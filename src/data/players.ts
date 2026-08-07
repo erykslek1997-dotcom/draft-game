@@ -302,6 +302,18 @@ const POSITION_OVERRIDES: { name: string; spanLabel: string; position: Position 
   // UI for a player who can now never actually play SF, which reads as a contradiction.
   { name: 'Charles Barkley', spanLabel: '1989-91', position: 'PF' },
   { name: 'Charles Barkley', spanLabel: '1990-92', position: 'PF' },
+  // 2026-08-07, user explicit ask — an EXPERIMENT, not a data-quality fix like the entries
+  // above: "przesunąłbym Hardena na PG i zobaczył jak wtedy będzie draftowany." His real
+  // position-share classifier already tags several nearby spans PG (2016-18 through 2024-26,
+  // his true primary-ball-handler years) — these two specific spans, his highest-TAL peaks
+  // (2014-16, 2017-19), sit right on that same real transition and were tagged SG. Moving them
+  // to PG is a deliberate what-if, not a claim the auto-classifier mistagged them; revert if the
+  // user doesn't like the resulting draft behavior. Unlike Magic Johnson's TAL-only position-
+  // correction override (talent.ts), this changes the real `primaryPosition` field, so it also
+  // triggers `computeTalent`'s PG-specific offense/defense grade ceilings and PG-specific tier
+  // caps (grades.ts) — a much bigger, more honest test of "how would he actually draft as a PG."
+  { name: 'James Harden', spanLabel: '2014-16', position: 'PG' },
+  { name: 'James Harden', spanLabel: '2017-19', position: 'PG' },
 ];
 
 function applyPositionOverrides(spans: PlayerSpan[]): PlayerSpan[] {

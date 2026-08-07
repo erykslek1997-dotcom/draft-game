@@ -16,6 +16,7 @@ import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing } from './spacing';
 import { isRimGravityScorer, isSelfSufficientEngine } from './offensiveProfile';
+import { isD1D2D3Player } from './d1d2d3Lookup';
 
 /** A player this good is a generational, top-of-history peak (Jordan/LeBron/Curry/Hakeem
  * tier) that a real GM drafts regardless of roster redundancy — the "already have two
@@ -585,6 +586,31 @@ export function pickForAi(
     });
     if (withoutHighFgaDuplicates.length > 0) phaseFilteredCandidates = withoutHighFgaDuplicates;
   }
+
+  // 2026-08-07, user explicit ask: keep the full 572-player board (see d1d2d3Lookup.ts's own
+  // docstring), but have the AI reach for a real, previously-human-drafted D1/D2/D3 name FIRST,
+  // the rest of the board second — without ever abandoning real position need to do it. Scoped
+  // to whichever position(s) the team actually still needs (empty or thin starter slots): if
+  // the D1/D2/D3 subset has a real fit for a needed position, restrict to it; if it doesn't
+  // (e.g. every D1/D2/D3 PG is already gone), candidates fall through UNCHANGED to the normal
+  // need-driven pool — which is still position-aware — so the AI reaches for a PG OUTSIDE the
+  // D1/D2/D3 list rather than settling for an on-list player at an unneeded position (a spare C)
+  // just because it happens to be "on the list." The user's own named example: don't let an
+  // empty PG slot on the D1/D2/D3 board get filled by a D1/D2/D3 center. With no specific
+  // positional need left (bench-depth picks, or once every slot's real need is met), the same
+  // preference still applies across the whole candidate pool, not just starter slots — "later
+  // takes into account the rest of the board" only once the on-list options are genuinely gone.
+  const neededPositionsForD1D2D3 = [...needs.emptySlots, ...needs.thinSlots];
+  const d1d2d3Preferred =
+    neededPositionsForD1D2D3.length > 0
+      ? phaseFilteredCandidates.filter(
+          (p) =>
+            isD1D2D3Player(p) &&
+            (neededPositionsForD1D2D3.includes(p.primaryPosition) ||
+              p.secondaryPositions.some((s) => neededPositionsForD1D2D3.includes(s))),
+        )
+      : phaseFilteredCandidates.filter(isD1D2D3Player);
+  if (d1d2d3Preferred.length > 0) phaseFilteredCandidates = d1d2d3Preferred;
 
   if (candidates.length === 0) {
     // Every candidate fails the strict lookahead — other teams have already drained
