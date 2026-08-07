@@ -667,6 +667,16 @@ select {
   color: #7a4b00;
   font-weight: 700;
 }
+/* GOAT — one rung above .rating-peak, deliberately not another shade of gold (it would just
+   read as "brighter Greatest peak" in a shared row): near-black with a bright gold border/text,
+   the one badge on this ladder that breaks the warm-gold family entirely, same reasoning
+   .tier-anomaly/.playoff-*-gold already use for their own rarest tier. */
+.rating-goat {
+  background: linear-gradient(96deg, #1a1a1a, #2e2e2e);
+  color: #ffd479;
+  border: 1px solid #ffd479;
+  font-weight: 700;
+}
 
 @media (prefers-color-scheme: dark) {
   .rating-cigarette {

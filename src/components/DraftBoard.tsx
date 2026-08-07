@@ -7,7 +7,7 @@ import { computeOffensivePortability, computeDefensivePortability } from '../eng
 import { computeSpacing, spacingTier, type SpacingTier } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
 import { allStarCount } from '../engine/allStarLookup';
-import { offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, overallTierForSpan, displayTalentForSpan, type OverallTier } from '../engine/grades';
+import { offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, overallTierForSpan, displayTalentForSpan, displayNumberForSpan, type OverallTier } from '../engine/grades';
 import { playoffPerformanceTier, type PlayoffPerformanceTier } from '../engine/playoffPerformanceLookup';
 import { computeDurability, durabilityTier, type DurabilityTier } from '../engine/durability';
 import DraftHistory from './DraftHistory';
@@ -68,11 +68,13 @@ const OVERALL_TIER_CLASS: Record<OverallTier, string> = {
   'All-NBA': 'rating-allnba',
   MVP: 'rating-mvp',
   'Greatest peak': 'rating-peak',
+  GOAT: 'rating-goat',
 };
 
 /** Shared by `OverallTierBadge` and every "TAL {number}" display site — building this once and
  * reusing it for both the badge and the number next to it is what guarantees they can never
- * disagree (see `displayTalentForSpan`'s own docstring for why they used to). */
+ * disagree (see `displayTalentForSpan`'s own docstring for why they used to). `playerName` is
+ * needed for the GOAT-tier check (grades.ts) — every other field already came from `span`. */
 export function tierContextFor(span: PlayerSpan) {
   return {
     position: span.primaryPosition,
@@ -80,6 +82,7 @@ export function tierContextFor(span: PlayerSpan) {
     otal: computeOffensiveTalent(span),
     dtal: computeDefensiveTalent(span),
     fga: span.fga,
+    playerName: span.playerName,
   };
 }
 
@@ -388,7 +391,7 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                     </span>
                     {showJudgeMetrics && (
                       <span className="pg-tal">
-                        TAL {displayTalentForSpan(tierContextFor(bestTalentSpan))} <OverallTierBadge span={bestTalentSpan} />
+                        TAL {displayNumberForSpan(bestTalentSpan, tierContextFor(bestTalentSpan))} <OverallTierBadge span={bestTalentSpan} />
                       </span>
                     )}
                     {showJudgeMetrics && <span className="pg-otal">O-TAL {offensiveGrade(bestOffensiveTalent)}</span>}
@@ -438,7 +441,7 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                                 {span.secondaryPositions.length ? ` / ${span.secondaryPositions.join(',')}` : ''}
                               </td>
                               <td>{span.fga.toFixed(1)}</td>
-                              {showJudgeMetrics && <td>{displayTalentForSpan(tierContextFor(span))}</td>}
+                              {showJudgeMetrics && <td>{displayNumberForSpan(span, tierContextFor(span))}</td>}
                               {showJudgeMetrics && (
                                 <td>
                                   <OverallTierBadge span={span} />

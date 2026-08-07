@@ -107,6 +107,11 @@ const DURABILITY_OVERWORK_MAX_PENALTY = 25;
  * rotation mistake the way benching a star is).
  */
 const OVERALL_TIER_MINUTES_TARGET: Record<OverallTier, { optimal: number; minimal: number | null }> = {
+  // GOAT (grades.ts) is a display-only tier `overallTier(value)` — the function this table is
+  // actually keyed against — never returns; it only exists via `overallTierForSpan`'s per-span
+  // upgrade. Included here purely so this Record type-checks as exhaustive; same numbers as
+  // 'Greatest peak', which is the real tier any GOAT-badged span still carries for this table.
+  GOAT: { optimal: 36, minimal: 32 },
   'Greatest peak': { optimal: 36, minimal: 32 },
   MVP: { optimal: 36, minimal: 32 },
   'All-NBA': { optimal: 34, minimal: 24 },
@@ -637,6 +642,8 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
   // in (`totalMinutesForPlayer`, already sums across slots) — a player split 24/12 across two
   // real positions is 36 total minutes on his OWN tier's budget, not evaluated per slot.
   const TIER_MAX_MINUTES: Record<OverallTier, number> = {
+    // Same "never actually returned by overallTier(value)" note as OVERALL_TIER_MINUTES_TARGET.
+    GOAT: MAX_MINUTES_PER_PLAYER,
     'Greatest peak': MAX_MINUTES_PER_PLAYER,
     MVP: MAX_MINUTES_PER_PLAYER,
     'All-NBA': MAX_MINUTES_PER_PLAYER,

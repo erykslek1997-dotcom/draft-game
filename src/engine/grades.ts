@@ -1,6 +1,7 @@
-import type { Position } from '../data/schema';
+import type { Position, PlayerSpan } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { computeOffensiveTalent, computeDefensiveTalent } from './talent';
+import { computeOffensiveTalent, computeDefensiveTalent, rawUncappedTalent } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 
 /**
@@ -108,6 +109,7 @@ export function defensivePortabilityGrade(value: number): Grade {
  * effectively 88-93.
  */
 export type OverallTier =
+  | 'GOAT'
   | 'Greatest peak'
   | 'MVP'
   | 'All-NBA'
@@ -167,6 +169,7 @@ const TIER_ORDER: OverallTier[] = [
   'All-NBA',
   'MVP',
   'Greatest peak',
+  'GOAT',
 ];
 function tierRank(t: OverallTier): number {
   return TIER_ORDER.indexOf(t);
@@ -179,6 +182,11 @@ function stricterTier(a: OverallTier, b: OverallTier): OverallTier {
  * came through them" is itself in question, independent of how efficient the shots they did
  * take were. */
 const TIER_GATE_LOW_FGA = 10;
+
+/** 2026-08-07: the middle band between "barely playing offense" (TIER_GATE_LOW_FGA, 10) and a
+ * genuine high-volume shooting guard — see the SG case's own comment (Manu Ginobili: 10.4-12.5
+ * FGA on his best-rated spans). */
+const SG_MODERATE_FGA_FLOOR = 13;
 
 /** Position-specific downward tier caps, applied ascending so a player can trip more than one
  * (the most restrictive wins — see `stricterTier` fold below). Every threshold reuses the exact
@@ -199,6 +207,16 @@ function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: n
       // formula changes move the pool around, so pinning an exemption to it exactly is fragile;
       // A+ (a fixed 95+ floor) reads the same "truly elite" intent without that fragility.
       if (!gradeAtLeast(dtalGrade, 'C-') && !gradeAtLeast(otalGrade, 'A+')) caps.push('All-NBA');
+      // 2026-08-07, user explicit ask ("boosts PGs too much"): the 2026-08-07 playmaking-skill
+      // TAL bonus (playmakingThreeLevel.ts) lifts a lot of PG O-TAL grades a full band or more
+      // (PG's own OFFENSE_TAL_PARAMS scale is one of the largest, so the same raw bonus swings
+      // O-TAL further than it does for SF/PF/C) — which pushed several PGs (Magic's weaker-D
+      // spans, Oscar's 1962-64) into "Greatest peak" purely on offense, with no equivalent
+      // defense requirement at all for the top tier the way SG/SF/C already have one. New gate,
+      // matching that same "real two-way case, not just offense" shape: below a genuine C+
+      // defensive grade, cap at MVP — doesn't touch Stockton/CP3 (real plus defenders) or Magic's
+      // better-defense spans, only the offense-only cases the complaint was about.
+      if (!gradeAtLeast(dtalGrade, 'C+')) caps.push('MVP');
       break;
     case 'SG': {
       // 2026-08-05: threshold for the two-way bypass below — user's own follow-up named both
@@ -222,20 +240,50 @@ function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: n
         (gradeAtLeast(otalGrade, 'B-') && gradeAtLeast(dtalGrade, 'B+'));
       if (!twoWay && !otalIsElite) caps.push('All-star');
       if (fga < TIER_GATE_LOW_FGA) caps.push('Starter');
-      // 2026-08-06: "Greatest peak" for an SG specifically requires a true top-of-scale (S)
-      // offensive grade — even a two-way A- guard doesn't have the case for the very top tier,
-      // just MVP. Literal `=== 'S'` (not `gradeAtLeast(..., 'A+')` like the PG exemptions above)
-      // is intentional here: this is the defining bar for the rule, not a fragile secondary
-      // exemption riding on top of another cap, so it should track the same dynamic "3 best in
-      // the pool" S actually means everywhere else it's displayed.
-      if (otalGrade !== 'S') caps.push('MVP');
+      // 2026-08-07, user explicit ask, replaces the earlier literal-S requirement below: "Kobe
+      // O-Tal at A with D-Tal with B = good enough for greatest peak" (his real 2002-04 span:
+      // O-TAL A/91, D-TAL B/79) — "same with Wade" (2008-10: O-TAL A+/95, D-TAL A-/87). A real
+      // A-grade offense (90+) plus a real B-grade defense (75+) is a genuine two-way peak case,
+      // not just an elite-offense-with-decent-D one; the old S-only bar was too strict for
+      // exactly this shape. `gradeAtLeast` on 'A' (not 'A-') is deliberate — the user's own
+      // examples are both literally at the 'A' band, not the tier below it.
+      if (!(gradeAtLeast(otalGrade, 'A') && gradeAtLeast(dtalGrade, 'B'))) caps.push('MVP');
+      // 2026-08-07, user explicit ask ("drop Ray Allen to All-NBA because of defense"): the
+      // `otalIsElite` bypass above already keeps a truly elite (A+) offense from being punished
+      // down to All-star despite weak D — correct for a genuinely good-enough defender, but Ray
+      // Allen's own defense is F-grade on literally every span (17-38 D-TAL) — a real, extreme
+      // one-way profile the bypass wasn't meant to fully excuse from every cap. F-grade defense
+      // alone caps at All-NBA regardless of how elite the offense is (the MVP-tier cap above
+      // already independently blocks him from MVP+ too, since F is nowhere near a 'B' grade —
+      // this rule is what stops the display from reading a contradictory "MVP-capped but somehow
+      // still shows near-All-NBA-quality," making the ceiling honest at every tier, not just the
+      // top one).
+      if (dtalGrade === 'F') caps.push('All-NBA');
+      // 2026-08-07, user explicit ask ("drop Manu to All-NBA because of low-FGA"): the existing
+      // FGA<10 gate (Starter cap, above) is a hard floor for "barely playing offense at all," but
+      // Manu's real volume (10.4-12.5 FGA on his best spans) clears that floor while still being
+      // genuinely low for a rated-MVP-tier shooting guard — a real, distinct middle band the old
+      // binary gate had no room for. Capped at All-NBA (not all the way to Starter) since he did
+      // clear the harder floor.
+      if (fga < SG_MODERATE_FGA_FLOOR) caps.push('All-NBA');
       break;
     }
     case 'SF':
-      // 2026-08-05, replaces the earlier OTAL-only version: needs a real A-tier grade (A- or
-      // better) on AT LEAST ONE side, offense or defense, to clear All-NBA — a merely-good
-      // all-around profile with no standout side doesn't have the case for MVP+.
-      if (!gradeAtLeast(otalGrade, 'A-') && !gradeAtLeast(dtalGrade, 'A-')) caps.push('All-NBA');
+      // 2026-08-07, user explicit ask, REPLACES the 2026-08-05 dual-sided version above ("SF
+      // need over B to be MVP in SF" — offense-focused, no defense-only escape this time): a
+      // real B+ offensive grade (80+) is now the floor just to clear All-NBA at all, regardless
+      // of how elite the defense is. Named cases, all confirmed against real O-TAL: Pippen
+      // (68-75 across his "MVP"-tier spans), Erving (66-72), Grant Hill (75), Kirilenko (63) —
+      // none reach B+, all drop to All-NBA even though several have S/A+ defense. A pure
+      // shutdown defender with only ordinary offense doesn't have the case for MVP+ under this
+      // rule — a real, deliberate reversal of the prior "one elite side is enough" design.
+      if (!gradeAtLeast(otalGrade, 'B+')) caps.push('All-NBA');
+      // Second, higher bar for "Greatest peak" specifically ("drop Kawhi to MVP because of
+      // offense" — his 2019-21 peak: O-TAL B+/84, D-TAL A-/86; B+ clears the All-NBA floor above
+      // but not this one). A merely-good-not-elite offense (B+ but short of A-) caps at MVP —
+      // real two-way volume at the very top still needs a genuinely elite offensive grade, not
+      // just "good enough to clear All-NBA."
+      if (!gradeAtLeast(otalGrade, 'A-')) caps.push('MVP');
       break;
     case 'PF':
       if (!gradeAtLeast(otalGrade, 'C+')) caps.push('All-star');
@@ -250,11 +298,23 @@ function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: n
       const dtalIsS = dtalGrade === 'S';
       if (!gradeAtLeast(otalGrade, 'A-') && !dtalIsS) caps.push('MVP');
       if (!gradeAtLeast(otalGrade, 'B-') && !dtalIsS) caps.push('All-NBA');
-      // 2026-08-05 follow-up: a center with neither side reaching a real B+ doesn't have a
-      // standout case for MVP+ either, even if their OTAL alone still clears the B- floor above —
-      // caught DeMarcus Cousins (2016-18: OTAL B/77, DTAL C/60 — decent both ways, elite at
-      // neither) sitting at MVP with no individually strong trait backing it up.
-      if (!gradeAtLeast(otalGrade, 'B+') && !gradeAtLeast(dtalGrade, 'B+')) caps.push('All-NBA');
+      // 2026-08-07, user explicit ask, TIGHTENED from B+ to A- ("drop Cousins to All-NBA — no
+      // above B+ in any category"): his real 2016-18 span (O-TAL B+/80, D-TAL C-/59) was landing
+      // exactly AT the old B+ floor, which the old `gradeAtLeast(..., 'B+')` check treats as
+      // clearing it — the user's own framing ("no ABOVE B+") means B+ itself isn't enough, only
+      // a real A- (85+) on either side is a standout trait worth MVP+. Same rule, higher bar.
+      if (!gradeAtLeast(otalGrade, 'A-') && !gradeAtLeast(dtalGrade, 'A-')) caps.push('All-NBA');
+      // 2026-08-07, same batch, a second and separate defense floor ("drop Sabonis to All-NBA —
+      // only D in defense"): his real D-TAL never exceeds D grade in ANY span (18-48, mostly F);
+      // his OTAL is genuinely elite (A/A+, 92-97) which clears the A- rule directly above on
+      // offense alone, so that rule can't catch him. An F-grade defense (well below even a mere
+      // D) is checked as its own independent floor — no amount of elite offense buys a center out
+      // of a truly bottom-of-the-scale defensive grade, matching the same "F caps regardless of
+      // the other side" shape just added to SG's Ray Allen rule. Checked for collateral: this also
+      // caps a handful of Jokić's own weaker-defense spans (his DTAL swings F-to-C- across his
+      // career) — a real, disclosed side effect, not hidden; his genuinely stronger-D spans
+      // (DTAL C- or better) are untouched and still reach Greatest peak.
+      if (dtalGrade === 'F') caps.push('All-NBA');
       break;
     }
   }
@@ -267,7 +327,27 @@ export interface TierGateContext {
   otal: number;
   dtal: number;
   fga: number;
+  /** Optional — only needed for the GOAT-tier check below. Every real UI call site
+   * (`tierContextFor` in DraftBoard.tsx) supplies it; left optional so any caller building a
+   * synthetic/hypothetical context (validation scripts, dry-runs) doesn't need to invent a name. */
+  playerName?: string;
 }
+
+/**
+ * 2026-08-07, user explicit ask: "LeBron, Jordan and Curry [have] not so much separation" from
+ * the rest of "Greatest peak" (a real, honest consequence of the soft-cap — see talent.ts's own
+ * docstring on `SOFT_CAP_K`, which deliberately compresses the whole top band toward 100 so nothing
+ * can hard-clip into an indistinguishable tie). This is the FOURTH named-player special case in
+ * the whole project (after Curry's shooting-gravity cap, Magic's SF position-correction override,
+ * and Durant's SF-defense-cap exclusion) — still exceptional, not a pattern to extend to a fourth
+ * name without being asked. Purely a DISPLAY tier, one rung above "Greatest peak": doesn't touch
+ * `computeTalent`, draft value, sorting, or sim behavior anywhere — a real draft-priority slide is
+ * a separate question (checked directly via `checkEliteSlideDiagnostic.ts` the same session: 25
+ * simulated 16-team drafts put Jordan at pick 1-8 every single time, avg 2.7 — the existing
+ * `GREATEST_PEAK_DRAFT_TIERS` tier-1 bonus in aiDrafter.ts is already doing that job for real; a
+ * single live-game slide to pick 32 reads as rare lottery variance, not a systemic regression).
+ */
+const GOAT_NAMES: ReadonlySet<string> = new Set(['Michael Jordan', 'LeBron James', 'Stephen Curry'].map(normalizePlayerName));
 
 /** The tier-badge function every UI call site should use instead of the raw `overallTier` —
  * same output for anyone who clears every gate for their position, strictly lower (never
@@ -279,13 +359,23 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   const otalGrade = offensiveGrade(ctx.otal);
   const dtalGrade = defensiveGrade(ctx.dtal);
   const caps = tierCaps(ctx.position, otalGrade, dtalGrade, ctx.fga);
-  return caps.reduce((tier, cap) => stricterTier(tier, cap), base);
+  const capped = caps.reduce((tier, cap) => stricterTier(tier, cap), base);
+  // GOAT is a RAISE, deliberately the only exception to this function's own "caps only ever
+  // lower a tier" rule (see every other case above) — gated on already having earned "Greatest
+  // peak" on the real merits first, so it can never manufacture a top tier out of nothing.
+  if (capped === 'Greatest peak' && ctx.playerName && GOAT_NAMES.has(normalizePlayerName(ctx.playerName))) {
+    return 'GOAT';
+  }
+  return capped;
 }
 
 /** The top of each tier's own band — one below the next tier's floor, so a capped player's
  * displayed number can never read as high as a real, uncapped member of the tier above. The
- * top tier has no ceiling of its own (nothing to cap against). */
+ * top two tiers ('Greatest peak', 'GOAT') have no ceiling of their own (nothing to cap
+ * against) — GOAT isn't in `OVERALL_TIER_FLOORS` at all (TAL itself never earns it, see above),
+ * so it needs its own explicit case rather than falling through the floor lookup. */
 function tierCeiling(tier: OverallTier): number {
+  if (tier === 'GOAT') return Infinity;
   const idx = OVERALL_TIER_FLOORS.findIndex(([, name]) => name === tier);
   const next = OVERALL_TIER_FLOORS[idx + 1];
   return next ? next[0] - 1 : Infinity;
@@ -309,4 +399,18 @@ function tierCeiling(tier: OverallTier): number {
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const cappedTier = overallTierForSpan(ctx);
   return Math.min(ctx.tal, tierCeiling(cappedTier));
+}
+
+/**
+ * The GOAT tier's own "give them 100+" ask — `ctx.tal` is always exactly ≤100 by construction
+ * (`computeTalent`'s own hard clamp), so there's no real number above 100 to show without a
+ * second, separate source: `rawUncappedTalent` (talent.ts) recomputes the same formula but skips
+ * the soft-cap's asymptotic approach-to-100 and the final clamp, exposing what the real internal
+ * spread actually is (Jordan's peak spans run well past 100 raw). Needs the full `span` (box
+ * stats etc.), not just the reduced `TierGateContext` — takes both rather than trying to
+ * reconstruct one from the other. Only ever shows the raw number for GOAT-tier spans; every
+ * other tier keeps reading the real, clamped number via `displayTalentForSpan` above.
+ */
+export function displayNumberForSpan(span: PlayerSpan, ctx: TierGateContext): number {
+  return overallTierForSpan(ctx) === 'GOAT' ? rawUncappedTalent(span) : displayTalentForSpan(ctx);
 }

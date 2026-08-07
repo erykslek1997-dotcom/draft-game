@@ -6,7 +6,7 @@ import { computeOffensivePortability, computeDefensivePortability } from '../eng
 import { computeSpacing } from '../engine/spacing';
 import { computeDurability } from '../engine/durability';
 import { allStarCount } from '../engine/allStarLookup';
-import { offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, displayTalentForSpan } from '../engine/grades';
+import { offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, displayTalentForSpan, displayNumberForSpan } from '../engine/grades';
 import {
   ALL_POSITIONS,
   groupByPlayer,
@@ -189,7 +189,7 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                       </span>
                       {showJudgeMetrics && (
                         <span className="pg-tal">
-                          TAL {displayTalentForSpan(tierContextFor(bestTalentSpan))} <OverallTierBadge span={bestTalentSpan} />
+                          TAL {displayNumberForSpan(bestTalentSpan, tierContextFor(bestTalentSpan))} <OverallTierBadge span={bestTalentSpan} />
                         </span>
                       )}
                       {showJudgeMetrics && <span className="pg-otal">O-TAL {offensiveGrade(bestOffensiveTalent)}</span>}
@@ -238,7 +238,7 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                                   {span.secondaryPositions.length ? ` / ${span.secondaryPositions.join(',')}` : ''}
                                 </td>
                                 <td>{span.fga.toFixed(1)}</td>
-                                {showJudgeMetrics && <td>{displayTalentForSpan(tierContextFor(span))}</td>}
+                                {showJudgeMetrics && <td>{displayNumberForSpan(span, tierContextFor(span))}</td>}
                                 {showJudgeMetrics && (
                                   <td>
                                     <OverallTierBadge span={span} />

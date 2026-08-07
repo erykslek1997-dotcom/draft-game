@@ -743,6 +743,24 @@ function sfDefenseGradeCeiling(span: PlayerSpan): number {
  */
 const talentCache = new Map<string, number>();
 
+/**
+ * 2026-08-07, user explicit ask (the "GOAT" display tier, grades.ts): what `computeTalent` would
+ * read WITHOUT the final `[0,100]` clamp or the soft-cap's asymptotic approach-to-100 — exposing
+ * the real internal spread the soft-cap exists to compress (Jordan's own peak spans run well
+ * past 100 raw; see `SOFT_CAP_K`'s own docstring for the concrete numbers from the session that
+ * built it). Mirrors `computeTalent`'s own two-pass usage-scale logic exactly (same gate on the
+ * SAME clamped/rounded `baseTal`, so which pass "wins" never disagrees between the two
+ * functions), just skips `softCapTalent`/the clamp/the PG-SF grade-ceiling `Math.min` at the very
+ * end. Display-only — nothing in the engine reads this for talent, draft value, or sorting;
+ * grades.ts's `displayNumberForSpan` is the only caller.
+ */
+export function rawUncappedTalent(span: PlayerSpan): number {
+  const baseScaled = talentScaled(span, 1.0);
+  const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
+  const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span));
+  return Math.round(scaled);
+}
+
 export function computeTalent(span: PlayerSpan): number {
   const cached = talentCache.get(span.id);
   if (cached !== undefined) return cached;
