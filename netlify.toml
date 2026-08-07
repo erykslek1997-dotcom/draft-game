@@ -1,0 +1,22 @@
+# Netlify config for when draft-game/ is ITSELF the repository root.
+#
+# Kept deliberately consistent with the repo-root ../netlify.toml, which sets `base =
+# "draft-game"` for the other layout (app in a subdirectory of the repo). Netlify reads the
+# netlify.toml inside the base directory as well, so these two must not disagree — the paths
+# below are already relative to this directory, so no `base` key belongs here.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Developer mode (all six judge metrics + the live player-mode toggle) is the DEFAULT build.
+# For a playtester build with player mode locked on and the toggle hidden, add:
+#   VITE_FORCE_PLAYER_MODE = "true"
+# to [build.environment] above.
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

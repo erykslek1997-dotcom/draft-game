@@ -1,0 +1,377 @@
+[
+  {
+    "seasonEndYear": 1952,
+    "avgThreePA": 0,
+    "spanCount": 70
+  },
+  {
+    "seasonEndYear": 1953,
+    "avgThreePA": 0,
+    "spanCount": 133
+  },
+  {
+    "seasonEndYear": 1954,
+    "avgThreePA": 0,
+    "spanCount": 123
+  },
+  {
+    "seasonEndYear": 1955,
+    "avgThreePA": 0,
+    "spanCount": 113
+  },
+  {
+    "seasonEndYear": 1956,
+    "avgThreePA": 0,
+    "spanCount": 112
+  },
+  {
+    "seasonEndYear": 1957,
+    "avgThreePA": 0,
+    "spanCount": 123
+  },
+  {
+    "seasonEndYear": 1958,
+    "avgThreePA": 0,
+    "spanCount": 120
+  },
+  {
+    "seasonEndYear": 1959,
+    "avgThreePA": 0,
+    "spanCount": 123
+  },
+  {
+    "seasonEndYear": 1960,
+    "avgThreePA": 0,
+    "spanCount": 130
+  },
+  {
+    "seasonEndYear": 1961,
+    "avgThreePA": 0,
+    "spanCount": 126
+  },
+  {
+    "seasonEndYear": 1962,
+    "avgThreePA": 0,
+    "spanCount": 123
+  },
+  {
+    "seasonEndYear": 1963,
+    "avgThreePA": 0,
+    "spanCount": 131
+  },
+  {
+    "seasonEndYear": 1964,
+    "avgThreePA": 0,
+    "spanCount": 141
+  },
+  {
+    "seasonEndYear": 1965,
+    "avgThreePA": 0,
+    "spanCount": 140
+  },
+  {
+    "seasonEndYear": 1966,
+    "avgThreePA": 0,
+    "spanCount": 148
+  },
+  {
+    "seasonEndYear": 1967,
+    "avgThreePA": 0,
+    "spanCount": 164
+  },
+  {
+    "seasonEndYear": 1968,
+    "avgThreePA": 0,
+    "spanCount": 188
+  },
+  {
+    "seasonEndYear": 1969,
+    "avgThreePA": 0,
+    "spanCount": 210
+  },
+  {
+    "seasonEndYear": 1970,
+    "avgThreePA": 0,
+    "spanCount": 233
+  },
+  {
+    "seasonEndYear": 1971,
+    "avgThreePA": 0,
+    "spanCount": 249
+  },
+  {
+    "seasonEndYear": 1972,
+    "avgThreePA": 0,
+    "spanCount": 258
+  },
+  {
+    "seasonEndYear": 1973,
+    "avgThreePA": 0,
+    "spanCount": 271
+  },
+  {
+    "seasonEndYear": 1974,
+    "avgThreePA": 0,
+    "spanCount": 278
+  },
+  {
+    "seasonEndYear": 1975,
+    "avgThreePA": 0,
+    "spanCount": 280
+  },
+  {
+    "seasonEndYear": 1976,
+    "avgThreePA": 0,
+    "spanCount": 274
+  },
+  {
+    "seasonEndYear": 1977,
+    "avgThreePA": 0,
+    "spanCount": 315
+  },
+  {
+    "seasonEndYear": 1978,
+    "avgThreePA": 0,
+    "spanCount": 361
+  },
+  {
+    "seasonEndYear": 1979,
+    "avgThreePA": 0.0693,
+    "spanCount": 355
+  },
+  {
+    "seasonEndYear": 1980,
+    "avgThreePA": 0.1992,
+    "spanCount": 357
+  },
+  {
+    "seasonEndYear": 1981,
+    "avgThreePA": 0.2351,
+    "spanCount": 373
+  },
+  {
+    "seasonEndYear": 1982,
+    "avgThreePA": 0.2297,
+    "spanCount": 377
+  },
+  {
+    "seasonEndYear": 1983,
+    "avgThreePA": 0.244,
+    "spanCount": 373
+  },
+  {
+    "seasonEndYear": 1984,
+    "avgThreePA": 0.2769,
+    "spanCount": 376
+  },
+  {
+    "seasonEndYear": 1985,
+    "avgThreePA": 0.3281,
+    "spanCount": 377
+  },
+  {
+    "seasonEndYear": 1986,
+    "avgThreePA": 0.3879,
+    "spanCount": 365
+  },
+  {
+    "seasonEndYear": 1987,
+    "avgThreePA": 0.4912,
+    "spanCount": 374
+  },
+  {
+    "seasonEndYear": 1988,
+    "avgThreePA": 0.5878,
+    "spanCount": 392
+  },
+  {
+    "seasonEndYear": 1989,
+    "avgThreePA": 0.7082,
+    "spanCount": 401
+  },
+  {
+    "seasonEndYear": 1990,
+    "avgThreePA": 0.7652,
+    "spanCount": 417
+  },
+  {
+    "seasonEndYear": 1991,
+    "avgThreePA": 0.7723,
+    "spanCount": 426
+  },
+  {
+    "seasonEndYear": 1992,
+    "avgThreePA": 0.8535,
+    "spanCount": 439
+  },
+  {
+    "seasonEndYear": 1993,
+    "avgThreePA": 0.9846,
+    "spanCount": 434
+  },
+  {
+    "seasonEndYear": 1994,
+    "avgThreePA": 1.2392,
+    "spanCount": 426
+  },
+  {
+    "seasonEndYear": 1995,
+    "avgThreePA": 1.5725,
+    "spanCount": 447
+  },
+  {
+    "seasonEndYear": 1996,
+    "avgThreePA": 1.7711,
+    "spanCount": 464
+  },
+  {
+    "seasonEndYear": 1997,
+    "avgThreePA": 1.7629,
+    "spanCount": 463
+  },
+  {
+    "seasonEndYear": 1998,
+    "avgThreePA": 1.5811,
+    "spanCount": 475
+  },
+  {
+    "seasonEndYear": 1999,
+    "avgThreePA": 1.4621,
+    "spanCount": 485
+  },
+  {
+    "seasonEndYear": 2000,
+    "avgThreePA": 1.5338,
+    "spanCount": 470
+  },
+  {
+    "seasonEndYear": 2001,
+    "avgThreePA": 1.6423,
+    "spanCount": 459
+  },
+  {
+    "seasonEndYear": 2002,
+    "avgThreePA": 1.7048,
+    "spanCount": 463
+  },
+  {
+    "seasonEndYear": 2003,
+    "avgThreePA": 1.7271,
+    "spanCount": 473
+  },
+  {
+    "seasonEndYear": 2004,
+    "avgThreePA": 1.7349,
+    "spanCount": 484
+  },
+  {
+    "seasonEndYear": 2005,
+    "avgThreePA": 1.7564,
+    "spanCount": 488
+  },
+  {
+    "seasonEndYear": 2006,
+    "avgThreePA": 1.8433,
+    "spanCount": 487
+  },
+  {
+    "seasonEndYear": 2007,
+    "avgThreePA": 1.9682,
+    "spanCount": 497
+  },
+  {
+    "seasonEndYear": 2008,
+    "avgThreePA": 2.0429,
+    "spanCount": 494
+  },
+  {
+    "seasonEndYear": 2009,
+    "avgThreePA": 2.0652,
+    "spanCount": 480
+  },
+  {
+    "seasonEndYear": 2010,
+    "avgThreePA": 2.0824,
+    "spanCount": 483
+  },
+  {
+    "seasonEndYear": 2011,
+    "avgThreePA": 2.0733,
+    "spanCount": 487
+  },
+  {
+    "seasonEndYear": 2012,
+    "avgThreePA": 2.0655,
+    "spanCount": 484
+  },
+  {
+    "seasonEndYear": 2013,
+    "avgThreePA": 2.173,
+    "spanCount": 482
+  },
+  {
+    "seasonEndYear": 2014,
+    "avgThreePA": 2.2811,
+    "spanCount": 497
+  },
+  {
+    "seasonEndYear": 2015,
+    "avgThreePA": 2.3804,
+    "spanCount": 514
+  },
+  {
+    "seasonEndYear": 2016,
+    "avgThreePA": 2.6111,
+    "spanCount": 513
+  },
+  {
+    "seasonEndYear": 2017,
+    "avgThreePA": 2.8811,
+    "spanCount": 508
+  },
+  {
+    "seasonEndYear": 2018,
+    "avgThreePA": 3.1639,
+    "spanCount": 498
+  },
+  {
+    "seasonEndYear": 2019,
+    "avgThreePA": 3.3963,
+    "spanCount": 480
+  },
+  {
+    "seasonEndYear": 2020,
+    "avgThreePA": 3.5903,
+    "spanCount": 483
+  },
+  {
+    "seasonEndYear": 2021,
+    "avgThreePA": 3.7066,
+    "spanCount": 483
+  },
+  {
+    "seasonEndYear": 2022,
+    "avgThreePA": 3.8026,
+    "spanCount": 463
+  },
+  {
+    "seasonEndYear": 2023,
+    "avgThreePA": 3.8727,
+    "spanCount": 465
+  },
+  {
+    "seasonEndYear": 2024,
+    "avgThreePA": 3.9901,
+    "spanCount": 464
+  },
+  {
+    "seasonEndYear": 2025,
+    "avgThreePA": 4.1145,
+    "spanCount": 441
+  },
+  {
+    "seasonEndYear": 2026,
+    "avgThreePA": 4.1023,
+    "spanCount": 215
+  }
+]

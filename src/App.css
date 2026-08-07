@@ -1,0 +1,1088 @@
+.app-shell {
+  padding: 0 16px 40px;
+  text-align: left;
+}
+
+.intro-screen {
+  max-width: 520px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.intro-screen p {
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+.fail-banner {
+  text-align: center;
+  border: 1px solid #d9534f;
+  background: rgba(217, 83, 79, 0.1);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.fail-banner h2 {
+  color: #d9534f;
+  margin: 0 0 8px;
+  letter-spacing: 2px;
+}
+
+.fail-banner p {
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.app-header {
+  position: relative;
+  text-align: center;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+/* No longer absolutely positioned against .app-header (2026-07-30): Reset now lives in
+   GameShell's own .game-controls row, not sharing space with the centred title/tagline text
+   the absolute positioning existed to avoid overlapping — see the load-time-split note in
+   App.tsx/GameShell.tsx for why the controls moved out of the header at all. */
+.reset-btn {
+  margin: 0;
+}
+
+.loading-panel {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.game-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.app-header h1 {
+  margin: 0 0 8px;
+}
+
+.tagline {
+  color: var(--text);
+  font-size: 15px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  padding: 6px 12px;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button.active,
+.pos-filters button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.primary-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 20px;
+  margin-top: 16px;
+}
+
+.secondary-btn {
+  margin: 8px 0 16px;
+}
+
+input {
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+select {
+  font: inherit;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  max-width: 320px;
+}
+
+/* Draft board */
+
+.draft-status {
+  font-size: 16px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  border-radius: 8px;
+}
+
+.team-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .team-panels {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.team-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.team-panel.active {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.team-panel h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.cap-meter {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.roster-count {
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.mini-roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.mini-roster li {
+  padding: 2px 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.pool-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cap-remaining {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.position-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.position-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-bg, transparent);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.position-card:hover {
+  border-color: var(--accent, #888);
+}
+
+.position-card-label {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.position-card-count {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.browse-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.browse-title {
+  font-weight: 600;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.player-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.player-table th,
+.player-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.player-table tr.illegal {
+  opacity: 0.35;
+}
+
+.cpu-thinking {
+  padding: 40px;
+  text-align: center;
+  color: var(--text);
+  font-style: italic;
+}
+
+/* Rotation builder */
+
+.rotation-builder {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.span-selection-screen {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.span-selection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.span-selection-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.span-selection-name {
+  width: 160px;
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.span-selection-row select {
+  flex: 1;
+}
+
+.span-selection-totals {
+  display: flex;
+  gap: 20px;
+  font-weight: 600;
+  margin: 16px 0;
+}
+
+.slot-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.slot-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slot-row label {
+  width: 32px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.bench-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.bench-list li {
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 14px;
+}
+
+.slot-block {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.slot-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.slot-block-header label {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.minutes-ok {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.minutes-bad {
+  color: #e5484d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.slot-row input[type='number'] {
+  width: 64px;
+}
+
+.min-label {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.durability-cap {
+  color: var(--text);
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+.slot-row input[type='number'].minutes-warning {
+  border-color: #f5a623;
+  outline-color: #f5a623;
+}
+
+.remove-row-btn {
+  padding: 0 8px;
+  line-height: 1.6;
+  color: #e5484d;
+}
+
+.add-row-btn {
+  margin-top: 6px;
+  font-size: 12px;
+  padding: 3px 8px;
+}
+
+.validation-warning {
+  color: #f5a623;
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.validation-error {
+  color: #e5484d;
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+/* Draft history */
+
+.history-toggle {
+  margin-left: 16px;
+  font-size: 13px;
+}
+
+.draft-history {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.draft-history h4 {
+  margin: 0 0 8px;
+}
+
+.history-empty {
+  color: var(--text);
+  font-size: 13px;
+  margin: 0;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.history-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--border);
+  flex-wrap: wrap;
+}
+
+.history-pick {
+  color: var(--accent);
+  font-weight: 700;
+  width: 34px;
+}
+
+.history-team {
+  width: 110px;
+  color: var(--text);
+}
+
+.history-player {
+  flex: 1;
+}
+
+/* Player pool grouped by player */
+
+.player-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.player-group {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.player-group-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 0;
+  background: var(--bg);
+  text-align: left;
+  /* On a narrow screen the name + every stat span can't all fit — previously this just
+     clipped silently (the parent .player-group sets overflow: hidden), so TAL/O-TAL/D-TAL/
+     POR/IMP were invisible with no way to reach them. Scrolls horizontally instead, same
+     pattern as .table-scroll below for the expanded span table. */
+  overflow-x: auto;
+}
+
+.pg-caret {
+  width: 12px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.pg-name {
+  flex-shrink: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pg-meta,
+.pg-fga,
+.pg-tal,
+.pg-otal,
+.pg-dtal,
+.pg-por,
+.pg-imp,
+.pg-spc {
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.pg-otal,
+.pg-dtal,
+.pg-imp,
+.pg-spc {
+  opacity: 0.75;
+}
+
+/* SPACING tier pills. Each tier gets a fill from its own colour family with text from the
+   dark end of that same family — never plain grey — so the label stays legible against the
+   tint. Dark-mode variants below invert that pairing (dark fill, light text) rather than
+   reusing the light fills, which would go muddy on a dark surface. */
+.tier-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.tier-non {
+  background: #fcebeb;
+  color: #a32d2d;
+}
+.tier-bad {
+  background: #faeeda;
+  color: #854f0b;
+}
+.tier-avg {
+  background: #f1efe8;
+  color: #5f5e5a;
+}
+.tier-good {
+  background: #e1f5ee;
+  color: #0f6e56;
+}
+.tier-great {
+  background: #eeedfe;
+  color: #534ab7;
+}
+.tier-gravity {
+  background: #e6f1fb;
+  color: #185fa5;
+}
+
+/* One player only (Stephen Curry — see spacing.ts's SHOOTING_ANOMALY_PLAYER). Deliberately the
+   one badge that doesn't follow the cool-to-warm family the other six use: it isn't a rung on
+   the same ladder, so it shouldn't read like one. */
+.tier-anomaly {
+  background: linear-gradient(96deg, #ffe9b0, #ffd0e8);
+  color: #7a3b00;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tier-non {
+    background: #3d1414;
+    color: #f09595;
+  }
+  .tier-bad {
+    background: #3a2206;
+    color: #fac775;
+  }
+  .tier-avg {
+    background: #2e2e2c;
+    color: #b4b2a9;
+  }
+  .tier-good {
+    background: #0d302a;
+    color: #5dcaa5;
+  }
+  .tier-great {
+    background: #221e4d;
+    color: #afa9ec;
+  }
+  .tier-gravity {
+    background: #0a2947;
+    color: #85b7eb;
+  }
+
+  .tier-anomaly {
+    background: linear-gradient(96deg, #4a3200, #4a1030);
+    color: #ffdc9b;
+  }
+}
+
+/* Overall-rating tier pills (Cigarette Butt .. Greatest peak) — same .tier-badge shape as the
+   SPACING pills above, but a fully distinct 8-hue palette (grey -> brown -> olive -> green ->
+   cyan -> indigo -> magenta -> gold) so the two badge columns never read as the same scale when
+   they sit in the same row. Greatest peak gets the one gradient treatment, same reasoning as
+   .tier-anomaly: the rarest tier shouldn't look like a rung on the plain ladder below it. */
+.rating-cigarette {
+  background: #ece9e6;
+  color: #6e6b64;
+}
+.rating-bench {
+  background: #f6e8de;
+  color: #8f5323;
+}
+.rating-role {
+  background: #f5f0d0;
+  color: #7a6a12;
+}
+.rating-starter {
+  background: #e6f2e2;
+  color: #3a7a3f;
+}
+.rating-allstar {
+  background: #ddf3f5;
+  color: #0e7a8a;
+}
+.rating-allnba {
+  background: #ece7fb;
+  color: #5b3fb0;
+}
+.rating-mvp {
+  background: #fbe6f3;
+  color: #a3227a;
+}
+.rating-peak {
+  background: linear-gradient(96deg, #ffe9b0, #ffd479);
+  color: #7a4b00;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .rating-cigarette {
+    background: #2c2b28;
+    color: #b3b0a8;
+  }
+  .rating-bench {
+    background: #3a2412;
+    color: #f0a868;
+  }
+  .rating-role {
+    background: #322c08;
+    color: #e8d461;
+  }
+  .rating-starter {
+    background: #12281a;
+    color: #7fd68a;
+  }
+  .rating-allstar {
+    background: #072c30;
+    color: #6fd9e6;
+  }
+  .rating-allnba {
+    background: #241c47;
+    color: #b2a3f2;
+  }
+  .rating-mvp {
+    background: #3a1230;
+    color: #ec8ecb;
+  }
+  .rating-peak {
+    background: linear-gradient(96deg, #4a3200, #5a3900);
+    color: #ffdc9b;
+  }
+}
+
+/* Playoff-performance tag pills — a third palette, fully distinct from both SPACING's and the
+   overall-rating's own hue families: red = efficiency dropped in the playoffs relative to the
+   league average, green = rose above it, darkening with tier. Platinum (the rarest, most
+   extreme tier on each side) gets the one gradient treatment, same reasoning as .tier-anomaly/
+   .rating-peak — but in vivid red/green rather than gold, so it can't be mistaken for either of
+   those two existing gradients when badges from different columns sit in the same row. */
+.playoff-bronze-drop {
+  background: #fbe4e1;
+  color: #a13d2c;
+}
+.playoff-silver-drop {
+  background: #f7c9c2;
+  color: #8a2f1f;
+}
+.playoff-gold-drop {
+  background: #f0a89c;
+  color: #6e2013;
+}
+.playoff-platinum-drop {
+  background: linear-gradient(96deg, #d9432b, #7a1c0f);
+  color: #ffffff;
+  font-weight: 700;
+}
+.playoff-bronze-rise {
+  background: #e1f3e2;
+  color: #2c7a34;
+}
+.playoff-silver-rise {
+  background: #c3e8c7;
+  color: #1f6626;
+}
+.playoff-gold-rise {
+  background: #9edaa6;
+  color: #14501a;
+}
+.playoff-platinum-rise {
+  background: linear-gradient(96deg, #22c55e, #0e7d3a);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .playoff-bronze-drop {
+    background: #3a1c14;
+    color: #f2a08c;
+  }
+  .playoff-silver-drop {
+    background: #4a1f14;
+    color: #f5866a;
+  }
+  .playoff-gold-drop {
+    background: #5c1f11;
+    color: #ff8a68;
+  }
+  .playoff-platinum-drop {
+    background: linear-gradient(96deg, #7a1c0f, #3d0e08);
+    color: #ffb199;
+  }
+  .playoff-bronze-rise {
+    background: #143a1c;
+    color: #8ee29a;
+  }
+  .playoff-silver-rise {
+    background: #0f4a1e;
+    color: #7bdb8c;
+  }
+  .playoff-gold-rise {
+    background: #0c5c22;
+    color: #6bea82;
+  }
+  .playoff-platinum-rise {
+    background: linear-gradient(96deg, #0e7d3a, #0a4d24);
+    color: #baffcb;
+  }
+}
+
+/* DUR tier pills (durability.ts) — a fourth palette, blue-to-violet, distinct from SPACING's
+   cool-to-warm, the overall rating's grey-to-gold, and playoff performance's red/green. DNP
+   reads as flat grey (off/unplayable, not a rung on the blue ladder). Ironman gets the one
+   gradient treatment, same reasoning as the other three families' rarest-tier gradients. */
+.dur-dnp {
+  background: #ece9e6;
+  color: #6e6b64;
+}
+.dur-walking-glass {
+  background: #e6eef8;
+  color: #3a5f8a;
+}
+.dur-street-clothes {
+  background: #d5e5f5;
+  color: #2f5580;
+}
+.dur-load-management {
+  background: #c3dbf2;
+  color: #24507d;
+}
+.dur-reliable {
+  background: #a8cdf0;
+  color: #1a4270;
+}
+.dur-unbreakable {
+  background: #8fb8ea;
+  color: #142f5c;
+}
+.dur-ironman {
+  background: linear-gradient(96deg, #1e3a8a, #4c1d95);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dur-dnp {
+    background: #2c2b28;
+    color: #b3b0a8;
+  }
+  .dur-walking-glass {
+    background: #16283f;
+    color: #8fb8ea;
+  }
+  .dur-street-clothes {
+    background: #1a3049;
+    color: #a0c4ee;
+  }
+  .dur-load-management {
+    background: #1e3a56;
+    color: #b0cef1;
+  }
+  .dur-reliable {
+    background: #234668;
+    color: #c3dbf5;
+  }
+  .dur-unbreakable {
+    background: #29537a;
+    color: #d6e6f8;
+  }
+  .dur-ironman {
+    background: linear-gradient(96deg, #3b5bc9, #7c3aed);
+    color: #ffffff;
+  }
+}
+
+.span-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.span-table th,
+.span-table td {
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* The stat columns are wide enough to need horizontal scrolling on a narrow screen, but the
+   Draft button must never scroll out of reach — pin the last column to the right edge. */
+.span-table th:last-child,
+.span-table td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  text-align: right;
+}
+
+/* Results screen */
+
+.results-screen {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.team-result {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+
+.team-result.rank-1 {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.subscores {
+  display: flex;
+  /* Wraps because this row grew to seven items (Talent/Offense/Defense/Spacing/Durability/Fit/
+     Rotation). Without it flex forces them onto one line and they overflow the card on a narrow
+     screen — the same way .player-group-header clipped its right-hand stats before it was given
+     its own overflow handling. */
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.lineup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.lineup ul {
+  margin: 4px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.rotation-slot-group {
+  margin-bottom: 6px;
+}
+
+.rotation-slot-label {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.rotation-slot-entries li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0 2px 12px;
+  flex-wrap: wrap;
+}
+
+.notes ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.draft-order ol {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  font-size: 13px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.draft-order li {
+  padding: 2px 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.left-on-board {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.left-on-board ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.team-feedback {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  font-size: 13px;
+}
+
+.team-feedback label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.results-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.feedback-field {
+  margin-bottom: 8px;
+}
+
+.feedback-field select {
+  margin-left: 6px;
+}
+
+.feedback-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  resize: vertical;
+  margin-top: 4px;
+}
+
+.player-notes-hint {
+  font-size: 12px;
+  opacity: 0.7;
+  margin: 6px 0;
+}
+
+/* Shared tick/cross feedback control (FeedbackToggle) — used on draft-history picks and on
+   each roster row here. Deliberately small/inline so it never dominates the row it sits on. */
+.feedback-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.feedback-toggle-btn {
+  min-width: 22px;
+  padding: 1px 5px;
+  line-height: 1.4;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.feedback-toggle-ok.active {
+  background: #1f9d63;
+  border-color: #1f9d63;
+  color: #fff;
+}
+
+.feedback-toggle-flag.active {
+  background: #e5484d;
+  border-color: #e5484d;
+  color: #fff;
+}
+
+.feedback-toggle-reason {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  width: 180px;
+  max-width: 44vw;
+}
+
+/* CPU pick-speed slider. Deliberately in normal flow (centred under the header buttons)
+   rather than absolutely positioned like .reset-btn: .mode-toggle-btn has no positioning of its
+   own and sits in the flow, so a bottom-right slider would overlap it at narrower widths. */
+.ai-speed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.ai-speed input[type='range'] {
+  width: 110px;
+  accent-color: var(--accent);
+}
+
+/* Fixed width so stepping Slow -> Instant doesn't shift the slider sideways under the cursor
+   mid-drag. */
+.ai-speed-value {
+  min-width: 52px;
+  text-align: left;
+  font-weight: 600;
+}

@@ -1,0 +1,419 @@
+import { lazy, Suspense, useState } from 'react';
+import { rankTeams } from '../engine/scoring';
+import { STARTER_SLOTS } from '../engine/positions';
+import { allAssignments, benchWithMinutes } from '../engine/rotation';
+import { draftPool } from '../data/draftPool';
+import { normalizePlayerName } from '../data/schema';
+import type { DraftHistoryEntry, Team } from '../engine/types';
+import { teamLabel } from '../engine/teamNames';
+import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
+import { computeSpacing } from '../engine/spacing';
+import { computeDurability } from '../engine/durability';
+import FeedbackToggle, { type FeedbackEntry } from './FeedbackToggle';
+
+// Lazy, matching App.tsx's own lazy() call for this exact component (see GameShell.tsx's
+// lazy-loading docstring) — a static import here would bundle DraftPoolBrowser (plus its own
+// allStarLookup.ts/grades.ts imports) into every draft session's GameShell chunk, even for the
+// far more common case of a user who finishes a draft and never opens the pool browser from here.
+const DraftPoolBrowser = lazy(() => import('./DraftPoolBrowser'));
+
+interface Props {
+  teams: Team[];
+  /** Full draft history across every team, so each team's card can show its own pick order —
+   * the user's own ask: "show team draft history in [results] screen." The live "Show Draft
+   * History" toggle during the draft only covers the in-progress view; this is the same data,
+   * scoped per team, on the screen that actually sticks around after the draft ends. */
+  history: DraftHistoryEntry[];
+  mode: 'developer' | 'player';
+  onRestart: () => void;
+  /** Read-only here — reactions made live during the draft (see `DraftHistory`/`GameShell`).
+   * Folded into the same export as this screen's own roster-row reactions so a single downloaded
+   * file has everything. */
+  pickReactions: Record<number, FeedbackEntry>;
+}
+
+/** Keyed by roster player id — one reaction per rostered player, set directly on that player's
+ * row (see `FeedbackToggle`'s own docstring for why this replaced the old
+ * pick-a-player-from-a-dropdown + pick-a-direction-from-a-second-dropdown flow). */
+type PlayerFeedback = Record<string, FeedbackEntry>;
+
+interface TeamFeedback {
+  rankingAgrees: 'yes' | 'no' | 'unsure' | '';
+  rankingNote: string;
+  playerNotes: PlayerFeedback;
+  rotationNote: string;
+  otherNote: string;
+}
+
+const EMPTY_FEEDBACK: TeamFeedback = { rankingAgrees: '', rankingNote: '', playerNotes: {}, rotationNote: '', otherNote: '' };
+
+function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): TeamFeedback {
+  return record[teamId] ?? EMPTY_FEEDBACK;
+}
+
+/**
+ * 2026-08-03, user's own ask (in Polish): a way to leave per-team feedback ("what I like / don't
+ * like") on the results screen, and export it as a file with enough context that a FUTURE
+ * session can actually analyze it — not just the comment text on its own, since a bare "this
+ * roster feels off" without the underlying ratings/rotation/picks is nothing to act on. Exports
+ * every team's full roster (every judge metric per player), rotation minutes, the complete
+ * ScoreBreakdown, and that team's draft-order history alongside the comment, matching how every
+ * other real-data decision this project has made needed full context, not a partial one.
+ *
+ * Pure client-side (no backend) — the file downloads via a Blob + a synthetic anchor click, the
+ * standard no-server-needed browser download pattern. The exported JSON is meant to be handed
+ * back to Claude in a later session the same way every other CSV/xlsx export in this project's
+ * history has been.
+ *
+ * 2026-08-04, follow-up (in Polish): "give me a template I can fill in, and let me browse every
+ * player the same way as during the draft." A single freeform textarea made every export equally
+ * vague — this project's own established lesson (see the memory file's "Durable lessons" section)
+ * is that a *specific named player + direction + reasoning* is worth far more than a general "feels
+ * off" comment, so the template is structured around exactly that shape instead of open prose.
+ * `DraftPoolBrowser` already existed for full-pool browsing (built for the intro screen) and is
+ * reused here as-is via a full-screen toggle, rather than duplicating its search/filter/expand logic.
+ */
+function remainingOnBoard(teams: Team[]) {
+  const draftedNames = new Set(teams.flatMap((t) => t.roster.map((p) => normalizePlayerName(p.playerName))));
+  const byPlayer = new Map<string, (typeof draftPool)[number]>();
+  for (const span of draftPool) {
+    if (draftedNames.has(normalizePlayerName(span.playerName))) continue;
+    const cur = byPlayer.get(span.playerName);
+    if (!cur || computeTalent(span) > computeTalent(cur)) byPlayer.set(span.playerName, span);
+  }
+  return [...byPlayer.values()]
+    .map((span) => ({
+      playerName: span.playerName,
+      spanLabel: span.spanLabel,
+      primaryPosition: span.primaryPosition,
+      TAL: computeTalent(span),
+    }))
+    .sort((a, b) => b.TAL - a.TAL);
+}
+
+function buildFeedbackExport(
+  teams: Team[],
+  history: DraftHistoryEntry[],
+  feedback: Record<string, TeamFeedback>,
+  pickReactions: Record<number, FeedbackEntry>,
+) {
+  const ranked = rankTeams(teams);
+  // Live in-draft reactions (see DraftHistory/GameShell) — only flagged picks carry a
+  // complaint, same "no flag = no complaint, don't export a wall of confirmations" convention
+  // as the per-roster playerNotes below.
+  const draftPickFeedback = Object.entries(pickReactions)
+    .filter(([, entry]) => entry.status === 'flagged')
+    .map(([pickNumberStr, entry]) => {
+      const pickNumber = Number(pickNumberStr);
+      const h = history.find((historyEntry) => historyEntry.pickNumber === pickNumber);
+      const p = h ? draftPool.find((pl) => pl.id === h.playerId) : undefined;
+      const team = h ? teams.find((t) => t.id === h.teamId) : undefined;
+      return {
+        pickNumber,
+        teamLabel: team ? teamLabel(team) : null,
+        playerName: p?.playerName ?? null,
+        spanLabel: p?.spanLabel ?? null,
+        reason: entry.reason,
+      };
+    })
+    .sort((a, b) => a.pickNumber - b.pickNumber);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    remainingOnBoard: remainingOnBoard(teams),
+    draftPickFeedback,
+    teams: ranked.map(({ team, breakdown, rank }) => {
+      const assignments = allAssignments(team);
+      const bench = benchWithMinutes(team);
+      const teamHistory = history
+        .filter((h) => h.teamId === team.id)
+        .sort((a, b) => a.pickNumber - b.pickNumber)
+        .map((h) => {
+          const p = draftPool.find((pl) => pl.id === h.playerId);
+          return { pickNumber: h.pickNumber, playerId: h.playerId, playerName: p?.playerName ?? null, spanLabel: p?.spanLabel ?? null };
+        });
+      const roster = team.roster.map((p) => ({
+        playerName: p.playerName,
+        spanLabel: p.spanLabel,
+        primaryPosition: p.primaryPosition,
+        secondaryPositions: p.secondaryPositions,
+        fga: p.fga,
+        TAL: computeTalent(p),
+        OTAL: computeOffensiveTalent(p),
+        DTAL: computeDefensiveTalent(p),
+        OPOR: computeOffensivePortability(p),
+        DPOR: computeDefensivePortability(p),
+        SPC: computeSpacing(p),
+        DUR: computeDurability(p),
+      }));
+      const fb = feedback[team.id] ?? EMPTY_FEEDBACK;
+      return {
+        rank,
+        teamId: team.id,
+        label: teamLabel(team),
+        isHuman: team.isHuman,
+        overall: breakdown.overall,
+        breakdown,
+        roster,
+        rotation: STARTER_SLOTS.map((slot) => ({
+          slot,
+          entries: assignments
+            .filter((a) => a.slot === slot)
+            .sort((a, b) => b.minutes - a.minutes)
+            .map((a) => ({ playerName: a.player.playerName, spanLabel: a.player.spanLabel, minutes: a.minutes })),
+        })),
+        bench: bench.map(({ player, minutes }) => ({ playerName: player.playerName, spanLabel: player.spanLabel, minutes })),
+        draftOrder: teamHistory,
+        feedback: {
+          rankingAgrees: fb.rankingAgrees,
+          rankingNote: fb.rankingNote,
+          rotationNote: fb.rotationNote,
+          otherNote: fb.otherNote,
+          playerNotes: Object.entries(fb.playerNotes)
+            .filter(([, entry]) => entry.status === 'flagged')
+            .map(([playerId, entry]) => {
+              const p = team.roster.find((r) => r.id === playerId);
+              return {
+                playerName: p?.playerName ?? null,
+                spanLabel: p?.spanLabel ?? null,
+                reason: entry.reason,
+              };
+            }),
+        },
+      };
+    }),
+  };
+}
+
+function downloadFeedback(
+  teams: Team[],
+  history: DraftHistoryEntry[],
+  feedback: Record<string, TeamFeedback>,
+  pickReactions: Record<number, FeedbackEntry>,
+) {
+  const data = buildFeedbackExport(teams, history, feedback, pickReactions);
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  a.href = url;
+  a.download = `draft-feedback-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export default function ResultsScreen({ teams, history, mode, onRestart, pickReactions }: Props) {
+  const ranked = rankTeams(teams);
+  const playerById = (id: string) => draftPool.find((p) => p.id === id);
+  const [feedback, setFeedback] = useState<Record<string, TeamFeedback>>({});
+  const [showBrowser, setShowBrowser] = useState(false);
+  const leftOnBoard = remainingOnBoard(teams);
+
+  function getFeedback(teamId: string): TeamFeedback {
+    return feedbackFor(feedback, teamId);
+  }
+
+  // Every mutator reads its "current" value from `prev` inside the updater, never from the
+  // outer `feedback` closure — two of these firing back-to-back before a re-render must not
+  // silently drop one of them.
+  function patchFeedback(teamId: string, patch: Partial<TeamFeedback>) {
+    setFeedback((prev) => ({ ...prev, [teamId]: { ...feedbackFor(prev, teamId), ...patch } }));
+  }
+
+  // One reaction per rostered player, set directly on their row — see FeedbackToggle's docstring
+  // for why this replaced the old add-a-row/pick-a-player/pick-a-direction flow.
+  function setPlayerFeedback(teamId: string, playerId: string, entry: FeedbackEntry | undefined) {
+    setFeedback((prev) => {
+      const current = feedbackFor(prev, teamId);
+      const notes = { ...current.playerNotes };
+      if (entry) notes[playerId] = entry;
+      else delete notes[playerId];
+      return { ...prev, [teamId]: { ...current, playerNotes: notes } };
+    });
+  }
+
+  if (showBrowser) {
+    return (
+      <Suspense fallback={<div className="loading-panel"><p>Loading player data…</p></div>}>
+        <DraftPoolBrowser mode={mode} onBack={() => setShowBrowser(false)} />
+      </Suspense>
+    );
+  }
+
+  return (
+    <div className="results-screen">
+      <h2>Final Power Ranking</h2>
+      <button className="secondary-btn" onClick={() => setShowBrowser(true)}>
+        Przeglądaj wszystkich graczy
+      </button>
+      <div className="left-on-board">
+        <strong>Zostali na boardzie (top wg TAL)</strong>
+        <ul>
+          {leftOnBoard.slice(0, 20).map((p) => (
+            <li key={p.playerName}>
+              {p.playerName} ({p.spanLabel}) — {p.primaryPosition}, TAL {p.TAL}
+            </li>
+          ))}
+        </ul>
+      </div>
+      {ranked.map(({ team, breakdown, rank }) => {
+        const assignments = allAssignments(team);
+        const bench = benchWithMinutes(team);
+        const teamHistory = history.filter((h) => h.teamId === team.id).sort((a, b) => a.pickNumber - b.pickNumber);
+        const fb = getFeedback(team.id);
+        return (
+          <div key={team.id} className={`team-result rank-${rank}`}>
+            <h3>
+              #{rank} — {teamLabel(team)} {team.isHuman ? '(You)' : ''} — {breakdown.overall}
+            </h3>
+            <div className="subscores">
+              <span>Talent: {breakdown.talentScore}</span>
+              <span>Offense: {breakdown.offenseScore}</span>
+              <span>Defense: {breakdown.defenseScore}</span>
+              <span>Spacing: {breakdown.spacingScore}</span>
+              <span>Fit: {breakdown.fitScore}</span>
+              <span>Rotation: {breakdown.rotationScore}</span>
+            </div>
+            <div className="lineup">
+              <div>
+                <strong>Rotation</strong>
+                <ul className="rotation-slot-groups">
+                  {STARTER_SLOTS.map((slot) => {
+                    const entries = assignments
+                      .filter((a) => a.slot === slot)
+                      .sort((a, b) => b.minutes - a.minutes);
+                    return (
+                      <li key={slot} className="rotation-slot-group">
+                        <span className="rotation-slot-label">{slot}</span>
+                        <ul className="rotation-slot-entries">
+                          {entries.map((e) => (
+                            <li key={e.player.id}>
+                              <span>
+                                {e.player.playerName} ({e.player.spanLabel}) - {e.minutes}
+                              </span>
+                              <FeedbackToggle
+                                entry={fb.playerNotes[e.player.id]}
+                                onChange={(entry) => setPlayerFeedback(team.id, e.player.id, entry)}
+                                placeholder="Co jest nie tak z tym graczem?"
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+              <div>
+                <strong>Bench</strong>
+                <ul className="rotation-slot-entries">
+                  {bench.map(({ player, minutes }) => (
+                    <li key={player.id}>
+                      <span>
+                        {player.playerName} ({player.spanLabel}) — {minutes} min
+                      </span>
+                      <FeedbackToggle
+                        entry={fb.playerNotes[player.id]}
+                        onChange={(entry) => setPlayerFeedback(team.id, player.id, entry)}
+                        placeholder="Co jest nie tak z tym graczem?"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="notes">
+              <strong>Why:</strong>
+              <ul>
+                {breakdown.notes.map((note, i) => (
+                  <li key={i}>{note}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="draft-order">
+              <strong>Draft Order</strong>
+              <ol>
+                {teamHistory.map((entry) => {
+                  const p = playerById(entry.playerId);
+                  return (
+                    <li key={entry.pickNumber}>
+                      <span className="history-pick">#{entry.pickNumber}</span>{' '}
+                      {p ? `${p.playerName} (${p.spanLabel})` : entry.playerId}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+            <div className="team-feedback">
+              <strong>Feedback</strong>
+
+              <div className="feedback-field">
+                <label>Zgadzasz się z tą pozycją w rankingu?</label>
+                <select
+                  value={fb.rankingAgrees}
+                  onChange={(e) => {
+                    const value = e.target.value as TeamFeedback['rankingAgrees'];
+                    // Clear the "why" note whenever it stops being relevant, so a stale reason
+                    // for "no" can never survive into the export under a "yes"/"unsure" answer.
+                    patchFeedback(team.id, { rankingAgrees: value, rankingNote: value === 'no' ? fb.rankingNote : '' });
+                  }}
+                >
+                  <option value="">-- wybierz --</option>
+                  <option value="yes">Tak</option>
+                  <option value="no">Nie</option>
+                  <option value="unsure">Nie jestem pewien/pewna</option>
+                </select>
+              </div>
+              {fb.rankingAgrees === 'no' && (
+                <textarea
+                  className="feedback-textarea"
+                  rows={2}
+                  placeholder="Dlaczego ranking jest niesłuszny?"
+                  value={fb.rankingNote}
+                  onChange={(e) => patchFeedback(team.id, { rankingNote: e.target.value })}
+                />
+              )}
+
+              <p className="player-notes-hint">
+                Konkretni gracze: kliknij ✓/✗ przy graczu w Rotation/Bench powyżej.
+              </p>
+
+              <div className="feedback-field">
+                <label>Uwagi do rotacji</label>
+                <textarea
+                  className="feedback-textarea"
+                  rows={2}
+                  placeholder="Np. kto powinien grać więcej/mniej minut..."
+                  value={fb.rotationNote}
+                  onChange={(e) => patchFeedback(team.id, { rotationNote: e.target.value })}
+                />
+              </div>
+
+              <div className="feedback-field">
+                <label>Inne uwagi</label>
+                <textarea
+                  className="feedback-textarea"
+                  rows={2}
+                  placeholder="Cokolwiek innego..."
+                  value={fb.otherNote}
+                  onChange={(e) => patchFeedback(team.id, { otherNote: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      <div className="results-actions">
+        <button className="primary-btn" onClick={onRestart}>
+          Draft Again
+        </button>
+        <button className="secondary-btn" onClick={() => downloadFeedback(teams, history, feedback, pickReactions)}>
+          Zapisz feedback do pliku
+        </button>
+      </div>
+    </div>
+  );
+}

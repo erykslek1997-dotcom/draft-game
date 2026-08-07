@@ -1,0 +1,42 @@
+{
+ "darkoDefense": {
+  "slope": 0.08005571653563774,
+  "intercept": -1.1084417698645435
+ },
+ "raptorDefense": {
+  "slope": 0.11529730517522724,
+  "intercept": -1.6125937645499966
+ },
+ "matchupDefense": {
+  "slope": 0.03644479775626478,
+  "intercept": -0.42004762658971107
+ },
+ "bpm2Defense": {
+  "slope": 0.06568900395454683,
+  "intercept": -0.8546254482887808
+ },
+ "hiddenValueModern": {
+  "slope": 0.19883592662046073,
+  "intercept": -3.400658752611196
+ },
+ "hiddenValuePre1997": {
+  "slope": 0.20953640928660294,
+  "intercept": -3.7846294071904953
+ },
+ "portability": {
+  "slope": 1.0748148919716252,
+  "intercept": 27.68922283036874
+ },
+ "impactModern": {
+  "slope": 0.09493655249020393,
+  "intercept": -4.008758544716268
+ },
+ "impactPre1997": {
+  "slope": 0.09976067850908271,
+  "intercept": -4.361785009397248
+ },
+ "impactWowyr": {
+  "slope": 0.0628591414616478,
+  "intercept": -0.70941350677391
+ }
+}

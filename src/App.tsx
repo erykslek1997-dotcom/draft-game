@@ -1,0 +1,89 @@
+import { lazy, Suspense, useState } from 'react';
+import './App.css';
+
+// Lazy-loaded so the intro screen renders instantly instead of blocking on the full engine
+// import graph (~10MB of player/DARKO/WOWYR data, pulled in transitively by computeTalent's
+// real-data corrections) — the user's own report: "the game feels slow with loading data."
+// Nothing about showing the intro text or the position/search UI actually needs that data;
+// it's only real work once a draft or the pool browser is actually rendered.
+const GameShell = lazy(() => import('./components/GameShell'));
+const DraftPoolBrowser = lazy(() => import('./components/DraftPoolBrowser'));
+
+type View = 'intro' | 'game' | 'pool';
+type Mode = 'developer' | 'player';
+
+/** Set at build time (e.g. `VITE_FORCE_PLAYER_MODE=true npm run build`) to ship a locked-down
+ * build for a playtester — player mode on, no toggle to peek at developer mode. Leave unset for
+ * normal local development, where the toggle is available and developer mode is the default. */
+const FORCE_PLAYER_MODE = import.meta.env.VITE_FORCE_PLAYER_MODE === 'true';
+
+/** Cap value shown in the intro tagline, kept in sync with `engine/positions.ts`'s CAP_LIMIT by
+ * the standing check in `scripts/checkIntroCapLimit.ts` — not imported directly so the intro
+ * screen has zero engine dependency (see the lazy-loading note above; even this one constant,
+ * pulled through `positions.ts`, would be harmless on its own today, but importing anything from
+ * `engine/` here is exactly the seam that regresses back to eager-loading everything if a future
+ * edit adds a heavier import to that file without anyone noticing this render path depends on it). */
+const DISPLAY_CAP_LIMIT = 100.9;
+
+function LoadingPanel({ label }: { label: string }) {
+  return (
+    <div className="loading-panel">
+      <p>{label}</p>
+    </div>
+  );
+}
+
+function App() {
+  const [view, setView] = useState<View>('intro');
+  const [mode, setMode] = useState<Mode>(FORCE_PLAYER_MODE ? 'player' : 'developer');
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <h1>All-Time Draft</h1>
+        <p className="tagline">
+          Build the best-<em>fitting</em> all-time roster under a {DISPLAY_CAP_LIMIT} FGA cap — not just the best
+          players.
+        </p>
+        {!FORCE_PLAYER_MODE && (
+          <button
+            className="secondary-btn mode-toggle-btn"
+            onClick={() => setMode((m) => (m === 'developer' ? 'player' : 'developer'))}
+          >
+            {mode === 'developer' ? 'Developer Mode (ratings visible)' : 'Player Mode (ratings hidden)'}
+          </button>
+        )}
+      </header>
+
+      {view === 'intro' && (
+        <div className="intro-screen">
+          <p>
+            Draft a 9-player all-time roster against 15 CPU teams, one pick at a time, under an FGA cap that forces
+            real trade-offs. Once the draft ends, you'll set your rotation's minutes, and the judge will grade every
+            roster — including yours.
+          </p>
+          <button className="primary-btn" onClick={() => setView('game')}>
+            Start Draft
+          </button>
+          <button className="secondary-btn" onClick={() => setView('pool')}>
+            Browse Draft Pool
+          </button>
+        </div>
+      )}
+
+      {view === 'game' && (
+        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
+          <GameShell mode={mode} onExit={() => setView('intro')} />
+        </Suspense>
+      )}
+
+      {view === 'pool' && (
+        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
+          <DraftPoolBrowser mode={mode} onBack={() => setView('intro')} />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+export default App;

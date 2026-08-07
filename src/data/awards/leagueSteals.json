@@ -1,0 +1,267 @@
+[
+  {
+    "seasonEndYear": 1974,
+    "avgSpg": 0.5705,
+    "spanCount": 278
+  },
+  {
+    "seasonEndYear": 1975,
+    "avgSpg": 1.0057,
+    "spanCount": 280
+  },
+  {
+    "seasonEndYear": 1976,
+    "avgSpg": 1.004,
+    "spanCount": 274
+  },
+  {
+    "seasonEndYear": 1977,
+    "avgSpg": 1.0368,
+    "spanCount": 315
+  },
+  {
+    "seasonEndYear": 1978,
+    "avgSpg": 1.046,
+    "spanCount": 361
+  },
+  {
+    "seasonEndYear": 1979,
+    "avgSpg": 1.0377,
+    "spanCount": 355
+  },
+  {
+    "seasonEndYear": 1980,
+    "avgSpg": 1.0283,
+    "spanCount": 357
+  },
+  {
+    "seasonEndYear": 1981,
+    "avgSpg": 0.9863,
+    "spanCount": 373
+  },
+  {
+    "seasonEndYear": 1982,
+    "avgSpg": 0.9523,
+    "spanCount": 377
+  },
+  {
+    "seasonEndYear": 1983,
+    "avgSpg": 0.9477,
+    "spanCount": 373
+  },
+  {
+    "seasonEndYear": 1984,
+    "avgSpg": 0.9415,
+    "spanCount": 376
+  },
+  {
+    "seasonEndYear": 1985,
+    "avgSpg": 0.9387,
+    "spanCount": 377
+  },
+  {
+    "seasonEndYear": 1986,
+    "avgSpg": 0.9474,
+    "spanCount": 365
+  },
+  {
+    "seasonEndYear": 1987,
+    "avgSpg": 0.9356,
+    "spanCount": 374
+  },
+  {
+    "seasonEndYear": 1988,
+    "avgSpg": 0.9464,
+    "spanCount": 392
+  },
+  {
+    "seasonEndYear": 1989,
+    "avgSpg": 0.9803,
+    "spanCount": 401
+  },
+  {
+    "seasonEndYear": 1990,
+    "avgSpg": 0.9794,
+    "spanCount": 417
+  },
+  {
+    "seasonEndYear": 1991,
+    "avgSpg": 0.9739,
+    "spanCount": 426
+  },
+  {
+    "seasonEndYear": 1992,
+    "avgSpg": 0.9686,
+    "spanCount": 439
+  },
+  {
+    "seasonEndYear": 1993,
+    "avgSpg": 0.9666,
+    "spanCount": 434
+  },
+  {
+    "seasonEndYear": 1994,
+    "avgSpg": 0.9657,
+    "spanCount": 426
+  },
+  {
+    "seasonEndYear": 1995,
+    "avgSpg": 0.919,
+    "spanCount": 447
+  },
+  {
+    "seasonEndYear": 1996,
+    "avgSpg": 0.8901,
+    "spanCount": 464
+  },
+  {
+    "seasonEndYear": 1997,
+    "avgSpg": 0.9156,
+    "spanCount": 463
+  },
+  {
+    "seasonEndYear": 1998,
+    "avgSpg": 0.9267,
+    "spanCount": 475
+  },
+  {
+    "seasonEndYear": 1999,
+    "avgSpg": 0.9006,
+    "spanCount": 485
+  },
+  {
+    "seasonEndYear": 2000,
+    "avgSpg": 0.8906,
+    "spanCount": 470
+  },
+  {
+    "seasonEndYear": 2001,
+    "avgSpg": 0.8913,
+    "spanCount": 459
+  },
+  {
+    "seasonEndYear": 2002,
+    "avgSpg": 0.8914,
+    "spanCount": 463
+  },
+  {
+    "seasonEndYear": 2003,
+    "avgSpg": 0.8922,
+    "spanCount": 473
+  },
+  {
+    "seasonEndYear": 2004,
+    "avgSpg": 0.868,
+    "spanCount": 484
+  },
+  {
+    "seasonEndYear": 2005,
+    "avgSpg": 0.825,
+    "spanCount": 488
+  },
+  {
+    "seasonEndYear": 2006,
+    "avgSpg": 0.8113,
+    "spanCount": 487
+  },
+  {
+    "seasonEndYear": 2007,
+    "avgSpg": 0.8187,
+    "spanCount": 497
+  },
+  {
+    "seasonEndYear": 2008,
+    "avgSpg": 0.8247,
+    "spanCount": 494
+  },
+  {
+    "seasonEndYear": 2009,
+    "avgSpg": 0.8248,
+    "spanCount": 480
+  },
+  {
+    "seasonEndYear": 2010,
+    "avgSpg": 0.8139,
+    "spanCount": 483
+  },
+  {
+    "seasonEndYear": 2011,
+    "avgSpg": 0.8203,
+    "spanCount": 487
+  },
+  {
+    "seasonEndYear": 2012,
+    "avgSpg": 0.8337,
+    "spanCount": 484
+  },
+  {
+    "seasonEndYear": 2013,
+    "avgSpg": 0.8488,
+    "spanCount": 482
+  },
+  {
+    "seasonEndYear": 2014,
+    "avgSpg": 0.8344,
+    "spanCount": 497
+  },
+  {
+    "seasonEndYear": 2015,
+    "avgSpg": 0.8187,
+    "spanCount": 514
+  },
+  {
+    "seasonEndYear": 2016,
+    "avgSpg": 0.8195,
+    "spanCount": 513
+  },
+  {
+    "seasonEndYear": 2017,
+    "avgSpg": 0.815,
+    "spanCount": 508
+  },
+  {
+    "seasonEndYear": 2018,
+    "avgSpg": 0.811,
+    "spanCount": 498
+  },
+  {
+    "seasonEndYear": 2019,
+    "avgSpg": 0.8144,
+    "spanCount": 480
+  },
+  {
+    "seasonEndYear": 2020,
+    "avgSpg": 0.8108,
+    "spanCount": 483
+  },
+  {
+    "seasonEndYear": 2021,
+    "avgSpg": 0.8025,
+    "spanCount": 483
+  },
+  {
+    "seasonEndYear": 2022,
+    "avgSpg": 0.8073,
+    "spanCount": 463
+  },
+  {
+    "seasonEndYear": 2023,
+    "avgSpg": 0.8034,
+    "spanCount": 465
+  },
+  {
+    "seasonEndYear": 2024,
+    "avgSpg": 0.8235,
+    "spanCount": 464
+  },
+  {
+    "seasonEndYear": 2025,
+    "avgSpg": 0.8664,
+    "spanCount": 441
+  },
+  {
+    "seasonEndYear": 2026,
+    "avgSpg": 0.8819,
+    "spanCount": 215
+  }
+]

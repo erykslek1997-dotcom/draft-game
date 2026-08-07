@@ -1,0 +1,422 @@
+[
+  {
+    "season": "1946-47",
+    "avgTs": 0.3046,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1947-48",
+    "avgTs": 0.3289,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1948-49",
+    "avgTs": 0.3361,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1949-50",
+    "avgTs": 0.4424,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1950-51",
+    "avgTs": 0.3951,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1951-52",
+    "avgTs": 0.4185,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1952-53",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1953-54",
+    "avgTs": 0.5295,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1954-55",
+    "avgTs": 0.5544,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1955-56",
+    "avgTs": 0.4528,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1956-57",
+    "avgTs": 0.4473,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1957-58",
+    "avgTs": 0.4451,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1958-59",
+    "avgTs": 0.4615,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1959-60",
+    "avgTs": 0.4564,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1962-63",
+    "avgTs": 0.4977,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1963-64",
+    "avgTs": 0.4922,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1964-65",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1965-66",
+    "avgTs": 0.5429,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1967-68",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1968-69",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1969-70",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1971-72",
+    "avgTs": 0.5319,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1972-73",
+    "avgTs": 0.5011,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1973-74",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1974-75",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1977-78",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1978-79",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1979-80",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1980-81",
+    "avgTs": null,
+    "avgThreePct": 0,
+    "pace": null
+  },
+  {
+    "season": "1981-82",
+    "avgTs": 0.5432,
+    "avgThreePct": null,
+    "pace": 102.52
+  },
+  {
+    "season": "1982-83",
+    "avgTs": 0.5313,
+    "avgThreePct": null,
+    "pace": 103.2
+  },
+  {
+    "season": "1983-84",
+    "avgTs": 0.5428,
+    "avgThreePct": null,
+    "pace": 102.86
+  },
+  {
+    "season": "1984-85",
+    "avgTs": 0.5432,
+    "avgThreePct": null,
+    "pace": 101.08
+  },
+  {
+    "season": "1985-86",
+    "avgTs": 0.5406,
+    "avgThreePct": 0.2824,
+    "pace": 104.64
+  },
+  {
+    "season": "1986-87",
+    "avgTs": 0.5379,
+    "avgThreePct": 0.3023,
+    "pace": 103.56
+  },
+  {
+    "season": "1987-88",
+    "avgTs": 0.5379,
+    "avgThreePct": 0.3162,
+    "pace": 102.21
+  },
+  {
+    "season": "1988-89",
+    "avgTs": 0.537,
+    "avgThreePct": 0.3225,
+    "pace": 103.41
+  },
+  {
+    "season": "1989-90",
+    "avgTs": 0.5366,
+    "avgThreePct": 0.3306,
+    "pace": 100.84
+  },
+  {
+    "season": "1990-91",
+    "avgTs": 0.5344,
+    "avgThreePct": 0.3197,
+    "pace": 100.38
+  },
+  {
+    "season": "1991-92",
+    "avgTs": 0.5314,
+    "avgThreePct": 0.3306,
+    "pace": 99.11
+  },
+  {
+    "season": "1992-93",
+    "avgTs": 0.5363,
+    "avgThreePct": 0.3363,
+    "pace": 99.09
+  },
+  {
+    "season": "1993-94",
+    "avgTs": 0.5278,
+    "avgThreePct": 0.3333,
+    "pace": 97.32
+  },
+  {
+    "season": "1994-95",
+    "avgTs": 0.5428,
+    "avgThreePct": 0.3586,
+    "pace": 95.02
+  },
+  {
+    "season": "1995-96",
+    "avgTs": 0.542,
+    "avgThreePct": 0.3669,
+    "pace": 93.81
+  },
+  {
+    "season": "1996-97",
+    "avgTs": 0.5356,
+    "avgThreePct": 0.3601,
+    "pace": 92.75
+  },
+  {
+    "season": "1997-98",
+    "avgTs": 0.5236,
+    "avgThreePct": 0.3457,
+    "pace": 93.01
+  },
+  {
+    "season": "1998-99",
+    "avgTs": 0.5114,
+    "avgThreePct": 0.3387,
+    "pace": 91.58
+  },
+  {
+    "season": "1999-00",
+    "avgTs": 0.5228,
+    "avgThreePct": 0.353,
+    "pace": 95.68
+  },
+  {
+    "season": "2000-01",
+    "avgTs": 0.5179,
+    "avgThreePct": 0.3535,
+    "pace": 93.82
+  },
+  {
+    "season": "2001-02",
+    "avgTs": 0.5203,
+    "avgThreePct": 0.3536,
+    "pace": 93.34
+  },
+  {
+    "season": "2002-03",
+    "avgTs": 0.5194,
+    "avgThreePct": 0.3495,
+    "pace": 93.64
+  },
+  {
+    "season": "2003-04",
+    "avgTs": 0.5162,
+    "avgThreePct": 0.3471,
+    "pace": 92.64
+  },
+  {
+    "season": "2004-05",
+    "avgTs": 0.5294,
+    "avgThreePct": 0.3556,
+    "pace": 93.58
+  },
+  {
+    "season": "2005-06",
+    "avgTs": 0.5356,
+    "avgThreePct": 0.3583,
+    "pace": 92.99
+  },
+  {
+    "season": "2006-07",
+    "avgTs": 0.5415,
+    "avgThreePct": 0.3582,
+    "pace": 94.35
+  },
+  {
+    "season": "2007-08",
+    "avgTs": 0.5402,
+    "avgThreePct": 0.362,
+    "pace": 94.81
+  },
+  {
+    "season": "2008-09",
+    "avgTs": 0.5444,
+    "avgThreePct": 0.3668,
+    "pace": 94.12
+  },
+  {
+    "season": "2009-10",
+    "avgTs": 0.5429,
+    "avgThreePct": 0.3546,
+    "pace": 95.12
+  },
+  {
+    "season": "2010-11",
+    "avgTs": 0.5414,
+    "avgThreePct": 0.3585,
+    "pace": 94.54
+  },
+  {
+    "season": "2011-12",
+    "avgTs": 0.5271,
+    "avgThreePct": 0.3488,
+    "pace": 93.77
+  },
+  {
+    "season": "2013-14",
+    "avgTs": 0.5409,
+    "avgThreePct": 0.3597,
+    "pace": 96.34
+  },
+  {
+    "season": "2014-15",
+    "avgTs": 0.5342,
+    "avgThreePct": 0.35,
+    "pace": 96.3
+  },
+  {
+    "season": "2015-16",
+    "avgTs": 0.5412,
+    "avgThreePct": 0.3537,
+    "pace": 98.09
+  },
+  {
+    "season": "2016-17",
+    "avgTs": 0.5524,
+    "avgThreePct": 0.3575,
+    "pace": 98.73
+  },
+  {
+    "season": "2017-18",
+    "avgTs": 0.5562,
+    "avgThreePct": 0.3618,
+    "pace": 99.57
+  },
+  {
+    "season": "2018-19",
+    "avgTs": 0.5596,
+    "avgThreePct": 0.355,
+    "pace": 102.4
+  },
+  {
+    "season": "2019-20",
+    "avgTs": 0.5647,
+    "avgThreePct": 0.3579,
+    "pace": 102.7
+  },
+  {
+    "season": "2020-21",
+    "avgTs": 0.5718,
+    "avgThreePct": 0.3666,
+    "pace": 101.42
+  },
+  {
+    "season": "2021-22",
+    "avgTs": 0.566,
+    "avgThreePct": 0.3536,
+    "pace": 100.58
+  },
+  {
+    "season": "2022-23",
+    "avgTs": 0.5813,
+    "avgThreePct": 0.3607,
+    "pace": 101.56
+  }
+]
