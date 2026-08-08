@@ -9,6 +9,7 @@ import { computeDefensiveTalent } from './defensiveTalent';
 import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
+import { playmakingThreeLevelOffenseAdjustment } from './playmakingThreeLevel';
 // 2026-08-06: moved below defensiveTalent/defensiveAccolades on purpose — `portability.ts` (which
 // this import cycles back through) now imports `computeDefensiveTalent` from THIS file, closing a
 // real cycle: talent.ts -> portabilityCorrection.ts -> portability.ts -> talent.ts. Importing
@@ -309,7 +310,11 @@ function rawComponents(
   const isCurry = normalizePlayerName(span.playerName) === normalizePlayerName('Stephen Curry');
   const gravityCap = applyCurryException && isCurry ? CURRY_GRAVITY_CAP : MAX_SHOOTING_GRAVITY_BONUS;
   const gravity = Math.max(-gravityCap, Math.min(gravityCap, shootingGravity(span) * SHOOTING_GRAVITY_SCALE));
-  const offense = (scoringRate + efficiency + playmaking + centerPlaymaking + gravity) * usageScale;
+  // 2026-08-07, second pass (see playmakingThreeLevel.ts's own header for the full story of the
+  // first pass, reverted, and this scoped-down retry) — playmaking quality + 3-level/rim-finishing
+  // scoring, excluded entirely for PG.
+  const playmakingThreeLevel = playmakingThreeLevelOffenseAdjustment(span);
+  const offense = (scoringRate + efficiency + playmaking + centerPlaymaking + gravity + playmakingThreeLevel) * usageScale;
 
   // Real DARKO plus-minus data (where it exists, 1997-98+) can reveal defensive value the
   // box score alone can't see (see darkoCorrection.ts) — Garnett and Duncan are the clearest
