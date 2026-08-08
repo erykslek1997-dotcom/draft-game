@@ -881,8 +881,20 @@ function softCapOffense(scaled: number): number {
  * ("penalize KJ/Stockton for low FGA without knocking Nash down too much"), for free, by finally
  * applying a mechanism that already existed for TAL to its sibling metric.
  */
+/** 2026-08-07 follow-up, user-caught real regression: applying the FULL `usageOffenseScale` (the
+ * >15-FGA BONUS half too, not just the low-FGA discount) to every position pushed high-volume
+ * wings/bigs (Kawhi 84→90, Paul George 84→85, Jayson Tatum's own O-TAL, Bob McAdoo) up into tier
+ * gates (SF's/PF's/C's own O-TAL-grade floors, calibrated earlier THIS SAME SESSION) they were
+ * correctly excluded from — undoing the explicit "drop Kawhi to MVP because of offense" fix from
+ * earlier today. The actual ask was narrower: fix PG specifically (Kevin Johnson/Stockton tying
+ * Nash on offense), not touch every other position's O-TAL calibration. Scoped to PG only —
+ * every other position's O-TAL is back to the flat 1.0 scale it always had. */
+function otalUsageScale(span: PlayerSpan): number {
+  return span.primaryPosition === 'PG' ? usageOffenseScale(span) : 1.0;
+}
+
 export function computeOffensiveTalent(span: PlayerSpan): number {
-  const { offense } = rawComponents(span, false, usageOffenseScale(span));
+  const { offense } = rawComponents(span, false, otalUsageScale(span));
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   const scaled = offense * scale + intercept;
   return Math.max(0, Math.min(100, Math.round(softCapOffense(scaled))));
@@ -891,7 +903,7 @@ export function computeOffensiveTalent(span: PlayerSpan): number {
 /** Debug-only, unclamped/uncapped O-TAL raw scaled value — used solely by calibration scripts to
  * see the real pre-softcap spread. Not imported anywhere in the engine itself. */
 export function rawOffenseScaledForDebug(span: PlayerSpan): number {
-  const { offense } = rawComponents(span, false, usageOffenseScale(span));
+  const { offense } = rawComponents(span, false, otalUsageScale(span));
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   return offense * scale + intercept;
 }
