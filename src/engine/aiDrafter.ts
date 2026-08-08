@@ -17,6 +17,7 @@ import { computeOffensivePortability, computeDefensivePortability } from './port
 import { computeSpacing } from './spacing';
 import { isRimGravityScorer, isSelfSufficientEngine } from './offensiveProfile';
 import { isD1D2D3Player } from './d1d2d3Lookup';
+import { draftPool } from '../data/draftPool';
 
 /** A player this good is a generational, top-of-history peak (Jordan/LeBron/Curry/Hakeem
  * tier) that a real GM drafts regardless of roster redundancy — the "already have two
@@ -158,10 +159,43 @@ const GREATEST_PEAK_DRAFT_TIERS: Record<string, 1 | 2 | 3> = {
 };
 const GREATEST_PEAK_TIER_BONUS: Record<1 | 2 | 3, number> = { 1: 1000, 2: 600, 3: 200 };
 
+/**
+ * 2026-08-07, real bug found from live-game reports ("Jordan spadł 4 razy + raz LeBron" — Jordan
+ * and LeBron sliding to picks 25-27 despite this exact tier-1 bonus existing to prevent it).
+ * Root-caused precisely, not guessed: the real game (`draft.ts`) never hands `pickForAi` the
+ * full multi-span `draftPool` this map was written against — it uses `peakDraftPool.ts`, which
+ * keeps exactly ONE span per real player (their single highest-`computeTalent` one), with ties
+ * broken by first-in-array-order, which is arbitrary/unrelated to which span this hardcoded list
+ * happens to name. Checked directly: Jordan has FIVE separate spans tied at his own max (TAL 98:
+ * 1986-88, 1987-89, 1988-90, 1989-91, 1990-92) and `peakDraftPool` happened to keep `1987-89` —
+ * not the `1988-90` this map names, so the exact-span key match failed and Jordan got ZERO of
+ * his +1000 bonus in every real game, falling back to ordinary need/talent scoring like anyone
+ * else. LeBron has EIGHT ties at TAL 98 and landed on `2010-12` in the peak pool, not this map's
+ * `2008-10` — same failure. Curry (`2014-16`) and Wembanyama (`2024-26`) happened to match by
+ * coincidence, which is exactly why only Jordan/LeBron showed the symptom in the user's reports.
+ *
+ * Fix: match by NAME, and require the candidate's own `computeTalent` to equal the TAL of the
+ * exact span this map names (precomputed once below from the real `draftPool`, not re-derived
+ * per call) — any span TIED at that same real peak value counts as "this player's greatest
+ * peak," which `peakDraftPool`'s own selection logic already guarantees is the only span of
+ * that person pickForAi ever sees in the real game anyway. This does NOT reopen the original
+ * "must be a specific named peak span, not just any span of this person" protection this map's
+ * own docstring describes (e.g. never letting a real decline-era Jordan span qualify) — a
+ * lower-TAL span still fails the equality check outright, exactly as before.
+ */
+const GREATEST_PEAK_TIER_BY_NAME: Map<string, { tier: 1 | 2 | 3; tal: number }> = new Map();
+for (const [key, tier] of Object.entries(GREATEST_PEAK_DRAFT_TIERS)) {
+  const separatorIndex = key.indexOf('|');
+  const name = key.slice(0, separatorIndex);
+  const spanLabel = key.slice(separatorIndex + 1);
+  const span = draftPool.find((p) => normalizePlayerName(p.playerName) === name && p.spanLabel === spanLabel);
+  if (span) GREATEST_PEAK_TIER_BY_NAME.set(name, { tier, tal: computeTalent(span) });
+}
+
 function greatestPeakTierBonus(p: PlayerSpan): number {
-  const key = `${normalizePlayerName(p.playerName)}|${p.spanLabel}`;
-  const tier = GREATEST_PEAK_DRAFT_TIERS[key];
-  return tier ? GREATEST_PEAK_TIER_BONUS[tier] : 0;
+  const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
+  if (!entry || computeTalent(p) < entry.tal) return 0;
+  return GREATEST_PEAK_TIER_BONUS[entry.tier];
 }
 
 /**
