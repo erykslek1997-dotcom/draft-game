@@ -292,7 +292,8 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                           {entries.map((e) => (
                             <li key={e.player.id}>
                               <span>
-                                {e.player.playerName} ({e.player.spanLabel}) - {e.minutes}
+                                {e.player.playerName} ({e.player.spanLabel}) - {e.minutes} min — FGA {e.player.fga.toFixed(1)}, TAL{' '}
+                                {computeTalent(e.player)}
                               </span>
                               <FeedbackToggle
                                 entry={fb.playerNotes[e.player.id]}
@@ -313,7 +314,7 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                   {bench.map(({ player, minutes }) => (
                     <li key={player.id}>
                       <span>
-                        {player.playerName} ({player.spanLabel}) — {minutes} min
+                        {player.playerName} ({player.spanLabel}) — {minutes} min — FGA {player.fga.toFixed(1)}, TAL {computeTalent(player)}
                       </span>
                       <FeedbackToggle
                         entry={fb.playerNotes[player.id]}

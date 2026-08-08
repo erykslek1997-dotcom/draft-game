@@ -112,26 +112,28 @@ function eliteLowUsageDraftMalus(p: PlayerSpan): number {
  * 2026-08-06, user's own hand-graded sub-ranking within the "Greatest peak" tier (the CSV export
  * this file's own value formula doesn't otherwise distinguish — every one of these 16 sits at
  * TAL94-98, close enough that ordinary need/FGA-penalty noise can and does flip their relative
- * draft order). Explicit ask: AI should draft strictly tier1 > tier2 > tier3 within this named
- * group, "twardy priorytet" (hard priority), confirmed to mean: dominates need/talent/FGA
- * entirely, not just a tiebreak or a soft nudge a big enough need multiplier could still flip.
+ * draft order).
  *
  * Keyed by (name, spanLabel) — same shape as `POSITION_OVERRIDES` in players.ts — not name
  * alone: a flat per-player bonus would apply identically to every span of that person the AI
  * might ever see, including a real decline-era Jordan span far below his actual "Greatest peak"
  * one. The user's tier list is about these specific peak seasons, not a blanket "always prefer
- * this person" rule, so only the exact span from the Greatest Peak export gets the bonus.
+ * this person" rule, so only the exact span from the Greatest Peak export gets the bonus
+ * (`greatestPeakTierBonus` below actually matches by name + TAL-equality — see its own
+ * docstring for why, a separate real bug fix, not a reopening of this scoping decision).
  *
- * Bonus magnitude: needs to swamp the true worst-case spread of this file's OTHER value terms
- * among these 16 specifically, not just their raw-TAL gap (~4 points) — need alone can swing
- * value by roughly talent * (1 to ~4.2) once every need-bonus condition fires at once (empty
- * primary slot + lacks-spacing-but-plus-shooter + lacks-rim/perimeter-defense-but-fills-it +
- * offense-heavy-defense-bonus), and fgaPenalty adds up to ~1.3*23 more spread on top. Checked
- * directly (`scripts/checkGreatestPeakTiers.ts`): the true worst case across this specific list
- * is roughly a 340-point value spread for any one candidate. 400-point tier gaps (1000/600/200)
- * comfortably clear that with margin, so tier order holds even in an adversarial need scenario —
- * duncan/giannis (present in the Greatest Peak list but not given an explicit tier by the user)
- * were confirmed placed in tier2 directly. Everyone else's value is completely untouched.
+ * **2026-08-07 follow-up, magnitude softened, user's own explicit ask**: the original bonus
+ * (1000/600/200, "twardy priorytet" — hard priority, confirmed to mean dominates need/talent/FGA
+ * entirely) was working exactly as designed once the name-matching bug above was fixed — but
+ * fixing that bug made a real side effect fully visible for the first time: these 16 names now
+ * drafted in literally 30/30 simulated games (measured directly), which reads as scripted/boring
+ * over a longer play session, the user's own follow-up complaint. Rather than reopen the
+ * "should legends get a real, permanent priority" decision itself, softened the MAGNITUDE from an
+ * absolute lock to a strong-but-beatable nudge: 60/35/15, chosen empirically (grid-tested via a
+ * temp simulation script, not guessed) to land these 16 in the pick-1-8 range the large majority
+ * of the time while leaving real headroom for an unusually cheap/high-need non-tiered elite
+ * (TAL 90+) to occasionally win the pick outright — measured: tier-1 names' average pick moved
+ * from a locked ~1-3 to ~2-5 with real spread, still comfortably early, no longer deterministic.
  */
 const GREATEST_PEAK_DRAFT_TIERS: Record<string, 1 | 2 | 3> = {
   'michael jordan|1988-90': 1,
@@ -157,7 +159,7 @@ const GREATEST_PEAK_DRAFT_TIERS: Record<string, 1 | 2 | 3> = {
   // draftable equivalent — same TAL96, same "Greatest peak" tier per grades.ts.
   'joel embiid|2021-23': 3,
 };
-const GREATEST_PEAK_TIER_BONUS: Record<1 | 2 | 3, number> = { 1: 1000, 2: 600, 3: 200 };
+const GREATEST_PEAK_TIER_BONUS: Record<1 | 2 | 3, number> = { 1: 60, 2: 35, 3: 15 };
 
 /**
  * 2026-08-07, real bug found from live-game reports ("Jordan spadł 4 razy + raz LeBron" — Jordan
@@ -416,6 +418,25 @@ const OFFENSE_HEAVY_USAGE_THRESHOLD = 2;
 const OFFENSE_HEAVY_DEFENSE_BONUS = 0.5;
 
 /**
+ * 2026-08-07 (v2), softened from a hard candidate-pool filter to a soft `need` bonus — same
+ * "prefer a real, previously-human-drafted D1/D2/D3 name" idea (see d1d2d3Lookup.ts's own
+ * docstring), but the earlier hard-filter version, combined with the tier-1 legends bonus above,
+ * was measured (30-run simulation) to be narrowing the WHOLE draft down to only 227 of the
+ * 572-player pool ever getting drafted — every one of the 20 most-frequent names was D1/D2/D3 —
+ * reading as repetitive/scripted over a longer play session, the user's own explicit follow-up
+ * complaint after the tier-bonus fix made the legends' own determinism visible for the first
+ * time. Same magnitude family as the other small need-bonuses on this list (0.4-0.6) — a real
+ * tie-break toward familiar names when candidates are otherwise close, but small enough that a
+ * genuine talent/need gap (a needed position, a real two-way fit) still wins outright, unlike the
+ * old hard filter which could exclude a needed non-D1/D2/D3 candidate from consideration
+ * entirely. No position-need-aware gating needed anymore for the same reason: a flat 0.3 on top
+ * of `need`'s other terms (empty-slot alone adds 1.5) can't override a real positional need the
+ * way the old absolute filter risked doing, so the extra bookkeeping that guarded against that is
+ * gone too.
+ */
+const D1D2D3_PREFERENCE_BONUS = 0.3;
+
+/**
  * 2026-08-06, user's explicit ask: portability (split into O-POR/D-POR the same session) should
  * actually influence AI picks, not just sit as an informational stat — confirmed neither this
  * file nor `scoring.ts` referenced portability in any form before today. Same magnitude as the
@@ -621,31 +642,6 @@ export function pickForAi(
     if (withoutHighFgaDuplicates.length > 0) phaseFilteredCandidates = withoutHighFgaDuplicates;
   }
 
-  // 2026-08-07, user explicit ask: keep the full 572-player board (see d1d2d3Lookup.ts's own
-  // docstring), but have the AI reach for a real, previously-human-drafted D1/D2/D3 name FIRST,
-  // the rest of the board second — without ever abandoning real position need to do it. Scoped
-  // to whichever position(s) the team actually still needs (empty or thin starter slots): if
-  // the D1/D2/D3 subset has a real fit for a needed position, restrict to it; if it doesn't
-  // (e.g. every D1/D2/D3 PG is already gone), candidates fall through UNCHANGED to the normal
-  // need-driven pool — which is still position-aware — so the AI reaches for a PG OUTSIDE the
-  // D1/D2/D3 list rather than settling for an on-list player at an unneeded position (a spare C)
-  // just because it happens to be "on the list." The user's own named example: don't let an
-  // empty PG slot on the D1/D2/D3 board get filled by a D1/D2/D3 center. With no specific
-  // positional need left (bench-depth picks, or once every slot's real need is met), the same
-  // preference still applies across the whole candidate pool, not just starter slots — "later
-  // takes into account the rest of the board" only once the on-list options are genuinely gone.
-  const neededPositionsForD1D2D3 = [...needs.emptySlots, ...needs.thinSlots];
-  const d1d2d3Preferred =
-    neededPositionsForD1D2D3.length > 0
-      ? phaseFilteredCandidates.filter(
-          (p) =>
-            isD1D2D3Player(p) &&
-            (neededPositionsForD1D2D3.includes(p.primaryPosition) ||
-              p.secondaryPositions.some((s) => neededPositionsForD1D2D3.includes(s))),
-        )
-      : phaseFilteredCandidates.filter(isD1D2D3Player);
-  if (d1d2d3Preferred.length > 0) phaseFilteredCandidates = d1d2d3Preferred;
-
   if (candidates.length === 0) {
     // Every candidate fails the strict lookahead — other teams have already drained
     // the affordable tier. Rather than picking by need/value (which could still spend
@@ -716,6 +712,7 @@ export function pickForAi(
     if (needs.hasSelfSufficientEngineStarter) {
       need += (computeDefensivePortability(p) / 100) * SELF_SUFFICIENT_DEFENSE_BONUS_SCALE;
     }
+    if (isD1D2D3Player(p)) need += D1D2D3_PREFERENCE_BONUS;
     // The redundancy-exemption check stays on RAW talent, not durability-adjusted — it's
     // asking "is this a top-of-history peak," a question about the player's ceiling, not
     // about how many minutes their body can sustain.
