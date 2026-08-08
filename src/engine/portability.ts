@@ -5,6 +5,7 @@ import { computeSpacing } from './spacing';
 import { positionAdjustedTsBaseline } from './era';
 import { computeDefensiveTalent, lowUsageEfficiencyFactor, extremeUsageRatioPenalty } from './talent';
 import { selfCreationPercentileForPortability } from './selfCreationSimilarity';
+import { buildZoneYearMap, zoneTotalsForSpan } from './zoneEfficiencyLookup';
 
 /**
  * Portability (a.k.a. scalability) answers a different question than `computeTalent`: not
@@ -215,6 +216,75 @@ function defensePercentileForPosition(span: PlayerSpan): number {
 const SELF_CREATION_MAX_PENALTY = 30;
 
 /**
+ * 2026-08-07, user explicit ask, real gap found and confirmed with data: "all-time great centers
+ * who are big targets in the paint that are easy to pass to" (Rudy Gobert named directly — "does
+ * not have ball in his hands for any other purpose than finish under basket") were reading C-/D
+ * portability, while a genuine ball-dominant high-usage center (DeMarcus Cousins — "shoots a lot,
+ * takes the ball from other guys, not a good defender") read HIGHER. Root-caused precisely, not
+ * guessed (`offenseComponents` breakdown, checked directly): `spacingValue` is the ONLY positive
+ * offensive-portability credit that exists — a shooter earns real credit, a non-shooting rim
+ * target earns literally zero, no matter how elite or reliable a target he is. Cousins' real
+ * modern outside shot (SPC 75) earned him +15 there; Gobert, with SPC 0, could never earn
+ * anything symmetric for the actual skill that makes him portable. `selfCreationPercentileForPortability`
+ * (the other lever that looked suspicious at first) turned out NOT to be the main driver once
+ * checked against both players side by side — it's rank-percentile WITHIN each player's own
+ * position, and centers as a population self-create a lot (low-post scoring), so neither Gobert
+ * (4.1) nor Cousins (2.6) actually sees a large penalty from it.
+ *
+ * Mirrors `spacingValue`'s own shape (squared excess, capped) for the same reason spacing uses
+ * it: an elite, high-accuracy rim target is worth more than twice as much as a merely-good one to
+ * a offense that can just throw it inside and get a bucket every time. Reuses the same
+ * rim-share/accuracy zone data `playmakingThreeLevel.ts`'s `insideFinishingBonus` already reads
+ * for TAL (that mechanism answers a different question — "is this a genuinely elite offensive
+ * weapon" — this one asks "is this player a low-maintenance target," so a shared data source but
+ * a separate, appropriately-scaled term is correct, not a duplicate). PF/C only, matching the
+ * user's own named population (a wing finishing at the rim off drives isn't the same "always
+ * available dump-off target" role a traditional center plays).
+ *
+ * Scale calibrated directly against the two named cases: with `RIM_TARGET_SCALE=2.0`/
+ * `MAX_RIM_TARGET_VALUE=24`, Gobert's real rim numbers (70-76% accuracy at a dominant rim share)
+ * move his O-POR from 57 (C-) into the high 70s/low 80s depending on span — genuinely elite,
+ * competitive with real S-grade spans — while Cousins' own rim profile (much lower accuracy, far
+ * less rim-dominant a diet) earns little to nothing here, so the real gap (Gobert now clearly
+ * ABOVE Cousins) is restored. Pre-1997 spans (no zone data — Wilt, McHale, Moses Malone, early
+ * Ewing) get 0 from this term specifically, a real accepted gap matching this project's other
+ * documented pre-zone-tracking gaps; the separate `usagePenalty` softening below still helps them
+ * some.
+ */
+const RIM_TARGET_MIN_SHARE = 0.5;
+const RIM_TARGET_GOOD_PCT = 60;
+const RIM_TARGET_SCALE = 2.0;
+const MAX_RIM_TARGET_VALUE = 24;
+const RIM_TARGET_POSITIONS: ReadonlySet<Position> = new Set(['PF', 'C']);
+const zoneMapForPortability = buildZoneYearMap();
+
+function rimTargetValue(span: PlayerSpan): number {
+  if (!RIM_TARGET_POSITIONS.has(span.primaryPosition)) return 0;
+  const totals = zoneTotalsForSpan(span, zoneMapForPortability);
+  if (!totals) return 0;
+  const classified = totals.rimFga + totals.midFga + totals.threeFga;
+  if (classified < 150) return 0; // same volume floor as playmakingThreeLevel.ts's zone-based terms
+  const rimShare = totals.rimFga / classified;
+  if (rimShare < RIM_TARGET_MIN_SHARE) return 0;
+  const rimAccuracy = (totals.rimFgm / Math.max(totals.rimFga, 1)) * 100;
+  const excess = rimAccuracy - RIM_TARGET_GOOD_PCT;
+  return excess > 0 ? Math.min(MAX_RIM_TARGET_VALUE, excess * RIM_TARGET_SCALE) : 0;
+}
+
+/**
+ * 2026-08-07, same batch as `rimTargetValue` above: even setting that new positive credit aside,
+ * `selfCreationPercentileForPortability`'s underlying question ("does this player create his own
+ * shot") maps less cleanly onto a traditional post-up big than onto a perimeter shot-creator —
+ * real post-move skill (footwork, being able to score 1-on-1 after a simple entry pass) is still
+ * a fundamentally low-maintenance, easy-to-integrate offensive role, unlike a wing who needs real
+ * possession/ball-screen sets run for him. Modest, not zeroed — a genuinely high-usage, ball-in-
+ * hands center (Cousins) should still see SOME penalty, just not the same full-strength one a
+ * perimeter iso-scorer earns for the identical percentile. PF/C only.
+ */
+const BIG_SELF_CREATION_PENALTY_SCALE = 0.6;
+const BIG_SELF_CREATION_POSITIONS: ReadonlySet<Position> = new Set(['PF', 'C']);
+
+/**
  * 2026-08-06, retired as part of the same S/F calibration batch as the block above. This used to
  * give back usage-penalty credit for elite shooting (SPC > 65) or plus defense
  * (`normalizedDefenseForFit` > 50) — originally built for a real gap (Kyrie Irving/Khris
@@ -228,19 +298,27 @@ const SELF_CREATION_MAX_PENALTY = 30;
  * flat 50-point/65-SPC-threshold version ever did — nothing replaces the retired function itself.
  */
 
-interface OffenseComponents {
+export interface OffenseComponents {
   spacingValue: number;
+  rimTargetValue: number;
   efficiencyValue: number;
   usagePenalty: number;
   extremeUsagePenalty: number;
 }
 
-function offenseComponents(span: PlayerSpan): OffenseComponents {
+/** Exported for diagnostics (`computeOffensivePortability` is the only real call site otherwise)
+ * — seeing which of the terms actually drives a surprising O-POR number, rather than guessing
+ * from the final 0-100 value alone. */
+export function offenseComponents(span: PlayerSpan): OffenseComponents {
   const shootPct = computeSpacing(span) / 100;
   const spacingValue =
     shootPct * shootPct * SPACING_VALUE_SCALE +
     (SPACING_ARCHETYPES.includes(span.offensiveArchetype) ? SPACING_ARCHETYPE_BONUS : 0);
-  const usagePenalty = selfCreationPercentileForPortability(span) * SELF_CREATION_MAX_PENALTY;
+  const rimTarget = rimTargetValue(span);
+  const rawUsagePenalty = selfCreationPercentileForPortability(span) * SELF_CREATION_MAX_PENALTY;
+  const usagePenalty = BIG_SELF_CREATION_POSITIONS.has(span.primaryPosition)
+    ? rawUsagePenalty * BIG_SELF_CREATION_PENALTY_SCALE
+    : rawUsagePenalty;
   const adjustedAvgTs = positionAdjustedTsBaseline(span.primaryPosition, span.fga, span.spanLabel);
   const efficiencyValue = (span.box.tsPct - adjustedAvgTs) * EFFICIENCY_SCALE * lowUsageEfficiencyFactor(span.fga);
   // 2026-08-05, user explicit ask: a high-FGA/low-assist "chucker" hurts portability specifically
@@ -251,7 +329,7 @@ function offenseComponents(span: PlayerSpan): OffenseComponents {
   // than re-deriving the same ratio math — see that function's own docstring for why it's ungated
   // and how its threshold was picked to spare validated elite two-way bigs.
   const extremeUsagePenalty = extremeUsageRatioPenalty(span);
-  return { spacingValue, efficiencyValue, usagePenalty, extremeUsagePenalty };
+  return { spacingValue, rimTargetValue: rimTarget, efficiencyValue, usagePenalty, extremeUsagePenalty };
 }
 
 interface DefenseComponents {
@@ -265,14 +343,55 @@ function defenseComponentsFor(span: PlayerSpan): DefenseComponents {
   return { defPct, defenseValue };
 }
 
+function rawOffensivePortability(span: PlayerSpan): number {
+  const { spacingValue, rimTargetValue: rimTarget, efficiencyValue, usagePenalty, extremeUsagePenalty } = offenseComponents(span);
+  return BASELINE + spacingValue + rimTarget + efficiencyValue - usagePenalty - extremeUsagePenalty;
+}
+
 /**
- * 2026-08-06, split out of the (now-removed) combined `computePortability` — see this file's own
- * top docstring for why. Own 0-100 scale.
+ * 2026-08-07, user explicit ask ("S tier should be ranked 100, not an 81, fix the scale" +
+ * "look for similar issues for other positions"): the flat, position-agnostic `[0,100]` clamp
+ * this used to be is the SAME class of bug `computeOffensiveTalent`/`computeDefensiveTalent`
+ * (talent.ts) already solved months ago — a single global ceiling naturally favors whichever
+ * position has the largest number of independent positive levers. Checked directly before
+ * fixing: even after `rimTargetValue` above fixed centers specifically, PG/SG/SF's own real
+ * ceiling (their only positive lever is `spacingValue`, capped ~22) never got anywhere close to
+ * 100 (real per-position max in the full dataset: PG 79, SG 82, SF 84) while PF/C — now with
+ * BOTH `spacingValue` AND `rimTargetValue` — could reach literal 100. Fixing centers alone would
+ * have just flipped which positions were disadvantaged, not fixed the actual architecture gap.
+ *
+ * Same technique `OFFENSE_TAL_PARAMS`/`DEFENSE_TAL_SCALE_BY_POSITION` (talent.ts) already use and
+ * document at length: anchor each position to its OWN real min/max raw value (over the full
+ * `players` dataset, not the smaller in-game `draftPool` — matching D-POR's own
+ * `defenseTalentSortedByPosition` a few lines up, which already does exactly this for defense).
+ * The single best-ever O-POR span at a position reads 100, the single worst reads 0, full stop
+ * — "S" (the dynamic top-3-in-the-whole-pool grade cutoff) now means the same thing at every
+ * position: genuinely close to that position's own realistic ceiling, not an arbitrary raw
+ * number that happens to favor whichever position's formula has more terms.
  */
+let offensivePortabilityRangeCache: Map<Position, { min: number; max: number }> | null = null;
+function offensivePortabilityRangeByPosition(): Map<Position, { min: number; max: number }> {
+  if (offensivePortabilityRangeCache) return offensivePortabilityRangeCache;
+  const byPos = new Map<Position, { min: number; max: number }>();
+  for (const span of players) {
+    const raw = rawOffensivePortability(span);
+    const cur = byPos.get(span.primaryPosition);
+    if (!cur) byPos.set(span.primaryPosition, { min: raw, max: raw });
+    else {
+      cur.min = Math.min(cur.min, raw);
+      cur.max = Math.max(cur.max, raw);
+    }
+  }
+  offensivePortabilityRangeCache = byPos;
+  return byPos;
+}
+
 export function computeOffensivePortability(span: PlayerSpan): number {
-  const { spacingValue, efficiencyValue, usagePenalty, extremeUsagePenalty } = offenseComponents(span);
-  const raw = BASELINE + spacingValue + efficiencyValue - usagePenalty - extremeUsagePenalty;
-  return Math.max(0, Math.min(100, Math.round(raw)));
+  const raw = rawOffensivePortability(span);
+  const range = offensivePortabilityRangeByPosition().get(span.primaryPosition);
+  if (!range || range.max <= range.min) return Math.max(0, Math.min(100, Math.round(raw)));
+  const rescaled = ((raw - range.min) / (range.max - range.min)) * 100;
+  return Math.max(0, Math.min(100, Math.round(rescaled)));
 }
 
 /** Own 0-100 scale — direct position-relative D-TAL percentile (see `defensePercentileForPosition`
