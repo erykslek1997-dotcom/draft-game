@@ -36,6 +36,14 @@ function LoadingPanel({ label }: { label: string }) {
 function App() {
   const [view, setView] = useState<View>('intro');
   const [mode, setMode] = useState<Mode>(FORCE_PLAYER_MODE ? 'player' : 'developer');
+  // 2026-08-07, user explicit ask: manually control every one of the 16 teams for a full,
+  // causally-reasoned draft (not just the one randomly-assigned human slot), to build a rich
+  // pick-by-pick reference dataset — the richest kind of data this project has ever gathered, per
+  // the D1 human-vote validation session's own finding that raw outcomes alone (who went where)
+  // barely correlate with the actual judge formula. Decided here, before `createDraft()` runs,
+  // since the flag has to exist on `DraftState` from the very first pick (see draft.ts's own
+  // docstring on why this is a separate flag, not just flipping every team's `isHuman`).
+  const [commissionerMode, setCommissionerMode] = useState(false);
 
   return (
     <div className="app-shell">
@@ -62,6 +70,12 @@ function App() {
             real trade-offs. Once the draft ends, you'll set your rotation's minutes, and the judge will grade every
             roster — including yours.
           </p>
+          {!FORCE_PLAYER_MODE && (
+            <label className="commissioner-toggle">
+              <input type="checkbox" checked={commissionerMode} onChange={(e) => setCommissionerMode(e.target.checked)} />
+              Commissioner Mode — control all 16 teams yourself, with a reasoning note per pick
+            </label>
+          )}
           <button className="primary-btn" onClick={() => setView('game')}>
             Start Draft
           </button>
@@ -73,7 +87,7 @@ function App() {
 
       {view === 'game' && (
         <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
-          <GameShell mode={mode} onExit={() => setView('intro')} />
+          <GameShell mode={mode} commissionerMode={commissionerMode} onExit={() => setView('intro')} />
         </Suspense>
       )}
 

@@ -11,9 +11,16 @@ interface Props {
    * user's explicit ask to react to picks live during the draft, not only after it ends. */
   reactions: Record<number, FeedbackEntry>;
   onReactionChange: (pickNumber: number, entry: FeedbackEntry | undefined) => void;
+  /** 2026-08-07, Commissioner Mode's causal-reasoning capture — an always-visible free-text box
+   * per pick (not gated behind a red-flag click like `FeedbackToggle`, since every pick gets a
+   * "why," not just the ones something's wrong with). Only rendered when `commissionerMode` is
+   * true, so the normal single-human-team draft UI stays exactly as it was. */
+  commissionerMode: boolean;
+  reasoning: Record<number, string>;
+  onReasoningChange: (pickNumber: number, reasoning: string) => void;
 }
 
-export default function DraftHistory({ history, teams, reactions, onReactionChange }: Props) {
+export default function DraftHistory({ history, teams, reactions, onReactionChange, commissionerMode, reasoning, onReasoningChange }: Props) {
   const teamName = (id: string) => {
     const team = teams.find((t) => t.id === id);
     return team ? teamLabel(team) : id;
@@ -34,11 +41,21 @@ export default function DraftHistory({ history, teams, reactions, onReactionChan
                 <span className="history-pick">#{entry.pickNumber}</span>
                 <span className="history-team">{teamName(entry.teamId)}</span>
                 <span className="history-player">{p ? `${p.playerName} (${p.spanLabel})` : entry.playerId}</span>
-                <FeedbackToggle
-                  entry={reactions[entry.pickNumber]}
-                  onChange={(e) => onReactionChange(entry.pickNumber, e)}
-                  placeholder="Co jest nie tak z tym pickiem?"
-                />
+                {commissionerMode ? (
+                  <input
+                    type="text"
+                    className="commissioner-reasoning-input"
+                    placeholder="Dlaczego ten pick? (opcjonalne)"
+                    value={reasoning[entry.pickNumber] ?? ''}
+                    onChange={(e) => onReasoningChange(entry.pickNumber, e.target.value)}
+                  />
+                ) : (
+                  <FeedbackToggle
+                    entry={reactions[entry.pickNumber]}
+                    onChange={(e) => onReactionChange(entry.pickNumber, e)}
+                    placeholder="Co jest nie tak z tym pickiem?"
+                  />
+                )}
               </li>
             );
           })}

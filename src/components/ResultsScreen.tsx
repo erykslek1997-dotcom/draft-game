@@ -31,6 +31,9 @@ interface Props {
    * Folded into the same export as this screen's own roster-row reactions so a single downloaded
    * file has everything. */
   pickReactions: Record<number, FeedbackEntry>;
+  /** Commissioner Mode's per-pick causal-reasoning notes (see `DraftHistory`/`GameShell`) — empty
+   * for a normal single-human-team draft. Folded into the same export as everything else here. */
+  pickReasoning: Record<number, string>;
 }
 
 /** Keyed by roster player id — one reaction per rostered player, set directly on that player's
@@ -97,6 +100,7 @@ function buildFeedbackExport(
   history: DraftHistoryEntry[],
   feedback: Record<string, TeamFeedback>,
   pickReactions: Record<number, FeedbackEntry>,
+  pickReasoning: Record<number, string>,
 ) {
   const ranked = rankTeams(teams);
   // Live in-draft reactions (see DraftHistory/GameShell) — only flagged picks carry a
@@ -131,7 +135,17 @@ function buildFeedbackExport(
         .sort((a, b) => a.pickNumber - b.pickNumber)
         .map((h) => {
           const p = draftPool.find((pl) => pl.id === h.playerId);
-          return { pickNumber: h.pickNumber, playerId: h.playerId, playerName: p?.playerName ?? null, spanLabel: p?.spanLabel ?? null };
+          return {
+            pickNumber: h.pickNumber,
+            playerId: h.playerId,
+            playerName: p?.playerName ?? null,
+            spanLabel: p?.spanLabel ?? null,
+            fga: p?.fga ?? null,
+            TAL: p ? computeTalent(p) : null,
+            // Commissioner Mode's causal note for this exact pick, if one was written — null for
+            // a normal single-human-team draft (pickReasoning is empty then).
+            reasoning: pickReasoning[h.pickNumber] ?? null,
+          };
         });
       const roster = team.roster.map((p) => ({
         playerName: p.playerName,
@@ -191,8 +205,9 @@ function downloadFeedback(
   history: DraftHistoryEntry[],
   feedback: Record<string, TeamFeedback>,
   pickReactions: Record<number, FeedbackEntry>,
+  pickReasoning: Record<number, string>,
 ) {
-  const data = buildFeedbackExport(teams, history, feedback, pickReactions);
+  const data = buildFeedbackExport(teams, history, feedback, pickReactions, pickReasoning);
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -205,7 +220,7 @@ function downloadFeedback(
   URL.revokeObjectURL(url);
 }
 
-export default function ResultsScreen({ teams, history, mode, onRestart, pickReactions }: Props) {
+export default function ResultsScreen({ teams, history, mode, onRestart, pickReactions, pickReasoning }: Props) {
   const ranked = rankTeams(teams);
   const playerById = (id: string) => draftPool.find((p) => p.id === id);
   const [feedback, setFeedback] = useState<Record<string, TeamFeedback>>({});
@@ -411,7 +426,7 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         <button className="primary-btn" onClick={onRestart}>
           Draft Again
         </button>
-        <button className="secondary-btn" onClick={() => downloadFeedback(teams, history, feedback, pickReactions)}>
+        <button className="secondary-btn" onClick={() => downloadFeedback(teams, history, feedback, pickReactions, pickReasoning)}>
           Zapisz feedback do pliku
         </button>
       </div>

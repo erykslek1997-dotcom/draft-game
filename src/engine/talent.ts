@@ -867,8 +867,22 @@ function softCapOffense(scaled: number): number {
   return OTAL_SOFT_CAP_FLOOR + (OTAL_SOFT_CAP_CEILING - OTAL_SOFT_CAP_FLOOR) * (1 - Math.exp(-(scaled - OTAL_SOFT_CAP_FLOOR) / OTAL_SOFT_CAP_K));
 }
 
+/**
+ * 2026-08-07, user's own precise diagnosis, real bug found: `computeTalent` already discounts
+ * low-volume offense via `usageOffenseScale` (the FGA<12 half, gated to `PLAYMAKER_ARCHETYPES` so
+ * it only touches real ball-handlers, not off-ball specialists) — but `computeOffensiveTalent`
+ * never applied it at all, computing offense at a flat 1.0 scale regardless of usage. That's
+ * exactly why Kevin Johnson (FGA 12.4, "Secondary Ball Handler") and especially John Stockton
+ * (FGA 9.8, same archetype) were reading competitively with Nash (FGA 13.1) despite a real,
+ * already-modeled difference in how much offense they actually had to create — Stockton's own FGA
+ * sits deep in the discount band (~0.84 scale, a real ~16% cut) while Nash's barely dips below 1.0
+ * (~0.975) and Harden/Luka/Oscar's high-FGA spans actually gain a BONUS (>15 FGA is the ramp's
+ * high-usage-credit half, ungated by archetype) — the exact separation the user asked for
+ * ("penalize KJ/Stockton for low FGA without knocking Nash down too much"), for free, by finally
+ * applying a mechanism that already existed for TAL to its sibling metric.
+ */
 export function computeOffensiveTalent(span: PlayerSpan): number {
-  const { offense } = rawComponents(span, false);
+  const { offense } = rawComponents(span, false, usageOffenseScale(span));
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   const scaled = offense * scale + intercept;
   return Math.max(0, Math.min(100, Math.round(softCapOffense(scaled))));
@@ -877,7 +891,7 @@ export function computeOffensiveTalent(span: PlayerSpan): number {
 /** Debug-only, unclamped/uncapped O-TAL raw scaled value — used solely by calibration scripts to
  * see the real pre-softcap spread. Not imported anywhere in the engine itself. */
 export function rawOffenseScaledForDebug(span: PlayerSpan): number {
-  const { offense } = rawComponents(span, false);
+  const { offense } = rawComponents(span, false, usageOffenseScale(span));
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   return offense * scale + intercept;
 }

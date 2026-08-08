@@ -115,7 +115,12 @@ const rows: Row[] = [
   ['ewing-93-95', 'Patrick Ewing', '1993-95', 'C', [], 18.5, 24.0, 11.0, 1.9, 0.9, 2.5, 0.500, 0.0, 0.0, 0.750, 0.540, 'Post Scorer', 'Anchor Big'],
   // John Stockton
   ['stockton-89-91', 'John Stockton', '1989-91', 'PG', [], 11.0, 15.2, 2.7, 13.6, 2.9, 0.2, 0.530, 0.380, 1.0, 0.820, 0.580, 'Primary Ball Handler', 'Point of Attack'],
-  ['stockton-93-95', 'John Stockton', '1993-95', 'PG', [], 10.5, 14.7, 2.7, 11.6, 2.6, 0.2, 0.520, 0.400, 1.2, 0.830, 0.580, 'Secondary Ball Handler', 'Point of Attack'],
+  // 2026-08-07, user-caught data bug: was tagged 'Secondary Ball Handler' with no comment
+  // justifying it, despite 11.6 apg — clearly primary-distributor volume, and inconsistent with
+  // this same player's other curated span (1989-91) just above, correctly tagged Primary at a
+  // similar apg. Stockton was Utah's primary initiator his entire career; no real basketball
+  // argument supports "secondary" for this stretch. Fixed to match.
+  ['stockton-93-95', 'John Stockton', '1993-95', 'PG', [], 10.5, 14.7, 2.7, 11.6, 2.6, 0.2, 0.520, 0.400, 1.2, 0.830, 0.580, 'Primary Ball Handler', 'Point of Attack'],
   // Gary Payton
   ['payton-95-97', 'Gary Payton', '1995-97', 'PG', [], 16.5, 20.6, 4.4, 7.4, 2.3, 0.3, 0.470, 0.340, 2.5, 0.750, 0.540, 'Primary Ball Handler', 'Point of Attack'],
   ['payton-99-01', 'Gary Payton', '1999-01', 'PG', [], 18.0, 22.5, 5.0, 8.5, 1.9, 0.2, 0.460, 0.320, 3.0, 0.760, 0.530, 'Primary Ball Handler', 'Point of Attack'],

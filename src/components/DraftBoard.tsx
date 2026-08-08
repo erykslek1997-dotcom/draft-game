@@ -26,6 +26,10 @@ interface Props {
    * it survives the phase transition into the results screen's export. */
   pickReactions: Record<number, FeedbackEntry>;
   onPickReactionChange: (pickNumber: number, entry: FeedbackEntry | undefined) => void;
+  /** Commissioner Mode's per-pick causal-reasoning notes — same lift-to-GameShell shape as
+   * `pickReactions` above, passed straight through to `DraftHistory`. */
+  pickReasoning: Record<number, string>;
+  onPickReasoningChange: (pickNumber: number, reasoning: string) => void;
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -160,12 +164,15 @@ export function groupByPlayer(list: PlayerSpan[]): PlayerGroup[] {
   }));
 }
 
-export default function DraftBoard({ state, onPick, mode, pickReactions, onPickReactionChange }: Props) {
+export default function DraftBoard({ state, onPick, mode, pickReactions, onPickReactionChange, pickReasoning, onPickReasoningChange }: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
   const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL' | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [showHistory, setShowHistory] = useState(false);
+  // Defaults open in Commissioner Mode: every pick needs its reasoning box reachable right after
+  // it's made, across up to 144 picks — an extra click to reveal it every single time would be a
+  // real friction cost at that volume.
+  const [showHistory, setShowHistory] = useState(state.commissionerMode);
 
   const teamIdx = currentTeamIndex(state);
   const currentTeam = state.teams[teamIdx];
@@ -290,7 +297,11 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
           Pick {pickNumber} of {totalPicks}
         </strong>{' '}
         — Round {state.round + 1} —{' '}
-        {currentTeam.isHuman ? 'Your pick' : `${teamLabel(currentTeam)} is picking…`}
+        {state.commissionerMode
+          ? `Your pick as ${teamLabel(currentTeam)}`
+          : currentTeam.isHuman
+            ? 'Your pick'
+            : `${teamLabel(currentTeam)} is picking…`}
         <button className="history-toggle" onClick={() => setShowHistory((s) => !s)}>
           {showHistory ? 'Hide' : 'Show'} Draft History
         </button>
@@ -302,6 +313,9 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
           teams={state.teams}
           reactions={pickReactions}
           onReactionChange={onPickReactionChange}
+          commissionerMode={state.commissionerMode}
+          reasoning={pickReasoning}
+          onReasoningChange={onPickReasoningChange}
         />
       )}
 
@@ -326,7 +340,7 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
         ))}
       </div>
 
-      {currentTeam.isHuman ? (
+      {currentTeam.isHuman || state.commissionerMode ? (
         <div className="player-pool">
           <div className="pool-controls">
             <input

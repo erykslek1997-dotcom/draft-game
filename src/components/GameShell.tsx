@@ -23,6 +23,13 @@ type Phase = 'draft' | 'spanSelection' | 'rotation' | 'results';
 
 interface Props {
   mode: 'developer' | 'player';
+  /** 2026-08-07, user explicit ask: manually pick for every one of the 16 teams (not just the
+   * one randomly-assigned human slot), with an optional causal reasoning note per pick. Deliberately
+   * scoped to the DRAFT phase only — span selection and rotation-building afterward still only
+   * involve the one `isHuman`-flagged team, exactly as today; the ask was specifically about
+   * describing draft PICKS, not building 16 full rotations by hand. See draft.ts's own
+   * `commissionerMode` docstring for why this is a separate flag from `isHuman`. */
+  commissionerMode: boolean;
   /** Returns the app to the intro screen — same "no confirmation" testing-convenience shape as
    * the old in-component Reset button had, just lifted up so the intro screen (which doesn't
    * load this module at all) can unmount it entirely. */
@@ -44,8 +51,8 @@ const AI_SPEEDS = [
 ] as const;
 const DEFAULT_AI_SPEED_INDEX = 1;
 
-export default function GameShell({ mode, onExit }: Props) {
-  const [draftState, setDraftState] = useState<DraftState>(() => createDraft());
+export default function GameShell({ mode, commissionerMode, onExit }: Props) {
+  const [draftState, setDraftState] = useState<DraftState>(() => createDraft(commissionerMode));
   const [phase, setPhase] = useState<Phase>('draft');
   const [finalTeams, setFinalTeams] = useState<Team[] | null>(null);
   const [aiSpeedIndex, setAiSpeedIndex] = useState(DEFAULT_AI_SPEED_INDEX);
@@ -54,6 +61,11 @@ export default function GameShell({ mode, onExit }: Props) {
   // into ResultsScreen's export — see FeedbackToggle's own docstring for why this replaced the
   // old too_high/too_low dropdown flow.
   const [pickReactions, setPickReactions] = useState<Record<number, FeedbackEntry>>({});
+  // 2026-08-07, Commissioner Mode's own per-pick "why" note — deliberately a separate free-text
+  // field from `pickReactions` above, not a repurposing of it: `FeedbackEntry` is about flagging
+  // a PROBLEM with a pick ("Co jest nie tak?" — what's wrong with this?), which doesn't fit a
+  // neutral causal explanation for every single pick, most of which aren't complaints at all.
+  const [pickReasoning, setPickReasoning] = useState<Record<number, string>>({});
 
   function handlePickReactionChange(pickNumber: number, entry: FeedbackEntry | undefined) {
     setPickReactions((prev) => {
@@ -64,9 +76,19 @@ export default function GameShell({ mode, onExit }: Props) {
     });
   }
 
-  // Auto-resolve AI turns during the draft.
+  function handlePickReasoningChange(pickNumber: number, reasoning: string) {
+    setPickReasoning((prev) => {
+      const next = { ...prev };
+      if (reasoning.trim()) next[pickNumber] = reasoning;
+      else delete next[pickNumber];
+      return next;
+    });
+  }
+
+  // Auto-resolve AI turns during the draft — never in Commissioner Mode, where every team's pick
+  // comes from the human via `handlePick` instead (see the effect's own early-return below).
   useEffect(() => {
-    if (phase !== 'draft' || draftState.complete) return;
+    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode) return;
     const teamIdx = currentTeamIndex(draftState);
     if (draftState.teams[teamIdx].isHuman) return;
     const timer = setTimeout(() => {
@@ -168,6 +190,8 @@ export default function GameShell({ mode, onExit }: Props) {
           mode={mode}
           pickReactions={pickReactions}
           onPickReactionChange={handlePickReactionChange}
+          pickReasoning={pickReasoning}
+          onPickReasoningChange={handlePickReasoningChange}
         />
       )}
       {phase === 'spanSelection' && (
@@ -181,6 +205,7 @@ export default function GameShell({ mode, onExit }: Props) {
           mode={mode}
           onRestart={handleReset}
           pickReactions={pickReactions}
+          pickReasoning={pickReasoning}
         />
       )}
     </>
