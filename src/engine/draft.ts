@@ -25,6 +25,14 @@ export interface DraftState {
   pickInRound: number; // 0-indexed
   complete: boolean;
   history: DraftHistoryEntry[];
+  /** 2026-08-07, user explicit ask: a mode where the human manually picks for EVERY team (to
+   * play out a full causal-reasoning draft, one pick-and-why at a time), not just their own
+   * randomly-assigned slot. Deliberately NOT implemented by setting every team's `isHuman` to
+   * true — that would also give every team the human's cap-FREE perk below, which defeats the
+   * whole point (the exercise is only useful if every team faces the same real constraints an AI
+   * team would). Instead this flag alone overrides just the cap-legality bypass, leaving
+   * `isHuman` purely about "which team's mini-roster panel says (You)" and UI/export labeling. */
+  commissionerMode: boolean;
 }
 
 // --- One-time-per-dataset lookups, built once at module load rather than re-scanning the
@@ -70,7 +78,7 @@ export function createInitialTeams(): Team[] {
   return teams;
 }
 
-export function createDraft(): DraftState {
+export function createDraft(commissionerMode: boolean = false): DraftState {
   return {
     teams: createInitialTeams(),
     draftedIds: new Set(),
@@ -78,6 +86,7 @@ export function createDraft(): DraftState {
     pickInRound: 0,
     complete: false,
     history: [],
+    commissionerMode,
   };
 }
 
@@ -203,8 +212,12 @@ export function isPickLegal(state: DraftState, playerId: string): boolean {
   // point of the cap is to make the AI's roster-building interesting/hard; it isn't a rule the
   // human needs to play under). The strict/lookahead/last-resort tiers below exist purely to
   // manage the AI's own cap pressure, so they never even run on the human's turn.
+  // `commissionerMode` overrides this bypass — every team (including the nominally "human" one)
+  // is cap-constrained exactly like an AI team, since the whole point of that mode is producing
+  // real, comparable picks under the same pressure every team actually faces. See DraftState's
+  // own docstring for why this is a separate flag rather than just flipping `isHuman` for all 16.
   const team = state.teams[currentTeamIndex(state)];
-  if (team.isHuman) return true;
+  if (team.isHuman && !state.commissionerMode) return true;
 
   if (strictPickLegal(state, playerId)) return true;
 

@@ -841,11 +841,45 @@ const DEFENSE_TAL_SCALE_BY_POSITION: Record<Position, number> = {
   C: 2.04,
 };
 
+/**
+ * 2026-08-07, user-caught real bug (playtest report: "Nash, Harden i Luka mają ten sam O-TAL co
+ * Kevin Johnson" — Stockton reading A+): O-TAL had no soft-cap, unlike TAL's own (`SOFT_CAP_K`
+ * above) — a straight `Math.min(100, ...)` clip. Once the new playmaking/3-level bonuses (see
+ * `playmakingThreeLevel.ts`) pushed several different PGs' raw pre-clamp offense scores past 100,
+ * they all flattened into the identical displayed 100, erasing real separation the same way
+ * TAL's own hard clip did before the 2026-08-01 fix — this is the exact same class of bug,
+ * recurring in a sibling metric that never got the same treatment. User's own explicit
+ * confirmation of the correct direction: "Nash, Harden i Luka powinni zostać w S a reszta
+ * powinna pójść w dół" (Nash/Harden/Luka should stay S, the rest should drop) — i.e. this needs
+ * to PRESERVE real separation at the top, not just uniformly shrink everyone's bonus (which would
+ * have pulled the genuinely-elite three down too). `OTAL_SOFT_CAP_FLOOR` set lower than TAL's own
+ * (90 vs 95) since O-TAL's ceiling-crowding here starts well below the very top (multiple players
+ * clip at exactly 100, not just approach it) — engaging earlier is what actually restores
+ * resolution among them. Same exponential-approach shape as TAL's `softCapTalent`, deliberately
+ * reusing a proven mechanism rather than inventing a new one for the same underlying problem.
+ */
+const OTAL_SOFT_CAP_FLOOR = 90;
+const OTAL_SOFT_CAP_CEILING = 100;
+const OTAL_SOFT_CAP_K = 14;
+
+function softCapOffense(scaled: number): number {
+  if (scaled <= OTAL_SOFT_CAP_FLOOR) return scaled;
+  return OTAL_SOFT_CAP_FLOOR + (OTAL_SOFT_CAP_CEILING - OTAL_SOFT_CAP_FLOOR) * (1 - Math.exp(-(scaled - OTAL_SOFT_CAP_FLOOR) / OTAL_SOFT_CAP_K));
+}
+
 export function computeOffensiveTalent(span: PlayerSpan): number {
   const { offense } = rawComponents(span, false);
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   const scaled = offense * scale + intercept;
-  return Math.max(0, Math.min(100, Math.round(scaled)));
+  return Math.max(0, Math.min(100, Math.round(softCapOffense(scaled))));
+}
+
+/** Debug-only, unclamped/uncapped O-TAL raw scaled value — used solely by calibration scripts to
+ * see the real pre-softcap spread. Not imported anywhere in the engine itself. */
+export function rawOffenseScaledForDebug(span: PlayerSpan): number {
+  const { offense } = rawComponents(span, false);
+  const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
+  return offense * scale + intercept;
 }
 
 /**

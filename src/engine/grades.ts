@@ -290,14 +290,28 @@ function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: n
       break;
     case 'C': {
       // 2026-08-05: "Greatest peak" needs real A- offense — Robinson/Olajuwon-type exception for
-      // a true S-grade defense (an elite-enough anchor overrides the offensive requirement
-      // entirely — not those two players by name, anyone whose defense actually reaches S clears
-      // it the same way). The exception has to waive BOTH offense-gated caps below, not just the
+      // a genuinely elite defense (an elite-enough anchor overrides the offensive requirement
+      // entirely). The exception has to waive BOTH offense-gated caps below, not just the
       // Greatest-peak one — otherwise the weaker "MVP needs B-" cap still fires on its own and
-      // quietly drags an S-defense anchor down to All-NBA instead of the intended Greatest peak.
-      const dtalIsS = dtalGrade === 'S';
-      if (!gradeAtLeast(otalGrade, 'A-') && !dtalIsS) caps.push('MVP');
-      if (!gradeAtLeast(otalGrade, 'B-') && !dtalIsS) caps.push('All-NBA');
+      // quietly drags an elite-D anchor down to All-NBA instead of the intended Greatest peak.
+      //
+      // 2026-08-07 follow-up, user explicit ask ("Howard i Mourning w All-NBA z tym samym
+      // ratingiem co Porzingis, nie da się podbić ich wartości w obronie do S?"): loosened from
+      // literal S to a real A grade (90+) — checked directly first, not guessed: their actual
+      // D-TAL (Howard 95/A+, Mourning 95/A+) is genuinely excellent and correctly graded, but
+      // literal 'S' means "3rd-highest DISTINCT value in the WHOLE 572-player pool," an extremely
+      // narrow bar (currently ~98+, with 87 spans already sitting at 95+ competing for it) — not
+      // a real "how good is this defender" question, a "how many other all-time-great defenders
+      // happen to also be in the pool right now" one. Their raw number isn't the problem here, the
+      // gate's threshold was. A (not A-) chosen deliberately: still means "a genuinely elite,
+      // top-of-scale defender," just not "top 3 in history," matching what an A+/95 grade already
+      // represents. Checked collateral: doesn't touch Sabonis (F-grade, nowhere close) or any
+      // Jokić span (his D-TAL tops out at C-/58) — the only other beneficiaries are similarly
+      // elite-but-not-literally-top-3 rim protectors (e.g. Gobert, A/93), the same real
+      // population this exception always meant to cover.
+      const dtalIsEliteAnchor = gradeAtLeast(dtalGrade, 'A');
+      if (!gradeAtLeast(otalGrade, 'A-') && !dtalIsEliteAnchor) caps.push('MVP');
+      if (!gradeAtLeast(otalGrade, 'B-') && !dtalIsEliteAnchor) caps.push('All-NBA');
       // 2026-08-07, user explicit ask, TIGHTENED from B+ to A- ("drop Cousins to All-NBA — no
       // above B+ in any category"): his real 2016-18 span (O-TAL B+/80, D-TAL C-/59) was landing
       // exactly AT the old B+ floor, which the old `gradeAtLeast(..., 'B+')` check treats as
@@ -402,15 +416,17 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
 }
 
 /**
- * The GOAT tier's own "give them 100+" ask — `ctx.tal` is always exactly ≤100 by construction
- * (`computeTalent`'s own hard clamp), so there's no real number above 100 to show without a
- * second, separate source: `rawUncappedTalent` (talent.ts) recomputes the same formula but skips
- * the soft-cap's asymptotic approach-to-100 and the final clamp, exposing what the real internal
- * spread actually is (Jordan's peak spans run well past 100 raw). Needs the full `span` (box
- * stats etc.), not just the reduced `TierGateContext` — takes both rather than trying to
- * reconstruct one from the other. Only ever shows the raw number for GOAT-tier spans; every
- * other tier keeps reading the real, clamped number via `displayTalentForSpan` above.
+ * The GOAT tier's own "give them 100+" ask. First shipped showing the real uncapped number
+ * (`rawUncappedTalent`, talent.ts — skips the soft-cap's asymptotic approach-to-100 and the
+ * final clamp, e.g. Jordan's peak spans read 115-131 raw); user's own direct follow-up asked for
+ * the literal string "100+" instead — "ładniej wizualnie się będzie prezentować" (looks nicer
+ * visually) — a specific number like "131" reads as an odd, arbitrary figure rather than a
+ * deliberate "beyond the scale" flourish. `rawUncappedTalent` is still what GATES this (only
+ * genuinely above-100-raw spans show it — no GOAT-tier span is ever actually below 100 raw in
+ * practice, since the tier itself requires "Greatest peak" first, but checking directly rather
+ * than assuming keeps this honest if that ever changes).
  */
-export function displayNumberForSpan(span: PlayerSpan, ctx: TierGateContext): number {
-  return overallTierForSpan(ctx) === 'GOAT' ? rawUncappedTalent(span) : displayTalentForSpan(ctx);
+export function displayNumberForSpan(span: PlayerSpan, ctx: TierGateContext): number | string {
+  if (overallTierForSpan(ctx) !== 'GOAT') return displayTalentForSpan(ctx);
+  return rawUncappedTalent(span) > 100 ? '100+' : rawUncappedTalent(span);
 }
