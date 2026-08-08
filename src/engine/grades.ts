@@ -151,6 +151,15 @@ export function overallTier(value: number): OverallTier {
  * on real half-court shot creation (grade + volume), an SG's case for the top tier specifically
  * rests on true two-way value (offense-only volume scorers cap below "Greatest peak"), etc.
  * Every rule caps *downward only* — never raises a tier above what raw TAL already earned.
+ *
+ * 2026-08-07: a same-day batch of position-specific refinements to these rules (PG/SG/SF/C, plus
+ * a matching TAL/O-TAL formula batch) was tried and then explicitly reverted by the user the same
+ * session — the refinements kept cascading into new problems in other positions faster than they
+ * fixed the one being reported (an O-TAL usage-scale fix aimed at PG ended up re-inflating SF/PF/C
+ * players past tier gates calibrated earlier the same day). Rolled back to this original,
+ * 2026-08-05/06 version rather than keep patching forward. If PG tier crowding gets revisited,
+ * start from a full population audit (which spans cluster where and why) before touching any
+ * single rule again — the reverted session's own transcript is the record of what was tried.
  */
 const GRADE_ORDER: Grade[] = ['F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+', 'S'];
 function gradeRank(g: Grade): number {
@@ -183,11 +192,6 @@ function stricterTier(a: OverallTier, b: OverallTier): OverallTier {
  * take were. */
 const TIER_GATE_LOW_FGA = 10;
 
-/** 2026-08-07: the middle band between "barely playing offense" (TIER_GATE_LOW_FGA, 10) and a
- * genuine high-volume shooting guard — see the SG case's own comment (Manu Ginobili: 10.4-12.5
- * FGA on his best-rated spans). */
-const SG_MODERATE_FGA_FLOOR = 13;
-
 /** Position-specific downward tier caps, applied ascending so a player can trip more than one
  * (the most restrictive wins — see `stricterTier` fold below). Every threshold reuses the exact
  * letter-grade bands `offensiveGrade`/`defensiveGrade` already display, so the rule reads the
@@ -207,16 +211,6 @@ function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: n
       // formula changes move the pool around, so pinning an exemption to it exactly is fragile;
       // A+ (a fixed 95+ floor) reads the same "truly elite" intent without that fragility.
       if (!gradeAtLeast(dtalGrade, 'C-') && !gradeAtLeast(otalGrade, 'A+')) caps.push('All-NBA');
-      // 2026-08-07, user explicit ask ("boosts PGs too much"): the 2026-08-07 playmaking-skill
-      // TAL bonus (playmakingThreeLevel.ts) lifts a lot of PG O-TAL grades a full band or more
-      // (PG's own OFFENSE_TAL_PARAMS scale is one of the largest, so the same raw bonus swings
-      // O-TAL further than it does for SF/PF/C) — which pushed several PGs (Magic's weaker-D
-      // spans, Oscar's 1962-64) into "Greatest peak" purely on offense, with no equivalent
-      // defense requirement at all for the top tier the way SG/SF/C already have one. New gate,
-      // matching that same "real two-way case, not just offense" shape: below a genuine C+
-      // defensive grade, cap at MVP — doesn't touch Stockton/CP3 (real plus defenders) or Magic's
-      // better-defense spans, only the offense-only cases the complaint was about.
-      if (!gradeAtLeast(dtalGrade, 'C+')) caps.push('MVP');
       break;
     case 'SG': {
       // 2026-08-05: threshold for the two-way bypass below — user's own follow-up named both
@@ -240,95 +234,39 @@ function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: n
         (gradeAtLeast(otalGrade, 'B-') && gradeAtLeast(dtalGrade, 'B+'));
       if (!twoWay && !otalIsElite) caps.push('All-star');
       if (fga < TIER_GATE_LOW_FGA) caps.push('Starter');
-      // 2026-08-07, user explicit ask, replaces the earlier literal-S requirement below: "Kobe
-      // O-Tal at A with D-Tal with B = good enough for greatest peak" (his real 2002-04 span:
-      // O-TAL A/91, D-TAL B/79) — "same with Wade" (2008-10: O-TAL A+/95, D-TAL A-/87). A real
-      // A-grade offense (90+) plus a real B-grade defense (75+) is a genuine two-way peak case,
-      // not just an elite-offense-with-decent-D one; the old S-only bar was too strict for
-      // exactly this shape. `gradeAtLeast` on 'A' (not 'A-') is deliberate — the user's own
-      // examples are both literally at the 'A' band, not the tier below it.
-      if (!(gradeAtLeast(otalGrade, 'A') && gradeAtLeast(dtalGrade, 'B'))) caps.push('MVP');
-      // 2026-08-07, user explicit ask ("drop Ray Allen to All-NBA because of defense"): the
-      // `otalIsElite` bypass above already keeps a truly elite (A+) offense from being punished
-      // down to All-star despite weak D — correct for a genuinely good-enough defender, but Ray
-      // Allen's own defense is F-grade on literally every span (17-38 D-TAL) — a real, extreme
-      // one-way profile the bypass wasn't meant to fully excuse from every cap. F-grade defense
-      // alone caps at All-NBA regardless of how elite the offense is (the MVP-tier cap above
-      // already independently blocks him from MVP+ too, since F is nowhere near a 'B' grade —
-      // this rule is what stops the display from reading a contradictory "MVP-capped but somehow
-      // still shows near-All-NBA-quality," making the ceiling honest at every tier, not just the
-      // top one).
-      if (dtalGrade === 'F') caps.push('All-NBA');
-      // 2026-08-07, user explicit ask ("drop Manu to All-NBA because of low-FGA"): the existing
-      // FGA<10 gate (Starter cap, above) is a hard floor for "barely playing offense at all," but
-      // Manu's real volume (10.4-12.5 FGA on his best spans) clears that floor while still being
-      // genuinely low for a rated-MVP-tier shooting guard — a real, distinct middle band the old
-      // binary gate had no room for. Capped at All-NBA (not all the way to Starter) since he did
-      // clear the harder floor.
-      if (fga < SG_MODERATE_FGA_FLOOR) caps.push('All-NBA');
+      // 2026-08-06: "Greatest peak" for an SG specifically requires a true top-of-scale (S)
+      // offensive grade — even a two-way A- guard doesn't have the case for the very top tier,
+      // just MVP. Literal `=== 'S'` (not `gradeAtLeast(..., 'A+')` like the PG exemptions above)
+      // is intentional here: this is the defining bar for the rule, not a fragile secondary
+      // exemption riding on top of another cap, so it should track the same dynamic "3 best in
+      // the pool" S actually means everywhere else it's displayed.
+      if (otalGrade !== 'S') caps.push('MVP');
       break;
     }
     case 'SF':
-      // 2026-08-07, user explicit ask, REPLACES the 2026-08-05 dual-sided version above ("SF
-      // need over B to be MVP in SF" — offense-focused, no defense-only escape this time): a
-      // real B+ offensive grade (80+) is now the floor just to clear All-NBA at all, regardless
-      // of how elite the defense is. Named cases, all confirmed against real O-TAL: Pippen
-      // (68-75 across his "MVP"-tier spans), Erving (66-72), Grant Hill (75), Kirilenko (63) —
-      // none reach B+, all drop to All-NBA even though several have S/A+ defense. A pure
-      // shutdown defender with only ordinary offense doesn't have the case for MVP+ under this
-      // rule — a real, deliberate reversal of the prior "one elite side is enough" design.
-      if (!gradeAtLeast(otalGrade, 'B+')) caps.push('All-NBA');
-      // Second, higher bar for "Greatest peak" specifically ("drop Kawhi to MVP because of
-      // offense" — his 2019-21 peak: O-TAL B+/84, D-TAL A-/86; B+ clears the All-NBA floor above
-      // but not this one). A merely-good-not-elite offense (B+ but short of A-) caps at MVP —
-      // real two-way volume at the very top still needs a genuinely elite offensive grade, not
-      // just "good enough to clear All-NBA."
-      if (!gradeAtLeast(otalGrade, 'A-')) caps.push('MVP');
+      // 2026-08-05, replaces the earlier OTAL-only version: needs a real A-tier grade (A- or
+      // better) on AT LEAST ONE side, offense or defense, to clear All-NBA — a merely-good
+      // all-around profile with no standout side doesn't have the case for MVP+.
+      if (!gradeAtLeast(otalGrade, 'A-') && !gradeAtLeast(dtalGrade, 'A-')) caps.push('All-NBA');
       break;
     case 'PF':
       if (!gradeAtLeast(otalGrade, 'C+')) caps.push('All-star');
       break;
     case 'C': {
       // 2026-08-05: "Greatest peak" needs real A- offense — Robinson/Olajuwon-type exception for
-      // a genuinely elite defense (an elite-enough anchor overrides the offensive requirement
-      // entirely). The exception has to waive BOTH offense-gated caps below, not just the
+      // a true S-grade defense (an elite-enough anchor overrides the offensive requirement
+      // entirely — not those two players by name, anyone whose defense actually reaches S clears
+      // it the same way). The exception has to waive BOTH offense-gated caps below, not just the
       // Greatest-peak one — otherwise the weaker "MVP needs B-" cap still fires on its own and
-      // quietly drags an elite-D anchor down to All-NBA instead of the intended Greatest peak.
-      //
-      // 2026-08-07 follow-up, user explicit ask ("Howard i Mourning w All-NBA z tym samym
-      // ratingiem co Porzingis, nie da się podbić ich wartości w obronie do S?"): loosened from
-      // literal S to a real A grade (90+) — checked directly first, not guessed: their actual
-      // D-TAL (Howard 95/A+, Mourning 95/A+) is genuinely excellent and correctly graded, but
-      // literal 'S' means "3rd-highest DISTINCT value in the WHOLE 572-player pool," an extremely
-      // narrow bar (currently ~98+, with 87 spans already sitting at 95+ competing for it) — not
-      // a real "how good is this defender" question, a "how many other all-time-great defenders
-      // happen to also be in the pool right now" one. Their raw number isn't the problem here, the
-      // gate's threshold was. A (not A-) chosen deliberately: still means "a genuinely elite,
-      // top-of-scale defender," just not "top 3 in history," matching what an A+/95 grade already
-      // represents. Checked collateral: doesn't touch Sabonis (F-grade, nowhere close) or any
-      // Jokić span (his D-TAL tops out at C-/58) — the only other beneficiaries are similarly
-      // elite-but-not-literally-top-3 rim protectors (e.g. Gobert, A/93), the same real
-      // population this exception always meant to cover.
-      const dtalIsEliteAnchor = gradeAtLeast(dtalGrade, 'A');
-      if (!gradeAtLeast(otalGrade, 'A-') && !dtalIsEliteAnchor) caps.push('MVP');
-      if (!gradeAtLeast(otalGrade, 'B-') && !dtalIsEliteAnchor) caps.push('All-NBA');
-      // 2026-08-07, user explicit ask, TIGHTENED from B+ to A- ("drop Cousins to All-NBA — no
-      // above B+ in any category"): his real 2016-18 span (O-TAL B+/80, D-TAL C-/59) was landing
-      // exactly AT the old B+ floor, which the old `gradeAtLeast(..., 'B+')` check treats as
-      // clearing it — the user's own framing ("no ABOVE B+") means B+ itself isn't enough, only
-      // a real A- (85+) on either side is a standout trait worth MVP+. Same rule, higher bar.
-      if (!gradeAtLeast(otalGrade, 'A-') && !gradeAtLeast(dtalGrade, 'A-')) caps.push('All-NBA');
-      // 2026-08-07, same batch, a second and separate defense floor ("drop Sabonis to All-NBA —
-      // only D in defense"): his real D-TAL never exceeds D grade in ANY span (18-48, mostly F);
-      // his OTAL is genuinely elite (A/A+, 92-97) which clears the A- rule directly above on
-      // offense alone, so that rule can't catch him. An F-grade defense (well below even a mere
-      // D) is checked as its own independent floor — no amount of elite offense buys a center out
-      // of a truly bottom-of-the-scale defensive grade, matching the same "F caps regardless of
-      // the other side" shape just added to SG's Ray Allen rule. Checked for collateral: this also
-      // caps a handful of Jokić's own weaker-defense spans (his DTAL swings F-to-C- across his
-      // career) — a real, disclosed side effect, not hidden; his genuinely stronger-D spans
-      // (DTAL C- or better) are untouched and still reach Greatest peak.
-      if (dtalGrade === 'F') caps.push('All-NBA');
+      // quietly drags an S-defense anchor down to All-NBA instead of the intended Greatest peak.
+      const dtalIsS = dtalGrade === 'S';
+      if (!gradeAtLeast(otalGrade, 'A-') && !dtalIsS) caps.push('MVP');
+      if (!gradeAtLeast(otalGrade, 'B-') && !dtalIsS) caps.push('All-NBA');
+      // 2026-08-05 follow-up: a center with neither side reaching a real B+ doesn't have a
+      // standout case for MVP+ either, even if their OTAL alone still clears the B- floor above —
+      // caught DeMarcus Cousins (2016-18: OTAL B/77, DTAL C/60 — decent both ways, elite at
+      // neither) sitting at MVP with no individually strong trait backing it up.
+      if (!gradeAtLeast(otalGrade, 'B+') && !gradeAtLeast(dtalGrade, 'B+')) caps.push('All-NBA');
       break;
     }
   }
@@ -360,6 +298,8 @@ export interface TierGateContext {
  * simulated 16-team drafts put Jordan at pick 1-8 every single time, avg 2.7 — the existing
  * `GREATEST_PEAK_DRAFT_TIERS` tier-1 bonus in aiDrafter.ts is already doing that job for real; a
  * single live-game slide to pick 32 reads as rare lottery variance, not a systemic regression).
+ * Survived the 2026-08-07 partial revert (see `GRADE_ORDER`'s own docstring above) — the user
+ * explicitly asked to keep GOAT while rolling back the tier-cap/O-TAL formula experiments.
  */
 const GOAT_NAMES: ReadonlySet<string> = new Set(['Michael Jordan', 'LeBron James', 'Stephen Curry'].map(normalizePlayerName));
 

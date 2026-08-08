@@ -9,7 +9,6 @@ import { computeDefensiveTalent } from './defensiveTalent';
 import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
-import { playmakingThreeLevelOffenseAdjustment } from './playmakingThreeLevel';
 // 2026-08-06: moved below defensiveTalent/defensiveAccolades on purpose — `portability.ts` (which
 // this import cycles back through) now imports `computeDefensiveTalent` from THIS file, closing a
 // real cycle: talent.ts -> portabilityCorrection.ts -> portability.ts -> talent.ts. Importing
@@ -310,12 +309,7 @@ function rawComponents(
   const isCurry = normalizePlayerName(span.playerName) === normalizePlayerName('Stephen Curry');
   const gravityCap = applyCurryException && isCurry ? CURRY_GRAVITY_CAP : MAX_SHOOTING_GRAVITY_BONUS;
   const gravity = Math.max(-gravityCap, Math.min(gravityCap, shootingGravity(span) * SHOOTING_GRAVITY_SCALE));
-  // 2026-08-07, user explicit ask: playmaking quality (beyond apg volume) and real 3-level/
-  // rim-finishing scoring efficiency, from the same 2026-08-07 CSV batch `offensiveProfile.ts`
-  // already reads for fit/synergy — see playmakingThreeLevel.ts for the full reasoning per
-  // mechanism. Framed as an open-direction experiment, not a finished calibration.
-  const playmakingThreeLevel = playmakingThreeLevelOffenseAdjustment(span);
-  const offense = (scoringRate + efficiency + playmaking + centerPlaymaking + gravity + playmakingThreeLevel) * usageScale;
+  const offense = (scoringRate + efficiency + playmaking + centerPlaymaking + gravity) * usageScale;
 
   // Real DARKO plus-minus data (where it exists, 1997-98+) can reveal defensive value the
   // box score alone can't see (see darkoCorrection.ts) — Garnett and Duncan are the clearest
@@ -752,7 +746,9 @@ const talentCache = new Map<string, number>();
  * SAME clamped/rounded `baseTal`, so which pass "wins" never disagrees between the two
  * functions), just skips `softCapTalent`/the clamp/the PG-SF grade-ceiling `Math.min` at the very
  * end. Display-only — nothing in the engine reads this for talent, draft value, or sorting;
- * grades.ts's `displayNumberForSpan` is the only caller.
+ * grades.ts's `displayNumberForSpan` is the only caller. Kept through the 2026-08-07 partial
+ * revert (the TAL/O-TAL formula experiments that session added were reverted; this one small,
+ * safe export survived because GOAT tier itself was explicitly kept).
  */
 export function rawUncappedTalent(span: PlayerSpan): number {
   const baseScaled = talentScaled(span, 1.0);
@@ -841,71 +837,11 @@ const DEFENSE_TAL_SCALE_BY_POSITION: Record<Position, number> = {
   C: 2.04,
 };
 
-/**
- * 2026-08-07, user-caught real bug (playtest report: "Nash, Harden i Luka mają ten sam O-TAL co
- * Kevin Johnson" — Stockton reading A+): O-TAL had no soft-cap, unlike TAL's own (`SOFT_CAP_K`
- * above) — a straight `Math.min(100, ...)` clip. Once the new playmaking/3-level bonuses (see
- * `playmakingThreeLevel.ts`) pushed several different PGs' raw pre-clamp offense scores past 100,
- * they all flattened into the identical displayed 100, erasing real separation the same way
- * TAL's own hard clip did before the 2026-08-01 fix — this is the exact same class of bug,
- * recurring in a sibling metric that never got the same treatment. User's own explicit
- * confirmation of the correct direction: "Nash, Harden i Luka powinni zostać w S a reszta
- * powinna pójść w dół" (Nash/Harden/Luka should stay S, the rest should drop) — i.e. this needs
- * to PRESERVE real separation at the top, not just uniformly shrink everyone's bonus (which would
- * have pulled the genuinely-elite three down too). `OTAL_SOFT_CAP_FLOOR` set lower than TAL's own
- * (90 vs 95) since O-TAL's ceiling-crowding here starts well below the very top (multiple players
- * clip at exactly 100, not just approach it) — engaging earlier is what actually restores
- * resolution among them. Same exponential-approach shape as TAL's `softCapTalent`, deliberately
- * reusing a proven mechanism rather than inventing a new one for the same underlying problem.
- */
-const OTAL_SOFT_CAP_FLOOR = 90;
-const OTAL_SOFT_CAP_CEILING = 100;
-const OTAL_SOFT_CAP_K = 14;
-
-function softCapOffense(scaled: number): number {
-  if (scaled <= OTAL_SOFT_CAP_FLOOR) return scaled;
-  return OTAL_SOFT_CAP_FLOOR + (OTAL_SOFT_CAP_CEILING - OTAL_SOFT_CAP_FLOOR) * (1 - Math.exp(-(scaled - OTAL_SOFT_CAP_FLOOR) / OTAL_SOFT_CAP_K));
-}
-
-/**
- * 2026-08-07, user's own precise diagnosis, real bug found: `computeTalent` already discounts
- * low-volume offense via `usageOffenseScale` (the FGA<12 half, gated to `PLAYMAKER_ARCHETYPES` so
- * it only touches real ball-handlers, not off-ball specialists) — but `computeOffensiveTalent`
- * never applied it at all, computing offense at a flat 1.0 scale regardless of usage. That's
- * exactly why Kevin Johnson (FGA 12.4, "Secondary Ball Handler") and especially John Stockton
- * (FGA 9.8, same archetype) were reading competitively with Nash (FGA 13.1) despite a real,
- * already-modeled difference in how much offense they actually had to create — Stockton's own FGA
- * sits deep in the discount band (~0.84 scale, a real ~16% cut) while Nash's barely dips below 1.0
- * (~0.975) and Harden/Luka/Oscar's high-FGA spans actually gain a BONUS (>15 FGA is the ramp's
- * high-usage-credit half, ungated by archetype) — the exact separation the user asked for
- * ("penalize KJ/Stockton for low FGA without knocking Nash down too much"), for free, by finally
- * applying a mechanism that already existed for TAL to its sibling metric.
- */
-/** 2026-08-07 follow-up, user-caught real regression: applying the FULL `usageOffenseScale` (the
- * >15-FGA BONUS half too, not just the low-FGA discount) to every position pushed high-volume
- * wings/bigs (Kawhi 84→90, Paul George 84→85, Jayson Tatum's own O-TAL, Bob McAdoo) up into tier
- * gates (SF's/PF's/C's own O-TAL-grade floors, calibrated earlier THIS SAME SESSION) they were
- * correctly excluded from — undoing the explicit "drop Kawhi to MVP because of offense" fix from
- * earlier today. The actual ask was narrower: fix PG specifically (Kevin Johnson/Stockton tying
- * Nash on offense), not touch every other position's O-TAL calibration. Scoped to PG only —
- * every other position's O-TAL is back to the flat 1.0 scale it always had. */
-function otalUsageScale(span: PlayerSpan): number {
-  return span.primaryPosition === 'PG' ? usageOffenseScale(span) : 1.0;
-}
-
 export function computeOffensiveTalent(span: PlayerSpan): number {
-  const { offense } = rawComponents(span, false, otalUsageScale(span));
+  const { offense } = rawComponents(span, false);
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   const scaled = offense * scale + intercept;
-  return Math.max(0, Math.min(100, Math.round(softCapOffense(scaled))));
-}
-
-/** Debug-only, unclamped/uncapped O-TAL raw scaled value — used solely by calibration scripts to
- * see the real pre-softcap spread. Not imported anywhere in the engine itself. */
-export function rawOffenseScaledForDebug(span: PlayerSpan): number {
-  const { offense } = rawComponents(span, false, otalUsageScale(span));
-  const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
-  return offense * scale + intercept;
+  return Math.max(0, Math.min(100, Math.round(scaled)));
 }
 
 /**
