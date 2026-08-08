@@ -122,7 +122,28 @@ function classifiedZoneShares(span: PlayerSpan): { rim: number; mid: number; thr
 const MULTI_LEVEL_SCALE = 0.5;
 const MAX_MULTI_LEVEL_BONUS = 6;
 
+/**
+ * 2026-08-07, user-caught bug (real playtest, John Stockton's O-TAL jumping "from C+ to S"):
+ * `ZONE_MIN_SHARE` alone isn't a volume gate, it's a SHARE gate — a career facilitator taking
+ * 8-9 shots a game who happens to spread them roughly evenly across rim/mid/three clears 15%
+ * share in all three trivially, without being anything like a genuine high-volume 3-level
+ * scorer (Dirk). Checked directly, not guessed: Stockton's 1995-97 through 2000-02 spans (FGA
+ * 8.4-9.6) were drawing the bonus's full +6 cap on top of an already-near-cap
+ * `playmakingSkillAdjustment` (+4.9, his playmaking score is 99.2) — a combined +10.9-11 raw
+ * offense points, LARGER than Dirk's own combined bonus at his real peak (~8). Steve Nash's
+ * spans showed the identical pattern, worse (10 of 16 spans hit the same stacked-max combo).
+ * Real per-game shot volume, not just the zone-share ratio, is what actually makes a 3-level
+ * scoring profile hard to defend — reuses the same `LOW_USAGE_EFFICIENCY_REFERENCE_FGA` (12)
+ * `talent.ts` already uses for "is this genuinely a low-usage span" elsewhere, rather than
+ * inventing a second number for the same idea. Checked the blast radius: Dirk (14-19 FGA every
+ * span), LeBron (17-22), prime Curry (13-20) all comfortably clear it and keep their bonus
+ * unchanged; Stockton (never above 11.7) and most of Nash's spans (5.4-13.4, only a few clear
+ * 12) now correctly get zero or a scaled-down version instead of the full cap.
+ */
+const MULTI_LEVEL_MIN_FGA = 12;
+
 export function multiLevelScoringBonus(span: PlayerSpan): number {
+  if (span.fga < MULTI_LEVEL_MIN_FGA) return 0;
   const shares = classifiedZoneShares(span);
   if (!shares) return 0;
   const totals = zoneTotalsForSpan(span, zoneMap)!;

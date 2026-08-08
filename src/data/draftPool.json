@@ -5734,228 +5734,6 @@
     "defensiveRole": "Chaser"
   },
   {
-    "id": "anderky01-2015-2016",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2014-16",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 3.5,
-    "box": {
-      "ppg": 3.8,
-      "rpg": 2.8,
-      "apg": 1.4,
-      "spg": 0.7,
-      "bpg": 0.3,
-      "fgPct": 0.44,
-      "threePct": 0.312,
-      "threePA": 0.4,
-      "ftPct": 0.732,
-      "tsPct": 0.489
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "anderky01-2016-2017",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2015-17",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 3.4,
-    "box": {
-      "ppg": 4,
-      "rpg": 3,
-      "apg": 1.4,
-      "spg": 0.7,
-      "bpg": 0.4,
-      "fgPct": 0.458,
-      "threePct": 0.351,
-      "threePA": 0.5,
-      "ftPct": 0.764,
-      "tsPct": 0.525
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "anderky01-2017-2018",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2016-18",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 4.4,
-    "box": {
-      "ppg": 5.7,
-      "rpg": 4.1,
-      "apg": 2,
-      "spg": 1.1,
-      "bpg": 0.6,
-      "fgPct": 0.501,
-      "threePct": 0.351,
-      "threePA": 0.7,
-      "ftPct": 0.734,
-      "tsPct": 0.569
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "anderky01-2018-2019",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2017-19",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 6.1,
-    "box": {
-      "ppg": 8,
-      "rpg": 5.5,
-      "apg": 2.8,
-      "spg": 1.4,
-      "bpg": 0.8,
-      "fgPct": 0.534,
-      "threePct": 0.308,
-      "threePA": 0.8,
-      "ftPct": 0.671,
-      "tsPct": 0.581
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "anderky01-2019-2020",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2018-20",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 5.5,
-    "box": {
-      "ppg": 6.7,
-      "rpg": 4.9,
-      "apg": 2.6,
-      "spg": 1,
-      "bpg": 0.7,
-      "fgPct": 0.506,
-      "threePct": 0.277,
-      "threePA": 1.1,
-      "ftPct": 0.627,
-      "tsPct": 0.552
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "anderky01-2020-2021",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2019-21",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 7.3,
-    "box": {
-      "ppg": 9.1,
-      "rpg": 5,
-      "apg": 3,
-      "spg": 1,
-      "bpg": 0.7,
-      "fgPct": 0.47,
-      "threePct": 0.341,
-      "threePA": 2.5,
-      "ftPct": 0.748,
-      "tsPct": 0.558
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "anderky01-2021-2022",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2020-22",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 8.2,
-    "box": {
-      "ppg": 10,
-      "rpg": 5.5,
-      "apg": 3.1,
-      "spg": 1.2,
-      "bpg": 0.7,
-      "fgPct": 0.459,
-      "threePct": 0.351,
-      "threePA": 2.7,
-      "ftPct": 0.73,
-      "tsPct": 0.548
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "anderky01-2022-2023",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2021-23",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 7,
-    "box": {
-      "ppg": 8.5,
-      "rpg": 5.3,
-      "apg": 3.8,
-      "spg": 1.1,
-      "bpg": 0.8,
-      "fgPct": 0.478,
-      "threePct": 0.369,
-      "threePA": 1.6,
-      "ftPct": 0.693,
-      "tsPct": 0.547
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "anderky01-2023-2024",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2022-24",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 6.3,
-    "box": {
-      "ppg": 7.8,
-      "rpg": 4.3,
-      "apg": 4.5,
-      "spg": 1,
-      "bpg": 0.7,
-      "fgPct": 0.486,
-      "threePct": 0.353,
-      "threePA": 1,
-      "ftPct": 0.722,
-      "tsPct": 0.548
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "anderky01-2024-2025",
-    "playerName": "Kyle Anderson",
-    "spanLabel": "2023-25",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 5.3,
-    "box": {
-      "ppg": 6.2,
-      "rpg": 3.4,
-      "apg": 3.4,
-      "spg": 0.8,
-      "bpg": 0.6,
-      "fgPct": 0.463,
-      "threePct": 0.305,
-      "threePA": 0.8,
-      "ftPct": 0.718,
-      "tsPct": 0.522
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
     "id": "anderni01-1990-1991",
     "playerName": "Nick Anderson",
     "spanLabel": "1989-91",
@@ -9088,6 +8866,294 @@
     },
     "offensiveArchetype": "Versatile Big",
     "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "barneha02-2013-2014",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2012-14",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 8.2,
+    "box": {
+      "ppg": 9.3,
+      "rpg": 4.1,
+      "apg": 1.3,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.419,
+      "threePct": 0.352,
+      "threePA": 2.1,
+      "ftPct": 0.739,
+      "tsPct": 0.504
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2014-2015",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2013-15",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 8.3,
+    "box": {
+      "ppg": 9.8,
+      "rpg": 4.8,
+      "apg": 1.5,
+      "spg": 0.8,
+      "bpg": 0.2,
+      "fgPct": 0.44,
+      "threePct": 0.378,
+      "threePA": 2.5,
+      "ftPct": 0.719,
+      "tsPct": 0.532
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "barneha02-2015-2016",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2014-16",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 8.7,
+    "box": {
+      "ppg": 10.8,
+      "rpg": 5.3,
+      "apg": 1.6,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.474,
+      "threePct": 0.394,
+      "threePA": 2.9,
+      "ftPct": 0.739,
+      "tsPct": 0.566
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2016-2017",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2015-17",
+    "primaryPosition": "PF",
+    "secondaryPositions": [
+      "SF"
+    ],
+    "fga": 13.2,
+    "box": {
+      "ppg": 15.8,
+      "rpg": 5,
+      "apg": 1.6,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.467,
+      "threePct": 0.367,
+      "threePA": 3,
+      "ftPct": 0.829,
+      "tsPct": 0.546
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2017-2018",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2016-18",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 15.9,
+    "box": {
+      "ppg": 19,
+      "rpg": 5.5,
+      "apg": 1.7,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.457,
+      "threePct": 0.355,
+      "threePA": 3.6,
+      "ftPct": 0.843,
+      "tsPct": 0.541
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2018-2019",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2017-19",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 14.5,
+    "box": {
+      "ppg": 17.6,
+      "rpg": 5.4,
+      "apg": 1.7,
+      "spg": 0.6,
+      "bpg": 0.2,
+      "fgPct": 0.433,
+      "threePct": 0.379,
+      "threePA": 5,
+      "ftPct": 0.826,
+      "tsPct": 0.544
+    },
+    "offensiveArchetype": "Stretch Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2019-2020",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2018-20",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 12.2,
+    "box": {
+      "ppg": 15.5,
+      "rpg": 4.8,
+      "apg": 1.8,
+      "spg": 0.6,
+      "bpg": 0.2,
+      "fgPct": 0.437,
+      "threePct": 0.389,
+      "threePA": 4.8,
+      "ftPct": 0.813,
+      "tsPct": 0.561
+    },
+    "offensiveArchetype": "Stretch Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2020-2021",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2019-21",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 11,
+    "box": {
+      "ppg": 15.2,
+      "rpg": 5.7,
+      "apg": 2.8,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.477,
+      "threePct": 0.385,
+      "threePA": 4,
+      "ftPct": 0.815,
+      "tsPct": 0.598
+    },
+    "offensiveArchetype": "Stretch Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2021-2022",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2020-22",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 10.9,
+    "box": {
+      "ppg": 16.3,
+      "rpg": 6.1,
+      "apg": 2.9,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.481,
+      "threePct": 0.393,
+      "threePA": 4.6,
+      "ftPct": 0.827,
+      "tsPct": 0.626
+    },
+    "offensiveArchetype": "Stretch Big",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "barneha02-2022-2023",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2021-23",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 10.2,
+    "box": {
+      "ppg": 15.7,
+      "rpg": 5,
+      "apg": 2,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.471,
+      "threePct": 0.384,
+      "threePA": 4.5,
+      "ftPct": 0.837,
+      "tsPct": 0.629
+    },
+    "offensiveArchetype": "Stretch Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2023-2024",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2022-24",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 9.3,
+    "box": {
+      "ppg": 13.6,
+      "rpg": 3.8,
+      "apg": 1.4,
+      "spg": 0.7,
+      "bpg": 0.1,
+      "fgPct": 0.473,
+      "threePct": 0.381,
+      "threePA": 4.5,
+      "ftPct": 0.833,
+      "tsPct": 0.622
+    },
+    "offensiveArchetype": "Stretch Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2024-2025",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2023-25",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 8.6,
+    "box": {
+      "ppg": 12.3,
+      "rpg": 3.4,
+      "apg": 1.4,
+      "spg": 0.6,
+      "bpg": 0.2,
+      "fgPct": 0.49,
+      "threePct": 0.409,
+      "threePA": 4.5,
+      "ftPct": 0.805,
+      "tsPct": 0.637
+    },
+    "offensiveArchetype": "Stretch Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "barneha02-2025-2026",
+    "playerName": "Harrison Barnes",
+    "spanLabel": "2024-26",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 7.9,
+    "box": {
+      "ppg": 11.2,
+      "rpg": 3.3,
+      "apg": 1.8,
+      "spg": 0.6,
+      "bpg": 0.2,
+      "fgPct": 0.484,
+      "threePct": 0.411,
+      "threePA": 4.5,
+      "ftPct": 0.817,
+      "tsPct": 0.637
+    },
+    "offensiveArchetype": "Stretch Big",
+    "defensiveRole": "Low Activity"
   },
   {
     "id": "barnesc01-2022-2023",
@@ -19076,72 +19142,6 @@
     "defensiveRole": "Mobile Big"
   },
   {
-    "id": "clarkia01-2016-2017",
-    "playerName": "Ian Clark",
-    "spanLabel": "2015-17",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 4.4,
-    "box": {
-      "ppg": 5.3,
-      "rpg": 1.3,
-      "apg": 1.1,
-      "spg": 0.4,
-      "bpg": 0.1,
-      "fgPct": 0.472,
-      "threePct": 0.368,
-      "threePA": 1.7,
-      "ftPct": 0.783,
-      "tsPct": 0.566
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "clarkia01-2017-2018",
-    "playerName": "Ian Clark",
-    "spanLabel": "2016-18",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 6.1,
-    "box": {
-      "ppg": 7.1,
-      "rpg": 1.6,
-      "apg": 1.3,
-      "spg": 0.5,
-      "bpg": 0.1,
-      "fgPct": 0.467,
-      "threePct": 0.344,
-      "threePA": 2.4,
-      "ftPct": 0.761,
-      "tsPct": 0.551
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "clarkia01-2018-2019",
-    "playerName": "Ian Clark",
-    "spanLabel": "2017-19",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 6.6,
-    "box": {
-      "ppg": 7.1,
-      "rpg": 1.6,
-      "apg": 1.5,
-      "spg": 0.4,
-      "bpg": 0.1,
-      "fgPct": 0.425,
-      "threePct": 0.322,
-      "threePA": 3,
-      "ftPct": 0.812,
-      "tsPct": 0.513
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Low Activity"
-  },
-  {
     "id": "claxtni01-2022-2023",
     "playerName": "Nic Claxton",
     "spanLabel": "2021-23",
@@ -21718,206 +21718,6 @@
     "defensiveRole": "Low Activity"
   },
   {
-    "id": "crowdja01-2013-2014",
-    "playerName": "Jae Crowder",
-    "spanLabel": "2012-14",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 4.3,
-    "box": {
-      "ppg": 4.8,
-      "rpg": 2.4,
-      "apg": 1,
-      "spg": 0.8,
-      "bpg": 0.2,
-      "fgPct": 0.409,
-      "threePct": 0.329,
-      "threePA": 2.2,
-      "ftPct": 0.694,
-      "tsPct": 0.513
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "crowdja01-2014-2015",
-    "playerName": "Jae Crowder",
-    "spanLabel": "2013-15",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 5.3,
-    "box": {
-      "ppg": 6.2,
-      "rpg": 3,
-      "apg": 1,
-      "spg": 0.8,
-      "bpg": 0.3,
-      "fgPct": 0.427,
-      "threePct": 0.309,
-      "threePA": 2.2,
-      "ftPct": 0.767,
-      "tsPct": 0.529
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "crowdja01-2015-2016",
-    "playerName": "Jae Crowder",
-    "spanLabel": "2014-16",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 8.8,
-    "box": {
-      "ppg": 10.7,
-      "rpg": 4.3,
-      "apg": 1.5,
-      "spg": 1.3,
-      "bpg": 0.4,
-      "fgPct": 0.434,
-      "threePct": 0.32,
-      "threePA": 3.7,
-      "ftPct": 0.803,
-      "tsPct": 0.542
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "crowdja01-2016-2017",
-    "playerName": "Jae Crowder",
-    "spanLabel": "2015-17",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 10.6,
-    "box": {
-      "ppg": 14,
-      "rpg": 5.4,
-      "apg": 2,
-      "spg": 1.4,
-      "bpg": 0.4,
-      "fgPct": 0.452,
-      "threePct": 0.369,
-      "threePA": 5.2,
-      "ftPct": 0.816,
-      "tsPct": 0.584
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "crowdja01-2017-2018",
-    "playerName": "Jae Crowder",
-    "spanLabel": "2016-18",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 9.2,
-    "box": {
-      "ppg": 11.7,
-      "rpg": 4.5,
-      "apg": 1.7,
-      "spg": 0.9,
-      "bpg": 0.3,
-      "fgPct": 0.434,
-      "threePct": 0.363,
-      "threePA": 4.8,
-      "ftPct": 0.814,
-      "tsPct": 0.57
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "crowdja01-2018-2019",
-    "playerName": "Jae Crowder",
-    "spanLabel": "2017-19",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 9.2,
-    "box": {
-      "ppg": 10.8,
-      "rpg": 4.1,
-      "apg": 1.5,
-      "spg": 0.8,
-      "bpg": 0.3,
-      "fgPct": 0.401,
-      "threePct": 0.328,
-      "threePA": 5.4,
-      "ftPct": 0.762,
-      "tsPct": 0.532
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "crowdja01-2019-2020",
-    "playerName": "Jae Crowder",
-    "spanLabel": "2018-20",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 9.4,
-    "box": {
-      "ppg": 11.3,
-      "rpg": 5.3,
-      "apg": 2,
-      "spg": 0.9,
-      "bpg": 0.4,
-      "fgPct": 0.4,
-      "threePct": 0.336,
-      "threePA": 6.3,
-      "ftPct": 0.742,
-      "tsPct": 0.544
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "crowdja01-2020-2021",
-    "playerName": "Jae Crowder",
-    "spanLabel": "2019-21",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "PF"
-    ],
-    "fga": 8.4,
-    "box": {
-      "ppg": 10.3,
-      "rpg": 5.3,
-      "apg": 2.3,
-      "spg": 1,
-      "bpg": 0.4,
-      "fgPct": 0.403,
-      "threePct": 0.366,
-      "threePA": 6.2,
-      "ftPct": 0.77,
-      "tsPct": 0.566
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "crowdja01-2021-2022",
-    "playerName": "Jae Crowder",
-    "spanLabel": "2020-22",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 8.2,
-    "box": {
-      "ppg": 9.7,
-      "rpg": 5,
-      "apg": 2,
-      "spg": 1.1,
-      "bpg": 0.4,
-      "fgPct": 0.402,
-      "threePct": 0.369,
-      "threePA": 5.9,
-      "ftPct": 0.776,
-      "tsPct": 0.553
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
     "id": "cummite01-1983-1984",
     "playerName": "Terry Cummings",
     "spanLabel": "1982-84",
@@ -22922,259 +22722,135 @@
     "defensiveRole": "Low Activity"
   },
   {
-    "id": "daniean01-1998-1999",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "1997-99",
-    "primaryPosition": "SG",
-    "secondaryPositions": [
-      "PG"
-    ],
-    "fga": 6,
-    "box": {
-      "ppg": 6.6,
-      "rpg": 1.6,
-      "apg": 3.6,
-      "spg": 0.7,
-      "bpg": 0.1,
-      "fgPct": 0.425,
-      "threePct": 0.232,
-      "threePA": 0.6,
-      "ftPct": 0.685,
-      "tsPct": 0.481
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "daniean01-1999-2000",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "1998-00",
-    "primaryPosition": "SG",
-    "secondaryPositions": [
-      "PG"
-    ],
-    "fga": 4.6,
-    "box": {
-      "ppg": 5.6,
-      "rpg": 1.2,
-      "apg": 2.5,
-      "spg": 0.7,
-      "bpg": 0.1,
-      "fgPct": 0.467,
-      "threePct": 0.325,
-      "threePA": 0.7,
-      "ftPct": 0.729,
-      "tsPct": 0.535
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "daniean01-2000-2001",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "1999-01",
+    "id": "curryse01-2016-2017",
+    "playerName": "Seth Curry",
+    "spanLabel": "2015-17",
     "primaryPosition": "PG",
-    "secondaryPositions": [
-      "SG"
-    ],
-    "fga": 6.3,
+    "secondaryPositions": [],
+    "fga": 8.1,
     "box": {
-      "ppg": 7.9,
-      "rpg": 1.7,
-      "apg": 3.3,
-      "spg": 0.8,
+      "ppg": 10.5,
+      "rpg": 2.1,
+      "apg": 2.2,
+      "spg": 0.9,
       "bpg": 0.1,
-      "fgPct": 0.47,
-      "threePct": 0.386,
-      "threePA": 1.7,
-      "ftPct": 0.751,
-      "tsPct": 0.559
+      "fgPct": 0.475,
+      "threePct": 0.432,
+      "threePA": 3.8,
+      "ftPct": 0.844,
+      "tsPct": 0.604
     },
-    "offensiveArchetype": "Athletic Finisher",
+    "offensiveArchetype": "Off Screen Shooter",
     "defensiveRole": "Helper"
   },
   {
-    "id": "daniean01-2001-2002",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "2000-02",
-    "primaryPosition": "SG",
-    "secondaryPositions": [
-      "PG"
-    ],
-    "fga": 7.5,
-    "box": {
-      "ppg": 9.3,
-      "rpg": 2.1,
-      "apg": 3.3,
-      "spg": 0.7,
-      "bpg": 0.2,
-      "fgPct": 0.453,
-      "threePct": 0.346,
-      "threePA": 2.4,
-      "ftPct": 0.762,
-      "tsPct": 0.547
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "daniean01-2002-2003",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "2001-03",
+    "id": "curryse01-2019-2020",
+    "playerName": "Seth Curry",
+    "spanLabel": "2018-20",
     "primaryPosition": "SG",
     "secondaryPositions": [],
-    "fga": 5.4,
+    "fga": 7.5,
     "box": {
-      "ppg": 6.7,
-      "rpg": 1.7,
-      "apg": 2.1,
+      "ppg": 10,
+      "rpg": 1.9,
+      "apg": 1.4,
       "spg": 0.5,
-      "bpg": 0.1,
-      "fgPct": 0.442,
-      "threePct": 0.294,
-      "threePA": 1.7,
-      "ftPct": 0.78,
-      "tsPct": 0.536
+      "bpg": 0.2,
+      "fgPct": 0.477,
+      "threePct": 0.451,
+      "threePA": 4.1,
+      "ftPct": 0.832,
+      "tsPct": 0.627
     },
-    "offensiveArchetype": "Athletic Finisher",
+    "offensiveArchetype": "Off Screen Shooter",
     "defensiveRole": "Low Activity"
   },
   {
-    "id": "daniean01-2003-2004",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "2002-04",
-    "primaryPosition": "PG",
-    "secondaryPositions": [
-      "SG"
-    ],
-    "fga": 4.2,
+    "id": "curryse01-2020-2021",
+    "playerName": "Seth Curry",
+    "spanLabel": "2019-21",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 9.3,
+    "box": {
+      "ppg": 12.4,
+      "rpg": 2.3,
+      "apg": 2.3,
+      "spg": 0.7,
+      "bpg": 0.1,
+      "fgPct": 0.481,
+      "threePct": 0.451,
+      "threePA": 5,
+      "ftPct": 0.856,
+      "tsPct": 0.624
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "curryse01-2021-2022",
+    "playerName": "Seth Curry",
+    "spanLabel": "2020-22",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 10.7,
+    "box": {
+      "ppg": 13.8,
+      "rpg": 2.8,
+      "apg": 3.2,
+      "spg": 0.8,
+      "bpg": 0.2,
+      "fgPct": 0.479,
+      "threePct": 0.434,
+      "threePA": 5.4,
+      "ftPct": 0.883,
+      "tsPct": 0.609
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "curryse01-2022-2023",
+    "playerName": "Seth Curry",
+    "spanLabel": "2021-23",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 9.5,
+    "box": {
+      "ppg": 12.2,
+      "rpg": 2.4,
+      "apg": 2.6,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.478,
+      "threePct": 0.416,
+      "threePA": 4.8,
+      "ftPct": 0.893,
+      "tsPct": 0.609
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "curryse01-2024-2025",
+    "playerName": "Seth Curry",
+    "spanLabel": "2023-25",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 4.9,
     "box": {
       "ppg": 6,
       "rpg": 1.6,
-      "apg": 2.8,
-      "spg": 0.6,
+      "apg": 0.9,
+      "spg": 0.4,
       "bpg": 0.1,
-      "fgPct": 0.464,
-      "threePct": 0.343,
-      "threePA": 1.3,
-      "ftPct": 0.846,
-      "tsPct": 0.597
+      "fgPct": 0.446,
+      "threePct": 0.417,
+      "threePA": 2.6,
+      "ftPct": 0.871,
+      "tsPct": 0.58
     },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "daniean01-2004-2005",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "2003-05",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 7,
-    "box": {
-      "ppg": 9.7,
-      "rpg": 2.1,
-      "apg": 4.2,
-      "spg": 0.7,
-      "bpg": 0.1,
-      "fgPct": 0.451,
-      "threePct": 0.324,
-      "threePA": 1.9,
-      "ftPct": 0.826,
-      "tsPct": 0.573
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "daniean01-2005-2006",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "2004-06",
-    "primaryPosition": "SG",
-    "secondaryPositions": [
-      "PG"
-    ],
-    "fga": 7.6,
-    "box": {
-      "ppg": 10.4,
-      "rpg": 2.2,
-      "apg": 3.8,
-      "spg": 0.7,
-      "bpg": 0.1,
-      "fgPct": 0.429,
-      "threePct": 0.271,
-      "threePA": 1.7,
-      "ftPct": 0.831,
-      "tsPct": 0.552
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "daniean01-2006-2007",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "2005-07",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 5.9,
-    "box": {
-      "ppg": 8.4,
-      "rpg": 2,
-      "apg": 3.6,
-      "spg": 0.6,
-      "bpg": 0.1,
-      "fgPct": 0.428,
-      "threePct": 0.256,
-      "threePA": 1,
-      "ftPct": 0.84,
-      "tsPct": 0.559
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "daniean01-2007-2008",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "2006-08",
-    "primaryPosition": "SG",
-    "secondaryPositions": [
-      "PG"
-    ],
-    "fga": 5.5,
-    "box": {
-      "ppg": 7.7,
-      "rpg": 2.3,
-      "apg": 4.2,
-      "spg": 0.7,
-      "bpg": 0.1,
-      "fgPct": 0.451,
-      "threePct": 0.263,
-      "threePA": 0.9,
-      "ftPct": 0.806,
-      "tsPct": 0.561
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "daniean01-2008-2009",
-    "playerName": "Antonio Daniels",
-    "spanLabel": "2007-09",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 4.7,
-    "box": {
-      "ppg": 6.2,
-      "rpg": 1.9,
-      "apg": 3.6,
-      "spg": 0.7,
-      "bpg": 0,
-      "fgPct": 0.445,
-      "threePct": 0.291,
-      "threePA": 0.9,
-      "ftPct": 0.784,
-      "tsPct": 0.547
-    },
-    "offensiveArchetype": "Athletic Finisher",
+    "offensiveArchetype": "Off Screen Shooter",
     "defensiveRole": "Low Activity"
   },
   {
@@ -23792,6 +23468,248 @@
     },
     "offensiveArchetype": "Secondary Ball Handler",
     "defensiveRole": "Chaser"
+  },
+  {
+    "id": "davisbr01-1981-1982",
+    "playerName": "Brad Davis",
+    "spanLabel": "1980-82",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 8.6,
+    "box": {
+      "ppg": 11.7,
+      "rpg": 2.7,
+      "apg": 6.5,
+      "spg": 0.9,
+      "bpg": 0.1,
+      "fgPct": 0.531,
+      "threePct": 0.258,
+      "threePA": 0.5,
+      "ftPct": 0.802,
+      "tsPct": 0.586
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "davisbr01-1982-1983",
+    "playerName": "Brad Davis",
+    "spanLabel": "1981-83",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 8.7,
+    "box": {
+      "ppg": 11.9,
+      "rpg": 2.6,
+      "apg": 6.7,
+      "spg": 1,
+      "bpg": 0.1,
+      "fgPct": 0.54,
+      "threePct": 0.272,
+      "threePA": 0.6,
+      "ftPct": 0.824,
+      "tsPct": 0.599
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "davisbr01-1983-1984",
+    "playerName": "Brad Davis",
+    "spanLabel": "1982-84",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 8,
+    "box": {
+      "ppg": 11.3,
+      "rpg": 2.4,
+      "apg": 7,
+      "spg": 1.1,
+      "bpg": 0.2,
+      "fgPct": 0.55,
+      "threePct": 0.222,
+      "threePA": 0.5,
+      "ftPct": 0.841,
+      "tsPct": 0.61
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "davisbr01-1984-1985",
+    "playerName": "Brad Davis",
+    "spanLabel": "1983-85",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 7.8,
+    "box": {
+      "ppg": 10.6,
+      "rpg": 2.3,
+      "apg": 7,
+      "spg": 1.1,
+      "bpg": 0.1,
+      "fgPct": 0.518,
+      "threePct": 0.353,
+      "threePA": 0.9,
+      "ftPct": 0.858,
+      "tsPct": 0.594
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "davisbr01-1985-1986",
+    "playerName": "Brad Davis",
+    "spanLabel": "1984-86",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 6.8,
+    "box": {
+      "ppg": 9.7,
+      "rpg": 2.1,
+      "apg": 6.4,
+      "spg": 0.9,
+      "bpg": 0.2,
+      "fgPct": 0.517,
+      "threePct": 0.387,
+      "threePA": 1.2,
+      "ftPct": 0.877,
+      "tsPct": 0.615
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "davisbr01-1986-1987",
+    "playerName": "Brad Davis",
+    "spanLabel": "1985-87",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 5.7,
+    "box": {
+      "ppg": 8.2,
+      "rpg": 1.6,
+      "apg": 5.1,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.497,
+      "threePct": 0.328,
+      "threePA": 1.2,
+      "ftPct": 0.865,
+      "tsPct": 0.606
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "davisbr01-1987-1988",
+    "playerName": "Brad Davis",
+    "spanLabel": "1986-88",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 5.4,
+    "box": {
+      "ppg": 7.1,
+      "rpg": 1.4,
+      "apg": 4.3,
+      "spg": 0.7,
+      "bpg": 0.2,
+      "fgPct": 0.478,
+      "threePct": 0.344,
+      "threePA": 1.1,
+      "ftPct": 0.853,
+      "tsPct": 0.574
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "davisbr01-1988-1989",
+    "playerName": "Brad Davis",
+    "spanLabel": "1987-89",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 5.2,
+    "box": {
+      "ppg": 6.8,
+      "rpg": 1.4,
+      "apg": 3.6,
+      "spg": 0.6,
+      "bpg": 0.2,
+      "fgPct": 0.492,
+      "threePct": 0.352,
+      "threePA": 1.2,
+      "ftPct": 0.823,
+      "tsPct": 0.58
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "davisbr01-1989-1990",
+    "playerName": "Brad Davis",
+    "spanLabel": "1988-90",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 4.9,
+    "box": {
+      "ppg": 6.4,
+      "rpg": 1.3,
+      "apg": 3.2,
+      "spg": 0.6,
+      "bpg": 0.2,
+      "fgPct": 0.487,
+      "threePct": 0.325,
+      "threePA": 1.4,
+      "ftPct": 0.789,
+      "tsPct": 0.577
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "davisbr01-1990-1991",
+    "playerName": "Brad Davis",
+    "spanLabel": "1989-91",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 4.8,
+    "box": {
+      "ppg": 5.9,
+      "rpg": 1.4,
+      "apg": 3.1,
+      "spg": 0.6,
+      "bpg": 0.2,
+      "fgPct": 0.458,
+      "threePct": 0.302,
+      "threePA": 1.2,
+      "ftPct": 0.771,
+      "tsPct": 0.544
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "davisbr01-1991-1992",
+    "playerName": "Brad Davis",
+    "spanLabel": "1990-92",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 4.1,
+    "box": {
+      "ppg": 4.6,
+      "rpg": 1.3,
+      "apg": 2.6,
+      "spg": 0.5,
+      "bpg": 0.2,
+      "fgPct": 0.429,
+      "threePct": 0.262,
+      "threePA": 0.9,
+      "ftPct": 0.767,
+      "tsPct": 0.498
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
   },
   {
     "id": "davisda01-1992-1993",
@@ -24721,116 +24639,6 @@
       "tsPct": 0.631
     },
     "offensiveArchetype": "Roll & Cut Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "dedmode01-2015-2016",
-    "playerName": "Dewayne Dedmon",
-    "spanLabel": "2014-16",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 2.9,
-    "box": {
-      "ppg": 4,
-      "rpg": 4.5,
-      "apg": 0.2,
-      "spg": 0.3,
-      "bpg": 0.8,
-      "fgPct": 0.56,
-      "threePct": 0,
-      "threePA": 0,
-      "ftPct": 0.65,
-      "tsPct": 0.584
-    },
-    "offensiveArchetype": "Roll & Cut Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "dedmode01-2016-2017",
-    "playerName": "Dewayne Dedmon",
-    "spanLabel": "2015-17",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 3.3,
-    "box": {
-      "ppg": 4.8,
-      "rpg": 5.4,
-      "apg": 0.4,
-      "spg": 0.4,
-      "bpg": 0.8,
-      "fgPct": 0.596,
-      "threePct": 0,
-      "threePA": 0,
-      "ftPct": 0.722,
-      "tsPct": 0.623
-    },
-    "offensiveArchetype": "Roll & Cut Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "dedmode01-2017-2018",
-    "playerName": "Dewayne Dedmon",
-    "spanLabel": "2016-18",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 5.3,
-    "box": {
-      "ppg": 7.3,
-      "rpg": 7.1,
-      "apg": 1,
-      "spg": 0.6,
-      "bpg": 0.8,
-      "fgPct": 0.558,
-      "threePct": 0.355,
-      "threePA": 1,
-      "ftPct": 0.737,
-      "tsPct": 0.622
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "dedmode01-2018-2019",
-    "playerName": "Dewayne Dedmon",
-    "spanLabel": "2017-19",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 8,
-    "box": {
-      "ppg": 10.4,
-      "rpg": 7.7,
-      "apg": 1.4,
-      "spg": 0.9,
-      "bpg": 1,
-      "fgPct": 0.507,
-      "threePct": 0.372,
-      "threePA": 2.8,
-      "ftPct": 0.799,
-      "tsPct": 0.598
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "dedmode01-2019-2020",
-    "playerName": "Dewayne Dedmon",
-    "spanLabel": "2018-20",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 7.2,
-    "box": {
-      "ppg": 8.8,
-      "rpg": 6.8,
-      "apg": 1,
-      "spg": 0.9,
-      "bpg": 1,
-      "fgPct": 0.462,
-      "threePct": 0.324,
-      "threePA": 3,
-      "ftPct": 0.819,
-      "tsPct": 0.564
-    },
-    "offensiveArchetype": "Stretch Big",
     "defensiveRole": "Mobile Big"
   },
   {
@@ -26610,6 +26418,94 @@
     },
     "offensiveArchetype": "Roll & Cut Big",
     "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "dosunay01-2022-2023",
+    "playerName": "Ayo Dosunmu",
+    "spanLabel": "2021-23",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 7,
+    "box": {
+      "ppg": 8.7,
+      "rpg": 2.8,
+      "apg": 2.9,
+      "spg": 0.8,
+      "bpg": 0.4,
+      "fgPct": 0.506,
+      "threePct": 0.344,
+      "threePA": 2.4,
+      "ftPct": 0.744,
+      "tsPct": 0.584
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "dosunay01-2023-2024",
+    "playerName": "Ayo Dosunmu",
+    "spanLabel": "2022-24",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 8.3,
+    "box": {
+      "ppg": 10.3,
+      "rpg": 2.8,
+      "apg": 2.9,
+      "spg": 0.8,
+      "bpg": 0.4,
+      "fgPct": 0.497,
+      "threePct": 0.368,
+      "threePA": 3.1,
+      "ftPct": 0.807,
+      "tsPct": 0.583
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "dosunay01-2024-2025",
+    "playerName": "Ayo Dosunmu",
+    "spanLabel": "2023-25",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 9.6,
+    "box": {
+      "ppg": 12.2,
+      "rpg": 3.1,
+      "apg": 3.7,
+      "spg": 0.9,
+      "bpg": 0.4,
+      "fgPct": 0.497,
+      "threePct": 0.374,
+      "threePA": 4,
+      "ftPct": 0.799,
+      "tsPct": 0.594
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "dosunay01-2025-2026",
+    "playerName": "Ayo Dosunmu",
+    "spanLabel": "2024-26",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 10.4,
+    "box": {
+      "ppg": 13.8,
+      "rpg": 3.5,
+      "apg": 4,
+      "spg": 0.9,
+      "bpg": 0.3,
+      "fgPct": 0.508,
+      "threePct": 0.394,
+      "threePA": 4.1,
+      "ftPct": 0.844,
+      "tsPct": 0.613
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Helper"
   },
   {
     "id": "dragigo01-2009-2010",
@@ -29652,6 +29548,146 @@
     "defensiveRole": "Chaser"
   },
   {
+    "id": "ellisla01-1993-1994",
+    "playerName": "LaPhonso Ellis",
+    "spanLabel": "1992-94",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 11.9,
+    "box": {
+      "ppg": 15,
+      "rpg": 8.9,
+      "apg": 2,
+      "spg": 0.8,
+      "bpg": 1.2,
+      "fgPct": 0.503,
+      "threePct": 0.25,
+      "threePA": 0.2,
+      "ftPct": 0.709,
+      "tsPct": 0.546
+    },
+    "offensiveArchetype": "Post Scorer",
+    "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "ellisla01-1997-1998",
+    "playerName": "LaPhonso Ellis",
+    "spanLabel": "1996-98",
+    "primaryPosition": "SF",
+    "secondaryPositions": [
+      "PF"
+    ],
+    "fga": 15.4,
+    "box": {
+      "ppg": 17.5,
+      "rpg": 7.1,
+      "apg": 2.6,
+      "spg": 0.8,
+      "bpg": 0.7,
+      "fgPct": 0.423,
+      "threePct": 0.33,
+      "threePA": 3.5,
+      "ftPct": 0.788,
+      "tsPct": 0.509
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "ellisla01-1998-1999",
+    "playerName": "LaPhonso Ellis",
+    "spanLabel": "1997-99",
+    "primaryPosition": "SF",
+    "secondaryPositions": [
+      "PF"
+    ],
+    "fga": 12.5,
+    "box": {
+      "ppg": 13.4,
+      "rpg": 6.8,
+      "apg": 2.4,
+      "spg": 0.8,
+      "bpg": 0.6,
+      "fgPct": 0.409,
+      "threePct": 0.282,
+      "threePA": 2.1,
+      "ftPct": 0.785,
+      "tsPct": 0.48
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "ellisla01-2000-2001",
+    "playerName": "LaPhonso Ellis",
+    "spanLabel": "1999-01",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 7.9,
+    "box": {
+      "ppg": 9,
+      "rpg": 5.6,
+      "apg": 1.1,
+      "spg": 0.7,
+      "bpg": 0.7,
+      "fgPct": 0.458,
+      "threePct": 0.233,
+      "threePA": 0.3,
+      "ftPct": 0.761,
+      "tsPct": 0.507
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "ellisla01-2001-2002",
+    "playerName": "LaPhonso Ellis",
+    "spanLabel": "2000-02",
+    "primaryPosition": "PF",
+    "secondaryPositions": [
+      "SF"
+    ],
+    "fga": 7.4,
+    "box": {
+      "ppg": 8.4,
+      "rpg": 5.3,
+      "apg": 1,
+      "spg": 0.7,
+      "bpg": 0.8,
+      "fgPct": 0.445,
+      "threePct": 0.308,
+      "threePA": 1,
+      "ftPct": 0.745,
+      "tsPct": 0.507
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "ellisla01-2002-2003",
+    "playerName": "LaPhonso Ellis",
+    "spanLabel": "2001-03",
+    "primaryPosition": "SF",
+    "secondaryPositions": [
+      "PF"
+    ],
+    "fga": 5.9,
+    "box": {
+      "ppg": 6.2,
+      "rpg": 3.7,
+      "apg": 0.6,
+      "spg": 0.4,
+      "bpg": 0.4,
+      "fgPct": 0.405,
+      "threePct": 0.281,
+      "threePA": 1.9,
+      "ftPct": 0.687,
+      "tsPct": 0.481
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
     "id": "ellismo01-2006-2007",
     "playerName": "Monta Ellis",
     "spanLabel": "2005-07",
@@ -30642,6 +30678,116 @@
     },
     "offensiveArchetype": "Roll & Cut Big",
     "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "farieke01-2012-2013",
+    "playerName": "Kenneth Faried",
+    "spanLabel": "2011-13",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 7.9,
+    "box": {
+      "ppg": 11.1,
+      "rpg": 8.6,
+      "apg": 0.9,
+      "spg": 0.9,
+      "bpg": 1,
+      "fgPct": 0.562,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.633,
+      "tsPct": 0.59
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "farieke01-2013-2014",
+    "playerName": "Kenneth Faried",
+    "spanLabel": "2012-14",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 9.4,
+    "box": {
+      "ppg": 12.6,
+      "rpg": 8.9,
+      "apg": 1.1,
+      "spg": 0.9,
+      "bpg": 1,
+      "fgPct": 0.548,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.633,
+      "tsPct": 0.573
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "farieke01-2014-2015",
+    "playerName": "Kenneth Faried",
+    "spanLabel": "2013-15",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 10,
+    "box": {
+      "ppg": 13.2,
+      "rpg": 8.7,
+      "apg": 1.2,
+      "spg": 0.9,
+      "bpg": 0.8,
+      "fgPct": 0.527,
+      "threePct": 0.091,
+      "threePA": 0.1,
+      "ftPct": 0.669,
+      "tsPct": 0.564
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "farieke01-2015-2016",
+    "playerName": "Kenneth Faried",
+    "spanLabel": "2014-16",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 9.6,
+    "box": {
+      "ppg": 12.5,
+      "rpg": 8.8,
+      "apg": 1.2,
+      "spg": 0.7,
+      "bpg": 0.8,
+      "fgPct": 0.53,
+      "threePct": 0.2,
+      "threePA": 0.1,
+      "ftPct": 0.657,
+      "tsPct": 0.559
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "farieke01-2016-2017",
+    "playerName": "Kenneth Faried",
+    "spanLabel": "2015-17",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 8.1,
+    "box": {
+      "ppg": 11.1,
+      "rpg": 8.1,
+      "apg": 1,
+      "spg": 0.6,
+      "bpg": 0.8,
+      "fgPct": 0.554,
+      "threePct": 0.125,
+      "threePA": 0.1,
+      "ftPct": 0.65,
+      "tsPct": 0.583
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Helper"
   },
   {
     "id": "favorde01-2011-2012",
@@ -40994,206 +41140,6 @@
     "defensiveRole": "Chaser"
   },
   {
-    "id": "hawessp01-2008-2009",
-    "playerName": "Spencer Hawes",
-    "spanLabel": "2007-09",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 7.6,
-    "box": {
-      "ppg": 8.2,
-      "rpg": 5.3,
-      "apg": 1.3,
-      "spg": 0.4,
-      "bpg": 0.9,
-      "fgPct": 0.464,
-      "threePct": 0.324,
-      "threePA": 0.9,
-      "ftPct": 0.66,
-      "tsPct": 0.501
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "hawessp01-2009-2010",
-    "playerName": "Spencer Hawes",
-    "spanLabel": "2008-10",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 9.8,
-    "box": {
-      "ppg": 10.7,
-      "rpg": 6.6,
-      "apg": 2.1,
-      "spg": 0.5,
-      "bpg": 1.2,
-      "fgPct": 0.467,
-      "threePct": 0.327,
-      "threePA": 1.4,
-      "ftPct": 0.674,
-      "tsPct": 0.509
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "hawessp01-2010-2011",
-    "playerName": "Spencer Hawes",
-    "spanLabel": "2009-11",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 8.1,
-    "box": {
-      "ppg": 8.5,
-      "rpg": 5.9,
-      "apg": 1.8,
-      "spg": 0.4,
-      "bpg": 1,
-      "fgPct": 0.467,
-      "threePct": 0.282,
-      "threePA": 0.8,
-      "ftPct": 0.619,
-      "tsPct": 0.491
-    },
-    "offensiveArchetype": "Roll & Cut Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "hawessp01-2011-2012",
-    "playerName": "Spencer Hawes",
-    "spanLabel": "2010-12",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 7.5,
-    "box": {
-      "ppg": 8,
-      "rpg": 6.2,
-      "apg": 1.9,
-      "spg": 0.4,
-      "bpg": 1,
-      "fgPct": 0.474,
-      "threePct": 0.245,
-      "threePA": 0.4,
-      "ftPct": 0.608,
-      "tsPct": 0.498
-    },
-    "offensiveArchetype": "Roll & Cut Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "hawessp01-2012-2013",
-    "playerName": "Spencer Hawes",
-    "spanLabel": "2011-13",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 9.5,
-    "box": {
-      "ppg": 10.6,
-      "rpg": 7.2,
-      "apg": 2.4,
-      "spg": 0.3,
-      "bpg": 1.4,
-      "fgPct": 0.471,
-      "threePct": 0.343,
-      "threePA": 0.8,
-      "ftPct": 0.764,
-      "tsPct": 0.515
-    },
-    "offensiveArchetype": "Roll & Cut Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "hawessp01-2013-2014",
-    "playerName": "Spencer Hawes",
-    "spanLabel": "2012-14",
-    "primaryPosition": "C",
-    "secondaryPositions": [],
-    "fga": 10.5,
-    "box": {
-      "ppg": 12.1,
-      "rpg": 7.7,
-      "apg": 2.6,
-      "spg": 0.4,
-      "bpg": 1.3,
-      "fgPct": 0.46,
-      "threePct": 0.403,
-      "threePA": 2.4,
-      "ftPct": 0.78,
-      "tsPct": 0.534
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "hawessp01-2014-2015",
-    "playerName": "Spencer Hawes",
-    "spanLabel": "2013-15",
-    "primaryPosition": "C",
-    "secondaryPositions": [
-      "PF"
-    ],
-    "fga": 8.5,
-    "box": {
-      "ppg": 9.7,
-      "rpg": 6,
-      "apg": 2.1,
-      "spg": 0.4,
-      "bpg": 1,
-      "fgPct": 0.436,
-      "threePct": 0.378,
-      "threePA": 3.2,
-      "ftPct": 0.741,
-      "tsPct": 0.531
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "hawessp01-2015-2016",
-    "playerName": "Spencer Hawes",
-    "spanLabel": "2014-16",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 5.5,
-    "box": {
-      "ppg": 5.9,
-      "rpg": 3.9,
-      "apg": 1.5,
-      "spg": 0.4,
-      "bpg": 0.6,
-      "fgPct": 0.398,
-      "threePct": 0.335,
-      "threePA": 2.1,
-      "ftPct": 0.737,
-      "tsPct": 0.496
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "hawessp01-2016-2017",
-    "playerName": "Spencer Hawes",
-    "spanLabel": "2015-17",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 5.3,
-    "box": {
-      "ppg": 6.1,
-      "rpg": 3.9,
-      "apg": 1.7,
-      "spg": 0.3,
-      "bpg": 0.5,
-      "fgPct": 0.443,
-      "threePct": 0.344,
-      "threePA": 1.6,
-      "ftPct": 0.838,
-      "tsPct": 0.529
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
     "id": "hawkihe01-1989-1990",
     "playerName": "Hersey Hawkins",
     "spanLabel": "1988-90",
@@ -42434,6 +42380,52 @@
     "defensiveRole": "Helper"
   },
   {
+    "id": "highjo01-1980-1981",
+    "playerName": "Johnny High",
+    "spanLabel": "1979-81",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 5.5,
+    "box": {
+      "ppg": 6.7,
+      "rpg": 2.5,
+      "apg": 2,
+      "spg": 1.2,
+      "bpg": 0.3,
+      "fgPct": 0.434,
+      "threePct": 0.097,
+      "threePA": 0.2,
+      "ftPct": 0.686,
+      "tsPct": 0.501
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "highjo01-1983-1984",
+    "playerName": "Johnny High",
+    "spanLabel": "1982-84",
+    "primaryPosition": "SG",
+    "secondaryPositions": [
+      "PG"
+    ],
+    "fga": 2.4,
+    "box": {
+      "ppg": 2.8,
+      "rpg": 1.9,
+      "apg": 1.8,
+      "spg": 1.1,
+      "bpg": 0.4,
+      "fgPct": 0.439,
+      "threePct": 0.143,
+      "threePA": 0.1,
+      "ftPct": 0.442,
+      "tsPct": 0.458
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Chaser"
+  },
+  {
     "id": "hilarne01-2003-2004",
     "playerName": "Nenê",
     "spanLabel": "2002-04",
@@ -42682,248 +42674,6 @@
     },
     "offensiveArchetype": "Roll & Cut Big",
     "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "hillge01-2009-2010",
-    "playerName": "George Hill",
-    "spanLabel": "2008-10",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 7.2,
-    "box": {
-      "ppg": 9,
-      "rpg": 2.3,
-      "apg": 2.3,
-      "spg": 0.7,
-      "bpg": 0.3,
-      "fgPct": 0.453,
-      "threePct": 0.379,
-      "threePA": 1.7,
-      "ftPct": 0.775,
-      "tsPct": 0.543
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "hillge01-2010-2011",
-    "playerName": "George Hill",
-    "spanLabel": "2009-11",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 8.9,
-    "box": {
-      "ppg": 12,
-      "rpg": 2.6,
-      "apg": 2.7,
-      "spg": 0.9,
-      "bpg": 0.3,
-      "fgPct": 0.467,
-      "threePct": 0.388,
-      "threePA": 2.5,
-      "ftPct": 0.821,
-      "tsPct": 0.58
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "hillge01-2011-2012",
-    "playerName": "George Hill",
-    "spanLabel": "2010-12",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 8,
-    "box": {
-      "ppg": 10.8,
-      "rpg": 2.8,
-      "apg": 2.7,
-      "spg": 0.9,
-      "bpg": 0.3,
-      "fgPct": 0.449,
-      "threePct": 0.373,
-      "threePA": 2.8,
-      "ftPct": 0.837,
-      "tsPct": 0.577
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "hillge01-2012-2013",
-    "playerName": "George Hill",
-    "spanLabel": "2011-13",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 9.9,
-    "box": {
-      "ppg": 12.4,
-      "rpg": 3.5,
-      "apg": 4,
-      "spg": 1,
-      "bpg": 0.3,
-      "fgPct": 0.443,
-      "threePct": 0.368,
-      "threePA": 4,
-      "ftPct": 0.803,
-      "tsPct": 0.561
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "hillge01-2013-2014",
-    "playerName": "George Hill",
-    "spanLabel": "2012-14",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 9.8,
-    "box": {
-      "ppg": 12.2,
-      "rpg": 3.7,
-      "apg": 4.1,
-      "spg": 1,
-      "bpg": 0.3,
-      "fgPct": 0.443,
-      "threePct": 0.367,
-      "threePA": 4,
-      "ftPct": 0.812,
-      "tsPct": 0.558
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "hillge01-2014-2015",
-    "playerName": "George Hill",
-    "spanLabel": "2013-15",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 9.7,
-    "box": {
-      "ppg": 12.4,
-      "rpg": 3.9,
-      "apg": 4.1,
-      "spg": 1,
-      "bpg": 0.3,
-      "fgPct": 0.458,
-      "threePct": 0.362,
-      "threePA": 3.8,
-      "ftPct": 0.799,
-      "tsPct": 0.57
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "hillge01-2015-2016",
-    "playerName": "George Hill",
-    "spanLabel": "2014-16",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 10.9,
-    "box": {
-      "ppg": 13.6,
-      "rpg": 4.1,
-      "apg": 4.1,
-      "spg": 1.1,
-      "bpg": 0.3,
-      "fgPct": 0.456,
-      "threePct": 0.389,
-      "threePA": 4.3,
-      "ftPct": 0.775,
-      "tsPct": 0.567
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "hillge01-2016-2017",
-    "playerName": "George Hill",
-    "spanLabel": "2015-17",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 10.9,
-    "box": {
-      "ppg": 14,
-      "rpg": 3.8,
-      "apg": 3.8,
-      "spg": 1.1,
-      "bpg": 0.2,
-      "fgPct": 0.457,
-      "threePct": 0.406,
-      "threePA": 4.4,
-      "ftPct": 0.783,
-      "tsPct": 0.577
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "hillge01-2017-2018",
-    "playerName": "George Hill",
-    "spanLabel": "2016-18",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 9.6,
-    "box": {
-      "ppg": 12.9,
-      "rpg": 3,
-      "apg": 3.4,
-      "spg": 1,
-      "bpg": 0.3,
-      "fgPct": 0.469,
-      "threePct": 0.409,
-      "threePA": 3.8,
-      "ftPct": 0.795,
-      "tsPct": 0.593
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "hillge01-2018-2019",
-    "playerName": "George Hill",
-    "spanLabel": "2017-19",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 7,
-    "box": {
-      "ppg": 8.9,
-      "rpg": 2.6,
-      "apg": 2.5,
-      "spg": 0.9,
-      "bpg": 0.3,
-      "fgPct": 0.457,
-      "threePct": 0.372,
-      "threePA": 2.8,
-      "ftPct": 0.8,
-      "tsPct": 0.572
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "hillge01-2019-2020",
-    "playerName": "George Hill",
-    "spanLabel": "2018-20",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 6.3,
-    "box": {
-      "ppg": 8.5,
-      "rpg": 2.7,
-      "apg": 2.6,
-      "spg": 0.8,
-      "bpg": 0.1,
-      "fgPct": 0.484,
-      "threePct": 0.392,
-      "threePA": 2.8,
-      "ftPct": 0.833,
-      "tsPct": 0.608
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Helper"
   },
   {
     "id": "hinriki01-2004-2005",
@@ -45558,270 +45308,6 @@
     },
     "offensiveArchetype": "Secondary Ball Handler",
     "defensiveRole": "Chaser"
-  },
-  {
-    "id": "huntede01-2022-2023",
-    "playerName": "De'Andre Hunter",
-    "spanLabel": "2021-23",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 11.6,
-    "box": {
-      "ppg": 14.5,
-      "rpg": 3.8,
-      "apg": 1.4,
-      "spg": 0.6,
-      "bpg": 0.3,
-      "fgPct": 0.453,
-      "threePct": 0.362,
-      "threePA": 4,
-      "ftPct": 0.799,
-      "tsPct": 0.559
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "huntede01-2023-2024",
-    "playerName": "De'Andre Hunter",
-    "spanLabel": "2022-24",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 12,
-    "box": {
-      "ppg": 15.5,
-      "rpg": 4.1,
-      "apg": 1.5,
-      "spg": 0.6,
-      "bpg": 0.3,
-      "fgPct": 0.46,
-      "threePct": 0.368,
-      "threePA": 4.8,
-      "ftPct": 0.836,
-      "tsPct": 0.577
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "huntede01-2024-2025",
-    "playerName": "De'Andre Hunter",
-    "spanLabel": "2023-25",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 11.8,
-    "box": {
-      "ppg": 16.4,
-      "rpg": 4,
-      "apg": 1.5,
-      "spg": 0.7,
-      "bpg": 0.2,
-      "fgPct": 0.465,
-      "threePct": 0.396,
-      "threePA": 5.7,
-      "ftPct": 0.847,
-      "tsPct": 0.61
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "hunteli01-1994-1995",
-    "playerName": "Lindsey Hunter",
-    "spanLabel": "1993-95",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 9.8,
-    "box": {
-      "ppg": 9.3,
-      "rpg": 2.1,
-      "apg": 4.4,
-      "spg": 1.4,
-      "bpg": 0.1,
-      "fgPct": 0.375,
-      "threePct": 0.333,
-      "threePA": 2.5,
-      "ftPct": 0.731,
-      "tsPct": 0.443
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "hunteli01-1995-1996",
-    "playerName": "Lindsey Hunter",
-    "spanLabel": "1994-96",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 7.8,
-    "box": {
-      "ppg": 8.1,
-      "rpg": 2.2,
-      "apg": 2.8,
-      "spg": 1.1,
-      "bpg": 0.2,
-      "fgPct": 0.378,
-      "threePct": 0.385,
-      "threePA": 3.3,
-      "ftPct": 0.709,
-      "tsPct": 0.48
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "hunteli01-1996-1997",
-    "playerName": "Lindsey Hunter",
-    "spanLabel": "1995-97",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 10.3,
-    "box": {
-      "ppg": 11.4,
-      "rpg": 2.6,
-      "apg": 2.1,
-      "spg": 1.3,
-      "bpg": 0.3,
-      "fgPct": 0.395,
-      "threePct": 0.374,
-      "threePA": 4.7,
-      "ftPct": 0.749,
-      "tsPct": 0.51
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "hunteli01-1997-1998",
-    "playerName": "Lindsey Hunter",
-    "spanLabel": "1996-98",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 12.2,
-    "box": {
-      "ppg": 13.3,
-      "rpg": 3.1,
-      "apg": 2.5,
-      "spg": 1.6,
-      "bpg": 0.2,
-      "fgPct": 0.395,
-      "threePct": 0.342,
-      "threePA": 4.8,
-      "ftPct": 0.759,
-      "tsPct": 0.498
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Point of Attack"
-  },
-  {
-    "id": "hunteli01-1998-1999",
-    "playerName": "Lindsey Hunter",
-    "spanLabel": "1997-99",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 11.3,
-    "box": {
-      "ppg": 12,
-      "rpg": 3.5,
-      "apg": 3.5,
-      "spg": 1.7,
-      "bpg": 0.2,
-      "fgPct": 0.403,
-      "threePct": 0.344,
-      "threePA": 3.5,
-      "ftPct": 0.744,
-      "tsPct": 0.486
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Point of Attack"
-  },
-  {
-    "id": "hunteli01-1999-2000",
-    "playerName": "Lindsey Hunter",
-    "spanLabel": "1998-00",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 10.8,
-    "box": {
-      "ppg": 12.4,
-      "rpg": 3.2,
-      "apg": 4,
-      "spg": 1.6,
-      "bpg": 0.2,
-      "fgPct": 0.429,
-      "threePct": 0.419,
-      "threePA": 4.1,
-      "ftPct": 0.757,
-      "tsPct": 0.534
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Point of Attack"
-  },
-  {
-    "id": "hunteli01-2000-2001",
-    "playerName": "Lindsey Hunter",
-    "spanLabel": "1999-01",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 10.2,
-    "box": {
-      "ppg": 11.4,
-      "rpg": 2.6,
-      "apg": 3.3,
-      "spg": 1.4,
-      "bpg": 0.2,
-      "fgPct": 0.404,
-      "threePct": 0.402,
-      "threePA": 4.9,
-      "ftPct": 0.776,
-      "tsPct": 0.524
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "hunteli01-2001-2002",
-    "playerName": "Lindsey Hunter",
-    "spanLabel": "2000-02",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 7.8,
-    "box": {
-      "ppg": 7.9,
-      "rpg": 1.8,
-      "apg": 2.1,
-      "spg": 1,
-      "bpg": 0.2,
-      "fgPct": 0.381,
-      "threePct": 0.376,
-      "threePA": 3.8,
-      "ftPct": 0.713,
-      "tsPct": 0.484
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "hunteli01-2002-2003",
-    "playerName": "Lindsey Hunter",
-    "spanLabel": "2001-03",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 7.1,
-    "box": {
-      "ppg": 6.8,
-      "rpg": 1.6,
-      "apg": 1.8,
-      "spg": 0.9,
-      "bpg": 0.2,
-      "fgPct": 0.37,
-      "threePct": 0.359,
-      "threePA": 2.8,
-      "ftPct": 0.621,
-      "tsPct": 0.457
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
   },
   {
     "id": "ibakase01-2010-2011",
@@ -49410,184 +48896,6 @@
     "defensiveRole": "Helper"
   },
   {
-    "id": "johnsja01-2011-2012",
-    "playerName": "James Johnson",
-    "spanLabel": "2010-12",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 7.6,
-    "box": {
-      "ppg": 8.4,
-      "rpg": 4.3,
-      "apg": 2.1,
-      "spg": 1,
-      "bpg": 1.2,
-      "fgPct": 0.452,
-      "threePct": 0.287,
-      "threePA": 0.9,
-      "ftPct": 0.688,
-      "tsPct": 0.499
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "johnsja01-2012-2013",
-    "playerName": "James Johnson",
-    "spanLabel": "2011-13",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 6.9,
-    "box": {
-      "ppg": 7.3,
-      "rpg": 3.8,
-      "apg": 1.6,
-      "spg": 1,
-      "bpg": 1.2,
-      "fgPct": 0.437,
-      "threePct": 0.259,
-      "threePA": 0.7,
-      "ftPct": 0.665,
-      "tsPct": 0.481
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "johnsja01-2014-2015",
-    "playerName": "James Johnson",
-    "spanLabel": "2013-15",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 5.8,
-    "box": {
-      "ppg": 7.7,
-      "rpg": 3.5,
-      "apg": 1.7,
-      "spg": 0.8,
-      "bpg": 1,
-      "fgPct": 0.535,
-      "threePct": 0.239,
-      "threePA": 1.1,
-      "ftPct": 0.745,
-      "tsPct": 0.593
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "johnsja01-2015-2016",
-    "playerName": "James Johnson",
-    "spanLabel": "2014-16",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 5.1,
-    "box": {
-      "ppg": 6.6,
-      "rpg": 3,
-      "apg": 1.3,
-      "spg": 0.7,
-      "bpg": 0.8,
-      "fgPct": 0.547,
-      "threePct": 0.265,
-      "threePA": 0.9,
-      "ftPct": 0.624,
-      "tsPct": 0.58
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "johnsja01-2016-2017",
-    "playerName": "James Johnson",
-    "spanLabel": "2015-17",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 7.6,
-    "box": {
-      "ppg": 9.5,
-      "rpg": 3.8,
-      "apg": 2.6,
-      "spg": 0.8,
-      "bpg": 0.9,
-      "fgPct": 0.478,
-      "threePct": 0.332,
-      "threePA": 2.4,
-      "ftPct": 0.675,
-      "tsPct": 0.556
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "johnsja01-2017-2018",
-    "playerName": "James Johnson",
-    "spanLabel": "2016-18",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 9.3,
-    "box": {
-      "ppg": 11.8,
-      "rpg": 4.9,
-      "apg": 3.7,
-      "spg": 1,
-      "bpg": 0.9,
-      "fgPct": 0.49,
-      "threePct": 0.327,
-      "threePA": 3,
-      "ftPct": 0.703,
-      "tsPct": 0.567
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "johnsja01-2018-2019",
-    "playerName": "James Johnson",
-    "spanLabel": "2017-19",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 7.8,
-    "box": {
-      "ppg": 9.5,
-      "rpg": 4.2,
-      "apg": 3.2,
-      "spg": 0.8,
-      "bpg": 0.6,
-      "fgPct": 0.476,
-      "threePct": 0.32,
-      "threePA": 2.6,
-      "ftPct": 0.703,
-      "tsPct": 0.552
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "johnsja01-2021-2022",
-    "playerName": "James Johnson",
-    "spanLabel": "2020-22",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 5.6,
-    "box": {
-      "ppg": 6.3,
-      "rpg": 3.5,
-      "apg": 2,
-      "spg": 0.6,
-      "bpg": 0.7,
-      "fgPct": 0.457,
-      "threePct": 0.263,
-      "threePA": 1.8,
-      "ftPct": 0.565,
-      "tsPct": 0.516
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
     "id": "johnsjo02-2002-2003",
     "playerName": "Joe Johnson",
     "spanLabel": "2001-03",
@@ -50678,6 +49986,160 @@
     "defensiveRole": "Mobile Big"
   },
   {
+    "id": "johnsst03-1982-1983",
+    "playerName": "Steve Johnson",
+    "spanLabel": "1981-83",
+    "primaryPosition": "C",
+    "secondaryPositions": [],
+    "fga": 7.9,
+    "box": {
+      "ppg": 12.3,
+      "rpg": 5.5,
+      "apg": 1.2,
+      "spg": 0.5,
+      "bpg": 1.1,
+      "fgPct": 0.618,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.609,
+      "tsPct": 0.632
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "johnsst03-1983-1984",
+    "playerName": "Steve Johnson",
+    "spanLabel": "1982-84",
+    "primaryPosition": "C",
+    "secondaryPositions": [],
+    "fga": 7.1,
+    "box": {
+      "ppg": 10.6,
+      "rpg": 5.1,
+      "apg": 1.1,
+      "spg": 0.5,
+      "bpg": 1,
+      "fgPct": 0.593,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.574,
+      "tsPct": 0.604
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "johnsst03-1984-1985",
+    "playerName": "Steve Johnson",
+    "spanLabel": "1983-85",
+    "primaryPosition": "C",
+    "secondaryPositions": [],
+    "fga": 6.8,
+    "box": {
+      "ppg": 9.8,
+      "rpg": 5.5,
+      "apg": 0.9,
+      "spg": 0.5,
+      "bpg": 0.8,
+      "fgPct": 0.552,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.642,
+      "tsPct": 0.588
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "johnsst03-1985-1986",
+    "playerName": "Steve Johnson",
+    "spanLabel": "1984-86",
+    "primaryPosition": "C",
+    "secondaryPositions": [],
+    "fga": 7.5,
+    "box": {
+      "ppg": 11.9,
+      "rpg": 6.2,
+      "apg": 1.1,
+      "spg": 0.6,
+      "bpg": 0.9,
+      "fgPct": 0.59,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.704,
+      "tsPct": 0.633
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "johnsst03-1986-1987",
+    "playerName": "Steve Johnson",
+    "spanLabel": "1985-87",
+    "primaryPosition": "C",
+    "secondaryPositions": [],
+    "fga": 9.7,
+    "box": {
+      "ppg": 15.4,
+      "rpg": 6.9,
+      "apg": 1.7,
+      "spg": 0.6,
+      "bpg": 0.9,
+      "fgPct": 0.585,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.696,
+      "tsPct": 0.63
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "johnsst03-1987-1988",
+    "playerName": "Steve Johnson",
+    "spanLabel": "1986-88",
+    "primaryPosition": "C",
+    "secondaryPositions": [],
+    "fga": 11.3,
+    "box": {
+      "ppg": 16.3,
+      "rpg": 6.6,
+      "apg": 1.7,
+      "spg": 0.5,
+      "bpg": 0.9,
+      "fgPct": 0.546,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.66,
+      "tsPct": 0.584
+    },
+    "offensiveArchetype": "Post Scorer",
+    "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "johnsst03-1988-1989",
+    "playerName": "Steve Johnson",
+    "spanLabel": "1987-89",
+    "primaryPosition": "C",
+    "secondaryPositions": [],
+    "fga": 9.2,
+    "box": {
+      "ppg": 12,
+      "rpg": 5.2,
+      "apg": 1.4,
+      "spg": 0.3,
+      "bpg": 0.7,
+      "fgPct": 0.526,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.557,
+      "tsPct": 0.541
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
     "id": "jonesbo01-1977-1978",
     "playerName": "Bobby Jones",
     "spanLabel": "1976-78",
@@ -51374,6 +50836,118 @@
     },
     "offensiveArchetype": "Off Screen Shooter",
     "defensiveRole": "Helper"
+  },
+  {
+    "id": "jonesja02-2005-2006",
+    "playerName": "James Jones",
+    "spanLabel": "2004-06",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 6,
+    "box": {
+      "ppg": 7.1,
+      "rpg": 2.8,
+      "apg": 0.8,
+      "spg": 0.5,
+      "bpg": 0.5,
+      "fgPct": 0.41,
+      "threePct": 0.39,
+      "threePA": 3,
+      "ftPct": 0.852,
+      "tsPct": 0.543
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "jonesja02-2006-2007",
+    "playerName": "James Jones",
+    "spanLabel": "2005-07",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 6.8,
+    "box": {
+      "ppg": 7.8,
+      "rpg": 2.8,
+      "apg": 0.7,
+      "spg": 0.4,
+      "bpg": 0.6,
+      "fgPct": 0.397,
+      "threePct": 0.382,
+      "threePA": 3.5,
+      "ftPct": 0.861,
+      "tsPct": 0.528
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "jonesja02-2007-2008",
+    "playerName": "James Jones",
+    "spanLabel": "2006-08",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 5.7,
+    "box": {
+      "ppg": 7.1,
+      "rpg": 2.5,
+      "apg": 0.6,
+      "spg": 0.4,
+      "bpg": 0.4,
+      "fgPct": 0.398,
+      "threePct": 0.409,
+      "threePA": 3.3,
+      "ftPct": 0.877,
+      "tsPct": 0.565
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "jonesja02-2010-2011",
+    "playerName": "James Jones",
+    "spanLabel": "2009-11",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 4,
+    "box": {
+      "ppg": 5.3,
+      "rpg": 1.8,
+      "apg": 0.5,
+      "spg": 0.3,
+      "bpg": 0.2,
+      "fgPct": 0.406,
+      "threePct": 0.424,
+      "threePA": 3.2,
+      "ftPct": 0.83,
+      "tsPct": 0.606
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "jonesja02-2011-2012",
+    "playerName": "James Jones",
+    "spanLabel": "2010-12",
+    "primaryPosition": "SF",
+    "secondaryPositions": [
+      "SG"
+    ],
+    "fga": 3.8,
+    "box": {
+      "ppg": 5,
+      "rpg": 1.6,
+      "apg": 0.5,
+      "spg": 0.3,
+      "bpg": 0.2,
+      "fgPct": 0.409,
+      "threePct": 0.421,
+      "threePA": 3,
+      "ftPct": 0.833,
+      "tsPct": 0.604
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Low Activity"
   },
   {
     "id": "jordade01-2009-2010",
@@ -58838,276 +58412,6 @@
     "defensiveRole": "Helper"
   },
   {
-    "id": "marshdo01-1995-1996",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "1994-96",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 8.9,
-    "box": {
-      "ppg": 9.3,
-      "rpg": 4.6,
-      "apg": 1.1,
-      "spg": 0.5,
-      "bpg": 0.9,
-      "fgPct": 0.395,
-      "threePct": 0.288,
-      "threePA": 2.5,
-      "ftPct": 0.692,
-      "tsPct": 0.47
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "marshdo01-1996-1997",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "1995-97",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 6,
-    "box": {
-      "ppg": 6.4,
-      "rpg": 4,
-      "apg": 0.8,
-      "spg": 0.4,
-      "bpg": 0.6,
-      "fgPct": 0.407,
-      "threePct": 0.307,
-      "threePA": 1.7,
-      "ftPct": 0.691,
-      "tsPct": 0.481
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "marshdo01-1997-1998",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "1996-98",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 11.3,
-    "box": {
-      "ppg": 11.7,
-      "rpg": 6.7,
-      "apg": 1.6,
-      "spg": 0.9,
-      "bpg": 0.9,
-      "fgPct": 0.414,
-      "threePct": 0.314,
-      "threePA": 2.3,
-      "ftPct": 0.697,
-      "tsPct": 0.474
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "marshdo01-1998-1999",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "1997-99",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 13.1,
-    "box": {
-      "ppg": 13.7,
-      "rpg": 8,
-      "apg": 1.9,
-      "spg": 1.2,
-      "bpg": 0.9,
-      "fgPct": 0.416,
-      "threePct": 0.326,
-      "threePA": 2.3,
-      "ftPct": 0.73,
-      "tsPct": 0.478
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "marshdo01-1999-2000",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "1998-00",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 11.9,
-    "box": {
-      "ppg": 12.9,
-      "rpg": 8.7,
-      "apg": 2.1,
-      "spg": 1,
-      "bpg": 0.9,
-      "fgPct": 0.404,
-      "threePct": 0.357,
-      "threePA": 1.9,
-      "ftPct": 0.763,
-      "tsPct": 0.482
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "marshdo01-2000-2001",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "1999-01",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "PF"
-    ],
-    "fga": 11.6,
-    "box": {
-      "ppg": 13.9,
-      "rpg": 8.3,
-      "apg": 2.1,
-      "spg": 1.1,
-      "bpg": 1,
-      "fgPct": 0.449,
-      "threePct": 0.338,
-      "threePA": 1.8,
-      "ftPct": 0.765,
-      "tsPct": 0.526
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "marshdo01-2001-2002",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "2000-02",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 10.9,
-    "box": {
-      "ppg": 14.1,
-      "rpg": 7.3,
-      "apg": 1.7,
-      "spg": 1,
-      "bpg": 1,
-      "fgPct": 0.51,
-      "threePct": 0.318,
-      "threePA": 1.2,
-      "ftPct": 0.731,
-      "tsPct": 0.565
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "marshdo01-2002-2003",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "2001-03",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 11.6,
-    "box": {
-      "ppg": 14,
-      "rpg": 8.4,
-      "apg": 1.8,
-      "spg": 1.1,
-      "bpg": 1.1,
-      "fgPct": 0.484,
-      "threePct": 0.357,
-      "threePA": 0.9,
-      "ftPct": 0.732,
-      "tsPct": 0.537
-    },
-    "offensiveArchetype": "Post Scorer",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "marshdo01-2003-2004",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "2002-04",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 12.1,
-    "box": {
-      "ppg": 14,
-      "rpg": 9.4,
-      "apg": 1.6,
-      "spg": 1.2,
-      "bpg": 1.3,
-      "fgPct": 0.46,
-      "threePct": 0.398,
-      "threePA": 2.6,
-      "ftPct": 0.747,
-      "tsPct": 0.53
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "marshdo01-2004-2005",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "2003-05",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 11,
-    "box": {
-      "ppg": 13.3,
-      "rpg": 8.4,
-      "apg": 1.4,
-      "spg": 1,
-      "bpg": 1.2,
-      "fgPct": 0.454,
-      "threePct": 0.41,
-      "threePA": 4.7,
-      "ftPct": 0.755,
-      "tsPct": 0.563
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Mobile Big"
-  },
-  {
-    "id": "marshdo01-2005-2006",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "2004-06",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 8.7,
-    "box": {
-      "ppg": 10.3,
-      "rpg": 6.3,
-      "apg": 1,
-      "spg": 0.8,
-      "bpg": 0.6,
-      "fgPct": 0.417,
-      "threePct": 0.368,
-      "threePA": 5.2,
-      "ftPct": 0.766,
-      "tsPct": 0.551
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "marshdo01-2006-2007",
-    "playerName": "Donyell Marshall",
-    "spanLabel": "2005-07",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 7.2,
-    "box": {
-      "ppg": 8.1,
-      "rpg": 5,
-      "apg": 0.7,
-      "spg": 0.6,
-      "bpg": 0.5,
-      "fgPct": 0.407,
-      "threePct": 0.335,
-      "threePA": 4.1,
-      "ftPct": 0.714,
-      "tsPct": 0.522
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
     "id": "martike01-2001-2002",
     "playerName": "Kenyon Martin",
     "spanLabel": "2000-02",
@@ -60676,190 +59980,6 @@
     "defensiveRole": "Low Activity"
   },
   {
-    "id": "mccarwa01-1997-1998",
-    "playerName": "Walter McCarty",
-    "spanLabel": "1996-98",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "PF"
-    ],
-    "fga": 6.8,
-    "box": {
-      "ppg": 7.3,
-      "rpg": 3.3,
-      "apg": 1.6,
-      "spg": 1,
-      "bpg": 0.5,
-      "fgPct": 0.402,
-      "threePct": 0.307,
-      "threePA": 1.6,
-      "ftPct": 0.731,
-      "tsPct": 0.481
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "mccarwa01-1998-1999",
-    "playerName": "Walter McCarty",
-    "spanLabel": "1997-99",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "PF"
-    ],
-    "fga": 8,
-    "box": {
-      "ppg": 8.5,
-      "rpg": 4.2,
-      "apg": 1.9,
-      "spg": 1.2,
-      "bpg": 0.5,
-      "fgPct": 0.396,
-      "threePct": 0.298,
-      "threePA": 2,
-      "ftPct": 0.733,
-      "tsPct": 0.474
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "mccarwa01-1999-2000",
-    "playerName": "Walter McCarty",
-    "spanLabel": "1998-00",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 4.4,
-    "box": {
-      "ppg": 4.4,
-      "rpg": 2.4,
-      "apg": 1.2,
-      "spg": 0.5,
-      "bpg": 0.4,
-      "fgPct": 0.349,
-      "threePct": 0.294,
-      "threePA": 1.7,
-      "ftPct": 0.712,
-      "tsPct": 0.447
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "mccarwa01-2000-2001",
-    "playerName": "Walter McCarty",
-    "spanLabel": "1999-01",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 2.9,
-    "box": {
-      "ppg": 3,
-      "rpg": 1.6,
-      "apg": 0.9,
-      "spg": 0.3,
-      "bpg": 0.2,
-      "fgPct": 0.346,
-      "threePct": 0.319,
-      "threePA": 1.4,
-      "ftPct": 0.744,
-      "tsPct": 0.469
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "mccarwa01-2001-2002",
-    "playerName": "Walter McCarty",
-    "spanLabel": "2000-02",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 2.6,
-    "box": {
-      "ppg": 3,
-      "rpg": 1.8,
-      "apg": 0.7,
-      "spg": 0.3,
-      "bpg": 0.1,
-      "fgPct": 0.408,
-      "threePct": 0.374,
-      "threePA": 1.3,
-      "ftPct": 0.745,
-      "tsPct": 0.54
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "mccarwa01-2002-2003",
-    "playerName": "Walter McCarty",
-    "spanLabel": "2001-03",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "PF"
-    ],
-    "fga": 4.3,
-    "box": {
-      "ppg": 5.1,
-      "rpg": 3,
-      "apg": 1.1,
-      "spg": 0.7,
-      "bpg": 0.3,
-      "fgPct": 0.423,
-      "threePct": 0.375,
-      "threePA": 2.5,
-      "ftPct": 0.632,
-      "tsPct": 0.546
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "mccarwa01-2003-2004",
-    "playerName": "Walter McCarty",
-    "spanLabel": "2002-04",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "PF"
-    ],
-    "fga": 5.9,
-    "box": {
-      "ppg": 6.9,
-      "rpg": 3.3,
-      "apg": 1.4,
-      "spg": 0.9,
-      "bpg": 0.3,
-      "fgPct": 0.4,
-      "threePct": 0.371,
-      "threePA": 3.9,
-      "ftPct": 0.683,
-      "tsPct": 0.539
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "mccarwa01-2004-2005",
-    "playerName": "Walter McCarty",
-    "spanLabel": "2003-05",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 5.1,
-    "box": {
-      "ppg": 5.8,
-      "rpg": 2.5,
-      "apg": 1.1,
-      "spg": 0.7,
-      "bpg": 0.2,
-      "fgPct": 0.393,
-      "threePct": 0.369,
-      "threePA": 3.5,
-      "ftPct": 0.694,
-      "tsPct": 0.534
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
     "id": "mccolcj01-2015-2016",
     "playerName": "CJ McCollum",
     "spanLabel": "2014-16",
@@ -62128,234 +61248,6 @@
     "defensiveRole": "Mobile Big"
   },
   {
-    "id": "mckieaa01-1995-1996",
-    "playerName": "Aaron McKie",
-    "spanLabel": "1994-96",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 7.8,
-    "box": {
-      "ppg": 9.2,
-      "rpg": 3.4,
-      "apg": 2.3,
-      "spg": 1,
-      "bpg": 0.3,
-      "fgPct": 0.461,
-      "threePct": 0.338,
-      "threePA": 1.2,
-      "ftPct": 0.743,
-      "tsPct": 0.526
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "mckieaa01-1996-1997",
-    "playerName": "Aaron McKie",
-    "spanLabel": "1995-97",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 6.6,
-    "box": {
-      "ppg": 7.9,
-      "rpg": 3.2,
-      "apg": 2.2,
-      "spg": 1,
-      "bpg": 0.3,
-      "fgPct": 0.448,
-      "threePct": 0.359,
-      "threePA": 1.3,
-      "ftPct": 0.79,
-      "tsPct": 0.532
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "mckieaa01-1997-1998",
-    "playerName": "Aaron McKie",
-    "spanLabel": "1996-98",
-    "primaryPosition": "SG",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 4.5,
-    "box": {
-      "ppg": 4.7,
-      "rpg": 2.8,
-      "apg": 2,
-      "spg": 1.1,
-      "bpg": 0.2,
-      "fgPct": 0.387,
-      "threePct": 0.319,
-      "threePA": 1,
-      "ftPct": 0.812,
-      "tsPct": 0.475
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "mckieaa01-1998-1999",
-    "playerName": "Aaron McKie",
-    "spanLabel": "1997-99",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "SG"
-    ],
-    "fga": 4.7,
-    "box": {
-      "ppg": 4.4,
-      "rpg": 2.8,
-      "apg": 2.1,
-      "spg": 1.3,
-      "bpg": 0.1,
-      "fgPct": 0.379,
-      "threePct": 0.191,
-      "threePA": 0.7,
-      "ftPct": 0.735,
-      "tsPct": 0.432
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "mckieaa01-1999-2000",
-    "playerName": "Aaron McKie",
-    "spanLabel": "1998-00",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 6.3,
-    "box": {
-      "ppg": 6.8,
-      "rpg": 2.9,
-      "apg": 2.6,
-      "spg": 1.3,
-      "bpg": 0.2,
-      "fgPct": 0.408,
-      "threePct": 0.329,
-      "threePA": 1.2,
-      "ftPct": 0.793,
-      "tsPct": 0.486
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "mckieaa01-2000-2001",
-    "playerName": "Aaron McKie",
-    "spanLabel": "1999-01",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 8.3,
-    "box": {
-      "ppg": 9.7,
-      "rpg": 3.5,
-      "apg": 3.9,
-      "spg": 1.4,
-      "bpg": 0.2,
-      "fgPct": 0.445,
-      "threePct": 0.333,
-      "threePA": 1.8,
-      "ftPct": 0.794,
-      "tsPct": 0.525
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "mckieaa01-2001-2002",
-    "playerName": "Aaron McKie",
-    "spanLabel": "2000-02",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 9.7,
-    "box": {
-      "ppg": 11.8,
-      "rpg": 4.1,
-      "apg": 4.5,
-      "spg": 1.3,
-      "bpg": 0.2,
-      "fgPct": 0.463,
-      "threePct": 0.349,
-      "threePA": 2.4,
-      "ftPct": 0.775,
-      "tsPct": 0.545
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "mckieaa01-2002-2003",
-    "playerName": "Aaron McKie",
-    "spanLabel": "2001-03",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "SG"
-    ],
-    "fga": 9,
-    "box": {
-      "ppg": 10.2,
-      "rpg": 4.2,
-      "apg": 3.6,
-      "spg": 1.5,
-      "bpg": 0.2,
-      "fgPct": 0.438,
-      "threePct": 0.367,
-      "threePA": 1.9,
-      "ftPct": 0.812,
-      "tsPct": 0.516
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "mckieaa01-2003-2004",
-    "playerName": "Aaron McKie",
-    "spanLabel": "2002-04",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 8,
-    "box": {
-      "ppg": 9.1,
-      "rpg": 3.9,
-      "apg": 3.1,
-      "spg": 1.4,
-      "bpg": 0.2,
-      "fgPct": 0.443,
-      "threePct": 0.394,
-      "threePA": 1.8,
-      "ftPct": 0.8,
-      "tsPct": 0.523
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "mckieaa01-2004-2005",
-    "playerName": "Aaron McKie",
-    "spanLabel": "2003-05",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "SG"
-    ],
-    "fga": 5,
-    "box": {
-      "ppg": 5.9,
-      "rpg": 3,
-      "apg": 2.1,
-      "spg": 0.9,
-      "bpg": 0.3,
-      "fgPct": 0.453,
-      "threePct": 0.406,
-      "threePA": 1.6,
-      "ftPct": 0.74,
-      "tsPct": 0.547
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
     "id": "mcmilna01-1987-1988",
     "playerName": "Nate McMillan",
     "spanLabel": "1986-88",
@@ -62556,96 +61448,6 @@
     },
     "offensiveArchetype": "Off Screen Shooter",
     "defensiveRole": "Point of Attack"
-  },
-  {
-    "id": "mcrobjo01-2010-2011",
-    "playerName": "Josh McRoberts",
-    "spanLabel": "2009-11",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "C"
-    ],
-    "fga": 4.7,
-    "box": {
-      "ppg": 6.2,
-      "rpg": 4.5,
-      "apg": 1.7,
-      "spg": 0.6,
-      "bpg": 0.6,
-      "fgPct": 0.539,
-      "threePct": 0.373,
-      "threePA": 0.7,
-      "ftPct": 0.682,
-      "tsPct": 0.584
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "mcrobjo01-2011-2012",
-    "playerName": "Josh McRoberts",
-    "spanLabel": "2010-12",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 4.1,
-    "box": {
-      "ppg": 5.5,
-      "rpg": 4.5,
-      "apg": 1.6,
-      "spg": 0.5,
-      "bpg": 0.6,
-      "fgPct": 0.53,
-      "threePct": 0.388,
-      "threePA": 0.5,
-      "ftPct": 0.716,
-      "tsPct": 0.59
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "mcrobjo01-2012-2013",
-    "playerName": "Josh McRoberts",
-    "spanLabel": "2011-13",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 3.9,
-    "box": {
-      "ppg": 4.6,
-      "rpg": 4.2,
-      "apg": 1.6,
-      "spg": 0.4,
-      "bpg": 0.4,
-      "fgPct": 0.46,
-      "threePct": 0.297,
-      "threePA": 0.8,
-      "ftPct": 0.727,
-      "tsPct": 0.528
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "mcrobjo01-2013-2014",
-    "playerName": "Josh McRoberts",
-    "spanLabel": "2012-14",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 6.3,
-    "box": {
-      "ppg": 7.3,
-      "rpg": 4.8,
-      "apg": 3.3,
-      "spg": 0.6,
-      "bpg": 0.5,
-      "fgPct": 0.443,
-      "threePct": 0.344,
-      "threePA": 2.6,
-      "ftPct": 0.747,
-      "tsPct": 0.536
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
   },
   {
     "id": "middlkh01-2014-2015",
@@ -65306,182 +64108,6 @@
     "defensiveRole": "Helper"
   },
   {
-    "id": "morroan01-2009-2010",
-    "playerName": "Anthony Morrow",
-    "spanLabel": "2008-10",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 9.1,
-    "box": {
-      "ppg": 11.6,
-      "rpg": 3.4,
-      "apg": 1.4,
-      "spg": 0.7,
-      "bpg": 0.2,
-      "fgPct": 0.472,
-      "threePct": 0.46,
-      "threePA": 3.6,
-      "ftPct": 0.879,
-      "tsPct": 0.594
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "morroan01-2010-2011",
-    "playerName": "Anthony Morrow",
-    "spanLabel": "2009-11",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 10.4,
-    "box": {
-      "ppg": 13.1,
-      "rpg": 3.4,
-      "apg": 1.4,
-      "spg": 0.7,
-      "bpg": 0.2,
-      "fgPct": 0.46,
-      "threePct": 0.441,
-      "threePA": 4.5,
-      "ftPct": 0.891,
-      "tsPct": 0.587
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "morroan01-2011-2012",
-    "playerName": "Anthony Morrow",
-    "spanLabel": "2010-12",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 10.7,
-    "box": {
-      "ppg": 12.6,
-      "rpg": 2.5,
-      "apg": 1.1,
-      "spg": 0.5,
-      "bpg": 0.1,
-      "fgPct": 0.431,
-      "threePct": 0.396,
-      "threePA": 4.6,
-      "ftPct": 0.915,
-      "tsPct": 0.549
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "morroan01-2012-2013",
-    "playerName": "Anthony Morrow",
-    "spanLabel": "2011-13",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 7.8,
-    "box": {
-      "ppg": 8.8,
-      "rpg": 1.5,
-      "apg": 0.7,
-      "spg": 0.6,
-      "bpg": 0.1,
-      "fgPct": 0.418,
-      "threePct": 0.371,
-      "threePA": 3.2,
-      "ftPct": 0.929,
-      "tsPct": 0.528
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "morroan01-2013-2014",
-    "playerName": "Anthony Morrow",
-    "spanLabel": "2012-14",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 5.7,
-    "box": {
-      "ppg": 6.8,
-      "rpg": 1.5,
-      "apg": 0.6,
-      "spg": 0.4,
-      "bpg": 0.1,
-      "fgPct": 0.454,
-      "threePct": 0.437,
-      "threePA": 2,
-      "ftPct": 0.844,
-      "tsPct": 0.556
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "morroan01-2014-2015",
-    "playerName": "Anthony Morrow",
-    "spanLabel": "2013-15",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 7.6,
-    "box": {
-      "ppg": 9.5,
-      "rpg": 2.2,
-      "apg": 0.8,
-      "spg": 0.6,
-      "bpg": 0.2,
-      "fgPct": 0.461,
-      "threePct": 0.44,
-      "threePA": 3.5,
-      "ftPct": 0.858,
-      "tsPct": 0.585
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "morroan01-2015-2016",
-    "playerName": "Anthony Morrow",
-    "spanLabel": "2014-16",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 6.7,
-    "box": {
-      "ppg": 8.2,
-      "rpg": 1.8,
-      "apg": 0.6,
-      "spg": 0.5,
-      "bpg": 0.1,
-      "fgPct": 0.444,
-      "threePct": 0.416,
-      "threePA": 3.7,
-      "ftPct": 0.844,
-      "tsPct": 0.578
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "morroan01-2016-2017",
-    "playerName": "Anthony Morrow",
-    "spanLabel": "2015-17",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 5,
-    "box": {
-      "ppg": 5.6,
-      "rpg": 0.8,
-      "apg": 0.4,
-      "spg": 0.4,
-      "bpg": 0.1,
-      "fgPct": 0.4,
-      "threePct": 0.356,
-      "threePA": 2.9,
-      "ftPct": 0.829,
-      "tsPct": 0.53
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Low Activity"
-  },
-  {
     "id": "mournal01-1993-1994",
     "playerName": "Alonzo Mourning",
     "spanLabel": "1992-94",
@@ -67036,6 +65662,144 @@
     },
     "offensiveArchetype": "Post Scorer",
     "defensiveRole": "Anchor Big"
+  },
+  {
+    "id": "nancela02-2016-2017",
+    "playerName": "Larry Nance Jr.",
+    "spanLabel": "2015-17",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 5.2,
+    "box": {
+      "ppg": 6.3,
+      "rpg": 5.4,
+      "apg": 1.1,
+      "spg": 1.1,
+      "bpg": 0.5,
+      "fgPct": 0.526,
+      "threePct": 0.239,
+      "threePA": 0.4,
+      "ftPct": 0.717,
+      "tsPct": 0.558
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "nancela02-2017-2018",
+    "playerName": "Larry Nance Jr.",
+    "spanLabel": "2016-18",
+    "primaryPosition": "C",
+    "secondaryPositions": [
+      "PF"
+    ],
+    "fga": 6,
+    "box": {
+      "ppg": 7.9,
+      "rpg": 6.4,
+      "apg": 1.4,
+      "spg": 1.3,
+      "bpg": 0.6,
+      "fgPct": 0.556,
+      "threePct": 0.25,
+      "threePA": 0.4,
+      "ftPct": 0.691,
+      "tsPct": 0.586
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "nancela02-2018-2019",
+    "playerName": "Larry Nance Jr.",
+    "spanLabel": "2017-19",
+    "primaryPosition": "C",
+    "secondaryPositions": [],
+    "fga": 6.7,
+    "box": {
+      "ppg": 9,
+      "rpg": 7.5,
+      "apg": 2.2,
+      "spg": 1.4,
+      "bpg": 0.6,
+      "fgPct": 0.548,
+      "threePct": 0.318,
+      "threePA": 0.8,
+      "ftPct": 0.69,
+      "tsPct": 0.592
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "nancela02-2019-2020",
+    "playerName": "Larry Nance Jr.",
+    "spanLabel": "2018-20",
+    "primaryPosition": "C",
+    "secondaryPositions": [
+      "PF"
+    ],
+    "fga": 7.4,
+    "box": {
+      "ppg": 9.7,
+      "rpg": 7.8,
+      "apg": 2.7,
+      "spg": 1.3,
+      "bpg": 0.5,
+      "fgPct": 0.525,
+      "threePct": 0.346,
+      "threePA": 2.1,
+      "ftPct": 0.702,
+      "tsPct": 0.596
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "nancela02-2022-2023",
+    "playerName": "Larry Nance Jr.",
+    "spanLabel": "2021-23",
+    "primaryPosition": "C",
+    "secondaryPositions": [
+      "PF"
+    ],
+    "fga": 5,
+    "box": {
+      "ppg": 6.9,
+      "rpg": 5.4,
+      "apg": 1.8,
+      "spg": 0.9,
+      "bpg": 0.5,
+      "fgPct": 0.571,
+      "threePct": 0.33,
+      "threePA": 1,
+      "ftPct": 0.699,
+      "tsPct": 0.623
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "nancela02-2023-2024",
+    "playerName": "Larry Nance Jr.",
+    "spanLabel": "2022-24",
+    "primaryPosition": "C",
+    "secondaryPositions": [],
+    "fga": 4.3,
+    "box": {
+      "ppg": 6.3,
+      "rpg": 5.2,
+      "apg": 1.8,
+      "spg": 0.9,
+      "bpg": 0.4,
+      "fgPct": 0.593,
+      "threePct": 0.383,
+      "threePA": 0.8,
+      "ftPct": 0.729,
+      "tsPct": 0.658
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
   },
   {
     "id": "nattca01-1980-1981",
@@ -70358,118 +69122,6 @@
     },
     "offensiveArchetype": "Roll & Cut Big",
     "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "parkean01-2007-2008",
-    "playerName": "Anthony Parker",
-    "spanLabel": "2006-08",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 9.8,
-    "box": {
-      "ppg": 12.4,
-      "rpg": 4,
-      "apg": 2.2,
-      "spg": 1,
-      "bpg": 0.2,
-      "fgPct": 0.477,
-      "threePct": 0.439,
-      "threePA": 3.6,
-      "ftPct": 0.827,
-      "tsPct": 0.585
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "parkean01-2008-2009",
-    "playerName": "Anthony Parker",
-    "spanLabel": "2007-09",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 9.8,
-    "box": {
-      "ppg": 11.6,
-      "rpg": 4,
-      "apg": 2.8,
-      "spg": 1.1,
-      "bpg": 0.2,
-      "fgPct": 0.452,
-      "threePct": 0.417,
-      "threePA": 3.4,
-      "ftPct": 0.826,
-      "tsPct": 0.551
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "parkean01-2009-2010",
-    "playerName": "Anthony Parker",
-    "spanLabel": "2008-10",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 7.6,
-    "box": {
-      "ppg": 9,
-      "rpg": 3.4,
-      "apg": 2.6,
-      "spg": 1,
-      "bpg": 0.2,
-      "fgPct": 0.429,
-      "threePct": 0.402,
-      "threePA": 3.1,
-      "ftPct": 0.817,
-      "tsPct": 0.545
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "parkean01-2010-2011",
-    "playerName": "Anthony Parker",
-    "spanLabel": "2009-11",
-    "primaryPosition": "SG",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 6.7,
-    "box": {
-      "ppg": 7.8,
-      "rpg": 2.9,
-      "apg": 2.5,
-      "spg": 0.8,
-      "bpg": 0.2,
-      "fgPct": 0.415,
-      "threePct": 0.398,
-      "threePA": 3.2,
-      "ftPct": 0.784,
-      "tsPct": 0.538
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "parkean01-2011-2012",
-    "playerName": "Anthony Parker",
-    "spanLabel": "2010-12",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 7.1,
-    "box": {
-      "ppg": 7.9,
-      "rpg": 2.9,
-      "apg": 2.7,
-      "spg": 0.9,
-      "bpg": 0.1,
-      "fgPct": 0.411,
-      "threePct": 0.373,
-      "threePA": 3,
-      "ftPct": 0.722,
-      "tsPct": 0.517
-    },
-    "offensiveArchetype": "Stationary Shooter",
-    "defensiveRole": "Helper"
   },
   {
     "id": "parketo01-2002-2003",
@@ -73950,50 +72602,6 @@
     "defensiveRole": "Low Activity"
   },
   {
-    "id": "pricebr01-1993-1994",
-    "playerName": "Brent Price",
-    "spanLabel": "1992-94",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 4.5,
-    "box": {
-      "ppg": 5,
-      "rpg": 1.5,
-      "apg": 2.8,
-      "spg": 0.8,
-      "bpg": 0,
-      "fgPct": 0.398,
-      "threePct": 0.293,
-      "threePA": 1.5,
-      "ftPct": 0.787,
-      "tsPct": 0.499
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "pricebr01-1998-1999",
-    "playerName": "Brent Price",
-    "spanLabel": "1997-99",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 4.6,
-    "box": {
-      "ppg": 6.2,
-      "rpg": 1.7,
-      "apg": 2.7,
-      "spg": 0.8,
-      "bpg": 0,
-      "fgPct": 0.441,
-      "threePct": 0.398,
-      "threePA": 2.7,
-      "ftPct": 0.774,
-      "tsPct": 0.593
-    },
-    "offensiveArchetype": "Off Screen Shooter",
-    "defensiveRole": "Helper"
-  },
-  {
     "id": "pricema01-1987-1988",
     "playerName": "Mark Price",
     "spanLabel": "1986-88",
@@ -76258,6 +74866,226 @@
     "defensiveRole": "Chaser"
   },
   {
+    "id": "riverdo01-1984-1985",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1983-85",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 8.3,
+    "box": {
+      "ppg": 11.5,
+      "rpg": 2.9,
+      "apg": 4.8,
+      "spg": 1.9,
+      "bpg": 0.6,
+      "fgPct": 0.47,
+      "threePct": 0.354,
+      "threePA": 0.3,
+      "ftPct": 0.777,
+      "tsPct": 0.555
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Point of Attack"
+  },
+  {
+    "id": "riverdo01-1985-1986",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1984-86",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 9.5,
+    "box": {
+      "ppg": 13,
+      "rpg": 3.1,
+      "apg": 7,
+      "spg": 2.3,
+      "bpg": 0.5,
+      "fgPct": 0.476,
+      "threePct": 0.288,
+      "threePA": 0.4,
+      "ftPct": 0.7,
+      "tsPct": 0.547
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Point of Attack"
+  },
+  {
+    "id": "riverdo01-1986-1987",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1985-87",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 9.1,
+    "box": {
+      "ppg": 12.3,
+      "rpg": 3.4,
+      "apg": 9.4,
+      "spg": 2.2,
+      "bpg": 0.3,
+      "fgPct": 0.46,
+      "threePct": 0.108,
+      "threePA": 0.3,
+      "ftPct": 0.742,
+      "tsPct": 0.537
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Point of Attack"
+  },
+  {
+    "id": "riverdo01-1987-1988",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1986-88",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 10.2,
+    "box": {
+      "ppg": 13.5,
+      "rpg": 4.1,
+      "apg": 9.7,
+      "spg": 1.9,
+      "bpg": 0.4,
+      "fgPct": 0.452,
+      "threePct": 0.241,
+      "threePA": 0.3,
+      "ftPct": 0.794,
+      "tsPct": 0.538
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Point of Attack"
+  },
+  {
+    "id": "riverdo01-1988-1989",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1987-89",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 10.9,
+    "box": {
+      "ppg": 13.9,
+      "rpg": 4.2,
+      "apg": 8.2,
+      "spg": 2.1,
+      "bpg": 0.5,
+      "fgPct": 0.454,
+      "threePct": 0.331,
+      "threePA": 1,
+      "ftPct": 0.799,
+      "tsPct": 0.539
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Point of Attack"
+  },
+  {
+    "id": "riverdo01-1989-1990",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1988-90",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 10.5,
+    "box": {
+      "ppg": 13.1,
+      "rpg": 3.9,
+      "apg": 6.4,
+      "spg": 2.4,
+      "bpg": 0.5,
+      "fgPct": 0.454,
+      "threePct": 0.353,
+      "threePA": 1.5,
+      "ftPct": 0.842,
+      "tsPct": 0.54
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Point of Attack"
+  },
+  {
+    "id": "riverdo01-1990-1991",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1989-91",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 11.8,
+    "box": {
+      "ppg": 14.1,
+      "rpg": 3.6,
+      "apg": 4.8,
+      "spg": 2.1,
+      "bpg": 0.5,
+      "fgPct": 0.441,
+      "threePct": 0.341,
+      "threePA": 2.6,
+      "ftPct": 0.831,
+      "tsPct": 0.53
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Point of Attack"
+  },
+  {
+    "id": "riverdo01-1991-1992",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1990-92",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 11.3,
+    "box": {
+      "ppg": 13.3,
+      "rpg": 2.9,
+      "apg": 4.2,
+      "spg": 1.9,
+      "bpg": 0.5,
+      "fgPct": 0.431,
+      "threePct": 0.322,
+      "threePA": 2.6,
+      "ftPct": 0.838,
+      "tsPct": 0.521
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Point of Attack"
+  },
+  {
+    "id": "riverdo01-1992-1993",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1991-93",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 7.6,
+    "box": {
+      "ppg": 9.2,
+      "rpg": 2.5,
+      "apg": 4.7,
+      "spg": 1.7,
+      "bpg": 0.2,
+      "fgPct": 0.43,
+      "threePct": 0.302,
+      "threePA": 1.6,
+      "ftPct": 0.827,
+      "tsPct": 0.525
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Point of Attack"
+  },
+  {
+    "id": "riverdo01-1995-1996",
+    "playerName": "Doc Rivers",
+    "spanLabel": "1994-96",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 4.2,
+    "box": {
+      "ppg": 4.5,
+      "rpg": 1.8,
+      "apg": 2,
+      "spg": 1,
+      "bpg": 0.3,
+      "fgPct": 0.365,
+      "threePct": 0.348,
+      "threePA": 1.9,
+      "ftPct": 0.74,
+      "tsPct": 0.483
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Helper"
+  },
+  {
     "id": "roberal01-1985-1986",
     "playerName": "Alvin Robertson",
     "spanLabel": "1984-86",
@@ -77244,260 +76072,6 @@
     },
     "offensiveArchetype": "Roll & Cut Big",
     "defensiveRole": "Anchor Big"
-  },
-  {
-    "id": "rogerro01-1994-1995",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "1993-95",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 8.3,
-    "box": {
-      "ppg": 10.2,
-      "rpg": 3.8,
-      "apg": 1.6,
-      "spg": 1,
-      "bpg": 0.6,
-      "fgPct": 0.467,
-      "threePct": 0.354,
-      "threePA": 1.5,
-      "ftPct": 0.659,
-      "tsPct": 0.532
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "rogerro01-1995-1996",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "1994-96",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 9.6,
-    "box": {
-      "ppg": 11.9,
-      "rpg": 4.6,
-      "apg": 2.2,
-      "spg": 1.2,
-      "bpg": 0.6,
-      "fgPct": 0.483,
-      "threePct": 0.329,
-      "threePA": 2,
-      "ftPct": 0.642,
-      "tsPct": 0.543
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "rogerro01-1996-1997",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "1995-97",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 10.3,
-    "box": {
-      "ppg": 12.5,
-      "rpg": 4.7,
-      "apg": 2.6,
-      "spg": 1.1,
-      "bpg": 0.6,
-      "fgPct": 0.468,
-      "threePct": 0.342,
-      "threePA": 2.3,
-      "ftPct": 0.65,
-      "tsPct": 0.535
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "rogerro01-1997-1998",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "1996-98",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 11.6,
-    "box": {
-      "ppg": 14.1,
-      "rpg": 5.3,
-      "apg": 2.7,
-      "spg": 1.2,
-      "bpg": 0.6,
-      "fgPct": 0.458,
-      "threePct": 0.349,
-      "threePA": 2.5,
-      "ftPct": 0.675,
-      "tsPct": 0.529
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "rogerro01-1998-1999",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "1997-99",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 10,
-    "box": {
-      "ppg": 12.2,
-      "rpg": 4.9,
-      "apg": 2.3,
-      "spg": 1.1,
-      "bpg": 0.5,
-      "fgPct": 0.452,
-      "threePct": 0.327,
-      "threePA": 2.2,
-      "ftPct": 0.683,
-      "tsPct": 0.529
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "rogerro01-1999-2000",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "1998-00",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 9.1,
-    "box": {
-      "ppg": 11.5,
-      "rpg": 4.9,
-      "apg": 1.9,
-      "spg": 1.1,
-      "bpg": 0.5,
-      "fgPct": 0.475,
-      "threePct": 0.409,
-      "threePA": 2.5,
-      "ftPct": 0.649,
-      "tsPct": 0.559
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "rogerro01-2000-2001",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "1999-01",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 10.7,
-    "box": {
-      "ppg": 13,
-      "rpg": 4.9,
-      "apg": 2.1,
-      "spg": 1.2,
-      "bpg": 0.6,
-      "fgPct": 0.458,
-      "threePct": 0.379,
-      "threePA": 2.8,
-      "ftPct": 0.7,
-      "tsPct": 0.54
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "rogerro01-2001-2002",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "2000-02",
-    "primaryPosition": "SF",
-    "secondaryPositions": [],
-    "fga": 10.3,
-    "box": {
-      "ppg": 12,
-      "rpg": 4.4,
-      "apg": 1.8,
-      "spg": 1,
-      "bpg": 0.5,
-      "fgPct": 0.449,
-      "threePct": 0.34,
-      "threePA": 2.7,
-      "ftPct": 0.77,
-      "tsPct": 0.527
-    },
-    "offensiveArchetype": "Slasher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "rogerro01-2002-2003",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "2001-03",
-    "primaryPosition": "SF",
-    "secondaryPositions": [
-      "PF"
-    ],
-    "fga": 8.4,
-    "box": {
-      "ppg": 9.6,
-      "rpg": 4.2,
-      "apg": 1.5,
-      "spg": 0.8,
-      "bpg": 0.4,
-      "fgPct": 0.445,
-      "threePct": 0.36,
-      "threePA": 2.5,
-      "ftPct": 0.774,
-      "tsPct": 0.526
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "rogerro01-2003-2004",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "2002-04",
-    "primaryPosition": "PF",
-    "secondaryPositions": [],
-    "fga": 7,
-    "box": {
-      "ppg": 7.4,
-      "rpg": 4.2,
-      "apg": 1.8,
-      "spg": 0.8,
-      "bpg": 0.4,
-      "fgPct": 0.406,
-      "threePct": 0.331,
-      "threePA": 2.1,
-      "ftPct": 0.761,
-      "tsPct": 0.487
-    },
-    "offensiveArchetype": "Versatile Big",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "rogerro01-2004-2005",
-    "playerName": "Rodney Rogers",
-    "spanLabel": "2003-05",
-    "primaryPosition": "PF",
-    "secondaryPositions": [
-      "SF"
-    ],
-    "fga": 7.5,
-    "box": {
-      "ppg": 7.7,
-      "rpg": 4.4,
-      "apg": 1.8,
-      "spg": 0.8,
-      "bpg": 0.4,
-      "fgPct": 0.397,
-      "threePct": 0.306,
-      "threePA": 2.5,
-      "ftPct": 0.756,
-      "tsPct": 0.476
-    },
-    "offensiveArchetype": "Stretch Big",
-    "defensiveRole": "Low Activity"
   },
   {
     "id": "rondora01-2007-2008",
@@ -81290,6 +79864,204 @@
     "defensiveRole": "Helper"
   },
   {
+    "id": "sharmbi01-1952-1953",
+    "playerName": "Bill Sharman",
+    "spanLabel": "1951-53",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 11.6,
+    "box": {
+      "ppg": 13.6,
+      "rpg": 3.8,
+      "apg": 2.6,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.417,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.853,
+      "tsPct": 0.499
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "sharmbi01-1953-1954",
+    "playerName": "Bill Sharman",
+    "spanLabel": "1952-54",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 12.9,
+    "box": {
+      "ppg": 16.1,
+      "rpg": 3.8,
+      "apg": 2.9,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.443,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.847,
+      "tsPct": 0.525
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "sharmbi01-1954-1955",
+    "playerName": "Bill Sharman",
+    "spanLabel": "1953-55",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 14.1,
+    "box": {
+      "ppg": 17.2,
+      "rpg": 4,
+      "apg": 3.6,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.438,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.87,
+      "tsPct": 0.52
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "sharmbi01-1955-1956",
+    "playerName": "Bill Sharman",
+    "spanLabel": "1954-56",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 16.4,
+    "box": {
+      "ppg": 19.2,
+      "rpg": 4,
+      "apg": 4.4,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.433,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.881,
+      "tsPct": 0.508
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "sharmbi01-1956-1957",
+    "playerName": "Bill Sharman",
+    "spanLabel": "1955-57",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 17.8,
+    "box": {
+      "ppg": 20.5,
+      "rpg": 3.9,
+      "apg": 4.1,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.427,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.886,
+      "tsPct": 0.501
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "sharmbi01-1957-1958",
+    "playerName": "Bill Sharman",
+    "spanLabel": "1956-58",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 19.5,
+    "box": {
+      "ppg": 21.7,
+      "rpg": 4.5,
+      "apg": 3.1,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.42,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.9,
+      "tsPct": 0.492
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "sharmbi01-1958-1959",
+    "playerName": "Bill Sharman",
+    "spanLabel": "1957-59",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 19.8,
+    "box": {
+      "ppg": 21.2,
+      "rpg": 4.3,
+      "apg": 2.6,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.416,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.913,
+      "tsPct": 0.48
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "sharmbi01-1959-1960",
+    "playerName": "Bill Sharman",
+    "spanLabel": "1958-60",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 18.2,
+    "box": {
+      "ppg": 19.8,
+      "rpg": 3.9,
+      "apg": 2.3,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.431,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.903,
+      "tsPct": 0.49
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "sharmbi01-1960-1961",
+    "playerName": "Bill Sharman",
+    "spanLabel": "1959-61",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 16.2,
+    "box": {
+      "ppg": 17.8,
+      "rpg": 3.7,
+      "apg": 2.2,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.442,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.89,
+      "tsPct": 0.496
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
     "id": "shortpu01-1979-1980",
     "playerName": "Purvis Short",
     "spanLabel": "1978-80",
@@ -82894,6 +81666,300 @@
     },
     "offensiveArchetype": "Versatile Big",
     "defensiveRole": "Mobile Big"
+  },
+  {
+    "id": "smithjr01-2005-2006",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2004-06",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 8.5,
+    "box": {
+      "ppg": 9.2,
+      "rpg": 2,
+      "apg": 1.5,
+      "spg": 0.7,
+      "bpg": 0.1,
+      "fgPct": 0.394,
+      "threePct": 0.316,
+      "threePA": 3.2,
+      "ftPct": 0.74,
+      "tsPct": 0.49
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "smithjr01-2006-2007",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2005-07",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 8.6,
+    "box": {
+      "ppg": 10.5,
+      "rpg": 2.1,
+      "apg": 1.3,
+      "spg": 0.7,
+      "bpg": 0.1,
+      "fgPct": 0.424,
+      "threePct": 0.385,
+      "threePA": 4.4,
+      "ftPct": 0.815,
+      "tsPct": 0.556
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "smithjr01-2007-2008",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2006-08",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 9.6,
+    "box": {
+      "ppg": 12.6,
+      "rpg": 2.2,
+      "apg": 1.6,
+      "spg": 0.8,
+      "bpg": 0.2,
+      "fgPct": 0.451,
+      "threePct": 0.396,
+      "threePA": 5.6,
+      "ftPct": 0.757,
+      "tsPct": 0.596
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "smithjr01-2008-2009",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2007-09",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 10.5,
+    "box": {
+      "ppg": 13.8,
+      "rpg": 2.9,
+      "apg": 2.3,
+      "spg": 0.9,
+      "bpg": 0.2,
+      "fgPct": 0.453,
+      "threePct": 0.4,
+      "threePA": 5.4,
+      "ftPct": 0.74,
+      "tsPct": 0.586
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "smithjr01-2009-2010",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2008-10",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 12.7,
+    "box": {
+      "ppg": 15.3,
+      "rpg": 3.4,
+      "apg": 2.6,
+      "spg": 1.1,
+      "bpg": 0.2,
+      "fgPct": 0.43,
+      "threePct": 0.367,
+      "threePA": 5.9,
+      "ftPct": 0.734,
+      "tsPct": 0.545
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "smithjr01-2010-2011",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2009-11",
+    "primaryPosition": "SF",
+    "secondaryPositions": [
+      "SG"
+    ],
+    "fga": 11.8,
+    "box": {
+      "ppg": 13.8,
+      "rpg": 3.6,
+      "apg": 2.3,
+      "spg": 1.2,
+      "bpg": 0.2,
+      "fgPct": 0.423,
+      "threePct": 0.359,
+      "threePA": 5.1,
+      "ftPct": 0.723,
+      "tsPct": 0.531
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "smithjr01-2011-2012",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2010-12",
+    "primaryPosition": "SF",
+    "secondaryPositions": [
+      "SG"
+    ],
+    "fga": 10.4,
+    "box": {
+      "ppg": 12.3,
+      "rpg": 4,
+      "apg": 2.3,
+      "spg": 1.3,
+      "bpg": 0.2,
+      "fgPct": 0.426,
+      "threePct": 0.374,
+      "threePA": 4.5,
+      "ftPct": 0.732,
+      "tsPct": 0.536
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "smithjr01-2012-2013",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2011-13",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 14.4,
+    "box": {
+      "ppg": 16.4,
+      "rpg": 4.9,
+      "apg": 2.6,
+      "spg": 1.3,
+      "bpg": 0.3,
+      "fgPct": 0.418,
+      "threePct": 0.353,
+      "threePA": 5.5,
+      "ftPct": 0.754,
+      "tsPct": 0.519
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "smithjr01-2013-2014",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2012-14",
+    "primaryPosition": "SG",
+    "secondaryPositions": [
+      "SF"
+    ],
+    "fga": 14.3,
+    "box": {
+      "ppg": 16.3,
+      "rpg": 4.7,
+      "apg": 2.8,
+      "spg": 1.1,
+      "bpg": 0.3,
+      "fgPct": 0.419,
+      "threePct": 0.376,
+      "threePA": 5.9,
+      "ftPct": 0.728,
+      "tsPct": 0.523
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "smithjr01-2014-2015",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2013-15",
+    "primaryPosition": "SF",
+    "secondaryPositions": [
+      "SG"
+    ],
+    "fga": 11.9,
+    "box": {
+      "ppg": 13.3,
+      "rpg": 3.6,
+      "apg": 2.9,
+      "spg": 1,
+      "bpg": 0.3,
+      "fgPct": 0.416,
+      "threePct": 0.389,
+      "threePA": 6.3,
+      "ftPct": 0.686,
+      "tsPct": 0.53
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "smithjr01-2015-2016",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2014-16",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 10.9,
+    "box": {
+      "ppg": 12.3,
+      "rpg": 3,
+      "apg": 2.2,
+      "spg": 1.1,
+      "bpg": 0.3,
+      "fgPct": 0.416,
+      "threePct": 0.392,
+      "threePA": 6.4,
+      "ftPct": 0.692,
+      "tsPct": 0.543
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "smithjr01-2016-2017",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2015-17",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 10.2,
+    "box": {
+      "ppg": 11.1,
+      "rpg": 2.8,
+      "apg": 1.6,
+      "spg": 1,
+      "bpg": 0.3,
+      "fgPct": 0.395,
+      "threePct": 0.383,
+      "threePA": 6.6,
+      "ftPct": 0.64,
+      "tsPct": 0.528
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "smithjr01-2017-2018",
+    "playerName": "J.R. Smith",
+    "spanLabel": "2016-18",
+    "primaryPosition": "SG",
+    "secondaryPositions": [],
+    "fga": 7.9,
+    "box": {
+      "ppg": 8.4,
+      "rpg": 2.9,
+      "apg": 1.7,
+      "spg": 0.9,
+      "bpg": 0.2,
+      "fgPct": 0.382,
+      "threePct": 0.365,
+      "threePA": 5.4,
+      "ftPct": 0.69,
+      "tsPct": 0.515
+    },
+    "offensiveArchetype": "Off Screen Shooter",
+    "defensiveRole": "Helper"
   },
   {
     "id": "smithke01-1988-1989",
@@ -89034,230 +88100,6 @@
     "defensiveRole": "Low Activity"
   },
   {
-    "id": "udrihbe01-2005-2006",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2004-06",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 4.6,
-    "box": {
-      "ppg": 5.6,
-      "rpg": 1,
-      "apg": 1.8,
-      "spg": 0.4,
-      "bpg": 0.1,
-      "fgPct": 0.448,
-      "threePct": 0.387,
-      "threePA": 1.6,
-      "ftPct": 0.763,
-      "tsPct": 0.554
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "udrihbe01-2006-2007",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2005-07",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 4.5,
-    "box": {
-      "ppg": 4.8,
-      "rpg": 1.1,
-      "apg": 1.7,
-      "spg": 0.3,
-      "bpg": 0,
-      "fgPct": 0.404,
-      "threePct": 0.308,
-      "threePA": 1.5,
-      "ftPct": 0.836,
-      "tsPct": 0.492
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "udrihbe01-2007-2008",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2006-08",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 7.6,
-    "box": {
-      "ppg": 8.5,
-      "rpg": 2.2,
-      "apg": 2.9,
-      "spg": 0.6,
-      "bpg": 0.1,
-      "fgPct": 0.433,
-      "threePct": 0.341,
-      "threePA": 1.8,
-      "ftPct": 0.86,
-      "tsPct": 0.515
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "udrihbe01-2008-2009",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2007-09",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 10.2,
-    "box": {
-      "ppg": 11.8,
-      "rpg": 3.2,
-      "apg": 4.5,
-      "spg": 1,
-      "bpg": 0.2,
-      "fgPct": 0.462,
-      "threePct": 0.352,
-      "threePA": 1.8,
-      "ftPct": 0.835,
-      "tsPct": 0.529
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "udrihbe01-2009-2010",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2008-10",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 10.1,
-    "box": {
-      "ppg": 12,
-      "rpg": 2.9,
-      "apg": 4.7,
-      "spg": 1.1,
-      "bpg": 0.1,
-      "fgPct": 0.479,
-      "threePct": 0.353,
-      "threePA": 2.1,
-      "ftPct": 0.828,
-      "tsPct": 0.548
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "udrihbe01-2010-2011",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2009-11",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 10.5,
-    "box": {
-      "ppg": 13.3,
-      "rpg": 3.1,
-      "apg": 4.8,
-      "spg": 1.2,
-      "bpg": 0.1,
-      "fgPct": 0.497,
-      "threePct": 0.367,
-      "threePA": 2.4,
-      "ftPct": 0.854,
-      "tsPct": 0.577
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Chaser"
-  },
-  {
-    "id": "udrihbe01-2011-2012",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2010-12",
-    "primaryPosition": "PG",
-    "secondaryPositions": [
-      "SG"
-    ],
-    "fga": 8.4,
-    "box": {
-      "ppg": 10.4,
-      "rpg": 2.7,
-      "apg": 4.4,
-      "spg": 0.9,
-      "bpg": 0.1,
-      "fgPct": 0.483,
-      "threePct": 0.34,
-      "threePA": 1.7,
-      "ftPct": 0.834,
-      "tsPct": 0.559
-    },
-    "offensiveArchetype": "Secondary Ball Handler",
-    "defensiveRole": "Helper"
-  },
-  {
-    "id": "udrihbe01-2012-2013",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2011-13",
-    "primaryPosition": "SG",
-    "secondaryPositions": [],
-    "fga": 6.5,
-    "box": {
-      "ppg": 7.1,
-      "rpg": 1.9,
-      "apg": 4.2,
-      "spg": 0.6,
-      "bpg": 0,
-      "fgPct": 0.441,
-      "threePct": 0.317,
-      "threePA": 1.3,
-      "ftPct": 0.778,
-      "tsPct": 0.503
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "udrihbe01-2014-2015",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2013-15",
-    "primaryPosition": "PG",
-    "secondaryPositions": [
-      "SG"
-    ],
-    "fga": 5.7,
-    "box": {
-      "ppg": 6.7,
-      "rpg": 1.7,
-      "apg": 2.8,
-      "spg": 0.6,
-      "bpg": 0.1,
-      "fgPct": 0.474,
-      "threePct": 0.324,
-      "threePA": 1.2,
-      "ftPct": 0.848,
-      "tsPct": 0.542
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
-    "id": "udrihbe01-2015-2016",
-    "playerName": "Beno Udrih",
-    "spanLabel": "2014-16",
-    "primaryPosition": "PG",
-    "secondaryPositions": [],
-    "fga": 5.7,
-    "box": {
-      "ppg": 6.6,
-      "rpg": 1.7,
-      "apg": 2.7,
-      "spg": 0.5,
-      "bpg": 0.1,
-      "fgPct": 0.472,
-      "threePct": 0.291,
-      "threePA": 1.1,
-      "ftPct": 0.861,
-      "tsPct": 0.538
-    },
-    "offensiveArchetype": "Athletic Finisher",
-    "defensiveRole": "Low Activity"
-  },
-  {
     "id": "unselwe01-1969-1970",
     "playerName": "Wes Unseld",
     "spanLabel": "1968-70",
@@ -94842,6 +93684,270 @@
     "defensiveRole": "Chaser"
   },
   {
+    "id": "wilkele01-1963-1964",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1962-64",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 10.7,
+    "box": {
+      "ppg": 11.9,
+      "rpg": 4.8,
+      "apg": 4.8,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.406,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.719,
+      "tsPct": 0.47
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1964-1965",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1963-65",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 11.9,
+    "box": {
+      "ppg": 14.2,
+      "rpg": 4.5,
+      "apg": 5.1,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.414,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.743,
+      "tsPct": 0.49
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1965-1966",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1964-66",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 13.6,
+    "box": {
+      "ppg": 17.2,
+      "rpg": 4.7,
+      "apg": 5.9,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.422,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.769,
+      "tsPct": 0.51
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1966-1967",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1965-67",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 13.5,
+    "box": {
+      "ppg": 17.7,
+      "rpg": 5,
+      "apg": 5.9,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.432,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.79,
+      "tsPct": 0.526
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1967-1968",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1966-68",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 14.3,
+    "box": {
+      "ppg": 18.7,
+      "rpg": 5.3,
+      "apg": 7,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.436,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.777,
+      "tsPct": 0.524
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1968-1969",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1967-69",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 16.5,
+    "box": {
+      "ppg": 21.2,
+      "rpg": 5.8,
+      "apg": 8.3,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.439,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.769,
+      "tsPct": 0.522
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1969-1970",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1968-70",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 16.1,
+    "box": {
+      "ppg": 20.2,
+      "rpg": 5.7,
+      "apg": 8.6,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.432,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.778,
+      "tsPct": 0.514
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1970-1971",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1969-71",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 15,
+    "box": {
+      "ppg": 18.7,
+      "rpg": 4.8,
+      "apg": 9.2,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.419,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.796,
+      "tsPct": 0.508
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1971-1972",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1970-72",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 14.3,
+    "box": {
+      "ppg": 18.8,
+      "rpg": 4.4,
+      "apg": 9.4,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.441,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.788,
+      "tsPct": 0.529
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1972-1973",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1971-73",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 14.9,
+    "box": {
+      "ppg": 19.2,
+      "rpg": 4.4,
+      "apg": 9,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.457,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.797,
+      "tsPct": 0.533
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1973-1974",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1972-74",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 15.2,
+    "box": {
+      "ppg": 18.5,
+      "rpg": 4.2,
+      "apg": 7.7,
+      "spg": 0,
+      "bpg": 0,
+      "fgPct": 0.456,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.816,
+      "tsPct": 0.523
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "wilkele01-1974-1975",
+    "playerName": "Lenny Wilkens",
+    "spanLabel": "1973-75",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 9.3,
+    "box": {
+      "ppg": 11.7,
+      "rpg": 2.9,
+      "apg": 5.4,
+      "spg": 1.3,
+      "bpg": 0.2,
+      "fgPct": 0.459,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.789,
+      "tsPct": 0.528
+    },
+    "offensiveArchetype": "Secondary Ball Handler",
+    "defensiveRole": "Chaser"
+  },
+  {
     "id": "wilkido01-1983-1984",
     "playerName": "Dominique Wilkins",
     "spanLabel": "1982-84",
@@ -96582,6 +95688,226 @@
     "defensiveRole": "Anchor Big"
   },
   {
+    "id": "williwa02-1993-1994",
+    "playerName": "Walt Williams",
+    "spanLabel": "1992-94",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 12.1,
+    "box": {
+      "ppg": 14.1,
+      "rpg": 4.3,
+      "apg": 2.7,
+      "spg": 1,
+      "bpg": 0.4,
+      "fgPct": 0.416,
+      "threePct": 0.307,
+      "threePA": 2.8,
+      "ftPct": 0.695,
+      "tsPct": 0.499
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "williwa02-1994-1995",
+    "playerName": "Walt Williams",
+    "spanLabel": "1993-95",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 11.8,
+    "box": {
+      "ppg": 14.2,
+      "rpg": 4.3,
+      "apg": 3.3,
+      "spg": 1.3,
+      "bpg": 0.6,
+      "fgPct": 0.425,
+      "threePct": 0.329,
+      "threePA": 3.2,
+      "ftPct": 0.693,
+      "tsPct": 0.516
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "williwa02-1995-1996",
+    "playerName": "Walt Williams",
+    "spanLabel": "1994-96",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 12,
+    "box": {
+      "ppg": 15,
+      "rpg": 4.4,
+      "apg": 3.6,
+      "spg": 1.4,
+      "bpg": 0.8,
+      "fgPct": 0.445,
+      "threePct": 0.368,
+      "threePA": 3.9,
+      "ftPct": 0.72,
+      "tsPct": 0.546
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "williwa02-1996-1997",
+    "playerName": "Walt Williams",
+    "spanLabel": "1995-97",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 12.3,
+    "box": {
+      "ppg": 15,
+      "rpg": 4.7,
+      "apg": 2.9,
+      "spg": 1.2,
+      "bpg": 0.8,
+      "fgPct": 0.435,
+      "threePct": 0.396,
+      "threePA": 5,
+      "ftPct": 0.735,
+      "tsPct": 0.546
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "williwa02-1997-1998",
+    "playerName": "Walt Williams",
+    "spanLabel": "1996-98",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 11.6,
+    "box": {
+      "ppg": 13.7,
+      "rpg": 4.3,
+      "apg": 2.4,
+      "spg": 1.2,
+      "bpg": 0.7,
+      "fgPct": 0.412,
+      "threePct": 0.389,
+      "threePA": 5,
+      "ftPct": 0.799,
+      "tsPct": 0.534
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "williwa02-1998-1999",
+    "playerName": "Walt Williams",
+    "spanLabel": "1997-99",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 8.3,
+    "box": {
+      "ppg": 9.9,
+      "rpg": 3.2,
+      "apg": 1.9,
+      "spg": 0.9,
+      "bpg": 0.6,
+      "fgPct": 0.401,
+      "threePct": 0.394,
+      "threePA": 3.4,
+      "ftPct": 0.849,
+      "tsPct": 0.535
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "williwa02-1999-2000",
+    "playerName": "Walt Williams",
+    "spanLabel": "1998-00",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 8.3,
+    "box": {
+      "ppg": 10.3,
+      "rpg": 3.6,
+      "apg": 1.9,
+      "spg": 0.7,
+      "bpg": 0.6,
+      "fgPct": 0.446,
+      "threePct": 0.407,
+      "threePA": 3.3,
+      "ftPct": 0.826,
+      "tsPct": 0.565
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "williwa02-2000-2001",
+    "playerName": "Walt Williams",
+    "spanLabel": "1999-01",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 8.1,
+    "box": {
+      "ppg": 9.6,
+      "rpg": 3.7,
+      "apg": 1.7,
+      "spg": 0.5,
+      "bpg": 0.5,
+      "fgPct": 0.43,
+      "threePct": 0.393,
+      "threePA": 3.4,
+      "ftPct": 0.795,
+      "tsPct": 0.543
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "williwa02-2001-2002",
+    "playerName": "Walt Williams",
+    "spanLabel": "2000-02",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 7.6,
+    "box": {
+      "ppg": 8.7,
+      "rpg": 3.4,
+      "apg": 1.4,
+      "spg": 0.4,
+      "bpg": 0.3,
+      "fgPct": 0.405,
+      "threePct": 0.408,
+      "threePA": 3.6,
+      "ftPct": 0.774,
+      "tsPct": 0.527
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "williwa02-2002-2003",
+    "playerName": "Walt Williams",
+    "spanLabel": "2001-03",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 6.5,
+    "box": {
+      "ppg": 7.1,
+      "rpg": 3.2,
+      "apg": 1.1,
+      "spg": 0.5,
+      "bpg": 0.3,
+      "fgPct": 0.407,
+      "threePct": 0.401,
+      "threePA": 3.1,
+      "ftPct": 0.703,
+      "tsPct": 0.515
+    },
+    "offensiveArchetype": "Stationary Shooter",
+    "defensiveRole": "Low Activity"
+  },
+  {
     "id": "wingada01-1987-1988",
     "playerName": "David Wingate",
     "spanLabel": "1986-88",
@@ -96968,6 +96294,226 @@
     "defensiveRole": "Mobile Big"
   },
   {
+    "id": "woolror01-1982-1983",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1981-83",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 7.7,
+    "box": {
+      "ppg": 11.3,
+      "rpg": 4,
+      "apg": 1.3,
+      "spg": 0.5,
+      "bpg": 0.5,
+      "fgPct": 0.554,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.661,
+      "tsPct": 0.593
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "woolror01-1983-1984",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1982-84",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 12.9,
+    "box": {
+      "ppg": 18.1,
+      "rpg": 5.1,
+      "apg": 1.8,
+      "spg": 0.8,
+      "bpg": 0.8,
+      "fgPct": 0.545,
+      "threePct": 0.2,
+      "threePA": 0,
+      "ftPct": 0.681,
+      "tsPct": 0.586
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "woolror01-1984-1985",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1983-85",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 15.2,
+    "box": {
+      "ppg": 21.1,
+      "rpg": 5.3,
+      "apg": 1.8,
+      "spg": 0.8,
+      "bpg": 0.6,
+      "fgPct": 0.54,
+      "threePct": 0.143,
+      "threePA": 0,
+      "ftPct": 0.753,
+      "tsPct": 0.588
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "woolror01-1985-1986",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1984-86",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 15.7,
+    "box": {
+      "ppg": 21.9,
+      "rpg": 5.3,
+      "apg": 2.4,
+      "spg": 0.7,
+      "bpg": 0.6,
+      "fgPct": 0.527,
+      "threePct": 0.143,
+      "threePA": 0.2,
+      "ftPct": 0.786,
+      "tsPct": 0.587
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "woolror01-1986-1987",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1985-87",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 14.9,
+    "box": {
+      "ppg": 20.7,
+      "rpg": 4.9,
+      "apg": 3.3,
+      "spg": 0.7,
+      "bpg": 0.9,
+      "fgPct": 0.508,
+      "threePct": 0.161,
+      "threePA": 0.2,
+      "ftPct": 0.782,
+      "tsPct": 0.575
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "woolror01-1989-1990",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1988-90",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 7.7,
+    "box": {
+      "ppg": 11.1,
+      "rpg": 3.3,
+      "apg": 1.1,
+      "spg": 0.5,
+      "bpg": 0.8,
+      "fgPct": 0.514,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.736,
+      "tsPct": 0.579
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "woolror01-1990-1991",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1989-91",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 13.3,
+    "box": {
+      "ppg": 18.4,
+      "rpg": 4.7,
+      "apg": 1.9,
+      "spg": 0.9,
+      "bpg": 0.6,
+      "fgPct": 0.519,
+      "threePct": 0,
+      "threePA": 0.1,
+      "ftPct": 0.775,
+      "tsPct": 0.579
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "woolror01-1991-1992",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1990-92",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 14,
+    "box": {
+      "ppg": 18.3,
+      "rpg": 4.6,
+      "apg": 1.5,
+      "spg": 0.8,
+      "bpg": 0.4,
+      "fgPct": 0.498,
+      "threePct": 0.077,
+      "threePA": 0.1,
+      "ftPct": 0.746,
+      "tsPct": 0.552
+    },
+    "offensiveArchetype": "Shot Creator",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "woolror01-1992-1993",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1991-93",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 10.8,
+    "box": {
+      "ppg": 13.2,
+      "rpg": 3.2,
+      "apg": 1.5,
+      "spg": 0.5,
+      "bpg": 0.4,
+      "fgPct": 0.492,
+      "threePct": 0.056,
+      "threePA": 0.1,
+      "ftPct": 0.681,
+      "tsPct": 0.529
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "woolror01-1993-1994",
+    "playerName": "Orlando Woolridge",
+    "spanLabel": "1992-94",
+    "primaryPosition": "SF",
+    "secondaryPositions": [],
+    "fga": 10.4,
+    "box": {
+      "ppg": 12.4,
+      "rpg": 3.7,
+      "apg": 1.9,
+      "spg": 0.5,
+      "bpg": 0.6,
+      "fgPct": 0.476,
+      "threePct": 0.043,
+      "threePA": 0.2,
+      "ftPct": 0.685,
+      "tsPct": 0.517
+    },
+    "offensiveArchetype": "Slasher",
+    "defensiveRole": "Low Activity"
+  },
+  {
     "id": "worthja01-1983-1984",
     "playerName": "James Worthy",
     "spanLabel": "1982-84",
@@ -97212,6 +96758,468 @@
     },
     "offensiveArchetype": "Slasher",
     "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngda01-1986-1987",
+    "playerName": "Danny Young",
+    "spanLabel": "1985-87",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 4.8,
+    "box": {
+      "ppg": 5.9,
+      "rpg": 1.5,
+      "apg": 4.2,
+      "spg": 1.2,
+      "bpg": 0.1,
+      "fgPct": 0.487,
+      "threePct": 0.346,
+      "threePA": 1,
+      "ftPct": 0.842,
+      "tsPct": 0.556
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "youngda01-1987-1988",
+    "playerName": "Danny Young",
+    "spanLabel": "1986-88",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 3.4,
+    "box": {
+      "ppg": 4,
+      "rpg": 1.3,
+      "apg": 3.8,
+      "spg": 0.8,
+      "bpg": 0,
+      "fgPct": 0.437,
+      "threePct": 0.327,
+      "threePA": 1,
+      "ftPct": 0.823,
+      "tsPct": 0.531
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngda01-1988-1989",
+    "playerName": "Danny Young",
+    "spanLabel": "1987-89",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 3.7,
+    "box": {
+      "ppg": 4.3,
+      "rpg": 1.2,
+      "apg": 2.7,
+      "spg": 0.9,
+      "bpg": 0,
+      "fgPct": 0.436,
+      "threePct": 0.307,
+      "threePA": 1,
+      "ftPct": 0.795,
+      "tsPct": 0.523
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngda01-1989-1990",
+    "playerName": "Danny Young",
+    "spanLabel": "1988-90",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 4.4,
+    "box": {
+      "ppg": 5.2,
+      "rpg": 1.5,
+      "apg": 2.7,
+      "spg": 1.1,
+      "bpg": 0.1,
+      "fgPct": 0.438,
+      "threePct": 0.303,
+      "threePA": 0.8,
+      "ftPct": 0.801,
+      "tsPct": 0.52
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Chaser"
+  },
+  {
+    "id": "youngda01-1990-1991",
+    "playerName": "Danny Young",
+    "spanLabel": "1989-91",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 3.8,
+    "box": {
+      "ppg": 4.2,
+      "rpg": 1.3,
+      "apg": 2.4,
+      "spg": 0.8,
+      "bpg": 0.1,
+      "fgPct": 0.402,
+      "threePct": 0.319,
+      "threePA": 1,
+      "ftPct": 0.841,
+      "tsPct": 0.495
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngda01-1991-1992",
+    "playerName": "Danny Young",
+    "spanLabel": "1990-92",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 3.8,
+    "box": {
+      "ppg": 4.1,
+      "rpg": 1.1,
+      "apg": 2.3,
+      "spg": 0.7,
+      "bpg": 0.1,
+      "fgPct": 0.386,
+      "threePct": 0.339,
+      "threePA": 1.3,
+      "ftPct": 0.875,
+      "tsPct": 0.493
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "youngda01-1992-1993",
+    "playerName": "Danny Young",
+    "spanLabel": "1991-93",
+    "primaryPosition": "PG",
+    "secondaryPositions": [],
+    "fga": 3.3,
+    "box": {
+      "ppg": 3.7,
+      "rpg": 1,
+      "apg": 2.3,
+      "spg": 0.6,
+      "bpg": 0.1,
+      "fgPct": 0.4,
+      "threePct": 0.326,
+      "threePA": 1.1,
+      "ftPct": 0.859,
+      "tsPct": 0.508
+    },
+    "offensiveArchetype": "Athletic Finisher",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "youngth01-2008-2009",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2007-09",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 9.7,
+    "box": {
+      "ppg": 11.8,
+      "rpg": 4.6,
+      "apg": 1,
+      "spg": 1.2,
+      "bpg": 0.2,
+      "fgPct": 0.51,
+      "threePct": 0.339,
+      "threePA": 1.2,
+      "ftPct": 0.736,
+      "tsPct": 0.559
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "youngth01-2009-2010",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2008-10",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 12.5,
+    "box": {
+      "ppg": 14.6,
+      "rpg": 5.1,
+      "apg": 1.3,
+      "spg": 1.3,
+      "bpg": 0.3,
+      "fgPct": 0.483,
+      "threePct": 0.344,
+      "threePA": 2.1,
+      "ftPct": 0.715,
+      "tsPct": 0.537
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "youngth01-2010-2011",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2009-11",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 11.1,
+    "box": {
+      "ppg": 13.2,
+      "rpg": 5.3,
+      "apg": 1.2,
+      "spg": 1.1,
+      "bpg": 0.3,
+      "fgPct": 0.506,
+      "threePct": 0.338,
+      "threePA": 1.1,
+      "ftPct": 0.699,
+      "tsPct": 0.545
+    },
+    "offensiveArchetype": "Post Scorer",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "youngth01-2011-2012",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2010-12",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 10.6,
+    "box": {
+      "ppg": 12.8,
+      "rpg": 5.2,
+      "apg": 1.1,
+      "spg": 1.1,
+      "bpg": 0.5,
+      "fgPct": 0.525,
+      "threePct": 0.269,
+      "threePA": 0.2,
+      "ftPct": 0.736,
+      "tsPct": 0.553
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "youngth01-2012-2013",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2011-13",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 11.8,
+    "box": {
+      "ppg": 13.9,
+      "rpg": 6.4,
+      "apg": 1.4,
+      "spg": 1.4,
+      "bpg": 0.7,
+      "fgPct": 0.521,
+      "threePct": 0.167,
+      "threePA": 0.1,
+      "ftPct": 0.66,
+      "tsPct": 0.541
+    },
+    "offensiveArchetype": "Post Scorer",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngth01-2013-2014",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2012-14",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 14.5,
+    "box": {
+      "ppg": 16.4,
+      "rpg": 6.8,
+      "apg": 2,
+      "spg": 1.9,
+      "bpg": 0.6,
+      "fgPct": 0.487,
+      "threePct": 0.303,
+      "threePA": 1.9,
+      "ftPct": 0.65,
+      "tsPct": 0.523
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngth01-2014-2015",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2013-15",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 14.5,
+    "box": {
+      "ppg": 16.1,
+      "rpg": 5.7,
+      "apg": 2.3,
+      "spg": 1.9,
+      "bpg": 0.4,
+      "fgPct": 0.459,
+      "threePct": 0.314,
+      "threePA": 2.6,
+      "ftPct": 0.685,
+      "tsPct": 0.512
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "youngth01-2015-2016",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2014-16",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 13,
+    "box": {
+      "ppg": 14.6,
+      "rpg": 7.2,
+      "apg": 2.1,
+      "spg": 1.6,
+      "bpg": 0.4,
+      "fgPct": 0.49,
+      "threePct": 0.31,
+      "threePA": 1,
+      "ftPct": 0.65,
+      "tsPct": 0.519
+    },
+    "offensiveArchetype": "Post Scorer",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngth01-2016-2017",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2015-17",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 11.2,
+    "box": {
+      "ppg": 13,
+      "rpg": 7.5,
+      "apg": 1.8,
+      "spg": 1.5,
+      "bpg": 0.4,
+      "fgPct": 0.519,
+      "threePct": 0.351,
+      "threePA": 1,
+      "ftPct": 0.602,
+      "tsPct": 0.544
+    },
+    "offensiveArchetype": "Post Scorer",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngth01-2017-2018",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2016-18",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 10,
+    "box": {
+      "ppg": 11.4,
+      "rpg": 6.2,
+      "apg": 1.8,
+      "spg": 1.6,
+      "bpg": 0.4,
+      "fgPct": 0.505,
+      "threePct": 0.344,
+      "threePA": 1.9,
+      "ftPct": 0.562,
+      "tsPct": 0.543
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngth01-2018-2019",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2017-19",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 10.5,
+    "box": {
+      "ppg": 12.2,
+      "rpg": 6.4,
+      "apg": 2.2,
+      "spg": 1.6,
+      "bpg": 0.4,
+      "fgPct": 0.507,
+      "threePct": 0.333,
+      "threePA": 2,
+      "ftPct": 0.626,
+      "tsPct": 0.549
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Helper"
+  },
+  {
+    "id": "youngth01-2019-2020",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2018-20",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 9.9,
+    "box": {
+      "ppg": 11.6,
+      "rpg": 5.8,
+      "apg": 2.2,
+      "spg": 1.5,
+      "bpg": 0.4,
+      "fgPct": 0.494,
+      "threePct": 0.353,
+      "threePA": 2.5,
+      "ftPct": 0.623,
+      "tsPct": 0.551
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "youngth01-2020-2021",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2019-21",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 9.6,
+    "box": {
+      "ppg": 11.2,
+      "rpg": 5.6,
+      "apg": 3.1,
+      "spg": 1.3,
+      "bpg": 0.5,
+      "fgPct": 0.506,
+      "threePct": 0.341,
+      "threePA": 2,
+      "ftPct": 0.611,
+      "tsPct": 0.548
+    },
+    "offensiveArchetype": "Versatile Big",
+    "defensiveRole": "Low Activity"
+  },
+  {
+    "id": "youngth01-2021-2022",
+    "playerName": "Thaddeus Young",
+    "spanLabel": "2020-22",
+    "primaryPosition": "PF",
+    "secondaryPositions": [],
+    "fga": 7.8,
+    "box": {
+      "ppg": 9.5,
+      "rpg": 5.3,
+      "apg": 3.3,
+      "spg": 1.1,
+      "bpg": 0.5,
+      "fgPct": 0.547,
+      "threePct": 0.312,
+      "threePA": 0.8,
+      "ftPct": 0.58,
+      "tsPct": 0.566
+    },
+    "offensiveArchetype": "Roll & Cut Big",
+    "defensiveRole": "Low Activity"
   },
   {
     "id": "youngtr01-2019-2020",
