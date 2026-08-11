@@ -1,6 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { computeDefensiveImpact } from './defense';
 import { ddpmCoverageForSpan, raptorCoverageForSpan, matchupCoverageForSpan, bpm2CoverageForSpan } from './blendedDefenseLookup';
+import { spanEndYears } from './era';
 import coefficients from '../data/awards/correctionCoefficients.json';
 
 /**
@@ -121,6 +122,30 @@ const EXCESS_TO_BONUS_SCALE = 6;
 const MAX_DARKO_BONUS = 9;
 
 /**
+ * Steals and blocks became official NBA box-score fields in 1973-74. For earlier seasons,
+ * `computeDefensiveImpact` is structurally missing two of its three defensive-activity inputs,
+ * while BPM2 is the only source in this project that supplies an era-adjusted defensive signal.
+ * Applying the modern +9 residual cap to those spans throws away most of that signal: across
+ * the full pre-1974 population with positive BPM2 residuals, the uncapped bonus distribution is
+ * p90=19.8, p95=22.7 and p99=25.3 component points (`scripts/auditHistoricalTalent.ts`).
+ *
+ * Use the rounded p99 as the ceiling only when every year in a span predates official stocks.
+ * Mixed spans interpolate by their missing-stocks share, avoiding a cliff at 1973-74. This is
+ * source/era based, not an old-player or named-player boost; negative residuals retain the same
+ * conservative malus below. BPM2 remains a last-resort source and still cannot override real
+ * DARKO/RAPTOR/matchup coverage.
+ */
+const FIRST_OFFICIAL_STOCKS_END_YEAR = 1974;
+const MAX_PRE_STOCKS_BPM2_BONUS = 25;
+
+function maximumDefenseBonus(span: PlayerSpan): number {
+  const years = spanEndYears(span.spanLabel);
+  if (years.length === 0) return MAX_DARKO_BONUS;
+  const missingStocksShare = years.filter((year) => year < FIRST_OFFICIAL_STOCKS_END_YEAR).length / years.length;
+  return MAX_DARKO_BONUS + missingStocksShare * (MAX_PRE_STOCKS_BPM2_BONUS - MAX_DARKO_BONUS);
+}
+
+/**
  * 2026-07-31, user comparison of Shane Battier (real DDPM excess +1.92, TAL 65) against OG
  * Anunoby (excess +0.33, TAL 58): checked directly and confirmed **86% of their entire 7-point
  * TAL gap** came from this one linear scale alone (6.04 of 7 points, `excess * 0.4 blend * 2.15
@@ -155,7 +180,7 @@ const MAX_DARKO_BONUS = 9;
 export function darkoDefenseBonus(span: PlayerSpan): number {
   const excess = blendedExcess(span);
   if (excess === null) return 0;
-  return excess > 0 ? Math.min(MAX_DARKO_BONUS, excess * EXCESS_TO_BONUS_SCALE) : 0;
+  return excess > 0 ? Math.min(maximumDefenseBonus(span), excess * EXCESS_TO_BONUS_SCALE) : 0;
 }
 
 /** The mirror-image case: real DARKO data confirming the box score *overestimates* defensive

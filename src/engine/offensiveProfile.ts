@@ -1,5 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
-import { zoneTotalsForSpan, buildZoneYearMap } from './zoneEfficiencyLookup';
+import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 
 /**
@@ -22,8 +22,6 @@ import { playmakingScoreForPlayer } from './playmakingLookup';
  * codebase genuinely didn't have before: the rim/mid side of the shot diet, and a playmaking-
  * balance read of self-sufficiency.
  */
-
-const zoneYearMap = buildZoneYearMap();
 
 export interface OffensiveProfile {
   hasZoneData: boolean;
@@ -71,7 +69,7 @@ function entropySpread(shares: number[]): number {
 
 export function computeOffensiveProfile(span: PlayerSpan): OffensiveProfile {
   const playmakingGravity = playmakingScoreForPlayer(span);
-  const totals = zoneTotalsForSpan(span, zoneYearMap);
+  const totals = runtimeZoneTotalsForSpan(span);
   if (!totals) {
     return { ...NEUTRAL_PROFILE, hasPlaymakingData: playmakingGravity !== null, playmakingGravity: playmakingGravity ?? 50 };
   }

@@ -544,6 +544,18 @@ select {
   white-space: nowrap;
 }
 
+/* Stable whole-career position label (e.g. "PG/SG") shown right next to the name — a quick
+   identity cue for a player the user doesn't recognize, deliberately muted so it doesn't compete
+   with the name itself. */
+.pg-natural-position {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
 .pg-meta,
 .pg-fga,
 .pg-tal,
@@ -882,6 +894,32 @@ select {
   white-space: nowrap;
 }
 
+.data-provenance-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.data-measured {
+  color: #70d6a4;
+  background: rgb(25 105 72 / 20%);
+}
+
+.data-mixed {
+  color: #f4c86a;
+  background: rgb(131 91 24 / 22%);
+}
+
+.data-manual {
+  color: #ff8f8f;
+  background: rgb(139 43 43 / 22%);
+}
+
 /* The stat columns are wide enough to need horizontal scrolling on a narrow screen, but the
    Draft button must never scroll out of reach — pin the last column to the right edge. */
 .span-table th:last-child,
@@ -1017,6 +1055,45 @@ select {
 
 .feedback-field select {
   margin-left: 6px;
+}
+
+.user-rank-input {
+  margin-left: 6px;
+  width: 56px;
+  font: inherit;
+}
+
+.user-rank-hint {
+  margin-left: 8px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* 2026-08-09, user's explicit ask: the per-team ranking number moved out of each team's own
+   feedback block into one consolidated section at the end of the results screen, right before
+   the Draft Again / export actions. */
+.user-power-ranking {
+  border-top: 1px solid var(--border, #ddd);
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.user-power-ranking-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.user-power-ranking-label {
+  min-width: 220px;
+  font-weight: 500;
+}
+
+.user-power-ranking-row .feedback-textarea {
+  flex-basis: 100%;
+  margin-top: 4px;
 }
 
 .feedback-textarea {

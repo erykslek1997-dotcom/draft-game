@@ -1,11 +1,14 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { SPACING_ARCHETYPES } from '../data/schema';
-import { players } from '../data/players';
 import { computeSpacing } from './spacing';
 import { positionAdjustedTsBaseline } from './era';
-import { computeDefensiveTalent, lowUsageEfficiencyFactor, extremeUsageRatioPenalty } from './talent';
-import { selfCreationPercentileForPortability } from './selfCreationSimilarity';
-import { buildZoneYearMap, zoneTotalsForSpan } from './zoneEfficiencyLookup';
+import { lowUsageEfficiencyFactor, extremeUsageRatioPenalty } from './talent';
+import {
+  runtimeDefenseTalentPercentile,
+  runtimeOffensivePortabilityRange,
+  runtimeSelfCreationPercentile,
+} from './runtimePercentiles';
+import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 
 /**
  * Portability (a.k.a. scalability) answers a different question than `computeTalent`: not
@@ -138,38 +141,10 @@ const BASELINE = 55;
  * by which point the whole module graph has finished its synchronous top-level evaluation
  * regardless of the cycle — cycles only break EAGER top-level evaluation order, not later calls.
  */
-let defenseTalentSortedByPositionCache: Map<Position, Float64Array> | null = null;
-function defenseTalentSortedByPosition(): Map<Position, Float64Array> {
-  if (defenseTalentSortedByPositionCache) return defenseTalentSortedByPositionCache;
-  const byPos = new Map<Position, number[]>();
-  for (const span of players) {
-    const arr = byPos.get(span.primaryPosition) ?? [];
-    arr.push(computeDefensiveTalent(span));
-    byPos.set(span.primaryPosition, arr);
-  }
-  const sorted = new Map<Position, Float64Array>();
-  for (const [pos, arr] of byPos) {
-    arr.sort((a, b) => a - b);
-    sorted.set(pos, Float64Array.from(arr));
-  }
-  defenseTalentSortedByPositionCache = sorted;
-  return sorted;
-}
-
 /** Fraction of `position`'s spans with a strictly lower D-TAL, 0-1 — the position-relative
  * defensive-quality signal `defenseValue`/`twoWayBonus` are built on. */
 function defensePercentileForPosition(span: PlayerSpan): number {
-  const sorted = defenseTalentSortedByPosition().get(span.primaryPosition);
-  if (!sorted || sorted.length === 0) return 0.5;
-  const value = computeDefensiveTalent(span);
-  let lo = 0;
-  let hi = sorted.length;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (sorted[mid] < value) lo = mid + 1;
-    else hi = mid;
-  }
-  return lo / sorted.length;
+  return runtimeDefenseTalentPercentile(span);
 }
 
 /**
@@ -256,11 +231,9 @@ const RIM_TARGET_GOOD_PCT = 60;
 const RIM_TARGET_SCALE = 2.0;
 const MAX_RIM_TARGET_VALUE = 24;
 const RIM_TARGET_POSITIONS: ReadonlySet<Position> = new Set(['PF', 'C']);
-const zoneMapForPortability = buildZoneYearMap();
-
 function rimTargetValue(span: PlayerSpan): number {
   if (!RIM_TARGET_POSITIONS.has(span.primaryPosition)) return 0;
-  const totals = zoneTotalsForSpan(span, zoneMapForPortability);
+  const totals = runtimeZoneTotalsForSpan(span);
   if (!totals) return 0;
   const classified = totals.rimFga + totals.midFga + totals.threeFga;
   if (classified < 150) return 0; // same volume floor as playmakingThreeLevel.ts's zone-based terms
@@ -315,7 +288,7 @@ export function offenseComponents(span: PlayerSpan): OffenseComponents {
     shootPct * shootPct * SPACING_VALUE_SCALE +
     (SPACING_ARCHETYPES.includes(span.offensiveArchetype) ? SPACING_ARCHETYPE_BONUS : 0);
   const rimTarget = rimTargetValue(span);
-  const rawUsagePenalty = selfCreationPercentileForPortability(span) * SELF_CREATION_MAX_PENALTY;
+  const rawUsagePenalty = runtimeSelfCreationPercentile(span) * SELF_CREATION_MAX_PENALTY;
   const usagePenalty = BIG_SELF_CREATION_POSITIONS.has(span.primaryPosition)
     ? rawUsagePenalty * BIG_SELF_CREATION_PENALTY_SCALE
     : rawUsagePenalty;
@@ -343,7 +316,8 @@ function defenseComponentsFor(span: PlayerSpan): DefenseComponents {
   return { defPct, defenseValue };
 }
 
-function rawOffensivePortability(span: PlayerSpan): number {
+/** Exported for the runtime-percentile build; production callers should use the scaled score. */
+export function rawOffensivePortability(span: PlayerSpan): number {
   const { spacingValue, rimTargetValue: rimTarget, efficiencyValue, usagePenalty, extremeUsagePenalty } = offenseComponents(span);
   return BASELINE + spacingValue + rimTarget + efficiencyValue - usagePenalty - extremeUsagePenalty;
 }
@@ -369,26 +343,9 @@ function rawOffensivePortability(span: PlayerSpan): number {
  * position: genuinely close to that position's own realistic ceiling, not an arbitrary raw
  * number that happens to favor whichever position's formula has more terms.
  */
-let offensivePortabilityRangeCache: Map<Position, { min: number; max: number }> | null = null;
-function offensivePortabilityRangeByPosition(): Map<Position, { min: number; max: number }> {
-  if (offensivePortabilityRangeCache) return offensivePortabilityRangeCache;
-  const byPos = new Map<Position, { min: number; max: number }>();
-  for (const span of players) {
-    const raw = rawOffensivePortability(span);
-    const cur = byPos.get(span.primaryPosition);
-    if (!cur) byPos.set(span.primaryPosition, { min: raw, max: raw });
-    else {
-      cur.min = Math.min(cur.min, raw);
-      cur.max = Math.max(cur.max, raw);
-    }
-  }
-  offensivePortabilityRangeCache = byPos;
-  return byPos;
-}
-
 export function computeOffensivePortability(span: PlayerSpan): number {
   const raw = rawOffensivePortability(span);
-  const range = offensivePortabilityRangeByPosition().get(span.primaryPosition);
+  const range = runtimeOffensivePortabilityRange(span.primaryPosition);
   if (!range || range.max <= range.min) return Math.max(0, Math.min(100, Math.round(raw)));
   const rescaled = ((raw - range.min) / (range.max - range.min)) * 100;
   return Math.max(0, Math.min(100, Math.round(rescaled)));

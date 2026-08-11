@@ -1,7 +1,12 @@
 import type { Position, PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { computeOffensiveTalent, computeDefensiveTalent, rawUncappedTalent } from './talent';
+import {
+  computeUncappedOffensiveTalent,
+  computeDefensiveTalent,
+  rawUncappedTalent,
+  applyGradeCeiling,
+} from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 
 /**
@@ -55,11 +60,23 @@ export function gradeForValue(value: number, sThreshold: number): Grade {
 let offensiveSThreshold: number | null = null;
 let defensiveSThreshold: number | null = null;
 
-export function offensiveGrade(value: number): Grade {
+/**
+ * 2026-08-08, Harden S-grade narrowing follow-up (see `computeUncappedOffensiveTalent`'s own
+ * docstring in talent.ts for the root cause). The pool-wide threshold now reads the real,
+ * unflattened spread instead of the clamped-at-100 one, so it lands well above the old value —
+ * `uncappedValue` lets every call site's S-check compare against that same real number. Below the
+ * threshold this makes no difference (the clamp only ever changes values that were already >100
+ * before clamping, and every A+ band starts at 95 — comfortably below where the clamp kicks in —
+ * so an uncapped 105 and a clamped 100 land in the same letter bucket either way), which is why
+ * `uncappedValue` defaults to `value`: any caller that only has the already-clamped display number
+ * (validation scripts, synthetic contexts) keeps its exact old behavior, it just can't distinguish
+ * two different top-of-scale spans from each other for the S cutoff specifically.
+ */
+export function offensiveGrade(value: number, uncappedValue: number = value): Grade {
   if (offensiveSThreshold === null) {
-    offensiveSThreshold = computeSThreshold(draftPool.map((p) => computeOffensiveTalent(p)));
+    offensiveSThreshold = computeSThreshold(draftPool.map((p) => computeUncappedOffensiveTalent(p)));
   }
-  return gradeForValue(value, offensiveSThreshold);
+  return uncappedValue >= offensiveSThreshold ? 'S' : letterForValue(value);
 }
 
 export function defensiveGrade(value: number): Grade {
@@ -180,7 +197,17 @@ const TIER_ORDER: OverallTier[] = [
   'Greatest peak',
   'GOAT',
 ];
-function tierRank(t: OverallTier): number {
+/**
+ * Exported (2026-08-08, user's v0.2 rating batch) so UI sort comparators can break ties on the
+ * TIER, not just the raw number — `displayTalentForSpan`'s own number is capped at each tier's
+ * ceiling (`tierCeiling`), and GOAT specifically has no ceiling of its own (`tierCeiling('GOAT')`
+ * is `Infinity`), so a GOAT-tier span and a merely-Greatest-Peak span can land on the EXACT SAME
+ * displayed number (both 98, say) with nothing in the number itself distinguishing them. Found via
+ * LeBron (GOAT, 98) sorting BELOW Larry Bird (Greatest peak, 98) in the draft pool list — the sort
+ * only compared the tied number, so array order (not rank) decided who showed first. See
+ * `DraftBoard.tsx`'s own sort comparator for the fix.
+ */
+export function tierRank(t: OverallTier): number {
   return TIER_ORDER.indexOf(t);
 }
 function stricterTier(a: OverallTier, b: OverallTier): OverallTier {
@@ -196,14 +223,57 @@ const TIER_GATE_LOW_FGA = 10;
  * (the most restrictive wins — see `stricterTier` fold below). Every threshold reuses the exact
  * letter-grade bands `offensiveGrade`/`defensiveGrade` already display, so the rule reads the
  * same way the user specified it ("PG below A- can't be MVP") rather than a re-derived number. */
-function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: number): OverallTier[] {
+/**
+ * 2026-08-08, user's explicit, direct ask: Harden's 2018-20 span (his real 35.3 ppg MVP season,
+ * O-TAL A+/106 uncapped after the SG position fix earlier this session) reaches "Greatest peak"
+ * — a single, named span exception, matching this project's existing `GOAT_NAMES` precedent
+ * (below) for "the user explicitly wants this exact display outcome, not a formula fix."
+ * Deliberately does NOT touch the O-TAL grade itself (stays honest A+, not faked to S) — this
+ * bypasses only the ONE literal-S/two-way tier-cap gate below, the same shape as `GOAT_NAMES`
+ * bypassing the tier ceiling rather than inventing a fake underlying number. His real defense
+ * (DTAL 62) doesn't clear the two-way bar, and his O-TAL doesn't clear the pool's own S bar
+ * (119, effectively Jokić alone) — asked for directly, not derived from any formula reasoning,
+ * so scoped to this exact (player, span) pair only, not a pattern to extend without being asked
+ * again (same warning `GOAT_NAMES` carries).
+ */
+const NAMED_TIER_EXCEPTIONS: ReadonlySet<string> = new Set(
+  [{ name: 'James Harden', spanLabel: '2018-20' }].map((e) => `${normalizePlayerName(e.name)}|${e.spanLabel}`),
+);
+
+function hasNamedTierException(playerName?: string, spanLabel?: string): boolean {
+  if (!playerName || !spanLabel) return false;
+  return NAMED_TIER_EXCEPTIONS.has(`${normalizePlayerName(playerName)}|${spanLabel}`);
+}
+
+function tierCaps(
+  position: Position,
+  otalGrade: Grade,
+  dtalGrade: Grade,
+  fga: number,
+  namedTierException: boolean = false,
+): OverallTier[] {
   const caps: OverallTier[] = [];
   switch (position) {
-    case 'PG':
+    case 'PG': {
       // Real half-court shot creation (grade + volume) is the PG case for MVP+; missing either
       // caps at All-NBA. A weak offensive grade on top of that caps much lower, at Starter.
+      //
+      // 2026-08-08, user-reported: Mike Conley's headline span (2011-13, TAL73, DTAL88/A-) reads
+      // as merely "Starter" — root-caused to this exact Starter cap having NO two-way exemption
+      // at all, unlike SG's/C's equivalent cap one tier up (`sgTwoWayElite`/`cTwoWayElite` below).
+      // A truly elite defender (A- or better) covers for a below-average offense the same way
+      // this project already lets elite defense cover for offense everywhere else — added the
+      // same shape of bypass. Checked blast radius first (`scripts/_checkPgTwoWayExemptionBlast.ts`,
+      // deleted after use): 36 of 1121 PG spans clear the DTAL>=A- floor while failing the OTAL
+      // floor — a real, coherent population of legitimately elite defensive point guards (Payton,
+      // Kidd, Blaylock, Rondo, Holiday, Marcus Smart, Conley, Ben Simmons...), not a broad
+      // giveaway; most sit at low-to-mid raw TAL, so the base tier from raw TAL alone (not this
+      // cap) is still what actually decides most of their final result — this only stops the cap
+      // from artificially dragging down the handful whose TAL is otherwise high enough to clear
+      // Starter on its own.
+      const pgDefenseCarriesStarterCap = gradeAtLeast(dtalGrade, 'A-');
       if (!gradeAtLeast(otalGrade, 'A-') || fga < TIER_GATE_LOW_FGA) caps.push('All-NBA');
-      if (!gradeAtLeast(otalGrade, 'C+')) caps.push('Starter');
+      if (!gradeAtLeast(otalGrade, 'C+') && !pgDefenseCarriesStarterCap) caps.push('Starter');
       // 2026-08-05 follow-up: a genuinely bad defender (below C-) with only an ordinary (not
       // truly elite) offensive peak doesn't have the profile for MVP either — a real top-of-scale
       // offense is its own exemption, same shape as SG's below. Gated on A+ rather than strictly
@@ -212,6 +282,7 @@ function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: n
       // A+ (a fixed 95+ floor) reads the same "truly elite" intent without that fragility.
       if (!gradeAtLeast(dtalGrade, 'C-') && !gradeAtLeast(otalGrade, 'A+')) caps.push('All-NBA');
       break;
+    }
     case 'SG': {
       // 2026-08-05: threshold for the two-way bypass below — user's own follow-up named both
       // Harden (A+) and McGrady (A-) as cases that should clear it, so A- (not A+) is the real
@@ -240,7 +311,22 @@ function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: n
       // is intentional here: this is the defining bar for the rule, not a fragile secondary
       // exemption riding on top of another cap, so it should track the same dynamic "3 best in
       // the pool" S actually means everywhere else it's displayed.
-      if (otalGrade !== 'S') caps.push('MVP');
+      //
+      // 2026-08-08, user's v0.2 rating batch: Kobe and Wade were missing from Greatest Peak
+      // entirely — both are genuine two-way greats (Kobe 2002-04: A offense/B defense; Wade
+      // 2008-10: A offense/A- defense) whose real offensive peak (A/A-, 88-93) never quite
+      // reaches the literal-S bar this rule demands, unlike a pure offensive engine (Harden).
+      // Added a second path: real two-way excellence (OTAL >= A- AND DTAL >= B) also clears the
+      // gate, on the same reasoning the All-NBA rule above already uses one tier down. Checked
+      // the full pool blast radius first (`scripts/_v02_sg_exemption_audit.ts`, deleted after
+      // use): only Kobe/Wade/Magic Johnson (SG-tagged spans) actually clear the underlying TAL>=94
+      // floor this exemption would matter for — Manu Ginóbili and Kobe/Wade's lesser spans also
+      // technically clear the grade bars but sit well below 94 raw, so the cap removal has no
+      // practical effect on them (caps only ever lower a tier, never raise one past the real
+      // numeric floor). Harden correctly stays excluded either way — his DTAL never clears B on
+      // any span.
+      const sgTwoWayElite = gradeAtLeast(otalGrade, 'A-') && gradeAtLeast(dtalGrade, 'B');
+      if (otalGrade !== 'S' && !sgTwoWayElite && !namedTierException) caps.push('MVP');
       break;
     }
     case 'SF':
@@ -259,9 +345,30 @@ function tierCaps(position: Position, otalGrade: Grade, dtalGrade: Grade, fga: n
       // it the same way). The exception has to waive BOTH offense-gated caps below, not just the
       // Greatest-peak one — otherwise the weaker "MVP needs B-" cap still fires on its own and
       // quietly drags an S-defense anchor down to All-NBA instead of the intended Greatest peak.
+      //
+      // 2026-08-08, user's v0.2 rating batch, two follow-ups:
+      // - Dwight Howard was stuck at All-NBA (real DTAL 95, a true A+ anchor, but short of the
+      //   dynamic S threshold which currently sits at 98) and the ask was specifically MVP tier,
+      //   not Greatest peak — relaxed literal-S to a fixed A+ (>=95) for the All-NBA->MVP gate
+      //   ONLY (same "S is a fragile relative cutoff, A+ reads the same elite intent" reasoning as
+      //   the PG defense-cap exemption earlier this batch), deliberately NOT for the MVP->Greatest
+      //   peak gate — Howard's real offense (C+, 67) is meaningfully weaker than every other real
+      //   member of that literal-S club (Hakeem/Robinson/Kareem all B or better), so letting him
+      //   ride pure defense all the way to Greatest peak would overshoot what was actually asked
+      //   and dilute what that top tier is supposed to mean. Checked directly: with the Greatest-
+      //   peak gate left at literal S, Howard lands exactly at MVP as requested.
+      // - Wembanyama (OTAL B/78, DTAL A/93) still doesn't clear A+ defense OR A- offense on his
+      //   own, but IS a genuine two-way anchor — added a second, narrower bypass (OTAL>=B AND
+      //   DTAL>=A) for the MVP->Greatest-peak gate specifically, mirroring the SG two-way path
+      //   above. Checked the blast radius first (`scripts/_v02_c_exemption_audit.ts`, deleted
+      //   after use): only Hakeem/Robinson/Kareem/Wemby clear it — all genuine two-way anchors,
+      //   and the first three already reach Greatest peak via other spans regardless, so Wemby is
+      //   the real beneficiary, not a new blanket relaxation.
       const dtalIsS = dtalGrade === 'S';
-      if (!gradeAtLeast(otalGrade, 'A-') && !dtalIsS) caps.push('MVP');
-      if (!gradeAtLeast(otalGrade, 'B-') && !dtalIsS) caps.push('All-NBA');
+      const dtalIsElite = gradeAtLeast(dtalGrade, 'A+');
+      const cTwoWayElite = gradeAtLeast(otalGrade, 'B') && gradeAtLeast(dtalGrade, 'A');
+      if (!gradeAtLeast(otalGrade, 'A-') && !dtalIsS && !cTwoWayElite) caps.push('MVP');
+      if (!gradeAtLeast(otalGrade, 'B-') && !dtalIsElite) caps.push('All-NBA');
       // 2026-08-05 follow-up: a center with neither side reaching a real B+ doesn't have a
       // standout case for MVP+ either, even if their OTAL alone still clears the B- floor above —
       // caught DeMarcus Cousins (2016-18: OTAL B/77, DTAL C/60 — decent both ways, elite at
@@ -283,6 +390,15 @@ export interface TierGateContext {
    * (`tierContextFor` in DraftBoard.tsx) supplies it; left optional so any caller building a
    * synthetic/hypothetical context (validation scripts, dry-runs) doesn't need to invent a name. */
   playerName?: string;
+  /** Optional, same reasoning as `playerName` above — feeds `offensiveGrade`'s S-check (see its
+   * own docstring). Real UI call sites (`tierContextFor`) supply the span's real
+   * `computeUncappedOffensiveTalent`; synthetic/hypothetical contexts default to `otal`, same as
+   * calling `offensiveGrade` with no second argument. */
+  otalUncapped?: number;
+  /** Optional, same reasoning as `playerName` — feeds `NAMED_TIER_EXCEPTIONS` (a (player, span)
+   * pair, not player alone, same scoping reason `GREATEST_PEAK_TIER_BONUS` in aiDrafter.ts uses
+   * for its own named-span bonuses). */
+  spanLabel?: string;
 }
 
 /**
@@ -310,9 +426,9 @@ const GOAT_NAMES: ReadonlySet<string> = new Set(['Michael Jordan', 'LeBron James
  * to gate on. */
 export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   const base = overallTier(ctx.tal);
-  const otalGrade = offensiveGrade(ctx.otal);
+  const otalGrade = offensiveGrade(ctx.otal, ctx.otalUncapped ?? ctx.otal);
   const dtalGrade = defensiveGrade(ctx.dtal);
-  const caps = tierCaps(ctx.position, otalGrade, dtalGrade, ctx.fga);
+  const caps = tierCaps(ctx.position, otalGrade, dtalGrade, ctx.fga, hasNamedTierException(ctx.playerName, ctx.spanLabel));
   const capped = caps.reduce((tier, cap) => stricterTier(tier, cap), base);
   // GOAT is a RAISE, deliberately the only exception to this function's own "caps only ever
   // lower a tier" rule (see every other case above) — gated on already having earned "Greatest
@@ -349,10 +465,21 @@ function tierCeiling(tier: OverallTier): number {
  * — a much bigger, position-and-role-dependent formula this project has deliberately kept as a
  * pure per-span function (see talent.ts's own docstring on why a roster-context-aware version
  * was rejected); not done without being asked for specifically.
+ *
+ * 2026-08-08, user's own follow-up ("too many PG players at the top with a similar rating"):
+ * the flat `Math.min(ctx.tal, tierCeiling(...))` below was a hard clip, same failure mode
+ * `talent.ts`'s own `applyGradeCeiling` was just built to fix one layer down — auditing the
+ * actual browse-pool view (not just raw TAL) found EIGHT real PG spans (Stockton, Westbrook,
+ * Luka, Archibald, Arenas, Kyrie, Lillard, Terry Porter — real TAL 87-92) all displaying as the
+ * identical "87" because `tierCaps` capped all of them to All-NBA and this clamp flattened every
+ * one onto that tier's exact ceiling. Switched to the same soft-compression `applyGradeCeiling`
+ * already uses: still strictly below the next tier's floor (so the badge and number can never
+ * contradict each other — the original 2026-08-05 reason this clamp exists at all), just no
+ * longer collapsing genuinely different players onto one number.
  */
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const cappedTier = overallTierForSpan(ctx);
-  return Math.min(ctx.tal, tierCeiling(cappedTier));
+  return Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
 }
 
 /**

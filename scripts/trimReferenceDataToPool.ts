@@ -1,5 +1,5 @@
 /**
- * Trims darko.json, historicalApm.json, pipm.json, and raptor.json down to only the players who
+ * Trims DARKO, historical APM, PIPM, RAPTOR, matchup-defense, and BPM2 data to players who
  * ever appear in draftPool.json — the user's ask, after the load-time-fix session. All four are
  * pure per-span lookups at runtime (avgDdpmForSpan / avgHistoricalApmForSpan / avgPipmForSpan /
  * avgRaptorDefenseForSpan, matched by normalized name),
@@ -27,12 +27,15 @@ import { normalizePlayerName } from '../src/data/schema';
 const poolNames = new Set(draftPool.map((p) => normalizePlayerName(p.playerName)));
 console.log('draft pool: unique normalized names:', poolNames.size);
 
-function trim(srcPath: string, outPath: string, nameField: string) {
+function trim(srcPath: string, outPath: string, nameField: string, retainedFields?: string[]) {
   const raw = JSON.parse(readFileSync(srcPath, 'utf8')) as Record<string, unknown>[];
   const before = raw.length;
   const beforeNames = new Set(raw.map((r) => normalizePlayerName(String(r[nameField]))));
 
-  const trimmed = raw.filter((r) => poolNames.has(normalizePlayerName(String(r[nameField]))));
+  const matched = raw.filter((r) => poolNames.has(normalizePlayerName(String(r[nameField]))));
+  const trimmed = retainedFields
+    ? matched.map((row) => Object.fromEntries(retainedFields.map((field) => [field, row[field]])))
+    : matched;
   const afterNames = new Set(trimmed.map((r) => normalizePlayerName(String(r[nameField]))));
 
   // Coverage-preservation check: every pool player who had ANY row in the source must still
@@ -45,7 +48,6 @@ function trim(srcPath: string, outPath: string, nameField: string) {
       coverageOk = false;
     }
   }
-  const rowCountPreserved = trimmed.every((r) => true); // structural; real check is per-name below
   for (const name of afterNames) {
     const beforeCount = raw.filter((r) => normalizePlayerName(String(r[nameField])) === name).length;
     const afterCount = trimmed.filter((r) => normalizePlayerName(String(r[nameField])) === name).length;
@@ -71,7 +73,14 @@ const ok2 = trim('src/data/awards/historicalApm.json', 'src/data/awards/historic
 const ok3 = trim('src/data/awards/pipm.json', 'src/data/awards/pipm.pool.json', 'name');
 const ok4 = trim('src/data/awards/raptor.json', 'src/data/awards/raptor.pool.json', 'name');
 const ok5 = trim('src/data/awards/matchupDefense.json', 'src/data/awards/matchupDefense.pool.json', 'name');
-const ok6 = trim('src/data/awards/bpm2.json', 'src/data/awards/bpm2.pool.json', 'name');
+// Confidence/status remain in the full source used by audits; the browser only needs lookup keys
+// and the two numeric values, avoiding repeated provenance strings in the production bundle.
+const ok6 = trim(
+  'src/data/awards/bpm2.json',
+  'src/data/awards/bpm2.pool.json',
+  'name',
+  ['name', 'season', 'dbpm', 'bpm'],
+);
 
 if (!ok1 || !ok2 || !ok3 || !ok4 || !ok5 || !ok6) {
   console.log('\nFAIL — do not point the lookup files at the .pool.json outputs');

@@ -125,6 +125,37 @@ export function deriveBox(span: RawSpan): DerivedBox {
   };
 }
 
+/**
+ * 2026-08-08, user's own follow-up on the PG TAL-crowding investigation: the PG/SG astRate/fga
+ * gate below used to require `astRate > 0.6 && fga >= 13` for 'Primary Ball Handler' — checked
+ * directly against `generatedPlayers` (the rules-classified, non-curated ~2,369 PG spans) before
+ * touching it: that bar was almost unreachable, only **0.3%** of generated PG spans ever cleared
+ * it, vs 49.1% landing 'Secondary Ball Handler' by default. Root cause: `astRate = apg/ppg`
+ * mechanically falls as scoring volume rises, so any real lead guard who also scores at a normal
+ * starter's clip (Tony Parker, Mike Conley, Chauncey Billups, Deron Williams, Andre Miller, Kyle
+ * Lowry — real, historically-known primary ball handlers) never re-clears 0.6 in their actual
+ * starter-usage prime, even though the assist volume itself is genuinely real. This tag isn't
+ * cosmetic — it drives real downstream numbers: `ARCHETYPE_SELF_CREATION` (spacing.ts, Primary
+ * 0.85 vs Secondary 0.55) and `HIGH_USAGE_ARCHETYPE_WEIGHT` (schema.ts, Primary 0.5 vs Secondary
+ * 0.25, feeds AI team-fit need-scoring) — both were silently undercrediting real point guards.
+ * (Does NOT touch `computeTalent`/O-TAL for PG — `playmakingThreeLevel.ts` excludes PG from every
+ * archetype-gated mechanism there entirely, and `talent.ts`'s `usageOffenseScale` already treats
+ * Primary/Secondary identically — so this is a SPC/AI-drafting fix, not a second TAL-crowding fix.)
+ *
+ * Grid-searched (`scripts/_pgArchetypeGrid.ts`, deleted after use) against 17 named real lead
+ * guards spanning eras (should earn >=1 real Primary-tagged span somewhere in their career) and 3
+ * named high-volume scoring engines (Lillard/Kyrie/Luka — must NOT flip into Primary just because
+ * the bar dropped). `astRate > 0.38, fga >= 9` was the sweet spot: 16/17 real lead guards covered
+ * (the lone miss, George Hill, never actually clears 0.34 real astRate in any span — correctly
+ * stays Secondary/combo), 0/3 false positives on the scoring-engine guardrail. Checked the SG
+ * blast radius too, since this branch is shared PG/SG (the exact kind of unscoped ripple that
+ * cascaded and got reverted in the 2026-08-07 session) — only 47 of 2,548 generated SG spans move
+ * at all, every single one a real, plausible combo/point-forward guard (Danny Ainge, Nicolas
+ * Batum, Josh Giddey, Josh Hart, Jarrett Jack), not a runaway reclassification.
+ */
+const PRIMARY_BALL_HANDLER_ASTRATE = 0.38;
+const PRIMARY_BALL_HANDLER_MIN_FGA = 9;
+
 // --- Archetype/role classification: documented rules-based heuristic, no qualitative
 // scouting data exists in the source, so this approximates from box shape + position.
 // Only used for players with no hand judgment call to fall back on (see expandCuratedSpans.ts
@@ -149,7 +180,9 @@ export function classifyOffense(position: Position, box: DerivedBox): OffensiveA
     return 'Athletic Finisher';
   }
   // PG / SG
-  if (astRate > 0.6 && box.apg >= 5) return box.fga >= 13 ? 'Primary Ball Handler' : 'Secondary Ball Handler';
+  if (astRate > PRIMARY_BALL_HANDLER_ASTRATE && box.apg >= 5) {
+    return box.fga >= PRIMARY_BALL_HANDLER_MIN_FGA ? 'Primary Ball Handler' : 'Secondary Ball Handler';
+  }
   if (threeRate > 0.42 && box.fga < 11) return 'Off Screen Shooter';
   if (box.fga >= 15) return 'Shot Creator';
   if (box.fga < 8) return 'Athletic Finisher';

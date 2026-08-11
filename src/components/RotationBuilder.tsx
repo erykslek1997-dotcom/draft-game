@@ -9,6 +9,16 @@ import type { Rotation, SlotAssignment, Team } from '../engine/types';
 interface Props {
   roster: PlayerSpan[];
   onConfirm: (rotation: Rotation) => void;
+  /** 2026-08-08, reused for the Results screen's rotation-correction feature (any team, not just
+   * the human's pre-results one): seeds the editor from an existing rotation (a prior correction,
+   * or the AI's own auto-assigned one) instead of always starting over from a fresh auto-fill —
+   * so reopening an edit doesn't discard earlier work. Omitted (the original pre-results flow)
+   * falls back to `autoAssignRotation`, unchanged. */
+  initialRotation?: Rotation | null;
+  /** 2026-08-08, same feature — the pre-results flow has no way to back out (you must set SOME
+   * rotation to proceed), but correcting an already-final team's rotation is optional and should
+   * be cancelable without side effects. Omitted hides the button, matching the original flow. */
+  onCancel?: () => void;
 }
 
 interface Row {
@@ -23,11 +33,11 @@ type RowsBySlot = Record<Position, Row[]>;
 
 const MAX_ROWS_PER_SLOT = 4;
 
-function buildInitialRows(roster: PlayerSpan[]): RowsBySlot {
-  const auto = autoAssignRotation(roster);
+function buildInitialRows(roster: PlayerSpan[], seed?: Rotation | null): RowsBySlot {
+  const source = seed ?? autoAssignRotation(roster);
   const result = {} as RowsBySlot;
   for (const slot of STARTER_SLOTS) {
-    const assignments = auto.slots[slot];
+    const assignments = source.slots[slot] ?? [];
     const rows: Row[] = assignments.map((a) => ({ playerId: a.playerId, minutes: a.minutes }));
     if (rows.length === 0) rows.push({ playerId: '', minutes: 36 });
     result[slot] = rows;
@@ -57,8 +67,8 @@ function playerTotalMinutes(rows: RowsBySlot, playerId: string): number {
   return total;
 }
 
-export default function RotationBuilder({ roster, onConfirm }: Props) {
-  const [rows, setRows] = useState<RowsBySlot>(() => buildInitialRows(roster));
+export default function RotationBuilder({ roster, onConfirm, initialRotation, onCancel }: Props) {
+  const [rows, setRows] = useState<RowsBySlot>(() => buildInitialRows(roster, initialRotation));
 
   function handleAutoFill() {
     setRows(buildInitialRows(roster));
@@ -224,8 +234,13 @@ export default function RotationBuilder({ roster, onConfirm }: Props) {
       </ul>
 
       <button className="primary-btn" disabled={!allValid} onClick={handleConfirm}>
-        Confirm Rotation &amp; See Results
+        {onCancel ? 'Save Rotation' : 'Confirm Rotation & See Results'}
       </button>
+      {onCancel && (
+        <button className="secondary-btn" onClick={onCancel}>
+          Cancel
+        </button>
+      )}
     </div>
   );
 }

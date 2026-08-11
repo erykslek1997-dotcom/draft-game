@@ -1,7 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { computeTalent } from './talent';
+import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from './talent';
 
 /**
  * 2026-08-03, user's own ask (in Polish): draft the PLAYER first, choose which specific span
@@ -22,16 +22,41 @@ import { computeTalent } from './talent';
  * Phase 2 (`spanOptimizer.ts`) is what actually lets a team reconsider which span of an
  * already-drafted player to rostered, once the whole 9-player picture is known.
  */
+/** How "two-way balanced" a span is, for breaking exact TAL ties below — the weaker of its two
+ * normalized halves, same anchoring `twoWaySynergyBonus` (talent.ts) already uses for the same
+ * "genuinely balanced beats one-sided" idea. */
+function twoWayBalance(span: PlayerSpan): number {
+  return Math.min(computeOffensiveTalent(span), computeDefensiveTalent(span));
+}
+
 function buildPeakPool(): PlayerSpan[] {
   // Keyed by NORMALIZED name, not the raw string — the same reason every other name-matching
   // lookup in this project does (normalizePlayerName), so e.g. "Nikola Jokić" and "Nikola Jokic"
   // spellings from different data sources collapse into one Phase 1 pool entry instead of
   // silently letting the same real player appear twice under two different spellings.
+  //
+  // 2026-08-08, user's v0.2 rating batch: an exact TAL tie between a player's own spans used to
+  // fall back to array order (whichever span this loop reached first) — found via Embiid, whose
+  // real peak by any reasonable read (2020-22, genuinely two-way: 92 O-TAL/76 D-TAL) was being
+  // silently passed over for a later, more offense-only-leaning tied span (2023-25, 99 O-TAL/71
+  // D-TAL) purely because of iteration order, never even reaching the AI as an option. Added a
+  // real tiebreak: on an exact TAL tie, prefer the more two-way-balanced span (higher
+  // `twoWayBalance`, same "weaker of the two sides" idea `twoWaySynergyBonus` already uses
+  // elsewhere) over array order. Checked the full blast radius before shipping
+  // (`scripts/_v02_tiebreak_audit.ts`, deleted after use): 75 players have an exact peak-TAL tie
+  // pool-wide, 26 of them get a different (always more-balanced, never a wild swing) pick under
+  // this rule — Embiid included, now correctly landing on 2020-22.
   const bestByPlayer = new Map<string, PlayerSpan>();
   for (const span of draftPool) {
     const key = normalizePlayerName(span.playerName);
     const current = bestByPlayer.get(key);
-    if (!current || computeTalent(span) > computeTalent(current)) {
+    if (!current) {
+      bestByPlayer.set(key, span);
+      continue;
+    }
+    const currentTal = computeTalent(current);
+    const spanTal = computeTalent(span);
+    if (spanTal > currentTal || (spanTal === currentTal && twoWayBalance(span) > twoWayBalance(current))) {
       bestByPlayer.set(key, span);
     }
   }

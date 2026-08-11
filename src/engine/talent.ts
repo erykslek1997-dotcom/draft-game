@@ -150,6 +150,33 @@ export function lowUsageEfficiencyFactor(fga: number): number {
 }
 
 /**
+ * 2026-08-08, user's v0.2 rating batch, direct follow-up on the Nash/CP3 Greatest-Peak exemptions
+ * above: the defense-side mirror of `lowUsageEfficiencyFactor` — "klasyczna kara za low FGA"
+ * (the classic low-FGA penalty), applied to defense instead of offense this time. Same reasoning,
+ * flipped side: Stockton's real defensive activity (steals volume, DARKO/historical-APM
+ * corroboration) is genuinely real, but at his most extreme low-usage spans (FGA as low as 10.5)
+ * he was also rarely the possession's primary offensive threat and correspondingly rarely tested
+ * as the primary point of attack the way a higher-usage, more heavily-scouted ball-handler is —
+ * the same "rarely asked to create/defend against real pressure" critique this file already
+ * applies to his offense, now applied symmetrically.
+ *
+ * Scoped to PG only, unlike the offense-side version (which is position-agnostic) — a big or
+ * wing's low FGA carries no such implication (Ben Wallace, Rudy Gobert-type rim protectors
+ * legitimately take few shots and are genuinely elite defenders; extending this beyond PG would
+ * be a real bug, not a feature, since it would punish exactly the wrong population). Reuses the
+ * same reference FGA (12) and ramp shape as the offense-side version rather than inventing a
+ * second number for the same idea. Only touches the BLENDED-TAL-facing internal defense
+ * component (`rawComponents`'s own `defense`, used for `computeTalent`) — deliberately leaves
+ * `defensiveTalent.ts`'s separately-calibrated DISPLAY D-TAL badge untouched, the same
+ * blend-vs-display architectural split `normalizedDefenseForFit`'s own docstring already
+ * documents and relies on for POR.
+ */
+function lowUsagePgDefenseFactor(span: PlayerSpan): number {
+  if (span.primaryPosition !== 'PG') return 1;
+  return lowUsageEfficiencyFactor(span.fga);
+}
+
+/**
  * 2026-08-01, user's follow-up after the whole defense-gate batch: Westbrook's real MVP
  * triple-double season (2016-17) reads a middling O-TAL, and Stockton's extreme assist volume
  * at genuinely low shot volume (11.7 FGA) still reads at the very top of the scale even after
@@ -283,6 +310,57 @@ const SHOOTING_GRAVITY_SCALE = 12;
 const MAX_SHOOTING_GRAVITY_BONUS = 5;
 const CURRY_GRAVITY_CAP = 3;
 
+/**
+ * 2026-08-08, user's own direct ask, after a dry-run comparison (same technique as Magic's SF
+ * position-correction override): recasting Luka Dončić as SF wholesale (position for every
+ * mechanism, not just this one) was tried first and made his overall rating WORSE, not better —
+ * checked directly, his blended TAL dropped 91->75 on his 2023-25 peak despite O-TAL jumping to
+ * S/A+, because SF's defense standard is strictly harsher than PG's in two places at once
+ * (`DEFENSE_TAL_SCALE_BY_POSITION` 4.09 vs PG's 5.13, and `grades.ts`'s SF tier caps requiring
+ * D-TAL >=50 just to avoid an All-star ceiling, where PG has no such floor-side cap at all) — his
+ * real defensive activity, unremarkable for a lead ball-handler, reads as actively bad for a
+ * small forward expected to switch across positions. A full swap doesn't get "great offense,
+ * real defensive weakness, MVP-level overall" — it gets "All-star, defense-gated," the opposite
+ * of what was asked.
+ *
+ * User's explicit follow-up request: keep him PG for defense (real weakness stays visible, D-TAL
+ * still reads D-/F depending on span — nothing here changes that) but let his OFFENSE read like
+ * the wing-strength engine it would if a wing-usage classifier saw the same box profile — "S
+ * O-TAL... MVP level" was the literal ask. Root-caused which sub-mechanism actually drives that:
+ * NOT `OFFENSE_TAL_PARAMS`'s scale/intercept (swapping only that moved O-TAL 88->89, negligible)
+ * but `playmakingThreeLevelOffenseAdjustment` — his real playmaking-quality score (88.3) and 3-
+ * level scoring profile are being read at LIGHT-PG strength (this file's own 2026-08-08 PG
+ * reintroduction, deliberately small — see that entry's own docstring) instead of full WING
+ * strength; recomputing that one sub-call as SF adds ~8 raw offense points (pmBonus 0->4.5,
+ * 3lvlBonus 1.5->5.0, both hitting the wing caps), enough on its own to reach O-TAL 98 (S) on his
+ * 2023-25 peak using his EXISTING PG O-TAL scale — no scale swap needed at all.
+ *
+ * Scoped to exactly this one sub-call, nothing else in `rawComponents` — defense, efficiency
+ * baseline (`positionAdjustedTsBaseline`), the final `positionCorrectionFor` multiplier, and
+ * every PG-specific tier-cap gate all keep reading his real, untouched PG span. The "MVP level"
+ * result the user asked for is an emergent, not a hand-picked, outcome: `grades.ts`'s PG tier-cap
+ * rule 3 (weak defense caps at All-NBA unless offense clears literal A+) stops firing once O-TAL
+ * crosses A+, and no other PG cap engages once offense is this strong — his real raw TAL (already
+ * ~91 before this change) becomes his displayed number for the first time, landing in the MVP
+ * band (88-93) rather than being compressed down to All-NBA. Verified directly before shipping,
+ * not assumed — see this file's own inline comment at the call site for the exact numbers.
+ *
+ * Fifth named-player exception in this file (after Curry's gravity cap, Magic's SF position
+ * correction, Durant's SF-defense exclusion, and Chris Paul's two-way offense-cap exemption in
+ * grades.ts) — still exceptional, not a pattern to extend to a sixth player without being asked.
+ */
+function lukaOffenseComputationSpan(span: PlayerSpan): PlayerSpan {
+  if (normalizePlayerName(span.playerName) !== normalizePlayerName('Luka Doncic')) return span;
+  return { ...span, primaryPosition: 'SF' };
+}
+
+/** Full wing strength (1.0) — see `LUKA_MVP_TIER_CAP`'s own docstring for why the "MVP level"
+ * half of the ask is enforced separately, as an explicit ceiling, rather than by weakening this
+ * bonus until it stops overshooting. A fractional blend was tried first and couldn't hit both
+ * targets from one knob: at 0.5 his best span (2022-24) still overshot into Greatest peak while
+ * his other real spans fell short of the S/A+ grade that was the whole point of the exception. */
+const LUKA_WING_BLEND = 1.0;
+
 /** Shared by computeTalent and the O-TAL/D-TAL split below, so both read off the exact same
  * underlying offense/defense numbers instead of two formulas drifting apart over time.
  *
@@ -312,17 +390,34 @@ function rawComponents(
   const gravity = Math.max(-gravityCap, Math.min(gravityCap, shootingGravity(span) * SHOOTING_GRAVITY_SCALE));
   // 2026-08-07, second pass (see playmakingThreeLevel.ts's own header for the full story of the
   // first pass, reverted, and this scoped-down retry) — playmaking quality + 3-level/rim-finishing
-  // scoring, excluded entirely for PG.
-  const playmakingThreeLevel = playmakingThreeLevelOffenseAdjustment(span);
+  // scoring. Was excluded entirely for PG; reintroduced 2026-08-08 at a light, position-relative
+  // magnitude (see playmakingThreeLevel.ts's own 2026-08-08 header entry for why and how much).
+  // Threads the same `applyCurryException` gate the gravity term above uses — Curry is PG-tagged
+  // and genuinely clears the 3-level bonus's gate, which reopened the exact Jordan/LeBron-ordering
+  // problem `CURRY_GRAVITY_CAP` exists to prevent (see `CURRY_MULTI_LEVEL_CAP`'s own docstring).
+  //
+  // 2026-08-08, Luka Dončić named exception (see `lukaOffenseComputationSpan`'s own docstring):
+  // this ONE sub-call reads a position-overridden span for him specifically, blending toward
+  // wing-strength instead of light-PG, everything else in this function (efficiency baseline,
+  // defense, the final position-correction multiplier) keeps reading his real `span`/PG
+  // untouched. Full wing strength (`LUKA_WING_BLEND = 1`) was tried first and overshot the "MVP
+  // level" ask on his two biggest spans (2022-24/2023-25 both crossed into Greatest peak, 96-97)
+  // — the raw offense boost feeds the BLENDED TAL too, not just the O-TAL display, so granting
+  // the full wing delta pushed him past the Greatest-peak floor on exactly the spans it was
+  // least intended to. `LUKA_WING_BLEND` interpolates between his real light-PG value and the
+  // full-wing one; see its own constant comment for the calibrated fraction.
+  const lightPgPlaymakingThreeLevel = playmakingThreeLevelOffenseAdjustment(span, applyCurryException);
+  const wingPlaymakingThreeLevel = playmakingThreeLevelOffenseAdjustment(lukaOffenseComputationSpan(span), applyCurryException);
+  const playmakingThreeLevel =
+    lightPgPlaymakingThreeLevel + LUKA_WING_BLEND * (wingPlaymakingThreeLevel - lightPgPlaymakingThreeLevel);
   const offense = (scoringRate + efficiency + playmaking + centerPlaymaking + gravity + playmakingThreeLevel) * usageScale;
 
   // Real DARKO plus-minus data (where it exists, 1997-98+) can reveal defensive value the
   // box score alone can't see (see darkoCorrection.ts) — Garnett and Duncan are the clearest
   // cases, both stuck at 78 from box stats alone despite historically strong real DDPM.
-  const defense = Math.max(
-    computeDefensiveImpact(span) + darkoDefenseBonus(span) - darkoDefenseMalus(span) + reboundingVersatilityBonus(span, paceFactor),
-    DEFENSE_FLOOR,
-  );
+  const rawDefense =
+    computeDefensiveImpact(span) + darkoDefenseBonus(span) - darkoDefenseMalus(span) + reboundingVersatilityBonus(span, paceFactor);
+  const defense = Math.max(rawDefense * lowUsagePgDefenseFactor(span), DEFENSE_FLOOR);
 
   return { offense, defense };
 }
@@ -624,6 +719,19 @@ function talentScaled(span: PlayerSpan, usageScale: number): number {
  * credit while Shaq/Hakeem/Duncan/Garnett already had full DARKO-era coverage and gained nothing
  * new — no softcap retune can reorder values that are already in the "wrong" order pre-cap; that
  * would need a raw-value-level fix (e.g. tempering the BPM2 bonus itself), not this mechanism.
+ *
+ * **`SOFT_CAP_FLOOR` widening tried and reverted, 2026-08-08, user's v0.2 rating batch**: the C
+ * position had its own version of the same crowding (Hakeem/Robinson/Shaq/Embiid all reading TAL
+ * 97 despite real raw values of 109/119/109/109 — a real 10-point spread erased). Widening the
+ * floor to 92 (band 5->8) fixed that, but at real cost to the already-validated TOP of the scale:
+ * Jordan dropped to #2 behind LeBron (a first — this project's own history treats "Jordan #1"
+ * as load-bearing) and Taylor top-10 Spearman fell 0.867->0.806. The floor/K pair here governs
+ * the ENTIRE pool's top end, not just C — a change big enough to meaningfully spread centers is
+ * also big enough to reshuffle Jordan/LeBron/Bird, and this batch didn't have room for the kind
+ * of dedicated grid-search validation (`scripts/_softCapGrid3.ts`, the ORIGINAL K=15->35 retune)
+ * that a real fix here would need. Left at FLOOR=95/K=35. The C crowding this was meant to fix
+ * is real but mild (max 4-way tie, not the 8-way ties the PG-specific ceiling fixes solved
+ * earlier this batch) — a genuine follow-up, not silently dropped.
  */
 const SOFT_CAP_FLOOR = 95;
 const SOFT_CAP_CEILING = 100;
@@ -663,10 +771,33 @@ const PG_OFFENSE_GRADE_B_FLOOR = 75;
 const PG_MVP_TIER_CAP = 93;
 const PG_ALL_NBA_TIER_CAP = 87;
 
+/**
+ * 2026-08-08, user's v0.2 rating batch, named exception: Chris Paul specifically, "for being
+ * two-way" — his real profile (B+-ish O-TAL paired with genuinely elite defense, several spans
+ * DTAL 88-95) is exactly the shape this whole cap exists to NOT auto-admit into Greatest Peak
+ * (a general "OTAL>=75 AND DTAL>=80" rule was tried first and rejected: it also caught 9 separate
+ * Stockton spans and 2 LeBron PG-tagged spans with raw uncapped TAL of 111 and 113 — a real
+ * re-opening of the exact Jason Kidd-style problem this cap was built to close, not a clean
+ * two-way signal). A named exception is the deliberately narrow alternative — the same pattern
+ * this file already uses for Curry's gravity cap, Magic's SF position correction, and Durant's
+ * SF-defense-cap exclusion — scoped to exactly the one player the user asked for, not a new
+ * general rule. Still gated on a real bar (both grades genuinely good, not just "not terrible")
+ * so it can't fire for an off-peak CP3 span that doesn't actually deserve it.
+ */
+const CP3_TWO_WAY_OFFENSE_FLOOR = 80;
+const CP3_TWO_WAY_DEFENSE_FLOOR = 80;
+
 function pgOffenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'PG') return 100;
   const otal = computeOffensiveTalent(span);
   if (otal >= PG_OFFENSE_GRADE_A_FLOOR) return 100;
+  if (
+    normalizePlayerName(span.playerName) === normalizePlayerName('Chris Paul') &&
+    otal >= CP3_TWO_WAY_OFFENSE_FLOOR &&
+    computeDefensiveTalent(span) >= CP3_TWO_WAY_DEFENSE_FLOOR
+  ) {
+    return 100;
+  }
   if (otal >= PG_OFFENSE_GRADE_B_FLOOR) return PG_MVP_TIER_CAP;
   return PG_ALL_NBA_TIER_CAP;
 }
@@ -684,8 +815,22 @@ function pgOffenseGradeCeiling(span: PlayerSpan): number {
  */
 const PG_DEFENSE_GRADE_C_FLOOR = 60;
 
+/**
+ * 2026-08-08, user's v0.2 rating batch: "Nash za atak" — a truly elite (A+) offensive engine
+ * shouldn't be capped out of Greatest Peak purely for weak defense, mirroring the exemption
+ * `grades.ts`'s own `tierCaps` already grants at the display-tier level for this exact case
+ * (gated on A+ there too, for the same "a relative S cutoff is fragile to pin an exemption on"
+ * reason). This is the numeric-cap counterpart — without it, Nash's real uncapped peak (95, well
+ * into Greatest Peak territory) was being held at 91 by this gate alone despite an OTAL of 100.
+ * Checked the blast radius first (`scripts/_v02_pg_exemption_audit.ts`, deleted after use): only
+ * 3 spans in the whole pool clear OTAL>=95 with DTAL<60, all three Nash himself — a genuinely
+ * narrow, general rule, not something that needed a named exception the way CP3's case did.
+ */
+const PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION = 95;
+
 function pgDefenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'PG') return 100;
+  if (computeOffensiveTalent(span) >= PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION) return 100;
   return computeDefensiveTalent(span) >= PG_DEFENSE_GRADE_C_FLOOR ? 100 : PG_MVP_TIER_CAP;
 }
 
@@ -762,6 +907,61 @@ export function rawUncappedTalent(span: PlayerSpan): number {
   return Math.round(scaled);
 }
 
+/**
+ * 2026-08-08, user's own follow-up on the PG offense/defense grade-ceiling batch above: too many
+ * PGs were landing on the exact same TAL at the top of the pool. Root cause, confirmed by
+ * instrumenting the pre-clip value directly (`scripts/_pgCeilingDebug.ts`, deleted after use):
+ * `Math.min(finalTal, ceiling)` was a HARD clip, and several genuinely different players were all
+ * clearing the 93/87 ceilings by different amounts yet all landing on the identical clipped
+ * number — Oscar Robertson (real 96), Stockton (95), Chris Paul (95), Lillard (95), and Luka (94)
+ * were all reading TAL 93; Jason Kidd (95), Gary Payton (92), and Isiah Thomas (88) were all
+ * reading TAL 87. Same failure mode `softCapTalent` above already exists to prevent at the 95-100
+ * boundary — this mechanism just never got the same treatment.
+ *
+ * Same fix, mirrored: values above their ceiling now approach it asymptotically instead of
+ * clipping flat onto it, spread out by how far above the ceiling they actually were. Never
+ * reaches (let alone exceeds) the ceiling, so the underlying rule this whole mechanism exists for
+ * — weak offense/defense can't reach "Greatest peak"/"MVP" tier — still holds exactly. Band (4)
+ * chosen deliberately small: this is meant to break exact ties among already-capped players, not
+ * meaningfully re-open the gap the ceiling was built to close. K=2.5 spreads real single-point
+ * gaps (Luka, excess 1) visibly from Stockton/Paul/Lillard's shared excess (2) and Oscar's larger
+ * excess (3) — checked against this exact top-20 list before shipping, all 5 of the 93-cluster
+ * and all 3 of the 87-cluster now separate.
+ */
+const GRADE_CEILING_BAND = 4;
+const GRADE_CEILING_SOFT_K = 2.5;
+
+/** Exported so `grades.ts`'s `displayTalentForSpan` can apply the identical soft-compression to
+ * its own hard `Math.min(tal, tierCeiling)` clamp — the exact same "different players, same
+ * flattened number" problem, one layer up (tier-badge display rather than the internal TAL
+ * ceiling above), found the same day auditing the PG top-of-pool cluster the user reported. Same
+ * band/K reused rather than re-tuned separately: no principled reason the two layers should
+ * compress by different amounts, and one shared constant pair is one less thing to drift out of
+ * sync. Safe for `ceiling = Infinity` (grades.ts's own `tierCeiling('Greatest peak' | 'GOAT')`) —
+ * the `ceiling >= 100` guard below already short-circuits before any arithmetic touches it. */
+export function applyGradeCeiling(value: number, ceiling: number): number {
+  if (ceiling >= 100 || value <= ceiling) return value;
+  const excess = value - ceiling;
+  return ceiling - GRADE_CEILING_BAND * (1 - Math.exp(-excess / GRADE_CEILING_SOFT_K));
+}
+
+/**
+ * 2026-08-08, second half of the Luka Dončić exception (see `lukaOffenseComputationSpan`'s own
+ * docstring for the first half — the offense-side wing-strength boost). The user's explicit ask
+ * was "S O-TAL... MVP level", two independently-specified targets — granting the full wing bonus
+ * alone doesn't hit both from one knob (checked directly: 1.0 strength gets real S/A+ grades but
+ * overshoots his two biggest spans into Greatest peak; dialing the bonus down to avoid that also
+ * dials the O-TAL grade back below what was asked for on his other spans). Splitting the two
+ * halves apart — keep the offense boost at full strength, cap the OUTCOME separately — hits both
+ * targets from independent, individually-tunable knobs instead of one fragile compromise value.
+ * Reuses the exact same soft-compression `applyGradeCeiling` already provides (his raw TAL
+ * approaches, never hard-clips at, the MVP-tier ceiling) rather than a second capping mechanism.
+ */
+function lukaMvpTierCeiling(span: PlayerSpan): number {
+  if (normalizePlayerName(span.playerName) !== normalizePlayerName('Luka Doncic')) return 100;
+  return PG_MVP_TIER_CAP;
+}
+
 export function computeTalent(span: PlayerSpan): number {
   const cached = talentCache.get(span.id);
   if (cached !== undefined) return cached;
@@ -770,19 +970,20 @@ export function computeTalent(span: PlayerSpan): number {
     pgOffenseGradeCeiling(span),
     pgDefenseGradeCeiling(span),
     sfOffenseGradeCeiling(span),
-    sfDefenseGradeCeiling(span)
+    sfDefenseGradeCeiling(span),
+    lukaMvpTierCeiling(span)
   );
   const baseScaled = talentScaled(span, 1.0);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
   if (baseTal < USAGE_SCALE_MIN_TIER_TAL) {
-    const result = Math.min(baseTal, ceiling);
+    const result = Math.round(applyGradeCeiling(baseTal, ceiling));
     talentCache.set(span.id, result);
     return result;
   }
 
   const scaledWithUsage = talentScaled(span, usageOffenseScale(span));
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaledWithUsage))));
-  const result = Math.min(finalTal, ceiling);
+  const result = Math.round(applyGradeCeiling(finalTal, ceiling));
   talentCache.set(span.id, result);
   return result;
 }
@@ -842,11 +1043,45 @@ const DEFENSE_TAL_SCALE_BY_POSITION: Record<Position, number> = {
   C: 2.04,
 };
 
+/**
+ * 2026-08-08, user's v0.2 rating batch: investigated a general soft-cap for O-TAL (mirroring
+ * `softCapTalent`) as a fix for "too many Harden spans earn S offense" — real root cause found
+ * (checked directly, script deleted after use): the hard `Math.min(100, ...)` clamp below was
+ * flattening 24+ genuinely different spans (real unclamped O-TAL from Jokić's 123 down to
+ * Harden's 97) onto the literal ceiling. A soft-cap version was built and tested, but reverted:
+ * it broke the Nash Greatest-Peak exemption shipped earlier this same session (his real OTAL
+ * dropped from 100 to below the 95 elite-offense threshold that exemption depends on) and
+ * over-corrected Harden to ZERO S-grade spans rather than narrowing to his real 2017-2020 peak —
+ * `computeOffensiveTalent` is load-bearing for too many other gates (PG defense-cap exemption,
+ * CP3's two-way exemption, SG's two-way Greatest-Peak path, every position's tier caps) to safely
+ * re-tune in the same pass without a much more thorough re-validation than this batch had time
+ * for. Left as a hard clamp for now — a real, documented follow-up, not silently dropped.
+ */
 export function computeOffensiveTalent(span: PlayerSpan): number {
   const { offense } = rawComponents(span, false);
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   const scaled = offense * scale + intercept;
   return Math.max(0, Math.min(100, Math.round(scaled)));
+}
+
+/**
+ * 2026-08-08, follow-up to the "Harden S-grade narrowing" investigation above: a narrower fix
+ * than the reverted general soft-cap. Rather than changing `computeOffensiveTalent` itself (still
+ * load-bearing everywhere, still untouched), this is the SAME formula minus only the `Math.min(100,
+ * ...)` ceiling — used exclusively by `grades.ts`'s offense S-grade threshold/check. That's the one
+ * place the hard clamp actually causes a problem: `computeSThreshold` picks the pool's 3rd-highest
+ * *distinct* value, and the clamp collapses 24+ genuinely different spans (Jokić 123 down to
+ * Harden 97) onto one distinct value (100), which drops the effective S-bar far lower than it
+ * should be and lets far more than "3 best" spans clear it. Reading the real, unflattened spread
+ * here fixes the threshold without touching any of the numeric gates (`PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION`,
+ * CP3's two-way exemption, every position's tier caps) that depend on `computeOffensiveTalent`
+ * staying bit-identical — the exact blast radius that sank the earlier attempt.
+ */
+export function computeUncappedOffensiveTalent(span: PlayerSpan): number {
+  const { offense } = rawComponents(span, false);
+  const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
+  const scaled = offense * scale + intercept;
+  return Math.max(0, Math.round(scaled));
 }
 
 /**

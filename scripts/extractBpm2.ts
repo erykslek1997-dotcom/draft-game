@@ -8,18 +8,16 @@
  * 1951-52 through 2025-26, RS+playoffs — filtered here to regular season only (RS-only convention
  * already used by darko.json/raptor.json/matchupDefense.json).
  *
- * Only extracts `dbpm` (defense) for now, since that's the only component this project currently
- * has a real-data correction mechanism for (`darkoCorrection.ts`'s blended-excess). `obpm`/`bpm`
- * are read from the source but not written out — add them here first if an offense/total-value
- * correction is ever built.
+ * Extracts `dbpm` (defense) and total `bpm`; confidence/status are retained alongside both.
+ * DBPM feeds the defensive correction; total BPM is retained for the fallback total-value
+ * correction after independent validation (`scripts/validateBpm2Total.ts`).
  *
  * Deliberately does NOT filter by `confidence`/`data_status` (same convention as every other real
  * source here — darko.json/raptor.json/matchupDefense.json carry no reliability flag either, they
  * ARE the ground truth once past their own extraction floor). This is a real, disclosed tradeoff:
  * it's exactly what lets bpm2.json cover the pre-1974 `estimated_similarity`/low-confidence era —
- * the whole reason this source is being extracted — but it also means a low-confidence row is
- * indistinguishable from a high-confidence one downstream. `minutes >= 500` (this season) is the
- * only quality floor applied, matching RAPTOR's own `mp >= 500` extraction floor.
+ * the whole reason this source is being extracted. Confidence and data status remain attached
+ * to every output row; `minutes >= 500` is the only quality floor.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 
@@ -77,6 +75,9 @@ interface Bpm2Row {
   name: string;
   season: string; // "2003-04"
   dbpm: number;
+  bpm: number;
+  confidence: string;
+  dataStatus: string;
 }
 
 console.log(`Reading ${MASTER_FILE} ...`);
@@ -101,11 +102,19 @@ for (const r of parsed) {
     continue;
   }
   const dbpm = parseFloat(r.dbpm);
-  if (!r.player || !r.season || Number.isNaN(dbpm)) {
+  const bpm = parseFloat(r.bpm);
+  if (!r.player || !r.season || Number.isNaN(dbpm) || Number.isNaN(bpm)) {
     skippedBadNumber++;
     continue;
   }
-  rows.push({ name: r.player, season: r.season, dbpm });
+  rows.push({
+    name: r.player,
+    season: r.season,
+    dbpm,
+    bpm,
+    confidence: r.confidence,
+    dataStatus: r.data_status,
+  });
 }
 
 console.log(`Kept ${rows.length} regular-season rows (>= ${MIN_MINUTES} minutes).`);

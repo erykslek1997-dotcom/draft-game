@@ -25,18 +25,19 @@ import bpm2Data from '../data/awards/bpm2.pool.json';
  * don't reach) means it can only ever ADD a real number where today there is none at all — see `blendedExcess` in
  * `darkoCorrection.ts` for the actual gate.
  *
- * No confidence/data_status filtering was applied at extraction (see extractBpm2.ts's own
- * comment) — a real, disclosed tradeoff, matching every other source here having no reliability
- * flag either.
+ * Confidence/data_status are retained in the extracted rows rather than filtered out. Total BPM
+ * is separately validated against independent PIPM/APM (`scripts/validateBpm2Total.ts`) and is
+ * fallback-only in `blendedRealValueLookup.ts`, just as DBPM is fallback-only for defense.
  */
 interface Bpm2Row {
   name: string;
   season: string; // "2003-04"
   dbpm: number;
+  bpm: number;
 }
 const bpm2 = bpm2Data as Bpm2Row[];
 
-export function buildBpm2YearMap(): Map<string, Map<number, number>> {
+export function buildBpm2YearMap(field: 'dbpm' | 'bpm' = 'dbpm'): Map<string, Map<number, number>> {
   const byNameYear = new Map<string, Map<number, number>>();
   for (const r of bpm2) {
     const key = normalizePlayerName(r.name);
@@ -46,7 +47,7 @@ export function buildBpm2YearMap(): Map<string, Map<number, number>> {
       yearMap = new Map();
       byNameYear.set(key, yearMap);
     }
-    yearMap.set(endYear, r.dbpm);
+    yearMap.set(endYear, r[field]);
   }
   return byNameYear;
 }
@@ -61,4 +62,9 @@ export function avgBpm2DefenseForSpan(span: PlayerSpan, byNameYear: Map<string, 
     .filter((v): v is number => v !== undefined);
   if (values.length === 0) return null;
   return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+/** Same span-average operation for a map built with `buildBpm2YearMap('bpm')`. */
+export function avgBpm2TotalForSpan(span: PlayerSpan, byNameYear: Map<string, Map<number, number>>): number | null {
+  return avgBpm2DefenseForSpan(span, byNameYear);
 }

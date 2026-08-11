@@ -169,7 +169,10 @@ async function main() {
   const hvPre1997Points: { x: number; y: number }[] = [];
   for (const span of players) {
     const r = blendedRealValueForSpan(span);
-    if (!r) continue;
+    // Keep the correction baseline anchored to independently observed DPM/APM/PIPM. BPM2's
+    // pre-1974 similarity rows may receive a residual correction, but must not redefine the
+    // regression standard they are being compared against.
+    if (!r || r.source === 'bpm2-fallback') continue;
     (r.isModernEra ? hvModernPoints : hvPre1997Points).push({ x: rawTalentBlend(span), y: r.value });
   }
   const hiddenValueModernRegression = fitLinearRegression(hvModernPoints);
@@ -190,7 +193,7 @@ async function main() {
   const impPre1997Points: { x: number; y: number }[] = [];
   for (const span of players) {
     const r = blendedRealValueForSpan(span);
-    if (!r) continue;
+    if (!r || r.source === 'bpm2-fallback') continue;
     (r.isModernEra ? impModernPoints : impPre1997Points).push({ x: computeTalent(span), y: r.value });
   }
   const impactModernRegression = fitLinearRegression(impModernPoints);

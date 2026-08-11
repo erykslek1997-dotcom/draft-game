@@ -71,3 +71,4 @@ console.log(`Rosters tested: ${rosters.length} (incl. 100 single-position worst 
 console.log(`Slots checked: ${slotsChecked} | all exactly 48 minutes: ${ok}`);
 console.log(`Out-of-position assignments made (must be editable): ${outOfPositionAssignments}`);
 console.log(`\nTest (every auto-filled assignment is representable in the editor)?`, ok, ok ? 'PASS' : 'FAIL');
+if (!ok) process.exitCode = 1;

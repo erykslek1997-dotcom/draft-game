@@ -1,142 +1,128 @@
-import { createDraft, makePick, availablePlayers } from '../src/engine/draft';
-import { draftPool as players } from '../src/data/draftPool';
-import { canFillRemainingSlots } from '../src/engine/positions';
+import {
+  ROUNDS,
+  TEAM_COUNT,
+  autoFinishDraft,
+  availablePlayers,
+  createDraft,
+  currentTeamIndex,
+  isPickLegal,
+  makePick,
+  snakeOrderIndex,
+  type DraftState,
+} from '../src/engine/draft';
+import { peakDraftPool } from '../src/engine/peakDraftPool';
+import { CAP_LIMIT, ROSTER_SIZE, canFillRemainingSlots, totalFga } from '../src/engine/positions';
+import { normalizePlayerName } from '../src/data/schema';
 
-let state = createDraft();
+let failures = 0;
 
-// --- Test 1: duplicate player prevention ---
-state = makePick(state, 'kobe-97-99'); // human drafts Kobe '97-99
-const stillAvailable = availablePlayers(state).some((p) => p.playerName === 'Kobe Bryant');
-console.log('Test 1 (dedup): Kobe still available after drafting one span?', stillAvailable, stillAvailable ? 'FAIL' : 'PASS');
-
-// --- Test 2: soft-lock prevention ---
-// Direct test of the feasibility check that guards makePick: confirm a pick that would
-// leave the team unable to afford filling its remaining slots gets blocked.
-
-const cheapPlayers = [...players].sort((a, b) => a.fga - b.fga);
-console.log('Cheapest 5 players FGA:', cheapPlayers.slice(0, 5).map((p) => `${p.playerName} ${p.fga}`));
-
-// Simulate: 7 slots filled leaving 2 slots, cap nearly exhausted, cheapest 2 remaining would still fit -> should be allowed.
-const okCase = canFillRemainingSlots(cheapPlayers, 2, 20); // plenty of room
-console.log('Test 2a (feasible case) canFillRemainingSlots ->', okCase, okCase ? 'PASS' : 'FAIL');
-
-// Simulate: only 0.5 FGA of cap remaining but need to fill 2 more slots -> should be blocked (cheapest 2 players cost far more than 0.5).
-const strandedCase = canFillRemainingSlots(cheapPlayers, 2, 0.5);
-console.log('Test 2b (stranding case) canFillRemainingSlots ->', strandedCase, strandedCase ? 'FAIL' : 'PASS');
-
-// --- Test 3: makePick itself rejects a stranding pick, end-to-end ---
-// Team0 has 3 expensive players (75.0 FGA), leaving 25.9 cap and 5 slots to fill after the next pick.
-const threeFillers = ['kobe-05-07', 'iverson-00-02', 'harden-17-19'];
-const filledFga = threeFillers.reduce((s, id) => s + players.find((p) => p.id === id)!.fga, 0);
-console.log('Three fillers total FGA:', filledFga.toFixed(1));
-
-const team0Roster = threeFillers.map((id) => players.find((p) => p.id === id)!);
-let scenario = createDraft();
-scenario = { ...scenario, teams: scenario.teams.map((t, i) => (i === 0 ? { ...t, roster: team0Roster } : t)) };
-const draftedIds = new Set(threeFillers);
-scenario = { ...scenario, draftedIds, round: 0, pickInRound: 0 }; // idx0 = human's turn either way
-
-// Kareem '71-73 (24.6 FGA) would leave only 1.3 cap for the remaining 5 slots -> must be rejected.
-const afterStrandingPick = makePick(scenario, 'kareem-71-73');
-const pickRejected = afterStrandingPick.teams[0].roster.length === 3;
-console.log('Test 3a (stranding pick rejected)?', pickRejected, pickRejected ? 'PASS' : 'FAIL');
-
-// --- Test 4: full simulated drafts never get stuck under the new stranding guard ---
-// Every team plays like the AI drafter (with its own randomness); across many runs, the
-// draft should always reach all 36 picks — the hard soft-lock guard must never leave a
-// team unable to complete its roster.
-import { pickForAi } from '../src/engine/aiDrafter';
-
-let allRunsComplete = true;
-for (let run = 0; run < 25; run++) {
-  let s = createDraft();
-  let guard = 0;
-  while (!s.complete && guard < 200) {
-    const teamIdx = s.round % 2 === 0 ? s.pickInRound : 3 - s.pickInRound;
-    const team = s.teams[teamIdx];
-    const available = players.filter((p) => !s.draftedIds.has(p.id));
-    if (available.length === 0) break;
-    const currentFgas = team.roster.map((p) => p.fga);
-    const pick = pickForAi(team.roster, currentFgas, available);
-    const next = makePick(s, pick.id);
-    if (next === s) {
-      const spent = currentFgas.reduce((sum, f) => sum + f, 0);
-      const slotsLeftAfterPick = 9 - team.roster.length - 1;
-      const capRemainingAfterPick = 100.9 - (spent + pick.fga);
-      const poolAfterPick = available.filter((p) => p.id !== pick.id && p.playerName !== pick.playerName);
-      const uniqueCheapest = new Map<string, number>();
-      for (const p of poolAfterPick) {
-        const cur = uniqueCheapest.get(p.playerName);
-        if (cur === undefined || p.fga < cur) uniqueCheapest.set(p.playerName, p.fga);
-      }
-      const sortedUnique = [...uniqueCheapest.entries()].sort((a, b) => a[1] - b[1]);
-      const neededTop = sortedUnique.slice(0, slotsLeftAfterPick);
-      const minCost = neededTop.reduce((sum, [, fga]) => sum + fga, 0);
-      console.log(
-        `Run ${run} pick#${s.round * 4 + s.pickInRound + 1}: team=${team.name} rosterLen=${team.roster.length} spent=${spent.toFixed(1)} proposed=${pick.playerName}(${pick.fga}) slotsLeftAfter=${slotsLeftAfterPick} capRemainingAfter=${capRemainingAfterPick.toFixed(1)} uniquePlayersAvailable=${uniqueCheapest.size} minCostForSlots=${minCost.toFixed(1)}`,
-      );
-      console.log('  cheapest unique needed:', neededTop.map(([name, fga]) => `${name} ${fga}`));
-      allRunsComplete = false;
-      break;
-    }
-    s = next;
-    guard++;
+function check(condition: boolean, label: string, detail?: string): void {
+  if (condition) {
+    console.log(`PASS: ${label}`);
+    return;
   }
-  if (!s.complete && allRunsComplete !== false) allRunsComplete = false;
+  failures++;
+  console.error(`FAIL: ${label}${detail ? ` — ${detail}` : ''}`);
 }
-console.log('Test 4 (25 simulated full drafts all complete)?', allRunsComplete, allRunsComplete ? 'PASS' : 'FAIL');
 
-// --- Test 5: deadlock relief for a realistic front-loaded-stars scenario (reproduces
-// what happened during live manual testing: human took 3 big-FGA stars in a row, then
-// found every remaining option disabled). Team0 takes its first 3 picks as the priciest
-// currently-legal options (mirroring that manual test), then plays like a normal drafter.
-// The rest of the roster must still be completable via the relief-valve fallback.
-import { isPickLegal } from '../src/engine/draft';
-
-let allRealisticRunsComplete = true;
-for (let run = 0; run < 15; run++) {
-  let s = createDraft();
-  let guard = 0;
-  while (!s.complete && guard < 200) {
-    const teamIdx = s.round % 2 === 0 ? s.pickInRound : 3 - s.pickInRound;
-    const team = s.teams[teamIdx];
-    const available = players.filter((p) => !s.draftedIds.has(p.id));
-    if (available.length === 0) break;
-
-    let pick;
-    if (teamIdx === 0 && team.roster.length < 3) {
-      const legalSorted = [...available].filter((p) => isPickLegal(s, p.id)).sort((a, b) => b.fga - a.fga);
-      pick = legalSorted[0];
-      if (!pick) {
-        console.log(`Run ${run}: team0 had zero legal picks on pick ${team.roster.length + 1} of its front-loaded stars.`);
-        allRealisticRunsComplete = false;
-        break;
-      }
-    } else {
-      const currentFgas = team.roster.map((p) => p.fga);
-      pick = pickForAi(team.roster, currentFgas, available);
-    }
-
-    const next = makePick(s, pick.id);
-    if (next === s) {
-      const recheck = isPickLegal(s, pick.id);
-      const cur = s.teams[teamIdx];
-      const currentFgas = cur.roster.map((p) => p.fga);
-      console.log(
-        `Run ${run}: makePick rejected pick (${pick.playerName}, ${pick.fga} FGA) — isPickLegal recheck=${recheck}, team=${cur.name}, rosterLen=${cur.roster.length}, spent=${currentFgas.reduce((a, b) => a + b, 0).toFixed(1)}, alreadyDrafted=${s.draftedIds.has(pick.id)}`,
-      );
-      allRealisticRunsComplete = false;
-      break;
-    }
-    s = next;
-    guard++;
-  }
-  if (!s.complete) allRealisticRunsComplete = false;
+function seededRandom(seed: number): () => number {
+  let value = seed >>> 0;
+  return () => {
+    value += 0x6d2b79f5;
+    let t = value;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
-console.log(
-  'Test 5 (15 front-loaded-stars drafts all complete via deadlock relief)?',
-  allRealisticRunsComplete,
-  allRealisticRunsComplete ? 'PASS' : 'FAIL',
+
+function withCurrentTeam(state: DraftState, rosterIds: string[], isHuman: boolean): DraftState {
+  const roster = rosterIds.map((id) => {
+    const player = peakDraftPool.find((p) => p.id === id);
+    if (!player) throw new Error(`Missing peak-pool test player: ${id}`);
+    return player;
+  });
+  const current = currentTeamIndex(state);
+  return {
+    ...state,
+    teams: state.teams.map((team, index) => ({
+      ...team,
+      isHuman: index === current ? isHuman : false,
+      roster: index === current ? roster : team.roster,
+    })),
+    draftedIds: new Set(rosterIds),
+  };
+}
+
+console.log(`Testing the production configuration: ${TEAM_COUNT} teams × ${ROUNDS} rounds, ${peakDraftPool.length} peak players.`);
+
+// Snake order must visit every team exactly once per round and reverse on odd rounds.
+for (let round = 0; round < ROUNDS; round++) {
+  const order = Array.from({ length: TEAM_COUNT }, (_, pick) => snakeOrderIndex(round, pick));
+  check(new Set(order).size === TEAM_COUNT, `round ${round + 1} visits every team exactly once`);
+  check(order[0] === (round % 2 === 0 ? 0 : TEAM_COUNT - 1), `round ${round + 1} starts at the correct end`);
+}
+
+// A real production-pool pick must advance and remove the selected real player.
+let duplicateState = createDraft();
+const firstPick = [...peakDraftPool].sort((a, b) => b.fga - a.fga).find((p) => isPickLegal(duplicateState, p.id));
+if (!firstPick) throw new Error('No legal opening pick in the production peak pool.');
+duplicateState = makePick(duplicateState, firstPick.id);
+check(duplicateState.history.length === 1, 'a legal opening pick advances the draft');
+check(
+  !availablePlayers(duplicateState).some(
+    (p) => normalizePlayerName(p.playerName) === normalizePlayerName(firstPick.playerName),
+  ),
+  'a drafted player is no longer available',
 );
 
-console.log('\nDone.');
+// Human and CPU teams must face exactly the same cap legality. Build a real three-player,
+// high-usage roster, then compare one candidate that fits with one that exceeds the cap.
+const expensiveRoster = [...peakDraftPool].sort((a, b) => b.fga - a.fga).slice(0, 3);
+const expensiveIds = expensiveRoster.map((p) => p.id);
+const spent = totalFga(expensiveRoster.map((p) => p.fga));
+const remaining = peakDraftPool.filter((p) => !expensiveIds.includes(p.id));
+const capLegalCandidate = [...remaining].sort((a, b) => a.fga - b.fga).find((p) => spent + p.fga <= CAP_LIMIT);
+const overCapCandidate = [...remaining].sort((a, b) => b.fga - a.fga).find((p) => spent + p.fga > CAP_LIMIT);
+if (!capLegalCandidate || !overCapCandidate) throw new Error('Could not construct the cap-equality test scenario.');
+
+const humanScenario = withCurrentTeam(createDraft(), expensiveIds, true);
+const cpuScenario = withCurrentTeam(createDraft(), expensiveIds, false);
+check(isPickLegal(humanScenario, capLegalCandidate.id), 'human can make a cap-legal pick');
+check(isPickLegal(cpuScenario, capLegalCandidate.id), 'CPU can make the same cap-legal pick');
+check(!isPickLegal(humanScenario, overCapCandidate.id), 'human cannot bypass the FGA cap');
+check(!isPickLegal(cpuScenario, overCapCandidate.id), 'CPU cannot bypass the FGA cap');
+
+const cheapest = [...peakDraftPool].sort((a, b) => a.fga - b.fga);
+check(canFillRemainingSlots(cheapest, 2, 20), 'lookahead accepts a feasible two-slot finish');
+check(!canFillRemainingSlots(cheapest, 2, 0.5), 'lookahead rejects an impossible two-slot finish');
+
+// Exercise the real synchronous auto-finish path with deterministic random sequences. These are
+// regression tests, not a statistical simulation: their job is to prove progress, completion,
+// roster size and cap invariants against the same pool/configuration the browser uses.
+const originalRandom = Math.random;
+try {
+  for (const seed of [7, 29]) {
+    Math.random = seededRandom(seed);
+    const finished = autoFinishDraft(createDraft());
+    check(finished.complete, `seed ${seed}: auto-finish completes`);
+    check(finished.history.length === TEAM_COUNT * ROSTER_SIZE, `seed ${seed}: records every pick`);
+    check(
+      finished.teams.every((team) => team.roster.length === ROSTER_SIZE),
+      `seed ${seed}: every team has ${ROSTER_SIZE} players`,
+    );
+    check(
+      finished.teams.every((team) => totalFga(team.roster.map((p) => p.fga)) <= CAP_LIMIT),
+      `seed ${seed}: every team stays at or below ${CAP_LIMIT} FGA`,
+    );
+  }
+} finally {
+  Math.random = originalRandom;
+}
+
+if (failures > 0) {
+  console.error(`\n${failures} draft regression test(s) failed.`);
+  process.exitCode = 1;
+} else {
+  console.log('\nAll draft regression tests passed.');
+}

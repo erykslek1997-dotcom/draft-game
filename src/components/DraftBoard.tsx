@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
+import { provenanceForSpan } from '../data/provenance';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, availablePlayers, isPickLegal, type DraftState } from '../engine/draft';
 import { CAP_LIMIT, capRemaining, totalFga } from '../engine/positions';
-import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+import { computeTalent, computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing, spacingTier, type SpacingTier } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
 import { allStarCount } from '../engine/allStarLookup';
-import { offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, overallTierForSpan, displayTalentForSpan, displayNumberForSpan, type OverallTier } from '../engine/grades';
+import { offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, overallTierForSpan, displayTalentForSpan, displayNumberForSpan, tierRank, type OverallTier } from '../engine/grades';
 import { playoffPerformanceTier, type PlayoffPerformanceTier } from '../engine/playoffPerformanceLookup';
 import { computeDurability, durabilityTier, type DurabilityTier } from '../engine/durability';
+import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
 import { teamLabel } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
@@ -33,6 +35,12 @@ interface Props {
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
+
+// Re-exported so `DraftPoolBrowser.tsx`'s existing `import { naturalPosition } from './DraftBoard'`
+// keeps working unchanged — the actual implementation moved to `engine/naturalPosition.ts` (see
+// that file's own docstring) specifically so `ResultsScreen.tsx` could use it too without
+// statically pulling in this whole (deliberately lazy-loaded) component.
+export { naturalPosition } from '../engine/naturalPosition';
 
 export interface PlayerGroup {
   playerName: string;
@@ -84,9 +92,11 @@ export function tierContextFor(span: PlayerSpan) {
     position: span.primaryPosition,
     tal: computeTalent(span),
     otal: computeOffensiveTalent(span),
+    otalUncapped: computeUncappedOffensiveTalent(span),
     dtal: computeDefensiveTalent(span),
     fga: span.fga,
     playerName: span.playerName,
+    spanLabel: span.spanLabel,
   };
 }
 
@@ -137,6 +147,27 @@ const DURABILITY_TIER_CLASS: Record<DurabilityTier, string> = {
 export function DurabilityTierBadge({ span }: { span: PlayerSpan }) {
   const tier = durabilityTier(span);
   return <span className={`tier-badge ${DURABILITY_TIER_CLASS[tier]}`}>{tier}</span>;
+}
+
+function DataProvenanceBadge({ span }: { span: PlayerSpan }) {
+  const provenance = provenanceForSpan(span);
+  const label = provenance.sourceKind === 'curated-manual'
+    ? 'MANUAL'
+    : provenance.boxStatus === 'mixed'
+      ? 'MIXED'
+      : 'MEASURED';
+  const details = [
+    provenance.sourceLabel,
+    provenance.estimatedFields.length > 0 ? `estimated: ${provenance.estimatedFields.join(', ')}` : '',
+    provenance.unavailableFields.length > 0 ? `unavailable: ${provenance.unavailableFields.join(', ')}` : '',
+    `offensive role: ${provenance.offensiveRoleStatus}`,
+    `defensive role: ${provenance.defensiveRoleStatus}`,
+  ].filter(Boolean).join(' · ');
+  return (
+    <span className={`data-provenance-badge data-${label.toLowerCase()}`} title={details}>
+      {label}
+    </span>
+  );
 }
 
 /** Spans arrive in dataset order, which for the generated players is effectively arbitrary —
@@ -259,7 +290,15 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
             ...g,
             bestTalentSpan,
             bestTalent: showJudgeMetrics ? displayTalentForSpan(tierContextFor(bestTalentSpan)) : 0,
+            // 2026-08-08, user's v0.2 rating batch: GOAT has no ceiling of its own
+            // (`tierCeiling('GOAT')` is `Infinity`), so a GOAT-tier span's `bestTalent` number can
+            // land on the exact same value as a merely-Greatest-Peak span (both 98, say) — found
+            // via LeBron (GOAT) sorting BELOW Bird (Greatest peak) purely because the tied number
+            // fell back to incidental array order. Stored alongside `bestTalent` so the sort below
+            // can break that specific tie by tier rank instead.
+            bestTier: showJudgeMetrics ? overallTierForSpan(tierContextFor(bestTalentSpan)) : 'Cigarette Butt',
             bestOffensiveTalent: showJudgeMetrics ? Math.max(...g.spans.map(computeOffensiveTalent)) : 0,
+            bestOffensiveTalentUncapped: showJudgeMetrics ? Math.max(...g.spans.map(computeUncappedOffensiveTalent)) : 0,
             bestDefensiveTalent: showJudgeMetrics ? Math.max(...g.spans.map(computeDefensiveTalent)) : 0,
             bestOffensivePortability: showJudgeMetrics ? Math.max(...g.spans.map(computeOffensivePortability)) : 0,
             bestDefensivePortability: showJudgeMetrics ? Math.max(...g.spans.map(computeDefensivePortability)) : 0,
@@ -273,7 +312,7 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
             if (starDiff !== 0) return starDiff;
             return (randomTiebreak.get(a.playerName) ?? 0) - (randomTiebreak.get(b.playerName) ?? 0);
           }
-          return b.bestTalent - a.bestTalent;
+          return b.bestTalent - a.bestTalent || tierRank(b.bestTier) - tierRank(a.bestTier);
         });
 
   function toggleExpand(name: string) {
@@ -386,6 +425,7 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
               const {
                 bestTalentSpan,
                 bestOffensiveTalent,
+                bestOffensiveTalentUncapped,
                 bestDefensiveTalent,
                 bestOffensivePortability,
                 bestDefensivePortability,
@@ -397,6 +437,7 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                   <button className="player-group-header" onClick={() => toggleExpand(group.playerName)}>
                     <span className="pg-caret">{isOpen ? '▾' : '▸'}</span>
                     <span className="pg-name">{group.playerName}</span>
+                    <span className="pg-natural-position">{naturalPosition(group.playerName)}</span>
                     <span className="pg-meta">
                       {group.spans.length} season{group.spans.length > 1 ? 's' : ''}
                     </span>
@@ -408,7 +449,9 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                         TAL {displayNumberForSpan(bestTalentSpan, tierContextFor(bestTalentSpan))} <OverallTierBadge span={bestTalentSpan} />
                       </span>
                     )}
-                    {showJudgeMetrics && <span className="pg-otal">O-TAL {offensiveGrade(bestOffensiveTalent)}</span>}
+                    {showJudgeMetrics && (
+                      <span className="pg-otal">O-TAL {offensiveGrade(bestOffensiveTalent, bestOffensiveTalentUncapped)}</span>
+                    )}
                     {showJudgeMetrics && <span className="pg-dtal">D-TAL {defensiveGrade(bestDefensiveTalent)}</span>}
                     {showJudgeMetrics && (
                       <span className="pg-opor">O-POR {offensivePortabilityGrade(bestOffensivePortability)}</span>
@@ -437,6 +480,7 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                             {showJudgeMetrics && <th>Shooter</th>}
                             {showJudgeMetrics && <th>Playoffs</th>}
                             {showJudgeMetrics && <th>DUR</th>}
+                            {showJudgeMetrics && <th>Data</th>}
                             <th>PTS</th>
                             <th>REB</th>
                             <th>AST</th>
@@ -461,7 +505,9 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                                   <OverallTierBadge span={span} />
                                 </td>
                               )}
-                              {showJudgeMetrics && <td>{offensiveGrade(computeOffensiveTalent(span))}</td>}
+                              {showJudgeMetrics && (
+                                <td>{offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))}</td>
+                              )}
                               {showJudgeMetrics && <td>{defensiveGrade(computeDefensiveTalent(span))}</td>}
                               {showJudgeMetrics && <td>{offensivePortabilityGrade(computeOffensivePortability(span))}</td>}
                               {showJudgeMetrics && <td>{defensivePortabilityGrade(computeDefensivePortability(span))}</td>}
@@ -479,6 +525,11 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                               {showJudgeMetrics && (
                                 <td>
                                   {computeDurability(span)} <DurabilityTierBadge span={span} />
+                                </td>
+                              )}
+                              {showJudgeMetrics && (
+                                <td>
+                                  <DataProvenanceBadge span={span} />
                                 </td>
                               )}
                               <td>{span.box.ppg.toFixed(1)}</td>

@@ -4,13 +4,15 @@ import { STARTER_SLOTS } from '../engine/positions';
 import { allAssignments, benchWithMinutes } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
-import type { DraftHistoryEntry, Team } from '../engine/types';
+import type { DraftHistoryEntry, Rotation, Team } from '../engine/types';
 import { teamLabel } from '../engine/teamNames';
 import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing } from '../engine/spacing';
 import { computeDurability } from '../engine/durability';
 import FeedbackToggle, { type FeedbackEntry } from './FeedbackToggle';
+import RotationBuilder from './RotationBuilder';
+import { naturalPosition } from '../engine/naturalPosition';
 
 // Lazy, matching App.tsx's own lazy() call for this exact component (see GameShell.tsx's
 // lazy-loading docstring) — a static import here would bundle DraftPoolBrowser (plus its own
@@ -42,14 +44,19 @@ interface Props {
 type PlayerFeedback = Record<string, FeedbackEntry>;
 
 interface TeamFeedback {
-  rankingAgrees: 'yes' | 'no' | 'unsure' | '';
+  /** 2026-08-09, user's explicit ask: replaces the old yes/no/unsure agreement dropdown with the
+   * user's own 1-16 Power Ranking placement for this team — a direct, comparable number against
+   * the algorithm's own `rank`, not just a binary "do you agree." Kept as a string (not number)
+   * for the same "empty string means unset" reason every other optional text field on this type
+   * uses — an actual `0`/`NaN` sentinel would be ambiguous with a real rank. */
+  userRank: string;
   rankingNote: string;
   playerNotes: PlayerFeedback;
   rotationNote: string;
   otherNote: string;
 }
 
-const EMPTY_FEEDBACK: TeamFeedback = { rankingAgrees: '', rankingNote: '', playerNotes: {}, rotationNote: '', otherNote: '' };
+const EMPTY_FEEDBACK: TeamFeedback = { userRank: '', rankingNote: '', playerNotes: {}, rotationNote: '', otherNote: '' };
 
 function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): TeamFeedback {
   return record[teamId] ?? EMPTY_FEEDBACK;
@@ -95,12 +102,36 @@ function remainingOnBoard(teams: Team[]) {
     .sort((a, b) => b.TAL - a.TAL);
 }
 
+/** Shared shape for both the original (auto-assigned) and corrected rotation in the export below
+ * — same fields either way, so an ML pipeline can diff them directly without special-casing. */
+function buildRotationExport(team: Team) {
+  const assignments = allAssignments(team);
+  const bench = benchWithMinutes(team);
+  return {
+    rotation: STARTER_SLOTS.map((slot) => ({
+      slot,
+      entries: assignments
+        .filter((a) => a.slot === slot)
+        .sort((a, b) => b.minutes - a.minutes)
+        .map((a) => ({ playerName: a.player.playerName, spanLabel: a.player.spanLabel, minutes: a.minutes })),
+    })),
+    bench: bench.map(({ player, minutes }) => ({ playerName: player.playerName, spanLabel: player.spanLabel, minutes })),
+  };
+}
+
 function buildFeedbackExport(
   teams: Team[],
   history: DraftHistoryEntry[],
   feedback: Record<string, TeamFeedback>,
   pickReactions: Record<number, FeedbackEntry>,
   pickReasoning: Record<number, string>,
+  /** 2026-08-08, user's explicit ask: manual rotation corrections (any team, not just the
+   * human's, made from this screen — see `RotationBuilder`'s reuse below) exported ALONGSIDE the
+   * original auto-assigned rotation, always both fields present (not just when a correction was
+   * made) — the user's own words, "do eksportu obie wersje," so an ML pipeline training "how to
+   * fix a rotation given a roster" always has a consistent (original, corrected) pair per team,
+   * even a same-as-original one when nothing was touched, rather than a sometimes-null field. */
+  correctedRotations: Record<string, Rotation>,
 ) {
   const ranked = rankTeams(teams);
   // Live in-draft reactions (see DraftHistory/GameShell) — only flagged picks carry a
@@ -128,8 +159,9 @@ function buildFeedbackExport(
     remainingOnBoard: remainingOnBoard(teams),
     draftPickFeedback,
     teams: ranked.map(({ team, breakdown, rank }) => {
-      const assignments = allAssignments(team);
-      const bench = benchWithMinutes(team);
+      const original = buildRotationExport(team);
+      const correction = correctedRotations[team.id];
+      const corrected = correction ? buildRotationExport({ ...team, rotation: correction }) : original;
       const teamHistory = history
         .filter((h) => h.teamId === team.id)
         .sort((a, b) => a.pickNumber - b.pickNumber)
@@ -170,17 +202,20 @@ function buildFeedbackExport(
         overall: breakdown.overall,
         breakdown,
         roster,
-        rotation: STARTER_SLOTS.map((slot) => ({
-          slot,
-          entries: assignments
-            .filter((a) => a.slot === slot)
-            .sort((a, b) => b.minutes - a.minutes)
-            .map((a) => ({ playerName: a.player.playerName, spanLabel: a.player.spanLabel, minutes: a.minutes })),
-        })),
-        bench: bench.map(({ player, minutes }) => ({ playerName: player.playerName, spanLabel: player.spanLabel, minutes })),
+        rotation: original.rotation,
+        bench: original.bench,
+        // Always present (see this function's own docstring on `correctedRotations`) — identical
+        // to `rotation`/`bench` above when this team's rotation was never manually touched.
+        correctedRotation: corrected.rotation,
+        correctedBench: corrected.bench,
+        rotationWasCorrected: Boolean(correction),
         draftOrder: teamHistory,
         feedback: {
-          rankingAgrees: fb.rankingAgrees,
+          // The algorithm's own placement is already `rank` above — exporting the user's number
+          // right alongside it (both null-able the same way) is what actually makes this
+          // comparable, rather than requiring a join against the top-level field later.
+          userRank: fb.userRank === '' ? null : Number(fb.userRank),
+          algorithmicRank: rank,
           rankingNote: fb.rankingNote,
           rotationNote: fb.rotationNote,
           otherNote: fb.otherNote,
@@ -206,8 +241,9 @@ function downloadFeedback(
   feedback: Record<string, TeamFeedback>,
   pickReactions: Record<number, FeedbackEntry>,
   pickReasoning: Record<number, string>,
+  correctedRotations: Record<string, Rotation>,
 ) {
-  const data = buildFeedbackExport(teams, history, feedback, pickReactions, pickReasoning);
+  const data = buildFeedbackExport(teams, history, feedback, pickReactions, pickReasoning, correctedRotations);
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -226,6 +262,21 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
   const [feedback, setFeedback] = useState<Record<string, TeamFeedback>>({});
   const [showBrowser, setShowBrowser] = useState(false);
   const leftOnBoard = remainingOnBoard(teams);
+  // 2026-08-08, user's explicit ask: correct ANY team's rotation from this screen (not just the
+  // human's own, pre-results one — see RotationBuilder's reuse below), kept separate from the
+  // original auto-assigned `team.rotation` so the export can carry both (see
+  // `buildFeedbackExport`'s own docstring on `correctedRotations`).
+  const [correctedRotations, setCorrectedRotations] = useState<Record<string, Rotation>>({});
+  const [editingRotationTeamId, setEditingRotationTeamId] = useState<string | null>(null);
+
+  /** The rotation actually shown on this screen for a team — its correction if one was made,
+   * otherwise the original auto-assigned one. Every display/render site below should read
+   * through this, not `team.rotation` directly, so a saved correction is reflected everywhere
+   * (minutes list, bench, scoring) immediately, not just in the export. */
+  function displayTeam(team: Team): Team {
+    const correction = correctedRotations[team.id];
+    return correction ? { ...team, rotation: correction } : team;
+  }
 
   function getFeedback(teamId: string): TeamFeedback {
     return feedbackFor(feedback, teamId);
@@ -275,10 +326,12 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         </ul>
       </div>
       {ranked.map(({ team, breakdown, rank }) => {
-        const assignments = allAssignments(team);
-        const bench = benchWithMinutes(team);
+        const shownTeam = displayTeam(team);
+        const assignments = allAssignments(shownTeam);
+        const bench = benchWithMinutes(shownTeam);
         const teamHistory = history.filter((h) => h.teamId === team.id).sort((a, b) => a.pickNumber - b.pickNumber);
         const fb = getFeedback(team.id);
+        const isEditingRotation = editingRotationTeamId === team.id;
         return (
           <div key={team.id} className={`team-result rank-${rank}`}>
             <h3>
@@ -291,7 +344,23 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
               <span>Spacing: {breakdown.spacingScore}</span>
               <span>Fit: {breakdown.fitScore}</span>
               <span>Rotation: {breakdown.rotationScore}</span>
+              <span>FGA spent: {team.roster.reduce((sum, p) => sum + p.fga, 0).toFixed(1)}</span>
             </div>
+            {isEditingRotation ? (
+              <RotationBuilder
+                roster={team.roster}
+                initialRotation={correctedRotations[team.id] ?? team.rotation}
+                onConfirm={(rotation) => {
+                  setCorrectedRotations((prev) => ({ ...prev, [team.id]: rotation }));
+                  setEditingRotationTeamId(null);
+                }}
+                onCancel={() => setEditingRotationTeamId(null)}
+              />
+            ) : (
+              <button className="secondary-btn" onClick={() => setEditingRotationTeamId(team.id)}>
+                {correctedRotations[team.id] ? '✏️ Edit corrected rotation' : '✏️ Correct rotation'}
+              </button>
+            )}
             <div className="lineup">
               <div>
                 <strong>Rotation</strong>
@@ -307,8 +376,8 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                           {entries.map((e) => (
                             <li key={e.player.id}>
                               <span>
-                                {e.player.playerName} ({e.player.spanLabel}) - {e.minutes} min — FGA {e.player.fga.toFixed(1)}, TAL{' '}
-                                {computeTalent(e.player)}
+                                {e.player.playerName} ({e.player.spanLabel}) [{naturalPosition(e.player.playerName)}] - {e.minutes} min —
+                                FGA {e.player.fga.toFixed(1)}, TAL {computeTalent(e.player)}
                               </span>
                               <FeedbackToggle
                                 entry={fb.playerNotes[e.player.id]}
@@ -329,7 +398,8 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                   {bench.map(({ player, minutes }) => (
                     <li key={player.id}>
                       <span>
-                        {player.playerName} ({player.spanLabel}) — {minutes} min — FGA {player.fga.toFixed(1)}, TAL {computeTalent(player)}
+                        {player.playerName} ({player.spanLabel}) [{naturalPosition(player.playerName)}] — {minutes} min — FGA{' '}
+                        {player.fga.toFixed(1)}, TAL {computeTalent(player)}
                       </span>
                       <FeedbackToggle
                         entry={fb.playerNotes[player.id]}
@@ -366,33 +436,6 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
             <div className="team-feedback">
               <strong>Feedback</strong>
 
-              <div className="feedback-field">
-                <label>Zgadzasz się z tą pozycją w rankingu?</label>
-                <select
-                  value={fb.rankingAgrees}
-                  onChange={(e) => {
-                    const value = e.target.value as TeamFeedback['rankingAgrees'];
-                    // Clear the "why" note whenever it stops being relevant, so a stale reason
-                    // for "no" can never survive into the export under a "yes"/"unsure" answer.
-                    patchFeedback(team.id, { rankingAgrees: value, rankingNote: value === 'no' ? fb.rankingNote : '' });
-                  }}
-                >
-                  <option value="">-- wybierz --</option>
-                  <option value="yes">Tak</option>
-                  <option value="no">Nie</option>
-                  <option value="unsure">Nie jestem pewien/pewna</option>
-                </select>
-              </div>
-              {fb.rankingAgrees === 'no' && (
-                <textarea
-                  className="feedback-textarea"
-                  rows={2}
-                  placeholder="Dlaczego ranking jest niesłuszny?"
-                  value={fb.rankingNote}
-                  onChange={(e) => patchFeedback(team.id, { rankingNote: e.target.value })}
-                />
-              )}
-
               <p className="player-notes-hint">
                 Konkretni gracze: kliknij ✓/✗ przy graczu w Rotation/Bench powyżej.
               </p>
@@ -422,11 +465,56 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
           </div>
         );
       })}
+      <div className="user-power-ranking">
+        <h3>Twój własny ranking (1-16)</h3>
+        <p className="player-notes-hint">Twoja ocena miejsca każdej drużyny — porównywana obok rankingu algorytmu.</p>
+        {ranked.map(({ team, rank }) => {
+          const fb = getFeedback(team.id);
+          const disagrees = fb.userRank !== '' && Number(fb.userRank) !== rank;
+          return (
+            <div key={team.id} className="user-power-ranking-row">
+              <span className="user-power-ranking-label">
+                #{rank} — {teamLabel(team)} {team.isHuman ? '(You)' : ''}
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={16}
+                className="user-rank-input"
+                value={fb.userRank}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Same "clear the stale reason" logic the old yes/no dropdown had — a reason
+                  // typed for a previous disagreement shouldn't survive into the export once the
+                  // user's own number matches the algorithm's again (or is cleared).
+                  const stillDisagrees = value !== '' && Number(value) !== rank;
+                  patchFeedback(team.id, { userRank: value, rankingNote: stillDisagrees ? fb.rankingNote : '' });
+                }}
+              />
+              {fb.userRank !== '' && (
+                <span className="user-rank-hint">{disagrees ? `(algorytm: #${rank})` : '(zgadza się z algorytmem)'}</span>
+              )}
+              {disagrees && (
+                <textarea
+                  className="feedback-textarea"
+                  rows={2}
+                  placeholder="Dlaczego Twoja kolejność jest inna?"
+                  value={fb.rankingNote}
+                  onChange={(e) => patchFeedback(team.id, { rankingNote: e.target.value })}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
       <div className="results-actions">
         <button className="primary-btn" onClick={onRestart}>
           Draft Again
         </button>
-        <button className="secondary-btn" onClick={() => downloadFeedback(teams, history, feedback, pickReactions, pickReasoning)}>
+        <button
+          className="secondary-btn"
+          onClick={() => downloadFeedback(teams, history, feedback, pickReactions, pickReasoning, correctedRotations)}
+        >
           Zapisz feedback do pliku
         </button>
       </div>

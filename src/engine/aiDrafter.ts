@@ -292,7 +292,27 @@ interface NeedContext {
    * elite playmaking, no dominant shot zone) — the team needs two-way/defensive complements more
    * than it needs another high-usage offensive piece. */
   hasSelfSufficientEngineStarter: boolean;
+  /** 2026-08-08, user-reported: bench units often have nobody who can "pociągnąć grę" (carry
+   * scoring load) once the starters sit — root-caused to `usageWeight`'s redundancy discount
+   * below firing against Shot Creator/Slasher candidates in BENCH rounds too, purely because
+   * `usageWeight` itself is starter-only (see its own docstring) with no round-awareness, so the
+   * exact archetype a bench scorer needs gets suppressed the moment the starting five already has
+   * two ball-dominant guys. True whenever NONE of the roster's current non-starters (real bench
+   * players, by the same `starterPlayers`/`isRealPositionFit` split used above) carry a real
+   * self-creator archetype yet. Deliberately NOT a roster-wide "has 2+ total" count — measured
+   * directly (`scripts/_checkBenchCreatorCoverage.ts`, deleted after use) that a roster-wide count
+   * is the wrong signal: a team can easily draft 2+ self-creators who all end up starting (they
+   * only compete for the SAME slot if they share a position), leaving the bench with none while
+   * reading as "covered." Checking the actual current bench split instead measures the real thing
+   * being asked for. */
+  lacksBenchShotCreator: boolean;
 }
+
+/** Only the full-weight archetypes (`HIGH_USAGE_ARCHETYPE_WEIGHT`'s Shot Creator/Slasher, weight
+ * 1) count — a lead guard (Primary/Secondary Ball Handler, weight 0.5/0.25) creates offense for
+ * teammates, not necessarily his own shot off the dribble, which is the specific "can go get a
+ * bucket himself" trait a bench scorer needs when the starters' half-court sets aren't running. */
+const isSelfCreatorArchetype = (p: PlayerSpan) => (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) >= 1;
 
 /** Measured against the real in-game pool (`draftPool.json`, ~3,100 spans): apg reads p50=2.9 /
  * p75=4.7 / p90=6.7 / p95=8.2 — 7.0 sits just past p90, "genuinely elite playmaking rate," not a
@@ -370,6 +390,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
     hasElitePlaymaking: starterPlayers.some((p) => p.box.apg >= ELITE_PLAYMAKING_APG_THRESHOLD),
     hasRimGravityStarter: starterPlayers.some(isRimGravityScorer),
     hasSelfSufficientEngineStarter: starterPlayers.some(isSelfSufficientEngine),
+    lacksBenchShotCreator: !roster.some((p) => !starterPlayers.includes(p) && isSelfCreatorArchetype(p)),
   };
 }
 
@@ -396,6 +417,35 @@ const BASE_FGA_PENALTY = 0.4;
  * previous 3.2 cap let a 5-FGA gap alone erase a 16-point talent edge, which was overpowering
  * ordinary star-vs-cap-glue talent gaps rather than just tie-breaking among similar talents. */
 const MAX_FGA_PENALTY = 1.3;
+
+/**
+ * 2026-08-08, user-reported: Bob McAdoo and Chris Webber's real high-FGA peaks (McAdoo 1973-77:
+ * 22.4-25.4 FGA; Webber 1999-2003: 20.7-22.0 FGA) still get drafted, and teams that take them
+ * end up FGA-starved everywhere else. Root-caused: `fgaPenalty` above is flat across every
+ * position — it can't tell that 20+ FGA is a much bigger outlier for a C/PF than for a wing or
+ * guard. Measured directly (`scripts/_checkFgaByPosition.ts`, deleted after use): C's own FGA
+ * distribution runs noticeably lower than every other position (p50 9.8 vs 11.8-12.8 elsewhere,
+ * p90 17.5) — most offense is funneled through the perimeter, so a center spending 22-25 FGA is
+ * genuinely rarer (95th-99th percentile) than a guard at the same raw number would be. The
+ * user's own framing matches this: "easier to save FGA at C/PF than everywhere else" is really
+ * "big men who need this much volume are rarer/more of an outlier, not that cheap bigs are more
+ * abundant" — a straight cheap-and-good-options count by position doesn't show a PF/C shortage
+ * either way (PF and SG are actually tied for fewest at 7, C has 12), so this is scoped as an
+ * outlier-FGA signal specifically, not a blanket "prefer cheaper bigs" bias.
+ *
+ * Position-relative, not a flat cutoff: only fires above each position's own 90th-percentile FGA
+ * (so it never touches an ordinary big), and scales with the actual excess, not a cliff — a
+ * center at 18 FGA barely trips it, one at 25 (McAdoo's peak) trips it hard.
+ */
+const BIG_FGA_OUTLIER_THRESHOLD: Partial<Record<Position, number>> = { PF: 17.9, C: 17.5 };
+const BIG_FGA_OUTLIER_PENALTY_SCALE = 0.6;
+
+function bigFgaOutlierPenalty(p: PlayerSpan): number {
+  const threshold = BIG_FGA_OUTLIER_THRESHOLD[p.primaryPosition];
+  if (threshold === undefined) return 0;
+  const excess = p.fga - threshold;
+  return excess > 0 ? excess * BIG_FGA_OUTLIER_PENALTY_SCALE : 0;
+}
 
 /**
  * A team already loaded with high-usage offensive talent should actively favor defense for its
@@ -495,6 +545,37 @@ const RIM_GRAVITY_SHOOTER_BONUS_SCALE = 0.8;
  * engine already starts — same shape as the existing redundancy discounts below, same elite-
  * talent exemption gate so a genuine top-of-history peak is still drafted regardless. */
 const SELF_SUFFICIENT_USAGE_DAMPENING = 0.4;
+/**
+ * 2026-08-08, bench-shot-creator fix, option B (positive signal) — see
+ * `NeedContext.lacksBenchShotCreator`'s own docstring. Flat, not proportional (matches
+ * `lacksRimProtection`/`lacksPerimeterDefense`'s shape) — this is a binary "do we have this skill
+ * covered at all" question, not a magnitude one.
+ *
+ * Tuned by measurement, not picked upfront (`scripts/_checkBenchCreatorCoverage.ts`, deleted
+ * after use, tracked "% of AI teams with a real Shot Creator/Slasher among actual bench minutes"
+ * across 225 simulated teams): the original magnitude family (this at 0.6, `BENCH_CREATOR_
+ * DISCOUNT_SOFTEN` at 0.4) barely moved the number — 0.9% baseline to 3.1% — because the thin-slot
+ * / spacing-deficit / rising cap-pressure bonuses competing for the same bench-round picks are
+ * all similar or larger magnitude. Scaled up to this value (paired with a near-full discount
+ * waiver below) for 11.6% coverage — still a real, deliberate minority (a bench needs at most one
+ * such player, and cap/position needs correctly still win when they're the more urgent gap), not
+ * a forced-every-team outcome. Confirmed no regressions from this size at the same time
+ * (`validateMultiTeamDraft.ts`: 0 stuck drafts across 4/8/12/16-team configs, off-position rate
+ * 1.5-8.8% consistent with pre-existing ranges; `checkStarterVsBenchFga.ts`: bench FGA distribution
+ * barely shifted, 23.8->24.1 avg total).
+ */
+const BENCH_SHOT_CREATOR_BONUS = 1.2;
+/**
+ * 2026-08-08, bench-shot-creator fix, option A (softened discount) — same
+ * `NeedContext.lacksBenchShotCreator` signal, same measurement pass as `BENCH_SHOT_CREATOR_BONUS`
+ * above. Deliberately not a full 0 (a residual discount still applies even to an uncovered team's
+ * candidate) but close to it — the positive bonus above is doing most of the real work; this
+ * mainly stops the redundancy discount from actively fighting it on the same candidate. A team
+ * that's already covered (real self-creator already sitting on the bench) gets the normal, full
+ * discount against any further stacking — this only softens the specific "team's only ball-dominant
+ * guys are all starters" case, not redundancy discounting in general. */
+const BENCH_CREATOR_DISCOUNT_SOFTEN = 0.15;
+
 /** Boosts real defensive/two-way value once a self-sufficient engine covers offense alone —
  * the user's own "needs two-way players, not more offensive talent" framing for the Nash case. */
 const SELF_SUFFICIENT_DEFENSE_BONUS_SCALE = 0.6;
@@ -681,6 +762,19 @@ export function pickForAi(
   const MARGINAL_VALUE_ROSTER_SIZE_CEILING = 7;
   const baselineStarterValue = roster.length < MARGINAL_VALUE_ROSTER_SIZE_CEILING ? projectedStarterValue(roster) : null;
 
+  // 2026-08-08, bench-shot-creator fix (options A+B): measured directly
+  // (`scripts/_checkSelfCreatorDistribution.ts`, deleted after use) that gating this on
+  // `needs.lacksBenchShotCreator` alone wasn't enough — 80% of teams already draft 2+ self-creator
+  // (Shot Creator/Slasher) spans, but 98% of THOSE teams still end up with zero on the bench,
+  // because a pick applied during starter rounds just becomes an extra starter (self-creators
+  // skew high-talent, so they win an empty/thin starter slot at whatever position they play,
+  // rather than ever reaching the bench) — reinforcing the exact problem instead of fixing it.
+  // Restricting both options to genuine bench rounds (starters already locked, same
+  // `STARTER_LOCK_ROSTER_SIZE` boundary the starter-fill phase above uses) means a pick this
+  // nudges toward is one `autoAssignRotation` will actually seat on the bench, barring an
+  // extreme talent mismatch with an existing starter.
+  const inBenchRound = roster.length >= STARTER_LOCK_ROSTER_SIZE;
+
   const scored = phaseFilteredCandidates.map((p) => {
     let need = 1;
     if (needs.emptySlots.includes(p.primaryPosition)) need += 1.5;
@@ -712,13 +806,26 @@ export function pickForAi(
     if (needs.hasSelfSufficientEngineStarter) {
       need += (computeDefensivePortability(p) / 100) * SELF_SUFFICIENT_DEFENSE_BONUS_SCALE;
     }
+    // Option B (bench-shot-creator fix): positive pull toward a self-creator archetype while the
+    // team still lacks a real bench-caliber one — see `NeedContext.lacksBenchShotCreator` and
+    // `inBenchRound`'s own docstring for why this is round-gated.
+    if (inBenchRound && needs.lacksBenchShotCreator && isSelfCreatorArchetype(p)) {
+      need += BENCH_SHOT_CREATOR_BONUS;
+    }
     if (isD1D2D3Player(p)) need += D1D2D3_PREFERENCE_BONUS;
     // The redundancy-exemption check stays on RAW talent, not durability-adjusted — it's
     // asking "is this a top-of-history peak," a question about the player's ceiling, not
     // about how many minutes their body can sustain.
     const talent = computeTalent(p);
     if (needs.usageWeight >= 2 && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
-      need -= (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * 0.5;
+      const usageDiscount = (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * 0.5;
+      // Option A (bench-shot-creator fix): this discount fires off `usageWeight`, which is
+      // starter-only (see its own docstring) — it can't tell "competing with starters for
+      // touches" apart from "this exact archetype is the one thing the bench still lacks," so
+      // soften (not waive) it for a self-creator candidate specifically while that's still true,
+      // and only in genuine bench rounds (see `inBenchRound`'s own docstring).
+      const stillNeedsBenchCreator = inBenchRound && needs.lacksBenchShotCreator && isSelfCreatorArchetype(p);
+      need -= stillNeedsBenchCreator ? usageDiscount * BENCH_CREATOR_DISCOUNT_SOFTEN : usageDiscount;
     }
     if (talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
       need -= samePositionRedundancyDiscount(roster, p);
@@ -752,7 +859,12 @@ export function pickForAi(
     // complaint was about elite peaks specifically, a milder/partial durability weight (rather
     // than a full multiplier) might resolve it without the all-or-nothing swing this is.
     const value =
-      talent * rampedNeed - p.fga * fgaPenalty - lowUsageBigMalus(p) - eliteLowUsageDraftMalus(p) + greatestPeakTierBonus(p);
+      talent * rampedNeed -
+      p.fga * fgaPenalty -
+      lowUsageBigMalus(p) -
+      eliteLowUsageDraftMalus(p) -
+      bigFgaOutlierPenalty(p) +
+      greatestPeakTierBonus(p);
     return { player: p, value, talent };
   });
 

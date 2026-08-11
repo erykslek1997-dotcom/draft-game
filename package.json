@@ -7,6 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test": "tsx scripts/testDraftRules.ts && tsx scripts/testRotationEditable.ts",
+    "audit:data": "tsx scripts/auditDataProvenance.ts",
+    "audit:historical": "tsx scripts/auditHistoricalTalent.ts",
+    "validate:bpm2": "tsx scripts/validateBpm2Total.ts",
+    "build:runtime-percentiles": "tsx scripts/buildRuntimePercentiles.ts",
+    "build:runtime-provenance": "tsx scripts/buildRuntimeProvenance.ts",
+    "build:runtime-lookups": "tsx scripts/buildRuntimeSpanLookups.ts",
+    "build:runtime-data": "npm run build:runtime-lookups && npm run build:runtime-percentiles && npm run build:runtime-provenance",
     "preview": "vite preview"
   },
   "dependencies": {

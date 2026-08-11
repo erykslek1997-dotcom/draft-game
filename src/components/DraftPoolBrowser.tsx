@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing } from '../engine/spacing';
 import { computeDurability } from '../engine/durability';
 import { allStarCount } from '../engine/allStarLookup';
-import { offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, displayTalentForSpan, displayNumberForSpan } from '../engine/grades';
+import { offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, displayTalentForSpan, displayNumberForSpan, overallTierForSpan, tierRank } from '../engine/grades';
 import {
   ALL_POSITIONS,
   groupByPlayer,
@@ -15,6 +15,7 @@ import {
   PlayoffPerformanceBadge,
   DurabilityTierBadge,
   tierContextFor,
+  naturalPosition,
   type PlayerGroup,
 } from './DraftBoard';
 
@@ -90,7 +91,12 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
             ...g,
             bestTalentSpan,
             bestTalent: showJudgeMetrics ? displayTalentForSpan(tierContextFor(bestTalentSpan)) : 0,
+            // 2026-08-08, same fix as DraftBoard.tsx's identical comment: GOAT has no ceiling of
+            // its own, so its `bestTalent` number can tie a merely-Greatest-Peak span's — stored
+            // so the sort below can break that tie by tier rank instead of array order.
+            bestTier: showJudgeMetrics ? overallTierForSpan(tierContextFor(bestTalentSpan)) : 'Cigarette Butt',
             bestOffensiveTalent: showJudgeMetrics ? Math.max(...g.spans.map(computeOffensiveTalent)) : 0,
+            bestOffensiveTalentUncapped: showJudgeMetrics ? Math.max(...g.spans.map(computeUncappedOffensiveTalent)) : 0,
             bestDefensiveTalent: showJudgeMetrics ? Math.max(...g.spans.map(computeDefensiveTalent)) : 0,
             bestOffensivePortability: showJudgeMetrics ? Math.max(...g.spans.map(computeOffensivePortability)) : 0,
             bestDefensivePortability: showJudgeMetrics ? Math.max(...g.spans.map(computeDefensivePortability)) : 0,
@@ -104,7 +110,7 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
             if (starDiff !== 0) return starDiff;
             return (randomTiebreak.get(a.playerName) ?? 0) - (randomTiebreak.get(b.playerName) ?? 0);
           }
-          return b.bestTalent - a.bestTalent;
+          return b.bestTalent - a.bestTalent || tierRank(b.bestTier) - tierRank(a.bestTier);
         });
 
   function toggleExpand(name: string) {
@@ -170,6 +176,7 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                 const {
                   bestTalentSpan,
                   bestOffensiveTalent,
+                  bestOffensiveTalentUncapped,
                   bestDefensiveTalent,
                   bestOffensivePortability,
                   bestDefensivePortability,
@@ -181,6 +188,7 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                     <button className="player-group-header" onClick={() => toggleExpand(group.playerName)}>
                       <span className="pg-caret">{isOpen ? '▾' : '▸'}</span>
                       <span className="pg-name">{group.playerName}</span>
+                      <span className="pg-natural-position">{naturalPosition(group.playerName)}</span>
                       <span className="pg-meta">
                         {group.spans.length} season{group.spans.length > 1 ? 's' : ''}
                       </span>
@@ -192,7 +200,9 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                           TAL {displayNumberForSpan(bestTalentSpan, tierContextFor(bestTalentSpan))} <OverallTierBadge span={bestTalentSpan} />
                         </span>
                       )}
-                      {showJudgeMetrics && <span className="pg-otal">O-TAL {offensiveGrade(bestOffensiveTalent)}</span>}
+                      {showJudgeMetrics && (
+                        <span className="pg-otal">O-TAL {offensiveGrade(bestOffensiveTalent, bestOffensiveTalentUncapped)}</span>
+                      )}
                       {showJudgeMetrics && <span className="pg-dtal">D-TAL {defensiveGrade(bestDefensiveTalent)}</span>}
                       {showJudgeMetrics && (
                         <span className="pg-opor">O-POR {offensivePortabilityGrade(bestOffensivePortability)}</span>
@@ -244,7 +254,9 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                                     <OverallTierBadge span={span} />
                                   </td>
                                 )}
-                                {showJudgeMetrics && <td>{offensiveGrade(computeOffensiveTalent(span))}</td>}
+                                {showJudgeMetrics && (
+                                  <td>{offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))}</td>
+                                )}
                                 {showJudgeMetrics && <td>{defensiveGrade(computeDefensiveTalent(span))}</td>}
                                 {showJudgeMetrics && <td>{offensivePortabilityGrade(computeOffensivePortability(span))}</td>}
                                 {showJudgeMetrics && <td>{defensivePortabilityGrade(computeDefensivePortability(span))}</td>}

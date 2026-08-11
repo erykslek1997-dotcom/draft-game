@@ -1,0 +1,4265 @@
+[
+  {
+    "id": "russell-61-63",
+    "sourcePlayerId": "russebi01",
+    "sourceSpanId": "russebi01-1962-1963",
+    "fga": 15.8,
+    "box": {
+      "ppg": 17.8,
+      "rpg": 23.6,
+      "apg": 4.5,
+      "spg": 1.8,
+      "bpg": 0.8,
+      "fgPct": 0.445,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.574,
+      "tsPct": 0.477
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "russell-64-66",
+    "sourcePlayerId": "russebi01",
+    "sourceSpanId": "russebi01-1965-1966",
+    "fga": 12.3,
+    "box": {
+      "ppg": 13.5,
+      "rpg": 23.4,
+      "apg": 5,
+      "spg": 1.7,
+      "bpg": 0.9,
+      "fgPct": 0.426,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.562,
+      "tsPct": 0.461
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "wilt-61-63",
+    "sourcePlayerId": "chambwi01",
+    "sourceSpanId": "chambwi01-1962-1963",
+    "fga": 37.1,
+    "box": {
+      "ppg": 47.6,
+      "rpg": 25,
+      "apg": 2.9,
+      "spg": 0.6,
+      "bpg": 2.5,
+      "fgPct": 0.516,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.604,
+      "tsPct": 0.542
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "wilt-67-69",
+    "sourcePlayerId": "chambwi01",
+    "sourceSpanId": "chambwi01-1968-1969",
+    "fga": 15.2,
+    "box": {
+      "ppg": 22.4,
+      "rpg": 22.5,
+      "apg": 6.6,
+      "spg": 0.8,
+      "bpg": 2.2,
+      "fgPct": 0.59,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.411,
+      "tsPct": 0.559
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "oscar-61-63",
+    "sourcePlayerId": "roberos01",
+    "sourceSpanId": "roberos01-1962-1963",
+    "fga": 21.4,
+    "box": {
+      "ppg": 29.5,
+      "rpg": 11.4,
+      "apg": 10.4,
+      "spg": 1.8,
+      "bpg": 0.3,
+      "fgPct": 0.497,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.806,
+      "tsPct": 0.569
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "oscar-69-71",
+    "sourcePlayerId": "roberos01",
+    "sourceSpanId": "roberos01-1970-1971",
+    "fga": 16.4,
+    "box": {
+      "ppg": 22.1,
+      "rpg": 5.9,
+      "apg": 8.2,
+      "spg": 1.4,
+      "bpg": 0.2,
+      "fgPct": 0.504,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.827,
+      "tsPct": 0.57
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "west-65-67",
+    "sourcePlayerId": "westje01",
+    "sourceSpanId": "westje01-1966-1967",
+    "fga": 21.5,
+    "box": {
+      "ppg": 30.1,
+      "rpg": 6.6,
+      "apg": 6.4,
+      "spg": 1.9,
+      "bpg": 0.3,
+      "fgPct": 0.469,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.867,
+      "tsPct": 0.567
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "west-71-73",
+    "sourcePlayerId": "westje01",
+    "sourceSpanId": "westje01-1972-1973",
+    "fga": 19.4,
+    "box": {
+      "ppg": 24.4,
+      "rpg": 4.2,
+      "apg": 9.3,
+      "spg": 2.2,
+      "bpg": 0.2,
+      "fgPct": 0.478,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.81,
+      "tsPct": 0.54
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "kareem-71-73",
+    "sourcePlayerId": "abdulka01",
+    "sourceSpanId": "abdulka01-1972-1973",
+    "fga": 24.1,
+    "box": {
+      "ppg": 32.6,
+      "rpg": 16.4,
+      "apg": 4.8,
+      "spg": 1,
+      "bpg": 3.3,
+      "fgPct": 0.565,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.698,
+      "tsPct": 0.594
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "kareem-85-87",
+    "sourcePlayerId": "abdulka01",
+    "sourceSpanId": "abdulka01-1986-1987",
+    "fga": 14.8,
+    "box": {
+      "ppg": 20.5,
+      "rpg": 6.4,
+      "apg": 3.1,
+      "spg": 0.7,
+      "bpg": 1.4,
+      "fgPct": 0.564,
+      "threePct": 0.2,
+      "threePA": 0,
+      "ftPct": 0.743,
+      "tsPct": 0.603
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "havlicek-70-72",
+    "sourcePlayerId": "havlijo01",
+    "sourceSpanId": "havlijo01-1971-1972",
+    "fga": 24.2,
+    "box": {
+      "ppg": 28.2,
+      "rpg": 8.6,
+      "apg": 7.5,
+      "spg": 1.5,
+      "bpg": 0.4,
+      "fgPct": 0.454,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.825,
+      "tsPct": 0.513
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "havlicek-75-77",
+    "sourcePlayerId": "havlijo01",
+    "sourceSpanId": "havlijo01-1976-1977",
+    "fga": 15.5,
+    "box": {
+      "ppg": 17.3,
+      "rpg": 4.5,
+      "apg": 4.4,
+      "spg": 1.2,
+      "bpg": 0.3,
+      "fgPct": 0.451,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.831,
+      "tsPct": 0.501
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "frazier-70-72",
+    "sourcePlayerId": "fraziwa01",
+    "sourceSpanId": "fraziwa01-1971-1972",
+    "fga": 16.7,
+    "box": {
+      "ppg": 22.4,
+      "rpg": 6.7,
+      "apg": 6.3,
+      "spg": 2.2,
+      "bpg": 0.2,
+      "fgPct": 0.503,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.794,
+      "tsPct": 0.565
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "frazier-74-76",
+    "sourcePlayerId": "fraziwa01",
+    "sourceSpanId": "fraziwa01-1975-1976",
+    "fga": 17.2,
+    "box": {
+      "ppg": 20.4,
+      "rpg": 6.3,
+      "apg": 6,
+      "spg": 2.2,
+      "bpg": 0.2,
+      "fgPct": 0.484,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.826,
+      "tsPct": 0.531
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "baylor-60-62",
+    "sourcePlayerId": "bayloel01",
+    "sourceSpanId": "bayloel01-1961-1962",
+    "fga": 31,
+    "box": {
+      "ppg": 36.1,
+      "rpg": 19.3,
+      "apg": 4.9,
+      "spg": 1.2,
+      "bpg": 0.6,
+      "fgPct": 0.429,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.771,
+      "tsPct": 0.495
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "baylor-65-67",
+    "sourcePlayerId": "bayloel01",
+    "sourceSpanId": "bayloel01-1966-1967",
+    "fga": 19.9,
+    "box": {
+      "ppg": 21.8,
+      "rpg": 11.3,
+      "apg": 3.3,
+      "spg": 1.1,
+      "bpg": 0.5,
+      "fgPct": 0.418,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.785,
+      "tsPct": 0.479
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": [
+      "spg",
+      "bpg"
+    ]
+  },
+  {
+    "id": "magic-82-84",
+    "sourcePlayerId": "johnsma02",
+    "sourceSpanId": "johnsma02-1983-1984",
+    "fga": 11.7,
+    "box": {
+      "ppg": 17.2,
+      "rpg": 8,
+      "apg": 11.7,
+      "spg": 2.2,
+      "bpg": 0.7,
+      "fgPct": 0.556,
+      "threePct": 0.12,
+      "threePA": 0.3,
+      "ftPct": 0.805,
+      "tsPct": 0.618
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "magic-89-91",
+    "sourcePlayerId": "johnsma02",
+    "sourceSpanId": "johnsma02-1990-1991",
+    "fga": 13.4,
+    "box": {
+      "ppg": 20.9,
+      "rpg": 6.8,
+      "apg": 12,
+      "spg": 1.5,
+      "bpg": 0.3,
+      "fgPct": 0.479,
+      "threePct": 0.354,
+      "threePA": 3.3,
+      "ftPct": 0.898,
+      "tsPct": 0.623
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "bird-81-83",
+    "sourcePlayerId": "birdla01",
+    "sourceSpanId": "birdla01-1982-1983",
+    "fga": 18.6,
+    "box": {
+      "ppg": 23.3,
+      "rpg": 10.9,
+      "apg": 5.8,
+      "spg": 1.9,
+      "bpg": 0.9,
+      "fgPct": 0.504,
+      "threePct": 0.256,
+      "threePA": 0.8,
+      "ftPct": 0.851,
+      "tsPct": 0.559
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "bird-85-87",
+    "sourcePlayerId": "birdla01",
+    "sourceSpanId": "birdla01-1986-1987",
+    "fga": 19.9,
+    "box": {
+      "ppg": 26.9,
+      "rpg": 9.5,
+      "apg": 7.2,
+      "spg": 1.9,
+      "bpg": 0.8,
+      "fgPct": 0.51,
+      "threePct": 0.411,
+      "threePA": 2.7,
+      "ftPct": 0.903,
+      "tsPct": 0.596
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "jordan-87-89",
+    "sourcePlayerId": "jordami01",
+    "sourceSpanId": "jordami01-1988-1989",
+    "fga": 23.3,
+    "box": {
+      "ppg": 33.7,
+      "rpg": 6.8,
+      "apg": 7,
+      "spg": 3,
+      "bpg": 1.2,
+      "fgPct": 0.537,
+      "threePct": 0.225,
+      "threePA": 0.9,
+      "ftPct": 0.845,
+      "tsPct": 0.607
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "jordan-96-98",
+    "sourcePlayerId": "jordami01",
+    "sourceSpanId": "jordami01-1997-1998",
+    "fga": 23.1,
+    "box": {
+      "ppg": 29.2,
+      "rpg": 5.8,
+      "apg": 3.9,
+      "spg": 1.7,
+      "bpg": 0.5,
+      "fgPct": 0.476,
+      "threePct": 0.333,
+      "threePA": 2.6,
+      "ftPct": 0.806,
+      "tsPct": 0.549
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "isiah-84-86",
+    "sourcePlayerId": "thomais01",
+    "sourceSpanId": "thomais01-1985-1986",
+    "fga": 16.8,
+    "box": {
+      "ppg": 21.1,
+      "rpg": 4,
+      "apg": 12.4,
+      "spg": 2.3,
+      "bpg": 0.3,
+      "fgPct": 0.472,
+      "threePct": 0.279,
+      "threePA": 1.2,
+      "ftPct": 0.8,
+      "tsPct": 0.542
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "isiah-89-91",
+    "sourcePlayerId": "thomais01",
+    "sourceSpanId": "thomais01-1990-1991",
+    "fga": 15.4,
+    "box": {
+      "ppg": 17.6,
+      "rpg": 3.6,
+      "apg": 9.4,
+      "spg": 1.7,
+      "bpg": 0.2,
+      "fgPct": 0.437,
+      "threePct": 0.303,
+      "threePA": 1.6,
+      "ftPct": 0.777,
+      "tsPct": 0.504
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "moses-81-83",
+    "sourcePlayerId": "malonmo01",
+    "sourceSpanId": "malonmo01-1982-1983",
+    "fga": 19.7,
+    "box": {
+      "ppg": 27.8,
+      "rpg": 15,
+      "apg": 1.5,
+      "spg": 1,
+      "bpg": 1.8,
+      "fgPct": 0.511,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.762,
+      "tsPct": 0.575
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "moses-85-87",
+    "sourcePlayerId": "malonmo01",
+    "sourceSpanId": "malonmo01-1986-1987",
+    "fga": 17.4,
+    "box": {
+      "ppg": 23.9,
+      "rpg": 11.5,
+      "apg": 1.4,
+      "spg": 0.9,
+      "bpg": 1.1,
+      "fgPct": 0.456,
+      "threePct": 0,
+      "threePA": 0.1,
+      "ftPct": 0.804,
+      "tsPct": 0.548
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "hakeem-89-91",
+    "sourcePlayerId": "olajuha01",
+    "sourceSpanId": "olajuha01-1990-1991",
+    "fga": 18.6,
+    "box": {
+      "ppg": 23.1,
+      "rpg": 13.9,
+      "apg": 2.6,
+      "spg": 2.1,
+      "bpg": 4.3,
+      "fgPct": 0.504,
+      "threePct": 0.1,
+      "threePA": 0.1,
+      "ftPct": 0.732,
+      "tsPct": 0.545
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "hakeem-93-95",
+    "sourcePlayerId": "olajuha01",
+    "sourceSpanId": "olajuha01-1994-1995",
+    "fga": 21.3,
+    "box": {
+      "ppg": 27.6,
+      "rpg": 11.4,
+      "apg": 3.6,
+      "spg": 1.7,
+      "bpg": 3.5,
+      "fgPct": 0.522,
+      "threePct": 0.314,
+      "threePA": 0.2,
+      "ftPct": 0.736,
+      "tsPct": 0.565
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "malone-89-91",
+    "sourcePlayerId": "malonka01",
+    "sourceSpanId": "malonka01-1990-1991",
+    "fga": 19.7,
+    "box": {
+      "ppg": 30,
+      "rpg": 11.5,
+      "apg": 3,
+      "spg": 1.3,
+      "bpg": 0.8,
+      "fgPct": 0.544,
+      "threePct": 0.351,
+      "threePA": 0.3,
+      "ftPct": 0.766,
+      "tsPct": 0.611
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "malone-96-98",
+    "sourcePlayerId": "malonka01",
+    "sourceSpanId": "malonka01-1997-1998",
+    "fga": 18.7,
+    "box": {
+      "ppg": 27.2,
+      "rpg": 10.1,
+      "apg": 4.2,
+      "spg": 1.3,
+      "bpg": 0.7,
+      "fgPct": 0.54,
+      "threePct": 0.105,
+      "threePA": 0.1,
+      "ftPct": 0.758,
+      "tsPct": 0.597
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "barkley-87-89",
+    "sourcePlayerId": "barklch01",
+    "sourceSpanId": "barklch01-1988-1989",
+    "fga": 15.7,
+    "box": {
+      "ppg": 27.1,
+      "rpg": 12.2,
+      "apg": 3.6,
+      "spg": 1.4,
+      "bpg": 1.1,
+      "fgPct": 0.583,
+      "threePct": 0.248,
+      "threePA": 2,
+      "ftPct": 0.752,
+      "tsPct": 0.66
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "barkley-92-94",
+    "sourcePlayerId": "barklch01",
+    "sourceSpanId": "barklch01-1993-1994",
+    "fga": 17.2,
+    "box": {
+      "ppg": 23.7,
+      "rpg": 11.7,
+      "apg": 4.8,
+      "spg": 1.6,
+      "bpg": 0.8,
+      "fgPct": 0.509,
+      "threePct": 0.289,
+      "threePA": 2.8,
+      "ftPct": 0.738,
+      "tsPct": 0.58
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "drexler-88-90",
+    "sourcePlayerId": "drexlcl01",
+    "sourceSpanId": "drexlcl01-1989-1990",
+    "fga": 20.1,
+    "box": {
+      "ppg": 25.3,
+      "rpg": 7.4,
+      "apg": 5.8,
+      "spg": 2.4,
+      "bpg": 0.7,
+      "fgPct": 0.495,
+      "threePct": 0.271,
+      "threePA": 1.4,
+      "ftPct": 0.788,
+      "tsPct": 0.551
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "drexler-93-95",
+    "sourcePlayerId": "drexlcl01",
+    "sourceSpanId": "drexlcl01-1994-1995",
+    "fga": 16.3,
+    "box": {
+      "ppg": 20.5,
+      "rpg": 6.4,
+      "apg": 4.8,
+      "spg": 1.6,
+      "bpg": 0.5,
+      "fgPct": 0.446,
+      "threePct": 0.348,
+      "threePA": 4.4,
+      "ftPct": 0.802,
+      "tsPct": 0.546
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "rodman-91-93",
+    "sourcePlayerId": "rodmade01",
+    "sourceSpanId": "rodmade01-1992-1993",
+    "fga": 7.4,
+    "box": {
+      "ppg": 8.8,
+      "rpg": 18.5,
+      "apg": 2,
+      "spg": 0.8,
+      "bpg": 0.8,
+      "fgPct": 0.493,
+      "threePct": 0.27,
+      "threePA": 1.2,
+      "ftPct": 0.564,
+      "tsPct": 0.528
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "rodman-95-97",
+    "sourcePlayerId": "rodmade01",
+    "sourceSpanId": "rodmade01-1996-1997",
+    "fga": 5,
+    "box": {
+      "ppg": 5.6,
+      "rpg": 15.4,
+      "apg": 2.8,
+      "spg": 0.6,
+      "bpg": 0.4,
+      "fgPct": 0.464,
+      "threePct": 0.174,
+      "threePA": 0.4,
+      "ftPct": 0.546,
+      "tsPct": 0.49
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "pippen-91-93",
+    "sourcePlayerId": "pippesc01",
+    "sourceSpanId": "pippesc01-1992-1993",
+    "fga": 16.5,
+    "box": {
+      "ppg": 19.8,
+      "rpg": 7.7,
+      "apg": 6.6,
+      "spg": 2,
+      "bpg": 1,
+      "fgPct": 0.49,
+      "threePct": 0.22,
+      "threePA": 1.1,
+      "ftPct": 0.717,
+      "tsPct": 0.532
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "pippen-94-96",
+    "sourcePlayerId": "pippesc01",
+    "sourceSpanId": "pippesc01-1995-1996",
+    "fga": 16.3,
+    "box": {
+      "ppg": 20.4,
+      "rpg": 7.3,
+      "apg": 5.5,
+      "spg": 2.3,
+      "bpg": 0.9,
+      "fgPct": 0.472,
+      "threePct": 0.361,
+      "threePA": 4.6,
+      "ftPct": 0.7,
+      "tsPct": 0.553
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "robinson-90-92",
+    "sourcePlayerId": "robinda01",
+    "sourceSpanId": "robinda01-1991-1992",
+    "fga": 16.3,
+    "box": {
+      "ppg": 24.5,
+      "rpg": 12.6,
+      "apg": 2.6,
+      "spg": 1.9,
+      "bpg": 4.2,
+      "fgPct": 0.552,
+      "threePct": 0.133,
+      "threePA": 0.1,
+      "ftPct": 0.736,
+      "tsPct": 0.606
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "robinson-94-96",
+    "sourcePlayerId": "robinda01",
+    "sourceSpanId": "robinda01-1995-1996",
+    "fga": 17.6,
+    "box": {
+      "ppg": 26.3,
+      "rpg": 11.5,
+      "apg": 3,
+      "spg": 1.5,
+      "bpg": 3.3,
+      "fgPct": 0.523,
+      "threePct": 0.31,
+      "threePA": 0.2,
+      "ftPct": 0.768,
+      "tsPct": 0.595
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "ewing-89-91",
+    "sourcePlayerId": "ewingpa01",
+    "sourceSpanId": "ewingpa01-1990-1991",
+    "fga": 20.4,
+    "box": {
+      "ppg": 27.6,
+      "rpg": 11,
+      "apg": 2.6,
+      "spg": 1,
+      "bpg": 3.6,
+      "fgPct": 0.533,
+      "threePct": 0.1,
+      "threePA": 0.1,
+      "ftPct": 0.76,
+      "tsPct": 0.579
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "ewing-93-95",
+    "sourcePlayerId": "ewingpa01",
+    "sourceSpanId": "ewingpa01-1994-1995",
+    "fga": 18.7,
+    "box": {
+      "ppg": 24.2,
+      "rpg": 11.1,
+      "apg": 2.5,
+      "spg": 1,
+      "bpg": 2.4,
+      "fgPct": 0.499,
+      "threePct": 0.286,
+      "threePA": 0.2,
+      "ftPct": 0.757,
+      "tsPct": 0.553
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "stockton-89-91",
+    "sourcePlayerId": "stockjo01",
+    "sourceSpanId": "stockjo01-1990-1991",
+    "fga": 11.9,
+    "box": {
+      "ppg": 17.2,
+      "rpg": 2.8,
+      "apg": 14.4,
+      "spg": 2.8,
+      "bpg": 0.2,
+      "fgPct": 0.511,
+      "threePct": 0.374,
+      "threePA": 1.8,
+      "ftPct": 0.828,
+      "tsPct": 0.602
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "stockton-93-95",
+    "sourcePlayerId": "stockjo01",
+    "sourceSpanId": "stockjo01-1994-1995",
+    "fga": 10.1,
+    "box": {
+      "ppg": 14.9,
+      "rpg": 3.1,
+      "apg": 12.5,
+      "spg": 2.4,
+      "bpg": 0.3,
+      "fgPct": 0.535,
+      "threePct": 0.399,
+      "threePA": 2.3,
+      "ftPct": 0.804,
+      "tsPct": 0.63
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "payton-95-97",
+    "sourcePlayerId": "paytoga01",
+    "sourceSpanId": "paytoga01-1996-1997",
+    "fga": 16.9,
+    "box": {
+      "ppg": 20.5,
+      "rpg": 4.4,
+      "apg": 7.3,
+      "spg": 2.6,
+      "bpg": 0.2,
+      "fgPct": 0.48,
+      "threePct": 0.32,
+      "threePA": 4.2,
+      "ftPct": 0.731,
+      "tsPct": 0.549
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "payton-99-01",
+    "sourcePlayerId": "paytoga01",
+    "sourceSpanId": "paytoga01-2000-2001",
+    "fga": 20.2,
+    "box": {
+      "ppg": 23.6,
+      "rpg": 5.5,
+      "apg": 8.5,
+      "spg": 1.7,
+      "bpg": 0.3,
+      "fgPct": 0.452,
+      "threePct": 0.352,
+      "threePA": 4.9,
+      "ftPct": 0.749,
+      "tsPct": 0.529
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "miller-93-95",
+    "sourcePlayerId": "millere01",
+    "sourceSpanId": "millere01-1994-1995",
+    "fga": 13.3,
+    "box": {
+      "ppg": 19.8,
+      "rpg": 2.6,
+      "apg": 3.1,
+      "spg": 1.4,
+      "bpg": 0.3,
+      "fgPct": 0.482,
+      "threePct": 0.417,
+      "threePA": 4.8,
+      "ftPct": 0.902,
+      "tsPct": 0.631
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "miller-97-99",
+    "sourcePlayerId": "millere01",
+    "sourceSpanId": "millere01-1998-1999",
+    "fga": 13.4,
+    "box": {
+      "ppg": 19.1,
+      "rpg": 2.8,
+      "apg": 2.2,
+      "spg": 0.9,
+      "bpg": 0.2,
+      "fgPct": 0.462,
+      "threePct": 0.411,
+      "threePA": 5,
+      "ftPct": 0.885,
+      "tsPct": 0.608
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "kemp-93-95",
+    "sourcePlayerId": "kempsh01",
+    "sourceSpanId": "kempsh01-1994-1995",
+    "fga": 12.3,
+    "box": {
+      "ppg": 18.4,
+      "rpg": 10.8,
+      "apg": 2.2,
+      "spg": 1.5,
+      "bpg": 1.8,
+      "fgPct": 0.543,
+      "threePct": 0.273,
+      "threePA": 0.1,
+      "ftPct": 0.745,
+      "tsPct": 0.604
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "kemp-96-98",
+    "sourcePlayerId": "kempsh01",
+    "sourceSpanId": "kempsh01-1997-1998",
+    "fga": 13.6,
+    "box": {
+      "ppg": 18.4,
+      "rpg": 9.6,
+      "apg": 2.2,
+      "spg": 1.4,
+      "bpg": 1.1,
+      "fgPct": 0.475,
+      "threePct": 0.341,
+      "threePA": 0.3,
+      "ftPct": 0.735,
+      "tsPct": 0.548
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "mutombo-94-96",
+    "sourcePlayerId": "mutomdi01",
+    "sourceSpanId": "mutomdi01-1995-1996",
+    "fga": 7.7,
+    "box": {
+      "ppg": 11.3,
+      "rpg": 12.2,
+      "apg": 1.4,
+      "spg": 0.5,
+      "bpg": 4.2,
+      "fgPct": 0.529,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.674,
+      "tsPct": 0.578
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "mutombo-98-00",
+    "sourcePlayerId": "mutomdi01",
+    "sourceSpanId": "mutomdi01-1999-2000",
+    "fga": 6.9,
+    "box": {
+      "ppg": 11.2,
+      "rpg": 13.4,
+      "apg": 1.2,
+      "spg": 0.3,
+      "bpg": 3.2,
+      "fgPct": 0.543,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.698,
+      "tsPct": 0.605
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "hill-96-98",
+    "sourcePlayerId": "hillgr01",
+    "sourceSpanId": "hillgr01-1997-1998",
+    "fga": 16.3,
+    "box": {
+      "ppg": 21.3,
+      "rpg": 8.3,
+      "apg": 7,
+      "spg": 1.8,
+      "bpg": 0.6,
+      "fgPct": 0.473,
+      "threePct": 0.241,
+      "threePA": 0.3,
+      "ftPct": 0.726,
+      "tsPct": 0.538
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "hill-98-00",
+    "sourcePlayerId": "hillgr01",
+    "sourceSpanId": "hillgr01-1999-2000",
+    "fga": 17.9,
+    "box": {
+      "ppg": 23.9,
+      "rpg": 6.8,
+      "apg": 5.5,
+      "spg": 1.5,
+      "bpg": 0.6,
+      "fgPct": 0.486,
+      "threePct": 0.304,
+      "threePA": 0.9,
+      "ftPct": 0.778,
+      "tsPct": 0.559
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "kobe-97-99",
+    "sourcePlayerId": "bryanko01",
+    "sourceSpanId": "bryanko01-1998-1999",
+    "fga": 13.1,
+    "box": {
+      "ppg": 17.2,
+      "rpg": 3.9,
+      "apg": 3,
+      "spg": 1.1,
+      "bpg": 0.7,
+      "fgPct": 0.445,
+      "threePct": 0.318,
+      "threePA": 2.5,
+      "ftPct": 0.812,
+      "tsPct": 0.549
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "kobe-05-07",
+    "sourcePlayerId": "bryanko01",
+    "sourceSpanId": "bryanko01-2006-2007",
+    "fga": 25,
+    "box": {
+      "ppg": 33.5,
+      "rpg": 5.5,
+      "apg": 4.9,
+      "spg": 1.6,
+      "bpg": 0.4,
+      "fgPct": 0.456,
+      "threePct": 0.346,
+      "threePA": 5.8,
+      "ftPct": 0.859,
+      "tsPct": 0.569
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "duncan-99-01",
+    "sourcePlayerId": "duncati01",
+    "sourceSpanId": "duncati01-2000-2001",
+    "fga": 17.2,
+    "box": {
+      "ppg": 22.7,
+      "rpg": 12.3,
+      "apg": 3.1,
+      "spg": 0.9,
+      "bpg": 2.3,
+      "fgPct": 0.495,
+      "threePct": 0.211,
+      "threePA": 0.2,
+      "ftPct": 0.686,
+      "tsPct": 0.547
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "duncan-05-07",
+    "sourcePlayerId": "duncati01",
+    "sourceSpanId": "duncati01-2006-2007",
+    "fga": 14.5,
+    "box": {
+      "ppg": 19.3,
+      "rpg": 10.8,
+      "apg": 3.3,
+      "spg": 0.9,
+      "bpg": 2.2,
+      "fgPct": 0.515,
+      "threePct": 0.214,
+      "threePA": 0.1,
+      "ftPct": 0.633,
+      "tsPct": 0.551
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "shaq-99-01",
+    "sourcePlayerId": "onealsh01",
+    "sourceSpanId": "onealsh01-2000-2001",
+    "fga": 20.2,
+    "box": {
+      "ppg": 29.2,
+      "rpg": 13.2,
+      "apg": 3.8,
+      "spg": 0.5,
+      "bpg": 2.9,
+      "fgPct": 0.573,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.518,
+      "tsPct": 0.576
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "shaq-04-06",
+    "sourcePlayerId": "onealsh01",
+    "sourceSpanId": "onealsh01-2005-2006",
+    "fga": 14.4,
+    "box": {
+      "ppg": 21.6,
+      "rpg": 9.9,
+      "apg": 2.4,
+      "spg": 0.4,
+      "bpg": 2.1,
+      "fgPct": 0.601,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.464,
+      "tsPct": 0.583
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "iverson-00-02",
+    "sourcePlayerId": "iversal01",
+    "sourceSpanId": "iversal01-2001-2002",
+    "fga": 26.6,
+    "box": {
+      "ppg": 31.2,
+      "rpg": 4.1,
+      "apg": 5,
+      "spg": 2.6,
+      "bpg": 0.3,
+      "fgPct": 0.41,
+      "threePct": 0.307,
+      "threePA": 4.4,
+      "ftPct": 0.813,
+      "tsPct": 0.504
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "iverson-04-06",
+    "sourcePlayerId": "iversal01",
+    "sourceSpanId": "iversal01-2005-2006",
+    "fga": 24.8,
+    "box": {
+      "ppg": 31.8,
+      "rpg": 3.6,
+      "apg": 7.7,
+      "spg": 2.2,
+      "bpg": 0.1,
+      "fgPct": 0.436,
+      "threePct": 0.314,
+      "threePA": 3.8,
+      "ftPct": 0.824,
+      "tsPct": 0.537
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "nash-04-06",
+    "sourcePlayerId": "nashst01",
+    "sourceSpanId": "nashst01-2005-2006",
+    "fga": 12.4,
+    "box": {
+      "ppg": 17.2,
+      "rpg": 3.8,
+      "apg": 11,
+      "spg": 0.9,
+      "bpg": 0.1,
+      "fgPct": 0.508,
+      "threePct": 0.436,
+      "threePA": 3.6,
+      "ftPct": 0.905,
+      "tsPct": 0.62
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "nash-07-09",
+    "sourcePlayerId": "nashst01",
+    "sourceSpanId": "nashst01-2008-2009",
+    "fga": 11.7,
+    "box": {
+      "ppg": 16.3,
+      "rpg": 3.3,
+      "apg": 10.4,
+      "spg": 0.7,
+      "bpg": 0.1,
+      "fgPct": 0.504,
+      "threePct": 0.458,
+      "threePA": 4,
+      "ftPct": 0.919,
+      "tsPct": 0.627
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "dirk-05-07",
+    "sourcePlayerId": "nowitdi01",
+    "sourceSpanId": "nowitdi01-2006-2007",
+    "fga": 18.3,
+    "box": {
+      "ppg": 25.6,
+      "rpg": 8.9,
+      "apg": 3.1,
+      "spg": 0.7,
+      "bpg": 0.9,
+      "fgPct": 0.49,
+      "threePct": 0.41,
+      "threePA": 2.8,
+      "ftPct": 0.903,
+      "tsPct": 0.596
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "dirk-10-12",
+    "sourcePlayerId": "nowitdi01",
+    "sourceSpanId": "nowitdi01-2011-2012",
+    "fga": 16.4,
+    "box": {
+      "ppg": 22.4,
+      "rpg": 6.9,
+      "apg": 2.4,
+      "spg": 0.6,
+      "bpg": 0.6,
+      "fgPct": 0.489,
+      "threePct": 0.379,
+      "threePA": 2.8,
+      "ftPct": 0.893,
+      "tsPct": 0.589
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "garnett-02-04",
+    "sourcePlayerId": "garneke01",
+    "sourceSpanId": "garneke01-2003-2004",
+    "fga": 18.9,
+    "box": {
+      "ppg": 23.6,
+      "rpg": 13.7,
+      "apg": 5.5,
+      "spg": 1.4,
+      "bpg": 1.9,
+      "fgPct": 0.5,
+      "threePct": 0.272,
+      "threePA": 0.7,
+      "ftPct": 0.77,
+      "tsPct": 0.549
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "garnett-07-09",
+    "sourcePlayerId": "garneke01",
+    "sourceSpanId": "garneke01-2008-2009",
+    "fga": 13.5,
+    "box": {
+      "ppg": 17.5,
+      "rpg": 8.9,
+      "apg": 3,
+      "spg": 1.3,
+      "bpg": 1.2,
+      "fgPct": 0.536,
+      "threePct": 0.105,
+      "threePA": 0.1,
+      "ftPct": 0.812,
+      "tsPct": 0.579
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "allen-00-02",
+    "sourcePlayerId": "allenra02",
+    "sourceSpanId": "allenra02-2001-2002",
+    "fga": 16.3,
+    "box": {
+      "ppg": 21.9,
+      "rpg": 4.9,
+      "apg": 4.3,
+      "spg": 1.4,
+      "bpg": 0.3,
+      "fgPct": 0.471,
+      "threePct": 0.433,
+      "threePA": 6.6,
+      "ftPct": 0.882,
+      "tsPct": 0.603
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "allen-07-09",
+    "sourcePlayerId": "allenra02",
+    "sourceSpanId": "allenra02-2008-2009",
+    "fga": 13.3,
+    "box": {
+      "ppg": 17.8,
+      "rpg": 3.6,
+      "apg": 2.9,
+      "spg": 0.9,
+      "bpg": 0.2,
+      "fgPct": 0.463,
+      "threePct": 0.404,
+      "threePA": 6.2,
+      "ftPct": 0.93,
+      "tsPct": 0.605
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "carter-99-01",
+    "sourcePlayerId": "cartevi01",
+    "sourceSpanId": "cartevi01-2000-2001",
+    "fga": 21.4,
+    "box": {
+      "ppg": 26.6,
+      "rpg": 5.7,
+      "apg": 3.9,
+      "spg": 1.4,
+      "bpg": 1.1,
+      "fgPct": 0.462,
+      "threePct": 0.406,
+      "threePA": 4,
+      "ftPct": 0.779,
+      "tsPct": 0.546
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "carter-05-07",
+    "sourcePlayerId": "cartevi01",
+    "sourceSpanId": "cartevi01-2006-2007",
+    "fga": 19.4,
+    "box": {
+      "ppg": 24.7,
+      "rpg": 5.9,
+      "apg": 4.5,
+      "spg": 1.1,
+      "bpg": 0.5,
+      "fgPct": 0.443,
+      "threePct": 0.35,
+      "threePA": 5,
+      "ftPct": 0.8,
+      "tsPct": 0.546
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "kidd-99-01",
+    "sourcePlayerId": "kiddja01",
+    "sourceSpanId": "kiddja01-2000-2001",
+    "fga": 13.6,
+    "box": {
+      "ppg": 15.7,
+      "rpg": 6.8,
+      "apg": 9.9,
+      "spg": 2.1,
+      "bpg": 0.4,
+      "fgPct": 0.41,
+      "threePct": 0.314,
+      "threePA": 2.8,
+      "ftPct": 0.819,
+      "tsPct": 0.504
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "kidd-01-03",
+    "sourcePlayerId": "kiddja01",
+    "sourceSpanId": "kiddja01-2002-2003",
+    "fga": 14.7,
+    "box": {
+      "ppg": 16.7,
+      "rpg": 6.8,
+      "apg": 9.4,
+      "spg": 2.2,
+      "bpg": 0.3,
+      "fgPct": 0.403,
+      "threePct": 0.331,
+      "threePA": 4.5,
+      "ftPct": 0.831,
+      "tsPct": 0.507
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "lebron-10-12",
+    "sourcePlayerId": "jamesle01",
+    "sourceSpanId": "jamesle01-2011-2012",
+    "fga": 18.8,
+    "box": {
+      "ppg": 26.9,
+      "rpg": 7.7,
+      "apg": 6.7,
+      "spg": 1.7,
+      "bpg": 0.7,
+      "fgPct": 0.52,
+      "threePct": 0.341,
+      "threePA": 3,
+      "ftPct": 0.764,
+      "tsPct": 0.599
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "lebron-17-19",
+    "sourcePlayerId": "jamesle01",
+    "sourceSpanId": "jamesle01-2018-2019",
+    "fga": 19.5,
+    "box": {
+      "ppg": 27.4,
+      "rpg": 8.6,
+      "apg": 8.8,
+      "spg": 1.4,
+      "bpg": 0.8,
+      "fgPct": 0.529,
+      "threePct": 0.355,
+      "threePA": 5.4,
+      "ftPct": 0.702,
+      "tsPct": 0.608
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "durant-09-11",
+    "sourcePlayerId": "duranke01",
+    "sourceSpanId": "duranke01-2010-2011",
+    "fga": 20,
+    "box": {
+      "ppg": 29,
+      "rpg": 7.2,
+      "apg": 2.8,
+      "spg": 1.3,
+      "bpg": 1,
+      "fgPct": 0.469,
+      "threePct": 0.357,
+      "threePA": 4.8,
+      "ftPct": 0.891,
+      "tsPct": 0.6
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "durant-16-18",
+    "sourcePlayerId": "duranke01",
+    "sourceSpanId": "duranke01-2017-2018",
+    "fga": 17.3,
+    "box": {
+      "ppg": 25.7,
+      "rpg": 7.5,
+      "apg": 5.1,
+      "spg": 0.9,
+      "bpg": 1.7,
+      "fgPct": 0.525,
+      "threePct": 0.4,
+      "threePA": 5.6,
+      "ftPct": 0.882,
+      "tsPct": 0.644
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "curry-10-12",
+    "sourcePlayerId": "curryst01",
+    "sourceSpanId": "curryst01-2011-2012",
+    "fga": 13.5,
+    "box": {
+      "ppg": 17.6,
+      "rpg": 3.7,
+      "apg": 5.7,
+      "spg": 1.5,
+      "bpg": 0.3,
+      "fgPct": 0.482,
+      "threePct": 0.445,
+      "threePA": 4.6,
+      "ftPct": 0.912,
+      "tsPct": 0.598
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "curry-15-17",
+    "sourcePlayerId": "curryst01",
+    "sourceSpanId": "curryst01-2016-2017",
+    "fga": 19.2,
+    "box": {
+      "ppg": 27.7,
+      "rpg": 5,
+      "apg": 6.7,
+      "spg": 2,
+      "bpg": 0.2,
+      "fgPct": 0.487,
+      "threePct": 0.433,
+      "threePA": 10.6,
+      "ftPct": 0.903,
+      "tsPct": 0.65
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "cp3-08-10",
+    "sourcePlayerId": "paulch01",
+    "sourceSpanId": "paulch01-2009-2010",
+    "fga": 15.4,
+    "box": {
+      "ppg": 21.3,
+      "rpg": 5.1,
+      "apg": 10.9,
+      "spg": 2.5,
+      "bpg": 0.1,
+      "fgPct": 0.499,
+      "threePct": 0.383,
+      "threePA": 2.5,
+      "ftPct": 0.863,
+      "tsPct": 0.593
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "cp3-14-16",
+    "sourcePlayerId": "paulch01",
+    "sourceSpanId": "paulch01-2015-2016",
+    "fga": 14.6,
+    "box": {
+      "ppg": 19.3,
+      "rpg": 4.4,
+      "apg": 10.1,
+      "spg": 2,
+      "bpg": 0.2,
+      "fgPct": 0.474,
+      "threePct": 0.385,
+      "threePA": 4.3,
+      "ftPct": 0.898,
+      "tsPct": 0.587
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "wade-05-07",
+    "sourcePlayerId": "wadedw01",
+    "sourceSpanId": "wadedw01-2006-2007",
+    "fga": 18.8,
+    "box": {
+      "ppg": 27.3,
+      "rpg": 5.3,
+      "apg": 7,
+      "spg": 2,
+      "bpg": 1,
+      "fgPct": 0.493,
+      "threePct": 0.219,
+      "threePA": 1.2,
+      "ftPct": 0.793,
+      "tsPct": 0.582
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "wade-10-12",
+    "sourcePlayerId": "wadedw01",
+    "sourceSpanId": "wadedw01-2011-2012",
+    "fga": 17.8,
+    "box": {
+      "ppg": 24.2,
+      "rpg": 5.8,
+      "apg": 4.6,
+      "spg": 1.5,
+      "bpg": 1.2,
+      "fgPct": 0.499,
+      "threePct": 0.298,
+      "threePA": 2.1,
+      "ftPct": 0.768,
+      "tsPct": 0.572
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "westbrook-13-15",
+    "sourcePlayerId": "westbru01",
+    "sourceSpanId": "westbru01-2014-2015",
+    "fga": 20,
+    "box": {
+      "ppg": 25.6,
+      "rpg": 6.6,
+      "apg": 7.9,
+      "spg": 2,
+      "bpg": 0.2,
+      "fgPct": 0.43,
+      "threePct": 0.307,
+      "threePA": 4.4,
+      "ftPct": 0.832,
+      "tsPct": 0.54
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "westbrook-16-18",
+    "sourcePlayerId": "westbru01",
+    "sourceSpanId": "westbru01-2017-2018",
+    "fga": 22.5,
+    "box": {
+      "ppg": 28.5,
+      "rpg": 10.4,
+      "apg": 10.3,
+      "spg": 1.7,
+      "bpg": 0.3,
+      "fgPct": 0.436,
+      "threePct": 0.327,
+      "threePA": 5.6,
+      "ftPct": 0.802,
+      "tsPct": 0.541
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "harden-12-14",
+    "sourcePlayerId": "hardeja01",
+    "sourceSpanId": "hardeja01-2013-2014",
+    "fga": 16.8,
+    "box": {
+      "ppg": 25.7,
+      "rpg": 4.8,
+      "apg": 6,
+      "spg": 1.7,
+      "bpg": 0.4,
+      "fgPct": 0.446,
+      "threePct": 0.367,
+      "threePA": 6.4,
+      "ftPct": 0.858,
+      "tsPct": 0.611
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "harden-17-19",
+    "sourcePlayerId": "hardeja01",
+    "sourceSpanId": "hardeja01-2018-2019",
+    "fga": 22.4,
+    "box": {
+      "ppg": 33.4,
+      "rpg": 6,
+      "apg": 8.1,
+      "spg": 1.9,
+      "bpg": 0.7,
+      "fgPct": 0.445,
+      "threePct": 0.367,
+      "threePA": 11.7,
+      "ftPct": 0.869,
+      "tsPct": 0.617
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "kawhi-15-17",
+    "sourcePlayerId": "leonaka01",
+    "sourceSpanId": "leonaka01-2016-2017",
+    "fga": 16.5,
+    "box": {
+      "ppg": 23.4,
+      "rpg": 6.3,
+      "apg": 3.1,
+      "spg": 1.8,
+      "bpg": 0.9,
+      "fgPct": 0.494,
+      "threePct": 0.407,
+      "threePA": 4.6,
+      "ftPct": 0.878,
+      "tsPct": 0.612
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "kawhi-18-20",
+    "sourcePlayerId": "leonaka01",
+    "sourceSpanId": "leonaka01-2019-2020",
+    "fga": 19.3,
+    "box": {
+      "ppg": 26.8,
+      "rpg": 7.2,
+      "apg": 4.1,
+      "spg": 1.8,
+      "bpg": 0.5,
+      "fgPct": 0.483,
+      "threePct": 0.375,
+      "threePA": 5.4,
+      "ftPct": 0.87,
+      "tsPct": 0.598
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "draymond-15-17",
+    "sourcePlayerId": "greendr01",
+    "sourceSpanId": "greendr01-2016-2017",
+    "fga": 9.4,
+    "box": {
+      "ppg": 12.1,
+      "rpg": 8.7,
+      "apg": 7.2,
+      "spg": 1.7,
+      "bpg": 1.4,
+      "fgPct": 0.458,
+      "threePct": 0.347,
+      "threePA": 3.3,
+      "ftPct": 0.701,
+      "tsPct": 0.554
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "draymond-18-20",
+    "sourcePlayerId": "greendr01",
+    "sourceSpanId": "greendr01-2019-2020",
+    "fga": 6.8,
+    "box": {
+      "ppg": 7.6,
+      "rpg": 6.9,
+      "apg": 6.6,
+      "spg": 1.4,
+      "bpg": 0.9,
+      "fgPct": 0.421,
+      "threePct": 0.282,
+      "threePA": 2.7,
+      "ftPct": 0.724,
+      "tsPct": 0.507
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "gobert-16-18",
+    "sourcePlayerId": "goberru01",
+    "sourceSpanId": "goberru01-2017-2018",
+    "fga": 7.8,
+    "box": {
+      "ppg": 13.8,
+      "rpg": 11.9,
+      "apg": 1.3,
+      "spg": 0.7,
+      "bpg": 2.5,
+      "fgPct": 0.645,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.665,
+      "tsPct": 0.671
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "gobert-20-22",
+    "sourcePlayerId": "goberru01",
+    "sourceSpanId": "goberru01-2021-2022",
+    "fga": 7.9,
+    "box": {
+      "ppg": 14.9,
+      "rpg": 14.1,
+      "apg": 1.2,
+      "spg": 0.6,
+      "bpg": 2.4,
+      "fgPct": 0.693,
+      "threePct": 0,
+      "threePA": 0.1,
+      "ftPct": 0.659,
+      "tsPct": 0.709
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "jokic-18-20",
+    "sourcePlayerId": "jokicni01",
+    "sourceSpanId": "jokicni01-2019-2020",
+    "fga": 14.9,
+    "box": {
+      "ppg": 20,
+      "rpg": 10.3,
+      "apg": 7.1,
+      "spg": 1.3,
+      "bpg": 0.6,
+      "fgPct": 0.519,
+      "threePct": 0.31,
+      "threePA": 3.4,
+      "ftPct": 0.819,
+      "tsPct": 0.596
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "jokic-23-25",
+    "sourcePlayerId": "jokicni01",
+    "sourceSpanId": "jokicni01-2024-2025",
+    "fga": 18.6,
+    "box": {
+      "ppg": 27.9,
+      "rpg": 12.5,
+      "apg": 9.6,
+      "spg": 1.6,
+      "bpg": 0.8,
+      "fgPct": 0.579,
+      "threePct": 0.393,
+      "threePA": 3.8,
+      "ftPct": 0.809,
+      "tsPct": 0.657
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "giannis-17-19",
+    "sourcePlayerId": "antetgi01",
+    "sourceSpanId": "antetgi01-2018-2019",
+    "fga": 18,
+    "box": {
+      "ppg": 27.3,
+      "rpg": 11.2,
+      "apg": 5.3,
+      "spg": 1.4,
+      "bpg": 1.5,
+      "fgPct": 0.552,
+      "threePct": 0.277,
+      "threePA": 2.3,
+      "ftPct": 0.744,
+      "tsPct": 0.621
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "giannis-20-22",
+    "sourcePlayerId": "antetgi01",
+    "sourceSpanId": "antetgi01-2021-2022",
+    "fga": 18.3,
+    "box": {
+      "ppg": 29.1,
+      "rpg": 11.3,
+      "apg": 5.8,
+      "spg": 1.1,
+      "bpg": 1.3,
+      "fgPct": 0.561,
+      "threePct": 0.298,
+      "threePA": 3.6,
+      "ftPct": 0.706,
+      "tsPct": 0.635
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "luka-19-21",
+    "sourcePlayerId": "doncilu01",
+    "sourceSpanId": "doncilu01-2020-2021",
+    "fga": 20.5,
+    "box": {
+      "ppg": 28.3,
+      "rpg": 8.7,
+      "apg": 8.7,
+      "spg": 1,
+      "bpg": 0.4,
+      "fgPct": 0.471,
+      "threePct": 0.333,
+      "threePA": 8.6,
+      "ftPct": 0.745,
+      "tsPct": 0.588
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "luka-23-25",
+    "sourcePlayerId": "doncilu01",
+    "sourceSpanId": "doncilu01-2024-2025",
+    "fga": 22.3,
+    "box": {
+      "ppg": 31.5,
+      "rpg": 8.8,
+      "apg": 8.9,
+      "spg": 1.6,
+      "bpg": 0.5,
+      "fgPct": 0.473,
+      "threePct": 0.376,
+      "threePA": 10.2,
+      "ftPct": 0.785,
+      "tsPct": 0.606
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "embiid-18-20",
+    "sourcePlayerId": "embiijo01",
+    "sourceSpanId": "embiijo01-2019-2020",
+    "fga": 17.4,
+    "box": {
+      "ppg": 25.5,
+      "rpg": 12.7,
+      "apg": 3.4,
+      "spg": 0.8,
+      "bpg": 1.6,
+      "fgPct": 0.481,
+      "threePct": 0.313,
+      "threePA": 3.8,
+      "ftPct": 0.805,
+      "tsPct": 0.592
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "tatum-19-21",
+    "sourcePlayerId": "tatumja01",
+    "sourceSpanId": "tatumja01-2020-2021",
+    "fga": 19.6,
+    "box": {
+      "ppg": 24.9,
+      "rpg": 7.2,
+      "apg": 3.7,
+      "spg": 1.3,
+      "bpg": 0.7,
+      "fgPct": 0.455,
+      "threePct": 0.394,
+      "threePA": 7.3,
+      "ftPct": 0.841,
+      "tsPct": 0.571
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "tatum-23-25",
+    "sourcePlayerId": "tatumja01",
+    "sourceSpanId": "tatumja01-2024-2025",
+    "fga": 19.8,
+    "box": {
+      "ppg": 26.8,
+      "rpg": 8.4,
+      "apg": 5.4,
+      "spg": 1,
+      "bpg": 0.6,
+      "fgPct": 0.461,
+      "threePct": 0.358,
+      "threePA": 9.2,
+      "ftPct": 0.824,
+      "tsPct": 0.592
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "klay-14-16",
+    "sourcePlayerId": "thompkl01",
+    "sourceSpanId": "thompkl01-2015-2016",
+    "fga": 17.1,
+    "box": {
+      "ppg": 21.9,
+      "rpg": 3.5,
+      "apg": 2.5,
+      "spg": 0.9,
+      "bpg": 0.7,
+      "fgPct": 0.467,
+      "threePct": 0.431,
+      "threePA": 7.6,
+      "ftPct": 0.876,
+      "tsPct": 0.594
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "ad-14-16",
+    "sourcePlayerId": "davisan02",
+    "sourceSpanId": "davisan02-2015-2016",
+    "fga": 18.1,
+    "box": {
+      "ppg": 24.3,
+      "rpg": 10.3,
+      "apg": 2.1,
+      "spg": 1.4,
+      "bpg": 2.5,
+      "fgPct": 0.515,
+      "threePct": 0.3,
+      "threePA": 0.9,
+      "ftPct": 0.782,
+      "tsPct": 0.575
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "ad-19-21",
+    "sourcePlayerId": "davisan02",
+    "sourceSpanId": "davisan02-2020-2021",
+    "fga": 17.4,
+    "box": {
+      "ppg": 24.5,
+      "rpg": 8.8,
+      "apg": 3.2,
+      "spg": 1.4,
+      "bpg": 2.1,
+      "fgPct": 0.499,
+      "threePct": 0.308,
+      "threePA": 3.2,
+      "ftPct": 0.815,
+      "tsPct": 0.591
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "butler-16-18",
+    "sourcePlayerId": "butleji01",
+    "sourceSpanId": "butleji01-2017-2018",
+    "fga": 16.1,
+    "box": {
+      "ppg": 23.1,
+      "rpg": 5.8,
+      "apg": 5.2,
+      "spg": 1.9,
+      "bpg": 0.4,
+      "fgPct": 0.463,
+      "threePct": 0.359,
+      "threePA": 3.3,
+      "ftPct": 0.861,
+      "tsPct": 0.587
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "butler-20-22",
+    "sourcePlayerId": "butleji01",
+    "sourceSpanId": "butleji01-2021-2022",
+    "fga": 14.4,
+    "box": {
+      "ppg": 21.4,
+      "rpg": 6.4,
+      "apg": 6.2,
+      "spg": 1.9,
+      "bpg": 0.4,
+      "fgPct": 0.488,
+      "threePct": 0.239,
+      "threePA": 2,
+      "ftPct": 0.867,
+      "tsPct": 0.597
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "bam-20-22",
+    "sourcePlayerId": "adebaba01",
+    "sourceSpanId": "adebaba01-2021-2022",
+    "fga": 12.7,
+    "box": {
+      "ppg": 18.9,
+      "rpg": 9.5,
+      "apg": 4.5,
+      "spg": 1.3,
+      "bpg": 0.9,
+      "fgPct": 0.564,
+      "threePct": 0.143,
+      "threePA": 0.1,
+      "ftPct": 0.777,
+      "tsPct": 0.62
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "bam-23-25",
+    "sourcePlayerId": "adebaba01",
+    "sourceSpanId": "adebaba01-2024-2025",
+    "fga": 14.3,
+    "box": {
+      "ppg": 18.6,
+      "rpg": 10,
+      "apg": 4.1,
+      "spg": 1.2,
+      "bpg": 0.8,
+      "fgPct": 0.502,
+      "threePct": 0.357,
+      "threePA": 1.8,
+      "ftPct": 0.759,
+      "tsPct": 0.567
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "korver-13-15",
+    "sourcePlayerId": "korveky01",
+    "sourceSpanId": "korveky01-2014-2015",
+    "fga": 8.3,
+    "box": {
+      "ppg": 12.1,
+      "rpg": 4,
+      "apg": 2.8,
+      "spg": 0.8,
+      "bpg": 0.5,
+      "fgPct": 0.481,
+      "threePct": 0.483,
+      "threePA": 5.8,
+      "ftPct": 0.91,
+      "tsPct": 0.677
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "korver-16-18",
+    "sourcePlayerId": "korveky01",
+    "sourceSpanId": "korveky01-2017-2018",
+    "fga": 7.1,
+    "box": {
+      "ppg": 9.6,
+      "rpg": 2.5,
+      "apg": 1.4,
+      "spg": 0.5,
+      "bpg": 0.3,
+      "fgPct": 0.461,
+      "threePct": 0.444,
+      "threePA": 5.3,
+      "ftPct": 0.895,
+      "tsPct": 0.644
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "green-13-15",
+    "sourcePlayerId": "greenda02",
+    "sourceSpanId": "greenda02-2014-2015",
+    "fga": 8.3,
+    "box": {
+      "ppg": 10.5,
+      "rpg": 3.8,
+      "apg": 1.8,
+      "spg": 1.1,
+      "bpg": 1,
+      "fgPct": 0.434,
+      "threePct": 0.417,
+      "threePA": 5.2,
+      "ftPct": 0.847,
+      "tsPct": 0.592
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "green-18-20",
+    "sourcePlayerId": "greenda02",
+    "sourceSpanId": "greenda02-2019-2020",
+    "fga": 7.5,
+    "box": {
+      "ppg": 9.2,
+      "rpg": 3.7,
+      "apg": 1.5,
+      "spg": 1.1,
+      "bpg": 0.6,
+      "fgPct": 0.444,
+      "threePct": 0.417,
+      "threePA": 5.1,
+      "ftPct": 0.761,
+      "tsPct": 0.592
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "allen-t-11-13",
+    "sourcePlayerId": "allento01",
+    "sourceSpanId": "allento01-2012-2013",
+    "fga": 7.9,
+    "box": {
+      "ppg": 9.3,
+      "rpg": 4.4,
+      "apg": 1.3,
+      "spg": 1.6,
+      "bpg": 0.6,
+      "fgPct": 0.455,
+      "threePct": 0.22,
+      "threePA": 0.4,
+      "ftPct": 0.757,
+      "tsPct": 0.513
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "allen-t-14-16",
+    "sourcePlayerId": "allento01",
+    "sourceSpanId": "allento01-2015-2016",
+    "fga": 7.3,
+    "box": {
+      "ppg": 8.5,
+      "rpg": 4.5,
+      "apg": 1.2,
+      "spg": 1.9,
+      "bpg": 0.4,
+      "fgPct": 0.476,
+      "threePct": 0.352,
+      "threePA": 0.6,
+      "ftPct": 0.64,
+      "tsPct": 0.517
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "bowen",
+    "sourcePlayerId": "bowenbr01",
+    "sourceSpanId": "bowenbr01-2004-2005",
+    "fga": 6.7,
+    "box": {
+      "ppg": 7.6,
+      "rpg": 3.3,
+      "apg": 1.5,
+      "spg": 0.8,
+      "bpg": 0.4,
+      "fgPct": 0.42,
+      "threePct": 0.385,
+      "threePA": 2.8,
+      "ftPct": 0.606,
+      "tsPct": 0.52
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "tucker",
+    "sourcePlayerId": "tuckepj01",
+    "sourceSpanId": "tuckepj01-2018-2019",
+    "fga": 5.9,
+    "box": {
+      "ppg": 6.7,
+      "rpg": 5.7,
+      "apg": 1.1,
+      "spg": 1.3,
+      "bpg": 0.4,
+      "fgPct": 0.393,
+      "threePct": 0.374,
+      "threePA": 4.3,
+      "ftPct": 0.706,
+      "tsPct": 0.539
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "smart",
+    "sourcePlayerId": "smartma01",
+    "sourceSpanId": "smartma01-2019-2020",
+    "fga": 8.9,
+    "box": {
+      "ppg": 10.6,
+      "rpg": 3.3,
+      "apg": 4.4,
+      "spg": 1.7,
+      "bpg": 0.4,
+      "fgPct": 0.396,
+      "threePct": 0.355,
+      "threePA": 5.3,
+      "ftPct": 0.822,
+      "tsPct": 0.542
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "wallace-b",
+    "sourcePlayerId": "wallabe01",
+    "sourceSpanId": "wallabe01-2003-2004",
+    "fga": 7.7,
+    "box": {
+      "ppg": 8.3,
+      "rpg": 13.8,
+      "apg": 1.7,
+      "spg": 1.6,
+      "bpg": 3.1,
+      "fgPct": 0.443,
+      "threePct": 0.143,
+      "threePA": 0.1,
+      "ftPct": 0.474,
+      "tsPct": 0.458
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "roberson",
+    "sourcePlayerId": "roberan03",
+    "sourceSpanId": "roberan03-2016-2017",
+    "fga": 4.9,
+    "box": {
+      "ppg": 5.8,
+      "rpg": 4.4,
+      "apg": 0.8,
+      "spg": 1,
+      "bpg": 0.8,
+      "fgPct": 0.476,
+      "threePct": 0.268,
+      "threePA": 1.9,
+      "ftPct": 0.485,
+      "tsPct": 0.538
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "bradley",
+    "sourcePlayerId": "bradlav01",
+    "sourceSpanId": "bradlav01-2016-2017",
+    "fga": 13.7,
+    "box": {
+      "ppg": 15.6,
+      "rpg": 4.2,
+      "apg": 2.1,
+      "spg": 1.4,
+      "bpg": 0.2,
+      "fgPct": 0.454,
+      "threePct": 0.373,
+      "threePA": 5.2,
+      "ftPct": 0.759,
+      "tsPct": 0.541
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "horry",
+    "sourcePlayerId": "horryro01",
+    "sourceSpanId": "horryro01-2000-2001",
+    "fga": 4.8,
+    "box": {
+      "ppg": 5.4,
+      "rpg": 4.2,
+      "apg": 1.6,
+      "spg": 0.9,
+      "bpg": 0.9,
+      "fgPct": 0.412,
+      "threePct": 0.332,
+      "threePA": 1.6,
+      "ftPct": 0.755,
+      "tsPct": 0.504
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "battier",
+    "sourcePlayerId": "battish01",
+    "sourceSpanId": "battish01-2008-2009",
+    "fga": 7,
+    "box": {
+      "ppg": 8.4,
+      "rpg": 4.9,
+      "apg": 2.1,
+      "spg": 0.9,
+      "bpg": 1,
+      "fgPct": 0.421,
+      "threePct": 0.38,
+      "threePA": 4.3,
+      "ftPct": 0.774,
+      "tsPct": 0.558
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "ariza",
+    "sourcePlayerId": "arizatr01",
+    "sourceSpanId": "arizatr01-2009-2010",
+    "fga": 10.4,
+    "box": {
+      "ppg": 11.7,
+      "rpg": 4.9,
+      "apg": 2.7,
+      "spg": 1.7,
+      "bpg": 0.4,
+      "fgPct": 0.419,
+      "threePct": 0.329,
+      "threePA": 3.9,
+      "ftPct": 0.675,
+      "tsPct": 0.507
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "sefolosha",
+    "sourcePlayerId": "sefolth01",
+    "sourceSpanId": "sefolth01-2013-2014",
+    "fga": 5.7,
+    "box": {
+      "ppg": 7,
+      "rpg": 3.8,
+      "apg": 1.5,
+      "spg": 1.3,
+      "bpg": 0.4,
+      "fgPct": 0.453,
+      "threePct": 0.38,
+      "threePA": 2.9,
+      "ftPct": 0.797,
+      "tsPct": 0.571
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "mbah-a-moute",
+    "sourcePlayerId": "mbahalu01",
+    "sourceSpanId": "mbahalu01-2014-2015",
+    "fga": 6.3,
+    "box": {
+      "ppg": 6.7,
+      "rpg": 3.6,
+      "apg": 1.1,
+      "spg": 0.8,
+      "bpg": 0.3,
+      "fgPct": 0.408,
+      "threePct": 0.301,
+      "threePA": 1.7,
+      "ftPct": 0.617,
+      "tsPct": 0.474
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "iguodala",
+    "sourcePlayerId": "iguodan01",
+    "sourceSpanId": "iguodan01-2016-2017",
+    "fga": 5.6,
+    "box": {
+      "ppg": 7.3,
+      "rpg": 4,
+      "apg": 3.4,
+      "spg": 1.1,
+      "bpg": 0.4,
+      "fgPct": 0.504,
+      "threePct": 0.356,
+      "threePA": 2.3,
+      "ftPct": 0.665,
+      "tsPct": 0.591
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "bell",
+    "sourcePlayerId": "bellra01",
+    "sourceSpanId": "bellra01-2007-2008",
+    "fga": 11.1,
+    "box": {
+      "ppg": 13.3,
+      "rpg": 3.4,
+      "apg": 2.4,
+      "spg": 0.7,
+      "bpg": 0.3,
+      "fgPct": 0.427,
+      "threePct": 0.407,
+      "threePA": 6.1,
+      "ftPct": 0.811,
+      "tsPct": 0.564
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "haslem",
+    "sourcePlayerId": "hasleud01",
+    "sourceSpanId": "hasleud01-2005-2006",
+    "fga": 7.7,
+    "box": {
+      "ppg": 10.1,
+      "rpg": 8.4,
+      "apg": 1.3,
+      "spg": 0.7,
+      "bpg": 0.4,
+      "fgPct": 0.524,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.79,
+      "tsPct": 0.57
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "mcgee",
+    "sourcePlayerId": "mcgeeja01",
+    "sourceSpanId": "mcgeeja01-2017-2018",
+    "fga": 3.8,
+    "box": {
+      "ppg": 5.5,
+      "rpg": 2.9,
+      "apg": 0.4,
+      "spg": 0.3,
+      "bpg": 0.9,
+      "fgPct": 0.639,
+      "threePct": 0,
+      "threePA": 0.1,
+      "ftPct": 0.577,
+      "tsPct": 0.639
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  },
+  {
+    "id": "udoh",
+    "sourcePlayerId": "udohek01",
+    "sourceSpanId": "udohek01-2012-2013",
+    "fga": 4.1,
+    "box": {
+      "ppg": 4.8,
+      "rpg": 3.7,
+      "apg": 0.7,
+      "spg": 0.6,
+      "bpg": 1.4,
+      "fgPct": 0.433,
+      "threePct": 0,
+      "threePA": 0,
+      "ftPct": 0.751,
+      "tsPct": 0.495
+    },
+    "measuredFields": [
+      "fga",
+      "ppg",
+      "rpg",
+      "apg",
+      "fgPct",
+      "threePct",
+      "threePA",
+      "ftPct"
+    ],
+    "derivedFields": [
+      "tsPct"
+    ],
+    "estimatedFields": []
+  }
+]

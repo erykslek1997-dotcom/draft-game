@@ -1,5 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
-import { availabilityForSpan } from './availabilityLookup';
+import { runtimeAvailabilityForSpan } from './runtimeSpanLookups';
 
 /**
  * DURABILITY (DUR) — "how much of his team's schedule did this player actually play," on the same
@@ -89,7 +89,7 @@ function tierFor(points: number): DurabilityTier {
 }
 
 export function durabilityBreakdown(span: PlayerSpan): DurabilityBreakdown {
-  const entry = availabilityForSpan(span);
+  const entry = runtimeAvailabilityForSpan(span);
   if (!entry) {
     return {
       availability: null, games: null, possibleGames: null,

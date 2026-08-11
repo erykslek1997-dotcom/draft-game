@@ -16,7 +16,7 @@ import { pickForAi } from './aiDrafter';
 import type { DraftHistoryEntry, Team } from './types';
 
 export { TEAM_COUNT };
-export const ROUNDS = ROSTER_SIZE; // 9 rounds x 4 teams = 36 picks
+export const ROUNDS = ROSTER_SIZE; // 9 rounds x TEAM_COUNT teams
 
 export interface DraftState {
   teams: Team[];
@@ -25,13 +25,9 @@ export interface DraftState {
   pickInRound: number; // 0-indexed
   complete: boolean;
   history: DraftHistoryEntry[];
-  /** 2026-08-07, user explicit ask: a mode where the human manually picks for EVERY team (to
-   * play out a full causal-reasoning draft, one pick-and-why at a time), not just their own
-   * randomly-assigned slot. Deliberately NOT implemented by setting every team's `isHuman` to
-   * true — that would also give every team the human's cap-FREE perk below, which defeats the
-   * whole point (the exercise is only useful if every team faces the same real constraints an AI
-   * team would). Instead this flag alone overrides just the cap-legality bypass, leaving
-   * `isHuman` purely about "which team's mini-roster panel says (You)" and UI/export labeling. */
+  /** A mode where the human manually picks for every team, one pick-and-why at a time. Kept as a
+   * separate flag because `isHuman` still identifies the user's own roster for UI/export and the
+   * post-draft span/rotation screens. Cap legality is identical in both modes and for every team. */
   commissionerMode: boolean;
 }
 
@@ -113,9 +109,9 @@ export function availablePlayers(state: DraftState): PlayerSpan[] {
  * remain undrafted than the human still needs. A conservative, unambiguous check (it doesn't
  * try to account for how many of those remaining players the other teams will also compete
  * for between now and the human's last pick — that would only make this true *earlier*, never
- * later, so this is a lower bound, not an overestimate). The human has no FGA cap
- * (`isPickLegal` bypasses it entirely), so cap exhaustion can't strand them — the pool
- * physically running out is the only way their team becomes impossible to complete.
+ * later, so this is a lower bound, not an overestimate). Cap exhaustion cannot permanently
+ * strand a team because `isPickLegal` has strict, cap-legal and final cheapest-player relief
+ * tiers; the pool physically running out is the only unrecoverable case.
  */
 export function isHumanRosterImpossible(state: DraftState): boolean {
   const humanTeam = state.teams.find((t) => t.isHuman);
@@ -163,10 +159,10 @@ function strictPickLegal(state: DraftState, playerId: string): boolean {
 }
 
 /**
- * True once every available player fails the strict stranding check — i.e. the four
+ * True once every available player fails the strict stranding check — i.e. the other
  * teams' competition for cheap players has already produced a dead end before this
  * pick, regardless of what gets chosen now. This can happen even though every past
- * pick individually passed the strict check at the time it was made, since 3 other
+ * pick individually passed the strict check at the time it was made, since the other
  * teams also draft from the same shrinking pool between this team's turns.
  */
 function strictCheckIsDeadEnd(state: DraftState): boolean {
@@ -194,7 +190,7 @@ function noCapLegalPickExists(state: DraftState): boolean {
  * Whether `playerId` is a legal pick for the team currently on the clock. Three tiers,
  * from strictest to a last-resort escape hatch — each only kicks in once the previous
  * one has been driven to a genuine dead end by the shared pool shrinking (own picks
- * plus the other 3 teams' picks in between this team's turns):
+ * plus the other teams' picks in between this team's turns):
  * 1. Cap-legal AND doesn't leave the team unable to afford filling its remaining slots.
  * 2. If (1) is impossible for every available player, just cap-legal is enough.
  * 3. If even (2) is impossible for every available player (the team spent its way into
@@ -208,16 +204,11 @@ export function isPickLegal(state: DraftState, playerId: string): boolean {
   const player = playersById.get(playerId);
   if (!player || state.draftedIds.has(playerId)) return false;
 
-  // The human drafts with no FGA cap at all - only the AI teams are cap-constrained (the whole
-  // point of the cap is to make the AI's roster-building interesting/hard; it isn't a rule the
-  // human needs to play under). The strict/lookahead/last-resort tiers below exist purely to
-  // manage the AI's own cap pressure, so they never even run on the human's turn.
-  // `commissionerMode` overrides this bypass — every team (including the nominally "human" one)
-  // is cap-constrained exactly like an AI team, since the whole point of that mode is producing
-  // real, comparable picks under the same pressure every team actually faces. See DraftState's
-  // own docstring for why this is a separate flag rather than just flipping `isHuman` for all 16.
+  // Every team follows the same cap rule. The intro, cap meter and final ranking all present the
+  // rosters as comparable under one 100.9-FGA constraint, so silently exempting the human would
+  // make both the strategy and the result misleading. Commissioner mode changes who clicks the
+  // pick button, not the rules used to validate that pick.
   const team = state.teams[currentTeamIndex(state)];
-  if (team.isHuman && !state.commissionerMode) return true;
 
   if (strictPickLegal(state, playerId)) return true;
 
@@ -261,15 +252,45 @@ export function makePick(state: DraftState, playerId: string): DraftState {
 export function autoFinishDraft(state: DraftState): DraftState {
   let s = state;
   while (!s.complete) {
-    const teamIdx = currentTeamIndex(s);
-    const team = s.teams[teamIdx];
-    const available = availablePlayers(s);
-    if (available.length === 0) break;
-    const currentFgas = team.roster.map((p) => p.fga);
-    const pick = pickForAi(team.roster, currentFgas, available);
-    s = makePick(s, pick.id);
+    const next = resolveAutomatedPick(s);
+    // Never spin synchronously forever if the AI's preferred candidate and the legality engine
+    // disagree. `resolveAutomatedPick` already retries from the legal subset; null therefore
+    // means there is genuinely no progress available and returning the partial state is safer
+    // than freezing the browser.
+    if (!next || next === s) break;
+    s = next;
   }
   return s;
+}
+
+/** Makes one automated pick and guarantees that any returned state has advanced. The AI and
+ * legality engine intentionally answer slightly different questions (the AI also excludes DNP
+ * spans), so an AI-preferred candidate can occasionally be rejected even though another legal
+ * option exists. On that rare mismatch, re-run the AI over the actual legal subset, then fall
+ * back to a direct legal scan as a final defensive guard. */
+function resolveAutomatedPick(state: DraftState): DraftState | null {
+  const teamIdx = currentTeamIndex(state);
+  const team = state.teams[teamIdx];
+  const available = availablePlayers(state);
+  if (available.length === 0) return null;
+
+  const currentFgas = team.roster.map((p) => p.fga);
+  const preferred = pickForAi(team.roster, currentFgas, available);
+  const preferredState = makePick(state, preferred.id);
+  if (preferredState !== state) return preferredState;
+
+  const legal = available.filter((p) => isPickLegal(state, p.id));
+  if (legal.length === 0) return null;
+
+  const fallback = pickForAi(team.roster, currentFgas, legal);
+  const fallbackState = makePick(state, fallback.id);
+  if (fallbackState !== state) return fallbackState;
+
+  for (const player of legal) {
+    const next = makePick(state, player.id);
+    if (next !== state) return next;
+  }
+  return null;
 }
 
 /** Resolves the current pick if it belongs to an AI team. Returns null if it's the human's turn or the draft is already complete. */
@@ -278,10 +299,5 @@ export function resolveAiPickIfNeeded(state: DraftState): DraftState | null {
   const teamIdx = currentTeamIndex(state);
   const team = state.teams[teamIdx];
   if (team.isHuman) return null;
-
-  const available = availablePlayers(state);
-  if (available.length === 0) return null;
-  const currentFgas = team.roster.map((p) => p.fga);
-  const pick = pickForAi(team.roster, currentFgas, available);
-  return makePick(state, pick.id);
+  return resolveAutomatedPick(state);
 }

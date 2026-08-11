@@ -1,7 +1,8 @@
-import type { DefensiveRole, OffensiveArchetype, PlayerSpan, Position } from './schema';
+import type { BoxLine, DefensiveRole, OffensiveArchetype, PlayerSpan, Position } from './schema';
 import { normalizePlayerName } from './schema';
 import { generatedPlayers } from './generatedPlayers';
 import { curatedExpandedSpans } from './curatedExpandedSpans';
+import curatedVerifiedBoxData from './curatedVerifiedBox.json';
 
 /**
  * STARTER DATASET — placeholder for prototyping the draft/scoring mechanics.
@@ -258,7 +259,7 @@ const rows: Row[] = [
   ['artest', 'Ron Artest', '2003-05', 'SF', [], 8.0, 9.0, 4.0, 2.0, 1.5, 0.3, 0.410, 0.300, 2.5, 0.700, 0.500, 'Slasher', 'Wing Stopper'],
 ];
 
-export const curatedPlayers: PlayerSpan[] = rows.map(
+const handCuratedPlayers: PlayerSpan[] = rows.map(
   ([id, name, span, pos, secondary, fga, ppg, rpg, apg, spg, bpg, fgPct, threePct, threePA, ftPct, tsPct, archetype, defRole]) => ({
     id,
     playerName: name,
@@ -271,6 +272,26 @@ export const curatedPlayers: PlayerSpan[] = rows.map(
     defensiveRole: defRole,
   }),
 );
+
+interface CuratedVerifiedBoxRecord {
+  id: string;
+  fga: number;
+  box: BoxLine;
+}
+
+/** Numeric box inputs for the curated anchors are overlaid from the exact matching span in the
+ * local player-data archive. The hand-authored archetype and defensive-role judgments remain
+ * untouched. Six anchors with no exact source window keep their original values; pre-1973-74
+ * STL/BLK estimates are likewise retained field-by-field and disclosed by the provenance JSON.
+ * Regenerate the overlay with `scripts/buildCuratedVerifiedBox.ts`. */
+const curatedVerifiedById = new Map(
+  (curatedVerifiedBoxData as CuratedVerifiedBoxRecord[]).map((record) => [record.id, record]),
+);
+
+export const curatedPlayers: PlayerSpan[] = handCuratedPlayers.map((player) => {
+  const verified = curatedVerifiedById.get(player.id);
+  return verified ? { ...player, fga: verified.fga, box: verified.box } : player;
+});
 
 // The curated list above is hand-authored/judgment-tagged; generatedPlayers.ts is produced by
 // scripts/generatePlayers.ts from a much larger real stats source and rules-classified
@@ -296,7 +317,7 @@ export const curatedPlayers: PlayerSpan[] = rows.map(
  * exists purely to correct the position tag itself (fixes in-game rotation/eligibility showing
  * him at SG), not as an attempt to fix his TAL.
  */
-const POSITION_OVERRIDES: { name: string; spanLabel: string; position: Position }[] = [
+const POSITION_OVERRIDES: { name: string; spanLabel: string; position: Position; keepOldAsSecondary?: boolean }[] = [
   { name: 'Paul Pierce', spanLabel: '2001-03', position: 'SF' },
   { name: 'Paul Pierce', spanLabel: '2002-04', position: 'SF' },
   // 2026-08-07: same class of bug, found while implementing the user's explicit "Barkley
@@ -307,6 +328,11 @@ const POSITION_OVERRIDES: { name: string; spanLabel: string; position: Position 
   // UI for a player who can now never actually play SF, which reads as a contradiction.
   { name: 'Charles Barkley', spanLabel: '1989-91', position: 'PF' },
   { name: 'Charles Barkley', spanLabel: '1990-92', position: 'PF' },
+  // 2026-08-08, user's explicit ask: Harden's 2018-20 span (his real 35.3 ppg MVP season) is
+  // auto-tagged primary PG (secondary SG) — moving it to primary SG. `keepOldAsSecondary: true`
+  // here (unlike Pierce/Barkley above) because the old primary (PG) is a real, legitimate
+  // secondary for him, not a data bug being purged — he genuinely ran point in that stretch too.
+  { name: 'James Harden', spanLabel: '2018-20', position: 'SG', keepOldAsSecondary: true },
 ];
 
 function applyPositionOverrides(spans: PlayerSpan[]): PlayerSpan[] {
@@ -314,8 +340,136 @@ function applyPositionOverrides(spans: PlayerSpan[]): PlayerSpan[] {
     const override = POSITION_OVERRIDES.find(
       (o) => normalizePlayerName(o.name) === normalizePlayerName(span.playerName) && o.spanLabel === span.spanLabel,
     );
-    return override ? { ...span, primaryPosition: override.position } : span;
+    if (!override) return span;
+    // Drop the new primary from the old secondary list either way (avoids a duplicate — Harden's
+    // original data already had SG as his secondary under primary PG). Only fold the OLD primary
+    // back in as a secondary when the override is a genuine reclassification, not a data-bug
+    // purge (Pierce/Barkley: the wrong old tag should just disappear, not survive as a secondary).
+    const withoutNewPrimary = span.secondaryPositions.filter((p) => p !== override.position);
+    const secondaryPositions =
+      override.keepOldAsSecondary && !withoutNewPrimary.includes(span.primaryPosition)
+        ? [...withoutNewPrimary, span.primaryPosition]
+        : withoutNewPrimary;
+    return { ...span, primaryPosition: override.position, secondaryPositions };
   });
 }
 
-export const players: PlayerSpan[] = applyPositionOverrides([...curatedPlayers, ...generatedPlayers, ...curatedExpandedSpans]);
+/**
+ * 2026-08-08, user's explicit positional-debate calls (Horford/Jaren Jackson Jr./Holmgren/Bosh:
+ * "these read more as PF to me than C"; Duncan: "more C than PF") — deliberately a SEPARATE
+ * mechanism from `POSITION_OVERRIDES` above, not a reuse of it: that one is span-scoped, for
+ * correcting a specific data-classification bug on named spans; this one is name-scoped, for a
+ * real "which position does this player's whole career belong to" judgment call the user is
+ * making on purpose. Reclassifies EVERY span currently tagged `from` to `to` — not narrowed to
+ * specific spans — and folds the old position into `secondaryPositions` (if not already there)
+ * rather than dropping it, so draft/rotation eligibility at the original tag is preserved, not
+ * lost. This changes real formula output, not just a label: `primaryPosition` feeds
+ * `OFFENSE_TAL_PARAMS`/`DEFENSE_TAL_SCALE_BY_POSITION` (talent.ts) directly, so a reclassified
+ * span's O-TAL/D-TAL are genuinely recomputed under the new position's scale, not just relabeled.
+ */
+const PRIMARY_POSITION_RECLASSIFICATIONS: { name: string; from: Position; to: Position }[] = [
+  { name: 'Al Horford', from: 'C', to: 'PF' },
+  { name: 'Jaren Jackson Jr.', from: 'C', to: 'PF' },
+  { name: 'Chet Holmgren', from: 'C', to: 'PF' },
+  { name: 'Chris Bosh', from: 'C', to: 'PF' },
+  // Duncan checked separately before shipping (user's explicit ask, given the C top-of-scale
+  // band's documented fragility — see talent.ts's own `SOFT_CAP_FLOOR` docstring on the
+  // reverted 2026-08-08 widen attempt): Taylor top-10 Spearman and Backpicks GOAT-40 both hold
+  // exactly at their prior values (0.867 / 0.730) with this applied, and his own headline spans
+  // (2001-03, 2002-04, both TAL97) land at "Greatest peak" either way — PF's own tier-cap rule
+  // was already lenient enough not to block him there, so this isn't unlocking a tier he
+  // couldn't otherwise reach. Real effect: he now ties into the C pool's already-acknowledged
+  // top-cluster crowding (Jokić/Kareem/Shaq/Embiid/Hakeem/Robinson all bunched 95-98) — a couple
+  // more ties at 96-97, not a new class of problem, same "mild, not the PG session's 8-way tie"
+  // scale flagged before.
+  { name: 'Tim Duncan', from: 'PF', to: 'C' },
+];
+
+function applyPrimaryPositionReclassifications(spans: PlayerSpan[]): PlayerSpan[] {
+  return spans.map((span) => {
+    const reclass = PRIMARY_POSITION_RECLASSIFICATIONS.find(
+      (r) => normalizePlayerName(r.name) === normalizePlayerName(span.playerName) && span.primaryPosition === r.from,
+    );
+    if (!reclass) return span;
+    // Drop `to` from the old secondary list first (it'd otherwise duplicate the new primary —
+    // e.g. a span already tagged secondary PF under primary C) before folding `from` back in.
+    const withoutNewPrimary = span.secondaryPositions.filter((p) => p !== reclass.to);
+    const secondaryPositions = withoutNewPrimary.includes(reclass.from) ? withoutNewPrimary : [...withoutNewPrimary, reclass.from];
+    return { ...span, primaryPosition: reclass.to, secondaryPositions };
+  });
+}
+
+/**
+ * 2026-08-08, user-reported: OG Anunoby's 2023-25/2024-26 spans read `defensiveRole: 'Low
+ * Activity'` despite a real, continued plus-defender reputation. Root-caused, not guessed:
+ * `classifyDefense` (`scripts/lib/rawPlayerData.ts`) branches entirely on `position` — `PF`/`C`
+ * only ever look at bpg/rpg, `spg` is not read at all for that branch. Both spans have his
+ * `primaryPosition` auto-tagged `PF` (real — he logged real small-ball-4 minutes on the Knicks)
+ * with a genuinely good SPG (1.4-1.5) that the PF/C branch simply never sees, while his BPG
+ * (0.8) and RPG (4.6-5.0) both fall short of that branch's own Mobile-Big/Helper floors — so he
+ * lands on the classifier's last rung, `Low Activity`, purely from being routed into the wrong
+ * branch, not from any real lack of defensive activity. `generatedPlayers.json` is a committed
+ * build artifact (needs the external raw-stats source to regenerate, not available here — same
+ * constraint `POSITION_OVERRIDES` above is built around), so this is a targeted post-load
+ * override, not a classifier fix. `Wing Stopper` (not `Chaser`) because his real SPG (1.4-1.5)
+ * sits closer to that threshold (1.6) than Chaser's (1.1) once actually read on the perimeter
+ * branch he should have gone through. Verified directly: computeDefensiveTalent moves 54->69
+ * and 62->72 for these two spans.
+ */
+/**
+ * 2026-08-08, same session, systematic follow-up (`scripts/_checkDefenseRoleGaps.ts`, deleted
+ * after use): scanned the whole pool for the exact same failure shape (PF/C-tagged span, `Low
+ * Activity`, real SPG that would clear a perimeter tag on the branch it should have used) — 28
+ * hits total. Deliberately did NOT blanket-fix all 28: most (Thaddeus Young, Nikola Jokić,
+ * Rashard Lewis, Nenê, Toni Kukoč, Alvan Adams, Danny Manning, James Worthy, Larry Nance Jr., Al
+ * Harrington, Joe Ingles) are genuine bigs/stretch-4s for their whole career — the isBig branch
+ * is the CORRECT one for them, and "decent SPG for a big" isn't evidence of hidden wing-caliber
+ * defense the way it is for a real perimeter player logging small-ball-4 minutes. Only added the
+ * two that match Anunoby's exact real-world shape (established plus perimeter defender, PF tag
+ * only from a genuine small-ball role, not their real defensive identity): Paul George's
+ * 2022-24/2023-25 Clippers small-ball-4 stretch (many All-Defense selections across his SF-tagged
+ * career, same player, same skill, just a different nominal slot late) and Jalen Williams'
+ * 2023-25 (the original reported case, PF/SG dual tag) — DTAL moves 53->64, 54->66, 59->72
+ * respectively.
+ */
+const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: DefensiveRole }[] = [
+  { name: 'OG Anunoby', spanLabel: '2023-25', role: 'Wing Stopper' },
+  { name: 'OG Anunoby', spanLabel: '2024-26', role: 'Wing Stopper' },
+  { name: 'Paul George', spanLabel: '2022-24', role: 'Wing Stopper' },
+  { name: 'Paul George', spanLabel: '2023-25', role: 'Wing Stopper' },
+  { name: 'Jalen Williams', spanLabel: '2023-25', role: 'Wing Stopper' },
+];
+
+function applyDefensiveRoleOverrides(spans: PlayerSpan[]): PlayerSpan[] {
+  return spans.map((span) => {
+    const override = DEFENSIVE_ROLE_OVERRIDES.find(
+      (o) => normalizePlayerName(o.name) === normalizePlayerName(span.playerName) && o.spanLabel === span.spanLabel,
+    );
+    return override ? { ...span, defensiveRole: override.role } : span;
+  });
+}
+
+/**
+ * 2026-08-08, user's explicit ask: Victor Wembanyama should be draft/rotation-eligible at PF too,
+ * not locked to C alone. Deliberately lighter-touch than `PRIMARY_POSITION_RECLASSIFICATIONS`
+ * above — his `primaryPosition` stays C (no O-TAL/D-TAL recomputation under PF's scale, no
+ * interaction with the already-fragile C top-cluster like the Duncan move), this only ADDS PF to
+ * `secondaryPositions` so `isPositionEligible`/`isRealPositionFit` (positions.ts) let him fill a
+ * team's PF slot for real, the same real-secondary-position credit any other listed secondary
+ * gets — a pure eligibility grant, not a reclassification.
+ */
+const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [{ name: 'Victor Wembanyama', position: 'PF' }];
+
+function applySecondaryPositionAdditions(spans: PlayerSpan[]): PlayerSpan[] {
+  return spans.map((span) => {
+    const addition = SECONDARY_POSITION_ADDITIONS.find((a) => normalizePlayerName(a.name) === normalizePlayerName(span.playerName));
+    if (!addition || addition.position === span.primaryPosition || span.secondaryPositions.includes(addition.position)) return span;
+    return { ...span, secondaryPositions: [...span.secondaryPositions, addition.position] };
+  });
+}
+
+export const players: PlayerSpan[] = applySecondaryPositionAdditions(
+  applyDefensiveRoleOverrides(
+    applyPrimaryPositionReclassifications(applyPositionOverrides([...curatedPlayers, ...generatedPlayers, ...curatedExpandedSpans])),
+  ),
+);
