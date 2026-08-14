@@ -7,11 +7,7 @@
 import { players } from '../src/data/players';
 import { normalizePlayerName } from '../src/data/schema';
 import { computeTalent } from '../src/engine/talent';
-
-const TAYLOR_TOP10: string[] = [
-  'Michael Jordan', 'LeBron James', "Shaquille O'Neal", 'Hakeem Olajuwon', 'Larry Bird',
-  'Kareem Abdul-Jabbar', 'Stephen Curry', 'Kevin Garnett', 'Tim Duncan', 'Magic Johnson',
-];
+import { TAYLOR_TOP10 } from '../src/engine/taylorValidatedNames';
 
 const peakByName = new Map<string, number>();
 for (const p of players) {

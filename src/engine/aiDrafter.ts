@@ -10,7 +10,7 @@ import {
   buildCheapestLookup,
   canFillFromLookup,
 } from './positions';
-import { computeTalent, computeOffensiveTalent } from './talent';
+import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from './talent';
 import { autoAssignRotation, projectedStarterValue, MAX_MINUTES_PER_PLAYER } from './rotation';
 import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
@@ -18,6 +18,7 @@ import { computeSpacing } from './spacing';
 import { isRimGravityScorer, isSelfSufficientEngine } from './offensiveProfile';
 import { isD1D2D3Player } from './d1d2d3Lookup';
 import { draftPool } from '../data/draftPool';
+import { DRAFT_EXPERIMENT } from './draftExperiment';
 
 /** A player this good is a generational, top-of-history peak (Jordan/LeBron/Curry/Hakeem
  * tier) that a real GM drafts regardless of roster redundancy — the "already have two
@@ -195,6 +196,7 @@ for (const [key, tier] of Object.entries(GREATEST_PEAK_DRAFT_TIERS)) {
 }
 
 function greatestPeakTierBonus(p: PlayerSpan): number {
+  if (!DRAFT_EXPERIMENT.greatestPeakBonus) return 0;
   const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
   if (!entry || computeTalent(p) < entry.tal) return 0;
   return GREATEST_PEAK_TIER_BONUS[entry.tier];
@@ -419,32 +421,215 @@ const BASE_FGA_PENALTY = 0.4;
 const MAX_FGA_PENALTY = 1.3;
 
 /**
- * 2026-08-08, user-reported: Bob McAdoo and Chris Webber's real high-FGA peaks (McAdoo 1973-77:
- * 22.4-25.4 FGA; Webber 1999-2003: 20.7-22.0 FGA) still get drafted, and teams that take them
- * end up FGA-starved everywhere else. Root-caused: `fgaPenalty` above is flat across every
- * position — it can't tell that 20+ FGA is a much bigger outlier for a C/PF than for a wing or
- * guard. Measured directly (`scripts/_checkFgaByPosition.ts`, deleted after use): C's own FGA
- * distribution runs noticeably lower than every other position (p50 9.8 vs 11.8-12.8 elsewhere,
- * p90 17.5) — most offense is funneled through the perimeter, so a center spending 22-25 FGA is
- * genuinely rarer (95th-99th percentile) than a guard at the same raw number would be. The
- * user's own framing matches this: "easier to save FGA at C/PF than everywhere else" is really
- * "big men who need this much volume are rarer/more of an outlier, not that cheap bigs are more
- * abundant" — a straight cheap-and-good-options count by position doesn't show a PF/C shortage
- * either way (PF and SG are actually tied for fewest at 7, C has 12), so this is scoped as an
- * outlier-FGA signal specifically, not a blanket "prefer cheaper bigs" bias.
+ * The flat FGA cost cannot distinguish a justified all-time offensive burden from a merely good
+ * player consuming an unusually large share of the cap. The thresholds are measured p85 values
+ * for every position in the full pool. Above them, the penalty scales with excess FGA, offensive
+ * shortfall, talent supplied by non-offensive components, and weak defense; PF/C receive an
+ * additional surcharge because high-volume non-elite bigs are especially difficult to build
+ * around under this game's cap.
  *
- * Position-relative, not a flat cutoff: only fires above each position's own 90th-percentile FGA
- * (so it never touches an ordinary big), and scales with the actual excess, not a cliff — a
- * center at 18 FGA barely trips it, one at 25 (McAdoo's peak) trips it hard.
+ * A strict TAL 96 plus elite-offense-or-defense gate protects real all-time engines and historic
+ * two-way anchors. This is deliberately a profile rule rather than a list of player names.
  */
-const BIG_FGA_OUTLIER_THRESHOLD: Partial<Record<Position, number>> = { PF: 17.9, C: 17.5 };
-const BIG_FGA_OUTLIER_PENALTY_SCALE = 0.6;
+const HIGH_VOLUME_FGA_THRESHOLD: Record<Position, number> = {
+  PG: 16.9,
+  SG: 17.9,
+  SF: 18.3,
+  PF: 16.7,
+  C: 16.1,
+};
+const ALL_TIME_VOLUME_TALENT_FLOOR = 96;
+const ALL_TIME_VOLUME_OFFENSE_FLOOR = 88;
+const ALL_TIME_VOLUME_DEFENSE_FLOOR = 95;
+const HIGH_VOLUME_BASE_SCALE = 0.75;
+const HIGH_VOLUME_OFFENSE_REFERENCE = 88;
+const HIGH_VOLUME_OFFENSE_SHORTFALL_SCALE = 0.035;
+const HIGH_VOLUME_OFFENSE_SHORTFALL_FLAT_SCALE = 0.12;
+const HIGH_VOLUME_WEAK_DEFENSE_FLOOR = 50;
+const HIGH_VOLUME_WEAK_DEFENSE_SCALE = 0.2;
+const HIGH_VOLUME_TALENT_OFFENSE_GAP_SCALE = 0.15;
+const HIGH_VOLUME_BIG_EXTRA_SCALE = 1.5;
+const MAX_HIGH_VOLUME_PENALTY = 14;
+const ELITE_ONE_WAY_CREATOR_DEFENSE_FLOOR = 60;
+const ELITE_ONE_WAY_CREATOR_DEFENSE_SCALE = 0.04;
+const ELITE_ONE_WAY_CREATOR_EXCESS_FGA_SCALE = 0.05;
+const MAX_ELITE_ONE_WAY_CREATOR_PENALTY = 1.5;
 
-function bigFgaOutlierPenalty(p: PlayerSpan): number {
-  const threshold = BIG_FGA_OUTLIER_THRESHOLD[p.primaryPosition];
-  if (threshold === undefined) return 0;
-  const excess = p.fga - threshold;
-  return excess > 0 ? excess * BIG_FGA_OUTLIER_PENALTY_SCALE : 0;
+function highVolumeNonElitePenalty(p: PlayerSpan): number {
+  const excess = p.fga - HIGH_VOLUME_FGA_THRESHOLD[p.primaryPosition];
+  if (excess <= 0) return 0;
+
+  const talent = computeTalent(p);
+  const offensiveTalent = computeOffensiveTalent(p);
+  const defensiveTalent = computeDefensiveTalent(p);
+  const isAllTimeVolumeException =
+    talent >= ALL_TIME_VOLUME_TALENT_FLOOR &&
+    (offensiveTalent >= ALL_TIME_VOLUME_OFFENSE_FLOOR || defensiveTalent >= ALL_TIME_VOLUME_DEFENSE_FLOOR);
+  if (isAllTimeVolumeException) {
+    // An all-time offensive peak still has to pay a modest construction cost when it is a
+    // high-volume, one-way Shot Creator. This separates Harden-like offense-only spans from
+    // Jordan/Kobe/Wade-style two-way volume and, within one player's tied TAL/O-TAL spans,
+    // stops the cheaper but much weaker defensive stretch from winning automatically.
+    if (
+      p.offensiveArchetype === 'Shot Creator' &&
+      offensiveTalent >= 96 &&
+      defensiveTalent < ELITE_ONE_WAY_CREATOR_DEFENSE_FLOOR
+    ) {
+      return Math.min(
+        MAX_ELITE_ONE_WAY_CREATOR_PENALTY,
+        (ELITE_ONE_WAY_CREATOR_DEFENSE_FLOOR - defensiveTalent) * ELITE_ONE_WAY_CREATOR_DEFENSE_SCALE +
+          excess * ELITE_ONE_WAY_CREATOR_EXCESS_FGA_SCALE,
+      );
+    }
+    return 0;
+  }
+
+  const offenseShortfall = Math.max(0, HIGH_VOLUME_OFFENSE_REFERENCE - offensiveTalent);
+  const volumeScale = HIGH_VOLUME_BASE_SCALE + offenseShortfall * HIGH_VOLUME_OFFENSE_SHORTFALL_SCALE;
+  const weakDefenseSurcharge =
+    Math.max(0, HIGH_VOLUME_WEAK_DEFENSE_FLOOR - defensiveTalent) * HIGH_VOLUME_WEAK_DEFENSE_SCALE;
+  const offenseShortfallSurcharge = offenseShortfall * HIGH_VOLUME_OFFENSE_SHORTFALL_FLAT_SCALE;
+  const talentOffenseGapSurcharge =
+    Math.max(0, talent - offensiveTalent) * HIGH_VOLUME_TALENT_OFFENSE_GAP_SCALE;
+  const bigPositionSurcharge =
+    p.primaryPosition === 'PF' || p.primaryPosition === 'C' ? excess * HIGH_VOLUME_BIG_EXTRA_SCALE : 0;
+  return Math.min(
+    MAX_HIGH_VOLUME_PENALTY,
+    excess * volumeScale +
+      offenseShortfallSurcharge +
+      weakDefenseSurcharge +
+      talentOffenseGapSurcharge +
+      bigPositionSurcharge,
+  );
+}
+
+const ELITE_PERIMETER_ENGINE_ARCHETYPES = new Set(['Primary Ball Handler', 'Shot Creator']);
+const ELITE_PERIMETER_ENGINE_TALENT_FLOOR = 96;
+const ELITE_PERIMETER_ENGINE_OFFENSE_FLOOR = 90;
+const ELITE_PERIMETER_ENGINE_FGA_FLOOR = 17.5;
+const ELITE_PERIMETER_ENGINE_BONUS_REFERENCE = 88;
+const ELITE_PERIMETER_ENGINE_BONUS_SCALE = 0.4;
+const MAX_ELITE_PERIMETER_ENGINE_BONUS = 3;
+const ELITE_POST_SCORER_BONUS = 2.5;
+const ELITE_POST_PLAYMAKING_HUB_BONUS = 2;
+
+function elitePerimeterEngineBonus(p: PlayerSpan): number {
+  if (p.fga < ELITE_PERIMETER_ENGINE_FGA_FLOOR) return 0;
+  if (computeTalent(p) < ELITE_PERIMETER_ENGINE_TALENT_FLOOR) return 0;
+  const offensiveTalent = computeOffensiveTalent(p);
+  if (p.offensiveArchetype === 'Post Scorer') {
+    if (offensiveTalent < 88 || computeDefensiveTalent(p) >= 90) return 0;
+    // The post-engine bump is meant for a workload a team can actually build around. Embiid's
+    // 34-minute/load-managed spans keep their measured TAL but do not receive the same extra
+    // draft credit as a fully sustainable Shaq-like peak.
+    const sustainableMinutes = maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER);
+    const workloadFactor = Math.max(0, Math.min(1, (sustainableMinutes - 32) / 4));
+    const postBonus = p.box.apg >= 6 ? ELITE_POST_PLAYMAKING_HUB_BONUS : ELITE_POST_SCORER_BONUS;
+    return postBonus * workloadFactor;
+  }
+  if (!ELITE_PERIMETER_ENGINE_ARCHETYPES.has(p.offensiveArchetype)) return 0;
+  if (offensiveTalent < ELITE_PERIMETER_ENGINE_OFFENSE_FLOOR) return 0;
+  return Math.min(
+    MAX_ELITE_PERIMETER_ENGINE_BONUS,
+    (offensiveTalent - ELITE_PERIMETER_ENGINE_BONUS_REFERENCE) * ELITE_PERIMETER_ENGINE_BONUS_SCALE,
+  );
+}
+
+const ELITE_TWO_WAY_FRONTCOURT_OFFENSE_FLOOR = 65;
+const ELITE_TWO_WAY_FRONTCOURT_DEFENSE_FLOOR = 91;
+const ELITE_TWO_WAY_FRONTCOURT_PLAYMAKING_FLOOR = 3.3;
+const ELITE_TWO_WAY_FRONTCOURT_BASE_BONUS = 0.4;
+const ELITE_TWO_WAY_FRONTCOURT_DEFENSE_SCALE = 0.06;
+const ELITE_TWO_WAY_FRONTCOURT_PLAYMAKING_SCALE = 0.05;
+const MAX_ELITE_TWO_WAY_FRONTCOURT_BONUS = 1;
+const ELITE_TWO_WAY_POST_FGA_FLOOR = 20;
+const ELITE_TWO_WAY_POST_DEFENSE_FLOOR = 97;
+const ELITE_TWO_WAY_POST_BONUS = 0.8;
+const ELITE_TWO_WAY_SLASHER_OFFENSE_FLOOR = 90;
+const ELITE_TWO_WAY_SLASHER_DEFENSE_FLOOR = 85;
+const ELITE_TWO_WAY_SLASHER_FGA_FLOOR = 18;
+const ELITE_TWO_WAY_SLASHER_BONUS = 0.8;
+const ELITE_TWO_WAY_PERIMETER_BONUS = 1;
+
+function eliteTwoWayFrontcourtBonus(p: PlayerSpan): number {
+  if (p.primaryPosition !== 'PF' && p.primaryPosition !== 'C') return 0;
+  if (p.offensiveArchetype === 'Post Scorer') return 0;
+  if (computeTalent(p) < ELITE_PERIMETER_ENGINE_TALENT_FLOOR) return 0;
+  const offensiveTalent = computeOffensiveTalent(p);
+  if (offensiveTalent < ELITE_TWO_WAY_FRONTCOURT_OFFENSE_FLOOR) return 0;
+  const defensiveTalent = computeDefensiveTalent(p);
+  if (defensiveTalent < ELITE_TWO_WAY_FRONTCOURT_DEFENSE_FLOOR) return 0;
+  if (p.box.apg < ELITE_TWO_WAY_FRONTCOURT_PLAYMAKING_FLOOR) return 0;
+  return Math.min(
+    MAX_ELITE_TWO_WAY_FRONTCOURT_BONUS,
+    ELITE_TWO_WAY_FRONTCOURT_BASE_BONUS +
+      (defensiveTalent - ELITE_TWO_WAY_FRONTCOURT_DEFENSE_FLOOR) * ELITE_TWO_WAY_FRONTCOURT_DEFENSE_SCALE +
+      (p.box.apg - ELITE_TWO_WAY_FRONTCOURT_PLAYMAKING_FLOOR) * ELITE_TWO_WAY_FRONTCOURT_PLAYMAKING_SCALE,
+  );
+}
+
+function eliteTwoWayPeakBonus(p: PlayerSpan): number {
+  const talent = computeTalent(p);
+  const offense = computeOffensiveTalent(p);
+  const defense = computeDefensiveTalent(p);
+  if (
+    p.offensiveArchetype === 'Post Scorer' &&
+    p.fga >= ELITE_TWO_WAY_POST_FGA_FLOOR &&
+    talent >= ELITE_PERIMETER_ENGINE_TALENT_FLOOR &&
+    offense >= ELITE_TWO_WAY_FRONTCOURT_OFFENSE_FLOOR &&
+    defense >= ELITE_TWO_WAY_POST_DEFENSE_FLOOR
+  ) {
+    return ELITE_TWO_WAY_POST_BONUS;
+  }
+  if (
+    p.offensiveArchetype === 'Slasher' &&
+    p.fga >= ELITE_TWO_WAY_SLASHER_FGA_FLOOR &&
+    talent >= ELITE_PERIMETER_ENGINE_TALENT_FLOOR &&
+    offense >= ELITE_TWO_WAY_SLASHER_OFFENSE_FLOOR &&
+    defense >= ELITE_TWO_WAY_SLASHER_DEFENSE_FLOOR
+  ) {
+    return ELITE_TWO_WAY_SLASHER_BONUS;
+  }
+  if (p.primaryPosition !== 'SG' && p.primaryPosition !== 'SF') return 0;
+  if (talent < 98) return 0;
+  if (offense < 94) return 0;
+  if (defense < 95) return 0;
+  return ELITE_TWO_WAY_PERIMETER_BONUS;
+}
+
+const NON_ELITE_CREATOR_TALENT_CEILING = 96;
+const NON_ELITE_CREATOR_OFFENSE_REFERENCE = 88;
+const NON_ELITE_CREATOR_BASE_PENALTY = 0.5;
+const NON_ELITE_CREATOR_SHORTFALL_SCALE = 0.3;
+const MAX_NON_ELITE_CREATOR_PENALTY = 4;
+const OFF_BALL_SHOOTER_ARCHETYPES = new Set(['Off Screen Shooter', 'Movement Shooter', 'Stationary Shooter']);
+const OFF_BALL_SPECIALIST_TALENT_REFERENCE = 96;
+const OFF_BALL_SPECIALIST_PENALTY_SCALE = 0.7;
+const OFF_BALL_SPECIALIST_DEFENSE_REFERENCE = 60;
+const OFF_BALL_SPECIALIST_DEFENSE_SCALE = 0.08;
+const MAX_OFF_BALL_SPECIALIST_PENALTY = 6.5;
+
+/** Keep secondary scorers and shooting specialists fit-dependent in the early rounds. Historic
+ * primary engines are exempt; the penalty only asks sub-96 Shot Creators to prove elite offense,
+ * and only discounts off-ball specialists below the all-time talent tier. */
+function earlyCoreRolePenalty(p: PlayerSpan): number {
+  const talent = computeTalent(p);
+  if (p.offensiveArchetype === 'Shot Creator' && talent < NON_ELITE_CREATOR_TALENT_CEILING) {
+    const offenseShortfall = Math.max(0, NON_ELITE_CREATOR_OFFENSE_REFERENCE - computeOffensiveTalent(p));
+    return Math.min(
+      MAX_NON_ELITE_CREATOR_PENALTY,
+      NON_ELITE_CREATOR_BASE_PENALTY + offenseShortfall * NON_ELITE_CREATOR_SHORTFALL_SCALE,
+    );
+  }
+  if (OFF_BALL_SHOOTER_ARCHETYPES.has(p.offensiveArchetype) && talent < OFF_BALL_SPECIALIST_TALENT_REFERENCE) {
+    return Math.min(
+      MAX_OFF_BALL_SPECIALIST_PENALTY,
+      (OFF_BALL_SPECIALIST_TALENT_REFERENCE - talent) * OFF_BALL_SPECIALIST_PENALTY_SCALE +
+        Math.max(0, OFF_BALL_SPECIALIST_DEFENSE_REFERENCE - computeDefensiveTalent(p)) *
+          OFF_BALL_SPECIALIST_DEFENSE_SCALE,
+    );
+  }
+  return 0;
 }
 
 /**
@@ -531,7 +716,7 @@ const DEFENSIVE_DEPTH_BONUS_SCALE = 0.5;
  * early picks are exactly the ones most likely to end up starting, so no draft-time need signal
  * can fully close the gap without reopening the round-1 talent-first design. */
 const SPACING_DEPTH_THRESHOLD = 65;
-const SPACING_DEPTH_BONUS_SCALE = 1.5;
+const SPACING_DEPTH_BONUS_SCALE = 1.1;
 
 /**
  * 2026-08-07, offensiveProfile.ts synergy signals — see `NeedContext.hasRimGravityStarter`/
@@ -628,7 +813,49 @@ const MAX_MARGINAL_STARTER_DISCOUNT = 20;
  * regardless of fit and only start drafting for team construction once the core is in place.
  * Ramping need's influence in over a team's first few picks (full strength by its 4th pick)
  * lets pure talent decide the truly early picks and hands fit-awareness back for the rest. */
-const NEED_RAMP_ROSTER_SIZE = 3;
+const NEED_RAMP_ROSTER_SIZE = 4;
+
+/** Collapse adjacent career spans only after they have been ranked, so one real player receives
+ * one lottery place while their best context-specific span remains available. */
+/** User-validated peak corrections where the derived TAL/O-TAL tie does not resolve the real
+ * span correctly. This changes no statistics: it only selects among real, already-legal spans
+ * of the same player. Keep this narrow and evidence-backed. */
+const USER_VALIDATED_PEAK_SPANS = new Map<string, string>([
+  [normalizePlayerName('James Harden'), '2018-20'],
+]);
+
+function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number }>(ranked: T[]): T[] {
+  const grouped = new Map<string, T[]>();
+  for (const entry of ranked) {
+    const key = normalizePlayerName(entry.player.playerName);
+    const existing = grouped.get(key);
+    if (existing) existing.push(entry);
+    else grouped.set(key, [entry]);
+  }
+
+  // Rank the real player by their best context/cap value. Only an explicitly validated peak may
+  // replace that representative span; a prior broad TAL/O-TAL tie-break changed unrelated center
+  // spans and destabilized the whole first round. Harden 2014-16 and 2018-20 both read TAL 96 /
+  // O-TAL 100, while the user-validated 2018-20 peak also carries the stronger real D-TAL.
+  return [...grouped.values()].map((entries) => {
+    const bestDraftEntry = entries[0];
+    const key = normalizePlayerName(bestDraftEntry.player.playerName);
+    const preferredSpan = USER_VALIDATED_PEAK_SPANS.get(key);
+    if (!preferredSpan) return bestDraftEntry;
+    const preferredEntry = entries.find((entry) => entry.player.spanLabel === preferredSpan);
+    return preferredEntry ? { ...bestDraftEntry, player: preferredEntry.player, talent: preferredEntry.talent } : bestDraftEntry;
+  });
+}
+
+function uniquePlayerSpans(ranked: PlayerSpan[]): PlayerSpan[] {
+  const seen = new Set<string>();
+  return ranked.filter((player) => {
+    const key = normalizePlayerName(player.playerName);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 /**
  * Picks a player for an AI team: reuses the same need signals the judge scores on, so the AI
@@ -698,7 +925,12 @@ export function pickForAi(
   // those same slots — the user's own mental model ("po 5 pickach mieć starting5").
   const STARTER_LOCK_ROSTER_SIZE = STARTER_SLOTS.length;
   let phaseFilteredCandidates = candidates;
-  if (roster.length >= NEED_RAMP_ROSTER_SIZE && roster.length < STARTER_LOCK_ROSTER_SIZE && needs.emptySlots.length > 0) {
+  if (
+    DRAFT_EXPERIMENT.starterFiveLock &&
+    roster.length >= NEED_RAMP_ROSTER_SIZE &&
+    roster.length < STARTER_LOCK_ROSTER_SIZE &&
+    needs.emptySlots.length > 0
+  ) {
     const starterFillers = candidates.filter((p) => needs.emptySlots.some((slot) => isRealPositionFit(p, slot)));
     if (starterFillers.length > 0) phaseFilteredCandidates = starterFillers;
   }
@@ -742,7 +974,7 @@ export function pickForAi(
       }
       return [...capLegalAnyDurability].sort((a, b) => a.fga - b.fga)[0];
     }
-    const cheapestFirst = [...capLegal].sort((a, b) => a.fga - b.fga);
+    const cheapestFirst = uniquePlayerSpans([...capLegal].sort((a, b) => a.fga - b.fga));
     const cheapPool = cheapestFirst.slice(0, Math.min(5, cheapestFirst.length));
     const weights = cheapPool.map((_, i) => cheapPool.length - i);
     const totalWeight = weights.reduce((s, w) => s + w, 0);
@@ -775,7 +1007,7 @@ export function pickForAi(
   // extreme talent mismatch with an existing starter.
   const inBenchRound = roster.length >= STARTER_LOCK_ROSTER_SIZE;
 
-  const scored = phaseFilteredCandidates.map((p) => {
+  const scoredBySpan = phaseFilteredCandidates.map((p) => {
     let need = 1;
     if (needs.emptySlots.includes(p.primaryPosition)) need += 1.5;
     else if (needs.thinSlots.includes(p.primaryPosition)) need += 1.3;
@@ -812,7 +1044,7 @@ export function pickForAi(
     if (inBenchRound && needs.lacksBenchShotCreator && isSelfCreatorArchetype(p)) {
       need += BENCH_SHOT_CREATOR_BONUS;
     }
-    if (isD1D2D3Player(p)) need += D1D2D3_PREFERENCE_BONUS;
+    if (DRAFT_EXPERIMENT.d1d2d3Preference && isD1D2D3Player(p)) need += D1D2D3_PREFERENCE_BONUS;
     // The redundancy-exemption check stays on RAW talent, not durability-adjusted — it's
     // asking "is this a top-of-history peak," a question about the player's ceiling, not
     // about how many minutes their body can sustain.
@@ -863,12 +1095,17 @@ export function pickForAi(
       p.fga * fgaPenalty -
       lowUsageBigMalus(p) -
       eliteLowUsageDraftMalus(p) -
-      bigFgaOutlierPenalty(p) +
+      highVolumeNonElitePenalty(p) +
+      elitePerimeterEngineBonus(p) +
+      eliteTwoWayFrontcourtBonus(p) +
+      eliteTwoWayPeakBonus(p) -
+      earlyCoreRolePenalty(p) +
       greatestPeakTierBonus(p);
     return { player: p, value, talent };
   });
 
-  scored.sort((a, b) => b.value - a.value);
+  scoredBySpan.sort((a, b) => b.value - a.value);
+  const scored = uniqueRankedPlayers(scoredBySpan);
 
   // `marginalStarterValue` (see its own docstring above) is expensive — an exact rotation
   // search per candidate — so it's only ever applied to a generous SHORTLIST of the top-by-raw-

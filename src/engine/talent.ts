@@ -10,6 +10,7 @@ import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
 import { playmakingThreeLevelOffenseAdjustment } from './playmakingThreeLevel';
+import { selfCreationPercentileForPortability } from './selfCreationSimilarity';
 // 2026-08-06: moved below defensiveTalent/defensiveAccolades on purpose — `portability.ts` (which
 // this import cycles back through) now imports `computeDefensiveTalent` from THIS file, closing a
 // real cycle: talent.ts -> portabilityCorrection.ts -> portability.ts -> talent.ts. Importing
@@ -272,6 +273,61 @@ function reboundingVersatilityBonus(span: PlayerSpan, paceFactor: number): numbe
   const adjustedRpg = span.box.rpg * paceFactor;
   const excess = adjustedRpg - threshold;
   return excess > 0 ? Math.min(MAX_REBOUND_VERSATILITY_BONUS, excess * REBOUND_VERSATILITY_SCALE) : 0;
+}
+
+/**
+ * 2026-08-12, G_ASSIST_EQUALS_CREATION: ppg counts an assisted catch-and-shoot three and a
+ * self-created stepback identically, so a player who manufactures their own offense earns no
+ * more TAL credit than one whose scoring is largely set up by a teammate — a real gap, since
+ * self-creation is genuinely the harder skill (the exact reason `portabilityCorrection.ts`
+ * already treats it as a "needs the ball" signal, just never as a credit toward talent itself).
+ *
+ * Reuses `selfCreationSimilarity.ts`'s existing measured/estimated signal rather than building a
+ * second one — `selfCreationPercentileForPortability` is already a real (1997+) or k-NN-estimated
+ * (pre-1997) blend of unassisted-3PT/unassisted-FG rate, expressed as a within-position
+ * percentile so a center's self-created post move and a guard's self-created iso are compared
+ * against their own position's real distribution rather than each other's structurally different
+ * baseline (bigs' assisted-cut/putback rate is a role artifact, not a skill gap this bonus should
+ * be reading).
+ *
+ * Additive-only, same one-directional shape as every other bonus in this file: below-median
+ * self-creation costs nothing (this is a credit for a real plus, not a re-litigation of
+ * `positionCorrectionFor`/usage-scale, which already handle volume separately), and the reward
+ * ramps linearly from the position median (percentile 0.5) to the top of the position (1.0),
+ * capped small — deliberately modest relative to `MAX_SHOOTING_GRAVITY_BONUS`/
+ * `MAX_REBOUND_VERSATILITY_BONUS` (both 5) since this project's durable lesson is to start a new
+ * mechanism narrow and widen only if a named-player complaint calls for it, not the reverse.
+ *
+ * **Archetype-gated, found necessary by a guardrail check before shipping, not assumed**: an
+ * unscoped first pass gave Shaquille O'Neal, Dennis Rodman, Rudy Gobert, and Bill Russell
+ * near-max bonuses (3.3-4.8 of the 5 cap) — box-score "unassisted" doesn't mean "self-created" for
+ * a finishing big, since an offensive-rebound putback or a roll-and-dunk records as unassisted
+ * despite requiring none of the shot-creation skill this bonus exists to reward. `spacing.ts`'s
+ * own older self-creation proxy already solved exactly this by scoping to shot-creation
+ * archetypes only (`ARCHETYPE_SELF_CREATION` in `scripts/calibrateSelfCreation.ts`); this bonus
+ * reuses that same population rather than inventing a second list. `Post Scorer` is excluded here
+ * even though the spacing proxy doesn't weight it, since this bonus's guardrail failures were
+ * specifically post/finishing bigs — a genuine post-up isolation move is real shot creation, but
+ * this dataset's `unassistedFg` can't distinguish it from a roll or putback the way the spacing
+ * proxy's hand-set archetype weight could, so the safer call is to leave Post Scorer ungated for
+ * now rather than risk crediting rebounds-as-creation again.
+ */
+const SELF_CREATION_BONUS_PERCENTILE_THRESHOLD = 0.5;
+const SELF_CREATION_BONUS_SCALE = 10;
+const MAX_SELF_CREATION_BONUS = 5;
+const SELF_CREATION_BONUS_ARCHETYPES: ReadonlySet<OffensiveArchetype> = new Set([
+  'Primary Ball Handler',
+  'Secondary Ball Handler',
+  'Shot Creator',
+  'Slasher',
+]);
+
+/** Exported for `scripts/checkSelfCreationTalentBonus.ts`'s blast-radius report — same pattern
+ * as `extremeUsageRatioPenalty` above. */
+export function selfCreationTalentBonus(span: PlayerSpan): number {
+  if (!SELF_CREATION_BONUS_ARCHETYPES.has(span.offensiveArchetype)) return 0;
+  const excess = selfCreationPercentileForPortability(span) - SELF_CREATION_BONUS_PERCENTILE_THRESHOLD;
+  return excess > 0 ? Math.min(MAX_SELF_CREATION_BONUS, excess * SELF_CREATION_BONUS_SCALE) : 0;
 }
 
 /** Floor under the defense component's downside — asymmetric, same one-directional philosophy
@@ -667,14 +723,83 @@ function talentScaled(span: PlayerSpan, usageScale: number): number {
   const hiddenValue = hiddenValueBonus(span);
   const portability = portabilityBonus(span);
   const playoffPerformance = playoffPerformanceBonus(span);
+  const selfCreation = selfCreationTalentBonus(span);
 
   // Squash into a 0-100 band; recalibrated (alongside the DARKO defense correction above) so
   // the true GOAT tier reaches ~97-99 instead of topping out at 91 — deep bench specialists
   // still land ~20-35, the low end wasn't touched by this pass.
   return (
-    (raw * 2.15 + 6 + synergy - usagePenalty - extremeUsagePenalty + hiddenValue + portability + playoffPerformance) *
+    (raw * 2.15 +
+      6 +
+      synergy -
+      usagePenalty -
+      extremeUsagePenalty +
+      hiddenValue +
+      portability +
+      playoffPerformance +
+      selfCreation) *
     positionCorrectionFor(span)
   );
+}
+
+/**
+ * 2026-08-12, G_BLACK_BOX: every named additive/subtractive term in `talentScaled` above, exposed
+ * as labeled numbers rather than folded into one opaque total — so `evidenceReport.ts` can build a
+ * real "why this rating" breakdown from the SAME numbers `computeTalent` actually used, instead of
+ * a second, drifting reimplementation of the formula. Runs the identical usage-scale gate
+ * `computeTalent` itself runs (base TAL at usageScale=1.0 decides whether the real usage scale
+ * applies) so a caller reading this breakdown never sees a component computed at a different scale
+ * than the one that produced the player's displayed TAL.
+ */
+export interface TalentBreakdown {
+  usageScaleApplied: number;
+  synergy: number;
+  usagePenalty: number;
+  extremeUsagePenalty: number;
+  hiddenValue: number;
+  portability: number;
+  playoffPerformance: number;
+  selfCreation: number;
+  darkoDefenseBonus: number;
+  darkoDefenseMalus: number;
+  /** Whether the defense component going into TAL is backed by real plus-minus/accolade data
+   * (`synergyGateDefense`'s corroboration gate), vs. capped as unconfirmed box volume. */
+  defenseCorroborated: boolean;
+  normalizedOffense: number;
+  /** Pre-corroboration-gate reading — compare against `normalizedDefense` to tell whether the
+   * uncorroborated cap actually bound (raw > gated means real box-defense activity is being
+   * held back for lack of confirming real-value/accolade data). */
+  normalizedDefenseRaw: number;
+  normalizedDefense: number;
+  positionCorrection: number;
+}
+
+export function talentBreakdown(span: PlayerSpan): TalentBreakdown {
+  const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(talentScaled(span, 1.0)))));
+  const usageScaleApplied = baseTal >= USAGE_SCALE_MIN_TIER_TAL ? usageOffenseScale(span) : 1.0;
+
+  const { offense, defense } = rawComponents(span, true, usageScaleApplied);
+  const { normalizedOffense, normalizedDefense } = normalizedComponents(span, offense, defense);
+  const gateDefense = synergyGateDefense(span, normalizedDefense);
+  const corroborated = darkoDefenseBonus(span) > 0 || individualDefenseRate(span) > 0;
+
+  return {
+    usageScaleApplied,
+    synergy: twoWaySynergyBonus(normalizedOffense, gateDefense),
+    usagePenalty: highUsageLowPlaymakingPenalty(span, gateDefense),
+    extremeUsagePenalty: extremeUsageRatioPenalty(span),
+    hiddenValue: hiddenValueBonus(span),
+    portability: portabilityBonus(span),
+    playoffPerformance: playoffPerformanceBonus(span),
+    selfCreation: selfCreationTalentBonus(span),
+    darkoDefenseBonus: darkoDefenseBonus(span),
+    darkoDefenseMalus: darkoDefenseMalus(span),
+    defenseCorroborated: corroborated || isDualSourceConfirmedBig(span) || hasPositiveRawDefense(span),
+    normalizedOffense,
+    normalizedDefenseRaw: normalizedDefense,
+    normalizedDefense: gateDefense,
+    positionCorrection: positionCorrectionFor(span),
+  };
 }
 
 /**

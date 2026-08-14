@@ -13,9 +13,16 @@ type View = 'intro' | 'game' | 'pool';
 type Mode = 'developer' | 'player';
 
 /** Set at build time (e.g. `VITE_FORCE_PLAYER_MODE=true npm run build`) to ship a locked-down
- * build for a playtester — player mode on, no toggle to peek at developer mode. Leave unset for
- * normal local development, where the toggle is available and developer mode is the default. */
+ * build for a playtester — Player Mode on, no selector to reach Tester Mode. Leave unset for
+ * normal local development, where the mode selector is shown on the intro screen and Tester
+ * Mode (the old, internally-named 'developer' mode — same engine, just the pre-redesign UI with
+ * every judge metric visible) is the default. */
 const FORCE_PLAYER_MODE = import.meta.env.VITE_FORCE_PLAYER_MODE === 'true';
+
+const MODE_OPTIONS: ReadonlyArray<{ id: Mode; name: string; blurb: string }> = [
+  { id: 'developer', name: 'Tester Mode', blurb: 'Old UI — every judge rating visible' },
+  { id: 'player', name: 'Player Mode', blurb: 'New UI — blind scouting, box stats only' },
+];
 
 /** Cap value shown in the intro tagline, kept in sync with `engine/positions.ts`'s CAP_LIMIT by
  * the standing check in `scripts/checkIntroCapLimit.ts` — not imported directly so the intro
@@ -53,14 +60,6 @@ function App() {
           Build the best-<em>fitting</em> all-time roster under a {DISPLAY_CAP_LIMIT} FGA cap — not just the best
           players.
         </p>
-        {!FORCE_PLAYER_MODE && (
-          <button
-            className="secondary-btn mode-toggle-btn"
-            onClick={() => setMode((m) => (m === 'developer' ? 'player' : 'developer'))}
-          >
-            {mode === 'developer' ? 'Developer Mode (ratings visible)' : 'Player Mode (ratings hidden)'}
-          </button>
-        )}
       </header>
 
       {view === 'intro' && (
@@ -70,6 +69,23 @@ function App() {
             real trade-offs. Once the draft ends, you'll set your rotation's minutes, and the judge will grade every
             roster — including yours.
           </p>
+          {!FORCE_PLAYER_MODE && (
+            <div className="mode-select" role="radiogroup" aria-label="Mode">
+              {MODE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === opt.id}
+                  className={`mode-select-btn ${mode === opt.id ? 'mode-select-btn--active' : ''}`}
+                  onClick={() => setMode(opt.id)}
+                >
+                  <span className="mode-select-name">{opt.name}</span>
+                  <span className="mode-select-blurb">{opt.blurb}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {!FORCE_PLAYER_MODE && (
             <label className="commissioner-toggle">
               <input type="checkbox" checked={commissionerMode} onChange={(e) => setCommissionerMode(e.target.checked)} />

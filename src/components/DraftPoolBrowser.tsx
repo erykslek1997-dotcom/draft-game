@@ -14,6 +14,8 @@ import {
   OverallTierBadge,
   PlayoffPerformanceBadge,
   DurabilityTierBadge,
+  SmallSampleBadge,
+  EvidenceReportPanel,
   tierContextFor,
   naturalPosition,
   type PlayerGroup,
@@ -38,6 +40,7 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
   const [search, setSearch] = useState('');
   const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL' | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [evidenceOpen, setEvidenceOpen] = useState<Set<string>>(new Set());
 
   const isSearching = search.trim() !== '';
   const isBrowsing = selectedPosition !== null || isSearching;
@@ -118,6 +121,15 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
       const next = new Set(prev);
       if (next.has(name)) next.delete(name);
       else next.add(name);
+      return next;
+    });
+  }
+
+  function toggleEvidence(spanId: string) {
+    setEvidenceOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(spanId)) next.delete(spanId);
+      else next.add(spanId);
       return next;
     });
   }
@@ -231,12 +243,14 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                               {showJudgeMetrics && <th>Shooter</th>}
                               {showJudgeMetrics && <th>Playoffs</th>}
                               {showJudgeMetrics && <th>DUR</th>}
+                              {showJudgeMetrics && <th>Sample</th>}
                               <th>PTS</th>
                               <th>REB</th>
                               <th>AST</th>
                               <th>3PT%</th>
                               <th>Archetype</th>
                               <th>Defense</th>
+                              <th></th>
                             </tr>
                           </thead>
                           <tbody>
@@ -276,18 +290,37 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                                     {computeDurability(span)} <DurabilityTierBadge span={span} />
                                   </td>
                                 )}
+                                {showJudgeMetrics && (
+                                  <td>
+                                    <SmallSampleBadge span={span} />
+                                  </td>
+                                )}
                                 <td>{span.box.ppg.toFixed(1)}</td>
                                 <td>{span.box.rpg.toFixed(1)}</td>
                                 <td>{span.box.apg.toFixed(1)}</td>
                                 <td>{(span.box.threePct * 100).toFixed(1)}%</td>
                                 <td>{span.offensiveArchetype}</td>
                                 <td>{span.defensiveRole}</td>
+                                <td>
+                                  <button className="evidence-toggle" onClick={() => toggleEvidence(span.id)}>
+                                    {evidenceOpen.has(span.id) ? 'Hide why' : 'Why?'}
+                                  </button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
                     )}
+                    {isOpen &&
+                      group.spans
+                        .filter((span) => evidenceOpen.has(span.id))
+                        .map((span) => (
+                          <div key={span.id} className="evidence-panel-wrap">
+                            <div className="evidence-panel-label">{span.spanLabel} — why this rating</div>
+                            <EvidenceReportPanel span={span} />
+                          </div>
+                        ))}
                   </div>
                 );
               })}

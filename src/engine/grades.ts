@@ -8,6 +8,8 @@ import {
   applyGradeCeiling,
 } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
+import { spanEndYears } from './era';
+import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
 
 /**
  * Letter-grade display for O-TAL/D-TAL, purely a UI presentation layer over the existing
@@ -101,11 +103,49 @@ export function defensiveGrade(value: number): Grade {
 let offensivePortabilitySThreshold: number | null = null;
 let defensivePortabilitySThreshold: number | null = null;
 
-export function offensivePortabilityGrade(value: number): Grade {
-  if (offensivePortabilitySThreshold === null) {
-    offensivePortabilitySThreshold = computeSThreshold(draftPool.map((p) => computeOffensivePortability(p)));
+/**
+ * 2026-08-13, user-reported: O-POR's letter grades pile up hard at the bottom — 44.4% of the
+ * whole pool reads F, vs. O-TAL's naturally well-spread 12.3% F on the exact same fixed
+ * `letterForValue` bands. Root cause confirmed, not assumed: O-POR's own raw value distribution
+ * is real but heavily right-skewed (median 43, p75 only 59), while O-TAL's is roughly even across
+ * the same 0-100 range — the fixed bands (built assuming an O-TAL-shaped distribution) just
+ * compress most of O-POR's real spread into D/F.
+ *
+ * Simplest fix tried first (explicit user ask, before reaching for a bigger rework): convert the
+ * raw value to its percentile RANK in the real O-POR population before handing it to the
+ * existing, completely unchanged `gradeForValue`/`letterForValue` machinery — same shared grading
+ * function every other stat uses, just fed a differently-scaled input. Purely a display
+ * transform: `computeOffensivePortability`'s own return value, and every real consumer of it
+ * (`portabilityCorrection.ts`'s TAL-blend regression chief among them), is completely untouched —
+ * only what letter this ONE badge shows changes. Scoped to O-POR alone; D-POR's own distribution
+ * skews the opposite way (median rank 67, not flagged by the user) and O-TAL/D-TAL are already
+ * healthy, so none of the three share this fix.
+ */
+let offensivePortabilitySortedValues: number[] | null = null; // sorted ascending, cached once
+
+function percentileRank(value: number, sortedAscending: number[]): number {
+  let lo = 0;
+  let hi = sortedAscending.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (sortedAscending[mid] <= value) lo = mid + 1;
+    else hi = mid;
   }
-  return gradeForValue(value, offensivePortabilitySThreshold);
+  return (100 * lo) / sortedAscending.length;
+}
+
+export function offensivePortabilityGrade(value: number): Grade {
+  if (offensivePortabilitySortedValues === null) {
+    offensivePortabilitySortedValues = draftPool.map((p) => computeOffensivePortability(p)).sort((a, b) => a - b);
+  }
+  if (offensivePortabilitySThreshold === null) {
+    // Same "3rd-highest distinct raw value" cutoff as before, just re-expressed as a rank so it
+    // still compares correctly against the rank-space value below.
+    const rawSThreshold = computeSThreshold(offensivePortabilitySortedValues);
+    offensivePortabilitySThreshold = percentileRank(rawSThreshold, offensivePortabilitySortedValues);
+  }
+  const rank = percentileRank(value, offensivePortabilitySortedValues);
+  return gradeForValue(rank, offensivePortabilitySThreshold);
 }
 
 export function defensivePortabilityGrade(value: number): Grade {
@@ -251,6 +291,7 @@ function tierCaps(
   dtalGrade: Grade,
   fga: number,
   namedTierException: boolean = false,
+  otal: number = 0,
 ): OverallTier[] {
   const caps: OverallTier[] = [];
   switch (position) {
@@ -293,7 +334,21 @@ function tierCaps(
       // unchanged even for an S-grade offense, which only guarantees MVP (see below), not the
       // top tier.
       if (!gradeAtLeast(otalGrade, 'B+')) caps.push('MVP');
-      if (!gradeAtLeast(dtalGrade, 'C')) caps.push('MVP');
+      // 2026-08-13, user-reported: Zach LaVine's 2020-22 peak (OTAL A/94, DTAL F/25) displayed as
+      // "MVP" — raw TAL (89) never even reached the "Greatest peak" floor (94) on its own, so the
+      // old version of this rule (below, capping only at MVP) was a dead cap for him: it can only
+      // ever stop a player from reaching "Greatest peak", and he was never going to get there
+      // regardless. The real ask was a genuinely lower ceiling — All-star, not MVP — for an SG
+      // with unconfirmed/bad defense (DTAL<C), same shape as the twoWay All-star cap below but
+      // independent of it (that one exempts on OTAL>=A-; this one demands a literal A+, checked
+      // directly against Ray Allen's whole career: only his two true A+-offense spans (2000-02,
+      // 1999-01) keep their real tier — his other four All-NBA-raw A/A- spans drop to All-star
+      // too, confirmed as the intended shape, not a side effect). Full-pool blast radius checked
+      // before shipping: this is the literal replacement of the old `caps.push('MVP')` line, not
+      // an addition — the old rule never fired without this one also firing on the same
+      // condition, so there's no case where keeping both would matter.
+      const otalIsTrulyElite = gradeAtLeast(otalGrade, 'A+');
+      if (!gradeAtLeast(dtalGrade, 'C') && !otalIsTrulyElite) caps.push('All-star');
       // All-NBA requires genuine two-way value: strong on one end AND at least good on the
       // other, either direction — an offense-only or defense-only case caps at All-star.
       // 2026-08-05 follow-up: this was catching real offensive engines too hard (Harden, A+
@@ -374,6 +429,28 @@ function tierCaps(
       // caught DeMarcus Cousins (2016-18: OTAL B/77, DTAL C/60 — decent both ways, elite at
       // neither) sitting at MVP with no individually strong trait backing it up.
       if (!gradeAtLeast(otalGrade, 'B+') && !gradeAtLeast(dtalGrade, 'B+')) caps.push('All-NBA');
+      // 2026-08-13, user-reported: Domantas Sabonis's 2022-24 peak (OTAL A+/95, DTAL F/18)
+      // displayed All-NBA untouched by any rule above — every one of them is offense-gated (only
+      // fires when OTAL fails some floor), and his OTAL clears all three outright. Unlike PG
+      // above, C never had an independent defense floor at all. Mirrors PG's own
+      // `!gradeAtLeast(dtalGrade,'C-') && !gradeAtLeast(otalGrade,'A+') -> cap All-NBA` shape, but
+      // PG's A+ bypass would be a no-op here — Sabonis's OTAL grade IS A+, so an A+-gated
+      // exemption leaves him exactly as untouched as before.
+      //
+      // First shipped gated on literal S (dynamic "3 best in the pool" cutoff) instead of A+ —
+      // caught in blast-radius review before shipping: Nikola Jokić's OTAL is clamped at the
+      // scale's hard ceiling (100, `computeOffensiveTalent`'s own `Math.min(100, ...)`) on 5 real
+      // spans, but only SOME of those get graded literal S vs A+ depending on which other spans
+      // happen to occupy the pool's dynamic top-3 that round — the exact "S is a fragile relative
+      // cutoff" problem this file's own PG/Howard comments already warn about, here catching two
+      // of Jokić's spans (2019-21, 2020-22) into an unintended "Greatest peak" -> "All-NBA" drop
+      // for no real reason tied to his actual offense. Fixed by testing the raw, hard-clamped
+      // OTAL number instead of its letter grade — `otal >= 100` is an absolute scale-ceiling
+      // fact, not a relative rank, so it can't flicker between spans of identical real quality.
+      // Checked directly across the whole C pool before shipping: OTAL>=100 belongs to Jokić (5
+      // spans) alone among anyone this cap could otherwise reach; Sabonis peaks at 95, Embiid at
+      // 99 — both still correctly capped.
+      if (!gradeAtLeast(dtalGrade, 'C-') && otal < 100) caps.push('All-NBA');
       break;
     }
   }
@@ -399,6 +476,11 @@ export interface TierGateContext {
    * pair, not player alone, same scoping reason `GREATEST_PEAK_TIER_BONUS` in aiDrafter.ts uses
    * for its own named-span bonuses). */
   spanLabel?: string;
+  /** Optional — real, un-tier-scaled playoff efficiency signal (negative = a real collapse,
+   * positive = a real riser; see `PLAYOFF_COLLAPSE_TIER_CAP` below for why this exists and why it
+   * gates the TIER rather than the number). Left optional for the same reason as the other
+   * context fields: synthetic/validation contexts default to no signal (0). */
+  playoffCollapse?: number;
 }
 
 /**
@@ -419,6 +501,58 @@ export interface TierGateContext {
  */
 const GOAT_NAMES: ReadonlySet<string> = new Set(['Michael Jordan', 'LeBron James', 'Stephen Curry'].map(normalizePlayerName));
 
+/**
+ * 2026-08-12, prototype: user's own follow-up on the playoff-performance work this session —
+ * Embiid's real, repeated playoff efficiency collapses (measured directly from real playoff-vs-
+ * regular-season TS%, opponent-defense-adjusted; see the playoff-BPM/TS-delta session work)
+ * barely move his DISPLAYED TAL even with a tier-scaled additive malus up to 3.5x, because his
+ * raw (pre-softcap) value sits at 109-120 — deep enough into `softCapTalent`'s asymptotic
+ * compression that no realistically-sized additive number moves the shown TAL at all. Confirmed
+ * directly: a -10.2 to -10.8 malus (the tier-scaled attempt) only ever moved his displayed TAL by
+ * 1 point.
+ *
+ * Gating the TIER BADGE instead, exactly the same shape as every other rule in `tierCaps` below
+ * (position-specific FGA/grade gates), sidesteps the softcap fight entirely: "Greatest peak"/
+ * "GOAT" is a claim about being one of the best seasons ever, and a real, evidence-based,
+ * opponent-adjusted playoff collapse is real counter-evidence against that specific claim,
+ * independent of how compressed the underlying number is. Position-agnostic (a real collapse is
+ * not a position-specific concept), unlike the rest of `tierCaps`.
+ *
+ * Thresholds are the same base (un-tier-scaled) signal already built and validated this session
+ * (TS%-delta vs opponent toughness, REF=8/POWER=1.5 curve, capped ±5) — NOT run through the tier
+ * multiplier, since the whole point of this mechanism is to stop depending on the number being
+ * large enough to survive the softcap. A genuinely severe reading (clearing roughly 40% of that
+ * curve's own ±5 range) removes eligibility for "Greatest peak"/"GOAT"; a reading at or near the
+ * curve's own cap removes eligibility for "MVP" too. Still a prototype — not yet validated against
+ * the project's usual Taylor top-10/GOAT-40/blast-radius checks before shipping.
+ */
+const PLAYOFF_COLLAPSE_MVP_CAP_THRESHOLD = -2;
+const PLAYOFF_COLLAPSE_ALL_NBA_CAP_THRESHOLD = -4;
+
+/**
+ * 2026-08-13, user proposal for the McAdoo/Lanier "accepted pre-DARKO gap" bucket (see
+ * `talent.ts`'s own docstring on `extremeUsageRatioPenalty` and this project's memory for the
+ * fuller history — real BPM2-corroborated defense credit pushes both of them to MVP-tier with no
+ * clean numeric lever to pull without also dragging down genuinely elite modern two-way bigs who
+ * share the same `darkoDefenseBonus` mechanism). Rather than fight the number, cap the BADGE:
+ * a span that entirely predates 1976 (before the 1976 ABA-NBA merger, roughly the point this
+ * project's external validation sources start having real opinions about a player) and whose
+ * player never appears in either of Ben Taylor's published all-time lists (`taylorValidatedNames.ts`
+ * — the same lists `validateAgainstTaylorTop10.ts`/`validateAgainstBackpicksGoat.ts` already treat
+ * as this project's external ground truth) can't claim MVP+ on an unverifiable, single-source
+ * (BPM2-only) defensive read alone. Position-agnostic, same shape as the playoff-collapse cap
+ * above. A genuine, externally-corroborated legend from that era (Kareem, Wilt, Russell, Oscar,
+ * West, Havlicek, Pettit, Frazier, Baylor, Barry, Gilmore — all already on one of the two lists)
+ * is completely untouched; this only reaches players this project has no outside opinion on.
+ */
+const UNVALIDATED_ERA_CAP_YEAR = 1976;
+
+function isUnvalidatedPre1976Span(spanLabel: string, playerName?: string): boolean {
+  if (playerName && TAYLOR_VALIDATED_NAMES.has(normalizePlayerName(playerName))) return false;
+  const years = spanEndYears(spanLabel);
+  return years.length > 0 && years.every((year) => year < UNVALIDATED_ERA_CAP_YEAR);
+}
+
 /** The tier-badge function every UI call site should use instead of the raw `overallTier` —
  * same output for anyone who clears every gate for their position, strictly lower (never
  * higher) for anyone who doesn't. `overallTier` itself stays exported and untouched, since
@@ -428,7 +562,11 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   const base = overallTier(ctx.tal);
   const otalGrade = offensiveGrade(ctx.otal, ctx.otalUncapped ?? ctx.otal);
   const dtalGrade = defensiveGrade(ctx.dtal);
-  const caps = tierCaps(ctx.position, otalGrade, dtalGrade, ctx.fga, hasNamedTierException(ctx.playerName, ctx.spanLabel));
+  const caps = tierCaps(ctx.position, otalGrade, dtalGrade, ctx.fga, hasNamedTierException(ctx.playerName, ctx.spanLabel), ctx.otal);
+  const playoffCollapse = ctx.playoffCollapse ?? 0;
+  if (playoffCollapse <= PLAYOFF_COLLAPSE_ALL_NBA_CAP_THRESHOLD) caps.push('All-NBA');
+  else if (playoffCollapse <= PLAYOFF_COLLAPSE_MVP_CAP_THRESHOLD) caps.push('MVP');
+  if (ctx.spanLabel && isUnvalidatedPre1976Span(ctx.spanLabel, ctx.playerName)) caps.push('All-NBA');
   const capped = caps.reduce((tier, cap) => stricterTier(tier, cap), base);
   // GOAT is a RAISE, deliberately the only exception to this function's own "caps only ever
   // lower a tier" rule (see every other case above) — gated on already having earned "Greatest

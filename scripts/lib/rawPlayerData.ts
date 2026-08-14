@@ -163,10 +163,33 @@ const PRIMARY_BALL_HANDLER_MIN_FGA = 9;
 export function classifyOffense(position: Position, box: DerivedBox): OffensiveArchetype {
   const threeRate = box.fga > 0 ? box.threePA / box.fga : 0;
   const astRate = box.ppg > 0 ? box.apg / box.ppg : 0;
-  const isBig = position === 'C' || position === 'PF';
+  // Box scores can identify a shooting-shaped profile, but not whether the player reached those
+  // shots by standing, relocating or running off screens. Keep the rules-only generator on the
+  // conservative Stationary Shooter label; Movement/Off Screen require Synergy, PBP support or
+  // explicit historical validation elsewhere. This prevents pull-up creators from being tagged
+  // as movement shooters solely because they take many threes.
+  const isShootingSpecialist =
+    position !== 'C' &&
+    box.threePA >= 2.5 &&
+    box.threePct >= 0.36 &&
+    threeRate >= 0.35 &&
+    box.apg < 4;
 
-  if (isBig) {
+  // Centers keep the interior-role branch. PF used to be routed here unconditionally, making
+  // every power forward a big regardless of how the player actually produced offense.
+  if (position === 'C') {
     if (astRate > 0.55 && box.apg >= 3) return 'Versatile Big';
+    if (threeRate > 0.3) return 'Stretch Big';
+    if (threeRate > 0.12) return 'Versatile Big';
+    if (box.fga >= 11) return 'Post Scorer';
+    return 'Roll & Cut Big';
+  }
+  // PF is a hybrid branch: real interior PFs can still earn big roles, but perimeter creators,
+  // movement shooters and spot-up specialists are no longer made unreachable by the position.
+  if (position === 'PF') {
+    if (astRate > 0.5 && box.apg >= 3) return 'Versatile Big';
+    if (box.apg >= 4 && box.fga >= 13) return 'Shot Creator';
+    if (isShootingSpecialist) return 'Stationary Shooter';
     if (threeRate > 0.3) return 'Stretch Big';
     if (threeRate > 0.12) return 'Versatile Big';
     if (box.fga >= 11) return 'Post Scorer';
@@ -174,7 +197,7 @@ export function classifyOffense(position: Position, box: DerivedBox): OffensiveA
   }
   if (position === 'SF') {
     if (astRate > 0.45 && box.apg >= 4) return box.fga >= 13 ? 'Shot Creator' : 'Secondary Ball Handler';
-    if (threeRate > 0.4 && box.fga < 11) return 'Stationary Shooter';
+    if (isShootingSpecialist) return 'Stationary Shooter';
     if (box.fga >= 14) return 'Shot Creator';
     if (box.fga >= 9) return 'Slasher';
     return 'Athletic Finisher';
@@ -183,18 +206,29 @@ export function classifyOffense(position: Position, box: DerivedBox): OffensiveA
   if (astRate > PRIMARY_BALL_HANDLER_ASTRATE && box.apg >= 5) {
     return box.fga >= PRIMARY_BALL_HANDLER_MIN_FGA ? 'Primary Ball Handler' : 'Secondary Ball Handler';
   }
-  if (threeRate > 0.42 && box.fga < 11) return 'Off Screen Shooter';
+  if (box.apg >= 4) return 'Secondary Ball Handler';
+  if (isShootingSpecialist) return 'Stationary Shooter';
   if (box.fga >= 15) return 'Shot Creator';
   if (box.fga < 8) return 'Athletic Finisher';
   return 'Secondary Ball Handler';
 }
 
 export function classifyDefense(position: Position, box: DerivedBox): DefensiveRole {
-  const isBig = position === 'C' || position === 'PF';
-  if (isBig) {
+  if (position === 'C') {
     if (box.bpg >= 1.8) return 'Anchor Big';
     if (box.bpg >= 0.9 || box.rpg >= 9) return 'Mobile Big';
     if (box.rpg >= 6) return 'Helper';
+    return 'Low Activity';
+  }
+  // PF is not synonymous with center. Read both perimeter activity and interior protection,
+  // allowing small-ball wings to retain a perimeter role while true rim protectors still grade
+  // as Mobile/Anchor Bigs.
+  if (position === 'PF') {
+    if (box.bpg >= 1.8) return 'Anchor Big';
+    if (box.spg >= 1.5 && box.bpg < 1.2) return 'Wing Stopper';
+    if (box.bpg >= 0.9 || (box.rpg >= 9 && box.bpg >= 0.6)) return 'Mobile Big';
+    if (box.spg >= 1.1) return 'Wing Stopper';
+    if (box.spg >= 0.8 || box.bpg >= 0.6 || box.rpg >= 6) return 'Helper';
     return 'Low Activity';
   }
   if (box.spg >= 1.6) return position === 'PG' ? 'Point of Attack' : 'Wing Stopper';

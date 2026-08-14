@@ -36,14 +36,14 @@ const BASELINE_EFFICIENCY = 4.05;
 const RIM_PROTECTOR_IMPACT_THRESHOLD = 18;
 const PERIMETER_DEFENDER_IMPACT_THRESHOLD = 10;
 
-function isStrongRimProtector(player: { defensiveRole: string }): boolean {
+export function isStrongRimProtector(player: { defensiveRole: string }): boolean {
   return (
     RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= RIM_PROTECTOR_IMPACT_THRESHOLD
   );
 }
 
-function isStrongPerimeterDefender(player: { defensiveRole: string }): boolean {
+export function isStrongPerimeterDefender(player: { defensiveRole: string }): boolean {
   return (
     PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= PERIMETER_DEFENDER_IMPACT_THRESHOLD
@@ -66,14 +66,14 @@ function isStrongPerimeterDefender(player: { defensiveRole: string }): boolean {
 const SHELL_RIM_PROTECTOR_IMPACT_THRESHOLD = 24;
 const SHELL_PERIMETER_DEFENDER_IMPACT_THRESHOLD = 15;
 
-function isShellRimProtector(player: { defensiveRole: string }): boolean {
+export function isShellRimProtector(player: { defensiveRole: string }): boolean {
   return (
     RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= SHELL_RIM_PROTECTOR_IMPACT_THRESHOLD
   );
 }
 
-function isShellPerimeterDefender(player: { defensiveRole: string }): boolean {
+export function isShellPerimeterDefender(player: { defensiveRole: string }): boolean {
   return (
     PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= SHELL_PERIMETER_DEFENDER_IMPACT_THRESHOLD
@@ -225,15 +225,32 @@ function rescaleToFullRange(raw: number, anchors: { worst: number; best: number 
   return Math.max(0, Math.min(100, scaled));
 }
 
+/** How many of the roster's best-TAL players get averaged for `talentScore` below — matches
+ * `scripts/analyzeD1HumanVote.ts`'s own validated "top5avg" metric exactly (unweighted average of
+ * the 5 highest `computeTalent` values across the whole 9-man roster, not just starters). */
+const TOP_CORE_SIZE = 5;
+
+/**
+ * 2026-08-05 (original), redefined 2026-08-13 per the D1 real in-person human-vote validation
+ * ([[alltime_draft_game_project]] memory): the old formula — minutes-weighted average TAL across
+ * every rotation assignment, position-fit-discounted — correlated only 0.45-0.49 with the real
+ * human vote ranking of 15 actual drafted rosters. The single best predictor found in that
+ * validation was a metric this function didn't compute at all: the unweighted average TAL of a
+ * roster's 5 best players (0.69 correlation) — a genuinely stronger signal than the old
+ * minutes-weighted whole-roster version, and the OPPOSITE of what peak single-player TAL predicts
+ * (-0.37 — stacking one superstar and coasting doesn't win real human favor; a deep top-5 core
+ * does). Reusing `talentScore`'s existing name/slot/weight in `overall` rather than adding a
+ * parallel metric — it's a strictly better answer to the exact same question ("how much real
+ * talent does this roster have"), not a different question needing its own new weight.
+ * Deliberately NOT minutes- or position-fit-weighted, matching the validated metric's own exact
+ * shape: bench depth/position legality already have their own dedicated scores (rotationScore,
+ * position eligibility itself) — this one is purely "how strong is the core."
+ */
 export function talentScore(team: Team): number {
-  const assignments = allAssignments(team);
-  const totalMinutes = STARTER_SLOTS.length * GAME_MINUTES;
-  if (assignments.length === 0 || totalMinutes === 0) return 0;
-  const weighted = assignments.reduce(
-    (sum, { slot, player, minutes }) => sum + computeTalent(player) * positionFitMultiplier(player, slot) * minutes,
-    0,
-  );
-  return Math.round(weighted / totalMinutes);
+  const tals = team.roster.map((player) => computeTalent(player)).sort((a, b) => b - a);
+  if (tals.length === 0) return 0;
+  const core = tals.slice(0, TOP_CORE_SIZE);
+  return Math.round(core.reduce((sum, t) => sum + t, 0) / core.length);
 }
 
 /** Minutes-weighted team average of O-TAL / D-TAL, the same shape as `talentScore` but reading
@@ -441,22 +458,6 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
     score += bonus;
   }
 
-  const hasRimProtector = starters.some(isStrongRimProtector);
-  if (!hasRimProtector) {
-    score -= 15;
-    notes.push('No rim protector among starters.');
-  } else {
-    notes.push('Rim protection covered among starters.');
-  }
-
-  const hasPerimeterDefender = starters.some(isStrongPerimeterDefender);
-  if (!hasPerimeterDefender) {
-    score -= 10;
-    notes.push('No plus perimeter defender among starters.');
-  } else {
-    notes.push('Perimeter defense covered among starters.');
-  }
-
   if (
     starters.some(isShellRimProtector) &&
     starters.some(isShellPerimeterDefender) &&
@@ -466,24 +467,45 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
     notes.push('Complete defensive shell: rim + perimeter + helper coverage.');
   }
 
-  // Real team-defense quality, continuous — 2026-08-07. The two binary checks above only ask
-  // "does at least one starter carry a rim/perimeter tag," which a single genuine individual
-  // defender can satisfy for a team whose defense isn't actually good as a whole (the same
-  // "individual vs. team defense" gap this project already found and fixed once in
-  // `aiDrafter.ts`'s `avgDefensivePortability`). Add-only (never a second penalty on top of the
-  // binary checks, which already correctly punish a team with zero real defenders) — this
-  // specifically rewards a genuinely elite defensive five the binary checks can't distinguish
-  // from a merely-adequate one. Anchored on real draft-pool D-TAL percentiles: p50=53 (neutral),
-  // p90=85 — the same "check real data" discipline as the O-POR term above.
-  const DTAL_NEUTRAL = 53;
-  const DTAL_ELITE_SPAN = 32; // p90 - p50
+  // 2026-08-13, real D1 human-vote diagnostic (`scripts/analyzeD1HumanVote.ts`'s new
+  // "fitScore INPUT SIGNALS" block): the two binary checks this replaced — "does at least one
+  // starter carry a rim-protector/perimeter-defender ROLE TAG" — correlated NEGATIVELY with the
+  // real vote (-0.504 / -0.307 across the 15 real D1 rosters), the opposite of what they were
+  // built to reward. The role tags themselves are known-noisy (see `isStrongPerimeterDefender`'s
+  // own docstring above: Reggie Miller's early-career spans auto-tag "Chaser" off elevated box
+  // activity despite no real perimeter-defense reputation) — a single well-tagged specialist could
+  // satisfy the binary check for a team whose D wasn't actually good, or a genuinely strong
+  // defensive team could miss it entirely if nobody happened to clear a specific role's tag.
+  // The continuous alternative right below (average starter D-TAL) had the CORRECT sign in the
+  // same diagnostic (+0.289) and was already present as a bonus-only term — extended it to also
+  // penalize below-neutral team defense symmetrically, replacing what the two binary checks used
+  // to catch, on a real signal instead of a noisy tag. n=15 is a small sample (rough significance
+  // threshold ~|r|>=0.52), so -0.504 clears it but -0.307 is more suggestive than proven; both
+  // shared the same identified root cause (noisy role tags) so both were replaced together rather
+  // than picking one to keep on thinner evidence.
+  //
+  // Anchored on real draft-pool D-TAL percentiles (`computeDefensiveTalent` over the current
+  // `draftPool`, not the old comment's stale 53/85 — re-measured directly rather than trusted,
+  // confirmed real drift since that was last calibrated): p10=19, p50=42 (neutral), p90=79.
+  // `TEAM_DEFENSE_MAX_PENALTY` set higher than the bonus side's own cap (20 vs. 10) — the two
+  // removed binary checks could cost up to -25 combined, so this keeps "bad team defense can
+  // genuinely hurt fitScore" true rather than quietly defanging it while fixing the sign problem.
+  const DTAL_NEUTRAL = 42;
+  const DTAL_ELITE_SPAN = 37; // p90 - p50
+  const DTAL_WEAK_SPAN = 23; // p50 - p10
   const TEAM_DEFENSE_MAX_BONUS = 10;
+  const TEAM_DEFENSE_MAX_PENALTY = 20;
   const avgStarterDTal = starters.reduce((sum, p) => sum + computeDefensiveTalent(p), 0) / starters.length;
   if (avgStarterDTal > DTAL_NEUTRAL) {
     const excessRatio = Math.min(1, (avgStarterDTal - DTAL_NEUTRAL) / DTAL_ELITE_SPAN);
     const bonus = Math.round(excessRatio * TEAM_DEFENSE_MAX_BONUS);
     score += bonus;
     if (bonus >= 5) notes.push('Genuinely elite team defense across the starting five, not just one tagged defender.');
+  } else {
+    const deficitRatio = Math.min(1, (DTAL_NEUTRAL - avgStarterDTal) / DTAL_WEAK_SPAN);
+    const penalty = Math.round(deficitRatio * TEAM_DEFENSE_MAX_PENALTY);
+    score -= penalty;
+    if (penalty >= 8) notes.push('Team defense is genuinely thin across the starting five.');
   }
 
   // Self-sufficient engine + real two-way complements — 2026-08-07, the user's (d) framework:
@@ -508,12 +530,19 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
     notes.push('Starting five rebounds well enough to hold its own on the glass.');
   }
 
+  // 2026-08-13, real D1 human-vote diagnostic: of every fitScore input signal checked
+  // independently against the real 15-roster vote, cap efficiency (talent/FGA) was by far the
+  // strongest (0.521) — stronger than any other fitScore ingredient, and close to `offenseScore`
+  // (0.529) despite fitScore's blended total correlating near zero (0.021) beforehand. It was
+  // capped to the narrowest, most conservative band of any term here (-10/+15) — widened
+  // (doubled) to actually carry the weight this signal earned, rather than clipping most of a
+  // proven-strong real predictor for no evidenced reason.
   const allPlayers = team.roster;
   const totalTalent = allPlayers.reduce((sum, p) => sum + computeTalent(p), 0);
   const totalFga = allPlayers.reduce((sum, p) => sum + p.fga, 0);
   const efficiency = totalFga > 0 ? totalTalent / totalFga : 0;
   const efficiencyDelta = ((efficiency - BASELINE_EFFICIENCY) / BASELINE_EFFICIENCY) * 40;
-  const efficiencyAdj = Math.max(-10, Math.min(15, Math.round(efficiencyDelta)));
+  const efficiencyAdj = Math.max(-20, Math.min(30, Math.round(efficiencyDelta)));
   score += efficiencyAdj;
   if (efficiencyAdj > 3) {
     notes.push('Efficient cap usage: strong talent-per-shot value from your role players.');
@@ -531,8 +560,14 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   // same discipline as `OFFENSE_SCORE_ANCHORS`/etc. above) against real worst/best-constructible
   // rosters under the ACTUAL mechanics above, not a hand-summed analytical bound. Recalibrate
   // (rerun that script, paste its printed anchors here) after changing any term's magnitude.
+  // 2026-08-13: recalibrated after widening the efficiency band and replacing the two binary
+  // rim/perimeter checks with a bidirectional D-TAL term (see those changes' own docstrings
+  // above) — MAX moved 133->150 (the wider efficiency band raises the real achievable ceiling),
+  // MIN held at -44 (the new D-TAL penalty's max magnitude, 20, is smaller than the two removed
+  // binary penalties combined, 25, so the real floor didn't move). Re-run
+  // `scripts/calibrateFitScoreRange.ts` and paste its output here after any future term change.
   const ACHIEVABLE_MIN = -44;
-  const ACHIEVABLE_MAX = 133;
+  const ACHIEVABLE_MAX = 150;
   const rescaled = ((score - ACHIEVABLE_MIN) / (ACHIEVABLE_MAX - ACHIEVABLE_MIN)) * 100;
 
   return { score: Math.max(0, Math.min(100, Math.round(rescaled))), notes, raw: score };

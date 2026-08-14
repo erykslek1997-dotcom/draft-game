@@ -1,6 +1,8 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
-import { peakDraftPool as players } from './peakDraftPool';
+import { draftPool } from '../data/draftPool';
+import { DRAFT_EXPERIMENT } from './draftExperiment';
+import { peakDraftPool } from './peakDraftPool';
 import { randomTeamNames } from './teamNames';
 import {
   ROSTER_SIZE,
@@ -18,6 +20,19 @@ import type { DraftHistoryEntry, Team } from './types';
 export { TEAM_COUNT };
 export const ROUNDS = ROSTER_SIZE; // 9 rounds x TEAM_COUNT teams
 
+/** The exact pool used by the current draft profile. Exported so regression tests exercise
+ * the same full-span/peak-only choice as the browser rather than assuming one of them.
+ *
+ * `pruneToObservedAiPool` used to filter this pool directly, which meant real gameplay
+ * (Commissioner Mode included) was silently restricted to the 216-name AI-calibration test
+ * allowlist instead of the full database -- after 3 rounds of a 16-team draft that left only
+ * ~168 players. The AI-calibration test now builds its own pruned pool locally in
+ * `scripts/analyzeAiAveragePick.ts`; `activeDraftPool` always reflects the real, full player
+ * database (modulo the separate `usePeakOnlyPool` span choice, which is unrelated). */
+const spanModePool = DRAFT_EXPERIMENT.usePeakOnlyPool ? peakDraftPool : draftPool;
+export const activeDraftPool: PlayerSpan[] = spanModePool;
+const players = activeDraftPool;
+
 export interface DraftState {
   teams: Team[];
   draftedIds: Set<string>;
@@ -29,6 +44,10 @@ export interface DraftState {
    * separate flag because `isHuman` still identifies the user's own roster for UI/export and the
    * post-draft span/rotation screens. Cap legality is identical in both modes and for every team. */
   commissionerMode: boolean;
+  /** The candidate pool this draft draws from -- `activeDraftPool` (the full real database) by
+   * default. Only the AI-calibration analysis script overrides this, to a small allowlisted
+   * pool, so that experiment stays isolated from real gameplay instead of shrinking it. */
+  pool: PlayerSpan[];
 }
 
 // --- One-time-per-dataset lookups, built once at module load rather than re-scanning the
@@ -74,7 +93,7 @@ export function createInitialTeams(): Team[] {
   return teams;
 }
 
-export function createDraft(commissionerMode: boolean = false): DraftState {
+export function createDraft(commissionerMode: boolean = false, pool: PlayerSpan[] = players): DraftState {
   return {
     teams: createInitialTeams(),
     draftedIds: new Set(),
@@ -83,6 +102,7 @@ export function createDraft(commissionerMode: boolean = false): DraftState {
     complete: false,
     history: [],
     commissionerMode,
+    pool,
   };
 }
 
@@ -97,7 +117,7 @@ export function currentTeamIndex(state: DraftState): number {
 export function availablePlayers(state: DraftState): PlayerSpan[] {
   let cached = availableCache.get(state);
   if (!cached) {
-    cached = players.filter((p) => !state.draftedIds.has(p.id));
+    cached = state.pool.filter((p) => !state.draftedIds.has(p.id));
     availableCache.set(state, cached);
   }
   return cached;

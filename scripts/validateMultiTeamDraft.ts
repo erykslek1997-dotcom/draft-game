@@ -7,7 +7,7 @@
  * for at team counts the real UI doesn't support), so this measures the AI's own drafting
  * quality/safety, not human-vs-AI dynamics.
  */
-import { draftPool as players } from '../src/data/draftPool';
+import { activeDraftPool as players } from '../src/engine/draft';
 import type { PlayerSpan, Position } from '../src/data/schema';
 import { normalizePlayerName } from '../src/data/schema';
 import { pickForAi } from '../src/engine/aiDrafter';

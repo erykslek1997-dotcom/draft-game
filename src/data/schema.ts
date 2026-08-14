@@ -48,6 +48,32 @@ export interface PlayerSpan {
   defensiveRole: DefensiveRole;
 }
 
+/**
+ * Experimental multi-role output. It intentionally does not live on `PlayerSpan`: keeping the
+ * profile in a separate object makes the first rollout a true shadow model, so existing TAL,
+ * AI, rotation and scoring code cannot start consuming it by accident.
+ */
+export type RoleFitConfidence = 'high' | 'medium' | 'low';
+
+export interface RoleFitScore<Role extends string> {
+  role: Role;
+  score: number;
+  confidence: RoleFitConfidence;
+  evidence: string[];
+}
+
+export interface ShadowRoleProfile {
+  version: 'role-fit-shadow-v1';
+  playerId: string;
+  incumbentOffensiveRole: OffensiveArchetype;
+  incumbentDefensiveRole: DefensiveRole;
+  offensiveFits: RoleFitScore<OffensiveArchetype>[];
+  defensiveFits: RoleFitScore<DefensiveRole>[];
+  proposedOffensiveRoles: RoleFitScore<OffensiveArchetype>[];
+  proposedDefensiveRoles: RoleFitScore<DefensiveRole>[];
+  warnings: string[];
+}
+
 export const POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 
 /**

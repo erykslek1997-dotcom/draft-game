@@ -9,19 +9,7 @@
 import { players } from '../src/data/players';
 import { normalizePlayerName } from '../src/data/schema';
 import { computeTalent } from '../src/engine/talent';
-
-// Rank 1 = GOAT. Source: thinkingbasketball.net Backpicks GOAT list, 2022 podcast-series
-// update (rank order = list position; parenthetical old-ranks in the source are not used here).
-const BACKPICKS_GOAT_2022: string[] = [
-  'LeBron James', 'Kareem Abdul-Jabbar', 'Michael Jordan', 'Bill Russell', 'Shaquille O\'Neal',
-  'Hakeem Olajuwon', 'Tim Duncan', 'Wilt Chamberlain', 'Kevin Garnett', 'Larry Bird',
-  'Magic Johnson', 'Kobe Bryant', 'Karl Malone', 'Oscar Robertson', 'Dirk Nowitzki',
-  'Stephen Curry', 'Chris Paul', 'Jerry West', 'David Robinson', 'Julius Erving',
-  'Kevin Durant', 'Charles Barkley', 'Steve Nash', 'John Stockton', 'Dwyane Wade',
-  'Scottie Pippen', 'Moses Malone', 'Rick Barry', 'Reggie Miller', 'James Harden',
-  'Bob Pettit', 'John Havlicek', 'Jason Kidd', 'Artis Gilmore', 'Patrick Ewing',
-  'Paul Pierce', 'Walt Frazier', 'Elgin Baylor', 'Isiah Thomas', 'Clyde Drexler',
-];
+import { BACKPICKS_GOAT_2022 } from '../src/engine/taylorValidatedNames';
 
 const peakByName = new Map<string, number>();
 for (const p of players) {

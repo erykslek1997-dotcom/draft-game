@@ -333,6 +333,12 @@ const POSITION_OVERRIDES: { name: string; spanLabel: string; position: Position;
   // here (unlike Pierce/Barkley above) because the old primary (PG) is a real, legitimate
   // secondary for him, not a data bug being purged — he genuinely ran point in that stretch too.
   { name: 'James Harden', spanLabel: '2018-20', position: 'SG', keepOldAsSecondary: true },
+  // 2026-08-13, user-reported: Kyrie Irving's 2022-24 span (Dallas, alongside Luka Dončić) is
+  // auto-tagged SG — the only one of his 8 real spans that isn't PG (2011-19 all read PG with no
+  // secondary at all, same as this override leaves it). Same class of bug as Pierce above, not a
+  // Harden-style genuine dual-role split — treated as a purge (no `keepOldAsSecondary`) to match
+  // the rest of his career rather than inventing a secondary tag nothing else in his data has.
+  { name: 'Kyrie Irving', spanLabel: '2022-24', position: 'PG' },
 ];
 
 function applyPositionOverrides(spans: PlayerSpan[]): PlayerSpan[] {
@@ -383,6 +389,10 @@ const PRIMARY_POSITION_RECLASSIFICATIONS: { name: string; from: Position; to: Po
   // more ties at 96-97, not a new class of problem, same "mild, not the PG session's 8-way tie"
   // scale flagged before.
   { name: 'Tim Duncan', from: 'PF', to: 'C' },
+  // 2026-08-12, user's explicit ask: Kyle Korver's real career splits nearly evenly between
+  // auto-tagged SF (10 spans, all with SG as a real secondary) and SG (6 spans) — a genuine
+  // "which position does his whole career belong to" call, same shape as the entries above.
+  { name: 'Kyle Korver', from: 'SF', to: 'SG' },
 ];
 
 function applyPrimaryPositionReclassifications(spans: PlayerSpan[]): PlayerSpan[] {

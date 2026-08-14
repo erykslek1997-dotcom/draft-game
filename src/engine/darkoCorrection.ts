@@ -129,20 +129,31 @@ const MAX_DARKO_BONUS = 9;
  * the full pre-1974 population with positive BPM2 residuals, the uncapped bonus distribution is
  * p90=19.8, p95=22.7 and p99=25.3 component points (`scripts/auditHistoricalTalent.ts`).
  *
- * Use the rounded p99 as the ceiling only when every year in a span predates official stocks.
- * Mixed spans interpolate by their missing-stocks share, avoiding a cliff at 1973-74. This is
- * source/era based, not an old-player or named-player boost; negative residuals retain the same
- * conservative malus below. BPM2 remains a last-resort source and still cannot override real
- * DARKO/RAPTOR/matchup coverage.
+ * The wider cap is also gated by the surviving box-score evidence: it begins to open above 15
+ * defImpact and reaches its full width at 30. That preserves Russell-level defensive evidence
+ * while preventing an ordinary rebound/role profile from receiving a historic rating solely
+ * because the span predates official stocks. Mixed spans also interpolate by their missing-
+ * stocks share, avoiding a cliff at 1973-74. This remains source/profile based, not a named-
+ * player boost; BPM2 is still a last resort behind DARKO/RAPTOR/matchup coverage.
  */
 const FIRST_OFFICIAL_STOCKS_END_YEAR = 1974;
 const MAX_PRE_STOCKS_BPM2_BONUS = 25;
+const PRE_STOCKS_EVIDENCE_FLOOR = 15;
+const PRE_STOCKS_FULL_EVIDENCE = 30;
 
 function maximumDefenseBonus(span: PlayerSpan): number {
   const years = spanEndYears(span.spanLabel);
   if (years.length === 0) return MAX_DARKO_BONUS;
   const missingStocksShare = years.filter((year) => year < FIRST_OFFICIAL_STOCKS_END_YEAR).length / years.length;
-  return MAX_DARKO_BONUS + missingStocksShare * (MAX_PRE_STOCKS_BPM2_BONUS - MAX_DARKO_BONUS);
+  const evidenceRange = PRE_STOCKS_FULL_EVIDENCE - PRE_STOCKS_EVIDENCE_FLOOR;
+  const evidenceFactor = Math.max(
+    0,
+    Math.min(1, (computeDefensiveImpact(span) - PRE_STOCKS_EVIDENCE_FLOOR) / evidenceRange),
+  );
+  return (
+    MAX_DARKO_BONUS +
+    missingStocksShare * evidenceFactor * (MAX_PRE_STOCKS_BPM2_BONUS - MAX_DARKO_BONUS)
+  );
 }
 
 /**

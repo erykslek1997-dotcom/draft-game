@@ -1,48 +1,31 @@
 import type { PlayerSpan } from '../data/schema';
-import playoffPerformanceData from '../data/awards/playoffPerformance.json';
+import playoffCollapseData from '../data/awards/playoffCollapse.json';
 
-const DATA = playoffPerformanceData as Record<string, number>;
+const DATA = playoffCollapseData as Record<string, number>;
 
 /**
- * Flat TAL bonus/penalty from real playoff shooting efficiency (TS%) vs. regular season,
- * relative to the league-wide average drop (playoffs are tougher across the board, so raw
- * zero isn't the right baseline — see MEMORY.md for the full derivation).
+ * 2026-08-12: replaced the old, PBP-shot-derived `playoffPerformance.json` (153/5205 spans,
+ * 2.9% coverage) with `playoffCollapse.json` (3095 spans, ~59%) — see `scripts/buildPlayoffCollapse.ts`
+ * for the full real methodology (real playoff-vs-regular TS% delta, real opponent-DRtg-faced
+ * toughness adjustment, no team win/round-advanced gating). Old file kept as
+ * `playoffPerformance.before.json` for reference, not read by any code. Same underlying real
+ * signal now also feeds `grades.ts`'s `playoffCollapse`-driven tier cap (see that file) for the
+ * elite-tier population this additive term can't move on its own (softCapTalent absorption,
+ * confirmed directly: even a heavily scaled-up malus barely moved TAL for raw values above ~110).
  *
- * **A same-day FG%-only variant (makes/attempts, no free throws) was tried, found to further
- * erode Taylor top-10/GOAT-40 correlation (0.806->0.794, 0.605->0.588) beyond the already
- * user-accepted TS%-based tradeoff, and reverted at the user's explicit "leave it as it was."
- * TS% is the shipped, current metric — don't re-derive FG% again without being asked.**
+ * Flat TAL bonus/penalty from real playoff shooting efficiency (TS%) vs. regular season, per span,
+ * ±5 range. Not gated on team wins/rounds advanced at all (the old mechanism's approach, replaced
+ * specifically because it wasn't — see the 2026-08-12 note above): instead, a real drop is
+ * softened when the player faced genuinely tough opponent defenses that postseason (measured, not
+ * assumed) and left alone otherwise, whether or not the team won. Full method, thresholds and the
+ * two real data sources are documented in `scripts/buildPlayoffCollapse.ts`, the single source of
+ * truth for how `playoffCollapse.json` was computed — this docstring intentionally doesn't
+ * duplicate it.
  *
- * Rise tiers are gated on actual playoff series wins: the raw efficiency excess sets a CEILING
- * tier (platinum/gold/silver), and how far the team actually advanced that postseason (bronze =
- * won round 1, silver = won round 2, gold = won the conference finals, platinum = won it all)
- * determines how much of that ceiling is unlocked — team success can only pull the tag DOWN from
- * the efficiency ceiling, never up. This stops a player from earning a "riser" tag purely by
- * padding efficiency on a team that never won anything (Tracy McGrady was the motivating case).
- * Drop tiers go one level higher too (Platinum -8, excess <= -6.5) for the most extreme real
- * collapses.
- *
- * Drop tiers ARE ALSO shaped by real team success, mirroring the rise side's logic but in the
- * opposite direction — a real efficiency collapse shouldn't read the same whether the team won
- * anyway or flamed out early:
- * - **A true first option (span FGA > 15) who at least reached the Finals is fully exempted**
- *   from any drop tag, regardless of raw TS% excess — their efficiency dip is the cost of
- *   being the focal point of a defense during a real title-contending run, not a competitive
- *   failure. This is a real, general rule, not a named-player carve-out: it independently
- *   exempts Jordan, Kobe, LeBron (several spans), Durant, Curry (two title runs), Jokić (two
- *   title runs), Tatum, Dončić, Malone's two Finals runs, Giannis 2020-22, and both Shai
- *   Gilgeous-Alexander title spans — the whole population of genuine go-to scorers on real
- *   championship-or-Finals teams, not a hand-picked list.
- * - **Any other span whose team still won real playoff success gets its penalty capped**, not
- *   removed: won the title -> capped at Bronze, lost the Finals -> capped at Silver, lost the
- *   conference finals -> capped at Gold, anything less -> the full raw penalty stands. This is
- *   what happens to Jrue Holiday's 2020-22 span (14.1 FGA, below the first-option bar, so not
- *   exempted) — his real TS% collapse was the single most extreme in the whole dataset, but the
- *   2021 title caps it at Bronze rather than the raw Platinum his numbers alone would imply.
- * - Spans with zero playoff series wins that postseason get neither the exemption nor the cap —
- *   a real collapse on a team that also lost immediately stays at its full raw tier.
- * Precomputed from 1996-2024 play-by-play shot/free-throw data (see scripts/awards source),
- * keyed by span id since it's a one-off precomputed tag, not a per-year lookup.
+ * **A same-day FG%-only variant of the old TS%-based mechanism (makes/attempts, no free throws)
+ * was tried, found to further erode Taylor top-10/GOAT-40 correlation (0.806->0.794, 0.605->0.588)
+ * beyond the already user-accepted TS%-based tradeoff, and reverted at the user's explicit "leave
+ * it as it was." TS% (not EFG%, not raw FG%) is the shipped metric here — re-derive only if asked.**
  */
 export function playoffPerformanceBonus(span: PlayerSpan): number {
   return DATA[span.id] ?? 0;
@@ -58,21 +41,22 @@ export type PlayoffPerformanceTier =
   | 'Gold Riser'
   | 'Platinum Riser';
 
-/** The delta value alone uniquely identifies the tier (each of the 8 tiers maps to exactly one
- * of the 8 possible nonzero values), so this is a pure lookup, not a re-derivation of the
- * underlying TS%/series-win logic that produced `playoffPerformance.json` in the first place. */
-const TIER_BY_DELTA: Record<number, PlayoffPerformanceTier> = {
-  [-8]: 'Platinum Dropper',
-  [-6]: 'Gold Dropper',
-  [-4]: 'Silver Dropper',
-  [-2]: 'Bronze Dropper',
-  [2]: 'Bronze Riser',
-  [4]: 'Silver Riser',
-  [6]: 'Gold Riser',
-  [8]: 'Platinum Riser',
-};
+/** 2026-08-12: `playoffCollapse.json`'s values are continuous (±5 range, 0.1 resolution), not the
+ * old file's exact 8-value set — banded by magnitude instead of exact-matched. Bands split the
+ * real ±5 range into even quarters (≤1 / ≤2.5 / ≤4 / ≤5), same 4-tier-per-direction shape as
+ * before. */
+function tierForMagnitude(bonus: number): PlayoffPerformanceTier {
+  const dropper: PlayoffPerformanceTier[] = ['Bronze Dropper', 'Silver Dropper', 'Gold Dropper', 'Platinum Dropper'];
+  const riser: PlayoffPerformanceTier[] = ['Bronze Riser', 'Silver Riser', 'Gold Riser', 'Platinum Riser'];
+  const bands = bonus < 0 ? dropper : riser;
+  const mag = Math.abs(bonus);
+  if (mag <= 1) return bands[0];
+  if (mag <= 2.5) return bands[1];
+  if (mag <= 4) return bands[2];
+  return bands[3];
+}
 
 export function playoffPerformanceTier(span: PlayerSpan): PlayoffPerformanceTier | null {
   const bonus = DATA[span.id];
-  return bonus ? TIER_BY_DELTA[bonus] ?? null : null;
+  return bonus ? tierForMagnitude(bonus) : null;
 }
