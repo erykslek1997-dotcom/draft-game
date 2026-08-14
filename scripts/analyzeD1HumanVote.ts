@@ -14,7 +14,7 @@ import {
   isStrongPerimeterDefender,
 } from '../src/engine/scoring';
 import { primaryStarters } from '../src/engine/rotation';
-import { HIGH_USAGE_ARCHETYPE_WEIGHT } from '../src/data/schema';
+import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../src/data/schema';
 import { computeOffensivePortability } from '../src/engine/portability';
 import { isPlusShooter } from '../src/engine/shooting';
 import type { Team } from '../src/engine/types';
@@ -415,6 +415,8 @@ interface FitSignalRow {
   avgDTal: number;
   totalRpg: number;
   efficiency: number;
+  rimProtectorTagCount: number;
+  perimeterDefenderTagCount: number;
 }
 const fitSignalRows: FitSignalRow[] = [];
 for (const res of results) {
@@ -445,7 +447,32 @@ for (const res of results) {
   const totalTalent = res.roster.reduce((sum, p) => sum + computeTalent(p), 0);
   const totalFga = res.roster.reduce((sum, p) => sum + p.fga, 0);
   const efficiency = totalFga > 0 ? totalTalent / totalFga : 0;
-  fitSignalRows.push({ vote: res.voteRank, usageWeight, usageWeightFga, usageWeightFgaShare, avgOPor, plusShooterCount, avgSpacing, hasRimProtector, hasPerimeterDefender, avgDTal, totalRpg, efficiency });
+  // 2026-08-14 candidate, re-testing the "3" open tension from [[net_rating_model_and_spec_reviews]]:
+  // the real-NBA archetype-composition calibration found rim/perimeter-defender-role MINUTES
+  // SHARE (continuous, whole-roster) carries real signal against real DEFRTG (r≈-0.19 to -0.31)
+  // — a different construction than the binary "at least one impact-gated starter"
+  // hasRimProtector/hasPerimeterDefender above, which was REMOVED from fitScore on 2026-08-13 for
+  // correlating the wrong way against this same D1 vote. Tests the closest fitScore-shaped
+  // analogue: raw (non-impact-gated) role-tag COUNT among the 5 starters, continuous 0-5 instead
+  // of binary presence/absence — before assuming the real-data finding transfers to this sample.
+  const rimProtectorTagCount = starters.filter((p) => RIM_PROTECTOR_ROLES.includes(p.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number])).length;
+  const perimeterDefenderTagCount = starters.filter((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number])).length;
+  fitSignalRows.push({
+    vote: res.voteRank,
+    usageWeight,
+    usageWeightFga,
+    usageWeightFgaShare,
+    avgOPor,
+    plusShooterCount,
+    avgSpacing,
+    hasRimProtector,
+    hasPerimeterDefender,
+    avgDTal,
+    totalRpg,
+    efficiency,
+    rimProtectorTagCount,
+    perimeterDefenderTagCount,
+  });
 }
 const fitVoteArr = fitSignalRows.map((r) => r.vote);
 console.log('\n=== fitScore INPUT SIGNALS vs vote (raw, before any threshold/penalty) ===');
@@ -460,6 +487,38 @@ console.log('has perimeter defender (0/1):', spearman(fitVoteArr, fitSignalRows.
 console.log('avg starter D-TAL:', spearman(fitVoteArr, fitSignalRows.map((r) => r.avgDTal)).toFixed(3));
 console.log('total starter RPG:', spearman(fitVoteArr, fitSignalRows.map((r) => r.totalRpg)).toFixed(3));
 console.log('cap efficiency (talent/FGA):', spearman(fitVoteArr, fitSignalRows.map((r) => r.efficiency)).toFixed(3));
+console.log('rim protector TAG COUNT among starters (continuous 0-5, not impact-gated binary):', spearman(fitVoteArr, fitSignalRows.map((r) => r.rimProtectorTagCount)).toFixed(3));
+console.log('perimeter defender TAG COUNT among starters (continuous 0-5, not impact-gated binary):', spearman(fitVoteArr, fitSignalRows.map((r) => r.perimeterDefenderTagCount)).toFixed(3));
+// Plain Spearman between two arbitrary signals (both ranked the SAME direction, ascending) —
+// distinct from `spearman()` above, which deliberately ranks its two arguments in OPPOSITE
+// directions (vote ascending / metric descending) because it's built specifically for "vote rank
+// vs a score where higher=better." Reusing it here for a signal-vs-signal redundancy check would
+// silently flip the sign.
+function spearmanSameDirection(a: number[], b: number[]): number {
+  const n = a.length;
+  const rankOf = (arr: number[]) => {
+    const idx = arr.map((v, i) => [v, i] as const).sort((x, y) => x[0] - y[0]);
+    const ranks = new Array(n);
+    idx.forEach(([, i], rank) => { ranks[i] = rank + 1; });
+    return ranks;
+  };
+  const rankA = rankOf(a);
+  const rankB = rankOf(b);
+  let d2sum = 0;
+  for (let i = 0; i < n; i++) {
+    const d = rankA[i] - rankB[i];
+    d2sum += d * d;
+  }
+  return 1 - (6 * d2sum) / (n * (n * n - 1));
+}
+console.log(
+  'redundancy check — rimProtectorTagCount vs avgDTal (already in fitScore):',
+  spearmanSameDirection(fitSignalRows.map((r) => r.avgDTal), fitSignalRows.map((r) => r.rimProtectorTagCount)).toFixed(3),
+);
+console.log(
+  'redundancy check — perimeterDefenderTagCount vs avgDTal (already in fitScore):',
+  spearmanSameDirection(fitSignalRows.map((r) => r.avgDTal), fitSignalRows.map((r) => r.perimeterDefenderTagCount)).toFixed(3),
+);
 
 console.log('\n=== raw fitScore signal rows, sorted by vote (outlier check) ===');
 console.log('vote\tavgSpacing\tavgOPor\tusageWeight\tplusShooters\tavgDTal');
