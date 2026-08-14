@@ -18,6 +18,7 @@ import { computeOffensivePortability, computeDefensivePortability } from './port
 import { computeSpacing } from './spacing';
 import { isRimGravityScorer, isSelfSufficientEngine } from './offensiveProfile';
 import { isD1D2D3Player } from './d1d2d3Lookup';
+import { isSixthManProfile } from './sixthMan';
 import { draftPool } from '../data/draftPool';
 import { DRAFT_EXPERIMENT } from './draftExperiment';
 
@@ -331,6 +332,13 @@ interface NeedContext {
    * reading as "covered." Checking the actual current bench split instead measures the real thing
    * being asked for. */
   lacksBenchShotCreator: boolean;
+  /** 2026-08-14, user's own idea (`sixthMan.ts`'s own docstring has the full derivation): a real
+   * instant-offense-off-the-bench profile (good O-TAL, real defensive liability, not a star-level
+   * overall talent) the bench specifically benefits from, distinct from `lacksBenchShotCreator`
+   * above — that one asks for a self-creator ARCHETYPE tag regardless of defense, this one asks
+   * for the actual weak-defense/scoring-specialist STAT profile `isSixthManProfile` measures.
+   * Same "does the current bench already have one" shape as `lacksBenchShotCreator`. */
+  lacksSixthMan: boolean;
 }
 
 /** Only the full-weight archetypes (`HIGH_USAGE_ARCHETYPE_WEIGHT`'s Shot Creator/Slasher, weight
@@ -416,6 +424,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
     hasRimGravityStarter: starterPlayers.some(isRimGravityScorer),
     hasSelfSufficientEngineStarter: starterPlayers.some(isSelfSufficientEngine),
     lacksBenchShotCreator: !roster.some((p) => !starterPlayers.includes(p) && isSelfCreatorArchetype(p)),
+    lacksSixthMan: !roster.some((p) => !starterPlayers.includes(p) && isSixthManProfile(p)),
   };
 }
 
@@ -463,7 +472,22 @@ const HIGH_VOLUME_FGA_THRESHOLD: Record<Position, number> = {
 };
 const ALL_TIME_VOLUME_TALENT_FLOOR = 96;
 const ALL_TIME_VOLUME_OFFENSE_FLOOR = 88;
-const ALL_TIME_VOLUME_DEFENSE_FLOOR = 95;
+/**
+ * 2026-08-14, user-reported (same session as the `grades.ts` C-position tier-cap fix — this is
+ * the second, independently-calibrated occurrence of the identical pattern): Tim Duncan's real
+ * defensive ceiling across his whole career is 94, one point under the old 95 floor here, so his
+ * high-FGA two-way-anchor peak spans (2001-03/2002-04, TAL96, O-TAL 75-79) got NEITHER exemption
+ * path — offense (79) is nowhere near 88, defense (94) missed 95 by exactly one point — and paid
+ * the full non-elite-volume penalty (~8 of the 14-point max) that this gate exists specifically to
+ * spare a genuine all-time anchor from. Measured directly: across 10 simulated drafts this alone
+ * was the dominant reason his average pick (29.6) sat roughly double every real peer in his own
+ * tier-2 legends cohort (Bird/Hakeem/Robinson/Garnett/Jokić/Magic/Durant/Giannis, all avg pick
+ * 6.4-15.2, all correctly exempt via one path or the other). Lowered to 94. Full-archive blast
+ * radius checked before shipping: 3 spans, 2 players (Kareem Abdul-Jabbar 1977-79, Tim Duncan
+ * 2001-03/2002-04) — both genuine two-way-anchor cases, nothing else in the archive sits exactly
+ * on this one-point line.
+ */
+const ALL_TIME_VOLUME_DEFENSE_FLOOR = 94;
 const HIGH_VOLUME_BASE_SCALE = 0.75;
 const HIGH_VOLUME_OFFENSE_REFERENCE = 88;
 const HIGH_VOLUME_OFFENSE_SHORTFALL_SCALE = 0.035;
@@ -574,9 +598,21 @@ const ELITE_TWO_WAY_SLASHER_FGA_FLOOR = 18;
 const ELITE_TWO_WAY_SLASHER_BONUS = 0.8;
 const ELITE_TWO_WAY_PERIMETER_BONUS = 1;
 
+/**
+ * 2026-08-14, user-reported ("Duncan nadal zbyt nisko" — still too low): this bonus is exactly
+ * the "real two-way frontcourt anchor" profile it's named for (TAL>=96, real defense>=91, real
+ * point-forward-level apg>=3.3), but a blanket `offensiveArchetype === 'Post Scorer'` exclusion
+ * (no docstring ever explained why) shut out every Post-Scorer-tagged big regardless of how well
+ * they otherwise fit — Duncan's three 96-TAL spans all clear every other gate. `Post Scorer` bigs
+ * already have their OWN, much stricter two-way path (`eliteTwoWayPeakBonus`'s Post-Scorer
+ * branch, defense>=97 vs this gate's 91) — that path staying separately gated is untouched here;
+ * this only removes the total exclusion from THIS looser gate. Checked full-archive blast radius
+ * before removing: 13 spans, 4 players — Kareem Abdul-Jabbar (7), Duncan (3), Hakeem Olajuwon (2),
+ * David Robinson (1, a different span than his already-qualifying Versatile-Big one) — every one
+ * a real, externally-validated (`taylorValidatedNames.ts`) two-way anchor, not a broad reopening.
+ */
 function eliteTwoWayFrontcourtBonus(p: PlayerSpan): number {
   if (p.primaryPosition !== 'PF' && p.primaryPosition !== 'C') return 0;
-  if (p.offensiveArchetype === 'Post Scorer') return 0;
   if (computeTalent(p) < ELITE_PERIMETER_ENGINE_TALENT_FLOOR) return 0;
   const offensiveTalent = computeOffensiveTalent(p);
   if (offensiveTalent < ELITE_TWO_WAY_FRONTCOURT_OFFENSE_FLOOR) return 0;
@@ -783,6 +819,18 @@ const BENCH_SHOT_CREATOR_BONUS = 1.2;
  * discount against any further stacking — this only softens the specific "team's only ball-dominant
  * guys are all starters" case, not redundancy discounting in general. */
 const BENCH_CREATOR_DISCOUNT_SOFTEN = 0.15;
+
+/**
+ * 2026-08-14, `NeedContext.lacksSixthMan`'s own positive-signal bonus — same flat-not-proportional
+ * shape and same magnitude as `BENCH_SHOT_CREATOR_BONUS` above (a real, already-measured value for
+ * "does the bench have this one specific skill covered"), reused directly rather than picked fresh
+ * since it's the closest existing precedent for the same kind of binary bench-coverage question.
+ * Not independently re-tuned against its own simulation batch the way the bench-shot-creator pair
+ * was — if bench sixth-man coverage measures too low/high in practice, revisit with the same
+ * measurement approach (`scripts/_checkBenchCreatorCoverage.ts`'s pattern) rather than guessing a
+ * new number.
+ */
+const SIXTH_MAN_BONUS = 1.2;
 
 /** Boosts real defensive/two-way value once a self-sufficient engine covers offense alone —
  * the user's own "needs two-way players, not more offensive talent" framing for the Nash case. */
@@ -1066,6 +1114,13 @@ export function pickForAi(
     // `inBenchRound`'s own docstring for why this is round-gated.
     if (inBenchRound && needs.lacksBenchShotCreator && isSelfCreatorArchetype(p)) {
       need += BENCH_SHOT_CREATOR_BONUS;
+    }
+    // 2026-08-14, user's own "Sixth Man" idea: same round-gated positive pull as the bench-shot-
+    // creator bonus above, but toward `isSixthManProfile`'s real weak-defense/scoring-specialist
+    // stat profile instead of an archetype tag — see `NeedContext.lacksSixthMan`'s own docstring
+    // for how the two differ.
+    if (inBenchRound && needs.lacksSixthMan && isSixthManProfile(p)) {
+      need += SIXTH_MAN_BONUS;
     }
     if (DRAFT_EXPERIMENT.d1d2d3Preference && isD1D2D3Player(p)) need += D1D2D3_PREFERENCE_BONUS;
     // 2026-08-14, user's explicit ask after the Jayson Tatum investigation: the AI was valuing

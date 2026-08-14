@@ -16,10 +16,14 @@ import {
   displayTalentForSpan,
   displayNumberForSpan,
   tierRank,
-  tierContextFor,
   type OverallTier,
   type Grade,
 } from '../engine/grades';
+// The sixth-man-aware version of `tierContextFor` — see `tierContextWithSixthMan`'s own docstring
+// for why this lives in `sixthMan.ts` rather than `grades.ts`. Aliased to the same name so every
+// existing call site in this file (and `DraftPoolBrowser.tsx`, which imports it from here) keeps
+// working unchanged and automatically picks up the 'Sixth Man' relabel.
+import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { playoffPerformanceTier, type PlayoffPerformanceTier } from '../engine/playoffPerformanceLookup';
 import { computeDurability, durabilityTier, type DurabilityTier } from '../engine/durability';
 import { careerAveragesFor } from '../engine/careerAverages';
@@ -92,6 +96,7 @@ const OVERALL_TIER_CLASS: Record<OverallTier, string> = {
   'Cigarette Butt': 'rating-cigarette',
   'Bench Warmer': 'rating-bench',
   'Role Player': 'rating-role',
+  'Sixth Man': 'rating-sixthman',
   Starter: 'rating-starter',
   'All-star': 'rating-allstar',
   'All-NBA': 'rating-allnba',
@@ -267,7 +272,7 @@ const GRADE_TIER_CLASS: Record<Grade, string> = {
 };
 
 const TALENT_DOT_CLASS: Record<OverallTier, string> = {
-  'Cigarette Butt': 'at-t1', 'Bench Warmer': 'at-t1', 'Role Player': 'at-t2', Starter: 'at-t3',
+  'Cigarette Butt': 'at-t1', 'Bench Warmer': 'at-t1', 'Role Player': 'at-t2', 'Sixth Man': 'at-t2', Starter: 'at-t3',
   'All-star': 'at-t4', 'All-NBA': 'at-t5', MVP: 'at-t6', 'Greatest peak': 'at-t6', GOAT: 'at-t6',
 };
 

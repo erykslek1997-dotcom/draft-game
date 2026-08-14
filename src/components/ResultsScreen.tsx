@@ -60,6 +60,79 @@ interface TeamFeedback {
 
 const EMPTY_FEEDBACK: TeamFeedback = { userRank: '', rankingNote: '', playerNotes: {}, rotationNote: '', otherNote: '' };
 
+/**
+ * 2026-08-14, results-screen redesign (user's own ask, "wszystko na raz" — full pass in one go):
+ * team-level 0-100 scores (Talent/Offense/Defense/Spacing/Fit/Rotation) get the same 6-band
+ * amber-ladder pill the Draft tab's Overview grid already uses for per-player metrics
+ * (`--at-t1`..`--at-t6` in App.css) — same "how good is this" visual language across the whole
+ * app, rather than inventing a new red/yellow/green scale that would compete with it. A local
+ * component (not DraftBoard.tsx's own unexported `AtDot`) since these are TEAM aggregates, a
+ * different semantic axis from a single player's TAL tier — reusing the CSS variables, not the
+ * player-specific component.
+ */
+function scoreBand(score: number): 1 | 2 | 3 | 4 | 5 | 6 {
+  if (score < 17) return 1;
+  if (score < 33) return 2;
+  if (score < 50) return 3;
+  if (score < 67) return 4;
+  if (score < 83) return 5;
+  return 6;
+}
+
+function ScoreChip({ label, value }: { label: string; value: number }) {
+  return (
+    <span className={`score-chip score-t${scoreBand(value)}`}>
+      <span className="score-chip-label">{label}</span>
+      <span className="score-chip-value">{value}</span>
+    </span>
+  );
+}
+
+/**
+ * `breakdown.notes` (scoring.ts) is a flat `string[]` with no strength/concern tag on either the
+ * type or the data — every note is written as a plain, human-readable sentence. Splitting the
+ * "Why" list into two columns (the user's own ask, motivated by "Nic Claxton underplayed"/"Over
+ * their tier's minutes ceiling" reading identically to genuine praise in one flat bullet list) is
+ * done here as a pure presentation-layer keyword heuristic, NOT a change to `scoring.ts` — every
+ * one of these substrings was taken directly from that file's own `notes.push(...)` call sites
+ * (see its own docstring for the full list), not guessed. Same "profile rule, not a claim of
+ * perfect precision" tradeoff this project already accepts for `isSixthManProfile`/
+ * `highVolumeNonElitePenalty` — a genuinely ambiguous note (rare in practice; scoring.ts's own
+ * notes read as clearly one or the other) falls back to "strength" rather than being silently
+ * dropped.
+ */
+const CONCERN_KEYWORDS = [
+  'no go-to',
+  // 'are redundant' (Starters ARE redundant), not bare 'redundant' — the latter also matched two
+  // genuinely POSITIVE notes via negation ('not redundant offense', 'no redundant isolation usage
+  // needed'), a real false-positive caught in browser verification, not a hypothetical.
+  'are redundant',
+  'compete for touches',
+  'little value',
+  'no plus shooters',
+  'spacing risk',
+  'nobody to punish',
+  'non-existent',
+  'genuinely thin',
+  'liability',
+  'inefficient',
+  'out of natural position',
+  'below natural position',
+  'underplayed',
+  'minutes ceiling',
+  'weak starter',
+  'halved',
+  'overworked',
+  'incomplete',
+  'stall',
+  'cramped',
+];
+
+function isConcernNote(note: string): boolean {
+  const lower = note.toLowerCase();
+  return CONCERN_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): TeamFeedback {
   return record[teamId] ?? EMPTY_FEEDBACK;
 }
@@ -280,6 +353,22 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
   // `buildFeedbackExport`'s own docstring on `correctedRotations`).
   const [correctedRotations, setCorrectedRotations] = useState<Record<string, Rotation>>({});
   const [editingRotationTeamId, setEditingRotationTeamId] = useState<string | null>(null);
+  // 2026-08-14, results-screen redesign: 16 full team cards on one page was the single biggest
+  // usability complaint (scrolling past 15 opponents to see your own team) — every card now
+  // starts collapsed to a one-line summary, except the human's own team, which starts expanded
+  // since that's what a player actually opens this screen to see first. `useState(() => ...)`
+  // (lazy initializer) so this only runs once, not on every render.
+  const [expandedTeamIds, setExpandedTeamIds] = useState<Set<string>>(
+    () => new Set(teams.filter((t) => t.isHuman).map((t) => t.id)),
+  );
+  function toggleExpanded(teamId: string) {
+    setExpandedTeamIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(teamId)) next.delete(teamId);
+      else next.add(teamId);
+      return next;
+    });
+  }
 
   /** The rotation actually shown on this screen for a team — its correction if one was made,
    * otherwise the original auto-assigned one. Every display/render site below should read
@@ -337,6 +426,17 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
           ))}
         </ul>
       </div>
+      <div className="expand-all-controls">
+        <button className="secondary-btn" onClick={() => setExpandedTeamIds(new Set(teams.map((t) => t.id)))}>
+          Rozwiń wszystkie
+        </button>
+        <button
+          className="secondary-btn"
+          onClick={() => setExpandedTeamIds(new Set(teams.filter((t) => t.isHuman).map((t) => t.id)))}
+        >
+          Zwiń wszystkie
+        </button>
+      </div>
       {ranked.map(({ team, breakdown, rank }) => {
         const shownTeam = displayTeam(team);
         const assignments = allAssignments(shownTeam);
@@ -346,152 +446,202 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         const teamHistory = history.filter((h) => h.teamId === team.id).sort((a, b) => a.pickNumber - b.pickNumber);
         const fb = getFeedback(team.id);
         const isEditingRotation = editingRotationTeamId === team.id;
+        const isExpanded = expandedTeamIds.has(team.id);
+        const totalFga = team.roster.reduce((sum, p) => sum + p.fga, 0);
+        const strengths = breakdown.notes.filter((n) => !isConcernNote(n));
+        const concerns = breakdown.notes.filter(isConcernNote);
         return (
-          <div key={team.id} className={`team-result rank-${rank}`}>
-            <h3>
-              #{rank} — {teamLabel(team)} {team.isHuman ? '(You)' : ''} — {breakdown.overall}
-            </h3>
-            <div className="subscores">
-              <span>Talent: {breakdown.talentScore}</span>
-              <span>Offense: {breakdown.offenseScore}</span>
-              <span>Defense: {breakdown.defenseScore}</span>
-              <span>Spacing: {breakdown.spacingScore}</span>
-              <span>Fit: {breakdown.fitScore}</span>
-              <span>Rotation: {breakdown.rotationScore}</span>
-              <span>FGA spent: {team.roster.reduce((sum, p) => sum + p.fga, 0).toFixed(1)}</span>
-            </div>
-            <div className="subscores net-rating-projection" title="Real-NBA-units estimate (points per 100 possessions), fitted against 865 real 1997-2026 team-seasons — a different, informational question from the 0-100 scores above, not a replacement for them.">
-              <span>Projected NBA net rating: {netRating.net >= 0 ? '+' : ''}{netRating.net.toFixed(1)}</span>
-              <span>(ORTG {netRating.offense.toFixed(1)} / DRTG {netRating.defense.toFixed(1)})</span>
-            </div>
-            {leagueEvalRow && (
-              <div className="subscores net-rating-projection" title="Best-of-7 series odds against each of the other 15 rosters, and championship probability from a 20,000-run single-elimination bracket simulation seeded by Final Power Ranking.">
-                <span>Championship odds: {(leagueEvalRow.championshipProbability * 100).toFixed(1)}%</span>
-                <span>Avg series win prob: {(leagueEvalRow.avgSeriesWinProb * 100).toFixed(0)}%</span>
-                <span>
-                  Best matchup: vs {teamLabel(teamById(leagueEvalRow.bestMatchup.opponentId)!)} ({(leagueEvalRow.bestMatchup.seriesWinProb * 100).toFixed(0)}%)
+          <div key={team.id} className={`team-result rank-${rank} ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}>
+            <button className="team-result-header" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
+              <span className="team-result-toggle">{isExpanded ? '▾' : '▸'}</span>
+              <span className="team-result-title">
+                #{rank} — {teamLabel(team)} {team.isHuman ? '(You)' : ''}
+              </span>
+              <ScoreChip label="Overall" value={breakdown.overall} />
+              {!isExpanded && (
+                <span className="team-result-header-mini">
+                  <ScoreChip label="TAL" value={breakdown.talentScore} />
+                  <ScoreChip label="OFF" value={breakdown.offenseScore} />
+                  <ScoreChip label="DEF" value={breakdown.defenseScore} />
+                  {leagueEvalRow && (
+                    <span className="mini-fact">🏆 {(leagueEvalRow.championshipProbability * 100).toFixed(1)}%</span>
+                  )}
                 </span>
-                <span>
-                  Worst matchup: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} ({(leagueEvalRow.worstMatchup.seriesWinProb * 100).toFixed(0)}%)
-                </span>
+              )}
+            </button>
+            {isExpanded && (
+              <div className="team-result-body">
+                <div className="subscores">
+                  <ScoreChip label="Talent" value={breakdown.talentScore} />
+                  <ScoreChip label="Offense" value={breakdown.offenseScore} />
+                  <ScoreChip label="Defense" value={breakdown.defenseScore} />
+                  <ScoreChip label="Spacing" value={breakdown.spacingScore} />
+                  <ScoreChip label="Fit" value={breakdown.fitScore} />
+                  <ScoreChip label="Rotation" value={breakdown.rotationScore} />
+                  <span className="fga-spent">FGA spent: {totalFga.toFixed(1)} / 100.9</span>
+                </div>
+                <div
+                  className="subscores net-rating-projection"
+                  title="Real-NBA-units estimate (points per 100 possessions), fitted against 865 real 1997-2026 team-seasons — a different, informational question from the 0-100 scores above, not a replacement for them."
+                >
+                  <span>
+                    Projected NBA net rating: {netRating.net >= 0 ? '+' : ''}
+                    {netRating.net.toFixed(1)}
+                  </span>
+                  <span>
+                    (ORTG {netRating.offense.toFixed(1)} / DRTG {netRating.defense.toFixed(1)})
+                  </span>
+                </div>
+                {leagueEvalRow && (
+                  <div
+                    className="subscores net-rating-projection"
+                    title="Best-of-7 series odds against each of the other 15 rosters, and championship probability from a 20,000-run single-elimination bracket simulation seeded by Final Power Ranking."
+                  >
+                    <span>Championship odds: {(leagueEvalRow.championshipProbability * 100).toFixed(1)}%</span>
+                    <span>Avg series win prob: {(leagueEvalRow.avgSeriesWinProb * 100).toFixed(0)}%</span>
+                    <span>
+                      Best matchup: vs {teamLabel(teamById(leagueEvalRow.bestMatchup.opponentId)!)} (
+                      {(leagueEvalRow.bestMatchup.seriesWinProb * 100).toFixed(0)}%)
+                    </span>
+                    <span>
+                      Worst matchup: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} (
+                      {(leagueEvalRow.worstMatchup.seriesWinProb * 100).toFixed(0)}%)
+                    </span>
+                  </div>
+                )}
+                {isEditingRotation ? (
+                  <RotationBuilder
+                    roster={team.roster}
+                    initialRotation={correctedRotations[team.id] ?? team.rotation}
+                    onConfirm={(rotation) => {
+                      setCorrectedRotations((prev) => ({ ...prev, [team.id]: rotation }));
+                      setEditingRotationTeamId(null);
+                    }}
+                    onCancel={() => setEditingRotationTeamId(null)}
+                  />
+                ) : (
+                  <button className="secondary-btn" onClick={() => setEditingRotationTeamId(team.id)}>
+                    {correctedRotations[team.id] ? '✏️ Edit corrected rotation' : '✏️ Correct rotation'}
+                  </button>
+                )}
+                <div className="lineup">
+                  <div>
+                    <strong>Rotation</strong>
+                    <ul className="rotation-slot-groups">
+                      {STARTER_SLOTS.map((slot) => {
+                        const entries = assignments.filter((a) => a.slot === slot).sort((a, b) => b.minutes - a.minutes);
+                        return (
+                          <li key={slot} className="rotation-slot-group">
+                            <span className="rotation-slot-label">{slot}</span>
+                            <ul className="rotation-slot-entries">
+                              {entries.map((e) => (
+                                <li key={e.player.id} className="player-row">
+                                  <span className="player-row-name">
+                                    {e.player.playerName} ({e.player.spanLabel}) [{naturalPosition(e.player.playerName)}]
+                                  </span>
+                                  <span className="player-row-meta">
+                                    <span className="mini-fact">{e.minutes} min</span>
+                                    <span className="mini-fact">FGA {e.player.fga.toFixed(1)}</span>
+                                    <ScoreChip label="TAL" value={computeTalent(e.player)} />
+                                  </span>
+                                  <FeedbackToggle
+                                    entry={fb.playerNotes[e.player.id]}
+                                    onChange={(entry) => setPlayerFeedback(team.id, e.player.id, entry)}
+                                    placeholder="Co jest nie tak z tym graczem?"
+                                  />
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                  <div>
+                    <strong>Bench</strong>
+                    <ul className="rotation-slot-entries">
+                      {bench.map(({ player, minutes }) => (
+                        <li key={player.id} className="player-row">
+                          <span className="player-row-name">
+                            {player.playerName} ({player.spanLabel}) [{naturalPosition(player.playerName)}]
+                          </span>
+                          <span className="player-row-meta">
+                            <span className="mini-fact">{minutes} min</span>
+                            <span className="mini-fact">FGA {player.fga.toFixed(1)}</span>
+                            <ScoreChip label="TAL" value={computeTalent(player)} />
+                          </span>
+                          <FeedbackToggle
+                            entry={fb.playerNotes[player.id]}
+                            onChange={(entry) => setPlayerFeedback(team.id, player.id, entry)}
+                            placeholder="Co jest nie tak z tym graczem?"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                <div className="notes notes-split">
+                  <div className="notes-column notes-strengths">
+                    <strong>✓ Strengths</strong>
+                    <ul>
+                      {strengths.map((note, i) => (
+                        <li key={i}>{note}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  {concerns.length > 0 && (
+                    <div className="notes-column notes-concerns">
+                      <strong>⚠ Concerns</strong>
+                      <ul>
+                        {concerns.map((note, i) => (
+                          <li key={i}>{note}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                <div className="draft-order">
+                  <strong>Draft Order</strong>
+                  <ol>
+                    {teamHistory.map((entry) => {
+                      const p = playerById(entry.playerId);
+                      return (
+                        <li key={entry.pickNumber}>
+                          <span className="history-pick">#{entry.pickNumber}</span> {p ? `${p.playerName} (${p.spanLabel})` : entry.playerId}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+                <div className="team-feedback">
+                  <strong>Feedback</strong>
+
+                  <p className="player-notes-hint">Konkretni gracze: kliknij ✓/✗ przy graczu w Rotation/Bench powyżej.</p>
+
+                  <div className="feedback-field">
+                    <label>Uwagi do rotacji</label>
+                    <textarea
+                      className="feedback-textarea"
+                      rows={2}
+                      placeholder="Np. kto powinien grać więcej/mniej minut..."
+                      value={fb.rotationNote}
+                      onChange={(e) => patchFeedback(team.id, { rotationNote: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="feedback-field">
+                    <label>Inne uwagi</label>
+                    <textarea
+                      className="feedback-textarea"
+                      rows={2}
+                      placeholder="Cokolwiek innego..."
+                      value={fb.otherNote}
+                      onChange={(e) => patchFeedback(team.id, { otherNote: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
             )}
-            {isEditingRotation ? (
-              <RotationBuilder
-                roster={team.roster}
-                initialRotation={correctedRotations[team.id] ?? team.rotation}
-                onConfirm={(rotation) => {
-                  setCorrectedRotations((prev) => ({ ...prev, [team.id]: rotation }));
-                  setEditingRotationTeamId(null);
-                }}
-                onCancel={() => setEditingRotationTeamId(null)}
-              />
-            ) : (
-              <button className="secondary-btn" onClick={() => setEditingRotationTeamId(team.id)}>
-                {correctedRotations[team.id] ? '✏️ Edit corrected rotation' : '✏️ Correct rotation'}
-              </button>
-            )}
-            <div className="lineup">
-              <div>
-                <strong>Rotation</strong>
-                <ul className="rotation-slot-groups">
-                  {STARTER_SLOTS.map((slot) => {
-                    const entries = assignments
-                      .filter((a) => a.slot === slot)
-                      .sort((a, b) => b.minutes - a.minutes);
-                    return (
-                      <li key={slot} className="rotation-slot-group">
-                        <span className="rotation-slot-label">{slot}</span>
-                        <ul className="rotation-slot-entries">
-                          {entries.map((e) => (
-                            <li key={e.player.id}>
-                              <span>
-                                {e.player.playerName} ({e.player.spanLabel}) [{naturalPosition(e.player.playerName)}] - {e.minutes} min —
-                                FGA {e.player.fga.toFixed(1)}, TAL {computeTalent(e.player)}
-                              </span>
-                              <FeedbackToggle
-                                entry={fb.playerNotes[e.player.id]}
-                                onChange={(entry) => setPlayerFeedback(team.id, e.player.id, entry)}
-                                placeholder="Co jest nie tak z tym graczem?"
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-              <div>
-                <strong>Bench</strong>
-                <ul className="rotation-slot-entries">
-                  {bench.map(({ player, minutes }) => (
-                    <li key={player.id}>
-                      <span>
-                        {player.playerName} ({player.spanLabel}) [{naturalPosition(player.playerName)}] — {minutes} min — FGA{' '}
-                        {player.fga.toFixed(1)}, TAL {computeTalent(player)}
-                      </span>
-                      <FeedbackToggle
-                        entry={fb.playerNotes[player.id]}
-                        onChange={(entry) => setPlayerFeedback(team.id, player.id, entry)}
-                        placeholder="Co jest nie tak z tym graczem?"
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <div className="notes">
-              <strong>Why:</strong>
-              <ul>
-                {breakdown.notes.map((note, i) => (
-                  <li key={i}>{note}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="draft-order">
-              <strong>Draft Order</strong>
-              <ol>
-                {teamHistory.map((entry) => {
-                  const p = playerById(entry.playerId);
-                  return (
-                    <li key={entry.pickNumber}>
-                      <span className="history-pick">#{entry.pickNumber}</span>{' '}
-                      {p ? `${p.playerName} (${p.spanLabel})` : entry.playerId}
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-            <div className="team-feedback">
-              <strong>Feedback</strong>
-
-              <p className="player-notes-hint">
-                Konkretni gracze: kliknij ✓/✗ przy graczu w Rotation/Bench powyżej.
-              </p>
-
-              <div className="feedback-field">
-                <label>Uwagi do rotacji</label>
-                <textarea
-                  className="feedback-textarea"
-                  rows={2}
-                  placeholder="Np. kto powinien grać więcej/mniej minut..."
-                  value={fb.rotationNote}
-                  onChange={(e) => patchFeedback(team.id, { rotationNote: e.target.value })}
-                />
-              </div>
-
-              <div className="feedback-field">
-                <label>Inne uwagi</label>
-                <textarea
-                  className="feedback-textarea"
-                  rows={2}
-                  placeholder="Cokolwiek innego..."
-                  value={fb.otherNote}
-                  onChange={(e) => patchFeedback(team.id, { otherNote: e.target.value })}
-                />
-              </div>
-            </div>
           </div>
         );
       })}

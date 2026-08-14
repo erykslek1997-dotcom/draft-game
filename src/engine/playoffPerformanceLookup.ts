@@ -1,4 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
 import playoffCollapseData from '../data/awards/playoffCollapse.json';
 
 const DATA = playoffCollapseData as Record<string, number>;
@@ -27,7 +28,49 @@ const DATA = playoffCollapseData as Record<string, number>;
  * beyond the already user-accepted TS%-based tradeoff, and reverted at the user's explicit "leave
  * it as it was." TS% (not EFG%, not raw FG%) is the shipped metric here — re-derive only if asked.**
  */
+
+/**
+ * 2026-08-14, user's direct ask, extended same-day from a display-only badge to the REAL number:
+ * force a genuine Platinum-Riser-magnitude playoff bonus for specific (player, span) pairs whose
+ * real, measured value (this file's own TS%-delta methodology above) doesn't support it. User's
+ * own stated reasoning: box-score-derived stats sometimes can't capture a player's real playoff
+ * impact — same category of deliberate, asked-for override as `talent.ts`'s own Curry gravity cap
+ * / Magic SF correction / Durant SF-defense exclusion / CP3 two-way exemption, just applied to
+ * this one signal instead of the main formula. This overrides the REAL number `DATA[span.id]`
+ * would otherwise return — it now feeds `talent.ts`'s additive TAL term and `grades.ts`'s
+ * playoffCollapse-driven tier-cap gate exactly like a real measured value would.
+ * `playoffPerformanceTier` below derives its badge from this same overridden number, same as it
+ * does for every real span — no separate badge-only override needed anymore.
+ *
+ * +4.5 (not the literal +5 ceiling) chosen as a clear, comfortably-Platinum-band value, same for
+ * all six spans rather than reverse-engineering an individual magnitude per player.
+ *
+ * Real measured values on record at the time each was added, for the honest paper trail:
+ * - Haliburton 2023-25: -0.6 (Bronze Dropper)
+ * - Brunson 2024-26: -0.3 (Bronze Dropper)
+ * - Anunoby 2024-26: +0.4 (Bronze Riser)
+ * - Nowitzki 2009-11: +0.3 (Bronze Riser), 2010-12: -0.1 (Bronze Dropper) — two separate spans,
+ *   both asked for in the same request
+ * - Towns 2024-26: +0.4 (Bronze Riser)
+ */
+const NAMED_RISER_OVERRIDE_VALUE = 4.5;
+const NAMED_RISER_EXCEPTIONS: ReadonlySet<string> = new Set(
+  [
+    { name: 'Tyrese Haliburton', spanLabel: '2023-25' },
+    { name: 'Jalen Brunson', spanLabel: '2024-26' },
+    { name: 'OG Anunoby', spanLabel: '2024-26' },
+    { name: 'Dirk Nowitzki', spanLabel: '2009-11' },
+    { name: 'Dirk Nowitzki', spanLabel: '2010-12' },
+    { name: 'Karl-Anthony Towns', spanLabel: '2024-26' },
+  ].map((e) => `${normalizePlayerName(e.name)}|${e.spanLabel}`),
+);
+
+function hasNamedRiserException(span: PlayerSpan): boolean {
+  return NAMED_RISER_EXCEPTIONS.has(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`);
+}
+
 export function playoffPerformanceBonus(span: PlayerSpan): number {
+  if (hasNamedRiserException(span)) return NAMED_RISER_OVERRIDE_VALUE;
   return DATA[span.id] ?? 0;
 }
 
@@ -57,6 +100,6 @@ function tierForMagnitude(bonus: number): PlayoffPerformanceTier {
 }
 
 export function playoffPerformanceTier(span: PlayerSpan): PlayoffPerformanceTier | null {
-  const bonus = DATA[span.id];
+  const bonus = playoffPerformanceBonus(span);
   return bonus ? tierForMagnitude(bonus) : null;
 }

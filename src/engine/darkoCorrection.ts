@@ -141,19 +141,43 @@ const MAX_PRE_STOCKS_BPM2_BONUS = 25;
 const PRE_STOCKS_EVIDENCE_FLOOR = 15;
 const PRE_STOCKS_FULL_EVIDENCE = 30;
 
+/**
+ * 2026-08-14, user's own proposal (Kareem-vs-Duncan comparison): a span with real DARKO/RAPTOR/
+ * matchup tracking-data confirmation and a span backed by BPM2 alone (a historical box-score
+ * estimate, not real plus-minus) were hitting the exact same +9 cap — Duncan's 2002-04 excess is
+ * confirmed by TWO independent real sources (DDPM +5, RAPTOR +4.35); Kareem's 1975-77 excess is
+ * BPM2-only (no DARKO/RAPTOR/matchup coverage exists that far back) yet saturated the identical
+ * ceiling. User's framing: "a small minus for lacking precise stats" is fair. Scoped to spans
+ * fully WITHIN the stocks-tracked era (`missingStocksShare === 0`) only — a pre-1974 span is
+ * ALSO BPM2-only, but that's the pre-stocks widening case just below (a genuinely different
+ * problem: whole stat categories never existed, not just no modern plus-minus confirmation), so
+ * this reduction and that widening are mutually exclusive, never both applied to the same span.
+ * Full-archive blast radius checked before shipping (162 spans capped between the new 7.5 and the
+ * old 9, some already below 7.5 so genuinely unaffected) — real Taylor top-10/GOAT-40 validation
+ * re-run after, not just eyeballed on the two motivating names.
+ */
+const UNCONFIRMED_BPM2_ONLY_MAX_BONUS = 7.5;
+
+function hasRealTrackingCoverage(span: PlayerSpan): boolean {
+  return Boolean(ddpmCoverageForSpan(span) || raptorCoverageForSpan(span) || matchupCoverageForSpan(span));
+}
+
 function maximumDefenseBonus(span: PlayerSpan): number {
   const years = spanEndYears(span.spanLabel);
   if (years.length === 0) return MAX_DARKO_BONUS;
   const missingStocksShare = years.filter((year) => year < FIRST_OFFICIAL_STOCKS_END_YEAR).length / years.length;
-  const evidenceRange = PRE_STOCKS_FULL_EVIDENCE - PRE_STOCKS_EVIDENCE_FLOOR;
-  const evidenceFactor = Math.max(
-    0,
-    Math.min(1, (computeDefensiveImpact(span) - PRE_STOCKS_EVIDENCE_FLOOR) / evidenceRange),
-  );
-  return (
-    MAX_DARKO_BONUS +
-    missingStocksShare * evidenceFactor * (MAX_PRE_STOCKS_BPM2_BONUS - MAX_DARKO_BONUS)
-  );
+  if (missingStocksShare > 0) {
+    const evidenceRange = PRE_STOCKS_FULL_EVIDENCE - PRE_STOCKS_EVIDENCE_FLOOR;
+    const evidenceFactor = Math.max(
+      0,
+      Math.min(1, (computeDefensiveImpact(span) - PRE_STOCKS_EVIDENCE_FLOOR) / evidenceRange),
+    );
+    return (
+      MAX_DARKO_BONUS +
+      missingStocksShare * evidenceFactor * (MAX_PRE_STOCKS_BPM2_BONUS - MAX_DARKO_BONUS)
+    );
+  }
+  return hasRealTrackingCoverage(span) ? MAX_DARKO_BONUS : UNCONFIRMED_BPM2_ONLY_MAX_BONUS;
 }
 
 /**

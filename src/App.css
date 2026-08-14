@@ -715,6 +715,13 @@ select {
   background: #f5f0d0;
   color: #7a6a12;
 }
+/* Sixth Man — deliberately NOT another rung on the grey->gold ladder above (a role description,
+   not a power ranking, same reasoning the playoff Riser/Dropper badges use their own fully
+   separate red/green palette): a warm terracotta that doesn't sit anywhere else in this ladder. */
+.rating-sixthman {
+  background: #ffe3d6;
+  color: #c1440e;
+}
 .rating-starter {
   background: #e6f2e2;
   color: #3a7a3f;
@@ -1079,11 +1086,97 @@ select {
   margin: 0 auto;
 }
 
+/* 2026-08-14, results-screen redesign: a 6-band amber ramp for TEAM-level 0-100 scores
+   (Talent/Offense/Defense/Spacing/Fit/Rotation/Overall/per-player TAL-in-a-row), same warm
+   grey->gold philosophy as `.rating-*`'s player-tier ladder but its own literal palette rather
+   than reusing `--at-t1`..`--at-t6` — those are deliberately scoped to `.at-shell` only (see that
+   section's own header comment: "so it can roll out panel-by-panel... ResultsScreen... untouched"
+   ), and this screen hasn't been migrated into that shell. */
+.score-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.score-chip-label {
+  font-weight: 600;
+  opacity: 0.85;
+}
+.score-chip-value {
+  font-weight: 700;
+}
+.score-t1 { background: #ece9e6; color: #6e6b64; }
+.score-t2 { background: #f3e9d8; color: #8a6a3a; }
+.score-t3 { background: #f7e6c0; color: #7a5a15; }
+.score-t4 { background: #f0d488; color: #6b4d0a; }
+.score-t5 { background: #e0b354; color: #4a3400; }
+.score-t6 { background: #c98f2a; color: #ffffff; font-weight: 700; }
+
+@media (prefers-color-scheme: dark) {
+  .score-t1 { background: #2c2b28; color: #b3b0a8; }
+  .score-t2 { background: #3a3020; color: #d3ac6e; }
+  .score-t3 { background: #4a3a18; color: #e8c476; }
+  .score-t4 { background: #5c4712; color: #f2d688; }
+  .score-t5 { background: #745a12; color: #ffe9a8; }
+  .score-t6 { background: #a5780f; color: #fff6e0; }
+}
+
 .team-result {
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 14px 18px;
-  margin-bottom: 14px;
+  padding: 0;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.team-result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.team-result-header:hover {
+  background: var(--panel-hover, rgba(0, 0, 0, 0.03));
+}
+.team-result-toggle {
+  color: var(--accent);
+  font-size: 12px;
+  width: 10px;
+}
+.team-result-title {
+  font-weight: 700;
+  flex: 1;
+}
+.team-result-header-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mini-fact {
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.team-result-body {
+  padding: 4px 18px 14px;
+  border-top: 1px solid var(--border);
+}
+.expand-all-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .team-result.rank-1 {
@@ -1093,15 +1186,21 @@ select {
 
 .subscores {
   display: flex;
+  align-items: center;
   /* Wraps because this row grew to seven items (Talent/Offense/Defense/Spacing/Durability/Fit/
      Rotation). Without it flex forces them onto one line and they overflow the card on a narrow
      screen — the same way .player-group-header clipped its right-hand stats before it was given
      its own overflow handling. */
   flex-wrap: wrap;
-  gap: 6px 16px;
+  gap: 6px 8px;
   font-size: 13px;
   color: var(--text);
   margin-bottom: 10px;
+}
+.fga-spent {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-left: 4px;
 }
 
 /* Deliberately visually distinct from .subscores above — a real-NBA-units estimate (points per
@@ -1144,11 +1243,44 @@ select {
   padding: 2px 0 2px 12px;
   flex-wrap: wrap;
 }
+.player-row-name {
+  flex: 1 1 auto;
+  min-width: 140px;
+}
+.player-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
 .notes ul {
   margin: 4px 0 0;
   padding-left: 18px;
   font-size: 13px;
+}
+/* 2026-08-14, results-screen redesign: `breakdown.notes` (scoring.ts) is a flat string list with
+   praise ("Clean creation hierarchy...") and real warnings ("...underplayed", "...over their
+   tier's minutes ceiling") reading identically before this — see `isConcernNote`'s own docstring
+   in ResultsScreen.tsx for the keyword split. Two columns so a genuine concern can't hide inside
+   a wall of praise; single column (concerns hidden entirely) when there simply are none. */
+.notes-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 16px;
+}
+.notes-strengths strong {
+  color: #2f7d3a;
+}
+.notes-concerns strong {
+  color: #b3540c;
+}
+@media (prefers-color-scheme: dark) {
+  .notes-strengths strong {
+    color: #7fd68a;
+  }
+  .notes-concerns strong {
+    color: #f0a868;
+  }
 }
 
 .draft-order ol {

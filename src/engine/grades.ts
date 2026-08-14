@@ -175,6 +175,7 @@ export type OverallTier =
   | 'All-NBA'
   | 'All-star'
   | 'Starter'
+  | 'Sixth Man'
   | 'Role Player'
   | 'Bench Warmer'
   | 'Cigarette Butt';
@@ -233,6 +234,7 @@ const TIER_ORDER: OverallTier[] = [
   'Cigarette Butt',
   'Bench Warmer',
   'Role Player',
+  'Sixth Man',
   'Starter',
   'All-star',
   'All-NBA',
@@ -286,6 +288,33 @@ const NAMED_TIER_EXCEPTIONS: ReadonlySet<string> = new Set(
 function hasNamedTierException(playerName?: string, spanLabel?: string): boolean {
   if (!playerName || !spanLabel) return false;
   return NAMED_TIER_EXCEPTIONS.has(`${normalizePlayerName(playerName)}|${spanLabel}`);
+}
+
+/**
+ * 2026-08-14, user-reported: Andrei Kirilenko's 2004-06 span (SF, O-TAL D+/62, D-TAL literal
+ * S/99) displays MVP on defense alone — SF's own `tierCaps` case (below) has exactly one rule
+ * (All-NBA needs A- on at least one side), no MVP-tier offense floor at all, unlike C's more
+ * layered two-way rules.
+ *
+ * A general "SF needs B+ offense to reach MVP" rule was tried first and rejected on blast radius:
+ * full archive, 25 spans, sweeping in real, externally-validated two-way wing peaks whose own
+ * defense sits in the same S/A+ band as Kirilenko's and can't be told apart from his on grade
+ * alone — Scottie Pippen (7 spans), Julius Erving (5), Kawhi 2014-16, Giannis 2016-18, Larry Bird,
+ * Paul George, Grant Hill, Elgin Baylor, Jimmy Butler, Paul Pierce. Named downcap instead, same
+ * shape as `NAMED_TIER_EXCEPTIONS` above but in the opposite direction (forces a tier DOWN rather
+ * than bypassing a cap) — the same "scoped to exactly the one span asked about, not a new general
+ * rule" reasoning as `talent.ts`'s own Durant SF-defense-cap exclusion / CP3 two-way exemption.
+ */
+const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
+  [{ name: 'Andrei Kirilenko', spanLabel: '2004-06', cap: 'All-NBA' as OverallTier }].map((e) => [
+    `${normalizePlayerName(e.name)}|${e.spanLabel}`,
+    e.cap,
+  ]),
+);
+
+function namedTierDowncap(playerName?: string, spanLabel?: string): OverallTier | undefined {
+  if (!playerName || !spanLabel) return undefined;
+  return NAMED_TIER_DOWNCAPS.get(`${normalizePlayerName(playerName)}|${spanLabel}`);
 }
 
 function tierCaps(
@@ -493,6 +522,16 @@ export interface TierGateContext {
    * gates the TIER rather than the number). Left optional for the same reason as the other
    * context fields: synthetic/validation contexts default to no signal (0). */
   playoffCollapse?: number;
+  /** 2026-08-14, user's own "Sixth Man" tag idea (`sixthMan.ts`'s own docstring has the full
+   * derivation/thresholds) — a real instant-offense-off-the-bench profile, deliberately computed
+   * OUTSIDE this file (`sixthMan.ts` imports `offensiveGrade`/`defensiveGrade` FROM here, so this
+   * file importing back from `sixthMan.ts` would be the exact import cycle `portability.ts`'s own
+   * docstring already warns about) — every real UI call site sets it by calling
+   * `isSixthManProfile(span)` itself; left optional/undefined-safe so synthetic/validation
+   * contexts and `aiDrafter.ts`'s own `tierContextFor` calls (which don't need the display label)
+   * are unaffected. When true, overrides the computed tier to 'Sixth Man' — a role description,
+   * not a power ranking, so it does NOT go through the normal `stricterTier` cap-folding above. */
+  isSixthMan?: boolean;
 }
 
 /**
@@ -579,6 +618,8 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   if (playoffCollapse <= PLAYOFF_COLLAPSE_ALL_NBA_CAP_THRESHOLD) caps.push('All-NBA');
   else if (playoffCollapse <= PLAYOFF_COLLAPSE_MVP_CAP_THRESHOLD) caps.push('MVP');
   if (ctx.spanLabel && isUnvalidatedPre1976Span(ctx.spanLabel, ctx.playerName)) caps.push('All-NBA');
+  const downcap = namedTierDowncap(ctx.playerName, ctx.spanLabel);
+  if (downcap) caps.push(downcap);
   const capped = caps.reduce((tier, cap) => stricterTier(tier, cap), base);
   // GOAT is a RAISE, deliberately the only exception to this function's own "caps only ever
   // lower a tier" rule (see every other case above) — gated on already having earned "Greatest
@@ -586,6 +627,10 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   if (capped === 'Greatest peak' && ctx.playerName && GOAT_NAMES.has(normalizePlayerName(ctx.playerName))) {
     return 'GOAT';
   }
+  // 'Sixth Man' is a role RELABEL, not a rank — same "independent of the cap-folding above"
+  // shape as the GOAT raise, just never able to conflict with it in practice (`isSixthManProfile`
+  // requires TAL<80, GOAT requires 'Greatest peak' i.e. TAL>=94 first).
+  if (ctx.isSixthMan) return 'Sixth Man';
   return capped;
 }
 
@@ -596,6 +641,10 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
  * so it needs its own explicit case rather than falling through the floor lookup. */
 function tierCeiling(tier: OverallTier): number {
   if (tier === 'GOAT') return Infinity;
+  // Not in `OVERALL_TIER_FLOORS` (same reason GOAT isn't — it's a relabel, not a rank on that
+  // ladder). `isSixthManProfile`'s own TAL<80 gate already guarantees the real number never
+  // needs clamping here — 79 is a safety ceiling, not an active clamp in practice.
+  if (tier === 'Sixth Man') return 79;
   const idx = OVERALL_TIER_FLOORS.findIndex(([, name]) => name === tier);
   const next = OVERALL_TIER_FLOORS[idx + 1];
   return next ? next[0] - 1 : Infinity;
