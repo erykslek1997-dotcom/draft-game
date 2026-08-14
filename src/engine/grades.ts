@@ -2,6 +2,8 @@ import type { Position, PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import {
+  computeTalent,
+  computeOffensiveTalent,
   computeUncappedOffensiveTalent,
   computeDefensiveTalent,
   rawUncappedTalent,
@@ -10,6 +12,7 @@ import {
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { spanEndYears } from './era';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
+import { playoffPerformanceBonus } from './playoffPerformanceLookup';
 
 /**
  * Letter-grade display for O-TAL/D-TAL, purely a UI presentation layer over the existing
@@ -420,10 +423,19 @@ function tierCaps(
       //   and the first three already reach Greatest peak via other spans regardless, so Wemby is
       //   the real beneficiary, not a new blanket relaxation.
       const dtalIsS = dtalGrade === 'S';
-      const dtalIsElite = gradeAtLeast(dtalGrade, 'A+');
       const cTwoWayElite = gradeAtLeast(otalGrade, 'B') && gradeAtLeast(dtalGrade, 'A');
       if (!gradeAtLeast(otalGrade, 'A-') && !dtalIsS && !cTwoWayElite) caps.push('MVP');
-      if (!gradeAtLeast(otalGrade, 'B-') && !dtalIsElite) caps.push('All-NBA');
+      // 2026-08-14, user-reported (post the `aiDrafter.ts` tier-cap wiring, `displayTalentForSpan`
+      // now feeding the AI's own valuation, not just a UI badge): this All-NBA gate's own defense
+      // bypass used to be pinned to literal A+ (>=95, the same Howard-era 2026-08-08 threshold the
+      // MVP->Greatest-peak gate above still uses on `dtalIsS`/`cTwoWayElite`), while Tim Duncan's
+      // real defensive ceiling across his whole career tops out at 94 (A) — one point short — so
+      // his declining-offense/elite-defense spans (2003-05 raw MVP-tier TAL 93, 2005-07 raw 89) got
+      // capped to All-NBA even though he's as clear a "genuinely elite anchor" case as this bypass
+      // is meant to catch. Relaxed to A (>=90) for THIS gate specifically — deliberately NOT
+      // touching the MVP->Greatest-peak gate above, which keeps its own literal-A+/S bar.
+      const dtalEliteForAllNbaGate = gradeAtLeast(dtalGrade, 'A');
+      if (!gradeAtLeast(otalGrade, 'B-') && !dtalEliteForAllNbaGate) caps.push('All-NBA');
       // 2026-08-05 follow-up: a center with neither side reaching a real B+ doesn't have a
       // standout case for MVP+ either, even if their OTAL alone still clears the B- floor above —
       // caught DeMarcus Cousins (2016-18: OTAL B/77, DTAL C/60 — decent both ways, elite at
@@ -634,4 +646,29 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
 export function displayNumberForSpan(span: PlayerSpan, ctx: TierGateContext): number | string {
   if (overallTierForSpan(ctx) !== 'GOAT') return displayTalentForSpan(ctx);
   return rawUncappedTalent(span) > 100 ? '100+' : rawUncappedTalent(span);
+}
+
+/**
+ * Builds a span's real `TierGateContext` — moved here from `DraftBoard.tsx` (2026-08-14, the
+ * `ELITE_TALENT_FGA_PENALTY_DAMPENING`/Tatum investigation) so `aiDrafter.ts` (a pure engine
+ * file) can compute a real tier-capped value for a draft candidate without importing from a
+ * React component, which was the wrong dependency direction (engine importing UI). `DraftBoard.tsx`
+ * re-exports this for its own and `DraftPoolBrowser.tsx`'s existing call sites — no behavior
+ * change there, purely a move.
+ */
+export function tierContextFor(span: PlayerSpan): TierGateContext {
+  return {
+    position: span.primaryPosition,
+    tal: computeTalent(span),
+    otal: computeOffensiveTalent(span),
+    otalUncapped: computeUncappedOffensiveTalent(span),
+    dtal: computeDefensiveTalent(span),
+    fga: span.fga,
+    playerName: span.playerName,
+    spanLabel: span.spanLabel,
+    // Same real, un-scaled playoff-collapse signal already feeding computeTalent's additive term
+    // (talent.ts, via playoffPerformanceBonus) — see this file's own docstring on why the top of
+    // the scale needs a tier cap instead of a bigger additive number (softCapTalent absorption).
+    playoffCollapse: playoffPerformanceBonus(span),
+  };
 }

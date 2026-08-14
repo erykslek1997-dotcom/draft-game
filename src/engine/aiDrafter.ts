@@ -11,6 +11,7 @@ import {
   canFillFromLookup,
 } from './positions';
 import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from './talent';
+import { displayTalentForSpan, tierContextFor } from './grades';
 import { autoAssignRotation, projectedStarterValue, MAX_MINUTES_PER_PLAYER } from './rotation';
 import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
@@ -28,6 +29,28 @@ import { DRAFT_EXPERIMENT } from './draftExperiment';
  * picks past where the peak-value principle says it should go. Scoped narrowly to the very top
  * of the talent scale so ordinary redundancy logic is untouched for everyone else. */
 const ELITE_TALENT_REDUNDANCY_EXEMPTION = 95;
+
+/**
+ * 2026-08-14, user-diagnosed (real draft export: Dwyane Wade 2008-10, TAL97/FGA20.8, fell to
+ * pick #42 — well past Terry Porter 1989-91, TAL90/FGA11.9, picked #20). Root-caused, not
+ * guessed: `value = talent*rampedNeed - fga*fgaPenalty - ...` treats FGA cost identically for
+ * every talent level, but `fgaPenalty` itself rises with pressure (BASE_FGA_PENALTY 0.4 up to
+ * MAX_FGA_PENALTY 1.3 — see those constants below). Solving `talent_A - talent_B = (fga_A -
+ * fga_B) * fgaPenalty` for Wade vs Porter: the crossover sits at fgaPenalty≈0.79 — comfortably
+ * inside the real 0.4-1.3 range, so at ordinary late-draft pressure a cheaper very-good player
+ * mechanically outvalues a more expensive true peak on this term alone, the exact same shape of
+ * problem `ELITE_TALENT_REDUNDANCY_EXEMPTION` above already exists to fix for the redundancy
+ * discount ("a real GM drafts [him] regardless of X") — just via a different term. Same
+ * philosophy, same threshold, applied to `fgaPenalty` instead: SOFTENED (not waived, unlike the
+ * redundancy exemption) — a true peak still has to fit under the cap at all (`isPickCapLegal`
+ * governs that separately and is untouched), this only stops the soft cost term from
+ * mechanically discounting him below a cheaper merely-very-good alternative. 0.5 keeps a real
+ * peak (talent 7 above a candidate, Wade vs Porter's exact gap) ahead across the ENTIRE real
+ * pressure range 0.4-1.3, not just at one end — solved directly: 7 >= (fga_A-fga_B) *
+ * MAX_FGA_PENALTY * dampening requires dampening <= ~0.6; 0.5 leaves real margin rather than
+ * sitting right at the edge.
+ */
+const ELITE_TALENT_FGA_PENALTY_DAMPENING = 0.5;
 
 /**
  * User-diagnosed (2026-08-05, playtest: "Howard top4, skąd to się bierze?"): the draft VALUE
@@ -1045,10 +1068,22 @@ export function pickForAi(
       need += BENCH_SHOT_CREATOR_BONUS;
     }
     if (DRAFT_EXPERIMENT.d1d2d3Preference && isD1D2D3Player(p)) need += D1D2D3_PREFERENCE_BONUS;
-    // The redundancy-exemption check stays on RAW talent, not durability-adjusted — it's
-    // asking "is this a top-of-history peak," a question about the player's ceiling, not
-    // about how many minutes their body can sustain.
-    const talent = computeTalent(p);
+    // 2026-08-14, user's explicit ask after the Jayson Tatum investigation: the AI was valuing
+    // every candidate off raw `computeTalent` alone, completely blind to the same tier-cap
+    // system (`grades.ts`'s `overallTierForSpan`/`displayTalentForSpan` — two-way position
+    // gates, playoff collapse, era validation) that the UI already uses to tell the user "this
+    // span's real production says 96, but it's only earned an All-NBA badge, not MVP+." A span
+    // whose badge disagrees with its raw number was still drafted (and exempted from redundancy
+    // discounting) as if it were the real top-of-history peak the raw number alone suggests.
+    // `displayTalentForSpan` IS that judgment, already built and validated — reusing it here
+    // instead of re-deriving a second opinion. Deliberately scoped to this one central `talent`
+    // (used below for the redundancy exemption, the main value formula, and the marginal-
+    // starter-value shortlist gate) — the smaller specialized malus/bonus functions above
+    // (`eliteLowUsageDraftMalus`, `greatestPeakTierBonus`, etc.) each read raw `computeTalent`
+    // against their OWN independently-calibrated floors and are left untouched; swapping their
+    // input without re-validating each threshold separately would be a much bigger, unvalidated
+    // change than what was actually asked for.
+    const talent = displayTalentForSpan(tierContextFor(p));
     if (needs.usageWeight >= 2 && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
       const usageDiscount = (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * 0.5;
       // Option A (bench-shot-creator fix): this discount fires off `usageWeight`, which is
@@ -1090,9 +1125,13 @@ export function pickForAi(
     // silently restore the exact prior formula without re-checking this diagnosis — the
     // complaint was about elite peaks specifically, a milder/partial durability weight (rather
     // than a full multiplier) might resolve it without the all-or-nothing swing this is.
+    // See `ELITE_TALENT_FGA_PENALTY_DAMPENING`'s own docstring above — a true top-of-history
+    // peak still feels cap pressure, just softened, rather than being mechanically discounted
+    // below a cheaper merely-very-good alternative the same way an ordinary star would be.
+    const effectiveFgaPenalty = talent >= ELITE_TALENT_REDUNDANCY_EXEMPTION ? fgaPenalty * ELITE_TALENT_FGA_PENALTY_DAMPENING : fgaPenalty;
     const value =
       talent * rampedNeed -
-      p.fga * fgaPenalty -
+      p.fga * effectiveFgaPenalty -
       lowUsageBigMalus(p) -
       eliteLowUsageDraftMalus(p) -
       highVolumeNonElitePenalty(p) +

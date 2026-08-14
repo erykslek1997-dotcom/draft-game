@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, availablePlayers, isPickLegal, type DraftState } from '../engine/draft';
 import { CAP_LIMIT, capRemaining, totalFga } from '../engine/positions';
-import { computeTalent, computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing, spacingTier, type SpacingTier } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
@@ -16,10 +16,11 @@ import {
   displayTalentForSpan,
   displayNumberForSpan,
   tierRank,
+  tierContextFor,
   type OverallTier,
   type Grade,
 } from '../engine/grades';
-import { playoffPerformanceBonus, playoffPerformanceTier, type PlayoffPerformanceTier } from '../engine/playoffPerformanceLookup';
+import { playoffPerformanceTier, type PlayoffPerformanceTier } from '../engine/playoffPerformanceLookup';
 import { computeDurability, durabilityTier, type DurabilityTier } from '../engine/durability';
 import { careerAveragesFor } from '../engine/careerAverages';
 import { isSmallSampleSpan, sampleSizeGames } from '../engine/sampleSize';
@@ -103,22 +104,10 @@ const OVERALL_TIER_CLASS: Record<OverallTier, string> = {
  * reusing it for both the badge and the number next to it is what guarantees they can never
  * disagree (see `displayTalentForSpan`'s own docstring for why they used to). `playerName` is
  * needed for the GOAT-tier check (grades.ts) — every other field already came from `span`. */
-export function tierContextFor(span: PlayerSpan) {
-  return {
-    position: span.primaryPosition,
-    tal: computeTalent(span),
-    otal: computeOffensiveTalent(span),
-    otalUncapped: computeUncappedOffensiveTalent(span),
-    dtal: computeDefensiveTalent(span),
-    fga: span.fga,
-    playerName: span.playerName,
-    spanLabel: span.spanLabel,
-    // Same real, un-scaled playoff-collapse signal already feeding computeTalent's additive term
-    // (talent.ts, via playoffPerformanceBonus) — see grades.ts's own docstring on why the top of
-    // the scale needs a tier cap instead of a bigger additive number (softCapTalent absorption).
-    playoffCollapse: playoffPerformanceBonus(span),
-  };
-}
+// Moved to grades.ts (2026-08-14) so aiDrafter.ts (pure engine) can build a real tier-capped
+// context too, without an engine file importing a React component — re-exported here (imported
+// above) so this file's own and DraftPoolBrowser.tsx's existing call sites are unaffected.
+export { tierContextFor };
 
 export function OverallTierBadge({ span }: { span: PlayerSpan }) {
   const tier = overallTierForSpan(tierContextFor(span));

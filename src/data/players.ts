@@ -467,8 +467,24 @@ function applyDefensiveRoleOverrides(spans: PlayerSpan[]): PlayerSpan[] {
  * `secondaryPositions` so `isPositionEligible`/`isRealPositionFit` (positions.ts) let him fill a
  * team's PF slot for real, the same real-secondary-position credit any other listed secondary
  * gets — a pure eligibility grant, not a reclassification.
+ *
+ * 2026-08-14, user-reported: an auto-assigned rotation put Derrick White (a real SG, no secondary)
+ * at PG and Magic Johnson at SG, eating a real off-position penalty even though Magic is one of
+ * history's most obvious point guards. Root-caused: three of his early-career GENERATED spans
+ * (1979-81, 1980-82, 1981-83 — the Norm Nixon backcourt-sharing years) auto-tagged
+ * `primaryPosition: 'SG'` with zero secondary positions, from `computePositionBreakdown` reading
+ * per-season logged position for those specific two years. The offensive archetype classifier
+ * already independently reads all three as `Primary Ball Handler` off his real box stats (assist
+ * volume/rate), so the position tag — not the underlying behavior — is what's wrong. Every other
+ * Magic Johnson span (1982-84 onward) already has `primaryPosition: 'PG'`; this only adds PG as a
+ * secondary to the three that don't (the `addition.position === span.primaryPosition` check above
+ * already no-ops on those), same pure-eligibility-grant shape as Wembanyama/PF — no O-TAL/D-TAL
+ * recomputation, no archetype change.
  */
-const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [{ name: 'Victor Wembanyama', position: 'PF' }];
+const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [
+  { name: 'Victor Wembanyama', position: 'PF' },
+  { name: 'Magic Johnson', position: 'PG' },
+];
 
 function applySecondaryPositionAdditions(spans: PlayerSpan[]): PlayerSpan[] {
   return spans.map((span) => {
