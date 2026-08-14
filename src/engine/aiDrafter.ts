@@ -399,7 +399,17 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
   // `isRealPositionFit` tightening as above — a bench SF who merely reaches into PF via the
   // generic fallback shouldn't count as "real depth" either, or the AI would stop looking for
   // an actual backup PF the moment it happens to draft any forward at all.
-  const MIN_ELIGIBLE_FOR_REAL_DEPTH = 3;
+  //
+  // 2026-08-15, user-reported (real diagnostic: 63.7% of teams' final roster spot goes to a
+  // player who gets literally 0 real minutes, ~4.8 FGA of cap spent for nothing): this constant
+  // was 3, off by one from this comment's own stated intent — `eligibleCount < 3` keeps flagging
+  // a slot "thin" even at 2 eligible bodies (starter + a real backup), the exact case the comment
+  // above says should already read as covered. Checked directly against 6 concrete 0-minute
+  // cases from real simulated drafts: every single one was a 3rd body at a position whose
+  // starter+backup pair already covered the full 48 minutes (a 3rd center, a 3rd SF/SG, etc.),
+  // while the roster spot could have gone to an actually-uncovered position instead. Fixed to
+  // match the comment's own math.
+  const MIN_ELIGIBLE_FOR_REAL_DEPTH = 2;
   const thinSlots = STARTER_SLOTS.filter((slot) => {
     if (emptySlots.includes(slot)) return false;
     const eligibleCount = roster.filter((p) => isRealPositionFit(p, slot)).length;
