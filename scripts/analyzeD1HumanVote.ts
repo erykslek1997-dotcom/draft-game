@@ -3,7 +3,20 @@ import { normalizePlayerName } from '../src/data/schema';
 import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from '../src/engine/talent';
 import { computeSpacing } from '../src/engine/spacing';
 import { autoAssignRotation } from '../src/engine/rotation';
-import { talentScore, offenseScore, defenseScore, spacingScore, fitScore } from '../src/engine/scoring';
+import {
+  talentScore,
+  offenseScore,
+  defenseScore,
+  spacingScore,
+  fitScore,
+  scoreTeam,
+  isStrongRimProtector,
+  isStrongPerimeterDefender,
+} from '../src/engine/scoring';
+import { primaryStarters } from '../src/engine/rotation';
+import { HIGH_USAGE_ARCHETYPE_WEIGHT } from '../src/data/schema';
+import { computeOffensivePortability } from '../src/engine/portability';
+import { isPlusShooter } from '../src/engine/shooting';
 import type { Team } from '../src/engine/types';
 import type { PlayerSpan, Position } from '../src/data/schema';
 
@@ -326,7 +339,7 @@ for (const res of results) {
 
 console.log('\n=== SCORES ===');
 console.log('sklad\tvote\tteam\t\ttalent\toffense\tdefense\tspacing\tfit\ttier');
-const rows2: { sklad: number; vote: number; team: string; talent: number; offense: number; defense: number; spacing: number; fit: number }[] = [];
+const rows2: { sklad: number; vote: number; team: string; talent: number; offense: number; defense: number; spacing: number; fit: number; overall: number }[] = [];
 for (const res of results) {
   if (res.roster.length < 8) {
     console.log(`Sklad ${res.sklad}: SKIPPED (roster too incomplete: ${res.roster.length}/9)`);
@@ -349,8 +362,9 @@ for (const res of results) {
   const def = defenseScore(team);
   const spc = spacingScore(team);
   const fit = fitScore(team);
-  rows2.push({ sklad: res.sklad, vote: res.voteRank, team: res.team, talent: tal, offense: off, defense: def, spacing: spc, fit: fit.score });
-  console.log(`${res.sklad}\t${res.voteRank}\t${res.team.padEnd(24)}\t${tal.toFixed(1)}\t${off.toFixed(1)}\t${def.toFixed(1)}\t${spc.toFixed(1)}\t${fit.score.toFixed(1)}`);
+  const overall = scoreTeam(team).overall;
+  rows2.push({ sklad: res.sklad, vote: res.voteRank, team: res.team, talent: tal, offense: off, defense: def, spacing: spc, fit: fit.score, overall });
+  console.log(`${res.sklad}\t${res.voteRank}\t${res.team.padEnd(24)}\t${tal.toFixed(1)}\t${off.toFixed(1)}\t${def.toFixed(1)}\t${spc.toFixed(1)}\t${fit.score.toFixed(1)}\t${overall.toFixed(1)}`);
 }
 
 // Spearman correlation between vote rank and each metric (rank by metric, best = 1)
@@ -379,6 +393,79 @@ console.log('offenseScore:', spearman(voteArr, rows2.map((r) => r.offense)).toFi
 console.log('defenseScore:', spearman(voteArr, rows2.map((r) => r.defense)).toFixed(3));
 console.log('spacingScore:', spearman(voteArr, rows2.map((r) => r.spacing)).toFixed(3));
 console.log('fitScore:', spearman(voteArr, rows2.map((r) => r.fit)).toFixed(3));
+console.log('overall (scoreTeam blend):', spearman(voteArr, rows2.map((r) => r.overall)).toFixed(3));
+
+// 2026-08-13: fitScore's own component SIGNALS (not the final scored/summed number — the raw
+// inputs fitScore reads before any threshold/penalty is applied) correlated individually against
+// the real vote, to find out which of fitScore's ~10 ingredients (if any) actually carries real
+// human-perceptible signal in this 15-roster sample, vs. which are pure noise diluting the ones
+// that do. Recomputed from the exact same real Team objects `rows2`'s own fit score used —
+// duplicates fitScore's own starter-selection/signal-reading lines (not its scoring thresholds)
+// rather than reaching into its closure, since none of these are currently exposed.
+interface FitSignalRow {
+  vote: number;
+  usageWeight: number;
+  usageWeightFga: number;
+  usageWeightFgaShare: number;
+  avgOPor: number;
+  plusShooterCount: number;
+  avgSpacing: number;
+  hasRimProtector: number;
+  hasPerimeterDefender: number;
+  avgDTal: number;
+  totalRpg: number;
+  efficiency: number;
+}
+const fitSignalRows: FitSignalRow[] = [];
+for (const res of results) {
+  if (res.roster.length < 8) continue;
+  const team: Team = { id: `sig-${res.sklad}`, name: res.team, draftSlot: res.sklad, isHuman: false, roster: res.roster, rotation: null };
+  team.rotation = autoAssignRotation(team.roster);
+  const starters = primaryStarters(team).map((e) => e.player);
+  const usageWeight = starters.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0), 0);
+  // ROLE_001 candidate (2026-08-14, nba_team_roles_spacing_spec_v1.json review): usageWeight
+  // today is pure archetype-tag weight, blind to actual FGA. Two variants tested here before
+  // touching fitScore itself: (a) weight * raw FGA (unnormalized volume), (b) weight * FGA
+  // SHARE of the starting five's total shot diet (how much of a limited pie each high-usage
+  // tag actually commands) — a genuinely different ranking across teams, not just a monotonic
+  // rescale of (a), since totalStarterFga varies team to team.
+  const usageWeightFga = starters.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * p.fga, 0);
+  const totalStarterFga = starters.reduce((sum, p) => sum + p.fga, 0);
+  const usageWeightFgaShare =
+    totalStarterFga > 0
+      ? starters.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * (p.fga / totalStarterFga), 0)
+      : 0;
+  const avgOPor = starters.reduce((sum, p) => sum + computeOffensivePortability(p), 0) / starters.length;
+  const plusShooterCount = starters.filter(isPlusShooter).length;
+  const avgSpacing = starters.reduce((sum, p) => sum + computeSpacing(p), 0) / starters.length;
+  const hasRimProtector = starters.some(isStrongRimProtector) ? 1 : 0;
+  const hasPerimeterDefender = starters.some(isStrongPerimeterDefender) ? 1 : 0;
+  const avgDTal = starters.reduce((sum, p) => sum + computeDefensiveTalent(p), 0) / starters.length;
+  const totalRpg = starters.reduce((sum, p) => sum + p.box.rpg, 0);
+  const totalTalent = res.roster.reduce((sum, p) => sum + computeTalent(p), 0);
+  const totalFga = res.roster.reduce((sum, p) => sum + p.fga, 0);
+  const efficiency = totalFga > 0 ? totalTalent / totalFga : 0;
+  fitSignalRows.push({ vote: res.voteRank, usageWeight, usageWeightFga, usageWeightFgaShare, avgOPor, plusShooterCount, avgSpacing, hasRimProtector, hasPerimeterDefender, avgDTal, totalRpg, efficiency });
+}
+const fitVoteArr = fitSignalRows.map((r) => r.vote);
+console.log('\n=== fitScore INPUT SIGNALS vs vote (raw, before any threshold/penalty) ===');
+console.log('usageWeight (lower=better fit, so sign flipped):', spearman(fitVoteArr, fitSignalRows.map((r) => -r.usageWeight)).toFixed(3));
+console.log('usageWeightFga (weight*raw FGA, sign flipped):', spearman(fitVoteArr, fitSignalRows.map((r) => -r.usageWeightFga)).toFixed(3));
+console.log('usageWeightFgaShare (weight*share-of-starter-FGA, sign flipped):', spearman(fitVoteArr, fitSignalRows.map((r) => -r.usageWeightFgaShare)).toFixed(3));
+console.log('avg starter O-POR:', spearman(fitVoteArr, fitSignalRows.map((r) => r.avgOPor)).toFixed(3));
+console.log('plus-shooter count:', spearman(fitVoteArr, fitSignalRows.map((r) => r.plusShooterCount)).toFixed(3));
+console.log('avg starter SPACING:', spearman(fitVoteArr, fitSignalRows.map((r) => r.avgSpacing)).toFixed(3));
+console.log('has rim protector (0/1):', spearman(fitVoteArr, fitSignalRows.map((r) => r.hasRimProtector)).toFixed(3));
+console.log('has perimeter defender (0/1):', spearman(fitVoteArr, fitSignalRows.map((r) => r.hasPerimeterDefender)).toFixed(3));
+console.log('avg starter D-TAL:', spearman(fitVoteArr, fitSignalRows.map((r) => r.avgDTal)).toFixed(3));
+console.log('total starter RPG:', spearman(fitVoteArr, fitSignalRows.map((r) => r.totalRpg)).toFixed(3));
+console.log('cap efficiency (talent/FGA):', spearman(fitVoteArr, fitSignalRows.map((r) => r.efficiency)).toFixed(3));
+
+console.log('\n=== raw fitScore signal rows, sorted by vote (outlier check) ===');
+console.log('vote\tavgSpacing\tavgOPor\tusageWeight\tplusShooters\tavgDTal');
+for (const r of [...fitSignalRows].sort((a, b) => a.vote - b.vote)) {
+  console.log(`${r.vote}\t${r.avgSpacing.toFixed(1)}\t\t${r.avgOPor.toFixed(1)}\t\t${r.usageWeight.toFixed(1)}\t\t${r.plusShooterCount}\t\t${r.avgDTal.toFixed(1)}`);
+}
 
 // Sorted by vote rank for eyeballing
 console.log('\n=== TABLE SORTED BY HUMAN VOTE ===');
@@ -412,3 +499,28 @@ for (const res of [...results].filter((r) => r.roster.length >= 8).sort((a, b) =
   console.log(`\nvote ${res.voteRank} | sklad ${res.sklad} | ${res.team} | fit=${score.toFixed(1)}`);
   for (const n of notes) console.log('   -', n);
 }
+
+console.log('\n=== ENGINE RANKING (by overall, post-fixes) ===');
+const byOverall = [...rows2].sort((a, b) => b.overall - a.overall);
+byOverall.forEach((r, i) => console.log(`engineRank ${i + 1}\tsklad ${r.sklad}\toverall ${r.overall.toFixed(1)}\thumanVote ${r.vote}\t${r.team}`));
+
+// 2026-08-13: does a "weakest link" signal explain the AI-qualitative-read edge over the engine
+// (0.882 vs overall's 0.568)? Test candidates: starters-only avg TAL (vs top5-of-9), weakest
+// roster player's TAL, count of "replacement level" (TAL<50) roster spots.
+console.log('\n=== weak-link candidate signals vs vote ===');
+const weakLinkRows: { vote: number; startersAvg: number; minTal: number; weakCount: number; top5of9: number }[] = [];
+for (const res of results) {
+  if (res.roster.length < 8) continue;
+  const tals = res.roster.map((p) => computeTalent(p));
+  const sortedDesc = [...tals].sort((a, b) => b - a);
+  const startersAvg = tals.slice(0, 5).reduce((s, v) => s + v, 0) / 5; // roster order: first 5 rows ARE the tagged starters
+  const minTal = Math.min(...tals);
+  const weakCount = tals.filter((t) => t < 50).length;
+  const top5of9 = sortedDesc.slice(0, 5).reduce((s, v) => s + v, 0) / 5;
+  weakLinkRows.push({ vote: res.voteRank, startersAvg, minTal, weakCount, top5of9 });
+}
+const wlVote = weakLinkRows.map((r) => r.vote);
+console.log('startersAvg (tagged 5, not top5-of-9):', spearman(wlVote, weakLinkRows.map((r) => r.startersAvg)).toFixed(3));
+console.log('minTal (weakest roster spot):', spearman(wlVote, weakLinkRows.map((r) => r.minTal)).toFixed(3));
+console.log('weakCount (TAL<50 count, sign flipped):', spearman(wlVote, weakLinkRows.map((r) => -r.weakCount)).toFixed(3));
+console.log('top5of9 (current talentScore def):', spearman(wlVote, weakLinkRows.map((r) => r.top5of9)).toFixed(3));

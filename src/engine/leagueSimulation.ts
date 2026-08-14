@@ -1,0 +1,118 @@
+import type { Team } from './types';
+import { rankTeams } from './scoring';
+import { projectMatchup, seriesWinProbability, gameWinProbability } from './matchup';
+import { projectedNetRating } from './netRatingProjection';
+
+/**
+ * League-wide evaluation: every pairwise BO7 matchup among the 16 drafted rosters, plus a Monte
+ * Carlo single-elimination championship simulation seeded by the existing "Final Power Ranking"
+ * (`rankTeams`'s `overall`). The genuinely new piece from [[net_rating_model_and_spec_reviews]]'s
+ * spec review — everything here is built on the already-validated `projectMatchup`/
+ * `projectedNetRating`, no new unvalidated formulas.
+ *
+ * Championship probability requires simulation rather than closed-form math: which opponent a
+ * team faces in round 2 depends on who wins round 1, so "probability of winning it all" isn't a
+ * simple product of fixed-opponent probabilities. Monte Carlo is the standard, simplest-correct
+ * way to handle that (and is literally what the spec itself recommended:
+ * `simulation_recommended: true`).
+ */
+
+/** Standard single-elimination bracket seed order for 16 entrants — the well-known recursive
+ * construction that keeps seed 1 and seed 2 on opposite halves of the bracket (so they can only
+ * meet in the final), same shape as a real NBA/NCAA 16-team bracket. Consecutive pairs are
+ * round-1 matchups: (1,16),(8,9),(4,13),(5,12),(2,15),(7,10),(3,14),(6,11). */
+const SEED_ORDER_16 = [1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11];
+
+const DEFAULT_SIMULATIONS = 20000;
+
+export interface MatchupSummary {
+  opponentId: string;
+  opponentLabel: string;
+  seriesWinProb: number;
+  marginA: number;
+}
+
+export interface TeamLeagueEvaluation {
+  teamId: string;
+  globalRank: number;
+  expectedNetRating: number;
+  avgSeriesWinProb: number;
+  bestMatchup: MatchupSummary;
+  worstMatchup: MatchupSummary;
+  championshipProbability: number;
+}
+
+/** One Monte Carlo pass through the bracket. `winProb(aIdx, bIdx)` returns aIdx's series win
+ * probability against bIdx (indices into `seededTeamIds`, 0-based, already in rank order). */
+function simulateOneBracket(seededTeamIds: string[], winProb: (aId: string, bId: string) => number): string {
+  let current = SEED_ORDER_16.map((seed) => seededTeamIds[seed - 1]);
+  while (current.length > 1) {
+    const next: string[] = [];
+    for (let i = 0; i < current.length; i += 2) {
+      const a = current[i];
+      const b = current[i + 1];
+      next.push(Math.random() < winProb(a, b) ? a : b);
+    }
+    current = next;
+  }
+  return current[0];
+}
+
+/**
+ * Full league evaluation for a completed 16-team draft. Returns one entry per team, indexed the
+ * same order as `teams`. Falls back to championshipProbability=0/neutral matchup fields if
+ * `teams.length !== 16` (the bracket seeding only makes sense for the real game's fixed
+ * TEAM_COUNT) rather than throwing — a defensive guard, not an expected path.
+ */
+export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMULATIONS): TeamLeagueEvaluation[] {
+  const ranked = rankTeams(teams); // rank 1 = best, per the existing Final Power Ranking
+  const rankByTeamId = new Map(ranked.map(({ team, rank }) => [team.id, rank]));
+  const seededTeamIds = [...teams].sort((a, b) => (rankByTeamId.get(a.id) ?? 999) - (rankByTeamId.get(b.id) ?? 999)).map((t) => t.id);
+
+  // Precompute every pairwise matchup once (120 unique pairs for 16 teams) — the simulation loop
+  // below only does cheap Math.random() + map lookups, not re-running projectedNetRating per sim.
+  const seriesWinProbByPair = new Map<string, number>(); // key `${aId}|${bId}` -> a's series win prob
+  for (const a of teams) {
+    for (const b of teams) {
+      if (a.id === b.id) continue;
+      const { seriesWinProbA } = projectMatchup(a, b);
+      seriesWinProbByPair.set(`${a.id}|${b.id}`, seriesWinProbA);
+    }
+  }
+  const winProb = (aId: string, bId: string) => seriesWinProbByPair.get(`${aId}|${bId}`) ?? 0.5;
+
+  const championshipCount = new Map<string, number>(teams.map((t) => [t.id, 0]));
+  if (teams.length === 16) {
+    for (let i = 0; i < simulations; i++) {
+      const champion = simulateOneBracket(seededTeamIds, winProb);
+      championshipCount.set(champion, (championshipCount.get(champion) ?? 0) + 1);
+    }
+  }
+
+  return teams.map((team) => {
+    const others = teams.filter((t) => t.id !== team.id);
+    const matchups: MatchupSummary[] = others.map((opp) => ({
+      opponentId: opp.id,
+      opponentLabel: opp.name,
+      seriesWinProb: seriesWinProbByPair.get(`${team.id}|${opp.id}`) ?? 0.5,
+      marginA: projectedNetRating(team).net - projectedNetRating(opp).net,
+    }));
+    const avgSeriesWinProb = matchups.reduce((sum, m) => sum + m.seriesWinProb, 0) / (matchups.length || 1);
+    const best = matchups.reduce((a, b) => (b.seriesWinProb > a.seriesWinProb ? b : a), matchups[0]);
+    const worst = matchups.reduce((a, b) => (b.seriesWinProb < a.seriesWinProb ? b : a), matchups[0]);
+
+    return {
+      teamId: team.id,
+      globalRank: rankByTeamId.get(team.id) ?? 0,
+      expectedNetRating: projectedNetRating(team).net,
+      avgSeriesWinProb,
+      bestMatchup: best,
+      worstMatchup: worst,
+      championshipProbability: teams.length === 16 ? (championshipCount.get(team.id) ?? 0) / simulations : 0,
+    };
+  });
+}
+
+// Re-exported for callers that only need a single ad-hoc matchup (e.g. a "compare two teams"
+// UI panel) without paying for the full 16-team league evaluation.
+export { projectMatchup, seriesWinProbability, gameWinProbability };

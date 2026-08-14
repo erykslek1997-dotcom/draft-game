@@ -28,6 +28,47 @@
   cursor: pointer;
 }
 
+/* Mode selector, shown on the intro screen only — the choice is made once, before "Start Draft"
+   / "Browse Draft Pool", instead of the old header toggle that could be flipped anytime
+   (including mid-draft). Two equal-width cards, not a single flip-button, so both options and
+   their one-line descriptions are visible at once instead of requiring a click to see what the
+   other mode even is. */
+.mode-select {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.mode-select-btn {
+  flex: 1 1 0;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  text-align: center;
+}
+
+.mode-select-btn--active {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.mode-select-name {
+  font-weight: 600;
+}
+
+.mode-select-blurb {
+  font-size: 12px;
+  color: var(--text);
+}
+
 .fail-banner {
   text-align: center;
   border: 1px solid #d9534f;
@@ -59,7 +100,9 @@
 /* No longer absolutely positioned against .app-header (2026-07-30): Reset now lives in
    GameShell's own .game-controls row, not sharing space with the centred title/tagline text
    the absolute positioning existed to avoid overlapping — see the load-time-split note in
-   App.tsx/GameShell.tsx for why the controls moved out of the header at all. */
+   App.tsx/GameShell.tsx for why the controls moved out of the header at all. Kept visible in
+   Player Mode too (relabeled "Exit Draft" there) as the only way out of an in-progress draft,
+   now that the CPU-speed slider and Auto-finish testing button next to it are Tester-Mode-only. */
 .reset-btn {
   margin: 0;
 }
@@ -880,6 +923,93 @@ select {
   }
 }
 
+/* G_SMALL_SAMPLE badge (sampleSize.ts) — a single boolean flag, not a tier ladder, so it
+   deliberately doesn't take a fifth hue family the way SPACING/rating/playoff/DUR each did.
+   Dashed border reads as "advisory" rather than "graded," matching what it actually is: a caution
+   about the underlying data, not a judgment on the player. */
+.sample-limited {
+  background: transparent;
+  border: 1px dashed #a3792f;
+  color: #a3792f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sample-limited {
+    border-color: #d9ac5c;
+    color: #d9ac5c;
+  }
+}
+
+/* G_BLACK_BOX (evidenceReport.ts) — plain-text panel, not a badge, so it gets its own small block
+   rather than reusing .tier-badge's pill styling. */
+.evidence-toggle {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+/* Rendered as a sibling of `.table-scroll`, not a row inside it — a colSpan row that lives inside
+   a horizontally-scrolling table only shows whatever slice of itself the table happens to be
+   scrolled to, which cut off the evidence text on first ship. Full page width, no scroll. */
+.evidence-panel-wrap {
+  margin-top: 8px;
+  padding: 12px 16px;
+  background: #faf9f6;
+  border-radius: 6px;
+}
+
+.evidence-panel-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #78756d;
+  margin-bottom: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .evidence-panel-wrap {
+    background: #232220;
+  }
+  .evidence-panel-label {
+    color: #a8a49a;
+  }
+}
+
+.evidence-report {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  text-align: left;
+}
+
+.evidence-column {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.evidence-column h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #78756d;
+}
+
+.evidence-column ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.evidence-column li {
+  margin-bottom: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .evidence-column h4 {
+    color: #a8a49a;
+  }
+}
+
 .span-table {
   width: 100%;
   border-collapse: collapse;
@@ -921,7 +1051,18 @@ select {
 }
 
 /* The stat columns are wide enough to need horizontal scrolling on a narrow screen, but the
-   Draft button must never scroll out of reach — pin the last column to the right edge. */
+   Draft button must never scroll out of reach — pin it to the left edge (2026-08-13, user
+   feedback: had to scroll right past every stat column just to click Draft). ".Why?" stays
+   pinned to the right edge for the same reason, on the opposite side. */
+.span-table th:first-child,
+.span-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+}
+
 .span-table th:last-child,
 .span-table td:last-child {
   position: sticky;
@@ -961,6 +1102,15 @@ select {
   font-size: 13px;
   color: var(--text);
   margin-bottom: 10px;
+}
+
+/* Deliberately visually distinct from .subscores above — a real-NBA-units estimate (points per
+   100 possessions), not another 0-100 relative score, so it shouldn't read as one more entry in
+   that same row (see netRatingProjection.ts's own docstring on why the two are kept separate). */
+.net-rating-projection {
+  font-style: italic;
+  color: var(--text);
+  opacity: 0.85;
 }
 
 .lineup {
@@ -1177,9 +1327,8 @@ select {
   max-width: 50vw;
 }
 
-/* CPU pick-speed slider. Deliberately in normal flow (centred under the header buttons)
-   rather than absolutely positioned like .reset-btn: .mode-toggle-btn has no positioning of its
-   own and sits in the flow, so a bottom-right slider would overlap it at narrower widths. */
+/* CPU pick-speed slider. Tester-Mode-only (see GameShell.tsx) — deliberately in normal flow
+   (centred under the header buttons) rather than absolutely positioned like .reset-btn. */
 .ai-speed {
   display: flex;
   align-items: center;
@@ -1202,3 +1351,315 @@ select {
   text-align: left;
   font-weight: 600;
 }
+
+/* ======================================================================
+   All-Time Fantasy redesign (2026-08-13) — new tab shell + Draft panel.
+   Scoped entirely under `.at-shell` / `at-*` class names so it can roll
+   out panel-by-panel without touching the rest of the app's existing
+   look (DraftPoolBrowser/ResultsScreen/RotationBuilder are untouched).
+   Tokens and structure ported from the agreed mockup artifact
+   (636d5807-a772-4b58-882c-026b3ac50b7b) — see
+   draft_game_ui_redesign_spec.md memory for the full design history.
+   ====================================================================== */
+
+.at-shell {
+  --at-paper: #edecea;
+  --at-paper-raised: #ffffff;
+  --at-ink: #38383b;
+  --at-ink-soft: #6b6b70;
+  --at-ink-faint: #97979a;
+  --at-pill: #48484c;
+  --at-pill-ink: #f5f4f1;
+  --at-line: #ddddd9;
+  --at-accent: #38383b;
+  --at-accent-ink: #f5f4f1;
+
+  /* Draft-table tier ramp only — the one place colour is allowed. Low tiers barely tinted,
+     top tier carries the most colour, single warm amber/bronze hue family (not a rainbow). */
+  --at-t1: #e6ded0; --at-t1-ink: #362c1e;
+  --at-t2: #dcc9a6; --at-t2-ink: #372c18;
+  --at-t3: #c9ac77; --at-t3-ink: #33280f;
+  --at-t4: #ac8752; --at-t4-ink: #fbf5ec;
+  --at-t5: #86663c; --at-t5-ink: #fbf5ec;
+  --at-t6: #57402a; --at-t6-ink: #fbf5ec;
+
+  --at-shadow: 0 1px 2px rgba(30,30,32,0.05), 0 6px 18px rgba(30,30,32,0.04);
+
+  background: var(--at-paper);
+  color: var(--at-ink);
+  border-radius: 16px;
+  padding: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .at-shell:not([data-at-theme="light"]) {
+    --at-paper: #1d1d1f;
+    --at-paper-raised: #262628;
+    --at-ink: #ddded7;
+    --at-ink-soft: #a9a8a3;
+    --at-ink-faint: #7e7d79;
+    --at-pill: #57565b;
+    --at-pill-ink: #efece5;
+    --at-line: #363639;
+    --at-accent: #c9c4b8;
+    --at-accent-ink: #1d1d1f;
+    --at-t1: #3c362c; --at-t1-ink: #e3ddd0;
+    --at-t2: #4c4028; --at-t2-ink: #e9dcbe;
+    --at-t3: #6c5730; --at-t3-ink: #edddb6;
+    --at-t4: #92723e; --at-t4-ink: #f7ecd7;
+    --at-t5: #bb9457; --at-t5-ink: #2b2110;
+    --at-t6: #e2bd7e; --at-t6-ink: #2b2110;
+    --at-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 10px 26px rgba(0,0,0,0.3);
+  }
+}
+
+.at-cond {
+  font-family: Haettenschweiler, "Arial Narrow Bold", "Arial Narrow", Impact, "Segoe UI", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+/* 3-column grid, not `flex + space-between`: with 3 flex items, space-between only equalizes the
+   two GAPS, not the items' positions — since .at-wordmark ("All-Time Draft") is much narrower
+   than .at-status-chip ("Pick N of N — Round N — ..."), that left .at-tabs visibly off-center,
+   pulled toward the short side. Grid's centre column centers on the true middle of the bar
+   regardless of how wide the two side columns are. Side columns share `1fr` so they stay
+   symmetric; each aligns its own content to its outer edge via justify-self. */
+.at-topbar {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: 16px; margin-bottom: 18px; padding: 4px 2px;
+}
+.at-wordmark { font-size: 24px; letter-spacing: 0.01em; justify-self: start; }
+.at-tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-self: center; }
+.at-status-chip { justify-self: end; }
+
+@media (max-width: 720px) {
+  /* Below this width the three columns no longer fit on one line without crowding — drop back to
+     a wrapped, left-aligned flex stack rather than fighting the grid for space. */
+  .at-topbar { display: flex; flex-wrap: wrap; }
+  .at-wordmark, .at-tabs, .at-status-chip { justify-self: auto; }
+}
+.at-tab-btn {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line);
+  background: var(--at-paper-raised); color: var(--at-ink-soft);
+  border-radius: 999px; padding: 8px 16px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.at-tab-btn.at-active { background: var(--at-pill); color: var(--at-pill-ink); border-color: var(--at-pill); }
+.at-tab-btn:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+
+.at-status-chip {
+  font-size: 12px; color: var(--at-ink-soft);
+  background: var(--at-paper-raised); border: 1px solid var(--at-line);
+  border-radius: 999px; padding: 7px 14px; white-space: nowrap;
+}
+.at-status-chip b { color: var(--at-ink); }
+.at-status-chip .at-dot-live {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--at-accent); margin-right: 7px;
+}
+
+.at-card {
+  background: var(--at-paper-raised); border: 1px solid var(--at-line);
+  border-radius: 16px; padding: 20px 22px 18px; box-shadow: var(--at-shadow);
+}
+.at-panel-title { font-size: 30px; margin: -4px 0 14px; }
+
+.at-controls-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+
+.at-search-input {
+  font: inherit; font-size: 13px; padding: 9px 14px; border-radius: 999px;
+  border: 1px solid var(--at-line); background: var(--at-paper); color: var(--at-ink);
+  min-width: 200px;
+}
+.at-search-input::placeholder { color: var(--at-ink-faint); }
+.at-search-input:focus, .at-fga-input:focus { outline: 2px solid var(--at-accent); outline-offset: 1px; }
+
+.at-fga-filter { display: flex; align-items: center; gap: 8px; }
+.at-fga-filter label {
+  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-faint);
+}
+.at-fga-input {
+  width: 52px; font: inherit; font-variant-numeric: tabular-nums; text-align: center;
+  border-radius: 999px; border: 1px solid var(--at-line); background: var(--at-pill); color: var(--at-pill-ink);
+  padding: 7px 4px; font-weight: 700;
+}
+
+.at-filter-pill {
+  font: inherit; cursor: pointer; border: none;
+  background: var(--at-pill); color: var(--at-pill-ink); border-radius: 999px;
+  font-size: 12.5px; font-weight: 700; padding: 8px 18px;
+  opacity: 0.55; transition: opacity .15s, box-shadow .15s;
+}
+.at-filter-pill.at-active { opacity: 1; box-shadow: 0 0 0 2px var(--at-accent) inset; }
+.at-filter-pill:hover { opacity: 0.85; }
+
+/* ---- dot tags (Talent / 3PT / Durability / Playoffs — real named tier systems) ---- */
+.at-dot-wrap {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; cursor: default; border-radius: 50%;
+}
+.at-dot-wrap:focus-visible { outline: 2px solid var(--at-ink-soft); outline-offset: 2px; }
+.at-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--at-ink) 14%, transparent);
+}
+.at-dot.at-t1 { background: var(--at-t1); } .at-dot.at-t2 { background: var(--at-t2); } .at-dot.at-t3 { background: var(--at-t3); }
+.at-dot.at-t4 { background: var(--at-t4); } .at-dot.at-t5 { background: var(--at-t5); } .at-dot.at-t6 { background: var(--at-t6); }
+
+.at-dot-wrap::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translate(-50%, 4px); background: var(--at-pill); color: var(--at-pill-ink);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
+  padding: 6px 10px; border-radius: 7px; box-shadow: var(--at-shadow);
+  opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
+}
+.at-dot-wrap::before {
+  content: ''; position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translate(-50%, 4px);
+  border: 5px solid transparent; border-top-color: var(--at-pill);
+  opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
+}
+.at-dot-wrap:hover::after, .at-dot-wrap:hover::before,
+.at-dot-wrap:focus-visible::after, .at-dot-wrap:focus-visible::before {
+  opacity: 1; transform: translate(-50%, 0);
+}
+
+/* ---- letter-grade badges (Offense/Defense/Portability/Impact — no named tiers yet, so the
+   real letter stays visible rather than being hidden behind an anonymous dot+tooltip). Ramped
+   into the same t1-t6 colour family by grade rank so the row still reads as a "how good" signal
+   at a glance, without inventing tier names that don't exist yet. */
+.at-grade-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 20px; padding: 0 6px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.at-grade-badge.at-t1 { background: var(--at-t1); color: var(--at-t1-ink); }
+.at-grade-badge.at-t2 { background: var(--at-t2); color: var(--at-t2-ink); }
+.at-grade-badge.at-t3 { background: var(--at-t3); color: var(--at-t3-ink); }
+.at-grade-badge.at-t4 { background: var(--at-t4); color: var(--at-t4-ink); }
+.at-grade-badge.at-t5 { background: var(--at-t5); color: var(--at-t5-ink); }
+.at-grade-badge.at-t6 { background: var(--at-t6); color: var(--at-t6-ink); }
+
+/* ---- Draft table ---- */
+.at-table-scroll { overflow-x: auto; }
+table.at-draft-table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 10px; }
+table.at-draft-table th {
+  text-align: left; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--at-ink-faint); padding: 0 10px 8px; border-bottom: 1px solid var(--at-line); white-space: nowrap;
+  position: sticky; top: 0; background: var(--at-paper-raised);
+}
+table.at-draft-table td {
+  padding: 8px 6px; border-bottom: 1px solid var(--at-line); vertical-align: middle;
+  white-space: nowrap; text-align: center;
+}
+table.at-draft-table td.at-player-cell, table.at-draft-table td.at-fga-num { text-align: left; padding: 8px 10px; }
+table.at-draft-table td:first-child { text-align: left; padding: 8px 6px 8px 10px; }
+table.at-draft-table tbody tr:hover { background: color-mix(in srgb, var(--at-accent) 6%, transparent); }
+/* Player-mode only: fixed column widths (set via <colgroup> in DraftBoard.tsx) so PTS/AST/REB/
+   STL/BLK/FG%/3PT%/FGA land in the exact same horizontal position on this summary row and on
+   every row of the expanded per-span table below it (.at-span-subtable--player) — same career
+   number, same column, visibly reinforcing that it's the same number rather than a coincidence.
+   Long player names wrap instead of forcing the column wider, since a fixed layout can't grow a
+   column to fit content the way the default auto layout does. */
+table.at-draft-table--player, table.at-span-subtable--player { table-layout: fixed; }
+table.at-draft-table--player td.at-player-cell { white-space: normal; }
+.at-player-cell { font-weight: 700; }
+.at-player-cell .at-span { display: block; font-weight: 400; color: var(--at-ink-faint); font-size: 11px; }
+.at-fga-num { font-variant-numeric: tabular-nums; color: var(--at-ink-soft); }
+.at-fga-num b { color: var(--at-ink); }
+.at-caption { font-size: 11px; color: var(--at-ink-faint); margin-top: 12px; line-height: 1.6; }
+
+.at-draft-btn {
+  font: inherit; cursor: pointer; border: none; background: var(--at-accent); color: var(--at-accent-ink);
+  border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 700;
+}
+.at-draft-btn:hover { filter: brightness(1.08); }
+.at-why-btn {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line); background: none; color: var(--at-ink-soft);
+  border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 700;
+}
+.at-why-btn:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
+.at-expand-toggle {
+  font: inherit; cursor: pointer; background: none; border: none; color: var(--at-ink-faint);
+  font-size: 12px; padding: 2px 4px; transition: transform .15s;
+  display: inline-block;
+}
+.at-expand-toggle.at-open { transform: rotate(90deg); }
+
+/* Per-span sub-table shown when a player row expands — same dot/grade system, indented under
+   the collapsed row it belongs to. */
+table.at-span-subtable { border-collapse: collapse; width: 100%; font-size: 12px; margin: 4px 0 10px 26px; }
+table.at-span-subtable th {
+  text-align: left; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--at-ink-faint); padding: 0 8px 6px; border-bottom: 1px solid var(--at-line);
+}
+table.at-span-subtable td { padding: 6px 8px; border-bottom: 1px solid var(--at-line); text-align: center; }
+table.at-span-subtable td:first-child, table.at-span-subtable td.at-player-cell { text-align: left; }
+
+.at-legend-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.at-legend-toggle {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line); background: none; color: var(--at-ink-soft);
+  border-radius: 999px; padding: 6px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+  white-space: nowrap; margin-top: 12px; transition: color .15s, border-color .15s;
+}
+.at-legend-toggle:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
+
+.at-tag-legend {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--at-line);
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;
+}
+.at-tag-legend-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px; padding: 10px 12px;
+}
+.at-tag-legend-item .at-swatches { display: flex; flex-direction: column; gap: 4px; flex: none; margin-top: 2px; }
+.at-tag-legend-item h5 {
+  margin: 0 0 4px; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--at-ink);
+}
+.at-tag-legend-item p { margin: 0; font-size: 11.5px; color: var(--at-ink-soft); line-height: 1.5; }
+
+/* ---- Overview panel (team x round grid) ---- */
+.at-ov-meta { font-size: 12px; color: var(--at-ink-soft); margin-bottom: 10px; }
+/* 2026-08-13: no vertical cap — TEAM_COUNT is a fixed 16, so the grid never has more rows than
+   that; the old 480px max-height forced an inner vertical scrollbar to see the last several
+   teams even though the row count can't grow. Horizontal scroll stays (9 round columns at
+   108px min-width each is wider than most viewports). */
+.at-grid-scroll { overflow-x: auto; overflow-y: visible; border: 1px solid var(--at-line); border-radius: 10px; }
+table.at-ov-grid { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
+table.at-ov-grid thead th {
+  position: sticky; top: 0; background: var(--at-pill); color: var(--at-pill-ink);
+  z-index: 2; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 9px 10px; text-align: left; white-space: nowrap;
+}
+table.at-ov-grid thead th.at-rnd { text-align: center; min-width: 108px; }
+table.at-ov-grid thead th.at-teamcol { position: sticky; left: 0; z-index: 3; min-width: 168px; }
+table.at-ov-grid tbody td.at-teamcol {
+  position: sticky; left: 0; background: var(--at-paper-raised); z-index: 1;
+  border-right: 1px solid var(--at-line); font-weight: 700; white-space: nowrap; padding: 8px 10px;
+}
+table.at-ov-grid tbody tr.at-you td.at-teamcol { background: color-mix(in srgb, var(--at-ink) 6%, var(--at-paper-raised)); }
+table.at-ov-grid tbody tr.at-clock td.at-teamcol { background: color-mix(in srgb, var(--at-ink) 14%, var(--at-paper-raised)); }
+table.at-ov-grid tbody td { padding: 8px 10px; border-top: 1px solid var(--at-line); white-space: nowrap; text-align: center; }
+table.at-ov-grid tbody td.at-pickcell { color: var(--at-ink); text-align: left; }
+table.at-ov-grid tbody td.at-pickcell .at-yr { color: var(--at-ink-faint); font-variant-numeric: tabular-nums; margin-left: 5px; font-size: 11px; }
+table.at-ov-grid tbody td.at-empty { color: var(--at-ink-faint); font-style: italic; }
+table.at-ov-grid tbody td.at-onclock { color: var(--at-ink); font-weight: 700; font-style: italic; }
+
+/* ---- Team panel (own roster during the draft) ---- */
+.at-cap-meter { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.at-cap-track { flex: 1; min-width: 160px; height: 9px; border-radius: 999px; background: var(--at-line); overflow: hidden; }
+.at-cap-fill { height: 100%; background: var(--at-accent); border-radius: 999px; }
+.at-cap-label { font-size: 12px; color: var(--at-ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.at-cap-label b { color: var(--at-ink); }
+
+table.at-roster-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.at-roster-table th {
+  text-align: left; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--at-ink-faint); padding: 0 10px 8px; border-bottom: 1px solid var(--at-line);
+}
+table.at-roster-table td { padding: 11px 10px; border-bottom: 1px solid var(--at-line); vertical-align: middle; }
+
+.at-empty-slot { color: var(--at-ink-faint); font-style: italic; }
+.at-placeholder { color: var(--at-ink-soft); font-size: 13px; padding: 30px 10px; text-align: center; }

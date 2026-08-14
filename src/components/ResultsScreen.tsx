@@ -1,5 +1,6 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { rankTeams } from '../engine/scoring';
+import { evaluateLeague } from '../engine/leagueSimulation';
 import { STARTER_SLOTS } from '../engine/positions';
 import { allAssignments, benchWithMinutes } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
@@ -10,6 +11,7 @@ import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from '.
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing } from '../engine/spacing';
 import { computeDurability } from '../engine/durability';
+import { projectedNetRating } from '../engine/netRatingProjection';
 import FeedbackToggle, { type FeedbackEntry } from './FeedbackToggle';
 import RotationBuilder from './RotationBuilder';
 import { naturalPosition } from '../engine/naturalPosition';
@@ -134,6 +136,8 @@ function buildFeedbackExport(
   correctedRotations: Record<string, Rotation>,
 ) {
   const ranked = rankTeams(teams);
+  const leagueEval = evaluateLeague(teams);
+  const leagueEvalByTeamId = new Map(leagueEval.map((e) => [e.teamId, e]));
   // Live in-draft reactions (see DraftHistory/GameShell) — only flagged picks carry a
   // complaint, same "no flag = no complaint, don't export a wall of confirmations" convention
   // as the per-roster playerNotes below.
@@ -201,6 +205,8 @@ function buildFeedbackExport(
         isHuman: team.isHuman,
         overall: breakdown.overall,
         breakdown,
+        netRatingProjection: projectedNetRating(team),
+        leagueEvaluation: leagueEvalByTeamId.get(team.id) ?? null,
         roster,
         rotation: original.rotation,
         bench: original.bench,
@@ -258,6 +264,12 @@ function downloadFeedback(
 
 export default function ResultsScreen({ teams, history, mode, onRestart, pickReactions, pickReasoning }: Props) {
   const ranked = rankTeams(teams);
+  // Monte Carlo bracket sim (20,000 runs) — memoized on `teams` identity so it doesn't re-run on
+  // every unrelated re-render (e.g. typing a feedback note), matching `ranked` above in reading
+  // off the original auto-assigned rotations, not per-card rotation corrections.
+  const leagueEval = useMemo(() => evaluateLeague(teams), [teams]);
+  const leagueEvalByTeamId = useMemo(() => new Map(leagueEval.map((e) => [e.teamId, e])), [leagueEval]);
+  const teamById = (id: string) => teams.find((t) => t.id === id);
   const playerById = (id: string) => draftPool.find((p) => p.id === id);
   const [feedback, setFeedback] = useState<Record<string, TeamFeedback>>({});
   const [showBrowser, setShowBrowser] = useState(false);
@@ -329,6 +341,8 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         const shownTeam = displayTeam(team);
         const assignments = allAssignments(shownTeam);
         const bench = benchWithMinutes(shownTeam);
+        const netRating = projectedNetRating(shownTeam);
+        const leagueEvalRow = leagueEvalByTeamId.get(team.id);
         const teamHistory = history.filter((h) => h.teamId === team.id).sort((a, b) => a.pickNumber - b.pickNumber);
         const fb = getFeedback(team.id);
         const isEditingRotation = editingRotationTeamId === team.id;
@@ -346,6 +360,22 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
               <span>Rotation: {breakdown.rotationScore}</span>
               <span>FGA spent: {team.roster.reduce((sum, p) => sum + p.fga, 0).toFixed(1)}</span>
             </div>
+            <div className="subscores net-rating-projection" title="Real-NBA-units estimate (points per 100 possessions), fitted against 865 real 1997-2026 team-seasons — a different, informational question from the 0-100 scores above, not a replacement for them.">
+              <span>Projected NBA net rating: {netRating.net >= 0 ? '+' : ''}{netRating.net.toFixed(1)}</span>
+              <span>(ORTG {netRating.offense.toFixed(1)} / DRTG {netRating.defense.toFixed(1)})</span>
+            </div>
+            {leagueEvalRow && (
+              <div className="subscores net-rating-projection" title="Best-of-7 series odds against each of the other 15 rosters, and championship probability from a 20,000-run single-elimination bracket simulation seeded by Final Power Ranking.">
+                <span>Championship odds: {(leagueEvalRow.championshipProbability * 100).toFixed(1)}%</span>
+                <span>Avg series win prob: {(leagueEvalRow.avgSeriesWinProb * 100).toFixed(0)}%</span>
+                <span>
+                  Best matchup: vs {teamLabel(teamById(leagueEvalRow.bestMatchup.opponentId)!)} ({(leagueEvalRow.bestMatchup.seriesWinProb * 100).toFixed(0)}%)
+                </span>
+                <span>
+                  Worst matchup: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} ({(leagueEvalRow.worstMatchup.seriesWinProb * 100).toFixed(0)}%)
+                </span>
+              </div>
+            )}
             {isEditingRotation ? (
               <RotationBuilder
                 roster={team.roster}

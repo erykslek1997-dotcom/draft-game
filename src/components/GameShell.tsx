@@ -87,6 +87,9 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
 
   // Auto-resolve AI turns during the draft — never in Commissioner Mode, where every team's pick
   // comes from the human via `handlePick` instead (see the effect's own early-return below).
+  // The CPU-speed slider (`aiSpeed`) is only exposed in the UI in Tester Mode (see the
+  // `game-controls` render below), but it still drives this effect in Player Mode too — it just
+  // stays pinned at its default ('Normal'), same real AI-turn pacing a player would expect.
   useEffect(() => {
     if (phase !== 'draft' || draftState.complete || draftState.commissionerMode) return;
     const teamIdx = currentTeamIndex(draftState);
@@ -132,6 +135,25 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
     setDraftState((s) => autoFinishDraft(s));
   }
 
+  // 2026-08-14, user's own ask ("zrób lekkie UI trybu developera żeby wszystko szybko działało"):
+  // reaching ResultsScreen for a quick check used to mean finishing 144 picks, then manually
+  // clicking through span selection and rotation-building — three separate screens just to see a
+  // score. One button, available in every pre-results phase, that does what a normal playthrough
+  // does for the human team too (same `optimizeSpans`/`autoAssignRotation` treatment AI teams
+  // already get after the draft) instead of leaving it for manual choice. Testing-only, same
+  // "no confirmation, skip real steps" convenience as Auto-finish above — never shown outside
+  // Tester Mode.
+  function handleSkipToResults() {
+    const finished = draftState.complete ? draftState : autoFinishDraft(draftState);
+    const teams = finished.teams.map((t) => {
+      const roster = optimizeSpans(t.roster, CAP_LIMIT);
+      return { ...t, roster, rotation: autoAssignRotation(roster) };
+    });
+    setDraftState(finished);
+    setFinalTeams(teams);
+    setPhase('results');
+  }
+
   function handleRotationConfirmed(rotation: Rotation) {
     const teams = draftState.teams.map((t) => (t.isHuman ? { ...t, rotation } : t));
     setFinalTeams(teams);
@@ -153,23 +175,33 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
     <>
       <div className="game-controls">
         <button className="secondary-btn reset-btn" onClick={handleReset}>
-          Reset
+          {mode === 'developer' ? 'Reset' : 'Exit Draft'}
         </button>
-        <label className="ai-speed">
-          <span>CPU speed</span>
-          <input
-            type="range"
-            min={0}
-            max={AI_SPEEDS.length - 1}
-            step={1}
-            value={aiSpeedIndex}
-            onChange={(e) => setAiSpeedIndex(Number(e.target.value))}
-          />
-          <span className="ai-speed-value">{aiSpeed.label}</span>
-        </label>
-        {phase === 'draft' && !draftState.complete && (
+        {/* CPU-speed slider and Auto-finish are testing conveniences, not real player-facing
+            features (see their own docstrings) — Tester Mode only. Player Mode always runs AI
+            turns at the default 'Normal' pace and has no shortcut past a real draft. */}
+        {mode === 'developer' && (
+          <label className="ai-speed">
+            <span>CPU speed</span>
+            <input
+              type="range"
+              min={0}
+              max={AI_SPEEDS.length - 1}
+              step={1}
+              value={aiSpeedIndex}
+              onChange={(e) => setAiSpeedIndex(Number(e.target.value))}
+            />
+            <span className="ai-speed-value">{aiSpeed.label}</span>
+          </label>
+        )}
+        {mode === 'developer' && phase === 'draft' && !draftState.complete && (
           <button className="secondary-btn auto-finish-btn" onClick={handleAutoFinish}>
             Auto-finish (testing)
+          </button>
+        )}
+        {mode === 'developer' && phase !== 'results' && (
+          <button className="secondary-btn skip-to-results-btn" onClick={handleSkipToResults}>
+            ⚡ Skip to Results (dev)
           </button>
         )}
       </div>
@@ -179,7 +211,7 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
           <h2>FAIL</h2>
           <p>The pool ran dry — there aren't enough undrafted players left for your team to ever reach 9.</p>
           <button className="primary-btn" onClick={handleReset}>
-            Reset
+            {mode === 'developer' ? 'Reset' : 'Exit Draft'}
           </button>
         </div>
       )}
