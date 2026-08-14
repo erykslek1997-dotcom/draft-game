@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
-import { rankTeams } from '../engine/scoring';
+import { rankTeams, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague } from '../engine/leagueSimulation';
 import { STARTER_SLOTS } from '../engine/positions';
 import { allAssignments, benchWithMinutes } from '../engine/rotation';
@@ -131,6 +131,60 @@ const CONCERN_KEYWORDS = [
 function isConcernNote(note: string): boolean {
   const lower = note.toLowerCase();
   return CONCERN_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+/**
+ * 2026-08-15, user-reported (real screenshot): a team with a genuinely weak score chip (Spacing
+ * ~50, below-average) can still show a near-empty Concerns column, because `scoring.ts`'s own
+ * `notes` array is threshold-gated per check — a mediocre-but-not-extreme score doesn't always
+ * clear whatever bar that specific check uses to push a note at all, positive OR negative.
+ * `isConcernNote` above can only classify notes that already exist; it can't invent one for a
+ * real weak number nobody wrote a sentence about.
+ *
+ * This synthesizes a concern directly off the score chip itself — scoped to the four dimensions a
+ * human reader would recognize as "explained by a note when something's wrong" (Offense/Defense/
+ * Spacing/Rotation; Talent and Fit are excluded: Talent has no note-generating check of its own to
+ * compare against, and Fit IS the composite most of `notes` already comes from, so a low Fit score
+ * is essentially always already covered by real notes above).
+ *
+ * Two calibration passes, the second a real correction of the first (checked live against 16
+ * real teams in one drafted game, not just the one motivating screenshot):
+ * 1. First shipped gated on `scoreBand<=2` (<33, "bottom third") and "already covered" checked
+ *    against the full `notes` list (strengths included). Measured: only 2 of 96 team-dimension
+ *    pairs across all 16 teams even cleared that bar, and both already had a real matching note —
+ *    the synthetic fallback never actually fired once in a real draft, including for the exact
+ *    Spacing~42-52 range the original screenshot showed (band 3, not band 2).
+ * 2. Loosened to `scoreBand<=3` (<50, "below average") and "already covered" checked against only
+ *    the real CONCERN notes specifically (a positive note mentioning "shooters" doesn't explain
+ *    away a mediocre Spacing number the way an actual concern would). Re-checked against the same
+ *    16 teams: now fires for ~7 genuinely under-explained cases (including the reporter's own
+ *    team, Spacing 42) while correctly staying silent wherever a real concern already covers the
+ *    dimension (e.g. Spacing 30 with "Only 1 plus shooter... (spacing risk)" already present).
+ */
+const DIMENSION_CONCERN_KEYWORDS: Record<string, string[]> = {
+  Offense: ['creation', 'isolation', 'touches', 'shot creator', 'stall'],
+  Defense: ['defens', 'rim', 'perimeter', 'shell'],
+  Spacing: ['spac', 'shooter', 'floor', 'gravity', 'cramped'],
+  Rotation: ['position', 'underplayed', 'minutes ceiling', 'overworked', 'incomplete', 'halved'],
+};
+
+function syntheticLowScoreConcerns(breakdown: ScoreBreakdown, existingConcerns: string[]): string[] {
+  const dims: [string, number][] = [
+    ['Offense', breakdown.offenseScore],
+    ['Defense', breakdown.defenseScore],
+    ['Spacing', breakdown.spacingScore],
+    ['Rotation', breakdown.rotationScore],
+  ];
+  const lowerConcerns = existingConcerns.map((n) => n.toLowerCase());
+  const out: string[] = [];
+  for (const [label, score] of dims) {
+    if (scoreBand(score) > 3) continue;
+    const keywords = DIMENSION_CONCERN_KEYWORDS[label];
+    const alreadyCovered = lowerConcerns.some((n) => keywords.some((kw) => n.includes(kw)));
+    if (alreadyCovered) continue;
+    out.push(`${label} sits below average for this roster (${score}/100) — no existing concern explains why, but the number itself is a real soft spot.`);
+  }
+  return out;
 }
 
 function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): TeamFeedback {
@@ -449,7 +503,8 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         const isExpanded = expandedTeamIds.has(team.id);
         const totalFga = team.roster.reduce((sum, p) => sum + p.fga, 0);
         const strengths = breakdown.notes.filter((n) => !isConcernNote(n));
-        const concerns = breakdown.notes.filter(isConcernNote);
+        const realConcerns = breakdown.notes.filter(isConcernNote);
+        const concerns = [...realConcerns, ...syntheticLowScoreConcerns(breakdown, realConcerns)];
         return (
           <div key={team.id} className={`team-result rank-${rank} ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}>
             <button className="team-result-header" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
