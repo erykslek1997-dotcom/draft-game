@@ -508,6 +508,37 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
     if (penalty >= 8) notes.push('Team defense is genuinely thin across the starting five.');
   }
 
+  // 2026-08-14, ATTEMPTED and REVERTED same day: a rim/perimeter-defender-role composition bonus
+  // (+1.5/starter, capped +8), motivated by real-NBA data (`scripts/calibrateArchetypeComposition.ts`,
+  // rimProtectorShare/perimeterDefenderShare r≈-0.19 to -0.31 vs real DEFRTG, stable out-of-sample)
+  // over a weak, wrong-signed D1-vote signal (perimeter defender tag count r=-0.211 at n=15) — the
+  // user's own call that a small hermetic opinion sample should lose to real outcome data on an
+  // axis (defense) it's plausibly biased against (easy to eyeball offense off a roster sheet, hard
+  // to eyeball defense). That reasoning stands on its own. But `scripts/checkFitZeroHundred.ts` — a
+  // concrete acceptance test with KNOWN ground truth, not opinion vs. data — caught a real,
+  // decisive problem: the user's own "BAD" roster (Ben Simmons/David Thompson/Alex English/Elton
+  // Brand/Amar'e Stoudemire, target fit 0-10, explicitly built to have weak defense among its
+  // defining flaws) got ALL FIVE starters flagged by the role tag — Simmons (Point of Attack, def
+  // impact 27.1), Thompson (Chaser, 16.7), English (Chaser, 23.8), Brand (Anchor Big, 36.2),
+  // Stoudemire (Mobile Big, 30.7). Checked whether the impact-gated `isStrongRimProtector`/
+  // `isStrongPerimeterDefender` (stricter than the raw tag) would filter them out: it does not —
+  // every one of the five clears even the STRICTER "shell" thresholds
+  // (`SHELL_RIM_PROTECTOR_IMPACT_THRESHOLD`=24, `SHELL_PERIMETER_DEFENDER_IMPACT_THRESHOLD`=15)
+  // too, so this isn't a threshold-tuning problem. It's the same root cause already diagnosed
+  // once before on this exact mechanism (`isStrongPerimeterDefender`'s own docstring above —
+  // Reggie Miller's Chaser tag from elevated box activity despite no real defensive reputation),
+  // just hitting five real, well-known limited defenders at once instead of one edge case. This is
+  // a THIRD, independent line of evidence — not D1 opinion, not real-NBA aggregate correlation, a
+  // directly falsifiable roster with a known correct answer — and it overrides both: the
+  // underlying role-tag signal (raw OR impact-gated) is demonstrably unreliable for real players
+  // real basketball knowledge says are weak defenders, so crediting it in `fitScore` — even
+  // capped, even small — rewards exactly the wrong roster here (fit moved 20->26 against a 0-10
+  // target, the wrong direction). Reverted; `ACHIEVABLE_MIN`/`ACHIEVABLE_MAX` restored to their
+  // pre-2026-08-14 values (-44/150) since the term that justified moving them is gone. The
+  // real-NBA archetype-composition finding itself stays valid and recorded in
+  // [[net_rating_model_and_spec_reviews]] — what's rejected here is specifically wiring the raw/
+  // impact-gated ROLE TAG into `fitScore`, not the underlying real-data correlation.
+
   // Self-sufficient engine + real two-way complements — 2026-08-07, the user's (d) framework:
   // a Nash-type doesn't need more offensive talent, he needs teammates who defend and finish.
   // Small, capped credit (distinct from the general team-defense bonus above, which fires
@@ -564,8 +595,12 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   // rim/perimeter checks with a bidirectional D-TAL term (see those changes' own docstrings
   // above) — MAX moved 133->150 (the wider efficiency band raises the real achievable ceiling),
   // MIN held at -44 (the new D-TAL penalty's max magnitude, 20, is smaller than the two removed
-  // binary penalties combined, 25, so the real floor didn't move). Re-run
-  // `scripts/calibrateFitScoreRange.ts` and paste its output here after any future term change.
+  // binary penalties combined, 25, so the real floor didn't move).
+  // 2026-08-14: a defensive-role-composition bonus was tried and reverted the same day (see that
+  // change's own now-removed docstring above, kept as a comment for the record) — these anchors
+  // moved to -51/153 for it and are restored here to their pre-attempt values now that the term
+  // is gone. Re-run `scripts/calibrateFitScoreRange.ts` and paste its output here after any
+  // future term change.
   const ACHIEVABLE_MIN = -44;
   const ACHIEVABLE_MAX = 150;
   const rescaled = ((score - ACHIEVABLE_MIN) / (ACHIEVABLE_MAX - ACHIEVABLE_MIN)) * 100;
