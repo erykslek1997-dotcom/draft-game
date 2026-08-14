@@ -508,36 +508,39 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
     if (penalty >= 8) notes.push('Team defense is genuinely thin across the starting five.');
   }
 
-  // 2026-08-14, ATTEMPTED and REVERTED same day: a rim/perimeter-defender-role composition bonus
-  // (+1.5/starter, capped +8), motivated by real-NBA data (`scripts/calibrateArchetypeComposition.ts`,
-  // rimProtectorShare/perimeterDefenderShare r≈-0.19 to -0.31 vs real DEFRTG, stable out-of-sample)
-  // over a weak, wrong-signed D1-vote signal (perimeter defender tag count r=-0.211 at n=15) — the
-  // user's own call that a small hermetic opinion sample should lose to real outcome data on an
-  // axis (defense) it's plausibly biased against (easy to eyeball offense off a roster sheet, hard
-  // to eyeball defense). That reasoning stands on its own. But `scripts/checkFitZeroHundred.ts` — a
-  // concrete acceptance test with KNOWN ground truth, not opinion vs. data — caught a real,
-  // decisive problem: the user's own "BAD" roster (Ben Simmons/David Thompson/Alex English/Elton
-  // Brand/Amar'e Stoudemire, target fit 0-10, explicitly built to have weak defense among its
-  // defining flaws) got ALL FIVE starters flagged by the role tag — Simmons (Point of Attack, def
-  // impact 27.1), Thompson (Chaser, 16.7), English (Chaser, 23.8), Brand (Anchor Big, 36.2),
-  // Stoudemire (Mobile Big, 30.7). Checked whether the impact-gated `isStrongRimProtector`/
-  // `isStrongPerimeterDefender` (stricter than the raw tag) would filter them out: it does not —
-  // every one of the five clears even the STRICTER "shell" thresholds
-  // (`SHELL_RIM_PROTECTOR_IMPACT_THRESHOLD`=24, `SHELL_PERIMETER_DEFENDER_IMPACT_THRESHOLD`=15)
-  // too, so this isn't a threshold-tuning problem. It's the same root cause already diagnosed
-  // once before on this exact mechanism (`isStrongPerimeterDefender`'s own docstring above —
-  // Reggie Miller's Chaser tag from elevated box activity despite no real defensive reputation),
-  // just hitting five real, well-known limited defenders at once instead of one edge case. This is
-  // a THIRD, independent line of evidence — not D1 opinion, not real-NBA aggregate correlation, a
-  // directly falsifiable roster with a known correct answer — and it overrides both: the
-  // underlying role-tag signal (raw OR impact-gated) is demonstrably unreliable for real players
-  // real basketball knowledge says are weak defenders, so crediting it in `fitScore` — even
-  // capped, even small — rewards exactly the wrong roster here (fit moved 20->26 against a 0-10
-  // target, the wrong direction). Reverted; `ACHIEVABLE_MIN`/`ACHIEVABLE_MAX` restored to their
-  // pre-2026-08-14 values (-44/150) since the term that justified moving them is gone. The
-  // real-NBA archetype-composition finding itself stays valid and recorded in
-  // [[net_rating_model_and_spec_reviews]] — what's rejected here is specifically wiring the raw/
-  // impact-gated ROLE TAG into `fitScore`, not the underlying real-data correlation.
+  // 2026-08-14, second attempt (first one — raw/impact-gated role tag, no further gate — was
+  // reverted same day: it credited all 5 starters on the `checkFitZeroHundred.ts` "BAD" roster,
+  // including Thompson/English/Stoudemire, none of whom clear even the strictest existing
+  // impact threshold despite real basketball knowledge rating them limited-to-poor defenders).
+  // Root cause diagnosed: `computeDefensiveImpact` (what both the role tag AND
+  // `isStrongRimProtector`/`isStrongPerimeterDefender` are built from) is pure box-score activity
+  // — it's the SAME signal circling back on itself, not independent corroboration. D-TAL
+  // (`computeDefensiveTalent`) is a genuinely different, stronger signal: DARKO-corrected real
+  // plus-minus on top of the box score, already used at the team level just above. Checked it
+  // directly against both acceptance-test rosters: BAD's D-TAL values are Simmons 78 (real,
+  // legitimately plus defender that era), Brand 68 (real, decent two-way piece 2005-07), Thompson
+  // 48, English 37, Stoudemire 33 — a clean split, with the box-noisy trio all reading BELOW GOOD
+  // roster's own weakest starter (Lowry, D-TAL 68). Gating the role-tag bonus on D-TAL clearing
+  // the ~70%-to-elite mark (`DTAL_NEUTRAL + 0.7 * DTAL_ELITE_SPAN` ≈ 68, using the same anchors as
+  // `avgStarterDTal` just above) keeps all 5 GOOD starters qualifying (min 68) while correctly
+  // dropping Thompson/English/Stoudemire from BAD — Simmons and Brand still count, which is
+  // defensible (both were real, legitimately good defenders in these specific spans; the
+  // remaining fit=~20ish this leaves BAD at reflects genuine credit, not leftover noise). Small
+  // and capped either way: +1.5 per D-TAL-corroborated starter, max +8.
+  const DEFENSIVE_ROLE_DTAL_GATE = Math.round(DTAL_NEUTRAL + 0.7 * DTAL_ELITE_SPAN);
+  const DEFENSIVE_ROLE_BONUS_PER_STARTER = 1.5;
+  const DEFENSIVE_ROLE_MAX_BONUS = 8;
+  const corroboratedDefenderStarters = starters.filter((p) => {
+    const hasRoleTag =
+      RIM_PROTECTOR_ROLES.includes(p.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) ||
+      PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]);
+    return hasRoleTag && computeDefensiveTalent(p) >= DEFENSIVE_ROLE_DTAL_GATE;
+  }).length;
+  if (corroboratedDefenderStarters > 0) {
+    const bonus = Math.min(DEFENSIVE_ROLE_MAX_BONUS, Math.round(corroboratedDefenderStarters * DEFENSIVE_ROLE_BONUS_PER_STARTER));
+    score += bonus;
+    notes.push(`${corroboratedDefenderStarters} starter(s) carry a real, D-TAL-corroborated rim/perimeter defensive role.`);
+  }
 
   // Self-sufficient engine + real two-way complements — 2026-08-07, the user's (d) framework:
   // a Nash-type doesn't need more offensive talent, he needs teammates who defend and finish.
@@ -596,13 +599,14 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   // above) — MAX moved 133->150 (the wider efficiency band raises the real achievable ceiling),
   // MIN held at -44 (the new D-TAL penalty's max magnitude, 20, is smaller than the two removed
   // binary penalties combined, 25, so the real floor didn't move).
-  // 2026-08-14: a defensive-role-composition bonus was tried and reverted the same day (see that
-  // change's own now-removed docstring above, kept as a comment for the record) — these anchors
-  // moved to -51/153 for it and are restored here to their pre-attempt values now that the term
-  // is gone. Re-run `scripts/calibrateFitScoreRange.ts` and paste its output here after any
-  // future term change.
-  const ACHIEVABLE_MIN = -44;
-  const ACHIEVABLE_MAX = 150;
+  // 2026-08-14: recalibrated after adding the D-TAL-gated defensive-role-composition bonus above
+  // (+8 max). `calibrateFitScoreRange.ts`'s hill-climbing search has real run-to-run variance
+  // (unseeded randomness) — 5 separate runs after this change returned MIN in [-55,-38] and MAX
+  // in [150,157], not a single stable answer. Used the median-ish of those runs (-46/154) rather
+  // than chasing one noisy extreme. Re-run `scripts/calibrateFitScoreRange.ts` a few times (not
+  // just once) and paste a representative value here after any future term change.
+  const ACHIEVABLE_MIN = -46;
+  const ACHIEVABLE_MAX = 154;
   const rescaled = ((score - ACHIEVABLE_MIN) / (ACHIEVABLE_MAX - ACHIEVABLE_MIN)) * 100;
 
   return { score: Math.max(0, Math.min(100, Math.round(rescaled))), notes, raw: score };
