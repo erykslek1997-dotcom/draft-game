@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { players } from '../src/data/players';
 import { autoAssignRotation } from '../src/engine/rotation';
+import { fitV2ShadowScore, type FitV2ShadowComponents } from '../src/engine/fitV2Shadow';
 import {
   fitScore,
   rotationScore,
@@ -46,6 +47,8 @@ interface AuditRow extends ScoreBreakdown {
   judged: number;
   fitComponents: FitScoreComponents;
   fitRaw: number;
+  fitV2Shadow: number;
+  fitV2Components: FitV2ShadowComponents;
   rotationComponents: RotationScoreComponents;
 }
 
@@ -61,12 +64,15 @@ for (const [teamId, roster] of rosters) {
     rotation: autoAssignRotation(roster),
   };
   const fit = fitScore(team);
+  const fitV2 = fitV2ShadowScore(team);
   const rotation = rotationScore(team);
   rows.push({
     teamId,
     judged: judged[String(teamId)],
     fitComponents: fit.components,
     fitRaw: fit.raw,
+    fitV2Shadow: fitV2.score,
+    fitV2Components: fitV2.components,
     rotationComponents: rotation.components,
     ...scoreTeam(team),
   });
@@ -135,6 +141,36 @@ for (const [key, weight] of components) {
   ].join('\t'));
 }
 
+const fitV2Values = rows.map((row) => row.fitV2Shadow);
+console.log('\nFIT v1 vs FIT v2 shadow (diagnostic only; the judge scores are overall-roster opinions, not dedicated FIT labels):');
+console.log('metric\tpearson\tspearman\tmean\tstddev');
+for (const [name, values] of [
+  ['fit_v1', rows.map((row) => row.fitScore)],
+  ['fit_v2_shadow', fitV2Values],
+] as const) {
+  console.log([
+    name,
+    pearson(judgedValues, values).toFixed(3),
+    spearman(judgedValues, values).toFixed(3),
+    average(values).toFixed(1),
+    standardDeviation(values).toFixed(1),
+  ].join('\t'));
+}
+console.log(`v1_v2_spearman\t${spearman(rows.map((row) => row.fitScore), fitV2Values).toFixed(3)}`);
+
+console.log('\nFIT v2 shadow components:');
+console.log('component\tpearson\tspearman\tmean\tstddev');
+for (const key of Object.keys(rows[0].fitV2Components) as Array<keyof FitV2ShadowComponents>) {
+  const values = rows.map((row) => row.fitV2Components[key]);
+  console.log([
+    key,
+    pearson(judgedValues, values).toFixed(3),
+    spearman(judgedValues, values).toFixed(3),
+    average(values).toFixed(1),
+    standardDeviation(values).toFixed(1),
+  ].join('\t'));
+}
+
 const blendComponents = components.filter(([key]) => key !== 'overall');
 console.log('\nLeave-one-component-out blend (remaining active weights renormalized):');
 console.log('removed\tpearson\tspearman\tdelta_spearman');
@@ -195,6 +231,14 @@ for (const [name, weights] of Object.entries(candidateBlends)) {
     standardDeviation(values).toFixed(1),
   ].join('\t'));
 }
+const shadowFitBlend = rows.map((row) => candidateBlend({ ...row, fitScore: row.fitV2Shadow }, candidateBlends.current));
+console.log([
+  'current_with_fit_v2_shadow',
+  pearson(judgedValues, shadowFitBlend).toFixed(3),
+  spearman(judgedValues, shadowFitBlend).toFixed(3),
+  average(shadowFitBlend).toFixed(1),
+  standardDeviation(shadowFitBlend).toFixed(1),
+].join('\t'));
 
 const lowDuplicationWeights = candidateBlends.current;
 const rotationComponentKeys = Object.keys(rows[0].rotationComponents) as Array<keyof RotationScoreComponents>;

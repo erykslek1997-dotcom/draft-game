@@ -1,4 +1,5 @@
 import heightByName from './awards/height.json';
+import weightByName from './awards/weight.json';
 import { normalizePlayerName } from './schema';
 
 /**
@@ -10,4 +11,9 @@ import { normalizePlayerName } from './schema';
  */
 export function getHeightInches(playerName: string): number | undefined {
   return (heightByName as Record<string, number>)[normalizePlayerName(playerName)];
+}
+
+/** Real listed body mass from the same 6,692-row historical NBA bio export as height. */
+export function getBodyWeightLbs(playerName: string): number | undefined {
+  return (weightByName as Record<string, number>)[normalizePlayerName(playerName)];
 }

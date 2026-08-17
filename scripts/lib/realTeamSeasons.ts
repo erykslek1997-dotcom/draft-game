@@ -52,7 +52,7 @@ interface TeamSeasonReal {
   games: number;
 }
 
-function loadTeamSeasonReal(): Map<string, TeamSeasonReal> {
+function loadTeamSeasonReal(gameType: 'regular' | 'playoff'): Map<string, TeamSeasonReal> {
   const { header, rows } = loadCsv(TEAM_ADVANCED_CSV);
   const iType = colIndex(header, 'type');
   const iTeam = colIndex(header, 'team');
@@ -63,7 +63,7 @@ function loadTeamSeasonReal(): Map<string, TeamSeasonReal> {
 
   const sums = new Map<string, { off: number; def: number; net: number; games: number; team: string; season: number }>();
   for (const r of rows) {
-    if (r[iType] !== 'regular') continue;
+    if (r[iType] !== gameType) continue;
     const season = parseInt(r[iSeason], 10);
     const team = r[iTeam];
     const key = `${season}|${team}`;
@@ -96,7 +96,7 @@ function loadTeamSeasonReal(): Map<string, TeamSeasonReal> {
   return result;
 }
 
-function loadRosterMinutes(): Map<string, Map<string, number>> {
+function loadRosterMinutes(gameType: 'regular' | 'playoff'): Map<string, Map<string, number>> {
   const { header, rows } = loadCsv(PLAYER_ADVANCED_CSV);
   const iType = colIndex(header, 'type');
   const iTeam = colIndex(header, 'team');
@@ -106,7 +106,7 @@ function loadRosterMinutes(): Map<string, Map<string, number>> {
 
   const result = new Map<string, Map<string, number>>();
   for (const r of rows) {
-    if (r[iType] !== 'regular') continue;
+    if (r[iType] !== gameType) continue;
     const min = parseFloat(r[iMin]);
     if (!Number.isFinite(min) || min <= 0) continue;
     const key = `${r[iSeason]}|${r[iTeam]}`;
@@ -182,14 +182,18 @@ export interface BuildOptions {
   /** Team-seasons with fewer real games than this are dropped (guards against tiny/lockout-
    * shortened-adjacent samples). Default 20. */
   minGames?: number;
+  /** Source split to aggregate. Defaults to regular; playoff keeps postseason team/player rows
+   * separate so matchup-hunting hypotheses can be validated without contaminating RS fits. */
+  gameType?: 'regular' | 'playoff';
 }
 
 export function buildRealTeamSeasons(options: BuildOptions = {}): RealTeamSeason[] {
   const minCoverage = options.minCoverage ?? 0.6;
   const minGames = options.minGames ?? 20;
+  const gameType = options.gameType ?? 'regular';
 
-  const teamSeasonReal = loadTeamSeasonReal();
-  const rosterMinutes = loadRosterMinutes();
+  const teamSeasonReal = loadTeamSeasonReal(gameType);
+  const rosterMinutes = loadRosterMinutes(gameType);
   const spanIndex = buildSpanIndex();
 
   const result: RealTeamSeason[] = [];

@@ -495,6 +495,25 @@ const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: Defensi
   { name: 'Paul George', spanLabel: '2022-24', role: 'Wing Stopper' },
   { name: 'Paul George', spanLabel: '2023-25', role: 'Wing Stopper' },
   { name: 'Jalen Williams', spanLabel: '2023-25', role: 'Wing Stopper' },
+  // The generated box classifier made these three isolated peak-McGrady windows Wing Stopper
+  // from high STL/BLK/RPG activity. Both adjacent windows (2000-02 and 2002-04) and the next one
+  // (2005-07) classify him as Chaser, and the reported Porter/T-Mac/Reggie lineup exposed why
+  // the one-rung promotion is misleading: event generation is not evidence that Orlando/Houston
+  // used him as a true primary wing stopper. Keep the real active perimeter role without
+  // inventing a matchup assignment the data does not contain.
+  { name: 'Tracy McGrady', spanLabel: '2001-03', role: 'Chaser' },
+  { name: 'Tracy McGrady', spanLabel: '2003-05', role: 'Chaser' },
+  { name: 'Tracy McGrady', spanLabel: '2004-06', role: 'Chaser' },
+  // Mullin's 1987-93 generated windows were promoted to Wing Stopper from steals/blocks alone.
+  // His value was anticipation and passing-lane help, not taking the opponent's best wing; the
+  // Stockton/Nash/Mullin lineup exposed the false claim directly (Wing Stopper 93 despite
+  // D-TAL 59). Helper preserves the real event-generation signal without inventing a matchup
+  // assignment, and lets a genuine stopper such as OG appear as the lineup's wing provider.
+  { name: 'Chris Mullin', spanLabel: '1987-89', role: 'Helper' },
+  { name: 'Chris Mullin', spanLabel: '1988-90', role: 'Helper' },
+  { name: 'Chris Mullin', spanLabel: '1989-91', role: 'Helper' },
+  { name: 'Chris Mullin', spanLabel: '1990-92', role: 'Helper' },
+  { name: 'Chris Mullin', spanLabel: '1991-93', role: 'Helper' },
 ];
 
 function applyDefensiveRoleOverrides(spans: PlayerSpan[]): PlayerSpan[] {
@@ -550,6 +569,11 @@ const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [
   // cross-slot starter-fallback tier (rotation.ts) legitimately extend him into a thin backup PG
   // spot with his own spare capacity instead of reaching for a true last-resort fallback.
   { name: 'LeBron James', position: 'PG' },
+  // Jrue's adjacent spans already alternate between PG/SG and SG/PG, while the isolated
+  // 2017-19/2018-20 generated spans lost PG entirely despite 6.8/6.9 APG and the same real
+  // lead-guard duties. This prevents those two spans from taking an artificial 0.5 position-fit
+  // multiplier when used as a backup PG; primary-PG spans no-op automatically.
+  { name: 'Jrue Holiday', position: 'PG' },
 ];
 
 function applySecondaryPositionAdditions(spans: PlayerSpan[]): PlayerSpan[] {

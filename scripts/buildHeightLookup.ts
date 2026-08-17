@@ -24,42 +24,54 @@ import { join } from 'node:path';
 import { normalizePlayerName } from '../src/data/schema';
 
 const CSV_PATH = join(process.cwd(), 'src/data/raw/players_bio.csv');
-const OUT_PATH = join(process.cwd(), 'src/data/awards/height.json');
+const HEIGHT_OUT_PATH = join(process.cwd(), 'src/data/awards/height.json');
+const WEIGHT_OUT_PATH = join(process.cwd(), 'src/data/awards/weight.json');
 
 const lines = readFileSync(CSV_PATH, 'utf8').split(/\r?\n/).filter(Boolean);
 const header = lines[0].split(',');
 const firstIdx = header.indexOf('firstName');
 const lastIdx = header.indexOf('lastName');
 const heightIdx = header.indexOf('heightInches');
+const weightIdx = header.indexOf('bodyWeightLbs');
 
-const byName = new Map<string, number>();
+const heightByName = new Map<string, number>();
+const weightByName = new Map<string, number>();
 let skippedNoHeight = 0;
+let skippedNoWeight = 0;
 let skippedDuplicate = 0;
 for (const line of lines.slice(1)) {
   const cols = line.split(',');
   const first = cols[firstIdx];
   const last = cols[lastIdx];
   const heightIn = parseFloat(cols[heightIdx]);
-  if (!first || !last || !Number.isFinite(heightIn)) {
+  const weightLbs = parseFloat(cols[weightIdx]);
+  if (!first || !last) continue;
+  if (!Number.isFinite(heightIn)) {
     skippedNoHeight++;
-    continue;
   }
+  if (!Number.isFinite(weightLbs)) skippedNoWeight++;
   const key = normalizePlayerName(`${first} ${last}`);
   // Same "keep the first seen, don't overwrite" rule as every other name-keyed lookup in this
   // project — a handful of normalized-name collisions across genuinely different real players
   // (multiple "Mike Smith"s etc.) is an accepted small-sample gap, not worth a bigger
   // disambiguation effort for ~6700 rows.
-  if (byName.has(key)) {
+  if (heightByName.has(key) || weightByName.has(key)) {
     skippedDuplicate++;
     continue;
   }
-  byName.set(key, heightIn);
+  if (Number.isFinite(heightIn)) heightByName.set(key, heightIn);
+  if (Number.isFinite(weightLbs)) weightByName.set(key, weightLbs);
 }
 
-const out: Record<string, number> = {};
-for (const [key, value] of byName) out[key] = value;
+const heightOut: Record<string, number> = {};
+for (const [key, value] of heightByName) heightOut[key] = value;
+const weightOut: Record<string, number> = {};
+for (const [key, value] of weightByName) weightOut[key] = value;
 
-writeFileSync(OUT_PATH, JSON.stringify(out, null, 2) + '\n');
+writeFileSync(HEIGHT_OUT_PATH, JSON.stringify(heightOut, null, 2) + '\n');
+writeFileSync(WEIGHT_OUT_PATH, JSON.stringify(weightOut, null, 2) + '\n');
 console.log(
-  `Wrote ${byName.size} players to ${OUT_PATH} (skipped ${skippedNoHeight} rows with no height, ${skippedDuplicate} duplicate-name collisions)`,
+  `Wrote ${heightByName.size} heights and ${weightByName.size} weights ` +
+    `(skipped ${skippedNoHeight} rows with no height, ${skippedNoWeight} with no weight, ` +
+    `${skippedDuplicate} duplicate-name collisions)`,
 );

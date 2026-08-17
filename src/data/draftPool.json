@@ -55133,7 +55133,9 @@
     "playerName": "Jrue Holiday",
     "spanLabel": "2017-19",
     "primaryPosition": "SG",
-    "secondaryPositions": [],
+    "secondaryPositions": [
+      "PG"
+    ],
     "fga": 16.2,
     "box": {
       "ppg": 20,
@@ -55155,7 +55157,9 @@
     "playerName": "Jrue Holiday",
     "spanLabel": "2018-20",
     "primaryPosition": "SG",
-    "secondaryPositions": [],
+    "secondaryPositions": [
+      "PG"
+    ],
     "fga": 16.9,
     "box": {
       "ppg": 20.2,
@@ -77213,7 +77217,7 @@
       "tsPct": 0.549
     },
     "offensiveArchetype": "Shot Creator",
-    "defensiveRole": "Wing Stopper"
+    "defensiveRole": "Chaser"
   },
   {
     "id": "mcgratr01-2003-2004",
@@ -77262,7 +77266,7 @@
       "tsPct": 0.527
     },
     "offensiveArchetype": "Shot Creator",
-    "defensiveRole": "Wing Stopper"
+    "defensiveRole": "Chaser"
   },
   {
     "id": "mcgratr01-2005-2006",
@@ -77286,7 +77290,7 @@
       "tsPct": 0.513
     },
     "offensiveArchetype": "Shot Creator",
-    "defensiveRole": "Wing Stopper"
+    "defensiveRole": "Chaser"
   },
   {
     "id": "mcgratr01-2006-2007",
@@ -81972,7 +81976,7 @@
       "tsPct": 0.582
     },
     "offensiveArchetype": "Shot Creator",
-    "defensiveRole": "Wing Stopper"
+    "defensiveRole": "Helper"
   },
   {
     "id": "mullich01-1989-1990",
@@ -81996,7 +82000,7 @@
       "tsPct": 0.609
     },
     "offensiveArchetype": "Shot Creator",
-    "defensiveRole": "Wing Stopper"
+    "defensiveRole": "Helper"
   },
   {
     "id": "mullich01-1990-1991",
@@ -82020,7 +82024,7 @@
       "tsPct": 0.63
     },
     "offensiveArchetype": "Shot Creator",
-    "defensiveRole": "Wing Stopper"
+    "defensiveRole": "Helper"
   },
   {
     "id": "mullich01-1991-1992",
@@ -82044,7 +82048,7 @@
       "tsPct": 0.603
     },
     "offensiveArchetype": "Shot Creator",
-    "defensiveRole": "Wing Stopper"
+    "defensiveRole": "Helper"
   },
   {
     "id": "mullich01-1992-1993",
@@ -82068,7 +82072,7 @@
       "tsPct": 0.583
     },
     "offensiveArchetype": "Shot Creator",
-    "defensiveRole": "Wing Stopper"
+    "defensiveRole": "Helper"
   },
   {
     "id": "mullich01-1996-1997",

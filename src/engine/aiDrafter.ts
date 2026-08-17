@@ -13,7 +13,7 @@ import {
 } from './positions';
 import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from './talent';
 import { displayTalentForSpan, tierContextFor } from './grades';
-import { autoAssignRotation, projectedStarterValue, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
+import { autoAssignRotation, projectedStarterValue, totalMinutesForPlayer, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
 import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing } from './spacing';
@@ -539,6 +539,29 @@ const BASE_FGA_PENALTY = 0.4;
  * previous 3.2 cap let a 5-FGA gap alone erase a 16-point talent edge, which was overpowering
  * ordinary star-vs-cap-glue talent gaps rather than just tie-breaking among similar talents. */
 const MAX_FGA_PENALTY = 1.3;
+
+/**
+ * A mathematically fillable bench is not necessarily a playable bench. The old lookahead only
+ * reserved the cheapest surviving names, which let a five-man core spend 85.5 FGA and leave
+ * three ~5-FGA roster spots; the resulting PG gap was then "solved" by TAL 40 Danny Young for
+ * 20 minutes. Six FGA is a conservative planning allowance for an ordinary playable reserve in
+ * this pool. Once only one or two future picks remain, one true sub-2-FGA glue slot may replace
+ * one ordinary reserve. If no candidate preserves this reserve, normal hard-cap legality remains
+ * the fallback, so the draft can always finish.
+ */
+const PLAYABLE_RESERVE_FGA_PER_SLOT = 6;
+const TRUE_CAP_GLUE_FGA_CEILING = 2;
+
+function plannedPlayableReserveFga(slotsRemaining: number): number {
+  if (slotsRemaining <= 0) return 0;
+  if (slotsRemaining >= 3) return slotsRemaining * PLAYABLE_RESERVE_FGA_PER_SLOT;
+  return (slotsRemaining - 1) * PLAYABLE_RESERVE_FGA_PER_SLOT + TRUE_CAP_GLUE_FGA_CEILING;
+}
+
+/** A 12-minute specialist may be narrow; an 18-24 minute backup cannot be replacement-level. */
+const MATERIAL_BENCH_MINUTES = 18;
+const MATERIAL_BENCH_TALENT_FLOOR = 52;
+const BENCH_QUALITY_SCAN_SIZE = 40;
 
 /**
  * The flat FGA cost cannot distinguish a justified all-time offensive burden from a merely good
@@ -1145,6 +1168,16 @@ export function pickForAi(
     return true;
   });
 
+  // Preserve enough cap for a *playable* remainder, not merely the cheapest mathematically
+  // possible remainder. This is a planning preference layered on top of the hard lookahead:
+  // fall back to `candidates` whenever the board/cap leaves no reserve-preserving choice.
+  const reserveAwareCandidates = candidates.filter((p) => {
+    const slotsLeftAfterPick = slotsLeft - 1;
+    const capRemainingAfterPick = CAP_LIMIT - (spent + p.fga);
+    return capRemainingAfterPick + 1e-9 >= plannedPlayableReserveFga(slotsLeftAfterPick);
+  });
+  const planningCandidates = reserveAwareCandidates.length > 0 ? reserveAwareCandidates : candidates;
+
   // 2026-08-15, user's explicit ask ("gracze jak KG jeśli spadają poniżej X picku... AI traktuje
   // go jako steal i wybiera z automatu"): `greatestPeakTierBonus` below is a real, but SOFT nudge
   // — it wins the weighted top-5 lottery most of the time (Kevin Garnett 2002-04 measured at
@@ -1167,7 +1200,7 @@ export function pickForAi(
   // still taken regardless of fit — the whole point of a "steal" is that a real GM takes him
   // anyway, same philosophy as `ELITE_TALENT_REDUNDANCY_EXEMPTION` elsewhere in this file.
   if (pickNumber !== undefined && pickNumber > STEAL_PICK_THRESHOLD) {
-    const steals = candidates.filter((p) => {
+    const steals = planningCandidates.filter((p) => {
       const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
       return entry !== undefined && computeTalent(p) >= entry.tal;
     });
@@ -1194,14 +1227,14 @@ export function pickForAi(
   // real 5-man starting five exists before redundancy/bench considerations ever compete for
   // those same slots — the user's own mental model ("po 5 pickach mieć starting5").
   const STARTER_LOCK_ROSTER_SIZE = STARTER_SLOTS.length;
-  let phaseFilteredCandidates = candidates;
+  let phaseFilteredCandidates = planningCandidates;
   if (
     DRAFT_EXPERIMENT.starterFiveLock &&
     roster.length >= NEED_RAMP_ROSTER_SIZE &&
     roster.length < STARTER_LOCK_ROSTER_SIZE &&
     needs.emptySlots.length > 0
   ) {
-    const starterFillers = candidates.filter((p) => needs.emptySlots.some((slot) => isRealPositionFit(p, slot)));
+    const starterFillers = planningCandidates.filter((p) => needs.emptySlots.some((slot) => isRealPositionFit(p, slot)));
     if (starterFillers.length > 0) phaseFilteredCandidates = starterFillers;
   }
 
@@ -1436,6 +1469,18 @@ export function pickForAi(
     return { player: p, value, talent };
   });
 
+  // A player may have several legal spans. The context-optimal representative used for draft
+  // value can be a cheaper, lower-TAL span, while post-draft span optimization can realize a
+  // stronger legal version of the same name. Keep the best legal talent by name for the bench
+  // quality gate so Nate McMillan is recognized as a playable reserve even if his cheapest span
+  // wins the immediate value comparison; Danny Young, whose entire profile tops out at TAL 40,
+  // remains correctly below the floor.
+  const bestLegalTalentByName = new Map<string, number>();
+  for (const entry of scoredBySpan) {
+    const key = normalizePlayerName(entry.player.playerName);
+    bestLegalTalentByName.set(key, Math.max(bestLegalTalentByName.get(key) ?? 0, entry.talent));
+  }
+
   scoredBySpan.sort((a, b) => b.value - a.value);
   const scored = uniqueRankedPlayers(scoredBySpan);
 
@@ -1479,8 +1524,34 @@ export function pickForAi(
     for (let i = 0; i < shortlistCount; i++) scored[i] = shortlist[i];
   }
 
+  let lotteryCandidates = scored;
+  if (inBenchRound) {
+    const scan = scored.slice(0, Math.min(BENCH_QUALITY_SCAN_SIZE, scored.length));
+    const playable = scan.filter((entry) => {
+      if (entry.player.fga < TRUE_CAP_GLUE_FGA_CEILING) return true;
+      const projectedRotation = autoAssignRotation([...roster, entry.player]);
+      const projectedMinutes = totalMinutesForPlayer(projectedRotation, entry.player.id);
+      if (projectedMinutes < MATERIAL_BENCH_MINUTES) return true;
+      const bestLegalTalent = bestLegalTalentByName.get(normalizePlayerName(entry.player.playerName)) ?? entry.talent;
+      return bestLegalTalent >= MATERIAL_BENCH_TALENT_FLOOR;
+    });
+    // Never dead-end the draft for a soft quality preference. If the cap/board truly offers no
+    // playable material-minutes option, keep the original lottery as the emergency fallback.
+    if (playable.length > 0) {
+      lotteryCandidates = playable;
+      // PG is the measured scarce bench position (see `benchPgScarcityBonus`). Once the roster
+      // reaches bench rounds with no real 48-minute PG coverage, a playable PG/SG option cannot
+      // share the narrowed lottery with an unrelated big and disappear on random variance. This
+      // is only applied *after* the quality gate and only while PG is genuinely thin.
+      if (needs.emptySlots.includes('PG') || needs.thinSlots.includes('PG')) {
+        const playablePg = playable.filter((entry) => isRealPositionFit(entry.player, 'PG'));
+        if (playablePg.length > 0) lotteryCandidates = playablePg;
+      }
+    }
+  }
+
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;
-  const top = scored.slice(0, Math.min(lotteryPoolSize, scored.length));
+  const top = lotteryCandidates.slice(0, Math.min(lotteryPoolSize, lotteryCandidates.length));
   const weights = top.map((_, i) => top.length - i);
   const totalWeight = weights.reduce((s, w) => s + w, 0);
   let roll = Math.random() * totalWeight;

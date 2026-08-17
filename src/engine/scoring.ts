@@ -23,6 +23,8 @@ import {
   MAX_MINUTES_PER_PLAYER,
   STARTER_MINUTES,
 } from './rotation';
+import { defensiveHuntability } from './defensiveHuntability';
+import { defensiveCohesion } from './defensiveCohesion';
 
 /** Talent points per FGA a "normal" cap-legal roster produces — calibrated (scripts/calibrate.ts)
  * against the actual in-game draft pool, FGA-weighted. Recalibrated after the position/usage-
@@ -325,7 +327,22 @@ export function offenseScore(team: Team): number {
 }
 
 export function defenseScore(team: Team): number {
-  return Math.round(rescaleToFullRange(benchBoostedWeightedAverage(team, computeDefensiveTalent, true), DEFENSE_SCORE_ANCHORS));
+  const linearScore = rescaleToFullRange(
+    benchBoostedWeightedAverage(team, computeDefensiveTalent, true),
+    DEFENSE_SCORE_ANCHORS,
+  );
+  // Linear minute-weighting lets an elite anchor conceal several attackable defenders. In a
+  // series those minutes are hunted repeatedly, so the shared nonlinear penalty stacks every
+  // weak stint instead of stopping after the first bad player. At the opposite extreme, a full
+  // POA + wing + rim structure earns bounded credit that an average of individual D-TAL values
+  // cannot express. A complete no-weak-link shell gets the ceiling treatment; a partial shell
+  // can receive only a smaller structural bonus while every weak player's actual minutes remain
+  // charged by huntability.
+  const adjusted =
+    linearScore -
+    defensiveHuntability(team).penalty +
+    defensiveCohesion(team).defenseScoreBonus;
+  return Math.round(Math.max(0, Math.min(100, adjusted)));
 }
 
 /**
@@ -498,46 +515,30 @@ export function fitScore(team: Team): FitScoreResult {
   }
   components.continuousSpacing = score - continuousSpacingStart;
 
-  // 2026-08-13, real D1 human-vote diagnostic (`scripts/analyzeD1HumanVote.ts`'s new
-  // "fitScore INPUT SIGNALS" block): the two binary checks this replaced — "does at least one
-  // starter carry a rim-protector/perimeter-defender ROLE TAG" — correlated NEGATIVELY with the
-  // real vote (-0.504 / -0.307 across the 15 real D1 rosters), the opposite of what they were
-  // built to reward. The role tags themselves are known-noisy (see `isStrongPerimeterDefender`'s
-  // own docstring above: Reggie Miller's early-career spans auto-tag "Chaser" off elevated box
-  // activity despite no real perimeter-defense reputation) — a single well-tagged specialist could
-  // satisfy the binary check for a team whose D wasn't actually good, or a genuinely strong
-  // defensive team could miss it entirely if nobody happened to clear a specific role's tag.
-  // The continuous alternative right below (average starter D-TAL) had the CORRECT sign in the
-  // same diagnostic (+0.289) and was already present as a bonus-only term — extended it to also
-  // penalize below-neutral team defense symmetrically, replacing what the two binary checks used
-  // to catch, on a real signal instead of a noisy tag. n=15 is a small sample (rough significance
-  // threshold ~|r|>=0.52), so -0.504 clears it but -0.307 is more suggestive than proven; both
-  // shared the same identified root cause (noisy role tags) so both were replaced together rather
-  // than picking one to keep on thinner evidence.
-  //
-  // Anchored on real draft-pool D-TAL percentiles (`computeDefensiveTalent` over the current
-  // `draftPool`, not the old comment's stale 53/85 — re-measured directly rather than trusted,
-  // confirmed real drift since that was last calibrated): p10=19, p50=42 (neutral), p90=79.
-  // `TEAM_DEFENSE_MAX_PENALTY` set higher than the bonus side's own cap (20 vs. 10) — the two
-  // removed binary checks could cost up to -25 combined, so this keeps "bad team defense can
-  // genuinely hurt fitScore" true rather than quietly defanging it while fixing the sign problem.
+  // 2026-08-17 weak-link pass: a starter-average D-TAL term let three strong defenders erase one
+  // or more obvious playoff targets from the mean. `defenseScore` already rewards average quality,
+  // so FIT now measures the separate complement question: how many assigned minutes can opponents
+  // hunt? Every D-TAL<60 player's real rotation minutes stack; this roster-level penalty cannot be
+  // satisfied by one noisy role tag or hidden by one elite rim protector.
   const teamDefenseStart = score;
   const DTAL_NEUTRAL = 42;
   const DTAL_ELITE_SPAN = 37; // p90 - p50
-  const DTAL_WEAK_SPAN = 23; // p50 - p10
-  const TEAM_DEFENSE_MAX_BONUS = 10;
-  const TEAM_DEFENSE_MAX_PENALTY = 20;
   const avgStarterDTal = starters.reduce((sum, p) => sum + computeDefensiveTalent(p), 0) / starters.length;
-  if (avgStarterDTal > DTAL_NEUTRAL) {
-    const excessRatio = Math.min(1, (avgStarterDTal - DTAL_NEUTRAL) / DTAL_ELITE_SPAN);
-    const bonus = Math.round(excessRatio * TEAM_DEFENSE_MAX_BONUS);
-    score += bonus;
-    if (bonus >= 5) notes.push('Genuinely elite team defense across the starting five, not just one tagged defender.');
-  } else {
-    const deficitRatio = Math.min(1, (DTAL_NEUTRAL - avgStarterDTal) / DTAL_WEAK_SPAN);
-    const penalty = Math.round(deficitRatio * TEAM_DEFENSE_MAX_PENALTY);
-    score -= penalty;
-    if (penalty >= 8) notes.push('Team defense is genuinely thin across the starting five.');
+  const huntability = defensiveHuntability(team);
+  // Average D-TAL is already a direct Overall axis through `defenseScore`; re-awarding it here
+  // duplicated quality and let Stockton/OG/Shaq erase Nash from the mean. FIT keeps only the
+  // nonlinear complement question: how many attackable minutes this rotation exposes.
+  const huntabilityPenalty = Math.round(huntability.penalty);
+  score -= huntabilityPenalty;
+  if (huntabilityPenalty >= 8) {
+    notes.push(
+      `Defense exposes ${huntability.targetableMinutes} targetable minutes: ${huntability.offenders
+        .slice(0, 3)
+        .map((offender) => `${offender.playerName} (D-TAL ${offender.defensiveTalent}, ${offender.minutes}m)`)
+        .join(', ')}.`,
+    );
+  } else if (avgStarterDTal >= DTAL_NEUTRAL + DTAL_ELITE_SPAN * 0.7) {
+    notes.push('Starting five has strong defensive talent without a major huntable-minutes problem.');
   }
   components.teamDefense = score - teamDefenseStart;
 
@@ -604,8 +605,11 @@ export function fitScore(team: Team): FitScoreResult {
   // terms (average O-POR, shooter count, defensive shell, role coverage, engine complements).
   // The live legal-roster search found -2/124; the two named acceptance rosters land near the
   // intended ends of that range again (bad fit near 0, good fit near 90).
-  const ACHIEVABLE_MIN = -2;
-  const ACHIEVABLE_MAX = 124;
+  // 2026-08-17, weak-link pass: average starter D-TAL was replaced by the nonlinear targetable-
+  // minutes penalty shared with Defense/DRTG. Two independent hill-climb runs returned
+  // [-15,112] and [-13,114]; use their midpoint rather than one stochastic extreme.
+  const ACHIEVABLE_MIN = -14;
+  const ACHIEVABLE_MAX = 113;
   const rescaled = ((score - ACHIEVABLE_MIN) / (ACHIEVABLE_MAX - ACHIEVABLE_MIN)) * 100;
 
   return { score: Math.max(0, Math.min(100, Math.round(rescaled))), notes, raw: score, components };

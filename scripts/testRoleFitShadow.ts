@@ -124,9 +124,14 @@ function sourceFiles(root: string): string[] {
 }
 
 const roleModule = path.resolve('src/engine/roleFitShadow.ts');
+const allowedShadowConsumer = path.resolve('src/engine/fitV2Shadow.ts');
 const runtimeImports = sourceFiles(path.resolve('src'))
   .filter((file) => path.resolve(file) !== roleModule)
   .filter((file) => fs.readFileSync(file, 'utf8').includes('roleFitShadow'));
-check(runtimeImports.length === 0, `no production module imports the shadow scorer (${runtimeImports.join(', ') || 'none'})`);
+const unexpectedRuntimeImports = runtimeImports.filter((file) => path.resolve(file) !== allowedShadowConsumer);
+check(
+  unexpectedRuntimeImports.length === 0 && runtimeImports.some((file) => path.resolve(file) === allowedShadowConsumer),
+  `only FIT v2's shadow bridge imports the role scorer (${runtimeImports.join(', ') || 'none'})`,
+);
 
 console.log('Role-fit shadow tests complete.');

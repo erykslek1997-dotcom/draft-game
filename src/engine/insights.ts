@@ -42,6 +42,7 @@ export interface PlayerTeamFeature {
   spanLabel: string;
   minutes: number;
   fga: number;
+  rpg?: number;
   tal?: number;
   primaryPosition?: Position;
   secondaryPositions?: Position[];
@@ -108,6 +109,7 @@ export interface TeamFeatureSnapshot {
   rimProtectionScore?: number;      // 0..1
   defensiveLayeringScore?: number;  // 0..1
   defensiveWeakLinkCount?: number;
+  defensiveTargetableMinutes?: number;
 
   teamOrbScore?: number;             // 0..1
   teamDrbScore?: number;             // 0..1
@@ -115,6 +117,8 @@ export interface TeamFeatureSnapshot {
 
   positionalCompromiseCount?: number;
   severePositionalCompromiseCount?: number;
+  positionalCompromisePlayers?: string[];
+  severePositionalCompromisePlayers?: string[];
   minutesCeilingViolationCount?: number;
   deepRotationScore?: number;        // 0..1
   topHeavyScore?: number;            // 0..1
@@ -263,6 +267,27 @@ export function scoreInsight(
 
 const inactive: DetectorResult = { active: false };
 
+function displayNames(players: PlayerTeamFeature[], limit = 3): string {
+  const names = players.slice(0, limit).map((player) => player.playerName);
+  if (players.length > limit) names.push(`+${players.length - limit} more`);
+  return names.join(', ');
+}
+
+function isCrediblePoa(player: PlayerTeamFeature): boolean {
+  const roleFits =
+    player.defensiveRole === 'Point of Attack' ||
+    player.defensiveRole === 'Chaser' ||
+    (player.defensiveRole === 'Wing Stopper' &&
+      (player.primaryPosition === 'PG' || player.primaryPosition === 'SG'));
+  return roleFits && (player.defensiveImpact ?? 0) >= 60 && player.minutes >= 18;
+}
+
+function isCredibleWingStopper(player: PlayerTeamFeature): boolean {
+  return player.defensiveRole === 'Wing Stopper' &&
+    (player.defensiveImpact ?? 0) >= 60 &&
+    player.minutes >= 18;
+}
+
 const hit = (
   severity: number,
   relevance: number,
@@ -301,15 +326,82 @@ export const EXPLICIT_SUPPRESSION: Partial<Record<DetectorId, DetectorId[]>> = {
   ELITE_STARTING_SPACING: ['GOOD_STARTING_SPACING'],
   ELITE_PERIMETER_DEFENSE: ['MULTIPLE_PERIMETER_DEFENDERS', 'POA_DEFENDER_PRESENT'],
   ELITE_RIM_PROTECTION: ['RIM_PROTECTOR_PRESENT', 'MULTIPLE_RIM_PROTECTORS'],
-  ELITE_DEFENSIVE_LAYERING: ['POA_DEFENDER_PRESENT', 'RIM_PROTECTOR_PRESENT', 'BALANCED_DEFENSIVE_COVERAGE'],
+  ELITE_DEFENSIVE_LAYERING: ['ELITE_PERIMETER_DEFENSE', 'ELITE_RIM_PROTECTION', 'MULTIPLE_PERIMETER_DEFENDERS', 'POA_DEFENDER_PRESENT', 'RIM_PROTECTOR_PRESENT', 'BALANCED_DEFENSIVE_COVERAGE'],
   MULTIPLE_MINUTES_CEILING_VIOLATIONS: ['PLAYER_ABOVE_MINUTES_CEILING'],
   SEVERE_POSITIONAL_STRAIN: ['ONE_POSITIONAL_COMPROMISE', 'MULTIPLE_POSITIONAL_COMPROMISES'],
   MULTIPLE_DEFENSIVE_WEAK_LINKS: ['DEFENSIVE_WEAK_LINK'],
-  STAR_POWER_WITH_USAGE_COLLISION: ['MULTIPLE_HIGH_USAGE_PLAYERS', 'OFFENSIVE_ROLE_REDUNDANCY'],
+  STAR_POWER_WITH_USAGE_COLLISION: ['MULTIPLE_HIGH_USAGE_PLAYERS', 'SEVERE_USAGE_COLLISION', 'STAR_FGA_COMPRESSION', 'OFFENSIVE_ROLE_REDUNDANCY'],
   LOW_FGA_HIGH_IMPACT_CONSTRUCTION: ['EFFICIENT_FGA_BUDGET', 'HIGH_TALENT_PER_FGA'],
 };
 
 export const DETECTORS: RosterInsightDetector[] = [
+  {
+    id: 'ELITE_PRIMARY_CREATOR', type: 'strength', category: 'creation',
+    suppressionGroup: 'creation_positive',
+    evaluate: t => {
+      const creators = t.players
+        .filter(p => (p.highUsageWeight ?? 0) >= 0.5 && p.minutes >= 24)
+        .sort((a, b) => (b.offensiveImpact ?? 0) - (a.offensiveImpact ?? 0));
+      const lead = creators[0];
+      return lead && (lead.offensiveImpact ?? 0) >= 82
+        ? hit((lead.offensiveImpact ?? 0) / 100, 0.94, teamConfidence(t), `${lead.playerName} gives the offense an elite primary creator who can organize difficult half-court possessions.`, { players: [lead.playerName], values: { offensiveImpact: lead.offensiveImpact ?? 0, minutes: lead.minutes } }, 0.95)
+        : inactive;
+    }
+  },
+  {
+    id: 'MULTIPLE_CREATION_SOURCES', type: 'strength', category: 'creation',
+    suppressionGroup: 'creation_positive',
+    evaluate: t => {
+      const creators = t.players
+        .filter(p => (p.highUsageWeight ?? 0) > 0 && p.minutes >= 15)
+        .sort((a, b) => (b.offensiveImpact ?? 0) - (a.offensiveImpact ?? 0));
+      return creators.length >= 3
+        ? hit(0.62 + creators.length * 0.07, 0.91, teamConfidence(t), `Creation is distributed across ${displayNames(creators)}, reducing dependence on one initiator.`, { players: creators.map(p => p.playerName), values: { creatorCount: creators.length } }, 0.92)
+        : inactive;
+    }
+  },
+  {
+    id: 'SECONDARY_CREATION_PRESENT', type: 'strength', category: 'creation',
+    suppressionGroup: 'creation_positive',
+    evaluate: t => {
+      const secondary = t.players
+        .filter(p => p.offensiveArchetype === 'Secondary Ball Handler' && p.minutes >= 15)
+        .sort((a, b) => b.minutes - a.minutes);
+      return secondary.length > 0
+        ? hit(0.66, 0.78, teamConfidence(t), `${displayNames(secondary)} ${secondary.length === 1 ? 'provides' : 'provide'} secondary ball handling when the lead creator is pressured or rests.`, { players: secondary.map(p => p.playerName), values: { secondaryCreatorCount: secondary.length } })
+        : inactive;
+    }
+  },
+  {
+    id: 'CREATION_SURVIVES_STAR_REST', type: 'strength', category: 'creation',
+    suppressionGroup: 'creation_positive',
+    evaluate: t => {
+      const benchCreators = t.bench
+        .filter(p => (p.highUsageWeight ?? 0) > 0 && (p.offensiveImpact ?? 0) >= 65 && p.minutes >= 15)
+        .sort((a, b) => (b.offensiveImpact ?? 0) - (a.offensiveImpact ?? 0));
+      return benchCreators.length > 0
+        ? hit(0.70, 0.87, teamConfidence(t), `${displayNames(benchCreators)} ${benchCreators.length === 1 ? 'keeps' : 'keep'} credible creation on the floor when the starting engines sit.`, { players: benchCreators.map(p => p.playerName), values: { benchCreatorCount: benchCreators.length } }, 0.9)
+        : inactive;
+    }
+  },
+  {
+    id: 'CREATION_SHORTAGE', type: 'concern', category: 'creation',
+    suppressionGroup: 'creation_negative',
+    evaluate: t => (t.creatorCount ?? 0) === 0
+      ? hit(0.92, 0.98, teamConfidence(t), 'The rotation lacks a reliable advantage creator, leaving too much offense dependent on assisted or pre-created chances.', { values: { creatorCount: 0 } }, 0.95)
+      : inactive
+  },
+  {
+    id: 'SINGLE_CREATOR_DEPENDENCY', type: 'concern', category: 'creation',
+    suppressionGroup: 'creation_negative',
+    evaluate: t => {
+      const creators = t.players.filter(p => (p.highUsageWeight ?? 0) >= 1 && p.minutes >= 20);
+      const otherCreation = t.players.filter(p => (p.highUsageWeight ?? 0) > 0 && !creators.includes(p) && p.minutes >= 15);
+      return creators.length === 1 && otherCreation.length === 0
+        ? hit(0.75, 0.92, teamConfidence(t), `Half-court creation depends heavily on ${creators[0].playerName}; there is no credible secondary initiator behind him.`, { players: [creators[0].playerName], values: { creatorCount: 1 } }, 0.92)
+        : inactive;
+    }
+  },
   {
     id: 'ELITE_STARTING_SPACING', type: 'strength', category: 'spacing',
     suppressionGroup: 'spacing_positive', suppresses: ['GOOD_STARTING_SPACING'],
@@ -349,8 +441,9 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const s = t.starterSpacingStrength ?? 1;
       const n = t.starterPlusShooterCount ?? t.starterSpacingCount ?? 5;
+      const nonShooters = t.starters.filter(p => !p.isSpacingArchetype);
       if (s > 0.45 && n >= 2) return inactive;
-      return hit(Math.max(1 - s, (3 - n) / 3), 0.95, teamConfidence(t), `Starting lineup has only ${n} credible plus shooter${n === 1 ? '' : 's'}, creating a spacing risk.`, { values: { starterSpacingStrength: s, starterPlusShooterCount: n } });
+      return hit(Math.max(1 - s, (3 - n) / 3), 0.95, teamConfidence(t), `The starting lineup has only ${n} credible plus shooter${n === 1 ? '' : 's'}; ${displayNames(nonShooters)} allow the defense to shrink the floor.`, { players: nonShooters.map(p => p.playerName), values: { starterSpacingStrength: s, starterPlusShooterCount: n } });
     }
   },
   {
@@ -358,8 +451,9 @@ export const DETECTORS: RosterInsightDetector[] = [
     suppressionGroup: 'spacing_negative',
     evaluate: t => {
       const n = t.starterNonSpacerCount ?? 0;
+      const nonShooters = t.starters.filter(p => !p.isSpacingArchetype);
       return n >= 2
-        ? hit(0.55 + (n - 2) * 0.18, 0.92, teamConfidence(t), `${n} starters grade as non-spacers, increasing half-court congestion.`, { values: { starterNonSpacerCount: n } })
+        ? hit(0.55 + (n - 2) * 0.18, 0.92, teamConfidence(t), `${displayNames(nonShooters)} give opponents ${n} starting non-shooters to help away from, increasing half-court congestion.`, { players: nonShooters.map(p => p.playerName), values: { starterNonSpacerCount: n } })
         : inactive;
     }
   },
@@ -383,6 +477,61 @@ export const DETECTORS: RosterInsightDetector[] = [
       const drop = a - b;
       return drop >= 0.28 && b <= 0.52
         ? hit(0.55 + drop * 0.65, 0.78, teamConfidence(t), 'Spacing deteriorates sharply when bench units replace the primary starters.', { values: { starterSpacingStrength: a, benchSpacingStrength: b, drop } })
+        : inactive;
+    }
+  },
+  {
+    id: 'SPACING_DISTRIBUTED', type: 'strength', category: 'spacing',
+    suppressionGroup: 'spacing_positive',
+    evaluate: t => {
+      const n = t.plusShooterCount ?? 0;
+      const share = t.topShooterMinuteShare ?? 1;
+      return n >= 5 && share <= 0.30
+        ? hit(0.62 + n * 0.06, 0.86, teamConfidence(t), `${n} rotation players provide credible shooting, so spacing does not depend on one specialist.`, { values: { plusShooterCount: n, topShooterMinuteShare: share } }, 0.9)
+        : inactive;
+    }
+  },
+  {
+    id: 'BENCH_SPACING', type: 'strength', category: 'spacing',
+    evaluate: t => {
+      const shooters = t.bench.filter(p => p.isSpacingArchetype && p.minutes >= 12);
+      const strength = t.benchSpacingStrength ?? 0;
+      return strength >= 0.65 && shooters.length >= 2
+        ? hit(strength, 0.76, teamConfidence(t), `Bench units retain spacing through ${displayNames(shooters)}, limiting offensive drop-off after substitutions.`, { players: shooters.map(p => p.playerName), values: { benchSpacingStrength: strength, benchShooterCount: shooters.length } }, 0.88)
+        : inactive;
+    }
+  },
+  {
+    id: 'STRETCH_BIG_VALUE', type: 'strength', category: 'shooting',
+    evaluate: t => {
+      const bigs = t.players.filter(p =>
+        (p.primaryPosition === 'PF' || p.primaryPosition === 'C') &&
+        (p.offensiveArchetype === 'Stretch Big' || p.offensiveArchetype === 'Versatile Big') &&
+        p.isSpacingArchetype && p.minutes >= 18,
+      );
+      return bigs.length > 0
+        ? hit(0.70, 0.84, teamConfidence(t), `${displayNames(bigs)} ${bigs.length === 1 ? 'provides' : 'provide'} frontcourt shooting that pulls rim protectors away from the basket.`, { players: bigs.map(p => p.playerName), values: { stretchBigCount: bigs.length } }, 0.92)
+        : inactive;
+    }
+  },
+  {
+    id: 'NO_FRONTCOURT_SPACING', type: 'concern', category: 'spacing',
+    suppressionGroup: 'spacing_negative',
+    evaluate: t => {
+      const frontcourt = t.starters.filter(p => p.primaryPosition === 'PF' || p.primaryPosition === 'C');
+      const shootingBigs = frontcourt.filter(p => p.isSpacingArchetype);
+      return frontcourt.length >= 2 && shootingBigs.length === 0
+        ? hit(0.73, 0.88, teamConfidence(t), `The starting frontcourt (${displayNames(frontcourt)}) provides no credible shooting gravity away from the paint.`, { players: frontcourt.map(p => p.playerName), values: { frontcourtSpacingCount: 0 } }, 0.9)
+        : inactive;
+    }
+  },
+  {
+    id: 'ONE_CRITICAL_SHOOTER', type: 'concern', category: 'spacing',
+    suppressionGroup: 'spacing_negative',
+    evaluate: t => {
+      const shooters = t.players.filter(p => p.isSpacingArchetype && p.minutes >= 12);
+      return shooters.length === 1 && (t.topShooterMinuteShare ?? 0) >= 0.45
+        ? hit(0.78, 0.90, teamConfidence(t), `Spacing depends almost entirely on ${shooters[0].playerName}; lineups without him can be compressed aggressively.`, { players: [shooters[0].playerName], values: { plusShooterCount: 1, topShooterMinuteShare: t.topShooterMinuteShare ?? 0 } }, 0.94)
         : inactive;
     }
   },
@@ -442,6 +591,44 @@ export const DETECTORS: RosterInsightDetector[] = [
     }
   },
   {
+    id: 'OFFENSIVE_ROLES_COMPLEMENTARY', type: 'strength', category: 'off_ball',
+    evaluate: t => {
+      const creators = t.players.filter(p => (p.highUsageWeight ?? 0) > 0 && p.minutes >= 18);
+      const offBall = t.players.filter(p =>
+        ['Off Screen Shooter', 'Movement Shooter', 'Stationary Shooter', 'Roll & Cut Big'].includes(p.offensiveArchetype ?? '') &&
+        p.minutes >= 15,
+      );
+      return creators.length >= 2 && offBall.length >= 2
+        ? hit(0.76, 0.87, teamConfidence(t), `On-ball creation is complemented by off-ball value from ${displayNames(offBall)}, giving possessions clear role separation.`, { players: [...creators, ...offBall].map(p => p.playerName), values: { creatorCount: creators.length, offBallSupportCount: offBall.length } }, 0.94)
+        : inactive;
+    }
+  },
+  {
+    id: 'OFF_BALL_SUPPORT_STRONG', type: 'strength', category: 'off_ball',
+    evaluate: t => {
+      const support = t.players.filter(p =>
+        ['Off Screen Shooter', 'Movement Shooter', 'Stationary Shooter', 'Stretch Big', 'Roll & Cut Big'].includes(p.offensiveArchetype ?? '') &&
+        p.minutes >= 15,
+      );
+      return support.length >= 4
+        ? hit(0.68 + support.length * 0.05, 0.80, teamConfidence(t), `${displayNames(support)} supply extensive shooting, cutting or finishing value without monopolizing the ball.`, { players: support.map(p => p.playerName), values: { offBallSupportCount: support.length } }, 0.9)
+        : inactive;
+    }
+  },
+  {
+    id: 'TOO_MANY_FINISHERS', type: 'concern', category: 'off_ball',
+    evaluate: t => {
+      const finishers = t.players.filter(p =>
+        ['Slasher', 'Athletic Finisher', 'Post Scorer', 'Roll & Cut Big'].includes(p.offensiveArchetype ?? '') &&
+        p.minutes >= 15,
+      );
+      const creators = t.creatorCount ?? 0;
+      return finishers.length >= 4 && creators <= 1
+        ? hit(0.72, 0.86, teamConfidence(t), `The roster has many finishers (${displayNames(finishers)}) but too little creation to consistently generate their best opportunities.`, { players: finishers.map(p => p.playerName), values: { finisherCount: finishers.length, creatorCount: creators } }, 0.92)
+        : inactive;
+    }
+  },
+  {
     id: 'ELITE_PERIMETER_DEFENSE', type: 'strength', category: 'perimeter_defense',
     suppressionGroup: 'perimeter_positive', suppresses: ['MULTIPLE_PERIMETER_DEFENDERS', 'POA_DEFENDER_PRESENT'],
     evaluate: t => {
@@ -453,12 +640,64 @@ export const DETECTORS: RosterInsightDetector[] = [
     }
   },
   {
+    id: 'MULTIPLE_PERIMETER_DEFENDERS', type: 'strength', category: 'perimeter_defense',
+    suppressionGroup: 'perimeter_positive',
+    evaluate: t => {
+      const defenders = t.players
+        .filter(p => p.isPerimeterDefenderRole && (p.defensiveImpact ?? 0) >= 65 && p.minutes >= 15)
+        .sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0));
+      return defenders.length >= 3
+        ? hit(0.66 + defenders.length * 0.06, 0.86, teamConfidence(t), `${displayNames(defenders)} give the rotation multiple credible perimeter matchups.`, { players: defenders.map(p => p.playerName), values: { perimeterDefenderCount: defenders.length } }, 0.9)
+        : inactive;
+    }
+  },
+  {
+    id: 'POA_DEFENDER_PRESENT', type: 'strength', category: 'perimeter_defense',
+    suppressionGroup: 'perimeter_positive',
+    evaluate: t => {
+      const defenders = t.players.filter(isCrediblePoa).sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0));
+      return defenders.length > 0
+        ? hit(0.70, 0.83, teamConfidence(t), `${defenders[0].playerName} provides a credible first line of defense against primary ball handlers.`, { players: [defenders[0].playerName], values: { defensiveImpact: defenders[0].defensiveImpact ?? 0, minutes: defenders[0].minutes } }, 0.88)
+        : inactive;
+    }
+  },
+  {
+    id: 'WING_STOPPER_PRESENT', type: 'strength', category: 'perimeter_defense',
+    suppressionGroup: 'perimeter_positive',
+    evaluate: t => {
+      const defenders = t.players.filter(isCredibleWingStopper).sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0));
+      return defenders.length > 0
+        ? hit(0.70, 0.84, teamConfidence(t), `${defenders[0].playerName} supplies a credible matchup for elite scoring wings.`, { players: [defenders[0].playerName], values: { defensiveImpact: defenders[0].defensiveImpact ?? 0, minutes: defenders[0].minutes } }, 0.9)
+        : inactive;
+    }
+  },
+  {
+    id: 'PERIMETER_DEFENSE_BENCH_DEPTH', type: 'strength', category: 'perimeter_defense',
+    evaluate: t => {
+      const defenders = t.bench
+        .filter(p => p.isPerimeterDefenderRole && (p.defensiveImpact ?? 0) >= 65 && p.minutes >= 12)
+        .sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0));
+      return defenders.length >= 2
+        ? hit(0.72, 0.78, teamConfidence(t), `Perimeter defense survives substitutions through ${displayNames(defenders)} on the bench.`, { players: defenders.map(p => p.playerName), values: { benchPerimeterDefenderCount: defenders.length } }, 0.9)
+        : inactive;
+    }
+  },
+  {
     id: 'NO_POA_DEFENDER', type: 'concern', category: 'perimeter_defense',
     suppressionGroup: 'perimeter_negative',
     evaluate: t => {
-      const has = t.players.some(p => p.defensiveRole === 'Point of Attack' && p.minutes >= 18);
+      // Mirrors defensiveCohesion: a strong guard Wing Stopper/Chaser can credibly take the ball
+      // even when the incumbent role label is not literally `Point of Attack`.
+      const has = t.players.some(isCrediblePoa);
       return !has ? hit(0.72, 0.89, teamConfidence(t), 'The primary rotation lacks a clear point-of-attack defensive role.', { values: { hasPOADefender: false } }) : inactive;
     }
+  },
+  {
+    id: 'NO_WING_STOPPER', type: 'concern', category: 'perimeter_defense',
+    suppressionGroup: 'perimeter_negative',
+    evaluate: t => !t.players.some(isCredibleWingStopper)
+      ? hit(0.70, 0.88, teamConfidence(t), 'The rotation lacks a credible primary matchup for elite scoring wings.', { values: { hasWingStopper: false } }, 0.9)
+      : inactive
   },
   {
     id: 'ELITE_RIM_PROTECTION', type: 'strength', category: 'rim_protection',
@@ -476,7 +715,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const ps = t.players.filter(p => p.isRimProtectorRole && p.minutes >= 10);
       return ps.length >= 2
-        ? hit(0.60 + ps.length * 0.08, 0.85, teamConfidence(t), 'Rim protection survives center substitutions rather than depending on a single anchor.', { players: ps.map(p => p.playerName), values: { rimProtectorCount: ps.length } })
+        ? hit(0.60 + ps.length * 0.08, 0.85, teamConfidence(t), `${displayNames(ps)} preserve rim protection across frontcourt substitutions rather than leaving one lone anchor.`, { players: ps.map(p => p.playerName), values: { rimProtectorCount: ps.length } })
         : inactive;
     }
   },
@@ -499,11 +738,52 @@ export const DETECTORS: RosterInsightDetector[] = [
   },
   {
     id: 'ELITE_DEFENSIVE_LAYERING', type: 'strength', category: 'defensive_structure',
-    suppressionGroup: 'defense_positive', suppresses: ['POA_DEFENDER_PRESENT', 'RIM_PROTECTOR_PRESENT', 'BALANCED_DEFENSIVE_COVERAGE'],
+    suppressionGroup: 'defense_positive', suppresses: ['ELITE_PERIMETER_DEFENSE', 'ELITE_RIM_PROTECTION', 'MULTIPLE_PERIMETER_DEFENDERS', 'POA_DEFENDER_PRESENT', 'RIM_PROTECTOR_PRESENT', 'BALANCED_DEFENSIVE_COVERAGE'],
     evaluate: t => {
       const s = t.defensiveLayeringScore ?? 0;
+      const perimeter = t.players
+        .filter(p => p.isPerimeterDefenderRole && (p.defensiveImpact ?? 0) >= 60 && p.minutes >= 18)
+        .sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0))[0];
+      const rim = t.players
+        .filter(p => p.isRimProtectorRole && (p.defensiveImpact ?? 0) >= 60 && p.minutes >= 18)
+        .sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0))[0];
       return s >= 0.82
-        ? hit(s, 0.98, teamConfidence(t), 'Elite defensive layering: strong perimeter resistance is backed by reliable interior protection.', { values: { defensiveLayeringScore: s } })
+        ? hit(s, 0.98, teamConfidence(t), `Elite defensive layering pairs ${perimeter?.playerName ?? 'strong perimeter resistance'} with ${rim?.playerName ?? 'reliable interior protection'} behind the play.`, { players: [perimeter?.playerName, rim?.playerName].filter((name): name is string => Boolean(name)), values: { defensiveLayeringScore: s } })
+        : inactive;
+    }
+  },
+  {
+    id: 'BALANCED_DEFENSIVE_COVERAGE', type: 'strength', category: 'defensive_structure',
+    suppressionGroup: 'defense_positive',
+    evaluate: t => {
+      const layering = t.defensiveLayeringScore ?? 0;
+      const weakLinks = t.defensiveWeakLinkCount ?? 0;
+      return layering >= 0.65 && weakLinks <= 1
+        ? hit(layering, 0.86, teamConfidence(t), 'The rotation combines credible perimeter containment with back-line rim protection and few obvious matchup targets.', { values: { defensiveLayeringScore: layering, defensiveWeakLinkCount: weakLinks } }, 0.9)
+        : inactive;
+    }
+  },
+  {
+    id: 'DEFENSE_SURVIVES_SUBSTITUTIONS', type: 'strength', category: 'defensive_structure',
+    suppressionGroup: 'defense_positive',
+    evaluate: t => {
+      const benchDefenders = t.bench
+        .filter(p => (p.defensiveImpact ?? 0) >= 68 && p.defensiveRole !== 'Low Activity' && p.minutes >= 12)
+        .sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0));
+      return benchDefenders.length >= 2 && (t.defensiveTargetableMinutes ?? 0) <= 30
+        ? hit(0.74, 0.82, teamConfidence(t), `${displayNames(benchDefenders)} keep defensive quality on the floor when starters rest.`, { players: benchDefenders.map(p => p.playerName), values: { benchDefenderCount: benchDefenders.length, targetableMinutes: t.defensiveTargetableMinutes ?? 0 } }, 0.92)
+        : inactive;
+    }
+  },
+  {
+    id: 'DEFENSIVE_WEAK_LINK', type: 'concern', category: 'defensive_structure',
+    suppressionGroup: 'defense_negative',
+    evaluate: t => {
+      const weak = t.players
+        .filter(p => (p.defensiveImpact ?? 100) < 60 && p.minutes > 0)
+        .sort((a, b) => b.minutes - a.minutes);
+      return weak.length === 1
+        ? hit(0.55 + weak[0].minutes / 80, 0.91, teamConfidence(t), `${weak[0].playerName} (${Math.round(weak[0].defensiveImpact ?? 0)} D-TAL, ${weak[0].minutes} min) is the rotation's clearest matchup-hunting target.`, { players: [weak[0].playerName], values: { defensiveTalent: weak[0].defensiveImpact ?? 0, minutes: weak[0].minutes, targetableMinutes: t.defensiveTargetableMinutes ?? weak[0].minutes } }, 0.94)
         : inactive;
     }
   },
@@ -512,8 +792,24 @@ export const DETECTORS: RosterInsightDetector[] = [
     suppressionGroup: 'defense_negative', suppresses: ['DEFENSIVE_WEAK_LINK'],
     evaluate: t => {
       const n = t.defensiveWeakLinkCount ?? 0;
+      const weak = t.players
+        .filter(p => (p.defensiveImpact ?? 100) < 60 && p.minutes > 0)
+        .sort((a, b) => b.minutes - a.minutes);
       return n >= 2
-        ? hit(0.60 + n * 0.10, 0.94, teamConfidence(t), `${n} rotation spots grade as defensive weak links, increasing matchup-hunting risk.`, { values: { defensiveWeakLinkCount: n } })
+        ? hit(0.60 + n * 0.10, 0.94, teamConfidence(t), `${displayNames(weak)} combine for ${t.defensiveTargetableMinutes ?? 0} targetable minutes, giving opponents multiple matchup-hunting options.`, { players: weak.map(p => p.playerName), values: { defensiveWeakLinkCount: n, targetableMinutes: t.defensiveTargetableMinutes ?? 0 }, notes: weak.map(p => `${p.playerName}: D-TAL ${Math.round(p.defensiveImpact ?? 0)}, ${p.minutes} min`) }, 0.96)
+        : inactive;
+    }
+  },
+  {
+    id: 'DEFENSE_DEPENDS_ON_STARTERS', type: 'concern', category: 'defensive_structure',
+    suppressionGroup: 'defense_negative',
+    evaluate: t => {
+      const benchTargets = t.bench
+        .filter(p => (p.defensiveImpact ?? 100) < 60 && p.minutes >= 10)
+        .sort((a, b) => b.minutes - a.minutes);
+      const targetMinutes = benchTargets.reduce((sum, p) => sum + p.minutes, 0);
+      return (t.defensiveLayeringScore ?? 0) >= 0.68 && targetMinutes >= 24
+        ? hit(0.58 + targetMinutes / 160, 0.88, teamConfidence(t), `The starting defensive structure weakens when ${displayNames(benchTargets)} enter; those bench targets cover ${targetMinutes} minutes.`, { players: benchTargets.map(p => p.playerName), values: { benchTargetableMinutes: targetMinutes } }, 0.94)
         : inactive;
     }
   },
@@ -521,8 +817,9 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'STRONG_STARTING_REBOUNDING', type: 'strength', category: 'rebounding',
     evaluate: t => {
       const s = t.starterReboundingScore ?? 0;
+      const rebounders = [...t.starters].sort((a, b) => (b.rpg ?? 0) - (a.rpg ?? 0)).slice(0, 2);
       return s >= 0.68
-        ? hit(s, 0.80, teamConfidence(t), 'The starting five rebounds well enough to protect possessions without relying on one specialist.', { values: { starterReboundingScore: s } })
+        ? hit(s, 0.80, teamConfidence(t), `${displayNames(rebounders)} lead a starting five strong enough on the glass to protect possessions.`, { players: rebounders.map(p => p.playerName), values: { starterReboundingScore: s } })
         : inactive;
     }
   },
@@ -536,12 +833,52 @@ export const DETECTORS: RosterInsightDetector[] = [
     }
   },
   {
+    id: 'NATURAL_POSITION_ROTATION', type: 'strength', category: 'position',
+    suppressionGroup: 'rotation_positive',
+    evaluate: t => (t.positionalCompromiseCount ?? 0) === 0
+      ? hit(0.72, 0.77, teamConfidence(t), 'Every rotation assignment stays within a player’s natural or demonstrated secondary positions.', { values: { positionalCompromiseCount: 0 } }, 0.86)
+      : inactive
+  },
+  {
+    id: 'ONE_POSITIONAL_COMPROMISE', type: 'concern', category: 'position',
+    suppressionGroup: 'rotation_negative',
+    evaluate: t => {
+      const compromised = t.players.filter(p => (p.naturalPositionFit ?? 1) < 0.95 && p.minutes > 0);
+      return (t.positionalCompromiseCount ?? 0) === 1
+        ? hit(0.58, 0.72, teamConfidence(t), `${t.positionalCompromisePlayers?.[0] ?? displayNames(compromised)} requires one meaningful out-of-position assignment to complete the rotation.`, { players: t.positionalCompromisePlayers ?? compromised.map(p => p.playerName), values: { positionalCompromiseCount: 1 } }, 0.86)
+        : inactive;
+    }
+  },
+  {
     id: 'MULTIPLE_POSITIONAL_COMPROMISES', type: 'concern', category: 'position',
     suppressionGroup: 'rotation_negative',
     evaluate: t => {
       const n = t.positionalCompromiseCount ?? 0;
       return n >= 2
-        ? hit(0.50 + n * 0.11, 0.86, teamConfidence(t), `${n} rotation assignments require players to operate outside their strongest natural positional fit.`, { values: { positionalCompromiseCount: n } })
+        ? hit(0.50 + n * 0.11, 0.86, teamConfidence(t), `${n} rotation assignments push ${t.positionalCompromisePlayers?.join(', ') ?? 'multiple players'} outside their strongest natural positional fit.`, { players: t.positionalCompromisePlayers, values: { positionalCompromiseCount: n } })
+        : inactive;
+    }
+  },
+  {
+    id: 'SEVERE_POSITIONAL_STRAIN', type: 'concern', category: 'position',
+    suppressionGroup: 'rotation_negative', suppresses: ['ONE_POSITIONAL_COMPROMISE', 'MULTIPLE_POSITIONAL_COMPROMISES'],
+    evaluate: t => {
+      const n = t.severePositionalCompromiseCount ?? 0;
+      const names = t.severePositionalCompromisePlayers ?? [];
+      return n >= 1
+        ? hit(0.76 + n * 0.08, 0.94, teamConfidence(t), names.length === 1
+          ? `${names[0]} is pushed well beyond a natural positional range, creating a major rotation strain.`
+          : `${names.join(', ') || 'The affected players'} are pushed well beyond their natural positional ranges, creating a major rotation strain.`, { players: names, values: { severePositionalCompromiseCount: n } }, 0.96)
+        : inactive;
+    }
+  },
+  {
+    id: 'PLAYER_ABOVE_MINUTES_CEILING', type: 'concern', category: 'rotation',
+    suppressionGroup: 'rotation_negative',
+    evaluate: t => {
+      const over = t.players.filter(p => p.minuteCeiling != null && p.minutes > p.minuteCeiling);
+      return over.length === 1
+        ? hit(0.62 + (over[0].minutes - (over[0].minuteCeiling ?? over[0].minutes)) / 20, 0.86, teamConfidence(t), `${over[0].playerName} is assigned ${over[0].minutes} minutes against a ${over[0].minuteCeiling}-minute durability ceiling.`, { players: [over[0].playerName], values: { minutes: over[0].minutes, minuteCeiling: over[0].minuteCeiling ?? 0 } }, 0.9)
         : inactive;
     }
   },
@@ -553,6 +890,18 @@ export const DETECTORS: RosterInsightDetector[] = [
       const ps = t.players.filter(p => p.minuteCeiling != null && p.minutes > p.minuteCeiling);
       return n >= 2
         ? hit(0.55 + n * 0.10, 0.90, teamConfidence(t), `${n} players are being asked to exceed their projected minutes ceiling.`, { players: ps.map(p => p.playerName), values: { minutesCeilingViolationCount: n }, notes: ps.map(p => `${p.playerName}: ${p.minutes}/${p.minuteCeiling} min`) })
+        : inactive;
+    }
+  },
+  {
+    id: 'STAR_MINUTES_UNDERUSED', type: 'concern', category: 'rotation',
+    evaluate: t => {
+      const underused = t.players.filter(p => {
+        const target = Math.min(32, p.minuteCeiling ?? 32);
+        return (p.tal ?? 0) >= 90 && p.minutes < target - 4;
+      });
+      return underused.length > 0
+        ? hit(0.72, 0.88, teamConfidence(t), `${displayNames(underused)} are not receiving enough minutes for their talent tier, leaving elite value on the bench.`, { players: underused.map(p => p.playerName), values: { underusedStarCount: underused.length }, notes: underused.map(p => `${p.playerName}: ${p.minutes} min`) }, 0.94)
         : inactive;
     }
   },
@@ -597,6 +946,103 @@ export const DETECTORS: RosterInsightDetector[] = [
     }
   },
   {
+    id: 'MATCHUP_SPECIALIST_AVAILABLE', type: 'strength', category: 'depth',
+    suppressionGroup: 'rotation_positive',
+    evaluate: t => {
+      const specialists = t.bench.filter(p =>
+        p.minutes >= 10 &&
+        ((p.defensiveImpact ?? 0) >= 80 || (p.isSpacingArchetype && (p.tal ?? 100) <= 75)),
+      );
+      return specialists.length > 0
+        ? hit(0.68, 0.72, teamConfidence(t), `${displayNames(specialists)} ${specialists.length === 1 ? 'gives' : 'give'} the bench a specialist option for matchup-specific defensive or spacing needs.`, { players: specialists.map(p => p.playerName), values: { specialistCount: specialists.length } }, 0.9)
+        : inactive;
+    }
+  },
+  {
+    id: 'ROLE_FLEXIBILITY_LOW', type: 'concern', category: 'fit',
+    suppressionGroup: 'rotation_negative',
+    evaluate: t => {
+      const flexibility = t.roleFlexibilityScore ?? 1;
+      const compromises = t.positionalCompromiseCount ?? 0;
+      return flexibility <= 0.22 && compromises >= 2
+        ? hit(0.72, 0.78, teamConfidence(t), 'The roster has little positional flexibility, so injuries or matchup changes quickly force uncomfortable assignments.', { values: { roleFlexibilityScore: flexibility, positionalCompromiseCount: compromises } }, 0.9)
+        : inactive;
+    }
+  },
+  {
+    id: 'ELITE_TWO_WAY_CORE', type: 'strength', category: 'two_way',
+    evaluate: t => {
+      const twoWay = t.starters
+        .filter(p => (p.offensiveImpact ?? 0) >= 75 && (p.defensiveImpact ?? 0) >= 75)
+        .sort((a, b) => (b.overallImpact ?? 0) - (a.overallImpact ?? 0));
+      return twoWay.length >= 2
+        ? hit(0.76 + twoWay.length * 0.06, 0.94, teamConfidence(t), `${displayNames(twoWay)} form an elite two-way core that does not require offense-defense substitutions.`, { players: twoWay.map(p => p.playerName), values: { eliteTwoWayCount: twoWay.length } }, 0.98)
+        : inactive;
+    }
+  },
+  {
+    id: 'STAR_POWER_WITHOUT_USAGE_COLLISION', type: 'strength', category: 'cross',
+    evaluate: t => {
+      const stars = t.players.filter(p => (p.tal ?? 0) >= 85 && p.minutes >= 24);
+      const overlap = t.usageOverlapScore ?? 0;
+      const compression = t.fgaCompressionScore ?? 0;
+      return stars.length >= 2 && overlap <= 0.50 && compression < 0.55
+        ? hit(0.78, 0.92, teamConfidence(t), `${displayNames(stars)} provide star-level talent without forcing severe on-ball or FGA overlap.`, { players: stars.map(p => p.playerName), values: { starCount: stars.length, usageOverlapScore: overlap, fgaCompressionScore: compression } }, 0.96)
+        : inactive;
+    }
+  },
+  {
+    id: 'HIGH_VALUE_ROLE_PLAYERS', type: 'strength', category: 'depth',
+    evaluate: t => {
+      const rolePlayers = t.bench
+        .filter(p => (p.tal ?? 0) >= 68 && p.fga <= 12 && (p.highUsageWeight ?? 0) <= 0.25 && p.minutes >= 15)
+        .sort((a, b) => (b.tal ?? 0) - (a.tal ?? 0));
+      return rolePlayers.length >= 2
+        ? hit(0.74, 0.84, teamConfidence(t), `${displayNames(rolePlayers)} supply useful bench impact at a manageable FGA and usage cost.`, { players: rolePlayers.map(p => p.playerName), values: { highValueRolePlayerCount: rolePlayers.length } }, 0.92)
+        : inactive;
+    }
+  },
+  {
+    id: 'NO_MAJOR_STRUCTURAL_HOLE', type: 'strength', category: 'cross',
+    evaluate: t => {
+      const sound =
+        (t.creatorCount ?? 0) >= 2 &&
+        (t.starterSpacingStrength ?? 0) >= 0.55 &&
+        (t.starterNonSpacerCount ?? 0) <= 1 &&
+        (t.defensiveLayeringScore ?? 0) >= 0.60 &&
+        (t.starterReboundingScore ?? 0) >= 0.50 &&
+        (t.defensiveWeakLinkCount ?? 0) <= 1 &&
+        (t.positionalCompromiseCount ?? 0) <= 1;
+      return sound
+        ? hit(0.80, 0.90, teamConfidence(t), 'The roster clears every major structural checkpoint: creation, spacing, defensive layers, rebounding and positional coverage.', { values: { creatorCount: t.creatorCount ?? 0, starterSpacingStrength: t.starterSpacingStrength ?? 0, defensiveLayeringScore: t.defensiveLayeringScore ?? 0, starterReboundingScore: t.starterReboundingScore ?? 0 } }, 0.98)
+        : inactive;
+    }
+  },
+  {
+    id: 'MULTIPLE_STRUCTURAL_HOLES', type: 'concern', category: 'cross',
+    evaluate: t => {
+      const holes: string[] = [];
+      if ((t.creatorCount ?? 0) === 0) holes.push('creation');
+      if ((t.starterSpacingStrength ?? 1) <= 0.42) holes.push('spacing');
+      if ((t.defensiveLayeringScore ?? 1) <= 0.42) holes.push('defensive structure');
+      if ((t.starterReboundingScore ?? 1) <= 0.40) holes.push('rebounding');
+      if ((t.positionalCompromiseCount ?? 0) >= 3) holes.push('positional coverage');
+      return holes.length >= 2
+        ? hit(0.62 + holes.length * 0.10, 0.96, teamConfidence(t), `The roster carries multiple structural holes at once: ${holes.join(', ')}.`, { values: { structuralHoleCount: holes.length }, notes: holes }, 0.98)
+        : inactive;
+    }
+  },
+  {
+    id: 'GOOD_SPACING_BUT_ONE_NONSHOOTER_BOTTLENECK', type: 'concern', category: 'cross',
+    evaluate: t => {
+      const nonShooters = t.starters.filter(p => !p.isSpacingArchetype);
+      const shooters = t.starterPlusShooterCount ?? 0;
+      return shooters >= 4 && nonShooters.length === 1
+        ? hit(0.64, 0.83, teamConfidence(t), `${nonShooters[0].playerName} is the lone starting non-shooter, giving opponents one clear place to help off the floor.`, { players: [nonShooters[0].playerName], values: { starterPlusShooterCount: shooters, starterNonSpacerCount: 1 } }, 0.92)
+        : inactive;
+    }
+  },
+  {
     id: 'DEFENSE_AT_COST_OF_SPACING', type: 'concern', category: 'cross',
     evaluate: t => {
       const d = t.defensiveLayeringScore ?? 0;
@@ -619,13 +1065,13 @@ export const DETECTORS: RosterInsightDetector[] = [
   },
   {
     id: 'STAR_POWER_WITH_USAGE_COLLISION', type: 'concern', category: 'cross',
-    suppresses: ['MULTIPLE_HIGH_USAGE_PLAYERS', 'OFFENSIVE_ROLE_REDUNDANCY'],
+    suppresses: ['MULTIPLE_HIGH_USAGE_PLAYERS', 'SEVERE_USAGE_COLLISION', 'STAR_FGA_COMPRESSION', 'OFFENSIVE_ROLE_REDUNDANCY'],
     evaluate: t => {
       const overlap = t.usageOverlapScore ?? 0;
       const compression = t.fgaCompressionScore ?? 0;
       const stars = t.players.filter(p => (p.tal ?? 0) >= 85 && p.minutes >= 24);
       return stars.length >= 3 && Math.max(overlap, compression) >= 0.65
-        ? hit(Math.max(overlap, compression), 0.96, teamConfidence(t), 'The roster has major star power, but too much of that value competes for the same limited FGA and on-ball possessions.', { players: stars.map(p => p.playerName), values: { usageOverlapScore: overlap, fgaCompressionScore: compression } }, 0.95)
+        ? hit(Math.max(overlap, compression), 0.96, teamConfidence(t), `${displayNames(stars)} provide major star power, but their combined FGA and on-ball demand create a difficult resource-allocation problem.`, { players: stars.map(p => p.playerName), values: { usageOverlapScore: overlap, fgaCompressionScore: compression } }, 0.95)
         : inactive;
     }
   },

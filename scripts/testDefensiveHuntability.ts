@@ -1,0 +1,152 @@
+import { draftPool as players } from '../src/data/draftPool';
+import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
+import { defensiveHuntability } from '../src/engine/defensiveHuntability';
+import { defensiveCohesion } from '../src/engine/defensiveCohesion';
+import { fitV2ShadowScore } from '../src/engine/fitV2Shadow';
+import { projectedNetRating } from '../src/engine/netRatingProjection';
+import { autoAssignRotation } from '../src/engine/rotation';
+import { defenseScore, scoreTeam } from '../src/engine/scoring';
+import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import type { Team } from '../src/engine/types';
+
+function check(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(`FAIL: ${message}`);
+  console.log(`PASS: ${message}`);
+}
+function pick(name: string, spanLabel: string): PlayerSpan {
+  const player = players.find((candidate) => normalizePlayerName(candidate.playerName) === normalizePlayerName(name) && candidate.spanLabel === spanLabel);
+  if (!player) throw new Error(`Missing huntability fixture: ${name}, ${spanLabel}`);
+  return player;
+}
+function team(id: string, roster: PlayerSpan[]): Team {
+  return { id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) };
+}
+
+const reported = team('reported-huntable-roster', [
+  pick('John Stockton', '1993-95'),
+  pick('Steve Nash', '2006-08'),
+  pick('Chris Mullin', '1990-92'),
+  pick('OG Anunoby', '2024-26'),
+  pick("Shaquille O'Neal", '1999-01'),
+  pick('Dana Barros', '1993-95'),
+  pick('Tyson Chandler', '2011-13'),
+  pick('Mario Elie', '1995-97'),
+]);
+const control = team('defensive-control', [
+  pick('Gary Payton', '1995-97'),
+  pick('Michael Jordan', '1996-98'),
+  pick('Scottie Pippen', '1994-96'),
+  pick('Tim Duncan', '2005-07'),
+  pick('Hakeem Olajuwon', '1993-95'),
+  pick('Alex Caruso', '2019-21'),
+  pick('Shane Battier', '2005-07'),
+  pick('Tyson Chandler', '2011-13'),
+]);
+const reportedElite = team('reported-elite-defense', [
+  pick('Jason Kidd', '1998-00'),
+  pick('Sidney Moncrief', '1981-83'),
+  pick('Anfernee Hardaway', '1995-97'),
+  pick('Scottie Pippen', '1992-94'),
+  pick('Shane Battier', '2005-07'),
+  pick('Draymond Green', '2015-17'),
+  pick('Hakeem Olajuwon', '1991-93'),
+  pick('Mitchell Robinson', '2020-22'),
+]);
+const reportedEliteCore = team('reported-elite-core-with-bench-targets', [
+  pick('Ron Harper', '1988-90'),
+  pick('Jrue Holiday', '2017-19'),
+  pick('Grant Hill', '1995-97'),
+  pick('Victor Wembanyama', '2024-26'),
+  pick('David Robinson', '1997-99'),
+  pick('Anthony Mason', '1995-97'),
+  pick('Charlie Ward', '1999-01'),
+  pick('Jon Barry', '2001-03'),
+]);
+const reportedThreeLayerCore = team('reported-jordan-mobley-gobert-core', [
+  pick('Jalen Brunson', '2024-26'),
+  pick('Dana Barros', '1993-95'),
+  pick('Michael Jordan', '1990-92'),
+  pick('Paul Pierce', '2009-11'),
+  pick('Andre Roberson', '2016-18'),
+  pick('Evan Mobley', '2023-25'),
+  pick('Rudy Gobert', '2020-22'),
+  pick('DeAndre Jordan', '2015-17'),
+]);
+
+const reportedHunt = defensiveHuntability(reported);
+const controlHunt = defensiveHuntability(control);
+const reportedFit = fitV2ShadowScore(reported);
+const reportedScores = scoreTeam(reported);
+const reportedProjection = projectedNetRating(reported);
+const eliteCohesion = defensiveCohesion(reportedElite);
+const eliteProjection = projectedNetRating(reportedElite);
+const eliteCoreHunt = defensiveHuntability(reportedEliteCore);
+const eliteCoreCohesion = defensiveCohesion(reportedEliteCore);
+const eliteCoreProjection = projectedNetRating(reportedEliteCore);
+const threeLayerHunt = defensiveHuntability(reportedThreeLayerCore);
+const threeLayerCohesion = defensiveCohesion(reportedThreeLayerCore);
+const threeLayerDefense = defenseScore(reportedThreeLayerCore);
+const threeLayerProjection = projectedNetRating(reportedThreeLayerCore);
+console.log({
+  defense: defenseScore(reported),
+  fit: reportedScores.fitScore,
+  overall: reportedScores.overall,
+  projectedDrtg: Number(reportedProjection.defense.toFixed(1)),
+  huntPenalty: Number(reportedHunt.penalty.toFixed(1)),
+  targetableMinutes: reportedHunt.targetableMinutes,
+  targets: reportedHunt.offenders.map((offender) => `${offender.playerName} D${offender.defensiveTalent}/${offender.minutes}m`),
+});
+console.log({
+  eliteCoreDefense: defenseScore(reportedEliteCore),
+  eliteCoreProjectedDrtg: Number(projectedNetRating(reportedEliteCore).defense.toFixed(1)),
+  eliteCoreHunt: defensiveHuntability(reportedEliteCore),
+  eliteCoreCohesion: defensiveCohesion(reportedEliteCore),
+  eliteCorePlayers: reportedEliteCore.roster.map((player) => ({
+    name: player.playerName,
+    dTal: computeDefensiveTalent(player),
+    role: player.defensiveRole,
+  })),
+});
+console.log({
+  threeLayerDefense,
+  threeLayerProjectedDrtg: Number(threeLayerProjection.defense.toFixed(1)),
+  threeLayerHunt,
+  threeLayerCohesion,
+  threeLayerPlayers: reportedThreeLayerCore.roster.map((player) => ({
+    name: player.playerName,
+    dTal: computeDefensiveTalent(player),
+    role: player.defensiveRole,
+  })),
+});
+console.log({
+  eliteDefense: defenseScore(reportedElite),
+  eliteProjectedDrtg: Number(eliteProjection.defense.toFixed(1)),
+  eliteShell: eliteCohesion.eliteShell,
+  eliteHunt: defensiveHuntability(reportedElite),
+  elitePlayers: reportedElite.roster.map((player) => ({
+    name: player.playerName,
+    dTal: computeDefensiveTalent(player),
+    role: player.defensiveRole,
+  })),
+});
+check(pick('Chris Mullin', '1990-92').defensiveRole === 'Helper', 'Mullin is no longer mislabeled as a primary Wing Stopper');
+check(reportedFit.inputs.wingCoverageProvider === 'OG Anunoby' && reportedFit.inputs.wingCoverageConfirmed, 'OG is the confirmed wing provider');
+check(reportedHunt.targetableMinutes >= 80 && reportedHunt.penalty >= 15, 'Nash/Barros/Elie weaknesses stack by real minutes');
+check(reportedHunt.penalty >= controlHunt.penalty + 10, 'huntable roster is clearly separated from an elite defensive control');
+check(defenseScore(reported) <= 50, 'reported roster no longer receives a mid-60s Defense score');
+check(reportedProjection.defense >= 102, 'projected DRTG exposes the weak-link cost instead of reading as sub-100 elite');
+check(reportedScores.overall <= 84, 'weak defense meaningfully lowers the final power score');
+check(eliteCoreHunt.targetableMinutes === 42, 'Ward and Jon Barry bench weaknesses retain their real rotation-minute cost');
+check(eliteCoreCohesion.eliteShell >= 80, 'Harper/Jrue plus Wembanyama/Robinson complete an elite starter shell despite limited bench targets');
+check(defenseScore(reportedEliteCore) >= 80, 'elite defensive core is no longer graded as merely above average');
+check(eliteCoreProjection.defense <= 88, 'elite defensive core projects into an elite DRTG tier without reaching the perfect-shell ceiling');
+check(threeLayerHunt.targetableMinutes >= 90, 'Brunson, Barros and Pierce retain their full weak-link minutes');
+check(threeLayerCohesion.threeLayerCore >= 0.6, 'Jordan, Roberson and Gobert register a genuine POA-wing-rim core');
+check(threeLayerCohesion.eliteShell === 0, 'weak starter average does not falsely classify the reported roster as an elite shell');
+check(threeLayerDefense >= 65 && threeLayerDefense <= 70, 'three-layer core lifts Defense out of the 50s without hiding 96 attackable minutes');
+check(threeLayerProjection.defense >= 97 && threeLayerProjection.defense <= 99, 'partial core earns only a modest DRTG correction');
+check(eliteCohesion.eliteShell === 100, 'reported elite roster completes confirmed POA, wing and rim layers with no targetable minutes');
+check(defenseScore(reportedElite) === 100, 'complete all-time defensive shell reaches the practical Defense ceiling');
+check(Math.abs(eliteProjection.defense - 85) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
+
+console.log('Defensive huntability tests complete.');

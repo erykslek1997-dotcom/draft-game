@@ -11,6 +11,7 @@ import { allAssignments, primaryStarters, benchWithMinutes, totalMinutesForPlaye
 import { projectedNetRating } from './netRatingProjection';
 import { benchDepthScore, talentScore } from './scoring';
 import { draftPool as allPoolPlayers } from '../data/draftPool';
+import { defensiveHuntability } from './defensiveHuntability';
 
 /**
  * 2026-08-15, the Team → `TeamFeatureSnapshot` translation `insights.ts`'s own docstring points
@@ -55,6 +56,7 @@ function toPlayerFeature(p: PlayerSpan, minutes: number, assignedSlots: { slot: 
     spanLabel: p.spanLabel,
     minutes,
     fga: p.fga,
+    rpg: p.box.rpg,
     tal: computeTalent(p),
     primaryPosition: p.primaryPosition,
     secondaryPositions: p.secondaryPositions,
@@ -161,6 +163,11 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
   const positionalCompromises = assignments.filter(
     (a) => a.minutes > 0 && a.player.primaryPosition !== a.slot && !a.player.secondaryPositions.includes(a.slot),
   );
+  const positionalCompromisePlayers = [...new Set(positionalCompromises.map((assignment) => assignment.player.playerName))];
+  const severePositionalCompromises = positionalCompromises.filter(
+    (a) => positionDistance(a.slot, a.player.primaryPosition) >= 2,
+  );
+  const severePositionalCompromisePlayers = [...new Set(severePositionalCompromises.map((assignment) => assignment.player.playerName))];
 
   // Depth/top-heaviness — reuses `benchDepthScore`/`talentScore` (scoring.ts) directly rather
   // than re-deriving a parallel "how good is the core vs. the bench" measure.
@@ -246,7 +253,10 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
       ? clamp01((perimeterDefenseScore + rimProtectionScore) / 2 + 0.1)
       : (perimeterDefenseScore + rimProtectionScore) / 2;
 
-  const defensiveWeakLinks = starterSpans.filter((p) => computeDefensiveTalent(p) < DTAL_LO + (DTAL_HI - DTAL_LO) * 0.25);
+  // Reuse the production playoff weak-link definition instead of maintaining a second, much
+  // lower starter-only threshold for prose. Descriptions now agree with Defense/FIT/DRTG about
+  // who is targetable and count the offender's real assigned minutes.
+  const huntability = defensiveHuntability(team);
 
   return {
     teamId: team.id,
@@ -286,7 +296,8 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
     perimeterDefenseScore,
     rimProtectionScore,
     defensiveLayeringScore,
-    defensiveWeakLinkCount: defensiveWeakLinks.length,
+    defensiveWeakLinkCount: huntability.offenders.length,
+    defensiveTargetableMinutes: huntability.targetableMinutes,
 
     // APPROXIMATION: no split ORB%/DRB% signal exists (see this file's own docstring) — both
     // folded into the same combined-rebounding read `fitScore`'s own `STARTER_REBOUNDING_FLOOR`
@@ -296,9 +307,9 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
     starterReboundingScore: normalize(totalStarterRpg, REBOUNDING_LO, REBOUNDING_HI),
 
     positionalCompromiseCount: positionalCompromises.length,
-    severePositionalCompromiseCount: positionalCompromises.filter(
-      (a) => positionDistance(a.slot, a.player.primaryPosition) >= 2,
-    ).length,
+    severePositionalCompromiseCount: severePositionalCompromises.length,
+    positionalCompromisePlayers,
+    severePositionalCompromisePlayers,
     minutesCeilingViolationCount: minutesCeilingViolations.length,
     deepRotationScore,
     topHeavyScore,

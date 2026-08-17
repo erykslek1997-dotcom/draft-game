@@ -182,6 +182,7 @@ function bestPrimaryAssignment(
 ): { assignment: Partial<Record<Position, PlayerSpan>>; score: number } {
   let best: Partial<Record<Position, PlayerSpan>> = {};
   let bestScore = -Infinity;
+  let bestPrimaryMatches = -Infinity;
   const used = new Set<string>();
   const current: Partial<Record<Position, PlayerSpan>> = {};
 
@@ -236,10 +237,17 @@ function bestPrimaryAssignment(
     return v;
   }
 
-  function search(slotIdx: number, score: number) {
+  function search(slotIdx: number, score: number, primaryMatches: number) {
     if (slotIdx === STARTER_SLOTS.length) {
-      if (score > bestScore) {
+      // Explicit secondary positions remain full-value, exactly as `starterFitMultiplier`
+      // promises. When two complete lineups have IDENTICAL value, however, prefer the one that
+      // places more players at their primary position. This is a pure tiebreak, not a secondary-
+      // position penalty: Wembanyama(C/PF)+Webber(PF/C) should display as Wemby C / Webber PF,
+      // rather than the reversed but numerically identical arrangement determined by iteration
+      // order alone.
+      if (score > bestScore || (score === bestScore && primaryMatches > bestPrimaryMatches)) {
         bestScore = score;
+        bestPrimaryMatches = primaryMatches;
         best = { ...current };
       }
       return;
@@ -249,19 +257,19 @@ function bestPrimaryAssignment(
     // Leave this slot unfilled and move on — always explored, so players are only ever
     // assigned where they actually help, never forced into an early slot just because the
     // roster doesn't have enough people to reach the end of the iteration order.
-    search(slotIdx + 1, score);
+    search(slotIdx + 1, score, primaryMatches);
 
     for (const player of roster) {
       if (used.has(player.id)) continue;
       used.add(player.id);
       current[slot] = player;
-      search(slotIdx + 1, score + valueFor(player, slot));
+      search(slotIdx + 1, score + valueFor(player, slot), primaryMatches + Number(player.primaryPosition === slot));
       used.delete(player.id);
       delete current[slot];
     }
   }
 
-  search(0, 0);
+  search(0, 0, 0);
   return { assignment: best, score: bestScore === -Infinity ? 0 : bestScore };
 }
 

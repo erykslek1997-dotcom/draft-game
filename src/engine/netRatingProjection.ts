@@ -5,6 +5,8 @@ import type { Team } from './types';
 import { allAssignments, GAME_MINUTES } from './rotation';
 import { STARTER_SLOTS } from './positions';
 import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
+import { defensiveHuntability, HUNTABILITY_DRTG_POINTS_PER_PENALTY } from './defensiveHuntability';
+import { defensiveCohesion, ELITE_SHELL_DRTG_TARGET } from './defensiveCohesion';
 
 /**
  * Real-NBA-units projection of a roster's offensive/defensive/net rating — points per 100
@@ -47,6 +49,17 @@ import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
  * a modeling failure. If more *differentiation* (as opposed to more *accuracy*) is ever wanted
  * regardless of real-unit honesty, that's what `defenseScore` (scoring.ts) is for — deliberately
  * rescaled to span its full achievable 0-100 range. Don't blend the two.
+ *
+ * **2026-08-17 playoff weak-link correction:** the base coefficients below remain the fitted
+ * regular-season model. DRTG additionally receives a conservative targetable-minutes adjustment
+ * from existing D-TAL and the actual 240-minute rotation. Its 0.20 multiplier is deliberately
+ * lower than the fitted regular-season D-TAL slope (0.277); it is a game-specific postseason
+ * structural correction, not claimed as another coefficient from the original OLS fit. Complete
+ * all-time shells blend toward a bounded historical-ceiling tier (85 DRTG) because the ordinary
+ * NBA training set contains no roster built entirely from elite defensive peaks. A genuine
+ * POA-wing-rim core that still carries weak links can use at most a 15% fraction of that blend;
+ * its targetable minutes remain fully charged. The playoff-only calibration remains diagnostic
+ * because its 463-team-season sample is much noisier.
  */
 
 // Fitted 2026-08-14 by scripts/calibrateMultiVariateNetRating.ts against team_advanced.csv +
@@ -74,7 +87,8 @@ export interface NetRatingProjection {
  * averages of `computeOffensiveTalent`/`computeDefensiveTalent`/`computeSpacing`, plus the
  * MIN-weighted share of minutes carrying a rim/perimeter-defender role tag, across every assigned
  * minute (`allAssignments`, the same full 240-minute rotation `offenseScore`/`defenseScore`
- * read). Deliberately NOT multiplied by `positionFitMultiplier` — real NBA rosters (what the
+ * read). A separate conservative weak-link adjustment uses those same assigned minutes.
+ * Deliberately NOT multiplied by `positionFitMultiplier` — real NBA rosters (what the
  * regression was trained against) have no such concept, so applying it here would evaluate a
  * different, unvalidated predictor than the one that was actually fit.
  */
@@ -95,6 +109,14 @@ export function projectedNetRating(team: Team): NetRatingProjection {
   const defRoleShare = roleMinutes / totalMinutes;
 
   const offense = OFF_INTERCEPT + OFF_B_OTAL * predOff + OFF_B_SPC * predSpc;
-  const defense = DEF_INTERCEPT + DEF_B_DTAL * predDef + DEF_B_ROLESHARE * defRoleShare;
+  const baseDefense =
+    DEF_INTERCEPT +
+    DEF_B_DTAL * predDef +
+    DEF_B_ROLESHARE * defRoleShare +
+    defensiveHuntability(team).penalty * HUNTABILITY_DRTG_POINTS_PER_PENALTY;
+  const cohesion = defensiveCohesion(team);
+  const defense =
+    baseDefense -
+    Math.max(0, baseDefense - ELITE_SHELL_DRTG_TARGET) * cohesion.drtgCompleteness;
   return { offense, defense, net: offense - defense };
 }

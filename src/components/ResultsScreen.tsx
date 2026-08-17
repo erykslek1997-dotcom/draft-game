@@ -14,6 +14,8 @@ import { computeOffensivePortability, computeDefensivePortability } from '../eng
 import { computeSpacing } from '../engine/spacing';
 import { computeDurability } from '../engine/durability';
 import { projectedNetRating } from '../engine/netRatingProjection';
+import { fitV2ShadowScore } from '../engine/fitV2Shadow';
+import { defensiveHuntability } from '../engine/defensiveHuntability';
 import { generateRosterInsights } from '../engine/insights';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
 import FeedbackToggle, { type FeedbackEntry } from './FeedbackToggle';
@@ -318,12 +320,6 @@ function downloadFeedback(
 }
 
 export default function ResultsScreen({ teams, history, mode, onRestart, pickReactions, pickReasoning }: Props) {
-  const ranked = rankTeams(teams);
-  // Monte Carlo bracket sim (20,000 runs) — memoized on `teams` identity so it doesn't re-run on
-  // every unrelated re-render (e.g. typing a feedback note), matching `ranked` above in reading
-  // off the original auto-assigned rotations, not per-card rotation corrections.
-  const leagueEval = useMemo(() => evaluateLeague(teams), [teams]);
-  const leagueEvalByTeamId = useMemo(() => new Map(leagueEval.map((e) => [e.teamId, e])), [leagueEval]);
   const teamById = (id: string) => teams.find((t) => t.id === id);
   const playerById = (id: string) => draftPool.find((p) => p.id === id);
   const [feedback, setFeedback] = useState<Record<string, TeamFeedback>>({});
@@ -343,6 +339,24 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
   const [expandedTeamIds, setExpandedTeamIds] = useState<Set<string>>(
     () => new Set(teams.filter((t) => t.isHuman).map((t) => t.id)),
   );
+  // Scores, ranking and matchup simulation must all read the same corrected rotations as the
+  // visible card. Previously only the minutes list and DRTG used a manual correction while the
+  // chips/rank/odds silently kept the original auto-rotation, producing impossible combinations
+  // such as Defense 76 beside a corrected-rotation DRTG of 87.0.
+  const scoredTeams = useMemo(
+    () => teams.map((team) => {
+      const correction = correctedRotations[team.id];
+      return correction ? { ...team, rotation: correction } : team;
+    }),
+    [teams, correctedRotations],
+  );
+  // Ranking is cheap compared with the Monte Carlo evaluation and intentionally recomputes on
+  // render; during local calibration HMR can replace scoring code without changing team identity.
+  const ranked = rankTeams(scoredTeams);
+  // Monte Carlo bracket sim (20,000 runs) is expensive, so it reruns only when the draft teams or
+  // a saved rotation correction actually change — not when feedback text or expansion state does.
+  const leagueEval = useMemo(() => evaluateLeague(scoredTeams), [scoredTeams]);
+  const leagueEvalByTeamId = useMemo(() => new Map(leagueEval.map((entry) => [entry.teamId, entry])), [leagueEval]);
   function toggleExpanded(teamId: string) {
     setExpandedTeamIds((prev) => {
       const next = new Set(prev);
@@ -433,6 +447,8 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         const fb = getFeedback(team.id);
         const isEditingRotation = editingRotationTeamId === team.id;
         const isExpanded = expandedTeamIds.has(team.id);
+        const fitV2Shadow = isExpanded ? fitV2ShadowScore(shownTeam) : null;
+        const huntability = isExpanded ? defensiveHuntability(shownTeam) : null;
         const totalFga = team.roster.reduce((sum, p) => sum + p.fga, 0);
         // 2026-08-15: Strengths/Concerns text now comes from the deterministic insight engine
         // (insights.ts + insightMapper.ts) instead of the old `breakdown.notes` split +
@@ -470,9 +486,46 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                   <ScoreChip label="Defense" value={breakdown.defenseScore} />
                   <ScoreChip label="Spacing" value={breakdown.spacingScore} />
                   <ScoreChip label="Fit" value={breakdown.fitScore} />
+                  {fitV2Shadow && <ScoreChip label="FIT v2 shadow" value={fitV2Shadow.score} />}
                   <ScoreChip label="Rotation" value={breakdown.rotationScore} />
                   <span className="fga-spent">FGA spent: {totalFga.toFixed(1)} / 100.9</span>
                 </div>
+                {fitV2Shadow && (
+                  <div
+                    className="fit-v2-shadow-panel"
+                    title="Diagnostic only. FIT v2 does not affect Overall, AI drafting or game results yet."
+                  >
+                    <span className="fit-v2-shadow-label">FIT v2 — shadow only</span>
+                    <span>Creation {fitV2Shadow.components.creationStructure}</span>
+                    <span>Spacing compatibility {fitV2Shadow.components.spacingCompatibility}</span>
+                    <span>Defensive roles {fitV2Shadow.components.defensiveRoleCoverage}</span>
+                    <span>Switchability {fitV2Shadow.inputs.switchability}</span>
+                    <span>Rebounding {fitV2Shadow.components.reboundingBalance}</span>
+                    <span>Functional size {fitV2Shadow.components.sizeCoverage}</span>
+                    <span className="fit-v2-shadow-detail">
+                      Defense: POA {fitV2Shadow.inputs.guardContainmentProvider ?? '—'} {Math.round(fitV2Shadow.inputs.guardContainment)}
+                      {!fitV2Shadow.inputs.guardContainmentConfirmed && ' (inferred)'}
+                      {' · '}wing {fitV2Shadow.inputs.wingCoverageProvider ?? '—'} {Math.round(fitV2Shadow.inputs.wingCoverage)}
+                      {!fitV2Shadow.inputs.wingCoverageConfirmed && ' (inferred)'}
+                      {' · '}rim {fitV2Shadow.inputs.rimProtectionProvider ?? '—'} {Math.round(fitV2Shadow.inputs.rimProtection)}
+                      {!fitV2Shadow.inputs.rimProtectionConfirmed && ' (inferred)'}
+                      {' · '}weak link {fitV2Shadow.inputs.defensiveWeakLinkPlayer ?? '—'} {Math.round(fitV2Shadow.inputs.defensiveWeakLinkResistance)}
+                    </span>
+                    {huntability && huntability.offenders.length > 0 && (
+                      <span className="fit-v2-shadow-detail">
+                        Weak-link targets: {huntability.offenders.slice(0, 4).map((offender) =>
+                          `${offender.playerName} D${offender.defensiveTalent}/${offender.minutes}m`,
+                        ).join(' · ')}
+                      </span>
+                    )}
+                    <span className="fit-v2-shadow-detail">
+                      Size inputs: height {Math.round(fitV2Shadow.inputs.positionAdjustedHeightPercentile ?? 50)}
+                      {' · '}strength {Math.round(fitV2Shadow.inputs.positionAdjustedWeightPercentile ?? 50)}
+                      {' · '}athleticism {Math.round(fitV2Shadow.inputs.positionAdjustedAthleticismPercentile ?? 50)}
+                      {' · '}rebounding {Math.round(fitV2Shadow.inputs.positionAdjustedReboundingPercentile)}
+                    </span>
+                  </div>
+                )}
                 <div
                   className="subscores net-rating-projection"
                   title="Real-NBA-units estimate (points per 100 possessions), fitted against 865 real 1997-2026 team-seasons — a different, informational question from the 0-100 scores above, not a replacement for them."
