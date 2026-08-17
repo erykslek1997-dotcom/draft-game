@@ -2,8 +2,9 @@ import { useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes } from '../engine/rotation';
-import { computeTalent } from '../engine/talent';
 import { computeDurability, maxSustainableMinutes } from '../engine/durability';
+import { displayTalentForSpan } from '../engine/grades';
+import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import type { Rotation, SlotAssignment, Team } from '../engine/types';
 
 interface Props {
@@ -19,6 +20,17 @@ interface Props {
    * rotation to proceed), but correcting an already-final team's rotation is optional and should
    * be cancelable without side effects. Omitted hides the button, matching the original flow. */
   onCancel?: () => void;
+  /** 2026-08-16, added for DraftBoard's Team tab reuse (see that file's own docstring on the
+   * merged span+rotation section) — lets the caller relabel the confirm action ("Submit Team"
+   * there) instead of always showing this component's own two default labels. */
+  confirmLabel?: string;
+  /** Same reuse: an extra gate on top of this component's own `allValid` check — the Team tab
+   * uses it to block submission until the draft itself is actually done, since `allValid` alone
+   * only checks that whatever's currently drafted has a legal rotation, not that drafting is over. */
+  confirmDisabled?: boolean;
+  /** Shown as the disabled button's `title` tooltip when `confirmDisabled` is the reason (not
+   * `!allValid`) — e.g. "Finish drafting before you can submit." */
+  confirmDisabledHint?: string;
 }
 
 interface Row {
@@ -67,7 +79,15 @@ function playerTotalMinutes(rows: RowsBySlot, playerId: string): number {
   return total;
 }
 
-export default function RotationBuilder({ roster, onConfirm, initialRotation, onCancel }: Props) {
+export default function RotationBuilder({
+  roster,
+  onConfirm,
+  initialRotation,
+  onCancel,
+  confirmLabel,
+  confirmDisabled,
+  confirmDisabledHint,
+}: Props) {
   const [rows, setRows] = useState<RowsBySlot>(() => buildInitialRows(roster, initialRotation));
 
   function handleAutoFill() {
@@ -228,13 +248,18 @@ export default function RotationBuilder({ roster, onConfirm, initialRotation, on
         {bench.map(({ player, minutes }) => (
           <li key={player.id}>
             {player.playerName} ({player.spanLabel}) — {player.offensiveArchetype} / {player.defensiveRole} — TAL{' '}
-            {computeTalent(player)} — {minutes} min
+            {displayTalentForSpan(tierContextFor(player))} — {minutes} min
           </li>
         ))}
       </ul>
 
-      <button className="primary-btn" disabled={!allValid} onClick={handleConfirm}>
-        {onCancel ? 'Save Rotation' : 'Confirm Rotation & See Results'}
+      <button
+        className="primary-btn"
+        disabled={!allValid || confirmDisabled}
+        title={!allValid ? undefined : confirmDisabled ? confirmDisabledHint : undefined}
+        onClick={handleConfirm}
+      >
+        {confirmLabel ?? (onCancel ? 'Save Rotation' : 'Confirm Rotation & See Results')}
       </button>
       {onCancel && (
         <button className="secondary-btn" onClick={onCancel}>

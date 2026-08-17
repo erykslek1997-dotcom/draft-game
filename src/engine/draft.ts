@@ -73,10 +73,21 @@ const noCapLegalCache = new WeakMap<DraftState, boolean>();
  * lands on — randomized per draft rather than always slot 0, like a real draft lottery.
  * Every team gets a random "Place Mascot" name (`teamNames.ts`) plus its 1-based `draftSlot`;
  * names are drawn independently of `humanIndex`, so nothing about a name reveals or depends on
- * where the human landed. Replaced the old sequential "CPU Team A/B/C" + "Your Team" scheme. */
-export function createInitialTeams(): Team[] {
+ * where the human landed. Replaced the old sequential "CPU Team A/B/C" + "Your Team" scheme.
+ *
+ * 2026-08-16, user's own ask: the human can now supply their own team NAME (typed on the intro
+ * screen, or that screen's own "🎲 randomize" button) instead of always getting one of the
+ * randomly-generated "Place Mascot" names indistinguishable from the 15 CPU teams — the whole
+ * point being they can actually recognize their own team on sight, including on the Draft
+ * Lottery/Overview grid where all 16 names sit in one list. Only overrides the human's own slot;
+ * the other 15 stay on the normal random generator untouched. A blank/whitespace-only
+ * `humanTeamName` is treated the same as not passing one at all (falls through to the random
+ * draw) rather than shipping a team with an empty name. */
+export function createInitialTeams(humanTeamName?: string): Team[] {
   const humanIndex = Math.floor(Math.random() * TEAM_COUNT);
   const names = randomTeamNames(TEAM_COUNT);
+  const trimmedHumanName = humanTeamName?.trim();
+  if (trimmedHumanName) names[humanIndex] = trimmedHumanName;
   const teams: Team[] = [];
   for (let i = 0; i < TEAM_COUNT; i++) {
     // `draftSlot` is 1-based and equals the team's position in round 1 — the same index the snake
@@ -93,9 +104,9 @@ export function createInitialTeams(): Team[] {
   return teams;
 }
 
-export function createDraft(commissionerMode: boolean = false, pool: PlayerSpan[] = players): DraftState {
+export function createDraft(commissionerMode: boolean = false, pool: PlayerSpan[] = players, humanTeamName?: string): DraftState {
   return {
-    teams: createInitialTeams(),
+    teams: createInitialTeams(humanTeamName),
     draftedIds: new Set(),
     round: 0,
     pickInRound: 0,
@@ -295,14 +306,18 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
   if (available.length === 0) return null;
 
   const currentFgas = team.roster.map((p) => p.fga);
-  const preferred = pickForAi(team.roster, currentFgas, available);
+  // Same `pickNumber` formula `makePick` itself uses when recording a history entry (see that
+  // function, just below) — computed from the CURRENT (pre-pick) state, since that's the pick
+  // about to be made. Feeds `pickForAi`'s "steal" safety net only; see that function's own docstring.
+  const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
+  const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber);
   const preferredState = makePick(state, preferred.id);
   if (preferredState !== state) return preferredState;
 
   const legal = available.filter((p) => isPickLegal(state, p.id));
   if (legal.length === 0) return null;
 
-  const fallback = pickForAi(team.roster, currentFgas, legal);
+  const fallback = pickForAi(team.roster, currentFgas, legal, TEAM_COUNT, pickNumber);
   const fallbackState = makePick(state, fallback.id);
   if (fallbackState !== state) return fallbackState;
 

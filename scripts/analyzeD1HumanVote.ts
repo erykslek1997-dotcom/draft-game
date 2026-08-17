@@ -5,13 +5,17 @@ import { computeSpacing } from '../src/engine/spacing';
 import { autoAssignRotation } from '../src/engine/rotation';
 import {
   talentScore,
+  benchDepthScore,
   offenseScore,
   defenseScore,
   spacingScore,
   fitScore,
+  rotationScore,
   scoreTeam,
   isStrongRimProtector,
   isStrongPerimeterDefender,
+  type FitScoreComponents,
+  type RotationScoreComponents,
 } from '../src/engine/scoring';
 import { primaryStarters } from '../src/engine/rotation';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../src/data/schema';
@@ -339,7 +343,7 @@ for (const res of results) {
 
 console.log('\n=== SCORES ===');
 console.log('sklad\tvote\tteam\t\ttalent\toffense\tdefense\tspacing\tfit\ttier');
-const rows2: { sklad: number; vote: number; team: string; talent: number; offense: number; defense: number; spacing: number; fit: number; overall: number }[] = [];
+const rows2: { sklad: number; vote: number; team: string; talent: number; bench: number; offense: number; defense: number; spacing: number; fit: number; fitRaw: number; fitComponents: FitScoreComponents; rotation: number; rotationComponents: RotationScoreComponents; overall: number }[] = [];
 for (const res of results) {
   if (res.roster.length < 8) {
     console.log(`Sklad ${res.sklad}: SKIPPED (roster too incomplete: ${res.roster.length}/9)`);
@@ -358,12 +362,15 @@ for (const res of results) {
   };
   team.rotation = autoAssignRotation(team.roster);
   const tal = talentScore(team);
+  const bench = benchDepthScore(team);
   const off = offenseScore(team);
   const def = defenseScore(team);
   const spc = spacingScore(team);
   const fit = fitScore(team);
+  const rotationResult = rotationScore(team);
+  const rotation = rotationResult.score;
   const overall = scoreTeam(team).overall;
-  rows2.push({ sklad: res.sklad, vote: res.voteRank, team: res.team, talent: tal, offense: off, defense: def, spacing: spc, fit: fit.score, overall });
+  rows2.push({ sklad: res.sklad, vote: res.voteRank, team: res.team, talent: tal, bench, offense: off, defense: def, spacing: spc, fit: fit.score, fitRaw: fit.raw, fitComponents: fit.components, rotation, rotationComponents: rotationResult.components, overall });
   console.log(`${res.sklad}\t${res.voteRank}\t${res.team.padEnd(24)}\t${tal.toFixed(1)}\t${off.toFixed(1)}\t${def.toFixed(1)}\t${spc.toFixed(1)}\t${fit.score.toFixed(1)}\t${overall.toFixed(1)}`);
 }
 
@@ -389,11 +396,71 @@ function spearman(a: number[], b: number[]): number {
 const voteArr = rows2.map((r) => r.vote);
 console.log('\n=== SPEARMAN CORRELATION (human vote vs metric) ===');
 console.log('talentScore:', spearman(voteArr, rows2.map((r) => r.talent)).toFixed(3));
+console.log('benchDepthScore:', spearman(voteArr, rows2.map((r) => r.bench)).toFixed(3));
 console.log('offenseScore:', spearman(voteArr, rows2.map((r) => r.offense)).toFixed(3));
 console.log('defenseScore:', spearman(voteArr, rows2.map((r) => r.defense)).toFixed(3));
 console.log('spacingScore:', spearman(voteArr, rows2.map((r) => r.spacing)).toFixed(3));
 console.log('fitScore:', spearman(voteArr, rows2.map((r) => r.fit)).toFixed(3));
+console.log('rotationScore:', spearman(voteArr, rows2.map((r) => r.rotation)).toFixed(3));
 console.log('overall (scoreTeam blend):', spearman(voteArr, rows2.map((r) => r.overall)).toFixed(3));
+
+const candidateBlends = {
+  legacy: { talent: 0.25, bench: 0.15, offense: 0.16 / 3, defense: 0.16 / 3, spacing: 0.16 / 3, fit: 0.29, rotation: 0.15 },
+  current: { talent: 0.40, bench: 0.10, offense: 0.12, defense: 0.12, spacing: 0.03, fit: 0.15, rotation: 0.08 },
+  balanced_35: { talent: 0.35, bench: 0.15, offense: 0.10, defense: 0.10, spacing: 0.05, fit: 0.15, rotation: 0.10 },
+  talent_40: { talent: 0.40, bench: 0.10, offense: 0.10, defense: 0.10, spacing: 0.05, fit: 0.15, rotation: 0.10 },
+};
+console.log('\n=== CANDIDATE TOP-LEVEL BLENDS ===');
+for (const [name, weights] of Object.entries(candidateBlends)) {
+  const values = rows2.map((row) =>
+    row.talent * weights.talent +
+    row.bench * weights.bench +
+    row.offense * weights.offense +
+    row.defense * weights.defense +
+    row.spacing * weights.spacing +
+    row.fit * weights.fit +
+    row.rotation * weights.rotation,
+  );
+  console.log(`${name}: ${spearman(voteArr, values).toFixed(3)}`);
+}
+
+const rotationComponentKeys = Object.keys(rows2[0].rotationComponents) as Array<keyof RotationScoreComponents>;
+const lowDuplicationWeights = candidateBlends.current;
+const rotationVariants: Record<string, (row: (typeof rows2)[number]) => number> = {
+  current: (row) => row.rotation,
+  weak_cap_25: (row) => {
+    const raw = rotationComponentKeys.reduce((sum, key) =>
+      sum + (key === 'weakStarterTransform' ? Math.max(-25, row.rotationComponents[key]) : row.rotationComponents[key]), 0);
+    return Math.max(0, Math.min(100, Math.round(raw)));
+  },
+  tier_cap_12: (row) => {
+    const raw = rotationComponentKeys.reduce((sum, key) =>
+      sum + (key === 'tierMinutesOverage' ? Math.max(-12, row.rotationComponents[key]) : row.rotationComponents[key]), 0);
+    return Math.max(0, Math.min(100, Math.round(raw)));
+  },
+  both_caps: (row) => {
+    const raw = rotationComponentKeys.reduce((sum, key) => {
+      if (key === 'weakStarterTransform') return sum + Math.max(-25, row.rotationComponents[key]);
+      if (key === 'tierMinutesOverage') return sum + Math.max(-12, row.rotationComponents[key]);
+      return sum + row.rotationComponents[key];
+    }, 0);
+    return Math.max(0, Math.min(100, Math.round(raw)));
+  },
+};
+console.log('\n=== ROTATION VARIANTS INSIDE LOW-DUPLICATION BLEND ===');
+for (const [name, rotationFor] of Object.entries(rotationVariants)) {
+  const values = rows2.map((row) =>
+    row.talent * lowDuplicationWeights.talent +
+    row.bench * lowDuplicationWeights.bench +
+    row.offense * lowDuplicationWeights.offense +
+    row.defense * lowDuplicationWeights.defense +
+    row.spacing * lowDuplicationWeights.spacing +
+    row.fit * lowDuplicationWeights.fit +
+    rotationFor(row) * lowDuplicationWeights.rotation,
+  );
+  console.log(`${name}: ${spearman(voteArr, values).toFixed(3)}`);
+}
+
 
 // 2026-08-13: fitScore's own component SIGNALS (not the final scored/summed number — the raw
 // inputs fitScore reads before any threshold/penalty is applied) correlated individually against

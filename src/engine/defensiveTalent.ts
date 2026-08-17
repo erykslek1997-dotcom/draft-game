@@ -170,7 +170,16 @@ function ladderPoints(position: Position, raw: number): number {
   return LADDER_PERCENTILE_POINTS[LADDER_PERCENTILE_POINTS.length - 1];
 }
 
+/** Same 2026-08-16 memoization as `talent.ts`'s `computeOffensiveTalent` (see that function's own
+ * docstring for the full profiling story) — this was the other uncached half of the same
+ * bottleneck: `aiDrafter.ts`'s per-candidate value formula calls `computeDefensiveTalent` several
+ * separate times per candidate, each re-running accolade-rate/DARKO/ladder lookups from scratch. A
+ * span's own data never changes during a session, so this is a pure function of `span.id`. */
+const defensiveTalentCache = new Map<string, number>();
+
 export function computeDefensiveTalent(span: PlayerSpan): number {
+  const cached = defensiveTalentCache.get(span.id);
+  if (cached !== undefined) return cached;
   const accoladeRate = individualDefenseRate(span);
   const uncorroborated = accoladeRate === 0 && darkoDefenseBonus(span) === 0;
   const base = Math.min(
@@ -178,5 +187,7 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
     uncorroborated ? UNCORROBORATED_CEILING : 100,
   );
   const credited = base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE;
-  return Math.max(0, Math.min(100, Math.round(credited)));
+  const result = Math.max(0, Math.min(100, Math.round(credited)));
+  defensiveTalentCache.set(span.id, result);
+  return result;
 }

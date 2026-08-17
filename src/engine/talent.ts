@@ -20,7 +20,7 @@ import { selfCreationPercentileForPortability } from './selfCreationSimilarity';
 // reproduced on every cold app boot, not just a script-ordering fluke. Import order within a
 // single file is otherwise cosmetic in acyclic code; it is load-bearing here specifically because
 // of this cycle, so don't reorder this block without re-testing a cold browser load.
-import { portabilityBonus } from './portabilityCorrection';
+import { portabilityBonus, roleScalabilityBonus } from './portabilityCorrection';
 
 export { computeDefensiveImpact };
 // D-TAL lives in its own file now (it has its own calibration — see defensiveTalent.ts), but
@@ -722,6 +722,7 @@ function talentScaled(span: PlayerSpan, usageScale: number): number {
   const extremeUsagePenalty = extremeUsageRatioPenalty(span);
   const hiddenValue = hiddenValueBonus(span);
   const portability = portabilityBonus(span);
+  const roleScalability = roleScalabilityBonus(span);
   const playoffPerformance = playoffPerformanceBonus(span);
   const selfCreation = selfCreationTalentBonus(span);
 
@@ -736,6 +737,7 @@ function talentScaled(span: PlayerSpan, usageScale: number): number {
       extremeUsagePenalty +
       hiddenValue +
       portability +
+      roleScalability +
       playoffPerformance +
       selfCreation) *
     positionCorrectionFor(span)
@@ -758,6 +760,7 @@ export interface TalentBreakdown {
   extremeUsagePenalty: number;
   hiddenValue: number;
   portability: number;
+  roleScalability: number;
   playoffPerformance: number;
   selfCreation: number;
   darkoDefenseBonus: number;
@@ -790,6 +793,7 @@ export function talentBreakdown(span: PlayerSpan): TalentBreakdown {
     extremeUsagePenalty: extremeUsageRatioPenalty(span),
     hiddenValue: hiddenValueBonus(span),
     portability: portabilityBonus(span),
+    roleScalability: roleScalabilityBonus(span),
     playoffPerformance: playoffPerformanceBonus(span),
     selfCreation: selfCreationTalentBonus(span),
     darkoDefenseBonus: darkoDefenseBonus(span),
@@ -1182,11 +1186,34 @@ const DEFENSE_TAL_SCALE_BY_POSITION: Record<Position, number> = {
  * re-tune in the same pass without a much more thorough re-validation than this batch had time
  * for. Left as a hard clamp for now — a real, documented follow-up, not silently dropped.
  */
+/**
+ * 2026-08-16, user-reported ("gra działa wolno" — profiled `pickForAi`'s per-candidate scoring
+ * loop at 63 of 66 total seconds for one 16-team draft, via `scripts/_profilePhases.ts`, deleted
+ * after use). Root cause: unlike `computeTalent` (memoized via `talentCache` above since
+ * 2026-08-01, precisely because this exact loop calls it thousands of times per pick), this
+ * function and `computeDefensiveTalent`/`computeUncappedOffensiveTalent` were NEVER memoized —
+ * `aiDrafter.ts`'s value formula calls `computeOffensiveTalent`/`computeDefensiveTalent` directly,
+ * several separate times per candidate across its various malus/bonus functions
+ * (`highVolumeNonElitePenalty`, `elitePerimeterEngineBonus`, `eliteTwoWayFrontcourtBonus`,
+ * `eliteTwoWayPeakBonus`, `earlyCoreRolePenalty`, plus `grades.ts`'s `tierContextFor`), each call
+ * re-running the real, non-trivial `rawComponents` computation (era baseline, shooting gravity,
+ * 3-level playmaking adjustment computed TWICE internally, DARKO defense corrections, rebounding
+ * versatility) completely from scratch. Same safe-to-memoize argument `computeTalent`'s own cache
+ * already relies on: a span's own data never changes during a session, so this is a pure function
+ * of `span.id` for the app's lifetime. Memoizing it (and its two siblings) directly addresses the
+ * measured bottleneck without changing any output value — pure caching, not a formula change.
+ */
+const offensiveTalentCache = new Map<string, number>();
+
 export function computeOffensiveTalent(span: PlayerSpan): number {
+  const cached = offensiveTalentCache.get(span.id);
+  if (cached !== undefined) return cached;
   const { offense } = rawComponents(span, false);
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   const scaled = offense * scale + intercept;
-  return Math.max(0, Math.min(100, Math.round(scaled)));
+  const result = Math.max(0, Math.min(100, Math.round(scaled)));
+  offensiveTalentCache.set(span.id, result);
+  return result;
 }
 
 /**
@@ -1202,11 +1229,18 @@ export function computeOffensiveTalent(span: PlayerSpan): number {
  * CP3's two-way exemption, every position's tier caps) that depend on `computeOffensiveTalent`
  * staying bit-identical — the exact blast radius that sank the earlier attempt.
  */
+/** Same 2026-08-16 memoization as `computeOffensiveTalent` above, same reason. */
+const uncappedOffensiveTalentCache = new Map<string, number>();
+
 export function computeUncappedOffensiveTalent(span: PlayerSpan): number {
+  const cached = uncappedOffensiveTalentCache.get(span.id);
+  if (cached !== undefined) return cached;
   const { offense } = rawComponents(span, false);
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   const scaled = offense * scale + intercept;
-  return Math.max(0, Math.round(scaled));
+  const result = Math.max(0, Math.round(scaled));
+  uncappedOffensiveTalentCache.set(span.id, result);
+  return result;
 }
 
 /**

@@ -1,12 +1,16 @@
 import { Fragment, useMemo, useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, availablePlayers, isPickLegal, type DraftState } from '../engine/draft';
-import { CAP_LIMIT, capRemaining, totalFga } from '../engine/positions';
-import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+import { CAP_LIMIT, ROSTER_SIZE, capRemaining, totalFga } from '../engine/positions';
+import { computeTalent, computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing, spacingTier, type SpacingTier } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
 import { allStarCount } from '../engine/allStarLookup';
+import { spanOptionsFor } from '../engine/spanOptimizer';
+import RotationBuilder from './RotationBuilder';
+import type { Rotation } from '../engine/types';
 import {
   offensiveGrade,
   defensiveGrade,
@@ -31,7 +35,7 @@ import { isSmallSampleSpan, sampleSizeGames } from '../engine/sampleSize';
 import { buildEvidenceReport } from '../engine/evidenceReport';
 import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
-import { teamLabel } from '../engine/teamNames';
+import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
 
 interface Props {
@@ -50,6 +54,11 @@ interface Props {
    * `pickReactions` above, passed straight through to `DraftHistory`. */
   pickReasoning: Record<number, string>;
   onPickReasoningChange: (pickNumber: number, reasoning: string) => void;
+  /** 2026-08-16, user's own ask: the old "Choose Each Player's Span" screen and the rotation-
+   * builder screen both went away as separate phases — both now live inside the Team tab below
+   * (see that tab's own render block for the full rationale), ending in this one callback once
+   * the human hits Submit. */
+  onSubmitTeam: (roster: PlayerSpan[], rotation: Rotation) => void;
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -265,6 +274,39 @@ export function groupByPlayer(list: PlayerSpan[]): PlayerGroup[] {
 // asked for, just fewer top-level tabs.
 type AtTab = 'draft' | 'team';
 
+/** Global 1-128 pick number for `state.teams[teamIdx]`'s round-`round` pick (both 0-indexed) —
+ * the inverse of `currentTeamIndex`/`snakeOrderIndex` in draft.ts, needed here because the
+ * Overview grid is laid out team-row x round-column (so it can double as "your team's picks
+ * across every round"), while the broadcast-board badge wants the true chronological pick
+ * number, same as `makePick`'s own `state.round * TEAM_COUNT + state.pickInRound + 1` formula.
+ * Snake order reverses direction every other round, so a team's `pickInRound` alternates between
+ * its array index and its mirror from the far end. */
+function overviewPickNumber(teamIdx: number, round: number): number {
+  const pickInRound = round % 2 === 0 ? teamIdx : TEAM_COUNT - 1 - teamIdx;
+  return round * TEAM_COUNT + pickInRound + 1;
+}
+
+/** "Michael Jordan" -> "M. Jordan" — same first-initial-plus-surname convention the real board
+ * photo itself uses ("C. FLAGG", "D. HARPER"). Rendered alongside the full name (CSS picks one
+ * per viewport width, see `.at-name-full`/`.at-name-short`) rather than swapped in via JS/resize
+ * listener — a full name a real board would also show on a big-enough screen has no reason to be
+ * throttled down on a wide viewport. Falls back to the given string as-is for the rare single-
+ * token name (mononyms, or the odd malformed row) rather than mangling it. */
+function shortPlayerName(name: string): string {
+  const parts = name.split(' ');
+  if (parts.length < 2) return name;
+  return `${parts[0][0]}. ${parts[parts.length - 1]}`;
+}
+
+/** 2026-08-16, user's own ask: a hover tooltip on the Overview grid's own pick cells, once a
+ * player is actually drafted — same `.at-name-tip`/`data-tip` popover mechanics as team names
+ * above, just built from this specific drafted SPAN's own real box line (`pick.box`) rather than
+ * a career average, since that's the exact season this roster spot actually rosters. */
+export function pickStatTip(pick: PlayerSpan): string {
+  const b = pick.box;
+  return `${b.ppg.toFixed(1)} PPG · ${b.apg.toFixed(1)} APG · ${b.rpg.toFixed(1)} RPG · ${(b.fgPct * 100).toFixed(1)}% FG · ${(b.threePct * 100).toFixed(1)}% 3PT`;
+}
+
 const GRADE_TIER_CLASS: Record<Grade, string> = {
   S: 'at-t6', 'A+': 'at-t6', A: 'at-t5', 'A-': 'at-t5',
   'B+': 'at-t4', B: 'at-t4', 'B-': 'at-t3', 'C+': 'at-t3',
@@ -311,7 +353,16 @@ const TAG_LEGEND: ReadonlyArray<{ name: string; tiers: string[]; text: string }>
   { name: 'Playoffs', tiers: ['at-t2', 'at-t6'], text: '▲ Riser / ▼ Dropper × Bronze–Platinum — real playoff-vs-regular-season efficiency shift.' },
 ];
 
-export default function DraftBoard({ state, onPick, mode, pickReactions, onPickReactionChange, pickReasoning, onPickReasoningChange }: Props) {
+export default function DraftBoard({
+  state,
+  onPick,
+  mode,
+  pickReactions,
+  onPickReactionChange,
+  pickReasoning,
+  onPickReasoningChange,
+  onSubmitTeam,
+}: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
   const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL'>('ALL');
@@ -328,26 +379,97 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
   // Defaults open in Commissioner Mode: every pick needs its reasoning box reachable right after
   // it's made, across up to 144 picks — an extra click to reveal it every single time would be a
   // real friction cost at that volume.
-  const [showHistory, setShowHistory] = useState(state.commissionerMode);
+  // No setter destructured: this pre-dates this session's own changes ("no visible toggle button
+  // anymore" per the render comment below), but was still declared as if a setter existed
+  // (`tsc`'s `noUnusedLocals` catches the drift) — fixed in passing while touching this file for
+  // the unrelated Team-tab work above.
+  const [showHistory] = useState(state.commissionerMode);
+  // Collision-safe team codes for the Overview grid's broadcast-style chips — must be computed
+  // across the whole `state.teams` list at once, not per-team, since `teamCodes` resolves
+  // collisions (e.g. Charleston vs Charlotte both wanting "CHA") relative to every other team's
+  // code. Team names/order never change mid-draft (only each team's own `roster` grows), so the
+  // actual code assignments are stable for the whole draft even though `state.teams` gets a new
+  // array reference on every pick — memoised mainly so the many renders that touch neither (tab
+  // switches, search typing, legend toggles) skip redoing the collision pass for nothing.
+  const teamCodeByTeamId = useMemo(() => teamCodes(state.teams), [state.teams]);
 
   const teamIdx = currentTeamIndex(state);
   const currentTeam = state.teams[teamIdx];
-  const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
-  const totalPicks = TEAM_COUNT * ROUNDS;
+  // 2026-08-16, user's own ask: the player list stays browsable during a CPU turn now (it used to
+  // disappear behind a full "X is thinking…" placeholder) — this just gates the actual DRAFT
+  // action, reused at both `at-draft-btn` call sites below instead of repeating the same
+  // condition inline everywhere.
+  const canPick = currentTeam.isHuman || state.commissionerMode;
+  // Real bug caught while making the change above: the Team tab (cap meter/roster-so-far) and
+  // the Draft tab's "Cap remaining" label both read straight off `currentTeam` — fine on your own
+  // turn (currentTeam IS the human then), silently wrong on a CPU turn (shows the CPU's cap/
+  // roster instead of yours). Invisible before now because a CPU turn used to hide the whole
+  // Draft tab behind the placeholder this same pass removed, and apparently nobody opened the
+  // Team tab specifically during a CPU turn to notice it there. `humanTeam` is the fix outside
+  // Commissioner Mode, where exactly one team is ever really "yours"; INSIDE Commissioner Mode,
+  // `currentTeam` stays correct as-is — you're deliberately building whichever team is currently
+  // on the clock, not one fixed team, so `teamForPanels` only swaps behavior in normal play.
+  const humanTeam = state.teams.find((t) => t.isHuman)!;
+  const teamForPanels = state.commissionerMode ? currentTeam : humanTeam;
+
+  // 2026-08-16, user's own ask: span selection + rotation-building moved off their own dedicated
+  // post-draft screens and into the Team tab below, reachable from the human's very first pick —
+  // always against `humanTeam` specifically (never `teamForPanels`), same "Commissioner Mode
+  // still only ever builds the ONE isHuman team's span/rotation" scoping this file's own
+  // `teamForPanels` comment above already documents for the roster table.
+  // Keyed by normalized player name (one entry per drafted PICK, not per real-world player who
+  // could have several spans in the pool) — same shape the old SpanSelectionScreen used.
+  const [humanSpanSelection, setHumanSpanSelection] = useState<Record<string, string>>({});
+  // Bumped on every span change and used as `RotationBuilder`'s `key` below — forces a clean
+  // remount (fresh `autoAssignRotation` seed) instead of trying to reconcile old minutes
+  // assignments against a roster whose player IDENTITY just changed (each span is its own
+  // `PlayerSpan.id`; swapping a player's span is not the same player anymore as far as the
+  // rotation editor's row state is concerned). Span edits are expected to happen before
+  // fine-tuning minutes, not interleaved with it, so losing in-progress rotation edits on a span
+  // change is an acceptable, rare trade-off, not a routine one.
+  const [spanVersion, setSpanVersion] = useState(0);
+
+  function setHumanSpan(key: string, spanId: string) {
+    setHumanSpanSelection((prev) => ({ ...prev, [key]: spanId }));
+    setSpanVersion((v) => v + 1);
+  }
+
+  // One entry per drafted pick, options sorted best-TAL-first (same convention the old
+  // SpanSelectionScreen used) — recomputed only when the human's own roster actually changes
+  // (grows by a pick), not on every render.
+  const humanSpanOptions = useMemo(
+    () =>
+      humanTeam.roster.map((p) => ({
+        key: normalizePlayerName(p.playerName),
+        playerName: p.playerName,
+        draftedSpan: p,
+        options: [...spanOptionsFor(p.playerName)].sort((a, b) => computeTalent(b) - computeTalent(a)),
+      })),
+    [humanTeam.roster],
+  );
+  // The human's roster as it should actually be scored: each drafted pick resolved to whichever
+  // span the player chose in the dropdown below, falling back to the drafted (peak) span until
+  // they pick something else — same fallback `SpanSelectionScreen` used to seed from.
+  const chosenHumanRoster: PlayerSpan[] = humanSpanOptions.map(({ key, draftedSpan, options }) => {
+    const chosenId = humanSpanSelection[key];
+    return options.find((o) => o.id === chosenId) ?? draftedSpan;
+  });
+  // True whenever the Team tab's roster table is actually showing the human's own roster — always
+  // true outside Commissioner Mode (`teamForPanels` IS `humanTeam` then), only sometimes true
+  // inside it (only when the human's own team happens to be the one currently on the clock).
+  // Gates both the inline span dropdown below and which FGA numbers the cap meter reads.
+  const isViewingHumanRoster = teamForPanels.id === humanTeam.id;
+  const humanSpanOptionsByKey = new Map(humanSpanOptions.map((o) => [o.key, o]));
 
   const available = useMemo(() => availablePlayers(state), [state]);
-  const currentFgas = currentTeam.roster.map((p) => p.fga);
+  const currentFgas = teamForPanels.roster.map((p) => p.fga);
+  // Cap meter + per-row FGA read the human's actually-CHOSEN spans (not the drafted/peak ones)
+  // once a span dropdown exists to disagree with them — otherwise the meter would silently lie
+  // about how much cap a cheaper chosen span actually freed up. Falls back to the plain
+  // `currentFgas` (drafted/peak spans) when this table isn't showing the human's own roster.
+  const displayFgas = isViewingHumanRoster ? chosenHumanRoster.map((p) => p.fga) : currentFgas;
 
   const allGroups = useMemo(() => groupByPlayer(available), [available]);
-
-  // A stable per-pool random tiebreak for player-mode sorting — generated once per pool
-  // (recomputed only when `available` actually changes, e.g. after a pick), not on every
-  // render, so the list doesn't visibly reshuffle while just typing a search or expanding a row.
-  const randomTiebreak = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const p of available) if (!map.has(p.playerName)) map.set(p.playerName, Math.random());
-    return map;
-  }, [available]);
 
   // The position he played the most seasons at, so a player appears under exactly one
   // position column instead of every position any single span's primary/secondary touched.
@@ -458,9 +580,19 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
     })
     .sort((a, b) => {
       if (mode === 'player') {
+        // 2026-08-16, user's own ask ("sortowanie graczy potrzebuje jakieś spójnej kolejności"):
+        // this used to fall back to a per-pool RANDOM tiebreak once real-world All-Star count ran
+        // out of discriminating power — the vast majority of the pool has 0 All-Star selections,
+        // so almost the whole list was really sorted at random. `bestTalent` is already computed
+        // unconditionally for every group (see its own comment above — player mode needs it to
+        // pick which span the engine rates highest even though it never displays the number), so
+        // reusing it here as the tiebreak costs nothing new and makes the order fully
+        // deterministic and quality-ordered instead of reshuffling every time the pool changes —
+        // still never shown to the player, exactly like the "don't show any of what we did"
+        // player-mode design this file already follows everywhere else.
         const starDiff = allStarCount(b.playerName) - allStarCount(a.playerName);
         if (starDiff !== 0) return starDiff;
-        return (randomTiebreak.get(a.playerName) ?? 0) - (randomTiebreak.get(b.playerName) ?? 0);
+        return b.bestTalent - a.bestTalent;
       }
       return b.bestTalent - a.bestTalent || tierRank(b.bestTier) - tierRank(a.bestTier);
     });
@@ -499,8 +631,10 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
 
   return (
     <div className="at-shell">
+      {/* 2026-08-16, user's own ask: sits above the whole board on its own row, not squeezed into
+          the topbar next to the tabs/status chip. */}
+      <div className="at-board-brand at-cond">All-Time NBA Draft</div>
       <div className="at-topbar">
-        <div className="at-wordmark at-cond">All-Time Draft</div>
         <div className="at-tabs" role="tablist">
           {TABS.map((tab) => (
             <button
@@ -512,28 +646,13 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
             </button>
           ))}
         </div>
-        <div className="at-status-chip">
-          <span className="at-dot-live" />
-          Pick <b>{pickNumber}</b> of {totalPicks} — Round <b>{state.round + 1}</b> —{' '}
-          {state.commissionerMode
-            ? `your pick as ${teamLabel(currentTeam)}`
-            : currentTeam.isHuman
-              ? 'your pick'
-              : `${teamLabel(currentTeam)} picking…`}
-          {showJudgeMetrics && (
-            <button className="at-legend-toggle" style={{ marginTop: 0, marginLeft: 10 }} onClick={() => setShowHistory((s) => !s)}>
-              {showHistory ? 'Hide' : 'Show'} History
-            </button>
-          )}
-        </div>
       </div>
 
-      {/* 2026-08-13, user's own follow-up: Draft History (the pick log + Commissioner Mode
-          reasoning boxes / FeedbackToggle) is a calibration/feedback-collection tool, not
-          something a player drafting blind needs to see — kept for developer mode only, same
-          "player mode only" scoping as the rest of this redesign thread. Nothing about the
-          underlying reasoning/reaction capture itself changed; it's just not reachable from the
-          player-mode Draft tab anymore. */}
+      {/* 2026-08-16, user's own ask: no visible toggle button anymore (first moved out of the
+          deleted status chip, then asked to drop entirely) — `showHistory` just keeps its
+          existing default (on for Commissioner Mode, since that's DraftHistory's only reachable
+          surface for its per-pick reasoning notes/FeedbackToggle; off otherwise) with no UI control
+          left to flip it. Same `showJudgeMetrics`-only scoping as before. */}
       {showJudgeMetrics && showHistory && (
         <DraftHistory
           history={state.history}
@@ -548,18 +667,10 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
 
       {activeTab === 'draft' && (
         <div className="at-card" style={{ marginBottom: 16 }}>
-          {/* 2026-08-13 follow-up: the "Overview" title + explainer caption removed in player
-              mode — the grid itself (all 16 teams × round) stays, just without the label
-              clutter. Developer mode keeps both, unchanged. */}
-          {showJudgeMetrics && (
-            <>
-              <h1 className="at-panel-title at-cond">Overview</h1>
-              <div className="at-ov-meta">
-                {TEAM_COUNT} teams · scroll vertically and horizontally · picks shown in the order they happened, not
-                reorganized by position — nothing about an opponent's real roster shape is visible until the draft ends.
-              </div>
-            </>
-          )}
+          {/* 2026-08-16, user's own ask: the "Overview" title + explainer caption are gone in
+              developer mode too now — previously kept there (player mode dropped them first,
+              2026-08-13) but the grid itself (all 16 teams × round) still says everything it
+              needs to without the label. */}
           <div className="at-grid-scroll">
             <table className="at-ov-grid">
               <thead>
@@ -577,16 +688,39 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                 {state.teams.map((team, i) => (
                   <tr key={team.id} className={`${team.isHuman ? 'at-you' : ''} ${i === teamIdx ? 'at-clock' : ''}`}>
                     <td className="at-teamcol">
-                      {teamLabel(team)}
-                      {team.isHuman ? ' (You)' : ''}
+                      {/* 2026-08-16, user's own ask: full team names used to sit in this cell
+                          unconditionally, eating real width in an already-cramped 16-team x
+                          8-round grid — the chip alone already IDs the team uniquely (`teamCodes`
+                          resolves collisions across the whole roster), so the full name only
+                          shows now as an on-hover/focus tooltip (`.at-name-tip`, same mechanics
+                          as the tier dots' own `data-tip` popover above). "(You)" is folded into
+                          that same tooltip text rather than sitting beside it — the row's own
+                          `.at-you` highlight already marks it visually either way. */}
+                      <span
+                        className="at-team-chip at-name-tip"
+                        tabIndex={0}
+                        data-tip={`${teamLabel(team)}${team.isHuman ? ' (You)' : ''}`}
+                      >
+                        {teamCodeByTeamId.get(team.id)}
+                      </span>
                     </td>
                     {Array.from({ length: ROUNDS }, (_, r) => {
                       const pick = team.roster[r];
                       if (pick) {
                         return (
                           <td key={r} className="at-pickcell">
-                            {pick.playerName}
-                            <span className="at-yr">{pick.spanLabel}</span>
+                            {/* 2026-08-16, user's own ask: the drafted span's year range dropped from this
+                                cell entirely — not needed on the board itself (it's still visible in the
+                                Draft/Team tabs' own tables), and cutting it is part of fitting all 8 round
+                                columns on a narrow screen without horizontal scrolling. Below 640px the full
+                                name is swapped for "F. Last" (`.at-name-full`/`.at-name-short`, picked by
+                                CSS media query) — a real column is only ~35px wide there, too narrow for
+                                most full names not to fragment mid-word even wrapped. */}
+                            <span className="at-pick-badge">{overviewPickNumber(i, r)}</span>
+                            <span className="at-name-tip" tabIndex={0} data-tip={pickStatTip(pick)}>
+                              <span className="at-name-full">{pick.playerName}</span>
+                              <span className="at-name-short">{shortPlayerName(pick.playerName)}</span>
+                            </span>
                           </td>
                         );
                       }
@@ -614,8 +748,15 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
       {activeTab === 'draft' && (
         <div className="at-card">
           <h1 className="at-panel-title at-cond">Draft</h1>
-          {currentTeam.isHuman || state.commissionerMode ? (
-            <>
+          {/* 2026-08-16, user's own ask: a CPU turn used to hide this whole panel behind a full
+              "X is thinking…" placeholder — the player list is browsable at all times now
+              instead, with just this small notice (not a block) while it's not your turn. The
+              actual Draft buttons below are `disabled` via `canPick`, not hidden, so browsing/
+              searching/expanding a row to look at a player works identically either way. */}
+          {!canPick && (
+            <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
+          )}
+          <>
               <div className="at-controls-row">
                 <input
                   className="at-search-input"
@@ -728,6 +869,34 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                               <td className="at-fga-num">{(group.displayBox.threePct * 100).toFixed(1)}%</td>
                             )}
                             {!showJudgeMetrics && <td className="at-fga-num">{group.bestTalentSpan.fga.toFixed(1)}</td>}
+                            {/* 2026-08-16, user's own follow-up ask: one Draft button per PLAYER
+                                here, right next to the FGA it actually costs — not one per span
+                                buried a row down in the expanded table (removed there; see that
+                                table's own history in this file). Drafts `bestTalentSpan`, the
+                                same engine-recommended season whose stats/FGA this row already
+                                shows — picking a DIFFERENT season is still possible afterward via
+                                the Team tab's own span dropdown (see that tab's docstring), which
+                                lists every season for a drafted player regardless of which one was
+                                actually drafted, so nothing about span choice is actually lost
+                                here, only which screen it happens on. `stopPropagation` because
+                                this button sits inside the same `<tr>` whose own onClick expands/
+                                collapses the row — without it, clicking Draft would also toggle
+                                the row open. */}
+                            {!showJudgeMetrics && (
+                              <td>
+                                <button
+                                  className="at-draft-btn"
+                                  disabled={!canPick}
+                                  title={canPick ? undefined : `${teamLabel(currentTeam)} is picking…`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onPick(group.bestTalentSpan.id);
+                                  }}
+                                >
+                                  Draft
+                                </button>
+                              </td>
+                            )}
                             {showJudgeMetrics && (
                               <td>
                                 <AtDot tierClass={TALENT_DOT_CLASS[group.bestTier]} label={`${group.bestTalent} — ${group.bestTier}`} />
@@ -784,7 +953,12 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                               </td>
                             )}
                             {showJudgeMetrics && <td className="at-fga-num">{group.lowestFga.toFixed(1)}</td>}
-                            <td></td>
+                            {/* Was an unconditional blank trailing cell for both modes — now only
+                                needed in developer mode, since player mode's own trailing cell is
+                                the real Draft button added above (same column position, matching
+                                the shared trailing blank `<th></th>` this table's header still has
+                                for both modes). */}
+                            {showJudgeMetrics && <td></td>}
                           </tr>
                           {isOpen && showJudgeMetrics && (
                             <tr key={`${group.playerName}-detail`}>
@@ -844,7 +1018,12 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                                           <SmallSampleBadge span={span} />
                                         </td>
                                         <td>
-                                          <button className="at-draft-btn" onClick={() => onPick(span.id)}>
+                                          <button
+                                            className="at-draft-btn"
+                                            disabled={!canPick}
+                                            title={canPick ? undefined : `${teamLabel(currentTeam)} is picking…`}
+                                            onClick={() => onPick(span.id)}
+                                          >
                                             Draft
                                           </button>
                                         </td>
@@ -889,8 +1068,18 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                                         match. Re-measure both if any padding/margin on either table
                                         changes. */}
                                     <colgroup>
-                                      <col style={{ width: 170 }} />
-                                      <col style={{ width: 94 }} />
+                                      {/* 2026-08-16, user's own ask: Pos dropped from this row
+                                          entirely — it's redundant now that the collapsed row
+                                          above already reads "Name - Position"
+                                          (`naturalPosition`), and it was the whole reason this
+                                          sub-table's PTS/AST/REB columns didn't line up under the
+                                          main table's own (this file's own prior comment on this
+                                          colgroup said as much: "300 == 180 + 94 + indent" — 94
+                                          was Pos's width). Folded that freed 94px into the Span
+                                          column instead (170->264) so PTS still starts at the
+                                          exact same x as before — removing a column shouldn't ALSO
+                                          shift every column after it. */}
+                                      <col style={{ width: 264 }} />
                                       <col style={{ width: 66 }} />
                                       <col style={{ width: 66 }} />
                                       <col style={{ width: 66 }} />
@@ -899,6 +1088,10 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                                       <col style={{ width: 66 }} />
                                       <col style={{ width: 66 }} />
                                       <col style={{ width: 66 }} />
+                                      {/* TAL + Tag — 2026-08-16, user's own ask: player mode used
+                                          to hide every judge metric here on purpose (see this
+                                          file's own header comment on the 2026-08-13 redesign). */}
+                                      <col style={{ width: 54 }} />
                                       {/* Deliberately no width here (unlike every column above) —
                                           when EVERY column has an explicit width and their sum is
                                           less than the table's rendered 100%-of-container width,
@@ -911,7 +1104,6 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                                     <thead>
                                       <tr>
                                         <th>Span</th>
-                                        <th>Pos</th>
                                         <th>PTS</th>
                                         <th>AST</th>
                                         <th>REB</th>
@@ -920,29 +1112,56 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                                         <th>FG%</th>
                                         <th>3PT%</th>
                                         <th>FGA</th>
-                                        <th></th>
+                                        <th>TAL</th>
+                                        <th>Tag</th>
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {visibleSpans.map((span) => (
+                                      {visibleSpans.map((span) => {
+                                        const ctx = tierContextFor(span);
+                                        return (
                                         <tr key={span.id}>
                                           <td className="at-player-cell">{span.spanLabel}</td>
-                                          <td>{span.primaryPosition}</td>
-                                          <td>{group.displayBox.ppg.toFixed(1)}</td>
-                                          <td>{group.displayBox.apg.toFixed(1)}</td>
-                                          <td>{group.displayBox.rpg.toFixed(1)}</td>
-                                          <td>{group.displayBox.spg.toFixed(1)}</td>
-                                          <td>{group.displayBox.bpg.toFixed(1)}</td>
-                                          <td>{(group.displayBox.fgPct * 100).toFixed(1)}%</td>
-                                          <td>{(group.displayBox.threePct * 100).toFixed(1)}%</td>
-                                          <td>{span.fga.toFixed(1)}</td>
-                                          <td>
-                                            <button className="at-draft-btn" onClick={() => onPick(span.id)}>
-                                              Draft
-                                            </button>
+                                          {/* Real per-span box stats, not the whole-career average shown on the
+                                              collapsed row above — that average is deliberately reused across every
+                                              span there (see this pass's own note in draft_game_ui_redesign_spec
+                                              memory), but this expanded sub-table's whole reason to exist is to show
+                                              how a specific span differs, so it must read `span.box` here, not
+                                              `group.displayBox`. Bug caught 2026-08-16: every row was rendering the
+                                              same career numbers, changing only by FGA (span.fga was already correct). */}
+                                          {/* 2026-08-16, user-reported: these used to be plain
+                                              `<td>`s (default left-aligned text) while the
+                                              collapsed row's own PTS-FGA cells are all
+                                              `.at-fga-num` (right-aligned, tabular-nums) — same
+                                              column width (verified via `getBoundingClientRect`),
+                                              different text alignment inside it, so the digits
+                                              themselves didn't line up even though the columns
+                                              did. Matched to `.at-fga-num` here too. */}
+                                          <td className="at-fga-num">{span.box.ppg.toFixed(1)}</td>
+                                          <td className="at-fga-num">{span.box.apg.toFixed(1)}</td>
+                                          <td className="at-fga-num">{span.box.rpg.toFixed(1)}</td>
+                                          <td className="at-fga-num">{span.box.spg.toFixed(1)}</td>
+                                          <td className="at-fga-num">{span.box.bpg.toFixed(1)}</td>
+                                          <td className="at-fga-num">{(span.box.fgPct * 100).toFixed(1)}%</td>
+                                          <td className="at-fga-num">{(span.box.threePct * 100).toFixed(1)}%</td>
+                                          <td className="at-fga-num">{span.fga.toFixed(1)}</td>
+                                          <td className="at-fga-num">
+                                            <b>{displayNumberForSpan(span, ctx)}</b>
+                                          </td>
+                                          {/* Tag — user-reported: pinned to the column's left edge
+                                              explicitly (`.at-tag-cell`) rather than relying on the
+                                              default, so a short pill (MVP) and a long one
+                                              (Greatest peak) both start at the same x instead of
+                                              each just sitting wherever its own content happens to
+                                              fall. */}
+                                          <td className="at-tag-cell">
+                                            <span className={`at-tag-badge ${TALENT_DOT_CLASS[overallTierForSpan(ctx)]}`}>
+                                              {overallTierForSpan(ctx)}
+                                            </span>
                                           </td>
                                         </tr>
-                                      ))}
+                                        );
+                                      })}
                                     </tbody>
                                   </table>
                                   {allSpans.length > 3 && (
@@ -968,7 +1187,7 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                 <p className="at-caption" style={{ marginTop: 0 }}>
                   {showJudgeMetrics
                     ? "Peak FGA = cost of this player's highest-Talent season. Lowest FGA = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one."
-                    : 'Click a row to see his top seasons and draft one. Show more reveals every season available in the pool right now.'}
+                    : 'Draft picks his best season. Click a row to compare his other seasons — you can still switch to a different one afterward, in the Team tab.'}
                 </p>
                 {showJudgeMetrics && (
                   <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
@@ -994,9 +1213,6 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                 </div>
               )}
             </>
-          ) : (
-            <div className="at-placeholder">{teamLabel(currentTeam)} is thinking…</div>
-          )}
         </div>
       )}
 
@@ -1005,16 +1221,16 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
           <h1 className="at-panel-title at-cond">Team</h1>
           <div className="at-cap-meter">
             <span className="at-cap-label">
-              <b>{totalFga(currentFgas).toFixed(1)}</b> / {CAP_LIMIT} FGA
+              <b>{totalFga(displayFgas).toFixed(1)}</b> / {CAP_LIMIT} FGA
             </span>
             <div className="at-cap-track">
-              <div className="at-cap-fill" style={{ width: `${Math.min(100, (totalFga(currentFgas) / CAP_LIMIT) * 100)}%` }} />
+              <div className="at-cap-fill" style={{ width: `${Math.min(100, (totalFga(displayFgas) / CAP_LIMIT) * 100)}%` }} />
             </div>
             <span className="at-cap-label">
-              {currentTeam.roster.length} / 9 picked
+              {teamForPanels.roster.length} / {ROSTER_SIZE} picked
             </span>
           </div>
-          {currentTeam.roster.length === 0 ? (
+          {teamForPanels.roster.length === 0 ? (
             <div className="at-placeholder">No picks yet — head to the Draft tab.</div>
           ) : (
             <table className="at-roster-table">
@@ -1027,30 +1243,86 @@ export default function DraftBoard({ state, onPick, mode, pickReactions, onPickR
                 </tr>
               </thead>
               <tbody>
-                {currentTeam.roster.map((p, i) => (
-                  <tr key={p.id}>
-                    <td>
-                      <span className="pos-pill">{p.primaryPosition}</span> R{i + 1}
-                    </td>
-                    <td>{p.playerName}</td>
-                    <td>{p.spanLabel}</td>
-                    <td className="at-fga-num">{p.fga.toFixed(1)}</td>
-                  </tr>
-                ))}
+                {teamForPanels.roster.map((p, i) => {
+                  // 2026-08-16, user's own follow-up ask ("span na spokojnie można zmieścić w
+                  // zakładce Team"): the span dropdown used to live in its own separate list
+                  // further down this same tab, right next to (and repeating) this exact table —
+                  // there's real horizontal room in this row for the dropdown itself, so it's
+                  // folded directly into the Span cell instead of existing twice. Only swapped in
+                  // when this table is actually showing the human's OWN roster (`isViewingHumanRoster`)
+                  // — during Commissioner Mode looking at a different team's turn, this stays
+                  // plain text, same "span editing only ever touches the one isHuman team" scoping
+                  // as everywhere else in this file.
+                  const spanOpt = isViewingHumanRoster ? humanSpanOptionsByKey.get(normalizePlayerName(p.playerName)) : undefined;
+                  const effective = spanOpt
+                    ? (spanOpt.options.find((o) => o.id === (humanSpanSelection[spanOpt.key] ?? spanOpt.draftedSpan.id)) ?? p)
+                    : p;
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <span className="pos-pill">{p.primaryPosition}</span> R{i + 1}
+                      </td>
+                      <td>{p.playerName}</td>
+                      <td>
+                        {spanOpt ? (
+                          <select
+                            className="at-span-picker-select"
+                            value={effective.id}
+                            onChange={(e) => setHumanSpan(spanOpt.key, e.target.value)}
+                          >
+                            {spanOpt.options.map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {o.spanLabel} — TAL {computeTalent(o)} — FGA {o.fga.toFixed(1)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          p.spanLabel
+                        )}
+                      </td>
+                      <td className="at-fga-num">{effective.fga.toFixed(1)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
-          <p className="at-caption">Final starter/bench slotting and per-player minutes are set after the draft ends.</p>
+          <p className="at-caption">
+            {isViewingHumanRoster
+              ? "You drafted the player, not a specific era — the Span dropdown above picks which career window to actually roster. No FGA cap here, same as the draft itself. Rotation minutes are set below."
+              : 'Rotation minutes are set below, in this same tab.'}
+          </p>
         </div>
       )}
 
+      {/* 2026-08-16, user's own ask: the old "Choose Each Player's Span" screen and the rotation-
+          builder screen are gone as separate phases — both merged into this tab, open from the
+          human's very first pick (not gated until the draft ends, per that same ask), ending in
+          one Submit action instead of two separate confirm screens. Always built against
+          `humanTeam` (never `teamForPanels`) — see this file's own comment on that split above;
+          Commissioner Mode still only ever builds the one isHuman team's span/rotation here. */}
       {activeTab === 'team' && (
         <div className="at-card">
           <h1 className="at-panel-title at-cond">Rotation</h1>
-          <div className="at-placeholder">
-            Rotation opens once the draft ends and you've picked your final 9 spans — you'll set minutes for every slot
-            there, same as today's post-draft step.
-          </div>
+          {humanTeam.roster.length === 0 ? (
+            <div className="at-placeholder">
+              Opens as soon as you make your first pick — set spans (in the Team table above) and
+              minutes here as you go, no need to wait for the draft to end.
+            </div>
+          ) : (
+            <>
+              <RotationBuilder
+                key={spanVersion}
+                roster={chosenHumanRoster}
+                onConfirm={(rotation) => onSubmitTeam(chosenHumanRoster, rotation)}
+                confirmLabel="Submit Team"
+                confirmDisabled={!state.complete}
+                confirmDisabledHint={
+                  !state.complete ? `Finish drafting all ${ROSTER_SIZE} picks before you can submit.` : undefined
+                }
+              />
+            </>
+          )}
         </div>
       )}
     </div>

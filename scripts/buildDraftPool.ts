@@ -44,9 +44,38 @@ const TARGET_POOL_SIZE = 560;
 /** Star tier: guarantees every position has real top-end talent to compete over, since a
  * global talent cut would otherwise favor bigs and wings over pure point guards. */
 const STARS_PER_POSITION = 100;
-/** Value tier: the best talent-per-FGA players at each position among genuinely cheap
- * options — the "cap glue" a drafter fills the last roster spots with. */
-const VALUE_PER_POSITION = 12;
+/**
+ * Value tier: the best talent-per-FGA players at each position among genuinely cheap options —
+ * the "cap glue" a drafter fills the last roster spots with.
+ *
+ * 2026-08-16, user-reported (repeated real playtest pattern, also documented in a batch export
+ * `braki pozycji.docx`: redundant 3rd centers drafted over real backup PG/SG/SF, Duncan-caliber
+ * players losing minutes to worse bigs, "Brak backup PG" x3): root-caused to THIS tier, not to
+ * `aiDrafter.ts`'s pick logic. Measured directly (`scripts/_auditCheapGuardPool.ts`, deleted
+ * after use): for a real cheap (FGA<=9) TAL 40-80 span — exactly the "cap glue" role-player band
+ * this tier exists to surface — the full ~14,000-span archive has real candidates at every
+ * position (PG 215, SG 176, SF 193, PF 105, C 117), but the OLD flat 12-per-position cap only
+ * let 34% of PG/SG/SF's real candidates into the in-game pool at all, vs 50% for PF and 66% for
+ * C. Root cause of the asymmetry: `STARS_PER_POSITION` above already captures most of a
+ * position's real cheap-and-useful players for FREE when they ALSO happen to be that same
+ * person's peak-talent span (checked directly: true for the large majority of C's cheap-band
+ * archive, since a center's TAL is structurally less usage-dependent — a low-FGA, high-efficiency
+ * stretch is often literally their best span). A pure guard/wing role player virtually never has
+ * a star-tier peak span at all, so this VALUE tier is their ONLY path into the pool — and it was
+ * sized the same as C's, whose real bottleneck this tier barely needs to solve.
+ *
+ * Raised per-position (not by loosening `VALUE_FGA_CEILING` — the archive already has plenty of
+ * real sub-9-FGA candidates at every guard/wing position; the cap on HOW MANY of them get kept
+ * was the actual constraint) until each position's real inclusion rate in the same 40-80 TAL
+ * cheap band landed in a comparable ~50-55% range (measured via
+ * `scripts/_dryRunPoolSize.ts`, deleted after use, before committing to a magnitude): PG
+ * 34%->50%, SG 34%->53%, SF 35%->49%, PF 50%->56%, C unchanged at 66% (already the least-affected
+ * position, left alone rather than padded further). `TARGET_POOL_SIZE` above was already not a
+ * binding constraint even at the old flat 12 (tier 1+2+3 alone summed to 573, past the 560
+ * target, before the "remaining fill by best talent" step ever ran) — raising this only grows the
+ * real in-game pool (573->730 distinct players, 5230->6172 span entries), it does not risk
+ * displacing anything via the target-size fill logic. */
+const VALUE_PER_POSITION: Record<Position, number> = { PG: 60, SG: 60, SF: 60, PF: 25, C: 12 };
 /** A player's cheapest span must come in under this to count for the value tier. */
 const VALUE_FGA_CEILING = 9;
 const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -147,7 +176,7 @@ if (RESTRICT_TO_D1_D2_D3) {
       .sort((a, b) => b.bestEfficiency - a.bestEfficiency);
     let added = 0;
     for (const s of inSlot) {
-      if (added >= VALUE_PER_POSITION) break;
+      if (added >= VALUE_PER_POSITION[slot]) break;
       if (kept.has(s.normalizedName)) continue;
       kept.add(s.normalizedName);
       added++;

@@ -61,3 +61,81 @@ export function portabilityBonus(span: PlayerSpan): number {
   const excess = combinedPortabilityForCorrection(span) - expected;
   return excess > 0 ? Math.min(MAX_PORTABILITY_BONUS, excess * EXCESS_TO_BONUS_SCALE) : 0;
 }
+
+/**
+ * Small, profile-level scalability corrections for real complementary skills that a single
+ * O-POR/D-POR regression still compresses too aggressively. These are general basketball
+ * profiles, not player-name overrides:
+ *
+ * - elite movement shooting that also survives defensively (Klay-type two-way off-ball wing),
+ * - a passing/skilled big with real defensive portability (Pau/Marc-type connector),
+ * - a low-usage stretch 5 who also anchors the rim (Brook-type spacing/rim-protection pairing).
+ *
+ * Each gate requires both sides of the claimed profile. A movement shooter must also own a real
+ * point-of-attack/wing-stopper assignment; a skilled big must stay below high-volume creator usage
+ * as well as clear the passing and D-POR gates; a generic stretch big does not receive the final
+ * bonus without Anchor Big defense. The combined cap keeps overlap from creating a new star tier
+ * by itself. This is deliberately separate from `portabilityBonus` so evidence reports can show
+ * the profile correction explicitly instead of hiding it in the regression residual.
+ */
+export interface RoleScalabilityBreakdown {
+  twoWayMovement: number;
+  skilledTwoWayBig: number;
+  stretchRimProtector: number;
+  total: number;
+}
+
+const MAX_ROLE_SCALABILITY_BONUS = 3.5;
+
+export function roleScalabilityBreakdown(span: PlayerSpan): RoleScalabilityBreakdown {
+  const offensivePortability = computeOffensivePortability(span);
+  const defensivePortability = computeDefensivePortability(span);
+
+  let twoWayMovement = 0;
+  if (
+    (span.offensiveArchetype === 'Movement Shooter' || span.offensiveArchetype === 'Off Screen Shooter') &&
+    (span.defensiveRole === 'Wing Stopper' || span.defensiveRole === 'Point of Attack') &&
+    offensivePortability >= 85 &&
+    defensivePortability >= 75
+  ) {
+    twoWayMovement = Math.min(
+      2.5,
+      1.25 + (offensivePortability - 85) * 0.08 + (defensivePortability - 75) * 0.06,
+    );
+  }
+
+  let skilledTwoWayBig = 0;
+  if (
+    (span.primaryPosition === 'PF' || span.primaryPosition === 'C') &&
+    (span.offensiveArchetype === 'Post Scorer' || span.offensiveArchetype === 'Versatile Big') &&
+    span.fga <= 15 &&
+    span.box.apg >= 3 &&
+    defensivePortability >= 75
+  ) {
+    skilledTwoWayBig = Math.min(
+      2.5,
+      1 + (span.box.apg - 3) * 0.75 + (defensivePortability - 75) * 0.03,
+    );
+  }
+
+  let stretchRimProtector = 0;
+  if (
+    span.offensiveArchetype === 'Stretch Big' &&
+    span.defensiveRole === 'Anchor Big' &&
+    span.fga <= 12 &&
+    offensivePortability >= 55 &&
+    defensivePortability >= 85
+  ) {
+    stretchRimProtector = Math.min(
+      2.5,
+      1 + (offensivePortability - 55) * 0.04 + (defensivePortability - 85) * 0.05 + (12 - span.fga) * 0.1,
+    );
+  }
+
+  const total = Math.min(MAX_ROLE_SCALABILITY_BONUS, twoWayMovement + skilledTwoWayBig + stretchRimProtector);
+  return { twoWayMovement, skilledTwoWayBig, stretchRimProtector, total };
+}
+
+export function roleScalabilityBonus(span: PlayerSpan): number {
+  return roleScalabilityBreakdown(span).total;
+}

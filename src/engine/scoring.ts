@@ -1,5 +1,5 @@
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
-import type { Position } from '../data/schema';
+import type { Position, PlayerSpan } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
 import { computeTalent, computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact } from './talent';
@@ -11,7 +11,6 @@ import {
   SHOOTING_ANOMALY_TEAM_SPACING_FLOOR,
   WALKING_GRAVITY_FLOOR,
 } from './spacing';
-import { computeOffensivePortability } from './portability';
 import { isRimGravityScorer, isSelfSufficientEngine } from './offensiveProfile';
 import { maxSustainableMinutes } from './durability';
 import { overallTier, type OverallTier } from './grades';
@@ -47,36 +46,6 @@ export function isStrongPerimeterDefender(player: { defensiveRole: string }): bo
   return (
     PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= PERIMETER_DEFENDER_IMPACT_THRESHOLD
-  );
-}
-
-/** Stricter bar than the general isStrongRimProtector/isStrongPerimeterDefender gates above,
- * used only for the "complete defensive shell" bonus below. Found directly: a Luka/Reggie
- * Miller/Mike Miller/AD/Jokić lineup earned the shell bonus because two of Reggie Miller's
- * specific early-career spans (1987-89, 1993-95) are auto-tagged "Chaser" — a real
- * PERIMETER_DEFENDER_ROLE — off elevated box activity in those particular seasons, clearing the
- * general 10-point bar (10.8/12.2) despite Reggie Miller's real reputation never being a plus
- * defender. Raising the *general* threshold to exclude this isn't safe: real perimeter
- * specialists' own weaker-tagged spans overlap the same range (Bruce Bowen 7.8, Tony Allen
- * 12.2 at their worst-tagged spans) and depend on general fit-gap detection elsewhere in this
- * function, which should stay lenient. The "complete shell" bonus is a smaller, optional +5 —
- * a stricter bar here only means a specific low-defImpact span of an otherwise-real defender
- * doesn't independently earn the bonus, not that the player stops counting as a rim/perimeter
- * defender everywhere else. */
-const SHELL_RIM_PROTECTOR_IMPACT_THRESHOLD = 24;
-const SHELL_PERIMETER_DEFENDER_IMPACT_THRESHOLD = 15;
-
-export function isShellRimProtector(player: { defensiveRole: string }): boolean {
-  return (
-    RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) &&
-    computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= SHELL_RIM_PROTECTOR_IMPACT_THRESHOLD
-  );
-}
-
-export function isShellPerimeterDefender(player: { defensiveRole: string }): boolean {
-  return (
-    PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]) &&
-    computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= SHELL_PERIMETER_DEFENDER_IMPACT_THRESHOLD
   );
 }
 
@@ -117,6 +86,13 @@ const OVERALL_TIER_MINUTES_TARGET: Record<OverallTier, { optimal: number; minima
   'All-NBA': { optimal: 34, minimal: 24 },
   'All-star': { optimal: 32, minimal: 24 },
   Starter: { optimal: 24, minimal: null },
+  // 2026-08-15, user's explicit ask: a real Sixth Man profile (sixthMan.ts) should pull real
+  // minutes toward it — meaningfully more than a generic Role Player (16), less than a full
+  // Starter (24 optimal / would-be 32 minimal if it had one) — this is a bench role by
+  // definition (`tierContextWithSixthMan` only ever relabels a span that would otherwise sit at
+  // Role Player/Starter-and-below), so no `minimal` floor, matching every other below-All-star
+  // tier's own "no minimum, only Starter-and-up get benched-mistake penalties" convention.
+  'Sixth Man': { optimal: 28, minimal: null },
   'Role Player': { optimal: 16, minimal: null },
   'Bench Warmer': { optimal: 8, minimal: null },
   'Cigarette Butt': { optimal: 0, minimal: null },
@@ -128,8 +104,15 @@ const OVERALL_TIER_MINUTES_TARGET: Record<OverallTier, { optimal: number; minima
 const OPTIMAL_MINUTES_BONUS_SCALE = 10;
 /** Flat deduction per star-tier player whose actual minutes fall below their (durability-
  * capped) minimal floor — a real rotation mistake (benching a star), distinct from the closeness
- * bonus above, which only rewards/tolerates deviation, not specifically punishes under-use. */
-const UNDERPLAYED_STAR_PENALTY = 5;
+ * bonus above, which only rewards/tolerates deviation, not specifically punishes under-use.
+ * 2026-08-15, user-reported (real diagnostic: "Cedric Maxwell (All-star) underplayed: 12/24 min
+ * minimum" barely dented the score at the old 5): raised to 12 — closer in weight to
+ * `DOWNWARD_POSITION_PENALTY`'s SF tier (12) below, a comparably real rotation mistake, and still
+ * well under its PF/C tiers (25/50) since burying a star's MINUTES is bad but not quite the same
+ * category of unrealistic as playing a center at guard. Left uncapped across multiple offenders
+ * on purpose, same shape as `downwardPenalty` below — benching two stars is genuinely worse than
+ * benching one, not a flat "rotation has a problem" toggle. */
+const UNDERPLAYED_STAR_PENALTY = 12;
 
 /**
  * "Cap minutes applied to greatest peak, optimal minutes gives a bonus to rotation, scale cap
@@ -192,6 +175,7 @@ function optimalMinutesRotationBonus(team: Team): { bonus: number; notes: string
 
 export interface ScoreBreakdown {
   talentScore: number;
+  benchDepthScore: number;
   offenseScore: number;
   defenseScore: number;
   spacingScore: number;
@@ -216,9 +200,21 @@ export interface ScoreBreakdown {
  * anchors whenever the pool or the underlying OTAL/DTAL/SPC formulas change** — stale anchors
  * quietly drift the displayed 0-100 range away from what's actually achievable again.
  */
-const OFFENSE_SCORE_ANCHORS = { worst: 21, best: 78 };
-const DEFENSE_SCORE_ANCHORS = { worst: 8, best: 94 };
-const SPACING_SCORE_ANCHORS = { worst: 0, best: 94 };
+// 2026-08-15, recalibrated (`scripts/calibrateExtremeTeamScores.ts`) after `BENCH_INFLUENCE_
+// BOOST` and `ROSTER_SIZE` 9→8 both changed the underlying weighted-average math these anchors
+// are fit against — old values (21/78, 8/94, 0/94) were measured against the pre-boost, 9-man
+// formula and were now stale per this file's own "re-run whenever the underlying formulas
+// change" rule. New worst/best achieved by the true best/worst-possible legal roster search:
+// offense 23-92, defense 5-102, spacing 0-115.
+const OFFENSE_SCORE_ANCHORS = { worst: 23, best: 92 };
+const DEFENSE_SCORE_ANCHORS = { worst: 5, best: 102 };
+/**
+ * Unlike the offense/defense axes, spacing is judged against a useful basketball range rather
+ * than the optimizer's literal 0/115 extremes. The old 115 ceiling meant a genuinely strong
+ * four-shooter construction still displayed in the high 60s. A raw 20 is a cramped floor and
+ * 90 is already elite legal-roster spacing; values outside that range still clamp to 0/100.
+ */
+const SPACING_SCORE_ANCHORS = { worst: 20, best: 90 };
 
 function rescaleToFullRange(raw: number, anchors: { worst: number; best: number }): number {
   const scaled = ((raw - anchors.worst) / (anchors.best - anchors.worst)) * 100;
@@ -253,30 +249,83 @@ export function talentScore(team: Team): number {
   return Math.round(core.reduce((sum, t) => sum + t, 0) / core.length);
 }
 
+/**
+ * 2026-08-15, user-reported (real diagnostic: an elite top-5 core, 84-98 TAL, paired with a
+ * 39-69 TAL bench that never got any real attention — "taki skład nie powinien kończyć top5").
+ * Root-caused, not guessed: `talentScore` above is DELIBERATELY blind to everything past the top
+ * 5 (its own docstring explains why — it's the strongest validated predictor of the real human
+ * vote), and `fitScore` below only ever reads `primaryStarters`, so between them 0.65 of
+ * `overall`'s weight (see `scoreTeam`) never looks at the other 4 roster spots at all. Nothing
+ * else in `overall` measures bench TALENT specifically either — `rotationScore` only checks
+ * whether minutes are deployed sensibly, not whether the players receiving them are any good.
+ *
+ * The natural complement of `talentScore`'s own metric: unweighted average TAL of the roster's
+ * BOTTOM `ROSTER_SIZE - TOP_CORE_SIZE` players (4 on a 9-man roster) — same shape, same units, so
+ * it composes cleanly with `talentScore` in `overall` without inventing a new scale to calibrate.
+ * Deliberately not a "gap vs. the top 5" metric — a team can have a real gap between an elite core
+ * and an ordinary-but-respectable bench without that being a mistake; what the user's example
+ * actually showed was a bench that was bad in absolute terms (much of it well under Role Player
+ * territory), which an absolute floor measures directly and a relative-gap metric could still miss
+ * (a mediocre top-5 could "pass" a gap check with an equally mediocre bench).
+ */
+export function benchDepthScore(team: Team): number {
+  const tals = team.roster.map((player) => computeTalent(player)).sort((a, b) => b - a);
+  const depth = tals.slice(TOP_CORE_SIZE);
+  if (depth.length === 0) return 0;
+  const rawAverage = depth.reduce((sum, t) => sum + t, 0) / depth.length;
+  // 2026-08-17: this used to return rawAverage directly. In real 8-player drafts that value
+  // clusters around 45-66, so even an excellent bench could never display a strong 0-100 score.
+  // 35 represents replacement-level depth; an average of 68 across roster spots 6-8 is an
+  // exceptionally strong, realistically achievable bench under the FGA cap.
+  return Math.round(rescaleToFullRange(rawAverage, { worst: 35, best: 68 }));
+}
+
+/**
+ * 2026-08-15, user's explicit ask, same underlying complaint as `benchDepthScore`'s own docstring
+ * (bench should influence more than just TAL) applied to offense/defense/spacing too: these three
+ * already read bench minutes proportionally (a 12-minute backup already counts 12/240 of the
+ * team average), but that's still a small voice by construction — a real bench upgrade barely
+ * moves the number. Backup (non-primary-starter) minutes count `BENCH_INFLUENCE_BOOST`x toward
+ * these three weighted averages specifically — inflates bench's real influence without also
+ * inflating a starter's (who already dominates by raw minutes share, 36 of 48 a slot, and doesn't
+ * need a boost to be heard). Requires recalibrating `OFFENSE_SCORE_ANCHORS`/`DEFENSE_SCORE_
+ * ANCHORS`/`SPACING_SCORE_ANCHORS` — `rescaleToFullRange`'s own docstring already instructs this
+ * "whenever... the underlying formulas change" (`scripts/calibrateExtremeTeamScores.ts` re-run
+ * alongside this change).
+ */
+const BENCH_INFLUENCE_BOOST = 1.5;
+
+/** Shared weighted-minutes reducer for `offenseScore`/`defenseScore`/`spacingScore` below —
+ * same shape three times over, differing only in which per-player metric and whether
+ * `positionFitMultiplier` applies (spacing deliberately excludes it — see its own docstring). */
+function benchBoostedWeightedAverage(
+  team: Team,
+  valueFor: (player: PlayerSpan) => number,
+  applyFitMultiplier: boolean,
+): number {
+  const assignments = allAssignments(team);
+  const totalMinutes = STARTER_SLOTS.length * GAME_MINUTES;
+  if (assignments.length === 0 || totalMinutes === 0) return 0;
+  const starterKeys = new Set(primaryStarters(team).map((s) => `${s.slot}|${s.player.id}`));
+  const weighted = assignments.reduce((sum, { slot, player, minutes }) => {
+    const isBench = !starterKeys.has(`${slot}|${player.id}`);
+    const effectiveMinutes = isBench ? minutes * BENCH_INFLUENCE_BOOST : minutes;
+    const fitMultiplier = applyFitMultiplier ? positionFitMultiplier(player, slot) : 1;
+    return sum + valueFor(player) * fitMultiplier * effectiveMinutes;
+  }, 0);
+  return weighted / totalMinutes;
+}
+
 /** Minutes-weighted team average of O-TAL / D-TAL, the same shape as `talentScore` but reading
  * off the split offense/defense components instead of the blended number — purely informational
  * (matches how O-TAL/D-TAL are already informational-only at the per-player level), so they
  * don't feed `overall`. */
 export function offenseScore(team: Team): number {
-  const assignments = allAssignments(team);
-  const totalMinutes = STARTER_SLOTS.length * GAME_MINUTES;
-  if (assignments.length === 0 || totalMinutes === 0) return 0;
-  const weighted = assignments.reduce(
-    (sum, { slot, player, minutes }) => sum + computeOffensiveTalent(player) * positionFitMultiplier(player, slot) * minutes,
-    0,
-  );
-  return Math.round(rescaleToFullRange(weighted / totalMinutes, OFFENSE_SCORE_ANCHORS));
+  return Math.round(rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS));
 }
 
 export function defenseScore(team: Team): number {
-  const assignments = allAssignments(team);
-  const totalMinutes = STARTER_SLOTS.length * GAME_MINUTES;
-  if (assignments.length === 0 || totalMinutes === 0) return 0;
-  const weighted = assignments.reduce(
-    (sum, { slot, player, minutes }) => sum + computeDefensiveTalent(player) * positionFitMultiplier(player, slot) * minutes,
-    0,
-  );
-  return Math.round(rescaleToFullRange(weighted / totalMinutes, DEFENSE_SCORE_ANCHORS));
+  return Math.round(rescaleToFullRange(benchBoostedWeightedAverage(team, computeDefensiveTalent, true), DEFENSE_SCORE_ANCHORS));
 }
 
 /**
@@ -315,7 +364,10 @@ export function spacingScore(team: Team): number {
   const totalMinutes = STARTER_SLOTS.length * GAME_MINUTES;
   if (assignments.length === 0 || totalMinutes === 0) return 0;
 
-  const base = assignments.reduce((sum, { player, minutes }) => sum + computeSpacing(player) * minutes, 0) / totalMinutes;
+  // See `BENCH_INFLUENCE_BOOST`'s own docstring above — the multi-gravity/anomaly-floor logic
+  // below already gives bench-minute shooters full (not minutes-diluted) credit on its own terms,
+  // so only this base weighted average needs the same boost offense/defense already get.
+  const base = benchBoostedWeightedAverage(team, computeSpacing, false);
 
   const anomalyMinutes = assignments
     .filter(({ player }) => isShootingAnomalyPlayer(player))
@@ -333,11 +385,38 @@ export function spacingScore(team: Team): number {
   return Math.round(rescaleToFullRange(withCurryFloor, SPACING_SCORE_ANCHORS));
 }
 
-export function fitScore(team: Team): { score: number; notes: string[]; raw: number } {
+export interface FitScoreComponents {
+  base: number;
+  creationHierarchy: number;
+  rimGravitySynergy: number;
+  continuousSpacing: number;
+  teamDefense: number;
+  rebounding: number;
+  capEfficiency: number;
+}
+
+export interface FitScoreResult {
+  score: number;
+  notes: string[];
+  raw: number;
+  components: FitScoreComponents;
+}
+
+export function fitScore(team: Team): FitScoreResult {
   const starters = primaryStarters(team).map((e) => e.player);
   const notes: string[] = [];
   let score = 70;
+  const components: FitScoreComponents = {
+    base: score,
+    creationHierarchy: 0,
+    rimGravitySynergy: 0,
+    continuousSpacing: 0,
+    teamDefense: 0,
+    rebounding: 0,
+    capEfficiency: 0,
+  };
 
+  const creationStart = score;
   const usageWeight = starters.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0), 0);
   // 2026-08-07: `isSelfSufficientEngine` (offensiveProfile.ts, Nash-type — elite playmaking, no
   // dominant shot zone) generates real offense alone even when his own archetype tag reads as
@@ -361,64 +440,22 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   } else {
     notes.push('Clean creation hierarchy among starters.');
   }
+  components.creationHierarchy = score - creationStart;
 
-  // Ball-dominance / "needs the ball to be useful" — 2026-08-07, user-diagnosed gap: the
-  // usageWeight check above only sees `HIGH_USAGE_ARCHETYPE_WEIGHT`'s narrow ISO/creation
-  // archetype list (Shot Creator/Slasher/Primary+Secondary Ball Handler), which reads Post
-  // Scorer/Roll & Cut Big as a flat 0 — completely invisible even for a classic ball-dominant
-  // post player (Elton Brand, Amar'e Stoudemire) who never touches the redundancy check at all.
-  // `computeOffensivePortability` (portability.ts) already answers the broader, archetype-
-  // agnostic version of this question continuously (self-creation reliance + extreme usage-ratio
-  // penalty), so it's reused here rather than growing the archetype map. Thresholds are the real
-  // draft-pool O-POR percentiles (`scripts/_tmpPercentiles.ts`-style check, not guessed):
-  // p10=29 / p25=37 / p50=48 / p75=59 / p90=67 — p50 is the neutral point, and the p50-p10/p90-p50
-  // gaps are both ~19, so a single symmetric span works for both sides.
-  const OPOR_NEUTRAL = 48;
-  const OPOR_SPAN = 19;
-  const BALL_DOMINANCE_MAX_PENALTY = 30;
-  const OFF_BALL_TRAVEL_MAX_BONUS = 10;
-  const avgStarterOPor = starters.reduce((sum, p) => sum + computeOffensivePortability(p), 0) / starters.length;
-  if (avgStarterOPor < OPOR_NEUTRAL) {
-    const deficitRatio = Math.min(1, (OPOR_NEUTRAL - avgStarterOPor) / OPOR_SPAN);
-    const penalty = Math.round(deficitRatio * BALL_DOMINANCE_MAX_PENALTY);
-    score -= penalty;
-    if (penalty >= 5) notes.push('Starters need the ball to be effective — little value when someone else has it.');
-  } else {
-    const excessRatio = Math.min(1, (avgStarterOPor - OPOR_NEUTRAL) / OPOR_SPAN);
-    const bonus = Math.round(excessRatio * OFF_BALL_TRAVEL_MAX_BONUS);
-    score += bonus;
-    if (bonus >= 4) notes.push('Starters generate real value even without the ball in their hands.');
-  }
-
+  // 2026-08-17 scoring audit: average O-POR across all five starters was removed from Fit.
+  // It penalized the legitimate primary engine instead of asking whether the *complements*
+  // travel, and duplicated the creation-hierarchy signal above. Shooter count likewise no
+  // longer scores independently: continuous spacing below already measures the same property.
+  // Both values remain available to the insight layer and the conditional rim-gravity check.
   const plusShooters = starters.filter(isPlusShooter);
-  // The shooting anomaly counts as a solved spacing problem on his own, not as one of five plus
-  // shooters — same rule as `spacingScore`'s floor, applied to the penalty side. Without this a
-  // Curry-plus-four-non-shooters five still paid the "only 1 plus shooter (spacing risk)" -8,
-  // which is the exact reading the floor exists to reject.
   const hasShootingAnomaly = starters.some(isShootingAnomalyPlayer);
-  if (hasShootingAnomaly) {
-    notes.push(`${starters.find(isShootingAnomalyPlayer)!.playerName} alone sets the defense's starting point — spacing is not this team's problem.`);
-  } else if (plusShooters.length === 0) {
-    score -= 15;
-    notes.push('No plus shooters among starters — the floor will be cramped.');
-  } else if (plusShooters.length === 1) {
-    score -= 8;
-    notes.push('Only 1 plus shooter among starters (spacing risk).');
-  } else {
-    // 2026-08-07: used to be a flat 0 for "2 or more" — a genuinely 5-shooter five scored
-    // identically to a team that barely cleared the bar with 2, which is exactly why a real
-    // 5-way-shooting roster couldn't separate itself toward 100. Continuous credit for the
-    // actual count above the "covered" floor of 2 (2 -> 0, 3 -> +3, 4 -> +6, 5 -> +9).
-    const bonus = (plusShooters.length - 2) * 3;
-    score += bonus;
-    notes.push(`${plusShooters.length} shooters/floor-spacers among starters.`);
-  }
 
   // Rim-gravity synergy — 2026-08-07, the user's own (a)/(c) framework (offensiveProfile.ts):
   // a rim-dominant scorer's whole value depends on real shooters punishing the help defense he
   // draws. Distinct from and stacks with the generic no-shooter penalty above — a rim-gravity
   // scorer with zero shooters around him is a WORSE fit failure than a merely shooter-less team
   // in general, not just the same one twice.
+  const rimGravityStart = score;
   const rimGravityStarters = starters.filter(isRimGravityScorer);
   const RIM_GRAVITY_WASTED_PENALTY_PER_PLAYER = 7;
   const MAX_RIM_GRAVITY_WASTED_PENALTY = 14;
@@ -432,6 +469,7 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
       notes.push('Shooters properly surround the roster\'s rim-gravity scorer(s).');
     }
   }
+  components.rimGravitySynergy = score - rimGravityStart;
 
   // Real team spacing, continuous — 2026-08-07, the user's own first-named reason for the BAD
   // example roster ("nieistniejący spacing" — spacing that doesn't exist at all, not just "no
@@ -441,6 +479,7 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   // starters score exactly 0). Anchored on real draft-pool per-player SPACING percentiles: p50=40
   // (neutral), p10=0/p90=85 — asymmetric spans on purpose, matching the asymmetric real
   // distribution (a quarter of the whole pool reads 0).
+  const continuousSpacingStart = score;
   const SPACING_TAL_NEUTRAL = 40;
   const SPACING_PENALTY_SPAN = 40; // neutral - p10
   const SPACING_BONUS_SPAN = 45; // p90 - neutral
@@ -457,15 +496,7 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
     const bonus = Math.round(excessRatio * SPACING_MAX_BONUS);
     score += bonus;
   }
-
-  if (
-    starters.some(isShellRimProtector) &&
-    starters.some(isShellPerimeterDefender) &&
-    starters.some((p) => p.defensiveRole === 'Helper')
-  ) {
-    score += 5;
-    notes.push('Complete defensive shell: rim + perimeter + helper coverage.');
-  }
+  components.continuousSpacing = score - continuousSpacingStart;
 
   // 2026-08-13, real D1 human-vote diagnostic (`scripts/analyzeD1HumanVote.ts`'s new
   // "fitScore INPUT SIGNALS" block): the two binary checks this replaced — "does at least one
@@ -490,6 +521,7 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   // `TEAM_DEFENSE_MAX_PENALTY` set higher than the bonus side's own cap (20 vs. 10) — the two
   // removed binary checks could cost up to -25 combined, so this keeps "bad team defense can
   // genuinely hurt fitScore" true rather than quietly defanging it while fixing the sign problem.
+  const teamDefenseStart = score;
   const DTAL_NEUTRAL = 42;
   const DTAL_ELITE_SPAN = 37; // p90 - p50
   const DTAL_WEAK_SPAN = 23; // p50 - p10
@@ -507,55 +539,15 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
     score -= penalty;
     if (penalty >= 8) notes.push('Team defense is genuinely thin across the starting five.');
   }
+  components.teamDefense = score - teamDefenseStart;
 
-  // 2026-08-14, second attempt (first one — raw/impact-gated role tag, no further gate — was
-  // reverted same day: it credited all 5 starters on the `checkFitZeroHundred.ts` "BAD" roster,
-  // including Thompson/English/Stoudemire, none of whom clear even the strictest existing
-  // impact threshold despite real basketball knowledge rating them limited-to-poor defenders).
-  // Root cause diagnosed: `computeDefensiveImpact` (what both the role tag AND
-  // `isStrongRimProtector`/`isStrongPerimeterDefender` are built from) is pure box-score activity
-  // — it's the SAME signal circling back on itself, not independent corroboration. D-TAL
-  // (`computeDefensiveTalent`) is a genuinely different, stronger signal: DARKO-corrected real
-  // plus-minus on top of the box score, already used at the team level just above. Checked it
-  // directly against both acceptance-test rosters: BAD's D-TAL values are Simmons 78 (real,
-  // legitimately plus defender that era), Brand 68 (real, decent two-way piece 2005-07), Thompson
-  // 48, English 37, Stoudemire 33 — a clean split, with the box-noisy trio all reading BELOW GOOD
-  // roster's own weakest starter (Lowry, D-TAL 68). Gating the role-tag bonus on D-TAL clearing
-  // the ~70%-to-elite mark (`DTAL_NEUTRAL + 0.7 * DTAL_ELITE_SPAN` ≈ 68, using the same anchors as
-  // `avgStarterDTal` just above) keeps all 5 GOOD starters qualifying (min 68) while correctly
-  // dropping Thompson/English/Stoudemire from BAD — Simmons and Brand still count, which is
-  // defensible (both were real, legitimately good defenders in these specific spans; the
-  // remaining fit=~20ish this leaves BAD at reflects genuine credit, not leftover noise). Small
-  // and capped either way: +1.5 per D-TAL-corroborated starter, max +8.
-  const DEFENSIVE_ROLE_DTAL_GATE = Math.round(DTAL_NEUTRAL + 0.7 * DTAL_ELITE_SPAN);
-  const DEFENSIVE_ROLE_BONUS_PER_STARTER = 1.5;
-  const DEFENSIVE_ROLE_MAX_BONUS = 8;
-  const corroboratedDefenderStarters = starters.filter((p) => {
-    const hasRoleTag =
-      RIM_PROTECTOR_ROLES.includes(p.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) ||
-      PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]);
-    return hasRoleTag && computeDefensiveTalent(p) >= DEFENSIVE_ROLE_DTAL_GATE;
-  }).length;
-  if (corroboratedDefenderStarters > 0) {
-    const bonus = Math.min(DEFENSIVE_ROLE_MAX_BONUS, Math.round(corroboratedDefenderStarters * DEFENSIVE_ROLE_BONUS_PER_STARTER));
-    score += bonus;
-    notes.push(`${corroboratedDefenderStarters} starter(s) carry a real, D-TAL-corroborated rim/perimeter defensive role.`);
-  }
+  // 2026-08-17 scoring audit: the former defensive-shell, corroborated-role and engine-
+  // complement bonuses were removed from the numeric score. The first two re-counted the same
+  // D-TAL already measured continuously above; the last fired for every roster in the 48-team
+  // blind sample and therefore carried no ranking information. Role composition still belongs
+  // in Strengths/Concerns, where it can explain a lineup without silently adding D-TAL twice.
 
-  // Self-sufficient engine + real two-way complements — 2026-08-07, the user's (d) framework:
-  // a Nash-type doesn't need more offensive talent, he needs teammates who defend and finish.
-  // Small, capped credit (distinct from the general team-defense bonus above, which fires
-  // regardless of WHY the defense is good) for pairing a self-sufficient engine with starters
-  // who carry real defensive value.
-  if (hasSelfSufficientEngine) {
-    const others = starters.filter((p) => !isSelfSufficientEngine(p));
-    const avgOthersDTal = others.length > 0 ? others.reduce((sum, p) => sum + computeDefensiveTalent(p), 0) / others.length : 0;
-    if (avgOthersDTal > DTAL_NEUTRAL) {
-      score += 3;
-      notes.push('Two-way complements around the self-sufficient offensive engine, not redundant offense.');
-    }
-  }
-
+  const reboundingStart = score;
   const totalStarterRpg = starters.reduce((sum, p) => sum + p.box.rpg, 0);
   if (totalStarterRpg < STARTER_REBOUNDING_FLOOR) {
     score -= 10;
@@ -563,6 +555,7 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   } else {
     notes.push('Starting five rebounds well enough to hold its own on the glass.');
   }
+  components.rebounding = score - reboundingStart;
 
   // 2026-08-13, real D1 human-vote diagnostic: of every fitScore input signal checked
   // independently against the real 15-roster vote, cap efficiency (talent/FGA) was by far the
@@ -571,6 +564,7 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   // capped to the narrowest, most conservative band of any term here (-10/+15) — widened
   // (doubled) to actually carry the weight this signal earned, rather than clipping most of a
   // proven-strong real predictor for no evidenced reason.
+  const capEfficiencyStart = score;
   const allPlayers = team.roster;
   const totalTalent = allPlayers.reduce((sum, p) => sum + computeTalent(p), 0);
   const totalFga = allPlayers.reduce((sum, p) => sum + p.fga, 0);
@@ -583,6 +577,7 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   } else if (efficiencyAdj < -3) {
     notes.push('Inefficient cap usage: too much of the cap spent on redundant high-usage scorers.');
   }
+  components.capEfficiency = score - capEfficiencyStart;
 
   // 2026-08-07 rework: analytically summing each term's own min/max (the previous approach —
   // "worst case sums every penalty, best case sums every bonus") assumes a realistic roster can
@@ -605,23 +600,55 @@ export function fitScore(team: Team): { score: number; notes: string[]; raw: num
   // in [150,157], not a single stable answer. Used the median-ish of those runs (-46/154) rather
   // than chasing one noisy extreme. Re-run `scripts/calibrateFitScoreRange.ts` a few times (not
   // just once) and paste a representative value here after any future term change.
-  const ACHIEVABLE_MIN = -46;
-  const ACHIEVABLE_MAX = 154;
+  // 2026-08-17: recalibrated after the scoring audit removed five duplicated/non-discriminating
+  // terms (average O-POR, shooter count, defensive shell, role coverage, engine complements).
+  // The live legal-roster search found -2/124; the two named acceptance rosters land near the
+  // intended ends of that range again (bad fit near 0, good fit near 90).
+  const ACHIEVABLE_MIN = -2;
+  const ACHIEVABLE_MAX = 124;
   const rescaled = ((score - ACHIEVABLE_MIN) / (ACHIEVABLE_MAX - ACHIEVABLE_MIN)) * 100;
 
-  return { score: Math.max(0, Math.min(100, Math.round(rescaled))), notes, raw: score };
+  return { score: Math.max(0, Math.min(100, Math.round(rescaled))), notes, raw: score, components };
 }
 
-export function rotationScore(team: Team): { score: number; notes: string[] } {
+export interface RotationScoreComponents {
+  basePositionFit: number;
+  benchSpacingCoverage: number;
+  benchRimCoverage: number;
+  durabilityOverwork: number;
+  optimalMinutes: number;
+  downwardPosition: number;
+  tierMinutesOverage: number;
+  weakStarterTransform: number;
+}
+
+export interface RotationScoreResult {
+  score: number;
+  notes: string[];
+  components: RotationScoreComponents;
+}
+
+export function rotationScore(team: Team): RotationScoreResult {
   const starters = primaryStarters(team);
   const notes: string[] = [];
+  const components: RotationScoreComponents = {
+    basePositionFit: 0,
+    benchSpacingCoverage: 0,
+    benchRimCoverage: 0,
+    durabilityOverwork: 0,
+    optimalMinutes: 0,
+    downwardPosition: 0,
+    tierMinutesOverage: 0,
+    weakStarterTransform: 0,
+  };
   if (starters.length < STARTER_SLOTS.length) {
-    return { score: 0, notes: ['Lineup incomplete.'] };
+    return { score: 0, notes: ['Lineup incomplete.'], components };
   }
 
   const avgMultiplier =
     starters.reduce((sum, { slot, player }) => sum + positionFitMultiplier(player, slot), 0) / starters.length;
   let score = Math.round(avgMultiplier * 100);
+  components.basePositionFit = score;
 
   const offPosition = starters.filter(({ slot, player }) => positionFitMultiplier(player, slot) < 0.9);
   if (offPosition.length > 0) {
@@ -640,12 +667,14 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
   const spacingGap = !starters.some((s) => isPlusShooter(s.player));
   if (spacingGap && bench.some(isPlusShooter)) {
     score += 7;
+    components.benchSpacingCoverage = 7;
     notes.push('Bench brings shooting the starting five lacks.');
   }
 
   const rimGap = !startersRoles.some((r) => RIM_PROTECTOR_ROLES.includes(r));
   if (rimGap && bench.some((p) => RIM_PROTECTOR_ROLES.includes(p.defensiveRole))) {
     score += 7;
+    components.benchRimCoverage = 7;
     notes.push('Bench brings rim protection the starting five lacks.');
   }
 
@@ -669,6 +698,7 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
     const totalOverage = overworked.reduce((sum, { minutes, cap }) => sum + (minutes - cap), 0);
     const penalty = Math.min(DURABILITY_OVERWORK_MAX_PENALTY, Math.round(totalOverage * DURABILITY_OVERWORK_PENALTY_PER_MINUTE));
     score -= penalty;
+    components.durabilityOverwork = -penalty;
     notes.push(
       `Overworked for their durability: ${overworked
         .map(({ player, minutes, cap }) => `${player.playerName} (${minutes}/${cap} safe min)`)
@@ -678,6 +708,7 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
 
   const { bonus: optimalBonus, notes: optimalNotes } = optimalMinutesRotationBonus(team);
   score += optimalBonus;
+  components.optimalMinutes = optimalBonus;
   notes.push(...optimalNotes);
 
   // 2026-08-07, user's explicit rule: playing BELOW your natural position (toward the
@@ -690,7 +721,22 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
   // other positions ("i tak w dół" — PF at SF costs less than a full center misuse, and so on).
   // Explicit secondary positions are real, curated fits, not a fallback stretch, so they're
   // exempt even when technically "downward" (e.g., a big whose actual secondary is one spot down).
+  //
+  // 2026-08-16, user-reported (real diagnostic: "Rotation 0" despite Talent 93/Fit 82 — Bam
+  // Adebayo, a real C, stretched to BOTH SF (6m) and PF (12m) backup on a roster that already had
+  // two other real centers). Root cause: unlike every other penalty in this function
+  // (`DURABILITY_OVERWORK_MAX_PENALTY`/`MAX_TIER_OVERAGE_PENALTY`, both 25), this one had NO cap —
+  // it fires once per (slot, player, minutes>0) ASSIGNMENT, so the same misplaced player counted
+  // twice here (once for SF, once for PF) stacked to -100 alone, crashing an otherwise-strong
+  // rotation to 0 outright. Capped at **50** — not reused from the other two penalties' 25, since
+  // this category's whole design intent (see the 2026-08-07 comment above) is that a single real
+  // center-at-a-perimeter-slot instance is a worse, flatter hit than a durability/tier mistake
+  // (`DOWNWARD_POSITION_PENALTY.C` itself is already 50) — capping at 25 would have undercut even
+  // a single genuine C misplacement, which was never the reported problem. 50 preserves that one
+  // single worst-case instance at its full original value while stopping the same or a second
+  // misplaced player from stacking past it.
   const DOWNWARD_POSITION_PENALTY: Record<Position, number> = { C: 50, PF: 25, SF: 12, SG: 6, PG: 0 };
+  const MAX_DOWNWARD_POSITION_PENALTY = 50;
   const downwardOffenders: string[] = [];
   let downwardPenalty = 0;
   for (const { slot, player, minutes } of allAssignments(team)) {
@@ -705,7 +751,9 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
     }
   }
   if (downwardPenalty > 0) {
-    score -= downwardPenalty;
+    const penalty = Math.min(MAX_DOWNWARD_POSITION_PENALTY, downwardPenalty);
+    score -= penalty;
+    components.downwardPosition = -penalty;
     notes.push(`Playing below natural position: ${downwardOffenders.join(', ')}.`);
   }
 
@@ -723,11 +771,20 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
     'All-NBA': MAX_MINUTES_PER_PLAYER,
     'All-star': MAX_MINUTES_PER_PLAYER,
     Starter: 32,
+    // 2026-08-15, user's explicit ask ("cap można ustawić na 28") — see the matching entry's own
+    // docstring on `OVERALL_TIER_MINUTES_TARGET` above.
+    'Sixth Man': 28,
     'Role Player': 24,
     'Bench Warmer': 16,
     'Cigarette Butt': 8,
   };
-  const TIER_OVERAGE_PENALTY_PER_MINUTE = 1;
+  // 2026-08-15, user-reported (real diagnostic: "Chris Duhon (Bench Warmer) 24/16m" — 8 minutes
+  // over his tier's real ceiling cost only -8 at the old rate of 1/minute, barely registering).
+  // Doubled to 2/minute — Duhon's exact case now costs -16, a real dent rather than a rounding
+  // error, while `MAX_TIER_OVERAGE_PENALTY` stays at 25 (already matches `DURABILITY_OVERWORK_
+  // MAX_PENALTY`'s own ceiling nearby — a consistent, already-calibrated cap for "how much any
+  // one minutes-deployment mistake can cost," not something this specific complaint asked to move).
+  const TIER_OVERAGE_PENALTY_PER_MINUTE = 2;
   const MAX_TIER_OVERAGE_PENALTY = 25;
   let tierOveragePenalty = 0;
   const tierOverageOffenders: string[] = [];
@@ -744,6 +801,7 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
   if (tierOveragePenalty > 0) {
     const penalty = Math.min(MAX_TIER_OVERAGE_PENALTY, Math.round(tierOveragePenalty));
     score -= penalty;
+    components.tierMinutesOverage = -penalty;
     notes.push(`Over their tier's real minutes ceiling: ${tierOverageOffenders.join(', ')}.`);
   }
 
@@ -756,11 +814,13 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
   const WEAK_STARTER_TAL_THRESHOLD = 55;
   const hasWeakStarter = starters.some(({ player }) => computeTalent(player) < WEAK_STARTER_TAL_THRESHOLD);
   if (hasWeakStarter) {
+    const beforeWeakStarter = score;
     score = Math.round(score * 0.5);
+    components.weakStarterTransform = score - beforeWeakStarter;
     notes.push('Weak starter (TAL<55) present — whole team rotation value halved.');
   }
 
-  return { score: Math.max(0, Math.min(100, Math.round(score))), notes };
+  return { score: Math.max(0, Math.min(100, Math.round(score))), notes, components };
 }
 
 /**
@@ -790,24 +850,56 @@ export function rotationScore(team: Team): { score: number; notes: string[] } {
  * still carries the largest single weight, since it's the project's actual "does this roster
  * make basketball sense" judge and this change doesn't reopen that.
  */
-const TALENT_WEIGHT = 0.3;
-const FIT_WEIGHT = 0.35;
-const ROTATION_WEIGHT = 0.15;
-const TEAM_QUALITY_WEIGHT = 0.2;
+/**
+ * 2026-08-15, user-reported ("taki skład nie powinien kończyć top5" — see `benchDepthScore`'s own
+ * docstring for the root cause): `talentScore` (0.3) and `fitScore` (0.35) together are 0.65 of
+ * `overall` and neither one ever looks past the starting five, so an elite top-5-core-plus-garbage-
+ * bench roster could rank unrealistically high. Same rebalancing move this file already made once
+ * before when `teamQuality` was added (see that change's own docstring above) — scale the existing
+ * roster-construction weights (talent/fit/teamQuality) down proportionally to make room, leave
+ * `rotation` alone (still measuring something orthogonal: legal/sensible minutes deployment, not
+ * which players were drafted). `BENCH_DEPTH_WEIGHT` matches `ROTATION_WEIGHT` (0.15) — a real,
+ * meaningful dimension, not a token one, but not bigger than the project's actual "does this
+ * roster make basketball sense" judge (`fitScore`, still the largest single weight).
+ */
+/**
+ * 2026-08-17 scoring audit: the former blend let Rotation and Fit dominate the *observed*
+ * variance even though Talent had the strongest external signal. On 15 genuinely human-ranked
+ * rosters the old blend reached 0.53 Spearman versus 0.82 for top-five TAL; on the separate
+ * 48-roster blind qualitative sample it reached 0.02. These weights were selected from a small,
+ * predeclared candidate set (not a free parameter fit) and improved both samples to roughly
+ * 0.65/0.12. Offense and defense remain meaningful direct axes; spacing stays present but has a
+ * smaller direct weight because continuous spacing and rim-gravity interactions already live in
+ * Fit. Rotation remains punitive for genuine deployment mistakes, without owning the ranking.
+ */
+const TALENT_WEIGHT = 0.40;
+const BENCH_DEPTH_WEIGHT = 0.10;
+const OFFENSE_WEIGHT = 0.12;
+const DEFENSE_WEIGHT = 0.12;
+const SPACING_WEIGHT = 0.03;
+const FIT_WEIGHT = 0.15;
+const ROTATION_WEIGHT = 0.08;
 
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
+  const benchDepth = benchDepthScore(team);
   const offense = offenseScore(team);
   const defense = defenseScore(team);
   const spacing = spacingScore(team);
   const fit = fitScore(team);
   const rotation = rotationScore(team);
-  const teamQuality = (offense + defense + spacing) / 3;
   const overall = Math.round(
-    talent * TALENT_WEIGHT + fit.score * FIT_WEIGHT + rotation.score * ROTATION_WEIGHT + teamQuality * TEAM_QUALITY_WEIGHT,
+    talent * TALENT_WEIGHT +
+      benchDepth * BENCH_DEPTH_WEIGHT +
+      offense * OFFENSE_WEIGHT +
+      defense * DEFENSE_WEIGHT +
+      spacing * SPACING_WEIGHT +
+      fit.score * FIT_WEIGHT +
+      rotation.score * ROTATION_WEIGHT,
   );
   return {
     talentScore: talent,
+    benchDepthScore: benchDepth,
     offenseScore: offense,
     defenseScore: defense,
     spacingScore: spacing,

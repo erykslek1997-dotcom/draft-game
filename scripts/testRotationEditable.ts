@@ -9,9 +9,10 @@
  * selectable options, so what the engine produces is always editable in the UI.
  */
 import { draftPool as players } from '../src/data/draftPool';
-import { autoAssignRotation } from '../src/engine/rotation';
+import { autoAssignRotation, benchWithMinutes, primaryStarters } from '../src/engine/rotation';
 import { STARTER_SLOTS, isPositionEligible } from '../src/engine/positions';
 import type { PlayerSpan, Position } from '../src/data/schema';
+import type { Team } from '../src/engine/types';
 
 /** Mirrors RotationBuilder.optionsFor — every rostered player, natural fits sorted first. */
 function optionsFor(roster: PlayerSpan[], slot: Position) {
@@ -71,4 +72,49 @@ console.log(`Rosters tested: ${rosters.length} (incl. 100 single-position worst 
 console.log(`Slots checked: ${slotsChecked} | all exactly 48 minutes: ${ok}`);
 console.log(`Out-of-position assignments made (must be editable): ${outOfPositionAssignments}`);
 console.log(`\nTest (every auto-filled assignment is representable in the editor)?`, ok, ok ? 'PASS' : 'FAIL');
+
+// Regression: the primary/starter is the first row selected by the lineup search/editor, not
+// whichever contributor happens to have the most minutes at that one slot. A dual-position
+// starter can legitimately split 30 total minutes across two positions (22+8) while a backup
+// absorbs 26 at the starter's primary slot.
+const george = players.find((p) => p.playerName === 'Paul George' && p.spanLabel === '2019-21');
+const barry = players.find((p) => p.playerName === 'Brent Barry' && p.spanLabel === '2000-02');
+const dirk = players.find((p) => p.playerName === 'Dirk Nowitzki' && p.spanLabel === '2002-04');
+if (!george || !barry || !dirk) {
+  console.log('FAIL: expected Paul George, Brent Barry and Dirk Nowitzki spans in draft pool.');
+  ok = false;
+} else {
+  const splitStarterTeam: Team = {
+    id: 'split-starter-regression',
+    name: 'Split Starter Regression',
+    draftSlot: 1,
+    isHuman: true,
+    roster: [george, barry, dirk],
+    rotation: {
+      slots: {
+        PG: [],
+        SG: [],
+        SF: [
+          { playerId: george.id, minutes: 22 },
+          { playerId: barry.id, minutes: 26 },
+        ],
+        PF: [
+          { playerId: dirk.id, minutes: 36 },
+          { playerId: george.id, minutes: 8 },
+        ],
+        C: [],
+      },
+    },
+  };
+  const sfStarter = primaryStarters(splitStarterTeam).find((entry) => entry.slot === 'SF')?.player.id;
+  const benchIds = new Set(benchWithMinutes(splitStarterTeam).map((entry) => entry.player.id));
+  const splitStarterOk = sfStarter === george.id && !benchIds.has(george.id) && benchIds.has(barry.id);
+  console.log(
+    'Test (split-position primary remains starter and backup remains bench)?',
+    splitStarterOk,
+    splitStarterOk ? 'PASS' : 'FAIL',
+  );
+  if (!splitStarterOk) ok = false;
+}
+
 if (!ok) process.exitCode = 1;

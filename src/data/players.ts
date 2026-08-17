@@ -3,6 +3,7 @@ import { normalizePlayerName } from './schema';
 import { generatedPlayers } from './generatedPlayers';
 import { curatedExpandedSpans } from './curatedExpandedSpans';
 import curatedVerifiedBoxData from './curatedVerifiedBox.json';
+import { getHeightInches } from './heightLookup';
 
 /**
  * STARTER DATASET — placeholder for prototyping the draft/scoring mechanics.
@@ -373,7 +374,7 @@ function applyPositionOverrides(spans: PlayerSpan[]): PlayerSpan[] {
  * `OFFENSE_TAL_PARAMS`/`DEFENSE_TAL_SCALE_BY_POSITION` (talent.ts) directly, so a reclassified
  * span's O-TAL/D-TAL are genuinely recomputed under the new position's scale, not just relabeled.
  */
-const PRIMARY_POSITION_RECLASSIFICATIONS: { name: string; from: Position; to: Position }[] = [
+const PRIMARY_POSITION_RECLASSIFICATIONS: { name: string; from: Position; to: Position; dropOld?: boolean }[] = [
   { name: 'Al Horford', from: 'C', to: 'PF' },
   { name: 'Jaren Jackson Jr.', from: 'C', to: 'PF' },
   { name: 'Chet Holmgren', from: 'C', to: 'PF' },
@@ -393,6 +394,18 @@ const PRIMARY_POSITION_RECLASSIFICATIONS: { name: string; from: Position; to: Po
   // auto-tagged SF (10 spans, all with SG as a real secondary) and SG (6 spans) — a genuine
   // "which position does his whole career belong to" call, same shape as the entries above.
   { name: 'Kyle Korver', from: 'SF', to: 'SG' },
+  // 2026-08-16, user's explicit ask ("usunąć tag PF z Chrisa Andersena" — remove the PF tag from
+  // Chris Andersen entirely, not just relabel it): his 4 earlier generated spans (2002-04, 2003-05,
+  // 2008-10, 2009-11) auto-tag `primaryPosition: 'PF', secondaryPositions: ['C']` from those
+  // specific seasons' logged per-game position, while his later spans (2012-14, 2013-15 — the
+  // "Birdman" years the user recognizes him from) already auto-tag plain `C`, no secondary at
+  // all. Same whole-career judgment call as every other entry above, but with `dropOld: true`:
+  // every other entry here folds the old tag into `secondaryPositions` (a real GM still trusts
+  // that eligibility), which is the right call for a genuine two-way tweener like Horford/Bosh —
+  // but Andersen was never a real stretch/face-up PF the way those spans read; the user wants PF
+  // gone outright, matching how his own later spans already read (plain `C`, zero secondary), not
+  // demoted to a secondary tag that would still leave `[C/PF]` on screen.
+  { name: 'Chris Andersen', from: 'PF', to: 'C', dropOld: true },
 ];
 
 function applyPrimaryPositionReclassifications(spans: PlayerSpan[]): PlayerSpan[] {
@@ -404,8 +417,42 @@ function applyPrimaryPositionReclassifications(spans: PlayerSpan[]): PlayerSpan[
     // Drop `to` from the old secondary list first (it'd otherwise duplicate the new primary —
     // e.g. a span already tagged secondary PF under primary C) before folding `from` back in.
     const withoutNewPrimary = span.secondaryPositions.filter((p) => p !== reclass.to);
-    const secondaryPositions = withoutNewPrimary.includes(reclass.from) ? withoutNewPrimary : [...withoutNewPrimary, reclass.from];
+    const secondaryPositions = reclass.dropOld
+      ? withoutNewPrimary.filter((p) => p !== reclass.from)
+      : withoutNewPrimary.includes(reclass.from)
+        ? withoutNewPrimary
+        : [...withoutNewPrimary, reclass.from];
     return { ...span, primaryPosition: reclass.to, secondaryPositions };
+  });
+}
+
+/**
+ * 2026-08-15, user's explicit whole-career call on Magic Johnson, made after independently
+ * root-causing (this same session) why an auto-assigned rotation put him at SG instead of PG for
+ * his 1981-83 span: that span's raw data reads `primaryPosition: 'SG'`, `secondaryPositions:
+ * ['PG']` (the Norm Nixon backcourt-sharing years) — a real, if early-career, position tag, not a
+ * data bug (unlike Pierce's SG mistag `POSITION_OVERRIDES` corrects above). `SECONDARY_POSITION_
+ * ADDITIONS` already patched the narrower "give the 3 SG-tagged spans PG eligibility too" version
+ * of this (2026-08-14) — the user is now asking for the stronger, whole-career version: PG is his
+ * position on literally every span, full stop, with SG and SF as real secondaries throughout (a
+ * genuinely position-flexible all-time playmaker, not just "eligible in a pinch"). Neither
+ * existing mechanism fits: `PRIMARY_POSITION_RECLASSIFICATIONS` only reclassifies spans currently
+ * tagged one specific `from` and folds only that one tag into secondaries (it wouldn't touch the
+ * 8 spans already primary PG, which still need the SF secondary added); `SECONDARY_POSITION_
+ * ADDITIONS` only adds one position and never touches `primaryPosition`. A dedicated, narrow
+ * mechanism instead: forces BOTH primary and the full secondary list on every span of the named
+ * player, superseding (not stacking with) the old narrower `SECONDARY_POSITION_ADDITIONS` entry,
+ * which is removed below to avoid two overlapping Magic-specific rules.
+ */
+const FORCED_POSITION_PROFILES: { name: string; primary: Position; secondary: Position[] }[] = [
+  { name: 'Magic Johnson', primary: 'PG', secondary: ['SG', 'SF'] },
+];
+
+function applyForcedPositionProfiles(spans: PlayerSpan[]): PlayerSpan[] {
+  return spans.map((span) => {
+    const profile = FORCED_POSITION_PROFILES.find((p) => normalizePlayerName(p.name) === normalizePlayerName(span.playerName));
+    if (!profile) return span;
+    return { ...span, primaryPosition: profile.primary, secondaryPositions: [...profile.secondary] };
   });
 }
 
@@ -483,7 +530,26 @@ function applyDefensiveRoleOverrides(spans: PlayerSpan[]): PlayerSpan[] {
  */
 const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [
   { name: 'Victor Wembanyama', position: 'PF' },
-  { name: 'Magic Johnson', position: 'PG' },
+  // Magic Johnson's narrower 2026-08-14 fix (PG secondary on his 3 SG-tagged spans only) is
+  // superseded by `FORCED_POSITION_PROFILES` above (2026-08-15, the user's stronger whole-career
+  // call) — removed here rather than left stacked, to avoid two overlapping Magic-specific rules.
+  // 2026-08-15, user's explicit ask (draft export: OG Anunoby drafted/played SF, real backup PF
+  // minutes going to an off-position stretch instead of him despite his genuine small-ball-4
+  // reputation — his 2023-25/2024-26 spans already auto-tag PF primary/SF secondary, but his
+  // earlier, more-drafted SF-primary spans, 2017-19 through 2022-24, have no PF secondary at
+  // all). Pure eligibility grant, same shape as Wembanyama/PF above — no O-TAL/D-TAL
+  // recomputation, no archetype change, just lets `isPositionEligible`/`isRealPositionFit` credit
+  // him for a real PF fit the same way his own later career already earns automatically.
+  { name: 'OG Anunoby', position: 'PF' },
+  // 2026-08-15, user's explicit ask (draft export: a team with LeBron already starting SF/PF and
+  // no real backup PG anywhere on the roster — Jrue Holiday's only realistic help came from an
+  // off-position SG). LeBron's real, well-documented point-forward/primary-facilitator range
+  // (career-long high-assist, ball-in-hands offense) makes him a genuine PG fit, not just a
+  // generic "any star can play any position" grant — same pure-eligibility-grant shape as
+  // Wembanyama/Anunoby above, no O-TAL/D-TAL recomputation, no archetype change. Lets the
+  // cross-slot starter-fallback tier (rotation.ts) legitimately extend him into a thin backup PG
+  // spot with his own spare capacity instead of reaching for a true last-resort fallback.
+  { name: 'LeBron James', position: 'PG' },
 ];
 
 function applySecondaryPositionAdditions(spans: PlayerSpan[]): PlayerSpan[] {
@@ -494,8 +560,87 @@ function applySecondaryPositionAdditions(spans: PlayerSpan[]): PlayerSpan[] {
   });
 }
 
-export const players: PlayerSpan[] = applySecondaryPositionAdditions(
-  applyDefensiveRoleOverrides(
-    applyPrimaryPositionReclassifications(applyPositionOverrides([...curatedPlayers, ...generatedPlayers, ...curatedExpandedSpans])),
+/**
+ * 2026-08-16, user's explicit ask, three general (not per-name) height-based real-secondary-
+ * position rules, backed by a real height export (`scripts/buildHeightLookup.ts`, 96.3% archive
+ * coverage — see that file's own docstring for provenance and the coverage comparison against the
+ * wingspan CSV that was tried first and rejected for this purpose). Unlike every other entry in
+ * `SECONDARY_POSITION_ADDITIONS`/`PRIMARY_POSITION_RECLASSIFICATIONS` above (a hand-picked, named
+ * list), this is a DATA-DRIVEN rule: any span meeting the height threshold gets the grant,
+ * regardless of who they are — the general-rule shape this project otherwise prefers over
+ * per-player special cases when a real, measurable signal supports it (matches
+ * `highVolumeNonElitePenalty`'s own "a profile rule rather than a list of player names" framing
+ * in `aiDrafter.ts`).
+ *
+ * Thresholds are the user's own stated cutoffs, taken literally:
+ * - SF at 6'8" (80in) or taller: real, credited PF eligibility (a bigger SF who can hold up at
+ *   the 4 — the same real "small-ball 4" idea `OG Anunoby`'s own named PF grant above captures,
+ *   generalized to anyone tall enough, not just him).
+ * - SF at 6'7" (79in) or shorter: real, credited SG eligibility (a smaller SF who can guard/play
+ *   alongside a big lineup on the wing).
+ * - PG taller than 6'2" (74in, strict): real, credited SG eligibility.
+ * A player without matched height data gets none of these — silently skipped, not defaulted to
+ * "average," same as every other partial-coverage lookup in this project.
+ *
+ * Same pure-eligibility-grant shape as `SECONDARY_POSITION_ADDITIONS` (no O-TAL/D-TAL
+ * recomputation, no archetype change, no primary-position change) — only ever ADDS a secondary if
+ * not already present, never removes or overrides one a more specific mechanism already granted.
+ *
+ * 2026-08-16 follow-up: root-caused the recurring "roster has literally only ONE real SF, the
+ * starter" complaint (`rotation.ts`'s rebalance pass docstring covers the assignment-side half of
+ * this same investigation) to a real, measured pool-composition gap — checked directly
+ * (`scripts/_checkSfPoolDepth.ts`, deleted after use): SF has only 11 distinct players who reach
+ * it as a SECONDARY position (from some other primary), vs SG's 92 and PF's 42 — by far the
+ * thinnest "who else can help at SF" population of any position, despite SF's own primary pool
+ * being a comfortable, unremarkable size (157, on par with PG's 158). The existing SF-primary
+ * rules above only ever grant SF-tagged players a secondary AT another position, never the
+ * reverse (another position gaining SF) — this is the first rule that runs the other direction.
+ *
+ * User's own explicit call on scope: a symmetric PF->SF grant was considered and REJECTED
+ * ("dużo 'vintage' PFów będzie się łapało" — too many old-era PFs would qualify under a simple
+ * height cutoff, since a lot of 1970s-80s power forwards were built more like modern wings than
+ * modern bigs, which would read as unrealistic bulk-grants rather than genuine two-way small-ball
+ * fits). SG->SF, taller cutoff only, was confirmed as the one worth shipping.
+ *
+ * Real effect: 495 spans / 196 distinct players gain the SF secondary (Drexler, Reggie Miller,
+ * Kobe, Vince Carter, Korver among them — real, plausible tall-2 wing fits). Measured downstream
+ * (`scripts/_checkFinalSfEffect.ts`, deleted after use, 4x16 teams): rosters with ZERO real second
+ * SF fit dropped from 7.8% to **0.0%** — the exact gap this rule targeted. Severe (not even
+ * loosely eligible) backups across all positions: 7.8% of teams, still in the same strong range
+ * the `rotation.ts` rebalance work landed (4.7-7.8% band across re-runs, small-sample noise
+ * between individual measurement passes, not a regression). Full regression suite clean.
+ */
+const SF_TALL_PF_THRESHOLD_IN = 80; // 6'8"
+const SF_SHORT_SG_THRESHOLD_IN = 79; // 6'7"
+const PG_TALL_SG_THRESHOLD_IN = 74; // 6'2" (strict >)
+const SG_TALL_SF_THRESHOLD_IN = 78; // 6'6" (strict >)
+
+function heightBasedSecondaryPosition(primaryPosition: Position, heightIn: number): Position | null {
+  if (primaryPosition === 'SF') {
+    if (heightIn >= SF_TALL_PF_THRESHOLD_IN) return 'PF';
+    if (heightIn <= SF_SHORT_SG_THRESHOLD_IN) return 'SG';
+  }
+  if (primaryPosition === 'PG' && heightIn > PG_TALL_SG_THRESHOLD_IN) return 'SG';
+  if (primaryPosition === 'SG' && heightIn > SG_TALL_SF_THRESHOLD_IN) return 'SF';
+  return null;
+}
+
+function applyHeightBasedSecondaryPositions(spans: PlayerSpan[]): PlayerSpan[] {
+  return spans.map((span) => {
+    const heightIn = getHeightInches(span.playerName);
+    if (heightIn === undefined) return span;
+    const addition = heightBasedSecondaryPosition(span.primaryPosition, heightIn);
+    if (!addition || addition === span.primaryPosition || span.secondaryPositions.includes(addition)) return span;
+    return { ...span, secondaryPositions: [...span.secondaryPositions, addition] };
+  });
+}
+
+export const players: PlayerSpan[] = applyForcedPositionProfiles(
+  applyHeightBasedSecondaryPositions(
+    applySecondaryPositionAdditions(
+      applyDefensiveRoleOverrides(
+        applyPrimaryPositionReclassifications(applyPositionOverrides([...curatedPlayers, ...generatedPlayers, ...curatedExpandedSpans])),
+      ),
+    ),
   ),
 );

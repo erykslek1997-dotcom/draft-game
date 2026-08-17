@@ -43,11 +43,32 @@ import { offensiveGrade, defensiveGrade, tierContextFor, type Grade, type TierGa
  * new names — Malcolm Brogdon, Mike Dunleavy, Artis Gilmore, Jeff Hornacek, Cedric Maxwell, Chris
  * Mullin, Paul Pierce, Jimmy Butler), no new stars.
  */
+/**
+ * 2026-08-16, second widening pass, user's own ask ("poszerzyć pool graczy z tagiem sixth man" —
+ * used by `NeedContext.lacksSixthMan`/`SIXTH_MAN_BONUS` in `aiDrafter.ts`). Same "check every
+ * dimension against the real pool before touching anything" discipline as the 2026-08-14 pass
+ * above (`scripts/_checkSixthManPoolWiden.ts`, deleted after use): `TAL_CEILING` left untouched —
+ * it's the one gate every other dimension's safety depends on, confirmed directly by testing FGA
+ * up to 15 and APG up to 7.5 simultaneously and finding `maxTAL` pinned at 79 the whole time, no
+ * new name above the same 3 already-accepted high-TAL entries (Pierce/Sabonis/Schrempf) ever
+ * enters regardless of how far the other three dimensions move. `OFFENSE_FLOOR` left alone again
+ * too — loosening it to C+ nearly tripled the pool (142 spans) without new TAL leakage either, but
+ * that's a different kind of risk than leakage: the whole identity of this tag is "real offensive
+ * skill for instant scoring off the bench," and admitting merely-average-offense spans dilutes
+ * that identity even where the TAL ceiling still holds, so it's left for a future pass only if
+ * asked for explicitly, not bundled in here.
+ *
+ * `FGA_CEILING` turned out to be the single highest-leverage, safest dimension — a real cliff-edge
+ * cluster of legitimate bench scorers sits at 13-14 FGA (three more Reggie Miller spans alone).
+ * Combined with the smaller, already-validated `APG_CEILING`/`DEFENSE_CEILING` nudges: 56->103
+ * spans, 30->47 distinct players (Barros's own 22-30-47 lineage keeps growing on real evidence,
+ * not a guess).
+ */
 const SIXTH_MAN_TAL_CEILING = 80;
-const SIXTH_MAN_FGA_CEILING = 13;
-const SIXTH_MAN_APG_CEILING = 7.1;
+const SIXTH_MAN_FGA_CEILING = 14;
+const SIXTH_MAN_APG_CEILING = 7.5;
 const SIXTH_MAN_OFFENSE_FLOOR: Grade = 'B-';
-const SIXTH_MAN_DEFENSE_CEILING: Grade = 'C'; // must NOT clear this (i.e. C-, D+, D, D-, or F)
+const SIXTH_MAN_DEFENSE_CEILING: Grade = 'C+'; // must NOT clear this (i.e. C, C-, D+, D, D-, or F)
 
 const GRADE_ORDER: Grade[] = ['F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+', 'S'];
 const gradeAtLeast = (g: Grade, min: Grade) => GRADE_ORDER.indexOf(g) >= GRADE_ORDER.indexOf(min);

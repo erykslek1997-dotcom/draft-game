@@ -1,20 +1,47 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
-import { rankTeams, type ScoreBreakdown } from '../engine/scoring';
+import { rankTeams } from '../engine/scoring';
 import { evaluateLeague } from '../engine/leagueSimulation';
 import { STARTER_SLOTS } from '../engine/positions';
-import { allAssignments, benchWithMinutes } from '../engine/rotation';
+import { allAssignments, benchWithMinutes, primaryStarters } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
 import type { DraftHistoryEntry, Rotation, Team } from '../engine/types';
 import { teamLabel } from '../engine/teamNames';
 import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+import { displayTalentForSpan } from '../engine/grades';
+import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing } from '../engine/spacing';
 import { computeDurability } from '../engine/durability';
 import { projectedNetRating } from '../engine/netRatingProjection';
+import { generateRosterInsights } from '../engine/insights';
+import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
 import FeedbackToggle, { type FeedbackEntry } from './FeedbackToggle';
 import RotationBuilder from './RotationBuilder';
-import { naturalPosition } from '../engine/naturalPosition';
+// 2026-08-16, user's own ask ("dodasz to też na ostatni ekran ocen?"): reuses the exact same
+// hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
+// safe to import directly (not lazy) since GameShell already bundles DraftBoard and this file
+// together as siblings, so nothing about the app's existing load-time split changes.
+import { pickStatTip } from './DraftBoard';
+import type { PlayerSpan } from '../data/schema';
+
+/**
+ * 2026-08-15, user-reported: the Rotation/Bench bracket tag next to a player's row used to read
+ * `naturalPosition(playerName)` — a whole-career majority-vote label (naturalPosition.ts), built
+ * from the FULL pool of that person's spans, not the ONE span actually drafted here. That's a
+ * real, deliberate feature for a different purpose (a stable identity cue — see that file's own
+ * docstring), but sitting next to a specific rotation slot it reads as "this player's position,"
+ * and disagrees with the SPECIFIC span's own `primaryPosition`/`secondaryPositions` whenever a
+ * person's early/late-career tag differs from their overall-career majority (confirmed directly:
+ * Magic Johnson's 1981-83 span is primary SG/secondary PG in the data, but naturalPosition() reads
+ * "PG/SG" from his whole career — exactly the "why isn't Magic at PG" confusion this was root-
+ * caused to earlier in the same investigation). Shows the actual drafted span's own tag instead —
+ * the one number that really drives `positionFitMultiplier`/rotation eligibility for THIS
+ * assignment, so the bracket can never again disagree with why a player is slotted where he is.
+ */
+function spanPositionTag(player: PlayerSpan): string {
+  return [player.primaryPosition, ...player.secondaryPositions].join('/');
+}
 
 // Lazy, matching App.tsx's own lazy() call for this exact component (see GameShell.tsx's
 // lazy-loading docstring) — a static import here would bundle DraftPoolBrowser (plus its own
@@ -86,105 +113,6 @@ function ScoreChip({ label, value }: { label: string; value: number }) {
       <span className="score-chip-value">{value}</span>
     </span>
   );
-}
-
-/**
- * `breakdown.notes` (scoring.ts) is a flat `string[]` with no strength/concern tag on either the
- * type or the data — every note is written as a plain, human-readable sentence. Splitting the
- * "Why" list into two columns (the user's own ask, motivated by "Nic Claxton underplayed"/"Over
- * their tier's minutes ceiling" reading identically to genuine praise in one flat bullet list) is
- * done here as a pure presentation-layer keyword heuristic, NOT a change to `scoring.ts` — every
- * one of these substrings was taken directly from that file's own `notes.push(...)` call sites
- * (see its own docstring for the full list), not guessed. Same "profile rule, not a claim of
- * perfect precision" tradeoff this project already accepts for `isSixthManProfile`/
- * `highVolumeNonElitePenalty` — a genuinely ambiguous note (rare in practice; scoring.ts's own
- * notes read as clearly one or the other) falls back to "strength" rather than being silently
- * dropped.
- */
-const CONCERN_KEYWORDS = [
-  'no go-to',
-  // 'are redundant' (Starters ARE redundant), not bare 'redundant' — the latter also matched two
-  // genuinely POSITIVE notes via negation ('not redundant offense', 'no redundant isolation usage
-  // needed'), a real false-positive caught in browser verification, not a hypothetical.
-  'are redundant',
-  'compete for touches',
-  'little value',
-  'no plus shooters',
-  'spacing risk',
-  'nobody to punish',
-  'non-existent',
-  'genuinely thin',
-  'liability',
-  'inefficient',
-  'out of natural position',
-  'below natural position',
-  'underplayed',
-  'minutes ceiling',
-  'weak starter',
-  'halved',
-  'overworked',
-  'incomplete',
-  'stall',
-  'cramped',
-];
-
-function isConcernNote(note: string): boolean {
-  const lower = note.toLowerCase();
-  return CONCERN_KEYWORDS.some((kw) => lower.includes(kw));
-}
-
-/**
- * 2026-08-15, user-reported (real screenshot): a team with a genuinely weak score chip (Spacing
- * ~50, below-average) can still show a near-empty Concerns column, because `scoring.ts`'s own
- * `notes` array is threshold-gated per check — a mediocre-but-not-extreme score doesn't always
- * clear whatever bar that specific check uses to push a note at all, positive OR negative.
- * `isConcernNote` above can only classify notes that already exist; it can't invent one for a
- * real weak number nobody wrote a sentence about.
- *
- * This synthesizes a concern directly off the score chip itself — scoped to the four dimensions a
- * human reader would recognize as "explained by a note when something's wrong" (Offense/Defense/
- * Spacing/Rotation; Talent and Fit are excluded: Talent has no note-generating check of its own to
- * compare against, and Fit IS the composite most of `notes` already comes from, so a low Fit score
- * is essentially always already covered by real notes above).
- *
- * Two calibration passes, the second a real correction of the first (checked live against 16
- * real teams in one drafted game, not just the one motivating screenshot):
- * 1. First shipped gated on `scoreBand<=2` (<33, "bottom third") and "already covered" checked
- *    against the full `notes` list (strengths included). Measured: only 2 of 96 team-dimension
- *    pairs across all 16 teams even cleared that bar, and both already had a real matching note —
- *    the synthetic fallback never actually fired once in a real draft, including for the exact
- *    Spacing~42-52 range the original screenshot showed (band 3, not band 2).
- * 2. Loosened to `scoreBand<=3` (<50, "below average") and "already covered" checked against only
- *    the real CONCERN notes specifically (a positive note mentioning "shooters" doesn't explain
- *    away a mediocre Spacing number the way an actual concern would). Re-checked against the same
- *    16 teams: now fires for ~7 genuinely under-explained cases (including the reporter's own
- *    team, Spacing 42) while correctly staying silent wherever a real concern already covers the
- *    dimension (e.g. Spacing 30 with "Only 1 plus shooter... (spacing risk)" already present).
- */
-const DIMENSION_CONCERN_KEYWORDS: Record<string, string[]> = {
-  Offense: ['creation', 'isolation', 'touches', 'shot creator', 'stall'],
-  Defense: ['defens', 'rim', 'perimeter', 'shell'],
-  Spacing: ['spac', 'shooter', 'floor', 'gravity', 'cramped'],
-  Rotation: ['position', 'underplayed', 'minutes ceiling', 'overworked', 'incomplete', 'halved'],
-};
-
-function syntheticLowScoreConcerns(breakdown: ScoreBreakdown, existingConcerns: string[]): string[] {
-  const dims: [string, number][] = [
-    ['Offense', breakdown.offenseScore],
-    ['Defense', breakdown.defenseScore],
-    ['Spacing', breakdown.spacingScore],
-    ['Rotation', breakdown.rotationScore],
-  ];
-  const lowerConcerns = existingConcerns.map((n) => n.toLowerCase());
-  const out: string[] = [];
-  for (const [label, score] of dims) {
-    if (scoreBand(score) > 3) continue;
-    const keywords = DIMENSION_CONCERN_KEYWORDS[label];
-    const alreadyCovered = lowerConcerns.some((n) => keywords.some((kw) => n.includes(kw)));
-    if (alreadyCovered) continue;
-    out.push(`${label} sits below average for this roster (${score}/100) — no existing concern explains why, but the number itself is a real soft spot.`);
-  }
-  return out;
 }
 
 function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): TeamFeedback {
@@ -465,7 +393,10 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
   }
 
   return (
-    <div className="results-screen">
+    // 2026-08-16, user's own ask: same fixed-dark broadcast board as the Draft screen — see the
+    // `.at-shell` token-aliasing comment in App.css for how the rest of this file's existing
+    // classes (never touched here) pick up the dark palette just by being nested inside this.
+    <div className="results-screen at-shell">
       <h2>Final Power Ranking</h2>
       <button className="secondary-btn" onClick={() => setShowBrowser(true)}>
         Przeglądaj wszystkich graczy
@@ -494,6 +425,7 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
       {ranked.map(({ team, breakdown, rank }) => {
         const shownTeam = displayTeam(team);
         const assignments = allAssignments(shownTeam);
+        const starterKeys = new Set(primaryStarters(shownTeam).map((entry) => `${entry.slot}|${entry.player.id}`));
         const bench = benchWithMinutes(shownTeam);
         const netRating = projectedNetRating(shownTeam);
         const leagueEvalRow = leagueEvalByTeamId.get(team.id);
@@ -502,9 +434,14 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         const isEditingRotation = editingRotationTeamId === team.id;
         const isExpanded = expandedTeamIds.has(team.id);
         const totalFga = team.roster.reduce((sum, p) => sum + p.fga, 0);
-        const strengths = breakdown.notes.filter((n) => !isConcernNote(n));
-        const realConcerns = breakdown.notes.filter(isConcernNote);
-        const concerns = [...realConcerns, ...syntheticLowScoreConcerns(breakdown, realConcerns)];
+        // 2026-08-15: Strengths/Concerns text now comes from the deterministic insight engine
+        // (insights.ts + insightMapper.ts) instead of the old `breakdown.notes` split +
+        // `syntheticLowScoreConcerns` catch-all — see insights.ts's own docstring for why. The
+        // actual SCORE (`breakdown`/`overall`/etc.) is untouched; this only replaces the prose.
+        // Only computed for expanded teams (the notes panel is the one thing that reads it) —
+        // `buildTeamFeatureSnapshot` does real per-starter pool scans, not free enough to run
+        // unconditionally for all `ranked.length` teams on every render.
+        const insights = isExpanded ? generateRosterInsights(buildTeamFeatureSnapshot(shownTeam)) : null;
         return (
           <div key={team.id} className={`team-result rank-${rank} ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}>
             <button className="team-result-header" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
@@ -528,6 +465,7 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
               <div className="team-result-body">
                 <div className="subscores">
                   <ScoreChip label="Talent" value={breakdown.talentScore} />
+                  <ScoreChip label="Bench Depth" value={breakdown.benchDepthScore} />
                   <ScoreChip label="Offense" value={breakdown.offenseScore} />
                   <ScoreChip label="Defense" value={breakdown.defenseScore} />
                   <ScoreChip label="Spacing" value={breakdown.spacingScore} />
@@ -584,20 +522,28 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                     <strong>Rotation</strong>
                     <ul className="rotation-slot-groups">
                       {STARTER_SLOTS.map((slot) => {
-                        const entries = assignments.filter((a) => a.slot === slot).sort((a, b) => b.minutes - a.minutes);
+                        const entries = assignments
+                          .filter((a) => a.slot === slot)
+                          .sort((a, b) => {
+                            const aIsStarter = starterKeys.has(`${a.slot}|${a.player.id}`);
+                            const bIsStarter = starterKeys.has(`${b.slot}|${b.player.id}`);
+                            if (aIsStarter !== bIsStarter) return aIsStarter ? -1 : 1;
+                            return b.minutes - a.minutes;
+                          });
                         return (
                           <li key={slot} className="rotation-slot-group">
                             <span className="rotation-slot-label">{slot}</span>
                             <ul className="rotation-slot-entries">
                               {entries.map((e) => (
                                 <li key={e.player.id} className="player-row">
-                                  <span className="player-row-name">
-                                    {e.player.playerName} ({e.player.spanLabel}) [{naturalPosition(e.player.playerName)}]
+                                  <span className="player-row-name at-name-tip" tabIndex={0} data-tip={pickStatTip(e.player)}>
+                                    {e.player.playerName} ({e.player.spanLabel}) [{spanPositionTag(e.player)}]
+                                    {starterKeys.has(`${e.slot}|${e.player.id}`) && <span className="starter-badge">Starter</span>}
                                   </span>
                                   <span className="player-row-meta">
                                     <span className="mini-fact">{e.minutes} min</span>
                                     <span className="mini-fact">FGA {e.player.fga.toFixed(1)}</span>
-                                    <ScoreChip label="TAL" value={computeTalent(e.player)} />
+                                    <ScoreChip label="TAL" value={displayTalentForSpan(tierContextFor(e.player))} />
                                   </span>
                                   <FeedbackToggle
                                     entry={fb.playerNotes[e.player.id]}
@@ -617,13 +563,13 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                     <ul className="rotation-slot-entries">
                       {bench.map(({ player, minutes }) => (
                         <li key={player.id} className="player-row">
-                          <span className="player-row-name">
-                            {player.playerName} ({player.spanLabel}) [{naturalPosition(player.playerName)}]
+                          <span className="player-row-name at-name-tip" tabIndex={0} data-tip={pickStatTip(player)}>
+                            {player.playerName} ({player.spanLabel}) [{spanPositionTag(player)}]
                           </span>
                           <span className="player-row-meta">
                             <span className="mini-fact">{minutes} min</span>
                             <span className="mini-fact">FGA {player.fga.toFixed(1)}</span>
-                            <ScoreChip label="TAL" value={computeTalent(player)} />
+                            <ScoreChip label="TAL" value={displayTalentForSpan(tierContextFor(player))} />
                           </span>
                           <FeedbackToggle
                             entry={fb.playerNotes[player.id]}
@@ -635,26 +581,28 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                     </ul>
                   </div>
                 </div>
-                <div className="notes notes-split">
-                  <div className="notes-column notes-strengths">
-                    <strong>✓ Strengths</strong>
-                    <ul>
-                      {strengths.map((note, i) => (
-                        <li key={i}>{note}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  {concerns.length > 0 && (
-                    <div className="notes-column notes-concerns">
-                      <strong>⚠ Concerns</strong>
+                {insights && (
+                  <div className="notes notes-split">
+                    <div className="notes-column notes-strengths">
+                      <strong>✓ Strengths</strong>
                       <ul>
-                        {concerns.map((note, i) => (
-                          <li key={i}>{note}</li>
+                        {insights.strengths.map((insight) => (
+                          <li key={insight.id}>{insight.message}</li>
                         ))}
                       </ul>
                     </div>
-                  )}
-                </div>
+                    {insights.concerns.length > 0 && (
+                      <div className="notes-column notes-concerns">
+                        <strong>⚠ Concerns</strong>
+                        <ul>
+                          {insights.concerns.map((insight) => (
+                            <li key={insight.id}>{insight.message}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="draft-order">
                   <strong>Draft Order</strong>
                   <ol>

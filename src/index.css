@@ -4,9 +4,16 @@
   --bg: #fff;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
+  /* 2026-08-16, user's own report ("brakuje koloru w całym projekcie... smutne"): this was an
+     unrelated bright purple, used sparingly (a couple of active-state borders/buttons) while
+     everything else stayed grey/black/white — recoloured to the same warm bronze family the
+     Draft-tab tier dots and the `.at-shell` redesign already committed to
+     (see draft_game_ui_redesign_spec memory), so the whole app reads as one accent, not a
+     scattered purple plus an unrelated separately-scoped amber. Muted, not vivid, per the
+     explicit "nie musi być mocny" ask. */
+  --accent: #8a5a2b;
+  --accent-bg: rgba(138, 90, 43, 0.1);
+  --accent-border: rgba(138, 90, 43, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
@@ -37,9 +44,9 @@
     --bg: #16171d;
     --border: #2e303a;
     --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
+    --accent: #d3a05a;
+    --accent-bg: rgba(211, 160, 90, 0.15);
+    --accent-border: rgba(211, 160, 90, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;

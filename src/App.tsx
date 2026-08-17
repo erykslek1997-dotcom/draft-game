@@ -1,5 +1,10 @@
 import { lazy, Suspense, useState } from 'react';
 import './App.css';
+// Plain, data-free module (place/mascot string arrays + a shuffle helper, no engine/dataset
+// imports of its own — verified directly, not assumed) — safe to pull into the intro screen's
+// eager bundle without regressing the "zero engine dependency until Start Draft" load-time split
+// this file's own docstrings already care about (see DISPLAY_CAP_LIMIT's comment above).
+import { randomTeamNames } from './engine/teamNames';
 
 // Lazy-loaded so the intro screen renders instantly instead of blocking on the full engine
 // import graph (~10MB of player/DARKO/WOWYR data, pulled in transitively by computeTalent's
@@ -51,24 +56,41 @@ function App() {
   // since the flag has to exist on `DraftState` from the very first pick (see draft.ts's own
   // docstring on why this is a separate flag, not just flipping every team's `isHuman`).
   const [commissionerMode, setCommissionerMode] = useState(false);
+  // 2026-08-16, user's own ask ("żeby wiedział jaką drużynę ma" — so they can actually recognize
+  // their own team): the human's own team used to always get one of the same random "Place
+  // Mascot" names as the 15 CPU teams, indistinguishable from them anywhere it's listed (Overview
+  // grid, the new Draft Lottery screen). Pre-filled with a real random suggestion (not a blank
+  // field) so a player who doesn't care can just leave it — the 🎲 button next to the input
+  // re-rolls a new one without retyping. Threaded through GameShell -> createDraft ->
+  // createInitialTeams (draft.ts), which overrides the random draw for whichever slot ends up
+  // human with this exact string.
+  // 2026-08-16, further follow-up (this session): the visible name-editing UI moved entirely to
+  // the Draft Lottery's "Your team" step (DraftLottery.tsx) — this still generates the initial
+  // random suggestion `createDraft` needs the moment GameShell mounts, but nothing on THIS screen
+  // ever changes it anymore, so there's no setter to expose here.
+  const [teamName] = useState(() => randomTeamNames(1)[0]);
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <h1>All-Time Draft</h1>
-        <p className="tagline">
-          Build the best-<em>fitting</em> all-time roster under a {DISPLAY_CAP_LIMIT} FGA cap — not just the best
-          players.
-        </p>
-      </header>
+      {/* 2026-08-16, user's own report: the intro screen's big "All-Time Draft" title and the
+          in-draft shell's own "All-Time Draft" wordmark (DraftBoard.tsx's `.at-wordmark`) both
+          rendered at once once a draft started, since this header used to show on every view
+          unconditionally — same name, twice, one above the other. Scoping it to the intro view
+          leaves exactly one: the big title on the splash screen, the compact wordmark once you're
+          actually inside a draft. Also trims persistent chrome above the game controls during
+          play, which was part of the same "draft bez dodatkowych napisów" ask. */}
+      {view === 'intro' && (
+        <header className="app-header">
+          <h1>All-Time NBA Draft</h1>
+          <p className="tagline">
+            Build the best-<em>fitting</em> all-time roster under a {DISPLAY_CAP_LIMIT} FGA cap — not just the best
+            players.
+          </p>
+        </header>
+      )}
 
       {view === 'intro' && (
         <div className="intro-screen">
-          <p>
-            Draft a 9-player all-time roster against 15 CPU teams, one pick at a time, under an FGA cap that forces
-            real trade-offs. Once the draft ends, you'll set your rotation's minutes, and the judge will grade every
-            roster — including yours.
-          </p>
           {!FORCE_PLAYER_MODE && (
             <div className="mode-select" role="radiogroup" aria-label="Mode">
               {MODE_OPTIONS.map((opt) => (
@@ -92,6 +114,14 @@ function App() {
               Commissioner Mode — control all 16 teams yourself, with a reasoning note per pick
             </label>
           )}
+          {/* 2026-08-16, user's own follow-up correction, then a same-day second correction: "Your
+              team" (the name input) moved off this screen entirely too, same reasoning as How to
+              Play just below — it only makes sense once Player Mode is the choice, and the splash
+              screen should stay a splash screen. Both now live together on the Draft Lottery's own
+              pre-reveal step (DraftLottery.tsx's `stage === 'intro'`), which runs right after
+              "Start Draft" — see that component's own docstring. `teamName` is still generated
+              here (silently, no visible UI) so `createDraft` has a real starting name the moment
+              GameShell mounts; the Lottery screen edits it in place via `onRenameTeam`. */}
           <button className="primary-btn" onClick={() => setView('game')}>
             Start Draft
           </button>
@@ -103,7 +133,7 @@ function App() {
 
       {view === 'game' && (
         <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
-          <GameShell mode={mode} commissionerMode={commissionerMode} onExit={() => setView('intro')} />
+          <GameShell mode={mode} commissionerMode={commissionerMode} humanTeamName={teamName} onExit={() => setView('intro')} />
         </Suspense>
       )}
 

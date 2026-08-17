@@ -14,12 +14,17 @@ import { CAP_LIMIT } from '../engine/positions';
 import type { PlayerSpan } from '../data/schema';
 import type { Rotation, Team } from '../engine/types';
 import DraftBoard from './DraftBoard';
-import SpanSelectionScreen from './SpanSelectionScreen';
-import RotationBuilder from './RotationBuilder';
+import DraftLottery from './DraftLottery';
 import ResultsScreen from './ResultsScreen';
 import type { FeedbackEntry } from './FeedbackToggle';
 
-type Phase = 'draft' | 'spanSelection' | 'rotation' | 'results';
+// 2026-08-16, user's own ask: span selection ("Choose Each Player's Span") and rotation-building
+// stopped being their own dedicated full-screen phases here — that whole "screen" is gone, per
+// the user's own words ("ten ekran wyrzucamy"). Both now happen INSIDE DraftBoard's Team tab
+// (see that file's own docstring on the merged span+rotation section), reachable from the very
+// first pick rather than gated until the draft ends, ending in one "Submit Team" action
+// (`handleSubmitTeam` below) instead of two separate confirm screens.
+type Phase = 'lottery' | 'draft' | 'results';
 
 interface Props {
   mode: 'developer' | 'player';
@@ -30,6 +35,12 @@ interface Props {
    * describing draft PICKS, not building 16 full rotations by hand. See draft.ts's own
    * `commissionerMode` docstring for why this is a separate flag from `isHuman`. */
   commissionerMode: boolean;
+  /** 2026-08-16, user's own ask: whatever the human typed/randomized on the intro screen for
+   * their own team's name — passed straight through to `createDraft` so THIS team (whichever
+   * random slot it lands on) gets it instead of the normal random "Place Mascot" draw. Empty/
+   * unset falls through to that random draw, same as always (see `createInitialTeams`'s own
+   * docstring on the trim-and-fallback rule). */
+  humanTeamName?: string;
   /** Returns the app to the intro screen — same "no confirmation" testing-convenience shape as
    * the old in-component Reset button had, just lifted up so the intro screen (which doesn't
    * load this module at all) can unmount it entirely. */
@@ -51,9 +62,12 @@ const AI_SPEEDS = [
 ] as const;
 const DEFAULT_AI_SPEED_INDEX = 1;
 
-export default function GameShell({ mode, commissionerMode, onExit }: Props) {
-  const [draftState, setDraftState] = useState<DraftState>(() => createDraft(commissionerMode));
-  const [phase, setPhase] = useState<Phase>('draft');
+export default function GameShell({ mode, commissionerMode, humanTeamName, onExit }: Props) {
+  const [draftState, setDraftState] = useState<DraftState>(() => createDraft(commissionerMode, undefined, humanTeamName));
+  // 2026-08-16, user's own ask: a visible lottery-reveal moment for the already-randomized slot
+  // assignment (see DraftLottery.tsx's own docstring — the randomization itself isn't new, only
+  // this reveal step is) runs once, right after Start Draft, before the real board appears.
+  const [phase, setPhase] = useState<Phase>('lottery');
   const [finalTeams, setFinalTeams] = useState<Team[] | null>(null);
   const [aiSpeedIndex, setAiSpeedIndex] = useState(DEFAULT_AI_SPEED_INDEX);
   const aiSpeed = AI_SPEEDS[aiSpeedIndex];
@@ -101,12 +115,19 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
     return () => clearTimeout(timer);
   }, [draftState, phase, aiSpeed.delayMs]);
 
-  // Once the draft finishes, resolve Phase 2 (span selection) for every team: AI rosters are
-  // re-optimized immediately via the same knapsack `optimizeSpans` used everywhere else (capped
-  // at CAP_LIMIT, matching the cap they drafted under), then have their rotation auto-built; the
-  // human's roster is left as-is (still peak spans) for them to work through on the next screen.
+  // Once the draft finishes, AI rosters are re-optimized once via the same knapsack
+  // `optimizeSpans` used everywhere else (capped at CAP_LIMIT, matching the cap they drafted
+  // under), then have their rotation auto-built. The human's roster is left as-is (still peak
+  // spans) — they work through their own spans + rotation in DraftBoard's Team tab instead (see
+  // that file's own docstring), not on a separate post-draft screen anymore.
+  // `aiTeamsFinalized` is a one-shot guard, not a `phase` check like this effect used to use:
+  // `phase` no longer changes away from 'draft' the moment the draft completes (the human keeps
+  // working in the Team tab, still phase 'draft', until they hit Submit), so without a separate
+  // guard this effect would re-fire on every render once `draftState.complete` goes true —
+  // each firing produces a NEW `draftState` object, which would just re-trigger itself forever.
+  const [aiTeamsFinalized, setAiTeamsFinalized] = useState(false);
   useEffect(() => {
-    if (phase === 'draft' && draftState.complete) {
+    if (draftState.complete && !aiTeamsFinalized) {
       setDraftState((s) => ({
         ...s,
         teams: s.teams.map((t) => {
@@ -115,13 +136,15 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
           return { ...t, roster, rotation: autoAssignRotation(roster) };
         }),
       }));
-      setPhase('spanSelection');
+      setAiTeamsFinalized(true);
     }
-  }, [draftState, phase]);
+  }, [draftState.complete, aiTeamsFinalized]);
 
-  function handleSpanSelectionConfirmed(roster: PlayerSpan[]) {
-    setDraftState((s) => ({ ...s, teams: s.teams.map((t) => (t.isHuman ? { ...t, roster } : t)) }));
-    setPhase('rotation');
+  // 2026-08-16, user's own ask: the human's own team name can be edited from the Draft Lottery's
+  // "Your team" step (DraftLottery.tsx's `stage === 'intro'`) — GameShell owns `draftState`, so
+  // the actual rename happens here rather than in that (deliberately presentational) component.
+  function handleRenameHumanTeam(name: string) {
+    setDraftState((s) => ({ ...s, teams: s.teams.map((t) => (t.isHuman ? { ...t, name } : t)) }));
   }
 
   function handlePick(playerId: string) {
@@ -154,8 +177,12 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
     setPhase('results');
   }
 
-  function handleRotationConfirmed(rotation: Rotation) {
-    const teams = draftState.teams.map((t) => (t.isHuman ? { ...t, rotation } : t));
+  // 2026-08-16, replaces the old two-step `handleSpanSelectionConfirmed`/`handleRotationConfirmed`
+  // pair: DraftBoard's Team tab now collects both the human's final spans AND their rotation
+  // itself (see that file's own docstring), and hands both back here at once from a single
+  // Submit action — this is the only place either ever gets written into `draftState`/`finalTeams`.
+  function handleSubmitTeam(roster: PlayerSpan[], rotation: Rotation) {
+    const teams = draftState.teams.map((t) => (t.isHuman ? { ...t, roster, rotation } : t));
     setFinalTeams(teams);
     setPhase('results');
   }
@@ -166,7 +193,6 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
     onExit();
   }
 
-  const humanTeam = draftState.teams.find((t) => t.isHuman)!;
   // Only meaningful mid-draft: once the pool physically runs dry (fewer real players left than
   // the human still needs), their roster can never reach 9 no matter what happens from here.
   const rosterImpossible = phase === 'draft' && isHumanRosterImpossible(draftState);
@@ -215,6 +241,14 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
           </button>
         </div>
       )}
+      {phase === 'lottery' && (
+        <DraftLottery
+          teams={draftState.teams}
+          mode={mode}
+          onDone={() => setPhase('draft')}
+          onRenameTeam={handleRenameHumanTeam}
+        />
+      )}
       {phase === 'draft' && (
         <DraftBoard
           state={draftState}
@@ -224,12 +258,9 @@ export default function GameShell({ mode, commissionerMode, onExit }: Props) {
           onPickReactionChange={handlePickReactionChange}
           pickReasoning={pickReasoning}
           onPickReasoningChange={handlePickReasoningChange}
+          onSubmitTeam={handleSubmitTeam}
         />
       )}
-      {phase === 'spanSelection' && (
-        <SpanSelectionScreen roster={humanTeam.roster} onConfirm={handleSpanSelectionConfirmed} />
-      )}
-      {phase === 'rotation' && <RotationBuilder roster={humanTeam.roster} onConfirm={handleRotationConfirmed} />}
       {phase === 'results' && finalTeams && (
         <ResultsScreen
           teams={finalTeams}

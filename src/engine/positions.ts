@@ -4,8 +4,18 @@ import { normalizePlayerName } from '../data/schema';
 export const CAP_LIMIT = 100.9;
 
 export const STARTER_SLOTS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
-export const BENCH_SLOT_COUNT = 4;
-export const ROSTER_SIZE = STARTER_SLOTS.length + BENCH_SLOT_COUNT; // 9
+/**
+ * 2026-08-15, user's explicit choice (weighed against the alternative "just raise CAP_LIMIT by
+ * ~5" — this session's whole "wasted 9th roster spot" investigation showed the last bench pick
+ * routinely ends up a near-0-FGA/0-minute player, ~25-44% of teams depending on which fix pass —
+ * so structurally removing that spot instead of trying to make it more useful): 4 → 3. Every
+ * other roster-size-dependent constant in this file (`ROSTER_SIZE` below) and downstream
+ * (`aiDrafter.ts`'s `NEED_RAMP_ROSTER_SIZE`/`MARGINAL_VALUE_ROSTER_SIZE_CEILING`, `draft.ts`'s
+ * `ROUNDS`) derives from this rather than hardcoding "9"/"8", so this one change is the actual
+ * single source of truth for roster size.
+ */
+export const BENCH_SLOT_COUNT = 3;
+export const ROSTER_SIZE = STARTER_SLOTS.length + BENCH_SLOT_COUNT; // 8
 /** Lives here (not draft.ts) so it's available without a circular import wherever the
  * shared cap-legality math needs to know how many teams are contending for the same pool. */
 export const TEAM_COUNT = 16;

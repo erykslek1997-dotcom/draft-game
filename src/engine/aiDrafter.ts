@@ -7,12 +7,13 @@ import {
   TEAM_COUNT,
   isPickCapLegal,
   isRealPositionFit,
+  isPositionEligible,
   buildCheapestLookup,
   canFillFromLookup,
 } from './positions';
 import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from './talent';
 import { displayTalentForSpan, tierContextFor } from './grades';
-import { autoAssignRotation, projectedStarterValue, MAX_MINUTES_PER_PLAYER } from './rotation';
+import { autoAssignRotation, projectedStarterValue, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
 import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing } from './spacing';
@@ -226,6 +227,12 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
   return GREATEST_PEAK_TIER_BONUS[entry.tier];
 }
 
+/** See the "steal" safety-net's own comment on its one use site (`pickForAi`) for the full case.
+ * Measured against Kevin Garnett 2002-04's own real observed range (picks 9-15 across 15 fresh
+ * drafts, `scripts` — temp, not kept) — comfortably past the worst legitimate lottery outcome
+ * seen, so this only ever fires on a genuine tail case, never on ordinary variance. */
+const STEAL_PICK_THRESHOLD = 20;
+
 /**
  * 2026-08-06, user-reported (playtest: "centers playing at other positions... może brakuje
  * graczy na innych pozycjach w bazie?"). Root-caused, not guessed — measured directly
@@ -256,11 +263,47 @@ const REAL_FIT_REDUNDANCY_THRESHOLD = 2;
 const REAL_FIT_REDUNDANCY_DISCOUNT = 0.4;
 const MAX_REAL_FIT_REDUNDANCY_DISCOUNT = 1.5;
 
+/**
+ * 2026-08-16, user's explicit strategic principle ("centra i tak się znajdą" — teams should
+ * prioritize backup PG/SG/SF/PF first, since a real backup center can always be found later):
+ * root-caused via a direct diagnostic (`scripts/_checkZeroMinutePlayers.ts`, deleted after use,
+ * 4x16 teams) that a THIRD real-fit C (past the general redundancy threshold above) drafted onto a
+ * roster still ends up at literally ZERO real minutes ~3% of the time (Marcus Camby drafted behind
+ * an already-covered Rudy Gobert, matching the user's own screenshot exactly) — real cap spent for
+ * nothing. The general `samePositionRedundancyDiscount` above already exists for exactly this and
+ * fires the same way at every position, but its 1.5-point cap on `need` isn't enough to outweigh a
+ * genuinely high-TAL redundant center's own raw talent edge (the same "need is a MULTIPLIER on
+ * structurally higher big-man TAL" dynamic already root-caused twice this session, for PG bench
+ * share and for bench self-creators).
+ *
+ * Deliberately position-SPECIFIC this time, not a reopening of the general mechanism's own
+ * "not center-specific" design choice — every measurement this session (cheap-tier pool inclusion,
+ * zero-real-fit-depth rate, this zero-minute check) consistently shows C as the one position that's
+ * genuinely, structurally deep and recoverable late, unlike PG/SF's real scarcity. A flat
+ * ACROSS-THE-BOARD "prefer non-C" bonus was already tried once this session and reverted for
+ * overcorrecting (severe-backup rate 18.8%->23.4%, guards forced into a newly-EMPTY C slot) — this
+ * is narrower: it only strengthens the EXISTING redundancy discount specifically for C, still gated
+ * on the same `REAL_FIT_REDUNDANCY_THRESHOLD`, so it can never fire on a roster that doesn't
+ * already have 2 real C fits (i.e., it can never cause C to go empty — the exact failure mode of
+ * the reverted attempt).
+ *
+ * Measured (`scripts/_checkCRedundancyEffect.ts`, deleted after use, 4x16 teams): zero-total-
+ * minute drafted players dropped 0.39%->0.20% (halved), while C's own zero-real-fit-depth rate
+ * stayed at 0.0% — confirming the exact failure mode of the earlier flat attempt did NOT
+ * reproduce here. Severe-backup rate held in the same healthy band (7.8%->9.4%, within this
+ * session's run-to-run noise). `npx tsc -b`/`npm test` clean.
+ */
+const C_REDUNDANCY_EXTRA_DISCOUNT_SCALE = 1.5;
+const MAX_C_REDUNDANCY_EXTRA_DISCOUNT = 4;
+
 function samePositionRedundancyDiscount(roster: PlayerSpan[], p: PlayerSpan): number {
   const realFits = roster.filter((r) => isRealPositionFit(r, p.primaryPosition)).length;
   if (realFits < REAL_FIT_REDUNDANCY_THRESHOLD) return 0;
   const excess = realFits - REAL_FIT_REDUNDANCY_THRESHOLD + 1;
-  return Math.min(MAX_REAL_FIT_REDUNDANCY_DISCOUNT, excess * REAL_FIT_REDUNDANCY_DISCOUNT);
+  const base = Math.min(MAX_REAL_FIT_REDUNDANCY_DISCOUNT, excess * REAL_FIT_REDUNDANCY_DISCOUNT);
+  if (p.primaryPosition !== 'C') return base;
+  const extra = Math.min(MAX_C_REDUNDANCY_EXTRA_DISCOUNT, excess * C_REDUNDANCY_EXTRA_DISCOUNT_SCALE);
+  return base + extra;
 }
 
 interface NeedContext {
@@ -269,6 +312,20 @@ interface NeedContext {
    * (no starter) so bench-round picks still have a positional signal to follow once the
    * starting five is set, instead of going position-blind for the remaining 3-4 rounds. */
   thinSlots: Position[];
+  /** 2026-08-15, user-reported (draft exports: Amir Johnson drafted as a duplicate PF while
+   * Gerald Wallace — already on the roster, SF primary — was already realistically covering PF
+   * minutes; same pattern with Dāvis Bertāns drafted over an already-rostered Wally Szczerbiak).
+   * Subset of `thinSlots` above where the roster already has at least one player who reaches the
+   * slot via the SAME adjacent-fallback tier `autoAssignRotation`'s own `REALISTIC_TIERS` uses to
+   * fill real bench minutes there (`isPositionEligible` true, `isRealPositionFit` false — a
+   * one-spot-away stretch, not a true primary/secondary fit). `thinSlots` itself stays untouched
+   * (it still needs to answer "does this slot have 2 REAL fits," a real roster-construction
+   * question independent of this), but the draft-time need bonus built from it was treating a
+   * slot backed by nothing beyond a loose fallback player exactly the same as one with genuinely
+   * nobody at all — routinely spending a late pick on a fully duplicate real-fit specialist
+   * instead of the team's actual biggest remaining gap (both real examples above: the redundant
+   * pick's FGA should have gone to a genuinely uncovered bench PG/PG-thin slot instead). */
+  looselyBackedThinSlots: Position[];
   /** Starters' minutes-weighted-equivalent average `computeSpacing` (0-100), 50 (neutral) for
    * an empty roster. 2026-08-07, user-reported (6 independent playtest teams: spacing scores
    * of ~40, including at least one — Detroit — with an otherwise well-chosen starting five,
@@ -409,16 +466,37 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
   // starter+backup pair already covered the full 48 minutes (a 3rd center, a 3rd SF/SG, etc.),
   // while the roster spot could have gone to an actually-uncovered position instead. Fixed to
   // match the comment's own math.
-  const MIN_ELIGIBLE_FOR_REAL_DEPTH = 2;
+  //
+  // 2026-08-15 SAME-DAY FOLLOW-UP, user-reported (real diagnostic: Jaren Jackson Jr. — PF starter,
+  // real C secondary, but `maxSustainableMinutes` only 30, already fully spent on his OWN PF
+  // slot — counted as C's "2nd real fit" purely by carrying the tag, with zero actual spare
+  // capacity to ever help there; C's real gap got covered by Mario Elie, an SF with NO real C fit
+  // at all, via true last-resort). Root cause: `eligibleCount` above only asks "does a real-fit
+  // body exist SOMEWHERE on the roster," never "is this slot's 48 minutes ACTUALLY coming from
+  // real-fit bodies in the rotation this exact roster already produces" — a real secondary tag on
+  // a starter who's fully consumed elsewhere is not real depth, just a nominal label. `slots`
+  // (this function's own first line) is the ACTUAL computed rotation for this roster — reusing it
+  // directly measures the true thing that matters (real minutes covered), not a proxy for it.
+  // User's own words, verbatim requirement: "MASZ 3 SPOTY NA ŁAWCE, TE 3 SPOTY MUSZĄ POKRYĆ 5
+  // POZYCJI" (3 bench spots MUST cover 5 positions) — a slot is only "not thin" once its real
+  // minutes, from real-fit players only, add up to the full game, not before.
   const thinSlots = STARTER_SLOTS.filter((slot) => {
     if (emptySlots.includes(slot)) return false;
-    const eligibleCount = roster.filter((p) => isRealPositionFit(p, slot)).length;
-    return eligibleCount < MIN_ELIGIBLE_FOR_REAL_DEPTH;
+    const realFitMinutes = slots[slot].reduce((sum, a) => {
+      const player = roster.find((p) => p.id === a.playerId);
+      return player && isRealPositionFit(player, slot) ? sum + a.minutes : sum;
+    }, 0);
+    return realFitMinutes < GAME_MINUTES;
   });
+  // See `NeedContext.looselyBackedThinSlots`'s own docstring.
+  const looselyBackedThinSlots = thinSlots.filter((slot) =>
+    roster.some((p) => isPositionEligible(p, slot) && !isRealPositionFit(p, slot)),
+  );
 
   return {
     emptySlots,
     thinSlots,
+    looselyBackedThinSlots,
     avgSpacing:
       starterPlayers.length === 0
         ? 50
@@ -813,12 +891,27 @@ const SELF_SUFFICIENT_USAGE_DAMPENING = 0.4;
  * all similar or larger magnitude. Scaled up to this value (paired with a near-full discount
  * waiver below) for 11.6% coverage — still a real, deliberate minority (a bench needs at most one
  * such player, and cap/position needs correctly still win when they're the more urgent gap), not
- * a forced-every-team outcome. Confirmed no regressions from this size at the same time
- * (`validateMultiTeamDraft.ts`: 0 stuck drafts across 4/8/12/16-team configs, off-position rate
- * 1.5-8.8% consistent with pre-existing ranges; `checkStarterVsBenchFga.ts`: bench FGA distribution
- * barely shifted, 23.8->24.1 avg total).
+ * a forced-every-team outcome.
+ *
+ * 2026-08-16, RAISED AGAIN, user-reported ("AI draftuje high TAL centra zamiast... kreacja na
+ * piłce" — a bench pick was a high-TAL big, Sabonis-type, TAL84, instead of a real on-ball
+ * creator): re-measured directly (`scripts/_checkBenchCreatorVsBig.ts`, deleted after use, 4x16
+ * teams) and found the OLD 1.2 magnitude was no longer enough — after this same session's other
+ * bench-round changes (dual-position coverage credit, `PG_BENCH_SCARCITY_BONUS`, the widened
+ * cheap-guard pool) shifted what else competes for the same picks, **71.9% of teams still ended
+ * the draft with literally zero real bench self-creator**, the exact symptom this bonus exists to
+ * prevent — same root cause as the PG case just above: `need` MULTIPLIES `talent`, and a genuine
+ * high-TAL big's raw advantage (60s-70s TAL for a real creator vs 80s+ for a big like Sabonis) was
+ * still large enough to beat a merely-larger need multiplier in a direct comparison. Grid-tested
+ * (not guessed) 2.5 and 4.0 against the same measurement: 2.5 dropped zero-coverage to 59.4%
+ * (a real, meaningful gain), 4.0 only reached 56.3% (steep diminishing returns past 2.5 — checked
+ * separately that pool depth isn't the bottleneck: 63 distinct real cheap self-creators exist in
+ * the draftPool, comfortably enough for 48 bench slots across 16 teams, so the residual ~56-60%
+ * reflects genuine per-pick competition/timing, not a supply shortage the bonus alone can fix).
+ * Landed on **2.5** — the efficient point on the curve, not the ceiling. Full regression pass
+ * (`npx tsc -b`, `npm test`) clean at this value.
  */
-const BENCH_SHOT_CREATOR_BONUS = 1.2;
+const BENCH_SHOT_CREATOR_BONUS = 2.5;
 /**
  * 2026-08-08, bench-shot-creator fix, option A (softened discount) — same
  * `NeedContext.lacksBenchShotCreator` signal, same measurement pass as `BENCH_SHOT_CREATOR_BONUS`
@@ -841,6 +934,49 @@ const BENCH_CREATOR_DISCOUNT_SOFTEN = 0.15;
  * new number.
  */
 const SIXTH_MAN_BONUS = 1.2;
+
+/**
+ * 2026-08-16, direction-2 follow-up to the `buildDraftPool.ts` cheap-guard/wing pool-widening fix
+ * (see that file's own `VALUE_PER_POSITION` docstring for the real archive-scarcity measurement
+ * that fix addressed). After widening the pool, re-measured actual bench-round (picks 6-8) pick
+ * behavior directly (`scripts/_checkBenchPickPositionBias.ts`, deleted after use, 6x16-team
+ * drafts): PG was BOTH the rarest bench pick (14.2% of bench slots, vs an even ~20% baseline) AND
+ * the weakest by average talent among what did get picked (avg TAL 49.4, vs C's 62.8 at similar
+ * average FGA cost — 6.4 vs 5.5). Root cause: the existing `emptySlots`/`thinSlots` bonus above is
+ * additive to `need`, but `need` is a MULTIPLIER on `talent` in the final value formula — a
+ * center's structural "free" TAL-per-FGA efficiency (established earlier this session: centers
+ * reach good TAL at low usage far more easily than guards, who need real touches to earn it) is
+ * large enough (the measured ~13-point TAL gap above) that an equal or even moderately larger need
+ * multiplier for a thin PG slot still loses to a simultaneously-thin C candidate's much higher raw
+ * talent. Scoped to PG alone, not SG/SF/PF too — those measured close to each other (17.7-26.7%
+ * share, TAL 54.2-55.9), only PG stood out as clearly, doubly underserved.
+ *
+ * Deliberately an EXTRA bonus on top of the existing emptySlots/thinSlots coverage gate, not a
+ * flat position-wide malus/bonus — the flat version was tried for this exact "bench needs
+ * stronger PG/SG/SF/PF, weaker C" ask once already this session and reverted after it overcorrected
+ * (severe-backup rate 18.8%->23.4%, guards forced into a now-EMPTY C backup slot — see the
+ * `inBenchRound` coverage-additive mechanism's own docstring above for the full history). This
+ * bonus only ever fires when PG is ALREADY a real, roster-specific gap (`emptySlots`/`thinSlots`
+ * membership, the same gate the surrounding bonus uses) — it never manufactures a preference for
+ * PG on a roster that doesn't actually need one, so it can't reproduce that failure mode.
+ *
+ * +1.5 chosen and verified by re-running the same measurement script with the bonus active, not
+ * guessed: PG bench share rose 14.2%->25.3% (avg TAL 49.4->56.7), while every other position
+ * stayed in a healthy, non-collapsed 16.7-19.8% band (C 22.2%->19.8%, still the single most
+ * common bench position by count in most individual runs — not starved). Cross-checked against
+ * the exact failure mode the earlier flat version caused: severe (not even loosely eligible)
+ * backup rate across 96 simulated teams was 12.5% — LOWER than the pre-this-bonus pool-widening-
+ * only baseline (18.8-32.8% across several measurement passes), and C's own backup real-fit rate
+ * stayed healthy at 75.5% (PG's own hit 100%, up from 53-60%) — the opposite of the old
+ * regression, where C specifically got starved by a broad guard preference.
+ */
+const PG_BENCH_SCARCITY_BONUS = 1.5;
+
+function benchPgScarcityBonus(pos: Position, needs: NeedContext): number {
+  if (pos !== 'PG') return 0;
+  if (needs.emptySlots.includes('PG') || needs.thinSlots.includes('PG')) return PG_BENCH_SCARCITY_BONUS;
+  return 0;
+}
 
 /** Boosts real defensive/two-way value once a self-sufficient engine covers offense alone —
  * the user's own "needs two-way players, not more offensive talent" framing for the Nash case. */
@@ -883,6 +1019,18 @@ function marginalStarterValue(roster: PlayerSpan[], baselineStarterValue: number
 }
 const MARGINAL_STARTER_DISCOUNT_SCALE = 0.5;
 const MAX_MARGINAL_STARTER_DISCOUNT = 20;
+/** See the 2026-08-15 comment on its one use site (the marginal-value shortlist loop below) for
+ * the full case (Bam Adebayo, 12.7 FGA for 12 real bench minutes).
+ * 2026-08-15, strengthened (0.4->0.6, 6->10), same day, user-reported follow-up: even a
+ * genuinely GOOD pick by the new real-coverage need signal (Domantas Sabonis closing a real C
+ * gap behind David Robinson) still cost 12.5 FGA for the 12 real minutes he actually plays — the
+ * coverage bonus correctly identified he was needed, but nothing pushed the AI toward the
+ * CHEAPEST real-fit way to close that same gap. The original magnitude was calibrated before the
+ * real-coverage `thinSlots` rewrite (see that constant's own docstring) made this bonus fire more
+ * often and more strongly than before; this penalty needed to scale up to match, not because the
+ * old value was wrong in isolation, but because the term it competes against got stronger. */
+const FGA_WASTE_ON_BENCH_SCALE = 0.6;
+const MAX_FGA_WASTE_ON_BENCH_PENALTY = 10;
 
 /** How many roster spots it takes for need-based value (position gaps, spacing, rim
  * protection, perimeter defense, redundancy discount) to reach full strength — 0 spots filled
@@ -943,12 +1091,18 @@ function uniquePlayerSpans(ranked: PlayerSpan[]): PlayerSpan[] {
  * is playing to the same rubric. `teamCount` defaults to the real game's `TEAM_COUNT` — only
  * validation scripts simulating a different number of contending teams need to override it,
  * so the contention margin actually reflects that scenario instead of silently assuming 4.
+ *
+ * `pickNumber` (1-based, the caller's own running pick count — e.g. draft.ts's
+ * `state.history.length + 1`) is optional and only feeds the "steal" safety net below; every
+ * other signal in this function is unaffected by it, and it's safe to omit entirely (validation
+ * scripts that don't track a real running pick count simply never trigger that check).
  */
 export function pickForAi(
   roster: PlayerSpan[],
   currentFgas: number[],
   available: PlayerSpan[],
   teamCount: number = TEAM_COUNT,
+  pickNumber?: number,
 ): PlayerSpan {
   const slotsLeft = ROSTER_SIZE - roster.length;
   const needs = assessNeeds(roster);
@@ -990,6 +1144,41 @@ export function pickForAi(
     }
     return true;
   });
+
+  // 2026-08-15, user's explicit ask ("gracze jak KG jeśli spadają poniżej X picku... AI traktuje
+  // go jako steal i wybiera z automatu"): `greatestPeakTierBonus` below is a real, but SOFT nudge
+  // — it wins the weighted top-5 lottery most of the time (Kevin Garnett 2002-04 measured at
+  // picks 9-15 across 15 fresh drafts) but is still a lottery, so a genuine legend can occasionally
+  // slide much further on pure bad luck. This is the hard safety net for that tail: once a listed
+  // legend (`GREATEST_PEAK_TIER_BY_NAME`, the same lookup `greatestPeakTierBonus` already uses —
+  // matched by name + real peak-or-better talent, same rule, not a new one) is STILL on the board
+  // past `STEAL_PICK_THRESHOLD`, take him immediately, bypassing the rest of this function's
+  // scoring entirely — an obvious value mismatch a real GM would never pass on twice. Still
+  // respects every hard constraint `candidates` above already filtered for (cap-legal, fillable,
+  // durability-playable) — this can never force an illegal or unplayable pick, only skip the
+  // SOFT scoring/lottery step for an unambiguous case.
+  //
+  // 2026-08-15 follow-up, user's explicit ask: on the rare turn where MORE than one qualifying
+  // legend has fallen this far at once, don't just grab the highest raw talent blindly — prefer
+  // whichever one actually fills a real gap (`needs.emptySlots`/`thinSlots`, the same signal
+  // every other pick in this function already reads) over one that would only duplicate a
+  // position the roster already has real depth at. This is a tie-break among steals, not a
+  // filter: with only one qualifying legend on the board (the overwhelmingly common case), he's
+  // still taken regardless of fit — the whole point of a "steal" is that a real GM takes him
+  // anyway, same philosophy as `ELITE_TALENT_REDUNDANCY_EXEMPTION` elsewhere in this file.
+  if (pickNumber !== undefined && pickNumber > STEAL_PICK_THRESHOLD) {
+    const steals = candidates.filter((p) => {
+      const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
+      return entry !== undefined && computeTalent(p) >= entry.tal;
+    });
+    if (steals.length > 0) {
+      const fillsRealGap = (p: PlayerSpan) => needs.emptySlots.includes(p.primaryPosition) || needs.thinSlots.includes(p.primaryPosition);
+      return steals.sort((a, b) => {
+        const gapDiff = Number(fillsRealGap(b)) - Number(fillsRealGap(a));
+        return gapDiff || computeTalent(b) - computeTalent(a) || a.fga - b.fga;
+      })[0];
+    }
+  }
 
   // 2026-08-07, user's own diagnosis: force the starting five to actually complete EARLY, while
   // the pool is still deep at every position (100+ per position), not late. Two hard-filter
@@ -1068,11 +1257,13 @@ export function pickForAi(
   }
 
   // Computed once per pick (the roster is fixed across every candidate this pick) — see
-  // `marginalStarterValue` above. Skipped entirely once the roster is basically full (7+ of 9
-  // filled): bench-round picks are legitimately about depth/insurance, not "will this start,"
-  // and the exact search's cost grows with roster size, so this also caps the worst-case
-  // per-pick overhead to the rounds where the signal actually matters.
-  const MARGINAL_VALUE_ROSTER_SIZE_CEILING = 7;
+  // `marginalStarterValue` above. Skipped entirely once the roster is basically full (last 2
+  // picks): bench-round picks are legitimately about depth/insurance, not "will this start," and
+  // the exact search's cost grows with roster size, so this also caps the worst-case per-pick
+  // overhead to the rounds where the signal actually matters. 2026-08-15: scaled from 7 (of a
+  // 9-man roster) to 6 (of the now-8-man `ROSTER_SIZE`) — same "last 2 picks" proportion, not a
+  // re-derivation.
+  const MARGINAL_VALUE_ROSTER_SIZE_CEILING = ROSTER_SIZE - 2;
   const baselineStarterValue = roster.length < MARGINAL_VALUE_ROSTER_SIZE_CEILING ? projectedStarterValue(roster) : null;
 
   // 2026-08-08, bench-shot-creator fix (options A+B): measured directly
@@ -1090,10 +1281,47 @@ export function pickForAi(
 
   const scoredBySpan = phaseFilteredCandidates.map((p) => {
     let need = 1;
-    if (needs.emptySlots.includes(p.primaryPosition)) need += 1.5;
-    else if (needs.thinSlots.includes(p.primaryPosition)) need += 1.3;
-    else if (p.secondaryPositions.some((s) => needs.emptySlots.includes(s))) need += 0.8;
-    else if (p.secondaryPositions.some((s) => needs.thinSlots.includes(s))) need += 0.6;
+    // 2026-08-15, user's explicit ask: with only `BENCH_SLOT_COUNT` (3) bench spots covering 5
+    // starter positions, a real GM can't afford a bench built from single-position duplicates —
+    // the only way 3 bodies realistically backstop 5 slots is real dual-position coverage (e.g.
+    // "PG/SG + SF/PF + C"), each bench player reaching two starter positions instead of one. The
+    // ORIGINAL cascade below only ever credits ONE of a candidate's real positions (primary if
+    // it's in need, secondary only as a fallback if primary isn't) — a genuine dual-position
+    // player who could help TWO thin slots at once got no more credit than a single-position
+    // player helping just one, so nothing here previously favored the versatile pick.
+    //
+    // First attempt at the user's SEPARATE, earlier ask ("bench needs stronger PG/SG/SF/PF,
+    // weaker C") was a flat position-wide malus/bonus — measured and reverted: it worked
+    // (`scripts/_checkBenchByPosition.ts`: bench C count 61->17 across 96 teams) but overcorrected
+    // into exactly the failure this fixes, confirmed directly (`checkBenchAbsurdities.ts`: severe-
+    // backup rate rose 18.8%->23.4%, almost entirely off-position guards/wings forced into a
+    // now-empty C backup slot). This additive-coverage version replaces that flat malus/bonus
+    // entirely — a real dual-position PF/C still earns full credit for genuinely covering C (no
+    // more starvation), it just no longer beats a PG/SG covering two thin guard spots by default.
+    //
+    // Scoped to bench rounds only (`inBenchRound`) — starter-round selection (picks before the
+    // roster locks its five) is unchanged, matching how every other bench-specific mechanism in
+    // this file (`lacksBenchShotCreator`, `lacksSixthMan`) is already scoped.
+    if (inBenchRound) {
+      for (const pos of [p.primaryPosition, ...p.secondaryPositions]) {
+        if (needs.emptySlots.includes(pos)) need += 1.5;
+        else if (needs.thinSlots.includes(pos)) {
+          need += needs.looselyBackedThinSlots.includes(pos) ? 0.5 : 1.3;
+        }
+        need += benchPgScarcityBonus(pos, needs);
+      }
+    } else {
+      if (needs.emptySlots.includes(p.primaryPosition)) need += 1.5;
+      // See `NeedContext.looselyBackedThinSlots`'s own docstring — a thin slot already backed by
+      // an adjacent-fallback roster player gets a discounted (not zeroed) version of the thin-slot
+      // pull, so a genuinely uncovered position elsewhere isn't mechanically outbid by a duplicate
+      // specialist here purely on this bonus.
+      else if (needs.thinSlots.includes(p.primaryPosition)) {
+        need += needs.looselyBackedThinSlots.includes(p.primaryPosition) ? 0.5 : 1.3;
+      }
+      else if (p.secondaryPositions.some((s) => needs.emptySlots.includes(s))) need += 0.8;
+      else if (p.secondaryPositions.some((s) => needs.thinSlots.includes(s))) need += 0.6;
+    }
     if (needs.avgSpacing < SPACING_DEPTH_THRESHOLD) {
       const deficitRatio = (SPACING_DEPTH_THRESHOLD - needs.avgSpacing) / SPACING_DEPTH_THRESHOLD;
       need += deficitRatio * (computeSpacing(p) / 100) * SPACING_DEPTH_BONUS_SCALE;
@@ -1229,7 +1457,21 @@ export function pickForAi(
       const marginalGain = marginalStarterValue(roster, baselineStarterValue, entry.player);
       const shortfall = Math.max(0, entry.talent - marginalGain);
       const wastedPickDiscount = Math.min(MAX_MARGINAL_STARTER_DISCOUNT, shortfall * MARGINAL_STARTER_DISCOUNT_SCALE);
-      entry.value -= wastedPickDiscount;
+      // 2026-08-15, user-reported (real diagnostic: Bam Adebayo, 12.7 FGA, projected/ended up a
+      // 12-real-minute backup C — "grający 12 minut za 12.7 FGA jest problemem"): `shortfall`
+      // above already answers "will this candidate actually start" (the same question
+      // `marginalStarterValue` exists for) and discounts by wasted TALENT when the answer is no,
+      // but says nothing about wasted FGA/cap specifically — a bench-fated candidate who's
+      // expensive because he was a heavy offensive focal point in his own stint is a strictly
+      // worse cap fit than an equally bench-fated candidate who's naturally cheap, even at similar
+      // projected minutes, and the existing discount doesn't distinguish them. Fires only when
+      // `shortfall > 0` (not a real projected starter upgrade — the same gate `wastedPickDiscount`
+      // uses), scaled by the candidate's OWN fga so a high-FGA bench-fated pick pays more than a
+      // low-FGA one. Magnitude picked by analogy to this file's other small profile maluses
+      // (`MAX_LOW_USAGE_BIG_MALUS`=5, `MAX_ELITE_LOW_USAGE_MALUS`=3), not yet grid-measured —
+      // revisit with a real simulation pass if bench FGA efficiency doesn't move as expected.
+      const fgaWasteOnBench = shortfall > 0 ? Math.min(MAX_FGA_WASTE_ON_BENCH_PENALTY, entry.player.fga * FGA_WASTE_ON_BENCH_SCALE) : 0;
+      entry.value -= wastedPickDiscount + fgaWasteOnBench;
     }
     // `.slice().sort()` sorts a copy, so the reordered shortlist is written back into the front
     // of `scored` explicitly rather than relying on an in-place sort of a slice.

@@ -69,9 +69,39 @@ function hasNamedRiserException(span: PlayerSpan): boolean {
   return NAMED_RISER_EXCEPTIONS.has(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`);
 }
 
+/**
+ * 2026-08-15, user's explicit ask, a different shape from the full-override exceptions above:
+ * Shai Gilgeous-Alexander's 2024-26 span (raw TAL 97, would read "Greatest peak" on the number
+ * alone) carries a real, measured -4.3 (Platinum Dropper) — which clears `grades.ts`'s
+ * `PLAYOFF_COLLAPSE_ALL_NBA_CAP_THRESHOLD` (-4) and caps his tier at All-NBA despite the raw
+ * number. User's stated reasoning: a real 2x MVP with a championship shouldn't be tier-capped out
+ * of "Greatest peak" the same way a genuine, uncontested collapse would — but explicitly asked
+ * for a LIGHTER multiplier, not the full override the riser exceptions above use (this isn't
+ * "the real number is wrong," it's "the real number is too severe a READ given who this is").
+ * Scales the real measured value down instead of replacing it — a real, non-zero playoff-collapse
+ * signal survives, it just no longer clears either tier-cap threshold. -4.3 * 0.3 = -1.29,
+ * comfortably clear of the -2 MVP-cap threshold (which would ALSO block "Greatest peak," since
+ * MVP sits below it in tier order) with real margin, not sitting right at the edge — same
+ * "don't just barely clear it" philosophy `ELITE_TALENT_FGA_PENALTY_DAMPENING` (aiDrafter.ts)
+ * already uses for an analogous problem.
+ */
+const NAMED_DAMPENING_SCALE = 0.3;
+const NAMED_DAMPENING_EXCEPTIONS: ReadonlyMap<string, number> = new Map(
+  [{ name: 'Shai Gilgeous-Alexander', spanLabel: '2024-26' }].map((e) => [
+    `${normalizePlayerName(e.name)}|${e.spanLabel}`,
+    NAMED_DAMPENING_SCALE,
+  ]),
+);
+
+function namedDampeningScale(span: PlayerSpan): number | undefined {
+  return NAMED_DAMPENING_EXCEPTIONS.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`);
+}
+
 export function playoffPerformanceBonus(span: PlayerSpan): number {
   if (hasNamedRiserException(span)) return NAMED_RISER_OVERRIDE_VALUE;
-  return DATA[span.id] ?? 0;
+  const raw = DATA[span.id] ?? 0;
+  const dampening = namedDampeningScale(span);
+  return dampening !== undefined ? raw * dampening : raw;
 }
 
 export type PlayoffPerformanceTier =
