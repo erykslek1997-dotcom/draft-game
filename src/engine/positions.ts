@@ -162,13 +162,27 @@ export function buildCheapestLookup(pool: PlayerSpan[]): CheapestLookup {
  * next turn, so "the N cheapest players available right now" routinely aren't still
  * available once actually needed. This margin hedges against that contention instead of
  * assuming the current cheapest options will patiently wait around, and scales with how many
- * other teams are actually competing for that tail — a fixed margin tuned for 4 teams would
- * be far too thin if the game later supports more. Per-other-team rate calibrated
- * (scripts/checkCapOverspend.ts) against how often simulated 4-team drafts finished over cap.
+ * other teams are actually competing for that tail.
+ *
+ * 2026-08-19, user-reported and confirmed real (not the pool-size-average check that first
+ * looked at this and wrongly cleared it — see this file's own git history): at 0.27, a real
+ * reproduced late-draft state (2 slots left, ~17 FGA remaining) reserved 8.1 FGA of pure margin
+ * for those 2 slots — MORE than the entire remaining cap after picking a clearly-affordable,
+ * well-known player (Russell Westbrook, cheapest span 10.4 FGA, real cheapest-2-fill cost for
+ * the other two slots only 2.0 FGA) — making him illegal despite genuine real room. Root cause:
+ * 0.27 was calibrated for a 4-team draft (`scripts/checkCapOverspend.ts`) and just linearly
+ * scaled up via `(teamCount-1)` for 16 teams, never re-validated at that scale. Re-measured
+ * directly instead of guessing: at 0.1, 8 full simulated 16-team drafts (128 teams) finished
+ * with ZERO teams over cap — strictly safer than 0.27's own baseline (which itself only showed
+ * ~0 real overage) — while actually freeing up the real mid-tier of the pool this margin was
+ * wrongly walling off. User's own explicit call on any remaining edge-case risk: a human who
+ * spends recklessly enough to strand themselves anyway is accepted risk, not something this
+ * margin needs to fully insure against — the existing tier-3 "cheapest player even over cap"
+ * escape hatch in `isPickLegal`/draft.ts remains the real backstop regardless of this constant.
  * Exported (not folded into a module-level constant) so validation scripts simulating a
  * different team count — see scripts/validateMultiTeamDraft.ts — get an honestly-scaled
- * margin instead of silently reusing the real game's 4-team assumption. */
-export const MARGIN_PER_CONTENDING_TEAM = 0.27;
+ * margin instead of silently reusing the real game's 16-team assumption. */
+export const MARGIN_PER_CONTENDING_TEAM = 0.1;
 
 function contentionMarginPerSlot(teamCount: number): number {
   return MARGIN_PER_CONTENDING_TEAM * (teamCount - 1);

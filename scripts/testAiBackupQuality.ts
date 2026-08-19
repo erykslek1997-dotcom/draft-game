@@ -96,27 +96,39 @@ check(
 // career) no longer won this exact lottery after the position-wide spacing-conditional TAL
 // correction (talent.ts) — swapped to Brent Barry (a real shooter). 2026-08-19, second update:
 // after `BENCH_SLOT_COUNT` reverted 3->4 (9-man rosters), this exact reconstructed pick now
-// reserves cap for one MORE future slot (`plannedPlayableReserveFga` scales with slots remaining),
-// which pushes this specific pick's outcomes to true sub-2-FGA cap glue exclusively (Biedriņš,
-// Charles Jones, Ruffin, Cage, Ervin Johnson) — still every outcome clears check #2's own
-// quality-or-glue gate, so the underlying protection is intact; only the flavor-text "which name"
-// assertion needed updating. Andris Biedriņš picked as the representative: his best other real
-// span (2006-08, TAL 59) gives a genuine post-optimization upgrade story, same shape as the
-// original McMillan/Barry checks.
-const biedrinsRepresentative = outcomes.get(normalizePlayerName('Andris Biedriņš'));
-check(biedrinsRepresentative, 'the corrected pick-83 lottery contains a legitimate backup (Andris Biedriņš)');
+// reserves cap for one MORE future slot, pushing this pick's outcomes to true sub-2-FGA cap glue
+// exclusively (Biedriņš, Charles Jones, Ruffin, Cage, Ervin Johnson) — check #2's own quality-or-
+// glue gate still held, so only the flavor-text "which name" assertion needed updating.
+//
+// 2026-08-19, THIRD update, same day — real cause this time, not a formula tweak: user-reported
+// and confirmed (a real well-known player, Russell Westbrook, was reading illegal despite genuine
+// remaining cap room) that `MARGIN_PER_CONTENDING_TEAM` (positions.ts) was miscalibrated for 16
+// teams — tuned at 4 teams and linearly scaled, never re-validated at the real team count. Fixed
+// there (0.27 -> 0.1, re-validated: 0/128 teams over cap across 8 simulated full drafts, strictly
+// safer than the old value's own baseline). Direct, independent confirmation from THIS exact
+// lottery: it no longer gets pushed down to true cap-glue at all — every one of the 30 sampled
+// outcomes is now a genuinely good, recognizable bench piece (Olynyk/Miller/Batum/Ingles/Dudley,
+// TAL 52-68) chosen directly, not "glue that optimization later rescues." The Biedriņš-specific
+// representative + post-optimization-upgrade story no longer has a case to demonstrate at this
+// exact scenario — replaced with a direct assertion that the lottery itself now clears the
+// quality floor outright, which is the real, better outcome the margin fix produces.
+check(
+  [...outcomes.values()].every((player) => displayTalentForSpan(tierContextFor(player)) >= 52),
+  'the corrected pick-83 lottery now surfaces genuinely playable backups directly, not cap-glue needing a later optimization rescue',
+);
+const representative = outcomes.values().next().value as PlayerSpan;
 const optimizedReportedRoster = optimizeSpans([
   ...roster,
-  biedrinsRepresentative,
+  representative,
   pick('Robert Horry', '1997-99'),
   pick('Thabo Sefolosha', '2014-16'),
 ]);
-const optimizedBiedrins = optimizedReportedRoster.find(
-  (player) => normalizePlayerName(player.playerName) === normalizePlayerName('Andris Biedriņš'),
+const optimizedRepresentative = optimizedReportedRoster.find(
+  (player) => normalizePlayerName(player.playerName) === normalizePlayerName(representative.playerName),
 );
 check(
-  optimizedBiedrins && displayTalentForSpan(tierContextFor(optimizedBiedrins)) >= 52,
-  'post-draft span optimization turns the selected backup PG into a genuinely playable span',
+  Boolean(optimizedRepresentative) && displayTalentForSpan(tierContextFor(optimizedRepresentative!)) >= 52,
+  'post-draft span optimization keeps (or further improves) an already-playable pick-83 backup',
 );
 
 const rosterBefore78 = roster.slice(0, 4);
