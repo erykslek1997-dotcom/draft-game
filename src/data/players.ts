@@ -406,6 +406,14 @@ const PRIMARY_POSITION_RECLASSIFICATIONS: { name: string; from: Position; to: Po
   // gone outright, matching how his own later spans already read (plain `C`, zero secondary), not
   // demoted to a secondary tag that would still leave `[C/PF]` on screen.
   { name: 'Chris Andersen', from: 'PF', to: 'C', dropOld: true },
+  // 2026-08-18, user's explicit ask ("Przypisz Jalenowi Williamsowi pozycję SF"): his two real
+  // auto-generated spans read primary SG (2022-24) and primary PF (2023-25) — neither ever SF —
+  // same "whole-career judgment call" shape as Korver/Horford above, not a Pierce-style single-
+  // span mistag. Two `from` entries (SG and PF) needed since his real spans split across both.
+  // No `dropOld`: he genuinely plays both guard and small-ball-4 minutes, so SG/PF fold in as
+  // real secondaries the same way Horford/Bosh keep C, not purged like Andersen's PF tag.
+  { name: 'Jalen Williams', from: 'SG', to: 'SF' },
+  { name: 'Jalen Williams', from: 'PF', to: 'SF' },
 ];
 
 function applyPrimaryPositionReclassifications(spans: PlayerSpan[]): PlayerSpan[] {
@@ -574,6 +582,13 @@ const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [
   // lead-guard duties. This prevents those two spans from taking an artificial 0.5 position-fit
   // multiplier when used as a backup PG; primary-PG spans no-op automatically.
   { name: 'Jrue Holiday', position: 'PG' },
+  // 2026-08-18, user's explicit ask (draft export: Magic/Kerr/Reggie Miller/Kawhi/Rasheed/Dwight
+  // — Kerr, TAL 55, held the backup-PG minutes while Hornacek, TAL 74, sat with zero PG
+  // eligibility despite real career point-guard minutes, e.g. sharing backcourt duties in
+  // Phoenix/Utah). Pure eligibility grant, same shape as the others above — no O-TAL/D-TAL
+  // recomputation, no archetype change — lets the existing best-TAL-eligible-player logic in
+  // rotation.ts naturally prefer him over a weaker true-PG option once he's a legal fit.
+  { name: 'Jeff Hornacek', position: 'PG' },
 ];
 
 function applySecondaryPositionAdditions(spans: PlayerSpan[]): PlayerSpan[] {

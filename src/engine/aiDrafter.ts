@@ -1539,13 +1539,29 @@ export function pickForAi(
     // playable material-minutes option, keep the original lottery as the emergency fallback.
     if (playable.length > 0) {
       lotteryCandidates = playable;
-      // PG is the measured scarce bench position (see `benchPgScarcityBonus`). Once the roster
-      // reaches bench rounds with no real 48-minute PG coverage, a playable PG/SG option cannot
-      // share the narrowed lottery with an unrelated big and disappear on random variance. This
-      // is only applied *after* the quality gate and only while PG is genuinely thin.
-      if (needs.emptySlots.includes('PG') || needs.thinSlots.includes('PG')) {
-        const playablePg = playable.filter((entry) => isRealPositionFit(entry.player, 'PG'));
-        if (playablePg.length > 0) lotteryCandidates = playablePg;
+      // 2026-08-18, user-reported (real diagnostic: repeated rosters with an all-guard bench —
+      // Barros/Barry/Buckner backing up Malone/Horry/Yao at PF/SF/C with zero real fit — or the
+      // mirror case, two redundant same-position bigs). Measured directly
+      // (`scripts/_checkBenchPositionBalance.ts`, 64 simulated 16-team teams): PG finished the
+      // draft real-fit-thin 0.0% of the time, but SF/PF/C sat thin 27-34% — because the ONLY hard
+      // guarantee here (this block) was scoped to PG alone; SF/PF/C relied purely on the additive
+      // `need` bonus above (`emptySlots`/`thinSlots`, same +1.5/+1.3 shape PG also gets), which a
+      // higher-raw-talent guard in the SAME top-5 lottery pool can and does outscore, since `need`
+      // only multiplies `talent` rather than gating the pool. PG itself needed both its own soft
+      // `benchPgScarcityBonus` AND this hard narrowing to reach 0% — the soft bonus alone (which
+      // SF/PF/C already have) was demonstrably not enough on its own for PG either.
+      //
+      // Generalized to every starter slot, not just PG: once ANY position is genuinely thin
+      // (`emptySlots`/`thinSlots`, the same real-fit-minutes gate every other need signal in this
+      // file already uses), a playable real fit there cannot share the narrowed lottery with an
+      // unrelated candidate and vanish on random variance. Still gated by the exact same quality
+      // filter above (never forces an unplayable/replacement-level pick) and still falls back to
+      // the full playable set if no gap-fitting candidate exists, so a thin position that
+      // genuinely has no board option left can never dead-end the draft.
+      const gapPositions = STARTER_SLOTS.filter((slot) => needs.emptySlots.includes(slot) || needs.thinSlots.includes(slot));
+      if (gapPositions.length > 0) {
+        const playableGapFit = playable.filter((entry) => gapPositions.some((slot) => isRealPositionFit(entry.player, slot)));
+        if (playableGapFit.length > 0) lotteryCandidates = playableGapFit;
       }
     }
   }
