@@ -764,6 +764,36 @@ const HIGH_USAGE_FGA_THRESHOLD = 14;
 const USAGE_RATIO_REFERENCE = 3.3;
 const USAGE_RATIO_SCALE = 1.1;
 const MAX_USAGE_RATIO_PENALTY = 6;
+
+/**
+ * 2026-08-19, user-reported (Klay Thompson 2014-16, Movement Shooter, FGA/APG 6.84 -> -3.9
+ * penalty, vs. CJ McCollum 2020-22, Shot Creator, FGA/APG only 3.84 -> -0.6 penalty, despite
+ * McCollum's own O-TAL/D-TAL both reading clearly *worse* than Klay's on every position-scaled
+ * number — confirmed directly via `talentBreakdown`, not assumed). This penalty's own docstring
+ * says it exists to catch "shoots a lot without creating for others" as a proxy for an empty/
+ * limited offensive game (Mullin/Dantley/English) — but a pure off-ball shooter structurally has
+ * low assists BY ROLE (they're not the one bringing the ball up or initiating offense), not
+ * because their game is limited the way a ball-dominant, low-vision scorer's is. The raw FGA/APG
+ * ratio can't distinguish those two cases, and the existing defense gate doesn't help either
+ * (Klay's defense is weak too, same as a real "empty stats" case would be). Meanwhile a genuine
+ * on-ball Shot Creator — arguably the archetype this penalty is MOST meant to catch — gets
+ * partially exempted anyway, since running the offense inflates assists as a side effect of
+ * having the ball, independent of whether they actually set teammates up well.
+ *
+ * `offensiveArchetype` already gates the POSITIVE side of this exact question
+ * (`SELF_CREATION_BONUS_ARCHETYPES` above restricts the self-creation bonus to on-ball
+ * archetypes) — this is the same signal applied to exempt the negative side. Scoped to the three
+ * archetypes that are off-ball BY DEFINITION (a player literally cannot initiate much offense
+ * from a role built around catching passes off movement/screens/spot-ups), not every low-assist
+ * wing. `Athletic Finisher` intentionally left out — "finishes plays others create" is a
+ * different claim from "shoots off movement/screens" that deserves its own look if it comes up,
+ * not folded in without a motivating case.
+ */
+const OFF_BALL_USAGE_PENALTY_EXEMPT_ARCHETYPES: ReadonlySet<OffensiveArchetype> = new Set([
+  'Off Screen Shooter',
+  'Movement Shooter',
+  'Stationary Shooter',
+]);
 /** Below this, the penalty applies at full strength; at/above `USAGE_PENALTY_DEFENSE_GATE_END`
  * it's fully phased out. A hard cliff at a single value (45) let a big whose box defense reads
  * as merely decent-for-a-big (rebounding + role weight, not real plus defense) dodge the
@@ -784,6 +814,7 @@ function usagePenaltyDefenseFactor(normalizedDefense: number): number {
 }
 
 function highUsageLowPlaymakingPenalty(span: PlayerSpan, normalizedDefense: number): number {
+  if (OFF_BALL_USAGE_PENALTY_EXEMPT_ARCHETYPES.has(span.offensiveArchetype)) return 0;
   if (span.fga < HIGH_USAGE_FGA_THRESHOLD) return 0;
   const gateFactor = usagePenaltyDefenseFactor(normalizedDefense);
   if (gateFactor <= 0) return 0;
