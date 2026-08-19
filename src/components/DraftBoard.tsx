@@ -343,15 +343,26 @@ function AtDot({ tierClass, label }: { tierClass: string; label: string }) {
   );
 }
 
-function AtGrade({ grade }: { grade: Grade }) {
+// Exported (2026-08-19) for RotationBuilder's own reuse — see that file's own docstring on why
+// the Team/Rotation screen now shows the same Offense/Defense letter grades this badge already
+// renders on the Draft tab, instead of building a second, slightly-different badge from scratch.
+export function AtGrade({ grade }: { grade: Grade }) {
   return <span className={`at-grade-badge ${GRADE_TIER_CLASS[grade]}`}>{grade}</span>;
 }
 
+/* 2026-08-19, user's explicit follow-up ask ("can we explain in glossary that is talent ETC"):
+   these used to only describe the SCALE (which letter/tier means what) without ever saying what
+   the underlying metric actually measures — accurate to how each one is really computed
+   (talent.ts/portability.ts's own docstrings), not invented. Split Offense/Defense out from
+   Portability into two entries: they're commonly confused but answer genuinely different
+   questions (raw quality vs. how well that quality travels next to another star), not two
+   readings of the same idea. */
 const TAG_LEGEND: ReadonlyArray<{ name: string; tiers: string[]; text: string }> = [
-  { name: 'Talent', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'Named tiers from Cigarette Butt to GOAT, off the player’s single best-TAL span.' },
-  { name: 'Offense / Defense / Portability', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'Letter grade S–F — S is reserved for the 3 best in the current pool. No named tiers yet, so the real letter still shows.' },
-  { name: '3PT', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'Non-shooter to Walking gravity — real, era-scaled 3-point volume and accuracy.' },
-  { name: 'Durability', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'DNP to Ironman — real share of possible team games actually played in this span.' },
+  { name: 'Talent (TAL)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "This player's own overall value — scoring, efficiency, playmaking and defensive activity blended into one box-score-derived number (a transparent stand-in for models like Basketball-Index's O-LEBRON). Named tiers from Cigarette Butt to GOAT, off the player's single best-TAL span." },
+  { name: 'Offense (OFF) / Defense (DEF)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'The same idea as Talent, split into its offense-only and defense-only halves. Letter grade S–F — S is reserved for the 3 best in the current pool.' },
+  { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "A different question from Talent/Offense/Defense: not how good this player is, but how well their game travels next to another ball-dominant star — an efficient off-ball scorer or a versatile defender ports well even at a modest overall Talent, and a ball-dominant star can port poorly despite elite Talent. Same S–F letter-grade scale." },
+  { name: '3PT (SPC)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How much this player's outside shooting forces a defense to respect the perimeter — real, era-scaled 3-point volume and accuracy. Non-shooter to Walking gravity." },
+  { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'DNP to Ironman — real share of possible team games actually played in this span.' },
   { name: 'Playoffs', tiers: ['at-t2', 'at-t6'], text: '▲ Riser / ▼ Dropper × Bronze–Platinum — real playoff-vs-regular-season efficiency shift.' },
 ];
 
@@ -1141,10 +1152,13 @@ export default function DraftBoard({
                                             away from the collapsed row's own deliberately-hidden
                                             number, quietly defeating the "blind scouting" premise
                                             the whole rest of this screen is built around. Dropped;
-                                            the Tag column right after already carries the same
-                                            coarse tier signal the collapsed row's new Tier badge
-                                            does, with no exact number attached to it. */}
-                                        <th>Tag</th>
+                                            the column right after already carries the same coarse
+                                            tier signal the collapsed row's own Tier badge does,
+                                            with no exact number attached to it — labelled "Tier"
+                                            here too (was "Tag") so the two tables read as the same
+                                            concept, not two different ones that happen to look
+                                            alike. */}
+                                        <th>Tier</th>
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -1264,9 +1278,33 @@ export default function DraftBoard({
             <table className="at-roster-table">
               <thead>
                 <tr>
-                  <th>Round</th>
+                  {/* 2026-08-19, user's explicit ask: "Round" used to pack position + round into
+                      one cell ("SG R1") as a single string — split into two real columns so each
+                      is independently scannable/sortable-by-eye instead of a merged label. Round
+                      before Position (follow-up ask) — draft order is the more natural first read
+                      of this table (it's a Round-by-round pick list), position is secondary. */}
+                  <th>Rnd</th>
+                  <th>Pos</th>
                   <th>Player</th>
                   <th>Span</th>
+                  {/* 2026-08-19, user's explicit ask ("show offense, defense, portability etc
+                      with S-F value"): the same judge letter-grades the Draft tab already shows
+                      per candidate, now visible for your own already-locked-in roster too.
+                      Deliberately NOT gated to Tester Mode, unlike the Draft tab's own equivalent
+                      columns — user's own direct follow-up clarification: player mode's "blind
+                      scouting" is specifically about the DRAFT decision, not about hiding what
+                      you already own ("you kind of drafting blindly but you can see what did you
+                      draft"). Once a player is actually on the roster, this is the whole point of
+                      the Team tab, not a spoiler.
+                      2026-08-19 follow-up, same ask extended to Spacing/Durability — the same two
+                      tier badges (`SpacingTierBadge`/`DurabilityTierBadge`) already used on the
+                      Draft tab, not new mechanics. */}
+                  <th style={{ textAlign: 'center' }}>Off</th>
+                  <th style={{ textAlign: 'center' }}>Def</th>
+                  <th style={{ textAlign: 'center' }}>O-POR</th>
+                  <th style={{ textAlign: 'center' }}>D-POR</th>
+                  <th style={{ textAlign: 'center' }}>SPC</th>
+                  <th style={{ textAlign: 'center' }}>DUR</th>
                   <th>FGA</th>
                 </tr>
               </thead>
@@ -1287,8 +1325,9 @@ export default function DraftBoard({
                     : p;
                   return (
                     <tr key={p.id}>
+                      <td>R{i + 1}</td>
                       <td>
-                        <span className="pos-pill">{p.primaryPosition}</span> R{i + 1}
+                        <span className="pos-pill">{p.primaryPosition}</span>
                       </td>
                       <td>{p.playerName}</td>
                       <td>
@@ -1307,14 +1346,41 @@ export default function DraftBoard({
                                     `<option>` text can't hold a styled badge, so the tier NAME
                                     stands in for the number in player mode — same coarse,
                                     non-precise signal as the Draft tab's own Tier badge, no
-                                    exact figure a beginner could just sort by. */}
-                                {o.spanLabel} — {showJudgeMetrics ? `TAL ${effectiveTalent(o)}` : overallTierForSpan(tierContextFor(o))} — FGA {o.fga.toFixed(1)}
+                                    exact figure a beginner could just sort by.
+                                    2026-08-19 follow-up, user's explicit ask: dropped the trailing
+                                    "— FGA {n}" here — the table's own FGA column right next to this
+                                    dropdown already shows the exact same number, so it was
+                                    genuinely duplicated, not two different facts. Tester mode also
+                                    now shows the tier name alongside the raw TAL number ("show TAL
+                                    with TAG"), not just the number alone. */}
+                                {o.spanLabel} —{' '}
+                                {showJudgeMetrics
+                                  ? `TAL ${effectiveTalent(o)} — ${overallTierForSpan(tierContextFor(o))}`
+                                  : overallTierForSpan(tierContextFor(o))}
                               </option>
                             ))}
                           </select>
                         ) : (
                           p.spanLabel
                         )}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <AtGrade grade={offensiveGrade(computeOffensiveTalent(effective), computeUncappedOffensiveTalent(effective))} />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <AtGrade grade={defensiveGrade(computeDefensiveTalent(effective))} />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <AtGrade grade={offensivePortabilityGrade(computeOffensivePortability(effective))} />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(effective))} />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <SpacingTierBadge span={effective} />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <DurabilityTierBadge span={effective} />
                       </td>
                       <td className="at-fga-num">{effective.fga.toFixed(1)}</td>
                     </tr>
@@ -1328,6 +1394,37 @@ export default function DraftBoard({
               ? "You drafted the player, not a specific era — the Span dropdown above picks which career window to actually roster. No FGA cap here, same as the draft itself. Rotation minutes are set below."
               : 'Rotation minutes are set below, in this same tab.'}
           </p>
+          {/* 2026-08-19, user's explicit ask ("you can add glossary under TEAM"): the roster table
+              above packs in six grade/tier columns (Off/Def/O-POR/D-POR/SPC/DUR) plus the Span
+              dropdown's own Tier name — same `TAG_LEGEND` glossary the Draft tab already offers,
+              reused rather than duplicated, but NOT gated to Tester Mode here (unlike the Draft
+              tab's copy): this table shows the same badges to both modes now (see the Off/Def/
+              O-POR/D-POR columns' own comment above), so Player Mode needs the explanation just
+              as much, arguably more. */}
+          {teamForPanels.roster.length > 0 && (
+            <>
+              <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
+                {showLegend ? 'Hide' : 'Show'} tag legend
+              </button>
+              {showLegend && (
+                <div className="at-tag-legend">
+                  {TAG_LEGEND.map((l) => (
+                    <div className="at-tag-legend-item" key={l.name}>
+                      <span className="at-swatches">
+                        {l.tiers.map((t, i) => (
+                          <span key={i} className={`at-dot ${t}`} />
+                        ))}
+                      </span>
+                      <div>
+                        <h5>{l.name}</h5>
+                        <p>{l.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

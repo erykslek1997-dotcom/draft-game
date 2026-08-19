@@ -417,8 +417,14 @@ select {
 
 /* Rotation builder */
 
+/* 2026-08-19, user-reported ("Rotation screen looks kinda ugly tbh"): this used to cap out at a
+   narrow 640px single column — reasonable for the original plain-form version, but cramped now
+   that each row also carries real Offense/Defense/Tier badges (see `PlayerValueBadges`,
+   RotationBuilder.tsx) alongside the dropdown. Widened to use the same card width the rest of
+   the redesigned shell gets, so this doesn't read as a narrower, older-feeling screen sitting
+   inside an otherwise full-width board. */
 .rotation-builder {
-  max-width: 640px;
+  max-width: 820px;
   margin: 0 auto;
 }
 
@@ -461,23 +467,56 @@ select {
   margin: 16px 0;
 }
 
+/* 2026-08-19, "kinda ugly" redesign: a real 2-column layout (was a single stacked column,
+   under-using the card's own width) so five position blocks read as a compact dashboard instead
+   of a long scrolling form. Collapses back to one column on narrow viewports. */
 .slot-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
   margin-bottom: 20px;
+}
+@media (max-width: 640px) {
+  .slot-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .slot-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
+  padding: 6px 0;
+}
+.slot-row + .slot-row {
+  border-top: 1px dashed var(--border);
 }
 
-.slot-row label {
-  width: 32px;
-  font-weight: 700;
-  color: var(--accent);
+/* Select + its live Offense/Defense/Tier readout stack together as one visual unit within the
+   row, wrapping onto their own line on narrow cards rather than forcing the minutes input off
+   the far edge of the block. */
+.slot-row-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.slot-row-main select {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* 2026-08-19, user's explicit ask: real per-player value context right where a rotation decision
+   is actually made, not just a name in a dropdown. Same `.tier-badge`/`.at-grade-badge` pill
+   shapes the rest of the app already uses for this exact data — no new visual language invented. */
+.rotation-value-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .bench-list {
@@ -486,16 +525,46 @@ select {
   margin: 0 0 16px;
 }
 
-.bench-list li {
-  padding: 4px 0;
+.bench-list-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 4px;
   border-bottom: 1px dashed var(--border);
   font-size: 14px;
 }
+.bench-list-row:last-child {
+  border-bottom: none;
+}
+.bench-list-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+.bench-list-role {
+  display: block;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.75;
+}
+.bench-list-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 
+/* 2026-08-19: card treatment (subtle raised background, colour-accented left edge, real padding
+   rhythm) instead of a bare 1px box — the plain-border version was the single biggest source of
+   the "ugly" report, five identical grey rectangles with no visual hierarchy at all. */
 .slot-block {
   border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 12px 14px;
+  background: var(--accent-bg);
 }
 
 .slot-block-header {
@@ -505,9 +574,20 @@ select {
   margin-bottom: 8px;
 }
 
+/* Position label as a small solid pill (matching `.pos-pill`'s own shape elsewhere in this file)
+   instead of plain bold coloured text — reads as a real section badge, not just emphasised text. */
 .slot-block-header label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
   font-weight: 700;
-  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.02em;
 }
 
 .minutes-ok {
@@ -2111,12 +2191,15 @@ table.at-ov-grid tbody td.at-onclock::before {
 .at-cap-label { font-size: 12px; color: var(--at-ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .at-cap-label b { color: var(--at-ink); }
 
+/* 2026-08-19, user's explicit ask ("make it more tight"): row padding cut roughly in half —
+   this table gained four new grade columns (Off/Def/O-POR/D-POR) in the same pass, so a tighter
+   vertical rhythm matters even more now than it did at the old 4-column width. */
 table.at-roster-table { border-collapse: collapse; width: 100%; font-size: 13px; }
 table.at-roster-table th {
   text-align: left; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--at-ink-faint); padding: 0 10px 8px; border-bottom: 1px solid var(--at-line);
+  color: var(--at-ink-faint); padding: 0 8px 6px; border-bottom: 1px solid var(--at-line);
 }
-table.at-roster-table td { padding: 11px 10px; border-bottom: 1px solid var(--at-line); vertical-align: middle; }
+table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-line); vertical-align: middle; }
 
 .at-empty-slot { color: var(--at-ink-faint); font-style: italic; }
 .at-placeholder { color: var(--at-ink-soft); font-size: 13px; padding: 30px 10px; text-align: center; }
@@ -2126,8 +2209,12 @@ table.at-roster-table td { padding: 11px 10px; border-bottom: 1px solid var(--at
    spokojnie można zmieścić w zakładce Team") folded directly into the roster table's own Span
    cell instead of repeating the same player list a second time just below it. `RotationBuilder`
    right below keeps its own pre-existing `.rotation-builder` styling, untouched. */
+/* 2026-08-19, user's explicit ask ("make span tighter"): this used to stretch to its full `<td>`
+   width, which grew very wide once the roster table gained six more columns (Off/Def/O-POR/
+   D-POR/SPC/DUR) — capped so it no longer crowds them out, and its own padding trimmed to match
+   the table's own tightened row rhythm from the same pass. */
 .at-span-picker-select {
-  width: 100%; font: inherit; font-size: 13px; padding: 7px 10px; border-radius: 999px;
+  max-width: 260px; font: inherit; font-size: 12.5px; padding: 5px 8px; border-radius: 999px;
   border: 1px solid var(--at-line); background: var(--at-pill); color: var(--at-pill-ink);
 }
 

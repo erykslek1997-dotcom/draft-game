@@ -3,9 +3,32 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes } from '../engine/rotation';
 import { computeDurability, maxSustainableMinutes } from '../engine/durability';
-import { displayTalentForSpan, overallTierForSpan } from '../engine/grades';
+import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+import { displayTalentForSpan, offensiveGrade, defensiveGrade } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
+import { AtGrade, OverallTierBadge } from './DraftBoard';
 import type { Rotation, SlotAssignment, Team } from '../engine/types';
+
+/** 2026-08-19, user's explicit ask ("maybe in TEAM section we can see player value in offense
+ * defense etc"): a per-row Offense/Defense/Tier readout for whichever player is currently
+ * assigned to a slot — the pick is already locked in by the time anyone reaches this screen, so
+ * showing real letter grades here (same `AtGrade`/`OverallTierBadge` the Draft tab already uses)
+ * enriches understanding without spoiling anything upstream. Only rendered once a player is
+ * actually selected — an empty row has nothing to grade yet.
+ * 2026-08-19 follow-up: briefly gated the two `AtGrade`s to Tester Mode for consistency with the
+ * Team tab's own roster table — reverted same-day on the user's own direct clarification: Player
+ * Mode's "blind scouting" is specifically about the DRAFT decision (Draft tab), not about hiding
+ * what you already own. "you kind of drafting blindly but you can see what did you draft" — once
+ * a player is actually on the roster, showing the full picture here is the point, not a leak. */
+function PlayerValueBadges({ player }: { player: PlayerSpan }) {
+  return (
+    <span className="rotation-value-badges">
+      <OverallTierBadge span={player} />
+      <AtGrade grade={offensiveGrade(computeOffensiveTalent(player), computeUncappedOffensiveTalent(player))} />
+      <AtGrade grade={defensiveGrade(computeDefensiveTalent(player))} />
+    </span>
+  );
+}
 
 interface Props {
   roster: PlayerSpan[];
@@ -169,27 +192,36 @@ export default function RotationBuilder({
                   {total} / {GAME_MINUTES} min
                 </span>
               </div>
-              {rows[slot].map((row, rowIdx) => (
+              {rows[slot].map((row, rowIdx) => {
+                const selectedPlayer = row.playerId ? roster.find((p) => p.id === row.playerId) : undefined;
+                return (
                 <div key={rowIdx} className="slot-row">
-                  <select
-                    value={row.playerId}
-                    onChange={(e) => updateRow(slot, rowIdx, { playerId: e.target.value })}
-                  >
-                    <option value="">{rowIdx === 0 ? '-- starter --' : '-- backup (optional) --'}</option>
-                    {/* Every rostered player is listed, not just the position-eligible ones:
-                        a thin roster can force somebody to cover out of position (auto-fill
-                        does exactly that to keep each slot at 48 minutes), and the dropdown
-                        has to be able to show and preserve that assignment. Out-of-position
-                        choices are marked rather than hidden — they're allowed but penalized,
-                        contributing no talent at that slot. */}
-                    {optionsFor(slot).map(({ player, eligible }) => (
-                      <option key={player.id} value={player.id}>
-                        {eligible ? '' : '⚠ '}
-                        {player.playerName} ({player.spanLabel}) — {player.primaryPosition}
-                        {eligible ? '' : ' (out of position)'}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="slot-row-main">
+                    <select
+                      value={row.playerId}
+                      onChange={(e) => updateRow(slot, rowIdx, { playerId: e.target.value })}
+                    >
+                      <option value="">{rowIdx === 0 ? '-- starter --' : '-- backup (optional) --'}</option>
+                      {/* Every rostered player is listed, not just the position-eligible ones:
+                          a thin roster can force somebody to cover out of position (auto-fill
+                          does exactly that to keep each slot at 48 minutes), and the dropdown
+                          has to be able to show and preserve that assignment. Out-of-position
+                          choices are marked rather than hidden — they're allowed but penalized,
+                          contributing no talent at that slot. */}
+                      {optionsFor(slot).map(({ player, eligible }) => (
+                        <option key={player.id} value={player.id}>
+                          {eligible ? '' : '⚠ '}
+                          {player.playerName} ({player.spanLabel}) — {player.primaryPosition}
+                          {eligible ? '' : ' (out of position)'}
+                        </option>
+                      ))}
+                    </select>
+                    {/* 2026-08-19, user's explicit ask: real Offense/Defense/Tier context for
+                        whichever player is actually in this slot right now — `<select>` can't
+                        render styled badges inside its own options, so these sit just outside it
+                        instead, updating live as the selection changes. */}
+                    {selectedPlayer && <PlayerValueBadges player={selectedPlayer} />}
+                  </div>
                   <input
                     type="number"
                     min={0}
@@ -201,12 +233,10 @@ export default function RotationBuilder({
                   />
                   <span className="min-label">
                     min
-                    {row.playerId && (() => {
-                      const player = roster.find((p) => p.id === row.playerId);
-                      if (!player) return null;
-                      const cap = maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER);
+                    {selectedPlayer && (() => {
+                      const cap = maxSustainableMinutes(selectedPlayer, MAX_MINUTES_PER_PLAYER);
                       return (
-                        <span className="durability-cap" title={`Durability-safe minutes cap, DUR ${computeDurability(player)}`}>
+                        <span className="durability-cap" title={`Durability-safe minutes cap, DUR ${computeDurability(selectedPlayer)}`}>
                           {' '}
                           (cap {cap}m)
                         </span>
@@ -219,7 +249,8 @@ export default function RotationBuilder({
                     </button>
                   )}
                 </div>
-              ))}
+                );
+              })}
               {rows[slot].length < MAX_ROWS_PER_SLOT && (
                 <button className="add-row-btn" onClick={() => addRow(slot)}>
                   + add contributor
@@ -246,12 +277,19 @@ export default function RotationBuilder({
       <h3>Bench ({bench.length})</h3>
       <ul className="bench-list">
         {bench.map(({ player, minutes }) => (
-          <li key={player.id}>
-            {/* 2026-08-19, user's explicit ask: a bare "TAL 68" here was one number with no sense
-                of what it means on this game's own scale — the named tier (already computed
-                everywhere else a player's overall quality is shown) gives it real context. */}
-            {player.playerName} ({player.spanLabel}) — {player.offensiveArchetype} / {player.defensiveRole} — TAL{' '}
-            {displayTalentForSpan(tierContextFor(player))} ({overallTierForSpan(tierContextFor(player))}) — {minutes} min
+          <li key={player.id} className="bench-list-row">
+            <span className="bench-list-name">
+              {player.playerName} ({player.spanLabel})
+              <span className="bench-list-role">{player.offensiveArchetype} / {player.defensiveRole}</span>
+            </span>
+            {/* 2026-08-19, user's explicit ask: real Offense/Defense/Tier badges here too, same
+                component the rotation rows above now use — a bare "TAL 68" text string used to be
+                the only signal, with no sense of what it means on this game's own scale. */}
+            <span className="bench-list-meta">
+              <PlayerValueBadges player={player} />
+              <span className="mini-fact">TAL {displayTalentForSpan(tierContextFor(player))}</span>
+              <span className="mini-fact">{minutes} min</span>
+            </span>
           </li>
         ))}
       </ul>
