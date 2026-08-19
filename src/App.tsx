@@ -79,55 +79,58 @@ function App() {
           leaves exactly one: the big title on the splash screen, the compact wordmark once you're
           actually inside a draft. Also trims persistent chrome above the game controls during
           play, which was part of the same "draft bez dodatkowych napisów" ask. */}
+      {/* 2026-08-19, "NBA-touch" full redesign: the splash screen picks up the same `.at-shell`
+          dark-board tokens/card treatment DraftBoard/DraftLottery/ResultsScreen already use,
+          instead of sitting on the plain app-wide light/dark tokens as a visibly different-looking
+          "old UI" leftover — the first screen every session sees now matches the rest of the app. */}
       {view === 'intro' && (
-        <header className="app-header">
-          <h1>All-Time NBA Draft</h1>
-          <p className="tagline">
-            Build the best-<em>fitting</em> all-time roster under a {DISPLAY_CAP_LIMIT} FGA cap — not just the best
-            players.
-          </p>
-        </header>
-      )}
-
-      {view === 'intro' && (
-        <div className="intro-screen">
-          {!FORCE_PLAYER_MODE && (
-            <div className="mode-select" role="radiogroup" aria-label="Mode">
-              {MODE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={mode === opt.id}
-                  className={`mode-select-btn ${mode === opt.id ? 'mode-select-btn--active' : ''}`}
-                  onClick={() => setMode(opt.id)}
-                >
-                  <span className="mode-select-name">{opt.name}</span>
-                  <span className="mode-select-blurb">{opt.blurb}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {!FORCE_PLAYER_MODE && (
-            <label className="commissioner-toggle">
-              <input type="checkbox" checked={commissionerMode} onChange={(e) => setCommissionerMode(e.target.checked)} />
-              Commissioner Mode — control all 16 teams yourself, with a reasoning note per pick
-            </label>
-          )}
-          {/* 2026-08-16, user's own follow-up correction, then a same-day second correction: "Your
-              team" (the name input) moved off this screen entirely too, same reasoning as How to
-              Play just below — it only makes sense once Player Mode is the choice, and the splash
-              screen should stay a splash screen. Both now live together on the Draft Lottery's own
-              pre-reveal step (DraftLottery.tsx's `stage === 'intro'`), which runs right after
-              "Start Draft" — see that component's own docstring. `teamName` is still generated
-              here (silently, no visible UI) so `createDraft` has a real starting name the moment
-              GameShell mounts; the Lottery screen edits it in place via `onRenameTeam`. */}
-          <button className="primary-btn" onClick={() => setView('game')}>
-            Start Draft
-          </button>
-          <button className="secondary-btn" onClick={() => setView('pool')}>
-            Browse Draft Pool
-          </button>
+        <div className="at-shell at-intro">
+          <header className="app-header">
+            <h1>All-Time NBA Draft</h1>
+            <p className="tagline">
+              Build the best-<em>fitting</em> all-time roster under a {DISPLAY_CAP_LIMIT} FGA cap — not just the best
+              players.
+            </p>
+          </header>
+          <div className="intro-screen">
+            {!FORCE_PLAYER_MODE && (
+              <div className="mode-select" role="radiogroup" aria-label="Mode">
+                {MODE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={mode === opt.id}
+                    className={`mode-select-btn ${mode === opt.id ? 'mode-select-btn--active' : ''}`}
+                    onClick={() => setMode(opt.id)}
+                  >
+                    <span className="mode-select-name">{opt.name}</span>
+                    <span className="mode-select-blurb">{opt.blurb}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {!FORCE_PLAYER_MODE && (
+              <label className="commissioner-toggle">
+                <input type="checkbox" checked={commissionerMode} onChange={(e) => setCommissionerMode(e.target.checked)} />
+                Commissioner Mode — control all 16 teams yourself, with a reasoning note per pick
+              </label>
+            )}
+            {/* 2026-08-16, user's own follow-up correction, then a same-day second correction: "Your
+                team" (the name input) moved off this screen entirely too, same reasoning as How to
+                Play just below — it only makes sense once Player Mode is the choice, and the splash
+                screen should stay a splash screen. Both now live together on the Draft Lottery's own
+                pre-reveal step (DraftLottery.tsx's `stage === 'intro'`), which runs right after
+                "Start Draft" — see that component's own docstring. `teamName` is still generated
+                here (silently, no visible UI) so `createDraft` has a real starting name the moment
+                GameShell mounts; the Lottery screen edits it in place via `onRenameTeam`. */}
+            <button className="primary-btn" onClick={() => setView('game')}>
+              Start Draft
+            </button>
+            <button className="secondary-btn" onClick={() => setView('pool')}>
+              Browse Draft Pool
+            </button>
+          </div>
         </div>
       )}
 

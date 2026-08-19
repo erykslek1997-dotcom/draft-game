@@ -5,15 +5,23 @@
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
   /* 2026-08-16, user's own report ("brakuje koloru w całym projekcie... smutne"): this was an
-     unrelated bright purple, used sparingly (a couple of active-state borders/buttons) while
-     everything else stayed grey/black/white — recoloured to the same warm bronze family the
-     Draft-tab tier dots and the `.at-shell` redesign already committed to
-     (see draft_game_ui_redesign_spec memory), so the whole app reads as one accent, not a
-     scattered purple plus an unrelated separately-scoped amber. Muted, not vivid, per the
-     explicit "nie musi być mocny" ask. */
-  --accent: #8a5a2b;
-  --accent-bg: rgba(138, 90, 43, 0.1);
-  --accent-border: rgba(138, 90, 43, 0.5);
+     unrelated bright purple, recoloured to the warm bronze family the `.at-shell` redesign used
+     at the time.
+     2026-08-19, user's explicit ask ("NBA-touch", full broadcast redesign, real logo hex given
+     directly): retired in favour of the real NBA blue — `.at-shell` itself moved off this same
+     bronze onto NBA blue/red earlier in this pass (see that block's own comment in App.css), so
+     keeping the app-wide root on bronze would leave every screen OUTSIDE `.at-shell` (the intro
+     screen, mode select, DraftPoolBrowser, RotationBuilder when not nested inside a Team tab) as
+     a mismatched leftover — exactly the old-UI inconsistency this same session's audit flagged.
+     One shared blue now, everywhere. */
+  --accent: #2f5aa0;
+  --accent-bg: rgba(47, 90, 160, 0.12);
+  --accent-border: rgba(47, 90, 160, 0.5);
+  /* Real NBA red — the app-wide alert/negative colour, replacing the handful of unrelated
+     hardcoded reds (`#e5484d`/`#d9534f`) that used to be scattered through App.css. */
+  --danger: #c8102e;
+  --danger-bg: rgba(200, 16, 46, 0.12);
+  --danger-border: rgba(200, 16, 46, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
@@ -44,9 +52,14 @@
     --bg: #16171d;
     --border: #2e303a;
     --code-bg: #1f2028;
-    --accent: #d3a05a;
-    --accent-bg: rgba(211, 160, 90, 0.15);
-    --accent-border: rgba(211, 160, 90, 0.5);
+    /* 2026-08-19: NBA blue, brightened for legibility against this dark background — same
+       `color-mix` shape `.at-shell`'s own `--at-accent` uses, see that block's comment. */
+    --accent: #4d7bc7;
+    --accent-bg: rgba(77, 123, 199, 0.15);
+    --accent-border: rgba(77, 123, 199, 0.5);
+    --danger: #e0435c;
+    --danger-bg: rgba(224, 67, 92, 0.15);
+    --danger-border: rgba(224, 67, 92, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
