@@ -496,11 +496,15 @@ export default function DraftBoard({
     return ALL_POSITIONS.reduce((best, pos) => ((counts.get(pos) ?? 0) > (counts.get(best) ?? 0) ? pos : best), ALL_POSITIONS[0]);
   }
 
-  // Only spans the current team can actually afford - an unaffordable span shouldn't linger
-  // in the list as a disabled row, it should simply not be an option anymore.
-  const legalGroups = allGroups
-    .map((g) => ({ ...g, spans: g.spans.filter((s) => isPickLegal(state, s.id)) }))
-    .filter((g) => g.spans.length > 0);
+  // 2026-08-19, user's explicit ask ("FULL BOARD FOR HUMAN" / "show everyone" — confirmed via
+  // AskUserQuestion, scoped to visibility only): this used to filter down to only cap-legal
+  // spans, so a genuinely affordable player could vanish from the list entirely if some OTHER
+  // span of theirs happened to fail the (now also-removed, see draft.ts's own docstring on
+  // `strictPickLegal`) lookahead check. Every undrafted span now stays visible regardless of
+  // legality — the actual 100.9 FGA cap itself is untouched and still real; a span that would
+  // bust it outright still can't actually be drafted (`isPickLegal` still gates the Draft button
+  // itself, at both the collapsed and expanded row below), it just isn't hidden from view first.
+  const legalGroups = allGroups;
 
   const fgaMinNum = Number(fgaMin);
   const fgaMaxNum = Number(fgaMax);
@@ -815,7 +819,9 @@ export default function DraftBoard({
                       site in this same file (the Team tab's own progress bar, further down) was
                       already fixed to use `displayFgas` for exactly this reason (see its own
                       comment), but this label was missed at the time. The actual legality check
-                      gating the Draft buttons (`isPickLegal`, via `legalGroups`) always reads the
+                      gating the Draft buttons themselves (`isPickLegal`, checked directly at each
+                      button — see that constant's own docstring on why the list itself no longer
+                      pre-filters by legality) always reads the
                       real `state.teams` roster directly and was never affected by this — a
                       span swap in the Team tab can't actually change what's pickable — but this
                       label could show a stale, wrong number after a swap, reading as a false
@@ -947,8 +953,14 @@ export default function DraftBoard({
                               <td>
                                 <button
                                   className="at-draft-btn"
-                                  disabled={!canPick}
-                                  title={canPick ? undefined : `${teamLabel(currentTeam)} is picking…`}
+                                  disabled={!canPick || !isPickLegal(state, group.bestTalentSpan.id)}
+                                  title={
+                                    !canPick
+                                      ? `${teamLabel(currentTeam)} is picking…`
+                                      : !isPickLegal(state, group.bestTalentSpan.id)
+                                        ? 'Over the FGA cap — pick something else first, or a cheaper season for this player.'
+                                        : undefined
+                                  }
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onPick(group.bestTalentSpan.id);
@@ -1081,8 +1093,14 @@ export default function DraftBoard({
                                         <td>
                                           <button
                                             className="at-draft-btn"
-                                            disabled={!canPick}
-                                            title={canPick ? undefined : `${teamLabel(currentTeam)} is picking…`}
+                                            disabled={!canPick || !isPickLegal(state, span.id)}
+                                            title={
+                                              !canPick
+                                                ? `${teamLabel(currentTeam)} is picking…`
+                                                : !isPickLegal(state, span.id)
+                                                  ? 'Over the FGA cap — pick something else first, or a cheaper season for this player.'
+                                                  : undefined
+                                            }
                                             onClick={() => onPick(span.id)}
                                           >
                                             Draft

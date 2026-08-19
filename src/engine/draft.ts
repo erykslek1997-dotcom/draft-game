@@ -173,6 +173,21 @@ function advance(state: DraftState): DraftState {
   return { ...state, round, pickInRound, complete };
 }
 
+/**
+ * 2026-08-19, user's explicit, direct, escalating ask across several real reproduced cases
+ * (Russell Westbrook; a 3-slots-left/11.2-FGA pick) where the "can I still complete my roster"
+ * foresight check — not just its contention margin — blocked genuinely cap-legal players from
+ * ever showing up for the human. First tried zeroing only the margin (`teamCount=1`); user's own
+ * direct follow-up ("FULL BOARD FOR HUMAN" / "IF PLAYER IS AN IDIOT LET HIM BE") asked for the
+ * whole foresight check gone for the human's own turn, not just its safety padding — real cap
+ * legality on THIS pick only, no lookahead at all. The AI still needs that lookahead (it can't
+ * see the human's future choices the way the human can just look at the board again next turn),
+ * so this only branches on `team.isHuman` — every AI turn keeps the full, unchanged
+ * `canFillFromLookup` tier-1 check, contention margin included. A human who spends into a corner
+ * this way isn't stranded regardless: the existing tier-2/tier-3 fallbacks below
+ * (`isPickLegal`'s own doc) still guarantee some pick is always possible, over cap if it comes to
+ * that — same backstop this project already relies on everywhere else.
+ */
 function strictPickLegal(state: DraftState, playerId: string): boolean {
   const player = playersById.get(playerId);
   if (!player || state.draftedIds.has(playerId)) return false;
@@ -180,6 +195,7 @@ function strictPickLegal(state: DraftState, playerId: string): boolean {
   const team = state.teams[currentTeamIndex(state)];
   const currentFgas = team.roster.map((p) => p.fga);
   if (!isPickCapLegal(currentFgas, player.fga)) return false;
+  if (team.isHuman) return true;
 
   const slotsLeftAfterPick = ROSTER_SIZE - team.roster.length - 1;
   if (slotsLeftAfterPick === 0) return true;
