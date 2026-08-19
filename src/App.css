@@ -467,51 +467,43 @@ select {
   margin: 16px 0;
 }
 
-/* 2026-08-19, "kinda ugly" redesign: a real 2-column layout (was a single stacked column,
-   under-using the card's own width) so five position blocks read as a compact dashboard instead
-   of a long scrolling form. Collapses back to one column on narrow viewports. */
-.slot-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+/* 2026-08-19, user-reported ("still don't like how rotation looks") — replaces the card-per-
+   position grid this used to be. Confirmed via direct question: match the Team roster table's
+   own row-based design one-for-one (`.at-roster-table`, reused below) instead of a second,
+   inconsistent visual language sitting right underneath it on the same tab. */
+.at-rotation-table {
   margin-bottom: 20px;
 }
-@media (max-width: 640px) {
-  .slot-grid {
-    grid-template-columns: 1fr;
-  }
+/* The merged position cell (`rowSpan` across a starter + its backups) needs its content pinned to
+   the top of that taller cell, and a real background/border so a multi-row group still reads as
+   one unit even though the position label itself only appears once. */
+.at-rotation-pos-cell {
+  vertical-align: top;
+  background: var(--at-pill, var(--bg));
+  border-right: 1px solid var(--at-line, var(--border));
+  white-space: nowrap;
 }
-
-.slot-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 6px 0;
+.at-rotation-pos-cell .pos-pill {
+  display: block;
+  margin-bottom: 4px;
 }
-.slot-row + .slot-row {
-  border-top: 1px dashed var(--border);
+/* A clear rule between one position's group and the next — the position cell's own rowSpan
+   already separates them structurally, but a first-row-of-group border makes that boundary
+   visible at a glance too, the same way the roster table's own row borders already read. */
+.at-rotation-table tr.at-rotation-group-start td {
+  border-top: 1px solid var(--at-line, var(--border));
 }
-
-/* Select + its live Offense/Defense/Tier readout stack together as one visual unit within the
-   row, wrapping onto their own line on narrow cards rather than forcing the minutes input off
-   the far edge of the block. */
-.slot-row-main {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-  flex: 1 1 220px;
+.at-rotation-table select {
   min-width: 0;
 }
-.slot-row-main select {
-  min-width: 0;
-  flex: 1 1 auto;
+.at-rotation-table input[type='number'] {
+  width: 56px;
 }
 
 /* 2026-08-19, user's explicit ask: real per-player value context right where a rotation decision
    is actually made, not just a name in a dropdown. Same `.tier-badge`/`.at-grade-badge` pill
-   shapes the rest of the app already uses for this exact data — no new visual language invented. */
+   shapes the rest of the app already uses for this exact data — no new visual language invented.
+   Still used by the Bench reference list below (plain player rows, not a table). */
 .rotation-value-badges {
   display: inline-flex;
   align-items: center;
@@ -556,40 +548,6 @@ select {
   flex-shrink: 0;
 }
 
-/* 2026-08-19: card treatment (subtle raised background, colour-accented left edge, real padding
-   rhythm) instead of a bare 1px box — the plain-border version was the single biggest source of
-   the "ugly" report, five identical grey rectangles with no visual hierarchy at all. */
-.slot-block {
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: 8px;
-  padding: 12px 14px;
-  background: var(--accent-bg);
-}
-
-.slot-block-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-/* Position label as a small solid pill (matching `.pos-pill`'s own shape elsewhere in this file)
-   instead of plain bold coloured text — reads as a real section badge, not just emphasised text. */
-.slot-block-header label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 30px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-}
-
 .minutes-ok {
   color: var(--text);
   font-size: 13px;
@@ -599,15 +557,6 @@ select {
   color: var(--danger);
   font-size: 13px;
   font-weight: 600;
-}
-
-.slot-row input[type='number'] {
-  width: 64px;
-}
-
-.min-label {
-  font-size: 13px;
-  color: var(--text);
 }
 
 .durability-cap {
