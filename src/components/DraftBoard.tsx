@@ -813,21 +813,23 @@ export default function DraftBoard({
                   <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
                 </div>
                 <div className="at-cap-label" style={{ marginLeft: 'auto' }}>
-                  {/* 2026-08-19, user-reported ("changed spans in team section and cannot pick
-                      anyone because according to game i dont have fga"): this read `currentFgas`
-                      (the drafted/peak spans) instead of `displayFgas` — the ONE other cap-meter
-                      site in this same file (the Team tab's own progress bar, further down) was
-                      already fixed to use `displayFgas` for exactly this reason (see its own
-                      comment), but this label was missed at the time. The actual legality check
-                      gating the Draft buttons themselves (`isPickLegal`, checked directly at each
-                      button — see that constant's own docstring on why the list itself no longer
-                      pre-filters by legality) always reads the
-                      real `state.teams` roster directly and was never affected by this — a
-                      span swap in the Team tab can't actually change what's pickable — but this
-                      label could show a stale, wrong number after a swap, reading as a false
-                      "you're locked out" the moment the swap freed up (or used) cap the label
-                      didn't know about. */}
-                  Cap remaining: <b>{capRemaining(displayFgas)}</b> FGA
+                  {/* 2026-08-19: this briefly read `displayFgas` (the Team tab's chosen/swapped
+                      spans) instead of `currentFgas` (the real, locked-in drafted spans) — fixed
+                      one real mismatch (a stale label after a Team-tab swap could read as a false
+                      "you're locked out") but created the opposite one: `isPickLegal`, which
+                      actually gates every Draft button, has never read anything but the real
+                      `state.teams` roster — a span swap in the Team tab is a scoring PREVIEW, it
+                      was never able to change what's really pickable. So a swap to a cheaper span
+                      made this label promise more room than the game would actually let you
+                      spend, reading as every listed player being disabled for no visible reason
+                      (user-reported, with a screenshot: "Cap remaining: 6.7" while every ~5-6 FGA
+                      player nearby stayed greyed out — the REAL remaining cap, tied to the
+                      unswapped roster, was smaller than the label said). This label's one job is
+                      "how much room do I actually have to draft with right now" — that can only
+                      ever be the real, enforced number, so back to `currentFgas`. `displayFgas`
+                      stays exactly where it already correctly belongs: the Team tab's own cap
+                      meter, which is reviewing an already-locked-in pick, not gating a new one. */}
+                  Cap remaining: <b>{capRemaining(currentFgas)}</b> FGA
                 </div>
               </div>
               <div className="at-controls-row" style={{ marginTop: -4 }}>
