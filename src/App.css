@@ -1498,51 +1498,90 @@ select {
   margin-top: 12px;
 }
 
-.playoff-bracket {
+/* 2026-08-19, user's own ask ("can you make playoff bracket like that?" — a CBS Sports-style
+   two-side bracket screenshot): replaces the old flat per-round text list (`.playoff-round`/
+   `.playoff-series-row`, both removed) with a real tree layout. See PlayoffBracketTree's own
+   docstring in ResultsScreen.tsx for why plain pixel math drives both the cards and the
+   connector lines — every coordinate here just positions what that component already computed,
+   nothing is re-derived in CSS. `.bracket-scroll` matches this project's own established
+   "wide content scrolls in its own container" pattern (same shape as `.at-grid-scroll` for the
+   Overview grid) since the full bracket is wider than most viewports. */
+.bracket-scroll {
   margin-top: 12px;
+  overflow-x: auto;
 }
 
-.playoff-round {
-  margin-bottom: 10px;
+.bracket-tree {
+  position: relative;
 }
 
-.playoff-round h4 {
-  margin: 0 0 4px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.7;
+.bracket-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
 }
 
-.playoff-round ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.bracket-line {
+  fill: none;
+  stroke: var(--at-line);
+  stroke-width: 1.5;
 }
 
-.playoff-series-row {
+.bracket-match {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--at-paper);
+  border: 1px solid var(--at-line);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.bracket-team-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
-  padding: 3px 0;
-  font-size: 13px;
+  font-size: 12px;
+  padding: 1px 0;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.playoff-series-vs {
-  opacity: 0.6;
-  font-size: 11px;
+.bracket-seed {
+  font-size: 10px;
+  color: var(--at-ink-faint);
+  min-width: 16px;
 }
 
-.playoff-winner {
+.bracket-team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bracket-team-winner {
   font-weight: 700;
   color: var(--at-accent, inherit);
 }
 
-.playoff-series-score {
-  margin-left: auto;
+.bracket-you-tag {
+  margin-left: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: var(--at-accent);
+  color: var(--at-accent-ink);
+}
+
+.bracket-score {
+  position: absolute;
+  right: 6px;
+  bottom: 2px;
+  font-size: 10px;
   font-variant-numeric: tabular-nums;
-  opacity: 0.85;
+  color: var(--at-ink-faint);
 }
 
 .playoff-champion {
