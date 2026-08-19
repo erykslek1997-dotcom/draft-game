@@ -329,16 +329,64 @@ function hasNamedTierException(playerName?: string, spanLabel?: string): boolean
  * seeing the other 76-TAL company Skiles keeps: he's "too weak" to sit among them at All-star —
  * named downcap for exactly this one span, not a general rule change.
  */
+/**
+ * 2026-08-19, user-reported: CJ McCollum's 2020-22 span (PG, O-TAL C+/65, D-TAL D/47) displays
+ * All-NBA off raw TAL (81) alone landing in that tier's floor band — no PG-side rule pulls it
+ * back down, since PG's own tierCaps case (unlike SG's) has no "needs real two-way value or
+ * elite offense to reach All-NBA" downcap at all. Tried building that general rule first
+ * (mirroring SG's exact threshold) and rejected it on blast radius before shipping: full PG
+ * archive, 86 All-NBA+-tier spans would have been wrongly downcapped, including real MVP-caliber
+ * peaks (Westbrook 2015-17, Magic 1986-88, Oscar Robertson 1965-67, Isiah Thomas 1984-86, Luka
+ * 2019-21) whose own O-TAL grade (B/B+) sits well below SG's A- bar but is still a genuine star
+ * profile for a PG specifically — PG's real O-TAL distribution runs structurally lower than SG's
+ * (compared against an elite-playmaking-peak bar, not a scoring one), so SG's exact threshold
+ * doesn't transfer. A narrower, PG-calibrated version (offense >= B- OR defense >= A-) fixed most
+ * of that but still had real judgment calls left in the remainder (Chris Paul 2017-19, Kyrie
+ * 2014-16 — genuinely no-standout-side profiles, arguably correct to downcap, but not clearly
+ * asked for). User's own call: fix this one reported span directly, same shape as the two
+ * existing named downcaps below, not a new general PG rule.
+ */
 const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
   [
     { name: 'Andrei Kirilenko', spanLabel: '2004-06', cap: 'All-NBA' as OverallTier },
     { name: 'Scott Skiles', spanLabel: '1990-92', cap: 'Sixth Man' as OverallTier },
+    { name: 'CJ McCollum', spanLabel: '2020-22', cap: 'All-star' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
 function namedTierDowncap(playerName?: string, spanLabel?: string): OverallTier | undefined {
   if (!playerName || !spanLabel) return undefined;
   return NAMED_TIER_DOWNCAPS.get(`${normalizePlayerName(playerName)}|${spanLabel}`);
+}
+
+/**
+ * 2026-08-19, user's explicit ask ("make klay all-nba"), direct follow-up on the off-ball-
+ * archetype usage-penalty fix (talent.ts) shipped the same day. That fix genuinely raised Klay
+ * Thompson's raw TAL (his best span, 2015-17, went from a penalized number up to a real 78) — but
+ * 78 still sits 2 points under the All-NBA floor (80), so no amount of cap-bypassing reaches it:
+ * unlike `NAMED_TIER_DOWNCAPS` above, this isn't a cap being wrongly strict, it's the BASE tier
+ * ladder itself (`overallTier`) reading the real number honestly. Caps only ever lower a tier from
+ * that base (this function's own established rule, same one `GOAT_NAMES` below is the sole
+ * documented exception to) — raising one requires a genuine override, not a cap adjustment.
+ *
+ * Same shape as `GOAT_NAMES`: a named, single-span exception because the user explicitly wants
+ * this exact display outcome, not a formula fix — a general "off-ball shooters get an extra tier
+ * boost" rule wasn't asked for and would need the same kind of full blast-radius check the
+ * rejected general PG downcap rule (see `NAMED_TIER_DOWNCAPS`'s own McCollum entry above) already
+ * demonstrated is necessary before touching anything pool-wide. Unlike `GOAT_NAMES`, this doesn't
+ * require already having earned a real tier first — it's a direct override, so `displayTalentForSpan`
+ * is also taught about it (see its own docstring) so the badge and the number stay in agreement.
+ */
+const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
+  [{ name: 'Klay Thompson', spanLabel: '2015-17', tier: 'All-NBA' as OverallTier }].map((e) => [
+    `${normalizePlayerName(e.name)}|${e.spanLabel}`,
+    e.tier,
+  ]),
+);
+
+function namedTierRaise(playerName?: string, spanLabel?: string): OverallTier | undefined {
+  if (!playerName || !spanLabel) return undefined;
+  return NAMED_TIER_RAISES.get(`${normalizePlayerName(playerName)}|${spanLabel}`);
 }
 
 function tierCaps(
@@ -713,6 +761,12 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   // shape as the GOAT raise, just never able to conflict with it in practice (`isSixthManProfile`
   // requires TAL<80, GOAT requires 'Greatest peak' i.e. TAL>=94 first).
   if (ctx.isSixthMan) return 'Sixth Man';
+  // See NAMED_TIER_RAISES's own docstring — a direct override, not gated on any real tier the
+  // span already earned (unlike GOAT above). Only ever takes effect if it's actually HIGHER than
+  // what capped/caps already computed, so it can't accidentally undo a real downcap for the same
+  // span if one ever existed.
+  const raise = namedTierRaise(ctx.playerName, ctx.spanLabel);
+  if (raise && tierRank(raise) > tierRank(capped)) return raise;
   return capped;
 }
 
@@ -769,9 +823,25 @@ function tierCeiling(tier: OverallTier): number {
  * contradict each other — the original 2026-08-05 reason this clamp exists at all), just no
  * longer collapsing genuinely different players onto one number.
  */
+/** The floor each tier's own band starts at, per `OVERALL_TIER_FLOORS` — the counterpart to
+ * `tierCeiling` above, needed so `displayTalentForSpan` can floor a `NAMED_TIER_RAISES` span's
+ * NUMBER to match its raised badge (see that map's own docstring: a raise that only changed the
+ * badge, leaving the number below the tier's real floor, would read exactly as broken as the
+ * badge/number mismatch `displayTalentForSpan`'s own history already had to fix once). Not
+ * meaningful for 'GOAT' (a relabel, not a real floor on the ladder) — returns 0 there, but no
+ * caller currently needs that case since `NAMED_TIER_RAISES` never targets GOAT. */
+function tierFloor(tier: OverallTier): number {
+  const entry = OVERALL_TIER_FLOORS.find(([, name]) => name === tier);
+  return entry ? entry[0] : 0;
+}
+
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const cappedTier = overallTierForSpan(ctx);
-  return Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
+  const raw = Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
+  // Only when the raise is actually what produced this span's displayed tier — every other span
+  // (the vast majority) is completely unaffected by this check.
+  if (namedTierRaise(ctx.playerName, ctx.spanLabel) === cappedTier) return Math.max(raw, tierFloor(cappedTier));
+  return raw;
 }
 
 /**
