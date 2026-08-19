@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { rankTeams } from '../engine/scoring';
 import { evaluateLeague } from '../engine/leagueSimulation';
+import { simulateSeason, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { STARTER_SLOTS } from '../engine/positions';
 import { allAssignments, benchWithMinutes, primaryStarters } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
@@ -334,6 +335,11 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
   // `buildFeedbackExport`'s own docstring on `correctedRotations`).
   const [correctedRotations, setCorrectedRotations] = useState<Record<string, Rotation>>({});
   const [editingRotationTeamId, setEditingRotationTeamId] = useState<string | null>(null);
+  // 2026-08-19, user's own idea ("PR works as it works, but user can simulate 82 game season"):
+  // one randomly-rolled 82-game season standings table, completely separate from the Final Power
+  // Ranking above (`ranked`, still what `overall`/rank is judged by — untouched by this). `null`
+  // until the button below is clicked; re-clicking re-rolls a fresh season rather than averaging.
+  const [seasonStandings, setSeasonStandings] = useState<SeasonStandingsRow[] | null>(null);
   // 2026-08-14, results-screen redesign: 16 full team cards on one page was the single biggest
   // usability complaint (scrolling past 15 opponents to see your own team) — every card now
   // starts collapsed to a one-line summary, except the human's own team, which starts expanded
@@ -418,6 +424,52 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
       <button className="secondary-btn" onClick={() => setShowBrowser(true)}>
         Przeglądaj wszystkich graczy
       </button>
+      {/* 2026-08-19, user's own idea: the Final Power Ranking above stays exactly what it always
+          was — this is a separate, just-for-fun roll of one randomly-simulated 82-game regular
+          season, game by game, using the same real per-game win probability model the Championship
+          bracket sim below already relies on (see seasonSimulation.ts's own docstring). Re-clicking
+          re-rolls a brand new season rather than averaging toward an "expected" record — the user's
+          explicit choice over a many-seasons-averaged projection. */}
+      <div className="season-sim-panel">
+        <h3>Simulate 82-Game Season</h3>
+        <p className="player-notes-hint">
+          Rolls one full regular season, game by game, using each pairing's real projected win probability. Separate from
+          the Final Power Ranking above — click again to roll a brand new season.
+        </p>
+        <button className="secondary-btn" onClick={() => setSeasonStandings(simulateSeason(scoredTeams))}>
+          {seasonStandings ? '🎲 Re-simulate Season' : '🏀 Simulate 82-Game Season'}
+        </button>
+        {seasonStandings && (
+          <table className="at-roster-table season-standings-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>W</th>
+                <th>L</th>
+                <th>Win%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {seasonStandings.map((row) => {
+                const rowTeam = teamById(row.teamId);
+                if (!rowTeam) return null;
+                return (
+                  <tr key={row.teamId} className={rowTeam.isHuman ? 'season-standings-you' : ''}>
+                    <td>{row.rank}</td>
+                    <td>
+                      {teamLabel(rowTeam)} {rowTeam.isHuman ? '(You)' : ''}
+                    </td>
+                    <td>{row.wins}</td>
+                    <td>{row.losses}</td>
+                    <td>{(row.winPct * 100).toFixed(1)}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
       <div className="left-on-board">
         <strong>Zostali na boardzie (top wg TAL)</strong>
         <ul>

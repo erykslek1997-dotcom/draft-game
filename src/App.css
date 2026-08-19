@@ -1465,6 +1465,32 @@ select {
   overflow-y: auto;
 }
 
+/* 2026-08-19, user's own idea ("PR works as it works, but user can simulate 82 game season"):
+   same bordered-panel treatment as `.left-on-board` right above it (a sibling "extra info" block
+   on the same screen), not a new visual language. The standings table reuses `.at-roster-table`'s
+   own styling directly (see App.tsx-adjacent `table.at-roster-table` rules) rather than a
+   duplicate set of column rules. */
+.season-sim-panel {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.season-sim-panel h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.season-standings-table {
+  margin-top: 10px;
+}
+
+.season-standings-you td {
+  font-weight: 700;
+  color: var(--at-accent, inherit);
+}
+
 .team-feedback {
   margin-top: 10px;
   padding-top: 10px;
