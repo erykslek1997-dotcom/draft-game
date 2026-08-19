@@ -18,15 +18,25 @@ import { athleticismScoreForSpan } from './athleticismLookup';
 import type { Team } from './types';
 
 /**
- * Experimental, explainable replacement candidate for `fitScore`.
- *
- * This module is intentionally NOT imported by scoring.ts or aiDrafter.ts. It answers only
- * "how well do these five starters complement each other?" and avoids re-awarding raw quality
- * already owned by TAL/OFF/DEF:
+ * `fitScore` — how well the starting five's roles actually complement each other. Answers
+ * "how well do these five starters complement each other?" and deliberately avoids re-awarding
+ * raw quality already owned by TAL/OFF/DEF elsewhere in `scoring.ts`:
  * - no `computeTalent` or `computeDefensiveTalent` input;
  * - no talent-per-FGA/cap-efficiency term;
  * - no average shooting-quality bonus (only lineup geometry and rim-gravity interactions);
  * - no rotation/minutes/position-fit penalty.
+ *
+ * 2026-08-19, promoted to the official Fit score (user's explicit ask, after this ran alongside
+ * the old formula as "FIT v2 shadow" — a separate, non-consumed panel next to the real Fit score
+ * — for direct side-by-side comparison across many real drafted rosters this session). The
+ * previous formula (a hand-tuned point system: creation hierarchy, rim-gravity synergy,
+ * continuous spacing, huntability-based team defense, rebounding, cap efficiency, rescaled
+ * against empirically-calibrated achievable min/max) is retired; see git history
+ * (`scoring.ts`'s old `fitScore`, deleted this same commit) for its own long, real calibration
+ * chain if it's ever worth revisiting one of its ideas (cap efficiency in particular had a real,
+ * validated 0.521 correlation with the human D1 vote — not reused here, since this module
+ * deliberately stays a pure role-complementarity signal, not a talent/efficiency one; TAL/OFF/DEF
+ * and `benchDepthScore` already own that ground on the Overall breakdown).
  *
  * Additional role proposals come from the existing role-fit shadow scorer. A curated incumbent
  * role establishes a credible 80-point floor (not automatic perfection); a proposed role is
@@ -35,7 +45,7 @@ import type { Team } from './types';
  * resemblance into full lineup versatility.
  */
 
-export const FIT_V2_SHADOW_WEIGHTS = {
+export const FIT_WEIGHTS = {
   creationStructure: 0.35,
   spacingCompatibility: 0.30,
   defensiveRoleCoverage: 0.25,
@@ -62,7 +72,7 @@ const SWITCHABILITY_ROLE_SCORE: Record<DefensiveRole, number> = {
   'Low Activity': 20,
 };
 
-export interface FitV2ShadowComponents {
+export interface FitScoreComponents {
   creationStructure: number;
   spacingCompatibility: number;
   defensiveRoleCoverage: number;
@@ -70,7 +80,7 @@ export interface FitV2ShadowComponents {
   sizeCoverage: number;
 }
 
-export interface FitV2ShadowInputs {
+export interface FitScoreInputs {
   starterCount: number;
   onBallDemand: number;
   primaryCreationSignal: number;
@@ -100,11 +110,11 @@ export interface FitV2ShadowInputs {
   additionalRoleCredits: string[];
 }
 
-export interface FitV2ShadowResult {
-  version: 'fit-v2-shadow-v1';
+export interface FitScoreResult {
+  version: 'fit-v2';
   score: number;
-  components: FitV2ShadowComponents;
-  inputs: FitV2ShadowInputs;
+  components: FitScoreComponents;
+  inputs: FitScoreInputs;
   notes: string[];
 }
 
@@ -255,14 +265,14 @@ function frontcourtGeometryScore(nonSpacers: number): number {
   return [100, 75, 25][Math.min(2, nonSpacers)];
 }
 
-export function fitV2ShadowScore(team: Team): FitV2ShadowResult {
+export function fitScore(team: Team): FitScoreResult {
   const starterEntries = primaryStarters(team);
   const starters = starterEntries.map((entry) => entry.player);
   const notes: string[] = [];
 
   if (starters.length < 5) {
     return {
-      version: 'fit-v2-shadow-v1',
+      version: 'fit-v2',
       score: 0,
       components: {
         creationStructure: 0,
@@ -465,7 +475,7 @@ export function fitV2ShadowScore(team: Team): FitV2ShadowResult {
   if (reboundingBalance < 35) notes.push('The starting five is weak on the glass relative to its assigned positions.');
   if (sizeCoverage < 35) notes.push('The starting five lacks functional size relative to its assigned positions.');
 
-  const components: FitV2ShadowComponents = {
+  const components: FitScoreComponents = {
     creationStructure,
     spacingCompatibility,
     defensiveRoleCoverage,
@@ -473,15 +483,15 @@ export function fitV2ShadowScore(team: Team): FitV2ShadowResult {
     sizeCoverage,
   };
   const score = Math.round(
-    components.creationStructure * FIT_V2_SHADOW_WEIGHTS.creationStructure +
-      components.spacingCompatibility * FIT_V2_SHADOW_WEIGHTS.spacingCompatibility +
-      components.defensiveRoleCoverage * FIT_V2_SHADOW_WEIGHTS.defensiveRoleCoverage +
-      components.reboundingBalance * FIT_V2_SHADOW_WEIGHTS.reboundingBalance +
-      components.sizeCoverage * FIT_V2_SHADOW_WEIGHTS.sizeCoverage,
+    components.creationStructure * FIT_WEIGHTS.creationStructure +
+      components.spacingCompatibility * FIT_WEIGHTS.spacingCompatibility +
+      components.defensiveRoleCoverage * FIT_WEIGHTS.defensiveRoleCoverage +
+      components.reboundingBalance * FIT_WEIGHTS.reboundingBalance +
+      components.sizeCoverage * FIT_WEIGHTS.sizeCoverage,
   );
 
   return {
-    version: 'fit-v2-shadow-v1',
+    version: 'fit-v2',
     score,
     components,
     inputs: {

@@ -124,14 +124,17 @@ function sourceFiles(root: string): string[] {
 }
 
 const roleModule = path.resolve('src/engine/roleFitShadow.ts');
-const allowedShadowConsumer = path.resolve('src/engine/fitV2Shadow.ts');
+// 2026-08-19: FIT v2 promoted to the official `fitScore` (user's explicit ask) — the file that
+// bridges into this role scorer is now `fit.ts`, not `fitV2Shadow.ts`. Same guard, same intent
+// ("only the fit score module imports the underlying role scorer"), updated path only.
+const allowedConsumer = path.resolve('src/engine/fit.ts');
 const runtimeImports = sourceFiles(path.resolve('src'))
   .filter((file) => path.resolve(file) !== roleModule)
   .filter((file) => fs.readFileSync(file, 'utf8').includes('roleFitShadow'));
-const unexpectedRuntimeImports = runtimeImports.filter((file) => path.resolve(file) !== allowedShadowConsumer);
+const unexpectedRuntimeImports = runtimeImports.filter((file) => path.resolve(file) !== allowedConsumer);
 check(
-  unexpectedRuntimeImports.length === 0 && runtimeImports.some((file) => path.resolve(file) === allowedShadowConsumer),
-  `only FIT v2's shadow bridge imports the role scorer (${runtimeImports.join(', ') || 'none'})`,
+  unexpectedRuntimeImports.length === 0 && runtimeImports.some((file) => path.resolve(file) === allowedConsumer),
+  `only fit.ts imports the role scorer (${runtimeImports.join(', ') || 'none'})`,
 );
 
 console.log('Role-fit shadow tests complete.');

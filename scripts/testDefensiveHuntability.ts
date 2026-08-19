@@ -2,7 +2,7 @@ import { draftPool as players } from '../src/data/draftPool';
 import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
 import { defensiveHuntability } from '../src/engine/defensiveHuntability';
 import { defensiveCohesion } from '../src/engine/defensiveCohesion';
-import { fitV2ShadowScore } from '../src/engine/fitV2Shadow';
+import { fitScore } from '../src/engine/fit';
 import { projectedNetRating } from '../src/engine/netRatingProjection';
 import { autoAssignRotation } from '../src/engine/rotation';
 import { defenseScore, scoreTeam } from '../src/engine/scoring';
@@ -75,7 +75,7 @@ const reportedThreeLayerCore = team('reported-jordan-mobley-gobert-core', [
 
 const reportedHunt = defensiveHuntability(reported);
 const controlHunt = defensiveHuntability(control);
-const reportedFit = fitV2ShadowScore(reported);
+const reportedFit = fitScore(reported);
 const reportedScores = scoreTeam(reported);
 const reportedProjection = projectedNetRating(reported);
 const eliteCohesion = defensiveCohesion(reportedElite);

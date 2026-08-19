@@ -1,6 +1,6 @@
 import { draftPool as players } from '../src/data/draftPool';
 import type { PlayerSpan } from '../src/data/schema';
-import { FIT_V2_SHADOW_WEIGHTS, fitV2ShadowScore } from '../src/engine/fitV2Shadow';
+import { FIT_WEIGHTS, fitScore } from '../src/engine/fit';
 import { autoAssignRotation, primaryStarters } from '../src/engine/rotation';
 import { scoreTeam } from '../src/engine/scoring';
 import type { Team } from '../src/engine/types';
@@ -35,32 +35,32 @@ const balanced = team('fit-v2-balanced', [
   pick('Brook Lopez', '2022-24'),
 ]);
 
-const crampedResult = fitV2ShadowScore(cramped);
-const balancedResult = fitV2ShadowScore(balanced);
+const crampedResult = fitScore(cramped);
+const balancedResult = fitScore(balanced);
 check(balancedResult.score >= crampedResult.score + 15, 'balanced lineup clearly outranks the cramped control');
 
 for (const [label, result] of [['cramped', crampedResult], ['balanced', balancedResult]] as const) {
-  check(result.version === 'fit-v2-shadow-v1', `${label} result carries the shadow schema version`);
+  check(result.version === 'fit-v2', `${label} result carries the expected schema version`);
   check(
     Object.values(result.components).every((value) => value >= 0 && value <= 100),
     `${label} component scores stay on the 0-100 scale`,
   );
   const recomputed = Math.round(
-    result.components.creationStructure * FIT_V2_SHADOW_WEIGHTS.creationStructure +
-      result.components.spacingCompatibility * FIT_V2_SHADOW_WEIGHTS.spacingCompatibility +
-      result.components.defensiveRoleCoverage * FIT_V2_SHADOW_WEIGHTS.defensiveRoleCoverage +
-      result.components.reboundingBalance * FIT_V2_SHADOW_WEIGHTS.reboundingBalance +
-      result.components.sizeCoverage * FIT_V2_SHADOW_WEIGHTS.sizeCoverage,
+    result.components.creationStructure * FIT_WEIGHTS.creationStructure +
+      result.components.spacingCompatibility * FIT_WEIGHTS.spacingCompatibility +
+      result.components.defensiveRoleCoverage * FIT_WEIGHTS.defensiveRoleCoverage +
+      result.components.reboundingBalance * FIT_WEIGHTS.reboundingBalance +
+      result.components.sizeCoverage * FIT_WEIGHTS.sizeCoverage,
   );
   check(result.score === recomputed, `${label} total is exactly the documented component blend`);
 }
 
 const productionBefore = scoreTeam(balanced);
-fitV2ShadowScore(balanced);
+fitScore(balanced);
 const productionAfter = scoreTeam(balanced);
 check(
   JSON.stringify(productionBefore) === JSON.stringify(productionAfter),
-  'shadow FIT does not mutate or alter production scoring',
+  'calling fitScore standalone does not mutate or alter production scoring',
 );
 
 const barkleyEmbiid = team('fit-v2-barkley-embiid', [
@@ -70,7 +70,7 @@ const barkleyEmbiid = team('fit-v2-barkley-embiid', [
   pick('Charles Barkley', '1985-87'),
   pick('Joel Embiid', '2020-22'),
 ]);
-const barkleyEmbiidResult = fitV2ShadowScore(barkleyEmbiid);
+const barkleyEmbiidResult = fitScore(barkleyEmbiid);
 check(barkleyEmbiidResult.components.reboundingBalance >= 75, 'Barkley + Embiid lineup retains elite measured rebounding');
 check((barkleyEmbiidResult.inputs.positionAdjustedHeightPercentile ?? 100) < 50, 'Barkley + Embiid lineup still reports its separate height limitation');
 check(
@@ -88,7 +88,7 @@ const reportedFunctionalSize = team('fit-v2-reported-functional-size', [
   pick('Hakeem Olajuwon', '1991-93'),
   pick('Jakob Poeltl', '2020-22'),
 ]);
-const reportedFunctionalSizeResult = fitV2ShadowScore(reportedFunctionalSize);
+const reportedFunctionalSizeResult = fitScore(reportedFunctionalSize);
 console.log('Reported functional-size inputs:', {
   functionalSize: reportedFunctionalSizeResult.components.sizeCoverage,
   height: Math.round(reportedFunctionalSizeResult.inputs.positionAdjustedHeightPercentile ?? 0),
@@ -111,7 +111,7 @@ const reportedSwitchability = team('fit-v2-reported-switchability', [
   pick('Kristaps Porziņģis', '2022-24'),
   pick('Ben Wallace', '2001-03'),
 ]);
-const reportedSwitchabilityResult = fitV2ShadowScore(reportedSwitchability);
+const reportedSwitchabilityResult = fitScore(reportedSwitchability);
 check(
   reportedSwitchabilityResult.inputs.switchability === 71,
   'Kidd/Klay/LeBron/Barkley/Porzingis starting five grades as good, not elite, switchability',
@@ -141,8 +141,8 @@ const duncanPorzingis = team('fit-v2-duncan-porzingis', [
   pick('Tim Duncan', '2005-07'),
   pick('Kristaps Porziņģis', '2022-24'),
 ]);
-const wembyWebberResult = fitV2ShadowScore(wembyWebber);
-const duncanPorzingisResult = fitV2ShadowScore(duncanPorzingis);
+const wembyWebberResult = fitScore(wembyWebber);
+const duncanPorzingisResult = fitScore(duncanPorzingis);
 check(
   duncanPorzingisResult.components.sizeCoverage > wembyWebberResult.components.sizeCoverage,
   'Duncan + Porzingis lineup grades larger than Wembanyama + Webber after natural-slot assignment',
@@ -159,7 +159,7 @@ const noTrueWingStopper = team('fit-v2-no-true-wing-stopper', [
   pick('Kevin Garnett', '2004-06'),
   pick('Alonzo Mourning', '1998-00'),
 ]);
-const noTrueWingStopperResult = fitV2ShadowScore(noTrueWingStopper);
+const noTrueWingStopperResult = fitScore(noTrueWingStopper);
 check(pick('Tracy McGrady', '2001-03').defensiveRole === 'Chaser', 'peak T-Mac is not mislabeled as a primary Wing Stopper from box activity');
 check(
   noTrueWingStopperResult.inputs.wingCoverage <= 80,
@@ -170,4 +170,4 @@ check(
   'Porter/T-Mac/Reggie lineup no longer earns elite defensive-role coverage without a true wing stopper',
 );
 
-console.log('FIT v2 shadow tests complete.');
+console.log('Fit tests complete.');

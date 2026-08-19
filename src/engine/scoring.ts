@@ -1,4 +1,4 @@
-import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
+import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import type { Position, PlayerSpan } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
@@ -11,7 +11,6 @@ import {
   SHOOTING_ANOMALY_TEAM_SPACING_FLOOR,
   WALKING_GRAVITY_FLOOR,
 } from './spacing';
-import { isRimGravityScorer, isSelfSufficientEngine } from './offensiveProfile';
 import { maxSustainableMinutes } from './durability';
 import { overallTier, effectiveTalent, type OverallTier } from './grades';
 import {
@@ -25,11 +24,8 @@ import {
 } from './rotation';
 import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
-
-/** Talent points per FGA a "normal" cap-legal roster produces — calibrated (scripts/calibrate.ts)
- * against the actual in-game draft pool, FGA-weighted. Recalibrated after the position/usage-
- * adjusted TS% baseline and continuous defensive role weight changed computeTalent's scale. */
-const BASELINE_EFFICIENCY = 4.05;
+import { fitScore } from './fit';
+export type { FitScoreResult, FitScoreComponents } from './fit';
 
 /** Minimum defensive-impact score (box-score activity + rebounding + role weight) required,
  * on top of the role tag itself, for a starter to actually count as a rim protector or
@@ -50,14 +46,6 @@ export function isStrongPerimeterDefender(player: { defensiveRole: string }): bo
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= PERIMETER_DEFENDER_IMPACT_THRESHOLD
   );
 }
-
-/** Combined starters' raw rpg, below which a starting five is a real rebounding liability —
- * e.g. an all-guard lineup. Calibrated against the actual pool's real per-position mean rpg
- * (scripts/checkReboundingBaseline.ts): PG/SG ~3.9, SF ~5.3, PF ~7.6, C ~9.5, so a normal
- * one-per-position starting five nets ~30 combined; 25 sits comfortably below that (so a
- * balanced five is never falsely flagged) but well above an all-guard five's ~19-20. Previously
- * nothing in fitScore checked team rebounding at all — an all-PG roster paid no penalty for it. */
-const STARTER_REBOUNDING_FLOOR = 25;
 
 /** Points deducted per minute a player is pushed past their durability-safe cap
  * (`maxSustainableMinutes`), in `rotationScore`. 0.8 means a single Walking-Glass-tier player
@@ -429,226 +417,6 @@ export function spacingScore(team: Team): number {
   const floored = Math.max(base, SHOOTING_ANOMALY_TEAM_SPACING_FLOOR);
   const withCurryFloor = base * (1 - anomalyShare) + floored * anomalyShare;
   return Math.round(rescaleToFullRange(withCurryFloor, SPACING_SCORE_ANCHORS));
-}
-
-export interface FitScoreComponents {
-  base: number;
-  creationHierarchy: number;
-  rimGravitySynergy: number;
-  continuousSpacing: number;
-  teamDefense: number;
-  rebounding: number;
-  capEfficiency: number;
-}
-
-export interface FitScoreResult {
-  score: number;
-  notes: string[];
-  raw: number;
-  components: FitScoreComponents;
-}
-
-export function fitScore(team: Team): FitScoreResult {
-  const starters = primaryStarters(team).map((e) => e.player);
-  const notes: string[] = [];
-  let score = 70;
-  const components: FitScoreComponents = {
-    base: score,
-    creationHierarchy: 0,
-    rimGravitySynergy: 0,
-    continuousSpacing: 0,
-    teamDefense: 0,
-    rebounding: 0,
-    capEfficiency: 0,
-  };
-
-  const creationStart = score;
-  const usageWeight = starters.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0), 0);
-  // 2026-08-07: `isSelfSufficientEngine` (offensiveProfile.ts, Nash-type — elite playmaking, no
-  // dominant shot zone) generates real offense alone even when his own archetype tag reads as
-  // low/no on-ball-usage weight (a facilitation-heavy hub isn't "Shot Creator"/"Slasher" in the
-  // redundancy sense) — without this check a genuine Nash/Stockton-caliber hub can still trip the
-  // "no go-to shot creator" penalty below despite objectively not needing one.
-  const hasSelfSufficientEngine = starters.some(isSelfSufficientEngine);
-  if (usageWeight === 0) {
-    if (hasSelfSufficientEngine) {
-      notes.push('A self-sufficient offensive engine covers creation alone — no redundant isolation usage needed.');
-    } else {
-      score -= 15;
-      notes.push('No go-to shot creator among starters — offense will stall in isolation situations.');
-    }
-  } else if (usageWeight > 3) {
-    score -= 20;
-    notes.push('Starters are redundant — too much isolation usage competing for the same shots.');
-  } else if (usageWeight > 2) {
-    score -= 10;
-    notes.push('Starters will compete for touches.');
-  } else {
-    notes.push('Clean creation hierarchy among starters.');
-  }
-  components.creationHierarchy = score - creationStart;
-
-  // 2026-08-17 scoring audit: average O-POR across all five starters was removed from Fit.
-  // It penalized the legitimate primary engine instead of asking whether the *complements*
-  // travel, and duplicated the creation-hierarchy signal above. Shooter count likewise no
-  // longer scores independently: continuous spacing below already measures the same property.
-  // Both values remain available to the insight layer and the conditional rim-gravity check.
-  const plusShooters = starters.filter(isPlusShooter);
-  const hasShootingAnomaly = starters.some(isShootingAnomalyPlayer);
-
-  // Rim-gravity synergy — 2026-08-07, the user's own (a)/(c) framework (offensiveProfile.ts):
-  // a rim-dominant scorer's whole value depends on real shooters punishing the help defense he
-  // draws. Distinct from and stacks with the generic no-shooter penalty above — a rim-gravity
-  // scorer with zero shooters around him is a WORSE fit failure than a merely shooter-less team
-  // in general, not just the same one twice.
-  const rimGravityStart = score;
-  const rimGravityStarters = starters.filter(isRimGravityScorer);
-  const RIM_GRAVITY_WASTED_PENALTY_PER_PLAYER = 7;
-  const MAX_RIM_GRAVITY_WASTED_PENALTY = 14;
-  if (rimGravityStarters.length > 0) {
-    if (!hasShootingAnomaly && plusShooters.length === 0) {
-      const penalty = Math.min(MAX_RIM_GRAVITY_WASTED_PENALTY, rimGravityStarters.length * RIM_GRAVITY_WASTED_PENALTY_PER_PLAYER);
-      score -= penalty;
-      notes.push(`${rimGravityStarters.map((p) => p.playerName).join('/')} draws real rim gravity with nobody to punish the help defense.`);
-    } else if (hasShootingAnomaly || plusShooters.length >= 2) {
-      score += 5;
-      notes.push('Shooters properly surround the roster\'s rim-gravity scorer(s).');
-    }
-  }
-  components.rimGravitySynergy = score - rimGravityStart;
-
-  // Real team spacing, continuous — 2026-08-07, the user's own first-named reason for the BAD
-  // example roster ("nieistniejący spacing" — spacing that doesn't exist at all, not just "no
-  // plus shooter"). The binary plus-shooter check above can't distinguish a team that's merely
-  // short of the plus-shooter bar from one where literally every starter reads 0 on
-  // `computeSpacing` — checked directly, the user's own BAD example is the latter (all five
-  // starters score exactly 0). Anchored on real draft-pool per-player SPACING percentiles: p50=40
-  // (neutral), p10=0/p90=85 — asymmetric spans on purpose, matching the asymmetric real
-  // distribution (a quarter of the whole pool reads 0).
-  const continuousSpacingStart = score;
-  const SPACING_TAL_NEUTRAL = 40;
-  const SPACING_PENALTY_SPAN = 40; // neutral - p10
-  const SPACING_BONUS_SPAN = 45; // p90 - neutral
-  const SPACING_MAX_PENALTY = 26;
-  const SPACING_MAX_BONUS = 12;
-  const avgStarterSpacing = starters.reduce((sum, p) => sum + computeSpacing(p), 0) / starters.length;
-  if (avgStarterSpacing < SPACING_TAL_NEUTRAL) {
-    const deficitRatio = Math.min(1, (SPACING_TAL_NEUTRAL - avgStarterSpacing) / SPACING_PENALTY_SPAN);
-    const penalty = Math.round(deficitRatio * SPACING_MAX_PENALTY);
-    score -= penalty;
-    if (penalty >= 10) notes.push('Team spacing is essentially non-existent across the starting five.');
-  } else {
-    const excessRatio = Math.min(1, (avgStarterSpacing - SPACING_TAL_NEUTRAL) / SPACING_BONUS_SPAN);
-    const bonus = Math.round(excessRatio * SPACING_MAX_BONUS);
-    score += bonus;
-  }
-  components.continuousSpacing = score - continuousSpacingStart;
-
-  // 2026-08-17 weak-link pass: a starter-average D-TAL term let three strong defenders erase one
-  // or more obvious playoff targets from the mean. `defenseScore` already rewards average quality,
-  // so FIT now measures the separate complement question: how many assigned minutes can opponents
-  // hunt? Every D-TAL<60 player's real rotation minutes stack; this roster-level penalty cannot be
-  // satisfied by one noisy role tag or hidden by one elite rim protector.
-  const teamDefenseStart = score;
-  const DTAL_NEUTRAL = 42;
-  const DTAL_ELITE_SPAN = 37; // p90 - p50
-  const avgStarterDTal = starters.reduce((sum, p) => sum + computeDefensiveTalent(p), 0) / starters.length;
-  const huntability = defensiveHuntability(team);
-  // Average D-TAL is already a direct Overall axis through `defenseScore`; re-awarding it here
-  // duplicated quality and let Stockton/OG/Shaq erase Nash from the mean. FIT keeps only the
-  // nonlinear complement question: how many attackable minutes this rotation exposes.
-  const huntabilityPenalty = Math.round(huntability.penalty);
-  score -= huntabilityPenalty;
-  if (huntabilityPenalty >= 8) {
-    notes.push(
-      `Defense exposes ${huntability.targetableMinutes} targetable minutes: ${huntability.offenders
-        .slice(0, 3)
-        .map((offender) => `${offender.playerName} (D-TAL ${offender.defensiveTalent}, ${offender.minutes}m)`)
-        .join(', ')}.`,
-    );
-  } else if (avgStarterDTal >= DTAL_NEUTRAL + DTAL_ELITE_SPAN * 0.7) {
-    notes.push('Starting five has strong defensive talent without a major huntable-minutes problem.');
-  }
-  components.teamDefense = score - teamDefenseStart;
-
-  // 2026-08-17 scoring audit: the former defensive-shell, corroborated-role and engine-
-  // complement bonuses were removed from the numeric score. The first two re-counted the same
-  // D-TAL already measured continuously above; the last fired for every roster in the 48-team
-  // blind sample and therefore carried no ranking information. Role composition still belongs
-  // in Strengths/Concerns, where it can explain a lineup without silently adding D-TAL twice.
-
-  const reboundingStart = score;
-  const totalStarterRpg = starters.reduce((sum, p) => sum + p.box.rpg, 0);
-  if (totalStarterRpg < STARTER_REBOUNDING_FLOOR) {
-    score -= 10;
-    notes.push('Starting five is a rebounding liability — thin at the glass on both ends.');
-  } else {
-    notes.push('Starting five rebounds well enough to hold its own on the glass.');
-  }
-  components.rebounding = score - reboundingStart;
-
-  // 2026-08-13, real D1 human-vote diagnostic: of every fitScore input signal checked
-  // independently against the real 15-roster vote, cap efficiency (talent/FGA) was by far the
-  // strongest (0.521) — stronger than any other fitScore ingredient, and close to `offenseScore`
-  // (0.529) despite fitScore's blended total correlating near zero (0.021) beforehand. It was
-  // capped to the narrowest, most conservative band of any term here (-10/+15) — widened
-  // (doubled) to actually carry the weight this signal earned, rather than clipping most of a
-  // proven-strong real predictor for no evidenced reason.
-  const capEfficiencyStart = score;
-  const allPlayers = team.roster;
-  const totalTalent = allPlayers.reduce((sum, p) => sum + effectiveTalent(p), 0);
-  const totalFga = allPlayers.reduce((sum, p) => sum + p.fga, 0);
-  const efficiency = totalFga > 0 ? totalTalent / totalFga : 0;
-  const efficiencyDelta = ((efficiency - BASELINE_EFFICIENCY) / BASELINE_EFFICIENCY) * 40;
-  const efficiencyAdj = Math.max(-20, Math.min(30, Math.round(efficiencyDelta)));
-  score += efficiencyAdj;
-  if (efficiencyAdj > 3) {
-    notes.push('Efficient cap usage: strong talent-per-shot value from your role players.');
-  } else if (efficiencyAdj < -3) {
-    notes.push('Inefficient cap usage: too much of the cap spent on redundant high-usage scorers.');
-  }
-  components.capEfficiency = score - capEfficiencyStart;
-
-  // 2026-08-07 rework: analytically summing each term's own min/max (the previous approach —
-  // "worst case sums every penalty, best case sums every bonus") assumes a realistic roster can
-  // actually trip every penalty or clear every bonus AT ONCE, which the user's own two named
-  // acceptance-test rosters showed isn't true in practice — a real bad-fit five doesn't
-  // necessarily fail every single check (e.g. Ben Simmons individually clears the perimeter-
-  // defense check even on a team the user correctly calls poorly fit). `ACHIEVABLE_MIN`/
-  // `ACHIEVABLE_MAX` are instead **empirically calibrated** (`scripts/calibrateFitScoreRange.ts`,
-  // same discipline as `OFFENSE_SCORE_ANCHORS`/etc. above) against real worst/best-constructible
-  // rosters under the ACTUAL mechanics above, not a hand-summed analytical bound. Recalibrate
-  // (rerun that script, paste its printed anchors here) after changing any term's magnitude.
-  // 2026-08-13: recalibrated after widening the efficiency band and replacing the two binary
-  // rim/perimeter checks with a bidirectional D-TAL term (see those changes' own docstrings
-  // above) — MAX moved 133->150 (the wider efficiency band raises the real achievable ceiling),
-  // MIN held at -44 (the new D-TAL penalty's max magnitude, 20, is smaller than the two removed
-  // binary penalties combined, 25, so the real floor didn't move).
-  // 2026-08-14: recalibrated after adding the D-TAL-gated defensive-role-composition bonus above
-  // (+8 max). `calibrateFitScoreRange.ts`'s hill-climbing search has real run-to-run variance
-  // (unseeded randomness) — 5 separate runs after this change returned MIN in [-55,-38] and MAX
-  // in [150,157], not a single stable answer. Used the median-ish of those runs (-46/154) rather
-  // than chasing one noisy extreme. Re-run `scripts/calibrateFitScoreRange.ts` a few times (not
-  // just once) and paste a representative value here after any future term change.
-  // 2026-08-17: recalibrated after the scoring audit removed five duplicated/non-discriminating
-  // terms (average O-POR, shooter count, defensive shell, role coverage, engine complements).
-  // The live legal-roster search found -2/124; the two named acceptance rosters land near the
-  // intended ends of that range again (bad fit near 0, good fit near 90).
-  // 2026-08-17, weak-link pass: average starter D-TAL was replaced by the nonlinear targetable-
-  // minutes penalty shared with Defense/DRTG. Two independent hill-climb runs returned
-  // [-15,112] and [-13,114]; use their midpoint rather than one stochastic extreme.
-  // 2026-08-19: recalibrated repeatedly the same day (see git history for the full chain —
-  // position-wide spacing-conditional TAL correction, draftPool.json regenerations, the pre-1980
-  // exemption, Jack Sikma's reclassification, the C bench-scarcity bonus, `effectiveTalent`
-  // replacing raw `computeTalent` project-wide) and again after the PG shooter/playmaker/defense
-  // archetype rule + its tighter Sixth Man ceiling. Three hill-climb runs against the final pool
-  // returned MIN in [-20,-11] (median -20) and MAX in [114,115] (median 114); used the medians
-  // rather than one stochastic extreme, same discipline as the entry above.
-  const ACHIEVABLE_MIN = -20;
-  const ACHIEVABLE_MAX = 114;
-  const rescaled = ((score - ACHIEVABLE_MIN) / (ACHIEVABLE_MAX - ACHIEVABLE_MIN)) * 100;
-
-  return { score: Math.max(0, Math.min(100, Math.round(rescaled))), notes, raw: score, components };
 }
 
 export interface RotationScoreComponents {
