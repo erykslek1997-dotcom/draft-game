@@ -126,58 +126,56 @@ function App() {
             {/* 2026-08-19, user's explicit ask ("merge how to play with home screen etc"): "Your
                 team" and How to Play both used to live on the Draft Lottery's own separate
                 pre-reveal step, reached only after clicking "Start Draft" — merged back onto this
-                screen instead, one screen instead of two. Still gated to Player Mode (unchanged
-                reasoning from when this content first moved off this screen: Tester Mode doesn't
-                need a team name or the rules), now reacting live to whichever mode is currently
-                selected rather than waiting for a separate step to find out. */}
+                screen instead, one screen instead of two. */}
             {mode === 'player' && (
-              <>
-                <div className="team-name-row">
-                  <label htmlFor="intro-team-name" className="team-name-label">
-                    Your team
-                  </label>
-                  <input
-                    id="intro-team-name"
-                    type="text"
-                    className="team-name-input"
-                    value={teamName}
-                    maxLength={40}
-                    onChange={(e) => setTeamName(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="secondary-btn team-name-randomize"
-                    title="Randomize a new suggestion"
-                    onClick={() => setTeamName(randomTeamNames(1)[0])}
-                  >
-                    🎲
-                  </button>
-                </div>
-                <ol className="how-to-play-panel">
-                  <li>
-                    <b>Draft.</b> 16 teams take turns, {DISPLAY_ROSTER_SIZE} rounds — one player each round. You
-                    control one team; the rest are CPU.
-                  </li>
-                  <li>
-                    <b>FGA cap.</b> Every pick costs shot volume (FGA). Your whole roster has to fit under{' '}
-                    {DISPLAY_CAP_LIMIT} FGA — the best player isn't always the pick that fits.
-                  </li>
-                  <li>
-                    <b>Spans.</b> You're not limited to a player's peak — draft any real multi-season window of
-                    their career. A cheaper, less-peak span can be the one that fits your cap.
-                  </li>
-                  <li>
-                    <b>Rotation.</b> Set minutes for your 5 starters and {DISPLAY_BENCH_SLOT_COUNT} bench players —
-                    the Team tab opens for it as soon as you have your first pick, no need to wait for the draft to
-                    finish.
-                  </li>
-                  <li>
-                    <b>Grading.</b> The judge scores every team — talent, offense, defense, spacing, fit, rotation —
-                    and ranks the whole field, yours included.
-                  </li>
-                </ol>
-              </>
+              <div className="team-name-row">
+                <label htmlFor="intro-team-name" className="team-name-label">
+                  Your team
+                </label>
+                <input
+                  id="intro-team-name"
+                  type="text"
+                  className="team-name-input"
+                  value={teamName}
+                  maxLength={40}
+                  onChange={(e) => setTeamName(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="secondary-btn team-name-randomize"
+                  title="Randomize a new suggestion"
+                  onClick={() => setTeamName(randomTeamNames(1)[0])}
+                >
+                  🎲
+                </button>
+              </div>
             )}
+            {/* 2026-08-19, same-day follow-up ("how to play can be on screen all the time in main
+                menu"): unlike the team-name input above (still Player-Mode-only — Tester Mode has
+                no use for a human team name), the rules themselves are useful regardless of which
+                mode is selected, so this no longer waits on `mode === 'player'`. */}
+            <ol className="how-to-play-panel">
+              <li>
+                <b>Draft.</b> 16 teams take turns, {DISPLAY_ROSTER_SIZE} rounds — one player each round. You control
+                one team; the rest are CPU.
+              </li>
+              <li>
+                <b>FGA cap.</b> Every pick costs shot volume (FGA). Your whole roster has to fit under{' '}
+                {DISPLAY_CAP_LIMIT} FGA — the best player isn't always the pick that fits.
+              </li>
+              <li>
+                <b>Spans.</b> You're not limited to a player's peak — draft any real multi-season window of their
+                career. A cheaper, less-peak span can be the one that fits your cap.
+              </li>
+              <li>
+                <b>Rotation.</b> Set minutes for your 5 starters and {DISPLAY_BENCH_SLOT_COUNT} bench players — the
+                Team tab opens for it as soon as you have your first pick, no need to wait for the draft to finish.
+              </li>
+              <li>
+                <b>Grading.</b> The judge scores every team — talent, offense, defense, spacing, fit, rotation — and
+                ranks the whole field, yours included.
+              </li>
+            </ol>
             <button className="primary-btn" onClick={() => setView('game')}>
               Start Draft
             </button>
