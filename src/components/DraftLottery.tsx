@@ -1,20 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Team } from '../engine/types';
-import { teamCodes, randomTeamNames } from '../engine/teamNames';
-// Real import, not App.tsx's own hand-kept `DISPLAY_CAP_LIMIT` copy — safe here since this
-// component only ever renders inside the already-lazy-loaded GameShell (see that file's own
-// docstring on why App.tsx itself avoids any `engine/` import), so there's no eager-load cost
-// to pulling the real constant instead of a second synced-by-hand duplicate.
-import { CAP_LIMIT, BENCH_SLOT_COUNT, ROSTER_SIZE } from '../engine/positions';
+import { teamCodes } from '../engine/teamNames';
 
 interface Props {
   teams: Team[];
-  mode: 'developer' | 'player';
   onDone: () => void;
-  /** 2026-08-16, user's own ask: renaming the human's team moved here from the intro screen (see
-   * this file's own docstring on the `stage === 'intro'` step) — GameShell owns `draftState`, so
-   * the actual rename has to happen up there; this just forwards the edited string. */
-  onRenameTeam: (name: string) => void;
 }
 
 const REVEAL_INTERVAL_MS = 320;
@@ -48,37 +38,29 @@ function shuffledIndices(count: number): number[] {
  * human's own reveal gets an extra highlight + pause (`HUMAN_REVEAL_PAUSE_MS`) since that's the
  * one card everyone watching actually cares about.
  *
- * 2026-08-16, same-day follow-up: also carries the "How to Play" rules — user's own correction
- * after an earlier pass put them on the intro screen instead ("w sensie how to play po tym jak
- * wcisniemy start draft" — they meant after Start Draft, not after picking Player Mode).
- *
- * 2026-08-16, second same-day follow-up (this session): split into two explicit sub-screens
- * (`stage`), player mode only —
- *   1. `'intro'` — "Your team" (the name input, ALSO moved here from the intro screen, same
- *      reasoning: it only matters once Player Mode is the actual choice) + How to Play, static,
- *      with a "Start Lottery" button. The reveal animation no longer autoplays the instant this
- *      component mounts; it waits for that click.
- *   2. `'revealing'` — the original slot-by-slot reveal grid, unchanged, except its finishing
- *      button now reads "Play" (was "Enter the Draft") to match the "Start Lottery" verb pairing.
- * Tester Mode skips `'intro'` entirely and starts straight into `'revealing'`, same as this
- * component's original always-autoplay behavior — nobody there needs to name a team or read the
- * rules.
+ * 2026-08-16, same-day follow-up: for a while also carried "Your team" (a name input) and the
+ * "How to Play" rules as their own separate `stage === 'intro'` step, reached after "Start Draft"
+ * but before this reveal — reasoning at the time was that neither made sense until Player Mode
+ * was the actual choice, which the intro screen didn't know yet.
+ * 2026-08-19, user's explicit ask ("merge how to play with home screen etc"): that whole step is
+ * gone. Both moved back onto the intro screen itself (App.tsx), which now reacts live to the
+ * selected mode instead of needing a separate step to find out — one screen instead of two. This
+ * component goes straight to revealing again, for every mode, matching its own original
+ * always-autoplay behavior before that split existed.
  */
-export default function DraftLottery({ teams, mode, onDone, onRenameTeam }: Props) {
+export default function DraftLottery({ teams, onDone }: Props) {
   const teamCodeByTeamId = useMemo(() => teamCodes(teams), [teams]);
   const revealOrder = useMemo(() => shuffledIndices(teams.length), [teams]);
   const [revealedCount, setRevealedCount] = useState(0);
-  const [stage, setStage] = useState<'intro' | 'revealing'>(mode === 'player' ? 'intro' : 'revealing');
   const done = revealedCount >= teams.length;
-  const humanTeam = teams.find((t) => t.isHuman);
 
   useEffect(() => {
-    if (stage !== 'revealing' || done) return;
+    if (done) return;
     const justRevealed = teams[revealOrder[revealedCount]];
     const delay = justRevealed?.isHuman ? HUMAN_REVEAL_PAUSE_MS : REVEAL_INTERVAL_MS;
     const timer = setTimeout(() => setRevealedCount((c) => c + 1), delay);
     return () => clearTimeout(timer);
-  }, [stage, revealedCount, done, revealOrder, teams]);
+  }, [revealedCount, done, revealOrder, teams]);
 
   const revealedTeamIds = new Set(revealOrder.slice(0, revealedCount).map((i) => teams[i].id));
   const bySlot = [...teams].sort((a, b) => a.draftSlot - b.draftSlot);
@@ -87,94 +69,40 @@ export default function DraftLottery({ teams, mode, onDone, onRenameTeam }: Prop
     <div className="at-shell at-lottery">
       <div className="at-board-brand at-cond">Draft Lottery</div>
 
-      {stage === 'intro' && humanTeam ? (
-        <>
-          <p className="at-lottery-sub">Before the order is drawn — who are you?</p>
-          <div className="team-name-row">
-            <label htmlFor="lottery-team-name" className="team-name-label">
-              Your team
-            </label>
-            <input
-              id="lottery-team-name"
-              type="text"
-              className="team-name-input"
-              value={humanTeam.name}
-              maxLength={40}
-              onChange={(e) => onRenameTeam(e.target.value)}
-            />
-            <button
-              type="button"
-              className="secondary-btn team-name-randomize"
-              title="Randomize a new suggestion"
-              onClick={() => onRenameTeam(randomTeamNames(1)[0])}
+      <p className="at-lottery-sub">
+        {done ? "Draft order set — here's the field." : 'Revealing this draft’s order…'}
+      </p>
+      <div className="at-lottery-grid">
+        {bySlot.map((team) => {
+          const revealed = revealedTeamIds.has(team.id);
+          return (
+            <div
+              key={team.id}
+              className={`at-lottery-slot ${revealed ? 'at-revealed' : ''} ${revealed && team.isHuman ? 'at-you' : ''}`}
             >
-              🎲
-            </button>
-          </div>
-          <ol className="how-to-play-panel">
-            <li>
-              <b>Draft.</b> 16 teams take turns, {ROSTER_SIZE} rounds — one player each round. You control one
-              team; the rest are CPU.
-            </li>
-            <li>
-              <b>FGA cap.</b> Every pick costs shot volume (FGA). Your whole roster has to fit under {CAP_LIMIT}{' '}
-              FGA — the best player isn't always the pick that fits.
-            </li>
-            <li>
-              <b>Spans.</b> You're not limited to a player's peak — draft any real multi-season window of their
-              career. A cheaper, less-peak span can be the one that fits your cap.
-            </li>
-            <li>
-              <b>Rotation.</b> Set minutes for your 5 starters and {BENCH_SLOT_COUNT} bench players — the Team tab
-              opens for it as soon as you have your first pick, no need to wait for the draft to finish.
-            </li>
-            <li>
-              <b>Grading.</b> The judge scores every team — talent, offense, defense, spacing, fit, rotation — and
-              ranks the whole field, yours included.
-            </li>
-          </ol>
-          <button className="primary-btn at-lottery-continue" onClick={() => setStage('revealing')}>
-            Start Lottery
-          </button>
-        </>
+              <span className="at-lottery-num">#{team.draftSlot}</span>
+              {revealed ? (
+                <span className="at-lottery-team">
+                  <span className="at-team-chip at-name-tip" tabIndex={0} data-tip={team.name}>
+                    {teamCodeByTeamId.get(team.id)}
+                  </span>
+                  {team.isHuman && <span className="at-lottery-you-tag">YOU</span>}
+                </span>
+              ) : (
+                <span className="at-lottery-unrevealed">?</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {done ? (
+        <button className="primary-btn at-lottery-continue" onClick={onDone}>
+          Play
+        </button>
       ) : (
-        <>
-          <p className="at-lottery-sub">
-            {done ? "Draft order set — here's the field." : 'Revealing this draft’s order…'}
-          </p>
-          <div className="at-lottery-grid">
-            {bySlot.map((team) => {
-              const revealed = revealedTeamIds.has(team.id);
-              return (
-                <div
-                  key={team.id}
-                  className={`at-lottery-slot ${revealed ? 'at-revealed' : ''} ${revealed && team.isHuman ? 'at-you' : ''}`}
-                >
-                  <span className="at-lottery-num">#{team.draftSlot}</span>
-                  {revealed ? (
-                    <span className="at-lottery-team">
-                      <span className="at-team-chip at-name-tip" tabIndex={0} data-tip={team.name}>
-                        {teamCodeByTeamId.get(team.id)}
-                      </span>
-                      {team.isHuman && <span className="at-lottery-you-tag">YOU</span>}
-                    </span>
-                  ) : (
-                    <span className="at-lottery-unrevealed">?</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {done ? (
-            <button className="primary-btn at-lottery-continue" onClick={onDone}>
-              Play
-            </button>
-          ) : (
-            <button className="secondary-btn at-lottery-skip" onClick={onDone}>
-              Skip
-            </button>
-          )}
-        </>
+        <button className="secondary-btn at-lottery-skip" onClick={onDone}>
+          Skip
+        </button>
       )}
     </div>
   );

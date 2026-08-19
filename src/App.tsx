@@ -36,6 +36,12 @@ const MODE_OPTIONS: ReadonlyArray<{ id: Mode; name: string; blurb: string }> = [
  * `engine/` here is exactly the seam that regresses back to eager-loading everything if a future
  * edit adds a heavier import to that file without anyone noticing this render path depends on it). */
 const DISPLAY_CAP_LIMIT = 100.9;
+/** Same hand-kept-constant pattern as `DISPLAY_CAP_LIMIT` above, for the How to Play copy that
+ * moved onto this screen (see the intro-screen `mode === 'player'` block below) — kept in sync
+ * with `engine/positions.ts`'s real `ROSTER_SIZE`/`BENCH_SLOT_COUNT` by the same standing check,
+ * extended to cover these two. */
+const DISPLAY_ROSTER_SIZE = 9;
+const DISPLAY_BENCH_SLOT_COUNT = 4;
 
 function LoadingPanel({ label }: { label: string }) {
   return (
@@ -59,16 +65,17 @@ function App() {
   // 2026-08-16, user's own ask ("żeby wiedział jaką drużynę ma" — so they can actually recognize
   // their own team): the human's own team used to always get one of the same random "Place
   // Mascot" names as the 15 CPU teams, indistinguishable from them anywhere it's listed (Overview
-  // grid, the new Draft Lottery screen). Pre-filled with a real random suggestion (not a blank
-  // field) so a player who doesn't care can just leave it — the 🎲 button next to the input
-  // re-rolls a new one without retyping. Threaded through GameShell -> createDraft ->
-  // createInitialTeams (draft.ts), which overrides the random draw for whichever slot ends up
-  // human with this exact string.
-  // 2026-08-16, further follow-up (this session): the visible name-editing UI moved entirely to
-  // the Draft Lottery's "Your team" step (DraftLottery.tsx) — this still generates the initial
-  // random suggestion `createDraft` needs the moment GameShell mounts, but nothing on THIS screen
-  // ever changes it anymore, so there's no setter to expose here.
-  const [teamName] = useState(() => randomTeamNames(1)[0]);
+  // grid, the Draft Lottery screen). Pre-filled with a real random suggestion (not a blank field)
+  // so a player who doesn't care can just leave it — the 🎲 button next to the input re-rolls a
+  // new one without retyping. Threaded through GameShell -> createDraft -> createInitialTeams
+  // (draft.ts), which overrides the random draw for whichever slot ends up human with this exact
+  // string.
+  // 2026-08-16, follow-up (same session): moved the editable UI off this screen entirely, onto
+  // the Draft Lottery's own "Your team" step.
+  // 2026-08-19, user's explicit ask ("merge how to play with home screen etc"): moved back. Real
+  // state again (was a no-setter placeholder while the Lottery screen owned editing) — see the
+  // `mode === 'player'` block below for the input itself.
+  const [teamName, setTeamName] = useState(() => randomTeamNames(1)[0]);
 
   return (
     <div className="app-shell">
@@ -116,14 +123,61 @@ function App() {
                 Commissioner Mode — control all 16 teams yourself, with a reasoning note per pick
               </label>
             )}
-            {/* 2026-08-16, user's own follow-up correction, then a same-day second correction: "Your
-                team" (the name input) moved off this screen entirely too, same reasoning as How to
-                Play just below — it only makes sense once Player Mode is the choice, and the splash
-                screen should stay a splash screen. Both now live together on the Draft Lottery's own
-                pre-reveal step (DraftLottery.tsx's `stage === 'intro'`), which runs right after
-                "Start Draft" — see that component's own docstring. `teamName` is still generated
-                here (silently, no visible UI) so `createDraft` has a real starting name the moment
-                GameShell mounts; the Lottery screen edits it in place via `onRenameTeam`. */}
+            {/* 2026-08-19, user's explicit ask ("merge how to play with home screen etc"): "Your
+                team" and How to Play both used to live on the Draft Lottery's own separate
+                pre-reveal step, reached only after clicking "Start Draft" — merged back onto this
+                screen instead, one screen instead of two. Still gated to Player Mode (unchanged
+                reasoning from when this content first moved off this screen: Tester Mode doesn't
+                need a team name or the rules), now reacting live to whichever mode is currently
+                selected rather than waiting for a separate step to find out. */}
+            {mode === 'player' && (
+              <>
+                <div className="team-name-row">
+                  <label htmlFor="intro-team-name" className="team-name-label">
+                    Your team
+                  </label>
+                  <input
+                    id="intro-team-name"
+                    type="text"
+                    className="team-name-input"
+                    value={teamName}
+                    maxLength={40}
+                    onChange={(e) => setTeamName(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="secondary-btn team-name-randomize"
+                    title="Randomize a new suggestion"
+                    onClick={() => setTeamName(randomTeamNames(1)[0])}
+                  >
+                    🎲
+                  </button>
+                </div>
+                <ol className="how-to-play-panel">
+                  <li>
+                    <b>Draft.</b> 16 teams take turns, {DISPLAY_ROSTER_SIZE} rounds — one player each round. You
+                    control one team; the rest are CPU.
+                  </li>
+                  <li>
+                    <b>FGA cap.</b> Every pick costs shot volume (FGA). Your whole roster has to fit under{' '}
+                    {DISPLAY_CAP_LIMIT} FGA — the best player isn't always the pick that fits.
+                  </li>
+                  <li>
+                    <b>Spans.</b> You're not limited to a player's peak — draft any real multi-season window of
+                    their career. A cheaper, less-peak span can be the one that fits your cap.
+                  </li>
+                  <li>
+                    <b>Rotation.</b> Set minutes for your 5 starters and {DISPLAY_BENCH_SLOT_COUNT} bench players —
+                    the Team tab opens for it as soon as you have your first pick, no need to wait for the draft to
+                    finish.
+                  </li>
+                  <li>
+                    <b>Grading.</b> The judge scores every team — talent, offense, defense, spacing, fit, rotation —
+                    and ranks the whole field, yours included.
+                  </li>
+                </ol>
+              </>
+            )}
             <button className="primary-btn" onClick={() => setView('game')}>
               Start Draft
             </button>

@@ -140,13 +140,6 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     }
   }, [draftState.complete, aiTeamsFinalized]);
 
-  // 2026-08-16, user's own ask: the human's own team name can be edited from the Draft Lottery's
-  // "Your team" step (DraftLottery.tsx's `stage === 'intro'`) — GameShell owns `draftState`, so
-  // the actual rename happens here rather than in that (deliberately presentational) component.
-  function handleRenameHumanTeam(name: string) {
-    setDraftState((s) => ({ ...s, teams: s.teams.map((t) => (t.isHuman ? { ...t, name } : t)) }));
-  }
-
   function handlePick(playerId: string) {
     setDraftState((s) => makePick(s, playerId));
   }
@@ -244,9 +237,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       {phase === 'lottery' && (
         <DraftLottery
           teams={draftState.teams}
-          mode={mode}
           onDone={() => setPhase('draft')}
-          onRenameTeam={handleRenameHumanTeam}
         />
       )}
       {phase === 'draft' && (
