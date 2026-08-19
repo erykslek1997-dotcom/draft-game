@@ -824,10 +824,16 @@ export const DETECTORS: RosterInsightDetector[] = [
     }
   },
   {
+    // 2026-08-19, user's explicit ask ("look for ways to make around 7 strengths and concerns"):
+    // 0.40 never fired across a real 48-team simulated sample (`scripts/_measureDeadConcernSignals.ts`,
+    // deleted after use) — `starterReboundingScore`'s own real p10 is 0.600, so even the worst 10%
+    // of real drafted rosters cleared the old bar by a wide margin. Raised to 0.62 (just above the
+    // real p10), so this now flags the genuinely weakest rebounding tier instead of a threshold
+    // that was unreachable under this game's real roster distribution.
     id: 'WEAK_STARTING_REBOUNDING', type: 'concern', category: 'rebounding',
     evaluate: t => {
       const s = t.starterReboundingScore ?? 1;
-      return s <= 0.40
+      return s <= 0.62
         ? hit(1 - s, 0.82, teamConfidence(t), 'The starting group projects as vulnerable on the glass and may concede extra possessions.', { values: { starterReboundingScore: s } })
         : inactive;
     }
@@ -926,11 +932,16 @@ export const DETECTORS: RosterInsightDetector[] = [
     }
   },
   {
+    // 2026-08-19, user's explicit ask ("look for ways to make around 7 strengths and concerns"):
+    // 0.68 never fired across a real 48-team simulated sample (`scripts/_measureDeadConcernSignals.ts`,
+    // deleted after use) — `topHeavyScore`'s own real max was 0.612, so this bar was structurally
+    // unreachable, not just rare. Lowered to 0.38 (real p90), so this now flags the genuinely most
+    // top-heavy tenth of rosters instead of a threshold no real roster could ever clear.
     id: 'TOP_HEAVY_ROTATION', type: 'concern', category: 'depth',
     suppressionGroup: 'rotation_negative',
     evaluate: t => {
       const s = t.topHeavyScore ?? 0;
-      return s >= 0.68
+      return s >= 0.38
         ? hit(s, 0.82, teamConfidence(t), 'Team quality falls sharply outside the primary core, making the rotation fragile when stars sit.', { values: { topHeavyScore: s, benchDropoffScore: t.benchDropoffScore ?? null } })
         : inactive;
     }
@@ -959,12 +970,20 @@ export const DETECTORS: RosterInsightDetector[] = [
     }
   },
   {
+    // 2026-08-19, user's explicit ask ("look for ways to make around 7 strengths and concerns"):
+    // this compound gate almost never fired — `positionalCompromiseCount>=2` alone was already rare
+    // (this session's earlier rotation-fit work made real compromises uncommon, a good outcome for
+    // gameplay), so requiring it on TOP of a low flexibility score compounded two rare conditions.
+    // Measured directly (`scripts/_measureDeadConcernSignals.ts`, 48 real teams, deleted after use):
+    // `roleFlexibilityScore` real p25 is 0.222. Loosened the compromise co-requirement to >=1 (still
+    // a real positional strain, just not requiring the much rarer >=2) and kept the flexibility bar
+    // near its real p25 so the combination is reachable without becoming a universal firer.
     id: 'ROLE_FLEXIBILITY_LOW', type: 'concern', category: 'fit',
     suppressionGroup: 'rotation_negative',
     evaluate: t => {
       const flexibility = t.roleFlexibilityScore ?? 1;
       const compromises = t.positionalCompromiseCount ?? 0;
-      return flexibility <= 0.22 && compromises >= 2
+      return flexibility <= 0.23 && compromises >= 1
         ? hit(0.72, 0.78, teamConfidence(t), 'The roster has little positional flexibility, so injuries or matchup changes quickly force uncomfortable assignments.', { values: { roleFlexibilityScore: flexibility, positionalCompromiseCount: compromises } }, 0.9)
         : inactive;
     }
