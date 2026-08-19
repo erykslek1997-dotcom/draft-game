@@ -317,11 +317,23 @@ function hasNamedTierException(playerName?: string, spanLabel?: string): boolean
  * than bypassing a cap) — the same "scoped to exactly the one span asked about, not a new general
  * rule" reasoning as `talent.ts`'s own Durant SF-defense-cap exclusion / CP3 two-way exemption.
  */
+/**
+ * 2026-08-19, user-reported: Scott Skiles's 1990-92 span (raw/eff TAL 76, SPC90/APG7.8/DTAL20)
+ * is the exact "good shooter + good playmaker + bad defense" combo the PG archetype rule above
+ * maps to Sixth Man — but it sits 1 point above `PG_ARCHETYPE_ENTRY_TAL_CEILING` (75), so the
+ * general rule correctly leaves it alone (same as 3 other real PGs at this identical edge: Steve
+ * Francis 2000-02, Jamal Murray 2024-26, Steve Nash 2002-04 — all measured, not guessed). Raising
+ * the ceiling to catch this one span would immediately re-catch genuine stars in the same combo
+ * one point higher (Lillard 2023-25, Kyrie 2017-19 — the ceiling's own original motivating case —
+ * Haliburton, Bibby, Garland...), so the general threshold stays put. User's explicit call after
+ * seeing the other 76-TAL company Skiles keeps: he's "too weak" to sit among them at All-star —
+ * named downcap for exactly this one span, not a general rule change.
+ */
 const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
-  [{ name: 'Andrei Kirilenko', spanLabel: '2004-06', cap: 'All-NBA' as OverallTier }].map((e) => [
-    `${normalizePlayerName(e.name)}|${e.spanLabel}`,
-    e.cap,
-  ]),
+  [
+    { name: 'Andrei Kirilenko', spanLabel: '2004-06', cap: 'All-NBA' as OverallTier },
+    { name: 'Scott Skiles', spanLabel: '1990-92', cap: 'Sixth Man' as OverallTier },
+  ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
 function namedTierDowncap(playerName?: string, spanLabel?: string): OverallTier | undefined {
