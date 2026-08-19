@@ -3,7 +3,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes } from '../engine/rotation';
 import { computeDurability, maxSustainableMinutes } from '../engine/durability';
-import { displayTalentForSpan } from '../engine/grades';
+import { displayTalentForSpan, overallTierForSpan } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import type { Rotation, SlotAssignment, Team } from '../engine/types';
 
@@ -247,8 +247,11 @@ export default function RotationBuilder({
       <ul className="bench-list">
         {bench.map(({ player, minutes }) => (
           <li key={player.id}>
+            {/* 2026-08-19, user's explicit ask: a bare "TAL 68" here was one number with no sense
+                of what it means on this game's own scale — the named tier (already computed
+                everywhere else a player's overall quality is shown) gives it real context. */}
             {player.playerName} ({player.spanLabel}) — {player.offensiveArchetype} / {player.defensiveRole} — TAL{' '}
-            {displayTalentForSpan(tierContextFor(player))} — {minutes} min
+            {displayTalentForSpan(tierContextFor(player))} ({overallTierForSpan(tierContextFor(player))}) — {minutes} min
           </li>
         ))}
       </ul>

@@ -27,7 +27,7 @@ import RotationBuilder from './RotationBuilder';
 // hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
 // safe to import directly (not lazy) since GameShell already bundles DraftBoard and this file
 // together as siblings, so nothing about the app's existing load-time split changes.
-import { pickStatTip } from './DraftBoard';
+import { pickStatTip, OverallTierBadge } from './DraftBoard';
 import type { PlayerSpan } from '../data/schema';
 
 /**
@@ -595,6 +595,13 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                                   <span className="player-row-meta">
                                     <span className="mini-fact">{e.minutes} min</span>
                                     <span className="mini-fact">FGA {e.player.fga.toFixed(1)}</span>
+                                    {/* 2026-08-19, user's explicit ask: a bare "TAL 97" chip is one
+                                        number with no sense of what it means — post-draft (the pick
+                                        is already locked in, nothing left to spoil), pairing it with
+                                        the same named tier the draft screens use gives the number
+                                        real context instead of asking the player to already know
+                                        this game's own internal scale. */}
+                                    <OverallTierBadge span={e.player} />
                                     <ScoreChip label="TAL" value={displayTalentForSpan(tierContextFor(e.player))} />
                                   </span>
                                   <FeedbackToggle
@@ -621,6 +628,7 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                           <span className="player-row-meta">
                             <span className="mini-fact">{minutes} min</span>
                             <span className="mini-fact">FGA {player.fga.toFixed(1)}</span>
+                            <OverallTierBadge span={player} />
                             <ScoreChip label="TAL" value={displayTalentForSpan(tierContextFor(player))} />
                           </span>
                           <FeedbackToggle

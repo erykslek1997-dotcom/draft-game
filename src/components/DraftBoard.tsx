@@ -561,14 +561,29 @@ export default function DraftBoard({
         bestTalentSpan,
         spansByAiValue,
         displayBox,
-        bestTalent: showJudgeMetrics ? displayTalentForSpan(tierContextFor(bestTalentSpan)) : 0,
+        // 2026-08-19, bug found while adding the player-mode tier badge below: the sort comparator's
+        // own comment (a few lines down) already claimed this was "computed unconditionally... costs
+        // nothing new" for the player-mode tiebreak, but the code here contradicted it — zeroing
+        // `bestTalent` in player mode made that tiebreak compare 0-0 for the ~90% of the pool with
+        // no real All-Star selections, silently reverting to incidental array order for almost the
+        // whole list despite the comment's claim it was fixed. Made genuinely unconditional to match
+        // what the comment already said was true; still never DISPLAYED as a raw number in player
+        // mode (only the coarser tier badge is), so this doesn't reveal anything new on-screen.
+        bestTalent: displayTalentForSpan(tierContextFor(bestTalentSpan)),
         // 2026-08-08, user's v0.2 rating batch: GOAT has no ceiling of its own
         // (`tierCeiling('GOAT')` is `Infinity`), so a GOAT-tier span's `bestTalent` number can
         // land on the exact same value as a merely-Greatest-Peak span (both 98, say) — found
         // via LeBron (GOAT) sorting BELOW Bird (Greatest peak) purely because the tied number
         // fell back to incidental array order. Stored alongside `bestTalent` so the sort below
         // can break that specific tie by tier rank instead.
-        bestTier: showJudgeMetrics ? overallTierForSpan(tierContextFor(bestTalentSpan)) : 'Cigarette Butt',
+        // 2026-08-19, user's explicit ask: player mode used to zero this out entirely, along with
+        // every other judge metric — but the tier NAME (not the number) is exactly the "richer
+        // signal without spoiling the exact optimum" beginner aid the user asked for, so it's now
+        // always real regardless of mode. Only the raw `bestTalent` NUMBER above stays hidden in
+        // player mode; the tier badge built from this is a much coarser, non-precise signal (an
+        // 8-wide bucket can't be reverse-engineered into "always draft the highest number" the way
+        // an exact TAL integer can).
+        bestTier: overallTierForSpan(tierContextFor(bestTalentSpan)),
         bestOffensiveTalent: showJudgeMetrics ? Math.max(...g.spans.map(computeOffensiveTalent)) : 0,
         bestOffensiveTalentUncapped: showJudgeMetrics ? Math.max(...g.spans.map(computeUncappedOffensiveTalent)) : 0,
         bestDefensiveTalent: showJudgeMetrics ? Math.max(...g.spans.map(computeDefensiveTalent)) : 0,
@@ -804,6 +819,10 @@ export default function DraftBoard({
                     // repeated, not a coincidence.
                     <colgroup>
                       <col style={{ width: 300 }} />
+                      {/* 2026-08-19, user's explicit ask: a real quality signal beyond raw box
+                          stats, without exposing the exact number that would turn drafting into
+                          "always take the highest one" — see `OverallTierBadge`'s own docstring. */}
+                      <col style={{ width: 96 }} />
                       <col style={{ width: 66 }} />
                       <col style={{ width: 66 }} />
                       <col style={{ width: 66 }} />
@@ -818,6 +837,7 @@ export default function DraftBoard({
                   <thead>
                     <tr>
                       <th>Player</th>
+                      {!showJudgeMetrics && <th>Tier</th>}
                       {!showJudgeMetrics && <th>PTS</th>}
                       {!showJudgeMetrics && <th>AST</th>}
                       {!showJudgeMetrics && <th>REB</th>}
@@ -859,6 +879,11 @@ export default function DraftBoard({
                                 `${group.playerName} - ${naturalPosition(group.playerName)}`
                               )}
                             </td>
+                            {!showJudgeMetrics && (
+                              <td>
+                                <span className={`tier-badge ${OVERALL_TIER_CLASS[group.bestTier]}`}>{group.bestTier}</span>
+                              </td>
+                            )}
                             {!showJudgeMetrics && <td className="at-fga-num">{group.displayBox.ppg.toFixed(1)}</td>}
                             {!showJudgeMetrics && <td className="at-fga-num">{group.displayBox.apg.toFixed(1)}</td>}
                             {!showJudgeMetrics && <td className="at-fga-num">{group.displayBox.rpg.toFixed(1)}</td>}
@@ -1090,10 +1115,6 @@ export default function DraftBoard({
                                       <col style={{ width: 66 }} />
                                       <col style={{ width: 66 }} />
                                       <col style={{ width: 66 }} />
-                                      {/* TAL + Tag — 2026-08-16, user's own ask: player mode used
-                                          to hide every judge metric here on purpose (see this
-                                          file's own header comment on the 2026-08-13 redesign). */}
-                                      <col style={{ width: 54 }} />
                                       {/* Deliberately no width here (unlike every column above) —
                                           when EVERY column has an explicit width and their sum is
                                           less than the table's rendered 100%-of-container width,
@@ -1114,7 +1135,15 @@ export default function DraftBoard({
                                         <th>FG%</th>
                                         <th>3PT%</th>
                                         <th>FGA</th>
-                                        <th>TAL</th>
+                                        {/* 2026-08-19, user-reported real gap: this table used to
+                                            include a "TAL" column with the exact raw number
+                                            (`displayNumberForSpan`) even in player mode — a click
+                                            away from the collapsed row's own deliberately-hidden
+                                            number, quietly defeating the "blind scouting" premise
+                                            the whole rest of this screen is built around. Dropped;
+                                            the Tag column right after already carries the same
+                                            coarse tier signal the collapsed row's new Tier badge
+                                            does, with no exact number attached to it. */}
                                         <th>Tag</th>
                                       </tr>
                                     </thead>
@@ -1147,9 +1176,6 @@ export default function DraftBoard({
                                           <td className="at-fga-num">{(span.box.fgPct * 100).toFixed(1)}%</td>
                                           <td className="at-fga-num">{(span.box.threePct * 100).toFixed(1)}%</td>
                                           <td className="at-fga-num">{span.fga.toFixed(1)}</td>
-                                          <td className="at-fga-num">
-                                            <b>{displayNumberForSpan(span, ctx)}</b>
-                                          </td>
                                           {/* Tag — user-reported: pinned to the column's left edge
                                               explicitly (`.at-tag-cell`) rather than relying on the
                                               default, so a short pill (MVP) and a long one
@@ -1274,7 +1300,15 @@ export default function DraftBoard({
                           >
                             {spanOpt.options.map((o) => (
                               <option key={o.id} value={o.id}>
-                                {o.spanLabel} — TAL {effectiveTalent(o)} — FGA {o.fga.toFixed(1)}
+                                {/* 2026-08-19, user-reported real gap: this dropdown isn't scoped
+                                    to Tester Mode at all — it's shared with player mode, which
+                                    means the raw exact TAL number leaked here regardless of the
+                                    "blind scouting" design everywhere else on this screen.
+                                    `<option>` text can't hold a styled badge, so the tier NAME
+                                    stands in for the number in player mode — same coarse,
+                                    non-precise signal as the Draft tab's own Tier badge, no
+                                    exact figure a beginner could just sort by. */}
+                                {o.spanLabel} — {showJudgeMetrics ? `TAL ${effectiveTalent(o)}` : overallTierForSpan(tierContextFor(o))} — FGA {o.fga.toFixed(1)}
                               </option>
                             ))}
                           </select>
