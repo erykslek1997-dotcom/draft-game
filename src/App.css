@@ -1491,6 +1491,66 @@ select {
   color: var(--at-accent, inherit);
 }
 
+/* 2026-08-19, same-day follow-up ("can we add playoffs?") — the bracket sits directly under the
+   standings table it was seeded from, same panel, no visual break between "here's the season" and
+   "here's what it led to." */
+.playoff-sim-btn {
+  margin-top: 12px;
+}
+
+.playoff-bracket {
+  margin-top: 12px;
+}
+
+.playoff-round {
+  margin-bottom: 10px;
+}
+
+.playoff-round h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+.playoff-round ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.playoff-series-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+.playoff-series-vs {
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+.playoff-winner {
+  font-weight: 700;
+  color: var(--at-accent, inherit);
+}
+
+.playoff-series-score {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.playoff-champion {
+  margin: 10px 0 0;
+  font-weight: 700;
+  font-size: 14px;
+}
+
 .team-feedback {
   margin-top: 10px;
   padding-top: 10px;

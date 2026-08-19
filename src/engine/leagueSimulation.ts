@@ -21,7 +21,11 @@ import { projectedNetRating } from './netRatingProjection';
  * construction that keeps seed 1 and seed 2 on opposite halves of the bracket (so they can only
  * meet in the final), same shape as a real NBA/NCAA 16-team bracket. Consecutive pairs are
  * round-1 matchups: (1,16),(8,9),(4,13),(5,12),(2,15),(7,10),(3,14),(6,11). */
-const SEED_ORDER_16 = [1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11];
+// 2026-08-19: exported so `playoffSimulation.ts` can reuse the exact same bracket construction
+// for its own (different) purpose — a single deterministically-simulated bracket seeded by real
+// season standings, instead of this file's Monte Carlo championship-probability estimate seeded
+// by the Final Power Ranking. Reused rather than duplicated so the two can never drift apart.
+export const SEED_ORDER_16 = [1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11];
 
 const DEFAULT_SIMULATIONS = 20000;
 

@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import { rankTeams } from '../engine/scoring';
 import { evaluateLeague } from '../engine/leagueSimulation';
 import { simulateSeason, type SeasonStandingsRow } from '../engine/seasonSimulation';
+import { simulatePlayoffs, type PlayoffResult } from '../engine/playoffSimulation';
 import { STARTER_SLOTS } from '../engine/positions';
 import { allAssignments, benchWithMinutes, primaryStarters } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
@@ -340,6 +341,12 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
   // Ranking above (`ranked`, still what `overall`/rank is judged by — untouched by this). `null`
   // until the button below is clicked; re-clicking re-rolls a fresh season rather than averaging.
   const [seasonStandings, setSeasonStandings] = useState<SeasonStandingsRow[] | null>(null);
+  // 2026-08-19, same-day follow-up ("can we add playoffs?"): seeded by `seasonStandings` above,
+  // not the Final Power Ranking — confirmed via AskUserQuestion before building. Cleared whenever
+  // a new season is rolled (a bracket seeded by a now-replaced season's standings is stale), but
+  // NOT cleared by re-simulating the playoffs alone from the same season — that's a real, expected
+  // "same season, roll the playoffs again" use case.
+  const [playoffResult, setPlayoffResult] = useState<PlayoffResult | null>(null);
   // 2026-08-14, results-screen redesign: 16 full team cards on one page was the single biggest
   // usability complaint (scrolling past 15 opponents to see your own team) — every card now
   // starts collapsed to a one-line summary, except the human's own team, which starts expanded
@@ -436,38 +443,96 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
           Rolls one full regular season, game by game, using each pairing's real projected win probability. Separate from
           the Final Power Ranking above — click again to roll a brand new season.
         </p>
-        <button className="secondary-btn" onClick={() => setSeasonStandings(simulateSeason(scoredTeams))}>
+        <button
+          className="secondary-btn"
+          onClick={() => {
+            setSeasonStandings(simulateSeason(scoredTeams));
+            setPlayoffResult(null);
+          }}
+        >
           {seasonStandings ? '🎲 Re-simulate Season' : '🏀 Simulate 82-Game Season'}
         </button>
         {seasonStandings && (
-          <table className="at-roster-table season-standings-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Team</th>
-                <th>W</th>
-                <th>L</th>
-                <th>Win%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {seasonStandings.map((row) => {
-                const rowTeam = teamById(row.teamId);
-                if (!rowTeam) return null;
-                return (
-                  <tr key={row.teamId} className={rowTeam.isHuman ? 'season-standings-you' : ''}>
-                    <td>{row.rank}</td>
-                    <td>
-                      {teamLabel(rowTeam)} {rowTeam.isHuman ? '(You)' : ''}
-                    </td>
-                    <td>{row.wins}</td>
-                    <td>{row.losses}</td>
-                    <td>{(row.winPct * 100).toFixed(1)}%</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <>
+            <table className="at-roster-table season-standings-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Team</th>
+                  <th>W</th>
+                  <th>L</th>
+                  <th>Win%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {seasonStandings.map((row) => {
+                  const rowTeam = teamById(row.teamId);
+                  if (!rowTeam) return null;
+                  return (
+                    <tr key={row.teamId} className={rowTeam.isHuman ? 'season-standings-you' : ''}>
+                      <td>{row.rank}</td>
+                      <td>
+                        {teamLabel(rowTeam)} {rowTeam.isHuman ? '(You)' : ''}
+                      </td>
+                      <td>{row.wins}</td>
+                      <td>{row.losses}</td>
+                      <td>{(row.winPct * 100).toFixed(1)}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {/* 2026-08-19, same-day follow-up: seeded by the standings above, not the Final Power
+                Ranking — every series is genuinely played out game by game (real BO7 tallies like
+                "4-2"), not a single probability draw. Re-clicking re-rolls the playoffs alone,
+                keeping the same season standings as the seed. */}
+            <button
+              className="secondary-btn playoff-sim-btn"
+              onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings))}
+            >
+              {playoffResult ? '🎲 Re-simulate Playoffs' : '🏆 Simulate Playoffs'}
+            </button>
+            {playoffResult && (
+              <div className="playoff-bracket">
+                {playoffResult.rounds.map((round) => (
+                  <div key={round[0]?.round ?? 0} className="playoff-round">
+                    <h4>{round[0]?.roundLabel}</h4>
+                    <ul>
+                      {round.map((series) => {
+                        const teamA = teamById(series.teamAId);
+                        const teamB = teamById(series.teamBId);
+                        if (!teamA || !teamB) return null;
+                        const higherTally = Math.max(series.gamesWonA, series.gamesWonB);
+                        const lowerTally = Math.min(series.gamesWonA, series.gamesWonB);
+                        return (
+                          <li key={`${series.teamAId}-${series.teamBId}`} className="playoff-series-row">
+                            <span className={series.winnerId === series.teamAId ? 'playoff-winner' : ''}>
+                              #{series.teamASeed} {teamLabel(teamA)} {teamA.isHuman ? '(You)' : ''}
+                            </span>
+                            <span className="playoff-series-vs">vs</span>
+                            <span className={series.winnerId === series.teamBId ? 'playoff-winner' : ''}>
+                              #{series.teamBSeed} {teamLabel(teamB)} {teamB.isHuman ? '(You)' : ''}
+                            </span>
+                            <span className="playoff-series-score">
+                              {higherTally}-{lowerTally}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+                {(() => {
+                  const champion = teamById(playoffResult.championId);
+                  return champion ? (
+                    <p className="playoff-champion">
+                      🏆 Champion: {teamLabel(champion)} {champion.isHuman ? '(You)' : ''}
+                    </p>
+                  ) : null;
+                })()}
+              </div>
+            )}
+          </>
         )}
       </div>
       <div className="left-on-board">
