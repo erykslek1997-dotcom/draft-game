@@ -608,16 +608,18 @@ export default function DraftBoard({
     })
     .sort((a, b) => {
       if (mode === 'player') {
-        // 2026-08-16, user's own ask ("sortowanie graczy potrzebuje jakieś spójnej kolejności"):
-        // this used to fall back to a per-pool RANDOM tiebreak once real-world All-Star count ran
-        // out of discriminating power — the vast majority of the pool has 0 All-Star selections,
-        // so almost the whole list was really sorted at random. `bestTalent` is already computed
-        // unconditionally for every group (see its own comment above — player mode needs it to
-        // pick which span the engine rates highest even though it never displays the number), so
-        // reusing it here as the tiebreak costs nothing new and makes the order fully
-        // deterministic and quality-ordered instead of reshuffling every time the pool changes —
-        // still never shown to the player, exactly like the "don't show any of what we did"
-        // player-mode design this file already follows everywhere else.
+        // 2026-08-19, user's explicit ask ("sort players by their tier"): the Tier badge (not a
+        // raw number) is the one quality signal Player Mode actually shows on this row — sorting
+        // by anything else first meant the visible list order could contradict the visible
+        // badges (a "Starter"-tier row appearing above an "All-star"-tier row, say), whenever
+        // All-Star count or the hidden raw number disagreed with the tier a span actually landed
+        // on (real, not hypothetical — `grades.ts`'s own position-specific tier caps routinely
+        // knock a high-raw-TAL span down a tier or more). Tier rank is now the primary key; the
+        // previous All-Star-count/raw-`bestTalent` order survives as the tiebreak WITHIN a tier,
+        // same "fully deterministic and quality-ordered, never shown to the player" reasoning the
+        // 2026-08-16 fix below already established for those two.
+        const tierDiff = tierRank(b.bestTier) - tierRank(a.bestTier);
+        if (tierDiff !== 0) return tierDiff;
         const starDiff = allStarCount(b.playerName) - allStarCount(a.playerName);
         if (starDiff !== 0) return starDiff;
         return b.bestTalent - a.bestTalent;

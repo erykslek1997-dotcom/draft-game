@@ -17,12 +17,28 @@ const DraftPoolBrowser = lazy(() => import('./components/DraftPoolBrowser'));
 type View = 'intro' | 'game' | 'pool';
 type Mode = 'developer' | 'player';
 
-/** Set at build time (e.g. `VITE_FORCE_PLAYER_MODE=true npm run build`) to ship a locked-down
- * build for a playtester — Player Mode on, no selector to reach Tester Mode. Leave unset for
- * normal local development, where the mode selector is shown on the intro screen and Tester
- * Mode (the old, internally-named 'developer' mode — same engine, just the pre-redesign UI with
- * every judge metric visible) is the default. */
+/** Manual override, e.g. `VITE_FORCE_PLAYER_MODE=true npm run dev`, to preview the locked-down
+ * friend-facing experience from a local dev server without doing a real production build. Not
+ * needed for normal deploys any more — see `SHOW_DEV_CONTROLS` below, which now does this
+ * automatically for every production build. */
 const FORCE_PLAYER_MODE = import.meta.env.VITE_FORCE_PLAYER_MODE === 'true';
+
+/**
+ * 2026-08-19, user's own asks while watching the intro screen: "delete commissioner mode" +
+ * "if im being honest, hide tester mode" — both the Tester/Player mode selector and the
+ * Commissioner Mode checkbox are dev/QA tools (the old pre-redesign judge-metrics UI, and a
+ * causal-reasoning-note drafting mode for building reference datasets — see their own docstrings
+ * below), not something a friend just playing the game should ever see or be able to reach.
+ * Rather than deleting either feature outright (Commissioner Mode in particular is still a real,
+ * valuable tool — see the 2026-08-07 docstring on `commissionerMode` below), both are now gated
+ * on `import.meta.env.DEV` (true for `npm run dev`, false for any real `npm run build`/deployed
+ * site) instead of the old manual `VITE_FORCE_PLAYER_MODE` flag — so a friend hitting the
+ * deployed Netlify build always gets pure Player Mode with no way to reach either, automatically,
+ * without anyone having to remember to set an env var at deploy time. `FORCE_PLAYER_MODE` still
+ * works as an explicit override on top of this (see its own docstring above) for previewing that
+ * exact friend experience from a local dev server.
+ */
+const SHOW_DEV_CONTROLS = import.meta.env.DEV && !FORCE_PLAYER_MODE;
 
 const MODE_OPTIONS: ReadonlyArray<{ id: Mode; name: string; blurb: string }> = [
   { id: 'developer', name: 'Tester Mode', blurb: 'Old UI — every judge rating visible' },
@@ -36,10 +52,9 @@ const MODE_OPTIONS: ReadonlyArray<{ id: Mode; name: string; blurb: string }> = [
  * `engine/` here is exactly the seam that regresses back to eager-loading everything if a future
  * edit adds a heavier import to that file without anyone noticing this render path depends on it). */
 const DISPLAY_CAP_LIMIT = 100.9;
-/** Same hand-kept-constant pattern as `DISPLAY_CAP_LIMIT` above, for the How to Play copy that
- * moved onto this screen (see the intro-screen `mode === 'player'` block below) — kept in sync
- * with `engine/positions.ts`'s real `ROSTER_SIZE`/`BENCH_SLOT_COUNT` by the same standing check,
- * extended to cover these two. */
+/** Same hand-kept-constant pattern as `DISPLAY_CAP_LIMIT` above, for the always-visible How to
+ * Play copy on the intro screen below — kept in sync with `engine/positions.ts`'s real
+ * `ROSTER_SIZE`/`BENCH_SLOT_COUNT` by the same standing check, extended to cover these two. */
 const DISPLAY_ROSTER_SIZE = 9;
 const DISPLAY_BENCH_SLOT_COUNT = 4;
 
@@ -53,7 +68,10 @@ function LoadingPanel({ label }: { label: string }) {
 
 function App() {
   const [view, setView] = useState<View>('intro');
-  const [mode, setMode] = useState<Mode>(FORCE_PLAYER_MODE ? 'player' : 'developer');
+  // Defaults to 'player' whenever the selector to change it is hidden (`!SHOW_DEV_CONTROLS`) —
+  // otherwise a real production deploy would silently default to Tester Mode's judge-metrics UI
+  // with no visible way to switch off it, which defeats the whole point of hiding the selector.
+  const [mode, setMode] = useState<Mode>(SHOW_DEV_CONTROLS ? 'developer' : 'player');
   // 2026-08-07, user explicit ask: manually control every one of the 16 teams for a full,
   // causally-reasoned draft (not just the one randomly-assigned human slot), to build a rich
   // pick-by-pick reference dataset — the richest kind of data this project has ever gathered, per
@@ -74,7 +92,8 @@ function App() {
   // the Draft Lottery's own "Your team" step.
   // 2026-08-19, user's explicit ask ("merge how to play with home screen etc"): moved back. Real
   // state again (was a no-setter placeholder while the Lottery screen owned editing) — see the
-  // `mode === 'player'` block below for the input itself.
+  // `team-name-row` block below for the input itself (unconditional as of the same-day
+  // "cant choose name for tester mode" follow-up, no longer Player-Mode-gated).
   const [teamName, setTeamName] = useState(() => randomTeamNames(1)[0]);
 
   return (
@@ -100,7 +119,7 @@ function App() {
             </p>
           </header>
           <div className="intro-screen">
-            {!FORCE_PLAYER_MODE && (
+            {SHOW_DEV_CONTROLS && (
               <div className="mode-select" role="radiogroup" aria-label="Mode">
                 {MODE_OPTIONS.map((opt) => (
                   <button
@@ -117,7 +136,7 @@ function App() {
                 ))}
               </div>
             )}
-            {!FORCE_PLAYER_MODE && (
+            {SHOW_DEV_CONTROLS && (
               <label className="commissioner-toggle">
                 <input type="checkbox" checked={commissionerMode} onChange={(e) => setCommissionerMode(e.target.checked)} />
                 Commissioner Mode — control all 16 teams yourself, with a reasoning note per pick
@@ -126,34 +145,35 @@ function App() {
             {/* 2026-08-19, user's explicit ask ("merge how to play with home screen etc"): "Your
                 team" and How to Play both used to live on the Draft Lottery's own separate
                 pre-reveal step, reached only after clicking "Start Draft" — merged back onto this
-                screen instead, one screen instead of two. */}
-            {mode === 'player' && (
-              <div className="team-name-row">
-                <label htmlFor="intro-team-name" className="team-name-label">
-                  Your team
-                </label>
-                <input
-                  id="intro-team-name"
-                  type="text"
-                  className="team-name-input"
-                  value={teamName}
-                  maxLength={40}
-                  onChange={(e) => setTeamName(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="secondary-btn team-name-randomize"
-                  title="Randomize a new suggestion"
-                  onClick={() => setTeamName(randomTeamNames(1)[0])}
-                >
-                  🎲
-                </button>
-              </div>
-            )}
+                screen instead, one screen instead of two.
+                Same-day follow-up ("cant choose name for tester mode"): no longer gated on
+                `mode === 'player'` — a real dev-mode user (SHOW_DEV_CONTROLS) can pick Tester Mode
+                and still wants a team name; a friend on a real deploy is always in Player Mode
+                anyway (see SHOW_DEV_CONTROLS's own docstring), so this shows unconditionally now. */}
+            <div className="team-name-row">
+              <label htmlFor="intro-team-name" className="team-name-label">
+                Your team
+              </label>
+              <input
+                id="intro-team-name"
+                type="text"
+                className="team-name-input"
+                value={teamName}
+                maxLength={40}
+                onChange={(e) => setTeamName(e.target.value)}
+              />
+              <button
+                type="button"
+                className="secondary-btn team-name-randomize"
+                title="Randomize a new suggestion"
+                onClick={() => setTeamName(randomTeamNames(1)[0])}
+              >
+                🎲
+              </button>
+            </div>
             {/* 2026-08-19, same-day follow-up ("how to play can be on screen all the time in main
-                menu"): unlike the team-name input above (still Player-Mode-only — Tester Mode has
-                no use for a human team name), the rules themselves are useful regardless of which
-                mode is selected, so this no longer waits on `mode === 'player'`. */}
+                menu"): the rules are useful regardless of which mode is selected, so — same as
+                the team-name input above — this no longer waits on `mode === 'player'`. */}
             <ol className="how-to-play-panel">
               <li>
                 <b>Draft.</b> 16 teams take turns, {DISPLAY_ROSTER_SIZE} rounds — one player each round. You control
