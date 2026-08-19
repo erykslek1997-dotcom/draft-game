@@ -7,8 +7,11 @@ import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
 import type { DraftHistoryEntry, Rotation, Team } from '../engine/types';
 import { teamLabel } from '../engine/teamNames';
-import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
-import { displayTalentForSpan } from '../engine/grades';
+import { computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+// `effectiveTalent` for every plain TAL read; `displayTalentForSpan` stays separately imported
+// for the two call sites below that use the Sixth-Man-aware `tierContextWithSixthMan` context
+// instead of the plain one `effectiveTalent` builds internally.
+import { effectiveTalent, displayTalentForSpan } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing } from '../engine/spacing';
@@ -149,14 +152,14 @@ function remainingOnBoard(teams: Team[]) {
   for (const span of draftPool) {
     if (draftedNames.has(normalizePlayerName(span.playerName))) continue;
     const cur = byPlayer.get(span.playerName);
-    if (!cur || computeTalent(span) > computeTalent(cur)) byPlayer.set(span.playerName, span);
+    if (!cur || effectiveTalent(span) > effectiveTalent(cur)) byPlayer.set(span.playerName, span);
   }
   return [...byPlayer.values()]
     .map((span) => ({
       playerName: span.playerName,
       spanLabel: span.spanLabel,
       primaryPosition: span.primaryPosition,
-      TAL: computeTalent(span),
+      TAL: effectiveTalent(span),
     }))
     .sort((a, b) => b.TAL - a.TAL);
 }
@@ -234,7 +237,7 @@ function buildFeedbackExport(
             playerName: p?.playerName ?? null,
             spanLabel: p?.spanLabel ?? null,
             fga: p?.fga ?? null,
-            TAL: p ? computeTalent(p) : null,
+            TAL: p ? effectiveTalent(p) : null,
             // Commissioner Mode's causal note for this exact pick, if one was written — null for
             // a normal single-human-team draft (pickReasoning is empty then).
             reasoning: pickReasoning[h.pickNumber] ?? null,
@@ -246,7 +249,7 @@ function buildFeedbackExport(
         primaryPosition: p.primaryPosition,
         secondaryPositions: p.secondaryPositions,
         fga: p.fga,
-        TAL: computeTalent(p),
+        TAL: effectiveTalent(p),
         OTAL: computeOffensiveTalent(p),
         DTAL: computeDefensiveTalent(p),
         OPOR: computeOffensivePortability(p),

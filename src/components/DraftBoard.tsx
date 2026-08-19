@@ -3,7 +3,8 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, availablePlayers, isPickLegal, type DraftState } from '../engine/draft';
 import { CAP_LIMIT, ROSTER_SIZE, capRemaining, totalFga } from '../engine/positions';
-import { computeTalent, computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
+import { effectiveTalent } from '../engine/grades';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing, spacingTier, type SpacingTier } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
@@ -274,7 +275,8 @@ export function groupByPlayer(list: PlayerSpan[]): PlayerGroup[] {
 // asked for, just fewer top-level tabs.
 type AtTab = 'draft' | 'team';
 
-/** Global 1-128 pick number for `state.teams[teamIdx]`'s round-`round` pick (both 0-indexed) —
+/** Global 1-(TEAM_COUNT*ROSTER_SIZE) pick number for `state.teams[teamIdx]`'s round-`round` pick
+ * (both 0-indexed) —
  * the inverse of `currentTeamIndex`/`snakeOrderIndex` in draft.ts, needed here because the
  * Overview grid is laid out team-row x round-column (so it can double as "your team's picks
  * across every round"), while the broadcast-board badge wants the true chronological pick
@@ -443,7 +445,7 @@ export default function DraftBoard({
         key: normalizePlayerName(p.playerName),
         playerName: p.playerName,
         draftedSpan: p,
-        options: [...spanOptionsFor(p.playerName)].sort((a, b) => computeTalent(b) - computeTalent(a)),
+        options: [...spanOptionsFor(p.playerName)].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)),
       })),
     [humanTeam.roster],
   );
@@ -1272,7 +1274,7 @@ export default function DraftBoard({
                           >
                             {spanOpt.options.map((o) => (
                               <option key={o.id} value={o.id}>
-                                {o.spanLabel} — TAL {computeTalent(o)} — FGA {o.fga.toFixed(1)}
+                                {o.spanLabel} — TAL {effectiveTalent(o)} — FGA {o.fga.toFixed(1)}
                               </option>
                             ))}
                           </select>

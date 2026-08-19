@@ -8,8 +8,10 @@ import {
   computeDefensiveTalent,
   rawUncappedTalent,
   applyGradeCeiling,
+  isCP3TwoWayExempt,
 } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
+import { computeSpacing } from './spacing';
 import { spanEndYears } from './era';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
@@ -264,6 +266,16 @@ function stricterTier(a: OverallTier, b: OverallTier): OverallTier {
  * take were. */
 const TIER_GATE_LOW_FGA = 10;
 
+/** User's explicit follow-up narrowing the PG archetype rule's own entry point (below) further
+ * than the original "below All-NBA" scope — see that rule's own call-site docstring for the
+ * full history ("zróbmy że powyżej 75 TAL nie robimy sixth mana, zmniejszmy też próg wejścia"). */
+const PG_ARCHETYPE_ENTRY_TAL_CEILING = 75;
+/** Real, already-established thresholds for the user's PG shooter/playmaker/defense archetype
+ * ask — see `overallTierForSpan`'s own call-site docstring for the full derivation. */
+const PG_ARCHETYPE_SHOOTER_SPACING_FLOOR = 65;
+const PG_ARCHETYPE_PLAYMAKER_APG_FLOOR = 6.0;
+const PG_ARCHETYPE_DEFENSE_DTAL_FLOOR = 55;
+
 /** Position-specific downward tier caps, applied ascending so a player can trip more than one
  * (the most restrictive wins — see `stricterTier` fold below). Every threshold reuses the exact
  * letter-grade bands `offensiveGrade`/`defensiveGrade` already display, so the rule reads the
@@ -324,6 +336,7 @@ function tierCaps(
   fga: number,
   namedTierException: boolean = false,
   otal: number = 0,
+  cp3TwoWayExempt: boolean = false,
 ): OverallTier[] {
   const caps: OverallTier[] = [];
   switch (position) {
@@ -345,7 +358,13 @@ function tierCaps(
       // from artificially dragging down the handful whose TAL is otherwise high enough to clear
       // Starter on its own.
       const pgDefenseCarriesStarterCap = gradeAtLeast(dtalGrade, 'A-');
-      if (!gradeAtLeast(otalGrade, 'A-') || fga < TIER_GATE_LOW_FGA) caps.push('All-NBA');
+      // 2026-08-19, user-reported ("dlaczego pokazuje 83 jeśli jego TAL jest 96"): `talent.ts`'s
+      // own CP3 two-way exemption already uncaps `computeTalent` itself for these seasons (real
+      // TAL 95-96, not compressed) — this cap independently re-capped the DISPLAYED badge at
+      // All-NBA with no matching exemption, so the badge and the real number disagreed. Passing
+      // the same `isCP3TwoWayExempt` check through from the caller closes that gap instead of
+      // adding a second, drifting copy of the same rule.
+      if ((!gradeAtLeast(otalGrade, 'A-') || fga < TIER_GATE_LOW_FGA) && !cp3TwoWayExempt) caps.push('All-NBA');
       if (!gradeAtLeast(otalGrade, 'C+') && !pgDefenseCarriesStarterCap) caps.push('Starter');
       // 2026-08-05 follow-up: a genuinely bad defender (below C-) with only an ordinary (not
       // truly elite) offensive peak doesn't have the profile for MVP either — a real top-of-scale
@@ -354,6 +373,10 @@ function tierCaps(
       // formula changes move the pool around, so pinning an exemption to it exactly is fragile;
       // A+ (a fixed 95+ floor) reads the same "truly elite" intent without that fragility.
       if (!gradeAtLeast(dtalGrade, 'C-') && !gradeAtLeast(otalGrade, 'A+')) caps.push('All-NBA');
+      // 2026-08-19, user's explicit PG shooter/playmaker/defense archetype ask: handled in
+      // `overallTierForSpan` (after this function's own caps are folded), not here — it needs to
+      // gate on the tier AFTER these caps apply, which isn't known yet at this point in the call.
+      // See that function's own docstring for the full rule and why it's gated post-fold.
       break;
     }
     case 'SG': {
@@ -532,6 +555,12 @@ export interface TierGateContext {
    * are unaffected. When true, overrides the computed tier to 'Sixth Man' — a role description,
    * not a power ranking, so it does NOT go through the normal `stricterTier` cap-folding above. */
   isSixthMan?: boolean;
+  /** 2026-08-19, user's explicit PG archetype ask (shooter/playmaker/defense, scoped to
+   * below-All-NBA only — see `tierCaps`'s PG case for the full rule). Optional/undefined-safe
+   * like every other context field above: a synthetic/validation context that omits these simply
+   * never trips the new gate, same "no signal, no restriction" default the others already use. */
+  spacing?: number;
+  apg?: number;
 }
 
 /**
@@ -613,14 +642,55 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   const base = overallTier(ctx.tal);
   const otalGrade = offensiveGrade(ctx.otal, ctx.otalUncapped ?? ctx.otal);
   const dtalGrade = defensiveGrade(ctx.dtal);
-  const caps = tierCaps(ctx.position, otalGrade, dtalGrade, ctx.fga, hasNamedTierException(ctx.playerName, ctx.spanLabel), ctx.otal);
+  const caps = tierCaps(
+    ctx.position,
+    otalGrade,
+    dtalGrade,
+    ctx.fga,
+    hasNamedTierException(ctx.playerName, ctx.spanLabel),
+    ctx.otal,
+    isCP3TwoWayExempt(ctx.playerName ?? '', ctx.otal, ctx.dtal),
+  );
   const playoffCollapse = ctx.playoffCollapse ?? 0;
   if (playoffCollapse <= PLAYOFF_COLLAPSE_ALL_NBA_CAP_THRESHOLD) caps.push('All-NBA');
   else if (playoffCollapse <= PLAYOFF_COLLAPSE_MVP_CAP_THRESHOLD) caps.push('MVP');
   if (ctx.spanLabel && isUnvalidatedPre1976Span(ctx.spanLabel, ctx.playerName)) caps.push('All-NBA');
   const downcap = namedTierDowncap(ctx.playerName, ctx.spanLabel);
   if (downcap) caps.push(downcap);
-  const capped = caps.reduce((tier, cap) => stricterTier(tier, cap), base);
+  let capped = caps.reduce((tier, cap) => stricterTier(tier, cap), base);
+  // 2026-08-19, user's explicit PG shooter/playmaker/defense archetype ask. Originally scoped to
+  // "only below All-NBA" (tier rank), but the user's own direct follow-up narrowed the entry
+  // threshold further after seeing real Sixth-Man-capped cases still read close to Starter/
+  // All-star numbers (Lillard, Kyrie, Haliburton...): "zróbmy że powyżej 75 TAL nie robimy sixth
+  // mana, zmniejszmy też próg wejścia" (above 75 TAL, no Sixth Man; lower the entry threshold
+  // too). Now gated on the actual NUMBER after every existing cap above (`numberSoFar`), not tier
+  // rank — a span whose raw TAL nominally reaches All-NBA but is already pulled down by an
+  // existing cap is a real below-threshold span for this purpose too (the same reasoning that
+  // caught LaMelo Ball's 2021-23 span originally), while a span whose post-cap number is already
+  // above `PG_ARCHETYPE_ENTRY_TAL_CEILING` is left alone entirely — this is what directly
+  // guarantees "no Sixth Man above 75," since nothing in this rule can fire past that point at
+  // all, not just the Sixth Man branches specifically. Real, already-established thresholds for
+  // the three archetype factors, not invented fresh: `PLUS_SHOOTER_SPACING` (65, the existing
+  // "genuine floor-spacer" bar `isPlusShooter`/`talent.ts`'s spacing correction both already use)
+  // for shooting; PG's own real APG distribution (p50=5.6, p75=7.3 in the pool) for playmaking,
+  // landing on 6.0 as a real "clearly above average, short of the existing 7.0
+  // ELITE_PLAYMAKING_APG_THRESHOLD" bar; PG's own real D-TAL p75 (55) for defense.
+  if (ctx.position === 'PG') {
+    const numberSoFar = applyGradeCeiling(ctx.tal, tierCeiling(capped));
+    if (numberSoFar <= PG_ARCHETYPE_ENTRY_TAL_CEILING) {
+      const isGoodShooter = (ctx.spacing ?? 0) >= PG_ARCHETYPE_SHOOTER_SPACING_FLOOR;
+      const isGoodPlaymaker = (ctx.apg ?? 0) >= PG_ARCHETYPE_PLAYMAKER_APG_FLOOR;
+      const isGoodDefense = ctx.dtal >= PG_ARCHETYPE_DEFENSE_DTAL_FLOOR;
+      let archetypeCap: OverallTier | null = null;
+      if (isGoodShooter && !isGoodPlaymaker && !isGoodDefense) archetypeCap = 'Bench Warmer'; // "shit player"
+      else if (isGoodShooter && !isGoodPlaymaker && isGoodDefense) archetypeCap = 'Sixth Man'; // "good rotation player"
+      else if (isGoodShooter && isGoodPlaymaker && !isGoodDefense) archetypeCap = 'Sixth Man'; // "good sixthman"
+      else if (!isGoodShooter && isGoodPlaymaker && isGoodDefense) archetypeCap = 'Starter'; // "starter in SOME TEAMS"
+      // good/good/good ("good enough for starter") and the 3 combinations the user didn't name
+      // are deliberately left untouched — whatever `capped` already reads stands.
+      if (archetypeCap) capped = stricterTier(capped, archetypeCap);
+    }
+  }
   // GOAT is a RAISE, deliberately the only exception to this function's own "caps only ever
   // lower a tier" rule (see every other case above) — gated on already having earned "Greatest
   // peak" on the real merits first, so it can never manufacture a top tier out of nothing.
@@ -642,9 +712,20 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
 function tierCeiling(tier: OverallTier): number {
   if (tier === 'GOAT') return Infinity;
   // Not in `OVERALL_TIER_FLOORS` (same reason GOAT isn't — it's a relabel, not a rank on that
-  // ladder). `isSixthManProfile`'s own TAL<80 gate already guarantees the real number never
-  // needs clamping here — 79 is a safety ceiling, not an active clamp in practice.
-  if (tier === 'Sixth Man') return 79;
+  // ladder).
+  // 2026-08-19, user's explicit ask ("niższy pułap" — lower ceiling), found while shipping the PG
+  // shooter/playmaker/defense archetype rule (`overallTierForSpan`'s own docstring): the old 79
+  // was documented as "a safety ceiling, not an active clamp in practice" for the original
+  // `isSixthManProfile` relabel, but checked directly against the real pool — that claim was only
+  // ever true by luck. All 6 real isSixthMan-flagged spans currently AT this tier have raw TAL
+  // above 65, so the old 79 ceiling was doing real (if small) work even there. The archetype
+  // rule's own new "good/good/bad" and "good/bad/good" PG cases made the gap much more visible —
+  // 95 spans land at Sixth Man through it, 78 of them with raw TAL above 65 (Lillard, Kyrie,
+  // Haliburton, Garland...), showing a number that read exactly like Starter/All-star with a
+  // demoted label, not a genuinely lower one. Lowered to 65 — clearly below Starter's own ceiling
+  // (69), so "Sixth Man" now reads as an actually distinct, lower tier for both use cases, not
+  // just a relabel that happens to leave the number alone.
+  if (tier === 'Sixth Man') return 65;
   const idx = OVERALL_TIER_FLOORS.findIndex(([, name]) => name === tier);
   const next = OVERALL_TIER_FLOORS[idx + 1];
   return next ? next[0] - 1 : Infinity;
@@ -679,6 +760,36 @@ function tierCeiling(tier: OverallTier): number {
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const cappedTier = overallTierForSpan(ctx);
   return Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
+}
+
+/**
+ * 2026-08-19, user's explicit ask ("CAP ma nie być tylko wizualny ale faktycznie funkcjonujący"
+ * — the cap should not be just visual but actually functioning): full-pool scan found 242 spans
+ * (117 distinct players, up to a 21-point gap — Brent Barry 86->65, Baron Davis 86->65) where
+ * `computeTalent` (the number every real gameplay decision — rotation assignment, `talentScore`/
+ * `benchDepthScore`/`fitScore`, most of `aiDrafter.ts`'s own bonus/malus checks) and
+ * `displayTalentForSpan` (the number the badge shows, and the ONE thing `aiDrafter.ts`'s own main
+ * pick-value formula already used) genuinely disagreed. Not a hypothetical inconsistency — it's
+ * why Brent Barry's real AI-draft value (86) never matched what his own displayed grade (65)
+ * implied he should be worth.
+ *
+ * `effectiveTalent` is now the one canonical "how good is this player, for every real gameplay
+ * purpose" number — memoized (same shape as `computeTalent`'s own `talentCache`, since this is
+ * called from the same hot rotation/draft loops) rather than recomputing `tierContextFor`'s own
+ * several `computeTalent`/`computeOffensiveTalent`/`computeDefensiveTalent` lookups on every call
+ * — those are already individually memoized, but the extra grade/tier-cap arithmetic on top of
+ * them isn't free at draft-simulation scale. `computeTalent` itself stays exported and untouched
+ * for the few callers that genuinely want the pre-tier-cap raw number (this function, `talent.ts`'s
+ * own internal ceiling math, evidence/debug reporting) — this is deliberately the new default for
+ * everything that makes a real, in-game decision.
+ */
+const effectiveTalentCache = new Map<string, number>();
+export function effectiveTalent(span: PlayerSpan): number {
+  const cached = effectiveTalentCache.get(span.id);
+  if (cached !== undefined) return cached;
+  const result = displayTalentForSpan(tierContextFor(span));
+  effectiveTalentCache.set(span.id, result);
+  return result;
 }
 
 /**
@@ -719,5 +830,7 @@ export function tierContextFor(span: PlayerSpan): TierGateContext {
     // (talent.ts, via playoffPerformanceBonus) — see this file's own docstring on why the top of
     // the scale needs a tier cap instead of a bigger additive number (softCapTalent absorption).
     playoffCollapse: playoffPerformanceBonus(span),
+    spacing: computeSpacing(span),
+    apg: span.box.apg,
   };
 }

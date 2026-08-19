@@ -5,7 +5,7 @@ import { teamCodes, randomTeamNames } from '../engine/teamNames';
 // component only ever renders inside the already-lazy-loaded GameShell (see that file's own
 // docstring on why App.tsx itself avoids any `engine/` import), so there's no eager-load cost
 // to pulling the real constant instead of a second synced-by-hand duplicate.
-import { CAP_LIMIT } from '../engine/positions';
+import { CAP_LIMIT, BENCH_SLOT_COUNT, ROSTER_SIZE } from '../engine/positions';
 
 interface Props {
   teams: Team[];
@@ -113,8 +113,8 @@ export default function DraftLottery({ teams, mode, onDone, onRenameTeam }: Prop
           </div>
           <ol className="how-to-play-panel">
             <li>
-              <b>Draft.</b> 16 teams take turns, 8 rounds — one player each round. You control one team; the rest
-              are CPU.
+              <b>Draft.</b> 16 teams take turns, {ROSTER_SIZE} rounds — one player each round. You control one
+              team; the rest are CPU.
             </li>
             <li>
               <b>FGA cap.</b> Every pick costs shot volume (FGA). Your whole roster has to fit under {CAP_LIMIT}{' '}
@@ -125,8 +125,8 @@ export default function DraftLottery({ teams, mode, onDone, onRenameTeam }: Prop
               career. A cheaper, less-peak span can be the one that fits your cap.
             </li>
             <li>
-              <b>Rotation.</b> Set minutes for your 5 starters and 3 bench players — the Team tab opens for it as
-              soon as you have your first pick, no need to wait for the draft to finish.
+              <b>Rotation.</b> Set minutes for your 5 starters and {BENCH_SLOT_COUNT} bench players — the Team tab
+              opens for it as soon as you have your first pick, no need to wait for the draft to finish.
             </li>
             <li>
               <b>Grading.</b> The judge scores every team — talent, offense, defense, spacing, fit, rotation — and

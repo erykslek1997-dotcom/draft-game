@@ -1,10 +1,11 @@
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
-import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE } from './era';
+import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE, predatesThreePointLine } from './era';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseMalus } from './darkoCorrection';
 import { hiddenValueBonus } from './historicalApmCorrection';
-import { shootingGravity } from './shooting';
+import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
+import { computeSpacing } from './spacing';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
@@ -79,11 +80,127 @@ const POSITION_TALENT_CORRECTION: Record<Position, number> = {
  * shooting-gravity cap — both exist because the user asked for them directly, not because a
  * general rule produced them; don't extend this pattern to a third player without being asked.
  */
-function positionCorrectionFor(span: PlayerSpan): number {
+/**
+ * 2026-08-19, user's explicit ask, scoped by two follow-up refinements: (1) "apply it only below
+ * All-Star guys — stars don't need to be spacers as much as role players" and (2) "make spacing
+ * rules for role players stronger and apply to all positions; give center a bigger boost for
+ * spacers for everyone below All-NBA but don't punish them." Real data checked before building
+ * either version: PF spacing is brutally bimodal (p10/p25/p50 all 0), and named examples show the
+ * old flat correction hiding real, opposite-direction misses — Dirk Nowitzki (SPC 95) read TAL 80,
+ * below several zero-spacing peers (Karl Malone SPC 0 TAL 94, Kevin Garnett SPC 5 TAL 97). Center
+ * spacing is even more extreme (p10-p75 all read 0, only p90=40 — three-quarters of the position
+ * never had real shooting gravity at all), which is why C uses its own, lower-reach curve below
+ * rather than sharing PLUS_SHOOTER_SPACING/90 with the other four positions.
+ *
+ * Two-pass bootstrap for the star gate, same shape `computeTalent` already uses for
+ * `usageOffenseScale`'s own gate below — reads the position-flat-corrected value first (never the
+ * spacing-adjusted one) so the gate can't be moved by the adjustment it's deciding whether to
+ * apply. `ALL_STAR_TAL_FLOOR`/`ALL_NBA_TAL_FLOOR` duplicate `grades.ts`'s own `OVERALL_TIER_FLOORS`
+ * floors as plain numbers rather than importing them — `grades.ts` already imports `computeTalent`
+ * FROM this file, so importing back would be circular. Keep these in sync if that table ever moves.
+ */
+const ALL_STAR_TAL_FLOOR = 70;
+/** Center's own, wider gate (per the user's explicit ask) — a good-but-not-yet-legendary
+ * (All-Star/borderline-All-NBA, 70-79) modern center who ALSO spaces the floor is exactly the
+ * "unicorn big" archetype real 2026 rosters build around, so C's boost stays live further up the
+ * tier ladder than the other four positions before a player's box production alone is judged
+ * enough on its own. `computeTalent(span) >= ALL_NBA_TAL_FLOOR` already implies >= ALL_STAR_TAL_FLOOR
+ * too, so this one constant fully subsumes the star gate for C — no separate All-Star check needed
+ * there. */
+const ALL_NBA_TAL_FLOOR = 80;
+
+/** Non-center floor (spacing 0, a true non-shooting classic role player) — a real, felt
+ * punishment below every non-C position's own flat correction, reflecting that box stats miss
+ * even MORE of a zero-gravity player's value than the old flat averages implied. Widened from the
+ * original PF-only version's 0.85 per the user's explicit "make it stronger" ask. */
+const SPACING_CORRECTION_FLOOR = 0.8;
+/** At `PLUS_SHOOTER_SPACING` (65, the existing "genuine floor-spacer" bar `isPlusShooter` uses)
+ * — fully neutral, no penalty at all: a real plus-shooter's value is already largely visible in
+ * their own box-score efficiency, so the "box stats miss it" rationale for any penalty no longer
+ * applies once they clear this bar. Shared across PG/SG/SF/PF — each position's own real p90
+ * spacing (75-88 in the pool) sits comfortably past this pivot, so it reads the same "genuine
+ * shooter" bar at every one of them, not a position-relative one. */
+const SPACING_CORRECTION_NEUTRAL = 1.0;
+/** Non-center ceiling (spacing 90+, near the real pool's own p90 for every non-C position) — a
+ * real bonus, capped well short of a second full shooting credit (TS%/3PT already feed the
+ * offense component directly) since this specifically represents the UNMEASURED gravity/floor-
+ * opening value for teammates, not a re-reward of the player's own shot-making. Raised from the
+ * original PF-only version's 1.10 per the user's explicit "make it stronger" ask. */
+const SPACING_CORRECTION_CEILING = 1.18;
+const SPACING_CORRECTION_ELITE_SPACING = 90;
+
+function roleSpacingAdjustedCorrection(span: PlayerSpan): number {
+  const spacing = computeSpacing(span);
+  const positionFlat = POSITION_TALENT_CORRECTION[span.primaryPosition];
+  let raw: number;
+  if (spacing >= SPACING_CORRECTION_ELITE_SPACING) {
+    raw = SPACING_CORRECTION_CEILING;
+  } else if (spacing >= PLUS_SHOOTER_SPACING) {
+    const t = (spacing - PLUS_SHOOTER_SPACING) / (SPACING_CORRECTION_ELITE_SPACING - PLUS_SHOOTER_SPACING);
+    raw = SPACING_CORRECTION_NEUTRAL + t * (SPACING_CORRECTION_CEILING - SPACING_CORRECTION_NEUTRAL);
+  } else {
+    const t = spacing / PLUS_SHOOTER_SPACING;
+    raw = SPACING_CORRECTION_FLOOR + t * (SPACING_CORRECTION_NEUTRAL - SPACING_CORRECTION_FLOOR);
+  }
+  // See `predatesThreePointLine`'s own docstring (era.ts) — a true 0 recorded before the 3-point
+  // line existed at all reflects no real opportunity, not a judged weakness, so it can never be
+  // punished below the position's own flat correction. The boost side stays fully open (a span
+  // could theoretically still clear PLUS_SHOOTER_SPACING via non-3PT gravity inputs, though in
+  // practice it never will pre-1980 since 3PA is always 0 then) — this only intercepts the
+  // punishment direction.
+  if (raw < positionFlat && predatesThreePointLine(span.spanLabel)) return positionFlat;
+  return raw;
+}
+
+/**
+ * Center-only, boost-only curve — the user's explicit "give center a bigger boost for spacers...
+ * but don't punish them": a rim-protecting, non-shooting center is still a real, legitimate
+ * archetype (screening/rim deterrence/rebounding), unlike a non-shooting guard/wing/PF in a 2026
+ * lineup-construction sense, so C never drops below its own existing flat correction
+ * (`POSITION_TALENT_CORRECTION.C`, 0.96) regardless of how low spacing reads. The boost itself is
+ * BIGGER than the other four positions' ceiling (1.20 vs 1.18) and reachable at a much lower real
+ * spacing value (`CENTER_SPACING_FULL_CREDIT`, 55) — real C spacing is far more extreme than any
+ * other position (p10 through p75 all read 0 in the pool; only p90 clears 40), so anchoring this
+ * curve to the shared `PLUS_SHOOTER_SPACING`/90 pivot points (calibrated for guards/wings) would
+ * make the boost nearly unreachable for the position it's specifically meant to reward.
+ *
+ * 2026-08-19, user's explicit ask: trimmed 1.30->1.20 (Brook Lopez's own 66->89 jump read as too
+ * strong relative to the rest of the curve) — still the biggest ceiling of any position, still
+ * reached at the same low real spacing bar, just less extreme at the very top.
+ */
+const CENTER_SPACING_CORRECTION_CEILING = 1.2;
+const CENTER_SPACING_FULL_CREDIT = 55;
+
+function centerSpacingBoost(span: PlayerSpan): number {
+  const flat = POSITION_TALENT_CORRECTION.C;
+  const spacing = computeSpacing(span);
+  if (spacing <= 0) return flat;
+  if (spacing >= CENTER_SPACING_FULL_CREDIT) return CENTER_SPACING_CORRECTION_CEILING;
+  const t = spacing / CENTER_SPACING_FULL_CREDIT;
+  return flat + t * (CENTER_SPACING_CORRECTION_CEILING - flat);
+}
+
+/**
+ * `rawSumForGate`, when provided (the real computation path, `talentScaled` below), is the exact
+ * pre-correction sum for THIS call's own usage scale — used only to decide whether this span is
+ * already star-tier-or-above on the unadjusted flat correction, never to compute the final
+ * returned number directly. When omitted (`talentBreakdown`'s display-only call, outside the
+ * real computation path), falls back to the already-resolved `computeTalent(span)` — safe here
+ * specifically because `talentBreakdown` never feeds back into `computeTalent` itself, unlike
+ * this function's other call site.
+ */
+function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number {
   if (normalizePlayerName(span.playerName) === normalizePlayerName('Magic Johnson')) {
     return POSITION_TALENT_CORRECTION.SF;
   }
-  return POSITION_TALENT_CORRECTION[span.primaryPosition];
+  const flat = POSITION_TALENT_CORRECTION[span.primaryPosition];
+  const baseTal = rawSumForGate !== undefined ? rawSumForGate * flat : computeTalent(span);
+  if (span.primaryPosition === 'C') {
+    if (baseTal >= ALL_NBA_TAL_FLOOR) return flat;
+    return Math.max(flat, centerSpacingBoost(span));
+  }
+  if (baseTal >= ALL_STAR_TAL_FLOOR) return flat;
+  return roleSpacingAdjustedCorrection(span);
 }
 
 /** Assist rate above which marginal playmaking value tapers off, and the rate it tapers to.
@@ -729,19 +846,18 @@ function talentScaled(span: PlayerSpan, usageScale: number): number {
   // Squash into a 0-100 band; recalibrated (alongside the DARKO defense correction above) so
   // the true GOAT tier reaches ~97-99 instead of topping out at 91 — deep bench specialists
   // still land ~20-35, the low end wasn't touched by this pass.
-  return (
-    (raw * 2.15 +
-      6 +
-      synergy -
-      usagePenalty -
-      extremeUsagePenalty +
-      hiddenValue +
-      portability +
-      roleScalability +
-      playoffPerformance +
-      selfCreation) *
-    positionCorrectionFor(span)
-  );
+  const rawSum =
+    raw * 2.15 +
+    6 +
+    synergy -
+    usagePenalty -
+    extremeUsagePenalty +
+    hiddenValue +
+    portability +
+    roleScalability +
+    playoffPerformance +
+    selfCreation;
+  return rawSum * positionCorrectionFor(span, rawSum);
 }
 
 /**
@@ -916,17 +1032,31 @@ const PG_ALL_NBA_TIER_CAP = 87;
 const CP3_TWO_WAY_OFFENSE_FLOOR = 80;
 const CP3_TWO_WAY_DEFENSE_FLOOR = 80;
 
+/**
+ * 2026-08-19, bug found while investigating the user's "why does CP3 show 83 if his real TAL is
+ * 96" report: this exemption only ever protected `computeTalent`'s own internal ceiling — the
+ * SEPARATE display-tier cap in `grades.ts` (`tierCaps`'s PG case, "needs A- O-TAL grade or better
+ * to display above All-NBA") had no matching exemption at all, so it independently re-capped the
+ * DISPLAYED badge at All-NBA for the same seasons this exemption already uncapped internally.
+ * Checked directly against all 19 real CP3 spans: seven (2009-11 through 2016-18, excluding
+ * 2013-15 which was already uncapped) clear this exact bar (OTAL/DTAL both >=80) and were still
+ * showing a capped All-NBA badge despite `computeTalent` already reading their real, uncapped
+ * value. Exported so `grades.ts` can apply the identical check to its own display cap instead of
+ * drifting out of sync with this one again.
+ */
+export function isCP3TwoWayExempt(playerName: string, otal: number, dtal: number): boolean {
+  return (
+    normalizePlayerName(playerName) === normalizePlayerName('Chris Paul') &&
+    otal >= CP3_TWO_WAY_OFFENSE_FLOOR &&
+    dtal >= CP3_TWO_WAY_DEFENSE_FLOOR
+  );
+}
+
 function pgOffenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'PG') return 100;
   const otal = computeOffensiveTalent(span);
   if (otal >= PG_OFFENSE_GRADE_A_FLOOR) return 100;
-  if (
-    normalizePlayerName(span.playerName) === normalizePlayerName('Chris Paul') &&
-    otal >= CP3_TWO_WAY_OFFENSE_FLOOR &&
-    computeDefensiveTalent(span) >= CP3_TWO_WAY_DEFENSE_FLOOR
-  ) {
-    return 100;
-  }
+  if (isCP3TwoWayExempt(span.playerName, otal, computeDefensiveTalent(span))) return 100;
   if (otal >= PG_OFFENSE_GRADE_B_FLOOR) return PG_MVP_TIER_CAP;
   return PG_ALL_NBA_TIER_CAP;
 }

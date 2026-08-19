@@ -11,8 +11,11 @@ import {
   buildCheapestLookup,
   canFillFromLookup,
 } from './positions';
-import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from './talent';
-import { displayTalentForSpan, tierContextFor } from './grades';
+import { computeOffensiveTalent, computeDefensiveTalent } from './talent';
+// 2026-08-19: every real-talent read below uses `effectiveTalent` (tier-capped, the same number
+// the displayed badge shows), not raw `computeTalent` — see that function's own docstring
+// (grades.ts) for why.
+import { effectiveTalent } from './grades';
 import { autoAssignRotation, projectedStarterValue, totalMinutesForPlayer, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
 import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
@@ -129,7 +132,7 @@ const MAX_ELITE_LOW_USAGE_MALUS = 3;
 function eliteLowUsageDraftMalus(p: PlayerSpan): number {
   if (p.primaryPosition === 'C') return 0;
   if (p.fga >= ELITE_LOW_USAGE_FGA_CEILING) return 0;
-  if (computeTalent(p) < ELITE_LOW_USAGE_TAL_FLOOR) return 0;
+  if (effectiveTalent(p) < ELITE_LOW_USAGE_TAL_FLOOR) return 0;
   const shortfall = ELITE_LOW_USAGE_FGA_CEILING - p.fga;
   return Math.min(MAX_ELITE_LOW_USAGE_MALUS, shortfall * ELITE_LOW_USAGE_MALUS_SCALE);
 }
@@ -217,13 +220,13 @@ for (const [key, tier] of Object.entries(GREATEST_PEAK_DRAFT_TIERS)) {
   const name = key.slice(0, separatorIndex);
   const spanLabel = key.slice(separatorIndex + 1);
   const span = draftPool.find((p) => normalizePlayerName(p.playerName) === name && p.spanLabel === spanLabel);
-  if (span) GREATEST_PEAK_TIER_BY_NAME.set(name, { tier, tal: computeTalent(span) });
+  if (span) GREATEST_PEAK_TIER_BY_NAME.set(name, { tier, tal: effectiveTalent(span) });
 }
 
 function greatestPeakTierBonus(p: PlayerSpan): number {
   if (!DRAFT_EXPERIMENT.greatestPeakBonus) return 0;
   const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
-  if (!entry || computeTalent(p) < entry.tal) return 0;
+  if (!entry || effectiveTalent(p) < entry.tal) return 0;
   return GREATEST_PEAK_TIER_BONUS[entry.tier];
 }
 
@@ -617,7 +620,7 @@ function highVolumeNonElitePenalty(p: PlayerSpan): number {
   const excess = p.fga - HIGH_VOLUME_FGA_THRESHOLD[p.primaryPosition];
   if (excess <= 0) return 0;
 
-  const talent = computeTalent(p);
+  const talent = effectiveTalent(p);
   const offensiveTalent = computeOffensiveTalent(p);
   const defensiveTalent = computeDefensiveTalent(p);
   const isAllTimeVolumeException =
@@ -673,7 +676,7 @@ const ELITE_POST_PLAYMAKING_HUB_BONUS = 2;
 
 function elitePerimeterEngineBonus(p: PlayerSpan): number {
   if (p.fga < ELITE_PERIMETER_ENGINE_FGA_FLOOR) return 0;
-  if (computeTalent(p) < ELITE_PERIMETER_ENGINE_TALENT_FLOOR) return 0;
+  if (effectiveTalent(p) < ELITE_PERIMETER_ENGINE_TALENT_FLOOR) return 0;
   const offensiveTalent = computeOffensiveTalent(p);
   if (p.offensiveArchetype === 'Post Scorer') {
     if (offensiveTalent < 88 || computeDefensiveTalent(p) >= 90) return 0;
@@ -724,7 +727,7 @@ const ELITE_TWO_WAY_PERIMETER_BONUS = 1;
  */
 function eliteTwoWayFrontcourtBonus(p: PlayerSpan): number {
   if (p.primaryPosition !== 'PF' && p.primaryPosition !== 'C') return 0;
-  if (computeTalent(p) < ELITE_PERIMETER_ENGINE_TALENT_FLOOR) return 0;
+  if (effectiveTalent(p) < ELITE_PERIMETER_ENGINE_TALENT_FLOOR) return 0;
   const offensiveTalent = computeOffensiveTalent(p);
   if (offensiveTalent < ELITE_TWO_WAY_FRONTCOURT_OFFENSE_FLOOR) return 0;
   const defensiveTalent = computeDefensiveTalent(p);
@@ -739,7 +742,7 @@ function eliteTwoWayFrontcourtBonus(p: PlayerSpan): number {
 }
 
 function eliteTwoWayPeakBonus(p: PlayerSpan): number {
-  const talent = computeTalent(p);
+  const talent = effectiveTalent(p);
   const offense = computeOffensiveTalent(p);
   const defense = computeDefensiveTalent(p);
   if (
@@ -783,7 +786,7 @@ const MAX_OFF_BALL_SPECIALIST_PENALTY = 6.5;
  * primary engines are exempt; the penalty only asks sub-96 Shot Creators to prove elite offense,
  * and only discounts off-ball specialists below the all-time talent tier. */
 function earlyCoreRolePenalty(p: PlayerSpan): number {
-  const talent = computeTalent(p);
+  const talent = effectiveTalent(p);
   if (p.offensiveArchetype === 'Shot Creator' && talent < NON_ELITE_CREATOR_TALENT_CEILING) {
     const offenseShortfall = Math.max(0, NON_ELITE_CREATOR_OFFENSE_REFERENCE - computeOffensiveTalent(p));
     return Math.min(
@@ -1001,6 +1004,38 @@ function benchPgScarcityBonus(pos: Position, needs: NeedContext): number {
   return 0;
 }
 
+/**
+ * 2026-08-19, user-reported real diagnostic: a team's final (8th) pick took Jon Barry (SG) while
+ * its C slot sat thin (Shaq alone, no real backup). Traced directly, not guessed
+ * (`scripts/_checkBarryVsCenter.ts`, deleted after use): reproducing that EXACT pick in isolation
+ * (this team's own drafted names removed from the pool, nobody else's) shows the lottery correctly
+ * picks a real center 5/5 of 30 samples — Nic Claxton, Rudy Gobert, Tyson Chandler, DeAndre Jordan,
+ * Al Horford, all real TAL 71-75 fits, never Barry. So the per-pick value comparison already works;
+ * the real board's Barry outcome means those same cheap, efficient centers had already been drafted
+ * by the OTHER 15 teams by pick #123 of 128 — a real, shared-pool depletion-by-round-8 problem this
+ * isolated reproduction can't see. checkBenchPositionBalance.ts's own measured C thin-rate (~20%)
+ * is well above what real total supply alone would predict (44 material-backup centers for 16
+ * teams needing ~1-2 each) — pointing at TIMING within each team's own draft, not raw scarcity: a
+ * team chasing the single highest-value thin-position candidate at each bench pick (as designed)
+ * can correctly pass on an available center at pick 6-7 for a higher-value alternative, then find
+ * its own preferred cheap centers gone by picks 8, even though the position pool overall wasn't
+ * actually exhausted.
+ *
+ * Same mechanism and magnitude as `benchPgScarcityBonus` above (the one other position this
+ * project has already proven needs this exact "buy it before the crowd does" nudge) — pulls a
+ * team toward locking in a real center a pick or two earlier, before 16-team competition for the
+ * same cheap tier catches up with it specifically. Re-measure `checkBenchPositionBalance.ts`
+ * after any future change to this value; this is a first-pass magnitude, not yet grid-tuned the
+ * way the PG version was.
+ */
+const CENTER_BENCH_SCARCITY_BONUS = 1.5;
+
+function benchCenterScarcityBonus(pos: Position, needs: NeedContext): number {
+  if (pos !== 'C') return 0;
+  if (needs.emptySlots.includes('C') || needs.thinSlots.includes('C')) return CENTER_BENCH_SCARCITY_BONUS;
+  return 0;
+}
+
 /** Boosts real defensive/two-way value once a self-sufficient engine covers offense alone —
  * the user's own "needs two-way players, not more offensive talent" framing for the Nash case. */
 const SELF_SUFFICIENT_DEFENSE_BONUS_SCALE = 0.6;
@@ -1202,13 +1237,13 @@ export function pickForAi(
   if (pickNumber !== undefined && pickNumber > STEAL_PICK_THRESHOLD) {
     const steals = planningCandidates.filter((p) => {
       const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
-      return entry !== undefined && computeTalent(p) >= entry.tal;
+      return entry !== undefined && effectiveTalent(p) >= entry.tal;
     });
     if (steals.length > 0) {
       const fillsRealGap = (p: PlayerSpan) => needs.emptySlots.includes(p.primaryPosition) || needs.thinSlots.includes(p.primaryPosition);
       return steals.sort((a, b) => {
         const gapDiff = Number(fillsRealGap(b)) - Number(fillsRealGap(a));
-        return gapDiff || computeTalent(b) - computeTalent(a) || a.fga - b.fga;
+        return gapDiff || effectiveTalent(b) - effectiveTalent(a) || a.fga - b.fga;
       })[0];
     }
   }
@@ -1256,6 +1291,27 @@ export function pickForAi(
       return !(positionAlreadyFilled && p.fga > HIGH_FGA_DUPLICATE_THRESHOLD);
     });
     if (withoutHighFgaDuplicates.length > 0) phaseFilteredCandidates = withoutHighFgaDuplicates;
+  }
+
+  // 2026-08-19, user's explicit ask, prototype for a `BENCH_SLOT_COUNT` 3->4 experiment (see that
+  // constant's own docstring for the 2026-08-15 reasoning behind shrinking it to 3 in the first
+  // place — the removed 4th spot routinely ended up a same-position duplicate with 0 real
+  // minutes, since a position's 48 real minutes are already fully claimed once 2 real fits exist
+  // there). The user's fix for a restored 4th spot: don't let the AI draft that duplicate at all
+  // during bench rounds, rather than merely discount it (`samePositionRedundancyDiscount` above
+  // already discounts, doesn't exclude). Hard-excludes a bench-round candidate whose EVERY real
+  // position (primary + secondary) already has `REAL_FIT_REDUNDANCY_THRESHOLD` (2) real fits —
+  // same threshold the existing soft discount already uses, just enforced as a wall instead of a
+  // nudge. Same `ELITE_TALENT_REDUNDANCY_EXEMPTION` gate as every other redundancy mechanism here
+  // (a genuine top-of-history peak still drafts regardless), and the same "never leaves zero
+  // candidates" safety every hard filter in this function already follows.
+  if (roster.length >= STARTER_LOCK_ROSTER_SIZE) {
+    const withoutRedundantBenchPicks = phaseFilteredCandidates.filter((p) => {
+      if (effectiveTalent(p) >= ELITE_TALENT_REDUNDANCY_EXEMPTION) return true;
+      const positions = [p.primaryPosition, ...p.secondaryPositions];
+      return positions.some((pos) => roster.filter((r) => isRealPositionFit(r, pos)).length < REAL_FIT_REDUNDANCY_THRESHOLD);
+    });
+    if (withoutRedundantBenchPicks.length > 0) phaseFilteredCandidates = withoutRedundantBenchPicks;
   }
 
   if (candidates.length === 0) {
@@ -1342,6 +1398,7 @@ export function pickForAi(
           need += needs.looselyBackedThinSlots.includes(pos) ? 0.5 : 1.3;
         }
         need += benchPgScarcityBonus(pos, needs);
+        need += benchCenterScarcityBonus(pos, needs);
       }
     } else {
       if (needs.emptySlots.includes(p.primaryPosition)) need += 1.5;
@@ -1404,12 +1461,18 @@ export function pickForAi(
     // `displayTalentForSpan` IS that judgment, already built and validated — reusing it here
     // instead of re-deriving a second opinion. Deliberately scoped to this one central `talent`
     // (used below for the redundancy exemption, the main value formula, and the marginal-
-    // starter-value shortlist gate) — the smaller specialized malus/bonus functions above
-    // (`eliteLowUsageDraftMalus`, `greatestPeakTierBonus`, etc.) each read raw `computeTalent`
-    // against their OWN independently-calibrated floors and are left untouched; swapping their
-    // input without re-validating each threshold separately would be a much bigger, unvalidated
-    // change than what was actually asked for.
-    const talent = displayTalentForSpan(tierContextFor(p));
+    // starter-value shortlist gate).
+    // 2026-08-19: this and every smaller specialized malus/bonus function above
+    // (`eliteLowUsageDraftMalus`, `greatestPeakTierBonus`, `highVolumeNonElitePenalty`,
+    // `elitePerimeterEngineBonus`, `eliteTwoWayFrontcourtBonus`, `eliteTwoWayPeakBonus`,
+    // `earlyCoreRolePenalty`) now read `effectiveTalent` (grades.ts), not raw `computeTalent` —
+    // part of the project-wide display-vs-real unification (see that function's own docstring).
+    // Full-pool scan found 242 spans/117 players where the two disagreed, up to 21 points (Brent
+    // Barry, this file's own long-standing motivating case for `OFFENSE_HEAVY_DEFENSE_BONUS`
+    // below, real=86/display=65) — those candidates were being valued here off a number higher
+    // than what the game's own credibility-gated judgment (and every other real decision point)
+    // actually thought they were worth.
+    const talent = effectiveTalent(p);
     if (needs.usageWeight >= 2 && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
       const usageDiscount = (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * 0.5;
       // Option A (bench-shot-creator fix): this discount fires off `usageWeight`, which is

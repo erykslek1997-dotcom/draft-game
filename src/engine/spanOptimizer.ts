@@ -1,7 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { computeTalent } from './talent';
+import { effectiveTalent } from './grades';
 import { CAP_LIMIT } from './positions';
 
 /**
@@ -54,7 +54,7 @@ export function optimizeSpans(roster: PlayerSpan[], capLimit: number = CAP_LIMIT
         if (cost > w) continue;
         const prev = dp[i - 1][w - cost];
         if (prev === NEG_INF) continue;
-        const value = prev + computeTalent(options[oi]);
+        const value = prev + effectiveTalent(options[oi]);
         if (value > dp[i][w]) {
           dp[i][w] = value;
           choice[i][w] = oi;

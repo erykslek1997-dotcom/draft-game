@@ -1,8 +1,11 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositionFit, positionDistance, isUpwardSlide, hardLockedPosition } from './positions';
-import { computeTalent } from './talent';
+// 2026-08-19: `computeTalent` import replaced with `effectiveTalent` (grades.ts) throughout —
+// every real starter/backup assignment decision here now uses the same tier-capped number
+// `aiDrafter.ts` and the displayed badge already use, closing a real raw-vs-display gap (see
+// `effectiveTalent`'s own docstring for the full "why").
 import { maxSustainableMinutes } from './durability';
-import { overallTierForSpan } from './grades';
+import { overallTierForSpan, effectiveTalent } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
 import type { Rotation, SlotAssignment, Team } from './types';
 
@@ -162,7 +165,7 @@ function starterFitMultiplier(player: PlayerSpan, slot: Position): number {
   if (slot === player.primaryPosition || player.secondaryPositions.includes(slot)) return 1;
   if (positionDistance(player.primaryPosition, slot) === 1) {
     if (!isUpwardSlide(player, slot)) return STARTER_FALLBACK_DOWN_MULTIPLIER;
-    return computeTalent(player) >= STARTER_UP_SLIDE_ELITE_TALENT_FLOOR
+    return effectiveTalent(player) >= STARTER_UP_SLIDE_ELITE_TALENT_FLOOR
       ? STARTER_FALLBACK_UP_MULTIPLIER
       : STARTER_FALLBACK_UP_MULTIPLIER_ORDINARY;
   }
@@ -231,7 +234,7 @@ function bestPrimaryAssignment(
       v =
         maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER) <= 0 || belowStarterTier
           ? 0
-          : computeTalent(player) * starterFitMultiplier(player, slot);
+          : effectiveTalent(player) * starterFitMultiplier(player, slot);
       valueByPlayerSlot.set(key, v);
     }
     return v;
@@ -449,7 +452,7 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
           // alternative (Bertans TAL50 real-fit vs. Anunoby TAL63 stretched up at 0.85 was ~7%
           // apart), not enough to block a genuinely much stronger off-position teammate from
           // earning real minutes when the gap is actually large.
-          const rawValue = computeTalent(player) * Math.max(positionFitMultiplier(player, slot), lastResortFloor(positionDistance(player.primaryPosition, slot)));
+          const rawValue = effectiveTalent(player) * Math.max(positionFitMultiplier(player, slot), lastResortFloor(positionDistance(player.primaryPosition, slot)));
           const isUnusedRealFit = positionFitMultiplier(player, slot) >= 0.9 && (minutesUsed.get(player.id) ?? 0) === 0;
           const key: [number, number] = [
             isUnusedRealFit ? rawValue * UNUSED_REAL_FIT_BACKUP_BOOST : rawValue,
@@ -512,7 +515,7 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
       const eligibleStarters = STARTER_SLOTS.filter((s) => s !== slot)
         .map((s) => primaryBySlot[s])
         .filter((p): p is PlayerSpan => !!p && isPositionEligible(p, slot))
-        .sort((a, b) => computeTalent(b) * positionFitMultiplier(b, slot) - computeTalent(a) * positionFitMultiplier(a, slot));
+        .sort((a, b) => effectiveTalent(b) * positionFitMultiplier(b, slot) - effectiveTalent(a) * positionFitMultiplier(a, slot));
       for (const starter of eligibleStarters) {
         if (minutesNeeded <= 0) break;
         const used = starterMinutesUsed.get(starter.id) ?? 0;
@@ -650,7 +653,7 @@ function rebalanceCrossSlotMinutes(
           .filter((x) => x.spare > 0)
           .sort(
             (a, b) =>
-              computeTalent(b.p) * positionFitMultiplier(b.p, primarySlot) - computeTalent(a.p) * positionFitMultiplier(a.p, primarySlot),
+              effectiveTalent(b.p) * positionFitMultiplier(b.p, primarySlot) - effectiveTalent(a.p) * positionFitMultiplier(a.p, primarySlot),
           );
         if (backfillCandidates.length > 0) {
           const best = backfillCandidates[0];

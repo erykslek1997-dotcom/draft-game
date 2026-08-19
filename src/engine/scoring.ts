@@ -2,7 +2,7 @@ import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_RO
 import type { Position, PlayerSpan } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
-import { computeTalent, computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact } from './talent';
+import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact } from './talent';
 import { isPlusShooter } from './shooting';
 import {
   computeSpacing,
@@ -13,7 +13,7 @@ import {
 } from './spacing';
 import { isRimGravityScorer, isSelfSufficientEngine } from './offensiveProfile';
 import { maxSustainableMinutes } from './durability';
-import { overallTier, type OverallTier } from './grades';
+import { overallTier, effectiveTalent, type OverallTier } from './grades';
 import {
   allAssignments,
   benchWithMinutes,
@@ -132,7 +132,7 @@ const UNDERPLAYED_STAR_PENALTY = 12;
  */
 function optimalMinutesRotationBonus(team: Team): { bonus: number; notes: string[] } {
   const rows = team.roster.map((player) => {
-    const tier = overallTier(computeTalent(player));
+    const tier = overallTier(effectiveTalent(player));
     const target = OVERALL_TIER_MINUTES_TARGET[tier];
     const cap = maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER);
     const effectiveOptimal = Math.min(target.optimal, cap);
@@ -244,8 +244,14 @@ const TOP_CORE_SIZE = 5;
  * shape: bench depth/position legality already have their own dedicated scores (rotationScore,
  * position eligibility itself) — this one is purely "how strong is the core."
  */
+// 2026-08-19: switched from raw `computeTalent` to `effectiveTalent` as part of the project-wide
+// display-vs-real unification (see that function's own docstring). Flagged explicitly because
+// THIS function's own validation (0.82 Spearman against 15 real human-ranked rosters, see the
+// docstring above) was measured against the raw number specifically — the original human-vote
+// dataset isn't available in this session to re-validate against the tier-capped version, so
+// treat that correlation figure as provisional until it's re-checked.
 export function talentScore(team: Team): number {
-  const tals = team.roster.map((player) => computeTalent(player)).sort((a, b) => b - a);
+  const tals = team.roster.map((player) => effectiveTalent(player)).sort((a, b) => b - a);
   if (tals.length === 0) return 0;
   const core = tals.slice(0, TOP_CORE_SIZE);
   return Math.round(core.reduce((sum, t) => sum + t, 0) / core.length);
@@ -271,7 +277,7 @@ export function talentScore(team: Team): number {
  * (a mediocre top-5 could "pass" a gap check with an equally mediocre bench).
  */
 export function benchDepthScore(team: Team): number {
-  const tals = team.roster.map((player) => computeTalent(player)).sort((a, b) => b - a);
+  const tals = team.roster.map((player) => effectiveTalent(player)).sort((a, b) => b - a);
   const depth = tals.slice(TOP_CORE_SIZE);
   if (depth.length === 0) return 0;
   const rawAverage = depth.reduce((sum, t) => sum + t, 0) / depth.length;
@@ -279,7 +285,14 @@ export function benchDepthScore(team: Team): number {
   // clusters around 45-66, so even an excellent bench could never display a strong 0-100 score.
   // 35 represents replacement-level depth; an average of 68 across roster spots 6-8 is an
   // exceptionally strong, realistically achievable bench under the FGA cap.
-  return Math.round(rescaleToFullRange(rawAverage, { worst: 35, best: 68 }));
+  // 2026-08-19: `best` lowered 68->63 after `BENCH_SLOT_COUNT` reverted 3->4 (9-man rosters) —
+  // averaging FOUR bench spots instead of three necessarily pulls the achievable ceiling down (a
+  // real 9th roster spot is inherently a weaker player than the 6th-8th, even under the new hard
+  // same-position-redundancy exclusion). Measured directly (`scripts/checkBenchDepthDistribution.ts`,
+  // 64 simulated teams): bottom-4 average TAL now clusters p50=54.25, p90=59, max=62.25 — a much
+  // narrower, higher-floor range than the old 35-68 was fit against. `worst` (35, replacement-
+  // level) is roster-size-independent and left unchanged.
+  return Math.round(rescaleToFullRange(rawAverage, { worst: 35, best: 63 }));
 }
 
 /**
@@ -318,12 +331,28 @@ function benchBoostedWeightedAverage(
   return weighted / totalMinutes;
 }
 
-/** Minutes-weighted team average of O-TAL / D-TAL, the same shape as `talentScore` but reading
- * off the split offense/defense components instead of the blended number — purely informational
- * (matches how O-TAL/D-TAL are already informational-only at the per-player level), so they
- * don't feed `overall`. */
+/** Minutes-weighted team average of O-TAL, the same shape as `talentScore` but reading off the
+ * split offense component instead of the blended number.
+ *
+ * 2026-08-19, user's explicit ask ("spacing should be part of offense to be honest"): a team of
+ * real plus-shooters (Curry/Drexler/Miller) previously couldn't move this number at all — it read
+ * purely off `computeOffensiveTalent`, completely blind to floor spacing. Blended with
+ * `spacingScore` below (70% O-TAL / 30% spacing) rather than reimplemented inline — `spacingScore`
+ * already carries its own real, separately-validated mechanics (multi-gravity threshold, the
+ * Curry-floor blend, anomaly handling) that a from-scratch merge would either duplicate or lose.
+ * Both inputs are already independently rescaled to 0-100 (`OFFENSE_SCORE_ANCHORS`/
+ * `SPACING_SCORE_ANCHORS`), so the blend needs no new anchor calibration of its own — a weighted
+ * average of two 0-100 numbers with weights summing to 1 stays in 0-100 by construction. Spacing
+ * no longer gets its own separate weight in `overall` (see `scoreTeam` below) — this is that
+ * weight moving structurally inside Offense instead of just being reallocated to it.
+ */
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.7;
+const OFFENSE_SPACING_BLEND_WEIGHT = 0.3;
+
 export function offenseScore(team: Team): number {
-  return Math.round(rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS));
+  const otalComponent = rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS);
+  const spacingComponent = spacingScore(team);
+  return Math.round(otalComponent * OFFENSE_OTAL_BLEND_WEIGHT + spacingComponent * OFFENSE_SPACING_BLEND_WEIGHT);
 }
 
 export function defenseScore(team: Team): number {
@@ -567,7 +596,7 @@ export function fitScore(team: Team): FitScoreResult {
   // proven-strong real predictor for no evidenced reason.
   const capEfficiencyStart = score;
   const allPlayers = team.roster;
-  const totalTalent = allPlayers.reduce((sum, p) => sum + computeTalent(p), 0);
+  const totalTalent = allPlayers.reduce((sum, p) => sum + effectiveTalent(p), 0);
   const totalFga = allPlayers.reduce((sum, p) => sum + p.fga, 0);
   const efficiency = totalFga > 0 ? totalTalent / totalFga : 0;
   const efficiencyDelta = ((efficiency - BASELINE_EFFICIENCY) / BASELINE_EFFICIENCY) * 40;
@@ -608,8 +637,15 @@ export function fitScore(team: Team): FitScoreResult {
   // 2026-08-17, weak-link pass: average starter D-TAL was replaced by the nonlinear targetable-
   // minutes penalty shared with Defense/DRTG. Two independent hill-climb runs returned
   // [-15,112] and [-13,114]; use their midpoint rather than one stochastic extreme.
-  const ACHIEVABLE_MIN = -14;
-  const ACHIEVABLE_MAX = 113;
+  // 2026-08-19: recalibrated repeatedly the same day (see git history for the full chain —
+  // position-wide spacing-conditional TAL correction, draftPool.json regenerations, the pre-1980
+  // exemption, Jack Sikma's reclassification, the C bench-scarcity bonus, `effectiveTalent`
+  // replacing raw `computeTalent` project-wide) and again after the PG shooter/playmaker/defense
+  // archetype rule + its tighter Sixth Man ceiling. Three hill-climb runs against the final pool
+  // returned MIN in [-20,-11] (median -20) and MAX in [114,115] (median 114); used the medians
+  // rather than one stochastic extreme, same discipline as the entry above.
+  const ACHIEVABLE_MIN = -20;
+  const ACHIEVABLE_MAX = 114;
   const rescaled = ((score - ACHIEVABLE_MIN) / (ACHIEVABLE_MAX - ACHIEVABLE_MIN)) * 100;
 
   return { score: Math.max(0, Math.min(100, Math.round(rescaled))), notes, raw: score, components };
@@ -795,7 +831,7 @@ export function rotationScore(team: Team): RotationScoreResult {
   for (const p of team.roster) {
     const minutes = totalMinutesForPlayer(team.rotation, p.id);
     if (minutes <= 0) continue;
-    const tier = overallTier(computeTalent(p));
+    const tier = overallTier(effectiveTalent(p));
     const cap = TIER_MAX_MINUTES[tier];
     if (minutes > cap) {
       tierOveragePenalty += (minutes - cap) * TIER_OVERAGE_PENALTY_PER_MINUTE;
@@ -816,7 +852,7 @@ export function rotationScore(team: Team): RotationScoreResult {
   // already refuses to start anyone below Starter tier when a real alternative or an empty slot
   // is available — this only fires in the genuine edge case none exists.
   const WEAK_STARTER_TAL_THRESHOLD = 55;
-  const hasWeakStarter = starters.some(({ player }) => computeTalent(player) < WEAK_STARTER_TAL_THRESHOLD);
+  const hasWeakStarter = starters.some(({ player }) => effectiveTalent(player) < WEAK_STARTER_TAL_THRESHOLD);
   if (hasWeakStarter) {
     const beforeWeakStarter = score;
     score = Math.round(score * 0.5);
@@ -875,13 +911,24 @@ export function rotationScore(team: Team): RotationScoreResult {
  * 0.65/0.12. Offense and defense remain meaningful direct axes; spacing stays present but has a
  * smaller direct weight because continuous spacing and rim-gravity interactions already live in
  * Fit. Rotation remains punitive for genuine deployment mistakes, without owning the ranking.
+ *
+ * 2026-08-19, user's explicit rebalance ask ("lower TAL weight, higher offense, defense and fit.
+ * spacing should be part of offense"): the note above is preserved as real history — Talent's
+ * 0.82 Spearman against real human rankings was, and remains, the single strongest validated
+ * signal this project has measured, so lowering its weight is a deliberate move AWAY from the
+ * best empirical fit to real human judgment, not toward it. The user's own goal here is a
+ * different, legitimate one (basketball-accuracy over matching intuitive human ranking), made with
+ * that trade-off explicit rather than silently reopened. `SPACING_WEIGHT` is removed outright, not
+ * folded into `OFFENSE_WEIGHT`'s number — spacing now lives structurally inside `offenseScore`
+ * itself (see that function's own docstring), so giving it a second separate weight here would
+ * double-count it. The freed 0.10 (talent) + 0.03 (spacing) = 0.13 is split 0.05/0.05/0.03 across
+ * offense/defense/fit.
  */
-const TALENT_WEIGHT = 0.40;
+const TALENT_WEIGHT = 0.30;
 const BENCH_DEPTH_WEIGHT = 0.10;
-const OFFENSE_WEIGHT = 0.12;
-const DEFENSE_WEIGHT = 0.12;
-const SPACING_WEIGHT = 0.03;
-const FIT_WEIGHT = 0.15;
+const OFFENSE_WEIGHT = 0.17;
+const DEFENSE_WEIGHT = 0.17;
+const FIT_WEIGHT = 0.18;
 const ROTATION_WEIGHT = 0.08;
 
 export function scoreTeam(team: Team): ScoreBreakdown {
@@ -897,7 +944,6 @@ export function scoreTeam(team: Team): ScoreBreakdown {
       benchDepth * BENCH_DEPTH_WEIGHT +
       offense * OFFENSE_WEIGHT +
       defense * DEFENSE_WEIGHT +
-      spacing * SPACING_WEIGHT +
       fit.score * FIT_WEIGHT +
       rotation.score * ROTATION_WEIGHT,
   );

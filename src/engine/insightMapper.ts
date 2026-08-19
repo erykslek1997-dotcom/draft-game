@@ -3,7 +3,8 @@ import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_RO
 import type { Team } from './types';
 import type { PlayerTeamFeature, TeamFeatureSnapshot } from './insights';
 import { STARTER_SLOTS, ROSTER_SIZE, positionFitMultiplier, positionDistance } from './positions';
-import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from './talent';
+import { computeOffensiveTalent, computeDefensiveTalent } from './talent';
+import { effectiveTalent } from './grades';
 import { computeSpacing, isShootingAnomalyPlayer } from './spacing';
 import { isPlusShooter } from './shooting';
 import { maxSustainableMinutes, computeDurability } from './durability';
@@ -57,7 +58,7 @@ function toPlayerFeature(p: PlayerSpan, minutes: number, assignedSlots: { slot: 
     minutes,
     fga: p.fga,
     rpg: p.box.rpg,
-    tal: computeTalent(p),
+    tal: effectiveTalent(p),
     primaryPosition: p.primaryPosition,
     secondaryPositions: p.secondaryPositions,
     offensiveArchetype: p.offensiveArchetype,
@@ -76,7 +77,7 @@ function toPlayerFeature(p: PlayerSpan, minutes: number, assignedSlots: { slot: 
     // undefined rather than faked (see this file's own docstring).
     offensiveImpact: computeOffensiveTalent(p),
     defensiveImpact: computeDefensiveTalent(p),
-    overallImpact: computeTalent(p),
+    overallImpact: effectiveTalent(p),
     minuteCeiling: maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER),
     // APPROXIMATION: durability isn't separately exposed as a 0-1 "availability" read here;
     // `minuteCeiling` already carries the real durability signal for the detectors that use it
@@ -215,7 +216,7 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
   // can force a star into a lower-FGA (lower-usage, cheaper) span of themselves than their own
   // real peak — checked directly against the full pool (`peakDraftPool.ts`'s own "peak span"
   // concept) rather than against team-wide spending.
-  const highValueStarters = starterSpans.filter((p) => computeTalent(p) >= 85);
+  const highValueStarters = starterSpans.filter((p) => effectiveTalent(p) >= 85);
   const compressionRatios = highValueStarters.map((p) => {
     const ownMaxFga = Math.max(
       p.fga,

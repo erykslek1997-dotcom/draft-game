@@ -14,7 +14,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { players, curatedPlayers } from '../src/data/players';
 import { normalizePlayerName } from '../src/data/schema';
-import { computeTalent } from '../src/engine/talent';
+// 2026-08-19: switched to `effectiveTalent` (grades.ts) — pool selection (star tier by peak
+// talent, value tier by talent-per-FGA efficiency) should read the same tier-capped number every
+// real gameplay decision now uses, not the raw pre-cap one. See that function's own docstring.
+import { effectiveTalent } from '../src/engine/grades';
 import type { PlayerSpan, Position } from '../src/data/schema';
 import d1d2d3AllowlistData from '../src/data/d1d2d3Allowlist.json';
 
@@ -142,7 +145,7 @@ const summaries: PlayerSummary[] = [...spansByName.entries()].map(([normalizedNa
   let bestEfficiency = -Infinity;
   let cheapestFga = Infinity;
   for (const span of spans) {
-    const talent = computeTalent(span);
+    const talent = effectiveTalent(span);
     if (talent > peakTalent) {
       peakTalent = talent;
       peakSpan = span;

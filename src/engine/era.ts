@@ -185,6 +185,24 @@ export const MODERN_THREE_VOLUME_BASELINE =
 export const MAX_THREE_VOLUME_SCALE = 8;
 
 /**
+ * 2026-08-19, user's explicit ask (real diagnostic: David Thompson's 1976-78 span, SPC 0,
+ * dropped out of the pool entirely under talent.ts's new spacing-conditional TAL correction —
+ * not because he was a bad shooter, but because the NBA had no 3-point line at all until 1979-80,
+ * so his true 0 3PA reflects "had no shot to take," not "chose not to shoot"). First season-end-
+ * year WITH a 3-point line. A span whose every real season predates this had zero opportunity to
+ * record real 3PT volume, so `computeSpacing` reading exactly 0 for it is not evidence about the
+ * player — used to exempt such spans from any correction that would otherwise punish that true 0
+ * as if it were a real, judged shooting weakness.
+ */
+export const FIRST_THREE_POINT_LINE_END_YEAR = 1980;
+
+export function predatesThreePointLine(spanLabel: string): boolean {
+  const years = spanEndYears(spanLabel);
+  if (years.length === 0) return false;
+  return years.every((y) => y < FIRST_THREE_POINT_LINE_END_YEAR);
+}
+
+/**
  * Multiplier putting a span's raw 3PA/game onto the modern (2024-26) volume scale, so
  * "how much did this player shoot from three, relative to what was normal at the time" is
  * comparable across eras. Returns 1 (no adjustment) for spans with no usable league data,

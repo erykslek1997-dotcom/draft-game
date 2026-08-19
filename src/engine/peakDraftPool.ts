@@ -1,7 +1,8 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from './talent';
+import { computeOffensiveTalent, computeDefensiveTalent } from './talent';
+import { effectiveTalent } from './grades';
 
 /**
  * 2026-08-03, user's own ask (in Polish): draft the PLAYER first, choose which specific span
@@ -54,8 +55,11 @@ function buildPeakPool(): PlayerSpan[] {
       bestByPlayer.set(key, span);
       continue;
     }
-    const currentTal = computeTalent(current);
-    const spanTal = computeTalent(span);
+    // 2026-08-19: switched to `effectiveTalent` (grades.ts) — the "peak" span this game actually
+    // drafts as a player's representative should be their real, tier-capped best, matching every
+    // other real gameplay decision now (see that function's own docstring).
+    const currentTal = effectiveTalent(current);
+    const spanTal = effectiveTalent(span);
     if (spanTal > currentTal || (spanTal === currentTal && twoWayBalance(span) > twoWayBalance(current))) {
       bestByPlayer.set(key, span);
     }

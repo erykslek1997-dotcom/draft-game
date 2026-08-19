@@ -90,21 +90,32 @@ check(
 
 // The draft chooses a player name first and GameShell optimizes every AI player's real span once
 // the roster is complete. Use the exact remaining two names from the reported roster and keep the
-// old expensive Arenas pick as a deliberately conservative cap fixture: Nate still resolves to
-// his playable 1988-90 span rather than remaining the cheap TAL-49 representative selected at #83.
-const nateRepresentative = outcomes.get(normalizePlayerName('Nate McMillan'));
-check(nateRepresentative, 'the corrected pick-83 lottery contains Nate McMillan');
+// old expensive Arenas pick as a deliberately conservative cap fixture.
+//
+// 2026-08-19, first update: Nate McMillan (real spacing 0-60, mostly non-shooting across his real
+// career) no longer won this exact lottery after the position-wide spacing-conditional TAL
+// correction (talent.ts) — swapped to Brent Barry (a real shooter). 2026-08-19, second update:
+// after `BENCH_SLOT_COUNT` reverted 3->4 (9-man rosters), this exact reconstructed pick now
+// reserves cap for one MORE future slot (`plannedPlayableReserveFga` scales with slots remaining),
+// which pushes this specific pick's outcomes to true sub-2-FGA cap glue exclusively (Biedriņš,
+// Charles Jones, Ruffin, Cage, Ervin Johnson) — still every outcome clears check #2's own
+// quality-or-glue gate, so the underlying protection is intact; only the flavor-text "which name"
+// assertion needed updating. Andris Biedriņš picked as the representative: his best other real
+// span (2006-08, TAL 59) gives a genuine post-optimization upgrade story, same shape as the
+// original McMillan/Barry checks.
+const biedrinsRepresentative = outcomes.get(normalizePlayerName('Andris Biedriņš'));
+check(biedrinsRepresentative, 'the corrected pick-83 lottery contains a legitimate backup (Andris Biedriņš)');
 const optimizedReportedRoster = optimizeSpans([
   ...roster,
-  nateRepresentative,
+  biedrinsRepresentative,
   pick('Robert Horry', '1997-99'),
   pick('Thabo Sefolosha', '2014-16'),
 ]);
-const optimizedNate = optimizedReportedRoster.find(
-  (player) => normalizePlayerName(player.playerName) === normalizePlayerName('Nate McMillan'),
+const optimizedBiedrins = optimizedReportedRoster.find(
+  (player) => normalizePlayerName(player.playerName) === normalizePlayerName('Andris Biedriņš'),
 );
 check(
-  optimizedNate && displayTalentForSpan(tierContextFor(optimizedNate)) >= 52,
+  optimizedBiedrins && displayTalentForSpan(tierContextFor(optimizedBiedrins)) >= 52,
   'post-draft span optimization turns the selected backup PG into a genuinely playable span',
 );
 
@@ -124,10 +135,13 @@ try {
   Math.random = originalRandom;
 }
 console.log('Pick 78 reserve-aware outcomes:', [...outcomes78.values()].map((player) => ({ player: player.playerName, fga: player.fga })));
-check(!outcomes78.has(normalizePlayerName('Gilbert Arenas')), '20.9-FGA Arenas cannot consume the budget reserved for all three bench spots');
+// 2026-08-19: reserve threshold 18->24 and "three-player" wording ->"four-player" after
+// `BENCH_SLOT_COUNT` reverted 3->4 (9-man rosters) — this pick fills the 5th roster slot, leaving
+// 4 bench slots still to come (`plannedPlayableReserveFga(4)` = 4*6 = 24), not 3 (18) anymore.
+check(!outcomes78.has(normalizePlayerName('Gilbert Arenas')), '20.9-FGA Arenas cannot consume the budget reserved for all four bench spots');
 check(
-  [...outcomes78.values()].every((player) => CAP_LIMIT - spentBefore78 - player.fga >= 18 - 1e-9),
-  'every fifth-starter lottery outcome leaves at least 18 FGA for a three-player bench',
+  [...outcomes78.values()].every((player) => CAP_LIMIT - spentBefore78 - player.fga >= 24 - 1e-9),
+  'every fifth-starter lottery outcome leaves at least 24 FGA for a four-player bench',
 );
 
 console.log('AI backup-quality tests complete.');

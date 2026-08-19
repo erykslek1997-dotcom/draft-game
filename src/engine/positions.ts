@@ -14,7 +14,14 @@ export const STARTER_SLOTS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
  * `ROUNDS`) derives from this rather than hardcoding "9"/"8", so this one change is the actual
  * single source of truth for roster size.
  */
-export const BENCH_SLOT_COUNT = 3;
+// 2026-08-19, user's prototype experiment (see aiDrafter.ts's own hard bench-redundancy-exclusion
+// docstring, added the same day): reverting 3->4 to test whether the 2026-08-15 "wasted 9th spot"
+// failure mode (see this constant's own docstring above) is actually fixed once the AI is
+// structurally blocked from drafting a same-position bench duplicate, rather than accepting the
+// smaller 8-man roster as the only fix. TEMPORARY prototype value — not yet validated against the
+// full regression suite (128->144 picks ripples into hardcoded test fixtures and every calibrated
+// anchor); measure with checkBenchPositionBalance.ts/checkBenchAbsurdities.ts first.
+export const BENCH_SLOT_COUNT = 4;
 export const ROSTER_SIZE = STARTER_SLOTS.length + BENCH_SLOT_COUNT; // 8
 /** Lives here (not draft.ts) so it's available without a circular import wherever the
  * shared cap-legality math needs to know how many teams are contending for the same pool. */

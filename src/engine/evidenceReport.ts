@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
-import { talentBreakdown, computeTalent } from './talent';
+import { talentBreakdown } from './talent';
+import { effectiveTalent } from './grades';
 import { playoffPerformanceTier } from './playoffPerformanceLookup';
 import { individualDefenseRate } from './defensiveAccolades';
 import { allStarCount } from './allStarLookup';
@@ -49,7 +50,9 @@ function fmt(n: number): string {
 
 export function buildEvidenceReport(span: PlayerSpan): EvidenceReport {
   const b = talentBreakdown(span);
-  const tal = computeTalent(span);
+  // 2026-08-19: switched to `effectiveTalent` so this panel's own TAL mention matches the badge
+  // and every real gameplay decision (see that function's own docstring, grades.ts).
+  const tal = effectiveTalent(span);
 
   const evidenceCandidates: Candidate[] = [
     b.hiddenValue >= NOISE_FLOOR

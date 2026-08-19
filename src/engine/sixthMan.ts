@@ -1,6 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
-import { computeTalent, computeOffensiveTalent, computeDefensiveTalent, computeUncappedOffensiveTalent } from './talent';
-import { offensiveGrade, defensiveGrade, tierContextFor, type Grade, type TierGateContext } from './grades';
+import { computeOffensiveTalent, computeDefensiveTalent, computeUncappedOffensiveTalent } from './talent';
+import { offensiveGrade, defensiveGrade, tierContextFor, effectiveTalent, type Grade, type TierGateContext } from './grades';
 
 /**
  * 2026-08-14, user's own idea, motivated by Dana Barros (real career: 1994-95 NBA Sixth Man of
@@ -74,7 +74,7 @@ const GRADE_ORDER: Grade[] = ['F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 
 const gradeAtLeast = (g: Grade, min: Grade) => GRADE_ORDER.indexOf(g) >= GRADE_ORDER.indexOf(min);
 
 export function isSixthManProfile(span: PlayerSpan): boolean {
-  if (computeTalent(span) >= SIXTH_MAN_TAL_CEILING) return false;
+  if (effectiveTalent(span) >= SIXTH_MAN_TAL_CEILING) return false;
   if (span.fga >= SIXTH_MAN_FGA_CEILING) return false;
   if (span.box.apg >= SIXTH_MAN_APG_CEILING) return false;
   const otal = computeOffensiveTalent(span);

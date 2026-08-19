@@ -414,6 +414,21 @@ const PRIMARY_POSITION_RECLASSIFICATIONS: { name: string; from: Position; to: Po
   // real secondaries the same way Horford/Bosh keep C, not purged like Andersen's PF tag.
   { name: 'Jalen Williams', from: 'SG', to: 'SF' },
   { name: 'Jalen Williams', from: 'PF', to: 'SF' },
+  // 2026-08-19, user's explicit ask ("Jack Sikma only center tag"): two of his real spans
+  // (1977-79, 1987-89) auto-tag primary PF with C secondary. Same `dropOld: true` shape as Chris
+  // Andersen above, not the fold-in-as-secondary default — the user's own explicit "ONLY center"
+  // wording is a purge, matching how the rest of his 13 real spans already read (plain C, most
+  // with zero secondary). His one remaining PF secondary (1986-88, primary already C) isn't
+  // touched by this reclassification — it only fires on spans whose CURRENT primary is PF — so
+  // `SECONDARY_POSITION_REMOVALS` below strips that one separately.
+  { name: 'Jack Sikma', from: 'PF', to: 'C', dropOld: true },
+  // 2026-08-19, user's explicit ask ("Robert Covington - delete the C tag, make him PF/SF"): two
+  // real spans (2018-20, 2019-21) auto-tag primary C — small-ball-5 lineup deployment years, not
+  // a real center. `dropOld: true` (Andersen/Sikma shape) purges C outright rather than folding it
+  // in as secondary, matching the user's explicit "delete" wording. `SECONDARY_POSITION_ADDITIONS`
+  // below grants PF/SF on every span so he reads as a genuine PF/SF tweener career-wide, not just
+  // on the two reclassified spans.
+  { name: 'Robert Covington', from: 'C', to: 'PF', dropOld: true },
 ];
 
 function applyPrimaryPositionReclassifications(spans: PlayerSpan[]): PlayerSpan[] {
@@ -589,13 +604,61 @@ const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [
   // recomputation, no archetype change — lets the existing best-TAL-eligible-player logic in
   // rotation.ts naturally prefer him over a weaker true-PG option once he's a legal fit.
   { name: 'Jeff Hornacek', position: 'PG' },
+  // 2026-08-19, user's explicit ask: Theo Ratliff's real spans are almost entirely primary C
+  // (1995-97, 1996-98, 1997-99/PF secondary already, 2002-04, 2003-05, 2004-06) except one
+  // generated span, 1998-00, tagged primary PF with zero secondary at all — a real shot-blocking
+  // center playing a PF-labeled stretch of his career shouldn't lose C eligibility there. Pure
+  // eligibility grant, same shape as the others above.
+  { name: 'Theo Ratliff', position: 'C' },
+  // 2026-08-19, user's explicit ask: every one of Julius Erving's real spans reads SF or SG,
+  // never PF, despite his real size/rebounding/interior game (a career 8.5 rpg SF who legitimately
+  // played some power forward, especially in the ABA years this dataset doesn't separately track).
+  // Pure eligibility grant, same shape as the others above.
+  { name: 'Julius Erving', position: 'PF' },
+  // 2026-08-19, user's explicit ask ("Robert Covington ... make him PF/SF"), paired with the
+  // `PRIMARY_POSITION_RECLASSIFICATIONS` C->PF purge above: grants BOTH PF and SF on every span
+  // (each addition no-ops on the span where it's already primary), so his 4 SF-primary spans gain
+  // PF eligibility and his 4 PF-primary spans (2 original, 2 just reclassified from C) gain SF —
+  // a real PF/SF tweener career-wide, not just eligible on the two touched spans.
+  { name: 'Robert Covington', position: 'PF' },
+  { name: 'Robert Covington', position: 'SF' },
 ];
 
+/**
+ * 2026-08-19, fixed: used to `.find()` a single entry per player name, silently applying only the
+ * FIRST matching entry — invisible for every prior single-grant player (Wembanyama/Anunoby/etc.)
+ * but a real bug for Robert Covington's new two-grant PF+SF request above (only PF would ever
+ * have applied). Now applies EVERY matching entry for a span's player name, not just the first.
+ */
 function applySecondaryPositionAdditions(spans: PlayerSpan[]): PlayerSpan[] {
   return spans.map((span) => {
-    const addition = SECONDARY_POSITION_ADDITIONS.find((a) => normalizePlayerName(a.name) === normalizePlayerName(span.playerName));
-    if (!addition || addition.position === span.primaryPosition || span.secondaryPositions.includes(addition.position)) return span;
-    return { ...span, secondaryPositions: [...span.secondaryPositions, addition.position] };
+    const additions = SECONDARY_POSITION_ADDITIONS.filter((a) => normalizePlayerName(a.name) === normalizePlayerName(span.playerName));
+    let secondaryPositions = span.secondaryPositions;
+    for (const addition of additions) {
+      if (addition.position === span.primaryPosition || secondaryPositions.includes(addition.position)) continue;
+      secondaryPositions = [...secondaryPositions, addition.position];
+    }
+    return secondaryPositions === span.secondaryPositions ? span : { ...span, secondaryPositions };
+  });
+}
+
+/**
+ * 2026-08-19, user's explicit ask ("Jack Sikma only center tag"): the mirror-image mechanism of
+ * `SECONDARY_POSITION_ADDITIONS` above — strips a named secondary tag outright instead of adding
+ * one. Needed specifically because `PRIMARY_POSITION_RECLASSIFICATIONS`'s own `dropOld` only
+ * clears the old tag on spans it actually reclassifies (primary === `from`); it can't reach a
+ * span whose primary was ALREADY the target position but still carries a stale secondary from the
+ * same tag (Sikma's 1986-88 span: primary C, secondary `['PF']`). Scoped narrowly (name-matched,
+ * not a general rule) since this is a specific whole-career purge request, not a data-driven
+ * pattern like the height-based grants below.
+ */
+const SECONDARY_POSITION_REMOVALS: { name: string; position: Position }[] = [{ name: 'Jack Sikma', position: 'PF' }];
+
+function applySecondaryPositionRemovals(spans: PlayerSpan[]): PlayerSpan[] {
+  return spans.map((span) => {
+    const removal = SECONDARY_POSITION_REMOVALS.find((r) => normalizePlayerName(r.name) === normalizePlayerName(span.playerName));
+    if (!removal || !span.secondaryPositions.includes(removal.position)) return span;
+    return { ...span, secondaryPositions: span.secondaryPositions.filter((p) => p !== removal.position) };
   });
 }
 
@@ -676,9 +739,11 @@ function applyHeightBasedSecondaryPositions(spans: PlayerSpan[]): PlayerSpan[] {
 
 export const players: PlayerSpan[] = applyForcedPositionProfiles(
   applyHeightBasedSecondaryPositions(
-    applySecondaryPositionAdditions(
-      applyDefensiveRoleOverrides(
-        applyPrimaryPositionReclassifications(applyPositionOverrides([...curatedPlayers, ...generatedPlayers, ...curatedExpandedSpans])),
+    applySecondaryPositionRemovals(
+      applySecondaryPositionAdditions(
+        applyDefensiveRoleOverrides(
+          applyPrimaryPositionReclassifications(applyPositionOverrides([...curatedPlayers, ...generatedPlayers, ...curatedExpandedSpans])),
+        ),
       ),
     ),
   ),
