@@ -2131,12 +2131,18 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
 }
 .at-legend-toggle:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
 
+/* 2026-08-19, user's explicit ask ("make everything in one line"): was `grid-template-columns:
+   repeat(auto-fit, minmax(240px, 1fr))`, which wrapped once there wasn't room for every card at
+   its 240px minimum (the old 6-card legend always wrapped its last card to a short second row).
+   Flex + `flex: 1 1 0` divides the full row width evenly across however many cards actually exist
+   (5, after the same-day Playoffs-entry removal) and never wraps — no column count hardcoded
+   against the array length, so this stays correct if the legend ever gains or loses an entry. */
 .at-tag-legend {
   margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--at-line);
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;
+  display: flex; flex-wrap: nowrap; gap: 10px;
 }
 .at-tag-legend-item {
-  display: flex; gap: 10px; align-items: flex-start;
+  display: flex; gap: 10px; align-items: flex-start; flex: 1 1 0; min-width: 0;
   background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px; padding: 10px 12px;
 }
 .at-tag-legend-item .at-swatches { display: flex; flex-direction: column; gap: 4px; flex: none; margin-top: 2px; }
@@ -2159,7 +2165,10 @@ table.at-ov-grid thead th {
   padding: 9px 10px; text-align: left; white-space: nowrap;
 }
 table.at-ov-grid thead th.at-rnd { text-align: center; min-width: 108px; }
-table.at-ov-grid thead th.at-teamcol { position: sticky; left: 0; z-index: 3; min-width: 168px; }
+/* 2026-08-19, widened 168->236px alongside the full-name change below — the chip alone fit 168,
+   chip + a real team name needs more room. Narrow-viewport override further down still shrinks
+   this back to a chip-only 54px, unaffected by this change. */
+table.at-ov-grid thead th.at-teamcol { position: sticky; left: 0; z-index: 3; min-width: 236px; }
 table.at-ov-grid tbody td.at-teamcol {
   position: sticky; left: 0; background: var(--at-paper-raised); z-index: 1;
   border-right: 1px solid var(--at-line); font-weight: 700; white-space: nowrap; padding: 8px 10px;
@@ -2170,6 +2179,8 @@ table.at-ov-grid tbody td.at-teamcol {
   text-align: left;
 }
 table.at-ov-grid tbody tr.at-you td.at-teamcol { background: color-mix(in srgb, var(--at-ink) 6%, var(--at-paper-raised)); }
+.at-team-name-full { margin-left: 8px; font-weight: 600; color: var(--at-ink); }
+.at-team-name-full .at-lottery-you-tag { margin-left: 6px; }
 /* 2026-08-19: on-the-clock row now reads in the NBA-red accent with a small pulsing dot, same
    "live" broadcast-graphics language real sports scoreboards use for whoever's up next — the
    flat neutral highlight this replaced didn't distinguish "the moment that's actually happening
@@ -2217,6 +2228,10 @@ table.at-ov-grid tbody td.at-onclock::before {
   .at-name-short { display: inline; }
   .at-team-chip { min-width: 0; height: 17px; padding: 0 4px; font-size: 9px; margin: 0 0 3px; display: inline-flex; }
   .at-pick-badge { min-width: 0; height: 15px; padding: 0 4px; font-size: 8.5px; margin: 0 0 2px; display: inline-flex; }
+  /* 2026-08-19: the full-name addition above is a wide-viewport convenience (real spare room in
+     that column) — at this width the column is back to a 54px chip-only budget, same reasoning
+     the chip-narrowing comment right above already gives, so the name goes back to hover-only. */
+  .at-team-name-full { display: none; }
 }
 
 /* ---- Team panel (own roster during the draft) ---- */

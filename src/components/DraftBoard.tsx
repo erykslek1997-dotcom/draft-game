@@ -363,7 +363,11 @@ const TAG_LEGEND: ReadonlyArray<{ name: string; tiers: string[]; text: string }>
   { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "A different question from Talent/Offense/Defense: not how good this player is, but how well their game travels next to another ball-dominant star — an efficient off-ball scorer or a versatile defender ports well even at a modest overall Talent, and a ball-dominant star can port poorly despite elite Talent. Same S–F letter-grade scale." },
   { name: '3PT (SPC)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How much this player's outside shooting forces a defense to respect the perimeter — real, era-scaled 3-point volume and accuracy. Non-shooter to Walking gravity." },
   { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'DNP to Ironman — real share of possible team games actually played in this span.' },
-  { name: 'Playoffs', tiers: ['at-t2', 'at-t6'], text: '▲ Riser / ▼ Dropper × Bronze–Platinum — real playoff-vs-regular-season efficiency shift.' },
+  // 2026-08-19, user's explicit ask ("hide playoffs and make everything in one line"): the
+  // Playoffs entry used to sit alone on its own short second row (5 cards fit one row, the 6th
+  // wrapped) — dropped so the remaining 5 fit one line cleanly, per the same ask. The actual
+  // Playoffs badge/column elsewhere in this file (the ▲/▼ riser/dropper tag) is untouched — this
+  // only removes its glossary entry.
 ];
 
 export default function DraftBoard({
@@ -726,12 +730,17 @@ export default function DraftBoard({
                           as the tier dots' own `data-tip` popover above). "(You)" is folded into
                           that same tooltip text rather than sitting beside it — the row's own
                           `.at-you` highlight already marks it visually either way. */}
-                      <span
-                        className="at-team-chip at-name-tip"
-                        tabIndex={0}
-                        data-tip={`${teamLabel(team)}${team.isHuman ? ' (You)' : ''}`}
-                      >
+                      {/* 2026-08-19, user's explicit ask ("with this much space we can just put
+                          names in for web") — the code-chip-plus-hover-tooltip design above was
+                          built for a cramped desktop layout; on a wider view this column has real
+                          room to spare, so the full name is shown directly again, chip retained
+                          for quick color-coded scanning. */}
+                      <span className="at-team-chip" tabIndex={0}>
                         {teamCodeByTeamId.get(team.id)}
+                      </span>
+                      <span className="at-team-name-full">
+                        {teamLabel(team)}
+                        {team.isHuman && <span className="at-lottery-you-tag">YOU</span>}
                       </span>
                     </td>
                     {Array.from({ length: ROUNDS }, (_, r) => {
@@ -800,7 +809,19 @@ export default function DraftBoard({
                   <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
                 </div>
                 <div className="at-cap-label" style={{ marginLeft: 'auto' }}>
-                  Cap remaining: <b>{capRemaining(currentFgas)}</b> FGA
+                  {/* 2026-08-19, user-reported ("changed spans in team section and cannot pick
+                      anyone because according to game i dont have fga"): this read `currentFgas`
+                      (the drafted/peak spans) instead of `displayFgas` — the ONE other cap-meter
+                      site in this same file (the Team tab's own progress bar, further down) was
+                      already fixed to use `displayFgas` for exactly this reason (see its own
+                      comment), but this label was missed at the time. The actual legality check
+                      gating the Draft buttons (`isPickLegal`, via `legalGroups`) always reads the
+                      real `state.teams` roster directly and was never affected by this — a
+                      span swap in the Team tab can't actually change what's pickable — but this
+                      label could show a stale, wrong number after a swap, reading as a false
+                      "you're locked out" the moment the swap freed up (or used) cap the label
+                      didn't know about. */}
+                  Cap remaining: <b>{capRemaining(displayFgas)}</b> FGA
                 </div>
               </div>
               <div className="at-controls-row" style={{ marginTop: -4 }}>
@@ -1349,13 +1370,16 @@ export default function DraftBoard({
                                     stands in for the number in player mode — same coarse,
                                     non-precise signal as the Draft tab's own Tier badge, no
                                     exact figure a beginner could just sort by.
-                                    2026-08-19 follow-up, user's explicit ask: dropped the trailing
-                                    "— FGA {n}" here — the table's own FGA column right next to this
-                                    dropdown already shows the exact same number, so it was
-                                    genuinely duplicated, not two different facts. Tester mode also
-                                    now shows the tier name alongside the raw TAL number ("show TAL
-                                    with TAG"), not just the number alone. */}
-                                {o.spanLabel} —{' '}
+                                    2026-08-19 follow-up: dropped the trailing "— FGA {n}" here,
+                                    reasoning the table's own FGA column already showed it — true
+                                    only for whichever ONE option is currently selected, not the
+                                    other options sitting in this same dropdown. Same-day, second
+                                    follow-up ("span list can show FGA becasue we need to click for
+                                    every one to look how much it costs"): put back, since
+                                    comparing spans by cost is the actual reason to open this
+                                    dropdown in the first place — the table's column duplicates the
+                                    SELECTED option only, never every option being compared. */}
+                                {o.spanLabel} — FGA {o.fga.toFixed(1)} —{' '}
                                 {showJudgeMetrics
                                   ? `TAL ${effectiveTalent(o)} — ${overallTierForSpan(tierContextFor(o))}`
                                   : overallTierForSpan(tierContextFor(o))}
