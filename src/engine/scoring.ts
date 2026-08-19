@@ -6,7 +6,6 @@ import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact 
 import { isPlusShooter } from './shooting';
 import {
   computeSpacing,
-  isShootingAnomalyPlayer,
   spacingBreakdown,
   SHOOTING_ANOMALY_TEAM_SPACING_FLOOR,
   WALKING_GRAVITY_FLOOR,
@@ -403,20 +402,34 @@ export function spacingScore(team: Team): number {
   // so only this base weighted average needs the same boost offense/defense already get.
   const base = benchBoostedWeightedAverage(team, computeSpacing, false);
 
-  const anomalyMinutes = assignments
-    .filter(({ player }) => isShootingAnomalyPlayer(player))
-    .reduce((sum, { minutes }) => sum + minutes, 0);
-  const anomalyShare = Math.max(0, Math.min(1, anomalyMinutes / STARTER_MINUTES));
-
-  const hasSecondGravityThreat = assignments.some(
-    ({ player, minutes }) =>
-      minutes > 0 && !isShootingAnomalyPlayer(player) && spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR,
+  // 2026-08-19, user-reported: a real Paul George "Walking gravity" span (SPC 100, no Curry on
+  // the roster) got NONE of this mechanic's credit — both the single-player floor and the
+  // multi-threat override below were gated on `isShootingAnomalyPlayer` (Curry by literal name),
+  // even though "Walking gravity" is already the same top individual tier Curry's own qualifying
+  // spans cap at (`spacingBreakdown`'s points are capped at `MAX_SPACING_POINTS` the moment they
+  // clear `WALKING_GRAVITY_FLOOR` — there's no numeric distinction between "Curry" and "any other
+  // Walking-Gravity-tier span" left to justify treating them differently here). Generalized to
+  // ANY real (minutes>0) Walking-Gravity-tier span, matching this mechanic's own stated intent
+  // ("two genuine floor-warpers... regardless of who else is out there" — see this function's own
+  // docstring above) instead of just the one motivating example (Curry) it happened to be built
+  // around. Scoped to this function only — `isShootingAnomalyPlayer` itself, and its separate
+  // consumers in fit.ts/insightMapper.ts, are untouched.
+  const gravityThreatAssignments = assignments.filter(
+    ({ player, minutes }) => minutes > 0 && spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR,
   );
-  if (anomalyMinutes > 0 && hasSecondGravityThreat) return MULTI_GRAVITY_TEAM_SPACING;
+  const distinctGravityThreatIds = new Set(gravityThreatAssignments.map(({ player }) => player.id));
 
-  const floored = Math.max(base, SHOOTING_ANOMALY_TEAM_SPACING_FLOOR);
-  const withCurryFloor = base * (1 - anomalyShare) + floored * anomalyShare;
-  return Math.round(rescaleToFullRange(withCurryFloor, SPACING_SCORE_ANCHORS));
+  if (distinctGravityThreatIds.size >= 2) return MULTI_GRAVITY_TEAM_SPACING;
+
+  if (distinctGravityThreatIds.size === 1) {
+    const threatMinutes = gravityThreatAssignments.reduce((sum, { minutes }) => sum + minutes, 0);
+    const threatShare = Math.max(0, Math.min(1, threatMinutes / STARTER_MINUTES));
+    const floored = Math.max(base, SHOOTING_ANOMALY_TEAM_SPACING_FLOOR);
+    const withGravityFloor = base * (1 - threatShare) + floored * threatShare;
+    return Math.round(rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS));
+  }
+
+  return Math.round(rescaleToFullRange(base, SPACING_SCORE_ANCHORS));
 }
 
 export interface RotationScoreComponents {
