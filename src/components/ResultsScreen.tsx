@@ -441,17 +441,22 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         <h3>Simulate 82-Game Season</h3>
         <p className="player-notes-hint">
           Rolls one full regular season, game by game, using each pairing's real projected win probability. Separate from
-          the Final Power Ranking above — click again to roll a brand new season.
+          the Final Power Ranking above.
         </p>
-        <button
-          className="secondary-btn"
-          onClick={() => {
-            setSeasonStandings(simulateSeason(scoredTeams));
-            setPlayoffResult(null);
-          }}
-        >
-          {seasonStandings ? '🎲 Re-simulate Season' : '🏀 Simulate 82-Game Season'}
-        </button>
+        {/* 2026-08-19, user's explicit ask ("delate resimulation button for regular season and
+            playoffs"): once rolled, that's the season — no re-roll button once a result exists,
+            for either this or the playoff button below. */}
+        {!seasonStandings && (
+          <button
+            className="secondary-btn"
+            onClick={() => {
+              setSeasonStandings(simulateSeason(scoredTeams));
+              setPlayoffResult(null);
+            }}
+          >
+            🏀 Simulate 82-Game Season
+          </button>
+        )}
         {seasonStandings && (
           <>
             <table className="at-roster-table season-standings-table">
@@ -486,12 +491,14 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                 Ranking — every series is genuinely played out game by game (real BO7 tallies like
                 "4-2"), not a single probability draw. Re-clicking re-rolls the playoffs alone,
                 keeping the same season standings as the seed. */}
-            <button
-              className="secondary-btn playoff-sim-btn"
-              onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings))}
-            >
-              {playoffResult ? '🎲 Re-simulate Playoffs' : '🏆 Simulate Playoffs'}
-            </button>
+            {!playoffResult && (
+              <button
+                className="secondary-btn playoff-sim-btn"
+                onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings))}
+              >
+                🏆 Simulate Playoffs
+              </button>
+            )}
             {playoffResult && (
               <div className="playoff-bracket">
                 {playoffResult.rounds.map((round) => (
