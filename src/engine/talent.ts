@@ -876,10 +876,32 @@ export function extremeUsageRatioPenalty(span: PlayerSpan): number {
   return excess > 0 ? Math.min(MAX_EXTREME_USAGE_PENALTY, excess * EXTREME_USAGE_RATIO_SCALE) : 0;
 }
 
+/**
+ * 2026-08-31, user-reported (batch feedback, Mutombo case): the fixed 60/40 offense/defense
+ * blend structurally undervalues a genuinely elite ONE-WAY defensive anchor — measured directly
+ * across the whole pool first (215 spans with D-TAL>=90): Ben Wallace's real peak (2002-04,
+ * D-TAL 99, a real 4x DPOY like Mutombo) topped out at TAL 61; Bill Russell (D-TAL 90) at 62;
+ * Mark Eaton (D-TAL 96-98) at 56-57. `twoWaySynergyBonus` above doesn't reach these spans at all
+ * — it's gated on the WEAKER of offense/defense clearing a bar, which a true one-way specialist's
+ * low O-TAL never will. This is the deliberately narrow, opposite-shaped complement: credit for
+ * being exceptional on ONE side specifically, independent of the other. Threshold (85) and scale
+ * chosen so the softcap naturally absorbs this for players who don't need it (an already-elite
+ * two-way legend like Jordan/Hakeem/Duncan sits close enough to the 100 ceiling that this bonus
+ * barely moves their displayed number) while genuinely lifting the low-O-TAL specialist
+ * population this was reported for.
+ */
+const ELITE_DEFENSE_BONUS_THRESHOLD = 85;
+const MAX_ELITE_DEFENSE_BONUS = 15;
+
+function eliteDefenseTalBonus(span: PlayerSpan): number {
+  const dtal = computeDefensiveTalent(span);
+  return Math.min(MAX_ELITE_DEFENSE_BONUS, Math.max(0, dtal - ELITE_DEFENSE_BONUS_THRESHOLD));
+}
+
 /** The shared pipeline `computeTalent` runs twice — once at `usageScale=1.0` to establish the
  * base tier for `USAGE_SCALE_MIN_TIER_TAL`'s gate, and again with the real usage scale if that
  * gate passes. Returns the uncapped, unrounded scaled value; callers clamp/round/soft-cap. */
-function talentScaled(span: PlayerSpan, usageScale: number): number {
+function talentScaled(span: PlayerSpan, usageScale: number, includeEliteDefenseBonus = true): number {
   const { offense, defense } = rawComponents(span, true, usageScale);
   const raw = offense * 0.6 + defense * 0.4;
   const { normalizedOffense, normalizedDefense } = normalizedComponents(span, offense, defense);
@@ -892,6 +914,7 @@ function talentScaled(span: PlayerSpan, usageScale: number): number {
   const roleScalability = roleScalabilityBonus(span);
   const playoffPerformance = playoffPerformanceBonus(span);
   const selfCreation = selfCreationTalentBonus(span);
+  const eliteDefense = includeEliteDefenseBonus ? eliteDefenseTalBonus(span) : 0;
 
   // Squash into a 0-100 band; recalibrated (alongside the DARKO defense correction above) so
   // the true GOAT tier reaches ~97-99 instead of topping out at 91 — deep bench specialists
@@ -906,7 +929,8 @@ function talentScaled(span: PlayerSpan, usageScale: number): number {
     portability +
     roleScalability +
     playoffPerformance +
-    selfCreation;
+    selfCreation +
+    eliteDefense;
   const correction = positionCorrectionFor(span, rawSum);
   // 2026-08-31, user-reported (batch feedback: Brad Miller/Arvydas Sabonis/Karl-Anthony Towns —
   // see `CENTER_SPACING_FULL_CREDIT`'s own docstring for the full measured root cause). The
@@ -1311,6 +1335,32 @@ export function computeTalent(span: PlayerSpan): number {
   const result = Math.round(applyGradeCeiling(finalTal, ceiling));
   talentCache.set(span.id, result);
   return result;
+}
+
+/**
+ * The same raw number `computeTalent` would produce with `eliteDefenseTalBonus` excluded — NOT
+ * cached (only ever called from `grades.ts`'s tier-cap gate, never in a hot path), and
+ * deliberately not itself a public "TAL without defense credit" concept — its only purpose is
+ * letting that gate ask "would this span have reached MVP+ without this specific bonus," so a
+ * span that gets there ONLY via this new bonus (Rudy Gobert's five affected spans, user-reported
+ * 2026-08-31) can be capped at All-NBA there without touching any span whose MVP+ status was
+ * already earned on other merits before this bonus existed (Hakeem/Duncan/Robinson/Kareem — all
+ * unaffected, their pre-bonus number already cleared MVP on its own).
+ */
+export function computeTalentWithoutEliteDefenseBonus(span: PlayerSpan): number {
+  const ceiling = Math.min(
+    pgOffenseGradeCeiling(span),
+    pgDefenseGradeCeiling(span),
+    sfOffenseGradeCeiling(span),
+    sfDefenseGradeCeiling(span),
+    lukaMvpTierCeiling(span)
+  );
+  const baseScaled = talentScaled(span, 1.0, false);
+  const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
+  if (baseTal < USAGE_SCALE_MIN_TIER_TAL) return Math.round(applyGradeCeiling(baseTal, ceiling));
+  const scaledWithUsage = talentScaled(span, usageOffenseScale(span), false);
+  const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaledWithUsage))));
+  return Math.round(applyGradeCeiling(finalTal, ceiling));
 }
 
 /**

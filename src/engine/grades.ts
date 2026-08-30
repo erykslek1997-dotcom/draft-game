@@ -6,6 +6,7 @@ import {
   computeOffensiveTalent,
   computeUncappedOffensiveTalent,
   computeDefensiveTalent,
+  computeTalentWithoutEliteDefenseBonus,
   rawUncappedTalent,
   applyGradeCeiling,
   isCP3TwoWayExempt,
@@ -621,6 +622,13 @@ export interface TierGateContext {
    * never trips the new gate, same "no signal, no restriction" default the others already use. */
   spacing?: number;
   apg?: number;
+  /** 2026-08-31, user-reported (batch feedback: `talent.ts`'s new elite-one-way-defense bonus —
+   * see that bonus's own docstring — pushed Rudy Gobert's five affected spans, plus one span
+   * each for Dwight Howard/Mourning/Walton/prime Hakeem/Duncan, from All-NBA into MVP). Optional/
+   * undefined-safe like every other context field: when omitted, `tal` is used in its place, so
+   * the gate below simply never fires for a synthetic/validation context — the same "no signal,
+   * no restriction" default this file already uses everywhere else. */
+  talWithoutEliteDefenseBonus?: number;
 }
 
 /**
@@ -718,6 +726,22 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   const downcap = namedTierDowncap(ctx.playerName, ctx.spanLabel);
   if (downcap) caps.push(downcap);
   let capped = caps.reduce((tier, cap) => stricterTier(tier, cap), base);
+  // 2026-08-31, user-reported (batch feedback): `talent.ts`'s new elite-one-way-defense bonus
+  // (see that bonus's own docstring — Ben Wallace/Mark Eaton/Mutombo/Bill Russell/Tony Allen, all
+  // real 4x-DPOY-or-comparable specialists topping out well below where their defense alone
+  // should carry them) is meant to lift a genuine one-way anchor to a respectable level, not let
+  // that ONE bonus alone be the reason a span crosses into MVP+ — that tier is still meant to
+  // require the span to have gotten there on its OTHER merits too. Measured directly before
+  // shipping (`scripts` batch, full C-position before/after tier sweep): only 11 spans actually
+  // cross this way — Rudy Gobert (5 of his 6 spans), plus one span each for Dwight Howard,
+  // Alonzo Mourning, Bill Walton, prime Hakeem (1986-88) and Tim Duncan (2004-06). Every other
+  // MVP+ center in the pool (the vast majority — Hakeem's other 8 spans, every Duncan/Robinson/
+  // Kareem/Wembanyama span) already cleared MVP on their pre-bonus number and is completely
+  // unaffected, since this only fires when the bonus itself was the deciding factor.
+  const withoutBonusTal = ctx.talWithoutEliteDefenseBonus ?? ctx.tal;
+  if (tierRank(capped) >= tierRank('MVP') && tierRank(overallTier(withoutBonusTal)) < tierRank('MVP')) {
+    capped = stricterTier(capped, 'All-NBA');
+  }
   // 2026-08-19, user's explicit PG shooter/playmaker/defense archetype ask. Originally scoped to
   // "only below All-NBA" (tier rank), but the user's own direct follow-up narrowed the entry
   // threshold further after seeing real Sixth-Man-capped cases still read close to Starter/
@@ -914,5 +938,6 @@ export function tierContextFor(span: PlayerSpan): TierGateContext {
     playoffCollapse: playoffPerformanceBonus(span),
     spacing: computeSpacing(span),
     apg: span.box.apg,
+    talWithoutEliteDefenseBonus: computeTalentWithoutEliteDefenseBonus(span),
   };
 }

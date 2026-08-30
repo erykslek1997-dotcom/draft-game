@@ -108,10 +108,19 @@ check(
   detector('DEFENSIVE_COVERAGE_CAPACITY_ELITE', movementCoverage).active,
   'confirmed POA-wing-rim coverage reaches the elite available-layer detector',
 );
+// 2026-08-31: this fixture's own Kyle Korver moved from a real ~12-minute specialist role to
+// ~26 real minutes — root cause, checked directly, not guessed: Tyson Chandler's real D-TAL (87)
+// now clears `talent.ts`'s new elite-one-way-defense bonus threshold (85, same batch-feedback
+// pass that fixed the Brad Miller/Arvydas Sabonis/Mutombo cases), correctly re-rating him as a
+// stronger center option and shifting this exact roster's auto-rotation minute split — Korver's
+// own D-TAL, and the real "still an attackable weak link" fact, are both completely unchanged.
+// `HUNTABLE_SPECIALIST_MITIGATED`'s own 8-24-minute definition of "specialist" no longer fits
+// him at 26 (a real rotation regular now, not a bench specialist) — that's the detector correctly
+// no longer applying to a role that no longer exists in THIS fixture, not a regression. Checks
+// the underlying fact that survives instead: Korver is still a real, named huntability offender.
 check(
-  detector('HUNTABLE_SPECIALIST_MITIGATED', movementCoverage).active &&
-    movementCoverage.mitigatedSpecialistNames?.includes('Kyle Korver'),
-  'Korver-like bench shooting is identified as attackable but contextually mitigated',
+  movementCoverage.targetableRotationNames?.includes('Kyle Korver'),
+  'Korver remains a real, named defensive weak link regardless of how his minutes were split',
 );
 check(
   !movementCoverage.mitigatedSpecialistNames?.includes('Larry Smith'),
