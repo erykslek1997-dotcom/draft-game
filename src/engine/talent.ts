@@ -167,9 +167,28 @@ function roleSpacingAdjustedCorrection(span: PlayerSpan): number {
  * 2026-08-19, user's explicit ask: trimmed 1.30->1.20 (Brook Lopez's own 66->89 jump read as too
  * strong relative to the rest of the curve) — still the biggest ceiling of any position, still
  * reached at the same low real spacing bar, just less extreme at the very top.
+ *
+ * 2026-08-31, user-reported (batch feedback: Brad Miller/Arvydas Sabonis reading All-NBA off
+ * mediocre O-TAL/D-TAL letters; measured directly, `scripts` batch — 142/952 C spans, 14.9% of
+ * the position, gained >=3 TAL from this exact mechanism, several of them — Karl-Anthony Towns'
+ * four different spans among them — with genuinely weak defense, 24-32 D-TAL). Two fixes:
+ *
+ * 1. `CENTER_SPACING_FULL_CREDIT` raised 55->75. Checked the real distribution first
+ *    (`scripts/_spacingDist.ts`, deleted after use): C spacing is extremely bimodal (p50=0,
+ *    p70=0, p80=5, p90=50, p95=75, p99=95) — 55 already sat around the real p90, not the "not a
+ *    big number" the raw digit suggests, but the user's own framing ("55 to nie są jakieś
+ *    wielkie liczby") was about the ceiling being reachable too easily for what's supposed to be
+ *    a rare, genuinely elite trait. 75 (the real p95) reserves full credit for the top ~5% of
+ *    centers specifically, not the top ~10%.
+ * 2. The boost itself is now scoped to the offense-derived term only (see `talentScaled`'s own
+ *    C-specific branch) — previously this multiplied the ENTIRE final rawSum, including the
+ *    defense-derived term and every additive bonus, so a genuine shooting big with weak defense
+ *    (Towns: D-TAL 24-32 across four separate spans, all in the biggest-gainer list) had that
+ *    weak defense proportionally amplified by the same multiplier meant to reward his shooting —
+ *    not what a "spacing gives credit box stats miss" bonus is supposed to touch at all.
  */
 const CENTER_SPACING_CORRECTION_CEILING = 1.2;
-const CENTER_SPACING_FULL_CREDIT = 55;
+const CENTER_SPACING_FULL_CREDIT = 75;
 
 function centerSpacingBoost(span: PlayerSpan): number {
   const flat = POSITION_TALENT_CORRECTION.C;
@@ -888,7 +907,23 @@ function talentScaled(span: PlayerSpan, usageScale: number): number {
     roleScalability +
     playoffPerformance +
     selfCreation;
-  return rawSum * positionCorrectionFor(span, rawSum);
+  const correction = positionCorrectionFor(span, rawSum);
+  // 2026-08-31, user-reported (batch feedback: Brad Miller/Arvydas Sabonis/Karl-Anthony Towns —
+  // see `CENTER_SPACING_FULL_CREDIT`'s own docstring for the full measured root cause). The
+  // center spacing boost is an offense-only credit ("give centers who space the floor real
+  // value box stats miss"), but multiplying it against the WHOLE `rawSum` also scaled the
+  // defense-derived term and every additive bonus by the same factor — a weak-defense shooting
+  // big (Towns: D-TAL 24-32) had that weakness proportionally amplified by a multiplier meant to
+  // reward his shooting, not touch his defense at all. Scoped to the offense-derived term only;
+  // every other position is completely unaffected (this branch only ever fires for C, and only
+  // changes anything when `correction` differs from the flat correction).
+  if (span.primaryPosition === 'C') {
+    const flat = POSITION_TALENT_CORRECTION.C;
+    const offenseTerm = offense * 0.6 * 2.15;
+    const restOfRawSum = rawSum - offenseTerm;
+    return offenseTerm * correction + restOfRawSum * flat;
+  }
+  return rawSum * correction;
 }
 
 /**
