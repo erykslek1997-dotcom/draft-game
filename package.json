@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "tsx scripts/testDraftRules.ts && tsx scripts/testAiBackupQuality.ts && tsx scripts/testRotationEditable.ts && tsx scripts/testRoleFitShadow.ts && tsx scripts/testFit.ts && tsx scripts/testDefensiveHuntability.ts && tsx scripts/testInsights.ts && tsx scripts/testPlayoffBpm2.ts && tsx scripts/testRoleScalability.ts && tsx scripts/testScoringLogic.ts && tsx scripts/testSeasonSimulation.ts && tsx scripts/testPlayoffSimulation.ts",
+    "test": "tsx scripts/testDraftRules.ts && tsx scripts/testAiBackupQuality.ts && tsx scripts/testRotationEditable.ts && tsx scripts/testRoleFitShadow.ts && tsx scripts/testFit.ts && tsx scripts/testDefensiveHuntability.ts && tsx scripts/testInsights.ts && tsx scripts/testClosingLineups.ts && tsx scripts/testPlayoffBpm2.ts && tsx scripts/testRoleScalability.ts && tsx scripts/testScoringLogic.ts && tsx scripts/testSeasonSimulation.ts && tsx scripts/testPlayoffSimulation.ts",
     "audit:data": "tsx scripts/auditDataProvenance.ts",
     "audit:historical": "tsx scripts/auditHistoricalTalent.ts",
     "test:fit": "tsx scripts/testFit.ts",

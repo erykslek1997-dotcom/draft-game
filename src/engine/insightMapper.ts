@@ -15,6 +15,7 @@ import { draftPool as allPoolPlayers } from '../data/draftPool';
 import { defensiveHuntability } from './defensiveHuntability';
 import { fitScore, shadowRoleProfileForDiagnostics } from './fit';
 import { buildTeamModelExtension } from './teamModel';
+import { buildClosingLineups } from './closingLineups';
 
 /**
  * 2026-08-15, the Team → `TeamFeatureSnapshot` translation `insights.ts`'s own docstring points
@@ -373,5 +374,6 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
     // (this project's own `SmallSampleBadge` concept could feed this later if wired through).
     uncertainty: 0.15,
     ...teamModelExtension,
+    closingLineups: buildClosingLineups(team.roster) ?? undefined,
   };
 }

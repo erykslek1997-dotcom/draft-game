@@ -1,5 +1,6 @@
 import type { OffensiveArchetype, DefensiveRole, Position } from '../data/schema';
 import { TEAM_MODEL_THRESHOLDS } from './teamModel';
+import type { ClosingLineupSet } from './closingLineups';
 
 /**
  * 2026-08-15, adapted from a user-supplied draft (`rosterInsightDetectors.ts`) — a deterministic,
@@ -157,6 +158,9 @@ export interface TeamFeatureSnapshot {
   deadRosterSlotCount?: number;
   deadRosterSlotPlayers?: string[];
   deadRosterSlotFga?: number;
+
+  // Team Model v1's closing-lineup extension (closingLineups.ts). Also shadow-only.
+  closingLineups?: ClosingLineupSet;
 }
 
 export interface InsightEvidence {
@@ -235,7 +239,8 @@ export type DetectorId =
   | 'HUNTABLE_SPECIALIST_MITIGATED' | 'HUNTABLE_STARTER_EXPOSED'
   | 'LOW_FGA_ROTATION_VALUE' | 'STAR_FGA_COST_JUSTIFIED'
   | 'STAR_FGA_COST_HURTS_DEPTH' | 'DEAD_NINTH_SLOT_ACCEPTABLE'
-  | 'DEAD_SLOT_HURTS_ROTATION';
+  | 'DEAD_SLOT_HURTS_ROTATION'
+  | 'CLOSING_FIVE_STABLE' | 'CLOSING_FIVE_REQUIRES_TRADEOFF';
 
 export interface RosterInsight {
   id: DetectorId;
@@ -1459,6 +1464,52 @@ export const DETECTORS: RosterInsightDetector[] = [
           0.98,
         )
         : inactive;
+    }
+  },
+  {
+    id: 'CLOSING_FIVE_STABLE', type: 'strength', category: 'rotation',
+    evaluate: t => {
+      const c = t.closingLineups;
+      if (!c) return inactive;
+      const overlap = c.offenseDefensePersonnelOverlap;
+      const cheapTradeoff = c.balancedOffenseTradeoff <= 0.12 && c.balancedDefenseTradeoff <= 0.12;
+      return overlap >= 4 && cheapTradeoff && c.balanced.score >= 0.55
+        ? hit(
+          c.balanced.score,
+          0.80,
+          teamConfidence(t),
+          `${displayNames(t.players.filter(p => c.balanced.players.some(bp => bp.playerId === p.playerId)))} close games as effectively together as any specialized grouping the roster could field — there is no real offense-vs-defense five-man tradeoff to make.`,
+          { players: c.balanced.players.map(p => p.playerName), values: { offenseDefensePersonnelOverlap: overlap, balancedOffenseTradeoff: c.balancedOffenseTradeoff, balancedDefenseTradeoff: c.balancedDefenseTradeoff, balancedScore: c.balanced.score } },
+          0.9,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'CLOSING_FIVE_REQUIRES_TRADEOFF', type: 'concern', category: 'rotation',
+    evaluate: t => {
+      const c = t.closingLineups;
+      if (!c) return inactive;
+      // 2026-08-30, measured directly (`scripts/testClosingLineups.ts`, real drafted-style
+      // fixtures): even a roster deliberately built from real offense-only/defense-only
+      // specialists at the same positions (Barros/Korver vs Ward/Sefolosha/Roberson) only reaches
+      // a ~0.14 tradeoff, because a real nine-man roster generally CAN field a competent five
+      // either way — that's the format working as intended, not a measurement error. An initial
+      // 0.22 guess never fired on any real fixture; 0.13 sits just above `CLOSING_FIVE_STABLE`'s
+      // own <=0.12 "cheap" bar so the two stay mutually exclusive rather than guessed independently.
+      const meaningfulTradeoff = c.balancedOffenseTradeoff >= 0.13 || c.balancedDefenseTradeoff >= 0.13;
+      if (c.offenseDefensePersonnelOverlap >= 4 || !meaningfulTradeoff) return inactive;
+      const offenseOnly = c.offense.players.filter(p => !c.defense.players.some(dp => dp.playerId === p.playerId));
+      const defenseOnly = c.defense.players.filter(p => !c.offense.players.some(op => op.playerId === p.playerId));
+      const costsOffense = c.balancedOffenseTradeoff >= c.balancedDefenseTradeoff;
+      return hit(
+        Math.max(c.balancedOffenseTradeoff, c.balancedDefenseTradeoff),
+        0.78,
+        teamConfidence(t),
+        `There is a real closing-lineup choice to make: the best offensive five (${displayNameList(offenseOnly.map(p => p.playerName))} over the defensive alternative) and the best defensive five (${displayNameList(defenseOnly.map(p => p.playerName))} instead) only share ${c.offenseDefensePersonnelOverlap} of 5 players, and the balanced compromise gives up meaningful ${costsOffense ? 'offense' : 'defense'} to hold both ends together.`,
+        { players: [...offenseOnly, ...defenseOnly].map(p => p.playerName), values: { offenseDefensePersonnelOverlap: c.offenseDefensePersonnelOverlap, balancedOffenseTradeoff: c.balancedOffenseTradeoff, balancedDefenseTradeoff: c.balancedDefenseTradeoff } },
+        0.85,
+      );
     }
   },
 ];

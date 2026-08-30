@@ -67,14 +67,26 @@ without guessed values:
 
 These fields should remain absent until a real source is imported.
 
-## Recommended next step
+## Recommended next step (SHIPPED same day, still shadow-only)
 
-Build three deterministic five-man closing-lineup evaluators (balanced, offense and defense) using
-only current player signals. Keep them shadow-only at first. Closing groups would supply the
-missing context for specialist removability, playoff robustness and matchup-specific huntability.
-After that stabilizes, implement remaining-pool replacement depth and full marginal team gain for
-the AI drafter.
+Three deterministic five-man closing-lineup evaluators (`src/engine/closingLineups.ts`): balanced,
+offense and defense. Every legal five-man subset of the real nine-man roster is scored exactly
+once (no sampling) using only signals this project already trusts — O-TAL/D-TAL (talent.ts),
+spacing (spacing.ts), and real position legality (positions.ts). The offense objective blends in
+spacing (0.65 offense + 0.35 spacing); defense is pure D-TAL; balanced rewards being good on both
+ends over a high average with one weak side. Fully deterministic (verified directly:
+`scripts/testClosingLineups.ts` reruns the same roster and diffs the JSON output). Two new
+shadow-only insight detectors read the result: `CLOSING_FIVE_STABLE` (the same five closes games
+best under every objective — no real tradeoff to make) and `CLOSING_FIVE_REQUIRES_TRADEOFF` (the
+offense-best and defense-best fives meaningfully diverge). The tradeoff bar was measured, not
+guessed: an initial 0.22 threshold never fired on any real fixture, including one built
+specifically from real offense-only/defense-only specialist pairs — a real nine-man roster
+generally CAN field a competent five either way, so 0.13 is the recalibrated, actually-reachable
+bar (see the detector's own comment in `insights.ts`).
 
-Before changing production scoring, re-audit the offense/defense range anchors: their last written
-calibration originated during the temporary eight-player roster experiment even though the active
-game has returned to nine.
+Still open, in priority order:
+
+1. Implement remaining-pool replacement depth and full marginal team gain for the AI drafter.
+2. Before changing production scoring, re-audit the offense/defense range anchors: their last
+   written calibration originated during the temporary eight-player roster experiment even though
+   the active game has returned to nine.
