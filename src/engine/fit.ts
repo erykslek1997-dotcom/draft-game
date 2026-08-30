@@ -45,6 +45,15 @@ import type { Team } from './types';
  * resemblance into full lineup versatility.
  */
 
+/** Below this, the starting five's least-good defender is a real, playoff-huntable liability —
+ * matches the bar `defensiveHuntability.ts`'s own `TARGETABLE_DTAL_CEILING` treats as attackable.
+ * Above it, that same player is just "the least elite of five good starters," not actually weak —
+ * a 2026-08-30 user-reported bug (batch feedback #10) had the UI always LABEL whoever scored
+ * lowest as "weak link" regardless of this threshold (Chauncey Billups at 80, nowhere near
+ * attackable, displayed as one) while this exact threshold already correctly gated the separate
+ * prose note just below. Exported so the UI can gate the label the same way. */
+export const HUNTABLE_WEAK_LINK_THRESHOLD = 50;
+
 export const FIT_WEIGHTS = {
   creationStructure: 0.35,
   spacingCompatibility: 0.30,
@@ -101,6 +110,10 @@ export interface FitScoreInputs {
   rimProtectionConfirmed: boolean;
   defensiveWeakLinkResistance: number;
   defensiveWeakLinkPlayer: string | null;
+  /** Whether that lowest-scoring starter actually clears `HUNTABLE_WEAK_LINK_THRESHOLD` — the
+   * UI should only call someone a "weak link" when this is true, not just because they're the
+   * least-good of five otherwise strong starters. */
+  defensiveWeakLinkIsHuntable: boolean;
   switchability: number;
   positionAdjustedReboundingPercentile: number;
   positionAdjustedHeightPercentile: number | null;
@@ -311,6 +324,7 @@ export function fitScore(team: Team): FitScoreResult {
         rimProtectionConfirmed: false,
         defensiveWeakLinkResistance: 0,
         defensiveWeakLinkPlayer: null,
+        defensiveWeakLinkIsHuntable: false,
         switchability: 0,
         positionAdjustedReboundingPercentile: 0,
         positionAdjustedHeightPercentile: null,
@@ -430,7 +444,8 @@ export function fitScore(team: Team): FitScoreResult {
   if (wingCoverage < 45) notes.push('No reliable wing coverage role.');
   if (wingCoverage > 0 && !wingCandidates[0]?.confirmed) notes.push('Wing coverage is inferred from box activity, not a confirmed incumbent Wing Stopper role.');
   if (rimProtection < 45) notes.push('No reliable rim-protection role.');
-  if (defensiveWeakLinkResistance < 50 && weakLinkCandidates[0]) {
+  const isHuntableWeakLink = defensiveWeakLinkResistance < HUNTABLE_WEAK_LINK_THRESHOLD;
+  if (isHuntableWeakLink && weakLinkCandidates[0]) {
     notes.push(`${weakLinkCandidates[0].player.playerName} is a huntable defensive weak link in the starting five.`);
   }
 
@@ -524,6 +539,7 @@ export function fitScore(team: Team): FitScoreResult {
       rimProtectionConfirmed: rimCandidates[0]?.confirmed ?? false,
       defensiveWeakLinkResistance,
       defensiveWeakLinkPlayer: weakLinkCandidates[0]?.player.playerName ?? null,
+      defensiveWeakLinkIsHuntable: isHuntableWeakLink,
       switchability,
       positionAdjustedReboundingPercentile,
       positionAdjustedHeightPercentile,

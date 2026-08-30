@@ -764,7 +764,13 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                       {!fitDetail.inputs.wingCoverageConfirmed && ' (inferred)'}
                       {' · '}rim {fitDetail.inputs.rimProtectionProvider ?? '—'} {Math.round(fitDetail.inputs.rimProtection)}
                       {!fitDetail.inputs.rimProtectionConfirmed && ' (inferred)'}
-                      {' · '}weak link {fitDetail.inputs.defensiveWeakLinkPlayer ?? '—'} {Math.round(fitDetail.inputs.defensiveWeakLinkResistance)}
+                      {/* 2026-08-30, user-reported (batch feedback #10): this used to always show
+                          the lowest-scoring starter as "weak link" even when their score was
+                          nowhere near actually weak (e.g. Chauncey Billups at 80) — gated on the
+                          same HUNTABLE_WEAK_LINK_THRESHOLD the prose note below already used. */}
+                      {fitDetail.inputs.defensiveWeakLinkIsHuntable &&
+                        <>{' · '}weak link {fitDetail.inputs.defensiveWeakLinkPlayer ?? '—'} {Math.round(fitDetail.inputs.defensiveWeakLinkResistance)}</>
+                      }
                     </span>
                     {huntability && huntability.offenders.length > 0 && (
                       <span className="fit-v2-shadow-detail">
