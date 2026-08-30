@@ -4,7 +4,11 @@ import { allAssignments, primaryStarters } from './rotation';
 import type { Team } from './types';
 import type { DefensiveRole } from '../data/schema';
 
-const WING_ROLES: DefensiveRole[] = ['Wing Stopper'];
+const WING_ROLES: DefensiveRole[] = ['Wing Stopper', 'Chaser'];
+/** Same discount shape `poa` below already applies to a non-exact-tag POA candidate — a real,
+ * high-effort perimeter defender tagged Chaser rather than the more specific Wing Stopper still
+ * covers real wing duty, just with slightly less confidence than the exact-tag case. */
+const WING_ROLE_MULTIPLIER: Record<'Wing Stopper' | 'Chaser', number> = { 'Wing Stopper': 1, Chaser: 0.9 };
 const RIM_ROLES: DefensiveRole[] = ['Anchor Big', 'Mobile Big'];
 
 const FULL_PROVIDER_MINUTES = 24;
@@ -56,7 +60,24 @@ function clamp01(value: number): number {
  * rotation with those same three layers plus attackable players receives only bounded structural
  * credit. Incumbent roles only are accepted; box-only inferred shadow roles cannot unlock this
  * production bonus. A guard with an incumbent Wing Stopper role receives 90% POA transfer credit
- * — Harper/Jrue guarding the ball is a real role overlap, not an inferred box-score invention. A
+ * — Harper/Jrue guarding the ball is a real role overlap, not an inferred box-score invention.
+ *
+ * 2026-08-30, user-reported (batch feedback: real rosters with a genuine plus wing defender —
+ * Nicolas Batum, Khris Middleton — reading `wing: null`, zeroing this entire bonus even with a
+ * strong POA and rim provider already present). Root-caused, not guessed: `WING_ROLES` only ever
+ * accepted the exact `'Wing Stopper'` tag, while `poa` right below already accepts `'Chaser'` at
+ * 90% confidence for the identical "real perimeter defender, not the single most specific tag"
+ * case. Batum's actual tag on the reported span is `Chaser` — a real, high-effort perimeter
+ * defender the pool tags this way when their profile doesn't fit the more specific Wing Stopper
+ * archetype, not "no real wing defense." Extended `WING_ROLES` to accept `Chaser` at the same 90%
+ * transfer credit already used for POA. Deliberately NOT touching `PROVIDER_START`/`PROVIDER_FULL`
+ * (the numeric floor) in the same pass — a real existing fixture
+ * (`scripts/testDefensiveHuntability.ts`'s `reported` roster) relies on OG Anunoby's wing D-TAL
+ * (72, just under the 75 floor) staying excluded to keep a genuinely weak-link roster capped at
+ * Defense<=50; loosening that floor is a separate, larger tradeoff that needs its own measurement
+ * pass, not bundled into this narrower role-tag fix. Also excludes whoever already filled POA
+ * from the wing search — `Chaser` now overlaps both roles, and the same do-everything guard
+ * filling both slots would only be two real layers of coverage, not three. A
  * 12-minute token specialist also cannot complete a layer — provider strength reaches full
  * availability at 24 assigned minutes.
  */
@@ -101,9 +122,13 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     ? starters.reduce((sum, player) => sum + computeDefensiveTalent(player), 0) / starters.length
     : 0;
 
-  function bestProvider(roles: DefensiveRole[], multiplierFor: (role: DefensiveRole) => number = () => 1) {
+  function bestProvider(
+    roles: DefensiveRole[],
+    multiplierFor: (role: DefensiveRole) => number = () => 1,
+    excludePlayerId?: string,
+  ) {
     return assignedPlayers
-      .filter(({ player }) => roles.includes(player.defensiveRole))
+      .filter(({ player }) => roles.includes(player.defensiveRole) && player.id !== excludePlayerId)
       .map((entry) => ({ ...entry, effectiveStrength: entry.providerStrength * multiplierFor(entry.player.defensiveRole) }))
       .sort((left, right) => right.effectiveStrength - left.effectiveStrength)[0] ?? null;
   }
@@ -119,7 +144,14 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
       effectiveStrength: entry.providerStrength * (entry.player.defensiveRole === 'Point of Attack' ? 1 : 0.9),
     }))
     .sort((left, right) => right.effectiveStrength - left.effectiveStrength)[0] ?? null;
-  const wing = bestProvider(WING_ROLES);
+  // Excludes whoever already filled POA — `Chaser` now qualifies for both roles (see this
+  // function's own docstring), and the three-layer bonus is meant to credit three DISTINCT
+  // specialists, not the same do-everything guard counted twice.
+  const wing = bestProvider(
+    WING_ROLES,
+    (role) => WING_ROLE_MULTIPLIER[role as 'Wing Stopper' | 'Chaser'],
+    poa?.player.id,
+  );
   const rim = bestProvider(RIM_ROLES);
   const poaStrength = poa?.effectiveStrength ?? 0;
   const wingStrength = wing?.effectiveStrength ?? 0;
