@@ -13,6 +13,8 @@ import { projectedNetRating } from './netRatingProjection';
 import { benchDepthScore, talentScore } from './scoring';
 import { draftPool as allPoolPlayers } from '../data/draftPool';
 import { defensiveHuntability } from './defensiveHuntability';
+import { fitScore, shadowRoleProfileForDiagnostics } from './fit';
+import { buildTeamModelExtension } from './teamModel';
 
 /**
  * 2026-08-15, the Team → `TeamFeatureSnapshot` translation `insights.ts`'s own docstring points
@@ -43,7 +45,39 @@ const DTAL_HI = 79;
 const REBOUNDING_LO = 19; // fitScore's own "all-guard five" reference point
 const REBOUNDING_HI = 40; // a bigs-heavy five comfortably above the ~30 "normal" combined total
 
-function toPlayerFeature(p: PlayerSpan, minutes: number, assignedSlots: { slot: Position; minutes: number }[]): PlayerTeamFeature {
+const movementRoleCache = new Map<string, {
+  score: number;
+  confidence: number;
+  evidence: string;
+}>();
+
+function movementShootingForSpan(span: PlayerSpan) {
+  const cached = movementRoleCache.get(span.id);
+  if (cached) return cached;
+  const profile = shadowRoleProfileForDiagnostics(span);
+  const incumbent = profile.incumbentOffensiveRole === 'Movement Shooter';
+  const proposed = profile.proposedOffensiveRoles.find((fit) => fit.role === 'Movement Shooter');
+  const fit = profile.offensiveFits.find((candidate) => candidate.role === 'Movement Shooter');
+  const supported = incumbent || proposed !== undefined;
+  const result = {
+    score: supported ? (fit?.score ?? 0) / 100 : 0,
+    confidence: incumbent ? 0.90 : proposed?.confidence === 'medium' ? 0.75 : proposed ? 0.55 : 0,
+    evidence: incumbent
+      ? 'incumbent Movement Shooter role + recorded 3PA/3P%'
+      : proposed
+        ? proposed.evidence.join('; ')
+        : '',
+  };
+  movementRoleCache.set(span.id, result);
+  return result;
+}
+
+function toPlayerFeature(
+  p: PlayerSpan,
+  minutes: number,
+  assignedSlots: { slot: Position; minutes: number }[],
+  starterSlot?: Position,
+): PlayerTeamFeature {
   // Minutes-weighted average fit across every slot this player actually plays — a combo guard
   // split PG/SG isn't fairly described by either slot alone.
   const naturalPositionFit =
@@ -51,6 +85,7 @@ function toPlayerFeature(p: PlayerSpan, minutes: number, assignedSlots: { slot: 
       ? assignedSlots.reduce((sum, a) => sum + positionFitMultiplier(p, a.slot) * a.minutes, 0) /
         assignedSlots.reduce((sum, a) => sum + a.minutes, 0)
       : 1;
+  const movement = movementShootingForSpan(p);
   return {
     playerId: p.id,
     playerName: p.playerName,
@@ -88,6 +123,11 @@ function toPlayerFeature(p: PlayerSpan, minutes: number, assignedSlots: { slot: 
     // exists — approximated from how many secondary positions the span carries (0 -> single-role,
     // 2+ -> fully flexible).
     roleFlexibility: clamp01((p.secondaryPositions.length ?? 0) / 2),
+    starterSlot,
+    spacingImpact: normalize(computeSpacing(p), SPACING_LO, SPACING_HI),
+    movementShooting: movement.score,
+    movementShootingConfidence: movement.confidence,
+    movementShootingEvidence: movement.evidence || undefined,
   };
 }
 
@@ -103,8 +143,15 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
     slotsByPlayer.set(a.player.id, list);
   }
 
+  const starterSlotByPlayer = new Map(starterEntries.map((entry) => [entry.player.id, entry.slot]));
+
   const players = team.roster.map((p) =>
-    toPlayerFeature(p, totalMinutesForPlayer(team.rotation, p.id), slotsByPlayer.get(p.id) ?? []),
+    toPlayerFeature(
+      p,
+      totalMinutesForPlayer(team.rotation, p.id),
+      slotsByPlayer.get(p.id) ?? [],
+      starterSlotByPlayer.get(p.id),
+    ),
   );
   const playerById = new Map(players.map((p) => [p.playerId, p]));
   const starters = starterEntries.map((s) => playerById.get(s.player.id)!);
@@ -177,13 +224,11 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
   const topHeavyScore = coreTal > 0 ? clamp01((coreTal - depthTal) / coreTal) : 0;
   const benchDropoffScore = topHeavyScore;
   // 2026-08-15 fix: measured directly (`scripts/_measureInsightRates.ts`, 96 real drafted teams)
-  // that the old `/(STARTER_SLOTS.length+2)` divisor (7, a leftover from when ROSTER_SIZE was 9)
-  // let DEEP_PLAYOFF_ROTATION clear its 0.72 gate on literally 100% of teams. Fixing the divisor
-  // to the real `ROSTER_SIZE` (8) alone wasn't enough — re-measured after that change and it was
-  // STILL 100%: this session's own earlier rotation.ts fixes (redundancy-aware drafting, the
-  // unused-real-fit backup boost, the cross-slot starter fallback) collectively made "every one
-  // of the 8 roster spots gets real double-digit minutes" close to a structural guarantee for a
-  // legal 8-man roster now, not a differentiator. Raised the per-player bar from a bare 10
+  // that the old fixed `/7` divisor let DEEP_PLAYOFF_ROTATION clear its 0.72 gate on literally
+  // 100% of teams. This now derives from the active `ROSTER_SIZE` (9): a score near 1 means the
+  // entire nine-man roster receives real minutes, while Team Model's separate playoff-depth signal
+  // can still recognize a robust eight-man group with a cheap dead ninth slot. The per-player bar
+  // remains 15 rather than a bare 10
   // (token garbage-time minutes) to 15 (a genuine, meaningful rotation share) so the detector
   // asks a harder, still-real question — "does the FULL roster get real run," not just "does it
   // get SOME run."
@@ -258,6 +303,13 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
   // lower starter-only threshold for prose. Descriptions now agree with Defense/FIT/DRTG about
   // who is targetable and count the offender's real assigned minutes.
   const huntability = defensiveHuntability(team);
+  const teamModelExtension = buildTeamModelExtension({
+    players,
+    starters,
+    bench: benchFeatures,
+    fit: fitScore(team),
+    huntability,
+  });
 
   return {
     teamId: team.id,
@@ -320,5 +372,6 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
     // Small-sample/derived-signal count feeding `teamConfidence` — kept modest and fixed for now
     // (this project's own `SmallSampleBadge` concept could feed this later if wired through).
     uncertainty: 0.15,
+    ...teamModelExtension,
   };
 }

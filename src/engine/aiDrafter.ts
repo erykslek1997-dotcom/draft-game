@@ -1349,9 +1349,9 @@ export function pickForAi(
   // `marginalStarterValue` above. Skipped entirely once the roster is basically full (last 2
   // picks): bench-round picks are legitimately about depth/insurance, not "will this start," and
   // the exact search's cost grows with roster size, so this also caps the worst-case per-pick
-  // overhead to the rounds where the signal actually matters. 2026-08-15: scaled from 7 (of a
-  // 9-man roster) to 6 (of the now-8-man `ROSTER_SIZE`) — same "last 2 picks" proportion, not a
-  // re-derivation.
+  // overhead to the rounds where the signal actually matters. The earlier 8-man prototype moved
+  // this boundary from 7 to 6; because it derives from `ROSTER_SIZE`, the active 9-man format now
+  // correctly restores the boundary to 7 while retaining the same "last 2 picks" proportion.
   const MARGINAL_VALUE_ROSTER_SIZE_CEILING = ROSTER_SIZE - 2;
   const baselineStarterValue = roster.length < MARGINAL_VALUE_ROSTER_SIZE_CEILING ? projectedStarterValue(roster) : null;
 

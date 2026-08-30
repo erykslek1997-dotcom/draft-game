@@ -2,7 +2,8 @@ import { draftPool } from '../src/data/draftPool';
 import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
 import { autoFinishDraft, createDraft } from '../src/engine/draft';
 import { buildTeamFeatureSnapshot } from '../src/engine/insightMapper';
-import { generateRosterInsights } from '../src/engine/insights';
+import { DETECTORS, generateRosterInsights, type DetectorId, type TeamFeatureSnapshot } from '../src/engine/insights';
+import { CAP_LIMIT } from '../src/engine/positions';
 import { autoAssignRotation } from '../src/engine/rotation';
 import type { Team } from '../src/engine/types';
 
@@ -34,6 +35,12 @@ function team(id: string, roster: PlayerSpan[]): Team {
   return { id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) };
 }
 
+function detector(id: DetectorId, snapshot: TeamFeatureSnapshot) {
+  const match = DETECTORS.find((candidate) => candidate.id === id);
+  if (!match) throw new Error(`Missing detector: ${id}`);
+  return match.evaluate(snapshot);
+}
+
 const threeLayerWithTargets = team('three-layer-with-targets', [
   pick('Jalen Brunson', '2024-26'),
   pick('Dana Barros', '1993-95'),
@@ -43,13 +50,14 @@ const threeLayerWithTargets = team('three-layer-with-targets', [
   pick('Evan Mobley', '2023-25'),
   pick('Rudy Gobert', '2020-22'),
   pick('DeAndre Jordan', '2015-17'),
+  pick('Larry Smith', '1991-93'),
 ]);
 const threeLayerInsights = generateRosterInsights(buildTeamFeatureSnapshot(threeLayerWithTargets));
-const weakLinkInsight = threeLayerInsights.concerns.find((insight) => insight.id === 'MULTIPLE_DEFENSIVE_WEAK_LINKS');
+const weakLinkInsight = threeLayerInsights.concerns.find((insight) => insight.id === 'HUNTABLE_STARTER_EXPOSED');
 check(Boolean(weakLinkInsight), 'reported Jordan/Mobley/Gobert roster exposes its multiple weak links in prose');
 check(
   ['Jalen Brunson', 'Dana Barros', 'Paul Pierce'].every((name) => weakLinkInsight?.message.includes(name)),
-  'weak-link description names Brunson, Barros and Pierce rather than using a generic warning',
+  'contextual exposure description retains Brunson, Barros and Pierce rather than hiding bench targets',
 );
 // 2026-08-19: 96->86 after talent.ts's spacing-conditional TAL correction shifted this same
 // fixture's rotation minutes (Paul Pierce, a real plus-shooter, gained TAL and rotation minutes
@@ -66,11 +74,123 @@ const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Anthony Mason', '1995-97'),
   pick('Charlie Ward', '1999-01'),
   pick('Jon Barry', '2001-03'),
+  pick('Larry Smith', '1991-93'),
 ]);
 const guardWingInsights = generateRosterInsights(buildTeamFeatureSnapshot(guardWingStopper));
 check(
   !guardWingInsights.concerns.some((insight) => insight.id === 'NO_POA_DEFENDER'),
   'credible guard Wing Stoppers no longer trigger a contradictory no-POA concern',
+);
+
+// Team Model v1 fixtures use nine real player spans and their real box/FGA/role data. No player
+// attributes are synthesized; only the normal auto-rotation decides assigned minutes.
+const movementCoverageTeam = team('team-model-movement-coverage', [
+  pick('Chris Paul', '2012-14'),
+  pick('Klay Thompson', '2014-16'),
+  pick('Shane Battier', '2005-07'),
+  pick('Al Horford', '2017-19'),
+  pick('Hakeem Olajuwon', '1991-93'),
+  pick('Kyle Korver', '2013-15'),
+  pick('Tyson Chandler', '2011-13'),
+  pick('Andre Iguodala', '2011-13'),
+  pick('Larry Smith', '1991-93'),
+]);
+const movementCoverage = buildTeamFeatureSnapshot(movementCoverageTeam);
+check(movementCoverage.players.length === 9, 'Team Model fixture uses the active nine-player roster');
+check(movementCoverage.totalFga <= CAP_LIMIT, 'movement/coverage fixture respects the real FGA cap');
+check(detector('MOVEMENT_SHOOTING_GRAVITY', movementCoverage).active, 'validated Klay/Korver movement gravity fires');
+check(
+  movementCoverage.movementShooterNames?.includes('Klay Thompson') &&
+    movementCoverage.movementShooterNames?.includes('Kyle Korver'),
+  'movement evidence names only supported real movement shooters',
+);
+check(
+  detector('DEFENSIVE_COVERAGE_CAPACITY_ELITE', movementCoverage).active,
+  'confirmed POA-wing-rim coverage reaches the elite available-layer detector',
+);
+check(
+  detector('HUNTABLE_SPECIALIST_MITIGATED', movementCoverage).active &&
+    movementCoverage.mitigatedSpecialistNames?.includes('Kyle Korver'),
+  'Korver-like bench shooting is identified as attackable but contextually mitigated',
+);
+check(
+  !movementCoverage.mitigatedSpecialistNames?.includes('Larry Smith'),
+  'a zero-minute low-impact ninth man is not mislabeled as a mitigated specialist',
+);
+check(detector('LOW_FGA_ROTATION_VALUE', movementCoverage).active, 'real low-FGA impact in material minutes is recognized');
+check(
+  movementCoverage.lowFgaImpactPlayers?.includes('Shane Battier'),
+  'low-FGA rotation evidence names the qualifying real player',
+);
+check(detector('DEAD_NINTH_SLOT_ACCEPTABLE', movementCoverage).active, 'cheap dead ninth slot is acceptable behind eight meaningful players');
+check(!detector('DEAD_SLOT_HURTS_ROTATION', movementCoverage).active, 'acceptable dead ninth slot does not also fire the harmful detector');
+
+const viableTwoBigTeam = team('team-model-two-big', [
+  pick('Stephen Curry', '2014-16'),
+  pick('Klay Thompson', '2014-16'),
+  pick('Shane Battier', '2005-07'),
+  pick('Dirk Nowitzki', '2006-08'),
+  pick('Brook Lopez', '2022-24'),
+  pick('Tyson Chandler', '2011-13'),
+  pick('Thabo Sefolosha', '2011-13'),
+  pick('Steve Blake', '2008-10'),
+  pick('Larry Smith', '1991-93'),
+]);
+const viableTwoBig = buildTeamFeatureSnapshot(viableTwoBigTeam);
+check(viableTwoBig.totalFga <= CAP_LIMIT, 'two-big fixture respects the real FGA cap');
+check(detector('SPACING_WITH_TWO_BIGS_VIABLE', viableTwoBig).active, 'Dirk/Lopez two-big spacing is treated as viable');
+check(!detector('NON_SPACER_OVERLOAD', viableTwoBig).active, 'viable two-big spacing is not contradicted by non-spacer overload');
+
+const expensiveStarWithDepth = team('team-model-star-justified', [
+  pick('Chris Paul', '2012-14'),
+  pick('Michael Jordan', '1990-92'),
+  pick('Shane Battier', '2005-07'),
+  pick('Al Horford', '2017-19'),
+  pick('Hakeem Olajuwon', '1991-93'),
+  pick('Tyson Chandler', '2011-13'),
+  pick('Andre Iguodala', '2011-13'),
+  pick('Thabo Sefolosha', '2011-13'),
+  pick('Larry Smith', '1991-93'),
+]);
+const starJustified = buildTeamFeatureSnapshot(expensiveStarWithDepth);
+check(starJustified.totalFga <= CAP_LIMIT, 'justified-star fixture respects the real FGA cap');
+check(detector('STAR_FGA_COST_JUSTIFIED', starJustified).active, 'Jordan-level FGA cost is justified behind a robust eight-man group');
+check(!detector('STAR_FGA_COST_HURTS_DEPTH', starJustified).active, 'justified star cost does not also fire the depth concern');
+
+const exposedStarTeam = team('team-model-exposed-star', [
+  pick('Jalen Brunson', '2024-26'),
+  pick('Michael Jordan', '1990-92'),
+  pick('Paul Pierce', '2009-11'),
+  pick('Evan Mobley', '2023-25'),
+  pick('Rudy Gobert', '2020-22'),
+  pick('Charlie Ward', '1999-01'),
+  pick('Andre Roberson', '2016-18'),
+  pick('DeAndre Jordan', '2015-17'),
+  pick('Greg Anderson', '1989-91'),
+]);
+const exposedStar = buildTeamFeatureSnapshot(exposedStarTeam);
+check(exposedStar.totalFga <= CAP_LIMIT, 'exposed-star fixture respects the real FGA cap');
+check(detector('NON_SPACER_OVERLOAD', exposedStar).active, 'nonlinear non-spacer overload fires on real cramped personnel');
+check(detector('HUNTABLE_STARTER_EXPOSED', exposedStar).active, 'starter weak links remain exposed despite strong back-line talent');
+check(
+  exposedStar.targetableStarterNames?.includes('Jalen Brunson'),
+  'huntability evidence names the real targetable starter',
+);
+check(detector('STAR_FGA_COST_HURTS_DEPTH', exposedStar).active, 'high star FGA plus sharp support dropoff fires the depth-cost concern');
+check(!detector('STAR_FGA_COST_JUSTIFIED', exposedStar).active, 'depth-cost concern does not also justify the same star allocation');
+check(detector('DEAD_SLOT_HURTS_ROTATION', exposedStar).active, 'expensive zero-minute ninth slot is identified as harmful');
+check(!detector('DEAD_NINTH_SLOT_ACCEPTABLE', exposedStar).active, 'expensive dead slot is not mislabeled as acceptable');
+
+const exposedOutput = generateRosterInsights(exposedStar);
+check(
+  exposedOutput.allActiveInsights.some((insight) => insight.id === 'HUNTABLE_STARTER_EXPOSED') &&
+    !exposedOutput.allActiveInsights.some((insight) => insight.id === 'MULTIPLE_DEFENSIVE_WEAK_LINKS'),
+  'contextual exposed-starter detector suppresses the older generic weak-link message',
+);
+check(
+  exposedOutput.allActiveInsights.some((insight) => insight.id === 'NON_SPACER_OVERLOAD') &&
+    !exposedOutput.allActiveInsights.some((insight) => insight.id === 'MULTIPLE_NON_SPACERS'),
+  'contextual nonlinear spacing detector suppresses the older generic non-spacer message',
 );
 
 const outputs = [];

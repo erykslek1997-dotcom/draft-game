@@ -144,9 +144,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     setDraftState((s) => makePick(s, playerId));
   }
 
-  // Testing convenience, not a real game action — see `autoFinishDraft`'s own docstring. Skips
-  // straight to a fully-drafted state; the existing draft-complete effect above then picks up
-  // exactly as it would after a normal draft (auto-builds AI rotations, advances to 'rotation').
+  // 2026-08-30, now also a player-facing convenience: lets the user hand every remaining pick
+  // to the existing AI draft logic. It still follows the normal draft-complete path below, so
+  // rotations/finalization behave exactly as they do after the last manually played pick.
   function handleAutoFinish() {
     setDraftState((s) => autoFinishDraft(s));
   }
@@ -196,9 +196,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
         <button className="secondary-btn reset-btn" onClick={handleReset}>
           {mode === 'developer' ? 'Reset' : 'Exit Draft'}
         </button>
-        {/* CPU-speed slider and Auto-finish are testing conveniences, not real player-facing
-            features (see their own docstrings) — Tester Mode only. Player Mode always runs AI
-            turns at the default 'Normal' pace and has no shortcut past a real draft. */}
+        {/* CPU speed remains a Tester Mode control. Auto-finish is deliberately available in
+            both modes: it delegates every remaining pick to the normal AI rather than skipping
+            draft finalization or manufacturing a roster. */}
         {mode === 'developer' && (
           <label className="ai-speed">
             <span>CPU speed</span>
@@ -213,9 +213,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
             <span className="ai-speed-value">{aiSpeed.label}</span>
           </label>
         )}
-        {mode === 'developer' && phase === 'draft' && !draftState.complete && (
+        {phase === 'draft' && !draftState.complete && (
           <button className="secondary-btn auto-finish-btn" onClick={handleAutoFinish}>
-            Auto-finish (testing)
+            Auto-finish
           </button>
         )}
         {mode === 'developer' && phase !== 'results' && (

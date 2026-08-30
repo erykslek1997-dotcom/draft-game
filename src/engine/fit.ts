@@ -156,6 +156,15 @@ function shadowRoles(player: PlayerSpan): ShadowRoleProfile {
   return profile;
 }
 
+/**
+ * Read-only access for diagnostic adapters that need the exact same cached shadow profile as FIT.
+ * Keeping the role scorer import and cache in this module preserves a single interpretation path;
+ * callers receive evidence but cannot attach it to PlayerSpan or mutate production scoring.
+ */
+export function shadowRoleProfileForDiagnostics(player: PlayerSpan): ShadowRoleProfile {
+  return shadowRoles(player);
+}
+
 function offensiveRoleScore(profile: ShadowRoleProfile, roles: OffensiveArchetype[]): number {
   if (roles.includes(profile.incumbentOffensiveRole)) return 100;
   return Math.max(

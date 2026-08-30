@@ -1,4 +1,5 @@
 import type { OffensiveArchetype, DefensiveRole, Position } from '../data/schema';
+import { TEAM_MODEL_THRESHOLDS } from './teamModel';
 
 /**
  * 2026-08-15, adapted from a user-supplied draft (`rosterInsightDetectors.ts`) — a deterministic,
@@ -16,9 +17,9 @@ import type { OffensiveArchetype, DefensiveRole, Position } from '../data/schema
  * - `offensiveArchetype`/`defensiveRole` retyped from loose `string` to this project's real
  *   `OffensiveArchetype`/`DefensiveRole` unions (schema.ts) — every other engine file in this
  *   project uses these, and a typo'd role string here would have silently never matched anything.
- * - `WEAK_NINTH_MAN` removed entirely: this session also removed the 9th roster spot
- *   (`ROSTER_SIZE` 9→8, positions.ts) as the structural fix for the exact problem that detector
- *   named — a dedicated "the last bench spot is weak" insight no longer has a subject.
+ * - The roster has since returned to nine players (five starters + four reserves). Team Model v1
+ *   therefore distinguishes an acceptable low-cost ninth slot behind a robust eight-man playoff
+ *   rotation from a dead slot that actually leaves the rotation short.
  * - Detector logic, scoring formula, and suppression mechanism are otherwise untouched — that
  *   part of the original draft was already sound. Thresholds are carried over as first-pass
  *   values, NOT yet individually validated against this game's real draft-pool distribution the
@@ -68,6 +69,11 @@ export interface PlayerTeamFeature {
   naturalPositionFit?: number; // 0..1
   roleFlexibility?: number;    // 0..1
   uncertainty?: number;        // 0..1
+  starterSlot?: Position;
+  spacingImpact?: number;      // 0..1, accuracy + volume through the existing spacing model
+  movementShooting?: number;   // 0..1, only incumbent or explicitly validated role evidence
+  movementShootingConfidence?: number; // 0..1
+  movementShootingEvidence?: string;
 }
 
 export interface TeamFeatureSnapshot {
@@ -126,6 +132,31 @@ export interface TeamFeatureSnapshot {
   benchDropoffScore?: number;        // 0..1
   availabilityRisk?: number;         // 0..1
   uncertainty?: number;              // 0..1
+
+  // Team Model v1 diagnostic extension. These fields do not affect scoring or draft AI.
+  movementShootingStrength?: number; // 0..1
+  movementShooterMinutes?: number;
+  movementShooterNames?: string[];
+  frontcourtSpacingStrength?: number; // 0..1
+  frontcourtSpacerCount?: number;
+  naturalBigStarterCount?: number;
+  nonlinearNonSpacerPenalty?: number; // 0..1
+  defensiveCoverageCapacity?: number; // 0..1, measured available layers only
+  defensiveCoverageConfirmedLayers?: number;
+  switchabilityScore?: number;        // 0..1
+  huntabilityMitigationScore?: number;// 0..1
+  huntabilityExposureScore?: number;  // 0..1
+  defensiveWeakLinkSeverity?: number; // 0..1 before contextual mitigation
+  targetableRotationNames?: string[];
+  targetableStarterNames?: string[];
+  mitigatedSpecialistNames?: string[];
+  playoffRotationDepthScore?: number; // 0..1 against an eight-player playoff target
+  meaningfulPlayoffPlayerCount?: number;
+  lowFgaImpactCount?: number;
+  lowFgaImpactPlayers?: string[];
+  deadRosterSlotCount?: number;
+  deadRosterSlotPlayers?: string[];
+  deadRosterSlotFga?: number;
 }
 
 export interface InsightEvidence {
@@ -198,7 +229,13 @@ export type DetectorId =
   | 'HIGH_TALENT_POOR_RESOURCE_ALLOCATION'
   | 'LOW_FGA_HIGH_IMPACT_CONSTRUCTION'
   | 'STRONG_CORE_FRAGILE_ROTATION'
-  | 'MULTIPLE_PATHS_TO_VIABLE_LINEUP';
+  | 'MULTIPLE_PATHS_TO_VIABLE_LINEUP'
+  | 'MOVEMENT_SHOOTING_GRAVITY' | 'SPACING_WITH_TWO_BIGS_VIABLE'
+  | 'NON_SPACER_OVERLOAD' | 'DEFENSIVE_COVERAGE_CAPACITY_ELITE'
+  | 'HUNTABLE_SPECIALIST_MITIGATED' | 'HUNTABLE_STARTER_EXPOSED'
+  | 'LOW_FGA_ROTATION_VALUE' | 'STAR_FGA_COST_JUSTIFIED'
+  | 'STAR_FGA_COST_HURTS_DEPTH' | 'DEAD_NINTH_SLOT_ACCEPTABLE'
+  | 'DEAD_SLOT_HURTS_ROTATION';
 
 export interface RosterInsight {
   id: DetectorId;
@@ -273,6 +310,12 @@ function displayNames(players: PlayerTeamFeature[], limit = 3): string {
   return names.join(', ');
 }
 
+function displayNameList(names: string[], limit = 3): string {
+  const visible = names.slice(0, limit);
+  if (names.length > limit) visible.push(`+${names.length - limit} more`);
+  return visible.join(', ');
+}
+
 function isCrediblePoa(player: PlayerTeamFeature): boolean {
   const roleFits =
     player.defensiveRole === 'Point of Attack' ||
@@ -310,7 +353,7 @@ export const SUPPRESSION_GROUPS: Record<string, DetectorId[]> = {
   creation_negative: ['CREATION_SHORTAGE', 'SINGLE_CREATOR_DEPENDENCY', 'BENCH_CREATION_SHORTAGE'],
   usage_negative: ['MULTIPLE_HIGH_USAGE_PLAYERS', 'SEVERE_USAGE_COLLISION', 'STAR_FGA_COMPRESSION', 'UNDERUSED_OFFENSIVE_TALENT'],
   spacing_positive: ['ELITE_STARTING_SPACING', 'GOOD_STARTING_SPACING', 'SPACING_DISTRIBUTED', 'BENCH_SPACING', 'STRETCH_BIG_VALUE'],
-  spacing_negative: ['LOW_STARTING_SPACING', 'MULTIPLE_NON_SPACERS', 'SPACING_CONCENTRATED', 'BENCH_SPACING_COLLAPSE', 'NO_FRONTCOURT_SPACING', 'ONE_CRITICAL_SHOOTER'],
+  spacing_negative: ['LOW_STARTING_SPACING', 'MULTIPLE_NON_SPACERS', 'NON_SPACER_OVERLOAD', 'SPACING_CONCENTRATED', 'BENCH_SPACING_COLLAPSE', 'NO_FRONTCOURT_SPACING', 'ONE_CRITICAL_SHOOTER'],
   perimeter_positive: ['ELITE_PERIMETER_DEFENSE', 'MULTIPLE_PERIMETER_DEFENDERS', 'POA_DEFENDER_PRESENT', 'WING_STOPPER_PRESENT', 'PERIMETER_DEFENSE_BENCH_DEPTH'],
   perimeter_negative: ['NO_POA_DEFENDER', 'NO_WING_STOPPER'],
   rim_positive: ['ELITE_RIM_PROTECTION', 'RIM_PROTECTOR_PRESENT', 'MULTIPLE_RIM_PROTECTORS', 'RIM_PROTECTION_CONTINUITY'],
@@ -332,6 +375,9 @@ export const EXPLICIT_SUPPRESSION: Partial<Record<DetectorId, DetectorId[]>> = {
   MULTIPLE_DEFENSIVE_WEAK_LINKS: ['DEFENSIVE_WEAK_LINK'],
   STAR_POWER_WITH_USAGE_COLLISION: ['MULTIPLE_HIGH_USAGE_PLAYERS', 'SEVERE_USAGE_COLLISION', 'STAR_FGA_COMPRESSION', 'OFFENSIVE_ROLE_REDUNDANCY'],
   LOW_FGA_HIGH_IMPACT_CONSTRUCTION: ['EFFICIENT_FGA_BUDGET', 'HIGH_TALENT_PER_FGA'],
+  NON_SPACER_OVERLOAD: ['MULTIPLE_NON_SPACERS'],
+  DEFENSIVE_COVERAGE_CAPACITY_ELITE: ['ELITE_DEFENSIVE_LAYERING', 'BALANCED_DEFENSIVE_COVERAGE'],
+  HUNTABLE_STARTER_EXPOSED: ['MULTIPLE_DEFENSIVE_WEAK_LINKS', 'DEFENSIVE_WEAK_LINK'],
 };
 
 export const DETECTORS: RosterInsightDetector[] = [
@@ -579,9 +625,9 @@ export const DETECTORS: RosterInsightDetector[] = [
   {
     // 2026-08-15, threshold raised 3->5 (`scripts/_measureInsightRates.ts`, 96 real teams):
     // `HIGH_USAGE_ARCHETYPE_WEIGHT` only tags 4 of 12 offensive archetypes as "high usage," so on
-    // an 8-man roster at least 3 non-ball-dominant complements was true of literally every team
-    // (100% fire rate measured) — not a real differentiator. 5 (majority of an 8-man roster) still
-    // clears comfortably for a genuinely complement-heavy build, without firing on everyone.
+    // the then-active 8-man roster at least 3 non-ball-dominant complements was true of literally
+    // every team (100% fire rate measured) — not a real differentiator. The threshold of 5 remains
+    // a majority-style complement signal in the restored 9-man format without firing on everyone.
     id: 'LOW_USAGE_COMPLEMENTS', type: 'strength', category: 'fit',
     evaluate: t => {
       const n = t.lowUsageComplementCount ?? 0;
@@ -912,12 +958,10 @@ export const DETECTORS: RosterInsightDetector[] = [
     }
   },
   {
-    // 2026-08-15, threshold raised 0.72->0.9 alongside `insightMapper.ts`'s own divisor fix
-    // (`/(STARTER_SLOTS.length+2)`=7, a leftover from ROSTER_SIZE=9, ->`/ROSTER_SIZE`=8) —
-    // measured (`scripts/_measureInsightRates.ts`, 96 real teams) the old pair fired on 100% of
-    // teams. 0.9 against the corrected /8 divisor requires essentially the full roster (7-8 of 8)
-    // getting real minutes, which the same session's zero-minute-roster-spot diagnostic (~25% of
-    // teams still have at least one dead spot) confirms is a genuine, non-universal bar.
+    // 2026-08-15, threshold raised 0.72->0.9 alongside `insightMapper.ts`'s divisor fix after the
+    // old pair fired on 100% of 96 measured teams. In the active 9-man format this is intentionally
+    // the "nearly the full roster receives 15+ minutes" signal; `DEAD_NINTH_SLOT_ACCEPTABLE`
+    // separately recognizes a strong eight-man playoff rotation behind a cheap unused ninth slot.
     id: 'DEEP_PLAYOFF_ROTATION', type: 'strength', category: 'depth',
     suppressionGroup: 'rotation_positive',
     evaluate: t => {
@@ -1184,6 +1228,236 @@ export const DETECTORS: RosterInsightDetector[] = [
       const sp = t.spacingStrength ?? 0;
       return f >= 0.70 && d >= 0.62 && Math.min(def, sp) >= 0.55
         ? hit((f + d + def + sp) / 4, 0.84, teamConfidence(t), 'The roster supports multiple viable lineup constructions rather than depending on one specific five-man unit.', { values: { roleFlexibilityScore: f, deepRotationScore: d, defensiveLayeringScore: def, spacingStrength: sp } }, 0.98)
+        : inactive;
+    }
+  },
+  {
+    id: 'MOVEMENT_SHOOTING_GRAVITY', type: 'strength', category: 'spacing',
+    evaluate: t => {
+      const strength = t.movementShootingStrength ?? 0;
+      const minutes = t.movementShooterMinutes ?? 0;
+      const names = t.movementShooterNames ?? [];
+      const movementPlayers = t.players.filter((player) => names.includes(player.playerName));
+      const evidenceConfidence = Math.max(
+        0,
+        ...movementPlayers.map((player) => player.movementShootingConfidence ?? 0),
+      );
+      return strength >= TEAM_MODEL_THRESHOLDS.movementShooting &&
+        minutes >= TEAM_MODEL_THRESHOLDS.movementMinutes
+        ? hit(
+          strength,
+          0.90,
+          Math.min(teamConfidence(t), evidenceConfidence),
+          `${displayNameList(names)} supplies real movement-shooting gravity without requiring extra on-ball possessions.`,
+          {
+            players: names,
+            values: { movementShootingStrength: strength, movementShooterMinutes: minutes },
+            notes: movementPlayers.flatMap((player) => player.movementShootingEvidence ? [player.movementShootingEvidence] : []),
+          },
+          0.97,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'SPACING_WITH_TWO_BIGS_VIABLE', type: 'strength', category: 'spacing',
+    evaluate: t => {
+      const bigs = t.naturalBigStarterCount ?? 0;
+      const frontcourtSpacing = t.frontcourtSpacingStrength ?? 0;
+      const frontcourtSpacers = t.frontcourtSpacerCount ?? 0;
+      const penalty = t.nonlinearNonSpacerPenalty ?? 1;
+      const startersWhoSpace = t.starterPlusShooterCount ?? 0;
+      return bigs >= 2 && frontcourtSpacers >= 1 && frontcourtSpacing >= 0.45 &&
+        startersWhoSpace >= 3 && penalty <= 0.27
+        ? hit(
+          0.76,
+          0.86,
+          teamConfidence(t),
+          'The two-big starting structure remains offensively viable because frontcourt shooting and perimeter spacing keep the paint open.',
+          { values: { naturalBigStarterCount: bigs, frontcourtSpacerCount: frontcourtSpacers, frontcourtSpacingStrength: frontcourtSpacing, starterPlusShooterCount: startersWhoSpace, nonlinearNonSpacerPenalty: penalty } },
+          0.96,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'NON_SPACER_OVERLOAD', type: 'concern', category: 'spacing',
+    suppresses: ['MULTIPLE_NON_SPACERS', 'LOW_STARTING_SPACING', 'NO_FRONTCOURT_SPACING'],
+    evaluate: t => {
+      const count = t.starterNonSpacerCount ?? 0;
+      const penalty = t.nonlinearNonSpacerPenalty ?? 0;
+      return count >= 2 && penalty >= 0.35
+        ? hit(
+          penalty,
+          0.94,
+          teamConfidence(t),
+          `${count} starting non-spacers create a nonlinear paint-congestion problem that the roster's current gravity cannot sufficiently offset.`,
+          { values: { starterNonSpacerCount: count, nonlinearNonSpacerPenalty: penalty, movementShootingStrength: t.movementShootingStrength ?? 0, frontcourtSpacingStrength: t.frontcourtSpacingStrength ?? 0 } },
+          0.96,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'DEFENSIVE_COVERAGE_CAPACITY_ELITE', type: 'strength', category: 'defensive_structure',
+    suppresses: ['ELITE_DEFENSIVE_LAYERING', 'BALANCED_DEFENSIVE_COVERAGE'],
+    evaluate: t => {
+      const coverage = t.defensiveCoverageCapacity ?? 0;
+      const confirmed = t.defensiveCoverageConfirmedLayers ?? 0;
+      return coverage >= TEAM_MODEL_THRESHOLDS.eliteDefensiveCoverage && confirmed === 3
+        ? hit(
+          coverage,
+          0.94,
+          Math.min(teamConfidence(t), 0.82),
+          'The starting five has confirmed point-of-attack, wing and rim coverage with credible switchability behind those layers.',
+          { values: { defensiveCoverageCapacity: coverage, confirmedDefensiveLayers: confirmed, switchabilityScore: t.switchabilityScore ?? 0 }, notes: ['Help, post and screen-navigation inputs are not yet available and are not inferred.'] },
+          0.98,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'HUNTABLE_SPECIALIST_MITIGATED', type: 'strength', category: 'defensive_structure',
+    evaluate: t => {
+      const names = t.mitigatedSpecialistNames ?? [];
+      const coverage = t.defensiveCoverageCapacity ?? 0;
+      const mitigation = t.huntabilityMitigationScore ?? 0;
+      return names.length > 0 && coverage >= 0.72 && mitigation >= 0.25
+        ? hit(
+          0.65,
+          0.82,
+          Math.min(teamConfidence(t), 0.80),
+          `${displayNameList(names)} remains attackable, but limited bench minutes and strong defensive coverage reduce the playoff exposure.`,
+          { players: names, values: { defensiveCoverageCapacity: coverage, huntabilityMitigationScore: mitigation, huntabilityExposureScore: t.huntabilityExposureScore ?? 0 } },
+          0.97,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'HUNTABLE_STARTER_EXPOSED', type: 'concern', category: 'defensive_structure',
+    suppresses: ['MULTIPLE_DEFENSIVE_WEAK_LINKS', 'DEFENSIVE_WEAK_LINK'],
+    evaluate: t => {
+      const names = t.targetableStarterNames ?? [];
+      const rotationTargets = t.targetableRotationNames ?? names;
+      const exposure = t.huntabilityExposureScore ?? 0;
+      return names.length > 0 && exposure >= 0.18
+        ? hit(
+          Math.max(exposure, 0.62),
+          0.96,
+          teamConfidence(t),
+          `${displayNameList(names)} carries starter-level defensive exposure; ${displayNameList(rotationTargets)} account for ${t.defensiveTargetableMinutes ?? 0} targetable minutes across the rotation that coverage can reduce but not hide.`,
+          { players: rotationTargets, values: { huntabilityExposureScore: exposure, huntabilityMitigationScore: t.huntabilityMitigationScore ?? 0, defensiveTargetableMinutes: t.defensiveTargetableMinutes ?? 0 } },
+          0.98,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'LOW_FGA_ROTATION_VALUE', type: 'strength', category: 'fga',
+    evaluate: t => {
+      const count = t.lowFgaImpactCount ?? 0;
+      const names = t.lowFgaImpactPlayers ?? [];
+      return count > 0
+        ? hit(
+          Math.min(0.88, 0.62 + 0.08 * count),
+          0.88,
+          teamConfidence(t),
+          `${displayNameList(names)} supplies real rotation impact at eight or fewer FGA, preserving scarce shot budget for higher-creation roles.`,
+          { players: names, values: { lowFgaImpactCount: count, maxQualifyingFga: TEAM_MODEL_THRESHOLDS.lowFga, minimumQualifyingMinutes: TEAM_MODEL_THRESHOLDS.lowFgaMinutes } },
+          0.96,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'STAR_FGA_COST_JUSTIFIED', type: 'strength', category: 'fga',
+    evaluate: t => {
+      const stars = t.players
+        .filter((player) =>
+          player.fga >= TEAM_MODEL_THRESHOLDS.highFgaStar &&
+          (player.offensiveImpact ?? 0) >= TEAM_MODEL_THRESHOLDS.eliteCreation &&
+          (player.highUsageWeight ?? 0) >= 0.5 &&
+          player.minutes >= 28
+        )
+        .sort((left, right) => (right.offensiveImpact ?? 0) - (left.offensiveImpact ?? 0));
+      const depth = t.playoffRotationDepthScore ?? 0;
+      const dropoff = t.benchDropoffScore ?? 1;
+      return stars.length > 0 && t.totalFga <= 100.9 && depth >= 1 && dropoff <= 0.45
+        ? hit(
+          0.78,
+          0.94,
+          teamConfidence(t),
+          `${stars[0].playerName}'s high FGA cost buys difficult-to-replace creation while the remaining roster still supports a robust eight-man playoff rotation.`,
+          { players: [stars[0].playerName], values: { starFga: stars[0].fga, offensiveImpact: stars[0].offensiveImpact ?? 0, playoffRotationDepthScore: depth, benchDropoffScore: dropoff } },
+          0.98,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'STAR_FGA_COST_HURTS_DEPTH', type: 'concern', category: 'fga',
+    evaluate: t => {
+      const stars = t.players
+        .filter((player) => player.fga >= TEAM_MODEL_THRESHOLDS.highFgaStar && player.minutes >= 28)
+        .sort((left, right) => right.fga - left.fga);
+      const depth = t.playoffRotationDepthScore ?? 1;
+      const dropoff = t.benchDropoffScore ?? 0;
+      const nearCap = t.totalFga >= 98;
+      return stars.length > 0 && nearCap && (depth < 1 || dropoff >= 0.50)
+        ? hit(
+          Math.max(0.64, 1 - depth, dropoff),
+          0.92,
+          teamConfidence(t),
+          `${stars[0].playerName}'s ${stars[0].fga.toFixed(1)} FGA cost absorbs a large share of the cap while supporting quality falls sharply outside the primary core.`,
+          { players: [stars[0].playerName], values: { starFga: stars[0].fga, totalFga: t.totalFga, playoffRotationDepthScore: depth, benchDropoffScore: dropoff } },
+          0.96,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'DEAD_NINTH_SLOT_ACCEPTABLE', type: 'strength', category: 'rotation',
+    evaluate: t => {
+      const dead = t.deadRosterSlotCount ?? 0;
+      const names = t.deadRosterSlotPlayers ?? [];
+      const robustEight = (t.meaningfulPlayoffPlayerCount ?? 0) >= TEAM_MODEL_THRESHOLDS.robustPlayoffRotationPlayers;
+      const lowCost = (t.deadRosterSlotFga ?? Infinity) <= TEAM_MODEL_THRESHOLDS.deadSlotFga;
+      const structurallySound = (t.severePositionalCompromiseCount ?? 0) === 0 && (t.minutesCeilingViolationCount ?? 0) === 0;
+      return t.players.length === 9 && dead === 1 && robustEight && lowCost && structurallySound
+        ? hit(
+          0.68,
+          0.80,
+          teamConfidence(t),
+          `${displayNameList(names)} can remain outside the playoff rotation without damage: eight other players cover meaningful minutes and the ninth slot consumes little FGA.`,
+          { players: names, values: { deadRosterSlotCount: dead, deadRosterSlotFga: t.deadRosterSlotFga ?? 0, meaningfulPlayoffPlayerCount: t.meaningfulPlayoffPlayerCount ?? 0 } },
+          0.98,
+        )
+        : inactive;
+    }
+  },
+  {
+    id: 'DEAD_SLOT_HURTS_ROTATION', type: 'concern', category: 'rotation',
+    evaluate: t => {
+      const dead = t.deadRosterSlotCount ?? 0;
+      const names = t.deadRosterSlotPlayers ?? [];
+      const meaningful = t.meaningfulPlayoffPlayerCount ?? 0;
+      const expensiveDeadSlot = (t.deadRosterSlotFga ?? 0) > TEAM_MODEL_THRESHOLDS.deadSlotFga;
+      const strained = meaningful < TEAM_MODEL_THRESHOLDS.robustPlayoffRotationPlayers ||
+        (t.severePositionalCompromiseCount ?? 0) > 0 ||
+        (t.minutesCeilingViolationCount ?? 0) > 0;
+      const message = expensiveDeadSlot && !strained
+        ? `${displayNameList(names)} uses ${(t.deadRosterSlotFga ?? 0).toFixed(1)} FGA without a playoff rotation role, an avoidable resource cost even behind a functional eight-man group.`
+        : `${displayNameList(names)} is effectively outside the rotation while the remaining roster still lacks a clean, robust eight-man playoff structure.`;
+      return t.players.length === 9 && dead > 0 && (expensiveDeadSlot || strained)
+        ? hit(
+          0.72,
+          0.88,
+          teamConfidence(t),
+          message,
+          { players: names, values: { deadRosterSlotCount: dead, deadRosterSlotFga: t.deadRosterSlotFga ?? 0, meaningfulPlayoffPlayerCount: meaningful, severePositionalCompromiseCount: t.severePositionalCompromiseCount ?? 0, minutesCeilingViolationCount: t.minutesCeilingViolationCount ?? 0 } },
+          0.98,
+        )
         : inactive;
     }
   },

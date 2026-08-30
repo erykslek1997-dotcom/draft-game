@@ -18,11 +18,12 @@ export const STARTER_SLOTS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 // docstring, added the same day): reverting 3->4 to test whether the 2026-08-15 "wasted 9th spot"
 // failure mode (see this constant's own docstring above) is actually fixed once the AI is
 // structurally blocked from drafting a same-position bench duplicate, rather than accepting the
-// smaller 8-man roster as the only fix. TEMPORARY prototype value — not yet validated against the
-// full regression suite (128->144 picks ripples into hardcoded test fixtures and every calibrated
-// anchor); measure with checkBenchPositionBalance.ts/checkBenchAbsurdities.ts first.
+// smaller 8-man roster as the only fix. 2026-08-30: this is now the active, verified configuration;
+// the full suite passes at 16 teams x 9 rounds (144 picks), including cap, backup-quality, rotation,
+// scoring, season and playoff regressions. Team Model v1 also models when the ninth slot may
+// legitimately sit outside a robust eight-man playoff rotation.
 export const BENCH_SLOT_COUNT = 4;
-export const ROSTER_SIZE = STARTER_SLOTS.length + BENCH_SLOT_COUNT; // 8
+export const ROSTER_SIZE = STARTER_SLOTS.length + BENCH_SLOT_COUNT; // 9
 /** Lives here (not draft.ts) so it's available without a circular import wherever the
  * shared cap-legality math needs to know how many teams are contending for the same pool. */
 export const TEAM_COUNT = 16;

@@ -190,11 +190,11 @@ export interface ScoreBreakdown {
  * quietly drift the displayed 0-100 range away from what's actually achievable again.
  */
 // 2026-08-15, recalibrated (`scripts/calibrateExtremeTeamScores.ts`) after `BENCH_INFLUENCE_
-// BOOST` and `ROSTER_SIZE` 9→8 both changed the underlying weighted-average math these anchors
-// are fit against — old values (21/78, 8/94, 0/94) were measured against the pre-boost, 9-man
-// formula and were now stale per this file's own "re-run whenever the underlying formulas
-// change" rule. New worst/best achieved by the true best/worst-possible legal roster search:
-// offense 23-92, defense 5-102, spacing 0-115.
+// BOOST` and the temporary ROSTER_SIZE 9→8 experiment changed the underlying weighted-average
+// math. The roster returned to 9 on 2026-08-19; these anchors remain the current production
+// calibration, but should be re-audited before any future scoring change rather than assumed to
+// be fresh 9-man extrema. The 2026-08-15 search produced offense 23-92, defense 5-102, spacing
+// 0-115.
 const OFFENSE_SCORE_ANCHORS = { worst: 23, best: 92 };
 const DEFENSE_SCORE_ANCHORS = { worst: 5, best: 102 };
 /**
