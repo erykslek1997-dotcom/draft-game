@@ -87,7 +87,20 @@ function hasNamedRiserException(span: PlayerSpan): boolean {
  */
 const NAMED_DAMPENING_SCALE = 0.3;
 const NAMED_DAMPENING_EXCEPTIONS: ReadonlyMap<string, number> = new Map(
-  [{ name: 'Shai Gilgeous-Alexander', spanLabel: '2024-26' }].map((e) => [
+  [
+    { name: 'Shai Gilgeous-Alexander', spanLabel: '2024-26' },
+    // 2026-08-30, user-reported (batch feedback follow-up): same shape as the SGA case above —
+    // a real, measured -3.4 (Gold Dropper) clears `grades.ts`'s -2 MVP-cap threshold and drags
+    // this span from its natural "Greatest peak" down to "MVP" (raw 98 -> displayed 90), despite
+    // this exact span (2021-23, covering the 2022-23 season) containing Jokić's real 2023
+    // championship run. User's own reasoning, matching the SGA precedent word-for-word: a real
+    // champion shouldn't be tier-capped the same way a genuine, uncontested collapse would.
+    // -3.4 * 0.3 = -1.02, comfortably clear of the -2 threshold with real margin, not sitting
+    // right at the edge — same "don't just barely clear it" philosophy as every other dampening
+    // exception here. The real, non-zero signal survives (there's a genuine dip inside this
+    // two-season span somewhere); it just no longer crosses either tier-cap threshold.
+    { name: 'Nikola Jokić', spanLabel: '2021-23' },
+  ].map((e) => [
     `${normalizePlayerName(e.name)}|${e.spanLabel}`,
     NAMED_DAMPENING_SCALE,
   ]),
