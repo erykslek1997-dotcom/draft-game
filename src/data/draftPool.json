@@ -130594,7 +130594,8 @@
     "spanLabel": "2012-14",
     "primaryPosition": "PF",
     "secondaryPositions": [
-      "PG"
+      "PG",
+      "SF"
     ],
     "fga": 17.7,
     "box": {
@@ -130743,6 +130744,7 @@
     "spanLabel": "2019-21",
     "primaryPosition": "PG",
     "secondaryPositions": [
+      "SF",
       "SG"
     ],
     "fga": 19,
@@ -130768,7 +130770,8 @@
     "primaryPosition": "C",
     "secondaryPositions": [
       "PF",
-      "PG"
+      "PG",
+      "SF"
     ],
     "fga": 22,
     "box": {
@@ -130792,7 +130795,8 @@
     "spanLabel": "2022-24",
     "primaryPosition": "PF",
     "secondaryPositions": [
-      "PG"
+      "PG",
+      "SF"
     ],
     "fga": 19.7,
     "box": {

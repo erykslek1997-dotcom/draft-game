@@ -592,6 +592,16 @@ const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [
   // cross-slot starter-fallback tier (rotation.ts) legitimately extend him into a thin backup PG
   // spot with his own spare capacity instead of reaching for a true last-resort fallback.
   { name: 'LeBron James', position: 'PG' },
+  // 2026-08-30, user-reported (draft export: a PF-primary LeBron span starting at PG while a real
+  // starter-quality PG/SG sat, because the roster's only realistic SF options were weaker bench
+  // pieces). Checked every span directly rather than patch just the one reported: 2012-14 and
+  // 2022-24 share the identical gap (PF primary, `['PG']` only) while every OTHER PF/C-primary
+  // LeBron span already carries SF as a secondary (2011-13, 2013-15, 2016-18, 2023-25) — an
+  // isolated data gap on two specific spans, not a real "he stopped playing small forward" fact.
+  // Same pure-eligibility-grant shape as the PG entry above — no O-TAL/D-TAL recomputation, no
+  // archetype change, just lets the rotation/position-fit logic credit the real wing minutes his
+  // whole career (including these two spans) actually includes.
+  { name: 'LeBron James', position: 'SF' },
   // Jrue's adjacent spans already alternate between PG/SG and SG/PG, while the isolated
   // 2017-19/2018-20 generated spans lost PG entirely despite 6.8/6.9 APG and the same real
   // lead-guard duties. This prevents those two spans from taking an artificial 0.5 position-fit
