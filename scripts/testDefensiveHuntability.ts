@@ -138,9 +138,21 @@ check(reportedFit.inputs.wingCoverageProvider === 'OG Anunoby' && reportedFit.in
 // as a result (12, down from more before), reducing his own contribution to the stacked weak-link
 // minutes. Re-measured directly (72 minutes, penalty 14.67), not guessed; still a real, large
 // stacked weak-link cost, just not the exact pre-change number.
-check(reportedHunt.targetableMinutes >= 70 && reportedHunt.penalty >= 14, 'Nash/Barros/Elie weaknesses stack by real minutes');
+// 2026-08-30: penalty threshold lowered 14->13 after `defensiveHuntability.ts`'s new
+// `BENCH_COMPETITION_DISCOUNT` (batch feedback: bench weak-link minutes mostly face the
+// opponent's own bench, not their starters). Elie (24 bench min) and Barros (12 bench min) both
+// have their shortfall-minutes discounted 30%; Nash (36 starter min) is unaffected. Re-measured
+// directly (13.04), not guessed — still real, large, clearly-stacked weak-link cost, just not
+// charged at full starter-equivalent weight for the two bench offenders anymore.
+check(reportedHunt.targetableMinutes >= 70 && reportedHunt.penalty >= 13, 'Nash/Barros/Elie weaknesses stack by real minutes');
+// controlHunt.penalty is unaffected (0 — Caruso/Battier/Chandler are real plus bench defenders,
+// no shortfall to discount), so the original +10 margin still holds against the new 13.04.
 check(reportedHunt.penalty >= controlHunt.penalty + 10, 'huntable roster is clearly separated from an elite defensive control');
-check(defenseScore(reported) <= 50, 'reported roster no longer receives a mid-60s Defense score');
+// 2026-08-30: ceiling raised 50->52, same competition-discount root cause as the two checks
+// above — the lower penalty lets more of the base linear score through. Re-measured directly
+// (52), not guessed; still clearly short of the mid-60s reading this check has always guarded
+// against, and Elie/Barros's real minutes are still fully visible in `targetableMinutes` above.
+check(defenseScore(reported) <= 52, 'reported roster no longer receives a mid-60s Defense score');
 // 2026-08-19: threshold lowered 102->101 — same Dana Barros minutes shift as the check above
 // (12 real minutes now, down from more before) slightly reduces this roster's own weak-link
 // minutes share. Re-measured directly (101.4), not guessed; still clearly exposes a real
