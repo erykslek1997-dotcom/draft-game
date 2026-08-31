@@ -1,5 +1,10 @@
 import type { PlayerSpan } from '../data/schema';
-import { computeOffensiveTalent, computeDefensiveTalent, computeUncappedOffensiveTalent } from './talent';
+import {
+  computeOffensiveTalent,
+  computeDefensiveTalent,
+  computeUncappedOffensiveTalent,
+  computeTalentWithoutBridge,
+} from './talent';
 import { offensiveGrade, defensiveGrade, tierContextFor, effectiveTalent, type Grade, type TierGateContext } from './grades';
 
 /**
@@ -74,7 +79,13 @@ const GRADE_ORDER: Grade[] = ['F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 
 const gradeAtLeast = (g: Grade, min: Grade) => GRADE_ORDER.indexOf(g) >= GRADE_ORDER.indexOf(min);
 
 export function isSixthManProfile(span: PlayerSpan): boolean {
+  // The star-exclusion ceiling is checked against BOTH the effective (post-cap, bridged) number and
+  // the no-bridge number (2026-08-31 bridge pass): the D-TAL->TAL bridge is a small mean-zero
+  // defensive rank nudge, and a downward correction of a few points must not be what newly makes a
+  // real star (Trae Young, Isaiah Thomas, Steve Nash) eligible for the "instant offense off the
+  // bench" relabel — a huge, always-wrong-feeling display drop when it flips.
   if (effectiveTalent(span) >= SIXTH_MAN_TAL_CEILING) return false;
+  if (computeTalentWithoutBridge(span) >= SIXTH_MAN_TAL_CEILING) return false;
   if (span.fga >= SIXTH_MAN_FGA_CEILING) return false;
   if (span.box.apg >= SIXTH_MAN_APG_CEILING) return false;
   const otal = computeOffensiveTalent(span);

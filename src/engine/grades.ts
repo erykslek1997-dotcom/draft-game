@@ -7,6 +7,7 @@ import {
   computeUncappedOffensiveTalent,
   computeDefensiveTalent,
   computeTalentWithoutEliteDefenseBonus,
+  computeTalentWithoutBridge,
   rawUncappedTalent,
   applyGradeCeiling,
   isCP3TwoWayExempt,
@@ -354,6 +355,14 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     { name: 'CJ McCollum', spanLabel: '2020-22', cap: 'All-star' as OverallTier },
     { name: 'Vince Carter', spanLabel: '2012-14', cap: 'Starter' as OverallTier },
     { name: 'Chris Webber', spanLabel: '1996-98', cap: 'All-NBA' as OverallTier },
+    // 2026-08-31 (D-TAL->TAL bridge pass): McMillan's 1992-94 peak (O-TAL 42 / D-TAL 99 — a genuine
+    // 2x All-Defense 1st-team perimeter menace, real DPOY-vote-adjacent) is the one span where the
+    // bridge's rank-relative defensive credit alone carries a near-zero offensive game to All-star.
+    // User's explicit call: cap it. 'Starter' is exactly its non-bridge tier — the bridge can still
+    // move the NUMBER, it just can't wear an All-star badge on defense alone. A named single-span
+    // exception, not a slope: the same "defensive specialist reaching All-star" question for every
+    // 3-and-D wing (Danny Green / P.J. Tucker / OG Anunoby) is a feature of the bridge, not a bug.
+    { name: 'Nate McMillan', spanLabel: '1992-94', cap: 'Starter' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
@@ -642,6 +651,13 @@ export interface TierGateContext {
    * the gate below simply never fires for a synthetic/validation context — the same "no signal,
    * no restriction" default this file already uses everywhere else. */
   talWithoutEliteDefenseBonus?: number;
+  /** 2026-08-31 (dedicated bridge pass): the number `computeTalent` would produce without the
+   * D-TAL->TAL bridge (`talent.ts`'s `dtalBridgeCorrection`). The bridge is a small mean-zero
+   * defensive rank nudge (cap +5 / -6); near a hard tier threshold that move still flips the whole
+   * badge. Same optional/undefined-safe shape as `talWithoutEliteDefenseBonus` — omitted contexts
+   * fall back to `tal`, so the two bridge gates below simply never fire for synthetic/validation
+   * contexts. */
+  talWithoutBridge?: number;
 }
 
 /**
@@ -755,6 +771,20 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   if (tierRank(capped) >= tierRank('MVP') && tierRank(overallTier(withoutBonusTal)) < tierRank('MVP')) {
     capped = stricterTier(capped, 'All-NBA');
   }
+  // 2026-08-31 (dedicated bridge pass): same shape as the elite-defense-bonus gate directly above,
+  // extended to every top-tier boundary. The D-TAL->TAL bridge (`talent.ts`) is a small mean-zero
+  // defensive rank correction (cap +5 / -6); near a top-tier floor that nudge flips the whole badge
+  // (Anthony Edwards 2024-26 into MVP, Durant 2009-11 MVP->Greatest peak, Dirk 1999-01, Kobe
+  // 2008-10 all measured crossing this way). The bridge can lift the displayed NUMBER within a
+  // band, but it can't lift the displayed TIER above what the non-bridge number earns once that
+  // tier is MVP or higher — never below All-NBA, so a legit All-NBA span the bridge nudged isn't
+  // over-punished (matching the elite-defense gate's own floor). The Sixth-Man/PG-archetype floor
+  // is gated the same way further down.
+  const withoutBridgeTal = ctx.talWithoutBridge ?? ctx.tal;
+  const bridgeFreeTier = overallTier(withoutBridgeTal);
+  if (tierRank(capped) >= tierRank('MVP') && tierRank(capped) > tierRank(bridgeFreeTier)) {
+    capped = stricterTier(capped, tierRank(bridgeFreeTier) >= tierRank('MVP') ? bridgeFreeTier : 'All-NBA');
+  }
   // 2026-08-19, user's explicit PG shooter/playmaker/defense archetype ask. Originally scoped to
   // "only below All-NBA" (tier rank), but the user's own direct follow-up narrowed the entry
   // threshold further after seeing real Sixth-Man-capped cases still read close to Starter/
@@ -773,7 +803,13 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   // landing on 6.0 as a real "clearly above average, short of the existing 7.0
   // ELITE_PLAYMAKING_APG_THRESHOLD" bar; PG's own real D-TAL p75 (55) for defense.
   if (ctx.position === 'PG') {
-    const numberSoFar = applyGradeCeiling(ctx.tal, tierCeiling(capped));
+    // Entry gated on the NON-bridge number (2026-08-31): the archetype rule is about a PG's own
+    // shooting/playmaking/defense profile and whether it's star-level enough to be exempt — a
+    // separate mean-zero defensive rank nudge shouldn't be what pushes a span across the 75 entry
+    // line in either direction (Steve Nash / Isaiah Thomas / Trae Young sit just above it and a
+    // downward bridge correction would newly demote them here; Curry 2010-12 / Kemba 2017-19 sit
+    // just below and an upward one would newly exempt them).
+    const numberSoFar = applyGradeCeiling(withoutBridgeTal, tierCeiling(capped));
     if (numberSoFar <= PG_ARCHETYPE_ENTRY_TAL_CEILING) {
       const isGoodShooter = (ctx.spacing ?? 0) >= PG_ARCHETYPE_SHOOTER_SPACING_FLOOR;
       const isGoodPlaymaker = (ctx.apg ?? 0) >= PG_ARCHETYPE_PLAYMAKER_APG_FLOOR;
@@ -952,5 +988,6 @@ export function tierContextFor(span: PlayerSpan): TierGateContext {
     spacing: computeSpacing(span),
     apg: span.box.apg,
     talWithoutEliteDefenseBonus: computeTalentWithoutEliteDefenseBonus(span),
+    talWithoutBridge: computeTalentWithoutBridge(span),
   };
 }

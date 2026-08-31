@@ -12,6 +12,7 @@ import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLook
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
 import { playmakingThreeLevelOffenseAdjustment } from './playmakingThreeLevel';
 import { selfCreationPercentileForPortability } from './selfCreationSimilarity';
+import { runtimeDefenseTalentPercentile, runtimeImpliedDefensePercentile } from './runtimePercentiles';
 // 2026-08-06: moved below defensiveTalent/defensiveAccolades on purpose — `portability.ts` (which
 // this import cycles back through) now imports `computeDefensiveTalent` from THIS file, closing a
 // real cycle: talent.ts -> portabilityCorrection.ts -> portability.ts -> talent.ts. Importing
@@ -910,6 +911,100 @@ function eliteDefenseTalBonus(span: PlayerSpan): number {
 // around it — grades.ts's elite-defense-bonus MVP-tier cap — so touching it again needs the same
 // care that fix took). Tracked as a real follow-up, not shelved silently.
 
+/**
+ * 2026-08-31 (later session, dedicated pass): the D-TAL -> TAL bridge. `eliteDefenseTalBonus` above
+ * is a step function (zero below D-TAL 85) and the only existing path from the calibrated D-TAL
+ * ladder into TAL's blended value. Everywhere below that threshold, TAL's own internal defense term
+ * (`rawComponents().defense` — box impact + DARKO, floored at 20) is a completely different,
+ * lower-resolution scale than the D-TAL display ladder (per-position percentile rungs +
+ * `UNCORROBORATED_CEILING` + accolade headroom credit, fitted against 46 reference ratings). So
+ * Danny Granger 2009-11 (D-TAL 53) and Sean Elliott 1994-96 (D-TAL 38) both land at TAL 78 — a real
+ * 15-point defensive gap the blend can't see. Three same-night attempts at closing this failed:
+ *
+ *   1. DCX (contextual defensive talent, DARKO-excess + decayed accolades) — bad signal, maxed out
+ *      known WEAK defenders (Ryan Anderson, Dirk 2010-12).
+ *   2. A triangular bonus added into `talentScaled`'s `rawSum` — moved 19.5% of the pool by up to
+ *      +17-19 TAL, because any new `rawSum` term can push a span's FIRST-pass value across
+ *      `USAGE_SCALE_MIN_TIER_TAL`'s gate, unlocking a much larger usage-scale multiplier on the
+ *      second pass.
+ *   3. The same bonus applied post-pipeline (after both passes + softcap) — per-span clean, but
+ *      purely one-directional: it lifted ~20% of the whole pool at once, which showed up as
+ *      systemic inflation in team-level aggregates (`benchDepthScore`, the SF position's feel).
+ *
+ * This version fixes all three failure modes at once:
+ * - **Rank-based, so mean-zero per position by construction.** The correction is driven by the gap
+ *   between two *within-position percentiles* — where D-TAL places the span vs where TAL's own
+ *   internal defense read (`normalizedDefenseForFit`) places it (both precomputed,
+ *   `runtimePercentiles.json`). The mean of a percentile is 0.5 for both, so the pool-wide mean
+ *   correction is ~0 at every position — team aggregates don't systematically move (verified:
+ *   full-pool mean correction |<=0.15| at every position).
+ * - **Applied post-pipeline**, after the two-pass usage-scale gate is already resolved and before
+ *   `softCapTalent` — so it can never move the gate-deciding first-pass value (failure mode 2).
+ * - **Signed** — a span D-TAL rates well *below* where the blend puts it (a one-way volume scorer:
+ *   Michael Redd, JJ Redick, Pete Maravich) is pulled down by the same mechanism that pulls a
+ *   genuine two-way guard up, so there's no net lift (failure mode 3).
+ * - **`tanh`-smoothed** so only genuinely large rank disagreements get near the cap; a small/medium
+ *   disagreement barely moves.
+ * - **Near-symmetric caps** — down to `DTAL_BRIDGE_DOWN_CAP` (6), up to `DTAL_BRIDGE_UP_CAP` (5).
+ *   A larger/uncapped version pushed a broad perimeter population up a whole display tier at once
+ *   (Anthony Edwards 2024-26 into MVP, Danny Granger 2009-11 to 90); at 5/6 with the `grades.ts`
+ *   tier gates below, the pool-wide mean correction is ~-0.2 per position (measured) — the tanh's
+ *   odd shape keeps it near mean-zero.
+ * - **Elite-offense damping on the DOWN side only** — `computeOffensiveTalent` from
+ *   `DTAL_BRIDGE_OFFENSE_DAMP_FLOOR` (75) up to `_CEIL` (95) linearly scales the down-correction
+ *   toward zero, so an elite offensive engine whose defense genuinely reads near the floor (Steve
+ *   Nash 2005-07, Jokić 2023-25, Durant 2011-13, Harden) isn't gutted — the same protection
+ *   `grades.ts`'s tier caps and `PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION` already grant this exact
+ *   population.
+ *
+ * **No damping on the UP side.** A symmetric "low-O-TAL specialist doesn't ride D-TAL alone into
+ * All-star" damp was tried (floor 42-58) and reverted: measured directly, the population it damps
+ * IS the bridge's target population — Danny Green, P.J. Tucker, Patrick Beverley, OG Anunoby, Luc
+ * Mbah a Moute, prime Ron Artest all sit at O-TAL 30-49 by role, and the whole point of the bridge
+ * is to credit exactly that "defense is most of my value" profile. It also introduced a systematic
+ * ~-1 pool-wide deflation (defense-plus players skew offense-light, so the up-damp bit a larger
+ * fraction of the up-population than the elite-offense damp bites of the down-population). A
+ * genuine non-scorer reaching All-star on defense alone (Nate McMillan O-TAL 42, D-TAL 99) is a
+ * handful of named spans best handled with a `NAMED_TIER_DOWNCAPS` entry if the user objects to a
+ * specific one, not a slope that punishes every 3-and-D role player.
+ *
+ * `eliteDefenseTalBonus` above is deliberately kept as-is and stacks on top — it targets the
+ * D-TAL >= 85 one-way-anchor tail specifically (Ben Wallace / Mutombo / Eaton), where an *additive*
+ * lift is wanted rather than a rank-relative nudge, and its own MVP-tier-cap gate in `grades.ts`
+ * still nets it out for players who don't need it.
+ *
+ * `grades.ts` additionally gates the DISPLAYED tier so the bridge alone can't be the sole reason a
+ * span crosses INTO MVP+ or DOWN into the PG-archetype / Sixth-Man band (both hard TAL thresholds a
+ * 5-6 point nudge would otherwise flip) — see `computeTalentWithoutBridge` and that file's
+ * `talWithoutBridge` gate. The numeric value (`talentScore`/`benchDepthScore`/rotation/AI/the
+ * displayed TAL number) always reflects the full correction.
+ */
+const DTAL_BRIDGE_GAIN = 20;
+const DTAL_BRIDGE_SMOOTH = 8;
+const DTAL_BRIDGE_UP_CAP = 5;
+const DTAL_BRIDGE_DOWN_CAP = 6;
+const DTAL_BRIDGE_OFFENSE_DAMP_FLOOR = 75;
+const DTAL_BRIDGE_OFFENSE_DAMP_CEIL = 95;
+
+const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
+
+/** Exported for `scripts/checkDtalBridge*` blast-radius reports — same pattern as
+ * `selfCreationTalentBonus`/`extremeUsageRatioPenalty` above. Signed: positive = TAL pulled up
+ * toward D-TAL, negative = pulled down. */
+export function dtalBridgeCorrection(span: PlayerSpan): number {
+  const rankGap = runtimeDefenseTalentPercentile(span) - runtimeImpliedDefensePercentile(span);
+  const smoothed = DTAL_BRIDGE_SMOOTH * Math.tanh((DTAL_BRIDGE_GAIN * rankGap) / DTAL_BRIDGE_SMOOTH);
+  if (smoothed >= 0) return Math.min(smoothed, DTAL_BRIDGE_UP_CAP);
+  const down = Math.min(-smoothed, DTAL_BRIDGE_DOWN_CAP);
+  const otal = computeOffensiveTalent(span);
+  const eliteOffenseDamp =
+    1 -
+    clamp01(
+      (otal - DTAL_BRIDGE_OFFENSE_DAMP_FLOOR) / (DTAL_BRIDGE_OFFENSE_DAMP_CEIL - DTAL_BRIDGE_OFFENSE_DAMP_FLOOR),
+    );
+  return -down * eliteOffenseDamp;
+}
+
 /** The shared pipeline `computeTalent` runs twice — once at `usageScale=1.0` to establish the
  * base tier for `USAGE_SCALE_MIN_TIER_TAL`'s gate, and again with the real usage scale if that
  * gate passes. Returns the uncapped, unrounded scaled value; callers clamp/round/soft-cap. */
@@ -1265,7 +1360,10 @@ export function rawUncappedTalent(span: PlayerSpan): number {
   const baseScaled = talentScaled(span, 1.0);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
   const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span));
-  return Math.round(scaled);
+  // Same post-pipeline bridge `computeTalent` applies — kept here so the GOAT-tier "100+" gate
+  // reads a consistent raw number. GOAT-tier spans sit at rank-gap ~0 anyway, so this is ~a no-op
+  // in practice, included for consistency rather than effect.
+  return Math.round(scaled + dtalBridgeCorrection(span));
 }
 
 /**
@@ -1336,14 +1434,11 @@ export function computeTalent(span: PlayerSpan): number {
   );
   const baseScaled = talentScaled(span, 1.0);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
-  if (baseTal < USAGE_SCALE_MIN_TIER_TAL) {
-    const result = Math.round(applyGradeCeiling(baseTal, ceiling));
-    talentCache.set(span.id, result);
-    return result;
-  }
-
-  const scaledWithUsage = talentScaled(span, usageOffenseScale(span));
-  const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaledWithUsage))));
+  // The usage-scale gate stays keyed on the UN-bridged `baseTal` (same as `talentBreakdown`/
+  // `rawUncappedTalent`) — the bridge is a post-pipeline defensive rank correction, deliberately
+  // outside the two-pass gate it would otherwise be able to move (see `dtalBridgeCorrection`).
+  const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span));
+  const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
   const result = Math.round(applyGradeCeiling(finalTal, ceiling));
   talentCache.set(span.id, result);
   return result;
@@ -1369,9 +1464,33 @@ export function computeTalentWithoutEliteDefenseBonus(span: PlayerSpan): number 
   );
   const baseScaled = talentScaled(span, 1.0, false);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
-  if (baseTal < USAGE_SCALE_MIN_TIER_TAL) return Math.round(applyGradeCeiling(baseTal, ceiling));
-  const scaledWithUsage = talentScaled(span, usageOffenseScale(span), false);
-  const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaledWithUsage))));
+  const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span), false);
+  const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
+  return Math.round(applyGradeCeiling(finalTal, ceiling));
+}
+
+/**
+ * The same number `computeTalent` produces with the D-TAL->TAL bridge (`dtalBridgeCorrection`)
+ * excluded. NOT cached (only ever called from `grades.ts`'s tier gate, never a hot path). Its only
+ * purpose, exactly parallel to `computeTalentWithoutEliteDefenseBonus` above: lets that gate ask
+ * "would this span sit in the same display-tier band without the bridge," so a small mean-zero
+ * defensive rank nudge can't be the sole reason a badge crosses INTO MVP+ (Anthony Edwards
+ * 2024-26, Durant 2009-11) or DOWN into the PG-archetype / Sixth-Man band (Trae Young, Isaiah
+ * Thomas, Steve Nash) — both hard TAL thresholds a <=8-point correction would otherwise flip. The
+ * numeric value everywhere else keeps the full bridged number.
+ */
+export function computeTalentWithoutBridge(span: PlayerSpan): number {
+  const ceiling = Math.min(
+    pgOffenseGradeCeiling(span),
+    pgDefenseGradeCeiling(span),
+    sfOffenseGradeCeiling(span),
+    sfDefenseGradeCeiling(span),
+    lukaMvpTierCeiling(span)
+  );
+  const baseScaled = talentScaled(span, 1.0);
+  const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
+  const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span));
+  const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled))));
   return Math.round(applyGradeCeiling(finalTal, ceiling));
 }
 

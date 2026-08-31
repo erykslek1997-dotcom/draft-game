@@ -1,44 +1,72 @@
 /**
- * Precomputes the two full-population percentiles needed by portability at runtime.
+ * Precomputes the full-population percentiles needed by portability and the D-TAL->TAL bridge at
+ * runtime.
  *
  * The underlying models deliberately calibrate against all ~13k spans, but shipping every full
- * player record and every self-creation row to the browser just to rebuild two immutable ranks is
+ * player record and every self-creation row to the browser just to rebuild immutable ranks is
  * wasteful. This script remains the full-data path; production imports only its compact output.
+ *
+ * Entry tuple: [selfCreation, defensiveTalent, impliedTalDefense].
+ * - `defensiveTalent` — within-position fraction of spans with a STRICTLY lower `computeDefensiveTalent`
+ *   (the display ladder). Legacy semantics, kept bit-identical: `portability.ts` reads this and its
+ *   own gates are calibrated against exactly this definition.
+ * - `impliedTalDefense` — within-position MIDRANK percentile of `normalizedDefenseForFit` (TAL's OWN
+ *   internal defense read, the pre-2026-07-30 linear scale). Midrank (not strictly-below) because
+ *   that value has a huge point mass at DEFENSE_FLOOR — strictly-below would map ~40% of the pool to
+ *   ~0 and bias every rank gap positive. The bridge (`talent.ts`) corrects TAL by the gap between
+ *   these two ranks: a span D-TAL rates well above where TAL's own blend places it gets pulled up,
+ *   and vice versa. Both inputs are unaffected by the bridge itself (it changes `computeTalent`, not
+ *   `rawComponents`/`computeDefensiveTalent`), so there is no feedback loop and this artifact never
+ *   needs a second regeneration pass after a bridge-constant change.
  */
 import { writeFileSync } from 'node:fs';
 import { players } from '../src/data/players';
 import type { PlayerSpan, Position } from '../src/data/schema';
 import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { normalizedDefenseForFit } from '../src/engine/talent';
 import { selfCreationPercentileForPortability } from '../src/engine/selfCreationSimilarity';
 
-type RuntimePercentileEntry = [selfCreation: number, defensiveTalent: number];
+type RuntimePercentileEntry = [selfCreation: number, defensiveTalent: number, impliedTalDefense: number];
 
-const defenseSortedByPosition = new Map<Position, number[]>();
-for (const span of players) {
-  const values = defenseSortedByPosition.get(span.primaryPosition) ?? [];
-  values.push(computeDefensiveTalent(span));
-  defenseSortedByPosition.set(span.primaryPosition, values);
-}
-for (const values of defenseSortedByPosition.values()) values.sort((a, b) => a - b);
-
-function defensePercentile(span: PlayerSpan): number {
-  const sorted = defenseSortedByPosition.get(span.primaryPosition);
-  if (!sorted || sorted.length === 0) return 0.5;
-  const value = computeDefensiveTalent(span);
-  let lo = 0;
-  let hi = sorted.length;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (sorted[mid] < value) lo = mid + 1;
-    else hi = mid;
+function percentileFn(
+  valueOf: (span: PlayerSpan) => number,
+  ties: 'strictly-below' | 'midrank',
+): (span: PlayerSpan) => number {
+  const sortedByPosition = new Map<Position, number[]>();
+  for (const span of players) {
+    const values = sortedByPosition.get(span.primaryPosition) ?? [];
+    values.push(valueOf(span));
+    sortedByPosition.set(span.primaryPosition, values);
   }
-  return lo / sorted.length;
+  for (const values of sortedByPosition.values()) values.sort((a, b) => a - b);
+  return (span: PlayerSpan): number => {
+    const sorted = sortedByPosition.get(span.primaryPosition);
+    if (!sorted || sorted.length === 0) return 0.5;
+    const value = valueOf(span);
+    let below = 0;
+    let atOrBelow = 0;
+    for (let i = 0; i < sorted.length; i++) {
+      if (sorted[i] < value) below++;
+      if (sorted[i] <= value) atOrBelow++;
+    }
+    // 'strictly-below': legacy `lo / n` — the fraction with a strictly lower value.
+    // 'midrank': midpoint of the tied block, so a large point mass (the DEFENSE_FLOOR blob in
+    // `normalizedDefenseForFit`) gets a fair central rank instead of ~0. Keeps E[pctl] = 0.5.
+    return ties === 'strictly-below' ? below / sorted.length : (below + atOrBelow) / (2 * sorted.length);
+  };
 }
+
+const defensePercentile = percentileFn(computeDefensiveTalent, 'strictly-below');
+const impliedDefensePercentile = percentileFn(normalizedDefenseForFit, 'midrank');
 
 const percentiles: Record<string, RuntimePercentileEntry> = {};
 const offensivePortabilityRanges: Partial<Record<Position, [min: number, max: number]>> = {};
 for (const span of players) {
-  percentiles[span.id] = [selfCreationPercentileForPortability(span), defensePercentile(span)];
+  percentiles[span.id] = [
+    selfCreationPercentileForPortability(span),
+    defensePercentile(span),
+    impliedDefensePercentile(span),
+  ];
 }
 
 const outputPath = 'src/data/runtimePercentiles.json';
