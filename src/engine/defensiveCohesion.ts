@@ -14,6 +14,14 @@ const RIM_ROLES: DefensiveRole[] = ['Anchor Big', 'Mobile Big'];
 const FULL_PROVIDER_MINUTES = 24;
 const PROVIDER_START = 75;
 const PROVIDER_FULL = 85;
+// 2026-08-31: measured against the real (no context-adjustment) D-TAL distribution for
+// Anchor Big/Mobile Big spans (1293 spans: p85=81, p90=86, p95=92). Mobley's 2023-25 span (83,
+// the weakest of this mechanism's own named motivating examples — Duncan/Robinson/Wembanyama all
+// sit at 90-92) needs to clear a real bar here, not one calibrated assuming an extra lift that no
+// longer exists. 78/88 spans roughly p73-p92: a merely good rim defender (p75, 72) still reads 0,
+// while every named example gets real, mostly-saturated credit.
+const BACKLINE_PROVIDER_START = 78;
+const BACKLINE_PROVIDER_FULL = 88;
 const AVERAGE_START = 80;
 const AVERAGE_FULL = 86;
 
@@ -25,6 +33,11 @@ export const MAX_ELITE_SHELL_DEFENSE_BONUS = 9;
  * ceiling: three excellent layers still matter, but they cannot erase weak-link minutes.
  */
 export const MAX_THREE_LAYER_CORE_DEFENSE_BONUS = 12;
+/** Two distinct high-minute rim protectors establish a real defensive floor even when the
+ * perimeter shell is weak. This is a ceiling/foundation bonus, not a substitute for POA/wing
+ * coverage, and therefore stays below the complete-shell treatment. */
+export const MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS = 18;
+export const BACKLINE_FOUNDATION_DRTG_BLEND = 0.35;
 /** Only a small part of a partial core carries into the real-units DRTG projection. */
 export const THREE_LAYER_CORE_DRTG_BLEND = 0.15;
 /** All-time-roster extrapolation target for a complete no-weak-link defensive shell. */
@@ -39,11 +52,14 @@ export interface DefensiveCohesionResult {
   threeLayerCore: number;
   /** Completeness used by DRTG: elite shell, or a tightly capped partial-core contribution. */
   drtgCompleteness: number;
+  /** Two-distinct-rim-provider foundation, attenuated but not erased by weak perimeter minutes. */
+  backlineFoundation: number;
   defenseScoreBonus: number;
   averageDefensiveTalent: number;
   poaProvider: string | null;
   wingProvider: string | null;
   rimProvider: string | null;
+  secondRimProvider: string | null;
   poaStrength: number;
   wingStrength: number;
   rimStrength: number;
@@ -89,11 +105,13 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
       completeness: 0,
       threeLayerCore: 0,
       drtgCompleteness: 0,
+      backlineFoundation: 0,
       defenseScoreBonus: 0,
       averageDefensiveTalent: 0,
       poaProvider: null,
       wingProvider: null,
       rimProvider: null,
+      secondRimProvider: null,
       poaStrength: 0,
       wingStrength: 0,
       rimStrength: 0,
@@ -153,6 +171,11 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     poa?.player.id,
   );
   const rim = bestProvider(RIM_ROLES);
+  const rimProviders = assignedPlayers
+    .filter(({ player }) => RIM_ROLES.includes(player.defensiveRole))
+    .map((entry) => ({ ...entry, effectiveStrength: entry.providerStrength }))
+    .sort((left, right) => right.effectiveStrength - left.effectiveStrength);
+  const secondRim = rimProviders[1] ?? null;
   const poaStrength = poa?.effectiveStrength ?? 0;
   const wingStrength = wing?.effectiveStrength ?? 0;
   const rimStrength = rim?.effectiveStrength ?? 0;
@@ -176,9 +199,18 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
   const threeLayerCore = providerReadiness * (0.5 + resistanceReadiness * 0.5);
   const eliteShellBonus = completeness * MAX_ELITE_SHELL_DEFENSE_BONUS;
   const threeLayerCoreBonus = threeLayerCore * MAX_THREE_LAYER_CORE_DEFENSE_BONUS;
+  const secondRimReadiness = clamp01(
+    ((secondRim?.effectiveStrength ?? 0) - BACKLINE_PROVIDER_START) /
+      (BACKLINE_PROVIDER_FULL - BACKLINE_PROVIDER_START),
+  );
+  // Opponents can still attack the guards, so hunt resistance affects the ceiling; it cannot
+  // erase Duncan+Robinson, Mobley+Gobert or Wembanyama+Robinson as a backline foundation.
+  const backlineFoundation = secondRimReadiness * (0.65 + resistanceReadiness * 0.35);
+  const backlineFoundationBonus = backlineFoundation * MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS;
   const drtgCompleteness = Math.max(
     completeness,
     threeLayerCore * THREE_LAYER_CORE_DRTG_BLEND,
+    backlineFoundation * BACKLINE_FOUNDATION_DRTG_BLEND,
   );
 
   return {
@@ -186,11 +218,13 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     completeness,
     threeLayerCore,
     drtgCompleteness,
-    defenseScoreBonus: Math.max(eliteShellBonus, threeLayerCoreBonus),
+    backlineFoundation,
+    defenseScoreBonus: Math.max(eliteShellBonus, threeLayerCoreBonus, backlineFoundationBonus),
     averageDefensiveTalent,
     poaProvider: poa?.player.playerName ?? null,
     wingProvider: wing?.player.playerName ?? null,
     rimProvider: rim?.player.playerName ?? null,
+    secondRimProvider: secondRim?.player.playerName ?? null,
     poaStrength,
     wingStrength,
     rimStrength,
