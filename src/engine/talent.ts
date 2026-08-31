@@ -638,9 +638,45 @@ export function rawTalentBlend(span: PlayerSpan): number {
  * was — so the bonus correctly does NOT fire for him, matching what the real data says rather
  * than the pre-fix assumption.
  */
-const TWO_WAY_SYNERGY_THRESHOLD = 45;
 const TWO_WAY_SYNERGY_SCALE = 1.0;
 const MAX_TWO_WAY_SYNERGY_BONUS = 7;
+
+/**
+ * 2026-08-31, user-reported ("PG overvalues defensive profiles" + "PF is a very weak position" —
+ * measured to be the same asymmetry): distinct players peaking at All-NBA+ run PG 47 vs SF 27 /
+ * C 28 / PF 20 / SG 15. 29 of ~200 pool PGs take a synergy bonus >= 3 on their peak span, most
+ * the full +7. `twoWaySynergyBonus` fires whenever BOTH position-normalized sides clear 45 — and
+ * for a PG, with the steep `DEFENSE_TAL_SCALE.PG` plus `synergyGateDefense`'s +12 corroboration
+ * bump, the defense side is near-automatic for anyone with steals or an All-Defense nod, while a
+ * C-/C-grade PG scorer's normalized offense (~52-62) also clears 45. So Mookie Blaylock (O C-),
+ * Steve Francis, Derek Harper, Fat Lever, Terrell Brandon, Eric Bledsoe all jumped a whole
+ * display tier on the bonus alone.
+ *
+ * PG's own base threshold is raised to 55 — the two-way bonus now needs the WEAKER side genuinely
+ * above-average for the position, not merely present. But raising it flat also caught the real
+ * pass-first two-way PGs whose scoring-weighted O-TAL understates them (Jason Kidd fell to
+ * Starter, Gary Payton / Maurice Cheeks dropped), so an **elite-playmaking exemption** puts them
+ * back at 45: a genuine floor general (pace-adjusted, diminishing-returns assists >=
+ * `PG_SYNERGY_ELITE_PLAYMAKING_APG`) is contributing real offense the O-TAL grade can't see, which
+ * is exactly the two-way case this bonus exists for. Every other position keeps a flat 45 — this
+ * over-firing is PG-specific, confirmed by the per-position distinct-player counts above.
+ */
+const TWO_WAY_SYNERGY_THRESHOLD_BY_POSITION: Record<Position, number> = {
+  PG: 55,
+  SG: 45,
+  SF: 45,
+  PF: 45,
+  C: 45,
+};
+const PG_SYNERGY_ELITE_PLAYMAKING_APG = 8;
+
+function synergyThresholdFor(span: PlayerSpan): number {
+  const base = TWO_WAY_SYNERGY_THRESHOLD_BY_POSITION[span.primaryPosition];
+  if (span.primaryPosition !== 'PG') return base;
+  const { pace } = eraBaseline(span.spanLabel);
+  const paceAdjustedApg = effectivePlaymakingApg(span.box.apg) * (LEAGUE_PACE_BASELINE / pace);
+  return paceAdjustedApg >= PG_SYNERGY_ELITE_PLAYMAKING_APG ? 45 : base;
+}
 
 /** Position-normalized 0-100 read of the same offense/defense components used by O-TAL/D-TAL
  * (see the split functions below) — shared by the two-way synergy bonus and the high-usage
@@ -761,9 +797,9 @@ function synergyGateDefense(span: PlayerSpan, normalizedDefense: number): number
   return Math.min(normalizedDefense, UNCORROBORATED_DEFENSE_GATE_CAP);
 }
 
-function twoWaySynergyBonus(normalizedOffense: number, normalizedDefense: number): number {
+function twoWaySynergyBonus(span: PlayerSpan, normalizedOffense: number, normalizedDefense: number): number {
   const weaker = Math.min(normalizedOffense, normalizedDefense);
-  return Math.min(MAX_TWO_WAY_SYNERGY_BONUS, Math.max(0, weaker - TWO_WAY_SYNERGY_THRESHOLD) * TWO_WAY_SYNERGY_SCALE);
+  return Math.min(MAX_TWO_WAY_SYNERGY_BONUS, Math.max(0, weaker - synergyThresholdFor(span)) * TWO_WAY_SYNERGY_SCALE);
 }
 
 /**
@@ -1013,7 +1049,7 @@ function talentScaled(span: PlayerSpan, usageScale: number, includeEliteDefenseB
   const raw = offense * 0.6 + defense * 0.4;
   const { normalizedOffense, normalizedDefense } = normalizedComponents(span, offense, defense);
   const gateDefense = synergyGateDefense(span, normalizedDefense);
-  const synergy = twoWaySynergyBonus(normalizedOffense, gateDefense);
+  const synergy = twoWaySynergyBonus(span, normalizedOffense, gateDefense);
   const usagePenalty = highUsageLowPlaymakingPenalty(span, gateDefense);
   const extremeUsagePenalty = extremeUsageRatioPenalty(span);
   const hiddenValue = hiddenValueBonus(span);
@@ -1101,7 +1137,7 @@ export function talentBreakdown(span: PlayerSpan): TalentBreakdown {
 
   return {
     usageScaleApplied,
-    synergy: twoWaySynergyBonus(normalizedOffense, gateDefense),
+    synergy: twoWaySynergyBonus(span, normalizedOffense, gateDefense),
     usagePenalty: highUsageLowPlaymakingPenalty(span, gateDefense),
     extremeUsagePenalty: extremeUsageRatioPenalty(span),
     hiddenValue: hiddenValueBonus(span),
