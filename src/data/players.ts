@@ -752,12 +752,33 @@ function applyHeightBasedSecondaryPositions(spans: PlayerSpan[]): PlayerSpan[] {
   });
 }
 
+/**
+ * A curated player whose raw source data is filed under their older/newer legal name gets
+ * expanded under the name they're better known by instead — see `scripts/expandCuratedSpans.ts`'s
+ * own `NAME_ALIASES` (Ron Artest -> Metta World Peace is the one entry there today; same real-
+ * name-change list, kept in sync by hand since one lives in `src/data` and the other in
+ * `scripts`). `generatedPlayers.json` has no knowledge of that alias and independently produces a
+ * full SECOND identity under the raw source's own name for the exact same real seasons — Ron
+ * Artest and Metta World Peace both covering 1999-2011 as "different" SF spans in the pool.
+ * 2026-08-31, user-reported (spotted by noticing identical TAL/O-TAL/D-TAL numbers under two
+ * "different" SF entries — a real duplicate-draft exploit, not just a cosmetic oddity). Every
+ * alias TARGET name here is dropped from `generatedPlayers` entirely; `curatedExpandedSpans` is
+ * the authoritative, hand-anchored source (real offensive archetype/defensive role, not the
+ * generic rules-based classifier) for these players.
+ */
+const GENERATED_PLAYER_DUPLICATE_NAMES: ReadonlySet<string> = new Set(
+  ['Metta World Peace'].map((n) => normalizePlayerName(n)),
+);
+const dedupedGeneratedPlayers = generatedPlayers.filter(
+  (p) => !GENERATED_PLAYER_DUPLICATE_NAMES.has(normalizePlayerName(p.playerName)),
+);
+
 export const players: PlayerSpan[] = applyForcedPositionProfiles(
   applyHeightBasedSecondaryPositions(
     applySecondaryPositionRemovals(
       applySecondaryPositionAdditions(
         applyDefensiveRoleOverrides(
-          applyPrimaryPositionReclassifications(applyPositionOverrides([...curatedPlayers, ...generatedPlayers, ...curatedExpandedSpans])),
+          applyPrimaryPositionReclassifications(applyPositionOverrides([...curatedPlayers, ...dedupedGeneratedPlayers, ...curatedExpandedSpans])),
         ),
       ),
     ),
