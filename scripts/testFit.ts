@@ -1,6 +1,12 @@
 import { draftPool as players } from '../src/data/draftPool';
 import type { PlayerSpan } from '../src/data/schema';
-import { FIT_WEIGHTS, fitScore } from '../src/engine/fit';
+import {
+  FIT_WEIGHTS,
+  fitScore,
+  SPACING_BOTTLENECK_FLOOR,
+  SPACING_BOTTLENECK_MAX_PENALTY,
+  SPACING_BOTTLENECK_SCALE,
+} from '../src/engine/fit';
 import { autoAssignRotation, primaryStarters } from '../src/engine/rotation';
 import { scoreTeam } from '../src/engine/scoring';
 import type { Team } from '../src/engine/types';
@@ -45,13 +51,20 @@ for (const [label, result] of [['cramped', crampedResult], ['balanced', balanced
     Object.values(result.components).every((value) => value >= 0 && value <= 100),
     `${label} component scores stay on the 0-100 scale`,
   );
-  const recomputed = Math.round(
+  const weightedBlend =
     result.components.creationStructure * FIT_WEIGHTS.creationStructure +
-      result.components.spacingCompatibility * FIT_WEIGHTS.spacingCompatibility +
-      result.components.defensiveRoleCoverage * FIT_WEIGHTS.defensiveRoleCoverage +
-      result.components.reboundingBalance * FIT_WEIGHTS.reboundingBalance +
-      result.components.sizeCoverage * FIT_WEIGHTS.sizeCoverage,
+    result.components.spacingCompatibility * FIT_WEIGHTS.spacingCompatibility +
+    result.components.defensiveRoleCoverage * FIT_WEIGHTS.defensiveRoleCoverage +
+    result.components.reboundingBalance * FIT_WEIGHTS.reboundingBalance +
+    result.components.sizeCoverage * FIT_WEIGHTS.sizeCoverage;
+  // Fit is not fully compensatory: a bounded spacing bottleneck (see fit.ts) subtracts from the
+  // weighted blend before the final score, so "the documented component blend" now means that
+  // penalty too, not just the five weighted components.
+  const spacingBottleneckPenalty = Math.min(
+    SPACING_BOTTLENECK_MAX_PENALTY,
+    Math.max(0, (SPACING_BOTTLENECK_FLOOR - result.components.spacingCompatibility) * SPACING_BOTTLENECK_SCALE),
   );
+  const recomputed = Math.round(Math.max(0, Math.min(100, weightedBlend - spacingBottleneckPenalty)));
   check(result.score === recomputed, `${label} total is exactly the documented component blend`);
 }
 

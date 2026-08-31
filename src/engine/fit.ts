@@ -54,6 +54,13 @@ import type { Team } from './types';
  * prose note just below. Exported so the UI can gate the label the same way. */
 export const HUNTABLE_WEAK_LINK_THRESHOLD = 50;
 
+/** Spacing bottleneck applied to the final fit score below — exported alongside `FIT_WEIGHTS` so
+ * a test recomputing "the documented component blend" can reproduce this term too, rather than
+ * hardcoding a second copy of these numbers. See the constant's own use site for the rationale. */
+export const SPACING_BOTTLENECK_FLOOR = 75;
+export const SPACING_BOTTLENECK_MAX_PENALTY = 18;
+export const SPACING_BOTTLENECK_SCALE = 0.65;
+
 export const FIT_WEIGHTS = {
   creationStructure: 0.35,
   spacingCompatibility: 0.30,
@@ -198,6 +205,12 @@ function defensiveRoleScore(profile: ShadowRoleProfile, roles: DefensiveRole[]):
     const evidencedFit = profile.defensiveFits.find((fit) => fit.role === profile.incumbentDefensiveRole)?.score ?? 0;
     return Math.max(80, evidencedFit);
   }
+  // A curated Low Activity tag is stronger evidence than a stocks/rebounds resemblance to an
+  // additional defensive job. Without this guard Magic could be shown simultaneously as an
+  // inferred POA provider (80) and the lineup's 25-point weak link — an internally impossible
+  // explanation. Low Activity players may still be evaluated in their incumbent role, but never
+  // create a second coverage layer from box inference alone.
+  if (profile.incumbentDefensiveRole === 'Low Activity') return 0;
   const proposedScore = Math.max(
     0,
     ...profile.proposedDefensiveRoles
@@ -506,13 +519,25 @@ export function fitScore(team: Team): FitScoreResult {
     reboundingBalance,
     sizeCoverage,
   };
-  const score = Math.round(
+  const weightedScore =
     components.creationStructure * FIT_WEIGHTS.creationStructure +
       components.spacingCompatibility * FIT_WEIGHTS.spacingCompatibility +
       components.defensiveRoleCoverage * FIT_WEIGHTS.defensiveRoleCoverage +
       components.reboundingBalance * FIT_WEIGHTS.reboundingBalance +
-      components.sizeCoverage * FIT_WEIGHTS.sizeCoverage,
+      components.sizeCoverage * FIT_WEIGHTS.sizeCoverage;
+  // Fit is not fully compensatory: excellent creation/defense cannot make a cramped half-court
+  // geometry disappear. The weighted average previously let Spacing compatibility 66 coexist
+  // with Fit 78, which overstated how portable the lineup actually was. This bounded bottleneck
+  // begins below a genuinely healthy 75 and tops out at 18 points, so poor spacing matters
+  // without zeroing every historically non-modern lineup.
+  const spacingBottleneckPenalty = Math.min(
+    SPACING_BOTTLENECK_MAX_PENALTY,
+    Math.max(0, (SPACING_BOTTLENECK_FLOOR - spacingCompatibility) * SPACING_BOTTLENECK_SCALE),
   );
+  const score = Math.round(clamp(weightedScore - spacingBottleneckPenalty));
+  if (spacingBottleneckPenalty >= 2) {
+    notes.push(`Spacing compatibility caps overall fit (-${Math.round(spacingBottleneckPenalty)}).`);
+  }
 
   return {
     version: 'fit-v2',
