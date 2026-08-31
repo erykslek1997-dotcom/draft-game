@@ -507,6 +507,17 @@ function tierCaps(
       // better) on AT LEAST ONE side, offense or defense, to clear All-NBA — a merely-good
       // all-around profile with no standout side doesn't have the case for MVP+.
       if (!gradeAtLeast(otalGrade, 'A-') && !gradeAtLeast(dtalGrade, 'A-')) caps.push('All-NBA');
+      // 2026-08-31, user-reported (real examples: Kirilenko 2002-04/2004-06/2005-07, Metta World
+      // Peace 2005-09, Shawn Marion 2001-03/2002-04/2006-08, Gerald Wallace 2008-10 — all reading
+      // All-NBA at TAL 81-91). The rule above only stops elite-D-alone from reaching MVP+; nothing
+      // stopped it from clearing All-NBA outright with a genuinely weak offense (grades as low as
+      // D+/F), unlike every other position's equivalent — PG needs real A- offense for All-NBA+
+      // with no defense escape at all; PF already caps below C+ offense straight to All-star. A
+      // real elite-two-way wing (B- offense or better, alongside A- defense) is untouched; a
+      // wing carried ENTIRELY by defense with no functional offensive floor is not an All-NBA
+      // case. Measured before shipping: 43 of 1279 SF spans (3.4%) affected, all below B- offense
+      // with A-+ defense — display-only, does not touch TAL/sorting/scoring.
+      if (gradeAtLeast(dtalGrade, 'A-') && !gradeAtLeast(otalGrade, 'B-')) caps.push('All-star');
       break;
     case 'PF':
       if (!gradeAtLeast(otalGrade, 'C+')) caps.push('All-star');
