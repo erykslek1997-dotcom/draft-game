@@ -7,6 +7,7 @@ import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositio
 import { maxSustainableMinutes } from './durability';
 import { overallTierForSpan, effectiveTalent } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
+import { minuteProfileForSpan } from './rotationRoleMinutes';
 import type { Rotation, SlotAssignment, Team } from './types';
 
 export const GAME_MINUTES = 48;
@@ -306,7 +307,10 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
   for (const slot of STARTER_SLOTS) {
     const primary = primaryBySlot[slot];
     if (primary) {
-      const grant = Math.min(STARTER_MINUTES, maxSustainableMinutes(primary, MAX_MINUTES_PER_PLAYER));
+      const grant = Math.min(
+        minuteProfileForSpan(primary).optimal,
+        maxSustainableMinutes(primary, MAX_MINUTES_PER_PLAYER),
+      );
       slots[slot].push({ playerId: primary.id, minutes: grant });
     }
   }
@@ -381,9 +385,10 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
     for (const candidateSlot of unresolvedSlots) {
       const usedHere = new Set(slots[candidateSlot].map((a) => a.playerId));
       const optionCount = remainingPlayers.filter(
-        (p) =>
+          (p) =>
           !usedHere.has(p.id) &&
-          (minutesUsed.get(p.id) ?? 0) < maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER) &&
+          (minutesUsed.get(p.id) ?? 0) <
+            Math.min(maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER), minuteProfileForSpan(p).ceiling) &&
           isPositionEligible(p, candidateSlot) &&
           (slotsBackedUp.get(p.id) ?? 0) < MAX_DISTINCT_BACKUP_SLOTS,
       ).length;
@@ -413,12 +418,25 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
     // that. Removed: a single strong-fit candidate can now absorb the slot's whole remaining
     // need up to their real capacity, and the loop only reaches for another contributor when
     // that capacity is actually exhausted — matching what the comment already claimed.
-    function fillFromTier(tierAllows: (p: PlayerSpan, slot: Position) => boolean) {
+    function fillFromTier(
+      tierAllows: (p: PlayerSpan, slot: Position) => boolean,
+      respectRoleCeiling: boolean = true,
+    ) {
       while (minutesNeeded > 0) {
         const candidates = remainingPlayers.filter(
           (p) =>
-            !usedInSlot.has(p.id) &&
-            (minutesUsed.get(p.id) ?? 0) < maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER) &&
+            // Normally one grant per player per slot — but the role-ceiling-ignoring true
+            // last-resort pass must be able to top an already-used contributor back up to their
+            // REAL durability, since the earlier ceiling-respecting pass may have granted them
+            // only a fraction of it (found via `testRotationEditable.ts`'s single-position
+            // worst-case sweep: a slot could go short of 48 with real spare durability sitting
+            // unused on someone already granted a role-ceiling-limited sliver).
+            (respectRoleCeiling ? !usedInSlot.has(p.id) : true) &&
+            (minutesUsed.get(p.id) ?? 0) <
+              Math.min(
+                maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER),
+                respectRoleCeiling ? minuteProfileForSpan(p).ceiling : MAX_MINUTES_PER_PLAYER,
+              ) &&
             tierAllows(p, slot),
         );
 
@@ -465,12 +483,21 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
         }
         if (!best) break;
 
-        const capacity = maxSustainableMinutes(best, MAX_MINUTES_PER_PLAYER) - (minutesUsed.get(best.id) ?? 0);
+        const roleCeiling = respectRoleCeiling ? minuteProfileForSpan(best).ceiling : MAX_MINUTES_PER_PLAYER;
+        const capacity =
+          Math.min(maxSustainableMinutes(best, MAX_MINUTES_PER_PLAYER), roleCeiling) -
+          (minutesUsed.get(best.id) ?? 0);
         const grant = Math.min(minutesNeeded, capacity);
-        slots[slot].push({ playerId: best.id, minutes: grant });
+        // Top up an existing grant (possible only when re-selection was allowed above) instead
+        // of pushing a duplicate entry for the same player in the same slot.
+        const existingEntry = slots[slot].find((a) => a.playerId === best.id);
+        if (existingEntry) existingEntry.minutes += grant;
+        else slots[slot].push({ playerId: best.id, minutes: grant });
         minutesUsed.set(best.id, (minutesUsed.get(best.id) ?? 0) + grant);
-        slotsBackedUp.set(best.id, (slotsBackedUp.get(best.id) ?? 0) + 1);
-        usedInSlot.add(best.id);
+        if (!existingEntry) {
+          slotsBackedUp.set(best.id, (slotsBackedUp.get(best.id) ?? 0) + 1);
+          usedInSlot.add(best.id);
+        }
         minutesNeeded -= grant;
       }
     }
@@ -489,6 +516,12 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
       const primaryEntry = slots[slot][0];
       const primaryPlayer = primaryBySlot[slot];
       if (primaryEntry && primaryPlayer) {
+        // Real durability only, not the role-tier ceiling: this is the last-resort path (see
+        // the "true last resort" comment on the position-blind fallback below, which this same
+        // reasoning already applies to) — a healthy starter with spare real capacity must never
+        // be blocked from covering a shortfall just because his TIER's typical ceiling is lower,
+        // or a slot can go short at 48 minutes even though a durability-legal player was sitting
+        // right there (found via `testRotationEditable.ts`'s single-position worst-case sweep).
         const cap = maxSustainableMinutes(primaryPlayer, MAX_MINUTES_PER_PLAYER);
         const extra = Math.max(0, Math.min(minutesNeeded, cap - primaryEntry.minutes));
         primaryEntry.minutes += extra;
@@ -519,6 +552,7 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
       for (const starter of eligibleStarters) {
         if (minutesNeeded <= 0) break;
         const used = starterMinutesUsed.get(starter.id) ?? 0;
+        // Same last-resort reasoning as the primary-extension block above: real durability only.
         const capacity = maxSustainableMinutes(starter, MAX_MINUTES_PER_PLAYER) - used;
         if (capacity <= 0) continue;
         const grant = Math.min(minutesNeeded, capacity);
@@ -533,7 +567,7 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
       // primary couldn't fully cover the gap either (he's durability-capped too) — a genuinely
       // threadbare-at-this-position roster, where the least-bad remaining option really is
       // someone stretched two-plus positions away for however many minutes are left.
-      fillFromTier(LAST_RESORT_TIER);
+      fillFromTier(LAST_RESORT_TIER, false);
     }
 
     if (minutesNeeded > 0) {
@@ -632,7 +666,10 @@ function rebalanceCrossSlotMinutes(
       const totalOffPositionMinutes = offPositionEntries.reduce((sum, e) => sum + e.a.minutes, 0);
 
       const starterTotalUsed = starterMinutesUsed.get(starter.id) ?? 0;
-      const starterCap = maxSustainableMinutes(starter, MAX_MINUTES_PER_PLAYER);
+      const starterCap = Math.min(
+        maxSustainableMinutes(starter, MAX_MINUTES_PER_PLAYER),
+        minuteProfileForSpan(starter).ceiling,
+      );
       let idleRemaining = Math.max(0, starterCap - starterTotalUsed);
 
       let trimRemaining = 0;
@@ -649,7 +686,12 @@ function rebalanceCrossSlotMinutes(
         // current assignment instead of duplicating it.
         const backfillCandidates = remainingPlayers
           .filter((p) => isRealPositionFit(p, primarySlot))
-          .map((p) => ({ p, spare: maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER) - (minutesUsed.get(p.id) ?? 0) }))
+          .map((p) => ({
+            p,
+            spare:
+              Math.min(maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER), minuteProfileForSpan(p).ceiling) -
+              (minutesUsed.get(p.id) ?? 0),
+          }))
           .filter((x) => x.spare > 0)
           .sort(
             (a, b) =>
