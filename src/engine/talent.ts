@@ -112,9 +112,18 @@ const ALL_NBA_TAL_FLOOR = 80;
 
 /** Non-center floor (spacing 0, a true non-shooting classic role player) — a real, felt
  * punishment below every non-C position's own flat correction, reflecting that box stats miss
- * even MORE of a zero-gravity player's value than the old flat averages implied. Widened from the
- * original PF-only version's 0.85 per the user's explicit "make it stronger" ask. */
-const SPACING_CORRECTION_FLOOR = 0.8;
+ * even MORE of a zero-gravity player's value than the old flat averages implied. Originally 0.85
+ * (PF-only), widened to 0.80 for all non-C positions on the user's "make it stronger" ask.
+ * **2026-08-31, back to 0.85** ("PF is a weak position"): PF has the most zero-spacing spans of any
+ * position (p10-p50 all 0), so 0.80 was the single biggest driver of PF's median TAL reading
+ * lowest of any position (46 vs 49-54) — this floor, not `POSITION_TALENT_CORRECTION.PF`, is what
+ * actually sits under the ~40% of PF spans that are non-shooting bench/role bigs. A flat PF
+ * correction bump was tried first and rejected: it over-promotes Kevin Garnett (the PF Taylor-top-10
+ * anchor, correctly placed at 97) to 99 and drops Taylor top-10 Spearman to 0.818. Raising this
+ * floor instead lifts the bench/role tail (PF +1.0 mean, PG/SG/SF +0.6) and leaves every star
+ * untouched — they're above the All-star gate and read the position flat. Taylor 0.891 held, max
+ * TAL move +5. */
+const SPACING_CORRECTION_FLOOR = 0.85;
 /** At `PLUS_SHOOTER_SPACING` (65, the existing "genuine floor-spacer" bar `isPlusShooter` uses)
  * — fully neutral, no penalty at all: a real plus-shooter's value is already largely visible in
  * their own box-score efficiency, so the "box stats miss it" rationale for any penalty no longer
