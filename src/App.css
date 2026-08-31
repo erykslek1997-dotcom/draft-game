@@ -814,6 +814,10 @@ select {
   background: #ece9e6;
   color: #6e6b64;
 }
+.rating-glue {
+  background: #e4edf8;
+  color: #315f91;
+}
 .rating-bench {
   background: #f6e8de;
   color: #8f5323;
@@ -865,6 +869,10 @@ select {
   .rating-cigarette {
     background: #2c2b28;
     color: #b3b0a8;
+  }
+  .rating-glue {
+    background: #16283d;
+    color: #82b5ea;
   }
   .rating-bench {
     background: #3a2412;

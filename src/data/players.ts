@@ -620,6 +620,11 @@ const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [
   // center playing a PF-labeled stretch of his career shouldn't lose C eligibility there. Pure
   // eligibility grant, same shape as the others above.
   { name: 'Theo Ratliff', position: 'C' },
+  // 2026-08-31, reported rotation regression: Olynyk's 2022-24 span was forced to cover real
+  // backup PF minutes but the data exposed only C, triggering the full center-at-PF penalty and
+  // collapsing Rotation to 46. He has repeatedly played both frontcourt positions; this is the
+  // same pure eligibility grant as Horford/Wembanyama, with no talent or role recalculation.
+  { name: 'Kelly Olynyk', position: 'PF' },
   // 2026-08-19, user's explicit ask: every one of Julius Erving's real spans reads SF or SG,
   // never PF, despite his real size/rebounding/interior game (a career 8.5 rpg SF who legitimately
   // played some power forward, especially in the ABA years this dataset doesn't separately track).

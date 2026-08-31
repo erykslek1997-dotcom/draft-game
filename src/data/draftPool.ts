@@ -6,4 +6,12 @@
 import type { PlayerSpan } from './schema';
 import data from './draftPool.json';
 
-export const draftPool: PlayerSpan[] = data as PlayerSpan[];
+// The JSON is a precomputed build artifact, but position corrections in players.ts must also be
+// visible immediately without reselecting the entire talent-sensitive pool. Olynyk is a real
+// C/PF; keeping this tiny runtime parity adjustment avoids an unrelated pool-membership churn
+// when only his eligibility changed. The next intentional pool rebuild will bake it into JSON.
+export const draftPool: PlayerSpan[] = (data as PlayerSpan[]).map((span) =>
+  span.playerName === 'Kelly Olynyk' && span.primaryPosition !== 'PF' && !span.secondaryPositions.includes('PF')
+    ? { ...span, secondaryPositions: [...span.secondaryPositions, 'PF'] }
+    : span,
+);

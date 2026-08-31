@@ -102,7 +102,10 @@ export function SpacingTierBadge({ span }: { span: PlayerSpan }) {
  * the raw TAL value — 2026-08-05, the user's position-based tier-cap rules (`overallTierForSpan`)
  * need O-TAL/D-TAL/FGA/position alongside TAL, the same reason `SpacingTierBadge` already needed
  * the player's identity for the Curry exception, not just the number. */
-const OVERALL_TIER_CLASS: Record<OverallTier, string> = {
+type DisplayOverallTier = OverallTier | 'FGA Glue';
+
+const OVERALL_TIER_CLASS: Record<DisplayOverallTier, string> = {
+  'FGA Glue': 'rating-glue',
   'Cigarette Butt': 'rating-cigarette',
   'Bench Warmer': 'rating-bench',
   'Role Player': 'rating-role',
@@ -115,6 +118,13 @@ const OVERALL_TIER_CLASS: Record<OverallTier, string> = {
   GOAT: 'rating-goat',
 };
 
+/** Sub-2-FGA players are cap-construction pieces, not ordinary replacement-level players. The
+ * underlying tier stays unchanged for talent/minutes rules; this is the explicit roster-role
+ * label the AI and UI can share without pretending cheapness is basketball quality. */
+function displayedOverallTier(span: PlayerSpan): DisplayOverallTier {
+  return span.fga < 2 ? 'FGA Glue' : overallTierForSpan(tierContextFor(span));
+}
+
 /** Shared by `OverallTierBadge` and every "TAL {number}" display site — building this once and
  * reusing it for both the badge and the number next to it is what guarantees they can never
  * disagree (see `displayTalentForSpan`'s own docstring for why they used to). `playerName` is
@@ -125,7 +135,7 @@ const OVERALL_TIER_CLASS: Record<OverallTier, string> = {
 export { tierContextFor };
 
 export function OverallTierBadge({ span }: { span: PlayerSpan }) {
-  const tier = overallTierForSpan(tierContextFor(span));
+  const tier = displayedOverallTier(span);
   return <span className={`tier-badge ${OVERALL_TIER_CLASS[tier]}`}>{tier}</span>;
 }
 
