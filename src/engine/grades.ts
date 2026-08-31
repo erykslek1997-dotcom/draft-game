@@ -390,10 +390,18 @@ function namedTierDowncap(playerName?: string, spanLabel?: string): OverallTier 
  * is also taught about it (see its own docstring) so the badge and the number stay in agreement.
  */
 const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
-  [{ name: 'Klay Thompson', spanLabel: '2015-17', tier: 'All-NBA' as OverallTier }].map((e) => [
-    `${normalizePlayerName(e.name)}|${e.spanLabel}`,
-    e.tier,
-  ]),
+  [
+    { name: 'Klay Thompson', spanLabel: '2015-17', tier: 'All-NBA' as OverallTier },
+    // 2026-08-31, user's SG-cap review: the SG `!gradeAtLeast(dtalGrade, 'C') && !A+ offense ->
+    // All-star` rule (built to cap modern empty-volume scorers like Zach LaVine 2020-22) also
+    // dumps two genuine peak-scoring seasons — Kobe 2004-06 (35.4 ppg, O A/92, real 1st-team
+    // All-NBA 2006) and T-Mac 2002-04 (32 ppg, O A/94, real 1st-team All-NBA 2002/03) — all the
+    // way to All-star on their weak defense. Loosening the rule's A+ bar to A re-frees LaVine
+    // (also O A/94), so a named raise to the tier they actually earned instead. Not MVP — that
+    // still wants real two-way value they don't have; All-NBA matches the real award.
+    { name: 'Kobe Bryant', spanLabel: '2004-06', tier: 'All-NBA' as OverallTier },
+    { name: 'Tracy McGrady', spanLabel: '2002-04', tier: 'All-NBA' as OverallTier },
+  ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tier]),
 );
 
 function namedTierRaise(playerName?: string, spanLabel?: string): OverallTier | undefined {
