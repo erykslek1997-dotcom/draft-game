@@ -33,7 +33,7 @@ const pickedBefore83 = [
   'Clyde Drexler', 'Eddie Jones', 'Al Horford', 'Scottie Pippen', 'Shawn Marion', 'Mark Price',
   'Jayson Tatum', 'Chris Mullin', 'Evan Mobley', 'Kyle Lowry', 'Reggie Miller', 'Khris Middleton',
   'DeMarcus Cousins', 'Bobby Jones', 'Terry Porter', 'Yao Ming', 'Jason Kidd', 'Luka Doncic',
-  'Mookie Blaylock', 'Sidney Moncrief', 'Andre Iguodala', 'Metta World Peace', 'Steve Francis',
+  'Mookie Blaylock', 'Sidney Moncrief', 'Andre Iguodala', 'Ron Artest', 'Steve Francis',
   'Danny Green', 'Chet Holmgren', 'Vince Carter', 'Klay Thompson', 'Shane Battier', 'Dana Barros',
   'David Wesley', 'Jrue Holiday', 'Gilbert Arenas', 'Alonzo Mourning', 'Jimmy Butler',
   'Detlef Schrempf', 'Cedric Maxwell',

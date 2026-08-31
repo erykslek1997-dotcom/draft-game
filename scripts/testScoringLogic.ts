@@ -96,7 +96,7 @@ const strongComplementaryBench = team('strong-complementary-bench', [
   pick('Manu Ginóbili', '2006-08'),
   pick('Chris Webber', '1996-98'),
   pick('Jrue Holiday', '2021-23'),
-  pick('Metta World Peace', '2006-08'),
+  pick('Ron Artest', '2006-08'),
   pick('OG Anunoby', '2022-24'),
   pick('Jim Les', '1990-92'),
   pick('Amir Johnson', '2012-14'),
