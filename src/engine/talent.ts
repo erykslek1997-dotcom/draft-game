@@ -139,6 +139,30 @@ const SPACING_CORRECTION_NEUTRAL = 1.0;
 const SPACING_CORRECTION_CEILING = 1.18;
 const SPACING_CORRECTION_ELITE_SPACING = 90;
 
+/**
+ * 2026-08-31: above the All-star gate the spacing adjustment no longer applies in full ("stars
+ * don't need to be spacers as much as role players" — the 2026-08-19 ask), but `positionCorrectionFor`
+ * did it as a hard cliff — `return flat` the moment TAL crosses 70. Measured: 342 pool spans are
+ * elite spacers (computeSpacing >= 95) sitting just past the gate at the flat correction — Peja
+ * Stojaković (5 spans), Glen Rice (4), Rashard Lewis (3), Danny Granger, Jason Richardson, Reggie
+ * Miller, Buddy Hield — exactly the movement-shooter archetype whose UNMEASURED floor-spacing this
+ * correction exists to credit, getting nothing for it in the All-star band. Now an above-gate span
+ * keeps `ABOVE_STAR_SPACING_RETENTION` of the sub-gate adjustment's distance from flat, hard-capped
+ * at `ABOVE_STAR_SPACING_MAX_GAIN`.
+ *
+ * **Scoped hard**: SG/SF/PF only (PG spacing is already handled at the tier level by `grades.ts`'s
+ * PG shooter/playmaker/defense archetype caps, and a correction-level gain there re-triggered the
+ * archetype-cap punch-through — Kemba/Curry 2010-12 crossing `PG_ARCHETYPE_ENTRY_TAL_CEILING`, +40
+ * display; C has its own branch), AND only for spans still BELOW the All-NBA floor. An MVP-tier
+ * spacer (Dirk, Durant, Bird) doesn't need this and a first, wider version tipped a dozen of them
+ * across MVP / Greatest-peak floors. This only lifts the All-star-band movement shooters the
+ * complaint was actually about. `ABOVE_STAR_SPACING_MAX_GAIN` (0.025) is ~+2.5 raw TAL at the top
+ * of the band — a nudge, not a re-tier.
+ */
+const ABOVE_STAR_SPACING_RETENTION = 0.3;
+const ABOVE_STAR_SPACING_MAX_GAIN = 0.025;
+const ABOVE_STAR_SPACING_POSITIONS: ReadonlySet<Position> = new Set(['SG', 'SF', 'PF']);
+
 function roleSpacingAdjustedCorrection(span: PlayerSpan): number {
   const spacing = computeSpacing(span);
   const positionFlat = POSITION_TALENT_CORRECTION[span.primaryPosition];
@@ -228,7 +252,16 @@ function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number
     if (baseTal >= ALL_NBA_TAL_FLOOR) return flat;
     return Math.max(flat, centerSpacingBoost(span));
   }
-  if (baseTal >= ALL_STAR_TAL_FLOOR) return flat;
+  if (baseTal >= ALL_STAR_TAL_FLOOR) {
+    // Above the star gate the spacing adjustment doesn't apply in full, but the old hard `return
+    // flat` was a cliff for elite spacers crossing TAL 70 (see `ABOVE_STAR_SPACING_RETENTION`).
+    // Keep a small, capped fraction of the sub-gate boost — SG/SF/PF only, and only in the
+    // All-star band (below the All-NBA floor); the penalty side still vanishes here
+    // (`Math.max(flat, ...)`), so a non-shooting star still reads flat, never below.
+    if (baseTal >= ALL_NBA_TAL_FLOOR || !ABOVE_STAR_SPACING_POSITIONS.has(span.primaryPosition)) return flat;
+    const residual = (roleSpacingAdjustedCorrection(span) - flat) * ABOVE_STAR_SPACING_RETENTION;
+    return Math.max(flat, flat + Math.min(residual, ABOVE_STAR_SPACING_MAX_GAIN));
+  }
   return roleSpacingAdjustedCorrection(span);
 }
 
