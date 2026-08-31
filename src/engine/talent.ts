@@ -898,6 +898,18 @@ function eliteDefenseTalBonus(span: PlayerSpan): number {
   return Math.min(MAX_ELITE_DEFENSE_BONUS, Math.max(0, dtal - ELITE_DEFENSE_BONUS_THRESHOLD));
 }
 
+// 2026-08-31: a one-off named TAL bonus for Klay Thompson 2015-17 (matching his D-TAL floor's
+// display fix, see defensiveTalent.ts's NAMED_DTAL_FLOOR) was tried and reverted here — the
+// user's own follow-up catch: it applied to only ONE of Klay's spans, so 2017-19 (real D-TAL 67,
+// C+ — already genuinely higher than 2015-17's floored 60) got no equivalent credit and 2015-17
+// leapfrogged it in TAL/tier despite still measuring worse defensively. A real fix needs
+// `eliteDefenseTalBonus` above generalized into a smooth bridge that reacts below its current 85
+// threshold for every span, not a per-player patch — that's a genuine formula change requiring
+// the same pool-wide blast-radius measurement as every other formula change this project ships,
+// not a same-night fix (this exact threshold already has a real, calibrated consequence built
+// around it — grades.ts's elite-defense-bonus MVP-tier cap — so touching it again needs the same
+// care that fix took). Tracked as a real follow-up, not shelved silently.
+
 /** The shared pipeline `computeTalent` runs twice — once at `usageScale=1.0` to establish the
  * base tier for `USAGE_SCALE_MIN_TIER_TAL`'s gate, and again with the real usage scale if that
  * gate passes. Returns the uncapped, unrounded scaled value; callers clamp/round/soft-cap. */

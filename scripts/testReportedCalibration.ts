@@ -29,12 +29,24 @@ function team(id: string, roster: PlayerSpan[]): Team {
 
 const klayPrime = span('Klay Thompson', '2015-17');
 const klayPostInjury = span('Klay Thompson', '2022-24');
-// 2026-08-31: prime Klay reading as a box-score non-defender (D-TAL 44) is the real, known gap a
-// contextual-defense mechanism (DCX) was built to fix tonight — measured with a 66% pool-wide
-// blast radius that inflated known bad defenders (Ryan Anderson, Mark Aguirre) more than it
-// helped Klay, so it was NOT shipped (saved as a follow-up idea, see the project memory). This
-// span's D-TAL is left at its real, unadjusted baseline value on purpose; no assertion needed
-// here since the box-score-only limitation is accepted, not fixed, for now.
+// 2026-08-31: prime Klay reading as a box-score non-defender (D-TAL 44, graded D-) is the real gap
+// a broad contextual-defense mechanism (DCX) was built to fix tonight — measured with a 66% pool-
+// wide blast radius that inflated known bad defenders (Ryan Anderson, Mark Aguirre) more than it
+// helped Klay, so it was NOT shipped (saved as a follow-up idea, see the project memory). Fixed
+// instead with a narrow, named D-TAL floor (defensiveTalent.ts's NAMED_DTAL_FLOOR) against real
+// evidence: Databallr's WOWY split for his 2013-2019 window shows team DEF rating EXACTLY flat
+// on vs off (105.3 both, 33,676 combined minutes) — incompatible with the "genuine defensive
+// liability" a D-/F grade claims. Opp TS% (-0.9pp with him on, real shot-quality signal) leans
+// the read modestly positive on top of that, so the floor lands at 60 — roughly the 60th
+// percentile of his own real peer group (SG Wing Stopper/Chaser), not a claim of being elite.
+assert(computeDefensiveTalent(klayPrime) === 60, 'Klay 2015-17 is floored to a modestly-above-peer-median defender (real WOWY: flat DEF, better Opp TS%).');
+// 2026-08-31, user's own follow-up catch: a one-off named TAL bonus was tried to carry this same
+// evidence into real draft value (not just the badge), then reverted — it applied to only this
+// ONE Klay span, so 2017-19 (real D-TAL 67, C+, already genuinely higher than 2015-17's floored
+// 60) got no equivalent credit and 2015-17 leapfrogged it in TAL/tier despite still measuring
+// worse defensively. TAL stays untouched (display-only fix) until `eliteDefenseTalBonus`
+// (talent.ts) is generalized into a real, pool-measured bridge instead of a per-player patch —
+// see that file's own note. computeTalent(klayPrime) is therefore still its real, unadjusted 78.
 assert(computeDefensiveTalent(klayPostInjury) < 50, 'Prime reputation must not overwrite post-injury Klay D-TAL.');
 
 assert.equal(

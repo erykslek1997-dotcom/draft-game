@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
 import { computeDefensiveImpact, reboundingTerm } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall } from './darkoCorrection';
 import { individualDefenseRate } from './defensiveAccolades';
@@ -170,6 +171,40 @@ function ladderPoints(position: Position, raw: number): number {
   return LADDER_PERCENTILE_POINTS[LADDER_PERCENTILE_POINTS.length - 1];
 }
 
+/**
+ * A real-data floor for a specific (player, span) whose box+DARKO-only D-TAL lands in bottom-
+ * decile (D-/F) territory despite real evidence that rules out "genuine defensive liability."
+ *
+ * 2026-08-31, Klay Thompson 2015-17 (D-TAL 44, graded D-): the box score has no signal for his
+ * real, curated Wing Stopper assignment (career-wide 2Y-DPOY-adjacent reputation, corroborated
+ * by neither a DARKO excess nor an All-Defense selection in this specific window), so the ladder
+ * alone reads him as a near-worst defender. Checked directly against Databallr's real WOWY split
+ * for his 2013-2019 window (23,285 min on / 10,391 off, regular season + playoffs): team DEF
+ * rating is EXACTLY flat on vs off (105.3 both), not the clearly *positive* on-off gap a real
+ * bottom-decile liability should produce if his individual defense were actually dragging the
+ * unit down. A flat large-sample on/off doesn't prove he's a plus defender on its own, but a
+ * secondary component of the same split does lean modestly positive: opponent TS% is 0.9 points
+ * lower with him on court (real shooting-defense signal, not just noise), while opponent ORB%
+ * being higher with him on reads more as a non-rebounding wing's normal profile than an
+ * individual-defense minus. Combined — flat team DEF, plus a real shot-quality edge — the honest
+ * read is "solid, slightly better than ordinary," not merely average, and clearly not the D-/F a
+ * true liability should produce. Floored to 60 (roughly the 60th percentile of his own real peer
+ * group — SG Wing Stopper/Chaser spans, measured directly: median 52, p60 58, p75 72 — so this
+ * lands as "moderately above that group's median," not a claim of being an elite/plus outlier).
+ * on/off is still too confounded by teammates to support a stronger claim than that — see this
+ * project's own Posey investigation the same night, which found genuinely contradictory single-
+ * season reads for a similar case. Scoped to this one (player, span) only, same shape as
+ * `NAMED_TIER_DOWNCAPS`/`NAMED_DAMPENING_EXCEPTIONS` elsewhere in this project — his other spans
+ * (all C-/D+ or better already) and his post-injury spans (37/38/25, correctly low — a different
+ * evidence question entirely) are untouched.
+ */
+const NAMED_DTAL_FLOOR: ReadonlyMap<string, number> = new Map(
+  [{ name: 'Klay Thompson', spanLabel: '2015-17', floor: 60 }].map((e) => [
+    `${normalizePlayerName(e.name)}|${e.spanLabel}`,
+    e.floor,
+  ]),
+);
+
 /** Same 2026-08-16 memoization as `talent.ts`'s `computeOffensiveTalent` (see that function's own
  * docstring for the full profiling story) — this was the other uncached half of the same
  * bottleneck: `aiDrafter.ts`'s per-candidate value formula calls `computeDefensiveTalent` several
@@ -187,7 +222,8 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
     uncorroborated ? UNCORROBORATED_CEILING : 100,
   );
   const credited = base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE;
-  const result = Math.max(0, Math.min(100, Math.round(credited)));
+  const namedFloor = NAMED_DTAL_FLOOR.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0;
+  const result = Math.max(0, Math.min(100, Math.round(Math.max(credited, namedFloor))));
   defensiveTalentCache.set(span.id, result);
   return result;
 }
