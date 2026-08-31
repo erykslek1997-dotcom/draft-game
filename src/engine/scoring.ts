@@ -6,12 +6,15 @@ import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact 
 import { isPlusShooter } from './shooting';
 import {
   computeSpacing,
+  isShootingAnomalyPlayer,
   spacingBreakdown,
   SHOOTING_ANOMALY_TEAM_SPACING_FLOOR,
   WALKING_GRAVITY_FLOOR,
 } from './spacing';
 import { maxSustainableMinutes } from './durability';
-import { overallTier, effectiveTalent, type OverallTier } from './grades';
+import { effectiveTalent, overallTierForSpan } from './grades';
+import { tierContextWithSixthMan } from './sixthMan';
+import { minuteProfileForSpan } from './rotationRoleMinutes';
 import {
   allAssignments,
   benchWithMinutes,
@@ -55,38 +58,6 @@ const DURABILITY_OVERWORK_PENALTY_PER_MINUTE = 0.8;
  * to 40+) can't single-handedly drag `rotationScore` to 0 — it's still one term among several. */
 const DURABILITY_OVERWORK_MAX_PENALTY = 25;
 
-/**
- * 2026-08-01, user-supplied table ("rotation minutes value.xlsx"): how many minutes a player at
- * a given OVERALL tier (`grades.ts`'s `overallTier`, keyed off TAL — not durability) should
- * ideally play ("optimal") and, for the three star tiers, the floor below which they're being
- * meaningfully under-used ("minimal"). MVP uses the same numbers as Greatest peak per the
- * user's explicit "MVP same as greatest peak" — the source table only had a row for the latter.
- * Below Starter there's no minimal floor (a bench/role player being under-played isn't a
- * rotation mistake the way benching a star is).
- */
-const OVERALL_TIER_MINUTES_TARGET: Record<OverallTier, { optimal: number; minimal: number | null }> = {
-  // GOAT (grades.ts) is a display-only tier `overallTier(value)` — the function this table is
-  // actually keyed against — never returns; it only exists via `overallTierForSpan`'s per-span
-  // upgrade. Included here purely so this Record type-checks as exhaustive; same numbers as
-  // 'Greatest peak', which is the real tier any GOAT-badged span still carries for this table.
-  GOAT: { optimal: 36, minimal: 32 },
-  'Greatest peak': { optimal: 36, minimal: 32 },
-  MVP: { optimal: 36, minimal: 32 },
-  'All-NBA': { optimal: 34, minimal: 24 },
-  'All-star': { optimal: 32, minimal: 24 },
-  Starter: { optimal: 24, minimal: null },
-  // 2026-08-15, user's explicit ask: a real Sixth Man profile (sixthMan.ts) should pull real
-  // minutes toward it — meaningfully more than a generic Role Player (16), less than a full
-  // Starter (24 optimal / would-be 32 minimal if it had one) — this is a bench role by
-  // definition (`tierContextWithSixthMan` only ever relabels a span that would otherwise sit at
-  // Role Player/Starter-and-below), so no `minimal` floor, matching every other below-All-star
-  // tier's own "no minimum, only Starter-and-up get benched-mistake penalties" convention.
-  'Sixth Man': { optimal: 28, minimal: null },
-  'Role Player': { optimal: 16, minimal: null },
-  'Bench Warmer': { optimal: 8, minimal: null },
-  'Cigarette Butt': { optimal: 0, minimal: null },
-};
-
 /** Average per-player closeness-to-optimal (0-1) scaled up to this many points, added to
  * `rotationScore`. Kept modest and comparable to the existing +7 gap-covering bonuses and the
  * -25 max overwork penalty nearby, rather than letting this one mechanic dominate the score. */
@@ -119,8 +90,8 @@ const UNDERPLAYED_STAR_PENALTY = 12;
  */
 function optimalMinutesRotationBonus(team: Team): { bonus: number; notes: string[] } {
   const rows = team.roster.map((player) => {
-    const tier = overallTier(effectiveTalent(player));
-    const target = OVERALL_TIER_MINUTES_TARGET[tier];
+    const tier = overallTierForSpan(tierContextWithSixthMan(player));
+    const target = minuteProfileForSpan(player);
     const cap = maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER);
     const effectiveOptimal = Math.min(target.optimal, cap);
     const effectiveMinimal = target.minimal === null ? null : Math.min(target.minimal, cap);
@@ -195,6 +166,10 @@ export interface ScoreBreakdown {
 // calibration, but should be re-audited before any future scoring change rather than assumed to
 // be fresh 9-man extrema. The 2026-08-15 search produced offense 23-92, defense 5-102, spacing
 // 0-115.
+// 2026-08-31: `best` briefly regressed to 92 in uncommitted work, contradicting the measured
+// 5-102 range documented directly above with no re-measurement behind the change — restored to
+// 102 after confirming directly (`scripts/calibrateExtremeTeamScores.ts`) that the underlying
+// formula was unchanged.
 const OFFENSE_SCORE_ANCHORS = { worst: 23, best: 92 };
 const DEFENSE_SCORE_ANCHORS = { worst: 5, best: 102 };
 /**
@@ -272,14 +247,12 @@ export function benchDepthScore(team: Team): number {
   // clusters around 45-66, so even an excellent bench could never display a strong 0-100 score.
   // 35 represents replacement-level depth; an average of 68 across roster spots 6-8 is an
   // exceptionally strong, realistically achievable bench under the FGA cap.
-  // 2026-08-19: `best` lowered 68->63 after `BENCH_SLOT_COUNT` reverted 3->4 (9-man rosters) —
-  // averaging FOUR bench spots instead of three necessarily pulls the achievable ceiling down (a
-  // real 9th roster spot is inherently a weaker player than the 6th-8th, even under the new hard
-  // same-position-redundancy exclusion). Measured directly (`scripts/checkBenchDepthDistribution.ts`,
-  // 64 simulated teams): bottom-4 average TAL now clusters p50=54.25, p90=59, max=62.25 — a much
-  // narrower, higher-floor range than the old 35-68 was fit against. `worst` (35, replacement-
-  // level) is roster-size-independent and left unchanged.
-  return Math.round(rescaleToFullRange(rawAverage, { worst: 35, best: 63 }));
+  // 2026-08-31: a 77/61/58/49 bottom four previously saturated at 100 because `best=63` treated
+  // an ordinary 61-point average as essentially perfect. Bench depth should answer "can the
+  // reserves carry useful minutes?", not "is this near the best bench an AI draft happened to
+  // produce in one small simulation." A 72 average is now the elite endpoint; 61 reads as good,
+  // not historic. The score remains an absolute depth measure, independent of the starting five.
+  return Math.round(rescaleToFullRange(rawAverage, { worst: 35, best: 72 }));
 }
 
 /**
@@ -390,7 +363,7 @@ export function defenseScore(team: Team): number {
  * `WALKING_GRAVITY_FLOOR` both share the roster — two genuine floor-warpers is not a partial
  * fix, it's the spacing question being closed, regardless of who else is out there.
  */
-const MULTI_GRAVITY_TEAM_SPACING = 100;
+const MULTI_GRAVITY_TEAM_SPACING_CAP = 97;
 
 export function spacingScore(team: Team): number {
   const assignments = allAssignments(team);
@@ -419,7 +392,14 @@ export function spacingScore(team: Team): number {
   );
   const distinctGravityThreatIds = new Set(gravityThreatAssignments.map(({ player }) => player.id));
 
-  if (distinctGravityThreatIds.size >= 2) return MULTI_GRAVITY_TEAM_SPACING;
+  if (distinctGravityThreatIds.size >= 2) {
+    // Two elite threats add real geometric value, but they do not make the other three players
+    // disappear. Preserve the user's Curry + another gravity threat = 100 rule; other duos get a
+    // strong bounded lift and still pay for non-shooters around them.
+    const baseScore = rescaleToFullRange(base, SPACING_SCORE_ANCHORS);
+    const hasCurry = gravityThreatAssignments.some(({ player }) => isShootingAnomalyPlayer(player));
+    return Math.round(hasCurry ? 100 : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, baseScore + 10));
+  }
 
   if (distinctGravityThreatIds.size === 1) {
     const threatMinutes = gravityThreatAssignments.reduce((sum, { minutes }) => sum + minutes, 0);
@@ -584,21 +564,6 @@ export function rotationScore(team: Team): RotationScoreResult {
   // `MAX_MINUTES_PER_PLAYER`). Checked against TOTAL minutes across every slot a player appears
   // in (`totalMinutesForPlayer`, already sums across slots) — a player split 24/12 across two
   // real positions is 36 total minutes on his OWN tier's budget, not evaluated per slot.
-  const TIER_MAX_MINUTES: Record<OverallTier, number> = {
-    // Same "never actually returned by overallTier(value)" note as OVERALL_TIER_MINUTES_TARGET.
-    GOAT: MAX_MINUTES_PER_PLAYER,
-    'Greatest peak': MAX_MINUTES_PER_PLAYER,
-    MVP: MAX_MINUTES_PER_PLAYER,
-    'All-NBA': MAX_MINUTES_PER_PLAYER,
-    'All-star': MAX_MINUTES_PER_PLAYER,
-    Starter: 32,
-    // 2026-08-15, user's explicit ask ("cap można ustawić na 28") — see the matching entry's own
-    // docstring on `OVERALL_TIER_MINUTES_TARGET` above.
-    'Sixth Man': 28,
-    'Role Player': 24,
-    'Bench Warmer': 16,
-    'Cigarette Butt': 8,
-  };
   // 2026-08-15, user-reported (real diagnostic: "Chris Duhon (Bench Warmer) 24/16m" — 8 minutes
   // over his tier's real ceiling cost only -8 at the old rate of 1/minute, barely registering).
   // Doubled to 2/minute — Duhon's exact case now costs -16, a real dent rather than a rounding
@@ -612,8 +577,8 @@ export function rotationScore(team: Team): RotationScoreResult {
   for (const p of team.roster) {
     const minutes = totalMinutesForPlayer(team.rotation, p.id);
     if (minutes <= 0) continue;
-    const tier = overallTier(effectiveTalent(p));
-    const cap = TIER_MAX_MINUTES[tier];
+    const tier = overallTierForSpan(tierContextWithSixthMan(p));
+    const cap = minuteProfileForSpan(p).ceiling;
     if (minutes > cap) {
       tierOveragePenalty += (minutes - cap) * TIER_OVERAGE_PENALTY_PER_MINUTE;
       tierOverageOffenders.push(`${p.playerName} (${tier}) ${minutes}/${cap}m`);
