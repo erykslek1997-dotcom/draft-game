@@ -7,11 +7,19 @@ import type { PlayerSpan } from './schema';
 import data from './draftPool.json';
 
 // The JSON is a precomputed build artifact, but position corrections in players.ts must also be
-// visible immediately without reselecting the entire talent-sensitive pool. Olynyk is a real
-// C/PF; keeping this tiny runtime parity adjustment avoids an unrelated pool-membership churn
-// when only his eligibility changed. The next intentional pool rebuild will bake it into JSON.
-export const draftPool: PlayerSpan[] = (data as PlayerSpan[]).map((span) =>
-  span.playerName === 'Kelly Olynyk' && span.primaryPosition !== 'PF' && !span.secondaryPositions.includes('PF')
-    ? { ...span, secondaryPositions: [...span.secondaryPositions, 'PF'] }
-    : span,
-);
+// visible immediately without reselecting the entire talent-sensitive pool (a full rebuild churns
+// ~1,000 borderline value-tier spans on unrelated accumulated formula drift). These tiny runtime
+// parity adjustments mirror what `players.ts`'s `POSITION_OVERRIDES` / `SECONDARY_POSITION_
+// ADDITIONS` already do to the full archive; the next intentional pool rebuild bakes them into JSON.
+export const draftPool: PlayerSpan[] = (data as PlayerSpan[]).map((span) => {
+  // Olynyk — real C/PF, only his PF eligibility changed.
+  if (span.playerName === 'Kelly Olynyk' && span.primaryPosition !== 'PF' && !span.secondaryPositions.includes('PF')) {
+    return { ...span, secondaryPositions: [...span.secondaryPositions, 'PF'] };
+  }
+  // Kirilenko 2003-05 — one-span SF-primary classifier artifact (see `POSITION_OVERRIDES` in
+  // players.ts). As PF it dodged the SF elite-defense tier cap and read Greatest peak.
+  if (span.playerName === 'Andrei Kirilenko' && span.spanLabel === '2003-05' && span.primaryPosition === 'PF') {
+    return { ...span, primaryPosition: 'SF', secondaryPositions: ['PF'] };
+  }
+  return span;
+});

@@ -340,6 +340,16 @@ const POSITION_OVERRIDES: { name: string; spanLabel: string; position: Position;
   // Harden-style genuine dual-role split — treated as a purge (no `keepOldAsSecondary`) to match
   // the rest of his career rather than inventing a secondary tag nothing else in his data has.
   { name: 'Kyrie Irving', spanLabel: '2022-24', position: 'PG' },
+  // 2026-08-31, user-reported ("AK to SF"), found while investigating Kirilenko 2003-05 reading
+  // Greatest peak: it is the ONLY one of his 9 real spans not tagged SF-primary (and the only one
+  // with an empty secondary list at all) — every other span is SF-primary / PF-secondary. Same
+  // one-span classifier artifact as Pierce 2001-03 above. As a PF that span dodged the SF elite-D
+  // tier cap (`tierCaps`: A-+ defense with sub-B- offense caps at All-star) that his structurally
+  // identical 2002-04 / 2004-06 SF spans — and Draymond Green's near-identical SF span — all hit,
+  // so it alone rocketed to Greatest peak on a 16/7/3 defense-first profile. `keepOldAsSecondary`
+  // because PF is a genuine secondary for him (every other span carries it) — this is a Harden-
+  // style dual-role correction, not a Pierce-style purge.
+  { name: 'Andrei Kirilenko', spanLabel: '2003-05', position: 'SF', keepOldAsSecondary: true },
 ];
 
 function applyPositionOverrides(spans: PlayerSpan[]): PlayerSpan[] {
