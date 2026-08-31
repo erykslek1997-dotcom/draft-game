@@ -352,6 +352,8 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     { name: 'Andrei Kirilenko', spanLabel: '2004-06', cap: 'All-NBA' as OverallTier },
     { name: 'Scott Skiles', spanLabel: '1990-92', cap: 'Sixth Man' as OverallTier },
     { name: 'CJ McCollum', spanLabel: '2020-22', cap: 'All-star' as OverallTier },
+    { name: 'Vince Carter', spanLabel: '2012-14', cap: 'Starter' as OverallTier },
+    { name: 'Chris Webber', spanLabel: '1996-98', cap: 'All-NBA' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
