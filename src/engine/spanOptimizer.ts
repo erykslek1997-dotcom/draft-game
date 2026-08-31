@@ -23,6 +23,15 @@ export function spanOptionsFor(playerName: string): PlayerSpan[] {
  * knapsack DP below — capUnits stays small (~1010 for the real 100.9 cap) regardless of scale,
  * so this costs nothing in practice. */
 const FGA_SCALE = 10;
+/** A post-draft cap optimization may trade a little peak quality for fit, but it must not turn
+ * a third-round star into a completely different, pre-prime version of the same player. */
+const MAX_POST_DRAFT_TALENT_DROP = 6;
+
+function peakProtectedOptions(options: PlayerSpan[]): PlayerSpan[] {
+  if (options.length === 0) return options;
+  const bestTalent = Math.max(...options.map(effectiveTalent));
+  return options.filter((option) => effectiveTalent(option) >= bestTalent - MAX_POST_DRAFT_TALENT_DROP);
+}
 
 /**
  * Multiple-choice knapsack: choose exactly one span per player (from that player's own real
@@ -37,52 +46,55 @@ const FGA_SCALE = 10;
  */
 export function optimizeSpans(roster: PlayerSpan[], capLimit: number = CAP_LIMIT): PlayerSpan[] {
   const n = roster.length;
-  const optionsPerPlayer = roster.map((p) => spanOptionsFor(p.playerName));
+  const allOptionsPerPlayer = roster.map((p) => spanOptionsFor(p.playerName));
   const capUnits = Math.round(capLimit * FGA_SCALE);
 
-  const NEG_INF = -Infinity;
-  // dp[i][w]: max total TAL using the first i players, with total discretized FGA <= w.
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(capUnits + 1).fill(NEG_INF));
-  const choice: number[][] = Array.from({ length: n + 1 }, () => new Array(capUnits + 1).fill(-1));
-  dp[0].fill(0); // 0 players chosen: 0 value, valid at every capacity level.
+  function solve(optionsPerPlayer: PlayerSpan[][]): PlayerSpan[] | null {
+    if (optionsPerPlayer.some((options) => options.length === 0)) return null;
 
-  for (let i = 1; i <= n; i++) {
-    const options = optionsPerPlayer[i - 1];
-    for (let w = 0; w <= capUnits; w++) {
-      for (let oi = 0; oi < options.length; oi++) {
-        const cost = Math.round(options[oi].fga * FGA_SCALE);
-        if (cost > w) continue;
-        const prev = dp[i - 1][w - cost];
-        if (prev === NEG_INF) continue;
-        const value = prev + effectiveTalent(options[oi]);
-        if (value > dp[i][w]) {
-          dp[i][w] = value;
-          choice[i][w] = oi;
+    const NEG_INF = -Infinity;
+    // dp[i][w]: max total TAL using the first i players, with total discretized FGA <= w.
+    const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(capUnits + 1).fill(NEG_INF));
+    const choice: number[][] = Array.from({ length: n + 1 }, () => new Array(capUnits + 1).fill(-1));
+    dp[0].fill(0); // 0 players chosen: 0 value, valid at every capacity level.
+
+    for (let i = 1; i <= n; i++) {
+      const options = optionsPerPlayer[i - 1];
+      for (let w = 0; w <= capUnits; w++) {
+        for (let oi = 0; oi < options.length; oi++) {
+          const cost = Math.round(options[oi].fga * FGA_SCALE);
+          if (cost > w) continue;
+          const prev = dp[i - 1][w - cost];
+          if (prev === NEG_INF) continue;
+          const value = prev + effectiveTalent(options[oi]);
+          if (value > dp[i][w]) {
+            dp[i][w] = value;
+            choice[i][w] = oi;
+          }
         }
       }
     }
+
+    // Best achievable value using AT MOST capUnits total — scan the final row for the max.
+    let bestW = 0;
+    for (let w = 0; w <= capUnits; w++) {
+      if (dp[n][w] > dp[n][bestW]) bestW = w;
+    }
+
+    if (dp[n][bestW] === NEG_INF) return null;
+
+    const result: PlayerSpan[] = new Array(n);
+    let w = bestW;
+    for (let i = n; i >= 1; i--) {
+      const oi = choice[i][w];
+      const span = optionsPerPlayer[i - 1][oi];
+      result[i - 1] = span;
+      w -= Math.round(span.fga * FGA_SCALE);
+    }
+    return result;
   }
 
-  // Best achievable value using AT MOST capUnits total — scan the final row for the max.
-  let bestW = 0;
-  for (let w = 0; w <= capUnits; w++) {
-    if (dp[n][w] > dp[n][bestW]) bestW = w;
-  }
-
-  if (dp[n][bestW] === NEG_INF) {
-    // No combination of real spans fits under the cap at all (shouldn't happen in practice,
-    // since Phase 1 already guaranteed the peak-span roster fits) — fall back to the roster
-    // exactly as passed in rather than throwing.
-    return roster;
-  }
-
-  const result: PlayerSpan[] = new Array(n);
-  let w = bestW;
-  for (let i = n; i >= 1; i--) {
-    const oi = choice[i][w];
-    const span = optionsPerPlayer[i - 1][oi];
-    result[i - 1] = span;
-    w -= Math.round(span.fga * FGA_SCALE);
-  }
-  return result;
+  // First solve within a bounded quality band. Only if that genuinely cannot fit the cap do we
+  // reopen every historical span as an emergency legality fallback.
+  return solve(allOptionsPerPlayer.map(peakProtectedOptions)) ?? solve(allOptionsPerPlayer) ?? roster;
 }
