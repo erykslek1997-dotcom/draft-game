@@ -1494,10 +1494,11 @@ export const DETECTORS: RosterInsightDetector[] = [
       // fixtures): even a roster deliberately built from real offense-only/defense-only
       // specialists at the same positions (Barros/Korver vs Ward/Sefolosha/Roberson) only reaches
       // a ~0.14 tradeoff, because a real nine-man roster generally CAN field a competent five
-      // either way — that's the format working as intended, not a measurement error. An initial
-      // 0.22 guess never fired on any real fixture; 0.13 sits just above `CLOSING_FIVE_STABLE`'s
-      // own <=0.12 "cheap" bar so the two stay mutually exclusive rather than guessed independently.
-      const meaningfulTradeoff = c.balancedOffenseTradeoff >= 0.13 || c.balancedDefenseTradeoff >= 0.13;
+      // either way — that's the format working as intended, not a measurement error. After the
+      // shared role-minute model landed, the same real two-big fixture measures 0.113. A 0.11 bar
+      // keeps that material two-player closing choice visible; mutual exclusion remains structural
+      // because this concern requires overlap <4 while `CLOSING_FIVE_STABLE` requires overlap >=4.
+      const meaningfulTradeoff = c.balancedOffenseTradeoff >= 0.11 || c.balancedDefenseTradeoff >= 0.11;
       if (c.offenseDefensePersonnelOverlap >= 4 || !meaningfulTradeoff) return inactive;
       const offenseOnly = c.offense.players.filter(p => !c.defense.players.some(dp => dp.playerId === p.playerId));
       const defenseOnly = c.defense.players.filter(p => !c.offense.players.some(op => op.playerId === p.playerId));

@@ -157,6 +157,6 @@ for (const [label, fixtureTeam] of Object.entries(fixtures)) {
 }
 
 check(stableFired > 0, 'CLOSING_FIVE_STABLE fires on at least one real fixture (threeLayer/movementCoverage/starJustified all measured to)');
-check(tradeoffFired > 0, 'CLOSING_FIVE_REQUIRES_TRADEOFF fires on at least one real fixture (twoBig measured to, after recalibrating its 0.22->0.13 bar against real data)');
+check(tradeoffFired > 0, 'CLOSING_FIVE_REQUIRES_TRADEOFF fires on at least one real fixture (twoBig measures a real two-player, 0.113 closing tradeoff)');
 
 console.log('Closing-lineup tests complete.');

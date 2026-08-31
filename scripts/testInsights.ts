@@ -59,11 +59,10 @@ check(
   ['Jalen Brunson', 'Dana Barros', 'Paul Pierce'].every((name) => weakLinkInsight?.message.includes(name)),
   'contextual exposure description retains Brunson, Barros and Pierce rather than hiding bench targets',
 );
-// 2026-08-19: 96->86 after talent.ts's spacing-conditional TAL correction shifted this same
-// fixture's rotation minutes (Paul Pierce, a real plus-shooter, gained TAL and rotation minutes
-// at Andre Roberson's expense — see testDefensiveHuntability.ts's matching fixture for the full
-// root cause). Re-measured directly, not guessed.
-check(weakLinkInsight?.message.includes('86 targetable minutes'), 'weak-link description reports the real 86-minute cost');
+// 2026-08-31: the shared role-minute model now gives Pierce and Barros their real material roles
+// instead of flattening them behind a generic 12/36 split. In this nine-player fixture Larry
+// Smith adds two targetable minutes to the matching eight-man defensive fixture's 98.
+check(weakLinkInsight?.message.includes('100 targetable minutes'), 'weak-link description reports the real 100-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
@@ -187,8 +186,9 @@ check(
 );
 check(detector('STAR_FGA_COST_HURTS_DEPTH', exposedStar).active, 'high star FGA plus sharp support dropoff fires the depth-cost concern');
 check(!detector('STAR_FGA_COST_JUSTIFIED', exposedStar).active, 'depth-cost concern does not also justify the same star allocation');
-check(detector('DEAD_SLOT_HURTS_ROTATION', exposedStar).active, 'expensive zero-minute ninth slot is identified as harmful');
-check(!detector('DEAD_NINTH_SLOT_ACCEPTABLE', exposedStar).active, 'expensive dead slot is not mislabeled as acceptable');
+check(exposedStar.deadRosterSlotCount === 0, 'role-aware nine-man rotation no longer creates an artificial dead slot');
+check(!detector('DEAD_SLOT_HURTS_ROTATION', exposedStar).active, 'a fully used nine-man rotation does not trigger a false dead-slot concern');
+check(!detector('DEAD_NINTH_SLOT_ACCEPTABLE', exposedStar).active, 'a fully used ninth player is not mislabeled as a dead-slot strength');
 
 const exposedOutput = generateRosterInsights(exposedStar);
 check(

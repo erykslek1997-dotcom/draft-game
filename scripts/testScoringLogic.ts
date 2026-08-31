@@ -103,10 +103,10 @@ const strongComplementaryBench = team('strong-complementary-bench', [
 ]);
 const depthTals = strongComplementaryBench.roster.map(effectiveTalent).sort((a, b) => b - a).slice(5);
 const rawDepthAverage = depthTals.reduce((sum, value) => sum + value, 0) / depthTals.length;
-// 2026-08-19: span 33->28 after benchDepthScore's own anchors moved {worst:35,best:68} ->
-// {worst:35,best:63} (BENCH_SLOT_COUNT reverted 3->4, see scoring.ts's own docstring there).
-const expectedDepth = Math.round(Math.max(0, Math.min(100, ((rawDepthAverage - 35) / 28) * 100)));
+// 2026-08-31: `benchDepthScore`'s measured display range is now 35..72. The former 63 ceiling
+// made an ordinary Price/Bonner-level reserve group read as a perfect 100.
+const expectedDepth = Math.round(Math.max(0, Math.min(100, ((rawDepthAverage - 35) / 37) * 100)));
 assert(benchDepthScore(strongComplementaryBench) === expectedDepth, 'Bench Depth maps the raw reserve average onto its achievable 0-100 range');
-assert(benchDepthScore(strongComplementaryBench) >= 80, 'a genuinely strong complementary bench can reach an 80+ score');
+assert(benchDepthScore(strongComplementaryBench) >= 60, 'a useful but non-elite complementary bench remains above average without approaching 100');
 assert(spacingScore(strongComplementaryBench) >= 80, 'a credible four-shooter construction can reach an 80+ spacing score');
 console.log('Scoring-logic tests complete.');
