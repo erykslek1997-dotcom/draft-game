@@ -563,7 +563,9 @@ function plannedPlayableReserveFga(slotsRemaining: number): number {
 
 /** A 12-minute specialist may be narrow; an 18-24 minute backup cannot be replacement-level. */
 const MATERIAL_BENCH_MINUTES = 18;
+const USEFUL_BENCH_MINUTES = 8;
 const MATERIAL_BENCH_TALENT_FLOOR = 52;
+const PENULTIMATE_ROTATION_TALENT_FLOOR = 56;
 const BENCH_QUALITY_SCAN_SIZE = 40;
 
 /**
@@ -1590,14 +1592,36 @@ export function pickForAi(
   let lotteryCandidates = scored;
   if (inBenchRound) {
     const scan = scored.slice(0, Math.min(BENCH_QUALITY_SCAN_SIZE, scored.length));
-    const playable = scan.filter((entry) => {
+    let playable = scan.filter((entry) => {
       if (entry.player.fga < TRUE_CAP_GLUE_FGA_CEILING) return true;
       const projectedRotation = autoAssignRotation([...roster, entry.player]);
       const projectedMinutes = totalMinutesForPlayer(projectedRotation, entry.player.id);
-      if (projectedMinutes < MATERIAL_BENCH_MINUTES) return true;
       const bestLegalTalent = bestLegalTalentByName.get(normalizePlayerName(entry.player.playerName)) ?? entry.talent;
-      return bestLegalTalent >= MATERIAL_BENCH_TALENT_FLOOR;
+      // A 3-6 FGA player projected for 0-7 minutes is not "harmlessly cheap" — he is the exact
+      // dead paid roster slot surfaced by Eric Snow/Greg Buckner/Hoiberg/Ratliff. Only true
+      // sub-2-FGA glue may occupy that construction role; everyone else must project to useful
+      // minutes and clear a basic talent floor.
+      return projectedMinutes >= USEFUL_BENCH_MINUTES && bestLegalTalent >= MATERIAL_BENCH_TALENT_FLOOR;
     });
+
+    const picksIncludingThisOne = ROSTER_SIZE - roster.length;
+    if (picksIncludingThisOne === 2) {
+      // With two slots left, secure one actual rotation player first. This prevents two cheap,
+      // low-TAL 3-5 FGA picks from consuming the remaining cap while neither can play.
+      const qualityReserve = playable.filter((entry) => {
+        if (entry.player.fga < TRUE_CAP_GLUE_FGA_CEILING) return false;
+        const projectedRotation = autoAssignRotation([...roster, entry.player]);
+        const projectedMinutes = totalMinutesForPlayer(projectedRotation, entry.player.id);
+        const bestLegalTalent = bestLegalTalentByName.get(normalizePlayerName(entry.player.playerName)) ?? entry.talent;
+        return projectedMinutes >= MATERIAL_BENCH_MINUTES && bestLegalTalent >= PENULTIMATE_ROTATION_TALENT_FLOOR;
+      });
+      if (qualityReserve.length > 0) playable = qualityReserve;
+    } else if (picksIncludingThisOne === 1 && !roster.some((player) => player.fga < TRUE_CAP_GLUE_FGA_CEILING)) {
+      // Once eight meaningful names are aboard, the ninth slot may deliberately be cap glue.
+      // It is never rewarded with minutes for being cheap; rotation quality still decides that.
+      const glue = playable.filter((entry) => entry.player.fga < TRUE_CAP_GLUE_FGA_CEILING);
+      if (glue.length > 0) playable = glue;
+    }
     // Never dead-end the draft for a soft quality preference. If the cap/board truly offers no
     // playable material-minutes option, keep the original lottery as the emergency fallback.
     if (playable.length > 0) {
