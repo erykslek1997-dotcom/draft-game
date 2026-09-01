@@ -1,6 +1,7 @@
 import allNbaData from '../data/awards/allNba.json';
 import allStarsData from '../data/awards/allStars.json';
 import { normalizeAwardName } from './allStarLookup';
+import { spanEndYears } from './era';
 
 /**
  * "Did this player ever make an All-Star team or any All-NBA team, at any point in their career."
@@ -43,4 +44,30 @@ for (const s of allNbaData as AllNbaSeason[]) {
 /** True if the player was ever named an All-Star or to any All-NBA team, career-wide. */
 export function wasEverAllStarCaliber(playerName: string): boolean {
   return validated.has(normalizeAwardName(playerName));
+}
+
+/** name -> Set of season-END years the player made any All-NBA team. */
+const allNbaEndYears = new Map<string, Set<number>>();
+for (const s of allNbaData as { season: string; tiers: string[][] }[]) {
+  const endYear = parseInt(s.season.slice(0, 4), 10) + 1;
+  for (const tier of s.tiers) {
+    for (const n of tier) {
+      const k = normalizeAwardName(n);
+      let set = allNbaEndYears.get(k);
+      if (!set) allNbaEndYears.set(k, (set = new Set()));
+      set.add(endYear);
+    }
+  }
+}
+
+/** True if the player made an All-NBA team in a season this span's label covers, OR the year
+ * immediately before it starts — a 3-year span like "2007-09" (seasons ending 2008-2009) belongs
+ * to an All-NBA-caliber stretch if the selection came in 2007. An in-window top-15 vote is a much
+ * stronger corroborating signal than a career-wide check for a floor. */
+export function madeAllNbaInSpan(playerName: string, spanLabel: string): boolean {
+  const set = allNbaEndYears.get(normalizeAwardName(playerName));
+  if (!set) return false;
+  const years = spanEndYears(spanLabel);
+  if (years.length === 0) return false;
+  return years.some((y) => set.has(y)) || set.has(years[0] - 1);
 }

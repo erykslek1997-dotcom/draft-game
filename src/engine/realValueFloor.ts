@@ -2,6 +2,7 @@ import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { players } from '../data/players';
 import { blendedRealValueForSpan } from './blendedRealValueLookup';
+import { madeAllNbaInSpan } from './allNbaLookup';
 import type { OverallTier } from './grades';
 
 /**
@@ -27,6 +28,13 @@ import type { OverallTier } from './grades';
  */
 const STARTER_FLOOR_RV = 3.5;
 const ALLSTAR_FLOOR_RV = 4.6;
+/** Lower All-star bar for a span the league itself voted top-15 (an in-window All-NBA team) — the
+ * `blendedRealValue` signal saturates/clusters near 4.0-4.5 for a lot of genuine stars, and a real
+ * All-NBA selection that year is a strong independent corroboration that this specific span was
+ * All-star-caliber. Chris Bosh 2007-09 (All-NBA 2nd 2007, rv 4.12), LaMarcus Aldridge 2011-15,
+ * Amar'e 2007-09 (All-NBA 1st 2007) all land here; a defense-first role player who never made an
+ * All-NBA team (Danny Green, Mookie Blaylock) does not. */
+const ALLSTAR_FLOOR_RV_WITH_ALL_NBA = 4.0;
 const SUSTAINED_BAR = 3.0;
 const SUSTAINED_MIN_SPANS = 3;
 
@@ -49,7 +57,10 @@ export function realValueTierFloor(span: PlayerSpan): RealValueFloor {
   if (!sustained.has(normalizePlayerName(span.playerName))) return null;
   const rv = blendedRealValueForSpan(span);
   if (!rv || !rv.isModernEra) return null;
-  if (rv.value >= ALLSTAR_FLOOR_RV) return 'All-star';
+  const allStarBar = madeAllNbaInSpan(span.playerName, span.spanLabel)
+    ? ALLSTAR_FLOOR_RV_WITH_ALL_NBA
+    : ALLSTAR_FLOOR_RV;
+  if (rv.value >= allStarBar) return 'All-star';
   if (rv.value >= STARTER_FLOOR_RV) return 'Starter';
   return null;
 }
