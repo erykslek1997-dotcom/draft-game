@@ -363,6 +363,17 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     // exception, not a slope: the same "defensive specialist reaching All-star" question for every
     // 3-and-D wing (Danny Green / P.J. Tucker / OG Anunoby) is a feature of the bridge, not a bug.
     { name: 'Nate McMillan', spanLabel: '1992-94', cap: 'Starter' as OverallTier },
+    // 2026-08-31, follow-up on the bridge: SF has only two tier-cap rules and neither catches a
+    // "mediocre offense + mediocre defense" wing, so a +5 bridge correction tips a handful of
+    // journeyman SF spans across the All-star floor (70). PG's own archetype caps catch the PG
+    // equivalents; SF has no such net. A blanket SF "sub-C+ offense AND sub-D+ defense -> Starter"
+    // rule was measured and rejected — SF O-TAL grades run low for real scorers, so it also caught
+    // Jamal Mashburn, Dan Majerle, Danny Granger and Jaylen Brown 2023-25 (a 23-ppg All-NBA wing
+    // reading "O C"). Named downcaps for the three whose non-bridge TAL was genuinely below the
+    // All-star floor and whose profile is journeyman both ways (O C-, D D-/D+/F).
+    { name: 'Jim Jackson', spanLabel: '2003-05', cap: 'Starter' as OverallTier },
+    { name: 'Stephen Jackson', spanLabel: '2003-05', cap: 'Starter' as OverallTier },
+    { name: 'Walt Williams', spanLabel: '1995-97', cap: 'Starter' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
