@@ -7,6 +7,7 @@ import {
 } from './talent';
 import { offensiveGrade, defensiveGrade, tierContextFor, effectiveTalent, type Grade, type TierGateContext } from './grades';
 import { blendedRealValueForSpan } from './blendedRealValueLookup';
+import { madeAllNbaInSpan } from './allNbaLookup';
 
 /**
  * 2026-08-14, user's own idea, motivated by Dana Barros (real career: 1994-95 NBA Sixth Man of
@@ -105,6 +106,15 @@ export function isSixthManProfile(span: PlayerSpan): boolean {
   // ~1997+).
   const rv = blendedRealValueForSpan(span);
   if (rv && rv.isModernEra && rv.value >= SIXTH_MAN_REAL_VALUE_CEILING) return false;
+  // 2026-09-01, SF audit (Detlef Schrempf's 1993-97 Seattle All-Star years reading "Sixth Man"):
+  // the same box-gate false positive as the real-value exemption above, but for pre-1997 spans the
+  // DARKO/APM blend the `rv` check relies on isn't there. A real in-window All-NBA selection is the
+  // league itself voting the player top-15 that season — categorically not the "thin everywhere but
+  // instant offense" bench profile. Frees Schrempf 1993-97, Brad Daugherty 1991-94, Mark Price
+  // 1987-89, Chauncey Billups 2009-11, Goran Dragić 2012-15 — every one an established starter or
+  // All-Star, not an actual sixth man. (His genuine Sixth-Man-of-the-Year 1989-92 spans have no
+  // in-window All-NBA and are untouched.)
+  if (madeAllNbaInSpan(span.playerName, span.spanLabel)) return false;
   return true;
 }
 
