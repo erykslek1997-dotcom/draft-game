@@ -100,6 +100,15 @@ const NAMED_DAMPENING_EXCEPTIONS: ReadonlyMap<string, number> = new Map(
     // exception here. The real, non-zero signal survives (there's a genuine dip inside this
     // two-season span somewhere); it just no longer crosses either tier-cap threshold.
     { name: 'Nikola Jokić', spanLabel: '2021-23' },
+    // 2026-08-31, user-reported ("usuńmy tego platinum droppera"): KD's 2012-14 span carries a
+    // measured -4.5 (Platinum Dropper, the most severe tier) — clearing `grades.ts`'s -4 All-NBA
+    // cap threshold and dragging his raw-97 span from "Greatest peak" to "All-NBA". Same shape as
+    // the SGA / Jokić cases above: a real MVP (2014) whose span-level playoff dip is genuine but
+    // heavily one-season (the 2013 Memphis series, played with Westbrook injured) rather than the
+    // uncontested multi-year collapse the Platinum tier implies. -4.5 * 0.3 = -1.35 (Silver
+    // Dropper) — a real non-zero signal survives, it just no longer clears either tier-cap
+    // threshold, so the span reads its natural "Greatest peak" alongside his 2010-12 / 2015-19.
+    { name: 'Kevin Durant', spanLabel: '2012-14' },
   ].map((e) => [
     `${normalizePlayerName(e.name)}|${e.spanLabel}`,
     NAMED_DAMPENING_SCALE,
