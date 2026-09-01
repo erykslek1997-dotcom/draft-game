@@ -42,6 +42,34 @@ function letterForValue(value: number): Exclude<Grade, 'S'> {
   return 'F';
 }
 
+/**
+ * D-TAL's own letter-grade cutoffs, distinct from `letterForValue` (which is calibrated for the
+ * TAL/O-TAL distribution). 2026-08-31, user-reported ("DDPM -1 is league average, an average
+ * defender shouldn't read D/F"): `computeDefensiveTalent` is a per-position percentile LADDER whose
+ * output distribution is nothing like TAL's — the median perimeter defender lands at D-TAL ~34-39
+ * and p75 at ~54. Run through `letterForValue` (C = 60-64) that made the MEDIAN defender at every
+ * guard/wing position grade "F", and a genuinely top-third span (young KD, D-TAL 47 ≈ 67th
+ * percentile among SFs) grade "D". These cutoffs are shifted down so the middle of the real D-TAL
+ * distribution reads around C-/C and only the actual bottom reads D/F, while the top (Ben Wallace
+ * ~99, Gobert ~85, Bruce Bowen ~87) still reads A-tier. S is still decided separately by
+ * `defensiveSThreshold`.
+ */
+function letterForDefensiveTalent(value: number): Exclude<Grade, 'S'> {
+  if (value >= 94) return 'A+';
+  if (value >= 88) return 'A';
+  if (value >= 83) return 'A-';
+  if (value >= 77) return 'B+';
+  if (value >= 70) return 'B';
+  if (value >= 62) return 'B-';
+  if (value >= 54) return 'C+';
+  if (value >= 46) return 'C';
+  if (value >= 39) return 'C-';
+  if (value >= 32) return 'D+';
+  if (value >= 24) return 'D';
+  if (value >= 16) return 'D-';
+  return 'F';
+}
+
 /** The value a span needs to clear for S — the 3rd-highest *distinct* value in the reference
  * population, so ties at the cutoff all earn S together rather than an arbitrary cut mid-tie. */
 function computeSThreshold(values: number[]): number {
@@ -115,7 +143,7 @@ export function defensiveGrade(value: number): Grade {
   if (defensiveSThreshold === null) {
     defensiveSThreshold = computeSThreshold(draftPool.map((p) => computeDefensiveTalent(p)));
   }
-  return gradeForValue(value, defensiveSThreshold);
+  return value >= defensiveSThreshold ? 'S' : letterForDefensiveTalent(value);
 }
 
 /**
