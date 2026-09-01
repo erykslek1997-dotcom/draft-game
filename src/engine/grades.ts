@@ -18,6 +18,7 @@ import { spanEndYears } from './era';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
 import { realValueTierFloor } from './realValueFloor';
+import { madeAllNbaInSpan } from './allNbaLookup';
 
 /**
  * Letter-grade display for O-TAL/D-TAL, purely a UI presentation layer over the existing
@@ -329,6 +330,9 @@ const PG_ARCHETYPE_ENTRY_TAL_CEILING = 75;
 const PG_ARCHETYPE_SHOOTER_SPACING_FLOOR = 65;
 const PG_ARCHETYPE_PLAYMAKER_APG_FLOOR = 6.0;
 const PG_ARCHETYPE_DEFENSE_DTAL_FLOOR = 55;
+/** A PG grading below this on offense (`letterForValue`) is treated as genuinely offense-limited
+ * for the defense-only All-NBA cap in `overallTierForSpan` — 'B-' = O-TAL < 70. */
+const PG_DEFENSE_ONLY_OTAL_FLOOR: Grade = 'B-';
 /** 2026-08-31, user-reported (Mike James 2004-06, and the same batch's spacing-cliff fix): the
  * "shooter, not-quite-a-playmaker, weak defense" branch labels a span "Bench Warmer" ("shit
  * player") — right for a genuine empty spot-up guard, wrong for a real 20-ppg lead scorer whose
@@ -838,6 +842,24 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   if (ctx.spanLabel && isUnvalidatedPre1976Span(ctx.spanLabel, ctx.playerName)) caps.push('All-NBA');
   const downcap = namedTierDowncap(ctx.playerName, ctx.spanLabel);
   if (downcap) caps.push(downcap);
+  // 2026-09-01, user's long-open "PG overvalues defensive profiles" follow-up. A defensive PG with
+  // a weak offensive grade can stack `twoWaySynergyBonus` + `darkoDefenseBonus` + the
+  // `synergyGateDefense` corroboration bump into an All-NBA number — Mookie Blaylock x4 (1
+  // All-Star, never All-NBA), Terrell Brandon, Maurice Cheeks. Capping the bonus SUM in `talent.ts`
+  // was tested and cost GOAT-40 0.016 while missing the base-defense cases. This tier cap is the
+  // surgical version: a PG whose offense grades below `PG_DEFENSE_ONLY_OTAL_FLOOR` can't display
+  // above All-star UNLESS the league actually voted them All-NBA in this span's own window
+  // (`madeAllNbaInSpan` — Kidd / Payton / Frazier / Fat Lever all have real in-window picks and
+  // are untouched). Display-only, no TAL change, Taylor/GOAT-safe.
+  if (
+    ctx.position === 'PG' &&
+    ctx.playerName &&
+    ctx.spanLabel &&
+    !gradeAtLeast(otalGrade, PG_DEFENSE_ONLY_OTAL_FLOOR) &&
+    !madeAllNbaInSpan(ctx.playerName, ctx.spanLabel)
+  ) {
+    caps.push('All-star');
+  }
   let capped = caps.reduce((tier, cap) => stricterTier(tier, cap), base);
   // 2026-08-31, user-reported (batch feedback): `talent.ts`'s new elite-one-way-defense bonus
   // (see that bonus's own docstring — Ben Wallace/Mark Eaton/Mutombo/Bill Russell/Tony Allen, all
