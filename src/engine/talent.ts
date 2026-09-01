@@ -960,16 +960,27 @@ const MAX_USAGE_RATIO_PENALTY = 6;
  * `offensiveArchetype` already gates the POSITIVE side of this exact question
  * (`SELF_CREATION_BONUS_ARCHETYPES` above restricts the self-creation bonus to on-ball
  * archetypes) — this is the same signal applied to exempt the negative side. Scoped to the three
- * archetypes that are off-ball BY DEFINITION (a player literally cannot initiate much offense
- * from a role built around catching passes off movement/screens/spot-ups), not every low-assist
- * wing. `Athletic Finisher` intentionally left out — "finishes plays others create" is a
- * different claim from "shoots off movement/screens" that deserves its own look if it comes up,
- * not folded in without a motivating case.
+ * off-ball-shooter archetypes plus the two back-to-the-basket ones, all off-ball BY DEFINITION (a
+ * player literally cannot initiate much offense from a role built around catching passes off
+ * movement/screens/spot-ups, or operating from the low post with his back to the rim).
+ * `Athletic Finisher` intentionally left out — "finishes plays others create" is a different
+ * claim that deserves its own look if it comes up.
+ *
+ * **2026-09-01, `Post Scorer` + `Roll & Cut Big` added.** Audited by position — this penalty had
+ * become a frontcourt/wing tax (PF/SF/C mean -4 over 400+ spans, PG mean -2) that maxed out (-6)
+ * on exactly the profile it isn't for: a post scorer generates few assists BY ROLE, not because
+ * the game is empty volume the way the docstring's own targets (Mullin/Dantley/English — all
+ * Slasher/Shot Creator, perimeter face-up) are. Measured: Karl Malone / Shaq / Ewing / Moses /
+ * Bob Pettit / Aldridge / Bosh's Toronto peak all lifted appropriately; Bargnani / Kevin Love /
+ * Carmelo / Al Harrington's chucker years keep the penalty (Versatile Big / Stretch Big / Shot
+ * Creator tags). 67 tier moves, 0 down, Taylor 0.891 / GOAT-40 0.693 both held exactly.
  */
 const OFF_BALL_USAGE_PENALTY_EXEMPT_ARCHETYPES: ReadonlySet<OffensiveArchetype> = new Set([
   'Off Screen Shooter',
   'Movement Shooter',
   'Stationary Shooter',
+  'Post Scorer',
+  'Roll & Cut Big',
 ]);
 /** Below this, the penalty applies at full strength; at/above `USAGE_PENALTY_DEFENSE_GATE_END`
  * it's fully phased out. A hard cliff at a single value (45) let a big whose box defense reads
