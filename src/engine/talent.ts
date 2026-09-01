@@ -190,8 +190,18 @@ const ABOVE_STAR_SPACING_POSITIONS: ReadonlySet<Position> = new Set(['SG', 'SF',
  * 0 demotions, Taylor 0.891 / GOAT-40 0.693 both held. Kept modest (0.955, ~+1.9 raw at the
  * top of the band) on purpose: pushing toward 1.0 re-creates the same cliff one tier up, where
  * a PF just under the All-NBA floor out-reads one exactly at it.
+ *
+ * **2026-09-01, extended below the gate too** (user, Bosh/Aldridge audit): the hard 0.85-vs-0.955
+ * jump at `ALL_STAR_TAL_FLOOR` was the same star-gate cliff. A PF on the non-shooter penalty side
+ * (`spacingCorrection <= flat` — no floor-spacing) now has that penalty EASE toward this value as
+ * the flat-corrected number climbs from `PF_PENALTY_TAPER_START` to the gate. A 22/10 non-shooting
+ * PF (Bosh 2007-09, flat-corrected ~67) isn't the "box misses a zero-gravity role player's value"
+ * case `SPACING_CORRECTION_FLOOR` exists for — the box sees the 22/10, it's the winning impact
+ * that's missed, and `realValueFloor.ts` covers that separately. A genuine bench big well below
+ * `PF_PENALTY_TAPER_START` keeps the full penalty.
  */
 const PF_ALLSTAR_BAND_CORRECTION = 0.955;
+const PF_PENALTY_TAPER_START = 66;
 
 /** The sub-All-star spacing boost tapers linearly back to the flat correction as the FLAT-corrected
  * value climbs through the `SPACING_BOOST_TAPER_BAND` points below `ALL_STAR_TAL_FLOOR` — see
@@ -309,10 +319,20 @@ function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number
   // above is a hard cliff checked on the PRE-boost value `rawSum * flat`, and the boost it applies
   // can be as large as 1.18 — a span whose flat value is ~68 (just under the gate) rides the +18%
   // straight to ~82. Taper the boost back to flat over `SPACING_BOOST_TAPER_BAND` points below the
-  // gate. Penalty side (spacingCorrection <= flat) and the display-only call (`talentBreakdown`, no
-  // `rawSumForGate`) are untouched — a real floor-spacing role player well below the band keeps the
-  // full boost.
-  if (rawSumForGate === undefined || spacingCorrection <= flat) return spacingCorrection;
+  // gate. The display-only call (`talentBreakdown`, no `rawSumForGate`) is untouched — a real
+  // floor-spacing role player well below the band keeps the full boost.
+  if (rawSumForGate === undefined) return spacingCorrection;
+  if (spacingCorrection <= flat) {
+    // Penalty side (no floor-spacing). For PF only, ease the non-shooter penalty toward
+    // `PF_ALLSTAR_BAND_CORRECTION` as the flat-corrected number climbs to the gate — see that
+    // constant's docstring. Every other position, and a PF below `PF_PENALTY_TAPER_START`, keeps
+    // the full penalty.
+    if (span.primaryPosition !== 'PF' || spacingCorrection >= PF_ALLSTAR_BAND_CORRECTION) return spacingCorrection;
+    const t = clamp01(
+      (rawSumForGate * flat - PF_PENALTY_TAPER_START) / (ALL_STAR_TAL_FLOOR - PF_PENALTY_TAPER_START),
+    );
+    return spacingCorrection + t * (PF_ALLSTAR_BAND_CORRECTION - spacingCorrection);
+  }
   // 2026-09-01, user's rule ("if they made any accolades in their career, not just this season,
   // they're validated"): the taper can't tell a fluke box line from a genuine prime span on the
   // counting stats alone. A player the league ever recognized as an All-Star / All-NBA pick is

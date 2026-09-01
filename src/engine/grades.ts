@@ -17,6 +17,7 @@ import { computeSpacing } from './spacing';
 import { spanEndYears } from './era';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
+import { realValueTierFloor } from './realValueFloor';
 
 /**
  * Letter-grade display for O-TAL/D-TAL, purely a UI presentation layer over the existing
@@ -735,6 +736,12 @@ export interface TierGateContext {
    * fall back to `tal`, so the two bridge gates below simply never fire for synthetic/validation
    * contexts. */
   talWithoutBridge?: number;
+  /** 2026-09-01, user-reported (Bosh/Gasol/Aldridge): a sustained real plus-minus record (DARKO +
+   * historical APM, `realValueFloor.ts`) that the box-score base badly understates for high-volume
+   * mid-range scoring bigs. When set ('Starter' or 'All-star'), the displayed tier can't read
+   * below it — a raise only, yields to `NAMED_TIER_DOWNCAPS`, never manufactures All-NBA+.
+   * Optional/undefined-safe like every other context field. */
+  realValueFloor?: OverallTier;
 }
 
 /**
@@ -911,14 +918,22 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   // 'Sixth Man' is a role RELABEL, not a rank — same "independent of the cap-folding above"
   // shape as the GOAT raise, just never able to conflict with it in practice (`isSixthManProfile`
   // requires TAL<80, GOAT requires 'Greatest peak' i.e. TAL>=94 first).
-  if (ctx.isSixthMan) return 'Sixth Man';
+  let result: OverallTier = ctx.isSixthMan ? 'Sixth Man' : capped;
+  // 2026-09-01 (Bosh/Gasol/Aldridge): a sustained real plus-minus record (`realValueFloor.ts`) the
+  // box-score base badly understates for high-volume mid-range scoring bigs. Raise only, capped at
+  // 'All-star' by construction, yields to an explicit `NAMED_TIER_DOWNCAPS` entry, and beats the
+  // instant-offense-off-the-bench relabel (a genuine +4 real-value player is not a bench
+  // specialist — the same case the `isSixthManProfile` real-value guard in `sixthMan.ts` handles).
+  if (ctx.realValueFloor && !downcap && tierRank(ctx.realValueFloor) > tierRank(result)) {
+    result = ctx.realValueFloor;
+  }
   // See NAMED_TIER_RAISES's own docstring — a direct override, not gated on any real tier the
   // span already earned (unlike GOAT above). Only ever takes effect if it's actually HIGHER than
   // what capped/caps already computed, so it can't accidentally undo a real downcap for the same
   // span if one ever existed.
   const raise = namedTierRaise(ctx.playerName, ctx.spanLabel);
-  if (raise && tierRank(raise) > tierRank(capped)) return raise;
-  return capped;
+  if (raise && tierRank(raise) > tierRank(result)) return raise;
+  return result;
 }
 
 /** The top of each tier's own band — one below the next tier's floor, so a capped player's
@@ -989,9 +1004,14 @@ function tierFloor(tier: OverallTier): number {
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const cappedTier = overallTierForSpan(ctx);
   const raw = Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
-  // Only when the raise is actually what produced this span's displayed tier — every other span
-  // (the vast majority) is completely unaffected by this check.
-  if (namedTierRaise(ctx.playerName, ctx.spanLabel) === cappedTier) return Math.max(raw, tierFloor(cappedTier));
+  // Only when a deliberate raise (a `NAMED_TIER_RAISES` entry, or the sustained real-value floor)
+  // is actually what produced this span's displayed tier — every other span (the vast majority)
+  // is unaffected. Both would otherwise leave the NUMBER below the badge's own floor, the exact
+  // badge/number mismatch this function's history already had to fix once.
+  const raisedByFloor = ctx.realValueFloor === cappedTier && tierRank(overallTier(ctx.tal)) < tierRank(cappedTier);
+  if (namedTierRaise(ctx.playerName, ctx.spanLabel) === cappedTier || raisedByFloor) {
+    return Math.max(raw, tierFloor(cappedTier));
+  }
   return raw;
 }
 
@@ -1067,5 +1087,6 @@ export function tierContextFor(span: PlayerSpan): TierGateContext {
     apg: span.box.apg,
     talWithoutEliteDefenseBonus: computeTalentWithoutEliteDefenseBonus(span),
     talWithoutBridge: computeTalentWithoutBridge(span),
+    realValueFloor: realValueTierFloor(span) ?? undefined,
   };
 }

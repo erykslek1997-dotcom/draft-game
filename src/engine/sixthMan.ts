@@ -6,6 +6,7 @@ import {
   computeTalentWithoutBridge,
 } from './talent';
 import { offensiveGrade, defensiveGrade, tierContextFor, effectiveTalent, type Grade, type TierGateContext } from './grades';
+import { blendedRealValueForSpan } from './blendedRealValueLookup';
 
 /**
  * 2026-08-14, user's own idea, motivated by Dana Barros (real career: 1994-95 NBA Sixth Man of
@@ -74,6 +75,9 @@ const SIXTH_MAN_FGA_CEILING = 14;
 const SIXTH_MAN_APG_CEILING = 7.5;
 const SIXTH_MAN_OFFENSE_FLOOR: Grade = 'B-';
 const SIXTH_MAN_DEFENSE_CEILING: Grade = 'C+'; // must NOT clear this (i.e. C, C-, D+, D, D-, or F)
+/** Real blended plus-minus (DARKO + historical APM) at/above which the span is a genuine starter,
+ * not an off-the-bench specialist — see the check in `isSixthManProfile`. */
+const SIXTH_MAN_REAL_VALUE_CEILING = 2.5;
 
 const GRADE_ORDER: Grade[] = ['F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+', 'S'];
 const gradeAtLeast = (g: Grade, min: Grade) => GRADE_ORDER.indexOf(g) >= GRADE_ORDER.indexOf(min);
@@ -92,7 +96,16 @@ export function isSixthManProfile(span: PlayerSpan): boolean {
   const otalGrade = offensiveGrade(otal, computeUncappedOffensiveTalent(span));
   if (!gradeAtLeast(otalGrade, SIXTH_MAN_OFFENSE_FLOOR)) return false;
   const dtalGrade = defensiveGrade(computeDefensiveTalent(span));
-  return !gradeAtLeast(dtalGrade, SIXTH_MAN_DEFENSE_CEILING);
+  if (gradeAtLeast(dtalGrade, SIXTH_MAN_DEFENSE_CEILING)) return false;
+  // 2026-09-01, user-reported (Jimmy Butler / Paul Pierce / Pau Gasol on title teams reading
+  // "Sixth Man"): the tag's box gates catch a full starter whose real plus-minus record clearly
+  // says otherwise. A `blendedRealValue` at or above `SIXTH_MAN_REAL_VALUE_CEILING` is genuine,
+  // measured starter-or-better impact — not the "instant offense off the bench, thin everywhere
+  // else" profile this relabel exists for. Modern-era only (the DARKO/APM blend is reliable
+  // ~1997+).
+  const rv = blendedRealValueForSpan(span);
+  if (rv && rv.isModernEra && rv.value >= SIXTH_MAN_REAL_VALUE_CEILING) return false;
+  return true;
 }
 
 /**
