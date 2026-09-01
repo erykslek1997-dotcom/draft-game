@@ -11,6 +11,7 @@ import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
 import { playmakingThreeLevelOffenseAdjustment } from './playmakingThreeLevel';
+import { wasEverAllStarCaliber } from './allNbaLookup';
 import { selfCreationPercentileForPortability } from './selfCreationSimilarity';
 import { runtimeDefenseTalentPercentile, runtimeImpliedDefensePercentile } from './runtimePercentiles';
 // 2026-08-06: moved below defensiveTalent/defensiveAccolades on purpose — `portability.ts` (which
@@ -163,6 +164,14 @@ const ABOVE_STAR_SPACING_RETENTION = 0.3;
 const ABOVE_STAR_SPACING_MAX_GAIN = 0.025;
 const ABOVE_STAR_SPACING_POSITIONS: ReadonlySet<Position> = new Set(['SG', 'SF', 'PF']);
 
+/** The sub-All-star spacing boost tapers linearly back to the flat correction as the FLAT-corrected
+ * value climbs through the `SPACING_BOOST_TAPER_BAND` points below `ALL_STAR_TAL_FLOOR` — see
+ * `positionCorrectionFor`. Without it the star gate is a hard cliff checked on the pre-boost value:
+ * a span whose flat value sits at ~68 rides the full 1.18 multiplier straight to ~82 (Mike James
+ * 2004-06, a one-year elite-shooting fluke reading All-NBA on C+/D grades). A genuine floor-spacing
+ * role player, well below the band, keeps the full boost. */
+const SPACING_BOOST_TAPER_BAND = 9;
+
 function roleSpacingAdjustedCorrection(span: PlayerSpan): number {
   const spacing = computeSpacing(span);
   const positionFlat = POSITION_TALENT_CORRECTION[span.primaryPosition];
@@ -262,7 +271,24 @@ function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number
     const residual = (roleSpacingAdjustedCorrection(span) - flat) * ABOVE_STAR_SPACING_RETENTION;
     return Math.max(flat, flat + Math.min(residual, ABOVE_STAR_SPACING_MAX_GAIN));
   }
-  return roleSpacingAdjustedCorrection(span);
+  const spacingCorrection = roleSpacingAdjustedCorrection(span);
+  // 2026-08-31, user-reported (Mike James 2004-06 at TAL 82 / All-NBA on C+/D grades): the star gate
+  // above is a hard cliff checked on the PRE-boost value `rawSum * flat`, and the boost it applies
+  // can be as large as 1.18 — a span whose flat value is ~68 (just under the gate) rides the +18%
+  // straight to ~82. Taper the boost back to flat over `SPACING_BOOST_TAPER_BAND` points below the
+  // gate. Penalty side (spacingCorrection <= flat) and the display-only call (`talentBreakdown`, no
+  // `rawSumForGate`) are untouched — a real floor-spacing role player well below the band keeps the
+  // full boost.
+  if (rawSumForGate === undefined || spacingCorrection <= flat) return spacingCorrection;
+  // 2026-09-01, user's rule ("if they made any accolades in their career, not just this season,
+  // they're validated"): the taper can't tell a fluke box line from a genuine prime span on the
+  // counting stats alone. A player the league ever recognized as an All-Star / All-NBA pick is
+  // exempt — Mike James (never, in any season) still falls; every player with a real selection
+  // somewhere in their career keeps the full boost.
+  if (wasEverAllStarCaliber(span.playerName)) return spacingCorrection;
+  const flatResult = rawSumForGate * flat;
+  const taper = clamp01((ALL_STAR_TAL_FLOOR - flatResult) / SPACING_BOOST_TAPER_BAND);
+  return flat + (spacingCorrection - flat) * taper;
 }
 
 /** Assist rate above which marginal playmaking value tapers off, and the rate it tapers to.

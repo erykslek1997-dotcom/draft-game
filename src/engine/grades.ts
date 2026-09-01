@@ -328,6 +328,13 @@ const PG_ARCHETYPE_ENTRY_TAL_CEILING = 75;
 const PG_ARCHETYPE_SHOOTER_SPACING_FLOOR = 65;
 const PG_ARCHETYPE_PLAYMAKER_APG_FLOOR = 6.0;
 const PG_ARCHETYPE_DEFENSE_DTAL_FLOOR = 55;
+/** 2026-08-31, user-reported (Mike James 2004-06, and the same batch's spacing-cliff fix): the
+ * "shooter, not-quite-a-playmaker, weak defense" branch labels a span "Bench Warmer" ("shit
+ * player") — right for a genuine empty spot-up guard, wrong for a real 20-ppg lead scorer whose
+ * assists just miss 6.0 (Damian Lillard 2013-15 O-TAL 69 / apg 5.9, Mike James's own fluke year
+ * O-TAL 67). A span with a real offensive engine isn't a "shit player" regardless of the other two
+ * factors — at this O-TAL it drops one tier less far (Sixth Man, not Bench Warmer). */
+const PG_ARCHETYPE_REAL_SCORER_OTAL = 64;
 
 /** Position-specific downward tier caps, applied ascending so a player can trip more than one
  * (the most restrictive wins — see `stricterTier` fold below). Every threshold reuses the exact
@@ -884,8 +891,9 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
       const isGoodShooter = (ctx.spacing ?? 0) >= PG_ARCHETYPE_SHOOTER_SPACING_FLOOR;
       const isGoodPlaymaker = (ctx.apg ?? 0) >= PG_ARCHETYPE_PLAYMAKER_APG_FLOOR;
       const isGoodDefense = ctx.dtal >= PG_ARCHETYPE_DEFENSE_DTAL_FLOOR;
+      const isRealScorer = ctx.otal >= PG_ARCHETYPE_REAL_SCORER_OTAL;
       let archetypeCap: OverallTier | null = null;
-      if (isGoodShooter && !isGoodPlaymaker && !isGoodDefense) archetypeCap = 'Bench Warmer'; // "shit player"
+      if (isGoodShooter && !isGoodPlaymaker && !isGoodDefense) archetypeCap = isRealScorer ? 'Sixth Man' : 'Bench Warmer'; // "shit player" unless a real scorer
       else if (isGoodShooter && !isGoodPlaymaker && isGoodDefense) archetypeCap = 'Sixth Man'; // "good rotation player"
       else if (isGoodShooter && isGoodPlaymaker && !isGoodDefense) archetypeCap = 'Sixth Man'; // "good sixthman"
       else if (!isGoodShooter && isGoodPlaymaker && isGoodDefense) archetypeCap = 'Starter'; // "starter in SOME TEAMS"

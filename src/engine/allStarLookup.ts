@@ -16,9 +16,16 @@ interface AllStarRow {
 }
 const allStars = allStarsData as AllStarRow[];
 
+/** The source table carries Basketball-Reference footnote marks on some names (Hall-of-Fame
+ * dagger `†`, active-player `§`, etc. — Kyle Lowry†, Gordon Hayward§) that `normalizePlayerName`
+ * doesn't strip, so a raw normalize would silently miss those players. */
+export function normalizeAwardName(name: string): string {
+  return normalizePlayerName(name.replace(/[†§*^‡]/g, '').trim());
+}
+
 const countByName = new Map<string, number>();
-for (const r of allStars) countByName.set(normalizePlayerName(r.name), r.count);
+for (const r of allStars) countByName.set(normalizeAwardName(r.name), r.count);
 
 export function allStarCount(playerName: string): number {
-  return countByName.get(normalizePlayerName(playerName)) ?? 0;
+  return countByName.get(normalizeAwardName(playerName)) ?? 0;
 }
