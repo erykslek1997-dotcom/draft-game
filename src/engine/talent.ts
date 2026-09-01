@@ -62,6 +62,18 @@ export { computeDefensiveTalent };
  * SF -26. SF was the best-calibrated position, so it's the zero-correction baseline; the
  * others scale down from there, capped at a 7% reduction for the worst offender (PF) — a
  * deliberately modest first pass, not a full rebalance, revisit as more RAPM data arrives.
+ *
+ * **2026-09-01, user's PG+PF side-by-side audit — PG left at 0.972 after measurement.** "PG
+ * overvalues defensive profiles" is real (41 distinct PGs reach All-NBA+ vs PF 20 / SG 18; 54
+ * PG All-NBA+ spans carry the tier on defense alone, O-TAL < 75, vs 6 for SG), but this flat
+ * factor can't fix it: lowering it drops borderline PGs (Curry 2009-11, Lillard 2012-14, Kyrie
+ * 2013-15, Mark Price, Tim Hardaway 1997-99) *below* `ALL_STAR_TAL_FLOOR` in `positionCorrectionFor`,
+ * where they pick up the full sub-gate spacing boost (~1.15) instead of the flat, and punch
+ * straight through the PG-archetype cap to All-NBA — the same star-gate cliff pathology
+ * `ABOVE_STAR_SPACING_*` and `SPACING_BOOST_TAPER_BAND` already exist to patch. The PG defense
+ * over-credit sits in the blend (two-way synergy + `synergyGateDefense` + `darkoDefenseBonus`
+ * stacking) and needs the deferred `positionCorrectionFor` star-gate untangle, not a knob here.
+ * PF is lifted below the All-NBA floor only (`PF_ALLSTAR_BAND_CORRECTION`).
  */
 const POSITION_TALENT_CORRECTION: Record<Position, number> = {
   PG: 0.972,
@@ -163,6 +175,23 @@ const SPACING_CORRECTION_ELITE_SPACING = 90;
 const ABOVE_STAR_SPACING_RETENTION = 0.3;
 const ABOVE_STAR_SPACING_MAX_GAIN = 0.025;
 const ABOVE_STAR_SPACING_POSITIONS: ReadonlySet<Position> = new Set(['SG', 'SF', 'PF']);
+
+/**
+ * 2026-09-01, user's PG+PF audit ("PF too weak"): a band-limited PF correction floor, applied
+ * only in the All-star band (baseTal in [ALL_STAR_TAL_FLOOR, ALL_NBA_TAL_FLOOR)). PF has both
+ * the harshest flat correction (0.93) AND the fewest players at the top (20 distinct All-NBA+,
+ * 49 All-star+ — lowest of any position); real offensive PFs stall at All-star (Barkley 1992-94,
+ * Dirk 2009-11/2012-14, Blake Griffin, Carmelo 2013-15, Siakam). A flat PF bump was rejected
+ * before — it lifts Kevin Garnett's TAL-97 peak past Shaq's and breaks the Taylor top-10
+ * (0.891 -> 0.818). Restricting the lift to below the All-NBA floor leaves every PF at TAL 80+
+ * (KG, Duncan, Giannis, Malone's MVP years) on the flat 0.93, so that pair is untouched.
+ * Measured: 4 spans promoted All-star -> All-NBA (Barkley 1992-94 — an MVP season that was
+ * stuck at All-star — plus Blake Griffin 2013-15, Chris Webber 1998-00, Al Horford 2014-16),
+ * 0 demotions, Taylor 0.891 / GOAT-40 0.693 both held. Kept modest (0.955, ~+1.9 raw at the
+ * top of the band) on purpose: pushing toward 1.0 re-creates the same cliff one tier up, where
+ * a PF just under the All-NBA floor out-reads one exactly at it.
+ */
+const PF_ALLSTAR_BAND_CORRECTION = 0.955;
 
 /** The sub-All-star spacing boost tapers linearly back to the flat correction as the FLAT-corrected
  * value climbs through the `SPACING_BOOST_TAPER_BAND` points below `ALL_STAR_TAL_FLOOR` — see
@@ -267,9 +296,13 @@ function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number
     // Keep a small, capped fraction of the sub-gate boost — SG/SF/PF only, and only in the
     // All-star band (below the All-NBA floor); the penalty side still vanishes here
     // (`Math.max(flat, ...)`), so a non-shooting star still reads flat, never below.
-    if (baseTal >= ALL_NBA_TAL_FLOOR || !ABOVE_STAR_SPACING_POSITIONS.has(span.primaryPosition)) return flat;
+    if (baseTal >= ALL_NBA_TAL_FLOOR) return flat;
+    // PF's All-star-band lift (see `PF_ALLSTAR_BAND_CORRECTION`) — applies whether or not the span
+    // also spaces the floor, so a non-shooting All-star PF (Barkley) gets it too.
+    const bandFloor = span.primaryPosition === 'PF' ? PF_ALLSTAR_BAND_CORRECTION : flat;
+    if (!ABOVE_STAR_SPACING_POSITIONS.has(span.primaryPosition)) return bandFloor;
     const residual = (roleSpacingAdjustedCorrection(span) - flat) * ABOVE_STAR_SPACING_RETENTION;
-    return Math.max(flat, flat + Math.min(residual, ABOVE_STAR_SPACING_MAX_GAIN));
+    return Math.max(bandFloor, flat + Math.min(residual, ABOVE_STAR_SPACING_MAX_GAIN));
   }
   const spacingCorrection = roleSpacingAdjustedCorrection(span);
   // 2026-08-31, user-reported (Mike James 2004-06 at TAL 82 / All-NBA on C+/D grades): the star gate
