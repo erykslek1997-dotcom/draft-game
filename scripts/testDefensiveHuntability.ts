@@ -59,7 +59,11 @@ const reportedEliteCore = team('reported-elite-core-with-bench-targets', [
   pick('Victor Wembanyama', '2024-26'),
   pick('David Robinson', '1997-99'),
   pick('Anthony Mason', '1995-97'),
-  pick('Charlie Ward', '1999-01'),
+  // 2026-09-01: was Charlie Ward '1999-01'. Restoring the stale reference-data trim gave Ward real
+  // DARKO/RAPTOR/BPM2 coverage (all three +1.6 to +3 on defense — he was a genuinely good defensive
+  // PG, not the box-only ~D-TAL 40 misread this fixture relied on). Kenny Anderson '1999-01' is the
+  // real "exploitable bench guard" this roster needs: a mild measured negative on all three sources.
+  pick('Kenny Anderson', '1999-01'),
   pick('Jon Barry', '2001-03'),
 ]);
 const reportedThreeLayerCore = team('reported-jordan-mobley-gobert-core', [
@@ -163,7 +167,7 @@ check(defenseScore(reported) <= 60, 'reported roster remains below a good Defens
 // weak-link cost, well outside "sub-100 elite."
 check(reportedProjection.defense >= 100, 'projected DRTG exposes the weak-link cost instead of reading as elite');
 check(reportedScores.overall <= 84, 'weak defense meaningfully lowers the final power score');
-check(eliteCoreHunt.targetableMinutes >= 42 && eliteCoreHunt.targetableMinutes <= 46, 'Ward and Jon Barry bench weaknesses retain their real rotation-minute cost');
+check(eliteCoreHunt.targetableMinutes >= 42 && eliteCoreHunt.targetableMinutes <= 46, 'Anderson and Jon Barry bench weaknesses retain their real rotation-minute cost');
 check(eliteCoreCohesion.eliteShell >= 80, 'Harper/Jrue plus Wembanyama/Robinson complete an elite starter shell despite limited bench targets');
 check(defenseScore(reportedEliteCore) >= 80, 'elite defensive core is no longer graded as merely above average');
 check(eliteCoreProjection.defense <= 88, 'elite defensive core projects into an elite DRTG tier without reaching the perfect-shell ceiling');

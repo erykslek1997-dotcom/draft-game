@@ -205,9 +205,19 @@
   "apm": 2.28
  },
  {
+  "name": "Anthony Bonner",
+  "season": "1993-94",
+  "apm": 0.5
+ },
+ {
   "name": "Anthony Mason",
   "season": "1993-94",
   "apm": 0.1
+ },
+ {
+  "name": "Anthony Peeler",
+  "season": "1993-94",
+  "apm": -2.3
  },
  {
   "name": "B.J. Armstrong",
@@ -225,11 +235,6 @@
   "apm": -0.81
  },
  {
-  "name": "Billy Owens",
-  "season": "1993-94",
-  "apm": -0.41
- },
- {
   "name": "Bo Outlaw",
   "season": "1993-94",
   "apm": 1.42
@@ -240,14 +245,34 @@
   "apm": 0.03
  },
  {
-  "name": "Buck Williams",
+  "name": "Brad Lohaus",
   "season": "1993-94",
-  "apm": 0.63
+  "apm": -0.81
+ },
+ {
+  "name": "Brent Price",
+  "season": "1993-94",
+  "apm": -1.04
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "1993-94",
+  "apm": -0.39
+ },
+ {
+  "name": "Bryon Russell",
+  "season": "1993-94",
+  "apm": 1.35
  },
  {
   "name": "Charles Barkley",
   "season": "1993-94",
   "apm": 2.87
+ },
+ {
+  "name": "Chris Morris",
+  "season": "1993-94",
+  "apm": 0.58
  },
  {
   "name": "Chris Mullin",
@@ -268,11 +293,6 @@
   "name": "Clyde Drexler",
   "season": "1993-94",
   "apm": 1.04
- },
- {
-  "name": "Dale Davis",
-  "season": "1993-94",
-  "apm": 0.07
  },
  {
   "name": "Dale Ellis",
@@ -355,6 +375,21 @@
   "apm": -2.04
  },
  {
+  "name": "Duane Ferrell",
+  "season": "1993-94",
+  "apm": -3.09
+ },
+ {
+  "name": "Ed Pinckney",
+  "season": "1993-94",
+  "apm": 0.34
+ },
+ {
+  "name": "Eddie Johnson",
+  "season": "1993-94",
+  "apm": -3.03
+ },
+ {
   "name": "Eric Murdock",
   "season": "1993-94",
   "apm": -0.62
@@ -375,9 +410,24 @@
   "apm": 2.09
  },
  {
+  "name": "Greg Anderson",
+  "season": "1993-94",
+  "apm": -3.71
+ },
+ {
+  "name": "Greg Anthony",
+  "season": "1993-94",
+  "apm": -0.29
+ },
+ {
   "name": "Hakeem Olajuwon",
   "season": "1993-94",
   "apm": 4.48
+ },
+ {
+  "name": "Haywoode Workman",
+  "season": "1993-94",
+  "apm": -0.49
  },
  {
   "name": "Hersey Hawkins",
@@ -385,9 +435,9 @@
   "apm": 0.93
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "1993-94",
-  "apm": 2.71
+  "apm": -0.82
  },
  {
   "name": "Isiah Thomas",
@@ -400,14 +450,14 @@
   "apm": -4.76
  },
  {
-  "name": "James Worthy",
-  "season": "1993-94",
-  "apm": -4.12
- },
- {
   "name": "Jay Humphries",
   "season": "1993-94",
   "apm": -3.16
+ },
+ {
+  "name": "Jim Jackson",
+  "season": "1993-94",
+  "apm": -4.73
  },
  {
   "name": "Joe Dumars",
@@ -440,11 +490,6 @@
   "apm": 2.3
  },
  {
-  "name": "LaPhonso Ellis",
-  "season": "1993-94",
-  "apm": 1.53
- },
- {
   "name": "Larry Johnson",
   "season": "1993-94",
   "apm": 1.04
@@ -458,6 +503,16 @@
   "name": "Latrell Sprewell",
   "season": "1993-94",
   "apm": -0.36
+ },
+ {
+  "name": "Lee Mayberry",
+  "season": "1993-94",
+  "apm": -2.06
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "1993-94",
+  "apm": -1.85
  },
  {
   "name": "Mario Elie",
@@ -490,11 +545,6 @@
   "apm": -1.55
  },
  {
-  "name": "Micheal Williams",
-  "season": "1993-94",
-  "apm": -1.14
- },
- {
   "name": "Mitch Richmond",
   "season": "1993-94",
   "apm": -0.31
@@ -508,6 +558,11 @@
   "name": "Moses Malone",
   "season": "1993-94",
   "apm": -0.81
+ },
+ {
+  "name": "Muggsy Bogues",
+  "season": "1993-94",
+  "apm": -0.85
  },
  {
   "name": "Nate McMillan",
@@ -525,16 +580,6 @@
   "apm": -1.76
  },
  {
-  "name": "Orlando Woolridge",
-  "season": "1993-94",
-  "apm": -4.71
- },
- {
-  "name": "Otis Thorpe",
-  "season": "1993-94",
-  "apm": 1.24
- },
- {
   "name": "Patrick Ewing",
   "season": "1993-94",
   "apm": 2.5
@@ -545,14 +590,24 @@
   "apm": -3.92
  },
  {
+  "name": "Pooh Richardson",
+  "season": "1993-94",
+  "apm": -1.06
+ },
+ {
   "name": "Reggie Miller",
   "season": "1993-94",
   "apm": 2.9
  },
  {
-  "name": "Rick Fox",
+  "name": "Reggie Williams",
   "season": "1993-94",
-  "apm": -1.19
+  "apm": 2.84
+ },
+ {
+  "name": "Ricky Pierce",
+  "season": "1993-94",
+  "apm": 2.01
  },
  {
   "name": "Robert Horry",
@@ -570,6 +625,11 @@
   "apm": 0.61
  },
  {
+  "name": "Rodney Rogers",
+  "season": "1993-94",
+  "apm": -2.39
+ },
+ {
   "name": "Rolando Blackman",
   "season": "1993-94",
   "apm": -0.81
@@ -583,6 +643,11 @@
   "name": "Sam Cassell",
   "season": "1993-94",
   "apm": -0.93
+ },
+ {
+  "name": "Scott Brooks",
+  "season": "1993-94",
+  "apm": -1.93
  },
  {
   "name": "Scott Skiles",
@@ -610,6 +675,11 @@
   "apm": 2.31
  },
  {
+  "name": "Stacey Augmon",
+  "season": "1993-94",
+  "apm": 3.42
+ },
+ {
   "name": "Steve Kerr",
   "season": "1993-94",
   "apm": 2.37
@@ -623,11 +693,6 @@
   "name": "Terrell Brandon",
   "season": "1993-94",
   "apm": 0.94
- },
- {
-  "name": "Terry Cummings",
-  "season": "1993-94",
-  "apm": -2.46
  },
  {
   "name": "Terry Mills",
@@ -655,6 +720,11 @@
   "apm": 0.63
  },
  {
+  "name": "Tracy Murray",
+  "season": "1993-94",
+  "apm": 0.07
+ },
+ {
   "name": "Vin Baker",
   "season": "1993-94",
   "apm": -2.21
@@ -668,6 +738,11 @@
   "name": "Walt Williams",
   "season": "1993-94",
   "apm": -1.01
+ },
+ {
+  "name": "Aaron McKie",
+  "season": "1994-95",
+  "apm": -1.79
  },
  {
   "name": "Adam Keefe",
@@ -695,9 +770,19 @@
   "apm": 5.62
  },
  {
+  "name": "Anthony Bonner",
+  "season": "1994-95",
+  "apm": 0.89
+ },
+ {
   "name": "Anthony Mason",
   "season": "1994-95",
   "apm": 1.8
+ },
+ {
+  "name": "Anthony Peeler",
+  "season": "1994-95",
+  "apm": -1.7
  },
  {
   "name": "B.J. Armstrong",
@@ -710,19 +795,24 @@
   "apm": -4.71
  },
  {
-  "name": "Billy Owens",
-  "season": "1994-95",
-  "apm": -1.74
- },
- {
   "name": "Bo Outlaw",
   "season": "1994-95",
   "apm": 2.24
  },
  {
-  "name": "Buck Williams",
+  "name": "Bobby Hurley",
   "season": "1994-95",
-  "apm": -1.85
+  "apm": -4.22
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "1994-95",
+  "apm": -1.49
+ },
+ {
+  "name": "Bryon Russell",
+  "season": "1994-95",
+  "apm": -0.66
  },
  {
   "name": "Byron Scott",
@@ -733,6 +823,16 @@
   "name": "Charles Barkley",
   "season": "1994-95",
   "apm": 3.84
+ },
+ {
+  "name": "Chris Childs",
+  "season": "1994-95",
+  "apm": 1.51
+ },
+ {
+  "name": "Chris Morris",
+  "season": "1994-95",
+  "apm": 0.98
  },
  {
   "name": "Chris Mullin",
@@ -758,11 +858,6 @@
   "name": "Clifford Robinson",
   "season": "1994-95",
   "apm": 2.01
- },
- {
-  "name": "Dale Davis",
-  "season": "1994-95",
-  "apm": 1.98
  },
  {
   "name": "Dale Ellis",
@@ -803,6 +898,11 @@
   "name": "David Wesley",
   "season": "1994-95",
   "apm": 1.02
+ },
+ {
+  "name": "David Wood",
+  "season": "1994-95",
+  "apm": 0.85
  },
  {
   "name": "Dee Brown",
@@ -855,6 +955,11 @@
   "apm": 0.68
  },
  {
+  "name": "Ed Pinckney",
+  "season": "1994-95",
+  "apm": -0.66
+ },
+ {
   "name": "Eddie Jones",
   "season": "1994-95",
   "apm": 1.92
@@ -865,6 +970,11 @@
   "apm": -0.12
  },
  {
+  "name": "Eric Piatkowski",
+  "season": "1994-95",
+  "apm": -0.64
+ },
+ {
   "name": "Ervin Johnson",
   "season": "1994-95",
   "apm": 0.18
@@ -873,6 +983,11 @@
   "name": "Gary Payton",
   "season": "1994-95",
   "apm": 2.39
+ },
+ {
+  "name": "George McCloud",
+  "season": "1994-95",
+  "apm": -0.74
  },
  {
   "name": "Glen Rice",
@@ -890,9 +1005,19 @@
   "apm": 1.98
  },
  {
+  "name": "Greg Anthony",
+  "season": "1994-95",
+  "apm": -0.25
+ },
+ {
   "name": "Hakeem Olajuwon",
   "season": "1994-95",
   "apm": 5.09
+ },
+ {
+  "name": "Haywoode Workman",
+  "season": "1994-95",
+  "apm": -2.19
  },
  {
   "name": "Hersey Hawkins",
@@ -900,9 +1025,9 @@
   "apm": 3.03
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "1994-95",
-  "apm": 4.64
+  "apm": -0.13
  },
  {
   "name": "Jalen Rose",
@@ -925,6 +1050,11 @@
   "apm": 3.37
  },
  {
+  "name": "Jim Jackson",
+  "season": "1994-95",
+  "apm": -0.98
+ },
+ {
   "name": "Joe Dumars",
   "season": "1994-95",
   "apm": -0.96
@@ -940,9 +1070,14 @@
   "apm": 5.26
  },
  {
-  "name": "Kendall Gill",
+  "name": "Keith Askins",
   "season": "1994-95",
-  "apm": -0.9
+  "apm": 1.12
+ },
+ {
+  "name": "Keith Jennings",
+  "season": "1994-95",
+  "apm": -0.33
  },
  {
   "name": "Kenny Anderson",
@@ -960,6 +1095,11 @@
   "apm": 0.82
  },
  {
+  "name": "Lamond Murray",
+  "season": "1994-95",
+  "apm": 0.28
+ },
+ {
   "name": "Larry Johnson",
   "season": "1994-95",
   "apm": 1.07
@@ -968,6 +1108,16 @@
   "name": "Latrell Sprewell",
   "season": "1994-95",
   "apm": 0.33
+ },
+ {
+  "name": "Lee Mayberry",
+  "season": "1994-95",
+  "apm": -2.13
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "1994-95",
+  "apm": -2.19
  },
  {
   "name": "Mario Elie",
@@ -1000,6 +1150,11 @@
   "apm": 4.06
  },
  {
+  "name": "Muggsy Bogues",
+  "season": "1994-95",
+  "apm": -0.51
+ },
+ {
   "name": "Nate McMillan",
   "season": "1994-95",
   "apm": 5.14
@@ -1025,14 +1180,29 @@
   "apm": 0.07
  },
  {
+  "name": "Pete Chilcutt",
+  "season": "1994-95",
+  "apm": -1.84
+ },
+ {
+  "name": "Pooh Richardson",
+  "season": "1994-95",
+  "apm": -3.65
+ },
+ {
   "name": "Reggie Miller",
   "season": "1994-95",
   "apm": 2.43
  },
  {
-  "name": "Rick Fox",
+  "name": "Reggie Williams",
   "season": "1994-95",
-  "apm": 0.21
+  "apm": 2.38
+ },
+ {
+  "name": "Rex Walters",
+  "season": "1994-95",
+  "apm": -2.16
  },
  {
   "name": "Robert Horry",
@@ -1048,6 +1218,11 @@
   "name": "Rod Strickland",
   "season": "1994-95",
   "apm": 4.17
+ },
+ {
+  "name": "Rodney Rogers",
+  "season": "1994-95",
+  "apm": 0.6
  },
  {
   "name": "Ron Harper",
@@ -1085,14 +1260,14 @@
   "apm": 1.26
  },
  {
-  "name": "Sherman Douglas",
-  "season": "1994-95",
-  "apm": -1.2
- },
- {
   "name": "Sleepy Floyd",
   "season": "1994-95",
   "apm": -0.37
+ },
+ {
+  "name": "Stacey Augmon",
+  "season": "1994-95",
+  "apm": 1.97
  },
  {
   "name": "Steve Kerr",
@@ -1103,11 +1278,6 @@
   "name": "Terrell Brandon",
   "season": "1994-95",
   "apm": 0.82
- },
- {
-  "name": "Terry Cummings",
-  "season": "1994-95",
-  "apm": -2.44
  },
  {
   "name": "Terry Mills",
@@ -1155,9 +1325,19 @@
   "apm": -1.24
  },
  {
+  "name": "Aaron McKie",
+  "season": "1995-96",
+  "apm": 2.26
+ },
+ {
   "name": "Adam Keefe",
   "season": "1995-96",
   "apm": 0.14
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "1995-96",
+  "apm": -3.63
  },
  {
   "name": "Allan Houston",
@@ -1185,6 +1365,11 @@
   "apm": 1.07
  },
  {
+  "name": "Anthony Peeler",
+  "season": "1995-96",
+  "apm": -0.75
+ },
+ {
   "name": "Antonio McDyess",
   "season": "1995-96",
   "apm": -1.26
@@ -1205,14 +1390,24 @@
   "apm": 3.07
  },
  {
+  "name": "Bobby Hurley",
+  "season": "1995-96",
+  "apm": -7.43
+ },
+ {
   "name": "Brent Barry",
   "season": "1995-96",
   "apm": -0.13
  },
  {
-  "name": "Buck Williams",
+  "name": "Brent Price",
   "season": "1995-96",
-  "apm": -0.05
+  "apm": 1.85
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "1995-96",
+  "apm": -1.57
  },
  {
   "name": "Byron Scott",
@@ -1223,6 +1418,16 @@
   "name": "Charles Barkley",
   "season": "1995-96",
   "apm": 2.97
+ },
+ {
+  "name": "Chris Childs",
+  "season": "1995-96",
+  "apm": -0.1
+ },
+ {
+  "name": "Chris Morris",
+  "season": "1995-96",
+  "apm": 0.07
  },
  {
   "name": "Chris Mullin",
@@ -1243,11 +1448,6 @@
   "name": "Clyde Drexler",
   "season": "1995-96",
   "apm": 3.85
- },
- {
-  "name": "Dale Davis",
-  "season": "1995-96",
-  "apm": 1.7
  },
  {
   "name": "Dale Ellis",
@@ -1330,9 +1530,29 @@
   "apm": -3.51
  },
  {
+  "name": "Donyell Marshall",
+  "season": "1995-96",
+  "apm": -2.21
+ },
+ {
+  "name": "Eddie Johnson",
+  "season": "1995-96",
+  "apm": -2.65
+ },
+ {
   "name": "Eddie Jones",
   "season": "1995-96",
   "apm": 3.36
+ },
+ {
+  "name": "Eldridge Recasner",
+  "season": "1995-96",
+  "apm": -2.1
+ },
+ {
+  "name": "Eric Piatkowski",
+  "season": "1995-96",
+  "apm": 1.04
  },
  {
   "name": "Ervin Johnson",
@@ -1343,6 +1563,11 @@
   "name": "Gary Payton",
   "season": "1995-96",
   "apm": 2.78
+ },
+ {
+  "name": "George McCloud",
+  "season": "1995-96",
+  "apm": -1.48
  },
  {
   "name": "Glen Rice",
@@ -1360,9 +1585,19 @@
   "apm": 4.09
  },
  {
+  "name": "Greg Anthony",
+  "season": "1995-96",
+  "apm": -1.82
+ },
+ {
   "name": "Hakeem Olajuwon",
   "season": "1995-96",
   "apm": 3.84
+ },
+ {
+  "name": "Haywoode Workman",
+  "season": "1995-96",
+  "apm": -2.22
  },
  {
   "name": "Hersey Hawkins",
@@ -1370,9 +1605,9 @@
   "apm": 2.1
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "1995-96",
-  "apm": 4.28
+  "apm": -1.12
  },
  {
   "name": "Jalen Rose",
@@ -1395,6 +1630,11 @@
   "apm": -6.13
  },
  {
+  "name": "Jim Jackson",
+  "season": "1995-96",
+  "apm": -3.11
+ },
+ {
   "name": "Jim McIlvaine",
   "season": "1995-96",
   "apm": -1.59
@@ -1415,6 +1655,11 @@
   "apm": 5.16
  },
  {
+  "name": "Keith Askins",
+  "season": "1995-96",
+  "apm": -1.06
+ },
+ {
   "name": "Kenny Smith",
   "season": "1995-96",
   "apm": -0.02
@@ -1430,9 +1675,9 @@
   "apm": 2.41
  },
  {
-  "name": "LaPhonso Ellis",
+  "name": "Lamond Murray",
   "season": "1995-96",
-  "apm": -1.67
+  "apm": -0.76
  },
  {
   "name": "Larry Johnson",
@@ -1443,6 +1688,16 @@
   "name": "Latrell Sprewell",
   "season": "1995-96",
   "apm": -0.66
+ },
+ {
+  "name": "Lee Mayberry",
+  "season": "1995-96",
+  "apm": -0.19
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "1995-96",
+  "apm": -0.12
  },
  {
   "name": "Magic Johnson",
@@ -1500,11 +1755,6 @@
   "apm": -0.52
  },
  {
-  "name": "Otis Thorpe",
-  "season": "1995-96",
-  "apm": 2.77
- },
- {
   "name": "Patrick Ewing",
   "season": "1995-96",
   "apm": 2.83
@@ -1513,6 +1763,11 @@
   "name": "Pervis Ellison",
   "season": "1995-96",
   "apm": -2.18
+ },
+ {
+  "name": "Pooh Richardson",
+  "season": "1995-96",
+  "apm": -2.51
  },
  {
   "name": "Rasheed Wallace",
@@ -1525,9 +1780,14 @@
   "apm": 3.56
  },
  {
-  "name": "Rick Fox",
+  "name": "Reggie Williams",
   "season": "1995-96",
-  "apm": -1.41
+  "apm": 0.04
+ },
+ {
+  "name": "Ricky Pierce",
+  "season": "1995-96",
+  "apm": -1.49
  },
  {
   "name": "Robert Horry",
@@ -1543,6 +1803,11 @@
   "name": "Rod Strickland",
   "season": "1995-96",
   "apm": 1.45
+ },
+ {
+  "name": "Rodney Rogers",
+  "season": "1995-96",
+  "apm": -2.6
  },
  {
   "name": "Ron Harper",
@@ -1575,6 +1840,11 @@
   "apm": 2.82
  },
  {
+  "name": "Stacey Augmon",
+  "season": "1995-96",
+  "apm": 1.13
+ },
+ {
   "name": "Steve Kerr",
   "season": "1995-96",
   "apm": 0.29
@@ -1588,11 +1858,6 @@
   "name": "Terrell Brandon",
   "season": "1995-96",
   "apm": 2.89
- },
- {
-  "name": "Terry Cummings",
-  "season": "1995-96",
-  "apm": 1.98
  },
  {
   "name": "Terry Mills",
@@ -1620,6 +1885,11 @@
   "apm": 4.04
  },
  {
+  "name": "Tracy Murray",
+  "season": "1995-96",
+  "apm": -0.23
+ },
+ {
   "name": "Vin Baker",
   "season": "1995-96",
   "apm": -3.8
@@ -1635,9 +1905,19 @@
   "apm": 1.47
  },
  {
+  "name": "Aaron McKie",
+  "season": "1996-97",
+  "apm": 1.88
+ },
+ {
   "name": "Adam Keefe",
   "season": "1996-97",
   "apm": 1.91
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "1996-97",
+  "apm": -3.62
  },
  {
   "name": "Allan Houston",
@@ -1670,6 +1950,11 @@
   "apm": -0.03
  },
  {
+  "name": "Anthony Peeler",
+  "season": "1996-97",
+  "apm": -0.48
+ },
+ {
   "name": "Antoine Walker",
   "season": "1996-97",
   "apm": -3.64
@@ -1700,14 +1985,19 @@
   "apm": -0.58
  },
  {
-  "name": "Billy Owens",
-  "season": "1996-97",
-  "apm": -0.01
- },
- {
   "name": "Bo Outlaw",
   "season": "1996-97",
   "apm": 6.87
+ },
+ {
+  "name": "Bobby Hurley",
+  "season": "1996-97",
+  "apm": -0.32
+ },
+ {
+  "name": "Brad Lohaus",
+  "season": "1996-97",
+  "apm": -1.39
  },
  {
   "name": "Brent Barry",
@@ -1715,9 +2005,19 @@
   "apm": 2.84
  },
  {
-  "name": "Buck Williams",
+  "name": "Brent Price",
   "season": "1996-97",
-  "apm": 2.46
+  "apm": 0.86
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "1996-97",
+  "apm": -7.7
+ },
+ {
+  "name": "Bryon Russell",
+  "season": "1996-97",
+  "apm": 3.23
  },
  {
   "name": "Byron Scott",
@@ -1735,6 +2035,21 @@
   "apm": -0.01
  },
  {
+  "name": "Charlie Ward",
+  "season": "1996-97",
+  "apm": 0.42
+ },
+ {
+  "name": "Chris Childs",
+  "season": "1996-97",
+  "apm": 2.33
+ },
+ {
+  "name": "Chris Morris",
+  "season": "1996-97",
+  "apm": -4.27
+ },
+ {
   "name": "Chris Mullin",
   "season": "1996-97",
   "apm": -2.41
@@ -1743,6 +2058,11 @@
   "name": "Chris Webber",
   "season": "1996-97",
   "apm": 3.42
+ },
+ {
+  "name": "Chris Whitney",
+  "season": "1996-97",
+  "apm": -0.26
  },
  {
   "name": "Christian Laettner",
@@ -1758,6 +2078,11 @@
   "name": "Clyde Drexler",
   "season": "1996-97",
   "apm": 4.47
+ },
+ {
+  "name": "Cory Alexander",
+  "season": "1996-97",
+  "apm": -3.01
  },
  {
   "name": "Damon Stoudamire",
@@ -1805,6 +2130,11 @@
   "apm": -2.48
  },
  {
+  "name": "David Wood",
+  "season": "1996-97",
+  "apm": 0.06
+ },
+ {
   "name": "Dee Brown",
   "season": "1996-97",
   "apm": -0.72
@@ -1823,6 +2153,11 @@
   "name": "Dennis Scott",
   "season": "1996-97",
   "apm": 1.81
+ },
+ {
+  "name": "Derek Fisher",
+  "season": "1996-97",
+  "apm": 1.16
  },
  {
   "name": "Derek Harper",
@@ -1855,9 +2190,29 @@
   "apm": -1.72
  },
  {
+  "name": "Donyell Marshall",
+  "season": "1996-97",
+  "apm": -3.07
+ },
+ {
   "name": "Doug Christie",
   "season": "1996-97",
   "apm": 1.63
+ },
+ {
+  "name": "Duane Ferrell",
+  "season": "1996-97",
+  "apm": 0.7
+ },
+ {
+  "name": "Ed Pinckney",
+  "season": "1996-97",
+  "apm": -2.79
+ },
+ {
+  "name": "Eddie Johnson",
+  "season": "1996-97",
+  "apm": -0.15
  },
  {
   "name": "Eddie Jones",
@@ -1865,14 +2220,34 @@
   "apm": 1.2
  },
  {
+  "name": "Eldridge Recasner",
+  "season": "1996-97",
+  "apm": -3.95
+ },
+ {
+  "name": "Emanual Davis",
+  "season": "1996-97",
+  "apm": 0.92
+ },
+ {
   "name": "Eric Murdock",
   "season": "1996-97",
   "apm": 0.83
  },
  {
+  "name": "Eric Piatkowski",
+  "season": "1996-97",
+  "apm": 1.87
+ },
+ {
   "name": "Eric Snow",
   "season": "1996-97",
   "apm": -2.86
+ },
+ {
+  "name": "Erick Strickland",
+  "season": "1996-97",
+  "apm": 0.45
  },
  {
   "name": "Ervin Johnson",
@@ -1890,6 +2265,11 @@
   "apm": 4.5
  },
  {
+  "name": "George McCloud",
+  "season": "1996-97",
+  "apm": 0.89
+ },
+ {
   "name": "Glen Rice",
   "season": "1996-97",
   "apm": 1.78
@@ -1905,9 +2285,24 @@
   "apm": 3.53
  },
  {
+  "name": "Greg Anderson",
+  "season": "1996-97",
+  "apm": -5.28
+ },
+ {
+  "name": "Greg Anthony",
+  "season": "1996-97",
+  "apm": 1.11
+ },
+ {
   "name": "Hakeem Olajuwon",
   "season": "1996-97",
   "apm": 3.99
+ },
+ {
+  "name": "Haywoode Workman",
+  "season": "1996-97",
+  "apm": -0.4
  },
  {
   "name": "Hersey Hawkins",
@@ -1915,9 +2310,9 @@
   "apm": 3.74
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "1996-97",
-  "apm": 3.85
+  "apm": -1.18
  },
  {
   "name": "Jalen Rose",
@@ -1950,6 +2345,11 @@
   "apm": 0.04
  },
  {
+  "name": "Jim Jackson",
+  "season": "1996-97",
+  "apm": -4.61
+ },
+ {
   "name": "Jim McIlvaine",
   "season": "1996-97",
   "apm": 1.83
@@ -1958,11 +2358,6 @@
   "name": "Joe Dumars",
   "season": "1996-97",
   "apm": 2.19
- },
- {
-  "name": "Joe Wolf",
-  "season": "1996-97",
-  "apm": -1.24
  },
  {
   "name": "John Stockton",
@@ -1985,9 +2380,9 @@
   "apm": 5.24
  },
  {
-  "name": "Kendall Gill",
+  "name": "Keith Askins",
   "season": "1996-97",
-  "apm": 3.08
+  "apm": 0.72
  },
  {
   "name": "Kenny Anderson",
@@ -1998,6 +2393,11 @@
   "name": "Kenny Smith",
   "season": "1996-97",
   "apm": -3.95
+ },
+ {
+  "name": "Kerry Kittles",
+  "season": "1996-97",
+  "apm": 0
  },
  {
   "name": "Kevin Garnett",
@@ -2015,6 +2415,11 @@
   "apm": -0.16
  },
  {
+  "name": "Lamond Murray",
+  "season": "1996-97",
+  "apm": -0.36
+ },
+ {
   "name": "Larry Johnson",
   "season": "1996-97",
   "apm": 1.59
@@ -2023,6 +2428,16 @@
   "name": "Latrell Sprewell",
   "season": "1996-97",
   "apm": 1.44
+ },
+ {
+  "name": "Lee Mayberry",
+  "season": "1996-97",
+  "apm": -2.45
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "1996-97",
+  "apm": -0.51
  },
  {
   "name": "Marcus Camby",
@@ -2043,6 +2458,11 @@
   "name": "Mark Price",
   "season": "1996-97",
   "apm": 0.09
+ },
+ {
+  "name": "Matt Bullard",
+  "season": "1996-97",
+  "apm": -0.5
  },
  {
   "name": "Michael Cage",
@@ -2075,6 +2495,11 @@
   "apm": 6.27
  },
  {
+  "name": "Muggsy Bogues",
+  "season": "1996-97",
+  "apm": 2.76
+ },
+ {
   "name": "Nate McMillan",
   "season": "1996-97",
   "apm": 4.06
@@ -2090,11 +2515,6 @@
   "apm": 0.18
  },
  {
-  "name": "Otis Thorpe",
-  "season": "1996-97",
-  "apm": 1.39
- },
- {
   "name": "Patrick Ewing",
   "season": "1996-97",
   "apm": 5.71
@@ -2103,6 +2523,16 @@
   "name": "Pervis Ellison",
   "season": "1996-97",
   "apm": 0.79
+ },
+ {
+  "name": "Pete Chilcutt",
+  "season": "1996-97",
+  "apm": -3.33
+ },
+ {
+  "name": "Pooh Richardson",
+  "season": "1996-97",
+  "apm": -0.99
  },
  {
   "name": "Rasheed Wallace",
@@ -2120,9 +2550,19 @@
   "apm": 1.8
  },
  {
-  "name": "Rick Fox",
+  "name": "Reggie Williams",
   "season": "1996-97",
-  "apm": 0.67
+  "apm": -1.24
+ },
+ {
+  "name": "Rex Walters",
+  "season": "1996-97",
+  "apm": -2.99
+ },
+ {
+  "name": "Ricky Pierce",
+  "season": "1996-97",
+  "apm": -0.82
  },
  {
   "name": "Robert Horry",
@@ -2140,6 +2580,11 @@
   "apm": 0.32
  },
  {
+  "name": "Rodney Rogers",
+  "season": "1996-97",
+  "apm": 2.94
+ },
+ {
   "name": "Ron Harper",
   "season": "1996-97",
   "apm": 4.75
@@ -2150,6 +2595,16 @@
   "apm": 1.87
  },
  {
+  "name": "Sam Mack",
+  "season": "1996-97",
+  "apm": -2.69
+ },
+ {
+  "name": "Scott Brooks",
+  "season": "1996-97",
+  "apm": -0.63
+ },
+ {
   "name": "Scottie Pippen",
   "season": "1996-97",
   "apm": 6.45
@@ -2158,6 +2613,11 @@
   "name": "Sean Elliott",
   "season": "1996-97",
   "apm": -0.48
+ },
+ {
+  "name": "Shandon Anderson",
+  "season": "1996-97",
+  "apm": 0.05
  },
  {
   "name": "Shaquille O'Neal",
@@ -2175,9 +2635,9 @@
   "apm": 1.13
  },
  {
-  "name": "Sherman Douglas",
+  "name": "Stacey Augmon",
   "season": "1996-97",
-  "apm": -0.5
+  "apm": 1.16
  },
  {
   "name": "Stephon Marbury",
@@ -2198,11 +2658,6 @@
   "name": "Terrell Brandon",
   "season": "1996-97",
   "apm": 0.31
- },
- {
-  "name": "Terry Cummings",
-  "season": "1996-97",
-  "apm": -0.92
  },
  {
   "name": "Terry Mills",
@@ -2240,6 +2695,11 @@
   "apm": 4.98
  },
  {
+  "name": "Tracy Murray",
+  "season": "1996-97",
+  "apm": 1.24
+ },
+ {
   "name": "Vin Baker",
   "season": "1996-97",
   "apm": 2.19
@@ -2255,14 +2715,29 @@
   "apm": 2.15
  },
  {
+  "name": "Walter McCarty",
+  "season": "1996-97",
+  "apm": -1.02
+ },
+ {
   "name": "Wesley Person",
   "season": "1996-97",
   "apm": 1.21
  },
  {
+  "name": "Aaron McKie",
+  "season": "1997-98",
+  "apm": 2.9
+ },
+ {
   "name": "Adam Keefe",
   "season": "1997-98",
   "apm": 2.06
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "1997-98",
+  "apm": -1.82
  },
  {
   "name": "Allan Houston",
@@ -2295,9 +2770,24 @@
   "apm": 1.22
  },
  {
+  "name": "Anthony Parker",
+  "season": "1997-98",
+  "apm": -2.61
+ },
+ {
+  "name": "Anthony Peeler",
+  "season": "1997-98",
+  "apm": 0.53
+ },
+ {
   "name": "Antoine Walker",
   "season": "1997-98",
   "apm": -2.19
+ },
+ {
+  "name": "Antonio Daniels",
+  "season": "1997-98",
+  "apm": -4.56
  },
  {
   "name": "Antonio McDyess",
@@ -2308,6 +2798,11 @@
   "name": "Arvydas Sabonis",
   "season": "1997-98",
   "apm": 4.91
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "1997-98",
+  "apm": -2.96
  },
  {
   "name": "B.J. Armstrong",
@@ -2325,14 +2820,19 @@
   "apm": 0.34
  },
  {
-  "name": "Billy Owens",
-  "season": "1997-98",
-  "apm": 0.11
- },
- {
   "name": "Bo Outlaw",
   "season": "1997-98",
   "apm": 4.73
+ },
+ {
+  "name": "Bobby Hurley",
+  "season": "1997-98",
+  "apm": -1.03
+ },
+ {
+  "name": "Brad Lohaus",
+  "season": "1997-98",
+  "apm": -1.78
  },
  {
   "name": "Brent Barry",
@@ -2340,14 +2840,24 @@
   "apm": 1.91
  },
  {
+  "name": "Brent Price",
+  "season": "1997-98",
+  "apm": 0.83
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "1997-98",
+  "apm": -4.59
+ },
+ {
   "name": "Bruce Bowen",
   "season": "1997-98",
   "apm": 2.51
  },
  {
-  "name": "Buck Williams",
+  "name": "Bryon Russell",
   "season": "1997-98",
-  "apm": 1.86
+  "apm": 2.34
  },
  {
   "name": "Charles Barkley",
@@ -2360,9 +2870,24 @@
   "apm": 0.3
  },
  {
+  "name": "Charlie Ward",
+  "season": "1997-98",
+  "apm": 3.33
+ },
+ {
   "name": "Chauncey Billups",
   "season": "1997-98",
   "apm": -4.47
+ },
+ {
+  "name": "Chris Childs",
+  "season": "1997-98",
+  "apm": 0.78
+ },
+ {
+  "name": "Chris Morris",
+  "season": "1997-98",
+  "apm": -2.41
  },
  {
   "name": "Chris Mullin",
@@ -2373,6 +2898,11 @@
   "name": "Chris Webber",
   "season": "1997-98",
   "apm": 3.54
+ },
+ {
+  "name": "Chris Whitney",
+  "season": "1997-98",
+  "apm": 0.27
  },
  {
   "name": "Christian Laettner",
@@ -2393,6 +2923,11 @@
   "name": "Clyde Drexler",
   "season": "1997-98",
   "apm": 3.51
+ },
+ {
+  "name": "Cory Alexander",
+  "season": "1997-98",
+  "apm": -1.85
  },
  {
   "name": "Dale Ellis",
@@ -2418,6 +2953,11 @@
   "name": "Danny Ferry",
   "season": "1997-98",
   "apm": 0.37
+ },
+ {
+  "name": "Danny Fortson",
+  "season": "1997-98",
+  "apm": -2.96
  },
  {
   "name": "Danny Manning",
@@ -2465,9 +3005,9 @@
   "apm": 1.14
  },
  {
-  "name": "Derek Anderson",
+  "name": "Derek Fisher",
   "season": "1997-98",
-  "apm": 0.41
+  "apm": 1.76
  },
  {
   "name": "Derek Harper",
@@ -2500,9 +3040,24 @@
   "apm": -0.2
  },
  {
+  "name": "Donyell Marshall",
+  "season": "1997-98",
+  "apm": -1.48
+ },
+ {
   "name": "Doug Christie",
   "season": "1997-98",
   "apm": 1
+ },
+ {
+  "name": "Duane Ferrell",
+  "season": "1997-98",
+  "apm": -0.93
+ },
+ {
+  "name": "Eddie Johnson",
+  "season": "1997-98",
+  "apm": -1.79
  },
  {
   "name": "Eddie Jones",
@@ -2510,14 +3065,34 @@
   "apm": 3.09
  },
  {
+  "name": "Eldridge Recasner",
+  "season": "1997-98",
+  "apm": -3.47
+ },
+ {
+  "name": "Emanual Davis",
+  "season": "1997-98",
+  "apm": 0.63
+ },
+ {
   "name": "Eric Murdock",
   "season": "1997-98",
   "apm": 0.44
  },
  {
+  "name": "Eric Piatkowski",
+  "season": "1997-98",
+  "apm": 1.23
+ },
+ {
   "name": "Eric Snow",
   "season": "1997-98",
   "apm": -1.04
+ },
+ {
+  "name": "Erick Strickland",
+  "season": "1997-98",
+  "apm": -0.24
  },
  {
   "name": "Ervin Johnson",
@@ -2535,6 +3110,11 @@
   "apm": 4.67
  },
  {
+  "name": "George McCloud",
+  "season": "1997-98",
+  "apm": 1.33
+ },
+ {
   "name": "Glen Rice",
   "season": "1997-98",
   "apm": 1.99
@@ -2550,6 +3130,16 @@
   "apm": 5.35
  },
  {
+  "name": "Greg Anderson",
+  "season": "1997-98",
+  "apm": -4.72
+ },
+ {
+  "name": "Greg Anthony",
+  "season": "1997-98",
+  "apm": -0.77
+ },
+ {
   "name": "Hakeem Olajuwon",
   "season": "1997-98",
   "apm": 3.35
@@ -2560,9 +3150,9 @@
   "apm": 3.23
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "1997-98",
-  "apm": 2.51
+  "apm": -0.97
  },
  {
   "name": "Jacque Vaughn",
@@ -2600,6 +3190,11 @@
   "apm": 0.67
  },
  {
+  "name": "Jim Jackson",
+  "season": "1997-98",
+  "apm": -2.45
+ },
+ {
   "name": "Jim McIlvaine",
   "season": "1997-98",
   "apm": 0.16
@@ -2608,11 +3203,6 @@
   "name": "Joe Dumars",
   "season": "1997-98",
   "apm": 1.16
- },
- {
-  "name": "Joe Wolf",
-  "season": "1997-98",
-  "apm": -0.32
  },
  {
   "name": "John Stockton",
@@ -2635,19 +3225,24 @@
   "apm": 5.54
  },
  {
+  "name": "Keith Askins",
+  "season": "1997-98",
+  "apm": 0.01
+ },
+ {
   "name": "Keith Van Horn",
   "season": "1997-98",
   "apm": 1.3
  },
  {
-  "name": "Kendall Gill",
-  "season": "1997-98",
-  "apm": 2.55
- },
- {
   "name": "Kenny Anderson",
   "season": "1997-98",
   "apm": 1.3
+ },
+ {
+  "name": "Kerry Kittles",
+  "season": "1997-98",
+  "apm": 1.95
  },
  {
   "name": "Kevin Garnett",
@@ -2670,9 +3265,9 @@
   "apm": 0.15
  },
  {
-  "name": "LaPhonso Ellis",
+  "name": "Lamond Murray",
   "season": "1997-98",
-  "apm": -2.58
+  "apm": -1.55
  },
  {
   "name": "Larry Johnson",
@@ -2683,6 +3278,16 @@
   "name": "Latrell Sprewell",
   "season": "1997-98",
   "apm": -0.21
+ },
+ {
+  "name": "Lee Mayberry",
+  "season": "1997-98",
+  "apm": 0.41
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "1997-98",
+  "apm": -0.25
  },
  {
   "name": "Marcus Camby",
@@ -2705,6 +3310,11 @@
   "apm": -0.49
  },
  {
+  "name": "Matt Bullard",
+  "season": "1997-98",
+  "apm": -0.24
+ },
+ {
   "name": "Michael Cage",
   "season": "1997-98",
   "apm": -1.49
@@ -2725,11 +3335,6 @@
   "apm": 6.37
  },
  {
-  "name": "Micheal Williams",
-  "season": "1997-98",
-  "apm": -0.4
- },
- {
   "name": "Mitch Richmond",
   "season": "1997-98",
   "apm": 3.67
@@ -2738,6 +3343,11 @@
   "name": "Mookie Blaylock",
   "season": "1997-98",
   "apm": 6.71
+ },
+ {
+  "name": "Muggsy Bogues",
+  "season": "1997-98",
+  "apm": 1.46
  },
  {
   "name": "Nate McMillan",
@@ -2755,11 +3365,6 @@
   "apm": 0.89
  },
  {
-  "name": "Otis Thorpe",
-  "season": "1997-98",
-  "apm": -1.17
- },
- {
   "name": "Patrick Ewing",
   "season": "1997-98",
   "apm": 4.59
@@ -2768,6 +3373,16 @@
   "name": "Pervis Ellison",
   "season": "1997-98",
   "apm": 1.77
+ },
+ {
+  "name": "Pete Chilcutt",
+  "season": "1997-98",
+  "apm": -2.36
+ },
+ {
+  "name": "Pooh Richardson",
+  "season": "1997-98",
+  "apm": -2.42
  },
  {
   "name": "Rasheed Wallace",
@@ -2785,9 +3400,19 @@
   "apm": 5.13
  },
  {
-  "name": "Rick Fox",
+  "name": "Rex Walters",
   "season": "1997-98",
-  "apm": 0.56
+  "apm": -2.67
+ },
+ {
+  "name": "Rick Brunson",
+  "season": "1997-98",
+  "apm": -2.19
+ },
+ {
+  "name": "Ricky Pierce",
+  "season": "1997-98",
+  "apm": -1.67
  },
  {
   "name": "Robert Horry",
@@ -2800,6 +3425,11 @@
   "apm": 2.22
  },
  {
+  "name": "Rodney Rogers",
+  "season": "1997-98",
+  "apm": -1.42
+ },
+ {
   "name": "Ron Harper",
   "season": "1997-98",
   "apm": 4.47
@@ -2810,6 +3440,16 @@
   "apm": 2.99
  },
  {
+  "name": "Sam Mack",
+  "season": "1997-98",
+  "apm": -1.47
+ },
+ {
+  "name": "Scott Brooks",
+  "season": "1997-98",
+  "apm": -0.79
+ },
+ {
   "name": "Scottie Pippen",
   "season": "1997-98",
   "apm": 4.67
@@ -2818,6 +3458,11 @@
   "name": "Sean Elliott",
   "season": "1997-98",
   "apm": -0.75
+ },
+ {
+  "name": "Shandon Anderson",
+  "season": "1997-98",
+  "apm": 0.36
  },
  {
   "name": "Shaquille O'Neal",
@@ -2835,9 +3480,9 @@
   "apm": 3.12
  },
  {
-  "name": "Sherman Douglas",
+  "name": "Stacey Augmon",
   "season": "1997-98",
-  "apm": 1.28
+  "apm": 0.03
  },
  {
   "name": "Stephon Marbury",
@@ -2863,11 +3508,6 @@
   "name": "Terrell Brandon",
   "season": "1997-98",
   "apm": 2.13
- },
- {
-  "name": "Terry Cummings",
-  "season": "1997-98",
-  "apm": 0.74
  },
  {
   "name": "Terry Mills",
@@ -2915,6 +3555,11 @@
   "apm": -2.41
  },
  {
+  "name": "Tracy Murray",
+  "season": "1997-98",
+  "apm": 0.62
+ },
+ {
   "name": "Vin Baker",
   "season": "1997-98",
   "apm": 0.47
@@ -2930,6 +3575,11 @@
   "apm": 0.24
  },
  {
+  "name": "Walter McCarty",
+  "season": "1997-98",
+  "apm": 0.11
+ },
+ {
   "name": "Wesley Person",
   "season": "1997-98",
   "apm": 2.58
@@ -2940,6 +3590,11 @@
   "apm": 1
  },
  {
+  "name": "Aaron McKie",
+  "season": "1998-99",
+  "apm": 1.19
+ },
+ {
   "name": "Adam Keefe",
   "season": "1998-99",
   "apm": 1.88
@@ -2948,6 +3603,11 @@
   "name": "Al Harrington",
   "season": "1998-99",
   "apm": -2.29
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "1998-99",
+  "apm": -2.88
  },
  {
   "name": "Allan Houston",
@@ -2970,9 +3630,29 @@
   "apm": 2.22
  },
  {
+  "name": "Antawn Jamison",
+  "season": "1998-99",
+  "apm": -0.47
+ },
+ {
+  "name": "Anthony Parker",
+  "season": "1998-99",
+  "apm": -2.42
+ },
+ {
+  "name": "Anthony Peeler",
+  "season": "1998-99",
+  "apm": 1.04
+ },
+ {
   "name": "Antoine Walker",
   "season": "1998-99",
   "apm": -2.89
+ },
+ {
+  "name": "Antonio Daniels",
+  "season": "1998-99",
+  "apm": -3.26
  },
  {
   "name": "Antonio McDyess",
@@ -2983,6 +3663,11 @@
   "name": "Arvydas Sabonis",
   "season": "1998-99",
   "apm": 5.43
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "1998-99",
+  "apm": -3.66
  },
  {
   "name": "B.J. Armstrong",
@@ -3000,11 +3685,6 @@
   "apm": 0.45
  },
  {
-  "name": "Billy Owens",
-  "season": "1998-99",
-  "apm": -0.21
- },
- {
   "name": "Bo Outlaw",
   "season": "1998-99",
   "apm": 3.15
@@ -3020,9 +3700,24 @@
   "apm": -0.28
  },
  {
+  "name": "Brent Price",
+  "season": "1998-99",
+  "apm": 0.57
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "1998-99",
+  "apm": -4.39
+ },
+ {
   "name": "Bruce Bowen",
   "season": "1998-99",
   "apm": 2.09
+ },
+ {
+  "name": "Bryon Russell",
+  "season": "1998-99",
+  "apm": 1.37
  },
  {
   "name": "Charles Barkley",
@@ -3030,9 +3725,24 @@
   "apm": 3.71
  },
  {
+  "name": "Charlie Ward",
+  "season": "1998-99",
+  "apm": 2.69
+ },
+ {
   "name": "Chauncey Billups",
   "season": "1998-99",
   "apm": -3
+ },
+ {
+  "name": "Chris Childs",
+  "season": "1998-99",
+  "apm": 1.49
+ },
+ {
+  "name": "Chris Morris",
+  "season": "1998-99",
+  "apm": -1.75
  },
  {
   "name": "Chris Mullin",
@@ -3043,6 +3753,11 @@
   "name": "Chris Webber",
   "season": "1998-99",
   "apm": 3.59
+ },
+ {
+  "name": "Chris Whitney",
+  "season": "1998-99",
+  "apm": 0.42
  },
  {
   "name": "Christian Laettner",
@@ -3060,6 +3775,11 @@
   "apm": 2.29
  },
  {
+  "name": "Cory Alexander",
+  "season": "1998-99",
+  "apm": -0.08
+ },
+ {
   "name": "Cuttino Mobley",
   "season": "1998-99",
   "apm": -1.35
@@ -3068,6 +3788,11 @@
   "name": "Dale Ellis",
   "season": "1998-99",
   "apm": -1.22
+ },
+ {
+  "name": "Damon Jones",
+  "season": "1998-99",
+  "apm": -0.38
  },
  {
   "name": "Damon Stoudamire",
@@ -3088,6 +3813,11 @@
   "name": "Danny Ferry",
   "season": "1998-99",
   "apm": 0.59
+ },
+ {
+  "name": "Danny Fortson",
+  "season": "1998-99",
+  "apm": -1.97
  },
  {
   "name": "Danny Manning",
@@ -3130,9 +3860,9 @@
   "apm": 0.35
  },
  {
-  "name": "Derek Anderson",
+  "name": "Derek Fisher",
   "season": "1998-99",
-  "apm": 0.6
+  "apm": 2.96
  },
  {
   "name": "Derek Harper",
@@ -3170,9 +3900,24 @@
   "apm": 0.86
  },
  {
+  "name": "Donyell Marshall",
+  "season": "1998-99",
+  "apm": -0.41
+ },
+ {
   "name": "Doug Christie",
   "season": "1998-99",
   "apm": 0.75
+ },
+ {
+  "name": "Duane Ferrell",
+  "season": "1998-99",
+  "apm": -0.43
+ },
+ {
+  "name": "Eddie Johnson",
+  "season": "1998-99",
+  "apm": -1.85
  },
  {
   "name": "Eddie Jones",
@@ -3180,14 +3925,29 @@
   "apm": 4.57
  },
  {
+  "name": "Eldridge Recasner",
+  "season": "1998-99",
+  "apm": -3.39
+ },
+ {
   "name": "Eric Murdock",
   "season": "1998-99",
   "apm": 0.74
  },
  {
+  "name": "Eric Piatkowski",
+  "season": "1998-99",
+  "apm": 1.1
+ },
+ {
   "name": "Eric Snow",
   "season": "1998-99",
   "apm": 0.57
+ },
+ {
+  "name": "Erick Strickland",
+  "season": "1998-99",
+  "apm": -0.18
  },
  {
   "name": "Ervin Johnson",
@@ -3205,6 +3965,11 @@
   "apm": 3.75
  },
  {
+  "name": "George McCloud",
+  "season": "1998-99",
+  "apm": 0.84
+ },
+ {
   "name": "Glen Rice",
   "season": "1998-99",
   "apm": 1.63
@@ -3220,9 +3985,19 @@
   "apm": 5.98
  },
  {
+  "name": "Greg Anthony",
+  "season": "1998-99",
+  "apm": 1.15
+ },
+ {
   "name": "Hakeem Olajuwon",
   "season": "1998-99",
   "apm": 2.86
+ },
+ {
+  "name": "Haywoode Workman",
+  "season": "1998-99",
+  "apm": 1.6
  },
  {
   "name": "Hersey Hawkins",
@@ -3230,9 +4005,9 @@
   "apm": 3.05
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "1998-99",
-  "apm": 1.47
+  "apm": -0.3
  },
  {
   "name": "Jacque Vaughn",
@@ -3270,6 +4045,11 @@
   "apm": -0.13
  },
  {
+  "name": "Jim Jackson",
+  "season": "1998-99",
+  "apm": -0.58
+ },
+ {
   "name": "Jim McIlvaine",
   "season": "1998-99",
   "apm": 0.13
@@ -3278,11 +4058,6 @@
   "name": "Joe Dumars",
   "season": "1998-99",
   "apm": 1.74
- },
- {
-  "name": "Joe Wolf",
-  "season": "1998-99",
-  "apm": -0.4
  },
  {
   "name": "John Stockton",
@@ -3305,19 +4080,24 @@
   "apm": 4.74
  },
  {
+  "name": "Keith Askins",
+  "season": "1998-99",
+  "apm": 1.13
+ },
+ {
   "name": "Keith Van Horn",
   "season": "1998-99",
   "apm": 0.85
  },
  {
-  "name": "Kendall Gill",
-  "season": "1998-99",
-  "apm": 1.4
- },
- {
   "name": "Kenny Anderson",
   "season": "1998-99",
   "apm": 1.19
+ },
+ {
+  "name": "Kerry Kittles",
+  "season": "1998-99",
+  "apm": -0.8
  },
  {
   "name": "Kevin Garnett",
@@ -3335,14 +4115,9 @@
   "apm": -0.84
  },
  {
-  "name": "LaPhonso Ellis",
+  "name": "Lamond Murray",
   "season": "1998-99",
-  "apm": -2.63
- },
- {
-  "name": "Larry Hughes",
-  "season": "1998-99",
-  "apm": -1.04
+  "apm": -2.45
  },
  {
   "name": "Larry Johnson",
@@ -3353,6 +4128,16 @@
   "name": "Latrell Sprewell",
   "season": "1998-99",
   "apm": -0.39
+ },
+ {
+  "name": "Lee Mayberry",
+  "season": "1998-99",
+  "apm": 0.31
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "1998-99",
+  "apm": 1.41
  },
  {
   "name": "Marcus Camby",
@@ -3370,6 +4155,11 @@
   "apm": 3.61
  },
  {
+  "name": "Matt Bullard",
+  "season": "1998-99",
+  "apm": -0.36
+ },
+ {
   "name": "Michael Dickerson",
   "season": "1998-99",
   "apm": -0.46
@@ -3380,14 +4170,14 @@
   "apm": 0.95
  },
  {
-  "name": "Micheal Williams",
-  "season": "1998-99",
-  "apm": -0.32
- },
- {
   "name": "Mike Bibby",
   "season": "1998-99",
   "apm": -1.52
+ },
+ {
+  "name": "Mikki Moore",
+  "season": "1998-99",
+  "apm": -1.33
  },
  {
   "name": "Mitch Richmond",
@@ -3400,6 +4190,11 @@
   "apm": 6.72
  },
  {
+  "name": "Muggsy Bogues",
+  "season": "1998-99",
+  "apm": 1.41
+ },
+ {
   "name": "Nick Anderson",
   "season": "1998-99",
   "apm": 2.86
@@ -3410,9 +4205,9 @@
   "apm": 0.93
  },
  {
-  "name": "Otis Thorpe",
+  "name": "Pat Garrity",
   "season": "1998-99",
-  "apm": -1.38
+  "apm": -0.23
  },
  {
   "name": "Patrick Ewing",
@@ -3428,6 +4223,16 @@
   "name": "Peja Stojakovic",
   "season": "1998-99",
   "apm": -1.01
+ },
+ {
+  "name": "Pete Chilcutt",
+  "season": "1998-99",
+  "apm": -1.59
+ },
+ {
+  "name": "Pooh Richardson",
+  "season": "1998-99",
+  "apm": -1.91
  },
  {
   "name": "Raef LaFrentz",
@@ -3455,9 +4260,14 @@
   "apm": 4.2
  },
  {
-  "name": "Rick Fox",
+  "name": "Rex Walters",
   "season": "1998-99",
-  "apm": 0.25
+  "apm": -2.27
+ },
+ {
+  "name": "Rick Brunson",
+  "season": "1998-99",
+  "apm": -1.76
  },
  {
   "name": "Ricky Davis",
@@ -3475,6 +4285,11 @@
   "apm": 2.22
  },
  {
+  "name": "Rodney Rogers",
+  "season": "1998-99",
+  "apm": -1.85
+ },
+ {
   "name": "Ron Harper",
   "season": "1998-99",
   "apm": 4.07
@@ -3485,6 +4300,11 @@
   "apm": 3.42
  },
  {
+  "name": "Sam Mack",
+  "season": "1998-99",
+  "apm": -0.35
+ },
+ {
   "name": "Scottie Pippen",
   "season": "1998-99",
   "apm": 3.71
@@ -3493,6 +4313,16 @@
   "name": "Sean Elliott",
   "season": "1998-99",
   "apm": -1.38
+ },
+ {
+  "name": "Shammond Williams",
+  "season": "1998-99",
+  "apm": -1.77
+ },
+ {
+  "name": "Shandon Anderson",
+  "season": "1998-99",
+  "apm": 0.58
  },
  {
   "name": "Shaquille O'Neal",
@@ -3510,9 +4340,9 @@
   "apm": 3.24
  },
  {
-  "name": "Sherman Douglas",
+  "name": "Stacey Augmon",
   "season": "1998-99",
-  "apm": 0.82
+  "apm": 1.24
  },
  {
   "name": "Stephon Marbury",
@@ -3533,11 +4363,6 @@
   "name": "Terrell Brandon",
   "season": "1998-99",
   "apm": 1.38
- },
- {
-  "name": "Terry Cummings",
-  "season": "1998-99",
-  "apm": 0.76
  },
  {
   "name": "Terry Mills",
@@ -3580,6 +4405,11 @@
   "apm": -1.59
  },
  {
+  "name": "Tracy Murray",
+  "season": "1998-99",
+  "apm": -0.88
+ },
+ {
   "name": "Vin Baker",
   "season": "1998-99",
   "apm": 0.64
@@ -3600,6 +4430,11 @@
   "apm": 2.09
  },
  {
+  "name": "Walter McCarty",
+  "season": "1998-99",
+  "apm": 0.88
+ },
+ {
   "name": "Wesley Person",
   "season": "1998-99",
   "apm": 0.84
@@ -3608,6 +4443,11 @@
   "name": "Zydrunas Ilgauskas",
   "season": "1998-99",
   "apm": 0.99
+ },
+ {
+  "name": "Aaron McKie",
+  "season": "1999-00",
+  "apm": 0.72
  },
  {
   "name": "Adam Keefe",
@@ -3623,6 +4463,11 @@
   "name": "Al Harrington",
   "season": "1999-00",
   "apm": -1.67
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "1999-00",
+  "apm": -3.58
  },
  {
   "name": "Allan Houston",
@@ -3650,14 +4495,39 @@
   "apm": 4.14
  },
  {
+  "name": "Antawn Jamison",
+  "season": "1999-00",
+  "apm": -1.48
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "1999-00",
+  "apm": -0.65
+ },
+ {
   "name": "Anthony Mason",
   "season": "1999-00",
   "apm": 0.85
  },
  {
+  "name": "Anthony Parker",
+  "season": "1999-00",
+  "apm": -2.59
+ },
+ {
+  "name": "Anthony Peeler",
+  "season": "1999-00",
+  "apm": -1
+ },
+ {
   "name": "Antoine Walker",
   "season": "1999-00",
   "apm": -1.32
+ },
+ {
+  "name": "Antonio Daniels",
+  "season": "1999-00",
+  "apm": -1.24
  },
  {
   "name": "Antonio McDyess",
@@ -3668,6 +4538,11 @@
   "name": "Arvydas Sabonis",
   "season": "1999-00",
   "apm": 4.85
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "1999-00",
+  "apm": -0.44
  },
  {
   "name": "B.J. Armstrong",
@@ -3690,11 +4565,6 @@
   "apm": 0.57
  },
  {
-  "name": "Billy Owens",
-  "season": "1999-00",
-  "apm": 0.38
- },
- {
   "name": "Bo Outlaw",
   "season": "1999-00",
   "apm": 5.51
@@ -3710,9 +4580,24 @@
   "apm": 0.07
  },
  {
+  "name": "Brent Price",
+  "season": "1999-00",
+  "apm": 0.68
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "1999-00",
+  "apm": -4.28
+ },
+ {
   "name": "Bruce Bowen",
   "season": "1999-00",
   "apm": 2.35
+ },
+ {
+  "name": "Bryon Russell",
+  "season": "1999-00",
+  "apm": 3.31
  },
  {
   "name": "Charles Barkley",
@@ -3720,9 +4605,19 @@
   "apm": 3.09
  },
  {
+  "name": "Charlie Ward",
+  "season": "1999-00",
+  "apm": 3.52
+ },
+ {
   "name": "Chauncey Billups",
   "season": "1999-00",
   "apm": -2.46
+ },
+ {
+  "name": "Chris Childs",
+  "season": "1999-00",
+  "apm": -0.01
  },
  {
   "name": "Chris Mullin",
@@ -3733,6 +4628,11 @@
   "name": "Chris Webber",
   "season": "1999-00",
   "apm": 2.44
+ },
+ {
+  "name": "Chris Whitney",
+  "season": "1999-00",
+  "apm": 0.4
  },
  {
   "name": "Christian Laettner",
@@ -3755,19 +4655,24 @@
   "apm": -1.53
  },
  {
+  "name": "Cory Alexander",
+  "season": "1999-00",
+  "apm": -0.29
+ },
+ {
   "name": "Cuttino Mobley",
   "season": "1999-00",
   "apm": 0.11
  },
  {
-  "name": "Dale Davis",
-  "season": "1999-00",
-  "apm": 2.27
- },
- {
   "name": "Dale Ellis",
   "season": "1999-00",
   "apm": -0.28
+ },
+ {
+  "name": "Damon Jones",
+  "season": "1999-00",
+  "apm": -1.34
  },
  {
   "name": "Damon Stoudamire",
@@ -3788,6 +4693,11 @@
   "name": "Danny Ferry",
   "season": "1999-00",
   "apm": 1.71
+ },
+ {
+  "name": "Danny Fortson",
+  "season": "1999-00",
+  "apm": -1.87
  },
  {
   "name": "Danny Manning",
@@ -3835,9 +4745,9 @@
   "apm": -0.39
  },
  {
-  "name": "Derek Anderson",
+  "name": "Derek Fisher",
   "season": "1999-00",
-  "apm": -0.84
+  "apm": 3.88
  },
  {
   "name": "Derrick Coleman",
@@ -3865,6 +4775,11 @@
   "apm": 0.72
  },
  {
+  "name": "Donyell Marshall",
+  "season": "1999-00",
+  "apm": -2.27
+ },
+ {
   "name": "Doug Christie",
   "season": "1999-00",
   "apm": 0.46
@@ -3875,9 +4790,19 @@
   "apm": 6.46
  },
  {
+  "name": "Eldridge Recasner",
+  "season": "1999-00",
+  "apm": -3.1
+ },
+ {
   "name": "Elton Brand",
   "season": "1999-00",
   "apm": -3.53
+ },
+ {
+  "name": "Emanual Davis",
+  "season": "1999-00",
+  "apm": 0.31
  },
  {
   "name": "Eric Murdock",
@@ -3885,9 +4810,19 @@
   "apm": 0.49
  },
  {
+  "name": "Eric Piatkowski",
+  "season": "1999-00",
+  "apm": -1.18
+ },
+ {
   "name": "Eric Snow",
   "season": "1999-00",
   "apm": -0.42
+ },
+ {
+  "name": "Erick Strickland",
+  "season": "1999-00",
+  "apm": 0.89
  },
  {
   "name": "Ervin Johnson",
@@ -3905,6 +4840,11 @@
   "apm": 6.4
  },
  {
+  "name": "George McCloud",
+  "season": "1999-00",
+  "apm": 0.31
+ },
+ {
   "name": "Glen Rice",
   "season": "1999-00",
   "apm": 0.69
@@ -3920,6 +4860,11 @@
   "apm": 5.78
  },
  {
+  "name": "Greg Anthony",
+  "season": "1999-00",
+  "apm": 2.06
+ },
+ {
   "name": "Greg Buckner",
   "season": "1999-00",
   "apm": -0.23
@@ -3930,14 +4875,19 @@
   "apm": 2.18
  },
  {
+  "name": "Haywoode Workman",
+  "season": "1999-00",
+  "apm": 0.71
+ },
+ {
   "name": "Hersey Hawkins",
   "season": "1999-00",
   "apm": 0.83
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "1999-00",
-  "apm": 1.28
+  "apm": -2.4
  },
  {
   "name": "Jacque Vaughn",
@@ -3953,6 +4903,11 @@
   "name": "Jamal Mashburn",
   "season": "1999-00",
   "apm": 1.19
+ },
+ {
+  "name": "James Posey",
+  "season": "1999-00",
+  "apm": 0.64
  },
  {
   "name": "Jason Kidd",
@@ -3980,6 +4935,11 @@
   "apm": -2.02
  },
  {
+  "name": "Jim Jackson",
+  "season": "1999-00",
+  "apm": -0.34
+ },
+ {
   "name": "Jim McIlvaine",
   "season": "1999-00",
   "apm": 0.79
@@ -4000,6 +4960,11 @@
   "apm": 0.13
  },
  {
+  "name": "Jumaine Jones",
+  "season": "1999-00",
+  "apm": -1.25
+ },
+ {
   "name": "Karl Malone",
   "season": "1999-00",
   "apm": 4.48
@@ -4010,14 +4975,14 @@
   "apm": -1.69
  },
  {
-  "name": "Kendall Gill",
-  "season": "1999-00",
-  "apm": 1.56
- },
- {
   "name": "Kenny Anderson",
   "season": "1999-00",
   "apm": 3.19
+ },
+ {
+  "name": "Kerry Kittles",
+  "season": "1999-00",
+  "apm": 1.07
  },
  {
   "name": "Kevin Garnett",
@@ -4045,14 +5010,9 @@
   "apm": 3.32
  },
  {
-  "name": "LaPhonso Ellis",
+  "name": "Lamond Murray",
   "season": "1999-00",
-  "apm": -2.04
- },
- {
-  "name": "Larry Hughes",
-  "season": "1999-00",
-  "apm": -2.57
+  "apm": -2.63
  },
  {
   "name": "Larry Johnson",
@@ -4063,6 +5023,11 @@
   "name": "Latrell Sprewell",
   "season": "1999-00",
   "apm": 0.7
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "1999-00",
+  "apm": 1.24
  },
  {
   "name": "Marcus Camby",
@@ -4080,9 +5045,9 @@
   "apm": 2.19
  },
  {
-  "name": "Metta World Peace",
+  "name": "Matt Bullard",
   "season": "1999-00",
-  "apm": 1.92
+  "apm": -0.05
  },
  {
   "name": "Michael Cage",
@@ -4115,6 +5080,16 @@
   "apm": -1.35
  },
  {
+  "name": "Mikki Moore",
+  "season": "1999-00",
+  "apm": 1.22
+ },
+ {
+  "name": "Milt Palacio",
+  "season": "1999-00",
+  "apm": -1.44
+ },
+ {
   "name": "Mitch Richmond",
   "season": "1999-00",
   "apm": 3.55
@@ -4123,6 +5098,11 @@
   "name": "Mookie Blaylock",
   "season": "1999-00",
   "apm": 3.58
+ },
+ {
+  "name": "Muggsy Bogues",
+  "season": "1999-00",
+  "apm": 1.14
  },
  {
   "name": "Nick Anderson",
@@ -4135,9 +5115,9 @@
   "apm": 2.12
  },
  {
-  "name": "Otis Thorpe",
+  "name": "Pat Garrity",
   "season": "1999-00",
-  "apm": -1.37
+  "apm": -0.25
  },
  {
   "name": "Patrick Ewing",
@@ -4158,6 +5138,11 @@
   "name": "Pervis Ellison",
   "season": "1999-00",
   "apm": -1.77
+ },
+ {
+  "name": "Pete Chilcutt",
+  "season": "1999-00",
+  "apm": -2.63
  },
  {
   "name": "Raef LaFrentz",
@@ -4185,14 +5170,14 @@
   "apm": 4.68
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Rex Walters",
   "season": "1999-00",
-  "apm": -1.66
+  "apm": -2.45
  },
  {
-  "name": "Rick Fox",
+  "name": "Rick Brunson",
   "season": "1999-00",
-  "apm": 0.4
+  "apm": -2.23
  },
  {
   "name": "Ricky Davis",
@@ -4210,6 +5195,11 @@
   "apm": 0.73
  },
  {
+  "name": "Rodney Rogers",
+  "season": "1999-00",
+  "apm": 2.88
+ },
+ {
   "name": "Ron Harper",
   "season": "1999-00",
   "apm": 2.93
@@ -4225,6 +5215,16 @@
   "apm": 2.77
  },
  {
+  "name": "Sam Mack",
+  "season": "1999-00",
+  "apm": -0.58
+ },
+ {
+  "name": "Scott Padgett",
+  "season": "1999-00",
+  "apm": -2.01
+ },
+ {
   "name": "Scottie Pippen",
   "season": "1999-00",
   "apm": 3.02
@@ -4233,6 +5233,16 @@
   "name": "Sean Elliott",
   "season": "1999-00",
   "apm": -0.31
+ },
+ {
+  "name": "Shammond Williams",
+  "season": "1999-00",
+  "apm": -1.83
+ },
+ {
+  "name": "Shandon Anderson",
+  "season": "1999-00",
+  "apm": 0.98
  },
  {
   "name": "Shaquille O'Neal",
@@ -4255,9 +5265,9 @@
   "apm": -1.23
  },
  {
-  "name": "Sherman Douglas",
+  "name": "Stacey Augmon",
   "season": "1999-00",
-  "apm": -0.41
+  "apm": -1.31
  },
  {
   "name": "Stephon Marbury",
@@ -4283,11 +5293,6 @@
   "name": "Terrell Brandon",
   "season": "1999-00",
   "apm": 3.33
- },
- {
-  "name": "Terry Cummings",
-  "season": "1999-00",
-  "apm": -0.03
  },
  {
   "name": "Terry Mills",
@@ -4330,6 +5335,11 @@
   "apm": -1.43
  },
  {
+  "name": "Tracy Murray",
+  "season": "1999-00",
+  "apm": -0.72
+ },
+ {
   "name": "Vin Baker",
   "season": "1999-00",
   "apm": 0.9
@@ -4355,9 +5365,19 @@
   "apm": 3.02
  },
  {
+  "name": "Walter McCarty",
+  "season": "1999-00",
+  "apm": -0.28
+ },
+ {
   "name": "Wesley Person",
   "season": "1999-00",
   "apm": 0.89
+ },
+ {
+  "name": "Aaron McKie",
+  "season": "2000-01",
+  "apm": 5.25
  },
  {
   "name": "Adam Keefe",
@@ -4373,6 +5393,11 @@
   "name": "Al Harrington",
   "season": "2000-01",
   "apm": -0.8
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "2000-01",
+  "apm": -2.44
  },
  {
   "name": "Allan Houston",
@@ -4400,14 +5425,34 @@
   "apm": -0.29
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2000-01",
+  "apm": -0.55
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2000-01",
+  "apm": 1.22
+ },
+ {
   "name": "Anthony Mason",
   "season": "2000-01",
   "apm": -1.18
  },
  {
+  "name": "Anthony Peeler",
+  "season": "2000-01",
+  "apm": -0.8
+ },
+ {
   "name": "Antoine Walker",
   "season": "2000-01",
   "apm": -0.92
+ },
+ {
+  "name": "Antonio Daniels",
+  "season": "2000-01",
+  "apm": -0.04
  },
  {
   "name": "Antonio McDyess",
@@ -4420,6 +5465,11 @@
   "apm": 3.11
  },
  {
+  "name": "Austin Croshere",
+  "season": "2000-01",
+  "apm": -0.42
+ },
+ {
   "name": "Baron Davis",
   "season": "2000-01",
   "apm": 5
@@ -4428,11 +5478,6 @@
   "name": "Ben Wallace",
   "season": "2000-01",
   "apm": 5
- },
- {
-  "name": "Billy Owens",
-  "season": "2000-01",
-  "apm": 0.59
  },
  {
   "name": "Bo Outlaw",
@@ -4450,14 +5495,39 @@
   "apm": 1.22
  },
  {
+  "name": "Brent Price",
+  "season": "2000-01",
+  "apm": -0.29
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "2000-01",
+  "apm": 0.46
+ },
+ {
   "name": "Bruce Bowen",
   "season": "2000-01",
   "apm": 1.6
  },
  {
+  "name": "Bryon Russell",
+  "season": "2000-01",
+  "apm": 2.35
+ },
+ {
+  "name": "Charlie Ward",
+  "season": "2000-01",
+  "apm": 2.86
+ },
+ {
   "name": "Chauncey Billups",
   "season": "2000-01",
   "apm": -0.67
+ },
+ {
+  "name": "Chris Childs",
+  "season": "2000-01",
+  "apm": -0.92
  },
  {
   "name": "Chris Mullin",
@@ -4468,6 +5538,11 @@
   "name": "Chris Webber",
   "season": "2000-01",
   "apm": 4.37
+ },
+ {
+  "name": "Chris Whitney",
+  "season": "2000-01",
+  "apm": -0.8
  },
  {
   "name": "Christian Laettner",
@@ -4485,14 +5560,19 @@
   "apm": -0.55
  },
  {
+  "name": "Cory Alexander",
+  "season": "2000-01",
+  "apm": -1.43
+ },
+ {
   "name": "Cuttino Mobley",
   "season": "2000-01",
   "apm": 2.73
  },
  {
-  "name": "Dale Davis",
+  "name": "Damon Jones",
   "season": "2000-01",
-  "apm": 1.09
+  "apm": -2.56
  },
  {
   "name": "Damon Stoudamire",
@@ -4513,6 +5593,11 @@
   "name": "Danny Ferry",
   "season": "2000-01",
   "apm": 3.36
+ },
+ {
+  "name": "Danny Fortson",
+  "season": "2000-01",
+  "apm": -0.04
  },
  {
   "name": "Danny Manning",
@@ -4550,7 +5635,7 @@
   "apm": -3.19
  },
  {
-  "name": "Derek Anderson",
+  "name": "Derek Fisher",
   "season": "2000-01",
   "apm": 4.49
  },
@@ -4558,6 +5643,11 @@
   "name": "Derrick Coleman",
   "season": "2000-01",
   "apm": -3.07
+ },
+ {
+  "name": "DeShawn Stevenson",
+  "season": "2000-01",
+  "apm": -1.18
  },
  {
   "name": "Detlef Schrempf",
@@ -4580,6 +5670,11 @@
   "apm": -0.29
  },
  {
+  "name": "Donyell Marshall",
+  "season": "2000-01",
+  "apm": 2.6
+ },
+ {
   "name": "Doug Christie",
   "season": "2000-01",
   "apm": 1.97
@@ -4590,14 +5685,34 @@
   "apm": 1.47
  },
  {
+  "name": "Eldridge Recasner",
+  "season": "2000-01",
+  "apm": -0.29
+ },
+ {
   "name": "Elton Brand",
   "season": "2000-01",
   "apm": -1.3
  },
  {
+  "name": "Emanual Davis",
+  "season": "2000-01",
+  "apm": 1.34
+ },
+ {
+  "name": "Eric Piatkowski",
+  "season": "2000-01",
+  "apm": 0.97
+ },
+ {
   "name": "Eric Snow",
   "season": "2000-01",
   "apm": 2.6
+ },
+ {
+  "name": "Erick Strickland",
+  "season": "2000-01",
+  "apm": 1.72
  },
  {
   "name": "Ervin Johnson",
@@ -4615,6 +5730,11 @@
   "apm": 0.34
  },
  {
+  "name": "George McCloud",
+  "season": "2000-01",
+  "apm": -2.44
+ },
+ {
   "name": "Glen Rice",
   "season": "2000-01",
   "apm": 0.08
@@ -4628,6 +5748,11 @@
   "name": "Grant Hill",
   "season": "2000-01",
   "apm": -0.92
+ },
+ {
+  "name": "Greg Anthony",
+  "season": "2000-01",
+  "apm": -1.05
  },
  {
   "name": "Greg Buckner",
@@ -4650,9 +5775,9 @@
   "apm": -1.56
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "2000-01",
-  "apm": 2.6
+  "apm": -1.56
  },
  {
   "name": "Jacque Vaughn",
@@ -4675,6 +5800,11 @@
   "apm": 1.97
  },
  {
+  "name": "James Posey",
+  "season": "2000-01",
+  "apm": 2.86
+ },
+ {
   "name": "Jason Kidd",
   "season": "2000-01",
   "apm": 0.71
@@ -4693,6 +5823,11 @@
   "name": "Jerry Stackhouse",
   "season": "2000-01",
   "apm": 1.47
+ },
+ {
+  "name": "Jim Jackson",
+  "season": "2000-01",
+  "apm": -2.94
  },
  {
   "name": "Jim McIlvaine",
@@ -4715,6 +5850,11 @@
   "apm": 0.08
  },
  {
+  "name": "Jumaine Jones",
+  "season": "2000-01",
+  "apm": -1.56
+ },
+ {
   "name": "Karl Malone",
   "season": "2000-01",
   "apm": 3.36
@@ -4723,11 +5863,6 @@
   "name": "Keith Van Horn",
   "season": "2000-01",
   "apm": 0.46
- },
- {
-  "name": "Kendall Gill",
-  "season": "2000-01",
-  "apm": -0.29
  },
  {
   "name": "Kenny Anderson",
@@ -4760,14 +5895,9 @@
   "apm": 2.6
  },
  {
-  "name": "LaPhonso Ellis",
+  "name": "Lamond Murray",
   "season": "2000-01",
-  "apm": -1.81
- },
- {
-  "name": "Larry Hughes",
-  "season": "2000-01",
-  "apm": 1.47
+  "apm": -1.68
  },
  {
   "name": "Larry Johnson",
@@ -4778,6 +5908,11 @@
   "name": "Latrell Sprewell",
   "season": "2000-01",
   "apm": 0.21
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "2000-01",
+  "apm": -1.81
  },
  {
   "name": "Marcus Camby",
@@ -4795,14 +5930,9 @@
   "apm": -2.06
  },
  {
-  "name": "Mark Madsen",
+  "name": "Matt Bullard",
   "season": "2000-01",
-  "apm": -2.94
- },
- {
-  "name": "Metta World Peace",
-  "season": "2000-01",
-  "apm": 0.97
+  "apm": 2.23
  },
  {
   "name": "Michael Curry",
@@ -4840,6 +5970,16 @@
   "apm": -0.92
  },
  {
+  "name": "Mikki Moore",
+  "season": "2000-01",
+  "apm": -1.3
+ },
+ {
+  "name": "Milt Palacio",
+  "season": "2000-01",
+  "apm": 0.46
+ },
+ {
   "name": "Mitch Richmond",
   "season": "2000-01",
   "apm": 0.97
@@ -4848,6 +5988,11 @@
   "name": "Mookie Blaylock",
   "season": "2000-01",
   "apm": 0.59
+ },
+ {
+  "name": "Muggsy Bogues",
+  "season": "2000-01",
+  "apm": -0.55
  },
  {
   "name": "Nick Anderson",
@@ -4860,9 +6005,9 @@
   "apm": 0.71
  },
  {
-  "name": "Otis Thorpe",
+  "name": "Pat Garrity",
   "season": "2000-01",
-  "apm": -2.69
+  "apm": -2.94
  },
  {
   "name": "Patrick Ewing",
@@ -4915,14 +6060,9 @@
   "apm": 0.71
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Rick Brunson",
   "season": "2000-01",
-  "apm": -1.56
- },
- {
-  "name": "Rick Fox",
-  "season": "2000-01",
-  "apm": 3.61
+  "apm": -0.42
  },
  {
   "name": "Ricky Davis",
@@ -4940,6 +6080,11 @@
   "apm": -2.31
  },
  {
+  "name": "Rodney Rogers",
+  "season": "2000-01",
+  "apm": -0.42
+ },
+ {
   "name": "Ron Harper",
   "season": "2000-01",
   "apm": 0.21
@@ -4955,6 +6100,11 @@
   "apm": -0.04
  },
  {
+  "name": "Scott Padgett",
+  "season": "2000-01",
+  "apm": -0.67
+ },
+ {
   "name": "Scottie Pippen",
   "season": "2000-01",
   "apm": 1.34
@@ -4963,6 +6113,16 @@
   "name": "Sean Elliott",
   "season": "2000-01",
   "apm": 0.46
+ },
+ {
+  "name": "Shammond Williams",
+  "season": "2000-01",
+  "apm": 0.59
+ },
+ {
+  "name": "Shandon Anderson",
+  "season": "2000-01",
+  "apm": -0.55
  },
  {
   "name": "Shaquille O'Neal",
@@ -4985,9 +6145,9 @@
   "apm": 6.13
  },
  {
-  "name": "Sherman Douglas",
+  "name": "Stacey Augmon",
   "season": "2000-01",
-  "apm": -0.67
+  "apm": 0.84
  },
  {
   "name": "Stephen Jackson",
@@ -5065,6 +6225,11 @@
   "apm": 3.86
  },
  {
+  "name": "Tracy Murray",
+  "season": "2000-01",
+  "apm": -3.19
+ },
+ {
   "name": "Vin Baker",
   "season": "2000-01",
   "apm": -1.05
@@ -5090,6 +6255,11 @@
   "apm": 1.72
  },
  {
+  "name": "Walter McCarty",
+  "season": "2000-01",
+  "apm": -0.55
+ },
+ {
   "name": "Wesley Person",
   "season": "2000-01",
   "apm": -0.29
@@ -5100,6 +6270,11 @@
   "apm": 0.71
  },
  {
+  "name": "Aaron McKie",
+  "season": "2001-02",
+  "apm": -0.82
+ },
+ {
   "name": "Adrian Griffin",
   "season": "2001-02",
   "apm": 3.57
@@ -5108,6 +6283,11 @@
   "name": "Al Harrington",
   "season": "2001-02",
   "apm": -0.6
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "2001-02",
+  "apm": -0.38
  },
  {
   "name": "Allan Houston",
@@ -5140,9 +6320,24 @@
   "apm": -2.79
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2001-02",
+  "apm": -0.16
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2001-02",
+  "apm": -2.13
+ },
+ {
   "name": "Anthony Mason",
   "season": "2001-02",
   "apm": -3.01
+ },
+ {
+  "name": "Anthony Peeler",
+  "season": "2001-02",
+  "apm": -4.33
  },
  {
   "name": "Antoine Walker",
@@ -5150,9 +6345,19 @@
   "apm": 5.54
  },
  {
+  "name": "Antonio Daniels",
+  "season": "2001-02",
+  "apm": -1.04
+ },
+ {
   "name": "Antonio McDyess",
   "season": "2001-02",
   "apm": -1.04
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "2001-02",
+  "apm": 0.72
  },
  {
   "name": "Baron Davis",
@@ -5185,9 +6390,34 @@
   "apm": 1.16
  },
  {
+  "name": "Brent Price",
+  "season": "2001-02",
+  "apm": -0.38
+ },
+ {
+  "name": "Brian Scalabrine",
+  "season": "2001-02",
+  "apm": -1.48
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "2001-02",
+  "apm": 0.94
+ },
+ {
   "name": "Bruce Bowen",
   "season": "2001-02",
   "apm": 4.01
+ },
+ {
+  "name": "Bryon Russell",
+  "season": "2001-02",
+  "apm": 0.72
+ },
+ {
+  "name": "Charlie Ward",
+  "season": "2001-02",
+  "apm": 1.6
  },
  {
   "name": "Chauncey Billups",
@@ -5200,9 +6430,19 @@
   "apm": 1.81
  },
  {
+  "name": "Chris Childs",
+  "season": "2001-02",
+  "apm": 1.16
+ },
+ {
   "name": "Chris Webber",
   "season": "2001-02",
   "apm": 4.89
+ },
+ {
+  "name": "Chris Whitney",
+  "season": "2001-02",
+  "apm": -5.2
  },
  {
   "name": "Christian Laettner",
@@ -5225,9 +6465,9 @@
   "apm": -2.35
  },
  {
-  "name": "Dale Davis",
+  "name": "Damon Jones",
   "season": "2001-02",
-  "apm": 0.5
+  "apm": 2.25
  },
  {
   "name": "Damon Stoudamire",
@@ -5248,6 +6488,11 @@
   "name": "Danny Ferry",
   "season": "2001-02",
   "apm": 0.5
+ },
+ {
+  "name": "Danny Fortson",
+  "season": "2001-02",
+  "apm": -0.82
  },
  {
   "name": "Danny Manning",
@@ -5280,9 +6525,9 @@
   "apm": 0.72
  },
  {
-  "name": "Derek Anderson",
+  "name": "Derek Fisher",
   "season": "2001-02",
-  "apm": -2.35
+  "apm": 4.45
  },
  {
   "name": "Derrick Coleman",
@@ -5291,6 +6536,11 @@
  },
  {
   "name": "DeSagana Diop",
+  "season": "2001-02",
+  "apm": -0.16
+ },
+ {
+  "name": "DeShawn Stevenson",
   "season": "2001-02",
   "apm": -0.16
  },
@@ -5310,9 +6560,19 @@
   "apm": -1.91
  },
  {
+  "name": "Donyell Marshall",
+  "season": "2001-02",
+  "apm": -2.13
+ },
+ {
   "name": "Doug Christie",
   "season": "2001-02",
   "apm": 7.3
+ },
+ {
+  "name": "Earl Watson",
+  "season": "2001-02",
+  "apm": 0.72
  },
  {
   "name": "Eddie Jones",
@@ -5320,19 +6580,24 @@
   "apm": 0.06
  },
  {
-  "name": "Eddy Curry",
-  "season": "2001-02",
-  "apm": -4.11
- },
- {
   "name": "Elton Brand",
   "season": "2001-02",
   "apm": 0.06
  },
  {
+  "name": "Eric Piatkowski",
+  "season": "2001-02",
+  "apm": -0.16
+ },
+ {
   "name": "Eric Snow",
   "season": "2001-02",
   "apm": 4.67
+ },
+ {
+  "name": "Erick Strickland",
+  "season": "2001-02",
+  "apm": -2.35
  },
  {
   "name": "Ervin Johnson",
@@ -5348,6 +6613,11 @@
   "name": "Gary Payton",
   "season": "2001-02",
   "apm": -0.16
+ },
+ {
+  "name": "George McCloud",
+  "season": "2001-02",
+  "apm": -3.67
  },
  {
   "name": "Gerald Wallace",
@@ -5370,6 +6640,11 @@
   "apm": 0.28
  },
  {
+  "name": "Greg Anthony",
+  "season": "2001-02",
+  "apm": -2.57
+ },
+ {
   "name": "Greg Buckner",
   "season": "2001-02",
   "apm": 2.91
@@ -5385,9 +6660,9 @@
   "apm": 3.13
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "2001-02",
-  "apm": 2.03
+  "apm": -0.6
  },
  {
   "name": "Jacque Vaughn",
@@ -5400,6 +6675,11 @@
   "apm": -1.48
  },
  {
+  "name": "Jamaal Tinsley",
+  "season": "2001-02",
+  "apm": 0.06
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2001-02",
   "apm": -3.67
@@ -5408,6 +6688,11 @@
   "name": "Jamal Mashburn",
   "season": "2001-02",
   "apm": -0.6
+ },
+ {
+  "name": "James Posey",
+  "season": "2001-02",
+  "apm": -1.04
  },
  {
   "name": "Jarron Collins",
@@ -5440,6 +6725,11 @@
   "apm": -0.16
  },
  {
+  "name": "Jim Jackson",
+  "season": "2001-02",
+  "apm": 1.16
+ },
+ {
   "name": "Joe Johnson",
   "season": "2001-02",
   "apm": -3.01
@@ -5460,6 +6750,11 @@
   "apm": -3.23
  },
  {
+  "name": "Jumaine Jones",
+  "season": "2001-02",
+  "apm": 0.28
+ },
+ {
   "name": "Karl Malone",
   "season": "2001-02",
   "apm": -1.04
@@ -5470,11 +6765,6 @@
   "apm": 1.81
  },
  {
-  "name": "Kendall Gill",
-  "season": "2001-02",
-  "apm": -0.38
- },
- {
   "name": "Kenny Anderson",
   "season": "2001-02",
   "apm": 3.79
@@ -5483,6 +6773,11 @@
   "name": "Kenyon Martin",
   "season": "2001-02",
   "apm": 5.54
+ },
+ {
+  "name": "Kerry Kittles",
+  "season": "2001-02",
+  "apm": 0.28
  },
  {
   "name": "Kevin Garnett",
@@ -5500,29 +6795,19 @@
   "apm": 4.45
  },
  {
-  "name": "LaPhonso Ellis",
-  "season": "2001-02",
-  "apm": 0.5
- },
- {
-  "name": "Larry Hughes",
-  "season": "2001-02",
-  "apm": -0.6
- },
- {
   "name": "Latrell Sprewell",
   "season": "2001-02",
   "apm": -1.26
  },
  {
+  "name": "Lindsey Hunter",
+  "season": "2001-02",
+  "apm": -3.23
+ },
+ {
   "name": "Mark Jackson",
   "season": "2001-02",
   "apm": -3.45
- },
- {
-  "name": "Mark Madsen",
-  "season": "2001-02",
-  "apm": 0.28
  },
  {
   "name": "Michael Curry",
@@ -5560,6 +6845,16 @@
   "apm": -1.91
  },
  {
+  "name": "Mikki Moore",
+  "season": "2001-02",
+  "apm": -0.6
+ },
+ {
+  "name": "Milt Palacio",
+  "season": "2001-02",
+  "apm": 0.06
+ },
+ {
   "name": "Mitch Richmond",
   "season": "2001-02",
   "apm": -1.69
@@ -5573,6 +6868,11 @@
   "name": "Nick Van Exel",
   "season": "2001-02",
   "apm": 3.13
+ },
+ {
+  "name": "Pat Garrity",
+  "season": "2001-02",
+  "apm": -4.11
  },
  {
   "name": "Patrick Ewing",
@@ -5625,19 +6925,14 @@
   "apm": 0.28
  },
  {
-  "name": "Richard Hamilton",
-  "season": "2001-02",
-  "apm": -4.11
- },
- {
   "name": "Richard Jefferson",
   "season": "2001-02",
   "apm": 1.38
  },
  {
-  "name": "Rick Fox",
+  "name": "Rick Brunson",
   "season": "2001-02",
-  "apm": 1.16
+  "apm": 0.5
  },
  {
   "name": "Ricky Davis",
@@ -5655,6 +6950,11 @@
   "apm": 0.28
  },
  {
+  "name": "Rodney Rogers",
+  "season": "2001-02",
+  "apm": -1.26
+ },
+ {
   "name": "Ron Artest",
   "season": "2001-02",
   "apm": 2.47
@@ -5670,9 +6970,24 @@
   "apm": 0.5
  },
  {
+  "name": "Scott Padgett",
+  "season": "2001-02",
+  "apm": 3.35
+ },
+ {
   "name": "Scottie Pippen",
   "season": "2001-02",
   "apm": 0.28
+ },
+ {
+  "name": "Shammond Williams",
+  "season": "2001-02",
+  "apm": 1.38
+ },
+ {
+  "name": "Shandon Anderson",
+  "season": "2001-02",
+  "apm": -3.45
  },
  {
   "name": "Shane Battier",
@@ -5698,6 +7013,11 @@
   "name": "Shawn Marion",
   "season": "2001-02",
   "apm": 1.38
+ },
+ {
+  "name": "Stacey Augmon",
+  "season": "2001-02",
+  "apm": 1.6
  },
  {
   "name": "Stephen Jackson",
@@ -5770,6 +7090,16 @@
   "apm": 1.81
  },
  {
+  "name": "Tracy Murray",
+  "season": "2001-02",
+  "apm": 0.28
+ },
+ {
+  "name": "Trenton Hassell",
+  "season": "2001-02",
+  "apm": -7.62
+ },
+ {
   "name": "Troy Murphy",
   "season": "2001-02",
   "apm": -3.23
@@ -5795,6 +7125,11 @@
   "apm": 5.76
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2001-02",
+  "apm": -0.38
+ },
+ {
   "name": "Wally Szczerbiak",
   "season": "2001-02",
   "apm": 2.03
@@ -5803,6 +7138,11 @@
   "name": "Walt Williams",
   "season": "2001-02",
   "apm": 0.06
+ },
+ {
+  "name": "Walter McCarty",
+  "season": "2001-02",
+  "apm": -1.04
  },
  {
   "name": "Wesley Person",
@@ -5815,6 +7155,11 @@
   "apm": -1.26
  },
  {
+  "name": "Aaron McKie",
+  "season": "2002-03",
+  "apm": 2.33
+ },
+ {
   "name": "Adrian Griffin",
   "season": "2002-03",
   "apm": 3.65
@@ -5823,6 +7168,11 @@
   "name": "Al Harrington",
   "season": "2002-03",
   "apm": 1.75
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "2002-03",
+  "apm": -1.77
  },
  {
   "name": "Allan Houston",
@@ -5850,9 +7200,24 @@
   "apm": -0.16
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2002-03",
+  "apm": 0.14
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2002-03",
+  "apm": -0.6
+ },
+ {
   "name": "Anthony Mason",
   "season": "2002-03",
   "apm": -4.11
+ },
+ {
+  "name": "Anthony Peeler",
+  "season": "2002-03",
+  "apm": -2.5
  },
  {
   "name": "Antoine Walker",
@@ -5860,9 +7225,19 @@
   "apm": 2.04
  },
  {
+  "name": "Antonio Daniels",
+  "season": "2002-03",
+  "apm": -1.33
+ },
+ {
   "name": "Arvydas Sabonis",
   "season": "2002-03",
   "apm": 2.92
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "2002-03",
+  "apm": 1.46
  },
  {
   "name": "Baron Davis",
@@ -5885,6 +7260,11 @@
   "apm": 4.39
  },
  {
+  "name": "Bostjan Nachbar",
+  "season": "2002-03",
+  "apm": -1.91
+ },
+ {
   "name": "Brad Miller",
   "season": "2002-03",
   "apm": 2.63
@@ -5895,19 +7275,39 @@
   "apm": 0.43
  },
  {
+  "name": "Brian Scalabrine",
+  "season": "2002-03",
+  "apm": -2.21
+ },
+ {
+  "name": "Brian Shaw",
+  "season": "2002-03",
+  "apm": -2.21
+ },
+ {
   "name": "Bruce Bowen",
   "season": "2002-03",
   "apm": 2.48
  },
  {
-  "name": "Carlos Boozer",
+  "name": "Bryon Russell",
   "season": "2002-03",
-  "apm": -2.79
+  "apm": 1.16
  },
  {
   "name": "Caron Butler",
   "season": "2002-03",
   "apm": -3.67
+ },
+ {
+  "name": "Casey Jacobsen",
+  "season": "2002-03",
+  "apm": 1.16
+ },
+ {
+  "name": "Charlie Ward",
+  "season": "2002-03",
+  "apm": 3.07
  },
  {
   "name": "Chauncey Billups",
@@ -5920,9 +7320,19 @@
   "apm": 2.77
  },
  {
+  "name": "Chris Childs",
+  "season": "2002-03",
+  "apm": 1.46
+ },
+ {
   "name": "Chris Webber",
   "season": "2002-03",
   "apm": 4.53
+ },
+ {
+  "name": "Chris Whitney",
+  "season": "2002-03",
+  "apm": -4.11
  },
  {
   "name": "Christian Laettner",
@@ -5945,9 +7355,9 @@
   "apm": -0.01
  },
  {
-  "name": "Dale Davis",
+  "name": "Damon Jones",
   "season": "2002-03",
-  "apm": 1.02
+  "apm": 1.6
  },
  {
   "name": "Damon Stoudamire",
@@ -5958,6 +7368,11 @@
   "name": "Danny Ferry",
   "season": "2002-03",
   "apm": -0.74
+ },
+ {
+  "name": "Danny Fortson",
+  "season": "2002-03",
+  "apm": -0.01
  },
  {
   "name": "Danny Manning",
@@ -5980,9 +7395,9 @@
   "apm": -0.89
  },
  {
-  "name": "Derek Anderson",
+  "name": "Derek Fisher",
   "season": "2002-03",
-  "apm": -1.04
+  "apm": 1.9
  },
  {
   "name": "Derrick Coleman",
@@ -5993,6 +7408,11 @@
   "name": "DeSagana Diop",
   "season": "2002-03",
   "apm": -2.21
+ },
+ {
+  "name": "DeShawn Stevenson",
+  "season": "2002-03",
+  "apm": -3.38
  },
  {
   "name": "Dikembe Mutombo",
@@ -6010,9 +7430,19 @@
   "apm": -0.74
  },
  {
+  "name": "Donyell Marshall",
+  "season": "2002-03",
+  "apm": 0.14
+ },
+ {
   "name": "Doug Christie",
   "season": "2002-03",
   "apm": 7.46
+ },
+ {
+  "name": "Earl Watson",
+  "season": "2002-03",
+  "apm": 2.48
  },
  {
   "name": "Eddie Jones",
@@ -6020,19 +7450,29 @@
   "apm": 1.31
  },
  {
-  "name": "Eddy Curry",
-  "season": "2002-03",
-  "apm": -1.18
- },
- {
   "name": "Elton Brand",
   "season": "2002-03",
   "apm": 2.63
  },
  {
+  "name": "Emanual Davis",
+  "season": "2002-03",
+  "apm": -2.35
+ },
+ {
+  "name": "Eric Piatkowski",
+  "season": "2002-03",
+  "apm": 1.75
+ },
+ {
   "name": "Eric Snow",
   "season": "2002-03",
   "apm": 3.51
+ },
+ {
+  "name": "Erick Strickland",
+  "season": "2002-03",
+  "apm": -1.62
  },
  {
   "name": "Ervin Johnson",
@@ -6085,9 +7525,9 @@
   "apm": 0.28
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "2002-03",
-  "apm": 1.75
+  "apm": -0.74
  },
  {
   "name": "Jacque Vaughn",
@@ -6100,6 +7540,11 @@
   "apm": -0.01
  },
  {
+  "name": "Jamaal Tinsley",
+  "season": "2002-03",
+  "apm": 1.02
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2002-03",
   "apm": 0.14
@@ -6108,6 +7553,16 @@
   "name": "Jamal Mashburn",
   "season": "2002-03",
   "apm": 0.14
+ },
+ {
+  "name": "James Posey",
+  "season": "2002-03",
+  "apm": 0.72
+ },
+ {
+  "name": "Jared Jeffries",
+  "season": "2002-03",
+  "apm": -1.48
  },
  {
   "name": "Jarron Collins",
@@ -6140,6 +7595,11 @@
   "apm": 1.9
  },
  {
+  "name": "Jim Jackson",
+  "season": "2002-03",
+  "apm": 0.43
+ },
+ {
   "name": "Joe Johnson",
   "season": "2002-03",
   "apm": 0.28
@@ -6160,6 +7620,11 @@
   "apm": 0.87
  },
  {
+  "name": "Jumaine Jones",
+  "season": "2002-03",
+  "apm": -1.62
+ },
+ {
   "name": "Karl Malone",
   "season": "2002-03",
   "apm": 2.04
@@ -6170,11 +7635,6 @@
   "apm": 1.75
  },
  {
-  "name": "Kendall Gill",
-  "season": "2002-03",
-  "apm": -0.3
- },
- {
   "name": "Kenny Anderson",
   "season": "2002-03",
   "apm": 1.9
@@ -6183,6 +7643,11 @@
   "name": "Kenyon Martin",
   "season": "2002-03",
   "apm": 5.41
+ },
+ {
+  "name": "Kerry Kittles",
+  "season": "2002-03",
+  "apm": 0.72
  },
  {
   "name": "Kevin Garnett",
@@ -6205,19 +7670,14 @@
   "apm": -2.21
  },
  {
-  "name": "LaPhonso Ellis",
-  "season": "2002-03",
-  "apm": 0.72
- },
- {
-  "name": "Larry Hughes",
-  "season": "2002-03",
-  "apm": 0.58
- },
- {
   "name": "Latrell Sprewell",
   "season": "2002-03",
   "apm": -2.35
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "2002-03",
+  "apm": -3.53
  },
  {
   "name": "Manu Ginobili",
@@ -6233,11 +7693,6 @@
   "name": "Mark Jackson",
   "season": "2002-03",
   "apm": -1.91
- },
- {
-  "name": "Mark Madsen",
-  "season": "2002-03",
-  "apm": -1.18
  },
  {
   "name": "Mehmet Okur",
@@ -6290,9 +7745,24 @@
   "apm": 0.87
  },
  {
+  "name": "Mikki Moore",
+  "season": "2002-03",
+  "apm": -0.16
+ },
+ {
+  "name": "Milt Palacio",
+  "season": "2002-03",
+  "apm": -2.06
+ },
+ {
   "name": "Nick Van Exel",
   "season": "2002-03",
   "apm": -0.89
+ },
+ {
+  "name": "Pat Garrity",
+  "season": "2002-03",
+  "apm": -2.06
  },
  {
   "name": "Pau Gasol",
@@ -6345,19 +7815,14 @@
   "apm": -0.74
  },
  {
-  "name": "Richard Hamilton",
-  "season": "2002-03",
-  "apm": -2.21
- },
- {
   "name": "Richard Jefferson",
   "season": "2002-03",
   "apm": 2.63
  },
  {
-  "name": "Rick Fox",
+  "name": "Rick Brunson",
   "season": "2002-03",
-  "apm": 0.28
+  "apm": 0.72
  },
  {
   "name": "Ricky Davis",
@@ -6375,6 +7840,16 @@
   "apm": 0.43
  },
  {
+  "name": "Rodney Rogers",
+  "season": "2002-03",
+  "apm": -0.89
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2002-03",
+  "apm": -2.21
+ },
+ {
   "name": "Ron Artest",
   "season": "2002-03",
   "apm": 3.36
@@ -6390,9 +7865,24 @@
   "apm": -0.3
  },
  {
+  "name": "Scott Padgett",
+  "season": "2002-03",
+  "apm": 0.87
+ },
+ {
   "name": "Scottie Pippen",
   "season": "2002-03",
   "apm": 2.63
+ },
+ {
+  "name": "Shammond Williams",
+  "season": "2002-03",
+  "apm": -0.6
+ },
+ {
+  "name": "Shandon Anderson",
+  "season": "2002-03",
+  "apm": -0.3
  },
  {
   "name": "Shane Battier",
@@ -6418,6 +7908,11 @@
   "name": "Shawn Marion",
   "season": "2002-03",
   "apm": 3.8
+ },
+ {
+  "name": "Stacey Augmon",
+  "season": "2002-03",
+  "apm": 3.21
  },
  {
   "name": "Stephen Jackson",
@@ -6485,6 +7980,16 @@
   "apm": 2.19
  },
  {
+  "name": "Tracy Murray",
+  "season": "2002-03",
+  "apm": -0.6
+ },
+ {
+  "name": "Trenton Hassell",
+  "season": "2002-03",
+  "apm": -5.29
+ },
+ {
   "name": "Troy Murphy",
   "season": "2002-03",
   "apm": -2.21
@@ -6510,6 +8015,11 @@
   "apm": 5.71
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2002-03",
+  "apm": 2.63
+ },
+ {
   "name": "Wally Szczerbiak",
   "season": "2002-03",
   "apm": 2.92
@@ -6518,6 +8028,11 @@
   "name": "Walt Williams",
   "season": "2002-03",
   "apm": -0.45
+ },
+ {
+  "name": "Walter McCarty",
+  "season": "2002-03",
+  "apm": 0.14
  },
  {
   "name": "Wesley Person",
@@ -6535,6 +8050,11 @@
   "apm": 0.14
  },
  {
+  "name": "Aaron McKie",
+  "season": "2003-04",
+  "apm": 1.32
+ },
+ {
   "name": "Adrian Griffin",
   "season": "2003-04",
   "apm": 2.93
@@ -6543,6 +8063,11 @@
   "name": "Al Harrington",
   "season": "2003-04",
   "apm": 0.45
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "2003-04",
+  "apm": -1.53
  },
  {
   "name": "Allan Houston",
@@ -6575,14 +8100,39 @@
   "apm": -1.04
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2003-04",
+  "apm": 1.69
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2003-04",
+  "apm": -0.29
+ },
+ {
+  "name": "Anthony Peeler",
+  "season": "2003-04",
+  "apm": 0.08
+ },
+ {
   "name": "Antoine Walker",
   "season": "2003-04",
   "apm": -0.91
  },
  {
+  "name": "Antonio Daniels",
+  "season": "2003-04",
+  "apm": -0.29
+ },
+ {
   "name": "Antonio McDyess",
   "season": "2003-04",
   "apm": -0.17
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "2003-04",
+  "apm": 0.45
  },
  {
   "name": "Baron Davis",
@@ -6610,6 +8160,11 @@
   "apm": -1.53
  },
  {
+  "name": "Bostjan Nachbar",
+  "season": "2003-04",
+  "apm": -0.42
+ },
+ {
   "name": "Brad Miller",
   "season": "2003-04",
   "apm": 5.4
@@ -6620,14 +8175,19 @@
   "apm": -0.05
  },
  {
+  "name": "Brian Scalabrine",
+  "season": "2003-04",
+  "apm": -3.27
+ },
+ {
   "name": "Bruce Bowen",
   "season": "2003-04",
   "apm": 2.56
  },
  {
-  "name": "Carlos Boozer",
+  "name": "Bryon Russell",
   "season": "2003-04",
-  "apm": 1.19
+  "apm": 0.33
  },
  {
   "name": "Carmelo Anthony",
@@ -6638,6 +8198,16 @@
   "name": "Caron Butler",
   "season": "2003-04",
   "apm": 0.33
+ },
+ {
+  "name": "Casey Jacobsen",
+  "season": "2003-04",
+  "apm": 0.2
+ },
+ {
+  "name": "Charlie Ward",
+  "season": "2003-04",
+  "apm": 0.57
  },
  {
   "name": "Chauncey Billups",
@@ -6660,6 +8230,11 @@
   "apm": 1.56
  },
  {
+  "name": "Chris Whitney",
+  "season": "2003-04",
+  "apm": -3.76
+ },
+ {
   "name": "Christian Laettner",
   "season": "2003-04",
   "apm": -1.04
@@ -6680,9 +8255,14 @@
   "apm": -0.29
  },
  {
-  "name": "Dale Davis",
+  "name": "Dahntay Jones",
   "season": "2003-04",
-  "apm": -0.17
+  "apm": -2.52
+ },
+ {
+  "name": "Damon Jones",
+  "season": "2003-04",
+  "apm": 0.57
  },
  {
   "name": "Damon Stoudamire",
@@ -6695,6 +8275,11 @@
   "apm": -1.66
  },
  {
+  "name": "Danny Fortson",
+  "season": "2003-04",
+  "apm": 0.95
+ },
+ {
   "name": "Darrell Armstrong",
   "season": "2003-04",
   "apm": -0.54
@@ -6705,14 +8290,9 @@
   "apm": -1.53
  },
  {
-  "name": "David West",
+  "name": "Derek Fisher",
   "season": "2003-04",
-  "apm": -3.64
- },
- {
-  "name": "Derek Anderson",
-  "season": "2003-04",
-  "apm": 1.69
+  "apm": 1.07
  },
  {
   "name": "Derrick Coleman",
@@ -6725,6 +8305,11 @@
   "apm": -1.04
  },
  {
+  "name": "DeShawn Stevenson",
+  "season": "2003-04",
+  "apm": -3.14
+ },
+ {
   "name": "Dikembe Mutombo",
   "season": "2003-04",
   "apm": 0.95
@@ -6733,6 +8318,11 @@
   "name": "Dirk Nowitzki",
   "season": "2003-04",
   "apm": 6.27
+ },
+ {
+  "name": "Donyell Marshall",
+  "season": "2003-04",
+  "apm": -0.42
  },
  {
   "name": "Doug Christie",
@@ -6745,14 +8335,14 @@
   "apm": 2.18
  },
  {
+  "name": "Earl Watson",
+  "season": "2003-04",
+  "apm": 3.92
+ },
+ {
   "name": "Eddie Jones",
   "season": "2003-04",
   "apm": 2.56
- },
- {
-  "name": "Eddy Curry",
-  "season": "2003-04",
-  "apm": -0.66
  },
  {
   "name": "Elton Brand",
@@ -6760,9 +8350,19 @@
   "apm": 2.31
  },
  {
+  "name": "Eric Piatkowski",
+  "season": "2003-04",
+  "apm": 0.95
+ },
+ {
   "name": "Eric Snow",
   "season": "2003-04",
   "apm": 3.17
+ },
+ {
+  "name": "Erick Strickland",
+  "season": "2003-04",
+  "apm": -0.42
  },
  {
   "name": "Ervin Johnson",
@@ -6810,9 +8410,14 @@
   "apm": 3.17
  },
  {
-  "name": "Horace Grant",
+  "name": "Hubert Davis",
   "season": "2003-04",
-  "apm": 0.57
+  "apm": -0.29
+ },
+ {
+  "name": "Ime Udoka",
+  "season": "2003-04",
+  "apm": -1.78
  },
  {
   "name": "Jacque Vaughn",
@@ -6823,6 +8428,11 @@
   "name": "Jalen Rose",
   "season": "2003-04",
   "apm": 0.33
+ },
+ {
+  "name": "Jamaal Tinsley",
+  "season": "2003-04",
+  "apm": 2.43
  },
  {
   "name": "Jamal Crawford",
@@ -6840,9 +8450,24 @@
   "apm": -1.66
  },
  {
+  "name": "James Posey",
+  "season": "2003-04",
+  "apm": 2.68
+ },
+ {
+  "name": "Jared Jeffries",
+  "season": "2003-04",
+  "apm": -0.17
+ },
+ {
   "name": "Jarron Collins",
   "season": "2003-04",
   "apm": -0.05
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2003-04",
+  "apm": -3.14
  },
  {
   "name": "Jason Kidd",
@@ -6870,6 +8495,11 @@
   "apm": 0.08
  },
  {
+  "name": "Jim Jackson",
+  "season": "2003-04",
+  "apm": 2.06
+ },
+ {
   "name": "Joe Johnson",
   "season": "2003-04",
   "apm": 0.33
@@ -6885,19 +8515,24 @@
   "apm": 0.33
  },
  {
+  "name": "Jumaine Jones",
+  "season": "2003-04",
+  "apm": -2.27
+ },
+ {
   "name": "Karl Malone",
   "season": "2003-04",
   "apm": 1.81
  },
  {
+  "name": "Keith Bogans",
+  "season": "2003-04",
+  "apm": -1.28
+ },
+ {
   "name": "Keith Van Horn",
   "season": "2003-04",
   "apm": 2.31
- },
- {
-  "name": "Kendall Gill",
-  "season": "2003-04",
-  "apm": -1.04
  },
  {
   "name": "Kenny Anderson",
@@ -6908,6 +8543,11 @@
   "name": "Kenyon Martin",
   "season": "2003-04",
   "apm": 4.41
+ },
+ {
+  "name": "Kerry Kittles",
+  "season": "2003-04",
+  "apm": 0.33
  },
  {
   "name": "Kevin Garnett",
@@ -6940,11 +8580,6 @@
   "apm": 0.33
  },
  {
-  "name": "Larry Hughes",
-  "season": "2003-04",
-  "apm": 0.82
- },
- {
   "name": "Latrell Sprewell",
   "season": "2003-04",
   "apm": 0.95
@@ -6958,6 +8593,11 @@
   "name": "LeBron James",
   "season": "2003-04",
   "apm": 2.8
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "2003-04",
+  "apm": -0.42
  },
  {
   "name": "Luke Walton",
@@ -6980,9 +8620,9 @@
   "apm": -1.04
  },
  {
-  "name": "Mark Madsen",
+  "name": "Matt Barnes",
   "season": "2003-04",
-  "apm": 0.08
+  "apm": -3.27
  },
  {
   "name": "Mehmet Okur",
@@ -7030,9 +8670,24 @@
   "apm": 1.56
  },
  {
+  "name": "Mikki Moore",
+  "season": "2003-04",
+  "apm": 0.7
+ },
+ {
+  "name": "Milt Palacio",
+  "season": "2003-04",
+  "apm": -2.27
+ },
+ {
   "name": "Nick Van Exel",
   "season": "2003-04",
   "apm": -1.78
+ },
+ {
+  "name": "Pat Garrity",
+  "season": "2003-04",
+  "apm": -1.66
  },
  {
   "name": "Pau Gasol",
@@ -7085,19 +8740,14 @@
   "apm": -0.05
  },
  {
-  "name": "Richard Hamilton",
-  "season": "2003-04",
-  "apm": 1.19
- },
- {
   "name": "Richard Jefferson",
   "season": "2003-04",
   "apm": 1.81
  },
  {
-  "name": "Rick Fox",
+  "name": "Rick Brunson",
   "season": "2003-04",
-  "apm": 0.08
+  "apm": 0.95
  },
  {
   "name": "Ricky Davis",
@@ -7115,6 +8765,16 @@
   "apm": -0.29
  },
  {
+  "name": "Rodney Rogers",
+  "season": "2003-04",
+  "apm": -0.54
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2003-04",
+  "apm": -2.89
+ },
+ {
   "name": "Ron Artest",
   "season": "2003-04",
   "apm": 5.03
@@ -7130,9 +8790,24 @@
   "apm": 4.54
  },
  {
+  "name": "Scott Padgett",
+  "season": "2003-04",
+  "apm": 1.44
+ },
+ {
   "name": "Scottie Pippen",
   "season": "2003-04",
   "apm": 0.7
+ },
+ {
+  "name": "Shammond Williams",
+  "season": "2003-04",
+  "apm": -1.28
+ },
+ {
+  "name": "Shandon Anderson",
+  "season": "2003-04",
+  "apm": -1.41
  },
  {
   "name": "Shane Battier",
@@ -7155,6 +8830,11 @@
   "apm": 2.8
  },
  {
+  "name": "Stacey Augmon",
+  "season": "2003-04",
+  "apm": 3.05
+ },
+ {
   "name": "Stephen Jackson",
   "season": "2003-04",
   "apm": 0.33
@@ -7163,6 +8843,11 @@
   "name": "Stephon Marbury",
   "season": "2003-04",
   "apm": 0.45
+ },
+ {
+  "name": "Steve Blake",
+  "season": "2003-04",
+  "apm": -3.51
  },
  {
   "name": "Steve Francis",
@@ -7210,6 +8895,16 @@
   "apm": 1.69
  },
  {
+  "name": "Tracy Murray",
+  "season": "2003-04",
+  "apm": -0.29
+ },
+ {
+  "name": "Trenton Hassell",
+  "season": "2003-04",
+  "apm": -1.66
+ },
+ {
   "name": "Troy Murphy",
   "season": "2003-04",
   "apm": -2.27
@@ -7240,14 +8935,29 @@
   "apm": 3.17
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2003-04",
+  "apm": 1.44
+ },
+ {
   "name": "Wally Szczerbiak",
   "season": "2003-04",
   "apm": 3.67
  },
  {
+  "name": "Walter McCarty",
+  "season": "2003-04",
+  "apm": -1.16
+ },
+ {
   "name": "Wesley Person",
   "season": "2003-04",
   "apm": -2.89
+ },
+ {
+  "name": "Willie Green",
+  "season": "2003-04",
+  "apm": -2.27
  },
  {
   "name": "Yao Ming",
@@ -7260,6 +8970,11 @@
   "apm": 1.56
  },
  {
+  "name": "Aaron McKie",
+  "season": "2004-05",
+  "apm": 0.31
+ },
+ {
   "name": "Adrian Griffin",
   "season": "2004-05",
   "apm": 2.75
@@ -7268,6 +8983,11 @@
   "name": "Al Harrington",
   "season": "2004-05",
   "apm": 0.31
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "2004-05",
+  "apm": -3.41
  },
  {
   "name": "Allan Houston",
@@ -7300,6 +9020,11 @@
   "apm": 5.43
  },
  {
+  "name": "Andres Nocioni",
+  "season": "2004-05",
+  "apm": -3.87
+ },
+ {
   "name": "Andris Biedrins",
   "season": "2004-05",
   "apm": -0.97
@@ -7310,14 +9035,39 @@
   "apm": -2.13
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2004-05",
+  "apm": 1.82
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2004-05",
+  "apm": 1.01
+ },
+ {
+  "name": "Anthony Peeler",
+  "season": "2004-05",
+  "apm": -3.06
+ },
+ {
   "name": "Antoine Walker",
   "season": "2004-05",
   "apm": -2.83
  },
  {
+  "name": "Antonio Daniels",
+  "season": "2004-05",
+  "apm": 1.71
+ },
+ {
   "name": "Antonio McDyess",
   "season": "2004-05",
   "apm": -1.32
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "2004-05",
+  "apm": -3.76
  },
  {
   "name": "Baron Davis",
@@ -7335,6 +9085,11 @@
   "apm": 4.27
  },
  {
+  "name": "Beno Udrih",
+  "season": "2004-05",
+  "apm": -2.13
+ },
+ {
   "name": "Bo Outlaw",
   "season": "2004-05",
   "apm": 1.59
@@ -7350,6 +9105,11 @@
   "apm": -0.04
  },
  {
+  "name": "Bostjan Nachbar",
+  "season": "2004-05",
+  "apm": -1.2
+ },
+ {
   "name": "Brad Miller",
   "season": "2004-05",
   "apm": 6.24
@@ -7360,14 +9120,19 @@
   "apm": -1.43
  },
  {
+  "name": "Brian Scalabrine",
+  "season": "2004-05",
+  "apm": -1.2
+ },
+ {
   "name": "Bruce Bowen",
   "season": "2004-05",
   "apm": 0.43
  },
  {
-  "name": "Carlos Boozer",
+  "name": "Bryon Russell",
   "season": "2004-05",
-  "apm": 4.27
+  "apm": -0.62
  },
  {
   "name": "Carmelo Anthony",
@@ -7378,6 +9143,16 @@
   "name": "Caron Butler",
   "season": "2004-05",
   "apm": 1.01
+ },
+ {
+  "name": "Casey Jacobsen",
+  "season": "2004-05",
+  "apm": 1.94
+ },
+ {
+  "name": "Charlie Ward",
+  "season": "2004-05",
+  "apm": -1.32
  },
  {
   "name": "Chauncey Billups",
@@ -7420,19 +9195,39 @@
   "apm": 0.2
  },
  {
+  "name": "Cory Alexander",
+  "season": "2004-05",
+  "apm": -1.55
+ },
+ {
   "name": "Cuttino Mobley",
   "season": "2004-05",
   "apm": -1.43
  },
  {
-  "name": "Dale Davis",
+  "name": "Dahntay Jones",
   "season": "2004-05",
-  "apm": 1.82
+  "apm": -1.08
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2004-05",
+  "apm": -1.2
+ },
+ {
+  "name": "Damon Jones",
+  "season": "2004-05",
+  "apm": 0.2
  },
  {
   "name": "Damon Stoudamire",
   "season": "2004-05",
   "apm": -0.73
+ },
+ {
+  "name": "Danny Fortson",
+  "season": "2004-05",
+  "apm": 2.29
  },
  {
   "name": "Darrell Armstrong",
@@ -7445,9 +9240,9 @@
   "apm": 0.08
  },
  {
-  "name": "Derek Anderson",
+  "name": "Derek Fisher",
   "season": "2004-05",
-  "apm": 1.71
+  "apm": -0.27
  },
  {
   "name": "Derrick Coleman",
@@ -7460,9 +9255,9 @@
   "apm": -1.55
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2004-05",
-  "apm": -3.41
+  "apm": -3.06
  },
  {
   "name": "Dikembe Mutombo",
@@ -7473,6 +9268,11 @@
   "name": "Dirk Nowitzki",
   "season": "2004-05",
   "apm": 6.01
+ },
+ {
+  "name": "Donyell Marshall",
+  "season": "2004-05",
+  "apm": -0.27
  },
  {
   "name": "Doug Christie",
@@ -7490,14 +9290,14 @@
   "apm": 2.75
  },
  {
+  "name": "Earl Watson",
+  "season": "2004-05",
+  "apm": 4.38
+ },
+ {
   "name": "Eddie Jones",
   "season": "2004-05",
   "apm": 3.22
- },
- {
-  "name": "Eddy Curry",
-  "season": "2004-05",
-  "apm": 1.13
  },
  {
   "name": "Elton Brand",
@@ -7510,9 +9310,19 @@
   "apm": -1.66
  },
  {
+  "name": "Eric Piatkowski",
+  "season": "2004-05",
+  "apm": 0.54
+ },
+ {
   "name": "Eric Snow",
   "season": "2004-05",
   "apm": 3.22
+ },
+ {
+  "name": "Erick Strickland",
+  "season": "2004-05",
+  "apm": -1.43
  },
  {
   "name": "Ervin Johnson",
@@ -7560,6 +9370,11 @@
   "apm": 1.24
  },
  {
+  "name": "J.R. Smith",
+  "season": "2004-05",
+  "apm": -4.57
+ },
+ {
   "name": "Jacque Vaughn",
   "season": "2004-05",
   "apm": -2.83
@@ -7570,14 +9385,14 @@
   "apm": -1.55
  },
  {
+  "name": "Jamaal Tinsley",
+  "season": "2004-05",
+  "apm": 2.75
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2004-05",
   "apm": -2.01
- },
- {
-  "name": "Jameer Nelson",
-  "season": "2004-05",
-  "apm": -1.55
  },
  {
   "name": "James Jones",
@@ -7585,9 +9400,24 @@
   "apm": 0.78
  },
  {
+  "name": "James Posey",
+  "season": "2004-05",
+  "apm": -0.39
+ },
+ {
+  "name": "Jared Jeffries",
+  "season": "2004-05",
+  "apm": 1.82
+ },
+ {
   "name": "Jarron Collins",
   "season": "2004-05",
   "apm": 1.36
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2004-05",
+  "apm": -1.43
  },
  {
   "name": "Jason Kidd",
@@ -7615,6 +9445,11 @@
   "apm": -0.85
  },
  {
+  "name": "Jim Jackson",
+  "season": "2004-05",
+  "apm": -0.85
+ },
+ {
   "name": "Joe Johnson",
   "season": "2004-05",
   "apm": 1.13
@@ -7635,14 +9470,19 @@
   "apm": 1.82
  },
  {
+  "name": "Jumaine Jones",
+  "season": "2004-05",
+  "apm": -0.85
+ },
+ {
+  "name": "Keith Bogans",
+  "season": "2004-05",
+  "apm": 0.31
+ },
+ {
   "name": "Keith Van Horn",
   "season": "2004-05",
   "apm": 1.59
- },
- {
-  "name": "Kendall Gill",
-  "season": "2004-05",
-  "apm": -0.62
  },
  {
   "name": "Kenny Anderson",
@@ -7653,6 +9493,11 @@
   "name": "Kenyon Martin",
   "season": "2004-05",
   "apm": 1.24
+ },
+ {
+  "name": "Kerry Kittles",
+  "season": "2004-05",
+  "apm": -0.15
  },
  {
   "name": "Kevin Garnett",
@@ -7690,11 +9535,6 @@
   "apm": 1.24
  },
  {
-  "name": "Larry Hughes",
-  "season": "2004-05",
-  "apm": 2.29
- },
- {
   "name": "Latrell Sprewell",
   "season": "2004-05",
   "apm": -0.73
@@ -7708,6 +9548,11 @@
   "name": "LeBron James",
   "season": "2004-05",
   "apm": 3.57
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "2004-05",
+  "apm": 2.87
  },
  {
   "name": "Luke Walton",
@@ -7730,9 +9575,14 @@
   "apm": 3.57
  },
  {
-  "name": "Mark Madsen",
+  "name": "Matt Barnes",
   "season": "2004-05",
-  "apm": 2.64
+  "apm": -0.85
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2004-05",
+  "apm": -0.85
  },
  {
   "name": "Mehmet Okur",
@@ -7780,9 +9630,24 @@
   "apm": 2.52
  },
  {
+  "name": "Mikki Moore",
+  "season": "2004-05",
+  "apm": 0.54
+ },
+ {
+  "name": "Milt Palacio",
+  "season": "2004-05",
+  "apm": -1.2
+ },
+ {
   "name": "Nick Van Exel",
   "season": "2004-05",
   "apm": -2.01
+ },
+ {
+  "name": "Pat Garrity",
+  "season": "2004-05",
+  "apm": -3.06
  },
  {
   "name": "Pau Gasol",
@@ -7835,14 +9700,14 @@
   "apm": 0.31
  },
  {
-  "name": "Richard Hamilton",
-  "season": "2004-05",
-  "apm": 4.61
- },
- {
   "name": "Richard Jefferson",
   "season": "2004-05",
   "apm": -0.15
+ },
+ {
+  "name": "Rick Brunson",
+  "season": "2004-05",
+  "apm": -0.97
  },
  {
   "name": "Ricky Davis",
@@ -7858,6 +9723,11 @@
   "name": "Rod Strickland",
   "season": "2004-05",
   "apm": -0.62
+ },
+ {
+  "name": "Rodney Rogers",
+  "season": "2004-05",
+  "apm": -2.01
  },
  {
   "name": "Ron Artest",
@@ -7880,6 +9750,26 @@
   "apm": 4.38
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2004-05",
+  "apm": -0.97
+ },
+ {
+  "name": "Sasha Vujacic",
+  "season": "2004-05",
+  "apm": -0.27
+ },
+ {
+  "name": "Scott Padgett",
+  "season": "2004-05",
+  "apm": 1.36
+ },
+ {
+  "name": "Shandon Anderson",
+  "season": "2004-05",
+  "apm": 1.71
+ },
+ {
   "name": "Shane Battier",
   "season": "2004-05",
   "apm": 5.66
@@ -7900,6 +9790,11 @@
   "apm": 4.27
  },
  {
+  "name": "Stacey Augmon",
+  "season": "2004-05",
+  "apm": 2.17
+ },
+ {
   "name": "Stephen Jackson",
   "season": "2004-05",
   "apm": 1.13
@@ -7908,6 +9803,11 @@
   "name": "Stephon Marbury",
   "season": "2004-05",
   "apm": 2.29
+ },
+ {
+  "name": "Steve Blake",
+  "season": "2004-05",
+  "apm": -3.18
  },
  {
   "name": "Steve Francis",
@@ -7960,6 +9860,11 @@
   "apm": 2.99
  },
  {
+  "name": "Trenton Hassell",
+  "season": "2004-05",
+  "apm": 0.78
+ },
+ {
   "name": "Trevor Ariza",
   "season": "2004-05",
   "apm": -0.04
@@ -7995,14 +9900,29 @@
   "apm": 0.08
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2004-05",
+  "apm": 4.15
+ },
+ {
   "name": "Wally Szczerbiak",
   "season": "2004-05",
   "apm": 1.47
  },
  {
+  "name": "Walter McCarty",
+  "season": "2004-05",
+  "apm": -1.32
+ },
+ {
   "name": "Wesley Person",
   "season": "2004-05",
   "apm": -3.87
+ },
+ {
+  "name": "Willie Green",
+  "season": "2004-05",
+  "apm": -0.62
  },
  {
   "name": "Yao Ming",
@@ -8015,6 +9935,11 @@
   "apm": 4.38
  },
  {
+  "name": "Aaron McKie",
+  "season": "2005-06",
+  "apm": -0.67
+ },
+ {
   "name": "Adrian Griffin",
   "season": "2005-06",
   "apm": 2.07
@@ -8023,6 +9948,11 @@
   "name": "Al Harrington",
   "season": "2005-06",
   "apm": -0.17
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "2005-06",
+  "apm": -3.21
  },
  {
   "name": "Allen Iverson",
@@ -8055,6 +9985,11 @@
   "apm": 5.93
  },
  {
+  "name": "Andres Nocioni",
+  "season": "2005-06",
+  "apm": -1.69
+ },
+ {
   "name": "Andrew Bogut",
   "season": "2005-06",
   "apm": 1.76
@@ -8075,14 +10010,34 @@
   "apm": -0.27
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2005-06",
+  "apm": 3.69
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2005-06",
+  "apm": -0.37
+ },
+ {
   "name": "Antoine Walker",
   "season": "2005-06",
   "apm": -0.57
  },
  {
+  "name": "Antonio Daniels",
+  "season": "2005-06",
+  "apm": 1.26
+ },
+ {
   "name": "Antonio McDyess",
   "season": "2005-06",
   "apm": -0.67
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "2005-06",
+  "apm": 0.44
  },
  {
   "name": "Baron Davis",
@@ -8100,6 +10055,11 @@
   "apm": 4.61
  },
  {
+  "name": "Beno Udrih",
+  "season": "2005-06",
+  "apm": -0.67
+ },
+ {
   "name": "Bo Outlaw",
   "season": "2005-06",
   "apm": 0.75
@@ -8115,6 +10075,11 @@
   "apm": 4.81
  },
  {
+  "name": "Bostjan Nachbar",
+  "season": "2005-06",
+  "apm": 0.24
+ },
+ {
   "name": "Brad Miller",
   "season": "2005-06",
   "apm": 5.12
@@ -8125,14 +10090,14 @@
   "apm": 1.56
  },
  {
+  "name": "Brian Scalabrine",
+  "season": "2005-06",
+  "apm": -0.06
+ },
+ {
   "name": "Bruce Bowen",
   "season": "2005-06",
   "apm": -0.27
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2005-06",
-  "apm": 1.36
  },
  {
   "name": "Carmelo Anthony",
@@ -8143,6 +10108,11 @@
   "name": "Caron Butler",
   "season": "2005-06",
   "apm": 1.05
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2005-06",
+  "apm": 0.95
  },
  {
   "name": "Chauncey Billups",
@@ -8190,14 +10160,29 @@
   "apm": 0.24
  },
  {
-  "name": "Dale Davis",
+  "name": "Dahntay Jones",
   "season": "2005-06",
-  "apm": 0.44
+  "apm": -3.31
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2005-06",
+  "apm": -2.7
+ },
+ {
+  "name": "Damon Jones",
+  "season": "2005-06",
+  "apm": 1.36
  },
  {
   "name": "Damon Stoudamire",
   "season": "2005-06",
   "apm": 0.14
+ },
+ {
+  "name": "Danny Fortson",
+  "season": "2005-06",
+  "apm": 2.98
  },
  {
   "name": "Danny Granger",
@@ -8220,14 +10205,9 @@
   "apm": 0.24
  },
  {
-  "name": "David West",
+  "name": "Derek Fisher",
   "season": "2005-06",
-  "apm": -1.38
- },
- {
-  "name": "Derek Anderson",
-  "season": "2005-06",
-  "apm": 0.55
+  "apm": 1.76
  },
  {
   "name": "Deron Williams",
@@ -8240,9 +10220,9 @@
   "apm": 0.85
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2005-06",
-  "apm": -0.67
+  "apm": -4.02
  },
  {
   "name": "Dikembe Mutombo",
@@ -8253,6 +10233,11 @@
   "name": "Dirk Nowitzki",
   "season": "2005-06",
   "apm": 6.64
+ },
+ {
+  "name": "Donyell Marshall",
+  "season": "2005-06",
+  "apm": 0.55
  },
  {
   "name": "Doug Christie",
@@ -8270,14 +10255,14 @@
   "apm": 7.35
  },
  {
+  "name": "Earl Watson",
+  "season": "2005-06",
+  "apm": 4.2
+ },
+ {
   "name": "Eddie Jones",
   "season": "2005-06",
   "apm": 4
- },
- {
-  "name": "Eddy Curry",
-  "season": "2005-06",
-  "apm": -1.69
  },
  {
   "name": "Elton Brand",
@@ -8286,6 +10271,11 @@
  },
  {
   "name": "Emeka Okafor",
+  "season": "2005-06",
+  "apm": 0.44
+ },
+ {
+  "name": "Eric Piatkowski",
   "season": "2005-06",
   "apm": 0.44
  },
@@ -8330,6 +10320,16 @@
   "apm": 1.76
  },
  {
+  "name": "Ime Udoka",
+  "season": "2005-06",
+  "apm": -1.59
+ },
+ {
+  "name": "J.R. Smith",
+  "season": "2005-06",
+  "apm": -2.2
+ },
+ {
   "name": "Jacque Vaughn",
   "season": "2005-06",
   "apm": -4.84
@@ -8340,14 +10340,14 @@
   "apm": -1.49
  },
  {
+  "name": "Jamaal Tinsley",
+  "season": "2005-06",
+  "apm": 1.36
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2005-06",
   "apm": -1.28
- },
- {
-  "name": "Jameer Nelson",
-  "season": "2005-06",
-  "apm": 2.07
  },
  {
   "name": "James Jones",
@@ -8355,9 +10355,19 @@
   "apm": 0.55
  },
  {
+  "name": "James Posey",
+  "season": "2005-06",
+  "apm": 0.65
+ },
+ {
   "name": "James Singleton",
   "season": "2005-06",
   "apm": -2.09
+ },
+ {
+  "name": "Jared Jeffries",
+  "season": "2005-06",
+  "apm": 0.55
  },
  {
   "name": "Jarrett Jack",
@@ -8368,6 +10378,11 @@
   "name": "Jarron Collins",
   "season": "2005-06",
   "apm": 2.07
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2005-06",
+  "apm": -2.7
  },
  {
   "name": "Jason Kidd",
@@ -8415,6 +10430,16 @@
   "apm": -0.37
  },
  {
+  "name": "Jumaine Jones",
+  "season": "2005-06",
+  "apm": -1.69
+ },
+ {
+  "name": "Keith Bogans",
+  "season": "2005-06",
+  "apm": -0.98
+ },
+ {
   "name": "Keith Van Horn",
   "season": "2005-06",
   "apm": 1.05
@@ -8460,11 +10485,6 @@
   "apm": 3.49
  },
  {
-  "name": "Larry Hughes",
-  "season": "2005-06",
-  "apm": 1.05
- },
- {
   "name": "Leandro Barbosa",
   "season": "2005-06",
   "apm": -1.99
@@ -8473,6 +10493,11 @@
   "name": "LeBron James",
   "season": "2005-06",
   "apm": 5.93
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "2005-06",
+  "apm": 1.36
  },
  {
   "name": "Luke Walton",
@@ -8495,9 +10520,24 @@
   "apm": 2.27
  },
  {
-  "name": "Mark Madsen",
+  "name": "Martell Webster",
   "season": "2005-06",
-  "apm": 1.26
+  "apm": -2.4
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2005-06",
+  "apm": 0.95
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2005-06",
+  "apm": 0.55
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2005-06",
+  "apm": -0.77
  },
  {
   "name": "Mehmet Okur",
@@ -8540,6 +10580,11 @@
   "apm": -0.27
  },
  {
+  "name": "Mikki Moore",
+  "season": "2005-06",
+  "apm": 1.05
+ },
+ {
   "name": "Mo Williams",
   "season": "2005-06",
   "apm": -1.49
@@ -8548,6 +10593,11 @@
   "name": "Monta Ellis",
   "season": "2005-06",
   "apm": 0.24
+ },
+ {
+  "name": "Pat Garrity",
+  "season": "2005-06",
+  "apm": -0.47
  },
  {
   "name": "Pau Gasol",
@@ -8595,11 +10645,6 @@
   "apm": -3.21
  },
  {
-  "name": "Richard Hamilton",
-  "season": "2005-06",
-  "apm": 2.17
- },
- {
   "name": "Richard Jefferson",
   "season": "2005-06",
   "apm": 1.05
@@ -8635,6 +10680,21 @@
   "apm": 3.8
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2005-06",
+  "apm": -0.67
+ },
+ {
+  "name": "Sasha Vujacic",
+  "season": "2005-06",
+  "apm": 0.44
+ },
+ {
+  "name": "Scott Padgett",
+  "season": "2005-06",
+  "apm": -0.88
+ },
+ {
   "name": "Shane Battier",
   "season": "2005-06",
   "apm": 5.83
@@ -8663,6 +10723,11 @@
   "name": "Stephon Marbury",
   "season": "2005-06",
   "apm": 1.66
+ },
+ {
+  "name": "Steve Blake",
+  "season": "2005-06",
+  "apm": -1.79
  },
  {
   "name": "Steve Francis",
@@ -8700,6 +10765,11 @@
   "apm": 4.2
  },
  {
+  "name": "Trenton Hassell",
+  "season": "2005-06",
+  "apm": -0.47
+ },
+ {
   "name": "Trevor Ariza",
   "season": "2005-06",
   "apm": 1.36
@@ -8730,9 +10800,19 @@
   "apm": 4.3
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2005-06",
+  "apm": 1.66
+ },
+ {
   "name": "Wally Szczerbiak",
   "season": "2005-06",
   "apm": 1.87
+ },
+ {
+  "name": "Willie Green",
+  "season": "2005-06",
+  "apm": -0.88
  },
  {
   "name": "Yao Ming",
@@ -8745,6 +10825,11 @@
   "apm": 4
  },
  {
+  "name": "Aaron McKie",
+  "season": "2006-07",
+  "apm": -0.73
+ },
+ {
   "name": "Adrian Griffin",
   "season": "2006-07",
   "apm": 1.43
@@ -8753,6 +10838,11 @@
   "name": "Al Harrington",
   "season": "2006-07",
   "apm": -0.43
+ },
+ {
+  "name": "Alan Henderson",
+  "season": "2006-07",
+  "apm": -0.34
  },
  {
   "name": "Allen Iverson",
@@ -8790,6 +10880,11 @@
   "apm": 2.99
  },
  {
+  "name": "Andres Nocioni",
+  "season": "2006-07",
+  "apm": -1.41
+ },
+ {
   "name": "Andrew Bogut",
   "season": "2006-07",
   "apm": 1.23
@@ -8805,14 +10900,39 @@
   "apm": 2.41
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2006-07",
+  "apm": 3.39
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2006-07",
+  "apm": -0.34
+ },
+ {
+  "name": "Anthony Parker",
+  "season": "2006-07",
+  "apm": 3.88
+ },
+ {
   "name": "Antoine Walker",
   "season": "2006-07",
   "apm": 0.06
  },
  {
+  "name": "Antonio Daniels",
+  "season": "2006-07",
+  "apm": 0.45
+ },
+ {
   "name": "Antonio McDyess",
   "season": "2006-07",
   "apm": 3.19
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "2006-07",
+  "apm": -0.92
  },
  {
   "name": "Baron Davis",
@@ -8830,6 +10950,11 @@
   "apm": 0.74
  },
  {
+  "name": "Beno Udrih",
+  "season": "2006-07",
+  "apm": -2.1
+ },
+ {
   "name": "Bo Outlaw",
   "season": "2006-07",
   "apm": 0.35
@@ -8843,6 +10968,11 @@
   "name": "Boris Diaw",
   "season": "2006-07",
   "apm": -0.92
+ },
+ {
+  "name": "Bostjan Nachbar",
+  "season": "2006-07",
+  "apm": 0.64
  },
  {
   "name": "Brad Miller",
@@ -8860,14 +10990,14 @@
   "apm": 0.64
  },
  {
+  "name": "Brian Scalabrine",
+  "season": "2006-07",
+  "apm": -0.43
+ },
+ {
   "name": "Bruce Bowen",
   "season": "2006-07",
   "apm": 2.21
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2006-07",
-  "apm": 2.9
  },
  {
   "name": "Carmelo Anthony",
@@ -8878,6 +11008,11 @@
   "name": "Caron Butler",
   "season": "2006-07",
   "apm": 0.74
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2006-07",
+  "apm": 0.15
  },
  {
   "name": "Chauncey Billups",
@@ -8900,6 +11035,11 @@
   "apm": 2.31
  },
  {
+  "name": "Chris Quinn",
+  "season": "2006-07",
+  "apm": 0.15
+ },
+ {
   "name": "Chris Webber",
   "season": "2006-07",
   "apm": -0.43
@@ -8920,14 +11060,34 @@
   "apm": 0.35
  },
  {
-  "name": "Dale Davis",
+  "name": "Dahntay Jones",
   "season": "2006-07",
-  "apm": 0.45
+  "apm": -0.24
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2006-07",
+  "apm": -3.76
+ },
+ {
+  "name": "Damon Jones",
+  "season": "2006-07",
+  "apm": 0.64
  },
  {
   "name": "Damon Stoudamire",
   "season": "2006-07",
   "apm": -0.92
+ },
+ {
+  "name": "Daniel Gibson",
+  "season": "2006-07",
+  "apm": 0.35
+ },
+ {
+  "name": "Danny Fortson",
+  "season": "2006-07",
+  "apm": 1.82
  },
  {
   "name": "Danny Granger",
@@ -8950,19 +11110,14 @@
   "apm": -0.83
  },
  {
-  "name": "David West",
-  "season": "2006-07",
-  "apm": 1.43
- },
- {
   "name": "Dee Brown",
   "season": "2006-07",
   "apm": -1.12
  },
  {
-  "name": "Derek Anderson",
+  "name": "Derek Fisher",
   "season": "2006-07",
-  "apm": 1.62
+  "apm": 2.31
  },
  {
   "name": "Deron Williams",
@@ -8975,9 +11130,9 @@
   "apm": -0.73
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2006-07",
-  "apm": 3.39
+  "apm": -3.67
  },
  {
   "name": "Dikembe Mutombo",
@@ -8988,6 +11143,11 @@
   "name": "Dirk Nowitzki",
   "season": "2006-07",
   "apm": 6.81
+ },
+ {
+  "name": "Donyell Marshall",
+  "season": "2006-07",
+  "apm": 1.03
  },
  {
   "name": "Doug Christie",
@@ -9005,14 +11165,14 @@
   "apm": 5.54
  },
  {
+  "name": "Earl Watson",
+  "season": "2006-07",
+  "apm": 1.23
+ },
+ {
   "name": "Eddie Jones",
   "season": "2006-07",
   "apm": 1.72
- },
- {
-  "name": "Eddy Curry",
-  "season": "2006-07",
-  "apm": -0.73
  },
  {
   "name": "Elton Brand",
@@ -9023,6 +11183,11 @@
   "name": "Emeka Okafor",
   "season": "2006-07",
   "apm": 1.33
+ },
+ {
+  "name": "Eric Piatkowski",
+  "season": "2006-07",
+  "apm": 0.06
  },
  {
   "name": "Eric Snow",
@@ -9070,6 +11235,16 @@
   "apm": 3.39
  },
  {
+  "name": "Ime Udoka",
+  "season": "2006-07",
+  "apm": 0.74
+ },
+ {
+  "name": "J.R. Smith",
+  "season": "2006-07",
+  "apm": -0.04
+ },
+ {
   "name": "Jacque Vaughn",
   "season": "2006-07",
   "apm": -1.51
@@ -9080,14 +11255,14 @@
   "apm": -2.88
  },
  {
+  "name": "Jamaal Tinsley",
+  "season": "2006-07",
+  "apm": 0.64
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2006-07",
   "apm": -0.53
- },
- {
-  "name": "Jameer Nelson",
-  "season": "2006-07",
-  "apm": 0.35
  },
  {
   "name": "James Jones",
@@ -9095,7 +11270,17 @@
   "apm": 0.84
  },
  {
+  "name": "James Posey",
+  "season": "2006-07",
+  "apm": 0.15
+ },
+ {
   "name": "James Singleton",
+  "season": "2006-07",
+  "apm": -1.22
+ },
+ {
+  "name": "Jared Jeffries",
   "season": "2006-07",
   "apm": -1.22
  },
@@ -9108,6 +11293,11 @@
   "name": "Jarron Collins",
   "season": "2006-07",
   "apm": 1.82
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2006-07",
+  "apm": -1.02
  },
  {
   "name": "Jason Kidd",
@@ -9153,6 +11343,16 @@
   "name": "Josh Smith",
   "season": "2006-07",
   "apm": 0.25
+ },
+ {
+  "name": "Jumaine Jones",
+  "season": "2006-07",
+  "apm": -1.81
+ },
+ {
+  "name": "Keith Bogans",
+  "season": "2006-07",
+  "apm": 0.64
  },
  {
   "name": "Kenyon Martin",
@@ -9205,11 +11405,6 @@
   "apm": 0.94
  },
  {
-  "name": "Larry Hughes",
-  "season": "2006-07",
-  "apm": 0.45
- },
- {
   "name": "Leandro Barbosa",
   "season": "2006-07",
   "apm": 1.23
@@ -9218,6 +11413,11 @@
   "name": "LeBron James",
   "season": "2006-07",
   "apm": 7.89
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "2006-07",
+  "apm": -2.39
  },
  {
   "name": "Luke Walton",
@@ -9240,9 +11440,24 @@
   "apm": 3.78
  },
  {
-  "name": "Mark Madsen",
+  "name": "Martell Webster",
   "season": "2006-07",
-  "apm": 0.84
+  "apm": -0.53
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2006-07",
+  "apm": 0.25
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2006-07",
+  "apm": 0.25
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2006-07",
+  "apm": -2
  },
  {
   "name": "Mehmet Okur",
@@ -9285,6 +11500,11 @@
   "apm": -0.04
  },
  {
+  "name": "Mikki Moore",
+  "season": "2006-07",
+  "apm": 2.11
+ },
+ {
   "name": "Mo Williams",
   "season": "2006-07",
   "apm": 0.15
@@ -9298,6 +11518,11 @@
   "name": "P.J. Tucker",
   "season": "2006-07",
   "apm": -1.81
+ },
+ {
+  "name": "Pat Garrity",
+  "season": "2006-07",
+  "apm": -0.14
  },
  {
   "name": "Pau Gasol",
@@ -9355,9 +11580,9 @@
   "apm": -0.04
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Renaldo Balkman",
   "season": "2006-07",
-  "apm": 2.7
+  "apm": -0.34
  },
  {
   "name": "Richard Jefferson",
@@ -9373,6 +11598,11 @@
   "name": "Robert Horry",
   "season": "2006-07",
   "apm": 2.11
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2006-07",
+  "apm": -2.2
  },
  {
   "name": "Ron Artest",
@@ -9398,6 +11628,26 @@
   "name": "Sam Cassell",
   "season": "2006-07",
   "apm": 2.8
+ },
+ {
+  "name": "Sasha Pavlovic",
+  "season": "2006-07",
+  "apm": 1.03
+ },
+ {
+  "name": "Sasha Vujacic",
+  "season": "2006-07",
+  "apm": -0.14
+ },
+ {
+  "name": "Scott Padgett",
+  "season": "2006-07",
+  "apm": -0.24
+ },
+ {
+  "name": "Shammond Williams",
+  "season": "2006-07",
+  "apm": -2.3
  },
  {
   "name": "Shane Battier",
@@ -9430,6 +11680,11 @@
   "apm": 1.23
  },
  {
+  "name": "Steve Blake",
+  "season": "2006-07",
+  "apm": -1.02
+ },
+ {
   "name": "Steve Francis",
   "season": "2006-07",
   "apm": 2.21
@@ -9438,6 +11693,11 @@
   "name": "Steve Nash",
   "season": "2006-07",
   "apm": 6.91
+ },
+ {
+  "name": "Steve Novak",
+  "season": "2006-07",
+  "apm": -2.1
  },
  {
   "name": "Thabo Sefolosha",
@@ -9470,6 +11730,11 @@
   "apm": 4.27
  },
  {
+  "name": "Trenton Hassell",
+  "season": "2006-07",
+  "apm": -0.92
+ },
+ {
   "name": "Trevor Ariza",
   "season": "2006-07",
   "apm": 0.84
@@ -9495,9 +11760,19 @@
   "apm": 3.09
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2006-07",
+  "apm": -0.73
+ },
+ {
   "name": "Wally Szczerbiak",
   "season": "2006-07",
   "apm": 1.13
+ },
+ {
+  "name": "Willie Green",
+  "season": "2006-07",
+  "apm": -2.59
  },
  {
   "name": "Yao Ming",
@@ -9560,6 +11835,11 @@
   "apm": 4.84
  },
  {
+  "name": "Andres Nocioni",
+  "season": "2007-08",
+  "apm": -0.08
+ },
+ {
   "name": "Andrew Bogut",
   "season": "2007-08",
   "apm": 1.02
@@ -9580,14 +11860,44 @@
   "apm": -1.29
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2007-08",
+  "apm": 4.74
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2007-08",
+  "apm": -1.39
+ },
+ {
+  "name": "Anthony Parker",
+  "season": "2007-08",
+  "apm": 2.13
+ },
+ {
   "name": "Antoine Walker",
   "season": "2007-08",
   "apm": 1.02
  },
  {
+  "name": "Antonio Daniels",
+  "season": "2007-08",
+  "apm": -0.08
+ },
+ {
   "name": "Antonio McDyess",
   "season": "2007-08",
   "apm": 1.02
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2007-08",
+  "apm": -0.68
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "2007-08",
+  "apm": -0.38
  },
  {
   "name": "Baron Davis",
@@ -9601,6 +11911,11 @@
  },
  {
   "name": "Ben Wallace",
+  "season": "2007-08",
+  "apm": -0.38
+ },
+ {
+  "name": "Beno Udrih",
   "season": "2007-08",
   "apm": -0.38
  },
@@ -9625,6 +11940,11 @@
   "apm": 0.02
  },
  {
+  "name": "Bostjan Nachbar",
+  "season": "2007-08",
+  "apm": -2.69
+ },
+ {
   "name": "Brad Miller",
   "season": "2007-08",
   "apm": 4.74
@@ -9640,19 +11960,14 @@
   "apm": 0.52
  },
  {
+  "name": "Brian Scalabrine",
+  "season": "2007-08",
+  "apm": -0.48
+ },
+ {
   "name": "Bruce Bowen",
   "season": "2007-08",
   "apm": 0.32
- },
- {
-  "name": "Carl Landry",
-  "season": "2007-08",
-  "apm": 0.22
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2007-08",
-  "apm": 3.63
  },
  {
   "name": "Carmelo Anthony",
@@ -9663,6 +11978,16 @@
   "name": "Caron Butler",
   "season": "2007-08",
   "apm": 2.43
+ },
+ {
+  "name": "Casey Jacobsen",
+  "season": "2007-08",
+  "apm": 0.52
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2007-08",
+  "apm": 1.83
  },
  {
   "name": "Chauncey Billups",
@@ -9690,6 +12015,11 @@
   "apm": 4.04
  },
  {
+  "name": "Chris Quinn",
+  "season": "2007-08",
+  "apm": 0.82
+ },
+ {
   "name": "Chris Webber",
   "season": "2007-08",
   "apm": -1.19
@@ -9705,9 +12035,34 @@
   "apm": -1.39
  },
  {
+  "name": "Daequan Cook",
+  "season": "2007-08",
+  "apm": -2.49
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2007-08",
+  "apm": 0.52
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2007-08",
+  "apm": -5
+ },
+ {
+  "name": "Damon Jones",
+  "season": "2007-08",
+  "apm": 0.02
+ },
+ {
   "name": "Damon Stoudamire",
   "season": "2007-08",
   "apm": -2.49
+ },
+ {
+  "name": "Daniel Gibson",
+  "season": "2007-08",
+  "apm": 2.53
  },
  {
   "name": "Danny Granger",
@@ -9725,14 +12080,9 @@
   "apm": 0.72
  },
  {
-  "name": "David West",
+  "name": "Derek Fisher",
   "season": "2007-08",
-  "apm": 2.83
- },
- {
-  "name": "Derek Anderson",
-  "season": "2007-08",
-  "apm": -0.78
+  "apm": 2.13
  },
  {
   "name": "Deron Williams",
@@ -9745,9 +12095,9 @@
   "apm": 0.82
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2007-08",
-  "apm": 4.34
+  "apm": -0.28
  },
  {
   "name": "Dikembe Mutombo",
@@ -9760,6 +12110,16 @@
   "apm": 6.85
  },
  {
+  "name": "Dominic McGuire",
+  "season": "2007-08",
+  "apm": -3.8
+ },
+ {
+  "name": "Donyell Marshall",
+  "season": "2007-08",
+  "apm": -0.58
+ },
+ {
   "name": "Dwight Howard",
   "season": "2007-08",
   "apm": 4.34
@@ -9770,14 +12130,14 @@
   "apm": 3.63
  },
  {
+  "name": "Earl Watson",
+  "season": "2007-08",
+  "apm": 0.42
+ },
+ {
   "name": "Eddie Jones",
   "season": "2007-08",
   "apm": 1.63
- },
- {
-  "name": "Eddy Curry",
-  "season": "2007-08",
-  "apm": -5
  },
  {
   "name": "Elton Brand",
@@ -9788,6 +12148,11 @@
   "name": "Emeka Okafor",
   "season": "2007-08",
   "apm": -0.58
+ },
+ {
+  "name": "Eric Piatkowski",
+  "season": "2007-08",
+  "apm": -0.48
  },
  {
   "name": "Eric Snow",
@@ -9825,9 +12190,24 @@
   "apm": 3.63
  },
  {
+  "name": "Ime Udoka",
+  "season": "2007-08",
+  "apm": 2.03
+ },
+ {
+  "name": "J.R. Smith",
+  "season": "2007-08",
+  "apm": 1.02
+ },
+ {
   "name": "Jacque Vaughn",
   "season": "2007-08",
   "apm": -2.39
+ },
+ {
+  "name": "Jamaal Tinsley",
+  "season": "2007-08",
+  "apm": 1.43
  },
  {
   "name": "Jamal Crawford",
@@ -9835,9 +12215,9 @@
   "apm": 0.92
  },
  {
-  "name": "Jameer Nelson",
+  "name": "Jamario Moon",
   "season": "2007-08",
-  "apm": 0.02
+  "apm": 2.43
  },
  {
   "name": "James Jones",
@@ -9845,9 +12225,19 @@
   "apm": 1.93
  },
  {
+  "name": "James Posey",
+  "season": "2007-08",
+  "apm": -1.39
+ },
+ {
   "name": "Jared Dudley",
   "season": "2007-08",
   "apm": 0.12
+ },
+ {
+  "name": "Jared Jeffries",
+  "season": "2007-08",
+  "apm": 0.62
  },
  {
   "name": "Jarrett Jack",
@@ -9858,6 +12248,11 @@
   "name": "Jarron Collins",
   "season": "2007-08",
   "apm": 1.83
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2007-08",
+  "apm": 0.02
  },
  {
   "name": "Jason Kidd",
@@ -9910,9 +12305,19 @@
   "apm": 0.82
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2007-08",
+  "apm": -0.68
+ },
+ {
   "name": "Josh Smith",
   "season": "2007-08",
   "apm": 2.63
+ },
+ {
+  "name": "Keith Bogans",
+  "season": "2007-08",
+  "apm": 1.83
  },
  {
   "name": "Kenyon Martin",
@@ -9970,11 +12375,6 @@
   "apm": 2.13
  },
  {
-  "name": "Larry Hughes",
-  "season": "2007-08",
-  "apm": -2.09
- },
- {
   "name": "Leandro Barbosa",
   "season": "2007-08",
   "apm": -0.48
@@ -9983,6 +12383,11 @@
   "name": "LeBron James",
   "season": "2007-08",
   "apm": 7.25
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "2007-08",
+  "apm": -0.38
  },
  {
   "name": "Luke Walton",
@@ -10010,9 +12415,24 @@
   "apm": 2.63
  },
  {
-  "name": "Mark Madsen",
+  "name": "Martell Webster",
   "season": "2007-08",
-  "apm": 1.32
+  "apm": -0.58
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2007-08",
+  "apm": -1.19
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2007-08",
+  "apm": -0.99
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2007-08",
+  "apm": -0.78
  },
  {
   "name": "Mehmet Okur",
@@ -10060,6 +12480,11 @@
   "apm": 1.53
  },
  {
+  "name": "Mikki Moore",
+  "season": "2007-08",
+  "apm": 1.02
+ },
+ {
   "name": "Mo Williams",
   "season": "2007-08",
   "apm": 0.12
@@ -10068,6 +12493,11 @@
   "name": "Monta Ellis",
   "season": "2007-08",
   "apm": 0.92
+ },
+ {
+  "name": "Pat Garrity",
+  "season": "2007-08",
+  "apm": -0.38
  },
  {
   "name": "Pau Gasol",
@@ -10125,9 +12555,9 @@
   "apm": 1.12
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Renaldo Balkman",
   "season": "2007-08",
-  "apm": 2.53
+  "apm": 0.12
  },
  {
   "name": "Richard Jefferson",
@@ -10143,6 +12573,11 @@
   "name": "Robert Horry",
   "season": "2007-08",
   "apm": 0.62
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2007-08",
+  "apm": -0.58
  },
  {
   "name": "Ron Artest",
@@ -10175,6 +12610,16 @@
   "apm": 1.93
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2007-08",
+  "apm": -0.08
+ },
+ {
+  "name": "Sasha Vujacic",
+  "season": "2007-08",
+  "apm": 0.42
+ },
+ {
   "name": "Shane Battier",
   "season": "2007-08",
   "apm": 3.43
@@ -10195,6 +12640,11 @@
   "apm": 4.14
  },
  {
+  "name": "Spencer Hawes",
+  "season": "2007-08",
+  "apm": -0.68
+ },
+ {
   "name": "Stephen Jackson",
   "season": "2007-08",
   "apm": 2.13
@@ -10203,6 +12653,11 @@
   "name": "Stephon Marbury",
   "season": "2007-08",
   "apm": -0.78
+ },
+ {
+  "name": "Steve Blake",
+  "season": "2007-08",
+  "apm": 1.53
  },
  {
   "name": "Steve Francis",
@@ -10215,14 +12670,14 @@
   "apm": 7.35
  },
  {
+  "name": "Steve Novak",
+  "season": "2007-08",
+  "apm": -2.79
+ },
+ {
   "name": "Thabo Sefolosha",
   "season": "2007-08",
   "apm": 0.22
- },
- {
-  "name": "Thaddeus Young",
-  "season": "2007-08",
-  "apm": 2.63
  },
  {
   "name": "Theo Ratliff",
@@ -10250,6 +12705,11 @@
   "apm": 3.43
  },
  {
+  "name": "Trenton Hassell",
+  "season": "2007-08",
+  "apm": -2.69
+ },
+ {
   "name": "Trevor Ariza",
   "season": "2007-08",
   "apm": -0.18
@@ -10275,9 +12735,19 @@
   "apm": 3.43
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2007-08",
+  "apm": 3.23
+ },
+ {
   "name": "Wally Szczerbiak",
   "season": "2007-08",
   "apm": 2.03
+ },
+ {
+  "name": "Willie Green",
+  "season": "2007-08",
+  "apm": -1.29
  },
  {
   "name": "Yao Ming",
@@ -10330,6 +12800,11 @@
   "apm": 4.43
  },
  {
+  "name": "Andres Nocioni",
+  "season": "2008-09",
+  "apm": 2.02
+ },
+ {
   "name": "Andrew Bogut",
   "season": "2008-09",
   "apm": 3.42
@@ -10345,9 +12820,49 @@
   "apm": 1.11
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2008-09",
+  "apm": 1.92
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2008-09",
+  "apm": -1.5
+ },
+ {
+  "name": "Anthony Morrow",
+  "season": "2008-09",
+  "apm": -0.09
+ },
+ {
+  "name": "Anthony Parker",
+  "season": "2008-09",
+  "apm": 2.32
+ },
+ {
+  "name": "Anthony Tolliver",
+  "season": "2008-09",
+  "apm": -1.5
+ },
+ {
+  "name": "Antonio Daniels",
+  "season": "2008-09",
+  "apm": -4.01
+ },
+ {
   "name": "Antonio McDyess",
   "season": "2008-09",
   "apm": 0.21
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2008-09",
+  "apm": 0.61
+ },
+ {
+  "name": "Austin Croshere",
+  "season": "2008-09",
+  "apm": -1.1
  },
  {
   "name": "Baron Davis",
@@ -10363,6 +12878,11 @@
   "name": "Ben Wallace",
   "season": "2008-09",
   "apm": 2.22
+ },
+ {
+  "name": "Beno Udrih",
+  "season": "2008-09",
+  "apm": 0.51
  },
  {
   "name": "Bobby Simmons",
@@ -10385,9 +12905,19 @@
   "apm": 4.23
  },
  {
+  "name": "Brandon Rush",
+  "season": "2008-09",
+  "apm": -2.71
+ },
+ {
   "name": "Brent Barry",
   "season": "2008-09",
   "apm": -0.6
+ },
+ {
+  "name": "Brian Scalabrine",
+  "season": "2008-09",
+  "apm": 0.71
  },
  {
   "name": "Brook Lopez",
@@ -10400,16 +12930,6 @@
   "apm": -0.9
  },
  {
-  "name": "Carl Landry",
-  "season": "2008-09",
-  "apm": -0.19
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2008-09",
-  "apm": 0.21
- },
- {
   "name": "Carmelo Anthony",
   "season": "2008-09",
   "apm": 3.73
@@ -10418,6 +12938,11 @@
   "name": "Caron Butler",
   "season": "2008-09",
   "apm": 0.41
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2008-09",
+  "apm": -2.3
  },
  {
   "name": "Chauncey Billups",
@@ -10445,6 +12970,11 @@
   "apm": 6.54
  },
  {
+  "name": "Chris Quinn",
+  "season": "2008-09",
+  "apm": 0.51
+ },
+ {
   "name": "Corey Maggette",
   "season": "2008-09",
   "apm": 0.21
@@ -10453,6 +12983,36 @@
   "name": "Cuttino Mobley",
   "season": "2008-09",
   "apm": -1.3
+ },
+ {
+  "name": "D.J. Augustin",
+  "season": "2008-09",
+  "apm": -0.39
+ },
+ {
+  "name": "Daequan Cook",
+  "season": "2008-09",
+  "apm": -1.2
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2008-09",
+  "apm": -2.61
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2008-09",
+  "apm": -4.51
+ },
+ {
+  "name": "Damon Jones",
+  "season": "2008-09",
+  "apm": 0.41
+ },
+ {
+  "name": "Daniel Gibson",
+  "season": "2008-09",
+  "apm": 1.41
  },
  {
   "name": "Danilo Gallinari",
@@ -10470,11 +13030,6 @@
   "apm": 0.41
  },
  {
-  "name": "David West",
-  "season": "2008-09",
-  "apm": 2.72
- },
- {
   "name": "DeAndre Jordan",
   "season": "2008-09",
   "apm": -3.01
@@ -10483,6 +13038,11 @@
   "name": "Dee Brown",
   "season": "2008-09",
   "apm": -1
+ },
+ {
+  "name": "Derek Fisher",
+  "season": "2008-09",
+  "apm": 1.72
  },
  {
   "name": "Deron Williams",
@@ -10500,9 +13060,9 @@
   "apm": -1.8
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2008-09",
-  "apm": 2.82
+  "apm": -1.3
  },
  {
   "name": "Dikembe Mutombo",
@@ -10515,6 +13075,16 @@
   "apm": 4.73
  },
  {
+  "name": "Dominic McGuire",
+  "season": "2008-09",
+  "apm": -2.91
+ },
+ {
+  "name": "Donyell Marshall",
+  "season": "2008-09",
+  "apm": 1.21
+ },
+ {
   "name": "Dwight Howard",
   "season": "2008-09",
   "apm": 4.13
@@ -10525,9 +13095,9 @@
   "apm": 7.14
  },
  {
-  "name": "Eddy Curry",
+  "name": "Earl Watson",
   "season": "2008-09",
-  "apm": -3.61
+  "apm": -0.7
  },
  {
   "name": "Elton Brand",
@@ -10585,6 +13155,16 @@
   "apm": 4.63
  },
  {
+  "name": "Ime Udoka",
+  "season": "2008-09",
+  "apm": 3.42
+ },
+ {
+  "name": "J.R. Smith",
+  "season": "2008-09",
+  "apm": 4.03
+ },
+ {
   "name": "Jacque Vaughn",
   "season": "2008-09",
   "apm": -2.4
@@ -10595,14 +13175,19 @@
   "apm": -0.49
  },
  {
-  "name": "Jameer Nelson",
+  "name": "Jamario Moon",
   "season": "2008-09",
-  "apm": 2.92
+  "apm": 3.32
  },
  {
   "name": "James Jones",
   "season": "2008-09",
   "apm": 1.82
+ },
+ {
+  "name": "James Posey",
+  "season": "2008-09",
+  "apm": -0.19
  },
  {
   "name": "James Singleton",
@@ -10615,6 +13200,11 @@
   "apm": 0.61
  },
  {
+  "name": "Jared Jeffries",
+  "season": "2008-09",
+  "apm": 0.41
+ },
+ {
   "name": "Jarrett Jack",
   "season": "2008-09",
   "apm": 0.21
@@ -10623,6 +13213,11 @@
   "name": "Jarron Collins",
   "season": "2008-09",
   "apm": 0.61
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2008-09",
+  "apm": -1.7
  },
  {
   "name": "Jason Kidd",
@@ -10680,9 +13275,19 @@
   "apm": -1.1
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2008-09",
+  "apm": -0.49
+ },
+ {
   "name": "Josh Smith",
   "season": "2008-09",
   "apm": 3.22
+ },
+ {
+  "name": "Keith Bogans",
+  "season": "2008-09",
+  "apm": 0.71
  },
  {
   "name": "Kenyon Martin",
@@ -10745,11 +13350,6 @@
   "apm": 4.53
  },
  {
-  "name": "Larry Hughes",
-  "season": "2008-09",
-  "apm": -2.81
- },
- {
   "name": "Leandro Barbosa",
   "season": "2008-09",
   "apm": -0.29
@@ -10758,6 +13358,11 @@
   "name": "LeBron James",
   "season": "2008-09",
   "apm": 10.06
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "2008-09",
+  "apm": -0.49
  },
  {
   "name": "Luc Mbah a Moute",
@@ -10795,9 +13400,29 @@
   "apm": 2.92
  },
  {
-  "name": "Mark Madsen",
+  "name": "Mario Chalmers",
   "season": "2008-09",
-  "apm": 0.91
+  "apm": -0.49
+ },
+ {
+  "name": "Martell Webster",
+  "season": "2008-09",
+  "apm": -0.49
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2008-09",
+  "apm": -1
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2008-09",
+  "apm": -0.7
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2008-09",
+  "apm": 3.42
  },
  {
   "name": "Mehmet Okur",
@@ -10845,6 +13470,11 @@
   "apm": -0.19
  },
  {
+  "name": "Mikki Moore",
+  "season": "2008-09",
+  "apm": -0.29
+ },
+ {
   "name": "Mo Williams",
   "season": "2008-09",
   "apm": 1.52
@@ -10858,6 +13488,11 @@
   "name": "Nicolas Batum",
   "season": "2008-09",
   "apm": 0.51
+ },
+ {
+  "name": "O.J. Mayo",
+  "season": "2008-09",
+  "apm": -0.9
  },
  {
   "name": "Pau Gasol",
@@ -10910,9 +13545,9 @@
   "apm": 0.11
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Renaldo Balkman",
   "season": "2008-09",
-  "apm": 0.91
+  "apm": -0.29
  },
  {
   "name": "Richard Jefferson",
@@ -10923,6 +13558,11 @@
   "name": "Ricky Davis",
   "season": "2008-09",
   "apm": -3.51
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2008-09",
+  "apm": 0.51
  },
  {
   "name": "Ron Artest",
@@ -10960,6 +13600,16 @@
   "apm": -0.09
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2008-09",
+  "apm": -0.6
+ },
+ {
+  "name": "Sasha Vujacic",
+  "season": "2008-09",
+  "apm": -0.49
+ },
+ {
   "name": "Shane Battier",
   "season": "2008-09",
   "apm": 3.22
@@ -10975,6 +13625,11 @@
   "apm": 1.92
  },
  {
+  "name": "Spencer Hawes",
+  "season": "2008-09",
+  "apm": -3.31
+ },
+ {
   "name": "Stephen Jackson",
   "season": "2008-09",
   "apm": 1.01
@@ -10985,19 +13640,24 @@
   "apm": -2.1
  },
  {
+  "name": "Steve Blake",
+  "season": "2008-09",
+  "apm": 3.12
+ },
+ {
   "name": "Steve Nash",
   "season": "2008-09",
   "apm": 6.14
  },
  {
+  "name": "Steve Novak",
+  "season": "2008-09",
+  "apm": -1.8
+ },
+ {
   "name": "Thabo Sefolosha",
   "season": "2008-09",
   "apm": 0.11
- },
- {
-  "name": "Thaddeus Young",
-  "season": "2008-09",
-  "apm": 3.63
  },
  {
   "name": "Theo Ratliff",
@@ -11025,6 +13685,11 @@
   "apm": 1.62
  },
  {
+  "name": "Trenton Hassell",
+  "season": "2008-09",
+  "apm": -3.01
+ },
+ {
   "name": "Trevor Ariza",
   "season": "2008-09",
   "apm": 0.21
@@ -11050,9 +13715,19 @@
   "apm": 2.42
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2008-09",
+  "apm": 0.81
+ },
+ {
   "name": "Wally Szczerbiak",
   "season": "2008-09",
   "apm": -0.7
+ },
+ {
+  "name": "Willie Green",
+  "season": "2008-09",
+  "apm": -1.4
  },
  {
   "name": "Yao Ming",
@@ -11080,6 +13755,11 @@
   "apm": -0.57
  },
  {
+  "name": "Alonzo Gee",
+  "season": "2009-10",
+  "apm": -0.68
+ },
+ {
   "name": "Amir Johnson",
   "season": "2009-10",
   "apm": 4.09
@@ -11105,6 +13785,11 @@
   "apm": 3.35
  },
  {
+  "name": "Andres Nocioni",
+  "season": "2009-10",
+  "apm": 0.49
+ },
+ {
   "name": "Andrew Bogut",
   "season": "2009-10",
   "apm": 5.58
@@ -11120,9 +13805,39 @@
   "apm": -0.68
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2009-10",
+  "apm": 1.76
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2009-10",
+  "apm": -3.12
+ },
+ {
+  "name": "Anthony Morrow",
+  "season": "2009-10",
+  "apm": 1.44
+ },
+ {
+  "name": "Anthony Parker",
+  "season": "2009-10",
+  "apm": 2.61
+ },
+ {
+  "name": "Anthony Tolliver",
+  "season": "2009-10",
+  "apm": 0.7
+ },
+ {
   "name": "Antonio McDyess",
   "season": "2009-10",
   "apm": 2.4
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2009-10",
+  "apm": 0.38
  },
  {
   "name": "Baron Davis",
@@ -11138,6 +13853,11 @@
   "name": "Ben Wallace",
   "season": "2009-10",
   "apm": 3.67
+ },
+ {
+  "name": "Beno Udrih",
+  "season": "2009-10",
+  "apm": 0.17
  },
  {
   "name": "Bobby Simmons",
@@ -11165,19 +13885,19 @@
   "apm": 2.4
  },
  {
+  "name": "Brandon Rush",
+  "season": "2009-10",
+  "apm": -1.53
+ },
+ {
+  "name": "Brian Scalabrine",
+  "season": "2009-10",
+  "apm": -2.17
+ },
+ {
   "name": "Brook Lopez",
   "season": "2009-10",
   "apm": -2.27
- },
- {
-  "name": "Carl Landry",
-  "season": "2009-10",
-  "apm": -0.15
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2009-10",
-  "apm": 0.7
  },
  {
   "name": "Carmelo Anthony",
@@ -11188,6 +13908,11 @@
   "name": "Caron Butler",
   "season": "2009-10",
   "apm": -0.68
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2009-10",
+  "apm": 2.4
  },
  {
   "name": "Chauncey Billups",
@@ -11215,9 +13940,39 @@
   "apm": 4.41
  },
  {
+  "name": "Chris Quinn",
+  "season": "2009-10",
+  "apm": -0.04
+ },
+ {
   "name": "Corey Maggette",
   "season": "2009-10",
   "apm": -1
+ },
+ {
+  "name": "D.J. Augustin",
+  "season": "2009-10",
+  "apm": -0.15
+ },
+ {
+  "name": "Daequan Cook",
+  "season": "2009-10",
+  "apm": -0.79
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2009-10",
+  "apm": -3.23
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2009-10",
+  "apm": -1.85
+ },
+ {
+  "name": "Daniel Gibson",
+  "season": "2009-10",
+  "apm": 0.38
  },
  {
   "name": "Danilo Gallinari",
@@ -11235,19 +13990,14 @@
   "apm": -2.27
  },
  {
-  "name": "Darren Collison",
+  "name": "Dante Cunningham",
   "season": "2009-10",
-  "apm": -1.63
+  "apm": -0.04
  },
  {
   "name": "David Lee",
   "season": "2009-10",
   "apm": -0.36
- },
- {
-  "name": "David West",
-  "season": "2009-10",
-  "apm": 0.7
  },
  {
   "name": "DeAndre Jordan",
@@ -11258,6 +14008,11 @@
   "name": "DeMar Derozan",
   "season": "2009-10",
   "apm": -3.23
+ },
+ {
+  "name": "Derek Fisher",
+  "season": "2009-10",
+  "apm": 1.12
  },
  {
   "name": "Deron Williams",
@@ -11275,14 +14030,19 @@
   "apm": -0.04
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2009-10",
-  "apm": -0.47
+  "apm": -1.74
  },
  {
   "name": "Dirk Nowitzki",
   "season": "2009-10",
   "apm": 4.52
+ },
+ {
+  "name": "Dominic McGuire",
+  "season": "2009-10",
+  "apm": -3.65
  },
  {
   "name": "Dwight Howard",
@@ -11295,9 +14055,9 @@
   "apm": 9.72
  },
  {
-  "name": "Eddy Curry",
+  "name": "Earl Watson",
   "season": "2009-10",
-  "apm": -3.01
+  "apm": 0.28
  },
  {
   "name": "Elton Brand",
@@ -11335,6 +14095,11 @@
   "apm": -0.79
  },
  {
+  "name": "Gerald Henderson",
+  "season": "2009-10",
+  "apm": -1.42
+ },
+ {
   "name": "Gerald Wallace",
   "season": "2009-10",
   "apm": 2.61
@@ -11360,14 +14125,29 @@
   "apm": 1.44
  },
  {
+  "name": "Ime Udoka",
+  "season": "2009-10",
+  "apm": 3.25
+ },
+ {
+  "name": "J.R. Smith",
+  "season": "2009-10",
+  "apm": 2.82
+ },
+ {
+  "name": "Jamaal Tinsley",
+  "season": "2009-10",
+  "apm": 0.06
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2009-10",
   "apm": 1.02
  },
  {
-  "name": "Jameer Nelson",
+  "name": "Jamario Moon",
   "season": "2009-10",
-  "apm": 2.18
+  "apm": 1.44
  },
  {
   "name": "James Harden",
@@ -11380,6 +14160,11 @@
   "apm": 0.81
  },
  {
+  "name": "James Posey",
+  "season": "2009-10",
+  "apm": 0.59
+ },
+ {
   "name": "James Singleton",
   "season": "2009-10",
   "apm": -1.53
@@ -11390,6 +14175,11 @@
   "apm": 3.88
  },
  {
+  "name": "Jared Jeffries",
+  "season": "2009-10",
+  "apm": 1.55
+ },
+ {
   "name": "Jarrett Jack",
   "season": "2009-10",
   "apm": -0.36
@@ -11398,6 +14188,11 @@
   "name": "Jarron Collins",
   "season": "2009-10",
   "apm": -0.79
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2009-10",
+  "apm": -2.06
  },
  {
   "name": "Jason Kidd",
@@ -11460,6 +14255,11 @@
   "apm": -0.57
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2009-10",
+  "apm": -0.04
+ },
+ {
   "name": "Josh Smith",
   "season": "2009-10",
   "apm": 3.67
@@ -11468,6 +14268,11 @@
   "name": "Jrue Holiday",
   "season": "2009-10",
   "apm": -1.21
+ },
+ {
+  "name": "Keith Bogans",
+  "season": "2009-10",
+  "apm": -0.79
  },
  {
   "name": "Kenyon Martin",
@@ -11530,11 +14335,6 @@
   "apm": 4.52
  },
  {
-  "name": "Larry Hughes",
-  "season": "2009-10",
-  "apm": -1.74
- },
- {
   "name": "Leandro Barbosa",
   "season": "2009-10",
   "apm": 1.34
@@ -11543,6 +14343,11 @@
   "name": "LeBron James",
   "season": "2009-10",
   "apm": 11.2
+ },
+ {
+  "name": "Lindsey Hunter",
+  "season": "2009-10",
+  "apm": -0.47
  },
  {
   "name": "Luc Mbah a Moute",
@@ -11578,6 +14383,31 @@
   "name": "Marcus Camby",
   "season": "2009-10",
   "apm": 3.88
+ },
+ {
+  "name": "Mario Chalmers",
+  "season": "2009-10",
+  "apm": -1.42
+ },
+ {
+  "name": "Martell Webster",
+  "season": "2009-10",
+  "apm": 1.34
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2009-10",
+  "apm": -0.04
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2009-10",
+  "apm": 2.29
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2009-10",
+  "apm": 3.67
  },
  {
   "name": "Mehmet Okur",
@@ -11620,6 +14450,11 @@
   "apm": 0.91
  },
  {
+  "name": "Mikki Moore",
+  "season": "2009-10",
+  "apm": -1.63
+ },
+ {
   "name": "Mo Williams",
   "season": "2009-10",
   "apm": -0.47
@@ -11633,6 +14468,16 @@
   "name": "Nicolas Batum",
   "season": "2009-10",
   "apm": 1.97
+ },
+ {
+  "name": "O.J. Mayo",
+  "season": "2009-10",
+  "apm": -1.63
+ },
+ {
+  "name": "Omri Casspi",
+  "season": "2009-10",
+  "apm": 0.59
  },
  {
   "name": "Pau Gasol",
@@ -11685,7 +14530,12 @@
   "apm": 0.49
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Reggie Williams",
+  "season": "2009-10",
+  "apm": -1.74
+ },
+ {
+  "name": "Renaldo Balkman",
   "season": "2009-10",
   "apm": -0.89
  },
@@ -11698,6 +14548,11 @@
   "name": "Ricky Davis",
   "season": "2009-10",
   "apm": -3.44
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2009-10",
+  "apm": -0.36
  },
  {
   "name": "Ron Artest",
@@ -11735,6 +14590,16 @@
   "apm": -3.97
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2009-10",
+  "apm": -4.29
+ },
+ {
+  "name": "Sasha Vujacic",
+  "season": "2009-10",
+  "apm": -0.79
+ },
+ {
   "name": "Serge Ibaka",
   "season": "2009-10",
   "apm": -1
@@ -11755,6 +14620,11 @@
   "apm": 2.93
  },
  {
+  "name": "Spencer Hawes",
+  "season": "2009-10",
+  "apm": -1.53
+ },
+ {
   "name": "Stephen Curry",
   "season": "2009-10",
   "apm": 0.49
@@ -11765,19 +14635,24 @@
   "apm": 1.55
  },
  {
+  "name": "Steve Blake",
+  "season": "2009-10",
+  "apm": 0.49
+ },
+ {
   "name": "Steve Nash",
   "season": "2009-10",
   "apm": 6.96
  },
  {
+  "name": "Steve Novak",
+  "season": "2009-10",
+  "apm": -2.8
+ },
+ {
   "name": "Thabo Sefolosha",
   "season": "2009-10",
   "apm": -0.36
- },
- {
-  "name": "Thaddeus Young",
-  "season": "2009-10",
-  "apm": 1.76
  },
  {
   "name": "Theo Ratliff",
@@ -11803,6 +14678,11 @@
   "name": "Tracy McGrady",
   "season": "2009-10",
   "apm": -0.04
+ },
+ {
+  "name": "Trenton Hassell",
+  "season": "2009-10",
+  "apm": -4.29
  },
  {
   "name": "Trevor Ariza",
@@ -11840,6 +14720,16 @@
   "apm": 4.41
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2009-10",
+  "apm": 0.06
+ },
+ {
+  "name": "Willie Green",
+  "season": "2009-10",
+  "apm": -1.42
+ },
+ {
   "name": "Zydrunas Ilgauskas",
   "season": "2009-10",
   "apm": 1.23
@@ -11853,6 +14743,11 @@
   "name": "Al Horford",
   "season": "2010-11",
   "apm": 1.77
+ },
+ {
+  "name": "Alonzo Gee",
+  "season": "2010-11",
+  "apm": -1.87
  },
  {
   "name": "Amir Johnson",
@@ -11880,6 +14775,11 @@
   "apm": 2.07
  },
  {
+  "name": "Andres Nocioni",
+  "season": "2010-11",
+  "apm": -2.88
+ },
+ {
   "name": "Andrew Bogut",
   "season": "2010-11",
   "apm": 4.2
@@ -11895,9 +14795,44 @@
   "apm": -2.99
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2010-11",
+  "apm": -0.15
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2010-11",
+  "apm": -1.77
+ },
+ {
+  "name": "Anthony Morrow",
+  "season": "2010-11",
+  "apm": 2.07
+ },
+ {
+  "name": "Anthony Parker",
+  "season": "2010-11",
+  "apm": 2.18
+ },
+ {
+  "name": "Anthony Tolliver",
+  "season": "2010-11",
+  "apm": 2.78
+ },
+ {
+  "name": "Antonio Daniels",
+  "season": "2010-11",
+  "apm": -0.86
+ },
+ {
   "name": "Antonio McDyess",
   "season": "2010-11",
   "apm": 1.87
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2010-11",
+  "apm": 0.15
  },
  {
   "name": "Avery Bradley",
@@ -11918,6 +14853,11 @@
   "name": "Ben Wallace",
   "season": "2010-11",
   "apm": -0.25
+ },
+ {
+  "name": "Beno Udrih",
+  "season": "2010-11",
+  "apm": 0.15
  },
  {
   "name": "Blake Griffin",
@@ -11950,19 +14890,19 @@
   "apm": 1.37
  },
  {
+  "name": "Brandon Rush",
+  "season": "2010-11",
+  "apm": -3.09
+ },
+ {
+  "name": "Brian Scalabrine",
+  "season": "2010-11",
+  "apm": -1.77
+ },
+ {
   "name": "Brook Lopez",
   "season": "2010-11",
   "apm": -1.16
- },
- {
-  "name": "Carl Landry",
-  "season": "2010-11",
-  "apm": -1.06
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2010-11",
-  "apm": 1.16
  },
  {
   "name": "Carmelo Anthony",
@@ -11973,6 +14913,11 @@
   "name": "Caron Butler",
   "season": "2010-11",
   "apm": 0.66
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2010-11",
+  "apm": 1.06
  },
  {
   "name": "Chauncey Billups",
@@ -12000,9 +14945,39 @@
   "apm": 6.73
  },
  {
+  "name": "Chris Quinn",
+  "season": "2010-11",
+  "apm": -0.66
+ },
+ {
   "name": "Corey Maggette",
   "season": "2010-11",
   "apm": -1.67
+ },
+ {
+  "name": "D.J. Augustin",
+  "season": "2010-11",
+  "apm": -1.16
+ },
+ {
+  "name": "Daequan Cook",
+  "season": "2010-11",
+  "apm": 0.76
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2010-11",
+  "apm": -1.77
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2010-11",
+  "apm": -1.57
+ },
+ {
+  "name": "Daniel Gibson",
+  "season": "2010-11",
+  "apm": 1.37
  },
  {
   "name": "Danilo Gallinari",
@@ -12020,19 +14995,14 @@
   "apm": -0.35
  },
  {
-  "name": "Darren Collison",
+  "name": "Dante Cunningham",
   "season": "2010-11",
-  "apm": -2.07
+  "apm": -0.76
  },
  {
   "name": "David Lee",
   "season": "2010-11",
   "apm": 0.05
- },
- {
-  "name": "David West",
-  "season": "2010-11",
-  "apm": 1.77
  },
  {
   "name": "DeAndre Jordan",
@@ -12048,6 +15018,11 @@
   "name": "DeMarcus Cousins",
   "season": "2010-11",
   "apm": -1.87
+ },
+ {
+  "name": "Derek Fisher",
+  "season": "2010-11",
+  "apm": 1.67
  },
  {
   "name": "Deron Williams",
@@ -12070,14 +15045,19 @@
   "apm": -0.96
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2010-11",
-  "apm": 1.16
+  "apm": -2.48
  },
  {
   "name": "Dirk Nowitzki",
   "season": "2010-11",
   "apm": 9.56
+ },
+ {
+  "name": "Dominic McGuire",
+  "season": "2010-11",
+  "apm": -2.28
  },
  {
   "name": "Dwight Howard",
@@ -12088,6 +15068,16 @@
   "name": "Dwyane Wade",
   "season": "2010-11",
   "apm": 6.22
+ },
+ {
+  "name": "Earl Watson",
+  "season": "2010-11",
+  "apm": 1.37
+ },
+ {
+  "name": "Ed Davis",
+  "season": "2010-11",
+  "apm": -3.39
  },
  {
   "name": "Ekpe Udoh",
@@ -12135,6 +15125,11 @@
   "apm": 1.87
  },
  {
+  "name": "Gerald Henderson",
+  "season": "2010-11",
+  "apm": 0.45
+ },
+ {
   "name": "Gerald Wallace",
   "season": "2010-11",
   "apm": 5.11
@@ -12160,11 +15155,6 @@
   "apm": 0.35
  },
  {
-  "name": "Greg Monroe",
-  "season": "2010-11",
-  "apm": -0.86
- },
- {
   "name": "Hassan Whiteside",
   "season": "2010-11",
   "apm": -1.37
@@ -12175,14 +15165,24 @@
   "apm": 2.28
  },
  {
+  "name": "Ime Udoka",
+  "season": "2010-11",
+  "apm": 1.67
+ },
+ {
+  "name": "J.R. Smith",
+  "season": "2010-11",
+  "apm": 2.88
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2010-11",
   "apm": 1.37
  },
  {
-  "name": "Jameer Nelson",
+  "name": "Jamario Moon",
   "season": "2010-11",
-  "apm": 1.97
+  "apm": 0.15
  },
  {
   "name": "James Harden",
@@ -12195,9 +15195,19 @@
   "apm": 1.77
  },
  {
+  "name": "James Posey",
+  "season": "2010-11",
+  "apm": -0.15
+ },
+ {
   "name": "Jared Dudley",
   "season": "2010-11",
   "apm": 1.97
+ },
+ {
+  "name": "Jared Jeffries",
+  "season": "2010-11",
+  "apm": 3.59
  },
  {
   "name": "Jarrett Jack",
@@ -12208,6 +15218,11 @@
   "name": "Jarron Collins",
   "season": "2010-11",
   "apm": -0.15
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2010-11",
+  "apm": -0.76
  },
  {
   "name": "Jason Kidd",
@@ -12275,6 +15290,11 @@
   "apm": 0.45
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2010-11",
+  "apm": 1.77
+ },
+ {
   "name": "Josh Smith",
   "season": "2010-11",
   "apm": 3.79
@@ -12283,6 +15303,11 @@
   "name": "Jrue Holiday",
   "season": "2010-11",
   "apm": 1.87
+ },
+ {
+  "name": "Keith Bogans",
+  "season": "2010-11",
+  "apm": 0.15
  },
  {
   "name": "Kenyon Martin",
@@ -12355,6 +15380,11 @@
   "apm": 0.96
  },
  {
+  "name": "Luke Babbitt",
+  "season": "2010-11",
+  "apm": -1.77
+ },
+ {
   "name": "Luke Walton",
   "season": "2010-11",
   "apm": 0.15
@@ -12383,6 +15413,31 @@
   "name": "Marcus Camby",
   "season": "2010-11",
   "apm": 1.77
+ },
+ {
+  "name": "Mario Chalmers",
+  "season": "2010-11",
+  "apm": 0.25
+ },
+ {
+  "name": "Martell Webster",
+  "season": "2010-11",
+  "apm": -2.38
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2010-11",
+  "apm": -0.25
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2010-11",
+  "apm": 0.45
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2010-11",
+  "apm": 3.29
  },
  {
   "name": "Mehmet Okur",
@@ -12430,6 +15485,16 @@
   "apm": -1.16
  },
  {
+  "name": "O.J. Mayo",
+  "season": "2010-11",
+  "apm": 0.66
+ },
+ {
+  "name": "Omri Casspi",
+  "season": "2010-11",
+  "apm": 0.96
+ },
+ {
   "name": "Pau Gasol",
   "season": "2010-11",
   "apm": 3.9
@@ -12453,6 +15518,11 @@
   "name": "Peja Stojakovic",
   "season": "2010-11",
   "apm": 2.88
+ },
+ {
+  "name": "Quincy Pondexter",
+  "season": "2010-11",
+  "apm": -2.07
  },
  {
   "name": "Raja Bell",
@@ -12480,14 +15550,24 @@
   "apm": -0.15
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Reggie Williams",
   "season": "2010-11",
-  "apm": -1.57
+  "apm": -0.66
+ },
+ {
+  "name": "Renaldo Balkman",
+  "season": "2010-11",
+  "apm": -0.66
  },
  {
   "name": "Richard Jefferson",
   "season": "2010-11",
   "apm": 1.06
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2010-11",
+  "apm": -1.27
  },
  {
   "name": "Ron Artest",
@@ -12520,6 +15600,16 @@
   "apm": -1.77
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2010-11",
+  "apm": -4.1
+ },
+ {
+  "name": "Sasha Vujacic",
+  "season": "2010-11",
+  "apm": -2.68
+ },
+ {
   "name": "Serge Ibaka",
   "season": "2010-11",
   "apm": -0.56
@@ -12540,6 +15630,11 @@
   "apm": -0.96
  },
  {
+  "name": "Spencer Hawes",
+  "season": "2010-11",
+  "apm": -1.77
+ },
+ {
   "name": "Stephen Curry",
   "season": "2010-11",
   "apm": 2.98
@@ -12550,19 +15645,24 @@
   "apm": -1.16
  },
  {
+  "name": "Steve Blake",
+  "season": "2010-11",
+  "apm": 0.35
+ },
+ {
   "name": "Steve Nash",
   "season": "2010-11",
   "apm": 6.73
  },
  {
+  "name": "Steve Novak",
+  "season": "2010-11",
+  "apm": -2.28
+ },
+ {
   "name": "Thabo Sefolosha",
   "season": "2010-11",
   "apm": 0.66
- },
- {
-  "name": "Thaddeus Young",
-  "season": "2010-11",
-  "apm": 3.19
  },
  {
   "name": "Theo Ratliff",
@@ -12625,6 +15725,16 @@
   "apm": 2.78
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2010-11",
+  "apm": 2.78
+ },
+ {
+  "name": "Willie Green",
+  "season": "2010-11",
+  "apm": -0.76
+ },
+ {
   "name": "Yao Ming",
   "season": "2010-11",
   "apm": -1.87
@@ -12643,6 +15753,11 @@
   "name": "Al Horford",
   "season": "2011-12",
   "apm": 1.08
+ },
+ {
+  "name": "Alonzo Gee",
+  "season": "2011-12",
+  "apm": -1.01
  },
  {
   "name": "Amir Johnson",
@@ -12665,6 +15780,11 @@
   "apm": 0.63
  },
  {
+  "name": "Andres Nocioni",
+  "season": "2011-12",
+  "apm": -0.86
+ },
+ {
   "name": "Andrew Bogut",
   "season": "2011-12",
   "apm": 1.23
@@ -12678,6 +15798,36 @@
   "name": "Andris Biedrins",
   "season": "2011-12",
   "apm": -2.49
+ },
+ {
+  "name": "Antawn Jamison",
+  "season": "2011-12",
+  "apm": -1.45
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2011-12",
+  "apm": -1.01
+ },
+ {
+  "name": "Anthony Morrow",
+  "season": "2011-12",
+  "apm": -3.24
+ },
+ {
+  "name": "Anthony Parker",
+  "season": "2011-12",
+  "apm": -2.2
+ },
+ {
+  "name": "Anthony Tolliver",
+  "season": "2011-12",
+  "apm": -0.11
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2011-12",
+  "apm": -0.11
  },
  {
   "name": "Avery Bradley",
@@ -12698,6 +15848,11 @@
   "name": "Ben Wallace",
   "season": "2011-12",
   "apm": -0.41
+ },
+ {
+  "name": "Beno Udrih",
+  "season": "2011-12",
+  "apm": 5.54
  },
  {
   "name": "Blake Griffin",
@@ -12725,19 +15880,19 @@
   "apm": -2.2
  },
  {
+  "name": "Brandon Rush",
+  "season": "2011-12",
+  "apm": 0.18
+ },
+ {
+  "name": "Brian Scalabrine",
+  "season": "2011-12",
+  "apm": -0.26
+ },
+ {
   "name": "Brook Lopez",
   "season": "2011-12",
   "apm": 0.33
- },
- {
-  "name": "Carl Landry",
-  "season": "2011-12",
-  "apm": -0.11
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2011-12",
-  "apm": 0.04
  },
  {
   "name": "Carmelo Anthony",
@@ -12753,6 +15908,11 @@
   "name": "Chandler Parsons",
   "season": "2011-12",
   "apm": 1.52
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2011-12",
+  "apm": 4.35
  },
  {
   "name": "Chauncey Billups",
@@ -12785,6 +15945,26 @@
   "apm": -3.54
  },
  {
+  "name": "Daequan Cook",
+  "season": "2011-12",
+  "apm": 0.33
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2011-12",
+  "apm": -3.09
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2011-12",
+  "apm": 1.52
+ },
+ {
+  "name": "Daniel Gibson",
+  "season": "2011-12",
+  "apm": -0.11
+ },
+ {
   "name": "Danilo Gallinari",
   "season": "2011-12",
   "apm": 5.54
@@ -12800,19 +15980,14 @@
   "apm": 2.27
  },
  {
-  "name": "Darren Collison",
+  "name": "Dante Cunningham",
   "season": "2011-12",
-  "apm": 0.04
+  "apm": -2.2
  },
  {
   "name": "David Lee",
   "season": "2011-12",
   "apm": -0.26
- },
- {
-  "name": "David West",
-  "season": "2011-12",
-  "apm": 2.57
  },
  {
   "name": "DeAndre Jordan",
@@ -12828,6 +16003,11 @@
   "name": "DeMarcus Cousins",
   "season": "2011-12",
   "apm": -0.11
+ },
+ {
+  "name": "Derek Fisher",
+  "season": "2011-12",
+  "apm": 1.08
  },
  {
   "name": "Deron Williams",
@@ -12850,14 +16030,19 @@
   "apm": -1.9
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2011-12",
-  "apm": 0.18
+  "apm": -1.3
  },
  {
   "name": "Dirk Nowitzki",
   "season": "2011-12",
   "apm": 6.29
+ },
+ {
+  "name": "Dominic McGuire",
+  "season": "2011-12",
+  "apm": -1.6
  },
  {
   "name": "Dwight Howard",
@@ -12870,9 +16055,14 @@
   "apm": 3.91
  },
  {
-  "name": "Eddy Curry",
+  "name": "Earl Watson",
   "season": "2011-12",
-  "apm": -2.05
+  "apm": 0.63
+ },
+ {
+  "name": "Ed Davis",
+  "season": "2011-12",
+  "apm": -2.79
  },
  {
   "name": "Ekpe Udoh",
@@ -12910,6 +16100,11 @@
   "apm": 1.82
  },
  {
+  "name": "Gerald Henderson",
+  "season": "2011-12",
+  "apm": -3.98
+ },
+ {
   "name": "Gerald Wallace",
   "season": "2011-12",
   "apm": 1.23
@@ -12935,11 +16130,6 @@
   "apm": 1.38
  },
  {
-  "name": "Greg Monroe",
-  "season": "2011-12",
-  "apm": -2.05
- },
- {
   "name": "Hassan Whiteside",
   "season": "2011-12",
   "apm": 1.52
@@ -12955,14 +16145,19 @@
   "apm": 1.67
  },
  {
+  "name": "Jamaal Tinsley",
+  "season": "2011-12",
+  "apm": -0.26
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2011-12",
   "apm": -2.79
  },
  {
-  "name": "Jameer Nelson",
+  "name": "Jamario Moon",
   "season": "2011-12",
-  "apm": 2.27
+  "apm": -1.6
  },
  {
   "name": "James Harden",
@@ -12985,9 +16180,19 @@
   "apm": 1.23
  },
  {
+  "name": "Jared Jeffries",
+  "season": "2011-12",
+  "apm": 0.93
+ },
+ {
   "name": "Jarrett Jack",
   "season": "2011-12",
   "apm": -3.24
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2011-12",
+  "apm": 1.52
  },
  {
   "name": "Jason Kidd",
@@ -13025,6 +16230,11 @@
   "apm": 1.38
  },
  {
+  "name": "Jimmer Fredette",
+  "season": "2011-12",
+  "apm": -3.69
+ },
+ {
   "name": "Jimmy Butler",
   "season": "2011-12",
   "apm": 2.42
@@ -13060,6 +16270,11 @@
   "apm": -2.05
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2011-12",
+  "apm": -3.24
+ },
+ {
   "name": "Josh Smith",
   "season": "2011-12",
   "apm": 3.61
@@ -13078,11 +16293,6 @@
   "name": "Kemba Walker",
   "season": "2011-12",
   "apm": -4.58
- },
- {
-  "name": "Kenneth Faried",
-  "season": "2011-12",
-  "apm": -0.26
  },
  {
   "name": "Kenyon Martin",
@@ -13155,11 +16365,6 @@
   "apm": -2.49
  },
  {
-  "name": "Larry Hughes",
-  "season": "2011-12",
-  "apm": -2.35
- },
- {
   "name": "Leandro Barbosa",
   "season": "2011-12",
   "apm": -1.01
@@ -13173,6 +16378,11 @@
   "name": "Luc Mbah a Moute",
   "season": "2011-12",
   "apm": 1.82
+ },
+ {
+  "name": "Luke Babbitt",
+  "season": "2011-12",
+  "apm": -3.24
  },
  {
   "name": "Luke Walton",
@@ -13210,14 +16420,34 @@
   "apm": -1.16
  },
  {
+  "name": "Mario Chalmers",
+  "season": "2011-12",
+  "apm": 2.71
+ },
+ {
+  "name": "Martell Webster",
+  "season": "2011-12",
+  "apm": -0.26
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2011-12",
+  "apm": -0.41
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2011-12",
+  "apm": 1.38
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2011-12",
+  "apm": 6.44
+ },
+ {
   "name": "Mehmet Okur",
   "season": "2011-12",
   "apm": -3.09
- },
- {
-  "name": "Metta World Peace",
-  "season": "2011-12",
-  "apm": 0.04
  },
  {
   "name": "Michael Redd",
@@ -13250,6 +16480,11 @@
   "apm": 3.16
  },
  {
+  "name": "Mikki Moore",
+  "season": "2011-12",
+  "apm": -0.11
+ },
+ {
   "name": "Mo Williams",
   "season": "2011-12",
   "apm": -2.2
@@ -13270,6 +16505,11 @@
   "apm": -0.41
  },
  {
+  "name": "Omri Casspi",
+  "season": "2011-12",
+  "apm": -4.43
+ },
+ {
   "name": "Pau Gasol",
   "season": "2011-12",
   "apm": 3.61
@@ -13288,6 +16528,11 @@
   "name": "Paul Pierce",
   "season": "2011-12",
   "apm": 1.38
+ },
+ {
+  "name": "Quincy Pondexter",
+  "season": "2011-12",
+  "apm": 2.12
  },
  {
   "name": "Raja Bell",
@@ -13315,14 +16560,24 @@
   "apm": -4.88
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Reggie Williams",
   "season": "2011-12",
-  "apm": 1.23
+  "apm": -3.54
+ },
+ {
+  "name": "Renaldo Balkman",
+  "season": "2011-12",
+  "apm": 0.04
  },
  {
   "name": "Richard Jefferson",
   "season": "2011-12",
   "apm": -2.05
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2011-12",
+  "apm": 0.78
  },
  {
   "name": "Royal Ivey",
@@ -13350,6 +16605,11 @@
   "apm": 0.48
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2011-12",
+  "apm": -0.41
+ },
+ {
   "name": "Serge Ibaka",
   "season": "2011-12",
   "apm": 1.82
@@ -13365,6 +16625,11 @@
   "apm": -2.05
  },
  {
+  "name": "Spencer Hawes",
+  "season": "2011-12",
+  "apm": -0.41
+ },
+ {
   "name": "Stephen Curry",
   "season": "2011-12",
   "apm": 4.65
@@ -13375,9 +16640,19 @@
   "apm": -0.41
  },
  {
+  "name": "Steve Blake",
+  "season": "2011-12",
+  "apm": 0.33
+ },
+ {
   "name": "Steve Nash",
   "season": "2011-12",
   "apm": 3.01
+ },
+ {
+  "name": "Steve Novak",
+  "season": "2011-12",
+  "apm": 2.86
  },
  {
   "name": "Thabo Sefolosha",
@@ -13385,14 +16660,14 @@
   "apm": 2.42
  },
  {
-  "name": "Thaddeus Young",
-  "season": "2011-12",
-  "apm": 3.61
- },
- {
   "name": "Tim Duncan",
   "season": "2011-12",
   "apm": 4.05
+ },
+ {
+  "name": "Tobias Harris",
+  "season": "2011-12",
+  "apm": 0.18
  },
  {
   "name": "Tony Allen",
@@ -13445,6 +16720,16 @@
   "apm": 5.54
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2011-12",
+  "apm": 2.27
+ },
+ {
+  "name": "Willie Green",
+  "season": "2011-12",
+  "apm": -3.24
+ },
+ {
   "name": "Al Harrington",
   "season": "2012-13",
   "apm": 2.08
@@ -13453,6 +16738,11 @@
   "name": "Al Horford",
   "season": "2012-13",
   "apm": -0.04
+ },
+ {
+  "name": "Alonzo Gee",
+  "season": "2012-13",
+  "apm": 0.73
  },
  {
   "name": "Amir Johnson",
@@ -13495,9 +16785,29 @@
   "apm": -1.68
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2012-13",
+  "apm": 0.25
+ },
+ {
   "name": "Anthony Davis",
   "season": "2012-13",
   "apm": -2.07
+ },
+ {
+  "name": "Anthony Morrow",
+  "season": "2012-13",
+  "apm": -0.72
+ },
+ {
+  "name": "Anthony Tolliver",
+  "season": "2012-13",
+  "apm": -0.52
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2012-13",
+  "apm": -0.04
  },
  {
   "name": "Avery Bradley",
@@ -13508,6 +16818,11 @@
   "name": "Ben Gordon",
   "season": "2012-13",
   "apm": -4.19
+ },
+ {
+  "name": "Beno Udrih",
+  "season": "2012-13",
+  "apm": 1.41
  },
  {
   "name": "Blake Griffin",
@@ -13535,19 +16850,14 @@
   "apm": -1.88
  },
  {
+  "name": "Brandon Rush",
+  "season": "2012-13",
+  "apm": 1.02
+ },
+ {
   "name": "Brook Lopez",
   "season": "2012-13",
   "apm": 0.25
- },
- {
-  "name": "Carl Landry",
-  "season": "2012-13",
-  "apm": -0.04
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2012-13",
-  "apm": -0.81
  },
  {
   "name": "Carmelo Anthony",
@@ -13590,14 +16900,44 @@
   "apm": 5.95
  },
  {
+  "name": "Chris Quinn",
+  "season": "2012-13",
+  "apm": -2.36
+ },
+ {
   "name": "Corey Maggette",
   "season": "2012-13",
   "apm": -1.39
  },
  {
+  "name": "D.J. Augustin",
+  "season": "2012-13",
+  "apm": -1.88
+ },
+ {
+  "name": "Daequan Cook",
+  "season": "2012-13",
+  "apm": -0.62
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2012-13",
+  "apm": -0.91
+ },
+ {
   "name": "Damian Lillard",
   "season": "2012-13",
   "apm": 0.44
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2012-13",
+  "apm": 0.54
+ },
+ {
+  "name": "Daniel Gibson",
+  "season": "2012-13",
+  "apm": -1.68
  },
  {
   "name": "Danilo Gallinari",
@@ -13615,19 +16955,19 @@
   "apm": 4.21
  },
  {
-  "name": "Darren Collison",
+  "name": "Dante Cunningham",
   "season": "2012-13",
-  "apm": -1.1
+  "apm": -0.52
+ },
+ {
+  "name": "Darius Miller",
+  "season": "2012-13",
+  "apm": -1.59
  },
  {
   "name": "David Lee",
   "season": "2012-13",
   "apm": 2.95
- },
- {
-  "name": "David West",
-  "season": "2012-13",
-  "apm": 3.63
  },
  {
   "name": "DeAndre Jordan",
@@ -13645,6 +16985,11 @@
   "apm": 0.54
  },
  {
+  "name": "Derek Fisher",
+  "season": "2012-13",
+  "apm": 3.24
+ },
+ {
   "name": "Deron Williams",
   "season": "2012-13",
   "apm": 0.83
@@ -13660,14 +17005,19 @@
   "apm": -1.49
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2012-13",
-  "apm": 2.57
+  "apm": -0.04
  },
  {
   "name": "Dirk Nowitzki",
   "season": "2012-13",
   "apm": 4.89
+ },
+ {
+  "name": "Dominic McGuire",
+  "season": "2012-13",
+  "apm": -0.72
  },
  {
   "name": "Draymond Green",
@@ -13685,9 +17035,14 @@
   "apm": 5.47
  },
  {
-  "name": "Eddy Curry",
+  "name": "Earl Watson",
   "season": "2012-13",
-  "apm": -1.97
+  "apm": -0.81
+ },
+ {
+  "name": "Ed Davis",
+  "season": "2012-13",
+  "apm": -2.94
  },
  {
   "name": "Ekpe Udoh",
@@ -13735,6 +17090,11 @@
   "apm": 4.31
  },
  {
+  "name": "Gerald Henderson",
+  "season": "2012-13",
+  "apm": -0.62
+ },
+ {
   "name": "Gerald Wallace",
   "season": "2012-13",
   "apm": 3.44
@@ -13755,11 +17115,6 @@
   "apm": 1.6
  },
  {
-  "name": "Greg Monroe",
-  "season": "2012-13",
-  "apm": -0.91
- },
- {
   "name": "Harrison Barnes",
   "season": "2012-13",
   "apm": 0.25
@@ -13775,14 +17130,24 @@
   "apm": 1.99
  },
  {
+  "name": "J.R. Smith",
+  "season": "2012-13",
+  "apm": 2.37
+ },
+ {
+  "name": "Jae Crowder",
+  "season": "2012-13",
+  "apm": -1.39
+ },
+ {
+  "name": "Jamaal Tinsley",
+  "season": "2012-13",
+  "apm": -0.23
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2012-13",
   "apm": 0.25
- },
- {
-  "name": "Jameer Nelson",
-  "season": "2012-13",
-  "apm": 2.76
  },
  {
   "name": "James Harden",
@@ -13798,6 +17163,11 @@
   "name": "Jared Dudley",
   "season": "2012-13",
   "apm": 1.51
+ },
+ {
+  "name": "Jared Jeffries",
+  "season": "2012-13",
+  "apm": 0.64
  },
  {
   "name": "Jarrett Jack",
@@ -13836,6 +17206,11 @@
  },
  {
   "name": "Jerry Stackhouse",
+  "season": "2012-13",
+  "apm": -1.59
+ },
+ {
+  "name": "Jimmer Fredette",
   "season": "2012-13",
   "apm": -1.59
  },
@@ -13880,6 +17255,11 @@
   "apm": -0.23
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2012-13",
+  "apm": -1.49
+ },
+ {
   "name": "Josh Smith",
   "season": "2012-13",
   "apm": 3.92
@@ -13895,14 +17275,14 @@
   "apm": 0.73
  },
  {
+  "name": "Keith Bogans",
+  "season": "2012-13",
+  "apm": -0.72
+ },
+ {
   "name": "Kemba Walker",
   "season": "2012-13",
   "apm": -1.49
- },
- {
-  "name": "Kenneth Faried",
-  "season": "2012-13",
-  "apm": 0.73
  },
  {
   "name": "Kenyon Martin",
@@ -13995,6 +17375,11 @@
   "apm": 2.57
  },
  {
+  "name": "Luke Babbitt",
+  "season": "2012-13",
+  "apm": -0.81
+ },
+ {
   "name": "Luke Walton",
   "season": "2012-13",
   "apm": -0.52
@@ -14030,9 +17415,34 @@
   "apm": -2.46
  },
  {
-  "name": "Metta World Peace",
+  "name": "Mario Chalmers",
   "season": "2012-13",
-  "apm": 3.05
+  "apm": 2.86
+ },
+ {
+  "name": "Martell Webster",
+  "season": "2012-13",
+  "apm": 1.31
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2012-13",
+  "apm": 0.25
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2012-13",
+  "apm": 3.44
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2012-13",
+  "apm": 4.89
+ },
+ {
+  "name": "Meyers Leonard",
+  "season": "2012-13",
+  "apm": -2.65
  },
  {
   "name": "Mike Conley",
@@ -14075,6 +17485,16 @@
   "apm": -0.72
  },
  {
+  "name": "O.J. Mayo",
+  "season": "2012-13",
+  "apm": 0.06
+ },
+ {
+  "name": "Omri Casspi",
+  "season": "2012-13",
+  "apm": -3.32
+ },
+ {
   "name": "P.J. Tucker",
   "season": "2012-13",
   "apm": -1.1
@@ -14110,6 +17530,11 @@
   "apm": 1.41
  },
  {
+  "name": "Quincy Pondexter",
+  "season": "2012-13",
+  "apm": 0.64
+ },
+ {
   "name": "Rajon Rondo",
   "season": "2012-13",
   "apm": 2.66
@@ -14135,14 +17560,19 @@
   "apm": -0.62
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Reggie Williams",
   "season": "2012-13",
-  "apm": -0.52
+  "apm": -2.17
  },
  {
   "name": "Richard Jefferson",
   "season": "2012-13",
   "apm": -0.91
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2012-13",
+  "apm": 0.25
  },
  {
   "name": "Royal Ivey",
@@ -14170,6 +17600,11 @@
   "apm": -1.68
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2012-13",
+  "apm": -0.62
+ },
+ {
   "name": "Serge Ibaka",
   "season": "2012-13",
   "apm": 3.24
@@ -14185,6 +17620,11 @@
   "apm": -1.1
  },
  {
+  "name": "Spencer Hawes",
+  "season": "2012-13",
+  "apm": 0.15
+ },
+ {
   "name": "Stephen Curry",
   "season": "2012-13",
   "apm": 3.63
@@ -14195,9 +17635,19 @@
   "apm": 0.44
  },
  {
+  "name": "Steve Blake",
+  "season": "2012-13",
+  "apm": -0.23
+ },
+ {
   "name": "Steve Nash",
   "season": "2012-13",
   "apm": 2.95
+ },
+ {
+  "name": "Steve Novak",
+  "season": "2012-13",
+  "apm": 2.08
  },
  {
   "name": "Thabo Sefolosha",
@@ -14205,14 +17655,14 @@
   "apm": 4.11
  },
  {
-  "name": "Thaddeus Young",
-  "season": "2012-13",
-  "apm": 4.02
- },
- {
   "name": "Tim Duncan",
   "season": "2012-13",
   "apm": 4.98
+ },
+ {
+  "name": "Tobias Harris",
+  "season": "2012-13",
+  "apm": -1.1
  },
  {
   "name": "Tony Allen",
@@ -14260,9 +17710,19 @@
   "apm": 5.56
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2012-13",
+  "apm": -0.23
+ },
+ {
   "name": "Wesley Matthews",
   "season": "2012-13",
   "apm": 2.57
+ },
+ {
+  "name": "Willie Green",
+  "season": "2012-13",
+  "apm": -2.75
  },
  {
   "name": "Al Harrington",
@@ -14273,6 +17733,11 @@
   "name": "Al Horford",
   "season": "2013-14",
   "apm": 1.52
+ },
+ {
+  "name": "Alonzo Gee",
+  "season": "2013-14",
+  "apm": -3.43
  },
  {
   "name": "Amir Johnson",
@@ -14310,6 +17775,11 @@
   "apm": 1.43
  },
  {
+  "name": "Andres Nocioni",
+  "season": "2013-14",
+  "apm": -0.27
+ },
+ {
   "name": "Andrew Bogut",
   "season": "2013-14",
   "apm": 1.84
@@ -14325,9 +17795,39 @@
   "apm": -2.33
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2013-14",
+  "apm": 0.96
+ },
+ {
+  "name": "Anthony Carter",
+  "season": "2013-14",
+  "apm": -0.85
+ },
+ {
   "name": "Anthony Davis",
   "season": "2013-14",
   "apm": 1.23
+ },
+ {
+  "name": "Anthony Morrow",
+  "season": "2013-14",
+  "apm": -0.31
+ },
+ {
+  "name": "Anthony Parker",
+  "season": "2013-14",
+  "apm": -1.89
+ },
+ {
+  "name": "Anthony Tolliver",
+  "season": "2013-14",
+  "apm": 2.85
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2013-14",
+  "apm": -2.57
  },
  {
   "name": "Avery Bradley",
@@ -14348,6 +17848,11 @@
   "name": "Ben Wallace",
   "season": "2013-14",
   "apm": 0.34
+ },
+ {
+  "name": "Beno Udrih",
+  "season": "2013-14",
+  "apm": 0.36
  },
  {
   "name": "Blake Griffin",
@@ -14385,19 +17890,19 @@
   "apm": 0.2
  },
  {
+  "name": "Brandon Rush",
+  "season": "2013-14",
+  "apm": -2.44
+ },
+ {
+  "name": "Brian Scalabrine",
+  "season": "2013-14",
+  "apm": 0.37
+ },
+ {
   "name": "Brook Lopez",
   "season": "2013-14",
   "apm": 1.55
- },
- {
-  "name": "Carl Landry",
-  "season": "2013-14",
-  "apm": -1.59
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2013-14",
-  "apm": -3.2
  },
  {
   "name": "Carmelo Anthony",
@@ -14413,6 +17918,11 @@
   "name": "Chandler Parsons",
   "season": "2013-14",
   "apm": 2.58
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2013-14",
+  "apm": 5.93
  },
  {
   "name": "Chauncey Billups",
@@ -14440,14 +17950,44 @@
   "apm": 8.1
  },
  {
+  "name": "Chris Quinn",
+  "season": "2013-14",
+  "apm": 0.25
+ },
+ {
   "name": "Corey Maggette",
   "season": "2013-14",
   "apm": -2.24
  },
  {
+  "name": "D.J. Augustin",
+  "season": "2013-14",
+  "apm": -2.63
+ },
+ {
+  "name": "Daequan Cook",
+  "season": "2013-14",
+  "apm": -1.86
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2013-14",
+  "apm": -1.69
+ },
+ {
   "name": "Damian Lillard",
   "season": "2013-14",
   "apm": 4.07
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2013-14",
+  "apm": 0.16
+ },
+ {
+  "name": "Daniel Gibson",
+  "season": "2013-14",
+  "apm": -1.95
  },
  {
   "name": "Danilo Gallinari",
@@ -14465,19 +18005,19 @@
   "apm": 4.36
  },
  {
-  "name": "Darren Collison",
+  "name": "Dante Cunningham",
   "season": "2013-14",
-  "apm": -0.65
+  "apm": -0.53
+ },
+ {
+  "name": "Darius Miller",
+  "season": "2013-14",
+  "apm": 1.65
  },
  {
   "name": "David Lee",
   "season": "2013-14",
   "apm": 2.06
- },
- {
-  "name": "David West",
-  "season": "2013-14",
-  "apm": 4.14
  },
  {
   "name": "DeAndre Jordan",
@@ -14493,6 +18033,11 @@
   "name": "DeMarcus Cousins",
   "season": "2013-14",
   "apm": 0.29
+ },
+ {
+  "name": "Derek Fisher",
+  "season": "2013-14",
+  "apm": 3.07
  },
  {
   "name": "Deron Williams",
@@ -14515,14 +18060,19 @@
   "apm": -2.37
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2013-14",
-  "apm": 3.49
+  "apm": -1.05
  },
  {
   "name": "Dirk Nowitzki",
   "season": "2013-14",
   "apm": 6.53
+ },
+ {
+  "name": "Dominic McGuire",
+  "season": "2013-14",
+  "apm": -1.88
  },
  {
   "name": "Draymond Green",
@@ -14540,9 +18090,14 @@
   "apm": 2.72
  },
  {
-  "name": "Eddy Curry",
+  "name": "Earl Watson",
   "season": "2013-14",
-  "apm": -1.84
+  "apm": 0.17
+ },
+ {
+  "name": "Ed Davis",
+  "season": "2013-14",
+  "apm": -1.32
  },
  {
   "name": "Ekpe Udoh",
@@ -14590,6 +18145,11 @@
   "apm": 3.58
  },
  {
+  "name": "Gerald Henderson",
+  "season": "2013-14",
+  "apm": -1.88
+ },
+ {
   "name": "Gerald Wallace",
   "season": "2013-14",
   "apm": 1.21
@@ -14625,11 +18185,6 @@
   "apm": 0.13
  },
  {
-  "name": "Greg Monroe",
-  "season": "2013-14",
-  "apm": 1.26
- },
- {
   "name": "Harrison Barnes",
   "season": "2013-14",
   "apm": -1.4
@@ -14645,9 +18200,29 @@
   "apm": 0.73
  },
  {
+  "name": "Ian Clark",
+  "season": "2013-14",
+  "apm": 0.41
+ },
+ {
   "name": "Isaiah Thomas",
   "season": "2013-14",
   "apm": 3.14
+ },
+ {
+  "name": "J.R. Smith",
+  "season": "2013-14",
+  "apm": 2.57
+ },
+ {
+  "name": "Jae Crowder",
+  "season": "2013-14",
+  "apm": 3
+ },
+ {
+  "name": "Jamaal Tinsley",
+  "season": "2013-14",
+  "apm": -0.06
  },
  {
   "name": "Jamal Crawford",
@@ -14655,9 +18230,9 @@
   "apm": 0.78
  },
  {
-  "name": "Jameer Nelson",
+  "name": "Jamario Moon",
   "season": "2013-14",
-  "apm": 1.96
+  "apm": -1.95
  },
  {
   "name": "James Harden",
@@ -14680,9 +18255,19 @@
   "apm": 0.44
  },
  {
+  "name": "Jared Jeffries",
+  "season": "2013-14",
+  "apm": 0.9
+ },
+ {
   "name": "Jarrett Jack",
   "season": "2013-14",
   "apm": -2.09
+ },
+ {
+  "name": "Jason Kapono",
+  "season": "2013-14",
+  "apm": 0.98
  },
  {
   "name": "Jason Kidd",
@@ -14718,6 +18303,11 @@
   "name": "Jerry Stackhouse",
   "season": "2013-14",
   "apm": 0.63
+ },
+ {
+  "name": "Jimmer Fredette",
+  "season": "2013-14",
+  "apm": -3.17
  },
  {
   "name": "Jimmy Butler",
@@ -14760,6 +18350,11 @@
   "apm": -1.4
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2013-14",
+  "apm": 1.05
+ },
+ {
   "name": "Josh Smith",
   "season": "2013-14",
   "apm": 1.91
@@ -14775,6 +18370,11 @@
   "apm": 3.71
  },
  {
+  "name": "Keith Bogans",
+  "season": "2013-14",
+  "apm": -0.65
+ },
+ {
   "name": "Kelly Olynyk",
   "season": "2013-14",
   "apm": -0.37
@@ -14783,11 +18383,6 @@
   "name": "Kemba Walker",
   "season": "2013-14",
   "apm": 1.67
- },
- {
-  "name": "Kenneth Faried",
-  "season": "2013-14",
-  "apm": 0.59
  },
  {
   "name": "Kenyon Martin",
@@ -14865,11 +18460,6 @@
   "apm": -1.62
  },
  {
-  "name": "Larry Hughes",
-  "season": "2013-14",
-  "apm": -1.45
- },
- {
   "name": "Leandro Barbosa",
   "season": "2013-14",
   "apm": 0.23
@@ -14883,6 +18473,11 @@
   "name": "Luc Mbah a Moute",
   "season": "2013-14",
   "apm": 0.5
+ },
+ {
+  "name": "Luke Babbitt",
+  "season": "2013-14",
+  "apm": 0.18
  },
  {
   "name": "Luke Walton",
@@ -14920,9 +18515,34 @@
   "apm": 0.82
  },
  {
-  "name": "Mason Plumlee",
+  "name": "Mario Chalmers",
   "season": "2013-14",
-  "apm": -2.23
+  "apm": 3.7
+ },
+ {
+  "name": "Martell Webster",
+  "season": "2013-14",
+  "apm": -0.14
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2013-14",
+  "apm": 0.41
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2013-14",
+  "apm": 3.91
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2013-14",
+  "apm": 3.63
+ },
+ {
+  "name": "Matthew Dellavedova",
+  "season": "2013-14",
+  "apm": 3.28
  },
  {
   "name": "Mehmet Okur",
@@ -14930,9 +18550,9 @@
   "apm": -2.3
  },
  {
-  "name": "Metta World Peace",
+  "name": "Meyers Leonard",
   "season": "2013-14",
-  "apm": 3.33
+  "apm": -4.09
  },
  {
   "name": "Michael Redd",
@@ -14965,6 +18585,11 @@
   "apm": -0.6
  },
  {
+  "name": "Mikki Moore",
+  "season": "2013-14",
+  "apm": -0.18
+ },
+ {
   "name": "Mo Williams",
   "season": "2013-14",
   "apm": -0.75
@@ -14983,6 +18608,16 @@
   "name": "Nikola Vucevic",
   "season": "2013-14",
   "apm": 0.61
+ },
+ {
+  "name": "O.J. Mayo",
+  "season": "2013-14",
+  "apm": -2.12
+ },
+ {
+  "name": "Omri Casspi",
+  "season": "2013-14",
+  "apm": -1.35
  },
  {
   "name": "P.J. Tucker",
@@ -15020,6 +18655,11 @@
   "apm": 3.25
  },
  {
+  "name": "Quincy Pondexter",
+  "season": "2013-14",
+  "apm": 0.55
+ },
+ {
   "name": "Raja Bell",
   "season": "2013-14",
   "apm": -0.73
@@ -15045,14 +18685,24 @@
   "apm": 0.69
  },
  {
+  "name": "Reggie Bullock",
+  "season": "2013-14",
+  "apm": -0.48
+ },
+ {
   "name": "Reggie Evans",
   "season": "2013-14",
   "apm": -1.34
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Reggie Williams",
   "season": "2013-14",
-  "apm": 0.3
+  "apm": -3.45
+ },
+ {
+  "name": "Renaldo Balkman",
+  "season": "2013-14",
+  "apm": -0.12
  },
  {
   "name": "Richard Jefferson",
@@ -15063,6 +18713,11 @@
   "name": "Robert Covington",
   "season": "2013-14",
   "apm": 0.65
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2013-14",
+  "apm": -0.32
  },
  {
   "name": "Royal Ivey",
@@ -15095,9 +18750,24 @@
   "apm": 1.93
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2013-14",
+  "apm": 0.31
+ },
+ {
+  "name": "Sasha Vujacic",
+  "season": "2013-14",
+  "apm": -0.37
+ },
+ {
   "name": "Serge Ibaka",
   "season": "2013-14",
   "apm": 4.81
+ },
+ {
+  "name": "Seth Curry",
+  "season": "2013-14",
+  "apm": -0.03
  },
  {
   "name": "Shane Battier",
@@ -15110,6 +18780,11 @@
   "apm": -0.49
  },
  {
+  "name": "Spencer Hawes",
+  "season": "2013-14",
+  "apm": -1.9
+ },
+ {
   "name": "Stephen Curry",
   "season": "2013-14",
   "apm": 6.54
@@ -15120,9 +18795,19 @@
   "apm": 0.73
  },
  {
+  "name": "Steve Blake",
+  "season": "2013-14",
+  "apm": -0.3
+ },
+ {
   "name": "Steve Nash",
   "season": "2013-14",
   "apm": 1.11
+ },
+ {
+  "name": "Steve Novak",
+  "season": "2013-14",
+  "apm": 2.53
  },
  {
   "name": "Steven Adams",
@@ -15135,11 +18820,6 @@
   "apm": 1.53
  },
  {
-  "name": "Thaddeus Young",
-  "season": "2013-14",
-  "apm": 1.56
- },
- {
   "name": "Tim Duncan",
   "season": "2013-14",
   "apm": 5.29
@@ -15150,6 +18830,11 @@
   "apm": -4.79
  },
  {
+  "name": "Tobias Harris",
+  "season": "2013-14",
+  "apm": -1.18
+ },
+ {
   "name": "Tony Allen",
   "season": "2013-14",
   "apm": 4.06
@@ -15158,6 +18843,11 @@
   "name": "Tony Parker",
   "season": "2013-14",
   "apm": 4.43
+ },
+ {
+  "name": "Tony Snell",
+  "season": "2013-14",
+  "apm": -3.53
  },
  {
   "name": "Tracy McGrady",
@@ -15205,9 +18895,19 @@
   "apm": 5.77
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2013-14",
+  "apm": 0.14
+ },
+ {
   "name": "Wesley Matthews",
   "season": "2013-14",
   "apm": 1.2
+ },
+ {
+  "name": "Willie Green",
+  "season": "2013-14",
+  "apm": -0.39
  },
  {
   "name": "Aaron Gordon",
@@ -15223,6 +18923,11 @@
   "name": "Al Horford",
   "season": "2014-15",
   "apm": 2.72
+ },
+ {
+  "name": "Alonzo Gee",
+  "season": "2014-15",
+  "apm": -4.08
  },
  {
   "name": "Amir Johnson",
@@ -15280,9 +18985,29 @@
   "apm": -1.27
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2014-15",
+  "apm": 2.01
+ },
+ {
   "name": "Anthony Davis",
   "season": "2014-15",
   "apm": 4.77
+ },
+ {
+  "name": "Anthony Morrow",
+  "season": "2014-15",
+  "apm": 1.62
+ },
+ {
+  "name": "Anthony Tolliver",
+  "season": "2014-15",
+  "apm": 3.74
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2014-15",
+  "apm": -1.36
  },
  {
   "name": "Avery Bradley",
@@ -15293,6 +19018,11 @@
   "name": "Ben Gordon",
   "season": "2014-15",
   "apm": -4.81
+ },
+ {
+  "name": "Beno Udrih",
+  "season": "2014-15",
+  "apm": -1.99
  },
  {
   "name": "Blake Griffin",
@@ -15325,19 +19055,14 @@
   "apm": 0.3
  },
  {
+  "name": "Brandon Rush",
+  "season": "2014-15",
+  "apm": -4.24
+ },
+ {
   "name": "Brook Lopez",
   "season": "2014-15",
   "apm": 0.17
- },
- {
-  "name": "Carl Landry",
-  "season": "2014-15",
-  "apm": -3.28
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2014-15",
-  "apm": -3.66
  },
  {
   "name": "Carmelo Anthony",
@@ -15353,6 +19078,11 @@
   "name": "Chandler Parsons",
   "season": "2014-15",
   "apm": 1.85
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2014-15",
+  "apm": 2.8
  },
  {
   "name": "Chauncey Billups",
@@ -15380,6 +19110,11 @@
   "apm": 8.16
  },
  {
+  "name": "Chris Quinn",
+  "season": "2014-15",
+  "apm": 0.23
+ },
+ {
   "name": "Clint Capela",
   "season": "2014-15",
   "apm": -0.18
@@ -15390,9 +19125,34 @@
   "apm": 0.2
  },
  {
+  "name": "D.J. Augustin",
+  "season": "2014-15",
+  "apm": -2
+ },
+ {
+  "name": "Daequan Cook",
+  "season": "2014-15",
+  "apm": -1.56
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2014-15",
+  "apm": -0.64
+ },
+ {
   "name": "Damian Lillard",
   "season": "2014-15",
   "apm": 3.53
+ },
+ {
+  "name": "Damien Wilkins",
+  "season": "2014-15",
+  "apm": -0.48
+ },
+ {
+  "name": "Daniel Gibson",
+  "season": "2014-15",
+  "apm": -2.79
  },
  {
   "name": "Danilo Gallinari",
@@ -15410,19 +19170,19 @@
   "apm": 4.84
  },
  {
-  "name": "Darren Collison",
+  "name": "Dante Cunningham",
   "season": "2014-15",
-  "apm": 2.21
+  "apm": 1.7
+ },
+ {
+  "name": "Darius Miller",
+  "season": "2014-15",
+  "apm": 0.95
  },
  {
   "name": "David Lee",
   "season": "2014-15",
   "apm": -0.25
- },
- {
-  "name": "David West",
-  "season": "2014-15",
-  "apm": 3.1
  },
  {
   "name": "DeAndre Jordan",
@@ -15438,6 +19198,11 @@
   "name": "DeMarcus Cousins",
   "season": "2014-15",
   "apm": 2.67
+ },
+ {
+  "name": "Derek Fisher",
+  "season": "2014-15",
+  "apm": 3.15
  },
  {
   "name": "Deron Williams",
@@ -15460,14 +19225,24 @@
   "apm": -0.46
  },
  {
-  "name": "Devin Harris",
+  "name": "DeShawn Stevenson",
   "season": "2014-15",
-  "apm": 1.6
+  "apm": -1.17
  },
  {
   "name": "Dirk Nowitzki",
   "season": "2014-15",
   "apm": 4.26
+ },
+ {
+  "name": "Dominic McGuire",
+  "season": "2014-15",
+  "apm": -0.91
+ },
+ {
+  "name": "Doug McDermott",
+  "season": "2014-15",
+  "apm": -2.56
  },
  {
   "name": "Draymond Green",
@@ -15490,9 +19265,14 @@
   "apm": 0.79
  },
  {
-  "name": "Eddy Curry",
+  "name": "Earl Watson",
   "season": "2014-15",
-  "apm": 0.09
+  "apm": -0.99
+ },
+ {
+  "name": "Ed Davis",
+  "season": "2014-15",
+  "apm": -0.64
  },
  {
   "name": "Ekpe Udoh",
@@ -15545,6 +19325,11 @@
   "apm": 4.71
  },
  {
+  "name": "Gerald Henderson",
+  "season": "2014-15",
+  "apm": 0.43
+ },
+ {
   "name": "Gerald Wallace",
   "season": "2014-15",
   "apm": 1.43
@@ -15580,11 +19365,6 @@
   "apm": -0.29
  },
  {
-  "name": "Greg Monroe",
-  "season": "2014-15",
-  "apm": 2.85
- },
- {
   "name": "Harrison Barnes",
   "season": "2014-15",
   "apm": 0.01
@@ -15600,19 +19380,34 @@
   "apm": -0.25
  },
  {
+  "name": "Ian Clark",
+  "season": "2014-15",
+  "apm": -0.89
+ },
+ {
   "name": "Isaiah Thomas",
   "season": "2014-15",
   "apm": 2.15
  },
  {
+  "name": "J.R. Smith",
+  "season": "2014-15",
+  "apm": 2.91
+ },
+ {
+  "name": "Jae Crowder",
+  "season": "2014-15",
+  "apm": 3.34
+ },
+ {
+  "name": "Jamaal Tinsley",
+  "season": "2014-15",
+  "apm": 0.27
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2014-15",
   "apm": -0.07
- },
- {
-  "name": "Jameer Nelson",
-  "season": "2014-15",
-  "apm": 0.41
  },
  {
   "name": "James Harden",
@@ -15628,6 +19423,11 @@
   "name": "Jared Dudley",
   "season": "2014-15",
   "apm": 2.66
+ },
+ {
+  "name": "Jared Jeffries",
+  "season": "2014-15",
+  "apm": 0.65
  },
  {
   "name": "Jarrett Jack",
@@ -15673,6 +19473,11 @@
   "name": "Jerry Stackhouse",
   "season": "2014-15",
   "apm": 0.08
+ },
+ {
+  "name": "Jimmer Fredette",
+  "season": "2014-15",
+  "apm": -1.01
  },
  {
   "name": "Jimmy Butler",
@@ -15725,6 +19530,11 @@
   "apm": -2.56
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2014-15",
+  "apm": 1.53
+ },
+ {
   "name": "Josh Smith",
   "season": "2014-15",
   "apm": -0.3
@@ -15745,6 +19555,11 @@
   "apm": 6.67
  },
  {
+  "name": "Keith Bogans",
+  "season": "2014-15",
+  "apm": -0.01
+ },
+ {
   "name": "Kelly Olynyk",
   "season": "2014-15",
   "apm": 2.7
@@ -15753,11 +19568,6 @@
   "name": "Kemba Walker",
   "season": "2014-15",
   "apm": 0.19
- },
- {
-  "name": "Kenneth Faried",
-  "season": "2014-15",
-  "apm": 1.92
  },
  {
   "name": "Kenyon Martin",
@@ -15855,6 +19665,11 @@
   "apm": -0.96
  },
  {
+  "name": "Luke Babbitt",
+  "season": "2014-15",
+  "apm": -1.64
+ },
+ {
   "name": "Luke Walton",
   "season": "2014-15",
   "apm": 0.02
@@ -15895,14 +19710,39 @@
   "apm": 2.23
  },
  {
-  "name": "Mason Plumlee",
+  "name": "Mario Chalmers",
   "season": "2014-15",
-  "apm": -2.83
+  "apm": 1.68
  },
  {
-  "name": "Metta World Peace",
+  "name": "Martell Webster",
   "season": "2014-15",
-  "apm": 3.65
+  "apm": -1.79
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2014-15",
+  "apm": -0.93
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2014-15",
+  "apm": 4.88
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2014-15",
+  "apm": 0
+ },
+ {
+  "name": "Matthew Dellavedova",
+  "season": "2014-15",
+  "apm": 2.02
+ },
+ {
+  "name": "Meyers Leonard",
+  "season": "2014-15",
+  "apm": -2.42
  },
  {
   "name": "Mike Conley",
@@ -15950,6 +19790,16 @@
   "apm": -1.28
  },
  {
+  "name": "O.J. Mayo",
+  "season": "2014-15",
+  "apm": -1.3
+ },
+ {
+  "name": "Omri Casspi",
+  "season": "2014-15",
+  "apm": 0.06
+ },
+ {
   "name": "P.J. Tucker",
   "season": "2014-15",
   "apm": 0.63
@@ -15985,6 +19835,11 @@
   "apm": 2.73
  },
  {
+  "name": "Quincy Pondexter",
+  "season": "2014-15",
+  "apm": 0.61
+ },
+ {
   "name": "Rajon Rondo",
   "season": "2014-15",
   "apm": -3.35
@@ -16005,14 +19860,19 @@
   "apm": 0.68
  },
  {
+  "name": "Reggie Bullock",
+  "season": "2014-15",
+  "apm": -0.25
+ },
+ {
   "name": "Reggie Evans",
   "season": "2014-15",
   "apm": 0.28
  },
  {
-  "name": "Richard Hamilton",
+  "name": "Reggie Williams",
   "season": "2014-15",
-  "apm": -0.29
+  "apm": -1.7
  },
  {
   "name": "Richard Jefferson",
@@ -16023,6 +19883,11 @@
   "name": "Robert Covington",
   "season": "2014-15",
   "apm": 2.31
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2014-15",
+  "apm": 0.89
  },
  {
   "name": "Royal Ivey",
@@ -16055,9 +19920,24 @@
   "apm": 0.85
  },
  {
+  "name": "Sasha Pavlovic",
+  "season": "2014-15",
+  "apm": 0.08
+ },
+ {
+  "name": "Sasha Vujacic",
+  "season": "2014-15",
+  "apm": -0.24
+ },
+ {
   "name": "Serge Ibaka",
   "season": "2014-15",
   "apm": 4.13
+ },
+ {
+  "name": "Seth Curry",
+  "season": "2014-15",
+  "apm": -0.26
  },
  {
   "name": "Shane Battier",
@@ -16070,6 +19950,11 @@
   "apm": -0.24
  },
  {
+  "name": "Spencer Hawes",
+  "season": "2014-15",
+  "apm": -2.38
+ },
+ {
   "name": "Stephen Curry",
   "season": "2014-15",
   "apm": 8.2
@@ -16080,9 +19965,19 @@
   "apm": 0.7
  },
  {
+  "name": "Steve Blake",
+  "season": "2014-15",
+  "apm": 0.9
+ },
+ {
   "name": "Steve Nash",
   "season": "2014-15",
   "apm": 0.19
+ },
+ {
+  "name": "Steve Novak",
+  "season": "2014-15",
+  "apm": 0.34
  },
  {
   "name": "Steven Adams",
@@ -16100,19 +19995,24 @@
   "apm": 4
  },
  {
-  "name": "Thaddeus Young",
-  "season": "2014-15",
-  "apm": 0.55
- },
- {
   "name": "Tim Duncan",
   "season": "2014-15",
   "apm": 4.06
  },
  {
+  "name": "Tim Frazier",
+  "season": "2014-15",
+  "apm": 0.38
+ },
+ {
   "name": "Tim Hardaway",
   "season": "2014-15",
   "apm": -4.59
+ },
+ {
+  "name": "Tobias Harris",
+  "season": "2014-15",
+  "apm": -1.71
  },
  {
   "name": "Tony Allen",
@@ -16123,6 +20023,11 @@
   "name": "Tony Parker",
   "season": "2014-15",
   "apm": 1.19
+ },
+ {
+  "name": "Tony Snell",
+  "season": "2014-15",
+  "apm": -0.21
  },
  {
   "name": "Tracy McGrady",
@@ -16170,9 +20075,19 @@
   "apm": 4.1
  },
  {
+  "name": "Vladimir Radmanovic",
+  "season": "2014-15",
+  "apm": -1.12
+ },
+ {
   "name": "Wesley Matthews",
   "season": "2014-15",
   "apm": 2.77
+ },
+ {
+  "name": "Willie Green",
+  "season": "2014-15",
+  "apm": -0.36
  },
  {
   "name": "Zach LaVine",
@@ -16193,6 +20108,11 @@
   "name": "Al Horford",
   "season": "2015-16",
   "apm": 2.74
+ },
+ {
+  "name": "Alonzo Gee",
+  "season": "2015-16",
+  "apm": -3.69
  },
  {
   "name": "Amir Johnson",
@@ -16250,9 +20170,29 @@
   "apm": 0.13
  },
  {
+  "name": "Antawn Jamison",
+  "season": "2015-16",
+  "apm": 1.03
+ },
+ {
   "name": "Anthony Davis",
   "season": "2015-16",
   "apm": 2.97
+ },
+ {
+  "name": "Anthony Morrow",
+  "season": "2015-16",
+  "apm": 1.46
+ },
+ {
+  "name": "Anthony Tolliver",
+  "season": "2015-16",
+  "apm": 2
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2015-16",
+  "apm": -0.85
  },
  {
   "name": "Avery Bradley",
@@ -16263,6 +20203,11 @@
   "name": "Ben Gordon",
   "season": "2015-16",
   "apm": -2.23
+ },
+ {
+  "name": "Beno Udrih",
+  "season": "2015-16",
+  "apm": -0.24
  },
  {
   "name": "Blake Griffin",
@@ -16290,19 +20235,14 @@
   "apm": 1.37
  },
  {
+  "name": "Brandon Rush",
+  "season": "2015-16",
+  "apm": -4.33
+ },
+ {
   "name": "Brook Lopez",
   "season": "2015-16",
   "apm": 1.16
- },
- {
-  "name": "Carl Landry",
-  "season": "2015-16",
-  "apm": -2.49
- },
- {
-  "name": "Carlos Boozer",
-  "season": "2015-16",
-  "apm": -2.83
  },
  {
   "name": "Carmelo Anthony",
@@ -16318,6 +20258,11 @@
   "name": "Chandler Parsons",
   "season": "2015-16",
   "apm": 3.32
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2015-16",
+  "apm": 3.47
  },
  {
   "name": "Chauncey Billups",
@@ -16350,9 +20295,19 @@
   "apm": 1.37
  },
  {
+  "name": "D.J. Augustin",
+  "season": "2015-16",
+  "apm": -0.75
+ },
+ {
   "name": "D'Angelo Russell",
   "season": "2015-16",
   "apm": -3.37
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2015-16",
+  "apm": -0.65
  },
  {
   "name": "Damian Lillard",
@@ -16375,9 +20330,14 @@
   "apm": 6.23
  },
  {
-  "name": "Darren Collison",
+  "name": "Dante Cunningham",
   "season": "2015-16",
-  "apm": 2.21
+  "apm": -0.41
+ },
+ {
+  "name": "Darius Miller",
+  "season": "2015-16",
+  "apm": 0.73
  },
  {
   "name": "David Lee",
@@ -16385,14 +20345,14 @@
   "apm": -0.9
  },
  {
-  "name": "David West",
-  "season": "2015-16",
-  "apm": 3.61
- },
- {
   "name": "DeAndre Jordan",
   "season": "2015-16",
   "apm": 4.6
+ },
+ {
+  "name": "Delon Wright",
+  "season": "2015-16",
+  "apm": 0.61
  },
  {
   "name": "DeMar Derozan",
@@ -16403,6 +20363,11 @@
   "name": "DeMarcus Cousins",
   "season": "2015-16",
   "apm": 4.96
+ },
+ {
+  "name": "Derek Fisher",
+  "season": "2015-16",
+  "apm": 1.26
  },
  {
   "name": "Deron Williams",
@@ -16425,14 +20390,14 @@
   "apm": -2.98
  },
  {
-  "name": "Devin Harris",
-  "season": "2015-16",
-  "apm": 0.51
- },
- {
   "name": "Dirk Nowitzki",
   "season": "2015-16",
   "apm": 4.47
+ },
+ {
+  "name": "Doug McDermott",
+  "season": "2015-16",
+  "apm": -2.61
  },
  {
   "name": "Draymond Green",
@@ -16453,6 +20418,16 @@
   "name": "Dwyane Wade",
   "season": "2015-16",
   "apm": -0.61
+ },
+ {
+  "name": "Earl Watson",
+  "season": "2015-16",
+  "apm": 0.06
+ },
+ {
+  "name": "Ed Davis",
+  "season": "2015-16",
+  "apm": 0.06
  },
  {
   "name": "Ekpe Udoh",
@@ -16500,6 +20475,11 @@
   "apm": 3.39
  },
  {
+  "name": "Gerald Henderson",
+  "season": "2015-16",
+  "apm": -0.1
+ },
+ {
   "name": "Gerald Wallace",
   "season": "2015-16",
   "apm": -0.74
@@ -16530,11 +20510,6 @@
   "apm": 1.76
  },
  {
-  "name": "Greg Monroe",
-  "season": "2015-16",
-  "apm": 0.45
- },
- {
   "name": "Harrison Barnes",
   "season": "2015-16",
   "apm": -0.73
@@ -16550,19 +20525,34 @@
   "apm": 0.59
  },
  {
+  "name": "Ian Clark",
+  "season": "2015-16",
+  "apm": -1.73
+ },
+ {
   "name": "Isaiah Thomas",
   "season": "2015-16",
   "apm": 2.19
  },
  {
+  "name": "J.R. Smith",
+  "season": "2015-16",
+  "apm": 2.4
+ },
+ {
+  "name": "Jae Crowder",
+  "season": "2015-16",
+  "apm": 5.06
+ },
+ {
+  "name": "Jamaal Tinsley",
+  "season": "2015-16",
+  "apm": -0.67
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2015-16",
   "apm": 0.3
- },
- {
-  "name": "Jameer Nelson",
-  "season": "2015-16",
-  "apm": -2.02
  },
  {
   "name": "James Harden",
@@ -16615,6 +20605,11 @@
   "apm": -1.79
  },
  {
+  "name": "Jimmer Fredette",
+  "season": "2015-16",
+  "apm": -0.49
+ },
+ {
   "name": "Jimmy Butler",
   "season": "2015-16",
   "apm": 4.23
@@ -16665,6 +20660,11 @@
   "apm": -1.32
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2015-16",
+  "apm": 2.26
+ },
+ {
   "name": "Josh Smith",
   "season": "2015-16",
   "apm": -0.96
@@ -16690,17 +20690,17 @@
   "apm": 7.58
  },
  {
+  "name": "Keith Bogans",
+  "season": "2015-16",
+  "apm": -0.24
+ },
+ {
   "name": "Kelly Olynyk",
   "season": "2015-16",
   "apm": 3.25
  },
  {
   "name": "Kemba Walker",
-  "season": "2015-16",
-  "apm": 2.57
- },
- {
-  "name": "Kenneth Faried",
   "season": "2015-16",
   "apm": 2.57
  },
@@ -16805,6 +20805,11 @@
   "apm": -0.29
  },
  {
+  "name": "Luke Babbitt",
+  "season": "2015-16",
+  "apm": -0.64
+ },
+ {
   "name": "Luol Deng",
   "season": "2015-16",
   "apm": 2.65
@@ -16835,14 +20840,39 @@
   "apm": 1.23
  },
  {
-  "name": "Mason Plumlee",
+  "name": "Mario Chalmers",
   "season": "2015-16",
-  "apm": -0.49
+  "apm": 1.52
  },
  {
-  "name": "Metta World Peace",
+  "name": "Martell Webster",
   "season": "2015-16",
-  "apm": -0.08
+  "apm": -2.31
+ },
+ {
+  "name": "Marvin Williams",
+  "season": "2015-16",
+  "apm": 0.99
+ },
+ {
+  "name": "Matt Barnes",
+  "season": "2015-16",
+  "apm": 0.14
+ },
+ {
+  "name": "Matt Bonner",
+  "season": "2015-16",
+  "apm": 1.27
+ },
+ {
+  "name": "Matthew Dellavedova",
+  "season": "2015-16",
+  "apm": 2.67
+ },
+ {
+  "name": "Meyers Leonard",
+  "season": "2015-16",
+  "apm": -0.28
  },
  {
   "name": "Mike Conley",
@@ -16885,6 +20915,11 @@
   "apm": -2.35
  },
  {
+  "name": "Nemanja Bjelica",
+  "season": "2015-16",
+  "apm": -0.11
+ },
+ {
   "name": "Nerlens Noel",
   "season": "2015-16",
   "apm": -2.96
@@ -16910,6 +20945,16 @@
   "apm": 1.27
  },
  {
+  "name": "O.J. Mayo",
+  "season": "2015-16",
+  "apm": -0.57
+ },
+ {
+  "name": "Omri Casspi",
+  "season": "2015-16",
+  "apm": 1.65
+ },
+ {
   "name": "P.J. Tucker",
   "season": "2015-16",
   "apm": 0.28
@@ -16918,6 +20963,11 @@
   "name": "Pablo Prigioni",
   "season": "2015-16",
   "apm": 0.7
+ },
+ {
+  "name": "Pat Connaughton",
+  "season": "2015-16",
+  "apm": -0.68
  },
  {
   "name": "Patrick Beverley",
@@ -16945,6 +20995,11 @@
   "apm": 0.12
  },
  {
+  "name": "Quincy Pondexter",
+  "season": "2015-16",
+  "apm": 0.33
+ },
+ {
   "name": "Rajon Rondo",
   "season": "2015-16",
   "apm": -2.05
@@ -16960,9 +21015,19 @@
   "apm": 0.95
  },
  {
+  "name": "Reggie Bullock",
+  "season": "2015-16",
+  "apm": -1.24
+ },
+ {
   "name": "Reggie Evans",
   "season": "2015-16",
   "apm": -1.38
+ },
+ {
+  "name": "Reggie Williams",
+  "season": "2015-16",
+  "apm": -0.67
  },
  {
   "name": "Richard Jefferson",
@@ -16978,6 +21043,11 @@
   "name": "Robert Covington",
   "season": "2015-16",
   "apm": 1.89
+ },
+ {
+  "name": "Roger Mason",
+  "season": "2015-16",
+  "apm": -0.07
  },
  {
   "name": "Royal Ivey",
@@ -17010,9 +21080,19 @@
   "apm": -2.32
  },
  {
+  "name": "Sasha Vujacic",
+  "season": "2015-16",
+  "apm": 0.17
+ },
+ {
   "name": "Serge Ibaka",
   "season": "2015-16",
   "apm": 4.75
+ },
+ {
+  "name": "Seth Curry",
+  "season": "2015-16",
+  "apm": -1.65
  },
  {
   "name": "Shane Battier",
@@ -17025,6 +21105,11 @@
   "apm": -0.06
  },
  {
+  "name": "Spencer Hawes",
+  "season": "2015-16",
+  "apm": -0.85
+ },
+ {
   "name": "Stephen Curry",
   "season": "2015-16",
   "apm": 9.02
@@ -17035,9 +21120,19 @@
   "apm": 0.16
  },
  {
+  "name": "Steve Blake",
+  "season": "2015-16",
+  "apm": -1.05
+ },
+ {
   "name": "Steve Nash",
   "season": "2015-16",
   "apm": -0.57
+ },
+ {
+  "name": "Steve Novak",
+  "season": "2015-16",
+  "apm": -0.43
  },
  {
   "name": "Steven Adams",
@@ -17050,14 +21145,14 @@
   "apm": -1.72
  },
  {
+  "name": "Terry Rozier",
+  "season": "2015-16",
+  "apm": -2.47
+ },
+ {
   "name": "Thabo Sefolosha",
   "season": "2015-16",
   "apm": 1.84
- },
- {
-  "name": "Thaddeus Young",
-  "season": "2015-16",
-  "apm": 0.23
  },
  {
   "name": "Tim Duncan",
@@ -17065,9 +21160,19 @@
   "apm": 4.28
  },
  {
+  "name": "Tim Frazier",
+  "season": "2015-16",
+  "apm": 0.31
+ },
+ {
   "name": "Tim Hardaway",
   "season": "2015-16",
   "apm": -1.82
+ },
+ {
+  "name": "Tobias Harris",
+  "season": "2015-16",
+  "apm": -0.81
  },
  {
   "name": "Tony Allen",
@@ -17078,6 +21183,11 @@
   "name": "Tony Parker",
   "season": "2015-16",
   "apm": -0.07
+ },
+ {
+  "name": "Tony Snell",
+  "season": "2015-16",
+  "apm": 2.32
  },
  {
   "name": "Trevor Ariza",
@@ -17100,6 +21210,11 @@
   "apm": 0.38
  },
  {
+  "name": "Tyus Jones",
+  "season": "2015-16",
+  "apm": -1.43
+ },
+ {
   "name": "Udonis Haslem",
   "season": "2015-16",
   "apm": -3.66
@@ -17120,6 +21235,11 @@
   "apm": 2.11
  },
  {
+  "name": "Willie Green",
+  "season": "2015-16",
+  "apm": -0.88
+ },
+ {
   "name": "Zach LaVine",
   "season": "2015-16",
   "apm": -5.3
@@ -17133,6 +21253,16 @@
   "name": "Al Horford",
   "season": "2016-17",
   "apm": 0.47
+ },
+ {
+  "name": "Alex Abrines",
+  "season": "2016-17",
+  "apm": -0.99
+ },
+ {
+  "name": "Alonzo Gee",
+  "season": "2016-17",
+  "apm": -0.26
  },
  {
   "name": "Amir Johnson",
@@ -17170,9 +21300,29 @@
   "apm": 2.63
  },
  {
+  "name": "Anthony Morrow",
+  "season": "2016-17",
+  "apm": -0.7
+ },
+ {
+  "name": "Anthony Tolliver",
+  "season": "2016-17",
+  "apm": -0.23
+ },
+ {
+  "name": "Arron Afflalo",
+  "season": "2016-17",
+  "apm": -2.56
+ },
+ {
   "name": "Avery Bradley",
   "season": "2016-17",
   "apm": -2.21
+ },
+ {
+  "name": "Beno Udrih",
+  "season": "2016-17",
+  "apm": 1.42
  },
  {
   "name": "Blake Griffin",
@@ -17205,6 +21355,11 @@
   "apm": -0.08
  },
  {
+  "name": "Brandon Rush",
+  "season": "2016-17",
+  "apm": 0.02
+ },
+ {
   "name": "Brook Lopez",
   "season": "2016-17",
   "apm": 0.31
@@ -17223,6 +21378,11 @@
   "name": "Chandler Parsons",
   "season": "2016-17",
   "apm": -1.75
+ },
+ {
+  "name": "Channing Frye",
+  "season": "2016-17",
+  "apm": -0.2
  },
  {
   "name": "Chris Andersen",
@@ -17245,9 +21405,19 @@
   "apm": 1.77
  },
  {
+  "name": "D.J. Augustin",
+  "season": "2016-17",
+  "apm": -7.03
+ },
+ {
   "name": "D'Angelo Russell",
   "season": "2016-17",
   "apm": -3.08
+ },
+ {
+  "name": "Dahntay Jones",
+  "season": "2016-17",
+  "apm": -0.15
  },
  {
   "name": "Damian Lillard",
@@ -17265,7 +21435,7 @@
   "apm": 1.64
  },
  {
-  "name": "Darren Collison",
+  "name": "Dante Cunningham",
   "season": "2016-17",
   "apm": 0.3
  },
@@ -17273,11 +21443,6 @@
   "name": "David Lee",
   "season": "2016-17",
   "apm": 3.41
- },
- {
-  "name": "David West",
-  "season": "2016-17",
-  "apm": 1.24
  },
  {
   "name": "Davis Bertans",
@@ -17290,9 +21455,19 @@
   "apm": 4.37
  },
  {
+  "name": "DeAndre' Bembry",
+  "season": "2016-17",
+  "apm": -0.89
+ },
+ {
   "name": "Dejounte Murray",
   "season": "2016-17",
   "apm": 0.84
+ },
+ {
+  "name": "Delon Wright",
+  "season": "2016-17",
+  "apm": 1.31
  },
  {
   "name": "DeMar Derozan",
@@ -17325,11 +21500,6 @@
   "apm": 0.43
  },
  {
-  "name": "Devin Harris",
-  "season": "2016-17",
-  "apm": 1.94
- },
- {
   "name": "Dirk Nowitzki",
   "season": "2016-17",
   "apm": 0.07
@@ -17338,6 +21508,16 @@
   "name": "Domantas Sabonis",
   "season": "2016-17",
   "apm": -0.31
+ },
+ {
+  "name": "Dorian Finney-Smith",
+  "season": "2016-17",
+  "apm": 0.22
+ },
+ {
+  "name": "Doug McDermott",
+  "season": "2016-17",
+  "apm": -2.69
  },
  {
   "name": "Draymond Green",
@@ -17358,6 +21538,11 @@
   "name": "Dwyane Wade",
   "season": "2016-17",
   "apm": -2.2
+ },
+ {
+  "name": "Ed Davis",
+  "season": "2016-17",
+  "apm": -2.91
  },
  {
   "name": "Eric Bledsoe",
@@ -17405,6 +21590,11 @@
   "apm": 4.87
  },
  {
+  "name": "Gerald Henderson",
+  "season": "2016-17",
+  "apm": -3.91
+ },
+ {
   "name": "Giannis Antetokounmpo",
   "season": "2016-17",
   "apm": 1.93
@@ -17425,11 +21615,6 @@
   "apm": 3.1
  },
  {
-  "name": "Greg Monroe",
-  "season": "2016-17",
-  "apm": 2.75
- },
- {
   "name": "Harrison Barnes",
   "season": "2016-17",
   "apm": -0.01
@@ -17440,6 +21625,11 @@
   "apm": 2.39
  },
  {
+  "name": "Ian Clark",
+  "season": "2016-17",
+  "apm": -0.55
+ },
+ {
   "name": "Isaiah Thomas",
   "season": "2016-17",
   "apm": 1.74
@@ -17448,6 +21638,16 @@
   "name": "Ivica Zubac",
   "season": "2016-17",
   "apm": -2.69
+ },
+ {
+  "name": "J.R. Smith",
+  "season": "2016-17",
+  "apm": 0.31
+ },
+ {
+  "name": "Jae Crowder",
+  "season": "2016-17",
+  "apm": 5.98
  },
  {
   "name": "Jakob Poeltl",
@@ -17463,11 +21663,6 @@
   "name": "Jamal Murray",
   "season": "2016-17",
   "apm": 0.88
- },
- {
-  "name": "Jameer Nelson",
-  "season": "2016-17",
-  "apm": 2.07
  },
  {
   "name": "James Harden",
@@ -17565,6 +21760,11 @@
   "apm": -1.82
  },
  {
+  "name": "Josh McRoberts",
+  "season": "2016-17",
+  "apm": -2.48
+ },
+ {
   "name": "Jrue Holiday",
   "season": "2016-17",
   "apm": 1.65
@@ -17593,11 +21793,6 @@
   "name": "Kemba Walker",
   "season": "2016-17",
   "apm": 3.79
- },
- {
-  "name": "Kenneth Faried",
-  "season": "2016-17",
-  "apm": -0.99
  },
  {
   "name": "Kevin Durant",
@@ -17670,6 +21865,11 @@
   "apm": 2.29
  },
  {
+  "name": "Luke Babbitt",
+  "season": "2016-17",
+  "apm": 0.65
+ },
+ {
   "name": "Luol Deng",
   "season": "2016-17",
   "apm": 0.48
@@ -17705,14 +21905,24 @@
   "apm": 1.36
  },
  {
-  "name": "Mason Plumlee",
+  "name": "Marvin Williams",
   "season": "2016-17",
-  "apm": 0.87
+  "apm": -1.71
  },
  {
-  "name": "Metta World Peace",
+  "name": "Matt Barnes",
   "season": "2016-17",
-  "apm": -1.72
+  "apm": -1.41
+ },
+ {
+  "name": "Matthew Dellavedova",
+  "season": "2016-17",
+  "apm": -0.21
+ },
+ {
+  "name": "Meyers Leonard",
+  "season": "2016-17",
+  "apm": -1.05
  },
  {
   "name": "Mike Conley",
@@ -17745,6 +21955,11 @@
   "apm": 2.59
  },
  {
+  "name": "Nemanja Bjelica",
+  "season": "2016-17",
+  "apm": 1.21
+ },
+ {
   "name": "Nerlens Noel",
   "season": "2016-17",
   "apm": 0.27
@@ -17770,6 +21985,11 @@
   "apm": 0.33
  },
  {
+  "name": "Omri Casspi",
+  "season": "2016-17",
+  "apm": -2.86
+ },
+ {
   "name": "P.J. Tucker",
   "season": "2016-17",
   "apm": 1.14
@@ -17778,6 +21998,11 @@
   "name": "Pascal Siakam",
   "season": "2016-17",
   "apm": -1.65
+ },
+ {
+  "name": "Pat Connaughton",
+  "season": "2016-17",
+  "apm": -1.35
  },
  {
   "name": "Patrick Beverley",
@@ -17808,6 +22033,16 @@
   "name": "Rajon Rondo",
   "season": "2016-17",
   "apm": -1.52
+ },
+ {
+  "name": "Reggie Bullock",
+  "season": "2016-17",
+  "apm": 1.36
+ },
+ {
+  "name": "Reggie Williams",
+  "season": "2016-17",
+  "apm": -0.81
  },
  {
   "name": "Richard Jefferson",
@@ -17845,14 +22080,34 @@
   "apm": 3.62
  },
  {
+  "name": "Sasha Vujacic",
+  "season": "2016-17",
+  "apm": -0.23
+ },
+ {
   "name": "Serge Ibaka",
   "season": "2016-17",
   "apm": 0.08
  },
  {
+  "name": "Seth Curry",
+  "season": "2016-17",
+  "apm": 1.18
+ },
+ {
+  "name": "Spencer Hawes",
+  "season": "2016-17",
+  "apm": -4.75
+ },
+ {
   "name": "Stephen Curry",
   "season": "2016-17",
   "apm": 10
+ },
+ {
+  "name": "Steve Novak",
+  "season": "2016-17",
+  "apm": 0.05
  },
  {
   "name": "Steven Adams",
@@ -17865,19 +22120,34 @@
   "apm": -1.55
  },
  {
+  "name": "Terry Rozier",
+  "season": "2016-17",
+  "apm": 1.37
+ },
+ {
   "name": "Thabo Sefolosha",
   "season": "2016-17",
   "apm": 0.31
  },
  {
-  "name": "Thaddeus Young",
+  "name": "Tim Frazier",
   "season": "2016-17",
-  "apm": 0.83
+  "apm": -1.95
  },
  {
   "name": "Tim Hardaway",
   "season": "2016-17",
   "apm": 3.05
+ },
+ {
+  "name": "Tobias Harris",
+  "season": "2016-17",
+  "apm": 1.18
+ },
+ {
+  "name": "Tomas Satoransky",
+  "season": "2016-17",
+  "apm": 2.08
  },
  {
   "name": "Tony Allen",
@@ -17888,6 +22158,11 @@
   "name": "Tony Parker",
   "season": "2016-17",
   "apm": 1.13
+ },
+ {
+  "name": "Tony Snell",
+  "season": "2016-17",
+  "apm": -1.35
  },
  {
   "name": "Trevor Ariza",
@@ -17903,6 +22178,11 @@
   "name": "Tyson Chandler",
   "season": "2016-17",
   "apm": 0.48
+ },
+ {
+  "name": "Tyus Jones",
+  "season": "2016-17",
+  "apm": 0.63
  },
  {
   "name": "Udonis Haslem",
