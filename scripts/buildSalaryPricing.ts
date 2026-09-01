@@ -22,8 +22,9 @@ import salaries from '../src/data/awards/salaries.json';
 import { draftPool } from '../src/data/draftPool';
 import { normalizePlayerName } from '../src/data/schema';
 import { tierContextWithSixthMan } from '../src/engine/sixthMan';
-import { overallTierForSpan } from '../src/engine/grades';
-import { computeTalent } from '../src/engine/talent';
+import { overallTierForSpan, offensiveGrade, defensiveGrade } from '../src/engine/grades';
+import { computeTalent, computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../src/engine/talent';
+import { computeSpacing } from '../src/engine/spacing';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.resolve(__dirname, 'out');
@@ -115,7 +116,10 @@ const roundM = (usd: number) => Math.round(usd / 1e5) / 10;
 
 interface SeasonCharge { year: number; realM: number | null; chargeM: number; source: 'real' | 'rookie' | 'estimate'; }
 interface SpanRecord {
-  player: string; span: string; position: string; tier: string; tal: number;
+  player: string; span: string; position: string; secondaryPositions: string[];
+  tier: string; tal: number; oGrade: string; dGrade: string; spacing: number;
+  archetype: string; defense: string; fga: number;
+  ppg: number; rpg: number; apg: number; threePct: number; tsPct: number;
   draftPick: number | null; method: 'real' | 'rookie' | 'synthetic' | 'mixed';
   realSalaryM: number | null; rosterChargeM: number; tierMarketM: number;
   seasons: SeasonCharge[];
@@ -162,12 +166,21 @@ for (const s of draftPool) {
       : seasons.some((x) => x.source === 'estimate') ? 'mixed'
       : 'real';
 
+  const b = s.box;
   spans.push({
     player: s.playerName,
     span: s.spanLabel,
     position: s.primaryPosition,
+    secondaryPositions: s.secondaryPositions,
     tier,
     tal: computeTalent(s),
+    oGrade: offensiveGrade(computeOffensiveTalent(s), computeUncappedOffensiveTalent(s)),
+    dGrade: defensiveGrade(computeDefensiveTalent(s)),
+    spacing: computeSpacing(s),
+    archetype: s.offensiveArchetype,
+    defense: s.defensiveRole,
+    fga: s.fga,
+    ppg: b.ppg, rpg: b.rpg, apg: b.apg, threePct: b.threePct, tsPct: b.tsPct,
     draftPick: draft?.pick ?? null,
     method,
     realSalaryM,
