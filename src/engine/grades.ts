@@ -49,6 +49,29 @@ function computeSThreshold(values: number[]): number {
   return sorted[2] ?? sorted[sorted.length - 1] ?? 100;
 }
 
+/**
+ * Per-PLAYER-peak S threshold — the 3rd-best player's ceiling, not the 3rd-highest span value.
+ *
+ * 2026-08-31, user-reported ("no player has S O-TAL"): `computeUncappedOffensiveTalent` is an
+ * uncapped scale, and Nikola Jokić's recent offense sits 7+ points clear of anyone else (uncapped
+ * 119-123 vs LeBron 112 / Durant 108 / Harden 106). With the span-wise threshold, Jokić's own top
+ * three spans ARE the top three distinct values, so the cutoff (119) landed on his own 3rd span and
+ * S collapsed to "Jokić, three spans" — every other elite offensive engine read A+. Deduping to
+ * each player's single best span first restores "S = the 3 best offensive players in the pool"
+ * (Jokić / LeBron / Durant — 9 spans between them at the 108 cutoff), which is what S is documented
+ * to mean. The grade CHECK still runs per span (a specific span can clear or miss it); only the
+ * threshold's reference set changes. Offense-only — the D-TAL ladder caps at 100 so its top is a
+ * real multi-player cluster, not a one-player outlier, and its span-wise threshold is unaffected.
+ */
+function computeSThresholdByPlayerPeak(valueOf: (span: PlayerSpan) => number): number {
+  const peakByPlayer = new Map<string, number>();
+  for (const span of draftPool) {
+    const key = normalizePlayerName(span.playerName);
+    peakByPlayer.set(key, Math.max(peakByPlayer.get(key) ?? -Infinity, valueOf(span)));
+  }
+  return computeSThreshold([...peakByPlayer.values()]);
+}
+
 export function gradeForValue(value: number, sThreshold: number): Grade {
   return value >= sThreshold ? 'S' : letterForValue(value);
 }
@@ -83,7 +106,7 @@ let defensiveSThreshold: number | null = null;
  */
 export function offensiveGrade(value: number, uncappedValue: number = value): Grade {
   if (offensiveSThreshold === null) {
-    offensiveSThreshold = computeSThreshold(draftPool.map((p) => computeUncappedOffensiveTalent(p)));
+    offensiveSThreshold = computeSThresholdByPlayerPeak((p) => computeUncappedOffensiveTalent(p));
   }
   return uncappedValue >= offensiveSThreshold ? 'S' : letterForValue(value);
 }
