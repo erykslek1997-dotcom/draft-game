@@ -15,6 +15,7 @@ import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
 import { isPlusShooter } from './shooting';
 import { computeSpacing, isShootingAnomalyPlayer } from './spacing';
 import { athleticismScoreForSpan } from './athleticismLookup';
+import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
 import type { Team } from './types';
 
 /**
@@ -62,11 +63,12 @@ export const SPACING_BOTTLENECK_MAX_PENALTY = 18;
 export const SPACING_BOTTLENECK_SCALE = 0.65;
 
 export const FIT_WEIGHTS = {
-  creationStructure: 0.35,
-  spacingCompatibility: 0.30,
+  creationStructure: 0.30,
+  spacingCompatibility: 0.25,
   defensiveRoleCoverage: 0.25,
   reboundingBalance: 0.05,
   sizeCoverage: 0.05,
+  championshipStructure: 0.10,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
@@ -94,6 +96,7 @@ export interface FitScoreComponents {
   defensiveRoleCoverage: number;
   reboundingBalance: number;
   sizeCoverage: number;
+  championshipStructure: number;
 }
 
 export interface FitScoreInputs {
@@ -128,6 +131,13 @@ export interface FitScoreInputs {
   positionAdjustedAthleticismPercentile: number | null;
   functionalSizePercentile: number | null;
   additionalRoleCredits: string[];
+  championshipArchetypes: ChampionshipStructureResult['archetypes'];
+  primaryArchetype?: ChampionshipStructureResult['primaryArchetype'];
+  secondaryArchetype?: ChampionshipStructureResult['secondaryArchetype'];
+  archetypeReport?: ChampionshipStructureResult['archetypeReport'];
+  playoffSuccessPrior: number;
+  championshipFloor: number;
+  championshipCeiling: number;
 }
 
 export interface FitScoreResult {
@@ -315,6 +325,7 @@ export function fitScore(team: Team): FitScoreResult {
         defensiveRoleCoverage: 0,
         reboundingBalance: 0,
         sizeCoverage: 0,
+        championshipStructure: 0,
       },
       inputs: {
         starterCount: starters.length,
@@ -345,6 +356,13 @@ export function fitScore(team: Team): FitScoreResult {
         positionAdjustedAthleticismPercentile: null,
         functionalSizePercentile: null,
         additionalRoleCredits: [],
+      championshipArchetypes: [],
+      primaryArchetype: undefined,
+      secondaryArchetype: undefined,
+      archetypeReport: undefined,
+      playoffSuccessPrior: 0,
+      championshipFloor: 0,
+        championshipCeiling: 0,
       },
       notes: ['Starting five is incomplete.'],
     };
@@ -518,13 +536,18 @@ export function fitScore(team: Team): FitScoreResult {
     defensiveRoleCoverage,
     reboundingBalance,
     sizeCoverage,
+    championshipStructure: 0,
   };
+  const championshipStructure = championshipStructureForRoster(starters, profiles, team.roster);
+  components.championshipStructure = championshipStructure.score;
+  notes.push(...championshipStructure.notes);
   const weightedScore =
     components.creationStructure * FIT_WEIGHTS.creationStructure +
       components.spacingCompatibility * FIT_WEIGHTS.spacingCompatibility +
       components.defensiveRoleCoverage * FIT_WEIGHTS.defensiveRoleCoverage +
       components.reboundingBalance * FIT_WEIGHTS.reboundingBalance +
-      components.sizeCoverage * FIT_WEIGHTS.sizeCoverage;
+      components.sizeCoverage * FIT_WEIGHTS.sizeCoverage +
+      components.championshipStructure * FIT_WEIGHTS.championshipStructure;
   // Fit is not fully compensatory: excellent creation/defense cannot make a cramped half-court
   // geometry disappear. The weighted average previously let Spacing compatibility 66 coexist
   // with Fit 78, which overstated how portable the lineup actually was. This bounded bottleneck
@@ -572,6 +595,13 @@ export function fitScore(team: Team): FitScoreResult {
       positionAdjustedAthleticismPercentile,
       functionalSizePercentile,
       additionalRoleCredits,
+      championshipArchetypes: championshipStructure.archetypes,
+      primaryArchetype: championshipStructure.primaryArchetype,
+      secondaryArchetype: championshipStructure.secondaryArchetype,
+      archetypeReport: championshipStructure.archetypeReport,
+      playoffSuccessPrior: championshipStructure.playoffSuccessPrior,
+      championshipFloor: championshipStructure.floor,
+      championshipCeiling: championshipStructure.ceiling,
     },
     notes,
   };

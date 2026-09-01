@@ -22,6 +22,8 @@ import { projectedNetRating } from '../engine/netRatingProjection';
 import { fitScore } from '../engine/fit';
 import { defensiveHuntability } from '../engine/defensiveHuntability';
 import { generateRosterInsights } from '../engine/insights';
+import { explainMatchup } from '../engine/matchupExplanation';
+import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
 import FeedbackToggle, { type FeedbackEntry } from './FeedbackToggle';
 import RotationBuilder from './RotationBuilder';
@@ -707,6 +709,15 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         const isEditingRotation = editingRotationTeamId === team.id;
         const isExpanded = expandedTeamIds.has(team.id);
         const fitDetail = isExpanded ? fitScore(shownTeam) : null;
+        const rsPoProfile = fitDetail ? seasonProfile(breakdown, fitDetail) : null;
+        const bestOpponent = leagueEvalRow ? teamById(leagueEvalRow.bestMatchup.opponentId) : undefined;
+        const worstOpponent = leagueEvalRow ? teamById(leagueEvalRow.worstMatchup.opponentId) : undefined;
+        const bestMatchupExplanation = fitDetail && bestOpponent && leagueEvalRow
+          ? explainMatchup({ own: fitDetail, opponent: fitScore(displayTeam(bestOpponent)), seriesWinProb: leagueEvalRow.bestMatchup.seriesWinProb })[0]
+          : null;
+        const worstMatchupExplanation = fitDetail && worstOpponent && leagueEvalRow
+          ? explainMatchup({ own: fitDetail, opponent: fitScore(displayTeam(worstOpponent)), seriesWinProb: leagueEvalRow.worstMatchup.seriesWinProb })[0]
+          : null;
         const huntability = isExpanded ? defensiveHuntability(shownTeam) : null;
         const totalFga = team.roster.reduce((sum, p) => sum + p.fga, 0);
         // 2026-08-15: Strengths/Concerns text now comes from the deterministic insight engine
@@ -757,6 +768,19 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                     <span>Switchability {fitDetail.inputs.switchability}</span>
                     <span>Rebounding {fitDetail.components.reboundingBalance}</span>
                     <span>Functional size {fitDetail.components.sizeCoverage}</span>
+                    <span>Championship structure {fitDetail.components.championshipStructure}</span>
+                    {fitDetail.inputs.primaryArchetype && (
+                      <span>Roster identity {fitDetail.inputs.primaryArchetype}{fitDetail.inputs.secondaryArchetype ? ` + ${fitDetail.inputs.secondaryArchetype}` : ''}</span>
+                    )}
+                    {fitDetail.inputs.championshipArchetypes.length > 0 && (
+                      <span>Archetypes {fitDetail.inputs.championshipArchetypes.map((entry) => `${entry.archetype} ${entry.share}%`).join(' · ')}</span>
+                    )}
+                    {fitDetail.inputs.archetypeReport && (
+                      <span>Profile: {fitDetail.inputs.archetypeReport.strengths.join(' · ')}. Risk: {fitDetail.inputs.archetypeReport.failureMode}.</span>
+                    )}
+                    {rsPoProfile && (
+                      <span>RS {rsPoProfile.regularSeason} · PO {rsPoProfile.playoffs} · {rsPoProfile.label}. {rsPoProfile.explanation}</span>
+                    )}
                     <span className="fit-v2-shadow-detail">
                       Defense: POA {fitDetail.inputs.guardContainmentProvider ?? '—'} {Math.round(fitDetail.inputs.guardContainment)}
                       {!fitDetail.inputs.guardContainmentConfirmed && ' (inferred)'}
@@ -814,6 +838,8 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                       Worst matchup: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} (
                       {(leagueEvalRow.worstMatchup.seriesWinProb * 100).toFixed(0)}%)
                     </span>
+                    {bestMatchupExplanation && <span className="matchup-explanation">Best why: {bestMatchupExplanation}</span>}
+                    {worstMatchupExplanation && <span className="matchup-explanation">Worst why: {worstMatchupExplanation}</span>}
                   </div>
                 )}
                 {isEditingRotation ? (

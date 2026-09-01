@@ -15,6 +15,10 @@
  */
 import { buildRealTeamSeasons, pearsonR, fitLinearRegression, rSquared, type RealTeamSeason } from './lib/realTeamSeasons';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, SPACING_ARCHETYPES, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../src/data/schema';
+import playoffOutcomes from '../src/data/playoffSeriesOutcomes.json';
+
+type PlayoffOutcome = (typeof playoffOutcomes)[number];
+const playoffByTeamSeason = new Map(playoffOutcomes.map((row) => [`${row.season}|${row.teamCode}`, row]));
 
 interface CompositionRow {
   season: number;
@@ -27,6 +31,10 @@ interface CompositionRow {
   onBallDemandFga: number; // minutes-weighted archetype-weight * player's own FGA
   rimProtectorShare: number;
   perimeterDefenderShare: number;
+  playoffRoundReached?: string;
+  isChampion?: boolean;
+  isFinalist?: boolean;
+  isConferenceFinalist?: boolean;
 }
 
 const ROTATION_MIN_THRESHOLD = 500; // ~half a normal bench role over a season, for spacingCount only
@@ -53,6 +61,7 @@ function toCompositionRow(ts: RealTeamSeason): CompositionRow {
     if (PERIMETER_DEFENDER_ROLES.includes(span.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number])) perimMin += minutes;
   }
 
+  const outcome = playoffByTeamSeason.get(`${ts.season}|${ts.team}`) as PlayoffOutcome | undefined;
   return {
     season: ts.season,
     team: ts.team,
@@ -64,10 +73,16 @@ function toCompositionRow(ts: RealTeamSeason): CompositionRow {
     onBallDemandFga: totalMin > 0 ? onBallFgaSum / totalMin : 0,
     rimProtectorShare: totalMin > 0 ? rimMin / totalMin : 0,
     perimeterDefenderShare: totalMin > 0 ? perimMin / totalMin : 0,
+    playoffRoundReached: outcome?.playoffRoundReached,
+    isChampion: outcome?.isChampion,
+    isFinalist: outcome?.isFinalist,
+    isConferenceFinalist: outcome?.isConferenceFinalist,
   };
 }
 
-const rows = buildRealTeamSeasons().map(toCompositionRow);
+const gameType = process.argv.includes('--playoff') ? 'playoff' : 'regular';
+const rows = buildRealTeamSeasons({ gameType, minGames: gameType === 'playoff' ? 5 : 20 }).map(toCompositionRow);
+console.log(`Game type: ${gameType}`);
 console.log(`Season range: ${Math.min(...rows.map((r) => r.season))}-${Math.max(...rows.map((r) => r.season))}\n`);
 
 function corrReport(label: string, feature: keyof CompositionRow, target: 'realOff' | 'realDef', data: CompositionRow[]) {
@@ -98,6 +113,21 @@ const defChecks = [
   corrReport('perimeter defender share', 'perimeterDefenderShare', 'realDef', rows),
 ];
 for (const c of defChecks) console.log(`${c.label}: r=${c.r.toFixed(3)}`);
+
+if (gameType === 'playoff') {
+  console.log('\n=== Outcome cohorts: composition means (real playoff team-seasons) ===');
+  const cohorts: [string, CompositionRow[]][] = [
+    ['champions', rows.filter((r) => r.isChampion)],
+    ['finalists', rows.filter((r) => r.isFinalist)],
+    ['conference finalists', rows.filter((r) => r.isConferenceFinalist)],
+    ['all playoff teams', rows],
+  ];
+  for (const [label, cohort] of cohorts) {
+    if (!cohort.length) continue;
+    const avg = (key: keyof CompositionRow) => cohort.reduce((sum, row) => sum + Number(row[key] ?? 0), 0) / cohort.length;
+    console.log(`${label} (n=${cohort.length}): OFF ${avg('realOff').toFixed(1)} DEF ${avg('realDef').toFixed(1)} spacing ${(avg('spacingShare') * 100).toFixed(0)}% perim ${(avg('perimeterDefenderShare') * 100).toFixed(0)}% rim ${(avg('rimProtectorShare') * 100).toFixed(0)}%`);
+  }
+}
 
 console.log('\n=== OUT-OF-SAMPLE (season-parity split-half — same bar as trainNetRatingModel.ts) ===');
 const odd = rows.filter((r) => r.season % 2 === 1);

@@ -24,7 +24,9 @@ import type { PlayerSpan } from '../../src/data/schema';
 import { parseSpanLabel } from './rawPlayerData';
 
 const TEAM_ADVANCED_CSV = 'C:\\Users\\Eryks\\Desktop\\team_advanced.csv';
-const PLAYER_ADVANCED_CSV = 'C:\\Users\\Eryks\\AppData\\Local\\Temp\\advanced.csv';
+// The player advanced export is kept beside the team export on the Desktop. Keeping both paths
+// explicit makes the calibration reproducible after the user re-exports the files.
+const PLAYER_ADVANCED_CSV = 'C:\\Users\\Eryks\\Desktop\\advanced.csv';
 
 // --- Generic CSV loader: header-indexed, tolerant of the CRLF trap documented in
 // [[game-advanced-boxscore-exports]] (naive split('\n') glues '\r' onto the last column). ---

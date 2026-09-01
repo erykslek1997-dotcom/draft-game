@@ -44,6 +44,8 @@ const balanced = team('fit-v2-balanced', [
 const crampedResult = fitScore(cramped);
 const balancedResult = fitScore(balanced);
 check(balancedResult.score >= crampedResult.score + 15, 'balanced lineup clearly outranks the cramped control');
+check(balancedResult.components.championshipStructure >= 45, 'balanced lineup receives a meaningful championship-structure score');
+check(balancedResult.inputs.championshipArchetypes.length >= 1, 'FIT exposes at least one evidence-backed roster archetype');
 
 for (const [label, result] of [['cramped', crampedResult], ['balanced', balancedResult]] as const) {
   check(result.version === 'fit-v2', `${label} result carries the expected schema version`);
@@ -56,7 +58,8 @@ for (const [label, result] of [['cramped', crampedResult], ['balanced', balanced
     result.components.spacingCompatibility * FIT_WEIGHTS.spacingCompatibility +
     result.components.defensiveRoleCoverage * FIT_WEIGHTS.defensiveRoleCoverage +
     result.components.reboundingBalance * FIT_WEIGHTS.reboundingBalance +
-    result.components.sizeCoverage * FIT_WEIGHTS.sizeCoverage;
+    result.components.sizeCoverage * FIT_WEIGHTS.sizeCoverage +
+    result.components.championshipStructure * FIT_WEIGHTS.championshipStructure;
   // Fit is not fully compensatory: a bounded spacing bottleneck (see fit.ts) subtracts from the
   // weighted blend before the final score, so "the documented component blend" now means that
   // penalty too, not just the five weighted components.
