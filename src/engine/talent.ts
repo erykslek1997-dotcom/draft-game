@@ -83,6 +83,12 @@ const POSITION_TALENT_CORRECTION: Record<Position, number> = {
   C: 0.96,
 };
 
+/** Players whose TALENT NUMBER always reads with SF's (uncorrected) position correction — see
+ * `positionCorrectionFor`. Named, deliberate, user-requested; not a general rule. */
+const POSITION_CORRECTION_AS_SF: ReadonlySet<string> = new Set(
+  ['Magic Johnson', 'LeBron James'].map(normalizePlayerName),
+);
+
 /**
  * 2026-08-01, explicit user request: Magic Johnson's TAL is computed using SF's position
  * correction factor (1.0, the uncorrected baseline) instead of PG's (0.972) — a small,
@@ -90,9 +96,12 @@ const POSITION_TALENT_CORRECTION: Record<Position, number> = {
  * `talent.ts`'s own PG-vs-SF gap always produced for him. `span.primaryPosition` itself is
  * left completely untouched — he still shows, filters, and drafts as PG everywhere else in the
  * game (eligibility, position badges, roster-slot logic); only the TALENT NUMBER reads as if
- * he were SF. This is the SECOND named-player special case in the whole formula, after Curry's
- * shooting-gravity cap — both exist because the user asked for them directly, not because a
- * general rule produced them; don't extend this pattern to a third player without being asked.
+ * he were SF. Named-player special cases in the formula exist only because the user asked for
+ * them directly (Curry's shooting-gravity cap, this, LeBron in `POSITION_CORRECTION_AS_SF`
+ * above) — never because a general rule produced them; don't extend the pattern unprompted.
+ * 2026-09-02: LeBron added for the same reason — the share-classifier scatters his spans across
+ * PF (Miami small-ball 4) / PG (Lakers) / C, so his point-forward game eats corrections meant
+ * for box-inflated bigs and light-scoring PGs. See `positionCorrectionFor`.
  */
 /**
  * 2026-08-19, user's explicit ask, scoped by two follow-up refinements: (1) "apply it only below
@@ -291,7 +300,15 @@ function centerSpacingBoost(span: PlayerSpan): number {
  * this function's other call site.
  */
 function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number {
-  if (normalizePlayerName(span.playerName) === normalizePlayerName('Magic Johnson')) {
+  // Magic Johnson (see docstring above) + LeBron James: the TALENT NUMBER reads as if SF, no
+  // matter which position the share-classifier tagged the span. `span.primaryPosition` is left
+  // untouched — both still show / filter / draft as their tagged position everywhere else.
+  // 2026-09-02, user: LeBron's Miami spans are classified PF (small-ball 4) and his Lakers spans
+  // PG, so they eat the PF 0.93 / PG 0.972 correction — a haircut calibrated for box-inflated
+  // back-to-the-basket bigs and scoring-light PGs, neither of which a point-forward is. His SF
+  // spans (2003-2012, incl. the 2008-10 statistical peak) are unaffected; this only lifts the
+  // non-SF spans the classifier scattered him across.
+  if (POSITION_CORRECTION_AS_SF.has(normalizePlayerName(span.playerName))) {
     return POSITION_TALENT_CORRECTION.SF;
   }
   const flat = POSITION_TALENT_CORRECTION[span.primaryPosition];
