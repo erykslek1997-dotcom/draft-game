@@ -15,8 +15,9 @@ const GameShell = lazy(() => import('./components/GameShell'));
 const DraftPoolBrowser = lazy(() => import('./components/DraftPoolBrowser'));
 const CapSheet = lazy(() => import('./components/CapSheet'));
 const BestFive = lazy(() => import('./components/BestFive'));
+const CardGallery = lazy(() => import('./components/CardGallery'));
 
-type View = 'intro' | 'game' | 'pool' | 'capsheet' | 'bestfive';
+type View = 'intro' | 'game' | 'pool' | 'capsheet' | 'bestfive' | 'cards';
 type Mode = 'developer' | 'player';
 
 /** Manual override, e.g. `VITE_FORCE_PLAYER_MODE=true npm run dev`, to preview the locked-down
@@ -204,6 +205,9 @@ function App() {
             <button className="secondary-btn" onClick={() => setView('game')}>
               Start Draft
             </button>
+            <button className="secondary-btn" onClick={() => setView('cards')}>
+              Card Collection
+            </button>
             <button className="secondary-btn" onClick={() => setView('pool')}>
               Browse Draft Pool
             </button>
@@ -235,6 +239,12 @@ function App() {
       {view === 'bestfive' && (
         <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
           <BestFive mode={mode} onBack={() => setView('intro')} />
+        </Suspense>
+      )}
+
+      {view === 'cards' && (
+        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
+          <CardGallery mode={mode} onBack={() => setView('intro')} />
         </Suspense>
       )}
     </div>

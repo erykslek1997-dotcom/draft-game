@@ -1,0 +1,375 @@
+/* Card Collection — gallery grid + full player card. Sits inside `.at-shell` (dark board), so
+   surfaces use the `--at-*` tokens. Rarity colours are OWN custom props (not `.rating-*`, which
+   carry prefers-color-scheme variants that misfire under fixed-dark `.at-shell`). */
+
+.card-gallery {
+  max-width: 1040px;
+  margin: 0 auto;
+  /* rarity palette — a single hue per tier, plus an ink for text on a tinted surface */
+  --rarity-legendary: #e0aa5f;
+  --rarity-epic: #c56bd6;
+  --rarity-rare: #5b8fd6;
+  --rarity-uncommon: #46b5a0;
+  --rarity-common: #7f8a99;
+}
+.cg-rarity-legendary {
+  --rarity: var(--rarity-legendary);
+}
+.cg-rarity-epic {
+  --rarity: var(--rarity-epic);
+}
+.cg-rarity-rare {
+  --rarity: var(--rarity-rare);
+}
+.cg-rarity-uncommon {
+  --rarity: var(--rarity-uncommon);
+}
+.cg-rarity-common {
+  --rarity: var(--rarity-common);
+}
+
+.cg-subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 2px 12px;
+}
+.cg-count {
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--at-ink-faint);
+}
+
+/* ---- controls ---- */
+.cg-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+}
+.cg-pos-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cg-sort {
+  font: inherit;
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--at-line);
+  background: var(--at-paper);
+  color: var(--at-ink-soft);
+  margin-left: auto;
+}
+
+/* ---- gallery grid ---- */
+.cg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 10px;
+}
+.cg-mini {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 10px 11px;
+  border: 1px solid var(--at-line);
+  border-top: 3px solid var(--rarity);
+  border-radius: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rarity) 12%, var(--at-paper)), var(--at-paper) 60%);
+  color: var(--at-ink-soft);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s, transform 0.08s;
+}
+.cg-mini:hover {
+  border-color: var(--rarity);
+  transform: translateY(-1px);
+}
+.cg-mini-portrait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--rarity) 70%, #000), color-mix(in srgb, var(--rarity) 30%, #000));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.cg-mini-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--at-ink);
+}
+.cg-mini-sub {
+  display: flex;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--at-ink-faint);
+}
+.cg-mini-as {
+  color: var(--rarity);
+  font-weight: 700;
+}
+.cg-mini-tier {
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--rarity);
+  font-weight: 700;
+}
+
+.cg-footnote {
+  margin: 16px 2px 0;
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--at-ink-faint);
+  line-height: 1.5;
+}
+.cg-missing {
+  color: var(--at-ink-soft);
+}
+
+/* ================= full player card ================= */
+.player-card {
+  --rarity: var(--rarity-common);
+}
+
+.pc-band {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  border: 1px solid color-mix(in srgb, var(--rarity) 45%, var(--at-line));
+  background: linear-gradient(120deg, color-mix(in srgb, var(--rarity) 20%, var(--at-paper)), var(--at-paper) 70%);
+}
+.pc-portrait {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--rarity) 75%, #000), color-mix(in srgb, var(--rarity) 25%, #000));
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+}
+.pc-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--at-ink);
+  line-height: 1.1;
+}
+.pc-meta {
+  font-size: 12.5px;
+  color: var(--at-ink-soft);
+  margin-top: 3px;
+}
+.pc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+}
+.pc-rarity {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--rarity);
+}
+.pc-tier-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rarity) 22%, transparent);
+  color: var(--at-ink);
+}
+.pc-rarity-hint {
+  font-size: 10.5px;
+  color: var(--at-ink-faint);
+}
+
+.pc-bio {
+  font-size: 12.5px;
+  color: var(--at-ink-soft);
+  margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.pc-career {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 12.5px;
+  color: var(--at-ink-soft);
+  font-variant-numeric: tabular-nums;
+  padding: 8px 10px;
+  border: 1px solid var(--at-line);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.pc-career-label {
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+
+/* ---- span blocks ---- */
+.pc-spans {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pc-span {
+  border: 1px solid var(--at-line);
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: var(--at-paper);
+}
+.pc-span--lead {
+  border-color: color-mix(in srgb, var(--rarity) 40%, var(--at-line));
+  background: color-mix(in srgb, var(--rarity) 6%, var(--at-paper));
+}
+.pc-span-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.pc-span-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--at-ink);
+}
+.pc-span-tal {
+  font-size: 12px;
+  color: var(--at-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.pc-span-tal b {
+  font-size: 14px;
+  color: var(--at-ink);
+  margin-right: 3px;
+}
+.pc-why-btn {
+  margin-left: auto;
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--at-line);
+  background: none;
+  color: var(--at-ink-soft);
+  cursor: pointer;
+}
+.pc-why-btn:hover {
+  border-color: var(--at-accent);
+  color: var(--at-ink);
+}
+
+.pc-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-bottom: 8px;
+}
+.pc-metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--at-ink) 5%, transparent);
+  font-size: 11px;
+}
+.pc-metric-label {
+  font-size: 9.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+.pc-metric-val {
+  color: var(--at-ink-soft);
+  font-weight: 600;
+}
+
+.pc-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  font-variant-numeric: tabular-nums;
+}
+.pc-box-cell {
+  display: inline-flex;
+  gap: 4px;
+  align-items: baseline;
+  font-size: 11.5px;
+}
+.pc-box-label {
+  font-size: 9.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+.pc-box-val {
+  color: var(--at-ink-soft);
+}
+
+/* ---- evidence ---- */
+.pc-evidence {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 18px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--at-line);
+}
+@media (max-width: 620px) {
+  .pc-evidence {
+    grid-template-columns: 1fr;
+  }
+}
+.pc-ev-col h5 {
+  margin: 0 0 5px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+.pc-ev-col ul {
+  margin: 0;
+  padding-left: 16px;
+}
+.pc-ev-col li {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--at-ink-soft);
+  margin-bottom: 4px;
+}
+
+.pc-devnote {
+  margin: 14px 0 0;
+  font-size: 10.5px;
+  color: var(--at-ink-faint);
+  font-style: italic;
+}
