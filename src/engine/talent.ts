@@ -1608,6 +1608,12 @@ function lukaMvpTierCeiling(span: PlayerSpan): number {
  * after the soft-cap and grade ceiling, re-clamped to [0, 100]. NONE of these spans appear in
  * `TAYLOR_TOP10` or `BACKPICKS_GOAT_2022`, so the external Spearman anchors are provably
  * unaffected (both rank only the players on those lists, among themselves).
+ *
+ * 2026-09-02, same batch: Jalen Williams 2023-25 (-4, 87 -> 83). User: "J-Dub 87 przy Butlerze
+ * 86 i Pierce 86... realnie powinien mieć 83-84." Same synergy-max root cause, made worse here
+ * by an unusually large `darkoDefenseBonus` (+9, near the ceiling) stacking on the +7 synergy —
+ * 16 points of two-way credit for a third-year wing, plausibly team-context-inflated (OKC's #1
+ * defense). -4 puts a clean gap below the Butler/Pierce peak-All-NBA band the user cited.
  */
 const NAMED_TAL_PENALTY: ReadonlyMap<string, number> = new Map(
   [
@@ -1618,6 +1624,7 @@ const NAMED_TAL_PENALTY: ReadonlyMap<string, number> = new Map(
     { name: 'Anthony Davis', spanLabel: '2017-19', penalty: 3 },
     { name: 'Anthony Davis', spanLabel: '2018-20', penalty: 3 },
     { name: 'Anthony Davis', spanLabel: '2019-21', penalty: 3 },
+    { name: 'Jalen Williams', spanLabel: '2023-25', penalty: 4 },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.penalty]),
 );
 
