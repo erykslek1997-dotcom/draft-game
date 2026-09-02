@@ -479,6 +479,34 @@ function namedTierDowncap(playerName?: string, spanLabel?: string): OverallTier 
 }
 
 /**
+ * 2026-09-02, user batch feedback ("Tatum 84, powinien być 87"): the span the browse-list header
+ * shows for Tatum is 2020-22 at eff 84, but his real peak — 2021-23 (the 2022 Finals run,
+ * All-NBA 1st) — has raw `computeTalent` 96 that `tierCaps`' SF "needs an A-tier grade on at
+ * least one side for MVP+" rule (his own grades are B+ offense / B- defense) folds to All-NBA,
+ * and `applyGradeCeiling` then compresses 96 hard against All-NBA's 87 ceiling down to 83. Every
+ * other tool over/under-shoots: a `NAMED_TIER_RAISES` -> MVP lands him at 90 (`applyGradeCeiling`
+ * to the MVP ceiling), a `talent.ts` `NAMED_TAL_PENALTY`-style raw bump does nothing (the tier
+ * cap re-compresses it), and relaxing the SF cap itself moves a validated wing population.
+ *
+ * `NAMED_DISPLAY_TAL` sets the final displayed/effective number directly for a named span,
+ * post-everything — the last resort when the span's raw is fine, its badge is fine, but the
+ * cap + `applyGradeCeiling` interaction produces a number the user disagrees with. Tatum 2021-23
+ * -> 87 (top of the All-NBA band, so badge and number stay consistent). Does not touch
+ * `computeTalent` (raw stays 96) or `overallTierForSpan` (badge stays All-NBA); flows to
+ * `effectiveTalent` and thus gameplay. Not in TAYLOR_TOP10 / GOAT-40 — anchors unaffected.
+ */
+const NAMED_DISPLAY_TAL: ReadonlyMap<string, number> = new Map(
+  [{ name: 'Jayson Tatum', spanLabel: '2021-23', tal: 87 }].map(
+    (e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tal] as const,
+  ),
+);
+
+function namedDisplayTal(playerName?: string, spanLabel?: string): number | undefined {
+  if (!playerName || !spanLabel) return undefined;
+  return NAMED_DISPLAY_TAL.get(`${normalizePlayerName(playerName)}|${spanLabel}`);
+}
+
+/**
  * 2026-08-19, user's explicit ask ("make klay all-nba"), direct follow-up on the off-ball-
  * archetype usage-penalty fix (talent.ts) shipped the same day. That fix genuinely raised Klay
  * Thompson's raw TAL (his best span, 2015-17, went from a penalized number up to a real 78) — but
@@ -1131,6 +1159,8 @@ function tierFloor(tier: OverallTier): number {
 const PLAYOFF_VALIDATED_ALL_NBA_TAL_FLOOR = 82;
 
 export function displayTalentForSpan(ctx: TierGateContext): number {
+  const override = namedDisplayTal(ctx.playerName, ctx.spanLabel);
+  if (override !== undefined) return override;
   const cappedTier = overallTierForSpan(ctx);
   const raw = Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
   // Only when a deliberate raise (a `NAMED_TIER_RAISES` entry, or the sustained real-value floor)
