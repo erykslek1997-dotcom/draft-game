@@ -1589,6 +1589,42 @@ function lukaMvpTierCeiling(span: PlayerSpan): number {
   return PG_MVP_TIER_CAP;
 }
 
+/**
+ * 2026-09-02, user batch feedback: SGA 2024-26, Kawhi 2015-17/2018-20/2019-21 and Anthony Davis
+ * 2017-19/2018-20/2019-21 each read "~3 TAL za dużo" — a genuine top-of-scale judgment call, not
+ * a mechanism bug (measured at length, `scripts/_diagSynergy.ts`/`_diagOvershoot.ts`): they max
+ * the two-way synergy bonus alongside every real GOAT, and nothing mechanical separates e.g.
+ * Anthony Davis 2017-19 from Kevin Garnett 2002-04 (syn 7, darkoD ~6, O-TAL 82-83, D-TAL 96 —
+ * near-identical) except the eye test the user is applying. The two tools that could otherwise
+ * reach this — a `MAX_TWO_WAY_SYNERGY_BONUS` trim and a `NAMED_TIER_DOWNCAPS` entry — both fail
+ * here specifically: the synergy trim costs GOAT-40 for near-zero movement (the 95-100 soft-cap
+ * absorbs it), and a downcap to MVP over-corrects to ~90 (`applyGradeCeiling` compresses hard and
+ * there is no tier between MVP's 93 ceiling and Greatest peak's 94 floor).
+ *
+ * So this is a small, flat, post-everything subtraction on exactly the named spans — the same
+ * "named single-span exception, the user explicitly wants a specific outcome and no clean general
+ * rule reaches it" footing as `NAMED_TIER_DOWNCAPS`/`NAMED_TIER_RAISES`/`GOAT_NAMES`, just on the
+ * number rather than the badge. Applied identically in every `compute*Talent` entry point below,
+ * after the soft-cap and grade ceiling, re-clamped to [0, 100]. NONE of these spans appear in
+ * `TAYLOR_TOP10` or `BACKPICKS_GOAT_2022`, so the external Spearman anchors are provably
+ * unaffected (both rank only the players on those lists, among themselves).
+ */
+const NAMED_TAL_PENALTY: ReadonlyMap<string, number> = new Map(
+  [
+    { name: 'Shai Gilgeous-Alexander', spanLabel: '2024-26', penalty: 3 },
+    { name: 'Kawhi Leonard', spanLabel: '2015-17', penalty: 3 },
+    { name: 'Kawhi Leonard', spanLabel: '2018-20', penalty: 3 },
+    { name: 'Kawhi Leonard', spanLabel: '2019-21', penalty: 3 },
+    { name: 'Anthony Davis', spanLabel: '2017-19', penalty: 3 },
+    { name: 'Anthony Davis', spanLabel: '2018-20', penalty: 3 },
+    { name: 'Anthony Davis', spanLabel: '2019-21', penalty: 3 },
+  ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.penalty]),
+);
+
+function namedTalPenalty(span: PlayerSpan): number {
+  return NAMED_TAL_PENALTY.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0;
+}
+
 export function computeTalent(span: PlayerSpan): number {
   const cached = talentCache.get(span.id);
   if (cached !== undefined) return cached;
@@ -1607,7 +1643,7 @@ export function computeTalent(span: PlayerSpan): number {
   // outside the two-pass gate it would otherwise be able to move (see `dtalBridgeCorrection`).
   const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span));
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
-  const result = Math.round(applyGradeCeiling(finalTal, ceiling));
+  const result = Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
   talentCache.set(span.id, result);
   return result;
 }
@@ -1634,7 +1670,7 @@ export function computeTalentWithoutEliteDefenseBonus(span: PlayerSpan): number 
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
   const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span), false);
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
-  return Math.round(applyGradeCeiling(finalTal, ceiling));
+  return Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
 }
 
 /**
@@ -1659,7 +1695,7 @@ export function computeTalentWithoutBridge(span: PlayerSpan): number {
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
   const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span));
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled))));
-  return Math.round(applyGradeCeiling(finalTal, ceiling));
+  return Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
 }
 
 /**
