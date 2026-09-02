@@ -89,11 +89,18 @@ const HEADLINER_PER_SLOT = 1;
  * weighted the OTHER way — toward players the casual fan has heard LESS of — so the puzzle is
  * about which role players fit, not which superstar to grab. */
 const BODY_BUCKET = 42;
-/** Hard cap: at most this many multi-time All-Stars (6+ selections) among the 8 body picks, so a
+/** Hard cap: at most this many multi-time All-Stars (5+ selections) among the 8 body picks, so a
  * board is at most 1 headliner + 2 stars per slot no matter how the weighted draw lands — the
  * weights alone can't guarantee it because the top of a position is inherently decorated. */
 const BODY_STAR_CAP = 2;
-const BODY_STAR_AS = 6;
+const BODY_STAR_AS = 5;
+/** Board-wide budget for genuine all-time greats (8+ All-Stars — roughly "a casual fan names this
+ * an all-time great"). The per-slot caps above still let 5 mega-headliners land on one board by
+ * RNG; this guarantees at least one slot where the best option is merely a good starter, so a
+ * lineup of five inner-circle legends is never buildable. Slot order for spending the budget is
+ * seed-shuffled so it isn't always PG/SG that get the greats. */
+const GREAT_AS = 8;
+const GREATS_PER_BOARD = 4;
 
 export interface DailyPool {
   key: string;
@@ -121,26 +128,36 @@ export function dailyPool(key: string = dayKey()): DailyPool {
   const buckets: Record<Position, PlayerSpan[]> = { PG: [], SG: [], SF: [], PF: [], C: [] };
   for (const span of best.values()) buckets[span.primaryPosition].push(span);
 
+  const isGreat = (s: PlayerSpan) => allStarCount(s.playerName) >= GREAT_AS;
+  let boardGreats = 0;
+
   const bySlot = {} as Record<Position, PlayerSpan[]>;
-  for (const slot of STARTER_SLOTS) {
+  // Spend the board-wide greats budget in a seed-shuffled slot order, but render PG..C.
+  for (const slot of weightedShuffle(STARTER_SLOTS.slice(), rng, () => 1)) {
     const ranked = buckets[slot].slice().sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
 
     const chosen: PlayerSpan[] = [];
     const taken = new Set<string>();
-    // 1 headliner: a recognisable star from the very top of the position.
+    // 1 headliner: a recognisable star from the very top of the position — unless the board's
+    // greats budget is spent, in which case the top all-time greats are skipped and the headliner
+    // is the most recognisable merely-good starter.
     for (const s of weightedShuffle(ranked.slice(0, HEADLINER_BUCKET), rng, recognisability)) {
       if (chosen.length >= HEADLINER_PER_SLOT) break;
+      if (isGreat(s) && boardGreats >= GREATS_PER_BOARD) continue;
+      if (isGreat(s)) boardGreats++;
       chosen.push(s);
       taken.add(s.playerName);
     }
     // 8 body: legitimate starters from the top of the position, weighted toward LESS-decorated
-    // names, with a hard cap on multi-time All-Stars so the board isn't a lineup of all-time greats.
+    // names, with a per-slot cap on multi-time All-Stars AND the board-wide greats budget.
     const body = ranked.slice(0, BODY_BUCKET).filter((s) => !taken.has(s.playerName));
     let bodyStars = 0;
     for (const s of weightedShuffle(body, rng, obscurity)) {
       if (chosen.length >= POOL_PER_SLOT) break;
+      if (isGreat(s) && boardGreats >= GREATS_PER_BOARD) continue;
       const isStar = allStarCount(s.playerName) >= BODY_STAR_AS;
       if (isStar && bodyStars >= BODY_STAR_CAP) continue;
+      if (isGreat(s)) boardGreats++;
       if (isStar) bodyStars++;
       chosen.push(s);
     }
