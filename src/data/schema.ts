@@ -21,6 +21,7 @@ export type DefensiveRole =
   | 'Wing Stopper'
   | 'Mobile Big'
   | 'Anchor Big'
+  | 'Post Defender'
   | 'Low Activity';
 
 export interface BoxLine {

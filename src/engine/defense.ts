@@ -13,6 +13,7 @@ const DEFENSIVE_ROLE_BASE_WEIGHT: Record<DefensiveRole, number> = {
   'Wing Stopper': 7,
   Helper: 6,
   'Mobile Big': 6,
+  'Post Defender': 7,
   Chaser: 4,
   'Low Activity': 0,
 };
@@ -26,6 +27,7 @@ const DEFENSIVE_ROLE_TYPICAL_ACTIVITY: Record<DefensiveRole, number> = {
   'Wing Stopper': 10.2,
   Helper: 5.3,
   'Mobile Big': 7.3,
+  'Post Defender': 9,
   Chaser: 7.4,
   'Low Activity': 1, // unused — base weight is 0
 };

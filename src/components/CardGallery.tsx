@@ -3,6 +3,7 @@ import './CardGallery.css';
 import type { Position } from '../data/schema';
 import { POSITIONS } from '../data/schema';
 import type { BoxLine } from '../data/schema';
+import { headshotUrl } from '../data/headshots';
 import {
   galleryEntries,
   buildPlayerCard,
@@ -20,14 +21,30 @@ interface Props {
 }
 
 type Sort = 'rarity' | 'name' | 'allstar';
+const PAGE_SIZE = 96;
 
 function initials(name: string): string {
   const parts = name.split(/\s+/).filter(Boolean);
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
 }
 
+function PlayerHeadshot({ name, eager = false }: { name: string; eager?: boolean }) {
+  const src = headshotUrl(name);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  if (!src || failedSrc === src) return <>{initials(name)}</>;
+  return (
+    <img
+      src={src}
+      alt=""
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      onError={() => setFailedSrc(src)}
+    />
+  );
+}
+
 /**
- * "Card Collection" — a browsable gallery of one card per player (~730), and a full card view
+ * "Card Collection" — a browsable gallery of one card per draftable two-year span, and a full card view
  * showing the complete per-span breakdown the game hides in player mode. Cosmetic only for now;
  * real acquisition (daily draw, game-win rewards, per-account persistence) needs a backend.
  * Standalone screen off the intro (same footing as CapSheet / DraftPoolBrowser).
@@ -36,10 +53,11 @@ export default function CardGallery({ mode, onBack }: Props) {
   const dev = mode === 'developer';
   const entries = useMemo(() => galleryEntries(), []);
 
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<{ name: string; spanId: string } | null>(null);
   const [search, setSearch] = useState('');
   const [pos, setPos] = useState<Position | 'ALL'>('ALL');
   const [sort, setSort] = useState<Sort>('rarity');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -51,14 +69,18 @@ export default function CardGallery({ mode, onBack }: Props) {
     return list; // 'rarity' — entries already come rarity-sorted
   }, [entries, search, pos, sort]);
 
-  const card = useMemo(() => (selected ? buildPlayerCard(selected) : null), [selected]);
+  const visible = shown.slice(0, visibleCount);
+  const card = useMemo(
+    () => (selected ? buildPlayerCard(selected.name, selected.spanId) : null),
+    [selected],
+  );
 
   return (
     <div className="at-shell card-gallery">
       <div className="at-board-brand at-cond">Card Collection</div>
       <div className="cg-subhead">
         <span className="cg-count">
-          {selected ? '' : `${shown.length} of ${entries.length} cards`}
+          {selected ? '' : `${visible.length} of ${shown.length} matching · ${entries.length} total cards`}
         </span>
         <button className="at-legend-toggle at-cond" onClick={selected ? () => setSelected(null) : onBack}>
           {selected ? '← All cards' : '← Back'}
@@ -72,12 +94,12 @@ export default function CardGallery({ mode, onBack }: Props) {
               className="at-search-input"
               placeholder="Search players…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setVisibleCount(PAGE_SIZE); }}
             />
             <div className="cg-pos-pills">
               <button
                 className={`at-filter-pill at-cond ${pos === 'ALL' ? 'at-active' : ''}`}
-                onClick={() => setPos('ALL')}
+                onClick={() => { setPos('ALL'); setVisibleCount(PAGE_SIZE); }}
               >
                 All
               </button>
@@ -85,13 +107,13 @@ export default function CardGallery({ mode, onBack }: Props) {
                 <button
                   key={p}
                   className={`at-filter-pill at-cond ${pos === p ? 'at-active' : ''}`}
-                  onClick={() => setPos(p)}
+                  onClick={() => { setPos(p); setVisibleCount(PAGE_SIZE); }}
                 >
                   {p}
                 </button>
               ))}
             </div>
-            <select className="cg-sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+            <select className="cg-sort" value={sort} onChange={(e) => { setSort(e.target.value as Sort); setVisibleCount(PAGE_SIZE); }}>
               <option value="rarity">Sort: rarity</option>
               <option value="name">Sort: name</option>
               <option value="allstar">Sort: All-Star count</option>
@@ -99,14 +121,20 @@ export default function CardGallery({ mode, onBack }: Props) {
           </div>
 
           <div className="cg-grid">
-            {shown.map((e) => (
-              <MiniCard key={e.name} entry={e} onOpen={() => setSelected(e.name)} />
+            {visible.map((e) => (
+              <MiniCard key={e.id} entry={e} onOpen={() => setSelected({ name: e.name, spanId: e.id })} />
             ))}
           </div>
 
+          {visible.length < shown.length && (
+            <button className="cg-load-more at-cond" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>
+              Load {Math.min(PAGE_SIZE, shown.length - visible.length)} more
+            </button>
+          )}
+
           <p className="cg-footnote">
-            One card per player. Collections, packs and daily draws land with accounts — for now
-            every card is here to browse.
+            One card per draftable two-year span. Collections, packs and daily draws land with accounts —
+            for now every span is here to browse.
           </p>
         </div>
       )}
@@ -116,23 +144,56 @@ export default function CardGallery({ mode, onBack }: Props) {
           <PlayerCard data={card} dev={dev} />
         </div>
       )}
-      {selected && !card && <div className="at-card cg-missing">No card for “{selected}”.</div>}
+      {selected && !card && <div className="at-card cg-missing">No card for “{selected.name}”.</div>}
     </div>
   );
 }
 
 function MiniCard({ entry, onOpen }: { entry: GalleryEntry; onOpen: () => void }) {
+  const stats = [
+    ['PTS', entry.box.ppg.toFixed(1)],
+    ['REB', entry.box.rpg.toFixed(1)],
+    ['AST', entry.box.apg.toFixed(1)],
+    ['STL', entry.box.spg.toFixed(1)],
+    ['BLK', entry.box.bpg.toFixed(1)],
+    ['3P', `${Math.round(entry.box.threePct * 100)}%`],
+  ];
   return (
     <button className={`cg-mini cg-rarity-${entry.rarity}`} onClick={onOpen}>
-      <span className="cg-mini-portrait" aria-hidden>
-        {initials(entry.name)}
+      <span className="cg-mini-topline">
+        <span className="cg-mini-kicker">{RARITY_LABEL[entry.rarity]} · All-Time</span>
+        <span className="cg-mini-career">{entry.careerYears}</span>
+      </span>
+      <span className="cg-mini-hero">
+        <span className="cg-mini-rating">
+          <strong>{entry.tal}</strong>
+          <span className="cg-mini-position">{entry.naturalPos}</span>
+        </span>
+        <span className="cg-mini-portrait" aria-hidden>
+          <PlayerHeadshot name={entry.name} />
+        </span>
       </span>
       <span className="cg-mini-name">{entry.name}</span>
-      <span className="cg-mini-sub">
-        <span className="cg-mini-pos">{entry.naturalPos}</span>
-        {entry.allStar > 0 && <span className="cg-mini-as">{entry.allStar}× AS</span>}
+      <span className="cg-mini-teams">{entry.teams || 'NBA'}</span>
+      <span className="cg-mini-accolades">
+        {entry.accolades.length > 0 ? entry.accolades.map((accolade) => (
+          <span key={accolade.title} className="cg-mini-accolade" title={accolade.title}>
+            <span className="cg-mini-accolade-icon">{accolade.icon}</span>
+            {accolade.label}
+          </span>
+        )) : <span className="cg-mini-no-accolades">No major accolades</span>}
       </span>
-      <span className="cg-mini-tier">{entry.bestTier}</span>
+      <span className="cg-mini-stats">
+        {stats.map(([label, value]) => (
+          <span key={label} className="cg-mini-stat">
+            <strong>{value}</strong> {label}
+          </span>
+        ))}
+      </span>
+      <span className="cg-mini-footer">
+        <span className="cg-mini-tier">{entry.bestTier}</span>
+        <span className="cg-mini-open">Profile&nbsp; →</span>
+      </span>
     </button>
   );
 }
@@ -158,7 +219,7 @@ function PlayerCard({ data, dev }: { data: PlayerCardData; dev: boolean }) {
     <div className={`player-card cg-rarity-${data.rarity}`}>
       <div className="pc-band">
         <span className="pc-portrait" aria-hidden>
-          {initials(data.name)}
+          <PlayerHeadshot name={data.name} eager />
         </span>
         <div className="pc-headline">
           <div className="pc-name">{data.name}</div>

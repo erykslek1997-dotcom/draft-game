@@ -5,13 +5,14 @@
 // ~14,000 entries; the pool is ~300 players' worth).
 import type { PlayerSpan } from './schema';
 import data from './draftPool.json';
+import { auditedPrimaryDefensiveRole, buildRoleFitContext } from '../engine/roleFitShadow';
 
 // The JSON is a precomputed build artifact, but position corrections in players.ts must also be
 // visible immediately without reselecting the entire talent-sensitive pool (a full rebuild churns
 // ~1,000 borderline value-tier spans on unrelated accumulated formula drift). These tiny runtime
 // parity adjustments mirror what `players.ts`'s `POSITION_OVERRIDES` / `SECONDARY_POSITION_
 // ADDITIONS` already do to the full archive; the next intentional pool rebuild bakes them into JSON.
-export const draftPool: PlayerSpan[] = (data as PlayerSpan[]).map((span) => {
+function applyRuntimeParity(span: PlayerSpan): PlayerSpan {
   // Olynyk — real C/PF, only his PF eligibility changed.
   if (span.playerName === 'Kelly Olynyk' && span.primaryPosition !== 'PF' && !span.secondaryPositions.includes('PF')) {
     return { ...span, secondaryPositions: [...span.secondaryPositions, 'PF'] };
@@ -29,4 +30,14 @@ export const draftPool: PlayerSpan[] = (data as PlayerSpan[]).map((span) => {
     return { ...span, primaryPosition: 'PF', secondaryPositions: ['C'] };
   }
   return span;
-});
+}
+
+const positionCorrectedPool = (data as PlayerSpan[]).map(applyRuntimeParity);
+const defensiveRoleAuditContext = buildRoleFitContext(positionCorrectedPool);
+
+/** Legacy Anchor/Mobile tags are replaced at load time by the audited physical/statistical
+ * primary role. The full multi-role profile is still calculated separately by FIT. */
+export const draftPool: PlayerSpan[] = positionCorrectedPool.map((span) => ({
+  ...span,
+  defensiveRole: auditedPrimaryDefensiveRole(span, defensiveRoleAuditContext),
+}));

@@ -124,17 +124,20 @@ function sourceFiles(root: string): string[] {
 }
 
 const roleModule = path.resolve('src/engine/roleFitShadow.ts');
-// 2026-08-19: FIT v2 promoted to the official `fitScore` (user's explicit ask) — the file that
-// bridges into this role scorer is now `fit.ts`, not `fitV2Shadow.ts`. Same guard, same intent
-// ("only the fit score module imports the underlying role scorer"), updated path only.
-const allowedConsumer = path.resolve('src/engine/fit.ts');
+// The audited role model is now intentionally promoted beyond FIT: both runtime player sources
+// resolve legacy primary big tags through it before gameplay consumes them.
+const allowedConsumers = new Set([
+  path.resolve('src/engine/fit.ts'),
+  path.resolve('src/data/players.ts'),
+  path.resolve('src/data/draftPool.ts'),
+]);
 const runtimeImports = sourceFiles(path.resolve('src'))
   .filter((file) => path.resolve(file) !== roleModule)
   .filter((file) => fs.readFileSync(file, 'utf8').includes('roleFitShadow'));
-const unexpectedRuntimeImports = runtimeImports.filter((file) => path.resolve(file) !== allowedConsumer);
+const unexpectedRuntimeImports = runtimeImports.filter((file) => !allowedConsumers.has(path.resolve(file)));
 check(
-  unexpectedRuntimeImports.length === 0 && runtimeImports.some((file) => path.resolve(file) === allowedConsumer),
-  `only fit.ts imports the role scorer (${runtimeImports.join(', ') || 'none'})`,
+  unexpectedRuntimeImports.length === 0 && [...allowedConsumers].every((consumer) => runtimeImports.some((file) => path.resolve(file) === consumer)),
+  `only the promoted role-model consumers import the scorer (${runtimeImports.join(', ') || 'none'})`,
 );
 
 console.log('Role-fit shadow tests complete.');

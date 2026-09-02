@@ -4,11 +4,6 @@ import { benchDepthScore, rotationScore, scoreTeam, spacingScore } from '../src/
 // 2026-08-19: FIT v2 promoted to the official `fitScore` (user's explicit ask) — it lives in
 // `fit.ts` now, not `scoring.ts` (which only imports it internally for `scoreTeam`).
 import { fitScore } from '../src/engine/fit';
-// 2026-08-19: switched to `effectiveTalent` (grades.ts) — `benchDepthScore` itself now reads
-// this, not raw `computeTalent`; this fixture's own recomputation needs to match or the two
-// silently drift apart the moment any capped span (e.g. a PG hitting the new archetype rule)
-// enters the roster, which is exactly what broke this check (Jim Les).
-import { effectiveTalent } from '../src/engine/grades';
 import type { PlayerSpan } from '../src/data/schema';
 import type { Team } from '../src/engine/types';
 
@@ -101,12 +96,17 @@ const strongComplementaryBench = team('strong-complementary-bench', [
   pick('Jim Les', '1990-92'),
   pick('Amir Johnson', '2012-14'),
 ]);
-const depthTals = strongComplementaryBench.roster.map(effectiveTalent).sort((a, b) => b - a).slice(5);
-const rawDepthAverage = depthTals.reduce((sum, value) => sum + value, 0) / depthTals.length;
-// 2026-08-31: `benchDepthScore`'s measured display range is now 35..72. The former 63 ceiling
-// made an ordinary Price/Bonner-level reserve group read as a perfect 100.
-const expectedDepth = Math.round(Math.max(0, Math.min(100, ((rawDepthAverage - 35) / 37) * 100)));
-assert(benchDepthScore(strongComplementaryBench) === expectedDepth, 'Bench Depth maps the raw reserve average onto its achievable 0-100 range');
-assert(benchDepthScore(strongComplementaryBench) >= 60, 'a useful but non-elite complementary bench remains above average without approaching 100');
+const activeDepth = benchDepthScore(strongComplementaryBench);
+assert(activeDepth >= 55 && activeDepth <= 90, 'a useful complementary bench grades strongly without reading as perfect');
+const unusedNinthMan = pick('Michael Ruffin', '2004-06');
+const withUnusedNinthMan: Team = {
+  ...strongComplementaryBench,
+  id: 'strong-complementary-bench-with-dnp',
+  roster: [...strongComplementaryBench.roster, unusedNinthMan],
+};
+assert(
+  benchDepthScore(withUnusedNinthMan) === activeDepth,
+  'a ninth player with zero assigned minutes does not lower active Bench Depth',
+);
 assert(spacingScore(strongComplementaryBench) >= 80, 'a credible four-shooter construction can reach an 80+ spacing score');
 console.log('Scoring-logic tests complete.');

@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { POSITIONS, normalizePlayerName } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { spanEndYears } from './era';
 import {
@@ -29,6 +29,8 @@ import { buildEvidenceReport, type EvidenceReport } from './evidenceReport';
 import { careerAveragesFor, type CareerAverageRow } from './careerAverages';
 import { naturalPosition } from './naturalPosition';
 import { allStarCount } from './allStarLookup';
+import { accoladesForSpan, featuredAccoladesFor, type AccoladeBadge } from './accoladesLookup';
+import cardCareerMetadataData from '../data/cardCareerMetadata.json';
 import { getHeightInches, getBodyWeightLbs } from '../data/heightLookup';
 import { athleticismScoreForSpan } from './athleticismLookup';
 
@@ -155,12 +157,6 @@ function leadSpan(name: string, spans: PlayerSpan[]): PlayerSpan {
   return (wanted && spans.find((s) => s.spanLabel === wanted)) || bestSpan(spans);
 }
 
-function careerPosition(spans: PlayerSpan[]): Position {
-  const counts = new Map<Position, number>();
-  for (const s of spans) counts.set(s.primaryPosition, (counts.get(s.primaryPosition) ?? 0) + 1);
-  return POSITIONS.reduce((best, p) => ((counts.get(p) ?? 0) > (counts.get(best) ?? 0) ? p : best), POSITIONS[0]);
-}
-
 function spanRange(spans: PlayerSpan[]): string {
   const start = parseInt(spans[0].spanLabel.slice(0, 4), 10);
   const endYears = spanEndYears(spans[spans.length - 1].spanLabel);
@@ -171,31 +167,78 @@ function spanRange(spans: PlayerSpan[]): string {
 // --- gallery grid (cheap — no per-span metric/evidence work) ---------------
 
 export interface GalleryEntry {
+  id: string;
   name: string;
   naturalPos: string;
   careerPos: Position;
   bestTier: OverallTier;
   rarity: Rarity;
   allStar: number;
+  careerYears: string;
+  teams: string;
+  accolades: AccoladeBadge[];
+  tal: number | string;
+  box: Pick<PlayerSpan['box'], 'ppg' | 'rpg' | 'apg' | 'spg' | 'bpg' | 'threePct'>;
+}
+
+interface CardCareerSeason {
+  seasonEnd: number;
+  team: string;
+  champion: boolean;
+}
+
+const cardCareerMetadata = cardCareerMetadataData as Record<string, {
+  teams: string[];
+  championships: number;
+  seasons: CardCareerSeason[];
+}>;
+
+function compactTeams(teams: string[]): string {
+  if (teams.length <= 4) return teams.join(' · ');
+  return `${teams.slice(0, 3).join(' · ')} · +${teams.length - 3}`;
 }
 
 let galleryCache: GalleryEntry[] | null = null;
 export function galleryEntries(): GalleryEntry[] {
   if (galleryCache) return galleryCache;
   galleryCache = playerGroups()
-    .map((g) => {
-      const bs = bestSpan(g.spans);
-      const bestTier = overallTierForSpan(tierContextWithSixthMan(bs));
+    .flatMap((g) => g.spans.map((span) => {
+      const ctx = tierContextWithSixthMan(span);
+      const tier = overallTierForSpan(ctx);
+      const career = cardCareerMetadata[g.name] ?? { teams: [], championships: 0, seasons: [] };
+      const coveredYears = new Set(spanEndYears(span.spanLabel));
+      const spanSeasons = career.seasons.filter((season) => coveredYears.has(season.seasonEnd));
+      const teams = [...new Set(spanSeasons.map((season) => season.team))];
+      const championships = new Set(
+        spanSeasons.filter((season) => season.champion).map((season) => season.seasonEnd),
+      ).size;
+      const spanAccolades = accoladesForSpan(g.name, span.spanLabel);
       return {
+        id: span.id,
         name: g.name,
-        naturalPos: naturalPosition(g.name),
-        careerPos: careerPosition(g.spans),
-        bestTier,
-        rarity: rarityForTier(bestTier),
-        allStar: allStarCount(g.name),
+        naturalPos: [span.primaryPosition, ...span.secondaryPositions.slice(0, 1)].join('/'),
+        careerPos: span.primaryPosition,
+        bestTier: tier,
+        rarity: rarityForTier(tier),
+        allStar: spanAccolades.allStar,
+        careerYears: span.spanLabel.replace('-', '–'),
+        teams: compactTeams(teams),
+        accolades: featuredAccoladesFor(g.name, championships, span.spanLabel),
+        tal: displayNumberForSpan(span, ctx),
+        box: {
+          ppg: span.box.ppg,
+          rpg: span.box.rpg,
+          apg: span.box.apg,
+          spg: span.box.spg,
+          bpg: span.box.bpg,
+          threePct: span.box.threePct,
+        },
       };
-    })
-    .sort((a, b) => tierRank(b.bestTier) - tierRank(a.bestTier) || b.allStar - a.allStar || a.name.localeCompare(b.name));
+    }))
+    .sort((a, b) => tierRank(b.bestTier) - tierRank(a.bestTier)
+      || b.allStar - a.allStar
+      || a.name.localeCompare(b.name)
+      || b.careerYears.localeCompare(a.careerYears));
   return galleryCache;
 }
 
@@ -254,14 +297,16 @@ function cardSpanRow(span: PlayerSpan): CardSpanRow {
   };
 }
 
-export function buildPlayerCard(name: string): PlayerCardData | null {
+export function buildPlayerCard(name: string, preferredSpanId?: string): PlayerCardData | null {
   const group = playerGroups().find((g) => g.name === name);
   if (!group) return null;
-  const bs = bestSpan(group.spans);
+  const bs = preferredSpanId
+    ? group.spans.find((span) => span.id === preferredSpanId) ?? bestSpan(group.spans)
+    : bestSpan(group.spans);
   const bestTier = overallTierForSpan(tierContextWithSixthMan(bs));
   // Rarity / best tier / athleticism stay on the engine's real peak (`bs`); only the row the card
   // opens on can be moved by `NAMED_LEAD_SPAN` (see its docstring).
-  const lead = leadSpan(name, group.spans);
+  const lead = preferredSpanId ? bs : leadSpan(name, group.spans);
   return {
     name,
     naturalPos: naturalPosition(name),

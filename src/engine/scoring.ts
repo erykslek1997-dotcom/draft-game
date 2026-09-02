@@ -229,30 +229,54 @@ export function talentScore(team: Team): number {
  * else in `overall` measures bench TALENT specifically either — `rotationScore` only checks
  * whether minutes are deployed sensibly, not whether the players receiving them are any good.
  *
- * The natural complement of `talentScore`'s own metric: unweighted average TAL of the roster's
- * BOTTOM `ROSTER_SIZE - TOP_CORE_SIZE` players (4 on a 9-man roster) — same shape, same units, so
- * it composes cleanly with `talentScore` in `overall` without inventing a new scale to calibrate.
- * Deliberately not a "gap vs. the top 5" metric — a team can have a real gap between an elite core
- * and an ordinary-but-respectable bench without that being a mistake; what the user's example
- * actually showed was a bench that was bad in absolute terms (much of it well under Role Player
- * territory), which an absolute floor measures directly and a relative-gap metric could still miss
- * (a mediocre top-5 could "pass" a gap check with an equally mediocre bench).
+ * Redefined after the user spotted that the ninth player at 0 minutes lowered the score while the
+ * actual reserve unit's fit was invisible. This now reads only non-starters who really play:
+ * minute-weighted TAL (55%), position/role fit (25%), and active depth resilience (20%). A DNP is
+ * emergency depth, not part of the current bench product, so adding one cannot lower this score.
  */
 export function benchDepthScore(team: Team): number {
-  const tals = team.roster.map((player) => effectiveTalent(player)).sort((a, b) => b - a);
-  const depth = tals.slice(TOP_CORE_SIZE);
-  if (depth.length === 0) return 0;
-  const rawAverage = depth.reduce((sum, t) => sum + t, 0) / depth.length;
-  // 2026-08-17: this used to return rawAverage directly. In real 8-player drafts that value
-  // clusters around 45-66, so even an excellent bench could never display a strong 0-100 score.
-  // 35 represents replacement-level depth; an average of 68 across roster spots 6-8 is an
-  // exceptionally strong, realistically achievable bench under the FGA cap.
-  // 2026-08-31: a 77/61/58/49 bottom four previously saturated at 100 because `best=63` treated
-  // an ordinary 61-point average as essentially perfect. Bench depth should answer "can the
-  // reserves carry useful minutes?", not "is this near the best bench an AI draft happened to
-  // produce in one small simulation." A 72 average is now the elite endpoint; 61 reads as good,
-  // not historic. The score remains an absolute depth measure, independent of the starting five.
-  return Math.round(rescaleToFullRange(rawAverage, { worst: 35, best: 72 }));
+  const activeBench = benchWithMinutes(team).filter(({ minutes }) => minutes > 0);
+  if (activeBench.length === 0) return 0;
+
+  const activeIds = new Set(activeBench.map(({ player }) => player.id));
+  const totalBenchMinutes = activeBench.reduce((sum, entry) => sum + entry.minutes, 0);
+  const talentRaw = activeBench.reduce(
+    (sum, { player, minutes }) => sum + effectiveTalent(player) * minutes,
+    0,
+  ) / totalBenchMinutes;
+  // An active bench is minute-selected, so its weighted TAL naturally runs above the old bottom-
+  // four average. An 85 average is the elite endpoint; using the old 72 ceiling made a merely
+  // strong Derrick White/Ingles/Noel unit read as virtually perfect.
+  const talentComponent = rescaleToFullRange(talentRaw, { worst: 35, best: 85 });
+
+  const activeAssignments = allAssignments(team).filter(({ player, minutes }) => activeIds.has(player.id) && minutes > 0);
+  const deploymentMinutes = activeAssignments.reduce((sum, entry) => sum + entry.minutes, 0);
+  const deploymentFit = deploymentMinutes > 0
+    ? activeAssignments.reduce(
+      (sum, { player, slot, minutes }) => sum + positionFitMultiplier(player, slot) * minutes,
+      0,
+    ) / deploymentMinutes * 100
+    : 0;
+
+  const hasCreator = activeBench.some(({ player }) =>
+    ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'].includes(player.offensiveArchetype),
+  );
+  const hasSpacer = activeBench.some(({ player }) => isPlusShooter(player));
+  const hasDefensiveRole = activeBench.some(({ player }) =>
+    isStrongPerimeterDefender(player) || isStrongRimProtector(player),
+  );
+  const roleCoverage = [hasCreator, hasSpacer, hasDefensiveRole]
+    .reduce((sum, covered) => sum + (covered ? 100 : 40), 0) / 3;
+  const fitComponent = deploymentFit * 0.65 + roleCoverage * 0.35;
+  const resilienceComponent = Math.min(100, (activeBench.length / 3) * 100);
+
+  // Active quality owns most of the score. Fit asks whether those minutes are playable and
+  // complementary; resilience rewards a real three-player bench without charging DNP depth.
+  return Math.round(
+    talentComponent * 0.55 +
+    fitComponent * 0.25 +
+    resilienceComponent * 0.20,
+  );
 }
 
 /**
@@ -368,6 +392,9 @@ const MULTI_GRAVITY_TEAM_SPACING_CAP = 97;
 // supply Curry's off-ball/on-ball floor by himself. This sits at a strong, not elite, raw team
 // spacing level; it is blended only across the shooter's actual starter minutes below.
 const SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR = 70;
+/** Three credible perimeter spacers prevent a two-big lineup from reading like a broken floor.
+ * The two non-shooting bigs still cap the ceiling; this is a solid, not elite, construction. */
+const THREE_SHOOTER_LINEUP_SPACING_FLOOR = 58;
 
 export function spacingScore(team: Team): number {
   const assignments = allAssignments(team);
@@ -386,6 +413,8 @@ export function spacingScore(team: Team): number {
     ? starters.reduce((sum, player) => sum + computeSpacing(player), 0) / starters.length
     : fullRotationBase;
   const base = fullRotationBase * 0.35 + starterBase * 0.65;
+  const plusShooterCount = starters.filter(isPlusShooter).length;
+  const hardNonSpacerCount = starters.filter((player) => computeSpacing(player) < 30).length;
 
   // 2026-08-19, user-reported: a real Paul George "Walking gravity" span (SPC 100, no Curry on
   // the roster) got NONE of this mechanic's credit — both the single-player floor and the
@@ -427,7 +456,11 @@ export function spacingScore(team: Team): number {
     return Math.round(rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS));
   }
 
-  return Math.round(rescaleToFullRange(base, SPACING_SCORE_ANCHORS));
+  const baseScore = rescaleToFullRange(base, SPACING_SCORE_ANCHORS);
+  const constructionFloor = plusShooterCount >= 3 && hardNonSpacerCount <= 2
+    ? THREE_SHOOTER_LINEUP_SPACING_FLOOR
+    : 0;
+  return Math.round(Math.max(baseScore, constructionFloor));
 }
 
 export interface RotationScoreComponents {

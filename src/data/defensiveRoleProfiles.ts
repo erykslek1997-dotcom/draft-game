@@ -13,12 +13,23 @@ const CURATED_SECONDARY_ROLES: Record<string, Partial<Record<DefensiveRole, numb
   'Klay Thompson': { Chaser: 0.90, 'Wing Stopper': 0.86 },
   'Andre Iguodala': { 'Wing Stopper': 0.94, 'Point of Attack': 0.82, Helper: 0.86 },
   'Shawn Marion': { 'Wing Stopper': 0.94, Helper: 0.90 },
-  'Draymond Green': { 'Mobile Big': 0.94, Helper: 0.94, 'Point of Attack': 0.74 },
+  'Draymond Green': {
+    'Anchor Big': 0.92,
+    'Mobile Big': 0.94,
+    Helper: 0.94,
+    'Wing Stopper': 0.88,
+    'Point of Attack': 0.74,
+  },
   'Evan Mobley': { 'Anchor Big': 0.92, Helper: 0.86 },
 };
 
 /** Relative credibility of a player performing `role` beyond their primary defensive tag. */
 export function secondaryDefensiveRoleStrength(player: PlayerSpan, role: DefensiveRole): number {
   if (player.defensiveRole === role) return 1;
+  return curatedSecondaryDefensiveRoleStrength(player, role);
+}
+
+/** Curated secondary evidence only, without treating the mutable primary label as proof. */
+export function curatedSecondaryDefensiveRoleStrength(player: PlayerSpan, role: DefensiveRole): number {
   return CURATED_SECONDARY_ROLES[player.playerName]?.[role] ?? 0;
 }

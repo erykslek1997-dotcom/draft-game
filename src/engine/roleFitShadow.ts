@@ -9,6 +9,9 @@ import type {
 } from '../data/schema';
 import { historicalMovementShooterEvidenceForSpan } from '../data/historicalMovementShooters';
 import { historicalRimPressureEvidenceForSpan, type RimPressureRole } from '../data/historicalRimPressureEvidence';
+import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
+import { curatedSecondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
+import { athleticismScoreForSpan } from './athleticismLookup';
 import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 
@@ -34,6 +37,7 @@ const DEFENSIVE_ROLES: DefensiveRole[] = [
   'Wing Stopper',
   'Mobile Big',
   'Anchor Big',
+  'Post Defender',
   'Low Activity',
 ];
 
@@ -56,6 +60,8 @@ type PositionDistributions = Record<FeatureName, number[]>;
 
 export interface RoleFitContext {
   byPosition: Record<Position, PositionDistributions>;
+  /** Shared PF/C-eligible reference group used for big-specific defensive jobs. */
+  bigs: PositionDistributions;
 }
 
 export interface ShadowRoleOptions {
@@ -66,8 +72,7 @@ export interface ShadowRoleOptions {
   warnings?: string[];
 }
 
-const ADDITIONAL_ROLE_THRESHOLD = 72;
-const MAX_ADDITIONAL_ROLES_PER_SIDE = 2;
+const ADDITIONAL_ROLE_THRESHOLD = 70;
 const measuredUnassistedThreeByYear = buildSelfCreationYearMap('unassisted3Pt');
 
 function rawFeatures(span: PlayerSpan): FeatureVector {
@@ -100,15 +105,19 @@ export function buildRoleFitContext(spans: PlayerSpan[]): RoleFitContext {
     PG: emptyDistributions(), SG: emptyDistributions(), SF: emptyDistributions(),
     PF: emptyDistributions(), C: emptyDistributions(),
   };
+  const bigs = emptyDistributions();
   for (const span of spans) {
     const features = rawFeatures(span);
     const distributions = byPosition[span.primaryPosition];
     for (const feature of Object.keys(features) as FeatureName[]) distributions[feature].push(features[feature]);
+    if (isBigEligible(span)) {
+      for (const feature of Object.keys(features) as FeatureName[]) bigs[feature].push(features[feature]);
+    }
   }
-  for (const distributions of Object.values(byPosition)) {
+  for (const distributions of [...Object.values(byPosition), bigs]) {
     for (const values of Object.values(distributions)) values.sort((a, b) => a - b);
   }
-  return { byPosition };
+  return { byPosition, bigs };
 }
 
 function percentile(sorted: number[], value: number): number {
@@ -132,6 +141,34 @@ function percentile(sorted: number[], value: number): number {
 
 function clampScore(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function isBigEligible(span: PlayerSpan): boolean {
+  return span.primaryPosition === 'PF' || span.primaryPosition === 'C' ||
+    span.secondaryPositions.includes('PF') || span.secondaryPositions.includes('C');
+}
+
+/** Physical post-defense proxy. Height represents the contest/release-point component and listed
+ * mass represents the strength/base component. It deliberately excludes RPG, STL and BLK: those
+ * describe outcomes and activity, not whether the defender can hold a post matchup one-on-one. */
+function postDefensePhysicalScore(span: PlayerSpan): number {
+  const height = getHeightInches(span.playerName);
+  const weight = getBodyWeightLbs(span.playerName);
+  if (height === undefined || weight === undefined) return 0;
+
+  // Below roughly 6'6 / 215 lb there is not enough NBA-big matchup size for this particular job.
+  // The continuous scales reach 100 at 6'11 and 270 lb; exceptional mass can compensate for
+  // some height and vice versa, while the PF/C gate prevents large guards becoming post bigs.
+  if (!isBigEligible(span) || height < 78 || weight < 215) return 0;
+  const size = Math.max(0, Math.min(100, ((height - 76) / 7) * 100));
+  const strength = Math.max(0, Math.min(100, ((weight - 200) / 70) * 100));
+  return clampScore(size * 0.5 + strength * 0.5);
+}
+
+function anchorPhysicalScore(span: PlayerSpan): number {
+  const height = getHeightInches(span.playerName);
+  if (height === undefined || !isBigEligible(span)) return 0;
+  return clampScore(((height - 76) / 7) * 100);
 }
 
 function weighted(parts: Array<[number, number]>): number {
@@ -172,6 +209,30 @@ function roleEvidence(
   }
   if (['Versatile Big', 'Post Scorer'].includes(role)) {
     return [`APG ${span.box.apg.toFixed(1)}`, `RPG ${span.box.rpg.toFixed(1)}`, `FGA ${span.fga.toFixed(1)}`];
+  }
+  if (role === 'Post Defender') {
+    const height = getHeightInches(span.playerName);
+    const weight = getBodyWeightLbs(span.playerName);
+    return [
+      height === undefined ? 'height unavailable' : `height ${Math.floor(height / 12)}'${height % 12}\"`,
+      weight === undefined ? 'weight unavailable' : `weight ${weight} lb`,
+      'size + strength profile',
+    ];
+  }
+  if (role === 'Anchor Big') {
+    const height = getHeightInches(span.playerName);
+    return [
+      height === undefined ? 'height unavailable' : `height ${Math.floor(height / 12)}'${height % 12}\"`,
+      `BPG ${span.box.bpg.toFixed(1)}`,
+      `RPG ${span.box.rpg.toFixed(1)}`,
+    ];
+  }
+  if (role === 'Mobile Big') {
+    const athleticism = athleticismScoreForSpan(span);
+    return [
+      athleticism === null ? 'athleticism unavailable' : `athleticism ${athleticism.toFixed(0)}`,
+      `SPG ${span.box.spg.toFixed(1)}`,
+    ];
   }
   return [`RPG ${span.box.rpg.toFixed(1)}`, `SPG ${span.box.spg.toFixed(1)}`, `BPG ${span.box.bpg.toFixed(1)}`];
 }
@@ -304,10 +365,13 @@ function scoreDefense(
   const raw = rawFeatures(span);
   const distributions = context.byPosition[span.primaryPosition];
   const p = (feature: FeatureName) => percentile(distributions[feature], raw[feature]);
+  const pBig = (feature: FeatureName) => percentile(context.bigs[feature], raw[feature]);
   const guard = positionFactor(span.primaryPosition, { PG: 100, SG: 100, SF: 55, PF: 25, C: 0 });
   const wing = positionFactor(span.primaryPosition, { PG: 65, SG: 100, SF: 100, PF: 85, C: 20 });
-  const big = positionFactor(span.primaryPosition, { PG: 0, SG: 10, SF: 45, PF: 95, C: 100 });
   const activity = weighted([[p('spg'), 45], [p('bpg'), 35], [p('rpg'), 20]]);
+  const size = anchorPhysicalScore(span);
+  const athleticism = athleticismScoreForSpan(span);
+  const isBig = isBigEligible(span);
   const fits: Array<[DefensiveRole, number]> = [
     ['Point of Attack', span.box.spg >= 1 ? weighted([[p('spg'), 50], [p('rpg'), 10], [guard, 40]]) : 0],
     ['Chaser', span.box.spg >= 0.8 ? weighted([[p('spg'), 40], [p('bpg'), 10], [guard, 30], [wing, 20]]) : 0],
@@ -315,20 +379,60 @@ function scoreDefense(
       ? weighted([[p('spg'), 30], [p('bpg'), 30], [p('rpg'), 30], [60, 10]])
       : 0],
     ['Wing Stopper', span.box.spg >= 0.9 ? weighted([[p('spg'), 35], [p('bpg'), 20], [p('rpg'), 15], [wing, 30]]) : 0],
-    ['Mobile Big', span.box.bpg >= 0.5 || span.box.rpg >= 6 ? weighted([[p('bpg'), 30], [p('spg'), 20], [p('rpg'), 25], [big, 25]]) : 0],
-    ['Anchor Big', span.box.bpg >= 0.8 ? weighted([[p('bpg'), 45], [p('rpg'), 30], [big, 25]]) : 0],
+    ['Mobile Big', isBig && athleticism !== null
+      ? weighted([[athleticism, 60], [pBig('spg'), 40]])
+      : 0],
+    ['Anchor Big', isBig && span.box.bpg >= 0.5
+      ? weighted([[size, 30], [pBig('bpg'), 45], [pBig('rpg'), 25]])
+      : 0],
+    ['Post Defender', postDefensePhysicalScore(span)],
     ['Low Activity', 100 - activity],
   ];
   return fits
-    .map(([role, score]) => ({ role, score: clampScore(score), confidence: stocksAvailable ? confidence : 'low', evidence: roleEvidence(span, role, null) }))
+    .map(([role, score]) => ({
+      role,
+      score: clampScore(Math.max(score, curatedSecondaryDefensiveRoleStrength(span, role) * 100)),
+      confidence: stocksAvailable ? confidence : 'low',
+      evidence: roleEvidence(span, role, null),
+    }))
     .sort((a, b) => b.score - a.score || a.role.localeCompare(b.role));
+}
+
+/**
+ * Migrates the legacy one-label big taxonomy onto the measured multi-role audit. The returned
+ * value is only the player's strongest PRIMARY label; `computeShadowRoleProfile` still exposes
+ * every other qualifying role. Pre-tracking spans retain their expert incumbent because the
+ * synthetic STL/BLK estimates are not strong enough evidence to overrule historical judgment.
+ */
+export function auditedPrimaryDefensiveRole(span: PlayerSpan, context: RoleFitContext): DefensiveRole {
+  // Explicit expert correction requested by the user: Draymond organizes the back line and is
+  // a small-ball defensive anchor even when height/box blocks undersell that responsibility.
+  if (span.playerName === 'Draymond Green') return 'Anchor Big';
+  if (span.defensiveRole !== 'Anchor Big' && span.defensiveRole !== 'Mobile Big') return span.defensiveRole;
+
+  const startYear = Number.parseInt(span.spanLabel.slice(0, 4), 10);
+  if (Number.isFinite(startYear) && startYear < 1973) return span.defensiveRole;
+  if (span.defensiveRole === 'Anchor Big' && getHeightInches(span.playerName) === undefined) return span.defensiveRole;
+  if (span.defensiveRole === 'Mobile Big' && athleticismScoreForSpan(span) === null) return span.defensiveRole;
+
+  const fits = scoreDefense(span, context, 'medium', true);
+  const incumbentScore = fits.find((fit) => fit.role === span.defensiveRole)?.score ?? 0;
+  if (incumbentScore >= ADDITIONAL_ROLE_THRESHOLD) return span.defensiveRole;
+
+  const bigRoles: DefensiveRole[] = ['Anchor Big', 'Mobile Big', 'Post Defender'];
+  let replacement = fits.find((fit) => bigRoles.includes(fit.role) && fit.score >= ADDITIONAL_ROLE_THRESHOLD);
+  const canDefendAsWing = span.primaryPosition === 'SF' || span.secondaryPositions.includes('SF');
+  if (!replacement && canDefendAsWing) {
+    replacement = fits.find((fit) => fit.role === 'Wing Stopper' && fit.score >= ADDITIONAL_ROLE_THRESHOLD);
+  }
+  if (replacement) return replacement.role;
+  return fits.find((fit) => fit.role === 'Helper' && fit.score >= 50) ? 'Helper' : 'Low Activity';
 }
 
 function proposedRoles<Role extends string>(fits: RoleFitScore<Role>[], incumbent: Role, enabled: boolean): RoleFitScore<Role>[] {
   if (!enabled) return [];
   return fits
-    .filter((fit) => fit.role !== incumbent && fit.role !== 'Low Activity' && fit.score >= ADDITIONAL_ROLE_THRESHOLD)
-    .slice(0, MAX_ADDITIONAL_ROLES_PER_SIDE);
+    .filter((fit) => fit.role !== incumbent && fit.role !== 'Low Activity' && fit.score >= ADDITIONAL_ROLE_THRESHOLD);
 }
 
 export function computeShadowRoleProfile(

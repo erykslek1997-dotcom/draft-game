@@ -752,7 +752,10 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                           nowhere near actually weak (e.g. Chauncey Billups at 80) — gated on the
                           same HUNTABLE_WEAK_LINK_THRESHOLD the prose note below already used. */}
                       {fitDetail.inputs.defensiveWeakLinkIsHuntable &&
-                        <>{' · '}weak link {fitDetail.inputs.defensiveWeakLinkPlayer ?? '—'} {Math.round(fitDetail.inputs.defensiveWeakLinkResistance)}</>
+                        <>
+                          {' · '}weak link {fitDetail.inputs.defensiveWeakLinkPlayer ?? '—'} {Math.round(fitDetail.inputs.defensiveWeakLinkResistance)}
+                          {fitDetail.inputs.defensiveWeakLinkCover > 0 && ` · shell cover +${fitDetail.inputs.defensiveWeakLinkCover}`}
+                        </>
                       }
                     </span>
                     {huntability && huntability.offenders.length > 0 && (

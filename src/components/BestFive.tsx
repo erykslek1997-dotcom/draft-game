@@ -25,7 +25,9 @@ import {
 
 interface Props {
   mode: 'developer' | 'player';
-  onBack: () => void;
+  /** Return to the host app's intro. Omitted in the standalone web export, where the "← Back"
+   * control is simply not rendered. */
+  onBack?: () => void;
 }
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
@@ -148,9 +150,11 @@ export default function BestFive({ mode, onBack }: Props) {
               Today’s puzzle
             </button>
           )}
-          <button className="at-legend-toggle at-cond" onClick={onBack}>
-            ← Back
-          </button>
+          {onBack && (
+            <button className="at-legend-toggle at-cond" onClick={onBack}>
+              ← Back
+            </button>
+          )}
         </span>
       </div>
 

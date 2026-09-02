@@ -88,6 +88,7 @@ const SWITCHABILITY_ROLE_SCORE: Record<DefensiveRole, number> = {
   Helper: 85,
   'Mobile Big': 78,
   'Anchor Big': 50,
+  'Post Defender': 35,
   'Low Activity': 20,
 };
 
@@ -120,6 +121,9 @@ export interface FitScoreInputs {
   rimProtectionProvider: string | null;
   rimProtectionConfirmed: boolean;
   defensiveWeakLinkResistance: number;
+  /** Points of lineup-level cover supplied by a strong POA/wing/rim shell. The player's own
+   * defensive grade stays unchanged; this only measures how much the five can hide them. */
+  defensiveWeakLinkCover: number;
   defensiveWeakLinkPlayer: string | null;
   /** Whether that lowest-scoring starter actually clears `HUNTABLE_WEAK_LINK_THRESHOLD` — the
    * UI should only call someone a "weak link" when this is true, not just because they're the
@@ -352,6 +356,7 @@ export function fitScore(team: Team): FitScoreResult {
         rimProtectionProvider: null,
         rimProtectionConfirmed: false,
         defensiveWeakLinkResistance: 0,
+        defensiveWeakLinkCover: 0,
         defensiveWeakLinkPlayer: null,
         defensiveWeakLinkIsHuntable: false,
         switchability: 0,
@@ -385,13 +390,14 @@ export function fitScore(team: Team): FitScoreResult {
       ),
   ]);
 
-  const demandByPlayer = profiles.map((profile) => {
-    const incumbent = HIGH_USAGE_ARCHETYPE_WEIGHT[profile.incumbentOffensiveRole] ?? 0;
-    const proposed = profile.proposedOffensiveRoles
-      .filter((fit) => fit.score >= ADDITIONAL_ROLE_CREDIT_FLOOR)
-      .map((fit) => (HIGH_USAGE_ARCHETYPE_WEIGHT[fit.role] ?? 0) * (fit.score / 100));
-    return Math.max(incumbent, ...proposed, 0);
-  });
+  // Demand describes the job a player actually occupies, not every job they are capable of
+  // performing. Counting proposed roles here turned Klay Thompson's inferred Shot Creator
+  // ability into the same ball requirement as a real primary scorer and made Nash + LeBron +
+  // off-ball threats look crowded. Proposed roles still contribute to creationSignals below;
+  // they simply no longer fabricate possessions a player's incumbent role does not demand.
+  const demandByPlayer = profiles.map(
+    (profile) => HIGH_USAGE_ARCHETYPE_WEIGHT[profile.incumbentOffensiveRole] ?? 0,
+  );
   const onBallDemand = demandByPlayer.reduce((sum, value) => sum + value, 0);
   const creationSignals = profiles
     .map((profile, index) => {
@@ -475,7 +481,17 @@ export function fitScore(team: Team): FitScoreResult {
   })).sort((a, b) => a.score - b.score);
   const defensiveWeakLinkResistance = weakLinkCandidates[0]?.score ?? 0;
   const layerCoverage = mean(defensiveLayers) * 0.60 + Math.min(...defensiveLayers) * 0.40;
-  const defensiveRoleCoverage = Math.round(layerCoverage * 0.75 + defensiveWeakLinkResistance * 0.25);
+  // One weak defender still matters, but a lineup with credible POA, wing and rim answers can
+  // cross-match and keep that player away from the primary action. The cover is continuous and
+  // capped: it needs all three layers, and can recover only 60% of the gap to the shell itself.
+  const shellHideability =
+    clamp((mean(defensiveLayers) - 65) / 20, 0, 1) *
+    clamp((Math.min(...defensiveLayers) - 50) / 20, 0, 1);
+  const coveredWeakLinkResistance =
+    defensiveWeakLinkResistance +
+    (layerCoverage - defensiveWeakLinkResistance) * shellHideability * 0.60;
+  const defensiveWeakLinkCover = Math.max(0, coveredWeakLinkResistance - defensiveWeakLinkResistance);
+  const defensiveRoleCoverage = Math.round(layerCoverage * 0.75 + coveredWeakLinkResistance * 0.25);
   if (guardContainment < 45) notes.push('No reliable point-of-attack containment role.');
   if (wingCoverage < 45) notes.push('No reliable wing coverage role.');
   if (wingCoverage > 0 && !wingCandidates[0]?.confirmed) notes.push('Wing coverage is inferred from box activity, not a confirmed incumbent Wing Stopper role.');
@@ -591,6 +607,7 @@ export function fitScore(team: Team): FitScoreResult {
       rimProtectionProvider: rimCandidates[0]?.player.playerName ?? null,
       rimProtectionConfirmed: rimCandidates[0]?.confirmed ?? false,
       defensiveWeakLinkResistance,
+      defensiveWeakLinkCover: Math.round(defensiveWeakLinkCover),
       defensiveWeakLinkPlayer: weakLinkCandidates[0]?.player.playerName ?? null,
       defensiveWeakLinkIsHuntable: isHuntableWeakLink,
       switchability,

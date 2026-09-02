@@ -4,6 +4,7 @@ import { generatedPlayers } from './generatedPlayers';
 import { curatedExpandedSpans } from './curatedExpandedSpans';
 import curatedVerifiedBoxData from './curatedVerifiedBox.json';
 import { getHeightInches } from './heightLookup';
+import { auditedPrimaryDefensiveRole, buildRoleFitContext } from '../engine/roleFitShadow';
 
 /**
  * STARTER DATASET — placeholder for prototyping the draft/scoring mechanics.
@@ -796,7 +797,7 @@ const dedupedGeneratedPlayers = generatedPlayers.filter(
   (p) => !GENERATED_PLAYER_DUPLICATE_NAMES.has(normalizePlayerName(p.playerName)),
 );
 
-export const players: PlayerSpan[] = applyForcedPositionProfiles(
+const positionCorrectedPlayers: PlayerSpan[] = applyForcedPositionProfiles(
   applyHeightBasedSecondaryPositions(
     applySecondaryPositionRemovals(
       applySecondaryPositionAdditions(
@@ -807,3 +808,9 @@ export const players: PlayerSpan[] = applyForcedPositionProfiles(
     ),
   ),
 );
+
+const defensiveRoleAuditContext = buildRoleFitContext(positionCorrectedPlayers);
+export const players: PlayerSpan[] = positionCorrectedPlayers.map((span) => ({
+  ...span,
+  defensiveRole: auditedPrimaryDefensiveRole(span, defensiveRoleAuditContext),
+}));

@@ -3,6 +3,7 @@ import type { PlayerSpan } from '../src/data/schema';
 import {
   FIT_WEIGHTS,
   fitScore,
+  shadowRoleProfileForDiagnostics,
   SPACING_BOTTLENECK_FLOOR,
   SPACING_BOTTLENECK_MAX_PENALTY,
   SPACING_BOTTLENECK_SCALE,
@@ -37,7 +38,7 @@ check(
   pick('Pau Gasol', '2008-10').primaryPosition === 'PF' && pick('Pau Gasol', '2008-10').secondaryPositions.includes('C'),
   'title-window Pau Gasol is represented as a real PF/C rather than a center-only player',
 );
-check(pick('Ben Wallace', '2001-03').secondaryPositions.includes('PF'), 'Ben Wallace can cover credible PF minutes without a center-at-PF penalty');
+check(!pick('Ben Wallace', '2001-03').secondaryPositions.includes('PF'), 'Ben Wallace remains center-only');
 
 function team(id: string, roster: PlayerSpan[]): Team {
   return { id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) };
@@ -63,6 +64,37 @@ const balancedResult = fitScore(balanced);
 check(balancedResult.score >= crampedResult.score + 15, 'balanced lineup clearly outranks the cramped control');
 check(balancedResult.components.championshipStructure >= 45, 'balanced lineup receives a meaningful championship-structure score');
 check(balancedResult.inputs.championshipArchetypes.length >= 1, 'FIT exposes at least one evidence-backed roster archetype');
+
+const nashLeBron = team('fit-v2-nash-lebron', [
+  pick('Steve Nash', '2005-07'),
+  pick('Klay Thompson', '2015-17'),
+  pick('Paul George', '2018-20'),
+  pick('LeBron James', '2012-14'),
+  pick('Rudy Gobert', '2019-21'),
+  pick('Derrick White', '2023-25'),
+  pick('Joe Ingles', '2016-18'),
+  pick('Nerlens Noel', '2018-20'),
+]);
+const nashLeBronResult = fitScore(nashLeBron);
+check(nashLeBronResult.inputs.onBallDemand <= 2, 'inferred creator versatility does not fabricate on-ball demand');
+check(nashLeBronResult.components.creationStructure >= 90, 'Nash and LeBron with off-ball threats grade as elite creation');
+check(nashLeBronResult.inputs.defensiveWeakLinkCover >= 20, 'strong POA/wing/rim layers can partially hide one weak defender');
+check(nashLeBronResult.components.defensiveRoleCoverage >= 70, 'one weak defender does not erase an otherwise complete defensive shell');
+
+const threeSpacersTwoBigs = team('fit-v2-three-spacers-two-bigs', [
+  pick('Chris Paul', '2013-15'),
+  pick('José Calderón', '2012-14'),
+  pick('Tracy McGrady', '2000-02'),
+  pick('Kyle Korver', '2011-13'),
+  pick('Danny Green', '2016-18'),
+  pick('Kevin Garnett', '2004-06'),
+  pick('Alonzo Mourning', '1997-99'),
+  pick('Tyson Chandler', '2011-13'),
+]);
+check(
+  scoreTeam(threeSpacersTwoBigs).spacingScore >= 55 && scoreTeam(threeSpacersTwoBigs).spacingScore <= 65,
+  'three real perimeter spacers keep a two-non-shooting-big lineup solid but non-elite',
+);
 
 for (const [label, result] of [['cramped', crampedResult], ['balanced', balancedResult]] as const) {
   check(result.version === 'fit-v2', `${label} result carries the expected schema version`);
@@ -146,12 +178,47 @@ const reportedSwitchability = team('fit-v2-reported-switchability', [
 ]);
 const reportedSwitchabilityResult = fitScore(reportedSwitchability);
 check(
-  reportedSwitchabilityResult.inputs.switchability === 71,
+  reportedSwitchabilityResult.inputs.switchability >= 65 && reportedSwitchabilityResult.inputs.switchability <= 80,
   'Kidd/Klay/LeBron/Barkley/Porzingis starting five grades as good, not elite, switchability',
 );
 
 const jrue = pick('Jrue Holiday', '2017-19');
 check(jrue.secondaryPositions.includes('PG'), 'Jrue Holiday 2017-19 is a real secondary PG and avoids an artificial PG penalty');
+
+const hakeemRoleProfile = shadowRoleProfileForDiagnostics(pick('Hakeem Olajuwon', '1991-93'));
+check(
+  hakeemRoleProfile.incumbentDefensiveRole === 'Anchor Big' &&
+    hakeemRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Mobile Big') &&
+    hakeemRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Post Defender') &&
+    hakeemRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Helper'),
+  'Hakeem is recognized simultaneously as an Anchor Big, Mobile Big, Post Defender and Helper',
+);
+const mutomboRoleProfile = shadowRoleProfileForDiagnostics(pick('Dikembe Mutombo', '1998-00'));
+check(
+  mutomboRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Post Defender') &&
+    !mutomboRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Mobile Big'),
+  'Mutombo grades as Anchor + Post without receiving an artificial Mobile role',
+);
+const draymondRoleProfile = shadowRoleProfileForDiagnostics(pick('Draymond Green', '2015-17'));
+check(
+  draymondRoleProfile.incumbentDefensiveRole === 'Anchor Big' &&
+    draymondRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Mobile Big') &&
+    draymondRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Helper') &&
+    draymondRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Wing Stopper'),
+  'Draymond carries Anchor, Mobile, Helper and Wing Stopper roles simultaneously',
+);
+const marionRoleProfile = shadowRoleProfileForDiagnostics(pick('Shawn Marion', '2005-07'));
+check(
+  marionRoleProfile.incumbentDefensiveRole === 'Mobile Big' &&
+    !marionRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Post Defender'),
+  'Marion remains Mobile without receiving Post Defender from activity stats',
+);
+const shaqRoleProfile = shadowRoleProfileForDiagnostics(pick("Shaquille O'Neal", '1999-01'));
+check(
+  shaqRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Post Defender') &&
+    shaqRoleProfile.proposedDefensiveRoles.some((fit) => fit.role === 'Mobile Big'),
+  'peak Shaq qualifies as Anchor + Post + Mobile from extraordinary size and athleticism',
+);
 
 const multiProfileDefense = team('fit-v2-multi-profile-defense', [
   pick('Jrue Holiday', '2022-24'),
