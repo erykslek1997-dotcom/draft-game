@@ -69,6 +69,25 @@
   background: color-mix(in srgb, var(--at-ink) 8%, transparent);
 }
 
+/* ---- season badge (which span of a player you're getting — load-bearing info) ---- */
+.bf-season {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--at-accent) 24%, transparent);
+  color: var(--at-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bf-season--sm {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0 5px;
+}
+
 /* ---- slot row ---- */
 .bf-slot-row {
   display: grid;
@@ -83,7 +102,7 @@
   gap: 3px;
   align-items: center;
   padding: 10px 6px 9px;
-  min-height: 92px;
+  min-height: 104px;
   border: 1px solid var(--at-line);
   border-radius: 10px;
   background: var(--at-paper);
@@ -460,7 +479,13 @@
 .bf-cmp-body {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
+  min-width: 0;
+}
+.bf-cmp-nameline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
 }
 .bf-cmp-name {

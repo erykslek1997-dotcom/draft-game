@@ -173,6 +173,7 @@ export default function BestFive({ mode, onBack }: Props) {
                   <span className="bf-slot-pos at-cond">{slot}</span>
                   {s ? <Face name={s.playerName} /> : <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />}
                   <span className="bf-slot-name">{s ? s.playerName : 'Tap to pick'}</span>
+                  {s && <span className="bf-season bf-season--sm">{s.spanLabel}</span>}
                   {s && <span className="bf-slot-box">{boxLineShort(s)}</span>}
                   {s && (
                     <span
@@ -207,9 +208,8 @@ export default function BestFive({ mode, onBack }: Props) {
                     >
                       <Face name={span.playerName} size="md" />
                       <span className="bf-pool-name">{span.playerName}</span>
-                      <span className="bf-pool-meta">
-                        {naturalPosition(span.playerName)} · {span.spanLabel}
-                      </span>
+                      <span className="bf-season">{span.spanLabel}</span>
+                      <span className="bf-pool-meta">{naturalPosition(span.playerName)}</span>
                       <span className="bf-pool-box">{boxLineShort(span)}</span>
                       <span className="bf-pool-box bf-pool-box--sub">{boxLineDetail(span)}</span>
                     </button>
@@ -374,7 +374,10 @@ function BestFiveResult({
                 <div className="bf-cmp-side">
                   <Face name={yours.playerName} />
                   <span className="bf-cmp-body">
-                    <span className="bf-cmp-name">{yours.playerName}</span>
+                    <span className="bf-cmp-nameline">
+                      <span className="bf-cmp-name">{yours.playerName}</span>
+                      <span className="bf-season bf-season--sm">{yours.spanLabel}</span>
+                    </span>
                     <span className="bf-cmp-box">{boxLine(yours)}</span>
                   </span>
                 </div>
@@ -386,7 +389,10 @@ function BestFiveResult({
                 <div className="bf-cmp-side bf-cmp-side--engine">
                   <Face name={engine.playerName} />
                   <span className="bf-cmp-body">
-                    <span className="bf-cmp-name">{engine.playerName}</span>
+                    <span className="bf-cmp-nameline">
+                      <span className="bf-cmp-name">{engine.playerName}</span>
+                      <span className="bf-season bf-season--sm">{engine.spanLabel}</span>
+                    </span>
                     <span className="bf-cmp-box">{boxLine(engine)}</span>
                   </span>
                 </div>
