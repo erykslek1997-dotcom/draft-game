@@ -51,15 +51,16 @@ function Face({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
   );
 }
 
-/** Blind-scouting line — box stats only, never the engine's TAL. Scoring volume, a spacing read
- * (3P%) and a defensive-activity read (steals+blocks). */
-function boxLine(s: PlayerSpan): string {
-  const b = s.box;
-  return `${b.ppg.toFixed(1)} / ${b.rpg.toFixed(1)} / ${b.apg.toFixed(1)} · ${Math.round(b.threePct * 100)}% 3P · ${(b.spg + b.bpg).toFixed(1)} stl+blk`;
-}
-/** Just pts/reb/ast — for the tight slot chips. */
+/** Blind-scouting box stats, never the engine's TAL. `boxLineShort` = pts/reb/ast (scoring
+ * volume); `boxLineDetail` = the spacing read (3P%) + defensive-activity read (steals+blocks). */
 function boxLineShort(s: PlayerSpan): string {
   return `${s.box.ppg.toFixed(1)} / ${s.box.rpg.toFixed(1)} / ${s.box.apg.toFixed(1)}`;
+}
+function boxLineDetail(s: PlayerSpan): string {
+  return `${Math.round(s.box.threePct * 100)}% 3P · ${(s.box.spg + s.box.bpg).toFixed(1)} stl+blk`;
+}
+function boxLine(s: PlayerSpan): string {
+  return `${boxLineShort(s)} · ${boxLineDetail(s)}`;
 }
 
 const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 'spacing' | 'fit'>; label: string; context?: boolean }[] = [
@@ -204,13 +205,12 @@ export default function BestFive({ mode, onBack }: Props) {
                       onClick={() => pick(activeSlot, span)}
                     >
                       <Face name={span.playerName} size="md" />
-                      <span className="bf-pool-body">
-                        <span className="bf-pool-name">{span.playerName}</span>
-                        <span className="bf-pool-meta">
-                          {naturalPosition(span.playerName)} · {span.spanLabel}
-                        </span>
-                        <span className="bf-pool-box">{boxLine(span)}</span>
+                      <span className="bf-pool-name">{span.playerName}</span>
+                      <span className="bf-pool-meta">
+                        {naturalPosition(span.playerName)} · {span.spanLabel}
                       </span>
+                      <span className="bf-pool-box">{boxLineShort(span)}</span>
+                      <span className="bf-pool-box bf-pool-box--sub">{boxLineDetail(span)}</span>
                     </button>
                   );
                 })}
