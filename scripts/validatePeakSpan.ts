@@ -67,6 +67,16 @@ const CASES: Case[] = [
   { name: 'Draymond Green', accept: ['2014-16', '2015-17', '2016-18'] },
 ];
 
+/** playerCard.ts `NAMED_LEAD_SPAN` — the card leads with this span instead of the engine's
+ * `bestSpan` for these players. Keep in sync with the source of truth in playerCard.ts. */
+const NAMED_LEAD_SPAN: Record<string, string> = {
+  'LeBron James': '2012-14',
+  'Chris Paul': '2007-09',
+  'Charles Barkley': '1989-91',
+  'Tracy McGrady': '2001-03',
+  'Allen Iverson': '2000-02',
+};
+
 let hits = 0;
 let misses = 0;
 const missLines: string[] = [];
@@ -89,10 +99,14 @@ for (const c of CASES) {
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
   // mirror playerCard.ts `bestSpan`: max effectiveTalent, ties broken by rawUncappedTalent
-  const pick = ranked.reduce(
+  const enginePick = ranked.reduce(
     (b, r) => (r.eff > b.eff || (r.eff === b.eff && r.rawU > b.rawU) ? r : b),
     ranked[0],
   );
+  // then playerCard.ts `NAMED_LEAD_SPAN` — keep in sync
+  const override = NAMED_LEAD_SPAN[c.name];
+  const pick = (override && ranked.find((r) => r.label === override)) || enginePick;
+  const overridden = pick.label !== enginePick.label;
   ranked.sort((a, b) => b.raw - a.raw);
   const ok = c.accept.includes(pick.label);
   if (ok) hits++;
@@ -100,9 +114,9 @@ for (const c of CASES) {
 
   const acceptEffs = ranked.filter((r) => c.accept.includes(r.label));
   const bestAccept = acceptEffs.sort((a, b) => b.raw - a.raw)[0];
-  const mark = ok ? 'OK  ' : 'MISS';
+  const mark = ok ? (overridden ? 'OK* ' : 'OK  ') : 'MISS';
   const line =
-    `${mark} ${c.name.padEnd(24)} pick ${pick.label} (eff ${pick.eff}, O ${pick.o} D ${pick.d}, ${pick.tier})` +
+    `${mark} ${c.name.padEnd(24)} pick ${pick.label} (eff ${pick.eff}, O ${pick.o} D ${pick.d}, ${pick.tier})${overridden ? ` [override, engine ${enginePick.label}]` : ''}` +
     (ok
       ? ''
       : `  |  want ${c.accept.join('/')}` +

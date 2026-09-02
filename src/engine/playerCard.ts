@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { POSITIONS } from '../data/schema';
+import { POSITIONS, normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { spanEndYears } from './era';
 import {
@@ -119,6 +119,42 @@ function bestSpan(spans: PlayerSpan[]): PlayerSpan {
   );
 }
 
+/**
+ * Per-player override for the span the *card* leads with — NOT the player's rarity or best tier
+ * (those stay on `bestSpan`, the engine's real peak read).
+ *
+ * `computeTalent` is box-score-driven, so for a handful of stars it rates an early, activity-heavy
+ * statistical peak above the season basketball consensus (and Ben Taylor's impact metrics) calls
+ * their actual best — LeBron's 2008-10 Cleveland run (simultaneous career highs in volume,
+ * relative efficiency, assists, steals AND blocks) over any Miami span; young Barkley's
+ * uncorroborated steal/block volume; Chris Paul's steals-and-DARKO 2013-15 over the 2008 near-MVP
+ * peak. See `scripts/validatePeakSpan.ts`. Decompressing the soft cap was tested and rejected — it
+ * only widens the gap (the raw internal order already has 2008-10 well ahead) and breaks the
+ * Taylor top-10 anchor (0.891 -> 0.818). This map is the deliberately narrow bridge: it moves only
+ * which span the card opens on, for the specific (player) the validation flags, until a real
+ * raw-value pass (synergy taper + PF position-correction relief + a perimeter defensive-box-
+ * activity cap) lands. Same shape as `grades.ts`'s `NAMED_*` maps.
+ */
+const NAMED_LEAD_SPAN: ReadonlyMap<string, string> = new Map(
+  [
+    { name: 'LeBron James', spanLabel: '2012-14' }, // Miami peak, not the 2008-10 Cleveland box peak
+    { name: 'Chris Paul', spanLabel: '2007-09' }, //   2008 near-MVP, not steals-and-DARKO 2013-15
+    { name: 'Charles Barkley', spanLabel: '1989-91' }, // athletic peak, not young uncorroborated box
+    { name: 'Tracy McGrady', spanLabel: '2001-03' }, //  Orlando scoring peak
+    { name: 'Allen Iverson', spanLabel: '2000-02' }, //  2001 MVP season
+    // Kobe / Karl Malone / Dirk are also flagged by validatePeakSpan, but their whole TAL curve is
+    // skewed (Dirk's peak is named-downcapped; Malone's 1993-95 bestSpan is itself defensible) —
+    // an override there would just paper over a raw-value problem. Left for the raw-value pass.
+  ].map((e) => [normalizePlayerName(e.name), e.spanLabel] as const),
+);
+
+/** The span the card opens on: the `NAMED_LEAD_SPAN` override when it names a real span for this
+ * player, otherwise `bestSpan`. */
+function leadSpan(name: string, spans: PlayerSpan[]): PlayerSpan {
+  const wanted = NAMED_LEAD_SPAN.get(normalizePlayerName(name));
+  return (wanted && spans.find((s) => s.spanLabel === wanted)) || bestSpan(spans);
+}
+
 function careerPosition(spans: PlayerSpan[]): Position {
   const counts = new Map<Position, number>();
   for (const s of spans) counts.set(s.primaryPosition, (counts.get(s.primaryPosition) ?? 0) + 1);
@@ -223,6 +259,9 @@ export function buildPlayerCard(name: string): PlayerCardData | null {
   if (!group) return null;
   const bs = bestSpan(group.spans);
   const bestTier = overallTierForSpan(tierContextWithSixthMan(bs));
+  // Rarity / best tier / athleticism stay on the engine's real peak (`bs`); only the row the card
+  // opens on can be moved by `NAMED_LEAD_SPAN` (see its docstring).
+  const lead = leadSpan(name, group.spans);
   return {
     name,
     naturalPos: naturalPosition(name),
@@ -234,8 +273,8 @@ export function buildPlayerCard(name: string): PlayerCardData | null {
     weightLbs: getBodyWeightLbs(name) ?? null,
     athleticism: athleticismScoreForSpan(bs),
     career: careerAveragesFor(name),
-    // Best span first, then the rest chronologically — the card leads with the peak.
-    rows: [bs, ...group.spans.filter((s) => s.id !== bs.id)].map(cardSpanRow),
+    // Lead span first, then the rest chronologically.
+    rows: [lead, ...group.spans.filter((s) => s.id !== lead.id)].map(cardSpanRow),
   };
 }
 
