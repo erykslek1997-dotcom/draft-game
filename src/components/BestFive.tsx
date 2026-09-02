@@ -263,7 +263,6 @@ function BestFiveResult({
   onBackToDaily: () => void;
 }) {
   const { score, targets, grade } = result;
-  const chosenIds = new Set(STARTER_SLOTS.map((s) => lineup[s]?.id));
   const explain = useMemo(() => explainResult(lineup, pool, targets), [lineup, pool, targets]);
   const [showGlossary, setShowGlossary] = useState(false);
 
@@ -360,19 +359,38 @@ function BestFiveResult({
       </div>
 
       <div className="bf-optimal">
-        <div className="bf-optimal-head at-cond">The engine’s best five from this pool</div>
+        <div className="bf-optimal-head at-cond">
+          <span>Your five</span>
+          <span>The engine’s best</span>
+        </div>
         {STARTER_SLOTS.map((slot) => {
-          const s = targets.optimalFive[slot];
-          const hit = chosenIds.has(s.id);
+          const engine = targets.optimalFive[slot];
+          const yours = lineup[slot];
+          const hit = !!yours && yours.id === engine.id;
           return (
-            <div key={slot} className={`bf-optimal-row ${hit ? 'bf-optimal-row--hit' : ''}`}>
-              <span className="bf-optimal-pos at-cond">{slot}</span>
-              <Face name={s.playerName} />
-              <span className="bf-optimal-body">
-                <span className="bf-optimal-name">{s.playerName}</span>
-                <span className="bf-optimal-box">{boxLine(s)}</span>
-              </span>
-              <span className="bf-optimal-mark">{hit ? '✓ you had this' : `you picked ${lineup[slot]?.playerName ?? '—'}`}</span>
+            <div key={slot} className={`bf-cmp-row ${hit ? 'bf-cmp-row--hit' : ''}`}>
+              <span className="bf-cmp-pos at-cond">{slot}</span>
+              {yours && (
+                <div className="bf-cmp-side">
+                  <Face name={yours.playerName} />
+                  <span className="bf-cmp-body">
+                    <span className="bf-cmp-name">{yours.playerName}</span>
+                    <span className="bf-cmp-box">{boxLine(yours)}</span>
+                  </span>
+                </div>
+              )}
+              <span className="bf-cmp-mid at-cond">{hit ? '✓' : '→'}</span>
+              {hit ? (
+                <span className="bf-cmp-match at-cond">nailed it</span>
+              ) : (
+                <div className="bf-cmp-side bf-cmp-side--engine">
+                  <Face name={engine.playerName} />
+                  <span className="bf-cmp-body">
+                    <span className="bf-cmp-name">{engine.playerName}</span>
+                    <span className="bf-cmp-box">{boxLine(engine)}</span>
+                  </span>
+                </div>
+              )}
             </div>
           );
         })}
