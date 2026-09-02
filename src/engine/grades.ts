@@ -454,6 +454,22 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     // All-star anyway; scoped to the two peak-usage spans.
     { name: 'Jalen Rose', spanLabel: '1999-01', cap: 'Starter' as OverallTier },
     { name: 'Jalen Rose', spanLabel: '2000-02', cap: 'Starter' as OverallTier },
+    // 2026-09-02, user batch feedback: Dirk / Malone read a "Greatest peak" badge a rung too
+    // high, Cousins "MVP zbyt wysoko". All ride the +7 two-way synergy bonus (maxed — see
+    // talent.ts `MAX_TWO_WAY_SYNERGY_BONUS`); a synergy trim was measured (`scripts/_diagSynergy.ts`)
+    // and reverted — it cost GOAT-40 0.009 for near-zero effect at the very top (the 95-100
+    // soft-cap absorbs a -1) and no clean surgical parameter exists (Malone/Cousins clear the
+    // ramp on real box defense; Dirk can't be told apart from real 3-and-D wings by normalized
+    // defense). Named downcap on each affected span instead — display + gameplay number both
+    // drop (post-2026-08-19 `effectiveTalent` unification), `computeTalent` raw is untouched so
+    // Taylor top-10 / Backpicks GOAT-40 are unaffected (both validate off raw). (SGA / Kawhi /
+    // AD were also flagged "~3 too high" but a downcap to MVP over-corrects them to ~90 — that
+    // trio is the deferred "top of the scale is compressed" session, left alone here.)
+    { name: 'DeMarcus Cousins', spanLabel: '2014-16', cap: 'All-NBA' as OverallTier },
+    { name: 'Dirk Nowitzki', spanLabel: '2002-04', cap: 'MVP' as OverallTier },
+    { name: 'Dirk Nowitzki', spanLabel: '2004-06', cap: 'MVP' as OverallTier },
+    { name: 'Karl Malone', spanLabel: '1992-94', cap: 'MVP' as OverallTier },
+    { name: 'Karl Malone', spanLabel: '1994-96', cap: 'MVP' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
