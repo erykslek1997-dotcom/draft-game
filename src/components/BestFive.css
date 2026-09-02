@@ -1,0 +1,327 @@
+/* "Build the Best 5" — puzzle-specific chrome only. The screen sits inside `.at-shell` so it
+   picks up the dark broadcast-board tokens (`--at-*`); everything below is layout for the slot
+   row, the pool picker, the golf grade and the component bars. */
+
+.best-five {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.bf-subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 2px 12px;
+}
+.bf-date {
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--at-ink-faint);
+}
+
+.bf-intro {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--at-ink-soft);
+}
+.bf-intro em {
+  color: var(--at-ink);
+  font-style: italic;
+}
+
+/* ---- slot row ---- */
+.bf-slot-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.bf-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  padding: 12px 6px 10px;
+  min-height: 76px;
+  border: 1px solid var(--at-line);
+  border-radius: 10px;
+  background: var(--at-paper);
+  color: var(--at-ink-soft);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s, background 0.12s;
+}
+.bf-slot:hover {
+  border-color: var(--at-ink-faint);
+}
+.bf-slot--active {
+  border-color: var(--at-accent);
+  box-shadow: 0 0 0 1px var(--at-accent) inset;
+}
+.bf-slot--filled {
+  background: color-mix(in srgb, var(--at-accent) 10%, var(--at-paper));
+}
+.bf-slot-pos {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--at-ink-faint);
+}
+.bf-slot--filled .bf-slot-pos {
+  color: var(--at-accent);
+}
+.bf-slot-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--at-ink);
+}
+.bf-slot--filled .bf-slot-name {
+  color: var(--at-ink);
+}
+.bf-slot:not(.bf-slot--filled) .bf-slot-name {
+  color: var(--at-ink-faint);
+  font-weight: 400;
+}
+.bf-slot-clear {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--at-ink-faint);
+  padding: 3px;
+}
+.bf-slot-clear:hover {
+  color: var(--at-brand-red);
+}
+
+/* ---- pool picker ---- */
+.bf-picker {
+  margin-bottom: 16px;
+}
+.bf-picker-head {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--at-ink-faint);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.bf-pool {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+@media (max-width: 560px) {
+  .bf-pool {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.bf-pool-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 11px;
+  border: 1px solid var(--at-line);
+  border-radius: 8px;
+  background: var(--at-paper);
+  color: var(--at-ink-soft);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s, background 0.12s;
+}
+.bf-pool-card:hover {
+  border-color: var(--at-ink-faint);
+  background: color-mix(in srgb, var(--at-accent) 6%, var(--at-paper));
+}
+.bf-pool-card--chosen {
+  border-color: var(--at-accent);
+  background: color-mix(in srgb, var(--at-accent) 14%, var(--at-paper));
+}
+.bf-pool-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--at-ink);
+}
+.bf-pool-meta {
+  font-size: 10.5px;
+  color: var(--at-ink-faint);
+}
+
+/* ---- submit ---- */
+.bf-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 6px;
+}
+.bf-live {
+  font-size: 11px;
+  color: var(--at-ink-faint);
+  margin-right: auto;
+}
+.bf-submit {
+  padding: 8px 20px;
+  font-size: 12.5px;
+}
+
+/* ---- result ---- */
+.bf-result {
+  animation: bf-fade 0.2s ease;
+}
+@keyframes bf-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.bf-grade {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--at-line);
+}
+.bf-grade-label {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.bf-grade-blurb {
+  font-size: 12.5px;
+  color: var(--at-ink-soft);
+  line-height: 1.5;
+}
+.bf-grade--eagle {
+  background: color-mix(in srgb, var(--at-t6) 22%, var(--at-paper));
+}
+.bf-grade--eagle .bf-grade-label {
+  color: var(--at-t6);
+}
+.bf-grade--birdie {
+  background: color-mix(in srgb, var(--at-t5) 18%, var(--at-paper));
+}
+.bf-grade--birdie .bf-grade-label {
+  color: var(--at-t5);
+}
+.bf-grade--par .bf-grade-label {
+  color: var(--at-ink);
+}
+.bf-grade--bogey .bf-grade-label,
+.bf-grade--double-bogey .bf-grade-label {
+  color: var(--at-brand-red);
+}
+
+.bf-scoreline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  font-size: 12.5px;
+  color: var(--at-ink-soft);
+  margin-bottom: 18px;
+}
+.bf-scoreline b {
+  font-size: 15px;
+  color: var(--at-ink);
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+}
+.bf-muted {
+  color: var(--at-ink-faint);
+}
+
+/* ---- component bars ---- */
+.bf-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+.bf-bar-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 34px;
+  align-items: center;
+  gap: 10px;
+}
+.bf-bar-label {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+.bf-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--at-ink) 10%, transparent);
+  overflow: hidden;
+}
+.bf-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--at-accent);
+}
+.bf-bar-val {
+  font-size: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--at-ink-soft);
+}
+
+.bf-weaklink {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--at-ink-soft);
+  margin: 0 0 18px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--at-brand-red);
+  background: color-mix(in srgb, var(--at-brand-red) 7%, transparent);
+  border-radius: 0 6px 6px 0;
+}
+
+/* ---- optimal reveal ---- */
+.bf-optimal-head {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+  margin-bottom: 8px;
+}
+.bf-optimal-row {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+}
+.bf-optimal-row:nth-child(odd) {
+  background: color-mix(in srgb, var(--at-ink) 3%, transparent);
+}
+.bf-optimal-row--hit {
+  background: color-mix(in srgb, var(--at-t6) 12%, transparent);
+}
+.bf-optimal-pos {
+  font-weight: 700;
+  color: var(--at-ink-faint);
+}
+.bf-optimal-name {
+  font-weight: 600;
+  color: var(--at-ink);
+}
+.bf-optimal-mark {
+  font-size: 11px;
+  color: var(--at-ink-faint);
+}
+.bf-optimal-row--hit .bf-optimal-mark {
+  color: var(--at-t6);
+}
