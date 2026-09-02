@@ -15,7 +15,12 @@ import {
   type Grade,
 } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
-import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from './talent';
+import {
+  computeOffensiveTalent,
+  computeUncappedOffensiveTalent,
+  computeDefensiveTalent,
+  rawUncappedTalent,
+} from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing, spacingTier, type SpacingTier } from './spacing';
 import { computeDurability, durabilityTier, type DurabilityTier } from './durability';
@@ -93,8 +98,25 @@ function playerGroups(): PlayerGroup[] {
   return groupsCache;
 }
 
+/**
+ * The span the card leads with: the highest displayed `effectiveTalent`, ties broken by
+ * `rawUncappedTalent`. At the top of the scale the soft cap compresses a whole cluster of a
+ * star's prime spans into the same displayed 96-99, so `effectiveTalent` alone ties constantly
+ * and the old `>` reduce just kept whichever span came first chronologically (Michael Jordan's
+ * 1986-88 over the strictly-better 1987-89; Larry Bird's 1983-85 over 1984-86). The pre-cap
+ * `rawUncappedTalent` keeps the real internal spread, so the tie resolves to the span the engine
+ * actually rates highest. Both are display-only reads — nothing else in the app ranks on either.
+ * `scripts/validatePeakSpan.ts` measures this against consensus peak windows.
+ */
 function bestSpan(spans: PlayerSpan[]): PlayerSpan {
-  return spans.reduce((b, s) => (effectiveTalent(s) > effectiveTalent(b) ? s : b), spans[0]);
+  return spans.reduce(
+    (b, s) =>
+      effectiveTalent(s) > effectiveTalent(b) ||
+      (effectiveTalent(s) === effectiveTalent(b) && rawUncappedTalent(s) > rawUncappedTalent(b))
+        ? s
+        : b,
+    spans[0],
+  );
 }
 
 function careerPosition(spans: PlayerSpan[]): Position {
