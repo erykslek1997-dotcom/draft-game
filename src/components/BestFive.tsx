@@ -51,13 +51,14 @@ function Face({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
   );
 }
 
-/** Blind-scouting box stats, never the engine's TAL. `boxLineShort` = pts/reb/ast (scoring
- * volume); `boxLineDetail` = the spacing read (3P%) + defensive-activity read (steals+blocks). */
+/** Blind-scouting box stats, never the engine's TAL. `boxLineShort` = the pts/reb/ast triple;
+ * `boxLineDetail` = the rest of a normal stat line — steals, blocks, FG%, 3P%. */
 function boxLineShort(s: PlayerSpan): string {
   return `${s.box.ppg.toFixed(1)} / ${s.box.rpg.toFixed(1)} / ${s.box.apg.toFixed(1)}`;
 }
 function boxLineDetail(s: PlayerSpan): string {
-  return `${Math.round(s.box.threePct * 100)}% 3P · ${(s.box.spg + s.box.bpg).toFixed(1)} stl+blk`;
+  const b = s.box;
+  return `${b.spg.toFixed(1)} stl · ${b.bpg.toFixed(1)} blk · ${Math.round(b.fgPct * 100)}% FG · ${Math.round(b.threePct * 100)}% 3P`;
 }
 function boxLine(s: PlayerSpan): string {
   return `${boxLineShort(s)} · ${boxLineDetail(s)}`;
