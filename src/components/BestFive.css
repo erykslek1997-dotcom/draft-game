@@ -36,6 +36,39 @@
   font-style: italic;
 }
 
+/* ---- face ---- */
+.bf-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--at-accent) 22%, var(--at-paper));
+  color: var(--at-ink);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.bf-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.bf-face--sm {
+  width: 26px;
+  height: 26px;
+  font-size: 9.5px;
+}
+.bf-face--md {
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+}
+.bf-face--empty {
+  background: color-mix(in srgb, var(--at-ink) 8%, transparent);
+}
+
 /* ---- slot row ---- */
 .bf-slot-row {
   display: grid;
@@ -47,10 +80,10 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
-  padding: 12px 6px 10px;
-  min-height: 76px;
+  padding: 10px 6px 9px;
+  min-height: 92px;
   border: 1px solid var(--at-line);
   border-radius: 10px;
   background: var(--at-paper);
@@ -79,9 +112,9 @@
   color: var(--at-accent);
 }
 .bf-slot-name {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
   color: var(--at-ink);
 }
 .bf-slot--filled .bf-slot-name {
@@ -90,6 +123,12 @@
 .bf-slot:not(.bf-slot--filled) .bf-slot-name {
   color: var(--at-ink-faint);
   font-weight: 400;
+}
+.bf-slot-box {
+  font-size: 9.5px;
+  color: var(--at-ink-faint);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
 .bf-slot-clear {
   position: absolute;
@@ -118,18 +157,18 @@
 }
 .bf-pool {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 6px;
 }
 @media (max-width: 560px) {
   .bf-pool {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
 }
 .bf-pool-card {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 10px;
   padding: 9px 11px;
   border: 1px solid var(--at-line);
   border-radius: 8px;
@@ -147,14 +186,26 @@
   border-color: var(--at-accent);
   background: color-mix(in srgb, var(--at-accent) 14%, var(--at-paper));
 }
+.bf-pool-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
 .bf-pool-name {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--at-ink);
 }
 .bf-pool-meta {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--at-ink-faint);
+}
+.bf-pool-box {
+  font-size: 10.5px;
+  color: var(--at-ink-soft);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
 }
 
 /* ---- submit ---- */
@@ -372,8 +423,8 @@
 }
 .bf-optimal-row {
   display: grid;
-  grid-template-columns: 34px 1fr auto;
-  align-items: baseline;
+  grid-template-columns: 22px 26px 1fr auto;
+  align-items: center;
   gap: 10px;
   padding: 6px 8px;
   border-radius: 6px;
@@ -389,13 +440,25 @@
   font-weight: 700;
   color: var(--at-ink-faint);
 }
+.bf-optimal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
 .bf-optimal-name {
   font-weight: 600;
   color: var(--at-ink);
 }
+.bf-optimal-box {
+  font-size: 10px;
+  color: var(--at-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
 .bf-optimal-mark {
   font-size: 11px;
   color: var(--at-ink-faint);
+  text-align: right;
 }
 .bf-optimal-row--hit .bf-optimal-mark {
   color: var(--at-t6);

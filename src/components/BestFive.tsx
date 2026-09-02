@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import './BestFive.css';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
-import { effectiveTalent } from '../engine/grades';
 import { naturalPosition } from '../engine/naturalPosition';
+import { headshotUrl } from '../data/headshots';
 import {
   dailyPool,
   dailyTargets,
@@ -29,6 +29,38 @@ interface Props {
 }
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
+
+function initials(name: string): string {
+  const p = name.split(/\s+/).filter(Boolean);
+  return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
+}
+
+/** Headshot with a monogram fallback (no image, or the image 404s). Faces come from the shared
+ * `data/headshots` lookup Codex built for the Card Collection. */
+function Face({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
+  const src = headshotUrl(name);
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className={`bf-face bf-face--${size}`} aria-hidden>
+      {src && !failed ? (
+        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+      ) : (
+        initials(name)
+      )}
+    </span>
+  );
+}
+
+/** Blind-scouting line — box stats only, never the engine's TAL. Scoring volume, a spacing read
+ * (3P%) and a defensive-activity read (steals+blocks). */
+function boxLine(s: PlayerSpan): string {
+  const b = s.box;
+  return `${b.ppg.toFixed(1)} / ${b.rpg.toFixed(1)} / ${b.apg.toFixed(1)} · ${Math.round(b.threePct * 100)}% 3P · ${(b.spg + b.bpg).toFixed(1)} stl+blk`;
+}
+/** Just pts/reb/ast — for the tight slot chips. */
+function boxLineShort(s: PlayerSpan): string {
+  return `${s.box.ppg.toFixed(1)} / ${s.box.rpg.toFixed(1)} / ${s.box.apg.toFixed(1)}`;
+}
 
 const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 'spacing' | 'fit'>; label: string; context?: boolean }[] = [
   { key: 'talent', label: 'Talent' },
@@ -137,7 +169,9 @@ export default function BestFive({ mode, onBack }: Props) {
                   onClick={() => setActiveSlot(slot)}
                 >
                   <span className="bf-slot-pos at-cond">{slot}</span>
+                  {s ? <Face name={s.playerName} /> : <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />}
                   <span className="bf-slot-name">{s ? s.playerName : 'Tap to pick'}</span>
+                  {s && <span className="bf-slot-box">{boxLineShort(s)}</span>}
                   {s && (
                     <span
                       className="bf-slot-clear"
@@ -169,10 +203,13 @@ export default function BestFive({ mode, onBack }: Props) {
                       className={`bf-pool-card ${chosen ? 'bf-pool-card--chosen' : ''}`}
                       onClick={() => pick(activeSlot, span)}
                     >
-                      <span className="bf-pool-name">{span.playerName}</span>
-                      <span className="bf-pool-meta">
-                        {naturalPosition(span.playerName)}
-                        {dev && ` · TAL ${effectiveTalent(span)} · ${span.spanLabel}`}
+                      <Face name={span.playerName} size="md" />
+                      <span className="bf-pool-body">
+                        <span className="bf-pool-name">{span.playerName}</span>
+                        <span className="bf-pool-meta">
+                          {naturalPosition(span.playerName)} · {span.spanLabel}
+                        </span>
+                        <span className="bf-pool-box">{boxLine(span)}</span>
                       </span>
                     </button>
                   );
@@ -329,7 +366,11 @@ function BestFiveResult({
           return (
             <div key={slot} className={`bf-optimal-row ${hit ? 'bf-optimal-row--hit' : ''}`}>
               <span className="bf-optimal-pos at-cond">{slot}</span>
-              <span className="bf-optimal-name">{s.playerName}</span>
+              <Face name={s.playerName} />
+              <span className="bf-optimal-body">
+                <span className="bf-optimal-name">{s.playerName}</span>
+                <span className="bf-optimal-box">{boxLine(s)}</span>
+              </span>
               <span className="bf-optimal-mark">{hit ? '✓ you had this' : `you picked ${lineup[slot]?.playerName ?? '—'}`}</span>
             </div>
           );

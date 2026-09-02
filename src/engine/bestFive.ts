@@ -95,12 +95,12 @@ const BODY_BUCKET = 42;
 const BODY_STAR_CAP = 2;
 const BODY_STAR_AS = 5;
 /** Board-wide budget for genuine all-time greats (8+ All-Stars — roughly "a casual fan names this
- * an all-time great"). The per-slot caps above still let 5 mega-headliners land on one board by
- * RNG; this guarantees at least one slot where the best option is merely a good starter, so a
- * lineup of five inner-circle legends is never buildable. Slot order for spending the budget is
- * seed-shuffled so it isn't always PG/SG that get the greats. */
+ * an all-time great"): at most 2 per board, so a legend is a rare treat and most slots are a
+ * choice between good starters. The per-slot caps above still let 5 mega-headliners land on one
+ * board by RNG; this is the real limiter. Slot order for spending the budget is seed-shuffled so
+ * it isn't always PG/SG that get the greats. */
 const GREAT_AS = 8;
-const GREATS_PER_BOARD = 4;
+const GREATS_PER_BOARD = 2;
 
 export interface DailyPool {
   key: string;
