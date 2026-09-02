@@ -74,9 +74,26 @@ function bestSpanByPlayer(): Map<string, PlayerSpan> {
 // ---------------------------------------------------------------------------
 
 export const POOL_PER_SLOT = 9;
-/** Guarantee at least this many genuine top-tier options per slot so every board is winnable. */
-const ELITE_GUARANTEE = 2;
-const ELITE_BUCKET = 15;
+
+/**
+ * Exactly ONE genuine headliner per slot — the tempting "lazy pick" — drawn from the top of the
+ * position by talent and weighted toward the most recognisable name. Every board stays winnable
+ * (par = grab the five headliners) without the pool being a wall of all-time greats: the old
+ * design forced ≥2 top-15-TAL players per slot AND weighted the whole draw toward All-Stars, so
+ * Curry + Jordan + LeBron + Garnett + Robinson could all sit on one board. Now a slot is 1 star
+ * + 8 starters/role-players, and picking all five stars is explicitly par, not a win.
+ */
+const HEADLINER_BUCKET = 12;
+const HEADLINER_PER_SLOT = 1;
+/** The other 8 come from the top of the position by talent (all legitimate NBA starters) but
+ * weighted the OTHER way — toward players the casual fan has heard LESS of — so the puzzle is
+ * about which role players fit, not which superstar to grab. */
+const BODY_BUCKET = 42;
+/** Hard cap: at most this many multi-time All-Stars (6+ selections) among the 8 body picks, so a
+ * board is at most 1 headliner + 2 stars per slot no matter how the weighted draw lands — the
+ * weights alone can't guarantee it because the top of a position is inherently decorated. */
+const BODY_STAR_CAP = 2;
+const BODY_STAR_AS = 6;
 
 export interface DailyPool {
   key: string;
@@ -93,6 +110,9 @@ function weightedShuffle<T>(items: T[], rng: () => number, weight: (t: T) => num
 }
 
 const recognisability = (s: PlayerSpan) => allStarCount(s.playerName) + 1;
+/** Inverse of `recognisability`, floored so a lesser name is favoured over a 15× All-Star but not
+ * by an absurd margin (0 AS → 3.5, 2 AS → 2.5, 5 AS → 1.0, 7+ AS → floor 0.4). */
+const obscurity = (s: PlayerSpan) => Math.max(0.4, 3.5 - allStarCount(s.playerName) * 0.5);
 
 export function dailyPool(key: string = dayKey()): DailyPool {
   const rng = mulberry32(seedFromKey(key));
@@ -104,17 +124,24 @@ export function dailyPool(key: string = dayKey()): DailyPool {
   const bySlot = {} as Record<Position, PlayerSpan[]>;
   for (const slot of STARTER_SLOTS) {
     const ranked = buckets[slot].slice().sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
-    const elite = ranked.slice(0, ELITE_BUCKET);
 
     const chosen: PlayerSpan[] = [];
     const taken = new Set<string>();
-    for (const s of weightedShuffle(elite, rng, recognisability)) {
-      if (chosen.length >= ELITE_GUARANTEE) break;
+    // 1 headliner: a recognisable star from the very top of the position.
+    for (const s of weightedShuffle(ranked.slice(0, HEADLINER_BUCKET), rng, recognisability)) {
+      if (chosen.length >= HEADLINER_PER_SLOT) break;
       chosen.push(s);
       taken.add(s.playerName);
     }
-    for (const s of weightedShuffle(ranked.filter((s) => !taken.has(s.playerName)), rng, recognisability)) {
+    // 8 body: legitimate starters from the top of the position, weighted toward LESS-decorated
+    // names, with a hard cap on multi-time All-Stars so the board isn't a lineup of all-time greats.
+    const body = ranked.slice(0, BODY_BUCKET).filter((s) => !taken.has(s.playerName));
+    let bodyStars = 0;
+    for (const s of weightedShuffle(body, rng, obscurity)) {
       if (chosen.length >= POOL_PER_SLOT) break;
+      const isStar = allStarCount(s.playerName) >= BODY_STAR_AS;
+      if (isStar && bodyStars >= BODY_STAR_CAP) continue;
+      if (isStar) bodyStars++;
       chosen.push(s);
     }
     // Blind: display order is neutral (alphabetical), never by talent.
@@ -293,14 +320,22 @@ export function dailyTargets(pool: DailyPool): DailyTargets {
 
 export type GolfGrade = 'eagle' | 'birdie' | 'par' | 'bogey' | 'double-bogey';
 
-/** Graded against `par` (the lazy TAL-max pick) and `optimal` (the engine's best). Matching or
- * beating the engine ⇒ eagle; clearly beating the lazy pick ⇒ birdie; landing on it ⇒ par. */
+/** Graded against `par` (the lazy TAL-max pick) and `optimal` (the engine's best). Eagle needs
+ * BOTH — match the engine AND clearly beat the lazy pick — so on a "chalk" board where the five
+ * biggest names really are near-optimal, grabbing them is par, never eagle. Birdie is a clear
+ * beat of the lazy pick. */
 export function gradeVsPar(score: number, par: number, optimal: number): GolfGrade {
-  if (score >= optimal - 1) return 'eagle';
-  if (score >= par + 2) return 'birdie';
+  if (score >= optimal - 1 && score >= par + 3) return 'eagle';
+  if (score >= par + 3) return 'birdie';
   if (score >= par - 1) return 'par';
   if (score >= par - 5) return 'bogey';
   return 'double-bogey';
+}
+
+/** A board where the five biggest names are within a couple of points of the engine's best —
+ * there's little room to out-think it, so par is the ceiling for most players. */
+export function isChalkBoard(targets: DailyTargets): boolean {
+  return targets.optimal - targets.par < 3;
 }
 
 export const GRADE_LABEL: Record<GolfGrade, string> = {
@@ -318,3 +353,92 @@ export const GRADE_BLURB: Record<GolfGrade, string> = {
   bogey: 'A notch below the safe pick — something in the five isn’t fitting.',
   'double-bogey': 'The pieces don’t fit — check spacing and rim protection.',
 };
+
+// ---------------------------------------------------------------------------
+// explaining the result
+// ---------------------------------------------------------------------------
+
+export type WeightedAxis = 'talent' | 'offense' | 'defense' | 'fit';
+
+/** The four axes that actually make up the composite, and their weight (renormalised, matches
+ * `W` above). `spacing` is shown alongside but is diagnostic — it feeds Offense and Fit, it is
+ * not a fifth weighted term. */
+export const WEIGHTED_AXES: { key: WeightedAxis; label: string; pct: number }[] = [
+  { key: 'talent', label: 'Talent', pct: Math.round((W.talent / WSUM) * 100) },
+  { key: 'offense', label: 'Offense', pct: Math.round((W.offense / WSUM) * 100) },
+  { key: 'defense', label: 'Defense', pct: Math.round((W.defense / WSUM) * 100) },
+  { key: 'fit', label: 'Fit', pct: Math.round((W.fit / WSUM) * 100) },
+];
+
+export const AXIS_GLOSSARY: { label: string; text: string }[] = [
+  { label: 'Talent', text: 'Raw individual quality of the five — the mean of their TAL ratings.' },
+  { label: 'Offense', text: 'How much the unit scores: shot-making, shot creation, efficiency.' },
+  { label: 'Defense', text: 'How much the unit stops: rim protection, on-ball defense, activity.' },
+  { label: 'Spacing', text: 'Floor spacing from three-point shooting and gravity. Diagnostic — it feeds Offense and Fit, not the score directly.' },
+  { label: 'Fit', text: 'How the pieces complement each other: position balance, shot-creation overlap, defensive coverage, spacing gaps. Five stars who all need the ball fit badly.' },
+];
+
+const WEAK_AXIS_REASON: Record<WeightedAxis, (s: LineupScore) => string> = {
+  talent: () => 'The five just don’t have the raw individual quality — better players were on the board.',
+  offense: (s) =>
+    s.spacing < 70
+      ? 'Not enough scoring punch, and thin floor spacing (Spacing ' + Math.round(s.spacing) + ') lets defenders help off.'
+      : 'Not enough shot creation or efficiency across the unit.',
+  defense: (s) =>
+    s.weakLink
+      ? 'Thin on the defensive end — ' + s.weakLink + ' especially can be hunted.'
+      : 'Short on rim protection and point-of-attack defense.',
+  fit: (s) =>
+    s.notes[0]
+      ? 'The pieces don’t complement each other: ' + s.notes[0].charAt(0).toLowerCase() + s.notes[0].slice(1)
+      : 'The pieces don’t complement each other — overlapping roles, or no floor spacing, drags the five even when the names are big.',
+};
+
+export interface ResultExplanation {
+  /** Lowest of the four weighted axes for the player's five, with a plain-English reason. */
+  weakest: { axis: WeightedAxis; label: string; value: number; reason: string };
+  /** Where the engine's own best five beats the player's, biggest gap first (empty ⇒ you matched
+   * or beat it on every axis). */
+  engineEdge: { axis: WeightedAxis; label: string; delta: number }[];
+  /** Slots where the engine's pick differs from the player's. */
+  swaps: { slot: Position; yours: string; engine: string }[];
+  /** The player took the lazy "five biggest names" lineup. */
+  tookLazyPick: boolean;
+}
+
+export function explainResult(lineup: Lineup, pool: DailyPool, targets: DailyTargets): ResultExplanation {
+  const score = scoreLineup(lineup);
+  const optScore = scoreLineup(targets.optimalFive);
+  const lazy = talMaxLineup(pool);
+
+  const weakestKey = [...WEIGHTED_AXES].sort((a, b) => score[a.key] - score[b.key])[0];
+  const engineEdge = WEIGHTED_AXES.map((a) => ({
+    axis: a.key,
+    label: a.label,
+    delta: Math.round(optScore[a.key] - score[a.key]),
+  }))
+    .filter((e) => e.delta >= 2)
+    .sort((a, b) => b.delta - a.delta);
+
+  const swaps = STARTER_SLOTS.flatMap((slot) => {
+    const yours = lineup[slot];
+    const engine = targets.optimalFive[slot];
+    return yours && engine && yours.id !== engine.id
+      ? [{ slot, yours: yours.playerName, engine: engine.playerName }]
+      : [];
+  });
+
+  const tookLazyPick = STARTER_SLOTS.every((slot) => lineup[slot]?.id === lazy[slot].id);
+
+  return {
+    weakest: {
+      axis: weakestKey.key,
+      label: weakestKey.label,
+      value: Math.round(score[weakestKey.key]),
+      reason: WEAK_AXIS_REASON[weakestKey.key](score),
+    },
+    engineEdge,
+    swaps,
+    tookLazyPick,
+  };
+}

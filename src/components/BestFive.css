@@ -19,6 +19,11 @@
   letter-spacing: 0.03em;
   color: var(--at-ink-faint);
 }
+.bf-subhead-actions {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
 
 .bf-intro {
   margin: 0 0 16px;
@@ -274,16 +279,86 @@
   font-variant-numeric: tabular-nums;
   color: var(--at-ink-soft);
 }
+.bf-bar-row--context {
+  opacity: 0.62;
+}
+.bf-bar-row--context .bf-bar-fill {
+  background: var(--at-ink-faint);
+}
 
-.bf-weaklink {
-  font-size: 12.5px;
+.bf-weights {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--at-ink-faint);
+}
+.bf-glossary-toggle {
+  border: none;
+  background: none;
+  padding: 0 0 0 6px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--at-accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.bf-glossary {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--at-line);
+  border-radius: 8px;
+}
+.bf-glossary dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+.bf-glossary dd {
+  margin: 1px 0 0;
+  font-size: 12px;
   line-height: 1.5;
   color: var(--at-ink-soft);
+}
+
+/* ---- why this score ---- */
+.bf-why {
   margin: 0 0 18px;
-  padding: 10px 12px;
-  border-left: 2px solid var(--at-brand-red);
-  background: color-mix(in srgb, var(--at-brand-red) 7%, transparent);
-  border-radius: 0 6px 6px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--at-line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--at-ink) 3%, transparent);
+}
+.bf-why-head {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+  margin-bottom: 8px;
+}
+.bf-why-line {
+  margin: 0 0 7px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--at-ink-soft);
+}
+.bf-why-line:last-child {
+  margin-bottom: 0;
+}
+.bf-why-line b {
+  color: var(--at-ink);
+}
+
+.bf-result-actions {
+  justify-content: space-between;
+  margin-top: 18px;
 }
 
 /* ---- optimal reveal ---- */

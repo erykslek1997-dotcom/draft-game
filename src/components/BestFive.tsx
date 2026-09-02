@@ -9,11 +9,16 @@ import {
   dailyTargets,
   scoreLineup,
   gradeVsPar,
+  explainResult,
+  isChalkBoard,
   GRADE_LABEL,
   GRADE_BLURB,
+  WEIGHTED_AXES,
+  AXIS_GLOSSARY,
   dayKey,
   type Lineup,
   type LineupScore,
+  type DailyPool,
   type DailyTargets,
   type GolfGrade,
 } from '../engine/bestFive';
@@ -25,11 +30,11 @@ interface Props {
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
 
-const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 'spacing' | 'fit'>; label: string }[] = [
+const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 'spacing' | 'fit'>; label: string; context?: boolean }[] = [
   { key: 'talent', label: 'Talent' },
   { key: 'offense', label: 'Offense' },
   { key: 'defense', label: 'Defense' },
-  { key: 'spacing', label: 'Spacing' },
+  { key: 'spacing', label: 'Spacing', context: true },
   { key: 'fit', label: 'Fit' },
 ];
 
@@ -44,8 +49,13 @@ const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 's
  */
 export default function BestFive({ mode, onBack }: Props) {
   const dev = mode === 'developer';
-  const key = useMemo(() => dayKey(), []);
-  const pool = useMemo(() => dailyPool(key), [key]);
+  const today = useMemo(() => dayKey(), []);
+
+  // The first board of the day is the daily puzzle; "New board" rolls a fresh random pool so the
+  // mode stays playable while there's no backend enforcing one scored attempt per day.
+  const [board, setBoard] = useState<{ seed: string; n: number }>({ seed: today, n: 0 });
+  const pool: DailyPool = useMemo(() => dailyPool(board.seed), [board.seed]);
+  const isDaily = board.seed === today;
 
   const [lineup, setLineup] = useState<Lineup>({});
   const [activeSlot, setActiveSlot] = useState<Position | null>('PG');
@@ -76,20 +86,38 @@ export default function BestFive({ mode, onBack }: Props) {
     setResult({ score, targets, grade: gradeVsPar(score.composite, targets.par, targets.optimal) });
   }
 
-  function playAgain() {
+  function resetPicks() {
     setLineup({});
     setActiveSlot('PG');
     setResult(null);
+  }
+
+  /** Fresh random pool — a practice board, not today's puzzle. */
+  function newBoard() {
+    setBoard((b) => ({ seed: `practice-${today}-${b.n + 1}-${Math.floor(Math.random() * 1e9)}`, n: b.n + 1 }));
+    resetPicks();
+  }
+
+  function backToDaily() {
+    setBoard({ seed: today, n: 0 });
+    resetPicks();
   }
 
   return (
     <div className="at-shell best-five">
       <div className="at-board-brand at-cond">Build the Best 5</div>
       <div className="bf-subhead">
-        <span className="bf-date">Daily puzzle · {key}</span>
-        <button className="at-legend-toggle at-cond" onClick={onBack}>
-          ← Back
-        </button>
+        <span className="bf-date">{isDaily ? `Daily puzzle · ${today}` : `Practice board #${board.n}`}</span>
+        <span className="bf-subhead-actions">
+          {!isDaily && (
+            <button className="at-legend-toggle at-cond" onClick={backToDaily}>
+              Today’s puzzle
+            </button>
+          )}
+          <button className="at-legend-toggle at-cond" onClick={onBack}>
+            ← Back
+          </button>
+        </span>
       </div>
 
       {!result && (
@@ -170,8 +198,11 @@ export default function BestFive({ mode, onBack }: Props) {
       {result && (
         <BestFiveResult
           lineup={lineup}
+          pool={pool}
           result={result}
-          onPlayAgain={playAgain}
+          isDaily={isDaily}
+          onNewBoard={newBoard}
+          onBackToDaily={backToDaily}
         />
       )}
     </div>
@@ -180,15 +211,25 @@ export default function BestFive({ mode, onBack }: Props) {
 
 function BestFiveResult({
   lineup,
+  pool,
   result,
-  onPlayAgain,
+  isDaily,
+  onNewBoard,
+  onBackToDaily,
 }: {
   lineup: Lineup;
+  pool: DailyPool;
   result: { score: LineupScore; targets: DailyTargets; grade: GolfGrade };
-  onPlayAgain: () => void;
+  isDaily: boolean;
+  onNewBoard: () => void;
+  onBackToDaily: () => void;
 }) {
   const { score, targets, grade } = result;
   const chosenIds = new Set(STARTER_SLOTS.map((s) => lineup[s]?.id));
+  const explain = useMemo(() => explainResult(lineup, pool, targets), [lineup, pool, targets]);
+  const [showGlossary, setShowGlossary] = useState(false);
+
+  const weightsLine = WEIGHTED_AXES.map((a) => `${a.pct}% ${a.label}`).join(' · ');
 
   return (
     <div className="at-card bf-result">
@@ -210,8 +251,8 @@ function BestFiveResult({
       </div>
 
       <div className="bf-bars">
-        {AXES.map(({ key, label }) => (
-          <div key={key} className="bf-bar-row">
+        {AXES.map(({ key, label, context }) => (
+          <div key={key} className={`bf-bar-row ${context ? 'bf-bar-row--context' : ''}`}>
             <span className="bf-bar-label at-cond">{label}</span>
             <span className="bf-bar-track">
               <span className="bf-bar-fill" style={{ width: `${Math.max(0, Math.min(100, score[key]))}%` }} />
@@ -219,16 +260,69 @@ function BestFiveResult({
             <span className="bf-bar-val">{Math.round(score[key])}</span>
           </div>
         ))}
+        <p className="bf-weights at-cond">
+          Score = {weightsLine}. Spacing is diagnostic — it feeds Offense and Fit.
+          <button className="bf-glossary-toggle at-cond" onClick={() => setShowGlossary((v) => !v)}>
+            {showGlossary ? 'hide' : 'what do these mean?'}
+          </button>
+        </p>
+        {showGlossary && (
+          <dl className="bf-glossary">
+            {AXIS_GLOSSARY.map((g) => (
+              <div key={g.label}>
+                <dt>{g.label}</dt>
+                <dd>{g.text}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </div>
 
-      {score.weakLink && (
-        <p className="bf-weaklink">
-          Defensively, <b>{score.weakLink}</b> is the softest spot in this five — a lineup that can be hunted there.
+      <div className="bf-why">
+        <div className="bf-why-head at-cond">Why this score</div>
+        {isChalkBoard(targets) && (
+          <p className="bf-why-line">
+            Chalk board — the five biggest names ({targets.par}) were within {targets.optimal - targets.par} of the
+            engine’s best ({targets.optimal}). Not much room to out-think it today.
+          </p>
+        )}
+        {explain.tookLazyPick && !isChalkBoard(targets) && (
+          <p className="bf-why-line">
+            You picked the five biggest names — that’s exactly par ({targets.par}). The pool almost always
+            hides a better-fitting lineup among the lesser names.
+          </p>
+        )}
+        <p className="bf-why-line">
+          Your weakest axis is <b>{explain.weakest.label} ({explain.weakest.value})</b>. {explain.weakest.reason}
         </p>
-      )}
+        {score.weakLink && (
+          <p className="bf-why-line">
+            Defensively, <b>{score.weakLink}</b> is the softest spot — an opponent will attack him every possession.
+          </p>
+        )}
+        {explain.engineEdge.length > 0 && (
+          <p className="bf-why-line">
+            The engine’s best five ({targets.optimal}) beats yours mostly on{' '}
+            <b>{explain.engineEdge[0].label} (+{explain.engineEdge[0].delta})</b>
+            {explain.engineEdge[1] && `, then ${explain.engineEdge[1].label} (+${explain.engineEdge[1].delta})`}
+            {explain.swaps.length > 0 && (
+              <>
+                {' '}— it plays{' '}
+                {explain.swaps.map((s, i) => (
+                  <span key={s.slot}>
+                    {i > 0 && (i === explain.swaps.length - 1 ? ' and ' : ', ')}
+                    <b>{s.engine}</b> at {s.slot}
+                  </span>
+                ))}
+                .
+              </>
+            )}
+          </p>
+        )}
+      </div>
 
       <div className="bf-optimal">
-        <div className="bf-optimal-head at-cond">The engine’s best five from today’s pool</div>
+        <div className="bf-optimal-head at-cond">The engine’s best five from this pool</div>
         {STARTER_SLOTS.map((slot) => {
           const s = targets.optimalFive[slot];
           const hit = chosenIds.has(s.id);
@@ -242,10 +336,15 @@ function BestFiveResult({
         })}
       </div>
 
-      <div className="bf-submit-row">
-        <button className="at-legend-toggle at-cond" onClick={onPlayAgain}>
-          Play again
+      <div className="bf-submit-row bf-result-actions">
+        <button className="at-draft-btn bf-submit" onClick={onNewBoard}>
+          New board
         </button>
+        {!isDaily && (
+          <button className="at-legend-toggle at-cond" onClick={onBackToDaily}>
+            Back to today’s puzzle
+          </button>
+        )}
       </div>
     </div>
   );
