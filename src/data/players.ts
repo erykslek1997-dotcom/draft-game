@@ -257,7 +257,13 @@ const rows: Row[] = [
   ['haslem', 'Udonis Haslem', '2004-06', 'PF', [], 5.5, 6.0, 6.8, 1.0, 0.6, 0.2, 0.470, 0.0, 0.0, 0.720, 0.500, 'Roll & Cut Big', 'Mobile Big'],
   ['mcgee', 'JaVale McGee', '2016-18', 'C', [], 5.0, 6.6, 4.7, 0.3, 0.2, 1.4, 0.610, 0.0, 0.0, 0.680, 0.620, 'Roll & Cut Big', 'Anchor Big'],
   ['udoh', 'Ekpe Udoh', '2011-13', 'C', [], 3.5, 4.0, 4.5, 1.0, 0.5, 1.3, 0.550, 0.0, 0.0, 0.650, 0.550, 'Roll & Cut Big', 'Anchor Big'],
-  ['artest', 'Ron Artest', '2003-05', 'SF', [], 8.0, 9.0, 4.0, 2.0, 1.5, 0.3, 0.410, 0.300, 2.5, 0.700, 0.500, 'Slasher', 'Wing Stopper'],
+  // 2026-09-01, SF audit: this row fills the one span the generated data can't (2004-05 center
+  // year — the 7-game Malice-at-the-Palace season). It was carrying placeholder cap-glue numbers
+  // (9.0 ppg / 8.0 fga) that badly misread prime, DPOY-2004, All-NBA-3rd Ron Artest as a Bench
+  // Warmer (O-TAL 36) while `blendedRealValue` correctly had him at +4.94. The missing 2004-05 is
+  // only 7 games, so the real 3-year window is dominated by 2002-03 + 2003-04 — set to match the
+  // generated 2002-04 span (his own DPOY-era numbers) rather than an invented low-usage version.
+  ['artest', 'Ron Artest', '2003-05', 'SF', [], 13.8, 16.9, 5.3, 3.3, 2.2, 0.7, 0.424, 0.322, 3.2, 0.735, 0.518, 'Slasher', 'Wing Stopper'],
 ];
 
 const handCuratedPlayers: PlayerSpan[] = rows.map(
@@ -350,6 +356,13 @@ const POSITION_OVERRIDES: { name: string; spanLabel: string; position: Position;
   // because PF is a genuine secondary for him (every other span carries it) — this is a Harden-
   // style dual-role correction, not a Pierce-style purge.
   { name: 'Andrei Kirilenko', spanLabel: '2003-05', position: 'SF', keepOldAsSecondary: true },
+  // Pau's Lakers title window was primarily a two-big PF/C construction alongside Andrew
+  // Bynum (and often Lamar Odom), not a center-only role. Keeping C as a real secondary
+  // preserves small-ball eligibility while allowing the draft and rotation model to value the
+  // frontcourt flexibility those teams actually used.
+  { name: 'Pau Gasol', spanLabel: '2007-09', position: 'PF', keepOldAsSecondary: true },
+  { name: 'Pau Gasol', spanLabel: '2008-10', position: 'PF', keepOldAsSecondary: true },
+  { name: 'Pau Gasol', spanLabel: '2009-11', position: 'PF', keepOldAsSecondary: true },
 ];
 
 function applyPositionOverrides(spans: PlayerSpan[]): PlayerSpan[] {

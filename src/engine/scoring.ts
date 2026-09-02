@@ -364,6 +364,10 @@ export function defenseScore(team: Team): number {
  * fix, it's the spacing question being closed, regardless of who else is out there.
  */
 const MULTI_GRAVITY_TEAM_SPACING_CAP = 97;
+// A non-Curry walking-gravity shooter raises the offense's geometry substantially, but cannot
+// supply Curry's off-ball/on-ball floor by himself. This sits at a strong, not elite, raw team
+// spacing level; it is blended only across the shooter's actual starter minutes below.
+const SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR = 70;
 
 export function spacingScore(team: Team): number {
   const assignments = allAssignments(team);
@@ -373,7 +377,15 @@ export function spacingScore(team: Team): number {
   // See `BENCH_INFLUENCE_BOOST`'s own docstring above — the multi-gravity/anomaly-floor logic
   // below already gives bench-minute shooters full (not minutes-diluted) credit on its own terms,
   // so only this base weighted average needs the same boost offense/defense already get.
-  const base = benchBoostedWeightedAverage(team, computeSpacing, false);
+  const fullRotationBase = benchBoostedWeightedAverage(team, computeSpacing, false);
+  // A team is judged first by the five opponents actually have to guard to open each game.
+  // Bench shooting still matters, but cannot turn a Wade/Iguodala/Webber front line into an
+  // elite-spacing starting lineup merely because Barry or Bonner appears later in the rotation.
+  const starters = primaryStarters(team).map((entry) => entry.player);
+  const starterBase = starters.length > 0
+    ? starters.reduce((sum, player) => sum + computeSpacing(player), 0) / starters.length
+    : fullRotationBase;
+  const base = fullRotationBase * 0.35 + starterBase * 0.65;
 
   // 2026-08-19, user-reported: a real Paul George "Walking gravity" span (SPC 100, no Curry on
   // the roster) got NONE of this mechanic's credit — both the single-player floor and the
@@ -387,9 +399,8 @@ export function spacingScore(team: Team): number {
   // docstring above) instead of just the one motivating example (Curry) it happened to be built
   // around. Scoped to this function only — `isShootingAnomalyPlayer` itself, and its separate
   // consumers in fit.ts/insightMapper.ts, are untouched.
-  const gravityThreatAssignments = assignments.filter(
-    ({ player, minutes }) => minutes > 0 && spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR,
-  );
+  const gravityThreatAssignments = primaryStarters(team)
+    .filter(({ player, minutes }) => minutes > 0 && spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR);
   const distinctGravityThreatIds = new Set(gravityThreatAssignments.map(({ player }) => player.id));
 
   if (distinctGravityThreatIds.size >= 2) {
@@ -401,10 +412,17 @@ export function spacingScore(team: Team): number {
     return Math.round(hasCurry ? 100 : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, baseScore + 10));
   }
 
+  // A single Walking-gravity span is an enormous individual asset, but it is not automatically
+  // a well-spaced five. Curry retains his unique 85 on-court floor; another elite shooter gets
+  // a strong 70 floor over his own minutes. This prevents one shooter from turning
+  // Wade/Iguodala/Webber/Embiid into a 90-spacing construction while preserving real gravity.
   if (distinctGravityThreatIds.size === 1) {
     const threatMinutes = gravityThreatAssignments.reduce((sum, { minutes }) => sum + minutes, 0);
     const threatShare = Math.max(0, Math.min(1, threatMinutes / STARTER_MINUTES));
-    const floored = Math.max(base, SHOOTING_ANOMALY_TEAM_SPACING_FLOOR);
+    const floor = isShootingAnomalyPlayer(gravityThreatAssignments[0]!.player)
+      ? SHOOTING_ANOMALY_TEAM_SPACING_FLOOR
+      : SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR;
+    const floored = Math.max(base, floor);
     const withGravityFloor = base * (1 - threatShare) + floored * threatShare;
     return Math.round(rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS));
   }
@@ -538,6 +556,7 @@ export function rotationScore(team: Team): RotationScoreResult {
   // misplaced player from stacking past it.
   const DOWNWARD_POSITION_PENALTY: Record<Position, number> = { C: 50, PF: 25, SF: 12, SG: 6, PG: 0 };
   const MAX_DOWNWARD_POSITION_PENALTY = 50;
+  const DOWNWARD_POSITION_FULL_PENALTY_MINUTES = 12;
   const downwardOffenders: string[] = [];
   let downwardPenalty = 0;
   for (const { slot, player, minutes } of allAssignments(team)) {
@@ -545,14 +564,16 @@ export function rotationScore(team: Team): RotationScoreResult {
     if (player.primaryPosition === slot) continue;
     if (player.secondaryPositions.includes(slot)) continue;
     if (isUpwardSlide(player, slot)) continue;
-    const penalty = DOWNWARD_POSITION_PENALTY[player.primaryPosition];
+    const penalty =
+      DOWNWARD_POSITION_PENALTY[player.primaryPosition] *
+      Math.min(1, minutes / DOWNWARD_POSITION_FULL_PENALTY_MINUTES);
     if (penalty > 0) {
       downwardPenalty += penalty;
       downwardOffenders.push(`${player.playerName} (${player.primaryPosition}) at ${slot} (${minutes}m)`);
     }
   }
   if (downwardPenalty > 0) {
-    const penalty = Math.min(MAX_DOWNWARD_POSITION_PENALTY, downwardPenalty);
+    const penalty = Math.min(MAX_DOWNWARD_POSITION_PENALTY, Math.round(downwardPenalty));
     score -= penalty;
     components.downwardPosition = -penalty;
     notes.push(`Playing below natural position: ${downwardOffenders.join(', ')}.`);

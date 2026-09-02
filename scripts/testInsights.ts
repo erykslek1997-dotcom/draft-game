@@ -59,10 +59,11 @@ check(
   ['Jalen Brunson', 'Dana Barros', 'Paul Pierce'].every((name) => weakLinkInsight?.message.includes(name)),
   'contextual exposure description retains Brunson, Barros and Pierce rather than hiding bench targets',
 );
-// 2026-08-31: the shared role-minute model now gives Pierce and Barros their real material roles
-// instead of flattening them behind a generic 12/36 split. In this nine-player fixture Larry
-// Smith adds two targetable minutes to the matching eight-man defensive fixture's 98.
-check(weakLinkInsight?.message.includes('100 targetable minutes'), 'weak-link description reports the real 100-minute cost');
+// The useful-bench-minute recovery keeps Larry Smith out of a token defensive stint, so this
+// nine-player fixture now matches the underlying Brunson/Barros/Pierce exposure at 98 minutes.
+// Keep the assertion tied to the current rotation output rather than the obsolete 100-minute
+// split from the previous allocator.
+check(weakLinkInsight?.message.includes('98 targetable minutes'), 'weak-link description reports the real 98-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),

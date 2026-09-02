@@ -41,6 +41,7 @@ export interface TeamLeagueEvaluation {
   globalRank: number;
   expectedNetRating: number;
   avgSeriesWinProb: number;
+  matchups: MatchupSummary[];
   bestMatchup: MatchupSummary;
   worstMatchup: MatchupSummary;
   championshipProbability: number;
@@ -110,6 +111,7 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
       globalRank: rankByTeamId.get(team.id) ?? 0,
       expectedNetRating: projectedNetRating(team).net,
       avgSeriesWinProb,
+      matchups,
       bestMatchup: best,
       worstMatchup: worst,
       championshipProbability: teams.length === 16 ? (championshipCount.get(team.id) ?? 0) / simulations : 0,

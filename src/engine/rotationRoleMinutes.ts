@@ -23,7 +23,7 @@ export const TIER_MINUTE_PROFILE: Record<OverallTier, TierMinuteProfile> = {
 };
 
 export function minuteProfileForSpan(span: PlayerSpan): TierMinuteProfile {
-  if (span.fga < 2) return { optimal: 0, minimal: null, ceiling: 8 };
+  if (span.fga < 2) return { optimal: 0, minimal: null, ceiling: 0 };
   return TIER_MINUTE_PROFILE[overallTierForSpan(tierContextWithSixthMan(span))];
 }
 

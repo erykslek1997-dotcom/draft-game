@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { rankTeams } from '../engine/scoring';
 import { evaluateLeague } from '../engine/leagueSimulation';
 import { simulateSeason, type SeasonStandingsRow } from '../engine/seasonSimulation';
@@ -25,14 +25,15 @@ import { generateRosterInsights } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
-import FeedbackToggle, { type FeedbackEntry } from './FeedbackToggle';
-import RotationBuilder from './RotationBuilder';
+import { type FeedbackEntry } from './FeedbackToggle';
 // 2026-08-16, user's own ask ("dodasz to też na ostatni ekran ocen?"): reuses the exact same
 // hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
 // safe to import directly (not lazy) since GameShell already bundles DraftBoard and this file
 // together as siblings, so nothing about the app's existing load-time split changes.
-import { pickStatTip, OverallTierBadge } from './DraftBoard';
-import type { PlayerSpan } from '../data/schema';
+import { pickStatTip } from './DraftBoard';
+import HistoricalChallengesPanel from './HistoricalChallengesPanel';
+import MatchupMatrix from './MatchupMatrix';
+import WhatIfPanel from './WhatIfPanel';
 
 /**
  * 2026-08-15, user-reported: the Rotation/Bench bracket tag next to a player's row used to read
@@ -48,15 +49,18 @@ import type { PlayerSpan } from '../data/schema';
  * the one number that really drives `positionFitMultiplier`/rotation eligibility for THIS
  * assignment, so the bracket can never again disagree with why a player is slotted where he is.
  */
-function spanPositionTag(player: PlayerSpan): string {
-  return [player.primaryPosition, ...player.secondaryPositions].join('/');
+/** Compact the year range in dense rotation rows while keeping the full span in the hover tip. */
+function compactSpanLabel(label: string): string {
+  return label.replace(/\((\d{4})-(\d{2})\)/, (_, start: string, end: string) => `(${start.slice(2)}-${end})`);
 }
 
-// Lazy, matching App.tsx's own lazy() call for this exact component (see GameShell.tsx's
-// lazy-loading docstring) — a static import here would bundle DraftPoolBrowser (plus its own
-// allStarLookup.ts/grades.ts imports) into every draft session's GameShell chunk, even for the
-// far more common case of a user who finishes a draft and never opens the pool browser from here.
-const DraftPoolBrowser = lazy(() => import('./DraftPoolBrowser'));
+function compactPlayerName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length < 2) return name;
+  const first = parts[0];
+  const initial = first.includes('.') ? first : `${first[0]}.`;
+  return `${initial} ${parts.slice(1).join(' ')}`;
+}
 
 interface Props {
   teams: Team[];
@@ -341,7 +345,7 @@ function remainingOnBoard(teams: Team[]) {
 
 /** Shared shape for both the original (auto-assigned) and corrected rotation in the export below
  * — same fields either way, so an ML pipeline can diff them directly without special-casing. */
-function buildRotationExport(team: Team) {
+export function buildRotationExport(team: Team) {
   const assignments = allAssignments(team);
   const bench = benchWithMinutes(team);
   return {
@@ -356,7 +360,7 @@ function buildRotationExport(team: Team) {
   };
 }
 
-function buildFeedbackExport(
+export function buildFeedbackExport(
   teams: Team[],
   history: DraftHistoryEntry[],
   feedback: Record<string, TeamFeedback>,
@@ -432,7 +436,7 @@ function buildFeedbackExport(
         SPC: computeSpacing(p),
         DUR: computeDurability(p),
       }));
-      const fb = feedback[team.id] ?? EMPTY_FEEDBACK;
+      const fb = feedbackFor(feedback, team.id);
       return {
         rank,
         teamId: team.id,
@@ -476,7 +480,7 @@ function buildFeedbackExport(
   };
 }
 
-function downloadFeedback(
+export function downloadFeedback(
   teams: Team[],
   history: DraftHistoryEntry[],
   feedback: Record<string, TeamFeedback>,
@@ -497,18 +501,15 @@ function downloadFeedback(
   URL.revokeObjectURL(url);
 }
 
-export default function ResultsScreen({ teams, history, mode, onRestart, pickReactions, pickReasoning }: Props) {
+export default function ResultsScreen({ teams, history, onRestart }: Props) {
   const teamById = (id: string) => teams.find((t) => t.id === id);
   const playerById = (id: string) => draftPool.find((p) => p.id === id);
-  const [feedback, setFeedback] = useState<Record<string, TeamFeedback>>({});
-  const [showBrowser, setShowBrowser] = useState(false);
   const leftOnBoard = remainingOnBoard(teams);
   // 2026-08-08, user's explicit ask: correct ANY team's rotation from this screen (not just the
   // human's own, pre-results one — see RotationBuilder's reuse below), kept separate from the
   // original auto-assigned `team.rotation` so the export can carry both (see
   // `buildFeedbackExport`'s own docstring on `correctedRotations`).
-  const [correctedRotations, setCorrectedRotations] = useState<Record<string, Rotation>>({});
-  const [editingRotationTeamId, setEditingRotationTeamId] = useState<string | null>(null);
+  const correctedRotations: Record<string, Rotation> = {};
   // 2026-08-19, user's own idea ("PR works as it works, but user can simulate 82 game season"):
   // one randomly-rolled 82-game season standings table, completely separate from the Final Power
   // Ranking above (`ranked`, still what `overall`/rank is judged by — untouched by this). `null`
@@ -544,7 +545,10 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
   const ranked = rankTeams(scoredTeams);
   // Monte Carlo bracket sim (20,000 runs) is expensive, so it reruns only when the draft teams or
   // a saved rotation correction actually change — not when feedback text or expansion state does.
-  const leagueEval = useMemo(() => evaluateLeague(scoredTeams), [scoredTeams]);
+  // The results screen should become interactive quickly after Skip to Results. The matchup
+  // matrix is descriptive, so a compact roll count is enough for whole-percent odds while
+  // avoiding a long main-thread pause from the engine's full calibration default.
+  const leagueEval = useMemo(() => evaluateLeague(scoredTeams, 500), [scoredTeams]);
   const leagueEvalByTeamId = useMemo(() => new Map(leagueEval.map((entry) => [entry.teamId, entry])), [leagueEval]);
   function toggleExpanded(teamId: string) {
     setExpandedTeamIds((prev) => {
@@ -564,46 +568,13 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
     return correction ? { ...team, rotation: correction } : team;
   }
 
-  function getFeedback(teamId: string): TeamFeedback {
-    return feedbackFor(feedback, teamId);
-  }
-
-  // Every mutator reads its "current" value from `prev` inside the updater, never from the
-  // outer `feedback` closure — two of these firing back-to-back before a re-render must not
-  // silently drop one of them.
-  function patchFeedback(teamId: string, patch: Partial<TeamFeedback>) {
-    setFeedback((prev) => ({ ...prev, [teamId]: { ...feedbackFor(prev, teamId), ...patch } }));
-  }
-
-  // One reaction per rostered player, set directly on their row — see FeedbackToggle's docstring
-  // for why this replaced the old add-a-row/pick-a-player/pick-a-direction flow.
-  function setPlayerFeedback(teamId: string, playerId: string, entry: FeedbackEntry | undefined) {
-    setFeedback((prev) => {
-      const current = feedbackFor(prev, teamId);
-      const notes = { ...current.playerNotes };
-      if (entry) notes[playerId] = entry;
-      else delete notes[playerId];
-      return { ...prev, [teamId]: { ...current, playerNotes: notes } };
-    });
-  }
-
-  if (showBrowser) {
-    return (
-      <Suspense fallback={<div className="loading-panel"><p>Loading player data…</p></div>}>
-        <DraftPoolBrowser mode={mode} onBack={() => setShowBrowser(false)} />
-      </Suspense>
-    );
-  }
-
   return (
     // 2026-08-16, user's own ask: same fixed-dark broadcast board as the Draft screen — see the
     // `.at-shell` token-aliasing comment in App.css for how the rest of this file's existing
     // classes (never touched here) pick up the dark palette just by being nested inside this.
     <div className="results-screen at-shell">
-      <h2>Final Power Ranking</h2>
-      <button className="secondary-btn" onClick={() => setShowBrowser(true)}>
-        Przeglądaj wszystkich graczy
-      </button>
+      <h2>Final team ranking</h2>
+      <MatchupMatrix teams={scoredTeams} evaluations={leagueEval} focusTeamId={scoredTeams.find((team) => team.isHuman)?.id} />
       {/* 2026-08-19, user's own idea: the Final Power Ranking above stays exactly what it always
           was — this is a separate, just-for-fun roll of one randomly-simulated 82-game regular
           season, game by game, using the same real per-game win probability model the Championship
@@ -611,7 +582,7 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
           re-rolls a brand new season rather than averaging toward an "expected" record — the user's
           explicit choice over a many-seasons-averaged projection. */}
       <div className="season-sim-panel">
-        <h3>Simulate 82-Game Season</h3>
+        <h3>Simulate an 82-game season</h3>
         <p className="player-notes-hint">
           Rolls one full regular season, game by game, using each pairing's real projected win probability. Separate from
           the Final Power Ranking above.
@@ -627,7 +598,7 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
               setPlayoffResult(null);
             }}
           >
-            🏀 Simulate 82-Game Season
+            🏀 Simulate an 82-game season
           </button>
         )}
         {seasonStandings && (
@@ -669,44 +640,31 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                 className="secondary-btn playoff-sim-btn"
                 onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings))}
               >
-                🏆 Simulate Playoffs
+                🏆 Simulate the playoffs
               </button>
             )}
             {playoffResult && <PlayoffBracketTree result={playoffResult} teamById={teamById} />}
           </>
         )}
       </div>
-      <div className="left-on-board">
-        <strong>Zostali na boardzie (top wg TAL)</strong>
-        <ul>
-          {leftOnBoard.slice(0, 20).map((p) => (
-            <li key={p.playerName}>
-              {p.playerName} ({p.spanLabel}) — {p.primaryPosition}, TAL {p.TAL}
-            </li>
-          ))}
-        </ul>
-      </div>
       <div className="expand-all-controls">
         <button className="secondary-btn" onClick={() => setExpandedTeamIds(new Set(teams.map((t) => t.id)))}>
-          Rozwiń wszystkie
+          Expand all
         </button>
         <button
           className="secondary-btn"
           onClick={() => setExpandedTeamIds(new Set(teams.filter((t) => t.isHuman).map((t) => t.id)))}
         >
-          Zwiń wszystkie
+          Collapse all
         </button>
       </div>
       {ranked.map(({ team, breakdown, rank }) => {
         const shownTeam = displayTeam(team);
         const assignments = allAssignments(shownTeam);
         const starterKeys = new Set(primaryStarters(shownTeam).map((entry) => `${entry.slot}|${entry.player.id}`));
-        const bench = benchWithMinutes(shownTeam);
         const netRating = projectedNetRating(shownTeam);
         const leagueEvalRow = leagueEvalByTeamId.get(team.id);
         const teamHistory = history.filter((h) => h.teamId === team.id).sort((a, b) => a.pickNumber - b.pickNumber);
-        const fb = getFeedback(team.id);
-        const isEditingRotation = editingRotationTeamId === team.id;
         const isExpanded = expandedTeamIds.has(team.id);
         const fitDetail = isExpanded ? fitScore(shownTeam) : null;
         const rsPoProfile = fitDetail ? seasonProfile(breakdown, fitDetail) : null;
@@ -729,7 +687,7 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
         // unconditionally for all `ranked.length` teams on every render.
         const insights = isExpanded ? generateRosterInsights(buildTeamFeatureSnapshot(shownTeam)) : null;
         return (
-          <div key={team.id} className={`team-result rank-${rank} ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}>
+          <div key={team.id} className={`team-result rank-${rank} ${team.isHuman ? 'is-human-team' : ''} ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}>
             <button className="team-result-header" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
               <span className="team-result-toggle">{isExpanded ? '▾' : '▸'}</span>
               <span className="team-result-title">
@@ -760,29 +718,30 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                   <span className="fga-spent">FGA spent: {totalFga.toFixed(1)} / 100.9</span>
                 </div>
                 {fitDetail && (
-                  <div className="fit-v2-shadow-panel">
-                    <span className="fit-v2-shadow-label">Fit breakdown</span>
-                    <span>Creation {fitDetail.components.creationStructure}</span>
-                    <span>Spacing compatibility {fitDetail.components.spacingCompatibility}</span>
-                    <span>Defensive roles {fitDetail.components.defensiveRoleCoverage}</span>
-                    <span>Switchability {fitDetail.inputs.switchability}</span>
-                    <span>Rebounding {fitDetail.components.reboundingBalance}</span>
-                    <span>Functional size {fitDetail.components.sizeCoverage}</span>
-                    <span>Championship structure {fitDetail.components.championshipStructure}</span>
+                  <details className="result-accordion-section team-analysis-section">
+                    <summary>Team analysis</summary>
+                    <div className="analysis-section-heading">Fit details</div>
+                    <span className="fit-detail-metric"><b>Creation</b><strong>{Math.round(fitDetail.components.creationStructure)}</strong></span>
+                    <span className="fit-detail-metric"><b>Spacing compatibility</b><strong>{Math.round(fitDetail.components.spacingCompatibility)}</strong></span>
+                    <span className="fit-detail-metric"><b>Defensive roles</b><strong>{Math.round(fitDetail.components.defensiveRoleCoverage)}</strong></span>
+                    <span className="fit-detail-metric"><b>Switchability</b><strong>{Math.round(fitDetail.inputs.switchability)}</strong></span>
+                    <span className="fit-detail-metric"><b>Rebounding</b><strong>{Math.round(fitDetail.components.reboundingBalance)}</strong></span>
+                    <span className="fit-detail-metric"><b>Functional size</b><strong>{Math.round(fitDetail.components.sizeCoverage)}</strong></span>
+                    <span className="fit-detail-metric"><b>Championship structure</b><strong>{Math.round(fitDetail.components.championshipStructure)}</strong></span>
                     {fitDetail.inputs.primaryArchetype && (
-                      <span>Roster identity {fitDetail.inputs.primaryArchetype}{fitDetail.inputs.secondaryArchetype ? ` + ${fitDetail.inputs.secondaryArchetype}` : ''}</span>
+                      <span className="fit-detail-wide"><b>Roster identity</b> {fitDetail.inputs.primaryArchetype}{fitDetail.inputs.secondaryArchetype ? ` + ${fitDetail.inputs.secondaryArchetype}` : ''}</span>
                     )}
                     {fitDetail.inputs.championshipArchetypes.length > 0 && (
-                      <span>Archetypes {fitDetail.inputs.championshipArchetypes.map((entry) => `${entry.archetype} ${entry.share}%`).join(' · ')}</span>
+                      <span className="fit-detail-wide"><b>Archetypes</b> {fitDetail.inputs.championshipArchetypes.map((entry) => `${entry.archetype} ${entry.share}%`).join(' · ')}</span>
                     )}
                     {fitDetail.inputs.archetypeReport && (
-                      <span>Profile: {fitDetail.inputs.archetypeReport.strengths.join(' · ')}. Risk: {fitDetail.inputs.archetypeReport.failureMode}.</span>
+                      <span className="fit-detail-wide"><b>Profile:</b> {fitDetail.inputs.archetypeReport.strengths.join(' · ')}. <b>Risk:</b> {fitDetail.inputs.archetypeReport.failureMode}.</span>
                     )}
                     {rsPoProfile && (
-                      <span>RS {rsPoProfile.regularSeason} · PO {rsPoProfile.playoffs} · {rsPoProfile.label}. {rsPoProfile.explanation}</span>
+                      <span className="fit-detail-wide"><b>Season profile:</b> RS {rsPoProfile.regularSeason} · PO {rsPoProfile.playoffs} · {rsPoProfile.label}. {rsPoProfile.explanation}</span>
                     )}
                     <span className="fit-v2-shadow-detail">
-                      Defense: POA {fitDetail.inputs.guardContainmentProvider ?? '—'} {Math.round(fitDetail.inputs.guardContainment)}
+                      <b>Defense:</b> POA {fitDetail.inputs.guardContainmentProvider ?? '—'} {Math.round(fitDetail.inputs.guardContainment)}
                       {!fitDetail.inputs.guardContainmentConfirmed && ' (inferred)'}
                       {' · '}wing {fitDetail.inputs.wingCoverageProvider ?? '—'} {Math.round(fitDetail.inputs.wingCoverage)}
                       {!fitDetail.inputs.wingCoverageConfirmed && ' (inferred)'}
@@ -798,68 +757,71 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                     </span>
                     {huntability && huntability.offenders.length > 0 && (
                       <span className="fit-v2-shadow-detail">
-                        Weak-link targets: {huntability.offenders.slice(0, 4).map((offender) =>
+                        <b>Weak-link targets:</b> {huntability.offenders.slice(0, 4).map((offender) =>
                           `${offender.playerName} D${offender.defensiveTalent}/${offender.minutes}m`,
                         ).join(' · ')}
                       </span>
                     )}
                     <span className="fit-v2-shadow-detail">
-                      Size inputs: height {Math.round(fitDetail.inputs.positionAdjustedHeightPercentile ?? 50)}
+                      <b>Size inputs:</b> height {Math.round(fitDetail.inputs.positionAdjustedHeightPercentile ?? 50)}
                       {' · '}strength {Math.round(fitDetail.inputs.positionAdjustedWeightPercentile ?? 50)}
                       {' · '}athleticism {Math.round(fitDetail.inputs.positionAdjustedAthleticismPercentile ?? 50)}
                       {' · '}rebounding {Math.round(fitDetail.inputs.positionAdjustedReboundingPercentile)}
                     </span>
-                  </div>
+                    {insights && (
+                      <div className="notes notes-split analysis-insights">
+                        <div className="notes-column notes-strengths">
+                          <strong>Strengths</strong>
+                          <ul>
+                            {insights.strengths.map((insight) => (
+                              <li key={insight.id}>{insight.message}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        {insights.concerns.length > 0 && (
+                          <div className="notes-column notes-concerns">
+                            <strong>Concerns</strong>
+                            <ul>
+                              {insights.concerns.map((insight) => (
+                                <li key={insight.id}>{insight.message}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </details>
                 )}
-                <div
-                  className="subscores net-rating-projection"
-                  title="Real-NBA-units estimate (points per 100 possessions), fitted against 865 real 1997-2026 team-seasons — a different, informational question from the 0-100 scores above, not a replacement for them."
-                >
-                  <span>
-                    Projected NBA net rating: {netRating.net >= 0 ? '+' : ''}
-                    {netRating.net.toFixed(1)}
-                  </span>
-                  <span>
-                    (ORTG {netRating.offense.toFixed(1)} / DRTG {netRating.defense.toFixed(1)})
-                  </span>
-                </div>
-                {leagueEvalRow && (
-                  <div
-                    className="subscores net-rating-projection"
-                    title="Best-of-7 series odds against each of the other 15 rosters, and championship probability from a 20,000-run single-elimination bracket simulation seeded by Final Power Ranking."
-                  >
+                <details className="result-accordion-section championship-section">
+                  <summary>Championship odds</summary>
+                  <div className="net-rating-projection" title="Real-NBA-units estimate (points per 100 possessions), fitted against real NBA team-seasons.">
+                    <span>Projected NBA net rating: {netRating.net >= 0 ? '+' : ''}{netRating.net.toFixed(1)}</span>
+                    <span>(ORTG {netRating.offense.toFixed(1)} / DRTG {netRating.defense.toFixed(1)})</span>
+                  </div>
+                  {leagueEvalRow && (
+                    <div className="championship-summary" title="Best-of-7 series odds against every other roster, plus a simulated championship probability.">
                     <span>Championship odds: {(leagueEvalRow.championshipProbability * 100).toFixed(1)}%</span>
-                    <span>Avg series win prob: {(leagueEvalRow.avgSeriesWinProb * 100).toFixed(0)}%</span>
+                    <span>Average series win probability: {(leagueEvalRow.avgSeriesWinProb * 100).toFixed(0)}%</span>
                     <span>
                       Best matchup: vs {teamLabel(teamById(leagueEvalRow.bestMatchup.opponentId)!)} (
                       {(leagueEvalRow.bestMatchup.seriesWinProb * 100).toFixed(0)}%)
                     </span>
                     <span>
-                      Worst matchup: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} (
+                      Toughest matchup: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} (
                       {(leagueEvalRow.worstMatchup.seriesWinProb * 100).toFixed(0)}%)
                     </span>
                     {bestMatchupExplanation && <span className="matchup-explanation">Best why: {bestMatchupExplanation}</span>}
                     {worstMatchupExplanation && <span className="matchup-explanation">Worst why: {worstMatchupExplanation}</span>}
-                  </div>
+                    </div>
+                  )}
+                </details>
+                {fitDetail && rsPoProfile && (
+                  <HistoricalChallengesPanel team={shownTeam} breakdown={breakdown} fit={fitDetail} season={rsPoProfile} />
                 )}
-                {isEditingRotation ? (
-                  <RotationBuilder
-                    roster={team.roster}
-                    initialRotation={correctedRotations[team.id] ?? team.rotation}
-                    onConfirm={(rotation) => {
-                      setCorrectedRotations((prev) => ({ ...prev, [team.id]: rotation }));
-                      setEditingRotationTeamId(null);
-                    }}
-                    onCancel={() => setEditingRotationTeamId(null)}
-                  />
-                ) : (
-                  <button className="secondary-btn" onClick={() => setEditingRotationTeamId(team.id)}>
-                    {correctedRotations[team.id] ? '✏️ Edit corrected rotation' : '✏️ Correct rotation'}
-                  </button>
-                )}
-                <div className="lineup">
-                  <div>
-                    <strong>Rotation</strong>
+                {team.isHuman && <WhatIfPanel team={shownTeam} />}
+                <details className="result-accordion-section rotation-panel">
+                  <summary>Rotation</summary>
+                  <div className="lineup">
                     <ul className="rotation-slot-groups">
                       {STARTER_SLOTS.map((slot) => {
                         const entries = assignments
@@ -877,26 +839,28 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                               {entries.map((e) => (
                                 <li key={e.player.id} className="player-row">
                                   <span className="player-row-name at-name-tip" tabIndex={0} data-tip={pickStatTip(e.player)}>
-                                    {e.player.playerName} ({e.player.spanLabel}) [{spanPositionTag(e.player)}]
-                                    {starterKeys.has(`${e.slot}|${e.player.id}`) && <span className="starter-badge">Starter</span>}
+                                    {compactPlayerName(e.player.playerName)} ({compactSpanLabel(e.player.spanLabel)})
+                                    <span className="rotation-role-badge">{starterKeys.has(`${e.slot}|${e.player.id}`) ? 'Starter' : 'Bench'}</span>
                                   </span>
                                   <span className="player-row-meta">
-                                    <span className="mini-fact">{e.minutes} min</span>
-                                    <span className="mini-fact">FGA {e.player.fga.toFixed(1)}</span>
+                                    <span className="player-row-minutes">{e.minutes} min</span>
+                                    <span className="player-row-boxscore">
+                                      <span>{e.player.box.ppg.toFixed(1)} PTS</span>
+                                      <span>{e.player.box.rpg.toFixed(1)} REB</span>
+                                      <span>{e.player.box.apg.toFixed(1)} AST</span>
+                                    </span>
+                                    <span className="player-row-shooting">
+                                      <span>{(e.player.box.fgPct * 100).toFixed(0)}% FG</span>
+                                      <span>{(e.player.box.threePct * 100).toFixed(0)}% 3P</span>
+                                    </span>
                                     {/* 2026-08-19, user's explicit ask: a bare "TAL 97" chip is one
                                         number with no sense of what it means — post-draft (the pick
                                         is already locked in, nothing left to spoil), pairing it with
                                         the same named tier the draft screens use gives the number
                                         real context instead of asking the player to already know
                                         this game's own internal scale. */}
-                                    <OverallTierBadge span={e.player} />
-                                    <ScoreChip label="TAL" value={displayTalentForSpan(tierContextFor(e.player))} />
+                                    <span className="mini-fact player-talent">TAL {displayTalentForSpan(tierContextFor(e.player))}</span>
                                   </span>
-                                  <FeedbackToggle
-                                    entry={fb.playerNotes[e.player.id]}
-                                    onChange={(entry) => setPlayerFeedback(team.id, e.player.id, entry)}
-                                    placeholder="Co jest nie tak z tym graczem?"
-                                  />
                                 </li>
                               ))}
                             </ul>
@@ -905,54 +869,9 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                       })}
                     </ul>
                   </div>
-                  <div>
-                    <strong>Bench</strong>
-                    <ul className="rotation-slot-entries">
-                      {bench.map(({ player, minutes }) => (
-                        <li key={player.id} className="player-row">
-                          <span className="player-row-name at-name-tip" tabIndex={0} data-tip={pickStatTip(player)}>
-                            {player.playerName} ({player.spanLabel}) [{spanPositionTag(player)}]
-                          </span>
-                          <span className="player-row-meta">
-                            <span className="mini-fact">{minutes} min</span>
-                            <span className="mini-fact">FGA {player.fga.toFixed(1)}</span>
-                            <OverallTierBadge span={player} />
-                            <ScoreChip label="TAL" value={displayTalentForSpan(tierContextFor(player))} />
-                          </span>
-                          <FeedbackToggle
-                            entry={fb.playerNotes[player.id]}
-                            onChange={(entry) => setPlayerFeedback(team.id, player.id, entry)}
-                            placeholder="Co jest nie tak z tym graczem?"
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                {insights && (
-                  <div className="notes notes-split">
-                    <div className="notes-column notes-strengths">
-                      <strong>✓ Strengths</strong>
-                      <ul>
-                        {insights.strengths.map((insight) => (
-                          <li key={insight.id}>{insight.message}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    {insights.concerns.length > 0 && (
-                      <div className="notes-column notes-concerns">
-                        <strong>⚠ Concerns</strong>
-                        <ul>
-                          {insights.concerns.map((insight) => (
-                            <li key={insight.id}>{insight.message}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="draft-order">
-                  <strong>Draft Order</strong>
+                </details>
+                <details className="result-accordion-section draft-order">
+                  <summary>Draft order</summary>
                   <ol>
                     {teamHistory.map((entry) => {
                       const p = playerById(entry.playerId);
@@ -963,91 +882,22 @@ export default function ResultsScreen({ teams, history, mode, onRestart, pickRea
                       );
                     })}
                   </ol>
-                </div>
-                <div className="team-feedback">
-                  <strong>Feedback</strong>
-
-                  <p className="player-notes-hint">Konkretni gracze: kliknij ✓/✗ przy graczu w Rotation/Bench powyżej.</p>
-
-                  <div className="feedback-field">
-                    <label>Uwagi do rotacji</label>
-                    <textarea
-                      className="feedback-textarea"
-                      rows={2}
-                      placeholder="Np. kto powinien grać więcej/mniej minut..."
-                      value={fb.rotationNote}
-                      onChange={(e) => patchFeedback(team.id, { rotationNote: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="feedback-field">
-                    <label>Inne uwagi</label>
-                    <textarea
-                      className="feedback-textarea"
-                      rows={2}
-                      placeholder="Cokolwiek innego..."
-                      value={fb.otherNote}
-                      onChange={(e) => patchFeedback(team.id, { otherNote: e.target.value })}
-                    />
-                  </div>
-                </div>
+                </details>
               </div>
             )}
           </div>
         );
       })}
-      <div className="user-power-ranking">
-        <h3>Twój własny ranking (1-16)</h3>
-        <p className="player-notes-hint">Twoja ocena miejsca każdej drużyny — porównywana obok rankingu algorytmu.</p>
-        {ranked.map(({ team, rank }) => {
-          const fb = getFeedback(team.id);
-          const disagrees = fb.userRank !== '' && Number(fb.userRank) !== rank;
-          return (
-            <div key={team.id} className="user-power-ranking-row">
-              <span className="user-power-ranking-label">
-                #{rank} — {teamLabel(team)} {team.isHuman ? '(You)' : ''}
-              </span>
-              <input
-                type="number"
-                min={1}
-                max={16}
-                className="user-rank-input"
-                value={fb.userRank}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Same "clear the stale reason" logic the old yes/no dropdown had — a reason
-                  // typed for a previous disagreement shouldn't survive into the export once the
-                  // user's own number matches the algorithm's again (or is cleared).
-                  const stillDisagrees = value !== '' && Number(value) !== rank;
-                  patchFeedback(team.id, { userRank: value, rankingNote: stillDisagrees ? fb.rankingNote : '' });
-                }}
-              />
-              {fb.userRank !== '' && (
-                <span className="user-rank-hint">{disagrees ? `(algorytm: #${rank})` : '(zgadza się z algorytmem)'}</span>
-              )}
-              {disagrees && (
-                <textarea
-                  className="feedback-textarea"
-                  rows={2}
-                  placeholder="Dlaczego Twoja kolejność jest inna?"
-                  value={fb.rankingNote}
-                  onChange={(e) => patchFeedback(team.id, { rankingNote: e.target.value })}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <details className="left-on-board left-on-board-collapsed">
+        <summary>Left on board ({leftOnBoard.length} players)</summary>
+        <ul>
+          {leftOnBoard.slice(0, 20).map((p) => (
+            <li key={p.playerName}>{p.playerName} ({p.spanLabel}) — {p.primaryPosition}, TAL {p.TAL}</li>
+          ))}
+        </ul>
+      </details>
       <div className="results-actions">
-        <button className="primary-btn" onClick={onRestart}>
-          Draft Again
-        </button>
-        <button
-          className="secondary-btn"
-          onClick={() => downloadFeedback(teams, history, feedback, pickReactions, pickReasoning, correctedRotations)}
-        >
-          Zapisz feedback do pliku
-        </button>
+        <button className="secondary-btn" onClick={onRestart}>Play again</button>
       </div>
     </div>
   );

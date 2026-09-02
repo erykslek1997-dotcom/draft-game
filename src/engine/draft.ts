@@ -310,6 +310,21 @@ export function autoFinishDraft(state: DraftState): DraftState {
   return s;
 }
 
+/** Lightweight developer skip: fills the remaining draft with the first legal spans instead of
+ * running the expensive AI scorer for every pick. It is intentionally only used by the Skip to
+ * Results convenience action; normal Auto-finish keeps the quality-oriented AI path. */
+export function fastFinishDraft(state: DraftState): DraftState {
+  let s = state;
+  while (!s.complete) {
+    const legal = availablePlayers(s).filter((p) => isPickLegal(s, p.id));
+    if (legal.length === 0) break;
+    const next = makePick(s, legal[0].id);
+    if (next === s) break;
+    s = next;
+  }
+  return s;
+}
+
 /** Makes one automated pick and guarantees that any returned state has advanced. The AI and
  * legality engine intentionally answer slightly different questions (the AI also excludes DNP
  * spans), so an AI-preferred candidate can occasionally be rejected even though another legal

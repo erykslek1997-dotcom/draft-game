@@ -9,7 +9,11 @@ import {
 } from '../src/engine/fit';
 import { autoAssignRotation, primaryStarters } from '../src/engine/rotation';
 import { scoreTeam } from '../src/engine/scoring';
+import { defensiveCohesion } from '../src/engine/defensiveCohesion';
 import type { Team } from '../src/engine/types';
+import { calibrateSeasonProfileScore } from '../src/engine/seasonProfile';
+import { effectiveTalent } from '../src/engine/grades';
+import { playoffBpmDraftBonus } from '../src/engine/aiDrafter';
 
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`FAIL: ${message}`);
@@ -21,6 +25,19 @@ function pick(playerName: string, spanLabel: string): PlayerSpan {
   if (!player) throw new Error(`Missing FIT v2 fixture: ${playerName}, ${spanLabel}`);
   return player;
 }
+
+check(calibrateSeasonProfileScore(66, { p10: 66, median: 76, p90: 82, elite: 86 }) === 50, 'season profile maps P10 to 50');
+check(calibrateSeasonProfileScore(76, { p10: 66, median: 76, p90: 82, elite: 86 }) === 75, 'season profile maps median to 75');
+check(calibrateSeasonProfileScore(82, { p10: 66, median: 76, p90: 82, elite: 86 }) === 90, 'season profile maps P90 to 90');
+check(calibrateSeasonProfileScore(86, { p10: 66, median: 76, p90: 82, elite: 86 }) === 100, 'season profile maps elite edge to 100');
+check(effectiveTalent(pick('Pau Gasol', '2008-10')) === 82, 'playoff-validated Pau Gasol earns the All-NBA talent floor');
+check(playoffBpmDraftBonus(pick('Marc Gasol', '2011-13')) > 1, 'Marc Gasol receives a reliable playoff-value draft bonus');
+check(playoffBpmDraftBonus(pick('Gilbert Arenas', '2005-07')) === 0, 'weak-defense perimeter scorers do not receive a playoff BPM draft bonus');
+check(
+  pick('Pau Gasol', '2008-10').primaryPosition === 'PF' && pick('Pau Gasol', '2008-10').secondaryPositions.includes('C'),
+  'title-window Pau Gasol is represented as a real PF/C rather than a center-only player',
+);
+check(pick('Ben Wallace', '2001-03').secondaryPositions.includes('PF'), 'Ben Wallace can cover credible PF minutes without a center-at-PF penalty');
 
 function team(id: string, roster: PlayerSpan[]): Team {
   return { id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) };
@@ -135,6 +152,43 @@ check(
 
 const jrue = pick('Jrue Holiday', '2017-19');
 check(jrue.secondaryPositions.includes('PG'), 'Jrue Holiday 2017-19 is a real secondary PG and avoids an artificial PG penalty');
+
+const multiProfileDefense = team('fit-v2-multi-profile-defense', [
+  pick('Jrue Holiday', '2022-24'),
+  pick('Ray Allen', '2000-02'),
+  pick('LeBron James', '2015-17'),
+  pick('Evan Mobley', '2023-25'),
+  pick('Wilt Chamberlain', '1966-68'),
+]);
+const multiProfileCohesion = defensiveCohesion(multiProfileDefense);
+check(
+  multiProfileCohesion.poaProvider === 'Jrue Holiday',
+  'Jrue receives POA credit from his curated secondary defensive profile instead of Ray Allen',
+);
+check(
+  multiProfileCohesion.wingProvider === 'LeBron James',
+  'LeBron receives credible wing coverage from his curated secondary defensive profile',
+);
+check(
+  multiProfileCohesion.rimProvider === 'Evan Mobley',
+  'Mobley receives anchor-rim credit from his curated secondary defensive profile',
+);
+
+const billupsWadeSpacing = team('fit-v2-billups-wade-spacing', [
+  pick('Chauncey Billups', '2004-06'),
+  pick('Dwyane Wade', '2005-07'),
+  pick('Andre Iguodala', '2011-13'),
+  pick('Chris Webber', '1996-98'),
+  pick('Joel Embiid', '2019-21'),
+  pick('Alex Caruso', '2022-24'),
+  pick('Brad Miller', '2003-05'),
+  pick('Brent Barry', '2005-07'),
+  pick('Adrian Griffin', '2004-06'),
+]);
+check(
+  scoreTeam(billupsWadeSpacing).spacingScore >= 65 && scoreTeam(billupsWadeSpacing).spacingScore <= 75,
+  'one Billups gravity span makes Wade/Iguodala/Webber/Embiid solid, not elite, spacing',
+);
 
 const wembyWebber = team('fit-v2-wemby-webber', [
   pick('Magic Johnson', '1988-90'),

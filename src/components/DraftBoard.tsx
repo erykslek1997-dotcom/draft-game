@@ -1,7 +1,7 @@
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
-import { TEAM_COUNT, ROUNDS, currentTeamIndex, availablePlayers, isPickLegal, type DraftState } from '../engine/draft';
+import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, type DraftState } from '../engine/draft';
 import { CAP_LIMIT, ROSTER_SIZE, capRemaining, totalFga } from '../engine/positions';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { effectiveTalent } from '../engine/grades';
@@ -31,13 +31,17 @@ import {
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { playoffPerformanceTier, type PlayoffPerformanceTier } from '../engine/playoffPerformanceLookup';
 import { computeDurability, durabilityTier, type DurabilityTier } from '../engine/durability';
-import { careerAveragesFor } from '../engine/careerAverages';
 import { isSmallSampleSpan, sampleSizeGames } from '../engine/sampleSize';
 import { buildEvidenceReport } from '../engine/evidenceReport';
 import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
+
+/** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
+ * players; anyone past it is reachable via search or a position filter (both land well under the
+ * cap). Rendering all ~720 as expandable accordion rows was ~11s per keystroke. */
+const DRAFT_LIST_LIMIT = 140;
 
 interface Props {
   state: DraftState;
@@ -325,34 +329,6 @@ const GRADE_TIER_CLASS: Record<Grade, string> = {
   C: 'at-t2', 'C-': 'at-t2', 'D+': 'at-t1', D: 'at-t1', 'D-': 'at-t1', F: 'at-t1',
 };
 
-const TALENT_DOT_CLASS: Record<OverallTier, string> = {
-  'Cigarette Butt': 'at-t1', 'Bench Warmer': 'at-t1', 'Role Player': 'at-t2', 'Sixth Man': 'at-t2', Starter: 'at-t3',
-  'All-star': 'at-t4', 'All-NBA': 'at-t5', MVP: 'at-t6', 'Greatest peak': 'at-t6', GOAT: 'at-t6',
-};
-
-const SPACING_DOT_CLASS: Record<SpacingTier, string> = {
-  'Non-shooter': 'at-t1', 'Bad shooter': 'at-t2', 'Average shooter': 'at-t3', 'Good shooter': 'at-t4',
-  'Great shooter': 'at-t5', 'Walking gravity': 'at-t6', 'Shooting anomaly': 'at-t6',
-};
-
-const DURABILITY_DOT_CLASS: Record<DurabilityTier, string> = {
-  DNP: 'at-t1', 'Walking Glass': 'at-t1', 'Street Clothes': 'at-t2', 'Load Management': 'at-t3',
-  Reliable: 'at-t4', Unbreakable: 'at-t5', Ironman: 'at-t6',
-};
-
-const PLAYOFF_DOT_CLASS: Record<PlayoffPerformanceTier, string> = {
-  'Bronze Dropper': 'at-t2', 'Bronze Riser': 'at-t2', 'Silver Dropper': 'at-t3', 'Silver Riser': 'at-t3',
-  'Gold Dropper': 'at-t4', 'Gold Riser': 'at-t4', 'Platinum Dropper': 'at-t6', 'Platinum Riser': 'at-t6',
-};
-
-function AtDot({ tierClass, label }: { tierClass: string; label: string }) {
-  return (
-    <span className="at-dot-wrap" tabIndex={0} data-tip={label} aria-label={label}>
-      <span className={`at-dot ${tierClass}`} />
-    </span>
-  );
-}
-
 // Exported (2026-08-19) for RotationBuilder's own reuse — see that file's own docstring on why
 // the Team/Rotation screen now shows the same Offense/Defense letter grades this badge already
 // renders on the Draft tab, instead of building a second, slightly-different badge from scratch.
@@ -488,7 +464,6 @@ export default function DraftBoard({
   const isViewingHumanRoster = teamForPanels.id === humanTeam.id;
   const humanSpanOptionsByKey = new Map(humanSpanOptions.map((o) => [o.key, o]));
 
-  const available = useMemo(() => availablePlayers(state), [state]);
   const currentFgas = teamForPanels.roster.map((p) => p.fga);
   // Cap meter + per-row FGA read the human's actually-CHOSEN spans (not the drafted/peak ones)
   // once a span dropdown exists to disagree with them — otherwise the meter would silently lie
@@ -496,7 +471,11 @@ export default function DraftBoard({
   // `currentFgas` (drafted/peak spans) when this table isn't showing the human's own roster.
   const displayFgas = isViewingHumanRoster ? chosenHumanRoster.map((p) => p.fga) : currentFgas;
 
-  const allGroups = useMemo(() => groupByPlayer(available), [available]);
+  // 2026-09-02: group the FULL, immutable pool once — not `availablePlayers(state)`, which
+  // returns a new array every pick, forcing the expensive per-player enrichment below to re-run
+  // on every single CPU pick during an auto-draft (~325 players × 5+ `computeX`, several times a
+  // second — the real "bardzo wolno"). Drafted players are filtered out cheaply in `groups`.
+  const allGroups = useMemo(() => groupByPlayer(state.pool), [state.pool]);
 
   // The position he played the most seasons at, so a player appears under exactly one
   // position column instead of every position any single span's primary/secondary touched.
@@ -527,12 +506,20 @@ export default function DraftBoard({
   // that redundancy), then the render below recomputed the same values a second time for
   // display. `showJudgeMetrics` gates the other five so player mode — which never displays
   // or sorts by them — doesn't pay for them at all.
-  const groups = legalGroups
-    .map((g) => ({ ...g, spans: fgaFilterActive ? g.spans.filter((s) => s.fga >= fgaMinNum && s.fga <= fgaMaxNum) : g.spans }))
-    .filter((g) => g.spans.length > 0)
-    .filter((g) => (selectedPosition !== 'ALL' ? careerPosition(g) === selectedPosition : true))
-    .filter((g) => g.playerName.toLowerCase().includes(search.toLowerCase()))
-    .map((g) => {
+  //
+  // 2026-09-01: split into two memos. The expensive per-player enrichment (TAL/tier/O/D/POR/
+  // spacing/durability over every span) now runs only when the pool, the FGA range or the mode
+  // changes — NOT on every search keystroke or position-pill click, which previously re-ran the
+  // whole thing (~325 players × 5+ `computeX` calls) and was the "bardzo wolno" the user hit
+  // scrolling the dev list while typing. The cheap filter/sort pass is its own memo.
+  const enrichedGroups = useMemo(() => {
+    return legalGroups
+      .map((g) => ({
+        ...g,
+        spans: fgaFilterActive ? g.spans.filter((s) => s.fga >= fgaMinNum && s.fga <= fgaMaxNum) : g.spans,
+      }))
+      .filter((g) => g.spans.length > 0)
+      .map((g) => {
       // The specific span behind this player's best TAL — found once here and reused for
       // both the sort key and the header's displayed number/badge below, so a player never
       // sorts by one number while showing another. 2026-08-05: sorting used to read the raw
@@ -558,7 +545,6 @@ export default function DraftBoard({
         (best, s) => (displayTalentForSpan(tierContextFor(s)) > displayTalentForSpan(tierContextFor(best)) ? s : best),
         g.spans[0],
       );
-      const fgas = g.spans.map((s) => s.fga);
       // Player-mode only: every one of this player's spans, ranked by the same hidden AI
       // valuation used for `bestTalentSpan` above — lets the expanded row show "the 3 the engine
       // likes best" first (+ a Show more for the rest) without ever surfacing the score or tier
@@ -569,27 +555,10 @@ export default function DraftBoard({
         : [...g.spans].sort(
             (a, b) => displayTalentForSpan(tierContextFor(b)) - displayTalentForSpan(tierContextFor(a)),
           );
-      // Player-mode only: real whole-career per-game averages (see careerAverages.ts's own
-      // docstring for why these can't just be an average of this player's overlapping spans),
-      // used for every PTS/AST/REB/STL/BLK/FG%/3PT% cell shown to the player — both the collapsed
-      // row and every row of the expanded span table, so a player's box line reads as one stable
-      // identity, not a number that jumps around per span. Falls back to `bestTalentSpan`'s own
-      // box line for the ~handful of names the raw extract doesn't match (see the lookup's own
-      // null contract) rather than showing nothing.
-      const career = showJudgeMetrics ? null : careerAveragesFor(g.playerName);
-      // `bestTalentSpan?.box` (not `.box`) is defensive-only, not load-bearing: `bestTalentSpan`
-      // is always a real span by construction (the `.filter((g) => g.spans.length > 0)` a few
-      // lines up guarantees `g.spans` is non-empty every time this runs), and the fallback object
-      // never surfaces in a real render — it exists purely so a genuinely impossible case (an
-      // empty group slipping through) renders zeroes instead of crashing the whole Draft tab.
-      const displayBox = career
-        ? { ppg: career.ppg, rpg: career.rpg, apg: career.apg, spg: career.spg, bpg: career.bpg, fgPct: career.fgPct, threePct: career.threePct }
-        : (bestTalentSpan?.box ?? { ppg: 0, rpg: 0, apg: 0, spg: 0, bpg: 0, fgPct: 0, threePct: 0 });
       return {
         ...g,
         bestTalentSpan,
         spansByAiValue,
-        displayBox,
         // 2026-08-19, bug found while adding the player-mode tier badge below: the sort comparator's
         // own comment (a few lines down) already claimed this was "computed unconditionally... costs
         // nothing new" for the player-mode tiebreak, but the code here contradicted it — zeroing
@@ -605,45 +574,58 @@ export default function DraftBoard({
         // via LeBron (GOAT) sorting BELOW Bird (Greatest peak) purely because the tied number
         // fell back to incidental array order. Stored alongside `bestTalent` so the sort below
         // can break that specific tie by tier rank instead.
-        // 2026-08-19, user's explicit ask: player mode used to zero this out entirely, along with
-        // every other judge metric — but the tier NAME (not the number) is exactly the "richer
-        // signal without spoiling the exact optimum" beginner aid the user asked for, so it's now
-        // always real regardless of mode. Only the raw `bestTalent` NUMBER above stays hidden in
-        // player mode; the tier badge built from this is a much coarser, non-precise signal (an
-        // 8-wide bucket can't be reverse-engineered into "always draft the highest number" the way
-        // an exact TAL integer can).
+        // 2026-09-02: `bestTier` is the one quality signal both modes now show in the header
+        // (player mode as a bare pill, dev mode as pill + `bestTalent` number). The old
+        // per-player `bestOffensiveTalent`/`bestDefensiveTalent`/`bestSpacing`/… aggregates and
+        // the `careerAveragesFor` box line were dropped: the condensed header no longer shows
+        // them, the expanded per-span table computes its own per-span values, and running six
+        // `Math.max(...spans.map(computeX))` for all ~730 players in this memo was pure waste.
         bestTier: overallTierForSpan(tierContextFor(bestTalentSpan)),
-        bestOffensiveTalent: showJudgeMetrics ? Math.max(...g.spans.map(computeOffensiveTalent)) : 0,
-        bestOffensiveTalentUncapped: showJudgeMetrics ? Math.max(...g.spans.map(computeUncappedOffensiveTalent)) : 0,
-        bestDefensiveTalent: showJudgeMetrics ? Math.max(...g.spans.map(computeDefensiveTalent)) : 0,
-        bestOffensivePortability: showJudgeMetrics ? Math.max(...g.spans.map(computeOffensivePortability)) : 0,
-        bestDefensivePortability: showJudgeMetrics ? Math.max(...g.spans.map(computeDefensivePortability)) : 0,
-        bestSpacing: showJudgeMetrics ? Math.max(...g.spans.map(computeSpacing)) : 0,
-        bestDurability: showJudgeMetrics ? Math.max(...g.spans.map(computeDurability)) : 0,
-        peakFga: bestTalentSpan.fga,
-        lowestFga: Math.min(...fgas),
       };
-    })
-    .sort((a, b) => {
-      if (mode === 'player') {
-        // 2026-08-19, user's explicit ask ("sort players by their tier"): the Tier badge (not a
-        // raw number) is the one quality signal Player Mode actually shows on this row — sorting
-        // by anything else first meant the visible list order could contradict the visible
-        // badges (a "Starter"-tier row appearing above an "All-star"-tier row, say), whenever
-        // All-Star count or the hidden raw number disagreed with the tier a span actually landed
-        // on (real, not hypothetical — `grades.ts`'s own position-specific tier caps routinely
-        // knock a high-raw-TAL span down a tier or more). Tier rank is now the primary key; the
-        // previous All-Star-count/raw-`bestTalent` order survives as the tiebreak WITHIN a tier,
-        // same "fully deterministic and quality-ordered, never shown to the player" reasoning the
-        // 2026-08-16 fix below already established for those two.
-        const tierDiff = tierRank(b.bestTier) - tierRank(a.bestTier);
-        if (tierDiff !== 0) return tierDiff;
-        const starDiff = allStarCount(b.playerName) - allStarCount(a.playerName);
-        if (starDiff !== 0) return starDiff;
-        return b.bestTalent - a.bestTalent;
-      }
-      return b.bestTalent - a.bestTalent || tierRank(b.bestTier) - tierRank(a.bestTier);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legalGroups, fgaFilterActive, fgaMinNum, fgaMaxNum, showJudgeMetrics]);
+
+  // Cheap pass: drop drafted players, then position pill, search box, tier sort. Re-runs on every
+  // keystroke AND every pick, but only ever filters/sorts the already-enriched objects above —
+  // no `computeX` here. `draftPickSpan` adds every sibling span of a picked player to
+  // `state.draftedIds` at once, so a player is all-in or all-out: one `.has` check settles it.
+  //
+  // 2026-09-02: the result is capped at DRAFT_LIST_LIMIT. Rendering all ~720 players as
+  // expandable accordion rows took ~11s per keystroke (measured) — the "bardzo wolno". The list
+  // is tier-sorted, so an uncapped "ALL + empty search" view was showing the 400th-best player
+  // anyway; capping to the top ~140 and telling the user to search / pick a position for the
+  // rest matches the Cap Sheet (which slices at 120) and is instant. Any real search or position
+  // filter lands well under the cap.
+  const { groups, totalMatched } = useMemo(() => {
+    const q = search.toLowerCase();
+    const matched = enrichedGroups
+      .filter((g) => !state.draftedIds.has(g.spans[0].id))
+      .filter((g) => (selectedPosition !== 'ALL' ? careerPosition(g) === selectedPosition : true))
+      .filter((g) => g.playerName.toLowerCase().includes(q))
+      .sort((a, b) => {
+        if (mode === 'player') {
+          // 2026-08-19, user's explicit ask ("sort players by their tier"): the Tier badge (not a
+          // raw number) is the one quality signal Player Mode actually shows on this row — sorting
+          // by anything else first meant the visible list order could contradict the visible
+          // badges (a "Starter"-tier row appearing above an "All-star"-tier row, say), whenever
+          // All-Star count or the hidden raw number disagreed with the tier a span actually landed
+          // on (real, not hypothetical — `grades.ts`'s own position-specific tier caps routinely
+          // knock a high-raw-TAL span down a tier or more). Tier rank is now the primary key; the
+          // previous All-Star-count/raw-`bestTalent` order survives as the tiebreak WITHIN a tier,
+          // same "fully deterministic and quality-ordered, never shown to the player" reasoning the
+          // 2026-08-16 fix below already established for those two.
+          const tierDiff = tierRank(b.bestTier) - tierRank(a.bestTier);
+          if (tierDiff !== 0) return tierDiff;
+          const starDiff = allStarCount(b.playerName) - allStarCount(a.playerName);
+          if (starDiff !== 0) return starDiff;
+          return b.bestTalent - a.bestTalent;
+        }
+        return b.bestTalent - a.bestTalent || tierRank(b.bestTier) - tierRank(a.bestTier);
+      });
+    return { groups: matched.slice(0, DRAFT_LIST_LIMIT), totalMatched: matched.length };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enrichedGroups, state.draftedIds, selectedPosition, search, mode]);
 
   function toggleExpand(name: string) {
     setExpanded((prev) => {
@@ -860,424 +842,225 @@ export default function DraftBoard({
                 ))}
               </div>
 
-              <div className="at-table-scroll">
-                <table className={`at-draft-table ${!showJudgeMetrics ? 'at-draft-table--player' : ''}`}>
-                  {!showJudgeMetrics && (
-                    // Fixed column widths, matched pixel-for-pixel against the expanded
-                    // span sub-table's own colgroup below (300 here == 180 + 94 + the
-                    // sub-table's own 26px indent there) — so a player's PTS/AST/etc. line up
-                    // in a visual column whether they're reading this summary row or an
-                    // expanded season row, making it obvious at a glance it's the same number
-                    // repeated, not a coincidence.
-                    <colgroup>
-                      <col style={{ width: 300 }} />
-                      {/* 2026-08-19, user's explicit ask: a real quality signal beyond raw box
-                          stats, without exposing the exact number that would turn drafting into
-                          "always take the highest one" — see `OverallTierBadge`'s own docstring. */}
-                      <col style={{ width: 96 }} />
-                      <col style={{ width: 66 }} />
-                      <col style={{ width: 66 }} />
-                      <col style={{ width: 66 }} />
-                      <col style={{ width: 66 }} />
-                      <col style={{ width: 66 }} />
-                      <col style={{ width: 66 }} />
-                      <col style={{ width: 66 }} />
-                      <col style={{ width: 66 }} />
-                      <col />
-                    </colgroup>
-                  )}
-                  <thead>
-                    <tr>
-                      <th>Player</th>
-                      {!showJudgeMetrics && <th>Tier</th>}
-                      {!showJudgeMetrics && <th>PTS</th>}
-                      {!showJudgeMetrics && <th>AST</th>}
-                      {!showJudgeMetrics && <th>REB</th>}
-                      {!showJudgeMetrics && <th>STL</th>}
-                      {!showJudgeMetrics && <th>BLK</th>}
-                      {!showJudgeMetrics && <th>FG%</th>}
-                      {!showJudgeMetrics && <th>3PT%</th>}
-                      {!showJudgeMetrics && <th>FGA</th>}
-                      {showJudgeMetrics && <th style={{ textAlign: 'center' }}>Talent</th>}
-                      {showJudgeMetrics && <th style={{ textAlign: 'center' }}>Offense</th>}
-                      {showJudgeMetrics && <th style={{ textAlign: 'center' }}>Defense</th>}
-                      {showJudgeMetrics && <th style={{ textAlign: 'center' }}>O-POR</th>}
-                      {showJudgeMetrics && <th style={{ textAlign: 'center' }}>D-POR</th>}
-                      {showJudgeMetrics && <th style={{ textAlign: 'center' }}>3PT</th>}
-                      {showJudgeMetrics && <th style={{ textAlign: 'center' }}>Durability</th>}
-                      {showJudgeMetrics && <th style={{ textAlign: 'center' }}>Playoffs</th>}
-                      {showJudgeMetrics && <th>Peak FGA</th>}
-                      {showJudgeMetrics && <th>Lowest FGA</th>}
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {groups.map((group) => {
-                      const isOpen = expanded.has(group.playerName);
-                      return (
-                        <Fragment key={group.playerName}>
-                          <tr onClick={() => toggleExpand(group.playerName)} style={{ cursor: 'pointer' }}>
-                            <td className="at-player-cell">
-                              <span className={`at-expand-toggle ${isOpen ? 'at-open' : ''}`}>▸</span>{' '}
-                              {showJudgeMetrics ? (
-                                <>
-                                  {group.playerName}
-                                  <span className="at-span">
-                                    {group.spans.length} season
-                                    {group.spans.length > 1 ? 's' : ''}
-                                  </span>
-                                </>
-                              ) : (
-                                `${group.playerName} - ${naturalPosition(group.playerName)}`
-                              )}
-                            </td>
-                            {!showJudgeMetrics && (
-                              <td>
-                                <span className={`tier-badge ${OVERALL_TIER_CLASS[group.bestTier]}`}>{group.bestTier}</span>
-                              </td>
-                            )}
-                            {!showJudgeMetrics && <td className="at-fga-num">{group.displayBox.ppg.toFixed(1)}</td>}
-                            {!showJudgeMetrics && <td className="at-fga-num">{group.displayBox.apg.toFixed(1)}</td>}
-                            {!showJudgeMetrics && <td className="at-fga-num">{group.displayBox.rpg.toFixed(1)}</td>}
-                            {!showJudgeMetrics && <td className="at-fga-num">{group.displayBox.spg.toFixed(1)}</td>}
-                            {!showJudgeMetrics && <td className="at-fga-num">{group.displayBox.bpg.toFixed(1)}</td>}
-                            {!showJudgeMetrics && (
-                              <td className="at-fga-num">{(group.displayBox.fgPct * 100).toFixed(1)}%</td>
-                            )}
-                            {!showJudgeMetrics && (
-                              <td className="at-fga-num">{(group.displayBox.threePct * 100).toFixed(1)}%</td>
-                            )}
-                            {!showJudgeMetrics && <td className="at-fga-num">{group.bestTalentSpan.fga.toFixed(1)}</td>}
-                            {/* 2026-08-16, user's own follow-up ask: one Draft button per PLAYER
-                                here, right next to the FGA it actually costs — not one per span
-                                buried a row down in the expanded table (removed there; see that
-                                table's own history in this file). Drafts `bestTalentSpan`, the
-                                same engine-recommended season whose stats/FGA this row already
-                                shows — picking a DIFFERENT season is still possible afterward via
-                                the Team tab's own span dropdown (see that tab's docstring), which
-                                lists every season for a drafted player regardless of which one was
-                                actually drafted, so nothing about span choice is actually lost
-                                here, only which screen it happens on. `stopPropagation` because
-                                this button sits inside the same `<tr>` whose own onClick expands/
-                                collapses the row — without it, clicking Draft would also toggle
-                                the row open. */}
-                            {!showJudgeMetrics && (
-                              <td>
-                                <button
-                                  className="at-draft-btn"
-                                  disabled={!canPick || !isPickLegal(state, group.bestTalentSpan.id)}
-                                  title={
-                                    !canPick
-                                      ? `${teamLabel(currentTeam)} is picking…`
-                                      : !isPickLegal(state, group.bestTalentSpan.id)
-                                        ? 'Over the FGA cap — pick something else first, or a cheaper season for this player.'
-                                        : undefined
-                                  }
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onPick(group.bestTalentSpan.id);
-                                  }}
-                                >
-                                  Draft
-                                </button>
-                              </td>
-                            )}
-                            {showJudgeMetrics && (
-                              <td>
-                                <AtDot tierClass={TALENT_DOT_CLASS[group.bestTier]} label={`${group.bestTalent} — ${group.bestTier}`} />
-                              </td>
-                            )}
-                            {showJudgeMetrics && (
-                              <td>
-                                <AtGrade grade={offensiveGrade(group.bestOffensiveTalent, group.bestOffensiveTalentUncapped)} />
-                              </td>
-                            )}
-                            {showJudgeMetrics && (
-                              <td>
-                                <AtGrade grade={defensiveGrade(group.bestDefensiveTalent)} />
-                              </td>
-                            )}
-                            {showJudgeMetrics && (
-                              <td>
-                                <AtGrade grade={offensivePortabilityGrade(group.bestOffensivePortability)} />
-                              </td>
-                            )}
-                            {showJudgeMetrics && (
-                              <td>
-                                <AtGrade grade={defensivePortabilityGrade(group.bestDefensivePortability)} />
-                              </td>
-                            )}
-                            {showJudgeMetrics && (
-                              <td>
-                                <AtDot tierClass={SPACING_DOT_CLASS[spacingTier(group.bestTalentSpan)]} label={spacingTier(group.bestTalentSpan)} />
-                              </td>
-                            )}
-                            {showJudgeMetrics && (
-                              <td>
-                                <AtDot
-                                  tierClass={DURABILITY_DOT_CLASS[durabilityTier(group.bestTalentSpan)]}
-                                  label={`${computeDurability(group.bestTalentSpan)} — ${durabilityTier(group.bestTalentSpan)}`}
-                                />
-                              </td>
-                            )}
-                            {showJudgeMetrics && (
-                              <td>
-                                {playoffPerformanceTier(group.bestTalentSpan) ? (
-                                  <AtDot
-                                    tierClass={PLAYOFF_DOT_CLASS[playoffPerformanceTier(group.bestTalentSpan)!]}
-                                    label={playoffPerformanceTier(group.bestTalentSpan)!}
-                                  />
-                                ) : (
-                                  '—'
-                                )}
-                              </td>
-                            )}
-                            {showJudgeMetrics && (
-                              <td className="at-fga-num">
-                                <b>{group.peakFga.toFixed(1)}</b>
-                              </td>
-                            )}
-                            {showJudgeMetrics && <td className="at-fga-num">{group.lowestFga.toFixed(1)}</td>}
-                            {/* Was an unconditional blank trailing cell for both modes — now only
-                                needed in developer mode, since player mode's own trailing cell is
-                                the real Draft button added above (same column position, matching
-                                the shared trailing blank `<th></th>` this table's header still has
-                                for both modes). */}
-                            {showJudgeMetrics && <td></td>}
-                          </tr>
-                          {isOpen && showJudgeMetrics && (
-                            <tr key={`${group.playerName}-detail`}>
-                              <td colSpan={99} style={{ background: 'var(--at-paper)', padding: '4px 10px 14px' }}>
-                                <table className="at-span-subtable">
-                                  <thead>
-                                    <tr>
-                                      <th>Span</th>
-                                      <th>Pos</th>
-                                      <th>FGA</th>
-                                      <th>Talent</th>
-                                      <th>Off</th>
-                                      <th>Def</th>
-                                      <th>O-POR</th>
-                                      <th>D-POR</th>
-                                      <th>3PT</th>
-                                      <th>DUR</th>
-                                      <th></th>
-                                      <th></th>
-                                      <th></th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {group.spans.map((span) => (
-                                      <tr key={span.id}>
-                                        <td className="at-player-cell">{span.spanLabel}</td>
-                                        <td>{span.primaryPosition}</td>
-                                        <td>{span.fga.toFixed(1)}</td>
-                                        <td>
-                                          <AtDot
-                                            tierClass={TALENT_DOT_CLASS[overallTierForSpan(tierContextFor(span))]}
-                                            label={`${displayNumberForSpan(span, tierContextFor(span))} — ${overallTierForSpan(tierContextFor(span))}`}
-                                          />
-                                        </td>
-                                        <td>
-                                          <AtGrade grade={offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))} />
-                                        </td>
-                                        <td>
-                                          <AtGrade grade={defensiveGrade(computeDefensiveTalent(span))} />
-                                        </td>
-                                        <td>
-                                          <AtGrade grade={offensivePortabilityGrade(computeOffensivePortability(span))} />
-                                        </td>
-                                        <td>
-                                          <AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(span))} />
-                                        </td>
-                                        <td>
-                                          <AtDot tierClass={SPACING_DOT_CLASS[spacingTier(span)]} label={spacingTier(span)} />
-                                        </td>
-                                        <td>
-                                          <AtDot
-                                            tierClass={DURABILITY_DOT_CLASS[durabilityTier(span)]}
-                                            label={`${computeDurability(span)} — ${durabilityTier(span)}`}
-                                          />
-                                        </td>
-                                        <td>
-                                          <SmallSampleBadge span={span} />
-                                        </td>
-                                        <td>
-                                          <button
-                                            className="at-draft-btn"
-                                            disabled={!canPick || !isPickLegal(state, span.id)}
-                                            title={
-                                              !canPick
-                                                ? `${teamLabel(currentTeam)} is picking…`
-                                                : !isPickLegal(state, span.id)
-                                                  ? 'Over the FGA cap — pick something else first, or a cheaper season for this player.'
-                                                  : undefined
-                                            }
-                                            onClick={() => onPick(span.id)}
-                                          >
-                                            Draft
-                                          </button>
-                                        </td>
-                                        <td>
-                                          <button className="at-why-btn" onClick={() => toggleEvidence(span.id)}>
-                                            {evidenceOpen.has(span.id) ? 'Hide' : 'Why?'}
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                                {group.spans
-                                  .filter((span) => evidenceOpen.has(span.id))
-                                  .map((span) => (
-                                    <div key={span.id} className="evidence-panel-wrap">
-                                      <div className="evidence-panel-label">{span.spanLabel} — why this rating</div>
-                                      <EvidenceReportPanel span={span} />
-                                    </div>
-                                  ))}
-                              </td>
-                            </tr>
+              {/* 2026-09-01: the Draft-tab player list is the same expandable-list shape as the
+                  Cap Sheet (`.player-group` accordion + `.span-table`), condensed to match it —
+                  minimal header (name · position · seasons · best tier · FGA/TAL on the right),
+                  plain-text stat cells, only the tier is a pill. FGA columns and the draft
+                  mechanic (`onPick`/`isPickLegal`/`canPick`, best-span pick in player mode,
+                  per-span pick + Why? in developer mode) are unchanged. `.player-group*` /
+                  `.span-table` read the plain `--bg`/`--border`/`--accent` names, which `.at-shell`
+                  aliases to its dark board values, so it renders on the board palette; the
+                  `.at-draft-groups` block in App.css only tightens spacing/typography. */}
+              <div className="player-groups at-draft-groups">
+                {groups.map((group) => {
+                  const isOpen = expanded.has(group.playerName);
+                  const groupFgas = group.spans.map((s) => s.fga);
+                  const minFga = Math.min(...groupFgas);
+                  const maxFga = Math.max(...groupFgas);
+                  const fgaRange =
+                    minFga === maxFga ? minFga.toFixed(1) : `${minFga.toFixed(1)}–${maxFga.toFixed(1)}`;
+                  return (
+                    <div key={group.playerName} className="player-group">
+                      <div
+                        className="player-group-header"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => toggleExpand(group.playerName)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleExpand(group.playerName);
+                          }
+                        }}
+                      >
+                        <span className="pg-caret">{isOpen ? '▾' : '▸'}</span>
+                        <span className="pg-name">{group.playerName}</span>
+                        <span className="pg-natural-position">{naturalPosition(group.playerName)}</span>
+                        <span className="pg-meta">
+                          {group.spans.length} season{group.spans.length > 1 ? 's' : ''}
+                        </span>
+
+                        {/* Right side, Cap-Sheet style: one calm monospace string, no pill.
+                            "best <tier> · TAL <n>" (dev) / "best <tier> · <fga> FGA" (player). */}
+                        <span className="pg-summary">
+                          <span className="lbl">best</span> {group.bestTier}
+                          {' · '}
+                          {showJudgeMetrics ? (
+                            <>
+                              <span className="lbl">TAL</span> {group.bestTalent}
+                            </>
+                          ) : (
+                            <>
+                              {fgaRange} <span className="lbl">FGA</span>
+                            </>
                           )}
-                          {isOpen && !showJudgeMetrics && (() => {
-                            // Player mode: box-score-only detail, ranked by the engine's hidden
-                            // valuation (`spansByAiValue`) rather than chronologically — shows its
-                            // top 3 by default, with a Show more to reveal every remaining season.
-                            // No Draft-reasoning ("Why?") panel here at all: nothing about *why*
-                            // the engine likes a span is ever surfaced in player mode.
-                            const allSpans = group.spansByAiValue;
-                            const showingAll = showAllSpans.has(group.playerName);
-                            const visibleSpans = showingAll ? allSpans : allSpans.slice(0, 3);
-                            return (
-                              <tr key={`${group.playerName}-detail`}>
-                                <td colSpan={99} style={{ background: 'var(--at-paper)', padding: '4px 10px 14px' }}>
-                                  <table className="at-span-subtable at-span-subtable--player">
-                                    {/* Widths chosen empirically (measured via getBoundingClientRect,
-                                        not calculated from the CSS margin/padding numbers, which
-                                        don't cleanly add up) so this table's PTS column starts at the
-                                        exact same viewport x as the main table's PTS column above —
-                                        see that table's colgroup comment for why these two must
-                                        match. Re-measure both if any padding/margin on either table
-                                        changes. */}
-                                    <colgroup>
-                                      {/* 2026-08-16, user's own ask: Pos dropped from this row
-                                          entirely — it's redundant now that the collapsed row
-                                          above already reads "Name - Position"
-                                          (`naturalPosition`), and it was the whole reason this
-                                          sub-table's PTS/AST/REB columns didn't line up under the
-                                          main table's own (this file's own prior comment on this
-                                          colgroup said as much: "300 == 180 + 94 + indent" — 94
-                                          was Pos's width). Folded that freed 94px into the Span
-                                          column instead (170->264) so PTS still starts at the
-                                          exact same x as before — removing a column shouldn't ALSO
-                                          shift every column after it. */}
-                                      <col style={{ width: 264 }} />
-                                      <col style={{ width: 66 }} />
-                                      <col style={{ width: 66 }} />
-                                      <col style={{ width: 66 }} />
-                                      <col style={{ width: 66 }} />
-                                      <col style={{ width: 66 }} />
-                                      <col style={{ width: 66 }} />
-                                      <col style={{ width: 66 }} />
-                                      <col style={{ width: 66 }} />
-                                      {/* Deliberately no width here (unlike every column above) —
-                                          when EVERY column has an explicit width and their sum is
-                                          less than the table's rendered 100%-of-container width,
-                                          browsers scale every column up proportionally to fill the
-                                          gap, which silently broke the alignment this colgroup
-                                          exists for. Leaving this one flexible lets it alone
-                                          absorb the leftover space instead. */}
-                                      <col />
-                                    </colgroup>
-                                    <thead>
-                                      <tr>
-                                        <th>Span</th>
-                                        <th>PTS</th>
-                                        <th>AST</th>
-                                        <th>REB</th>
-                                        <th>STL</th>
-                                        <th>BLK</th>
-                                        <th>FG%</th>
-                                        <th>3PT%</th>
-                                        <th>FGA</th>
-                                        {/* 2026-08-19, user-reported real gap: this table used to
-                                            include a "TAL" column with the exact raw number
-                                            (`displayNumberForSpan`) even in player mode — a click
-                                            away from the collapsed row's own deliberately-hidden
-                                            number, quietly defeating the "blind scouting" premise
-                                            the whole rest of this screen is built around. Dropped;
-                                            the column right after already carries the same coarse
-                                            tier signal the collapsed row's own Tier badge does,
-                                            with no exact number attached to it — labelled "Tier"
-                                            here too (was "Tag") so the two tables read as the same
-                                            concept, not two different ones that happen to look
-                                            alike. */}
-                                        <th>Tier</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {visibleSpans.map((span) => {
-                                        const ctx = tierContextFor(span);
-                                        return (
-                                        <tr key={span.id}>
-                                          <td className="at-player-cell">{span.spanLabel}</td>
-                                          {/* Real per-span box stats, not the whole-career average shown on the
-                                              collapsed row above — that average is deliberately reused across every
-                                              span there (see this pass's own note in draft_game_ui_redesign_spec
-                                              memory), but this expanded sub-table's whole reason to exist is to show
-                                              how a specific span differs, so it must read `span.box` here, not
-                                              `group.displayBox`. Bug caught 2026-08-16: every row was rendering the
-                                              same career numbers, changing only by FGA (span.fga was already correct). */}
-                                          {/* 2026-08-16, user-reported: these used to be plain
-                                              `<td>`s (default left-aligned text) while the
-                                              collapsed row's own PTS-FGA cells are all
-                                              `.at-fga-num` (right-aligned, tabular-nums) — same
-                                              column width (verified via `getBoundingClientRect`),
-                                              different text alignment inside it, so the digits
-                                              themselves didn't line up even though the columns
-                                              did. Matched to `.at-fga-num` here too. */}
-                                          <td className="at-fga-num">{span.box.ppg.toFixed(1)}</td>
-                                          <td className="at-fga-num">{span.box.apg.toFixed(1)}</td>
-                                          <td className="at-fga-num">{span.box.rpg.toFixed(1)}</td>
-                                          <td className="at-fga-num">{span.box.spg.toFixed(1)}</td>
-                                          <td className="at-fga-num">{span.box.bpg.toFixed(1)}</td>
-                                          <td className="at-fga-num">{(span.box.fgPct * 100).toFixed(1)}%</td>
-                                          <td className="at-fga-num">{(span.box.threePct * 100).toFixed(1)}%</td>
-                                          <td className="at-fga-num">{span.fga.toFixed(1)}</td>
-                                          {/* Tag — user-reported: pinned to the column's left edge
-                                              explicitly (`.at-tag-cell`) rather than relying on the
-                                              default, so a short pill (MVP) and a long one
-                                              (Greatest peak) both start at the same x instead of
-                                              each just sitting wherever its own content happens to
-                                              fall. */}
-                                          <td className="at-tag-cell">
-                                            <span className={`at-tag-badge ${TALENT_DOT_CLASS[overallTierForSpan(ctx)]}`}>
-                                              {overallTierForSpan(ctx)}
-                                            </span>
-                                          </td>
-                                        </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
-                                  {allSpans.length > 3 && (
-                                    <button
-                                      className="at-legend-toggle at-cond"
-                                      style={{ marginTop: 8 }}
-                                      onClick={() => toggleShowAllSpans(group.playerName)}
-                                    >
-                                      {showingAll ? 'Show less' : `Show more (${allSpans.length - 3} more)`}
-                                    </button>
-                                  )}
-                                </td>
+                        </span>
+
+                        {!showJudgeMetrics && (
+                          <button
+                            className="at-draft-btn pg-draft"
+                            disabled={!canPick || !isPickLegal(state, group.bestTalentSpan.id)}
+                            title={
+                              !canPick
+                                ? `${teamLabel(currentTeam)} is picking…`
+                                : !isPickLegal(state, group.bestTalentSpan.id)
+                                  ? 'Over the FGA cap — pick something else first, or a cheaper season for this player.'
+                                  : undefined
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onPick(group.bestTalentSpan.id);
+                            }}
+                          >
+                            Draft
+                          </button>
+                        )}
+                      </div>
+
+                      {isOpen && showJudgeMetrics && (
+                        <div className="table-scroll">
+                          <table className="span-table at-draft-span-table">
+                            <thead>
+                              <tr>
+                                <th>Span</th>
+                                <th>Pos</th>
+                                <th className="num">FGA</th>
+                                <th className="num">TAL</th>
+                                <th>O</th>
+                                <th>D</th>
+                                <th>O-POR</th>
+                                <th>D-POR</th>
+                                <th className="num">SPC</th>
+                                <th className="num">DUR</th>
+                                <th>Tier</th>
+                                <th />
+                                <th />
+                                <th />
                               </tr>
-                            );
-                          })()}
-                        </Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            </thead>
+                            <tbody>
+                              {group.spans.map((span) => {
+                                const ctx = tierContextFor(span);
+                                return (
+                                  <tr key={span.id}>
+                                    <td>{span.spanLabel}</td>
+                                    <td>{span.primaryPosition}</td>
+                                    <td className="num">{span.fga.toFixed(1)}</td>
+                                    <td className="num">{displayNumberForSpan(span, ctx)}</td>
+                                    <td>{offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))}</td>
+                                    <td>{defensiveGrade(computeDefensiveTalent(span))}</td>
+                                    <td>{offensivePortabilityGrade(computeOffensivePortability(span))}</td>
+                                    <td>{defensivePortabilityGrade(computeDefensivePortability(span))}</td>
+                                    <td className="num">{computeSpacing(span)}</td>
+                                    <td className="num">{computeDurability(span)}</td>
+                                    <td className="tier-cell">{overallTierForSpan(ctx)}</td>
+                                    <td><SmallSampleBadge span={span} /></td>
+                                    <td>
+                                      <button
+                                        className="at-draft-btn"
+                                        disabled={!canPick || !isPickLegal(state, span.id)}
+                                        title={
+                                          !canPick
+                                            ? `${teamLabel(currentTeam)} is picking…`
+                                            : !isPickLegal(state, span.id)
+                                              ? 'Over the FGA cap — pick something else first, or a cheaper season for this player.'
+                                              : undefined
+                                        }
+                                        onClick={() => onPick(span.id)}
+                                      >
+                                        Draft
+                                      </button>
+                                    </td>
+                                    <td>
+                                      <button className="at-why-btn" onClick={() => toggleEvidence(span.id)}>
+                                        {evidenceOpen.has(span.id) ? 'Hide' : 'Why?'}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                          {group.spans
+                            .filter((span) => evidenceOpen.has(span.id))
+                            .map((span) => (
+                              <div key={span.id} className="evidence-panel-wrap">
+                                <div className="evidence-panel-label">{span.spanLabel} — why this rating</div>
+                                <EvidenceReportPanel span={span} />
+                              </div>
+                            ))}
+                        </div>
+                      )}
+
+                      {isOpen && !showJudgeMetrics && (() => {
+                        // Player mode: box-score detail only, ranked by the engine's hidden
+                        // valuation (`spansByAiValue`), top 3 with a Show more for the rest. No
+                        // Draft-reasoning panel and no per-span Draft button — player mode drafts
+                        // the best span from the header; span swapping happens in the Team tab.
+                        const orderedSpans = group.spansByAiValue;
+                        const showingAll = showAllSpans.has(group.playerName);
+                        const visibleSpans = showingAll ? orderedSpans : orderedSpans.slice(0, 3);
+                        return (
+                          <div className="table-scroll">
+                            <table className="span-table at-draft-span-table">
+                              <thead>
+                                <tr>
+                                  <th>Span</th>
+                                  <th>Pos</th>
+                                  <th>Tier</th>
+                                  <th className="num">PTS</th>
+                                  <th className="num">AST</th>
+                                  <th className="num">REB</th>
+                                  <th className="num">STL</th>
+                                  <th className="num">BLK</th>
+                                  <th className="num">FG%</th>
+                                  <th className="num">3PT%</th>
+                                  <th className="num">FGA</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {visibleSpans.map((span) => {
+                                  const ctx = tierContextFor(span);
+                                  return (
+                                    <tr key={span.id}>
+                                      <td>{span.spanLabel}</td>
+                                      <td>{span.primaryPosition}</td>
+                                      <td className="tier-cell">{overallTierForSpan(ctx)}</td>
+                                      <td className="num">{span.box.ppg.toFixed(1)}</td>
+                                      <td className="num">{span.box.apg.toFixed(1)}</td>
+                                      <td className="num">{span.box.rpg.toFixed(1)}</td>
+                                      <td className="num">{span.box.spg.toFixed(1)}</td>
+                                      <td className="num">{span.box.bpg.toFixed(1)}</td>
+                                      <td className="num">{(span.box.fgPct * 100).toFixed(1)}%</td>
+                                      <td className="num">{(span.box.threePct * 100).toFixed(1)}%</td>
+                                      <td className="num">{span.fga.toFixed(1)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                            {orderedSpans.length > 3 && (
+                              <button
+                                className="at-legend-toggle at-cond"
+                                style={{ marginTop: 6 }}
+                                onClick={() => toggleShowAllSpans(group.playerName)}
+                              >
+                                {showingAll ? 'Show less' : `Show more (${orderedSpans.length - 3} more)`}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                })}
               </div>
+              {totalMatched > groups.length && (
+                <p className="at-caption at-draft-more-note">
+                  Showing the top {groups.length} of {totalMatched} — search a name or pick a
+                  position to see the rest.
+                </p>
+              )}
               <div className="at-legend-row">
                 <p className="at-caption" style={{ marginTop: 0 }}>
                   {showJudgeMetrics

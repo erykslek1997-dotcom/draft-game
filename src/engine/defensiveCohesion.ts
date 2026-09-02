@@ -3,6 +3,7 @@ import { defensiveHuntability } from './defensiveHuntability';
 import { allAssignments, primaryStarters } from './rotation';
 import type { Team } from './types';
 import type { DefensiveRole } from '../data/schema';
+import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 
 const WING_ROLES: DefensiveRole[] = ['Wing Stopper', 'Chaser'];
 /** Same discount shape `poa` below already applies to a non-exact-tag POA candidate — a real,
@@ -146,20 +147,29 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     excludePlayerId?: string,
   ) {
     return assignedPlayers
-      .filter(({ player }) => roles.includes(player.defensiveRole) && player.id !== excludePlayerId)
-      .map((entry) => ({ ...entry, effectiveStrength: entry.providerStrength * multiplierFor(entry.player.defensiveRole) }))
+      .filter(({ player }) => player.id !== excludePlayerId && roles.some((role) => secondaryDefensiveRoleStrength(player, role) > 0))
+      .map((entry) => {
+        const bestRole = [...roles].sort(
+          (left, right) => secondaryDefensiveRoleStrength(entry.player, right) - secondaryDefensiveRoleStrength(entry.player, left),
+        )[0]!;
+        const roleStrength = secondaryDefensiveRoleStrength(entry.player, bestRole);
+        // Secondary jobs soften, but do not erase, a player's real defensive quality. A verified
+        // Jrue POA assignment should not score like a new player with 90% of Jrue's D-TAL.
+        const effectiveStrength = entry.providerStrength * (0.8 + roleStrength * 0.2) * multiplierFor(bestRole);
+        return { ...entry, effectiveStrength };
+      })
       .sort((left, right) => right.effectiveStrength - left.effectiveStrength)[0] ?? null;
   }
 
   const poa = assignedPlayers
     .filter(({ player }) =>
-      player.defensiveRole === 'Point of Attack' ||
+      secondaryDefensiveRoleStrength(player, 'Point of Attack') > 0 ||
       player.defensiveRole === 'Chaser' ||
       (player.defensiveRole === 'Wing Stopper' && (player.primaryPosition === 'PG' || player.primaryPosition === 'SG')),
     )
     .map((entry) => ({
       ...entry,
-      effectiveStrength: entry.providerStrength * (entry.player.defensiveRole === 'Point of Attack' ? 1 : 0.9),
+      effectiveStrength: entry.providerStrength * (entry.player.defensiveRole === 'Point of Attack' ? 1 : entry.player.defensiveRole === 'Chaser' ? 0.9 : 0.96),
     }))
     .sort((left, right) => right.effectiveStrength - left.effectiveStrength)[0] ?? null;
   // Excludes whoever already filled POA — `Chaser` now qualifies for both roles (see this

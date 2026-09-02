@@ -19,6 +19,7 @@ import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
 import { realValueTierFloor } from './realValueFloor';
 import { madeAllNbaInSpan } from './allNbaLookup';
+import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 
 /**
  * Letter-grade display for O-TAL/D-TAL, purely a UI presentation layer over the existing
@@ -437,6 +438,22 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     { name: 'Jim Jackson', spanLabel: '2003-05', cap: 'Starter' as OverallTier },
     { name: 'Stephen Jackson', spanLabel: '2003-05', cap: 'Starter' as OverallTier },
     { name: 'Walt Williams', spanLabel: '1995-97', cap: 'Starter' as OverallTier },
+    // 2026-09-01, SG audit: two never-All-Star empty-volume scorers whose O-TAL alone carries them
+    // to All-star while every real plus-minus source has them clearly net-negative. The SG two-way
+    // cap holds them at All-star (out of All-NBA) but has no lower rung. Monta Ellis 2009-11 (25.5
+    // ppg on poor efficiency, D-TAL F, blendedRealValue -2.10 — the canonical "stats All-Star" who
+    // never actually made one); Jason Terry 2000-02 (young chucker on 25-win Hawks, rv -0.79,
+    // pre-Sixth-Man-of-the-Year). Both scoped single spans — their real, positive-value seasons
+    // (Terry's Mavs/Sixth Man years, Ellis's later Mavs/Pacers) are untouched.
+    { name: 'Monta Ellis', spanLabel: '2009-11', cap: 'Starter' as OverallTier },
+    { name: 'Jason Terry', spanLabel: '2000-02', cap: 'Starter' as OverallTier },
+    // 2026-09-01, SF audit: same empty-volume pattern as the two SG downcaps above. Jalen Rose's
+    // 1999-2002 Pacers peak (19-20 ppg lead scorer, incl. the 2000 Finals run) reads All-star off
+    // O-TAL alone while every plus-minus source has him net-negative (rv -0.64 / -0.87, D-TAL D)
+    // and he was never a real All-Star. His genuine positive seasons aren't in the pool at
+    // All-star anyway; scoped to the two peak-usage spans.
+    { name: 'Jalen Rose', spanLabel: '1999-01', cap: 'Starter' as OverallTier },
+    { name: 'Jalen Rose', spanLabel: '2000-02', cap: 'Starter' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
@@ -475,6 +492,55 @@ const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
     // still wants real two-way value they don't have; All-NBA matches the real award.
     { name: 'Kobe Bryant', spanLabel: '2004-06', tier: 'All-NBA' as OverallTier },
     { name: 'Tracy McGrady', spanLabel: '2002-04', tier: 'All-NBA' as OverallTier },
+    // 2026-09-01, PF audit follow-up to the reference-data trim fix: `realValueFloor.ts`'s
+    // sustained-real-value floor requires `rv.isModernEra` (real DARKO coverage, ~1997+), which
+    // exists because pre-DARKO plus-minus data was assumed too thin to trust. But these three
+    // spans use `bpm2-fallback`/pre-DARKO `measured-blend` sourced real data (the same trim that
+    // fixed Jim Jackson/Jamison/Griffith) showing a genuine sustained signal well past the floor's
+    // own 3.5 Starter bar (Laettner 3.67, Nance 3.66, Kemp 3.58 - Kemp's span also has a real
+    // in-window All-NBA selection) that the era gate blocks outright. Tried lifting the gate
+    // itself first and rejected it on blast radius: 47 spans move, reaching back to Cousy/Schayes/
+    // Bill Russell/Oscar Robertson - clearly not scoped to the PF gap being fixed here, touches
+    // Taylor/GOAT-validated eras. Three narrow named raises instead, same shape as Klay/Kobe/
+    // T-Mac above - each one individually verified past the floor's real threshold, not a rule.
+    { name: 'Christian Laettner', spanLabel: '1996-98', tier: 'Starter' as OverallTier },
+    { name: 'Larry Nance', spanLabel: '1983-85', tier: 'Starter' as OverallTier },
+    { name: 'Shawn Kemp', spanLabel: '1992-94', tier: 'Starter' as OverallTier },
+    // 2026-09-01, PF audit: Elvin Hayes 1972-74 (both seasons real All-NBA 2nd team) reads Bench
+    // Warmer / TAL 43 purely because the NBA didn't record blocks until 1973-74. His own adjacent,
+    // 2/3-overlapping 1973-75 span (also All-NBA both years, same player, same skills) lands
+    // All-star / TAL 82 — the entire ~22-point `computeDefensiveImpact` gap between them is the
+    // `(steals+blocks)*4.5` term appearing. `maximumDefenseBonus`'s pre-stocks widening exists for
+    // exactly this but is gated on `computeDefensiveImpact > 15`, which Hayes barely clears (15.4,
+    // rebounding-only) because his defensive value was blocks, not rebounds — a real gap in that
+    // mechanism, but widening the gate is a pool-wide blast. Named raise to the tier his
+    // mechanically-luckier neighbouring span already earned; not All-NBA (our gate wants the
+    // offense his real .473 TS genuinely lacked, even as the league voted him All-NBA on volume).
+    { name: 'Elvin Hayes', spanLabel: '1972-74', tier: 'All-star' as OverallTier },
+    // 2026-09-01, PF audit: Larry Nance 1989-91 reads Role Player / TAL 55 wedged between 1988-90
+    // (Starter 67) and 1990-92 (All-star 77) with a nearly identical box line (0.8 spg / 2.3 bpg vs
+    // 0.8/2.4 and 0.9/2.8). The whole 12-point D-TAL crater is `darkoDefenseBonus` stepping to
+    // exactly 0.00 for this one span (neighbours 0.09-2.66) — his BPM2 that window is 1.11 vs
+    // ~1.5-1.7 around it, a real but small dip (age 30-31, knee, Phoenix->Cleveland trade) that
+    // tips the real-minus-box excess just under zero, and the bonus never subtracts so it floors.
+    // A step function at 0 over-reacting to a ~0.4 BPM2 move, amplified by the ladder being steep
+    // there. Raise to Starter (the lower bracket, 1988-90) — not All-star: rv 3.01 and BPM2 1.11
+    // both independently agree this was his weakest peak-era window, just not a Role-Player one.
+    { name: 'Larry Nance', spanLabel: '1989-91', tier: 'Starter' as OverallTier },
+    // 2026-09-01, SG audit: George Gervin's 1979-84 scoring peak reads Role Player across four
+    // straight spans despite being 4x scoring champion / 5x consecutive All-NBA 1st team, with a
+    // still-positive blendedRealValue (2.2-2.3 in 1979-82). The cause is real — both his box stocks
+    // (1.7/1.2 -> 1.1/0.6 spg/bpg) and BPM2 (-0.25 -> -1.7) agree his defense genuinely declined
+    // with age and rising offensive load — but the 0.4 defense weight in the TAL blend then drops
+    // a historically elite one-way scorer below the All-star floor entirely. Mirror image of the
+    // Monta Ellis / Jason Terry overrate downcaps above (empty volume READING All-star); this is
+    // real volume with real positive value reading Role Player. Raised to All-star, not All-NBA
+    // (his own 1977-79 span, with the defense still intact, is the All-NBA one) — the decline was
+    // real, just not a Role-Player one for a 33-ppg 5x-1st-team peak.
+    { name: 'George Gervin', spanLabel: '1979-81', tier: 'All-star' as OverallTier },
+    { name: 'George Gervin', spanLabel: '1980-82', tier: 'All-star' as OverallTier },
+    { name: 'George Gervin', spanLabel: '1981-83', tier: 'All-star' as OverallTier },
+    { name: 'George Gervin', spanLabel: '1982-84', tier: 'All-star' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tier]),
 );
 
@@ -746,6 +812,8 @@ export interface TierGateContext {
    * below it — a raise only, yields to `NAMED_TIER_DOWNCAPS`, never manufactures All-NBA+.
    * Optional/undefined-safe like every other context field. */
   realValueFloor?: OverallTier;
+  /** Raise a real All-NBA span with strong, reliable playoff BPM to an All-NBA floor. */
+  playoffValidatedAllNba?: boolean;
 }
 
 /**
@@ -928,6 +996,24 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
       else if (!isGoodShooter && isGoodPlaymaker && isGoodDefense) archetypeCap = 'Starter'; // "starter in SOME TEAMS"
       // good/good/good ("good enough for starter") and the 3 combinations the user didn't name
       // are deliberately left untouched — whatever `capped` already reads stands.
+      // 2026-09-01, PG audit: a real in-window All-NBA selection is the league voting the player
+      // top-15 that season — categorically not the "limited shooter/playmaker, bench player"
+      // profile the Sixth Man / Bench Warmer branches claim. For those spans the archetype cap
+      // can still pull an inflated number DOWN, but not below All-star — Kemba Walker 2017-19
+      // (All-NBA 3rd 2019), Tyrese Maxey 2024-26, De'Aaron Fox 2023-25, Cade Cunningham 2023-25,
+      // Tim Hardaway 1997-99 (All-NBA 1st), Damian Lillard 2014-16, Mark Price 1987-89 were all
+      // being dumped to Sixth Man. Deliberately a FLOOR on the cap, not an exemption: removing the
+      // cap entirely let a dozen spans (Rondo, Ja Morant, John Wall, Stockton...) float from their
+      // real tier all the way to All-NBA on the bridge/spacing inflation the cap exists to hold.
+      if (
+        archetypeCap &&
+        ctx.playerName &&
+        ctx.spanLabel &&
+        madeAllNbaInSpan(ctx.playerName, ctx.spanLabel) &&
+        tierRank(archetypeCap) < tierRank('All-star')
+      ) {
+        archetypeCap = 'All-star';
+      }
       if (archetypeCap) capped = stricterTier(capped, archetypeCap);
     }
   }
@@ -948,6 +1034,9 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   // specialist — the same case the `isSixthManProfile` real-value guard in `sixthMan.ts` handles).
   if (ctx.realValueFloor && !downcap && tierRank(ctx.realValueFloor) > tierRank(result)) {
     result = ctx.realValueFloor;
+  }
+  if (ctx.playoffValidatedAllNba && !downcap && tierRank(result) < tierRank('All-NBA')) {
+    result = 'All-NBA';
   }
   // See NAMED_TIER_RAISES's own docstring — a direct override, not gated on any real tier the
   // span already earned (unlike GOAT above). Only ever takes effect if it's actually HIGHER than
@@ -1023,6 +1112,8 @@ function tierFloor(tier: OverallTier): number {
   return entry ? entry[0] : 0;
 }
 
+const PLAYOFF_VALIDATED_ALL_NBA_TAL_FLOOR = 82;
+
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const cappedTier = overallTierForSpan(ctx);
   const raw = Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
@@ -1030,9 +1121,16 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
   // is actually what produced this span's displayed tier — every other span (the vast majority)
   // is unaffected. Both would otherwise leave the NUMBER below the badge's own floor, the exact
   // badge/number mismatch this function's history already had to fix once.
-  const raisedByFloor = ctx.realValueFloor === cappedTier && tierRank(overallTier(ctx.tal)) < tierRank(cappedTier);
+  const raisedByFloor =
+    (ctx.realValueFloor === cappedTier && tierRank(overallTier(ctx.tal)) < tierRank(cappedTier)) ||
+    (ctx.playoffValidatedAllNba === true &&
+      cappedTier === 'All-NBA' &&
+      tierRank(overallTier(ctx.tal)) < tierRank('All-NBA'));
   if (namedTierRaise(ctx.playerName, ctx.spanLabel) === cappedTier || raisedByFloor) {
-    return Math.max(raw, tierFloor(cappedTier));
+    const floor = ctx.playoffValidatedAllNba && cappedTier === 'All-NBA'
+      ? PLAYOFF_VALIDATED_ALL_NBA_TAL_FLOOR
+      : tierFloor(cappedTier);
+    return Math.max(raw, floor);
   }
   return raw;
 }
@@ -1092,6 +1190,7 @@ export function displayNumberForSpan(span: PlayerSpan, ctx: TierGateContext): nu
  * change there, purely a move.
  */
 export function tierContextFor(span: PlayerSpan): TierGateContext {
+  const playoffBpm = playoffBpm2ForSpan(span);
   return {
     position: span.primaryPosition,
     tal: computeTalent(span),
@@ -1110,5 +1209,10 @@ export function tierContextFor(span: PlayerSpan): TierGateContext {
     talWithoutEliteDefenseBonus: computeTalentWithoutEliteDefenseBonus(span),
     talWithoutBridge: computeTalentWithoutBridge(span),
     realValueFloor: realValueTierFloor(span) ?? undefined,
+    playoffValidatedAllNba:
+      madeAllNbaInSpan(span.playerName, span.spanLabel) &&
+      playoffBpm !== null &&
+      playoffBpm.bpm >= 4 &&
+      playoffBpm.reliability >= 0.5,
   };
 }

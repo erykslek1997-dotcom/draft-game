@@ -1,0 +1,325 @@
+/* Salary-cap contract browser — layers only the contract-specific bits on top of the shared
+   .draft-pool-browser styling in App.css. Uses the app's own light/dark tokens throughout
+   (--accent = NBA blue, --danger = NBA red), same as every other out-of-draft screen. */
+
+.cap-sheet .cs-method-note {
+  margin-top: 1.5rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text);
+  opacity: 0.75;
+  max-width: 80ch;
+}
+.cap-sheet .cs-method-note code {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  background: var(--code-bg);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.2rem;
+}
+
+/* ---- overview ---- */
+.cs-overview {
+  margin: 0.75rem 0 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+}
+.cs-overview > summary {
+  cursor: pointer;
+  padding: 0.7rem 0.9rem;
+  font-weight: 700;
+  color: var(--text-h);
+  list-style: none;
+}
+.cs-overview > summary::-webkit-details-marker {
+  display: none;
+}
+.cs-overview > summary::before {
+  content: '▸ ';
+  color: var(--accent);
+}
+.cs-overview[open] > summary::before {
+  content: '▾ ';
+}
+.cs-ov-hint {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--text);
+  opacity: 0.7;
+  margin-left: 0.5rem;
+}
+.cs-ov-body {
+  padding: 0 0.9rem 1rem;
+}
+
+.cs-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.cs-stat {
+  background: var(--bg);
+  padding: 0.7rem 0.8rem;
+}
+.cs-stat-v {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-h);
+  line-height: 1.1;
+}
+.cs-stat-l {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  opacity: 0.7;
+  margin-top: 0.35rem;
+}
+@media (max-width: 720px) {
+  .cs-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cs-boards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 760px) {
+  .cs-boards {
+    grid-template-columns: 1fr;
+  }
+}
+.cs-board {
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  overflow: hidden;
+}
+.cs-board-head {
+  padding: 0.5rem 0.8rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+.cs-board.steal .cs-board-head {
+  color: #2f7a4f;
+  background: color-mix(in srgb, #2f7a4f 10%, transparent);
+}
+.cs-board.trap .cs-board-head {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+.cs-lb-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.4rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.cs-lb-row:last-child {
+  border-bottom: 0;
+}
+.cs-lb-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+.cs-lb-sub {
+  font-size: 0.72rem;
+  color: var(--text);
+  opacity: 0.7;
+}
+.cs-lb-charge {
+  font-weight: 700;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+.cs-board.steal .cs-lb-charge {
+  color: #2f7a4f;
+}
+.cs-board.trap .cs-lb-charge {
+  color: var(--danger);
+}
+
+.cs-arcs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+@media (max-width: 900px) {
+  .cs-arcs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .cs-arcs {
+    grid-template-columns: 1fr;
+  }
+}
+.cs-arc {
+  background: var(--bg);
+  padding: 0.55rem 0.65rem 0.65rem;
+}
+.cs-arc-name {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-h);
+}
+.cs-arc-meta {
+  font-size: 0.66rem;
+  font-family: var(--mono);
+  color: var(--text);
+  opacity: 0.65;
+  margin: 0.1rem 0 0.5rem;
+}
+.cs-arc-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 42px;
+}
+.cs-bar {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 2px 2px 0 0;
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+}
+.cs-bar.lo {
+  background: #2f7a4f;
+}
+.cs-bar.hi {
+  background: var(--danger);
+}
+.cs-bar.mid {
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+/* ---- player-group header extras ---- */
+.cap-sheet .pg-charge {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+  margin-left: auto;
+}
+
+/* ---- span table extras ---- */
+.cs-span-table .cs-row {
+  cursor: pointer;
+}
+.cs-span-table .cs-row:hover td {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.cs-row-caret {
+  color: var(--text);
+  opacity: 0.5;
+  width: 1rem;
+}
+.cs-charge {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cs-charge.lo {
+  color: #2f7a4f;
+}
+.cs-charge.hi {
+  color: var(--danger);
+}
+
+.cs-gap {
+  position: relative;
+  display: block;
+  width: 120px;
+  height: 14px;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.cs-gap-mid {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--text) 30%, transparent);
+}
+.cs-gap-fill {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 2px;
+}
+.cs-gap-fill.steal {
+  right: 50%;
+  background: #2f7a4f;
+}
+.cs-gap-fill.trap {
+  left: 50%;
+  background: var(--danger);
+}
+
+/* ---- season detail ---- */
+.cs-detail-row > td {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  padding: 0;
+}
+.cs-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.9rem 0.9rem;
+}
+.cs-season-list {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.cs-season {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  padding: 0.35rem 0.55rem;
+  min-width: 5.5rem;
+}
+.cs-season-y {
+  color: var(--text);
+  opacity: 0.6;
+}
+.cs-season-p {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-h);
+}
+.cs-season.rk .cs-season-p {
+  color: var(--accent);
+}
+.cs-season-r {
+  color: var(--text);
+  opacity: 0.75;
+  font-size: 0.66rem;
+}
+.cs-detail-note {
+  font-size: 0.78rem;
+  color: var(--text);
+  max-width: 42ch;
+  line-height: 1.5;
+}

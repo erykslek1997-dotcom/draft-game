@@ -13,8 +13,9 @@ import { randomTeamNames } from './engine/teamNames';
 // it's only real work once a draft or the pool browser is actually rendered.
 const GameShell = lazy(() => import('./components/GameShell'));
 const DraftPoolBrowser = lazy(() => import('./components/DraftPoolBrowser'));
+const CapSheet = lazy(() => import('./components/CapSheet'));
 
-type View = 'intro' | 'game' | 'pool';
+type View = 'intro' | 'game' | 'pool' | 'capsheet';
 type Mode = 'developer' | 'player';
 
 /** Manual override, e.g. `VITE_FORCE_PLAYER_MODE=true npm run dev`, to preview the locked-down
@@ -202,6 +203,9 @@ function App() {
             <button className="secondary-btn" onClick={() => setView('pool')}>
               Browse Draft Pool
             </button>
+            <button className="secondary-btn" onClick={() => setView('capsheet')}>
+              Cap Sheet (salary-cap mode)
+            </button>
           </div>
         </div>
       )}
@@ -215,6 +219,12 @@ function App() {
       {view === 'pool' && (
         <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
           <DraftPoolBrowser mode={mode} onBack={() => setView('intro')} />
+        </Suspense>
+      )}
+
+      {view === 'capsheet' && (
+        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
+          <CapSheet onBack={() => setView('intro')} />
         </Suspense>
       )}
     </div>

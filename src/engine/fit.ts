@@ -16,6 +16,7 @@ import { isPlusShooter } from './shooting';
 import { computeSpacing, isShootingAnomalyPlayer } from './spacing';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
+import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 import type { Team } from './types';
 
 /**
@@ -221,6 +222,10 @@ function defensiveRoleScore(profile: ShadowRoleProfile, roles: DefensiveRole[]):
   // explanation. Low Activity players may still be evaluated in their incumbent role, but never
   // create a second coverage layer from box inference alone.
   if (profile.incumbentDefensiveRole === 'Low Activity') return 0;
+  const player = players.find((candidate) => candidate.id === profile.playerId);
+  const curatedSecondary = player
+    ? Math.max(...roles.map((role) => secondaryDefensiveRoleStrength(player, role) * 80))
+    : 0;
   const proposedScore = Math.max(
     0,
     ...profile.proposedDefensiveRoles
@@ -233,7 +238,7 @@ function defensiveRoleScore(profile: ShadowRoleProfile, roles: DefensiveRole[]):
   // multi-role value alive while reserving elite layer scores for the player's incumbent,
   // manually/externally established role. T-Mac/KG being inferred as 97/92 Wing Stoppers from
   // box activity on the same lineup is the motivating false-positive.
-  return Math.min(ADDITIONAL_ROLE_CREDIT_FLOOR, proposedScore);
+  return Math.min(ADDITIONAL_ROLE_CREDIT_FLOOR, Math.max(proposedScore, curatedSecondary));
 }
 
 /**

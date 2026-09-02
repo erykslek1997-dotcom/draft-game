@@ -3,6 +3,129 @@
   text-align: left;
 }
 
+.matchup-matrix-section,
+.historical-challenges-panel,
+.what-if-panel {
+  margin: 1rem 0;
+}
+
+.matchup-matrix-scroll {
+  overflow-x: auto;
+}
+
+.matchup-matrix-table {
+  min-width: 900px;
+}
+
+.matchup-matrix-cell {
+  width: 100%;
+  min-width: 3.25rem;
+  padding: 0.45rem;
+  color: inherit;
+  border: 1px solid var(--border, #30343c);
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+
+.matchup-matrix-detail,
+.what-if-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: center;
+}
+
+.matchup-matrix-detail {
+  display: block;
+  line-height: 1.35;
+}
+.matchup-detail-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-bottom: 4px;
+}
+.matchup-detail-heading strong { color: var(--text); }
+.matchup-detail-margin { color: var(--muted); }
+.matchup-detail-explanation { margin: 4px 0 9px; color: var(--text); }
+.matchup-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 5px 10px;
+  margin: 6px 0 9px;
+}
+.matchup-detail-metric {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 6px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 5px;
+  background: rgba(255,255,255,.02);
+}
+.matchup-detail-metric span { color: var(--muted); }
+.matchup-detail-metric i { font-style: normal; color: var(--muted); font-size: 10px; }
+.matchup-detail-metric .opponent-score { color: var(--muted); }
+.matchup-detail-notes { display: flex; flex-wrap: wrap; gap: 3px 14px; color: var(--muted); }
+.matchup-detail-notes span { min-width: min(100%, 270px); }
+@media (max-width: 700px) {
+  .matchup-detail-grid { grid-template-columns: repeat(2, minmax(130px, 1fr)); }
+}
+
+.what-if-panel label {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.what-if-panel select,
+.what-if-panel input {
+  max-width: 22rem;
+}
+
+.what-if-panel > summary {
+  flex-basis: 100%;
+  cursor: pointer;
+}
+
+.historical-challenges-panel > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.historical-challenge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.55rem;
+}
+
+.historical-challenge-card {
+  padding: 0.6rem 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  border: 1px solid var(--border, #30343c);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.historical-challenge-card.is-complete {
+  border-color: #4e9f70;
+}
+
+.historical-challenge-card span,
+.historical-challenge-card small {
+  display: block;
+  margin-top: 0.3rem;
+}
+.historical-challenge-card strong { font-size: 0.95rem; }
+.historical-challenge-card ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
+
+.condition-met { color: #79c99a; }
+.condition-missed { color: #d68b8b; }
+
 .intro-screen {
   max-width: 520px;
   margin: 40px auto;
@@ -1197,6 +1320,8 @@ select {
 /* Results screen */
 
 .results-screen {
+  display: flex;
+  flex-direction: column;
   max-width: 800px;
   margin: 0 auto;
   /* `.at-shell` (now always applied alongside this class — see ResultsScreen.tsx) resets its own
@@ -1206,6 +1331,14 @@ select {
      rounded card. */
   padding: 18px 20px 24px;
 }
+.results-screen > h2 { order: 0; }
+.results-screen > .team-result { order: 5; width: 100%; }
+.results-screen > .team-result.is-human-team { order: 1; }
+.results-screen > .matchup-matrix-section { order: 2; }
+.results-screen > .season-sim-panel { order: 3; }
+.results-screen > .expand-all-controls { order: 4; }
+.results-screen > .left-on-board { order: 6; }
+.results-screen > .results-actions { order: 7; }
 
 /* 2026-08-14, results-screen redesign: a 6-band amber ramp for TEAM-level 0-100 scores
    (Talent/Offense/Defense/Spacing/Fit/Rotation/Overall/per-player TAL-in-a-row), same warm
@@ -1284,13 +1417,145 @@ select {
   white-space: nowrap;
 }
 .team-result-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14px;
   padding: 4px 18px 14px;
   border-top: 1px solid var(--border);
+}
+.team-result-body > .subscores,
+.team-result-body > .net-rating-projection,
+.team-result-body > .historical-challenges-panel,
+.team-result-body > .what-if-panel,
+.team-result-body > .notes,
+.team-result-body > .draft-order { flex: 0 0 100%; }
+.team-result-body > .subscores { order: 0; }
+.team-result-body > .net-rating-projection,
+.team-result-body > .historical-challenges-panel,
+.team-result-body > .what-if-panel { order: 2; }
+.team-result-body > .notes,
+.team-result-body > .draft-order { order: 4; }
+.team-result-body > details.fit-v2-shadow-panel {
+  order: 1;
+  flex: 1 1 calc(50% - 14px);
+  align-self: flex-start;
+  min-width: 0;
+}
+.team-result-body > .bench-panel {
+  order: 1;
+  flex: 1 1 calc(50% - 14px);
+  min-width: 280px;
+  align-self: flex-start;
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+.team-result-body > .rotation-panel {
+  order: 3;
+  flex: 0 0 100%;
+}
+@media (max-width: 760px) {
+  .team-result-body > details.fit-v2-shadow-panel,
+  .team-result-body > .bench-panel { flex-basis: 100%; }
 }
 .expand-all-controls {
   display: flex;
   gap: 8px;
   margin-bottom: 10px;
+}
+
+/* Results use one accordion vocabulary.  The old screen mixed bordered cards, dashed FIT boxes
+   and bare headings, which made the information hierarchy hard to scan. */
+.team-result-body > .result-accordion-section {
+  flex: 0 0 100%;
+  box-sizing: border-box;
+  order: 10;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--at-paper-raised) 88%, transparent);
+  overflow: hidden;
+}
+.team-result-body > .rotation-panel { order: 1; }
+.team-result-body > .team-analysis-section { order: 2; }
+.team-result-body > .championship-section { order: 3; }
+.team-result-body > .historical-challenges-panel { order: 4; }
+.team-result-body > .draft-order { order: 5; }
+.team-result-body > .what-if-panel { order: 6; }
+.result-accordion-section > summary {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 11px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 750;
+  list-style: none;
+}
+.result-accordion-section > summary::-webkit-details-marker { display: none; }
+.result-accordion-section > summary::before {
+  content: '›';
+  width: 12px;
+  color: var(--accent);
+  font-size: 17px;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform .14s ease;
+}
+.result-accordion-section[open] > summary {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+.result-accordion-section[open] > summary::before { transform: rotate(90deg); }
+.result-accordion-section[open] > :not(summary) {
+  box-sizing: border-box;
+  max-width: calc(100% - 22px);
+  margin-left: 11px;
+  margin-right: 11px;
+}
+.result-accordion-section[open] > :last-child { margin-bottom: 11px; }
+.analysis-section-heading {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.analysis-insights {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.team-analysis-section[open] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+.team-analysis-section[open] > summary,
+.team-analysis-section[open] > .analysis-section-heading,
+.team-analysis-section[open] > .fit-detail-wide,
+.team-analysis-section[open] > .fit-v2-shadow-detail,
+.team-analysis-section[open] > .analysis-insights { grid-column: 1 / -1; }
+.team-analysis-section[open] > .fit-detail-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+@media (max-width: 620px) {
+  .team-analysis-section[open] { grid-template-columns: 1fr; }
+  .team-analysis-section[open] > .analysis-section-heading,
+  .team-analysis-section[open] > .fit-detail-wide,
+  .team-analysis-section[open] > .fit-v2-shadow-detail,
+  .team-analysis-section[open] > .analysis-insights { grid-column: auto; }
+}
+.championship-summary {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .team-result.rank-1 {
@@ -1336,6 +1601,48 @@ select {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+summary.fit-v2-shadow-label {
+  flex-basis: 100%;
+  cursor: pointer;
+  list-style-position: inside;
+  padding: 2px 0;
+}
+details.fit-v2-shadow-panel:not([open]) {
+  display: block;
+}
+details.fit-v2-shadow-panel[open] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+}
+details.fit-v2-shadow-panel[open] > summary { grid-column: 1 / -1; }
+details.fit-v2-shadow-panel[open] > .fit-detail-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 3px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+.fit-detail-metric b { color: var(--muted); font-weight: 500; }
+.fit-detail-metric strong { color: var(--text); }
+details.fit-v2-shadow-panel[open] > .fit-detail-wide,
+details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail { grid-column: 1 / -1; }
+.fit-detail-wide,
+details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail {
+  display: block;
+  min-width: 0;
+  padding: 6px 0 2px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  line-height: 1.5;
+}
+.fit-detail-wide b,
+details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text); }
+@media (max-width: 620px) {
+  details.fit-v2-shadow-panel[open] { grid-template-columns: 1fr; }
+  details.fit-v2-shadow-panel[open] > .fit-detail-wide,
+  details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail { grid-column: auto; }
+}
 .fit-v2-shadow-detail {
   flex-basis: 100%;
   padding-top: 2px;
@@ -1349,14 +1656,51 @@ select {
   font-style: italic;
   color: var(--text);
   opacity: 0.85;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  margin: 0.55rem 0;
 }
 
+.matchup-explanation {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.player-talent { color: var(--muted); font-weight: 600; }
+
+.left-on-board-collapsed {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+.left-on-board-collapsed summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 700;
+}
+.left-on-board-collapsed ul {
+  columns: 2;
+  column-gap: 2rem;
+  margin: 0.55rem 0 0;
+}
+@media (max-width: 700px) { .left-on-board-collapsed ul { columns: 1; } }
+
 .lineup {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
   font-size: 13px;
   margin-bottom: 10px;
+}
+.rotation-panel > div { width: 100%; }
+.rotation-bench-list { margin-top: 0; }
+.rotation-role-badge {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
 }
 
 .lineup ul {
@@ -1372,6 +1716,8 @@ select {
 .rotation-slot-label {
   font-weight: 700;
   color: var(--accent);
+  display: inline-block;
+  padding-left: 12px;
 }
 
 .rotation-slot-entries li {
@@ -1385,6 +1731,10 @@ select {
 .player-row-name {
   flex: 1 1 auto;
   min-width: 140px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .starter-badge {
   display: inline-flex;
@@ -1404,7 +1754,45 @@ select {
 .player-row-meta {
   display: flex;
   align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.player-row-minutes {
+  display: inline-flex;
+  align-items: center;
+  padding-right: 8px;
+}
+.player-row-boxscore {
+  display: inline-flex;
   gap: 6px;
+  padding: 0 8px;
+  border-left: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+.player-row-shooting {
+  display: inline-flex;
+  gap: 6px;
+  padding-right: 8px;
+  border-right: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+.player-row-meta .player-talent {
+  padding-left: 8px;
+}
+.player-row-boxscore > span + span::before,
+.player-row-shooting > span + span::before {
+  content: '/';
+  margin-right: 6px;
+  color: color-mix(in srgb, var(--accent) 62%, var(--muted));
+  font-weight: 400;
+}
+@media (max-width: 620px) {
+  .rotation-slot-entries li { align-items: flex-start; }
+  .player-row-meta {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 1px;
+  }
 }
 
 .notes ul {
@@ -1816,19 +2204,14 @@ select {
   --at-accent-2: color-mix(in srgb, var(--at-brand-red) 72%, white);
   --at-accent-2-ink: #ffffff;
 
-  /* Draft-table tier ramp — a cool-to-hot broadcast scale bookended by the two real brand
-     colours (dim navy at the low end, NBA red at the top), routed through amber-orange in the
-     middle rather than a literal blue->red blend (which produces a muddy magenta midpoint). Each
-     step keeps its own paired ink for contrast, same shape as every other tier ladder in this
-     file (SPACING/.tier-*, overall rating/.rating-*, playoff/.playoff-*, durability/.dur-*) —
-     deliberately its own hue journey so it doesn't get confused with those, exactly like they're
-     already kept apart from each other. */
-  --at-t1: #23355c; --at-t1-ink: #b9c6e0;
-  --at-t2: #2f5490; --at-t2-ink: #d7e3f7;
-  --at-t3: #4f7fbe; --at-t3-ink: #ffffff;
-  --at-t4: #c98a4a; --at-t4-ink: #2b1a08;
-  --at-t5: #d9622f; --at-t5-ink: #2b1004;
-  --at-t6: #c8102e; --at-t6-ink: #ffffff;
+  /* One calm, sequential blue scale for ratings. Green/red remain reserved for semantic
+     outcomes such as a favorable or unfavorable matchup, instead of competing with scores. */
+  --at-t1: #202b3d; --at-t1-ink: #b8c4d4;
+  --at-t2: #29405d; --at-t2-ink: #c9d8e8;
+  --at-t3: #355775; --at-t3-ink: #d8e5f2;
+  --at-t4: #46708f; --at-t4-ink: #eef5fb;
+  --at-t5: #5c87a8; --at-t5-ink: #ffffff;
+  --at-t6: #76a1c4; --at-t6-ink: #ffffff;
 
   --at-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 10px 26px rgba(0,0,0,0.35);
 
@@ -2169,6 +2552,143 @@ table.at-span-subtable td:first-child, table.at-span-subtable td.at-player-cell 
    the class alone would cross table boundaries. Tag gets the same explicit left pin (`.at-tag-cell`)
    so a short pill (MVP) and a long one (Greatest peak) both start at the same x. */
 table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { text-align: left; }
+
+/* 2026-09-01: the Draft tab's player list uses the Cap Sheet expandable-list shape
+   (`.player-groups` > `.player-group` > `.player-group-header` + `.span-table`) instead of the
+   stacked `.at-draft-table` + `.at-span-subtable` above (those rules are kept only for reference
+   — nothing renders them any more). Condensed to match the Cap Sheet's density: one tight header
+   row per player, plain-text stat cells, only the tier is a pill. The shared `.player-group*` /
+   `.span-table` rules read the plain `--bg`/`--border`/`--accent`/`--text` names, which
+   `.at-shell` aliases to its dark board values; everything below is just spacing/typography. */
+/* 2026-09-02: matched to the Cap Sheet's calm reading hierarchy after "all-time cap dalej
+   bardziej czytelne" — the loud parts were the saturated gold tier PILL and the solid-blue Draft
+   button repeating down every row. Now: tier is plain muted mono text inside one right-aligned
+   "best <tier> · <TAL|FGA>" summary string (no pill anywhere in the list), the Draft button is a
+   quiet outline/ghost button, the position is a thin outlined chip, and rows are a flat
+   hairline-separated list (no rounded card borders / gaps). */
+.at-shell .at-draft-groups { margin-top: 10px; display: flex; flex-direction: column; gap: 0; }
+.at-shell .at-draft-more-note { margin: 12px 2px 0; opacity: 0.7; font-style: italic; }
+.at-shell .at-draft-groups .player-group {
+  border: 0;
+  border-bottom: 1px solid var(--at-line);
+  border-radius: 0;
+}
+.at-shell .at-draft-groups .player-group-header {
+  /* base `.player-group-header` is content-box (no global border-box reset in this app), so its
+     `width: 100%` + padding overflowed `.player-group`'s content box and the `overflow: hidden`
+     there clipped the right edge. */
+  box-sizing: border-box;
+  cursor: pointer;
+  gap: 4px 10px;
+  padding: 9px 6px;
+  min-height: 30px;
+  flex-wrap: wrap;
+  /* no `overflow` / `transition` here: the content is minimal now (fits, or wraps), and ~140
+     clip contexts + transitionable elements were a real render cost. */
+  overflow: visible;
+  font-size: 12.5px;
+}
+.at-shell .at-draft-groups .player-group-header:hover {
+  background: color-mix(in srgb, var(--at-accent) 6%, transparent);
+}
+.at-shell .at-draft-groups .player-group-header:focus-visible {
+  outline: 2px solid var(--at-accent);
+  outline-offset: -2px;
+}
+.at-shell .at-draft-groups .pg-caret { width: 10px; color: var(--at-ink-faint); }
+.at-shell .at-draft-groups .pg-name { font-size: 13px; font-weight: 600; color: var(--at-ink); }
+/* position → thin outlined chip, like the Cap Sheet */
+.at-shell .at-draft-groups .pg-natural-position {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border: 1px solid var(--at-line);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--at-ink-faint);
+  opacity: 1;
+}
+.at-shell .at-draft-groups .pg-meta { color: var(--at-ink-faint); opacity: 1; }
+/* the one calm data string on the right — monospace, muted, labels dimmer than values */
+.at-shell .at-draft-groups .pg-summary {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: var(--at-ink-soft);
+  white-space: nowrap;
+}
+.at-shell .at-draft-groups .pg-summary .lbl { color: var(--at-ink-faint); }
+/* Draft button → quiet ghost, same shape as `.at-why-btn` (not the solid-blue `.at-draft-btn`) */
+.at-shell .at-draft-groups .pg-draft {
+  background: none;
+  border: 1px solid var(--at-line);
+  color: var(--at-ink-soft);
+  border-radius: 5px;
+  padding: 3px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  filter: none;
+}
+.at-shell .at-draft-groups .pg-draft:hover:not(:disabled) {
+  border-color: var(--at-accent);
+  color: var(--at-ink);
+  background: color-mix(in srgb, var(--at-accent) 12%, transparent);
+}
+.at-shell .at-draft-groups .pg-draft:disabled { opacity: 0.3; }
+
+/* the expanded per-span table — Cap Sheet density, plain text, no pills */
+.at-shell .at-draft-groups .table-scroll {
+  border-top: 1px solid var(--at-line);
+  padding: 2px 0 8px;
+}
+.at-shell .at-draft-groups .span-table { font-size: 12px; }
+.at-shell .at-draft-groups .span-table th,
+.at-shell .at-draft-groups .span-table td {
+  padding: 3px 8px;
+  border-top: 1px solid color-mix(in srgb, var(--at-line) 55%, transparent);
+}
+.at-shell .at-draft-groups .span-table td.tier-cell {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--at-ink-soft);
+}
+/* the expanded table's Draft / Why? buttons — plain text links, not chunky pills */
+.at-shell .at-draft-groups .span-table .at-draft-btn,
+.at-shell .at-draft-groups .span-table .at-why-btn {
+  background: none;
+  border: 1px solid var(--at-line);
+  color: var(--at-ink-soft);
+  padding: 2px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 4px;
+  line-height: 1.3;
+  filter: none;
+}
+.at-shell .at-draft-groups .span-table .at-draft-btn:hover:not(:disabled),
+.at-shell .at-draft-groups .span-table .at-why-btn:hover {
+  border-color: var(--at-accent);
+  color: var(--at-ink);
+}
+.at-shell .at-draft-groups .span-table .at-draft-btn:disabled { opacity: 0.3; }
+.at-shell .at-draft-groups .span-table thead th {
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+  border-top: 0;
+}
+.at-shell .at-draft-groups .span-table th.num,
+.at-shell .at-draft-groups .span-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.at-shell .at-draft-groups .span-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--at-accent) 6%, transparent);
+}
 
 .at-legend-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .at-legend-toggle {

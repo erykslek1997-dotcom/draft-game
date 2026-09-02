@@ -8,6 +8,6 @@ export const DRAFT_EXPERIMENT = {
   usePeakOnlyPool: false,
   pruneToObservedAiPool: true,
   greatestPeakBonus: false,
-  starterFiveLock: false,
+  starterFiveLock: true,
   d1d2d3Preference: false,
 } as const;

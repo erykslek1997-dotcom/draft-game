@@ -35,7 +35,7 @@ export default function FeedbackToggle({ entry, onChange, placeholder }: Props) 
       <button
         type="button"
         className={`feedback-toggle-btn feedback-toggle-ok ${status === 'ok' ? 'active' : ''}`}
-        title="Wygląda dobrze"
+        title="Looks right"
         onClick={() => onChange({ status: 'ok', reason: '' })}
       >
         ✓
@@ -43,7 +43,7 @@ export default function FeedbackToggle({ entry, onChange, placeholder }: Props) 
       <button
         type="button"
         className={`feedback-toggle-btn feedback-toggle-flag ${status === 'flagged' ? 'active' : ''}`}
-        title="Zgłoś problem"
+        title="Report a problem"
         onClick={() => onChange({ status: 'flagged', reason: entry?.reason ?? '' })}
       >
         ✗

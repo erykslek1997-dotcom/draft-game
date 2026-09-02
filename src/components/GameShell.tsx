@@ -6,6 +6,7 @@ import {
   resolveAiPickIfNeeded,
   isHumanRosterImpossible,
   autoFinishDraft,
+  fastFinishDraft,
   type DraftState,
 } from '../engine/draft';
 import { autoAssignRotation } from '../engine/rotation';
@@ -160,7 +161,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // "no confirmation, skip real steps" convenience as Auto-finish above — never shown outside
   // Tester Mode.
   function handleSkipToResults() {
-    const finished = draftState.complete ? draftState : autoFinishDraft(draftState);
+    const finished = draftState.complete ? draftState : fastFinishDraft(draftState);
     const teams = finished.teams.map((t) => {
       const roster = optimizeSpans(t.roster, CAP_LIMIT);
       return { ...t, roster, rotation: autoAssignRotation(roster) };

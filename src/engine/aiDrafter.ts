@@ -25,6 +25,8 @@ import { isD1D2D3Player } from './d1d2d3Lookup';
 import { isSixthManProfile } from './sixthMan';
 import { draftPool } from '../data/draftPool';
 import { DRAFT_EXPERIMENT } from './draftExperiment';
+import { madeAllNbaInSpan } from './allNbaLookup';
+import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 
 /** A player this good is a generational, top-of-history peak (Jordan/LeBron/Curry/Hakeem
  * tier) that a real GM drafts regardless of roster redundancy — the "already have two
@@ -563,7 +565,7 @@ function plannedPlayableReserveFga(slotsRemaining: number): number {
 
 /** A 12-minute specialist may be narrow; an 18-24 minute backup cannot be replacement-level. */
 const MATERIAL_BENCH_MINUTES = 18;
-const USEFUL_BENCH_MINUTES = 8;
+const USEFUL_BENCH_MINUTES = 12;
 const MATERIAL_BENCH_TALENT_FLOOR = 52;
 const PENULTIMATE_ROTATION_TALENT_FLOOR = 56;
 const BENCH_QUALITY_SCAN_SIZE = 40;
@@ -617,6 +619,20 @@ const ELITE_ONE_WAY_CREATOR_DEFENSE_FLOOR = 60;
 const ELITE_ONE_WAY_CREATOR_DEFENSE_SCALE = 0.04;
 const ELITE_ONE_WAY_CREATOR_EXCESS_FGA_SCALE = 0.05;
 const MAX_ELITE_ONE_WAY_CREATOR_PENALTY = 1.5;
+const PORTABLE_TWO_WAY_WING_OTAL_FLOOR = 75;
+const PORTABLE_TWO_WAY_WING_DTAL_FLOOR = 55;
+const PORTABLE_TWO_WAY_WING_SPACING_FLOOR = 80;
+const PORTABLE_TWO_WAY_WING_PENALTY_SCALE = 0.35;
+
+function isValidatedPortableTwoWayWing(p: PlayerSpan): boolean {
+  if (p.primaryPosition !== 'SG' && p.primaryPosition !== 'SF') return false;
+  return (
+    madeAllNbaInSpan(p.playerName, p.spanLabel) &&
+    computeOffensiveTalent(p) >= PORTABLE_TWO_WAY_WING_OTAL_FLOOR &&
+    computeDefensiveTalent(p) >= PORTABLE_TWO_WAY_WING_DTAL_FLOOR &&
+    computeSpacing(p) >= PORTABLE_TWO_WAY_WING_SPACING_FLOOR
+  );
+}
 
 function highVolumeNonElitePenalty(p: PlayerSpan): number {
   const excess = p.fga - HIGH_VOLUME_FGA_THRESHOLD[p.primaryPosition];
@@ -656,7 +672,7 @@ function highVolumeNonElitePenalty(p: PlayerSpan): number {
     Math.max(0, talent - offensiveTalent) * HIGH_VOLUME_TALENT_OFFENSE_GAP_SCALE;
   const bigPositionSurcharge =
     p.primaryPosition === 'PF' || p.primaryPosition === 'C' ? excess * HIGH_VOLUME_BIG_EXTRA_SCALE : 0;
-  return Math.min(
+  const penalty = Math.min(
     MAX_HIGH_VOLUME_PENALTY,
     excess * volumeScale +
       offenseShortfallSurcharge +
@@ -664,6 +680,23 @@ function highVolumeNonElitePenalty(p: PlayerSpan): number {
       talentOffenseGapSurcharge +
       bigPositionSurcharge,
   );
+  return isValidatedPortableTwoWayWing(p) ? penalty * PORTABLE_TWO_WAY_WING_PENALTY_SCALE : penalty;
+}
+
+const PLAYOFF_BPM_VALUE_BASELINE = 2;
+const PLAYOFF_BPM_VALUE_SCALE = 0.9;
+const MAX_PLAYOFF_BPM_VALUE_BONUS = 4;
+
+export function playoffBpmDraftBonus(p: PlayerSpan): number {
+  const playoff = playoffBpm2ForSpan(p);
+  if (!playoff) return 0;
+  if (
+    p.primaryPosition !== 'PF' &&
+    p.primaryPosition !== 'C' &&
+    computeDefensiveTalent(p) < PORTABLE_TWO_WAY_WING_DTAL_FLOOR
+  ) return 0;
+  const excess = Math.max(0, playoff.bpm - PLAYOFF_BPM_VALUE_BASELINE);
+  return Math.min(MAX_PLAYOFF_BPM_VALUE_BONUS, excess * playoff.reliability * PLAYOFF_BPM_VALUE_SCALE);
 }
 
 const ELITE_PERIMETER_ENGINE_ARCHETYPES = new Set(['Primary Ball Handler', 'Shot Creator']);
@@ -791,10 +824,11 @@ function earlyCoreRolePenalty(p: PlayerSpan): number {
   const talent = effectiveTalent(p);
   if (p.offensiveArchetype === 'Shot Creator' && talent < NON_ELITE_CREATOR_TALENT_CEILING) {
     const offenseShortfall = Math.max(0, NON_ELITE_CREATOR_OFFENSE_REFERENCE - computeOffensiveTalent(p));
-    return Math.min(
+    const penalty = Math.min(
       MAX_NON_ELITE_CREATOR_PENALTY,
       NON_ELITE_CREATOR_BASE_PENALTY + offenseShortfall * NON_ELITE_CREATOR_SHORTFALL_SCALE,
     );
+    return isValidatedPortableTwoWayWing(p) ? penalty * PORTABLE_TWO_WAY_WING_PENALTY_SCALE : penalty;
   }
   if (OFF_BALL_SHOOTER_ARCHETYPES.has(p.offensiveArchetype) && talent < OFF_BALL_SPECIALIST_TALENT_REFERENCE) {
     return Math.min(
@@ -1264,15 +1298,22 @@ export function pickForAi(
   // real 5-man starting five exists before redundancy/bench considerations ever compete for
   // those same slots — the user's own mental model ("po 5 pickach mieć starting5").
   const STARTER_LOCK_ROSTER_SIZE = STARTER_SLOTS.length;
+  const MINIMUM_CREDIBLE_STARTER_TALENT = 55;
   let phaseFilteredCandidates = planningCandidates;
   if (
     DRAFT_EXPERIMENT.starterFiveLock &&
-    roster.length >= NEED_RAMP_ROSTER_SIZE &&
+    roster.length >= NEED_RAMP_ROSTER_SIZE - 1 &&
     roster.length < STARTER_LOCK_ROSTER_SIZE &&
     needs.emptySlots.length > 0
   ) {
     const starterFillers = planningCandidates.filter((p) => needs.emptySlots.some((slot) => isRealPositionFit(p, slot)));
-    if (starterFillers.length > 0) phaseFilteredCandidates = starterFillers;
+    if (starterFillers.length > 0) {
+      // `rotationScore` treats a starter below TAL55 as a lineup-breaking weak starter. Prefer
+      // candidates that clear the same boundary while the board is still deep, but retain the
+      // full filler set as a cap/availability fallback so this can never dead-end the draft.
+      const credibleStarterFillers = starterFillers.filter((p) => effectiveTalent(p) >= MINIMUM_CREDIBLE_STARTER_TALENT);
+      phaseFilteredCandidates = credibleStarterFillers.length > 0 ? credibleStarterFillers : starterFillers;
+    }
   }
 
   // 2026-08-07, user's follow-up diagnosis from a live draft-order export (Hakeem #5, then a
@@ -1530,7 +1571,8 @@ export function pickForAi(
       eliteTwoWayFrontcourtBonus(p) +
       eliteTwoWayPeakBonus(p) -
       earlyCoreRolePenalty(p) +
-      greatestPeakTierBonus(p);
+      greatestPeakTierBonus(p) +
+      playoffBpmDraftBonus(p);
     return { player: p, value, talent };
   });
 
@@ -1601,10 +1643,18 @@ export function pickForAi(
       // dead paid roster slot surfaced by Eric Snow/Greg Buckner/Hoiberg/Ratliff. Only true
       // sub-2-FGA glue may occupy that construction role; everyone else must project to useful
       // minutes and clear a basic talent floor.
-      return projectedMinutes >= USEFUL_BENCH_MINUTES && bestLegalTalent >= MATERIAL_BENCH_TALENT_FLOOR;
+      return (
+        projectedMinutes >= USEFUL_BENCH_MINUTES &&
+        entry.talent >= MATERIAL_BENCH_TALENT_FLOOR &&
+        bestLegalTalent >= MATERIAL_BENCH_TALENT_FLOOR
+      );
     });
 
     const picksIncludingThisOne = ROSTER_SIZE - roster.length;
+    if (picksIncludingThisOne > 1) {
+      const realRotationCandidates = playable.filter((entry) => entry.player.fga >= TRUE_CAP_GLUE_FGA_CEILING);
+      if (realRotationCandidates.length > 0) playable = realRotationCandidates;
+    }
     if (picksIncludingThisOne === 2) {
       // With two slots left, secure one actual rotation player first. This prevents two cheap,
       // low-TAL 3-5 FGA picks from consuming the remaining cap while neither can play.

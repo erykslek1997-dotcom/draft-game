@@ -22,6 +22,13 @@ export const MAX_MINUTES_PER_PLAYER = 40;
 const MAX_DISTINCT_BACKUP_SLOTS = 2;
 /** See the 2026-08-15 comment on its one use site (`fillFromTier` below) for the full case. */
 const UNUSED_REAL_FIT_BACKUP_BOOST = 1.15;
+/** A 9th man who is actually rotation-caliber should not become an accidental DNP solely because
+ * the greedy slot fill spent all minutes on earlier candidates. This is deliberately below a
+ * normal 12-minute backup role: it protects a real role without forcing a weak player into a
+ * full rotation workload. */
+const MIN_USEFUL_BENCH_MINUTES = 8;
+const USEFUL_BENCH_TALENT_FLOOR = 55;
+const USEFUL_BENCH_DONOR_TALENT_GAP = 12;
 
 /**
  * 2026-08-15, user-reported (recurring pattern across several real drafts, most recently David
@@ -334,13 +341,10 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
    * Every slot has to add up to a full 48 minutes — somebody is on the floor at that spot
    * for the whole game. Finding that somebody goes through progressively looser tiers,
    * only dropping to the next once the previous one has nobody left with capacity:
-   *  0. A position-eligible bench player, under the normal distinct-slot cap (the ordinary
-   *     case — a real backup who isn't already stretched across too many other slots).
-   *  1. Still position-eligible (real primary/secondary, or one spot away — never someone
-   *     genuinely out of position), but the distinct-slot cap is relaxed: a versatile combo
-   *     player already covering 2 other slots can cover a 3rd real fit before we resort to
-   *     someone with zero fit at all.
-   *  2. Truly last resort: any bench player, position ignored entirely. On a 9-man roster
+   *  0. A real primary/secondary-position bench player, under the normal distinct-slot cap.
+   *  1. Still position-eligible (including a one-spot fallback), under the normal slot cap.
+   *  2. Position-eligible with the distinct-slot cap relaxed.
+   *  3. Truly last resort: any bench player, position ignored entirely. On a 9-man roster
    *     there sometimes simply isn't a second natural center (or point guard) left with
    *     capacity anywhere, and somebody covering out of position is more realistic than
    *     nobody playing those minutes. Self-penalizing rather than free — `positionFitMultiplier`
@@ -366,6 +370,8 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
   // tried in between: realistic bench fits first, then "play the starter more," and only THEN
   // (if the starter is himself durability-capped) a position-blind bench fallback.
   const REALISTIC_TIERS = [
+    (p: PlayerSpan, slot: Position) =>
+      isRealPositionFit(p, slot) && (slotsBackedUp.get(p.id) ?? 0) < MAX_DISTINCT_BACKUP_SLOTS,
     (p: PlayerSpan, slot: Position) =>
       isPositionEligible(p, slot) && (slotsBackedUp.get(p.id) ?? 0) < MAX_DISTINCT_BACKUP_SLOTS,
     (p: PlayerSpan, slot: Position) => isPositionEligible(p, slot),
@@ -577,8 +583,61 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
   }
 
   rebalanceCrossSlotMinutes(roster, slots, primaryBySlot, starterMinutesUsed, minutesUsed, slotsBackedUp, remainingPlayers);
+  ensureUsefulBenchMinutes(roster, slots, primaryBySlot);
 
   return { slots };
+}
+
+/**
+ * Give a genuinely useful, naturally-fitting ninth man a small real role when the greedy fill
+ * left him at zero. This is a redistribution only: every affected slot remains at 48 minutes,
+ * and a player who is clearly worse than the donor is not artificially forced onto the floor.
+ */
+function ensureUsefulBenchMinutes(
+  roster: PlayerSpan[],
+  slots: Record<Position, SlotAssignment[]>,
+  primaryBySlot: Partial<Record<Position, PlayerSpan>>,
+): void {
+  const starterIds = new Set(Object.values(primaryBySlot).filter((player): player is PlayerSpan => !!player).map((player) => player.id));
+  const totalMinutes = (playerId: string) => STARTER_SLOTS.reduce(
+    (sum, slot) => sum + slots[slot].filter((entry) => entry.playerId === playerId).reduce((slotSum, entry) => slotSum + entry.minutes, 0),
+    0,
+  );
+
+  const candidates = roster
+    .filter((player) => player.fga >= 2 && !starterIds.has(player.id) && effectiveTalent(player) >= USEFUL_BENCH_TALENT_FLOOR && totalMinutes(player.id) === 0)
+    .sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+
+  for (const candidate of candidates) {
+    const candidateCap = Math.min(maxSustainableMinutes(candidate, MAX_MINUTES_PER_PLAYER), minuteProfileForSpan(candidate).ceiling);
+    const needed = Math.min(MIN_USEFUL_BENCH_MINUTES, candidateCap);
+    if (needed < 6) continue;
+
+    const donors = STARTER_SLOTS
+      .filter((slot) => isRealPositionFit(candidate, slot))
+      .flatMap((slot) => slots[slot].map((entry) => ({ slot, entry, donor: roster.find((player) => player.id === entry.playerId) })))
+      .filter((item): item is { slot: Position; entry: SlotAssignment; donor: PlayerSpan } => !!item.donor && item.donor.id !== candidate.id)
+      .map((item) => {
+        const donorIsStarter = starterIds.has(item.donor.id);
+        const donorFloor = donorIsStarter ? 24 : 6;
+        const surrenderable = Math.max(0, Math.min(item.entry.minutes, totalMinutes(item.donor.id) - donorFloor));
+        return { ...item, donorIsStarter, surrenderable };
+      })
+      .filter((item) => item.surrenderable > 0 && effectiveTalent(candidate) >= effectiveTalent(item.donor) - USEFUL_BENCH_DONOR_TALENT_GAP)
+      .sort((a, b) =>
+        Number(!isRealPositionFit(b.donor, b.slot)) - Number(!isRealPositionFit(a.donor, a.slot)) ||
+        Number(a.donorIsStarter) - Number(b.donorIsStarter) ||
+        b.surrenderable - a.surrenderable,
+      );
+
+    const donor = donors[0];
+    if (!donor) continue;
+    const grant = Math.min(needed, donor.surrenderable);
+    donor.entry.minutes -= grant;
+    const existing = slots[donor.slot].find((entry) => entry.playerId === candidate.id);
+    if (existing) existing.minutes += grant;
+    else slots[donor.slot].push({ playerId: candidate.id, minutes: grant });
+  }
 }
 
 /**

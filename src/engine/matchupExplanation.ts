@@ -15,18 +15,18 @@ export function explainMatchup({ own, opponent, seriesWinProb }: MatchupExplanat
   const defenseGap = diff(own.components.defensiveRoleCoverage, opponent.components.defensiveRoleCoverage);
   const creationGap = diff(own.components.creationStructure, opponent.components.creationStructure);
   const sizeGap = diff(own.components.sizeCoverage, opponent.components.sizeCoverage);
-  if (spacingGap >= 10) reasons.push('twoja przewaga spacingu utrudnia przeciwnikowi pomoc z rogu');
-  else if (spacingGap <= -10) reasons.push('przeciwnik może zamknąć wjazdy przez słabszy spacing');
-  if (defenseGap >= 10) reasons.push('masz więcej odpowiedzi na POA i skrzydła');
-  else if (defenseGap <= -10) reasons.push('ich kreacja może atakować twoje słabsze matchupy na obwodzie');
-  if (creationGap >= 10) reasons.push('twoja kreacja ma większy zapas na końcówki akcji');
-  else if (creationGap <= -10) reasons.push('możesz zostać zmuszony do grania bez głównego kreatora');
-  if (sizeGap <= -12) reasons.push('ich przewaga rozmiaru zwiększa presję na zbiórkę i obręcz');
-  else if (sizeGap >= 12) reasons.push('twoja przewaga funkcjonalnego rozmiaru ogranicza atak przy obręczy');
+  if (spacingGap >= 10) reasons.push('your spacing advantage makes corner help difficult');
+  else if (spacingGap <= -10) reasons.push('the opponent can load the paint against your weaker spacing');
+  if (defenseGap >= 10) reasons.push('you have more answers at the point of attack and on the wings');
+  else if (defenseGap <= -10) reasons.push('their creation can attack your weaker perimeter matchups');
+  if (creationGap >= 10) reasons.push('your creation has more margin late in the shot clock');
+  else if (creationGap <= -10) reasons.push('you may be forced to play without a primary creator');
+  if (sizeGap <= -12) reasons.push('their size advantage increases pressure on the glass and at the rim');
+  else if (sizeGap >= 12) reasons.push('your functional-size advantage limits offense at the rim');
   if (own.inputs.defensiveWeakLinkIsHuntable && own.inputs.defensiveWeakLinkResistance < opponent.inputs.primaryCreationSignal) {
-    reasons.push(`do polowania nadaje się ${own.inputs.defensiveWeakLinkPlayer ?? 'najsłabszy obrońca'}`);
+    reasons.push(`${own.inputs.defensiveWeakLinkPlayer ?? 'your weakest defender'} can be targeted`);
   }
-  if (reasons.length === 0) reasons.push('wynik zależy głównie od różnicy talentu, bez wyraźnego konfliktu schematów');
-  const confidence = seriesWinProb >= 0.6 ? 'To korzystny matchup.' : seriesWinProb <= 0.4 ? 'To trudny matchup.' : 'To wyrównany matchup.';
+  if (reasons.length === 0) reasons.push('the result is driven mostly by the talent gap, without a clear scheme conflict');
+  const confidence = seriesWinProb >= 0.6 ? 'Favorable matchup.' : seriesWinProb <= 0.4 ? 'Difficult matchup.' : 'Even matchup.';
   return [`${confidence} ${reasons.slice(0, 2).join('; ')}.`];
 }

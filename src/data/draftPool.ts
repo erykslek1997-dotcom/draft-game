@@ -21,5 +21,12 @@ export const draftPool: PlayerSpan[] = (data as PlayerSpan[]).map((span) => {
   if (span.playerName === 'Andrei Kirilenko' && span.spanLabel === '2003-05' && span.primaryPosition === 'PF') {
     return { ...span, primaryPosition: 'SF', secondaryPositions: ['PF'] };
   }
+  if (
+    span.playerName === 'Pau Gasol' &&
+    ['2007-09', '2008-10', '2009-11'].includes(span.spanLabel) &&
+    span.primaryPosition === 'C'
+  ) {
+    return { ...span, primaryPosition: 'PF', secondaryPositions: ['C'] };
+  }
   return span;
 });
