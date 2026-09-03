@@ -11,6 +11,7 @@ import {
 } from '../engine/draft';
 import { autoAssignRotation } from '../engine/rotation';
 import { optimizeSpans } from '../engine/spanOptimizer';
+import { setAiDraftDebug } from '../engine/aiDrafter';
 import { CAP_LIMIT } from '../engine/positions';
 import type { PlayerSpan } from '../data/schema';
 import type { Rotation, Team } from '../engine/types';
@@ -63,8 +64,31 @@ const AI_SPEEDS = [
 ] as const;
 const DEFAULT_AI_SPEED_INDEX = 1;
 
+/** `?draftSeed=123` on the URL replays a specific draft — the seed `createDraft` logs to the
+ * console in dev. Any non-finite value is ignored and a fresh random seed is drawn as usual. */
+function seedFromUrl(): number | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const raw = new URLSearchParams(window.location.search).get('draftSeed');
+  if (raw == null) return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n >>> 0 : undefined;
+}
+
 export default function GameShell({ mode, commissionerMode, humanTeamName, onExit }: Props) {
-  const [draftState, setDraftState] = useState<DraftState>(() => createDraft(commissionerMode, undefined, humanTeamName));
+  const [draftState, setDraftState] = useState<DraftState>(
+    () => createDraft(commissionerMode, undefined, humanTeamName, seedFromUrl()),
+  );
+  // Dev-only console hook: `draftDebug()` turns on the per-pick value-breakdown log in
+  // `pickForAi`, `draftDebug(false)` turns it back off. Paired with the seed `createDraft` logs,
+  // this is the whole "why did the AI take him?" workflow — no UI surface, dev builds only.
+  useEffect(() => {
+    if (!import.meta.env.DEV || typeof window === 'undefined') return;
+    (window as unknown as { draftDebug: (on?: boolean) => string }).draftDebug = (on = true) => {
+      setAiDraftDebug(on);
+      return `AI draft debug ${on ? 'ON' : 'off'}`;
+    };
+    return () => setAiDraftDebug(false);
+  }, []);
   // 2026-08-16, user's own ask: a visible lottery-reveal moment for the already-randomized slot
   // assignment (see DraftLottery.tsx's own docstring — the randomization itself isn't new, only
   // this reveal step is) runs once, right after Start Draft, before the real board appears.

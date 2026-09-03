@@ -15,6 +15,7 @@ import {
   type CheapestLookup,
 } from './positions';
 import { pickForAi } from './aiDrafter';
+import { mulberry32, mixSeed, randomSeed } from './rng';
 import type { DraftHistoryEntry, Team } from './types';
 
 export { TEAM_COUNT };
@@ -48,6 +49,12 @@ export interface DraftState {
    * default. Only the AI-calibration analysis script overrides this, to a small allowlisted
    * pool, so that experiment stays isolated from real gameplay instead of shrinking it. */
   pool: PlayerSpan[];
+  /** uint32 seed for every random draw this draft makes — the human's slot assignment and each
+   * AI team's weighted lottery. Random per draft unless `createDraft` is handed one. Logged to the
+   * console in dev so a surprising draft can be replayed verbatim by passing the same value back
+   * (see `createDraft`). The value pipeline that ranks candidates is fully deterministic; only the
+   * final tie-break lottery consumes this. */
+  seed: number;
 }
 
 // --- One-time-per-dataset lookups, built once at module load rather than re-scanning the
@@ -83,8 +90,8 @@ const noCapLegalCache = new WeakMap<DraftState, boolean>();
  * the other 15 stay on the normal random generator untouched. A blank/whitespace-only
  * `humanTeamName` is treated the same as not passing one at all (falls through to the random
  * draw) rather than shipping a team with an empty name. */
-export function createInitialTeams(humanTeamName?: string): Team[] {
-  const humanIndex = Math.floor(Math.random() * TEAM_COUNT);
+export function createInitialTeams(humanTeamName?: string, rng: () => number = Math.random): Team[] {
+  const humanIndex = Math.floor(rng() * TEAM_COUNT);
   const names = randomTeamNames(TEAM_COUNT);
   const trimmedHumanName = humanTeamName?.trim();
   if (trimmedHumanName) names[humanIndex] = trimmedHumanName;
@@ -104,9 +111,26 @@ export function createInitialTeams(humanTeamName?: string): Team[] {
   return teams;
 }
 
-export function createDraft(commissionerMode: boolean = false, pool: PlayerSpan[] = players, humanTeamName?: string): DraftState {
+/**
+ * `seed` (uint32) is optional: omitted, a fresh random one is drawn per draft. Pass one to replay
+ * a draft — the same seed reproduces the human's slot and every AI lottery outcome exactly (given
+ * the same pool). In dev the chosen seed is logged so a surprising draft can be pinned and
+ * re-run; a `?draftSeed=` URL param wired through `GameShell` is the usual way to feed one back.
+ */
+export function createDraft(
+  commissionerMode: boolean = false,
+  pool: PlayerSpan[] = players,
+  humanTeamName?: string,
+  seed: number = randomSeed(),
+): DraftState {
+  // Optional-chained: `import.meta.env` is undefined when an engine test script runs this under
+  // tsx (no Vite), and `.DEV` on undefined would throw.
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.info(`[draft] seed ${seed} — pass ?draftSeed=${seed} to replay this draft`);
+  }
   return {
-    teams: createInitialTeams(humanTeamName),
+    teams: createInitialTeams(humanTeamName, mulberry32(mixSeed(seed, 0))),
     draftedIds: new Set(),
     round: 0,
     pickInRound: 0,
@@ -114,6 +138,7 @@ export function createDraft(commissionerMode: boolean = false, pool: PlayerSpan[
     history: [],
     commissionerMode,
     pool,
+    seed,
   };
 }
 
@@ -341,14 +366,19 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
   // function, just below) — computed from the CURRENT (pre-pick) state, since that's the pick
   // about to be made. Feeds `pickForAi`'s "steal" safety net only; see that function's own docstring.
   const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
-  const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber);
+  // Per-pick seeded stream off the draft's own seed, so the whole draft replays from `state.seed`.
+  // One generator instance for both `pickForAi` calls below: if the preferred pick is rejected and
+  // the AI re-runs over the legal subset, that second lottery just draws the next value from the
+  // same stream — still fully determined by the seed.
+  const rng = mulberry32(mixSeed(state.seed, pickNumber));
+  const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber, rng);
   const preferredState = makePick(state, preferred.id);
   if (preferredState !== state) return preferredState;
 
   const legal = available.filter((p) => isPickLegal(state, p.id));
   if (legal.length === 0) return null;
 
-  const fallback = pickForAi(team.roster, currentFgas, legal, TEAM_COUNT, pickNumber);
+  const fallback = pickForAi(team.roster, currentFgas, legal, TEAM_COUNT, pickNumber, rng);
   const fallbackState = makePick(state, fallback.id);
   if (fallbackState !== state) return fallbackState;
 

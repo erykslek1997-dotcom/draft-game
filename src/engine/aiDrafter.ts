@@ -28,6 +28,57 @@ import { DRAFT_EXPERIMENT } from './draftExperiment';
 import { madeAllNbaInSpan } from './allNbaLookup';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 
+// ---------------------------------------------------------------------------
+// dev debug — off by default, no cost on the hot path. `draft.ts` flips it on from a dev-only
+// `window.draftDebug()` console hook (see GameShell). When on, every `pickForAi` call prints the
+// finalists' full value breakdown and the lottery roll that chose between them, so a surprising
+// AI pick can be traced to the exact term that inflated (or sank) its score.
+// ---------------------------------------------------------------------------
+let aiDraftDebug = false;
+export function setAiDraftDebug(on: boolean): void {
+  aiDraftDebug = on;
+}
+
+type ScoredEntry = { player: PlayerSpan; value: number; talent: number; debug?: Record<string, number> };
+
+function logDraftDebug(
+  roster: PlayerSpan[],
+  pickNumber: number | undefined,
+  top: ScoredEntry[],
+  weights: number[],
+  roll: number,
+  totalWeight: number,
+  chosenIndex: number,
+): void {
+  const label = pickNumber != null ? `pick #${pickNumber}` : 'pick';
+  // eslint-disable-next-line no-console
+  console.groupCollapsed(
+    `%c[draft] ${label} — roster ${roster.length}/${ROSTER_SIZE} → ${top[chosenIndex]?.player.playerName} ${top[chosenIndex]?.player.spanLabel}`,
+    'color:#4f8cff',
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `lottery roll ${roll.toFixed(2)} / ${totalWeight} (weights ${weights.join(':')}) → index ${chosenIndex}`,
+  );
+  // eslint-disable-next-line no-console
+  console.table(
+    top.map((entry, i) => ({
+      '': i === chosenIndex ? '►' : '',
+      player: `${entry.player.playerName} ${entry.player.spanLabel}`,
+      value: Number(entry.value.toFixed(1)),
+      ...(entry.debug
+        ? Object.fromEntries(
+            Object.entries(entry.debug)
+              .filter(([, v]) => Math.abs(v) > 0.05)
+              .map(([k, v]) => [k, Number(v.toFixed(1))]),
+          )
+        : {}),
+    })),
+  );
+  // eslint-disable-next-line no-console
+  console.groupEnd();
+}
+
 /** A player this good is a generational, top-of-history peak (Jordan/LeBron/Curry/Hakeem
  * tier) that a real GM drafts regardless of roster redundancy — the "already have two
  * high-usage guys" discount below is real and correct for ordinary stars (a second shot-heavy
@@ -1190,6 +1241,11 @@ function uniquePlayerSpans(ranked: PlayerSpan[]): PlayerSpan[] {
  * `state.history.length + 1`) is optional and only feeds the "steal" safety net below; every
  * other signal in this function is unaffected by it, and it's safe to omit entirely (validation
  * scripts that don't track a real running pick count simply never trigger that check).
+ *
+ * `rng` (defaults to `Math.random`) is only consulted by the final weighted lottery — the entire
+ * value pipeline above it is deterministic. `draft.ts` threads a seeded `mulberry32` stream here
+ * so a whole draft can be replayed from its logged seed (see that file's `seed` field); every
+ * other caller leaves it unseeded.
  */
 export function pickForAi(
   roster: PlayerSpan[],
@@ -1197,6 +1253,7 @@ export function pickForAi(
   available: PlayerSpan[],
   teamCount: number = TEAM_COUNT,
   pickNumber?: number,
+  rng: () => number = Math.random,
 ): PlayerSpan {
   const slotsLeft = ROSTER_SIZE - roster.length;
   const needs = assessNeeds(roster);
@@ -1380,7 +1437,7 @@ export function pickForAi(
     const cheapPool = cheapestFirst.slice(0, Math.min(5, cheapestFirst.length));
     const weights = cheapPool.map((_, i) => cheapPool.length - i);
     const totalWeight = weights.reduce((s, w) => s + w, 0);
-    let roll = Math.random() * totalWeight;
+    let roll = rng() * totalWeight;
     for (let i = 0; i < cheapPool.length; i++) {
       roll -= weights[i];
       if (roll <= 0) return cheapPool[i];
@@ -1561,19 +1618,27 @@ export function pickForAi(
     // peak still feels cap pressure, just softened, rather than being mechanically discounted
     // below a cheaper merely-very-good alternative the same way an ordinary star would be.
     const effectiveFgaPenalty = talent >= ELITE_TALENT_REDUNDANCY_EXEMPTION ? fgaPenalty * ELITE_TALENT_FGA_PENALTY_DAMPENING : fgaPenalty;
+    const talentTerm = talent * rampedNeed;
+    const fgaCost = p.fga * effectiveFgaPenalty;
+    const adjustments = {
+      lowUsageBigMalus: -lowUsageBigMalus(p),
+      eliteLowUsageDraftMalus: -eliteLowUsageDraftMalus(p),
+      highVolumeNonElitePenalty: -highVolumeNonElitePenalty(p),
+      elitePerimeterEngineBonus: elitePerimeterEngineBonus(p),
+      eliteTwoWayFrontcourtBonus: eliteTwoWayFrontcourtBonus(p),
+      eliteTwoWayPeakBonus: eliteTwoWayPeakBonus(p),
+      earlyCoreRolePenalty: -earlyCoreRolePenalty(p),
+      greatestPeakTierBonus: greatestPeakTierBonus(p),
+      playoffBpmDraftBonus: playoffBpmDraftBonus(p),
+    };
     const value =
-      talent * rampedNeed -
-      p.fga * effectiveFgaPenalty -
-      lowUsageBigMalus(p) -
-      eliteLowUsageDraftMalus(p) -
-      highVolumeNonElitePenalty(p) +
-      elitePerimeterEngineBonus(p) +
-      eliteTwoWayFrontcourtBonus(p) +
-      eliteTwoWayPeakBonus(p) -
-      earlyCoreRolePenalty(p) +
-      greatestPeakTierBonus(p) +
-      playoffBpmDraftBonus(p);
-    return { player: p, value, talent };
+      talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
+    // The per-candidate value breakdown is only materialised when the dev debug flag is on (see
+    // `setAiDraftDebug`) — otherwise it's dead weight on the hot scoring loop.
+    const debug = aiDraftDebug
+      ? { talent, rampedNeed, talentTerm, fga: p.fga, effectiveFgaPenalty, fgaCost, ...adjustments }
+      : undefined;
+    return { player: p, value, talent, debug };
   });
 
   // A player may have several legal spans. The context-optimal representative used for draft
@@ -1707,10 +1772,15 @@ export function pickForAi(
   const top = lotteryCandidates.slice(0, Math.min(lotteryPoolSize, lotteryCandidates.length));
   const weights = top.map((_, i) => top.length - i);
   const totalWeight = weights.reduce((s, w) => s + w, 0);
-  let roll = Math.random() * totalWeight;
+  let roll = rng() * totalWeight;
+  const rolledFrom = roll;
+  let chosenIndex = 0;
   for (let i = 0; i < top.length; i++) {
     roll -= weights[i];
-    if (roll <= 0) return top[i].player;
+    if (roll <= 0) { chosenIndex = i; break; }
   }
-  return top[0].player;
+  if (aiDraftDebug) {
+    logDraftDebug(roster, pickNumber, top, weights, rolledFrom, totalWeight, chosenIndex);
+  }
+  return top[chosenIndex].player;
 }
