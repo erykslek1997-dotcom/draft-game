@@ -470,6 +470,10 @@ export default function DraftBoard({
   // about how much cap a cheaper chosen span actually freed up. Falls back to the plain
   // `currentFgas` (drafted/peak spans) when this table isn't showing the human's own roster.
   const displayFgas = isViewingHumanRoster ? chosenHumanRoster.map((p) => p.fga) : currentFgas;
+  // The human's chosen-span roster measured against the cap — the span dropdown can pick a
+  // pricier span than was drafted, and nothing downstream clamps it (see the Submit button).
+  const chosenRosterFga = totalFga(chosenHumanRoster.map((p) => p.fga));
+  const chosenRosterOverCap = chosenRosterFga > CAP_LIMIT;
 
   // 2026-09-02: group the FULL, immutable pool once — not `availablePlayers(state)`, which
   // returns a new array every pick, forcing the expensive per-player enrichment below to re-run
@@ -1097,9 +1101,10 @@ export default function DraftBoard({
       {activeTab === 'team' && (
         <div className="at-card" style={{ marginBottom: 16 }}>
           <h1 className="at-panel-title at-cond">Team</h1>
-          <div className="at-cap-meter">
+          <div className={`at-cap-meter${isViewingHumanRoster && chosenRosterOverCap ? ' at-cap-meter--over' : ''}`}>
             <span className="at-cap-label">
               <b>{totalFga(displayFgas).toFixed(1)}</b> / {CAP_LIMIT} FGA
+              {isViewingHumanRoster && chosenRosterOverCap && ' — over cap'}
             </span>
             <div className="at-cap-track">
               <div className="at-cap-fill" style={{ width: `${Math.min(100, (totalFga(displayFgas) / CAP_LIMIT) * 100)}%` }} />
@@ -1288,9 +1293,18 @@ export default function DraftBoard({
                 roster={chosenHumanRoster}
                 onConfirm={(rotation) => onSubmitTeam(chosenHumanRoster, rotation)}
                 confirmLabel="Submit Team"
-                confirmDisabled={!state.complete}
+                // The span dropdown deliberately lists every span (comparing them by cost is the
+                // point), so a player can swap to a pricier span and push the chosen roster over
+                // the cap. `handleSubmitTeam` writes the human's spans through verbatim (no
+                // `optimizeSpans` clamp, unlike the AI path) — so block the submit here, or the
+                // human is scored over a cap all 15 AI teams are held to.
+                confirmDisabled={!state.complete || chosenRosterOverCap}
                 confirmDisabledHint={
-                  !state.complete ? `Finish drafting all ${ROSTER_SIZE} picks before you can submit.` : undefined
+                  !state.complete
+                    ? `Finish drafting all ${ROSTER_SIZE} picks before you can submit.`
+                    : chosenRosterOverCap
+                      ? `Your chosen spans total ${chosenRosterFga.toFixed(1)} FGA — over the ${CAP_LIMIT} cap. Pick cheaper spans in the Team table above.`
+                      : undefined
                 }
               />
             </>
