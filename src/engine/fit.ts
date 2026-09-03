@@ -13,7 +13,7 @@ import { playmakingScoreForPlayer } from './playmakingLookup';
 import { primaryStarters } from './rotation';
 import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
 import { isPlusShooter } from './shooting';
-import { computeSpacing, isShootingAnomalyPlayer } from './spacing';
+import { computeSpacing, isShootingAnomalyPlayer, spacingBreakdown, WALKING_GRAVITY_FLOOR } from './spacing';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
@@ -305,6 +305,36 @@ function demandBalance(onBallDemand: number, primarySignal: number): number {
   return clamp(60 - (onBallDemand - 3) * 35);
 }
 
+/**
+ * On-ball demand a starter's incumbent role actually imposes. `HIGH_USAGE_ARCHETYPE_WEIGHT`
+ * (schema.ts) is tuned for guard/wing self-creators and leaves Post Scorer / Versatile Big /
+ * Roll & Cut Big at 0 — so a two-hub post offense (KD + Embiid) read as `onBallDemand 1.5` and
+ * four iso creators + Jokić read no differently than three. Kept local to fit.ts: the shared
+ * constant has other consumers (aiDrafter's `usageWeight`/self-sufficient dampening,
+ * insightMapper's `highUsageStarters`) that this reading should not move.
+ *
+ * Two additions over the raw weight:
+ *  - Post Scorer gets a flat floor — the archetype IS "offensive focal point" by definition
+ *    (Embiid, Hakeem, Shaq, prime Dwight, Kareem all carry a real post-up load).
+ *  - Elite passing volume registers as a ball-dominant hub even without a scoring archetype
+ *    (Jokić-as-Versatile-Big, Draymond, Horford) — but ONLY for players the weight table already
+ *    rates below a lead guard (< 0.5). A Primary Ball Handler / Shot Creator / Slasher keeps
+ *    their exact existing weight, so nothing calibrated on the old scale (e.g. the Nash+LeBron
+ *    `onBallDemand <= 2` fixture) shifts.
+ */
+const POST_SCORER_ON_BALL_FLOOR = 0.65;
+function starterOnBallDemand(profile: ShadowRoleProfile, span: PlayerSpan): number {
+  const archetypeWeight = HIGH_USAGE_ARCHETYPE_WEIGHT[profile.incumbentOffensiveRole] ?? 0;
+  const postFloor = profile.incumbentOffensiveRole === 'Post Scorer' ? POST_SCORER_ON_BALL_FLOOR : 0;
+  // playmakingScoreForPlayer: 0-100, name-keyed peak, ~85 = "elite"; null when uncovered.
+  // pm 84 → ~0.14, pm 90 → ~0.28, pm 99 → ~0.49 — tops out near a Primary Ball Handler's own
+  // 0.5 so a distributor never out-demands a lead guard.
+  const pm = playmakingScoreForPlayer(span);
+  const playmakingDemand =
+    archetypeWeight >= 0.5 || pm === null ? 0 : clamp((pm - 78) / 30, 0, 1) * 0.7;
+  return Math.max(archetypeWeight, postFloor, playmakingDemand);
+}
+
 function geometryScore(hardNonSpacers: number): number {
   return [100, 82, 52, 22, 5, 0][Math.min(5, hardNonSpacers)];
 }
@@ -395,9 +425,7 @@ export function fitScore(team: Team): FitScoreResult {
   // ability into the same ball requirement as a real primary scorer and made Nash + LeBron +
   // off-ball threats look crowded. Proposed roles still contribute to creationSignals below;
   // they simply no longer fabricate possessions a player's incumbent role does not demand.
-  const demandByPlayer = profiles.map(
-    (profile) => HIGH_USAGE_ARCHETYPE_WEIGHT[profile.incumbentOffensiveRole] ?? 0,
-  );
+  const demandByPlayer = profiles.map((profile, index) => starterOnBallDemand(profile, starters[index]));
   const onBallDemand = demandByPlayer.reduce((sum, value) => sum + value, 0);
   const creationSignals = profiles
     .map((profile, index) => {
@@ -440,12 +468,28 @@ export function fitScore(team: Team): FitScoreResult {
   const hasShootingAnomaly = starters.some(isShootingAnomalyPlayer);
   const frontcourt = starterEntries.filter((entry) => entry.slot === 'PF' || entry.slot === 'C').map((entry) => entry.player);
   const frontcourtNonSpacerCount = frontcourt.filter((player) => computeSpacing(player) < FRONTCOURT_SPACING_FLOOR).length;
+
+  // An elite-gravity shooter makes help defense costly: collapsing onto him opens 4-on-3 the
+  // non-shooters' own teammates can punish, so the raw hard-non-spacer count overstates how
+  // cramped a compressed floor (2+ hard non-spacers) really is. Discount one non-spacer of
+  // geometry cost, a second when the lineup can actually punish the rotation (a real secondary
+  // creator, or a rim-gravity release valve). `spacingScore` in scoring.ts already carries an
+  // equivalent multi-gravity floor; `spacingCompatibility` never picked it up. Only geometryScore
+  // is softened — frontcourtGeometryScore still charges two non-shooting bigs, so a gravity
+  // starter eases the penalty but never erases it.
+  const hasGravityStarter = starters.some((player) => spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR);
+  const canPunishHelp = secondaryCreationSignal >= 75 || starters.some(isRimGravityScorer);
+  const geometryNonSpacerCount =
+    hasGravityStarter && hardNonSpacerCount >= 2
+      ? Math.max(0, hardNonSpacerCount - (canPunishHelp ? 2 : 1))
+      : hardNonSpacerCount;
+
   const spacingCompatibility = Math.round(
-    geometryScore(hardNonSpacerCount) * 0.45 +
+    geometryScore(geometryNonSpacerCount) * 0.45 +
       rimSupportScore(rimGravityScorerCount, plusShooterCount, hasShootingAnomaly) * 0.35 +
       frontcourtGeometryScore(frontcourtNonSpacerCount) * 0.20,
   );
-  if (hardNonSpacerCount >= 2) notes.push(`${hardNonSpacerCount} hard non-spacers compress the starting lineup.`);
+  if (geometryNonSpacerCount >= 2) notes.push(`${hardNonSpacerCount} hard non-spacers compress the starting lineup.`);
   if (rimGravityScorerCount > 0 && plusShooterCount < 2 && !hasShootingAnomaly) {
     notes.push('Rim gravity does not have enough shooting support.');
   }
