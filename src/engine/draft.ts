@@ -318,12 +318,17 @@ export function makePick(state: DraftState, playerId: string): DraftState {
  * draft can be skipped straight to a finished roster. The user's own ask, for testing: "add
  * auto-finish button. Good for testing." `pickForAi` doesn't care who's on the clock (it only
  * reads roster/cap/available), so this is the same logic every CPU team already uses, run for
- * all `TEAM_COUNT` teams instead of `TEAM_COUNT - 1`. Synchronous — the whole draft resolves in
- * one call, unlike the normal per-pick `setTimeout` pacing the UI uses for CPU turns.
+ * all `TEAM_COUNT` teams instead of `TEAM_COUNT - 1`.
+ *
+ * `maxPicks` (audit AI-4) caps how many picks one call resolves — the UI passes a small number
+ * and loops with a `setTimeout(0)` yield between chunks so a full auto-finish (~2500 rotation
+ * builds) no longer freezes the main thread for several seconds; omitted, it resolves the whole
+ * remaining draft in one synchronous call as before (scripts and tests rely on that).
  */
-export function autoFinishDraft(state: DraftState): DraftState {
+export function autoFinishDraft(state: DraftState, maxPicks: number = Infinity): DraftState {
   let s = state;
-  while (!s.complete) {
+  let done = 0;
+  while (!s.complete && done < maxPicks) {
     const next = resolveAutomatedPick(s);
     // Never spin synchronously forever if the AI's preferred candidate and the legality engine
     // disagree. `resolveAutomatedPick` already retries from the legal subset; null therefore
@@ -331,6 +336,7 @@ export function autoFinishDraft(state: DraftState): DraftState {
     // than freezing the browser.
     if (!next || next === s) break;
     s = next;
+    done++;
   }
   return s;
 }

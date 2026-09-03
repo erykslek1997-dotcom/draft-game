@@ -7,6 +7,8 @@ import {
   isHumanRosterImpossible,
   autoFinishDraft,
   fastFinishDraft,
+  TEAM_COUNT,
+  ROUNDS,
   type DraftState,
 } from '../engine/draft';
 import { autoAssignRotation } from '../engine/rotation';
@@ -63,6 +65,11 @@ const AI_SPEEDS = [
   { label: 'Instant', delayMs: 0 },
 ] as const;
 const DEFAULT_AI_SPEED_INDEX = 1;
+
+/** Audit AI-4 — chunked auto-finish: picks resolved per `setTimeout(0)` frame, and the whole
+ * draft's pick count for the progress readout. */
+const AUTO_FINISH_CHUNK = 6;
+const TOTAL_PICKS = TEAM_COUNT * ROUNDS;
 
 /** `?draftSeed=123` on the URL replays a specific draft — the seed `createDraft` logs to the
  * console in dev. Any non-finite value is ignored and a fresh random seed is drawn as usual. */
@@ -124,13 +131,18 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     });
   }
 
+  // Audit AI-4: `autoFinishDraft` in one synchronous call is ~2500 rotation builds — a multi-
+  // second main-thread freeze. `autoFinishing` drives the chunked effect below instead.
+  const [autoFinishing, setAutoFinishing] = useState(false);
+
   // Auto-resolve AI turns during the draft — never in Commissioner Mode, where every team's pick
   // comes from the human via `handlePick` instead (see the effect's own early-return below).
   // The CPU-speed slider (`aiSpeed`) is only exposed in the UI in Tester Mode (see the
   // `game-controls` render below), but it still drives this effect in Player Mode too — it just
   // stays pinned at its default ('Normal'), same real AI-turn pacing a player would expect.
+  // Suspended while `autoFinishing` — the chunk effect below owns every pick then.
   useEffect(() => {
-    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode) return;
+    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || autoFinishing) return;
     const teamIdx = currentTeamIndex(draftState);
     if (draftState.teams[teamIdx].isHuman) return;
     const timer = setTimeout(() => {
@@ -138,7 +150,25 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       if (next) setDraftState(next);
     }, aiSpeed.delayMs);
     return () => clearTimeout(timer);
-  }, [draftState, phase, aiSpeed.delayMs]);
+  }, [draftState, phase, aiSpeed.delayMs, autoFinishing]);
+
+  // Resolve the auto-finish in small chunks with a `setTimeout(0)` yield between them, so the
+  // browser can paint progress and stay responsive to Reset. `draftState.history.length` is the
+  // live progress out of `TOTAL_PICKS`. Stops on completion, or if a chunk makes no progress
+  // (the same dead-end guard `autoFinishDraft` already has internally).
+  useEffect(() => {
+    if (!autoFinishing) return;
+    if (draftState.complete) {
+      setAutoFinishing(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const next = autoFinishDraft(draftState, AUTO_FINISH_CHUNK);
+      if (next.history.length > draftState.history.length) setDraftState(next);
+      else setAutoFinishing(false);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [autoFinishing, draftState]);
 
   // Once the draft finishes, AI rosters are re-optimized once via the same knapsack
   // `optimizeSpans` used everywhere else (capped at CAP_LIMIT, matching the cap they drafted
@@ -173,7 +203,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // to the existing AI draft logic. It still follows the normal draft-complete path below, so
   // rotations/finalization behave exactly as they do after the last manually played pick.
   function handleAutoFinish() {
-    setDraftState((s) => autoFinishDraft(s));
+    setAutoFinishing(true);
   }
 
   // 2026-08-14, user's own ask ("zrób lekkie UI trybu developera żeby wszystko szybko działało"):
@@ -200,7 +230,17 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // itself (see that file's own docstring), and hands both back here at once from a single
   // Submit action — this is the only place either ever gets written into `draftState`/`finalTeams`.
   function handleSubmitTeam(roster: PlayerSpan[], rotation: Rotation) {
-    const teams = draftState.teams.map((t) => (t.isHuman ? { ...t, roster, rotation } : t));
+    const teams = draftState.teams.map((t) => {
+      if (t.isHuman) return { ...t, roster, rotation };
+      // Defensive (audit DR-5): the one-shot `aiTeamsFinalized` effect optimizes AI spans and
+      // builds their rotations after the draft completes, but the human can Submit on the same
+      // render that enabled the button, before that effect fires. Finalize any AI team still
+      // missing a rotation here too — `optimizeSpans` + `autoAssignRotation` are deterministic and
+      // stable on an already-finalized roster, so this is a no-op once the effect has run.
+      if (t.rotation) return t;
+      const optimized = optimizeSpans(t.roster, CAP_LIMIT);
+      return { ...t, roster: optimized, rotation: autoAssignRotation(optimized) };
+    });
     setFinalTeams(teams);
     setPhase('results');
   }
@@ -239,8 +279,12 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           </label>
         )}
         {phase === 'draft' && !draftState.complete && (
-          <button className="secondary-btn auto-finish-btn" onClick={handleAutoFinish}>
-            Auto-finish
+          <button
+            className="secondary-btn auto-finish-btn"
+            onClick={handleAutoFinish}
+            disabled={autoFinishing}
+          >
+            {autoFinishing ? `Finishing… ${draftState.history.length} / ${TOTAL_PICKS}` : 'Auto-finish'}
           </button>
         )}
         {mode === 'developer' && phase !== 'results' && (
