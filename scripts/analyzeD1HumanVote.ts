@@ -9,14 +9,15 @@ import {
   offenseScore,
   defenseScore,
   spacingScore,
-  fitScore,
   rotationScore,
   scoreTeam,
   isStrongRimProtector,
   isStrongPerimeterDefender,
-  type FitScoreComponents,
   type RotationScoreComponents,
 } from '../src/engine/scoring';
+// `fitScore` + its component type moved to `fit.ts` (the 2026-08 scoring/fit split) — this
+// analysis script predates that.
+import { fitScore, type FitScoreComponents } from '../src/engine/fit';
 import { primaryStarters } from '../src/engine/rotation';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../src/data/schema';
 import { computeOffensivePortability } from '../src/engine/portability';
@@ -343,7 +344,7 @@ for (const res of results) {
 
 console.log('\n=== SCORES ===');
 console.log('sklad\tvote\tteam\t\ttalent\toffense\tdefense\tspacing\tfit\ttier');
-const rows2: { sklad: number; vote: number; team: string; talent: number; bench: number; offense: number; defense: number; spacing: number; fit: number; fitRaw: number; fitComponents: FitScoreComponents; rotation: number; rotationComponents: RotationScoreComponents; overall: number }[] = [];
+const rows2: { sklad: number; vote: number; team: string; talent: number; bench: number; offense: number; defense: number; spacing: number; fit: number; fitComponents: FitScoreComponents; rotation: number; rotationComponents: RotationScoreComponents; overall: number }[] = [];
 for (const res of results) {
   if (res.roster.length < 8) {
     console.log(`Sklad ${res.sklad}: SKIPPED (roster too incomplete: ${res.roster.length}/9)`);
@@ -370,7 +371,7 @@ for (const res of results) {
   const rotationResult = rotationScore(team);
   const rotation = rotationResult.score;
   const overall = scoreTeam(team).overall;
-  rows2.push({ sklad: res.sklad, vote: res.voteRank, team: res.team, talent: tal, bench, offense: off, defense: def, spacing: spc, fit: fit.score, fitRaw: fit.raw, fitComponents: fit.components, rotation, rotationComponents: rotationResult.components, overall });
+  rows2.push({ sklad: res.sklad, vote: res.voteRank, team: res.team, talent: tal, bench, offense: off, defense: def, spacing: spc, fit: fit.score, fitComponents: fit.components, rotation, rotationComponents: rotationResult.components, overall });
   console.log(`${res.sklad}\t${res.voteRank}\t${res.team.padEnd(24)}\t${tal.toFixed(1)}\t${off.toFixed(1)}\t${def.toFixed(1)}\t${spc.toFixed(1)}\t${fit.score.toFixed(1)}\t${overall.toFixed(1)}`);
 }
 

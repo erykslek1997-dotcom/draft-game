@@ -207,11 +207,22 @@ const TOP_CORE_SIZE = 5;
  * position eligibility itself) — this one is purely "how strong is the core."
  */
 // 2026-08-19: switched from raw `computeTalent` to `effectiveTalent` as part of the project-wide
-// display-vs-real unification (see that function's own docstring). Flagged explicitly because
-// THIS function's own validation (0.82 Spearman against 15 real human-ranked rosters, see the
-// docstring above) was measured against the raw number specifically — the original human-vote
-// dataset isn't available in this session to re-validate against the tier-capped version, so
-// treat that correlation figure as provisional until it's re-checked.
+// display-vs-real unification (see that function's own docstring).
+//
+// 2026-09-03 RE-VALIDATION (the "0.82" claim was stale — TE-1 in the draft/Best-5 audit). The
+// D1 human-vote dataset IS available after all — `scripts/analyzeD1HumanVote.ts` carries all 15
+// transcribed rosters + the vote ranking (an earlier session's comment wrongly said it wasn't).
+// Re-ran it against the current engine:
+//   - `talentScore` (effectiveTalent, top-5-of-9):  Spearman 0.536
+//   - the same metric on raw `computeTalent`:        0.550   → the effectiveTalent switch cost ~0.01, not the problem
+//   - `benchDepthScore`:                             0.686   (now the strongest single axis, not this one)
+//   - average of the 5 TAGGED starters (not top-5-of-9): 0.700
+//   - `overall` (scoreTeam blend):                   0.543
+// So the docstring above's "0.82 / strongest predictor" no longer holds — it was measured on a
+// different player-dataset era (the whole scoring stack has been recalibrated many times since).
+// At n=15 the Spearman standard error is ~0.27, so these differences are noisy; NOT re-tuning the
+// blend or the top-5-vs-starters definition off this alone. Flagged for a deliberate calibration
+// session with more data. The metric's shape (unweighted mean of the roster's best 5) is unchanged.
 export function talentScore(team: Team): number {
   const tals = team.roster.map((player) => effectiveTalent(player)).sort((a, b) => b - a);
   if (tals.length === 0) return 0;

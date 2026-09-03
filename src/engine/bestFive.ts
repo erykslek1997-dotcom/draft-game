@@ -169,8 +169,13 @@ export function dailyPool(key: string = dayKey()): DailyPool {
 // scoring a 5-man lineup
 // ---------------------------------------------------------------------------
 
-/** Pinned here — see the file docstring. Renormalised from `scoreTeam`'s own blend with the
- * bench-depth and rotation axes (both meaningless for a bare starting five) dropped. */
+/** Pinned here — see the file docstring. Derived from `scoreTeam`'s blend (talent .30 / bench .10
+ * / offense .17 / defense .17 / fit .18 / rotation .08) by dropping the two axes meaningless for a
+ * bare starting five (bench, rotation) and re-spreading: talent stays dominant (.37), and
+ * offense/defense/fit are flattened to an equal .21 each rather than kept at their exact
+ * renormalised ratio (fit's .18/.82 ≈ .22 vs offense/defense's .17/.82 ≈ .21). A deliberate pin,
+ * not a mechanical renormalisation — `WSUM` below divides out the rounding so the composite still
+ * lands on 0–100. */
 const W = { talent: 0.37, offense: 0.21, defense: 0.21, fit: 0.21 };
 const WSUM = W.talent + W.offense + W.defense + W.fit;
 
