@@ -1,6 +1,7 @@
 import { players } from '../src/data/players';
 import { normalizePlayerName } from '../src/data/schema';
 import { computeTalent, computeOffensiveTalent, computeDefensiveTalent } from '../src/engine/talent';
+import { effectiveTalent } from '../src/engine/grades';
 import { computeSpacing } from '../src/engine/spacing';
 import { autoAssignRotation } from '../src/engine/rotation';
 import {
@@ -651,3 +652,60 @@ console.log('startersAvg (tagged 5, not top5-of-9):', spearman(wlVote, weakLinkR
 console.log('minTal (weakest roster spot):', spearman(wlVote, weakLinkRows.map((r) => r.minTal)).toFixed(3));
 console.log('weakCount (TAL<50 count, sign flipped):', spearman(wlVote, weakLinkRows.map((r) => -r.weakCount)).toFixed(3));
 console.log('top5of9 (current talentScore def):', spearman(wlVote, weakLinkRows.map((r) => r.top5of9)).toFixed(3));
+
+// 2026-09-03 (audit TE-1): `talentScore` correlates only ~0.54 with the vote. Try candidate
+// re-definitions, all on `effectiveTalent` (what the real function uses), including the
+// ENGINE-NATIVE "5 starters" (`primaryStarters(team)` — what the engine actually picks, not the
+// CSV's transcribed starter order). Pick the on-9-man-roster shape here, no rescale, matching the
+// current function.
+console.log('\n=== TE-1: talentScore candidate re-definitions vs vote (all on effectiveTalent) ===');
+type TeRow = { sklad: number; vote: number; cur: number; starters5: number; starters5min: number; top5min: number; top6: number; top4: number; top7: number; top8: number; top9: number; top6min: number };
+const teRows: TeRow[] = [];
+for (const res of results) {
+  if (res.roster.length < 8) continue;
+  const team: Team = { id: `te-${res.sklad}`, name: res.team, draftSlot: res.sklad, isHuman: false, roster: res.roster, rotation: null };
+  team.rotation = autoAssignRotation(team.roster);
+  const eff = res.roster.map((p) => effectiveTalent(p)).sort((a, b) => b - a);
+  const mean = (a: number[]) => a.reduce((s, v) => s + v, 0) / a.length;
+  const starterEff = primaryStarters(team).map((e) => effectiveTalent(e.player));
+  teRows.push({
+    sklad: res.sklad,
+    vote: res.voteRank,
+    cur: mean(eff.slice(0, 5)),
+    starters5: starterEff.length > 0 ? mean(starterEff) : mean(eff.slice(0, 5)),
+    starters5min: starterEff.length > 0 ? mean(starterEff) * 0.7 + Math.min(...starterEff) * 0.3 : mean(eff.slice(0, 5)),
+    top5min: mean(eff.slice(0, 5)) * 0.7 + eff[4] * 0.3,
+    top4: mean(eff.slice(0, 4)),
+    top6: mean(eff.slice(0, 6)),
+    top7: mean(eff.slice(0, 7)),
+    top8: mean(eff.slice(0, 8)),
+    top9: mean(eff.slice(0, 9)),
+    top6min: mean(eff.slice(0, 6)) * 0.7 + eff[Math.min(5, eff.length - 1)] * 0.3,
+  });
+}
+const teVote = teRows.map((r) => r.vote);
+const teKeys = ['cur', 'starters5', 'starters5min', 'top5min', 'top4', 'top6', 'top7', 'top8', 'top9', 'top6min'] as const;
+for (const key of teKeys) {
+  console.log(`  ${key.padEnd(14)}: ${spearman(teVote, teRows.map((r) => r[key])).toFixed(3)}`);
+}
+// what does `overall` become if talentScore is swapped for each candidate? (weights unchanged)
+console.log('\n  --- `overall` blend with talentScore swapped (weights unchanged: talent .30) ---');
+const teBySklad = new Map(teRows.map((r) => [r.sklad, r]));
+for (const key of teKeys) {
+  const blended = rows2.map((row) => {
+    const swapped = teBySklad.get(row.sklad)?.[key] ?? row.talent;
+    return swapped * 0.30 + row.bench * 0.10 + row.offense * 0.17 + row.defense * 0.17 + row.fit * 0.18 + row.rotation * 0.08;
+  });
+  console.log(`  overall w/ talentScore=${key.padEnd(14)}: ${spearman(rows2.map((r) => r.vote), blended).toFixed(3)}`);
+}
+// NOTE: top6..top9 increasingly overlap benchDepthScore's own job. Print how correlated each
+// candidate is with benchDepthScore, so a "better vs vote" number that's really just
+// benchDepthScore leaking in is visible.
+console.log('\n  --- candidate vs benchDepthScore (redundancy check) ---');
+const benchBySklad = new Map(rows2.map((r) => [r.sklad, r.bench]));
+for (const key of teKeys) {
+  const pairs = teRows.filter((r) => benchBySklad.has(r.sklad));
+  const a = pairs.map((r) => r[key]);
+  const b = pairs.map((r) => benchBySklad.get(r.sklad)!);
+  console.log(`  ${key.padEnd(14)} vs bench: ${spearmanSameDirection(a, b).toFixed(3)}`);
+}
