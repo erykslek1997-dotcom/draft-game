@@ -303,16 +303,27 @@ function benchBoostedWeightedAverage(
   applyFitMultiplier: boolean,
 ): number {
   const assignments = allAssignments(team);
-  const totalMinutes = STARTER_SLOTS.length * GAME_MINUTES;
-  if (assignments.length === 0 || totalMinutes === 0) return 0;
+  const fullMinutes = STARTER_SLOTS.length * GAME_MINUTES;
+  if (assignments.length === 0 || fullMinutes === 0) return 0;
   const starterKeys = new Set(primaryStarters(team).map((s) => `${s.slot}|${s.player.id}`));
+  let rawAssignedMinutes = 0;
   const weighted = assignments.reduce((sum, { slot, player, minutes }) => {
+    rawAssignedMinutes += minutes;
     const isBench = !starterKeys.has(`${slot}|${player.id}`);
     const effectiveMinutes = isBench ? minutes * BENCH_INFLUENCE_BOOST : minutes;
     const fitMultiplier = applyFitMultiplier ? positionFitMultiplier(player, slot) : 1;
     return sum + valueFor(player) * fitMultiplier * effectiveMinutes;
   }, 0);
-  return weighted / totalMinutes;
+  // Normally the rotation fills every slot to exactly 48 (Σ = 240) so this divides by `fullMinutes`
+  // and nothing changes. But `autoAssignRotation` deliberately leaves a slot short when a
+  // genuinely threadbare roster has every player at their durability cap (see rotation.ts's
+  // "leave the slot short" branch): those missing minutes would otherwise dilute the average
+  // toward zero as if a 0-value player were on the floor. `Math.min` clamps the denominator to
+  // what's actually assigned in that case — the score then reflects who's really playing, and the
+  // roster-construction gap stays the concern of bench-depth / rotation / fit, not a silent hit
+  // here. Can only ever affect a rotation that already failed to fill 240; every real 9-man
+  // roster is untouched.
+  return weighted / Math.min(fullMinutes, rawAssignedMinutes || fullMinutes);
 }
 
 /** Minutes-weighted team average of O-TAL, the same shape as `talentScore` but reading off the

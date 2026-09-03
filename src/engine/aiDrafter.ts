@@ -1140,6 +1140,21 @@ const FIRST_PICK_LOTTERY_POOL = 3;
 const LOTTERY_POOL = 5;
 
 /**
+ * Shapes the weighted lottery over the final shortlist. The weights were linear (`n-i` → 5:4:3:2:1
+ * over a 5-wide pool), which handed the AI's own top pick only 5/15 ≈ 33% — two picks in three
+ * went to a candidate it rated lower, which reads in playtest as "why did they take *that*."
+ * Squaring (`(n-i)²` → 25:16:9:4:1) lifts the top pick to ≈ 45% over the 5-wide pool and ≈ 64%
+ * over the first-pick 3-wide pool, keeping real variety while sharpening the AI toward its own
+ * evaluation. Pulled out as a constant so it's a one-number tuning knob.
+ */
+const LOTTERY_WEIGHT_EXPONENT = 2;
+
+/** `k` is the pool size; returns descending weights `[k^e, (k-1)^e, … 1^e]`. */
+function lotteryWeights(k: number): number[] {
+  return Array.from({ length: k }, (_, i) => Math.pow(k - i, LOTTERY_WEIGHT_EXPONENT));
+}
+
+/**
  * 2026-08-07, "draft nie planuje pod rolę w rotacji" — named symptom: Ewing/Jokić/Kirilenko/
  * Nash-caliber players ending up buried as backups. Root cause: `pickForAi`'s value formula only
  * ever asked "how good is this player," never "would this player actually start on the roster
@@ -1435,7 +1450,7 @@ export function pickForAi(
     }
     const cheapestFirst = uniquePlayerSpans([...capLegal].sort((a, b) => a.fga - b.fga));
     const cheapPool = cheapestFirst.slice(0, Math.min(5, cheapestFirst.length));
-    const weights = cheapPool.map((_, i) => cheapPool.length - i);
+    const weights = lotteryWeights(cheapPool.length);
     const totalWeight = weights.reduce((s, w) => s + w, 0);
     let roll = rng() * totalWeight;
     for (let i = 0; i < cheapPool.length; i++) {
@@ -1770,7 +1785,7 @@ export function pickForAi(
 
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;
   const top = lotteryCandidates.slice(0, Math.min(lotteryPoolSize, lotteryCandidates.length));
-  const weights = top.map((_, i) => top.length - i);
+  const weights = lotteryWeights(top.length);
   const totalWeight = weights.reduce((s, w) => s + w, 0);
   let roll = rng() * totalWeight;
   const rolledFrom = roll;
