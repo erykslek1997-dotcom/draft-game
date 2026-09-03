@@ -9,6 +9,7 @@ import {
   type ShadowRoleProfile,
 } from '../data/schema';
 import { isRimGravityScorer } from './offensiveProfile';
+import { pairwiseFitNotes } from './pairwiseFit';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { primaryStarters } from './rotation';
 import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
@@ -461,6 +462,9 @@ export function fitScore(team: Team): FitScoreResult {
   );
   if (primaryCreationSignal < 50) notes.push('No credible primary creation role in the starting five.');
   if (onBallDemand > 2.5) notes.push(`On-ball demand is crowded (${onBallDemand.toFixed(2)} weighted roles).`);
+  notes.push(
+    ...pairwiseFitNotes(starters, starterEntries.map((entry) => entry.slot), demandByPlayer),
+  );
 
   const hardNonSpacerCount = starters.filter((player) => computeSpacing(player) < HARD_NON_SPACER_FLOOR).length;
   const plusShooterCount = starters.filter(isPlusShooter).length;
