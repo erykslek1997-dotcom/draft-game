@@ -3,7 +3,7 @@ import { rankTeams } from '../engine/scoring';
 import { evaluateLeague } from '../engine/leagueSimulation';
 import { simulateSeason, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
-import { STARTER_SLOTS } from '../engine/positions';
+import { STARTER_SLOTS, CAP_LIMIT } from '../engine/positions';
 import { allAssignments, benchWithMinutes, primaryStarters } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
@@ -715,7 +715,7 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                   <ScoreChip label="Spacing" value={breakdown.spacingScore} />
                   <ScoreChip label="Fit" value={breakdown.fitScore} />
                   <ScoreChip label="Rotation" value={breakdown.rotationScore} />
-                  <span className="fga-spent">FGA spent: {totalFga.toFixed(1)} / 100.9</span>
+                  <span className="fga-spent">FGA spent: {totalFga.toFixed(1)} / {CAP_LIMIT}</span>
                 </div>
                 {fitDetail && (
                   <details className="result-accordion-section team-analysis-section">

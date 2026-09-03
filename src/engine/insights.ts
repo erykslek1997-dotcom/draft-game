@@ -1,4 +1,5 @@
 import type { OffensiveArchetype, DefensiveRole, Position } from '../data/schema';
+import { CAP_LIMIT } from './positions';
 import { TEAM_MODEL_THRESHOLDS } from './teamModel';
 import type { ClosingLineupSet } from './closingLineups';
 
@@ -1388,7 +1389,7 @@ export const DETECTORS: RosterInsightDetector[] = [
         .sort((left, right) => (right.offensiveImpact ?? 0) - (left.offensiveImpact ?? 0));
       const depth = t.playoffRotationDepthScore ?? 0;
       const dropoff = t.benchDropoffScore ?? 1;
-      return stars.length > 0 && t.totalFga <= 100.9 && depth >= 1 && dropoff <= 0.45
+      return stars.length > 0 && t.totalFga <= CAP_LIMIT && depth >= 1 && dropoff <= 0.45
         ? hit(
           0.78,
           0.94,

@@ -41,11 +41,15 @@ function initials(name: string): string {
  * `data/headshots` lookup Codex built for the Card Collection. */
 function Face({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
   const src = headshotUrl(name);
-  const [failed, setFailed] = useState(false);
+  // Track the src that failed, not a bare boolean — so when this same <Face> instance is reused
+  // for a different player (React keeps it mounted across slot re-picks / the your-five vs
+  // engine-five columns), a new `src` clears the failed state and the monogram doesn't stick.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc !== null && failedSrc === src;
   return (
     <span className={`bf-face bf-face--${size}`} aria-hidden>
       {src && !failed ? (
-        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailedSrc(src)} />
       ) : (
         initials(name)
       )}
@@ -99,12 +103,16 @@ export default function BestFive({ mode, onBack }: Props) {
 
   const filledCount = STARTER_SLOTS.filter((s) => lineup[s]).length;
   const complete = filledCount === 5;
-  const liveScore = dev && filledCount > 0 ? scoreLineup(lineup) : null;
+  // Dev-only live readout — gated on a full five so `scoreLineup` always runs on a complete
+  // lineup (its synthetic-Team rotation math assumes five slots; a partial one is meaningless).
+  const liveScore = dev && complete ? scoreLineup(lineup) : null;
 
   function pick(slot: Position, span: PlayerSpan) {
     setLineup((prev) => ({ ...prev, [slot]: span }));
+    // Advance to the next still-empty slot; if there is none (board full, or re-picking the last
+    // gap), stay on the current slot so the picker stays open for another change of mind.
     const nextEmpty = STARTER_SLOTS.find((s) => s !== slot && !lineup[s] && s !== activeSlot);
-    setActiveSlot(nextEmpty ?? null);
+    setActiveSlot(nextEmpty ?? activeSlot);
   }
 
   function clear(slot: Position) {
@@ -225,10 +233,7 @@ export default function BestFive({ mode, onBack }: Props) {
 
           <div className="bf-submit-row">
             {dev && liveScore && (
-              <span className="bf-live at-cond">
-                live composite {liveScore.composite}
-                {!complete && ` (${filledCount}/5)`}
-              </span>
+              <span className="bf-live at-cond">live composite {liveScore.composite}</span>
             )}
             <button className="at-draft-btn bf-submit" disabled={!complete} onClick={submit}>
               Submit lineup
@@ -271,6 +276,7 @@ function BestFiveResult({
   const [showGlossary, setShowGlossary] = useState(false);
 
   const weightsLine = WEIGHTED_AXES.map((a) => `${a.pct}% ${a.label}`).join(' · ');
+  const chalkGap = targets.optimal - targets.par;
 
   return (
     <div className="at-card bf-result">
@@ -323,8 +329,11 @@ function BestFiveResult({
         <div className="bf-why-head at-cond">Why this score</div>
         {isChalkBoard(targets) && (
           <p className="bf-why-line">
-            Chalk board — the five biggest names ({targets.par}) were within {targets.optimal - targets.par} of the
-            engine’s best ({targets.optimal}). Not much room to out-think it today.
+            Chalk board — the five biggest names ({targets.par}){' '}
+            {chalkGap <= 0
+              ? `already match the engine’s best (${targets.optimal})`
+              : `were within ${chalkGap} of the engine’s best (${targets.optimal})`}
+            . Not much room to out-think it today.
           </p>
         )}
         {explain.tookLazyPick && !isChalkBoard(targets) && (

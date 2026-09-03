@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName, type PlayerSpan, type Position } from '../data/schema';
 import { fitScore } from '../engine/fit';
+import { isPickCapLegal } from '../engine/positions';
 import { scoreTeam } from '../engine/scoring';
 import { seasonProfile } from '../engine/seasonProfile';
 import { computeTalent } from '../engine/talent';
 import type { Rotation, Team } from '../engine/types';
 
-const FGA_CAP = 100.9;
 const positionsFor = (player: PlayerSpan) => new Set<Position>([player.primaryPosition, ...player.secondaryPositions]);
 const signed = (value: number) => `${value > 0 ? '+' : ''}${value}`;
 
@@ -35,18 +35,27 @@ export default function WhatIfPanel({ team }: { team: Team }) {
     return new Set(Object.entries(team.rotation.slots)
       .filter(([, entries]) => entries.some((entry) => entry.playerId === outgoing.id))
       .map(([slot]) => slot as Position));
-  }, [team, outgoing]);
-  const rosterNames = new Set(team.roster.map((player) => normalizePlayerName(player.playerName)));
+  }, [team.rotation, outgoing]);
+  const rosterNames = useMemo(
+    () => new Set(team.roster.map((player) => normalizePlayerName(player.playerName))),
+    [team.roster],
+  );
   const currentFga = team.roster.reduce((sum, player) => sum + player.fga, 0);
+  // The roster's FGAs with `outgoing` removed — the exact base the real draft's cap check runs on
+  // (`isPickCapLegal` → `totalFga`, 1-decimal rounding), so a swap legal here is legal in the game.
+  const remainingFgas = useMemo(
+    () => (outgoing ? team.roster.filter((p) => p.id !== outgoing.id).map((p) => p.fga) : []),
+    [team.roster, outgoing],
+  );
   const candidates = useMemo(() => {
     if (!outgoing) return [];
     return draftPool.filter((candidate) => {
       if (rosterNames.has(normalizePlayerName(candidate.playerName))) return false;
-      if (currentFga - outgoing.fga + candidate.fga > FGA_CAP + 0.001) return false;
+      if (!isPickCapLegal(remainingFgas, candidate.fga)) return false;
       const positions = positionsFor(candidate);
       return [...occupiedSlots].every((slot) => positions.has(slot));
     }).sort((a, b) => computeTalent(b) - computeTalent(a) || a.playerName.localeCompare(b.playerName));
-  }, [currentFga, occupiedSlots, outgoing, rosterNames]);
+  }, [remainingFgas, occupiedSlots, outgoing, rosterNames]);
   const incoming = candidates.find((player) => player.id === incomingId);
   const candidateLabel = (player: PlayerSpan) => `${player.playerName} (${player.spanLabel})`;
   const candidateListId = `what-if-candidates-${team.id}`;
