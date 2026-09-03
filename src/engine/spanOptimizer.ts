@@ -2,7 +2,7 @@ import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { effectiveTalent } from './grades';
-import { CAP_LIMIT } from './positions';
+import { CAP_LIMIT, positionDistance } from './positions';
 
 /**
  * Phase 2 of the "draft the player, then choose their span" mechanic (2026-08-03, user's own
@@ -34,11 +34,27 @@ function peakProtectedOptions(options: PlayerSpan[]): PlayerSpan[] {
 }
 
 /**
+ * The objective here is pure `Σ effectiveTalent` — it has no position/fit term. Without a bound,
+ * a cheaper span at a *different* primary position (a wing's early SF years, a guard's SG-heavy
+ * stint) can win, quietly moving a player off the position the draft built the roster's balance
+ * around. Keep each player to spans within one position slot of the span they were drafted at
+ * (SF↔PF, PG↔SG realistic; SF→C not). The drafted span itself is always distance 0, so this
+ * never empties a player's list; if the position bound somehow would, fall back to the full set
+ * for that player so the knapsack still has something to choose.
+ */
+function positionBoundedOptions(options: PlayerSpan[], draftedSpan: PlayerSpan): PlayerSpan[] {
+  const bounded = options.filter(
+    (option) => positionDistance(option.primaryPosition, draftedSpan.primaryPosition) <= 1,
+  );
+  return bounded.length > 0 ? bounded : options;
+}
+
+/**
  * Multiple-choice knapsack: choose exactly one span per player (from that player's own real
  * span options) maximizing total TAL, subject to the roster's combined FGA staying at or under
- * `capLimit`. `roster` only needs `playerName` from each entry — whatever specific span each
- * team member happens to be represented by going in (e.g. their Phase 1 peak span) doesn't
- * matter, since every one of their real span options is looked up fresh here.
+ * `capLimit`. `roster` needs `playerName` *and* `primaryPosition` from each entry: the name looks
+ * up the span options, the drafted position bounds them (see `positionBoundedOptions` — the
+ * objective is TAL-only and would otherwise drift a player off-position for a point of cheap TAL).
  *
  * DP over (player index, discretized FGA used so far) -> best total TAL, backtracked at the end
  * to recover which span was chosen for each player. `n` (roster size, 9) x `capUnits` (~1010) x
@@ -47,6 +63,9 @@ function peakProtectedOptions(options: PlayerSpan[]): PlayerSpan[] {
 export function optimizeSpans(roster: PlayerSpan[], capLimit: number = CAP_LIMIT): PlayerSpan[] {
   const n = roster.length;
   const allOptionsPerPlayer = roster.map((p) => spanOptionsFor(p.playerName));
+  const positionBoundedPerPlayer = allOptionsPerPlayer.map((options, i) =>
+    positionBoundedOptions(options, roster[i]),
+  );
   const capUnits = Math.round(capLimit * FGA_SCALE);
 
   function solve(optionsPerPlayer: PlayerSpan[][]): PlayerSpan[] | null {
@@ -94,7 +113,16 @@ export function optimizeSpans(roster: PlayerSpan[], capLimit: number = CAP_LIMIT
     return result;
   }
 
-  // First solve within a bounded quality band. Only if that genuinely cannot fit the cap do we
-  // reopen every historical span as an emergency legality fallback.
-  return solve(allOptionsPerPlayer.map(peakProtectedOptions)) ?? solve(allOptionsPerPlayer) ?? roster;
+  // Tiers, most-constrained first — each relaxation only kicks in if the previous genuinely can't
+  // fit the cap:
+  //   1. position-bounded AND within the peak-quality band  (the normal case)
+  //   2. drop the position bound  (a player whose only affordable spans are at another position)
+  //   3. drop the quality band too  (emergency legality — reopen every historical span)
+  //   4. give up, keep the drafted roster
+  return (
+    solve(positionBoundedPerPlayer.map(peakProtectedOptions)) ??
+    solve(allOptionsPerPlayer.map(peakProtectedOptions)) ??
+    solve(allOptionsPerPlayer) ??
+    roster
+  );
 }

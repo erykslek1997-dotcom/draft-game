@@ -288,13 +288,26 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
     DTAL_LO,
     DTAL_HI,
   );
-  const rimProtectionScore = normalize(
+  // 2026-09-03 (audit "rim-protection overclaim"): the D-TAL average alone is blind to whether the
+  // tagged rim protectors actually contest shots at the rim — a rebounding-heavy big (Dirk Nowitzki
+  // 2002-04: "Mobile Big" tag, D-TAL ~65 from 9.3 rpg, only 1.2 bpg) inflated this enough to fire
+  // "reliable interior protection" prose that specifically claims shot-contesting. Fold in a real
+  // block-volume factor: the rim protectors' mean bpg mapped over [0.6, 2.4] (Dirk 1.2 -> 0.33,
+  // Gobert ~2.2 -> 0.89, Mutombo ~3.4 -> 1.0). A big body with no blocks still keeps most of the
+  // D-TAL credit (0.55 floor — they occupy space) but can no longer read as *elite* rim protection.
+  const rimProtectorBpg =
     starterRimProtectors.length > 0
-      ? starterRimProtectors.reduce((s, p) => s + computeDefensiveTalent(p), 0) / starterRimProtectors.length
-      : avgStarterDTal,
-    DTAL_LO,
-    DTAL_HI,
-  );
+      ? starterRimProtectors.reduce((s, p) => s + p.box.bpg, 0) / starterRimProtectors.length
+      : 0;
+  const rimDeterrenceFactor = starterRimProtectors.length > 0 ? 0.55 + 0.45 * clamp01((rimProtectorBpg - 0.6) / 1.8) : 1;
+  const rimProtectionScore =
+    normalize(
+      starterRimProtectors.length > 0
+        ? starterRimProtectors.reduce((s, p) => s + computeDefensiveTalent(p), 0) / starterRimProtectors.length
+        : avgStarterDTal,
+      DTAL_LO,
+      DTAL_HI,
+    ) * rimDeterrenceFactor;
   const defensiveLayeringScore =
     starterRimProtectors.length > 0 && starterPerimeterDefenders.length > 0
       ? clamp01((perimeterDefenseScore + rimProtectionScore) / 2 + 0.1)
