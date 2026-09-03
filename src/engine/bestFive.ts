@@ -6,6 +6,10 @@ import { allStarCount } from './allStarLookup';
 import { talentScore, offenseScore, defenseScore, spacingScore } from './scoring';
 import { fitScore } from './fit';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
+import { mulberry32, hashSeed } from './rng';
+
+// Re-exported for API stability — `mulberry32` used to be defined and exported here.
+export { mulberry32 } from './rng';
 
 /**
  * "Build the Best 5" — the engine side of the entry-level daily puzzle (see `components/
@@ -22,20 +26,9 @@ import { STARTER_SLOTS, positionFitMultiplier } from './positions';
  */
 
 // ---------------------------------------------------------------------------
-// seeded RNG + day key (the repo has no seedable PRNG — `teamNames.ts`'s Fisher-Yates uses
-// Math.random directly; a daily puzzle needs the same pool for everyone on a given date)
+// day key (the seeded RNG itself now lives in `./rng`; a daily puzzle needs the same pool for
+// everyone on a given date)
 // ---------------------------------------------------------------------------
-
-/** mulberry32 — tiny, fast, good-enough uint32-seeded PRNG returning [0, 1). */
-export function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 /** `YYYY-MM-DD` in UTC — the puzzle rotates at UTC midnight so every player worldwide gets the
  * same board on the same calendar date. */
@@ -43,15 +36,7 @@ export function dayKey(d: Date = new Date()): string {
   return d.toISOString().slice(0, 10);
 }
 
-function seedFromKey(key: string): number {
-  // FNV-1a
-  let h = 2166136261;
-  for (let i = 0; i < key.length; i++) {
-    h ^= key.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
+const seedFromKey = hashSeed;
 
 // ---------------------------------------------------------------------------
 // best span per player (the puzzle uses each player's peak season)
@@ -160,6 +145,18 @@ export function dailyPool(key: string = dayKey()): DailyPool {
       if (isGreat(s)) boardGreats++;
       if (isStar) bodyStars++;
       chosen.push(s);
+      taken.add(s.playerName);
+    }
+    // Floor guard: BODY_BUCKET (42) per position always leaves headroom today, but if the star /
+    // greats caps ever starve a thin position below a full nine, top up from the ranked list
+    // ignoring those caps — a slot with fewer than nine options would break the picker.
+    if (chosen.length < POOL_PER_SLOT) {
+      for (const s of ranked) {
+        if (chosen.length >= POOL_PER_SLOT) break;
+        if (taken.has(s.playerName)) continue;
+        chosen.push(s);
+        taken.add(s.playerName);
+      }
     }
     // Blind: display order is neutral (alphabetical), never by talent.
     bySlot[slot] = chosen.sort((a, b) => a.playerName.localeCompare(b.playerName));
