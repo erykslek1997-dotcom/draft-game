@@ -12,7 +12,7 @@ import {
   WALKING_GRAVITY_FLOOR,
 } from './spacing';
 import { maxSustainableMinutes } from './durability';
-import { effectiveTalent, overallTierForSpan } from './grades';
+import { effectiveTalent, overallTierForSpan, tierRank } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan } from './rotationRoleMinutes';
 import {
@@ -550,6 +550,28 @@ export function rotationScore(team: Team): RotationScoreResult {
     score += 7;
     components.benchRimCoverage = 7;
     notes.push('Bench brings rim protection the starting five lacks.');
+  }
+
+  // 2026-09-03, D2 calibration (user: #1 "brak prawdziwego centra z ławki", #5 "brak realnej siły
+  // pod koszem"). Center is the least substitutable position — a 9-man rotation can cover a hurt
+  // guard with a combo guard, but a hurt center means a power forward playing out of position
+  // with no rim protection. A roster with only one credible center has no real answer to foul
+  // trouble or an injury there. Nothing else in `overall` sees it — `benchDepthScore` reads the
+  // bench as a whole, `fitScore` only the starting five. Roster-level, not rotation-level (the
+  // backup a 9-man auto-rotation lands on is too noisy a signal — it slides a PF up to C and
+  // papers the gap over). Informational for now — a note, no score change — until the D2 human
+  // vote says whether it should also cost points.
+  const credibleCenters = team.roster.filter(
+    (p) =>
+      (p.primaryPosition === 'C' || p.secondaryPositions.includes('C')) &&
+      tierRank(overallTierForSpan(tierContextWithSixthMan(p))) >= tierRank('Role Player'),
+  );
+  if (credibleCenters.length <= 1) {
+    notes.push(
+      credibleCenters.length === 1
+        ? 'Thin at center — one credible option, so foul trouble or an injury there has no real answer.'
+        : 'No credible center on the roster — the position is covered only by out-of-position or replacement-level players.',
+    );
   }
 
   // `autoAssignRotation` never produces this — every path through it checks
