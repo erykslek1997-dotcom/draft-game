@@ -852,15 +852,38 @@ export function rotationScore(team: Team): RotationScoreResult {
  * model and by folding in two real, previously-unscored signals, not by chasing the number.
  */
 const TEAM_QUALITY_TALENT_WEIGHT = 0.75;
-const TEAM_FIT_COHERENCE_WEIGHT = 0.85;
 const QUALITY_FIT_SPLIT = 0.5;
+
+/**
+ * 2026-09-04, later same day: the "Pełne scalenie w FIT" build above kept `offenseScore` /
+ * `defenseScore` as pure roll-ups, specifically to stop O-TAL/D-TAL *level* leaking into the FIT
+ * half. The user's own original ask, restated: "offense i defense miały mieć wpływ na FIT" —
+ * offense/defense/rotation feed FIT, only bench feeds quality. Both `offenseScore` and
+ * `defenseScore` have since grown into real composites in their own right (offense: O-TAL 0.45 /
+ * spacing / rimPressureTeam / playmaking / self-creation; defense: D-TAL level, huntability,
+ * cohesion) — a level leak back into FIT is a known, accepted consequence of honoring that ask
+ * literally rather than re-litigating it.
+ *
+ * Weights renormalize the project's own last validated 4-way split for this exact quartet
+ * (offense .17 / defense .17 / fit .18 / rotation .08, from the 2026-08-19 rebalance — see the
+ * long docstring above) to sum to 1 within the FIT half, rather than freehand new numbers.
+ */
+const FIT_OFFENSE_WEIGHT = 0.17 / 0.60;
+const FIT_DEFENSE_WEIGHT = 0.17 / 0.60;
+const FIT_COHERENCE_WEIGHT = 0.18 / 0.60;
+const FIT_ROTATION_WEIGHT = 0.08 / 0.60;
 
 export function teamQualityScore(talent: number, benchDepth: number): number {
   return talent * TEAM_QUALITY_TALENT_WEIGHT + benchDepth * (1 - TEAM_QUALITY_TALENT_WEIGHT);
 }
 
-export function teamFitCompositeScore(fit: number, rotation: number): number {
-  return fit * TEAM_FIT_COHERENCE_WEIGHT + rotation * (1 - TEAM_FIT_COHERENCE_WEIGHT);
+export function teamFitCompositeScore(fit: number, offense: number, defense: number, rotation: number): number {
+  return (
+    fit * FIT_COHERENCE_WEIGHT +
+    offense * FIT_OFFENSE_WEIGHT +
+    defense * FIT_DEFENSE_WEIGHT +
+    rotation * FIT_ROTATION_WEIGHT
+  );
 }
 
 export function scoreTeam(team: Team): ScoreBreakdown {
@@ -873,7 +896,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const rotation = rotationScore(team);
   const overall = Math.round(
     teamQualityScore(talent, benchDepth) * QUALITY_FIT_SPLIT +
-      teamFitCompositeScore(fit.score, rotation.score) * (1 - QUALITY_FIT_SPLIT),
+      teamFitCompositeScore(fit.score, offense, defense, rotation.score) * (1 - QUALITY_FIT_SPLIT),
   );
   return {
     talentScore: talent,
