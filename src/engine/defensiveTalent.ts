@@ -198,8 +198,22 @@ function ladderPoints(position: Position, raw: number): number {
  * (all C-/D+ or better already) and his post-injury spans (37/38/25, correctly low — a different
  * evidence question entirely) are untouched.
  */
+// 2026-09-04, D2 calibration: Toumani Camara 2023-25/2024-26 (All-Defensive 2nd Team 2024-25).
+// The pool-inclusion fix that self-corrected the rest of the modern-perimeter-stopper class
+// (Herbert Jones -> 85, Lu Dort -> 82, Dyson Daniels -> 84, McDaniels -> 80) does NOT reach him:
+// his real defended-FG% matchup data reads clearly negative (-2.05 / -2.16), and the blend
+// leans on it. But that's a known bias of the matchup metric for a power forward who takes the
+// hardest frontcourt assignments (guarding Giannis/Tatum-type scorers, whose shooting stays high
+// against anyone) — and the two individual signals it doesn't confound both say plus: real
+// defensive RAPM peakDef +2.3 (defRank 170 / 2894) and the All-Defense vote. Floored to 74 —
+// solidly above the SF/PF Wing Stopper median, matching the RAPM read, without claiming the
+// A-grade the eye test alone might. Same one-(player, span) shape as the Klay entry above.
 const NAMED_DTAL_FLOOR: ReadonlyMap<string, number> = new Map(
-  [{ name: 'Klay Thompson', spanLabel: '2015-17', floor: 60 }].map((e) => [
+  [
+    { name: 'Klay Thompson', spanLabel: '2015-17', floor: 60 },
+    { name: 'Toumani Camara', spanLabel: '2023-25', floor: 74 },
+    { name: 'Toumani Camara', spanLabel: '2024-26', floor: 74 },
+  ].map((e) => [
     `${normalizePlayerName(e.name)}|${e.spanLabel}`,
     e.floor,
   ]),

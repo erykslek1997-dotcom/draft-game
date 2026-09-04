@@ -41,12 +41,20 @@ const JSON_FILE = path.resolve(__dirname, '../src/data/draftPool.json');
  * 2026-08-07, user's explicit ask after diagnosing "weak starter"/"severe backup" complaints
  * (16.3%/7.5% of teams) as a pool-depth problem, not purely an AI-logic one: guarantee at least
  * 100 distinct real players per position (500+ total) rather than continuing to tune drafting
- * heuristics against a thin pool. Raised from the previous 300/38-per-position target.
+ * heuristics against a thin pool.
+ *
+ * 2026-09-04, user's explicit ask ("powiększyć pool do ~1000 nazwisk, 200 na pozycję") — the
+ * modern low-event perimeter stoppers the D2 calibration surfaced (Jaden McDaniels, Herbert
+ * Jones, Lu Dort, Jalen Suggs, Toumani Camara, Dyson Daniels) all fell just below both the star
+ * and value cuts at their position; a wall-up defender's box profile doesn't rank. Doubling
+ * `STARS_PER_POSITION` catches them (and the class generally) with real data flowing back in via
+ * `trimReferenceDataToPool.ts`, and shrinks the accumulated-drift removal churn to a handful of
+ * genuine scrubs.
  */
-const TARGET_POOL_SIZE = 560;
+const TARGET_POOL_SIZE = 1000;
 /** Star tier: guarantees every position has real top-end talent to compete over, since a
  * global talent cut would otherwise favor bigs and wings over pure point guards. */
-const STARS_PER_POSITION = 100;
+const STARS_PER_POSITION = 200;
 /**
  * Value tier: the best talent-per-FGA players at each position among genuinely cheap options —
  * the "cap glue" a drafter fills the last roster spots with.
@@ -122,6 +130,17 @@ const eligiblePlayers = players.filter((p) => !isBannedSpan(p));
 const RESTRICT_TO_D1_D2_D3 = false;
 const D1_D2_D3_ALLOWLIST: string[] = d1d2d3AllowlistData;
 
+/**
+ * Names always kept in the pool regardless of the talent/value-tier cut, when the normal
+ * (non-RESTRICT) build runs. Unlike `curatedPlayers` (Tier 1) these need no hand-authored box
+ * rows — they already exist in the generated dataset, they're just genuine draft-worthy players
+ * the three-tier selection misses (a low-usage elite defender scores below both the star-talent
+ * and the talent-per-FGA cuts). 2026-09-04: Jaden McDaniels and Herbert Jones — modern All-Defense
+ * wings drafted in the real D2 session, absent from the pool purely because a wall-up stopper's
+ * box profile doesn't rank at their position on either axis.
+ */
+const POOL_FORCE_INCLUDE = ['Jaden McDaniels', 'Herbert Jones'];
+
 interface PlayerSummary {
   normalizedName: string;
   peakTalent: number;
@@ -165,6 +184,7 @@ if (RESTRICT_TO_D1_D2_D3) {
   // archetype/role/era spread the fit rubric grades on (including the deliberate low-usage
   // "cap glue" tier), so a talent-ranked cut must never drop them.
   for (const p of curatedPlayers) kept.add(normalizePlayerName(p.playerName));
+  for (const name of POOL_FORCE_INCLUDE) kept.add(normalizePlayerName(name));
 
   // Tier 2 — star talent, per position.
   for (const slot of ALL_POSITIONS) {

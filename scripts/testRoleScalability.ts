@@ -31,6 +31,9 @@ for (const [playerName, spanLabel] of [
 }
 
 const corrected = draftPool.map(roleScalabilityBreakdown).filter((breakdown) => breakdown.total > 0);
-assert(corrected.length <= 100, 'role-scalability correction remains narrow across the pool');
+// Proportional, not an absolute count — the draft pool grew from ~6,075 to ~9,451 spans on
+// 2026-09-04 (STARS_PER_POSITION 100 -> 200). At the old size this was `<= 100` (~1.6%); the
+// correction is a targeted mechanism, so gate it on the share of the pool it touches instead.
+assert(corrected.length / draftPool.length <= 0.02, 'role-scalability correction remains narrow across the pool');
 assert(corrected.every((breakdown) => breakdown.total <= 3.5), 'every combined correction respects the 3.5-point cap');
 console.log('Role-scalability tests complete.');

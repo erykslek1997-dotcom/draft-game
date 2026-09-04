@@ -577,6 +577,11 @@ const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: Defensi
   { name: 'Jaden McDaniels', spanLabel: '2023-25', role: 'Helper' },
   { name: 'Jaden McDaniels', spanLabel: '2024-26', role: 'Helper' },
   { name: 'Herbert Jones', spanLabel: '2022-24', role: 'Wing Stopper' },
+  // Toumani Camara — All-Defensive 2nd Team 2024-25, real defensive RAPM peakDef 2.3 (defRank
+  // 170 / 2894). The generated tag is `Low Activity` (spg 1.2-1.3 is not "low"; a PF-slot box
+  // classifier that only reads bpg/rpg mis-routes him, same as the Anunoby case). Wing Stopper.
+  { name: 'Toumani Camara', spanLabel: '2023-25', role: 'Wing Stopper' },
+  { name: 'Toumani Camara', spanLabel: '2024-26', role: 'Wing Stopper' },
 ];
 
 function applyDefensiveRoleOverrides(spans: PlayerSpan[]): PlayerSpan[] {

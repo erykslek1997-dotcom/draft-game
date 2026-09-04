@@ -25,6 +25,7 @@ const CURATED_SECONDARY_ROLES: Record<string, Partial<Record<DefensiveRole, numb
   // players.ts); these are the secondary matchups they also cover in a real lineup.
   'Jaden McDaniels': { 'Point of Attack': 0.88, Helper: 0.86, 'Mobile Big': 0.72 },
   'Herbert Jones': { 'Point of Attack': 0.90, Chaser: 0.88, Helper: 0.84 },
+  'Toumani Camara': { 'Point of Attack': 0.84, Helper: 0.86, 'Mobile Big': 0.78 },
 };
 
 /** Relative credibility of a player performing `role` beyond their primary defensive tag. */
