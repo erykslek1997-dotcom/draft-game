@@ -693,7 +693,17 @@ export function rotationScore(team: Team): RotationScoreResult {
   // misplaced player from stacking past it.
   const DOWNWARD_POSITION_PENALTY: Record<Position, number> = { C: 50, PF: 25, SF: 12, SG: 6, PG: 0 };
   const MAX_DOWNWARD_POSITION_PENALTY = 50;
-  const DOWNWARD_POSITION_FULL_PENALTY_MINUTES = 12;
+  // 2026-09-04, user-reported (Manu Ginóbili, SG, playing 12 real minutes at PG in a D2 rotation —
+  // a combo guard covering a swing stint, not a rotation mistake): the ramp used to reach its own
+  // FULL_PENALTY_MINUTES at exactly 12, so a normal, brief positional swing already read as the
+  // single worst-case misuse. A grace window now costs nothing before the ramp starts, sized to
+  // how big a stretch the move actually is — a guard sliding one spot (PG<->SG range) is common
+  // NBA usage; a genuine size mismatch (a center at the point) almost never happens even briefly,
+  // so it keeps none. The ramp's own top end also moves out to 24 so a real, sustained misuse
+  // (a center actually playing 24+ minutes of guard) still reaches the full historical penalty —
+  // this is a wider grace window, not a smaller maximum.
+  const DOWNWARD_POSITION_GRACE_MINUTES: Record<Position, number> = { C: 0, PF: 4, SF: 8, SG: 12, PG: 12 };
+  const DOWNWARD_POSITION_FULL_PENALTY_MINUTES = 24;
   const downwardOffenders: string[] = [];
   let downwardPenalty = 0;
   for (const { slot, player, minutes } of allAssignments(team)) {
@@ -701,9 +711,10 @@ export function rotationScore(team: Team): RotationScoreResult {
     if (player.primaryPosition === slot) continue;
     if (player.secondaryPositions.includes(slot)) continue;
     if (isUpwardSlide(player, slot)) continue;
-    const penalty =
-      DOWNWARD_POSITION_PENALTY[player.primaryPosition] *
-      Math.min(1, minutes / DOWNWARD_POSITION_FULL_PENALTY_MINUTES);
+    const grace = DOWNWARD_POSITION_GRACE_MINUTES[player.primaryPosition];
+    const rampMinutes = Math.max(0, minutes - grace);
+    const rampSpan = Math.max(1, DOWNWARD_POSITION_FULL_PENALTY_MINUTES - grace);
+    const penalty = DOWNWARD_POSITION_PENALTY[player.primaryPosition] * Math.min(1, rampMinutes / rampSpan);
     if (penalty > 0) {
       downwardPenalty += penalty;
       downwardOffenders.push(`${player.playerName} (${player.primaryPosition}) at ${slot} (${minutes}m)`);
