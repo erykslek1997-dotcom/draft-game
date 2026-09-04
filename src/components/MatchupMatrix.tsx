@@ -76,6 +76,7 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
             {([
               ['Creation', detail.ownFit.components.creationStructure, detail.opponentFit.components.creationStructure],
               ['Spacing', detail.ownFit.components.spacingCompatibility, detail.opponentFit.components.spacingCompatibility],
+              ['Rim pressure', detail.ownFit.components.rimPressureTeam, detail.opponentFit.components.rimPressureTeam],
               ['Defense', detail.ownFit.components.defensiveRoleCoverage, detail.opponentFit.components.defensiveRoleCoverage],
               ['Size', detail.ownFit.components.sizeCoverage, detail.opponentFit.components.sizeCoverage],
               ['Rebounding', detail.ownFit.components.reboundingBalance, detail.opponentFit.components.reboundingBalance],

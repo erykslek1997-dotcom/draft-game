@@ -723,6 +723,7 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                     <div className="analysis-section-heading">Fit details</div>
                     <span className="fit-detail-metric"><b>Creation</b><strong>{Math.round(fitDetail.components.creationStructure)}</strong></span>
                     <span className="fit-detail-metric"><b>Spacing compatibility</b><strong>{Math.round(fitDetail.components.spacingCompatibility)}</strong></span>
+                    <span className="fit-detail-metric"><b>Rim pressure</b><strong>{Math.round(fitDetail.components.rimPressureTeam)}</strong></span>
                     <span className="fit-detail-metric"><b>Defensive roles</b><strong>{Math.round(fitDetail.components.defensiveRoleCoverage)}</strong></span>
                     <span className="fit-detail-metric"><b>Switchability</b><strong>{Math.round(fitDetail.components.switchability)}</strong></span>
                     <span className="fit-detail-metric"><b>Hunt resistance</b><strong>{Math.round(fitDetail.components.huntResistance)}</strong></span>

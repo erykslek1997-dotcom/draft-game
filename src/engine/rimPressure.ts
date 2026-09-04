@@ -1,6 +1,7 @@
 import type { OffensiveArchetype, PlayerSpan } from '../data/schema';
 import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import { computeOffensiveProfile } from './offensiveProfile';
+import { boxRatesForSpan } from './boxRatesLookup';
 
 /**
  * "Rim pressure" — how much a player forces the defense to send help at the rim / build its game
@@ -121,4 +122,50 @@ export function rimPressureOffenseTerm(span: PlayerSpan): number {
   if (rp <= 0) return 0;
   const k = computeOffensiveProfile(span).hasZoneData ? RIM_PRESSURE_K_ZONE : RIM_PRESSURE_K_PROXY;
   return clamp((rp - RIM_PRESSURE_BASELINE) / k, 0, RIM_PRESSURE_CAP);
+}
+
+/**
+ * Team-level rim pressure, 0-100 — how much a starting five collapses the defense in the paint,
+ * the offensive-geometry complement to `spacing.ts` (arc gravity). The `scoreTeam` refactor's
+ * `fitScore` reads this: a post-centric build (Twin Towers, Hakeem + A. Davis, Shaq-and-shooters)
+ * generates real offensive value — forced help, drawn fouls, second-chance possessions — that a
+ * spacing-only geometry model reads as pure negative.
+ *
+ * Three signals, `rimPressure(span)` the anchor and the two box rates additive on top (both from
+ * `boxRatesLookup.ts`, the user-supplied per-game export):
+ *  - starters-mean `rimPressure(span)` — only PF/C ever score, so a real interior five means ~20-28
+ *  - the frontcourt's best free-throw rate (FTA/FGA) — Shaq/Embiid/Barkley/Moses ~0.5-0.6 force
+ *    the defense to foul; a stretch big ~0.2 does not. Full 1946-present coverage.
+ *  - team offensive rebounds per game across starters, but only where the export's OREB split is
+ *    reliable (1983-84+); pre-1983 spans get the neutral midpoint rather than a halved count.
+ */
+const RIM_TEAM_BASE_ANCHOR = 26; // starters-mean rimPressure that reads as a full interior five
+const RIM_TEAM_FT_BONUS_MAX = 16;
+const RIM_TEAM_OREB_BONUS_MAX = 12;
+
+export function rimPressureTeam(starters: PlayerSpan[]): number {
+  if (starters.length === 0) return 0;
+  const base = starters.reduce((sum, p) => sum + rimPressure(p), 0) / starters.length;
+  const baseComponent = clamp((base / RIM_TEAM_BASE_ANCHOR) * 100, 0, 100);
+
+  const frontcourt = starters.filter((p) => p.primaryPosition === 'C' || p.primaryPosition === 'PF');
+  const maxFtRate = frontcourt.reduce((best, p) => {
+    const r = boxRatesForSpan(p);
+    return r ? Math.max(best, r.ftRate) : best;
+  }, 0);
+  // 0.28 FTA/FGA is a middling interior rate; 0.55+ is a genuine foul magnet.
+  const ftBonus = clamp((maxFtRate - 0.28) / 0.27, 0, 1) * RIM_TEAM_FT_BONUS_MAX;
+
+  const reliableOreb = starters
+    .map((p) => boxRatesForSpan(p))
+    .filter((r): r is NonNullable<typeof r> => r !== null && r.orebReliable);
+  let orebBonus = RIM_TEAM_OREB_BONUS_MAX * 0.5; // neutral when the era's split isn't trustworthy
+  if (reliableOreb.length >= 3) {
+    const teamOreb = reliableOreb.reduce((sum, r) => sum + r.orebPerGame, 0);
+    // a weak offensive-rebounding five totals ~4-5 OREB/g, a dominant one (Rodman/Barkley/Oakley
+    // era, or Shaq + role bigs) ~11-13.
+    orebBonus = clamp((teamOreb - 5) / 7, 0, 1) * RIM_TEAM_OREB_BONUS_MAX;
+  }
+
+  return clamp(baseComponent + ftBonus + orebBonus, 0, 100);
 }

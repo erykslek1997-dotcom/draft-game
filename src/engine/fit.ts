@@ -19,6 +19,7 @@ import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
 import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion, MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS } from './defensiveCohesion';
+import { rimPressureTeam } from './rimPressure';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 import type { Team } from './types';
 
@@ -75,16 +76,22 @@ export const SPACING_BOTTLENECK_SCALE = 0.65;
 // `creationStructure` drops from 0.30: it was the single most negatively-correlated component
 // (−0.28) and structurally over-rewards raw creation presence (two lead guards who need the same
 // touches read ~100), so its weight is cut rather than its internals reopened in this pass.
+//
+// 2026-09-04 (Phase 2): `rimPressureTeam` added — the paint-attack complement to
+// `spacingCompatibility` (arc geometry). D1 +0.39 on its own, +0.02 on `overall`; closes the
+// long-standing gap where a post-centric build (Twin Towers, Hakeem + A. Davis) read as pure
+// negative offense. Weight comes off creation / spacing / championship.
 export const FIT_WEIGHTS = {
-  creationStructure: 0.16,
-  spacingCompatibility: 0.13,
+  creationStructure: 0.13,
+  spacingCompatibility: 0.11,
   defensiveRoleCoverage: 0.17,
   switchability: 0.15,
   huntResistance: 0.13,
   defensiveCohesion: 0.05,
+  rimPressureTeam: 0.07,
   reboundingBalance: 0.02,
   sizeCoverage: 0.07,
-  championshipStructure: 0.12,
+  championshipStructure: 0.10,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
@@ -120,6 +127,9 @@ export interface FitScoreComponents {
   /** `defensiveCohesion(team).defenseScoreBonus` on a 0-100 scale — the elite-shell / three-layer
    * / backline-foundation bonus, 0 for most rosters. Folded here from `defenseScore`. */
   defensiveCohesion: number;
+  /** Team paint-attack pressure, 0-100 (`rimPressureTeam` in `rimPressure.ts`) — the offensive
+   * complement to `spacingCompatibility`. Non-zero mainly for PF/C-anchored fives. */
+  rimPressureTeam: number;
   reboundingBalance: number;
   sizeCoverage: number;
   championshipStructure: number;
@@ -389,6 +399,7 @@ export function fitScore(team: Team): FitScoreResult {
         switchability: 0,
         huntResistance: 0,
         defensiveCohesion: 0,
+        rimPressureTeam: 0,
         reboundingBalance: 0,
         sizeCoverage: 0,
         championshipStructure: 0,
@@ -633,6 +644,7 @@ export function fitScore(team: Team): FitScoreResult {
   const huntResistance = defensiveHuntability(team).resistance;
   const cohesionBonusRaw = defensiveCohesion(team).defenseScoreBonus;
   const defensiveCohesionComponent = Math.round((cohesionBonusRaw / MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS) * 100);
+  const rimPressureTeamComponent = Math.round(rimPressureTeam(starters));
 
   const components: FitScoreComponents = {
     creationStructure,
@@ -641,6 +653,7 @@ export function fitScore(team: Team): FitScoreResult {
     switchability,
     huntResistance,
     defensiveCohesion: defensiveCohesionComponent,
+    rimPressureTeam: rimPressureTeamComponent,
     reboundingBalance,
     sizeCoverage,
     championshipStructure: 0,
