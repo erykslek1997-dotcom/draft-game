@@ -704,6 +704,19 @@ export function rotationScore(team: Team): RotationScoreResult {
   // this is a wider grace window, not a smaller maximum.
   const DOWNWARD_POSITION_GRACE_MINUTES: Record<Position, number> = { C: 0, PF: 4, SF: 8, SG: 12, PG: 12 };
   const DOWNWARD_POSITION_FULL_PENALTY_MINUTES = 24;
+  // 2026-09-04, user's follow-up ("Manu pasuje na PG ze względu na playmaking" — Manu fits at PG
+  // because of his playmaking, not a curated position tag): a guard or wing with a real, elite
+  // (career "elite" tier, score >=90 — playmakingLookup.ts's own top ~3% band, 79 of 2439 rated
+  // players) playmaking profile can credibly run point regardless of what `secondaryPositions`
+  // says, the same real-basketball fact `roleFitShadow.ts` already reads for other role proposals.
+  // Scoped to PG only (not every downward slot — ball-handling competence doesn't make a guard a
+  // credible power forward) and to guards/wings only (an elite-passing big, e.g. Draymond/Jokić,
+  // still isn't a positional point guard — that's a different kind of "can play the point").
+  const ELITE_PLAYMAKING_TIER_SCORE = 90;
+  const isElitePlaymakingGuardOrWing = (player: PlayerSpan): boolean =>
+    player.primaryPosition !== 'C' &&
+    player.primaryPosition !== 'PF' &&
+    (playmakingScoreForPlayer(player) ?? 0) >= ELITE_PLAYMAKING_TIER_SCORE;
   const downwardOffenders: string[] = [];
   let downwardPenalty = 0;
   for (const { slot, player, minutes } of allAssignments(team)) {
@@ -711,6 +724,7 @@ export function rotationScore(team: Team): RotationScoreResult {
     if (player.primaryPosition === slot) continue;
     if (player.secondaryPositions.includes(slot)) continue;
     if (isUpwardSlide(player, slot)) continue;
+    if (slot === 'PG' && isElitePlaymakingGuardOrWing(player)) continue;
     const grace = DOWNWARD_POSITION_GRACE_MINUTES[player.primaryPosition];
     const rampMinutes = Math.max(0, minutes - grace);
     const rampSpan = Math.max(1, DOWNWARD_POSITION_FULL_PENALTY_MINUTES - grace);
@@ -766,9 +780,29 @@ export function rotationScore(team: Team): RotationScoreResult {
   // deduction. Largely a belt-and-suspenders backstop now that `bestPrimaryAssignment` (rotation.ts)
   // already refuses to start anyone below Starter tier when a real alternative or an empty slot
   // is available — this only fires in the genuine edge case none exists.
+  //
+  // 2026-09-04, user-reported (D2 #3: KCP designated the SG starter at TAL 53, but plays only 24
+  // of the slot's 48 minutes — a genuine 24/24 timeshare with Manu Ginóbili, TAL 81 — "gra tylko
+  // 24 minuty więc nie jest to pełnosprawny starter"). The designated-starter identity stays
+  // authoritative (see `primaryStarters`'s own docstring — column order, not raw minutes, is the
+  // real lineup intent), but a weak "starter" who is genuinely splitting the slot with a real
+  // (TAL>=55) co-starter taking a comparable share of the minutes isn't actually anchoring the
+  // position the way this rule is meant to catch. Relief requires the co-starter to play at least
+  // 80% as many minutes as the weak starter — a token 4-minute mercy appearance doesn't count.
   const WEAK_STARTER_TAL_THRESHOLD = 55;
-  const hasWeakStarter = starters.some(({ player }) => effectiveTalent(player) < WEAK_STARTER_TAL_THRESHOLD);
-  if (hasWeakStarter) {
+  const TIMESHARE_RELIEF_MIN_SHARE = 0.8;
+  const hasGenuineTimeshareRelief = (weak: { slot: Position; player: PlayerSpan; minutes: number }): boolean =>
+    allAssignments(team).some(
+      (a) =>
+        a.slot === weak.slot &&
+        a.player.id !== weak.player.id &&
+        effectiveTalent(a.player) >= WEAK_STARTER_TAL_THRESHOLD &&
+        a.minutes >= weak.minutes * TIMESHARE_RELIEF_MIN_SHARE,
+    );
+  const unrelievedWeakStarter = starters.find(
+    (entry) => effectiveTalent(entry.player) < WEAK_STARTER_TAL_THRESHOLD && !hasGenuineTimeshareRelief(entry),
+  );
+  if (unrelievedWeakStarter) {
     const beforeWeakStarter = score;
     score = Math.round(score * 0.5);
     components.weakStarterTransform = score - beforeWeakStarter;
