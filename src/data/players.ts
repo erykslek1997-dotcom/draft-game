@@ -561,6 +561,22 @@ const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: Defensi
   { name: 'Chris Mullin', spanLabel: '1989-91', role: 'Helper' },
   { name: 'Chris Mullin', spanLabel: '1990-92', role: 'Helper' },
   { name: 'Chris Mullin', spanLabel: '1991-93', role: 'Helper' },
+  // 2026-09-04, D2 calibration: two modern point-of-attack wings the box classifier routed wrong.
+  // Herbert Jones is All-Defensive 1st Team 2023-24 with real matchup-defense data (+3.70 that
+  // year); `Chaser` undersells a genuine primary wing stopper — `Wing Stopper` matches how New
+  // Orleans actually uses him, and his box activity (impact ~20) clears that tag's expectation.
+  // Jaden McDaniels' generated spans wander (`Helper` / `Low Activity` / `Mobile Big`) — a
+  // wall-up stopper with genuinely low steal/block volume confuses the box classifier, and the
+  // role-fit audit then re-reads his other spans off whichever tags it produced. Pinned to
+  // `Helper` across the board: the honest read (his real events ARE low — a `Wing Stopper` tag
+  // would make `computeDefensiveImpact` penalise him against that tag's event expectation,
+  // exactly the wrong direction), and stable so one span's fix can't drift another. His curated
+  // secondary roles carry the real POA responsibility for lineup fit.
+  { name: 'Jaden McDaniels', spanLabel: '2020-22', role: 'Helper' },
+  { name: 'Jaden McDaniels', spanLabel: '2021-23', role: 'Helper' },
+  { name: 'Jaden McDaniels', spanLabel: '2023-25', role: 'Helper' },
+  { name: 'Jaden McDaniels', spanLabel: '2024-26', role: 'Helper' },
+  { name: 'Herbert Jones', spanLabel: '2022-24', role: 'Wing Stopper' },
 ];
 
 function applyDefensiveRoleOverrides(spans: PlayerSpan[]): PlayerSpan[] {

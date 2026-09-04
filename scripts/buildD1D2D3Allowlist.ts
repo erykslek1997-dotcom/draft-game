@@ -45,12 +45,16 @@ const NAME_CORRECTIONS: Record<string, string> = {
   "Shaquile O'Neal": "Shaquille O'Neal",
   'TR Dunn': 'T.R. Dunn',
   'Trey Murphy': 'Trey Murphy III',
+  // 2026-09-04: the draft-log spelling; the dataset lists him under his full first name. He was
+  // wrongly in NO_DATA below (the name-match failed, not a genuine data absence — "Herbert Jones"
+  // has 2 spans, an All-Defensive 1st Team, and real matchup-defense data).
+  'Herb Jones': 'Herbert Jones',
 };
 
 /** Confirmed zero rows in the full dataset (checked directly against players.ts, not guessed) —
- * excluded rather than corrected. All 4 are deep-bench/short-career players outside whatever
- * coverage threshold the auto-generation scripts used. */
-const NO_DATA = new Set(['Hasheem Thabeet', 'Herb Jones', 'Mario West', 'Scott Hastings']);
+ * excluded rather than corrected. Deep-bench/short-career players outside whatever coverage
+ * threshold the auto-generation scripts used. */
+const NO_DATA = new Set(['Hasheem Thabeet', 'Mario West', 'Scott Hastings']);
 
 const knownNames = new Set(players.map((p) => normalizePlayerName(p.playerName)));
 const finalNames: string[] = [];

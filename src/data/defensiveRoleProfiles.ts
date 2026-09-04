@@ -21,6 +21,10 @@ const CURATED_SECONDARY_ROLES: Record<string, Partial<Record<DefensiveRole, numb
     'Point of Attack': 0.74,
   },
   'Evan Mobley': { 'Anchor Big': 0.92, Helper: 0.86 },
+  // 2026-09-04, D2 calibration — both primary Wing Stoppers (see `DEFENSIVE_ROLE_OVERRIDES` in
+  // players.ts); these are the secondary matchups they also cover in a real lineup.
+  'Jaden McDaniels': { 'Point of Attack': 0.88, Helper: 0.86, 'Mobile Big': 0.72 },
+  'Herbert Jones': { 'Point of Attack': 0.90, Chaser: 0.88, Helper: 0.84 },
 };
 
 /** Relative credibility of a player performing `role` beyond their primary defensive tag. */
