@@ -768,12 +768,40 @@ export function rotationScore(team: Team): RotationScoreResult {
  * double-count it. The freed 0.10 (talent) + 0.03 (spacing) = 0.13 is split 0.05/0.05/0.03 across
  * offense/defense/fit.
  */
-const TALENT_WEIGHT = 0.30;
-const BENCH_DEPTH_WEIGHT = 0.10;
-const OFFENSE_WEIGHT = 0.17;
-const DEFENSE_WEIGHT = 0.17;
-const FIT_WEIGHT = 0.18;
-const ROTATION_WEIGHT = 0.08;
+/**
+ * 2026-09-04, user's explicit restructure ("overall = tal × 0,5 + fit × 0,5; benchDepth działa na
+ * TAL; offense, defense i rotacja działają na FIT"). Two axes, split 50/50:
+ *
+ *  - **quality** — how good the roster is: top-5 core TAL (`talentScore`) + active bench TAL
+ *    (`benchDepthScore`). `TEAM_QUALITY_TALENT_WEIGHT` keeps the old 0.30:0.10 core:bench ratio.
+ *  - **fit** — how well it coheres: `fitScore` (the full roster-construction judge, which on this
+ *    same date absorbed switchability / hunt resistance / defensive cohesion) plus deployment
+ *    sanity (`rotationScore`). `TEAM_FIT_COHERENCE_WEIGHT` leaves rotation ~0.075 of `overall`,
+ *    matching its old direct weight.
+ *
+ * `offenseScore` / `defenseScore` / `spacingScore` no longer feed `overall` — the O-TAL / D-TAL
+ * *level* they carry is already the quality half's job, and their contextual half (spacing
+ * geometry, rim-protection coverage, huntability) is `fitScore`'s. They stay on `ScoreBreakdown`
+ * as display roll-ups and are still consumed directly by `historicalChallenges` / `seasonProfile`
+ * / `closingLineups` / `bestFive` (which pins its own weights).
+ *
+ * Measured on the D1 human vote (n=15, `scripts/analyzeD1HumanVote.ts` + `_fitDecomp.ts`): the
+ * old blend reached Spearman 0.536, below `talentScore` alone (0.571) — `fitScore` at −0.06 and
+ * `spacingScore` at −0.16 were net-negative dead weight. This structure with the fit rebuild
+ * lands ~0.56-0.59. At n=15 (SE ~0.27) that gap is noise; the change is justified by the cleaner
+ * model and by folding in two real, previously-unscored signals, not by chasing the number.
+ */
+const TEAM_QUALITY_TALENT_WEIGHT = 0.75;
+const TEAM_FIT_COHERENCE_WEIGHT = 0.85;
+const QUALITY_FIT_SPLIT = 0.5;
+
+export function teamQualityScore(talent: number, benchDepth: number): number {
+  return talent * TEAM_QUALITY_TALENT_WEIGHT + benchDepth * (1 - TEAM_QUALITY_TALENT_WEIGHT);
+}
+
+export function teamFitCompositeScore(fit: number, rotation: number): number {
+  return fit * TEAM_FIT_COHERENCE_WEIGHT + rotation * (1 - TEAM_FIT_COHERENCE_WEIGHT);
+}
 
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
@@ -784,12 +812,8 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const fit = fitScore(team);
   const rotation = rotationScore(team);
   const overall = Math.round(
-    talent * TALENT_WEIGHT +
-      benchDepth * BENCH_DEPTH_WEIGHT +
-      offense * OFFENSE_WEIGHT +
-      defense * DEFENSE_WEIGHT +
-      fit.score * FIT_WEIGHT +
-      rotation.score * ROTATION_WEIGHT,
+    teamQualityScore(talent, benchDepth) * QUALITY_FIT_SPLIT +
+      teamFitCompositeScore(fit.score, rotation.score) * (1 - QUALITY_FIT_SPLIT),
   );
   return {
     talentScore: talent,

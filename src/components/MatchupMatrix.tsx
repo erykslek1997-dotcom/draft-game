@@ -79,7 +79,8 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
               ['Defense', detail.ownFit.components.defensiveRoleCoverage, detail.opponentFit.components.defensiveRoleCoverage],
               ['Size', detail.ownFit.components.sizeCoverage, detail.opponentFit.components.sizeCoverage],
               ['Rebounding', detail.ownFit.components.reboundingBalance, detail.opponentFit.components.reboundingBalance],
-              ['Switchability', detail.ownFit.inputs.switchability, detail.opponentFit.inputs.switchability],
+              ['Switchability', detail.ownFit.components.switchability, detail.opponentFit.components.switchability],
+              ['Hunt resistance', detail.ownFit.components.huntResistance, detail.opponentFit.components.huntResistance],
             ] as Array<[string, number, number]>).map(([label, own, opponent]) => (
               <div className="matchup-detail-metric" key={label}>
                 <span>{label}</span>

@@ -17,6 +17,8 @@ import { isPlusShooter } from './shooting';
 import { computeSpacing, isShootingAnomalyPlayer, spacingBreakdown, WALKING_GRAVITY_FLOOR } from './spacing';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
+import { defensiveHuntability } from './defensiveHuntability';
+import { defensiveCohesion, MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS } from './defensiveCohesion';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 import type { Team } from './types';
 
@@ -64,13 +66,25 @@ export const SPACING_BOTTLENECK_FLOOR = 75;
 export const SPACING_BOTTLENECK_MAX_PENALTY = 18;
 export const SPACING_BOTTLENECK_SCALE = 0.65;
 
+// 2026-09-04, the `scoreTeam` refactor (`overall = TAL·0.5 + FIT·0.5`, user's model): `fitScore`
+// is now the whole "does this roster cohere" half, so it absorbs signals that used to live only
+// in `defenseScore` (which no longer feeds `overall`). Two were measured on the D1 human vote
+// (n=15) as real and previously unused/underweighted: `switchability` (Spearman +0.49 — computed
+// as an input but never scored) and the `defensiveCohesion` shell bonus (+0.46 — only ever
+// applied inside `defenseScore`). `huntResistance` folds in `defensiveHuntability` the same way.
+// `creationStructure` drops from 0.30: it was the single most negatively-correlated component
+// (−0.28) and structurally over-rewards raw creation presence (two lead guards who need the same
+// touches read ~100), so its weight is cut rather than its internals reopened in this pass.
 export const FIT_WEIGHTS = {
-  creationStructure: 0.30,
-  spacingCompatibility: 0.25,
-  defensiveRoleCoverage: 0.25,
-  reboundingBalance: 0.05,
-  sizeCoverage: 0.05,
-  championshipStructure: 0.10,
+  creationStructure: 0.16,
+  spacingCompatibility: 0.13,
+  defensiveRoleCoverage: 0.17,
+  switchability: 0.15,
+  huntResistance: 0.13,
+  defensiveCohesion: 0.05,
+  reboundingBalance: 0.02,
+  sizeCoverage: 0.07,
+  championshipStructure: 0.12,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
@@ -97,6 +111,15 @@ export interface FitScoreComponents {
   creationStructure: number;
   spacingCompatibility: number;
   defensiveRoleCoverage: number;
+  /** Lineup switching capability, 0-100 — promoted from a diagnostic-only input on 2026-09-04
+   * (the `scoreTeam` refactor). Mean of per-starter switchability, weakest-link weighted. */
+  switchability: number;
+  /** `100 − defensiveHuntability(team).penalty`-scaled, 0-100 — how resistant the rotation is to
+   * repeated playoff matchup-hunting. Folded here from `defenseScore` in the same refactor. */
+  huntResistance: number;
+  /** `defensiveCohesion(team).defenseScoreBonus` on a 0-100 scale — the elite-shell / three-layer
+   * / backline-foundation bonus, 0 for most rosters. Folded here from `defenseScore`. */
+  defensiveCohesion: number;
   reboundingBalance: number;
   sizeCoverage: number;
   championshipStructure: number;
@@ -363,6 +386,9 @@ export function fitScore(team: Team): FitScoreResult {
         creationStructure: 0,
         spacingCompatibility: 0,
         defensiveRoleCoverage: 0,
+        switchability: 0,
+        huntResistance: 0,
+        defensiveCohesion: 0,
         reboundingBalance: 0,
         sizeCoverage: 0,
         championshipStructure: 0,
@@ -593,16 +619,28 @@ export function fitScore(team: Team): FitScoreResult {
     { value: physicalProfiles[index].functional, weight: 0.10 },
   ]) ?? 0);
   // A switching scheme is limited by both the lineup's general versatility and its least
-  // switchable starter. This is starter-only and diagnostic; full-rotation D-TAL huntability
-  // remains a separate production penalty rather than being relabeled as the same concept.
+  // switchable starter. Starter-only; full-rotation D-TAL huntability is the separate
+  // `huntResistance` component below.
   const switchability = Math.round(mean(individualSwitchability) * 0.75 + Math.min(...individualSwitchability) * 0.25);
   if (reboundingBalance < 35) notes.push('The starting five is weak on the glass relative to its assigned positions.');
   if (sizeCoverage < 35) notes.push('The starting five lacks functional size relative to its assigned positions.');
+
+  // 2026-09-04 (`scoreTeam` refactor): `defenseScore` no longer feeds `overall`, so the two
+  // whole-rotation defensive-scheme signals it carried are read here instead. `huntResistance`
+  // is `defensiveHuntability`'s own 0-100 resistance (100 = nothing to hunt); `defensiveCohesion`
+  // rescales that module's elite-shell bonus (max = backline foundation, 18) to 0-100 — it stays
+  // 0 for any roster without a genuinely complete or elite-anchored defensive shell.
+  const huntResistance = defensiveHuntability(team).resistance;
+  const cohesionBonusRaw = defensiveCohesion(team).defenseScoreBonus;
+  const defensiveCohesionComponent = Math.round((cohesionBonusRaw / MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS) * 100);
 
   const components: FitScoreComponents = {
     creationStructure,
     spacingCompatibility,
     defensiveRoleCoverage,
+    switchability,
+    huntResistance,
+    defensiveCohesion: defensiveCohesionComponent,
     reboundingBalance,
     sizeCoverage,
     championshipStructure: 0,
@@ -610,13 +648,10 @@ export function fitScore(team: Team): FitScoreResult {
   const championshipStructure = championshipStructureForRoster(starters, profiles, team.roster);
   components.championshipStructure = championshipStructure.score;
   notes.push(...championshipStructure.notes);
-  const weightedScore =
-    components.creationStructure * FIT_WEIGHTS.creationStructure +
-      components.spacingCompatibility * FIT_WEIGHTS.spacingCompatibility +
-      components.defensiveRoleCoverage * FIT_WEIGHTS.defensiveRoleCoverage +
-      components.reboundingBalance * FIT_WEIGHTS.reboundingBalance +
-      components.sizeCoverage * FIT_WEIGHTS.sizeCoverage +
-      components.championshipStructure * FIT_WEIGHTS.championshipStructure;
+  const weightedScore = (Object.keys(FIT_WEIGHTS) as (keyof typeof FIT_WEIGHTS)[]).reduce(
+    (sum, key) => sum + components[key] * FIT_WEIGHTS[key],
+    0,
+  );
   // Fit is not fully compensatory: excellent creation/defense cannot make a cramped half-court
   // geometry disappear. The weighted average previously let Spacing compatibility 66 coexist
   // with Fit 78, which overstated how portable the lineup actually was. This bounded bottleneck

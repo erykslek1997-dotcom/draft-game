@@ -102,13 +102,10 @@ for (const [label, result] of [['cramped', crampedResult], ['balanced', balanced
     Object.values(result.components).every((value) => value >= 0 && value <= 100),
     `${label} component scores stay on the 0-100 scale`,
   );
-  const weightedBlend =
-    result.components.creationStructure * FIT_WEIGHTS.creationStructure +
-    result.components.spacingCompatibility * FIT_WEIGHTS.spacingCompatibility +
-    result.components.defensiveRoleCoverage * FIT_WEIGHTS.defensiveRoleCoverage +
-    result.components.reboundingBalance * FIT_WEIGHTS.reboundingBalance +
-    result.components.sizeCoverage * FIT_WEIGHTS.sizeCoverage +
-    result.components.championshipStructure * FIT_WEIGHTS.championshipStructure;
+  const weightedBlend = (Object.keys(FIT_WEIGHTS) as (keyof typeof FIT_WEIGHTS)[]).reduce(
+    (sum, key) => sum + result.components[key] * FIT_WEIGHTS[key],
+    0,
+  );
   // Fit is not fully compensatory: a bounded spacing bottleneck (see fit.ts) subtracts from the
   // weighted blend before the final score, so "the documented component blend" now means that
   // penalty too, not just the five weighted components.

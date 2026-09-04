@@ -80,7 +80,10 @@ export function evaluateHistoricalChallenges(
       condition('Creation minimum 82', fit.components.creationStructure >= 82, `${fit.components.creationStructure}`),
       condition('At least three plus shooters', fit.inputs.plusShooterCount >= 3, `${fit.inputs.plusShooterCount}`),
       condition('At least two off-ball complements', fit.inputs.offBallComplementCount >= 2, `${fit.inputs.offBallComplementCount}`),
-      condition('FIT minimum 82', breakdown.fitScore >= 82, `${breakdown.fitScore}`),
+      // 2026-09-04: `fitScore` rescaled ~7pts lower after it absorbed hunt resistance / defensive
+      // cohesion / switchability (the `scoreTeam` refactor) — top rosters now read ~78-81 rather
+      // than ~85-88. 75 preserves this as a genuine elite-fit gate on the new scale.
+      condition('FIT minimum 75', breakdown.fitScore >= 75, `${breakdown.fitScore}`),
     ]),
     build('fga-glue', 'FGA Glue', 'Low-usage championship role players', 'Cap alchemist badge', [
       condition('At least two players below 2 FGA', gluePlayers >= 2, `${gluePlayers}`),
