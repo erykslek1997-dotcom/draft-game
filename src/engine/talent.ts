@@ -3,6 +3,7 @@ import { normalizePlayerName } from '../data/schema';
 import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE, predatesThreePointLine } from './era';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseMalus } from './darkoCorrection';
+import { rimPressureOffenseTerm } from './rimPressure';
 import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
 import { computeSpacing } from './spacing';
@@ -741,7 +742,15 @@ function rawComponents(
   const wingPlaymakingThreeLevel = playmakingThreeLevelOffenseAdjustment(lukaOffenseComputationSpan(span), applyCurryException);
   const playmakingThreeLevel =
     lightPgPlaymakingThreeLevel + LUKA_WING_BLEND * (wingPlaymakingThreeLevel - lightPgPlaymakingThreeLevel);
-  const offense = (scoringRate + efficiency + playmaking + centerPlaymaking + gravity + playmakingThreeLevel) * usageScale;
+  // 2026-09-04 — "rim pressure": the counterpart to the `gravity` (arc-spacing) term above. That
+  // term only ever credits 3PT floor-spacing, so a dominant interior focal point who collapsed
+  // defenses every possession (Shaq, Kareem, Moses, prime Ewing/Hakeem/Karl Malone) got nothing
+  // for it. Selective and one-directional — 0 for guards/wings, stretch bigs, face-up PFs,
+  // passing hubs, and low-usage lob threats; see rimPressure.ts. Same additive scale as `gravity`.
+  const rimPressureOffense = rimPressureOffenseTerm(span);
+  const offense =
+    (scoringRate + efficiency + playmaking + centerPlaymaking + gravity + playmakingThreeLevel + rimPressureOffense) *
+    usageScale;
 
   // Real DARKO plus-minus data (where it exists, 1997-98+) can reveal defensive value the
   // box score alone can't see (see darkoCorrection.ts) — Garnett and Duncan are the clearest
