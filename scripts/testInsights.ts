@@ -60,10 +60,13 @@ check(
   'contextual exposure description retains Brunson, Barros and Pierce rather than hiding bench targets',
 );
 // The useful-bench-minute recovery keeps Larry Smith out of a token defensive stint, so this
-// nine-player fixture now matches the underlying Brunson/Barros/Pierce exposure at 98 minutes.
-// Keep the assertion tied to the current rotation output rather than the obsolete 100-minute
-// split from the previous allocator.
-check(weakLinkInsight?.message.includes('98 targetable minutes'), 'weak-link description reports the real 98-minute cost');
+// nine-player fixture matches the underlying Brunson/Barros/Pierce exposure at 92 minutes:
+// Brunson 34 (PG only) + Barros 14 PG + 6 SG + Pierce 34 SF + 4 SG = 92, still a clean 240-minute
+// (5 slots x 48) rotation split, not a double-count. 2026-09-04: the rim-pressure talent change
+// (1a3d8dc) nudged this fixture's frontcourt minute allocation and moved the real total from 98
+// to 92. Keep the assertion tied to the current rotation output rather than the obsolete number
+// from the previous allocator.
+check(weakLinkInsight?.message.includes('92 targetable minutes'), 'weak-link description reports the real 92-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
@@ -166,6 +169,15 @@ check(starJustified.totalFga <= CAP_LIMIT, 'justified-star fixture respects the 
 check(detector('STAR_FGA_COST_JUSTIFIED', starJustified).active, 'Jordan-level FGA cost is justified behind a robust eight-man group');
 check(!detector('STAR_FGA_COST_HURTS_DEPTH', starJustified).active, 'justified star cost does not also fire the depth concern');
 
+// 2026-09-04: the rim-pressure talent change (1a3d8dc) legitimately raised DeAndre Jordan's
+// (2015-17) rim-runner TAL enough that this bench stopped reading as a real drop-off from the
+// Jordan/Gobert/Mobley/Pierce/Brunson core (measured: coreTal 88, depthTal 65, only a 26% falloff)
+// — STAR_FGA_COST_HURTS_DEPTH stopped firing and STAR_FGA_COST_JUSTIFIED started firing instead.
+// Swapped in two real, comparably weak bench spans in place of Andre Roberson/DeAndre Jordan —
+// Bill Cartwright's non-shooting backup-center Bulls span and Ira Newble's journeyman defensive
+// wing span — so the fixture again represents a real star-plus-thin-depth roster (54% falloff)
+// under the current calibration, rather than loosening the assertion to match a roster that no
+// longer tests the scenario it's named for.
 const exposedStarTeam = team('team-model-exposed-star', [
   pick('Jalen Brunson', '2024-26'),
   pick('Michael Jordan', '1990-92'),
@@ -173,8 +185,8 @@ const exposedStarTeam = team('team-model-exposed-star', [
   pick('Evan Mobley', '2023-25'),
   pick('Rudy Gobert', '2020-22'),
   pick('Charlie Ward', '1999-01'),
-  pick('Andre Roberson', '2016-18'),
-  pick('DeAndre Jordan', '2015-17'),
+  pick('Ira Newble', '2003-05'),
+  pick('Bill Cartwright', '1990-92'),
   pick('Greg Anderson', '1989-91'),
 ]);
 const exposedStar = buildTeamFeatureSnapshot(exposedStarTeam);
