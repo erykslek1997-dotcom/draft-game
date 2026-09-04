@@ -73,19 +73,22 @@ const rotationRaw = Object.values(rotation.components).reduce((sum, value) => su
 assert(rotation.score === Math.max(0, Math.min(100, Math.round(rotationRaw))), 'rotation components reproduce the clamped rotation score');
 
 const breakdown = scoreTeam(fullRoster);
-// 2026-09-04: `overall` is the user's two-axis model — quality (talentScore .75 / benchDepthScore
-// .25) and fit, split 50/50. Fit itself folds in offense/defense/rotation alongside fitScore
-// (renormalized from the project's last validated offense .17 / defense .17 / fit .18 /
-// rotation .08 split to sum to 1). See `scoreTeam`'s docstring in scoring.ts.
-const fitQuartetSum = 0.17 + 0.17 + 0.18 + 0.08;
+// 2026-09-04: `overall` is the user's two 3-way-axis model, split 50/50 — quality (talentScore +
+// benchDepthScore + rotationScore) and fit (fitScore + offenseScore + defenseScore). Both axes'
+// internal weights renormalize the project's last validated 6-way split (talent .30 / bench .10 /
+// rotation .08 / fit .18 / offense .17 / defense .17) to sum to 1 within their bucket. See
+// `scoreTeam`'s docstring in scoring.ts.
+const qualitySum = 0.30 + 0.10 + 0.08;
+const fitSum = 0.18 + 0.17 + 0.17;
 const recomputedOverall = Math.round(
-  (breakdown.talentScore * 0.75 + breakdown.benchDepthScore * 0.25) * 0.5 +
-  (breakdown.fitScore * (0.18 / fitQuartetSum) +
-    breakdown.offenseScore * (0.17 / fitQuartetSum) +
-    breakdown.defenseScore * (0.17 / fitQuartetSum) +
-    breakdown.rotationScore * (0.08 / fitQuartetSum)) * 0.5,
+  (breakdown.talentScore * (0.30 / qualitySum) +
+    breakdown.benchDepthScore * (0.10 / qualitySum) +
+    breakdown.rotationScore * (0.08 / qualitySum)) * 0.5 +
+  (breakdown.fitScore * (0.18 / fitSum) +
+    breakdown.offenseScore * (0.17 / fitSum) +
+    breakdown.defenseScore * (0.17 / fitSum)) * 0.5,
 );
-assert(breakdown.overall === recomputedOverall, 'Overall is the 50/50 quality-vs-fit blend, fit folding in offense/defense/rotation');
+assert(breakdown.overall === recomputedOverall, 'Overall is the 50/50 quality-vs-fit blend, quality folding in rotation and fit folding in offense/defense');
 
 const strongComplementaryBench = team('strong-complementary-bench', [
   pick('Nikola Jokic', '2021-23'),
