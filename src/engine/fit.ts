@@ -15,6 +15,7 @@ import { primaryStarters } from './rotation';
 import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
 import { isPlusShooter } from './shooting';
 import { computeSpacing, isShootingAnomalyPlayer, spacingBreakdown, WALKING_GRAVITY_FLOOR } from './spacing';
+import { computeOffensiveTalent } from './talent';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
 import { defensiveHuntability } from './defensiveHuntability';
@@ -518,7 +519,19 @@ export function fitScore(team: Team): FitScoreResult {
   // equivalent multi-gravity floor; `spacingCompatibility` never picked it up. Only geometryScore
   // is softened — frontcourtGeometryScore still charges two non-shooting bigs, so a gravity
   // starter eases the penalty but never erases it.
-  const hasGravityStarter = starters.some((player) => spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR);
+  //
+  // 2026-09-04, user-reported (D2 #2, Jordan+Haliburton+Malone+Howard): `spacingBreakdown` is
+  // purely arc/3PT gravity, so peak Jordan (1989-91, O-TAL 100, minimal 3PA — the league barely
+  // shot 3s yet) reads 16.8 points, under `WALKING_GRAVITY_FLOOR` (19), and never triggers this
+  // discount despite being exactly the kind of scorer real defenses double-teamed and warped
+  // around. `eliteScoringGravity` is a second, independent path to the same flag: an O-TAL >= 95
+  // span (the ~59-span, all-time-great tier — Jordan/Harden/Luka/prime-LeBron-band; already-
+  // covered arc shooters like Nash/Miller/Allen also clear it, so no double mechanism for them)
+  // draws enough defensive attention on pure scoring gravity alone, independent of shot selection.
+  const ELITE_SCORING_GRAVITY_OTAL = 95;
+  const hasGravityStarter =
+    starters.some((player) => spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR) ||
+    starters.some((player) => computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL);
   const canPunishHelp = secondaryCreationSignal >= 75 || starters.some(isRimGravityScorer);
   const geometryNonSpacerCount =
     hasGravityStarter && hardNonSpacerCount >= 2
