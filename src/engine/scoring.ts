@@ -14,6 +14,7 @@ import {
 } from './spacing';
 import { rimPressureTeam } from './rimPressure';
 import { playmakingScoreForPlayer } from './playmakingLookup';
+import { isNamedPgEligible } from './pgEligibility';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { maxSustainableMinutes } from './durability';
 import { effectiveTalent, overallTierForSpan, tierRank } from './grades';
@@ -705,18 +706,25 @@ export function rotationScore(team: Team): RotationScoreResult {
   const DOWNWARD_POSITION_GRACE_MINUTES: Record<Position, number> = { C: 0, PF: 4, SF: 8, SG: 12, PG: 12 };
   const DOWNWARD_POSITION_FULL_PENALTY_MINUTES = 24;
   // 2026-09-04, user's follow-up ("Manu pasuje na PG ze względu na playmaking" — Manu fits at PG
-  // because of his playmaking, not a curated position tag): a guard or wing with a real, elite
-  // (career "elite" tier, score >=90 — playmakingLookup.ts's own top ~3% band, 79 of 2439 rated
-  // players) playmaking profile can credibly run point regardless of what `secondaryPositions`
-  // says, the same real-basketball fact `roleFitShadow.ts` already reads for other role proposals.
+  // because of his playmaking, not a curated position tag): a guard or wing with a real point-
+  // guard skillset can credibly run point regardless of what `secondaryPositions` says, the same
+  // real-basketball fact the engine's own shadow role-model (`fit.ts`/`players.ts`/`draftPool.ts`
+  // only — this file is deliberately not one of its import-surface's named consumers) already
+  // reads for other role proposals. First tried as
+  // a scalar `playmakingScoreForPlayer >= 90` cut; the user's own counter-example broke it same
+  // day — Jerry West (81.7) and Danny Ainge (84.2) were offered as fits, Jordan (86.8) / Kobe
+  // (86.7) / Pippen (86.9) as not, all with a *higher* score. `offensiveArchetype` doesn't
+  // separate them either (Pippen shares Manu's own "Secondary Ball Handler" tag). Replaced with a
+  // curated named list (`pgEligibility.ts`) built by putting every SG/SF with playmaking >=75
+  // (149 players) in front of the user as a checklist and deciding one-by-one — see that file's
+  // docstring for the full result (48 yes / 101 no, ranges fully overlapping either way).
   // Scoped to PG only (not every downward slot — ball-handling competence doesn't make a guard a
   // credible power forward) and to guards/wings only (an elite-passing big, e.g. Draymond/Jokić,
   // still isn't a positional point guard — that's a different kind of "can play the point").
-  const ELITE_PLAYMAKING_TIER_SCORE = 90;
   const isElitePlaymakingGuardOrWing = (player: PlayerSpan): boolean =>
     player.primaryPosition !== 'C' &&
     player.primaryPosition !== 'PF' &&
-    (playmakingScoreForPlayer(player) ?? 0) >= ELITE_PLAYMAKING_TIER_SCORE;
+    isNamedPgEligible(player);
   const downwardOffenders: string[] = [];
   let downwardPenalty = 0;
   for (const { slot, player, minutes } of allAssignments(team)) {
