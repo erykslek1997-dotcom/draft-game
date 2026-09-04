@@ -44,7 +44,21 @@ export function reboundingTerm(span: PlayerSpan): number {
   return span.box.rpg * (LEAGUE_PACE_BASELINE / pace) * 0.9;
 }
 
-export function computeDefensiveImpact(span: PlayerSpan): number {
+/**
+ * The three separable pieces of `computeDefensiveImpact`, exposed so `predictedDefense.ts` can
+ * regress a real-plus-minus model against steals and blocks INDEPENDENTLY (the box formula below
+ * weights them identically at `* 4.5`, which the pool audit vs `peakRapm.json` confirmed is wrong
+ * in both directions — it under-credits shot-blocking interior anchors and over-credits steal-
+ * gambling guards). Returns the exact intermediate values `computeDefensiveImpact` sums, so the
+ * two can never drift.
+ */
+export function defensiveBoxParts(span: PlayerSpan): {
+  stealActivity: number;
+  blockActivity: number;
+  activity: number;
+  rebounding: number;
+  roleWeight: number;
+} {
   const { box, defensiveRole } = span;
   const { pace } = eraBaseline(span.spanLabel);
   const paceFactor = LEAGUE_PACE_BASELINE / pace;
@@ -71,5 +85,10 @@ export function computeDefensiveImpact(span: PlayerSpan): number {
       : baseWeight *
         Math.max(ROLE_SCALE_MIN, Math.min(ROLE_SCALE_MAX, activity / DEFENSIVE_ROLE_TYPICAL_ACTIVITY[defensiveRole]));
 
+  return { stealActivity, blockActivity, activity, rebounding, roleWeight };
+}
+
+export function computeDefensiveImpact(span: PlayerSpan): number {
+  const { activity, rebounding, roleWeight } = defensiveBoxParts(span);
   return activity + rebounding + roleWeight;
 }

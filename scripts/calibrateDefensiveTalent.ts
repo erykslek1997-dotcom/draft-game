@@ -86,9 +86,14 @@ function coverageForSpan(span: PlayerSpan, byNameYear: Map<string, Map<number, n
   return { avg: values.reduce((sum, v) => sum + v, 0) / values.length, count: values.length };
 }
 
-function blendedExcessFull(span: PlayerSpan, defImpact: number): number | null {
-  const parts: { excess: number; count: number }[] = [];
+// 2026-09-04: agreement cap (darkoCorrection.ts) — >=2 covered sources each showing excess >= 0.6
+// unlocks a wider bonus ceiling (Chuck Hayes / Splitter-class interior anchors pinned at +9).
+const AGREEMENT_MIN_EXCESS = 0.6;
+const AGREEMENT_MIN_SOURCES = 2;
+const AGREEMENT_BONUS_CAP = 16;
 
+function coveredExcessParts(span: PlayerSpan, defImpact: number): { excess: number; count: number }[] {
+  const parts: { excess: number; count: number }[] = [];
   const ddpmCov = coverageForSpan(span, ddpmByNameYear);
   if (ddpmCov) {
     const { slope, intercept } = correctionCoefficients.darkoDefense;
@@ -104,7 +109,11 @@ function blendedExcessFull(span: PlayerSpan, defImpact: number): number | null {
     const { slope, intercept } = correctionCoefficients.matchupDefense;
     parts.push({ excess: matchupCov.avg - (slope * defImpact + intercept), count: matchupCov.count });
   }
+  return parts;
+}
 
+function blendedExcessFull(span: PlayerSpan, defImpact: number): number | null {
+  const parts = coveredExcessParts(span, defImpact);
   if (parts.length === 0) return null;
   const totalWeight = parts.reduce((sum, p) => sum + p.count, 0);
   return parts.reduce((sum, p) => sum + p.excess * p.count, 0) / totalWeight;
@@ -173,8 +182,10 @@ function rawDefense(span: PlayerSpan, cfg: Config): number {
   let correction = 0;
   const excess = blendedExcessFull(span, impact);
   if (excess !== null) {
+    const agree = coveredExcessParts(span, impact).filter((p) => p.excess >= AGREEMENT_MIN_EXCESS).length;
+    const bonusCap = agree >= AGREEMENT_MIN_SOURCES ? AGREEMENT_BONUS_CAP : cfg.bonusCap;
     correction = excess > 0
-      ? Math.min(cfg.bonusCap, excess * 6)
+      ? Math.min(bonusCap, excess * 6)
       : -Math.min(cfg.malusCap, -excess * 6);
   }
   return impact - trim + correction;

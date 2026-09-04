@@ -76,7 +76,18 @@ function getRegression(field: 'darkoDefense' | 'raptorDefense' | 'matchupDefense
  * Taylor's own real-world read of Barkley ("never a positive on D") that this project already had
  * on file but had no numeric lever to act on before now.
  */
-function blendedExcess(span: PlayerSpan): number | null {
+/**
+ * Per-source (real − expected) for whichever of DARKO/RAPTOR/matchup cover the span, each against
+ * its own `slope * computeDefensiveImpact + intercept` line. Split out of `blendedExcess` so
+ * `maximumDefenseBonus` can read the same per-source excesses to decide the agreement cap without
+ * recomputing them.
+ *
+ * A 2026-09-04 experiment (`scripts/trainDefenseModel.ts`) replaced this scalar expectation with
+ * a multi-feature model — it predicts real defense materially better out of sample, but wiring it
+ * here collapses the excess for the very defenders the correction protects (a good box model
+ * leaves no residual), so only the cap raise below shipped.
+ */
+function coveredExcessParts(span: PlayerSpan): { excess: number; count: number }[] {
   const defImpact = computeDefensiveImpact(span);
   const parts: { excess: number; count: number }[] = [];
 
@@ -95,7 +106,11 @@ function blendedExcess(span: PlayerSpan): number | null {
     const { slope, intercept } = getRegression('matchupDefense');
     parts.push({ excess: matchupCov.avg - (slope * defImpact + intercept), count: matchupCov.count });
   }
+  return parts;
+}
 
+function blendedExcess(span: PlayerSpan): number | null {
+  const parts = coveredExcessParts(span);
   if (parts.length > 0) {
     const totalWeight = parts.reduce((sum, p) => sum + p.count, 0);
     return parts.reduce((sum, p) => sum + p.excess * p.count, 0) / totalWeight;
@@ -105,7 +120,7 @@ function blendedExcess(span: PlayerSpan): number | null {
   const bpm2Cov = bpm2CoverageForSpan(span);
   if (bpm2Cov) {
     const { slope, intercept } = getRegression('bpm2Defense');
-    return bpm2Cov.avg - (slope * defImpact + intercept);
+    return bpm2Cov.avg - (slope * computeDefensiveImpact(span) + intercept);
   }
 
   return null;
@@ -158,6 +173,22 @@ const PRE_STOCKS_FULL_EVIDENCE = 30;
  */
 const UNCONFIRMED_BPM2_ONLY_MAX_BONUS = 7.5;
 
+/**
+ * 2026-09-04, pool audit vs `peakRapm.json`: a class of low-event interior anchors (Chuck Hayes
+ * peakDef 4.1 / D-TAL 68, Tiago Splitter, undersized rim protectors) reads far below their real
+ * defensive impact because `computeDefensiveImpact` is block-count-driven and they don't rack up
+ * blocks — yet DARKO, RAPTOR **and** matchup all independently read them well above the box. They
+ * sit pinned at the +9 cap: raising the cap for them is the only lever, since the excess itself
+ * is already large. Gated on **≥2** covered sources each showing a materially positive excess so
+ * one noisy source can't unlock the wider ceiling; a single-source strong read still caps at 9.
+ * Deliberately below the pre-stocks widening (25) — this is "the box misses your job," not "whole
+ * stat categories didn't exist." Taylor/GOAT re-validated after (this feeds `talent.ts` via
+ * `darkoDefenseBonus`).
+ */
+const AGREEMENT_BONUS_CAP = 16;
+const AGREEMENT_MIN_SOURCES = 2;
+const AGREEMENT_MIN_EXCESS = 0.6;
+
 function hasRealTrackingCoverage(span: PlayerSpan): boolean {
   return Boolean(ddpmCoverageForSpan(span) || raptorCoverageForSpan(span) || matchupCoverageForSpan(span));
 }
@@ -177,7 +208,9 @@ function maximumDefenseBonus(span: PlayerSpan): number {
       missingStocksShare * evidenceFactor * (MAX_PRE_STOCKS_BPM2_BONUS - MAX_DARKO_BONUS)
     );
   }
-  return hasRealTrackingCoverage(span) ? MAX_DARKO_BONUS : UNCONFIRMED_BPM2_ONLY_MAX_BONUS;
+  if (!hasRealTrackingCoverage(span)) return UNCONFIRMED_BPM2_ONLY_MAX_BONUS;
+  const agreeingSources = coveredExcessParts(span).filter((p) => p.excess >= AGREEMENT_MIN_EXCESS).length;
+  return agreeingSources >= AGREEMENT_MIN_SOURCES ? AGREEMENT_BONUS_CAP : MAX_DARKO_BONUS;
 }
 
 /**
