@@ -71,6 +71,24 @@ const passingHubDampener = (s: PlayerSpan) => clamp(1.3 - s.box.apg / 16, 0.55, 
 const scoringVolumeFactor = (s: PlayerSpan) => clamp((s.box.ppg * paceFactor(s) - 12) / 16, 0.4, 1.1);
 
 /**
+ * pre-1996-97 proxy only (see its call site): a real, independent foul-drawing signal from the
+ * 2026-09-04 box-rates export (`boxRatesLookup.ts`, full 1946+ coverage) the ppg/fgPct percentile
+ * ladders can't see on their own — Bob McAdoo (69 proxy rimPressure) and Charles Barkley (78) both
+ * drew fouls at a genuine focal-point rate (FTr 0.43 / 0.49) the volume/efficiency read alone
+ * doesn't fully credit. Deliberately gentle (±20%, not the ±40% a naive read of Shaq's 0.58 would
+ * suggest) — FTr is noisy at this remove (Dolph Schayes reads 0.64 off a small, different-era
+ * shot diet) and this is a multiplier on an already-computed proxy, not a new independent term.
+ * Returns 1.0 (no-op) when the export has no coverage for this span.
+ */
+const FTR_BASELINE = 0.32;
+const FTR_SLOPE = 0.9;
+function freeThrowRateFactor(span: PlayerSpan): number {
+  const rates = boxRatesForSpan(span);
+  if (!rates) return 1.0;
+  return clamp(1.0 + (rates.ftRate - FTR_BASELINE) * FTR_SLOPE, 0.85, 1.2);
+}
+
+/**
  * 0-100: how much this player collapses the defense at the rim. Selective — most spans read 0.
  */
 export function rimPressure(span: PlayerSpan): number {
@@ -98,7 +116,7 @@ export function rimPressure(span: PlayerSpan): number {
   const proxyElig = span.offensiveArchetype === 'Slasher' ? 0.75 : elig; // a slashing big IS rim gravity
   const volScore = steep(pctileOf(BIG_PPG_RUNGS, span.box.ppg * paceFactor(span)));
   const fgFactor = clamp((pctileOf(BIG_FGPCT_RUNGS, span.box.fgPct) - 30) / 50, 0.4, 1.15);
-  return clamp(proxyElig * volScore * fgFactor * passingHubDampener(span), 0, 100);
+  return clamp(proxyElig * volScore * fgFactor * freeThrowRateFactor(span) * passingHubDampener(span), 0, 100);
 }
 
 /**
