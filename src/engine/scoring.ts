@@ -8,9 +8,13 @@ import {
   computeSpacing,
   isShootingAnomalyPlayer,
   spacingBreakdown,
+  selfCreationRate,
   SHOOTING_ANOMALY_TEAM_SPACING_FLOOR,
   WALKING_GRAVITY_FLOOR,
 } from './spacing';
+import { rimPressureTeam } from './rimPressure';
+import { playmakingScoreForPlayer } from './playmakingLookup';
+import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { maxSustainableMinutes } from './durability';
 import { effectiveTalent, overallTierForSpan, tierRank } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
@@ -352,13 +356,69 @@ function benchBoostedWeightedAverage(
  * no longer gets its own separate weight in `overall` (see `scoreTeam` below) — this is that
  * weight moving structurally inside Offense instead of just being reallocated to it.
  */
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.7;
-const OFFENSE_SPACING_BLEND_WEIGHT = 0.3;
+/**
+ * 2026-09-04, user's explicit ask: `offenseScore` only ever saw two offensive-geometry
+ * dimensions — team talent and arc spacing. It was blind to paint pressure (`rimPressureTeam`,
+ * shipped earlier this session as a `fitScore`-only signal — "spacing + rim pressure powinno
+ * karmić offense") and to two more real offensive qualities entirely absent from any team score:
+ * **playmaking** (is there a real engine running this offense, distinct from `fitScore`'s
+ * `creationStructure`, which asks whether the hierarchy is clean/uncrowded, not how good the
+ * playmaking itself is) and **self-creation** ("czy drużyna potrafi wygenerować rzut po koźle" —
+ * can this five get a shot when the set play breaks down, distinct from spacing/talent).
+ *
+ * Both new components are starter-only, best-player-weighted (60/55% weight on the single best,
+ * the rest on the starter mean) — one elite engine or shot-creator matters far more than five
+ * mediocre ones averaged flat, but a genuine second option still counts. `selfCreationFgByYear`
+ * reads real unassisted-FG rate (1997+, made-weighted, `selfCreationLookup.ts`) with the
+ * archetype proxy (`selfCreationRate`) as fallback pre-1997 or below the measured volume floor —
+ * the same fallback shape every other real-data lookup in this project uses.
+ */
+const selfCreationFgByYear = buildSelfCreationYearMap('unassistedFg');
+/** Missing career playmaking coverage defaults to a below-average 35, not 0 — most uncovered
+ * players are uncatalogued role players, not proven non-playmakers. */
+const PLAYMAKING_COVERAGE_DEFAULT = 35;
+
+function teamPlaymakingQuality(starters: PlayerSpan[]): number {
+  if (starters.length === 0) return 0;
+  const values = starters.map((p) => playmakingScoreForPlayer(p) ?? PLAYMAKING_COVERAGE_DEFAULT);
+  const best = Math.max(...values);
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  return Math.round(best * 0.6 + mean * 0.4);
+}
+
+function starterSelfCreation(player: PlayerSpan): number {
+  const measured = measuredSelfCreationForSpan(player, selfCreationFgByYear);
+  return (measured ?? selfCreationRate(player)) * 100;
+}
+
+function teamSelfCreationQuality(starters: PlayerSpan[]): number {
+  if (starters.length === 0) return 0;
+  const values = starters.map(starterSelfCreation);
+  const best = Math.max(...values);
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  return Math.round(best * 0.55 + mean * 0.45);
+}
+
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.45;
+const OFFENSE_SPACING_BLEND_WEIGHT = 0.15;
+const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.15;
+const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.15;
+const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.10;
 
 export function offenseScore(team: Team): number {
   const otalComponent = rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS);
   const spacingComponent = spacingScore(team);
-  return Math.round(otalComponent * OFFENSE_OTAL_BLEND_WEIGHT + spacingComponent * OFFENSE_SPACING_BLEND_WEIGHT);
+  const starters = primaryStarters(team).map((entry) => entry.player);
+  const rimPressureComponent = rimPressureTeam(starters);
+  const playmakingComponent = teamPlaymakingQuality(starters);
+  const selfCreationComponent = teamSelfCreationQuality(starters);
+  return Math.round(
+    otalComponent * OFFENSE_OTAL_BLEND_WEIGHT +
+      spacingComponent * OFFENSE_SPACING_BLEND_WEIGHT +
+      rimPressureComponent * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
+      playmakingComponent * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
+      selfCreationComponent * OFFENSE_SELF_CREATION_BLEND_WEIGHT,
+  );
 }
 
 export function defenseScore(team: Team): number {
