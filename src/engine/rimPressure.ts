@@ -120,6 +120,59 @@ export function rimPressure(span: PlayerSpan): number {
 }
 
 /**
+ * Team-fit-only variant, read solely by `rimPressureTeam` below — never by `rimPressureOffenseTerm`
+ * (TAL), so Taylor/GOAT are untouched by any of this. Three differences from `rimPressure()`,
+ * from the 2026-09-04 fitScore rim-pressure review:
+ *
+ *  1. No archetype pre-gate on the zone-data (1997+) path. `rimPressure()`'s `elig` check zeroes
+ *     a "Primary Ball Handler" (LeBron) or "Stretch Big" (Dirk) tag before real shot-location data
+ *     is even read. Here the real data speaks for itself: LeBron 2012-14's actual rimShare (0.47)
+ *     and volume clear the bar on their own; Dirk's genuinely low rimShare (0.18 — his game was
+ *     mid-range/floater, not restricted-area) still fails `shareRamp` regardless of archetype.
+ *  2. The volume-percentile curve is a smooth ramp from the 35th percentile
+ *     (`fitVolScore`), not `steep()`'s hard cliff at 78. A real but moderate rim-attacker
+ *     (Embiid's volume sits just below the old cliff) is genuinely different from a player with
+ *     zero rim presence, and the cliff couldn't tell them apart — both read exactly 0.
+ *  3. A flat floor for every real PF/C (`BIG_RIM_PRESSURE_FLOOR`), independent of the computed
+ *     value. A legitimate big has positional size/interior capability a pure shot-chart read
+ *     undersells (Dirk's offense is genuinely mid-range-heavy, not rim-share-heavy, but a
+ *     7-footer still isn't a lesser interior threat than a wing shooter with a similar or even
+ *     higher raw rim share — Klay Thompson's more frequent basket cuts otherwise out-scored him).
+ *     User-set 2026-09-04 after comparing floors of 10/15 against Dirk/Porzingis/Klay/Curry.
+ */
+const FIT_SHARE_FLOOR = 0.15;
+const BIG_RIM_PRESSURE_FLOOR = 15;
+function fitVolScore(percentile: number): number {
+  return clamp((percentile - 35) / 65, 0, 1) * 100;
+}
+
+export function rimPressureForFit(span: PlayerSpan): number {
+  const prof = computeOffensiveProfile(span);
+  let base: number;
+  if (prof.hasZoneData) {
+    const shareRamp = clamp((prof.rimShare - FIT_SHARE_FLOOR) / (0.5 - FIT_SHARE_FLOOR), 0, 1);
+    if (shareRamp <= 0) {
+      base = 0;
+    } else {
+      const accFactor = clamp((prof.rimAccuracy - 52) / 20, 0.35, 1.2);
+      const shareFactor = clamp(0.7 + prof.rimShare * 0.6, 0.7, 1.25);
+      const volScore = fitVolScore(pctileOf(RIM_VOL_RUNGS, prof.rimShare * span.fga * paceFactor(span)));
+      base = clamp(
+        volScore * accFactor * shareFactor * shareRamp * passingHubDampener(span) * scoringVolumeFactor(span),
+        0,
+        100,
+      );
+    }
+  } else {
+    // pre-1997: no shot-location data to improve on — fall back to the existing archetype-gated
+    // proxy, which already gates to C/PF.
+    base = rimPressure(span);
+  }
+  const isBig = span.primaryPosition === 'C' || span.primaryPosition === 'PF';
+  return isBig ? Math.max(base, BIG_RIM_PRESSURE_FLOOR) : base;
+}
+
+/**
  * Extra `rawComponents.offense` points for rim pressure, on the same additive scale as the
  * `gravity` (arc-spacing) term next to it. Cap 5; baseline 60 so an above-average interior
  * finisher who is not a genuine focal point contributes nothing.
@@ -149,21 +202,23 @@ export function rimPressureOffenseTerm(span: PlayerSpan): number {
  * generates real offensive value — forced help, drawn fouls, second-chance possessions — that a
  * spacing-only geometry model reads as pure negative.
  *
- * Three signals, `rimPressure(span)` the anchor and the two box rates additive on top (both from
- * `boxRatesLookup.ts`, the user-supplied per-game export):
- *  - starters-mean `rimPressure(span)` — only PF/C ever score, so a real interior five means ~20-28
+ * Three signals, starters-mean `rimPressureForFit(span)` the anchor (not `rimPressure()` — the
+ * team-fit variant above, so a wing slasher and a below-the-cliff big both register here even
+ * though neither moves TAL) and the two box rates additive on top (both from `boxRatesLookup.ts`,
+ * the user-supplied per-game export):
+ *  - starters-mean `rimPressureForFit(span)`
  *  - the frontcourt's best free-throw rate (FTA/FGA) — Shaq/Embiid/Barkley/Moses ~0.5-0.6 force
  *    the defense to foul; a stretch big ~0.2 does not. Full 1946-present coverage.
  *  - team offensive rebounds per game across starters, but only where the export's OREB split is
  *    reliable (1983-84+); pre-1983 spans get the neutral midpoint rather than a halved count.
  */
-const RIM_TEAM_BASE_ANCHOR = 26; // starters-mean rimPressure that reads as a full interior five
+const RIM_TEAM_BASE_ANCHOR = 45; // starters-mean rimPressureForFit that reads as a full interior five (re-derived 2026-09-04 for the smoothed/floored fit variant — a hypothetical Shaq+Duncan+D.Robinson five reads ~49)
 const RIM_TEAM_FT_BONUS_MAX = 16;
 const RIM_TEAM_OREB_BONUS_MAX = 12;
 
 export function rimPressureTeam(starters: PlayerSpan[]): number {
   if (starters.length === 0) return 0;
-  const base = starters.reduce((sum, p) => sum + rimPressure(p), 0) / starters.length;
+  const base = starters.reduce((sum, p) => sum + rimPressureForFit(p), 0) / starters.length;
   const baseComponent = clamp((base / RIM_TEAM_BASE_ANCHOR) * 100, 0, 100);
 
   const frontcourt = starters.filter((p) => p.primaryPosition === 'C' || p.primaryPosition === 'PF');
