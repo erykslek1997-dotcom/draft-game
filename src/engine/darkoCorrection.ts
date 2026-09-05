@@ -294,7 +294,13 @@ const DISPLAY_STRONG_SOURCE_EXCESS = 1.0;
  * BPM2-only span (which must never unlock the display release).
  */
 export function realDefenseExcessDetail(span: PlayerSpan):
-  | { blendedExcess: number; strongPositiveSourceCount: number; hasTrackingCoverage: boolean }
+  | {
+      blendedExcess: number;
+      strongPositiveSourceCount: number;
+      hasTrackingCoverage: boolean;
+      onOffDdpm: number | null;
+      raptorDefense: number | null;
+    }
   | null {
   const blended = blendedExcess(span);
   if (blended === null) return null;
@@ -305,5 +311,7 @@ export function realDefenseExcessDetail(span: PlayerSpan):
     blendedExcess: blended,
     strongPositiveSourceCount,
     hasTrackingCoverage: hasRealTrackingCoverage(span),
+    onOffDdpm: ddpmCoverageForSpan(span)?.avg ?? null,
+    raptorDefense: raptorCoverageForSpan(span)?.avg ?? null,
   };
 }

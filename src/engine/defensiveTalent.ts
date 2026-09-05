@@ -259,6 +259,38 @@ const NAMED_DTAL_FLOOR: ReadonlyMap<string, number> = new Map(
  * span's own data never changes during a session, so this is a pure function of `span.id`. */
 const defensiveTalentCache = new Map<string, number>();
 
+const ON_OFF_FLOOR_MIN_DDPM = 1.5;
+const ON_OFF_FLOOR_RAPTOR_VETO = -1.0;
+const ON_OFF_FLOOR_AT_MIN = 48;
+const ON_OFF_FLOOR_AT_CAP = 58;
+const ON_OFF_FLOOR_DDPM_CAP = 3.0;
+
+/**
+ * Display-only D-TAL floor from real on/off data. 2026-09-05, user: "a center affects TEAM
+ * defense, not individual matchups — does D-TAL count that?" It barely does: `computeDefensiveImpact`
+ * is pure individual box, and the real-data correction blends DARKO (on/off — the team-anchoring
+ * signal) and RAPTOR against `matchupDefense` (individual defended FG%) at roughly EQUAL weight,
+ * so a rim protector's real team value gets outvoted by the individual metric. The audit found
+ * 108 spans with DARKO on/off >= +1.5 (a genuinely strong team-defense signal) reading D-TAL < 50
+ * because matchup drags the blend down — Nikola Jokic 2016-25 (D-TAL 26-43, DARKO +1.5..+2.5,
+ * matchup -1.8..-5.3 — the classic "bad on tape, elite on/off" case), Capela, Poeltl, Turner,
+ * Jarrett Allen, Zubac, Robin Lopez, Bruce Bowen, CP3 2020-22.
+ *
+ * When DARKO on/off clears +1.5 and RAPTOR does not strongly disagree (>= -1.0, or no RAPTOR
+ * coverage), floor D-TAL on a curve: +1.5 -> 48, +3.0 -> 58. Bounded, never a claim of elite
+ * defense — "a real rotation defender the team defends well with, not an F-tier turnstile."
+ * Display-only: like `displayExtraDefenseBonus`, this feeds `defenseScore` / huntability / matchup
+ * DRTG but NOT `computeTalent`'s raw blend (which reads the capped `darkoDefenseBonus` directly).
+ */
+function onOffDefenseFloor(span: PlayerSpan): number {
+  const detail = realDefenseExcessDetail(span);
+  if (!detail || detail.onOffDdpm === null || detail.onOffDdpm < ON_OFF_FLOOR_MIN_DDPM) return 0;
+  if (detail.raptorDefense !== null && detail.raptorDefense < ON_OFF_FLOOR_RAPTOR_VETO) return 0;
+  const ddpm = Math.min(ON_OFF_FLOOR_DDPM_CAP, detail.onOffDdpm);
+  const frac = (ddpm - ON_OFF_FLOOR_MIN_DDPM) / (ON_OFF_FLOOR_DDPM_CAP - ON_OFF_FLOOR_MIN_DDPM);
+  return ON_OFF_FLOOR_AT_MIN + frac * (ON_OFF_FLOOR_AT_CAP - ON_OFF_FLOOR_AT_MIN);
+}
+
 export function computeDefensiveTalent(span: PlayerSpan): number {
   const cached = defensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
@@ -270,7 +302,10 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
   );
   const credited = base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE;
   const namedFloor = NAMED_DTAL_FLOOR.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0;
-  const result = Math.max(0, Math.min(100, Math.round(Math.max(credited, namedFloor))));
+  const result = Math.max(
+    0,
+    Math.min(100, Math.round(Math.max(credited, namedFloor, onOffDefenseFloor(span)))),
+  );
   defensiveTalentCache.set(span.id, result);
   return result;
 }
