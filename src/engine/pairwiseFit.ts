@@ -187,20 +187,33 @@ export function pairwiseFitNotes(
  * 1. A real on-ball initiator (`findLeadInitiator`, generalized beyond the PG-only scope anti-
  *    pattern #3 above uses — a wing initiator like Harden/Luka runs just as much real ball-screen
  *    offense as a lead guard).
- * 2. Paired with a frontcourt screener whose own gravity forces an actual decision: `Roll & Cut
- *    Big`/`Versatile Big` credited for real rim pressure (switch onto the roller = post
- *    mismatch, stay = open rim), `Stretch Big`/`Versatile Big`/any plus-shooter big credited for
- *    real spacing (switch = mismatch on the perimeter, drop = open three). A `Post Scorer` earns
- *    neither — camping the block is a real job, just not this one (mirrors anti-pattern #3's own
- *    gate, from the other side).
+ * 2. Paired with a frontcourt screener whose own gravity forces an actual decision:
+ *    - ROLL gravity: `Roll & Cut Big` / `Versatile Big` / `Post Scorer` credited for real rim
+ *      pressure at or above `ROLL_GRAVITY_FLOOR` (switch onto the roller = post mismatch, stay =
+ *      open rim). 2026-09-05, user-reported (Drużyna 3, Curry + Kareem read mismatchStructure 0):
+ *      a `Post Scorer` who genuinely finishes at the rim IS a screen threat — Kareem catching a
+ *      roll and skyhooking forces exactly the switch/drop decision this measures, even though his
+ *      archetype tag is "back-to-the-basket scorer" not "roll man." The `rimPressureForFit >=
+ *      floor` gate does the real work: a finesse/face-up post scorer (or a low-volume Roll & Cut
+ *      Big like pre-shot-clock Bill Russell) that never actually threatens the rim reads below the
+ *      floor and earns nothing here regardless of tag.
+ *    - POP gravity: `Stretch Big` / `Versatile Big` / any plus-shooter big credited for real
+ *      spacing (switch = mismatch on the perimeter, drop = open three).
  * 3. Scaled by the OTHER two starters' real spacing — a forced switch or a help rotation only
  *    gets punished if the floor around the action is actually spaced; a crowded floor absorbs it
- *    for free regardless of how good the two-man game is.
+ *    for free regardless of how good the two-man game is. (This is where a Curry + Kareem pairing
+ *    lands moderate rather than elite — the action is real, the floor around it is cramped.)
  *
  * Hard-gated at 0 when there's no real initiator+screener pair at all — a genuine two-man action
  * either exists or it doesn't, there's no partial credit for "sort of."
  */
 const SURROUNDING_SPACING_WEIGHT = 0.4;
+/** Real Roll & Cut Bigs sit ~50+, elite rim scorers (Kareem/Shaq/Malone) at the 100 ceiling,
+ * Jokić/Dwight-type post scorers ~55-65, Pau Gasol ~34; face-up "Versatile Big" tags (KG, Bosh,
+ * Horford) and low-volume roll bigs sit at the ~15 floor and are meant to fall out — they get
+ * their gravity from the POP branch instead if they actually shoot. */
+const ROLL_GRAVITY_FLOOR = 30;
+const ROLL_SCREENER_ARCHETYPES: readonly OffensiveArchetype[] = ['Roll & Cut Big', 'Versatile Big', 'Post Scorer'];
 
 export function mismatchStructureScore(
   starters: PlayerSpan[],
@@ -218,8 +231,9 @@ export function mismatchStructureScore(
     if (index === lead.index) return;
     if (slots[index] !== 'PF' && slots[index] !== 'C') return;
     let gravity = 0;
-    if (player.offensiveArchetype === 'Roll & Cut Big' || player.offensiveArchetype === 'Versatile Big') {
-      gravity = Math.max(gravity, rimPressureForFit(player));
+    if (ROLL_SCREENER_ARCHETYPES.includes(player.offensiveArchetype)) {
+      const rim = rimPressureForFit(player);
+      if (rim >= ROLL_GRAVITY_FLOOR) gravity = Math.max(gravity, rim);
     }
     if (player.offensiveArchetype === 'Stretch Big' || player.offensiveArchetype === 'Versatile Big' || isPlusShooter(player)) {
       gravity = Math.max(gravity, spacing[index]);
