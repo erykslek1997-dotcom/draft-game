@@ -1,6 +1,6 @@
 import type { Team } from './types';
 import { rankTeams } from './scoring';
-import { projectMatchup, seriesWinProbability, gameWinProbability } from './matchup';
+import { projectMatchup, seriesWinProbability, gameWinProbability, type MatchupProjection } from './matchup';
 import { projectedNetRating } from './netRatingProjection';
 
 /**
@@ -76,15 +76,17 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
 
   // Precompute every pairwise matchup once (120 unique pairs for 16 teams) — the simulation loop
   // below only does cheap Math.random() + map lookups, not re-running projectedNetRating per sim.
-  const seriesWinProbByPair = new Map<string, number>(); // key `${aId}|${bId}` -> a's series win prob
+  // Stores the full projection (not just seriesWinProbA) so the displayed `marginA` below
+  // (MatchupMatrix.tsx) reflects the same mismatch-adjusted number that actually drives the win
+  // probability, instead of a plain net-rating subtraction that silently disagreed with it.
+  const matchupByPair = new Map<string, MatchupProjection>(); // key `${aId}|${bId}` -> a's projection
   for (const a of teams) {
     for (const b of teams) {
       if (a.id === b.id) continue;
-      const { seriesWinProbA } = projectMatchup(a, b);
-      seriesWinProbByPair.set(`${a.id}|${b.id}`, seriesWinProbA);
+      matchupByPair.set(`${a.id}|${b.id}`, projectMatchup(a, b));
     }
   }
-  const winProb = (aId: string, bId: string) => seriesWinProbByPair.get(`${aId}|${bId}`) ?? 0.5;
+  const winProb = (aId: string, bId: string) => matchupByPair.get(`${aId}|${bId}`)?.seriesWinProbA ?? 0.5;
 
   const championshipCount = new Map<string, number>(teams.map((t) => [t.id, 0]));
   if (teams.length === 16) {
@@ -96,12 +98,15 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
 
   return teams.map((team) => {
     const others = teams.filter((t) => t.id !== team.id);
-    const matchups: MatchupSummary[] = others.map((opp) => ({
-      opponentId: opp.id,
-      opponentLabel: opp.name,
-      seriesWinProb: seriesWinProbByPair.get(`${team.id}|${opp.id}`) ?? 0.5,
-      marginA: projectedNetRating(team).net - projectedNetRating(opp).net,
-    }));
+    const matchups: MatchupSummary[] = others.map((opp) => {
+      const projection = matchupByPair.get(`${team.id}|${opp.id}`);
+      return {
+        opponentId: opp.id,
+        opponentLabel: opp.name,
+        seriesWinProb: projection?.seriesWinProbA ?? 0.5,
+        marginA: projection?.marginA ?? (projectedNetRating(team).net - projectedNetRating(opp).net),
+      };
+    });
     const avgSeriesWinProb = matchups.reduce((sum, m) => sum + m.seriesWinProb, 0) / (matchups.length || 1);
     const best = matchups.reduce((a, b) => (b.seriesWinProb > a.seriesWinProb ? b : a), matchups[0]);
     const worst = matchups.reduce((a, b) => (b.seriesWinProb < a.seriesWinProb ? b : a), matchups[0]);

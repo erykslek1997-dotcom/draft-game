@@ -14,7 +14,8 @@ import { playmakingScoreForPlayer } from './playmakingLookup';
 import { primaryStarters } from './rotation';
 import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
 import { isPlusShooter } from './shooting';
-import { computeSpacing, isShootingAnomalyPlayer, spacingBreakdown, WALKING_GRAVITY_FLOOR } from './spacing';
+import { computeSpacing, isShootingAnomalyPlayer, spacingBreakdown, selfCreationRate, WALKING_GRAVITY_FLOOR } from './spacing';
+import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { computeOffensiveTalent } from './talent';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
@@ -141,6 +142,10 @@ export interface FitScoreInputs {
   onBallDemand: number;
   primaryCreationSignal: number;
   secondaryCreationSignal: number;
+  /** How dangerous this starting five is at hunting a mismatch on OFFENSE — best-player-weighted
+   * blend of playmaking and self-creation (see `huntingPotentialFor`'s own docstring). Read by
+   * `explainMatchup` against the OPPONENT's `defensiveWeakLinkResistance` below. */
+  huntingPotential: number;
   offBallComplementCount: number;
   hardNonSpacerCount: number;
   frontcourtNonSpacerCount: number;
@@ -357,6 +362,43 @@ function demandBalance(onBallDemand: number, primarySignal: number): number {
  *    their exact existing weight, so nothing calibrated on the old scale (e.g. the Nash+LeBron
  *    `onBallDemand <= 2` fixture) shifts.
  */
+/**
+ * 2026-09-05, user's explicit ask ("jeśli defense karze za gracza na którego można polować, to
+ * powinno też oceniać czy zespół który atakuje ma potencjał na huntowanie w ataku" — if defense
+ * penalizes a huntable player, it should also evaluate whether the ATTACKING team has real
+ * hunting potential on offense): a huntable defender only actually gets exploited if the opponent
+ * has the tools to force and punish the mismatch. The user's own example — a Doncic-level threat
+ * is dangerous both off the pull-up (self-creation) AND as a passer (playmaking) — is exactly
+ * `offenseScore`'s own `playmaking`/`selfCreation` dimensions (scoring.ts, same day), so this
+ * reuses their exact shape (best-player-weighted, not a flat average — one elite dual threat
+ * matters far more than five average ones) rather than inventing a new formula. Duplicated here
+ * instead of imported from scoring.ts: `scoring.ts` already imports `fitScore` from this file, so
+ * the reverse import would be circular (same reasoning as every other small duplicated helper in
+ * this project — see `percentile()` in fit.ts/grades.ts/roleFitShadow.ts).
+ *
+ * First landed as an upgrade to `explainMatchup`'s existing (narrative-only, score-blind) weak-
+ * link check, which used to compare a defender's resistance against `primaryCreationSignal` — a
+ * playmaking-only signal that misses a pure self-creating scorer's own hunting threat entirely.
+ */
+const HUNTING_POTENTIAL_PLAYMAKING_DEFAULT = 35;
+const huntingPotentialSelfCreationByYear = buildSelfCreationYearMap('unassistedFg');
+function huntingSelfCreationFor(player: PlayerSpan): number {
+  const measured = measuredSelfCreationForSpan(player, huntingPotentialSelfCreationByYear);
+  return (measured ?? selfCreationRate(player)) * 100;
+}
+function huntingPotentialFor(starters: PlayerSpan[]): number {
+  if (starters.length === 0) return 0;
+  const playmakingValues = starters.map((p) => playmakingScoreForPlayer(p) ?? HUNTING_POTENTIAL_PLAYMAKING_DEFAULT);
+  const bestPlaymaking = Math.max(...playmakingValues);
+  const meanPlaymaking = playmakingValues.reduce((sum, v) => sum + v, 0) / playmakingValues.length;
+  const playmakingComponent = bestPlaymaking * 0.6 + meanPlaymaking * 0.4;
+  const selfCreationValues = starters.map(huntingSelfCreationFor);
+  const bestSelfCreation = Math.max(...selfCreationValues);
+  const meanSelfCreation = selfCreationValues.reduce((sum, v) => sum + v, 0) / selfCreationValues.length;
+  const selfCreationComponent = bestSelfCreation * 0.55 + meanSelfCreation * 0.45;
+  return Math.round(playmakingComponent * 0.5 + selfCreationComponent * 0.5);
+}
+
 const POST_SCORER_ON_BALL_FLOOR = 0.65;
 function starterOnBallDemand(profile: ShadowRoleProfile, span: PlayerSpan): number {
   const archetypeWeight = HIGH_USAGE_ARCHETYPE_WEIGHT[profile.incumbentOffensiveRole] ?? 0;
@@ -409,6 +451,7 @@ export function fitScore(team: Team): FitScoreResult {
         starterCount: starters.length,
         onBallDemand: 0,
         primaryCreationSignal: 0,
+        huntingPotential: 0,
         secondaryCreationSignal: 0,
         offBallComplementCount: 0,
         hardNonSpacerCount: 0,
@@ -700,6 +743,7 @@ export function fitScore(team: Team): FitScoreResult {
       starterCount: starters.length,
       onBallDemand,
       primaryCreationSignal,
+      huntingPotential: huntingPotentialFor(starters),
       secondaryCreationSignal,
       offBallComplementCount,
       hardNonSpacerCount,
