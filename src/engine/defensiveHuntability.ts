@@ -34,14 +34,24 @@ const starterCaliberByPosition: Record<Position, PlayerSpan[]> = Object.fromEntr
   ]),
 ) as Record<Position, PlayerSpan[]>;
 
-function median(values: number[]): number {
+/**
+ * 2026-09-05, user-reported (Bosh 62 / O'Neale 40 / Embiid 67 flagged as hunt targets they
+ * shouldn't clearly be): "below average" was the cohort MEDIAN. A merely somewhat-below-median
+ * defender isn't THE weak link opponents scheme around — only a genuinely below-average one is.
+ * The bar is now the ~45th percentile of the realistic starter cohort — a small step down from
+ * the median, enough to clear the borderline false positives without collapsing the signal for
+ * genuinely weak defenders (which a p40 bar started to do — D1 rank correlation moved the wrong
+ * way, and Kyle Korver-tier liabilities began slipping through).
+ */
+const HUNTABLE_COHORT_PERCENTILE = 0.45;
+function cohortBar(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
+  return sorted[Math.floor(sorted.length * HUNTABLE_COHORT_PERCENTILE)];
 }
 
-/** Position-relative "average real starter" D-TAL — replaces the old flat `TARGETABLE_DTAL_CEILING`. */
+/** Position-relative "huntable bar" D-TAL — replaces the old flat `TARGETABLE_DTAL_CEILING`. */
 const AVERAGE_DTAL_BY_POSITION: Record<Position, number> = Object.fromEntries(
-  POSITIONS.map((pos) => [pos, median(starterCaliberByPosition[pos].map(computeDefensiveTalent))]),
+  POSITIONS.map((pos) => [pos, cohortBar(starterCaliberByPosition[pos].map(computeDefensiveTalent))]),
 ) as Record<Position, number>;
 
 /**
@@ -90,10 +100,38 @@ for (const pos of POSITIONS) {
 }
 const AVERAGE_DTAL_BY_ROLE_KEY = new Map<string, number>();
 for (const [key, group] of starterCaliberByRoleKey) {
-  if (group.length >= MIN_ROLE_SAMPLE) AVERAGE_DTAL_BY_ROLE_KEY.set(key, median(group.map(computeDefensiveTalent)));
+  if (group.length >= MIN_ROLE_SAMPLE) AVERAGE_DTAL_BY_ROLE_KEY.set(key, cohortBar(group.map(computeDefensiveTalent)));
+}
+
+/**
+ * 2026-09-05, user-reported (Chris Bosh 2012-14, D-TAL 62, tagged `Anchor Big` -> huntable against
+ * the elite rim-anchor bar; the user: a mobile switch PF who held up on switches shouldn't be the
+ * hunt target, a slow true C would be). The `Anchor Big` tag reads off a big's rim-protection box
+ * profile, not whether they can switch — but ATHLETICISM is a real proxy for it. Rather than a
+ * hard Anchor/Mobile cliff, a rim-protector-role big's bar is INTERPOLATED between the two cohort
+ * bars by their athleticism percentile within their position's starter pool: max-athleticism ->
+ * the Mobile Big (switch-capable) bar, min-athleticism -> the Anchor Big bar. Embiid (elite
+ * athleticism) lands right at the Mobile Big bar and clears it; a plodding true anchor barely
+ * moves off the Anchor Big bar. (Bosh's own athleticism data is only ~38th pctile among starting
+ * PFs, so he gets partial relief here, not full — his D-TAL 62 vs a real DARKO of +2.0 is a
+ * separate "box + capped bonus undervalue him" question.)
+ */
+function rimProtectorBar(player: PlayerSpan): number | null {
+  const anchor = AVERAGE_DTAL_BY_ROLE_KEY.get(roleKey(player.primaryPosition, 'Anchor Big'));
+  const mobile = AVERAGE_DTAL_BY_ROLE_KEY.get(roleKey(player.primaryPosition, 'Mobile Big'));
+  if (anchor === undefined || mobile === undefined) {
+    return AVERAGE_DTAL_BY_ROLE_KEY.get(roleKey(player.primaryPosition, player.defensiveRole)) ?? null;
+  }
+  const ath = athleticismScoreForSpan(player);
+  const athFrac = ath === null ? 0.35 : percentile(athleticismLadderByPosition[player.primaryPosition], ath) / 100;
+  return anchor - athFrac * (anchor - mobile);
 }
 
 function averageDtalFor(player: PlayerSpan): number {
+  if (RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number])) {
+    const bar = rimProtectorBar(player);
+    if (bar !== null) return bar;
+  }
   return AVERAGE_DTAL_BY_ROLE_KEY.get(roleKey(player.primaryPosition, player.defensiveRole))
     ?? AVERAGE_DTAL_BY_POSITION[player.primaryPosition];
 }
@@ -229,11 +267,15 @@ export interface DefensiveHuntabilityResult {
   offenders: DefensiveHuntabilityOffender[];
 }
 
-/** Single scalar for the penalty's own 0-100-ish normalization below — the position ceilings
- * above differ (46-71), but the penalty scale itself needs one fixed denominator, not five. The
- * mean of the five position averages (~56) keeps the overall penalty scale close to the old flat
- * 60 rather than silently rescaling every roster's number when this shipped. */
-const NORMALIZATION_DTAL = POSITIONS.reduce((sum, pos) => sum + AVERAGE_DTAL_BY_POSITION[pos], 0) / POSITIONS.length;
+/** Single scalar for the penalty's own 0-100-ish normalization below — the position bars above
+ * differ, but the penalty scale itself needs one fixed denominator, not five. Deliberately still
+ * the MEAN OF THE POSITION MEDIANS (~56), not the p45 bars: dropping the bar to p45 (2026-09-05)
+ * flags fewer players, but it must not also silently make every flagged minute cost more by
+ * shrinking this denominator — the two effects should not compound. */
+const NORMALIZATION_DTAL = POSITIONS.reduce((sum, pos) => {
+  const vals = starterCaliberByPosition[pos].map(computeDefensiveTalent).sort((a, b) => a - b);
+  return sum + vals[Math.floor(vals.length / 2)];
+}, 0) / POSITIONS.length;
 
 /**
  * Nonlinear playoff weak-link signal. A minutes-weighted average can hide one or two defenders

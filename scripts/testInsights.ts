@@ -61,23 +61,24 @@ check(Boolean(weakLinkInsight), 'reported Jordan/Mobley/Gobert roster exposes it
 // an exposed weak link — the flat 60 was calling an above-average-for-his-position defender
 // "huntable" purely because 56 sat under a universal number. Brunson and Barros (both PG, D-TAL
 // 21/39 against a 51 real PG average) remain genuine, named targets.
-// 2026-09-05, same-day follow-up: DeAndre Jordan (C, Anchor Big, D-TAL 72) joined this list once
-// the average was further split by `RIM_PROTECTOR_ROLES` for centers (real Anchor Big median 78,
-// not the flat C average 71) — he's a good rim anchor, just not among the best of that specific
-// archetype. A real, correctly-targeted addition, not a bug.
+// 2026-09-05, same-day follow-ups: DeAndre Jordan briefly joined this list (RIM_PROTECTOR_ROLES
+// split), then dropped back out the same day — the huntable bar moved to the ~45th percentile AND
+// an athletic rim-protector-role big is now measured against the Mobile Big (switch-capable) bar,
+// not Anchor Big. DJ (athletic C, D-TAL 72) clears the C Mobile Big p45 (~59) comfortably.
+// Brunson and Barros (both PG, D-TAL 21/39, genuinely bottom-tier) remain the named targets.
 check(
-  ['Jalen Brunson', 'Dana Barros', 'DeAndre Jordan'].every((name) => weakLinkInsight?.message.includes(name)),
-  'contextual exposure description retains Brunson, Barros and DeAndre Jordan rather than hiding bench targets',
+  ['Jalen Brunson', 'Dana Barros'].every((name) => weakLinkInsight?.message.includes(name)),
+  'contextual exposure description retains Brunson and Barros rather than hiding bench targets',
 );
-check(!weakLinkInsight?.message.includes('Paul Pierce'), 'Pierce no longer misreads as huntable above his own position average');
+check(!weakLinkInsight?.message.includes('Paul Pierce'), 'Pierce no longer misreads as huntable');
+check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-protector big no longer misreads as a switch-space target');
 // The useful-bench-minute recovery keeps Larry Smith out of a token defensive stint. 2026-09-04:
 // the rim-pressure talent change (1a3d8dc) moved this fixture's real total from 98 to 92.
-// 2026-09-05: 92 -> 54 after the position-relative huntable ceiling above drops Pierce (34 SF + 4
-// SG = 38 minutes) out of the exposed total entirely; Brunson/Barros's own minutes (54) unchanged.
-// Same day, second pass: 54 -> 84 after the average was further split by `RIM_PROTECTOR_ROLES` —
-// DeAndre Jordan's real Anchor Big shortfall adds his own targetable minutes to the total.
+// 2026-09-05: 92 -> 54 (position-relative huntable ceiling drops Pierce); briefly 84 (DeAndre
+// Jordan via the RIM_PROTECTOR_ROLES split); back to 54 the same day once the bar moved to p45
+// and DJ moved to the Mobile Big cohort. Brunson/Barros's own minutes (54) unchanged throughout.
 // Re-measured directly, not guessed.
-check(weakLinkInsight?.message.includes('84 targetable minutes'), 'weak-link description reports the real 84-minute cost');
+check(weakLinkInsight?.message.includes('54 targetable minutes'), 'weak-link description reports the real 54-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
@@ -104,7 +105,12 @@ const movementCoverageTeam = team('team-model-movement-coverage', [
   pick('Shane Battier', '2005-07'),
   pick('Al Horford', '2017-19'),
   pick('Hakeem Olajuwon', '1991-93'),
-  pick('Kyle Korver', '2013-15'),
+  // 2026-09-05: was Kyle Korver 2013-15 (D-TAL 44). The huntable bar dropped from the cohort
+  // median to the ~45th percentile (SG ~38), and 44 no longer clears it as a genuine bottom-tier
+  // reading — the point of the check below is "a real defensive liability registers", so use the
+  // span where Korver's own D-TAL (22) genuinely is bottom-tier. Still a validated movement
+  // shooter in this window, so the movement-gravity checks above are unaffected.
+  pick('Kyle Korver', '2016-18'),
   pick('Tyson Chandler', '2011-13'),
   pick('Andre Iguodala', '2011-13'),
   pick('Larry Smith', '1991-93'),
