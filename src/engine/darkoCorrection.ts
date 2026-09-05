@@ -279,3 +279,31 @@ export function darkoDefenseShortfall(span: PlayerSpan): number {
 export function darkoDefenseMalus(span: PlayerSpan): number {
   return Math.min(MAX_DARKO_MALUS, darkoDefenseShortfall(span));
 }
+
+/** Per-source excess of at least this much counts as a "strong" corroborating source for the
+ * display-side extra credit in `defensiveTalent.ts` (a higher bar than `AGREEMENT_MIN_EXCESS`
+ * 0.6, which only governs the additive cap). */
+const DISPLAY_STRONG_SOURCE_EXCESS = 1.0;
+
+/**
+ * Raw ingredients of the real-defense correction, exposed for the DISPLAY-only D-TAL extra credit
+ * in `defensiveTalent.ts` (`displayExtraDefenseBonus`). Deliberately NOT consumed by
+ * `computeTalent` — `talent.ts` stays on the capped `darkoDefenseBonus` above so the raw TAL
+ * blend is unchanged. `strongPositiveSourceCount` counts tracking sources (DARKO/RAPTOR/matchup)
+ * whose own excess clears `DISPLAY_STRONG_SOURCE_EXCESS`; `hasTrackingCoverage` is false for a
+ * BPM2-only span (which must never unlock the display release).
+ */
+export function realDefenseExcessDetail(span: PlayerSpan):
+  | { blendedExcess: number; strongPositiveSourceCount: number; hasTrackingCoverage: boolean }
+  | null {
+  const blended = blendedExcess(span);
+  if (blended === null) return null;
+  const strongPositiveSourceCount = coveredExcessParts(span).filter(
+    (part) => part.excess >= DISPLAY_STRONG_SOURCE_EXCESS,
+  ).length;
+  return {
+    blendedExcess: blended,
+    strongPositiveSourceCount,
+    hasTrackingCoverage: hasRealTrackingCoverage(span),
+  };
+}

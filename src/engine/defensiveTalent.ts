@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { computeDefensiveImpact, reboundingTerm } from './defense';
-import { darkoDefenseBonus, darkoDefenseShortfall } from './darkoCorrection';
+import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
 import { individualDefenseRate } from './defensiveAccolades';
 
 /**
@@ -147,13 +147,46 @@ function reboundTrim(span: PlayerSpan): number {
   return excess > 0 ? excess * (1 - REBOUND_DIMINISHING_RATE) : 0;
 }
 
+const DISPLAY_EXTRA_MIN_SOURCES = 2;
+const DISPLAY_EXTRA_SCALE = 9;
+const DISPLAY_EXTRA_CAP = 26;
+
+/**
+ * Display-only extra credit for a corroborated low-event plus defender the additive
+ * `darkoDefenseBonus` can't reach. 2026-09-05, user-reported ("the defense counts solid defenders
+ * as weak"): a pool audit vs DARKO/RAPTOR/matchup found ~264 spans — almost all C/PF rebounding
+ * anchors who don't block (Kevon Looney real +3.2 reading D-TAL 42; Tiago Splitter, Chuck Hayes,
+ * Nick Collison, Nenê, Kendrick Perkins) — where >=2 tracking sources agree the player is a real
+ * plus, but `computeDefensiveImpact` is near-zero without blocks and `darkoDefenseBonus`'s +16
+ * agreement cap (times `EXCESS_TO_BONUS_SCALE` 6) leaves the box+bonus sum in the 30s-40s. The
+ * audit also found ZERO over-crediting (real <= -1 while D-TAL >= 65: n=0), so a one-directional
+ * release of the clipped real signal is safe.
+ *
+ * This is display-only on purpose: `computeDefensiveTalent` feeds `defenseScore` / huntability /
+ * matchup DRTG projections (so team defense moves with it — the user's explicit ask), but NOT
+ * `computeTalent`'s `rawDefense` blend, which reads the still-capped `darkoDefenseBonus` directly
+ * in `talent.ts`. Gated on (a) no All-Defensive accolade — the accolade headroom credit already
+ * lifts those — and (b) >=2 tracking sources each clearing +1.0 excess, the same corroboration
+ * bar that governs the additive agreement cap. Never subtracts.
+ */
+function displayExtraDefenseBonus(span: PlayerSpan): number {
+  if (individualDefenseRate(span) > 0) return 0;
+  const detail = realDefenseExcessDetail(span);
+  if (!detail || !detail.hasTrackingCoverage) return 0;
+  if (detail.blendedExcess <= 0 || detail.strongPositiveSourceCount < DISPLAY_EXTRA_MIN_SOURCES) return 0;
+  const target = Math.min(DISPLAY_EXTRA_CAP, detail.blendedExcess * DISPLAY_EXTRA_SCALE);
+  return Math.max(0, target - darkoDefenseBonus(span));
+}
+
 /** The raw defensive value D-TAL's ladder reads: the shared box-score defensive impact, with
- * rebounding's tail trimmed, corrected by real DARKO plus-minus in both directions. */
+ * rebounding's tail trimmed, corrected by real DARKO plus-minus in both directions, plus a
+ * display-only release of corroborated real signal the additive cap clips (`displayExtraDefenseBonus`). */
 export function displayDefenseRaw(span: PlayerSpan): number {
   return (
     computeDefensiveImpact(span) -
     reboundTrim(span) +
-    darkoDefenseBonus(span) -
+    darkoDefenseBonus(span) +
+    displayExtraDefenseBonus(span) -
     Math.min(MAX_DISPLAY_DARKO_MALUS, darkoDefenseShortfall(span))
   );
 }
