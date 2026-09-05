@@ -1,5 +1,5 @@
 import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
-import type { Position, PlayerSpan } from '../data/schema';
+import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
 import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact } from './talent';
@@ -387,9 +387,36 @@ function teamPlaymakingQuality(starters: PlayerSpan[]): number {
   return Math.round(best * 0.6 + mean * 0.4);
 }
 
+// 2026-09-05, user-reported (D1S2 Drużyna 3, self-creation 47 too low for a Curry + Kareem core):
+// two blind spots in the raw feed —
+//  1. `selfCreationRate` (spacing.ts's shared archetype proxy) returns 0 for a `Post Scorer`. But
+//     a post-up scorer creating on the block — Kareem's skyhook, Hakeem's Dream Shake — is the
+//     purest self-creation there is. Reconstructed here as a local usage ramp (mirroring
+//     spacing.ts's own 11→16 FGA ramp) so it stays OUT of that shared table, which feeds
+//     `computeSpacing` → `computeTalent` → Taylor/GOAT.
+//  2. `measuredSelfCreationForSpan` (real unassisted-FG rate, 1997+) reads Curry 2014-16 at ~54%
+//     — correct as a fraction (much of his make diet is assisted catch-and-shoot off the Warriors'
+//     motion) but it undersells his pull-up shot-creation THREAT. For a genuine primary-creator
+//     archetype the archetype proxy is used as a FLOOR: measured can beat it, never fall under it.
+const SC_USAGE_FLOOR = 11;
+const SC_USAGE_FULL = 16;
+const POST_SCORER_SELF_CREATION = 0.7;
+const SELF_CREATION_PROXY_FLOOR_WEIGHT = 0.7;
+const PRIMARY_CREATOR_ARCHETYPES: readonly OffensiveArchetype[] = ['Shot Creator', 'Primary Ball Handler'];
+
+function selfCreationProxy(player: PlayerSpan): number {
+  const base = selfCreationRate(player);
+  if (base > 0 || player.offensiveArchetype !== 'Post Scorer') return base;
+  const usage = Math.max(0, Math.min(1, (player.fga - SC_USAGE_FLOOR) / (SC_USAGE_FULL - SC_USAGE_FLOOR)));
+  return POST_SCORER_SELF_CREATION * usage;
+}
+
 function starterSelfCreation(player: PlayerSpan): number {
   const measured = measuredSelfCreationForSpan(player, selfCreationFgByYear);
-  return (measured ?? selfCreationRate(player)) * 100;
+  const proxy = selfCreationProxy(player);
+  if (measured == null) return proxy * 100;
+  const floor = PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
+  return Math.max(measured, floor) * 100;
 }
 
 function teamSelfCreationQuality(starters: PlayerSpan[]): number {

@@ -388,9 +388,26 @@ function demandBalance(onBallDemand: number, primarySignal: number): number {
  */
 const HUNTING_POTENTIAL_PLAYMAKING_DEFAULT = 35;
 const huntingPotentialSelfCreationByYear = buildSelfCreationYearMap('unassistedFg');
+// Same 2026-09-05 Post-Scorer proxy + primary-creator floor as scoring.ts's `starterSelfCreation`
+// (see that function's docstring) — duplicated rather than imported, scoring.ts already imports
+// `fitScore` from here so the reverse is a cycle.
+const SC_USAGE_FLOOR = 11;
+const SC_USAGE_FULL = 16;
+const POST_SCORER_SELF_CREATION = 0.7;
+const SELF_CREATION_PROXY_FLOOR_WEIGHT = 0.7;
+const PRIMARY_CREATOR_ARCHETYPES: readonly OffensiveArchetype[] = ['Shot Creator', 'Primary Ball Handler'];
+function huntingSelfCreationProxy(player: PlayerSpan): number {
+  const base = selfCreationRate(player);
+  if (base > 0 || player.offensiveArchetype !== 'Post Scorer') return base;
+  const usage = clamp((player.fga - SC_USAGE_FLOOR) / (SC_USAGE_FULL - SC_USAGE_FLOOR), 0, 1);
+  return POST_SCORER_SELF_CREATION * usage;
+}
 function huntingSelfCreationFor(player: PlayerSpan): number {
   const measured = measuredSelfCreationForSpan(player, huntingPotentialSelfCreationByYear);
-  return (measured ?? selfCreationRate(player)) * 100;
+  const proxy = huntingSelfCreationProxy(player);
+  if (measured == null) return proxy * 100;
+  const floor = PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
+  return Math.max(measured, floor) * 100;
 }
 function huntingPotentialFor(starters: PlayerSpan[]): number {
   if (starters.length === 0) return 0;
