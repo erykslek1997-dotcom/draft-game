@@ -3,6 +3,7 @@ import { computeSpacing } from './spacing';
 import { computeOffensiveTalent } from './talent';
 import { isPlusShooter } from './shooting';
 import { playmakingScoreForPlayer } from './playmakingLookup';
+import { rimPressureForFit } from './rimPressure';
 
 /**
  * G6a — archetype-pair anti-patterns. `fitScore` grades every starter's role in isolation and
@@ -30,7 +31,39 @@ const HIGH_USAGE_OTAL = 82;
  * option at this level — a Slasher/Off-Screen role player whose archetype implies more primacy
  * than their box output delivers (Kirilenko-as-"Slasher") should not read as a fourth offense. */
 const SYSTEM_MEMBER_OTAL = 72;
-const PNR_LEAD_PLAYMAKING = 85;
+export const PNR_LEAD_PLAYMAKING = 85;
+
+/**
+ * Shared by the anti-pattern check below (#3) and `mismatchStructureScore`'s positive mirror —
+ * "who is the real pick-and-roll initiator, if any." A Primary Ball Handler always qualifies; a
+ * Shot Creator or Secondary Ball Handler only qualifies with real measured playmaking, so a pure
+ * scorer who happens to bring the ball up sometimes doesn't count. Not slot-gated to PG — a wing
+ * initiator (Harden, Luka) runs just as much real ball-screen offense as a lead guard.
+ */
+function isRealInitiator(player: PlayerSpan): boolean {
+  return (
+    player.offensiveArchetype === 'Primary Ball Handler' ||
+    ((playmakingScoreForPlayer(player) ?? 0) >= PNR_LEAD_PLAYMAKING &&
+      (player.offensiveArchetype === 'Shot Creator' || player.offensiveArchetype === 'Secondary Ball Handler'))
+  );
+}
+
+function findLeadInitiator(
+  starters: PlayerSpan[],
+  demandByPlayer: number[],
+): { player: PlayerSpan; index: number } | null {
+  // Filter to QUALIFYING candidates first, THEN take the highest-demand one — not the other way
+  // around. Picking the single highest-demand starter across the whole lineup and only then
+  // checking whether THAT ONE player qualifies would miss a real Primary Ball Handler sitting
+  // right there whenever a teammate (a high-usage Shot Creator forward, say) happens to carry
+  // more raw on-ball weight without being a real initiator archetype themselves.
+  return (
+    starters
+      .map((player, index) => ({ player, index }))
+      .filter(({ player, index }) => demandByPlayer[index] >= 0.5 && isRealInitiator(player))
+      .sort((a, b) => demandByPlayer[b.index] - demandByPlayer[a.index])[0] ?? null
+  );
+}
 
 type StyleBucket = 'iso' | 'post' | 'pnr' | 'motion';
 const STYLE_BUCKET: Partial<Record<OffensiveArchetype, StyleBucket>> = {
@@ -92,16 +125,10 @@ export function pairwiseFitNotes(
   //    a `Post Scorer` (wants the block, not the roll — a `Roll & Cut Big` is the *right* PnR
   //    partner) who genuinely doesn't space (SPC < POST_CENTER_SPACING_CEILING, so a
   //    three-shooting Embiid-type doesn't count).
-  const pgLeadIdx = starters
-    .map((p, i) => ({ p, i }))
-    .filter(({ i }) => slots[i] === 'PG' && demandByPlayer[i] >= 0.5)
-    .sort((a, b) => demandByPlayer[b.i] - demandByPlayer[a.i])[0];
-  const isPnrLead =
-    pgLeadIdx &&
-    (pgLeadIdx.p.offensiveArchetype === 'Primary Ball Handler' ||
-      ((playmakingScoreForPlayer(pgLeadIdx.p) ?? 0) >= PNR_LEAD_PLAYMAKING &&
-        (pgLeadIdx.p.offensiveArchetype === 'Shot Creator' ||
-          pgLeadIdx.p.offensiveArchetype === 'Secondary Ball Handler')));
+  // Restricted to the PG slot specifically — matches this note's original, validated scope (a
+  // wing initiator triggers the newer, generalized `mismatchStructureScore` below instead).
+  const pgOnlyDemand = starters.map((_, i) => (slots[i] === 'PG' ? demandByPlayer[i] : -1));
+  const pgLead = findLeadInitiator(starters, pgOnlyDemand);
   const postCenter = starters.find(
     (p, i) =>
       slots[i] === 'C' &&
@@ -111,9 +138,9 @@ export function pairwiseFitNotes(
       // without a jumper — the tension is with a pure block-scorer who neither pops nor reads.
       (playmakingScoreForPlayer(p) ?? 0) < POST_CENTER_PASSING_EXEMPTION,
   );
-  if (isPnrLead && postCenter) {
+  if (pgLead && postCenter) {
     notes.push(
-      `${pgLeadIdx.p.playerName} is a pick-and-roll lead guard paired with a block-camping center (${postCenter.playerName}) — a screen-and-pop big and a back-to-the-basket scorer are different jobs.`,
+      `${pgLead.player.playerName} is a pick-and-roll lead guard paired with a block-camping center (${postCenter.playerName}) — a screen-and-pop big and a back-to-the-basket scorer are different jobs.`,
     );
   }
 
@@ -145,4 +172,68 @@ export function pairwiseFitNotes(
   }
 
   return notes;
+}
+
+/**
+ * 2026-09-05, user's explicit follow-up to the matchup "hunting potential" work (`fit.ts`'s
+ * `huntingPotentialFor`, `matchup.ts`'s `mismatchAdjustment`): those measure individual
+ * playmaking/self-creation SKILL, already priced into `offenseScore` on their own terms (0.15 +
+ * 0.10 weight). The user's own framing for a genuinely separate signal: "czy skład ma realną
+ * STRUKTURĘ do wymuszania switchy (odpowiednie archetypy, spacing wymuszający przełączenia)
+ * niezależnie od czystego playmakingu/scoringu" — does the ROSTER have real structure to force
+ * switches, independent of any one player's rating. This reads the pairing and the shell around
+ * it, not a skill number:
+ *
+ * 1. A real on-ball initiator (`findLeadInitiator`, generalized beyond the PG-only scope anti-
+ *    pattern #3 above uses — a wing initiator like Harden/Luka runs just as much real ball-screen
+ *    offense as a lead guard).
+ * 2. Paired with a frontcourt screener whose own gravity forces an actual decision: `Roll & Cut
+ *    Big`/`Versatile Big` credited for real rim pressure (switch onto the roller = post
+ *    mismatch, stay = open rim), `Stretch Big`/`Versatile Big`/any plus-shooter big credited for
+ *    real spacing (switch = mismatch on the perimeter, drop = open three). A `Post Scorer` earns
+ *    neither — camping the block is a real job, just not this one (mirrors anti-pattern #3's own
+ *    gate, from the other side).
+ * 3. Scaled by the OTHER two starters' real spacing — a forced switch or a help rotation only
+ *    gets punished if the floor around the action is actually spaced; a crowded floor absorbs it
+ *    for free regardless of how good the two-man game is.
+ *
+ * Hard-gated at 0 when there's no real initiator+screener pair at all — a genuine two-man action
+ * either exists or it doesn't, there's no partial credit for "sort of."
+ */
+const SURROUNDING_SPACING_WEIGHT = 0.4;
+
+export function mismatchStructureScore(
+  starters: PlayerSpan[],
+  slots: Position[],
+  demandByPlayer: number[],
+): number {
+  if (starters.length < 5) return 0;
+  const lead = findLeadInitiator(starters, demandByPlayer);
+  if (!lead) return 0;
+
+  const spacing = starters.map(computeSpacing);
+  let bestGravity = 0;
+  let screenerIndex = -1;
+  starters.forEach((player, index) => {
+    if (index === lead.index) return;
+    if (slots[index] !== 'PF' && slots[index] !== 'C') return;
+    let gravity = 0;
+    if (player.offensiveArchetype === 'Roll & Cut Big' || player.offensiveArchetype === 'Versatile Big') {
+      gravity = Math.max(gravity, rimPressureForFit(player));
+    }
+    if (player.offensiveArchetype === 'Stretch Big' || player.offensiveArchetype === 'Versatile Big' || isPlusShooter(player)) {
+      gravity = Math.max(gravity, spacing[index]);
+    }
+    if (gravity > bestGravity) {
+      bestGravity = gravity;
+      screenerIndex = index;
+    }
+  });
+  if (screenerIndex < 0 || bestGravity <= 0) return 0;
+
+  const surroundingValues = spacing.filter((_, index) => index !== lead.index && index !== screenerIndex);
+  const surroundingSpacing = surroundingValues.length > 0
+    ? surroundingValues.reduce((sum, value) => sum + value, 0) / surroundingValues.length
+    : 0;
+  return Math.round(bestGravity * (1 - SURROUNDING_SPACING_WEIGHT) + surroundingSpacing * SURROUNDING_SPACING_WEIGHT);
 }

@@ -400,13 +400,27 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
   return Math.round(best * 0.55 + mean * 0.45);
 }
 
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.45;
-const OFFENSE_SPACING_BLEND_WEIGHT = 0.15;
-const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.15;
-const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.15;
-const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.10;
+// 2026-09-05: re-normalized (each old weight x0.9) to make room for `mismatchStructure` (0.10)
+// below without silently rescaling the whole formula's range — see that field's own docstring.
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.405;
+const OFFENSE_SPACING_BLEND_WEIGHT = 0.135;
+const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.135;
+const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.135;
+const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.09;
+/** 2026-09-05, user's explicit follow-up to `huntingPotential` (matchup.ts): playmaking and
+ * self-creation already price individual SKILL into `offenseScore` on their own terms above.
+ * "podpięte pod offense" turned out to mean something genuinely different, not a restatement of
+ * those two numbers — "czy skład ma realną STRUKTURĘ do wymuszania switchy (odpowiednie
+ * archetypy, spacing wymuszający przełączenia) niezależnie od czystego playmakingu/scoringu."
+ * `fit.ts`'s `mismatchStructureScore` (via `fitScore(team).inputs.mismatchStructure`) reads the
+ * roster's actual pick-and-roll structure — a real initiator paired with a screener whose own
+ * gravity forces a decision, surrounded by real spacing — independent of either player's own
+ * skill rating. Reads `fitScore` here (already computed elsewhere in `scoreTeam`, but not
+ * threaded through this function) rather than recomputing the underlying shadow-role-profile
+ * machinery a second time. */
+const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.10;
 
-/** The 5 raw 0-100 dimensions `offenseScore` blends, exposed together so the UI can show
+/** The 6 raw 0-100 dimensions `offenseScore` blends, exposed together so the UI can show
  * playmaking/self-creation individually — 2026-09-05, user's explicit ask ("playmaking i shot
  * creation widoczne do podglądu w ocenie zespołu"). Both were real inputs to `offenseScore`
  * already (same day, earlier session — see that function's own docstring) but had no visible
@@ -418,6 +432,7 @@ export interface OffenseScoreComponents {
   rimPressure: number;
   playmaking: number;
   selfCreation: number;
+  mismatchStructure: number;
 }
 export interface OffenseScoreBreakdown extends OffenseScoreComponents {
   score: number;
@@ -431,6 +446,7 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
     rimPressure: rimPressureTeam(starters),
     playmaking: teamPlaymakingQuality(starters),
     selfCreation: teamSelfCreationQuality(starters),
+    mismatchStructure: fitScore(team).inputs.mismatchStructure,
   };
 }
 
@@ -444,7 +460,8 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
       components.spacing * OFFENSE_SPACING_BLEND_WEIGHT +
       components.rimPressure * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
       components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
-      components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT,
+      components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
+      components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT,
   );
   return { ...components, score };
 }

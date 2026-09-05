@@ -9,7 +9,7 @@ import {
   type ShadowRoleProfile,
 } from '../data/schema';
 import { isRimGravityScorer } from './offensiveProfile';
-import { pairwiseFitNotes } from './pairwiseFit';
+import { pairwiseFitNotes, mismatchStructureScore } from './pairwiseFit';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { primaryStarters } from './rotation';
 import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
@@ -146,6 +146,12 @@ export interface FitScoreInputs {
    * blend of playmaking and self-creation (see `huntingPotentialFor`'s own docstring). Read by
    * `explainMatchup` against the OPPONENT's `defensiveWeakLinkResistance` below. */
   huntingPotential: number;
+  /** Does the roster have real STRUCTURE to force and punish a defensive switch — a genuine
+   * ball-screen initiator paired with a screener whose own gravity (roll or pop) creates a real
+   * mismatch, surrounded by real spacing (`pairwiseFit.ts`'s `mismatchStructureScore`). Distinct
+   * from `huntingPotential` on purpose: reads archetypes/pairing/shell, not individual skill. Read
+   * by `offenseScoreComponents` (scoring.ts) as its own offenseScore dimension. */
+  mismatchStructure: number;
   offBallComplementCount: number;
   hardNonSpacerCount: number;
   frontcourtNonSpacerCount: number;
@@ -452,6 +458,7 @@ export function fitScore(team: Team): FitScoreResult {
         onBallDemand: 0,
         primaryCreationSignal: 0,
         huntingPotential: 0,
+        mismatchStructure: 0,
         secondaryCreationSignal: 0,
         offBallComplementCount: 0,
         hardNonSpacerCount: 0,
@@ -543,9 +550,9 @@ export function fitScore(team: Team): FitScoreResult {
   );
   if (primaryCreationSignal < 50) notes.push('No credible primary creation role in the starting five.');
   if (onBallDemand > 2.5) notes.push(`On-ball demand is crowded (${onBallDemand.toFixed(2)} weighted roles).`);
-  notes.push(
-    ...pairwiseFitNotes(starters, starterEntries.map((entry) => entry.slot), demandByPlayer),
-  );
+  const starterSlots = starterEntries.map((entry) => entry.slot);
+  notes.push(...pairwiseFitNotes(starters, starterSlots, demandByPlayer));
+  const mismatchStructure = mismatchStructureScore(starters, starterSlots, demandByPlayer);
 
   const hardNonSpacerCount = starters.filter((player) => computeSpacing(player) < HARD_NON_SPACER_FLOOR).length;
   const plusShooterCount = starters.filter(isPlusShooter).length;
@@ -744,6 +751,7 @@ export function fitScore(team: Team): FitScoreResult {
       onBallDemand,
       primaryCreationSignal,
       huntingPotential: huntingPotentialFor(starters),
+      mismatchStructure,
       secondaryCreationSignal,
       offBallComplementCount,
       hardNonSpacerCount,
