@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { rankTeams } from '../engine/scoring';
+import { rankTeams, offenseScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague } from '../engine/leagueSimulation';
 import { simulateSeason, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
@@ -667,6 +667,7 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
         const teamHistory = history.filter((h) => h.teamId === team.id).sort((a, b) => a.pickNumber - b.pickNumber);
         const isExpanded = expandedTeamIds.has(team.id);
         const fitDetail = isExpanded ? fitScore(shownTeam) : null;
+        const offenseDetail = isExpanded ? offenseScoreBreakdown(shownTeam) : null;
         const rsPoProfile = fitDetail ? seasonProfile(breakdown, fitDetail) : null;
         const bestOpponent = leagueEvalRow ? teamById(leagueEvalRow.bestMatchup.opponentId) : undefined;
         const worstOpponent = leagueEvalRow ? teamById(leagueEvalRow.worstMatchup.opponentId) : undefined;
@@ -720,6 +721,16 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                 {fitDetail && (
                   <details className="result-accordion-section team-analysis-section">
                     <summary>Team analysis</summary>
+                    {offenseDetail && (
+                      <>
+                        <div className="analysis-section-heading">Offense details</div>
+                        <span className="fit-detail-metric"><b>O-TAL</b><strong>{Math.round(offenseDetail.otal)}</strong></span>
+                        <span className="fit-detail-metric"><b>Spacing</b><strong>{Math.round(offenseDetail.spacing)}</strong></span>
+                        <span className="fit-detail-metric"><b>Rim pressure</b><strong>{Math.round(offenseDetail.rimPressure)}</strong></span>
+                        <span className="fit-detail-metric"><b>Playmaking</b><strong>{Math.round(offenseDetail.playmaking)}</strong></span>
+                        <span className="fit-detail-metric"><b>Self-creation</b><strong>{Math.round(offenseDetail.selfCreation)}</strong></span>
+                      </>
+                    )}
                     <div className="analysis-section-heading">Fit details</div>
                     <span className="fit-detail-metric"><b>Creation</b><strong>{Math.round(fitDetail.components.creationStructure)}</strong></span>
                     <span className="fit-detail-metric"><b>Spacing compatibility</b><strong>{Math.round(fitDetail.components.spacingCompatibility)}</strong></span>

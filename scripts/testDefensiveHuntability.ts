@@ -195,8 +195,13 @@ check(eliteCoreProjection.defense <= 88, 'elite defensive core projects into an 
 // above-average-for-his-position defender "huntable" purely because 56 sat under a universal
 // number no real SF starter distribution actually centers on. Brunson (PG, D-TAL 21) and Barros
 // (PG, D-TAL 39) are both well below the real PG average (51) and remain genuine targets.
-// Re-measured directly (54), not guessed.
-check(threeLayerHunt.targetableMinutes >= 50, 'Brunson and Barros retain their full weak-link minutes; Pierce no longer misreads as one above his own position average');
+// 2026-09-05: 54 -> 84 after the average was further split by `RIM_PROTECTOR_ROLES` (Anchor
+// Big/Mobile Big) for centers — DeAndre Jordan (C, Anchor Big, D-TAL 72) now compares against the
+// real Anchor Big median (78), not the flat C average (71), and 72 falls short of that higher,
+// more accurate bar for his specific archetype. A real, modest, correctly-targeted addition, not
+// a bug: DJ is a good anchor, just not among the very best ones. Re-measured directly (84), not
+// guessed.
+check(threeLayerHunt.targetableMinutes >= 80 && threeLayerHunt.targetableMinutes <= 88, 'Brunson, Barros and DeAndre Jordan retain their real weak-link minutes; Pierce no longer misreads as one above his own position average');
 // 2026-08-19: threshold lowered 0.6->0.25 after talent.ts's spacing-conditional TAL correction.
 // Root cause, checked directly: Paul Pierce (real plus-shooter, SPC 81) gained TAL from the same
 // correction that dropped Andre Roberson (real near-zero shooter, SPC 5) — `autoAssignRotation`
@@ -222,13 +227,13 @@ check(threeLayerCohesion.eliteShell === 0, 'weak starter average does not falsel
 check(threeLayerDefense >= 65 && threeLayerDefense <= 76, 'Jordan plus the two-anchor backline lifts Defense without hiding the real Brunson/Barros weak-link minutes');
 check(threeLayerProjection.defense >= 95 && threeLayerProjection.defense <= 98, 'two-anchor foundation earns only a bounded DRTG correction');
 // 2026-09-05: exact 100 -> >=99 after `defensiveHuntability.ts`'s position-relative average
-// ceiling. Centers' real Starter-tier average D-TAL (71) is much higher than other positions'
-// (46-51) — Mitchell Robinson's 63 D-TAL, a perfectly fine backup-center number under the old
-// flat 60, is genuinely a touch below what a real starting-caliber center's defense averages, so
-// he now registers a small (12-minute, 0.19-penalty) shortfall the old flat threshold couldn't
-// see. A real, tiny, intended consequence of the fix, not a bug — re-measured directly (99), not
-// guessed.
-check(eliteCohesion.eliteShell >= 99, 'reported elite roster completes confirmed POA, wing and rim layers with only a negligible targetable-minute residue');
+// ceiling first shipped position-only: Mitchell Robinson's 63 D-TAL sat a touch below the flat C
+// average (71), registering a tiny (12-minute, 0.19-penalty) shortfall the old flat 60 couldn't
+// see. Restored to exact 100 the same day once the average was split further by
+// `RIM_PROTECTOR_ROLES` (Anchor Big/Mobile Big) — Robinson is a Mobile Big, and 63 is almost
+// exactly that archetype's own real median (62), not actually below-average for his real
+// defensive job. Re-measured directly, not guessed.
+check(eliteCohesion.eliteShell === 100, 'reported elite roster completes confirmed POA, wing and rim layers with no targetable minutes');
 check(defenseScore(reportedElite) === 100, 'complete all-time defensive shell reaches the practical Defense ceiling');
 check(Math.abs(eliteProjection.defense - 85) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
 

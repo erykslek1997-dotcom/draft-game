@@ -61,17 +61,23 @@ check(Boolean(weakLinkInsight), 'reported Jordan/Mobley/Gobert roster exposes it
 // an exposed weak link — the flat 60 was calling an above-average-for-his-position defender
 // "huntable" purely because 56 sat under a universal number. Brunson and Barros (both PG, D-TAL
 // 21/39 against a 51 real PG average) remain genuine, named targets.
+// 2026-09-05, same-day follow-up: DeAndre Jordan (C, Anchor Big, D-TAL 72) joined this list once
+// the average was further split by `RIM_PROTECTOR_ROLES` for centers (real Anchor Big median 78,
+// not the flat C average 71) — he's a good rim anchor, just not among the best of that specific
+// archetype. A real, correctly-targeted addition, not a bug.
 check(
-  ['Jalen Brunson', 'Dana Barros'].every((name) => weakLinkInsight?.message.includes(name)),
-  'contextual exposure description retains Brunson and Barros rather than hiding bench targets',
+  ['Jalen Brunson', 'Dana Barros', 'DeAndre Jordan'].every((name) => weakLinkInsight?.message.includes(name)),
+  'contextual exposure description retains Brunson, Barros and DeAndre Jordan rather than hiding bench targets',
 );
 check(!weakLinkInsight?.message.includes('Paul Pierce'), 'Pierce no longer misreads as huntable above his own position average');
 // The useful-bench-minute recovery keeps Larry Smith out of a token defensive stint. 2026-09-04:
 // the rim-pressure talent change (1a3d8dc) moved this fixture's real total from 98 to 92.
 // 2026-09-05: 92 -> 54 after the position-relative huntable ceiling above drops Pierce (34 SF + 4
-// SG = 38 minutes) out of the exposed total entirely; Brunson/Barros's own minutes (54) are
-// unchanged and still fully charged. Re-measured directly, not guessed.
-check(weakLinkInsight?.message.includes('54 targetable minutes'), 'weak-link description reports the real 54-minute cost');
+// SG = 38 minutes) out of the exposed total entirely; Brunson/Barros's own minutes (54) unchanged.
+// Same day, second pass: 54 -> 84 after the average was further split by `RIM_PROTECTOR_ROLES` —
+// DeAndre Jordan's real Anchor Big shortfall adds his own targetable minutes to the total.
+// Re-measured directly, not guessed.
+check(weakLinkInsight?.message.includes('84 targetable minutes'), 'weak-link description reports the real 84-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),

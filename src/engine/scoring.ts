@@ -406,20 +406,51 @@ const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.15;
 const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.15;
 const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.10;
 
-export function offenseScore(team: Team): number {
-  const otalComponent = rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS);
-  const spacingComponent = spacingScore(team);
+/** The 5 raw 0-100 dimensions `offenseScore` blends, exposed together so the UI can show
+ * playmaking/self-creation individually — 2026-09-05, user's explicit ask ("playmaking i shot
+ * creation widoczne do podglądu w ocenie zespołu"). Both were real inputs to `offenseScore`
+ * already (same day, earlier session — see that function's own docstring) but had no visible
+ * home of their own; a team could read a middling Offense number with no way to tell whether that
+ * came from a weak engine, weak self-creation, or just poor spacing. */
+export interface OffenseScoreComponents {
+  otal: number;
+  spacing: number;
+  rimPressure: number;
+  playmaking: number;
+  selfCreation: number;
+}
+export interface OffenseScoreBreakdown extends OffenseScoreComponents {
+  score: number;
+}
+
+function offenseScoreComponents(team: Team): OffenseScoreComponents {
   const starters = primaryStarters(team).map((entry) => entry.player);
-  const rimPressureComponent = rimPressureTeam(starters);
-  const playmakingComponent = teamPlaymakingQuality(starters);
-  const selfCreationComponent = teamSelfCreationQuality(starters);
-  return Math.round(
-    otalComponent * OFFENSE_OTAL_BLEND_WEIGHT +
-      spacingComponent * OFFENSE_SPACING_BLEND_WEIGHT +
-      rimPressureComponent * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
-      playmakingComponent * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
-      selfCreationComponent * OFFENSE_SELF_CREATION_BLEND_WEIGHT,
+  return {
+    otal: rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS),
+    spacing: spacingScore(team),
+    rimPressure: rimPressureTeam(starters),
+    playmaking: teamPlaymakingQuality(starters),
+    selfCreation: teamSelfCreationQuality(starters),
+  };
+}
+
+/** Single source of truth for the weighted blend — `offenseScore` (the number every other
+ * consumer reads) and `offenseScoreBreakdown` (the UI's per-dimension view) both build on this so
+ * the two can never drift apart. */
+export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
+  const components = offenseScoreComponents(team);
+  const score = Math.round(
+    components.otal * OFFENSE_OTAL_BLEND_WEIGHT +
+      components.spacing * OFFENSE_SPACING_BLEND_WEIGHT +
+      components.rimPressure * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
+      components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
+      components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT,
   );
+  return { ...components, score };
+}
+
+export function offenseScore(team: Team): number {
+  return offenseScoreBreakdown(team).score;
 }
 
 export function defenseScore(team: Team): number {

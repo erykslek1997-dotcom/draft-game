@@ -1,4 +1,4 @@
-import { RIM_PROTECTOR_ROLES, type Position, type PlayerSpan } from '../data/schema';
+import { RIM_PROTECTOR_ROLES, type Position, type PlayerSpan, type DefensiveRole } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { effectiveTalent } from './grades';
@@ -44,9 +44,64 @@ const AVERAGE_DTAL_BY_POSITION: Record<Position, number> = Object.fromEntries(
   POSITIONS.map((pos) => [pos, median(starterCaliberByPosition[pos].map(computeDefensiveTalent))]),
 ) as Record<Position, number>;
 
-/** Same reference group (real Starter-tier-or-better peers at the same position), used for the
- * athleticism percentile below — comparing a player's tools against realistic peers, not the
- * pool's replacement-level tail. */
+/**
+ * 2026-09-05, user-reported follow-up ("da się zrobić podział centrów na interior i perimeter
+ * defense?" — can centers be split into interior vs. perimeter defense?): the position-level
+ * average above still blends two real, comparably-legitimate defensive archetypes at PF/C.
+ * `RIM_PROTECTOR_ROLES` (Anchor Big / Mobile Big) is the existing categorical split this project
+ * already uses elsewhere for exactly this question (`anchorDampening` above,
+ * `defensiveCohesion.ts`'s `RIM_ROLES`). Measured directly against the Starter-tier-or-better
+ * reference group: C Anchor Big median 78 vs C Mobile Big 62 (a 16-point gap); PF Anchor Big 81
+ * vs PF Mobile Big 70. A flat C average (71) sits BETWEEN the two — it was quietly grading every
+ * real rim-anchor against too LOW a bar (never huntable) and every switchy/mobile big against too
+ * HIGH a bar (Mitchell Robinson's 63, this mechanism's own motivating example, is almost exactly
+ * the Mobile Big median of 62 — he isn't actually below-average for his real defensive job, only
+ * for the wrong reference group).
+ *
+ * Deliberately scoped to ONLY `RIM_PROTECTOR_ROLES`, not every `defensiveRole` at every position.
+ * The guard/wing roles (Point of Attack/Wing Stopper vs. Chaser/Helper/Low Activity) show an even
+ * bigger spread (e.g. PG Point of Attack median 69 vs PG Low Activity 35) — but unlike Anchor vs.
+ * Mobile Big, that spread is mostly a QUALITY gradient, not two comparably-good alternate jobs:
+ * "Low Activity"/"Helper"/"Chaser" describe a weak or passive defensive profile, not a legitimate
+ * specialization the way a switch-everything big is a legitimate alternative to a rim-camping one.
+ * Splitting guards the same way was tried and rejected on a real measurement: it roughly halved
+ * Steve Nash/Dana Barros/Mario Elie's real huntability penalty (10.2 -> 5.5 on the `reported`
+ * fixture below) by comparing them only against other already-bad-defender peers — softening
+ * exactly the signal this mechanism exists to keep sharp. Bigs are different because
+ * `RIM_PROTECTOR_ROLES` really are two separate, both-legitimate jobs; guards' role tags are not.
+ *
+ * `AVERAGE_DTAL_BY_ROLE_KEY` keys on `${position}|${defensiveRole}`, populated only for
+ * `RIM_PROTECTOR_ROLES`; `MIN_ROLE_SAMPLE` guards against noisy small buckets (SF Anchor Big has
+ * only 2 real spans in the whole pool) by falling back to the plain position average above.
+ */
+const MIN_ROLE_SAMPLE = 15;
+function roleKey(position: Position, role: DefensiveRole): string {
+  return `${position}|${role}`;
+}
+const starterCaliberByRoleKey = new Map<string, PlayerSpan[]>();
+for (const pos of POSITIONS) {
+  for (const player of starterCaliberByPosition[pos]) {
+    if (!RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number])) continue;
+    const key = roleKey(pos, player.defensiveRole);
+    const bucket = starterCaliberByRoleKey.get(key);
+    if (bucket) bucket.push(player);
+    else starterCaliberByRoleKey.set(key, [player]);
+  }
+}
+const AVERAGE_DTAL_BY_ROLE_KEY = new Map<string, number>();
+for (const [key, group] of starterCaliberByRoleKey) {
+  if (group.length >= MIN_ROLE_SAMPLE) AVERAGE_DTAL_BY_ROLE_KEY.set(key, median(group.map(computeDefensiveTalent)));
+}
+
+function averageDtalFor(player: PlayerSpan): number {
+  return AVERAGE_DTAL_BY_ROLE_KEY.get(roleKey(player.primaryPosition, player.defensiveRole))
+    ?? AVERAGE_DTAL_BY_POSITION[player.primaryPosition];
+}
+
+/** Same role-aware reference group, used for the athleticism percentile below — comparing a
+ * player's tools against realistic peers doing the same defensive job, not just the same
+ * position (a rim-camping Anchor Big and a switch-everything Mobile Big are not the same
+ * athleticism population), with the same small-bucket position-level fallback. */
 const athleticismLadderByPosition: Record<Position, number[]> = Object.fromEntries(
   POSITIONS.map((pos) => [
     pos,
@@ -56,6 +111,16 @@ const athleticismLadderByPosition: Record<Position, number[]> = Object.fromEntri
       .sort((a, b) => a - b),
   ]),
 ) as Record<Position, number[]>;
+const athleticismLadderByRoleKey = new Map<string, number[]>();
+for (const [key, group] of starterCaliberByRoleKey) {
+  if (group.length < MIN_ROLE_SAMPLE) continue;
+  const ladder = group.map(athleticismScoreForSpan).filter((v): v is number => v !== null).sort((a, b) => a - b);
+  if (ladder.length > 0) athleticismLadderByRoleKey.set(key, ladder);
+}
+function athleticismLadderFor(player: PlayerSpan): number[] {
+  return athleticismLadderByRoleKey.get(roleKey(player.primaryPosition, player.defensiveRole))
+    ?? athleticismLadderByPosition[player.primaryPosition];
+}
 
 function percentile(sorted: number[], value: number): number {
   if (sorted.length === 0) return 50;
@@ -83,7 +148,7 @@ const ATHLETICISM_SHORTFALL_DAMPEN = 0.75;
 
 function athleticismShortfallFactor(player: PlayerSpan): number {
   const score = athleticismScoreForSpan(player);
-  const pct = score === null ? 50 : percentile(athleticismLadderByPosition[player.primaryPosition], score);
+  const pct = score === null ? 50 : percentile(athleticismLadderFor(player), score);
   return ATHLETICISM_SHORTFALL_AMPLIFY - (pct / 100) * (ATHLETICISM_SHORTFALL_AMPLIFY - ATHLETICISM_SHORTFALL_DAMPEN);
 }
 
@@ -200,7 +265,7 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
     const starterMinutes = minutes - benchMinutes;
     const competitionAdjustedMinutes = starterMinutes + benchMinutes * BENCH_COMPETITION_DISCOUNT;
     const defensiveTalent = computeDefensiveTalent(player);
-    const rawShortfall = Math.max(0, AVERAGE_DTAL_BY_POSITION[player.primaryPosition] - defensiveTalent);
+    const rawShortfall = Math.max(0, averageDtalFor(player) - defensiveTalent);
     const shortfall = rawShortfall * athleticismShortfallFactor(player);
     return minutes > 0 && shortfall > 0
       ? [{ playerId: player.id, playerName: player.playerName, minutes, competitionAdjustedMinutes, defensiveTalent, shortfall }]
