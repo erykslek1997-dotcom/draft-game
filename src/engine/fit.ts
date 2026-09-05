@@ -9,7 +9,7 @@ import {
   type ShadowRoleProfile,
 } from '../data/schema';
 import { isRimGravityScorer } from './offensiveProfile';
-import { pairwiseFitNotes, mismatchStructureScore } from './pairwiseFit';
+import { pairwiseFitNotes, mismatchStructureScore, offensiveSystemOverloadPenalty } from './pairwiseFit';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { primaryStarters } from './rotation';
 import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
@@ -559,11 +559,19 @@ export function fitScore(team: Team): FitScoreResult {
   }).length;
   const primaryCreationScore = normalize(primaryCreationSignal, 50, 85);
   const secondaryCreationScore = 40 + normalize(secondaryCreationSignal, 40, 75) * 0.6;
+  // 2026-09-05, user's call ("powinno to liczyć w fit"): a five committed to 3+ co-primary
+  // offensive systems (pairwiseFit pattern 5) genuinely lacks a playoff identity — dock it from
+  // creationStructure rather than leaving it note-only.
+  const systemOverloadPenalty = offensiveSystemOverloadPenalty(starters, demandByPlayer);
   const creationStructure = Math.round(
-    primaryCreationScore * 0.40 +
-      demandBalance(onBallDemand, primaryCreationSignal) * 0.30 +
-      secondaryCreationScore * 0.15 +
-      clamp((offBallComplementCount / 3) * 100) * 0.15,
+    Math.max(
+      0,
+      primaryCreationScore * 0.40 +
+        demandBalance(onBallDemand, primaryCreationSignal) * 0.30 +
+        secondaryCreationScore * 0.15 +
+        clamp((offBallComplementCount / 3) * 100) * 0.15 -
+        systemOverloadPenalty,
+    ),
   );
   if (primaryCreationSignal < 50) notes.push('No credible primary creation role in the starting five.');
   if (onBallDemand > 2.5) notes.push(`On-ball demand is crowded (${onBallDemand.toFixed(2)} weighted roles).`);

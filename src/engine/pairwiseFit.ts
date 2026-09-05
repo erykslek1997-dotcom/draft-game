@@ -157,6 +157,23 @@ export function pairwiseFitNotes(
 
   // 5. The starting five wants to run several different offenses — off-ball motion, a post-up,
   //    a pick-and-roll and an iso creator all demanding primacy at once ("gra do kilku bramek").
+  const systems = offensiveSystemBuckets(starters, demandByPlayer);
+  if (systems.length >= 3) {
+    notes.push(
+      `The starting five commits to ${systems.length} different offensive systems at once (${systems.map((s) => STYLE_LABEL[s]).join(', ')}) — no single one gets enough reps to become the identity.`,
+    );
+  }
+
+  return notes;
+}
+
+/**
+ * The distinct offensive "systems" a starting five is committed to (pattern 5 above, extracted so
+ * `fitScore` can also read it). A starter contributes their archetype's system only if they clear
+ * `SYSTEM_MEMBER_OTAL` AND are either a real on-ball demand (>= 0.5) or a high-usage scorer
+ * (`HIGH_USAGE_OTAL`). Returns the buckets, deduped.
+ */
+export function offensiveSystemBuckets(starters: PlayerSpan[], demandByPlayer: number[]): StyleBucket[] {
   const systems = new Set<StyleBucket>();
   starters.forEach((p, i) => {
     const bucket = STYLE_BUCKET[p.offensiveArchetype];
@@ -165,13 +182,21 @@ export function pairwiseFitNotes(
     if (otal < SYSTEM_MEMBER_OTAL) return;
     if (demandByPlayer[i] >= 0.5 || otal >= HIGH_USAGE_OTAL) systems.add(bucket);
   });
-  if (systems.size >= 3) {
-    notes.push(
-      `The starting five commits to ${systems.size} different offensive systems at once (${[...systems].map((s) => STYLE_LABEL[s]).join(', ')}) — no single one gets enough reps to become the identity.`,
-    );
-  }
+  return [...systems];
+}
 
-  return notes;
+/**
+ * Points to dock from `creationStructure` when a five over-commits to too many offensive systems
+ * — 2026-09-05, user's call ("powinno to liczyć w fit"): the pattern-5 note was diagnostic-only;
+ * a five running 3+ co-primary systems genuinely lacks an offensive identity in a playoff series.
+ * `PENALTY_PER_EXTRA_SYSTEM` per system beyond 2, capped at `MAX_SYSTEM_OVERLOAD_PENALTY`.
+ */
+const PENALTY_PER_EXTRA_SYSTEM = 6;
+const MAX_SYSTEM_OVERLOAD_PENALTY = 12;
+export function offensiveSystemOverloadPenalty(starters: PlayerSpan[], demandByPlayer: number[]): number {
+  const count = offensiveSystemBuckets(starters, demandByPlayer).length;
+  if (count < 3) return 0;
+  return Math.min(MAX_SYSTEM_OVERLOAD_PENALTY, (count - 2) * PENALTY_PER_EXTRA_SYSTEM);
 }
 
 /**
