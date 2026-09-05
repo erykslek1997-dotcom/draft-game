@@ -1,9 +1,92 @@
-import { RIM_PROTECTOR_ROLES } from '../data/schema';
+import { RIM_PROTECTOR_ROLES, type Position, type PlayerSpan } from '../data/schema';
+import { draftPool } from '../data/draftPool';
 import { computeDefensiveTalent } from './defensiveTalent';
+import { effectiveTalent } from './grades';
+import { athleticismScoreForSpan } from './athleticismLookup';
 import { allAssignments, primaryStarters, GAME_MINUTES } from './rotation';
 import type { Team } from './types';
 
-const TARGETABLE_DTAL_CEILING = 60;
+/**
+ * 2026-09-05, user-reported: a flat D-TAL ceiling (60, for every position alike) doesn't mean
+ * "below average" — it means something different depending on position. `computeDefensiveTalent`
+ * rewards rim protection/rebounding heavily, so among real Starter-tier-or-better spans (TAL>=60,
+ * the same floor `grades.ts`'s `OVERALL_TIER_FLOORS` uses) the position medians are wildly
+ * different: PG 51 / SG 46 / SF 47 / PF 64 / C 71 (measured directly against `draftPool`). A flat
+ * 60 called almost every legitimate starting guard/wing "below average" while barely ever
+ * flagging a center — the exact position bias this replaces.
+ *
+ * The reference population is deliberately `draftPool` filtered to `effectiveTalent >=
+ * STARTER_TAL_FLOOR`, not the whole pool or the whole span-history dataset: the user's own
+ * objection to a population-wide average was that "hundreds of weak non-draftable players" drag
+ * it down to a number no real rostered starter resembles. A team-relative average (this roster's
+ * own mean) was rejected too — it would flag a merely-least-good starter on a genuinely elite
+ * defensive five as "huntable," which the user called out directly as not making sense. This is a
+ * fixed, position-specific number computed once from the realistic reference group ("an actual
+ * NBA-caliber starter at this position"), not context-dependent on either the specific roster or
+ * the pool's replacement-level tail.
+ */
+const STARTER_TAL_FLOOR = 60;
+const POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
+const starterCaliberByPosition: Record<Position, PlayerSpan[]> = Object.fromEntries(
+  POSITIONS.map((pos) => [
+    pos,
+    draftPool.filter((p) => p.primaryPosition === pos && effectiveTalent(p) >= STARTER_TAL_FLOOR),
+  ]),
+) as Record<Position, PlayerSpan[]>;
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+/** Position-relative "average real starter" D-TAL — replaces the old flat `TARGETABLE_DTAL_CEILING`. */
+const AVERAGE_DTAL_BY_POSITION: Record<Position, number> = Object.fromEntries(
+  POSITIONS.map((pos) => [pos, median(starterCaliberByPosition[pos].map(computeDefensiveTalent))]),
+) as Record<Position, number>;
+
+/** Same reference group (real Starter-tier-or-better peers at the same position), used for the
+ * athleticism percentile below — comparing a player's tools against realistic peers, not the
+ * pool's replacement-level tail. */
+const athleticismLadderByPosition: Record<Position, number[]> = Object.fromEntries(
+  POSITIONS.map((pos) => [
+    pos,
+    starterCaliberByPosition[pos]
+      .map(athleticismScoreForSpan)
+      .filter((v): v is number => v !== null)
+      .sort((a, b) => a - b),
+  ]),
+) as Record<Position, number[]>;
+
+function percentile(sorted: number[], value: number): number {
+  if (sorted.length === 0) return 50;
+  let lo = 0;
+  let hi = sorted.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (sorted[mid] < value) lo = mid + 1;
+    else hi = mid;
+  }
+  return (lo / sorted.length) * 100;
+}
+
+/**
+ * A below-average defender with genuinely below-average physical tools for their position is a
+ * cleaner target than one whose D-TAL reads low for scheme/box reasons despite real athleticism —
+ * recovery speed and length let an athletic-but-lower-D-TAL player survive isolations a true
+ * unathletic liability can't. Bounded, symmetric ramp around the position's own median
+ * (percentile 50 -> neutral 1.0): bottom of the pool -> `AMPLIFY`, top -> `DAMPEN`. Missing
+ * athleticism coverage (some older spans) defaults to the neutral midpoint, not a penalty — no
+ * data is not evidence of poor tools.
+ */
+const ATHLETICISM_SHORTFALL_AMPLIFY = 1.25;
+const ATHLETICISM_SHORTFALL_DAMPEN = 0.75;
+
+function athleticismShortfallFactor(player: PlayerSpan): number {
+  const score = athleticismScoreForSpan(player);
+  const pct = score === null ? 50 : percentile(athleticismLadderByPosition[player.primaryPosition], score);
+  return ATHLETICISM_SHORTFALL_AMPLIFY - (pct / 100) * (ATHLETICISM_SHORTFALL_AMPLIFY - ATHLETICISM_SHORTFALL_DAMPEN);
+}
+
 const MAX_HUNTABILITY_PENALTY = 20;
 
 /**
@@ -55,8 +138,12 @@ function anchorDampening(team: Team, minutesByPlayer: Map<string, number>): numb
  * average, not softening its exploitability). First-pass estimate, not measured against a real
  * competition-quality dataset (none exists in this project) — the same honest-starting-point
  * status as every other first-pass constant here until a real report justifies tightening it.
+ *
+ * 2026-09-05, user's explicit follow-up call: 0.7 was too little relief for how one-sided bench
+ * play actually is — tightened to 0.4 (bench weak-link minutes now count for less than half their
+ * real minutes toward the penalty).
  */
-const BENCH_COMPETITION_DISCOUNT = 0.7;
+const BENCH_COMPETITION_DISCOUNT = 0.4;
 
 export interface DefensiveHuntabilityOffender {
   playerId: string;
@@ -77,13 +164,21 @@ export interface DefensiveHuntabilityResult {
   offenders: DefensiveHuntabilityOffender[];
 }
 
+/** Single scalar for the penalty's own 0-100-ish normalization below — the position ceilings
+ * above differ (46-71), but the penalty scale itself needs one fixed denominator, not five. The
+ * mean of the five position averages (~56) keeps the overall penalty scale close to the old flat
+ * 60 rather than silently rescaling every roster's number when this shipped. */
+const NORMALIZATION_DTAL = POSITIONS.reduce((sum, pos) => sum + AVERAGE_DTAL_BY_POSITION[pos], 0) / POSITIONS.length;
+
 /**
  * Nonlinear playoff weak-link signal. A minutes-weighted average can hide one or two defenders
  * behind an elite rim protector; opponents cannot. This counts the volume and severity of every
- * below-60 D-TAL stint, so two huntable perimeter players stack while a 10-minute bench weakness
- * remains much cheaper than a 36-minute starter — and now also cheaper per minute than an equally
- * weak starter, since bench minutes are discounted by `BENCH_COMPETITION_DISCOUNT` to reflect
- * facing real bench-level opposition on average, not starter-level.
+ * below-position-average D-TAL stint (see `AVERAGE_DTAL_BY_POSITION` above), scaled by how
+ * exploitable the shortfall really is physically (`athleticismShortfallFactor`), so two huntable
+ * perimeter players stack while a 10-minute bench weakness remains much cheaper than a 36-minute
+ * starter — and cheaper per minute than an equally weak starter, since bench minutes are
+ * discounted by `BENCH_COMPETITION_DISCOUNT` to reflect facing real bench-level opposition on
+ * average, not starter-level.
  */
 export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
   const minutesByPlayer = new Map<string, number>();
@@ -105,7 +200,8 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
     const starterMinutes = minutes - benchMinutes;
     const competitionAdjustedMinutes = starterMinutes + benchMinutes * BENCH_COMPETITION_DISCOUNT;
     const defensiveTalent = computeDefensiveTalent(player);
-    const shortfall = Math.max(0, TARGETABLE_DTAL_CEILING - defensiveTalent);
+    const rawShortfall = Math.max(0, AVERAGE_DTAL_BY_POSITION[player.primaryPosition] - defensiveTalent);
+    const shortfall = rawShortfall * athleticismShortfallFactor(player);
     return minutes > 0 && shortfall > 0
       ? [{ playerId: player.id, playerName: player.playerName, minutes, competitionAdjustedMinutes, defensiveTalent, shortfall }]
       : [];
@@ -113,7 +209,7 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
   const shortfallMinutes = offenders.reduce((sum, offender) => sum + offender.shortfall * offender.competitionAdjustedMinutes, 0);
   const rawPenalty = Math.min(
     MAX_HUNTABILITY_PENALTY,
-    (shortfallMinutes / (TARGETABLE_DTAL_CEILING * GAME_MINUTES)) * MAX_HUNTABILITY_PENALTY,
+    (shortfallMinutes / (NORMALIZATION_DTAL * GAME_MINUTES)) * MAX_HUNTABILITY_PENALTY,
   );
   const penalty = rawPenalty * anchorDampening(team, minutesByPlayer);
   return {

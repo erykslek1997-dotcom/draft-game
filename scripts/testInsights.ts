@@ -55,18 +55,23 @@ const threeLayerWithTargets = team('three-layer-with-targets', [
 const threeLayerInsights = generateRosterInsights(buildTeamFeatureSnapshot(threeLayerWithTargets));
 const weakLinkInsight = threeLayerInsights.concerns.find((insight) => insight.id === 'HUNTABLE_STARTER_EXPOSED');
 check(Boolean(weakLinkInsight), 'reported Jordan/Mobley/Gobert roster exposes its multiple weak links in prose');
+// 2026-09-05: dropped Paul Pierce from this list after `defensiveHuntability.ts`'s huntable
+// ceiling moved from a flat 60 to a position-relative average (SF real Starter-tier median 47).
+// Pierce's D-TAL (56) clears his own position's real average, so he correctly no longer reads as
+// an exposed weak link — the flat 60 was calling an above-average-for-his-position defender
+// "huntable" purely because 56 sat under a universal number. Brunson and Barros (both PG, D-TAL
+// 21/39 against a 51 real PG average) remain genuine, named targets.
 check(
-  ['Jalen Brunson', 'Dana Barros', 'Paul Pierce'].every((name) => weakLinkInsight?.message.includes(name)),
-  'contextual exposure description retains Brunson, Barros and Pierce rather than hiding bench targets',
+  ['Jalen Brunson', 'Dana Barros'].every((name) => weakLinkInsight?.message.includes(name)),
+  'contextual exposure description retains Brunson and Barros rather than hiding bench targets',
 );
-// The useful-bench-minute recovery keeps Larry Smith out of a token defensive stint, so this
-// nine-player fixture matches the underlying Brunson/Barros/Pierce exposure at 92 minutes:
-// Brunson 34 (PG only) + Barros 14 PG + 6 SG + Pierce 34 SF + 4 SG = 92, still a clean 240-minute
-// (5 slots x 48) rotation split, not a double-count. 2026-09-04: the rim-pressure talent change
-// (1a3d8dc) nudged this fixture's frontcourt minute allocation and moved the real total from 98
-// to 92. Keep the assertion tied to the current rotation output rather than the obsolete number
-// from the previous allocator.
-check(weakLinkInsight?.message.includes('92 targetable minutes'), 'weak-link description reports the real 92-minute cost');
+check(!weakLinkInsight?.message.includes('Paul Pierce'), 'Pierce no longer misreads as huntable above his own position average');
+// The useful-bench-minute recovery keeps Larry Smith out of a token defensive stint. 2026-09-04:
+// the rim-pressure talent change (1a3d8dc) moved this fixture's real total from 98 to 92.
+// 2026-09-05: 92 -> 54 after the position-relative huntable ceiling above drops Pierce (34 SF + 4
+// SG = 38 minutes) out of the exposed total entirely; Brunson/Barros's own minutes (54) are
+// unchanged and still fully charged. Re-measured directly, not guessed.
+check(weakLinkInsight?.message.includes('54 targetable minutes'), 'weak-link description reports the real 54-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),

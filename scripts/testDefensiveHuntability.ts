@@ -165,9 +165,21 @@ check(defenseScore(reported) <= 60, 'reported roster remains below a good Defens
 // (12 real minutes now, down from more before) slightly reduces this roster's own weak-link
 // minutes share. Re-measured directly (101.4), not guessed; still clearly exposes a real
 // weak-link cost, well outside "sub-100 elite."
-check(reportedProjection.defense >= 100, 'projected DRTG exposes the weak-link cost instead of reading as elite');
+// 2026-09-05: threshold lowered 100->99 after `defensiveHuntability.ts`'s bench-competition
+// discount tightened 0.7->0.4 (user's explicit call) — Elie (28 bench min) and Barros (12 bench
+// min) both count for less of their real minutes now, softening this roster's own penalty.
+// Re-measured directly (99.5), not guessed; still clearly a real weak-link cost, just barely
+// short of the old 100 line rather than clearing it.
+check(reportedProjection.defense >= 99, 'projected DRTG exposes the weak-link cost instead of reading as elite');
 check(reportedScores.overall <= 84, 'weak defense meaningfully lowers the final power score');
-check(eliteCoreHunt.targetableMinutes >= 42 && eliteCoreHunt.targetableMinutes <= 46, 'Anderson and Jon Barry bench weaknesses retain their real rotation-minute cost');
+// 2026-09-05: band lowered 42-46 -> 12-16 after `defensiveHuntability.ts`'s huntable ceiling
+// moved from a flat 60 to a position-relative average (PG 51 / SG 46). Jon Barry's D-TAL (54)
+// clears his own position's (SG) real average, so he correctly drops out of this list entirely —
+// the flat 60 was calling an above-average-for-his-position defender "huntable" only because 54
+// happened to sit under an arbitrary universal number. Kenny Anderson (PG, D-TAL 40) is still
+// well below the PG average (51) and remains the one real target here. Re-measured directly (14),
+// not guessed.
+check(eliteCoreHunt.targetableMinutes >= 12 && eliteCoreHunt.targetableMinutes <= 16, 'Kenny Anderson remains a real target; Jon Barry no longer misreads as one above his own position average');
 check(eliteCoreCohesion.eliteShell >= 80, 'Harper/Jrue plus Wembanyama/Robinson complete an elite starter shell despite limited bench targets');
 check(defenseScore(reportedEliteCore) >= 80, 'elite defensive core is no longer graded as merely above average');
 check(eliteCoreProjection.defense <= 88, 'elite defensive core projects into an elite DRTG tier without reaching the perfect-shell ceiling');
@@ -177,7 +189,14 @@ check(eliteCoreProjection.defense <= 88, 'elite defensive core projects into an 
 // (a real, intended effect elsewhere) — which shifted `autoAssignRotation`'s minutes split
 // slightly (86, not 96, real minutes across the three now). Still a large, real weak-link cost,
 // just not the exact pre-correction number; re-measured directly, not guessed.
-check(threeLayerHunt.targetableMinutes >= 85, 'Brunson, Barros and Pierce retain their full weak-link minutes');
+// 2026-09-05: threshold lowered 85 -> 50 after `defensiveHuntability.ts`'s huntable ceiling moved
+// from a flat 60 to a position-relative average (PG 51 / SF 47). Paul Pierce's D-TAL (56) clears
+// his own position's (SF) real average, so he correctly drops out — flat 60 was calling an
+// above-average-for-his-position defender "huntable" purely because 56 sat under a universal
+// number no real SF starter distribution actually centers on. Brunson (PG, D-TAL 21) and Barros
+// (PG, D-TAL 39) are both well below the real PG average (51) and remain genuine targets.
+// Re-measured directly (54), not guessed.
+check(threeLayerHunt.targetableMinutes >= 50, 'Brunson and Barros retain their full weak-link minutes; Pierce no longer misreads as one above his own position average');
 // 2026-08-19: threshold lowered 0.6->0.25 after talent.ts's spacing-conditional TAL correction.
 // Root cause, checked directly: Paul Pierce (real plus-shooter, SPC 81) gained TAL from the same
 // correction that dropped Andre Roberson (real near-zero shooter, SPC 5) — `autoAssignRotation`
@@ -195,9 +214,21 @@ check(threeLayerCohesion.eliteShell === 0, 'weak starter average does not falsel
 // 2026-08-31: band moved 55-65 -> 60-70 after `defensiveCohesion.ts`'s `BACKLINE_PROVIDER_START`/
 // `_FULL` were recalibrated against real (no context-adjustment) D-TAL — see that file's own note.
 // Re-measured directly (63), not guessed; still clearly "out of the 50s" per this check's own name.
-check(threeLayerDefense >= 60 && threeLayerDefense <= 70, 'Jordan plus the two-anchor backline lifts Defense without hiding 98 attackable minutes');
+// 2026-09-05: band moved 60-70 -> 65-76 after `defensiveHuntability.ts`'s position-relative
+// average ceiling — Pierce (SF, D-TAL 56) no longer misreads as huntable (he's above the real SF
+// starter average, 47), so this roster's own penalty is smaller and its Defense reads a bit
+// higher. Re-measured directly (71), not guessed; still well short of an elite reading, and
+// Brunson/Barros's real weak-link minutes (see the check above) are still fully charged.
+check(threeLayerDefense >= 65 && threeLayerDefense <= 76, 'Jordan plus the two-anchor backline lifts Defense without hiding the real Brunson/Barros weak-link minutes');
 check(threeLayerProjection.defense >= 95 && threeLayerProjection.defense <= 98, 'two-anchor foundation earns only a bounded DRTG correction');
-check(eliteCohesion.eliteShell === 100, 'reported elite roster completes confirmed POA, wing and rim layers with no targetable minutes');
+// 2026-09-05: exact 100 -> >=99 after `defensiveHuntability.ts`'s position-relative average
+// ceiling. Centers' real Starter-tier average D-TAL (71) is much higher than other positions'
+// (46-51) — Mitchell Robinson's 63 D-TAL, a perfectly fine backup-center number under the old
+// flat 60, is genuinely a touch below what a real starting-caliber center's defense averages, so
+// he now registers a small (12-minute, 0.19-penalty) shortfall the old flat threshold couldn't
+// see. A real, tiny, intended consequence of the fix, not a bug — re-measured directly (99), not
+// guessed.
+check(eliteCohesion.eliteShell >= 99, 'reported elite roster completes confirmed POA, wing and rim layers with only a negligible targetable-minute residue');
 check(defenseScore(reportedElite) === 100, 'complete all-time defensive shell reaches the practical Defense ceiling');
 check(Math.abs(eliteProjection.defense - 85) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
 
