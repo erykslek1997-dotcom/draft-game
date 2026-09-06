@@ -1,4 +1,4 @@
-import { RIM_PROTECTOR_ROLES, type Position, type PlayerSpan, type DefensiveRole } from '../data/schema';
+import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, type Position, type PlayerSpan, type DefensiveRole } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { effectiveTalent } from './grades';
