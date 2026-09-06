@@ -1216,6 +1216,14 @@ const NEED_RAMP_ROSTER_SIZE = 4;
  * of the same player. Keep this narrow and evidence-backed. */
 const USER_VALIDATED_PEAK_SPANS = new Map<string, string>([
   [normalizePlayerName('James Harden'), '2018-20'],
+  // 2026-09-06, user-reported (AI-4 backlog item): without a pin, Shaq's draft-time representative
+  // span floated to whichever of his several TAL-97-tied spans scored best in a given pick's
+  // context (measured: 2003-05, a real span but not his peak, won at least once) — the mechanism
+  // behind the "AI picked a clearly worse Shaq span" 2026-08-19 report. User's own call: 1999-01
+  // and 2000-02 are the two real peak-offense-and-defense candidates; checked both directly —
+  // 1999-01 wins on both components (O-TAL 94 vs 92, D-TAL 80 vs 74) despite the tied overall TAL
+  // (97), so it's the one pinned.
+  [normalizePlayerName("Shaquille O'Neal"), '1999-01'],
 ]);
 
 function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number }>(ranked: T[]): T[] {
