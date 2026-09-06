@@ -229,6 +229,44 @@ function anchorDampening(team: Team, minutesByPlayer: Map<string, number>): numb
   }
   return 1 - MAX_ANCHOR_DAMPENING * best;
 }
+
+/**
+ * 2026-09-06, user-reported (Drużyna 8: Garnett + Marcus Smart + Tatum reading Def 59 despite an
+ * elite POA + rim shell) + a pick-and-roll-coverage discussion. `anchorDampening` above only
+ * credits the rim protector. But a genuine point-of-attack stopper mitigates hunting too, on the
+ * coverage logic from the PnR literature: with an elite on-ball defender guarding the primary
+ * threat, the offense cannot simply attack the weak link — it has to *engineer* the switch (screen
+ * the POA off the ball), which costs an action and tempo, and a real POA fights over that screen.
+ * And with a rim anchor behind, the defense can hold a modified drop against a typical ball-screen
+ * (weak link sags, anchor covers the roll) rather than being forced to switch at all.
+ *
+ * This is the TEAM-level, typical-opponent version — it assumes an average hunting offense (some
+ * roll gravity, some pull-up threat). `matchup.ts` scales it by the actual opponent's best PnR
+ * pairing (a five of shooters + a lob threat can still force the switch; a non-shooting,
+ * non-rolling screener cannot). Deliberately smaller than `MAX_ANCHOR_DAMPENING` — the POA relief
+ * is real but a stopper can be screened off in a way a rim anchor cannot be moved away from the
+ * rim. Multiplies with `anchorDampening`; both stay bounded.
+ */
+const POA_DTAL_GATE = 85;
+const POA_DTAL_FULL = 98;
+const POA_MINUTES_FOR_FULL = 30;
+const POA_MIN_MINUTES = 20;
+const MAX_POA_DAMPENING = 0.22;
+
+function poaCoverageDampening(team: Team, minutesByPlayer: Map<string, number>): number {
+  let best = 0;
+  for (const player of team.roster) {
+    if (!PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole)) continue;
+    const minutes = minutesByPlayer.get(player.id) ?? 0;
+    if (minutes < POA_MIN_MINUTES) continue;
+    const dtal = computeDefensiveTalent(player);
+    if (dtal < POA_DTAL_GATE) continue;
+    const dtalFactor = Math.min(1, (dtal - POA_DTAL_GATE) / (POA_DTAL_FULL - POA_DTAL_GATE));
+    const minutesFactor = Math.min(1, minutes / POA_MINUTES_FOR_FULL);
+    best = Math.max(best, dtalFactor * minutesFactor);
+  }
+  return 1 - MAX_POA_DAMPENING * best;
+}
 /**
  * 2026-08-30, user-reported (batch feedback follow-up: "are bench players scaled for the fact
  * they're bench players who'll mostly face the opponent's bench, playing fewer minutes?"). They
@@ -318,7 +356,8 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
     MAX_HUNTABILITY_PENALTY,
     (shortfallMinutes / (NORMALIZATION_DTAL * GAME_MINUTES)) * MAX_HUNTABILITY_PENALTY,
   );
-  const penalty = rawPenalty * anchorDampening(team, minutesByPlayer);
+  const penalty =
+    rawPenalty * anchorDampening(team, minutesByPlayer) * poaCoverageDampening(team, minutesByPlayer);
   return {
     penalty,
     resistance: Math.round(100 - (penalty / MAX_HUNTABILITY_PENALTY) * 100),

@@ -1,102 +1,100 @@
 # TODO — Draft Game
 
-Living backlog. Edit this file directly whenever something is decided, shipped, or newly opened —
-this is the one place to check "what's going on with this project," instead of piecing it together
-from old handoff docs or an AI's memory.
+Żywy backlog. Edytuj ten plik bezpośrednio, kiedy coś zostanie zdecydowane, wypuszczone albo nowo
+otwarte — to jedno miejsce do sprawdzenia "co się dzieje z tym projektem", zamiast składać to z
+pamięci AI albo starych plików handoff.
 
-The `CLAUDE_*_HANDOFF*.md` / `CODEX-REVERT-NOTICE.md` / `SPACING_HANDOFF.md` /
-`TEAM_MODEL_V1_SHADOW_*.md` files at the repo root are one-off, dated AI-session snapshots, not
-living docs — several are from July/August and likely stale. Worth archiving into a `handoffs/`
-folder or deleting once you've confirmed nothing in them is still needed; nothing here depends on
-them.
+(Stare pliki `CLAUDE_*_HANDOFF*.md` / `CODEX-REVERT-NOTICE.md` / `SPACING_HANDOFF.md` /
+`TEAM_MODEL_V1_SHADOW_*.md` zostały usunięte 2026-09-06 — były jednorazowymi, nieaktualnymi
+migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
 
 ---
 
-## Before shipping to friends
+## Przed wypuszczeniem dla znajomych
 
-Nothing found that's actually blocking — engine and test suite are in good shape as of 2026-09-06.
+Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie na 2026-09-06.
 
-## Calibration decisions needing your judgment call
+## Decyzje kalibracyjne czekające na Twoją ocenę
 
-- [ ] **TE-1 weight**: measured talentScore↔human-vote correlation is 0.54 (not the originally
-      assumed 0.82). Accept it, or re-tune once there's more than n=15 human-draft data?
-- [ ] **AI-1 pick-value exponent** — needs actual playtest feel, not just the math, to judge if it's right
-- [ ] **AI-4 total draft time** — only the mid-draft freeze got fixed; overall pacing/total time not addressed
-- [ ] **PG archetype edge cases** (from 2026-08-19 — re-check before acting, a lot of PG-specific work
-      has shipped since and may have already resolved some of these): Skiles 76-vs-75 tier ceiling,
-      Hartenstein/Tucker tier-floor collision, Nash-core defense stacking, AI draft-value read on
-      these archetypes
-- [ ] **mmStruct post-hub taper** (offenseScore's mismatch-structure dimension, open per 2026-09-05 session)
-- [ ] **"Fix B" label audit** — coded and green-lit, held pending your review (defensive-undervaluation thread)
-- [ ] **Team-level offenseScore component** for team-wide rim pressure — today the per-player rim
-      pressure fix barely moves team totals (example: Team #9/#14 moved only +1)
-- [ ] **Expand Movement Shooter / rim-pressure verified-name registries** — small, real, named additions,
-      offered as a quick win whenever this project comes up
-- [ ] **Salary-cap game mode, Step 2**: pricing engine module (Step 1 — real 1985-2025 salary data — is done)
+- [ ] **Waga TE-1**: zmierzona korelacja talentScore↔głos człowieka to 0.54 (nie zakładane wcześniej
+      0.82). Zaakceptować, czy przekalibrować gdy będzie więcej niż n=15 realnych draftów?
+- [ ] **Wykładnik wartości pick'a AI-1** — potrzebuje realnego "czucia" z rozgrywki, nie tylko matematyki
+- [ ] **Całkowity czas draftu AI-4** — naprawione tylko zawieszanie w połowie draftu, ogólne tempo/czas nie ruszone
+- [ ] **Edge case'y archetypu PG** (z 2026-08-19 — sprawdź ponownie zanim zaczniesz działać, dużo pracy
+      nad PG wylądowało od tego czasu i część mogła się już sama rozwiązać): sufit tieru Skiles
+      76-vs-75, kolizja tier-floor Hartenstein/Tucker, stackowanie obrony w stylu Nasha, ocena
+      wartości draftowej AI dla tych archetypów
+- [ ] **Taper mmStruct post-hub** (wymiar "struktury niedopasowania" w offenseScore, otwarte od sesji 2026-09-05)
+- [ ] **Audyt etykiet "Fix B"** — kod gotowy, zatwierdzony, czeka na Twój przegląd (wątek niedoszacowania obrony)
+- [ ] **Komponent offenseScore na poziomie drużyny** dla rim pressure całej drużyny — dziś poprawka
+      per-gracz ledwo rusza sumy drużynowe (przykład: Drużyna #9/#14 zmieniła się tylko o +1)
+- [ ] **Rozszerzenie rejestrów Movement Shooter / rim-pressure** — małe, realne, nazwane dodatki,
+      proponowane jako szybki zysk przy każdym powrocie do tego projektu
+- [ ] **Tryb salary-cap, Krok 2**: moduł silnika cenowego (Krok 1 — realne dane płacowe 1985-2025 — gotowy)
 
-## Known, accepted limitations (decided not to chase further — don't re-litigate without new evidence)
+## Znane, zaakceptowane ograniczenia (zdecydowano nie gonić dalej — nie odgrzewać bez nowych dowodów)
 
-- LeBron's 2008-10 Cleveland span reads as his engine-computed peak over Miami — a real
-  architectural gap (defense-only signal), not a per-player patch problem. A named-exception fix
-  was offered and declined.
-- Pre-1997 PG/C systemic underrating (Bill Russell, Bob Cousy, etc. reading too low) — real, needs
-  its own dedicated session, not started.
+- Okres LeBrona 2008-10 w Cleveland czytany przez silnik jako jego szczyt kariery, ponad Miami —
+  realna dziura architektoniczna (sygnał czysto defensywny), nie problem do załatania per-gracz.
+  Nazwany wyjątek był proponowany i odrzucony.
+- Systemowe niedoszacowanie PG/C sprzed 1997 (Bill Russell, Bob Cousy itd. czytani za nisko) —
+  realne, wymaga osobnej sesji, nie zaczęte.
 
-## Ideas parking lot (brainstormed 2026-09-05/06 — none decided or prioritized yet)
+## Skrzynka pomysłów (wymyślone 2026-09-05/06 — nic jeszcze nie zdecydowane/priorytetyzowane)
 
-### Entry-level modes
-- [ ] "Legends Only" pool (~80-100 iconic names, easier than the full ~1223-span pool)
-- [ ] "Quick 5" — 5-player mini-draft, no rotation building
-- [ ] Random squad — zero choice, pure comparison/laughs
-- [ ] "Guess Who's Better" — 2-span trivia, teaches TAL/D-TAL passively
-- [ ] Guided draft — AI suggests 3-4 picks per turn instead of searching the full pool
-- [ ] Simplified 1-2-sentence results screen variant (vs. the full 7 strengths + 7 concerns)
+### Tryby entry-level
+- [ ] "Legends Only" — pula ~80-100 ikonicznych nazwisk (łatwiejsza niż pełna pula ~1223 spanów)
+- [ ] "Szybka 5" — mini-draft na 5 graczy, bez budowania rotacji
+- [ ] Losowy skład — zero wyboru, czysta zabawa/porównanie
+- [ ] "Zgadnij kto lepszy" — trivia na 2 spanach, uczy TAL/D-TAL przy okazji
+- [ ] Draft z podpowiedziami — AI sugeruje 3-4 picki na turę zamiast przeszukiwania całej puli
+- [ ] Uproszczony wariant ekranu wyników (1-2 zdania vs. pełne 7 strengths + 7 concerns)
 
-### Daily engagement
-- [ ] Streak counter on the daily puzzle
-- [ ] Daily free card pack (ties into Card Collection)
-- [ ] Collection progress bar (X / ~1223 cards)
-- [ ] "On this day in NBA history" blurb on the home screen
-- [ ] "Best Squad of the Day" — daily winner within a friend group, shown with *why* they won
-      (reuse the existing insights text engine) + a hall-of-fame history of past winners
+### Codzienne zaangażowanie
+- [ ] Licznik serii (streak) na codziennej zagadce
+- [ ] Darmowa codzienna paczka kart (łączy się z Card Collection)
+- [ ] Pasek postępu kolekcji (X / ~1223 kart)
+- [ ] "Tego dnia w historii NBA" na stronie głównej
+- [ ] "Squad dnia" — codzienny zwycięzca w grupie znajomych, pokazany z WYJAŚNIENIEM dlaczego wygrał
+      (wykorzystując istniejący silnik tekstu insights) + archiwum "hall of fame" poprzednich zwycięzców
 
-### Quick PvP (buildable without a backend)
-- [ ] Same-seed duel — reuses the existing `?draftSeed=` mechanism (cheapest of all of these)
-- [ ] "Draft roast" — share a result, a friend tries to beat it
-- [ ] Best-of-3 mini-draft showdown
-- [ ] 1-on-1 player picker (no roster building at all)
+### Szybkie PvP (bez backendu)
+- [ ] Duel na tym samym seedzie — wykorzystuje istniejący mechanizm `?draftSeed=` (najtańszy z tych pomysłów)
+- [ ] "Draft roast" — wysyłasz wynik, znajomy próbuje go pobić
+- [ ] Best-of-3 szybkie starcie mini-draftów
+- [ ] Wybór 1-na-1 (bez budowania składu w ogóle)
 
-### Sharing / virality
-- [ ] Wordle-style shareable result card — no spoilers, just a compact score summary
+### Udostępnianie / wiralowość
+- [ ] Shareable wynik w stylu Wordle — bez spoilerów, tylko skondensowane podsumowanie wyniku
 
-### Bigger content ideas
-- [ ] "What If" mode extended to real historical scenarios (not just single-player swaps within your own team)
-- [ ] "Recreate this legendary team" challenge mode
-- [ ] Ironic/funny achievements (e.g. "drafted a team with zero shooters")
-- [ ] Multi-season career/dynasty mode (season/playoff sim already exists as a building block)
+### Większe pomysły na zawartość
+- [ ] Rozszerzenie "What If" o realne scenariusze historyczne (nie tylko podmiana w swojej drużynie)
+- [ ] Tryb wyzwania "odtwórz tę legendarną drużynę"
+- [ ] Ironiczne/śmieszne achievementy (np. "wydraftowałeś drużynę bez ani jednego strzelca")
+- [ ] Tryb kariery/dynastii na wiele sezonów (symulacja sezonu/playoffów już istnieje jako budulec)
 
-## Monetization — direction chosen, nothing built yet
+## Monetyzacja — kierunek wybrany, nic jeszcze nie zbudowane
 
-- [ ] Private leagues, likely a one-time per-league seasonal fee (not per-person monthly — recurring
-      monthly billing is a bad fit for a feature a friend group uses in bursts through a season)
-- [ ] **Before charging any real money**: get an actual legal opinion on using real NBA player
-      names/stats/data in a paid feature. Flagged repeatedly, not yet done — this gates the whole
-      monetization track.
-- [ ] Validate real demand for private leagues as a free feature before building any payment infra
+- [ ] Prywatne ligi, prawdopodobnie jednorazowa opłata per liga za sezon (nie per osoba miesięcznie —
+      cykliczne rozliczanie miesięczne źle pasuje do funkcji używanej w grupie znajomych zrywami przez sezon)
+- [ ] **Zanim zaczniesz pobierać realne pieniądze**: zdobądź prawdziwą opinię prawną co do używania
+      prawdziwych nazwisk/statystyk graczy NBA w płatnej funkcji. Wspominane wielokrotnie, wciąż nie
+      zrobione — to blokuje całą ścieżkę monetyzacji.
+- [ ] Zwaliduj realny popyt na prywatne ligi jako darmową funkcję, zanim zbudujesz infrastrukturę płatności
 
-## Code quality
+## Jakość kodu
 
-Full detail in Claude's memory (`code_quality_plan_post_friends_launch.md`) if picking this back up with Claude.
+Pełny szczegół w pamięci Claude (`code_quality_plan_post_friends_launch.md`), jeśli wracasz do tego z Claude.
 
-- [x] Dead detector-config cleanup + `scripts/testDetectorIntegrity.ts` standing test (`ddf840e`)
-- [x] Fast/slow test split — `npm run test:fast` (~3m17s) vs full `npm test` (~17min) (`9a93e6e`)
-- [ ] Named-exceptions registry for `talent.ts`/`grades.ts` per-player overrides — still pending, post-launch
-- [x] ~~Git worktrees for concurrent AI sessions~~ — moot, no longer running another AI concurrently
+- [x] Czyszczenie martwej konfiguracji detektorów + stały test `scripts/testDetectorIntegrity.ts` (`ddf840e`)
+- [x] Podział testów szybkie/pełne — `npm run test:fast` (~3m17s) vs pełny `npm test` (~17min) (`9a93e6e`)
+- [ ] Rejestr nazwanych wyjątków dla per-gracz override'ów w `talent.ts`/`grades.ts` — wciąż czeka, po premierze
+- [x] ~~Git worktree dla równoległych sesji AI~~ — nieaktualne, nie pracujesz już równolegle z innym AI
 
-## Long-term / paused
+## Długoterminowe / wstrzymane
 
-- Playoff BPM from play-by-play pipeline — paused, revisit near project end (validated for one
-  season, not yet scaled to the other ~28)
-- Real multiplayer with live tactics — long-term vision, your own words "that's a long fucking
-  shot." Needs a real backend (Supabase/Firebase are the realistic picks), not started. Cheap
-  first steps that don't need a backend: the entry-level/PvP/daily-engagement ideas above.
+- Pipeline Playoff BPM z play-by-play — wstrzymany, wróć bliżej końca projektu (zwalidowany dla
+  jednego sezonu, nie przeskalowany na resztę ~28)
+- Prawdziwy multiplayer z taktyką na żywo — długoterminowa wizja, Twoje własne słowa: "that's a long
+  fucking shot". Potrzebuje prawdziwego backendu (Supabase/Firebase to realistyczne wybory), nie
+  zaczęte. Tanie pierwsze kroki bez backendu: pomysły entry-level/PvP/codzienne zaangażowanie wyżej.
