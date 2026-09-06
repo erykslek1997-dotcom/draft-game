@@ -24,6 +24,13 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
       + kara down-slide 0.12x niezmieniony od 08-19, Tucker nadal tier-gated w każdym realnym
       spanie — scenariusz prawdopodobnie nadal reprodukowalny). Decyzja: poluzować próg tieru dla
       realnych drugich pozycji, czy pozwolić dużym różnicom fit przebić próg?
+- [ ] **Skalibrować Shaq w `USER_VALIDATED_PEAK_SPANS`** (`aiDrafter.ts`) — dziś ma tylko Harden
+      (→ 2018-20, sprawdzone 2026-09-06: to nadal jego najwyższy TAL, 97, wygląda aktualnie). Shaq
+      NIE ma wpisu, więc jego "reprezentatywny" span do draftu pływa zależnie od kontekstu/wartości
+      przy danym picku (to dokładnie mechanizm za "wybrał słabszy span 2003-05" z edge case'u AI-4).
+      Do zdecydowania: czy dodać mu wpis na stałe, i który span — TAL 97 dzielą aż 4 spany
+      (1998-00, 1999-01, 2000-02, 2001-03), więc sam TAL nie rozstrzyga; potrzebne realne kryterium
+      (najlepsze pudełko statystyczne, konsensus "peak Shaq", coś innego).
 - [ ] **Taper mmStruct post-hub** (wymiar "struktury niedopasowania" w offenseScore, otwarte od sesji 2026-09-05)
 - [ ] **Audyt etykiet "Fix B"** — kod gotowy, zatwierdzony, czeka na Twój przegląd (wątek niedoszacowania obrony)
 - [ ] **Komponent offenseScore na poziomie drużyny** dla rim pressure całej drużyny — dziś poprawka
