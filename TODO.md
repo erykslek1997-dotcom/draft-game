@@ -20,10 +20,14 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
       0.82). Zaakceptować, czy przekalibrować gdy będzie więcej niż n=15 realnych draftów?
 - [ ] **Wykładnik wartości pick'a AI-1** — potrzebuje realnego "czucia" z rozgrywki, nie tylko matematyki
 - [ ] **Całkowity czas draftu AI-4** — naprawione tylko zawieszanie w połowie draftu, ogólne tempo/czas nie ruszone
-- [ ] **Edge case'y archetypu PG** (z 2026-08-19 — sprawdź ponownie zanim zaczniesz działać, dużo pracy
-      nad PG wylądowało od tego czasu i część mogła się już sama rozwiązać): sufit tieru Skiles
-      76-vs-75, kolizja tier-floor Hartenstein/Tucker, stackowanie obrony w stylu Nasha, ocena
-      wartości draftowej AI dla tych archetypów
+- [ ] **Kolizja tier-floor Hartenstein/Tucker** (przegląd 2026-09-06: mechanizm `STARTER_ELIGIBLE_TIERS`
+      + kara down-slide 0.12x niezmieniony od 08-19, Tucker nadal tier-gated w każdym realnym
+      spanie — scenariusz prawdopodobnie nadal reprodukowalny). Decyzja: poluzować próg tieru dla
+      realnych drugich pozycji, czy pozwolić dużym różnicom fit przebić próg?
+- [ ] **AI draft-value** (Sefolosha zamiast 2. spanu Hardena, gorszy pick Shaqa 2003-05) — przegląd
+      2026-09-06: `aiDrafter.ts` miał od tego czasu 6 commitów w tym "prevent dead cap-glue picks
+      near the end of a draft" — brzmi trafnie, ale nie zweryfikowane (brak zapisanego seeda z
+      oryginalnego zgłoszenia, trzeba by zaobserwować ponownie w praktyce)
 - [ ] **Taper mmStruct post-hub** (wymiar "struktury niedopasowania" w offenseScore, otwarte od sesji 2026-09-05)
 - [ ] **Audyt etykiet "Fix B"** — kod gotowy, zatwierdzony, czeka na Twój przegląd (wątek niedoszacowania obrony)
 - [ ] **Komponent offenseScore na poziomie drużyny** dla rim pressure całej drużyny — dziś poprawka
@@ -39,6 +43,16 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
   Nazwany wyjątek był proponowany i odrzucony.
 - Systemowe niedoszacowanie PG/C sprzed 1997 (Bill Russell, Bob Cousy itd. czytani za nisko) —
   realne, wymaga osobnej sesji, nie zaczęte.
+
+## Zamknięte (przegląd 2026-09-06)
+
+- ~~**Sufit tieru Skilesa 76-vs-75**~~ — rozwiązane już 08-19 przez nazwany downcap
+  (`grades.ts` — Scott Skiles 1990-92 → cap 'Sixth Man'), notatka pamięci po prostu tego nie
+  odnotowała. Potwierdzone działające dziś na żywo.
+- ~~**Stackowanie obrony Nash/Kerr/Schrempf**~~ — prawdopodobnie zaadresowane przy okazji przez
+  `886ad0b` ("dampen huntability penalty behind an elite rim anchor", G4) — dokładnie odpowiada na
+  pytanie "czy kara za surowa przy silnym anchorze". Nie zrekonstruowano identycznego 9-osobowego
+  składu żeby potwierdzić 1:1, ale mechanizm którego brakowało już istnieje.
 
 ## Skrzynka pomysłów (wymyślone 2026-09-05/06 — nic jeszcze nie zdecydowane/priorytetyzowane)
 
