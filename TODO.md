@@ -46,9 +46,9 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
 
 ## Zamknięte (przegląd 2026-09-06)
 
-- ~~**Sufit tieru Skilesa 76-vs-75**~~ — rozwiązane już 08-19 przez nazwany downcap
-  (`grades.ts` — Scott Skiles 1990-92 → cap 'Sixth Man'), notatka pamięci po prostu tego nie
-  odnotowała. Potwierdzone działające dziś na żywo.
+- ~~**Sufit tieru Skilesa 76-vs-75**~~ — rozwiązane już 08-19 przez nazwany downcap. Od tego czasu
+  jego TAL sam spadł do 62 (dalsza kalibracja), więc wyjątek stał się zbędny — usunięty (`8c0e99c`),
+  potwierdzone identyczne zachowanie bez niego (nadal Sixth Man).
 - ~~**Stackowanie obrony Nash/Kerr/Schrempf**~~ — prawdopodobnie zaadresowane przy okazji przez
   `886ad0b` ("dampen huntability penalty behind an elite rim anchor", G4) — dokładnie odpowiada na
   pytanie "czy kara za surowa przy silnym anchorze". Nie zrekonstruowano identycznego 9-osobowego
