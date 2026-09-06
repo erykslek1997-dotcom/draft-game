@@ -24,13 +24,6 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
       + kara down-slide 0.12x niezmieniony od 08-19, Tucker nadal tier-gated w każdym realnym
       spanie — scenariusz prawdopodobnie nadal reprodukowalny). Decyzja: poluzować próg tieru dla
       realnych drugich pozycji, czy pozwolić dużym różnicom fit przebić próg?
-- [ ] **Skalibrować Shaq w `USER_VALIDATED_PEAK_SPANS`** (`aiDrafter.ts`) — dziś ma tylko Harden
-      (→ 2018-20, sprawdzone 2026-09-06: to nadal jego najwyższy TAL, 97, wygląda aktualnie). Shaq
-      NIE ma wpisu, więc jego "reprezentatywny" span do draftu pływa zależnie od kontekstu/wartości
-      przy danym picku (to dokładnie mechanizm za "wybrał słabszy span 2003-05" z edge case'u AI-4).
-      Do zdecydowania: czy dodać mu wpis na stałe, i który span — TAL 97 dzielą aż 4 spany
-      (1998-00, 1999-01, 2000-02, 2001-03), więc sam TAL nie rozstrzyga; potrzebne realne kryterium
-      (najlepsze pudełko statystyczne, konsensus "peak Shaq", coś innego).
 - [ ] **Taper mmStruct post-hub** (wymiar "struktury niedopasowania" w offenseScore, otwarte od sesji 2026-09-05)
 - [ ] **Audyt etykiet "Fix B"** — kod gotowy, zatwierdzony, czeka na Twój przegląd (wątek niedoszacowania obrony)
 - [ ] **Komponent offenseScore na poziomie drużyny** dla rim pressure całej drużyny — dziś poprawka
@@ -49,6 +42,9 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
 
 ## Zamknięte (przegląd 2026-09-06)
 
+- ~~**Shaq w `USER_VALIDATED_PEAK_SPANS`**~~ — przypięty na 1999-01 (`e1a67cc`). Twoja decyzja:
+  1999-01 i 2000-02 to realni kandydaci na peak ofensywy+obrony; sprawdzone wprost — 1999-01 wygrywa
+  na obu składowych (O-TAL 94 vs 92, D-TAL 80 vs 74) mimo remisu na ogólnym TAL (97).
 - ~~**Sufit tieru Skilesa 76-vs-75**~~ — rozwiązane już 08-19 przez nazwany downcap. Od tego czasu
   jego TAL sam spadł do 62 (dalsza kalibracja), więc wyjątek stał się zbędny — usunięty (`8c0e99c`),
   potwierdzone identyczne zachowanie bez niego (nadal Sixth Man).
