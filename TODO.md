@@ -24,10 +24,6 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
       + kara down-slide 0.12x niezmieniony od 08-19, Tucker nadal tier-gated w każdym realnym
       spanie — scenariusz prawdopodobnie nadal reprodukowalny). Decyzja: poluzować próg tieru dla
       realnych drugich pozycji, czy pozwolić dużym różnicom fit przebić próg?
-- [ ] **AI draft-value** (Sefolosha zamiast 2. spanu Hardena, gorszy pick Shaqa 2003-05) — przegląd
-      2026-09-06: `aiDrafter.ts` miał od tego czasu 6 commitów w tym "prevent dead cap-glue picks
-      near the end of a draft" — brzmi trafnie, ale nie zweryfikowane (brak zapisanego seeda z
-      oryginalnego zgłoszenia, trzeba by zaobserwować ponownie w praktyce)
 - [ ] **Taper mmStruct post-hub** (wymiar "struktury niedopasowania" w offenseScore, otwarte od sesji 2026-09-05)
 - [ ] **Audyt etykiet "Fix B"** — kod gotowy, zatwierdzony, czeka na Twój przegląd (wątek niedoszacowania obrony)
 - [ ] **Komponent offenseScore na poziomie drużyny** dla rim pressure całej drużyny — dziś poprawka
@@ -53,6 +49,16 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
   `886ad0b` ("dampen huntability penalty behind an elite rim anchor", G4) — dokładnie odpowiada na
   pytanie "czy kara za surowa przy silnym anchorze". Nie zrekonstruowano identycznego 9-osobowego
   składu żeby potwierdzić 1:1, ale mechanizm którego brakowało już istnieje.
+- ~~**AI draft-value: Sefolosha zamiast 2. spanu Hardena**~~ — to strukturalnie niemożliwy scenariusz,
+  nie bug. `draft.ts` ma twardą regułę: gdy ktokolwiek wydraftuje którykolwiek span danego gracza,
+  WSZYSTKIE pozostałe spany tej samej realnej osoby znikają z całej puli, dla każdej drużyny, do
+  końca draftu. "Drugi span Hardena" nie mógł być fizycznie dostępny. Oryginalna notatka musiała
+  nieprecyzyjnie zapamiętać co się faktycznie stało.
+- ~~**AI draft-value: gorszy pick Shaqa 2003-05**~~ — ma realne uzasadnienie. Ze wszystkich 14 spanów
+  Shaqa, 2003-05 (TAL 93) to tylko 14.6 FGA — znacznie taniej niż jego szczytowe lata (97 TAL przy
+  18-20 FGA). Kod ma udokumentowaną, celową zasadę preferowania tańszego/niższego-TAL spanu tego
+  samego gracza gdy liczy się miejsce w limicie FGA. Bez zapisanego stanu budżetu z oryginalnego
+  zgłoszenia nie da się potwierdzić 1:1, ale to wygląda na sensowny wybór efektywnościowy, nie błąd.
 
 ## Skrzynka pomysłów (wymyślone 2026-09-05/06 — nic jeszcze nie zdecydowane/priorytetyzowane)
 
