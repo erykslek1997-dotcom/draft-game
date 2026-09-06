@@ -3,6 +3,7 @@ import { normalizePlayerName } from '../data/schema';
 import { computeDefensiveImpact, reboundingTerm } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
 import { individualDefenseRate } from './defensiveAccolades';
+import { getBodyWeightLbs } from '../data/heightLookup';
 
 /**
  * D-TAL — "how good is this player defensively," 0-100, per position.
@@ -266,6 +267,25 @@ const ON_OFF_FLOOR_AT_CAP = 58;
 const ON_OFF_FLOOR_DDPM_CAP = 3.0;
 
 /**
+ * 2026-09-06, user, on Pau Gasol / Steven Adams: "the engine undervalues players who are STRONG
+ * at the rim but don't block." Confirmed structural — `computeDefensiveImpact`'s `roleWeight` term
+ * is scaled by the player's own steal+block activity, so a 250+lb interior wall who holds
+ * position, boxes out and forces tough shots WITHOUT swatting them gets the Anchor Big role
+ * bonus cut roughly in half. The on/off audit for `onOffDefenseFloor` above showed the class:
+ * ~320 heavy C/PF spans with real DARKO +2 to +2.5 (a genuine top-30 defensive on/off) whose
+ * D-TAL sat at exactly the 51-55 the standard floor curve produces — Adams every span, Capela,
+ * DeAndre Jordan, Nurkić, Brad Miller, Dampier, Haywood, Dale Davis, Zaza, Robin/Brook Lopez.
+ * A physically large true big (weight >= `PHYSICAL_ANCHOR_WEIGHT_LBS`, position C/PF) whose real
+ * on/off is strongly positive gets a steeper, higher floor: the box specifically cannot see
+ * wall-defense, so strong on/off deserves more benefit of the doubt for a heavy interior body
+ * than it does for a guard riding a good team defense. Guards and stretch fours never clear the
+ * weight gate. Still display-only, still bounded (never a claim of elite).
+ */
+const PHYSICAL_ANCHOR_WEIGHT_LBS = 248;
+const PHYSICAL_ANCHOR_FLOOR_AT_MIN = 52;
+const PHYSICAL_ANCHOR_FLOOR_AT_CAP = 66;
+
+/**
  * Display-only D-TAL floor from real on/off data. 2026-09-05, user: "a center affects TEAM
  * defense, not individual matchups — does D-TAL count that?" It barely does: `computeDefensiveImpact`
  * is pure individual box, and the real-data correction blends DARKO (on/off — the team-anchoring
@@ -288,7 +308,14 @@ function onOffDefenseFloor(span: PlayerSpan): number {
   if (detail.raptorDefense !== null && detail.raptorDefense < ON_OFF_FLOOR_RAPTOR_VETO) return 0;
   const ddpm = Math.min(ON_OFF_FLOOR_DDPM_CAP, detail.onOffDdpm);
   const frac = (ddpm - ON_OFF_FLOOR_MIN_DDPM) / (ON_OFF_FLOOR_DDPM_CAP - ON_OFF_FLOOR_MIN_DDPM);
-  return ON_OFF_FLOOR_AT_MIN + frac * (ON_OFF_FLOOR_AT_CAP - ON_OFF_FLOOR_AT_MIN);
+  const weight = getBodyWeightLbs(span.playerName);
+  const isPhysicalAnchor =
+    (span.primaryPosition === 'C' || span.primaryPosition === 'PF') &&
+    weight !== undefined &&
+    weight >= PHYSICAL_ANCHOR_WEIGHT_LBS;
+  const atMin = isPhysicalAnchor ? PHYSICAL_ANCHOR_FLOOR_AT_MIN : ON_OFF_FLOOR_AT_MIN;
+  const atCap = isPhysicalAnchor ? PHYSICAL_ANCHOR_FLOOR_AT_CAP : ON_OFF_FLOOR_AT_CAP;
+  return atMin + frac * (atCap - atMin);
 }
 
 export function computeDefensiveTalent(span: PlayerSpan): number {
