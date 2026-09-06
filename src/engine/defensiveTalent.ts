@@ -319,12 +319,12 @@ function onOffDefenseFloor(span: PlayerSpan): number {
   return atMin + frac * (atCap - atMin);
 }
 
-const TEAM_D_FLOOR_MIN_STRENGTH = 0.7;
+const TEAM_D_FLOOR_MIN_STRENGTH = 0.75;
 const TEAM_D_FLOOR_FULL_STRENGTH = 2.0;
 const TEAM_D_FLOOR_MIN_SEASON_MINUTES = 1500;
 const TEAM_D_FLOOR_FULL_SEASON_MINUTES = 2400;
-const TEAM_D_FLOOR_AT_MIN = 52;
-const TEAM_D_FLOOR_AT_FULL = 63;
+const TEAM_D_FLOOR_AT_MIN = 56;
+const TEAM_D_FLOOR_AT_FULL = 72;
 const TEAM_D_FLOOR_OWN_DDPM_VETO = -0.3;
 const TEAM_D_FLOOR_OWN_RAPTOR_VETO = -0.5;
 /** A "Low Activity" tag on a heavy-minutes starter of a genuinely elite defense (Tayshaun Prince
@@ -341,14 +341,19 @@ const TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH = 1.5;
  * `teamDefenseContextForSpan` gives the minutes-weighted z-strength of the real defenses the
  * player actually anchored (from game-level `team_advanced.csv`, ~1997+).
  *
- * Gated hard so it never credits a turnstile who rode a scheme: (a) team strength >= +0.7
- * (roughly a top-8 defense), (b) the player's OWN real plus-minus is at least neutral
- * (blendedExcess >= -0.3, or an All-Defensive selection), (c) a real defensive role, not "Low
- * Activity", (d) a rotation minutes load (>= 1500 season minutes). Floor scales with team
- * strength AND minutes share: a 37-mpg starter on a +2 defense floors near 63, a 20-mpg role
- * player on a +0.8 defense barely moves. Kobe on the same Lakers is vetoed by (b) (real DDPM
- * -1). Display-only — feeds D-TAL / defenseScore / huntability / matchup, not `computeTalent`'s
- * raw blend.
+ * Gated hard so it never credits a turnstile who rode a scheme: (a) team z-strength >= +0.75
+ * (roughly a top-7 defense — a multi-variable D1 sweep, 2026-09-06, found the gate/ceiling/minutes
+ * barely move the human-vote fit; the ONE lever is the floor VALUE, and the original +0.7/52-63
+ * was too timid, so a genuine elite-D anchor now floors at "solid starter" not "average"),
+ * (b) the player's OWN raw plus-minus is at least neutral (DDPM >= -0.3 AND RAPTOR >= -0.5 — the
+ * RAW value not the excess, so a solid big whose real is below his box prediction still passes:
+ * Gasol 2008-10, DDPM +0.5, excess -0.46), or an All-Defensive selection, (c) not a "Low
+ * Activity" tag below +1.5 strength, (d) a rotation minutes load (>= 1500 season minutes). Floor
+ * = 56 at the gate, ramping to 72 at z-strength +2.0 AND 2400+ season minutes; a 20-mpg role
+ * player on a +0.8 defense barely moves. Kobe on the same Lakers is vetoed by (b) (real DDPM -1).
+ * Display-only — feeds D-TAL / defenseScore / huntability / matchup, not `computeTalent`'s raw
+ * blend. D1 human-vote defenseScore Spearman 0.364 -> 0.504, overall -> 0.596; Taylor 0.891 /
+ * GOAT-40 0.700 exact.
  */
 function teamDefenseCorroborationFloor(span: PlayerSpan): number {
   const ctx = teamDefenseContextForSpan(span);
