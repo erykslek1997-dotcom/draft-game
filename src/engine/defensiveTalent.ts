@@ -4,6 +4,7 @@ import { computeDefensiveImpact, reboundingTerm } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
 import { individualDefenseRate } from './defensiveAccolades';
 import { getBodyWeightLbs } from '../data/heightLookup';
+import { teamDefenseContextForSpan } from './teamDefenseLookup';
 
 /**
  * D-TAL — "how good is this player defensively," 0-100, per position.
@@ -318,6 +319,64 @@ function onOffDefenseFloor(span: PlayerSpan): number {
   return atMin + frac * (atCap - atMin);
 }
 
+const TEAM_D_FLOOR_MIN_STRENGTH = 0.7;
+const TEAM_D_FLOOR_FULL_STRENGTH = 2.0;
+const TEAM_D_FLOOR_MIN_SEASON_MINUTES = 1500;
+const TEAM_D_FLOOR_FULL_SEASON_MINUTES = 2400;
+const TEAM_D_FLOOR_AT_MIN = 52;
+const TEAM_D_FLOOR_AT_FULL = 63;
+const TEAM_D_FLOOR_OWN_DDPM_VETO = -0.3;
+const TEAM_D_FLOOR_OWN_RAPTOR_VETO = -0.5;
+/** A "Low Activity" tag on a heavy-minutes starter of a genuinely elite defense (Tayshaun Prince
+ * on the 2004 Pistons) is usually a mislabel, not a real read — allow the floor there only above
+ * this strength. */
+const TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH = 1.5;
+
+/**
+ * Display-only D-TAL floor for a high-minutes contributor on a genuinely elite team defense.
+ * 2026-09-06, user (re Pau Gasol / 2008-10 Lakers): "the base of a defense is still the bigs — no
+ * defense finishes top-5 with 5/10 bigs." The box misses wall-defense and individual on/off
+ * can't isolate one anchor when the whole unit is strong (Odom read +2.5 DDPM, Gasol +0.5, on
+ * near-identical minutes), so a good big on a top-5 defense gets squeezed from both sides.
+ * `teamDefenseContextForSpan` gives the minutes-weighted z-strength of the real defenses the
+ * player actually anchored (from game-level `team_advanced.csv`, ~1997+).
+ *
+ * Gated hard so it never credits a turnstile who rode a scheme: (a) team strength >= +0.7
+ * (roughly a top-8 defense), (b) the player's OWN real plus-minus is at least neutral
+ * (blendedExcess >= -0.3, or an All-Defensive selection), (c) a real defensive role, not "Low
+ * Activity", (d) a rotation minutes load (>= 1500 season minutes). Floor scales with team
+ * strength AND minutes share: a 37-mpg starter on a +2 defense floors near 63, a 20-mpg role
+ * player on a +0.8 defense barely moves. Kobe on the same Lakers is vetoed by (b) (real DDPM
+ * -1). Display-only — feeds D-TAL / defenseScore / huntability / matchup, not `computeTalent`'s
+ * raw blend.
+ */
+function teamDefenseCorroborationFloor(span: PlayerSpan): number {
+  const ctx = teamDefenseContextForSpan(span);
+  if (!ctx || ctx.strength < TEAM_D_FLOOR_MIN_STRENGTH) return 0;
+  if (ctx.meanSeasonMinutes < TEAM_D_FLOOR_MIN_SEASON_MINUTES) return 0;
+  if (span.defensiveRole === 'Low Activity' && ctx.strength < TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH) return 0;
+  if (individualDefenseRate(span) === 0) {
+    // Veto on the RAW real plus-minus, not the excess: a genuine turnstile reads negative DDPM/
+    // RAPTOR, but a solid big can read a negative *excess* (real below what his box predicts)
+    // while still being an honestly positive defender — Gasol 2008-10 (DDPM +0.5, excess -0.46).
+    const detail = realDefenseExcessDetail(span);
+    if (!detail) return 0;
+    if (detail.onOffDdpm !== null && detail.onOffDdpm < TEAM_D_FLOOR_OWN_DDPM_VETO) return 0;
+    if (detail.raptorDefense !== null && detail.raptorDefense < TEAM_D_FLOOR_OWN_RAPTOR_VETO) return 0;
+    if (detail.onOffDdpm === null && detail.raptorDefense === null) return 0;
+  }
+  const strengthFrac = Math.min(
+    1,
+    (ctx.strength - TEAM_D_FLOOR_MIN_STRENGTH) / (TEAM_D_FLOOR_FULL_STRENGTH - TEAM_D_FLOOR_MIN_STRENGTH),
+  );
+  const minutesFrac = Math.min(
+    1,
+    (ctx.meanSeasonMinutes - TEAM_D_FLOOR_MIN_SEASON_MINUTES) /
+      (TEAM_D_FLOOR_FULL_SEASON_MINUTES - TEAM_D_FLOOR_MIN_SEASON_MINUTES),
+  );
+  return TEAM_D_FLOOR_AT_MIN + strengthFrac * minutesFrac * (TEAM_D_FLOOR_AT_FULL - TEAM_D_FLOOR_AT_MIN);
+}
+
 export function computeDefensiveTalent(span: PlayerSpan): number {
   const cached = defensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
@@ -331,7 +390,12 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
   const namedFloor = NAMED_DTAL_FLOOR.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0;
   const result = Math.max(
     0,
-    Math.min(100, Math.round(Math.max(credited, namedFloor, onOffDefenseFloor(span)))),
+    Math.min(
+      100,
+      Math.round(
+        Math.max(credited, namedFloor, onOffDefenseFloor(span), teamDefenseCorroborationFloor(span)),
+      ),
+    ),
   );
   defensiveTalentCache.set(span.id, result);
   return result;
