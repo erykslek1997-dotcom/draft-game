@@ -40,6 +40,35 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
 - Systemowe niedoszacowanie PG/C sprzed 1997 (Bill Russell, Bob Cousy itd. czytani za nisko) —
   realne, wymaga osobnej sesji, nie zaczęte.
 
+## Polityka: ręczna kalibracja "greatest peaks" (ustalone 2026-09-06)
+
+Gdy gracz ma kilka spanów remisujących na tym samym ogólnym TAL, silnik AI (draft) domyślnie
+wybiera reprezentanta zależnie od kontekstu picku (budżet, potrzeby) — co czasem daje span, który
+nie jest realnym szczytem formy (tak jak Shaq/Harden/Jordan/Duncan/Garnett/Davis/Jokić poniżej).
+**Ustalona polityka: nie budujemy ogólnego algorytmu wykrywającego to automatycznie** (zbyt
+ryzykowne — historia tego projektu pokazuje że generalizacje tego typu regularnie się cofa, patrz
+np. most D-TAL→TAL, próby generalnej reguły obronnej SG) — zamiast tego, ręcznie sprawdzamy i
+przypinamy `USER_VALIDATED_PEAK_SPANS` (`aiDrafter.ts`) pojedynczo, w miarę jak faktycznie się
+pojawiają. Kryterium: jeśli jeden remisujący span jest Pareto-lepszy (nigdy gorszy, czasem lepszy
+na O-TAL I D-TAL jednocześnie) od pozostałych — przypinamy go. Jeśli to prawdziwy kompromis bez
+jasnego zwycięzcy — zostawiamy bez wpisu (Twoja decyzja waży więcej niż automat).
+
+**Przypięte (`e1a67cc`, `4d6a59c`)**: James Harden (2018-20), Shaquille O'Neal (1999-01), Michael
+Jordan (1987-89), Tim Duncan (2001-03), Kevin Garnett (2002-04), Anthony Davis (2017-19), Nikola
+Jokić (2021-23, remis idealny na O-TAL/D-TAL — przełamany po najniższym koszcie FGA).
+
+**Świadomie zostawione bez wpisu** (Twoja decyzja — prawdziwe kompromisy, bez znaczenia które):
+Larry Bird, Hakeem Olajuwon, David Robinson, Giannis Antetokounmpo.
+
+**Dwie poboczne obserwacje z audytu, nieporuszone dziś — osobna sesja jeśli kiedyś zechcesz:**
+- Prawdziwe sezony MVP Giannisa (spany ~2017-19/2018-20, TAL 90) czytają się WYRAŹNIE niżej niż
+  jego późniejsze spany z ery mistrzostwa (TAL 98). Starsza, osobna lista `GREATEST_PEAK_DRAFT_TIERS`
+  (inny mechanizm — bonus za spadającą legendę) już wcześniej wybrała ten późniejszy okres
+  (2020-22), niezależnie od dzisiejszej pracy.
+- Ta sama starsza lista ma Jordana przypisanego do 1988-90, różniącego się od dzisiejszego,
+  świeżo zmierzonego Pareto-zwycięzcy (1987-89) — te dwa mechanizmy (stara lista bonusu za legendę
+  vs dzisiejszy `USER_VALIDATED_PEAK_SPANS`) nigdy nie zostały ze sobą uzgodnione.
+
 ## Zamknięte (przegląd 2026-09-06)
 
 - ~~**Shaq w `USER_VALIDATED_PEAK_SPANS`**~~ — przypięty na 1999-01 (`e1a67cc`). Twoja decyzja:
