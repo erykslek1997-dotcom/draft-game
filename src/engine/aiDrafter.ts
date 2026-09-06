@@ -1224,6 +1224,20 @@ const USER_VALIDATED_PEAK_SPANS = new Map<string, string>([
   // 1999-01 wins on both components (O-TAL 94 vs 92, D-TAL 80 vs 74) despite the tied overall TAL
   // (97), so it's the one pinned.
   [normalizePlayerName("Shaquille O'Neal"), '1999-01'],
+  // 2026-09-06, systematic follow-up: audited every name in GREATEST_PEAK_DRAFT_TIERS above for
+  // the same TAL-tie pattern that caused the Shaq case. Where one tied span is Pareto-dominant
+  // on BOTH O-TAL and D-TAL over every other tied span (never worse on either, strictly better on
+  // at least one), pinned it directly as the same class of fix; genuine either/or tradeoffs
+  // (Bird, Hakeem, Robinson — user's own call: inconsequential either way) were deliberately left
+  // unpinned.
+  [normalizePlayerName('Michael Jordan'), '1987-89'], // O-TAL 100/D-TAL 100, beats the other 4 TAL-99 spans (1986-88, 1988-90, 1989-91, 1990-92) on both
+  [normalizePlayerName('Tim Duncan'), '2001-03'], // O-TAL 79/D-TAL 96, beats 2000-02 and 2002-04 (both TAL-97-tied) on both
+  [normalizePlayerName('Kevin Garnett'), '2002-04'], // O-TAL 82/D-TAL 96, beats 2003-05 and 2004-06 (both TAL-97-tied) on both
+  [normalizePlayerName('Anthony Davis'), '2017-19'], // O-TAL 85/D-TAL 96, beats 2018-20 (TAL-94-tied) on both
+  // Jokić's three TAL-98-tied spans (2021-23/2023-25/2024-26) read IDENTICAL O-TAL(100)/D-TAL(57)
+  // — no Pareto answer, since none differs on either axis. User's own tiebreak: the cheapest of
+  // the three (16.3 FGA vs 18.5/18.6), same production for less cap cost.
+  [normalizePlayerName('Nikola Jokic'), '2021-23'],
 ]);
 
 function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number }>(ranked: T[]): T[] {
