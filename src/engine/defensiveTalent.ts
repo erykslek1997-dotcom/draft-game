@@ -283,6 +283,18 @@ const NAMED_DTAL_FLOOR: ReadonlyMap<string, number> = new Map(
  */
 const NAMED_DTAL_FLOOR_ALL_SPANS: ReadonlyMap<string, number> = new Map([
   [normalizePlayerName('Bill Russell'), 99],
+  // 2026-09-07, D1S2 human-vote review (Drużyna 6 = Wilt/Rodman/Cooper/Anunoby/PG read DEF 59,
+  // ranked 6th by the judges): same pre-1974 no-stocks problem as Russell. Wilt's D-TAL swings
+  // 67-85 across his four spans purely on box-rebound volume while BPM2 defense is a flat +3.5
+  // to +4.3 (sustained top-~20 all-time) and he anchored the 1967 76ers and 1972 Lakers, two of
+  // the best defenses of their eras. Floored at 84 — a notch below Russell's 99 (Wilt's defense
+  // was "dominant rim deterrent", not "the best 5-year team-D stretch in history"), and
+  // deliberately UNDER the `eliteDefenseTalBonus` trigger (85): his peak span is 1966-68, already
+  // TAL 96 / GOAT-rank 5 (one better than Backpicks' 8), so this must NOT feed TAL. Display +
+  // team-defense (`providerStrength` / huntability) only. Costs D1 human-vote overall ~0.025
+  // (concentrated in one Wilt team the engine already over-ranks) for +0.026 D1S2 / +0.036 D1 on
+  // the defense sub-metric — user's explicit call after seeing the tradeoff.
+  [normalizePlayerName('Wilt Chamberlain'), 84],
 ]);
 
 /**

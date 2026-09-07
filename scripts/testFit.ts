@@ -234,8 +234,14 @@ check(
   'LeBron receives credible wing coverage from his curated secondary defensive profile',
 );
 check(
-  multiProfileCohesion.rimProvider === 'Evan Mobley',
-  'Mobley receives anchor-rim credit from his curated secondary defensive profile',
+  // 2026-09-07: was `=== 'Evan Mobley'`. That only held because Wilt 1966-68 read D-TAL 71 (the
+  // pre-1974 no-stocks under-rating). Wilt now carries a whole-career era override
+  // (defensiveTalent.ts `NAMED_DTAL_FLOOR_ALL_SPANS`, floor 84), so the greatest rim deterrent of
+  // his era correctly out-anchors a young Mobley for the rim slot. Mobley stays the lineup's #2
+  // rim option via his curated Anchor Big secondary (still exercised by the POA/wing checks above
+  // and his own incumbent Mobile Big tag).
+  multiProfileCohesion.rimProvider === 'Wilt Chamberlain',
+  'Wilt out-anchors a young Mobley at the rim once his era-override D-TAL is applied',
 );
 
 const billupsWadeSpacing = team('fit-v2-billups-wade-spacing', [
