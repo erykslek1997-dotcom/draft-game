@@ -300,6 +300,8 @@ export function realDefenseExcessDetail(span: PlayerSpan):
       hasTrackingCoverage: boolean;
       onOffDdpm: number | null;
       raptorDefense: number | null;
+      matchupDefense: number | null;
+      bpm2Defense: number | null;
     }
   | null {
   const blended = blendedExcess(span);
@@ -313,5 +315,7 @@ export function realDefenseExcessDetail(span: PlayerSpan):
     hasTrackingCoverage: hasRealTrackingCoverage(span),
     onOffDdpm: ddpmCoverageForSpan(span)?.avg ?? null,
     raptorDefense: raptorCoverageForSpan(span)?.avg ?? null,
+    matchupDefense: matchupCoverageForSpan(span)?.avg ?? null,
+    bpm2Defense: bpm2CoverageForSpan(span)?.avg ?? null,
   };
 }

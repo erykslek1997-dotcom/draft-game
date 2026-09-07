@@ -319,6 +319,47 @@ function onOffDefenseFloor(span: PlayerSpan): number {
   return atMin + frac * (atCap - atMin);
 }
 
+const PERIMETER_STOPPER_ROLES: readonly string[] = ['Wing Stopper', 'Chaser'];
+const PERIM_STOPPER_MATCHUP_DRAG = -1.5;
+const PERIM_STOPPER_CORROBORATION = 0.7;
+const PERIM_STOPPER_FLOOR_AT_MIN = 52;
+const PERIM_STOPPER_FLOOR_AT_FULL = 62;
+const PERIM_STOPPER_FULL_CORROBORATION = 1.6;
+
+/**
+ * Display-only D-TAL floor for a perimeter defender the `matchupDefense` (defended-FG%) source
+ * craters on its own. 2026-09-07, user (re Scottie Barnes, then "this may help other wings"):
+ * `matchupDefense` is structurally harsh on a wing who takes the toughest scoring assignment —
+ * the man he guards keeps shooting well against ANYONE. The audit found 11 SG/SF/PF perimeter-role
+ * spans where matchup reads <= -1.5 while RAPTOR AND BPM2 both read clearly positive and DARKO is
+ * not negative — Mikal Bridges 2018-20 (D-TAL 36 !), Delon Wright, Otto Porter, Robert Covington,
+ * Kent Bazemore. The count-weighted blend lets the lone strong-negative matchup number win,
+ * `darkoDefenseShortfall` fires, and D-TAL lands in the 30s-40s for real 3&D stoppers.
+ *
+ * Gated tight — SG/SF/PF only (PG and C excluded: for C, RAPTOR over-credits bigs and matchup is
+ * often RIGHT about them — Sabonis/Drummond/Vučević; PG perimeter defense is the `Point of Attack`
+ * lane, not covered here), a `Wing Stopper` or `Chaser` role (not `Helper`, which catches
+ * stretch-4s like Olynyk, nor `Point of Attack`, the steal-gambler tag), matchup <= -1.5, RAPTOR
+ * AND BPM2 both >= 0 with at least one >= +0.7, DARKO not < -0.3. Floor scales 52 -> 62 with the
+ * weaker of the two corroborating sources (Bridges 2018-20, RAPTOR +1.4 / BPM2 +1.1, lands near
+ * the top). Scottie Barnes 2021-24 does NOT qualify — his contemporaneous RAPTOR
+ * (+0.7) / BPM2 (~0) genuinely read "average young defender"; his elite reputation is 2024-25 and
+ * his 2024-26 span already reads 67 off a real All-Defensive selection. Display-only.
+ */
+function perimeterStopperFloor(span: PlayerSpan): number {
+  if (span.primaryPosition === 'PG' || span.primaryPosition === 'C') return 0;
+  if (!PERIMETER_STOPPER_ROLES.includes(span.defensiveRole)) return 0;
+  const detail = realDefenseExcessDetail(span);
+  if (!detail) return 0;
+  if (detail.matchupDefense === null || detail.matchupDefense > PERIM_STOPPER_MATCHUP_DRAG) return 0;
+  if (detail.onOffDdpm !== null && detail.onOffDdpm < -0.3) return 0;
+  const { raptorDefense: r, bpm2Defense: b } = detail;
+  if (r === null || b === null || r < 0 || b < 0) return 0;
+  if (r < PERIM_STOPPER_CORROBORATION && b < PERIM_STOPPER_CORROBORATION) return 0;
+  const frac = Math.min(1, Math.min(r, b) / PERIM_STOPPER_FULL_CORROBORATION);
+  return PERIM_STOPPER_FLOOR_AT_MIN + frac * (PERIM_STOPPER_FLOOR_AT_FULL - PERIM_STOPPER_FLOOR_AT_MIN);
+}
+
 const TEAM_D_FLOOR_MIN_STRENGTH = 0.75;
 const TEAM_D_FLOOR_FULL_STRENGTH = 2.0;
 const TEAM_D_FLOOR_MIN_SEASON_MINUTES = 1500;
@@ -398,7 +439,13 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
     Math.min(
       100,
       Math.round(
-        Math.max(credited, namedFloor, onOffDefenseFloor(span), teamDefenseCorroborationFloor(span)),
+        Math.max(
+          credited,
+          namedFloor,
+          onOffDefenseFloor(span),
+          teamDefenseCorroborationFloor(span),
+          perimeterStopperFloor(span),
+        ),
       ),
     ),
   );
