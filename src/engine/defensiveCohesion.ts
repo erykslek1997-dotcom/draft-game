@@ -126,8 +126,19 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
   }
 
   const minutesByPlayer = new Map<string, number>();
-  for (const { player, minutes } of assignments) {
+  const dominantSlotByPlayer = new Map<string, Position>();
+  const slotMinutesByPlayer = new Map<string, Map<Position, number>>();
+  for (const { player, slot, minutes } of assignments) {
     minutesByPlayer.set(player.id, (minutesByPlayer.get(player.id) ?? 0) + minutes);
+    const bySlot = slotMinutesByPlayer.get(player.id) ?? new Map<Position, number>();
+    bySlot.set(slot, (bySlot.get(slot) ?? 0) + minutes);
+    slotMinutesByPlayer.set(player.id, bySlot);
+  }
+  for (const [id, bySlot] of slotMinutesByPlayer) {
+    let best: Position = 'C';
+    let bestMin = -1;
+    for (const [s, m] of bySlot) if (m > bestMin) { best = s; bestMin = m; }
+    dominantSlotByPlayer.set(id, best);
   }
   const assignedPlayers = team.roster
     .map((player) => {
@@ -219,9 +230,20 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     ((secondRim?.effectiveStrength ?? 0) - BACKLINE_PROVIDER_START) /
       (BACKLINE_PROVIDER_FULL - BACKLINE_PROVIDER_START),
   );
+  // A backline FOUNDATION means two rim anchors actually on the floor together — Duncan at the 4,
+  // Robinson at the 5 — not two centers time-sharing one position. Those two things defend very
+  // differently but read identically to the strength-only check above: Gobert 26 min + Ben
+  // Wallace 22 min, both at the C slot (D1S2 Drużyna 13), was earning the full +18 for a twin
+  // tower it never fields. Require the two anchors' dominant slots to differ (one C, one PF).
+  const rimSlotsDiffer =
+    rimProviders.length >= 2 &&
+    dominantSlotByPlayer.get(rimProviders[0].player.id) !==
+      dominantSlotByPlayer.get(rimProviders[1].player.id);
   // Opponents can still attack the guards, so hunt resistance affects the ceiling; it cannot
   // erase Duncan+Robinson, Mobley+Gobert or Wembanyama+Robinson as a backline foundation.
-  const backlineFoundation = secondRimReadiness * (0.65 + resistanceReadiness * 0.35);
+  const backlineFoundation = rimSlotsDiffer
+    ? secondRimReadiness * (0.65 + resistanceReadiness * 0.35)
+    : 0;
   const backlineFoundationBonus = backlineFoundation * MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS;
   const drtgCompleteness = Math.max(
     completeness,
