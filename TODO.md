@@ -12,7 +12,13 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
 
 ## Przed wypuszczeniem dla znajomych
 
-Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie na 2026-09-06.
+- [ ] **`npm test`/`npm run test:fast` obecnie czerwone** (2026-09-07): `testClosingLineups.ts` —
+      `CLOSING_FIVE_REQUIRES_TRADEOFF fires on at least one real fixture (twoBig measures a real
+      two-player, 0.113 closing tradeoff)`. Próg 0.11 w tym teście prawdopodobnie zdryfował przez
+      późniejszą kalibrację silnika (ten sam wzorzec co poprawki testInsights.ts na starcie tej
+      sesji) — potwierdzone: powtarza się niezależnie od dzisiejszej pracy nad pensjami (`git
+      stash` + rerun, identyczny fail). Nie naprawione — nikt nie prosił, tylko odnotowane po
+      drodze. Warto poprawić przed premierą, żeby `npm test` znowu przechodziło w całości.
 
 ## Decyzje kalibracyjne czekające na Twoją ocenę
 
@@ -68,8 +74,14 @@ Larry Bird, Hakeem Olajuwon, David Robinson, Giannis Antetokounmpo.
   świeżo zmierzonego Pareto-zwycięzcy (1987-89) — te dwa mechanizmy (stara lista bonusu za legendę
   vs dzisiejszy `USER_VALIDATED_PEAK_SPANS`) nigdy nie zostały ze sobą uzgodnione.
 
-## Zamknięte (przegląd 2026-09-06)
+## Zamknięte (przegląd 2026-09-06/07)
 
+- ~~**Sezon 2025-26 brakujący w `salaries.json`**~~ (`10c7cf2`, 2026-09-07) — Twoje przeczucie było
+  słuszne: dane kończyły się na 2024-25 (0/496 dopasowanych graczy miało klucz "2026"), plus 144 z
+  640 obecnych graczy nie było w bazie w ogóle. Naprawione realnymi danymi z Twojego eksportu
+  (`player_salaries.csv`, HoopsHype) — tylko dopisywanie brakujących lat, nic nadpisane. Sezon
+  2026-27 świadomie pominięty (Twoja decyzja — jeszcze nie rozegrany). Zweryfikowane przez prawdziwą
+  funkcję wyceny `priceSpan()`, nie tylko surowy JSON.
 - ~~**Tryb salary-cap, Krok 2 (silnik cenowy)**~~ — **KOREKTA: to już istnieje**, wcześniejszy wpis w
   tym pliku był błędny (oparty na nieaktualnej notatce pamięci). [CapSheet.tsx](../src/components/CapSheet.tsx)
   (445 linii) + [salaryPricing.ts](../src/engine/salaryPricing.ts) (199 linii) są w pełni
