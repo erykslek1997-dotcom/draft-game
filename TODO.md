@@ -30,7 +30,6 @@ Nie znalazłem niczego co realnie blokuje — silnik i testy są w dobrym stanie
       per-gracz ledwo rusza sumy drużynowe (przykład: Drużyna #9/#14 zmieniła się tylko o +1)
 - [ ] **Rozszerzenie rejestrów Movement Shooter / rim-pressure** — małe, realne, nazwane dodatki,
       proponowane jako szybki zysk przy każdym powrocie do tego projektu
-- [ ] **Tryb salary-cap, Krok 2**: moduł silnika cenowego (Krok 1 — realne dane płacowe 1985-2025 — gotowy)
 
 ## Znane, zaakceptowane ograniczenia (zdecydowano nie gonić dalej — nie odgrzewać bez nowych dowodów)
 
@@ -71,6 +70,15 @@ Larry Bird, Hakeem Olajuwon, David Robinson, Giannis Antetokounmpo.
 
 ## Zamknięte (przegląd 2026-09-06)
 
+- ~~**Tryb salary-cap, Krok 2 (silnik cenowy)**~~ — **KOREKTA: to już istnieje**, wcześniejszy wpis w
+  tym pliku był błędny (oparty na nieaktualnej notatce pamięci). [CapSheet.tsx](../src/components/CapSheet.tsx)
+  (445 linii) + [salaryPricing.ts](../src/engine/salaryPricing.ts) (199 linii) są w pełni
+  zaimplementowane i **wdrożone na żywo** na `https://timely-pasca-a20b70.netlify.app/` — trafiły w
+  commit `dcb1444` pod nazwą niezwiązaną z tematem, stąd przeoczenie. Realna cecha: przelicza każdy
+  span na "obciążenie" budżetu $200M/9 graczy, normalizując prawdziwą pensję do dzisiejszego capu
+  ($154 647 000), z osobną obsługą kontraktów rookie i danych szacunkowych sprzed 1985. Kod sam
+  siebie oznacza jako "WORKING DRAFT" (`capByYear` przybliżony przed 2016, lata służby szacowane z
+  rocznika draftu) — jeśli to dopracowanie ma sens, to osobny, mniejszy temat niż "zbuduj to od zera".
 - ~~**Shaq w `USER_VALIDATED_PEAK_SPANS`**~~ — przypięty na 1999-01 (`e1a67cc`). Twoja decyzja:
   1999-01 i 2000-02 to realni kandydaci na peak ofensywy+obrony; sprawdzone wprost — 1999-01 wygrywa
   na obu składowych (O-TAL 94 vs 92, D-TAL 80 vs 74) mimo remisu na ogólnym TAL (97).
