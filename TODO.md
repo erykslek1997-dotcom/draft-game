@@ -32,18 +32,6 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
       oknie kontraktu rookie #1 wyboru — to celowe (mechanika gry), nie błąd. Efekt łączny: jego
       najlepsze lata są sztucznie tanie, najgorsze sztucznie drogie. Prawdopodobnie dotyczy każdego
       gracza z realną pensją z lat ~1984-88, nie tylko Waltona — nie zweryfikowane jak szeroko.
-- [ ] **Salary-cap mode: zaniżony staż (YOS) dla graczy bez wpisu draftowego** (znalezione
-      2026-09-07, przykład: Moses Malone — wszedł do ABA z liceum w 1974, nigdy nie draftowany
-      przez NBA, brak wpisu w `draftHistory.json`). `salaryPricing.ts:152-153`: bez wpisu draftowego
-      "lata stażu" liczone są od PIERWSZEGO ROKU Z DANYMI O PENSJI (1985, bo baza pensji zaczyna się
-      wtedy dla każdego), nie od realnego początku kariery — Malone czytany jako rookie w 1985, mimo
-      11 realnych lat gry. Ląduje w najniższym progu maks. pensji ($41.24M zamiast właściwych
-      $57.74M dla 10+ lat), więc jego schyłkowe/przeciętne sezony post-1985 systematycznie czytają
-      się jako kontrakty maksymalne. Jego sezony sprzed 1985 (czysto szacunkowe wg tieru) wyglądają
-      sensownie — problem zaczyna się dokładnie tam gdzie wchodzą prawdziwe dane pensji bez wsparcia
-      z danych draftowych. Dotyczy prawdopodobnie każdego gracza bez wpisu w `draftHistory.json`
-      (konwertyci z ABA, niedraftowani wolni agenci) — osobny mechanizm od problemu Waltona wyżej,
-      choć oba dotykają podobnego obszaru (wczesna era realnych danych pensji).
 - [ ] **Waga TE-1**: zmierzona korelacja talentScore↔głos człowieka to 0.54 (nie zakładane wcześniej
       0.82). Zaakceptować, czy przekalibrować gdy będzie więcej niż n=15 realnych draftów?
 - [ ] **Wykładnik wartości pick'a AI-1** — potrzebuje realnego "czucia" z rozgrywki, nie tylko matematyki
@@ -98,6 +86,13 @@ Larry Bird, Hakeem Olajuwon, David Robinson, Giannis Antetokounmpo.
 
 ## Zamknięte (przegląd 2026-09-06/07)
 
+- ~~**Zaniżony staż (YOS) dla graczy bez wpisu draftowego**~~ (`3ac2ffb`, 2026-09-07, przykład:
+  Moses Malone) — naprawione ogólnie, nie tylko dla Malone'a: nowy `earliestSpanStartYearByName`
+  (z całej `draftPool`) zastępuje "pierwszy rok z danymi o pensji" jako punkt startowy stażu, kiedy
+  nie ma wpisu draftowego. Malone: 1984-86 $41M → $49M (drugi najwyższy próg zamiast najniższego).
+  Walton (ma wpis draftowy, nietknięty tą zmianą) zweryfikowany bajt-w-bajt identyczny przed/po.
+  Wciąż niedoskonałe (pula zaczyna się dla Malone'a w 1976, nie w jego realnym 1974 debiucie) —
+  odnotowane wprost w kodzie, nie ukryte.
 - ~~**Sezon 2025-26 brakujący w `salaries.json`**~~ (`10c7cf2`, 2026-09-07) — Twoje przeczucie było
   słuszne: dane kończyły się na 2024-25 (0/496 dopasowanych graczy miało klucz "2026"), plus 144 z
   640 obecnych graczy nie było w bazie w ogóle. Naprawione realnymi danymi z Twojego eksportu
