@@ -20,6 +20,7 @@ export type DefensiveRole =
   | 'Helper'
   | 'Wing Stopper'
   | 'Mobile Big'
+  | 'Switch Big'
   | 'Anchor Big'
   | 'Post Defender'
   | 'Low Activity';
@@ -127,8 +128,15 @@ export const SPACING_ARCHETYPES: OffensiveArchetype[] = [
   'Versatile Big',
 ];
 
-/** Defensive roles that anchor a defense at the rim. */
-export const RIM_PROTECTOR_ROLES: DefensiveRole[] = ['Anchor Big', 'Mobile Big'];
+/** Defensive roles that anchor a defense at the rim. `Switch Big` is a rim role that ALSO holds
+ * up on the perimeter — a switch-everything big (Draymond, Bam, peak AD/KG) is in both this list
+ * and `PERIMETER_DEFENDER_ROLES`. */
+export const RIM_PROTECTOR_ROLES: DefensiveRole[] = ['Anchor Big', 'Mobile Big', 'Switch Big'];
 
 /** Defensive roles that hold up on the perimeter. */
-export const PERIMETER_DEFENDER_ROLES: DefensiveRole[] = ['Point of Attack', 'Wing Stopper', 'Chaser'];
+export const PERIMETER_DEFENDER_ROLES: DefensiveRole[] = [
+  'Point of Attack',
+  'Wing Stopper',
+  'Chaser',
+  'Switch Big',
+];

@@ -36,6 +36,7 @@ const DEFENSIVE_ROLES: DefensiveRole[] = [
   'Helper',
   'Wing Stopper',
   'Mobile Big',
+  'Switch Big',
   'Anchor Big',
   'Post Defender',
   'Low Activity',
@@ -227,11 +228,12 @@ function roleEvidence(
       `RPG ${span.box.rpg.toFixed(1)}`,
     ];
   }
-  if (role === 'Mobile Big') {
+  if (role === 'Mobile Big' || role === 'Switch Big') {
     const athleticism = athleticismScoreForSpan(span);
     return [
       athleticism === null ? 'athleticism unavailable' : `athleticism ${athleticism.toFixed(0)}`,
       `SPG ${span.box.spg.toFixed(1)}`,
+      `BPG ${span.box.bpg.toFixed(1)}`,
     ];
   }
   return [`RPG ${span.box.rpg.toFixed(1)}`, `SPG ${span.box.spg.toFixed(1)}`, `BPG ${span.box.bpg.toFixed(1)}`];
@@ -381,6 +383,14 @@ function scoreDefense(
     ['Wing Stopper', span.box.spg >= 0.9 ? weighted([[p('spg'), 35], [p('bpg'), 20], [p('rpg'), 15], [wing, 30]]) : 0],
     ['Mobile Big', isBig && athleticism !== null
       ? weighted([[athleticism, 60], [pBig('spg'), 40]])
+      : 0],
+    // A switch big is a Mobile Big who also survives on the perimeter: same big eligibility, but
+    // a HIGHER athleticism bar plus real perimeter mobility (steals + wing positional factor).
+    // The box can only get this partly right, so in practice `Switch Big` is driven by the
+    // curated list in defensiveRoleProfiles.ts (Math.max'd in below); this formula keeps an
+    // uncurated athletic switch four from reading 0.
+    ['Switch Big', isBig && athleticism !== null && athleticism >= 55 && span.box.spg >= 0.8
+      ? weighted([[athleticism, 45], [pBig('spg'), 30], [wing, 15], [size, 10]])
       : 0],
     ['Anchor Big', isBig && span.box.bpg >= 0.5
       ? weighted([[size, 30], [pBig('bpg'), 45], [pBig('rpg'), 25]])

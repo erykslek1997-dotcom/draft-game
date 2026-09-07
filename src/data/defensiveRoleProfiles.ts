@@ -13,14 +13,26 @@ const CURATED_SECONDARY_ROLES: Record<string, Partial<Record<DefensiveRole, numb
   'Klay Thompson': { Chaser: 0.90, 'Wing Stopper': 0.86 },
   'Andre Iguodala': { 'Wing Stopper': 0.94, 'Point of Attack': 0.82, Helper: 0.86 },
   'Shawn Marion': { 'Wing Stopper': 0.94, Helper: 0.90 },
+  // 2026-09-07: `Switch Big` — a rare archetype (a big who switches 1-5 and holds up on the
+  // perimeter, not just a big who moves). Curated secondary only, never a span's primary tag, so
+  // it costs nothing in `computeDefensiveImpact`/TAL (see defense.ts) — it feeds FIT: switchability
+  // and the POA/wing + rim layers of `defensiveCohesion` from one roster spot.
   'Draymond Green': {
     'Anchor Big': 0.92,
+    'Switch Big': 0.97,
     'Mobile Big': 0.94,
     Helper: 0.94,
     'Wing Stopper': 0.88,
     'Point of Attack': 0.74,
   },
-  'Evan Mobley': { 'Anchor Big': 0.92, Helper: 0.86 },
+  'Anthony Davis': { 'Switch Big': 0.9, Helper: 0.86 },
+  'Kevin Garnett': { 'Switch Big': 0.92, Helper: 0.88, 'Wing Stopper': 0.72 },
+  'Bam Adebayo': { 'Switch Big': 0.95, Helper: 0.86, 'Point of Attack': 0.7 },
+  'Scottie Barnes': { 'Switch Big': 0.9, Helper: 0.84, 'Wing Stopper': 0.78 },
+  'Al Horford': { 'Switch Big': 0.84, Helper: 0.88, 'Anchor Big': 0.82 },
+  'Paul Millsap': { 'Switch Big': 0.82, Helper: 0.86, 'Wing Stopper': 0.7 },
+  'P.J. Tucker': { 'Switch Big': 0.86, 'Wing Stopper': 0.88, 'Post Defender': 0.8 },
+  'Evan Mobley': { 'Anchor Big': 0.92, 'Switch Big': 0.86, Helper: 0.86 },
   // 2026-09-04, D2 calibration — both primary Wing Stoppers (see `DEFENSIVE_ROLE_OVERRIDES` in
   // players.ts); these are the secondary matchups they also cover in a real lineup.
   'Jaden McDaniels': { 'Point of Attack': 0.88, Helper: 0.86, 'Mobile Big': 0.72 },

@@ -5,12 +5,18 @@ import type { Team } from './types';
 import type { DefensiveRole } from '../data/schema';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 
-const WING_ROLES: DefensiveRole[] = ['Wing Stopper', 'Chaser'];
+const WING_ROLES: DefensiveRole[] = ['Wing Stopper', 'Chaser', 'Switch Big'];
 /** Same discount shape `poa` below already applies to a non-exact-tag POA candidate — a real,
  * high-effort perimeter defender tagged Chaser rather than the more specific Wing Stopper still
  * covers real wing duty, just with slightly less confidence than the exact-tag case. */
-const WING_ROLE_MULTIPLIER: Record<'Wing Stopper' | 'Chaser', number> = { 'Wing Stopper': 1, Chaser: 0.9 };
-const RIM_ROLES: DefensiveRole[] = ['Anchor Big', 'Mobile Big'];
+const WING_ROLE_MULTIPLIER: Record<'Wing Stopper' | 'Chaser' | 'Switch Big', number> = {
+  'Wing Stopper': 1,
+  Chaser: 0.9,
+  // A switch big genuinely covers a wing on a switch, but the perimeter isn't their home base —
+  // between the two dedicated wing tags.
+  'Switch Big': 0.92,
+};
+const RIM_ROLES: DefensiveRole[] = ['Anchor Big', 'Mobile Big', 'Switch Big'];
 
 const FULL_PROVIDER_MINUTES = 24;
 const PROVIDER_START = 75;
@@ -177,7 +183,7 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
   // specialists, not the same do-everything guard counted twice.
   const wing = bestProvider(
     WING_ROLES,
-    (role) => WING_ROLE_MULTIPLIER[role as 'Wing Stopper' | 'Chaser'],
+    (role) => WING_ROLE_MULTIPLIER[role as 'Wing Stopper' | 'Chaser' | 'Switch Big'] ?? 0.9,
     poa?.player.id,
   );
   const rim = bestProvider(RIM_ROLES);

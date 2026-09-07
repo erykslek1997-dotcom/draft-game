@@ -13,6 +13,12 @@ const DEFENSIVE_ROLE_BASE_WEIGHT: Record<DefensiveRole, number> = {
   'Wing Stopper': 7,
   Helper: 6,
   'Mobile Big': 6,
+  // Deliberately identical to 'Mobile Big': `Switch Big` is only ever a curated SECONDARY role
+  // (see defensiveRoleProfiles.ts), never a span's primary `defensiveRole`, so this entry is here
+  // purely for `Record<DefensiveRole>` exhaustiveness — matching Mobile Big means that if a span
+  // were ever primary-tagged `Switch Big`, `computeDefensiveImpact` (and therefore TAL) would be
+  // byte-identical to the Mobile Big it replaced. The archetype's real value lands FIT-side.
+  'Switch Big': 6,
   'Post Defender': 7,
   Chaser: 4,
   'Low Activity': 0,
@@ -27,6 +33,7 @@ const DEFENSIVE_ROLE_TYPICAL_ACTIVITY: Record<DefensiveRole, number> = {
   'Wing Stopper': 10.2,
   Helper: 5.3,
   'Mobile Big': 7.3,
+  'Switch Big': 7.3, // = Mobile Big, see DEFENSIVE_ROLE_BASE_WEIGHT
   'Post Defender': 9,
   Chaser: 7.4,
   'Low Activity': 1, // unused — base weight is 0

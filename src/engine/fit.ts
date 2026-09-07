@@ -109,6 +109,10 @@ const SWITCHABILITY_ROLE_SCORE: Record<DefensiveRole, number> = {
   'Point of Attack': 100,
   'Wing Stopper': 95,
   Chaser: 90,
+  // A switch big holds up on the perimeter like a wing — that IS the archetype. Sits just below
+  // the pure wing roles and well above `Mobile Big` (a big who moves) and `Anchor Big` (a big who
+  // stays home).
+  'Switch Big': 90,
   Helper: 85,
   'Mobile Big': 78,
   'Anchor Big': 50,
@@ -636,13 +640,16 @@ export function fitScore(team: Team): FitScoreResult {
     confirmed: profile.incumbentDefensiveRole === 'Wing Stopper',
     score: Math.max(
       defensiveRoleScore(profile, ['Wing Stopper']),
+      // A switch big covers the wing on a switch — credited at a slight discount to a dedicated
+      // wing stopper, same idea as the `Helper` fallback below.
+      defensiveRoleScore(profile, ['Switch Big']) * 0.9,
       defensiveRoleScore(profile, ['Helper']) * 0.65,
     ),
   })).sort((a, b) => b.score - a.score || Number(b.confirmed) - Number(a.confirmed));
   const rimCandidates = profiles.map((profile, index) => ({
     player: starters[index],
     confirmed: profile.incumbentDefensiveRole === 'Anchor Big' || profile.incumbentDefensiveRole === 'Mobile Big',
-    score: defensiveRoleScore(profile, ['Anchor Big', 'Mobile Big']),
+    score: defensiveRoleScore(profile, ['Anchor Big', 'Mobile Big', 'Switch Big']),
   })).sort((a, b) => b.score - a.score || Number(b.confirmed) - Number(a.confirmed));
   const guardContainment = guardCandidates[0]?.score ?? 0;
   const wingCoverage = wingCandidates[0]?.score ?? 0;
@@ -712,7 +719,15 @@ export function fitScore(team: Team): FitScoreResult {
   const reboundingBalance = Math.round(positionAdjustedReboundingPercentile);
   const sizeCoverage = Math.round(functionalSizePercentile ?? 50);
   const individualSwitchability = starters.map((player, index) => weightedAvailable([
-    { value: SWITCHABILITY_ROLE_SCORE[player.defensiveRole], weight: 0.40 },
+    // A curated `Switch Big` secondary (defensiveRoleProfiles.ts) means "switches 1-5" even when
+    // the primary tag is the more conservative Anchor/Mobile Big — take the better of the two.
+    {
+      value: Math.max(
+        SWITCHABILITY_ROLE_SCORE[player.defensiveRole],
+        secondaryDefensiveRoleStrength(player, 'Switch Big') > 0 ? SWITCHABILITY_ROLE_SCORE['Switch Big'] : 0,
+      ),
+      weight: 0.40,
+    },
     { value: positionVersatilityScore(player), weight: 0.30 },
     { value: physicalProfiles[index].athleticism, weight: 0.20 },
     { value: physicalProfiles[index].functional, weight: 0.10 },
