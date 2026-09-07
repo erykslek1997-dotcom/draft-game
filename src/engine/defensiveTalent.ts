@@ -248,6 +248,16 @@ const NAMED_DTAL_FLOOR: ReadonlyMap<string, number> = new Map(
     { name: 'Klay Thompson', spanLabel: '2015-17', floor: 60 },
     { name: 'Toumani Camara', spanLabel: '2023-25', floor: 74 },
     { name: 'Toumani Camara', spanLabel: '2024-26', floor: 74 },
+    // 2026-09-07, user: Scottie Barnes 2022-24 read D-TAL 31 (F-adjacent) — matchup −2.35 with
+    // NO RAPTOR coverage for that window and only a lukewarm BPM2 (+0.24), so `blendedExcess`
+    // −1.70 and `darkoDefenseShortfall` fired hard on a single-source read. No general rule
+    // catches a class here (every other post-2022 wing with a harsh matchup either has a positive
+    // DARKO or a different role or already reads higher), so this is a one-span floor: a young
+    // active forward with a healthy box (impact 22) taking hard wing assignments is a below-
+    // average defender, not the bottom-15% liability the shortfall math produced. His 2024-26
+    // span (real matchup +1.2 / BPM2 +1.6, All-Defensive) is handled by
+    // `corroboratedAllDefenseFloor` below.
+    { name: 'Scottie Barnes', spanLabel: '2022-24', floor: 44 },
   ].map((e) => [
     `${normalizePlayerName(e.name)}|${e.spanLabel}`,
     e.floor,
@@ -392,6 +402,35 @@ function perimeterStopperFloor(span: PlayerSpan): number {
   return PERIM_STOPPER_FLOOR_AT_MIN + frac * (PERIM_STOPPER_FLOOR_AT_FULL - PERIM_STOPPER_FLOOR_AT_MIN);
 }
 
+const CORROBORATED_ALL_D_MATCHUP_MIN = 1.0;
+const CORROBORATED_ALL_D_BPM2_MIN = 1.0;
+const CORROBORATED_ALL_D_FLOOR = 74;
+
+/**
+ * Display-only D-TAL floor for a wing/forward whose defense is corroborated from every angle yet
+ * still reads sub-B. 2026-09-07, user (re Scottie Barnes 2024-26, D-TAL 67): a real All-Defensive
+ * selection in the window, a positive defended-FG% (`matchupDefense >= +1.0`) AND a positive
+ * historical estimate (`BPM2 >= +1.0`) — but `blendedExcess` still nets ~0 or slightly negative
+ * because the player's high box-event volume makes the per-source regression EXPECT even stronger
+ * real results, so `darkoDefenseBonus` gives nothing and the ladder alone (plus a thin one-
+ * selection accolade rate) lands him at B-. A switch-forward who doesn't rack up steals is exactly
+ * this shape. Gate is the mirror of `displayExtraDefenseBonus` (which requires NO All-Defensive):
+ * a corroborated All-Defensive perimeter defender simply should not read below the bottom of the
+ * B band. Flat 74. SG/SF/PF only (bigs have their own anchor/on-off floors). Across the pool the
+ * gate matches 43 spans and lifts exactly 3 — Barnes 2024-26 (67->74), Jaden McDaniels 2023-25
+ * (69->74), Evan Mobley 2022-24 (72->74); the other 40 already read 76-99. Display-only.
+ */
+function corroboratedAllDefenseFloor(span: PlayerSpan): number {
+  if (span.primaryPosition !== 'SG' && span.primaryPosition !== 'SF' && span.primaryPosition !== 'PF') return 0;
+  if (individualDefenseRate(span) <= 0) return 0;
+  const detail = realDefenseExcessDetail(span);
+  if (!detail || detail.matchupDefense === null || detail.bpm2Defense === null) return 0;
+  if (detail.matchupDefense < CORROBORATED_ALL_D_MATCHUP_MIN || detail.bpm2Defense < CORROBORATED_ALL_D_BPM2_MIN) {
+    return 0;
+  }
+  return CORROBORATED_ALL_D_FLOOR;
+}
+
 const TEAM_D_FLOOR_MIN_STRENGTH = 0.75;
 const TEAM_D_FLOOR_FULL_STRENGTH = 2.0;
 const TEAM_D_FLOOR_MIN_SEASON_MINUTES = 1500;
@@ -480,6 +519,7 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
           onOffDefenseFloor(span),
           teamDefenseCorroborationFloor(span),
           perimeterStopperFloor(span),
+          corroboratedAllDefenseFloor(span),
         ),
       ),
     ),
