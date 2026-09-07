@@ -582,6 +582,14 @@ const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: Defensi
   // classifier that only reads bpg/rpg mis-routes him, same as the Anunoby case). Wing Stopper.
   { name: 'Toumani Camara', spanLabel: '2023-25', role: 'Wing Stopper' },
   { name: 'Toumani Camara', spanLabel: '2024-26', role: 'Wing Stopper' },
+  // 2026-09-07, D1S2 Drużyna 6. Magic 1989-91: the box classifier read `Low Activity` off
+  // 1.5 spg / 0.3 bpg. But a 6'9" guard with 7 rpg who routinely took the opponent's bigger
+  // wing (Larry Bird-type) while a teammate chased the quick point guard is a `Wing Stopper`,
+  // not an absent defender. `Helper` was tried and reverted — its roleWeight scaling overshot
+  // to D-TAL 85; `Wing Stopper` lands at ~77, and the tag matches how the Showtime Lakers
+  // actually assigned him. (His TAL already reads with an SF position correction — see
+  // `POSITION_CORRECTION_AS_SF` in talent.ts — so a wing defensive role is consistent.)
+  { name: 'Magic Johnson', spanLabel: '1989-91', role: 'Wing Stopper' },
 ];
 
 function applyDefensiveRoleOverrides(spans: PlayerSpan[]): PlayerSpan[] {

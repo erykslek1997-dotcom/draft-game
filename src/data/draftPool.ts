@@ -29,6 +29,10 @@ function applyRuntimeParity(span: PlayerSpan): PlayerSpan {
   ) {
     return { ...span, primaryPosition: 'PF', secondaryPositions: ['C'] };
   }
+  // `DEFENSIVE_ROLE_OVERRIDES` parity (see players.ts) — pool JSON is precomputed, mirror until rebuild.
+  if (span.playerName === 'Magic Johnson' && span.spanLabel === '1989-91' && span.defensiveRole === 'Low Activity') {
+    return { ...span, defensiveRole: 'Wing Stopper' };
+  }
   return span;
 }
 
