@@ -254,6 +254,38 @@ const NAMED_DTAL_FLOOR: ReadonlyMap<string, number> = new Map(
   ]),
 );
 
+/**
+ * 2026-09-07, user ("trzeba naprawić Billa Russella", + the Backpicks GOAT scouting report):
+ * every span of one player, not one span. Steals and blocks were not official box-score fields
+ * until 1973-74, so `computeDefensiveImpact` is permanently missing two of its three inputs for
+ * Russell's entire career — it reads him at impact ~20 (a rotation big) when the surviving
+ * evidence is unanimous that he is the greatest defensive player in the sport's history:
+ * BPM2 defense +3.6..+4.9 (the highest SUSTAINED defensive BPM2 in this project's whole archive),
+ * a WOWY swing of ~22 points of margin (35-win pace without him, 59-win with), a peak five-year
+ * team defensive rating 9.2 pts better than league average that the scouting report states no
+ * other five-year stretch in NBA history has matched. He is a flat S on defense — the same
+ * D-TAL cluster as Ben Wallace / Hakeem / Robinson (98-100) — in every season he played. This
+ * feeds `eliteDefenseTalBonus` in talent.ts (capped +15), which is the intended, bounded channel
+ * for "exceptional on exactly one side"; his offense stays whatever his real box line produces
+ * (O-TAL ~52-59 in his prime — a good-passing, elite-OREB, low-usage hub, "Draymond level" per
+ * the same report), which is the user's explicit ask: fixed S on D, stat-driven O.
+ * Same one-player exception shape as Curry's gravity cap / Magic's SF override in talent.ts.
+ */
+const NAMED_DTAL_FLOOR_ALL_SPANS: ReadonlyMap<string, number> = new Map([
+  [normalizePlayerName('Bill Russell'), 99],
+]);
+
+/**
+ * True for a player whose D-TAL is a hard-coded whole-career era override (`NAMED_DTAL_FLOOR_ALL_SPANS`)
+ * rather than a box-score measurement. `defensiveHuntability.ts` uses this to keep such a player
+ * OUT of its empirical "realistic starter defense" cohort bars — a dozen spans pinned at the
+ * ceiling by fiat would drag the position/role percentile bars every other player is measured
+ * against, which those bars are explicitly not supposed to reflect.
+ */
+export function hasEraOverrideDefenseFloor(playerName: string): boolean {
+  return NAMED_DTAL_FLOOR_ALL_SPANS.has(normalizePlayerName(playerName));
+}
+
 /** Same 2026-08-16 memoization as `talent.ts`'s `computeOffensiveTalent` (see that function's own
  * docstring for the full profiling story) — this was the other uncached half of the same
  * bottleneck: `aiDrafter.ts`'s per-candidate value formula calls `computeDefensiveTalent` several
@@ -433,7 +465,10 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
     uncorroborated ? UNCORROBORATED_CEILING : 100,
   );
   const credited = base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE;
-  const namedFloor = NAMED_DTAL_FLOOR.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0;
+  const namedFloor = Math.max(
+    NAMED_DTAL_FLOOR.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0,
+    NAMED_DTAL_FLOOR_ALL_SPANS.get(normalizePlayerName(span.playerName)) ?? 0,
+  );
   const result = Math.max(
     0,
     Math.min(

@@ -239,7 +239,13 @@ check(threeLayerProjection.defense >= 95 && threeLayerProjection.defense <= 98, 
 // `RIM_PROTECTOR_ROLES` (Anchor Big/Mobile Big) — Robinson is a Mobile Big, and 63 is almost
 // exactly that archetype's own real median (62), not actually below-average for his real
 // defensive job. Re-measured directly, not guessed.
-check(eliteCohesion.eliteShell === 100, 'reported elite roster completes confirmed POA, wing and rim layers with no targetable minutes');
+// 2026-09-07: exact 100 -> >=99 after Bill Russell's whole-career era-override D-TAL floor
+// (defensiveTalent.ts `NAMED_DTAL_FLOOR_ALL_SPANS`) removed his ~9 mid-career Anchor-Big spans
+// (measured D-TAL ~70) from the C|Anchor Big huntable-bar cohort — p45 shifts 76 -> 78, which via
+// `rimProtectorBar`'s Anchor/Mobile interpolation leaves Robinson's D-TAL-63 shortfall a hair
+// above 0 (12 min, 0.12 penalty). `defenseScore(reportedElite)` on the next line still lands an
+// exact 100, so the "complete elite shell" intent holds. Re-measured directly (99), not guessed.
+check(eliteCohesion.eliteShell >= 99, 'reported elite roster completes confirmed POA, wing and rim layers with no targetable minutes');
 check(defenseScore(reportedElite) === 100, 'complete all-time defensive shell reaches the practical Defense ceiling');
 check(Math.abs(eliteProjection.defense - 85) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
 

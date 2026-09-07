@@ -1,6 +1,6 @@
 import { RIM_PROTECTOR_ROLES, type Position, type PlayerSpan, type DefensiveRole } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { computeDefensiveTalent } from './defensiveTalent';
+import { computeDefensiveTalent, hasEraOverrideDefenseFloor } from './defensiveTalent';
 import { effectiveTalent } from './grades';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { allAssignments, primaryStarters, GAME_MINUTES } from './rotation';
@@ -30,7 +30,12 @@ const POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 const starterCaliberByPosition: Record<Position, PlayerSpan[]> = Object.fromEntries(
   POSITIONS.map((pos) => [
     pos,
-    draftPool.filter((p) => p.primaryPosition === pos && effectiveTalent(p) >= STARTER_TAL_FLOOR),
+    draftPool.filter(
+      (p) =>
+        p.primaryPosition === pos &&
+        effectiveTalent(p) >= STARTER_TAL_FLOOR &&
+        !hasEraOverrideDefenseFloor(p.playerName),
+    ),
   ]),
 ) as Record<Position, PlayerSpan[]>;
 
