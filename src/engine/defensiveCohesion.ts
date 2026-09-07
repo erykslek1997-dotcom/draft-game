@@ -19,7 +19,17 @@ const WING_ROLE_MULTIPLIER: Record<'Wing Stopper' | 'Chaser' | 'Switch Big', num
 const RIM_ROLES: DefensiveRole[] = ['Anchor Big', 'Mobile Big', 'Switch Big'];
 
 const FULL_PROVIDER_MINUTES = 24;
-const PROVIDER_START = 75;
+// 2026-09-07: 75 -> 68 after a D1 (n=15) + D1S2 (n=14) human-vote sweep. `providerReadiness`
+// gates BOTH the elite-shell path and the bounded three-layer-core credit; the old 75 hard floor
+// meant a lineup with three genuinely credible layers but a weakest link around 70-74 (Magic on
+// D1S2 Drużyna 6, LeBron/Russell's Drużyna 1) earned exactly zero structural credit — same as a
+// team with no defensive spine at all. Lowering the START to 68 (FULL kept at 85, so the ramp is
+// gentler, not just shifted) gives those lineups partial, capped credit while D2/D11/D12-tier
+// defenses (a weakest layer well below 68) still read 0. D1S2 overall Spearman 0.762 -> 0.788
+// (Drużyna 1 engine #6 -> #4, the biggest miss), D1S2 defense sub 0.587 -> 0.613, D1 overall
+// 0.564 -> 0.589 (recovers the Wilt era-override's cost). The elite-shell path is unaffected in
+// practice — it still needs `averageDefensiveTalent >= AVERAGE_START` (80), a separate hard gate.
+const PROVIDER_START = 68;
 const PROVIDER_FULL = 85;
 // 2026-08-31: measured against the real (no context-adjustment) D-TAL distribution for
 // Anchor Big/Mobile Big spans (1293 spans: p85=81, p90=86, p95=92). Mobley's 2023-25 span (83,
