@@ -146,6 +146,35 @@ function fitVolScore(percentile: number): number {
   return clamp((percentile - 35) / 65, 0, 1) * 100;
 }
 
+/**
+ * Fit-only (called solely from `rimPressureForFit`'s pre-1997 branch — never `rimPressure()` /
+ * `rimPressureOffenseTerm()`, so TAL / Taylor / GOAT are untouched).
+ *
+ * `rimPressure`'s pre-1997 proxy pace-adjusts scoring volume through the `steep()` cliff AND
+ * applies `passingHubDampener`. For a genuine 1960s-70s interior monster those compound into a
+ * bad read: Wilt 1966-68 (24 ppg on 68% FG while leading the league in assists, 8.2 apg) lands
+ * at 52, where Kevin McHale 1985-87 — near-identical FG% (95th pctile) and raw volume (96th),
+ * but 2.6 apg and a slower era — reads 100. Wilt 66-68's efficiency+volume combo is the 2nd
+ * highest of any pre-1997 big in the pool.
+ *
+ * A pre-1997 big with top-decile FG% AND top-decile raw (un-pace-adjusted) scoring volume AND
+ * real shot volume, who is not a stretch big, was an interior focal point regardless of pace or
+ * how much he also passed. Floor him at 82 — deliberately below the 90-100 the comparable
+ * McHale/Kareem/Barkley spans read, because Wilt's FGA (~15.5) is short of their 16-24.
+ */
+const DOMINANT_SCORER_FG_PCTILE = 90;
+const DOMINANT_SCORER_PPG_PCTILE = 90;
+const DOMINANT_SCORER_MIN_FGA = 15;
+const DOMINANT_SCORER_FLOOR = 82;
+function dominantInteriorScorerFloor(span: PlayerSpan): number {
+  if (span.primaryPosition !== 'C' && span.primaryPosition !== 'PF') return 0;
+  if (span.box.threePA / Math.max(1, span.fga) > 0.15) return 0;
+  if (span.fga < DOMINANT_SCORER_MIN_FGA) return 0;
+  if (pctileOf(BIG_FGPCT_RUNGS, span.box.fgPct) < DOMINANT_SCORER_FG_PCTILE) return 0;
+  if (pctileOf(BIG_PPG_RUNGS, span.box.ppg) < DOMINANT_SCORER_PPG_PCTILE) return 0;
+  return DOMINANT_SCORER_FLOOR;
+}
+
 export function rimPressureForFit(span: PlayerSpan): number {
   const prof = computeOffensiveProfile(span);
   let base: number;
@@ -165,8 +194,8 @@ export function rimPressureForFit(span: PlayerSpan): number {
     }
   } else {
     // pre-1997: no shot-location data to improve on — fall back to the existing archetype-gated
-    // proxy, which already gates to C/PF.
-    base = rimPressure(span);
+    // proxy, which already gates to C/PF, then apply the dominant-interior-scorer floor.
+    base = Math.max(rimPressure(span), dominantInteriorScorerFloor(span));
   }
   const isBig = span.primaryPosition === 'C' || span.primaryPosition === 'PF';
   return isBig ? Math.max(base, BIG_RIM_PRESSURE_FLOOR) : base;
