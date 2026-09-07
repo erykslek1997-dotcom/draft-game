@@ -3468,6 +3468,23 @@
   "ftPct": 0.608
  },
  {
+  "name": "Metta World Peace",
+  "season": "2000-01",
+  "pos": "F",
+  "dpm": -2,
+  "odpm": -2,
+  "ddpm": 0,
+  "box": -2,
+  "onOffDpm": -3,
+  "mpg": 7.8,
+  "pace": 94.3,
+  "ptsPer100": 17.1,
+  "astPer100": 3.1,
+  "fgPct": 0.397,
+  "threePct": 0.29100000000000004,
+  "ftPct": 0.6609999999999999
+ },
+ {
   "name": "Pat Garrity",
   "season": "2000-01",
   "pos": "F",
@@ -4741,6 +4758,23 @@
   "fgPct": 0.39299999999999996,
   "threePct": 0.32,
   "ftPct": 0.753
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2001-02",
+  "pos": "F",
+  "dpm": 1,
+  "odpm": 0,
+  "ddpm": 1,
+  "box": 1,
+  "onOffDpm": 1,
+  "mpg": 33.1,
+  "pace": 93.4,
+  "ptsPer100": 21.5,
+  "astPer100": 4.4,
+  "fgPct": 0.409,
+  "threePct": 0.315,
+  "ftPct": 0.6809999999999999
  },
  {
   "name": "Greg Ostertag",
@@ -7869,6 +7903,23 @@
   "fgPct": 0.479,
   "threePct": 0.182,
   "ftPct": 0.755
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2002-03",
+  "pos": "F",
+  "dpm": 3,
+  "odpm": 1,
+  "ddpm": 2,
+  "box": 3,
+  "onOffDpm": 2,
+  "mpg": 36.9,
+  "pace": 90.6,
+  "ptsPer100": 25.4,
+  "astPer100": 3.4,
+  "fgPct": 0.405,
+  "threePct": 0.302,
+  "ftPct": 0.7170000000000001
  },
  {
   "name": "Andrei Kirilenko",
@@ -11643,6 +11694,23 @@
   "fgPct": 0.479,
   "threePct": 0.182,
   "ftPct": 0.755
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2003-04",
+  "pos": "F",
+  "dpm": 3,
+  "odpm": 1,
+  "ddpm": 2,
+  "box": 3,
+  "onOffDpm": 2,
+  "mpg": 36.9,
+  "pace": 90.6,
+  "ptsPer100": 25.4,
+  "astPer100": 3.4,
+  "fgPct": 0.405,
+  "threePct": 0.302,
+  "ftPct": 0.7170000000000001
  },
  {
   "name": "Andrei Kirilenko",
@@ -15332,6 +15400,23 @@
   "fgPct": 0.424,
   "threePct": 0.33899999999999997,
   "ftPct": 0.782
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2004-05",
+  "pos": "F",
+  "dpm": 4,
+  "odpm": 2,
+  "ddpm": 2,
+  "box": 4,
+  "onOffDpm": 3,
+  "mpg": 41.6,
+  "pace": 91.6,
+  "ptsPer100": 29.1,
+  "astPer100": 5.3,
+  "fgPct": 0.406,
+  "threePct": 0.313,
+  "ftPct": 0.72
  },
  {
   "name": "Andrei Kirilenko",
@@ -19497,6 +19582,23 @@
   "fgPct": 0.424,
   "threePct": 0.33899999999999997,
   "ftPct": 0.782
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2005-06",
+  "pos": "F",
+  "dpm": 4,
+  "odpm": 2,
+  "ddpm": 2,
+  "box": 4,
+  "onOffDpm": 3,
+  "mpg": 41.6,
+  "pace": 91.6,
+  "ptsPer100": 29.1,
+  "astPer100": 5.3,
+  "fgPct": 0.406,
+  "threePct": 0.313,
+  "ftPct": 0.72
  },
  {
   "name": "Andrei Kirilenko",
@@ -23849,6 +23951,23 @@
   "fgPct": 0.47,
   "threePct": 0.342,
   "ftPct": 0.784
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2006-07",
+  "pos": "F",
+  "dpm": 3,
+  "odpm": 1,
+  "ddpm": 2,
+  "box": 2,
+  "onOffDpm": 4,
+  "mpg": 36.8,
+  "pace": 94.3,
+  "ptsPer100": 22.6,
+  "astPer100": 4.9,
+  "fgPct": 0.402,
+  "threePct": 0.33,
+  "ftPct": 0.69
  },
  {
   "name": "Allen Iverson",
@@ -28337,6 +28456,23 @@
   "fgPct": 0.444,
   "threePct": 0.318,
   "ftPct": 0.773
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2007-08",
+  "pos": "F",
+  "dpm": 3,
+  "odpm": 1,
+  "ddpm": 2,
+  "box": 3,
+  "onOffDpm": 3,
+  "mpg": 37,
+  "pace": 96.9,
+  "ptsPer100": 26.2,
+  "astPer100": 4.8,
+  "fgPct": 0.423,
+  "threePct": 0.305,
+  "ftPct": 0.7190000000000001
  },
  {
   "name": "Chris Paul",
@@ -32944,6 +33080,23 @@
   "fgPct": 0.413,
   "threePct": 0.341,
   "ftPct": 0.812
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2008-09",
+  "pos": "F",
+  "dpm": 3,
+  "odpm": 2,
+  "ddpm": 2,
+  "box": 3,
+  "onOffDpm": 3,
+  "mpg": 35.5,
+  "pace": 95.6,
+  "ptsPer100": 27.9,
+  "astPer100": 4.5,
+  "fgPct": 0.441,
+  "threePct": 0.349,
+  "ftPct": 0.718
  },
  {
   "name": "Shane Battier",
@@ -37876,6 +38029,23 @@
   "ftPct": 0.802
  },
  {
+  "name": "Metta World Peace",
+  "season": "2009-10",
+  "pos": "F",
+  "dpm": 3,
+  "odpm": 1,
+  "ddpm": 2,
+  "box": 0,
+  "onOffDpm": 3,
+  "mpg": 35.8,
+  "pace": 93.6,
+  "ptsPer100": 25.5,
+  "astPer100": 6,
+  "fgPct": 0.40399999999999997,
+  "threePct": 0.34600000000000003,
+  "ftPct": 0.7120000000000001
+ },
+ {
   "name": "Josh Howard",
   "season": "2009-10",
   "pos": "F-G",
@@ -42753,6 +42923,23 @@
   "fgPct": 0.618,
   "threePct": 0.21100000000000002,
   "ftPct": 0.6629999999999999
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2010-11",
+  "pos": "F",
+  "dpm": 2,
+  "odpm": 0,
+  "ddpm": 2,
+  "box": 0,
+  "onOffDpm": 3,
+  "mpg": 33.3,
+  "pace": 95.8,
+  "ptsPer100": 17.4,
+  "astPer100": 3.6,
+  "fgPct": 0.42200000000000004,
+  "threePct": 0.35,
+  "ftPct": 0.6709999999999999
  },
  {
   "name": "Joe Johnson",
@@ -48195,6 +48382,23 @@
   "ftPct": 0.79
  },
  {
+  "name": "Metta World Peace",
+  "season": "2011-12",
+  "pos": "F",
+  "dpm": 1,
+  "odpm": -1,
+  "ddpm": 2,
+  "box": 1,
+  "onOffDpm": 1,
+  "mpg": 29.9,
+  "pace": 93.4,
+  "ptsPer100": 17.4,
+  "astPer100": 4.2,
+  "fgPct": 0.39299999999999996,
+  "threePct": 0.336,
+  "ftPct": 0.64
+ },
+ {
   "name": "Wesley Matthews",
   "season": "2011-12",
   "pos": "G",
@@ -52887,6 +53091,23 @@
   "ftPct": 0.7909999999999999
  },
  {
+  "name": "Metta World Peace",
+  "season": "2012-13",
+  "pos": "F",
+  "dpm": 1,
+  "odpm": -1,
+  "ddpm": 2,
+  "box": 1,
+  "onOffDpm": 1,
+  "mpg": 31.5,
+  "pace": 92.5,
+  "ptsPer100": 16.9,
+  "astPer100": 4.2,
+  "fgPct": 0.39399999999999996,
+  "threePct": 0.33399999999999996,
+  "ftPct": 0.649
+ },
+ {
   "name": "Wesley Matthews",
   "season": "2012-13",
   "pos": "G",
@@ -57373,6 +57594,23 @@
   "fgPct": 0.429,
   "threePct": 0.379,
   "ftPct": 0.7879999999999999
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2013-14",
+  "pos": "F",
+  "dpm": 2,
+  "odpm": 0,
+  "ddpm": 2,
+  "box": 0,
+  "onOffDpm": 2,
+  "mpg": 24.4,
+  "pace": 97.4,
+  "ptsPer100": 17.2,
+  "astPer100": 2.4,
+  "fgPct": 0.40299999999999997,
+  "threePct": 0.336,
+  "ftPct": 0.6759999999999999
  },
  {
   "name": "David West",
@@ -68391,6 +68629,23 @@
   "ftPct": 0.7609999999999999
  },
  {
+  "name": "Metta World Peace",
+  "season": "2015-16",
+  "pos": "F",
+  "dpm": 0,
+  "odpm": -1,
+  "ddpm": 1,
+  "box": 0,
+  "onOffDpm": 0,
+  "mpg": 16.3,
+  "pace": 95.9,
+  "ptsPer100": 17.6,
+  "astPer100": 2.5,
+  "fgPct": 0.39899999999999997,
+  "threePct": 0.324,
+  "ftPct": 0.662
+ },
+ {
   "name": "David Lee",
   "season": "2015-16",
   "pos": "F",
@@ -73982,6 +74237,23 @@
   "fgPct": 0.426,
   "threePct": 0.349,
   "ftPct": 0.773
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2016-17",
+  "pos": "F",
+  "dpm": -1,
+  "odpm": -2,
+  "ddpm": 1,
+  "box": -1,
+  "onOffDpm": -1,
+  "mpg": 5.8,
+  "pace": 98.2,
+  "ptsPer100": 15.2,
+  "astPer100": 2.4,
+  "fgPct": 0.375,
+  "threePct": 0.32299999999999995,
+  "ftPct": 0.705
  },
  {
   "name": "Meyers Leonard",

@@ -16200,6 +16200,12 @@
   "bpm": -3.622
  },
  {
+  "name": "Metta World Peace",
+  "season": "2015-16",
+  "dbpm": -0.311,
+  "bpm": -3.687
+ },
+ {
   "name": "Beno Udrih",
   "season": "2015-16",
   "dbpm": -1.003,
@@ -19986,6 +19992,12 @@
   "bpm": 0.048
  },
  {
+  "name": "Metta World Peace",
+  "season": "2012-13",
+  "dbpm": 0.657,
+  "bpm": 0.035
+ },
+ {
   "name": "Antawn Jamison",
   "season": "2012-13",
   "dbpm": -1.166,
@@ -21612,6 +21624,12 @@
   "bpm": -0.69
  },
  {
+  "name": "Metta World Peace",
+  "season": "2011-12",
+  "dbpm": 0.953,
+  "bpm": -0.701
+ },
+ {
   "name": "Amar'e Stoudemire",
   "season": "2011-12",
   "dbpm": -0.407,
@@ -22894,6 +22912,12 @@
   "season": "2010-11",
   "dbpm": 1.141,
   "bpm": -0.05
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2010-11",
+  "dbpm": 1.39,
+  "bpm": -0.072
  },
  {
   "name": "Vladimir Radmanovic",
@@ -24288,6 +24312,12 @@
   "bpm": 0.245
  },
  {
+  "name": "Metta World Peace",
+  "season": "2009-10",
+  "dbpm": 0.961,
+  "bpm": 0.21
+ },
+ {
   "name": "Martell Webster",
   "season": "2009-10",
   "dbpm": -0.211,
@@ -25390,6 +25420,12 @@
   "season": "2008-09",
   "dbpm": -0.876,
   "bpm": 1.773
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2008-09",
+  "dbpm": 1.007,
+  "bpm": 1.768
  },
  {
   "name": "Shaquille O'Neal",
@@ -26758,6 +26794,12 @@
   "season": "2007-08",
   "dbpm": -0.389,
   "bpm": 2.481
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2007-08",
+  "dbpm": 0.503,
+  "bpm": 2.462
  },
  {
   "name": "Allen Iverson",
@@ -28174,6 +28216,12 @@
   "season": "2006-07",
   "dbpm": -0.116,
   "bpm": 2.712
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2006-07",
+  "dbpm": 0.842,
+  "bpm": 2.698
  },
  {
   "name": "Leandro Barbosa",
@@ -29794,6 +29842,12 @@
   "season": "2005-06",
   "dbpm": -1.298,
   "bpm": 0.983
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2005-06",
+  "dbpm": 1.253,
+  "bpm": 0.971
  },
  {
   "name": "Chris Duhon",
@@ -32376,6 +32430,12 @@
   "bpm": 3.315
  },
  {
+  "name": "Metta World Peace",
+  "season": "2003-04",
+  "dbpm": 1.687,
+  "bpm": 3.24
+ },
+ {
   "name": "Stephon Marbury",
   "season": "2003-04",
   "dbpm": -0.936,
@@ -33792,6 +33852,12 @@
   "bpm": 3.275
  },
  {
+  "name": "Metta World Peace",
+  "season": "2002-03",
+  "dbpm": 2.253,
+  "bpm": 3.226
+ },
+ {
   "name": "Doug Christie",
   "season": "2002-03",
   "dbpm": 3.162,
@@ -35200,6 +35266,12 @@
   "season": "2001-02",
   "dbpm": 0.332,
   "bpm": 1.902
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "2001-02",
+  "dbpm": 2.687,
+  "bpm": 1.892
  },
  {
   "name": "Raef LaFrentz",
@@ -37062,6 +37134,12 @@
   "bpm": -0.606
  },
  {
+  "name": "Metta World Peace",
+  "season": "2000-01",
+  "dbpm": 1.274,
+  "bpm": -0.617
+ },
+ {
   "name": "Danny Ferry",
   "season": "2000-01",
   "dbpm": 0.182,
@@ -38332,6 +38410,12 @@
   "season": "1999-00",
   "dbpm": 1.19,
   "bpm": -0.12
+ },
+ {
+  "name": "Metta World Peace",
+  "season": "1999-00",
+  "dbpm": 0.953,
+  "bpm": -0.141
  },
  {
   "name": "Eric Snow",

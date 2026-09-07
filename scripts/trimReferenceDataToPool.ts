@@ -25,6 +25,11 @@ import { draftPool } from '../src/data/draftPool';
 import { normalizePlayerName } from '../src/data/schema';
 
 const poolNames = new Set(draftPool.map((p) => normalizePlayerName(p.playerName)));
+// The pool de-dup made "Ron Artest" his single canonical span name, but DARKO/RAPTOR/BPM2 key
+// him only as "Metta World Peace" -- add that source name so his rows survive the trim (the
+// runtime alias in blendedDefenseLookup.ts then resolves the span back to it). Same one entry
+// availabilityLookup/pipmLookup already carry.
+poolNames.add(normalizePlayerName('Metta World Peace'));
 console.log('draft pool: unique normalized names:', poolNames.size);
 
 function trim(srcPath: string, outPath: string, nameField: string, retainedFields?: string[]) {
