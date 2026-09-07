@@ -22,6 +22,16 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
 
 ## Decyzje kalibracyjne czekające na Twoją ocenę
 
+- [ ] **Salary-cap mode: eksplozja klamry (clamp) w pierwszych latach realnego capu (~1984-88)**
+      (znalezione 2026-09-07, przykład: Bill Walton). Prawdziwy cap w 1984-85 to zaledwie $3.6M
+      CAŁEJ drużyny — więc dowolna "normalna" realna pensja weterana z tamtych lat stanowi ogromny
+      % ówczesnego capu, co po przeskalowaniu na dzisiejszy cap ($154.6M) regularnie wybija ponad
+      dzisiejsze realne maksimum i ląduje docięte do klamry (Walton: schyłkowy sezon Role Player
+      czyta się jako $58M, kontrakt maksymalny). Osobno, ale nakładająco: jego wcześniejsze,
+      naprawdę elitarne (All-star/All-NBA) sezony czytają się jako tanie $13.8M, bo mieszczą się w
+      oknie kontraktu rookie #1 wyboru — to celowe (mechanika gry), nie błąd. Efekt łączny: jego
+      najlepsze lata są sztucznie tanie, najgorsze sztucznie drogie. Prawdopodobnie dotyczy każdego
+      gracza z realną pensją z lat ~1984-88, nie tylko Waltona — nie zweryfikowane jak szeroko.
 - [ ] **Waga TE-1**: zmierzona korelacja talentScore↔głos człowieka to 0.54 (nie zakładane wcześniej
       0.82). Zaakceptować, czy przekalibrować gdy będzie więcej niż n=15 realnych draftów?
 - [ ] **Wykładnik wartości pick'a AI-1** — potrzebuje realnego "czucia" z rozgrywki, nie tylko matematyki
