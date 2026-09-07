@@ -22,13 +22,16 @@
  * with at most one `rookie`-method span.
  *
  * WORKING DRAFT — `salaries.json`'s `capByYear` is approximate before 2016, and years-of-service
- * is estimated from draft year. Not a shipped ruleset. See the project memory
+ * is estimated from draft year where known, else from the player's own earliest span in the pool
+ * (real but incomplete for a career that started before the pool's own coverage — see
+ * earliestSpanStartYearByName's docstring). Not a shipped ruleset. See the project memory
  * `usg_possession_cap_plan.md` for the fuller design + the full list of caveats.
  */
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import salaries from '../data/awards/salaries.json';
 import draftHistory from '../data/awards/draftHistory.json';
+import { draftPool } from '../data/draftPool';
 import { overallTierForSpan, type OverallTier } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
 
@@ -98,6 +101,33 @@ for (const row of draftHistory as { name: string; season: string; overallPick: n
   }
 }
 
+/**
+ * 2026-09-07, user-reported (Moses Malone's post-1985 real-salary seasons all clamping to the
+ * lowest, <7-years-of-service max, $41.24M, when he should be well past 10): players with no
+ * `draftInfoByName` entry (ABA-to-NBA converts like Malone, who jumped straight from high school
+ * to the ABA in 1974 and so were never drafted by an NBA team through a route this table covers;
+ * undrafted entries) fell back to counting years-of-service from the first year THIS PROJECT
+ * happens to have a real salary on file — which floors at 1985 for literally every player,
+ * regardless of when their real career started, so Malone (11 real pro seasons in by then) was
+ * priced as a rookie. Rather than special-case Malone by name, use a real, already-available,
+ * player-specific signal instead: the earliest span this same real person has anywhere in the
+ * full (non-active-filtered) draftPool, which for a long-career player routinely reaches back
+ * well before 1985 (Malone's own earliest curated span is 1976-78). Still not their true real
+ * debut (Malone's is 1974; the pool's own earliest curated span for him is 1976-78, 2 years
+ * later — a real, acknowledged residual gap for players whose career started before the pool's
+ * own coverage), but a measured, order-of-magnitude improvement over "assume rookie in 1985"
+ * for every player this affects, not just this one name.
+ */
+const earliestSpanStartYearByName = new Map<string, number>();
+for (const p of draftPool) {
+  const m = p.spanLabel.match(/^(\d{4})-/);
+  if (!m) continue;
+  const startYear = parseInt(m[1], 10);
+  const key = normalizePlayerName(p.playerName);
+  const existing = earliestSpanStartYearByName.get(key);
+  if (existing === undefined || startYear < existing) earliestSpanStartYearByName.set(key, startYear);
+}
+
 /** "1990-92" -> [1991, 1992] (the season-END years the span covers). */
 function spanEndYears(label: string): number[] {
   const m = label.match(/(\d{4})-(\d{2})/);
@@ -146,11 +176,17 @@ export function priceSpan(span: PlayerSpan): SpanPricing {
   const tierMarketUsd = TIER_MARKET_USD[tier] ?? 9_000_000;
   const history = salaryHistoryFor(span);
   const draft = draftInfoByName.get(normalizePlayerName(span.playerName));
-  const firstSalaryYear = history ? Math.min(...Object.keys(history).map(Number)) : null;
+  const earliestSpanYear = earliestSpanStartYearByName.get(normalizePlayerName(span.playerName));
 
   const seasons: SeasonCharge[] = spanEndYears(span.spanLabel).map((year) => {
+    // Same "years since the season before their first tracked one" shape as the `draft` branch,
+    // just anchored on the earliest span this real person has in the pool instead of a draft
+    // year — see earliestSpanStartYearByName's own docstring for why this replaced falling back
+    // to "first year we happen to have a real salary on file" (floors at 1985 for everyone).
     const yos =
-      draft ? year - 1 - draft.year : firstSalaryYear != null ? year - firstSalaryYear : 8;
+      draft ? year - 1 - draft.year
+      : earliestSpanYear != null ? year - 1 - earliestSpanYear
+      : 8;
     const real = history?.[String(year)] ?? null;
     const isRookieYear = draft != null && draft.pick <= 30 && year >= draft.year + 1 && year <= draft.year + 4;
 
