@@ -23,6 +23,9 @@ import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion, MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS } from './defensiveCohesion';
 import { rimPressureTeam } from './rimPressure';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
+// Boolean predicate only (is this player a hard whole-career era override) — NOT a
+// `computeDefensiveTalent` value; the module keeps its "no talent-number input" rule.
+import { hasEraOverrideDefenseFloor } from './defensiveTalent';
 import type { Team } from './types';
 
 /**
@@ -268,7 +271,22 @@ function defensiveRoleScore(profile: ShadowRoleProfile, roles: DefensiveRole[]):
   // a useful compatibility signal.
   if (roles.includes(profile.incumbentDefensiveRole)) {
     const evidencedFit = profile.defensiveFits.find((fit) => fit.role === profile.incumbentDefensiveRole)?.score ?? 0;
-    return Math.max(80, evidencedFit);
+    // `evidencedFit` is a position-scaled STL/BLK/RPG box score. For a pre-1974 anchor it is
+    // structurally broken (no steals or blocks on record), so the 80 floor — meant as "credible,
+    // not elite" — becomes a hard ceiling on a Russell/Wilt-tier rim layer. When the incumbent
+    // role is a rim/wing job AND the player carries a whole-career era override
+    // (`hasEraOverrideDefenseFloor`), raise the floor to 92: still short of the box-verified
+    // elite scores, but no longer capping a confirmed all-time anchor at "credible".
+    const player = players.find((candidate) => candidate.id === profile.playerId);
+    const eraFloor =
+      player &&
+      hasEraOverrideDefenseFloor(player.playerName) &&
+      (profile.incumbentDefensiveRole === 'Anchor Big' ||
+        profile.incumbentDefensiveRole === 'Mobile Big' ||
+        profile.incumbentDefensiveRole === 'Wing Stopper')
+        ? 92
+        : 0;
+    return Math.max(80, evidencedFit, eraFloor);
   }
   // A curated Low Activity tag is stronger evidence than a stocks/rebounds resemblance to an
   // additional defensive job. Without this guard Magic could be shown simultaneously as an
