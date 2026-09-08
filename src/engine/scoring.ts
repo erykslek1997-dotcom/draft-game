@@ -477,45 +477,19 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
   };
 }
 
-/**
- * 2026-09-08, user-reported ("ofensywy są zaniżane, łatwiej zrobić 100 def niż 100 off").
- * Measured across 29 real drafted rosters (D1 n=15 + D1S2 n=14): `offenseScore` SD 5.3 vs
- * `defenseScore` SD 15.0 — at equal `overall` weight (0.163 each) defense drove ~3x the ranking
- * spread, contrary to the intended near-symmetry. Root cause: `defenseScore` gets an additive
- * coherence bonus (`defensiveCohesion`, 0..+18) that lets a well-built defensive shell reach
- * 100, while `offenseScore` is a flat 6-way weighted average with no coherence term — so even an
- * all-time offense (2017 KD + Klay + Draymond + Embiid) tops out ~81 because the dimensions
- * trade off (elite rim pressure vs elite spacing, etc.). The 6-dim blend also lost its final
- * range-stretch when it replaced the old 2-dim (OTAL+spacing) formula on 2026-09-04 —
- * `OFFENSE_SCORE_ANCHORS` now only rescales the `otal` sub-component, not the blended output.
- *
- * This is the cheap interim: a final rescale of the blended output against the *practical*
- * achievable range rather than the optimizer's literal extremes — exactly what
- * `SPACING_SCORE_ANCHORS` already does for spacing ("a useful basketball range rather than the
- * optimizer's literal 0/115 extremes"). Anchors from the 29-roster distribution: a genuinely
- * broken offense (raw ~44) maps to ~0, a Warriors-tier construction (raw ~85) to ~100; values
- * outside clamp. The 6 component fields on the breakdown stay RAW for the UI's per-dimension
- * view — only `.score` (the number every downstream consumer reads) is stretched.
- *
- * The real fix — an `offensiveCohesion` additive bonus mirroring `defensiveCohesion` — is a
- * planned follow-up; this only stops the axis reading as pre-compressed in the meantime. Does
- * not touch `computeTalent` (Taylor/GOAT unaffected).
- */
-const OFFENSE_BLEND_ANCHORS = { worst: 44, best: 85 };
-
 /** Single source of truth for the weighted blend — `offenseScore` (the number every other
  * consumer reads) and `offenseScoreBreakdown` (the UI's per-dimension view) both build on this so
  * the two can never drift apart. */
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
-  const rawBlend =
+  const score = Math.round(
     components.otal * OFFENSE_OTAL_BLEND_WEIGHT +
-    components.spacing * OFFENSE_SPACING_BLEND_WEIGHT +
-    components.rimPressure * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
-    components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
-    components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
-    components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
-  const score = Math.round(rescaleToFullRange(rawBlend, OFFENSE_BLEND_ANCHORS));
+      components.spacing * OFFENSE_SPACING_BLEND_WEIGHT +
+      components.rimPressure * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
+      components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
+      components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
+      components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT,
+  );
   return { ...components, score };
 }
 
