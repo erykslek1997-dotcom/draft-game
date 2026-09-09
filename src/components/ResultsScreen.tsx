@@ -796,6 +796,13 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
       {ranked.map(({ team, breakdown, rank }) => {
         const shownTeam = displayTeam(team);
         const assignments = allAssignments(shownTeam);
+        // A thin-bench player is genuinely split across two or three slots by `autoAssignRotation`;
+        // the per-slot rows below then read as several different players. Their total minutes,
+        // shown alongside each partial, make it clear it's one body covering multiple spots.
+        const totalMinutesByPlayerId = new Map<string, number>();
+        for (const a of assignments) {
+          totalMinutesByPlayerId.set(a.player.id, (totalMinutesByPlayerId.get(a.player.id) ?? 0) + a.minutes);
+        }
         const starterKeys = new Set(primaryStarters(shownTeam).map((entry) => `${entry.slot}|${entry.player.id}`));
         const netRating = projectedNetRating(shownTeam);
         const leagueEvalRow = leagueEvalByTeamId.get(team.id);
@@ -1035,7 +1042,12 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                                     <span className="rotation-role-badge">{starterKeys.has(`${e.slot}|${e.player.id}`) ? 'Starter' : 'Bench'}</span>
                                   </span>
                                   <span className="player-row-meta">
-                                    <span className="player-row-minutes">{e.minutes} min</span>
+                                    <span className="player-row-minutes">
+                                      {e.minutes} min
+                                      {(totalMinutesByPlayerId.get(e.player.id) ?? e.minutes) !== e.minutes && (
+                                        <span className="player-row-total-min"> ({totalMinutesByPlayerId.get(e.player.id)} total)</span>
+                                      )}
+                                    </span>
                                     <span className="player-row-boxscore">
                                       <span>{e.player.box.ppg.toFixed(1)} PTS</span>
                                       <span>{e.player.box.rpg.toFixed(1)} REB</span>

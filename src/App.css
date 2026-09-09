@@ -2024,6 +2024,11 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   align-items: center;
   padding-right: 8px;
 }
+.player-row-total-min {
+  color: var(--at-ink-faint);
+  font-size: 10px;
+  margin-left: 3px;
+}
 .player-row-boxscore {
   display: inline-flex;
   gap: 6px;
