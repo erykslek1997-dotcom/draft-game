@@ -42,18 +42,29 @@ const BACKLINE_PROVIDER_FULL = 88;
 const AVERAGE_START = 80;
 const AVERAGE_FULL = 86;
 
+// 2026-09-09, user-reported ("kilka zespołów z 100 def nie ma sensu") + a top-5 human-vs-AI
+// comparison where 4/5 elite AI defenses read exactly 100: the PARTIAL credits were doing most of
+// the saturating — the AI's routine "draft a cheap 2nd rim protector" pattern maxed
+// `backlineFoundation` (+18) on nearly every roster and pinned `defenseScore` to 100. The
+// complete-all-time-shell credit is barely touched (9 -> 8, a genuine no-weak-link shell should
+// still be able to approach the ceiling); the two partial paths are cut hard (12 -> 8, 18 -> 9)
+// so only a real shell — not "two bigs + otherwise fine" — reaches 100. Paired with the new
+// `offensiveCohesion` bonus (scoring.ts) so the two axes can reach comparable ceilings. These
+// caps only touch the display/fit `defenseScore`; `drtgCompleteness` (the projectedNetRating
+// floor) reads the readiness fractions and their own DRTG_BLEND constants, not these.
+
 /** Maximum extra separation reserved for a complete all-time defensive shell. */
-export const MAX_ELITE_SHELL_DEFENSE_BONUS = 9;
+export const MAX_ELITE_SHELL_DEFENSE_BONUS = 8;
 /**
  * Maximum structural credit for fielding real POA + wing + rim providers even when the rest of
  * the rotation contains attackable players. This is deliberately separate from the elite-shell
  * ceiling: three excellent layers still matter, but they cannot erase weak-link minutes.
  */
-export const MAX_THREE_LAYER_CORE_DEFENSE_BONUS = 12;
+export const MAX_THREE_LAYER_CORE_DEFENSE_BONUS = 8;
 /** Two distinct high-minute rim protectors establish a real defensive floor even when the
  * perimeter shell is weak. This is a ceiling/foundation bonus, not a substitute for POA/wing
  * coverage, and therefore stays below the complete-shell treatment. */
-export const MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS = 18;
+export const MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS = 9;
 export const BACKLINE_FOUNDATION_DRTG_BLEND = 0.35;
 /** Only a small part of a partial core carries into the real-units DRTG projection. */
 export const THREE_LAYER_CORE_DRTG_BLEND = 0.15;

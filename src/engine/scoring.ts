@@ -477,18 +477,94 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
   };
 }
 
+/**
+ * 2026-09-09, user-reported for the 3rd time ("dużo łatwiej zrobić 100 def niż 100 off") and this
+ * time with a top-5 human-vs-AI roster comparison as evidence: `defenseScore` gets an additive
+ * `defensiveCohesion` bonus (a "you built a complete elite unit → ceiling" term) that routinely
+ * pins elite defensive shells to 100, while `offenseScore` was a flat weighted average with no
+ * equivalent, so even Curry + Barkley + Wilt + 93-spacing capped at ~81.
+ *
+ * The 5 previously-reverted attempts at an `offensiveCohesion` bonus all keyed it on offensive
+ * STRUCTURE (playmaking chains, spacing geometry) and regressed the human-vote correlation —
+ * humans reward STARS on offense, not structure (`analyzeD1HumanVote.ts`: `talentScore` and
+ * `offenseScore` both correlate with the vote, structural offense signals do not). This one is
+ * keyed on exactly that: a genuine two-elite-scorer starting core (2nd-best starter O-TAL) that
+ * is ALSO real playoff offense (a spacing gate, the mirror of `defensiveCohesion`'s huntability-
+ * resistance gate). An elite scoring pair with no spacing (Giannis + Ginóbili + weak shooting)
+ * gets almost nothing — the same way an elite rim pair with a hunted perimeter does on defense.
+ *
+ * Same magnitude family as `defensiveCohesion`'s own (post-2026-09-09-cut) caps, so the two axes
+ * can reach comparable ceilings for comparably-complete units. Additive on the blended `.score`,
+ * clamped 0-100 — the 6 component fields stay raw for the UI breakdown, exactly like
+ * `defenseScore`'s linear part vs its final adjusted value.
+ */
+export const MAX_ELITE_SCORING_CORE_BONUS = 9;
+export const MAX_SECONDARY_SCORING_BONUS = 6;
+const SECOND_SCORER_OTAL_START = 82;
+const SECOND_SCORER_OTAL_FULL = 92;
+const THIRD_SCORER_OTAL_START = 78;
+const THIRD_SCORER_OTAL_FULL = 88;
+const OFFENSE_COHESION_SPACING_START = 55;
+const OFFENSE_COHESION_SPACING_FULL = 85;
+
+export interface OffensiveCohesionResult {
+  /** 0-1: a complete two-elite-scorer core that is also real spacing. */
+  eliteScoringCore: number;
+  secondScorerOtal: number;
+  spacingReadiness: number;
+  offenseScoreBonus: number;
+}
+
+export function offensiveCohesion(team: Team): OffensiveCohesionResult {
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const starterOtals = primaryStarters(team)
+    .map((entry) => computeOffensiveTalent(entry.player))
+    .sort((a, b) => b - a);
+  const second = starterOtals[1] ?? 0;
+  const third = starterOtals[2] ?? 0;
+  const teamSpacing = spacingScore(team);
+
+  const coreReadiness = clamp01(
+    (second - SECOND_SCORER_OTAL_START) / (SECOND_SCORER_OTAL_FULL - SECOND_SCORER_OTAL_START),
+  );
+  const thirdReadiness = clamp01(
+    (third - THIRD_SCORER_OTAL_START) / (THIRD_SCORER_OTAL_FULL - THIRD_SCORER_OTAL_START),
+  );
+  const spacingReadiness = clamp01(
+    (teamSpacing - OFFENSE_COHESION_SPACING_START) /
+      (OFFENSE_COHESION_SPACING_FULL - OFFENSE_COHESION_SPACING_START),
+  );
+
+  // Complete elite core: two genuine elite scorers AND real spacing (the playoff gate).
+  const eliteScoringCore = coreReadiness * spacingReadiness;
+  const eliteCoreBonus = eliteScoringCore * MAX_ELITE_SCORING_CORE_BONUS;
+  // Partial: a real 2nd + 3rd scorer with at least some spacing — bounded credit, mirrors
+  // `defensiveCohesion`'s three-layer-core term.
+  const secondaryBonus =
+    coreReadiness * (0.5 + thirdReadiness * 0.5) * spacingReadiness * MAX_SECONDARY_SCORING_BONUS;
+
+  return {
+    eliteScoringCore,
+    secondScorerOtal: second,
+    spacingReadiness,
+    offenseScoreBonus: Math.max(eliteCoreBonus, secondaryBonus),
+  };
+}
+
 /** Single source of truth for the weighted blend — `offenseScore` (the number every other
  * consumer reads) and `offenseScoreBreakdown` (the UI's per-dimension view) both build on this so
  * the two can never drift apart. */
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
-  const score = Math.round(
+  const rawBlend =
     components.otal * OFFENSE_OTAL_BLEND_WEIGHT +
-      components.spacing * OFFENSE_SPACING_BLEND_WEIGHT +
-      components.rimPressure * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
-      components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
-      components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
-      components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT,
+    components.spacing * OFFENSE_SPACING_BLEND_WEIGHT +
+    components.rimPressure * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
+    components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
+    components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
+    components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
+  const score = Math.round(
+    Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus)),
   );
   return { ...components, score };
 }
