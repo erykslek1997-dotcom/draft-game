@@ -107,8 +107,28 @@ const ELITE_TALENT_REDUNDANCY_EXEMPTION = 95;
  * pressure range 0.4-1.3, not just at one end — solved directly: 7 >= (fga_A-fga_B) *
  * MAX_FGA_PENALTY * dampening requires dampening <= ~0.6; 0.5 leaves real margin rather than
  * sitting right at the edge.
+ *
+ * 2026-09-09: a hard gate at `ELITE_TALENT_REDUNDANCY_EXEMPTION` (95) meant a genuine high-usage
+ * star just below it ate the FULL FGA penalty — measured directly, T-Mac 2000-02 (eTAL 92, FGA
+ * 21.6) fell past pick 96 (round 7) in the AI order across 4 seeds while zero of 29 real human
+ * rosters left him that late. The 0.5 endpoint and the >=95 behaviour are unchanged; the gate is
+ * now a linear ramp so a star at eTAL 88 gets nothing and one at 92 gets ~0.71 dampening —
+ * partial relief proportional to how elite the peak actually is, the same "softened not waived"
+ * shape the 0.5 was chosen for.
  */
 const ELITE_TALENT_FGA_PENALTY_DAMPENING = 0.5;
+/** Below this eTAL the FGA-penalty dampening does not apply at all; from here it ramps linearly
+ * down to `ELITE_TALENT_FGA_PENALTY_DAMPENING` at `ELITE_TALENT_REDUNDANCY_EXEMPTION`. */
+const ELITE_TALENT_FGA_DAMPENING_RAMP_START = 88;
+
+function eliteTalentFgaPenaltyDampening(talent: number): number {
+  if (talent <= ELITE_TALENT_FGA_DAMPENING_RAMP_START) return 1;
+  if (talent >= ELITE_TALENT_REDUNDANCY_EXEMPTION) return ELITE_TALENT_FGA_PENALTY_DAMPENING;
+  const progress =
+    (talent - ELITE_TALENT_FGA_DAMPENING_RAMP_START) /
+    (ELITE_TALENT_REDUNDANCY_EXEMPTION - ELITE_TALENT_FGA_DAMPENING_RAMP_START);
+  return 1 - progress * (1 - ELITE_TALENT_FGA_PENALTY_DAMPENING);
+}
 
 /**
  * User-diagnosed (2026-08-05, playtest: "Howard top4, skąd to się bierze?"): the draft VALUE
@@ -1659,7 +1679,7 @@ export function pickForAi(
     // See `ELITE_TALENT_FGA_PENALTY_DAMPENING`'s own docstring above — a true top-of-history
     // peak still feels cap pressure, just softened, rather than being mechanically discounted
     // below a cheaper merely-very-good alternative the same way an ordinary star would be.
-    const effectiveFgaPenalty = talent >= ELITE_TALENT_REDUNDANCY_EXEMPTION ? fgaPenalty * ELITE_TALENT_FGA_PENALTY_DAMPENING : fgaPenalty;
+    const effectiveFgaPenalty = fgaPenalty * eliteTalentFgaPenaltyDampening(talent);
     const talentTerm = talent * rampedNeed;
     const fgaCost = p.fga * effectiveFgaPenalty;
     const adjustments = {

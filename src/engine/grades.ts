@@ -475,6 +475,13 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     { name: 'Draymond Green', spanLabel: '2014-16', cap: 'All-NBA' as OverallTier },
     { name: 'Rudy Gobert', spanLabel: '2019-21', cap: 'All-NBA' as OverallTier },
     { name: 'Rudy Gobert', spanLabel: '2020-22', cap: 'All-NBA' as OverallTier },
+    // 2026-09-09, user batch feedback ("Webber zawsze narzekałem, reszta git" — of the
+    // AI-over-drafted volume forwards, Barkley/Drexler are friend-group taste to leave alone,
+    // Webber genuinely reads a rung high). Only 2000-02 (cTAL/eTAL 90) sits in 'MVP'; his other
+    // peak spans (1996-98, 1999-01 at 87, 2001-03 at 86) are already All-NBA. A 1st-team All-NBA
+    // but never-real-MVP-candidate season shouldn't clear the MVP floor; capping it to All-NBA
+    // brings it in line with the rest of his own prime. `computeTalent` raw untouched.
+    { name: 'Chris Webber', spanLabel: '2000-02', cap: 'All-NBA' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
