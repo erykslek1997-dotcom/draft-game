@@ -1560,14 +1560,25 @@ export function pickForAi(
     // roster locks its five) is unchanged, matching how every other bench-specific mechanism in
     // this file (`lacksBenchShotCreator`, `lacksSixthMan`) is already scoped.
     if (inBenchRound) {
+      let positionalNeed = 0;
       for (const pos of [p.primaryPosition, ...p.secondaryPositions]) {
-        if (needs.emptySlots.includes(pos)) need += 1.5;
+        if (needs.emptySlots.includes(pos)) positionalNeed += 1.5;
         else if (needs.thinSlots.includes(pos)) {
-          need += needs.looselyBackedThinSlots.includes(pos) ? 0.5 : 1.3;
+          positionalNeed += needs.looselyBackedThinSlots.includes(pos) ? 0.5 : 1.3;
         }
-        need += benchPgScarcityBonus(pos, needs);
-        need += benchCenterScarcityBonus(pos, needs);
+        positionalNeed += benchPgScarcityBonus(pos, needs);
+        positionalNeed += benchCenterScarcityBonus(pos, needs);
       }
+      // 2026-09-09, user-reported ("AI draftuje słabo" / weak benches): a bench-round positional
+      // need stacks to ~2.8 (thin-slot 1.3 + scarcity bonus 1.5), and on a genuinely replacement-
+      // level filler (eTAL ~55) that turned into picks like Satoranský / George Hill / Delonte
+      // West at 87-98 over clearly better players at covered positions. Scale the whole positional
+      // pull by candidate talent: a real backup (eTAL >= 67) still gets the full pull that keeps
+      // PG/C bench coverage from collapsing, but a sub-60-eTAL body no longer gets drafted two
+      // rounds early purely for playing a thin position.
+      const benchTalent = effectiveTalent(p);
+      const benchNeedScale = Math.max(0.4, Math.min(1, (benchTalent - 50) / 17));
+      need += positionalNeed * benchNeedScale;
     } else {
       if (needs.emptySlots.includes(p.primaryPosition)) need += 1.5;
       // See `NeedContext.looselyBackedThinSlots`'s own docstring — a thin slot already backed by
@@ -1590,7 +1601,10 @@ export function pickForAi(
     // `perimeterDefenderStarterCount`'s own docstring). Third and beyond: nothing.
     if (PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)) {
       const already = needs.perimeterDefenderStarterCount;
-      need += already === 0 ? 0.4 : already === 1 ? 0.25 : 0;
+      // 2026-09-09: halved from 0.4/0.25 — the original was reaching cheap Point-of-Attack guards
+      // (Kris Dunn eTAL 55 → pick ~99, Don Buse) well past their talent. The smaller nudge still
+      // gets a genuine 3&D wing drafted without inventing a round-6 reach.
+      need += already === 0 ? 0.22 : already === 1 ? 0.12 : 0;
     }
     if (
       needs.usageWeight >= OFFENSE_HEAVY_USAGE_THRESHOLD &&
