@@ -13,8 +13,12 @@
  * exists — so it's capped at the 2025-26 max for the player's years of service.
  *
  * Three cases:
- *   - **rookie**   first-round pick, first 4 seasons -> the 2025-26 rookie scale for their slot,
- *                  regardless of how good they were (this is where the arbitrage lives).
+ *   - **rookie**   first-round pick drafted 1995 or later (the rookie WAGE SCALE is a 1995-CBA
+ *                  mechanism; it didn't exist before), first 4 seasons -> the 2025-26 rookie
+ *                  scale for their slot, regardless of how good they were (this is where the
+ *                  arbitrage lives). A pre-1995 top pick could sign a real, uncapped,
+ *                  individually-negotiated rookie deal instead (Glenn Robinson, #1 in 1994,
+ *                  10-yr/$68M) -- those fall through to **real** below like anyone else's.
  *   - **real**     otherwise, the scaled-and-clamped real salary.
  *   - **estimate** pre-1985 / a few name-alias misses -> a tier-based fallback.
  *
@@ -188,7 +192,16 @@ export function priceSpan(span: PlayerSpan): SpanPricing {
       : earliestSpanYear != null ? year - 1 - earliestSpanYear
       : 8;
     const real = history?.[String(year)] ?? null;
-    const isRookieYear = draft != null && draft.pick <= 30 && year >= draft.year + 1 && year <= draft.year + 4;
+    // 2026-09-09, user-reported: the rookie-scale WAGE SCALE this branch flattens a player's
+    // early seasons to is a specific mechanism the 1995 CBA introduced (first applied to the
+    // 1995 draft class onward) -- it didn't exist before that. A pre-1995 top pick (Glenn
+    // Robinson, #1 in 1994, signed an uncapped 10-year/$68M deal as an unproven rookie) had a
+    // real, individually-negotiated contract, often a blockbuster one, not a rookie-scale
+    // number -- gating this on draft.year lets those seasons fall through to the normal
+    // real/estimate pricing below instead of being anachronistically flattened to a 2025-26
+    // rookie-scale figure that has nothing to do with how their era actually paid rookies.
+    const isRookieYear =
+      draft != null && draft.year >= 1995 && draft.pick <= 30 && year >= draft.year + 1 && year <= draft.year + 4;
 
     if (isRookieYear) {
       return { year, realSalaryUsd: real, chargeUsd: rookieScaleSalary(draft.pick), source: 'rookie' };
