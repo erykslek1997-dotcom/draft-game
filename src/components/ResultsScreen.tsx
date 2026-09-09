@@ -85,6 +85,16 @@ interface Props {
  * pick-a-player-from-a-dropdown + pick-a-direction-from-a-second-dropdown flow). */
 type PlayerFeedback = Record<string, FeedbackEntry>;
 
+/** 2026-09-09: the "correct any team's rotation from the results screen" feature (a reused
+ * `RotationBuilder`) is no longer wired in — `correctedRotations` is always empty. Kept as a
+ * single module-level stable reference so the `scoredTeams` `useMemo` below actually memoizes:
+ * previously it was `const correctedRotations = {}` inside the component body, a fresh object
+ * every render, which busted `scoredTeams` → `leagueEval` (`evaluateLeague`, ~1.5s) on every
+ * re-render (feedback keystroke, accordion toggle, season-sim click). The dead export fields
+ * (`correctedRotation`/`correctedBench`/`rotationWasCorrected`) stay so the feedback JSON schema
+ * is unchanged. */
+const EMPTY_CORRECTED_ROTATIONS: Record<string, Rotation> = {};
+
 interface TeamFeedback {
   /** 2026-08-09, user's explicit ask: replaces the old yes/no/unsure agreement dropdown with the
    * user's own 1-16 Power Ranking placement for this team — a direct, comparable number against
@@ -594,11 +604,11 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
   const teamById = (id: string) => teams.find((t) => t.id === id);
   const playerById = (id: string) => draftPool.find((p) => p.id === id);
   const leftOnBoard = remainingOnBoard(teams);
-  // 2026-08-08, user's explicit ask: correct ANY team's rotation from this screen (not just the
-  // human's own, pre-results one — see RotationBuilder's reuse below), kept separate from the
-  // original auto-assigned `team.rotation` so the export can carry both (see
-  // `buildFeedbackExport`'s own docstring on `correctedRotations`).
-  const correctedRotations: Record<string, Rotation> = {};
+  // 2026-08-08, user's explicit ask: correct ANY team's rotation from this screen — no longer
+  // wired in; `EMPTY_CORRECTED_ROTATIONS` is a stable module-level reference (see its docstring
+  // for the perf reason). The `displayTeam` / `scoredTeams` plumbing stays so re-wiring a
+  // corrector later is a one-line change, and the feedback-export schema is unchanged.
+  const correctedRotations = EMPTY_CORRECTED_ROTATIONS;
   // 2026-08-19, user's own idea ("PR works as it works, but user can simulate 82 game season"):
   // one randomly-rolled 82-game season standings table, completely separate from the Final Power
   // Ranking above (`ranked`, still what `overall`/rank is judged by — untouched by this). `null`
@@ -627,9 +637,11 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
     }),
     [teams, correctedRotations],
   );
-  // Ranking is cheap compared with the Monte Carlo evaluation and intentionally recomputes on
-  // render; during local calibration HMR can replace scoring code without changing team identity.
-  const ranked = rankTeams(scoredTeams);
+  // `rankTeams` is `scoreTeam ×16` (~400ms) — memoized on the same `scoredTeams` identity as the
+  // sim below so a feedback keystroke or accordion toggle doesn't re-score the whole field.
+  // (During local calibration a scoring.ts HMR edit won't refresh this without a hard reload —
+  // acceptable; the sim below already had the same property.)
+  const ranked = useMemo(() => rankTeams(scoredTeams), [scoredTeams]);
   // Monte Carlo bracket sim (20,000 runs) is expensive, so it reruns only when the draft teams or
   // a saved rotation correction actually change — not when feedback text or expansion state does.
   // The results screen should become interactive quickly after Skip to Results. The matchup
