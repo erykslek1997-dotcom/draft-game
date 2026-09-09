@@ -417,7 +417,13 @@ interface NeedContext {
    * equivalent yet, unlike defense. */
   avgSpacing: number;
   lacksRimProtection: boolean;
-  lacksPerimeterDefense: boolean;
+  /** How many current STARTERS carry a real perimeter-defender role (`PERIMETER_DEFENDER_ROLES`).
+   * 2026-09-09: replaced a binary `lacksPerimeterDefense` — the AI-vs-human draft comparison
+   * (D1 + D1S2) showed the AI takes exactly ONE 3-and-D wing and then never values another, so
+   * Iguodala / OG Anunoby / Danny Green-tier connectors real humans stack 2-3 of never came off
+   * the board. The `need` bonus below now tapers over the first two rather than vanishing after
+   * the first. */
+  perimeterDefenderStarterCount: number;
   usageWeight: number;
   /** Starters' average D-POR (`computeDefensivePortability`), 50 (a neutral mid-scale default)
    * for an empty roster. 2026-08-06, user's explicit ask after the O-POR/D-POR split landed:
@@ -578,7 +584,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
         ? 50
         : starterPlayers.reduce((sum, p) => sum + computeSpacing(p), 0) / starterPlayers.length,
     lacksRimProtection: !starterPlayers.some((p) => RIM_PROTECTOR_ROLES.includes(p.defensiveRole)),
-    lacksPerimeterDefense: !starterPlayers.some((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)),
+    perimeterDefenderStarterCount: starterPlayers.filter((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)).length,
     usageWeight: starterPlayers.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0), 0),
     avgDefensivePortability:
       starterPlayers.length === 0
@@ -1579,7 +1585,13 @@ export function pickForAi(
       need += deficitRatio * (computeSpacing(p) / 100) * SPACING_DEPTH_BONUS_SCALE;
     }
     if (needs.lacksRimProtection && RIM_PROTECTOR_ROLES.includes(p.defensiveRole)) need += 0.6;
-    if (needs.lacksPerimeterDefense && PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)) need += 0.4;
+    // A real contender stacks 2-3 perimeter defenders, not one — taper the bonus over the first
+    // two starters rather than dropping it to zero the moment one is aboard (see
+    // `perimeterDefenderStarterCount`'s own docstring). Third and beyond: nothing.
+    if (PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)) {
+      const already = needs.perimeterDefenderStarterCount;
+      need += already === 0 ? 0.4 : already === 1 ? 0.25 : 0;
+    }
     if (
       needs.usageWeight >= OFFENSE_HEAVY_USAGE_THRESHOLD &&
       (RIM_PROTECTOR_ROLES.includes(p.defensiveRole) || PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole))
