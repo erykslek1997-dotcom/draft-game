@@ -188,9 +188,30 @@ function starterFitMultiplier(player: PlayerSpan, slot: Position): number {
  * uses, not an independent approximation that could disagree with what actually happens at
  * rotation-build time.
  */
+/**
+ * 2026-09-09, user-reported ("gra działa wolno" on the draft): `pickForAi`'s bench rounds
+ * (`aiDrafter.ts`, roster size >= 5) call `autoAssignRotation` / `projectedStarterValue` — both
+ * of which route through this exact search — 40-80 times per pick (a `playable` scan followed by
+ * an overlapping `qualityReserve` re-scan over the same `[...roster, candidate]` rosters).
+ * Profiled: `pickForAi` cost jumps ~350ms -> ~2500ms at roster size 5, i.e. this search runs
+ * tens of thousands of nodes per call and is re-run for rosters it has already solved verbatim.
+ * The result is a pure function of the roster (talent/fit lookups it reads are all individually
+ * memoized and stable within a session), so memoize by the roster's id sequence. The returned
+ * `assignment` is a fresh object every caller only reads — safe to share. Key is order-sensitive
+ * on purpose: a different order is a cache miss that recomputes exactly as before (zero behavior
+ * change), and every real repeat (`pickForAi`'s two passes, a display re-render of the same
+ * roster) passes the same order.
+ */
+const bestPrimaryAssignmentCache = new Map<string, { assignment: Partial<Record<Position, PlayerSpan>>; score: number }>();
+const BEST_PRIMARY_ASSIGNMENT_CACHE_CAP = 20000;
+
 function bestPrimaryAssignment(
   roster: PlayerSpan[],
 ): { assignment: Partial<Record<Position, PlayerSpan>>; score: number } {
+  const cacheKey = roster.map((p) => p.id).join('|');
+  const cached = bestPrimaryAssignmentCache.get(cacheKey);
+  if (cached) return cached;
+
   let best: Partial<Record<Position, PlayerSpan>> = {};
   let bestScore = -Infinity;
   let bestPrimaryMatches = -Infinity;
@@ -248,7 +269,31 @@ function bestPrimaryAssignment(
     return v;
   }
 
+  // Admissible branch-and-bound bound. `slotMax[i]` = the highest value ANY roster player could
+  // bring to slot i, ignoring whether they are already used elsewhere — using a player at another
+  // slot can only *lower* what is available here, so this never underestimates a real completion.
+  // `suffixMax[i]` sums that from slot i to the end: the most additional score any completion from
+  // slot i onward could possibly reach. A branch whose running `score + suffixMax[slotIdx]` cannot
+  // clear the best complete lineup found so far (by a real margin, not a float ULP) can contain
+  // no better *or equal* lineup, so it is pruned — the `primaryMatches` tiebreak at a genuine
+  // exact tie is never pruned because the cut is strict-with-margin. Cuts the ~30k-node search
+  // for a 9-man roster by roughly an order of magnitude; the returned assignment is identical
+  // (2026-09-09, draft-speed pass — profiled `pickForAi` bench rounds at ~2.5s/pick, ~90% of it
+  // here).
+  const slotMax = STARTER_SLOTS.map((slot) => {
+    let m = 0;
+    for (const player of roster) {
+      const v = valueFor(player, slot);
+      if (v > m) m = v;
+    }
+    return m;
+  });
+  const suffixMax: number[] = new Array(STARTER_SLOTS.length + 1).fill(0);
+  for (let i = STARTER_SLOTS.length - 1; i >= 0; i--) suffixMax[i] = suffixMax[i + 1] + slotMax[i];
+  const PRUNE_MARGIN = 1e-6;
+
   function search(slotIdx: number, score: number, primaryMatches: number) {
+    if (bestScore > -Infinity && score + suffixMax[slotIdx] < bestScore - PRUNE_MARGIN) return;
     if (slotIdx === STARTER_SLOTS.length) {
       // Explicit secondary positions remain full-value, exactly as `starterFitMultiplier`
       // promises. When two complete lineups have IDENTICAL value, however, prefer the one that
@@ -281,7 +326,10 @@ function bestPrimaryAssignment(
   }
 
   search(0, 0, 0);
-  return { assignment: best, score: bestScore === -Infinity ? 0 : bestScore };
+  const result = { assignment: best, score: bestScore === -Infinity ? 0 : bestScore };
+  if (bestPrimaryAssignmentCache.size >= BEST_PRIMARY_ASSIGNMENT_CACHE_CAP) bestPrimaryAssignmentCache.clear();
+  bestPrimaryAssignmentCache.set(cacheKey, result);
+  return result;
 }
 
 /** Total value (`computeTalent * starterFitMultiplier`, summed) of the true best starting five
@@ -302,7 +350,37 @@ export function projectedStarterValue(roster: PlayerSpan[]): number {
  * minutes-cap and distinct-slot-cap constraints make that more involved), but a greedy
  * pass here only affects who's the *backup*, not the more visually obvious starters.
  */
+/**
+ * 2026-09-09, draft-speed pass: `pickForAi`'s bench rounds call this 40+ times per pick over
+ * `[...roster, candidate]` rosters — including a second `qualityReserve` scan over the same
+ * rosters — and it was profiled as the remaining hot path once `bestPrimaryAssignment` was
+ * memoized (~30ms per call for the greedy backup-fill, ~47ms with the exact search on top).
+ * The output is a pure function of the roster (id sequence), so cache it. Callers only ever
+ * READ the returned `Rotation` (grep-verified: no `.slots[...].push` / minute reassignment
+ * outside this file — the rotation editor builds a fresh object from its own row state), but to
+ * keep the cache defensively immune to a future mutating caller, each hit returns a shallow
+ * clone of the slot arrays (5 slots x ~2 entries — trivial next to the solve it skips).
+ */
+const autoAssignRotationCache = new Map<string, Rotation>();
+const AUTO_ASSIGN_ROTATION_CACHE_CAP = 20000;
+
+function cloneRotation(rotation: Rotation): Rotation {
+  const slots = {} as Record<Position, SlotAssignment[]>;
+  for (const slot of STARTER_SLOTS) slots[slot] = rotation.slots[slot].map((a) => ({ ...a }));
+  return { slots };
+}
+
 export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
+  const cacheKey = roster.map((p) => p.id).join('|');
+  const cached = autoAssignRotationCache.get(cacheKey);
+  if (cached) return cloneRotation(cached);
+  const result = autoAssignRotationUncached(roster);
+  if (autoAssignRotationCache.size >= AUTO_ASSIGN_ROTATION_CACHE_CAP) autoAssignRotationCache.clear();
+  autoAssignRotationCache.set(cacheKey, result);
+  return cloneRotation(result);
+}
+
+function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
   const primaryBySlot = bestPrimaryAssignment(roster).assignment;
   const assignedIds = new Set(Object.values(primaryBySlot).map((p) => p!.id));
   const remainingPlayers = roster.filter((p) => !assignedIds.has(p.id));
