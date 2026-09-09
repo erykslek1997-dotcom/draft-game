@@ -2,12 +2,26 @@ import { useMemo, useState } from 'react';
 import { fitScore } from '../engine/fit';
 import type { TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { explainMatchup } from '../engine/matchupExplanation';
-import { teamLabel } from '../engine/teamNames';
+import { teamCodes, teamLabel } from '../engine/teamNames';
 import type { Team } from '../engine/types';
+
+/** Diverging red↔green scale for a BO7 series win probability, tuned for the dark board. A toss-up
+ * sits near-grey; a decisive matchup saturates toward red (underdog) or green (favourite). The old
+ * `rgba(…, 0.12 + |p-0.5|)` only varied alpha over a near-black ground, so the whole low end
+ * (4%, 9%, 34%) collapsed into one muddy red — here 4% is a deep saturated red and 34% is a washed
+ * grey-red, which is the reading a heat cell is supposed to give. */
+function matchupCellColor(probability: number): string {
+  const edge = Math.min(1, Math.abs(probability - 0.5) * 2); // 0 at a coin flip, 1 at 0% / 100%
+  const hue = probability >= 0.5 ? 148 : 2;
+  const saturation = 6 + edge * 52;
+  const lightness = 27 - edge * 3;
+  return `hsl(${hue} ${saturation}% ${lightness}%)`;
+}
 
 export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { teams: Team[]; evaluations: TeamLeagueEvaluation[]; focusTeamId?: string }) {
   const [selected, setSelected] = useState<{ teamId: string; opponentId: string } | null>(null);
   const teamById = useMemo(() => new Map(teams.map((team) => [team.id, team])), [teams]);
+  const codeByTeamId = useMemo(() => teamCodes(teams), [teams]);
   const evaluationById = useMemo(() => new Map(evaluations.map((row) => [row.teamId, row])), [evaluations]);
   const ordered = [...evaluations].sort((a, b) => a.globalRank - b.globalRank);
   const visibleRows = focusTeamId ? ordered.filter((row) => row.teamId === focusTeamId) : ordered;
@@ -39,7 +53,12 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
       <p className="player-notes-hint">Click a percentage to view the matchup analysis. The row shows your team.</p>
       <div className="matchup-matrix-scroll">
         <table className="at-roster-table matchup-matrix-table">
-          <thead><tr><th>Team</th>{ordered.map((row) => <th key={row.teamId} title={teamLabel(teamById.get(row.teamId)!)}>#{row.globalRank}</th>)}</tr></thead>
+          <thead><tr><th>Opponent</th>{ordered.map((row) => (
+            <th key={row.teamId} title={`#${row.globalRank} ${teamLabel(teamById.get(row.teamId)!)}`}>
+              <span className="matchup-col-rank">#{row.globalRank}</span>
+              <span className="matchup-col-code">{codeByTeamId.get(row.teamId)}</span>
+            </th>
+          ))}</tr></thead>
           <tbody>
             {visibleRows.map((row) => (
               <tr key={row.teamId}>
@@ -53,7 +72,8 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
                     <td key={column.teamId}>
                       <button
                         className="matchup-matrix-cell"
-                        style={{ backgroundColor: probability >= 0.5 ? `rgba(59, 155, 92, ${0.12 + Math.abs(probability - 0.5)})` : `rgba(190, 67, 67, ${0.12 + Math.abs(probability - 0.5)})` }}
+                        style={{ backgroundColor: matchupCellColor(probability) }}
+                        title={`#${column.globalRank} ${teamLabel(teamById.get(column.teamId)!)}`}
                         onClick={() => setSelected({ teamId: row.teamId, opponentId: column.teamId })}
                       >{pct}%</button>
                     </td>

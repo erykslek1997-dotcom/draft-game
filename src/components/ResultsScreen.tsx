@@ -119,6 +119,79 @@ function scoreBand(score: number): 1 | 2 | 3 | 4 | 5 | 6 {
   return 6;
 }
 
+/** 1 -> "1st", 2 -> "2nd", 11 -> "11th" — plain English ordinal for the finish-position line. */
+function ordinal(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
+}
+
+/**
+ * 2026-09-09, user-reported ("końcowy screen wygląda średnio"): the results screen opened straight
+ * into a plain `<h2>Final team ranking</h2>` and 16 identical accordion cards, so the one thing a
+ * player actually came back to see — how their own roster did — had no more visual weight than the
+ * CPU teams. This is the payoff line: finish position out of 16, the Final Power Ranking Overall
+ * (the single number every team is judged by, kept dominant here), the simulated title odds (now
+ * consistent with that ranking after the 2026-09-09 matchup fix), and the roster's own one-line
+ * identity + honest failure mode straight from `fitScore`'s archetype report.
+ */
+function HeroResult({
+  teamName,
+  isHuman,
+  rank,
+  fieldSize,
+  overall,
+  titleOdds,
+  identity,
+  failureMode,
+}: {
+  teamName: string;
+  isHuman: boolean;
+  rank: number;
+  fieldSize: number;
+  overall: number;
+  titleOdds: number | null;
+  identity: string | null;
+  failureMode: string | null;
+}) {
+  return (
+    <header className="results-hero">
+      <div className="results-hero-finish">
+        <span className="results-hero-eyebrow">{isHuman ? 'You finished' : 'Top of the field'}</span>
+        <span className="results-hero-rank">
+          <b>{ordinal(rank)}</b>
+          <i>/ {fieldSize}</i>
+        </span>
+        <span className="results-hero-team">{teamName}</span>
+      </div>
+      <div className="results-hero-stats">
+        <div className={`results-hero-stat results-hero-overall score-t${scoreBand(overall)}`}>
+          <span className="results-hero-stat-label">Final Power Ranking</span>
+          <span className="results-hero-stat-value">{overall}</span>
+        </div>
+        {titleOdds !== null && (
+          <div className="results-hero-stat">
+            <span className="results-hero-stat-label">Title odds</span>
+            <span className="results-hero-stat-value">{(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%</span>
+          </div>
+        )}
+      </div>
+      {(identity || failureMode) && (
+        <p className="results-hero-identity">
+          {identity && <b>{identity}</b>}
+          {identity && failureMode && ' — '}
+          {failureMode && <span>{failureMode}</span>}
+        </p>
+      )}
+    </header>
+  );
+}
+
 function ScoreChip({ label, value }: { label: string; value: number }) {
   return (
     <span className={`score-chip score-t${scoreBand(value)}`}>
@@ -522,13 +595,11 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
   // "same season, roll the playoffs again" use case.
   const [playoffResult, setPlayoffResult] = useState<PlayoffResult | null>(null);
   // 2026-08-14, results-screen redesign: 16 full team cards on one page was the single biggest
-  // usability complaint (scrolling past 15 opponents to see your own team) — every card now
-  // starts collapsed to a one-line summary, except the human's own team, which starts expanded
-  // since that's what a player actually opens this screen to see first. `useState(() => ...)`
-  // (lazy initializer) so this only runs once, not on every render.
-  const [expandedTeamIds, setExpandedTeamIds] = useState<Set<string>>(
-    () => new Set(teams.filter((t) => t.isHuman).map((t) => t.id)),
-  );
+  // usability complaint (scrolling past 15 opponents to see your own team) — every card starts
+  // collapsed to a one-line summary. 2026-09-09: the human's card starts collapsed too now that
+  // the hero header above carries the finish/Overall/identity payoff — the card is just the
+  // drill-down (rotation, analysis, matchups) and doesn't need to be open before the player asks.
+  const [expandedTeamIds, setExpandedTeamIds] = useState<Set<string>>(() => new Set<string>());
   // Scores, ranking and matchup simulation must all read the same corrected rotations as the
   // visible card. Previously only the minutes list and DRTG used a manual correction while the
   // chips/rank/odds silently kept the original auto-rotation, producing impossible combinations
@@ -550,6 +621,15 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
   // avoiding a long main-thread pause from the engine's full calibration default.
   const leagueEval = useMemo(() => evaluateLeague(scoredTeams, 500), [scoredTeams]);
   const leagueEvalByTeamId = useMemo(() => new Map(leagueEval.map((entry) => [entry.teamId, entry])), [leagueEval]);
+
+  // The one roster this screen exists to show off — the player's own, or (a defensive fallback for
+  // a no-human commissioner draft) the Final Power Ranking's #1. Drives the hero header below.
+  const heroRanked = ranked.find(({ team }) => team.isHuman) ?? ranked[0];
+  const heroFit = useMemo(
+    () => (heroRanked ? fitScore(displayTeam(heroRanked.team)) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [heroRanked?.team.id, scoredTeams],
+  );
   function toggleExpanded(teamId: string) {
     setExpandedTeamIds((prev) => {
       const next = new Set(prev);
@@ -573,7 +653,24 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
     // `.at-shell` token-aliasing comment in App.css for how the rest of this file's existing
     // classes (never touched here) pick up the dark palette just by being nested inside this.
     <div className="results-screen at-shell">
-      <h2>Final team ranking</h2>
+      {heroRanked && (
+        <HeroResult
+          teamName={heroRanked.team.name}
+          isHuman={heroRanked.team.isHuman}
+          rank={heroRanked.rank}
+          fieldSize={ranked.length}
+          overall={heroRanked.breakdown.overall}
+          titleOdds={leagueEvalByTeamId.get(heroRanked.team.id)?.championshipProbability ?? null}
+          identity={
+            heroFit?.inputs.primaryArchetype
+              ? heroFit.inputs.primaryArchetype +
+                (heroFit.inputs.secondaryArchetype ? ` + ${heroFit.inputs.secondaryArchetype}` : '')
+              : null
+          }
+          failureMode={heroFit?.inputs.archetypeReport?.failureMode ?? null}
+        />
+      )}
+      <h2 className="results-section-title">Final team ranking</h2>
       <MatchupMatrix teams={scoredTeams} evaluations={leagueEval} focusTeamId={scoredTeams.find((team) => team.isHuman)?.id} />
       {/* 2026-08-19, user's own idea: the Final Power Ranking above stays exactly what it always
           was — this is a separate, just-for-fun roll of one randomly-simulated 82-game regular
@@ -653,7 +750,7 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
         </button>
         <button
           className="secondary-btn"
-          onClick={() => setExpandedTeamIds(new Set(teams.filter((t) => t.isHuman).map((t) => t.id)))}
+          onClick={() => setExpandedTeamIds(new Set<string>())}
         >
           Collapse all
         </button>
@@ -721,6 +818,28 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                 {fitDetail && (
                   <details className="result-accordion-section team-analysis-section">
                     <summary>Team analysis</summary>
+                    {insights && (
+                      <div className="notes notes-split analysis-insights analysis-insights-lead">
+                        <div className="notes-column notes-strengths">
+                          <strong>Strengths</strong>
+                          <ul>
+                            {insights.strengths.map((insight) => (
+                              <li key={insight.id}>{insight.message}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        {insights.concerns.length > 0 && (
+                          <div className="notes-column notes-concerns">
+                            <strong>Concerns</strong>
+                            <ul>
+                              {insights.concerns.map((insight) => (
+                                <li key={insight.id}>{insight.message}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {offenseDetail && (
                       <>
                         <div className="analysis-section-heading">Offense details</div>
@@ -739,14 +858,18 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                         )}
                       </>
                     )}
-                    <div className="analysis-section-heading">Fit details</div>
+                    <div className="analysis-section-heading">Fit &amp; defense details</div>
                     <span className="fit-detail-metric"><b>Creation</b><strong>{Math.round(fitDetail.components.creationStructure)}</strong></span>
                     <span className="fit-detail-metric"><b>Spacing compatibility</b><strong>{Math.round(fitDetail.components.spacingCompatibility)}</strong></span>
-                    <span className="fit-detail-metric"><b>Rim pressure</b><strong>{Math.round(fitDetail.components.rimPressureTeam)}</strong></span>
+                    <span className="fit-detail-metric" title="Team-level rim pressure as a fit component — how much the five collectively bends a defense at the rim, distinct from the Offense-details rim-pressure input above.">
+                      <b>Rim pressure (fit)</b><strong>{Math.round(fitDetail.components.rimPressureTeam)}</strong>
+                    </span>
                     <span className="fit-detail-metric"><b>Defensive roles</b><strong>{Math.round(fitDetail.components.defensiveRoleCoverage)}</strong></span>
                     <span className="fit-detail-metric"><b>Switchability</b><strong>{Math.round(fitDetail.components.switchability)}</strong></span>
                     <span className="fit-detail-metric"><b>Hunt resistance</b><strong>{Math.round(fitDetail.components.huntResistance)}</strong></span>
-                    <span className="fit-detail-metric"><b>Defensive cohesion</b><strong>{Math.round(fitDetail.components.defensiveCohesion)}</strong></span>
+                    {fitDetail.components.defensiveCohesion > 0 && (
+                      <span className="fit-detail-metric"><b>Defensive cohesion</b><strong>{Math.round(fitDetail.components.defensiveCohesion)}</strong></span>
+                    )}
                     <span className="fit-detail-metric"><b>Rebounding</b><strong>{Math.round(fitDetail.components.reboundingBalance)}</strong></span>
                     <span className="fit-detail-metric"><b>Functional size</b><strong>{Math.round(fitDetail.components.sizeCoverage)}</strong></span>
                     <span className="fit-detail-metric"><b>Championship structure</b><strong>{Math.round(fitDetail.components.championshipStructure)}</strong></span>
@@ -793,52 +916,41 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                       {' · '}athleticism {Math.round(fitDetail.inputs.positionAdjustedAthleticismPercentile ?? 50)}
                       {' · '}rebounding {Math.round(fitDetail.inputs.positionAdjustedReboundingPercentile)}
                     </span>
-                    {insights && (
-                      <div className="notes notes-split analysis-insights">
-                        <div className="notes-column notes-strengths">
-                          <strong>Strengths</strong>
-                          <ul>
-                            {insights.strengths.map((insight) => (
-                              <li key={insight.id}>{insight.message}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        {insights.concerns.length > 0 && (
-                          <div className="notes-column notes-concerns">
-                            <strong>Concerns</strong>
-                            <ul>
-                              {insights.concerns.map((insight) => (
-                                <li key={insight.id}>{insight.message}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </details>
                 )}
                 <details className="result-accordion-section championship-section">
                   <summary>Championship odds</summary>
-                  <div className="net-rating-projection" title="Real-NBA-units estimate (points per 100 possessions), fitted against real NBA team-seasons.">
-                    <span>Projected NBA net rating: {netRating.net >= 0 ? '+' : ''}{netRating.net.toFixed(1)}</span>
-                    <span>(ORTG {netRating.offense.toFixed(1)} / DRTG {netRating.defense.toFixed(1)})</span>
-                  </div>
                   {leagueEvalRow && (
-                    <div className="championship-summary" title="Best-of-7 series odds against every other roster, plus a simulated championship probability.">
-                    <span>Championship odds: {(leagueEvalRow.championshipProbability * 100).toFixed(1)}%</span>
-                    <span>Average series win probability: {(leagueEvalRow.avgSeriesWinProb * 100).toFixed(0)}%</span>
-                    <span>
-                      Best matchup: vs {teamLabel(teamById(leagueEvalRow.bestMatchup.opponentId)!)} (
-                      {(leagueEvalRow.bestMatchup.seriesWinProb * 100).toFixed(0)}%)
-                    </span>
-                    <span>
-                      Toughest matchup: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} (
-                      {(leagueEvalRow.worstMatchup.seriesWinProb * 100).toFixed(0)}%)
-                    </span>
-                    {bestMatchupExplanation && <span className="matchup-explanation">Best why: {bestMatchupExplanation}</span>}
-                    {worstMatchupExplanation && <span className="matchup-explanation">Worst why: {worstMatchupExplanation}</span>}
+                    <div className="championship-summary" title="Simulated over the full 16-team bracket, seeded by the Final Power Ranking.">
+                      <div className="championship-headline">
+                        <span className="championship-headline-stat">
+                          <b>{(leagueEvalRow.championshipProbability * 100).toFixed(1)}%</b>
+                          <i>to win it all</i>
+                        </span>
+                        <span className="championship-headline-stat">
+                          <b>{(leagueEvalRow.avgSeriesWinProb * 100).toFixed(0)}%</b>
+                          <i>avg BO7 series win</i>
+                        </span>
+                      </div>
+                      <span>
+                        Best matchup: vs {teamLabel(teamById(leagueEvalRow.bestMatchup.opponentId)!)} (
+                        {(leagueEvalRow.bestMatchup.seriesWinProb * 100).toFixed(0)}%)
+                        {bestMatchupExplanation && ` — ${bestMatchupExplanation}`}
+                      </span>
+                      <span>
+                        Toughest matchup: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} (
+                        {(leagueEvalRow.worstMatchup.seriesWinProb * 100).toFixed(0)}%)
+                        {worstMatchupExplanation && worstMatchupExplanation !== bestMatchupExplanation && ` — ${worstMatchupExplanation}`}
+                      </span>
                     </div>
                   )}
+                  {/* The raw regression estimate is kept for texture but demoted to a footnote: for
+                      an all-time field it extrapolates past its real-NBA training range and its
+                      rank order no longer drives the bracket (see matchup.ts, 2026-09-09), so it
+                      shouldn't sit level with the odds it used to disagree with. */}
+                  <p className="net-rating-footnote" title="Real-NBA-units regression (points per 100 possessions), fitted on real NBA team-seasons. Separate from the bracket sim above.">
+                    Raw net-rating estimate: {netRating.net >= 0 ? '+' : ''}{netRating.net.toFixed(1)} (ORTG {netRating.offense.toFixed(1)} / DRTG {netRating.defense.toFixed(1)})
+                  </p>
                 </details>
                 {fitDetail && rsPoProfile && (
                   <HistoricalChallengesPanel team={shownTeam} breakdown={breakdown} fit={fitDetail} season={rsPoProfile} />

@@ -257,14 +257,15 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
 
   return (
     <>
-      <div className="game-controls">
+      <div className={`game-controls${phase === 'results' ? ' game-controls-results' : ''}`}>
         <button className="secondary-btn reset-btn" onClick={handleReset}>
-          {mode === 'developer' ? 'Reset' : 'Exit Draft'}
+          {mode === 'developer' ? 'Reset' : phase === 'results' ? 'New draft' : 'Exit Draft'}
         </button>
-        {/* CPU speed remains a Tester Mode control. Auto-finish is deliberately available in
-            both modes: it delegates every remaining pick to the normal AI rather than skipping
-            draft finalization or manufacturing a roster. */}
-        {mode === 'developer' && (
+        {/* CPU speed remains a Tester Mode control, and only while a draft is actually running —
+            on the results screen it steers nothing and just reads as leftover draft chrome.
+            Auto-finish is deliberately available in both modes: it delegates every remaining pick
+            to the normal AI rather than skipping draft finalization or manufacturing a roster. */}
+        {mode === 'developer' && phase !== 'results' && (
           <label className="ai-speed">
             <span>CPU speed</span>
             <input

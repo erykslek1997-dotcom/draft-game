@@ -14,18 +14,37 @@
 }
 
 .matchup-matrix-table {
-  min-width: 900px;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 3px;
 }
+.matchup-matrix-table thead th {
+  font-weight: 700;
+  vertical-align: bottom;
+}
+.matchup-col-rank,
+.matchup-col-code {
+  display: block;
+  line-height: 1.15;
+}
+.matchup-col-rank { font-size: 10px; color: var(--at-ink-faint); }
+.matchup-col-code { font-size: 11px; color: var(--at-ink-soft); letter-spacing: 0.03em; }
 
 .matchup-matrix-cell {
   width: 100%;
-  min-width: 3.25rem;
-  padding: 0.45rem;
-  color: inherit;
-  border: 1px solid var(--border, #30343c);
+  min-width: 3rem;
+  padding: 0.4rem 0.3rem;
+  color: #fff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.3rem;
   cursor: pointer;
+  transition: outline-color .12s ease;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
 }
+.matchup-matrix-cell:hover { outline-color: rgba(255, 255, 255, 0.55); }
 
 .matchup-matrix-detail,
 .what-if-panel {
@@ -1331,7 +1350,9 @@ select {
      rounded card. */
   padding: 18px 20px 24px;
 }
-.results-screen > h2 { order: 0; }
+.results-screen > .results-hero { order: -1; }
+.results-screen > h2,
+.results-screen > .results-section-title { order: 0; }
 .results-screen > .team-result { order: 5; width: 100%; }
 .results-screen > .team-result.is-human-team { order: 1; }
 .results-screen > .matchup-matrix-section { order: 2; }
@@ -1339,6 +1360,105 @@ select {
 .results-screen > .expand-all-controls { order: 4; }
 .results-screen > .left-on-board { order: 6; }
 .results-screen > .results-actions { order: 7; }
+
+/* 2026-09-09: the payoff header. The player came back to this screen to see how THEIR roster did —
+   this block says it in one glance (finish position, the Final Power Ranking number, title odds,
+   roster identity) before the 16 uniform accordion cards below. Deliberately the one element on
+   the screen that breaks the flat card rhythm. */
+.results-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px 20px;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--at-accent) 16%, transparent), transparent 60%),
+    var(--at-paper-raised);
+  box-shadow: var(--shadow);
+}
+.results-hero-finish {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.results-hero-eyebrow {
+  flex-basis: 100%;
+  color: var(--at-ink-faint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.results-hero-rank {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--at-ink);
+}
+.results-hero-rank b { font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; }
+.results-hero-rank i { font-style: normal; font-size: 15px; color: var(--at-ink-soft); }
+.results-hero-team {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--at-ink);
+}
+.results-hero-stats {
+  display: flex;
+  gap: 8px;
+}
+.results-hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 74px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--at-ink) 6%, transparent);
+  text-align: right;
+}
+.results-hero-stat-label {
+  color: var(--at-ink-faint);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.results-hero-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--at-ink);
+}
+.results-hero-overall {
+  background: var(--at-t5);
+}
+.results-hero-overall.score-t1, .results-hero-overall.score-t2 { background: var(--at-t2); }
+.results-hero-overall.score-t3 { background: var(--at-t3); }
+.results-hero-overall.score-t4 { background: var(--at-t4); }
+.results-hero-overall.score-t5 { background: var(--at-t5); }
+.results-hero-overall.score-t6 { background: var(--at-t6); }
+.results-hero-overall .results-hero-stat-label { color: color-mix(in srgb, #fff 78%, transparent); }
+.results-hero-overall .results-hero-stat-value { color: #fff; }
+.results-hero-identity {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--at-ink-soft);
+}
+.results-hero-identity b { color: var(--at-ink); font-weight: 700; }
+@media (max-width: 560px) {
+  .results-hero { grid-template-columns: 1fr; }
+  .results-hero-stats { justify-content: flex-start; }
+  .results-hero-stat { text-align: left; }
+}
 
 /* 2026-08-14, results-screen redesign: a 6-band amber ramp for TEAM-level 0-100 scores
    (Talent/Offense/Defense/Spacing/Fit/Rotation/Overall/per-player TAL-in-a-row), same warm
@@ -1526,6 +1646,13 @@ select {
   padding-top: 9px;
   border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
+/* 2026-09-09: Strengths/Concerns is the one human-readable takeaway in this section — it now
+   leads instead of sitting under a 17-row metric dump, so no divider above it. */
+.analysis-insights-lead {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: none;
+}
 .team-analysis-section[open] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1555,6 +1682,40 @@ select {
   gap: 6px;
   margin-top: 8px;
   font-size: 12px;
+  line-height: 1.4;
+}
+.championship-headline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin-bottom: 4px;
+}
+.championship-headline-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.championship-headline-stat b {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--at-ink);
+}
+.championship-headline-stat i {
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--at-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.net-rating-footnote {
+  margin: 9px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--at-ink-faint);
   line-height: 1.4;
 }
 
