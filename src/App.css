@@ -1492,6 +1492,25 @@ select {
 .score-t5 { background: var(--at-t5); color: var(--at-t5-ink); }
 .score-t6 { background: var(--at-t6); color: var(--at-t6-ink); font-weight: 700; }
 
+/* 2026-09-09: the seven sub-axis chips sat in a narrow blue band (a 48 and an 80 were three shades
+   apart and read as "all the same"). In the expanded card they get a bit more room, the value in
+   tabular numerals at a larger size, and a semantic underline (red = weak axis, gold = middling,
+   bright = strong) so a soft spot is spottable without reading every number. The compact header
+   mini-chips are left alone. */
+.subscores .score-chip {
+  padding: 3px 9px 4px;
+  border-radius: 7px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.22);
+}
+.subscores .score-chip .score-chip-value {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.subscores .score-chip.score-t1, .subscores .score-chip.score-t2 { border-bottom-color: var(--at-accent-2); }
+.subscores .score-chip.score-t3 { border-bottom-color: #c58f3c; }
+.subscores .score-chip.score-t4 { border-bottom-color: #7fae62; }
+.subscores .score-chip.score-t5, .subscores .score-chip.score-t6 { border-bottom-color: #6fd39a; }
+
 .team-result {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1601,6 +1620,17 @@ select {
 .team-result-body > .historical-challenges-panel { order: 4; }
 .team-result-body > .draft-order { order: 5; }
 .team-result-body > .what-if-panel { order: 6; }
+
+/* 2026-09-09: six identical grey bars gave the drill-down no landmarks. A 3px colour rail on the
+   summary — one hue per section kind — lets the eye jump straight to the one it wants without
+   adding a row of decorative icons. */
+.result-accordion-section > summary { border-left: 3px solid transparent; padding-left: 9px; }
+.rotation-panel > summary { border-left-color: color-mix(in srgb, var(--at-t5) 85%, white); }
+.team-analysis-section > summary { border-left-color: var(--at-ink-faint); }
+.championship-section > summary { border-left-color: var(--at-brand-red); }
+.historical-challenges-panel > summary { border-left-color: #7a6bd6; }
+.draft-order > summary { border-left-color: color-mix(in srgb, var(--at-t3) 80%, white); }
+.what-if-panel > summary { border-left-color: #3f9b7a; }
 .result-accordion-section > summary {
   display: flex;
   align-items: center;
