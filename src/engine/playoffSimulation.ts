@@ -74,12 +74,20 @@ function simulateSeries(
  * defensive-guard shape as `evaluateLeague`'s own `teams.length !== 16` check) — the bracket
  * construction only makes sense at that exact size.
  */
-export function simulatePlayoffs(teams: Team[], standings: SeasonStandingsRow[]): PlayoffResult | null {
+export function simulatePlayoffs(
+  teams: Team[],
+  standings: SeasonStandingsRow[],
+  /** Precomputed `scoreTeam(team).overall` per team id (see `simulateSeason`'s own param) — pass
+   * it so re-rolling the bracket from the same standings doesn't re-score 16 teams. */
+  overallByTeamId?: Map<string, number>,
+): PlayoffResult | null {
   if (teams.length !== TEAM_COUNT || standings.length !== TEAM_COUNT) return null;
 
   const teamById = new Map(teams.map((t) => [t.id, t]));
   const teamIdBySeed = new Map(standings.map((row) => [row.rank, row.teamId]));
-  const overallById = new Map(teams.map((t) => [t.id, scoreTeam(t).overall]));
+  const overallById = new Map(
+    teams.map((t) => [t.id, overallByTeamId?.get(t.id) ?? scoreTeam(t).overall]),
+  );
 
   let currentIds = SEED_ORDER_16.map((seed) => teamIdBySeed.get(seed));
   let currentSeeds = [...SEED_ORDER_16];

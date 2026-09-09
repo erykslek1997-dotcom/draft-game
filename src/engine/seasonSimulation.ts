@@ -69,13 +69,19 @@ export interface SeasonStandingsRow {
  * see matchup.ts's own docstring). A genuinely different result every call, not an average across
  * many seasons — call again to re-roll.
  */
-export function simulateSeason(teams: Team[]): SeasonStandingsRow[] {
+export function simulateSeason(
+  teams: Team[],
+  /** Precomputed `scoreTeam(team).overall` per team id — `projectMatchup` blends the `overall`
+   * gap into the game margin (see its `OVERALL_MARGIN_WEIGHT` docstring). The results screen
+   * already has these from `rankTeams`; pass them so a re-roll doesn't re-score 16 teams.
+   * Falls back to a fresh `scoreTeam` for any id not supplied. */
+  overallByTeamId?: Map<string, number>,
+): SeasonStandingsRow[] {
   const wins = new Map<string, number>(teams.map((t) => [t.id, 0]));
   const losses = new Map<string, number>(teams.map((t) => [t.id, 0]));
-  // `projectMatchup` now blends the `overall` gap into the game margin (see its
-  // `OVERALL_MARGIN_WEIGHT` docstring); precompute once per team so the pair loop below doesn't
-  // re-score.
-  const overallById = new Map(teams.map((t) => [t.id, scoreTeam(t).overall]));
+  const overallById = new Map(
+    teams.map((t) => [t.id, overallByTeamId?.get(t.id) ?? scoreTeam(t).overall]),
+  );
 
   for (let i = 0; i < teams.length; i++) {
     for (let j = i + 1; j < teams.length; j++) {

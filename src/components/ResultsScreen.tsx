@@ -601,9 +601,13 @@ export function downloadFeedback(
 }
 
 export default function ResultsScreen({ teams, history, onRestart }: Props) {
-  const teamById = (id: string) => teams.find((t) => t.id === id);
-  const playerById = (id: string) => draftPool.find((p) => p.id === id);
-  const leftOnBoard = remainingOnBoard(teams);
+  // Lookups used inside render loops (matchup opponents, draft-order rows, the bracket tree) —
+  // Maps, not repeated `.find` over `teams` / the 9451-span `draftPool`.
+  const teamsById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const teamById = (id: string) => teamsById.get(id);
+  const draftPoolById = useMemo(() => new Map(draftPool.map((p) => [p.id, p])), []);
+  const playerById = (id: string) => draftPoolById.get(id);
+  const leftOnBoard = useMemo(() => remainingOnBoard(teams), [teams]);
   // 2026-08-08, user's explicit ask: correct ANY team's rotation from this screen — no longer
   // wired in; `EMPTY_CORRECTED_ROTATIONS` is a stable module-level reference (see its docstring
   // for the perf reason). The `displayTeam` / `scoredTeams` plumbing stays so re-wiring a
@@ -649,6 +653,12 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
   // avoiding a long main-thread pause from the engine's full calibration default.
   const leagueEval = useMemo(() => evaluateLeague(scoredTeams, 500), [scoredTeams]);
   const leagueEvalByTeamId = useMemo(() => new Map(leagueEval.map((entry) => [entry.teamId, entry])), [leagueEval]);
+  // Fed into the season / playoff sims so a re-roll doesn't re-score all 16 teams (they blend
+  // `overall` into each game's margin — see `projectMatchup`'s `OVERALL_MARGIN_WEIGHT`).
+  const overallByTeamId = useMemo(
+    () => new Map(ranked.map(({ team, breakdown }) => [team.id, breakdown.overall])),
+    [ranked],
+  );
 
   // The one roster this screen exists to show off — the player's own, or (a defensive fallback for
   // a no-human commissioner draft) the Final Power Ranking's #1. Drives the hero header below.
@@ -719,7 +729,7 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
           <button
             className="secondary-btn"
             onClick={() => {
-              setSeasonStandings(simulateSeason(scoredTeams));
+              setSeasonStandings(simulateSeason(scoredTeams, overallByTeamId));
               setPlayoffResult(null);
             }}
           >
@@ -763,7 +773,7 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
             {!playoffResult && (
               <button
                 className="secondary-btn playoff-sim-btn"
-                onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings))}
+                onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings, overallByTeamId))}
               >
                 🏆 Simulate the playoffs
               </button>
