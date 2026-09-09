@@ -2,8 +2,7 @@ import { Fragment, useMemo, useState } from 'react';
 import './CapSheet.css';
 import type { Position, PlayerSpan } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { overallTierForSpan } from '../engine/grades';
-import { computeTalent } from '../engine/talent';
+import { overallTierForSpan, effectiveTalent } from '../engine/grades';
 import { priceSpan, formatUsdM, ROSTER_BUDGET, CAP_BASELINE } from '../engine/salaryPricing';
 import {
   ALL_POSITIONS,
@@ -307,7 +306,7 @@ export default function CapSheet({ onBack }: Props) {
                                     <td>
                                       <OverallTierBadge span={s} />
                                     </td>
-                                    <td>{Math.round(priceSpanTal(s))}</td>
+                                    <td>{Math.round(effectiveTalent(s))}</td>
                                     <td>{s.box.ppg.toFixed(1)}</td>
                                     <td>{s.box.rpg.toFixed(1)}</td>
                                     <td>{s.box.apg.toFixed(1)}</td>
@@ -363,10 +362,6 @@ function careerPosition(g: PlayerGroup): Position {
     (best, pos) => ((counts.get(pos) ?? 0) > (counts.get(best) ?? 0) ? pos : best),
     ALL_POSITIONS[0],
   );
-}
-
-function priceSpanTal(span: PlayerSpan): number {
-  return computeTalent(span);
 }
 
 function Stat({ v, l }: { v: string; l: string }) {

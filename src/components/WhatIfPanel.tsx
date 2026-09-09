@@ -5,7 +5,7 @@ import { fitScore } from '../engine/fit';
 import { isPickCapLegal } from '../engine/positions';
 import { scoreTeam } from '../engine/scoring';
 import { seasonProfile } from '../engine/seasonProfile';
-import { computeTalent } from '../engine/talent';
+import { effectiveTalent } from '../engine/grades';
 import type { Rotation, Team } from '../engine/types';
 
 const positionsFor = (player: PlayerSpan) => new Set<Position>([player.primaryPosition, ...player.secondaryPositions]);
@@ -54,7 +54,7 @@ export default function WhatIfPanel({ team }: { team: Team }) {
       if (!isPickCapLegal(remainingFgas, candidate.fga)) return false;
       const positions = positionsFor(candidate);
       return [...occupiedSlots].every((slot) => positions.has(slot));
-    }).sort((a, b) => computeTalent(b) - computeTalent(a) || a.playerName.localeCompare(b.playerName));
+    }).sort((a, b) => effectiveTalent(b) - effectiveTalent(a) || a.playerName.localeCompare(b.playerName));
   }, [remainingFgas, occupiedSlots, outgoing, rosterNames]);
   const incoming = candidates.find((player) => player.id === incomingId);
   const candidateLabel = (player: PlayerSpan) => `${player.playerName} (${player.spanLabel})`;
@@ -104,7 +104,7 @@ export default function WhatIfPanel({ team }: { team: Team }) {
         <datalist id={candidateListId}>
           {candidates.map((player) => (
             <option key={player.id} value={candidateLabel(player)}>
-              TAL {Math.round(computeTalent(player))} · FGA {player.fga.toFixed(1)}
+              TAL {Math.round(effectiveTalent(player))} · FGA {player.fga.toFixed(1)}
             </option>
           ))}
         </datalist>

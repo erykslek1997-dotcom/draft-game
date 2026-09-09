@@ -457,6 +457,24 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     { name: 'Dirk Nowitzki', spanLabel: '2004-06', cap: 'MVP' as OverallTier },
     { name: 'Karl Malone', spanLabel: '1992-94', cap: 'MVP' as OverallTier },
     { name: 'Karl Malone', spanLabel: '1994-96', cap: 'MVP' as OverallTier },
+    // 2026-09-09, user batch feedback ("Draymond wskoczył na greatest peak", "Gobert do
+    // kalibracji", target "86 max"): a defense-first big with a genuinely limited offensive game
+    // (Draymond O-TAL 64-65, Gobert O-TAL 66) should not read MVP / Greatest-peak — the pure-
+    // specialist anchors are the calibration floor here: Ben Wallace 2002-04 (D-TAL 100!) reads
+    // TAL 78, Mutombo 1996-98 (D-TAL 94) reads 80. Draymond/Gobert clear those two on real modern
+    // offense (playmaking hub / lob-and-rim-run gravity), which lands them a rung up at All-NBA,
+    // not three rungs up at Greatest peak. The defense->TAL channel (`eliteDefenseTalBonus` +13/
+    // +11, plus the D-TAL->TAL bridge, which the 2026-09 pool rebuild's `runtimePercentiles.json`
+    // regen re-exposed) had `computeTalent` at 95-96 for these spans. `effectiveTalent` already
+    // capped Draymond 2015-17 -> 83 and 2016-18 -> 84 via the existing PF two-way path, but
+    // MISSED 2014-16 (95, "Greatest peak") and both of Gobert's 2019-21/2020-22 (90, "MVP").
+    // Named downcap on exactly those three; `computeTalent` raw untouched so Taylor top-10 /
+    // Backpicks GOAT-40 (both validate off raw) are unaffected. A general "low-O-TAL defensive
+    // star caps at All-NBA" rule is exactly the kind of position-rule refinement `NAMED_TIER_
+    // EXCEPTIONS`'s own docstring records as repeatedly cascading into other positions — named.
+    { name: 'Draymond Green', spanLabel: '2014-16', cap: 'All-NBA' as OverallTier },
+    { name: 'Rudy Gobert', spanLabel: '2019-21', cap: 'All-NBA' as OverallTier },
+    { name: 'Rudy Gobert', spanLabel: '2020-22', cap: 'All-NBA' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
