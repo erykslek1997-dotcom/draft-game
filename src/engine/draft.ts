@@ -3,6 +3,7 @@ import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { DRAFT_EXPERIMENT } from './draftExperiment';
 import { peakDraftPool } from './peakDraftPool';
+import { leanDraftPool } from './leanDraftPool';
 import { randomTeamNames } from './teamNames';
 import {
   ROSTER_SIZE,
@@ -29,8 +30,13 @@ export const ROUNDS = ROSTER_SIZE; // 9 rounds x TEAM_COUNT teams
  * allowlist instead of the full database -- after 3 rounds of a 16-team draft that left only
  * ~168 players. The AI-calibration test now builds its own pruned pool locally in
  * `scripts/analyzeAiAveragePick.ts`; `activeDraftPool` always reflects the real, full player
- * database (modulo the separate `usePeakOnlyPool` span choice, which is unrelated). */
-const spanModePool = DRAFT_EXPERIMENT.usePeakOnlyPool ? peakDraftPool : draftPool;
+ * database (modulo the separate `DRAFT_EXPERIMENT.spanPoolMode` span choice, which is unrelated). */
+const spanModePool =
+  DRAFT_EXPERIMENT.spanPoolMode === 'peak'
+    ? peakDraftPool
+    : DRAFT_EXPERIMENT.spanPoolMode === 'lean'
+      ? leanDraftPool
+      : draftPool;
 export const activeDraftPool: PlayerSpan[] = spanModePool;
 const players = activeDraftPool;
 

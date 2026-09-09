@@ -30,7 +30,12 @@ function twoWayBalance(span: PlayerSpan): number {
   return Math.min(computeOffensiveTalent(span), computeDefensiveTalent(span));
 }
 
-function buildPeakPool(): PlayerSpan[] {
+/**
+ * The single "peak" span this game treats as a player's representative, keyed by normalized name.
+ * Exported so `leanDraftPool.ts` can build on the exact same peak-selection + tiebreak logic
+ * rather than a second copy that could drift.
+ */
+export function buildPeakSpanByName(): Map<string, PlayerSpan> {
   // Keyed by NORMALIZED name, not the raw string — the same reason every other name-matching
   // lookup in this project does (normalizePlayerName), so e.g. "Nikola Jokić" and "Nikola Jokic"
   // spellings from different data sources collapse into one Phase 1 pool entry instead of
@@ -64,7 +69,7 @@ function buildPeakPool(): PlayerSpan[] {
       bestByPlayer.set(key, span);
     }
   }
-  return [...bestByPlayer.values()];
+  return bestByPlayer;
 }
 
-export const peakDraftPool: PlayerSpan[] = buildPeakPool();
+export const peakDraftPool: PlayerSpan[] = [...buildPeakSpanByName().values()];
