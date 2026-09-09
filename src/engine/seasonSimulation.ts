@@ -1,6 +1,7 @@
 import type { Team } from './types';
 import { TEAM_COUNT } from './positions';
 import { projectMatchup } from './matchup';
+import { scoreTeam } from './scoring';
 
 /**
  * 2026-08-19, user's own idea: "PR works as it works, but user can simulate 82 game season" —
@@ -71,13 +72,17 @@ export interface SeasonStandingsRow {
 export function simulateSeason(teams: Team[]): SeasonStandingsRow[] {
   const wins = new Map<string, number>(teams.map((t) => [t.id, 0]));
   const losses = new Map<string, number>(teams.map((t) => [t.id, 0]));
+  // `projectMatchup` now blends the `overall` gap into the game margin (see its
+  // `OVERALL_MARGIN_WEIGHT` docstring); precompute once per team so the pair loop below doesn't
+  // re-score.
+  const overallById = new Map(teams.map((t) => [t.id, scoreTeam(t).overall]));
 
   for (let i = 0; i < teams.length; i++) {
     for (let j = i + 1; j < teams.length; j++) {
       const teamA = teams[i];
       const teamB = teams[j];
       const gameCount = gamesScheduledForPair(i, j, teams.length);
-      const { gameWinProbA } = projectMatchup(teamA, teamB);
+      const { gameWinProbA } = projectMatchup(teamA, teamB, overallById.get(teamA.id), overallById.get(teamB.id));
       for (let g = 0; g < gameCount; g++) {
         if (Math.random() < gameWinProbA) {
           wins.set(teamA.id, (wins.get(teamA.id) ?? 0) + 1);

@@ -1,6 +1,7 @@
 import type { Team } from './types';
 import { TEAM_COUNT } from './positions';
 import { projectMatchup } from './matchup';
+import { scoreTeam } from './scoring';
 import { SEED_ORDER_16 } from './leagueSimulation';
 import type { SeasonStandingsRow } from './seasonSimulation';
 
@@ -47,8 +48,16 @@ export interface PlayoffResult {
  * same calibrated model `seasonSimulation.ts`'s own regular-season games already use), stopping
  * the moment either side reaches 4 wins. Genuinely produces final tallies like 4-0 through 4-3,
  * not just a winner. */
-function simulateSeries(teamA: Team, teamB: Team): { winnerId: string; gamesWonA: number; gamesWonB: number } {
-  const { gameWinProbA } = projectMatchup(teamA, teamB);
+function simulateSeries(
+  teamA: Team,
+  teamB: Team,
+  /** Precomputed `scoreTeam(team).overall` for each side — `projectMatchup` now blends the
+   * `overall` gap into the game margin (see its `OVERALL_MARGIN_WEIGHT` docstring); precomputed
+   * once in `simulatePlayoffs` so a re-rolled bracket doesn't re-score every team. */
+  overallA?: number,
+  overallB?: number,
+): { winnerId: string; gamesWonA: number; gamesWonB: number } {
+  const { gameWinProbA } = projectMatchup(teamA, teamB, overallA, overallB);
   let gamesWonA = 0;
   let gamesWonB = 0;
   while (gamesWonA < 4 && gamesWonB < 4) {
@@ -70,6 +79,7 @@ export function simulatePlayoffs(teams: Team[], standings: SeasonStandingsRow[])
 
   const teamById = new Map(teams.map((t) => [t.id, t]));
   const teamIdBySeed = new Map(standings.map((row) => [row.rank, row.teamId]));
+  const overallById = new Map(teams.map((t) => [t.id, scoreTeam(t).overall]));
 
   let currentIds = SEED_ORDER_16.map((seed) => teamIdBySeed.get(seed));
   let currentSeeds = [...SEED_ORDER_16];
@@ -88,7 +98,12 @@ export function simulatePlayoffs(teams: Team[], standings: SeasonStandingsRow[])
       const teamA = teamById.get(teamAId);
       const teamB = teamById.get(teamBId);
       if (!teamA || !teamB) return null; // defensive — every seeded id must resolve to a real team
-      const { winnerId, gamesWonA, gamesWonB } = simulateSeries(teamA, teamB);
+      const { winnerId, gamesWonA, gamesWonB } = simulateSeries(
+        teamA,
+        teamB,
+        overallById.get(teamAId),
+        overallById.get(teamBId),
+      );
       seriesResults.push({
         round: round + 1,
         roundLabel: ROUND_LABELS[round],

@@ -72,6 +72,10 @@ function simulateOneBracket(seededTeamIds: string[], winProb: (aId: string, bId:
 export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMULATIONS): TeamLeagueEvaluation[] {
   const ranked = rankTeams(teams); // rank 1 = best, per the existing Final Power Ranking
   const rankByTeamId = new Map(ranked.map(({ team, rank }) => [team.id, rank]));
+  // The same `overall` the ranking is built on — threaded into `projectMatchup` so the sim's
+  // game outcomes track the Final Power Ranking rather than diverging from it (see that
+  // function's `OVERALL_MARGIN_WEIGHT` docstring).
+  const overallByTeamId = new Map(ranked.map(({ team, breakdown }) => [team.id, breakdown.overall]));
   const seededTeamIds = [...teams].sort((a, b) => (rankByTeamId.get(a.id) ?? 999) - (rankByTeamId.get(b.id) ?? 999)).map((t) => t.id);
 
   // Precompute every pairwise matchup once (120 unique pairs for 16 teams) — the simulation loop
@@ -83,7 +87,7 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
   for (const a of teams) {
     for (const b of teams) {
       if (a.id === b.id) continue;
-      matchupByPair.set(`${a.id}|${b.id}`, projectMatchup(a, b));
+      matchupByPair.set(`${a.id}|${b.id}`, projectMatchup(a, b, overallByTeamId.get(a.id), overallByTeamId.get(b.id)));
     }
   }
   const winProb = (aId: string, bId: string) => matchupByPair.get(`${aId}|${bId}`)?.seriesWinProbA ?? 0.5;

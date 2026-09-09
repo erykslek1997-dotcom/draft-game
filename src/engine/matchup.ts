@@ -1,6 +1,7 @@
 import type { Team } from './types';
 import { projectedNetRating } from './netRatingProjection';
 import { fitScore } from './fit';
+import { scoreTeam } from './scoring';
 import { defensiveHuntability, HUNTABILITY_DRTG_POINTS_PER_PENALTY } from './defensiveHuntability';
 
 /**
@@ -85,6 +86,26 @@ function mismatchAdjustment(attacker: Team, defender: Team): number {
  * and update this constant after a fresh team_advanced.csv export. */
 const MARGIN_STD_DEV = 13.822;
 
+/**
+ * 2026-09-09, user-reported ("wyniki a championship odds powinny jednak być podobne"): the
+ * bracket / season / playoff sims were deciding every game purely off `projectedNetRating`'s
+ * differential, and for a field of 16 all-time rosters that regression's *rank order* diverges
+ * hard from `scoreTeam.overall` — the number the Final Power Ranking is built on and the one shown
+ * right next to the odds. Measured directly: `projectedNetRating` extrapolates well past its real-
+ * NBA training range (whole-league +14.7..+31.8 net), and a team it rates 2nd (Santa Fe, +30.8,
+ * elite projected DRTG) reads only #12 by `overall`, so it got a #12 seed but swept the field →
+ * 37% title odds while the #1-2 seeds sat at ~4%.
+ *
+ * Fix: the game margin is now mostly the `overall` gap (the validated-against-human-vote power
+ * number), with a minority `projectedNetRating` component kept for style texture and the
+ * per-matchup `mismatchAdjustment` untouched. `OVERALL_POINTS_PER_UNIT` maps a 1-point `overall`
+ * gap to ~1 projected point — `overall` spans ~76-88 across a 16-team all-time field, so #1 vs
+ * #16 lands near a +12 margin, in line with a real #1-vs-#16 net-rating gap. The champion now
+ * tracks the ranking; a close all-time field still spreads the odds rather than crowning one team.
+ */
+const OVERALL_MARGIN_WEIGHT = 0.7;
+const OVERALL_POINTS_PER_UNIT = 1.0;
+
 /** Abramowitz-Stegun 7.1.26 approximation of the error function — accurate to ~1.5e-7, the
  * standard closed-form approximation used when no stats library is available. */
 function erf(x: number): number {
@@ -130,14 +151,27 @@ export interface MatchupProjection {
   seriesWinProbA: number;
 }
 
-export function projectMatchup(teamA: Team, teamB: Team): MatchupProjection {
-  const netA = projectedNetRating(teamA).net;
-  const netB = projectedNetRating(teamB).net;
+export function projectMatchup(
+  teamA: Team,
+  teamB: Team,
+  /** Precomputed `scoreTeam(team).overall` — the league sims already have these from
+   * `rankTeams`; pass them to avoid re-scoring 120 pairs. Falls back to a fresh `scoreTeam`. */
+  overallA?: number,
+  overallB?: number,
+): MatchupProjection {
+  const netMargin = projectedNetRating(teamA).net - projectedNetRating(teamB).net;
+  const oA = overallA ?? scoreTeam(teamA).overall;
+  const oB = overallB ?? scoreTeam(teamB).overall;
+  const overallMargin = (oA - oB) * OVERALL_POINTS_PER_UNIT;
   // A hunting B's weak link helps A; B hunting A's weak link helps B — both fold into the one
   // shared margin (see `mismatchAdjustment`'s own docstring).
   const mismatchForA = mismatchAdjustment(teamA, teamB);
   const mismatchForB = mismatchAdjustment(teamB, teamA);
-  const marginA = netA - netB + mismatchForA - mismatchForB;
+  const marginA =
+    OVERALL_MARGIN_WEIGHT * overallMargin +
+    (1 - OVERALL_MARGIN_WEIGHT) * netMargin +
+    mismatchForA -
+    mismatchForB;
   const gameWinProbA = gameWinProbability(marginA);
   const seriesWinProbA = seriesWinProbability(gameWinProbA);
   return { marginA, gameWinProbA, seriesWinProbA };
