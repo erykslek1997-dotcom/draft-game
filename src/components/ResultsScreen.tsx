@@ -201,6 +201,22 @@ function ScoreChip({ label, value }: { label: string; value: number }) {
   );
 }
 
+/** A labelled 0-100 bar for the Team-analysis profile row — a fill proportional to the value,
+ * tinted by the same band ladder the score chips use, so a weak axis is a short red bar and a
+ * strong one a long green bar without the reader parsing 8 numbers. */
+function MetricBar({ label, value, hint }: { label: string; value: number; hint?: string }) {
+  const v = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <div className="metric-bar" title={hint}>
+      <span className="metric-bar-label">{label}</span>
+      <span className="metric-bar-track">
+        <span className={`metric-bar-fill metric-t${scoreBand(v)}`} style={{ width: `${v}%` }} />
+      </span>
+      <span className="metric-bar-value">{v}</span>
+    </div>
+  );
+}
+
 function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): TeamFeedback {
   return record[teamId] ?? EMPTY_FEEDBACK;
 }
@@ -840,82 +856,99 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                         )}
                       </div>
                     )}
-                    {offenseDetail && (
-                      <>
-                        <div className="analysis-section-heading">Offense details</div>
-                        <span className="fit-detail-metric"><b>O-TAL</b><strong>{Math.round(offenseDetail.otal)}</strong></span>
-                        <span className="fit-detail-metric"><b>Spacing</b><strong>{Math.round(offenseDetail.spacing)}</strong></span>
-                        <span className="fit-detail-metric"><b>Rim pressure</b><strong>{Math.round(offenseDetail.rimPressure)}</strong></span>
-                        <span className="fit-detail-metric"><b>Playmaking</b><strong>{Math.round(offenseDetail.playmaking)}</strong></span>
-                        <span className="fit-detail-metric"><b>Self-creation</b><strong>{Math.round(offenseDetail.selfCreation)}</strong></span>
-                        <span className="fit-detail-metric" title="Real pick-and-roll structure: an initiator paired with a screener whose own gravity forces a switch, surrounded by real spacing.">
-                          <b>Mismatch structure</b><strong>{Math.round(offenseDetail.mismatchStructure)}</strong>
-                        </span>
-                        {fitDetail && (
+                    {(fitDetail.inputs.primaryArchetype || rsPoProfile) && (
+                      <div className="analysis-identity">
+                        {fitDetail.inputs.primaryArchetype && (
+                          <p className="analysis-identity-line">
+                            <b>Identity:</b> {fitDetail.inputs.primaryArchetype}
+                            {fitDetail.inputs.secondaryArchetype ? ` + ${fitDetail.inputs.secondaryArchetype}` : ''}
+                            {fitDetail.inputs.archetypeReport && ` — risk: ${fitDetail.inputs.archetypeReport.failureMode}`}
+                          </p>
+                        )}
+                        {rsPoProfile && (
+                          <p className="analysis-identity-line">
+                            <b>Season profile:</b> {rsPoProfile.label} (RS {rsPoProfile.regularSeason} · PO {rsPoProfile.playoffs}). {rsPoProfile.explanation}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <div className="analysis-bars">
+                      {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
+                      <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
+                      {offenseDetail && <MetricBar label="Spacing" value={offenseDetail.spacing} hint="Floor spacing the five provides." />}
+                      <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
+                      <MetricBar label="Defense" value={fitDetail.components.defensiveRoleCoverage} hint="Coverage of the point-of-attack / wing / rim defensive roles." />
+                      <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
+                      <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
+                      <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
+                      <MetricBar label="Size" value={fitDetail.components.sizeCoverage} hint="Functional positional size across the lineup." />
+                      <MetricBar label="Title structure" value={fitDetail.components.championshipStructure} hint="How closely the roster's shape matches real championship rosters." />
+                    </div>
+                    <details className="analysis-raw">
+                      <summary>All metrics &amp; inputs</summary>
+                      {offenseDetail && (
+                        <>
+                          <div className="analysis-section-heading">Offense</div>
+                          <span className="fit-detail-metric"><b>O-TAL</b><strong>{Math.round(offenseDetail.otal)}</strong></span>
+                          <span className="fit-detail-metric"><b>Spacing</b><strong>{Math.round(offenseDetail.spacing)}</strong></span>
+                          <span className="fit-detail-metric"><b>Rim pressure</b><strong>{Math.round(offenseDetail.rimPressure)}</strong></span>
+                          <span className="fit-detail-metric"><b>Playmaking</b><strong>{Math.round(offenseDetail.playmaking)}</strong></span>
+                          <span className="fit-detail-metric"><b>Self-creation</b><strong>{Math.round(offenseDetail.selfCreation)}</strong></span>
+                          <span className="fit-detail-metric" title="Real pick-and-roll structure: an initiator paired with a screener whose own gravity forces a switch, surrounded by real spacing.">
+                            <b>Mismatch structure</b><strong>{Math.round(offenseDetail.mismatchStructure)}</strong>
+                          </span>
                           <span className="fit-detail-metric" title="Playmaking + self-creation blend — how dangerous this five is at hunting a mismatch on offense.">
                             <b>Hunting potential</b><strong>{Math.round(fitDetail.inputs.huntingPotential)}</strong>
                           </span>
-                        )}
-                      </>
-                    )}
-                    <div className="analysis-section-heading">Fit &amp; defense details</div>
-                    <span className="fit-detail-metric"><b>Creation</b><strong>{Math.round(fitDetail.components.creationStructure)}</strong></span>
-                    <span className="fit-detail-metric"><b>Spacing compatibility</b><strong>{Math.round(fitDetail.components.spacingCompatibility)}</strong></span>
-                    <span className="fit-detail-metric" title="Team-level rim pressure as a fit component — how much the five collectively bends a defense at the rim, distinct from the Offense-details rim-pressure input above.">
-                      <b>Rim pressure (fit)</b><strong>{Math.round(fitDetail.components.rimPressureTeam)}</strong>
-                    </span>
-                    <span className="fit-detail-metric"><b>Defensive roles</b><strong>{Math.round(fitDetail.components.defensiveRoleCoverage)}</strong></span>
-                    <span className="fit-detail-metric"><b>Switchability</b><strong>{Math.round(fitDetail.components.switchability)}</strong></span>
-                    <span className="fit-detail-metric"><b>Hunt resistance</b><strong>{Math.round(fitDetail.components.huntResistance)}</strong></span>
-                    {fitDetail.components.defensiveCohesion > 0 && (
-                      <span className="fit-detail-metric"><b>Defensive cohesion</b><strong>{Math.round(fitDetail.components.defensiveCohesion)}</strong></span>
-                    )}
-                    <span className="fit-detail-metric"><b>Rebounding</b><strong>{Math.round(fitDetail.components.reboundingBalance)}</strong></span>
-                    <span className="fit-detail-metric"><b>Functional size</b><strong>{Math.round(fitDetail.components.sizeCoverage)}</strong></span>
-                    <span className="fit-detail-metric"><b>Championship structure</b><strong>{Math.round(fitDetail.components.championshipStructure)}</strong></span>
-                    {fitDetail.inputs.primaryArchetype && (
-                      <span className="fit-detail-wide"><b>Roster identity</b> {fitDetail.inputs.primaryArchetype}{fitDetail.inputs.secondaryArchetype ? ` + ${fitDetail.inputs.secondaryArchetype}` : ''}</span>
-                    )}
-                    {fitDetail.inputs.championshipArchetypes.length > 0 && (
-                      <span className="fit-detail-wide"><b>Archetypes</b> {fitDetail.inputs.championshipArchetypes.map((entry) => `${entry.archetype} ${entry.share}%`).join(' · ')}</span>
-                    )}
-                    {fitDetail.inputs.archetypeReport && (
-                      <span className="fit-detail-wide"><b>Profile:</b> {fitDetail.inputs.archetypeReport.strengths.join(' · ')}. <b>Risk:</b> {fitDetail.inputs.archetypeReport.failureMode}.</span>
-                    )}
-                    {rsPoProfile && (
-                      <span className="fit-detail-wide"><b>Season profile:</b> RS {rsPoProfile.regularSeason} · PO {rsPoProfile.playoffs} · {rsPoProfile.label}. {rsPoProfile.explanation}</span>
-                    )}
-                    <span className="fit-v2-shadow-detail">
-                      <b>Defense:</b> POA {fitDetail.inputs.guardContainmentProvider ?? '—'} {Math.round(fitDetail.inputs.guardContainment)}
-                      {!fitDetail.inputs.guardContainmentConfirmed && ' (inferred)'}
-                      {' · '}wing {fitDetail.inputs.wingCoverageProvider ?? '—'} {Math.round(fitDetail.inputs.wingCoverage)}
-                      {!fitDetail.inputs.wingCoverageConfirmed && ' (inferred)'}
-                      {' · '}rim {fitDetail.inputs.rimProtectionProvider ?? '—'} {Math.round(fitDetail.inputs.rimProtection)}
-                      {!fitDetail.inputs.rimProtectionConfirmed && ' (inferred)'}
-                      {/* 2026-08-30, user-reported (batch feedback #10): this used to always show
-                          the lowest-scoring starter as "weak link" even when their score was
-                          nowhere near actually weak (e.g. Chauncey Billups at 80) — gated on the
-                          same HUNTABLE_WEAK_LINK_THRESHOLD the prose note below already used. */}
-                      {fitDetail.inputs.defensiveWeakLinkIsHuntable &&
-                        <>
-                          {' · '}weak link {fitDetail.inputs.defensiveWeakLinkPlayer ?? '—'} {Math.round(fitDetail.inputs.defensiveWeakLinkResistance)}
-                          {fitDetail.inputs.defensiveWeakLinkCover > 0 && ` · shell cover +${fitDetail.inputs.defensiveWeakLinkCover}`}
                         </>
-                      }
-                    </span>
-                    {huntability && huntability.offenders.length > 0 && (
+                      )}
+                      <div className="analysis-section-heading">Fit &amp; defense</div>
+                      <span className="fit-detail-metric"><b>Creation</b><strong>{Math.round(fitDetail.components.creationStructure)}</strong></span>
+                      <span className="fit-detail-metric"><b>Spacing compatibility</b><strong>{Math.round(fitDetail.components.spacingCompatibility)}</strong></span>
+                      <span className="fit-detail-metric"><b>Rim pressure (fit)</b><strong>{Math.round(fitDetail.components.rimPressureTeam)}</strong></span>
+                      <span className="fit-detail-metric"><b>Defensive roles</b><strong>{Math.round(fitDetail.components.defensiveRoleCoverage)}</strong></span>
+                      <span className="fit-detail-metric"><b>Switchability</b><strong>{Math.round(fitDetail.components.switchability)}</strong></span>
+                      <span className="fit-detail-metric"><b>Hunt resistance</b><strong>{Math.round(fitDetail.components.huntResistance)}</strong></span>
+                      {fitDetail.components.defensiveCohesion > 0 && (
+                        <span className="fit-detail-metric"><b>Defensive cohesion</b><strong>{Math.round(fitDetail.components.defensiveCohesion)}</strong></span>
+                      )}
+                      <span className="fit-detail-metric"><b>Rebounding</b><strong>{Math.round(fitDetail.components.reboundingBalance)}</strong></span>
+                      <span className="fit-detail-metric"><b>Functional size</b><strong>{Math.round(fitDetail.components.sizeCoverage)}</strong></span>
+                      <span className="fit-detail-metric"><b>Championship structure</b><strong>{Math.round(fitDetail.components.championshipStructure)}</strong></span>
+                      {fitDetail.inputs.championshipArchetypes.length > 0 && (
+                        <span className="fit-detail-wide"><b>Archetypes</b> {fitDetail.inputs.championshipArchetypes.map((entry) => `${entry.archetype} ${entry.share}%`).join(' · ')}</span>
+                      )}
+                      {fitDetail.inputs.archetypeReport && (
+                        <span className="fit-detail-wide"><b>Profile:</b> {fitDetail.inputs.archetypeReport.strengths.join(' · ')}.</span>
+                      )}
                       <span className="fit-v2-shadow-detail">
-                        <b>Weak-link targets:</b> {huntability.offenders.slice(0, 4).map((offender) =>
-                          `${offender.playerName} D${offender.defensiveTalent}/${offender.minutes}m`,
-                        ).join(' · ')}
+                        <b>Defenders:</b> POA {fitDetail.inputs.guardContainmentProvider ?? '—'} {Math.round(fitDetail.inputs.guardContainment)}
+                        {!fitDetail.inputs.guardContainmentConfirmed && ' (inferred)'}
+                        {' · '}wing {fitDetail.inputs.wingCoverageProvider ?? '—'} {Math.round(fitDetail.inputs.wingCoverage)}
+                        {!fitDetail.inputs.wingCoverageConfirmed && ' (inferred)'}
+                        {' · '}rim {fitDetail.inputs.rimProtectionProvider ?? '—'} {Math.round(fitDetail.inputs.rimProtection)}
+                        {!fitDetail.inputs.rimProtectionConfirmed && ' (inferred)'}
+                        {fitDetail.inputs.defensiveWeakLinkIsHuntable &&
+                          <>
+                            {' · '}weak link {fitDetail.inputs.defensiveWeakLinkPlayer ?? '—'} {Math.round(fitDetail.inputs.defensiveWeakLinkResistance)}
+                            {fitDetail.inputs.defensiveWeakLinkCover > 0 && ` · shell cover +${fitDetail.inputs.defensiveWeakLinkCover}`}
+                          </>
+                        }
                       </span>
-                    )}
-                    <span className="fit-v2-shadow-detail">
-                      <b>Size inputs:</b> height {Math.round(fitDetail.inputs.positionAdjustedHeightPercentile ?? 50)}
-                      {' · '}strength {Math.round(fitDetail.inputs.positionAdjustedWeightPercentile ?? 50)}
-                      {' · '}athleticism {Math.round(fitDetail.inputs.positionAdjustedAthleticismPercentile ?? 50)}
-                      {' · '}rebounding {Math.round(fitDetail.inputs.positionAdjustedReboundingPercentile)}
-                    </span>
+                      {huntability && huntability.offenders.length > 0 && (
+                        <span className="fit-v2-shadow-detail">
+                          <b>Weak-link targets:</b> {huntability.offenders.slice(0, 4).map((offender) =>
+                            `${offender.playerName} D${offender.defensiveTalent}/${offender.minutes}m`,
+                          ).join(' · ')}
+                        </span>
+                      )}
+                      <span className="fit-v2-shadow-detail">
+                        <b>Size inputs:</b> height {Math.round(fitDetail.inputs.positionAdjustedHeightPercentile ?? 50)}
+                        {' · '}strength {Math.round(fitDetail.inputs.positionAdjustedWeightPercentile ?? 50)}
+                        {' · '}athleticism {Math.round(fitDetail.inputs.positionAdjustedAthleticismPercentile ?? 50)}
+                        {' · '}rebounding {Math.round(fitDetail.inputs.positionAdjustedReboundingPercentile)}
+                      </span>
+                    </details>
                   </details>
                 )}
                 <details className="result-accordion-section championship-section">

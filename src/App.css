@@ -1683,17 +1683,87 @@ select {
   padding-top: 0;
   border-top: none;
 }
+/* 2026-09-09 restructure: Team analysis now leads with identity + season-profile prose and
+   Strengths/Concerns, then a scannable row of labelled bars for the key axes; the full raw metric
+   grid sits behind a nested "All metrics & inputs" toggle for anyone who wants the numbers. */
 .team-analysis-section[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.analysis-identity {
+  margin: 6px 0 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.analysis-identity-line {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--at-ink-soft);
+}
+.analysis-identity-line b { color: var(--at-ink); font-weight: 700; }
+.analysis-bars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 16px;
+  margin: 8px 0 4px;
+}
+.metric-bar {
+  display: grid;
+  grid-template-columns: 92px 1fr 26px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+.metric-bar-label { color: var(--at-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.metric-bar-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--at-ink) 9%, transparent);
+  overflow: hidden;
+}
+.metric-bar-fill { display: block; height: 100%; border-radius: 999px; }
+.metric-bar-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--at-ink);
+}
+.metric-t1, .metric-t2 { background: var(--at-accent-2); }
+.metric-t3 { background: #c58f3c; }
+.metric-t4 { background: #7fae62; }
+.metric-t5, .metric-t6 { background: #6fd39a; }
+
+.analysis-raw {
+  margin-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  padding-top: 6px;
+}
+.analysis-raw > summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--at-ink-faint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 0;
+}
+.analysis-raw > summary::-webkit-details-marker { display: none; }
+.analysis-raw > summary::before { content: '▸ '; }
+.analysis-raw[open] > summary::before { content: '▾ '; }
+.analysis-raw[open] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 14px;
 }
-.team-analysis-section[open] > summary,
-.team-analysis-section[open] > .analysis-section-heading,
-.team-analysis-section[open] > .fit-detail-wide,
-.team-analysis-section[open] > .fit-v2-shadow-detail,
-.team-analysis-section[open] > .analysis-insights { grid-column: 1 / -1; }
-.team-analysis-section[open] > .fit-detail-metric {
+.analysis-raw[open] > summary,
+.analysis-raw > .analysis-section-heading,
+.analysis-raw > .fit-detail-wide,
+.analysis-raw > .fit-v2-shadow-detail { grid-column: 1 / -1; }
+.analysis-raw > .fit-detail-metric {
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -1701,11 +1771,11 @@ select {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
 }
 @media (max-width: 620px) {
-  .team-analysis-section[open] { grid-template-columns: 1fr; }
-  .team-analysis-section[open] > .analysis-section-heading,
-  .team-analysis-section[open] > .fit-detail-wide,
-  .team-analysis-section[open] > .fit-v2-shadow-detail,
-  .team-analysis-section[open] > .analysis-insights { grid-column: auto; }
+  .analysis-bars { grid-template-columns: 1fr; }
+  .analysis-raw[open] { grid-template-columns: 1fr; }
+  .analysis-raw > .analysis-section-heading,
+  .analysis-raw > .fit-detail-wide,
+  .analysis-raw > .fit-v2-shadow-detail { grid-column: auto; }
 }
 .championship-summary {
   display: grid;
