@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, type DraftState } from '../engine/draft';
-import { CAP_LIMIT, ROSTER_SIZE, capRemaining, totalFga } from '../engine/positions';
+import { CAP_LIMIT, ROSTER_SIZE, capRemaining, totalFga, STARTER_SLOTS } from '../engine/positions';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { effectiveTalent } from '../engine/grades';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
@@ -13,6 +13,7 @@ import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
 import type { Rotation } from '../engine/types';
 import { Face, ShotChip, shortenName } from './ShotChip';
+import { bestPrimaryAssignment } from '../engine/rotation';
 import {
   offensiveGrade,
   defensiveGrade,
@@ -448,6 +449,18 @@ export default function DraftBoard({
   const humanTeam = state.teams.find((t) => t.isHuman)!;
   const teamForPanels = state.commissionerMode ? currentTeam : humanTeam;
 
+  // 2026-09-11, user's own inspiration screenshot ("po prawej nasz zespół... jeden element" —
+  // Draft and Team merged into one screen, a persistent team sidebar next to the player cards):
+  // same optimal starter-slot search `finalizeQuickRotation`/QuickFive's own team panel already
+  // use for the identical need there, so this sidebar reads as PG/SG/SF/PF/C coverage instead of
+  // draft order. Read-only here (span-swap + full rotation-minute editing stay on the Team tab —
+  // deliberately scoped smaller for this pass; see this session's own conversation for why) —
+  // this is "what do I already have" at a glance while still browsing the board.
+  const humanAssignment = useMemo(
+    () => bestPrimaryAssignment(humanTeam.roster).assignment,
+    [humanTeam.roster],
+  );
+
   // 2026-08-16, user's own ask: span selection + rotation-building moved off their own dedicated
   // post-draft screens and into the Team tab below, reachable from the human's very first pick —
   // always against `humanTeam` specifically (never `teamForPanels`), same "Commissioner Mode
@@ -840,25 +853,14 @@ export default function DraftBoard({
           {!canPick && (
             <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
           )}
-          {/* 2026-09-11, user-reported live ("można dodać mała informację o graczach jakich
-              posiadamy, np face-cardy") — the only way to see your own roster used to be
-              switching to the Team tab; a compact strip of who you've already drafted (same
-              Face+ShotChip tile Quick Five/Best Five use) right on the Draft tab itself, so
-              picking your next player doesn't mean losing sight of who you already have. Only
-              ever the human's own (at most 9) picks, not the ~5000-span candidate pool below, so
-              this carries none of that list's own perf cost. */}
-          {humanTeam.roster.length > 0 && (
-            <div className="at-own-team-strip">
-              {humanTeam.roster.map((p) => (
-                <span className="at-own-team-pip" key={p.id} title={p.playerName}>
-                  <Face name={p.playerName} />
-                  <span className="at-own-team-pip-name">{shortenName(p.playerName)}</span>
-                  <ShotChip fga={p.fga} cap={CAP_LIMIT} />
-                </span>
-              ))}
-            </div>
-          )}
-          <>
+          {/* 2026-09-11, user's own inspiration screenshot: Draft + Team merged into one screen —
+              player cards on the left, a persistent "Your Five" sidebar on the right (replaces
+              the draft-order pip strip this had for one round of live-testing — that was a step
+              toward this same request, now superseded by the real thing). See `humanAssignment`'s
+              own comment above for what's deliberately still out of scope this pass (span-swap,
+              full rotation-minute editing — still on the Team tab). */}
+          <div className="at-draft-workspace">
+          <div className="at-draft-main">
               <div className="at-controls-row">
                 <input
                   className="at-search-input"
@@ -929,6 +931,7 @@ export default function DraftBoard({
                   `.span-table` read the plain `--bg`/`--border`/`--accent` names, which `.at-shell`
                   aliases to its dark board values, so it renders on the board palette; the
                   `.at-draft-groups` block in App.css only tightens spacing/typography. */}
+              {showJudgeMetrics && (
               <div className="player-groups at-draft-groups">
                 {groups.map((group) => {
                   const isOpen = expanded.has(group.playerName);
@@ -1133,6 +1136,97 @@ export default function DraftBoard({
                   );
                 })}
               </div>
+              )}
+
+              {/* 2026-09-11, user's own inspiration screenshot: face cards instead of an
+                  accordion list — a magnifying glass expands the card in place to compare a
+                  player's other available seasons (same `spansByAiValue`/`showAllSpans` logic the
+                  old expanded row used), an arrow drafts the best one immediately. Player mode
+                  only — developer/tester mode keeps the dense table above unchanged. */}
+              {!showJudgeMetrics && (
+                <div className="at-player-cards">
+                  {groups.map((group) => {
+                    const isOpen = expanded.has(group.playerName);
+                    const best = group.bestTalentSpan;
+                    const legal = canPick && isPickLegal(state, best.id);
+                    const orderedSpans = group.spansByAiValue;
+                    const showingAll = showAllSpans.has(group.playerName);
+                    const visibleSpans = showingAll ? orderedSpans : orderedSpans.slice(0, 4);
+                    return (
+                      <div className={`at-player-card ${isOpen ? 'at-player-card--open' : ''}`} key={group.playerName}>
+                        <div className="at-player-card-top">
+                          <Face name={group.playerName} size="md" />
+                          <OverallTierBadge span={best} />
+                        </div>
+                        <span className="at-player-card-name">{shortenName(group.playerName)}</span>
+                        <span className="at-player-card-pos">{naturalPosition(group.playerName)}</span>
+                        <div className="at-player-card-foot">
+                          <ShotChip fga={best.fga} cap={CAP_LIMIT} />
+                          <span className="at-player-card-actions">
+                            <button
+                              type="button"
+                              className="at-player-card-peek"
+                              title={isOpen ? 'Hide seasons' : `${group.spans.length} season${group.spans.length > 1 ? 's' : ''} available`}
+                              onClick={() => toggleExpand(group.playerName)}
+                            >
+                              🔍
+                            </button>
+                            <button
+                              type="button"
+                              className="at-player-card-draft"
+                              disabled={!legal}
+                              title={
+                                !canPick
+                                  ? `${teamLabel(currentTeam)} is picking…`
+                                  : !legal
+                                    ? 'Over the shots cap — pick something else first, or a cheaper season for this player.'
+                                    : `Draft ${group.playerName}`
+                              }
+                              onClick={() => onPick(best.id)}
+                            >
+                              →
+                            </button>
+                          </span>
+                        </div>
+                        {isOpen && (
+                          <div className="at-player-card-spans">
+                            {visibleSpans.map((span) => {
+                              const spanLegal = canPick && isPickLegal(state, span.id);
+                              return (
+                                <button
+                                  type="button"
+                                  key={span.id}
+                                  className="at-player-card-span-row"
+                                  disabled={!spanLegal}
+                                  onClick={() => onPick(span.id)}
+                                  title={!canPick ? `${teamLabel(currentTeam)} is picking…` : !spanLegal ? 'Over the shots cap.' : `Draft this season`}
+                                >
+                                  <span className="at-player-card-span-label">{span.spanLabel}</span>
+                                  <OverallTierBadge span={span} />
+                                  <ShotChip fga={span.fga} cap={CAP_LIMIT} />
+                                </button>
+                              );
+                            })}
+                            {orderedSpans.length > 4 && (
+                              <button
+                                type="button"
+                                className="at-legend-toggle at-cond at-player-card-more"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleShowAllSpans(group.playerName);
+                                }}
+                              >
+                                {showingAll ? 'Show less' : `+${orderedSpans.length - 4} more`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {totalMatched > groups.length && (
                 <p className="at-caption at-draft-more-note">
                   Showing the top {groups.length} of {totalMatched} — search a name or pick a
@@ -1143,7 +1237,7 @@ export default function DraftBoard({
                 <p className="at-caption" style={{ marginTop: 0 }}>
                   {showJudgeMetrics
                     ? "Peak shots = cost of this player's highest-Talent season. Lowest shots = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one."
-                    : 'Draft picks his best season. Click a row to compare his other seasons — you can still switch to a different one afterward, in the Team tab.'}
+                    : 'The arrow drafts his best season. Tap 🔍 to compare his other seasons — you can still switch to a different one afterward, in the Team tab.'}
                 </p>
                 {showJudgeMetrics && (
                   <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
@@ -1168,7 +1262,66 @@ export default function DraftBoard({
                   ))}
                 </div>
               )}
-            </>
+          </div>
+
+          {/* 2026-09-11, user's own inspiration screenshot: a persistent "Your Five" sidebar next
+              to the player cards — position-organized (same `bestPrimaryAssignment` search the
+              Rotation cards use), read-only here on purpose. Span-swap and rotation-minute editing
+              stay on the Team tab this pass — see `humanAssignment`'s own comment for the full
+              scoping reasoning. */}
+          <aside className="at-draft-sidebar">
+            <div className="at-draft-sidebar-head">
+              <h2 className="at-cond">Your Five</h2>
+              <span className="at-draft-sidebar-count">{humanTeam.roster.length}/{ROSTER_SIZE}</span>
+            </div>
+            <div className="at-draft-sidebar-slots">
+              {STARTER_SLOTS.map((slot) => {
+                const p = humanAssignment[slot];
+                return p ? (
+                  <div className="at-sidebar-slot at-sidebar-slot--filled" key={slot} title={p.playerName}>
+                    <span className="at-sidebar-slot-pos at-cond">{slot}</span>
+                    <Face name={p.playerName} />
+                    <span className="at-sidebar-slot-name">{shortenName(p.playerName)}</span>
+                    <ShotChip fga={p.fga} cap={CAP_LIMIT} />
+                  </div>
+                ) : (
+                  <div className="at-sidebar-slot" key={slot}>
+                    <span className="at-sidebar-slot-pos at-cond">{slot}</span>
+                    <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />
+                    <span className="at-sidebar-slot-empty">Open</span>
+                  </div>
+                );
+              })}
+            </div>
+            {(() => {
+              const seatedIds = new Set(
+                Object.values(humanAssignment)
+                  .filter((p): p is PlayerSpan => Boolean(p))
+                  .map((p) => p.id),
+              );
+              const overflow = humanTeam.roster.filter((p) => !seatedIds.has(p.id));
+              return overflow.length > 0 ? (
+                <div className="at-draft-sidebar-bench">
+                  <span className="at-draft-sidebar-bench-label">Bench</span>
+                  {overflow.map((p) => (
+                    <div className="at-sidebar-slot at-sidebar-slot--filled" key={p.id} title={p.playerName}>
+                      <Face name={p.playerName} />
+                      <span className="at-sidebar-slot-name">{shortenName(p.playerName)}</span>
+                      <ShotChip fga={p.fga} cap={CAP_LIMIT} />
+                    </div>
+                  ))}
+                </div>
+              ) : null;
+            })()}
+            <p className="at-draft-sidebar-hint">
+              Span swaps and rotation minutes live on the{' '}
+              <button type="button" className="at-inline-link" onClick={() => setActiveTab('team')}>
+                Team tab
+              </button>
+              .
+            </p>
+          </aside>
+        </div>
         </div>
       )}
 

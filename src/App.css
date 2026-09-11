@@ -3049,35 +3049,235 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 }
 .at-panel-title { font-size: 30px; margin: -4px 0 14px; }
 
-/* 2026-09-11, user-reported live ("można dodać mała informację o graczach jakich posiadamy, np
-   face-cardy") — a compact strip of the human's own drafted picks, right on the Draft tab (see
-   this block's own JSX comment in DraftBoard.tsx). Same pill shape `.qf-team-card` (QuickFive.css)
-   already uses for the identical need there — kept as its own rule here rather than importing that
-   file, since QuickFive.css is a separate lazy chunk this screen has no other reason to load. */
-.at-own-team-strip {
+/* 2026-09-11: the own-team pip strip this used to be (`.at-own-team-strip`/`.at-own-team-pip`,
+   "można dodać mała informację o graczach jakich posiadamy") was a same-session stepping stone —
+   superseded a few messages later by the real "Your Five" sidebar below, which shows the same
+   info position-organized instead of by draft order. Rules removed with it. */
+
+/* 2026-09-11, user's own inspiration screenshot: Draft + Team merged into one screen — player
+   cards + a persistent "Your Five" sidebar, side by side. See DraftBoard.tsx's own JSX comments
+   (`at-draft-workspace`) for the exact scoping of this pass. */
+.at-draft-workspace {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 14px;
+  align-items: flex-start;
+  gap: 18px;
 }
-.at-own-team-pip {
+.at-draft-main {
+  flex: 1;
+  min-width: 0;
+}
+.at-draft-sidebar {
+  flex: none;
+  width: 260px;
+  position: sticky;
+  top: 12px;
+  border: 1px solid var(--at-line);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--at-paper-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.at-draft-sidebar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.at-draft-sidebar-head h2 {
+  font-size: 14px;
+  margin: 0;
+  color: var(--at-ink);
+}
+.at-draft-sidebar-count {
+  font-size: 12px;
+  color: var(--at-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.at-draft-sidebar-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.at-sidebar-slot {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px 6px 6px;
-  border: 1px solid var(--at-line);
-  border-radius: 999px;
-  background: var(--at-paper);
-  min-width: 0;
+  padding: 6px 8px;
+  border: 1px dashed var(--at-line);
+  border-radius: 8px;
+  min-height: 38px;
 }
-.at-own-team-pip-name {
+.at-sidebar-slot--filled {
+  border-style: solid;
+  background: color-mix(in srgb, var(--at-accent) 6%, transparent);
+}
+.at-sidebar-slot-pos {
+  flex: none;
+  width: 24px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--at-ink-faint);
+}
+.at-sidebar-slot--filled .at-sidebar-slot-pos {
+  color: var(--at-accent);
+}
+.at-sidebar-slot-name {
+  flex: 1;
+  min-width: 0;
   font-size: 12px;
   font-weight: 600;
   color: var(--at-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 120px;
+}
+.at-sidebar-slot-empty {
+  font-size: 11.5px;
+  color: var(--at-ink-faint);
+}
+.at-draft-sidebar-bench {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--at-line);
+}
+.at-draft-sidebar-bench-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+.at-draft-sidebar-hint {
+  font-size: 11px;
+  color: var(--at-ink-faint);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+.at-inline-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--at-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ---- player face-cards (replaces the accordion list, player mode only) ---- */
+.at-player-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.at-player-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--at-line);
+  border-radius: 10px;
+  background: var(--at-paper);
+}
+.at-player-card--open {
+  border-color: var(--at-accent);
+}
+.at-player-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.at-player-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--at-ink);
+  line-height: 1.25;
+}
+.at-player-card-pos {
+  font-size: 10.5px;
+  color: var(--at-ink-faint);
+}
+.at-player-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.at-player-card-actions {
+  display: flex;
+  gap: 4px;
+}
+.at-player-card-peek,
+.at-player-card-draft {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid var(--at-line);
+  background: var(--at-pill);
+  color: var(--at-ink-soft);
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.at-player-card-draft {
+  background: var(--at-accent);
+  color: var(--at-accent-ink);
+  border-color: transparent;
+  font-weight: 700;
+}
+.at-player-card-draft:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.at-player-card-spans {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--at-line);
+}
+.at-player-card-span-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--at-ink-soft);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.at-player-card-span-row:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--at-accent) 8%, transparent);
+  border-color: var(--at-line);
+}
+.at-player-card-span-row:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.at-player-card-span-label {
+  flex: 1;
+  font-weight: 600;
+}
+.at-player-card-more {
+  align-self: center;
+  margin-top: 2px;
+}
+@media (max-width: 860px) {
+  .at-draft-workspace { flex-direction: column; }
+  .at-draft-sidebar { width: 100%; position: static; }
 }
 .at-controls-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 
