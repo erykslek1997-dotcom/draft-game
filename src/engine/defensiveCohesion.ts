@@ -2,7 +2,7 @@ import { computeDefensiveTalent } from './defensiveTalent';
 import { defensiveHuntability } from './defensiveHuntability';
 import { allAssignments, primaryStarters } from './rotation';
 import type { Team } from './types';
-import type { DefensiveRole } from '../data/schema';
+import type { DefensiveRole, Position } from '../data/schema';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 
 const WING_ROLES: DefensiveRole[] = ['Wing Stopper', 'Chaser', 'Switch Big'];
