@@ -3279,6 +3279,62 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   .at-draft-workspace { flex-direction: column; }
   .at-draft-sidebar { width: 100%; position: static; }
 }
+
+/* 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
+   glass on a player card opens this instead of expanding the card in place. Same overlay pattern
+   `.share-modal-overlay`/`.share-modal-card` already established (ResultsScreen.tsx), just a
+   wider card since this one holds a real stats table instead of a summary. */
+.player-peek-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+.player-peek-card {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: min(560px, 85vh);
+  overflow-y: auto;
+  background: var(--at-paper-raised);
+  border: 1px solid var(--at-line);
+  border-radius: 14px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+.player-peek-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--at-line);
+  background: transparent;
+  color: var(--at-ink-faint);
+  cursor: pointer;
+  line-height: 1;
+}
+.player-peek-close:hover { color: var(--at-ink); border-color: var(--at-ink-faint); }
+.player-peek-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-right: 30px;
+}
+.player-peek-name {
+  font-size: 18px;
+  margin: 0;
+  color: var(--at-ink);
+}
+.player-peek-sub {
+  font-size: 12px;
+  color: var(--at-ink-faint);
+}
 .at-controls-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 
 .at-search-input {

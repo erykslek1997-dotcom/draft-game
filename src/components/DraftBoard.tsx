@@ -11,7 +11,7 @@ import { spanEndYears } from '../engine/era';
 import { allStarCount } from '../engine/allStarLookup';
 import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
-import type { Rotation } from '../engine/types';
+import type { Rotation, Team } from '../engine/types';
 import { Face, ShotChip, shortenName } from './ShotChip';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import {
@@ -142,6 +142,115 @@ export { tierContextFor };
 export function OverallTierBadge({ span }: { span: PlayerSpan }) {
   const tier = displayedOverallTier(span);
   return <span className={`tier-badge ${OVERALL_TIER_CLASS[tier]}`}>{tier}</span>;
+}
+
+/** 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
+ * glass on a player face-card opens this instead of expanding the card in place: every available
+ * season with real box-score stats and its own Draft button, the same content the card's earlier
+ * inline expand showed, just with room to show all of it at once instead of a "Show more" toggle. */
+function PlayerPeekModal({
+  group,
+  state,
+  canPick,
+  currentTeam,
+  onClose,
+  onPick,
+}: {
+  group: { playerName: string; spans: PlayerSpan[]; spansByAiValue: PlayerSpan[] };
+  state: DraftState;
+  canPick: boolean;
+  currentTeam: Team;
+  onClose: () => void;
+  onPick: (id: string) => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div className="player-peek-overlay" onClick={onClose}>
+      <div
+        className="player-peek-card"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${group.playerName} — seasons`}
+      >
+        <button type="button" className="player-peek-close" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
+        <div className="player-peek-head">
+          <Face name={group.playerName} size="md" />
+          <div>
+            <h2 className="player-peek-name">{group.playerName}</h2>
+            <span className="player-peek-sub">
+              {naturalPosition(group.playerName)} · {group.spans.length} season{group.spans.length > 1 ? 's' : ''} available
+            </span>
+          </div>
+        </div>
+        <div className="table-scroll">
+          <table className="span-table at-draft-span-table">
+            <thead>
+              <tr>
+                <th>Span</th>
+                <th>Pos</th>
+                <th>Tier</th>
+                <th className="num">PTS</th>
+                <th className="num">AST</th>
+                <th className="num">REB</th>
+                <th className="num">STL</th>
+                <th className="num">BLK</th>
+                <th className="num">FG%</th>
+                <th className="num">3PT%</th>
+                <th className="num">Shots</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {group.spansByAiValue.map((span) => {
+                const ctx = tierContextFor(span);
+                const legal = canPick && isPickLegal(state, span.id);
+                return (
+                  <tr key={span.id}>
+                    <td>{span.spanLabel}</td>
+                    <td>{span.primaryPosition}</td>
+                    <td className="tier-cell">{overallTierForSpan(ctx)}</td>
+                    <td className="num">{span.box.ppg.toFixed(1)}</td>
+                    <td className="num">{span.box.apg.toFixed(1)}</td>
+                    <td className="num">{span.box.rpg.toFixed(1)}</td>
+                    <td className="num">{span.box.spg.toFixed(1)}</td>
+                    <td className="num">{span.box.bpg.toFixed(1)}</td>
+                    <td className="num">{(span.box.fgPct * 100).toFixed(1)}%</td>
+                    <td className="num">{(span.box.threePct * 100).toFixed(1)}%</td>
+                    <td className="num">{span.fga.toFixed(1)}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="at-draft-btn"
+                        disabled={!legal}
+                        title={
+                          !canPick
+                            ? `${teamLabel(currentTeam)} is picking…`
+                            : !legal
+                              ? 'Over the shots cap — pick something else first, or a cheaper season for this player.'
+                              : undefined
+                        }
+                        onClick={() => onPick(span.id)}
+                      >
+                        Draft
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** Real playoff-performance tag (see `playoffPerformanceLookup.ts`) — a third, fully distinct
@@ -406,11 +515,12 @@ export default function DraftBoard({
     return () => clearTimeout(t);
   }, [fgaMax]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
+  // glass on a player face-card now opens a modal instead of expanding the card in place. A
+  // single name (not a Set like `expanded`, which developer mode's own accordion still uses
+  // unchanged) — only one card can be peeked at a time.
+  const [peekPlayer, setPeekPlayer] = useState<string | null>(null);
   const [evidenceOpen, setEvidenceOpen] = useState<Set<string>>(new Set());
-  // 2026-08-13 player-mode redesign: which expanded players have asked to see every season
-  // instead of just the engine's top 3 — see the `!showJudgeMetrics` branch of the expanded
-  // detail table below. Not used at all in developer mode, which always shows every span.
-  const [showAllSpans, setShowAllSpans] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<AtTab>('draft');
   const [showLegend, setShowLegend] = useState(false);
   // Defaults open in Commissioner Mode: every pick needs its reasoning box reachable right after
@@ -703,15 +813,6 @@ export default function DraftBoard({
       const next = new Set(prev);
       if (next.has(spanId)) next.delete(spanId);
       else next.add(spanId);
-      return next;
-    });
-  }
-
-  function toggleShowAllSpans(playerName: string) {
-    setShowAllSpans((prev) => {
-      const next = new Set(prev);
-      if (next.has(playerName)) next.delete(playerName);
-      else next.add(playerName);
       return next;
     });
   }
@@ -1073,65 +1174,6 @@ export default function DraftBoard({
                         </div>
                       )}
 
-                      {isOpen && !showJudgeMetrics && (() => {
-                        // Player mode: box-score detail only, ranked by the engine's hidden
-                        // valuation (`spansByAiValue`), top 3 with a Show more for the rest. No
-                        // Draft-reasoning panel and no per-span Draft button — player mode drafts
-                        // the best span from the header; span swapping happens in the Team tab.
-                        const orderedSpans = group.spansByAiValue;
-                        const showingAll = showAllSpans.has(group.playerName);
-                        const visibleSpans = showingAll ? orderedSpans : orderedSpans.slice(0, 3);
-                        return (
-                          <div className="table-scroll">
-                            <table className="span-table at-draft-span-table">
-                              <thead>
-                                <tr>
-                                  <th>Span</th>
-                                  <th>Pos</th>
-                                  <th>Tier</th>
-                                  <th className="num">PTS</th>
-                                  <th className="num">AST</th>
-                                  <th className="num">REB</th>
-                                  <th className="num">STL</th>
-                                  <th className="num">BLK</th>
-                                  <th className="num">FG%</th>
-                                  <th className="num">3PT%</th>
-                                  <th className="num">Shots</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {visibleSpans.map((span) => {
-                                  const ctx = tierContextFor(span);
-                                  return (
-                                    <tr key={span.id}>
-                                      <td>{span.spanLabel}</td>
-                                      <td>{span.primaryPosition}</td>
-                                      <td className="tier-cell">{overallTierForSpan(ctx)}</td>
-                                      <td className="num">{span.box.ppg.toFixed(1)}</td>
-                                      <td className="num">{span.box.apg.toFixed(1)}</td>
-                                      <td className="num">{span.box.rpg.toFixed(1)}</td>
-                                      <td className="num">{span.box.spg.toFixed(1)}</td>
-                                      <td className="num">{span.box.bpg.toFixed(1)}</td>
-                                      <td className="num">{(span.box.fgPct * 100).toFixed(1)}%</td>
-                                      <td className="num">{(span.box.threePct * 100).toFixed(1)}%</td>
-                                      <td className="num">{span.fga.toFixed(1)}</td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                            {orderedSpans.length > 3 && (
-                              <button
-                                className="at-legend-toggle at-cond"
-                                style={{ marginTop: 6 }}
-                                onClick={() => toggleShowAllSpans(group.playerName)}
-                              >
-                                {showingAll ? 'Show less' : `Show more (${orderedSpans.length - 3} more)`}
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })()}
                     </div>
                   );
                 })}
@@ -1139,21 +1181,19 @@ export default function DraftBoard({
               )}
 
               {/* 2026-09-11, user's own inspiration screenshot: face cards instead of an
-                  accordion list — a magnifying glass expands the card in place to compare a
-                  player's other available seasons (same `spansByAiValue`/`showAllSpans` logic the
-                  old expanded row used), an arrow drafts the best one immediately. Player mode
-                  only — developer/tester mode keeps the dense table above unchanged. */}
+                  accordion list. Follow-up ask ("modal zamiast obecnego rozwijania karty"): the
+                  magnifying glass opens a modal (`PlayerPeekModal` below) instead of expanding the
+                  card in place — more room for the same `spansByAiValue` season list plus real box
+                  stats, without the grid's row heights jumping around per-card. An arrow still
+                  drafts the best season immediately, no modal needed for the common case. Player
+                  mode only — developer/tester mode keeps the dense table above unchanged. */}
               {!showJudgeMetrics && (
                 <div className="at-player-cards">
                   {groups.map((group) => {
-                    const isOpen = expanded.has(group.playerName);
                     const best = group.bestTalentSpan;
                     const legal = canPick && isPickLegal(state, best.id);
-                    const orderedSpans = group.spansByAiValue;
-                    const showingAll = showAllSpans.has(group.playerName);
-                    const visibleSpans = showingAll ? orderedSpans : orderedSpans.slice(0, 4);
                     return (
-                      <div className={`at-player-card ${isOpen ? 'at-player-card--open' : ''}`} key={group.playerName}>
+                      <div className="at-player-card" key={group.playerName}>
                         <div className="at-player-card-top">
                           <Face name={group.playerName} size="md" />
                           <OverallTierBadge span={best} />
@@ -1166,8 +1206,8 @@ export default function DraftBoard({
                             <button
                               type="button"
                               className="at-player-card-peek"
-                              title={isOpen ? 'Hide seasons' : `${group.spans.length} season${group.spans.length > 1 ? 's' : ''} available`}
-                              onClick={() => toggleExpand(group.playerName)}
+                              title={`${group.spans.length} season${group.spans.length > 1 ? 's' : ''} available`}
+                              onClick={() => setPeekPlayer(group.playerName)}
                             >
                               🔍
                             </button>
@@ -1188,44 +1228,28 @@ export default function DraftBoard({
                             </button>
                           </span>
                         </div>
-                        {isOpen && (
-                          <div className="at-player-card-spans">
-                            {visibleSpans.map((span) => {
-                              const spanLegal = canPick && isPickLegal(state, span.id);
-                              return (
-                                <button
-                                  type="button"
-                                  key={span.id}
-                                  className="at-player-card-span-row"
-                                  disabled={!spanLegal}
-                                  onClick={() => onPick(span.id)}
-                                  title={!canPick ? `${teamLabel(currentTeam)} is picking…` : !spanLegal ? 'Over the shots cap.' : `Draft this season`}
-                                >
-                                  <span className="at-player-card-span-label">{span.spanLabel}</span>
-                                  <OverallTierBadge span={span} />
-                                  <ShotChip fga={span.fga} cap={CAP_LIMIT} />
-                                </button>
-                              );
-                            })}
-                            {orderedSpans.length > 4 && (
-                              <button
-                                type="button"
-                                className="at-legend-toggle at-cond at-player-card-more"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleShowAllSpans(group.playerName);
-                                }}
-                              >
-                                {showingAll ? 'Show less' : `+${orderedSpans.length - 4} more`}
-                              </button>
-                            )}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
                 </div>
               )}
+              {peekPlayer && (() => {
+                const group = groups.find((g) => g.playerName === peekPlayer);
+                if (!group) return null;
+                return (
+                  <PlayerPeekModal
+                    group={group}
+                    state={state}
+                    canPick={canPick}
+                    currentTeam={currentTeam}
+                    onClose={() => setPeekPlayer(null)}
+                    onPick={(id) => {
+                      onPick(id);
+                      setPeekPlayer(null);
+                    }}
+                  />
+                );
+              })()}
 
               {totalMatched > groups.length && (
                 <p className="at-caption at-draft-more-note">
