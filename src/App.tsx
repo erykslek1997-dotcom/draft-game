@@ -45,6 +45,10 @@ const DISPLAY_CAP_LIMIT = 100.9;
  * `ROSTER_SIZE`/`BENCH_SLOT_COUNT` by the same standing check, extended to cover these two. */
 const DISPLAY_ROSTER_SIZE = 9;
 const DISPLAY_BENCH_SLOT_COUNT = 4;
+/** Same hand-kept-constant pattern again, for the Szybka 5 mode card's own one-line description —
+ * kept in sync with `engine/quickDraft.ts`'s real `QUICK_CAP_LIMIT` by the same standing check
+ * (`scripts/checkIntroCapLimit.ts`), extended to cover this one too. */
+const DISPLAY_QUICK_CAP_LIMIT = 70;
 
 function LoadingPanel({ label }: { label: string }) {
   return (
@@ -149,15 +153,38 @@ function App() {
                 ranks the whole field, yours included.
               </li>
             </ol>
-            <div className="intro-actions">
-              <button className="primary-btn" onClick={() => setView('game')}>
-                Start Draft
+            {/* 2026-09-11, mode-card grid — the intro used to stack every mode as same-weight
+                buttons in a column; three real modes now (Draft/Best 5/Szybka 5) makes that
+                column read as a growing pile instead of a set of real choices. User's own steer
+                (shown a competitor's icon-grid mode picker): "tak, dobry kierunek... nie kopiuję
+                1:1 wyglądu... naszej już ustalonej ciemnej tablicy NBA-touch, żeby siatka
+                wyglądała jak część tej samej gry" — structure only (icon + name + one line +
+                a NEW badge for a genuinely new mode), our own dark board tokens throughout, not
+                the reference's own colors/branding. Draft keeps the visual weight it earns from
+                every other piece of this screen (hero, tagline, How to Play) already being about
+                it — the other two are real, equal-footing choices, not afterthoughts. */}
+            <div className="mode-grid">
+              <button className="mode-card mode-card--featured" onClick={() => setView('game')}>
+                <span className="mode-card-icon" aria-hidden>
+                  🏀
+                </span>
+                <span className="mode-card-name at-cond">Draft</span>
+                <span className="mode-card-desc">16 teams, {DISPLAY_ROSTER_SIZE} rounds — real AI reacting to every pick you make.</span>
               </button>
-              <button className="secondary-btn intro-bestfive-btn" onClick={() => setView('bestfive')}>
-                Build the Best 5 — daily
+              <button className="mode-card" onClick={() => setView('bestfive')}>
+                <span className="mode-card-icon" aria-hidden>
+                  🧩
+                </span>
+                <span className="mode-card-name at-cond">Best 5</span>
+                <span className="mode-card-desc">Daily puzzle — pick five under a shot cap, beat the field.</span>
               </button>
-              <button className="secondary-btn" onClick={() => setView('quickfive')}>
-                Szybka 5 — 5 rounds, 70-shot cap
+              <button className="mode-card" onClick={() => setView('quickfive')}>
+                <span className="mode-card-badge">NEW</span>
+                <span className="mode-card-icon" aria-hidden>
+                  ⚡
+                </span>
+                <span className="mode-card-name at-cond">Szybka 5</span>
+                <span className="mode-card-desc">5 rounds, a {DISPLAY_QUICK_CAP_LIMIT}-shot cap — a real draft in a few minutes.</span>
               </button>
             </div>
           </div>

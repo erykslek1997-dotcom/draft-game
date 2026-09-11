@@ -1,4 +1,5 @@
 import { CAP_LIMIT, ROSTER_SIZE, BENCH_SLOT_COUNT } from '../src/engine/positions';
+import { QUICK_CAP_LIMIT } from '../src/engine/quickDraft';
 
 /**
  * `App.tsx` hardcodes `DISPLAY_CAP_LIMIT` for the intro tagline instead of importing
@@ -11,10 +12,15 @@ import { CAP_LIMIT, ROSTER_SIZE, BENCH_SLOT_COUNT } from '../src/engine/position
  * 2026-08-19: extended to `DISPLAY_ROSTER_SIZE`/`DISPLAY_BENCH_SLOT_COUNT`, added the same day the
  * How to Play copy moved from DraftLottery.tsx (which could afford a real import — it only ever
  * renders inside the already-lazy-loaded GameShell) onto App.tsx's own intro screen, which can't.
+ *
+ * 2026-09-11: extended to `DISPLAY_QUICK_CAP_LIMIT`, for the Szybka 5 mode card's own one-line
+ * description on the same intro screen (`quickDraft.ts` is real engine weight too — same
+ * zero-engine-dependency reasoning as everything else this check covers).
  */
 const DISPLAY_CAP_LIMIT = 100.9;
 const DISPLAY_ROSTER_SIZE = 9;
 const DISPLAY_BENCH_SLOT_COUNT = 4;
+const DISPLAY_QUICK_CAP_LIMIT = 70;
 
 let ok = true;
 if (DISPLAY_CAP_LIMIT !== CAP_LIMIT) {
@@ -29,5 +35,9 @@ if (DISPLAY_BENCH_SLOT_COUNT !== BENCH_SLOT_COUNT) {
   console.log(`FAIL: App.tsx's DISPLAY_BENCH_SLOT_COUNT (${DISPLAY_BENCH_SLOT_COUNT}) != engine/positions.ts's BENCH_SLOT_COUNT (${BENCH_SLOT_COUNT})`);
   ok = false;
 }
+if (DISPLAY_QUICK_CAP_LIMIT !== QUICK_CAP_LIMIT) {
+  console.log(`FAIL: App.tsx's DISPLAY_QUICK_CAP_LIMIT (${DISPLAY_QUICK_CAP_LIMIT}) != quickDraft.ts's QUICK_CAP_LIMIT (${QUICK_CAP_LIMIT})`);
+  ok = false;
+}
 if (!ok) process.exit(1);
-console.log(`PASS: DISPLAY_CAP_LIMIT/DISPLAY_ROSTER_SIZE/DISPLAY_BENCH_SLOT_COUNT match engine/positions.ts (${CAP_LIMIT}/${ROSTER_SIZE}/${BENCH_SLOT_COUNT})`);
+console.log(`PASS: DISPLAY_CAP_LIMIT/DISPLAY_ROSTER_SIZE/DISPLAY_BENCH_SLOT_COUNT/DISPLAY_QUICK_CAP_LIMIT match the engine (${CAP_LIMIT}/${ROSTER_SIZE}/${BENCH_SLOT_COUNT}/${QUICK_CAP_LIMIT})`);

@@ -401,26 +401,73 @@ button.active,
   margin: 8px 0 16px;
 }
 
-/* 2026-09-11, intro screen CTA hierarchy fix (Self-Scout Report finding #1) — real containers for
-   the two actual entry points instead of letting five bare `<button>`s wrap as inline-block text.
-   `.intro-actions` stacks Start Draft (now `.primary-btn`, the flagship 16-team draft the rest of
-   the page's copy is about) above Best 5 as a column, both full-width-feeling and equally easy to
-   hit; `.intro-more-row` demotes Card Collection/Browse Draft Pool/Cap Sheet to a single row of
-   plain text links — still reachable in one click, but no longer competing with the two real
-   starting points for the same visual weight. */
-.intro-actions {
+/* 2026-09-11, mode-card grid — replaces the earlier `.intro-actions` column (Self-Scout Report
+   finding #1: real CTA hierarchy instead of bare buttons wrapping as text) now that a third real
+   mode (Szybka 5) exists: three same-shape cards read as a real choice, where a third stacked
+   button would've just resumed the growing-pile problem that fix started solving. Icon + name +
+   one line, `.mode-card--featured` (Draft) gets the accent border/background every other piece of
+   this screen already points at — the other two are real, equal-footing picks, not afterthoughts,
+   so they share one plain card shape rather than each inventing their own weight. */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 16px auto 0;
+  max-width: 560px;
+}
+.mode-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-  max-width: 320px;
-  margin: 16px auto 0;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 18px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: border-color .12s ease, background-color .12s ease, transform .12s ease;
 }
-.intro-actions .primary-btn,
-.intro-actions .secondary-btn {
-  margin: 0;
-  width: 100%;
+.mode-card:hover {
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
 }
+.mode-card--featured {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.mode-card-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+.mode-card-name {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.mode-card-desc {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+}
+.mode-card-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--at-accent-2, var(--accent));
+  color: #fff;
+}
+@media (max-width: 480px) {
+  .mode-grid { grid-template-columns: 1fr; }
+}
+
 .intro-more-row {
   display: flex;
   flex-wrap: wrap;
