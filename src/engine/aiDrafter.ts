@@ -5,7 +5,7 @@ import {
   ROSTER_SIZE,
   CAP_LIMIT,
   TEAM_COUNT,
-  isPickCapLegal,
+  totalFga,
   isRealPositionFit,
   isPositionEligible,
   buildCheapestLookup,
@@ -598,9 +598,6 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
   };
 }
 
-/** Even split of the whole cap across a full roster — the reference point "cap room per
- * remaining slot" is compared against to gauge how tight things are getting. */
-const COMFORTABLE_BUDGET_PER_SLOT = CAP_LIMIT / ROSTER_SIZE;
 /** Slots remaining at which point cap-consciousness starts ramping up regardless of how much
  * room is technically left — even a team that's spent nothing still shouldn't stay in pure
  * "best player available" mode all the way to the last pick or two, since the endgame is a
@@ -1315,6 +1312,18 @@ function uniquePlayerSpans(ranked: PlayerSpan[]): PlayerSpan[] {
  * so a whole draft can be replayed from its logged seed (see that file's `seed` field); every
  * other caller leaves it unseeded.
  */
+/**
+ * Overrides the module's real 9-man `ROSTER_SIZE`/`CAP_LIMIT` for a differently-shaped draft —
+ * added 2026-09-11 for `quickDraft.ts` (the 5-round "Szybka 5" mode), so it can reuse this exact
+ * AI pick logic instead of forking a duplicate copy that could drift from it over time. Every
+ * existing caller omits this and gets byte-identical behavior to before (verified via
+ * `testAiPickRegression.ts`'s 30 pinned picks, unchanged) — this is a purely additive default,
+ * not a behavior change to the real 9-man/100.9-FGA draft. */
+export interface AiDraftRuleset {
+  rosterSize: number;
+  capLimit: number;
+}
+
 export function pickForAi(
   roster: PlayerSpan[],
   currentFgas: number[],
@@ -1322,17 +1331,28 @@ export function pickForAi(
   teamCount: number = TEAM_COUNT,
   pickNumber?: number,
   rng: () => number = Math.random,
+  ruleset?: AiDraftRuleset,
 ): PlayerSpan {
-  const slotsLeft = ROSTER_SIZE - roster.length;
+  const rosterSize = ruleset?.rosterSize ?? ROSTER_SIZE;
+  const capLimit = ruleset?.capLimit ?? CAP_LIMIT;
+  // `isPickCapLegal` (positions.ts) hardcodes the real 9-man CAP_LIMIT — this local mirrors its
+  // exact `totalFga([...currentFgas, fga]) <= limit` check against the resolved `capLimit`
+  // instead, so every legality check inside this function honors a ruleset override too. Byte-
+  // identical to `isPickCapLegal` when `ruleset` is omitted (capLimit === CAP_LIMIT). Named
+  // `isCapLegal` (not `capLegal`) to avoid colliding with an existing local `capLegal` array
+  // further down this same function.
+  const isCapLegal = (fga: number) => totalFga([...currentFgas, fga]) <= capLimit;
+  const slotsLeft = rosterSize - roster.length;
   const needs = assessNeeds(roster);
   const spent = currentFgas.reduce((s, f) => s + f, 0);
-  const capRemaining = CAP_LIMIT - spent;
+  const capRemaining = capLimit - spent;
   const budgetPerSlot = capRemaining / slotsLeft;
   // Two independent signals, whichever is more urgent wins: a team that's overspent gets
   // pressure from tight actual cap room, and every team gets rising pressure in the last few
   // picks regardless of room left, since the endgame squeeze is structural, not just a
   // function of this one team's own spending so far.
-  const budgetPressure = Math.max(0, Math.min(1, 1 - budgetPerSlot / COMFORTABLE_BUDGET_PER_SLOT));
+  const comfortableBudgetPerSlot = capLimit / rosterSize;
+  const budgetPressure = Math.max(0, Math.min(1, 1 - budgetPerSlot / comfortableBudgetPerSlot));
   const slotsLeftPressure = Math.max(0, Math.min(1, (COMFORT_SLOTS_LEFT - slotsLeft) / COMFORT_SLOTS_LEFT));
   const pressure = Math.max(budgetPressure, slotsLeftPressure);
   const fgaPenalty = BASE_FGA_PENALTY + pressure * (MAX_FGA_PENALTY - BASE_FGA_PENALTY);
@@ -1355,10 +1375,10 @@ export function pickForAi(
   const lookup = buildCheapestLookup(available);
   const candidates = available.filter((p) => {
     if (!isDraftableDurability(p)) return false;
-    if (!isPickCapLegal(currentFgas, p.fga)) return false;
+    if (!isCapLegal(p.fga)) return false;
     const slotsLeftAfterPick = slotsLeft - 1;
     if (slotsLeftAfterPick > 0) {
-      const capRemainingAfterPick = CAP_LIMIT - (spent + p.fga);
+      const capRemainingAfterPick = capLimit - (spent + p.fga);
       if (!canFillFromLookup(lookup, slotsLeftAfterPick, capRemainingAfterPick, normalizePlayerName(p.playerName), teamCount)) return false;
     }
     return true;
@@ -1369,7 +1389,7 @@ export function pickForAi(
   // fall back to `candidates` whenever the board/cap leaves no reserve-preserving choice.
   const reserveAwareCandidates = candidates.filter((p) => {
     const slotsLeftAfterPick = slotsLeft - 1;
-    const capRemainingAfterPick = CAP_LIMIT - (spent + p.fga);
+    const capRemainingAfterPick = capLimit - (spent + p.fga);
     return capRemainingAfterPick + 1e-9 >= plannedPlayableReserveFga(slotsLeftAfterPick);
   });
   const planningCandidates = reserveAwareCandidates.length > 0 ? reserveAwareCandidates : candidates;
@@ -1490,9 +1510,9 @@ export function pickForAi(
     // playable span here (DNP is a genuinely worse pick than an ordinary cheap one, not just
     // an ignorable one), and only drops that preference in the true last-resort tiers below,
     // where filling the roster at all matters more than which span fills it.
-    const capLegal = available.filter((p) => isPickCapLegal(currentFgas, p.fga) && isDraftableDurability(p));
+    const capLegal = available.filter((p) => isCapLegal(p.fga) && isDraftableDurability(p));
     if (capLegal.length === 0) {
-      const capLegalAnyDurability = available.filter((p) => isPickCapLegal(currentFgas, p.fga));
+      const capLegalAnyDurability = available.filter((p) => isCapLegal(p.fga));
       if (capLegalAnyDurability.length === 0) {
         // Nothing fits under the cap at all anymore — a full (if imperfect) roster beats
         // a permanently unfillable slot, so take the single cheapest player available,
@@ -1520,7 +1540,7 @@ export function pickForAi(
   // overhead to the rounds where the signal actually matters. The earlier 8-man prototype moved
   // this boundary from 7 to 6; because it derives from `ROSTER_SIZE`, the active 9-man format now
   // correctly restores the boundary to 7 while retaining the same "last 2 picks" proportion.
-  const MARGINAL_VALUE_ROSTER_SIZE_CEILING = ROSTER_SIZE - 2;
+  const MARGINAL_VALUE_ROSTER_SIZE_CEILING = rosterSize - 2;
   const baselineStarterValue = roster.length < MARGINAL_VALUE_ROSTER_SIZE_CEILING ? projectedStarterValue(roster) : null;
 
   // 2026-08-08, bench-shot-creator fix (options A+B): measured directly
@@ -1803,7 +1823,7 @@ export function pickForAi(
       );
     });
 
-    const picksIncludingThisOne = ROSTER_SIZE - roster.length;
+    const picksIncludingThisOne = rosterSize - roster.length;
     if (picksIncludingThisOne > 1) {
       const realRotationCandidates = playable.filter((entry) => entry.player.fga >= TRUE_CAP_GLUE_FGA_CEILING);
       if (realRotationCandidates.length > 0) playable = realRotationCandidates;
