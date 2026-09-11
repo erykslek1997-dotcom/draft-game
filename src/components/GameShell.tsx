@@ -296,6 +296,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           onRestart={handleReset}
           pickReactions={pickReactions}
           pickReasoning={pickReasoning}
+          draftSeed={draftState.seed}
         />
       )}
     </>

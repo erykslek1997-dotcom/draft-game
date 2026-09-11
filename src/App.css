@@ -352,6 +352,20 @@
   font-size: 15px;
 }
 
+/* 2026-09-11, "Duel na seedzie" — shown only when `?draftSeed=` is present in the URL (a friend's
+   challenge link), so the shared board reads as intentional rather than a bug. */
+.shared-seed-banner {
+  margin: 16px auto 0;
+  max-width: 420px;
+  padding: 8px 14px;
+  border: 1px solid var(--at-accent-2, var(--accent-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--at-accent-2, var(--accent)) 12%, transparent);
+  color: var(--text-h);
+  font-size: 13px;
+  text-align: center;
+}
+
 button {
   font: inherit;
   cursor: pointer;
@@ -1527,10 +1541,14 @@ select {
    payoff (Share result / Challenge a friend); this screen had no path from seeing a result to
    sending it to the group chat at all. Clipboard-only — no share-sheet/backend dependency, which
    matches "closed friend group who already coordinate outside the app." */
-.results-hero-copy {
+.results-hero-actions {
   grid-column: 1 / -1;
-  justify-self: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 4px;
+}
+.results-hero-copy {
   padding: 7px 14px;
   border: 1px solid var(--accent-border);
   border-radius: 8px;
@@ -1543,6 +1561,15 @@ select {
   transition: background-color .12s ease;
 }
 .results-hero-copy:hover { background: color-mix(in srgb, var(--at-accent) 20%, transparent); }
+/* "Challenge a friend" — 2026-09-11, "Duel na seedzie": same button shape as Copy result, second
+   accent (red, not blue) so the two distinct payoffs (brag about MY score / invite the SAME board)
+   read as visually separate actions, not a repeated control. */
+.results-hero-challenge {
+  border-color: var(--at-accent-2, var(--accent-border));
+  background: color-mix(in srgb, var(--at-accent-2, var(--at-accent)) 12%, transparent);
+  color: var(--at-accent-2, var(--at-accent));
+}
+.results-hero-challenge:hover { background: color-mix(in srgb, var(--at-accent-2, var(--at-accent)) 20%, transparent); }
 @media (max-width: 560px) {
   .results-hero { grid-template-columns: 1fr; }
   .results-hero-stats { justify-content: flex-start; }

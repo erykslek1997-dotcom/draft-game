@@ -78,6 +78,12 @@ interface Props {
   /** Commissioner Mode's per-pick causal-reasoning notes (see `DraftHistory`/`GameShell`) — empty
    * for a normal single-human-team draft. Folded into the same export as everything else here. */
   pickReasoning: Record<number, string>;
+  /** 2026-09-11, "Duel na seedzie" — the uint32 RNG seed this exact draft ran on (`DraftState.seed`,
+   * already logged to the console in dev, already replayable via `?draftSeed=` — see
+   * `GameShell.tsx`'s own `seedFromUrl` docstring). Threaded through here purely so the hero's
+   * "Challenge a friend" button can build a shareable link — no new draft logic, this is the same
+   * seed/replay mechanism that already existed, just surfaced in the UI for the first time. */
+  draftSeed: number;
 }
 
 /** Keyed by roster player id — one reaction per rostered player, set directly on that player's
@@ -188,6 +194,7 @@ function HeroResult({
   overall,
   topOverall,
   titleOdds,
+  draftSeed,
   identity,
   failureMode,
 }: {
@@ -198,12 +205,33 @@ function HeroResult({
   overall: number;
   topOverall: number | null;
   titleOdds: number | null;
+  draftSeed: number;
   identity: string | null;
   failureMode: string | null;
 }) {
   const [copied, setCopied] = useState(false);
+  const [challengeCopied, setChallengeCopied] = useState(false);
   const tier = resultTierLabel(rank, fieldSize);
   const gap = topOverall !== null ? topOverall - overall : null;
+
+  /** 2026-09-11, "Duel na seedzie" — user's own spec: "Ty i znajomy dostajecie DOKŁADNIE tę samą
+   * kolejność picków AI... Zero nowej logiki draftu, tylko UI do 'wygeneruj link z tym seedem,
+   * wyślij znajomemu'." The seed/replay mechanism (`?draftSeed=`, `GameShell.tsx`'s own
+   * `seedFromUrl`) already existed — this just copies a link carrying THIS draft's own seed, so a
+   * friend who opens it and clicks Start Draft gets the identical 16-team AI sequence to react to,
+   * then compares their own Final Power Ranking against this one (manually — no backend, no
+   * automatic comparison, same scope the spec asked for). */
+  async function copyChallengeLink() {
+    const url = new URL(window.location.href);
+    url.search = `?draftSeed=${draftSeed}`;
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setChallengeCopied(true);
+      setTimeout(() => setChallengeCopied(false), 2000);
+    } catch {
+      // Same silent-fail shape as copyResult below — clipboard permission denied/unavailable.
+    }
+  }
 
   async function copyResult() {
     const lines = [
@@ -261,9 +289,19 @@ function HeroResult({
           {failureMode && <span>{failureMode}</span>}
         </p>
       )}
-      <button type="button" className="results-hero-copy" onClick={copyResult}>
-        {copied ? '✓ Copied' : '📋 Copy result'}
-      </button>
+      <div className="results-hero-actions">
+        <button type="button" className="results-hero-copy" onClick={copyResult}>
+          {copied ? '✓ Copied' : '📋 Copy result'}
+        </button>
+        <button
+          type="button"
+          className="results-hero-copy results-hero-challenge"
+          onClick={copyChallengeLink}
+          title="Copies a link that gives a friend the exact same 16-team draft board to react to."
+        >
+          {challengeCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
+        </button>
+      </div>
     </header>
   );
 }
@@ -666,7 +704,7 @@ export function downloadFeedback(
   URL.revokeObjectURL(url);
 }
 
-export default function ResultsScreen({ teams, history, onRestart }: Props) {
+export default function ResultsScreen({ teams, history, onRestart, draftSeed }: Props) {
   // Lookups used inside render loops (matchup opponents, draft-order rows, the bracket tree) —
   // Maps, not repeated `.find` over `teams` / the 9451-span `draftPool`.
   const teamsById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
@@ -766,6 +804,7 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
           overall={heroRanked.breakdown.overall}
           topOverall={ranked[0]?.breakdown.overall ?? null}
           titleOdds={leagueEvalByTeamId.get(heroRanked.team.id)?.championshipProbability ?? null}
+          draftSeed={draftSeed}
           identity={
             heroFit?.inputs.primaryArchetype
               ? heroFit.inputs.primaryArchetype +

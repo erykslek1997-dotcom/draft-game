@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import './App.css';
 // Plain, data-free module (place/mascot string arrays + a shuffle helper, no engine/dataset
 // imports of its own — verified directly, not assumed) — safe to pull into the intro screen's
@@ -54,8 +54,20 @@ function LoadingPanel({ label }: { label: string }) {
   );
 }
 
+/** 2026-09-11, "Duel na seedzie" — read-only mirror of `GameShell.tsx`'s own `seedFromUrl()`, just
+ * for the intro screen's own "you're on a shared board" hint below; the actual replay still only
+ * ever happens inside `GameShell`'s `createDraft` call, this never touches draft state itself. */
+function sharedDraftSeedFromUrl(): number | null {
+  if (typeof window === 'undefined') return null;
+  const raw = new URLSearchParams(window.location.search).get('draftSeed');
+  if (raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n >>> 0 : null;
+}
+
 function App() {
   const [view, setView] = useState<View>('intro');
+  const sharedDraftSeed = useMemo(sharedDraftSeedFromUrl, []);
   // 2026-08-16, user's own ask ("żeby wiedział jaką drużynę ma" — so they can actually recognize
   // their own team): the human's own team used to always get one of the same random "Place
   // Mascot" names as the 15 CPU teams, indistinguishable from them anywhere it's listed (Overview
@@ -88,6 +100,11 @@ function App() {
               players.
             </p>
           </header>
+          {sharedDraftSeed !== null && (
+            <p className="shared-seed-banner">
+              🔗 Duel loaded — Start Draft gives you the exact same 16-team board a friend already played.
+            </p>
+          )}
           <div className="intro-screen">
             <div className="team-name-row">
               <label htmlFor="intro-team-name" className="team-name-label">
