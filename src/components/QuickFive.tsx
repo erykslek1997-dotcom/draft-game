@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { PlayerSpan, Position } from '../data/schema';
+import type { Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
   createQuickDraft,
@@ -13,22 +13,18 @@ import {
   QUICK_ROUNDS,
   type QuickDraftState,
 } from '../engine/quickDraft';
-import { activeDraftPool } from '../engine/draft';
-import { totalFga, TEAM_COUNT } from '../engine/positions';
+import { peakDraftPool } from '../engine/peakDraftPool';
+import { totalFga, TEAM_COUNT, STARTER_SLOTS } from '../engine/positions';
 import { bestPrimaryAssignment } from '../engine/rotation';
-import { scoreLineup, type Lineup, type LineupScore } from '../engine/bestFive';
+import { scoreLineup, WEIGHTED_AXES, WEAK_AXIS_REASON, type Lineup, type LineupScore } from '../engine/bestFive';
 import { allStarCount } from '../engine/allStarLookup';
-import { tierRank, overallTierForSpan, displayTalentForSpan } from '../engine/grades';
+import { tierRank, overallTierForSpan } from '../engine/grades';
+import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { teamCodes, teamLabel } from '../engine/teamNames';
+import { Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
 import DraftLottery from './DraftLottery';
-import {
-  ALL_POSITIONS,
-  groupByPlayer,
-  OverallTierBadge,
-  tierContextFor,
-  naturalPosition,
-  type PlayerGroup,
-} from './DraftBoard';
+import { ALL_POSITIONS } from './DraftBoard';
+import './QuickFive.css';
 
 interface Props {
   humanTeamName?: string;
@@ -46,9 +42,15 @@ type Phase = 'lottery' | 'draft' | 'results';
  * 9-man/100.9-cap shaped (judge-metric columns sized for 9 rounds, championship/matchup features
  * that don't translate to a bare five under a different cap) — reusing them directly would mean
  * either forking huge swaths of them or leaving dead 9-man UI chrome half-visible. This screen
- * reuses the small, genuinely generic pieces instead (`DraftLottery`, `groupByPlayer`/
- * `OverallTierBadge` from DraftBoard.tsx, `scoreLineup`/`bestPrimaryAssignment` from the bare-five
- * scoring path Best Five already validated) and builds its own compact Draft/Results.
+ * reuses the small, genuinely generic pieces instead (`DraftLottery`, `Face`/`ShotChip`/
+ * `ShotsMeter` — shared with Best Five, user's own ask: "podobne kafelki jak w build the best 5" —
+ * `scoreLineup`/`WEAK_AXIS_REASON` from the bare-five scoring path Best Five already validated)
+ * and builds its own compact Draft/Results.
+ *
+ * One card per PLAYER, not per span — user's own steer: "ograniczamy do najlepszego sezonu...
+ * gracz nie wybiera sezonu, tylko gracza." Drafts straight from `peakDraftPool` (one real,
+ * tier-capped-peak span per player), not `draft.ts`'s own multi-span `activeDraftPool` — there is
+ * no span picker anywhere in this mode, by design, not just by omission.
  */
 export default function QuickFive({ humanTeamName, onExit }: Props) {
   const [state, setState] = useState<QuickDraftState>(() => createQuickDraft(humanTeamName));
@@ -126,18 +128,23 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
   );
 }
 
-/** The full candidate universe this quick draft draws from — the same `activeDraftPool` (module-
- * level in `draft.ts`) `quickDraft.ts` itself picks from, so what's rendered here always agrees
- * with what `state.draftedIds` is actually tracking. */
-function poolFor(state: QuickDraftState): PlayerSpan[] {
-  return activeDraftPool.filter((p) => !state.draftedIds.has(p.id));
-}
-
-function careerPosition(g: PlayerGroup): Position {
-  const counts = new Map<Position, number>();
-  for (const span of g.spans) counts.set(span.primaryPosition, (counts.get(span.primaryPosition) ?? 0) + 1);
-  return ALL_POSITIONS.reduce((best, pos) => ((counts.get(pos) ?? 0) > (counts.get(best) ?? 0) ? pos : best), ALL_POSITIONS[0]);
-}
+/**
+ * 2026-09-11, user-reported live ("długi czas ładowania po wciśnięciu play"): the whole candidate
+ * pool's expensive per-player tier lookup (`overallTierForSpan`/`tierContextFor` chain through
+ * several real-data corrections, not cheap — DraftBoard.tsx's own "bardzo wolno" perf bug,
+ * 2026-09-02, was exactly this same trap) used to be recomputed on EVERY pick, because it lived in
+ * a `useMemo` keyed on `state` (which changes every pick, correctly, but only the "which players
+ * are still available" part actually needs to). Built once here, at module scope, over the whole
+ * immutable `peakDraftPool` — same fix shape DraftBoard.tsx's own `enrichedGroups` memo already
+ * uses — so a pick, a search keystroke, or a position-filter click only ever re-runs the CHEAP
+ * filter/sort pass in `filtered` below, never this. One entry per player already (see this file's
+ * own top docstring), so no per-player span-grouping/reduce is needed here at all, unlike
+ * DraftBoard.tsx's own multi-span pool.
+ */
+const allEnrichedOnce = peakDraftPool.map((span) => ({
+  span,
+  tier: overallTierForSpan(tierContextFor(span)),
+}));
 
 function QuickDraftBoard({
   state,
@@ -168,38 +175,36 @@ function QuickDraftBoard({
   autoFinishing: boolean;
   teamIdx: number;
 }) {
-  const allGroups = useMemo(() => groupByPlayer(poolFor(state)), [state]);
-
-  const enriched = useMemo(
-    () =>
-      allGroups.map((g) => {
-        const bestSpan = g.spans.reduce(
-          (best, s) => (displayTalentForSpan(tierContextFor(s)) > displayTalentForSpan(tierContextFor(best)) ? s : best),
-          g.spans[0],
-        );
-        return { ...g, bestSpan };
-      }),
-    [allGroups],
-  );
-
+  // Cheap pass only: drop drafted players, position filter, search box, tier sort — no per-player
+  // tier-lookup call here, that's all already done once in `allEnrichedOnce` above. Re-runs on
+  // every pick AND every keystroke, same as DraftBoard.tsx's own `groups` memo.
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return enriched
-      .filter((g) => (selectedPosition !== 'ALL' ? careerPosition(g) === selectedPosition : true))
-      .filter((g) => g.playerName.toLowerCase().includes(q))
+    return allEnrichedOnce
+      .filter((e) => !state.draftedIds.has(e.span.id))
+      .filter((e) => (selectedPosition !== 'ALL' ? e.span.primaryPosition === selectedPosition : true))
+      .filter((e) => e.span.playerName.toLowerCase().includes(q))
       .sort((a, b) => {
-        const tierDiff =
-          tierRank(overallTierForSpan(tierContextFor(b.bestSpan))) - tierRank(overallTierForSpan(tierContextFor(a.bestSpan)));
+        const tierDiff = tierRank(b.tier) - tierRank(a.tier);
         if (tierDiff !== 0) return tierDiff;
-        return allStarCount(b.playerName) - allStarCount(a.playerName);
+        return allStarCount(b.span.playerName) - allStarCount(a.span.playerName);
       })
       .slice(0, 80);
-  }, [enriched, search, selectedPosition]);
+  }, [state.draftedIds, search, selectedPosition]);
 
   const humanFgas = humanTeam.roster.map((p) => p.fga);
   // Not `capRemaining` from positions.ts — that hardcodes the real 9-man CAP_LIMIT (100.9), wrong
-  // for Szybka 5's own 70-shot cap. Same rounding convention as that function otherwise.
-  const humanCapRemaining = Math.round((QUICK_CAP_LIMIT - totalFga(humanFgas)) * 10) / 10;
+  // for Szybka 5's own 70-shot cap.
+  const humanShotsUsed = totalFga(humanFgas);
+  // 2026-09-11, user-reported live ("nie wiem jakie pozycje mam obstawione" — the panel used to
+  // list picks in draft order with no position label, so you couldn't tell PG/SG/SF/PF/C coverage
+  // at a glance). Same optimal slot search `finalizeQuickRotation`/`QuickResults` already use to
+  // decide "who plays where" for scoring, reused here so the live panel matches what the result
+  // screen will actually grade instead of showing a second, different guess at the lineup.
+  const humanAssignment = useMemo(
+    () => bestPrimaryAssignment(humanTeam.roster).assignment,
+    [humanTeam.roster],
+  );
 
   return (
     <div className="at-card">
@@ -259,6 +264,52 @@ function QuickDraftBoard({
 
       {!canPick && <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>}
 
+      <ShotsMeter used={humanShotsUsed} cap={QUICK_CAP_LIMIT} label="Your shots" />
+
+      {/* 2026-09-11, user-reported live: "ważne żebyśmy mogli zobaczyć własny zespoł bo nie wiem
+          ile mam zabranych rzutów" — the cap number alone didn't show WHICH players it came from.
+          Same Face+ShotChip tile Best Five uses (user's own cross-mode ask), one per starter slot.
+          Keyed by STARTER_SLOTS (not draft order, per the follow-up "nie wiem jakie pozycje mam
+          obstawione" — draft order never told you WHICH position a pick actually covers) so the
+          panel reads as PG/SG/SF/PF/C coverage, matching `humanAssignment`'s own optimal seating —
+          a player picked 3rd can still show up under SF here if that's their best slot. Any drafted
+          player `bestPrimaryAssignment` couldn't seat (5th man beyond a clean 1-per-slot fit) still
+          shows below the grid so a real pick never silently vanishes from view. */}
+      <div className="qf-team-panel">
+        {STARTER_SLOTS.map((slot) => {
+          const p = humanAssignment[slot];
+          return p ? (
+            <div className="qf-team-card" key={slot}>
+              <span className="qf-team-card-slot at-cond">{slot}</span>
+              <Face name={p.playerName} />
+              <span className="qf-team-card-name">{p.playerName}</span>
+              <ShotChip fga={p.fga} cap={QUICK_CAP_LIMIT} />
+            </div>
+          ) : (
+            <div className="qf-team-empty" key={slot}>
+              <span className="qf-team-card-slot at-cond">{slot}</span>
+              <span aria-hidden>?</span>
+            </div>
+          );
+        })}
+      </div>
+      {(() => {
+        const seatedIds = new Set(Object.values(humanAssignment).filter((p): p is (typeof humanTeam.roster)[number] => Boolean(p)).map((p) => p.id));
+        const overflow = humanTeam.roster.filter((p) => !seatedIds.has(p.id));
+        return overflow.length > 0 ? (
+          <div className="qf-team-panel qf-team-panel--overflow">
+            {overflow.map((p) => (
+              <div className="qf-team-card" key={p.id}>
+                <span className="qf-team-card-slot at-cond">EXTRA</span>
+                <Face name={p.playerName} />
+                <span className="qf-team-card-name">{p.playerName}</span>
+                <ShotChip fga={p.fga} cap={QUICK_CAP_LIMIT} />
+              </div>
+            ))}
+          </div>
+        ) : null;
+      })()}
+
       <div className="at-controls-row">
         <input
           className="at-search-input"
@@ -266,9 +317,9 @@ function QuickDraftBoard({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <div className="at-cap-label" style={{ marginLeft: 'auto' }}>
-          Cap remaining: <b>{humanCapRemaining}</b> / {QUICK_CAP_LIMIT} shots
-        </div>
+        <button className="secondary-btn" style={{ marginLeft: 'auto' }} disabled={autoFinishing} onClick={onAutoFinish}>
+          {autoFinishing ? 'Finishing…' : 'Auto-finish'}
+        </button>
       </div>
       <div className="at-controls-row" style={{ marginTop: -4 }}>
         <button className={selectedPosition === 'ALL' ? 'active' : ''} onClick={() => setSelectedPosition('ALL')}>
@@ -279,44 +330,66 @@ function QuickDraftBoard({
             {pos}
           </button>
         ))}
-        <button className="secondary-btn" style={{ marginLeft: 'auto' }} disabled={autoFinishing} onClick={onAutoFinish}>
-          {autoFinishing ? 'Finishing…' : 'Auto-finish'}
-        </button>
       </div>
 
-      <div className="at-draft-groups">
-        {filtered.map((g) => {
-          const legal = canPick && isQuickPickLegal(state, g.bestSpan.id);
+      {/* 2026-09-11, user-reported live ("widok graczy" screenshot, then "może używajmy podobnych
+          kafelków jak w build the best 5? face card + shots i tyle") — replaces the flat
+          DraftBoard-style text row this used to be with the same card-grid shape Best Five's own
+          `.bf-pool-card` uses: a face, a name, and the shot cost, nothing else. */}
+      <div className="qf-pool">
+        {filtered.map(({ span }) => {
+          const legal = canPick && isQuickPickLegal(state, span.id);
+          const position = span.secondaryPositions.length > 0 ? `${span.primaryPosition}/${span.secondaryPositions[0]}` : span.primaryPosition;
           return (
-            <div className="player-group" key={g.playerName}>
-              <div className="pg-summary">
-                <span className="pg-name">{g.playerName}</span>
-                <span className="pos-pill">{naturalPosition(g.playerName)}</span>
-                <span className="pg-tier">
-                  <OverallTierBadge span={g.bestSpan} />
-                  <span className="lbl">{g.bestSpan.fga.toFixed(1)} shots</span>
-                </span>
-                <button
-                  className="at-draft-btn pg-draft"
-                  disabled={!legal}
-                  title={
-                    !canPick
-                      ? `${teamLabel(currentTeam)} is picking…`
-                      : !legal
-                        ? 'Not a legal pick right now — over the 70-shot cap, or your roster is already full.'
-                        : undefined
-                  }
-                  onClick={() => onPick(g.bestSpan.id)}
-                >
-                  Draft
-                </button>
-              </div>
-            </div>
+            <button
+              key={span.id}
+              className="qf-pool-card"
+              disabled={!legal}
+              title={
+                !canPick
+                  ? `${teamLabel(currentTeam)} is picking…`
+                  : !legal
+                    ? 'Not a legal pick right now — over the 70-shot cap, or your roster is already full.'
+                    : span.playerName
+              }
+              onClick={() => onPick(span.id)}
+            >
+              <Face name={span.playerName} size="md" />
+              <span className="qf-pool-name">{shortenName(span.playerName)}</span>
+              <span className="qf-pool-pos">{position}</span>
+              <ShotChip fga={span.fga} cap={QUICK_CAP_LIMIT} />
+            </button>
           );
         })}
       </div>
     </div>
   );
+}
+
+/** Same tier ramp ResultsScreen.tsx's own hero uses for the main draft (module-private there —
+ * duplicated here rather than imported, same "small and self-contained, don't pull a large
+ * lazy-loaded component's module graph into this lean screen" reasoning `quickDraft.ts` already
+ * documents for not reusing `draft.ts` directly). */
+function resultTier(rank: number, fieldSize: number): { label: string; tone: 1 | 2 | 3 | 4 | 5 | 6 } {
+  const pct = rank / fieldSize;
+  if (rank === 1) return { label: 'Dynasty', tone: 6 };
+  if (pct <= 0.2) return { label: 'Contender', tone: 5 };
+  if (pct <= 0.4) return { label: 'Playoff Lock', tone: 4 };
+  if (pct <= 0.6) return { label: 'Play-In Fight', tone: 3 };
+  if (pct <= 0.85) return { label: 'Lottery Team', tone: 2 };
+  if (rank < fieldSize) return { label: 'Full Rebuild', tone: 1 };
+  return { label: 'Wooden Spoon', tone: 1 };
+}
+
+function ordinal(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
 }
 
 function QuickResults({
@@ -332,7 +405,16 @@ function QuickResults({
     return state.teams
       .map((team) => {
         const finalized = finalizeQuickRotation(team);
-        const lineup: Lineup = bestPrimaryAssignment(team.roster).assignment;
+        // Derived from the ALREADY-finalized rotation (not a second, separate
+        // `bestPrimaryAssignment` call) — guarantees the score shown here always matches the same
+        // 5-man assignment the team's own card displays, gap-filled the same way (see
+        // `finalizeQuickRotation`'s own docstring: a drafted 5th player never silently drops out
+        // of its team's score just because the optimal search alone couldn't seat him).
+        const lineup: Lineup = {};
+        for (const [slot, assignments] of Object.entries(finalized.rotation!.slots) as [Position, { playerId: string }[]][]) {
+          const playerId = assignments[0]?.playerId;
+          if (playerId) lineup[slot] = finalized.roster.find((p) => p.id === playerId);
+        }
         const score = scoreLineup(lineup);
         return { team: finalized, score };
       })
@@ -341,17 +423,24 @@ function QuickResults({
 
   const humanRank = ranked.findIndex((r) => r.team.isHuman) + 1;
   const human = ranked[humanRank - 1];
+  const tier = resultTier(humanRank, TEAM_COUNT);
   const barKeys: (keyof LineupScore)[] = ['talent', 'offense', 'defense', 'spacing', 'fit'];
+
+  // 2026-09-11, user-reported live: "brak insightu" — the field/bars alone never explained WHY.
+  // Same weakest-axis reasoning Best Five's own result screen uses (`WEAK_AXIS_REASON`, exported
+  // from bestFive.ts for exactly this reuse), plus the same fit weak-link/notes `scoreLineup`
+  // already computes but nothing here was reading yet.
+  const weakest = [...WEIGHTED_AXES].sort((a, b) => human.score[a.key] - human.score[b.key])[0];
 
   return (
     <div className="at-card bf-result">
-      <div className="bf-grade bf-grade--par">
-        <span className="bf-grade-label at-cond">
-          {humanRank}
-          {ordinal(humanRank)} of {TEAM_COUNT}
+      <div className={`qf-hero qf-hero-t${tier.tone}`}>
+        <span className="qf-hero-rank">
+          {ordinal(humanRank)} of {TEAM_COUNT} — {tier.label}
         </span>
-        <span className="bf-grade-blurb">{teamLabel(human.team)} — {human.score.composite} composite</span>
+        <span className="qf-hero-team">{teamLabel(human.team)} · {human.score.composite} composite</span>
       </div>
+
       <div className="bf-bars">
         {barKeys.map((key) => (
           <div key={key} className="bf-bar-row">
@@ -363,14 +452,27 @@ function QuickResults({
           </div>
         ))}
       </div>
-      <div className="at-legend-row" style={{ marginTop: 16 }}>
+
+      <div className="qf-why">
+        <p>
+          Your weakest axis is <b>{weakest.label} ({Math.round(human.score[weakest.key])})</b>. {WEAK_AXIS_REASON[weakest.key](human.score)}
+        </p>
+        {human.score.weakLink && (
+          <p>
+            Defensively, <b>{human.score.weakLink}</b> is the softest spot — an opponent will attack him every possession.
+          </p>
+        )}
+        {human.score.notes[0] && <p>{human.score.notes[0]}</p>}
+      </div>
+
+      <div className="at-legend-row" style={{ marginTop: 4 }}>
         <p className="at-caption" style={{ marginTop: 0 }}>
           Field
         </p>
       </div>
-      <div className="at-tag-legend">
+      <div className="qf-field">
         {ranked.map((r, i) => (
-          <div key={r.team.id} className={`historical-challenge-card ${r.team.isHuman ? 'is-complete' : ''}`}>
+          <div key={r.team.id} className={`qf-field-card ${r.team.isHuman ? 'qf-field-card--you' : ''}`}>
             <strong>
               {i + 1}. {teamCodeByTeamId.get(r.team.id)} {r.team.isHuman && '(You)'}
             </strong>
@@ -378,6 +480,7 @@ function QuickResults({
           </div>
         ))}
       </div>
+
       <div className="bf-submit-row bf-result-actions">
         <button className="at-draft-btn bf-submit" onClick={onExit}>
           Exit
@@ -385,10 +488,4 @@ function QuickResults({
       </div>
     </div>
   );
-}
-
-function ordinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return s[(v - 20) % 10] ?? s[v] ?? s[0];
 }

@@ -36,76 +36,11 @@
   font-style: italic;
 }
 
-/* ---- shots-cost twist, 2026-09-11 — same visual language as the draft's own `.at-cap-meter`/
-   `.at-cap-track`/`.at-cap-fill` (DraftBoard.tsx), just BF-scoped since this screen has no draft
-   engine dependency to share that markup with directly. */
-.bf-shots-meter {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 14px;
-}
-.bf-shots-label {
-  font-size: 12px;
-  color: var(--at-ink-soft);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.bf-shots-label b {
-  color: var(--at-ink);
-}
-.bf-shots-meter--over .bf-shots-label,
-.bf-shots-meter--over .bf-shots-label b {
-  color: var(--danger, #e06a6a);
-}
-.bf-shots-track {
-  flex: 1;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--at-line);
-  overflow: hidden;
-}
-.bf-shots-fill {
-  height: 100%;
-  background: var(--at-accent);
-  border-radius: 999px;
-}
-.bf-shots-meter--over .bf-shots-fill {
-  background: var(--danger, #e06a6a);
-}
-
-/* ---- face ---- */
-.bf-face {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--at-accent) 22%, var(--at-paper));
-  color: var(--at-ink);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.bf-face img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top center;
-}
-.bf-face--sm {
-  width: 26px;
-  height: 26px;
-  font-size: 9.5px;
-}
-.bf-face--md {
-  width: 40px;
-  height: 40px;
-  font-size: 13px;
-}
-.bf-face--empty {
-  background: color-mix(in srgb, var(--at-ink) 8%, transparent);
-}
+/* ---- shots-cost twist + face avatar: moved to `./ShotChip.css` (imported by ShotChip.tsx itself)
+   2026-09-11, once QuickFive.tsx started sharing `ShotChip`/`ShotsMeter`/`Face` too — this file is
+   a separate lazy chunk QuickFive.tsx never loads, so the rules living only here meant those
+   components rendered unstyled the first time Szybka 5 was opened without visiting Best Five
+   first. See ShotChip.css for `.bf-shots-meter`/`.bf-shot-chip`/`.bf-face` and their sub-rules. */
 
 /* ---- season badge (which span of a player you're getting — load-bearing info) ---- */
 .bf-season {
@@ -255,6 +190,16 @@
   font-size: 9.5px;
   color: var(--at-ink-faint);
 }
+/* 2026-09-11, user-reported live ("sezon zwykły font i najbardziej widoczny, później
+   statystyki") — plain (un-badged) and the biggest text on the card, so the season reads as the
+   pick's headline instead of `.bf-season`'s boxed-tag treatment elsewhere in the app. */
+.bf-pool-season {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--at-ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
 .bf-pool-box {
   font-size: 10.5px;
   color: var(--at-ink-soft);
@@ -351,49 +296,10 @@
   color: var(--at-ink-faint);
 }
 
-/* ---- component bars ---- */
-.bf-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  margin-bottom: 16px;
-}
-.bf-bar-row {
-  display: grid;
-  grid-template-columns: 64px 1fr 34px;
-  align-items: center;
-  gap: 10px;
-}
-.bf-bar-label {
-  font-size: 11px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--at-ink-faint);
-}
-.bf-bar-track {
-  height: 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--at-ink) 10%, transparent);
-  overflow: hidden;
-}
-.bf-bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--at-accent);
-}
-.bf-bar-val {
-  font-size: 12px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  color: var(--at-ink-soft);
-}
-.bf-bar-row--context {
-  opacity: 0.62;
-}
-.bf-bar-row--context .bf-bar-fill {
-  background: var(--at-ink-faint);
-}
+/* ---- component bars: moved to `./ShotChip.css` 2026-09-11 — QuickResults (QuickFive.tsx) reuses
+   these same classes for its own 5-axis bars, and hit the identical lazy-chunk colocation bug the
+   Face/ShotChip/ShotsMeter move already fixed (rendered as plain unstyled text, no track/fill —
+   "TALENT84" with no bar at all). See ShotChip.css for `.bf-bars`/`.bf-bar-row`/`.bf-bar-fill` etc. */
 
 .bf-weights {
   grid-column: 1 / -1;
@@ -463,6 +369,11 @@
 }
 .bf-why-line b {
   color: var(--at-ink);
+}
+.bf-why-lead {
+  font-weight: 600;
+  color: var(--at-ink);
+  font-size: 13.5px;
 }
 
 .bf-result-actions {

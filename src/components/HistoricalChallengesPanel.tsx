@@ -15,10 +15,21 @@ export default function HistoricalChallengesPanel({ team, breakdown, fit, season
   return (
     <details className="result-accordion-section historical-challenges-panel">
       <summary>Historical challenges — {completed}/{challenges.length} completed</summary>
+      {/* 2026-09-11, user-reported live ("dobrze by było gdyby wszystkie kafelki się nie
+          rozwijały, można tylko to co udało się zrobić") — every card used to dump its full
+          condition-by-condition breakdown unconditionally, completed or not, so an early attempt
+          (0-1/7 completed, the common case) read as a wall of red ✕'s. Each card is now its own
+          `<details>`, open by default only when actually completed — the achievement is worth
+          showing off, an in-progress attempt collapses to just its title + %, still one click
+          away from the same detail. */}
       <div className="historical-challenge-grid">
         {challenges.map((challenge) => (
-          <article key={challenge.id} className={`historical-challenge-card ${challenge.completed ? 'is-complete' : ''}`}>
-            <strong>{challenge.completed ? '✓' : `${challenge.progress}%`} {challenge.title}</strong>
+          <details
+            key={challenge.id}
+            className={`historical-challenge-card ${challenge.completed ? 'is-complete' : ''}`}
+            open={challenge.completed}
+          >
+            <summary>{challenge.completed ? '✓' : `${challenge.progress}%`} {challenge.title}</summary>
             <span>{challenge.inspiration}</span>
             <ul>
               {challenge.conditions.map((entry) => (
@@ -28,7 +39,7 @@ export default function HistoricalChallengesPanel({ team, breakdown, fit, season
               ))}
             </ul>
             <small>Reward: {challenge.bonus}</small>
-          </article>
+          </details>
         ))}
       </div>
     </details>

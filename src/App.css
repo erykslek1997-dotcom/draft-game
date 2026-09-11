@@ -67,6 +67,23 @@
 }
 .matchup-detail-heading strong { color: var(--text); }
 .matchup-detail-margin { color: var(--muted); }
+/* 2026-09-11, user-reported live ("po rozwinięciu nie można zamknąć") — an explicit close control,
+   pushed to the row's end regardless of how much the heading's other flex-wrap items take up. */
+.matchup-detail-close {
+  margin-left: auto;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  line-height: 1;
+  cursor: pointer;
+}
+.matchup-detail-close:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
 .matchup-detail-explanation { margin: 4px 0 9px; color: var(--text); }
 .matchup-detail-grid {
   display: grid;
@@ -139,7 +156,25 @@
   display: block;
   margin-top: 0.3rem;
 }
-.historical-challenge-card strong { font-size: 0.95rem; }
+/* Each card is its own `<details>` now (see HistoricalChallengesPanel.tsx) — the summary carries
+   the same bold title treatment `strong` used to, just as a real disclosure widget instead of
+   static text, with the browser's default marker swapped for a rotating chevron. */
+.historical-challenge-card > summary {
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+.historical-challenge-card > summary::-webkit-details-marker { display: none; }
+.historical-challenge-card > summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 5px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  transition: transform 0.12s;
+}
+.historical-challenge-card[open] > summary::before { transform: rotate(90deg); }
 .historical-challenge-card ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
 
 .condition-met { color: #79c99a; }
@@ -710,37 +745,105 @@ select {
   margin: 16px 0;
 }
 
-/* 2026-08-19, user-reported ("still don't like how rotation looks") — replaces the card-per-
-   position grid this used to be. Confirmed via direct question: match the Team roster table's
-   own row-based design one-for-one (`.at-roster-table`, reused below) instead of a second,
-   inconsistent visual language sitting right underneath it on the same tab. */
-.at-rotation-table {
-  margin-bottom: 20px;
+/* 2026-09-11, user-reported live ("głębsza przebudowa", "brzydko to wygląda") — replaces the
+   2026-08-19 table rebuild (which itself replaced an earlier card-per-position grid). That table
+   matched the Team roster table's row shape, but its `<select>`/`<input type=number>` were bare,
+   unstyled native form chrome — the one surface left in the app that didn't share the Face-avatar
+   + colored-pill language Quick Five/Best Five/the Draft tab's own team strip all use. Real cards
+   again, but built from that same shared language this time (see RotationBuilder.tsx's own JSX
+   comment for the full reasoning), with the native controls heavily reskinned rather than
+   replaced — same real `<select>`/`<input>` underneath, unchanged keyboard/a11y behavior. */
+.rotation-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 20px;
 }
-/* The merged position cell (`rowSpan` across a starter + its backups) needs its content pinned to
-   the top of that taller cell, and a real background/border so a multi-row group still reads as
-   one unit even though the position label itself only appears once. */
-.at-rotation-pos-cell {
-  vertical-align: top;
-  background: var(--at-pill, var(--bg));
-  border-right: 1px solid var(--at-line, var(--border));
-  white-space: nowrap;
+.rotation-card {
+  border: 1px solid var(--at-line, var(--border));
+  border-radius: 10px;
+  padding: 10px 12px 12px;
+  background: var(--at-paper, var(--bg));
 }
-.at-rotation-pos-cell .pos-pill {
-  display: block;
+.rotation-card--short {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--at-line, var(--border)));
+}
+.rotation-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 4px;
 }
-/* A clear rule between one position's group and the next — the position cell's own rowSpan
-   already separates them structurally, but a first-row-of-group border makes that boundary
-   visible at a glance too, the same way the roster table's own row borders already read. */
-.at-rotation-table tr.at-rotation-group-start td {
-  border-top: 1px solid var(--at-line, var(--border));
+.rotation-card-pos {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--at-accent, var(--accent));
+  min-width: 26px;
 }
-.at-rotation-table select {
+.rotation-card-minutes-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--at-line, var(--border));
+  overflow: hidden;
+}
+.rotation-card-minutes-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--at-accent, var(--accent));
+}
+.rotation-card--short .rotation-card-minutes-fill { background: var(--danger); }
+.rotation-card-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px dashed color-mix(in srgb, var(--at-line, var(--border)) 70%, transparent);
+}
+.rotation-card-row:first-of-type { border-top: none; }
+.rotation-card-row-main {
+  flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.at-rotation-table input[type='number'] {
-  width: 56px;
+.rotation-select {
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--at-line, var(--border));
+  background: var(--at-pill, var(--bg));
+  color: var(--at-pill-ink, var(--text));
+}
+.rotation-select:focus-visible { outline: 2px solid var(--at-accent, var(--accent)); outline-offset: -1px; }
+.rotation-card-row-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rotation-minutes-input {
+  width: 48px;
+  flex: none;
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--at-line, var(--border));
+  background: var(--at-pill, var(--bg));
+  color: var(--text);
+}
+.rotation-minutes-input:disabled { opacity: 0.4; }
+.rotation-minutes-input.minutes-warning { border-color: #f5a623; outline-color: #f5a623; }
+@media (max-width: 480px) {
+  .rotation-card-row { flex-wrap: wrap; }
+  .rotation-card-row-main { flex-basis: 100%; order: -1; }
 }
 
 /* 2026-08-19, user's explicit ask: real per-player value context right where a rotation decision
@@ -764,7 +867,6 @@ select {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: 4px 12px;
   padding: 8px 4px;
   border-bottom: 1px dashed var(--border);
@@ -789,6 +891,10 @@ select {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  /* 2026-09-11: Face avatar added as the row's own leading element (RotationBuilder.tsx) — this
+     does what the row's old `justify-content: space-between` did with exactly 2 children, now
+     that there are 3 (Face, name, meta). */
+  margin-left: auto;
 }
 
 .minutes-ok {
@@ -1608,6 +1714,105 @@ select {
   transition: background-color .12s ease;
 }
 .results-hero-copy:hover { background: color-mix(in srgb, var(--at-accent) 20%, transparent); }
+
+/* 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
+   ekran z naszymi wynikami?") — a real preview card instead of a blind clipboard copy. Reuses the
+   hero's own `.results-hero-tier-t{N}` tone classes so the tier pill reads identically here. */
+.share-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+.share-modal-card {
+  position: relative;
+  width: min(380px, 100%);
+  background: var(--at-paper-raised, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+.share-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+}
+.share-modal-close:hover { color: var(--text); border-color: var(--muted); }
+.share-modal-team {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.share-modal-rank {
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+.share-modal-rank i {
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 4px;
+}
+.share-modal-tier {
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.share-modal-stats {
+  display: flex;
+  gap: 22px;
+  margin: 10px 0 2px;
+}
+.share-modal-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.share-modal-stat span {
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.share-modal-stat b {
+  font-size: 22px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.share-modal-gap, .share-modal-identity {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0;
+}
+.share-modal-identity b { color: var(--text); }
+.share-modal-copy {
+  margin-top: 12px;
+  width: 100%;
+}
 /* "Challenge a friend" — 2026-09-11, "Duel na seedzie": same button shape as Copy result, second
    accent (red, not blue) so the two distinct payoffs (brag about MY score / invite the SAME board)
    read as visually separate actions, not a repeated control. */
@@ -1648,12 +1853,11 @@ select {
 .score-chip-value {
   font-weight: 700;
 }
-.score-t1 { background: var(--at-t1); color: var(--at-t1-ink); }
-.score-t2 { background: var(--at-t2); color: var(--at-t2-ink); }
-.score-t3 { background: var(--at-t3); color: var(--at-t3-ink); }
-.score-t4 { background: var(--at-t4); color: var(--at-t4-ink); }
-.score-t5 { background: var(--at-t5); color: var(--at-t5-ink); }
-.score-t6 { background: var(--at-t6); color: var(--at-t6-ink); font-weight: 700; }
+/* 2026-09-11: `.score-chip`'s background/border-bottom moved to an inline continuous red→green
+   scale computed in `ScoreChip` itself (ResultsScreen.tsx's own `qualityColor`) — see that
+   component's docstring for why the discrete `score-t1..6` bands it used to read (and
+   `results-hero-overall.score-t1..6` below, which is unrelated and still uses them) are gone
+   from here specifically. */
 
 /* 2026-09-09: the seven sub-axis chips sat in a narrow blue band (a 48 and an 80 were three shades
    apart and read as "all the same"). In the expanded card they get a bit more room, the value in
@@ -1669,10 +1873,7 @@ select {
   font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
-.subscores .score-chip.score-t1, .subscores .score-chip.score-t2 { border-bottom-color: var(--at-accent-2); }
-.subscores .score-chip.score-t3 { border-bottom-color: #c58f3c; }
-.subscores .score-chip.score-t4 { border-bottom-color: #7fae62; }
-.subscores .score-chip.score-t5, .subscores .score-chip.score-t6 { border-bottom-color: #6fd39a; }
+/* border-bottom-color itself now comes from `ScoreChip`'s own inline `qualityColor` style. */
 
 .team-result {
   border: 1px solid var(--border);
@@ -1875,6 +2076,33 @@ select {
   gap: 5px 16px;
   margin: 8px 0 4px;
 }
+/* 2026-09-11, user-reported live ("ofensywne statystyki po lewej, defensywne po prawej") — two
+   explicit columns (offense/defense), not one auto-flowing grid whose row-major fill mixed them
+   by accident. */
+.analysis-bars-split {
+  display: flex;
+  gap: 5px 20px;
+  margin: 8px 0 2px;
+}
+.analysis-bars-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.analysis-bars-col-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+  margin-bottom: 1px;
+}
+.analysis-bars-full { margin: 6px 0 4px; }
+@media (max-width: 620px) {
+  .analysis-bars-split { flex-direction: column; gap: 10px; }
+}
 .metric-bar {
   display: grid;
   grid-template-columns: 92px 1fr 26px;
@@ -1896,10 +2124,8 @@ select {
   font-weight: 700;
   color: var(--at-ink);
 }
-.metric-t1, .metric-t2 { background: var(--at-accent-2); }
-.metric-t3 { background: #c58f3c; }
-.metric-t4 { background: #7fae62; }
-.metric-t5, .metric-t6 { background: #6fd39a; }
+/* 2026-09-11: `.metric-bar-fill`'s color moved to an inline continuous scale (`qualityColor` in
+   ResultsScreen.tsx) — see `ScoreChip`'s own docstring, same fix for the same reason. */
 
 .analysis-raw {
   margin-top: 6px;
@@ -2028,6 +2254,13 @@ select {
   border-color: color-mix(in srgb, var(--at-ink) 25%, transparent);
   background: color-mix(in srgb, var(--at-ink) 8%, transparent);
   color: var(--at-ink-soft);
+}
+/* 2026-09-11: the risk line that used to live as a separate "Identity:" paragraph down in "Team
+   analysis" — moved next to the chips it actually describes (see the chip-row's own JSX comment). */
+.identity-risk {
+  align-self: center;
+  font-size: 11.5px;
+  color: var(--at-ink-faint);
 }
 
 .fit-v2-shadow-panel {
@@ -2249,11 +2482,17 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   font-weight: 400;
 }
 @media (max-width: 620px) {
+  /* 2026-09-11, user-reported live ("te dwie minuty na C tak mało estetycznie wyglądają") — this
+     row (minutes + the "(N total)" annotation + box score + shooting split) used to scroll
+     sideways at narrow widths, `white-space: nowrap`'d into a single line with no visible scroll
+     affordance — a short annotation like "(34 total)" could sit just past the fold, invisible
+     unless you knew to scroll for it. Wraps onto a second line instead: nothing gets hidden. */
   .rotation-slot-entries li { align-items: flex-start; }
   .player-row-meta {
     width: 100%;
-    overflow-x: auto;
-    padding-bottom: 1px;
+    white-space: normal;
+    flex-wrap: wrap;
+    row-gap: 4px;
   }
 }
 
@@ -2731,11 +2970,21 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   border-radius: 5px; background: var(--at-pill); color: var(--at-ink-soft);
   font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
+/* 2026-09-11, user-reported live ("takie dwa kwadraty wyglądają bardzo archaicznie" — Szybka 5's
+   overview grid, where this chip sits right next to the equally-badge-shaped `.at-lottery-you-tag`
+   on the human's row): was a flat solid rectangle, radius 6px — read as dated next to everything
+   else on the board being a pill or a circle. Full pill shape + a soft gradient/sheen give it the
+   same rounded, slightly-dimensional feel as `.at-lottery-you-tag` and the shot chips, instead of
+   a flat corporate-badge rectangle. Shared with DraftBoard.tsx's own overview grid and
+   DraftLottery.tsx, so the uplift applies everywhere this chip appears, not just Szybka 5. */
 .at-team-chip {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 30px; height: 22px; padding: 0 6px; margin-right: 8px;
-  border-radius: 6px; background: var(--at-accent); color: var(--at-accent-ink);
-  font-size: 10.5px; font-weight: 800; letter-spacing: 0.02em;
+  min-width: 34px; height: 22px; padding: 0 7px; margin-right: 8px;
+  border-radius: 999px;
+  background: linear-gradient(155deg, color-mix(in srgb, white 16%, var(--at-accent)), var(--at-accent) 70%);
+  color: var(--at-accent-ink);
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.03em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 0, 0, 0.22);
 }
 
 /* 2026-08-16, user's own report ("czcionka mi się tutaj nie podoba"): this used to pull in a
@@ -2800,6 +3049,36 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 }
 .at-panel-title { font-size: 30px; margin: -4px 0 14px; }
 
+/* 2026-09-11, user-reported live ("można dodać mała informację o graczach jakich posiadamy, np
+   face-cardy") — a compact strip of the human's own drafted picks, right on the Draft tab (see
+   this block's own JSX comment in DraftBoard.tsx). Same pill shape `.qf-team-card` (QuickFive.css)
+   already uses for the identical need there — kept as its own rule here rather than importing that
+   file, since QuickFive.css is a separate lazy chunk this screen has no other reason to load. */
+.at-own-team-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.at-own-team-pip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--at-line);
+  border-radius: 999px;
+  background: var(--at-paper);
+  min-width: 0;
+}
+.at-own-team-pip-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--at-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
 .at-controls-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 
 .at-search-input {
@@ -2903,12 +3182,9 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   min-width: 26px; height: 20px; padding: 0 6px; border-radius: 999px;
   font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
-.at-grade-badge.at-t1 { background: var(--at-t1); color: var(--at-t1-ink); }
-.at-grade-badge.at-t2 { background: var(--at-t2); color: var(--at-t2-ink); }
-.at-grade-badge.at-t3 { background: var(--at-t3); color: var(--at-t3-ink); }
-.at-grade-badge.at-t4 { background: var(--at-t4); color: var(--at-t4-ink); }
-.at-grade-badge.at-t5 { background: var(--at-t5); color: var(--at-t5-ink); }
-.at-grade-badge.at-t6 { background: var(--at-t6); color: var(--at-t6-ink); }
+/* 2026-09-11: grade coloring moved to an inline red→green scale computed in `AtGrade` itself
+   (DraftBoard.tsx) — see that component's own docstring for why it split off the shared
+   `at-t1..at-t6` tone ramp. */
 
 /* ---- player-mode expanded-span Tag badge — 2026-08-16, user's own ask to surface TAL + a named
    tag ("np. greatest peak") in the player-mode Draft tab's expanded per-span table, which used
@@ -3267,8 +3543,17 @@ table.at-ov-grid tbody td.at-onclock::before {
 .at-cap-meter { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
 .at-cap-track { flex: 1; min-width: 160px; height: 9px; border-radius: 999px; background: var(--at-line); overflow: hidden; }
 .at-cap-fill { height: 100%; background: var(--at-accent); border-radius: 999px; }
-.at-cap-label { font-size: 12px; color: var(--at-ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.at-cap-label {
+  font-size: 12px; color: var(--at-ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap;
+  /* 2026-09-11, user-reported live ("pasek wypełniania się capu") — was text-only; now a flex row
+     so the Draft tab's own inline `.at-cap-track--inline` bar sits right next to the number. */
+  display: flex; align-items: center; gap: 8px;
+}
 .at-cap-label b { color: var(--at-ink); }
+/* Narrower, non-flexing variant of `.at-cap-track` for the Draft tab's cramped controls row —
+   Team's own meter has a whole row to itself and can flex to fill it; this one shares space with
+   the search box and the FGA filter. */
+.at-cap-track--inline { width: 90px; min-width: 0; flex: none; }
 .at-cap-meter--over .at-cap-label,
 .at-cap-meter--over .at-cap-label b { color: var(--danger); }
 .at-cap-meter--over .at-cap-fill { background: var(--danger); }

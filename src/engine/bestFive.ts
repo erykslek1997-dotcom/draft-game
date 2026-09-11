@@ -458,7 +458,11 @@ export const AXIS_GLOSSARY: { label: string; text: string }[] = [
   { label: 'Fit', text: 'How the pieces complement each other: position balance, shot-creation overlap, defensive coverage, spacing gaps. Five stars who all need the ball fit badly.' },
 ];
 
-const WEAK_AXIS_REASON: Record<WeightedAxis, (s: LineupScore) => string> = {
+/** 2026-09-11: exported (was module-private) so `QuickFive.tsx`'s own results "why" section can
+ * reuse the exact same weakest-axis reasoning instead of a near-duplicate — it's generic over any
+ * `LineupScore`, not actually Best-Five-specific in what it says, so reuse keeps the voice
+ * consistent between both bare-five modes rather than drifting. */
+export const WEAK_AXIS_REASON: Record<WeightedAxis, (s: LineupScore) => string> = {
   talent: () => 'The five just don’t have the raw individual quality — better players were on the board.',
   offense: (s) =>
     s.spacing < 70

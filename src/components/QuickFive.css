@@ -1,0 +1,172 @@
+/* Szybka 5 — screen-specific chrome. Sits inside `.at-shell` (dark broadcast-board tokens). */
+
+.qf-team-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.qf-team-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--at-line);
+  border-radius: 999px;
+  background: var(--at-paper);
+  min-width: 0;
+}
+.qf-team-card-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--at-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+/* 2026-09-11, user-reported live ("nie wiem jakie pozycje mam obstawione"): a small leading
+   badge for the starter slot (PG/SG/SF/PF/C) this card fills — matches `.bf-slot-pos`'s own
+   "faint label, lights up once filled" treatment from Best Five's slot row. */
+.qf-team-card-slot {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--at-accent);
+  min-width: 20px;
+}
+.qf-team-empty .qf-team-card-slot {
+  color: var(--at-ink-faint);
+}
+.qf-team-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border: 1px dashed var(--at-line);
+  border-radius: 999px;
+  color: var(--at-ink-faint);
+  font-size: 13px;
+}
+.qf-team-panel--overflow {
+  margin-top: -6px;
+}
+
+/* ---- draft picker, card grid (user's own ask: "podobne kafelki jak w build the best 5? face
+   card + shots i tyle") ---- */
+.qf-pool {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+.qf-pool-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px 9px;
+  border: 1px solid var(--at-line);
+  border-radius: 8px;
+  background: var(--at-paper);
+  color: var(--at-ink-soft);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s, background 0.12s;
+}
+.qf-pool-card:hover:not(:disabled) {
+  border-color: var(--at-ink-faint);
+  background: color-mix(in srgb, var(--at-accent) 6%, var(--at-paper));
+}
+.qf-pool-card:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.qf-pool-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--at-ink);
+}
+.qf-pool-pos {
+  font-size: 9.5px;
+  color: var(--at-ink-faint);
+}
+
+/* ---- results: rank/tier header, same tone ramp ResultsScreen.tsx's own hero uses ---- */
+.qf-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--at-line);
+  margin-bottom: 16px;
+}
+.qf-hero-rank {
+  font-family: var(--at-cond-font, inherit);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.qf-hero-team {
+  font-size: 13px;
+  color: var(--at-ink-soft);
+}
+.qf-hero-t1 { background: color-mix(in srgb, var(--at-t1) 55%, var(--at-paper-raised)); border-color: var(--at-t1); }
+.qf-hero-t2 { background: color-mix(in srgb, var(--at-t2) 55%, var(--at-paper-raised)); border-color: var(--at-t2); }
+.qf-hero-t3 { background: color-mix(in srgb, var(--at-t3) 55%, var(--at-paper-raised)); border-color: var(--at-t3); }
+.qf-hero-t4 { background: color-mix(in srgb, var(--at-t4) 55%, var(--at-paper-raised)); border-color: var(--at-t4); }
+.qf-hero-t5 { background: color-mix(in srgb, var(--at-t5) 55%, var(--at-paper-raised)); border-color: var(--at-t5); }
+.qf-hero-t6 { background: color-mix(in srgb, var(--at-t6) 55%, var(--at-paper-raised)); border-color: var(--at-t6); }
+.qf-hero-t1 .qf-hero-rank { color: var(--at-t1-ink); }
+.qf-hero-t2 .qf-hero-rank { color: var(--at-t2-ink); }
+.qf-hero-t3 .qf-hero-rank { color: var(--at-t3-ink); }
+.qf-hero-t4 .qf-hero-rank { color: var(--at-t4-ink); }
+.qf-hero-t5 .qf-hero-rank { color: var(--at-t5-ink); }
+.qf-hero-t6 .qf-hero-rank { color: var(--at-t6-ink); }
+
+.qf-why {
+  margin: 4px 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--at-ink) 5%, transparent);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--at-ink-soft);
+}
+.qf-why b { color: var(--at-ink); }
+.qf-why p { margin: 0 0 6px; }
+.qf-why p:last-child { margin-bottom: 0; }
+
+/* ---- field / leaderboard — a real wrapping grid, NOT `.at-tag-legend` (that's `flex-wrap:
+   nowrap`, built for a small fixed-count legend — reusing it here silently clipped teams 11-16
+   off-screen with no scroll, the exact "nie widać wszystkich zespołów" bug). ---- */
+.qf-field {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+.qf-field-card {
+  padding: 8px 10px;
+  border: 1px solid var(--at-line);
+  border-radius: 8px;
+  background: var(--at-paper);
+}
+.qf-field-card strong {
+  display: block;
+  font-size: 12px;
+  color: var(--at-ink);
+  margin-bottom: 2px;
+}
+.qf-field-card span {
+  font-size: 11px;
+  color: var(--at-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.qf-field-card--you {
+  border-color: var(--at-accent-2);
+  background: color-mix(in srgb, var(--at-accent-2) 16%, var(--at-paper));
+}
+.qf-field-card--you strong { color: var(--at-ink); }

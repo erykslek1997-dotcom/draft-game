@@ -1,0 +1,161 @@
+/* Shared between BestFive.tsx and QuickFive.tsx — imported by ShotChip.tsx itself so any consumer
+   of the components gets the styling for free, rather than each screen needing to remember to
+   import it separately (that exact omission was a real bug here: this CSS used to live only in
+   BestFive.css, which QuickFive.tsx never imports — so Face/ShotChip/ShotsMeter rendered as
+   unstyled plain text/img the first time anyone opened Szybka 5 without visiting Best Five first). */
+
+/* ---- shots meter — same visual language as the draft's own `.at-cap-meter`/`.at-cap-track`/
+   `.at-cap-fill` (DraftBoard.tsx), just scoped here since neither bare-five screen shares that
+   markup directly. */
+.bf-shots-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--at-accent) 8%, transparent);
+}
+.bf-shots-label {
+  /* 2026-09-11, user-reported live twice ("mało widoczna liczba shots per team", "cap bardziej
+     widoczny") — was 12px/ink-soft, easy to miss next to the search box. */
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--at-ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bf-shots-label b {
+  font-size: 16px;
+  color: var(--at-ink);
+}
+.bf-shots-meter--over .bf-shots-label,
+.bf-shots-meter--over .bf-shots-label b {
+  color: var(--danger, #e06a6a);
+}
+.bf-shots-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--at-line);
+  overflow: hidden;
+}
+.bf-shots-fill {
+  /* 2026-09-11, user-reported live twice ("pasek nie wypełnia się" / "i pasek nadal się nie
+     wypełnia") — this is a DIFFERENT bug than `.bf-bar-row--context`'s earlier contrast fix: this
+     span was never given `display: block`, so as a plain inline element its `width: N%` (set
+     inline by ShotsMeter) never applied at all — computed layout was a real 0x0 box, not just a
+     low-contrast one. Confirmed live: `getBoundingClientRect()` returned width 0 despite the
+     inline `style="width: 73.5%"` being present in the DOM. */
+  display: block;
+  height: 100%;
+  background: var(--at-accent);
+  border-radius: 999px;
+}
+.bf-shots-meter--over .bf-shots-fill {
+  background: var(--danger, #e06a6a);
+}
+
+/* 2026-09-11, user-reported live: "mało widoczna liczba shots u gracza" + "zbyt mało koloru" — a
+   candidate's own shot cost used to be plain 9.5px/ink-faint text, easy to miss and monochrome.
+   Cap-relative color (cheap/mid/pricey — see `shotBudgetTier`'s own docstring for why this is
+   safe to color without leaking the hidden talent judgment "blind scouting" hides). */
+.bf-shot-chip {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bf-shot-chip--cheap { background: color-mix(in srgb, #4fc98b 22%, transparent); color: #4fc98b; }
+/* 2026-09-11, user-reported live ("ten szary przy 16 shots można dać na żółty") — the mid tier
+   used to reuse the plain ink-soft grey, which read as "no signal" next to the green/red ends of
+   the same scale. Amber keeps the cheap→mid→pricey ramp reading as one continuous scale instead
+   of green/nothing/red. */
+.bf-shot-chip--mid { background: color-mix(in srgb, #e0b23d 22%, transparent); color: #e0b23d; }
+.bf-shot-chip--pricey { background: color-mix(in srgb, var(--at-brand-red) 24%, transparent); color: #e8859a; }
+
+/* ---- component bars — shared by BestFive.tsx's own result screen and QuickFive.tsx's
+   `QuickResults` (both score on the same 5-axis talent/offense/defense/spacing/fit shape). ---- */
+.bf-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+.bf-bar-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 34px;
+  align-items: center;
+  gap: 10px;
+}
+.bf-bar-label {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+.bf-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--at-ink) 10%, transparent);
+  overflow: hidden;
+}
+.bf-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--at-accent);
+}
+.bf-bar-val {
+  font-size: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--at-ink-soft);
+}
+/* 2026-09-11, user-reported live: "pasek nie wypełnia się" — this bar DID fill, but at
+   `--at-ink-faint` (already a low-contrast muted gray) on the track's own near-black background it
+   read as empty in practice, not just "de-emphasized." A muted BLUE (not gray) keeps the "this one
+   is diagnostic, not a scored axis" distinction (still visibly duller than the other bars' full
+   `--at-accent`) while actually being visible against the dark track. */
+.bf-bar-row--context {
+  opacity: 0.78;
+}
+.bf-bar-row--context .bf-bar-fill {
+  background: color-mix(in srgb, var(--at-accent) 45%, var(--at-ink-faint));
+}
+
+/* ---- face ---- */
+.bf-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--at-accent) 22%, var(--at-paper));
+  color: var(--at-ink);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.bf-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.bf-face--sm {
+  width: 26px;
+  height: 26px;
+  font-size: 9.5px;
+}
+.bf-face--md {
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+}
+.bf-face--empty {
+  background: color-mix(in srgb, var(--at-ink) 8%, transparent);
+}

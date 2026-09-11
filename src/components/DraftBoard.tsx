@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, type DraftState } from '../engine/draft';
@@ -12,13 +12,13 @@ import { allStarCount } from '../engine/allStarLookup';
 import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
 import type { Rotation } from '../engine/types';
+import { Face, ShotChip, shortenName } from './ShotChip';
 import {
   offensiveGrade,
   defensiveGrade,
   offensivePortabilityGrade,
   defensivePortabilityGrade,
   overallTierForSpan,
-  displayTalentForSpan,
   displayNumberForSpan,
   tierRank,
   type OverallTier,
@@ -323,17 +323,33 @@ export function pickStatTip(pick: PlayerSpan): string {
   return `${b.ppg.toFixed(1)} PPG · ${b.apg.toFixed(1)} APG · ${b.rpg.toFixed(1)} RPG · ${(b.fgPct * 100).toFixed(1)}% FG · ${(b.threePct * 100).toFixed(1)}% 3PT`;
 }
 
-const GRADE_TIER_CLASS: Record<Grade, string> = {
-  S: 'at-t6', 'A+': 'at-t6', A: 'at-t5', 'A-': 'at-t5',
-  'B+': 'at-t4', B: 'at-t4', 'B-': 'at-t3', 'C+': 'at-t3',
-  C: 'at-t2', 'C-': 'at-t2', 'D+': 'at-t1', D: 'at-t1', 'D-': 'at-t1', F: 'at-t1',
+// 2026-09-11, user-reported live ("4) brak koloru" — the Team tab's OFF/DEF/O-POR/D-POR pills all
+// reading as the same navy regardless of grade): these used to share the app-wide `at-t1..at-t6`
+// tone ramp, which is a deliberately monochrome-BLUE "how exceptional is this" scale (also used
+// for talent tiers, results tone, lottery highlight — contexts where "worst" doesn't mean "bad",
+// just "less exceptional"). A letter grade is the one place that ramp doesn't fit: S-vs-F is a
+// genuine good/bad judgment, so it gets its own real red→green scale instead — scoped to grades
+// only, the shared tone ramp everywhere else is untouched.
+const GRADE_RANK: Record<Grade, number> = {
+  S: 13, 'A+': 12, A: 11, 'A-': 10, 'B+': 9, B: 8, 'B-': 7, 'C+': 6, C: 5, 'C-': 4, 'D+': 3, D: 2, 'D-': 1, F: 0,
 };
+function gradeColor(grade: Grade): string {
+  const t = GRADE_RANK[grade] / 13; // 0 (F, worst) .. 1 (S, best)
+  const hue = 2 + t * 146; // 2 = red, 148 = green, same endpoints MatchupMatrix's own diverging scale uses
+  const saturation = 42 + Math.abs(t - 0.5) * 34; // most saturated at both extremes, muted mid-pack
+  const lightness = 30 + t * 9;
+  return `hsl(${hue} ${saturation}% ${lightness}%)`;
+}
 
 // Exported (2026-08-19) for RotationBuilder's own reuse — see that file's own docstring on why
 // the Team/Rotation screen now shows the same Offense/Defense letter grades this badge already
 // renders on the Draft tab, instead of building a second, slightly-different badge from scratch.
 export function AtGrade({ grade }: { grade: Grade }) {
-  return <span className={`at-grade-badge ${GRADE_TIER_CLASS[grade]}`}>{grade}</span>;
+  return (
+    <span className="at-grade-badge" style={{ background: gradeColor(grade), color: '#fff' }}>
+      {grade}
+    </span>
+  );
 }
 
 /* 2026-08-19, user's explicit follow-up ask ("can we explain in glossary that is talent ETC"):
@@ -371,6 +387,23 @@ export default function DraftBoard({
   const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL'>('ALL');
   const [fgaMin, setFgaMin] = useState('0');
   const [fgaMax, setFgaMax] = useState('30');
+  // 2026-09-11, user-reported live ("zacina się jak filtrujemy fga") — every keystroke here used
+  // to force the whole `enrichedGroups` memo below (every player group, not just the filtered-out
+  // spans) to re-filter and re-run its reduce/sort. Each individual span touch is now cache-hit-
+  // cheap (the `tierContextWithSixthMan` cache fix, sixthMan.ts), but the group-level bookkeeping
+  // alone still measured 60-180ms per keystroke live — a real stutter while actively typing.
+  // Debouncing the value the memo actually reacts to (not what the input displays, which stays
+  // instant either way) means typing itself never blocks; only the recompute waits for a pause.
+  const [fgaMinDebounced, setFgaMinDebounced] = useState(fgaMin);
+  const [fgaMaxDebounced, setFgaMaxDebounced] = useState(fgaMax);
+  useEffect(() => {
+    const t = setTimeout(() => setFgaMinDebounced(fgaMin), 200);
+    return () => clearTimeout(t);
+  }, [fgaMin]);
+  useEffect(() => {
+    const t = setTimeout(() => setFgaMaxDebounced(fgaMax), 200);
+    return () => clearTimeout(t);
+  }, [fgaMax]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [evidenceOpen, setEvidenceOpen] = useState<Set<string>>(new Set());
   // 2026-08-13 player-mode redesign: which expanded players have asked to see every season
@@ -465,11 +498,20 @@ export default function DraftBoard({
   const humanSpanOptionsByKey = new Map(humanSpanOptions.map((o) => [o.key, o]));
 
   const currentFgas = teamForPanels.roster.map((p) => p.fga);
-  // Cap meter + per-row FGA read the human's actually-CHOSEN spans (not the drafted/peak ones)
-  // once a span dropdown exists to disagree with them — otherwise the meter would silently lie
-  // about how much cap a cheaper chosen span actually freed up. Falls back to the plain
-  // `currentFgas` (drafted/peak spans) when this table isn't showing the human's own roster.
-  const displayFgas = isViewingHumanRoster ? chosenHumanRoster.map((p) => p.fga) : currentFgas;
+  // 2026-09-11, user-reported live ("brak korelacji z fga w team i draft... to po prostu
+  // pozostałość podczas poprawiania mechanizmu, teraz powinniśmy to naprawić"): while the draft is
+  // still running, a span swap here is NOT safe to treat as real freed-up cap — `isPickLegal`
+  // (and every Draft-tab "Cap remaining" label) only ever gates against the real drafted/peak
+  // span, on purpose (see `peakDraftPool.ts`'s own docstring on the loophole this closes: draft
+  // cheap, swap to the real peak span, and you got 9 max-TAL players past the cap the AI never
+  // got to react to). Letting the Team tab show a smaller, swap-based total DURING that same
+  // window was the "pozostałość" — it just relabeled the identical bug (Team promising room the
+  // Draft tab's own enforced number would then contradict) instead of removing it. Once the draft
+  // is actually done, there's no more legality gate left for a swap to sneak past — Submit is the
+  // real gate then (`chosenRosterOverCap` below) — so only THEN does showing the chosen-span total
+  // here mean anything more than "how much room am I planning to (maybe illegally) want."
+  const draftComplete = humanTeam.roster.length >= ROSTER_SIZE;
+  const displayFgas = isViewingHumanRoster && draftComplete ? chosenHumanRoster.map((p) => p.fga) : currentFgas;
   // The human's chosen-span roster measured against the cap — the span dropdown can pick a
   // pricier span than was drafted, and nothing downstream clamps it (see the Submit button).
   const chosenRosterFga = totalFga(chosenHumanRoster.map((p) => p.fga));
@@ -499,8 +541,8 @@ export default function DraftBoard({
   // itself, at both the collapsed and expanded row below), it just isn't hidden from view first.
   const legalGroups = allGroups;
 
-  const fgaMinNum = Number(fgaMin);
-  const fgaMaxNum = Number(fgaMax);
+  const fgaMinNum = Number(fgaMinDebounced);
+  const fgaMaxNum = Number(fgaMaxDebounced);
   const fgaFilterActive = Number.isFinite(fgaMinNum) && Number.isFinite(fgaMaxNum);
 
   // Every judge metric computed exactly once per visible player here, not once per sort
@@ -545,8 +587,13 @@ export default function DraftBoard({
       // engine rates highest — that's the span whose box-score line appears on the collapsed row,
       // and it anchors `spansByAiValue` below. The engine keeps doing the judging; the player just
       // never sees the number, per the 2026-08-13 "don't show any of what we did" redesign.
+      // 2026-09-11, user-reported live ("po wciśnięciu skip długi czas ładowania"): `isSixthMan`
+      // only ever affects the TIER label (`overallTierForSpan`'s own `ctx.isSixthMan ? 'Sixth
+      // Man' : ...`), never the talent number `displayTalentForSpan` returns — so this comparison
+      // (number only, no tier read) can use the already-memoized `effectiveTalent` instead of a
+      // fresh, uncached `tierContextFor` on both sides of every reduce step. Byte-identical result.
       const bestTalentSpan = g.spans.reduce(
-        (best, s) => (displayTalentForSpan(tierContextFor(s)) > displayTalentForSpan(tierContextFor(best)) ? s : best),
+        (best, s) => (effectiveTalent(s) > effectiveTalent(best) ? s : best),
         g.spans[0],
       );
       // Player-mode only: every one of this player's spans, ranked by the same hidden AI
@@ -556,9 +603,7 @@ export default function DraftBoard({
       // instead (`group.spans`, already sorted by `byChronology`).
       const spansByAiValue = showJudgeMetrics
         ? g.spans
-        : [...g.spans].sort(
-            (a, b) => displayTalentForSpan(tierContextFor(b)) - displayTalentForSpan(tierContextFor(a)),
-          );
+        : [...g.spans].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
       return {
         ...g,
         bestTalentSpan,
@@ -571,7 +616,7 @@ export default function DraftBoard({
         // whole list despite the comment's claim it was fixed. Made genuinely unconditional to match
         // what the comment already said was true; still never DISPLAYED as a raw number in player
         // mode (only the coarser tier badge is), so this doesn't reveal anything new on-screen.
-        bestTalent: displayTalentForSpan(tierContextFor(bestTalentSpan)),
+        bestTalent: effectiveTalent(bestTalentSpan),
         // 2026-08-08, user's v0.2 rating batch: GOAT has no ceiling of its own
         // (`tierCeiling('GOAT')` is `Infinity`), so a GOAT-tier span's `bestTalent` number can
         // land on the exact same value as a merely-Greatest-Peak span (both 98, say) — found
@@ -795,6 +840,24 @@ export default function DraftBoard({
           {!canPick && (
             <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
           )}
+          {/* 2026-09-11, user-reported live ("można dodać mała informację o graczach jakich
+              posiadamy, np face-cardy") — the only way to see your own roster used to be
+              switching to the Team tab; a compact strip of who you've already drafted (same
+              Face+ShotChip tile Quick Five/Best Five use) right on the Draft tab itself, so
+              picking your next player doesn't mean losing sight of who you already have. Only
+              ever the human's own (at most 9) picks, not the ~5000-span candidate pool below, so
+              this carries none of that list's own perf cost. */}
+          {humanTeam.roster.length > 0 && (
+            <div className="at-own-team-strip">
+              {humanTeam.roster.map((p) => (
+                <span className="at-own-team-pip" key={p.id} title={p.playerName}>
+                  <Face name={p.playerName} />
+                  <span className="at-own-team-pip-name">{shortenName(p.playerName)}</span>
+                  <ShotChip fga={p.fga} cap={CAP_LIMIT} />
+                </span>
+              ))}
+            </div>
+          )}
           <>
               <div className="at-controls-row">
                 <input
@@ -825,7 +888,18 @@ export default function DraftBoard({
                       ever be the real, enforced number, so back to `currentFgas`. `displayFgas`
                       stays exactly where it already correctly belongs: the Team tab's own cap
                       meter, which is reviewing an already-locked-in pick, not gating a new one. */}
-                  Cap remaining: <b>{capRemaining(currentFgas)}</b> shots
+                  {/* 2026-09-11, user-reported live ("4) pasek wypełniania się capu") — this was
+                      plain text with no visual fill, the only cap readout in the whole app without
+                      one. Reuses the Team tab's own `.at-cap-track`/`.at-cap-fill` (real decimal
+                      cap, not the rounded `ShotsMeter` Best Five/Szybka 5 use — 100.9 stays 100.9
+                      here) so the two screens share one visual language, not a second bar style. */}
+                  <span>Cap remaining: <b>{capRemaining(currentFgas)}</b> shots</span>
+                  <span className="at-cap-track at-cap-track--inline">
+                    <span
+                      className="at-cap-fill"
+                      style={{ width: `${Math.min(100, (totalFga(currentFgas) / CAP_LIMIT) * 100)}%` }}
+                    />
+                  </span>
                 </div>
               </div>
               <div className="at-controls-row" style={{ marginTop: -4 }}>

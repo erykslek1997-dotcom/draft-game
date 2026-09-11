@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { rankTeams, offenseScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague } from '../engine/leagueSimulation';
 import { simulateSeason, type SeasonStandingsRow } from '../engine/seasonSimulation';
@@ -135,6 +135,23 @@ function scoreBand(score: number): 1 | 2 | 3 | 4 | 5 | 6 {
   return 6;
 }
 
+/** 2026-09-11, user-reported live ("14) skala może być w czerwono-zielonym gradiencie" / "16)
+ * kurde brzydkie to") — `ScoreChip`/`MetricBar` used to tint off `scoreBand`'s own 6 discrete
+ * buckets, whose bottom 4 (0-67) span red→amber→green but whose TOP 2 buckets (67-100) are both
+ * the same green — so a real, competitive roster (whose metrics mostly land 50-95) rendered as a
+ * wall of near-identical green, reading as "no color" even though the mechanism technically has
+ * some. A continuous interpolation instead of discrete bands means a 58 and a 95 — both "good" —
+ * still read as visibly different shades, the actual "gradient" the ask was for. Same red/green
+ * hue endpoints `MatchupMatrix.tsx`'s own diverging scale uses, for one consistent "how good is
+ * this number" visual language across the app's judgment displays. */
+function qualityColor(v: number): string {
+  const t = Math.max(0, Math.min(100, v)) / 100;
+  const hue = 2 + t * 146;
+  const saturation = 42 + Math.abs(t - 0.5) * 34;
+  const lightness = 30 + t * 12;
+  return `hsl(${hue} ${saturation}% ${lightness}%)`;
+}
+
 /** 1 -> "1st", 2 -> "2nd", 11 -> "11th" — plain English ordinal for the finish-position line. */
 function ordinal(n: number): string {
   const mod100 = n % 100;
@@ -211,6 +228,12 @@ function HeroResult({
 }) {
   const [copied, setCopied] = useState(false);
   const [challengeCopied, setChallengeCopied] = useState(false);
+  // 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
+  // ekran z naszymi wynikami?") — plain clipboard copy gave no preview of what you were actually
+  // sending; a real card to look at (and still copy as text from) matches what every rival this
+  // screen was already benchmarked against does. No backend/share-sheet added — same "closed
+  // friend group" scope the original Copy-result feature was built for.
+  const [shareOpen, setShareOpen] = useState(false);
   const tier = resultTierLabel(rank, fieldSize);
   const gap = topOverall !== null ? topOverall - overall : null;
 
@@ -290,8 +313,8 @@ function HeroResult({
         </p>
       )}
       <div className="results-hero-actions">
-        <button type="button" className="results-hero-copy" onClick={copyResult}>
-          {copied ? '✓ Copied' : '📋 Copy result'}
+        <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
+          📤 Share the result
         </button>
         <button
           type="button"
@@ -302,13 +325,123 @@ function HeroResult({
           {challengeCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
         </button>
       </div>
+      {shareOpen && (
+        <ShareModal
+          onClose={() => setShareOpen(false)}
+          teamName={teamName}
+          rank={rank}
+          fieldSize={fieldSize}
+          tier={tier}
+          overall={overall}
+          topOverall={topOverall}
+          gap={gap}
+          titleOdds={titleOdds}
+          identity={identity}
+          failureMode={failureMode}
+          copied={copied}
+          onCopyText={copyResult}
+        />
+      )}
     </header>
   );
 }
 
-function ScoreChip({ label, value }: { label: string; value: number }) {
+/** 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
+ * ekran z naszymi wynikami?") — a real card to look at before/instead of a blind clipboard copy.
+ * Reuses the hero's own tier-tone language (`results-hero-tier-t{N}`) so it reads as the same
+ * result, not a second visual system invented for one modal. Still no backend/share-sheet — the
+ * "Copy as text" button inside is the exact same `copyResult` clipboard write the old button did. */
+function ShareModal({
+  onClose,
+  teamName,
+  rank,
+  fieldSize,
+  tier,
+  overall,
+  topOverall,
+  gap,
+  titleOdds,
+  identity,
+  failureMode,
+  copied,
+  onCopyText,
+}: {
+  onClose: () => void;
+  teamName: string;
+  rank: number;
+  fieldSize: number;
+  tier: { label: string; tone: 1 | 2 | 3 | 4 | 5 | 6 };
+  overall: number;
+  topOverall: number | null;
+  gap: number | null;
+  titleOdds: number | null;
+  identity: string | null;
+  failureMode: string | null;
+  copied: boolean;
+  onCopyText: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
-    <span className={`score-chip score-t${scoreBand(value)}`}>
+    <div className="share-modal-overlay" onClick={onClose}>
+      <div className="share-modal-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Share result">
+        <button type="button" className="share-modal-close" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
+        <span className="share-modal-team">{teamName}</span>
+        <div className="share-modal-rank">
+          <b>{ordinal(rank)}</b>
+          <i>/ {fieldSize}</i>
+        </div>
+        <span className={`share-modal-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
+        <div className="share-modal-stats">
+          <div className="share-modal-stat">
+            <span>Final Power Ranking</span>
+            <b>{overall}</b>
+          </div>
+          {titleOdds !== null && (
+            <div className="share-modal-stat">
+              <span>Title odds</span>
+              <b>{(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%</b>
+            </div>
+          )}
+        </div>
+        {gap !== null && (
+          <p className="share-modal-gap">
+            {gap > 0 ? (
+              <>
+                Overall #1 in the field: <b>{topOverall}</b> — you're <b>{gap}</b> back.
+              </>
+            ) : (
+              'You have the best Overall in the field.'
+            )}
+          </p>
+        )}
+        {(identity || failureMode) && (
+          <p className="share-modal-identity">
+            {identity && <b>{identity}</b>}
+            {identity && failureMode && ' — '}
+            {failureMode}
+          </p>
+        )}
+        <button type="button" className="primary-btn share-modal-copy" onClick={onCopyText}>
+          {copied ? '✓ Copied' : '📋 Copy as text'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ScoreChip({ label, value }: { label: string; value: number }) {
+  // `borderBottomColor` only actually shows once `.subscores .score-chip` gives the chip a
+  // visible bottom border (see App.css) — harmless to set unconditionally on the compact header
+  // mini-chips too, which just never render a border to show it on.
+  return (
+    <span className="score-chip" style={{ background: qualityColor(value), color: '#fff', borderBottomColor: qualityColor(value) }}>
       <span className="score-chip-label">{label}</span>
       <span className="score-chip-value">{value}</span>
     </span>
@@ -324,7 +457,7 @@ function MetricBar({ label, value, hint }: { label: string; value: number; hint?
     <div className="metric-bar" title={hint}>
       <span className="metric-bar-label">{label}</span>
       <span className="metric-bar-track">
-        <span className={`metric-bar-fill metric-t${scoreBand(v)}`} style={{ width: `${v}%` }} />
+        <span className="metric-bar-fill" style={{ width: `${v}%`, background: qualityColor(v) }} />
       </span>
       <span className="metric-bar-value">{v}</span>
     </div>
@@ -969,12 +1102,24 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
                 {/* 2026-09-11, Scouting Report finding: Era Ball surfaces its named archetype tags
                     right on the player list; ours was only visible after opening "Team analysis".
                     Same data (`fitDetail.inputs.primaryArchetype`), already computed for this card
-                    the moment it's expanded — just promoted up here instead of a second lookup. */}
-                {fitDetail?.inputs.primaryArchetype && (
+                    the moment it's expanded — just promoted up here instead of a second lookup.
+                    2026-09-11 follow-up, user-reported live: "1 tag to też mało, trzeba więcej" +
+                    "a ten opisek można dać tam gdzie jest drugi screen" — the engine already scores
+                    up to 3 archetype matches (`championshipArchetype.ts`'s own `archetypes`,
+                    `.slice(0, 3)`), this row was just reading the two singular
+                    primary/secondaryArchetype fields instead of the full list, silently dropping
+                    a real 3rd match when one existed. Maps the full array now, and the risk line
+                    that used to live down in "Team analysis" as a separate "Identity:" paragraph
+                    moved up here next to the tags it's actually describing. */}
+                {fitDetail && fitDetail.inputs.championshipArchetypes.length > 0 && (
                   <div className="identity-chip-row">
-                    <span className="identity-chip">{fitDetail.inputs.primaryArchetype}</span>
-                    {fitDetail.inputs.secondaryArchetype && (
-                      <span className="identity-chip identity-chip-secondary">{fitDetail.inputs.secondaryArchetype}</span>
+                    {fitDetail.inputs.championshipArchetypes.map((entry, i) => (
+                      <span key={entry.archetype} className={`identity-chip ${i > 0 ? 'identity-chip-secondary' : ''}`}>
+                        {entry.archetype}
+                      </span>
+                    ))}
+                    {fitDetail.inputs.archetypeReport && (
+                      <span className="identity-risk">risk: {fitDetail.inputs.archetypeReport.failureMode}</span>
                     )}
                   </div>
                 )}
@@ -1003,32 +1148,45 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
                         )}
                       </div>
                     )}
-                    {(fitDetail.inputs.primaryArchetype || rsPoProfile) && (
+                    {/* 2026-09-11, user-reported live ("a ten opisek można dać tam gdzie jest
+                        drugi screen") — the "Identity:" line moved up to the header's own
+                        `identity-chip-row`, right next to the tags it describes, instead of
+                        repeating the same primary/secondary archetype text a second time down
+                        here. Season profile is a different read (RS-vs-playoffs shape) and stays. */}
+                    {rsPoProfile && (
                       <div className="analysis-identity">
-                        {fitDetail.inputs.primaryArchetype && (
-                          <p className="analysis-identity-line">
-                            <b>Identity:</b> {fitDetail.inputs.primaryArchetype}
-                            {fitDetail.inputs.secondaryArchetype ? ` + ${fitDetail.inputs.secondaryArchetype}` : ''}
-                            {fitDetail.inputs.archetypeReport && ` — risk: ${fitDetail.inputs.archetypeReport.failureMode}`}
-                          </p>
-                        )}
-                        {rsPoProfile && (
-                          <p className="analysis-identity-line">
-                            <b>Season profile:</b> {rsPoProfile.label} (RS {rsPoProfile.regularSeason} · PO {rsPoProfile.playoffs}). {rsPoProfile.explanation}
-                          </p>
-                        )}
+                        <p className="analysis-identity-line">
+                          <b>Season profile:</b> {rsPoProfile.label} (RS {rsPoProfile.regularSeason} · PO {rsPoProfile.playoffs}). {rsPoProfile.explanation}
+                        </p>
                       </div>
                     )}
-                    <div className="analysis-bars">
-                      {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
-                      <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
-                      {offenseDetail && <MetricBar label="Spacing" value={offenseDetail.spacing} hint="Floor spacing the five provides." />}
-                      <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
-                      <MetricBar label="Defense" value={fitDetail.components.defensiveRoleCoverage} hint="Coverage of the point-of-attack / wing / rim defensive roles." />
-                      <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
-                      <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
-                      <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
-                      <MetricBar label="Size" value={fitDetail.components.sizeCoverage} hint="Functional positional size across the lineup." />
+                    {/* 2026-09-11, user-reported live ("można te ofensywne statystyki dać po
+                        lewej stronie a po prawej defensywne"): the old single 2-col grid filled
+                        row-major, so reading straight down the left column mixed offense and
+                        defense metrics (O-TAL, Spacing, Defense, Hunt resistance, Size all landed
+                        together purely by row-fill accident). Two explicit columns instead of one
+                        auto-flowing grid — offense metrics stay grouped left, defense right,
+                        regardless of how many of each side there are. Title structure is a
+                        whole-roster read (neither purely offense nor defense), so it gets its own
+                        full-width row below both columns rather than an arbitrary side. */}
+                    <div className="analysis-bars-split">
+                      <div className="analysis-bars-col">
+                        <span className="analysis-bars-col-label">Offense</span>
+                        {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
+                        <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
+                        {offenseDetail && <MetricBar label="Spacing" value={offenseDetail.spacing} hint="Floor spacing the five provides." />}
+                        <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
+                      </div>
+                      <div className="analysis-bars-col">
+                        <span className="analysis-bars-col-label">Defense</span>
+                        <MetricBar label="Defense" value={fitDetail.components.defensiveRoleCoverage} hint="Coverage of the point-of-attack / wing / rim defensive roles." />
+                        <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
+                        <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
+                        <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
+                        <MetricBar label="Size" value={fitDetail.components.sizeCoverage} hint="Functional positional size across the lineup." />
+                      </div>
+                    </div>
+                    <div className="analysis-bars-full">
                       <MetricBar label="Title structure" value={fitDetail.components.championshipStructure} hint="How closely the roster's shape matches real championship rosters." />
                     </div>
                     <details className="analysis-raw">

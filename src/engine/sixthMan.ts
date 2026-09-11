@@ -128,6 +128,21 @@ export function isSixthManProfile(span: PlayerSpan): boolean {
  * doesn't need the display-only tier relabel, and already has its own separate
  * `isSixthManProfile` import for the bench-need bonus.
  */
+// 2026-09-11, user-reported live ("po wciśnięciu skip długi czas ładowania" — the real Draft
+// board's first mount): pure function of `span` alone, same shape as `effectiveTalent`'s own
+// `effectiveTalentCache` (grades.ts) — but this one had no cache at all, while DraftBoard.tsx's
+// `enrichedGroups` calls it (via `displayTalentForSpan(tierContextFor(s))`, the `tierContextFor`
+// alias every UI site uses) up to 4 TIMES for the same span (twice in the best-span reduce, once
+// in the spansByAiValue sort's O(n log n) comparator, once more for `bestTier`) across the whole
+// pool on every first render. Each call chains through `tierContextFor`/`computeOffensiveTalent`/
+// `computeDefensiveTalent` — not free at ~5000-span pool scale. Module-level, keyed by `span.id`,
+// same as every other span-keyed cache in this codebase (never invalidated — a span's own data
+// never changes within a session).
+const tierContextWithSixthManCache = new Map<string, TierGateContext>();
 export function tierContextWithSixthMan(span: PlayerSpan): TierGateContext {
-  return { ...tierContextFor(span), isSixthMan: isSixthManProfile(span) };
+  const cached = tierContextWithSixthManCache.get(span.id);
+  if (cached) return cached;
+  const result = { ...tierContextFor(span), isSixthMan: isSixthManProfile(span) };
+  tierContextWithSixthManCache.set(span.id, result);
+  return result;
 }

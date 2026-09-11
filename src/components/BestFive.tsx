@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react';
 import './BestFive.css';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
-import { naturalPosition } from '../engine/naturalPosition';
-import { headshotUrl } from '../data/headshots';
+import { Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
 import {
   dailyPool,
   dailyShotsCap,
@@ -34,29 +33,13 @@ interface Props {
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
 
-function initials(name: string): string {
-  const p = name.split(/\s+/).filter(Boolean);
-  return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
-}
-
-/** Headshot with a monogram fallback (no image, or the image 404s). Faces come from the shared
- * `data/headshots` lookup Codex built for the Card Collection. */
-function Face({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
-  const src = headshotUrl(name);
-  // Track the src that failed, not a bare boolean — so when this same <Face> instance is reused
-  // for a different player (React keeps it mounted across slot re-picks / the your-five vs
-  // engine-five columns), a new `src` clears the failed state and the monogram doesn't stick.
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const failed = failedSrc !== null && failedSrc === src;
-  return (
-    <span className={`bf-face bf-face--${size}`} aria-hidden>
-      {src && !failed ? (
-        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailedSrc(src)} />
-      ) : (
-        initials(name)
-      )}
-    </span>
-  );
+/** 2026-09-11, user-reported live: "mało interesująca data" — the raw ISO `dayKey()` string
+ * ("2026-09-11") read as a database timestamp, not a daily-puzzle date. Formats the SAME string
+ * (never a live `Date`, so a practice-board's own synthetic seed never gets fed through this) into
+ * a real weekday + month/day, `Date.UTC` since `dayKey` is already UTC-anchored. */
+function formatDisplayDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 /** Blind-scouting box stats, never the engine's TAL. `boxLineShort` = the pts/reb/ast triple;
@@ -155,7 +138,7 @@ export default function BestFive({ onBack }: Props) {
     <div className="at-shell best-five">
       <div className="at-board-brand at-cond">Build the Best 5</div>
       <div className="bf-subhead">
-        <span className="bf-date">{isDaily ? `Daily puzzle · ${today}` : `Practice board #${board.n}`}</span>
+        <span className="bf-date">{isDaily ? `Daily puzzle · ${formatDisplayDate(today)}` : `Practice board #${board.n}`}</span>
         <span className="bf-subhead-actions">
           {!isDaily && (
             <button className="at-legend-toggle at-cond" onClick={backToDaily}>
@@ -177,15 +160,7 @@ export default function BestFive({ onBack }: Props) {
             answer — spacing and rim protection matter. No score until you submit.
           </p>
 
-          <div className={`bf-shots-meter ${overCap ? 'bf-shots-meter--over' : ''}`}>
-            <span className="bf-shots-label">
-              Shots: <b>{shotsUsed.toFixed(1)}</b> / {shotsCap}
-              {overCap && ' — over the cap'}
-            </span>
-            <span className="bf-shots-track">
-              <span className="bf-shots-fill" style={{ width: `${Math.min(100, (shotsUsed / shotsCap) * 100)}%` }} />
-            </span>
-          </div>
+          <ShotsMeter used={shotsUsed} cap={shotsCap} />
 
           <div className="bf-slot-row">
             {STARTER_SLOTS.map((slot) => {
@@ -200,7 +175,11 @@ export default function BestFive({ onBack }: Props) {
                   {s ? <Face name={s.playerName} /> : <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />}
                   <span className="bf-slot-name">{s ? s.playerName : 'Tap to pick'}</span>
                   {s && <span className="bf-season bf-season--sm">{s.spanLabel}</span>}
-                  {s && <span className="bf-slot-box">{boxLineShort(s)} · {s.fga.toFixed(1)} shots</span>}
+                  {s && (
+                    <span className="bf-slot-box">
+                      {boxLineShort(s)} · <ShotChip fga={s.fga} cap={shotsCap} />
+                    </span>
+                  )}
                   {s && (
                     <span
                       className="bf-slot-clear"
@@ -230,13 +209,24 @@ export default function BestFive({ onBack }: Props) {
                     <button
                       key={span.id}
                       className={`bf-pool-card ${chosen ? 'bf-pool-card--chosen' : ''}`}
+                      title={span.playerName}
                       onClick={() => pick(activeSlot, span)}
                     >
                       <Face name={span.playerName} size="md" />
-                      <span className="bf-pool-name">{span.playerName}</span>
-                      <span className="bf-season">{span.spanLabel}</span>
+                      <span className="bf-pool-name">{shortenName(span.playerName)}</span>
+                      {/* 2026-09-11, user-reported live ("mało przestrzeni tutaj... sezon zwykły
+                          font i najbardziej widoczny, później statystyki") — the badge treatment
+                          (`.bf-season`, bold+boxed) read as chrome, not the headline info a Best
+                          Five pick actually turns on: which career window you're drafting. Plain,
+                          larger text (`.bf-pool-season`, pool-card only) makes it the card's real
+                          lead without spending padding on a box in an already-tight ~140px card. */}
+                      <span className="bf-pool-season">{span.spanLabel}</span>
+                      {/* 2026-09-11, user-reported live ("dopisek pozycji na karcie nie ma sensu"):
+                          this picker is already scoped to one slot (`SLOT_LABEL[activeSlot]` in
+                          the header above — "Pick your point guard"), so repeating the position on
+                          every card under it was pure noise, not new information. */}
                       <span className="bf-pool-meta">
-                        {naturalPosition(span.playerName)} · {span.fga.toFixed(1)} shots
+                        <ShotChip fga={span.fga} cap={shotsCap} />
                       </span>
                       <span className="bf-pool-box">{boxLineShort(span)}</span>
                       <span className="bf-pool-box bf-pool-box--sub">{boxLineDetail(span)}</span>
@@ -274,6 +264,19 @@ export default function BestFive({ onBack }: Props) {
     </div>
   );
 }
+
+/** 2026-09-11, user-reported live: "why powinno być ciekawsze, nie że silnik ocenia tak i tak" —
+ * the detail lines below were already real, plain-spoken sentences, not engine-speak; what was
+ * missing was a single narrative lead tying the grade to the actual STORY of the board before the
+ * bullet-by-bullet breakdown starts — the same job the grade banner's own blurb does for the
+ * headline number. One line, keyed off the grade itself, not a repeat of any line below it. */
+const RESULT_LEAD: Record<GolfGrade, string> = {
+  eagle: 'You out-scouted the engine on a board that had a real trap to avoid.',
+  birdie: 'You saw past the obvious five — here’s exactly where you got the edge.',
+  par: 'A safe, sensible five. Here’s the upside you left on the board.',
+  bogey: 'Something in this five is fighting itself — here’s what.',
+  'double-bogey': 'This five doesn’t play as a team yet — here’s where it breaks down.',
+};
 
 function BestFiveResult({
   lineup,
@@ -318,7 +321,7 @@ function BestFiveResult({
           <b>{targets.optimal}</b> engine’s best
         </span>
         <span className="bf-muted">
-          {yourShots.toFixed(1)} / {shotsCap} shots
+          {Math.round(yourShots)} / {shotsCap} shots
         </span>
       </div>
 
@@ -352,6 +355,7 @@ function BestFiveResult({
 
       <div className="bf-why">
         <div className="bf-why-head at-cond">Why this score</div>
+        <p className="bf-why-line bf-why-lead">{RESULT_LEAD[grade]}</p>
         {isChalkBoard(targets) && (
           <p className="bf-why-line">
             Chalk board — the five biggest names ({targets.par}){' '}

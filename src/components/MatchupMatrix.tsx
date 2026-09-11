@@ -74,7 +74,18 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
                         className="matchup-matrix-cell"
                         style={{ backgroundColor: matchupCellColor(probability) }}
                         title={`#${column.globalRank} ${teamLabel(teamById.get(column.teamId)!)}`}
-                        onClick={() => setSelected({ teamId: row.teamId, opponentId: column.teamId })}
+                        onClick={() =>
+                          // 2026-09-11, user-reported live ("po rozwinięciu nie można zamknąć"):
+                          // this used to always set `selected`, so a panel once opened could only
+                          // ever be replaced by a different matchup, never closed. Clicking the
+                          // same cell again now toggles it shut (an explicit close button on the
+                          // panel below covers the rest).
+                          setSelected((current) =>
+                            current?.teamId === row.teamId && current?.opponentId === column.teamId
+                              ? null
+                              : { teamId: row.teamId, opponentId: column.teamId },
+                          )
+                        }
                       >{pct}%</button>
                     </td>
                   );
@@ -90,6 +101,9 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
             <span className="fit-v2-shadow-label">{teamLabel(detail.team)} vs {teamLabel(detail.opponent)}</span>
             <strong>{(detail.matchup.seriesWinProb * 100).toFixed(0)}% series win probability</strong>
             <span className="matchup-detail-margin">Projected margin: {detail.margin >= 0 ? '+' : ''}{detail.margin.toFixed(1)}</span>
+            <button className="matchup-detail-close" onClick={() => setSelected(null)} aria-label="Close matchup analysis">
+              ✕
+            </button>
           </div>
           <p className="matchup-detail-explanation">{detail.explanation}</p>
           <div className="matchup-detail-grid">
@@ -109,10 +123,14 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
               </div>
             ))}
           </div>
+          {/* 2026-09-11, user-reported live ("'your defense' albo to usuwamy albo dodajemy coś
+              dodatkowego... usuwamy, zostawiamy tylko profil drużyny") — the POA/wing/rim provider
+              dump duplicated info the matchup-detail-grid rows above it already cover (Defense,
+              Switchability, Hunt resistance) without adding a new decision-relevant read; profile
+              stays as the two-line summary. */}
           <div className="matchup-detail-notes">
             <span><b>Your profile:</b> {detail.ownArchetype ?? '—'}</span>
             <span><b>Opponent profile:</b> {detail.opponentArchetype ?? '—'}</span>
-            <span><b>Your defense:</b> POA {detail.ownFit.inputs.guardContainmentProvider ?? '—'} · wing {detail.ownFit.inputs.wingCoverageProvider ?? '—'} · rim {detail.ownFit.inputs.rimProtectionProvider ?? '—'}</span>
             {detail.ownFit.inputs.defensiveWeakLinkIsHuntable && <span><b>Target to protect:</b> {detail.ownFit.inputs.defensiveWeakLinkPlayer ?? 'weak link'}</span>}
           </div>
         </div>

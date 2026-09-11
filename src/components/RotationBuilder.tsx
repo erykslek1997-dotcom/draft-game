@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes } from '../engine/rotation';
@@ -7,6 +7,7 @@ import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiv
 import { displayTalentForSpan, offensiveGrade, defensiveGrade } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { AtGrade, OverallTierBadge } from './DraftBoard';
+import { Face } from './ShotChip';
 import type { Rotation, SlotAssignment, Team } from '../engine/types';
 
 /** 2026-08-19, user's explicit ask ("maybe in TEAM section we can see player value in offense
@@ -181,128 +182,111 @@ export default function RotationBuilder({
         Auto-fill (best fit)
       </button>
 
-      {/* 2026-08-19, user-reported ("still don't like how rotation looks") — the card-per-position
-          grid this replaced was its own separate visual language sitting directly under the Team
-          roster table's clean row-based one, reading as two inconsistent designs stacked on the
-          same tab. Rebuilt as one real table reusing the exact same `.at-roster-table` styling
-          (row padding, header treatment, badge sizing) the roster table above already established,
-          per the user's own explicit direction ("match the roster table above it"). Position is
-          shown once per group (first row only, via `rowSpan`) rather than repeated on every row —
-          a real lineup-sheet grouping, not five separate boxes. */}
-      <table className="at-roster-table at-rotation-table">
-        <thead>
-          <tr>
-            <th>Pos</th>
-            <th>Player</th>
-            <th style={{ textAlign: 'center' }}>Tier</th>
-            <th style={{ textAlign: 'center' }}>Off</th>
-            <th style={{ textAlign: 'center' }}>Def</th>
-            <th>Min</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {STARTER_SLOTS.map((slot) => {
-            const total = slotTotal(rows, slot);
-            const canAddMore = rows[slot].length < MAX_ROWS_PER_SLOT;
-            // +1 row for the trailing "add contributor" control, when there's still room for one —
-            // rowSpan has to account for it too, or the position cell falls short of its own group.
-            const groupRowCount = rows[slot].length + (canAddMore ? 1 : 0);
-            return (
-              <Fragment key={slot}>
-                {rows[slot].map((row, rowIdx) => {
-                  const selectedPlayer = row.playerId ? roster.find((p) => p.id === row.playerId) : undefined;
-                  return (
-                    <tr key={rowIdx} className={`at-rotation-row ${rowIdx === 0 ? 'at-rotation-group-start' : ''}`}>
-                      {rowIdx === 0 && (
-                        <td rowSpan={groupRowCount} className="at-rotation-pos-cell">
-                          <span className="pos-pill">{slot}</span>
-                          <span className={total === GAME_MINUTES ? 'minutes-ok' : 'minutes-bad'}>
-                            {total}/{GAME_MINUTES}
-                          </span>
-                        </td>
-                      )}
-                      <td>
-                        <select
-                          className="at-span-picker-select"
-                          value={row.playerId}
-                          onChange={(e) => updateRow(slot, rowIdx, { playerId: e.target.value })}
-                        >
-                          <option value="">{rowIdx === 0 ? '-- starter --' : '-- backup (optional) --'}</option>
-                          {/* Every rostered player is listed, not just the position-eligible ones:
-                              a thin roster can force somebody to cover out of position (auto-fill
-                              does exactly that to keep each slot at 48 minutes), and the dropdown
-                              has to be able to show and preserve that assignment. Out-of-position
-                              choices are marked rather than hidden — they're allowed but penalized,
-                              contributing no talent at that slot. */}
-                          {optionsFor(slot).map(({ player, eligible }) => (
-                            <option key={player.id} value={player.id}>
-                              {eligible ? '' : '⚠ '}
-                              {player.playerName} ({player.spanLabel}) — {player.primaryPosition}
-                              {eligible ? '' : ' (out of position)'}
-                            </option>
-                          ))}
-                        </select>
-                        {selectedPlayer && (
+      {/* 2026-09-11, user-reported live ("głębsza przebudowa", "brzydko to wygląda") — the table
+          this replaced (itself a 2026-08-19 rebuild away from an earlier card grid) matched the
+          Team roster table's row shape, but every control in it was a bare, unstyled native
+          `<select>`/`<input type=number>` — the one surface in the app that still looked like
+          default browser chrome next to everywhere else's Face avatars and colored pills. Real
+          cards again, but this time built FROM the same Face+badge language the rest of the app
+          (Quick Five, Best Five, the Draft tab's own team strip) already established, with the
+          native controls heavily reskinned rather than swapped for a custom dropdown — same real
+          <select>/<input>, so nothing about keyboard/accessibility behavior changed underneath. */}
+      <div className="rotation-cards">
+        {STARTER_SLOTS.map((slot) => {
+          const total = slotTotal(rows, slot);
+          const canAddMore = rows[slot].length < MAX_ROWS_PER_SLOT;
+          const full = total === GAME_MINUTES;
+          return (
+            <div key={slot} className={`rotation-card ${full ? 'rotation-card--full' : 'rotation-card--short'}`}>
+              <div className="rotation-card-head">
+                <span className="rotation-card-pos at-cond">{slot}</span>
+                <span className="rotation-card-minutes-track">
+                  <span
+                    className="rotation-card-minutes-fill"
+                    style={{ width: `${Math.min(100, (total / GAME_MINUTES) * 100)}%` }}
+                  />
+                </span>
+                <span className={full ? 'minutes-ok' : 'minutes-bad'}>
+                  {total}/{GAME_MINUTES}
+                </span>
+              </div>
+              {rows[slot].map((row, rowIdx) => {
+                const selectedPlayer = row.playerId ? roster.find((p) => p.id === row.playerId) : undefined;
+                return (
+                  <div key={rowIdx} className="rotation-card-row">
+                    {selectedPlayer ? (
+                      <Face name={selectedPlayer.playerName} />
+                    ) : (
+                      <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />
+                    )}
+                    <div className="rotation-card-row-main">
+                      <select
+                        className="rotation-select"
+                        value={row.playerId}
+                        onChange={(e) => updateRow(slot, rowIdx, { playerId: e.target.value })}
+                      >
+                        <option value="">{rowIdx === 0 ? '-- starter --' : '-- backup (optional) --'}</option>
+                        {/* Every rostered player is listed, not just the position-eligible ones:
+                            a thin roster can force somebody to cover out of position (auto-fill
+                            does exactly that to keep each slot at 48 minutes), and the dropdown
+                            has to be able to show and preserve that assignment. Out-of-position
+                            choices are marked rather than hidden — they're allowed but penalized,
+                            contributing no talent at that slot. */}
+                        {optionsFor(slot).map(({ player, eligible }) => (
+                          <option key={player.id} value={player.id}>
+                            {eligible ? '' : '⚠ '}
+                            {player.playerName} ({player.spanLabel}) — {player.primaryPosition}
+                            {eligible ? '' : ' (out of position)'}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedPlayer && (
+                        <span className="rotation-card-row-meta">
                           <span
                             className="durability-cap"
                             title={`Durability-safe minutes cap, DUR ${computeDurability(selectedPlayer)}`}
                           >
                             cap {maxSustainableMinutes(selectedPlayer, MAX_MINUTES_PER_PLAYER)}m
                           </span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>{selectedPlayer && <OverallTierBadge span={selectedPlayer} />}</td>
-                      <td style={{ textAlign: 'center' }}>
-                        {selectedPlayer && (
+                          <OverallTierBadge span={selectedPlayer} />
                           <AtGrade grade={offensiveGrade(computeOffensiveTalent(selectedPlayer), computeUncappedOffensiveTalent(selectedPlayer))} />
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        {selectedPlayer && <AtGrade grade={defensiveGrade(computeDefensiveTalent(selectedPlayer))} />}
-                      </td>
-                      <td>
-                        {/* 2026-09-11, internal UI audit finding #3 ("Self-Scout Report"): an empty
-                            starter row used to show a real "36" in this field before anyone was
-                            assigned — the state still defaults new rows to 36 (so picking a starter
-                            fills in a sensible minutes value for free, unchanged), but the field now
-                            only displays it once `playerId` is actually set, matching the disabled
-                            state it's already in either way. */}
-                        <input
-                          type="number"
-                          min={0}
-                          max={GAME_MINUTES}
-                          value={row.playerId ? row.minutes : ''}
-                          placeholder="—"
-                          disabled={!row.playerId}
-                          className={row.playerId && overCapIds.has(row.playerId) ? 'minutes-warning' : undefined}
-                          onChange={(e) => updateRow(slot, rowIdx, { minutes: Number(e.target.value) })}
-                        />
-                      </td>
-                      <td>
-                        {rowIdx > 0 && (
-                          <button className="remove-row-btn" title="Remove this contributor" onClick={() => removeRow(slot, rowIdx)}>
-                            ×
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {canAddMore && (
-                  <tr className="at-rotation-row">
-                    <td colSpan={6}>
-                      <button className="add-row-btn" onClick={() => addRow(slot)}>
-                        + add contributor
+                          <AtGrade grade={defensiveGrade(computeDefensiveTalent(selectedPlayer))} />
+                        </span>
+                      )}
+                    </div>
+                    {/* 2026-09-11, internal UI audit finding #3 ("Self-Scout Report"): an empty
+                        starter row used to show a real "36" in this field before anyone was
+                        assigned — the state still defaults new rows to 36 (so picking a starter
+                        fills in a sensible minutes value for free, unchanged), but the field now
+                        only displays it once `playerId` is actually set, matching the disabled
+                        state it's already in either way. */}
+                    <input
+                      type="number"
+                      min={0}
+                      max={GAME_MINUTES}
+                      value={row.playerId ? row.minutes : ''}
+                      placeholder="—"
+                      disabled={!row.playerId}
+                      className={`rotation-minutes-input ${row.playerId && overCapIds.has(row.playerId) ? 'minutes-warning' : ''}`}
+                      onChange={(e) => updateRow(slot, rowIdx, { minutes: Number(e.target.value) })}
+                    />
+                    {rowIdx > 0 && (
+                      <button className="remove-row-btn" title="Remove this contributor" onClick={() => removeRow(slot, rowIdx)}>
+                        ×
                       </button>
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+                    )}
+                  </div>
+                );
+              })}
+              {canAddMore && (
+                <button className="add-row-btn" onClick={() => addRow(slot)}>
+                  + add contributor
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {overworkedPlayers.length > 0 && (
         <p className="validation-error">
@@ -321,6 +305,7 @@ export default function RotationBuilder({
       <ul className="bench-list">
         {bench.map(({ player, minutes }) => (
           <li key={player.id} className="bench-list-row">
+            <Face name={player.playerName} />
             <span className="bench-list-name">
               {player.playerName} ({player.spanLabel})
               <span className="bench-list-role">{player.offensiveArchetype} / {player.defensiveRole}</span>
