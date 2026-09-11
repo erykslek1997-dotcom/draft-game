@@ -29,8 +29,9 @@ import { randomTeamNames } from './engine/teamNames';
 // it's only real work once a draft is actually rendered.
 const GameShell = lazy(() => import('./components/GameShell'));
 const BestFive = lazy(() => import('./components/BestFive'));
+const QuickFive = lazy(() => import('./components/QuickFive'));
 
-type View = 'intro' | 'game' | 'bestfive';
+type View = 'intro' | 'game' | 'bestfive' | 'quickfive';
 
 /** Cap value shown in the intro tagline, kept in sync with `engine/positions.ts`'s CAP_LIMIT by
  * the standing check in `scripts/checkIntroCapLimit.ts` — not imported directly so the intro
@@ -138,6 +139,9 @@ function App() {
               <button className="secondary-btn intro-bestfive-btn" onClick={() => setView('bestfive')}>
                 Build the Best 5 — daily
               </button>
+              <button className="secondary-btn" onClick={() => setView('quickfive')}>
+                Szybka 5 — 5 rounds, 70-shot cap
+              </button>
             </div>
           </div>
         </div>
@@ -152,6 +156,12 @@ function App() {
       {view === 'bestfive' && (
         <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
           <BestFive mode="player" onBack={() => setView('intro')} />
+        </Suspense>
+      )}
+
+      {view === 'quickfive' && (
+        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
+          <QuickFive humanTeamName={teamName} onExit={() => setView('intro')} />
         </Suspense>
       )}
     </div>
