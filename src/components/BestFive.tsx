@@ -87,8 +87,7 @@ const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 's
  * Deliberately a standalone screen off the intro (same footing as `CapSheet` / `DraftPoolBrowser`)
  * — it has no draft, no lottery, no AI, none of `GameShell`'s phase machine applies.
  */
-export default function BestFive({ mode, onBack }: Props) {
-  const dev = mode === 'developer';
+export default function BestFive({ onBack }: Props) {
   const today = useMemo(() => dayKey(), []);
 
   // The first board of the day is the daily puzzle; "New board" rolls a fresh random pool so the
@@ -103,9 +102,6 @@ export default function BestFive({ mode, onBack }: Props) {
 
   const filledCount = STARTER_SLOTS.filter((s) => lineup[s]).length;
   const complete = filledCount === 5;
-  // Dev-only live readout — gated on a full five so `scoreLineup` always runs on a complete
-  // lineup (its synthetic-Team rotation math assumes five slots; a partial one is meaningless).
-  const liveScore = dev && complete ? scoreLineup(lineup) : null;
 
   function pick(slot: Position, span: PlayerSpan) {
     setLineup((prev) => ({ ...prev, [slot]: span }));
@@ -232,9 +228,6 @@ export default function BestFive({ mode, onBack }: Props) {
           )}
 
           <div className="bf-submit-row">
-            {dev && liveScore && (
-              <span className="bf-live at-cond">live composite {liveScore.composite}</span>
-            )}
             <button className="at-draft-btn bf-submit" disabled={!complete} onClick={submit}>
               Submit lineup
             </button>

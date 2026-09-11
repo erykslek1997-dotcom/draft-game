@@ -6,7 +6,6 @@ import {
   resolveAiPickIfNeeded,
   isHumanRosterImpossible,
   autoFinishDraft,
-  fastFinishDraft,
   TEAM_COUNT,
   ROUNDS,
   type DraftState,
@@ -101,8 +100,11 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // this reveal step is) runs once, right after Start Draft, before the real board appears.
   const [phase, setPhase] = useState<Phase>('lottery');
   const [finalTeams, setFinalTeams] = useState<Team[] | null>(null);
-  const [aiSpeedIndex, setAiSpeedIndex] = useState(DEFAULT_AI_SPEED_INDEX);
-  const aiSpeed = AI_SPEEDS[aiSpeedIndex];
+  // 2026-09-11, player-skeleton branch: the CPU-speed slider that used to set this is gone (Tester
+  // Mode only — see the docstring at the top of this file), so `aiSpeed` is now a plain constant
+  // pinned at its old default ('Normal') instead of `useState` — same real AI-turn pacing a player
+  // would expect, just no longer changeable from anywhere.
+  const aiSpeed = AI_SPEEDS[DEFAULT_AI_SPEED_INDEX];
   // Owned here (not inside DraftBoard) so live in-draft reactions survive the phase transition
   // into ResultsScreen's export — see FeedbackToggle's own docstring for why this replaced the
   // old too_high/too_low dropdown flow.
@@ -137,10 +139,8 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
 
   // Auto-resolve AI turns during the draft — never in Commissioner Mode, where every team's pick
   // comes from the human via `handlePick` instead (see the effect's own early-return below).
-  // The CPU-speed slider (`aiSpeed`) is only exposed in the UI in Tester Mode (see the
-  // `game-controls` render below), but it still drives this effect in Player Mode too — it just
-  // stays pinned at its default ('Normal'), same real AI-turn pacing a player would expect.
-  // Suspended while `autoFinishing` — the chunk effect below owns every pick then.
+  // `aiSpeed` still paces this effect (pinned at 'Normal' on this branch — see its own docstring
+  // above). Suspended while `autoFinishing` — the chunk effect below owns every pick then.
   useEffect(() => {
     if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || autoFinishing) return;
     const teamIdx = currentTeamIndex(draftState);
@@ -206,24 +206,8 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     setAutoFinishing(true);
   }
 
-  // 2026-08-14, user's own ask ("zrób lekkie UI trybu developera żeby wszystko szybko działało"):
-  // reaching ResultsScreen for a quick check used to mean finishing 144 picks, then manually
-  // clicking through span selection and rotation-building — three separate screens just to see a
-  // score. One button, available in every pre-results phase, that does what a normal playthrough
-  // does for the human team too (same `optimizeSpans`/`autoAssignRotation` treatment AI teams
-  // already get after the draft) instead of leaving it for manual choice. Testing-only, same
-  // "no confirmation, skip real steps" convenience as Auto-finish above — never shown outside
-  // Tester Mode.
-  function handleSkipToResults() {
-    const finished = draftState.complete ? draftState : fastFinishDraft(draftState);
-    const teams = finished.teams.map((t) => {
-      const roster = optimizeSpans(t.roster, CAP_LIMIT);
-      return { ...t, roster, rotation: autoAssignRotation(roster) };
-    });
-    setDraftState(finished);
-    setFinalTeams(teams);
-    setPhase('results');
-  }
+  // 2026-09-11, player-skeleton branch: `handleSkipToResults` (Tester-Mode-only "⚡ Skip to
+  // Results (dev)") removed along with its button — see GameShell's own top-of-file docstring.
 
   // 2026-08-16, replaces the old two-step `handleSpanSelectionConfirmed`/`handleRotationConfirmed`
   // pair: DraftBoard's Team tab now collects both the human's final spans AND their rotation
@@ -259,26 +243,13 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     <>
       <div className={`game-controls${phase === 'results' ? ' game-controls-results' : ''}`}>
         <button className="secondary-btn reset-btn" onClick={handleReset}>
-          {mode === 'developer' ? 'Reset' : phase === 'results' ? 'New draft' : 'Exit Draft'}
+          {phase === 'results' ? 'New draft' : 'Exit Draft'}
         </button>
-        {/* CPU speed remains a Tester Mode control, and only while a draft is actually running —
-            on the results screen it steers nothing and just reads as leftover draft chrome.
-            Auto-finish is deliberately available in both modes: it delegates every remaining pick
-            to the normal AI rather than skipping draft finalization or manufacturing a roster. */}
-        {mode === 'developer' && phase !== 'results' && (
-          <label className="ai-speed">
-            <span>CPU speed</span>
-            <input
-              type="range"
-              min={0}
-              max={AI_SPEEDS.length - 1}
-              step={1}
-              value={aiSpeedIndex}
-              onChange={(e) => setAiSpeedIndex(Number(e.target.value))}
-            />
-            <span className="ai-speed-value">{aiSpeed.label}</span>
-          </label>
-        )}
+        {/* 2026-09-11, player-skeleton branch: the Tester-Mode-only CPU-speed slider and
+            "Skip to Results (dev)" button are gone — `mode` is always 'player' on this branch (see
+            App.tsx), so these never rendered here anyway; removed rather than left dead, since
+            `aiSpeedIndex`/`handleSkipToResults` are genuinely unused now (see below). Auto-finish
+            stays: it was always a real player-facing convenience, not a dev tool. */}
         {phase === 'draft' && !draftState.complete && (
           <button
             className="secondary-btn auto-finish-btn"
@@ -288,11 +259,6 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
             {autoFinishing ? `Finishing… ${draftState.history.length} / ${TOTAL_PICKS}` : 'Auto-finish'}
           </button>
         )}
-        {mode === 'developer' && phase !== 'results' && (
-          <button className="secondary-btn skip-to-results-btn" onClick={handleSkipToResults}>
-            ⚡ Skip to Results (dev)
-          </button>
-        )}
       </div>
 
       {rosterImpossible && (
@@ -300,7 +266,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           <h2>FAIL</h2>
           <p>The pool ran dry — there aren't enough undrafted players left for your team to ever reach 9.</p>
           <button className="primary-btn" onClick={handleReset}>
-            {mode === 'developer' ? 'Reset' : 'Exit Draft'}
+            Exit Draft
           </button>
         </div>
       )}

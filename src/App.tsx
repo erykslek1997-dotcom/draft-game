@@ -6,47 +6,31 @@ import './App.css';
 // this file's own docstrings already care about (see DISPLAY_CAP_LIMIT's comment above).
 import { randomTeamNames } from './engine/teamNames';
 
+/**
+ * 2026-09-11, `player-skeleton` branch: the real Tester Mode / Player Mode split (mode picker,
+ * `SHOW_DEV_CONTROLS`, Commissioner Mode, DraftPoolBrowser/CapSheet/CardGallery nav) lives on
+ * `catch-up-2026-08-14` — see that branch's `App.tsx` for the full history. This branch is
+ * deliberately Player Mode ONLY, hardcoded, with no toggle anywhere: "musimy oddzielić tester game
+ * od player game, żebym już mógł poprawiać na gotowym do eksportu szkielecie" (separate the
+ * tester game from the player game, so there's a real export-ready skeleton to polish). Scope
+ * further narrowed same session: "w player game zostawiamy tylko draft i build the best 5" — Card
+ * Collection / Browse Draft Pool / Cap Sheet are NOT wired into this branch's nav at all (their
+ * component files still exist, untouched, just unreached — reintroducing one later is a small,
+ * additive change, not a revert). GameShell.tsx/BestFive.tsx had their own dev-only branches
+ * stripped to match; DraftBoard.tsx's ~16 `mode === 'developer'`/`showJudgeMetrics` branches were
+ * deliberately left in place (see that file — too much load-bearing history to strip safely in one
+ * pass) but are permanently dead code here since `mode` is always `'player'`, never selectable.
+ */
+
 // Lazy-loaded so the intro screen renders instantly instead of blocking on the full engine
 // import graph (~10MB of player/DARKO/WOWYR data, pulled in transitively by computeTalent's
 // real-data corrections) — the user's own report: "the game feels slow with loading data."
 // Nothing about showing the intro text or the position/search UI actually needs that data;
-// it's only real work once a draft or the pool browser is actually rendered.
+// it's only real work once a draft is actually rendered.
 const GameShell = lazy(() => import('./components/GameShell'));
-const DraftPoolBrowser = lazy(() => import('./components/DraftPoolBrowser'));
-const CapSheet = lazy(() => import('./components/CapSheet'));
 const BestFive = lazy(() => import('./components/BestFive'));
-const CardGallery = lazy(() => import('./components/CardGallery'));
 
-type View = 'intro' | 'game' | 'pool' | 'capsheet' | 'bestfive' | 'cards';
-type Mode = 'developer' | 'player';
-
-/** Manual override, e.g. `VITE_FORCE_PLAYER_MODE=true npm run dev`, to preview the locked-down
- * friend-facing experience from a local dev server without doing a real production build. Not
- * needed for normal deploys any more — see `SHOW_DEV_CONTROLS` below, which now does this
- * automatically for every production build. */
-const FORCE_PLAYER_MODE = import.meta.env.VITE_FORCE_PLAYER_MODE === 'true';
-
-/**
- * 2026-08-19, user's own asks while watching the intro screen: "delete commissioner mode" +
- * "if im being honest, hide tester mode" — both the Tester/Player mode selector and the
- * Commissioner Mode checkbox are dev/QA tools (the old pre-redesign judge-metrics UI, and a
- * causal-reasoning-note drafting mode for building reference datasets — see their own docstrings
- * below), not something a friend just playing the game should ever see or be able to reach.
- * Rather than deleting either feature outright (Commissioner Mode in particular is still a real,
- * valuable tool — see the 2026-08-07 docstring on `commissionerMode` below), both are now gated
- * on `import.meta.env.DEV` (true for `npm run dev`, false for any real `npm run build`/deployed
- * site) instead of the old manual `VITE_FORCE_PLAYER_MODE` flag — so a friend hitting the
- * deployed Netlify build always gets pure Player Mode with no way to reach either, automatically,
- * without anyone having to remember to set an env var at deploy time. `FORCE_PLAYER_MODE` still
- * works as an explicit override on top of this (see its own docstring above) for previewing that
- * exact friend experience from a local dev server.
- */
-const SHOW_DEV_CONTROLS = import.meta.env.DEV && !FORCE_PLAYER_MODE;
-
-const MODE_OPTIONS: ReadonlyArray<{ id: Mode; name: string; blurb: string }> = [
-  { id: 'developer', name: 'Tester Mode', blurb: 'Old UI — every judge rating visible' },
-  { id: 'player', name: 'Player Mode', blurb: 'New UI — blind scouting, box stats only' },
-];
+type View = 'intro' | 'game' | 'bestfive';
 
 /** Cap value shown in the intro tagline, kept in sync with `engine/positions.ts`'s CAP_LIMIT by
  * the standing check in `scripts/checkIntroCapLimit.ts` — not imported directly so the intro
@@ -71,18 +55,6 @@ function LoadingPanel({ label }: { label: string }) {
 
 function App() {
   const [view, setView] = useState<View>('intro');
-  // Defaults to 'player' whenever the selector to change it is hidden (`!SHOW_DEV_CONTROLS`) —
-  // otherwise a real production deploy would silently default to Tester Mode's judge-metrics UI
-  // with no visible way to switch off it, which defeats the whole point of hiding the selector.
-  const [mode, setMode] = useState<Mode>(SHOW_DEV_CONTROLS ? 'developer' : 'player');
-  // 2026-08-07, user explicit ask: manually control every one of the 16 teams for a full,
-  // causally-reasoned draft (not just the one randomly-assigned human slot), to build a rich
-  // pick-by-pick reference dataset — the richest kind of data this project has ever gathered, per
-  // the D1 human-vote validation session's own finding that raw outcomes alone (who went where)
-  // barely correlate with the actual judge formula. Decided here, before `createDraft()` runs,
-  // since the flag has to exist on `DraftState` from the very first pick (see draft.ts's own
-  // docstring on why this is a separate flag, not just flipping every team's `isHuman`).
-  const [commissionerMode, setCommissionerMode] = useState(false);
   // 2026-08-16, user's own ask ("żeby wiedział jaką drużynę ma" — so they can actually recognize
   // their own team): the human's own team used to always get one of the same random "Place
   // Mascot" names as the 15 CPU teams, indistinguishable from them anywhere it's listed (Overview
@@ -91,12 +63,6 @@ function App() {
   // new one without retyping. Threaded through GameShell -> createDraft -> createInitialTeams
   // (draft.ts), which overrides the random draw for whichever slot ends up human with this exact
   // string.
-  // 2026-08-16, follow-up (same session): moved the editable UI off this screen entirely, onto
-  // the Draft Lottery's own "Your team" step.
-  // 2026-08-19, user's explicit ask ("merge how to play with home screen etc"): moved back. Real
-  // state again (was a no-setter placeholder while the Lottery screen owned editing) — see the
-  // `team-name-row` block below for the input itself (unconditional as of the same-day
-  // "cant choose name for tester mode" follow-up, no longer Player-Mode-gated).
   const [teamName, setTeamName] = useState(() => randomTeamNames(1)[0]);
 
   return (
@@ -122,37 +88,6 @@ function App() {
             </p>
           </header>
           <div className="intro-screen">
-            {SHOW_DEV_CONTROLS && (
-              <div className="mode-select" role="radiogroup" aria-label="Mode">
-                {MODE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={mode === opt.id}
-                    className={`mode-select-btn ${mode === opt.id ? 'mode-select-btn--active' : ''}`}
-                    onClick={() => setMode(opt.id)}
-                  >
-                    <span className="mode-select-name">{opt.name}</span>
-                    <span className="mode-select-blurb">{opt.blurb}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {SHOW_DEV_CONTROLS && (
-              <label className="commissioner-toggle">
-                <input type="checkbox" checked={commissionerMode} onChange={(e) => setCommissionerMode(e.target.checked)} />
-                Commissioner Mode — control all 16 teams yourself, with a reasoning note per pick
-              </label>
-            )}
-            {/* 2026-08-19, user's explicit ask ("merge how to play with home screen etc"): "Your
-                team" and How to Play both used to live on the Draft Lottery's own separate
-                pre-reveal step, reached only after clicking "Start Draft" — merged back onto this
-                screen instead, one screen instead of two.
-                Same-day follow-up ("cant choose name for tester mode"): no longer gated on
-                `mode === 'player'` — a real dev-mode user (SHOW_DEV_CONTROLS) can pick Tester Mode
-                and still wants a team name; a friend on a real deploy is always in Player Mode
-                anyway (see SHOW_DEV_CONTROLS's own docstring), so this shows unconditionally now. */}
             <div className="team-name-row">
               <label htmlFor="intro-team-name" className="team-name-label">
                 Your team
@@ -174,9 +109,6 @@ function App() {
                 🎲
               </button>
             </div>
-            {/* 2026-08-19, same-day follow-up ("how to play can be on screen all the time in main
-                menu"): the rules are useful regardless of which mode is selected, so — same as
-                the team-name input above — this no longer waits on `mode === 'player'`. */}
             <ol className="how-to-play-panel">
               <li>
                 <b>Draft.</b> 16 teams take turns, {DISPLAY_ROSTER_SIZE} rounds — one player each round. You control
@@ -199,16 +131,6 @@ function App() {
                 ranks the whole field, yours included.
               </li>
             </ol>
-            {/* 2026-09-11, internal UI audit finding #1 ("Self-Scout Report"): every piece of copy
-                above (hero, tagline, all 5 how-to-play bullets) is about the 16-team draft, but the
-                one button that used to carry `.primary-btn`'s accent color was "Build the Best 5"
-                (a side mode) while "Start Draft" sat visually identical to Card Collection/Browse
-                Draft Pool/Cap Sheet. Also fixes the second half of that finding: five plain
-                `<button>`s with no wrapping container flowed as inline-block text and wrapped
-                raggedly (measured 3-then-2 at 1280px) — `.intro-actions`/`.intro-more-row` below
-                give the two real entry points (Draft, Best 5) their own flex column and demote the
-                other three to a single-row link group instead of a third and fourth full-size
-                button. */}
             <div className="intro-actions">
               <button className="primary-btn" onClick={() => setView('game')}>
                 Start Draft
@@ -217,48 +139,19 @@ function App() {
                 Build the Best 5 — daily
               </button>
             </div>
-            <div className="intro-more-row">
-              <button className="text-link-btn" onClick={() => setView('cards')}>
-                Card Collection
-              </button>
-              <button className="text-link-btn" onClick={() => setView('pool')}>
-                Browse Draft Pool
-              </button>
-              <button className="text-link-btn" onClick={() => setView('capsheet')}>
-                Cap Sheet
-              </button>
-            </div>
           </div>
         </div>
       )}
 
       {view === 'game' && (
         <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
-          <GameShell mode={mode} commissionerMode={commissionerMode} humanTeamName={teamName} onExit={() => setView('intro')} />
-        </Suspense>
-      )}
-
-      {view === 'pool' && (
-        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
-          <DraftPoolBrowser mode={mode} onBack={() => setView('intro')} />
-        </Suspense>
-      )}
-
-      {view === 'capsheet' && (
-        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
-          <CapSheet onBack={() => setView('intro')} />
+          <GameShell mode="player" commissionerMode={false} humanTeamName={teamName} onExit={() => setView('intro')} />
         </Suspense>
       )}
 
       {view === 'bestfive' && (
         <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
-          <BestFive mode={mode} onBack={() => setView('intro')} />
-        </Suspense>
-      )}
-
-      {view === 'cards' && (
-        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
-          <CardGallery mode={mode} onBack={() => setView('intro')} />
+          <BestFive mode="player" onBack={() => setView('intro')} />
         </Suspense>
       )}
     </div>
