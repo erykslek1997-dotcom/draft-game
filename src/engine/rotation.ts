@@ -205,7 +205,13 @@ function starterFitMultiplier(player: PlayerSpan, slot: Position): number {
 const bestPrimaryAssignmentCache = new Map<string, { assignment: Partial<Record<Position, PlayerSpan>>; score: number }>();
 const BEST_PRIMARY_ASSIGNMENT_CACHE_CAP = 20000;
 
-function bestPrimaryAssignment(
+/** 2026-09-11: exported (was module-private) so `quickDraft.ts`'s Szybka 5 mode can reuse this
+ * exact optimal starter-slot search directly — it needs "which of my 5 drafted players fits which
+ * slot best" without the minutes-distribution half of `autoAssignRotation` below, which is wrong
+ * for a bare 5-man roster (see Best Five's own `lineupTeam` docstring: it "leaves sub-Starter-tier
+ * slots empty and overworks the rest" there). Pure export, zero behavior change to any existing
+ * caller — the function body is untouched. */
+export function bestPrimaryAssignment(
   roster: PlayerSpan[],
 ): { assignment: Partial<Record<Position, PlayerSpan>>; score: number } {
   const cacheKey = roster.map((p) => p.id).join('|');
