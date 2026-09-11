@@ -925,7 +925,7 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                   <ScoreChip label="Spacing" value={breakdown.spacingScore} />
                   <ScoreChip label="Fit" value={breakdown.fitScore} />
                   <ScoreChip label="Rotation" value={breakdown.rotationScore} />
-                  <span className="fga-spent">FGA spent: {totalFga.toFixed(1)} / {CAP_LIMIT}</span>
+                  <span className="fga-spent">Shots spent: {totalFga.toFixed(1)} / {CAP_LIMIT}</span>
                 </div>
                 {/* 2026-09-11, Scouting Report finding: Era Ball surfaces its named archetype tags
                     right on the player list; ours was only visible after opening "Team analysis".

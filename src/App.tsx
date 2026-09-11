@@ -83,7 +83,7 @@ function App() {
           <header className="app-header">
             <h1>All-Time NBA Draft</h1>
             <p className="tagline">
-              Build the best-<em>fitting</em> all-time roster under a {DISPLAY_CAP_LIMIT} FGA cap — not just the best
+              Build the best-<em>fitting</em> all-time roster under a {DISPLAY_CAP_LIMIT}-shot cap — not just the best
               players.
             </p>
           </header>
@@ -115,8 +115,8 @@ function App() {
                 one team; the rest are CPU.
               </li>
               <li>
-                <b>FGA cap.</b> Every pick costs shot volume (FGA). Your whole roster has to fit under{' '}
-                {DISPLAY_CAP_LIMIT} FGA — the best player isn't always the pick that fits.
+                <b>Shot cap.</b> Every pick costs shots. Your whole roster has to fit under{' '}
+                {DISPLAY_CAP_LIMIT} shots — the best player isn't always the pick that fits.
               </li>
               <li>
                 <b>Spans.</b> You're not limited to a player's peak — draft any real multi-season window of their

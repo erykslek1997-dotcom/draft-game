@@ -106,10 +106,10 @@ export function SpacingTierBadge({ span }: { span: PlayerSpan }) {
  * the raw TAL value — 2026-08-05, the user's position-based tier-cap rules (`overallTierForSpan`)
  * need O-TAL/D-TAL/FGA/position alongside TAL, the same reason `SpacingTierBadge` already needed
  * the player's identity for the Curry exception, not just the number. */
-type DisplayOverallTier = OverallTier | 'FGA Glue';
+type DisplayOverallTier = OverallTier | 'Shots Glue';
 
 const OVERALL_TIER_CLASS: Record<DisplayOverallTier, string> = {
-  'FGA Glue': 'rating-glue',
+  'Shots Glue': 'rating-glue',
   'Cigarette Butt': 'rating-cigarette',
   'Bench Warmer': 'rating-bench',
   'Role Player': 'rating-role',
@@ -122,11 +122,11 @@ const OVERALL_TIER_CLASS: Record<DisplayOverallTier, string> = {
   GOAT: 'rating-goat',
 };
 
-/** Sub-2-FGA players are cap-construction pieces, not ordinary replacement-level players. The
+/** Sub-2-shot players are cap-construction pieces, not ordinary replacement-level players. The
  * underlying tier stays unchanged for talent/minutes rules; this is the explicit roster-role
  * label the AI and UI can share without pretending cheapness is basketball quality. */
 function displayedOverallTier(span: PlayerSpan): DisplayOverallTier {
-  return span.fga < 2 ? 'FGA Glue' : overallTierForSpan(tierContextFor(span));
+  return span.fga < 2 ? 'Shots Glue' : overallTierForSpan(tierContextFor(span));
 }
 
 /** Shared by `OverallTierBadge` and every "TAL {number}" display site — building this once and
@@ -804,7 +804,7 @@ export default function DraftBoard({
                   onChange={(e) => setSearch(e.target.value)}
                 />
                 <div className="at-fga-filter">
-                  <label>Filter FGA</label>
+                  <label>Filter shots</label>
                   <input className="at-fga-input" value={fgaMin} onChange={(e) => setFgaMin(e.target.value)} />
                   <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
                 </div>
@@ -825,7 +825,7 @@ export default function DraftBoard({
                       ever be the real, enforced number, so back to `currentFgas`. `displayFgas`
                       stays exactly where it already correctly belongs: the Team tab's own cap
                       meter, which is reviewing an already-locked-in pick, not gating a new one. */}
-                  Cap remaining: <b>{capRemaining(currentFgas)}</b> FGA
+                  Cap remaining: <b>{capRemaining(currentFgas)}</b> shots
                 </div>
               </div>
               <div className="at-controls-row" style={{ marginTop: -4 }}>
@@ -895,7 +895,7 @@ export default function DraftBoard({
                             </>
                           ) : (
                             <>
-                              {fgaRange} <span className="lbl">FGA</span>
+                              {fgaRange} <span className="lbl">shots</span>
                             </>
                           )}
                         </span>
@@ -908,7 +908,7 @@ export default function DraftBoard({
                               !canPick
                                 ? `${teamLabel(currentTeam)} is picking…`
                                 : !isPickLegal(state, group.bestTalentSpan.id)
-                                  ? 'Over the FGA cap — pick something else first, or a cheaper season for this player.'
+                                  ? 'Over the shots cap — pick something else first, or a cheaper season for this player.'
                                   : undefined
                             }
                             onClick={(e) => {
@@ -928,7 +928,7 @@ export default function DraftBoard({
                               <tr>
                                 <th>Span</th>
                                 <th>Pos</th>
-                                <th className="num">FGA</th>
+                                <th className="num">Shots</th>
                                 <th className="num">TAL</th>
                                 <th>O</th>
                                 <th>D</th>
@@ -967,7 +967,7 @@ export default function DraftBoard({
                                           !canPick
                                             ? `${teamLabel(currentTeam)} is picking…`
                                             : !isPickLegal(state, span.id)
-                                              ? 'Over the FGA cap — pick something else first, or a cheaper season for this player.'
+                                              ? 'Over the shots cap — pick something else first, or a cheaper season for this player.'
                                               : undefined
                                         }
                                         onClick={() => onPick(span.id)}
@@ -1019,7 +1019,7 @@ export default function DraftBoard({
                                   <th className="num">BLK</th>
                                   <th className="num">FG%</th>
                                   <th className="num">3PT%</th>
-                                  <th className="num">FGA</th>
+                                  <th className="num">Shots</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -1068,7 +1068,7 @@ export default function DraftBoard({
               <div className="at-legend-row">
                 <p className="at-caption" style={{ marginTop: 0 }}>
                   {showJudgeMetrics
-                    ? "Peak FGA = cost of this player's highest-Talent season. Lowest FGA = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one."
+                    ? "Peak shots = cost of this player's highest-Talent season. Lowest shots = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one."
                     : 'Draft picks his best season. Click a row to compare his other seasons — you can still switch to a different one afterward, in the Team tab.'}
                 </p>
                 {showJudgeMetrics && (
@@ -1103,7 +1103,7 @@ export default function DraftBoard({
           <h1 className="at-panel-title at-cond">Team</h1>
           <div className={`at-cap-meter${isViewingHumanRoster && chosenRosterOverCap ? ' at-cap-meter--over' : ''}`}>
             <span className="at-cap-label">
-              <b>{totalFga(displayFgas).toFixed(1)}</b> / {CAP_LIMIT} FGA
+              <b>{totalFga(displayFgas).toFixed(1)}</b> / {CAP_LIMIT} shots
               {isViewingHumanRoster && chosenRosterOverCap && ' — over cap'}
             </span>
             <div className="at-cap-track">
@@ -1146,7 +1146,7 @@ export default function DraftBoard({
                   <th style={{ textAlign: 'center' }}>D-POR</th>
                   <th style={{ textAlign: 'center' }}>SPC</th>
                   <th style={{ textAlign: 'center' }}>DUR</th>
-                  <th>FGA</th>
+                  <th>Shots</th>
                 </tr>
               </thead>
               <tbody>
@@ -1197,7 +1197,7 @@ export default function DraftBoard({
                                     comparing spans by cost is the actual reason to open this
                                     dropdown in the first place — the table's column duplicates the
                                     SELECTED option only, never every option being compared. */}
-                                {o.spanLabel} — FGA {o.fga.toFixed(1)} —{' '}
+                                {o.spanLabel} — {o.fga.toFixed(1)} shots —{' '}
                                 {showJudgeMetrics
                                   ? `TAL ${effectiveTalent(o)} — ${overallTierForSpan(tierContextFor(o))}`
                                   : overallTierForSpan(tierContextFor(o))}
@@ -1235,7 +1235,7 @@ export default function DraftBoard({
           )}
           <p className="at-caption">
             {isViewingHumanRoster
-              ? "You drafted the player, not a specific era — the Span dropdown above picks which career window to actually roster. No FGA cap here, same as the draft itself. Rotation minutes are set below."
+              ? "You drafted the player, not a specific era — the Span dropdown above picks which career window to actually roster. No shots cap here, same as the draft itself. Rotation minutes are set below."
               : 'Rotation minutes are set below, in this same tab.'}
           </p>
           {/* 2026-08-19, user's explicit ask ("you can add glossary under TEAM"): the roster table
@@ -1303,7 +1303,7 @@ export default function DraftBoard({
                   !state.complete
                     ? `Finish drafting all ${ROSTER_SIZE} picks before you can submit.`
                     : chosenRosterOverCap
-                      ? `Your chosen spans total ${chosenRosterFga.toFixed(1)} FGA — over the ${CAP_LIMIT} cap. Pick cheaper spans in the Team table above.`
+                      ? `Your chosen spans total ${chosenRosterFga.toFixed(1)} shots — over the ${CAP_LIMIT} cap. Pick cheaper spans in the Team table above.`
                       : undefined
                 }
               />

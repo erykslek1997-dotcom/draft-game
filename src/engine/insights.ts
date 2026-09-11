@@ -634,7 +634,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const s = t.fgaEfficiencyScore ?? 0;
       return s >= 0.70
-        ? hit(s, 0.90, teamConfidence(t), 'The roster uses the FGA budget efficiently, generating strong value per allocated shot.', { values: { fgaEfficiencyScore: s, totalFga: t.totalFga } })
+        ? hit(s, 0.90, teamConfidence(t), 'The roster uses its shot budget efficiently, generating strong value per allocated shot.', { values: { fgaEfficiencyScore: s, totalFga: t.totalFga } })
         : inactive;
     }
   },
@@ -1066,7 +1066,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const overlap = t.usageOverlapScore ?? 0;
       const compression = t.fgaCompressionScore ?? 0;
       return stars.length >= 2 && overlap <= 0.50 && compression < 0.55
-        ? hit(0.78, 0.92, teamConfidence(t), `${displayNames(stars)} provide star-level talent without forcing severe on-ball or FGA overlap.`, { players: stars.map(p => p.playerName), values: { starCount: stars.length, usageOverlapScore: overlap, fgaCompressionScore: compression } }, 0.96)
+        ? hit(0.78, 0.92, teamConfidence(t), `${displayNames(stars)} provide star-level talent without forcing severe on-ball or shot overlap.`, { players: stars.map(p => p.playerName), values: { starCount: stars.length, usageOverlapScore: overlap, fgaCompressionScore: compression } }, 0.96)
         : inactive;
     }
   },
@@ -1077,7 +1077,7 @@ export const DETECTORS: RosterInsightDetector[] = [
         .filter(p => (p.tal ?? 0) >= 68 && p.fga <= 12 && (p.highUsageWeight ?? 0) <= 0.25 && p.minutes >= 15)
         .sort((a, b) => (b.tal ?? 0) - (a.tal ?? 0));
       return rolePlayers.length >= 2
-        ? hit(0.74, 0.84, teamConfidence(t), `${displayNames(rolePlayers)} supply useful bench impact at a manageable FGA and usage cost.`, { players: rolePlayers.map(p => p.playerName), values: { highValueRolePlayerCount: rolePlayers.length } }, 0.92)
+        ? hit(0.74, 0.84, teamConfidence(t), `${displayNames(rolePlayers)} supply useful bench impact at a manageable shot and usage cost.`, { players: rolePlayers.map(p => p.playerName), values: { highValueRolePlayerCount: rolePlayers.length } }, 0.92)
         : inactive;
     }
   },
@@ -1138,7 +1138,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const f = t.fgaEfficiencyScore ?? 0;
       const c = t.lowUsageComplementCount ?? 0;
       return d >= 0.78 && f >= 0.68 && c >= 2
-        ? hit((d + f) / 2, 0.92, teamConfidence(t), 'The roster gets elite defensive value from several low-FGA players, preserving shots for its offensive engines.', { values: { defensiveLayeringScore: d, fgaEfficiencyScore: f, lowUsageComplementCount: c } }, 0.95)
+        ? hit((d + f) / 2, 0.92, teamConfidence(t), 'The roster gets elite defensive value from several low-shot players, preserving shots for its offensive engines.', { values: { defensiveLayeringScore: d, fgaEfficiencyScore: f, lowUsageComplementCount: c } }, 0.95)
         : inactive;
     }
   },
@@ -1150,7 +1150,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const compression = t.fgaCompressionScore ?? 0;
       const stars = t.players.filter(p => (p.tal ?? 0) >= 85 && p.minutes >= 24);
       return stars.length >= 3 && Math.max(overlap, compression) >= 0.65
-        ? hit(Math.max(overlap, compression), 0.96, teamConfidence(t), `${displayNames(stars)} provide major star power, but their combined FGA and on-ball demand create a difficult resource-allocation problem.`, { players: stars.map(p => p.playerName), values: { usageOverlapScore: overlap, fgaCompressionScore: compression } }, 0.95)
+        ? hit(Math.max(overlap, compression), 0.96, teamConfidence(t), `${displayNames(stars)} provide major star power, but their combined shot volume and on-ball demand create a difficult resource-allocation problem.`, { players: stars.map(p => p.playerName), values: { usageOverlapScore: overlap, fgaCompressionScore: compression } }, 0.95)
         : inactive;
     }
   },
@@ -1221,7 +1221,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const f = t.fgaEfficiencyScore ?? 0;
       const n = t.netRatingProjection ?? 0;
       return f >= 0.78 && n >= 3
-        ? hit(0.60 + f * 0.35, 0.96, teamConfidence(t), 'The roster creates unusually high projected team impact without overspending its FGA budget.', { values: { fgaEfficiencyScore: f, netRatingProjection: n, totalFga: t.totalFga } }, 0.98)
+        ? hit(0.60 + f * 0.35, 0.96, teamConfidence(t), 'The roster creates unusually high projected team impact without overspending its shot budget.', { values: { fgaEfficiencyScore: f, netRatingProjection: n, totalFga: t.totalFga } }, 0.98)
         : inactive;
     }
   },
@@ -1379,7 +1379,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           Math.min(0.88, 0.62 + 0.08 * count),
           0.88,
           teamConfidence(t),
-          `${displayNameList(names)} supplies real rotation impact at eight or fewer FGA, preserving scarce shot budget for higher-creation roles.`,
+          `${displayNameList(names)} supplies real rotation impact at eight or fewer shots, preserving scarce shot budget for higher-creation roles.`,
           { players: names, values: { lowFgaImpactCount: count, maxQualifyingFga: TEAM_MODEL_THRESHOLDS.lowFga, minimumQualifyingMinutes: TEAM_MODEL_THRESHOLDS.lowFgaMinutes } },
           0.96,
         )
@@ -1404,7 +1404,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           0.78,
           0.94,
           teamConfidence(t),
-          `${stars[0].playerName}'s FGA cost buys creation nobody else on the roster could replace — and there's still enough left for a real eight-man rotation.`,
+          `${stars[0].playerName}'s shot cost buys creation nobody else on the roster could replace — and there's still enough left for a real eight-man rotation.`,
           { players: [stars[0].playerName], values: { starFga: stars[0].fga, offensiveImpact: stars[0].offensiveImpact ?? 0, playoffRotationDepthScore: depth, benchDropoffScore: dropoff } },
           0.98,
         )
@@ -1425,7 +1425,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           Math.max(0.64, 1 - depth, dropoff),
           0.92,
           teamConfidence(t),
-          `${stars[0].playerName}'s ${stars[0].fga.toFixed(1)} FGA cost absorbs a large share of the cap while supporting quality falls sharply outside the primary core.`,
+          `${stars[0].playerName}'s ${stars[0].fga.toFixed(1)} shot cost absorbs a large share of the cap while supporting quality falls sharply outside the primary core.`,
           { players: [stars[0].playerName], values: { starFga: stars[0].fga, totalFga: t.totalFga, playoffRotationDepthScore: depth, benchDropoffScore: dropoff } },
           0.96,
         )
@@ -1445,7 +1445,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           0.68,
           0.80,
           teamConfidence(t),
-          `${displayNameList(names)} can remain outside the playoff rotation without damage: eight other players cover meaningful minutes and the ninth slot consumes little FGA.`,
+          `${displayNameList(names)} can remain outside the playoff rotation without damage: eight other players cover meaningful minutes and the ninth slot consumes few shots.`,
           { players: names, values: { deadRosterSlotCount: dead, deadRosterSlotFga: t.deadRosterSlotFga ?? 0, meaningfulPlayoffPlayerCount: t.meaningfulPlayoffPlayerCount ?? 0 } },
           0.98,
         )
@@ -1463,7 +1463,7 @@ export const DETECTORS: RosterInsightDetector[] = [
         (t.severePositionalCompromiseCount ?? 0) > 0 ||
         (t.minutesCeilingViolationCount ?? 0) > 0;
       const message = expensiveDeadSlot && !strained
-        ? `${displayNameList(names)} uses ${(t.deadRosterSlotFga ?? 0).toFixed(1)} FGA without a playoff rotation role, an avoidable resource cost even behind a functional eight-man group.`
+        ? `${displayNameList(names)} uses ${(t.deadRosterSlotFga ?? 0).toFixed(1)} shots without a playoff rotation role, an avoidable resource cost even behind a functional eight-man group.`
         : `${displayNameList(names)} is effectively outside the rotation while the remaining roster still lacks a clean, robust eight-man playoff structure.`;
       return t.players.length === 9 && dead > 0 && (expensiveDeadSlot || strained)
         ? hit(

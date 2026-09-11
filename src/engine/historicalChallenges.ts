@@ -85,8 +85,8 @@ export function evaluateHistoricalChallenges(
       // than ~85-88. 75 preserves this as a genuine elite-fit gate on the new scale.
       condition('FIT minimum 75', breakdown.fitScore >= 75, `${breakdown.fitScore}`),
     ]),
-    build('fga-glue', 'FGA Glue', 'Low-usage championship role players', 'Cap alchemist badge', [
-      condition('At least two players below 2 FGA', gluePlayers >= 2, `${gluePlayers}`),
+    build('fga-glue', 'Shots Glue', 'Low-usage championship role players', 'Cap alchemist badge', [
+      condition('At least two players below 2 shots', gluePlayers >= 2, `${gluePlayers}`),
       condition('PO profile minimum 80', season.playoffs >= 80, `${season.playoffs}`),
       condition('Bench depth minimum 70', breakdown.benchDepthScore >= 70, `${breakdown.benchDepthScore}`),
       condition('Rotation minimum 75', breakdown.rotationScore >= 75, `${breakdown.rotationScore}`),

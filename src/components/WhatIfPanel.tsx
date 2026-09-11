@@ -104,14 +104,14 @@ export default function WhatIfPanel({ team }: { team: Team }) {
         <datalist id={candidateListId}>
           {candidates.map((player) => (
             <option key={player.id} value={candidateLabel(player)}>
-              TAL {Math.round(effectiveTalent(player))} · FGA {player.fga.toFixed(1)}
+              TAL {Math.round(effectiveTalent(player))} · {player.fga.toFixed(1)} shots
             </option>
           ))}
         </datalist>
       </label>
       {comparison && (
         <>
-          <span>FGA {currentFga.toFixed(1)} → {comparison.fga.toFixed(1)}</span>
+          <span>Shots {currentFga.toFixed(1)} → {comparison.fga.toFixed(1)}</span>
           <span>Overall {comparison.beforeBreakdown.overall} → {comparison.afterBreakdown.overall} ({signed(comparison.afterBreakdown.overall - comparison.beforeBreakdown.overall)})</span>
           <span>FIT {comparison.beforeFit.score} → {comparison.afterFit.score} ({signed(comparison.afterFit.score - comparison.beforeFit.score)})</span>
           <span>RS {comparison.beforeSeason.regularSeason} → {comparison.afterSeason.regularSeason} · PO {comparison.beforeSeason.playoffs} → {comparison.afterSeason.playoffs}</span>
