@@ -142,6 +142,25 @@ function ordinal(n: number): string {
 }
 
 /**
+ * 2026-09-11, competitor scouting report ("Scouting Report" artifact): every rival in this space
+ * names the OUTCOME, not just the number — HoopsMatic's 73-9 game badges an 11-71 season as "TANK
+ * COMMANDER". A bare "11th / 16" is correct but has no personality. Real sports vocabulary, not an
+ * invented scale — six bands over a 16-team field, scored on rank (the thing a real GM/fan actually
+ * says out loud) with a `tone` for the hero's accent color, reusing the existing score-band ladder
+ * rather than a 7th palette.
+ */
+function resultTierLabel(rank: number, fieldSize: number): { label: string; tone: 1 | 2 | 3 | 4 | 5 | 6 } {
+  const pct = rank / fieldSize; // lower = better
+  if (rank === 1) return { label: 'Dynasty', tone: 6 };
+  if (pct <= 0.2) return { label: 'Contender', tone: 5 };
+  if (pct <= 0.4) return { label: 'Playoff Lock', tone: 4 };
+  if (pct <= 0.6) return { label: 'Play-In Fight', tone: 3 };
+  if (pct <= 0.85) return { label: 'Lottery Team', tone: 2 };
+  if (rank < fieldSize) return { label: 'Full Rebuild', tone: 1 };
+  return { label: 'Wooden Spoon', tone: 1 };
+}
+
+/**
  * 2026-09-09, user-reported ("końcowy screen wygląda średnio"): the results screen opened straight
  * into a plain `<h2>Final team ranking</h2>` and 16 identical accordion cards, so the one thing a
  * player actually came back to see — how their own roster did — had no more visual weight than the
@@ -149,6 +168,17 @@ function ordinal(n: number): string {
  * (the single number every team is judged by, kept dominant here), the simulated title odds (now
  * consistent with that ranking after the 2026-09-09 matchup fix), and the roster's own one-line
  * identity + honest failure mode straight from `fitScore`'s archetype report.
+ *
+ * 2026-09-11, "Scouting Report" competitor audit (HoopsMatic/82-0/Era Ball all end their results
+ * screen the same way): three additions, none touching the engine —
+ *  - a named tier badge (`resultTierLabel`) next to the raw rank, the same "name the outcome, not
+ *    just the number" move all three rivals make;
+ *  - a "gap to #1" caption so the Overall number has a benchmark instead of floating alone;
+ *  - a "Copy result" button. This is the one the audit called the actual finding that matters for
+ *    a friends-group launch — every rival treats "share this" as part of the payoff, and this
+ *    screen had no path from "I just saw my result" to "I sent it to the group chat" at all.
+ *    Clipboard-only, no backend, no share-sheet dependency — exactly the "closed friend group who
+ *    already coordinate outside the app" case the audit scoped it to.
  */
 function HeroResult({
   teamName,
@@ -156,6 +186,7 @@ function HeroResult({
   rank,
   fieldSize,
   overall,
+  topOverall,
   titleOdds,
   identity,
   failureMode,
@@ -165,10 +196,34 @@ function HeroResult({
   rank: number;
   fieldSize: number;
   overall: number;
+  topOverall: number | null;
   titleOdds: number | null;
   identity: string | null;
   failureMode: string | null;
 }) {
+  const [copied, setCopied] = useState(false);
+  const tier = resultTierLabel(rank, fieldSize);
+  const gap = topOverall !== null ? topOverall - overall : null;
+
+  async function copyResult() {
+    const lines = [
+      `🏀 ${teamName} — ${ordinal(rank)} / ${fieldSize} (${tier.label})`,
+      `Final Power Ranking: ${overall}${gap && gap > 0 ? ` (#1 is ${topOverall}, −${gap})` : ''}`,
+      titleOdds !== null ? `Title odds: ${(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%` : null,
+      identity,
+      'Beat me? — All-Time Draft',
+    ].filter((line): line is string => Boolean(line));
+    const text = lines.join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard permission denied or unavailable (e.g. non-HTTPS/local file context) — the
+      // button just silently doesn't confirm rather than throwing in the player's face.
+    }
+  }
+
   return (
     <header className="results-hero">
       <div className="results-hero-finish">
@@ -177,6 +232,7 @@ function HeroResult({
           <b>{ordinal(rank)}</b>
           <i>/ {fieldSize}</i>
         </span>
+        <span className={`results-hero-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
         <span className="results-hero-team">{teamName}</span>
       </div>
       <div className="results-hero-stats">
@@ -191,6 +247,13 @@ function HeroResult({
           </div>
         )}
       </div>
+      {gap !== null && (
+        <p className="results-hero-gap">
+          {gap > 0
+            ? <>Overall #1 in the field: <b>{topOverall}</b> — you're <b>{gap}</b> back.</>
+            : <>You have the best Overall in the field.</>}
+        </p>
+      )}
       {(identity || failureMode) && (
         <p className="results-hero-identity">
           {identity && <b>{identity}</b>}
@@ -198,6 +261,9 @@ function HeroResult({
           {failureMode && <span>{failureMode}</span>}
         </p>
       )}
+      <button type="button" className="results-hero-copy" onClick={copyResult}>
+        {copied ? '✓ Copied' : '📋 Copy result'}
+      </button>
     </header>
   );
 }
@@ -698,6 +764,7 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
           rank={heroRanked.rank}
           fieldSize={ranked.length}
           overall={heroRanked.breakdown.overall}
+          topOverall={ranked[0]?.breakdown.overall ?? null}
           titleOdds={leagueEvalByTeamId.get(heroRanked.team.id)?.championshipProbability ?? null}
           identity={
             heroFit?.inputs.primaryArchetype
@@ -860,6 +927,18 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                   <ScoreChip label="Rotation" value={breakdown.rotationScore} />
                   <span className="fga-spent">FGA spent: {totalFga.toFixed(1)} / {CAP_LIMIT}</span>
                 </div>
+                {/* 2026-09-11, Scouting Report finding: Era Ball surfaces its named archetype tags
+                    right on the player list; ours was only visible after opening "Team analysis".
+                    Same data (`fitDetail.inputs.primaryArchetype`), already computed for this card
+                    the moment it's expanded — just promoted up here instead of a second lookup. */}
+                {fitDetail?.inputs.primaryArchetype && (
+                  <div className="identity-chip-row">
+                    <span className="identity-chip">{fitDetail.inputs.primaryArchetype}</span>
+                    {fitDetail.inputs.secondaryArchetype && (
+                      <span className="identity-chip identity-chip-secondary">{fitDetail.inputs.secondaryArchetype}</span>
+                    )}
+                  </div>
+                )}
                 {fitDetail && (
                   <details className="result-accordion-section team-analysis-section">
                     <summary>Team analysis</summary>
@@ -1039,6 +1118,15 @@ export default function ResultsScreen({ teams, history, onRestart }: Props) {
                                 <li key={e.player.id} className="player-row">
                                   <span className="player-row-name at-name-tip" tabIndex={0} data-tip={pickStatTip(e.player)}>
                                     {compactPlayerName(e.player.playerName)} ({compactSpanLabel(e.player.spanLabel)})
+                                    {/* 2026-09-11, Scouting Report finding: HoopsMatic/Era Ball flag a real
+                                        position mismatch with a small superscript next to the name instead of a
+                                        sentence — this is that, additive to (not instead of) the existing
+                                        Concerns prose that names the same mismatch in full. */}
+                                    {e.player.primaryPosition !== slot && (
+                                      <sup className="rotation-natural-pos" title={`Natural position: ${e.player.primaryPosition}`}>
+                                        {e.player.primaryPosition}
+                                      </sup>
+                                    )}
                                     <span className="rotation-role-badge">{starterKeys.has(`${e.slot}|${e.player.id}`) ? 'Starter' : 'Bench'}</span>
                                   </span>
                                   <span className="player-row-meta">

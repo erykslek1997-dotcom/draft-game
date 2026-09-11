@@ -1406,6 +1406,21 @@ select {
   font-weight: 700;
   color: var(--at-ink);
 }
+/* 2026-09-11: names the outcome, not just the rank number — see HeroResult's own docstring. Reuses
+   the score-band tone family (t1 weakest/reddest through t6 strongest) rather than a new palette. */
+.results-hero-tier {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.results-hero-tier-t1, .results-hero-tier-t2 { background: color-mix(in srgb, var(--at-accent-2) 24%, transparent); color: color-mix(in srgb, var(--at-accent-2) 55%, white); }
+.results-hero-tier-t3 { background: color-mix(in srgb, #c58f3c 26%, transparent); color: #e8b568; }
+.results-hero-tier-t4 { background: color-mix(in srgb, var(--at-t5) 34%, transparent); color: var(--at-t6-ink); }
+.results-hero-tier-t5 { background: color-mix(in srgb, var(--at-t6) 40%, transparent); color: #fff; }
+.results-hero-tier-t6 { background: var(--at-t6); color: #fff; }
 .results-hero-stats {
   display: flex;
   gap: 8px;
@@ -1444,6 +1459,20 @@ select {
 .results-hero-overall.score-t6 { background: var(--at-t6); }
 .results-hero-overall .results-hero-stat-label { color: color-mix(in srgb, #fff 78%, transparent); }
 .results-hero-overall .results-hero-stat-value { color: #fff; }
+/* "Overall #1 in the field: X — you're Y back" — the benchmark line from the Scouting Report
+   audit (HoopsMatic shows "best squad you could've signed would win 11.29%"). Sits above the
+   identity line, no border of its own, so the two read as one continuous payoff paragraph. */
+.results-hero-gap {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--at-ink-soft);
+}
+.results-hero-gap b { color: var(--at-ink); font-weight: 700; }
+.results-hero-gap + .results-hero-identity { border-top: none; padding-top: 4px; }
 .results-hero-identity {
   grid-column: 1 / -1;
   margin: 2px 0 0;
@@ -1454,6 +1483,26 @@ select {
   color: var(--at-ink-soft);
 }
 .results-hero-identity b { color: var(--at-ink); font-weight: 700; }
+/* 2026-09-11, Scouting Report finding: every competitor treats "share this" as part of the
+   payoff (Share result / Challenge a friend); this screen had no path from seeing a result to
+   sending it to the group chat at all. Clipboard-only — no share-sheet/backend dependency, which
+   matches "closed friend group who already coordinate outside the app." */
+.results-hero-copy {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: 4px;
+  padding: 7px 14px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--at-accent) 12%, transparent);
+  color: var(--at-accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color .12s ease;
+}
+.results-hero-copy:hover { background: color-mix(in srgb, var(--at-accent) 20%, transparent); }
 @media (max-width: 560px) {
   .results-hero { grid-template-columns: 1fr; }
   .results-hero-stats { justify-content: flex-start; }
@@ -1563,12 +1612,14 @@ select {
   border-top: 1px solid var(--border);
 }
 .team-result-body > .subscores,
+.team-result-body > .identity-chip-row,
 .team-result-body > .net-rating-projection,
 .team-result-body > .historical-challenges-panel,
 .team-result-body > .what-if-panel,
 .team-result-body > .notes,
 .team-result-body > .draft-order { flex: 0 0 100%; }
-.team-result-body > .subscores { order: 0; }
+.team-result-body > .subscores,
+.team-result-body > .identity-chip-row { order: 0; }
 .team-result-body > .net-rating-projection,
 .team-result-body > .historical-challenges-panel,
 .team-result-body > .what-if-panel { order: 2; }
@@ -1842,6 +1893,28 @@ select {
   opacity: 0.75;
   margin-left: 4px;
 }
+/* 2026-09-11: the roster's named archetype(s), promoted out of the "Team analysis" accordion so
+   every card's identity reads at a glance — see the render site's own comment. */
+.identity-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -2px 0 10px;
+}
+.identity-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--at-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--at-accent) 13%, transparent);
+  color: var(--at-accent);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.identity-chip-secondary {
+  border-color: color-mix(in srgb, var(--at-ink) 25%, transparent);
+  background: color-mix(in srgb, var(--at-ink) 8%, transparent);
+  color: var(--at-ink-soft);
+}
 
 .fit-v2-shadow-panel {
   display: flex;
@@ -1962,6 +2035,15 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   letter-spacing: .04em;
   text-transform: uppercase;
   vertical-align: 1px;
+}
+/* 2026-09-11: small "natural position" flag when a player is slotted off their primary position —
+   see the rotation-panel render site's own comment. Cheap, additive to the existing Concerns prose. */
+.rotation-natural-pos {
+  margin-left: 3px;
+  color: var(--at-accent-2);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .lineup ul {

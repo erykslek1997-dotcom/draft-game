@@ -450,7 +450,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'CREATION_SHORTAGE', type: 'concern', category: 'creation',
     suppressionGroup: 'creation_negative',
     evaluate: t => (t.creatorCount ?? 0) === 0
-      ? hit(0.92, 0.98, teamConfidence(t), 'The rotation lacks a reliable advantage creator, leaving too much offense dependent on assisted or pre-created chances.', { values: { creatorCount: 0 } }, 0.95)
+      ? hit(0.92, 0.98, teamConfidence(t), 'No reliable advantage creator — too much of the offense depends on assisted or pre-created looks.', { values: { creatorCount: 0 } }, 0.95)
       : inactive
   },
   {
@@ -923,7 +923,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const n = t.positionalCompromiseCount ?? 0;
       return n >= 2
-        ? hit(0.50 + n * 0.11, 0.86, teamConfidence(t), `${n} rotation assignments push ${t.positionalCompromisePlayers?.join(', ') ?? 'multiple players'} outside their strongest natural positional fit.`, { players: t.positionalCompromisePlayers, values: { positionalCompromiseCount: n } })
+        ? hit(0.50 + n * 0.11, 0.86, teamConfidence(t), `${n} rotation slots ask ${t.positionalCompromisePlayers?.join(', ') ?? 'multiple players'} to play out of position.`, { players: t.positionalCompromisePlayers, values: { positionalCompromiseCount: n } })
         : inactive;
     }
   },
@@ -1107,7 +1107,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       if ((t.starterReboundingScore ?? 1) <= 0.40) holes.push('rebounding');
       if ((t.positionalCompromiseCount ?? 0) >= 3) holes.push('positional coverage');
       return holes.length >= 2
-        ? hit(0.62 + holes.length * 0.10, 0.96, teamConfidence(t), `The roster carries multiple structural holes at once: ${holes.join(', ')}.`, { values: { structuralHoleCount: holes.length }, notes: holes }, 0.98)
+        ? hit(0.62 + holes.length * 0.10, 0.96, teamConfidence(t), `Multiple structural holes at once: ${holes.join(', ')}.`, { values: { structuralHoleCount: holes.length }, notes: holes }, 0.98)
         : inactive;
     }
   },
@@ -1404,7 +1404,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           0.78,
           0.94,
           teamConfidence(t),
-          `${stars[0].playerName}'s high FGA cost buys difficult-to-replace creation while the remaining roster still supports a robust eight-man playoff rotation.`,
+          `${stars[0].playerName}'s FGA cost buys creation nobody else on the roster could replace — and there's still enough left for a real eight-man rotation.`,
           { players: [stars[0].playerName], values: { starFga: stars[0].fga, offensiveImpact: stars[0].offensiveImpact ?? 0, playoffRotationDepthScore: depth, benchDropoffScore: dropoff } },
           0.98,
         )
