@@ -6,7 +6,9 @@ import { naturalPosition } from '../engine/naturalPosition';
 import { headshotUrl } from '../data/headshots';
 import {
   dailyPool,
+  dailyShotsCap,
   dailyTargets,
+  lineupShots,
   scoreLineup,
   gradeVsPar,
   explainResult,
@@ -94,6 +96,10 @@ export default function BestFive({ onBack }: Props) {
   // mode stays playable while there's no backend enforcing one scored attempt per day.
   const [board, setBoard] = useState<{ seed: string; n: number }>({ seed: today, n: 0 });
   const pool: DailyPool = useMemo(() => dailyPool(board.seed), [board.seed]);
+  // 2026-09-11, user's own ask: "dodajemy koszt gracza w shots i oprócz codziennej puli graczy
+  // będzie losowa liczba między 60 a 90" — a daily-seeded shots budget for the five starters,
+  // same deterministic-per-day pattern as the pool itself (see dailyShotsCap's own docstring).
+  const shotsCap = useMemo(() => dailyShotsCap(board.seed), [board.seed]);
   const isDaily = board.seed === today;
 
   const [lineup, setLineup] = useState<Lineup>({});
@@ -102,6 +108,8 @@ export default function BestFive({ onBack }: Props) {
 
   const filledCount = STARTER_SLOTS.filter((s) => lineup[s]).length;
   const complete = filledCount === 5;
+  const shotsUsed = lineupShots(lineup);
+  const overCap = shotsUsed > shotsCap;
 
   function pick(slot: Position, span: PlayerSpan) {
     setLineup((prev) => ({ ...prev, [slot]: span }));
@@ -120,9 +128,9 @@ export default function BestFive({ onBack }: Props) {
   }
 
   function submit() {
-    if (!complete) return;
+    if (!complete || overCap) return;
     const score = scoreLineup(lineup);
-    const targets = dailyTargets(pool);
+    const targets = dailyTargets(pool, shotsCap);
     setResult({ score, targets, grade: gradeVsPar(score.composite, targets.par, targets.optimal) });
   }
 
@@ -169,6 +177,16 @@ export default function BestFive({ onBack }: Props) {
             answer — spacing and rim protection matter. No score until you submit.
           </p>
 
+          <div className={`bf-shots-meter ${overCap ? 'bf-shots-meter--over' : ''}`}>
+            <span className="bf-shots-label">
+              Shots: <b>{shotsUsed.toFixed(1)}</b> / {shotsCap}
+              {overCap && ' — over the cap'}
+            </span>
+            <span className="bf-shots-track">
+              <span className="bf-shots-fill" style={{ width: `${Math.min(100, (shotsUsed / shotsCap) * 100)}%` }} />
+            </span>
+          </div>
+
           <div className="bf-slot-row">
             {STARTER_SLOTS.map((slot) => {
               const s = lineup[slot];
@@ -182,7 +200,7 @@ export default function BestFive({ onBack }: Props) {
                   {s ? <Face name={s.playerName} /> : <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />}
                   <span className="bf-slot-name">{s ? s.playerName : 'Tap to pick'}</span>
                   {s && <span className="bf-season bf-season--sm">{s.spanLabel}</span>}
-                  {s && <span className="bf-slot-box">{boxLineShort(s)}</span>}
+                  {s && <span className="bf-slot-box">{boxLineShort(s)} · {s.fga.toFixed(1)} shots</span>}
                   {s && (
                     <span
                       className="bf-slot-clear"
@@ -217,7 +235,9 @@ export default function BestFive({ onBack }: Props) {
                       <Face name={span.playerName} size="md" />
                       <span className="bf-pool-name">{span.playerName}</span>
                       <span className="bf-season">{span.spanLabel}</span>
-                      <span className="bf-pool-meta">{naturalPosition(span.playerName)}</span>
+                      <span className="bf-pool-meta">
+                        {naturalPosition(span.playerName)} · {span.fga.toFixed(1)} shots
+                      </span>
                       <span className="bf-pool-box">{boxLineShort(span)}</span>
                       <span className="bf-pool-box bf-pool-box--sub">{boxLineDetail(span)}</span>
                     </button>
@@ -228,7 +248,12 @@ export default function BestFive({ onBack }: Props) {
           )}
 
           <div className="bf-submit-row">
-            <button className="at-draft-btn bf-submit" disabled={!complete} onClick={submit}>
+            <button
+              className="at-draft-btn bf-submit"
+              disabled={!complete || overCap}
+              title={overCap ? `Over the ${shotsCap}-shot cap — swap out a costlier pick first.` : undefined}
+              onClick={submit}
+            >
               Submit lineup
             </button>
           </div>
@@ -240,6 +265,7 @@ export default function BestFive({ onBack }: Props) {
           lineup={lineup}
           pool={pool}
           result={result}
+          shotsCap={shotsCap}
           isDaily={isDaily}
           onNewBoard={newBoard}
           onBackToDaily={backToDaily}
@@ -253,6 +279,7 @@ function BestFiveResult({
   lineup,
   pool,
   result,
+  shotsCap,
   isDaily,
   onNewBoard,
   onBackToDaily,
@@ -260,13 +287,15 @@ function BestFiveResult({
   lineup: Lineup;
   pool: DailyPool;
   result: { score: LineupScore; targets: DailyTargets; grade: GolfGrade };
+  shotsCap: number;
   isDaily: boolean;
   onNewBoard: () => void;
   onBackToDaily: () => void;
 }) {
   const { score, targets, grade } = result;
-  const explain = useMemo(() => explainResult(lineup, pool, targets), [lineup, pool, targets]);
+  const explain = useMemo(() => explainResult(lineup, pool, targets, shotsCap), [lineup, pool, targets, shotsCap]);
   const [showGlossary, setShowGlossary] = useState(false);
+  const yourShots = useMemo(() => lineupShots(lineup), [lineup]);
 
   const weightsLine = WEIGHTED_AXES.map((a) => `${a.pct}% ${a.label}`).join(' · ');
   const chalkGap = targets.optimal - targets.par;
@@ -287,6 +316,9 @@ function BestFiveResult({
         </span>
         <span>
           <b>{targets.optimal}</b> engine’s best
+        </span>
+        <span className="bf-muted">
+          {yourShots.toFixed(1)} / {shotsCap} shots
         </span>
       </div>
 

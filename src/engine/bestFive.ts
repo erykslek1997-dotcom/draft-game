@@ -166,6 +166,64 @@ export function dailyPool(key: string = dayKey()): DailyPool {
 }
 
 // ---------------------------------------------------------------------------
+// shots-cost twist — 2026-09-11, user's own ask: "dodajemy koszt gracza w shots i oprócz
+// codziennej puli graczy będzie losowa liczba między 60 a 90" (add each candidate's shot cost,
+// plus a random number between 60-90 alongside the daily pool). Same deterministic-per-day
+// pattern as `dailyPool` — a distinct RNG stream (`:cap` key suffix) so the cap doesn't
+// correlate with which players happen to be in the pool, but every player worldwide still sees
+// the same number on the same calendar date.
+// ---------------------------------------------------------------------------
+
+const SHOTS_CAP_MIN = 60;
+const SHOTS_CAP_MAX = 90;
+
+/** Deterministic daily shots budget for the five starters. Hand-estimated range, same
+ * "tuned, not derived" status the original 100.9 FGA cap started at — not yet checked against a
+ * real sample of boundary-legal fives the way that cap eventually was. */
+export function dailyShotsCap(key: string = dayKey()): number {
+  const rng = mulberry32(seedFromKey(`${key}:cap`));
+  return Math.round(SHOTS_CAP_MIN + rng() * (SHOTS_CAP_MAX - SHOTS_CAP_MIN));
+}
+
+export function lineupShots(lineup: Partial<Record<Position, PlayerSpan>>): number {
+  return STARTER_SLOTS.reduce((sum, sl) => sum + (lineup[sl]?.fga ?? 0), 0);
+}
+
+/**
+ * Repairs an over-cap five by repeatedly downgrading whichever slot loses the LEAST talent per
+ * shot saved, until the total is legal (or no legal downgrade is left — every slot already at
+ * its position's cheapest option in the pool). Used both for `talMaxLineup`'s "par" baseline
+ * (the naive biggest-names pick, once a cap can make it illegal) and to repair a random hill-climb
+ * starting point in `solveDailyOptimal` below — same "grab the big names, then trim the least
+ * painful ones until legal" a real player would actually do once told they're over budget.
+ */
+function repairToCap(five: Record<Position, PlayerSpan>, pool: DailyPool, cap: number): Record<Position, PlayerSpan> {
+  const result = { ...five };
+  let guard = 0;
+  while (lineupShots(result) > cap && guard++ < 50) {
+    let bestSlot: Position | null = null;
+    let bestReplacement: PlayerSpan | null = null;
+    let bestRatio = Infinity; // talent lost per shot saved — lower is a less painful downgrade
+    for (const slot of STARTER_SLOTS) {
+      const current = result[slot];
+      for (const cand of pool.bySlot[slot]) {
+        const shotsSaved = current.fga - cand.fga;
+        if (cand.id === current.id || shotsSaved <= 0) continue;
+        const ratio = (effectiveTalent(current) - effectiveTalent(cand)) / shotsSaved;
+        if (ratio < bestRatio) {
+          bestRatio = ratio;
+          bestSlot = slot;
+          bestReplacement = cand;
+        }
+      }
+    }
+    if (!bestSlot || !bestReplacement) break; // no legal downgrade left in the pool
+    result[bestSlot] = bestReplacement;
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // scoring a 5-man lineup
 // ---------------------------------------------------------------------------
 
@@ -249,17 +307,20 @@ export interface SolvedLineup {
 }
 
 /** The lazy strategy: highest-`effectiveTalent` player at every slot. This is the baseline the
- * puzzle asks you to beat — see `parFor`. */
-export function talMaxLineup(pool: DailyPool): Record<Position, PlayerSpan> {
-  return Object.fromEntries(
+ * puzzle asks you to beat — see `parFor`. `cap`, when given, repairs the naive pick down to a
+ * legal one (see `repairToCap`) — the "five biggest names" IS the naive move even under a shots
+ * cap, it just might need trimming first. */
+export function talMaxLineup(pool: DailyPool, cap?: number): Record<Position, PlayerSpan> {
+  const naive = Object.fromEntries(
     STARTER_SLOTS.map((slot) => [
       slot,
       pool.bySlot[slot].slice().sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0],
     ]),
   ) as Record<Position, PlayerSpan>;
+  return cap != null ? repairToCap(naive, pool, cap) : naive;
 }
 
-export function solveDailyOptimal(pool: DailyPool): SolvedLineup {
+export function solveDailyOptimal(pool: DailyPool, cap?: number): SolvedLineup {
   const cache = new Map<string, LineupScore>();
   const sc = (five: Record<Position, PlayerSpan>): LineupScore => {
     const key = STARTER_SLOTS.map((s) => five[s].id).join('|');
@@ -273,16 +334,15 @@ export function solveDailyOptimal(pool: DailyPool): SolvedLineup {
 
   const rng = mulberry32(seedFromKey(`${pool.key}:solve`));
 
-  const starts: Record<Position, PlayerSpan>[] = [talMaxLineup(pool)];
+  const starts: Record<Position, PlayerSpan>[] = [talMaxLineup(pool, cap)];
   for (let r = 0; r < 4; r++) {
-    starts.push(
-      Object.fromEntries(
-        STARTER_SLOTS.map((s) => {
-          const p = pool.bySlot[s];
-          return [s, p[Math.floor(rng() * p.length)]];
-        }),
-      ) as Record<Position, PlayerSpan>,
-    );
+    const rand = Object.fromEntries(
+      STARTER_SLOTS.map((s) => {
+        const p = pool.bySlot[s];
+        return [s, p[Math.floor(rng() * p.length)]];
+      }),
+    ) as Record<Position, PlayerSpan>;
+    starts.push(cap != null ? repairToCap(rand, pool, cap) : rand);
   }
 
   let bestFive: Record<Position, PlayerSpan> | null = null;
@@ -298,6 +358,7 @@ export function solveDailyOptimal(pool: DailyPool): SolvedLineup {
         for (const cand of pool.bySlot[slot]) {
           if (cand.id === five[slot].id) continue;
           const trial = { ...five, [slot]: cand };
+          if (cap != null && lineupShots(trial) > cap) continue; // reject illegal swaps
           const s = sc(trial).composite;
           if (s > cur + 1e-6) {
             five = trial;
@@ -328,10 +389,10 @@ export interface DailyTargets {
   optimalFive: Record<Position, PlayerSpan>;
 }
 
-export function dailyTargets(pool: DailyPool): DailyTargets {
-  const solved = solveDailyOptimal(pool);
+export function dailyTargets(pool: DailyPool, cap?: number): DailyTargets {
+  const solved = solveDailyOptimal(pool, cap);
   return {
-    par: scoreLineup(talMaxLineup(pool)).composite,
+    par: scoreLineup(talMaxLineup(pool, cap)).composite,
     optimal: solved.score.composite,
     optimalFive: solved.five,
   };
@@ -425,10 +486,12 @@ export interface ResultExplanation {
   tookLazyPick: boolean;
 }
 
-export function explainResult(lineup: Lineup, pool: DailyPool, targets: DailyTargets): ResultExplanation {
+export function explainResult(lineup: Lineup, pool: DailyPool, targets: DailyTargets, cap?: number): ResultExplanation {
   const score = scoreLineup(lineup);
   const optScore = scoreLineup(targets.optimalFive);
-  const lazy = talMaxLineup(pool);
+  // Same (possibly cap-repaired) lazy five `targets.par` was scored from — comparing against the
+  // pure uncapped naive pick here would make "you took the lazy pick" disagree with par itself.
+  const lazy = talMaxLineup(pool, cap);
 
   const weakestKey = [...WEIGHTED_AXES].sort((a, b) => score[a.key] - score[b.key])[0];
   const engineEdge = WEIGHTED_AXES.map((a) => ({
