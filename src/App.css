@@ -387,6 +387,46 @@ button.active,
   margin: 8px 0 16px;
 }
 
+/* 2026-09-11, intro screen CTA hierarchy fix (Self-Scout Report finding #1) — real containers for
+   the two actual entry points instead of letting five bare `<button>`s wrap as inline-block text.
+   `.intro-actions` stacks Start Draft (now `.primary-btn`, the flagship 16-team draft the rest of
+   the page's copy is about) above Best 5 as a column, both full-width-feeling and equally easy to
+   hit; `.intro-more-row` demotes Card Collection/Browse Draft Pool/Cap Sheet to a single row of
+   plain text links — still reachable in one click, but no longer competing with the two real
+   starting points for the same visual weight. */
+.intro-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  max-width: 320px;
+  margin: 16px auto 0;
+}
+.intro-actions .primary-btn,
+.intro-actions .secondary-btn {
+  margin: 0;
+  width: 100%;
+}
+.intro-more-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  margin: 20px 0 0;
+}
+.text-link-btn {
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 13px;
+}
+.text-link-btn:hover {
+  color: var(--text-h);
+}
+
 input {
   font: inherit;
   padding: 6px 10px;
@@ -3225,6 +3265,13 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   flex: none; background: var(--at-accent-2); color: var(--at-accent-2-ink);
   font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em;
   border-radius: 999px; padding: 2px 7px;
+}
+/* 2026-09-11, Self-Scout Report finding #2 — `.at-team-name-full`'s shared base rule (8px left
+   margin, bold, full ink color) is reused as-is; this only adds the truncation `.at-lottery-team`'s
+   flex row needs so a long name ("Winston-Salem Cowboys") shrinks with an ellipsis instead of
+   wrapping the slot taller or pushing the YOU tag out. */
+.at-lottery-name-full {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 @keyframes at-lottery-pop {
   from { opacity: 0; transform: scale(0.85); }

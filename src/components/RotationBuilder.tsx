@@ -262,11 +262,18 @@ export default function RotationBuilder({
                         {selectedPlayer && <AtGrade grade={defensiveGrade(computeDefensiveTalent(selectedPlayer))} />}
                       </td>
                       <td>
+                        {/* 2026-09-11, internal UI audit finding #3 ("Self-Scout Report"): an empty
+                            starter row used to show a real "36" in this field before anyone was
+                            assigned — the state still defaults new rows to 36 (so picking a starter
+                            fills in a sensible minutes value for free, unchanged), but the field now
+                            only displays it once `playerId` is actually set, matching the disabled
+                            state it's already in either way. */}
                         <input
                           type="number"
                           min={0}
                           max={GAME_MINUTES}
-                          value={row.minutes}
+                          value={row.playerId ? row.minutes : ''}
+                          placeholder="—"
                           disabled={!row.playerId}
                           className={row.playerId && overCapIds.has(row.playerId) ? 'minutes-warning' : undefined}
                           onChange={(e) => updateRow(slot, rowIdx, { minutes: Number(e.target.value) })}

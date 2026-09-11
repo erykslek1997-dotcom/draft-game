@@ -199,21 +199,35 @@ function App() {
                 ranks the whole field, yours included.
               </li>
             </ol>
-            <button className="primary-btn" onClick={() => setView('bestfive')}>
-              Build the Best 5 — daily
-            </button>
-            <button className="secondary-btn" onClick={() => setView('game')}>
-              Start Draft
-            </button>
-            <button className="secondary-btn" onClick={() => setView('cards')}>
-              Card Collection
-            </button>
-            <button className="secondary-btn" onClick={() => setView('pool')}>
-              Browse Draft Pool
-            </button>
-            <button className="secondary-btn" onClick={() => setView('capsheet')}>
-              Cap Sheet (salary-cap mode)
-            </button>
+            {/* 2026-09-11, internal UI audit finding #1 ("Self-Scout Report"): every piece of copy
+                above (hero, tagline, all 5 how-to-play bullets) is about the 16-team draft, but the
+                one button that used to carry `.primary-btn`'s accent color was "Build the Best 5"
+                (a side mode) while "Start Draft" sat visually identical to Card Collection/Browse
+                Draft Pool/Cap Sheet. Also fixes the second half of that finding: five plain
+                `<button>`s with no wrapping container flowed as inline-block text and wrapped
+                raggedly (measured 3-then-2 at 1280px) — `.intro-actions`/`.intro-more-row` below
+                give the two real entry points (Draft, Best 5) their own flex column and demote the
+                other three to a single-row link group instead of a third and fourth full-size
+                button. */}
+            <div className="intro-actions">
+              <button className="primary-btn" onClick={() => setView('game')}>
+                Start Draft
+              </button>
+              <button className="secondary-btn intro-bestfive-btn" onClick={() => setView('bestfive')}>
+                Build the Best 5 — daily
+              </button>
+            </div>
+            <div className="intro-more-row">
+              <button className="text-link-btn" onClick={() => setView('cards')}>
+                Card Collection
+              </button>
+              <button className="text-link-btn" onClick={() => setView('pool')}>
+                Browse Draft Pool
+              </button>
+              <button className="text-link-btn" onClick={() => setView('capsheet')}>
+                Cap Sheet
+              </button>
+            </div>
           </div>
         </div>
       )}

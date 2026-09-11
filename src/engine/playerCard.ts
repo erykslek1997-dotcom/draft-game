@@ -198,10 +198,54 @@ function compactTeams(teams: string[]): string {
   return `${teams.slice(0, 3).join(' · ')} · +${teams.length - 3}`;
 }
 
+/** 2026-09-11, internal UI audit finding #4 ("Self-Scout Report"): `galleryEntries`'s sort below
+ * (tier, then All-Star count, then name, then career years desc) incidentally clusters one
+ * prolific player's many career windows together — most of a given player's spans share the same
+ * tier+All-Star tie-break inputs, so they collapse onto identical name/year ordering and end up
+ * back-to-back. Default "Sort: rarity" opened on 6 straight LeBron James cards before anyone else
+ * appeared, which undersells a 9451-card collection meant to showcase breadth across NBA history.
+ * This keeps the exact same tier/All-Star ordering as the real ranking signal (untouched) but
+ * round-robins across distinct players within each contiguous rarity run, so the first screenful
+ * samples many players instead of one career's repeats — a pure display reorder, no card's own
+ * rarity/tier/stats change. */
+function diversifyByPlayer(entries: GalleryEntry[]): GalleryEntry[] {
+  const result: GalleryEntry[] = [];
+  let i = 0;
+  while (i < entries.length) {
+    const rarity = entries[i].rarity;
+    let j = i;
+    while (j < entries.length && entries[j].rarity === rarity) j++;
+    const run = entries.slice(i, j);
+    const byPlayer = new Map<string, GalleryEntry[]>();
+    const order: string[] = [];
+    for (const e of run) {
+      if (!byPlayer.has(e.name)) {
+        byPlayer.set(e.name, []);
+        order.push(e.name);
+      }
+      byPlayer.get(e.name)!.push(e);
+    }
+    let round = 0;
+    let remaining = run.length;
+    while (remaining > 0) {
+      for (const name of order) {
+        const bucket = byPlayer.get(name)!;
+        if (round < bucket.length) {
+          result.push(bucket[round]);
+          remaining--;
+        }
+      }
+      round++;
+    }
+    i = j;
+  }
+  return result;
+}
+
 let galleryCache: GalleryEntry[] | null = null;
 export function galleryEntries(): GalleryEntry[] {
   if (galleryCache) return galleryCache;
-  galleryCache = playerGroups()
+  galleryCache = diversifyByPlayer(playerGroups()
     .flatMap((g) => g.spans.map((span) => {
       const ctx = tierContextWithSixthMan(span);
       const tier = overallTierForSpan(ctx);
@@ -238,7 +282,7 @@ export function galleryEntries(): GalleryEntry[] {
     .sort((a, b) => tierRank(b.bestTier) - tierRank(a.bestTier)
       || b.allStar - a.allStar
       || a.name.localeCompare(b.name)
-      || b.careerYears.localeCompare(a.careerYears));
+      || b.careerYears.localeCompare(a.careerYears)));
   return galleryCache;
 }
 

@@ -83,9 +83,19 @@ export default function DraftLottery({ teams, onDone }: Props) {
               <span className="at-lottery-num">#{team.draftSlot}</span>
               {revealed ? (
                 <span className="at-lottery-team">
+                  {/* 2026-09-11, internal UI audit finding #2 ("Self-Scout Report"): the reveal
+                      used to show only the 2-4 letter chip, full team name hover/focus-only via
+                      `data-tip` — including for the player's OWN team on the one screen built
+                      entirely around the "which team did I land on?" moment. DraftBoard's Overview
+                      grid got the equivalent "we have the room, just show the name" fix on
+                      2026-08-19 (see its own `.at-team-name-full` docstring); this mirrors that
+                      same chip-plus-name pattern here, hidden below 640px by the same shared
+                      `.at-team-name-full` media-query rule so the narrow layout still falls back
+                      to chip-only. */}
                   <span className="at-team-chip at-name-tip" tabIndex={0} data-tip={team.name}>
                     {teamCodeByTeamId.get(team.id)}
                   </span>
+                  <span className="at-team-name-full at-lottery-name-full">{team.name}</span>
                   {team.isHuman && <span className="at-lottery-you-tag">YOU</span>}
                 </span>
               ) : (

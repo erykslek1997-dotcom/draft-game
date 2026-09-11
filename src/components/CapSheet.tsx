@@ -343,11 +343,14 @@ export default function CapSheet({ onBack }: Props) {
         )}
       </div>
 
+      {/* 2026-09-11, internal UI audit finding #5 ("Self-Scout Report"): "Working draft" read as a
+          dev note left in shipped copy — reworded to state the same caveat (older seasons are
+          estimated) without the implication that the feature itself is unfinished. */}
       <div className="cs-method-note">
         Charge = <code>(real salary ÷ that season's cap) × {formatUsdM(CAP_BASELINE)}</code>, clamped at the
         2025-26 max for years of service; rookie years use the 2025-26 rookie scale by pick; pre-1985 falls
-        back to a tier estimate. Span charge is the mean of its seasons. Working draft — the historical
-        cap-by-year table is approximate for older seasons.
+        back to a tier estimate. Span charge is the mean of its seasons. Older seasons' cap figures are
+        historical estimates, not exact.
       </div>
     </div>
   );
