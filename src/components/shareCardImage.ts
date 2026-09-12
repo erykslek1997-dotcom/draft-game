@@ -63,7 +63,12 @@ function initials(name: string): string {
 }
 
 /** Hand-copied from App.css's `:root` block (`--at-*` tokens) — a `<canvas>` context can't resolve
- * CSS custom properties, so the card's palette is these same hex values, kept in sync manually. */
+ * CSS custom properties, so the card's palette is these same hex values, kept in sync manually.
+ * 2026-09-12, code-review fix: `accent` had drifted to `#6f8ec2` — the real token is
+ * `color-mix(in srgb, var(--at-brand-blue) 68%, white)` with `--at-brand-blue: #1D428A`, which
+ * works out to `#657eaf` (checked by hand: R 29*.68+255*.32=101, G 66*.68+255*.32=126,
+ * B 138*.68+255*.32=175 → 65/7e/af), not the value this had drifted to. Every other entry here
+ * was re-checked against its real token the same way and still matches exactly. */
 const PALETTE = {
   paper: '#0b0c0f',
   paperRaised: '#17181c',
@@ -73,18 +78,23 @@ const PALETTE = {
   pill: '#1c2c4d',
   pillInk: '#d6e2f7',
   line: '#2a3348',
-  accent: '#6f8ec2',
+  accent: '#657eaf',
 };
 
-/** Same six finish tiers `results-hero-tier-t1..6` style in App.css — colors approximated from
- * those `color-mix()` rules (a canvas context has no `color-mix`, so these are pre-mixed). */
+/** Same six finish tiers `results-hero-tier-t1..6` style in App.css — colors pre-mixed by hand
+ * from those real `color-mix()` rules (a canvas context has no `color-mix`).
+ * 2026-09-12, code-review fix: re-derived each one directly from App.css's actual rules rather
+ * than trusting the existing values — tones 1-5's RGB already matched exactly (only their alpha
+ * had drifted a few hundredths, corrected below); tone 6 ("Dynasty") had drifted to a completely
+ * different, much darker color (`#3a4a63`) than the real `.results-hero-tier-t6` rule, which is
+ * SOLID `var(--at-t6)` (`#76a1c4`), not a translucent one like the tiers below it. */
 const TIER_COLORS: Record<1 | 2 | 3 | 4 | 5 | 6, { bg: string; fg: string }> = {
-  1: { bg: 'rgba(215,83,105,0.28)', fg: '#e9a0ad' },
-  2: { bg: 'rgba(215,83,105,0.28)', fg: '#e9a0ad' },
-  3: { bg: 'rgba(197,143,60,0.30)', fg: '#e8b568' },
-  4: { bg: 'rgba(92,135,168,0.38)', fg: '#ffffff' },
-  5: { bg: 'rgba(118,161,196,0.42)', fg: '#ffffff' },
-  6: { bg: '#3a4a63', fg: '#ffffff' },
+  1: { bg: 'rgba(215,83,105,0.24)', fg: '#e9a0ad' },
+  2: { bg: 'rgba(215,83,105,0.24)', fg: '#e9a0ad' },
+  3: { bg: 'rgba(197,143,60,0.26)', fg: '#e8b568' },
+  4: { bg: 'rgba(92,135,168,0.34)', fg: '#ffffff' },
+  5: { bg: 'rgba(118,161,196,0.40)', fg: '#ffffff' },
+  6: { bg: '#76a1c4', fg: '#ffffff' },
 };
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {

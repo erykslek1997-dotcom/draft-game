@@ -1300,8 +1300,14 @@ select {
     color: #6fd9e6;
   }
   .rating-allnba {
+    /* 2026-09-12, code-review fix: color updated to match the Draft tab's own card border/corner
+       for this tier (`TIER_FRAME_COLOR['All-NBA']` in DraftBoard.tsx) — that one moved off this
+       exact `#b2a3f2` on the user's own report ("kolor różowy w all-nba nie do końca mi się
+       podoba", too close to MVP's pink) but this text badge, shown elsewhere (Team roster table,
+       Rotation, the peek modal), never got the same update, so the same tier read as two
+       different colors depending on which screen you were looking at. */
     background: #241c47;
-    color: #b2a3f2;
+    color: #8b9bf7;
   }
   .rating-mvp {
     background: #3a1230;
