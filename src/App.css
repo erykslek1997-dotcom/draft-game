@@ -1790,7 +1790,11 @@ select {
 }
 .share-modal-card {
   position: relative;
-  width: min(380px, 100%);
+  /* 2026-09-12, user-reported live ("brzydota szczerze" — a screenshot of exactly this modal with
+     the new face-card roster jammed into the old 380px width, no spacing at all between position/
+     name/minutes): widened to fit 5 starter face-cards across one real row, matching the ask
+     ("dwóch rzędach, s5 i bench"). See `.share-modal-face-*` below for the cards themselves. */
+  width: min(520px, 100%);
   background: var(--at-paper-raised, var(--bg));
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -1893,32 +1897,60 @@ select {
   color: var(--muted);
   margin-bottom: 6px;
 }
-.share-modal-roster-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2px 14px;
-}
-.share-modal-roster-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
+/* 2026-09-12, user's own follow-up ask ("dodać face cards w dwóch rzędach, s5 i bench") replaced
+   the plain two-column text grid above with two real rows of face-cards — same `Face` avatar the
+   Draft tab's own "Your Five" sidebar and Rotation cards already use, so this modal finally
+   matches the headshot row the downloadable PNG (`shareCardImage.ts`) already had. */
+.share-modal-face-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 6px;
-  align-items: baseline;
-  font-size: 12px;
-  padding: 2px 0;
+  margin-top: 10px;
 }
-.share-modal-roster-pos {
+.share-modal-face-group-label {
+  font-size: 9.5px;
   font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--muted);
-  font-size: 10.5px;
+  text-align: left;
 }
-.share-modal-roster-name {
+.share-modal-face-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.share-modal-face-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 88px;
+  padding: 8px 4px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+.share-modal-face-pos {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.share-modal-face-name {
+  max-width: 100%;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.share-modal-roster-minutes,
-.share-modal-roster-fga {
+.share-modal-face-meta {
+  font-size: 9.5px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -3393,8 +3425,6 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   flex: none;
   border-radius: 999px;
   border: 1px solid var(--at-line);
-  background: var(--at-pill);
-  color: var(--at-ink-soft);
   font-size: 10.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -3402,6 +3432,15 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+/* 2026-09-12, user-reported live ("kolor w scouting report też nie do końca mi siedzi"): a filled
+   navy pill next to the vivid blue Draft button and the card's own new tier-colored border was a
+   third competing block of color on one small card. Ghost/ ​outline treatment instead — no fill,
+   just the same border every other neutral pill in this app already uses — so Draft (still solid,
+   still the one clearly "primary" action) and the tier frame stay the only real color on the card. */
+.at-player-card-peek {
+  background: transparent;
+  color: var(--at-ink-soft);
 }
 .at-player-card-draft {
   background: var(--at-accent);
@@ -3523,13 +3562,21 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 .at-search-input:focus, .at-fga-input:focus { outline: 2px solid var(--at-accent); outline-offset: 1px; }
 
 .at-fga-filter { display: flex; align-items: center; gap: 8px; }
+/* 2026-09-12, user-reported live (screenshot): "FILTER SHOTS" at `--at-ink-faint` (the app's
+   dimmest ink) + 10px read as barely-there next to the bold, full-size "0"/"30" pills right next
+   to it — bumped to the same `--at-ink-soft` weight the search placeholder and other row labels
+   use, and a touch larger. */
 .at-fga-filter label {
-  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-faint);
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-soft);
 }
+/* 2026-09-12, user-reported live, same screenshot ("ikony można zmniejszyć" — the min/max shot
+   pills read as oversized icon-like badges next to the label they belong to): narrower and less
+   padded, so they sit as a compact pair of numbers rather than competing for attention with the
+   label naming them. */
 .at-fga-input {
-  width: 52px; font: inherit; font-variant-numeric: tabular-nums; text-align: center;
+  width: 38px; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; text-align: center;
   border-radius: 999px; border: 1px solid var(--at-line); background: var(--at-pill); color: var(--at-pill-ink);
-  padding: 7px 4px; font-weight: 700;
+  padding: 5px 2px; font-weight: 700;
 }
 
 .at-filter-pill {

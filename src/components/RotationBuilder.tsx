@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes } from '../engine/rotation';
@@ -115,7 +115,17 @@ function playerTotalMinutes(rows: RowsBySlot, playerId: string): number {
   return total;
 }
 
-export default function RotationBuilder({
+/**
+ * 2026-09-12, user-reported live (Auto-finish appearing to hang on a full 144-pick draft, after
+ * the Draft tab's Rotation card stopped unmounting on every tab switch — see that card's own
+ * "always mounted" fix in DraftBoard.tsx): with the card always in the tree, this component now
+ * renders on every pick in the whole draft, not just the human's own 9 — including 135 AI-only
+ * picks whose roster/rotation data it never actually uses. `React.memo` plus the caller now
+ * passing a memoized `roster` and a ref-stabilized `onConfirm` (both in DraftBoard.tsx) lets React
+ * skip this component's own render — and the `optionsFor`/`benchWithMinutes` work inside it —
+ * entirely for those picks, instead of quietly recomputing the same output 15x over.
+ */
+function RotationBuilderComponent({
   roster,
   onConfirm,
   initialRotation,
@@ -363,3 +373,5 @@ export default function RotationBuilder({
     </div>
   );
 }
+
+export default memo(RotationBuilderComponent);

@@ -4,7 +4,7 @@ import { evaluateLeague } from '../engine/leagueSimulation';
 import { simulateSeason, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
 import { STARTER_SLOTS, CAP_LIMIT } from '../engine/positions';
-import { allAssignments, benchWithMinutes, bestPrimaryAssignment, primaryStarters } from '../engine/rotation';
+import { allAssignments, benchWithMinutes, primaryStarters } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
 import type { DraftHistoryEntry, Rotation, Team } from '../engine/types';
@@ -35,6 +35,7 @@ import HistoricalChallengesPanel from './HistoricalChallengesPanel';
 import MatchupMatrix from './MatchupMatrix';
 import WhatIfPanel from './WhatIfPanel';
 import { downloadShareCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
+import { Face, shortenName } from './ShotChip';
 
 /**
  * 2026-08-15, user-reported: the Rotation/Bench bracket tag next to a player's row used to read
@@ -380,11 +381,20 @@ function ShareModal({
 
   async function handleDownloadPng() {
     setPngState('building');
-    const ok = await downloadShareCard(
-      { teamName, rank, fieldSize, tier, overall, titleOdds, gap, topOverall, identity, starters, roster },
-      `all-time-draft-${teamName.replace(/\s+/g, '-').toLowerCase()}.png`,
-    );
-    setPngState(ok ? 'done' : 'error');
+    // 2026-09-12, code-review fix: an unguarded `await` here meant any unexpected exception
+    // inside `buildShareCardBlob` (canvas unsupported, a tainted-canvas/security error, etc.)
+    // left `pngState` stuck at 'building' forever — the button permanently disabled reading
+    // "Building…" with no way to retry, and (since "Copy as text" was removed this same session)
+    // no fallback share action left at all.
+    try {
+      const ok = await downloadShareCard(
+        { teamName, rank, fieldSize, tier, overall, titleOdds, gap, topOverall, identity, starters, roster },
+        `all-time-draft-${teamName.replace(/\s+/g, '-').toLowerCase()}.png`,
+      );
+      setPngState(ok ? 'done' : 'error');
+    } catch {
+      setPngState('error');
+    }
     setTimeout(() => setPngState('idle'), 2000);
   }
 
@@ -436,21 +446,41 @@ function ShareModal({
             {failureMode}
           </p>
         )}
-        {roster.length > 0 && (
-          <div className="share-modal-roster">
-            <span className="share-modal-roster-label">Roster &amp; rotation</span>
-            <div className="share-modal-roster-grid">
-              {roster.map((row) => (
-                <div className="share-modal-roster-row" key={`${row.position}-${row.name}`}>
-                  <span className="share-modal-roster-pos">{row.position}</span>
-                  <span className="share-modal-roster-name">{row.name}</span>
-                  <span className="share-modal-roster-minutes">{Math.round(row.minutes)}m</span>
-                  <span className="share-modal-roster-fga">{row.fga.toFixed(1)} sh</span>
-                </div>
-              ))}
+        {roster.length > 0 && (() => {
+          // 2026-09-12, user-reported live (screenshot of this exact modal): the roster section
+          // was a plain two-column text grid with no faces at all — the PNG `shareCardImage.ts`
+          // builds already has a real starting-five headshot row, but this in-modal preview (what
+          // the user actually looks at before downloading) never matched it. Two face-card rows
+          // now, same `Face` avatar the Draft tab's own "Your Five" sidebar and Rotation cards
+          // already use — Starting five first, Bench second, exactly as asked ("w dwóch rzędach,
+          // s5 i bench").
+          const starterRows = roster.filter((row) => row.isStarter);
+          const benchRows = roster.filter((row) => !row.isStarter);
+          const faceRow = (rows: ShareRosterRow[], label: string) => (
+            <div className="share-modal-face-group" key={label}>
+              <span className="share-modal-face-group-label">{label}</span>
+              <div className="share-modal-face-row">
+                {rows.map((row) => (
+                  <div className="share-modal-face-card" key={`${row.position}-${row.name}`}>
+                    <Face name={row.name} size="md" />
+                    <span className="share-modal-face-pos">{row.position}</span>
+                    <span className="share-modal-face-name">{shortenName(row.name)}</span>
+                    <span className="share-modal-face-meta">
+                      {Math.round(row.minutes)}m · {row.fga.toFixed(1)} sh
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+          return (
+            <div className="share-modal-roster">
+              <span className="share-modal-roster-label">Roster &amp; rotation</span>
+              {faceRow(starterRows, 'Starting five')}
+              {benchRows.length > 0 && faceRow(benchRows, 'Bench')}
+            </div>
+          );
+        })()}
         <button
           type="button"
           className="primary-btn share-modal-copy"
@@ -933,16 +963,6 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked?.team.id, scoredTeams],
   );
-  // Feeds the share card's starting-five row (`shareCardImage.ts`) — same optimal-slot search the
-  // Draft tab's own "Your Five" sidebar and QuickFive's team panel already use.
-  const heroStarters: ShareCardStarter[] = useMemo(() => {
-    if (!heroRanked) return [];
-    const assignment = bestPrimaryAssignment(heroRanked.team.roster).assignment;
-    return STARTER_SLOTS.map((slot): ShareCardStarter | null => {
-      const player = assignment[slot];
-      return player ? { position: slot, name: player.playerName } : null;
-    }).filter((entry): entry is ShareCardStarter => entry !== null);
-  }, [heroRanked]);
   // 2026-09-12, user's own ask ("dodaj dodatkowe informacje jak roster, rotacja itd") — the full
   // 9-man roster + real rotation minutes for the share card/modal, reusing the exact same
   // `primaryStarters`/`benchWithMinutes` split the Team/Rotation tabs are already built from, so
@@ -968,6 +988,16 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
     return [...starterRows, ...benchRows];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [heroRanked, correctedRotations]);
+  // 2026-09-12, code-review fix: used to be its own separate `bestPrimaryAssignment` recompute —
+  // a fresh, purely-optimal-fit search that can name a DIFFERENT player as a slot's starter than
+  // `heroRoster.starterRows` above (the team's actual saved/corrected rotation, e.g. the Paul
+  // George 22-SF/8-PF case, or a rotation-engine side effect that legitimately keeps a non-optimal
+  // starter). That let the PNG's headshot row disagree with its own roster table for the same
+  // slot. Derived from `heroRoster` instead so the two can never name different starters.
+  const heroStarters: ShareCardStarter[] = useMemo(
+    () => heroRoster.filter((row) => row.isStarter).map((row) => ({ position: row.position, name: row.name })),
+    [heroRoster],
+  );
   function toggleExpanded(teamId: string) {
     setExpandedTeamIds((prev) => {
       const next = new Set(prev);

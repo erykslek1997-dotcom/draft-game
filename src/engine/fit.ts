@@ -20,7 +20,7 @@ import { computeOffensiveTalent } from './talent';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
 import { defensiveHuntability } from './defensiveHuntability';
-import { defensiveCohesion, MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS } from './defensiveCohesion';
+import { defensiveCohesion, MAX_DEFENSE_SCORE_BONUS } from './defensiveCohesion';
 import { rimPressureTeam } from './rimPressure';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 // Boolean predicate only (is this player a hard whole-career era override) — NOT a
@@ -779,11 +779,16 @@ export function fitScore(team: Team): FitScoreResult {
   // 2026-09-04 (`scoreTeam` refactor): `defenseScore` no longer feeds `overall`, so the two
   // whole-rotation defensive-scheme signals it carried are read here instead. `huntResistance`
   // is `defensiveHuntability`'s own 0-100 resistance (100 = nothing to hunt); `defensiveCohesion`
-  // rescales that module's elite-shell bonus (max = backline foundation, 18) to 0-100 — it stays
-  // 0 for any roster without a genuinely complete or elite-anchored defensive shell.
+  // rescales that module's own bonus (whichever of its four paths wins) to 0-100 — it stays 0 for
+  // any roster without a genuinely complete or elite-anchored defensive shell.
+  // 2026-09-12, code-review finding: this used to divide by `MAX_BACKLINE_FOUNDATION_DEFENSE_
+  // BONUS` specifically (a comment here even still said "18," a value from an even earlier cut) —
+  // stale the moment ANY sibling path's own cap became the larger one, most recently
+  // `weakLinkOvercomeBonus`'s 28, which pushed this over 100 (up to ~467) and was shown raw to
+  // the user in Team analysis. `MAX_DEFENSE_SCORE_BONUS` is the real, always-current ceiling.
   const huntResistance = defensiveHuntability(team).resistance;
   const cohesionBonusRaw = defensiveCohesion(team).defenseScoreBonus;
-  const defensiveCohesionComponent = Math.round((cohesionBonusRaw / MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS) * 100);
+  const defensiveCohesionComponent = Math.round((cohesionBonusRaw / MAX_DEFENSE_SCORE_BONUS) * 100);
   const rimPressureTeamComponent = Math.round(rimPressureTeam(starters));
 
   const components: FitScoreComponents = {

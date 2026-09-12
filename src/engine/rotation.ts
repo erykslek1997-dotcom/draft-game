@@ -668,9 +668,109 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
 
   rebalanceCrossSlotMinutes(roster, slots, primaryBySlot, starterMinutesUsed, minutesUsed, slotsBackedUp, remainingPlayers);
   consolidateOffPositionFillers(roster, slots, primaryBySlot, starterMinutesUsed, minutesUsed, slotsBackedUp);
+  mergeTinyBackupSlivers(roster, slots, primaryBySlot);
   ensureUsefulBenchMinutes(roster, slots, primaryBySlot);
 
   return { slots };
+}
+
+/**
+ * 2026-09-12, user-reported live, two real examples: a PF backup need split Duncan-38/George-8/
+ * Wallace-2 instead of concentrating George+Wallace's shared SF/PF coverage onto just one of them;
+ * an SG backup need split Miller-6/Reeves-2/Hardaway-2, the last two both off-position PGs each
+ * contributing a token sliver. Root cause: `fillFromTier`'s greedy loop grants each candidate only
+ * up to THEIR OWN remaining capacity before reaching for a second contributor — when the best-fit
+ * candidate's spare room happens to fall just short of the slot's full remaining need, the last
+ * couple of minutes fall to a second teammate instead, producing a tiny stint that reads as noise
+ * rather than a role.
+ *
+ * A bounded, pure LATERAL swap, not a capacity change for anyone: for a bench-level sliver entry
+ * below `MIN_USEFUL_BENCH_MINUTES` (excluding only THIS SLOT's own starter — see the in-loop
+ * comment on why a global starter check was wrong), find whichever other player in the SAME slot
+ * fits it best-or-equal-to the sliver (real data rarely ties exactly — George's real secondary PF,
+ * 0.9, vs Wallace's fallback-only 0.85 — so `>=`, not a near-equality check, is what actually
+ * matches the reported case) who ALSO already shares a real, positive-minute "home" slot with the
+ * sliver holder (both real examples have this shape — Wallace/George both real-fit SF, Reeves/
+ * Hardaway presumably both real-fit PG). Move the whole sliver onto that teammate in THIS slot,
+ * and give the sliver holder the same number of minutes back in their shared home slot, taken from
+ * the teammate there — both players' own totals (and both slots' totals) are exactly unchanged, so
+ * no durability/cap check can be violated by this move; it only ever reduces how many distinct
+ * fillers a slot carries. Verified directly against the exact reported PF shape (a unit probe,
+ * deleted after use): Duncan-38/George-8/Wallace-2 -> Duncan-38/George-10, SF George-20/Wallace-28
+ * — matches the user's own proposed fix exactly.
+ */
+function mergeTinyBackupSlivers(
+  roster: PlayerSpan[],
+  slots: Record<Position, SlotAssignment[]>,
+  primaryBySlot: Partial<Record<Position, PlayerSpan>>,
+): void {
+  for (const slot of STARTER_SLOTS) {
+    // 2026-09-12 fix (measured against the exact reported shape via a direct unit probe, not
+    // guessed): the first version excluded any player who is a starter AT ANY SLOT from either
+    // role here — but the real motivating case (Paul George: SF starter, ALSO an 8-minute PF
+    // filler) is exactly a starter-elsewhere-but-bench-here player, and excluding him globally
+    // left no eligible partner at all, so nothing ever merged. The only row that must stay
+    // untouched is THIS slot's own starter (`primaryBySlot[slot]`) — a starter's role at a
+    // DIFFERENT slot is just an ordinary bench-level entry here, exactly like anyone else's.
+    const ownStarterId = primaryBySlot[slot]?.id;
+    for (const entry of [...slots[slot]]) {
+      if (entry.minutes <= 0 || entry.minutes >= MIN_USEFUL_BENCH_MINUTES || entry.playerId === ownStarterId) continue;
+      const sliverPlayer = roster.find((p) => p.id === entry.playerId);
+      if (!sliverPlayer || isRealPositionFit(sliverPlayer, slot)) continue;
+      const sliverFit = positionFitMultiplier(sliverPlayer, slot);
+
+      // 2026-09-12 fix, same direct-probe measurement as the starter check above: the real
+      // motivating case has George (REAL secondary PF, multiplier 0.9) and Wallace (fallback-only
+      // PF, 0.85) — a genuine, if small, fit gap, not an exact tie. Requiring near-equal fit
+      // (`Math.abs(diff) < 0.01`) never matched real data at all; `>=` picks the best-or-equal
+      // fit teammate instead, which is also just the more correct goal — concentrate the slot's
+      // need on whoever fits it best, not merely on whoever happens to tie the sliver exactly.
+      // 2026-09-12, code-review fix: `a.minutes > 0` added — without it, a same-slot partner
+      // already zeroed out earlier in THIS SAME pass (a prior sliver, not yet pruned since
+      // pruning was deferred — see below) could still be picked as the new "partner," reviving a
+      // dead entry instead of routing onto a genuinely still-active teammate.
+      const partnerEntry = slots[slot]
+        .filter((a) => a.playerId !== sliverPlayer.id && a.playerId !== ownStarterId && a.minutes > 0)
+        .map((a) => ({ a, p: roster.find((r) => r.id === a.playerId) }))
+        .filter((x): x is { a: SlotAssignment; p: PlayerSpan } => !!x.p && positionFitMultiplier(x.p, slot) >= sliverFit)
+        .sort(
+          (x, y) =>
+            positionFitMultiplier(y.p, slot) - positionFitMultiplier(x.p, slot) || y.a.minutes - x.a.minutes,
+        )[0];
+      if (!partnerEntry) continue;
+
+      // A real, positive-minute slot both already share — the "home" position this swap moves
+      // minutes through, keeping both players' own totals unchanged.
+      const homeSlot = STARTER_SLOTS.find(
+        (s) =>
+          s !== slot &&
+          slots[s].some((a) => a.playerId === sliverPlayer.id && a.minutes > 0) &&
+          slots[s].some((a) => a.playerId === partnerEntry.p.id && a.minutes > 0),
+      );
+      if (!homeSlot) continue;
+      const sliverHomeEntry = slots[homeSlot].find((a) => a.playerId === sliverPlayer.id)!;
+      const partnerHomeEntry = slots[homeSlot].find((a) => a.playerId === partnerEntry.p.id)!;
+      const m = entry.minutes;
+      if (partnerHomeEntry.minutes < m) continue;
+
+      partnerEntry.a.minutes += m;
+      partnerHomeEntry.minutes -= m;
+      sliverHomeEntry.minutes += m;
+      entry.minutes = 0;
+    }
+  }
+  // 2026-09-12, code-review fix: pruning used to happen per-slot, immediately after that slot's
+  // own inner loop — but a swap's `partnerHomeEntry`/`sliverHomeEntry` can belong to a DIFFERENT
+  // slot (`homeSlot`) that the outer loop already finished and pruned earlier (STARTER_SLOTS order
+  // is fixed; a later slot's merge can zero out an entry in an EARLIER one). If that zeroed entry
+  // was the home slot's own starter row (index 0), the stale zero-minute row survived uncleaned,
+  // and `primaryStarters()`'s `resolved.find(entry => entry.minutes > 0) ?? resolved[0]` fallback
+  // would skip it and report a different, wrong player as that slot's starter. Pruning every slot
+  // once, only after every slot's swaps are all done, means it no longer matters which order the
+  // slots were processed in or which slot a swap's home leg landed in.
+  for (const slot of STARTER_SLOTS) {
+    slots[slot] = slots[slot].filter((a) => a.minutes > 0);
+  }
 }
 
 /**

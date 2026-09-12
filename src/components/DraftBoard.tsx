@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, type DraftState } from '../engine/draft';
@@ -147,6 +147,12 @@ function displayedOverallTier(span: PlayerSpan): DisplayOverallTier {
  * own docstring — a broadcast-board look that deliberately ignores `prefers-color-scheme`), so
  * this reuses each tier's already-defined DARK-mode hue directly rather than forking another
  * light/dark pair that would only ever render one half of. */
+/* 2026-09-12, user-reported live ("kolor różowy w all-nba nie do końca mi się podoba"): the
+   original `.rating-allnba` hex (#b2a3f2) is a lightened dark-mode derivative of the light-mode
+   indigo (#5b3fb0) — brightening it for dark-background contrast pulled it close enough to MVP's
+   own pastel pink (#ec8ecb) that the two read as near-neighbors instead of distinct rungs. Shifted
+   cooler/bluer (indigo, not lavender) so it stays clearly on the blue side of MVP's pink — same
+   "cyan -> indigo -> magenta -> gold" ladder this palette was always meant to read as. */
 const TIER_FRAME_COLOR: Record<DisplayOverallTier, string> = {
   'Salary Glue': '#82b5ea',
   'Cigarette Butt': '#b3b0a8',
@@ -155,7 +161,7 @@ const TIER_FRAME_COLOR: Record<DisplayOverallTier, string> = {
   'Sixth Man': '#c1440e',
   Starter: '#7fd68a',
   'All-star': '#6fd9e6',
-  'All-NBA': '#b2a3f2',
+  'All-NBA': '#8b9bf7',
   MVP: '#ec8ecb',
   'Greatest peak': '#ffdc9b',
   GOAT: '#ffd479',
@@ -671,10 +677,37 @@ export default function DraftBoard({
   // The human's roster as it should actually be scored: each drafted pick resolved to whichever
   // span the player chose in the dropdown below, falling back to the drafted (peak) span until
   // they pick something else — same fallback `SpanSelectionScreen` used to seed from.
-  const chosenHumanRoster: PlayerSpan[] = humanSpanOptions.map(({ key, draftedSpan, options }) => {
-    const chosenId = humanSpanSelection[key];
-    return options.find((o) => o.id === chosenId) ?? draftedSpan;
-  });
+  // 2026-09-12, user-reported live (Auto-finish appearing to hang on a full 144-pick draft): this
+  // used to be a bare `.map()` in the render body — a brand-new array (and options) on every
+  // single DraftBoard render, human pick or not. Harmless while the Rotation card unmounted
+  // whenever you weren't on the Team tab (see that card's own "always mounted" fix above), but
+  // once it stays mounted for the WHOLE draft, an unstable `roster` prop forces it to fully
+  // re-render — and re-run its own `optionsFor`/`benchWithMinutes` work — on all 143 OTHER teams'
+  // picks too, not just the human's 9. Real `autoFinishDraft` timing in isolation (`tsx`, no React)
+  // stayed ~19-20s with or without today's rotation changes — the slowdown was this render, not
+  // the engine. Memoized so AI-only picks (`humanSpanOptions`/`humanSpanSelection` both unchanged)
+  // return the SAME array reference, letting `RotationBuilder`'s own `React.memo` (see that
+  // component) skip re-rendering entirely for them.
+  const chosenHumanRoster: PlayerSpan[] = useMemo(
+    () =>
+      humanSpanOptions.map(({ key, draftedSpan, options }) => {
+        const chosenId = humanSpanSelection[key];
+        return options.find((o) => o.id === chosenId) ?? draftedSpan;
+      }),
+    [humanSpanOptions, humanSpanSelection],
+  );
+  // Same "AI-only picks shouldn't re-render the Rotation card" fix as `chosenHumanRoster` above —
+  // an inline `(rotation) => onSubmitTeam(chosenHumanRoster, rotation)` at the call site is a new
+  // function every render regardless of any memoization upstream, which alone would defeat
+  // `RotationBuilder`'s own `React.memo`. Refs hold the latest values so this callback's identity
+  // never changes at all, independent of whether `onSubmitTeam` itself is stable in its parent.
+  const chosenHumanRosterRef = useRef(chosenHumanRoster);
+  chosenHumanRosterRef.current = chosenHumanRoster;
+  const onSubmitTeamRef = useRef(onSubmitTeam);
+  onSubmitTeamRef.current = onSubmitTeam;
+  const handleRotationConfirm = useCallback((rotation: Rotation) => {
+    onSubmitTeamRef.current(chosenHumanRosterRef.current, rotation);
+  }, []);
 
   // 2026-09-11, user's own inspiration screenshot ("po prawej nasz zespół... jeden element" —
   // Draft and Team merged into one screen, a persistent team sidebar next to the player cards):
@@ -683,13 +716,21 @@ export default function DraftBoard({
   // draft order. Read-only here (span-swap + full rotation-minute editing stay on the Team tab —
   // deliberately scoped smaller for this pass; see this session's own conversation for why) —
   // this is "what do I already have" at a glance while still browsing the board.
-  // 2026-09-12: reads `chosenHumanRoster` (span-swap aware), not `humanTeam.roster` (always the
-  // drafted/peak span) — this sidebar is a pure preview, same as the Team tab's own cap meter
-  // right below it (see `displayFgas`'s comment), so a span swap should show up here too instead
-  // of the sidebar quietly keeping stale FGA numbers after the Team tab already moved on.
+  // 2026-09-12, code-review fix: this briefly read `chosenHumanRoster` (the span-swap PREVIEW),
+  // on the stated belief that it'd match "the Team tab's own cap meter right below it" — but the
+  // cap bar actually living right below it in this SAME sidebar (`at-draft-sidebar-cap`, a few
+  // lines down) deliberately stays on the REAL `currentFgas`/`humanTeam.roster`, precisely to
+  // avoid ever promising more draftable room than `isPickLegal` actually enforces (the exact
+  // failure mode a real user report already caught once this session for the old inline label).
+  // So for one card to ever show an UPWARD (not-yet-committed) span swap, the roster grid/bench
+  // here would show the swapped, pricier player while the cap number beside it didn't move —
+  // reopening that same "two adjacent numbers disagree" complaint in a new spot. Back to
+  // `humanTeam.roster` so every number in this read-only summary card is the same real, enforced
+  // state; the Team tab remains the one place an upward swap actually previews (roster table +
+  // its own cap meter both already consistently read `chosenHumanRoster`/`displayFgas` there).
   const humanAssignment = useMemo(
-    () => bestPrimaryAssignment(chosenHumanRoster).assignment,
-    [chosenHumanRoster],
+    () => bestPrimaryAssignment(humanTeam.roster).assignment,
+    [humanTeam.roster],
   );
 
   // True whenever the Team tab's roster table is actually showing the human's own roster — always
@@ -1408,7 +1449,10 @@ export default function DraftBoard({
                   .filter((p): p is PlayerSpan => Boolean(p))
                   .map((p) => p.id),
               );
-              const overflow = chosenHumanRoster.filter((p) => !seatedIds.has(p.id));
+              // 2026-09-12, code-review fix: matches `humanAssignment` above — real roster, not
+              // the span-swap preview, so this card's bench list can never disagree with its own
+              // cap-remaining number.
+              const overflow = humanTeam.roster.filter((p) => !seatedIds.has(p.id));
               return overflow.length > 0 ? (
                 <div className="at-draft-sidebar-bench">
                   <span className="at-draft-sidebar-bench-label">Bench</span>
@@ -1646,7 +1690,7 @@ export default function DraftBoard({
                 key={spanVersion}
                 roster={chosenHumanRoster}
                 rosterComplete={draftComplete}
-                onConfirm={(rotation) => onSubmitTeam(chosenHumanRoster, rotation)}
+                onConfirm={handleRotationConfirm}
                 confirmLabel="Submit Team"
                 // The span dropdown deliberately lists every span (comparing them by cost is the
                 // point), so a player can swap to a pricier span and push the chosen roster over

@@ -127,6 +127,21 @@ const WEAK_LINK_EXTREME_DTAL_FLOOR = 10;
 const WEAK_LINK_SHELL_DTAL_FLOOR = 80;
 const WEAK_LINK_SHELL_DTAL_FULL = 90;
 export const MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS = 28;
+/**
+ * 2026-09-12, code-review finding (fit.ts's `defensiveCohesionComponent` was rescaling
+ * `defenseScoreBonus` onto a 0-100 display scale by dividing by `MAX_BACKLINE_FOUNDATION_
+ * DEFENSE_BONUS` alone — stale the moment `weakLinkOvercomeBonus`'s 28-point cap became the
+ * largest of the four paths, producing values over 100, up to ~467, shown raw to the user):
+ * the true ceiling `defenseScoreBonus` can reach is whichever of the four caps above is
+ * currently largest. Exported so any consumer rescaling it stays correct automatically if any
+ * one of the four is ever retuned again, instead of hardcoding one and silently going stale.
+ */
+export const MAX_DEFENSE_SCORE_BONUS = Math.max(
+  MAX_ELITE_SHELL_DEFENSE_BONUS,
+  MAX_THREE_LAYER_CORE_DEFENSE_BONUS,
+  MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS,
+  MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS,
+);
 /** All-time-roster extrapolation target for a complete no-weak-link defensive shell. */
 export const ELITE_SHELL_DRTG_TARGET = 85;
 
@@ -357,10 +372,22 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
       : 0;
   const weakLinkOvercomeBonus = weakLinkOvercome * MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS;
 
+  // 2026-09-12, code-review finding: this used to omit `weakLinkOvercome` entirely, so a Nash-
+  // style team's boosted defenseScore/Overall (the whole point of the mechanism — see that
+  // constant's own docstring) never reached the season/playoff simulation's real net-rating model
+  // (`netRatingProjection.ts` blends `drtgCompleteness` in directly) — the team could rank #1 in
+  // the draft-day Power Ranking while still simulating games with its unconcealed, bad defense,
+  // contradicting the user's own explicit requirement ("musi być w stanie wygrać draft"). Blended
+  // in at the same weight as `completeness` itself (not a smaller fraction like the two softer
+  // partial paths below): `weakLinkOvercome`'s own three-factor gate (a genuinely extreme outlier
+  // AND a genuinely elite 80-90 shell average AND a real floor across the other four) is at least
+  // as strict as `completeness`'s own no-weak-link-shell bar, just scoped to concealing one
+  // starter instead of requiring the whole rotation to already be weak-link-free.
   const drtgCompleteness = Math.max(
     completeness,
     threeLayerCore * THREE_LAYER_CORE_DRTG_BLEND,
     backlineFoundation * BACKLINE_FOUNDATION_DRTG_BLEND,
+    weakLinkOvercome,
   );
 
   return {
