@@ -55,6 +55,15 @@ interface Props {
   /** Shown as the disabled button's `title` tooltip when `confirmDisabled` is the reason (not
    * `!allValid`) — e.g. "Finish drafting before you can submit." */
   confirmDisabledHint?: string;
+  /** 2026-09-12, user-reported live (screenshot: PG 2/48 + PF 38/48, both LeBron, right after his
+   * very first pick) — the Team tab opens this editor from pick 1 on, and until this flag existed
+   * the initial auto-seed (and the "Auto-fill" button) ran `autoAssignRotation` against whatever
+   * partial roster existed at the time, producing exactly that kind of nonsense partial fill (one
+   * drafted player smeared across two starter slots, the other three left empty) instead of
+   * waiting for a real 9-man roster to actually assign. Omitted defaults to `true` (unchanged
+   * behavior for the results-screen reuse, which only ever seeds this from an already-final
+   * team) — the Team tab call site is the only one that passes `false` while picks remain. */
+  rosterComplete?: boolean;
 }
 
 interface Row {
@@ -69,8 +78,11 @@ type RowsBySlot = Record<Position, Row[]>;
 
 const MAX_ROWS_PER_SLOT = 4;
 
-function buildInitialRows(roster: PlayerSpan[], seed?: Rotation | null): RowsBySlot {
-  const source = seed ?? autoAssignRotation(roster);
+/** `rosterComplete = false` skips `autoAssignRotation` entirely and returns every slot empty —
+ * see `Props.rosterComplete`'s own comment for why: auto-assigning against a still-growing roster
+ * produces a partial, nonsensical fill instead of waiting for all 9 picks to actually be in. */
+function buildInitialRows(roster: PlayerSpan[], seed?: Rotation | null, rosterComplete = true): RowsBySlot {
+  const source = rosterComplete ? (seed ?? autoAssignRotation(roster)) : { slots: {} as Record<Position, SlotAssignment[]> };
   const result = {} as RowsBySlot;
   for (const slot of STARTER_SLOTS) {
     const assignments = source.slots[slot] ?? [];
@@ -111,10 +123,12 @@ export default function RotationBuilder({
   confirmLabel,
   confirmDisabled,
   confirmDisabledHint,
+  rosterComplete = true,
 }: Props) {
-  const [rows, setRows] = useState<RowsBySlot>(() => buildInitialRows(roster, initialRotation));
+  const [rows, setRows] = useState<RowsBySlot>(() => buildInitialRows(roster, initialRotation, rosterComplete));
 
   function handleAutoFill() {
+    if (!rosterComplete) return;
     setRows(buildInitialRows(roster));
   }
 
@@ -178,9 +192,20 @@ export default function RotationBuilder({
         cover more than one position (e.g. a combo guard backing up both PG and SG), and a 3rd contributor can pick
         up minutes a single backup can't (minutes/positions caps permitting).
       </p>
-      <button className="secondary-btn" onClick={handleAutoFill}>
+      <button
+        className="secondary-btn"
+        onClick={handleAutoFill}
+        disabled={!rosterComplete}
+        title={rosterComplete ? undefined : 'Finish drafting your full roster before auto-filling the rotation.'}
+      >
         Auto-fill (best fit)
       </button>
+      {!rosterComplete && (
+        <p className="rotation-incomplete-hint">
+          Set minutes manually if you'd like, but auto-fill waits for your full roster — a partial
+          one just gets smeared across a couple of slots instead of assigned sensibly.
+        </p>
+      )}
 
       {/* 2026-09-11, user-reported live ("głębsza przebudowa", "brzydko to wygląda") — the table
           this replaced (itself a 2026-08-19 rebuild away from an earlier card grid) matched the

@@ -667,9 +667,112 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
   }
 
   rebalanceCrossSlotMinutes(roster, slots, primaryBySlot, starterMinutesUsed, minutesUsed, slotsBackedUp, remainingPlayers);
+  consolidateOffPositionFillers(roster, slots, primaryBySlot, starterMinutesUsed, minutesUsed, slotsBackedUp);
   ensureUsefulBenchMinutes(roster, slots, primaryBySlot);
 
   return { slots };
+}
+
+/**
+ * 2026-09-12, user-reported live, two independent real examples in the same shape: a bench
+ * small forward split thin across two off-position slots at once (SG AND PF, or SG AND a second
+ * off-position spot) while a much closer fit for one of those two sat idle — in one case the
+ * roster's own PG starter (adjacent to SG, distance 1) had real spare capacity nobody offered
+ * that slot; in the other, freeing the wing from one of his two off-position slots would have
+ * left him spare distinct-slot budget for the OTHER, closer one instead of forcing a true
+ * position-blind last resort (a different natural SF) onto it. Root cause: the greedy, slot-by-
+ * slot fill above resolves each slot independently and can spend a versatile bench player's
+ * limited `MAX_DISTINCT_BACKUP_SLOTS` budget on a mediocre fit before a much closer use of that
+ * SAME player is even discovered later in the loop — locking them out of a slot they'd have fit
+ * better, and forcing THAT slot down to a worse, unrelated fallback.
+ *
+ * A bounded, per-slot POST-PROCESS cleanup, not a fresh global re-optimization (same philosophy
+ * as `rebalanceCrossSlotMinutes` just above): for each slot's current WORST-fitting bench filler,
+ * look across the whole roster — starters included, since a starter's genuinely idle capacity is
+ * real, exactly how `rebalanceCrossSlotMinutes` already treats it — for anyone who fits this slot
+ * meaningfully better and has real spare room, and shift as many of the worst filler's minutes
+ * onto them as that spare room allows. Repeats per slot until no more improving swap exists there
+ * (bounded by the slot's own entry count, so this always terminates). Scoped to BENCH fillers
+ * only (a starter already playing off-position elsewhere, via the `eligibleStarters` fallback
+ * tier above, is left untouched) — deliberately narrow, so this pass only ever relieves a bench
+ * assignment, never re-perturbs a starter's own allocation the way the trim-and-backfill half of
+ * `rebalanceCrossSlotMinutes` does.
+ */
+function consolidateOffPositionFillers(
+  roster: PlayerSpan[],
+  slots: Record<Position, SlotAssignment[]>,
+  primaryBySlot: Partial<Record<Position, PlayerSpan>>,
+  starterMinutesUsed: Map<string, number>,
+  minutesUsed: Map<string, number>,
+  slotsBackedUp: Map<string, number>,
+): void {
+  const starterIds = new Set(
+    Object.values(primaryBySlot)
+      .filter((p): p is PlayerSpan => !!p)
+      .map((p) => p.id),
+  );
+
+  const usedFor = (playerId: string): number =>
+    starterIds.has(playerId) ? starterMinutesUsed.get(playerId) ?? 0 : minutesUsed.get(playerId) ?? 0;
+  const capFor = (player: PlayerSpan): number =>
+    Math.min(maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER), minuteProfileForSpan(player).ceiling);
+
+  for (const slot of STARTER_SLOTS) {
+    let guard = 0;
+    while (guard++ <= slots[slot].length) {
+      const offPositionEntries = slots[slot]
+        .map((entry) => ({ entry, filler: roster.find((p) => p.id === entry.playerId) }))
+        .filter(
+          (x): x is { entry: SlotAssignment; filler: PlayerSpan } =>
+            !!x.filler && x.entry.minutes > 0 && !starterIds.has(x.filler.id) && !isRealPositionFit(x.filler, slot),
+        )
+        .sort((a, b) => positionFitMultiplier(a.filler, slot) - positionFitMultiplier(b.filler, slot));
+      const worst = offPositionEntries[0];
+      if (!worst) break;
+      const { entry, filler } = worst;
+      const fillerFit = positionFitMultiplier(filler, slot);
+
+      const alternative = roster
+        .filter((p) => p.id !== filler.id)
+        .map((p) => ({ p, fit: positionFitMultiplier(p, slot), spare: capFor(p) - usedFor(p.id) }))
+        .filter(
+          ({ p, fit, spare }) =>
+            fit > fillerFit &&
+            spare > 0.5 &&
+            (starterIds.has(p.id) ||
+              slots[slot].some((a) => a.playerId === p.id) ||
+              (slotsBackedUp.get(p.id) ?? 0) < MAX_DISTINCT_BACKUP_SLOTS),
+        )
+        .sort((a, b) => effectiveTalent(b.p) * b.fit - effectiveTalent(a.p) * a.fit)[0];
+      if (!alternative) break;
+
+      const shift = Math.min(entry.minutes, alternative.spare);
+      if (shift <= 0) break;
+
+      entry.minutes -= shift;
+      if (starterIds.has(filler.id)) {
+        starterMinutesUsed.set(filler.id, Math.max(0, (starterMinutesUsed.get(filler.id) ?? 0) - shift));
+      } else {
+        minutesUsed.set(filler.id, Math.max(0, (minutesUsed.get(filler.id) ?? 0) - shift));
+        if (entry.minutes <= 0) slotsBackedUp.set(filler.id, Math.max(0, (slotsBackedUp.get(filler.id) ?? 0) - 1));
+      }
+
+      const existingAlt = slots[slot].find((a) => a.playerId === alternative.p.id);
+      if (existingAlt) existingAlt.minutes += shift;
+      else {
+        slots[slot].push({ playerId: alternative.p.id, minutes: shift });
+        if (!starterIds.has(alternative.p.id)) {
+          slotsBackedUp.set(alternative.p.id, (slotsBackedUp.get(alternative.p.id) ?? 0) + 1);
+        }
+      }
+      if (starterIds.has(alternative.p.id)) {
+        starterMinutesUsed.set(alternative.p.id, (starterMinutesUsed.get(alternative.p.id) ?? 0) + shift);
+      } else {
+        minutesUsed.set(alternative.p.id, (minutesUsed.get(alternative.p.id) ?? 0) + shift);
+      }
+    }
+    slots[slot] = slots[slot].filter((a) => a.minutes > 0);
+  }
 }
 
 /**

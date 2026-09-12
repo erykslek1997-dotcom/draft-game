@@ -66,7 +66,7 @@ export function evaluateHistoricalChallenges(
     ]),
     build('heliocentric', 'Heliocentric Star + Specialists', '2018 Houston Rockets', 'Role clarity badge', [
       condition('Primary creation minimum 85', fit.inputs.primaryCreationSignal >= 85, `${Math.round(fit.inputs.primaryCreationSignal)}`),
-      condition('Minimum trzech low-usage specialists', lowUsageSpecialists >= 3, `${lowUsageSpecialists}`),
+      condition('Minimum three low-usage specialists', lowUsageSpecialists >= 3, `${lowUsageSpecialists}`),
       condition('Spacing minimum 78', breakdown.spacingScore >= 78, `${breakdown.spacingScore}`),
       condition('PO profile minimum 75', season.playoffs >= 75, `${season.playoffs}`),
     ]),
@@ -85,11 +85,33 @@ export function evaluateHistoricalChallenges(
       // than ~85-88. 75 preserves this as a genuine elite-fit gate on the new scale.
       condition('FIT minimum 75', breakdown.fitScore >= 75, `${breakdown.fitScore}`),
     ]),
-    build('fga-glue', 'Shots Glue', 'Low-usage championship role players', 'Cap alchemist badge', [
+    build('fga-glue', 'Salary Glue', 'Low-usage championship role players', 'Cap alchemist badge', [
       condition('At least two players below 2 shots', gluePlayers >= 2, `${gluePlayers}`),
       condition('PO profile minimum 80', season.playoffs >= 80, `${season.playoffs}`),
       condition('Bench depth minimum 70', breakdown.benchDepthScore >= 70, `${breakdown.benchDepthScore}`),
       condition('Rotation minimum 75', breakdown.rotationScore >= 75, `${breakdown.rotationScore}`),
+    ]),
+    // 2026-09-12, user's own ask ("dodajmy więcej archetypów"): three more, built from
+    // components/inputs the existing seven never touch (`huntingPotential`/`mismatchStructure`,
+    // `guardContainment`, `rimPressureTeam`) so each reads as its own distinct identity rather
+    // than a reshuffled version of one already above.
+    build('lob-city', 'Lob City', '2012–15 LA Clippers', 'Alley-oop badge', [
+      condition('Rim pressure minimum 80', fit.components.rimPressureTeam >= 80, `${fit.components.rimPressureTeam}`),
+      condition('Primary creation minimum 80', fit.inputs.primaryCreationSignal >= 80, `${Math.round(fit.inputs.primaryCreationSignal)}`),
+      condition('Spacing minimum 60', breakdown.spacingScore >= 60, `${breakdown.spacingScore}`),
+      condition('RS profile minimum 78', season.regularSeason >= 78, `${season.regularSeason}`),
+    ]),
+    build('grit-and-grind', 'Grit and Grind', '2011–13 Memphis Grizzlies', 'Bully-ball badge', [
+      condition('Defense minimum 82', breakdown.defenseScore >= 82, `${breakdown.defenseScore}`),
+      condition('Rebounding minimum 78', fit.components.reboundingBalance >= 78, `${fit.components.reboundingBalance}`),
+      condition('Guard containment minimum 75', fit.inputs.guardContainment >= 75, `${fit.inputs.guardContainment}`),
+      condition('Spacing at most 58', breakdown.spacingScore <= 58, `${breakdown.spacingScore}`),
+    ]),
+    build('mismatch-hunters', 'Mismatch Hunters', '2010–14 Miami Heat', 'Isolation badge', [
+      condition('Hunting potential minimum 80', fit.inputs.huntingPotential >= 80, `${Math.round(fit.inputs.huntingPotential)}`),
+      condition('Mismatch structure minimum 78', fit.inputs.mismatchStructure >= 78, `${Math.round(fit.inputs.mismatchStructure)}`),
+      condition('Defensive cohesion minimum 80', fit.components.defensiveCohesion >= 80, `${fit.components.defensiveCohesion}`),
+      condition('PO profile minimum 82', season.playoffs >= 82, `${season.playoffs}`),
     ]),
   ].sort((a, b) => Number(b.completed) - Number(a.completed) || b.progress - a.progress);
 }

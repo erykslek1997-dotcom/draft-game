@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, type DraftState } from '../engine/draft';
@@ -65,6 +65,14 @@ interface Props {
    * (see that tab's own render block for the full rationale), ending in this one callback once
    * the human hits Submit. */
   onSubmitTeam: (roster: PlayerSpan[], rotation: Rotation) => void;
+  /** 2026-09-12, user-reported live ("nadal brak korelacji" — the Team tab's own cap meter could
+   * show real, saved cap room from a cheaper span swap that the Draft tab's actual pick-legality
+   * gate never saw, since a swap was always a local `DraftBoard`-only preview never written back
+   * into `state`). Applies a span swap for real, in `GameShell`'s own `draftState` — but ONLY when
+   * `setHumanSpan` below has already verified it's safe (never costs more than the span originally
+   * drafted, and never busts the real cap) — so every other read of the human's roster
+   * (`isPickLegal`'s lookahead included) sees the same, single, real number from that point on. */
+  onSwapHumanSpan: (playerName: string, newSpanId: string) => void;
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -107,10 +115,10 @@ export function SpacingTierBadge({ span }: { span: PlayerSpan }) {
  * the raw TAL value — 2026-08-05, the user's position-based tier-cap rules (`overallTierForSpan`)
  * need O-TAL/D-TAL/FGA/position alongside TAL, the same reason `SpacingTierBadge` already needed
  * the player's identity for the Curry exception, not just the number. */
-type DisplayOverallTier = OverallTier | 'Shots Glue';
+type DisplayOverallTier = OverallTier | 'Salary Glue';
 
 const OVERALL_TIER_CLASS: Record<DisplayOverallTier, string> = {
-  'Shots Glue': 'rating-glue',
+  'Salary Glue': 'rating-glue',
   'Cigarette Butt': 'rating-cigarette',
   'Bench Warmer': 'rating-bench',
   'Role Player': 'rating-role',
@@ -127,8 +135,31 @@ const OVERALL_TIER_CLASS: Record<DisplayOverallTier, string> = {
  * underlying tier stays unchanged for talent/minutes rules; this is the explicit roster-role
  * label the AI and UI can share without pretending cheapness is basketball quality. */
 function displayedOverallTier(span: PlayerSpan): DisplayOverallTier {
-  return span.fga < 2 ? 'Shots Glue' : overallTierForSpan(tierContextFor(span));
+  return span.fga < 2 ? 'Salary Glue' : overallTierForSpan(tierContextFor(span));
 }
+
+/** 2026-09-12, user's explicit choice ("wariant A") from a 3-option mockup: the Draft tab's
+ * player cards drop the text tier badge entirely and carry the tier as a colored frame + corner
+ * flag around the whole card instead — same 11-tier palette `OVERALL_TIER_CLASS` already uses for
+ * the text badge everywhere else (Team roster table, Rotation, the peek modal — all untouched,
+ * this is scoped to the browsing grid only), just reused as a border/corner accent instead of a
+ * pill background. `.at-player-card`'s parent `.at-shell` is fixed dark always (see that class's
+ * own docstring — a broadcast-board look that deliberately ignores `prefers-color-scheme`), so
+ * this reuses each tier's already-defined DARK-mode hue directly rather than forking another
+ * light/dark pair that would only ever render one half of. */
+const TIER_FRAME_COLOR: Record<DisplayOverallTier, string> = {
+  'Salary Glue': '#82b5ea',
+  'Cigarette Butt': '#b3b0a8',
+  'Bench Warmer': '#f0a868',
+  'Role Player': '#e8d461',
+  'Sixth Man': '#c1440e',
+  Starter: '#7fd68a',
+  'All-star': '#6fd9e6',
+  'All-NBA': '#b2a3f2',
+  MVP: '#ec8ecb',
+  'Greatest peak': '#ffdc9b',
+  GOAT: '#ffd479',
+};
 
 /** Shared by `OverallTierBadge` and every "TAL {number}" display site — building this once and
  * reusing it for both the badge and the number next to it is what guarantees they can never
@@ -491,6 +522,7 @@ export default function DraftBoard({
   pickReasoning,
   onPickReasoningChange,
   onSubmitTeam,
+  onSwapHumanSpan,
 }: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
@@ -559,18 +591,6 @@ export default function DraftBoard({
   const humanTeam = state.teams.find((t) => t.isHuman)!;
   const teamForPanels = state.commissionerMode ? currentTeam : humanTeam;
 
-  // 2026-09-11, user's own inspiration screenshot ("po prawej nasz zespół... jeden element" —
-  // Draft and Team merged into one screen, a persistent team sidebar next to the player cards):
-  // same optimal starter-slot search `finalizeQuickRotation`/QuickFive's own team panel already
-  // use for the identical need there, so this sidebar reads as PG/SG/SF/PF/C coverage instead of
-  // draft order. Read-only here (span-swap + full rotation-minute editing stay on the Team tab —
-  // deliberately scoped smaller for this pass; see this session's own conversation for why) —
-  // this is "what do I already have" at a glance while still browsing the board.
-  const humanAssignment = useMemo(
-    () => bestPrimaryAssignment(humanTeam.roster).assignment,
-    [humanTeam.roster],
-  );
-
   // 2026-08-16, user's own ask: span selection + rotation-building moved off their own dedicated
   // post-draft screens and into the Team tab below, reachable from the human's very first pick —
   // always against `humanTeam` specifically (never `teamForPanels`), same "Commissioner Mode
@@ -588,7 +608,49 @@ export default function DraftBoard({
   // change is an acceptable, rare trade-off, not a routine one.
   const [spanVersion, setSpanVersion] = useState(0);
 
-  function setHumanSpan(key: string, spanId: string) {
+  // 2026-09-12, user-reported live ("nadal brak korelacji") + user's own explicit direction
+  // ("zamiana w dół = realna, od razu"): the FGA a pick was actually drafted at is the one number
+  // `isPickLegal`'s lookahead already promised every OTHER team it wouldn't exceed — so swapping
+  // to anything AT OR BELOW that original number can never retroactively invalidate a decision the
+  // AI already made, and is safe to commit for real, immediately. Swapping ABOVE it stays exactly
+  // what it always was: a local preview, gated for real only at Submit (`chosenRosterOverCap`).
+  // A `ref` (not state) because this is pure bookkeeping the render output never reads directly —
+  // only `setHumanSpan` below consults it — and it must never reset a key once captured, including
+  // across the very re-render a real commit itself causes.
+  const originalPeakFgaByKeyRef = useRef<Map<string, number>>(new Map());
+  useEffect(() => {
+    for (const p of humanTeam.roster) {
+      const key = normalizePlayerName(p.playerName);
+      if (!originalPeakFgaByKeyRef.current.has(key)) {
+        originalPeakFgaByKeyRef.current.set(key, p.fga);
+      }
+    }
+  }, [humanTeam.roster]);
+
+  function setHumanSpan(key: string, spanId: string, playerName: string, options: PlayerSpan[]) {
+    const chosen = options.find((o) => o.id === spanId);
+    const originalPeakFga = originalPeakFgaByKeyRef.current.get(key);
+    if (chosen && originalPeakFga !== undefined && chosen.fga <= originalPeakFga) {
+      // Re-verify against the FULL roster, not just this one player — a real commit that would
+      // itself bust the cap (e.g. swapping back up toward peak after the freed room from an
+      // earlier real downward swap was already spent on a different pick) must still fall back to
+      // preview-only, same as any ordinary above-peak swap.
+      const wouldBeRoster = humanTeam.roster.map((p) => (normalizePlayerName(p.playerName) === key ? chosen : p));
+      if (totalFga(wouldBeRoster.map((p) => p.fga)) <= CAP_LIMIT) {
+        onSwapHumanSpan(playerName, spanId);
+        // The real roster (read via `draftedSpan` below) now already reflects this choice — no
+        // local override left to fall back from, so a later render doesn't have two conflicting
+        // sources of truth for the same key.
+        setHumanSpanSelection((prev) => {
+          if (!(key in prev)) return prev;
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+        setSpanVersion((v) => v + 1);
+        return;
+      }
+    }
     setHumanSpanSelection((prev) => ({ ...prev, [key]: spanId }));
     setSpanVersion((v) => v + 1);
   }
@@ -613,6 +675,23 @@ export default function DraftBoard({
     const chosenId = humanSpanSelection[key];
     return options.find((o) => o.id === chosenId) ?? draftedSpan;
   });
+
+  // 2026-09-11, user's own inspiration screenshot ("po prawej nasz zespół... jeden element" —
+  // Draft and Team merged into one screen, a persistent team sidebar next to the player cards):
+  // same optimal starter-slot search `finalizeQuickRotation`/QuickFive's own team panel already
+  // use for the identical need there, so this sidebar reads as PG/SG/SF/PF/C coverage instead of
+  // draft order. Read-only here (span-swap + full rotation-minute editing stay on the Team tab —
+  // deliberately scoped smaller for this pass; see this session's own conversation for why) —
+  // this is "what do I already have" at a glance while still browsing the board.
+  // 2026-09-12: reads `chosenHumanRoster` (span-swap aware), not `humanTeam.roster` (always the
+  // drafted/peak span) — this sidebar is a pure preview, same as the Team tab's own cap meter
+  // right below it (see `displayFgas`'s comment), so a span swap should show up here too instead
+  // of the sidebar quietly keeping stale FGA numbers after the Team tab already moved on.
+  const humanAssignment = useMemo(
+    () => bestPrimaryAssignment(chosenHumanRoster).assignment,
+    [chosenHumanRoster],
+  );
+
   // True whenever the Team tab's roster table is actually showing the human's own roster — always
   // true outside Commissioner Mode (`teamForPanels` IS `humanTeam` then), only sometimes true
   // inside it (only when the human's own team happens to be the one currently on the clock).
@@ -621,20 +700,16 @@ export default function DraftBoard({
   const humanSpanOptionsByKey = new Map(humanSpanOptions.map((o) => [o.key, o]));
 
   const currentFgas = teamForPanels.roster.map((p) => p.fga);
-  // 2026-09-11, user-reported live ("brak korelacji z fga w team i draft... to po prostu
-  // pozostałość podczas poprawiania mechanizmu, teraz powinniśmy to naprawić"): while the draft is
-  // still running, a span swap here is NOT safe to treat as real freed-up cap — `isPickLegal`
-  // (and every Draft-tab "Cap remaining" label) only ever gates against the real drafted/peak
-  // span, on purpose (see `peakDraftPool.ts`'s own docstring on the loophole this closes: draft
-  // cheap, swap to the real peak span, and you got 9 max-TAL players past the cap the AI never
-  // got to react to). Letting the Team tab show a smaller, swap-based total DURING that same
-  // window was the "pozostałość" — it just relabeled the identical bug (Team promising room the
-  // Draft tab's own enforced number would then contradict) instead of removing it. Once the draft
-  // is actually done, there's no more legality gate left for a swap to sneak past — Submit is the
-  // real gate then (`chosenRosterOverCap` below) — so only THEN does showing the chosen-span total
-  // here mean anything more than "how much room am I planning to (maybe illegally) want."
   const draftComplete = humanTeam.roster.length >= ROSTER_SIZE;
-  const displayFgas = isViewingHumanRoster && draftComplete ? chosenHumanRoster.map((p) => p.fga) : currentFgas;
+  // 2026-09-12: `currentFgas` above (read straight off `humanTeam.roster`, the REAL `state`) is
+  // now already correct on its own for a swapped-down player — see `setHumanSpan`'s own docstring
+  // for why a downward swap commits for real into `state` instead of staying a local preview like
+  // every earlier iteration of this line did. `displayFgas` only still needs to differ from
+  // `currentFgas` for the one case that's genuinely still preview-only: an UPWARD swap (pricier
+  // than originally drafted), which `chosenHumanRoster` reflects but `state` deliberately never
+  // does until Submit (`chosenRosterOverCap` below is that gate). Both numbers agree automatically
+  // for every other case, which is the actual fix for the repeated "brak korelacji" reports.
+  const displayFgas = isViewingHumanRoster ? chosenHumanRoster.map((p) => p.fga) : currentFgas;
   // The human's chosen-span roster measured against the cap — the span dropdown can pick a
   // pricier span than was drafted, and nothing downstream clamps it (see the Submit button).
   const chosenRosterFga = totalFga(chosenHumanRoster.map((p) => p.fga));
@@ -974,36 +1049,6 @@ export default function DraftBoard({
                   <input className="at-fga-input" value={fgaMin} onChange={(e) => setFgaMin(e.target.value)} />
                   <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
                 </div>
-                <div className="at-cap-label" style={{ marginLeft: 'auto' }}>
-                  {/* 2026-08-19: this briefly read `displayFgas` (the Team tab's chosen/swapped
-                      spans) instead of `currentFgas` (the real, locked-in drafted spans) — fixed
-                      one real mismatch (a stale label after a Team-tab swap could read as a false
-                      "you're locked out") but created the opposite one: `isPickLegal`, which
-                      actually gates every Draft button, has never read anything but the real
-                      `state.teams` roster — a span swap in the Team tab is a scoring PREVIEW, it
-                      was never able to change what's really pickable. So a swap to a cheaper span
-                      made this label promise more room than the game would actually let you
-                      spend, reading as every listed player being disabled for no visible reason
-                      (user-reported, with a screenshot: "Cap remaining: 6.7" while every ~5-6 FGA
-                      player nearby stayed greyed out — the REAL remaining cap, tied to the
-                      unswapped roster, was smaller than the label said). This label's one job is
-                      "how much room do I actually have to draft with right now" — that can only
-                      ever be the real, enforced number, so back to `currentFgas`. `displayFgas`
-                      stays exactly where it already correctly belongs: the Team tab's own cap
-                      meter, which is reviewing an already-locked-in pick, not gating a new one. */}
-                  {/* 2026-09-11, user-reported live ("4) pasek wypełniania się capu") — this was
-                      plain text with no visual fill, the only cap readout in the whole app without
-                      one. Reuses the Team tab's own `.at-cap-track`/`.at-cap-fill` (real decimal
-                      cap, not the rounded `ShotsMeter` Best Five/Szybka 5 use — 100.9 stays 100.9
-                      here) so the two screens share one visual language, not a second bar style. */}
-                  <span>Cap remaining: <b>{capRemaining(currentFgas)}</b> shots</span>
-                  <span className="at-cap-track at-cap-track--inline">
-                    <span
-                      className="at-cap-fill"
-                      style={{ width: `${Math.min(100, (totalFga(currentFgas) / CAP_LIMIT) * 100)}%` }}
-                    />
-                  </span>
-                </div>
               </div>
               <div className="at-controls-row" style={{ marginTop: -4 }}>
                 <button
@@ -1191,17 +1236,39 @@ export default function DraftBoard({
                 <div className="at-player-cards">
                   {groups.map((group) => {
                     const best = group.bestTalentSpan;
-                    const legal = canPick && isPickLegal(state, best.id);
+                    const bestLegal = canPick && isPickLegal(state, best.id);
+                    // 2026-09-12, user-reported live (Andris Biedriņš, a real 0.9-shot span on the
+                    // board with only ~1.7 shots of cap left — "nie mogę wybrać... mimo że ma span
+                    // 0.9 fga"): this card's own headline span is always `bestTalentSpan` — the
+                    // player's single highest-TAL season — with no fallback, so a role player whose
+                    // BEST season happens to cost more than the remaining cap showed a permanently
+                    // disabled arrow even when one of his OTHER seasons (a cheaper seasons list
+                    // every role player like this keeps, per `leanDraftPool.ts`) was perfectly
+                    // affordable. The 🔍 modal always had a per-season Draft button that already
+                    // worked around this — but the card's own "arrow drafts the best season
+                    // immediately, no modal needed" promise silently broke exactly when it mattered
+                    // most (a tight cap). Falls back to the best-TAL-among-actually-affordable
+                    // season (`spansByAiValue` is already TAL-sorted) only when the headline one
+                    // isn't legal, so ordinary drafting is completely unchanged.
+                    const target = bestLegal ? best : group.spansByAiValue.find((s) => canPick && isPickLegal(state, s.id)) ?? best;
+                    const legal = canPick && isPickLegal(state, target.id);
+                    const tierFrameColor = TIER_FRAME_COLOR[displayedOverallTier(target)];
                     return (
-                      <div className="at-player-card" key={group.playerName}>
+                      <div
+                        className="at-player-card"
+                        key={group.playerName}
+                        style={{ '--tier-frame': tierFrameColor } as CSSProperties}
+                      >
+                        <span className="at-player-card-corner" title={displayedOverallTier(target)} aria-hidden />
                         <div className="at-player-card-top">
                           <Face name={group.playerName} size="md" />
-                          <OverallTierBadge span={best} />
+                          <ShotChip fga={target.fga} cap={CAP_LIMIT} />
                         </div>
-                        <span className="at-player-card-name">{shortenName(group.playerName)}</span>
-                        <span className="at-player-card-pos">{naturalPosition(group.playerName)}</span>
+                        <span className="at-player-card-name">
+                          {shortenName(group.playerName)}
+                          <span className="at-player-card-pos"> – {naturalPosition(group.playerName)}</span>
+                        </span>
                         <div className="at-player-card-foot">
-                          <ShotChip fga={best.fga} cap={CAP_LIMIT} />
                           <span className="at-player-card-actions">
                             <button
                               type="button"
@@ -1209,7 +1276,7 @@ export default function DraftBoard({
                               title={`${group.spans.length} season${group.spans.length > 1 ? 's' : ''} available`}
                               onClick={() => setPeekPlayer(group.playerName)}
                             >
-                              🔍
+                              Scouting report
                             </button>
                             <button
                               type="button"
@@ -1222,9 +1289,9 @@ export default function DraftBoard({
                                     ? 'Over the shots cap — pick something else first, or a cheaper season for this player.'
                                     : `Draft ${group.playerName}`
                               }
-                              onClick={() => onPick(best.id)}
+                              onClick={() => onPick(target.id)}
                             >
-                              →
+                              Draft
                             </button>
                           </span>
                         </div>
@@ -1261,7 +1328,7 @@ export default function DraftBoard({
                 <p className="at-caption" style={{ marginTop: 0 }}>
                   {showJudgeMetrics
                     ? "Peak shots = cost of this player's highest-Talent season. Lowest shots = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one."
-                    : 'The arrow drafts his best season. Tap 🔍 to compare his other seasons — you can still switch to a different one afterward, in the Team tab.'}
+                    : 'Draft picks his best season. Tap Scouting report to compare his other seasons — you can still switch to a different one afterward, in the Team tab.'}
                 </p>
                 {showJudgeMetrics && (
                   <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
@@ -1298,6 +1365,24 @@ export default function DraftBoard({
               <h2 className="at-cond">Your Five</h2>
               <span className="at-draft-sidebar-count">{humanTeam.roster.length}/{ROSTER_SIZE}</span>
             </div>
+            {/* 2026-09-12, user-reported live ("nie wypełnia się" + "można dać to w kolumnie
+                'your team'"): this used to live as a 90px sliver in the Draft tab's controls row,
+                squeezed between the search box and the position filters — real fill %, but too
+                thin and too far from "your team" to read as belonging to it. Moved into the Your
+                Five sidebar itself and given the sidebar's full width, so the same real number
+                (`currentFgas`, the enforced roster — never the Team tab's preview-only
+                `chosenHumanRoster`) is finally wide enough to actually look like it's filling. */}
+            <div className="at-draft-sidebar-cap-wrap">
+              <div className="at-cap-track at-draft-sidebar-cap">
+                <span
+                  className="at-cap-fill"
+                  style={{ width: `${Math.min(100, (totalFga(currentFgas) / CAP_LIMIT) * 100)}%` }}
+                />
+              </div>
+              <p className="at-draft-sidebar-cap-label">
+                Cap remaining: <b>{capRemaining(currentFgas)}</b> shots
+              </p>
+            </div>
             <div className="at-draft-sidebar-slots">
               {STARTER_SLOTS.map((slot) => {
                 const p = humanAssignment[slot];
@@ -1323,7 +1408,7 @@ export default function DraftBoard({
                   .filter((p): p is PlayerSpan => Boolean(p))
                   .map((p) => p.id),
               );
-              const overflow = humanTeam.roster.filter((p) => !seatedIds.has(p.id));
+              const overflow = chosenHumanRoster.filter((p) => !seatedIds.has(p.id));
               return overflow.length > 0 ? (
                 <div className="at-draft-sidebar-bench">
                   <span className="at-draft-sidebar-bench-label">Bench</span>
@@ -1427,7 +1512,7 @@ export default function DraftBoard({
                           <select
                             className="at-span-picker-select"
                             value={effective.id}
-                            onChange={(e) => setHumanSpan(spanOpt.key, e.target.value)}
+                            onChange={(e) => setHumanSpan(spanOpt.key, e.target.value, spanOpt.playerName, spanOpt.options)}
                           >
                             {spanOpt.options.map((o) => (
                               <option key={o.id} value={o.id}>
@@ -1529,8 +1614,16 @@ export default function DraftBoard({
           one Submit action instead of two separate confirm screens. Always built against
           `humanTeam` (never `teamForPanels`) — see this file's own comment on that split above;
           Commissioner Mode still only ever builds the one isHuman team's span/rotation here. */}
-      {activeTab === 'team' && (
-        <div className="at-card">
+      {/* 2026-09-12, user-reported live ("jak coś wrzucę w rotation i wydraftuje następnego gracza
+          to wszystko się usuwa"): this whole card used to be gated the same `{activeTab === 'team'
+          && (...)}` way every other tab section here is — which UNMOUNTS `RotationBuilder`
+          entirely the moment you leave the Team tab, and remounts it fresh (empty rows again) the
+          moment you come back. That's not a `key`/remount-timing bug (the actual `key={spanVersion}`
+          fix above addresses a real, separate 9th-pick discontinuity) — you cannot even DRAFT the
+          next player without leaving this tab, so every single "set some minutes, draft, come
+          back" cycle hit it. Always rendered now; `display: none` hides it instead of unmounting
+          it, so `RotationBuilder`'s own `rows` state survives every tab switch untouched. */}
+      <div className="at-card" style={activeTab === 'team' ? undefined : { display: 'none' }}>
           <h1 className="at-panel-title at-cond">Rotation</h1>
           {humanTeam.roster.length === 0 ? (
             <div className="at-placeholder">
@@ -1540,8 +1633,19 @@ export default function DraftBoard({
           ) : (
             <>
               <RotationBuilder
+                // 2026-09-12, user-reported live ("jak coś wrzucę w rotation i wydraftuje
+                // następnego gracza to wszystko się usuwa"): this used to also remount on
+                // `draftComplete` flipping false->true, so the moment the human's 9th (final) pick
+                // landed, any minutes the user had already set by hand while the roster was still
+                // incomplete were silently thrown away for a fresh `autoAssignRotation` seed — the
+                // exact opposite of the "set minutes manually if you'd like ... as you go" promise
+                // this same screen makes below. `rosterComplete` still gates the Auto-fill button
+                // and its own hint (see that prop's docstring) — a real full-roster auto-seed is
+                // now something the user opts into by clicking it once it's enabled, not something
+                // forced on them by a remount they never asked for.
                 key={spanVersion}
                 roster={chosenHumanRoster}
+                rosterComplete={draftComplete}
                 onConfirm={(rotation) => onSubmitTeam(chosenHumanRoster, rotation)}
                 confirmLabel="Submit Team"
                 // The span dropdown deliberately lists every span (comparing them by cost is the
@@ -1560,8 +1664,7 @@ export default function DraftBoard({
               />
             </>
           )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

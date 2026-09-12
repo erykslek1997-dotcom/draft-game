@@ -231,7 +231,14 @@ check(threeLayerCohesion.eliteShell === 0, 'weak starter average does not falsel
 // higher. Re-measured directly (71), not guessed; still well short of an elite reading, and
 // Brunson/Barros's real weak-link minutes (see the check above) are still fully charged.
 check(threeLayerDefense >= 65 && threeLayerDefense <= 76, 'Jordan plus the two-anchor backline lifts Defense without hiding the real Brunson/Barros weak-link minutes');
-check(threeLayerProjection.defense >= 95 && threeLayerProjection.defense <= 98, 'two-anchor foundation earns only a bounded DRTG correction');
+// 2026-09-12: band lowered 95-98 -> 94-98 after `rotation.ts`'s new `consolidateOffPositionFillers`
+// pass (user-reported live: a versatile bench player's limited distinct-slot budget was getting
+// spent on a worse fit before a closer one was even discovered) redirected 4 of Dana Barros's 6
+// off-position SG minutes to Michael Jordan (real SG fit, real spare durability) on this exact
+// fixture — a small, correct-direction shift (less weak-link-guard time at SG, more from a D-TAL
+// 99 real fit) that nudged this roster's projected DRTG from 95.x to 94.9. Re-measured directly,
+// not guessed; still clearly short of the elite ~85 target, so "bounded correction" still holds.
+check(threeLayerProjection.defense >= 94 && threeLayerProjection.defense <= 98, 'two-anchor foundation earns only a bounded DRTG correction');
 // 2026-09-05: exact 100 -> >=99 after `defensiveHuntability.ts`'s position-relative average
 // ceiling first shipped position-only: Mitchell Robinson's 63 D-TAL sat a touch below the flat C
 // average (71), registering a tiny (12-minute, 0.19-penalty) shortfall the old flat 60 couldn't

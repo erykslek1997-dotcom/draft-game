@@ -50,7 +50,14 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
   return (
     <section className="matchup-matrix-section">
       <h3>Your team's matchups — BO7</h3>
-      <p className="player-notes-hint">Click a percentage to view the matchup analysis. The row shows your team.</p>
+      <div className="matchup-matrix-legend">
+        <p className="player-notes-hint">Click a percentage to view the matchup analysis. The row shows your team.</p>
+        <span className="matchup-matrix-scale">
+          <i>Underdog</i>
+          <span className="matchup-matrix-scale-bar" aria-hidden />
+          <i>Favorite</i>
+        </span>
+      </div>
       <div className="matchup-matrix-scroll">
         <table className="at-roster-table matchup-matrix-table">
           <thead><tr><th>Opponent</th>{ordered.map((row) => (
@@ -62,9 +69,11 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
           <tbody>
             {visibleRows.map((row) => (
               <tr key={row.teamId}>
-                <th>#{row.globalRank} {teamLabel(teamById.get(row.teamId)!)}</th>
+                <th className="matchup-row-label" title={`#${row.globalRank} ${teamLabel(teamById.get(row.teamId)!)}`}>
+                  #{row.globalRank} {teamLabel(teamById.get(row.teamId)!)}
+                </th>
                 {ordered.map((column) => {
-                  if (row.teamId === column.teamId) return <td key={column.teamId}>—</td>;
+                  if (row.teamId === column.teamId) return <td key={column.teamId} className="matchup-matrix-self">—</td>;
                   const matchup = row.matchups.find((entry) => entry.opponentId === column.teamId);
                   const probability = matchup?.seriesWinProb ?? 0.5;
                   const pct = Math.round(probability * 100);

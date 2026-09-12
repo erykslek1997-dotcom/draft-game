@@ -629,9 +629,28 @@ export function fitScore(team: Team): FitScoreResult {
   const hasGravityStarter =
     starters.some((player) => spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR) ||
     starters.some((player) => computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL);
-  const canPunishHelp = secondaryCreationSignal >= 75 || starters.some(isRimGravityScorer);
+  // 2026-09-12, user's own idea, live ("wybitny rozgrywający jest w stanie wykreować ofensywę
+  // mimo słabego spacingu, co pozwala na zbieranie większej ilości defensywnego talentu" — an
+  // elite playmaker can manufacture good offense despite weak spacing, which should let the roster
+  // spend more of its budget on defensive talent instead): `hasGravityStarter` above is entirely
+  // about drawing defensive ATTENTION (a shooting or scoring threat), which is one real way to
+  // make a help defense pay for collapsing on a non-shooter — but not the only one. A genuine
+  // elite-passing hub (Nash/Magic/Stockton-tier) makes the SAME defense pay a different way: he
+  // finds the cutter/roller the help just left open, independent of whether he draws gravity
+  // himself. First attempt at this folded the creator check only into `canPunishHelp` (the
+  // discount's SECOND, larger tier) while leaving it gated behind `hasGravityStarter` for even the
+  // first tier — measured directly against this exact fix's own motivating case (Nash + two
+  // traditional bigs) and it changed nothing, because that five has no real gravity shooter at
+  // all, so the whole branch stayed closed regardless. `hasElitePrimaryCreator` is instead its own,
+  // independent path into the discount, not an amplifier nested under the gravity gate. `85`
+  // reuses `primaryCreationScore`'s own normalization ceiling a few lines up — the same bar this
+  // function already treats as "maxed-out primary creation" — rather than inventing a second,
+  // separate threshold for the same underlying signal.
+  const ELITE_PRIMARY_CREATOR_THRESHOLD = 85;
+  const hasElitePrimaryCreator = primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD;
+  const canPunishHelp = secondaryCreationSignal >= 75 || hasElitePrimaryCreator || starters.some(isRimGravityScorer);
   const geometryNonSpacerCount =
-    hasGravityStarter && hardNonSpacerCount >= 2
+    (hasGravityStarter || hasElitePrimaryCreator) && hardNonSpacerCount >= 2
       ? Math.max(0, hardNonSpacerCount - (canPunishHelp ? 2 : 1))
       : hardNonSpacerCount;
 

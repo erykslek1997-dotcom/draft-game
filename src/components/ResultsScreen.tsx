@@ -4,7 +4,7 @@ import { evaluateLeague } from '../engine/leagueSimulation';
 import { simulateSeason, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
 import { STARTER_SLOTS, CAP_LIMIT } from '../engine/positions';
-import { allAssignments, benchWithMinutes, primaryStarters } from '../engine/rotation';
+import { allAssignments, benchWithMinutes, bestPrimaryAssignment, primaryStarters } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
 import type { DraftHistoryEntry, Rotation, Team } from '../engine/types';
@@ -34,6 +34,7 @@ import { pickStatTip } from './DraftBoard';
 import HistoricalChallengesPanel from './HistoricalChallengesPanel';
 import MatchupMatrix from './MatchupMatrix';
 import WhatIfPanel from './WhatIfPanel';
+import { downloadShareCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 
 /**
  * 2026-08-15, user-reported: the Rotation/Bench bracket tag next to a player's row used to read
@@ -214,6 +215,8 @@ function HeroResult({
   draftSeed,
   identity,
   failureMode,
+  starters,
+  roster,
 }: {
   teamName: string;
   isHuman: boolean;
@@ -225,14 +228,18 @@ function HeroResult({
   draftSeed: number;
   identity: string | null;
   failureMode: string | null;
+  starters: ShareCardStarter[];
+  roster: ShareRosterRow[];
 }) {
-  const [copied, setCopied] = useState(false);
   const [challengeCopied, setChallengeCopied] = useState(false);
   // 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
   // ekran z naszymi wynikami?") — plain clipboard copy gave no preview of what you were actually
-  // sending; a real card to look at (and still copy as text from) matches what every rival this
-  // screen was already benchmarked against does. No backend/share-sheet added — same "closed
-  // friend group" scope the original Copy-result feature was built for.
+  // sending; a real card to look at matches what every rival this screen was already benchmarked
+  // against does. No backend/share-sheet added — same "closed friend group" scope the original
+  // Copy-result feature was built for.
+  // 2026-09-12, "Copy as text" itself removed (user's own ask, "usuń copy as text") — the PNG
+  // download below is now the one share action, and covers strictly more (roster + rotation, not
+  // just the headline stats a text blob had room for).
   const [shareOpen, setShareOpen] = useState(false);
   const tier = resultTierLabel(rank, fieldSize);
   const gap = topOverall !== null ? topOverall - overall : null;
@@ -253,25 +260,6 @@ function HeroResult({
       setTimeout(() => setChallengeCopied(false), 2000);
     } catch {
       // Same silent-fail shape as copyResult below — clipboard permission denied/unavailable.
-    }
-  }
-
-  async function copyResult() {
-    const lines = [
-      `🏀 ${teamName} — ${ordinal(rank)} / ${fieldSize} (${tier.label})`,
-      `Final Power Ranking: ${overall}${gap && gap > 0 ? ` (#1 is ${topOverall}, −${gap})` : ''}`,
-      titleOdds !== null ? `Title odds: ${(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%` : null,
-      identity,
-      'Beat me? — All-Time Draft',
-    ].filter((line): line is string => Boolean(line));
-    const text = lines.join('\n');
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard permission denied or unavailable (e.g. non-HTTPS/local file context) — the
-      // button just silently doesn't confirm rather than throwing in the player's face.
     }
   }
 
@@ -338,8 +326,8 @@ function HeroResult({
           titleOdds={titleOdds}
           identity={identity}
           failureMode={failureMode}
-          copied={copied}
-          onCopyText={copyResult}
+          starters={starters}
+          roster={roster}
         />
       )}
     </header>
@@ -363,8 +351,8 @@ function ShareModal({
   titleOdds,
   identity,
   failureMode,
-  copied,
-  onCopyText,
+  starters,
+  roster,
 }: {
   onClose: () => void;
   teamName: string;
@@ -377,9 +365,29 @@ function ShareModal({
   titleOdds: number | null;
   identity: string | null;
   failureMode: string | null;
-  copied: boolean;
-  onCopyText: () => void;
+  starters: ShareCardStarter[];
+  roster: ShareRosterRow[];
 }) {
+  // 2026-09-12, user-reported live ("tu powinna się generować grafika do zapisu jako png, i
+  // bardziej szczegółowa") — a real downloadable PNG, built by `shareCardImage.ts` from this exact
+  // same data plus the starting five's headshots and the full roster/rotation below. 'idle' |
+  // 'building' | 'done' | 'error' rather than a bare boolean so a slow headshot load (or a canvas
+  // failure) has a visible state instead of the button looking unresponsive.
+  // 2026-09-12 follow-up ("usuń copy as text, dodaj dodatkowe informacje jak roster, rotacja") —
+  // the plain-text clipboard copy is gone (the PNG covers strictly more now); this modal itself
+  // also grew a real Roster/Rotation section instead of stopping at the headline stats.
+  const [pngState, setPngState] = useState<'idle' | 'building' | 'done' | 'error'>('idle');
+
+  async function handleDownloadPng() {
+    setPngState('building');
+    const ok = await downloadShareCard(
+      { teamName, rank, fieldSize, tier, overall, titleOdds, gap, topOverall, identity, starters, roster },
+      `all-time-draft-${teamName.replace(/\s+/g, '-').toLowerCase()}.png`,
+    );
+    setPngState(ok ? 'done' : 'error');
+    setTimeout(() => setPngState('idle'), 2000);
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -428,8 +436,28 @@ function ShareModal({
             {failureMode}
           </p>
         )}
-        <button type="button" className="primary-btn share-modal-copy" onClick={onCopyText}>
-          {copied ? '✓ Copied' : '📋 Copy as text'}
+        {roster.length > 0 && (
+          <div className="share-modal-roster">
+            <span className="share-modal-roster-label">Roster &amp; rotation</span>
+            <div className="share-modal-roster-grid">
+              {roster.map((row) => (
+                <div className="share-modal-roster-row" key={`${row.position}-${row.name}`}>
+                  <span className="share-modal-roster-pos">{row.position}</span>
+                  <span className="share-modal-roster-name">{row.name}</span>
+                  <span className="share-modal-roster-minutes">{Math.round(row.minutes)}m</span>
+                  <span className="share-modal-roster-fga">{row.fga.toFixed(1)} sh</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <button
+          type="button"
+          className="primary-btn share-modal-copy"
+          onClick={handleDownloadPng}
+          disabled={pngState === 'building'}
+        >
+          {pngState === 'building' ? 'Building…' : pngState === 'done' ? '✓ Saved' : pngState === 'error' ? '✕ Failed' : '🖼️ Download PNG'}
         </button>
       </div>
     </div>
@@ -905,6 +933,41 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked?.team.id, scoredTeams],
   );
+  // Feeds the share card's starting-five row (`shareCardImage.ts`) — same optimal-slot search the
+  // Draft tab's own "Your Five" sidebar and QuickFive's team panel already use.
+  const heroStarters: ShareCardStarter[] = useMemo(() => {
+    if (!heroRanked) return [];
+    const assignment = bestPrimaryAssignment(heroRanked.team.roster).assignment;
+    return STARTER_SLOTS.map((slot): ShareCardStarter | null => {
+      const player = assignment[slot];
+      return player ? { position: slot, name: player.playerName } : null;
+    }).filter((entry): entry is ShareCardStarter => entry !== null);
+  }, [heroRanked]);
+  // 2026-09-12, user's own ask ("dodaj dodatkowe informacje jak roster, rotacja itd") — the full
+  // 9-man roster + real rotation minutes for the share card/modal, reusing the exact same
+  // `primaryStarters`/`benchWithMinutes` split the Team/Rotation tabs are already built from, so
+  // this can never disagree with what the player actually set. `displayTeam` picks up any
+  // rotation correction made on this screen itself, same as `heroFit` above.
+  const heroRoster: ShareRosterRow[] = useMemo(() => {
+    if (!heroRanked) return [];
+    const team = displayTeam(heroRanked.team);
+    const starterRows: ShareRosterRow[] = primaryStarters(team).map((s) => ({
+      position: s.slot,
+      name: s.player.playerName,
+      fga: s.player.fga,
+      minutes: s.minutes,
+      isStarter: true,
+    }));
+    const benchRows: ShareRosterRow[] = benchWithMinutes(team).map((b) => ({
+      position: b.player.primaryPosition,
+      name: b.player.playerName,
+      fga: b.player.fga,
+      minutes: b.minutes,
+      isStarter: false,
+    }));
+    return [...starterRows, ...benchRows];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroRanked, correctedRotations]);
   function toggleExpanded(teamId: string) {
     setExpandedTeamIds((prev) => {
       const next = new Set(prev);
@@ -945,6 +1008,8 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
               : null
           }
           failureMode={heroFit?.inputs.archetypeReport?.failureMode ?? null}
+          starters={heroStarters}
+          roster={heroRoster}
         />
       )}
       <h2 className="results-section-title">Final team ranking</h2>
@@ -1118,7 +1183,7 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
                         {entry.archetype}
                       </span>
                     ))}
-                    {fitDetail.inputs.archetypeReport && (
+                    {fitDetail.inputs.archetypeReport?.failureMode && (
                       <span className="identity-risk">risk: {fitDetail.inputs.archetypeReport.failureMode}</span>
                     )}
                   </div>

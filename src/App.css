@@ -13,14 +13,47 @@
   overflow-x: auto;
 }
 
+/* 2026-09-12, user-reported live ("trzeba to zrobić lepiej") — a small legend above the table so
+   the red↔green scale reads as an intentional heat map instead of an unexplained color wash, plus
+   the row-label tightening below (the team name was wrapping to two lines against the narrow `<th>`
+   the browser gave it by default). */
+.matchup-matrix-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.matchup-matrix-scale {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--at-ink-faint);
+  white-space: nowrap;
+}
+.matchup-matrix-scale-bar {
+  display: inline-block;
+  width: 72px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, hsl(2 58% 24%), hsl(0 0% 27%), hsl(148 58% 24%));
+}
+
 .matchup-matrix-table {
   min-width: 760px;
   border-collapse: separate;
-  border-spacing: 3px;
+  border-spacing: 4px;
 }
 .matchup-matrix-table thead th {
   font-weight: 700;
   vertical-align: bottom;
+}
+.matchup-row-label {
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .matchup-col-rank,
 .matchup-col-code {
@@ -32,19 +65,24 @@
 
 .matchup-matrix-cell {
   width: 100%;
-  min-width: 3rem;
-  padding: 0.4rem 0.3rem;
+  min-width: 3.4rem;
+  padding: 0.5rem 0.3rem;
   color: #fff;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.3rem;
+  border-radius: 0.45rem;
   cursor: pointer;
-  transition: outline-color .12s ease;
+  transition: outline-color .12s ease, transform .12s ease;
   outline: 2px solid transparent;
   outline-offset: -2px;
 }
-.matchup-matrix-cell:hover { outline-color: rgba(255, 255, 255, 0.55); }
+.matchup-matrix-cell:hover { outline-color: rgba(255, 255, 255, 0.55); transform: translateY(-1px); }
+.matchup-matrix-self {
+  text-align: center;
+  color: var(--at-ink-faint);
+  font-size: 12px;
+}
 
 .matchup-matrix-detail,
 .what-if-panel {
@@ -133,9 +171,10 @@
 
 .historical-challenge-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem;
   margin-top: 0.55rem;
+  align-items: start;
 }
 
 .historical-challenge-card {
@@ -145,6 +184,19 @@
   border: 1px solid var(--border, #30343c);
   border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.025);
+}
+
+/* 2026-09-12, user-reported live ("to jest zbyt duże zanim rozwiniemy" — a closed card, which
+   shows nothing but its one-line title + %, was taking the same padding/font as an open one full
+   of conditions, so a 0-7/N attempt read as a grid of oversized near-empty boxes). Collapsed cards
+   get a visibly tighter footprint; `[open]` keeps the roomier padding/type since it's actually
+   showing detail then. */
+.historical-challenge-card:not([open]) {
+  padding: 0.4rem 0.55rem;
+}
+.historical-challenge-card:not([open]) > summary {
+  font-size: 0.8rem;
+  line-height: 1.25;
 }
 
 .historical-challenge-card.is-complete {
@@ -704,6 +756,14 @@ select {
 .rotation-builder {
   max-width: 820px;
   margin: 0 auto;
+}
+
+/* 2026-09-12, user-reported live (auto-fill smearing one drafted player across two starter
+   slots) — shown only while `rosterComplete` is false, next to the now-disabled auto-fill button. */
+.rotation-incomplete-hint {
+  font-size: 12px;
+  color: var(--at-ink-faint);
+  margin: 6px 0 0;
 }
 
 .span-selection-screen {
@@ -1813,6 +1873,56 @@ select {
   margin-top: 12px;
   width: 100%;
 }
+/* 2026-09-12, user-reported live ("usuń copy as text, dodaj dodatkowe informacje jak roster,
+   rotacja itd") — "Copy as text" is gone (the PNG below covers strictly more now, so the two-
+   action row this class used to lay out side by side is back down to the single full-width
+   button `.share-modal-copy` already handles); this section is the modal's own new roster read-
+   out, matching what the downloadable PNG now also carries. Two-column grid so all 9 rows fit
+   without the modal growing very tall — `auto 1fr auto auto` keeps the position/minutes/shots
+   columns snug and lets the name take whatever's left. */
+.share-modal-roster {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.share-modal-roster-label {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.share-modal-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px 14px;
+}
+.share-modal-roster-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 12px;
+  padding: 2px 0;
+}
+.share-modal-roster-pos {
+  font-weight: 700;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+.share-modal-roster-name {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.share-modal-roster-minutes,
+.share-modal-roster-fga {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 /* "Challenge a friend" — 2026-09-11, "Duel na seedzie": same button shape as Copy result, second
    accent (red, not blue) so the two distinct payoffs (brag about MY score / invite the SAME board)
    read as visually separate actions, not a repeated control. */
@@ -2641,7 +2751,12 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  padding: 1px 0;
+  /* 2026-09-12, user-reported live (screenshot: a long team name's tail overlapping the series
+     score digits) — `.bracket-score` sits absolutely in the card's bottom-right corner, but this
+     row's own text used the card's FULL width with nothing reserved for it, so a name that (with
+     its seed prefix) nearly filled the 176px card ran its ellipsis right up against — sometimes
+     under — the score badge instead of stopping short of it. */
+  padding: 1px 30px 1px 0;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -2674,11 +2789,15 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 
 .bracket-score {
   position: absolute;
-  right: 6px;
-  bottom: 2px;
+  right: 5px;
+  bottom: 4px;
   font-size: 10px;
   font-variant-numeric: tabular-nums;
-  color: var(--at-ink-faint);
+  color: var(--at-ink-soft);
+  background: var(--at-paper-raised);
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.2;
 }
 
 .playoff-champion {
@@ -3094,6 +3213,24 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   color: var(--at-ink-faint);
   font-variant-numeric: tabular-nums;
 }
+.at-draft-sidebar-cap-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.at-draft-sidebar-cap {
+  width: 100%;
+  height: 8px;
+}
+.at-draft-sidebar-cap-label {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--at-ink-faint);
+}
+.at-draft-sidebar-cap-label b {
+  color: var(--at-ink);
+  font-variant-numeric: tabular-nums;
+}
 .at-draft-sidebar-slots {
   display: flex;
   flex-direction: column;
@@ -3178,49 +3315,89 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   flex-direction: column;
   gap: 6px;
   padding: 10px;
-  border: 1px solid var(--at-line);
+  border: 2px solid var(--tier-frame, var(--at-line));
   border-radius: 10px;
   background: var(--at-paper);
+  position: relative;
+  overflow: hidden;
 }
 .at-player-card--open {
   border-color: var(--at-accent);
+}
+/* 2026-09-12, user's chosen "wariant A": the tier that used to be a text badge in the top-right
+   corner is now this card's own border color (set via the `--tier-frame` custom property, one
+   real hex per tier — see `TIER_FRAME_COLOR` in DraftBoard.tsx) plus this small corner flag, a
+   second read of the same color for anyone scanning a dense grid rather than one card at a time.
+   Classic corner-ribbon CSS triangle: a 0x0 box whose border widths are 0/22/22/0 (top/right/
+   bottom/left) draws only the right-hand wedge once every other edge is transparent. */
+.at-player-card-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 22px 22px 0;
+  border-color: transparent var(--tier-frame, var(--at-line)) transparent transparent;
+  pointer-events: none;
 }
 .at-player-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
+/* 2026-09-12, user's own follow-up ask ("Imię nazwisko - PG/SG"): name and position used to be
+   two stacked lines; merged into one ("L. James – PG/SG") now that the tier badge's move to the
+   card's own border/corner (see `.at-player-card-corner`) freed a line of vertical room anyway.
+   `white-space: nowrap` + ellipsis rather than letting a long combination wrap — `shortenName`
+   already keeps most names short, but a wide position pair (PG/SG) on an unshortened short name
+   can still be the widest line on a 150px card. */
 .at-player-card-name {
   font-size: 13px;
   font-weight: 700;
   color: var(--at-ink);
   line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .at-player-card-pos {
   font-size: 10.5px;
+  font-weight: 500;
   color: var(--at-ink-faint);
 }
 .at-player-card-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* The Shot chip moved up next to the Face avatar (freed by the tier badge's move to the card's
+     own border/corner, see `.at-player-card-corner`) — this row now holds only the two action
+     buttons, right-aligned under the name/position lines instead of splitting the row with them. */
+  justify-content: flex-end;
   margin-top: auto;
   padding-top: 4px;
 }
 .at-player-card-actions {
   display: flex;
+  flex-direction: column;
+  /* 2026-09-12, user-reported live ("skrócić przycisk Draft"): a flex column's default
+     `align-items: stretch` was forcing "Draft" (a short word) to stretch to match "Scouting
+     report"'s own, much wider, content width. `flex-end` lets each button size to its own text
+     instead, right-aligned under the name/position line above. */
+  align-items: flex-end;
   gap: 4px;
 }
 .at-player-card-peek,
 .at-player-card-draft {
-  width: 26px;
-  height: 26px;
+  height: 22px;
+  padding: 0 10px;
   flex: none;
   border-radius: 999px;
   border: 1px solid var(--at-line);
   background: var(--at-pill);
   color: var(--at-ink-soft);
-  font-size: 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -3801,15 +3978,9 @@ table.at-ov-grid tbody td.at-onclock::before {
 .at-cap-fill { height: 100%; background: var(--at-accent); border-radius: 999px; }
 .at-cap-label {
   font-size: 12px; color: var(--at-ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap;
-  /* 2026-09-11, user-reported live ("pasek wypełniania się capu") — was text-only; now a flex row
-     so the Draft tab's own inline `.at-cap-track--inline` bar sits right next to the number. */
   display: flex; align-items: center; gap: 8px;
 }
 .at-cap-label b { color: var(--at-ink); }
-/* Narrower, non-flexing variant of `.at-cap-track` for the Draft tab's cramped controls row —
-   Team's own meter has a whole row to itself and can flex to fill it; this one shares space with
-   the search box and the FGA filter. */
-.at-cap-track--inline { width: 90px; min-width: 0; flex: none; }
 .at-cap-meter--over .at-cap-label,
 .at-cap-meter--over .at-cap-label b { color: var(--danger); }
 .at-cap-meter--over .at-cap-fill { background: var(--danger); }

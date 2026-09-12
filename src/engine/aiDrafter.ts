@@ -478,6 +478,18 @@ interface NeedContext {
    * for the actual weak-defense/scoring-specialist STAT profile `isSixthManProfile` measures.
    * Same "does the current bench already have one" shape as `lacksBenchShotCreator`. */
   lacksSixthMan: boolean;
+  /** 2026-09-12, user-reported live (real diagnostic: a team finished 94.7/100.9 shots spent —
+   * 6.2 shots of genuine leftover cap — running Nate McMillan (eTAL 68) starting at PG with
+   * Mario Chalmers (eTAL 65) behind him, while Kevin Johnson (eTAL 87) sat undrafted the whole
+   * game: "AI powinno draftować wtedy lepiej"). `emptySlots`/`thinSlots` above are pure headcount
+   * — a slot only ever needs ANY real starter + ANY real backup, never asks whether either is any
+   * good — so once a position has two warm bodies, this file had literally no further signal
+   * pulling toward a clear talent upgrade there, no matter how large the gap or how much cap was
+   * still open. The real starter's `effectiveTalent` at each slot (or missing key, when
+   * `emptySlots` already covers it) — read by `starterUpgradeBonus` below, which turns a large gap
+   * into a soft pull, the same "nudge the lottery, never a hard override" shape every other need
+   * signal in this file already uses. */
+  starterTalentBySlot: Partial<Record<Position, number>>;
 }
 
 /** Only the full-weight archetypes (`HIGH_USAGE_ARCHETYPE_WEIGHT`'s Shot Creator/Slasher, weight
@@ -523,11 +535,13 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
   // genuinely lacks depth and stretching someone a slot is more realistic than nobody there.
   const starterPlayers: PlayerSpan[] = [];
   const emptySlots: Position[] = [];
+  const starterTalentBySlot: Partial<Record<Position, number>> = {};
   for (const slot of STARTER_SLOTS) {
     const top = slots[slot][0];
     const player = top ? roster.find((p) => p.id === top.playerId) : undefined;
     if (player && isRealPositionFit(player, slot)) {
       starterPlayers.push(player);
+      starterTalentBySlot[slot] = effectiveTalent(player);
     } else {
       emptySlots.push(slot);
     }
@@ -595,7 +609,30 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
     hasSelfSufficientEngineStarter: starterPlayers.some(isSelfSufficientEngine),
     lacksBenchShotCreator: !roster.some((p) => !starterPlayers.includes(p) && isSelfCreatorArchetype(p)),
     lacksSixthMan: !roster.some((p) => !starterPlayers.includes(p) && isSixthManProfile(p)),
+    starterTalentBySlot,
   };
+}
+
+/**
+ * See `NeedContext.starterTalentBySlot`'s own docstring for the full diagnosis. Only fires once a
+ * position is otherwise considered covered (`emptySlots`/`thinSlots` didn't already claim it) —
+ * this is strictly about UPGRADING an occupied starter slot, not filling a gap, which the existing
+ * signals already own. Gated on a genuinely large gap (`STARTER_UPGRADE_TALENT_GAP_THRESHOLD`) so
+ * this can't fire on routine noise between two similar-quality starters, and capped
+ * (`MAX_STARTER_UPGRADE_BONUS`) at the same order of magnitude as `thinSlots`' own 1.3 — a real,
+ * competing pull, not one that can dominate every other signal in this file on its own.
+ */
+const STARTER_UPGRADE_TALENT_GAP_THRESHOLD = 15;
+const STARTER_UPGRADE_BONUS_SCALE = 0.08;
+const MAX_STARTER_UPGRADE_BONUS = 1.5;
+
+function starterUpgradeBonus(p: PlayerSpan, needs: NeedContext): number {
+  if (needs.emptySlots.includes(p.primaryPosition) || needs.thinSlots.includes(p.primaryPosition)) return 0;
+  const currentStarterTalent = needs.starterTalentBySlot[p.primaryPosition];
+  if (currentStarterTalent === undefined) return 0;
+  const gap = effectiveTalent(p) - currentStarterTalent;
+  if (gap <= STARTER_UPGRADE_TALENT_GAP_THRESHOLD) return 0;
+  return Math.min(MAX_STARTER_UPGRADE_BONUS, (gap - STARTER_UPGRADE_TALENT_GAP_THRESHOLD) * STARTER_UPGRADE_BONUS_SCALE);
 }
 
 /** Slots remaining at which point cap-consciousness starts ramping up regardless of how much
@@ -1611,6 +1648,7 @@ export function pickForAi(
       else if (p.secondaryPositions.some((s) => needs.emptySlots.includes(s))) need += 0.8;
       else if (p.secondaryPositions.some((s) => needs.thinSlots.includes(s))) need += 0.6;
     }
+    need += starterUpgradeBonus(p, needs);
     if (needs.avgSpacing < SPACING_DEPTH_THRESHOLD) {
       const deficitRatio = (SPACING_DEPTH_THRESHOLD - needs.avgSpacing) / SPACING_DEPTH_THRESHOLD;
       need += deficitRatio * (computeSpacing(p) / 100) * SPACING_DEPTH_BONUS_SCALE;

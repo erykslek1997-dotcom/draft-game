@@ -1,6 +1,7 @@
 import { computeDefensiveTalent } from './defensiveTalent';
 import { defensiveHuntability } from './defensiveHuntability';
 import { allAssignments, primaryStarters } from './rotation';
+import { STARTER_SLOTS } from './positions';
 import type { Team } from './types';
 import type { DefensiveRole, Position } from '../data/schema';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
@@ -52,22 +53,80 @@ const AVERAGE_FULL = 86;
 // `offensiveCohesion` bonus (scoring.ts) so the two axes can reach comparable ceilings. These
 // caps only touch the display/fit `defenseScore`; `drtgCompleteness` (the projectedNetRating
 // floor) reads the readiness fractions and their own DRTG_BLEND constants, not these.
+//
+// 2026-09-12, user-reported live, still true after the cut above ("defensywa jest zawyżona,
+// nadal zbyt dużo drużyn ma over 90"): measured directly (`scripts/_defenseInflationDiag.ts`,
+// deleted after use, 5 seeds x 16 real AI-drafted-and-finalized teams = 80): 16.3% of teams read
+// Defense > 90, 33.8% > 80. `threeLayerCore` was the winning (highest) bonus path on 57.5% of ALL
+// teams (avg magnitude 5.04 of its 8 max when it wins) — the underlying `PROVIDER_START`=68 gate
+// (lowered from 75 on 2026-09-07 for a real undercrediting case) makes it common, not rare, for a
+// roster this pool's depth produces, so its bounded ceiling was still doing most of the pushing
+// over 90. `backlineFoundation` won 9/80 (avg 7.69 of 9 max — usually near-saturated when it
+// fires at all) and was the SOLE contributor on at least one >90 case (a team with zero elite-
+// shell/three-layer credit still cleared 90 off backline alone). `weakLinkOvercome` — this same
+// session's own new Nash mechanism — won exactly 1/80 and contributed to ZERO of the measured
+// >90 cases: confirmed NOT the driver here, left untouched. Cut proportionally, same ~1/3 ratio
+// as the 2026-09-09 pass (12->8, 18->9): 8->6, 9->6. `MAX_ELITE_SHELL_DEFENSE_BONUS` (a genuinely
+// complete no-weak-link shell) is cut by the smallest margin of the three, same reasoning as
+// 2026-09-09 — it should still be able to approach the ceiling; the two PARTIAL-credit paths
+// (three-layer, backline) are cut harder since they are what a merely-good, not complete, defense
+// was riding into the 90s.
 
 /** Maximum extra separation reserved for a complete all-time defensive shell. */
-export const MAX_ELITE_SHELL_DEFENSE_BONUS = 8;
+export const MAX_ELITE_SHELL_DEFENSE_BONUS = 6;
 /**
  * Maximum structural credit for fielding real POA + wing + rim providers even when the rest of
  * the rotation contains attackable players. This is deliberately separate from the elite-shell
  * ceiling: three excellent layers still matter, but they cannot erase weak-link minutes.
  */
-export const MAX_THREE_LAYER_CORE_DEFENSE_BONUS = 8;
+export const MAX_THREE_LAYER_CORE_DEFENSE_BONUS = 5;
 /** Two distinct high-minute rim protectors establish a real defensive floor even when the
  * perimeter shell is weak. This is a ceiling/foundation bonus, not a substitute for POA/wing
  * coverage, and therefore stays below the complete-shell treatment. */
-export const MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS = 9;
+export const MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS = 6;
 export const BACKLINE_FOUNDATION_DRTG_BLEND = 0.35;
 /** Only a small part of a partial core carries into the real-units DRTG projection. */
 export const THREE_LAYER_CORE_DRTG_BLEND = 0.15;
+
+/**
+ * 2026-09-12, user's own explicit design requirement, backed by a rigorous isolation test: took a
+ * real, actually-drafted #1-overall team (Overall 87) and swapped ONLY its own elite, pass-first
+ * PG (Stockton/Chris Paul/Frazier, in three separate leagues) for Steve Nash — same slot, same
+ * everything else. Every time: Overall dropped 6-7 points and the team fell out of the top 3,
+ * ENTIRELY from `defenseScore`. Broke that down further: `defensiveHuntability`'s penalty and
+ * `defensiveCohesion`'s own existing bonuses above were already roughly CANCELING each other out
+ * (7.6 vs 7.0) — neither is the actual problem. The real cause is the plain minutes-weighted D-TAL
+ * average `defenseScore` starts from: Nash plays real starter minutes (~34-38) at D-TAL 21, and no
+ * amount of teammate quality can "hide" those minutes from a linear average the way real NBA
+ * scheme/help defense can. Verified this mechanically: even lifting Nash's OWN effective D-TAL to
+ * the theoretical max (100) for the averaging step alone recovers at most ~11 points of
+ * `defenseScore` (his real minutes are too small a share of the 240-minute team total) — nowhere
+ * near the ~15 needed. A minutes-weighted-average fix is the wrong shape for this; a bounded,
+ * ADDITIVE credit (the same shape `eliteShellBonus`/`threeLayerCoreBonus`/`backlineFoundationBonus`
+ * above already use) can be sized directly instead of fighting that arithmetic ceiling.
+ *
+ * User's explicit requirement: "jeśli Nash ma greatest peak, to drużyna z nim musi być w stanie
+ * wygrać draft" — if the engine's own tier system calls a player's peak "Greatest peak" (one step
+ * below GOAT), a team built around him must have a real path to being the league's best, the same
+ * way a real NBA team schemes around and conceals one historically extreme defensive liability
+ * when everyone else on the floor is elite. Deliberately narrow on BOTH gates so this can't become
+ * the same "too many teams read 100 Defense" problem the three existing bonuses above were already
+ * tightened once to avoid (see this file's own 2026-09-09 comment): the weak link must be
+ * genuinely EXTREME (`WEAK_LINK_EXTREME_DTAL_CEILING` — a merely below-average starter, 40-60
+ * range, does not qualify at all), not just "worst of the five," and the other four starters must
+ * be genuinely elite on average (`WEAK_LINK_SHELL_DTAL_FLOOR`/`_FULL` — a merely solid defense
+ * doesn't unlock this). Participates in the same `Math.max(...)` ensemble as the other three paths
+ * below, at a higher ceiling than any of them, since it exists specifically for a more extreme
+ * case than any of those three were ever meant to cover.
+ */
+const WEAK_LINK_EXTREME_DTAL_CEILING = 35;
+/** Severity ramps from 0 at the ceiling above to full at this realistic near-rock-bottom
+ * reference (Nash himself, 21, is roughly the motivating middle of this range) — not from 0,
+ * which would read every merely-extreme case (471, 25, 30...) as barely-qualifying. */
+const WEAK_LINK_EXTREME_DTAL_FLOOR = 10;
+const WEAK_LINK_SHELL_DTAL_FLOOR = 80;
+const WEAK_LINK_SHELL_DTAL_FULL = 90;
+export const MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS = 28;
 /** All-time-roster extrapolation target for a complete no-weak-link defensive shell. */
 export const ELITE_SHELL_DRTG_TARGET = 85;
 
@@ -82,6 +141,10 @@ export interface DefensiveCohesionResult {
   drtgCompleteness: number;
   /** Two-distinct-rim-provider foundation, attenuated but not erased by weak perimeter minutes. */
   backlineFoundation: number;
+  /** How completely an elite four-starter shell overcomes ONE genuinely extreme weak-link
+   * starter (see `MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS`'s own docstring) — 0 unless exactly that
+   * shape is present. */
+  weakLinkOvercome: number;
   defenseScoreBonus: number;
   averageDefensiveTalent: number;
   poaProvider: string | null;
@@ -134,6 +197,7 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
       threeLayerCore: 0,
       drtgCompleteness: 0,
       backlineFoundation: 0,
+      weakLinkOvercome: 0,
       defenseScoreBonus: 0,
       averageDefensiveTalent: 0,
       poaProvider: null,
@@ -266,6 +330,33 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     ? secondRimReadiness * (0.65 + resistanceReadiness * 0.35)
     : 0;
   const backlineFoundationBonus = backlineFoundation * MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS;
+
+  // See `MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS`'s own docstring for the full derivation. Uses the
+  // starters' OWN D-TAL directly (not `providerStrength`/role-tag credit like poa/wing/rim above)
+  // — this is specifically about the plain averaging problem, so it has to measure the same raw
+  // number that problem is made of. Requires ALL FOUR other starters to individually clear a real
+  // floor (`shellMin`), not just a high average one outlier could inflate.
+  const starterDefTals = starters.map((player) => computeDefensiveTalent(player));
+  const minDefTal = starterDefTals.length > 0 ? Math.min(...starterDefTals) : 100;
+  const weakLinkIdx = starterDefTals.indexOf(minDefTal);
+  const shellDefTals = starterDefTals.filter((_, i) => i !== weakLinkIdx);
+  const shellAverageDefTal = shellDefTals.length > 0 ? shellDefTals.reduce((sum, v) => sum + v, 0) / shellDefTals.length : 0;
+  const shellMinDefTal = shellDefTals.length > 0 ? Math.min(...shellDefTals) : 0;
+  const extremeSeverity = clamp01(
+    (WEAK_LINK_EXTREME_DTAL_CEILING - minDefTal) / (WEAK_LINK_EXTREME_DTAL_CEILING - WEAK_LINK_EXTREME_DTAL_FLOOR),
+  );
+  const shellAverageReadiness = clamp01((shellAverageDefTal - WEAK_LINK_SHELL_DTAL_FLOOR) / (WEAK_LINK_SHELL_DTAL_FULL - WEAK_LINK_SHELL_DTAL_FLOOR));
+  // Same floor as the average gate, 8 points softer — the individually-weakest of the other four
+  // still has to be genuinely strong, just not held to quite the average's own bar.
+  const shellFloorReadiness = clamp01(
+    (shellMinDefTal - (WEAK_LINK_SHELL_DTAL_FLOOR - 8)) / (WEAK_LINK_SHELL_DTAL_FULL - (WEAK_LINK_SHELL_DTAL_FLOOR - 8)),
+  );
+  const weakLinkOvercome =
+    starters.length === STARTER_SLOTS.length && minDefTal < WEAK_LINK_EXTREME_DTAL_CEILING
+      ? extremeSeverity * shellAverageReadiness * shellFloorReadiness
+      : 0;
+  const weakLinkOvercomeBonus = weakLinkOvercome * MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS;
+
   const drtgCompleteness = Math.max(
     completeness,
     threeLayerCore * THREE_LAYER_CORE_DRTG_BLEND,
@@ -278,7 +369,8 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     threeLayerCore,
     drtgCompleteness,
     backlineFoundation,
-    defenseScoreBonus: Math.max(eliteShellBonus, threeLayerCoreBonus, backlineFoundationBonus),
+    weakLinkOvercome,
+    defenseScoreBonus: Math.max(eliteShellBonus, threeLayerCoreBonus, backlineFoundationBonus, weakLinkOvercomeBonus),
     averageDefensiveTalent,
     poaProvider: poa?.player.playerName ?? null,
     wingProvider: wing?.player.playerName ?? null,

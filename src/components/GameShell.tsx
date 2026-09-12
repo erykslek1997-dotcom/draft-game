@@ -11,9 +11,10 @@ import {
   type DraftState,
 } from '../engine/draft';
 import { autoAssignRotation } from '../engine/rotation';
-import { optimizeSpans } from '../engine/spanOptimizer';
+import { optimizeSpans, spanOptionsFor } from '../engine/spanOptimizer';
 import { setAiDraftDebug } from '../engine/aiDrafter';
 import { CAP_LIMIT } from '../engine/positions';
+import { normalizePlayerName } from '../data/schema';
 import type { PlayerSpan } from '../data/schema';
 import type { Rotation, Team } from '../engine/types';
 import DraftBoard from './DraftBoard';
@@ -199,6 +200,26 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     setDraftState((s) => makePick(s, playerId));
   }
 
+  // 2026-09-12, user-reported live ("nadal brak korelacji") — `DraftBoard`'s span dropdown used to
+  // be a purely local preview (`humanSpanSelection`), never written back here, so a cheaper span
+  // swap couldn't free any cap room `isPickLegal`'s own lookahead would actually honor for the
+  // REST of the draft — only `DraftBoard`'s own `setHumanSpan` calls this, and only once it has
+  // already verified the swap is safe (never costs more than the span originally drafted, and
+  // never busts the real cap given everything else already committed) — this just applies it.
+  function handleSwapHumanSpan(playerName: string, newSpanId: string) {
+    const key = normalizePlayerName(playerName);
+    const newSpan = spanOptionsFor(playerName).find((s) => s.id === newSpanId);
+    if (!newSpan) return;
+    setDraftState((s) => ({
+      ...s,
+      teams: s.teams.map((t) =>
+        t.isHuman
+          ? { ...t, roster: t.roster.map((p) => (normalizePlayerName(p.playerName) === key ? newSpan : p)) }
+          : t,
+      ),
+    }));
+  }
+
   // 2026-08-30, now also a player-facing convenience: lets the user hand every remaining pick
   // to the existing AI draft logic. It still follows the normal draft-complete path below, so
   // rotations/finalization behave exactly as they do after the last manually played pick.
@@ -286,6 +307,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           pickReasoning={pickReasoning}
           onPickReasoningChange={handlePickReasoningChange}
           onSubmitTeam={handleSubmitTeam}
+          onSwapHumanSpan={handleSwapHumanSpan}
         />
       )}
       {phase === 'results' && finalTeams && (

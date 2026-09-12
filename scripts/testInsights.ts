@@ -66,7 +66,12 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // Jordan via the RIM_PROTECTOR_ROLES split); back to 54 the same day once the bar moved to p45
 // and DJ moved to the Mobile Big cohort. Brunson/Barros's own minutes (54) unchanged throughout.
 // Re-measured directly, not guessed.
-check(weakLinkInsight?.message.includes('54 targetable minutes'), 'weak-link description reports the real 54-minute cost');
+// 2026-09-12: 54 -> 50 after `rotation.ts`'s new `consolidateOffPositionFillers` pass moved 4 of
+// Barros's off-position SG minutes to Michael Jordan (real SG fit, real spare durability) — same
+// real shift documented on `testDefensiveHuntability.ts`'s "two-anchor foundation" check this same
+// date. Barros's own real-position (PG) minutes are untouched; only his SG sliver shrank.
+// Re-measured directly (50), not guessed.
+check(weakLinkInsight?.message.includes('50 targetable minutes'), 'weak-link description reports the real 50-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),

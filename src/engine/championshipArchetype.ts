@@ -26,7 +26,7 @@ export interface ChampionshipStructureResult {
   archetypes: Array<{ archetype: ChampionshipArchetype; share: number }>;
   primaryArchetype?: ChampionshipArchetype;
   secondaryArchetype?: ChampionshipArchetype;
-  archetypeReport?: { strengths: string[]; requirements: string[]; failureMode: string };
+  archetypeReport?: { strengths: string[]; requirements: string[]; failureMode: string | null };
   notes: string[];
 }
 
@@ -43,6 +43,50 @@ const ARCHETYPE_REPORTS: Record<ChampionshipArchetype, { strengths: string[]; re
   'Balanced two-way contender': { strengths: ['few matchup-specific weaknesses', 'portable lineups'], requirements: ['two credible creators and two-way minutes'], failureMode: 'the roster lacks a single advantage that can decide a close series' },
   'Fragile specialist mix': { strengths: ['can win a narrow matchup'], requirements: ['careful opponent selection'], failureMode: 'a single weak link is repeatedly targeted' },
 };
+
+/**
+ * 2026-09-12, user-reported live with three separate rosters (Shai Gilgeous-Alexander as the
+ * starting PG; then separately Kobe Bryant; then C. Billups starting + R. Rondo off the bench) —
+ * "jest shai, dlaczego jest tutaj ten risk": `ARCHETYPE_REPORTS.failureMode` above is one FIXED
+ * string per archetype, always shown whenever that archetype is the roster's top pick — but
+ * `candidates` below picks 'Motion spacing + switch defense' purely on `shooters`/
+ * `perimeterDefenders` (a real, elite creator can absolutely be on a roster that also clears that
+ * bar, e.g. no rim anchor at all costs 'Creator + rim anchor' its own candidate score outright), so
+ * its canned "no late-clock creator" text was firing against rosters that plainly have one. Root
+ * cause is generic — every failureMode here describes a weakness the archetype's own selection
+ * math never actually checks — so this gates each one on the SAME creation/spacing/defense values
+ * `championshipStructureForRoster` already computed, and only surfaces the risk when it's actually
+ * still true for this specific roster. An archetype with no gate below describes a weakness that's
+ * inherent to its own selection criteria (e.g. 'Heliocentric star' by definition already required
+ * `secondary < 55`) so it's always shown once that archetype is picked at all.
+ */
+interface ArchetypeRiskContext {
+  primary: number;
+  secondary: number;
+  shooters: number;
+  rimAnchors: number;
+  perimeterDefenders: number;
+  defensiveFloor: number;
+  defensiveCeiling: number;
+}
+
+const FAILURE_MODE_GATE: Partial<Record<ChampionshipArchetype, (ctx: ArchetypeRiskContext) => boolean>> = {
+  'Two-way engine': (ctx) => ctx.secondary < 45,
+  'Creator + rim anchor': (ctx) => ctx.shooters < 3,
+  'Motion spacing + switch defense': (ctx) => ctx.primary < 65,
+  'Post hub + shooters': (ctx) => ctx.shooters < 4,
+  'Defensive superteam': (ctx) => ctx.primary < 60,
+  'Big two-way + shooting': (ctx) => ctx.perimeterDefenders < 2,
+};
+
+function archetypeReportFor(archetype: ChampionshipArchetype, ctx: ArchetypeRiskContext) {
+  const report = ARCHETYPE_REPORTS[archetype];
+  const gate = FAILURE_MODE_GATE[archetype];
+  if (gate && !gate(ctx)) {
+    return { strengths: report.strengths, requirements: report.requirements, failureMode: null };
+  }
+  return report;
+}
 
 /**
  * Historical team-archetype proxy. It deliberately uses only portable, already-audited signals
@@ -133,7 +177,9 @@ export function championshipStructureForRoster(
     archetypes,
     primaryArchetype: archetypes[0]?.archetype,
     secondaryArchetype: archetypes[1]?.archetype,
-    archetypeReport: archetypes[0] ? ARCHETYPE_REPORTS[archetypes[0].archetype] : undefined,
+    archetypeReport: archetypes[0]
+      ? archetypeReportFor(archetypes[0].archetype, { primary, secondary, shooters, rimAnchors, perimeterDefenders, defensiveFloor, defensiveCeiling })
+      : undefined,
     notes,
   };
 }

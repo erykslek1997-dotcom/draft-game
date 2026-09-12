@@ -429,8 +429,16 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 
 // 2026-09-05: re-normalized (each old weight x0.9) to make room for `mismatchStructure` (0.10)
 // below without silently rescaling the whole formula's range — see that field's own docstring.
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.405;
-const OFFENSE_SPACING_BLEND_WEIGHT = 0.135;
+// 2026-09-12, user-reported live with a real example (Tampa Eagles: spacing 30, still Offense 70
+// and a top-3 PR finish): `offensiveCohesion` above already zeroes its own bonus below spacing 55
+// (the `spacingReadiness` gate), so that wasn't the leak — the plain blend was. At 13.5% weight, a
+// team can be near the worst legal spacing in the whole pool (`SPACING_SCORE_ANCHORS.worst`=20)
+// and still only lose ~9 raw points versus a maxed-out spacer, while OTAL alone was worth exactly
+// 3x that. Moved weight from OTAL into spacing (0.405->0.34, 0.135->0.20) rather than inventing a
+// new penalty mechanism — same six components, same 1.0 sum, just closer to how much a genuinely
+// broken floor should cost an NBA-realistic offense relative to raw scoring talent.
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.34;
+const OFFENSE_SPACING_BLEND_WEIGHT = 0.2;
 const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.135;
 const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.135;
 const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.09;
