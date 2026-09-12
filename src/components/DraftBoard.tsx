@@ -559,6 +559,16 @@ export default function DraftBoard({
   // unchanged) — only one card can be peeked at a time.
   const [peekPlayer, setPeekPlayer] = useState<string | null>(null);
   const [evidenceOpen, setEvidenceOpen] = useState<Set<string>>(new Set());
+  // 2026-09-12, user-reported live (mobile screenshot: all 9 round columns squeezed to fit,
+  // wrapping names onto 2-4 lines each) — real horizontal scroll (restored below, mobile-only)
+  // replaces that squeeze, but scroll on a table isn't always obvious as a possibility on a
+  // touch device with no visible scrollbar. These two buttons are a plainly-tappable affordance
+  // for it (mobile-only, see `.at-grid-scroll-nav`'s own CSS) — `scrollBy` already clamps at
+  // both ends, so no separate "can I still scroll further" state is needed.
+  const gridScrollRef = useRef<HTMLDivElement>(null);
+  function scrollGrid(direction: 1 | -1) {
+    gridScrollRef.current?.scrollBy({ left: direction * 280, behavior: 'smooth' });
+  }
   const [activeTab, setActiveTab] = useState<AtTab>('draft');
   const [showLegend, setShowLegend] = useState(false);
   // Defaults open in Commissioner Mode: every pick needs its reasoning box reachable right after
@@ -843,10 +853,20 @@ export default function DraftBoard({
       const spansByAiValue = showJudgeMetrics
         ? g.spans
         : [...g.spans].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+      // 2026-09-12, code-review finding: the Biedriņš-fix fallback a few hundred lines down
+      // (`target = bestLegal ? best : group.spansByAiValue.find(...) ?? best`) leaned on
+      // `spansByAiValue`'s comment claiming it's "already TAL-sorted" — true in player mode, but
+      // in developer mode `spansByAiValue` is deliberately `g.spans` (chronological, for browsing
+      // a career by season — see the comment above), not value-sorted at all. That silently made
+      // the fallback pick the first chronologically-affordable season in developer mode instead
+      // of the best-TAL affordable one. A real, always-TAL-sorted list, kept separate from
+      // `spansByAiValue` so that one's own developer-mode chronological order stays intact.
+      const spansByTal = [...g.spans].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
       return {
         ...g,
         bestTalentSpan,
         spansByAiValue,
+        spansByTal,
         // 2026-08-19, bug found while adding the player-mode tier badge below: the sort comparator's
         // own comment (a few lines down) already claimed this was "computed unconditionally... costs
         // nothing new" for the player-mode tiebreak, but the code here contradicted it — zeroing
@@ -980,7 +1000,16 @@ export default function DraftBoard({
               developer mode too now — previously kept there (player mode dropped them first,
               2026-08-13) but the grid itself (all 16 teams × round) still says everything it
               needs to without the label. */}
-          <div className="at-grid-scroll">
+          <div className="at-grid-scroll-nav">
+            <button type="button" className="at-grid-scroll-btn" onClick={() => scrollGrid(-1)} aria-label="Scroll rounds left">
+              ‹
+            </button>
+            <span className="at-grid-scroll-hint">Swipe or tap to see more rounds</span>
+            <button type="button" className="at-grid-scroll-btn" onClick={() => scrollGrid(1)} aria-label="Scroll rounds right">
+              ›
+            </button>
+          </div>
+          <div className="at-grid-scroll" ref={gridScrollRef}>
             <table className="at-ov-grid">
               <thead>
                 <tr>
@@ -1289,9 +1318,17 @@ export default function DraftBoard({
                     // worked around this — but the card's own "arrow drafts the best season
                     // immediately, no modal needed" promise silently broke exactly when it mattered
                     // most (a tight cap). Falls back to the best-TAL-among-actually-affordable
-                    // season (`spansByAiValue` is already TAL-sorted) only when the headline one
-                    // isn't legal, so ordinary drafting is completely unchanged.
-                    const target = bestLegal ? best : group.spansByAiValue.find((s) => canPick && isPickLegal(state, s.id)) ?? best;
+                    // season only when the headline one isn't legal, so ordinary drafting is
+                    // completely unchanged.
+                    // 2026-09-12, code-review fix: was `group.spansByAiValue.find(...)` — that
+                    // list is only TAL-sorted in player mode; in developer mode it's deliberately
+                    // chronological instead (see `spansByAiValue`'s own docstring), which would
+                    // have picked the first affordable season by date rather than by value. This
+                    // whole card grid only ever renders when `!showJudgeMetrics` (player mode), so
+                    // that mismatch was never actually reachable here — `spansByTal` (always real
+                    // value order, computed alongside `spansByAiValue`) is the correct source
+                    // either way and removes the landmine if that gating ever changes.
+                    const target = bestLegal ? best : group.spansByTal.find((s) => canPick && isPickLegal(state, s.id)) ?? best;
                     const legal = canPick && isPickLegal(state, target.id);
                     const tierFrameColor = TIER_FRAME_COLOR[displayedOverallTier(target)];
                     return (
@@ -1301,6 +1338,14 @@ export default function DraftBoard({
                         style={{ '--tier-frame': tierFrameColor } as CSSProperties}
                       >
                         <span className="at-player-card-corner" title={displayedOverallTier(target)} aria-hidden />
+                        {/* 2026-09-12, code-review finding: the tier used to be a text badge in
+                            this card's own accessibility tree; moving it to a colored border/
+                            corner (this same session, "wariant A") dropped that entirely — the
+                            corner is aria-hidden and its `title` is a mouse-hover-only affordance,
+                            so a screen-reader, keyboard-only, or touch user got no tier signal at
+                            all. Same information, visually hidden instead of removed: sighted
+                            mouse users still read the tier from color/hover exactly as before. */}
+                        <span className="at-sr-only">{displayedOverallTier(target)} tier</span>
                         <div className="at-player-card-top">
                           <Face name={group.playerName} size="md" />
                           <ShotChip fga={target.fga} cap={CAP_LIMIT} />

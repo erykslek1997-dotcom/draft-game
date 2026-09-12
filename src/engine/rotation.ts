@@ -704,6 +704,10 @@ function mergeTinyBackupSlivers(
   slots: Record<Position, SlotAssignment[]>,
   primaryBySlot: Partial<Record<Position, PlayerSpan>>,
 ): void {
+  // 2026-09-12, code-review fix (efficiency), same shape as `consolidateOffPositionFillers`'s own
+  // `rosterById` a few lines above — avoids an O(n) `roster.find(...)` linear scan per lookup on
+  // this same hot path.
+  const rosterById = new Map(roster.map((p) => [p.id, p]));
   for (const slot of STARTER_SLOTS) {
     // 2026-09-12 fix (measured against the exact reported shape via a direct unit probe, not
     // guessed): the first version excluded any player who is a starter AT ANY SLOT from either
@@ -715,7 +719,7 @@ function mergeTinyBackupSlivers(
     const ownStarterId = primaryBySlot[slot]?.id;
     for (const entry of [...slots[slot]]) {
       if (entry.minutes <= 0 || entry.minutes >= MIN_USEFUL_BENCH_MINUTES || entry.playerId === ownStarterId) continue;
-      const sliverPlayer = roster.find((p) => p.id === entry.playerId);
+      const sliverPlayer = rosterById.get(entry.playerId);
       if (!sliverPlayer || isRealPositionFit(sliverPlayer, slot)) continue;
       const sliverFit = positionFitMultiplier(sliverPlayer, slot);
 
@@ -731,7 +735,7 @@ function mergeTinyBackupSlivers(
       // dead entry instead of routing onto a genuinely still-active teammate.
       const partnerEntry = slots[slot]
         .filter((a) => a.playerId !== sliverPlayer.id && a.playerId !== ownStarterId && a.minutes > 0)
-        .map((a) => ({ a, p: roster.find((r) => r.id === a.playerId) }))
+        .map((a) => ({ a, p: rosterById.get(a.playerId) }))
         .filter((x): x is { a: SlotAssignment; p: PlayerSpan } => !!x.p && positionFitMultiplier(x.p, slot) >= sliverFit)
         .sort(
           (x, y) =>
@@ -811,6 +815,10 @@ function consolidateOffPositionFillers(
       .filter((p): p is PlayerSpan => !!p)
       .map((p) => p.id),
   );
+  // 2026-09-12, code-review fix (efficiency): was `roster.find((p) => p.id === entry.playerId)`
+  // — an O(n) linear scan repeated for every entry on every guard-loop iteration, on a pass that
+  // itself runs on `autoAssignRotation`'s documented hot path (40-80x per AI draft pick).
+  const rosterById = new Map(roster.map((p) => [p.id, p]));
 
   const usedFor = (playerId: string): number =>
     starterIds.has(playerId) ? starterMinutesUsed.get(playerId) ?? 0 : minutesUsed.get(playerId) ?? 0;
@@ -818,23 +826,33 @@ function consolidateOffPositionFillers(
     Math.min(maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER), minuteProfileForSpan(player).ceiling);
 
   for (const slot of STARTER_SLOTS) {
+    // 2026-09-12, code-review fix (efficiency): `positionFitMultiplier`/`capFor` depend only on
+    // (player, slot) — both fixed for this whole slot's while-loop below — so both are computed
+    // once per player here instead of being re-derived from scratch (durability + tier-minute-
+    // profile lookups included) on every one of the loop's iterations. Only `usedFor` (the
+    // running minutes total, via `usedFor`/the live maps) actually changes iteration to
+    // iteration, so it's still read fresh each time.
+    const fitAndCapById = new Map(roster.map((p) => [p.id, { fit: positionFitMultiplier(p, slot), cap: capFor(p) }]));
     let guard = 0;
     while (guard++ <= slots[slot].length) {
       const offPositionEntries = slots[slot]
-        .map((entry) => ({ entry, filler: roster.find((p) => p.id === entry.playerId) }))
+        .map((entry) => ({ entry, filler: rosterById.get(entry.playerId) }))
         .filter(
           (x): x is { entry: SlotAssignment; filler: PlayerSpan } =>
             !!x.filler && x.entry.minutes > 0 && !starterIds.has(x.filler.id) && !isRealPositionFit(x.filler, slot),
         )
-        .sort((a, b) => positionFitMultiplier(a.filler, slot) - positionFitMultiplier(b.filler, slot));
+        .sort((a, b) => fitAndCapById.get(a.filler.id)!.fit - fitAndCapById.get(b.filler.id)!.fit);
       const worst = offPositionEntries[0];
       if (!worst) break;
       const { entry, filler } = worst;
-      const fillerFit = positionFitMultiplier(filler, slot);
+      const fillerFit = fitAndCapById.get(filler.id)!.fit;
 
       const alternative = roster
         .filter((p) => p.id !== filler.id)
-        .map((p) => ({ p, fit: positionFitMultiplier(p, slot), spare: capFor(p) - usedFor(p.id) }))
+        .map((p) => {
+          const { fit, cap } = fitAndCapById.get(p.id)!;
+          return { p, fit, spare: cap - usedFor(p.id) };
+        })
         .filter(
           ({ p, fit, spare }) =>
             fit > fillerFit &&

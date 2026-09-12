@@ -3373,6 +3373,20 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   border-color: transparent var(--tier-frame, var(--at-line)) transparent transparent;
   pointer-events: none;
 }
+/* 2026-09-12, code-review fix: standard visually-hidden pattern — present in the accessibility
+   tree (screen readers, browser "find in page") but occupies no visual space and is invisible to
+   sighted users. Used to restore the tier text `.at-player-card-corner` moved off-tree. */
+.at-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .at-player-card-top {
   display: flex;
   align-items: center;
@@ -3493,7 +3507,13 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 }
 @media (max-width: 860px) {
   .at-draft-workspace { flex-direction: column; }
-  .at-draft-sidebar { width: 100%; position: static; }
+  /* 2026-09-12, user-reported live ("your team powinien być między draft board a polem
+     graczy"): column layout stacks in DOM order by default, which put "Your Five" (this card)
+     dead last — below the whole player-card grid, the opposite of where it's useful. `order: -1`
+     moves it ahead of `.at-draft-main` (the search/filter row + player cards, still one visual
+     unit together) without touching DOM order or component structure, landing it exactly between
+     the round-by-round board above `.at-draft-workspace` and the player pool below. */
+  .at-draft-sidebar { width: 100%; position: static; order: -1; }
 }
 
 /* 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
@@ -3988,27 +4008,32 @@ table.at-ov-grid tbody td.at-onclock::before {
    pair pattern for both, CSS-only toggle so there's no resize listener/JS width check involved. */
 .at-name-short { display: none; }
 
-/* 2026-08-16, user's own ask ("damy radę zmieścić wszystkie 8 picków na jednym boardzie"): below
-   this width the desktop layout's 108px-per-round columns can't all fit without horizontal
-   scrolling, so all 8 round columns compress to share whatever width is left after a narrower
-   team column, `table-layout: fixed` splitting that space evenly since no column has its own
-   explicit width. Dropping the drafted year (see the Overview grid JSX in DraftBoard.tsx) and
-   swapping to "F. Last" (`.at-name-short`) are what make a pick cell short enough for this to
-   work at all — a real column here is only ~35px wide, too narrow for most full names not to
-   fragment mid-word even with wrapping on. Team names in the sticky column still wrap (that
-   column isn't nearly as cramped, one column vs. eight). */
+/* Scroll-nav affordance for the round grid below — two tappable arrows + a one-time hint text,
+   hidden by default (desktop already scrolls fine with a trackpad/wheel, or just fits) and shown
+   only inside the mobile media query below. */
+.at-grid-scroll-nav { display: none; }
+.at-grid-scroll-btn {
+  flex: none; width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--at-line);
+  background: var(--at-pill); color: var(--at-pill-ink); font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.at-grid-scroll-hint { font-size: 10.5px; color: var(--at-ink-faint); text-align: center; flex: 1; }
+
+/* 2026-08-16, user's own ask at the time ("damy radę zmieścić wszystkie 8 picków na jednym
+   boardzie"): squeezed all round columns to fit the viewport with `table-layout: fixed`, wrapping
+   names onto multiple lines to make it work.
+   2026-09-12, user-reported live (mobile screenshot, that exact squeeze: "M. Jordan" wrapped
+   across 2 lines, "S. Gilgeous-Alexander" across 4) — reversed: real horizontal scroll instead,
+   sized so about two round columns are visible at a time (matching the explicit ask), with the
+   arrow-button affordance above for anyone who doesn't think to swipe a table. Team column and
+   the "F. Last" short-name format stay from the original pass — both are still the right call
+   for a narrow column, independent of which scroll strategy the round columns use. */
 @media (max-width: 640px) {
-  .at-grid-scroll { overflow-x: visible; }
-  table.at-ov-grid { table-layout: fixed; }
-  table.at-ov-grid thead th.at-rnd { min-width: 0; padding: 7px 3px; font-size: 9px; }
-  /* 2026-08-16, user-reported: 86px was sized for the full team NAME this column used to wrap
-     (see this block's own header comment) — now that the name is hover-only (`.at-name-tip`, the
-     column holds just a ~30px chip) that width left a lot of dead space around it. Narrowed to
-     fit the chip with real padding, not the old name-wrapping budget; the freed width goes to the
-     round columns instead (`table-layout: fixed` splits whatever's left over among them). */
-  table.at-ov-grid thead th.at-teamcol { width: 54px; min-width: 0; padding: 7px 6px; }
+  .at-grid-scroll-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  table.at-ov-grid thead th.at-rnd { min-width: 132px; padding: 7px 8px; font-size: 9px; }
+  table.at-ov-grid thead th.at-teamcol { width: 54px; min-width: 54px; padding: 7px 6px; }
   table.at-ov-grid tbody td.at-teamcol { width: 54px; padding: 6px; white-space: normal; font-size: 12px; }
-  table.at-ov-grid tbody td.at-pickcell { white-space: normal; padding: 5px 3px; font-size: 10.5px; overflow-wrap: break-word; }
+  table.at-ov-grid tbody td.at-pickcell { padding: 5px 8px; font-size: 10.5px; }
   .at-name-full { display: none; }
   .at-name-short { display: inline; }
   .at-team-chip { min-width: 0; height: 17px; padding: 0 4px; font-size: 9px; margin: 0 0 3px; display: inline-flex; }
