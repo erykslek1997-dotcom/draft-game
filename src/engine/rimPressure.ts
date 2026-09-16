@@ -147,6 +147,45 @@ function fitVolScore(percentile: number): number {
 }
 
 /**
+ * 2026-09-16, user-reported live (a real drafted Kevin Garnett 2002-04 span, then broadened to a
+ * pool scan after the user pushed back that this looked systemic, not a one-off): `accFactor`'s
+ * old 52-72% window was never checked against the real distribution — it turns out real rim
+ * accuracy for a genuine, meaningful-volume PF/C (FGA >= 10) runs p10=57.3 / p50=64.7 / p90=71.9 /
+ * p99=76.5 (min 49.7, max 78.6 — `scripts/_accDistDiag.ts`, measured, deleted after use). The old
+ * floor (52%) was set BELOW the real 10th percentile, meaning it never actually bound anyone —
+ * the effective floor was really the CLAMP'S OWN 0.35 minimum, which every real player under ~59%
+ * hit identically regardless of how far under. That's roughly the bottom 15% of the real
+ * population reading the exact same value, Hall-of-Famer or not: Hakeem Olajuwon (1995-97, 58%
+ * rim accuracy on a 96th-percentile rim-shot volume) landed at the same 0.35 as Dirk Nowitzki
+ * (2005-07, a genuinely low-rim-share jump-shooter who is SUPPOSED to read low here) — the
+ * multiplicative accFactor term simply couldn't tell an elite-but-not-explosive finisher from a
+ * non-threat.
+ *
+ * Re-anchored to the real min (50, rounded from 49.7) and real p99 (77, rounded from 76.5) instead
+ * of the old guessed 52/72 — same 0.35-1.2 output range (the ceiling behavior for genuine elite
+ * finishers like LeBron 2012-14 at 77% was already correct and is unchanged), just stretched to
+ * actually differentiate across the real populated range instead of clustering the bottom ~15% at
+ * one flat number. Verified against the project's usual reference cases before shipping
+ * (`scripts/_fixTestDiag.ts`, measured, deleted after use): Hakeem 1995-97 24->40, Karl Malone
+ * 1995-97 66->76, Chris Bosh 2007-09 16->26, Anthony Davis 2015-17 44->50 — all real, meaningful
+ * moves for real scorers. Dirk 2005-07 stays exactly 15 (his shareRamp, not accuracy, is what
+ * correctly floors him — a low rim SHARE, not just moderate accuracy), Robert Horry 1999-01 stays
+ * exactly 15 (genuinely low volume/accuracy both) — the validated "should stay low" cases are
+ * unaffected. Scoped to `rimPressureForFit` only, same as `FIT_SHARE_FLOOR`/`BIG_RIM_PRESSURE_FLOOR`
+ * above — `rimPressure()` (which feeds `computeTalent`/TAL, Taylor/GOAT-validated) keeps its own
+ * original 52/72 window untouched.
+ */
+const FIT_ACC_FACTOR_FLOOR_PCT = 50;
+const FIT_ACC_FACTOR_CEILING_PCT = 77;
+function fitAccFactor(rimAccuracy: number): number {
+  return clamp(
+    0.35 + ((rimAccuracy - FIT_ACC_FACTOR_FLOOR_PCT) * (1.2 - 0.35)) / (FIT_ACC_FACTOR_CEILING_PCT - FIT_ACC_FACTOR_FLOOR_PCT),
+    0.35,
+    1.2,
+  );
+}
+
+/**
  * Fit-only (called solely from `rimPressureForFit`'s pre-1997 branch — never `rimPressure()` /
  * `rimPressureOffenseTerm()`, so TAL / Taylor / GOAT are untouched).
  *
@@ -183,7 +222,7 @@ export function rimPressureForFit(span: PlayerSpan): number {
     if (shareRamp <= 0) {
       base = 0;
     } else {
-      const accFactor = clamp((prof.rimAccuracy - 52) / 20, 0.35, 1.2);
+      const accFactor = fitAccFactor(prof.rimAccuracy);
       const shareFactor = clamp(0.7 + prof.rimShare * 0.6, 0.7, 1.25);
       const volScore = fitVolScore(pctileOf(RIM_VOL_RUNGS, prof.rimShare * span.fga * paceFactor(span)));
       base = clamp(
