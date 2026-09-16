@@ -317,6 +317,7 @@ function HeroResult({
   fitDetail,
   offenseDetail,
   assignments,
+  starterKeys,
   topOverall,
   titleOdds,
   draftSeed,
@@ -340,6 +341,7 @@ function HeroResult({
   fitDetail: FitScoreResult | null;
   offenseDetail: OffenseScoreBreakdown | null;
   assignments: ResolvedSlotAssignment[];
+  starterKeys: Set<string>;
   topOverall: number | null;
   titleOdds: number | null;
   draftSeed: number;
@@ -475,7 +477,14 @@ function HeroResult({
           <span className="share-modal-face-group-label">Rotation</span>
           <div className="results-hero-rotation-columns">
             {STARTER_SLOTS.map((slot) => {
-              const entries = assignments.filter((a) => a.slot === slot).sort((a, b) => b.minutes - a.minutes);
+              const entries = assignments
+                .filter((a) => a.slot === slot)
+                .sort((a, b) => {
+                  const aIsStarter = starterKeys.has(`${a.slot}|${a.player.id}`);
+                  const bIsStarter = starterKeys.has(`${b.slot}|${b.player.id}`);
+                  if (aIsStarter !== bIsStarter) return aIsStarter ? -1 : 1;
+                  return b.minutes - a.minutes;
+                });
               return (
                 <div className="results-hero-rotation-col" key={slot}>
                   <span className="results-hero-rotation-col-label">{slot}</span>
@@ -1250,6 +1259,19 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked, correctedRotations],
   );
+  // 2026-09-16, user-reported live ("KD był starterem a pokazuje Iguodale w s5"): the hero
+  // Rotation panel's own entries were sorted purely by minutes, unlike the "Rotation" accordion
+  // further down (which already keys off `primaryStarters` — see `starterKeys` there). Whenever a
+  // bench player's actual minutes exceed the real starter's (a durability cap, an injury-style
+  // rotation correction, etc.), the higher-minutes bench name floated to the TOP of the column,
+  // reading as "this is the starter" even though the real lineup slot is still the other player.
+  // Same fix, same shape as the accordion's `starterKeys` — computed once here and reused by the
+  // hero panel's own sort below instead of duplicating `primaryStarters` a second time.
+  const heroStarterKeys: Set<string> = useMemo(
+    () => new Set(heroRanked ? primaryStarters(displayTeam(heroRanked.team)).map((entry) => `${entry.slot}|${entry.player.id}`) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [heroRanked, correctedRotations],
+  );
   function toggleExpanded(teamId: string) {
     setExpandedTeamIds((prev) => {
       const next = new Set(prev);
@@ -1290,6 +1312,7 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
           fitDetail={heroFit}
           offenseDetail={heroOffenseDetail}
           assignments={heroAssignments}
+          starterKeys={heroStarterKeys}
           topOverall={ranked[0]?.breakdown.overall ?? null}
           titleOdds={leagueEvalByTeamId.get(heroRanked.team.id)?.championshipProbability ?? null}
           draftSeed={draftSeed}
