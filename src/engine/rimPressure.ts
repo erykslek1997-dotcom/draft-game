@@ -192,6 +192,37 @@ function fitAccFactor(rimAccuracy: number): number {
 }
 
 /**
+ * 2026-09-16, same investigation as `fitAccFactor` above (user: "KG na poziomie 18 a Horry na 15
+ * sugeruje że wychodzimy z wadliwych założeń... chociażby 40 byłoby bardziej realistyczne" — KG at
+ * 18 vs Horry at 15 suggests a flawed premise, ~40 would be more realistic): the old formula
+ * multiplied TWO separate curves off the exact same `rimShare` value — a hard 0->1 gate from 15%
+ * to 50% (the old inline `shareRamp`) and a gentle 0.7->1.25 bonus over the full 0-92%+ range (the
+ * old inline `shareFactor`) — double-penalizing anyone whose share sits in the ambiguous middle
+ * band. Confirmed this wasn't a "should stay low" case being inflated: Garnett 2002-04's other five
+ * factors (volScore 68.6, accFactor 0.94, passingHub 0.96, scoringVol 0.83, ftr 0.99) were already
+ * well-calibrated after the accFactor/ftr fixes above — the residual ~18 on a real 23ppg/50%FG
+ * season was purely the compounded 0.40 (old shareRamp) x 0.87 (old shareFactor) = 0.35 share term.
+ *
+ * Replaced with ONE curve, same anchors as the old two (0 at the 15% floor, full 0.7-1.25 credit at
+ * >=50% share, unchanged there), but concave (exponent 0.25) inside the 15-50% band instead of the
+ * old product's effectively-linear shape, so a moderate share isn't punished twice for the same
+ * fact. Broadly verified against ~25 reference cases across archetypes (`scripts/
+ * _shareConsolidateDiag.ts` / `_shareExp025Diag.ts`, measured, deleted after use): every floor case
+ * unaffected (Horry/Haslem/Dirk/Draymond/Al Horford stay exactly 15 — their real share sits at or
+ * below the 15% gate, outside the touched band) and every >=50%-share ceiling case unaffected (Shaq
+ * 100, Dwight Howard 80, Gobert 54, Tyson Chandler 41, Ben Wallace 21, Andre Drummond 40 — all
+ * unchanged). Only the ambiguous middle band moves: Garnett 2002-04 18->41, Anthony Davis 2015-17
+ * 54->74, Chris Bosh 2007-09 30->42, Hakeem 1995-97 41->50.
+ */
+const FIT_SHARE_CREDIT_EXPONENT = 0.25;
+function fitShareCredit(rimShare: number): number {
+  if (rimShare <= FIT_SHARE_FLOOR) return 0;
+  if (rimShare >= 0.5) return clamp(0.7 + rimShare * 0.6, 1.0, 1.25);
+  const t = (rimShare - FIT_SHARE_FLOOR) / (0.5 - FIT_SHARE_FLOOR);
+  return Math.pow(t, FIT_SHARE_CREDIT_EXPONENT);
+}
+
+/**
  * Fit-only (called solely from `rimPressureForFit`'s pre-1997 branch — never `rimPressure()` /
  * `rimPressureOffenseTerm()`, so TAL / Taylor / GOAT are untouched).
  *
@@ -224,12 +255,11 @@ export function rimPressureForFit(span: PlayerSpan): number {
   const prof = computeOffensiveProfile(span);
   let base: number;
   if (prof.hasZoneData) {
-    const shareRamp = clamp((prof.rimShare - FIT_SHARE_FLOOR) / (0.5 - FIT_SHARE_FLOOR), 0, 1);
-    if (shareRamp <= 0) {
+    const shareCredit = fitShareCredit(prof.rimShare);
+    if (shareCredit <= 0) {
       base = 0;
     } else {
       const accFactor = fitAccFactor(prof.rimAccuracy);
-      const shareFactor = clamp(0.7 + prof.rimShare * 0.6, 0.7, 1.25);
       const volScore = fitVolScore(pctileOf(RIM_VOL_RUNGS, prof.rimShare * span.fga * paceFactor(span)));
       // 2026-09-16, user's own follow-up after the accFactor recalibration above ("możemy też
       // wziąć pod uwagę... liczbę wymuszonych osobistych?" — can we also factor in forced fouls):
@@ -239,7 +269,7 @@ export function rimPressureForFit(span: PlayerSpan): number {
       // defensive pressure the shot-make% alone doesn't fully capture (Barkley/McAdoo's own
       // motivating cases for that function). Same gentle ±20% multiplier, not a new mechanism.
       base = clamp(
-        volScore * accFactor * shareFactor * shareRamp * passingHubDampener(span) * scoringVolumeFactor(span) * freeThrowRateFactor(span),
+        volScore * accFactor * shareCredit * passingHubDampener(span) * scoringVolumeFactor(span) * freeThrowRateFactor(span),
         0,
         100,
       );
