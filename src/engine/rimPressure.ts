@@ -71,14 +71,20 @@ const passingHubDampener = (s: PlayerSpan) => clamp(1.3 - s.box.apg / 16, 0.55, 
 const scoringVolumeFactor = (s: PlayerSpan) => clamp((s.box.ppg * paceFactor(s) - 12) / 16, 0.4, 1.1);
 
 /**
- * pre-1996-97 proxy only (see its call site): a real, independent foul-drawing signal from the
- * 2026-09-04 box-rates export (`boxRatesLookup.ts`, full 1946+ coverage) the ppg/fgPct percentile
- * ladders can't see on their own — Bob McAdoo (69 proxy rimPressure) and Charles Barkley (78) both
- * drew fouls at a genuine focal-point rate (FTr 0.43 / 0.49) the volume/efficiency read alone
- * doesn't fully credit. Deliberately gentle (±20%, not the ±40% a naive read of Shaq's 0.58 would
- * suggest) — FTr is noisy at this remove (Dolph Schayes reads 0.64 off a small, different-era
- * shot diet) and this is a multiplier on an already-computed proxy, not a new independent term.
- * Returns 1.0 (no-op) when the export has no coverage for this span.
+ * A real, independent foul-drawing signal from the 2026-09-04 box-rates export
+ * (`boxRatesLookup.ts`, full 1946+ coverage) the ppg/fgPct/rim-accuracy reads can't see on their
+ * own — Bob McAdoo (69 proxy rimPressure) and Charles Barkley (78) both drew fouls at a genuine
+ * focal-point rate (FTr 0.43 / 0.49) the volume/efficiency read alone doesn't fully credit.
+ * Deliberately gentle (±20%, not the ±40% a naive read of Shaq's 0.58 would suggest) — FTr is
+ * noisy at this remove (Dolph Schayes reads 0.64 off a small, different-era shot diet) and this is
+ * a multiplier on an already-computed base, not a new independent term. Returns 1.0 (no-op) when
+ * the export has no coverage for this span.
+ *
+ * Originally the pre-1996-97 proxy branch's own signal only; 2026-09-16, user's own follow-up
+ * ask, extended to `rimPressureForFit`'s zone-data (1997+) branch too — same real signal, no
+ * reason it should only apply pre-1997. Not extended to `rimPressure()`'s own zone-data branch
+ * (which feeds `computeTalent`/TAL, Taylor/GOAT-validated) — that stays untouched, same scoping
+ * rule every `rimPressureForFit`-only change in this file already follows.
  */
 const FTR_BASELINE = 0.32;
 const FTR_SLOPE = 0.9;
@@ -225,8 +231,15 @@ export function rimPressureForFit(span: PlayerSpan): number {
       const accFactor = fitAccFactor(prof.rimAccuracy);
       const shareFactor = clamp(0.7 + prof.rimShare * 0.6, 0.7, 1.25);
       const volScore = fitVolScore(pctileOf(RIM_VOL_RUNGS, prof.rimShare * span.fga * paceFactor(span)));
+      // 2026-09-16, user's own follow-up after the accFactor recalibration above ("możemy też
+      // wziąć pod uwagę... liczbę wymuszonych osobistych?" — can we also factor in forced fouls):
+      // a real, independent foul-drawing signal, same shape `freeThrowRateFactor` already applies
+      // in the pre-1997 proxy branch just below — extended here to the zone-data (1997+) branch
+      // for the same reason it exists there: drawing real contact at the rim is itself evidence of
+      // defensive pressure the shot-make% alone doesn't fully capture (Barkley/McAdoo's own
+      // motivating cases for that function). Same gentle ±20% multiplier, not a new mechanism.
       base = clamp(
-        volScore * accFactor * shareFactor * shareRamp * passingHubDampener(span) * scoringVolumeFactor(span),
+        volScore * accFactor * shareFactor * shareRamp * passingHubDampener(span) * scoringVolumeFactor(span) * freeThrowRateFactor(span),
         0,
         100,
       );
