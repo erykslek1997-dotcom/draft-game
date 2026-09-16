@@ -1829,7 +1829,11 @@ select {
   border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 .results-hero-scores { display: flex; flex-direction: column; gap: 8px; flex: 1 1 400px; min-width: 0; }
-.results-hero-scores-row { display: flex; gap: 6px; }
+/* Wraps for the same reason `.subscores` (the "Final team ranking" list's own copy of this same
+   7-chip row) already wraps — seven full-word chips (Talent/Bench Depth/Offense/Defense/Spacing/
+   Fit/Rotation, not the old 3-letter OFF/DEF/SPC) routinely don't fit one line at this column's
+   own ~400px basis. */
+.results-hero-scores-row { display: flex; flex-wrap: wrap; gap: 6px; }
 /* Bumped up from the compact header-strip size `.score-chip` defaults to (same move
    `.subscores .score-chip` already makes for its own, equally prominent context) — this is one of
    two headline halves of the hero now, not a footnote. */
@@ -1840,12 +1844,64 @@ select {
 }
 .results-hero-dashboard .score-chip-value { font-size: 15px; font-variant-numeric: tabular-nums; }
 .results-hero-bars { margin-top: 2px; }
-.results-hero-rotation { display: flex; flex-direction: column; gap: 12px; flex: 1 1 360px; min-width: 0; }
-/* `.share-modal-face-group`'s own `margin-top: 10px` is meant for stacking under OTHER modal
-   content above it — here the two groups (Starting five, Bench) are this column's only content,
-   spaced by its own `gap` instead, so the first group doesn't carry a redundant top offset. */
-.results-hero-rotation .share-modal-face-group { margin-top: 0; }
-.results-hero-face-row { justify-content: flex-start; }
+.results-hero-rotation { display: flex; flex-direction: column; gap: 8px; flex: 1 1 360px; min-width: 0; }
+/* 2026-09-16, user-reported live ("zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn z
+   pozycjami i minutami") — replaces the old two-group (Starting five/Bench) face-card rows. Five
+   equal columns, one per `STARTER_SLOTS` position — each a light bordered card (same recipe as
+   `.share-modal-face-card`, just taller to hold a variable number of stacked contributors instead
+   of exactly one) so a slot with 2-3 real contributors (a backup, maybe a 3rd sliver) reads as one
+   coherent group instead of scattering its players across two unrelated old groups by role. */
+.results-hero-rotation-columns {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.results-hero-rotation-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  min-width: 0;
+}
+.results-hero-rotation-col-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint, var(--muted));
+  text-align: center;
+}
+.results-hero-rotation-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+.results-hero-rotation-col > .results-hero-rotation-entry:first-of-type { padding-top: 0; border-top: none; }
+.results-hero-rotation-entry-info { display: flex; flex-direction: column; gap: 0; min-width: 0; line-height: 1.25; }
+.results-hero-rotation-entry-name {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.results-hero-rotation-entry-min {
+  font-size: 9.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 480px) {
+  /* Five columns of a 26px face + two lines of text each get too narrow to read below this width
+     — same "stack instead of squeeze" call the dashboard's own 560px breakpoint already makes for
+     its two halves. */
+  .results-hero-rotation-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 /* 2026-09-11, Scouting Report finding: every competitor treats "share this" as part of the
    payoff (Share result / Challenge a friend); this screen had no path from seeing a result to
    sending it to the group chat at all. Clipboard-only — no share-sheet/backend dependency, which
@@ -2560,11 +2616,25 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   details.fit-v2-shadow-panel[open] > .fit-detail-wide,
   details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail { grid-column: auto; }
 }
+/* 2026-09-16, user-reported live ("bardzo brzydko to wygląda" — a screenshot of exactly this
+   panel, text visibly running together: "...Kareem Abdul-Jabbar 98Weak-link targets:..."). The
+   only `display: block` this class had was scoped to `details.fit-v2-shadow-panel[open] > ...`
+   (a few lines up) — a container class this element hasn't actually been rendered inside since
+   the raw-metrics panel was migrated to `.analysis-raw` (ResultsScreen.tsx). That scoped rule's
+   `grid-column: 1 / -1` (analysis-raw's own version, above) still applied, but with no `display`
+   override winning, this stayed a plain inline `<span>` — three of them back to back with no line
+   break between. Unscoped so it holds regardless of which container renders it. */
 .fit-v2-shadow-detail {
+  display: block;
   flex-basis: 100%;
-  padding-top: 2px;
+  padding: 6px 0 2px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  line-height: 1.5;
   color: var(--muted);
 }
+/* First one right under `.fit-detail-wide`'s own "Profile:" line doesn't need a second divider
+   stacked directly on that one's bottom padding. */
+.fit-detail-wide + .fit-v2-shadow-detail { border-top: none; padding-top: 2px; }
 
 /* Deliberately visually distinct from .subscores above — a real-NBA-units estimate (points per
    100 possessions), not another 0-100 relative score, so it shouldn't read as one more entry in

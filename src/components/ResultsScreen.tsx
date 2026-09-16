@@ -4,7 +4,7 @@ import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimul
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
 import { STARTER_SLOTS, CAP_LIMIT } from '../engine/positions';
-import { allAssignments, benchWithMinutes, primaryStarters } from '../engine/rotation';
+import { allAssignments, benchWithMinutes, primaryStarters, type ResolvedSlotAssignment } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
 import type { DraftHistoryEntry, Rotation, Team } from '../engine/types';
@@ -307,11 +307,16 @@ function HeroResult({
   rank,
   fieldSize,
   overall,
+  talentScore,
+  benchDepthScore,
   offenseScore,
   defenseScore,
   spacingScore,
+  fitScore,
+  rotationScore,
   fitDetail,
   offenseDetail,
+  assignments,
   topOverall,
   titleOdds,
   draftSeed,
@@ -325,11 +330,16 @@ function HeroResult({
   rank: number;
   fieldSize: number;
   overall: number;
+  talentScore: number;
+  benchDepthScore: number;
   offenseScore: number;
   defenseScore: number;
   spacingScore: number;
+  fitScore: number;
+  rotationScore: number;
   fitDetail: FitScoreResult | null;
   offenseDetail: OffenseScoreBreakdown | null;
+  assignments: ResolvedSlotAssignment[];
   topOverall: number | null;
   titleOdds: number | null;
   draftSeed: number;
@@ -416,19 +426,31 @@ function HeroResult({
           own bordered `.share-modal-face-card` for the starting five) but was still, per the same
           follow-up ("nadal można dodać ławkę, offensive and defensive breakdown... to ma być
           dashboard jako podsumowanie całego draftu, teraz to jest bardzo skrócona wersja"), an
-          abbreviated summary rather than the actual draft report. V3 adds the two missing pieces,
+          abbreviated summary rather than the actual draft report. V3 added the two missing pieces,
           both already fully computed elsewhere on this page for the human's own expanded card —
           hoisted up here (`heroFit`/`heroOffenseDetail`) rather than recomputed: the SAME
           Offense/Defense `MetricBar` breakdown "Team analysis" shows below (`.analysis-bars-*`),
-          and the bench half of `roster` (already carries all 9 players, not just the 5 starters)
-          alongside Starting five using the exact same face-card row. */}
+          and the bench half of `roster` (already carried all 9 players, not just the 5 starters).
+          V4, two more follow-ups the same day: "chyba damy radę zmieścić wszystko w tym hero
+          dashboard?" — Team profile now shows all 7 `ScoreChip`s the "Final team ranking" list
+          below already has (Talent/Bench Depth/Offense/Defense/Spacing/Fit/Rotation), not just
+          OFF/DEF/SPC. Then "zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn z
+          pozycjami i minutami" — Starting five/Bench (grouped by ROLE, and a bench row's own
+          `.primaryPosition` label didn't reflect which slot it actually backs up) replaced by one
+          "Rotation" section, 5 columns by SLOT (`heroAssignments`, the same per-slot shape the
+          "Rotation" accordion further down already builds via `allAssignments`) — a split
+          contributor now correctly shows under every slot they actually cover. */}
       <div className="results-hero-dashboard">
         <div className="results-hero-scores">
           <span className="share-modal-face-group-label">Team profile</span>
           <div className="results-hero-scores-row">
-            <ScoreChip label="OFF" value={Math.round(offenseScore)} />
-            <ScoreChip label="DEF" value={Math.round(defenseScore)} />
-            <ScoreChip label="SPC" value={Math.round(spacingScore)} />
+            <ScoreChip label="Talent" value={Math.round(talentScore)} />
+            <ScoreChip label="Bench Depth" value={Math.round(benchDepthScore)} />
+            <ScoreChip label="Offense" value={Math.round(offenseScore)} />
+            <ScoreChip label="Defense" value={Math.round(defenseScore)} />
+            <ScoreChip label="Spacing" value={Math.round(spacingScore)} />
+            <ScoreChip label="Fit" value={Math.round(fitScore)} />
+            <ScoreChip label="Rotation" value={Math.round(rotationScore)} />
           </div>
           {fitDetail && (
             <div className="analysis-bars-split results-hero-bars">
@@ -450,38 +472,26 @@ function HeroResult({
           )}
         </div>
         <div className="results-hero-rotation">
-          <div className="share-modal-face-group">
-            <span className="share-modal-face-group-label">Starting five</span>
-            <div className="share-modal-face-row results-hero-face-row">
-              {roster
-                .filter((row) => row.isStarter)
-                .map((row) => (
-                  <div className="share-modal-face-card" key={row.position + row.name}>
-                    <Face name={row.name} size="md" />
-                    <span className="share-modal-face-pos">{row.position}</span>
-                    <span className="share-modal-face-name">{shortenName(row.name)}</span>
-                    <span className="share-modal-face-meta">{Math.round(row.minutes)}m</span>
-                  </div>
-                ))}
-            </div>
-          </div>
-          {roster.some((row) => !row.isStarter) && (
-            <div className="share-modal-face-group">
-              <span className="share-modal-face-group-label">Bench</span>
-              <div className="share-modal-face-row results-hero-face-row">
-                {roster
-                  .filter((row) => !row.isStarter)
-                  .map((row) => (
-                    <div className="share-modal-face-card" key={row.position + row.name}>
-                      <Face name={row.name} size="md" />
-                      <span className="share-modal-face-pos">{row.position}</span>
-                      <span className="share-modal-face-name">{shortenName(row.name)}</span>
-                      <span className="share-modal-face-meta">{Math.round(row.minutes)}m</span>
+          <span className="share-modal-face-group-label">Rotation</span>
+          <div className="results-hero-rotation-columns">
+            {STARTER_SLOTS.map((slot) => {
+              const entries = assignments.filter((a) => a.slot === slot).sort((a, b) => b.minutes - a.minutes);
+              return (
+                <div className="results-hero-rotation-col" key={slot}>
+                  <span className="results-hero-rotation-col-label">{slot}</span>
+                  {entries.map((e) => (
+                    <div className="results-hero-rotation-entry" key={e.player.id}>
+                      <Face name={e.player.playerName} size="sm" />
+                      <span className="results-hero-rotation-entry-info">
+                        <span className="results-hero-rotation-entry-name">{shortenName(e.player.playerName, 12)}</span>
+                        <span className="results-hero-rotation-entry-min">{Math.round(e.minutes)}m</span>
+                      </span>
                     </div>
                   ))}
-              </div>
-            </div>
-          )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
       <div className="results-hero-actions">
@@ -1227,6 +1237,19 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
     () => heroRoster.filter((row) => row.isStarter).map((row) => ({ position: row.position, name: row.name })),
     [heroRoster],
   );
+  // 2026-09-16, user-reported live ("zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn
+  // z pozycjami i minutami"): the hero's own "Starting five"/"Bench" split named a player's
+  // CARD position (their primary position for bench rows — see `heroRoster` above), not which
+  // SLOT(s) they actually play minutes at, so a combo guard backing up two positions would only
+  // ever show once, under one label. Same per-slot shape the "Rotation" accordion further down
+  // already builds (`allAssignments`, grouped by `STARTER_SLOTS`) — reused directly rather than
+  // reshaping `heroRoster`, so a player split across slots shows under every slot they actually
+  // cover, exactly like that accordion already does.
+  const heroAssignments: ResolvedSlotAssignment[] = useMemo(
+    () => (heroRanked ? allAssignments(displayTeam(heroRanked.team)) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [heroRanked, correctedRotations],
+  );
   function toggleExpanded(teamId: string) {
     setExpandedTeamIds((prev) => {
       const next = new Set(prev);
@@ -1257,11 +1280,16 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
           rank={heroRanked.rank}
           fieldSize={ranked.length}
           overall={heroRanked.breakdown.overall}
+          talentScore={heroRanked.breakdown.talentScore}
+          benchDepthScore={heroRanked.breakdown.benchDepthScore}
           offenseScore={heroRanked.breakdown.offenseScore}
           defenseScore={heroRanked.breakdown.defenseScore}
           spacingScore={heroRanked.breakdown.spacingScore}
+          fitScore={heroRanked.breakdown.fitScore}
+          rotationScore={heroRanked.breakdown.rotationScore}
           fitDetail={heroFit}
           offenseDetail={heroOffenseDetail}
+          assignments={heroAssignments}
           topOverall={ranked[0]?.breakdown.overall ?? null}
           titleOdds={leagueEvalByTeamId.get(heroRanked.team.id)?.championshipProbability ?? null}
           draftSeed={draftSeed}
