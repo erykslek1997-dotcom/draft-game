@@ -1868,10 +1868,14 @@ export default function DraftBoard({
                 // landed, any minutes the user had already set by hand while the roster was still
                 // incomplete were silently thrown away for a fresh `autoAssignRotation` seed — the
                 // exact opposite of the "set minutes manually if you'd like ... as you go" promise
-                // this same screen makes below. `rosterComplete` still gates the Auto-fill button
-                // and its own hint (see that prop's docstring) — a real full-roster auto-seed is
-                // now something the user opts into by clicking it once it's enabled, not something
-                // forced on them by a remount they never asked for.
+                // this same screen makes below.
+                // 2026-09-16, user-reported live ("ciągnie gracza za rączkę i ustawia z automatu
+                // najlepszy line-up, brak myślenia po stronie gracza"): the "Auto-fill (best fit)"
+                // button this comment used to describe is gone entirely (RotationBuilder.tsx) —
+                // setting the rotation is meant to be a real decision, not a one-click optimum.
+                // `rosterComplete` still matters here, though: `buildInitialRows` (that file's own
+                // helper) reads it to keep the INITIAL seed empty until the roster is actually
+                // full, rather than auto-assigning a still-growing roster sensibly-but-wrongly.
                 key={spanVersion}
                 roster={chosenHumanRoster}
                 rosterComplete={draftComplete}
