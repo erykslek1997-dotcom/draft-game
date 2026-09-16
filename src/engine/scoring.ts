@@ -190,11 +190,6 @@ function rescaleToFullRange(raw: number, anchors: { worst: number; best: number 
   return Math.max(0, Math.min(100, scaled));
 }
 
-/** How many of the roster's best-TAL players get averaged for `talentScore` below — matches
- * `scripts/analyzeD1HumanVote.ts`'s own validated "top5avg" metric exactly (unweighted average of
- * the 5 highest `computeTalent` values across the whole 9-man roster, not just starters). */
-const TOP_CORE_SIZE = 5;
-
 /**
  * 2026-08-05 (original), redefined 2026-08-13 per the D1 real in-person human-vote validation
  * ([[alltime_draft_game_project]] memory): the old formula — minutes-weighted average TAL across
@@ -207,32 +202,41 @@ const TOP_CORE_SIZE = 5;
  * does). Reusing `talentScore`'s existing name/slot/weight in `overall` rather than adding a
  * parallel metric — it's a strictly better answer to the exact same question ("how much real
  * talent does this roster have"), not a different question needing its own new weight.
- * Deliberately NOT minutes- or position-fit-weighted, matching the validated metric's own exact
- * shape: bench depth/position legality already have their own dedicated scores (rotationScore,
- * position eligibility itself) — this one is purely "how strong is the core."
+ *
+ * 2026-09-16, user-reported live (a real drafted team: Dave Twardzik 1976-78 as the starting PG
+ * next to peak Durant/Wade/Mourning/Rasheed Wallace — "to nie są gracze o wartości startera",
+ * ranked ABOVE Kobe+Shaq / Hakeem / Drexler+D.Robinson / Chris Paul+Anthony Davis rosters — user:
+ * "jestem pewny że chodziło o starting 5, a nie 5 najlepszych w rotacji"): re-derived from
+ * `TOP_CORE_SIZE`-of-the-whole-9-man-roster (unweighted top 5 TAL ANYWHERE, bench included) to the
+ * actual 5 tagged starters. The old shape let two truly elite complementary pieces (peak Durant 98,
+ * peak Wade 97) fully hide a legitimately inadequate starting PG (TAL 61) from this metric
+ * entirely — he never even made the "top 5" being averaged, so his own start never counted against
+ * his team at all. This wasn't a guess: a 2026-09-03 re-validation already measured this exact
+ * swap and left it unapplied pending more data —
+ *   - old (effectiveTalent, top-5-of-9):        Spearman 0.536 (D1, n=15)
+ *   - average of the 5 TAGGED starters instead: Spearman 0.700
+ * The user's live case is a concrete instance of the same gap that measurement predicted. Also
+ * folds in a starter floor (`STARTER_FLOOR_THRESHOLD`/`STARTER_FLOOR_PENALTY_PER_POINT`) —
+ * switching to a starters-only average alone still lets 1-2 outlier-elite starters largely absorb
+ * one glaringly weak one (Twardzik 61 + Durant 98 + Wade 97 + Wallace 82 + Mourning 87 still
+ * averages 85, barely below a genuine top-tier roster's ~86-89) — so a starter reading clearly
+ * below credible all-time-starter value now docks the score directly, regardless of how strong the
+ * other four are. Deliberately NOT minutes- or position-fit-weighted otherwise, matching the
+ * validated metric's own exact shape: bench depth/position legality already have their own
+ * dedicated scores (rotationScore, position eligibility itself) — this one is purely "how strong
+ * is the starting five, and is every one of them a credible starter."
  */
 // 2026-08-19: switched from raw `computeTalent` to `effectiveTalent` as part of the project-wide
 // display-vs-real unification (see that function's own docstring).
-//
-// 2026-09-03 RE-VALIDATION (the "0.82" claim was stale — TE-1 in the draft/Best-5 audit). The
-// D1 human-vote dataset IS available after all — `scripts/analyzeD1HumanVote.ts` carries all 15
-// transcribed rosters + the vote ranking (an earlier session's comment wrongly said it wasn't).
-// Re-ran it against the current engine:
-//   - `talentScore` (effectiveTalent, top-5-of-9):  Spearman 0.536
-//   - the same metric on raw `computeTalent`:        0.550   → the effectiveTalent switch cost ~0.01, not the problem
-//   - `benchDepthScore`:                             0.686   (now the strongest single axis, not this one)
-//   - average of the 5 TAGGED starters (not top-5-of-9): 0.700
-//   - `overall` (scoreTeam blend):                   0.543
-// So the docstring above's "0.82 / strongest predictor" no longer holds — it was measured on a
-// different player-dataset era (the whole scoring stack has been recalibrated many times since).
-// At n=15 the Spearman standard error is ~0.27, so these differences are noisy; NOT re-tuning the
-// blend or the top-5-vs-starters definition off this alone. Flagged for a deliberate calibration
-// session with more data. The metric's shape (unweighted mean of the roster's best 5) is unchanged.
+const STARTER_FLOOR_THRESHOLD = 70;
+const STARTER_FLOOR_PENALTY_PER_POINT = 0.6;
 export function talentScore(team: Team): number {
-  const tals = team.roster.map((player) => effectiveTalent(player)).sort((a, b) => b - a);
-  if (tals.length === 0) return 0;
-  const core = tals.slice(0, TOP_CORE_SIZE);
-  return Math.round(core.reduce((sum, t) => sum + t, 0) / core.length);
+  const starterTals = primaryStarters(team).map((entry) => effectiveTalent(entry.player));
+  if (starterTals.length === 0) return 0;
+  const average = starterTals.reduce((sum, t) => sum + t, 0) / starterTals.length;
+  const weakestStarter = Math.min(...starterTals);
+  const floorPenalty = Math.max(0, STARTER_FLOOR_THRESHOLD - weakestStarter) * STARTER_FLOOR_PENALTY_PER_POINT;
+  return Math.round(Math.max(0, Math.min(100, average - floorPenalty)));
 }
 
 /**
