@@ -15,7 +15,7 @@ import {
   canFillFromLookup,
   type CheapestLookup,
 } from './positions';
-import { pickForAi } from './aiDrafter';
+import { pickForAi, type AiDraftRuleset, type AiDraftStrategy } from './aiDrafter';
 import { mulberry32, mixSeed, randomSeed } from './rng';
 import type { DraftHistoryEntry, Team } from './types';
 
@@ -367,6 +367,19 @@ export function fastFinishDraft(state: DraftState): DraftState {
  * spans), so an AI-preferred candidate can occasionally be rejected even though another legal
  * option exists. On that rare mismatch, re-run the AI over the actual legal subset, then fall
  * back to a direct legal scan as a final defensive guard. */
+/**
+ * 2026-09-16, real 16-team AI-draft strategy mix ([[pickforai_stacked_fga_stars_bug]]) — see
+ * `AiDraftRuleset`'s own docstring in aiDrafter.ts for the full rationale. Deterministic off each
+ * team's `draftSlot` (1-16, fixed at `createInitialTeams` time) so a draft still replays exactly
+ * from its `seed`. Roughly 6/5/5 across the three named strategies.
+ */
+function strategyForDraftSlot(draftSlot: number): AiDraftStrategy {
+  const bucket = draftSlot % 3;
+  if (bucket === 2) return 'stack-stars';
+  if (bucket === 0) return 'value-hunter';
+  return 'starting-five-first';
+}
+
 function resolveAutomatedPick(state: DraftState): DraftState | null {
   const teamIdx = currentTeamIndex(state);
   const team = state.teams[teamIdx];
@@ -383,14 +396,15 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
   // the AI re-runs over the legal subset, that second lottery just draws the next value from the
   // same stream — still fully determined by the seed.
   const rng = mulberry32(mixSeed(state.seed, pickNumber));
-  const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber, rng);
+  const ruleset: AiDraftRuleset = { rosterSize: ROSTER_SIZE, capLimit: CAP_LIMIT, strategy: strategyForDraftSlot(team.draftSlot) };
+  const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber, rng, ruleset);
   const preferredState = makePick(state, preferred.id);
   if (preferredState !== state) return preferredState;
 
   const legal = available.filter((p) => isPickLegal(state, p.id));
   if (legal.length === 0) return null;
 
-  const fallback = pickForAi(team.roster, currentFgas, legal, TEAM_COUNT, pickNumber, rng);
+  const fallback = pickForAi(team.roster, currentFgas, legal, TEAM_COUNT, pickNumber, rng, ruleset);
   const fallbackState = makePick(state, fallback.id);
   if (fallbackState !== state) return fallbackState;
 

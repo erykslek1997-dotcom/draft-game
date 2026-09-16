@@ -887,6 +887,44 @@ function eliteTwoWayFrontcourtBonus(p: PlayerSpan): number {
   );
 }
 
+/**
+ * 2026-09-16, found via the strategy-mix investigation ([[pickforai_stacked_fga_stars_bug]]): the
+ * user's own sharp diagnosis after seeing Embiid-anchored teams crater under the new 'stack-stars'/
+ * 'value-hunter' strategies — "wygląda na to jakby strategia była przypisana z góry i AI skupiało
+ * się tylko na tym?" (it looks like the strategy is assigned top-down and the AI only focuses on
+ * that?) — confirmed exactly right: neither strategy (nor, on inspection, ANY existing term in
+ * this value formula) ever asks "does my roster actually have real defensive value," only
+ * positional/offensive-role signals (`NeedContext` has no defensive field at all). Two real traced
+ * rosters showed the gap directly: SGA/Embiid/Ray Allen/Kevin Love plus an offense-only bench
+ * (defenseScore 56); Durant/Embiid/Markkanen plus another offense-heavy bench (defenseScore 52) —
+ * both strategies happily stacked pure offensive talent with zero defensive counterweight, because
+ * nothing in the formula would ever have stopped them even under the OLD single-curve formula; the
+ * new strategies' cost-timing just changed which teams got exposed to the gap.
+ *
+ * A genuine team-need signal, not a strategy-specific patch — every candidate's own real
+ * `computeDefensiveTalent` is compared to the ROSTER'S current average; below
+ * `TEAM_DEFENSE_NEED_THRESHOLD` (44, this pool's own real median individual D-TAL — a team of
+ * merely-average defenders already clears it, this only fires for a genuinely below-average unit),
+ * a candidate whose own defense is ABOVE the roster's current average gets real credit,
+ * proportional to both how deficient the team is and how much better than the existing average
+ * this specific candidate is. Applies to every strategy (this was a formula-wide gap, not one
+ * strategy's alone) — 'starting-five-first' teams already have other mechanisms that partially
+ * cover for it (the starter-lock's positional variety), so this mostly changes behavior for teams
+ * whose picks would otherwise stack pure offense with no counterweight at all.
+ */
+const TEAM_DEFENSE_NEED_THRESHOLD = 60;
+const MAX_DEFENSIVE_BALANCE_BONUS = 20;
+function teamDefensiveBalanceBonus(roster: PlayerSpan[], p: PlayerSpan): number {
+  if (roster.length === 0) return 0;
+  const rosterAvgDefense = roster.reduce((sum, r) => sum + computeDefensiveTalent(r), 0) / roster.length;
+  if (rosterAvgDefense >= TEAM_DEFENSE_NEED_THRESHOLD) return 0;
+  const candidateDefense = computeDefensiveTalent(p);
+  if (candidateDefense <= rosterAvgDefense) return 0;
+  const deficit = Math.min(1, (TEAM_DEFENSE_NEED_THRESHOLD - rosterAvgDefense) / TEAM_DEFENSE_NEED_THRESHOLD);
+  const candidateEdge = Math.min(1, (candidateDefense - rosterAvgDefense) / 40);
+  return MAX_DEFENSIVE_BALANCE_BONUS * deficit * candidateEdge;
+}
+
 function eliteTwoWayPeakBonus(p: PlayerSpan): number {
   const talent = effectiveTalent(p);
   const offense = computeOffensiveTalent(p);
@@ -1356,9 +1394,39 @@ function uniquePlayerSpans(ranked: PlayerSpan[]): PlayerSpan[] {
  * existing caller omits this and gets byte-identical behavior to before (verified via
  * `testAiPickRegression.ts`'s 30 pinned picks, unchanged) — this is a purely additive default,
  * not a behavior change to the real 9-man/100.9-FGA draft. */
+/**
+ * 2026-09-16, user's own follow-up on the Hakeem/Jokić/Magic pickForAi investigation
+ * ([[pickforai_stacked_fga_stars_bug]]): real human drafters use genuinely different strategies —
+ * some fill the starting five first then go for role players, some stack 2-3 stars early then
+ * economize (finishing the starting five last, off the leftovers), others stay cheap/value-driven
+ * early specifically to preserve cap room for a high-FGA star that inevitably survives past other
+ * cap-conscious drafters ("zawsze zostanie jakiś Westbrook"). Two single-lever fixes earlier that
+ * same session (a reserve-filter elite-talent relief; a flat post-star-pick fgaPenalty "cooldown")
+ * both measured as net-negative redistributions in a 10-seed win-rate harness — helping some
+ * Greatest-peak anchors at other anchors' direct expense, since a global scalar knob just
+ * reallocates who gets the same finite pool of good cheap complementary players. This mixes
+ * DISTINCT team-level draft personalities into the same 16-team field instead, so the underlying
+ * pool of "who goes for value early vs late" varies by team rather than by one global setting —
+ * the "Value Hunter" teams are what actually create a realistic Westbrook-survives-to-round-4
+ * dynamic for anyone (not just Greatest-peak anchors) to exploit.
+ *
+ * `'starting-five-first'` is the exact pre-existing default behavior (today's `BASE_FGA_PENALTY`/
+ * `MAX_FGA_PENALTY`, `DRAFT_EXPERIMENT.starterFiveLock` unchanged) — not a new mechanism, just
+ * named for what it already does. `'stack-stars'` disables the starter-five lock (pure
+ * best-available regardless of position, backfilling the starting five last off the leftovers)
+ * and steepens the cost curve (very cheap early, very expensive once pressure mounts).
+ * `'value-hunter'` keeps the starter-five lock but INVERTS the curve — expensive from pick 1
+ * (immediately cost-conscious), cheap once pressure would normally be highest, so a team that
+ * banked cap room early is willing to spend it on a star who fell further than expected.
+ */
+export type AiDraftStrategy = 'starting-five-first' | 'stack-stars' | 'value-hunter';
+
 export interface AiDraftRuleset {
   rosterSize: number;
   capLimit: number;
+  /** Omitted (every existing caller) is byte-identical to today's behavior — see this type's own
+   * docstring. Only `draft.ts`'s real 16-team AI draft assigns one per team, by `draftSlot`. */
+  strategy?: AiDraftStrategy;
 }
 
 export function pickForAi(
@@ -1392,7 +1460,17 @@ export function pickForAi(
   const budgetPressure = Math.max(0, Math.min(1, 1 - budgetPerSlot / comfortableBudgetPerSlot));
   const slotsLeftPressure = Math.max(0, Math.min(1, (COMFORT_SLOTS_LEFT - slotsLeft) / COMFORT_SLOTS_LEFT));
   const pressure = Math.max(budgetPressure, slotsLeftPressure);
-  const fgaPenalty = BASE_FGA_PENALTY + pressure * (MAX_FGA_PENALTY - BASE_FGA_PENALTY);
+  // See `AiDraftRuleset`'s own docstring for the full rationale. `undefined`/`'starting-five-
+  // first'` is byte-identical to the pre-existing single curve; the other two strategies swap in a
+  // different (for 'value-hunter', inverted) BASE/MAX pair for this same formula shape.
+  const strategyFgaCurve: Record<AiDraftStrategy, { base: number; max: number }> = {
+    'starting-five-first': { base: BASE_FGA_PENALTY, max: MAX_FGA_PENALTY },
+    'stack-stars': { base: 0.2, max: 1.5 },
+    'value-hunter': { base: 1.1, max: 0.5 },
+  };
+  const { base: strategyBaseFgaPenalty, max: strategyMaxFgaPenalty } =
+    strategyFgaCurve[ruleset?.strategy ?? 'starting-five-first'];
+  const fgaPenalty = strategyBaseFgaPenalty + pressure * (strategyMaxFgaPenalty - strategyBaseFgaPenalty);
   const needRampProgress = Math.min(1, roster.length / NEED_RAMP_ROSTER_SIZE);
 
   // A DNP-tier span (maxSustainableMinutes <= 0 — the player physically couldn't stay on the
@@ -1481,9 +1559,12 @@ export function pickForAi(
   // those same slots — the user's own mental model ("po 5 pickach mieć starting5").
   const STARTER_LOCK_ROSTER_SIZE = STARTER_SLOTS.length;
   const MINIMUM_CREDIBLE_STARTER_TALENT = 55;
+  // 'stack-stars' (see `AiDraftRuleset`'s own docstring) deliberately skips this lock — pure
+  // best-available regardless of position, backfilling the starting five last off the leftovers.
+  const starterFiveLockActive = ruleset?.strategy === 'stack-stars' ? false : DRAFT_EXPERIMENT.starterFiveLock;
   let phaseFilteredCandidates = planningCandidates;
   if (
-    DRAFT_EXPERIMENT.starterFiveLock &&
+    starterFiveLockActive &&
     roster.length >= NEED_RAMP_ROSTER_SIZE - 1 &&
     roster.length < STARTER_LOCK_ROSTER_SIZE &&
     needs.emptySlots.length > 0
@@ -1776,6 +1857,7 @@ export function pickForAi(
       earlyCoreRolePenalty: -earlyCoreRolePenalty(p),
       greatestPeakTierBonus: greatestPeakTierBonus(p),
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
+      teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
