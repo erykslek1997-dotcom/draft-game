@@ -3474,18 +3474,25 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
    Draft tab renders ALONE (tab-switched, no Team column beside it — same threshold `.at-merge-row`
    itself gates on above), so the flat cap just left dead, un-absorbed space to the right on any
    wide-but-sub-1600px window — exactly what the user then reported live ("w zależności od
-   szerokości zostaje empty space po prawej"). Cap now only applies inside that same media query;
-   below it the grid uses the full width it's alone on. `auto-fit` (not `auto-fill`) so an
-   under-full last row's unused tracks collapse instead of reserving dead width, on either side of
-   the breakpoint. Left-aligned (no `margin: auto`) so it stays flush under the search bar above it
-   rather than centering into its own separate island. */
+   szerokości zostaje empty space po prawej"). Second fix scoped the cap to that same media query —
+   fine on a normal wide desktop (Draft's own ~50% flex share lands close to 900px anyway), but a
+   genuinely ultra-wide monitor gives `.at-merge-draft` a much bigger flex share than 900px, and the
+   flat cap doesn't grow with it — exactly the SAME dead-space complaint again, live on ultra-wide
+   ("nadal zostaje miejsce po prawej stronie w sekcji draft"), just at a bigger breakpoint. Capping
+   the CARD's own max width instead of the grid's fixes both directions at once: `auto-fit` still
+   adds more columns as the container actually grows (so it always fills real width, no dead zone
+   at any monitor size), but no single column can grow past 190px, so it never regresses to the
+   original "10-12 skinny 150px columns" complaint either — a wider container just means more ~5-7
+   comfortably-sized columns instead of nothing. `auto-fit` (not `auto-fill`) so an under-full last
+   row's unused tracks collapse instead of reserving dead width. Left-aligned (no `margin: auto`) so
+   it stays flush under the search bar above it rather than centering into its own separate island. */
 .at-player-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
 }
 @media (min-width: 1600px) {
-  .at-player-cards { max-width: 900px; }
+  .at-player-cards { grid-template-columns: repeat(auto-fit, minmax(150px, 190px)); }
 }
 .at-player-card {
   display: flex;
