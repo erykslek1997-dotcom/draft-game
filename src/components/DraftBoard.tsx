@@ -19,6 +19,8 @@ import {
   defensiveGrade,
   offensivePortabilityGrade,
   defensivePortabilityGrade,
+  spacingGrade,
+  durabilityGrade,
   overallTierForSpan,
   displayNumberForSpan,
   tierRank,
@@ -43,6 +45,11 @@ import type { FeedbackEntry } from './FeedbackToggle';
  * players; anyone past it is reachable via search or a position filter (both land well under the
  * cap). Rendering all ~720 as expandable accordion rows was ~11s per keystroke. */
 const DRAFT_LIST_LIMIT = 140;
+/** 2026-09-14, user-reported live: how many of those (already-capped) rows actually show at once
+ * before "See more" is needed — a separate, much smaller number purely for not overwhelming the
+ * player with a wall of cards, independent of `DRAFT_LIST_LIMIT`'s own performance reasoning. */
+const DRAFT_VISIBLE_DEFAULT = 30;
+const DRAFT_VISIBLE_STEP = 30;
 
 interface Props {
   state: DraftState;
@@ -510,14 +517,42 @@ const TAG_LEGEND: ReadonlyArray<{ name: string; tiers: string[]; text: string }>
   { name: 'Talent (TAL)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "This player's own overall value — scoring, efficiency, playmaking and defensive activity blended into one box-score-derived number (a transparent stand-in for models like Basketball-Index's O-LEBRON). Named tiers from Cigarette Butt to GOAT, off the player's single best-TAL span." },
   { name: 'Offense (OFF) / Defense (DEF)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'The same idea as Talent, split into its offense-only and defense-only halves. Letter grade S–F — S is reserved for the 3 best in the current pool.' },
   { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "A different question from Talent/Offense/Defense: not how good this player is, but how well their game travels next to another ball-dominant star — an efficient off-ball scorer or a versatile defender ports well even at a modest overall Talent, and a ball-dominant star can port poorly despite elite Talent. Same S–F letter-grade scale." },
-  { name: '3PT (SPC)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How much this player's outside shooting forces a defense to respect the perimeter — real, era-scaled 3-point volume and accuracy. Non-shooter to Walking gravity." },
-  { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'DNP to Ironman — real share of possible team games actually played in this span.' },
+  { name: '3PT (SPC)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How much this player's outside shooting forces a defense to respect the perimeter — real, era-scaled 3-point volume and accuracy. Same S–F letter-grade scale." },
+  { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "Real share of possible team games actually played in this span. Same S–F letter-grade scale." },
   // 2026-08-19, user's explicit ask ("hide playoffs and make everything in one line"): the
   // Playoffs entry used to sit alone on its own short second row (5 cards fit one row, the 6th
   // wrapped) — dropped so the remaining 5 fit one line cleanly, per the same ask. The actual
   // Playoffs badge/column elsewhere in this file (the ▲/▼ riser/dropper tag) is untouched — this
   // only removes its glossary entry.
 ];
+
+// 2026-09-14, user-reported live ("za dużo tego na desktopie... połączmy wszystko w jeden ekran"):
+// on a genuinely wide screen (now that `#root` itself spans the full viewport instead of a boxed
+// ~1126px card — see index.css's own comment on that removal), the Draft/Team split left a huge
+// blank column next to the "Your Five" sidebar while the actual Team roster + Rotation minutes
+// still needed a separate tab click. This hook is what lets DraftBoard's render below switch, at
+// runtime, into showing the Draft workspace and the Team column side by side instead of picking
+// one via `activeTab` — see the `at-merge-row` wrapper further down for how it's used. A real
+// `matchMedia` listener (not just a one-time check) so resizing the actual browser window flips
+// the layout live, matching how every other responsive rule in this file already behaves via CSS
+// alone; this one just also needs to gate which panels are MOUNTED, which CSS alone can't do for
+// JSX that isn't in the DOM at all when its tab isn't active.
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = () => setMatches(mql.matches);
+    handler();
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
+// Threshold picked wide enough that a normal 1280-1440px laptop still gets the familiar single-
+// panel tabbed view (Team's roster table + Rotation's own `.rotation-builder` card both want real
+// room — see their own CSS max-widths — a half-share of anything narrower would cramp both), while
+// an actual wide desktop monitor gets the merged two-column layout the user asked for.
+const WIDE_LAYOUT_QUERY = '(min-width: 1600px)';
 
 export default function DraftBoard({
   state,
@@ -533,6 +568,21 @@ export default function DraftBoard({
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
   const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL'>('ALL');
+  // 2026-09-14, user-reported live ("rzucamy ponad 100 nazwisk na raz, za dużo informacji dla
+  // użytkownika na raz" — throwing 100+ names at once is too much information at once): the
+  // DRAFT_LIST_LIMIT=140 cap a few lines down exists for RENDER PERFORMANCE (see its own
+  // docstring — an uncapped tier-sorted "ALL" view was ~11s per keystroke), not for how much a
+  // person can actually scan at once, and this session's earlier "make it fill the whole screen"
+  // pass only made that worse (more columns fit, same huge count). `visibleCount` is a second,
+  // independent cap purely for how many of the already-computed `groups` get rendered — "See
+  // more" below raises it in one comfortable-screenful steps; switching the search text or
+  // position pill (an intentional re-browse) drops it back to the default via the effect below,
+  // so a leftover expanded count from one search doesn't carry over and immediately dump a wall of
+  // cards under the next one.
+  const [visibleCount, setVisibleCount] = useState(DRAFT_VISIBLE_DEFAULT);
+  useEffect(() => {
+    setVisibleCount(DRAFT_VISIBLE_DEFAULT);
+  }, [search, selectedPosition]);
   const [fgaMin, setFgaMin] = useState('0');
   const [fgaMax, setFgaMax] = useState('30');
   // 2026-09-11, user-reported live ("zacina się jak filtrujemy fga") — every keystroke here used
@@ -570,6 +620,7 @@ export default function DraftBoard({
     gridScrollRef.current?.scrollBy({ left: direction * 280, behavior: 'smooth' });
   }
   const [activeTab, setActiveTab] = useState<AtTab>('draft');
+  const isWideLayout = useMediaQuery(WIDE_LAYOUT_QUERY);
   const [showLegend, setShowLegend] = useState(false);
   // Defaults open in Commissioner Mode: every pick needs its reasoning box reachable right after
   // it's made, across up to 144 picks — an extra click to reveal it every single time would be a
@@ -905,6 +956,23 @@ export default function DraftBoard({
   // anyway; capping to the top ~140 and telling the user to search / pick a position for the
   // rest matches the Cap Sheet (which slices at 120) and is instant. Any real search or position
   // filter lands well under the cap.
+  // 2026-09-14, user-reported live ("po kilku rundach powinno dobierać widocznych graczy pod
+  // brakujące pozycje" — after a few rounds it should pick the visible players for the missing
+  // positions): once the human has a few picks in AND isn't already narrowing by position/name
+  // (that's the user's own explicit override — never second-guess it), players whose career
+  // position (the same one `careerPosition` already uses for the pill filter) still has an open
+  // starter slot sort ahead of everyone else, quality-ordered same as before WITHIN each of the
+  // two groups. `humanAssignment` (above) already answers "which starter slots are filled" via the
+  // exact same `bestPrimaryAssignment` the Draft sidebar's own "Your Five" card reads — reused
+  // rather than a second, possibly-divergent notion of "need". 3+ picks ("a few rounds") avoids
+  // biasing the very first look at the board, where every slot is open and the bias would be a
+  // no-op busywork pass over the whole pool anyway.
+  const openStarterPositions = useMemo(
+    () => new Set(STARTER_SLOTS.filter((slot) => !humanAssignment[slot])),
+    [humanAssignment],
+  );
+  const needBiasActive = selectedPosition === 'ALL' && !search && humanTeam.roster.length >= 3 && openStarterPositions.size > 0;
+
   const { groups, totalMatched } = useMemo(() => {
     const q = search.toLowerCase();
     const matched = enrichedGroups
@@ -912,6 +980,10 @@ export default function DraftBoard({
       .filter((g) => (selectedPosition !== 'ALL' ? careerPosition(g) === selectedPosition : true))
       .filter((g) => g.playerName.toLowerCase().includes(q))
       .sort((a, b) => {
+        if (needBiasActive) {
+          const needDiff = Number(openStarterPositions.has(careerPosition(b))) - Number(openStarterPositions.has(careerPosition(a)));
+          if (needDiff !== 0) return needDiff;
+        }
         if (mode === 'player') {
           // 2026-08-19, user's explicit ask ("sort players by their tier"): the Tier badge (not a
           // raw number) is the one quality signal Player Mode actually shows on this row — sorting
@@ -933,7 +1005,7 @@ export default function DraftBoard({
       });
     return { groups: matched.slice(0, DRAFT_LIST_LIMIT), totalMatched: matched.length };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enrichedGroups, state.draftedIds, selectedPosition, search, mode]);
+  }, [enrichedGroups, state.draftedIds, selectedPosition, search, mode, needBiasActive, openStarterPositions]);
 
   function toggleExpand(name: string) {
     setExpanded((prev) => {
@@ -1088,8 +1160,13 @@ export default function DraftBoard({
         </div>
       )}
 
-      {activeTab === 'draft' && (
-        <div className="at-card">
+      {/* 2026-09-14, user-reported live: wraps the Draft workspace card together with the Team
+          column below so `.at-merge-row`'s own CSS (App.css) can lay them out side by side once
+          `isWideLayout` is true — narrow/default screens get `display: block` from that same rule,
+          so this wrapper is otherwise invisible to the existing single-column tabbed flow. */}
+      <div className="at-merge-row">
+      {(isWideLayout || activeTab === 'draft') && (
+        <div className="at-card at-merge-draft">
           <h1 className="at-panel-title at-cond">Draft</h1>
           {/* 2026-08-16, user's own ask: a CPU turn used to hide this whole panel behind a full
               "X is thinking…" placeholder — the player list is browsable at all times now
@@ -1304,7 +1381,7 @@ export default function DraftBoard({
                   mode only — developer/tester mode keeps the dense table above unchanged. */}
               {!showJudgeMetrics && (
                 <div className="at-player-cards">
-                  {groups.map((group) => {
+                  {groups.slice(0, visibleCount).map((group) => {
                     const best = group.bestTalentSpan;
                     const bestLegal = canPick && isPickLegal(state, best.id);
                     // 2026-09-12, user-reported live (Andris Biedriņš, a real 0.9-shot span on the
@@ -1404,6 +1481,22 @@ export default function DraftBoard({
                 );
               })()}
 
+              {/* 2026-09-14, user-reported live: the primary fix for "too many names at once" —
+                  `groups` itself can already hold up to `DRAFT_LIST_LIMIT` (140, a render-
+                  performance cap, see its own docstring), but only `visibleCount` of them are
+                  actually rendered above. Player mode only, same gate as the card grid itself
+                  (`visibleCount` isn't read by developer mode's own accordion list). */}
+              {!showJudgeMetrics && visibleCount < groups.length && (
+                <button
+                  type="button"
+                  className="at-legend-toggle"
+                  style={{ marginBottom: 4 }}
+                  onClick={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))}
+                >
+                  See {Math.min(DRAFT_VISIBLE_STEP, groups.length - visibleCount)} more (
+                  {groups.length - visibleCount} left)
+                </button>
+              )}
               {totalMatched > groups.length && (
                 <p className="at-caption at-draft-more-note">
                   Showing the top {groups.length} of {totalMatched} — search a name or pick a
@@ -1445,7 +1538,16 @@ export default function DraftBoard({
               to the player cards — position-organized (same `bestPrimaryAssignment` search the
               Rotation cards use), read-only here on purpose. Span-swap and rotation-minute editing
               stay on the Team tab this pass — see `humanAssignment`'s own comment for the full
-              scoping reasoning. */}
+              scoping reasoning.
+              2026-09-14, user-reported live ("na desktopie można usunąć your five jeśli obok jest
+              zakładka team"): at `isWideLayout` the Team column already sits right beside this one
+              (`.at-merge-row`, App.css) with the same roster identity AND the same cap-remaining
+              meter (its own `.at-cap-meter`) — this whole card is a pure duplicate there, not a
+              second read of different information, so it's dropped entirely on wide screens rather
+              than just trimmed. Narrow/tab-mode keeps it exactly as before: the Team tab isn't
+              simultaneously visible there, so this is the only roster glance available while
+              browsing the player pool. */}
+          {!isWideLayout && (
           <aside className="at-draft-sidebar">
             <div className="at-draft-sidebar-head">
               <h2 className="at-cond">Your Five</h2>
@@ -1511,6 +1613,10 @@ export default function DraftBoard({
                 </div>
               ) : null;
             })()}
+            {/* 2026-09-14: this whole aside only ever renders when `!isWideLayout` now (see its
+                own opening condition above), so the "Team tab" jump link below is always pointing
+                at a real, separate click target — no longer needs its own redundant `isWideLayout`
+                check now that the parent already gates it. */}
             <p className="at-draft-sidebar-hint">
               Span swaps and rotation minutes live on the{' '}
               <button type="button" className="at-inline-link" onClick={() => setActiveTab('team')}>
@@ -1519,11 +1625,18 @@ export default function DraftBoard({
               .
             </p>
           </aside>
+          )}
         </div>
         </div>
       )}
 
-      {activeTab === 'team' && (
+      {/* 2026-09-14, user-reported live: closes the Draft-card `if`/opens the Team column that
+          sits beside it — the Team roster table and the always-mounted Rotation card below both
+          move inside this one wrapper so `.at-merge-row`'s flex layout (App.css) treats "Draft" and
+          "Team + Rotation" as its two side-by-side items on a wide screen; on a narrow one this is
+          just an unstyled div and everything still stacks exactly as it did before this pass. */}
+      <div className="at-merge-team-col">
+      {(isWideLayout || activeTab === 'team') && (
         <div className="at-card" style={{ marginBottom: 16 }}>
           <h1 className="at-panel-title at-cond">Team</h1>
           <div className={`at-cap-meter${isViewingHumanRoster && chosenRosterOverCap ? ' at-cap-meter--over' : ''}`}>
@@ -1539,7 +1652,12 @@ export default function DraftBoard({
             </span>
           </div>
           {teamForPanels.roster.length === 0 ? (
-            <div className="at-placeholder">No picks yet — head to the Draft tab.</div>
+            <div className="at-placeholder">
+              {/* 2026-09-14, user-reported live: at `isWideLayout` this panel sits right next to
+                  the Draft column with no separate tab to "head to" any more — see the top of this
+                  file's own `isWideLayout` docstring. */}
+              {isWideLayout ? 'No picks yet — draft your first player on the left.' : 'No picks yet — head to the Draft tab.'}
+            </div>
           ) : (
             <table className="at-roster-table">
               <thead>
@@ -1562,9 +1680,17 @@ export default function DraftBoard({
                       you already own ("you kind of drafting blindly but you can see what did you
                       draft"). Once a player is actually on the roster, this is the whole point of
                       the Team tab, not a spoiler.
-                      2026-08-19 follow-up, same ask extended to Spacing/Durability — the same two
-                      tier badges (`SpacingTierBadge`/`DurabilityTierBadge`) already used on the
-                      Draft tab, not new mechanics. */}
+                      2026-08-19 follow-up, same ask extended to Spacing/Durability.
+                      2026-09-14, user-reported live ("niech wszystko będzie w skali S-F"): SPC/DUR
+                      switched from the named-text `SpacingTierBadge`/`DurabilityTierBadge` pills to
+                      the same `AtGrade` S-F letter every other column here already uses — see
+                      `spacingGrade`/`durabilityGrade` in grades.ts for the two different
+                      calibration stories behind that. `SpacingTierBadge`/`DurabilityTierBadge`
+                      themselves are untouched exports, not deleted (`DraftPoolBrowser.tsx` on the
+                      `catch-up-2026-08-14` branch still uses them), but this was their last call
+                      site on `player-skeleton` — the TAG_LEGEND entries below were updated to match
+                      what's actually on screen here now instead of describing a named-tier scale
+                      nothing on this branch still shows. */}
                   <th style={{ textAlign: 'center' }}>Off</th>
                   <th style={{ textAlign: 'center' }}>Def</th>
                   <th style={{ textAlign: 'center' }}>O-POR</th>
@@ -1595,7 +1721,18 @@ export default function DraftBoard({
                       <td>
                         <span className="pos-pill">{p.primaryPosition}</span>
                       </td>
-                      <td>{p.playerName}</td>
+                      <td>
+                        {/* 2026-09-14, user-reported live ("niech wszystko będzie w skali S-F i
+                            wtedy zrobimy miejsce na facecardy"): SPC/DUR moving off wide named-text
+                            badges onto the same compact `AtGrade` pill every other column already
+                            uses (below) freed real width in this row — spent here, on the same
+                            `Face` avatar the Draft tab's own cards/sidebar/Rotation rows already
+                            use, so a roster of names isn't the only unillustrated table in the app. */}
+                        <span className="at-roster-player-cell">
+                          <Face name={p.playerName} />
+                          {p.playerName}
+                        </span>
+                      </td>
                       <td>
                         {spanOpt ? (
                           <select
@@ -1646,10 +1783,10 @@ export default function DraftBoard({
                         <AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(effective))} />
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <SpacingTierBadge span={effective} />
+                        <AtGrade grade={spacingGrade(computeSpacing(effective))} />
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <DurabilityTierBadge span={effective} />
+                        <AtGrade grade={durabilityGrade(computeDurability(effective))} />
                       </td>
                       <td className="at-fga-num">{effective.fga.toFixed(1)}</td>
                     </tr>
@@ -1711,8 +1848,11 @@ export default function DraftBoard({
           fix above addresses a real, separate 9th-pick discontinuity) — you cannot even DRAFT the
           next player without leaving this tab, so every single "set some minutes, draft, come
           back" cycle hit it. Always rendered now; `display: none` hides it instead of unmounting
-          it, so `RotationBuilder`'s own `rows` state survives every tab switch untouched. */}
-      <div className="at-card" style={activeTab === 'team' ? undefined : { display: 'none' }}>
+          it, so `RotationBuilder`'s own `rows` state survives every tab switch untouched.
+          2026-09-14: `isWideLayout` added to this same condition — on a wide screen this card sits
+          permanently visible in the merged Team column (see `.at-merge-team-col` above), same
+          "mounted, just hidden" shape this already used for the tab case. */}
+      <div className="at-card" style={(isWideLayout || activeTab === 'team') ? undefined : { display: 'none' }}>
           <h1 className="at-panel-title at-cond">Rotation</h1>
           {humanTeam.roster.length === 0 ? (
             <div className="at-placeholder">
@@ -1753,6 +1893,8 @@ export default function DraftBoard({
               />
             </>
           )}
+      </div>
+      </div>
       </div>
     </div>
   );

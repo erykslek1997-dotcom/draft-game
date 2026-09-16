@@ -71,11 +71,9 @@
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   text-align: center;
-  border-inline: 1px solid var(--border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
@@ -84,6 +82,13 @@
 
 body {
   margin: 0;
+  /* Every real screen in this app renders inside `.at-shell`, which is "fixed dark always" by its
+     own documented design decision (App.css, ignores `prefers-color-scheme` on purpose). #root no
+     longer boxes that shell into a fixed-width centered card (see #root above), so on a short
+     screen (e.g. the intro) or a wide viewport, the page background behind the shell used to show
+     through as a stray light-mode-white halo. Pinning it to the same dark tone as `--at-paper`
+     keeps the page reading as one full-bleed dark app instead of a card floating on white. */
+  background: #0b0c0f;
 }
 
 h1,

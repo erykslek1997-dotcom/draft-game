@@ -758,6 +758,39 @@ select {
   margin: 0 auto;
 }
 
+/* 2026-09-14, user-reported live ("font tutaj nie pasuje do reszty"): RotationBuilder predates
+   the NBA-board redesign (see `.at-shell`'s own comment above on why it and ResultsScreen only
+   got their COLOR tokens aliased, not a typography pass) — its `<h2>`/intro `<p>` were still
+   plain index.css defaults (weight 500, loose -0.24px tracking, sentence case), sitting directly
+   under the board's own "ROTATION" `.at-panel-title` (bold/uppercase/tracked `.at-cond`), which
+   read as two different typefaces even though both are actually `var(--sans)`. Restyled to the
+   same small bold-uppercase-tracked label language every other card/table heading on the board
+   already uses (`.at-draft-sidebar-bench-label`, `.at-lottery-sub`, table `th`s, etc.) instead of
+   the untouched legacy heading styles. `h3` (the "Bench" sub-header further down) gets the exact
+   same treatment as `.at-draft-sidebar-bench-label`, since it's the same "Bench" concept. */
+.rotation-builder h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--at-ink, var(--text-h));
+  margin: 0 0 8px;
+}
+.rotation-builder > p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--at-ink-soft, var(--text));
+  margin: 0 0 16px;
+}
+.rotation-builder h3 {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint, var(--text));
+  margin: 0 0 8px;
+}
+
 /* 2026-09-12, user-reported live (auto-fill smearing one drafted player across two starter
    slots) — shown only while `rosterComplete` is false, next to the now-disabled auto-fill button. */
 .rotation-incomplete-hint {
@@ -1618,21 +1651,51 @@ select {
   margin: 0 auto;
   /* `.at-shell` (now always applied alongside this class — see ResultsScreen.tsx) resets its own
      padding to 0 since DraftBoard.tsx's children (`.at-card`/`.at-topbar`) each carry their own —
-     this screen's children mostly do too (`.team-result`, `.left-on-board`, etc. are all their
+     this screen's children mostly do too (`.team-result`, `.season-sim-panel`, etc. are all their
      own bordered boxes), but the outer edge still needs some breathing room against the dark
      rounded card. */
   padding: 18px 20px 24px;
 }
 .results-screen > .results-hero { order: -1; }
-.results-screen > h2,
-.results-screen > .results-section-title { order: 0; }
-.results-screen > .team-result { order: 5; width: 100%; }
-.results-screen > .team-result.is-human-team { order: 1; }
-.results-screen > .matchup-matrix-section { order: 2; }
-.results-screen > .season-sim-panel { order: 3; }
-.results-screen > .expand-all-controls { order: 4; }
-.results-screen > .left-on-board { order: 6; }
 .results-screen > .results-actions { order: 7; }
+/* 2026-09-14, user-reported live, TWICE. First pass ("ogromnie dużo miejsca na dużym ekranie,
+   można zrobić cały dashboard") put the matrix + season sim in a persistent sidebar next to the
+   team-card list. Second pass, against a real screenshot ("jesteśmy w stanie zmieścić wszystkie
+   informacje na samej górze, nie widzę sensu w rozbijaniu tego" — we can fit it all at the top, no
+   point splitting this): that sidebar cramped the matrix into far less width than its own
+   `.matchup-matrix-table` 760px floor wants, AND ran out of content long before the 16-card list
+   beside it did, reading as an unbalanced split rather than a real dashboard. `.results-top-panels`
+   (ResultsScreen.tsx) replaces it — matrix + season sim side by side in ONE full-width band right
+   under the hero, each with real room, and the team-card list goes back to full width below since
+   there's no second column competing with it any more. `order` still places everything below —
+   `display: contents` on `.results-top-panels` below the dashboard breakpoint makes it invisible to
+   layout, so its two children become real flex ITEMS of `.results-screen` itself, and these same
+   `order` values keep placing them (`order` always resolves against whichever REAL flex container
+   is actually an item's parent — `.results-top-panels` once it's a real flex row at/above the
+   breakpoint, `.results-screen` itself below it — no separate wide-mode rules needed either way). */
+.results-screen .results-section-title { order: 0; }
+.results-screen .team-result { order: 5; width: 100%; }
+.results-screen .team-result.is-human-team { order: 1; }
+.results-screen .matchup-matrix-section { order: 2; }
+.results-screen .season-sim-panel { order: 3; }
+.results-screen .expand-all-controls { order: 4; }
+.results-top-panels {
+  display: contents;
+}
+@media (min-width: 1300px) {
+  .results-screen { max-width: 1500px; }
+  .results-top-panels { display: flex; align-items: flex-start; gap: 20px; margin-bottom: 16px; }
+  /* The matrix wants the lion's share — `min-width: 0` lets it shrink below its own table's
+     760px floor when the viewport is tight rather than forcing this whole row wider than
+     `.results-screen`'s own max-width (same reasoning as the sidebar version this replaced: a flex
+     item's AUTOMATIC minimum size is its content's min-content width, not its `flex` shorthand,
+     unless `min-width: 0` removes that floor — `.matchup-matrix-scroll { overflow-x: auto }`,
+     unchanged, takes over showing whatever doesn't fit). Season sim is comparatively narrow content
+     (a 5-column standings table, or a playoff bracket) — a moderate fixed share reads better than
+     stretching it to match the matrix's own width. */
+  .results-top-panels > .matchup-matrix-section { flex: 1 1 0; min-width: 0; margin: 0; }
+  .results-top-panels > .season-sim-panel { flex: 0 0 420px; }
+}
 
 /* 2026-09-09: the payoff header. The player came back to this screen to see how THEIR roster did —
    this block says it in one glance (finish position, the Final Power Ranking number, title odds,
@@ -1756,6 +1819,41 @@ select {
   color: var(--at-ink-soft);
 }
 .results-hero-identity b { color: var(--at-ink); font-weight: 700; }
+/* 2026-09-14, DRAFT v3 — see this row's own JSX comment (ResultsScreen.tsx) for the full "why".
+   v1 drew direct criticism ("myślę że stać cię na kilka razy lepszy projekt"); v2 fixed the visual
+   weight but was still, per the follow-up ask, "bardzo skrócona wersja" of a real dashboard. v3
+   gives each labelled half real width to hold its now-bigger content (a 2-column MetricBar
+   breakdown; two face-card rows, Starting five + Bench) instead of shrink-wrapping to content —
+   `flex-basis` on both so they wrap to full width individually well before either gets squeezed
+   narrow. Top-aligned, not centered — the two halves are genuinely different heights. */
+.results-hero-dashboard {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px 28px;
+  margin: 4px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.results-hero-scores { display: flex; flex-direction: column; gap: 8px; flex: 1 1 400px; min-width: 0; }
+.results-hero-scores-row { display: flex; gap: 6px; }
+/* Bumped up from the compact header-strip size `.score-chip` defaults to (same move
+   `.subscores .score-chip` already makes for its own, equally prominent context) — this is one of
+   two headline halves of the hero now, not a footnote. */
+.results-hero-dashboard .score-chip {
+  padding: 4px 10px 5px;
+  border-radius: 8px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.22);
+}
+.results-hero-dashboard .score-chip-value { font-size: 15px; font-variant-numeric: tabular-nums; }
+.results-hero-bars { margin-top: 2px; }
+.results-hero-rotation { display: flex; flex-direction: column; gap: 12px; flex: 1 1 360px; min-width: 0; }
+/* `.share-modal-face-group`'s own `margin-top: 10px` is meant for stacking under OTHER modal
+   content above it — here the two groups (Starting five, Bench) are this column's only content,
+   spaced by its own `gap` instead, so the first group doesn't carry a redundant top offset. */
+.results-hero-rotation .share-modal-face-group { margin-top: 0; }
+.results-hero-face-row { justify-content: flex-start; }
 /* 2026-09-11, Scouting Report finding: every competitor treats "share this" as part of the
    payoff (Share result / Challenge a friend); this screen had no path from seeing a result to
    sending it to the group chat at all. Clipboard-only — no share-sheet/backend dependency, which
@@ -1974,6 +2072,10 @@ select {
   .results-hero { grid-template-columns: 1fr; }
   .results-hero-stats { justify-content: flex-start; }
   .results-hero-stat { text-align: left; }
+  /* Below this width `.results-hero-rotation`'s own `flex: 1` only had a narrow leftover sliver
+     next to the fixed-width score-chip column to lay 88px player cards into — stack the two
+     labelled halves instead, each then getting the full row width. */
+  .results-hero-dashboard { flex-direction: column; align-items: stretch; }
 }
 
 /* 2026-08-14, results-screen redesign: a 6-band amber ramp for TEAM-level 0-100 scores
@@ -2077,15 +2179,11 @@ select {
 .team-result-body > .subscores,
 .team-result-body > .identity-chip-row,
 .team-result-body > .net-rating-projection,
-.team-result-body > .historical-challenges-panel,
-.team-result-body > .what-if-panel,
 .team-result-body > .notes,
 .team-result-body > .draft-order { flex: 0 0 100%; }
 .team-result-body > .subscores,
 .team-result-body > .identity-chip-row { order: 0; }
-.team-result-body > .net-rating-projection,
-.team-result-body > .historical-challenges-panel,
-.team-result-body > .what-if-panel { order: 2; }
+.team-result-body > .net-rating-projection { order: 2; }
 .team-result-body > .notes,
 .team-result-body > .draft-order { order: 4; }
 .team-result-body > details.fit-v2-shadow-panel {
@@ -2131,9 +2229,7 @@ select {
 .team-result-body > .rotation-panel { order: 1; }
 .team-result-body > .team-analysis-section { order: 2; }
 .team-result-body > .championship-section { order: 3; }
-.team-result-body > .historical-challenges-panel { order: 4; }
 .team-result-body > .draft-order { order: 5; }
-.team-result-body > .what-if-panel { order: 6; }
 
 /* 2026-09-09: six identical grey bars gave the drill-down no landmarks. A 3px colour rail on the
    summary — one hue per section kind — lets the eye jump straight to the one it wants without
@@ -2496,22 +2592,6 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 }
 .player-talent { color: var(--muted); font-weight: 600; }
 
-.left-on-board-collapsed {
-  margin-top: 1rem;
-  font-size: 0.85rem;
-}
-.left-on-board-collapsed summary {
-  cursor: pointer;
-  color: var(--muted);
-  font-weight: 700;
-}
-.left-on-board-collapsed ul {
-  columns: 2;
-  column-gap: 2rem;
-  margin: 0.55rem 0 0;
-}
-@media (max-width: 700px) { .left-on-board-collapsed ul { columns: 1; } }
-
 .lineup {
   font-size: 13px;
   margin-bottom: 10px;
@@ -2606,32 +2686,14 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   font-size: 10px;
   margin-left: 3px;
 }
-.player-row-boxscore {
-  display: inline-flex;
-  gap: 6px;
-  padding: 0 8px;
-  border-left: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-  border-right: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-}
-.player-row-shooting {
-  display: inline-flex;
-  gap: 6px;
-  padding-right: 8px;
-  border-right: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-}
 .player-row-meta .player-talent {
   padding-left: 8px;
-}
-.player-row-boxscore > span + span::before,
-.player-row-shooting > span + span::before {
-  content: '/';
-  margin-right: 6px;
-  color: color-mix(in srgb, var(--accent) 62%, var(--muted));
-  font-weight: 400;
+  border-left: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 @media (max-width: 620px) {
   /* 2026-09-11, user-reported live ("te dwie minuty na C tak mało estetycznie wyglądają") — this
-     row (minutes + the "(N total)" annotation + box score + shooting split) used to scroll
+     row (minutes + the "(N total)" annotation + TAL — box score/shooting were dropped from this
+     view entirely 2026-09-14, see the rotation-panel render site's own comment) used to scroll
      sideways at narrow widths, `white-space: nowrap`'d into a single line with no visible scroll
      affordance — a short annotation like "(34 total)" could sit just past the fold, invisible
      unless you knew to scroll for it. Wraps onto a second line instead: nothing gets hidden. */
@@ -2695,26 +2757,13 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   border-bottom: 1px dashed var(--border);
 }
 
-.left-on-board {
-  margin-bottom: 16px;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 13px;
-}
-
-.left-on-board ul {
-  margin: 6px 0 0;
-  padding-left: 18px;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
 /* 2026-08-19, user's own idea ("PR works as it works, but user can simulate 82 game season"):
-   same bordered-panel treatment as `.left-on-board` right above it (a sibling "extra info" block
-   on the same screen), not a new visual language. The standings table reuses `.at-roster-table`'s
-   own styling directly (see App.tsx-adjacent `table.at-roster-table` rules) rather than a
-   duplicate set of column rules. */
+   same bordered-panel treatment as the rest of this screen's own sibling "extra info" blocks, not
+   a new visual language. The standings table reuses `.at-roster-table`'s own styling directly (see
+   App.tsx-adjacent `table.at-roster-table` rules) rather than a duplicate set of column rules.
+   2026-09-14: the `.left-on-board` sibling this comment originally pointed at is gone (user-
+   reported live, "usuń" — removed from ResultsScreen.tsx along with its CSS) — reworded rather
+   than left dangling on a class that no longer exists. */
 .season-sim-panel {
   margin-bottom: 16px;
   padding: 10px 14px;
@@ -3214,6 +3263,27 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 /* 2026-09-11, user's own inspiration screenshot: Draft + Team merged into one screen — player
    cards + a persistent "Your Five" sidebar, side by side. See DraftBoard.tsx's own JSX comments
    (`at-draft-workspace`) for the exact scoping of this pass. */
+/* 2026-09-14, user-reported live ("za dużo tego na desktopie... połączmy wszystko w jeden ekran"):
+   a genuinely wide monitor (now that `#root` spans the full viewport instead of a boxed ~1126px
+   card — see index.css's own comment) left a large blank column next to the Draft tab's "Your
+   Five" sidebar while the Team roster table + Rotation minutes editor sat a tab-click away, on an
+   otherwise-empty screen. `.at-merge-row` wraps the Draft workspace card and a new
+   `.at-merge-team-col` (Team roster + Rotation, see DraftBoard.tsx's own JSX comments on both) —
+   below `WIDE_LAYOUT_QUERY` this is just a plain block, so narrow/default screens stack exactly as
+   before this pass; at that width both panels are also kept mounted simultaneously (DraftBoard.tsx
+   `isWideLayout`), so this only has to place them, not reveal anything CSS-hidden. The 1600px
+   threshold matches that same JS breakpoint exactly — `.rotation-builder`'s own 820px max-width
+   and the Team table's 11 columns both want real room, more than a three-way split would leave. */
+@media (min-width: 1600px) {
+  .at-merge-row { display: flex; align-items: flex-start; gap: 20px; }
+  .at-merge-draft { flex: 1 1 0; min-width: 0; margin-bottom: 0; }
+  .at-merge-team-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  /* Both panels are always showing side by side at this width, so switching between them no
+     longer does anything — the topbar's Draft/Team pill pair (and the sidebar's own "Team tab"
+     jump link, hidden via DraftBoard.tsx's own `isWideLayout` check) would just be dead chrome. */
+  .at-topbar { display: none; }
+}
+
 .at-draft-workspace {
   display: flex;
   align-items: flex-start;
@@ -3343,10 +3413,30 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 }
 
 /* ---- player face-cards (replaces the accordion list, player mode only) ---- */
+/* 2026-09-14, user-reported live ("nie potrzeba aż tak dużo nazwisk na jednym ekranie"): this grid
+   is `auto-fit`, so it doesn't keep adding MORE 150px columns forever as its container grows —
+   fine up through a normal desktop width, but on a genuinely wide monitor (especially now that
+   `.at-draft-main` can fill half a full-bleed 1600px+ shell — see index.css's own comment on
+   `#root` no longer boxing the app into a ~1126px card) that used to mean 10-12 skinny columns of
+   player cards at once, not a handful of comfortably-sized ones.
+   First fix (same day) capped this unconditionally at `max-width: 900px` — but that assumed the
+   freed width always gets picked up by a sibling Team column, which is only true at
+   `isWideLayout`'s own `WIDE_LAYOUT_QUERY` (1600px, DraftBoard.tsx). Below that breakpoint the
+   Draft tab renders ALONE (tab-switched, no Team column beside it — same threshold `.at-merge-row`
+   itself gates on above), so the flat cap just left dead, un-absorbed space to the right on any
+   wide-but-sub-1600px window — exactly what the user then reported live ("w zależności od
+   szerokości zostaje empty space po prawej"). Cap now only applies inside that same media query;
+   below it the grid uses the full width it's alone on. `auto-fit` (not `auto-fill`) so an
+   under-full last row's unused tracks collapse instead of reserving dead width, on either side of
+   the breakpoint. Left-aligned (no `margin: auto`) so it stays flush under the search bar above it
+   rather than centering into its own separate island. */
 .at-player-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
+}
+@media (min-width: 1600px) {
+  .at-player-cards { max-width: 900px; }
 }
 .at-player-card {
   display: flex;
@@ -3942,25 +4032,34 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
 }
 .at-legend-toggle:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
 
-/* 2026-08-19, user's explicit ask ("make everything in one line"): was `grid-template-columns:
-   repeat(auto-fit, minmax(240px, 1fr))`, which wrapped once there wasn't room for every card at
-   its 240px minimum (the old 6-card legend always wrapped its last card to a short second row).
-   Flex + `flex: 1 1 0` divides the full row width evenly across however many cards actually exist
-   (5, after the same-day Playoffs-entry removal) and never wraps — no column count hardcoded
-   against the array length, so this stays correct if the legend ever gains or loses an entry. */
+/* 2026-08-19, user's explicit ask ("make everything in one line"): forced exactly 5 equal-width
+   flex columns (`flex: 1 1 0`, `flex-wrap: nowrap`) so the row never wrapped to a second line —
+   but that meant each card's real width was whatever the container happened to divide by 5, with
+   no floor, so a merely-normal-width screen squeezed headings like "OFFENSE (OFF) / DEFENSE (DEF)"
+   into 2-3 ragged lines fighting the dot swatches beside them for space.
+   2026-09-14, user-reported live ("spójniej i ładniej"): back to a real responsive grid with a
+   floor wide enough for every heading in the current 5-card set to sit on one line — wrapping to a
+   second ROW on a narrow screen (one clean line of cards, then another) reads far more deliberate
+   than 5 cards each internally wrapping its own heading like this did. No column count hardcoded
+   against the array length, same as before. */
 .at-tag-legend {
   margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--at-line);
-  display: flex; flex-wrap: nowrap; gap: 10px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px;
 }
+/* Swatches moved off to the side of a wrapping heading (the old layout) and onto their own row
+   above it — a small horizontal key strip that reads as "here's the color scale," followed by the
+   heading and body getting the card's FULL width to themselves, so the heading only ever needs to
+   wrap for being genuinely long, never for sharing space with the dots. */
 .at-tag-legend-item {
-  display: flex; gap: 10px; align-items: flex-start; flex: 1 1 0; min-width: 0;
-  background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px; padding: 12px 14px;
 }
-.at-tag-legend-item .at-swatches { display: flex; flex-direction: column; gap: 4px; flex: none; margin-top: 2px; }
+.at-tag-legend-item .at-swatches { display: flex; flex-direction: row; gap: 4px; }
+.at-tag-legend-item .at-dot { width: 16px; height: 6px; border-radius: 3px; }
 .at-tag-legend-item h5 {
-  margin: 0 0 4px; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--at-ink);
+  margin: 0; font-size: 12px; letter-spacing: 0.03em; font-weight: 700; color: var(--at-ink);
 }
-.at-tag-legend-item p { margin: 0; font-size: 11.5px; color: var(--at-ink-soft); line-height: 1.5; }
+.at-tag-legend-item p { margin: 0; font-size: 12px; color: var(--at-ink-soft); line-height: 1.5; }
 
 /* ---- Overview panel (team x round grid) ---- */
 .at-ov-meta { font-size: 12px; color: var(--at-ink-soft); margin-bottom: 10px; }
@@ -4073,6 +4172,11 @@ table.at-roster-table th {
 }
 table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-line); vertical-align: middle; }
 
+/* 2026-09-14, user-reported live: the Player cell's new face-card avatar (DraftBoard.tsx) — same
+   `.bf-face` small headshot the Draft tab's cards/sidebar/Rotation rows already use, just inline
+   with the name instead of stacked above it, since a table row is a lot shorter than a card. */
+.at-roster-player-cell { display: flex; align-items: center; gap: 8px; }
+
 .at-empty-slot { color: var(--at-ink-faint); font-style: italic; }
 .at-placeholder { color: var(--at-ink-soft); font-size: 13px; padding: 30px 10px; text-align: center; }
 
@@ -4095,9 +4199,18 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-lottery .at-board-brand { border-bottom: none; padding: 0 0 4px; margin-bottom: 0; }
 .at-lottery-sub { color: var(--at-ink-soft); font-size: 13px; margin: 0 0 22px; }
 
+/* 2026-09-14, user-reported live: this cap (920px) dated from when `#root` itself boxed the whole
+   app into a centered ~1126px card (see index.css's own comment on that removal) — 920px was
+   already most of the available width back then. Now that the shell spans the full viewport, the
+   same 920px cap left this grid a narrow island in the middle of a much wider screen, forcing
+   every column back down near its 220px floor and truncating longer team names ("Winston-Salem
+   Cowboys" -> "Winston-Salem C..."). Both numbers raised together — 280px floor, 1320px cap — so
+   a still-narrow (tablet/mobile) viewport keeps the same graceful auto-fill column drop this had
+   before, while a normal desktop width now settles on 4 wide ~320px+ columns with room for a full
+   name, number, code pill and YOU tag without eliding anything. */
 .at-lottery-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px; margin: 0 auto 24px; max-width: 920px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px; margin: 0 auto 24px; max-width: 1320px;
 }
 .at-lottery-slot {
   display: flex; align-items: center; gap: 10px;

@@ -1,9 +1,8 @@
 import type { Team } from './types';
 import { TEAM_COUNT } from './positions';
-import { projectMatchup } from './matchup';
-import { scoreTeam } from './scoring';
+import { projectMatchup, type MatchupTeamCache } from './matchup';
 import { SEED_ORDER_16 } from './leagueSimulation';
-import type { SeasonStandingsRow } from './seasonSimulation';
+import { buildMatchupCache, type SeasonStandingsRow } from './seasonSimulation';
 
 /**
  * 2026-08-19, user's follow-up on the just-shipped 82-game season sim ("can we add playoffs?"):
@@ -51,13 +50,12 @@ export interface PlayoffResult {
 function simulateSeries(
   teamA: Team,
   teamB: Team,
-  /** Precomputed `scoreTeam(team).overall` for each side — `projectMatchup` now blends the
-   * `overall` gap into the game margin (see its `OVERALL_MARGIN_WEIGHT` docstring); precomputed
-   * once in `simulatePlayoffs` so a re-rolled bracket doesn't re-score every team. */
-  overallA?: number,
-  overallB?: number,
+  /** Precomputed `MatchupTeamCache` for each side (matchup.ts) — precomputed once in
+   * `simulatePlayoffs` so a re-rolled bracket doesn't re-derive every team's cache from scratch. */
+  cacheA?: MatchupTeamCache,
+  cacheB?: MatchupTeamCache,
 ): { winnerId: string; gamesWonA: number; gamesWonB: number } {
-  const { gameWinProbA } = projectMatchup(teamA, teamB, overallA, overallB);
+  const { gameWinProbA } = projectMatchup(teamA, teamB, cacheA, cacheB);
   let gamesWonA = 0;
   let gamesWonB = 0;
   while (gamesWonA < 4 && gamesWonB < 4) {
@@ -77,17 +75,16 @@ function simulateSeries(
 export function simulatePlayoffs(
   teams: Team[],
   standings: SeasonStandingsRow[],
-  /** Precomputed `scoreTeam(team).overall` per team id (see `simulateSeason`'s own param) — pass
-   * it so re-rolling the bracket from the same standings doesn't re-score 16 teams. */
-  overallByTeamId?: Map<string, number>,
+  /** Precomputed per-team `MatchupTeamCache` (see `buildMatchupCache`, seasonSimulation.ts, and
+   * its own docstring) — pass it so re-rolling the bracket from the same standings doesn't
+   * re-derive every team's cache from scratch. Falls back to building it once here when omitted. */
+  cacheByTeamId?: Map<string, MatchupTeamCache>,
 ): PlayoffResult | null {
   if (teams.length !== TEAM_COUNT || standings.length !== TEAM_COUNT) return null;
 
   const teamById = new Map(teams.map((t) => [t.id, t]));
   const teamIdBySeed = new Map(standings.map((row) => [row.rank, row.teamId]));
-  const overallById = new Map(
-    teams.map((t) => [t.id, overallByTeamId?.get(t.id) ?? scoreTeam(t).overall]),
-  );
+  const cacheById = cacheByTeamId ?? buildMatchupCache(teams);
 
   let currentIds = SEED_ORDER_16.map((seed) => teamIdBySeed.get(seed));
   let currentSeeds = [...SEED_ORDER_16];
@@ -109,8 +106,8 @@ export function simulatePlayoffs(
       const { winnerId, gamesWonA, gamesWonB } = simulateSeries(
         teamA,
         teamB,
-        overallById.get(teamAId),
-        overallById.get(teamBId),
+        cacheById.get(teamAId),
+        cacheById.get(teamBId),
       );
       seriesResults.push({
         round: round + 1,

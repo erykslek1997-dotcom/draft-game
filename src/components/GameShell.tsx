@@ -262,25 +262,36 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
 
   return (
     <>
-      <div className={`game-controls${phase === 'results' ? ' game-controls-results' : ''}`}>
-        <button className="secondary-btn reset-btn" onClick={handleReset}>
-          {phase === 'results' ? 'New draft' : 'Exit Draft'}
-        </button>
-        {/* 2026-09-11, player-skeleton branch: the Tester-Mode-only CPU-speed slider and
-            "Skip to Results (dev)" button are gone — `mode` is always 'player' on this branch (see
-            App.tsx), so these never rendered here anyway; removed rather than left dead, since
-            `aiSpeedIndex`/`handleSkipToResults` are genuinely unused now (see below). Auto-finish
-            stays: it was always a real player-facing convenience, not a dev tool. */}
-        {phase === 'draft' && !draftState.complete && (
-          <button
-            className="secondary-btn auto-finish-btn"
-            onClick={handleAutoFinish}
-            disabled={autoFinishing}
-          >
-            {autoFinishing ? `Finishing… ${draftState.history.length} / ${TOTAL_PICKS}` : 'Auto-finish'}
+      {/* 2026-09-14, user-reported live: the results screen's own bottom "Play again" button
+          (ResultsScreen.tsx) already calls this exact same `handleReset`/`onExit` — this top row
+          used to relabel itself "New draft" and stick around during the results phase purely so
+          there was ALWAYS a way out, but that made it a second button doing the identical thing
+          the page already ends with. Scoped to `phase !== 'results'` now (still covers both
+          `lottery` and `draft` — this row sits above `<DraftLottery>`/`<DraftBoard>` alike, and
+          the lottery screen has no Exit control of its own) — "Exit Draft" (the one label this
+          row ever needs once results-only "New draft" is gone) is the only case with no
+          bottom-of-page equivalent. */}
+      {phase !== 'results' && (
+        <div className="game-controls">
+          <button className="secondary-btn reset-btn" onClick={handleReset}>
+            Exit Draft
           </button>
-        )}
-      </div>
+          {/* 2026-09-11, player-skeleton branch: the Tester-Mode-only CPU-speed slider and
+              "Skip to Results (dev)" button are gone — `mode` is always 'player' on this branch (see
+              App.tsx), so these never rendered here anyway; removed rather than left dead, since
+              `aiSpeedIndex`/`handleSkipToResults` are genuinely unused now (see below). Auto-finish
+              stays: it was always a real player-facing convenience, not a dev tool. */}
+          {phase === 'draft' && !draftState.complete && (
+            <button
+              className="secondary-btn auto-finish-btn"
+              onClick={handleAutoFinish}
+              disabled={autoFinishing}
+            >
+              {autoFinishing ? `Finishing… ${draftState.history.length} / ${TOTAL_PICKS}` : 'Auto-finish'}
+            </button>
+          )}
+        </div>
+      )}
 
       {rosterImpossible && (
         <div className="fail-banner">

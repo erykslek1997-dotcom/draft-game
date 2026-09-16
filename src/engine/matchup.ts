@@ -2,7 +2,28 @@ import type { Team } from './types';
 import { projectedNetRating } from './netRatingProjection';
 import { fitScore } from './fit';
 import { scoreTeam } from './scoring';
-import { defensiveHuntability, HUNTABILITY_DRTG_POINTS_PER_PENALTY } from './defensiveHuntability';
+import { defensiveHuntability, HUNTABILITY_DRTG_POINTS_PER_PENALTY, type DefensiveHuntabilityResult } from './defensiveHuntability';
+
+/**
+ * 2026-09-14, user-reported live (asking for more background season simulations "so the result is
+ * more realistic"): every field here is a genuinely expensive per-team computation this file used
+ * to re-derive FRESH on every single `projectMatchup` call — `scoreTeam`/`projectedNetRating` were
+ * already carrying their own separate optional-param workaround below before this pass, but
+ * `fitScore` (read for `huntingPotential`, inside `mismatchAdjustment`) and `defensiveHuntability`
+ * were not, and `fitScore` turned out to be the real dominant cost: measured
+ * (`scripts/_simPerfDiag.ts`, run once and discarded) at ~2.2ms/call, called up to 240 times in one
+ * `simulateSeason` pass (2 directions × 120 pairs) — ~450ms of `simulateSeason`'s own ~490ms total,
+ * dwarfing the `projectedNetRating` redundancy a first pass at this fix (mistakenly) targeted
+ * instead. One bundled cache object per team, built ONCE by the caller and reused across every pair
+ * that team appears in — replaces what would otherwise be a 4th and 5th pair of scattered
+ * `xA?`/`xB?` params bolted onto an already-growing list, the same shape `overallA`/`overallB` and
+ * `netRatingA`/`netRatingB` used before this refactor folded them in here too. */
+export interface MatchupTeamCache {
+  overall?: number;
+  netRating?: number;
+  huntingPotential?: number;
+  huntability?: DefensiveHuntabilityResult;
+}
 
 /**
  * Pairwise matchup projection — "how would roster A actually do against roster B," the one large
@@ -71,10 +92,10 @@ const MISMATCH_PENALTY_SWING = 0.5;
  * `offenseScoreBreakdown` weights) — this is specifically the TACTICAL value of a live mismatch
  * against a real, weaker opponent, not a restatement of baseline offensive quality.
  */
-function mismatchAdjustment(attacker: Team, defender: Team): number {
-  const defenderHunt = defensiveHuntability(defender);
+function mismatchAdjustment(attacker: Team, defender: Team, attackerCache?: MatchupTeamCache, defenderCache?: MatchupTeamCache): number {
+  const defenderHunt = defenderCache?.huntability ?? defensiveHuntability(defender);
   if (defenderHunt.penalty <= 0) return 0;
-  const huntingPotential = fitScore(attacker).inputs.huntingPotential;
+  const huntingPotential = attackerCache?.huntingPotential ?? fitScore(attacker).inputs.huntingPotential;
   const factor = Math.max(-1, Math.min(1, (huntingPotential - HUNTING_POTENTIAL_NEUTRAL) / HUNTING_POTENTIAL_NEUTRAL));
   return defenderHunt.penalty * MISMATCH_PENALTY_SWING * factor * HUNTABILITY_DRTG_POINTS_PER_PENALTY;
 }
@@ -154,19 +175,31 @@ export interface MatchupProjection {
 export function projectMatchup(
   teamA: Team,
   teamB: Team,
-  /** Precomputed `scoreTeam(team).overall` — the league sims already have these from
-   * `rankTeams`; pass them to avoid re-scoring 120 pairs. Falls back to a fresh `scoreTeam`. */
-  overallA?: number,
-  overallB?: number,
+  /**
+   * 2026-09-14, user-reported live (asking for more background season simulations "so the result
+   * is more realistic"): this function's 3 real callers (`evaluateLeague`/`simulateSeason`/
+   * `simulatePlayoffs`) all call it for every ordered pair among the same ~16 teams, so anything
+   * computed per-TEAM instead of per-PAIR is worth precomputing once and passing through —
+   * `overall`/`netRating` already had their own bolted-on optional params before this refactor
+   * folded them into one bundle alongside two more the first pass at this fix missed. `overall`
+   * and `netRating` turned out to be the cheap ones; profiling (`scripts/_simPerfDiag.ts`, run once
+   * and discarded) found `mismatchAdjustment`'s own `fitScore(attacker)` call — read only for its
+   * `huntingPotential` field — was the REAL dominant cost: ~2.2ms/call, called up to 240 times in
+   * one `simulateSeason` pass, ~450ms of its ~490ms total. `huntability` (`defensiveHuntability`)
+   * is cheaper but cached here too for the same reason, once the bundle already exists. Every field
+   * falls back to a fresh call when omitted, so any existing caller that doesn't pass a cache still
+   * works exactly as before this param existed. */
+  cacheA?: MatchupTeamCache,
+  cacheB?: MatchupTeamCache,
 ): MatchupProjection {
-  const netMargin = projectedNetRating(teamA).net - projectedNetRating(teamB).net;
-  const oA = overallA ?? scoreTeam(teamA).overall;
-  const oB = overallB ?? scoreTeam(teamB).overall;
+  const netMargin = (cacheA?.netRating ?? projectedNetRating(teamA).net) - (cacheB?.netRating ?? projectedNetRating(teamB).net);
+  const oA = cacheA?.overall ?? scoreTeam(teamA).overall;
+  const oB = cacheB?.overall ?? scoreTeam(teamB).overall;
   const overallMargin = (oA - oB) * OVERALL_POINTS_PER_UNIT;
   // A hunting B's weak link helps A; B hunting A's weak link helps B — both fold into the one
   // shared margin (see `mismatchAdjustment`'s own docstring).
-  const mismatchForA = mismatchAdjustment(teamA, teamB);
-  const mismatchForB = mismatchAdjustment(teamB, teamA);
+  const mismatchForA = mismatchAdjustment(teamA, teamB, cacheA, cacheB);
+  const mismatchForB = mismatchAdjustment(teamB, teamA, cacheB, cacheA);
   const marginA =
     OVERALL_MARGIN_WEIGHT * overallMargin +
     (1 - OVERALL_MARGIN_WEIGHT) * netMargin +

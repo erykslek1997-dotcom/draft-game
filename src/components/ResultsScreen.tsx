@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { rankTeams, offenseScoreBreakdown } from '../engine/scoring';
-import { evaluateLeague } from '../engine/leagueSimulation';
-import { simulateSeason, type SeasonStandingsRow } from '../engine/seasonSimulation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown } from '../engine/scoring';
+import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
+import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
 import { STARTER_SLOTS, CAP_LIMIT } from '../engine/positions';
 import { allAssignments, benchWithMinutes, primaryStarters } from '../engine/rotation';
@@ -19,7 +19,7 @@ import { computeOffensivePortability, computeDefensivePortability } from '../eng
 import { computeSpacing } from '../engine/spacing';
 import { computeDurability } from '../engine/durability';
 import { projectedNetRating } from '../engine/netRatingProjection';
-import { fitScore } from '../engine/fit';
+import { fitScore, type FitScoreResult } from '../engine/fit';
 import { defensiveHuntability } from '../engine/defensiveHuntability';
 import { generateRosterInsights } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
@@ -31,11 +31,107 @@ import { type FeedbackEntry } from './FeedbackToggle';
 // safe to import directly (not lazy) since GameShell already bundles DraftBoard and this file
 // together as siblings, so nothing about the app's existing load-time split changes.
 import { pickStatTip } from './DraftBoard';
-import HistoricalChallengesPanel from './HistoricalChallengesPanel';
+// 2026-09-14, user-reported live ("wyrzucamy historical challanges i what-if"): both panels
+// dropped from this screen — `HistoricalChallengesPanel`/`WhatIfPanel` themselves are UNTOUCHED
+// (not deleted), just no longer imported/rendered here. The user's own explicit plan for
+// Historical Challenges is to reuse it as the base of a real separate game mode later, not to
+// throw the work away — see [[player_skeleton_and_new_modes]].
 import MatchupMatrix from './MatchupMatrix';
-import WhatIfPanel from './WhatIfPanel';
 import { downloadShareCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 import { Face, shortenName } from './ShotChip';
+
+// 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
+// features below (Title Odds precision upgrade, season-sim pool) — real work deferred until the
+// browser is actually idle, so neither one competes with the results screen's own first paint.
+// `requestIdleCallback` isn't in Safari; a short `setTimeout` is a reasonable stand-in (still
+// yields to the current paint/interaction, just without the "only when truly idle" guarantee).
+function scheduleIdle(fn: () => void): number {
+  const w = window as typeof window & { requestIdleCallback?: (cb: () => void) => number };
+  return w.requestIdleCallback ? w.requestIdleCallback(fn) : window.setTimeout(fn, 300);
+}
+function cancelIdle(handle: number): void {
+  const w = window as typeof window & { cancelIdleCallback?: (handle: number) => void };
+  if (w.cancelIdleCallback) w.cancelIdleCallback(handle);
+  else window.clearTimeout(handle);
+}
+
+/** Fast enough to paint instantly even pre-caching; kept modest anyway since the precise pass
+ * below replaces it within a moment either way. */
+const FAST_TITLE_ODDS_SIMULATIONS = 500;
+/** The engine's own real calibration default (`DEFAULT_SIMULATIONS`, leagueSimulation.ts) — what
+ * Title Odds always meant to show, now affordable in the background instead of blocking paint. */
+const PRECISE_TITLE_ODDS_SIMULATIONS = 20000;
+/** How many independent season rolls the background pool builds before "Simulate an 82-game
+ * season" has a real distribution to pick a representative entry from. */
+const SEASON_SIM_POOL_SIZE = 60;
+
+/** The pool entry whose win total for `humanTeamId` sits closest to the pool's own median — see
+ * this screen's own docstring on the season-sim pool for why "closest to median" instead of an
+ * arbitrary or purely-random pick. Ties broken by whichever entry comes first. Falls back to the
+ * pool's own first entry if `humanTeamId` never appears in it (defensive; not an expected path). */
+function pickRepresentativeSeason(pool: SeasonStandingsRow[][], humanTeamId: string): SeasonStandingsRow[] {
+  const winsByIndex = pool.map((standings) => standings.find((row) => row.teamId === humanTeamId)?.wins ?? 0);
+  const sorted = [...winsByIndex].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  let bestIndex = 0;
+  let bestDiff = Infinity;
+  winsByIndex.forEach((wins, index) => {
+    const diff = Math.abs(wins - median);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIndex = index;
+    }
+  });
+  return pool[bestIndex] ?? pool[0];
+}
+
+/**
+ * 2026-09-14, user-reported live ("a gdyby zrobić animację cyfr?" — what if we animated the
+ * digits?): tweens a displayed number toward `target` over `durationMs` using an ease-out curve,
+ * instead of a silent jump — makes the Title Odds precision upgrade (500 → 20,000 trials, once the
+ * browser is idle) a visible "the odds are settling in" moment rather than an invisible swap.
+ * Respects `prefers-reduced-motion` (jumps straight to `target`, no animation frames at all).
+ * Starts each tween from whatever's CURRENTLY displayed (not the previous target), so a second
+ * update arriving mid-tween blends smoothly instead of snapping back to a stale starting point.
+ */
+function useAnimatedNumber(target: number, durationMs = 700): number {
+  const [display, setDisplay] = useState(target);
+  const displayRef = useRef(target);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(target);
+      displayRef.current = target;
+      return;
+    }
+    const from = displayRef.current;
+    if (from === target) return;
+    let start: number | null = null;
+    function tick(now: number) {
+      if (start === null) start = now;
+      const t = Math.min(1, (now - start) / durationMs);
+      const eased = 1 - (1 - t) ** 3;
+      const value = from + (target - from) * eased;
+      displayRef.current = value;
+      setDisplay(value);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [target, durationMs]);
+
+  return display;
+}
+
+/** Small wrapper so the two live Title Odds displays (hero header, per-team "Championship odds"
+ * section) share one tween + formatting rule instead of hand-rolling `useAnimatedNumber` twice. */
+function AnimatedPercent({ value, className }: { value: number; className?: string }) {
+  const animated = useAnimatedNumber(value * 100);
+  return <span className={className}>{animated.toFixed(animated >= 10 ? 0 : 1)}%</span>;
+}
 
 /**
  * 2026-08-15, user-reported: the Rotation/Bench bracket tag next to a player's row used to read
@@ -211,6 +307,11 @@ function HeroResult({
   rank,
   fieldSize,
   overall,
+  offenseScore,
+  defenseScore,
+  spacingScore,
+  fitDetail,
+  offenseDetail,
   topOverall,
   titleOdds,
   draftSeed,
@@ -224,6 +325,11 @@ function HeroResult({
   rank: number;
   fieldSize: number;
   overall: number;
+  offenseScore: number;
+  defenseScore: number;
+  spacingScore: number;
+  fitDetail: FitScoreResult | null;
+  offenseDetail: OffenseScoreBreakdown | null;
   topOverall: number | null;
   titleOdds: number | null;
   draftSeed: number;
@@ -283,7 +389,7 @@ function HeroResult({
         {titleOdds !== null && (
           <div className="results-hero-stat">
             <span className="results-hero-stat-label">Title odds</span>
-            <span className="results-hero-stat-value">{(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%</span>
+            <AnimatedPercent value={titleOdds} className="results-hero-stat-value" />
           </div>
         )}
       </div>
@@ -301,6 +407,83 @@ function HeroResult({
           {failureMode && <span>{failureMode}</span>}
         </p>
       )}
+      {/* 2026-09-14, DRAFT per user's own request ("możesz mi pokazać design zanim wprowadzisz") —
+          batch item 3 ("ogromnie dużo miejsca na dużym ekranie, można zrobić cały dashboard").
+          V1 (plain text numbers + a thin pill-per-player strip) drew direct criticism live
+          ("myślę że stać cię na kilka razy lepszy projekt") — visually the "runt" of an otherwise
+          bold hero, and two new, unproven visual treatments instead of reusing ones already on
+          this screen. V2 fixed the visual weight (`ScoreChip`'s gradient pills, the ShareModal's
+          own bordered `.share-modal-face-card` for the starting five) but was still, per the same
+          follow-up ("nadal można dodać ławkę, offensive and defensive breakdown... to ma być
+          dashboard jako podsumowanie całego draftu, teraz to jest bardzo skrócona wersja"), an
+          abbreviated summary rather than the actual draft report. V3 adds the two missing pieces,
+          both already fully computed elsewhere on this page for the human's own expanded card —
+          hoisted up here (`heroFit`/`heroOffenseDetail`) rather than recomputed: the SAME
+          Offense/Defense `MetricBar` breakdown "Team analysis" shows below (`.analysis-bars-*`),
+          and the bench half of `roster` (already carries all 9 players, not just the 5 starters)
+          alongside Starting five using the exact same face-card row. */}
+      <div className="results-hero-dashboard">
+        <div className="results-hero-scores">
+          <span className="share-modal-face-group-label">Team profile</span>
+          <div className="results-hero-scores-row">
+            <ScoreChip label="OFF" value={Math.round(offenseScore)} />
+            <ScoreChip label="DEF" value={Math.round(defenseScore)} />
+            <ScoreChip label="SPC" value={Math.round(spacingScore)} />
+          </div>
+          {fitDetail && (
+            <div className="analysis-bars-split results-hero-bars">
+              <div className="analysis-bars-col">
+                <span className="analysis-bars-col-label">Offense</span>
+                {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
+                <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
+                {offenseDetail && <MetricBar label="Spacing" value={offenseDetail.spacing} hint="Floor spacing the five provides." />}
+                <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
+              </div>
+              <div className="analysis-bars-col">
+                <span className="analysis-bars-col-label">Defense</span>
+                <MetricBar label="Defense" value={fitDetail.components.defensiveRoleCoverage} hint="Coverage of the point-of-attack / wing / rim defensive roles." />
+                <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
+                <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
+                <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="results-hero-rotation">
+          <div className="share-modal-face-group">
+            <span className="share-modal-face-group-label">Starting five</span>
+            <div className="share-modal-face-row results-hero-face-row">
+              {roster
+                .filter((row) => row.isStarter)
+                .map((row) => (
+                  <div className="share-modal-face-card" key={row.position + row.name}>
+                    <Face name={row.name} size="md" />
+                    <span className="share-modal-face-pos">{row.position}</span>
+                    <span className="share-modal-face-name">{shortenName(row.name)}</span>
+                    <span className="share-modal-face-meta">{Math.round(row.minutes)}m</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+          {roster.some((row) => !row.isStarter) && (
+            <div className="share-modal-face-group">
+              <span className="share-modal-face-group-label">Bench</span>
+              <div className="share-modal-face-row results-hero-face-row">
+                {roster
+                  .filter((row) => !row.isStarter)
+                  .map((row) => (
+                    <div className="share-modal-face-card" key={row.position + row.name}>
+                      <Face name={row.name} size="md" />
+                      <span className="share-modal-face-pos">{row.position}</span>
+                      <span className="share-modal-face-name">{shortenName(row.name)}</span>
+                      <span className="share-modal-face-meta">{Math.round(row.minutes)}m</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
       <div className="results-hero-actions">
         <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
           📤 Share the result
@@ -902,7 +1085,6 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
   const teamById = (id: string) => teamsById.get(id);
   const draftPoolById = useMemo(() => new Map(draftPool.map((p) => [p.id, p])), []);
   const playerById = (id: string) => draftPoolById.get(id);
-  const leftOnBoard = useMemo(() => remainingOnBoard(teams), [teams]);
   // 2026-08-08, user's explicit ask: correct ANY team's rotation from this screen — no longer
   // wired in; `EMPTY_CORRECTED_ROTATIONS` is a stable module-level reference (see its docstring
   // for the perf reason). The `displayTeam` / `scoredTeams` plumbing stays so re-wiring a
@@ -941,25 +1123,72 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
   // (During local calibration a scoring.ts HMR edit won't refresh this without a hard reload —
   // acceptable; the sim below already had the same property.)
   const ranked = useMemo(() => rankTeams(scoredTeams), [scoredTeams]);
-  // Monte Carlo bracket sim (20,000 runs) is expensive, so it reruns only when the draft teams or
-  // a saved rotation correction actually change — not when feedback text or expansion state does.
-  // The results screen should become interactive quickly after Skip to Results. The matchup
-  // matrix is descriptive, so a compact roll count is enough for whole-percent odds while
-  // avoiding a long main-thread pause from the engine's full calibration default.
-  const leagueEval = useMemo(() => evaluateLeague(scoredTeams, 500), [scoredTeams]);
+  // 2026-09-14, user-reported live (asking for more background simulation so results feel more
+  // real): one shared per-team cache (overall/netRating/huntingPotential/huntability — see
+  // `buildMatchupCache`'s own docstring, seasonSimulation.ts) built ONCE per completed draft.
+  // Replaces the narrower `overallByTeamId` this screen used to build just for the season/playoff
+  // sim buttons — profiling found `fitScore` (read here for `huntingPotential`), not `overall`, was
+  // the real dominant cost of every matchup projection, and this same cache is what makes both
+  // background features below (the Title Odds precision upgrade and the season-sim pool) actually
+  // affordable instead of blocking the main thread for seconds.
+  const matchupCache = useMemo(() => buildMatchupCache(scoredTeams), [scoredTeams]);
+
+  // 2026-09-14, user-reported live: Title Odds used to be a single 500-trial Monte Carlo estimate,
+  // chosen specifically because the engine's real 20,000-trial default used to take ~1s and would
+  // have blocked the results screen's first paint. Now that `matchupCache` above eliminates the
+  // real bottleneck (`fitScore` re-derived per pair, not `evaluateLeague`'s own trial count —
+  // measured, `scripts/_simPerfDiag.ts`, run once and discarded), the 500-trial pass below still
+  // renders instantly, but a second, precise pass at the engine's own full default now runs once
+  // the browser is idle and REPLACES it — the user watches the page immediately, then the odds
+  // quietly firm up to the real number a moment later. `useAnimatedNumber` below turns that swap
+  // into a visible tween instead of a silent jump.
+  const fastLeagueEval = useMemo(() => evaluateLeague(scoredTeams, FAST_TITLE_ODDS_SIMULATIONS), [scoredTeams]);
+  const [preciseLeagueEval, setPreciseLeagueEval] = useState<TeamLeagueEvaluation[] | null>(null);
+  useEffect(() => {
+    setPreciseLeagueEval(null);
+    const handle = scheduleIdle(() => setPreciseLeagueEval(evaluateLeague(scoredTeams, PRECISE_TITLE_ODDS_SIMULATIONS)));
+    return () => cancelIdle(handle);
+  }, [scoredTeams]);
+  const leagueEval = preciseLeagueEval ?? fastLeagueEval;
   const leagueEvalByTeamId = useMemo(() => new Map(leagueEval.map((entry) => [entry.teamId, entry])), [leagueEval]);
-  // Fed into the season / playoff sims so a re-roll doesn't re-score all 16 teams (they blend
-  // `overall` into each game's margin — see `projectMatchup`'s `OVERALL_MARGIN_WEIGHT`).
-  const overallByTeamId = useMemo(
-    () => new Map(ranked.map(({ team, breakdown }) => [team.id, breakdown.overall])),
-    [ranked],
-  );
+
+  // 2026-09-14, user-reported live ("chodzi mi o większą liczbę symulacji w tle żeby wynik był
+  // bardziej realny" — more background simulations so the result feels more real): a background
+  // pool of real, independent `simulateSeason` rolls (same unchanged primitive — see its own
+  // docstring, seasonSimulation.ts) computed once idle. "Simulate an 82-game season" below no
+  // longer rolls one arbitrary season on click; it reveals whichever pool entry landed closest to
+  // the pool's own median win total for the human's team — still one genuine, concrete season with
+  // real standings, just a REPRESENTATIVE one instead of an arbitrary one. Falls back to a single
+  // direct roll if the pool isn't ready yet (a very fast click, or `requestIdleCallback` never
+  // firing) so the button always works. A deliberate, CONFIRMED reversal of this screen's own
+  // earlier "simulate once, don't average many seasons" choice (AskUserQuestion, this session) —
+  // not a silent regression of it.
+  const [seasonPool, setSeasonPool] = useState<SeasonStandingsRow[][] | null>(null);
+  useEffect(() => {
+    setSeasonPool(null);
+    const handle = scheduleIdle(() => {
+      const pool: SeasonStandingsRow[][] = [];
+      for (let i = 0; i < SEASON_SIM_POOL_SIZE; i++) pool.push(simulateSeason(scoredTeams, matchupCache));
+      setSeasonPool(pool);
+    });
+    return () => cancelIdle(handle);
+  }, [scoredTeams, matchupCache]);
 
   // The one roster this screen exists to show off — the player's own, or (a defensive fallback for
   // a no-human commissioner draft) the Final Power Ranking's #1. Drives the hero header below.
   const heroRanked = ranked.find(({ team }) => team.isHuman) ?? ranked[0];
   const heroFit = useMemo(
     () => (heroRanked ? fitScore(displayTeam(heroRanked.team)) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [heroRanked?.team.id, scoredTeams],
+  );
+  // 2026-09-14, user-reported live ("można dodać ławkę, offensive and defensive breakdown... to ma
+  // być dashboard jako podsumowanie całego draftu") — same O-TAL/Creation/Spacing/Rim-pressure
+  // split the per-team "Team analysis" accordion already computes for `offenseDetail` below, just
+  // hoisted up here so the hero dashboard can show it unconditionally instead of only after
+  // expanding the human's own card further down the page.
+  const heroOffenseDetail = useMemo(
+    () => (heroRanked ? offenseScoreBreakdown(displayTeam(heroRanked.team)) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked?.team.id, scoredTeams],
   );
@@ -1028,6 +1257,11 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
           rank={heroRanked.rank}
           fieldSize={ranked.length}
           overall={heroRanked.breakdown.overall}
+          offenseScore={heroRanked.breakdown.offenseScore}
+          defenseScore={heroRanked.breakdown.defenseScore}
+          spacingScore={heroRanked.breakdown.spacingScore}
+          fitDetail={heroFit}
+          offenseDetail={heroOffenseDetail}
           topOverall={ranked[0]?.breakdown.overall ?? null}
           titleOdds={leagueEvalByTeamId.get(heroRanked.team.id)?.championshipProbability ?? null}
           draftSeed={draftSeed}
@@ -1042,80 +1276,110 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
           roster={heroRoster}
         />
       )}
-      <h2 className="results-section-title">Final team ranking</h2>
-      <MatchupMatrix teams={scoredTeams} evaluations={leagueEval} focusTeamId={scoredTeams.find((team) => team.isHuman)?.id} />
-      {/* 2026-08-19, user's own idea: the Final Power Ranking above stays exactly what it always
-          was — this is a separate, just-for-fun roll of one randomly-simulated 82-game regular
-          season, game by game, using the same real per-game win probability model the Championship
-          bracket sim below already relies on (see seasonSimulation.ts's own docstring). Re-clicking
-          re-rolls a brand new season rather than averaging toward an "expected" record — the user's
-          explicit choice over a many-seasons-averaged projection. */}
-      <div className="season-sim-panel">
-        <h3>Simulate an 82-game season</h3>
-        <p className="player-notes-hint">
-          Rolls one full regular season, game by game, using each pairing's real projected win probability. Separate from
-          the Final Power Ranking above.
-        </p>
-        {/* 2026-08-19, user's explicit ask ("delate resimulation button for regular season and
-            playoffs"): once rolled, that's the season — no re-roll button once a result exists,
-            for either this or the playoff button below. */}
-        {!seasonStandings && (
-          <button
-            className="secondary-btn"
-            onClick={() => {
-              setSeasonStandings(simulateSeason(scoredTeams, overallByTeamId));
-              setPlayoffResult(null);
-            }}
-          >
-            🏀 Simulate an 82-game season
-          </button>
-        )}
-        {seasonStandings && (
-          <>
-            <table className="at-roster-table season-standings-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Team</th>
-                  <th>W</th>
-                  <th>L</th>
-                  <th>Win%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {seasonStandings.map((row) => {
-                  const rowTeam = teamById(row.teamId);
-                  if (!rowTeam) return null;
-                  return (
-                    <tr key={row.teamId} className={rowTeam.isHuman ? 'season-standings-you' : ''}>
-                      <td>{row.rank}</td>
-                      <td>
-                        {teamLabel(rowTeam)} {rowTeam.isHuman ? '(You)' : ''}
-                      </td>
-                      <td>{row.wins}</td>
-                      <td>{row.losses}</td>
-                      <td>{(row.winPct * 100).toFixed(1)}%</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {/* 2026-08-19, same-day follow-up: seeded by the standings above, not the Final Power
-                Ranking — every series is genuinely played out game by game (real BO7 tallies like
-                "4-2"), not a single probability draw. Re-clicking re-rolls the playoffs alone,
-                keeping the same season standings as the seed. */}
-            {!playoffResult && (
-              <button
-                className="secondary-btn playoff-sim-btn"
-                onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings, overallByTeamId))}
-              >
-                🏆 Simulate the playoffs
-              </button>
-            )}
-            {playoffResult && <PlayoffBracketTree result={playoffResult} teamById={teamById} />}
-          </>
-        )}
+      {/* 2026-09-14, user-reported live ("ogromnie dużo miejsca na dużym ekranie, można zrobić
+          cały dashboard"): FIRST version of this fix put the matchup matrix + season sim in a
+          persistent sidebar next to the (much longer) team-card list. User-reported live again,
+          against a real screenshot: the matrix still got cut off inside that narrower column (it
+          wants real width — `.matchup-matrix-table`'s own 760px floor), and a sidebar that runs out
+          of content halfway down a 16-card list reads as an awkward, unbalanced split rather than a
+          real dashboard — "jesteśmy w stanie zmieścić wszystkie informacje na samej górze, nie
+          widzę sensu w rozbijaniu tego" (we can fit it all at the top, no point splitting this).
+          Reworked into `.results-top-panels`: the matrix + season sim sit side by side in one
+          full-width band right under the hero, each finally getting real width instead of sharing a
+          cramped column — the team-card list below goes back to full width too, since there's no
+          longer a second column competing with it for space. Below the dashboard breakpoint
+          `.results-top-panels` is `display: contents` (pure CSS, no JS) — its children become
+          direct flex items of `.results-screen` again, same `order`-based placement (this file's
+          own CSS, unchanged) as before any of this dashboard work existed. */}
+      <div className="results-top-panels">
+        <MatchupMatrix teams={scoredTeams} evaluations={leagueEval} focusTeamId={scoredTeams.find((team) => team.isHuman)?.id} />
+        {/* 2026-08-19, user's own idea: the Final Power Ranking above stays exactly what it always
+            was — this is a separate roll of a randomly-simulated 82-game regular season, game by
+            game, using the same real per-game win probability model the Championship bracket sim
+            below already relies on (see seasonSimulation.ts's own docstring).
+            2026-09-14, user-reported live ("chodzi mi o większą liczbę symulacji w tle żeby wynik
+            był bardziej realny"): the paragraph above used to end "re-clicking re-rolls a brand new
+            season rather than averaging toward an expected record — the user's explicit choice over
+            a many-seasons-averaged projection." That choice is deliberately REVERSED now (confirmed
+            via AskUserQuestion, this session) — the button below reveals a REPRESENTATIVE roll from
+            a background pool (`seasonPool` above) instead of one arbitrary walk, still one real
+            season with real standings, not a synthesized average. */}
+        <div className="season-sim-panel">
+          <h3>Simulate an 82-game season</h3>
+          <p className="player-notes-hint">
+            Rolls a full regular season, game by game, using each pairing's real projected win probability — the roll shown
+            is whichever of {SEASON_SIM_POOL_SIZE} background simulations landed closest to the typical outcome for your
+            team. Separate from the Final Power Ranking above.
+          </p>
+          {/* 2026-08-19, user's explicit ask ("delate resimulation button for regular season and
+              playoffs"): once rolled, that's the season — no re-roll button once a result exists,
+              for either this or the playoff button below. */}
+          {!seasonStandings && (
+            <button
+              className="secondary-btn"
+              onClick={() => {
+                // 2026-09-14: prefers the background pool's representative pick; falls back to one
+                // direct roll on the rare chance the pool hasn't finished yet (a very fast click,
+                // or `requestIdleCallback` never firing) so the button always works either way.
+                const humanTeamId = scoredTeams.find((team) => team.isHuman)?.id;
+                const picked = seasonPool && humanTeamId
+                  ? pickRepresentativeSeason(seasonPool, humanTeamId)
+                  : simulateSeason(scoredTeams, matchupCache);
+                setSeasonStandings(picked);
+                setPlayoffResult(null);
+              }}
+            >
+              🏀 Simulate an 82-game season
+            </button>
+          )}
+          {seasonStandings && (
+            <>
+              <table className="at-roster-table season-standings-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Team</th>
+                    <th>W</th>
+                    <th>L</th>
+                    <th>Win%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {seasonStandings.map((row) => {
+                    const rowTeam = teamById(row.teamId);
+                    if (!rowTeam) return null;
+                    return (
+                      <tr key={row.teamId} className={rowTeam.isHuman ? 'season-standings-you' : ''}>
+                        <td>{row.rank}</td>
+                        <td>
+                          {teamLabel(rowTeam)} {rowTeam.isHuman ? '(You)' : ''}
+                        </td>
+                        <td>{row.wins}</td>
+                        <td>{row.losses}</td>
+                        <td>{(row.winPct * 100).toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {/* 2026-08-19, same-day follow-up: seeded by the standings above, not the Final Power
+                  Ranking — every series is genuinely played out game by game (real BO7 tallies like
+                  "4-2"), not a single probability draw. Re-clicking re-rolls the playoffs alone,
+                  keeping the same season standings as the seed. */}
+              {!playoffResult && (
+                <button
+                  className="secondary-btn playoff-sim-btn"
+                  onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings, matchupCache))}
+                >
+                  🏆 Simulate the playoffs
+                </button>
+              )}
+              {playoffResult && <PlayoffBracketTree result={playoffResult} teamById={teamById} />}
+            </>
+          )}
+        </div>
       </div>
+      <h2 className="results-section-title">Final team ranking</h2>
       <div className="expand-all-controls">
         <button className="secondary-btn" onClick={() => setExpandedTeamIds(new Set(teams.map((t) => t.id)))}>
           Expand all
@@ -1357,7 +1621,7 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
                     <div className="championship-summary" title="Simulated over the full 16-team bracket, seeded by the Final Power Ranking.">
                       <div className="championship-headline">
                         <span className="championship-headline-stat">
-                          <b>{(leagueEvalRow.championshipProbability * 100).toFixed(1)}%</b>
+                          <b><AnimatedPercent value={leagueEvalRow.championshipProbability} /></b>
                           <i>to win it all</i>
                         </span>
                         <span className="championship-headline-stat">
@@ -1385,10 +1649,6 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
                     Raw net-rating estimate: {netRating.net >= 0 ? '+' : ''}{netRating.net.toFixed(1)} (ORTG {netRating.offense.toFixed(1)} / DRTG {netRating.defense.toFixed(1)})
                   </p>
                 </details>
-                {fitDetail && rsPoProfile && (
-                  <HistoricalChallengesPanel team={shownTeam} breakdown={breakdown} fit={fitDetail} season={rsPoProfile} />
-                )}
-                {team.isHuman && <WhatIfPanel team={shownTeam} />}
                 <details className="result-accordion-section rotation-panel">
                   <summary>Rotation</summary>
                   <div className="lineup">
@@ -1428,15 +1688,19 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
                                         <span className="player-row-total-min"> ({totalMinutesByPlayerId.get(e.player.id)} total)</span>
                                       )}
                                     </span>
-                                    <span className="player-row-boxscore">
-                                      <span>{e.player.box.ppg.toFixed(1)} PTS</span>
-                                      <span>{e.player.box.rpg.toFixed(1)} REB</span>
-                                      <span>{e.player.box.apg.toFixed(1)} AST</span>
-                                    </span>
-                                    <span className="player-row-shooting">
-                                      <span>{(e.player.box.fgPct * 100).toFixed(0)}% FG</span>
-                                      <span>{(e.player.box.threePct * 100).toFixed(0)}% 3P</span>
-                                    </span>
+                                    {/* 2026-09-14, user-reported live ("rotation jest ogromne w
+                                        porównaniu do reszty"): the box score (PTS/REB/AST) and
+                                        shooting split used to sit on every one of up to ~13 rows
+                                        here (5 starter groups, some carrying a split bench player
+                                        across 2-3 of them) — on `nowrap`, that many inline segments
+                                        routinely didn't fit the card width and silently wrapped
+                                        each row onto a second line, roughly doubling this section's
+                                        real height next to compact single-line siblings like "Draft
+                                        order". Dropped both — box score/shooting are raw game stats
+                                        available elsewhere (the Team roster table, the Draft tab's
+                                        own scouting report), not the point of a MINUTES panel — kept
+                                        just the minutes + TAL, the two numbers that actually answer
+                                        "is this rotation any good." */}
                                     {/* 2026-08-19, user's explicit ask: a bare "TAL 97" chip is one
                                         number with no sense of what it means — post-draft (the pick
                                         is already locked in, nothing left to spoil), pairing it with
@@ -1472,14 +1736,6 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
           </div>
         );
       })}
-      <details className="left-on-board left-on-board-collapsed">
-        <summary>Left on board ({leftOnBoard.length} players)</summary>
-        <ul>
-          {leftOnBoard.slice(0, 20).map((p) => (
-            <li key={p.playerName}>{p.playerName} ({p.spanLabel}) — {p.primaryPosition}, TAL {p.TAL}</li>
-          ))}
-        </ul>
-      </details>
       <div className="results-actions">
         <button className="secondary-btn" onClick={onRestart}>Play again</button>
       </div>

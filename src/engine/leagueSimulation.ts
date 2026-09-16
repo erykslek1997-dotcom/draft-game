@@ -1,7 +1,9 @@
 import type { Team } from './types';
 import { rankTeams } from './scoring';
-import { projectMatchup, seriesWinProbability, gameWinProbability, type MatchupProjection } from './matchup';
+import { projectMatchup, seriesWinProbability, gameWinProbability, type MatchupProjection, type MatchupTeamCache } from './matchup';
 import { projectedNetRating } from './netRatingProjection';
+import { fitScore } from './fit';
+import { defensiveHuntability } from './defensiveHuntability';
 
 /**
  * League-wide evaluation: every pairwise BO7 matchup among the 16 drafted rosters, plus a Monte
@@ -72,10 +74,28 @@ function simulateOneBracket(seededTeamIds: string[], winProb: (aId: string, bId:
 export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMULATIONS): TeamLeagueEvaluation[] {
   const ranked = rankTeams(teams); // rank 1 = best, per the existing Final Power Ranking
   const rankByTeamId = new Map(ranked.map(({ team, rank }) => [team.id, rank]));
-  // The same `overall` the ranking is built on — threaded into `projectMatchup` so the sim's
-  // game outcomes track the Final Power Ranking rather than diverging from it (see that
-  // function's `OVERALL_MARGIN_WEIGHT` docstring).
-  const overallByTeamId = new Map(ranked.map(({ team, breakdown }) => [team.id, breakdown.overall]));
+  // 2026-09-14, user-reported live (asking for more background simulations "so the result is more
+  // realistic"): every field of `MatchupTeamCache` (matchup.ts) is a real per-team computation this
+  // precompute loop used to hand `projectMatchup` fresh for BOTH sides of every one of the 240
+  // ordered pairs below — up to 15x redundant per team, each appearing in 15 pairs. Measured
+  // (`scripts/_simPerfDiag.ts`, run once and discarded): `fitScore` (read for `huntingPotential`)
+  // was the dominant cost at ~2.2ms/call, not the `overall`/`projectedNetRating` fields this cache
+  // already carried before that measurement — see `MatchupTeamCache`'s own docstring for the full
+  // story. One bundle per team, built once here from `rankTeams`/`projectedNetRating`/`fitScore`/
+  // `defensiveHuntability`, reused for every pair that team appears in below — `fitScore` runs
+  // elsewhere too (ResultsScreen.tsx's own "Team analysis"/matchup-explanation panels), but as
+  // separate, uncached calls of its own; this cache is local to this one function's own pair loop.
+  const cacheByTeamId = new Map<string, MatchupTeamCache>(
+    ranked.map(({ team, breakdown }) => [
+      team.id,
+      {
+        overall: breakdown.overall,
+        netRating: projectedNetRating(team).net,
+        huntingPotential: fitScore(team).inputs.huntingPotential,
+        huntability: defensiveHuntability(team),
+      },
+    ]),
+  );
   const seededTeamIds = [...teams].sort((a, b) => (rankByTeamId.get(a.id) ?? 999) - (rankByTeamId.get(b.id) ?? 999)).map((t) => t.id);
 
   // Precompute every pairwise matchup once (120 unique pairs for 16 teams) — the simulation loop
@@ -87,7 +107,7 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
   for (const a of teams) {
     for (const b of teams) {
       if (a.id === b.id) continue;
-      matchupByPair.set(`${a.id}|${b.id}`, projectMatchup(a, b, overallByTeamId.get(a.id), overallByTeamId.get(b.id)));
+      matchupByPair.set(`${a.id}|${b.id}`, projectMatchup(a, b, cacheByTeamId.get(a.id), cacheByTeamId.get(b.id)));
     }
   }
   const winProb = (aId: string, bId: string) => matchupByPair.get(`${aId}|${bId}`)?.seriesWinProbA ?? 0.5;

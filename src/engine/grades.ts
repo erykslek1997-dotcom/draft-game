@@ -14,6 +14,7 @@ import {
 } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing } from './spacing';
+import { computeDurability } from './durability';
 import { spanEndYears } from './era';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
 import { playoffPerformanceBonus } from './playoffPerformanceLookup';
@@ -214,6 +215,59 @@ export function defensivePortabilityGrade(value: number): Grade {
     defensivePortabilitySThreshold = computeSThreshold(draftPool.map((p) => computeDefensivePortability(p)));
   }
   return gradeForValue(value, defensivePortabilitySThreshold);
+}
+
+/**
+ * 2026-09-14, user-reported live: the Team roster table's SPC/DUR columns used to show
+ * `SpacingTierBadge`/`DurabilityTierBadge` — named-text pills ("Great shooter", "Unbreakable")
+ * on their own bespoke palettes, distinct from the plain S-F `AtGrade` letters every other column
+ * (Off/Def/O-POR/D-POR) already uses. Asked to fold onto the same S-F scale so the row reads as
+ * one consistent language end to end, freeing the wide text-badge columns for a face-card portrait
+ * instead. `SpacingTierBadge`/`DurabilityTierBadge` themselves are UNTOUCHED (still used by the
+ * Draft tab's own player cards/peek modal, where the named tier is the more scannable read at a
+ * glance) — these are new, separate functions for the one table that's switching formats.
+ */
+let spacingGradeSortedValues: number[] | null = null; // sorted ascending, cached once
+let spacingGradeSThreshold: number | null = null;
+
+/**
+ * SPACING's raw 0-100 value is heavily right-skewed — measured (`scripts/_gradeCalibDiag.ts`, run
+ * once and discarded): 61.7% of the real draft pool reads flat F under the plain `letterForValue`
+ * bands, because those bands assume a TAL-shaped even spread and SPACING's own calibration
+ * deliberately puts only the top ~3% of spans in its best named tiers (see spacing.ts's own
+ * docstring). Same fix as `offensivePortabilityGrade` above, for the exact same reason: convert to
+ * a percentile RANK in the real SPACING population first, then hand that to the same
+ * `gradeForValue`/`letterForValue` machinery every other stat already shares.
+ */
+export function spacingGrade(value: number): Grade {
+  if (spacingGradeSortedValues === null) {
+    spacingGradeSortedValues = draftPool.map((p) => computeSpacing(p)).sort((a, b) => a - b);
+  }
+  if (spacingGradeSThreshold === null) {
+    const rawSThreshold = computeSThreshold(spacingGradeSortedValues);
+    spacingGradeSThreshold = percentileRank(rawSThreshold, spacingGradeSortedValues);
+  }
+  const rank = percentileRank(value, spacingGradeSortedValues);
+  return gradeForValue(rank, spacingGradeSThreshold);
+}
+
+let durabilityGradeSThreshold: number | null = null;
+
+/**
+ * DURABILITY's raw value is the OPPOSITE skew from SPACING (measured the same way: p10 across the
+ * real pool is already B- or better, median A-, and the bottom half of the S-F scale — C-/D+/D/D-
+ * — sits essentially empty) — but unlike SPACING, this is not a calibration accident to correct.
+ * `durability.ts`'s own docstring already litigated this exact tradeoff: DUR is a deliberate RAW
+ * percentage, kept per explicit user direction specifically so it carries the real (era-biased)
+ * signal instead of a flattened one. Percentile-ranking it here would quietly re-introduce the
+ * flattening the raw-percentage redesign was choosing to avoid — so this reads straight off the
+ * same `letterForValue` bands O-TAL/D-TAL use, no rank transform, same as those two.
+ */
+export function durabilityGrade(value: number): Grade {
+  if (durabilityGradeSThreshold === null) {
+    durabilityGradeSThreshold = computeSThreshold(draftPool.map((p) => computeDurability(p)));
+  }
+  return gradeForValue(value, durabilityGradeSThreshold);
 }
 
 /**

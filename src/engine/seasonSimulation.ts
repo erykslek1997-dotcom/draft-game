@@ -1,7 +1,33 @@
 import type { Team } from './types';
 import { TEAM_COUNT } from './positions';
-import { projectMatchup } from './matchup';
+import { projectMatchup, type MatchupTeamCache } from './matchup';
 import { scoreTeam } from './scoring';
+import { projectedNetRating } from './netRatingProjection';
+import { fitScore } from './fit';
+import { defensiveHuntability } from './defensiveHuntability';
+
+/**
+ * 2026-09-14, user-reported live (asking for more background season simulations "so the result is
+ * more realistic"): builds the same per-team `MatchupTeamCache` bundle `evaluateLeague`
+ * (leagueSimulation.ts) already builds for its own pairwise loop — see that cache's own docstring
+ * (matchup.ts) for what's in it and why each field is worth precomputing once instead of per pair.
+ * Exported so ResultsScreen.tsx's background season-sim pool can build ONE cache and reuse it
+ * across every roll in the pool (the SAME `teams` array, unchanged from roll to roll), instead of
+ * `simulateSeason` quietly rebuilding it fresh inside every one of N calls.
+ */
+export function buildMatchupCache(teams: Team[]): Map<string, MatchupTeamCache> {
+  return new Map(
+    teams.map((t) => [
+      t.id,
+      {
+        overall: scoreTeam(t).overall,
+        netRating: projectedNetRating(t).net,
+        huntingPotential: fitScore(t).inputs.huntingPotential,
+        huntability: defensiveHuntability(t),
+      },
+    ]),
+  );
+}
 
 /**
  * 2026-08-19, user's own idea: "PR works as it works, but user can simulate 82 game season" —
@@ -14,6 +40,17 @@ import { scoreTeam } from './scoring';
  * User explicitly chose "simulate once, re-rollable with a button" over "average many seasons" —
  * this returns ONE randomly-rolled season's standings, not an expected-value projection. Calling
  * it again produces a different result, same as clicking "Skip"/"Play" re-rolls the lottery.
+ *
+ * 2026-09-14, user-reported live ("chodzi mi o większą liczbę symulacji w tle żeby wynik był
+ * bardziej realny" — more background simulations so the result feels more realistic): this
+ * function ITSELF is unchanged and still means exactly what the paragraph above says — one real,
+ * concrete, game-by-game season, nothing averaged or synthesized. What changed is how
+ * ResultsScreen.tsx now USES it: instead of one ad-hoc roll made the instant the button is
+ * clicked, a background pool of many calls to this same function runs first, and the button
+ * reveals whichever ONE of those real rolls landed closest to the pool's own median win total for
+ * the human's team — still one genuine story with real box scores, just a representative one
+ * instead of an arbitrary one. A deliberate, confirmed reversal of the "not average many seasons"
+ * choice above (see ResultsScreen.tsx's own docstring on the pool), not a silent regression.
  */
 export const REGULAR_SEASON_GAMES = 82;
 
@@ -71,24 +108,26 @@ export interface SeasonStandingsRow {
  */
 export function simulateSeason(
   teams: Team[],
-  /** Precomputed `scoreTeam(team).overall` per team id — `projectMatchup` blends the `overall`
-   * gap into the game margin (see its `OVERALL_MARGIN_WEIGHT` docstring). The results screen
-   * already has these from `rankTeams`; pass them so a re-roll doesn't re-score 16 teams.
-   * Falls back to a fresh `scoreTeam` for any id not supplied. */
-  overallByTeamId?: Map<string, number>,
+  /**
+   * Precomputed per-team `MatchupTeamCache` (see `buildMatchupCache` above and its own docstring)
+   * — `projectMatchup` reads `overall`/`netRating`/`huntingPotential`/`huntability` off it instead
+   * of re-deriving all four fresh for both sides of every one of the 120 pairs below. Falls back to
+   * building it once here (still far cheaper than the OLD per-pair re-derivation, just not shared
+   * across multiple `simulateSeason` calls) when the caller doesn't have one ready — a single
+   * ad-hoc call works exactly as it always has, just faster.
+   */
+  cacheByTeamId?: Map<string, MatchupTeamCache>,
 ): SeasonStandingsRow[] {
   const wins = new Map<string, number>(teams.map((t) => [t.id, 0]));
   const losses = new Map<string, number>(teams.map((t) => [t.id, 0]));
-  const overallById = new Map(
-    teams.map((t) => [t.id, overallByTeamId?.get(t.id) ?? scoreTeam(t).overall]),
-  );
+  const cacheById = cacheByTeamId ?? buildMatchupCache(teams);
 
   for (let i = 0; i < teams.length; i++) {
     for (let j = i + 1; j < teams.length; j++) {
       const teamA = teams[i];
       const teamB = teams[j];
       const gameCount = gamesScheduledForPair(i, j, teams.length);
-      const { gameWinProbA } = projectMatchup(teamA, teamB, overallById.get(teamA.id), overallById.get(teamB.id));
+      const { gameWinProbA } = projectMatchup(teamA, teamB, cacheById.get(teamA.id), cacheById.get(teamB.id));
       for (let g = 0; g < gameCount; g++) {
         if (Math.random() < gameWinProbA) {
           wins.set(teamA.id, (wins.get(teamA.id) ?? 0) + 1);
