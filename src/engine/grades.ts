@@ -536,6 +536,34 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     // but never-real-MVP-candidate season shouldn't clear the MVP floor; capping it to All-NBA
     // brings it in line with the rest of his own prime. `computeTalent` raw untouched.
     { name: 'Chris Webber', spanLabel: '2000-02', cap: 'All-NBA' as OverallTier },
+    // 2026-09-16, user batch feedback ("Tatum/Ginóbili greatest peak", "Malone/Embiid/Barkley
+    // też... 93 TAL i MVP", then "w sumie Manu i Tatum nawet ALL-NBA", "Drexler i Ray Allen ->
+    // All-NBA"): the bestTalentSpan the browse-list card shows for each of these read a tier (or,
+    // for Drexler, a whole cluster of spans) higher than the friend group's own read of these
+    // careers. Tatum's own 2021-23 span already had a `NAMED_DISPLAY_TAL` fix (see below) for
+    // exactly this shape, but a DIFFERENT span (2022-24, raw 95) has since overtaken it as his
+    // bestTalentSpan — same for Malone, where the existing 1992-94/1994-96 downcaps (2026-09-02
+    // batch, below) left three sibling Greatest-peak spans (1993-95/1989-91/1988-90) untouched.
+    // Every span here is the one currently winning `bestTalentSpan` for its player (or, for
+    // Drexler, the full cluster of spans that would otherwise just hand the badge to the next one
+    // down) — see `NAMED_DISPLAY_TAL` below for the matching number on each of these.
+    { name: 'Jayson Tatum', spanLabel: '2022-24', cap: 'All-NBA' as OverallTier },
+    { name: 'Manu Ginóbili', spanLabel: '2006-08', cap: 'All-NBA' as OverallTier },
+    { name: 'Karl Malone', spanLabel: '1993-95', cap: 'MVP' as OverallTier },
+    { name: 'Karl Malone', spanLabel: '1989-91', cap: 'MVP' as OverallTier },
+    { name: 'Karl Malone', spanLabel: '1988-90', cap: 'MVP' as OverallTier },
+    { name: 'Joel Embiid', spanLabel: '2020-22', cap: 'MVP' as OverallTier },
+    { name: 'Charles Barkley', spanLabel: '1989-91', cap: 'MVP' as OverallTier },
+    // Drexler's entire peak cluster (6 spans, raw 90-92) sits in MVP with no single outlier —
+    // downcapping only the top one just hands the badge straight to the next MVP-tier span, so
+    // all six move together.
+    { name: 'Clyde Drexler', spanLabel: '1991-93', cap: 'All-NBA' as OverallTier },
+    { name: 'Clyde Drexler', spanLabel: '1986-88', cap: 'All-NBA' as OverallTier },
+    { name: 'Clyde Drexler', spanLabel: '1988-90', cap: 'All-NBA' as OverallTier },
+    { name: 'Clyde Drexler', spanLabel: '1987-89', cap: 'All-NBA' as OverallTier },
+    { name: 'Clyde Drexler', spanLabel: '1989-91', cap: 'All-NBA' as OverallTier },
+    { name: 'Clyde Drexler', spanLabel: '1990-92', cap: 'All-NBA' as OverallTier },
+    { name: 'Ray Allen', spanLabel: '2000-02', cap: 'All-NBA' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
@@ -562,9 +590,31 @@ function namedTierDowncap(playerName?: string, spanLabel?: string): OverallTier 
  * `effectiveTalent` and thus gameplay. Not in TAYLOR_TOP10 / GOAT-40 — anchors unaffected.
  */
 const NAMED_DISPLAY_TAL: ReadonlyMap<string, number> = new Map(
-  [{ name: 'Jayson Tatum', spanLabel: '2021-23', tal: 87 }].map(
-    (e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tal] as const,
-  ),
+  [
+    { name: 'Jayson Tatum', spanLabel: '2021-23', tal: 87 },
+    // 2026-09-16 batch (see the matching `NAMED_TIER_DOWNCAPS`/`NAMED_TIER_RAISES` entries above
+    // for the full "why" on each) — explicit numbers so the badge and the number agree without
+    // relying on `applyGradeCeiling`'s auto-compression, which has previously undershot a tier's
+    // real ceiling (the original reason `NAMED_DISPLAY_TAL` exists at all, per Tatum 2021-23
+    // above). All-NBA group lands at 87 (top of its 80-87 band); MVP group at 93 (top of its
+    // 88-93 band, the exact number the user asked for); West at 90 ("w okolicy 90" — mid-band,
+    // not the ceiling, since only a modest raise was asked for there).
+    { name: 'Jayson Tatum', spanLabel: '2022-24', tal: 87 },
+    { name: 'Manu Ginóbili', spanLabel: '2006-08', tal: 87 },
+    { name: 'Karl Malone', spanLabel: '1993-95', tal: 93 },
+    { name: 'Karl Malone', spanLabel: '1989-91', tal: 93 },
+    { name: 'Karl Malone', spanLabel: '1988-90', tal: 93 },
+    { name: 'Joel Embiid', spanLabel: '2020-22', tal: 93 },
+    { name: 'Charles Barkley', spanLabel: '1989-91', tal: 93 },
+    { name: 'Clyde Drexler', spanLabel: '1991-93', tal: 87 },
+    { name: 'Clyde Drexler', spanLabel: '1986-88', tal: 87 },
+    { name: 'Clyde Drexler', spanLabel: '1988-90', tal: 87 },
+    { name: 'Clyde Drexler', spanLabel: '1987-89', tal: 87 },
+    { name: 'Clyde Drexler', spanLabel: '1989-91', tal: 87 },
+    { name: 'Clyde Drexler', spanLabel: '1990-92', tal: 87 },
+    { name: 'Ray Allen', spanLabel: '2000-02', tal: 87 },
+    { name: 'Jerry West', spanLabel: '1971-73', tal: 90 },
+  ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tal] as const),
 );
 
 function namedDisplayTal(playerName?: string, spanLabel?: string): number | undefined {
@@ -651,6 +701,13 @@ const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
     { name: 'George Gervin', spanLabel: '1980-82', tier: 'All-star' as OverallTier },
     { name: 'George Gervin', spanLabel: '1981-83', tier: 'All-star' as OverallTier },
     { name: 'George Gervin', spanLabel: '1982-84', tier: 'All-star' as OverallTier },
+    // 2026-09-16, user batch feedback ("Jerry West z all-nba na MVP", "może być w okolicy 90"):
+    // his own bestTalentSpan (1971-73) reads All-NBA/87 — the friend group's own read is that his
+    // real peak belongs a rung higher. Same shape as Klay/Kobe/T-Mac above — a direct display
+    // override, not a formula change (`computeTalent` raw untouched, Taylor/GOAT unaffected). See
+    // the matching `NAMED_DISPLAY_TAL` entry for the number (90, not the MVP ceiling — "w okolicy
+    // 90" asked for a modest raise, not a maxed-out one).
+    { name: 'Jerry West', spanLabel: '1971-73', tier: 'MVP' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tier]),
 );
 
