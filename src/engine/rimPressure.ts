@@ -139,17 +139,41 @@ export function rimPressure(span: PlayerSpan): number {
  *     (`fitVolScore`), not `steep()`'s hard cliff at 78. A real but moderate rim-attacker
  *     (Embiid's volume sits just below the old cliff) is genuinely different from a player with
  *     zero rim presence, and the cliff couldn't tell them apart — both read exactly 0.
- *  3. A flat floor for every real PF/C (`BIG_RIM_PRESSURE_FLOOR`), independent of the computed
+ *  3. A positional credit for every real PF/C (`bigPositionalFloor`), independent of the computed
  *     value. A legitimate big has positional size/interior capability a pure shot-chart read
  *     undersells (Dirk's offense is genuinely mid-range-heavy, not rim-share-heavy, but a
  *     7-footer still isn't a lesser interior threat than a wing shooter with a similar or even
  *     higher raw rim share — Klay Thompson's more frequent basket cuts otherwise out-scored him).
- *     User-set 2026-09-04 after comparing floors of 10/15 against Dirk/Porzingis/Klay/Curry.
+ *     Originally a flat `Math.max(base, 15)` floor, user-set 2026-09-04 after comparing floors of
+ *     10/15 against Dirk/Porzingis/Klay/Curry.
  */
 const FIT_SHARE_FLOOR = 0.15;
 const BIG_RIM_PRESSURE_FLOOR = 15;
 function fitVolScore(percentile: number): number {
   return clamp((percentile - 35) / 65, 0, 1) * 100;
+}
+
+/**
+ * 2026-09-16, user-reported live: the original flat `Math.max(base, 15)` floor created a
+ * discontinuity right at its own threshold — any real base of 0-15 collapsed to the identical 15,
+ * so a genuine non-threat (base 0) and a player with real, computed low-level rim presence (base
+ * 16) read almost identically (15 vs 16), a 1-point gap for a 16-point real difference. But the
+ * floor's own rationale ("a legitimate big still has SOME positional interior threat a pure
+ * shot-chart read undersells") applies just as much to that base-16 player as it does to base-0 —
+ * there's no reason the credit should vanish exactly at 15 rather than taper out gradually.
+ *
+ * Replaced with a diminishing bonus, `BIG_RIM_PRESSURE_FLOOR` (15) at base=0, fading linearly to 0
+ * by base=`BIG_RIM_PRESSURE_FLOOR_TAPER` (30) — beyond that point this is byte-identical to the old
+ * hard floor (already-substantial computed values are untouched). Verified (`scripts/
+ * _softFloorDiag.ts`, measured, deleted after use): Horry 1999-01 stays exactly 15 (base 0, no
+ * change), Garnett 2002-04 / Chris Bosh 2007-09 (base 40.7 / 42.0, well past the taper) stay exactly
+ * unchanged — only the low end (base < 30) smooths out: Dirk 2005-07 15->21.9, Al Horford 2015-17
+ * 15->20.2, Ben Wallace 2003-05 20.6->25.3.
+ */
+const BIG_RIM_PRESSURE_FLOOR_TAPER = 30;
+function bigPositionalFloor(base: number): number {
+  const bonus = BIG_RIM_PRESSURE_FLOOR * clamp(1 - base / BIG_RIM_PRESSURE_FLOOR_TAPER, 0, 1);
+  return clamp(base + bonus, 0, 100);
 }
 
 /**
@@ -280,7 +304,7 @@ export function rimPressureForFit(span: PlayerSpan): number {
     base = Math.max(rimPressure(span), dominantInteriorScorerFloor(span));
   }
   const isBig = span.primaryPosition === 'C' || span.primaryPosition === 'PF';
-  return isBig ? Math.max(base, BIG_RIM_PRESSURE_FLOOR) : base;
+  return isBig ? bigPositionalFloor(base) : base;
 }
 
 /**
