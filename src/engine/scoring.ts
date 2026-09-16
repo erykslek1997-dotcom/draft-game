@@ -31,7 +31,7 @@ import {
 } from './rotation';
 import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
-import { fitScore } from './fit';
+import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD } from './fit';
 export type { FitScoreResult, FitScoreComponents } from './fit';
 
 /** Minimum defensive-impact score (box-score activity + rebounding + role weight) required,
@@ -473,15 +473,41 @@ export interface OffenseScoreBreakdown extends OffenseScoreComponents {
   score: number;
 }
 
+// 2026-09-16, user-reported live with a real example (Nash + Erving-peak + Garnett-peak + Ewing —
+// "ta drużyna ofensywnie nie wiele się różni od core Phoenix Suns... a mimo to dostaje karę" — a
+// scouting-report-backed argument, via Ben Taylor's own Nash writeup, that a genuine elite
+// playmaking engine shouldn't pay full price for teammates who can't shoot). Investigated with a
+// direct diagnostic before touching anything: `fitScore`'s own `spacingCompatibility` ALREADY
+// applies exactly this discount (`hasGravityStarter`/`hasElitePrimaryCreator`, 2026-09-12, from a
+// near-identical earlier ask) and reads a healthy 77 for this roster — that mechanism works. The
+// gap is that `spacingScore` below (this function's own `spacing` field, 20% of `offenseScore`'s
+// blend) is a plain weighted average with no equivalent — the same real insight was never ported
+// over when spacing was blended into offense (2026-08-19). `hasElitePlaymakingEngine` mirrors
+// `fitScore`'s own two gates exactly (same thresholds, imported rather than duplicated) so both
+// numbers agree on WHO counts as a self-sufficient engine; `OFFENSE_SPACING_ELITE_ENGINE_BONUS` is
+// deliberately more modest than fit.ts's own swing (that one can move a single `geometryScore`
+// ladder step by up to 60 raw points before its 0.45 sub-weight; this is a flat, capped credit on
+// the simple average, not a ladder-based mechanic) — a real, felt credit without fully erasing the
+// cost of a genuinely bad-shooting frontcourt. `fitScore(team)` is computed once and reused for
+// `mismatchStructure` below too, instead of the pre-existing redundant second call.
+const OFFENSE_SPACING_ELITE_ENGINE_BONUS = 15;
+
 function offenseScoreComponents(team: Team): OffenseScoreComponents {
   const starters = primaryStarters(team).map((entry) => entry.player);
+  const fit = fitScore(team);
+  const hasGravityStarter =
+    starters.some((player) => spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR) ||
+    starters.some((player) => computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL);
+  const hasElitePrimaryCreator = fit.inputs.primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD;
+  const hasElitePlaymakingEngine = hasGravityStarter || hasElitePrimaryCreator;
+  const rawSpacing = spacingScore(team);
   return {
     otal: rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS),
-    spacing: spacingScore(team),
+    spacing: hasElitePlaymakingEngine ? Math.min(100, rawSpacing + OFFENSE_SPACING_ELITE_ENGINE_BONUS) : rawSpacing,
     rimPressure: rimPressureTeam(starters),
     playmaking: teamPlaymakingQuality(starters),
     selfCreation: teamSelfCreationQuality(starters),
-    mismatchStructure: fitScore(team).inputs.mismatchStructure,
+    mismatchStructure: fit.inputs.mismatchStructure,
   };
 }
 

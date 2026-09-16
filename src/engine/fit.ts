@@ -102,6 +102,12 @@ export const FIT_WEIGHTS = {
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
 const HARD_NON_SPACER_FLOOR = 30;
 const FRONTCOURT_SPACING_FLOOR = 40;
+/** Hoisted out of `fitScore`'s body (2026-09-16) and exported so `scoring.ts`'s `offenseScore`
+ * blend can apply the SAME "elite playmaking engine" gate to its own raw-spacing term — see that
+ * function's own docstring for why. Values and meaning unchanged from where they used to live
+ * inline just above `hasGravityStarter`/`hasElitePrimaryCreator` below. */
+export const ELITE_SCORING_GRAVITY_OTAL = 95;
+export const ELITE_PRIMARY_CREATOR_THRESHOLD = 85;
 const FUNCTIONAL_SIZE_WEIGHTS = {
   height: 0.40,
   weight: 0.25,
@@ -625,7 +631,6 @@ export function fitScore(team: Team): FitScoreResult {
   // span (the ~59-span, all-time-great tier — Jordan/Harden/Luka/prime-LeBron-band; already-
   // covered arc shooters like Nash/Miller/Allen also clear it, so no double mechanism for them)
   // draws enough defensive attention on pure scoring gravity alone, independent of shot selection.
-  const ELITE_SCORING_GRAVITY_OTAL = 95;
   const hasGravityStarter =
     starters.some((player) => spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR) ||
     starters.some((player) => computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL);
@@ -646,7 +651,6 @@ export function fitScore(team: Team): FitScoreResult {
   // reuses `primaryCreationScore`'s own normalization ceiling a few lines up — the same bar this
   // function already treats as "maxed-out primary creation" — rather than inventing a second,
   // separate threshold for the same underlying signal.
-  const ELITE_PRIMARY_CREATOR_THRESHOLD = 85;
   const hasElitePrimaryCreator = primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD;
   const canPunishHelp = secondaryCreationSignal >= 75 || hasElitePrimaryCreator || starters.some(isRimGravityScorer);
   const geometryNonSpacerCount =
