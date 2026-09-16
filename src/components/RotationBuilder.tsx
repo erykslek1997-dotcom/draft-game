@@ -136,6 +136,17 @@ function RotationBuilderComponent({
   rosterComplete = true,
 }: Props) {
   const [rows, setRows] = useState<RowsBySlot>(() => buildInitialRows(roster, initialRotation, rosterComplete));
+  // 2026-09-16, user-reported live ("jak ustalam minuty zawodnika, to wkurzające jest jak tam
+  // nic nie może być... jak wykasuje wszystko to pojawia się zero"): the minutes `<input>` below
+  // is fully controlled off `row.minutes` (a plain number) — clearing it to type a fresh value
+  // made `onChange` read `Number('')` (== 0) and commit that immediately, so the box re-rendered
+  // showing "0" mid-edit instead of staying blank, fighting every attempt to retype a 2-digit
+  // number. This tracks the raw text the user is actively typing, per row, separately from the
+  // committed numeric `row.minutes` — blank/in-progress text renders as blank without forcing a
+  // 0 into the real rotation state; a valid number still commits live (on-cap warnings etc. keep
+  // reacting as you type); losing focus while empty just reverts the box to the last committed
+  // value instead of silently zeroing it.
+  const [minutesDraft, setMinutesDraft] = useState<Record<string, string>>({});
 
   function handleAutoFill() {
     if (!rosterComplete) return;
@@ -299,11 +310,31 @@ function RotationBuilderComponent({
                       type="number"
                       min={0}
                       max={GAME_MINUTES}
-                      value={row.playerId ? row.minutes : ''}
+                      value={row.playerId ? (minutesDraft[`${slot}-${rowIdx}`] ?? String(row.minutes)) : ''}
                       placeholder="—"
                       disabled={!row.playerId}
                       className={`rotation-minutes-input ${row.playerId && overCapIds.has(row.playerId) ? 'minutes-warning' : ''}`}
-                      onChange={(e) => updateRow(slot, rowIdx, { minutes: Number(e.target.value) })}
+                      onChange={(e) => {
+                        const key = `${slot}-${rowIdx}`;
+                        const text = e.target.value;
+                        setMinutesDraft((prev) => ({ ...prev, [key]: text }));
+                        // Leave `row.minutes` alone while the box is genuinely empty or the user
+                        // is still mid-keystroke on a partial number — only a value that already
+                        // parses commits, same "don't snap to 0" reasoning as the state comment
+                        // above.
+                        if (text === '') return;
+                        const parsed = Number(text);
+                        if (!Number.isNaN(parsed)) updateRow(slot, rowIdx, { minutes: parsed });
+                      }}
+                      onBlur={() => {
+                        const key = `${slot}-${rowIdx}`;
+                        setMinutesDraft((prev) => {
+                          if (!(key in prev)) return prev;
+                          const next = { ...prev };
+                          delete next[key];
+                          return next;
+                        });
+                      }}
                     />
                     {rowIdx > 0 && (
                       <button className="remove-row-btn" title="Remove this contributor" onClick={() => removeRow(slot, rowIdx)}>
