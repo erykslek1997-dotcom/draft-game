@@ -506,15 +506,42 @@ function teamDefenseCorroborationFloor(span: PlayerSpan): number {
   return TEAM_D_FLOOR_AT_MIN + strengthFrac * minutesFrac * (TEAM_D_FLOOR_AT_FULL - TEAM_D_FLOOR_AT_MIN);
 }
 
+/**
+ * 2026-09-16, user-reported live (Nate McMillan 1992-94 — a 6.7ppg/5.3apg/2.7spg facilitator,
+ * historically a bench sixth man in this exact stretch, read D-TAL 99): `UNCORROBORATED_CEILING`
+ * above was a binary gate — accoladeRate===0 AND darkoDefenseBonus===0, or the ladder runs
+ * uncapped to 100. McMillan's accoladeRate is 0.225 (some real recognition, but modest — nowhere
+ * near a full All-Defense case) and darkoDefenseBonus 7.5, so he skipped the ceiling ENTIRELY:
+ * traced directly, `base` alone (before any accolade credit) already computed to 98.5, and
+ * `credited` added barely anything on top (+0.2) — the real driver is `defense.ts`'s own
+ * already-documented `activity = (stealActivity + blockActivity) * 4.5` bug (identical weight for
+ * steals and blocks, confirmed wrong for steal-gambling guards by an earlier `peakRapm.json`
+ * audit) feeding a ladder read that a MODEST real corroboration (0.225) was enough to fully
+ * unlock, rather than a graduated one.
+ *
+ * Replaces the binary check with a smooth ramp: the ceiling itself scales from
+ * `UNCORROBORATED_CEILING` (identical to before, at zero corroboration) up to 100 (also identical
+ * to before, once corroboration is strong) as `corroborationStrength` grows — a modest signal like
+ * McMillan's now unlocks a proportionally modest amount of extra ceiling, not the entire 22-point
+ * gap to 100 in one step. `darkoDefenseBonus` normalized against 9 (`MAX_DARKO_BONUS` in
+ * darkoCorrection.ts, that function's own standard ceiling) and weighted at half an accolade's
+ * strength — this is a corroboration-STRENGTH signal, not a swap-in replacement for accoladeRate,
+ * so a maxed-out DARKO bonus alone (no real accolade at all) still tops out contributing 0.5 of
+ * the 0-1 scale, not the full 1.0 a genuine All-Defense selection would.
+ */
+const DARKO_CORROBORATION_NORMALIZER = 9;
+const DARKO_CORROBORATION_WEIGHT = 0.5;
+
 export function computeDefensiveTalent(span: PlayerSpan): number {
   const cached = defensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const accoladeRate = individualDefenseRate(span);
-  const uncorroborated = accoladeRate === 0 && darkoDefenseBonus(span) === 0;
-  const base = Math.min(
-    ladderPoints(span.primaryPosition, displayDefenseRaw(span)),
-    uncorroborated ? UNCORROBORATED_CEILING : 100,
+  const corroborationStrength = Math.min(
+    1,
+    accoladeRate + (darkoDefenseBonus(span) / DARKO_CORROBORATION_NORMALIZER) * DARKO_CORROBORATION_WEIGHT,
   );
+  const corroborationCeiling = UNCORROBORATED_CEILING + (100 - UNCORROBORATED_CEILING) * corroborationStrength;
+  const base = Math.min(ladderPoints(span.primaryPosition, displayDefenseRaw(span)), corroborationCeiling);
   const credited = base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE;
   const namedFloor = Math.max(
     NAMED_DTAL_FLOOR.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0,
