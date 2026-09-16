@@ -589,6 +589,45 @@ export function offensiveCohesion(team: Team): OffensiveCohesionResult {
   };
 }
 
+/**
+ * 2026-09-16, user's direct follow-up on `OFFENSE_SPACING_ELITE_ENGINE_BONUS` above ("chodzi mi
+ * żeby można było zbudować wokół Nasha kompletnie defensywny zespół który i tak będzie mocny w
+ * ataku" — a team built around a real elite offensive engine should be able to field an
+ * all-defense supporting cast and still read as a genuine offense): mirrors `spacing.ts`'s
+ * `SHOOTING_ANOMALY_TEAM_SPACING_FLOOR` (Curry's own minutes floor spacing at 85 regardless of his
+ * teammates), but for the WHOLE `offenseScore` blend instead of just spacing — the spacing-only
+ * bonus above still leaves a genuinely elite engine's team reading weak overall when literally
+ * every teammate is defense-only.
+ *
+ * Verified against the motivating extreme case (Nash 2005-07 + four genuine defense-only starters
+ * — Bruce Bowen, Tony Allen, Ben Wallace, Rudy Gobert): raw offenseScore reads 55 even WITH the
+ * spacing bonus already applied (spacing itself only reaches 36). Floored at
+ * `ELITE_OFFENSIVE_ENGINE_FLOOR`, scaled by the engine's actual starter-minutes share exactly like
+ * Curry's spacing floor (a bench-minutes engine gets proportionally less credit, not the full
+ * floor) — can only ever raise the number, and does nothing at 0 minutes.
+ *
+ * Deliberately gated on the SAME individually-attributable half of `hasGravityStarter` only (a
+ * specific starter clearing `WALKING_GRAVITY_FLOOR` spacing or `ELITE_SCORING_GRAVITY_OTAL`
+ * themselves) — NOT the team-aggregate `hasElitePrimaryCreator` signal, which has no single
+ * attributable player and would otherwise misattribute the floor to whichever starter happens to
+ * be first in, say, a Kobe+Shaq+Webber+Porter+Horry lineup (verified this doesn't fire there:
+ * Porter himself clears neither threshold, so that team's raw 80 is untouched). A genuinely
+ * stacked team (Nash + real shooters, raw 84; Curry + all-defense, raw 68 from Curry's own
+ * existing mechanics) is likewise untouched or only lifted the remaining gap to the floor.
+ */
+const ELITE_OFFENSIVE_ENGINE_FLOOR = 72;
+function eliteOffensiveEngineFloorContribution(team: Team): number {
+  const engineAssignment = primaryStarters(team).find(({ player, minutes }) => {
+    if (minutes <= 0) return false;
+    return (
+      spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR ||
+      computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL
+    );
+  });
+  if (!engineAssignment) return 0;
+  return ELITE_OFFENSIVE_ENGINE_FLOOR * (engineAssignment.minutes / STARTER_MINUTES);
+}
+
 /** Single source of truth for the weighted blend — `offenseScore` (the number every other
  * consumer reads) and `offenseScoreBreakdown` (the UI's per-dimension view) both build on this so
  * the two can never drift apart. */
@@ -601,9 +640,8 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
-  const score = Math.round(
-    Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus)),
-  );
+  const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus));
+  const score = Math.round(Math.max(blended, eliteOffensiveEngineFloorContribution(team)));
   return { ...components, score };
 }
 
