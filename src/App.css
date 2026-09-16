@@ -2652,27 +2652,31 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   font-size: 0.82rem;
   line-height: 1.35;
 }
-.player-talent { color: var(--muted); font-weight: 600; }
-
 .lineup {
   font-size: 13px;
   margin-bottom: 10px;
 }
 .rotation-panel > div { width: 100%; }
 .rotation-bench-list { margin-top: 0; }
+/* 2026-09-16, user-reported live ("po prostu wizualnie to tak słabo wygląda") — was a plain
+   outlined rectangle (no fill), the one badge in this row not using the app's established
+   colored-pill language. Solid fill now, tone matching what the label itself means (starter =
+   accent, same blue the rest of the app uses for "this one's live/active"; bench = a quieter
+   neutral fill instead of an empty outline). */
 .rotation-role-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   margin-left: 7px;
-  padding: 1px 5px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--muted);
+  padding: 1px 7px;
+  border-radius: 999px;
   font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .04em;
+  font-weight: 800;
+  letter-spacing: .05em;
   text-transform: uppercase;
   vertical-align: 1px;
 }
+.rotation-role-badge.is-starter { background: color-mix(in srgb, var(--accent) 24%, transparent); color: var(--accent); }
+.rotation-role-badge.is-bench { background: color-mix(in srgb, var(--muted) 18%, transparent); color: var(--muted); }
 /* 2026-09-11: small "natural position" flag when a player is slotted off their primary position —
    see the rotation-panel render site's own comment. Cheap, additive to the existing Concerns prose. */
 .rotation-natural-pos {
@@ -2716,24 +2720,12 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.starter-badge {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 7px;
-  padding: 1px 6px;
-  border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
-  border-radius: 999px;
-  color: var(--accent);
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1.35;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  vertical-align: 1px;
-}
 .player-row-meta {
   display: flex;
   align-items: center;
+  /* `ScoreChip` (the TAL readout replacing the old bare-text + border-left divider) carries its
+     own visual weight already, so this row just needs a small gap before it instead of a divider. */
+  gap: 6px;
   color: var(--muted);
   font-size: 12px;
   white-space: nowrap;
@@ -2741,16 +2733,11 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 .player-row-minutes {
   display: inline-flex;
   align-items: center;
-  padding-right: 8px;
 }
 .player-row-total-min {
   color: var(--at-ink-faint);
   font-size: 10px;
   margin-left: 3px;
-}
-.player-row-meta .player-talent {
-  padding-left: 8px;
-  border-left: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 @media (max-width: 620px) {
   /* 2026-09-11, user-reported live ("te dwie minuty na C tak mało estetycznie wyglądają") — this

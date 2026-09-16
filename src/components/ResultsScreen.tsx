@@ -1694,7 +1694,9 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
                           <li key={slot} className="rotation-slot-group">
                             <span className="rotation-slot-label">{slot}</span>
                             <ul className="rotation-slot-entries">
-                              {entries.map((e) => (
+                              {entries.map((e) => {
+                                const isStarterHere = starterKeys.has(`${e.slot}|${e.player.id}`);
+                                return (
                                 <li key={e.player.id} className="player-row">
                                   <span className="player-row-name at-name-tip" tabIndex={0} data-tip={pickStatTip(e.player)}>
                                     {compactPlayerName(e.player.playerName)} ({compactSpanLabel(e.player.spanLabel)})
@@ -1707,7 +1709,15 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
                                         {e.player.primaryPosition}
                                       </sup>
                                     )}
-                                    <span className="rotation-role-badge">{starterKeys.has(`${e.slot}|${e.player.id}`) ? 'Starter' : 'Bench'}</span>
+                                    {/* 2026-09-16, user-reported live ("po prostu wizualnie to tak
+                                        słabo wygląda") — this used to be a plain outlined rectangle
+                                        (no fill) and the TAL readout below a bare border-left divider
+                                        with plain text; neither used the colored-pill language every
+                                        other numeric badge in the app already has. Solid-fill pill
+                                        (starter = accent, bench = neutral) instead of an outline. */}
+                                    <span className={`rotation-role-badge ${isStarterHere ? 'is-starter' : 'is-bench'}`}>
+                                      {isStarterHere ? 'Starter' : 'Bench'}
+                                    </span>
                                   </span>
                                   <span className="player-row-meta">
                                     <span className="player-row-minutes">
@@ -1729,16 +1739,14 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
                                         own scouting report), not the point of a MINUTES panel — kept
                                         just the minutes + TAL, the two numbers that actually answer
                                         "is this rotation any good." */}
-                                    {/* 2026-08-19, user's explicit ask: a bare "TAL 97" chip is one
-                                        number with no sense of what it means — post-draft (the pick
-                                        is already locked in, nothing left to spoil), pairing it with
-                                        the same named tier the draft screens use gives the number
-                                        real context instead of asking the player to already know
-                                        this game's own internal scale. */}
-                                    <span className="mini-fact player-talent">TAL {displayTalentForSpan(tierContextFor(e.player))}</span>
+                                    {/* 2026-09-16, same "słabo wygląda" pass: bare text swapped for
+                                        the real `ScoreChip` (red→green gradient) every other 0-100
+                                        readout on this screen already uses, instead of a plain
+                                        number behind a divider line. */}
+                                    <ScoreChip label="TAL" value={displayTalentForSpan(tierContextFor(e.player))} />
                                   </span>
                                 </li>
-                              ))}
+                              );})}
                             </ul>
                           </li>
                         );
