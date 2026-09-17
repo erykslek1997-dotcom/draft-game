@@ -125,7 +125,23 @@ function challengerFromUrl(): ChallengeChallenger | undefined {
       // roster rows rather than dropping the whole comparison.
     }
   }
-  return { name, overall, rank, fieldSize, starters };
+  // 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy"): `cv`, the 7-metric breakdown —
+  // same degrade-independently shape as `cs` above (a missing/malformed blob just means no
+  // per-metric table, not no comparison at all).
+  let scores: ChallengeChallenger['scores'];
+  const rawScores = params.get('cv');
+  if (rawScores) {
+    try {
+      const parsed: unknown = JSON.parse(rawScores);
+      const keys = ['talent', 'benchDepth', 'offense', 'defense', 'spacing', 'fit', 'rotation'] as const;
+      if (parsed && typeof parsed === 'object' && keys.every((k) => typeof (parsed as Record<string, unknown>)[k] === 'number')) {
+        scores = parsed as ChallengeChallenger['scores'];
+      }
+    } catch {
+      // Same fallback shape as `cs` above.
+    }
+  }
+  return { name, overall, rank, fieldSize, starters, scores };
 }
 
 export default function GameShell({ mode, commissionerMode, humanTeamName, onExit }: Props) {

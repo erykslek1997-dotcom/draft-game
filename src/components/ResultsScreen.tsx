@@ -206,6 +206,12 @@ export interface ChallengeChallenger {
   rank: number;
   fieldSize: number;
   starters: ShareCardStarter[];
+  /** 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy" — make it more detailed): the
+   * same 7 `ScoreChip` values the hero's own "Team profile" row already shows for THIS team —
+   * reused as-is rather than inventing a second breakdown, so a friend's popup reads exactly like
+   * looking at their own Results screen would. Optional: an older-format link (before this
+   * follow-up shipped) still shows the headline score + roster rows without this row. */
+  scores?: { talent: number; benchDepth: number; offense: number; defense: number; spacing: number; fit: number; rotation: number };
 }
 
 /** Keyed by roster player id — one reaction per rostered player, set directly on that player's
@@ -415,7 +421,13 @@ function HeroResult({
    * comparison too): `cs` carries the same 5-entry starting five the PNG share card already
    * builds (`starters`, `ShareCardStarter[]`), JSON-encoded — small enough for a URL (five
    * `{position,name}` pairs) without needing the full 9-man roster/minutes this popup deliberately
-   * keeps out of scope (that's what the PNG share card is for). */
+   * keeps out of scope (that's what the PNG share card is for).
+   *
+   * 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy" — make it more detailed): `cv`
+   * carries the same 7 numbers the hero's own "Team profile" `ScoreChip` row already shows for
+   * this team (already rounded integers, same as the chips display), so the popup's per-metric
+   * table can never disagree with what this exact screen shows for the person who generated the
+   * link. */
   async function copyChallengeLink() {
     const url = new URL(window.location.href);
     const params = new URLSearchParams();
@@ -425,6 +437,15 @@ function HeroResult({
     params.set('cr', String(rank));
     params.set('cf', String(fieldSize));
     params.set('cs', JSON.stringify(starters));
+    params.set('cv', JSON.stringify({
+      talent: Math.round(talentScore),
+      benchDepth: Math.round(benchDepthScore),
+      offense: Math.round(offenseScore),
+      defense: Math.round(defenseScore),
+      spacing: Math.round(spacingScore),
+      fit: Math.round(fitScore),
+      rotation: Math.round(rotationScore),
+    }));
     url.search = `?${params.toString()}`;
     try {
       await navigator.clipboard.writeText(url.toString());
@@ -459,6 +480,31 @@ function HeroResult({
                 <span className="challenge-compare-rank">{ordinal(challenger.rank)} / {challenger.fieldSize}</span>
               </div>
             </div>
+            {/* 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy" — make it more
+                detailed): the same 7 numbers the hero's own "Team profile" chips show for this
+                team, laid out as your-value / label / their-value so both sides read at a glance;
+                the higher value per row gets the same green "winner" treatment the headline score
+                cards use. Degrades quietly if `challenger.scores` is missing (an older-format
+                link) — just skips straight to the roster comparison below. */}
+            {challenger.scores && (
+              <div className="challenge-compare-metrics">
+                {([
+                  ['Talent', Math.round(talentScore), challenger.scores.talent],
+                  ['Bench Depth', Math.round(benchDepthScore), challenger.scores.benchDepth],
+                  ['Offense', Math.round(offenseScore), challenger.scores.offense],
+                  ['Defense', Math.round(defenseScore), challenger.scores.defense],
+                  ['Spacing', Math.round(spacingScore), challenger.scores.spacing],
+                  ['Fit', Math.round(fitScore), challenger.scores.fit],
+                  ['Rotation', Math.round(rotationScore), challenger.scores.rotation],
+                ] as [string, number, number][]).map(([label, mine, theirs]) => (
+                  <div className="challenge-compare-metric-row" key={label}>
+                    <span className={`challenge-compare-metric-value ${mine > theirs ? 'challenge-compare-metric-value--winner' : ''}`}>{mine}</span>
+                    <span className="challenge-compare-metric-label">{label}</span>
+                    <span className={`challenge-compare-metric-value ${theirs > mine ? 'challenge-compare-metric-value--winner' : ''}`}>{theirs}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             {/* 2026-09-17, same-day follow-up ("krótkie porównanie składów + share"): a compact
                 per-slot roster comparison — just the 5 starters, not the full 9-man breakdown the
                 PNG share card already covers — plus a share action right here so the second player

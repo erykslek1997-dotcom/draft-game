@@ -2286,6 +2286,35 @@ select {
   color: var(--at-ink-faint, var(--text));
   text-transform: uppercase;
 }
+/* 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy") — the 7-metric breakdown, laid
+   out as your-value / label / their-value so both numbers read at a glance without a header row. */
+.challenge-compare-metrics {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--at-line, var(--border));
+}
+.challenge-compare-metric-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+}
+.challenge-compare-metric-label {
+  font-size: 11px;
+  text-align: center;
+  color: var(--at-ink-faint, var(--text));
+}
+.challenge-compare-metric-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--at-ink-soft, var(--text));
+}
+.challenge-compare-metric-row .challenge-compare-metric-value:first-child { text-align: right; }
+.challenge-compare-metric-row .challenge-compare-metric-value:last-child { text-align: left; }
+.challenge-compare-metric-value--winner {
+  color: #79c99a;
+}
 /* 2026-09-17, same-day follow-up ("krótkie porównanie składów + share") — a compact per-slot
    starting-five comparison and a share action inside the popup itself. */
 .challenge-compare-roster {
