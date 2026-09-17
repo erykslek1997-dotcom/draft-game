@@ -681,7 +681,15 @@ export const DETECTORS: RosterInsightDetector[] = [
     suppressionGroup: 'usage_negative',
     evaluate: t => {
       const c = t.fgaCompressionScore ?? 0;
-      return c >= 0.55
+      // 2026-09-17, "dodatkowe opisy" audit (user's own ask, after real playtester feedback about
+      // the panel — measured which of the 86 detectors never fire on a real 160-roster sample):
+      // 0.55 was more than double the real observed max (0.266, `scripts` diagnostic, deleted
+      // after use) — `fgaCompressionScore` only ever reaches 1.0 in the extreme case a star's
+      // drafted span is a TOTAL cap-forced downgrade from his own real peak FGA, which essentially
+      // never happens under this game's real cap/pool. Lowered to just above the real p90 (0.221),
+      // so this now flags the genuine top decile of cap-forced-down stars instead of a threshold
+      // this field could never reach.
+      return c >= 0.18
         ? hit(c, 0.94, teamConfidence(t), 'At least one high-value scorer requires a meaningful reduction from his historical shot volume.', { values: { fgaCompressionScore: c, totalFga: t.totalFga } })
         : inactive;
     }
@@ -1055,7 +1063,12 @@ export const DETECTORS: RosterInsightDetector[] = [
       // `deepRotationScore` is actually built from — kept in sync so the displayed count never
       // disagrees with the score it's explaining.
       const n = t.players.filter(p => p.minutes >= 15).length;
-      return s >= 0.9
+      // 2026-09-17, "dodatkowe opisy" audit: `deepRotationScore` is a discrete `k/9` (k = players
+      // clearing the 15-minute bar), so its real ceiling below a perfect 9/9 is 8/9 = 0.889 — 0.9
+      // was one player short of ever being reachable (measured: real max across a 160-roster
+      // sample was exactly 0.889, never 1.0). Lowered to 0.85, comfortably inside the 8/9 case this
+      // was clearly meant to reward.
+      return s >= 0.85
         ? hit(s, 0.76, teamConfidence(t), `${n} players project for meaningful playoff minutes, giving the roster credible functional depth.`, { values: { deepRotationScore: s, usefulPlayers: n } })
         : inactive;
     }
@@ -1063,14 +1076,18 @@ export const DETECTORS: RosterInsightDetector[] = [
   {
     // 2026-08-19, user's explicit ask ("look for ways to make around 7 strengths and concerns"):
     // 0.68 never fired across a real 48-team simulated sample (`scripts/_measureDeadConcernSignals.ts`,
-    // deleted after use) — `topHeavyScore`'s own real max was 0.612, so this bar was structurally
-    // unreachable, not just rare. Lowered to 0.38 (real p90), so this now flags the genuinely most
-    // top-heavy tenth of rosters instead of a threshold no real roster could ever clear.
+    // deleted after use) — `topHeavyScore`'s own real max was 0.612 at the time, so 0.38 (that
+    // sample's real p90) was chosen to flag the genuinely most top-heavy tenth of rosters.
+    // 2026-09-17: the same field's real distribution has since shifted (later talent/rotation
+    // recalibrations) — a fresh 160-roster sample now tops out at 0.356, below the 2026-08-19 fix's
+    // own 0.38 bar, making it unreachable again. Lowered to 0.30 (this sample's real p90/p95
+    // boundary) — re-measure again if a future formula change shifts this field once more, the
+    // same way this second pass caught the first fix going stale.
     id: 'TOP_HEAVY_ROTATION', type: 'concern', category: 'depth',
     suppressionGroup: 'rotation_negative',
     evaluate: t => {
       const s = t.topHeavyScore ?? 0;
-      return s >= 0.38
+      return s >= 0.30
         ? hit(s, 0.82, teamConfidence(t), 'Team quality falls sharply outside the primary core, making the rotation fragile when stars sit.', { values: { topHeavyScore: s, benchDropoffScore: t.benchDropoffScore ?? null } })
         : inactive;
     }
@@ -1080,7 +1097,12 @@ export const DETECTORS: RosterInsightDetector[] = [
     suppressionGroup: 'rotation_positive',
     evaluate: t => {
       const s = t.roleFlexibilityScore ?? 0;
-      return s >= 0.72
+      // 2026-09-17, "dodatkowe opisy" audit: `roleFlexibilityScore` averages each player's own
+      // `roleFlexibility` (0/0.5/1 for 0/1/2 real secondary positions) — a real 160-roster sample
+      // topped out at 0.50, well short of 0.72 (would need most of the roster carrying two
+      // secondary positions each, essentially never true for real drafted spans). Lowered to 0.40,
+      // just above the real p90 (0.389).
+      return s >= 0.40
         ? hit(s, 0.72, teamConfidence(t), 'The roster supports several credible role configurations without creating a major structural weakness.', { values: { roleFlexibilityScore: s } })
         : inactive;
     }
@@ -1175,10 +1197,19 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'MULTIPLE_STRUCTURAL_HOLES', type: 'concern', category: 'cross',
     evaluate: t => {
       const holes: string[] = [];
+      // 2026-09-17, "dodatkowe opisy" audit: three of these five per-dimension bars were far
+      // enough below their field's real observed range that "2+ holes at once" could never
+      // mathematically happen (measured on a 160-roster sample: starterSpacingStrength's own real
+      // p5 was 0.494, defensiveLayeringScore's p5 was 0.753, starterReboundingScore's p5 was
+      // 0.543 — all comfortably above the old 0.40-0.42 bars). Raised each to sit just below its
+      // own real p10-p15 (spacing/rebounding) or with real headroom below the real p5 (defense,
+      // which almost never reads low at all), so a genuinely bad-in-two-ways roster can actually
+      // trip this. `creatorCount === 0` and the positional-compromise bar were already reachable
+      // (both fire in the real sample) — left unchanged.
       if ((t.creatorCount ?? 0) === 0) holes.push('creation');
-      if ((t.starterSpacingStrength ?? 1) <= 0.42) holes.push('spacing');
-      if ((t.defensiveLayeringScore ?? 1) <= 0.42) holes.push('defensive structure');
-      if ((t.starterReboundingScore ?? 1) <= 0.40) holes.push('rebounding');
+      if ((t.starterSpacingStrength ?? 1) <= 0.58) holes.push('spacing');
+      if ((t.defensiveLayeringScore ?? 1) <= 0.70) holes.push('defensive structure');
+      if ((t.starterReboundingScore ?? 1) <= 0.58) holes.push('rebounding');
       if ((t.positionalCompromiseCount ?? 0) >= 3) holes.push('positional coverage');
       return holes.length >= 2
         ? hit(0.62 + holes.length * 0.10, 0.96, teamConfidence(t), `Multiple structural holes at once: ${holes.join(', ')}.`, { values: { structuralHoleCount: holes.length }, notes: holes }, 0.98)
@@ -1234,7 +1265,14 @@ export const DETECTORS: RosterInsightDetector[] = [
       const drop = t.benchDropoffScore ?? 0;
       const mins = t.starters.reduce((s, p) => s + p.minutes, 0);
       const tal = t.starters.reduce((s, p) => s + (p.tal ?? 0) * p.minutes, 0) / Math.max(1, mins);
-      return tal >= 78 && drop >= 0.62
+      // 2026-09-17, "dodatkowe opisy" audit: `weightedStarterTal >= 78` was never the real gate —
+      // a real 160-roster sample's weighted-starter-TAL never dropped below 85.7 (drafted starters
+      // are always elite-caliber by construction), so `tal>=78` was already unconditionally true.
+      // The actual blocker was `drop >= 0.62`: `benchDropoffScore` is the exact same field
+      // `topHeavyScore` reads (see insightMapper.ts), whose own real max is 0.356 — 0.62 could
+      // never fire. Lowered to 0.26 (real p90), matching the same recalibration TOP_HEAVY_ROTATION
+      // just got for the identical underlying number.
+      return tal >= 78 && drop >= 0.26
         ? hit(drop, 0.90, teamConfidence(t), 'The starting group is strong, but team quality drops materially when the bench enters.', { values: { weightedStarterTal: tal, benchDropoffScore: drop } }, 0.95)
         : inactive;
     }
@@ -1254,7 +1292,12 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const p = t.perimeterDefenseScore ?? 0;
       const r = t.rimProtectionScore ?? 1;
-      return p >= 0.72 && r <= 0.40
+      // 2026-09-17, "dodatkowe opisy" audit: `perimeterDefenseScore >= 0.72` was already easily
+      // reachable (real p25 was 0.783), so the real blocker was `rimProtectionScore <= 0.40` — a
+      // real 160-roster sample's own worst 5% still read 0.537, so 0.40 was below anything a real
+      // drafted team produces. Lowered to 0.55 (just above the real p10, 0.588's neighbor), so this
+      // now flags a genuinely rim-protection-poor team instead of an unreachable floor.
+      return p >= 0.72 && r <= 0.55
         ? hit((p + (1 - r)) / 2, 0.90, teamConfidence(t), 'Strong perimeter defense lacks reliable back-line rim protection behind it.', { values: { perimeterDefenseScore: p, rimProtectionScore: r } }, 0.95)
         : inactive;
     }
@@ -1304,7 +1347,15 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const top = t.topHeavyScore ?? 0;
       const deep = t.deepRotationScore ?? 1;
-      return top >= 0.65 && deep <= 0.45
+      // 2026-09-17, "dodatkowe opisy" audit: doubly unreachable on a real 160-roster sample —
+      // `topHeavyScore` (same field TOP_HEAVY_ROTATION/GREAT_STARTERS_WEAK_BENCH just got
+      // recalibrated for) never exceeded 0.356, and `deepRotationScore`'s own real worst case never
+      // dropped below 0.667 (it's a discrete k/9 — 6/9 rounds to 0.667). Lowered both to the same
+      // real p90-ish neighborhood the sibling depth detectors above now use, so a genuinely
+      // top-heavy-AND-shallow roster (this concern's whole point, and the exact shape the
+      // DEAD_NINTH_SLOT_ACCEPTABLE suppression below this file's EXPLICIT_SUPPRESSION now depends
+      // on) can actually fire instead of being permanently dead code.
+      return top >= 0.26 && deep <= 0.70
         ? hit((top + (1 - deep)) / 2, 0.88, teamConfidence(t), 'The core is strong, but the overall playoff rotation is fragile outside its best lineups.', { values: { topHeavyScore: top, deepRotationScore: deep } }, 0.95)
         : inactive;
     }
@@ -1316,7 +1367,12 @@ export const DETECTORS: RosterInsightDetector[] = [
       const d = t.deepRotationScore ?? 0;
       const def = t.defensiveLayeringScore ?? 0;
       const sp = t.spacingStrength ?? 0;
-      return f >= 0.70 && d >= 0.62 && Math.min(def, sp) >= 0.55
+      // 2026-09-17, "dodatkowe opisy" audit: `roleFlexibilityScore >= 0.70` was the blocker here
+      // too (same field ROLE_FLEXIBILITY_HIGH above was just recalibrated for — real max 0.50).
+      // `d`/`def`/`sp`'s own bars were already comfortably reachable on their own. Lowered just
+      // this one leg to 0.35, a notch below ROLE_FLEXIBILITY_HIGH's own new 0.40 since this is only
+      // one of four ANDed conditions here, not the detector's sole claim.
+      return f >= 0.35 && d >= 0.62 && Math.min(def, sp) >= 0.55
         ? hit((f + d + def + sp) / 4, 0.84, teamConfidence(t), 'The roster supports multiple viable lineup constructions rather than depending on one specific five-man unit.', { values: { roleFlexibilityScore: f, deepRotationScore: d, defensiveLayeringScore: def, spacingStrength: sp } }, 0.98)
         : inactive;
     }
