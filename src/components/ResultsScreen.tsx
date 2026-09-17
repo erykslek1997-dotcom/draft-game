@@ -194,12 +194,18 @@ interface Props {
   challenger?: ChallengeChallenger;
 }
 
-/** See the `challenger` prop's own docstring on `Props` above for the full "no backend" story. */
+/** See the `challenger` prop's own docstring on `Props` above for the full "no backend" story.
+ * 2026-09-17, same-day follow-up (user's own ask: "krótkie porównanie składów + share" — a short
+ * roster comparison, plus a share action, right on the popup): `starters` reuses the exact
+ * `ShareCardStarter` shape the PNG share card already builds (`shareCardImage.ts`) — same 5-slot
+ * starting five, just the position+name a real user cares about for a quick "who'd you take at
+ * PG" glance, not the full 9-man roster/minutes breakdown that would bloat the shareable link. */
 export interface ChallengeChallenger {
   name: string;
   overall: number;
   rank: number;
   fieldSize: number;
+  starters: ShareCardStarter[];
 }
 
 /** Keyed by roster player id — one reaction per rostered player, set directly on that player's
@@ -403,7 +409,13 @@ function HeroResult({
    * finishes their own draft lands on a Results screen that already knows what it's being compared
    * against (`GameShell.tsx`'s `challengerFromUrl` decodes these same params). That second player's
    * own "Challenge a friend" click then naturally encodes THEIR result the same way — sending it
-   * back (or onward) closes the loop with zero new UI needed for the reply direction. */
+   * back (or onward) closes the loop with zero new UI needed for the reply direction.
+   *
+   * 2026-09-17, same-day follow-up ("krótkie porównanie składów + share" — a short roster
+   * comparison too): `cs` carries the same 5-entry starting five the PNG share card already
+   * builds (`starters`, `ShareCardStarter[]`), JSON-encoded — small enough for a URL (five
+   * `{position,name}` pairs) without needing the full 9-man roster/minutes this popup deliberately
+   * keeps out of scope (that's what the PNG share card is for). */
   async function copyChallengeLink() {
     const url = new URL(window.location.href);
     const params = new URLSearchParams();
@@ -412,6 +424,7 @@ function HeroResult({
     params.set('co', String(overall));
     params.set('cr', String(rank));
     params.set('cf', String(fieldSize));
+    params.set('cs', JSON.stringify(starters));
     url.search = `?${params.toString()}`;
     try {
       await navigator.clipboard.writeText(url.toString());
@@ -446,7 +459,31 @@ function HeroResult({
                 <span className="challenge-compare-rank">{ordinal(challenger.rank)} / {challenger.fieldSize}</span>
               </div>
             </div>
-            <p className="challenge-compare-hint">Same 16-team board, same AI, two different drafts. Use “Challenge a friend” below to send this result onward.</p>
+            {/* 2026-09-17, same-day follow-up ("krótkie porównanie składów + share"): a compact
+                per-slot roster comparison — just the 5 starters, not the full 9-man breakdown the
+                PNG share card already covers — plus a share action right here so the second player
+                doesn't have to scroll down to find "Challenge a friend" to reply/forward. Degrades
+                quietly if `challenger.starters` is empty (an older-format link). */}
+            {challenger.starters.length > 0 && (
+              <div className="challenge-compare-roster">
+                <span className="challenge-compare-roster-label">Starting five</span>
+                {STARTER_SLOTS.map((slot) => {
+                  const mine = starters.find((s) => s.position === slot)?.name ?? '—';
+                  const theirs = challenger.starters.find((s) => s.position === slot)?.name ?? '—';
+                  return (
+                    <div className="challenge-compare-roster-row" key={slot}>
+                      <span className="challenge-compare-roster-slot">{slot}</span>
+                      <span className="challenge-compare-roster-name" title={mine}>{mine}</span>
+                      <span className="challenge-compare-roster-name" title={theirs}>{theirs}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button type="button" className="challenge-compare-share" onClick={copyChallengeLink}>
+              {challengeCopied ? '✓ Link copied' : '🔗 Share your result'}
+            </button>
+            <p className="challenge-compare-hint">Same 16-team board, same AI, two different drafts.</p>
           </div>
         </div>
       )}
