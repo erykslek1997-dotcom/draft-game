@@ -342,12 +342,27 @@ export async function downloadShareCard(data: ShareCardData, filename: string): 
  * bar per metric, and the starting five matched slot-for-slot with faces — a real downloadable PNG
  * for the "you vs them" moment, not just a link.
  */
+/** One rotation contributor's minutes at one slot — same shape as `ResultsScreen.tsx`'s own
+ * `ChallengeRotationEntry`, duplicated rather than imported (that file already imports FROM this
+ * one; a reverse import would make the two circularly dependent for a 3-field shape). */
+export interface DuelRotationEntry {
+  slot: string;
+  name: string;
+  minutes: number;
+}
+
 export interface DuelCardSide {
   name: string;
   overall: number;
   rank: number;
   fieldSize: number;
-  starters: ShareCardStarter[];
+  /** 2026-09-17, user-reported live (screenshot comparing this card's old starters-only row
+   * against the single-player hero's own bordered per-slot rotation cards): "rotacja by mogła być
+   * tak jak tutaj" — every contributor at every slot, not just the starter, drawn the same
+   * card-per-slot way. Replaces the earlier `starters`-only field entirely (this app has no real
+   * users of the old shape yet — same session, see `ChallengeChallenger`'s own "no legacy format"
+   * note). */
+  rotation: DuelRotationEntry[];
   /** Missing on an older-format challenge link (see `ChallengeChallenger`'s own docstring) — the
    * metrics section is skipped entirely rather than showing one side's numbers against blanks. */
   scores?: { talent: number; benchDepth: number; offense: number; defense: number; spacing: number; fit: number; rotation: number };
@@ -409,13 +424,33 @@ export async function buildDuelCardBlob(data: DuelCardData): Promise<Blob | null
   const { you, friend } = data;
   const W = 1200;
   const hasScores = Boolean(you.scores && friend.scores);
-  const hasStarters = you.starters.length > 0 || friend.starters.length > 0;
+  const hasRotation = you.rotation.length > 0 || friend.rotation.length > 0;
+
+  // Grouped up front (not inside the draw loop) since each slot's CARD height depends on how many
+  // contributors it has — the canvas height itself has to account for that before it's created.
+  const youBySlot = new Map<string, DuelRotationEntry[]>(STARTER_SLOTS.map((s) => [s, []]));
+  const friendBySlot = new Map<string, DuelRotationEntry[]>(STARTER_SLOTS.map((s) => [s, []]));
+  you.rotation.forEach((e) => youBySlot.get(e.slot)?.push(e));
+  friend.rotation.forEach((e) => friendBySlot.get(e.slot)?.push(e));
+  youBySlot.forEach((list) => list.sort((a, b) => b.minutes - a.minutes));
+  friendBySlot.forEach((list) => list.sort((a, b) => b.minutes - a.minutes));
+
+  const ROTATION_HEADER_H = 40;
+  const CARD_HEADER_H = 30;
+  const CARD_ROW_H = 40;
+  const CARD_PAD = 12;
+  const CARD_GAP = 12;
+  const slotCardHeights = STARTER_SLOTS.map((slot) => {
+    const rows = Math.max(youBySlot.get(slot)!.length, friendBySlot.get(slot)!.length, 1);
+    return CARD_HEADER_H + rows * CARD_ROW_H + CARD_PAD * 2;
+  });
+  const rotationBlockH = slotCardHeights.reduce((sum, h) => sum + h, 0) + CARD_GAP * (STARTER_SLOTS.length - 1);
 
   const panelTop = 150;
   const panelH = 200;
   const metricsTop = panelTop + panelH + 60;
-  const startersTop = hasScores ? metricsTop + 30 + 7 * 42 + 20 : metricsTop;
-  const contentBottom = hasStarters ? startersTop + 30 + STARTER_SLOTS.length * 52 + 20 : startersTop;
+  const rotationTop = hasScores ? metricsTop + 30 + 7 * 42 + 30 : metricsTop;
+  const contentBottom = hasRotation ? rotationTop + ROTATION_HEADER_H + rotationBlockH : rotationTop;
   const H = contentBottom + 60;
 
   const canvas = document.createElement('canvas');
@@ -527,9 +562,15 @@ export async function buildDuelCardBlob(data: DuelCardData): Promise<Blob | null
       roundedRectPath(ctx, W / 2 - barHalf, barY, barHalf * 2, barH, 4);
       ctx.fillStyle = PALETTE.line;
       ctx.fill();
-      const total = mine + theirs || 1;
-      const leftW = (barHalf * mine) / total;
-      const rightW = (barHalf * theirs) / total;
+      // 2026-09-17, user-reported live ("mamy np. 91/100 na skali, a wizualnie wygląda jakby skala
+      // była do np. 200" — a 91/100 score visually reads as if the scale went up to ~200): this
+      // used to fill each half by `mine/(mine+theirs)` — a relative-SHARE fraction, correct for two
+      // numbers that sum to a whole (like a vote split), wrong for two independent 0-100 scores,
+      // where it left roughly half the bar empty even for a near-maxed value. Every one of these 7
+      // metrics is already a 0-100 score (see `ScoreChip`/`scoreBand` in ResultsScreen.tsx) — fill
+      // length is now a direct percentage of that real, fixed scale instead.
+      const leftW = (barHalf * mine) / 100;
+      const rightW = (barHalf * theirs) / 100;
       if (leftW > 0.5) {
         roundedRectPath(ctx, W / 2 - leftW, barY, leftW, barH, 4);
         ctx.fillStyle = mine >= theirs ? WIN_GREEN : PALETTE.accent;
@@ -551,52 +592,76 @@ export async function buildDuelCardBlob(data: DuelCardData): Promise<Blob | null
     });
   }
 
-  // Starting five: matched slot-for-slot (not just listed in draft order), each side's face
-  // growing inward toward the shared position label at center — a "fight card" layout, the same
-  // instinct behind the identity panels' own side-by-side VS framing.
-  if (hasStarters) {
+  // Rotation: one bordered card per slot (2026-09-17, user-reported live, comparing this section
+  // against the single-player hero's own `results-hero-rotation` cards: "rotacja by mogła być tak
+  // jak tutaj") — every contributor at that slot, not just the starter, each with real minutes.
+  // "You"/"Friend" labelled once above the whole block (not per-card) since every card repeats the
+  // same two-sided split; inside each card, that side's own contributors grow inward toward the
+  // centred slot label, matching the identity panels' own side-by-side VS framing.
+  if (hasRotation) {
     ctx.textAlign = 'left';
     ctx.fillStyle = PALETTE.inkFaint;
     ctx.font = '700 14px Arial, sans-serif';
-    ctx.fillText('STARTING FIVE', 56, startersTop);
+    ctx.fillText('ROTATION', 56, rotationTop);
+    ctx.font = '700 12px Arial, sans-serif';
+    ctx.fillText('YOU', 74, rotationTop + 26);
+    ctx.textAlign = 'right';
+    ctx.fillText('YOUR FRIEND', W - 74, rotationTop + 26);
+    ctx.textAlign = 'left';
 
-    const youBySlot = new Map(you.starters.map((s) => [s.position, s]));
-    const friendBySlot = new Map(friend.starters.map((s) => [s.position, s]));
-    const radius = 20;
-    const nameMaxW = 360;
+    const cardX = 56;
+    const cardW = W - 112;
+    const radius = 15;
+    const nameMaxW = cardW / 2 - 120;
     const images = await Promise.all(
       STARTER_SLOTS.map(async (slot) => {
-        const y = youBySlot.get(slot);
-        const f = friendBySlot.get(slot);
-        const [youImg, friendImg] = await Promise.all([
-          y ? loadImage(headshotUrl(y.name) ?? '') : Promise.resolve(null),
-          f ? loadImage(headshotUrl(f.name) ?? '') : Promise.resolve(null),
-        ]);
-        return { youImg, friendImg };
+        const youImgs = await Promise.all(youBySlot.get(slot)!.map((e) => loadImage(headshotUrl(e.name) ?? '')));
+        const friendImgs = await Promise.all(friendBySlot.get(slot)!.map((e) => loadImage(headshotUrl(e.name) ?? '')));
+        return { youImgs, friendImgs };
       }),
     );
+
+    let cardY = rotationTop + ROTATION_HEADER_H;
     STARTER_SLOTS.forEach((slot, i) => {
-      const rowY = startersTop + 30 + i * 52 + 26;
-      const y = youBySlot.get(slot);
-      const f = friendBySlot.get(slot);
+      const youList = youBySlot.get(slot)!;
+      const friendList = friendBySlot.get(slot)!;
+      const rows = Math.max(youList.length, friendList.length, 1);
+      const cardH = slotCardHeights[i];
+
+      roundedRectPath(ctx, cardX, cardY, cardW, cardH, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      ctx.fill();
+      ctx.strokeStyle = PALETTE.line;
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
       ctx.textAlign = 'center';
       ctx.fillStyle = PALETTE.inkFaint;
       ctx.font = '700 13px Arial, sans-serif';
-      ctx.fillText(slot, W / 2, rowY + 5);
+      ctx.fillText(slot, W / 2, cardY + 20);
 
-      const youCx = 56 + radius;
-      drawAvatarCircle(ctx, youCx, rowY, radius, images[i].youImg, y ? initials(y.name) : '');
+      const drawEntry = (entry: DuelRotationEntry | undefined, img: HTMLImageElement | null, r: number, mirrored: boolean) => {
+        const rowCy = cardY + CARD_HEADER_H + CARD_PAD + r * CARD_ROW_H + CARD_ROW_H / 2;
+        const cx = mirrored ? cardX + cardW - 20 - radius : cardX + 20 + radius;
+        drawAvatarCircle(ctx, cx, rowCy, radius, img, entry ? initials(entry.name) : '');
+        const textX = mirrored ? cx - radius - 12 : cx + radius + 12;
+        ctx.textAlign = mirrored ? 'right' : 'left';
+        ctx.fillStyle = PALETTE.ink;
+        ctx.font = '600 15px Arial, sans-serif';
+        ctx.fillText(fitText(ctx, entry?.name ?? '—', nameMaxW), textX, rowCy - 4);
+        if (entry) {
+          ctx.fillStyle = PALETTE.inkFaint;
+          ctx.font = '500 12px Arial, sans-serif';
+          ctx.fillText(`${Math.round(entry.minutes)}m`, textX, rowCy + 13);
+        }
+      };
+      for (let r = 0; r < rows; r += 1) {
+        drawEntry(youList[r], images[i].youImgs[r] ?? null, r, false);
+        drawEntry(friendList[r], images[i].friendImgs[r] ?? null, r, true);
+      }
       ctx.textAlign = 'left';
-      ctx.fillStyle = PALETTE.ink;
-      ctx.font = '600 17px Arial, sans-serif';
-      ctx.fillText(fitText(ctx, y?.name ?? '—', nameMaxW), youCx + radius + 16, rowY + 6);
 
-      const friendCx = W - 56 - radius;
-      drawAvatarCircle(ctx, friendCx, rowY, radius, images[i].friendImg, f ? initials(f.name) : '');
-      ctx.textAlign = 'right';
-      ctx.fillText(fitText(ctx, f?.name ?? '—', nameMaxW), friendCx - radius - 16, rowY + 6);
-      ctx.textAlign = 'left';
+      cardY += cardH + CARD_GAP;
     });
   }
 

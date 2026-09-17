@@ -419,7 +419,12 @@ function HeroResult({
   // draft's Results screen mounts, so the second player can't miss it. Dismissible, and only ever
   // shown when `challenger` is actually present (a normal draft never sees this).
   const [compareOpen, setCompareOpen] = useState(() => challenger !== undefined);
-  const youWon = challenger ? overall > challenger.overall : null;
+  // 2026-09-17, user-reported live (screenshot: a tie's "Your friend" card rendered with the green
+  // "winner" tint) — this used to be `overall > challenger.overall`, which is `false` for BOTH a
+  // loss AND a tie; the JSX below checks `youWon === false` for "friend won" specifically, so a
+  // tie was misread as a friend win. Explicit 3-way `true`/`false`/`null`, matching
+  // `shareCardImage.ts`'s `buildDuelCardBlob` (which already had this right).
+  const youWon = challenger ? (overall > challenger.overall ? true : overall < challenger.overall ? false : null) : null;
 
   /** 2026-09-11, "Duel na seedzie" — user's own spec: "Ty i znajomy dostajecie DOKŁADNIE tę samą
    * kolejność picków AI... Zero nowej logiki draftu, tylko UI do 'wygeneruj link z tym seedem,
@@ -439,15 +444,28 @@ function HeroResult({
    *
    * 2026-09-17, same-day follow-up ("krótkie porównanie składów + share" — a short roster
    * comparison too): `cs` carries the same 5-entry starting five the PNG share card already
-   * builds (`starters`, `ShareCardStarter[]`), JSON-encoded — small enough for a URL (five
-   * `{position,name}` pairs) without needing the full 9-man roster/minutes this popup deliberately
-   * keeps out of scope (that's what the PNG share card is for).
+   * builds (`starters`, `ShareCardStarter[]`), small enough for a URL without needing the full
+   * 9-man roster/minutes this popup deliberately keeps out of scope (that's what the PNG share
+   * card is for).
    *
    * 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy" — make it more detailed): `cv`
    * carries the same 7 numbers the hero's own "Team profile" `ScoreChip` row already shows for
    * this team (already rounded integers, same as the chips display), so the popup's per-metric
    * table can never disagree with what this exact screen shows for the person who generated the
-   * link. */
+   * link.
+   *
+   * 2026-09-17, same-day follow-up ("dałoby radę zrobić tam rotacje tak jak na koniec draftu"):
+   * `cx` carries every rotation contributor (not just the 5 starters) + their minutes.
+   *
+   * 2026-09-17, user-reported live ("link do challange jest ABSURDALNIE długi" — the link is
+   * absurdly long): `cs`/`cv`/`cx` used to be JSON objects with named keys (`{"slot":"PG",
+   * "name":"Jason Kidd","minutes":34}`), and every key name gets repeated per entry — `cx` alone
+   * can carry 9+ rotation entries, so those repeated key names (further bloated by percent-
+   * encoding: `"`→`%22`, `:`→`%3A`) were the dominant cost. All three now encode as plain
+   * positional tuples instead (`["PG","Jason Kidd",34]`) — same JSON.parse/Array.isArray decode
+   * shape on the other end (`GameShell.tsx`'s `challengerFromUrl`), just no key names to repeat.
+   * No legacy-format decode kept: this whole feature shipped within the same session, before any
+   * real link was ever shared outside it. */
   async function copyChallengeLink() {
     const url = new URL(window.location.href);
     const params = new URLSearchParams();
@@ -456,18 +474,18 @@ function HeroResult({
     params.set('co', String(overall));
     params.set('cr', String(rank));
     params.set('cf', String(fieldSize));
-    params.set('cs', JSON.stringify(starters));
-    params.set('cv', JSON.stringify({
-      talent: Math.round(talentScore),
-      benchDepth: Math.round(benchDepthScore),
-      offense: Math.round(offenseScore),
-      defense: Math.round(defenseScore),
-      spacing: Math.round(spacingScore),
-      fit: Math.round(fitScore),
-      rotation: Math.round(rotationScore),
-    }));
+    params.set('cs', JSON.stringify(starters.map((s) => [s.position, s.name])));
+    params.set('cv', JSON.stringify([
+      Math.round(talentScore),
+      Math.round(benchDepthScore),
+      Math.round(offenseScore),
+      Math.round(defenseScore),
+      Math.round(spacingScore),
+      Math.round(fitScore),
+      Math.round(rotationScore),
+    ]));
     params.set('cx', JSON.stringify(
-      assignments.map((a) => ({ slot: a.slot, name: a.player.playerName, minutes: Math.round(a.minutes) })),
+      assignments.map((a) => [a.slot, a.player.playerName, Math.round(a.minutes)]),
     ));
     url.search = `?${params.toString()}`;
     try {
@@ -492,7 +510,7 @@ function HeroResult({
             overall,
             rank,
             fieldSize,
-            starters,
+            rotation: assignments.map((a) => ({ slot: a.slot, name: a.player.playerName, minutes: Math.round(a.minutes) })),
             scores: {
               talent: Math.round(talentScore),
               benchDepth: Math.round(benchDepthScore),
@@ -508,7 +526,7 @@ function HeroResult({
             overall: challenger.overall,
             rank: challenger.rank,
             fieldSize: challenger.fieldSize,
-            starters: challenger.starters,
+            rotation: challenger.rotation ?? [],
             scores: challenger.scores,
           },
         },
