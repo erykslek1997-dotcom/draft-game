@@ -5,9 +5,7 @@ import {
   makePick,
   resolveAiPickIfNeeded,
   isHumanRosterImpossible,
-  autoFinishDraft,
   TEAM_COUNT,
-  ROUNDS,
   type DraftState,
 } from '../engine/draft';
 import { autoAssignRotation } from '../engine/rotation';
@@ -79,11 +77,6 @@ const AI_SPEEDS = [
 ] as const;
 const DEFAULT_AI_SPEED_INDEX = 1;
 
-/** Audit AI-4 — chunked auto-finish: picks resolved per `setTimeout(0)` frame, and the whole
- * draft's pick count for the progress readout. */
-const AUTO_FINISH_CHUNK = 6;
-const TOTAL_PICKS = TEAM_COUNT * ROUNDS;
-
 /** `?draftSeed=123` on the URL replays a specific draft — the seed `createDraft` logs to the
  * console in dev. Any non-finite value is ignored and a fresh random seed is drawn as usual. */
 function seedFromUrl(): number | undefined {
@@ -112,38 +105,44 @@ function challengerFromUrl(): ChallengeChallenger | undefined {
   const rank = Number(params.get('cr'));
   const fieldSize = Number(params.get('cf'));
   if (!name || !Number.isFinite(overall) || !Number.isFinite(rank) || !Number.isFinite(fieldSize)) return undefined;
+  // 2026-09-17, user-reported live ("link do challange jest ABSURDALNIE długi" — the link is
+  // absurdly long): `cs`/`cv`/`cx` used to be JSON objects with named keys, repeated per entry —
+  // `cx` alone can carry 9+ rotation entries, so those repeated names (further bloated by percent-
+  // encoding) were the dominant cost. All three now decode as plain positional tuples instead
+  // (`copyChallengeLink`'s own docstring in ResultsScreen.tsx has the full before/after). No
+  // legacy-format fallback: this whole feature shipped within the same session, before any real
+  // link was shared outside it.
   let starters: ShareCardStarter[] = [];
   const rawStarters = params.get('cs');
   if (rawStarters) {
     try {
       const parsed: unknown = JSON.parse(rawStarters);
-      if (Array.isArray(parsed) && parsed.every((s) => s && typeof s.position === 'string' && typeof s.name === 'string')) {
-        starters = parsed as ShareCardStarter[];
+      if (Array.isArray(parsed) && parsed.every((s) => Array.isArray(s) && s.length === 2 && typeof s[0] === 'string' && typeof s[1] === 'string')) {
+        starters = (parsed as [string, string][]).map(([position, name]) => ({ position, name }));
       }
     } catch {
-      // Malformed/truncated `cs` (a manually-edited URL, an older link format) — fall back to no
-      // roster rows rather than dropping the whole comparison.
+      // Malformed/truncated `cs` (a manually-edited URL) — fall back to no roster rows rather
+      // than dropping the whole comparison.
     }
   }
-  // 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy"): `cv`, the 7-metric breakdown —
-  // same degrade-independently shape as `cs` above (a missing/malformed blob just means no
-  // per-metric table, not no comparison at all).
+  // `cv`, the 7-metric breakdown (fixed order: talent/benchDepth/offense/defense/spacing/fit/
+  // rotation) — same degrade-independently shape as `cs` above (a missing/malformed blob just
+  // means no per-metric table, not no comparison at all).
   let scores: ChallengeChallenger['scores'];
   const rawScores = params.get('cv');
   if (rawScores) {
     try {
       const parsed: unknown = JSON.parse(rawScores);
-      const keys = ['talent', 'benchDepth', 'offense', 'defense', 'spacing', 'fit', 'rotation'] as const;
-      if (parsed && typeof parsed === 'object' && keys.every((k) => typeof (parsed as Record<string, unknown>)[k] === 'number')) {
-        scores = parsed as ChallengeChallenger['scores'];
+      if (Array.isArray(parsed) && parsed.length === 7 && parsed.every((n) => typeof n === 'number')) {
+        const [talent, benchDepth, offense, defense, spacing, fit, rotationScore] = parsed as number[];
+        scores = { talent, benchDepth, offense, defense, spacing, fit, rotation: rotationScore };
       }
     } catch {
       // Same fallback shape as `cs` above.
     }
   }
-  // 2026-09-17, same-day follow-up (user: "dałoby radę zrobić tam rotacje tak jak na koniec
-  // draftu"): `cx`, the full per-slot rotation (every contributor + minutes, not just the
-  // starter) — same degrade-independently shape as `cs`/`cv` above.
+  // `cx`, the full per-slot rotation (every contributor + minutes, not just the starter) — same
+  // degrade-independently shape as `cs`/`cv` above.
   let rotation: ChallengeChallenger['rotation'];
   const rawRotation = params.get('cx');
   if (rawRotation) {
@@ -151,9 +150,9 @@ function challengerFromUrl(): ChallengeChallenger | undefined {
       const parsed: unknown = JSON.parse(rawRotation);
       if (
         Array.isArray(parsed) &&
-        parsed.every((e) => e && typeof e.slot === 'string' && typeof e.name === 'string' && typeof e.minutes === 'number')
+        parsed.every((e) => Array.isArray(e) && e.length === 3 && typeof e[0] === 'string' && typeof e[1] === 'string' && typeof e[2] === 'number')
       ) {
-        rotation = parsed as ChallengeChallenger['rotation'];
+        rotation = (parsed as [string, string, number][]).map(([slot, name, minutes]) => ({ slot, name, minutes }));
       }
     } catch {
       // Same fallback shape as `cs`/`cv` above.
@@ -216,16 +215,12 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     });
   }
 
-  // Audit AI-4: `autoFinishDraft` in one synchronous call is ~2500 rotation builds — a multi-
-  // second main-thread freeze. `autoFinishing` drives the chunked effect below instead.
-  const [autoFinishing, setAutoFinishing] = useState(false);
-
   // Auto-resolve AI turns during the draft — never in Commissioner Mode, where every team's pick
   // comes from the human via `handlePick` instead (see the effect's own early-return below).
   // `aiSpeed` still paces this effect (pinned at 'Normal' on this branch — see its own docstring
-  // above). Suspended while `autoFinishing` — the chunk effect below owns every pick then.
+  // above).
   useEffect(() => {
-    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || autoFinishing) return;
+    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode) return;
     const teamIdx = currentTeamIndex(draftState);
     if (draftState.teams[teamIdx].isHuman) return;
     const timer = setTimeout(() => {
@@ -233,25 +228,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       if (next) setDraftState(next);
     }, aiSpeed.delayMs);
     return () => clearTimeout(timer);
-  }, [draftState, phase, aiSpeed.delayMs, autoFinishing]);
-
-  // Resolve the auto-finish in small chunks with a `setTimeout(0)` yield between them, so the
-  // browser can paint progress and stay responsive to Reset. `draftState.history.length` is the
-  // live progress out of `TOTAL_PICKS`. Stops on completion, or if a chunk makes no progress
-  // (the same dead-end guard `autoFinishDraft` already has internally).
-  useEffect(() => {
-    if (!autoFinishing) return;
-    if (draftState.complete) {
-      setAutoFinishing(false);
-      return;
-    }
-    const timer = setTimeout(() => {
-      const next = autoFinishDraft(draftState, AUTO_FINISH_CHUNK);
-      if (next.history.length > draftState.history.length) setDraftState(next);
-      else setAutoFinishing(false);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [autoFinishing, draftState]);
+  }, [draftState, phase, aiSpeed.delayMs]);
 
   // Once the draft finishes, AI rosters are re-optimized once via the same knapsack
   // `optimizeSpans` used everywhere else (capped at CAP_LIMIT, matching the cap they drafted
@@ -302,13 +279,6 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     }));
   }
 
-  // 2026-08-30, now also a player-facing convenience: lets the user hand every remaining pick
-  // to the existing AI draft logic. It still follows the normal draft-complete path below, so
-  // rotations/finalization behave exactly as they do after the last manually played pick.
-  function handleAutoFinish() {
-    setAutoFinishing(true);
-  }
-
   // 2026-09-11, player-skeleton branch: `handleSkipToResults` (Tester-Mode-only "⚡ Skip to
   // Results (dev)") removed along with its button — see GameShell's own top-of-file docstring.
 
@@ -344,37 +314,6 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
 
   return (
     <>
-      {/* 2026-09-14, user-reported live: the results screen's own bottom "Play again" button
-          (ResultsScreen.tsx) already calls this exact same `handleReset`/`onExit` — this top row
-          used to relabel itself "New draft" and stick around during the results phase purely so
-          there was ALWAYS a way out, but that made it a second button doing the identical thing
-          the page already ends with. Scoped to `phase !== 'results'` now (still covers both
-          `lottery` and `draft` — this row sits above `<DraftLottery>`/`<DraftBoard>` alike, and
-          the lottery screen has no Exit control of its own) — "Exit Draft" (the one label this
-          row ever needs once results-only "New draft" is gone) is the only case with no
-          bottom-of-page equivalent. */}
-      {phase !== 'results' && (
-        <div className="game-controls">
-          <button className="secondary-btn reset-btn" onClick={handleReset}>
-            Exit Draft
-          </button>
-          {/* 2026-09-11, player-skeleton branch: the Tester-Mode-only CPU-speed slider and
-              "Skip to Results (dev)" button are gone — `mode` is always 'player' on this branch (see
-              App.tsx), so these never rendered here anyway; removed rather than left dead, since
-              `aiSpeedIndex`/`handleSkipToResults` are genuinely unused now (see below). Auto-finish
-              stays: it was always a real player-facing convenience, not a dev tool. */}
-          {phase === 'draft' && !draftState.complete && (
-            <button
-              className="secondary-btn auto-finish-btn"
-              onClick={handleAutoFinish}
-              disabled={autoFinishing}
-            >
-              {autoFinishing ? `Finishing… ${draftState.history.length} / ${TOTAL_PICKS}` : 'Auto-finish'}
-            </button>
-          )}
-        </div>
-      )}
-
       {rosterImpossible && (
         <div className="fail-banner">
           <h2>FAIL</h2>

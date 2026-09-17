@@ -476,12 +476,11 @@
 }
 .at-intro .team-name-row { margin-top: 24px; }
 
-/* No longer absolutely positioned against .app-header (2026-07-30): Reset now lives in
-   GameShell's own .game-controls row, not sharing space with the centred title/tagline text
-   the absolute positioning existed to avoid overlapping — see the load-time-split note in
-   App.tsx/GameShell.tsx for why the controls moved out of the header at all. Kept visible in
-   Player Mode too (relabeled "Exit Draft" there) as the way out of an in-progress draft. The
-   CPU-speed slider remains Tester-Mode-only; Auto-finish is now a normal draft convenience. */
+/* No longer absolutely positioned against .app-header (2026-07-30): Reset now lives in its own
+   .game-controls row, not sharing space with the centred title/tagline text the absolute
+   positioning existed to avoid overlapping — see the load-time-split note in App.tsx for why the
+   controls moved out of the header at all. 2026-09-17: GameShell's own "Exit Draft"/"Auto-finish"
+   row was removed (user's own ask); QuickFive's "Exit" is the only remaining user of this class. */
 .reset-btn {
   margin: 0;
 }
