@@ -721,6 +721,19 @@ const MULTI_WALKING_GRAVITY_TEAM_SPACING_FLOOR = 80;
 /** Three credible perimeter spacers prevent a two-big lineup from reading like a broken floor.
  * The two non-shooting bigs still cap the ceiling; this is a solid, not elite, construction. */
 const THREE_SHOOTER_LINEUP_SPACING_FLOOR = 58;
+/**
+ * 2026-09-17, user-reported live (Chris Paul 2013-15 + Rashard Lewis 2000-02, both real
+ * `isPlusShooter` starters at 78/80 computeSpacing, alongside three genuine zeros): with only
+ * TWO qualifying shooters, `THREE_SHOOTER_LINEUP_SPACING_FLOOR`'s `>= 3` gate doesn't fire, and
+ * there was no floor at all below it — the roster fell straight to the raw weighted average
+ * (~25), a cliff, not a taper. Two real plus-shooters are worse than three but still real: they
+ * are exactly what keeps a Paul/Lewis-type five from playing like a truly dead floor. Set below
+ * the three-shooter floor and un-gated on `hardNonSpacerCount` (redundant with `plusShooterCount
+ * >= 2` here — five starters, two of them plus-shooters, means at most three hard non-spacers by
+ * construction, and that's exactly the case this floor exists for). User's own target: "40-50
+ * byłoby sprawiedliwe."
+ */
+const TWO_SHOOTER_LINEUP_SPACING_FLOOR = 45;
 
 export function spacingScore(team: Team): number {
   const assignments = allAssignments(team);
@@ -791,9 +804,12 @@ export function spacingScore(team: Team): number {
   }
 
   const baseScore = rescaleToFullRange(base, SPACING_SCORE_ANCHORS);
-  const constructionFloor = plusShooterCount >= 3 && hardNonSpacerCount <= 2
-    ? THREE_SHOOTER_LINEUP_SPACING_FLOOR
-    : 0;
+  const constructionFloor =
+    plusShooterCount >= 3 && hardNonSpacerCount <= 2
+      ? THREE_SHOOTER_LINEUP_SPACING_FLOOR
+      : plusShooterCount >= 2
+        ? TWO_SHOOTER_LINEUP_SPACING_FLOOR
+        : 0;
   return Math.round(Math.max(baseScore, constructionFloor));
 }
 

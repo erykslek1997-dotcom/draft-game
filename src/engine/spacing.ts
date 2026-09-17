@@ -236,32 +236,41 @@ export function selfCreationRate(span: PlayerSpan): number {
  * equivalent attempts and maxed the ladder outright, which overstates what four threes a game
  * did to a defense even in 1992.
  *
- * The three exemptions are the user's too, and they're the players for whom the era-scaled
- * reading is the *correct* one: Mark Price, Reggie Miller and Larry Bird were the shot that
- * teams actually game-planned around in their era, at a time when almost nobody else was.
+ * The exemptions are the user's too, and they're the players for whom the era-scaled reading is
+ * the *correct* one: Mark Price, Reggie Miller and Larry Bird were the shot that teams actually
+ * game-planned around in their era, at a time when almost nobody else was.
+ *
+ * 2026-09-17: added Steve Nash after re-tightening this cap (see `realVolumeFloorCapPoints`'s own
+ * note) correctly pushed his real 4.4-3PA-a-game spans back out of Walking gravity — the user's
+ * direct call ("Nash ręcznie przypisane walking gravity") that his case belongs on this list too,
+ * same reasoning as Price/Miller/Bird: defenses genuinely planned around his jumper at a volume
+ * the box score alone undersells.
  */
 const REAL_VOLUME_FLOOR_FOR_WALKING_GRAVITY = 4.5;
-const REAL_VOLUME_FLOOR_EXEMPT = ['Mark Price', 'Reggie Miller', 'Larry Bird'];
+const REAL_VOLUME_FLOOR_EXEMPT = ['Mark Price', 'Reggie Miller', 'Larry Bird', 'Steve Nash'];
 
 /**
- * The cap this rule applies to a low-real-volume span — deliberately its own constant rather
- * than a `WALKING_GRAVITY_FLOOR - 0.1` derivation.
+ * 2026-09-17, same-day correction: for a few hours this cap was pinned to a fixed constant
+ * (18.9) instead of tracking `WALKING_GRAVITY_FLOOR - 0.1`, on the theory that the rule's job was
+ * only to withhold the *label*, not to keep suppressing `points` once the tier floor moved. That
+ * theory was wrong — re-read the block above: "a span cannot reach Walking gravity, no matter how
+ * far era-scaling lifts its modern equivalent" is unconditional, not pegged to wherever the floor
+ * happened to sit when it was written. Pinning the cap above the new, lower floor (16) let every
+ * sub-4.5-real-volume span it was built to stop — Rashard Lewis's 2000-02 (4.0 real attempts),
+ * caught live by the user asking "Lewis ma walking gravity?" after a completed draft — walk
+ * straight into Walking gravity anyway, exactly the outcome this rule exists to prevent.
  *
- * 2026-09-17: those two used to be the same expression, which meant lowering
- * `WALKING_GRAVITY_FLOOR` (19->16, see that constant's own note) silently lowered this cap's
- * ceiling too — not just narrowing who is exempt from it, but flattening every already-capped
- * span down to the new, lower number. Caught on the user's own reported teams: Steve Nash's
- * organic 17.2 and Chris Paul's ~17-18 sat comfortably under the old 18.9 ceiling (uncapped,
- * reading their true score); under the coupled 15.9 ceiling both got dragged DOWN below their
- * pre-fix reading, which is the opposite of what lowering the tier threshold was for.
- *
- * This rule's actual job (the Terry Porter precedent above) is narrower than "track the tier
- * floor": stop era-scaling alone from earning the *Walking gravity label* for a low-volume
- * shooter. It was never meant to also suppress how high a capped player's `points` can read
- * below that label. Pinning it at 18.9 — the value it already had — keeps that job exactly as
- * calibrated while letting `WALKING_GRAVITY_FLOOR` move on its own.
+ * The dynamic form is the correct one: always one tenth of a point under whatever
+ * `WALKING_GRAVITY_FLOOR` currently is, so a low-real-volume span can never cross that line
+ * regardless of where later recalibration moves it. (Steve Nash's span reading 15.9 instead of
+ * his organic 17.2 earlier the same day was this rule working correctly, not the bug it was
+ * mistaken for — he's real 4.4 3PA/game, under the 4.5 floor, so he was never supposed to reach
+ * Walking gravity either. The team-spacing complaint that motivated lowering the floor is still
+ * addressed correctly by Kristaps Porziņģis alone clearing it on real volume.)
  */
-const REAL_VOLUME_FLOOR_CAP_POINTS = 18.9;
+function realVolumeFloorCapPoints(): number {
+  return WALKING_GRAVITY_FLOOR - 0.1;
+}
 
 /**
  * Manual Walking-gravity floors, by player and season range — spans whose *shot profile* the
@@ -380,7 +389,7 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
     span.box.threePA < REAL_VOLUME_FLOOR_FOR_WALKING_GRAVITY &&
     !REAL_VOLUME_FLOOR_EXEMPT.some((name) => normalizePlayerName(name) === normalizePlayerName(span.playerName))
   ) {
-    points = Math.min(points, REAL_VOLUME_FLOOR_CAP_POINTS);
+    points = Math.min(points, realVolumeFloorCapPoints());
   }
   if (hasManualWalkingGravity(span)) points = Math.max(points, WALKING_GRAVITY_FLOOR);
 
