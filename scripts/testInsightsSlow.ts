@@ -55,6 +55,20 @@ const contradictoryPairs = [
   ['NO_MAJOR_STRUCTURAL_HOLE', 'MULTIPLE_STRUCTURAL_HOLES'],
   ['NO_MAJOR_STRUCTURAL_HOLE', 'MULTIPLE_NON_SPACERS'],
   ['STAR_POWER_WITHOUT_USAGE_COLLISION', 'STAR_POWER_WITH_USAGE_COLLISION'],
+  // 2026-09-17, real playtester feedback ("generally writes contradictory things") triggered a
+  // full audit of every strength/concern pair — these 9 were confirmed live (synthetic snapshots
+  // that satisfied both sides simultaneously, run through the real `generateRosterInsights`)
+  // before being fixed in insights.ts/insightMapper.ts. Added here so a future change can't
+  // silently reopen any of them without this test catching it.
+  ['NO_MAJOR_STRUCTURAL_HOLE', 'WEAK_STARTING_REBOUNDING'],
+  ['SPACING_DISTRIBUTED', 'MULTIPLE_NON_SPACERS'],
+  ['MULTIPLE_CREATION_SOURCES', 'ELITE_SPACING_WEAK_CREATION'],
+  ['DEAD_NINTH_SLOT_ACCEPTABLE', 'STRONG_CORE_FRAGILE_ROTATION'],
+  ['ELITE_PERIMETER_DEFENSE', 'NO_WING_STOPPER'],
+  ['ELITE_RIM_PROTECTION', 'SINGLE_RIM_PROTECTOR_DEPENDENCY'],
+  ['BALANCED_DEFENSIVE_COVERAGE', 'DEFENSIVE_WEAK_LINK'],
+  ['OFFENSIVE_ROLES_COMPLEMENTARY', 'TOO_MANY_FINISHERS'],
+  ['SECONDARY_CREATION_PRESENT', 'CREATION_SHORTAGE'],
 ] as const;
 let respectsCap = true;
 let strengthsUnique = true;

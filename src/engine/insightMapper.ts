@@ -365,6 +365,18 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
     defensiveLayeringScore,
     defensiveWeakLinkCount: huntability.offenders.length,
     defensiveTargetableMinutes: huntability.targetableMinutes,
+    // 2026-09-17, contradiction audit: `DEFENSIVE_WEAK_LINK`/`MULTIPLE_DEFENSIVE_WEAK_LINKS`
+    // (insights.ts) used to re-derive "who's weak" from a flat `defensiveImpact < 60` filter,
+    // independent of the position-relative `defensiveHuntability` calc that `defensiveWeakLinkCount`
+    // above and `BALANCED_DEFENSIVE_COVERAGE` already use — confirmed live to let both
+    // "few obvious matchup targets" (canonical) and "X is the clearest matchup-hunting target"
+    // (flat threshold) fire together for the same roster. Threading the actual named offenders
+    // through so every weak-link detector reads the one real calc, not two disagreeing ones.
+    defensiveWeakLinkPlayers: huntability.offenders.map((o) => ({
+      playerName: o.playerName,
+      defensiveImpact: o.defensiveTalent,
+      minutes: o.minutes,
+    })),
 
     // APPROXIMATION: no split ORB%/DRB% signal exists (see this file's own docstring) — both
     // folded into the same combined-rebounding read `fitScore`'s own `STARTER_REBOUNDING_FLOOR`

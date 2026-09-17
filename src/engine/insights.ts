@@ -118,6 +118,10 @@ export interface TeamFeatureSnapshot {
   defensiveLayeringScore?: number;  // 0..1
   defensiveWeakLinkCount?: number;
   defensiveTargetableMinutes?: number;
+  /** The exact players `defensiveWeakLinkCount` counted (real `defensiveHuntability` offenders,
+   * position-relative and athleticism-adjusted) — the one canonical "who's a weak link" list every
+   * weak-link detector should read, instead of each re-deriving its own flat threshold. */
+  defensiveWeakLinkPlayers?: { playerName: string; defensiveImpact: number; minutes: number }[];
 
   teamOrbScore?: number;             // 0..1
   teamDrbScore?: number;             // 0..1
@@ -310,7 +314,7 @@ export function scoreInsight(
 
 const inactive: DetectorResult = { active: false };
 
-function displayNames(players: PlayerTeamFeature[], limit = 3): string {
+function displayNames(players: { playerName: string }[], limit = 3): string {
   const names = players.slice(0, limit).map((player) => player.playerName);
   if (players.length > limit) names.push(`+${players.length - limit} more`);
   return names.join(', ');
@@ -380,7 +384,13 @@ export const SUPPRESSION_GROUPS: Record<string, DetectorId[]> = {
 export const EXPLICIT_SUPPRESSION: Partial<Record<DetectorId, DetectorId[]>> = {
   SEVERE_USAGE_COLLISION: ['MULTIPLE_HIGH_USAGE_PLAYERS'],
   ELITE_STARTING_SPACING: ['GOOD_STARTING_SPACING'],
-  ELITE_PERIMETER_DEFENSE: ['MULTIPLE_PERIMETER_DEFENDERS', 'POA_DEFENDER_PRESENT'],
+  // 'NO_WING_STOPPER' added 2026-09-17 (contradiction audit, see the comment block below this
+  // object) — merged into this same pre-existing key. A first pass of this fix added a *second*
+  // `ELITE_PERIMETER_DEFENSE` key further down instead — a plain object literal silently lets the
+  // later duplicate win rather than erroring or merging, which would have quietly dropped this
+  // line's two original targets. Caught by re-reading the diff, not by any test — neither `tsc`
+  // nor `testDetectorIntegrity.ts` flags a duplicated object-literal key.
+  ELITE_PERIMETER_DEFENSE: ['MULTIPLE_PERIMETER_DEFENDERS', 'POA_DEFENDER_PRESENT', 'NO_WING_STOPPER'],
   // 2026-09-05: dropped the standalone 'ELITE_RIM_PROTECTION' entry here — both of its targets
   // ('RIM_PROTECTOR_PRESENT', 'MULTIPLE_RIM_PROTECTORS') were never implemented as real detectors,
   // so the entry could never suppress anything. Same root cause as the SUPPRESSION_GROUPS cleanup
@@ -394,7 +404,35 @@ export const EXPLICIT_SUPPRESSION: Partial<Record<DetectorId, DetectorId[]>> = {
   NON_SPACER_OVERLOAD: ['MULTIPLE_NON_SPACERS'],
   DEFENSIVE_COVERAGE_CAPACITY_ELITE: ['ELITE_DEFENSIVE_LAYERING', 'BALANCED_DEFENSIVE_COVERAGE'],
   HUNTABLE_STARTER_EXPOSED: ['MULTIPLE_DEFENSIVE_WEAK_LINKS', 'DEFENSIVE_WEAK_LINK'],
+  // 2026-09-17, contradiction audit additions below — every existing entry above only ever
+  // suppresses a same-TYPE detector (a strength killing a weaker strength, a concern killing a
+  // weaker concern); nothing crossed the strength/concern boundary, which is exactly the gap real
+  // playtester feedback ("generally writes contradictory things") landed on. `NO_WING_STOPPER` is
+  // merged into the pre-existing `ELITE_PERIMETER_DEFENSE` key above rather than a new one here —
+  // its message ("elite on the perimeter, multiple credible matchups") is a general claim that
+  // doesn't itself distinguish ball-pressure defenders from wing stoppers, so "lacks a credible
+  // matchup for elite scoring wings" reads as contradicting it even though NO_WING_STOPPER checks
+  // a real, narrower sub-skill worth keeping distinct rather than unifying outright.
+  // A "fragile outside its best lineups" concern (deepRotationScore's 15-minute bar) is the more
+  // specific, more cautious claim when it disagrees with "acceptable dead ninth slot" (Team
+  // Model's looser 12-minute bar) — a warning should win a disagreement like this, not a reassurance.
+  STRONG_CORE_FRAGILE_ROTATION: ['DEAD_NINTH_SLOT_ACCEPTABLE'],
+  // BALANCED_DEFENSIVE_COVERAGE's "few obvious matchup targets" already reads `defensiveWeakLinkCount
+  // <= 1`, which after the DEFENSIVE_WEAK_LINK fix above shares the exact same canonical
+  // `defensiveHuntability` definition DEFENSIVE_WEAK_LINK itself uses — so at the boundary
+  // (exactly 1 real weak link) both are now factually AGREEING, not disagreeing, but "few obvious
+  // matchup targets" right next to "{Player} is the rotation's clearest matchup-hunting target"
+  // still reads as whiplash in the same panel (confirmed live on a real 32-roster sample,
+  // scripts/testInsightsSlow.ts). The general strength already covers this case; the specific
+  // single-player concern adds nothing once it does.
+  BALANCED_DEFENSIVE_COVERAGE: ['DEFENSIVE_WEAK_LINK'],
 };
+
+/** Shared with `NO_MAJOR_STRUCTURAL_HOLE` below, so "clears every major checkpoint" can never
+ * claim a rebounding bar this same file's own `WEAK_STARTING_REBOUNDING` calls vulnerable —
+ * 2026-09-17, contradiction audit: the two used to be independent numbers (0.50 vs. 0.62) with a
+ * real overlapping window a live team could land in. */
+const WEAK_STARTING_REBOUNDING_THRESHOLD = 0.62;
 
 export const DETECTORS: RosterInsightDetector[] = [
   {
@@ -417,7 +455,15 @@ export const DETECTORS: RosterInsightDetector[] = [
       const creators = t.players
         .filter(p => (p.highUsageWeight ?? 0) > 0 && p.minutes >= 15)
         .sort((a, b) => (b.offensiveImpact ?? 0) - (a.offensiveImpact ?? 0));
-      return creators.length >= 3
+      // 2026-09-17, contradiction audit: this local `highUsageWeight > 0` refilter also counts
+      // Primary/Secondary Ball Handlers (weight 0.25/0.5), a looser bar than the canonical
+      // `creatorCount` (weight >= 1, real Shot Creator/Slasher-tier) that CREATION_SHORTAGE/
+      // ELITE_SPACING_WEAK_CREATION/TOO_MANY_FINISHERS all gate on at `<= 1`. Confirmed live: a
+      // team with zero real advantage creators but a Primary + Secondary Ball Handler still hit 3
+      // "creators" here, firing "reducing dependence on one initiator" the same breath as "may lack
+      // enough advantage creation." Requiring the canonical count too closes the gap with no
+      // overlap (its concern-side ceiling is 1, this now needs 2+).
+      return creators.length >= 3 && (t.creatorCount ?? 0) >= 2
         ? hit(0.62 + creators.length * 0.07, 0.91, teamConfidence(t), `Creation is distributed across ${displayNames(creators)}, reducing dependence on one initiator.`, { players: creators.map(p => p.playerName), values: { creatorCount: creators.length } }, 0.92)
         : inactive;
     }
@@ -429,7 +475,10 @@ export const DETECTORS: RosterInsightDetector[] = [
       const secondary = t.players
         .filter(p => p.offensiveArchetype === 'Secondary Ball Handler' && p.minutes >= 15)
         .sort((a, b) => b.minutes - a.minutes);
-      return secondary.length > 0
+      // 2026-09-17, contradiction audit: this message presupposes a real "lead creator" exists —
+      // gate it on the canonical `creatorCount` so it can't fire in the same breath as
+      // CREATION_SHORTAGE's "no reliable advantage creator" (creatorCount === 0).
+      return secondary.length > 0 && (t.creatorCount ?? 0) >= 1
         ? hit(0.66, 0.78, teamConfidence(t), `${displayNames(secondary)} ${secondary.length === 1 ? 'provides' : 'provide'} secondary ball handling when the lead creator is pressured or rests.`, { players: secondary.map(p => p.playerName), values: { secondaryCreatorCount: secondary.length } })
         : inactive;
     }
@@ -548,8 +597,16 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const n = t.plusShooterCount ?? 0;
       const share = t.topShooterMinuteShare ?? 1;
-      return n >= 5 && share <= 0.30
-        ? hit(0.62 + n * 0.06, 0.86, teamConfidence(t), `${n} rotation players provide credible shooting, so spacing does not depend on one specialist.`, { values: { plusShooterCount: n, topShooterMinuteShare: share } }, 0.9)
+      // 2026-09-17, contradiction audit: `plusShooterCount`/`topShooterMinuteShare` are ROTATION-
+      // wide, while MULTIPLE_NON_SPACERS/ELITE_CREATION_POOR_SPACING read the STARTERS-only
+      // spacing signal — confirmed live, a team with 4 non-shooting starters but a deep shooting
+      // bench cleared both this detector's roster-wide bar and MULTIPLE_NON_SPACERS' starter-only
+      // one. Same `starterNonSpacerCount` contradiction guard ELITE_STARTING_SPACING/
+      // GOOD_STARTING_SPACING already use — "spacing doesn't depend on one specialist" shouldn't
+      // fire in the same breath as "N starters are non-shooters."
+      const nonSpacers = t.starterNonSpacerCount ?? 0;
+      return n >= 5 && share <= 0.30 && nonSpacers <= 1
+        ? hit(0.62 + n * 0.06, 0.86, teamConfidence(t), `${n} rotation players provide credible shooting, so spacing does not depend on one specialist.`, { values: { plusShooterCount: n, topShooterMinuteShare: share, starterNonSpacerCount: nonSpacers } }, 0.9)
         : inactive;
     }
   },
@@ -660,7 +717,10 @@ export const DETECTORS: RosterInsightDetector[] = [
         ['Off Screen Shooter', 'Movement Shooter', 'Stationary Shooter', 'Roll & Cut Big'].includes(p.offensiveArchetype ?? '') &&
         p.minutes >= 15,
       );
-      return creators.length >= 2 && offBall.length >= 2
+      // 2026-09-17, contradiction audit: same loose-vs-canonical creator gap as
+      // MULTIPLE_CREATION_SOURCES above — "on-ball creation is complemented" needs the canonical
+      // `creatorCount` to actually clear TOO_MANY_FINISHERS' `<= 1` "too little creation" ceiling.
+      return creators.length >= 2 && offBall.length >= 2 && (t.creatorCount ?? 0) >= 2
         ? hit(0.76, 0.87, teamConfidence(t), `On-ball creation is complemented by off-ball value from ${displayNames(offBall)}, giving possessions clear role separation.`, { players: [...creators, ...offBall].map(p => p.playerName), values: { creatorCount: creators.length, offBallSupportCount: offBall.length } }, 0.94)
         : inactive;
     }
@@ -766,8 +826,16 @@ export const DETECTORS: RosterInsightDetector[] = [
     suppressionGroup: 'rim_positive', suppresses: ['RIM_PROTECTOR_PRESENT', 'MULTIPLE_RIM_PROTECTORS'],
     evaluate: t => {
       const s = t.rimProtectionScore ?? 0;
-      return s >= 0.82
-        ? hit(s, 0.95, teamConfidence(t), 'The roster has elite interior defensive coverage and reliable rim protection.', { values: { rimProtectionScore: s } })
+      // 2026-09-17, contradiction audit: `rimProtectionScore` only reads the STARTING rim
+      // protector(s)' D-TAL, so it said nothing about bench depth — confirmed live, a team with
+      // exactly one elite starting anchor and zero backups cleared this bar while
+      // SINGLE_RIM_PROTECTOR_DEPENDENCY (whole-roster count === 1) fired right next to it, and
+      // "reliable rim protection" directly contradicts "bench units lose much of that protection."
+      // Requiring a real second rim-protector-tagged player closes the gap with no overlap
+      // (SINGLE_RIM_PROTECTOR_DEPENDENCY's own count is exactly 1).
+      const depth = t.rimProtectorCount ?? 0;
+      return s >= 0.82 && depth >= 2
+        ? hit(s, 0.95, teamConfidence(t), 'The roster has elite interior defensive coverage and reliable rim protection.', { values: { rimProtectionScore: s, rimProtectorCount: depth } })
         : inactive;
     }
   },
@@ -841,11 +909,14 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'DEFENSIVE_WEAK_LINK', type: 'concern', category: 'defensive_structure',
     suppressionGroup: 'defense_negative',
     evaluate: t => {
-      const weak = t.players
-        .filter(p => (p.defensiveImpact ?? 100) < 60 && p.minutes > 0)
-        .sort((a, b) => b.minutes - a.minutes);
+      // 2026-09-17, contradiction audit: reads the same canonical `defensiveHuntability` offender
+      // list `defensiveWeakLinkCount`/`BALANCED_DEFENSIVE_COVERAGE` already use, instead of a flat
+      // `defensiveImpact < 60` re-derivation that could disagree with them (confirmed live: a bench
+      // PG at D-TAL 55 cleared his own real position bar but failed the flat 60 cut, so this fired
+      // right alongside "few obvious matchup targets").
+      const weak = [...(t.defensiveWeakLinkPlayers ?? [])].sort((a, b) => b.minutes - a.minutes);
       return weak.length === 1
-        ? hit(0.55 + weak[0].minutes / 80, 0.91, teamConfidence(t), `${weak[0].playerName} (${Math.round(weak[0].defensiveImpact ?? 0)} D-TAL, ${weak[0].minutes} min) is the rotation's clearest matchup-hunting target.`, { players: [weak[0].playerName], values: { defensiveTalent: weak[0].defensiveImpact ?? 0, minutes: weak[0].minutes, targetableMinutes: t.defensiveTargetableMinutes ?? weak[0].minutes } }, 0.94)
+        ? hit(0.55 + weak[0].minutes / 80, 0.91, teamConfidence(t), `${weak[0].playerName} (${Math.round(weak[0].defensiveImpact)} D-TAL, ${weak[0].minutes} min) is the rotation's clearest matchup-hunting target.`, { players: [weak[0].playerName], values: { defensiveTalent: weak[0].defensiveImpact, minutes: weak[0].minutes, targetableMinutes: t.defensiveTargetableMinutes ?? weak[0].minutes } }, 0.94)
         : inactive;
     }
   },
@@ -854,11 +925,9 @@ export const DETECTORS: RosterInsightDetector[] = [
     suppressionGroup: 'defense_negative', suppresses: ['DEFENSIVE_WEAK_LINK'],
     evaluate: t => {
       const n = t.defensiveWeakLinkCount ?? 0;
-      const weak = t.players
-        .filter(p => (p.defensiveImpact ?? 100) < 60 && p.minutes > 0)
-        .sort((a, b) => b.minutes - a.minutes);
+      const weak = [...(t.defensiveWeakLinkPlayers ?? [])].sort((a, b) => b.minutes - a.minutes);
       return n >= 2
-        ? hit(0.60 + n * 0.10, 0.94, teamConfidence(t), `${displayNames(weak)} combine for ${t.defensiveTargetableMinutes ?? 0} targetable minutes, giving opponents multiple matchup-hunting options.`, { players: weak.map(p => p.playerName), values: { defensiveWeakLinkCount: n, targetableMinutes: t.defensiveTargetableMinutes ?? 0 }, notes: weak.map(p => `${p.playerName}: D-TAL ${Math.round(p.defensiveImpact ?? 0)}, ${p.minutes} min`) }, 0.96)
+        ? hit(0.60 + n * 0.10, 0.94, teamConfidence(t), `${displayNames(weak)} combine for ${t.defensiveTargetableMinutes ?? 0} targetable minutes, giving opponents multiple matchup-hunting options.`, { players: weak.map(p => p.playerName), values: { defensiveWeakLinkCount: n, targetableMinutes: t.defensiveTargetableMinutes ?? 0 }, notes: weak.map(p => `${p.playerName}: D-TAL ${Math.round(p.defensiveImpact)}, ${p.minutes} min`) }, 0.96)
         : inactive;
     }
   },
@@ -895,7 +964,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'WEAK_STARTING_REBOUNDING', type: 'concern', category: 'rebounding',
     evaluate: t => {
       const s = t.starterReboundingScore ?? 1;
-      return s <= 0.62
+      return s <= WEAK_STARTING_REBOUNDING_THRESHOLD
         ? hit(1 - s, 0.82, teamConfidence(t), 'The starting group projects as vulnerable on the glass and may concede extra possessions.', { values: { starterReboundingScore: s } })
         : inactive;
     }
@@ -1089,7 +1158,12 @@ export const DETECTORS: RosterInsightDetector[] = [
         (t.starterSpacingStrength ?? 0) >= 0.55 &&
         (t.starterNonSpacerCount ?? 0) <= 1 &&
         (t.defensiveLayeringScore ?? 0) >= 0.60 &&
-        (t.starterReboundingScore ?? 0) >= 0.50 &&
+        // 2026-09-17, contradiction audit: was `>= 0.50`, a real overlapping window against
+        // WEAK_STARTING_REBOUNDING's own `<= 0.62` concern threshold — confirmed live at
+        // starterReboundingScore=0.55, both fired for the same roster. Now shares that detector's
+        // exact threshold so "clears every checkpoint" can never claim rebounding is fine while the
+        // dedicated rebounding concern calls the same number vulnerable.
+        (t.starterReboundingScore ?? 0) > WEAK_STARTING_REBOUNDING_THRESHOLD &&
         (t.defensiveWeakLinkCount ?? 0) <= 1 &&
         (t.positionalCompromiseCount ?? 0) <= 1;
       return sound
