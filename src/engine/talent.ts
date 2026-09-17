@@ -839,12 +839,31 @@ const TWO_WAY_SYNERGY_THRESHOLD_BY_POSITION: Record<Position, number> = {
 };
 const PG_SYNERGY_ELITE_PLAYMAKING_APG = 8;
 
+/**
+ * 2026-09-17, full-engine audit follow-up: the elite-playmaking exemption above was a hard
+ * cliff on `paceAdjustedApg` — Doc Rivers' 1987-89 span (paceApg 7.98, weaker-side 53.8) got
+ * threshold 55 and synergy 0, while the same span nudged to paceApg 8.25 (weaker-side barely
+ * different, 54.3) cleared the elite threshold of 45 and jumped straight to the max +7 bonus —
+ * confirmed live with a synthetic apg sweep on his real box line, everything else held fixed.
+ * A 0.27 apg difference, smaller than a normal season-to-season fluctuation, swinging the full
+ * bonus range is the same shape as the other cliffs this audit already fixed elsewhere. Tapered
+ * over a 1-apg band below the gate, same pattern as `usageOffenseScaleTapered`'s
+ * `USAGE_SCALE_TAPER_BAND` — chosen as the smallest band that removes the literal discontinuity
+ * (18 pool spans move at band=1 vs 33 at band=2, where it starts reaching players like Eric
+ * Bledsoe at ~6.1 apg who were never the "genuine floor general" this exemption targets).
+ */
+const PG_SYNERGY_APG_TAPER_BAND = 1;
+
 function synergyThresholdFor(span: PlayerSpan): number {
   const base = TWO_WAY_SYNERGY_THRESHOLD_BY_POSITION[span.primaryPosition];
   if (span.primaryPosition !== 'PG') return base;
   const { pace } = eraBaseline(span.spanLabel);
   const paceAdjustedApg = effectivePlaymakingApg(span.box.apg) * (LEAGUE_PACE_BASELINE / pace);
-  return paceAdjustedApg >= PG_SYNERGY_ELITE_PLAYMAKING_APG ? 45 : base;
+  if (paceAdjustedApg >= PG_SYNERGY_ELITE_PLAYMAKING_APG) return 45;
+  const bandFloor = PG_SYNERGY_ELITE_PLAYMAKING_APG - PG_SYNERGY_APG_TAPER_BAND;
+  if (paceAdjustedApg <= bandFloor) return base;
+  const taper = clamp01((paceAdjustedApg - bandFloor) / PG_SYNERGY_APG_TAPER_BAND);
+  return base - taper * (base - 45);
 }
 
 /** Position-normalized 0-100 read of the same offense/defense components used by O-TAL/D-TAL
