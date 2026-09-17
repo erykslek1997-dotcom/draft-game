@@ -260,6 +260,15 @@ const GREATEST_PEAK_DRAFT_TIERS: Record<string, 1 | 2 | 3> = {
   // undrafted through a full auto-finished draft). '2021-23' is the closest actually-
   // draftable equivalent — same TAL96, same "Greatest peak" tier per grades.ts.
   'joel embiid|2021-23': 3,
+  // 2026-09-17, real playtester feedback ("Shaq spada za daleko" — Shaq falls too far): he was
+  // simply never in this map at all, despite his real peak (1999-01, TAL 97) grading "Greatest
+  // peak" — the same tier as Hakeem/Jokić/Magic, all of whom already carry this protection.
+  // Confirmed the omission actually bites: a 10-seed natural-draft harness had him falling to
+  // picks 13-18 in every single seed, never earlier — exactly the AI-value-formula-fails-to-
+  // protect-a-legend pattern this map exists to prevent for the other 16 names. Tier 2 (not 1),
+  // matching the Hakeem/Jokić/Magic/Duncan/Garnett peer group his real TAL sits alongside, not
+  // the Jordan/LeBron/Curry tier-1 trio.
+  'shaquille o\'neal|1999-01': 2,
 };
 const GREATEST_PEAK_TIER_BONUS: Record<1 | 2 | 3, number> = { 1: 60, 2: 35, 3: 15 };
 
