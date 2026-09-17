@@ -2350,6 +2350,60 @@ select {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 2026-09-17, same-day follow-up (user: "dałoby radę zrobić tam rotacje tak jak na koniec
+   draftu") — one block per slot (not a single grid row) since either side can now show more than
+   one contributor for it, matching the single-player hero's own `results-hero-rotation` columns. */
+.challenge-compare-rotation-slot {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--at-line, var(--border));
+}
+.challenge-compare-rotation-slot:last-child {
+  border-bottom: none;
+}
+.challenge-compare-rotation-slot .challenge-compare-roster-slot {
+  display: block;
+  margin-bottom: 4px;
+}
+.challenge-compare-rotation-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.challenge-compare-rotation-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.challenge-compare-rotation-col--right {
+  align-items: flex-end;
+}
+.challenge-compare-rotation-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.challenge-compare-rotation-col--right .challenge-compare-rotation-entry {
+  flex-direction: row-reverse;
+}
+.challenge-compare-rotation-name {
+  font-size: 12.5px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.challenge-compare-rotation-min {
+  font-size: 11px;
+  color: var(--at-ink-faint, var(--text));
+  flex-shrink: 0;
+}
+.challenge-compare-rotation-empty {
+  font-size: 12px;
+  color: var(--at-ink-faint, var(--text));
+}
 .challenge-compare-actions {
   display: flex;
   gap: 10px;

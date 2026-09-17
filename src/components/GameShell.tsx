@@ -141,7 +141,25 @@ function challengerFromUrl(): ChallengeChallenger | undefined {
       // Same fallback shape as `cs` above.
     }
   }
-  return { name, overall, rank, fieldSize, starters, scores };
+  // 2026-09-17, same-day follow-up (user: "dałoby radę zrobić tam rotacje tak jak na koniec
+  // draftu"): `cx`, the full per-slot rotation (every contributor + minutes, not just the
+  // starter) — same degrade-independently shape as `cs`/`cv` above.
+  let rotation: ChallengeChallenger['rotation'];
+  const rawRotation = params.get('cx');
+  if (rawRotation) {
+    try {
+      const parsed: unknown = JSON.parse(rawRotation);
+      if (
+        Array.isArray(parsed) &&
+        parsed.every((e) => e && typeof e.slot === 'string' && typeof e.name === 'string' && typeof e.minutes === 'number')
+      ) {
+        rotation = parsed as ChallengeChallenger['rotation'];
+      }
+    } catch {
+      // Same fallback shape as `cs`/`cv` above.
+    }
+  }
+  return { name, overall, rank, fieldSize, starters, scores, rotation };
 }
 
 export default function GameShell({ mode, commissionerMode, humanTeamName, onExit }: Props) {

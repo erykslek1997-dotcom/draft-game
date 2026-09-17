@@ -212,6 +212,20 @@ export interface ChallengeChallenger {
    * looking at their own Results screen would. Optional: an older-format link (before this
    * follow-up shipped) still shows the headline score + roster rows without this row. */
   scores?: { talent: number; benchDepth: number; offense: number; defense: number; spacing: number; fit: number; rotation: number };
+  /** 2026-09-17, same-day follow-up (user: "dałoby radę zrobić tam rotacje tak jak na koniec
+   * draftu" — do the rotation the same way the single-player Results screen does): a flat list of
+   * every rotation slot assignment (one entry per contributor, so a combo guard covering both
+   * PG/SG appears twice) — the same shape `results-hero-rotation`'s own `assignments` prop already
+   * carries, just serializable. Optional: an older-format link falls back to `starters`-only. */
+  rotation?: ChallengeRotationEntry[];
+}
+
+/** One contributor's minutes at one rotation slot — see `rotation`'s own docstring on
+ * `ChallengeChallenger` above. */
+export interface ChallengeRotationEntry {
+  slot: string;
+  name: string;
+  minutes: number;
 }
 
 /** Keyed by roster player id — one reaction per rostered player, set directly on that player's
@@ -452,6 +466,9 @@ function HeroResult({
       fit: Math.round(fitScore),
       rotation: Math.round(rotationScore),
     }));
+    params.set('cx', JSON.stringify(
+      assignments.map((a) => ({ slot: a.slot, name: a.player.playerName, minutes: Math.round(a.minutes) })),
+    ));
     url.search = `?${params.toString()}`;
     try {
       await navigator.clipboard.writeText(url.toString());
@@ -553,12 +570,54 @@ function HeroResult({
                 ))}
               </div>
             )}
-            {/* 2026-09-17, same-day follow-up ("krótkie porównanie składów + share"): a compact
-                per-slot roster comparison — just the 5 starters, not the full 9-man breakdown the
-                PNG share card already covers — plus a share action right here so the second player
-                doesn't have to scroll down to find "Challenge a friend" to reply/forward. Degrades
-                quietly if `challenger.starters` is empty (an older-format link). */}
-            {challenger.starters.length > 0 && (
+            {/* 2026-09-17, same-day follow-up (user: "dałoby radę zrobić tam rotacje tak jak na
+                koniec draftu" — do the rotation the same way the single-player Results screen
+                does): per slot, EVERY contributor (not just the starter) with their minutes, same
+                grouping `results-hero-rotation` above already uses for `assignments` — a combo
+                guard backing up two slots shows up in both. Falls back to the older starters-only
+                row (just a name per slot, no minutes) when `challenger.rotation` is missing (a
+                link generated before this follow-up shipped). */}
+            {challenger.rotation && challenger.rotation.length > 0 ? (
+              <div className="challenge-compare-roster">
+                <span className="challenge-compare-roster-label">Rotation</span>
+                {STARTER_SLOTS.map((slot) => {
+                  const mineEntries = assignments
+                    .filter((a) => a.slot === slot)
+                    .sort((a, b) => {
+                      const aIsStarter = starterKeys.has(`${a.slot}|${a.player.id}`);
+                      const bIsStarter = starterKeys.has(`${b.slot}|${b.player.id}`);
+                      if (aIsStarter !== bIsStarter) return aIsStarter ? -1 : 1;
+                      return b.minutes - a.minutes;
+                    });
+                  const theirEntries = challenger.rotation!
+                    .filter((e) => e.slot === slot)
+                    .sort((a, b) => b.minutes - a.minutes);
+                  return (
+                    <div className="challenge-compare-rotation-slot" key={slot}>
+                      <span className="challenge-compare-roster-slot">{slot}</span>
+                      <div className="challenge-compare-rotation-cols">
+                        <div className="challenge-compare-rotation-col">
+                          {mineEntries.length > 0 ? mineEntries.map((a) => (
+                            <div className="challenge-compare-rotation-entry" key={a.player.id}>
+                              <span className="challenge-compare-rotation-name" title={a.player.playerName}>{shortenName(a.player.playerName, 14)}</span>
+                              <span className="challenge-compare-rotation-min">{Math.round(a.minutes)}m</span>
+                            </div>
+                          )) : <span className="challenge-compare-rotation-empty">—</span>}
+                        </div>
+                        <div className="challenge-compare-rotation-col challenge-compare-rotation-col--right">
+                          {theirEntries.length > 0 ? theirEntries.map((e, i) => (
+                            <div className="challenge-compare-rotation-entry" key={`${e.name}-${i}`}>
+                              <span className="challenge-compare-rotation-min">{e.minutes}m</span>
+                              <span className="challenge-compare-rotation-name" title={e.name}>{shortenName(e.name, 14)}</span>
+                            </div>
+                          )) : <span className="challenge-compare-rotation-empty">—</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : challenger.starters.length > 0 && (
               <div className="challenge-compare-roster">
                 <span className="challenge-compare-roster-label">Starting five</span>
                 {STARTER_SLOTS.map((slot) => {
