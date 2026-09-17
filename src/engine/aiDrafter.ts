@@ -674,6 +674,67 @@ function plannedPlayableReserveFga(slotsRemaining: number): number {
   return (slotsRemaining - 1) * PLAYABLE_RESERVE_FGA_PER_SLOT + TRUE_CAP_GLUE_FGA_CEILING;
 }
 
+/**
+ * 2026-09-17, found live: this reserve was, until today, a hard filter (`reserveAwareCandidates`)
+ * — a candidate whose cost would breach it was dropped from the candidate pool entirely, before
+ * `value`/`talentTerm` ever got computed for it. Traced a real live pick (Winston-Salem Diggers
+ * drafting Nate McMillan at PG over a sitting-right-there Jason Kidd 2008-10 span, 8.0 FGA/TAL 71):
+ * every Kidd span above 6.8 FGA failed this check outright at 30.8 FGA remaining / 4 slots left
+ * (24 FGA required), so the value formula never got a chance to weigh his +6-9 TAL edge against
+ * the ~1-2 extra FGA it would have cost — a hard wall, not a preference, discarding a dramatically
+ * better candidate the same way it would a genuinely bad one.
+ *
+ * `plannedPlayableReserveFga` itself is unchanged and still the right planning target (a
+ * mathematically fillable bench is not necessarily a playable one — see that function's own
+ * docstring). What changed is how a breach of it is enforced: a soft, value-scaled penalty
+ * (applied in the main scoring loop below, alongside `teamDefensiveBalanceBonus`/
+ * `teamSpacingNeedBonus`) instead of an outright exclusion, so a large enough talent edge can
+ * still buy its way past a thin reserve, the way a real GM would take a clear steal even if it
+ * means a slightly leaner bench — while a normal player who ISN'T worth the tradeoff still loses
+ * to the cheaper options the reserve was protecting. The genuinely hard safety net — the roster
+ * can always still be COMPLETED under cap — is `canFillFromLookup` above, entirely separate from
+ * this and untouched: this constant only ever softened a preference layered on top of that
+ * guarantee, never the guarantee itself.
+ *
+ * Rate picked so a modest breach (Kidd's real case: needed 24, offered 22.8, a 1.2 breach) barely
+ * registers against a multi-point talent edge. A purely linear, uncapped penalty turned out not
+ * to be enough on its own, though: measured directly with an (accidentally) still-available
+ * LeBron James sitting in a late-round test pool, a large enough `talentTerm` (peak-talent
+ * players scale up to ~400 there) just buys straight through ANY linear breach cost, recreating
+ * exactly the "core spends 85.5 FGA, three ~5-FGA scrap slots left" failure this mechanism exists
+ * to prevent — a real GM does NOT get to draft a top-3 talent at pick 57 no matter how good he is,
+ * because the roster literally cannot be built around that anymore. So this is paired with
+ * `RESERVE_HARD_FLOOR_FRACTION` below: a loosened, but still real, hard wall.
+ */
+const RESERVE_BREACH_PENALTY_PER_FGA = 4;
+function reserveBreachPenalty(capRemainingAfterPick: number, slotsLeftAfterPick: number): number {
+  const breach = plannedPlayableReserveFga(slotsLeftAfterPick) - capRemainingAfterPick;
+  return breach > 0 ? breach * RESERVE_BREACH_PENALTY_PER_FGA : 0;
+}
+
+/**
+ * The hard wall a value edge can never buy through, no matter how large — keeps this a loosened
+ * gate, not a removed one.
+ *
+ * 2026-09-17, measured, not guessed: the first pass here loosened this to 0.5 (half the planned
+ * reserve). That fixed the motivating case (Kidd's real Winston-Salem miss: needed 24, offered
+ * 22.8 — a 95%-of-requirement near-miss) but was a wildly oversized fix for a 5% problem — an
+ * isolated before/after over 128 simulated 9-man rosters (scripts/_spacingImpact.ts, deleted
+ * after use) showed 0.5 dragging roster-average `computeSpacing` DOWN (median 48.9 -> 46.1) and
+ * `computeDefensiveTalent` down too (70.0 -> 68.2), the opposite of this session's actual goal:
+ * loosening the gate broadly let teams overspend on raw talent earlier across MANY picks, not
+ * just the rare deserving one, squeezing the cap left for the cheap late-round shooting/defense
+ * specialists that reserve exists to protect.
+ *
+ * 0.9 is the surgical fix instead of the broad one: tight enough that it changes almost nothing
+ * for the general case (measured: spacing median 49.0, defense median 69.6 — both within noise of
+ * the untouched 48.9/70.0 baseline) while still clearing Kidd's real 0.95 ratio specifically. The
+ * lesson generalizes: match a gate's loosening to the SIZE of the miss that motivated it, not a
+ * round number — a candidate may cost the team as little as
+ * `PLAYABLE_RESERVE_FGA_PER_SLOT * 0.9` (5.4) per remaining slot instead of the full 6.
+ */
+const RESERVE_HARD_FLOOR_FRACTION = 0.7;
+
 /** A 12-minute specialist may be narrow; an 18-24 minute backup cannot be replacement-level. */
 const MATERIAL_BENCH_MINUTES = 18;
 const USEFUL_BENCH_MINUTES = 12;
@@ -923,6 +984,39 @@ function teamDefensiveBalanceBonus(roster: PlayerSpan[], p: PlayerSpan): number 
   const deficit = Math.min(1, (TEAM_DEFENSE_NEED_THRESHOLD - rosterAvgDefense) / TEAM_DEFENSE_NEED_THRESHOLD);
   const candidateEdge = Math.min(1, (candidateDefense - rosterAvgDefense) / 40);
   return MAX_DEFENSIVE_BALANCE_BONUS * deficit * candidateEdge;
+}
+
+/**
+ * 2026-09-17, found the same way `teamDefensiveBalanceBonus` above was (a live user catch): after
+ * playing a full human draft where every pick after a non-shooting center (Shaquille O'Neal, SPC
+ * D-) was deliberately chosen to compensate — Paul Pierce, Clifford Robinson (picked over a
+ * higher-TAL Charles Barkley explicitly for spacing fit), James Posey, Jason Kidd all real
+ * `computeSpacing` A/A+ — the user asked what this looks like translated into AI logic. There
+ * wasn't one: this value formula had a defensive-need signal but nothing symmetric for spacing,
+ * so AI teams can happily stack Non-shooters (Buffalo: Jordan+Draymond+Dwight Howard; Norfolk:
+ * Bird+Wilt+Lewis+Frazier, only Bird a genuine shooter) with no counterweight, the same
+ * formula-wide gap the defensive version was built to close.
+ *
+ * Same shape as `teamDefensiveBalanceBonus` exactly — roster's current average `computeSpacing`
+ * vs. a threshold, credit a candidate whose own spacing clears both the threshold gap and the
+ * roster's own average. `TEAM_SPACING_NEED_THRESHOLD` (55) is calibrated from real roster
+ * averages, not the raw player pool (the same mistake the defense threshold's first pass made,
+ * per that constant's own docstring): 128 real AI-finished 9-man rosters averaged (per-roster
+ * mean `computeSpacing`) median 48.9, p25 42.2, p75 56.8 (scripts/_spacingNeedCalib.ts, deleted
+ * after use) — 55 sits just above the median, so this fires for the below-median half of teams
+ * with `deficit` scaling continuously, not a threshold picked to never fire (or always fire).
+ */
+const TEAM_SPACING_NEED_THRESHOLD = 55;
+const MAX_SPACING_BALANCE_BONUS = 20;
+function teamSpacingNeedBonus(roster: PlayerSpan[], p: PlayerSpan): number {
+  if (roster.length === 0) return 0;
+  const rosterAvgSpacing = roster.reduce((sum, r) => sum + computeSpacing(r), 0) / roster.length;
+  if (rosterAvgSpacing >= TEAM_SPACING_NEED_THRESHOLD) return 0;
+  const candidateSpacing = computeSpacing(p);
+  if (candidateSpacing <= rosterAvgSpacing) return 0;
+  const deficit = Math.min(1, (TEAM_SPACING_NEED_THRESHOLD - rosterAvgSpacing) / TEAM_SPACING_NEED_THRESHOLD);
+  const candidateEdge = Math.min(1, (candidateSpacing - rosterAvgSpacing) / 40);
+  return MAX_SPACING_BALANCE_BONUS * deficit * candidateEdge;
 }
 
 function eliteTwoWayPeakBonus(p: PlayerSpan): number {
@@ -1500,12 +1594,16 @@ export function pickForAi(
   });
 
   // Preserve enough cap for a *playable* remainder, not merely the cheapest mathematically
-  // possible remainder. This is a planning preference layered on top of the hard lookahead:
-  // fall back to `candidates` whenever the board/cap leaves no reserve-preserving choice.
+  // possible remainder. 2026-09-17: loosened from a hard wall at the FULL reserve to one at half
+  // of it (`RESERVE_HARD_FLOOR_FRACTION`) — the old, tighter wall could exclude a genuinely great
+  // candidate before the value formula ever got to compare it (see `reserveBreachPenalty`'s own
+  // docstring). Any remaining breach up to this looser wall is a soft, value-scaled penalty in
+  // the main scoring loop below, not a filter. Falls back to `candidates` whenever the board/cap
+  // leaves no reserve-preserving choice at all, same as before.
   const reserveAwareCandidates = candidates.filter((p) => {
     const slotsLeftAfterPick = slotsLeft - 1;
     const capRemainingAfterPick = capLimit - (spent + p.fga);
-    return capRemainingAfterPick + 1e-9 >= plannedPlayableReserveFga(slotsLeftAfterPick);
+    return capRemainingAfterPick + 1e-9 >= plannedPlayableReserveFga(slotsLeftAfterPick) * RESERVE_HARD_FLOOR_FRACTION;
   });
   const planningCandidates = reserveAwareCandidates.length > 0 ? reserveAwareCandidates : candidates;
 
@@ -1847,6 +1945,8 @@ export function pickForAi(
     const effectiveFgaPenalty = fgaPenalty * eliteTalentFgaPenaltyDampening(talent);
     const talentTerm = talent * rampedNeed;
     const fgaCost = p.fga * effectiveFgaPenalty;
+    const slotsLeftAfterPick = slotsLeft - 1;
+    const capRemainingAfterPick = capLimit - (spent + p.fga);
     const adjustments = {
       lowUsageBigMalus: -lowUsageBigMalus(p),
       eliteLowUsageDraftMalus: -eliteLowUsageDraftMalus(p),
@@ -1858,6 +1958,8 @@ export function pickForAi(
       greatestPeakTierBonus: greatestPeakTierBonus(p),
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
+      teamSpacingNeedBonus: teamSpacingNeedBonus(roster, p),
+      reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);

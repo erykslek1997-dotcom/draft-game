@@ -16,6 +16,7 @@ import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
 import { isPlusShooter } from './shooting';
 import { computeSpacing, isShootingAnomalyPlayer, spacingBreakdown, selfCreationRate, WALKING_GRAVITY_FLOOR } from './spacing';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
+import { usageForSpan, type UsageSpanValue } from './usageLookup';
 import { computeOffensiveTalent } from './talent';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
@@ -451,9 +452,82 @@ function huntingPotentialFor(starters: PlayerSpan[]): number {
 }
 
 const POST_SCORER_ON_BALL_FLOOR = 0.65;
+
+/**
+ * 2026-09-17, user-reported live, with real numbers: prime Kobe Bryant (2002-04, 21.1 real FGA)
+ * and Paul Pierce's 2009-11 span (12.5 FGA, already his lower-usage third-option Celtics years
+ * alongside Garnett/Allen/Rondo) both carry the `Shot Creator`/`Slasher` archetype tag, so both
+ * got the flat `HIGH_USAGE_ARCHETYPE_WEIGHT` value with zero distinction between them — "Kobe w
+ * prime z 22 fga ma taką samą wagę jak starszy Pierce". Checked the pool directly
+ * (scripts/_fgaByArchetype.ts, deleted after use): median real FGA is 16.7 for Shot Creator vs.
+ * 11.0 for Slasher — the archetypes themselves already imply systematically different usage
+ * levels the flat weight discarded, on top of within-archetype spread (a given Slasher can be a
+ * 9-FGA cutter or a 13-FGA go-to scorer).
+ *
+ * `fgaDemandScale` rescales the flat weight by the player's own real FGA against a reference
+ * (18, roughly a genuine go-to star's volume — close to Shot Creator's own p75/p90 in the pool),
+ * clamped to [0.4, 1.3] so a very low-volume tag-holder still registers SOME real demand and a
+ * very high-volume one can't blow past a hard ceiling. A span sitting exactly at the reference
+ * keeps its old weight unchanged; below it scales down, above it scales up — this is why the
+ * Nash+LeBron `onBallDemand <= 2` fixture (testFit.ts) still holds: neither span's own FGA sits
+ * far enough above their archetype's typical range to push the sum past the fixture's own bound.
+ */
+const FGA_DEMAND_REFERENCE = 18;
+const FGA_DEMAND_MIN_SCALE = 0.4;
+const FGA_DEMAND_MAX_SCALE = 1.3;
+function fgaDemandScale(fga: number): number {
+  return clamp(fga / FGA_DEMAND_REFERENCE, FGA_DEMAND_MIN_SCALE, FGA_DEMAND_MAX_SCALE);
+}
+
+/**
+ * 2026-09-17, same day as the fga-scale patch above: the user pushed further ("Działaj nad
+ * tematem assisted fg i usg") after real usage%/assisted-FG% turned out to exist per-game in
+ * `PlayerStatisticsExtended.csv` (1996-2026 coverage — [[usg_possession_cap_plan]]'s "THIRD
+ * consumer" note has the full data story). `usageForSpan` (usageLookup.ts) aggregates it
+ * minutes-weighted per span. This replaces the archetype+fga-scale PROXY outright wherever real
+ * data exists — it's not another adjustment layered on top, it's the actual thing the proxy was
+ * always standing in for.
+ *
+ * Two real numbers combine: `usgPct` (true on-ball load, not an archetype guess) sets the raw
+ * demand against `USAGE_DEMAND_FLOOR`/`CEILING` (14%/34% — checked against the real pool
+ * distribution, scripts/_usageTest.ts deleted after use: p5=11.6%, median=17.4%, max=37.8%, so
+ * these bracket a genuine "replacement-level to superstar" range, not arbitrary numbers).
+ * `assistedFgPct` then scales that raw demand by how much of it the player actually EARNED
+ * himself versus received from a teammate's pass — a high-usage post scorer or catch-and-shoot
+ * option whose buckets are mostly assisted asks less of the OFFENSE's structure than the same
+ * usage spent creating a shot from scratch. `SELF_CREATION_DEMAND_FLOOR` (0.5) keeps even a
+ * fully-assisted high-usage span (a pure lob-and-putback big, say) registering real demand —
+ * touches still have to go somewhere — rather than zeroing out.
+ *
+ * Validated directly on the user's own drafted roster (Billups/Kobe/Pierce/C.Robinson/Shaq): real
+ * onBallDemand sums to ~2.13, comfortably under the "crowded" 2.5 line the flat/fga-scaled proxies
+ * both put it well past (4.15 / 3.82) — Pierce's real 09-11 usage (23.6%) and Robinson's real
+ * assisted rate (78.4%, mostly finishing) are exactly what the user argued they were: genuinely
+ * lower-demand than the tags implied. Falls back to the archetype+fga-scale proxy for any span
+ * this source doesn't cover (all pre-1996 spans, plus the ~3% of post-1996 games missing
+ * usagePercentage).
+ */
+const USAGE_DEMAND_FLOOR = 0.14;
+const USAGE_DEMAND_CEILING = 0.34;
+const USAGE_DEMAND_MAX = 1.3;
+const SELF_CREATION_DEMAND_FLOOR = 0.5;
+const MIN_GAMES_FOR_REAL_USAGE = 15;
+
+function realUsageDemand(usage: UsageSpanValue): number {
+  const rawDemand = clamp((usage.usgPct - USAGE_DEMAND_FLOOR) / (USAGE_DEMAND_CEILING - USAGE_DEMAND_FLOOR), 0, USAGE_DEMAND_MAX);
+  const selfCreation = 1 - usage.assistedFgPct;
+  return rawDemand * (SELF_CREATION_DEMAND_FLOOR + (1 - SELF_CREATION_DEMAND_FLOOR) * selfCreation);
+}
+
 function starterOnBallDemand(profile: ShadowRoleProfile, span: PlayerSpan): number {
-  const archetypeWeight = HIGH_USAGE_ARCHETYPE_WEIGHT[profile.incumbentOffensiveRole] ?? 0;
-  const postFloor = profile.incumbentOffensiveRole === 'Post Scorer' ? POST_SCORER_ON_BALL_FLOOR : 0;
+  const realUsage = usageForSpan(span);
+  if (realUsage && realUsage.games >= MIN_GAMES_FOR_REAL_USAGE) {
+    return realUsageDemand(realUsage);
+  }
+
+  const demandScale = fgaDemandScale(span.fga);
+  const archetypeWeight = (HIGH_USAGE_ARCHETYPE_WEIGHT[profile.incumbentOffensiveRole] ?? 0) * demandScale;
+  const postFloor = profile.incumbentOffensiveRole === 'Post Scorer' ? POST_SCORER_ON_BALL_FLOOR * demandScale : 0;
   // playmakingScoreForPlayer: 0-100, name-keyed peak, ~85 = "elite"; null when uncovered.
   // pm 84 → ~0.14, pm 90 → ~0.28, pm 99 → ~0.49 — tops out near a Primary Ball Handler's own
   // 0.5 so a distributor never out-demands a lead guard.

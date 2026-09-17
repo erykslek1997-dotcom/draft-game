@@ -76,7 +76,13 @@ const nashLeBron = team('fit-v2-nash-lebron', [
   pick('Nerlens Noel', '2018-20'),
 ]);
 const nashLeBronResult = fitScore(nashLeBron);
-check(nashLeBronResult.inputs.onBallDemand <= 2, 'inferred creator versatility does not fabricate on-ball demand');
+// 2026-09-17: onBallDemand's flat archetype weights became real-FGA-scaled (starterOnBallDemand,
+// fit.ts) — Paul George's 2018-20 span (19.2 real FGA) now reads slightly above his Shot Creator
+// archetype's old flat 1.0 weight, nudging this roster's sum from exactly 2.0 to 2.058. The bound
+// here was always a proxy for the real thing this fixture checks (`creationStructure` below,
+// still exactly 90) — loosened to what the more accurate calculation actually produces rather
+// than the round number the old flat weights happened to land on.
+check(nashLeBronResult.inputs.onBallDemand <= 2.2, 'inferred creator versatility does not fabricate on-ball demand');
 check(nashLeBronResult.components.creationStructure >= 90, 'Nash and LeBron with off-ball threats grade as elite creation');
 check(nashLeBronResult.inputs.defensiveWeakLinkCover >= 20, 'strong POA/wing/rim layers can partially hide one weak defender');
 check(nashLeBronResult.components.defensiveRoleCoverage >= 70, 'one weak defender does not erase an otherwise complete defensive shell');

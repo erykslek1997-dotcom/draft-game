@@ -86,7 +86,7 @@ const STARS_PER_POSITION = 200;
  * target, before the "remaining fill by best talent" step ever ran) — raising this only grows the
  * real in-game pool (573->730 distinct players, 5230->6172 span entries), it does not risk
  * displacing anything via the target-size fill logic. */
-const VALUE_PER_POSITION: Record<Position, number> = { PG: 60, SG: 60, SF: 60, PF: 25, C: 12 };
+const VALUE_PER_POSITION: Record<Position, number> = { PG: 120, SG: 120, SF: 120, PF: 50, C: 25 };
 /** A player's cheapest span must come in under this to count for the value tier. */
 const VALUE_FGA_CEILING = 9;
 const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -147,7 +147,35 @@ interface PlayerSummary {
   peakPosition: Position;
   /** Best talent-per-FGA across this player's spans — the "value" axis. */
   bestEfficiency: number;
+  /** The span label that achieved `bestEfficiency` — only used to read that span's era for
+   * `recencyWeight` below. */
+  bestEfficiencySpanLabel: string;
   cheapestFga: number;
+}
+
+/**
+ * 2026-09-17, user's explicit ask after seeing this session's widened value tier skew old
+ * ("więcej modern mniej older"): raw talent-per-FGA efficiency has no era term at all, and cheap
+ * "value" role players are exactly the population this project has repeatedly found skews old —
+ * same underlying complaint as the deferred PG-pool item in
+ * [[dtal_pg_steal_weighting_audit]] ("draftowanie PGs z 80s szczerze psuje immersję"). Measured
+ * directly (scripts/_eraDiag.ts, deleted after use): the pre-widening Tier 3 PG slice already ran
+ * 20% pre-1990 vs. 7.5% from the 2020s, before this session's widening made the tier bigger (and
+ * so pulled in more of that same old-skewed tail).
+ *
+ * A soft multiplier on the sort key, not a hard cutoff or era quota — a genuinely excellent
+ * old-era role player can still out-rank a mediocre modern one, just needs a real edge to do it
+ * rather than a token one. Neutral (1.0) at year 2000 (roughly the felt "recent enough" line from
+ * the same PG complaint), rising to 1.3 by 2020+ and falling to 0.7 by 1980 and earlier — kept
+ * inside +/-30% so this nudges the ranking rather than silently re-implementing a cutoff via an
+ * extreme weight. Scoped to Tier 3 only (the "cheap role player" pool this complaint is actually
+ * about); Tier 2 star talent is unaffected — a star's era doesn't hurt immersion the way an
+ * obscure 1980s role player filling a bench slot does.
+ */
+function recencyWeight(spanLabel: string): number {
+  const year = parseInt(spanLabel.slice(0, 4), 10);
+  if (!Number.isFinite(year)) return 1;
+  return Math.max(0.7, Math.min(1.3, 1 + (year - 2000) / 67));
 }
 
 const spansByName = new Map<string, PlayerSpan[]>();
@@ -162,6 +190,7 @@ const summaries: PlayerSummary[] = [...spansByName.entries()].map(([normalizedNa
   let peakSpan = spans[0];
   let peakTalent = -Infinity;
   let bestEfficiency = -Infinity;
+  let bestEfficiencySpanLabel = spans[0].spanLabel;
   let cheapestFga = Infinity;
   for (const span of spans) {
     const talent = effectiveTalent(span);
@@ -169,10 +198,13 @@ const summaries: PlayerSummary[] = [...spansByName.entries()].map(([normalizedNa
       peakTalent = talent;
       peakSpan = span;
     }
-    if (span.fga > 0) bestEfficiency = Math.max(bestEfficiency, talent / span.fga);
+    if (span.fga > 0 && talent / span.fga > bestEfficiency) {
+      bestEfficiency = talent / span.fga;
+      bestEfficiencySpanLabel = span.spanLabel;
+    }
     cheapestFga = Math.min(cheapestFga, span.fga);
   }
-  return { normalizedName, peakTalent, peakPosition: peakSpan.primaryPosition, bestEfficiency, cheapestFga };
+  return { normalizedName, peakTalent, peakPosition: peakSpan.primaryPosition, bestEfficiency, bestEfficiencySpanLabel, cheapestFga };
 });
 
 const kept = new Set<string>();
@@ -192,11 +224,17 @@ if (RESTRICT_TO_D1_D2_D3) {
     for (const s of inSlot.slice(0, STARS_PER_POSITION)) kept.add(s.normalizedName);
   }
 
-  // Tier 3 — cheap value, per position.
+  // Tier 3 — cheap value, per position. Ranked by efficiency times `recencyWeight` (see that
+  // function's own docstring) — not raw efficiency — so this tier doesn't skew as old as a
+  // era-blind talent-per-FGA sort naturally does.
   for (const slot of ALL_POSITIONS) {
     const inSlot = summaries
       .filter((s) => s.peakPosition === slot && s.cheapestFga <= VALUE_FGA_CEILING)
-      .sort((a, b) => b.bestEfficiency - a.bestEfficiency);
+      .sort(
+        (a, b) =>
+          b.bestEfficiency * recencyWeight(b.bestEfficiencySpanLabel) -
+          a.bestEfficiency * recencyWeight(a.bestEfficiencySpanLabel),
+      );
     let added = 0;
     for (const s of inSlot) {
       if (added >= VALUE_PER_POSITION[slot]) break;
