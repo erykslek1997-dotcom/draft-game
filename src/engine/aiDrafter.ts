@@ -687,8 +687,8 @@ function plannedPlayableReserveFga(slotsRemaining: number): number {
  * `plannedPlayableReserveFga` itself is unchanged and still the right planning target (a
  * mathematically fillable bench is not necessarily a playable one — see that function's own
  * docstring). What changed is how a breach of it is enforced: a soft, value-scaled penalty
- * (applied in the main scoring loop below, alongside `teamDefensiveBalanceBonus`/
- * `teamSpacingNeedBonus`) instead of an outright exclusion, so a large enough talent edge can
+ * (applied in the main scoring loop below, alongside `teamDefensiveBalanceBonus`) instead of an
+ * outright exclusion, so a large enough talent edge can
  * still buy its way past a thin reserve, the way a real GM would take a clear steal even if it
  * means a slightly leaner bench — while a normal player who ISN'T worth the tradeoff still loses
  * to the cheaper options the reserve was protecting. The genuinely hard safety net — the roster
@@ -987,37 +987,33 @@ function teamDefensiveBalanceBonus(roster: PlayerSpan[], p: PlayerSpan): number 
 }
 
 /**
- * 2026-09-17, found the same way `teamDefensiveBalanceBonus` above was (a live user catch): after
- * playing a full human draft where every pick after a non-shooting center (Shaquille O'Neal, SPC
- * D-) was deliberately chosen to compensate — Paul Pierce, Clifford Robinson (picked over a
- * higher-TAL Charles Barkley explicitly for spacing fit), James Posey, Jason Kidd all real
- * `computeSpacing` A/A+ — the user asked what this looks like translated into AI logic. There
- * wasn't one: this value formula had a defensive-need signal but nothing symmetric for spacing,
- * so AI teams can happily stack Non-shooters (Buffalo: Jordan+Draymond+Dwight Howard; Norfolk:
- * Bird+Wilt+Lewis+Frazier, only Bird a genuine shooter) with no counterweight, the same
- * formula-wide gap the defensive version was built to close.
+ * 2026-09-17, tried and REVERTED same day: a spacing-need bonus mirroring
+ * `teamDefensiveBalanceBonus` (roster-average `computeSpacing` vs. a threshold, credit a
+ * candidate whose own spacing clears both the gap and the average) — motivated by a live user
+ * catch (a human draft where every pick after a non-shooting center was deliberately chosen to
+ * compensate; nothing in this formula did that for AI teams).
  *
- * Same shape as `teamDefensiveBalanceBonus` exactly — roster's current average `computeSpacing`
- * vs. a threshold, credit a candidate whose own spacing clears both the threshold gap and the
- * roster's own average. `TEAM_SPACING_NEED_THRESHOLD` (55) is calibrated from real roster
- * averages, not the raw player pool (the same mistake the defense threshold's first pass made,
- * per that constant's own docstring): 128 real AI-finished 9-man rosters averaged (per-roster
- * mean `computeSpacing`) median 48.9, p25 42.2, p75 56.8 (scripts/_spacingNeedCalib.ts, deleted
- * after use) — 55 sits just above the median, so this fires for the below-median half of teams
- * with `deficit` scaling continuously, not a threshold picked to never fire (or always fire).
+ * Shipped, then measured to be worth reverting on two independent findings: (1) the bonus alone
+ * moved real drafted-team spacing almost NOT AT ALL (mean 49.4->49.4, isolated A/B,
+ * scripts/_spacingImpact.ts deleted after use) — `MAX_SPACING_BALANCE_BONUS` (20) is simply too
+ * small next to `talentTerm`'s scale (100-400) to redirect the lottery in aggregate. (2) it
+ * measurably increased redundant same-position stacking — user-reported live ("mam wrażenie że
+ * needspacing trochę powoduje że draftuje dwóch PG w jednej rotacji"), confirmed: 3+ PG on a
+ * roster jumped 10.4%->17.5% after this bonus shipped (240 simulated rosters,
+ * scripts/_doublePgDiag.ts deleted after use). A same-position-redundancy gate (mirroring
+ * `samePositionRedundancyDiscount`'s own `REAL_FIT_REDUNDANCY_THRESHOLD` pattern) was tried
+ * first, correctly made the bonus mathematically impossible to apply directly to a 3rd-same-
+ * position candidate, and STILL didn't move the 3+ PG rate (17.9% gated vs. 11.7% fully
+ * disabled, vs. 10.4% pre-bonus baseline) — the effect is indirect/emergent: the bonus nudges
+ * which 1st/2nd PG a team takes (still legal, real fits < 2 at that point), and that altered
+ * roster trajectory cascades into more 3rd-PG situations later through ordinary bench-round
+ * value competition, a pathway no candidate-local gate on THIS bonus can reach. Given (1) alone
+ * already meant near-zero benefit, and (2) meant a real, non-fixable-in-place cost, reverted
+ * outright rather than continuing to patch an emergent side effect. If revisited, the real
+ * spacing gap this was meant to close is real (see the docstring history above) — a much larger
+ * bonus magnitude, or a mechanism that reasons about the WHOLE remaining draft rather than one
+ * pick at a time, would be needed to actually move the needle; a small per-pick nudge does not.
  */
-const TEAM_SPACING_NEED_THRESHOLD = 55;
-const MAX_SPACING_BALANCE_BONUS = 20;
-function teamSpacingNeedBonus(roster: PlayerSpan[], p: PlayerSpan): number {
-  if (roster.length === 0) return 0;
-  const rosterAvgSpacing = roster.reduce((sum, r) => sum + computeSpacing(r), 0) / roster.length;
-  if (rosterAvgSpacing >= TEAM_SPACING_NEED_THRESHOLD) return 0;
-  const candidateSpacing = computeSpacing(p);
-  if (candidateSpacing <= rosterAvgSpacing) return 0;
-  const deficit = Math.min(1, (TEAM_SPACING_NEED_THRESHOLD - rosterAvgSpacing) / TEAM_SPACING_NEED_THRESHOLD);
-  const candidateEdge = Math.min(1, (candidateSpacing - rosterAvgSpacing) / 40);
-  return MAX_SPACING_BALANCE_BONUS * deficit * candidateEdge;
-}
 
 function eliteTwoWayPeakBonus(p: PlayerSpan): number {
   const talent = effectiveTalent(p);
@@ -1958,7 +1954,6 @@ export function pickForAi(
       greatestPeakTierBonus: greatestPeakTierBonus(p),
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
-      teamSpacingNeedBonus: teamSpacingNeedBonus(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
     };
     const value =
