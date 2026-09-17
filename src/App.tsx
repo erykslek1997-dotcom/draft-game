@@ -164,7 +164,7 @@ function App() {
                 <span className="heritage-badge" aria-hidden>
                   Est. 1946
                 </span>
-                <h1>Hoopverse</h1>
+                <h1>Draftverse</h1>
               </header>
               {sharedDraftSeed !== null && (
                 <p className="shared-seed-banner">

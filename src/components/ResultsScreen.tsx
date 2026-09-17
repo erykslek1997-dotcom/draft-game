@@ -182,6 +182,24 @@ interface Props {
    * "Challenge a friend" button can build a shareable link — no new draft logic, this is the same
    * seed/replay mechanism that already existed, just surfaced in the UI for the first time. */
   draftSeed: number;
+  /** 2026-09-17, user's own ask ("challange a friend łączy dwie osoby, ale nie ma na koniec
+   * porównania obu draftów"): the original "Duel na seedzie" spec deliberately left the actual
+   * comparison to the two people manually ("no backend, no automatic comparison"). This closes
+   * that gap the only way a 100%-client-side game can — the challenger's own headline result
+   * (name/overall/rank/fieldSize) rides along AS PART OF the shareable link itself
+   * (`copyChallengeLink` below encodes it, `GameShell.tsx`'s `challengerFromUrl` decodes it), so
+   * the second player's own Results screen can show a real "you vs them" comparison the moment
+   * their draft finishes — still no server, the URL IS the message. `undefined` for a normal
+   * (non-challenge-link) draft. */
+  challenger?: ChallengeChallenger;
+}
+
+/** See the `challenger` prop's own docstring on `Props` above for the full "no backend" story. */
+export interface ChallengeChallenger {
+  name: string;
+  overall: number;
+  rank: number;
+  fieldSize: number;
 }
 
 /** Keyed by roster player id — one reaction per rostered player, set directly on that player's
@@ -325,6 +343,7 @@ function HeroResult({
   failureMode,
   starters,
   roster,
+  challenger,
 }: {
   teamName: string;
   isHuman: boolean;
@@ -340,6 +359,7 @@ function HeroResult({
   rotationScore: number;
   fitDetail: FitScoreResult | null;
   offenseDetail: OffenseScoreBreakdown | null;
+  challenger?: ChallengeChallenger;
   assignments: ResolvedSlotAssignment[];
   starterKeys: Set<string>;
   topOverall: number | null;
@@ -362,17 +382,37 @@ function HeroResult({
   const [shareOpen, setShareOpen] = useState(false);
   const tier = resultTierLabel(rank, fieldSize);
   const gap = topOverall !== null ? topOverall - overall : null;
+  // 2026-09-17, follow-up to "Duel na seedzie" (user: "nie ma na koniec porównania obu draftów" —
+  // there's no comparison of both drafts at the end): auto-opens once, the moment a challenge-link
+  // draft's Results screen mounts, so the second player can't miss it. Dismissible, and only ever
+  // shown when `challenger` is actually present (a normal draft never sees this).
+  const [compareOpen, setCompareOpen] = useState(() => challenger !== undefined);
+  const youWon = challenger ? overall > challenger.overall : null;
 
   /** 2026-09-11, "Duel na seedzie" — user's own spec: "Ty i znajomy dostajecie DOKŁADNIE tę samą
    * kolejność picków AI... Zero nowej logiki draftu, tylko UI do 'wygeneruj link z tym seedem,
    * wyślij znajomemu'." The seed/replay mechanism (`?draftSeed=`, `GameShell.tsx`'s own
    * `seedFromUrl`) already existed — this just copies a link carrying THIS draft's own seed, so a
-   * friend who opens it and clicks Start Draft gets the identical 16-team AI sequence to react to,
-   * then compares their own Final Power Ranking against this one (manually — no backend, no
-   * automatic comparison, same scope the spec asked for). */
+   * friend who opens it and clicks Start Draft gets the identical 16-team AI sequence to react to.
+   *
+   * 2026-09-17, user's own follow-up ask ("nie ma na koniec porównania obu draftów" / "popup z
+   * porównaniem dla drugiego gracza do wysłania znajomemu"): the original spec deliberately left
+   * the actual comparison manual — "no backend, no automatic comparison." Closing that gap without
+   * adding a backend means the comparison has to travel IN the link itself: this now also encodes
+   * THIS result's own name/overall/rank/fieldSize as query params, so whoever opens the link and
+   * finishes their own draft lands on a Results screen that already knows what it's being compared
+   * against (`GameShell.tsx`'s `challengerFromUrl` decodes these same params). That second player's
+   * own "Challenge a friend" click then naturally encodes THEIR result the same way — sending it
+   * back (or onward) closes the loop with zero new UI needed for the reply direction. */
   async function copyChallengeLink() {
     const url = new URL(window.location.href);
-    url.search = `?draftSeed=${draftSeed}`;
+    const params = new URLSearchParams();
+    params.set('draftSeed', String(draftSeed));
+    params.set('cn', teamName);
+    params.set('co', String(overall));
+    params.set('cr', String(rank));
+    params.set('cf', String(fieldSize));
+    url.search = `?${params.toString()}`;
     try {
       await navigator.clipboard.writeText(url.toString());
       setChallengeCopied(true);
@@ -384,6 +424,32 @@ function HeroResult({
 
   return (
     <header className="results-hero">
+      {challenger && compareOpen && (
+        <div className="challenge-compare-backdrop" onClick={() => setCompareOpen(false)}>
+          <div className="challenge-compare-modal" role="dialog" aria-modal="true" aria-label="Challenge comparison" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="challenge-compare-close" aria-label="Close" onClick={() => setCompareOpen(false)}>✕</button>
+            <p className="challenge-compare-title">
+              {youWon ? '🏆 You win the duel' : overall === challenger.overall ? '🤝 It’s a tie' : 'This one goes to your friend'}
+            </p>
+            <div className="challenge-compare-row">
+              <div className={`challenge-compare-side ${youWon ? 'challenge-compare-side--winner' : ''}`}>
+                <span className="challenge-compare-label">You</span>
+                <span className="challenge-compare-team">{teamName}</span>
+                <span className="challenge-compare-overall">{overall}</span>
+                <span className="challenge-compare-rank">{ordinal(rank)} / {fieldSize}</span>
+              </div>
+              <span className="challenge-compare-vs">vs</span>
+              <div className={`challenge-compare-side ${youWon === false ? 'challenge-compare-side--winner' : ''}`}>
+                <span className="challenge-compare-label">Your friend</span>
+                <span className="challenge-compare-team">{challenger.name}</span>
+                <span className="challenge-compare-overall">{challenger.overall}</span>
+                <span className="challenge-compare-rank">{ordinal(challenger.rank)} / {challenger.fieldSize}</span>
+              </div>
+            </div>
+            <p className="challenge-compare-hint">Same 16-team board, same AI, two different drafts. Use “Challenge a friend” below to send this result onward.</p>
+          </div>
+        </div>
+      )}
       <div className="results-hero-finish">
         <span className="results-hero-eyebrow">{isHuman ? 'You finished' : 'Top of the field'}</span>
         <span className="results-hero-rank">
@@ -1097,7 +1163,7 @@ export function downloadFeedback(
   URL.revokeObjectURL(url);
 }
 
-export default function ResultsScreen({ teams, history, onRestart, draftSeed }: Props) {
+export default function ResultsScreen({ teams, history, onRestart, draftSeed, challenger }: Props) {
   // Lookups used inside render loops (matchup opponents, draft-order rows, the bracket tree) —
   // Maps, not repeated `.find` over `teams` / the 9451-span `draftPool`.
   const teamsById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
@@ -1316,6 +1382,7 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed }: 
           topOverall={ranked[0]?.breakdown.overall ?? null}
           titleOdds={leagueEvalByTeamId.get(heroRanked.team.id)?.championshipProbability ?? null}
           draftSeed={draftSeed}
+          challenger={challenger}
           identity={
             heroFit?.inputs.primaryArchetype
               ? heroFit.inputs.primaryArchetype +

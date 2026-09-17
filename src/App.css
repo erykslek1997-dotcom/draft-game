@@ -2198,6 +2198,101 @@ select {
 .results-hero-overall.score-t6 { background: var(--at-t6); }
 .results-hero-overall .results-hero-stat-label { color: color-mix(in srgb, #fff 78%, transparent); }
 .results-hero-overall .results-hero-stat-value { color: #fff; }
+/* 2026-09-17, "Duel na seedzie" follow-up (user: "nie ma na koniec porównania obu draftów" — the
+   challenge link connects two people but never compares their results): auto-opens once when a
+   challenge-link draft's Results screen mounts (see HeroResult's own `compareOpen` docstring). */
+.challenge-compare-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 60;
+}
+.challenge-compare-modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  padding: 26px 24px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--at-line, var(--border));
+  background: var(--at-paper-raised, var(--bg));
+  box-shadow: var(--at-shadow, var(--shadow));
+  text-align: center;
+}
+.challenge-compare-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  line-height: 1;
+}
+.challenge-compare-title {
+  margin: 0 0 18px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.challenge-compare-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.challenge-compare-side {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--at-line, var(--border));
+  background: color-mix(in srgb, var(--at-pill, var(--bg)) 40%, transparent);
+}
+.challenge-compare-side--winner {
+  border-color: #79c99a;
+  background: color-mix(in srgb, #79c99a 16%, transparent);
+}
+.challenge-compare-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--at-ink-faint, var(--text));
+}
+.challenge-compare-team {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.challenge-compare-overall {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: 1;
+}
+.challenge-compare-rank {
+  font-size: 11.5px;
+  color: var(--at-ink-faint, var(--text));
+}
+.challenge-compare-vs {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--at-ink-faint, var(--text));
+  text-transform: uppercase;
+}
+.challenge-compare-hint {
+  margin: 18px 0 0;
+  font-size: 12px;
+  color: var(--at-ink-faint, var(--text));
+  line-height: 1.5;
+}
+
 /* "Overall #1 in the field: X — you're Y back" — the benchmark line from the Scouting Report
    audit (HoopsMatic shows "best squad you could've signed would win 11.29%"). Sits above the
    identity line, no border of its own, so the two read as one continuous payoff paragraph. */

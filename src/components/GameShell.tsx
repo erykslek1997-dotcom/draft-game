@@ -19,7 +19,7 @@ import type { PlayerSpan } from '../data/schema';
 import type { Rotation, Team } from '../engine/types';
 import DraftBoard from './DraftBoard';
 import DraftLottery from './DraftLottery';
-import ResultsScreen from './ResultsScreen';
+import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { FeedbackEntry } from './FeedbackToggle';
 
 // 2026-09-17, user's own ask: a real "how to play?" affordance on the lottery screen, now that
@@ -93,10 +93,29 @@ function seedFromUrl(): number | undefined {
   return Number.isFinite(n) ? n >>> 0 : undefined;
 }
 
+/** 2026-09-17, "Duel na seedzie" follow-up — see ResultsScreen.tsx's `ChallengeChallenger`
+ * docstring for the full "no backend, the URL IS the message" story. Reads the SAME `cn`/`co`/
+ * `cr`/`cf` params `copyChallengeLink` (ResultsScreen.tsx) writes; any missing/non-finite piece
+ * and this returns `undefined` rather than a partially-filled comparison, since a still-solo draft
+ * (no challenge link, or an old-style link from before this feature shipped) must render exactly
+ * like it always has. Read once at mount, same as `seedFromUrl` below — the URL doesn't change
+ * mid-draft, and neither should this. */
+function challengerFromUrl(): ChallengeChallenger | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const params = new URLSearchParams(window.location.search);
+  const name = params.get('cn');
+  const overall = Number(params.get('co'));
+  const rank = Number(params.get('cr'));
+  const fieldSize = Number(params.get('cf'));
+  if (!name || !Number.isFinite(overall) || !Number.isFinite(rank) || !Number.isFinite(fieldSize)) return undefined;
+  return { name, overall, rank, fieldSize };
+}
+
 export default function GameShell({ mode, commissionerMode, humanTeamName, onExit }: Props) {
   const [draftState, setDraftState] = useState<DraftState>(
     () => createDraft(commissionerMode, undefined, humanTeamName, seedFromUrl()),
   );
+  const [challenger] = useState<ChallengeChallenger | undefined>(() => challengerFromUrl());
   // Dev-only console hook: `draftDebug()` turns on the per-pick value-breakdown log in
   // `pickForAi`, `draftDebug(false)` turns it back off. Paired with the seed `createDraft` logs,
   // this is the whole "why did the AI take him?" workflow — no UI surface, dev builds only.
@@ -343,6 +362,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           pickReactions={pickReactions}
           pickReasoning={pickReasoning}
           draftSeed={draftState.seed}
+          challenger={challenger}
         />
       )}
     </>
