@@ -371,6 +371,28 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
       ? extremeSeverity * shellAverageReadiness * shellFloorReadiness
       : 0;
   const weakLinkOvercomeBonus = weakLinkOvercome * MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS;
+  // 2026-09-17, audit-found dead zone: `weakLinkOvercome` only ever engages below
+  // `WEAK_LINK_EXTREME_DTAL_CEILING` (35) by design (see that constant's own docstring — a
+  // merely below-average 40-60 weak link is deliberately excluded). But between 35 and
+  // `AVERAGE_START` (80), the weak link's own D-TAL barely moves anything else either (it's only
+  // 1/5 of `averageDefensiveTalent`, itself gated at 80+) — so the ensemble bonus sits flat at
+  // whatever `eliteShellBonus`/`threeLayerCoreBonus`/`backlineFoundationBonus` happen to be,
+  // completely insensitive to the weak link getting worse throughout that whole range, and then
+  // JUMPS up the instant it crosses 35, since `weakLinkOvercomeBonus` starts its own ramp from 0
+  // rather than from wherever the ensemble already was. Verified live: a fixed elite shell
+  // (Jordan/LeBron/AD/Hakeem) with the 5th starter at D-TAL 35 read `defenseScoreBonus=5.52`; the
+  // SAME shell with a strictly WORSE 5th starter (D-TAL 17) read `defenseScoreBonus=19.04` — a
+  // worse defender raised the team's defense score, because the jump into
+  // `weakLinkOvercomeBonus`'s own 0-28 range outran the small three-layer/backline bonus it
+  // replaced. Fixed by having `weakLinkOvercomeBonus`, when it engages, continue UP from the
+  // other three paths' own max instead of restarting from 0 — the ceiling (28) and the "must be
+  // genuinely extreme" gate are both untouched, this only removes the discontinuity at the gate.
+  // For any roster where `weakLinkOvercome` is 0 (the overwhelming majority — no extreme weak
+  // link at all), `blendedWeakLinkOvercomeBonus` reduces to exactly `otherDefenseBonusesMax`,
+  // which never changes the final `Math.max(...)` result below.
+  const otherDefenseBonusesMax = Math.max(eliteShellBonus, threeLayerCoreBonus, backlineFoundationBonus);
+  const blendedWeakLinkOvercomeBonus =
+    otherDefenseBonusesMax + weakLinkOvercome * (MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS - otherDefenseBonusesMax);
 
   // 2026-09-12, code-review finding: this used to omit `weakLinkOvercome` entirely, so a Nash-
   // style team's boosted defenseScore/Overall (the whole point of the mechanism — see that
@@ -397,7 +419,7 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     drtgCompleteness,
     backlineFoundation,
     weakLinkOvercome,
-    defenseScoreBonus: Math.max(eliteShellBonus, threeLayerCoreBonus, backlineFoundationBonus, weakLinkOvercomeBonus),
+    defenseScoreBonus: Math.max(eliteShellBonus, threeLayerCoreBonus, backlineFoundationBonus, blendedWeakLinkOvercomeBonus),
     averageDefensiveTalent,
     poaProvider: poa?.player.playerName ?? null,
     wingProvider: wing?.player.playerName ?? null,

@@ -727,8 +727,18 @@ export function fitScore(team: Team): FitScoreResult {
   // separate threshold for the same underlying signal.
   const hasElitePrimaryCreator = primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD;
   const canPunishHelp = secondaryCreationSignal >= 75 || hasElitePrimaryCreator || starters.some(isRimGravityScorer);
+  // 2026-09-17, audit-found: this discount used to require `hardNonSpacerCount >= 2` to engage
+  // at all, so a lineup with exactly ONE hard non-spacer (strictly better personnel) never got
+  // it, while a lineup with TWO (strictly worse) could. Verified live: swapping a real lineup's
+  // PG from Chris Paul (1 hard non-spacer, no discount, geometryScore(1)=82) to Ben Simmons
+  // 2017-19 (a genuine zero-shooting liability, 2 hard non-spacers, discount fires, ->
+  // geometryScore(0)=100) RAISED `spacingCompatibility` and the overall FIT score — adding a
+  // worse shooter scored higher. Lowering the gate to `>= 1` lets the same elite-creator/gravity
+  // rescue apply uniformly starting at one non-spacer, so a one-non-spacer five can reach at
+  // least the same floor a two-non-spacer five with the same qualifying starter would — fewer
+  // non-spacers can no longer score worse than more.
   const geometryNonSpacerCount =
-    (hasGravityStarter || hasElitePrimaryCreator) && hardNonSpacerCount >= 2
+    (hasGravityStarter || hasElitePrimaryCreator) && hardNonSpacerCount >= 1
       ? Math.max(0, hardNonSpacerCount - (canPunishHelp ? 2 : 1))
       : hardNonSpacerCount;
 

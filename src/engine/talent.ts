@@ -513,6 +513,28 @@ function usageOffenseScale(span: PlayerSpan): number {
   return scale;
 }
 
+/**
+ * 2026-09-17, audit-found: `USAGE_SCALE_MIN_TIER_TAL`'s gate was a hard on/off switch checked on
+ * `baseTal` — a span at exactly 70 got the FULL usage scale (0.65-1.18x), a span at 69 got NONE
+ * of it, regardless of how similar their real FGA profiles were. Same shape as this session's
+ * spacing.ts findings (a hard cliff where a taper belongs) and the same fix this file's own
+ * `SPACING_BOOST_TAPER_BAND` already uses for an analogous star-tier gate just above: ease the
+ * scale in linearly over a band below the gate instead of switching it on all at once. Below the
+ * band it's exactly 1.0 (no change to the "don't touch marginal role players" intent the gate's
+ * own docstring states); at or above `USAGE_SCALE_MIN_TIER_TAL` it's exactly `usageOffenseScale`
+ * (no change to the already-established population this was calibrated against). Only the
+ * `USAGE_SCALE_TAPER_BAND`-point transition zone changes, and only to remove the discontinuity —
+ * a span at baseTal 69.9 now reads ~90% of the real scale instead of 0%.
+ */
+const USAGE_SCALE_TAPER_BAND = 9;
+function usageOffenseScaleTapered(span: PlayerSpan, baseTal: number): number {
+  if (baseTal >= USAGE_SCALE_MIN_TIER_TAL) return usageOffenseScale(span);
+  const bandFloor = USAGE_SCALE_MIN_TIER_TAL - USAGE_SCALE_TAPER_BAND;
+  if (baseTal <= bandFloor) return 1.0;
+  const taper = clamp01((baseTal - bandFloor) / USAGE_SCALE_TAPER_BAND);
+  return 1.0 + (usageOffenseScale(span) - 1.0) * taper;
+}
+
 function effectivePlaymakingApg(apg: number): number {
   if (apg <= PLAYMAKING_DIMINISHING_THRESHOLD) return apg;
   return PLAYMAKING_DIMINISHING_THRESHOLD + (apg - PLAYMAKING_DIMINISHING_THRESHOLD) * PLAYMAKING_DIMINISHING_RATE;
@@ -936,11 +958,27 @@ function isDualSourceConfirmedBig(span: PlayerSpan): boolean {
   return !!ddpm && !!raptor && ddpm.avg > 0 && raptor.avg > 0;
 }
 
+/**
+ * 2026-09-17, audit-found (not user-reported from a specific span, a structural code-review
+ * catch): this used to be an if/else-if cascade checked in the order corroborated -> dual-source
+ * -> partial, first match wins. But the dual-source tier's own docstring above argues its bonus
+ * (17) is "at least as strong a signal, arguably stronger" than the corroborated tier's (12) —
+ * two independent real sources both reading positive vs. one source's excess or an accolade. A
+ * PF/C span satisfying BOTH conditions got trapped in the smaller `corroborated` branch purely
+ * because it was checked first, never reaching the larger bonus its stronger evidence earned —
+ * the same "more corroboration scores lower" non-monotonic-branch shape as this session's
+ * spacing.ts findings, just on a defense gate instead of a shooter count. Fixed by computing
+ * every tier's bonus independently and taking the max that applies, so evidence strength (not
+ * check order) decides the result — this also means a future fifth tier can be added without
+ * having to re-derive the correct relative ordering of every existing one.
+ */
 function synergyGateDefense(span: PlayerSpan, normalizedDefense: number): number {
   const corroborated = darkoDefenseBonus(span) > 0 || individualDefenseRate(span) > 0;
-  if (corroborated) return Math.min(100, normalizedDefense + CONFIRMED_DEFENSE_GATE_BONUS);
-  if (isDualSourceConfirmedBig(span)) return Math.min(100, normalizedDefense + DUAL_SOURCE_BIG_GATE_BONUS);
-  if (hasPositiveRawDefense(span)) return Math.min(100, normalizedDefense + PARTIAL_DEFENSE_GATE_BONUS);
+  let bonus = 0;
+  if (corroborated) bonus = Math.max(bonus, CONFIRMED_DEFENSE_GATE_BONUS);
+  if (isDualSourceConfirmedBig(span)) bonus = Math.max(bonus, DUAL_SOURCE_BIG_GATE_BONUS);
+  if (hasPositiveRawDefense(span)) bonus = Math.max(bonus, PARTIAL_DEFENSE_GATE_BONUS);
+  if (bonus > 0) return Math.min(100, normalizedDefense + bonus);
   return Math.min(normalizedDefense, UNCORROBORATED_DEFENSE_GATE_CAP);
 }
 
@@ -1286,7 +1324,7 @@ export interface TalentBreakdown {
 
 export function talentBreakdown(span: PlayerSpan): TalentBreakdown {
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(talentScaled(span, 1.0)))));
-  const usageScaleApplied = baseTal >= USAGE_SCALE_MIN_TIER_TAL ? usageOffenseScale(span) : 1.0;
+  const usageScaleApplied = usageOffenseScaleTapered(span, baseTal);
 
   const { offense, defense } = rawComponents(span, true, usageScaleApplied);
   const { normalizedOffense, normalizedDefense } = normalizedComponents(span, offense, defense);
@@ -1553,7 +1591,7 @@ const talentCache = new Map<string, number>();
 export function rawUncappedTalent(span: PlayerSpan): number {
   const baseScaled = talentScaled(span, 1.0);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
-  const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span));
+  const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
   // Same post-pipeline bridge `computeTalent` applies — kept here so the GOAT-tier "100+" gate
   // reads a consistent raw number. GOAT-tier spans sit at rank-gap ~0 anyway, so this is ~a no-op
   // in practice, included for consistency rather than effect.
@@ -1674,7 +1712,7 @@ export function computeTalent(span: PlayerSpan): number {
   // The usage-scale gate stays keyed on the UN-bridged `baseTal` (same as `talentBreakdown`/
   // `rawUncappedTalent`) — the bridge is a post-pipeline defensive rank correction, deliberately
   // outside the two-pass gate it would otherwise be able to move (see `dtalBridgeCorrection`).
-  const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span));
+  const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
   const result = Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
   talentCache.set(span.id, result);
@@ -1701,7 +1739,7 @@ export function computeTalentWithoutEliteDefenseBonus(span: PlayerSpan): number 
   );
   const baseScaled = talentScaled(span, 1.0, false);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
-  const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span), false);
+  const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal), false);
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
   return Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
 }
@@ -1726,7 +1764,7 @@ export function computeTalentWithoutBridge(span: PlayerSpan): number {
   );
   const baseScaled = talentScaled(span, 1.0);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
-  const scaled = baseTal < USAGE_SCALE_MIN_TIER_TAL ? baseScaled : talentScaled(span, usageOffenseScale(span));
+  const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled))));
   return Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
 }

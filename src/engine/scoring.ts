@@ -792,15 +792,26 @@ export function spacingScore(team: Team): number {
   // a well-spaced five. Curry retains his unique 85 on-court floor; another elite shooter gets
   // a strong 70 floor over his own minutes. This prevents one shooter from turning
   // Wade/Iguodala/Webber/Embiid into a 90-spacing construction while preserving real gravity.
+  //
+  // 2026-09-17, audit-found: this branch had NO cap at all, while the two-threat branch above
+  // caps non-Curry duos at `MULTI_GRAVITY_TEAM_SPACING_CAP` (97) specifically so 100 stays
+  // reserved for the Curry+another-threat case. Verified live: swapping a team's second starter
+  // from a good-but-not-elite shooter (Ryan Anderson, not a threat) to a genuinely elite one
+  // (Dāvis Bertāns, becomes threat #2) moved the roster from this uncapped branch (Anderson,
+  // -> 100) into the capped one (Bertāns, -> 97) — a strictly BETTER shooter lowered the team's
+  // spacing score by 3. Applying the same 97 ceiling here (Curry's own case is exempted the same
+  // way, via `isShootingAnomalyPlayer` below, matching the two-threat branch's `hasCurry` carve-
+  // out) closes that gap: a non-Curry configuration can never score lower by gaining a genuine
+  // second threat, because neither a 1-threat nor a 2-threat non-Curry team can exceed 97.
   if (distinctGravityThreatIds.size === 1) {
     const threatMinutes = gravityThreatAssignments.reduce((sum, { minutes }) => sum + minutes, 0);
     const threatShare = Math.max(0, Math.min(1, threatMinutes / STARTER_MINUTES));
-    const floor = isShootingAnomalyPlayer(gravityThreatAssignments[0]!.player)
-      ? SHOOTING_ANOMALY_TEAM_SPACING_FLOOR
-      : SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR;
+    const isCurry = isShootingAnomalyPlayer(gravityThreatAssignments[0]!.player);
+    const floor = isCurry ? SHOOTING_ANOMALY_TEAM_SPACING_FLOOR : SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR;
     const floored = Math.max(base, floor);
     const withGravityFloor = base * (1 - threatShare) + floored * threatShare;
-    return Math.round(rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS));
+    const baseScore = rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS);
+    return Math.round(isCurry ? baseScore : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, baseScore));
   }
 
   const baseScore = rescaleToFullRange(base, SPACING_SCORE_ANCHORS);
