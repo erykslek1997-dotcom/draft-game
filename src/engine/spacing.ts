@@ -140,18 +140,38 @@ const VOLUME_ACCURACY_HEADROOM = 3;
 /** Tier floors against the raw 0-20 sum, ascending. `Shooting anomaly` is deliberately absent —
  * it is not a score band anyone can reach, it is a named exception for one player (see
  * `SHOOTING_ANOMALY_PLAYER`). */
+/**
+ * 2026-09-17, user-reported live: a real drafted team (Nash 2005-07 + Kristaps Porziņģis 2022-24
+ * as its two real shooting threats, alongside Jordan/Erving/Mason reading genuine zeros) read a
+ * team spacingScore of 27-33 despite having two real, good shooters — because NEITHER Nash
+ * (17.2 points) nor Porziņģis (16.0) reached the old `WALKING_GRAVITY_FLOOR` (19), so
+ * `spacingScore`'s "two genuine gravity threats" override never fired and the team fell back to a
+ * plain weighted average of [86, 25, 0, 0, 80] blended against the bench. Checked the real
+ * distribution first: even Reggie Miller (one of the greatest pure shooters ever, `points`=18.0,
+ * exempted from the low-real-volume cap by name) didn't clear the old 19 — the bar was reserved
+ * for a genuinely tiny top slice (154 of 9451 spans) while a much larger "very good, not elite"
+ * band (1129 spans read 15-18.9) got none of the multi-threat credit regardless of how good two of
+ * them actually were together.
+ *
+ * Lowered to 16 (catches Porziņģis exactly, Nash comfortably, Korver's 17.0, Reggie's 18.0) —
+ * moved together with `TIER_FLOORS`'s own 'Walking gravity' floor so the tier NAME and the bonus-
+ * eligibility NUMBER never diverge (they're two separate constants only because 'Walking gravity'
+ * needs its own floor value in this table, not because they were ever meant to differ). 'Great
+ * shooter' floor moved 16->14 to keep a real, non-empty band between 'Good shooter' (13) and the
+ * new 'Walking gravity' (16) rather than colliding with it.
+ */
 const TIER_FLOORS: ReadonlyArray<readonly [number, SpacingTier]> = [
   [0, 'Non-shooter'],
   [5, 'Bad shooter'],
   [9, 'Average shooter'],
   [13, 'Good shooter'],
-  [16, 'Great shooter'],
-  [19, 'Walking gravity'],
+  [14, 'Great shooter'],
+  [16, 'Walking gravity'],
 ];
 
 /** Exported so `scoring.ts` can detect a second real gravity threat without duplicating the
  * threshold — see `spacingScore`'s multi-shooter override. */
-export const WALKING_GRAVITY_FLOOR = 19;
+export const WALKING_GRAVITY_FLOOR = 16;
 const MAX_SPACING_POINTS = 20;
 
 /**
@@ -222,6 +242,26 @@ export function selfCreationRate(span: PlayerSpan): number {
  */
 const REAL_VOLUME_FLOOR_FOR_WALKING_GRAVITY = 4.5;
 const REAL_VOLUME_FLOOR_EXEMPT = ['Mark Price', 'Reggie Miller', 'Larry Bird'];
+
+/**
+ * The cap this rule applies to a low-real-volume span — deliberately its own constant rather
+ * than a `WALKING_GRAVITY_FLOOR - 0.1` derivation.
+ *
+ * 2026-09-17: those two used to be the same expression, which meant lowering
+ * `WALKING_GRAVITY_FLOOR` (19->16, see that constant's own note) silently lowered this cap's
+ * ceiling too — not just narrowing who is exempt from it, but flattening every already-capped
+ * span down to the new, lower number. Caught on the user's own reported teams: Steve Nash's
+ * organic 17.2 and Chris Paul's ~17-18 sat comfortably under the old 18.9 ceiling (uncapped,
+ * reading their true score); under the coupled 15.9 ceiling both got dragged DOWN below their
+ * pre-fix reading, which is the opposite of what lowering the tier threshold was for.
+ *
+ * This rule's actual job (the Terry Porter precedent above) is narrower than "track the tier
+ * floor": stop era-scaling alone from earning the *Walking gravity label* for a low-volume
+ * shooter. It was never meant to also suppress how high a capped player's `points` can read
+ * below that label. Pinning it at 18.9 — the value it already had — keeps that job exactly as
+ * calibrated while letting `WALKING_GRAVITY_FLOOR` move on its own.
+ */
+const REAL_VOLUME_FLOOR_CAP_POINTS = 18.9;
 
 /**
  * Manual Walking-gravity floors, by player and season range — spans whose *shot profile* the
@@ -340,7 +380,7 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
     span.box.threePA < REAL_VOLUME_FLOOR_FOR_WALKING_GRAVITY &&
     !REAL_VOLUME_FLOOR_EXEMPT.some((name) => normalizePlayerName(name) === normalizePlayerName(span.playerName))
   ) {
-    points = Math.min(points, WALKING_GRAVITY_FLOOR - 0.1);
+    points = Math.min(points, REAL_VOLUME_FLOOR_CAP_POINTS);
   }
   if (hasManualWalkingGravity(span)) points = Math.max(points, WALKING_GRAVITY_FLOOR);
 

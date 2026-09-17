@@ -702,6 +702,22 @@ const MULTI_GRAVITY_TEAM_SPACING_CAP = 97;
 // supply Curry's off-ball/on-ball floor by himself. This sits at a strong, not elite, raw team
 // spacing level; it is blended only across the shooter's actual starter minutes below.
 const SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR = 70;
+/**
+ * 2026-09-17, user-reported: the two-threat branch below used to apply no floor of its own —
+ * just `base + 10`, capped at `MULTI_GRAVITY_TEAM_SPACING_CAP` — while the one-threat branch
+ * above floors at 70. That let a two-genuine-shooter team (Nash + Porziņģis, three real
+ * non-shooters around them) score LOWER (43) than a one-shooter team (Lewis alone, four real
+ * non-shooters around him, which floors at 70 -> 69) once the `WALKING_GRAVITY_FLOOR` fix
+ * (see spacing.ts) let Nash clear the bar on his own real number. Directly contradicts this
+ * function's own stated rule two paragraphs up ("two genuine floor-warpers... regardless of who
+ * else is out there") — two threats floor lower than one is never the intended ordering.
+ *
+ * Set above the single-threat floor (two real threats are worth more than one) and blended the
+ * same way, over the AVERAGE of the threats' own minutes shares rather than the sum — two
+ * shooters who each play a full starter's minutes shouldn't get double the workload credit of
+ * one, since they're on the floor together, not back to back.
+ */
+const MULTI_WALKING_GRAVITY_TEAM_SPACING_FLOOR = 80;
 /** Three credible perimeter spacers prevent a two-big lineup from reading like a broken floor.
  * The two non-shooting bigs still cap the ceiling; this is a solid, not elite, construction. */
 const THREE_SHOOTER_LINEUP_SPACING_FLOOR = 58;
@@ -745,10 +761,18 @@ export function spacingScore(team: Team): number {
   if (distinctGravityThreatIds.size >= 2) {
     // Two elite threats add real geometric value, but they do not make the other three players
     // disappear. Preserve the user's Curry + another gravity threat = 100 rule; other duos get a
-    // strong bounded lift and still pay for non-shooters around them.
-    const baseScore = rescaleToFullRange(base, SPACING_SCORE_ANCHORS);
+    // strong bounded floor (see `MULTI_WALKING_GRAVITY_TEAM_SPACING_FLOOR`'s own note) and still
+    // pay for non-shooters around them over the minutes the threats aren't both on the floor.
     const hasCurry = gravityThreatAssignments.some(({ player }) => isShootingAnomalyPlayer(player));
-    return Math.round(hasCurry ? 100 : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, baseScore + 10));
+    if (hasCurry) return 100;
+    const uniqueThreats = [...new Map(gravityThreatAssignments.map((entry) => [entry.player.id, entry])).values()];
+    const avgThreatShare =
+      uniqueThreats.reduce((sum, { minutes }) => sum + Math.max(0, Math.min(1, minutes / STARTER_MINUTES)), 0) /
+      uniqueThreats.length;
+    const floored = Math.max(base, MULTI_WALKING_GRAVITY_TEAM_SPACING_FLOOR);
+    const withGravityFloor = base * (1 - avgThreatShare) + floored * avgThreatShare;
+    const baseScore = rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS);
+    return Math.round(Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, baseScore));
   }
 
   // A single Walking-gravity span is an enormous individual asset, but it is not automatically

@@ -81,6 +81,14 @@ check(nashLeBronResult.components.creationStructure >= 90, 'Nash and LeBron with
 check(nashLeBronResult.inputs.defensiveWeakLinkCover >= 20, 'strong POA/wing/rim layers can partially hide one weak defender');
 check(nashLeBronResult.components.defensiveRoleCoverage >= 70, 'one weak defender does not erase an otherwise complete defensive shell');
 
+// 2026-09-17: this fixture's three starters (Paul, McGrady, Korver) used to all fall short of
+// `WALKING_GRAVITY_FLOOR` (then 19), so the roster read as "three good-but-not-elite spacers"
+// via `THREE_SHOOTER_LINEUP_SPACING_FLOOR`. The user-directed threshold lower (19->16, see
+// spacing.ts's own note — Korver's real 17.0 is named there as one of the intended catches) now
+// puts Korver over the line on his own, genuine number: this is a one-genuine-threat lineup
+// (Paul 15.5, McGrady 15.2 stay short; Korver 17.0 clears), not a three-near-miss one. That's a
+// different, and correctly stronger, read — `SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR` (70)
+// blended over Korver's own ~89% starter-minutes share, landing at 68.
 const threeSpacersTwoBigs = team('fit-v2-three-spacers-two-bigs', [
   pick('Chris Paul', '2013-15'),
   pick('José Calderón', '2012-14'),
@@ -92,8 +100,8 @@ const threeSpacersTwoBigs = team('fit-v2-three-spacers-two-bigs', [
   pick('Tyson Chandler', '2011-13'),
 ]);
 check(
-  scoreTeam(threeSpacersTwoBigs).spacingScore >= 55 && scoreTeam(threeSpacersTwoBigs).spacingScore <= 65,
-  'three real perimeter spacers keep a two-non-shooting-big lineup solid but non-elite',
+  scoreTeam(threeSpacersTwoBigs).spacingScore >= 63 && scoreTeam(threeSpacersTwoBigs).spacingScore <= 75,
+  'one genuine walking-gravity spacer carries a two-non-shooting-big lineup to a strong, not maxed, read',
 );
 
 for (const [label, result] of [['cramped', crampedResult], ['balanced', balancedResult]] as const) {
