@@ -370,7 +370,6 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     starters.length === STARTER_SLOTS.length && minDefTal < WEAK_LINK_EXTREME_DTAL_CEILING
       ? extremeSeverity * shellAverageReadiness * shellFloorReadiness
       : 0;
-  const weakLinkOvercomeBonus = weakLinkOvercome * MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS;
   // 2026-09-17, audit-found dead zone: `weakLinkOvercome` only ever engages below
   // `WEAK_LINK_EXTREME_DTAL_CEILING` (35) by design (see that constant's own docstring — a
   // merely below-average 40-60 weak link is deliberately excluded). But between 35 and
