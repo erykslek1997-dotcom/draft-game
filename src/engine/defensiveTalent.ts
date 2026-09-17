@@ -417,6 +417,19 @@ function perimeterStopperFloor(span: PlayerSpan): number {
 const CORROBORATED_ALL_D_MATCHUP_MIN = 1.0;
 const CORROBORATED_ALL_D_BPM2_MIN = 1.0;
 const CORROBORATED_ALL_D_FLOOR = 74;
+/**
+ * 2026-09-17, full-engine audit follow-up: this floor was a flat boolean gate — matchup AND bpm2
+ * both `>= 1.0` bought the full 74, one hair below either bought nothing, unlike its three sibling
+ * floor mechanisms which all ramp continuously. Verified live: Evan Mobley's real 2021-23 span
+ * (matchup 0.97, bpm2 1.06 — 0.03 short on the weaker side) reads D-TAL 68, while his own 2022-24
+ * span, corroboration only marginally stronger, clears the gate and reads 74 — a 6-point jump for
+ * a difference smaller than either source's own noise. Tapered over a band below each metric's own
+ * gate, same pattern as `perimeterStopperFloor`'s continuous ramp just above. Pool-wide this
+ * mechanism is narrow either way (only Mobley's 2021-23 span sits close enough to the gate to move
+ * at any band tested 0.2-1.0); band=0.5 was chosen as a moderate middle value that lifts that one
+ * real near-miss (68 -> 70.1) without phasing a barely-corroborated read almost all the way to 74.
+ */
+const CORROBORATED_ALL_D_TAPER_BAND = 0.5;
 
 /**
  * Display-only D-TAL floor for a wing/forward whose defense is corroborated from every angle yet
@@ -432,15 +445,22 @@ const CORROBORATED_ALL_D_FLOOR = 74;
  * gate matches 43 spans and lifts exactly 3 — Barnes 2024-26 (67->74), Jaden McDaniels 2023-25
  * (69->74), Evan Mobley 2022-24 (72->74); the other 40 already read 76-99. Display-only.
  */
+function corroboratedAllDTaperFrac(value: number, gate: number): number {
+  const bandFloor = gate - CORROBORATED_ALL_D_TAPER_BAND;
+  if (value <= bandFloor) return 0;
+  return Math.min(1, (value - bandFloor) / CORROBORATED_ALL_D_TAPER_BAND);
+}
+
 function corroboratedAllDefenseFloor(span: PlayerSpan): number {
   if (span.primaryPosition !== 'SG' && span.primaryPosition !== 'SF' && span.primaryPosition !== 'PF') return 0;
   if (individualDefenseRate(span) <= 0) return 0;
   const detail = realDefenseExcessDetail(span);
   if (!detail || detail.matchupDefense === null || detail.bpm2Defense === null) return 0;
-  if (detail.matchupDefense < CORROBORATED_ALL_D_MATCHUP_MIN || detail.bpm2Defense < CORROBORATED_ALL_D_BPM2_MIN) {
-    return 0;
-  }
-  return CORROBORATED_ALL_D_FLOOR;
+  const taper = Math.min(
+    corroboratedAllDTaperFrac(detail.matchupDefense, CORROBORATED_ALL_D_MATCHUP_MIN),
+    corroboratedAllDTaperFrac(detail.bpm2Defense, CORROBORATED_ALL_D_BPM2_MIN),
+  );
+  return taper * CORROBORATED_ALL_D_FLOOR;
 }
 
 const TEAM_D_FLOOR_MIN_STRENGTH = 0.75;
