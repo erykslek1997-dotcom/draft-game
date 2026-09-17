@@ -37,7 +37,7 @@ import { pickStatTip } from './DraftBoard';
 // Historical Challenges is to reuse it as the base of a real separate game mode later, not to
 // throw the work away — see [[player_skeleton_and_new_modes]].
 import MatchupMatrix from './MatchupMatrix';
-import { downloadShareCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
+import { downloadShareCard, downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 import { Face, shortenName } from './ShotChip';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
@@ -383,6 +383,12 @@ function HeroResult({
   roster: ShareRosterRow[];
 }) {
   const [challengeCopied, setChallengeCopied] = useState(false);
+  // 2026-09-17, user-reported live ("więcej sosu, coś jak share po zakończonym drafcie" — more
+  // sauce, like the share after a finished draft): the popup's own share action only ever copied a
+  // link; this gives it the same visual payoff `ShareModal`'s PNG already gives a normal draft
+  // finish — a real downloadable head-to-head card (`shareCardImage.ts`'s `buildDuelCardBlob`).
+  // 'idle' | 'building' | 'done' | 'error', matching `ShareModal`'s own `pngState` shape.
+  const [duelPngState, setDuelPngState] = useState<'idle' | 'building' | 'done' | 'error'>('idle');
   // 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
   // ekran z naszymi wynikami?") — plain clipboard copy gave no preview of what you were actually
   // sending; a real card to look at matches what every rival this screen was already benchmarked
@@ -456,6 +462,48 @@ function HeroResult({
     }
   }
 
+  /** Same "unguarded await left the button stuck forever" fix `ShareModal.handleDownloadPng`
+   * already had applied to it (2026-09-12 code review) — caught here from the start. */
+  async function handleDownloadDuelCard() {
+    if (!challenger) return;
+    setDuelPngState('building');
+    try {
+      const ok = await downloadDuelCard(
+        {
+          you: {
+            name: teamName,
+            overall,
+            rank,
+            fieldSize,
+            starters,
+            scores: {
+              talent: Math.round(talentScore),
+              benchDepth: Math.round(benchDepthScore),
+              offense: Math.round(offenseScore),
+              defense: Math.round(defenseScore),
+              spacing: Math.round(spacingScore),
+              fit: Math.round(fitScore),
+              rotation: Math.round(rotationScore),
+            },
+          },
+          friend: {
+            name: challenger.name,
+            overall: challenger.overall,
+            rank: challenger.rank,
+            fieldSize: challenger.fieldSize,
+            starters: challenger.starters,
+            scores: challenger.scores,
+          },
+        },
+        `all-time-draft-duel-${teamName.replace(/\s+/g, '-').toLowerCase()}.png`,
+      );
+      setDuelPngState(ok ? 'done' : 'error');
+    } catch {
+      setDuelPngState('error');
+    }
+    setTimeout(() => setDuelPngState('idle'), 2000);
+  }
+
   return (
     <header className="results-hero">
       {challenger && compareOpen && (
@@ -526,9 +574,19 @@ function HeroResult({
                 })}
               </div>
             )}
-            <button type="button" className="challenge-compare-share" onClick={copyChallengeLink}>
-              {challengeCopied ? '✓ Link copied' : '🔗 Share your result'}
-            </button>
+            <div className="challenge-compare-actions">
+              <button
+                type="button"
+                className="challenge-compare-download"
+                onClick={handleDownloadDuelCard}
+                disabled={duelPngState === 'building'}
+              >
+                {duelPngState === 'building' ? 'Building…' : duelPngState === 'done' ? '✓ Saved' : duelPngState === 'error' ? '✕ Failed' : '🖼️ Download image'}
+              </button>
+              <button type="button" className="challenge-compare-share" onClick={copyChallengeLink}>
+                {challengeCopied ? '✓ Link copied' : '🔗 Share link'}
+              </button>
+            </div>
             <p className="challenge-compare-hint">Same 16-team board, same AI, two different drafts.</p>
           </div>
         </div>

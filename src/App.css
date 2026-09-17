@@ -2350,15 +2350,27 @@ select {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.challenge-compare-share {
+.challenge-compare-actions {
+  display: flex;
+  gap: 10px;
   margin-top: 18px;
-  width: 100%;
+}
+.challenge-compare-share,
+.challenge-compare-download {
+  flex: 1 1 0;
   padding: 10px;
   border-radius: 8px;
   font-weight: 600;
+}
+.challenge-compare-share {
   background: var(--at-brand-blue, var(--accent));
   border-color: var(--at-brand-blue, var(--accent));
   color: #fff;
+}
+.challenge-compare-download {
+  background: transparent;
+  border-color: var(--at-line, var(--border));
+  color: var(--text-h);
 }
 .challenge-compare-hint {
   margin: 10px 0 0;
