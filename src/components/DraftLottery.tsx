@@ -1,10 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import { teamCodes } from '../engine/teamNames';
+
+export interface HowToPlayItem {
+  title: string;
+  body: ReactNode;
+}
 
 interface Props {
   teams: Team[];
   onDone: () => void;
+  /** 2026-09-17, user's own ask: every mode needs a real "how to play?" affordance somewhere now
+   * that the intro screen's own always-visible rules list is gone (see App.tsx's history). The
+   * lottery reveal is the one screen every mode already shows before real play starts, so it's the
+   * one natural shared spot — content is mode-specific (GameShell passes the full 9-round rules,
+   * QuickFive its own 5-round/no-bench version), the toggle/panel itself is shared. Optional so a
+   * caller that hasn't been given rules yet doesn't render a dead button. */
+  howToPlay?: HowToPlayItem[];
 }
 
 const REVEAL_INTERVAL_MS = 320;
@@ -48,10 +61,11 @@ function shuffledIndices(count: number): number[] {
  * component goes straight to revealing again, for every mode, matching its own original
  * always-autoplay behavior before that split existed.
  */
-export default function DraftLottery({ teams, onDone }: Props) {
+export default function DraftLottery({ teams, onDone, howToPlay }: Props) {
   const teamCodeByTeamId = useMemo(() => teamCodes(teams), [teams]);
   const revealOrder = useMemo(() => shuffledIndices(teams.length), [teams]);
   const [revealedCount, setRevealedCount] = useState(0);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
   const done = revealedCount >= teams.length;
 
   useEffect(() => {
@@ -68,6 +82,27 @@ export default function DraftLottery({ teams, onDone }: Props) {
   return (
     <div className="at-shell at-lottery">
       <div className="at-board-brand at-cond">Draft Lottery</div>
+
+      {howToPlay && howToPlay.length > 0 && (
+        <div className="at-lottery-howtoplay">
+          <button
+            type="button"
+            className="secondary-btn how-to-play-btn at-cond"
+            onClick={() => setShowHowToPlay((v) => !v)}
+          >
+            {showHowToPlay ? 'Hide how to play' : 'How to play?'}
+          </button>
+          {showHowToPlay && (
+            <ol className="how-to-play-panel">
+              {howToPlay.map((item) => (
+                <li key={item.title}>
+                  <b>{item.title}.</b> {item.body}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
 
       <p className="at-lottery-sub">
         {done ? "Draft order set — here's the field." : 'Revealing this draft’s order…'}

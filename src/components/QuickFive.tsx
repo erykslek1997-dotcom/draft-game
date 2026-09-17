@@ -33,6 +33,16 @@ interface Props {
 
 type Phase = 'lottery' | 'draft' | 'results';
 
+// 2026-09-17, user's own ask: a real "how to play?" on the lottery screen, same as the full draft
+// — but this mode's own rules, not a copy of the 9-round ones (no bench/rotation step, no span
+// choice, a different cap/round count).
+const QUICK_HOW_TO_PLAY = [
+  { title: 'Draft', body: `${TEAM_COUNT} teams take turns, ${QUICK_ROUNDS} rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
+  { title: 'Shot cap', body: `Every pick costs shots. Your five starters have to fit under ${QUICK_CAP_LIMIT} shots.` },
+  { title: 'Peak only', body: "No span picking — every player is shown at their single best season, so each pick is quick." },
+  { title: 'Grading', body: 'The judge scores your five the same way the full draft does — talent, offense, defense, spacing, fit — right after your last pick.' },
+];
+
 /**
  * "Szybka 5" — a real 16-team, pick-by-pick draft (same AI reacting live as the full 9-round
  * draft), just 5 rounds/starters-only and a 70-shot cap instead of 100.9. See `quickDraft.ts` for
@@ -97,8 +107,10 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
 
   return (
     <div className="at-shell">
-      <div className="at-board-brand at-cond">Szybka 5</div>
-      {phase === 'lottery' && <DraftLottery teams={state.teams} onDone={() => setPhase('draft')} />}
+      <div className="at-board-brand at-cond">Quick 5</div>
+      {phase === 'lottery' && (
+        <DraftLottery teams={state.teams} onDone={() => setPhase('draft')} howToPlay={QUICK_HOW_TO_PLAY} />
+      )}
       {phase === 'draft' && (
         <QuickDraftBoard
           state={state}

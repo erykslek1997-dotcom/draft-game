@@ -1,9 +1,9 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import './App.css';
 // Plain, data-free module (place/mascot string arrays + a shuffle helper, no engine/dataset
 // imports of its own — verified directly, not assumed) — safe to pull into the intro screen's
 // eager bundle without regressing the "zero engine dependency until Start Draft" load-time split
-// this file's own docstrings already care about (see DISPLAY_CAP_LIMIT's comment above).
+// this file's own docstrings already care about (see DISPLAY_ROSTER_SIZE's comment below).
 import { randomTeamNames } from './engine/teamNames';
 
 /**
@@ -33,22 +33,57 @@ const QuickFive = lazy(() => import('./components/QuickFive'));
 
 type View = 'intro' | 'game' | 'bestfive' | 'quickfive';
 
-/** Cap value shown in the intro tagline, kept in sync with `engine/positions.ts`'s CAP_LIMIT by
- * the standing check in `scripts/checkIntroCapLimit.ts` — not imported directly so the intro
- * screen has zero engine dependency (see the lazy-loading note above; even this one constant,
- * pulled through `positions.ts`, would be harmless on its own today, but importing anything from
- * `engine/` here is exactly the seam that regresses back to eager-loading everything if a future
- * edit adds a heavier import to that file without anyone noticing this render path depends on it). */
-const DISPLAY_CAP_LIMIT = 100.9;
-/** Same hand-kept-constant pattern as `DISPLAY_CAP_LIMIT` above, for the always-visible How to
- * Play copy on the intro screen below — kept in sync with `engine/positions.ts`'s real
- * `ROSTER_SIZE`/`BENCH_SLOT_COUNT` by the same standing check, extended to cover these two. */
+/** Roster-size figure shown in the Draft mode card's own one-line description, kept in sync with
+ * `engine/positions.ts`'s real `ROSTER_SIZE` by the standing check in
+ * `scripts/checkIntroCapLimit.ts` — not imported directly so the intro screen has zero engine
+ * dependency (see the lazy-loading note above; even this one constant, pulled through
+ * `positions.ts`, would be harmless on its own today, but importing anything from `engine/` here
+ * is exactly the seam that regresses back to eager-loading everything if a future edit adds a
+ * heavier import to that file without anyone noticing this render path depends on it). */
 const DISPLAY_ROSTER_SIZE = 9;
-const DISPLAY_BENCH_SLOT_COUNT = 4;
-/** Same hand-kept-constant pattern again, for the Szybka 5 mode card's own one-line description —
+/** Same hand-kept-constant pattern again, for the Quick 5 mode card's own one-line description —
  * kept in sync with `engine/quickDraft.ts`'s real `QUICK_CAP_LIMIT` by the same standing check
  * (`scripts/checkIntroCapLimit.ts`), extended to cover this one too. */
 const DISPLAY_QUICK_CAP_LIMIT = 70;
+/** Same hand-kept-constant pattern, revived for the mode cards' own "?" popovers below (2026-09-17,
+ * user's own ask — a quick-glance rules check without leaving the menu). Kept in sync with
+ * `engine/positions.ts`'s real `CAP_LIMIT`/`BENCH_SLOT_COUNT` by the same standing check. */
+const DISPLAY_CAP_LIMIT = 100.9;
+const DISPLAY_BENCH_SLOT_COUNT = 4;
+
+/** Same copy as each mode's own in-flow "How to play?" (GameShell.tsx's `DRAFT_HOW_TO_PLAY`,
+ * QuickFive.tsx's `QUICK_HOW_TO_PLAY`, BestFive.tsx's inline list) — duplicated by hand rather than
+ * imported, same reasoning as the `DISPLAY_*` constants above: App.tsx must stay free of any
+ * engine import until a mode is actually chosen. Keep these three in sync with their real-mode
+ * counterparts if the rules ever change. */
+const MODE_HOW_TO_PLAY_TITLE: Record<'draft' | 'bestfive' | 'quickfive', string> = {
+  draft: 'All-Time Draft',
+  bestfive: 'Best 5',
+  quickfive: 'Quick 5',
+};
+
+const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: string; body: string }[]> = {
+  draft: [
+    { title: 'Draft', body: `16 teams take turns, ${DISPLAY_ROSTER_SIZE} rounds — one player each round. You control one team; the rest are CPU.` },
+    { title: 'Shot cap', body: `Every pick costs shots. Your whole roster has to fit under ${DISPLAY_CAP_LIMIT} shots — the best player isn't always the pick that fits.` },
+    { title: 'Spans', body: "You're not limited to a player's peak — draft any real multi-season window of their career. A cheaper, less-peak span can be the one that fits your cap." },
+    { title: 'Rotation', body: `Set minutes for your 5 starters and ${DISPLAY_BENCH_SLOT_COUNT} bench players — the Team tab opens for it as soon as you have your first pick, no need to wait for the draft to finish.` },
+    { title: 'Grading', body: 'The judge scores every team — talent, offense, defense, spacing, fit, rotation — and ranks the whole field, yours included.' },
+  ],
+  bestfive: [
+    { title: 'Pick five', body: 'One player per position — PG/SG/SF/PF/C — from today’s pool.' },
+    { title: 'Shot cap', body: 'Your five have to fit under today’s cap, shown by the meter above the board.' },
+    { title: 'Submit once', body: 'No re-picking after you see your score for today’s puzzle.' },
+    { title: 'Grading', body: 'You’re scored on talent, offense, defense, spacing, and fit, then compared against par.' },
+    { title: 'Practice anytime', body: 'Today’s puzzle is once a day — a practice board gives you a fresh random pool whenever you want another rep.' },
+  ],
+  quickfive: [
+    { title: 'Draft', body: `16 teams take turns, 5 rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
+    { title: 'Shot cap', body: `Every pick costs shots. Your five starters have to fit under ${DISPLAY_QUICK_CAP_LIMIT} shots.` },
+    { title: 'Peak only', body: "No span picking — every player is shown at their single best season, so each pick is quick." },
+    { title: 'Grading', body: 'The judge scores your five the same way the full draft does — talent, offense, defense, spacing, fit — right after your last pick.' },
+  ],
+};
 
 function LoadingPanel({ label }: { label: string }) {
   return (
@@ -81,6 +116,20 @@ function App() {
   // (draft.ts), which overrides the random draw for whichever slot ends up human with this exact
   // string.
   const [teamName, setTeamName] = useState(() => randomTeamNames(1)[0]);
+  // 2026-09-17, user's own ask: a "?" on each mode card itself, so the rules are a glance away
+  // right on the menu instead of only reachable after already committing to a mode.
+  const [expandedHelp, setExpandedHelp] = useState<'draft' | 'bestfive' | 'quickfive' | null>(null);
+  function toggleHelp(mode: 'draft' | 'bestfive' | 'quickfive') {
+    setExpandedHelp((current) => (current === mode ? null : mode));
+  }
+  useEffect(() => {
+    if (!expandedHelp) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setExpandedHelp(null);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [expandedHelp]);
 
   return (
     <div className="app-shell">
@@ -96,65 +145,58 @@ function App() {
           instead of sitting on the plain app-wide light/dark tokens as a visibly different-looking
           "old UI" leftover — the first screen every session sees now matches the rest of the app. */}
       {view === 'intro' && (
-        <div className="at-shell at-intro">
-          <header className="app-header">
-            <h1>All-Time NBA Draft</h1>
-            <p className="tagline">
-              Build the best-<em>fitting</em> all-time roster under a {DISPLAY_CAP_LIMIT}-shot cap — not just the best
-              players.
-            </p>
-          </header>
-          {sharedDraftSeed !== null && (
-            <p className="shared-seed-banner">
-              🔗 Duel loaded — Start Draft gives you the exact same 16-team board a friend already played.
-            </p>
-          )}
-          <div className="intro-screen">
-            <div className="team-name-row">
-              <label htmlFor="intro-team-name" className="team-name-label">
-                Your team
-              </label>
-              <input
-                id="intro-team-name"
-                type="text"
-                className="team-name-input"
-                value={teamName}
-                maxLength={40}
-                onChange={(e) => setTeamName(e.target.value)}
-              />
-              <button
-                type="button"
-                className="secondary-btn team-name-randomize"
-                title="Randomize a new suggestion"
-                onClick={() => setTeamName(randomTeamNames(1)[0])}
-              >
-                🎲
-              </button>
+        <div className="at-shell at-intro at-intro-terminal">
+          {/* 2026-09-17, user's own ask on a genuinely wide monitor: the whole screen used to be
+              one narrow centred column pinned near the top, leaving most of a large display
+              empty — `.intro-columns` splits it into a hero (wordmark + team name, vertically
+              centred) on the left and the mode list as its own column on the right, once there's
+              real width to spend (see the `min-width` breakpoint below); narrower viewports keep
+              the original single stacked column, just flowing top to bottom. */}
+          <div className="intro-columns">
+            <div className="intro-hero">
+              <header className="app-header">
+                {/* 2026-09-17, user's own ask ("czy jest możliwość połączenie modern designu z
+                    starszym?"): a genuinely old-basketball touch on an otherwise modern/terminal
+                    screen, kept to one small stamp rather than reskinning anything — full concept
+                    (era-aware player cards) prototyped separately and parked, see
+                    [[heritage_board_era_cards_concept]]. 1946 is the real first season this game's
+                    own data covers, not a decorative number. */}
+                <span className="heritage-badge" aria-hidden>
+                  Est. 1946
+                </span>
+                <h1>Hoopverse</h1>
+              </header>
+              {sharedDraftSeed !== null && (
+                <p className="shared-seed-banner">
+                  🔗 Duel loaded — Start Draft gives you the exact same 16-team board a friend already played.
+                </p>
+              )}
+              <div className="team-name-row">
+                <label htmlFor="intro-team-name" className="team-name-label">
+                  Your team
+                </label>
+                <div className="team-name-input-row">
+                  <input
+                    id="intro-team-name"
+                    type="text"
+                    className="team-name-input"
+                    value={teamName}
+                    maxLength={40}
+                    onChange={(e) => setTeamName(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="secondary-btn team-name-randomize"
+                    title="Randomize a new suggestion"
+                    onClick={() => setTeamName(randomTeamNames(1)[0])}
+                  >
+                    🎲
+                  </button>
+                </div>
+              </div>
             </div>
-            <ol className="how-to-play-panel">
-              <li>
-                <b>Draft.</b> 16 teams take turns, {DISPLAY_ROSTER_SIZE} rounds — one player each round. You control
-                one team; the rest are CPU.
-              </li>
-              <li>
-                <b>Shot cap.</b> Every pick costs shots. Your whole roster has to fit under{' '}
-                {DISPLAY_CAP_LIMIT} shots — the best player isn't always the pick that fits.
-              </li>
-              <li>
-                <b>Spans.</b> You're not limited to a player's peak — draft any real multi-season window of their
-                career. A cheaper, less-peak span can be the one that fits your cap.
-              </li>
-              <li>
-                <b>Rotation.</b> Set minutes for your 5 starters and {DISPLAY_BENCH_SLOT_COUNT} bench players — the
-                Team tab opens for it as soon as you have your first pick, no need to wait for the draft to finish.
-              </li>
-              <li>
-                <b>Grading.</b> The judge scores every team — talent, offense, defense, spacing, fit, rotation — and
-                ranks the whole field, yours included.
-              </li>
-            </ol>
             {/* 2026-09-11, mode-card grid — the intro used to stack every mode as same-weight
-                buttons in a column; three real modes now (Draft/Best 5/Szybka 5) makes that
+                buttons in a column; three real modes now (Draft/Best 5/Quick 5) makes that
                 column read as a growing pile instead of a set of real choices. User's own steer
                 (shown a competitor's icon-grid mode picker): "tak, dobry kierunek... nie kopiuję
                 1:1 wyglądu... naszej już ustalonej ciemnej tablicy NBA-touch, żeby siatka
@@ -164,30 +206,96 @@ function App() {
                 every other piece of this screen (hero, tagline, How to Play) already being about
                 it — the other two are real, equal-footing choices, not afterthoughts. */}
             <div className="mode-grid">
-              <button className="mode-card mode-card--featured" onClick={() => setView('game')}>
-                <span className="mode-card-icon" aria-hidden>
-                  🏀
-                </span>
-                <span className="mode-card-name at-cond">Draft</span>
-                <span className="mode-card-desc">16 teams, {DISPLAY_ROSTER_SIZE} rounds — real AI reacting to every pick you make.</span>
-              </button>
-              <button className="mode-card" onClick={() => setView('bestfive')}>
-                <span className="mode-card-icon" aria-hidden>
-                  🧩
-                </span>
-                <span className="mode-card-name at-cond">Best 5</span>
-                <span className="mode-card-desc">Daily puzzle — pick five under a shot cap, beat the field.</span>
-              </button>
-              <button className="mode-card" onClick={() => setView('quickfive')}>
-                <span className="mode-card-badge">NEW</span>
-                <span className="mode-card-icon" aria-hidden>
-                  ⚡
-                </span>
-                <span className="mode-card-name at-cond">Szybka 5</span>
-                <span className="mode-card-desc">5 rounds, a {DISPLAY_QUICK_CAP_LIMIT}-shot cap — a real draft in a few minutes.</span>
-              </button>
+              <div className="mode-card-wrap">
+                <button className="mode-card mode-card--featured" onClick={() => setView('game')}>
+                  <span className="mode-card-icon" aria-hidden>
+                    🏀
+                  </span>
+                  <span className="mode-card-name at-cond">All-Time Draft</span>
+                  <span className="mode-card-desc">16 teams, {DISPLAY_ROSTER_SIZE} rounds — real AI reacting to every pick you make.</span>
+                </button>
+                <button
+                  type="button"
+                  className="mode-card-help"
+                  aria-label="How to play: All-Time Draft"
+                  aria-haspopup="dialog"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleHelp('draft');
+                  }}
+                >
+                  ?
+                </button>
+              </div>
+              <div className="mode-card-wrap">
+                <button className="mode-card" onClick={() => setView('bestfive')}>
+                  <span className="mode-card-icon" aria-hidden>
+                    🧩
+                  </span>
+                  <span className="mode-card-name at-cond">Best 5</span>
+                  <span className="mode-card-desc">Daily puzzle — pick five under a shot cap, beat the field.</span>
+                </button>
+                <button
+                  type="button"
+                  className="mode-card-help"
+                  aria-label="How to play: Best 5"
+                  aria-haspopup="dialog"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleHelp('bestfive');
+                  }}
+                >
+                  ?
+                </button>
+              </div>
+              <div className="mode-card-wrap">
+                <button className="mode-card" onClick={() => setView('quickfive')}>
+                  <span className="mode-card-icon" aria-hidden>
+                    ⚡
+                  </span>
+                  <span className="mode-card-name at-cond">Quick 5</span>
+                  <span className="mode-card-desc">5 rounds, a {DISPLAY_QUICK_CAP_LIMIT}-shot cap — a real draft in a few minutes.</span>
+                </button>
+                <button
+                  type="button"
+                  className="mode-card-help"
+                  aria-label="How to play: Quick 5"
+                  aria-haspopup="dialog"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleHelp('quickfive');
+                  }}
+                >
+                  ?
+                </button>
+              </div>
             </div>
           </div>
+          {expandedHelp && (
+            <div className="mode-help-backdrop" onClick={() => setExpandedHelp(null)}>
+              <div
+                className="mode-help-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-label={`How to play: ${MODE_HOW_TO_PLAY_TITLE[expandedHelp]}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mode-help-modal-head">
+                  <span className="mode-help-modal-title at-cond">{MODE_HOW_TO_PLAY_TITLE[expandedHelp]}</span>
+                  <button type="button" className="mode-help-modal-close" aria-label="Close" onClick={() => setExpandedHelp(null)}>
+                    ✕
+                  </button>
+                </div>
+                <ol className="how-to-play-panel mode-help-modal-panel">
+                  {MODE_HOW_TO_PLAY[expandedHelp].map((item) => (
+                    <li key={item.title}>
+                      <b>{item.title}.</b> {item.body}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

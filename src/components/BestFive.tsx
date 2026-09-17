@@ -88,6 +88,9 @@ export default function BestFive({ onBack }: Props) {
   const [lineup, setLineup] = useState<Lineup>({});
   const [activeSlot, setActiveSlot] = useState<Position | null>('PG');
   const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(null);
+  // 2026-09-17, user's own ask: a real "how to play?" affordance on every mode, now that the
+  // intro screen's own always-visible rules list is gone.
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   const filledCount = STARTER_SLOTS.filter((s) => lineup[s]).length;
   const complete = filledCount === 5;
@@ -140,6 +143,9 @@ export default function BestFive({ onBack }: Props) {
       <div className="bf-subhead">
         <span className="bf-date">{isDaily ? `Daily puzzle · ${formatDisplayDate(today)}` : `Practice board #${board.n}`}</span>
         <span className="bf-subhead-actions">
+          <button className="at-legend-toggle at-cond" onClick={() => setShowHowToPlay((v) => !v)}>
+            {showHowToPlay ? 'Hide how to play' : 'How to play?'}
+          </button>
           {!isDaily && (
             <button className="at-legend-toggle at-cond" onClick={backToDaily}>
               Today’s puzzle
@@ -152,6 +158,16 @@ export default function BestFive({ onBack }: Props) {
           )}
         </span>
       </div>
+
+      {showHowToPlay && (
+        <ol className="how-to-play-panel">
+          <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C — from today’s pool.</li>
+          <li><b>Shot cap.</b> Your five have to fit under today’s cap, shown by the meter above the board.</li>
+          <li><b>Submit once.</b> No re-picking after you see your score for today’s puzzle.</li>
+          <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against par.</li>
+          <li><b>Practice anytime.</b> Today’s puzzle is once a day — a practice board gives you a fresh random pool whenever you want another rep.</li>
+        </ol>
+      )}
 
       {!result && (
         <div className="at-card">
