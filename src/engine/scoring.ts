@@ -499,11 +499,19 @@ const OFFENSE_SPACING_ELITE_ENGINE_BONUS = 15;
 function offenseScoreComponents(team: Team): OffenseScoreComponents {
   const starters = primaryStarters(team).map((entry) => entry.player);
   const fit = fitScore(team);
-  const hasGravityStarter =
-    starters.some((player) => spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR) ||
-    starters.some((player) => computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL);
+  // 2026-09-17, user-reported live (real Magic Johnson/Klay Thompson/Paul Pierce/Shawn Kemp/
+  // Dwight Howard construction: `spacingScore` already read 86 off Klay+Pierce clearing
+  // `WALKING_GRAVITY_FLOOR` as starters, then this bonus added +15 more on the SAME signal,
+  // capping the display at 100 despite 2 of 5 starters being flat non-shooters): the
+  // `spacingBreakdown(...).points >= WALKING_GRAVITY_FLOOR` half of this gate was the literal same
+  // check `spacingScore`'s own single/multi-gravity-threat branches already use to floor/boost
+  // `rawSpacing` for that exact player — real double counting, not two independent signals. The
+  // OTAL-based half is not: raw scoring talent isn't specifically a 3PT-shooting signal, so a
+  // Nash-caliber engine who ISN'T necessarily a plus shooter still earns this credit on its own
+  // terms, matching the mechanic's original Nash/Erving/Garnett/Ewing motivation. Kept OTAL-only.
+  const hasEliteScoringEngine = starters.some((player) => computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL);
   const hasElitePrimaryCreator = fit.inputs.primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD;
-  const hasElitePlaymakingEngine = hasGravityStarter || hasElitePrimaryCreator;
+  const hasElitePlaymakingEngine = hasEliteScoringEngine || hasElitePrimaryCreator;
   const rawSpacing = spacingScore(team);
   return {
     otal: rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS),
@@ -735,6 +743,33 @@ const THREE_SHOOTER_LINEUP_SPACING_FLOOR = 58;
  */
 const TWO_SHOOTER_LINEUP_SPACING_FLOOR = 45;
 
+/**
+ * 2026-09-17, user-reported live with a real construction (Magic Johnson 1988-90 + Klay Thompson
+ * 2014-16 + Paul Pierce 2000-02 — two genuine Walking-gravity wings — alongside Shawn Kemp 1994-96
+ * and Dwight Howard 2009-11, two flat `computeSpacing`=0 zeros at PF/C): every floor/bonus above
+ * exists to make sure a real shooter's OWN gravity reads as real team spacing, but none of them has
+ * ever asked how many of the OTHER starters simply cannot shoot at all. That roster's two real
+ * gravity threats pushed `spacingScore` to 86 raw (100 once `offenseScoreComponents`'s elite-engine
+ * bonus — see that function's own 2026-09-17 fix — added on top) despite 2 of 5 starters being
+ * total non-threats a defense can freely sag or help off of. User's own proposed design: 2+ hard
+ * non-spacer (`computeSpacing < 30`) starters caps the team at a good-not-elite 75 regardless of
+ * how well the other three shoot; a non-shooting PG on top of that — the position whose own
+ * shooting gravity most directly opens dribble-drive lanes for the rest of the offense — tightens
+ * it further to 65. This is a pure CEILING, the mirror of `TWO_SHOOTER_LINEUP_SPACING_FLOOR`'s own
+ * floor above, and — like every other cap in this function — never applies on Curry's own path
+ * (`hasCurry`/`isCurry`), matching that mechanic's explicit "regardless of who else is out there"
+ * design commitment.
+ */
+const TWO_NON_SPACER_STARTERS_CEILING = 75;
+const NON_SPACER_PG_STARTER_CEILING = 65;
+
+function spacingNonSpacerCeiling(starterAssignments: ReturnType<typeof primaryStarters>): number {
+  const hardNonSpacers = starterAssignments.filter(({ player }) => computeSpacing(player) < 30);
+  if (hardNonSpacers.length < 2) return 100;
+  const pgIsNonSpacer = hardNonSpacers.some(({ slot }) => slot === 'PG');
+  return pgIsNonSpacer ? NON_SPACER_PG_STARTER_CEILING : TWO_NON_SPACER_STARTERS_CEILING;
+}
+
 export function spacingScore(team: Team): number {
   const assignments = allAssignments(team);
   const totalMinutes = STARTER_SLOTS.length * GAME_MINUTES;
@@ -747,13 +782,15 @@ export function spacingScore(team: Team): number {
   // A team is judged first by the five opponents actually have to guard to open each game.
   // Bench shooting still matters, but cannot turn a Wade/Iguodala/Webber front line into an
   // elite-spacing starting lineup merely because Barry or Bonner appears later in the rotation.
-  const starters = primaryStarters(team).map((entry) => entry.player);
+  const starterAssignments = primaryStarters(team);
+  const starters = starterAssignments.map((entry) => entry.player);
   const starterBase = starters.length > 0
     ? starters.reduce((sum, player) => sum + computeSpacing(player), 0) / starters.length
     : fullRotationBase;
   const base = fullRotationBase * 0.35 + starterBase * 0.65;
   const plusShooterCount = starters.filter(isPlusShooter).length;
   const hardNonSpacerCount = starters.filter((player) => computeSpacing(player) < 30).length;
+  const nonSpacerCeiling = spacingNonSpacerCeiling(starterAssignments);
 
   // 2026-08-19, user-reported: a real Paul George "Walking gravity" span (SPC 100, no Curry on
   // the roster) got NONE of this mechanic's credit — both the single-player floor and the
@@ -785,7 +822,7 @@ export function spacingScore(team: Team): number {
     const floored = Math.max(base, MULTI_WALKING_GRAVITY_TEAM_SPACING_FLOOR);
     const withGravityFloor = base * (1 - avgThreatShare) + floored * avgThreatShare;
     const baseScore = rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS);
-    return Math.round(Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, baseScore));
+    return Math.round(Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore));
   }
 
   // A single Walking-gravity span is an enormous individual asset, but it is not automatically
@@ -811,7 +848,7 @@ export function spacingScore(team: Team): number {
     const floored = Math.max(base, floor);
     const withGravityFloor = base * (1 - threatShare) + floored * threatShare;
     const baseScore = rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS);
-    return Math.round(isCurry ? baseScore : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, baseScore));
+    return Math.round(isCurry ? baseScore : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore));
   }
 
   const baseScore = rescaleToFullRange(base, SPACING_SCORE_ANCHORS);
@@ -821,7 +858,7 @@ export function spacingScore(team: Team): number {
       : plusShooterCount >= 2
         ? TWO_SHOOTER_LINEUP_SPACING_FLOOR
         : 0;
-  return Math.round(Math.max(baseScore, constructionFloor));
+  return Math.round(Math.min(nonSpacerCeiling, Math.max(baseScore, constructionFloor)));
 }
 
 export interface RotationScoreComponents {
