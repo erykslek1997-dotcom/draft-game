@@ -1695,6 +1695,30 @@ function dedupeGroups(items: RosterInsight[]): RosterInsight[] {
   return [...free, ...winners];
 }
 
+/** 2026-09-17, user-reported live ("przydałoby się to bardziej czytelne i uporządkowane, dużo razy
+ * powtarza się to samo nazwisko, raz jest opisany atak, później defensywa, znowu atak" — this
+ * would read better grouped, right now it jumps offense/defense/offense): the final strengths/
+ * concerns lists were sorted purely by raw `score`, and every detector already carries its own
+ * topic `category` (spacing/rim_protection/rebounding/rotation/etc.) that was never used for
+ * anything but suppression grouping. Re-orders the ALREADY-SELECTED top N (never changes which
+ * insights get picked, or their score-driven priority — that logic is untouched) so same-category
+ * items sit together, ordered by each category's own first (highest-scoring) member. A stable
+ * group-by achieves this for free: `items` arrives sorted by score, so a category's first
+ * occurrence is its best member, and grouping preserves each member's relative order within its
+ * group. */
+function groupByCategory(items: RosterInsight[]): RosterInsight[] {
+  const order: InsightCategory[] = [];
+  const groups = new Map<InsightCategory, RosterInsight[]>();
+  for (const item of items) {
+    if (!groups.has(item.category)) {
+      groups.set(item.category, []);
+      order.push(item.category);
+    }
+    groups.get(item.category)!.push(item);
+  }
+  return order.flatMap((category) => groups.get(category)!);
+}
+
 export interface InsightEngineOutput {
   strengths: RosterInsight[];
   concerns: RosterInsight[];
@@ -1716,8 +1740,10 @@ export function generateRosterInsights(
     .sort((a, b) => b.score - a.score);
 
   const eligible = ranked.filter(i => i.score >= config.minScore);
-  const strengths = eligible.filter(i => i.type === 'strength').slice(0, config.maxPerSide);
-  const concerns = eligible.filter(i => i.type === 'concern').slice(0, config.maxPerSide);
+  // `allActiveInsights` below stays in raw score order (debug/tooling reads it as a priority
+  // ranking) — only the two DISPLAY lists get grouped by topic, once selection is already final.
+  const strengths = groupByCategory(eligible.filter(i => i.type === 'strength').slice(0, config.maxPerSide));
+  const concerns = groupByCategory(eligible.filter(i => i.type === 'concern').slice(0, config.maxPerSide));
 
   return { strengths, concerns, allActiveInsights: ranked };
 }
