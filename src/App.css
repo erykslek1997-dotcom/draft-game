@@ -3822,32 +3822,47 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
    "concern" emphasis) instead of the several unrelated hardcoded reds that used to be scattered
    through this file (now consolidated into the app-wide `--danger` token, aliased to this shell's
    `--at-accent-2` — see that alias block below) — one real brand red standing in for all of them. */
+/* 2026-09-18, user's own ask ("main menu było git, reszta dostosowana do tego miała być" — the
+   intro screen's own JetBrains-Mono/cyan terminal experiment, see `.at-intro-terminal` below, was
+   the right call, and the rest of the shell should move to match it, not the other way round).
+   Retires the navy/red broadcast-board palette above in favour of a terminal identity — but tuned
+   back toward this project's own real NBA colour, not the generic aqua-cyan the intro experiment
+   borrowed from its draftballr.com reference ("pokombinować z kolorami żeby były bardziej spójne z
+   paletą NBA draft"): `--at-accent` is still a `color-mix` off the real NBA logo blue
+   (`--at-brand-blue`, unchanged hex), just brightened toward an electric glow-blue instead of
+   toward flat white, so every existing consumer of `--at-accent`/`--accent` across the whole shell
+   inherits a colour genuinely rooted in this game's own brand token, not an unrelated import.
+   `--at-brand-red` is untouched and stays alert-only (on-the-clock pulse, danger, warnings) — confirmed
+   live against the new background on the Lottery/Draft/Team tabs. `.at-cond` (below) switched from
+   a hardcoded `var(--sans)` to `inherit` in the same pass so headings/tab labels/panel titles pick
+   up this shell's new mono font instead of silently staying sans-serif. */
 .at-shell {
-  --at-paper: #0b0c0f;
-  --at-paper-raised: #17181c;
-  --at-ink: #f4f3ef;
-  --at-ink-soft: #a9a8a3;
-  --at-ink-faint: #6f6e6a;
-  --at-pill: #1c2c4d;
-  --at-pill-ink: #d6e2f7;
-  --at-line: #2a3348;
+  --at-paper: #05070c;
+  --at-paper-raised: #0a0f18;
+  --at-ink: #eef4fb;
+  --at-ink-soft: #7f96b3;
+  --at-ink-faint: #48586d;
+  --at-pill: #0d151f;
+  --at-pill-ink: #6cc3ff;
+  --at-line: #16222f;
   --at-brand-blue: #1D428A;
   --at-brand-red: #C8102E;
-  --at-accent: color-mix(in srgb, var(--at-brand-blue) 68%, white);
-  --at-accent-ink: #ffffff;
+  --at-accent: color-mix(in srgb, var(--at-brand-blue) 40%, #5ec8ff 60%);
+  --at-accent-ink: #06070c;
   --at-accent-2: color-mix(in srgb, var(--at-brand-red) 72%, white);
   --at-accent-2-ink: #ffffff;
 
-  /* One calm, sequential blue scale for ratings. Green/red remain reserved for semantic
-     outcomes such as a favorable or unfavorable matchup, instead of competing with scores. */
-  --at-t1: #202b3d; --at-t1-ink: #b8c4d4;
-  --at-t2: #29405d; --at-t2-ink: #c9d8e8;
-  --at-t3: #355775; --at-t3-ink: #d8e5f2;
-  --at-t4: #46708f; --at-t4-ink: #eef5fb;
-  --at-t5: #5c87a8; --at-t5-ink: #ffffff;
-  --at-t6: #76a1c4; --at-t6-ink: #ffffff;
+  /* Same calm, sequential scale, re-tuned to the electric-blue terminal accent instead of the
+     older flat navy. Green/red remain reserved for semantic outcomes such as a favorable or
+     unfavorable matchup, instead of competing with scores. */
+  --at-t1: #0c1a2c; --at-t1-ink: #7f96b3;
+  --at-t2: #102846; --at-t2-ink: #a9c7e8;
+  --at-t3: #14395f; --at-t3-ink: #cfe3f7;
+  --at-t4: #184c7c; --at-t4-ink: #eef4fb;
+  --at-t5: #2f74b8; --at-t5-ink: #ffffff;
+  --at-t6: #5ec8ff; --at-t6-ink: #06070c;
 
-  --at-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 10px 26px rgba(0,0,0,0.35);
+  --at-shadow: 0 1px 2px rgba(0,0,0,0.6), 0 10px 26px rgba(0,0,0,0.45);
 
   /* 2026-08-16, user's own ask: bring ResultsScreen (the final Power Ranking screen) onto the
      same dark board as the Draft screen. Rather than rewrite every one of ResultsScreen's own
@@ -3875,7 +3890,11 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   --danger-border: color-mix(in srgb, var(--at-accent-2) 45%, transparent);
   --shadow: var(--at-shadow);
 
+  font-family: 'JetBrains Mono', var(--mono), ui-monospace, Consolas, monospace;
   background: var(--at-paper);
+  background-image:
+    radial-gradient(120% 90% at 20% 0%, color-mix(in srgb, var(--at-brand-blue) 30%, transparent), transparent 55%),
+    repeating-linear-gradient(180deg, color-mix(in srgb, var(--at-accent) 3%, transparent) 0px, color-mix(in srgb, var(--at-accent) 3%, transparent) 1px, transparent 1px, transparent 3px);
   color: var(--at-ink);
   border-radius: 16px;
   padding: 0;
@@ -3924,9 +3943,13 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
    condensed display face (Haettenschweiler/Impact) for every tab/pill/panel-title in the shell —
    read as much heavier/shoutier than the rest of the app, which is plain `var(--sans)`
    everywhere else. Same bold-uppercase "badge" identity, just the app's own typeface instead of
-   a second, unrelated one. */
+   a second, unrelated one.
+   2026-09-18: hardcoded `var(--sans)` replaced with `inherit` now that `.at-shell` sets its own
+   mono font-family (see that rule's own 2026-09-18 comment) — this class still only owns weight/
+   spacing/case, never its own typeface, so it rides whatever font the surrounding shell picks
+   instead of silently opting back out of the mono terminal look everywhere it's used. */
 .at-cond {
-  font-family: var(--sans, system-ui, "Segoe UI", Roboto, sans-serif);
+  font-family: inherit;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
