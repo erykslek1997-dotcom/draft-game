@@ -3,7 +3,7 @@ import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown } from '..
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
-import { STARTER_SLOTS, CAP_LIMIT } from '../engine/positions';
+import { STARTER_SLOTS, CAP_LIMIT, positionFitMultiplier } from '../engine/positions';
 import { allAssignments, benchWithMinutes, primaryStarters, type ResolvedSlotAssignment } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
@@ -2011,8 +2011,16 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
                                     {/* 2026-09-11, Scouting Report finding: HoopsMatic/Era Ball flag a real
                                         position mismatch with a small superscript next to the name instead of a
                                         sentence — this is that, additive to (not instead of) the existing
-                                        Concerns prose that names the same mismatch in full. */}
-                                    {e.player.primaryPosition !== slot && (
+                                        Concerns prose that names the same mismatch in full.
+                                        2026-09-18, user-reported live (Jeff Hornacek at PG flagged red despite
+                                        SG/PG being a real, explicitly-listed secondary — no actual penalty
+                                        attached): this used to fire on any `primaryPosition !== slot`, which
+                                        flags a harmless secondary-position assignment (`positionFitMultiplier`
+                                        0.9, the same bar `rotationScore`'s own "out of natural position" notes
+                                        use to decide what actually counts as off) the same way it flags a
+                                        real, penalized mismatch. Matches that same `< 0.9` bar now — a listed
+                                        secondary no longer reads as a warning it isn't. */}
+                                    {positionFitMultiplier(e.player, slot) < 0.9 && (
                                       <sup className="rotation-natural-pos" title={`Natural position: ${e.player.primaryPosition}`}>
                                         {e.player.primaryPosition}
                                       </sup>
