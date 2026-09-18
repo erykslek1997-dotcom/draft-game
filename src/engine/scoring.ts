@@ -497,7 +497,8 @@ export interface OffenseScoreBreakdown extends OffenseScoreComponents {
 const OFFENSE_SPACING_ELITE_ENGINE_BONUS = 15;
 
 function offenseScoreComponents(team: Team): OffenseScoreComponents {
-  const starters = primaryStarters(team).map((entry) => entry.player);
+  const starterAssignments = primaryStarters(team);
+  const starters = starterAssignments.map((entry) => entry.player);
   const fit = fitScore(team);
   // 2026-09-17, user-reported live (real Magic Johnson/Klay Thompson/Paul Pierce/Shawn Kemp/
   // Dwight Howard construction: `spacingScore` already read 86 off Klay+Pierce clearing
@@ -513,9 +514,19 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
   const hasElitePrimaryCreator = fit.inputs.primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD;
   const hasElitePlaymakingEngine = hasEliteScoringEngine || hasElitePrimaryCreator;
   const rawSpacing = spacingScore(team);
+  // 2026-09-18, user-reported live ("90 nadal za dużo w mojej opinii" — 90 is still too much,
+  // after the fix below had already brought a real Magic Johnson/Klay Thompson/Paul Pierce/Shawn
+  // Kemp/Dwight Howard construction from 100 to 90): the elite-engine bonus itself was still
+  // uncapped by `spacingNonSpacerCeiling` — it could lift the DISPLAYED number past the same 75/65
+  // ceiling `spacingScore` now enforces on the raw value, on the theory that a genuine elite
+  // playmaking engine is a real, independent value source worth exceeding it for. The user's own
+  // call: no — two non-shooting starters cap the team's spacing story regardless of how good the
+  // engine running it is. Reusing the same ceiling here closes that gap; the bonus can still lift a
+  // team TOWARD the ceiling, just never past it.
+  const spacingCeiling = spacingNonSpacerCeiling(starterAssignments);
   return {
     otal: rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS),
-    spacing: hasElitePlaymakingEngine ? Math.min(100, rawSpacing + OFFENSE_SPACING_ELITE_ENGINE_BONUS) : rawSpacing,
+    spacing: Math.min(spacingCeiling, hasElitePlaymakingEngine ? Math.min(100, rawSpacing + OFFENSE_SPACING_ELITE_ENGINE_BONUS) : rawSpacing),
     rimPressure: rimPressureTeam(starters),
     playmaking: teamPlaymakingQuality(starters),
     selfCreation: teamSelfCreationQuality(starters),
