@@ -2530,12 +2530,16 @@ select {
    payoff (Share result / Challenge a friend); this screen had no path from seeing a result to
    sending it to the group chat at all. Clipboard-only — no share-sheet/backend dependency, which
    matches "closed friend group who already coordinate outside the app." */
+/* 2026-09-18: moved from its own full-width row below the whole hero dashboard into
+   `.results-hero-scores` itself (see that JSX's own comment) — `grid-column: 1 / -1` was a leftover
+   from when this sat directly under a grid container; it's a normal flex-column child now, so that
+   rule is dropped along with it. Slightly larger top margin than before (was 4px) now that it
+   trails the bars directly instead of the whole dashboard row. */
 .results-hero-actions {
-  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 14px;
 }
 .results-hero-copy {
   padding: 7px 14px;
@@ -2687,12 +2691,26 @@ select {
    the plain two-column text grid above with two real rows of face-cards — same `Face` avatar the
    Draft tab's own "Your Five" sidebar and Rotation cards already use, so this modal finally
    matches the headshot row the downloadable PNG (`shareCardImage.ts`) already had. */
+/* 2026-09-18: one bordered card per SLOT (was per-player) — same column treatment
+   `.results-hero-rotation-col` already uses above, so a slot with 2-3 real contributors reads as
+   one coherent group instead of a row of individually-bordered player cards with no visual link
+   between a starter and the bench player covering his other minutes.
+   2026-09-18 follow-up, user-reported live (screenshot: the 5th card wrapped to its own row): a
+   fixed 96px card width times 5 (plus gaps) came to 504px, wider than `.share-modal-card`'s own
+   476px content box (520px card minus its 22px side padding twice) — close enough to fit 4 cards
+   on a line but never 5. Switched the row to a 5-column grid instead of flex-wrap, so it always
+   divides the real available width into exactly 5 columns rather than wrapping once a fixed card
+   width doesn't happen to fit; `min-width: 0` lets a long name's existing ellipsis do its job
+   inside a narrower grid cell instead of forcing the column wider. */
 .share-modal-face-group {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
   gap: 6px;
-  margin-top: 10px;
+  min-width: 0;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
 }
 .share-modal-face-group-label {
   font-size: 9.5px;
@@ -2700,35 +2718,25 @@ select {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);
-  text-align: left;
+  text-align: center;
 }
 .share-modal-face-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
 }
 .share-modal-face-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
-  width: 88px;
-  padding: 8px 4px 6px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  gap: 5px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
 }
-.share-modal-face-pos {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
+.share-modal-face-group > .share-modal-face-card:first-of-type { padding-top: 0; border-top: none; }
+.share-modal-face-info { display: flex; flex-direction: column; gap: 0; min-width: 0; line-height: 1.25; }
 .share-modal-face-name {
   max-width: 100%;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--text);
   overflow: hidden;
@@ -2736,7 +2744,7 @@ select {
   white-space: nowrap;
 }
 .share-modal-face-meta {
-  font-size: 9.5px;
+  font-size: 9px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

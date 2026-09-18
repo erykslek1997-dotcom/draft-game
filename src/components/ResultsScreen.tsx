@@ -37,7 +37,7 @@ import { pickStatTip } from './DraftBoard';
 // Historical Challenges is to reuse it as the base of a real separate game mode later, not to
 // throw the work away — see [[player_skeleton_and_new_modes]].
 import MatchupMatrix from './MatchupMatrix';
-import { downloadShareCard, downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
+import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 import { Face, shortenName } from './ShotChip';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
@@ -406,9 +406,10 @@ function HeroResult({
   const [challengeCopied, setChallengeCopied] = useState(false);
   // 2026-09-17, user-reported live ("więcej sosu, coś jak share po zakończonym drafcie" — more
   // sauce, like the share after a finished draft): the popup's own share action only ever copied a
-  // link; this gives it the same visual payoff `ShareModal`'s PNG already gives a normal draft
-  // finish — a real downloadable head-to-head card (`shareCardImage.ts`'s `buildDuelCardBlob`).
-  // 'idle' | 'building' | 'done' | 'error', matching `ShareModal`'s own `pngState` shape.
+  // link; this gives it real visual payoff — a downloadable head-to-head card
+  // (`shareCardImage.ts`'s `buildDuelCardBlob`). 'idle' | 'building' | 'done' | 'error' rather than
+  // a bare boolean so a slow headshot load (or a canvas failure) has a visible state instead of the
+  // button looking unresponsive.
   const [duelPngState, setDuelPngState] = useState<'idle' | 'building' | 'done' | 'error'>('idle');
   // 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
   // ekran z naszymi wynikami?") — plain clipboard copy gave no preview of what you were actually
@@ -504,8 +505,9 @@ function HeroResult({
     }
   }
 
-  /** Same "unguarded await left the button stuck forever" fix `ShareModal.handleDownloadPng`
-   * already had applied to it (2026-09-12 code review) — caught here from the start. */
+  /** Guarded `await` so an unexpected exception inside `buildDuelCardBlob` (canvas unsupported, a
+   * tainted-canvas/security error, etc.) can't leave `duelPngState` stuck at 'building' forever —
+   * the button permanently disabled with no way to retry. */
   async function handleDownloadDuelCard() {
     if (!challenger) return;
     setDuelPngState('building');
@@ -763,6 +765,26 @@ function HeroResult({
               </div>
             </div>
           )}
+          {/* 2026-09-18, user-reported live ("share the result and challenge a friend można dać
+              wyżej w empty space który jest po lewej stronie") — this column's content (chips +
+              bars) is routinely shorter than the Rotation column beside it, leaving dead space
+              below it while these two buttons sat in their own full-width row underneath both
+              columns. Moved in here, right after the bars, so they fill that gap instead — same
+              "give the column's own empty space a job" move as `seasonSimSlot` in the Rotation
+              column just below. */}
+          <div className="results-hero-actions">
+            <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
+              📤 Share the result
+            </button>
+            <button
+              type="button"
+              className="results-hero-copy results-hero-challenge"
+              onClick={copyChallengeLink}
+              title="Copies a link that gives a friend the exact same 16-team draft board to react to."
+            >
+              {challengeCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
+            </button>
+          </div>
         </div>
         <div className="results-hero-rotation">
           <span className="share-modal-face-group-label">Rotation</span>
@@ -802,19 +824,6 @@ function HeroResult({
           {seasonSimSlot}
         </div>
       </div>
-      <div className="results-hero-actions">
-        <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
-          📤 Share the result
-        </button>
-        <button
-          type="button"
-          className="results-hero-copy results-hero-challenge"
-          onClick={copyChallengeLink}
-          title="Copies a link that gives a friend the exact same 16-team draft board to react to."
-        >
-          {challengeCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
-        </button>
-      </div>
       {shareOpen && (
         <ShareModal
           onClose={() => setShareOpen(false)}
@@ -828,7 +837,6 @@ function HeroResult({
           titleOdds={titleOdds}
           identity={identity}
           failureMode={failureMode}
-          starters={starters}
           roster={roster}
           scores={{
             talent: Math.round(talentScore),
@@ -862,7 +870,6 @@ function ShareModal({
   titleOdds,
   identity,
   failureMode,
-  starters,
   roster,
   scores,
 }: {
@@ -877,42 +884,12 @@ function ShareModal({
   titleOdds: number | null;
   identity: string | null;
   failureMode: string | null;
-  starters: ShareCardStarter[];
   roster: ShareRosterRow[];
   /** 2026-09-18, user-reported live ("można dodać tu podstawowe metryki" — the basic metrics
    * could go here too): the same 7 `ScoreChip` values the hero's own "Team profile" row already
    * shows for this team. */
   scores: { talent: number; benchDepth: number; offense: number; defense: number; spacing: number; fit: number; rotation: number };
 }) {
-  // 2026-09-12, user-reported live ("tu powinna się generować grafika do zapisu jako png, i
-  // bardziej szczegółowa") — a real downloadable PNG, built by `shareCardImage.ts` from this exact
-  // same data plus the starting five's headshots and the full roster/rotation below. 'idle' |
-  // 'building' | 'done' | 'error' rather than a bare boolean so a slow headshot load (or a canvas
-  // failure) has a visible state instead of the button looking unresponsive.
-  // 2026-09-12 follow-up ("usuń copy as text, dodaj dodatkowe informacje jak roster, rotacja") —
-  // the plain-text clipboard copy is gone (the PNG covers strictly more now); this modal itself
-  // also grew a real Roster/Rotation section instead of stopping at the headline stats.
-  const [pngState, setPngState] = useState<'idle' | 'building' | 'done' | 'error'>('idle');
-
-  async function handleDownloadPng() {
-    setPngState('building');
-    // 2026-09-12, code-review fix: an unguarded `await` here meant any unexpected exception
-    // inside `buildShareCardBlob` (canvas unsupported, a tainted-canvas/security error, etc.)
-    // left `pngState` stuck at 'building' forever — the button permanently disabled reading
-    // "Building…" with no way to retry, and (since "Copy as text" was removed this same session)
-    // no fallback share action left at all.
-    try {
-      const ok = await downloadShareCard(
-        { teamName, rank, fieldSize, tier, overall, titleOdds, gap, topOverall, identity, starters, roster, scores },
-        `all-time-draft-${teamName.replace(/\s+/g, '-').toLowerCase()}.png`,
-      );
-      setPngState(ok ? 'done' : 'error');
-    } catch {
-      setPngState('error');
-    }
-    setTimeout(() => setPngState('idle'), 2000);
-  }
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -974,45 +951,46 @@ function ShareModal({
           // 2026-09-12, user-reported live (screenshot of this exact modal): the roster section
           // was a plain two-column text grid with no faces at all — the PNG `shareCardImage.ts`
           // builds already has a real starting-five headshot row, but this in-modal preview (what
-          // the user actually looks at before downloading) never matched it. Two face-card rows
-          // now, same `Face` avatar the Draft tab's own "Your Five" sidebar and Rotation cards
-          // already use — Starting five first, Bench second, exactly as asked ("w dwóch rzędach,
-          // s5 i bench").
-          const starterRows = roster.filter((row) => row.isStarter);
-          const benchRows = roster.filter((row) => !row.isStarter);
-          const faceRow = (rows: ShareRosterRow[], label: string) => (
-            <div className="share-modal-face-group" key={label}>
-              <span className="share-modal-face-group-label">{label}</span>
+          // the user actually looks at before downloading) never matched it. Face cards added.
+          // 2026-09-18, user-reported live (screenshot: Jerry West "18m" with no visible link to
+          // who covers his other 30 — "brak dokładnej rotacji", "rotacja jako jedna statystyka w
+          // oddzielnej linii źle wygląda"): the original "Starting five" row / "Bench" row split
+          // read as two disconnected lists — you had to match position labels across two separate
+          // groups by eye to see who actually backs up whom. Grouped by SLOT instead, one card per
+          // position with every real contributor stacked inside (starter first, then by minutes) —
+          // same shape as the hero's own "Rotation" panel above (`results-hero-rotation-columns`),
+          // so a slot's full picture (e.g. West 18m / White 30m, both SG) reads at a glance instead
+          // of needing to be reassembled from two separate rows.
+          const bySlot = STARTER_SLOTS.map((slot) => ({
+            slot,
+            rows: roster
+              .filter((row) => row.position === slot)
+              .sort((a, b) => (a.isStarter === b.isStarter ? b.minutes - a.minutes : a.isStarter ? -1 : 1)),
+          })).filter((group) => group.rows.length > 0);
+          return (
+            <div className="share-modal-roster">
+              <span className="share-modal-roster-label">Roster &amp; rotation</span>
               <div className="share-modal-face-row">
-                {rows.map((row) => (
-                  <div className="share-modal-face-card" key={`${row.position}-${row.name}`}>
-                    <Face name={row.name} size="md" />
-                    <span className="share-modal-face-pos">{row.position}</span>
-                    <span className="share-modal-face-name">{shortenName(row.name)}</span>
-                    <span className="share-modal-face-meta">
-                      {Math.round(row.minutes)}m · {row.fga.toFixed(1)} sh
-                    </span>
+                {bySlot.map(({ slot, rows }) => (
+                  <div className="share-modal-face-group" key={slot}>
+                    <span className="share-modal-face-group-label">{slot}</span>
+                    {rows.map((row) => (
+                      <div className="share-modal-face-card" key={`${row.position}-${row.name}`}>
+                        <Face name={row.name} size="sm" />
+                        <span className="share-modal-face-info">
+                          <span className="share-modal-face-name">{shortenName(row.name)}</span>
+                          <span className="share-modal-face-meta">
+                            {Math.round(row.minutes)}m · {row.fga.toFixed(1)} sh
+                          </span>
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
             </div>
           );
-          return (
-            <div className="share-modal-roster">
-              <span className="share-modal-roster-label">Roster &amp; rotation</span>
-              {faceRow(starterRows, 'Starting five')}
-              {benchRows.length > 0 && faceRow(benchRows, 'Bench')}
-            </div>
-          );
         })()}
-        <button
-          type="button"
-          className="primary-btn share-modal-copy"
-          onClick={handleDownloadPng}
-          disabled={pngState === 'building'}
-        >
-          {pngState === 'building' ? 'Building…' : pngState === 'done' ? '✓ Saved' : pngState === 'error' ? '✕ Failed' : '🖼️ Download PNG'}
-        </button>
       </div>
     </div>
   );
@@ -1542,41 +1520,6 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked?.team.id, scoredTeams],
   );
-  // 2026-09-12, user's own ask ("dodaj dodatkowe informacje jak roster, rotacja itd") — the full
-  // 9-man roster + real rotation minutes for the share card/modal, reusing the exact same
-  // `primaryStarters`/`benchWithMinutes` split the Team/Rotation tabs are already built from, so
-  // this can never disagree with what the player actually set. `displayTeam` picks up any
-  // rotation correction made on this screen itself, same as `heroFit` above.
-  const heroRoster: ShareRosterRow[] = useMemo(() => {
-    if (!heroRanked) return [];
-    const team = displayTeam(heroRanked.team);
-    const starterRows: ShareRosterRow[] = primaryStarters(team).map((s) => ({
-      position: s.slot,
-      name: s.player.playerName,
-      fga: s.player.fga,
-      minutes: s.minutes,
-      isStarter: true,
-    }));
-    const benchRows: ShareRosterRow[] = benchWithMinutes(team).map((b) => ({
-      position: b.player.primaryPosition,
-      name: b.player.playerName,
-      fga: b.player.fga,
-      minutes: b.minutes,
-      isStarter: false,
-    }));
-    return [...starterRows, ...benchRows];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [heroRanked, correctedRotations]);
-  // 2026-09-12, code-review fix: used to be its own separate `bestPrimaryAssignment` recompute —
-  // a fresh, purely-optimal-fit search that can name a DIFFERENT player as a slot's starter than
-  // `heroRoster.starterRows` above (the team's actual saved/corrected rotation, e.g. the Paul
-  // George 22-SF/8-PF case, or a rotation-engine side effect that legitimately keeps a non-optimal
-  // starter). That let the PNG's headshot row disagree with its own roster table for the same
-  // slot. Derived from `heroRoster` instead so the two can never name different starters.
-  const heroStarters: ShareCardStarter[] = useMemo(
-    () => heroRoster.filter((row) => row.isStarter).map((row) => ({ position: row.position, name: row.name })),
-    [heroRoster],
-  );
   // 2026-09-16, user-reported live ("zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn
   // z pozycjami i minutami"): the hero's own "Starting five"/"Bench" split named a player's
   // CARD position (their primary position for bench rows — see `heroRoster` above), not which
@@ -1602,6 +1545,44 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
     () => new Set(heroRanked ? primaryStarters(displayTeam(heroRanked.team)).map((entry) => `${entry.slot}|${entry.player.id}`) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked, correctedRotations],
+  );
+  // 2026-09-18, user-reported live (screenshot: Jerry West showing "18m" with no visible pairing
+  // to who covers his other 30, "brak dokładnej rotacji") — this used to be built separately from
+  // `primaryStarters`/`benchWithMinutes`, labelling each bench row with the player's own
+  // `primaryPosition` rather than the SLOT they actually cover. That's approximate at best (right
+  // only when a bench player's natural position happens to match his backup slot) and can't
+  // represent a combo backup covering two slots at all — exactly the gap the hero's own "Rotation"
+  // panel above solved by switching to real per-slot `allAssignments` data. Rebuilt directly from
+  // `heroAssignments`/`heroStarterKeys` instead of recomputing a second, looser approximation, so
+  // the share modal/PNG's roster can never again disagree with what the on-screen Rotation panel
+  // already shows.
+  const heroRoster: ShareRosterRow[] = useMemo(() => {
+    if (!heroRanked) return [];
+    const assigned: ShareRosterRow[] = heroAssignments.map((a) => ({
+      position: a.slot,
+      name: a.player.playerName,
+      fga: a.player.fga,
+      minutes: a.minutes,
+      isStarter: heroStarterKeys.has(`${a.slot}|${a.player.id}`),
+    }));
+    // `heroAssignments` only carries players the rotation actually gave minutes to — a genuine
+    // 0-minute deep-bench roster spot (see `benchWithMinutes`'s own docstring: "including 0-minute
+    // deep bench") never appears there at all. Fall back to the player's own `primaryPosition` for
+    // exactly that remainder, same as before, so the roster still shows all 9 picks rather than
+    // silently dropping whoever isn't in the active rotation.
+    const assignedIds = new Set(heroAssignments.map((a) => a.player.id));
+    const deepBench: ShareRosterRow[] = displayTeam(heroRanked.team).roster
+      .filter((p) => !assignedIds.has(p.id))
+      .map((p) => ({ position: p.primaryPosition, name: p.playerName, fga: p.fga, minutes: 0, isStarter: false }));
+    return [...assigned, ...deepBench];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroAssignments, heroStarterKeys, heroRanked]);
+  // Still needed for `HeroResult`'s own "Challenge a friend" link (`copyChallengeLink`'s `cs` param)
+  // and the challenge-comparison table's per-slot name lookup — unrelated to the removed PNG/
+  // ShareModal-headshot-row use, which is the only consumer that went away with it.
+  const heroStarters: ShareCardStarter[] = useMemo(
+    () => heroRoster.filter((row) => row.isStarter).map((row) => ({ position: row.position, name: row.name })),
+    [heroRoster],
   );
   function toggleExpanded(teamId: string) {
     setExpandedTeamIds((prev) => {

@@ -30,26 +30,6 @@ export interface ShareRosterRow {
   isStarter: boolean;
 }
 
-export interface ShareCardData {
-  teamName: string;
-  rank: number;
-  fieldSize: number;
-  tier: { label: string; tone: 1 | 2 | 3 | 4 | 5 | 6 };
-  overall: number;
-  titleOdds: number | null;
-  gap: number | null;
-  topOverall: number | null;
-  identity: string | null;
-  starters: ShareCardStarter[];
-  roster: ShareRosterRow[];
-  /** 2026-09-18, user-reported live ("można dodać tu podstawowe metryki" — the basic metrics
-   * could go here too): the same 7 `ScoreChip` values the hero's own "Team profile" row already
-   * shows for this team — this card led with only the headline Overall/Title-odds pair before,
-   * with no path from "here's my result" to "here's WHY," the same gap the duel card's own
-   * `DuelCardSide.scores` already closed for the head-to-head case. */
-  scores: { talent: number; benchDepth: number; offense: number; defense: number; spacing: number; fit: number; rotation: number };
-}
-
 /** 1 -> "1st", 2 -> "2nd", 11 -> "11th" — same rule `ResultsScreen.tsx`'s own local `ordinal`
  * uses; duplicated rather than imported, matching how that one is already duplicated into
  * QuickFive.tsx — small enough that a shared-utility module would be more ceremony than the copy. */
@@ -104,22 +84,6 @@ const TIER_COLORS: Record<1 | 2 | 3 | 4 | 5 | 6, { bg: string; fg: string }> = {
   6: { bg: '#76a1c4', fg: '#ffffff' },
 };
 
-/** Duplicated from `ResultsScreen.tsx`'s own `qualityColor` (not exported — same "small enough
- * that a shared-utility module would be more ceremony than the copy" call already made for
- * `ordinal`/`initials`/`resultTierLabel` in this file), so a metric chip on the PNG reads the same
- * green-to-red gradient the modal's own `ScoreChip`s already use for the identical numbers.
- * 2026-09-18, user-reported live ("wyskakujący i pobierany png powinien być taki sam" — the popup
- * and the downloaded PNG should look the same): these metric chips used to render as plain grey
- * pills with no value-quality signal at all, the one thing that made this row's colors disagree
- * with the modal it sits right next to on screen. */
-function qualityColor(v: number): string {
-  const t = Math.max(0, Math.min(100, v)) / 100;
-  const hue = 2 + t * 146;
-  const saturation = 42 + Math.abs(t - 0.5) * 34;
-  const lightness = 30 + t * 12;
-  return `hsl(${hue} ${saturation}% ${lightness}%)`;
-}
-
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -150,254 +114,19 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number):
   return `${truncated}…`;
 }
 
-/** Builds the share card and resolves a PNG `Blob`, or `null` if canvas 2D isn't available. */
-export async function buildShareCardBlob(data: ShareCardData): Promise<Blob | null> {
-  const W = 1200;
-  const H = 830;
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-
-  // Background: the same paper -> raised vertical gradient the app shell sits on, plus a soft
-  // brand-accent glow in the corner so the card doesn't read as flat.
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  bgGrad.addColorStop(0, PALETTE.paperRaised);
-  bgGrad.addColorStop(1, PALETTE.paper);
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, W, H);
-  const glow = ctx.createRadialGradient(W - 60, 40, 20, W - 60, 40, 480);
-  glow.addColorStop(0, 'rgba(111,142,194,0.30)');
-  glow.addColorStop(1, 'rgba(111,142,194,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
-
-  // Eyebrow + team name.
-  ctx.fillStyle = PALETTE.inkFaint;
-  ctx.font = '700 20px Arial, sans-serif';
-  ctx.fillText('ALL-TIME DRAFT', 56, 58);
-  ctx.fillStyle = PALETTE.ink;
-  ctx.font = '800 52px Arial, sans-serif';
-  ctx.fillText(fitText(ctx, data.teamName, 620), 56, 118);
-
-  // Tier pill + rank, top-right.
-  const tierColors = TIER_COLORS[data.tier.tone];
-  const tierText = data.tier.label.toUpperCase();
-  ctx.font = '700 20px Arial, sans-serif';
-  const tierW = ctx.measureText(tierText).width + 36;
-  roundedRectPath(ctx, W - 56 - tierW, 34, tierW, 38, 19);
-  ctx.fillStyle = tierColors.bg;
-  ctx.fill();
-  ctx.fillStyle = tierColors.fg;
-  ctx.textAlign = 'center';
-  ctx.fillText(tierText, W - 56 - tierW / 2, 59);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = PALETTE.ink;
-  ctx.font = '700 28px Arial, sans-serif';
-  ctx.fillText(`${ordinal(data.rank)} / ${data.fieldSize}`, W - 56, 108);
-  ctx.textAlign = 'left';
-
-  // Stat boxes: Final Power Ranking + (if present) Title odds — same two the share modal's own
-  // text copy already leads with.
-  const statY = 175;
-  const statBoxW = 300;
-  const stats: Array<{ label: string; value: string }> = [{ label: 'FINAL POWER RANKING', value: `${data.overall}` }];
-  if (data.titleOdds !== null) {
-    stats.push({ label: 'TITLE ODDS', value: `${(data.titleOdds * 100).toFixed(data.titleOdds >= 0.1 ? 0 : 1)}%` });
-  }
-  stats.forEach((stat, i) => {
-    const x = 56 + i * (statBoxW + 20);
-    roundedRectPath(ctx, x, statY, statBoxW, 110, 14);
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    ctx.fill();
-    ctx.strokeStyle = PALETTE.line;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = PALETTE.inkFaint;
-    ctx.font = '700 15px Arial, sans-serif';
-    ctx.fillText(stat.label, x + 20, statY + 34);
-    ctx.fillStyle = PALETTE.ink;
-    ctx.font = '800 44px Arial, sans-serif';
-    ctx.fillText(stat.value, x + 20, statY + 85);
-  });
-
-  // Gap-to-#1 line, when the human isn't already #1 — same framing as the hero header.
-  let cursorY = statY + 150;
-  if (data.gap !== null) {
-    ctx.fillStyle = PALETTE.inkSoft;
-    ctx.font = '500 20px Arial, sans-serif';
-    const gapText = data.gap > 0
-      ? `Overall #1 in the field: ${data.topOverall} — you're ${data.gap} back.`
-      : 'You have the best Overall in the field.';
-    ctx.fillText(fitText(ctx, gapText, W - 112), 56, cursorY);
-    cursorY += 34;
-  }
-
-  // Identity chip.
-  if (data.identity) {
-    ctx.font = '700 18px Arial, sans-serif';
-    const chipText = data.identity;
-    const chipW = Math.min(W - 112, ctx.measureText(chipText).width + 32);
-    roundedRectPath(ctx, 56, cursorY, chipW, 36, 18);
-    ctx.fillStyle = PALETTE.pill;
-    ctx.fill();
-    ctx.fillStyle = PALETTE.pillInk;
-    ctx.fillText(fitText(ctx, chipText, chipW - 32), 72, cursorY + 24);
-    cursorY += 56;
-  }
-
-  // 2026-09-18, user-reported live ("można dodać tu podstawowe metryki" — the basic metrics
-  // could go here too): the same 7 numbers the hero's own "Team profile" ScoreChip row already
-  // shows, as a row of small pills — this card used to lead with only Overall/Title-odds, no path
-  // from "here's my result" to "here's why," the same gap `DuelCardSide.scores` already closed
-  // for the head-to-head card.
-  const metricEntries: [string, number][] = [
-    ['Talent', data.scores.talent],
-    ['Bench Depth', data.scores.benchDepth],
-    ['Offense', data.scores.offense],
-    ['Defense', data.scores.defense],
-    ['Spacing', data.scores.spacing],
-    ['Fit', data.scores.fit],
-    ['Rotation', data.scores.rotation],
-  ];
-  let chipX = 56;
-  const chipH = 34;
-  metricEntries.forEach(([label, value]) => {
-    ctx.font = '700 15px Arial, sans-serif';
-    const labelW = ctx.measureText(label).width;
-    ctx.font = '800 15px Arial, sans-serif';
-    const valueW = ctx.measureText(String(value)).width;
-    const chipW = labelW + valueW + 34;
-    roundedRectPath(ctx, chipX, cursorY, chipW, chipH, 17);
-    ctx.fillStyle = qualityColor(value);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.font = '700 15px Arial, sans-serif';
-    ctx.fillText(label, chipX + 14, cursorY + 22);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '800 15px Arial, sans-serif';
-    ctx.fillText(String(value), chipX + 14 + labelW + 6, cursorY + 22);
-    chipX += chipW + 10;
-  });
-  cursorY += chipH + 24;
-
-  // Starting five — headshots (or a monogram fallback, same as the app's own `Face` component),
-  // position label above, name below. This row is the actual "more detailed" ask: the text-only
-  // copy never showed the roster at all. `contentBottomY` tracks where THIS section actually ends
-  // (cursorY itself is conditional on gap/identity rendering above, so the roster table below
-  // needs its own real anchor, not a guessed constant).
-  const starters = data.starters.slice(0, 5);
-  let contentBottomY = cursorY;
-  if (starters.length > 0) {
-    const rowY = cursorY + 90;
-    const laneW = (W - 112) / starters.length;
-    const radius = 46;
-    contentBottomY = rowY + radius + 26 + 30;
-    const images = await Promise.all(starters.map((s) => {
-      const src = headshotUrl(s.name);
-      return src ? loadImage(src) : Promise.resolve(null);
-    }));
-    starters.forEach((starter, i) => {
-      const cx = 56 + laneW * i + laneW / 2;
-      const cy = rowY;
-
-      ctx.fillStyle = PALETTE.inkFaint;
-      ctx.font = '700 15px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(starter.position, cx, cy - radius - 16);
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.fillStyle = PALETTE.pill;
-      ctx.fill();
-      const img = images[i];
-      if (img) {
-        ctx.clip();
-        ctx.drawImage(img, cx - radius, cy - radius, radius * 2, radius * 2);
-      } else {
-        ctx.fillStyle = PALETTE.pillInk;
-        ctx.font = '700 26px Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(initials(starter.name), cx, cy + 2);
-        ctx.textBaseline = 'alphabetic';
-      }
-      ctx.restore();
-
-      ctx.fillStyle = PALETTE.ink;
-      ctx.font = '600 17px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(fitText(ctx, starter.name, laneW - 16), cx, cy + radius + 26);
-      ctx.textAlign = 'left';
-    });
-  }
-
-  // Full roster + rotation minutes — the actual "roster, rotacja itd" ask: the starters-with-faces
-  // row above only ever showed 5 names, never a minute, so this is the first place the card shows
-  // the other 4 roster spots and how the 48 minutes at each position are actually split.
-  if (data.roster.length > 0) {
-    const tableY = contentBottomY;
-    ctx.fillStyle = PALETTE.inkFaint;
-    ctx.font = '700 15px Arial, sans-serif';
-    ctx.fillText('ROSTER & ROTATION', 56, tableY);
-
-    const starterRows = data.roster.filter((r) => r.isStarter);
-    const benchRows = data.roster.filter((r) => !r.isStarter);
-    const colW = (W - 112) / 2;
-    const rowH = 26;
-    const drawRow = (row: ShareRosterRow, x: number, y: number) => {
-      ctx.fillStyle = PALETTE.inkFaint;
-      ctx.font = '700 13px Arial, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(row.position, x, y);
-      ctx.fillStyle = PALETTE.ink;
-      ctx.font = '600 15px Arial, sans-serif';
-      ctx.fillText(fitText(ctx, row.name, colW - 150), x + 34, y);
-      ctx.fillStyle = PALETTE.inkSoft;
-      ctx.font = '500 14px Arial, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(`${Math.round(row.minutes)}m · ${row.fga.toFixed(1)} sh`, x + colW - 34, y);
-      ctx.textAlign = 'left';
-    };
-    starterRows.forEach((row, i) => drawRow(row, 56, tableY + 30 + i * rowH));
-    benchRows.forEach((row, i) => drawRow(row, 56 + colW, tableY + 30 + i * rowH));
-  }
-
-  // Footer.
-  ctx.fillStyle = PALETTE.inkFaint;
-  ctx.font = '500 17px Arial, sans-serif';
-  ctx.fillText('🏀 Beat me? — All-Time Draft', 56, H - 32);
-
-  return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/png'));
-}
-
-/** Triggers a browser download of the built card — a throwaway `<a download>` + object URL,
- * revoked right after the click (standard pattern; nothing here persists past this call). */
-export async function downloadShareCard(data: ShareCardData, filename: string): Promise<boolean> {
-  const blob = await buildShareCardBlob(data);
-  if (!blob) return false;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  return true;
-}
-
 /**
  * 2026-09-17, user-reported live ("więcej sosu, coś jak share po zakończonym drafcie" — more
  * sauce, like the share after a finished draft): the "Challenge a friend" comparison popup's own
- * share action only ever copied a plain link — none of the visual payoff the single-team card
- * above gives a normal draft finish (gradient background, tier pill, headshots). This is that same
- * treatment applied to a head-to-head: both sides' identity/score/tier side by side, a tug-of-war
- * bar per metric, and the starting five matched slot-for-slot with faces — a real downloadable PNG
- * for the "you vs them" moment, not just a link.
+ * share action only ever copied a plain link. This gives it real visual payoff instead: both
+ * sides' identity/score/tier side by side, a tug-of-war bar per metric, and the starting five
+ * matched slot-for-slot with faces — a real downloadable PNG for the "you vs them" moment, not
+ * just a link.
+ * 2026-09-18: the single-team equivalent (`buildShareCardBlob`, a hand-coded `<canvas>` twin of
+ * `ResultsScreen.tsx`'s `ShareModal`) was removed — it kept drifting out of sync with the modal's
+ * real markup (a gradient-chip mismatch, then a roster-row overlap bug, both user-reported live)
+ * since every layout change had to be re-implemented by hand in two places. Rebuilding it on real
+ * DOM capture (e.g. `html-to-image`) instead of hand-drawn canvas is a real future fix, tracked
+ * separately rather than re-patched here again.
  */
 /** One rotation contributor's minutes at one slot — same shape as `ResultsScreen.tsx`'s own
  * `ChallengeRotationEntry`, duplicated rather than imported (that file already imports FROM this
