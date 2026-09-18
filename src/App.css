@@ -2060,43 +2060,22 @@ select {
 }
 .results-screen > .results-hero { order: -1; }
 .results-screen > .results-actions { order: 7; }
-/* 2026-09-14, user-reported live, TWICE. First pass ("ogromnie dużo miejsca na dużym ekranie,
-   można zrobić cały dashboard") put the matrix + season sim in a persistent sidebar next to the
-   team-card list. Second pass, against a real screenshot ("jesteśmy w stanie zmieścić wszystkie
-   informacje na samej górze, nie widzę sensu w rozbijaniu tego" — we can fit it all at the top, no
-   point splitting this): that sidebar cramped the matrix into far less width than its own
-   `.matchup-matrix-table` 760px floor wants, AND ran out of content long before the 16-card list
-   beside it did, reading as an unbalanced split rather than a real dashboard. `.results-top-panels`
-   (ResultsScreen.tsx) replaces it — matrix + season sim side by side in ONE full-width band right
-   under the hero, each with real room, and the team-card list goes back to full width below since
-   there's no second column competing with it any more. `order` still places everything below —
-   `display: contents` on `.results-top-panels` below the dashboard breakpoint makes it invisible to
-   layout, so its two children become real flex ITEMS of `.results-screen` itself, and these same
-   `order` values keep placing them (`order` always resolves against whichever REAL flex container
-   is actually an item's parent — `.results-top-panels` once it's a real flex row at/above the
-   breakpoint, `.results-screen` itself below it — no separate wide-mode rules needed either way). */
+/* 2026-09-14, user-reported live, TWICE (a persistent sidebar, then a shared full-width
+   `.results-top-panels` row — see git history for that full story). 2026-09-18, user-reported live
+   again ("simulate season można dać nad rotacją... dzięki temu można zmieścić matchups bez
+   potrzeby suwaka" — freeing full width removes the matrix's own horizontal scroll slider): the
+   season-sim panel that used to share this row moved into the hero's Rotation column (see
+   `seasonSimSlot` in ResultsScreen.tsx) once it became a small, fixed-size popup trigger instead
+   of an inline-growing table, so the matrix now renders alone, directly, at full width — no
+   wrapper needed any more. `order` still places every top-level piece of this screen against
+   `.results-screen`'s own flex column. */
 .results-screen .results-section-title { order: 0; }
 .results-screen .team-result { order: 5; width: 100%; }
 .results-screen .team-result.is-human-team { order: 1; }
 .results-screen .matchup-matrix-section { order: 2; }
-.results-screen .season-sim-panel { order: 3; }
 .results-screen .expand-all-controls { order: 4; }
-.results-top-panels {
-  display: contents;
-}
 @media (min-width: 1300px) {
   .results-screen { max-width: 1500px; }
-  .results-top-panels { display: flex; align-items: flex-start; gap: 20px; margin-bottom: 16px; }
-  /* The matrix wants the lion's share — `min-width: 0` lets it shrink below its own table's
-     760px floor when the viewport is tight rather than forcing this whole row wider than
-     `.results-screen`'s own max-width (same reasoning as the sidebar version this replaced: a flex
-     item's AUTOMATIC minimum size is its content's min-content width, not its `flex` shorthand,
-     unless `min-width: 0` removes that floor — `.matchup-matrix-scroll { overflow-x: auto }`,
-     unchanged, takes over showing whatever doesn't fit). Season sim is comparatively narrow content
-     (a 5-column standings table, or a playoff bracket) — a moderate fixed share reads better than
-     stretching it to match the matrix's own width. */
-  .results-top-panels > .matchup-matrix-section { flex: 1 1 0; min-width: 0; margin: 0; }
-  .results-top-panels > .season-sim-panel { flex: 0 0 420px; }
 }
 
 /* 2026-09-09: the payoff header. The player came back to this screen to see how THEIR roster did —
@@ -3459,7 +3438,7 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
    reported live, "usuń" — removed from ResultsScreen.tsx along with its CSS) — reworded rather
    than left dangling on a class that no longer exists. */
 .season-sim-panel {
-  margin-bottom: 16px;
+  margin-top: 12px;
   padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -3468,6 +3447,50 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 .season-sim-panel h3 {
   margin: 0 0 4px;
   font-size: 15px;
+}
+
+/* 2026-09-18, user-reported live ("może zamiast rozwijanej listy, niech to będzie popup" — a
+   popup instead of an inline-growing list): standings + playoff bracket used to render inline and
+   grow `.season-sim-panel` tall the moment a result existed — now they live in this overlay
+   instead, same backdrop/modal/close-button language `.challenge-compare-*` already established
+   for the Challenge-a-friend popup, just wider (a 5-column standings table for 16 teams, plus
+   `.bracket-scroll`'s own horizontal-scrolling bracket, both want more room than that narrower
+   modal). `max-height`/`overflow-y` since standings + a full bracket can run taller than the
+   viewport, unlike the shorter challenge popup. */
+.season-sim-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 60;
+}
+.season-sim-modal {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 26px 24px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--at-line, var(--border));
+  background: var(--at-paper-raised, var(--bg));
+  box-shadow: var(--at-shadow, var(--shadow));
+}
+.season-sim-modal h3 {
+  margin: 0 0 4px;
+  font-size: 19px;
+  text-align: center;
+}
+.season-sim-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  line-height: 1;
 }
 
 .season-standings-table {

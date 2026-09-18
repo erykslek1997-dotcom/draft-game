@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
@@ -370,6 +370,7 @@ function HeroResult({
   starters,
   roster,
   challenger,
+  seasonSimSlot,
 }: {
   teamName: string;
   isHuman: boolean;
@@ -395,6 +396,12 @@ function HeroResult({
   failureMode: string | null;
   starters: ShareCardStarter[];
   roster: ShareRosterRow[];
+  /** 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest empty
+   * space" — the season-sim panel can go above, next to the Rotation cards, where there's empty
+   * space): a pre-built JSX subtree from `ResultsScreen` itself (which owns all the season-sim
+   * state) rather than threading every individual piece of that state down as its own prop — the
+   * simplest way for a child this deep to render a parent-owned slot without duplicating state. */
+  seasonSimSlot?: ReactNode;
 }) {
   const [challengeCopied, setChallengeCopied] = useState(false);
   // 2026-09-17, user-reported live ("więcej sosu, coś jak share po zakończonym drafcie" — more
@@ -785,6 +792,14 @@ function HeroResult({
               );
             })}
           </div>
+          {/* 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest
+              empty space, dzięki temu można zmieścić matchups bez potrzeby suwaka" — put it above/
+              beside Rotation where there's empty space, so Matchups can fit full width without a
+              scroll slider): the Rotation cards rarely fill this column's full height, and the
+              season-sim panel is now a small fixed-size trigger (see its own docstring on
+              `seasonSimSlot`) regardless of whether a result exists, so it fits here without ever
+              growing into the huge inline table it used to become. */}
+          {seasonSimSlot}
         </div>
       </div>
       <div className="results-hero-actions">
@@ -1404,6 +1419,15 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
   // NOT cleared by re-simulating the playoffs alone from the same season — that's a real, expected
   // "same season, roll the playoffs again" use case.
   const [playoffResult, setPlayoffResult] = useState<PlayoffResult | null>(null);
+  // 2026-09-18, user-reported live ("może zamiast rozwijanej listy, niech to będzie popup, po
+  // symulacji można zamknąć i zamiast 'simulate season' w tym samym miejscu będzie 'see season
+  // results'" — a popup instead of an inline-growing list; closeable, with the trigger button
+  // relabeling itself once a result exists): the standings table + playoff bracket used to render
+  // inline and grow the whole panel tall the moment a season existed. Opens on the FIRST simulate
+  // click (so the payoff is immediate) and again on any later "See season results" click; closing
+  // it never discards `seasonStandings`/`playoffResult` — same "no re-roll once a result exists"
+  // rule as before, just now reachable without permanently occupying page space.
+  const [seasonModalOpen, setSeasonModalOpen] = useState(false);
   // 2026-08-14, results-screen redesign: 16 full team cards on one page was the single biggest
   // usability complaint (scrolling past 15 opponents to see your own team) — every card starts
   // collapsed to a one-line summary. 2026-09-09: the human's card starts collapsed too now that
@@ -1574,6 +1598,99 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
     return correction ? { ...team, rotation: correction } : team;
   }
 
+  // 2026-09-18, user-reported live (see `seasonModalOpen`'s own docstring above for the full
+  // "popup instead of inline" story, and `seasonSimSlot`'s docstring on `HeroResult` for why this
+  // whole thing is built here and handed down as one prop): the compact trigger always renders at
+  // the same size whether or not a result exists — only the modal's own presence varies — which is
+  // what lets it live inside the hero's Rotation column without ever pushing that column's height
+  // around.
+  const seasonSimSlot = (
+    <div className="season-sim-panel">
+      <h3>{seasonStandings ? 'Season results' : 'Simulate an 82-game season'}</h3>
+      <p className="player-notes-hint">
+        Rolls a full regular season, game by game, using each pairing's real projected win probability — the roll shown
+        is whichever of {SEASON_SIM_POOL_SIZE} background simulations landed closest to the typical outcome for your
+        team. Separate from the Final Power Ranking above.
+      </p>
+      <button
+        className="secondary-btn"
+        onClick={() => {
+          if (!seasonStandings) {
+            // 2026-09-14: prefers the background pool's representative pick; falls back to one
+            // direct roll on the rare chance the pool hasn't finished yet (a very fast click, or
+            // `requestIdleCallback` never firing) so the button always works either way.
+            const humanTeamId = scoredTeams.find((team) => team.isHuman)?.id;
+            const picked = seasonPool && humanTeamId
+              ? pickRepresentativeSeason(seasonPool, humanTeamId)
+              : simulateSeason(scoredTeams, matchupCache);
+            setSeasonStandings(picked);
+            setPlayoffResult(null);
+          }
+          setSeasonModalOpen(true);
+        }}
+      >
+        {seasonStandings ? '📊 See season results' : '🏀 Simulate an 82-game season'}
+      </button>
+      {seasonModalOpen && seasonStandings && (
+        <div className="season-sim-backdrop" onClick={() => setSeasonModalOpen(false)}>
+          <div
+            className="season-sim-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Season results"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button type="button" className="season-sim-close" aria-label="Close" onClick={() => setSeasonModalOpen(false)}>
+              ✕
+            </button>
+            <h3>Season results</h3>
+            <table className="at-roster-table season-standings-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Team</th>
+                  <th>W</th>
+                  <th>L</th>
+                  <th>Win%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {seasonStandings.map((row) => {
+                  const rowTeam = teamById(row.teamId);
+                  if (!rowTeam) return null;
+                  return (
+                    <tr key={row.teamId} className={rowTeam.isHuman ? 'season-standings-you' : ''}>
+                      <td>{row.rank}</td>
+                      <td>
+                        {teamLabel(rowTeam)} {rowTeam.isHuman ? '(You)' : ''}
+                      </td>
+                      <td>{row.wins}</td>
+                      <td>{row.losses}</td>
+                      <td>{(row.winPct * 100).toFixed(1)}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {/* 2026-08-19, same-day follow-up: seeded by the standings above, not the Final Power
+                Ranking — every series is genuinely played out game by game (real BO7 tallies like
+                "4-2"), not a single probability draw. Re-clicking re-rolls the playoffs alone,
+                keeping the same season standings as the seed. */}
+            {!playoffResult && (
+              <button
+                className="secondary-btn playoff-sim-btn"
+                onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings, matchupCache))}
+              >
+                🏆 Simulate the playoffs
+              </button>
+            )}
+            {playoffResult && <PlayoffBracketTree result={playoffResult} teamById={teamById} />}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     // 2026-08-16, user's own ask: same fixed-dark broadcast board as the Draft screen — see the
     // `.at-shell` token-aliasing comment in App.css for how the rest of this file's existing
@@ -1601,6 +1718,7 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
           titleOdds={leagueEvalByTeamId.get(heroRanked.team.id)?.championshipProbability ?? null}
           draftSeed={draftSeed}
           challenger={challenger}
+          seasonSimSlot={seasonSimSlot}
           identity={
             heroFit?.inputs.primaryArchetype
               ? heroFit.inputs.primaryArchetype +
@@ -1627,94 +1745,13 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
           `.results-top-panels` is `display: contents` (pure CSS, no JS) — its children become
           direct flex items of `.results-screen` again, same `order`-based placement (this file's
           own CSS, unchanged) as before any of this dashboard work existed. */}
-      <div className="results-top-panels">
-        <MatchupMatrix teams={scoredTeams} evaluations={leagueEval} focusTeamId={scoredTeams.find((team) => team.isHuman)?.id} />
-        {/* 2026-08-19, user's own idea: the Final Power Ranking above stays exactly what it always
-            was — this is a separate roll of a randomly-simulated 82-game regular season, game by
-            game, using the same real per-game win probability model the Championship bracket sim
-            below already relies on (see seasonSimulation.ts's own docstring).
-            2026-09-14, user-reported live ("chodzi mi o większą liczbę symulacji w tle żeby wynik
-            był bardziej realny"): the paragraph above used to end "re-clicking re-rolls a brand new
-            season rather than averaging toward an expected record — the user's explicit choice over
-            a many-seasons-averaged projection." That choice is deliberately REVERSED now (confirmed
-            via AskUserQuestion, this session) — the button below reveals a REPRESENTATIVE roll from
-            a background pool (`seasonPool` above) instead of one arbitrary walk, still one real
-            season with real standings, not a synthesized average. */}
-        <div className="season-sim-panel">
-          <h3>Simulate an 82-game season</h3>
-          <p className="player-notes-hint">
-            Rolls a full regular season, game by game, using each pairing's real projected win probability — the roll shown
-            is whichever of {SEASON_SIM_POOL_SIZE} background simulations landed closest to the typical outcome for your
-            team. Separate from the Final Power Ranking above.
-          </p>
-          {/* 2026-08-19, user's explicit ask ("delate resimulation button for regular season and
-              playoffs"): once rolled, that's the season — no re-roll button once a result exists,
-              for either this or the playoff button below. */}
-          {!seasonStandings && (
-            <button
-              className="secondary-btn"
-              onClick={() => {
-                // 2026-09-14: prefers the background pool's representative pick; falls back to one
-                // direct roll on the rare chance the pool hasn't finished yet (a very fast click,
-                // or `requestIdleCallback` never firing) so the button always works either way.
-                const humanTeamId = scoredTeams.find((team) => team.isHuman)?.id;
-                const picked = seasonPool && humanTeamId
-                  ? pickRepresentativeSeason(seasonPool, humanTeamId)
-                  : simulateSeason(scoredTeams, matchupCache);
-                setSeasonStandings(picked);
-                setPlayoffResult(null);
-              }}
-            >
-              🏀 Simulate an 82-game season
-            </button>
-          )}
-          {seasonStandings && (
-            <>
-              <table className="at-roster-table season-standings-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Team</th>
-                    <th>W</th>
-                    <th>L</th>
-                    <th>Win%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {seasonStandings.map((row) => {
-                    const rowTeam = teamById(row.teamId);
-                    if (!rowTeam) return null;
-                    return (
-                      <tr key={row.teamId} className={rowTeam.isHuman ? 'season-standings-you' : ''}>
-                        <td>{row.rank}</td>
-                        <td>
-                          {teamLabel(rowTeam)} {rowTeam.isHuman ? '(You)' : ''}
-                        </td>
-                        <td>{row.wins}</td>
-                        <td>{row.losses}</td>
-                        <td>{(row.winPct * 100).toFixed(1)}%</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {/* 2026-08-19, same-day follow-up: seeded by the standings above, not the Final Power
-                  Ranking — every series is genuinely played out game by game (real BO7 tallies like
-                  "4-2"), not a single probability draw. Re-clicking re-rolls the playoffs alone,
-                  keeping the same season standings as the seed. */}
-              {!playoffResult && (
-                <button
-                  className="secondary-btn playoff-sim-btn"
-                  onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings, matchupCache))}
-                >
-                  🏆 Simulate the playoffs
-                </button>
-              )}
-              {playoffResult && <PlayoffBracketTree result={playoffResult} teamById={teamById} />}
-            </>
-          )}
-        </div>
-      </div>
+      {/* 2026-09-18, user-reported live ("simulate season można dać nad rotacją... dzięki temu
+          można zmieścić matchups bez potrzeby suwaka" — freeing full width removes the need for
+          the matrix's own horizontal scroll slider): the season-sim panel that used to share this
+          row moved into the hero's Rotation column (see `seasonSimSlot` above) once it became a
+          small, fixed-size popup trigger instead of an inline-growing table — the matrix no longer
+          has anything to share this row with, so it renders alone at full width. */}
+      <MatchupMatrix teams={scoredTeams} evaluations={leagueEval} focusTeamId={scoredTeams.find((team) => team.isHuman)?.id} />
       <h2 className="results-section-title">Final team ranking</h2>
       <div className="expand-all-controls">
         <button className="secondary-btn" onClick={() => setExpandedTeamIds(new Set(teams.map((t) => t.id)))}>
