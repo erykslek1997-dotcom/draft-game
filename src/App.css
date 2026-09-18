@@ -2649,6 +2649,16 @@ select {
   margin: 0;
 }
 .share-modal-identity b { color: var(--text); }
+/* 2026-09-18, user-reported live ("można dodać tu podstawowe metryki" — the basic metrics could
+   go here too): the same 7 `ScoreChip`s the hero's own "Team profile" row already shows, wrapped
+   to fit this narrower modal instead of the hero's own single wide row. */
+.share-modal-scores {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 2px;
+}
 .share-modal-copy {
   margin-top: 12px;
   width: 100%;

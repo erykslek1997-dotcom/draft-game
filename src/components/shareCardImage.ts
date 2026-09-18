@@ -42,6 +42,12 @@ export interface ShareCardData {
   identity: string | null;
   starters: ShareCardStarter[];
   roster: ShareRosterRow[];
+  /** 2026-09-18, user-reported live ("można dodać tu podstawowe metryki" — the basic metrics
+   * could go here too): the same 7 `ScoreChip` values the hero's own "Team profile" row already
+   * shows for this team — this card led with only the headline Overall/Title-odds pair before,
+   * with no path from "here's my result" to "here's WHY," the same gap the duel card's own
+   * `DuelCardSide.scores` already closed for the head-to-head case. */
+  scores: { talent: number; benchDepth: number; offense: number; defense: number; spacing: number; fit: number; rotation: number };
 }
 
 /** 1 -> "1st", 2 -> "2nd", 11 -> "11th" — same rule `ResultsScreen.tsx`'s own local `ordinal`
@@ -97,6 +103,22 @@ const TIER_COLORS: Record<1 | 2 | 3 | 4 | 5 | 6, { bg: string; fg: string }> = {
   5: { bg: 'rgba(118,161,196,0.40)', fg: '#ffffff' },
   6: { bg: '#76a1c4', fg: '#ffffff' },
 };
+
+/** Duplicated from `ResultsScreen.tsx`'s own `qualityColor` (not exported — same "small enough
+ * that a shared-utility module would be more ceremony than the copy" call already made for
+ * `ordinal`/`initials`/`resultTierLabel` in this file), so a metric chip on the PNG reads the same
+ * green-to-red gradient the modal's own `ScoreChip`s already use for the identical numbers.
+ * 2026-09-18, user-reported live ("wyskakujący i pobierany png powinien być taki sam" — the popup
+ * and the downloaded PNG should look the same): these metric chips used to render as plain grey
+ * pills with no value-quality signal at all, the one thing that made this row's colors disagree
+ * with the modal it sits right next to on screen. */
+function qualityColor(v: number): string {
+  const t = Math.max(0, Math.min(100, v)) / 100;
+  const hue = 2 + t * 146;
+  const saturation = 42 + Math.abs(t - 0.5) * 34;
+  const lightness = 30 + t * 12;
+  return `hsl(${hue} ${saturation}% ${lightness}%)`;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -224,6 +246,41 @@ export async function buildShareCardBlob(data: ShareCardData): Promise<Blob | nu
     ctx.fillText(fitText(ctx, chipText, chipW - 32), 72, cursorY + 24);
     cursorY += 56;
   }
+
+  // 2026-09-18, user-reported live ("można dodać tu podstawowe metryki" — the basic metrics
+  // could go here too): the same 7 numbers the hero's own "Team profile" ScoreChip row already
+  // shows, as a row of small pills — this card used to lead with only Overall/Title-odds, no path
+  // from "here's my result" to "here's why," the same gap `DuelCardSide.scores` already closed
+  // for the head-to-head card.
+  const metricEntries: [string, number][] = [
+    ['Talent', data.scores.talent],
+    ['Bench Depth', data.scores.benchDepth],
+    ['Offense', data.scores.offense],
+    ['Defense', data.scores.defense],
+    ['Spacing', data.scores.spacing],
+    ['Fit', data.scores.fit],
+    ['Rotation', data.scores.rotation],
+  ];
+  let chipX = 56;
+  const chipH = 34;
+  metricEntries.forEach(([label, value]) => {
+    ctx.font = '700 15px Arial, sans-serif';
+    const labelW = ctx.measureText(label).width;
+    ctx.font = '800 15px Arial, sans-serif';
+    const valueW = ctx.measureText(String(value)).width;
+    const chipW = labelW + valueW + 34;
+    roundedRectPath(ctx, chipX, cursorY, chipW, chipH, 17);
+    ctx.fillStyle = qualityColor(value);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = '700 15px Arial, sans-serif';
+    ctx.fillText(label, chipX + 14, cursorY + 22);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 15px Arial, sans-serif';
+    ctx.fillText(String(value), chipX + 14 + labelW + 6, cursorY + 22);
+    chipX += chipW + 10;
+  });
+  cursorY += chipH + 24;
 
   // Starting five — headshots (or a monogram fallback, same as the app's own `Face` component),
   // position label above, name below. This row is the actual "more detailed" ask: the text-only

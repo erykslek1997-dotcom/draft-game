@@ -830,6 +830,15 @@ function HeroResult({
           failureMode={failureMode}
           starters={starters}
           roster={roster}
+          scores={{
+            talent: Math.round(talentScore),
+            benchDepth: Math.round(benchDepthScore),
+            offense: Math.round(offenseScore),
+            defense: Math.round(defenseScore),
+            spacing: Math.round(spacingScore),
+            fit: Math.round(fitScore),
+            rotation: Math.round(rotationScore),
+          }}
         />
       )}
     </header>
@@ -855,6 +864,7 @@ function ShareModal({
   failureMode,
   starters,
   roster,
+  scores,
 }: {
   onClose: () => void;
   teamName: string;
@@ -869,6 +879,10 @@ function ShareModal({
   failureMode: string | null;
   starters: ShareCardStarter[];
   roster: ShareRosterRow[];
+  /** 2026-09-18, user-reported live ("można dodać tu podstawowe metryki" — the basic metrics
+   * could go here too): the same 7 `ScoreChip` values the hero's own "Team profile" row already
+   * shows for this team. */
+  scores: { talent: number; benchDepth: number; offense: number; defense: number; spacing: number; fit: number; rotation: number };
 }) {
   // 2026-09-12, user-reported live ("tu powinna się generować grafika do zapisu jako png, i
   // bardziej szczegółowa") — a real downloadable PNG, built by `shareCardImage.ts` from this exact
@@ -889,7 +903,7 @@ function ShareModal({
     // no fallback share action left at all.
     try {
       const ok = await downloadShareCard(
-        { teamName, rank, fieldSize, tier, overall, titleOdds, gap, topOverall, identity, starters, roster },
+        { teamName, rank, fieldSize, tier, overall, titleOdds, gap, topOverall, identity, starters, roster, scores },
         `all-time-draft-${teamName.replace(/\s+/g, '-').toLowerCase()}.png`,
       );
       setPngState(ok ? 'done' : 'error');
@@ -947,6 +961,15 @@ function ShareModal({
             {failureMode}
           </p>
         )}
+        <div className="share-modal-scores">
+          <ScoreChip label="Talent" value={scores.talent} />
+          <ScoreChip label="Bench Depth" value={scores.benchDepth} />
+          <ScoreChip label="Offense" value={scores.offense} />
+          <ScoreChip label="Defense" value={scores.defense} />
+          <ScoreChip label="Spacing" value={scores.spacing} />
+          <ScoreChip label="Fit" value={scores.fit} />
+          <ScoreChip label="Rotation" value={scores.rotation} />
+        </div>
         {roster.length > 0 && (() => {
           // 2026-09-12, user-reported live (screenshot of this exact modal): the roster section
           // was a plain two-column text grid with no faces at all — the PNG `shareCardImage.ts`
