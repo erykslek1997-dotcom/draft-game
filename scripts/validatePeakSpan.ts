@@ -28,7 +28,7 @@ interface Case {
 }
 
 const CASES: Case[] = [
-  { name: 'LeBron James', accept: ['2011-13', '2012-14', '2013-15'], note: 'engine 2008-10: Cleveland D box activity + DARKO, not the Miami peak' },
+  { name: 'LeBron James', accept: ['2010-12', '2011-13', '2012-14', '2013-15'], note: 'engine 2008-10: Cleveland D box activity + DARKO, not the Miami peak' },
   { name: 'Michael Jordan', accept: ['1987-89', '1988-90', '1989-91', '1990-92'] },
   { name: 'Kareem Abdul-Jabbar', accept: ['1970-72', '1971-73', '1972-74', '1975-77'] },
   { name: 'Tim Duncan', accept: ['2000-02', '2001-03', '2002-04'] },
@@ -70,7 +70,7 @@ const CASES: Case[] = [
 /** playerCard.ts `NAMED_LEAD_SPAN` — the card leads with this span instead of the engine's
  * `bestSpan` for these players. Keep in sync with the source of truth in playerCard.ts. */
 const NAMED_LEAD_SPAN: Record<string, string> = {
-  'LeBron James': '2012-14',
+  'LeBron James': '2010-12',
   'Chris Paul': '2007-09',
   'Charles Barkley': '1989-91',
   'Tracy McGrady': '2001-03',

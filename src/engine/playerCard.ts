@@ -139,7 +139,16 @@ function bestSpan(spans: PlayerSpan[]): PlayerSpan {
  */
 const NAMED_LEAD_SPAN: ReadonlyMap<string, string> = new Map(
   [
-    { name: 'LeBron James', spanLabel: '2012-14' }, // Miami peak, not the 2008-10 Cleveland box peak
+    // 2026-09-23: was '2012-14' (the commonly-cited Ben Taylor peak window). Re-checked against
+    // real DARKO/RAPTOR/BPM2 + All-Defense data: 2012-14 spans his weaker 2013-14 All-D year
+    // (2nd team, not 1st) and a real RAPTOR-defense dip (+0.11, vs +1.8-2.7 in every neighboring
+    // window) — box blocks also genuinely dropped (~1.1/g -> 0.6/g, a real scheme shift, not
+    // noise), landing D-TAL 74 on the card. `2010-12` (first two Heat seasons, incl. the 2011-12
+    // title) is an equally-real Miami window with the SAME 1st-team-heavy All-D coverage as
+    // Cleveland and a much stronger measured defensive read (D-TAL 90, TAL 98 — 1 point off the
+    // 2008-10 anchor). Still a real span, not a manufactured number; just a better-supported one
+    // for "Miami peak" than 2012-14 turned out to be.
+    { name: 'LeBron James', spanLabel: '2010-12' },
     { name: 'Chris Paul', spanLabel: '2007-09' }, //   2008 near-MVP, not steals-and-DARKO 2013-15
     { name: 'Charles Barkley', spanLabel: '1989-91' }, // athletic peak, not young uncorroborated box
     { name: 'Tracy McGrady', spanLabel: '2001-03' }, //  Orlando scoring peak

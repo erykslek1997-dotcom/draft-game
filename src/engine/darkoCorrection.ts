@@ -2,6 +2,7 @@ import type { PlayerSpan } from '../data/schema';
 import { computeDefensiveImpact } from './defense';
 import { ddpmCoverageForSpan, raptorCoverageForSpan, matchupCoverageForSpan, bpm2CoverageForSpan } from './blendedDefenseLookup';
 import { spanEndYears } from './era';
+import { individualDefenseRate } from './defensiveAccolades';
 import coefficients from '../data/awards/correctionCoefficients.json';
 
 /**
@@ -242,13 +243,103 @@ function maximumDefenseBonus(span: PlayerSpan): number {
  * swing TAL, rather than the shape of the reaction curve being changed.
  */
 
+/**
+ * Coverage-weighted blend of the RAW real values themselves (not excess-over-expectation) —
+ * same shape as `blendedExcess`, minus the BPM2 fallback (that population is a different scale
+ * this floor was never validated against, see `realValueBonusFloorFactor`'s own docstring).
+ */
+function blendedRealValue(span: PlayerSpan): number | null {
+  const parts: { value: number; count: number }[] = [];
+  const ddpmCov = ddpmCoverageForSpan(span);
+  if (ddpmCov) parts.push({ value: ddpmCov.avg, count: ddpmCov.count });
+  const raptorCov = raptorCoverageForSpan(span);
+  if (raptorCov) parts.push({ value: raptorCov.avg, count: raptorCov.count });
+  const matchupCov = matchupCoverageForSpan(span);
+  if (matchupCov) parts.push({ value: matchupCov.avg, count: matchupCov.count });
+  if (parts.length === 0) return null;
+  const totalWeight = parts.reduce((sum, p) => sum + p.count, 0);
+  return parts.reduce((sum, p) => sum + p.value * p.count, 0) / totalWeight;
+}
+
+/**
+ * 2026-09-23, user-reported live (Curry reads D-TAL 74-85 off a `darkoDefenseBonus` of 9-12,
+ * near/at cap): `blendedExcess` rewards a real value merely beating box-score EXPECTATION, and
+ * `computeDefensiveImpact` sits at the low end for a low-activity guard, so its own predicted
+ * baseline is close to zero — meaning a real value that is only mildly positive (Curry's ddpm 1 /
+ * raptor 2.27, blended ~1.6; the project's own reference point for "average" is DDPM ~0, Chris
+ * Paul's case above) reads as a huge relative surprise and nearly saturates the same cap Kevin
+ * Garnett's real +3/+4.27 and Tim Duncan's +5/+3.86 earn. Those two motivating cases are not
+ * ambiguous on any absolute scale; Curry's is. Confirmed this is a real, structural coupling, not
+ * a one-off: reducing ANY box-formula component (roleWeight, rebounding) to fix a DIFFERENT
+ * over-crediting problem lowers `computeDefensiveImpact`, which lowers the expectation, which
+ * INCREASES this bonus for anyone with real coverage — the two mechanisms fight each other by
+ * construction. This floor breaks that coupling by gating on the blended REAL value directly
+ * (ramped, not a cliff): the bonus phases out below `REAL_VALUE_BONUS_FLOOR` regardless of how
+ * large the box-relative excess reads, and is completely unaffected by any future box-formula
+ * change. Scoped to real-tracking sources only (DARKO/RAPTOR/matchup) — BPM2-only spans need
+ * their own floor on BPM2's own scale, see `BPM2_ONLY_BONUS_FLOOR`/`BPM2_ONLY_BONUS_FULL` below.
+ * (An earlier same-day note comparing Barkley's raw BPM2 2.35 against Duncan's 2.24 to argue this
+ * couldn't separate deserving from questionable cases was comparing the wrong players — Duncan
+ * has real ddpm/raptor coverage and never actually uses BPM2 for his own bonus at all. Against
+ * players who genuinely rely on BPM2 alone, the separation is clean: see below.)
+ */
+const REAL_VALUE_BONUS_FLOOR = 1.0;
+const REAL_VALUE_BONUS_FULL = 2.5;
+
+/**
+ * 2026-09-23, "teraz dziadków" — the same coupling fix for the BPM2-only (mostly pre-1997)
+ * population `REAL_VALUE_BONUS_FLOOR` explicitly doesn't cover. Checked directly against players
+ * who genuinely have zero DARKO/RAPTOR/matchup coverage (not Duncan, who has real coverage and
+ * never touches BPM2 for his own bonus): Magic Johnson 2.10, Charles Barkley 2.35 — both clearly
+ * below Kareem Abdul-Jabbar's 4.31 (real, corroborated by a genuine 0.45 All-Defensive accolade
+ * rate) on the identical scale. A floor here separates them cleanly. Scoped to spans fully WITHIN
+ * the stocks-tracked era (`missingStocksShare === 0`) only, same scoping `UNCONFIRMED_BPM2_ONLY_MAX_BONUS`
+ * already uses — pre-1974 spans (Russell, Wilt) run through the separate pre-stocks evidence-floor
+ * widening instead, and both have their own named D-TAL floors regardless (99, 84), so this can
+ * never touch them either way.
+ */
+const BPM2_ONLY_BONUS_FLOOR = 1.0;
+const BPM2_ONLY_BONUS_FULL = 4.0;
+/**
+ * 2026-09-23, follow-up same day: the floor above, checked directly against the reference suite,
+ * cost Jrue Holiday's real 2017-19 peak (blended real ~1.6, same modest range as Curry's — real
+ * defense across many sources that each individually read unremarkable) despite his genuine
+ * All-Defensive selections in that window. Curry (accoladeRate 0 on every span) and Jrue
+ * (accoladeRate 0.6) have near-identical raw blended values, so the raw number alone can't
+ * separate a real, independently-recognized plus defender whose per-source excess is modest from
+ * a player with no such recognition at all — accoladeRate is exactly that missing signal.
+ * Whichever is more generous wins, same one-directional shape as every other floor in this file:
+ * real accolade recognition can rescue a modest raw reading, but a raw reading already above
+ * `REAL_VALUE_BONUS_FULL` never needs it.
+ */
+function ramp(value: number, floor: number, full: number): number {
+  if (value >= full) return 1;
+  return Math.max(0, (value - floor) / (full - floor));
+}
+
+function realValueBonusFactor(span: PlayerSpan): number {
+  const real = blendedRealValue(span);
+  if (real !== null) {
+    return Math.max(ramp(real, REAL_VALUE_BONUS_FLOOR, REAL_VALUE_BONUS_FULL), individualDefenseRate(span));
+  }
+  // No DARKO/RAPTOR/matchup coverage at all. Pre-1974 spans keep their own separate evidence-
+  // floor widening (`maximumDefenseBonus`) untouched — this only gates the stocks-tracked-era
+  // BPM2-only population.
+  const years = spanEndYears(span.spanLabel);
+  const missingStocksShare = years.length === 0 ? 0 : years.filter((year) => year < FIRST_OFFICIAL_STOCKS_END_YEAR).length / years.length;
+  if (missingStocksShare > 0) return 1;
+  const bpm2Cov = bpm2CoverageForSpan(span);
+  if (!bpm2Cov) return 1;
+  return Math.max(ramp(bpm2Cov.avg, BPM2_ONLY_BONUS_FLOOR, BPM2_ONLY_BONUS_FULL), individualDefenseRate(span));
+}
+
 /** Extra defense-component points for `span`, given real defense data — 0 if neither DARKO nor
  * RAPTOR covers this player/span, or if real defense doesn't exceed the box-score expectation
  * (this correction never subtracts). */
 export function darkoDefenseBonus(span: PlayerSpan): number {
   const excess = blendedExcess(span);
   if (excess === null) return 0;
-  return excess > 0 ? Math.min(maximumDefenseBonus(span), excess * EXCESS_TO_BONUS_SCALE) : 0;
+  return excess > 0 ? Math.min(maximumDefenseBonus(span), excess * EXCESS_TO_BONUS_SCALE) * realValueBonusFactor(span) : 0;
 }
 
 /** The mirror-image case: real DARKO data confirming the box score *overestimates* defensive

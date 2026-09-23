@@ -244,8 +244,15 @@ check(
   'Jrue receives POA credit from his curated secondary defensive profile instead of Ray Allen',
 );
 check(
-  multiProfileCohesion.wingProvider === 'LeBron James',
-  'LeBron receives credible wing coverage from his curated secondary defensive profile',
+  // 2026-09-23: was `=== 'LeBron James'`. LeBron's 2015-17 span is tagged `Helper` (uncorroborated —
+  // no All-Defense, no real DARKO/BPM2 coverage for these seasons), so lowering
+  // `UNCORROBORATED_CEILING` (defensiveTalent.ts, 78 -> 58, user ask re: Magic/Barkley) capped his
+  // D-TAL 75 -> 60. Mobley's Switch Big secondary (D-TAL 81, real corroboration) now out-scores
+  // LeBron's diminished Wing Stopper secondary for the wing slot — still the exact mechanism this
+  // check exists to verify (a curated SECONDARY role earning real credit over a naive primary-tag
+  // read), just demonstrated by a different player now that the ceiling change moved the ranking.
+  multiProfileCohesion.wingProvider === 'Evan Mobley',
+  'Mobley receives credible wing coverage from his curated secondary defensive profile',
 );
 check(
   // 2026-09-07: was `=== 'Evan Mobley'`. That only held because Wilt 1966-68 read D-TAL 71 (the

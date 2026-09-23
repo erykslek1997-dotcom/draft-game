@@ -38,12 +38,29 @@ const ALLSTAR_FLOOR_RV_WITH_ALL_NBA = 4.0;
 const SUSTAINED_BAR = 3.0;
 const SUSTAINED_MIN_SPANS = 3;
 
+/**
+ * 2026-09-23, D-TAL->TAL bridge follow-up ("pre-1997 era reads" — see [[dtal_tal_bridge_shipped]]):
+ * `isModernEra` is really "does DARKO cover this span," not "is the underlying value reliable" —
+ * `blendedRealValueForSpan`'s own docstring cross-validates historicalApm/PIPM at r=0.736 and
+ * treats them as real measured sources independent of DARKO, but this floor's gate threw all of
+ * that away for any span DARKO doesn't reach (roughly pre-2014), which is most of Cousy/Frazier/
+ * Bing/Mikan/Macauley/Cowens/Lanier's careers. A prior attempt to lift the gate globally was
+ * REJECTED (measured: 47 spans move, reaching Cousy/Schayes/Bill Russell/Oscar Robertson, touching
+ * Taylor/GOAT-validated eras) — but that attempt also let `bpm2-fallback` rows through, which are
+ * this project's own disclosed LOW-CONFIDENCE similarity estimates, especially pre-1974. This
+ * function instead admits `measured-blend` spans (real historicalApm/PIPM, whether or not DARKO
+ * also happens to contribute) while still excluding `bpm2-fallback` outright — a real measured
+ * source shouldn't need DARKO specifically to count as real. */
+function eligibleForFloor(rv: { isModernEra: boolean; source: 'measured-blend' | 'bpm2-fallback' }): boolean {
+  return rv.isModernEra || rv.source === 'measured-blend';
+}
+
 const sustained = new Set<string>();
 {
   const counts = new Map<string, number>();
   for (const s of players) {
     const rv = blendedRealValueForSpan(s);
-    if (rv && rv.isModernEra && rv.value >= SUSTAINED_BAR) {
+    if (rv && eligibleForFloor(rv) && rv.value >= SUSTAINED_BAR) {
       const k = normalizePlayerName(s.playerName);
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }
@@ -56,7 +73,7 @@ export type RealValueFloor = Extract<OverallTier, 'All-star' | 'Starter'> | null
 export function realValueTierFloor(span: PlayerSpan): RealValueFloor {
   if (!sustained.has(normalizePlayerName(span.playerName))) return null;
   const rv = blendedRealValueForSpan(span);
-  if (!rv || !rv.isModernEra) return null;
+  if (!rv || !eligibleForFloor(rv)) return null;
   const allStarBar = madeAllNbaInSpan(span.playerName, span.spanLabel)
     ? ALLSTAR_FLOOR_RV_WITH_ALL_NBA
     : ALLSTAR_FLOOR_RV;

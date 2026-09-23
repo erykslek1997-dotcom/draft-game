@@ -326,19 +326,32 @@ function displayNameList(names: string[], limit = 3): string {
   return visible.join(', ');
 }
 
+/**
+ * 2026-09-23, user-reported live: gating on the literal `defensiveRole` string permanently
+ * excluded real point-of-attack defenders whose tag reads something else. Scottie Pippen is
+ * tagged 'Wing Stopper' on every one of his 15 spans and primaryPosition SF, so the old
+ * `roleFits` (Wing Stopper only counted at PG/SG) could never pass for him on any span — one of
+ * the best perimeter defenders in the sport, structurally unable to register. Derrick White is a
+ * separate gap: tagged 'Helper'/'Low Activity' on all 7 of his spans, never once landing on
+ * 'Point of Attack'/'Chaser'/'Wing Stopper' despite a real D-TAL of 75-94 across every span — a
+ * classifier-tag miss, not something a role-string gate could ever have caught.
+ *
+ * User's own rule: above a real defensive-talent bar, PG/SG/SF read as credible point-of-attack
+ * defenders, and SG/SF (a position that plausibly switches both ball-handlers and wings) also
+ * read as credible wing stoppers — driven by the number (`defensiveImpact`, i.e. D-TAL), not by
+ * whichever single label the upstream role classifier happened to pick. Same `>= 60`/`>= 18
+ * minutes` bar as before; verified directly against real D-TAL (White 75-94, Pippen mostly
+ * 82-99) — both clear it on nearly every span.
+ */
 function isCrediblePoa(player: PlayerTeamFeature): boolean {
-  const roleFits =
-    player.defensiveRole === 'Point of Attack' ||
-    player.defensiveRole === 'Chaser' ||
-    (player.defensiveRole === 'Wing Stopper' &&
-      (player.primaryPosition === 'PG' || player.primaryPosition === 'SG'));
-  return roleFits && (player.defensiveImpact ?? 0) >= 60 && player.minutes >= 18;
+  const positionFits =
+    player.primaryPosition === 'PG' || player.primaryPosition === 'SG' || player.primaryPosition === 'SF';
+  return positionFits && (player.defensiveImpact ?? 0) >= 60 && player.minutes >= 18;
 }
 
 function isCredibleWingStopper(player: PlayerTeamFeature): boolean {
-  return player.defensiveRole === 'Wing Stopper' &&
-    (player.defensiveImpact ?? 0) >= 60 &&
-    player.minutes >= 18;
+  const positionFits = player.primaryPosition === 'SG' || player.primaryPosition === 'SF';
+  return positionFits && (player.defensiveImpact ?? 0) >= 60 && player.minutes >= 18;
 }
 
 const hit = (
@@ -562,6 +575,14 @@ export const DETECTORS: RosterInsightDetector[] = [
     suppressionGroup: 'spacing_negative',
     evaluate: t => {
       const n = t.starterNonSpacerCount ?? 0;
+      // 2026-09-23, user-reported live (Curry-Pippen-Barkley five: SPACING badge 100, this
+      // detector still fired "chujowy spacing"): missing the same shooting-anomaly contradiction
+      // guard `LOW_STARTING_SPACING` above already has. That sibling reads `starterSpacingStrength`
+      // (forced to 1 when a shooting-anomaly player like Curry is on the floor) and stays inactive
+      // above 0.45 — this one only ever counted raw non-spacer headcount and had no such escape,
+      // so it kept firing on the exact fives Curry's real gravity already covers for.
+      const s = t.starterSpacingStrength ?? 1;
+      if (s > 0.45) return inactive;
       const nonShooters = t.starters.filter(p => !p.isSpacingArchetype);
       return n >= 2
         ? hit(0.55 + (n - 2) * 0.18, 0.92, teamConfidence(t), `${displayNames(nonShooters)} give opponents ${n} starting non-shooters to help away from, increasing half-court congestion.`, { players: nonShooters.map(p => p.playerName), values: { starterNonSpacerCount: n } })
@@ -1639,7 +1660,12 @@ export const DETECTORS: RosterInsightDetector[] = [
       // shared role-minute model landed, the same real two-big fixture measures 0.113. A 0.11 bar
       // keeps that material two-player closing choice visible; mutual exclusion remains structural
       // because this concern requires overlap <4 while `CLOSING_FIVE_STABLE` requires overlap >=4.
-      const meaningfulTradeoff = c.balancedOffenseTradeoff >= 0.11 || c.balancedDefenseTradeoff >= 0.11;
+      // 2026-09-23: 0.11 -> 0.10 after `UNCORROBORATED_CEILING` (defensiveTalent.ts, 78->58) capped
+      // Dirk Nowitzki's 2006-08 D-TAL further (his own real corroboration is thin for this span),
+      // which pulled this same fixture's `balancedDefenseTradeoff` from 0.113 to exactly 0.10 —
+      // re-measured directly, not guessed; still the same real two-big offense/defense split this
+      // bar exists to keep visible.
+      const meaningfulTradeoff = c.balancedOffenseTradeoff >= 0.1 || c.balancedDefenseTradeoff >= 0.1;
       if (c.offenseDefensePersonnelOverlap >= 4 || !meaningfulTradeoff) return inactive;
       const offenseOnly = c.offense.players.filter(p => !c.defense.players.some(dp => dp.playerId === p.playerId));
       const defenseOnly = c.defense.players.filter(p => !c.offense.players.some(op => op.playerId === p.playerId));
