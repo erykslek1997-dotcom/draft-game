@@ -174,12 +174,24 @@ const DISPLAY_EXTRA_CAP = 26;
  * lifts those — and (b) >=2 tracking sources each clearing +1.0 excess, the same corroboration
  * bar that governs the additive agreement cap. Never subtracts.
  */
+/**
+ * 2026-09-23, "walidacja" investigation (adjacent spans, near-flat box stats, big D-TAL swing):
+ * `strongPositiveSourceCount < DISPLAY_EXTRA_MIN_SOURCES` used to be a hard 0/1 gate — Dirk
+ * Nowitzki's box impact barely moves across 2009-11/2010-12/2011-13 (14.1/12.3/12.6) but D-TAL
+ * read 34/56/29, because only 2010-12 happened to clear 2 strong-agreeing sources (its neighbors
+ * each had exactly 1). Ramping the gate by `strongPositiveSourceCount / DISPLAY_EXTRA_MIN_SOURCES`
+ * (0 sources -> 0%, 1 -> 50%, 2+ -> 100%, same cap/scale otherwise) turns that into 46/56/37 —
+ * still tracks each span's own real signal strength (2011-13's blendedExcess IS genuinely lower
+ * than 2010-12's), just without the artificial cliff from crossing an integer source-count line.
+ */
 function displayExtraDefenseBonus(span: PlayerSpan): number {
   if (individualDefenseRate(span) > 0) return 0;
   const detail = realDefenseExcessDetail(span);
   if (!detail || !detail.hasTrackingCoverage) return 0;
-  if (detail.blendedExcess <= 0 || detail.strongPositiveSourceCount < DISPLAY_EXTRA_MIN_SOURCES) return 0;
-  const target = Math.min(DISPLAY_EXTRA_CAP, detail.blendedExcess * DISPLAY_EXTRA_SCALE);
+  if (detail.blendedExcess <= 0) return 0;
+  const sourceRamp = Math.min(1, detail.strongPositiveSourceCount / DISPLAY_EXTRA_MIN_SOURCES);
+  if (sourceRamp <= 0) return 0;
+  const target = Math.min(DISPLAY_EXTRA_CAP, detail.blendedExcess * DISPLAY_EXTRA_SCALE) * sourceRamp;
   return Math.max(0, target - darkoDefenseBonus(span));
 }
 
