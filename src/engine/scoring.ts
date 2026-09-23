@@ -686,6 +686,30 @@ function eliteOffensiveEngineFloorContribution(team: Team): number {
   return ELITE_OFFENSIVE_ENGINE_FLOOR * (engineAssignment.minutes / STARTER_MINUTES);
 }
 
+/**
+ * 2026-09-23, user-reported ("słaby center w ofensywie - cap na offense z lekkim gradientem",
+ * then "tę zasadę można przenieść na inne pozycje"): a starting player with real offensive
+ * limitations (O-TAL below `LOW_OFFENSE_BIG_OTAL_CEILING`) at ANY of the five slots shouldn't let
+ * the blended offense score climb unchecked — but a hard flat cap felt too static, so this is a
+ * gradient instead: the user's own worked example (raw ~90 -> 83, ~87 -> 82, ~85 -> 81) fits a
+ * line, `raw*0.4 + 47`, floored at 80 below its own crossover (~82.5) so a modest raw score still
+ * reads a flat 80, not something dragged under it. `Math.min(raw, ...)` means this only ever
+ * pulls DOWN — a team whose raw blend is already below 80 is untouched, since there's nothing to
+ * cap. Originally scoped to `primaryPosition === 'C'` only (matching the defensive-engine-floor
+ * check above's own scope); widened to all five starter slots at the user's explicit follow-up —
+ * the 75-point bar reads as "not a real all-time offensive threat," which is exactly as fair a
+ * question for a starting PG/wing as it is for a center, not something specific to size.
+ */
+function weakOffensiveCenterCap(raw: number): number {
+  return Math.min(raw, Math.max(80, raw * 0.4 + 47));
+}
+
+function hasWeakOffensiveStarter(team: Team): boolean {
+  return primaryStarters(team).some(
+    ({ player, minutes }) => minutes > 0 && computeOffensiveTalent(player) < LOW_OFFENSE_BIG_OTAL_CEILING,
+  );
+}
+
 /** Single source of truth for the weighted blend — `offenseScore` (the number every other
  * consumer reads) and `offenseScoreBreakdown` (the UI's per-dimension view) both build on this so
  * the two can never drift apart. */
@@ -699,7 +723,8 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
   const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus));
-  const score = Math.round(Math.max(blended, eliteOffensiveEngineFloorContribution(team)));
+  const cappedBlended = hasWeakOffensiveStarter(team) ? weakOffensiveCenterCap(blended) : blended;
+  const score = Math.round(Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)));
   return { ...components, score };
 }
 
