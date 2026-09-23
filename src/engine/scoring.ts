@@ -14,6 +14,7 @@ import {
 } from './spacing';
 import { rimPressureTeam } from './rimPressure';
 import { playmakingScoreForPlayer } from './playmakingLookup';
+import { LOW_OFFENSE_BIG_OTAL_CEILING, LOW_USAGE_BIG_FGA_CEILING } from './aiDrafter';
 import { isNamedPgEligible } from './pgEligibility';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { maxSustainableMinutes } from './durability';
@@ -635,13 +636,51 @@ export function offensiveCohesion(team: Team): OffensiveCohesionResult {
  * existing mechanics) is likewise untouched or only lifted the remaining gap to the floor.
  */
 const ELITE_OFFENSIVE_ENGINE_FLOOR = 72;
+
+/**
+ * 2026-09-23, user ("defensywni centrzy zbyt op - zbyt mało zaniżają ofensywę... brak elitarnego
+ * playmakera obok defensywnego centra = spadek w ataku"): the "cheap because it isn't an
+ * offense" low-usage defensive anchor `lowUsageBigMalus` (aiDrafter.ts) already targets for
+ * draft-value reasons — reused directly rather than a second copy of the same three-condition
+ * profile. `fga`/`niski o-tal` alone isn't enough by the user's own follow-up: a low-usage,
+ * low-O-TAL big is only genuinely "needs a real passer to be fed" if he's ALSO a real defensive
+ * anchor (high D-TAL) — a merely replaceable backup big isn't a case this floor should ever have
+ * cared about either way.
+ */
+const DEFENSIVE_CENTER_DTAL_FLOOR = 70;
+function isLowUsageDefensiveCenter(p: PlayerSpan): boolean {
+  return (
+    p.primaryPosition === 'C' &&
+    computeOffensiveTalent(p) < LOW_OFFENSE_BIG_OTAL_CEILING &&
+    p.fga < LOW_USAGE_BIG_FGA_CEILING &&
+    computeDefensiveTalent(p) >= DEFENSIVE_CENTER_DTAL_FLOOR
+  );
+}
+
+/**
+ * Real passing quality bar for the engine itself, only checked once a starting defensive center
+ * (above) needs someone to actually feed him. `playmakingScoreForPlayer`'s own real distribution
+ * (fit.ts's docstring on `starterOnBallDemand`): 84 -> elite-adjacent, 90+ -> genuine elite. Set
+ * well below that so the mechanism's own validated motivating case — Nash 2005-07 anchoring an
+ * all-defense five including Ben Wallace AND Rudy Gobert — still clears it comfortably; this
+ * only excludes an engine with real scoring/shooting but no real point-of-attack passing (a pure
+ * shooter or isolation scorer), which is exactly the gap the user is pointing at.
+ */
+const DEFENSIVE_CENTER_ENGINE_PLAYMAKING_FLOOR = 65;
+
 function eliteOffensiveEngineFloorContribution(team: Team): number {
-  const engineAssignment = primaryStarters(team).find(({ player, minutes }) => {
+  const starters = primaryStarters(team);
+  const hasStartingDefensiveCenter = starters.some(
+    ({ player, minutes }) => minutes > 0 && isLowUsageDefensiveCenter(player),
+  );
+  const engineAssignment = starters.find(({ player, minutes }) => {
     if (minutes <= 0) return false;
-    return (
+    const clearsSoloOffenseBar =
       spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR ||
-      computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL
-    );
+      computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL;
+    if (!clearsSoloOffenseBar) return false;
+    if (!hasStartingDefensiveCenter) return true;
+    return (playmakingScoreForPlayer(player) ?? 0) >= DEFENSIVE_CENTER_ENGINE_PLAYMAKING_FLOOR;
   });
   if (!engineAssignment) return 0;
   return ELITE_OFFENSIVE_ENGINE_FLOOR * (engineAssignment.minutes / STARTER_MINUTES);

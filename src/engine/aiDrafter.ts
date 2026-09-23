@@ -165,8 +165,10 @@ function eliteTalentFgaPenaltyDampening(talent: number): number {
  * risked doing for e.g. the old MAX_FGA_PENALTY before it was lowered (see that constant's own
  * history above).
  */
-const LOW_OFFENSE_BIG_OTAL_CEILING = 75;
-const LOW_USAGE_BIG_FGA_CEILING = 15;
+// Exported so `scoring.ts`'s defensive-center-needs-a-playmaker floor check (2026-09-23) can
+// reuse this exact "cheap because it isn't an offense" population instead of a second copy.
+export const LOW_OFFENSE_BIG_OTAL_CEILING = 75;
+export const LOW_USAGE_BIG_FGA_CEILING = 15;
 const LOW_USAGE_BIG_MALUS_SCALE = 1;
 const MAX_LOW_USAGE_BIG_MALUS = 5;
 

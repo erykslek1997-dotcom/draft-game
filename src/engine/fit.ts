@@ -87,17 +87,38 @@ export const SPACING_BOTTLENECK_SCALE = 0.65;
 // `spacingCompatibility` (arc geometry). D1 +0.39 on its own, +0.02 on `overall`; closes the
 // long-standing gap where a post-centric build (Twin Towers, Hakeem + A. Davis) read as pure
 // negative offense. Weight comes off creation / spacing / championship.
+/**
+ * 2026-09-23, [[fit_score_defense_offense_weight_asymmetry]] follow-up ("a fresh D1 pass with the
+ * CURRENT full component set"): measured each component's own standalone Spearman against the D1
+ * human-vote set (n=15, `scripts/analyzeD1HumanVote.ts`), not the incremental deltas each one was
+ * originally added against. Two real outliers: `defensiveRoleCoverage` — the single HIGHEST
+ * weight in this whole table — measured -0.007 (dead weight on this sample), while
+ * `defensiveCohesion` — the LOWEST defense-side weight — measured +0.493 (one of the strongest).
+ * `spacingCompatibility` measured -0.311 (actively anti-correlated) and `creationStructure` -0.082
+ * (near zero); `switchability` (+0.539) and `championshipStructure` (+0.339) were already solid.
+ * Shifted weight AWAY from the three weak/negative components INTO the three strongest, capped at
+ * 0.05 per component so no single move dominates: raw fitScore-vs-vote Spearman on D1 moved
+ * 0.539 -> 0.621 with this exact reallocation (still sums to 1.0). Deliberately the CONSERVATIVE
+ * of several swept candidates (an aggressive version reached 0.679, but n=15 is a small, noisy
+ * sample this project has repeatedly found "hypersensitive" to reordering 1-2 teams — see the
+ * Taylor-top-10 Spearman history in [[dtal_tal_bridge_shipped]] for the same lesson). Could not
+ * cross-check against D1S2 (n=14, a stronger-correlating second human-vote round) — that dataset's
+ * raw file isn't present in this environment, only summary numbers preserved in code comments
+ * (`defensiveCohesion.ts`, `defensiveTalent.ts`) from a 2026-09-07 session. Full `npm test` +
+ * `checkNeverDrafted`/AI-pick-regression green after this change; re-run both if either dataset
+ * ever needs re-validating.
+ */
 export const FIT_WEIGHTS = {
-  creationStructure: 0.13,
-  spacingCompatibility: 0.11,
-  defensiveRoleCoverage: 0.17,
-  switchability: 0.15,
+  creationStructure: 0.10,
+  spacingCompatibility: 0.08,
+  defensiveRoleCoverage: 0.12,
+  switchability: 0.18,
   huntResistance: 0.13,
-  defensiveCohesion: 0.05,
+  defensiveCohesion: 0.10,
   rimPressureTeam: 0.07,
   reboundingBalance: 0.02,
   sizeCoverage: 0.07,
-  championshipStructure: 0.10,
+  championshipStructure: 0.13,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;

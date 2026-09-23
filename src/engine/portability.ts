@@ -227,6 +227,19 @@ const SELF_CREATION_MAX_PENALTY = 30;
  * some.
  */
 const RIM_TARGET_MIN_SHARE = 0.5;
+/**
+ * 2026-09-23, user-reported live (LeBron James 2013-15 O-POR "D+", 2016-18 "A+" — "prawie ten
+ * sam gracz, przepaść"): `RIM_TARGET_MIN_SHARE` was a hard cliff — 2016-18's 50.2% rim share
+ * cleared it and earned the full term, 2013-15's 44.1% (with BETTER rim accuracy, 74.5% vs
+ * 75.6%) missed it by 6 points and earned zero. Ramped instead: share still has to clear this
+ * floor to earn anything, but between here and `RIM_TARGET_MIN_SHARE` the term phases in rather
+ * than snapping on, so two spans a few points of real rim-share apart get proportionally close
+ * scores instead of an all-or-nothing swing. `RIM_TARGET_POSITIONS` is untouched — that gate is
+ * deliberate (a wing/forward finishing off his own drives isn't the same "low-maintenance dump-
+ * off target" role a traditional big plays, see this function's own docstring above), not part
+ * of the cliff this fixes.
+ */
+const RIM_TARGET_SHARE_RAMP_FLOOR = 0.35;
 const RIM_TARGET_GOOD_PCT = 60;
 const RIM_TARGET_SCALE = 2.0;
 const MAX_RIM_TARGET_VALUE = 24;
@@ -238,10 +251,14 @@ function rimTargetValue(span: PlayerSpan): number {
   const classified = totals.rimFga + totals.midFga + totals.threeFga;
   if (classified < 150) return 0; // same volume floor as playmakingThreeLevel.ts's zone-based terms
   const rimShare = totals.rimFga / classified;
-  if (rimShare < RIM_TARGET_MIN_SHARE) return 0;
+  if (rimShare < RIM_TARGET_SHARE_RAMP_FLOOR) return 0;
+  const shareFactor = Math.min(
+    1,
+    (rimShare - RIM_TARGET_SHARE_RAMP_FLOOR) / (RIM_TARGET_MIN_SHARE - RIM_TARGET_SHARE_RAMP_FLOOR),
+  );
   const rimAccuracy = (totals.rimFgm / Math.max(totals.rimFga, 1)) * 100;
   const excess = rimAccuracy - RIM_TARGET_GOOD_PCT;
-  return excess > 0 ? Math.min(MAX_RIM_TARGET_VALUE, excess * RIM_TARGET_SCALE) : 0;
+  return excess > 0 ? Math.min(MAX_RIM_TARGET_VALUE, excess * RIM_TARGET_SCALE) * shareFactor : 0;
 }
 
 /**

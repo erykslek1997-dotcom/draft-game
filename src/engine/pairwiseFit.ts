@@ -193,8 +193,24 @@ export function offensiveSystemBuckets(starters: PlayerSpan[], demandByPlayer: n
  */
 const PENALTY_PER_EXTRA_SYSTEM = 6;
 const MAX_SYSTEM_OVERLOAD_PENALTY = 12;
+/** Same real-demand bar `offensiveSystemBuckets` itself already gates on, reused below rather
+ * than a second threshold. */
+const HIGH_DEMAND_THRESHOLD = 0.5;
+
+/**
+ * 2026-09-23, user-reported live (Magic/Kobe/Pierce/Barkley starting five, Fit 79 despite four
+ * ball-dominant starters): `offensiveSystemBuckets` dedupes by offensive STYLE — two Slashers (or
+ * any same-archetype pair) collapse into one bucket, so a five stacked with same-archetype
+ * ball-dominant players can under-count entirely and never trip this penalty, the exact opposite
+ * of "too many players wanting the same job." Counting real on-ball demand directly alongside the
+ * existing bucket-diversity count — taking whichever is larger — catches both failure shapes:
+ * too many DIFFERENT systems (the original case) and too many players competing for the SAME one
+ * (this one), without weakening the original check for the five it already worked correctly on.
+ */
 export function offensiveSystemOverloadPenalty(starters: PlayerSpan[], demandByPlayer: number[]): number {
-  const count = offensiveSystemBuckets(starters, demandByPlayer).length;
+  const distinctSystems = offensiveSystemBuckets(starters, demandByPlayer).length;
+  const highDemandStarters = demandByPlayer.filter((d) => d >= HIGH_DEMAND_THRESHOLD).length;
+  const count = Math.max(distinctSystems, highDemandStarters);
   if (count < 3) return 0;
   return Math.min(MAX_SYSTEM_OVERLOAD_PENALTY, (count - 2) * PENALTY_PER_EXTRA_SYSTEM);
 }

@@ -13,7 +13,7 @@ import {
   isCP3TwoWayExempt,
 } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
-import { computeSpacing } from './spacing';
+import { computeSpacing, computeRawSpacing } from './spacing';
 import { computeDurability } from './durability';
 import { spanEndYears } from './era';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
@@ -239,7 +239,33 @@ let spacingGradeSThreshold: number | null = null;
  * a percentile RANK in the real SPACING population first, then hand that to the same
  * `gradeForValue`/`letterForValue` machinery every other stat already shares.
  */
-export function spacingGrade(value: number): Grade {
+/**
+ * The era-scaling cap's baseline reading of a span's REAL (non-era-scaled) shooting. Deliberately
+ * the plain `letterForValue` bands, NOT the percentile-rank treatment `spacingGrade` itself uses
+ * — percentile-ranking the raw value against the real pool was tried first and back-fired: most
+ * of this archive predates the 3-point line or plays a non-shooting role, so raw scores are
+ * skewed even harder toward zero than the era-scaled ones, and a real, modest shooter (Magic
+ * Johnson's 1989-91, rawSPC 40) ranked ~B purely for clearing that zero-heavy floor — defeating
+ * the whole point of a cap meant to bite. A flat read of the same 0-100 number every other TAL-
+ * shaped stat already uses doesn't have that skew, and it's only ever a reference ceiling here,
+ * never a displayed grade of its own.
+ */
+function rawSpacingGrade(span: PlayerSpan): Grade {
+  return letterForValue(computeRawSpacing(span));
+}
+
+/**
+ * 2026-09-23, user ("zbyt mocny shooting Magica - era scaling jest zbyt mocny... cap który
+ * pozwoli tylko na +1 w ratingu"): era-scaled volume can carry a low-real-volume shooter (Magic
+ * Johnson's 1988-90, 3.0 real 3PA/g at 35.6%) all the way to A+ off a ~5.5x scaling multiplier,
+ * while his OWN real shooting judged fairly against other real shooters (`rawSpacingGrade`) reads
+ * D+/D-. Same root complaint as `REAL_VOLUME_FLOOR_FOR_WALKING_GRAVITY` (spacing.ts) already
+ * fixed for the single top tier — this generalizes it to the whole letter scale: era-scaling may
+ * lift a span at most one letter tier above what its real volume alone earns, never further,
+ * regardless of which tier that is. `span` is optional so any caller without one (there are none
+ * today) still gets the plain era-scaled grade.
+ */
+export function spacingGrade(value: number, span?: PlayerSpan): Grade {
   if (spacingGradeSortedValues === null) {
     spacingGradeSortedValues = draftPool.map((p) => computeSpacing(p)).sort((a, b) => a - b);
   }
@@ -248,7 +274,11 @@ export function spacingGrade(value: number): Grade {
     spacingGradeSThreshold = percentileRank(rawSThreshold, spacingGradeSortedValues);
   }
   const rank = percentileRank(value, spacingGradeSortedValues);
-  return gradeForValue(rank, spacingGradeSThreshold);
+  const eraScaledGrade = gradeForValue(rank, spacingGradeSThreshold);
+  if (!span) return eraScaledGrade;
+  const rawGrade = rawSpacingGrade(span);
+  const cappedRank = Math.min(gradeRank(eraScaledGrade), gradeRank(rawGrade) + 1);
+  return GRADE_ORDER[cappedRank];
 }
 
 let durabilityGradeSThreshold: number | null = null;

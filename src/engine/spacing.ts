@@ -412,3 +412,38 @@ export function computeSpacing(span: PlayerSpan): number {
 export function spacingTier(span: PlayerSpan): SpacingTier {
   return spacingBreakdown(span).tier;
 }
+
+/**
+ * SPACING's volume ladder scored against the player's REAL 3PA/game, no `eraScaledThreePA` —
+ * "how much era-scaling alone is doing" is only answerable by comparing against this. Exists
+ * solely for `grades.ts`'s `spacingGrade` era-scaling cap (2026-09-23, user: "cap żeby era
+ * scaling dawał max +1 literę"). Deliberately skips every scaling-specific guardrail in
+ * `spacingBreakdown` (`REAL_VOLUME_FLOOR_FOR_WALKING_GRAVITY`, `MANUAL_WALKING_GRAVITY`,
+ * the Curry tier rename) — those all exist to bound what era-scaling can buy, which is
+ * meaningless once there is no scaling to bound. Self-creation/accuracy-discount terms are kept:
+ * they grade shot difficulty, not volume inflation, so they apply to a real shooter exactly the
+ * same with or without scaling.
+ */
+export function rawSpacingPoints(span: PlayerSpan): number {
+  const position = span.primaryPosition;
+  const selfCreation = selfCreationRate(span);
+  const accuracyBar =
+    span.box.threePct + SELF_CREATION_ACCURACY_DISCOUNT * selfCreation - shortenedLineAccuracyDiscount(span.spanLabel);
+  const accuracyPoints =
+    span.box.threePA < MIN_VOLUME_FOR_ACCURACY ? 0 : ladderScore(ACCURACY_LADDERS[position], accuracyBar);
+  const volumeKicker =
+    span.box.threePA >= SELF_CREATION_RAW_VOLUME_GATE ? 1 + SELF_CREATION_VOLUME_KICKER * selfCreation : 1;
+  const rawVolumePoints = ladderScore(VOLUME_LADDERS[position], span.box.threePA * volumeKicker);
+  const volumePoints = Math.min(rawVolumePoints, accuracyPoints + VOLUME_ACCURACY_HEADROOM);
+  const ladderPoints = accuracyPoints + volumePoints;
+  const selfCreationBonus =
+    accuracyPoints >= SELF_CREATION_BONUS_MIN_ACCURACY && volumePoints >= SELF_CREATION_BONUS_MIN_VOLUME
+      ? SELF_CREATION_BONUS * selfCreation * (1 - ladderPoints / MAX_SPACING_POINTS)
+      : 0;
+  return Math.min(MAX_SPACING_POINTS, ladderPoints + selfCreationBonus);
+}
+
+/** Real (non-era-scaled) SPACING on the same 0-100 scale as `computeSpacing`. */
+export function computeRawSpacing(span: PlayerSpan): number {
+  return Math.round((rawSpacingPoints(span) / MAX_SPACING_POINTS) * 100);
+}

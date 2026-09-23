@@ -1783,7 +1783,7 @@ export default function DraftBoard({
                         <AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(effective))} />
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <AtGrade grade={spacingGrade(computeSpacing(effective))} />
+                        <AtGrade grade={spacingGrade(computeSpacing(effective), effective)} />
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <AtGrade grade={durabilityGrade(computeDurability(effective))} />

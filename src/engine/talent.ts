@@ -427,6 +427,41 @@ export function lowUsageEfficiencyFactor(fga: number): number {
 }
 
 /**
+ * 2026-09-23, user-reported live ("spoko że Gobert ma fajne efficiency ale wszystko to
+ * wykreowane przez kolegów rzuty"): `efficiency` (`relativeTs * 140`) has zero awareness of
+ * assisted-vs-self-created shots — a lob dunk and a self-created stepback count identically as
+ * long as both go in, so Rudy Gobert's real 70.9% TS% (2020-22), almost entirely lobs/putbacks
+ * off teammates, produces the single largest efficiency credit of any span checked (8.8),
+ * rivaling far more offensively versatile bigs on pure volume alone.
+ *
+ * `selfCreationTalentBonus` below already hit the identical data problem from the other
+ * direction — its own docstring names Gobert directly among the guardrail failures ("box-score
+ * 'unassisted' doesn't mean 'self-created' for a finishing big... a roll-and-dunk records as
+ * unassisted") — and settled it by scoping to archetypes where the unassisted-rate signal is
+ * actually trustworthy. This reuses that exact same population and threshold rather than
+ * re-litigating it, just applied as a discount on `efficiency` instead of withholding a bonus.
+ * `Post Scorer` is excluded for the same reason `selfCreationTalentBonus` leaves it ungated: a
+ * real post move and a pass-entry bucket both read "assisted" in this dataset, so a low
+ * self-creation percentile there isn't trustworthy evidence either way (Shaq, Duncan untouched).
+ * `Stretch Big` is excluded too — a catch-and-shoot three being assisted doesn't diminish the
+ * real shooting skill it took to make it, unlike a roll-and-dunk.
+ *
+ * Bounded like every other one-directional term in this file: never below `EFFICIENCY_SELF_CREATION_MIN_FACTOR`
+ * (a real, verified TS% still means something even at zero self-creation), full credit restored
+ * at/above the same position-median bar (`SELF_CREATION_BONUS_PERCENTILE_THRESHOLD`) the bonus
+ * mechanism already uses.
+ */
+const EFFICIENCY_SELF_CREATION_ARCHETYPES: ReadonlySet<OffensiveArchetype> = new Set(['Roll & Cut Big']);
+const EFFICIENCY_SELF_CREATION_MIN_FACTOR = 0.6;
+export function assistedEfficiencyFactor(span: PlayerSpan): number {
+  if (!EFFICIENCY_SELF_CREATION_ARCHETYPES.has(span.offensiveArchetype)) return 1;
+  const percentile = selfCreationPercentileForPortability(span);
+  if (percentile >= SELF_CREATION_BONUS_PERCENTILE_THRESHOLD) return 1;
+  const shortfall = (SELF_CREATION_BONUS_PERCENTILE_THRESHOLD - percentile) / SELF_CREATION_BONUS_PERCENTILE_THRESHOLD;
+  return 1 - shortfall * (1 - EFFICIENCY_SELF_CREATION_MIN_FACTOR);
+}
+
+/**
  * 2026-08-08, user's v0.2 rating batch, direct follow-up on the Nash/CP3 Greatest-Peak exemptions
  * above: the defense-side mirror of `lowUsageEfficiencyFactor` — "klasyczna kara za low FGA"
  * (the classic low-FGA penalty), applied to defense instead of offense this time. Same reasoning,
@@ -736,7 +771,11 @@ function rawComponents(
 
   const scoringRate = box.ppg * paceFactor * 0.9;
   const relativeTs = box.tsPct - adjustedAvgTs;
-  const efficiency = relativeTs * 140 * lowUsageEfficiencyFactor(span.fga);
+  // `assistedEfficiencyFactor` only ever discounts a CREDIT (relativeTs > 0) — a genuinely
+  // below-average finishing big's efficiency penalty is real regardless of who set him up, so
+  // the dampening never softens that direction.
+  const efficiency =
+    relativeTs * 140 * lowUsageEfficiencyFactor(span.fga) * (relativeTs > 0 ? assistedEfficiencyFactor(span) : 1);
   const playmaking = effectivePlaymakingApg(box.apg) * paceFactor * 1.7;
   const centerPlaymaking = centerPlaymakingBonus(span.primaryPosition, box.apg, paceFactor);
   const isCurry = normalizePlayerName(span.playerName) === normalizePlayerName('Stephen Curry');

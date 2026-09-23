@@ -406,6 +406,77 @@ console.log('fitScore:', spearman(voteArr, rows2.map((r) => r.fit)).toFixed(3));
 console.log('rotationScore:', spearman(voteArr, rows2.map((r) => r.rotation)).toFixed(3));
 console.log('overall (scoreTeam blend):', spearman(voteArr, rows2.map((r) => r.overall)).toFixed(3));
 
+// 2026-09-23, D-TAL/fitScore weight-asymmetry follow-up (see [[fit_score_defense_offense_weight_asymmetry]]):
+// each fitScore COMPONENT's own individual Spearman vs the D1 vote, to check whether FIT_WEIGHTS'
+// current defense-heavy split (~0.50 defense-side vs ~0.31 offense-side) still matches each
+// component's actual standalone predictive power on the CURRENT full component set, rather than
+// the incremental deltas each one was originally measured against when added individually.
+console.log('\n=== fitScore COMPONENT breakdown vs vote (current FIT_WEIGHTS in comments) ===');
+// Mirrors fit.ts's real, current FIT_WEIGHTS (post 2026-09-23 reweight) — keep in sync.
+const FIT_WEIGHTS_REF: Record<keyof FitScoreComponents, number> = {
+  creationStructure: 0.10,
+  spacingCompatibility: 0.08,
+  defensiveRoleCoverage: 0.12,
+  switchability: 0.18,
+  huntResistance: 0.13,
+  defensiveCohesion: 0.10,
+  rimPressureTeam: 0.07,
+  reboundingBalance: 0.02,
+  sizeCoverage: 0.07,
+  championshipStructure: 0.13,
+};
+for (const key of Object.keys(FIT_WEIGHTS_REF) as (keyof FitScoreComponents)[]) {
+  const values = rows2.map((r) => r.fitComponents[key]);
+  const corr = spearman(voteArr, values);
+  console.log(`${key.padEnd(22)} weight=${FIT_WEIGHTS_REF[key].toFixed(2)}  spearman=${corr.toFixed(3)}`);
+}
+
+// Recompute fitScore locally under candidate re-weightings (no fit.ts edit needed to test) —
+// each candidate must sum to 1.0, same constraint FIT_WEIGHTS itself holds to.
+function fitUnder(weights: Record<keyof FitScoreComponents, number>, fc: FitScoreComponents): number {
+  return (Object.keys(weights) as (keyof FitScoreComponents)[]).reduce((sum, k) => sum + weights[k] * fc[k], 0);
+}
+const reweightCandidates: Record<string, Record<keyof FitScoreComponents, number>> = {
+  current: FIT_WEIGHTS_REF,
+  // Conservative: shift weight AWAY from the two near-zero/negative components
+  // (defensiveRoleCoverage -0.05, spacingCompatibility -0.03, creationStructure -0.03 = -0.11)
+  // INTO the three strongest-measured ones (defensiveCohesion +0.05, switchability +0.03,
+  // championshipStructure +0.03 = +0.11). No single move exceeds 0.05.
+  shiftToMeasuredWinners: {
+    ...FIT_WEIGHTS_REF,
+    defensiveRoleCoverage: 0.12,
+    spacingCompatibility: 0.08,
+    creationStructure: 0.10,
+    defensiveCohesion: 0.10,
+    switchability: 0.18,
+    championshipStructure: 0.13,
+  },
+  // Aggressive version of the same direction, roughly double the shift.
+  shiftToMeasuredWinnersAggressive: {
+    ...FIT_WEIGHTS_REF,
+    defensiveRoleCoverage: 0.07,
+    spacingCompatibility: 0.05,
+    creationStructure: 0.07,
+    defensiveCohesion: 0.15,
+    switchability: 0.21,
+    championshipStructure: 0.16,
+  },
+  // Zero out the dead-weight component entirely, redistribute to defensiveCohesion + switchability.
+  zeroDeadWeight: {
+    ...FIT_WEIGHTS_REF,
+    defensiveRoleCoverage: 0,
+    defensiveCohesion: 0.12,
+    switchability: 0.20,
+  },
+};
+console.log('\n=== fitScore RE-WEIGHT candidates vs D1 vote (sum must be 1.0) ===');
+for (const [name, weights] of Object.entries(reweightCandidates)) {
+  const sum = Object.values(weights).reduce((a, b) => a + b, 0);
+  const values = rows2.map((r) => fitUnder(weights, r.fitComponents));
+  const corr = spearman(voteArr, values);
+  console.log(`${name.padEnd(30)} sum=${sum.toFixed(2)}  spearman=${corr.toFixed(3)}`);
+}
+
 const candidateBlends = {
   legacy: { talent: 0.25, bench: 0.15, offense: 0.16 / 3, defense: 0.16 / 3, spacing: 0.16 / 3, fit: 0.29, rotation: 0.15 },
   current: { talent: 0.40, bench: 0.10, offense: 0.12, defense: 0.12, spacing: 0.03, fit: 0.15, rotation: 0.08 },
