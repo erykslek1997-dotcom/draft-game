@@ -193,8 +193,20 @@ function buildEstimator(field: SelfCreationField) {
   return { estimate, isMeasured };
 }
 
-const fgEstimator = buildEstimator('unassistedFg');
-const threePtEstimator = buildEstimator('unassisted3Pt');
+// 2026-09-24: built on first use instead of at module load — the kNN fill over every span was
+// ~0.8s of start-up on a desktop (several seconds on a phone) before the menu could hand over to
+// the game, and production builds rarely need it at all now (tier contexts are precomputed, see
+// precomputedTiers.ts). Same estimators, same values, just lazily.
+let fgEstimatorInstance: ReturnType<typeof buildEstimator> | null = null;
+let threePtEstimatorInstance: ReturnType<typeof buildEstimator> | null = null;
+const fgEstimator = {
+  estimate: (span: PlayerSpan) => (fgEstimatorInstance ??= buildEstimator('unassistedFg')).estimate(span),
+  isMeasured: (span: PlayerSpan) => (fgEstimatorInstance ??= buildEstimator('unassistedFg')).isMeasured(span),
+};
+const threePtEstimator = {
+  estimate: (span: PlayerSpan) => (threePtEstimatorInstance ??= buildEstimator('unassisted3Pt')).estimate(span),
+  isMeasured: (span: PlayerSpan) => (threePtEstimatorInstance ??= buildEstimator('unassisted3Pt')).isMeasured(span),
+};
 
 /** Share of a span's made FIELD GOALS (all of them) estimated unassisted/self-created, 0-1. */
 export function selfCreationEstimate(span: PlayerSpan): number {
@@ -260,8 +272,10 @@ export function selfCreationForPortability(span: PlayerSpan): number {
  * bands, full 13,145-span dataset) spreads across the whole A+-through-F range rather than
  * clustering S-B, which was the user's second complaint.
  */
-const percentileSortedByPosition = new Map<Position, Float64Array>();
-{
+let percentileSortedByPositionBuilt: Map<Position, Float64Array> | null = null;
+function percentileSortedByPosition(): Map<Position, Float64Array> {
+  if (percentileSortedByPositionBuilt) return percentileSortedByPositionBuilt;
+  const built = new Map<Position, Float64Array>();
   const byPos = new Map<Position, number[]>();
   for (const span of players) {
     const arr = byPos.get(span.primaryPosition) ?? [];
@@ -270,13 +284,15 @@ const percentileSortedByPosition = new Map<Position, Float64Array>();
   }
   for (const [pos, arr] of byPos) {
     arr.sort((a, b) => a - b);
-    percentileSortedByPosition.set(pos, Float64Array.from(arr));
+    built.set(pos, Float64Array.from(arr));
   }
+  percentileSortedByPositionBuilt = built;
+  return built;
 }
 
 /** Fraction of `position`'s spans with a strictly lower `selfCreationForPortability` value, 0-1. */
 export function selfCreationPercentileForPortability(span: PlayerSpan): number {
-  const sorted = percentileSortedByPosition.get(span.primaryPosition);
+  const sorted = percentileSortedByPosition().get(span.primaryPosition);
   if (!sorted || sorted.length === 0) return 0.5;
   const value = selfCreationForPortability(span);
   let lo = 0;

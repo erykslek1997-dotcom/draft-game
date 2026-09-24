@@ -1,4 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
+import { precomputedTierContext } from './precomputedTiers';
 import {
   computeOffensiveTalent,
   computeDefensiveTalent,
@@ -142,7 +143,8 @@ const tierContextWithSixthManCache = new Map<string, TierGateContext>();
 export function tierContextWithSixthMan(span: PlayerSpan): TierGateContext {
   const cached = tierContextWithSixthManCache.get(span.id);
   if (cached) return cached;
-  const result = { ...tierContextFor(span), isSixthMan: isSixthManProfile(span) };
+  // Production builds ship this precomputed (precomputedTiers.ts) — same value, no start-up cost.
+  const result = precomputedTierContext(span) ?? { ...tierContextFor(span), isSixthMan: isSixthManProfile(span) };
   tierContextWithSixthManCache.set(span.id, result);
   return result;
 }

@@ -502,8 +502,19 @@ export function suggestBasicRotation(roster: PlayerSpan[]): Rotation {
       give(slot, p, minutes);
     }
     // Nobody left who fits: the slot's own starter plays through his ceiling — a minutes overage
-    // costs far less than a big playing on the perimeter.
-    give(slot, starter, GAME_MINUTES - slotTotal());
+    // costs far less than a big playing on the perimeter. Never past 48 total for anyone, though
+    // (RotationBuilder refuses that outright): if the starter is already maxed, the rest goes to
+    // whoever fits best with room left.
+    const hardRoom = (p: PlayerSpan) => GAME_MINUTES - (minutesUsed.get(p.id) ?? 0);
+    give(slot, starter, Math.min(GAME_MINUTES - slotTotal(), hardRoom(starter)));
+    const byFitThenLoad = [...roster].sort(
+      (a, b) => fitRank(a, slot) - fitRank(b, slot) || (minutesUsed.get(a.id) ?? 0) - (minutesUsed.get(b.id) ?? 0),
+    );
+    for (const p of byFitThenLoad) {
+      const need = GAME_MINUTES - slotTotal();
+      if (need <= 0) break;
+      give(slot, p, Math.min(need, hardRoom(p)));
+    }
   }
   return { slots };
 }
