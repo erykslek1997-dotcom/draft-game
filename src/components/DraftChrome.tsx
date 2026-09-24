@@ -46,16 +46,12 @@ export function DraftTicker({
   onClockLabel,
   picksAway,
   recentPicks,
-  boardOpen,
-  onToggleBoard,
 }: {
   youOnClock: boolean;
   complete: boolean;
   onClockLabel: string;
   picksAway: number | null;
   recentPicks: TickerPick[];
-  boardOpen: boolean;
-  onToggleBoard: () => void;
 }) {
   return (
     <div className="at-ticker">
@@ -82,10 +78,21 @@ export function DraftTicker({
           ))}
         </span>
       )}
-      <button type="button" className="at-ticker-toggle at-cond" aria-expanded={boardOpen} onClick={onToggleBoard}>
-        {boardOpen ? 'Hide draft board ▴' : 'Show full draft board ▾'}
-      </button>
     </div>
+  );
+}
+
+/**
+ * Show/hide the full draft board. 2026-09-24, user-reported live ("nachodzi na siebie, i trochę nie
+ * pasuje, może tam gdzie szybkość go damy?"): it first sat inside the ticker row, crowding the
+ * latest-picks chips and butting into the opened board; it now lives in the top bar next to the
+ * CPU-speed control, with the other "how this screen looks" settings.
+ */
+export function BoardToggleButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" className="at-board-toggle at-cond" aria-expanded={open} onClick={onToggle}>
+      {open ? 'Hide draft board ▴' : 'Show draft board ▾'}
+    </button>
   );
 }
 
@@ -118,5 +125,46 @@ export function LeaveDraftDialog({ text, onStay, onLeave }: { text: string; onSt
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The "Your pick" banner's budget line, shared by the All-Time Draft and Quick 5.
+ *
+ * 2026-09-24, user-reported live ("to się matematycznie zgadza, ale sugeruje zapychanie pod
+ * limit"): the first version led with the MAXIMUM this pick could cost ("up to 12.4 shots this
+ * pick (7.6 kept for your other 3 picks)") — correct, but it read as advice to spend it all now
+ * and fill the rest with the cheapest bodies in the pool. It now leads with what's left and the
+ * even split across the remaining picks; the hard maximum is only a quiet footnote.
+ */
+export function TurnBudgetText({
+  round,
+  rounds,
+  capLeft,
+  slotsLeft,
+  maxThisPick,
+}: {
+  round: number;
+  rounds: number;
+  capLeft: number;
+  slotsLeft: number;
+  maxThisPick: number;
+}) {
+  const perPick = (slotsLeft > 0 ? capLeft / slotsLeft : capLeft).toFixed(1);
+  const left = capLeft.toFixed(1);
+  return (
+    <span>
+      Round {round}/{rounds} ·{' '}
+      {slotsLeft <= 1 ? (
+        <>
+          <b>{left}</b> shots left for your last pick
+        </>
+      ) : (
+        <>
+          <b>{left}</b> shots left for your last {slotsLeft} picks — about <b>{perPick}</b> each
+          <span className="at-your-turn-reserve"> (max {maxThisPick.toFixed(1)} on this one)</span>
+        </>
+      )}
+    </span>
   );
 }

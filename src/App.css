@@ -3072,7 +3072,9 @@ select {
 }
 .metric-bar {
   display: grid;
-  grid-template-columns: 92px 1fr 26px;
+  /* 2026-09-24: 92px cut "Switchability", "Hunt resistance" and "Role coverage" to an ellipsis;
+     sized to the longest label now. */
+  grid-template-columns: 118px 1fr 26px;
   align-items: center;
   gap: 8px;
   font-size: 11.5px;
@@ -3548,10 +3550,15 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   margin-top: 10px;
 }
 
+/* 2026-09-24: "you" is the red accent everywhere (draft board, lottery) — here too, as a tinted
+   row with a left bar, instead of blue text that matched the bracket's old winner colour. */
 .season-standings-you td {
   font-weight: 700;
-  color: var(--at-accent, inherit);
+  color: var(--at-ink, inherit);
+  background: color-mix(in srgb, var(--at-accent-2) 16%, transparent);
 }
+.season-standings-you td:first-child { box-shadow: inset 3px 0 0 var(--at-accent-2); }
+.season-sim-modal--wide { max-width: min(1340px, 96vw); }
 
 /* 2026-08-19, same-day follow-up ("can we add playoffs?") — the bracket sits directly under the
    standings table it was seeded from, same panel, no visual break between "here's the season" and
@@ -3629,18 +3636,38 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 
 .bracket-team-winner {
   font-weight: 700;
-  color: var(--at-accent, inherit);
+  color: var(--at-ink, inherit);
 }
+.bracket-team-loser { opacity: 0.55; }
+.bracket-win-mark { flex: none; font-size: 11px; color: #7fd68a; }
+.bracket-team-you {
+  opacity: 1;
+  margin: 0 -6px;
+  padding-left: 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--at-accent-2) 22%, transparent);
+  box-shadow: inset 3px 0 0 var(--at-accent-2);
+}
+.bracket-team-you.bracket-team-loser .bracket-team-name { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--at-accent-2) 70%, transparent); }
+.bracket-match--you { border-color: var(--at-accent-2); box-shadow: 0 0 0 1px var(--at-accent-2); }
 
 .bracket-you-tag {
-  margin-left: 4px;
+  flex: none;
+  margin-left: 6px;
   font-size: 9px;
-  font-weight: 700;
-  padding: 1px 4px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
   border-radius: 999px;
-  background: var(--at-accent);
-  color: var(--at-accent-ink);
+  background: var(--at-accent-2);
+  color: var(--at-accent-2-ink);
 }
+.playoff-champion--you { color: var(--at-accent-2); }
+/* Phone layout: rounds listed top to bottom (PlayoffBracketTree). */
+.bracket-list-round { margin-top: 12px; }
+.bracket-list-round-label { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); margin-bottom: 6px; }
+.bracket-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bracket-list-grid .bracket-match { position: relative; min-height: 46px; }
 
 .bracket-score {
   position: absolute;
@@ -5210,19 +5237,17 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 }
 .at-ticker-pick.is-you { color: var(--at-accent-2); }
 .at-ticker-pick-no { color: var(--at-ink-faint); }
-/* 2026-09-24, user-reported live ("full board mało widoczny"): was a dark pill pushed to the far
-   right edge — on a wide screen, a thousand-plus pixels away from anything else. Now an accent
-   button right after the on-the-clock status (see `order` below), where the eye already is. */
-.at-ticker-toggle {
-  order: -1; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+/* 2026-09-24: show/hide-board button, in the top bar next to CPU speed (DraftChrome's
+   BoardToggleButton) — accent-coloured so it doesn't read as one of the passive picks chips. */
+.at-board-toggle {
+  font: inherit; font-size: 11.5px; font-weight: 800; cursor: pointer;
   border: 1px solid var(--at-accent); border-radius: 999px; padding: 6px 14px;
   background: color-mix(in srgb, var(--at-accent) 16%, var(--at-paper)); color: var(--at-accent);
 }
-.at-ticker-toggle:hover { background: var(--at-accent); color: var(--at-accent-ink); }
-.at-ticker-toggle:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
-.at-ticker-now { order: -2; }
+.at-board-toggle:hover { background: var(--at-accent); color: var(--at-accent-ink); }
+.at-board-toggle:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 .at-ticker + .at-grid-scroll-nav,
-.at-ticker + .at-grid-scroll { margin-top: 12px; }
+.at-ticker + .at-grid-scroll { margin-top: 16px; }
 .at-draft-sidebar-head--toggle {
   width: 100%; font: inherit; cursor: pointer; background: none; border: none; padding: 0; color: inherit;
   text-align: left;
@@ -5256,3 +5281,17 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 @media (max-width: 640px) {
   .at-ticker-recent { flex: 1 1 100%; }
 }
+.results-hero-bars-note { font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); margin: 6px 0 12px; }
+.bracket-scroll > div:first-child { overflow: hidden; }
+.results-verdict--won { border-color: color-mix(in srgb, #ffd479 55%, var(--at-line)); }
+.results-verdict--won .results-verdict-title { color: #ffd479; }
+
+/* 2026-09-24: detailed variant of the rotation tiles (RotationColumns), used in every team's
+   Rotation section of the ranking: a TAL badge per player and a total when minutes are split. */
+.rotation-columns--detailed .results-hero-rotation-entry { position: relative; }
+.rotation-entry-tal {
+  margin-left: auto; flex: none; font-size: 10.5px; font-weight: 800; color: #fff;
+  padding: 1px 6px; border-radius: 999px; font-variant-numeric: tabular-nums;
+}
+.rotation-entry-total { color: var(--at-ink-faint); font-weight: 500; }
+.rotation-columns--detailed .rotation-natural-pos { margin-left: 3px; }

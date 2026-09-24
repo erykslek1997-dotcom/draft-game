@@ -40,7 +40,7 @@ import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
-import { AiSpeedControl, DraftTicker, LeaveDraftDialog } from './DraftChrome';
+import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, TurnBudgetText } from './DraftChrome';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
 
 /** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
@@ -1172,6 +1172,7 @@ export default function DraftBoard({
           ))}
         </div>
         {!state.complete && <AiSpeedControl labels={aiSpeedLabels} index={aiSpeedIndex} onChange={onAiSpeedChange} />}
+        {(isWideLayout || activeTab === 'draft') && <BoardToggleButton open={boardOpen} onToggle={toggleBoard} />}
       </div>
 
       {/* 2026-08-16, user's own ask: no visible toggle button anymore (first moved out of the
@@ -1207,8 +1208,6 @@ export default function DraftBoard({
             onClockLabel={teamLabel(currentTeam)}
             picksAway={humanPicksAway}
             recentPicks={recentPicks}
-            boardOpen={boardOpen}
-            onToggleBoard={toggleBoard}
           />
           {boardOpen && (
             <>
@@ -1324,16 +1323,13 @@ export default function DraftBoard({
               // view) — and nothing on screen said how much of the cap this pick could actually use.
               <div className="at-your-turn-banner" role="status">
                 <span className="at-your-turn-title at-cond">Your pick</span>
-                <span>
-                  Round {state.round + 1}/{ROUNDS} · up to <b>{currentBudget.maxThisPick}</b> shots this pick
-                  {currentBudget.slotsLeft > 1 && (
-                    <span className="at-your-turn-reserve">
-                      {' '}
-                      ({currentBudget.reserved} kept for your other {currentBudget.slotsLeft - 1} pick
-                      {currentBudget.slotsLeft - 1 === 1 ? '' : 's'})
-                    </span>
-                  )}
-                </span>
+                <TurnBudgetText
+                  round={state.round + 1}
+                  rounds={ROUNDS}
+                  capLeft={currentBudget.capLeft}
+                  slotsLeft={currentBudget.slotsLeft}
+                  maxThisPick={currentBudget.maxThisPick}
+                />
               </div>
             )}
             {canPick && !anyVisibleLegal && (
@@ -1773,7 +1769,7 @@ export default function DraftBoard({
               </p>
               {canPick && currentBudget.slotsLeft > 1 && (
                 <p className="at-draft-sidebar-cap-label">
-                  Max this pick: <b>{currentBudget.maxThisPick}</b> shots
+                  About <b>{(currentBudget.capLeft / currentBudget.slotsLeft).toFixed(1)}</b> per remaining pick
                 </p>
               )}
             </div>

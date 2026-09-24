@@ -30,7 +30,6 @@ import { type FeedbackEntry } from './FeedbackToggle';
 // hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
 // safe to import directly (not lazy) since GameShell already bundles DraftBoard and this file
 // together as siblings, so nothing about the app's existing load-time split changes.
-import { pickStatTip } from './DraftBoard';
 // 2026-09-14, user-reported live ("wyrzucamy historical challanges i what-if"): both panels
 // dropped from this screen — `HistoricalChallengesPanel`/`WhatIfPanel` themselves are UNTOUCHED
 // (not deleted), just no longer imported/rendered here. The user's own explicit plan for
@@ -147,18 +146,6 @@ function AnimatedPercent({ value, className }: { value: number; className?: stri
  * the one number that really drives `positionFitMultiplier`/rotation eligibility for THIS
  * assignment, so the bracket can never again disagree with why a player is slotted where he is.
  */
-/** Compact the year range in dense rotation rows while keeping the full span in the hover tip. */
-function compactSpanLabel(label: string): string {
-  return label.replace(/\((\d{4})-(\d{2})\)/, (_, start: string, end: string) => `(${start.slice(2)}-${end})`);
-}
-
-function compactPlayerName(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length < 2) return name;
-  const first = parts[0];
-  const initial = first.includes('.') ? first : `${first[0]}.`;
-  return `${initial} ${parts.slice(1).join(' ')}`;
-}
 
 interface Props {
   teams: Team[];
@@ -758,20 +745,31 @@ function HeroResult({
           {fitDetail && (
             <div className="analysis-bars-split results-hero-bars">
               <div className="analysis-bars-col">
-                <span className="analysis-bars-col-label">Offense</span>
+                <span className="analysis-bars-col-label">Offense details</span>
                 {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
                 <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
-                {offenseDetail && <MetricBar label="Spacing" value={offenseDetail.spacing} hint="Floor spacing the five provides." />}
+                {offenseDetail && <MetricBar label="Spacing fit" value={offenseDetail.spacing} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
                 <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
               </div>
               <div className="analysis-bars-col">
-                <span className="analysis-bars-col-label">Defense</span>
-                <MetricBar label="Defense" value={fitDetail.components.defensiveRoleCoverage} hint="Coverage of the point-of-attack / wing / rim defensive roles." />
+                <span className="analysis-bars-col-label">Defense details</span>
+                <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
                 <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
                 <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
                 <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
               </div>
             </div>
+          )}
+          {/* 2026-09-24, user-reported live ("defense w kafelku i niżej w pasku daje sprzeczne
+              sygnały"): the bars are separate ingredients, not re-statements of the chips above —
+              "Defense 69" chip vs a "Defense 85" bar read as a contradiction. The two clashing bars
+              were renamed (Role coverage, Spacing fit); this line says so for touch screens too,
+              where the bars' hover hints never show. */}
+          {fitDetail && (
+            <p className="results-hero-bars-note">
+              These are the ingredients behind the scores above, measured separately — e.g. Role coverage is whether
+              each defensive job is filled at all, the Defense score is how well it's done.
+            </p>
           )}
           {/* 2026-09-18, user-reported live ("share the result and challenge a friend można dać
               wyżej w empty space który jest po lewej stronie") — this column's content (chips +
@@ -796,32 +794,7 @@ function HeroResult({
         </div>
         <div className="results-hero-rotation">
           <span className="share-modal-face-group-label">Rotation</span>
-          <div className="results-hero-rotation-columns">
-            {STARTER_SLOTS.map((slot) => {
-              const entries = assignments
-                .filter((a) => a.slot === slot)
-                .sort((a, b) => {
-                  const aIsStarter = starterKeys.has(`${a.slot}|${a.player.id}`);
-                  const bIsStarter = starterKeys.has(`${b.slot}|${b.player.id}`);
-                  if (aIsStarter !== bIsStarter) return aIsStarter ? -1 : 1;
-                  return b.minutes - a.minutes;
-                });
-              return (
-                <div className="results-hero-rotation-col" key={slot}>
-                  <span className="results-hero-rotation-col-label">{slot}</span>
-                  {entries.map((e) => (
-                    <div className="results-hero-rotation-entry" key={e.player.id}>
-                      <Face name={e.player.playerName} size="sm" />
-                      <span className="results-hero-rotation-entry-info">
-                        <span className="results-hero-rotation-entry-name">{shortenName(e.player.playerName, 12)}</span>
-                        <span className="results-hero-rotation-entry-min">{Math.round(e.minutes)}m</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
+          <RotationColumns assignments={assignments} starterKeys={starterKeys} />
           {/* 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest
               empty space, dzięki temu można zmieścić matchups bez potrzeby suwaka" — put it above/
               beside Rotation where there's empty space, so Matchups can fit full width without a
@@ -1060,10 +1033,10 @@ function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): Team
  * pairs, round sizes 8/4/2/1) and kept deliberately simple pixel arithmetic rather than anything
  * relying on runtime-measured layout, but a first look from the user is still the real check.
  */
-const BRACKET_CARD_W = 176;
+const BRACKET_CARD_W = 164;
 const BRACKET_CARD_H = 46;
 const BRACKET_ROW_UNIT = 58;
-const BRACKET_COL_GAP = 48;
+const BRACKET_COL_GAP = 26;
 const BRACKET_COL_W = BRACKET_CARD_W + BRACKET_COL_GAP;
 const BRACKET_LEAF_COUNT = 4; // First Round matches per side (16 teams / 2 sides / 2 teams-per-match)
 const BRACKET_ROUNDS_PER_SIDE = 3; // First Round, Quarterfinals, Semifinals (Finals is the shared center column)
@@ -1096,20 +1069,71 @@ interface BracketTeamRowProps {
   isWinner: boolean;
 }
 
+// 2026-09-24, user-reported live ("nasz zespół powinien być lepiej zaznaczony"): the YOU tag used
+// to sit INSIDE the ellipsis-truncated name, so a long name ("Wichita Mudcats…") cut it off, and
+// series winners were drawn in the same blue the standings used for "you". Now: the human's row
+// gets the red "you" treatment (tint + tag outside the truncated name), and a winner is marked by
+// weight and a check, the loser dimmed — no colour shared with "you".
 function BracketTeamRow({ team, seed, isWinner }: BracketTeamRowProps) {
   if (!team) return null;
   return (
-    <div className={`bracket-team-row ${isWinner ? 'bracket-team-winner' : ''}`}>
+    <div
+      className={`bracket-team-row ${isWinner ? 'bracket-team-winner' : 'bracket-team-loser'} ${team.isHuman ? 'bracket-team-you' : ''}`}
+    >
       <span className="bracket-seed">#{seed}</span>
-      <span className="bracket-team-name">
-        {teamLabel(team)}
-        {team.isHuman && <span className="bracket-you-tag">YOU</span>}
+      <span className="bracket-team-name">{teamLabel(team)}</span>
+      {team.isHuman && <span className="bracket-you-tag">YOU</span>}
+      {isWinner && <span className="bracket-win-mark" aria-label="won the series">✓</span>}
+    </div>
+  );
+}
+
+function BracketMatchCard({
+  series,
+  teamById,
+  style,
+}: {
+  series: PlayoffSeriesResult;
+  teamById: (id: string) => Team | undefined;
+  style?: React.CSSProperties;
+}) {
+  const teamA = teamById(series.teamAId);
+  const teamB = teamById(series.teamBId);
+  const higherTally = Math.max(series.gamesWonA, series.gamesWonB);
+  const lowerTally = Math.min(series.gamesWonA, series.gamesWonB);
+  const involvesYou = Boolean(teamA?.isHuman || teamB?.isHuman);
+  return (
+    <div className={`bracket-match ${involvesYou ? 'bracket-match--you' : ''}`} style={style} title={series.roundLabel}>
+      <BracketTeamRow team={teamA} seed={series.teamASeed} isWinner={series.winnerId === series.teamAId} />
+      <BracketTeamRow team={teamB} seed={series.teamBSeed} isWinner={series.winnerId === series.teamBId} />
+      <span className="bracket-score">
+        {higherTally}-{lowerTally}
       </span>
     </div>
   );
 }
 
+/** Below this width the tree (even scaled) gets unreadable — rounds are listed top to bottom instead. */
+const BRACKET_LIST_BREAKPOINT = 640;
+/** Smallest the tree is ever scaled down to fit; narrower than that it scrolls sideways again. */
+const BRACKET_MIN_SCALE = 0.72;
+
 function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamById: (id: string) => Team | undefined }) {
+  // 2026-09-24, user-reported live ("brak widoczności playoffs, trzeba przesuwać"): the tree is a
+  // fixed-pixel layout (see the constants above) that was always wider than its modal, so it had
+  // to be scrolled sideways. It's now scaled to the space it actually gets, and on a phone it
+  // becomes a top-to-bottom list of rounds instead of an unreadably small tree.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [available, setAvailable] = useState<number | null>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => setAvailable(el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const firstRound = result.rounds[0]; // 8 series: [0-3] left side, [4-7] right side
   const quarterfinals = result.rounds[1]; // 4 series: [0-1] left, [2-3] right
   const semifinals = result.rounds[2]; // 2 series: [0] left, [1] right
@@ -1164,9 +1188,40 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
 
   const champion = teamById(result.championId);
 
+  const championLine = champion && (
+    <p className={`playoff-champion ${champion.isHuman ? 'playoff-champion--you' : ''}`}>
+      🏆 Champion: {teamLabel(champion)} {champion.isHuman ? '(You)' : ''}
+    </p>
+  );
+
+  if (available !== null && available < BRACKET_LIST_BREAKPOINT) {
+    return (
+      <div className="bracket-scroll" ref={containerRef}>
+        {result.rounds.map((round, i) => (
+          <div className="bracket-list-round" key={i}>
+            <span className="bracket-list-round-label at-cond">{round[0]?.roundLabel}</span>
+            <div className="bracket-list-grid">
+              {round.map((series) => (
+                <BracketMatchCard key={`${series.teamAId}-${series.teamBId}`} series={series} teamById={teamById} />
+              ))}
+            </div>
+          </div>
+        ))}
+        {championLine}
+      </div>
+    );
+  }
+
+  const treeHeight = BRACKET_HEIGHT + BRACKET_CARD_H;
+  const scale = available === null ? 1 : Math.min(1, Math.max(BRACKET_MIN_SCALE, available / BRACKET_WIDTH));
+
   return (
-    <div className="bracket-scroll">
-      <div className="bracket-tree" style={{ width: BRACKET_WIDTH, height: BRACKET_HEIGHT + BRACKET_CARD_H }}>
+    <div className="bracket-scroll" ref={containerRef}>
+      <div style={{ width: BRACKET_WIDTH * scale, height: treeHeight * scale }}>
+      <div
+        className="bracket-tree"
+        style={{ width: BRACKET_WIDTH, height: treeHeight, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+      >
         <svg
           className="bracket-lines"
           width={BRACKET_WIDTH}
@@ -1177,32 +1232,17 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
             <path key={c.key} d={c.d} className="bracket-line" />
           ))}
         </svg>
-        {cards.map(({ x, y, series }) => {
-          const teamA = teamById(series.teamAId);
-          const teamB = teamById(series.teamBId);
-          const higherTally = Math.max(series.gamesWonA, series.gamesWonB);
-          const lowerTally = Math.min(series.gamesWonA, series.gamesWonB);
-          return (
-            <div
-              key={`${series.teamAId}-${series.teamBId}`}
-              className="bracket-match"
-              style={{ left: x, top: y - BRACKET_CARD_H / 2, width: BRACKET_CARD_W, height: BRACKET_CARD_H }}
-              title={series.roundLabel}
-            >
-              <BracketTeamRow team={teamA} seed={series.teamASeed} isWinner={series.winnerId === series.teamAId} />
-              <BracketTeamRow team={teamB} seed={series.teamBSeed} isWinner={series.winnerId === series.teamBId} />
-              <span className="bracket-score">
-                {higherTally}-{lowerTally}
-              </span>
-            </div>
-          );
-        })}
+        {cards.map(({ x, y, series }) => (
+          <BracketMatchCard
+            key={`${series.teamAId}-${series.teamBId}`}
+            series={series}
+            teamById={teamById}
+            style={{ position: 'absolute', left: x, top: y - BRACKET_CARD_H / 2, width: BRACKET_CARD_W, height: BRACKET_CARD_H }}
+          />
+        ))}
       </div>
-      {champion && (
-        <p className="playoff-champion">
-          🏆 Champion: {teamLabel(champion)} {champion.isHuman ? '(You)' : ''}
-        </p>
-      )}
+      </div>
+      {championLine}
     </div>
   );
 }
@@ -1418,31 +1458,106 @@ const NEXT_DRAFT_TIP: Record<string, string> = {
   Rotation: 'Your rotation cost you. Start players at their own positions and keep minutes within each player’s durability cap.',
 };
 
+/**
+ * One tile per position with every contributor's face, name and minutes — the hero's Rotation
+ * panel, and (since 2026-09-24) every team's own Rotation section in the ranking below. `detailed`
+ * adds each player's TAL, a total when a player is split across positions, and the natural
+ * position of anyone playing a real mismatch (same `< 0.9` fit bar `rotationScore` uses).
+ */
+function RotationColumns({
+  assignments,
+  starterKeys,
+  totalMinutesByPlayerId,
+  detailed = false,
+}: {
+  assignments: ResolvedSlotAssignment[];
+  starterKeys: Set<string>;
+  totalMinutesByPlayerId?: Map<string, number>;
+  detailed?: boolean;
+}) {
+  return (
+    <div className={`results-hero-rotation-columns ${detailed ? 'rotation-columns--detailed' : ''}`}>
+      {STARTER_SLOTS.map((slot) => {
+        const entries = assignments
+          .filter((a) => a.slot === slot)
+          .sort((a, b) => {
+            const aIsStarter = starterKeys.has(`${a.slot}|${a.player.id}`);
+            const bIsStarter = starterKeys.has(`${b.slot}|${b.player.id}`);
+            if (aIsStarter !== bIsStarter) return aIsStarter ? -1 : 1;
+            return b.minutes - a.minutes;
+          });
+        return (
+          <div className="results-hero-rotation-col" key={slot}>
+            <span className="results-hero-rotation-col-label">{slot}</span>
+            {entries.map((e) => {
+              const total = totalMinutesByPlayerId?.get(e.player.id) ?? e.minutes;
+              const offPosition = positionFitMultiplier(e.player, slot) < 0.9;
+              return (
+                <div className="results-hero-rotation-entry" key={e.player.id} title={`${e.player.playerName} (${e.player.spanLabel})`}>
+                  <Face name={e.player.playerName} size="sm" />
+                  <span className="results-hero-rotation-entry-info">
+                    <span className="results-hero-rotation-entry-name">
+                      {shortenName(e.player.playerName, 12)}
+                      {detailed && offPosition && (
+                        <sup className="rotation-natural-pos" title={`Natural position: ${e.player.primaryPosition}`}>
+                          {e.player.primaryPosition}
+                        </sup>
+                      )}
+                    </span>
+                    <span className="results-hero-rotation-entry-min">
+                      {Math.round(e.minutes)}m
+                      {detailed && total !== e.minutes && <span className="rotation-entry-total"> · {Math.round(total)} total</span>}
+                    </span>
+                  </span>
+                  {detailed && (
+                    <span className="rotation-entry-tal" style={{ background: qualityColor(displayTalentForSpan(tierContextFor(e.player))) }}>
+                      {displayTalentForSpan(tierContextFor(e.player))}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ResultsVerdict({
   team,
+  rank,
   scores,
   onNewDraft,
   onRematch,
   onMenu,
 }: {
   team: Team;
+  /** Final ranking place — the card's tone follows it (2026-09-24, user-reported live: "wygrałem,
+   * czy jest sens żeby mnie pouczało?" — a champion got a "what held you back" list and a
+   * "Next draft:" lecture). 1st: why you won + the one thing a rival could exploit, no advice.
+   * 2nd-4th: the tip becomes "to get over the top". Everyone else: as before. */
+  rank: number;
   scores: Record<string, number>;
   onNewDraft?: () => void;
   onRematch?: () => void;
   onMenu: () => void;
 }) {
   const insights = useMemo(() => generateRosterInsights(buildTeamFeatureSnapshot(team)), [team]);
-  const strengths = insights.strengths.slice(0, 2);
-  const concerns = insights.concerns.slice(0, 2);
+  const won = rank === 1;
+  const contender = rank > 1 && rank <= 4;
+  const strengths = insights.strengths.slice(0, won ? 3 : 2);
+  const concerns = insights.concerns.slice(0, won ? 1 : 2);
   const [weakestLabel] = Object.entries(scores).sort((a, b) => a[1] - b[1])[0] ?? [];
-  const tip = weakestLabel ? NEXT_DRAFT_TIP[weakestLabel] : undefined;
+  const tip = !won && weakestLabel ? NEXT_DRAFT_TIP[weakestLabel] : undefined;
+  const title = won ? 'Why you won' : 'Why you finished here';
   return (
-    <section className="results-verdict" aria-label="Why you finished here">
-      <h2 className="results-verdict-title at-cond">Why you finished here</h2>
+    <section className={`results-verdict ${won ? 'results-verdict--won' : ''}`} aria-label={title}>
+      <h2 className="results-verdict-title at-cond">{title}</h2>
       <div className="results-verdict-cols">
         {strengths.length > 0 && (
           <div className="results-verdict-col results-verdict-col--good">
-            <span className="results-verdict-label">What worked</span>
+            <span className="results-verdict-label">{won ? 'What won it' : 'What worked'}</span>
             <ul>
               {strengths.map((i) => (
                 <li key={i.id}>{i.message}</li>
@@ -1452,7 +1567,7 @@ function ResultsVerdict({
         )}
         {concerns.length > 0 && (
           <div className="results-verdict-col results-verdict-col--bad">
-            <span className="results-verdict-label">What held you back</span>
+            <span className="results-verdict-label">{won ? 'Where a rival could still hurt you' : 'What held you back'}</span>
             <ul>
               {concerns.map((i) => (
                 <li key={i.id}>{i.message}</li>
@@ -1463,7 +1578,7 @@ function ResultsVerdict({
       </div>
       {tip && (
         <p className="results-verdict-tip">
-          <b>Next draft:</b> {tip}
+          <b>{contender ? 'To get over the top:' : 'Next draft:'}</b> {tip}
         </p>
       )}
       <div className="results-verdict-actions">
@@ -1726,7 +1841,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       {seasonModalOpen && seasonStandings && (
         <div className="season-sim-backdrop" onClick={() => setSeasonModalOpen(false)}>
           <div
-            className="season-sim-modal"
+            className={`season-sim-modal ${playoffResult ? 'season-sim-modal--wide' : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label="Season results"
@@ -1754,7 +1869,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <tr key={row.teamId} className={rowTeam.isHuman ? 'season-standings-you' : ''}>
                       <td>{row.rank}</td>
                       <td>
-                        {teamLabel(rowTeam)} {rowTeam.isHuman ? '(You)' : ''}
+                        {teamLabel(rowTeam)}
+                        {rowTeam.isHuman && <span className="bracket-you-tag">YOU</span>}
                       </td>
                       <td>{row.wins}</td>
                       <td>{row.losses}</td>
@@ -1825,6 +1941,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       {heroRanked?.team.isHuman && (
         <ResultsVerdict
           team={displayTeam(heroRanked.team)}
+          rank={heroRanked.rank}
           scores={{
             Talent: heroRanked.breakdown.talentScore,
             'Bench Depth': heroRanked.breakdown.benchDepthScore,
@@ -2012,15 +2129,15 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                         full-width row below both columns rather than an arbitrary side. */}
                     <div className="analysis-bars-split">
                       <div className="analysis-bars-col">
-                        <span className="analysis-bars-col-label">Offense</span>
+                        <span className="analysis-bars-col-label">Offense details</span>
                         {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
                         <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
-                        {offenseDetail && <MetricBar label="Spacing" value={offenseDetail.spacing} hint="Floor spacing the five provides." />}
+                        {offenseDetail && <MetricBar label="Spacing fit" value={offenseDetail.spacing} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
                         <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
                       </div>
                       <div className="analysis-bars-col">
-                        <span className="analysis-bars-col-label">Defense</span>
-                        <MetricBar label="Defense" value={fitDetail.components.defensiveRoleCoverage} hint="Coverage of the point-of-attack / wing / rim defensive roles." />
+                        <span className="analysis-bars-col-label">Defense details</span>
+                        <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
                         <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
                         <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
                         <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
@@ -2133,88 +2250,15 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 </details>
                 <details className="result-accordion-section rotation-panel">
                   <summary>Rotation</summary>
-                  <div className="lineup">
-                    <ul className="rotation-slot-groups">
-                      {STARTER_SLOTS.map((slot) => {
-                        const entries = assignments
-                          .filter((a) => a.slot === slot)
-                          .sort((a, b) => {
-                            const aIsStarter = starterKeys.has(`${a.slot}|${a.player.id}`);
-                            const bIsStarter = starterKeys.has(`${b.slot}|${b.player.id}`);
-                            if (aIsStarter !== bIsStarter) return aIsStarter ? -1 : 1;
-                            return b.minutes - a.minutes;
-                          });
-                        return (
-                          <li key={slot} className="rotation-slot-group">
-                            <span className="rotation-slot-label">{slot}</span>
-                            <ul className="rotation-slot-entries">
-                              {entries.map((e) => {
-                                const isStarterHere = starterKeys.has(`${e.slot}|${e.player.id}`);
-                                return (
-                                <li key={e.player.id} className="player-row">
-                                  <span className="player-row-name at-name-tip" tabIndex={0} data-tip={pickStatTip(e.player)}>
-                                    {compactPlayerName(e.player.playerName)} ({compactSpanLabel(e.player.spanLabel)})
-                                    {/* 2026-09-11, Scouting Report finding: HoopsMatic/Era Ball flag a real
-                                        position mismatch with a small superscript next to the name instead of a
-                                        sentence — this is that, additive to (not instead of) the existing
-                                        Concerns prose that names the same mismatch in full.
-                                        2026-09-18, user-reported live (Jeff Hornacek at PG flagged red despite
-                                        SG/PG being a real, explicitly-listed secondary — no actual penalty
-                                        attached): this used to fire on any `primaryPosition !== slot`, which
-                                        flags a harmless secondary-position assignment (`positionFitMultiplier`
-                                        0.9, the same bar `rotationScore`'s own "out of natural position" notes
-                                        use to decide what actually counts as off) the same way it flags a
-                                        real, penalized mismatch. Matches that same `< 0.9` bar now — a listed
-                                        secondary no longer reads as a warning it isn't. */}
-                                    {positionFitMultiplier(e.player, slot) < 0.9 && (
-                                      <sup className="rotation-natural-pos" title={`Natural position: ${e.player.primaryPosition}`}>
-                                        {e.player.primaryPosition}
-                                      </sup>
-                                    )}
-                                    {/* 2026-09-16, user-reported live ("po prostu wizualnie to tak
-                                        słabo wygląda") — this used to be a plain outlined rectangle
-                                        (no fill) and the TAL readout below a bare border-left divider
-                                        with plain text; neither used the colored-pill language every
-                                        other numeric badge in the app already has. Solid-fill pill
-                                        (starter = accent, bench = neutral) instead of an outline. */}
-                                    <span className={`rotation-role-badge ${isStarterHere ? 'is-starter' : 'is-bench'}`}>
-                                      {isStarterHere ? 'Starter' : 'Bench'}
-                                    </span>
-                                  </span>
-                                  <span className="player-row-meta">
-                                    <span className="player-row-minutes">
-                                      {e.minutes} min
-                                      {(totalMinutesByPlayerId.get(e.player.id) ?? e.minutes) !== e.minutes && (
-                                        <span className="player-row-total-min"> ({totalMinutesByPlayerId.get(e.player.id)} total)</span>
-                                      )}
-                                    </span>
-                                    {/* 2026-09-14, user-reported live ("rotation jest ogromne w
-                                        porównaniu do reszty"): the box score (PTS/REB/AST) and
-                                        shooting split used to sit on every one of up to ~13 rows
-                                        here (5 starter groups, some carrying a split bench player
-                                        across 2-3 of them) — on `nowrap`, that many inline segments
-                                        routinely didn't fit the card width and silently wrapped
-                                        each row onto a second line, roughly doubling this section's
-                                        real height next to compact single-line siblings like "Draft
-                                        order". Dropped both — box score/shooting are raw game stats
-                                        available elsewhere (the Team roster table, the Draft tab's
-                                        own scouting report), not the point of a MINUTES panel — kept
-                                        just the minutes + TAL, the two numbers that actually answer
-                                        "is this rotation any good." */}
-                                    {/* 2026-09-16, same "słabo wygląda" pass: bare text swapped for
-                                        the real `ScoreChip` (red→green gradient) every other 0-100
-                                        readout on this screen already uses, instead of a plain
-                                        number behind a divider line. */}
-                                    <ScoreChip label="TAL" value={displayTalentForSpan(tierContextFor(e.player))} />
-                                  </span>
-                                </li>
-                              );})}
-                            </ul>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
+                  {/* 2026-09-24, user's own ask ("a gdyby to dla wszystkich takimi kafelkami
+                      zastąpić?"): every team's rotation now uses the same per-position tiles as the
+                      hero's own Rotation panel, instead of a long one-row-per-stint list. */}
+                  <RotationColumns
+                    assignments={assignments}
+                    starterKeys={starterKeys}
+                    totalMinutesByPlayerId={totalMinutesByPlayerId}
+                    detailed
+                  />
                 </details>
                 <details className="result-accordion-section draft-order">
                   <summary>Draft order</summary>
