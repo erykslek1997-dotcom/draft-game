@@ -111,6 +111,20 @@ function bridgePace(seasonEndYear: number): number {
  * generation scripts use. Exported so other modules (darkoCorrection.ts) can match a span
  * against real per-season external data using the same year convention. */
 export function spanEndYears(spanLabel: string): number[] {
+  // 2026-09-24, load-time profile: this and `eraBaseline` below ran hundreds of thousands of times
+  // while the engine modules precompute their per-span tables — ~5s of the ~11s "Loading player
+  // data" wait on a desktop. Both are pure functions of the label, so each label is parsed once;
+  // a copy is returned so no caller can mutate the cached array.
+  let cached = spanEndYearsCache.get(spanLabel);
+  if (!cached) {
+    cached = spanEndYearsUncached(spanLabel);
+    spanEndYearsCache.set(spanLabel, cached);
+  }
+  return cached.slice();
+}
+const spanEndYearsCache = new Map<string, number[]>();
+
+function spanEndYearsUncached(spanLabel: string): number[] {
   const m = spanLabel.match(/^(\d{4})-(\d{2})$/);
   if (!m) return [];
   const startCalendarYear = parseInt(m[1], 10);
@@ -126,7 +140,19 @@ export function spanEndYears(spanLabel: string): number[] {
   return [startSeasonEnd];
 }
 
+const eraBaselineCache = new Map<string, EraBaseline>();
+
+/** Memoized per label (see `spanEndYears`); every caller only destructures the result. */
 export function eraBaseline(spanLabel: string): EraBaseline {
+  let cached = eraBaselineCache.get(spanLabel);
+  if (!cached) {
+    cached = eraBaselineUncached(spanLabel);
+    eraBaselineCache.set(spanLabel, cached);
+  }
+  return cached;
+}
+
+function eraBaselineUncached(spanLabel: string): EraBaseline {
   const years = spanEndYears(spanLabel).length > 0 ? spanEndYears(spanLabel) : [new Date().getFullYear()];
 
   const avgTsValues = years.map((y) => tsByEndYear.get(clampToKnown(y, KNOWN_TS_YEARS))!);
@@ -271,7 +297,19 @@ export const MODERN_STEAL_BASELINE = modernStealSamples.reduce((sum, v) => sum +
  */
 const STEAL_RATE_RESIDUAL_FLOOR = 0.85;
 
+const stealRateEraResidualCache = new Map<string, number>();
+
+/** Memoized per label, same reasoning as `spanEndYears`/`eraBaseline` above. */
 export function stealRateEraResidual(spanLabel: string): number {
+  let cached = stealRateEraResidualCache.get(spanLabel);
+  if (cached === undefined) {
+    cached = stealRateEraResidualUncached(spanLabel);
+    stealRateEraResidualCache.set(spanLabel, cached);
+  }
+  return cached;
+}
+
+function stealRateEraResidualUncached(spanLabel: string): number {
   const years = spanEndYears(spanLabel);
   if (years.length === 0 || KNOWN_STEAL_YEARS.length === 0) return 1;
   const covered = years.filter((y) => y >= KNOWN_STEAL_YEARS[0]);

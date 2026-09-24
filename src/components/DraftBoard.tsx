@@ -84,6 +84,8 @@ interface Props {
   aiSpeedLabels: readonly string[];
   aiSpeedIndex: number;
   onAiSpeedChange: (index: number) => void;
+  /** 2026-09-24: back to the main menu (after a confirm — the draft is autosaved, see draftSave.ts). */
+  onExit: () => void;
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -580,6 +582,10 @@ function useMediaQuery(query: string): boolean {
 // room — see their own CSS max-widths — a half-share of anything narrower would cramp both), while
 // an actual wide desktop monitor gets the merged two-column layout the user asked for.
 const WIDE_LAYOUT_QUERY = '(min-width: 1600px)';
+/** Must match the `max-width: 860px` rule in App.css that stacks `.at-draft-workspace`. */
+const STACKED_LAYOUT_QUERY = '(max-width: 860px)';
+const BOARD_OPEN_STORAGE_KEY = 'draftverse.boardOpen';
+const RECENT_PICKS_SHOWN = 4;
 
 export default function DraftBoard({
   state,
@@ -594,6 +600,7 @@ export default function DraftBoard({
   aiSpeedLabels,
   aiSpeedIndex,
   onAiSpeedChange,
+  onExit,
 }: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
@@ -652,6 +659,34 @@ export default function DraftBoard({
   const [activeTab, setActiveTab] = useState<AtTab>('draft');
   const isWideLayout = useMediaQuery(WIDE_LAYOUT_QUERY);
   const [showLegend, setShowLegend] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(() => {
+    try {
+      return window.localStorage.getItem(BOARD_OPEN_STORAGE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  function toggleBoard() {
+    setBoardOpen((open) => {
+      try {
+        window.localStorage.setItem(BOARD_OPEN_STORAGE_KEY, open ? '0' : '1');
+      } catch {
+        // Not remembered — still toggles for this session.
+      }
+      return !open;
+    });
+  }
+  // 2026-09-24: below the stacked-layout breakpoint the "Your Team" card sits between the board and
+  // the player cards — collapsed there to a one-line summary so your own turn opens on players.
+  const isStackedLayout = useMediaQuery(STACKED_LAYOUT_QUERY);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => {
+    if (!confirmExit) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setConfirmExit(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [confirmExit]);
   // Defaults open in Commissioner Mode: every pick needs its reasoning box reachable right after
   // it's made, across up to 144 picks — an extra click to reveal it every single time would be a
   // real friction cost at that volume.
@@ -1055,6 +1090,35 @@ export default function DraftBoard({
     });
   }
 
+  // Ticker data (see the collapsed-board JSX): the latest few picks, and how many picks until the
+  // human is up again (snake order, so it varies round to round).
+  const recentPicks = useMemo(() => {
+    const spanById = new Map<string, PlayerSpan>();
+    for (const t of state.teams) for (const p of t.roster) spanById.set(p.id, p);
+    return state.history
+      .slice(-RECENT_PICKS_SHOWN)
+      .reverse()
+      .map((h) => {
+        const team = state.teams.find((t) => t.id === h.teamId);
+        return {
+          pickNumber: h.pickNumber,
+          teamCode: teamCodeByTeamId.get(h.teamId) ?? '',
+          isHuman: Boolean(team?.isHuman),
+          playerName: spanById.get(h.playerId)?.playerName ?? '—',
+        };
+      });
+  }, [state.history, state.teams, teamCodeByTeamId]);
+  const humanPicksAway = useMemo(() => {
+    const start = state.round * TEAM_COUNT + state.pickInRound;
+    for (let k = start; k < TEAM_COUNT * ROUNDS; k++) {
+      const round = Math.floor(k / TEAM_COUNT);
+      const pick = k % TEAM_COUNT;
+      const idx = round % 2 === 0 ? pick : TEAM_COUNT - 1 - pick;
+      if (state.teams[idx].isHuman) return k - start;
+    }
+    return null;
+  }, [state.round, state.pickInRound, state.teams]);
+
   // 2026-09-24: budget for whoever is on the clock (the human outside Commissioner Mode) — drives
   // the "Your pick" banner, the stuck-board notice below it and the sidebar's own budget line.
   const currentBudget = useMemo(() => pickBudget(state), [state]);
@@ -1080,6 +1144,37 @@ export default function DraftBoard({
     <div className="at-shell">
       {/* 2026-08-16, user's own ask: sits above the whole board on its own row, not squeezed into
           the topbar next to the tabs/status chip. */}
+      <button type="button" className="at-menu-btn at-cond" onClick={() => setConfirmExit(true)}>
+        ← Menu
+      </button>
+      {confirmExit && (
+        <div className="mode-help-backdrop" onClick={() => setConfirmExit(false)}>
+          <div
+            className="mode-help-modal at-exit-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="Leave the draft?"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mode-help-modal-head">
+              <span className="mode-help-modal-title at-cond">Leave the draft?</span>
+            </div>
+            <p className="at-exit-modal-text">
+              {state.commissionerMode
+                ? 'This draft is not saved — leaving ends it.'
+                : "Your draft is saved. You can pick it up again from the main menu with “Continue draft”."}
+            </p>
+            <div className="at-exit-modal-actions">
+              <button type="button" className="secondary-btn" onClick={() => setConfirmExit(false)} autoFocus>
+                Keep drafting
+              </button>
+              <button type="button" className="primary-btn" onClick={onExit}>
+                Back to menu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="at-board-brand at-cond">All-Time NBA Draft</div>
       <div className="at-topbar">
         <div className="at-tabs" role="tablist">
@@ -1134,6 +1229,42 @@ export default function DraftBoard({
               developer mode too now — previously kept there (player mode dropped them first,
               2026-08-13) but the grid itself (all 16 teams × round) still says everything it
               needs to without the label. */}
+          {/* 2026-09-24: the full 16-team × 9-round board used to open the Draft tab — a whole
+              laptop screen (and several phone screens) before the first player card. It now
+              starts collapsed to a one-line ticker (who's on the clock, the latest picks, when
+              you pick next); the full board is one click away and the choice is remembered. */}
+          <div className="at-ticker">
+            <span className="at-ticker-now">
+              {canPick && currentTeam.isHuman ? (
+                <b className="at-ticker-you">You're on the clock</b>
+              ) : state.complete ? (
+                <b>Draft complete</b>
+              ) : (
+                <>
+                  <span className="at-ticker-label">On the clock</span> <b>{teamLabel(currentTeam)}</b>
+                </>
+              )}
+              {!state.complete && !(canPick && currentTeam.isHuman) && humanPicksAway !== null && (
+                <span className="at-ticker-next">
+                  · you pick {humanPicksAway === 1 ? 'next' : `in ${humanPicksAway} picks`}
+                </span>
+              )}
+            </span>
+            {recentPicks.length > 0 && (
+              <span className="at-ticker-recent" aria-label="Latest picks">
+                {recentPicks.map((p) => (
+                  <span key={p.pickNumber} className={`at-ticker-pick ${p.isHuman ? 'is-you' : ''}`}>
+                    <span className="at-ticker-pick-no">#{p.pickNumber}</span> {p.teamCode} {shortPlayerName(p.playerName)}
+                  </span>
+                ))}
+              </span>
+            )}
+            <button type="button" className="at-ticker-toggle at-cond" aria-expanded={boardOpen} onClick={toggleBoard}>
+              {boardOpen ? 'Hide board ▴' : 'Full board ▾'}
+            </button>
+          </div>
+          {boardOpen && (
+            <>
           <div className="at-grid-scroll-nav">
             <button type="button" className="at-grid-scroll-btn" onClick={() => scrollGrid(-1)} aria-label="Scroll rounds left">
               ‹
@@ -1219,6 +1350,8 @@ export default function DraftBoard({
               </tbody>
             </table>
           </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1642,10 +1775,26 @@ export default function DraftBoard({
               browsing the player pool. */}
           {!isWideLayout && (
           <aside className="at-draft-sidebar">
-            <div className="at-draft-sidebar-head">
-              <h2 className="at-cond">Your Five</h2>
-              <span className="at-draft-sidebar-count">{humanTeam.roster.length}/{ROSTER_SIZE}</span>
-            </div>
+            {isStackedLayout ? (
+              <button
+                type="button"
+                className="at-draft-sidebar-head at-draft-sidebar-head--toggle"
+                aria-expanded={sidebarOpen}
+                onClick={() => setSidebarOpen((o) => !o)}
+              >
+                <h2 className="at-cond">Your Team</h2>
+                <span className="at-draft-sidebar-count">
+                  {humanTeam.roster.length}/{ROSTER_SIZE} · {capRemaining(currentFgas)} shots left {sidebarOpen ? '▴' : '▾'}
+                </span>
+              </button>
+            ) : (
+              <div className="at-draft-sidebar-head">
+                <h2 className="at-cond">Your Team</h2>
+                <span className="at-draft-sidebar-count">{humanTeam.roster.length}/{ROSTER_SIZE}</span>
+              </div>
+            )}
+            {(!isStackedLayout || sidebarOpen) && (
+            <>
             {/* 2026-09-12, user-reported live ("nie wypełnia się" + "można dać to w kolumnie
                 'your team'"): this used to live as a 90px sliver in the Draft tab's controls row,
                 squeezed between the search box and the position filters — real fill %, but too
@@ -1722,6 +1871,8 @@ export default function DraftBoard({
               </button>
               .
             </p>
+            </>
+            )}
           </aside>
           )}
         </div>
@@ -1895,7 +2046,7 @@ export default function DraftBoard({
           )}
           <p className="at-caption">
             {isViewingHumanRoster
-              ? "You drafted the player, not a specific era — the Span dropdown above picks which career window to actually roster. No shots cap here, same as the draft itself. Rotation minutes are set below."
+              ? `You drafted the player, not a specific era — the Span dropdown above picks which career window to actually roster. A cheaper season frees shots for the rest of the draft; a pricier one is fine as long as the whole roster stays under ${CAP_LIMIT} shots when you submit. Rotation minutes are set below.`
               : 'Rotation minutes are set below, in this same tab.'}
           </p>
           {/* 2026-08-19, user's explicit ask ("you can add glossary under TEAM"): the roster table

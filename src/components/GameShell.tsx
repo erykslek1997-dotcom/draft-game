@@ -20,6 +20,7 @@ import DraftLottery from './DraftLottery';
 import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { ShareCardStarter } from './shareCardImage';
 import type { FeedbackEntry } from './FeedbackToggle';
+import { clearDraftSave, loadDraft, saveDraft } from './draftSave';
 
 // 2026-09-17, user's own ask: a real "how to play?" affordance on the lottery screen, now that
 // the intro's own always-visible rules list is gone (see App.tsx). This is the same five-item
@@ -60,6 +61,10 @@ interface Props {
    * the old in-component Reset button had, just lifted up so the intro screen (which doesn't
    * load this module at all) can unmount it entirely. */
   onExit: () => void;
+  /** 2026-09-24: continue the draft saved in localStorage (see `draftSave.ts`) instead of starting
+   * a new one — the intro's "Continue draft" button. Falls back to a fresh draft if the save is
+   * missing or unreadable. */
+  resume?: boolean;
 }
 
 /**
@@ -163,11 +168,37 @@ function challengerFromUrl(): ChallengeChallenger | undefined {
   return { name, overall, rank, fieldSize, starters, scores, rotation };
 }
 
-export default function GameShell({ mode, commissionerMode, humanTeamName, onExit }: Props) {
+/** Every URL param a duel/challenge link carries (see `seedFromUrl`/`challengerFromUrl`). */
+const SHARED_LINK_PARAMS = ['draftSeed', 'cn', 'co', 'cr', 'cf', 'cs', 'cv', 'cx'];
+
+/** 2026-09-24: once a shared link's board/challenger have been read into state, drop them from
+ * the address bar — otherwise every later "Play again" silently replayed the friend's board and
+ * re-showed the same comparison forever. The results screen's own "Rematch" button is now the
+ * deliberate way to replay a board. */
+function stripSharedLinkParams() {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  let changed = false;
+  for (const key of SHARED_LINK_PARAMS) {
+    if (url.searchParams.has(key)) {
+      url.searchParams.delete(key);
+      changed = true;
+    }
+  }
+  if (changed) window.history.replaceState(window.history.state, '', url.toString());
+}
+
+export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false }: Props) {
+  const [resumed] = useState(() => (resume && !commissionerMode ? loadDraft() : null));
   const [draftState, setDraftState] = useState<DraftState>(
-    () => createDraft(commissionerMode, undefined, humanTeamName, seedFromUrl()),
+    () => resumed?.state ?? createDraft(commissionerMode, undefined, humanTeamName, seedFromUrl()),
   );
-  const [challenger] = useState<ChallengeChallenger | undefined>(() => challengerFromUrl());
+  const [challenger, setChallenger] = useState<ChallengeChallenger | undefined>(() =>
+    resumed ? resumed.challenger : challengerFromUrl(),
+  );
+  useEffect(() => {
+    stripSharedLinkParams();
+  }, []);
   // Dev-only console hook: `draftDebug()` turns on the per-pick value-breakdown log in
   // `pickForAi`, `draftDebug(false)` turns it back off. Paired with the seed `createDraft` logs,
   // this is the whole "why did the AI take him?" workflow — no UI surface, dev builds only.
@@ -182,7 +213,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // 2026-08-16, user's own ask: a visible lottery-reveal moment for the already-randomized slot
   // assignment (see DraftLottery.tsx's own docstring — the randomization itself isn't new, only
   // this reveal step is) runs once, right after Start Draft, before the real board appears.
-  const [phase, setPhase] = useState<Phase>('lottery');
+  const [phase, setPhase] = useState<Phase>(resumed ? 'draft' : 'lottery');
   const [finalTeams, setFinalTeams] = useState<Team[] | null>(null);
   // 2026-09-24, user's own call ("przywróćmy pasek"): the CPU-speed control is back, this time in
   // Player Mode too — at a fixed 'Normal' a human waited 10-30s between their own picks with
@@ -274,6 +305,20 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     }
   }, [draftState.complete, aiTeamsFinalized]);
 
+  // 2026-09-24: each phase starts at the top of the page — Submit sits at the very bottom of the
+  // Team tab, and the results screen used to open scrolled down to its last row.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [phase]);
+
+  // 2026-09-24: autosave after every pick (and the post-draft AI finalization) while drafting;
+  // a submitted team is finished, so its save is dropped.
+  useEffect(() => {
+    if (commissionerMode) return;
+    if (phase === 'results') clearDraftSave();
+    else if (phase === 'draft' && draftState.history.length > 0) saveDraft(draftState, challenger);
+  }, [draftState, phase, challenger, commissionerMode]);
+
   function handlePick(playerId: string) {
     setDraftState((s) => makePick(s, playerId));
   }
@@ -327,6 +372,21 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     onExit();
   }
 
+  /** 2026-09-24: "New draft" / "Rematch this board" on the results screen. With `seed` it's the
+   * same board (same draft slots, same CPU tie-breaks) — the deliberate replacement for the old
+   * accidental replay through a URL param that never went away; without, a fresh random draft. */
+  function handleRematch(seed?: number) {
+    const humanName = draftState.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
+    clearDraftSave();
+    setDraftState(createDraft(commissionerMode, undefined, humanName, seed));
+    setChallenger(undefined);
+    setFinalTeams(null);
+    setAiTeamsFinalized(false);
+    setPickReactions({});
+    setPickReasoning({});
+    setPhase('lottery');
+  }
+
   // Only meaningful mid-draft: once the pool physically runs dry (fewer real players left than
   // the human still needs), their roster can never reach 9 no matter what happens from here.
   const rosterImpossible = phase === 'draft' && isHumanRosterImpossible(draftState);
@@ -347,6 +407,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           teams={draftState.teams}
           onDone={() => setPhase('draft')}
           howToPlay={DRAFT_HOW_TO_PLAY}
+          onExit={handleReset}
         />
       )}
       {phase === 'draft' && (
@@ -363,6 +424,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           aiSpeedLabels={AI_SPEED_LABELS}
           aiSpeedIndex={aiSpeedIndex}
           onAiSpeedChange={handleAiSpeedChange}
+          onExit={handleReset}
         />
       )}
       {phase === 'results' && finalTeams && (
@@ -371,6 +433,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           history={draftState.history}
           mode={mode}
           onRestart={handleReset}
+          onRematch={handleRematch}
           pickReactions={pickReactions}
           pickReasoning={pickReasoning}
           draftSeed={draftState.seed}
