@@ -146,7 +146,7 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
         </div>
       )}
       {phase === 'lottery' && (
-        <DraftLottery teams={state.teams} onDone={() => setPhase('draft')} howToPlay={QUICK_HOW_TO_PLAY} onExit={onExit} />
+        <DraftLottery teams={state.teams} rounds={QUICK_ROUNDS} onDone={() => setPhase('draft')} howToPlay={QUICK_HOW_TO_PLAY} onExit={onExit} />
       )}
       {phase === 'draft' && (
         <QuickDraftBoard

@@ -1612,6 +1612,16 @@ export default function DraftBoard({
                             TAL <b>{displayTalentForSpan(tierContextFor(target))}</b>
                           </span>
                         </span>
+                        {/* 2026-09-24, user-reported live ("dużo wolnego miejsca które można
+                            wykorzystać"): the season's own headline box line, the same numbers the
+                            Scouting report opens with — the card had the room, and it's the first
+                            thing a player checks before a pick. */}
+                        <span className="at-player-card-season">{target.spanLabel} season</span>
+                        <span className="at-player-card-stats">
+                          <span><b>{target.box.ppg.toFixed(1)}</b>PTS</span>
+                          <span><b>{target.box.rpg.toFixed(1)}</b>REB</span>
+                          <span><b>{target.box.apg.toFixed(1)}</b>AST</span>
+                        </span>
                         <div className="at-player-card-foot">
                           <span className="at-player-card-actions">
                             <button
@@ -1620,7 +1630,7 @@ export default function DraftBoard({
                               title={`${group.spans.length} season${group.spans.length > 1 ? 's' : ''} available`}
                               onClick={() => setPeekPlayer(group.playerName)}
                             >
-                              Scouting report
+                              Scouting
                             </button>
                             <button
                               type="button"

@@ -6,6 +6,7 @@ import {
   resolveAiPickIfNeeded,
   isHumanRosterImpossible,
   TEAM_COUNT,
+  ROUNDS,
   type DraftState,
 } from '../engine/draft';
 import { autoAssignRotation } from '../engine/rotation';
@@ -381,6 +382,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       {phase === 'lottery' && (
         <DraftLottery
           teams={draftState.teams}
+          rounds={ROUNDS}
           onDone={() => setPhase('draft')}
           howToPlay={DRAFT_HOW_TO_PLAY}
           onExit={handleReset}
