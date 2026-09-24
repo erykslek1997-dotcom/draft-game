@@ -171,7 +171,11 @@ function RotationBuilderComponent({
       .sort((a, b) => Number(b.eligible) - Number(a.eligible));
   }
 
-  const slotErrors = STARTER_SLOTS.filter((slot) => !rows[slot][0]?.playerId || slotTotal(rows, slot) > GAME_MINUTES);
+  // A slot must total EXACTLY 48 — somebody is on the floor at that spot for the whole game (see
+  // rotation.ts). It used to only reject `> 48`, so a rotation with, say, PG at 30/48 could be
+  // submitted (user-reported 2026-09-23).
+  const slotErrors = STARTER_SLOTS.filter((slot) => !rows[slot][0]?.playerId || slotTotal(rows, slot) !== GAME_MINUTES);
+  const wrongSlotTotals = STARTER_SLOTS.filter((slot) => rows[slot][0]?.playerId && slotTotal(rows, slot) !== GAME_MINUTES);
   const overworkedPlayers = roster.filter((p) => playerTotalMinutes(rows, p.id) > GAME_MINUTES);
   const allValid = slotErrors.length === 0 && overworkedPlayers.length === 0;
 
@@ -334,6 +338,12 @@ function RotationBuilderComponent({
           );
         })}
       </div>
+
+      {wrongSlotTotals.length > 0 && (
+        <p className="validation-error">
+          Each position needs exactly {GAME_MINUTES} minutes: {wrongSlotTotals.map((slot) => `${slot} ${slotTotal(rows, slot)}/${GAME_MINUTES}`).join(', ')}
+        </p>
+      )}
 
       {overworkedPlayers.length > 0 && (
         <p className="validation-error">
