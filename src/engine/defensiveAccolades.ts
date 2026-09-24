@@ -128,6 +128,14 @@ function awardCoverageWindow(): { first: number; last: number } {
  * data: Victor Wembanyama's 2024-26 span has no covered year at all, and his 2023-25 span would
  * have had its 2024 1st-team selection halved by the uncovered 2025.
  */
+/** True when at least one season of the span falls inside the All-Defense/DPOY data window — i.e.
+ * an `individualDefenseRate` of 0 there means "no recognition", not "no data" (pre-1969 spans,
+ * before All-Defense existed, are the latter). */
+export function hasDefenseAwardCoverage(span: PlayerSpan): boolean {
+  const { first, last } = awardCoverageWindow();
+  return spanEndYears(span.spanLabel).some((y) => y >= first && y <= last);
+}
+
 export function individualDefenseRate(span: PlayerSpan): number {
   const { first, last } = awardCoverageWindow();
   const years = spanEndYears(span.spanLabel).filter((y) => y >= first && y <= last);

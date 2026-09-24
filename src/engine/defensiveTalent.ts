@@ -2,7 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
-import { individualDefenseRate } from './defensiveAccolades';
+import { hasDefenseAwardCoverage, individualDefenseRate } from './defensiveAccolades';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import { teamDefenseContextForSpan } from './teamDefenseLookup';
 
@@ -590,6 +590,29 @@ function undersizedBigMalus(span: PlayerSpan): number {
   return shortfall > 0 ? Math.min(MAX_UNDERSIZED_BIG_MALUS, shortfall * UNDERSIZED_BIG_MALUS_SCALE) : 0;
 }
 
+/**
+ * 2026-09-24, user-reported ("obrona 90-100 powinna wymagać naprawdę potężnego zabudowania"): a
+ * D-TAL in the top band should not be reachable on real plus-minus data alone. Measured on the
+ * draft pool: 181 spans / 64 players sit at D-TAL >= 90, none uncorroborated — but 15 players'
+ * BEST span has real-data backing and ZERO All-Defense/DPOY recognition (Derrick Jones Jr. 95,
+ * Kyle Anderson 95, Mbah a Moute 95, Bowen 95, Okogie 94, Ginóbili 94, Ward 93, Splitter 92,
+ * Divac 92, Matthews 92, ...), and 8 more ride a single 2nd-team year (Caruso 98, Thybulle 99,
+ * Amen Thompson 96, Roberson 94). The additive real-data bonus reaches +16 under the agreement
+ * cap, which lifts the corroboration ceiling to ~95 without any accolade.
+ *
+ * A ceiling that rises smoothly with `accoladeRate` (not a cliff — see the adjacent-span audit):
+ * `NO_RECOGNITION_DTAL_CEILING` with no recognition at all, climbing linearly to 100 at
+ * `RECOGNITION_FULL_RATE`. Only applies where the award data actually covers the span (an
+ * `individualDefenseRate` of 0 before All-Defense existed means "no data", not "no recognition").
+ * Named/real-data FLOORS below are unaffected — they are separate, individually justified paths.
+ */
+const NO_RECOGNITION_DTAL_CEILING = 84;
+const RECOGNITION_FULL_RATE = 0.45;
+function recognitionCeiling(span: PlayerSpan, accoladeRate: number): number {
+  if (!hasDefenseAwardCoverage(span)) return 100;
+  return NO_RECOGNITION_DTAL_CEILING + (100 - NO_RECOGNITION_DTAL_CEILING) * Math.min(1, accoladeRate / RECOGNITION_FULL_RATE);
+}
+
 export function computeDefensiveTalent(span: PlayerSpan): number {
   const cached = defensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
@@ -600,7 +623,10 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
   );
   const corroborationCeiling = UNCORROBORATED_CEILING + (100 - UNCORROBORATED_CEILING) * corroborationStrength;
   const base = Math.min(ladderPoints(span.primaryPosition, displayDefenseRaw(span)), corroborationCeiling);
-  const credited = base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE - undersizedBigMalus(span);
+  const credited = Math.min(
+    recognitionCeiling(span, accoladeRate),
+    base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE - undersizedBigMalus(span),
+  );
   const namedFloor = Math.max(
     NAMED_DTAL_FLOOR.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0,
     NAMED_DTAL_FLOOR_ALL_SPANS.get(normalizePlayerName(span.playerName)) ?? 0,

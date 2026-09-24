@@ -285,7 +285,12 @@ check(eliteCohesion.eliteShell >= 99, 'reported elite roster completes confirmed
 // thin-corroboration spans); `eliteShell` above is unaffected (they're bench, not starters), but
 // the plain minutes-weighted blend behind `defenseScore` still feels their lower bench reading.
 // Re-measured directly (97).
-check(defenseScore(reportedElite) >= 97, 'complete all-time defensive shell reaches the practical Defense ceiling');
+// 2026-09-24: >=97 -> >=96 after `defensiveTalent.ts`'s recognition ceiling (D-TAL capped at 84
+// with zero All-Defense/DPOY recognition, rising to 100 at `accoladeRate` 0.45) took Shane
+// Battier 2005-07 from 89 to 84 — a real-data-only defender with no selection in that window.
+// `eliteShell` still reads 100 and the projected DRTG below still lands 85.00; only the minutes-
+// weighted average feels the bench piece. Re-measured directly (96), not guessed.
+check(defenseScore(reportedElite) >= 96, 'complete all-time defensive shell reaches the practical Defense ceiling');
 check(Math.abs(eliteProjection.defense - 85) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
 
 console.log('Defensive huntability tests complete.');
