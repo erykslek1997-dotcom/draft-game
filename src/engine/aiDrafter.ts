@@ -523,6 +523,9 @@ const ELITE_PLAYMAKING_APG_THRESHOLD = 7;
  * have this skill covered" question, not a "how much excess" one. */
 const ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT = 0.6;
 
+/** Real minutes at a slot below which its top rotation entry is a nominal cover, not a starter (a third of the game). */
+const MIN_STARTER_MINUTES_AT_SLOT = 16;
+
 export function assessNeeds(roster: PlayerSpan[]): NeedContext {
   const { slots } = autoAssignRotation(roster);
 
@@ -551,7 +554,14 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
   for (const slot of STARTER_SLOTS) {
     const top = slots[slot][0];
     const player = top ? roster.find((p) => p.id === top.playerId) : undefined;
-    if (player && isRealPositionFit(player, slot)) {
+    // 2026-09-24, user ("dlaczego AI najpierw nie bada czy ma SG, tylko bierze drugiego PG" — Dragić
+    // over Eddie Jones): the slot was read as covered by whoever heads its rotation row with a real
+    // fit, however few minutes he plays THERE. Kawhi Leonard (SF, secondary SG) sat at SG for 2 minutes
+    // and SF for 38, so SG counted as filled, the empty-slot bonus (+1.5 for an SG, +0.8 for a
+    // secondary) and the picks-4-5 starter lock never fired, and the leftover "thin slot" bonus then
+    // favoured a second PG (1.3, PG has no lenient backup) over an SG (0.5, lenient backing exists).
+    // A slot needs a starter who really plays a starter's share there.
+    if (player && top.minutes >= MIN_STARTER_MINUTES_AT_SLOT && isRealPositionFit(player, slot)) {
       starterPlayers.push(player);
       starterTalentBySlot[slot] = effectiveTalent(player);
     } else {

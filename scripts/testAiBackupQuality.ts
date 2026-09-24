@@ -1,4 +1,4 @@
-import { pickForAi } from '../src/engine/aiDrafter';
+import { assessNeeds, pickForAi } from '../src/engine/aiDrafter';
 import { activeDraftPool } from '../src/engine/draft';
 import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
 import { displayTalentForSpan, tierContextFor } from '../src/engine/grades';
@@ -171,5 +171,21 @@ check(
   [...outcomes78.values()].every((player) => CAP_LIMIT - spentBefore78 - player.fga >= 24 - 1e-9),
   'every fifth-starter lottery outcome leaves at least 24 FGA for a four-player bench',
 );
+
+// 2026-09-24: a slot only counts as covered when its top rotation entry plays a starter's share THERE.
+// Kawhi Leonard (SF, secondary SG) heads the SG row for 2 minutes and the SF row for 38; SG used to read as
+// filled, so the empty-slot bonus never fired and the AI took a second PG (Dragic) over an SG (Eddie Jones).
+{
+  const fixture = [
+    ['Kevin Johnson', '1995-97'],
+    ['Kevin Garnett', '2002-04'],
+    ['Kawhi Leonard', '2015-17'],
+    ['Rudy Gobert', '2016-18'],
+  ].map(([n, l]) => activeDraftPool.find((p) => p.playerName === n && p.spanLabel === l));
+  if (fixture.every(Boolean)) {
+    const needs = assessNeeds(fixture as PlayerSpan[]);
+    check(needs.emptySlots.includes('SG'), 'a wing who plays 2 minutes at SG does not cover the SG slot (Leonard as the only SG-eligible body)');
+  }
+}
 
 console.log('AI backup-quality tests complete.');
