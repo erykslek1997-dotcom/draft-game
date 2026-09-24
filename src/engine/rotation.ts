@@ -381,51 +381,129 @@ function cloneRotation(rotation: Rotation): Rotation {
  * (10+ dropdowns/minute boxes before "Submit Team" even enabled), after the earlier one-click
  * optimal auto-fill was removed for doing the thinking for the player. This is the middle ground
  * the user asked for — a complete, legal starting point that is deliberately NOT optimized: it
- * reads only draft order and listed positions (no talent, fit, durability or minutes tuning), so
- * the player still has real decisions left to make and the UI says as much next to it.
+ * never compares players by talent or fit, so the player still has real decisions left to make
+ * and the UI says as much next to it.
  *
- * Starters: for each slot, the earliest-drafted unused player whose primary position matches,
- * then one who has really played it, then anyone eligible, then anyone left — 36 minutes each.
- * Backups: 12 minutes per slot, earliest-drafted bench player who fits (each bench player covers
- * at most two slots), falling back to any bench player, then to the thinnest-used starter.
+ * Starters: the earliest-drafted player at his natural position for each slot, then listed
+ * secondary positions, then other real fits, then anyone eligible, then anyone left.
+ *
+ * Same-day follow-up ("wzmocnij lekko sugestię rotacji" — the first version averaged ~72/100
+ * Rotation vs ~91 for `autoAssignRotation`, bottoming out near 10 on unbalanced rosters): two
+ * rules the game already enforces, still no talent comparison —
+ * - minutes respect each player's own ceiling (durability-safe minutes and the tier minutes cap
+ *   `rotationScore` penalizes past): a starter gets up to 36, and whatever he can't cover passes
+ *   to the next contributor instead of being played anyway;
+ * - backups come by positional fit first (natural or listed position, then an upward slide such
+ *   as a PG at SG), so nobody is sent DOWN the lineup (a big at a guard spot) while a real fit is
+ *   still available. Earliest-drafted wins within the same fit level.
+ * Only when the roster simply can't cover a slot within those limits does it stretch someone.
  */
+const DOWNWARD_GRACE_MINUTES: Record<Position, number> = { C: 0, PF: 4, SF: 8, SG: 12, PG: 12 };
+
 export function suggestBasicRotation(roster: PlayerSpan[]): Rotation {
   const slots = emptySlots();
   const used = new Set<string>();
-  const starters: PlayerSpan[] = [];
-  const tiers: ((p: PlayerSpan, slot: Position) => boolean)[] = [
+  const minutesUsed = new Map<string, number>();
+  const backupSlotsUsed = new Map<string, number>();
+  const ceilingOf = (p: PlayerSpan) =>
+    Math.min(MAX_MINUTES_PER_PLAYER, maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER), minuteProfileForSpan(p).ceiling);
+  const spare = (p: PlayerSpan) => Math.max(0, ceilingOf(p) - (minutesUsed.get(p.id) ?? 0));
+  const give = (slot: Position, p: PlayerSpan, minutes: number) => {
+    if (minutes <= 0) return;
+    const existing = slots[slot].find((a) => a.playerId === p.id);
+    if (existing) existing.minutes += minutes;
+    else slots[slot].push({ playerId: p.id, minutes });
+    minutesUsed.set(p.id, (minutesUsed.get(p.id) ?? 0) + minutes);
+  };
+  /** 0 natural, 1 listed secondary, 2 upward slide, 3 eligible stretch, 4 anything else. */
+  const fitRank = (p: PlayerSpan, slot: Position) =>
+    p.primaryPosition === slot
+      ? 0
+      : p.secondaryPositions.includes(slot)
+        ? 1
+        : isUpwardSlide(p, slot) && isPositionEligible(p, slot)
+          ? 2
+          : isPositionEligible(p, slot)
+            ? 3
+            : 4;
+
+  // A starter should be able to play starter-ish minutes at all — a Salary Glue piece (tier
+  // minutes cap 0) at his natural position still loses the slot to a real fit who can.
+  const canStart = (p: PlayerSpan) => ceilingOf(p) >= 24;
+  // Filled tier by tier across ALL slots (every natural-position starter first, then listed
+  // secondaries, …), not slot by slot — otherwise an early slot grabs a player by his secondary
+  // position (LeBron at PG) and leaves a later slot to a player who can't really start there.
+  const starterTiers: ((p: PlayerSpan, slot: Position) => boolean)[] = [
+    (p, slot) => p.primaryPosition === slot && canStart(p),
+    (p, slot) => p.secondaryPositions.includes(slot) && canStart(p),
+    (p, slot) => isRealPositionFit(p, slot) && canStart(p),
     (p, slot) => p.primaryPosition === slot,
     (p, slot) => isRealPositionFit(p, slot),
     (p, slot) => isPositionEligible(p, slot),
     () => true,
   ];
-  for (const slot of STARTER_SLOTS) {
-    let pick: PlayerSpan | undefined;
-    for (const fits of tiers) {
-      pick = roster.find((p) => !used.has(p.id) && fits(p, slot));
-      if (pick) break;
+  const starterBySlot = new Map<Position, PlayerSpan>();
+  for (const fits of starterTiers) {
+    for (const slot of STARTER_SLOTS) {
+      if (starterBySlot.has(slot)) continue;
+      const pick = roster.find((p) => !used.has(p.id) && fits(p, slot));
+      if (!pick) continue;
+      used.add(pick.id);
+      starterBySlot.set(slot, pick);
     }
-    if (!pick) continue;
-    used.add(pick.id);
-    starters.push(pick);
-    slots[slot].push({ playerId: pick.id, minutes: STARTER_MINUTES });
   }
-  const bench = roster.filter((p) => !used.has(p.id));
-  const benchSlotsUsed = new Map<string, number>();
-  const backupMinutes = GAME_MINUTES - STARTER_MINUTES;
   for (const slot of STARTER_SLOTS) {
-    if (slots[slot].length === 0) continue;
-    const free = (p: PlayerSpan) => (benchSlotsUsed.get(p.id) ?? 0) < MAX_DISTINCT_BACKUP_SLOTS;
-    const backup =
-      bench.find((p) => free(p) && isRealPositionFit(p, slot)) ??
-      bench.find((p) => free(p) && isPositionEligible(p, slot)) ??
-      bench.find(free);
-    if (backup) {
-      benchSlotsUsed.set(backup.id, (benchSlotsUsed.get(backup.id) ?? 0) + 1);
-      slots[slot].push({ playerId: backup.id, minutes: backupMinutes });
-    } else {
-      slots[slot][0].minutes = GAME_MINUTES;
+    const starter = starterBySlot.get(slot);
+    if (starter) give(slot, starter, Math.min(STARTER_MINUTES, spare(starter)));
+  }
+
+  const bench = roster.filter((p) => !used.has(p.id));
+  const otherStartersAny = (starter: PlayerSpan) => [...starterBySlot.values()].filter((p) => p.id !== starter.id);
+  for (const slot of STARTER_SLOTS) {
+    const starter = starterBySlot.get(slot);
+    if (!starter) continue;
+    const slotTotal = () => slots[slot].reduce((sum, a) => sum + a.minutes, 0);
+    // Order of who covers the rest of the slot, all without sending anyone down the lineup:
+    // bench players who fit (natural, listed, or an upward slide), then this slot's own starter up
+    // to his ceiling, then other starters' leftover minutes — draft order within a fit level
+    // (Array.prototype.sort is stable).
+    const fittingBench = bench
+      .filter((p) => fitRank(p, slot) <= 2)
+      .sort((a, b) => fitRank(a, slot) - fitRank(b, slot));
+    const otherStarters = [...starterBySlot.values()]
+      .filter((p) => p.id !== starter.id && fitRank(p, slot) <= 2)
+      .sort((a, b) => fitRank(a, slot) - fitRank(b, slot));
+    for (const p of fittingBench) {
+      const need = GAME_MINUTES - slotTotal();
+      if (need <= 0) break;
+      if ((backupSlotsUsed.get(p.id) ?? 0) >= MAX_DISTINCT_BACKUP_SLOTS) continue;
+      const minutes = Math.min(need, spare(p));
+      if (minutes <= 0) continue;
+      give(slot, p, minutes);
+      backupSlotsUsed.set(p.id, (backupSlotsUsed.get(p.id) ?? 0) + 1);
     }
+    give(slot, starter, Math.min(GAME_MINUTES - slotTotal(), spare(starter)));
+    for (const p of otherStarters) {
+      const need = GAME_MINUTES - slotTotal();
+      if (need <= 0) break;
+      give(slot, p, Math.min(need, spare(p)));
+    }
+    // Still short: a brief stint one spot down the lineup is normal basketball (a SG running the
+    // point for a few minutes) and `rotationScore` doesn't charge for it within a per-position
+    // grace window — mirrored here (scoring.ts's DOWNWARD_POSITION_GRACE_MINUTES; not imported,
+    // scoring.ts already imports this module). Centers get none.
+    for (const p of [...bench, ...otherStartersAny(starter)]) {
+      const need = GAME_MINUTES - slotTotal();
+      if (need <= 0) break;
+      if (fitRank(p, slot) !== 3) continue;
+      const already = slots[slot].find((a) => a.playerId === p.id)?.minutes ?? 0;
+      const minutes = Math.min(need, spare(p), DOWNWARD_GRACE_MINUTES[p.primaryPosition] - already);
+      if (minutes <= 0) continue;
+      give(slot, p, minutes);
+    }
+    // Nobody left who fits: the slot's own starter plays through his ceiling — a minutes overage
+    // costs far less than a big playing on the perimeter.
+    give(slot, starter, GAME_MINUTES - slotTotal());
   }
   return { slots };
 }
