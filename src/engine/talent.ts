@@ -387,6 +387,10 @@ function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number
   // exempt — Mike James (never, in any season) still falls; every player with a real selection
   // somewhere in their career keeps the full boost.
   if (wasEverAllStarCaliber(span.playerName)) {
+    // PG is left on its own numbers (user, 2026-09-24: "PG liczy całkiem ok, problem przy pozycjach
+    // wyżej"): with the cap applied ~9 shooter-playmaker PGs sitting on the PG-archetype 75 line
+    // (Billups, Murray, Maxey, Garland, ...) fell 15 points into "Sixth Man" for a 1-4 point raw drop.
+    if (span.primaryPosition === 'PG') return spacingCorrection;
     // 2026-09-24, adjacent-span audit (Ray Allen 2009-11 -> 2010-12: rawSum 74.3 -> 70.9 yet TAL
     // 71 -> 81; Paul George 2022-24 78 vs 2023-25 88 on a LOWER rawSum). The validated-player
     // exemption above keeps the FULL boost (up to x1.18) right up to the star gate, then the
