@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { Team } from '../engine/types';
 
 export interface HowToPlayItem {
@@ -31,6 +31,13 @@ function prefersReducedMotion(): boolean {
   } catch {
     return false;
   }
+}
+
+/** Columns for the picks grid on a narrow screen: an even split, never more than 5 across. */
+function narrowPickColumns(count: number): number {
+  if (count <= 5) return count;
+  for (const cols of [3, 4, 5]) if (count % cols === 0) return cols;
+  return Math.ceil(count / Math.ceil(count / 5));
 }
 
 /** Overall pick numbers (1-based) a team in `slot` makes in a snake draft. */
@@ -97,7 +104,13 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit 
             <b>{human.name}</b> picks <b>#{slot}</b> in round 1.
           </p>
           <p className="at-lottery-picks-label">Snake draft — your picks:</p>
-          <div className="at-lottery-picks">
+          {/* 2026-09-24, user-reported live ("brzydko dzieli te picki"): a wrapping flex row broke
+              9 picks into an uneven 7 + 2. A grid with an explicit column count keeps rows even —
+              all in one row when there's room, otherwise the most even split (9 -> 3x3). */}
+          <div
+            className="at-lottery-picks"
+            style={{ '--pick-cols': picks.length, '--pick-cols-narrow': narrowPickColumns(picks.length) } as CSSProperties}
+          >
             {picks.map((n, r) => (
               <span key={n} className="at-lottery-pick" title={`Round ${r + 1}`}>
                 <span className="at-lottery-pick-round">R{r + 1}</span> #{n}
