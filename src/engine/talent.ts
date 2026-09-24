@@ -531,6 +531,30 @@ export function assistedEfficiencyFactor(span: PlayerSpan): number {
 }
 
 /**
+ * 2026-09-24, user ("FT% powinno go ciągnąć w dół" — DeAndre Jordan, FT% .42, All-NBA floor 82 on a raw
+ * 69): the engine never used `ftPct`, and it only reaches TS% indirectly. That is right for a centre
+ * whose own shots are hard (Shaq, Wilt, Howard, Drummond — a post scorer's misses at the line already
+ * show in his TS%), but not for a lob-catcher whose TS% is padded by shots his teammates create, so
+ * the low FT% never shows while he can still be fouled intentionally and has to leave the floor late in
+ * close games. The gate is the existing "assisted" signal (`assistedEfficiencyFactor`: Roll & Cut Big
+ * with a low self-creation percentile), so Ben Wallace (self-creation percentile .78-.84, `aef` 1.0) and
+ * every post scorer are untouched. Size: the FT gap under 60%, weighted by real free-throw volume
+ * (FTA/g, rebuilt from ppg/TS%/FGA, full weight at 4) and by how assisted he is; only Jordan 2012-17
+ * gets >= 2 (4.3 at 2014-16), the other 108 Roll & Cut Bigs under 60% stay under 1.
+ */
+const HACK_FT_PCT_REFERENCE = 0.6;
+const HACK_FTA_FULL_WEIGHT = 4;
+const HACK_PENALTY_SCALE = 40;
+const MAX_HACK_PENALTY = 6;
+export function hackLiabilityPenalty(span: PlayerSpan): number {
+  const assistedShare = (1 - assistedEfficiencyFactor(span)) / (1 - EFFICIENCY_SELF_CREATION_MIN_FACTOR);
+  const ftGap = HACK_FT_PCT_REFERENCE - span.box.ftPct;
+  if (assistedShare <= 0 || ftGap <= 0 || span.box.tsPct <= 0) return 0;
+  const fta = Math.max(0, (span.box.ppg / (2 * span.box.tsPct) - span.fga) / 0.44);
+  return Math.min(MAX_HACK_PENALTY, ftGap * Math.min(1, fta / HACK_FTA_FULL_WEIGHT) * assistedShare * HACK_PENALTY_SCALE);
+}
+
+/**
  * 2026-08-08, user's v0.2 rating batch, direct follow-up on the Nash/CP3 Greatest-Peak exemptions
  * above: the defense-side mirror of `lowUsageEfficiencyFactor` — "klasyczna kara za low FGA"
  * (the classic low-FGA penalty), applied to defense instead of offense this time. Same reasoning,
@@ -1390,7 +1414,8 @@ function talentScaled(span: PlayerSpan, usageScale: number, includeEliteDefenseB
     6 +
     synergy -
     usagePenalty -
-    extremeUsagePenalty +
+    extremeUsagePenalty -
+    hackLiabilityPenalty(span) +
     hiddenValue +
     portability +
     roleScalability +

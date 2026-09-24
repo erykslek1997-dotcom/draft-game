@@ -4,6 +4,8 @@ import { benchDepthScore, rotationScore, scoreTeam, spacingScore } from '../src/
 // 2026-08-19: FIT v2 promoted to the official `fitScore` (user's explicit ask) — it lives in
 // `fit.ts` now, not `scoring.ts` (which only imports it internally for `scoreTeam`).
 import { fitScore } from '../src/engine/fit';
+import { hackLiabilityPenalty } from '../src/engine/talent';
+import { effectiveTalent } from '../src/engine/grades';
 import type { PlayerSpan } from '../src/data/schema';
 import type { Team } from '../src/engine/types';
 
@@ -113,4 +115,12 @@ assert(
   'a ninth player with zero assigned minutes does not lower active Bench Depth',
 );
 assert(spacingScore(strongComplementaryBench) >= 80, 'a credible four-shooter construction can reach an 80+ spacing score');
+// 2026-09-24: hack liability is charged only to assisted lob-catching centres (Roll & Cut Big, low
+// self-creation), not to post scorers whose misses at the line already show in TS% — DeAndre Jordan
+// 2014-16 (FT% .42) loses the playoff-validated All-NBA 82; Shaq/Ben Wallace/Wilt are untouched.
+assert(hackLiabilityPenalty(pick('DeAndre Jordan', '2014-16')) >= 2, 'a lob-catching centre with 42% free throws carries a real hack liability');
+assert(effectiveTalent(pick('DeAndre Jordan', '2014-16')) < 80, 'that liability voids his playoff-validated All-NBA 82 floor');
+assert(hackLiabilityPenalty(pick("Shaquille O'Neal", '2003-05')) === 0, 'a post scorer with 47% free throws is not charged (TS% already shows it)');
+assert(hackLiabilityPenalty(pick('Ben Wallace', '2002-04')) === 0, 'a self-created 47% free-throw centre (Ben Wallace) is not charged');
+assert(effectiveTalent(pick('Ben Wallace', '2002-04')) >= 82, 'Ben Wallace keeps his playoff-validated All-NBA floor');
 console.log('Scoring-logic tests complete.');

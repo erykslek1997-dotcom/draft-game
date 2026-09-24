@@ -13,6 +13,7 @@ import {
   rawUncappedTalent,
   applyGradeCeiling,
   isCP3TwoWayExempt,
+  hackLiabilityPenalty,
 } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing, computeRawSpacing } from './spacing';
@@ -1371,6 +1372,8 @@ function tierFloor(tier: OverallTier): number {
 }
 
 const PLAYOFF_VALIDATED_ALL_NBA_TAL_FLOOR = 82;
+/** A hack-liability penalty at or above this (talent.ts) voids the playoff-validated All-NBA floor. */
+const HACK_DISQUALIFIES_ALL_NBA_FLOOR_AT = 2;
 
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const override = namedDisplayTal(ctx.playerName, ctx.spanLabel);
@@ -1475,6 +1478,9 @@ export function tierContextFor(rawSpan: PlayerSpan): TierGateContext {
       madeAllNbaInSpan(span.playerName, span.spanLabel) &&
       playoffBpm !== null &&
       playoffBpm.bpm >= 4 &&
-      playoffBpm.reliability >= 0.5,
+      playoffBpm.reliability >= 0.5 &&
+      // 2026-09-24: a hack-exposed lob-catcher (DeAndre Jordan 2014-16, FT% .42) does not get the
+      // guaranteed All-NBA 82 on a raw 69 — see `hackLiabilityPenalty` (talent.ts).
+      hackLiabilityPenalty(span) < HACK_DISQUALIFIES_ALL_NBA_FLOOR_AT,
   };
 }
