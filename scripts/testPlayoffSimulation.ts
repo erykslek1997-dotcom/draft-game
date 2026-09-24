@@ -60,14 +60,23 @@ const result = simulatePlayoffs(teams, standings);
 assert(result !== null, 'simulates a bracket for the real 16-team case');
 const bracket = result!;
 
-assert(bracket.rounds.length === 4, 'bracket has exactly 4 rounds (16 -> 8 -> 4 -> 2 -> 1)');
+assert(bracket.rounds.length === 3, 'bracket has exactly 3 rounds (top 8 -> 4 -> 2 -> 1)');
 assert(
-  bracket.rounds.map((r) => r.length).join(',') === '8,4,2,1',
+  bracket.rounds.map((r) => r.length).join(',') === '4,2,1',
   `each round has the expected series count (${bracket.rounds.map((r) => r.length).join(',')})`,
 );
 
 const totalSeries = bracket.rounds.reduce((sum, r) => sum + r.length, 0);
-assert(totalSeries === 15, `bracket plays exactly 15 series total (${totalSeries})`);
+assert(totalSeries === 7, `bracket plays exactly 7 series total (${totalSeries})`);
+
+// Only the season's top 8 get in, seeded 1v8 / 4v5 / 2v7 / 3v6.
+const topEight = new Set(standings.filter((row) => row.rank <= 8).map((row) => row.teamId));
+const entrants = bracket.rounds[0].flatMap((s) => [s.teamAId, s.teamBId]);
+assert(entrants.length === 8 && entrants.every((id) => topEight.has(id)), 'only the top 8 of the season make the playoffs');
+assert(
+  bracket.rounds[0].map((s) => `${s.teamASeed}v${s.teamBSeed}`).join(',') === '1v8,4v5,2v7,3v6',
+  `first-round seeding is 1v8/4v5/2v7/3v6 (${bracket.rounds[0].map((s) => `${s.teamASeed}v${s.teamBSeed}`).join(',')})`,
+);
 
 for (const round of bracket.rounds) {
   for (const series of round) {
@@ -92,7 +101,7 @@ for (let r = 1; r < bracket.rounds.length; r++) {
   }
 }
 
-const finals = bracket.rounds[3][0];
+const finals = bracket.rounds[bracket.rounds.length - 1][0];
 assert(bracket.championId === finals.winnerId, "championId matches the Finals series' winner");
 
 // Statistical check: the weak roster is a clear per-game underdog against every other roster in
@@ -100,7 +109,7 @@ assert(bracket.championId === finals.winnerId, "championId matches the Finals se
 // before writing this assertion — the 14 filler copies are genuinely strong too, built on a
 // LeBron/Holiday/Millsap peak core, so "the roster with the most players" isn't automatically the
 // favorite here; only the weak roster's disadvantage is unambiguous). It should essentially never
-// win a 4-round bracket across repeated rolls.
+// win the bracket across repeated rolls.
 const BRACKETS_TO_SAMPLE = 30;
 let weakChampionships = 0;
 for (let i = 0; i < BRACKETS_TO_SAMPLE; i++) {

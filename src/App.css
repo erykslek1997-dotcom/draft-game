@@ -3599,6 +3599,7 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 
 .bracket-match {
   position: absolute;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -5282,7 +5283,7 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   .at-ticker-recent { flex: 1 1 100%; }
 }
 .results-hero-bars-note { font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); margin: 6px 0 12px; }
-.bracket-scroll > div:first-child { overflow: hidden; }
+.bracket-scroll > div:first-child { overflow: hidden; margin: 0 auto; }
 .results-verdict--won { border-color: color-mix(in srgb, #ffd479 55%, var(--at-line)); }
 .results-verdict--won .results-verdict-title { color: #ffd479; }
 
@@ -5295,3 +5296,8 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 }
 .rotation-entry-total { color: var(--at-ink-faint); font-weight: 500; }
 .rotation-columns--detailed .rotation-natural-pos { margin-left: 3px; }
+/* Season standings: the playoff line after the 8th seed, non-playoff teams dimmed. */
+.season-standings-cutoff td { border-bottom: 2px dashed color-mix(in srgb, var(--at-accent) 60%, transparent); }
+.season-standings-out td { opacity: 0.6; }
+.season-standings-out.season-standings-you td { opacity: 1; }
+.season-playoff-note { font-size: 12.5px; color: var(--at-ink-soft); margin: 10px 0 0; }

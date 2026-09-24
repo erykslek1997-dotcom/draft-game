@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
-import { simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
+import { PLAYOFF_TEAM_COUNT, simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
 import { STARTER_SLOTS, CAP_LIMIT, positionFitMultiplier } from '../engine/positions';
 import { allAssignments, benchWithMinutes, primaryStarters, type ResolvedSlotAssignment } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
@@ -1033,34 +1033,49 @@ function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): Team
  * pairs, round sizes 8/4/2/1) and kept deliberately simple pixel arithmetic rather than anything
  * relying on runtime-measured layout, but a first look from the user is still the real check.
  */
-const BRACKET_CARD_W = 164;
+const BRACKET_CARD_W = 200;
 const BRACKET_CARD_H = 46;
 const BRACKET_ROW_UNIT = 58;
 const BRACKET_COL_GAP = 26;
 const BRACKET_COL_W = BRACKET_CARD_W + BRACKET_COL_GAP;
-const BRACKET_LEAF_COUNT = 4; // First Round matches per side (16 teams / 2 sides / 2 teams-per-match)
-const BRACKET_ROUNDS_PER_SIDE = 3; // First Round, Quarterfinals, Semifinals (Finals is the shared center column)
-const BRACKET_HEIGHT = BRACKET_LEAF_COUNT * BRACKET_ROW_UNIT;
-const BRACKET_WIDTH = (2 * BRACKET_ROUNDS_PER_SIDE) * BRACKET_COL_W + BRACKET_CARD_W;
+
+/** 2026-09-24: the bracket's size now follows the actual result (the simulated playoffs became
+ * top-8, 3 rounds — see playoffSimulation.ts) instead of fixed 16-team constants. `leafCount` is
+ * first-round matches per side, `roundsPerSide` every round except the shared Finals column. */
+interface BracketLayout {
+  leafCount: number;
+  roundsPerSide: number;
+  width: number;
+  height: number;
+}
+
+function bracketLayout(result: PlayoffResult): BracketLayout {
+  const roundsPerSide = Math.max(1, result.rounds.length - 1);
+  const leafCount = Math.max(1, result.rounds[0].length / 2);
+  return {
+    leafCount,
+    roundsPerSide,
+    width: 2 * roundsPerSide * BRACKET_COL_W + BRACKET_CARD_W,
+    height: leafCount * BRACKET_ROW_UNIT,
+  };
+}
 
 /** Vertical center of match `indexInRound` within a round whose matches each span `2^round`
- * leaf-slots — round 0 (First Round) matches occupy exactly 1 slot each, round 1 (Quarterfinals)
- * 2 slots, round 2 (Semifinals) all 4. A match's center is always exactly the midpoint of the two
- * matches that feed it, by construction of this doubling — no separate "connector midpoint" math
- * needed beyond reusing this same function one round up. */
+ * leaf-slots — first-round matches occupy exactly 1 slot each, the next round 2 slots, and so on.
+ * A match's center is always exactly the midpoint of the two matches that feed it, by construction
+ * of this doubling — no separate "connector midpoint" math needed beyond reusing this same function
+ * one round up. */
 function bracketMatchCenterY(round: number, indexInRound: number): number {
   const rowSpan = 2 ** round;
   return (indexInRound * rowSpan + rowSpan / 2) * BRACKET_ROW_UNIT;
 }
 
 /** Left edge x-position for a match card. `mirrored` (the right-side bracket) counts rounds in
- * from the far right instead of the far left, so Semifinals sit nearest the center Finals column
- * on both sides and First Round sits on the outside edge on both sides — the actual visual shape
- * a bracket is supposed to have. */
-function bracketMatchX(round: number, mirrored: boolean): number {
-  return mirrored
-    ? BRACKET_WIDTH - BRACKET_CARD_W - round * BRACKET_COL_W
-    : round * BRACKET_COL_W;
+ * from the far right instead of the far left, so the last round before the Finals sits nearest
+ * the center column on both sides and the first round on the outside edge on both sides — the
+ * actual visual shape a bracket is supposed to have. */
+function bracketMatchX(round: number, mirrored: boolean, width: number): number {
+  return mirrored ? width - BRACKET_CARD_W - round * BRACKET_COL_W : round * BRACKET_COL_W;
 }
 
 interface BracketTeamRowProps {
@@ -1134,15 +1149,22 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  const firstRound = result.rounds[0]; // 8 series: [0-3] left side, [4-7] right side
-  const quarterfinals = result.rounds[1]; // 4 series: [0-1] left, [2-3] right
-  const semifinals = result.rounds[2]; // 2 series: [0] left, [1] right
-  const finals = result.rounds[3]?.[0];
+  const layout = bracketLayout(result);
+  const { roundsPerSide, width: BRACKET_WIDTH, height: BRACKET_HEIGHT } = layout;
+  const finals = result.rounds[result.rounds.length - 1]?.[0];
   if (!finals) return null;
 
+  // Each non-final round splits in half: the first half of its series feeds the left side of the
+  // bracket, the second half the right (the engine plays rounds in seed order, so halves stay
+  // together all the way to the Finals).
+  const sideRounds = (half: 0 | 1) =>
+    result.rounds.slice(0, roundsPerSide).map((round) => {
+      const mid = round.length / 2;
+      return half === 0 ? round.slice(0, mid) : round.slice(mid);
+    });
   const sides: { mirrored: boolean; rounds: PlayoffSeriesResult[][] }[] = [
-    { mirrored: false, rounds: [firstRound.slice(0, 4), quarterfinals.slice(0, 2), semifinals.slice(0, 1)] },
-    { mirrored: true, rounds: [firstRound.slice(4, 8), quarterfinals.slice(2, 4), semifinals.slice(1, 2)] },
+    { mirrored: false, rounds: sideRounds(0) },
+    { mirrored: true, rounds: sideRounds(1) },
   ];
 
   const cards: { x: number; y: number; series: PlayoffSeriesResult }[] = [];
@@ -1151,15 +1173,17 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
   for (const { mirrored, rounds } of sides) {
     rounds.forEach((matches, round) => {
       matches.forEach((series, indexInRound) => {
-        const x = bracketMatchX(round, mirrored);
+        const x = bracketMatchX(round, mirrored, BRACKET_WIDTH);
         const y = bracketMatchCenterY(round, indexInRound);
         cards.push({ x, y, series });
       });
-      // Connectors from this round's matches to the NEXT round's matches (Semifinals connect to
-      // the shared Finals card separately, below, since that's a special single shared target).
-      if (round < BRACKET_ROUNDS_PER_SIDE - 1) {
-        const cardRightX = mirrored ? bracketMatchX(round, true) : bracketMatchX(round, false) + BRACKET_CARD_W;
-        const nextLeftX = mirrored ? bracketMatchX(round + 1, true) + BRACKET_CARD_W : bracketMatchX(round + 1, false);
+      // Connectors from this round's matches to the NEXT round's matches (the last side round
+      // connects to the shared Finals card separately, below).
+      if (round < roundsPerSide - 1) {
+        const cardRightX = mirrored ? bracketMatchX(round, true, BRACKET_WIDTH) : bracketMatchX(round, false, BRACKET_WIDTH) + BRACKET_CARD_W;
+        const nextLeftX = mirrored
+          ? bracketMatchX(round + 1, true, BRACKET_WIDTH) + BRACKET_CARD_W
+          : bracketMatchX(round + 1, false, BRACKET_WIDTH);
         const midX = (cardRightX + nextLeftX) / 2;
         for (let i = 0; i + 1 < matches.length; i += 2) {
           const yTop = bracketMatchCenterY(round, i);
@@ -1174,16 +1198,14 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
     });
   }
 
-  // Semifinal -> Finals connectors: both Semifinal winners already sit at the vertical center
-  // (BRACKET_HEIGHT / 2, since each spans the full 4-slot height of its own side) — same
-  // center-Y the Finals card itself uses, so these are simple straight horizontal lines, no
-  // elbow needed.
+  // Last side round -> Finals: both of those winners sit at the vertical center (each spans its
+  // side's full height), the same center-Y the Finals card uses, so these are straight lines.
   const finalsX = BRACKET_WIDTH / 2 - BRACKET_CARD_W / 2;
   const finalsY = BRACKET_HEIGHT / 2;
-  const leftSfRightX = bracketMatchX(2, false) + BRACKET_CARD_W;
-  const rightSfLeftX = bracketMatchX(2, true);
-  connectors.push({ key: 'left-final', d: `M${leftSfRightX},${finalsY} H${finalsX}` });
-  connectors.push({ key: 'right-final', d: `M${rightSfLeftX},${finalsY} H${finalsX + BRACKET_CARD_W}` });
+  const leftLastRightX = bracketMatchX(roundsPerSide - 1, false, BRACKET_WIDTH) + BRACKET_CARD_W;
+  const rightLastLeftX = bracketMatchX(roundsPerSide - 1, true, BRACKET_WIDTH);
+  connectors.push({ key: 'left-final', d: `M${leftLastRightX},${finalsY} H${finalsX}` });
+  connectors.push({ key: 'right-final', d: `M${rightLastLeftX},${finalsY} H${finalsX + BRACKET_CARD_W}` });
   cards.push({ x: finalsX, y: finalsY, series: finals });
 
   const champion = teamById(result.championId);
@@ -1866,7 +1888,10 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   const rowTeam = teamById(row.teamId);
                   if (!rowTeam) return null;
                   return (
-                    <tr key={row.teamId} className={rowTeam.isHuman ? 'season-standings-you' : ''}>
+                    <tr
+                      key={row.teamId}
+                      className={`${rowTeam.isHuman ? 'season-standings-you' : ''} ${row.rank === PLAYOFF_TEAM_COUNT ? 'season-standings-cutoff' : ''} ${row.rank > PLAYOFF_TEAM_COUNT ? 'season-standings-out' : ''}`}
+                    >
                       <td>{row.rank}</td>
                       <td>
                         {teamLabel(rowTeam)}
@@ -1892,6 +1917,16 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 🏆 Simulate the playoffs
               </button>
             )}
+            {/* 2026-09-24: only the season's top 8 make these playoffs (playoffSimulation.ts). */}
+            <p className="season-playoff-note">
+              {(() => {
+                const humanRow = seasonStandings.find((row) => teamById(row.teamId)?.isHuman);
+                if (!humanRow) return `Top ${PLAYOFF_TEAM_COUNT} make the playoffs.`;
+                return humanRow.rank <= PLAYOFF_TEAM_COUNT
+                  ? `Top ${PLAYOFF_TEAM_COUNT} make the playoffs — you're in as the #${humanRow.rank} seed.`
+                  : `Top ${PLAYOFF_TEAM_COUNT} make the playoffs — you finished ${humanRow.rank}th and missed out.`;
+              })()}
+            </p>
             {playoffResult && <PlayoffBracketTree result={playoffResult} teamById={teamById} />}
           </div>
         </div>
