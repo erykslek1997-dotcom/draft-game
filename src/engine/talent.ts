@@ -220,6 +220,7 @@ const PF_PENALTY_TAPER_START = 66;
  * 2004-06, a one-year elite-shooting fluke reading All-NBA on C+/D grades). A genuine floor-spacing
  * role player, well below the band, keeps the full boost. */
 const SPACING_BOOST_TAPER_BAND = 9;
+const EXEMPT_RIDGE_SLOPE = 0.5;
 
 /**
  * 2026-09-24, user-reported ("defensywni PG bez rzutu — wymarły archetyp w nowoczesnej
@@ -384,7 +385,23 @@ function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number
   // counting stats alone. A player the league ever recognized as an All-Star / All-NBA pick is
   // exempt — Mike James (never, in any season) still falls; every player with a real selection
   // somewhere in their career keeps the full boost.
-  if (wasEverAllStarCaliber(span.playerName)) return spacingCorrection;
+  if (wasEverAllStarCaliber(span.playerName)) {
+    // 2026-09-24, adjacent-span audit (Ray Allen 2009-11 -> 2010-12: rawSum 74.3 -> 70.9 yet TAL
+    // 71 -> 81; Paul George 2022-24 78 vs 2023-25 88 on a LOWER rawSum). The validated-player
+    // exemption above keeps the FULL boost (up to x1.18) right up to the star gate, then the
+    // above-gate branch drops it to ~flat: TAL was non-monotonic in rawSum, a ridge of 3-16
+    // points sitting just below TAL 70 (112 spans out-earned the same profile just above the
+    // gate; 108 of them ever-All-Stars) — a declining Ray Allen / late Reggie Miller read better
+    // than their own primes. The boosted output may not exceed what this profile earns AT the
+    // gate, minus `EXEMPT_RIDGE_SLOPE` per rawSum point of distance: monotone by construction,
+    // untouched far below the gate (role-player range), identical at and above it. Measured
+    // (draft pool, slope 0.5): 224 spans move (220 down, mean -5.3, 68 by >= 8), Taylor 0.830 /
+    // GOAT 0.730 / peak-span unchanged, audit TAL pairs 165 -> 148.
+    const xGate = ALL_STAR_TAL_FLOOR / flat;
+    const residual = Math.min((spacingCorrection - flat) * ABOVE_STAR_SPACING_RETENTION, ABOVE_STAR_SPACING_MAX_GAIN);
+    const ridgeCap = xGate * (flat + residual) - EXEMPT_RIDGE_SLOPE * (xGate - rawSumForGate);
+    return Math.min(spacingCorrection, ridgeCap / rawSumForGate);
+  }
   const flatResult = rawSumForGate * flat;
   const taper = clamp01((ALL_STAR_TAL_FLOOR - flatResult) / SPACING_BOOST_TAPER_BAND);
   return flat + (spacingCorrection - flat) * taper;
