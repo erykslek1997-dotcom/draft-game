@@ -1670,7 +1670,12 @@ export const DETECTORS: RosterInsightDetector[] = [
       // `balancedDefenseTradeoff` 0.1000 -> 0.0967. Measured, not guessed — but note the last two
       // bar moves both simply tracked this one fixture, so treat 0.09 as "roughly a tenth of the
       // composite," not a validated cutoff.
-      const meaningfulTradeoff = c.balancedOffenseTradeoff >= 0.09 || c.balancedDefenseTradeoff >= 0.09;
+      // 2026-09-24: 0.09 -> 0.08 after the real-data excess pooling / matchup discount
+      // (darkoCorrection.ts) moved this same fixture's `balancedDefenseTradeoff` 0.0967 -> 0.087.
+      // Third bar move in two days that simply tracks `twoBig` — the threshold is a fixture-chaser,
+      // not a validated cutoff; a relative measure (or a fixture with a clearly larger split) would
+      // stop it drifting with every D-TAL calibration.
+      const meaningfulTradeoff = c.balancedOffenseTradeoff >= 0.08 || c.balancedDefenseTradeoff >= 0.08;
       if (c.offenseDefensePersonnelOverlap >= 4 || !meaningfulTradeoff) return inactive;
       const offenseOnly = c.offense.players.filter(p => !c.defense.players.some(dp => dp.playerId === p.playerId));
       const defenseOnly = c.defense.players.filter(p => !c.offense.players.some(op => op.playerId === p.playerId));

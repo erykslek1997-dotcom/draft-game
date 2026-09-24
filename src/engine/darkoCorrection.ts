@@ -1,4 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
+import { players } from '../data/players';
 import { computeDefensiveImpact } from './defense';
 import { ddpmCoverageForSpan, raptorCoverageForSpan, matchupCoverageForSpan, bpm2CoverageForSpan } from './blendedDefenseLookup';
 import { spanEndYears } from './era';
@@ -88,9 +90,9 @@ function getRegression(field: 'darkoDefense' | 'raptorDefense' | 'matchupDefense
  * here collapses the excess for the very defenders the correction protects (a good box model
  * leaves no residual), so only the cap raise below shipped.
  */
-function coveredExcessParts(span: PlayerSpan): { excess: number; count: number }[] {
+function coveredExcessParts(span: PlayerSpan): { excess: number; count: number; isMatchup?: boolean }[] {
   const defImpact = computeDefensiveImpact(span);
-  const parts: { excess: number; count: number }[] = [];
+  const parts: { excess: number; count: number; isMatchup?: boolean }[] = [];
 
   const ddpmCov = ddpmCoverageForSpan(span);
   if (ddpmCov) {
@@ -105,16 +107,96 @@ function coveredExcessParts(span: PlayerSpan): { excess: number; count: number }
   const matchupCov = matchupCoverageForSpan(span);
   if (matchupCov) {
     const { slope, intercept } = getRegression('matchupDefense');
-    parts.push({ excess: matchupCov.avg - (slope * defImpact + intercept), count: matchupCov.count });
+    parts.push({ excess: matchupCov.avg - (slope * defImpact + intercept), count: matchupCov.count, isMatchup: true });
   }
   return parts;
 }
 
-function blendedExcess(span: PlayerSpan): number | null {
+/**
+ * 2026-09-24, user ("2 ściągamy" — Durant 2023-25 D-TAL 71 vs his own 55-64 target): per-source
+ * persistence between non-overlapping spans 2 years apart is DDPM corr 0.79 / slope 0.86, RAPTOR 0.58 /
+ * 0.61, and defended-FG% MATCHUP only 0.35 / 0.34 (SD 2.2, the noisiest and least-covered source: 1679
+ * spans). Durant's late spans read matchup +4.6/+4.6/+5.75 (2+ SD) against DDPM ~+1 and dominated the
+ * blend (excess +2.3, D-TAL 76) while his box defense is lower than in his prime. Shrinking EVERY source
+ * by its slope broke the elite defenders whose hidden value is DDPM/RAPTOR (Duncan, Wallace, 13-14/46 on
+ * the reference suite); shrinking matchup for everyone hurt the ones whose matchup credit is real
+ * (Draymond, Davis, Wembanyama: 10/46). What separates them is recognition: a matchup read is trusted in
+ * full once the league itself voted the player All-Defense (accolade rate >= `MATCHUP_FULL_TRUST_RATE`,
+ * the same 0.45 as `recognitionCeiling` in defensiveTalent.ts), and shrunk toward
+ * `MATCHUP_TRUST_NO_RECOGNITION` without any. 0.44 is the measured slope (0.34) softened to the power
+ * 0.75, because the pooling below already shrinks the blend. Reference suite stays 7/46 (Durant 2022-26
+ * -> 60/60/61, inside his band; Lillard 2022-24 35 vs 40-54 is the cost), Wembanyama 90, Gobert 94.
+ */
+const MATCHUP_TRUST_NO_RECOGNITION = 0.44;
+const MATCHUP_FULL_TRUST_RATE = 0.45;
+function matchupTrust(span: PlayerSpan): number {
+  const recognised = Math.min(1, individualDefenseRate(span) / MATCHUP_FULL_TRUST_RATE);
+  return MATCHUP_TRUST_NO_RECOGNITION + (1 - MATCHUP_TRUST_NO_RECOGNITION) * recognised;
+}
+
+/** Raw, unpooled blend: the count-weighted mean of every tracking source's excess (matchup discounted). */
+function rawTrackingExcess(span: PlayerSpan): number | null {
   const parts = coveredExcessParts(span);
-  if (parts.length > 0) {
-    const totalWeight = parts.reduce((sum, p) => sum + p.count, 0);
-    return parts.reduce((sum, p) => sum + p.excess * p.count, 0) / totalWeight;
+  if (parts.length === 0) return null;
+  const trust = matchupTrust(span);
+  const totalWeight = parts.reduce((sum, p) => sum + p.count, 0);
+  return parts.reduce((sum, p) => sum + p.excess * (p.isMatchup ? trust : 1) * p.count, 0) / totalWeight;
+}
+
+/**
+ * 2026-09-24, user ("niby szum, ale wykazuje pewne wady" — Herro 2023-25 D-TAL 48 vs 26 next door,
+ * Tucker 2016-18 12, Durant's late matchup +4.6/+5.75): the single-span excess is a noisy read of a
+ * fairly stable trait. Measured on same-player pairs of non-overlapping spans, the blended excess
+ * persists (corr 0.70 at a 2-year gap, 0.61 at 4). Predicting a player's NEXT span's excess (MSE):
+ * face value 0.759; shrinking toward zero with 0.7 gives 0.674; partial pooling toward the mean of his
+ * OTHER non-overlapping spans, weighted 1/gap^2 (nearer spans say more), 0.584; and letting the
+ * baseline's pull scale with how much nearby evidence exists (`r = sum(w) / (sum(w) + KAPPA)`) 0.581 —
+ * the same accuracy, but a lone far-away span (Jordan 1996-98 against his Wizards years) cannot drag a
+ * peak span toward a different career stage. A sudden swing inside one span (a single high-variance
+ * matchup source, a couple of bad on/off seasons) is pulled toward the player's own baseline; a
+ * sustained one (Garnett, Duncan) is barely touched. Spans without tracking data (the BPM2-only
+ * fallback below) are left as they were.
+ */
+const LAMBDA_NO_HISTORY = 0.7;
+const LAMBDA_FULL_HISTORY = 0.55;
+const POOL_KAPPA = 0.1;
+const MIN_START_GAP_YEARS = 2;
+
+const spanStartYear = (span: PlayerSpan): number => parseInt(span.spanLabel.slice(0, 4), 10);
+
+let excessIndex: Map<string, { id: string; start: number; excess: number }[]> | null = null;
+function otherSpanExcesses(span: PlayerSpan): { gap: number; excess: number }[] {
+  if (!excessIndex) {
+    excessIndex = new Map();
+    for (const p of players) {
+      const excess = rawTrackingExcess(p);
+      if (excess === null) continue;
+      const key = normalizePlayerName(p.playerName);
+      const list = excessIndex.get(key) ?? [];
+      list.push({ id: p.id, start: spanStartYear(p), excess });
+      excessIndex.set(key, list);
+    }
+  }
+  const start = spanStartYear(span);
+  return (excessIndex.get(normalizePlayerName(span.playerName)) ?? [])
+    .filter((e) => e.id !== span.id && Math.abs(e.start - start) >= MIN_START_GAP_YEARS)
+    .map((e) => ({ gap: Math.abs(e.start - start), excess: e.excess }));
+}
+
+function blendedExcess(span: PlayerSpan): number | null {
+  const own = rawTrackingExcess(span);
+  if (own !== null) {
+    let weightSum = 0;
+    let weighted = 0;
+    for (const { gap, excess } of otherSpanExcesses(span)) {
+      const w = 1 / (gap * gap);
+      weightSum += w;
+      weighted += w * excess;
+    }
+    const reliability = weightSum / (weightSum + POOL_KAPPA);
+    const lambda = LAMBDA_NO_HISTORY - (LAMBDA_NO_HISTORY - LAMBDA_FULL_HISTORY) * reliability;
+    const baseline = weightSum > 0 ? (weighted / weightSum) * reliability : 0;
+    return lambda * own + (1 - lambda) * baseline;
   }
 
   // No existing real-data coverage at all — fall back to BPM2 alone, never blended.

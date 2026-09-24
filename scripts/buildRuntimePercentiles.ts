@@ -23,6 +23,7 @@ import { writeFileSync } from 'node:fs';
 import { players } from '../src/data/players';
 import type { PlayerSpan, Position } from '../src/data/schema';
 import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { functionalPosition } from '../src/engine/functionalPosition';
 import { normalizedDefenseForFit } from '../src/engine/talent';
 import { selfCreationPercentileForPortability } from '../src/engine/selfCreationSimilarity';
 
@@ -34,13 +35,13 @@ function percentileFn(
 ): (span: PlayerSpan) => number {
   const sortedByPosition = new Map<Position, number[]>();
   for (const span of players) {
-    const values = sortedByPosition.get(span.primaryPosition) ?? [];
+    const values = sortedByPosition.get(functionalPosition(span)) ?? [];
     values.push(valueOf(span));
-    sortedByPosition.set(span.primaryPosition, values);
+    sortedByPosition.set(functionalPosition(span), values);
   }
   for (const values of sortedByPosition.values()) values.sort((a, b) => a - b);
   return (span: PlayerSpan): number => {
-    const sorted = sortedByPosition.get(span.primaryPosition);
+    const sorted = sortedByPosition.get(functionalPosition(span));
     if (!sorted || sorted.length === 0) return 0.5;
     const value = valueOf(span);
     let below = 0;

@@ -750,6 +750,14 @@ const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
     // the matching `NAMED_DISPLAY_TAL` entry for the number (90, not the MVP ceiling — "w okolicy
     // 90" asked for a modest raise, not a maxed-out one).
     { name: 'Jerry West', spanLabel: '1971-73', tier: 'MVP' as OverallTier },
+    // 2026-09-24, user ("Reggie Miller jest niedoceniony", dislikes the cascade to Sixth Man): the
+    // star-gate ridge cap (`EXEMPT_RIDGE_*`, talent.ts) lowered these spans' no-bridge TAL below
+    // `SIXTH_MAN_TAL_CEILING` (80), which flipped the box-gate Sixth Man relabel on for three
+    // starting shooting guards that read All-star before the cap. Restores the pre-cap tier only;
+    // the numbers stay where the cap put them.
+    { name: 'Reggie Miller', spanLabel: '1999-01', tier: 'All-star' as OverallTier },
+    { name: 'Reggie Miller', spanLabel: '2000-02', tier: 'All-star' as OverallTier },
+    { name: 'Ray Allen', spanLabel: '2010-12', tier: 'All-star' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tier]),
 );
 

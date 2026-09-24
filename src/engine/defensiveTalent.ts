@@ -2,6 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
+import { functionalPosition } from './functionalPosition';
 import { hasDefenseAwardCoverage, individualDefenseRate } from './defensiveAccolades';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import { teamDefenseContextForSpan } from './teamDefenseLookup';
@@ -421,7 +422,13 @@ function perimeterStopperFloor(span: PlayerSpan): number {
   if (!detail) return 0;
   if (detail.matchupDefense === null || detail.matchupDefense > PERIM_STOPPER_MATCHUP_DRAG) return 0;
   if (detail.onOffDdpm !== null && detail.onOffDdpm < -0.3) return 0;
-  const { raptorDefense: r, bpm2Defense: b } = detail;
+  const { raptorDefense, bpm2Defense: b } = detail;
+  // 2026-09-24, user ("PJ Tucker wpada w słabego obrońcę?"): RAPTOR only exists from 2014-15 on and
+  // some seasons simply lack it, so the floor silently could not fire for exactly the class it was
+  // built for — P.J. Tucker 2016-18 (Wing Stopper, matchup -2.68, DDPM +0.5, BPM2 +0.91, no RAPTOR)
+  // read D-TAL 12 between neighbours at 51 and 26. Without RAPTOR, a non-negative on/off DDPM is the
+  // second corroborating source (same thresholds); with RAPTOR nothing changes.
+  const r = raptorDefense ?? (detail.onOffDdpm !== null && detail.onOffDdpm >= 0 ? detail.onOffDdpm : null);
   if (r === null || b === null || r < 0 || b < 0) return 0;
   if (r < PERIM_STOPPER_CORROBORATION && b < PERIM_STOPPER_CORROBORATION) return 0;
   const frac = Math.min(1, Math.min(r, b) / PERIM_STOPPER_FULL_CORROBORATION);
@@ -582,7 +589,7 @@ const UNDERSIZED_BIG_HEIGHT_THRESHOLD: Partial<Record<Position, number>> = { PF:
 const UNDERSIZED_BIG_MALUS_SCALE = 5;
 const MAX_UNDERSIZED_BIG_MALUS = 15;
 function undersizedBigMalus(span: PlayerSpan): number {
-  const threshold = UNDERSIZED_BIG_HEIGHT_THRESHOLD[span.primaryPosition];
+  const threshold = UNDERSIZED_BIG_HEIGHT_THRESHOLD[functionalPosition(span)];
   if (threshold === undefined) return 0;
   const height = getHeightInches(span.playerName);
   if (height === undefined) return 0;
@@ -622,7 +629,7 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
     accoladeRate + (darkoDefenseBonus(span) / DARKO_CORROBORATION_NORMALIZER) * DARKO_CORROBORATION_WEIGHT,
   );
   const corroborationCeiling = UNCORROBORATED_CEILING + (100 - UNCORROBORATED_CEILING) * corroborationStrength;
-  const base = Math.min(ladderPoints(span.primaryPosition, displayDefenseRaw(span)), corroborationCeiling);
+  const base = Math.min(ladderPoints(functionalPosition(span), displayDefenseRaw(span)), corroborationCeiling);
   const credited = Math.min(
     recognitionCeiling(span, accoladeRate),
     base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE - undersizedBigMalus(span),

@@ -3,6 +3,7 @@ import { normalizePlayerName } from '../data/schema';
 import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE, predatesThreePointLine } from './era';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseMalus } from './darkoCorrection';
+import { functionalPosition } from './functionalPosition';
 import { rimPressureOffenseTerm } from './rimPressure';
 import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
@@ -220,6 +221,8 @@ const PF_PENALTY_TAPER_START = 66;
  * 2004-06, a one-year elite-shooting fluke reading All-NBA on C+/D grades). A genuine floor-spacing
  * role player, well below the band, keeps the full boost. */
 const SPACING_BOOST_TAPER_BAND = 9;
+const EXEMPT_RIDGE_HEIGHT = 4;
+const EXEMPT_RIDGE_SLOPE = 0.3;
 
 /**
  * 2026-09-24, user-reported ("defensywni PG bez rzutu — wymarły archetyp w nowoczesnej
@@ -384,7 +387,31 @@ function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number
   // counting stats alone. A player the league ever recognized as an All-Star / All-NBA pick is
   // exempt — Mike James (never, in any season) still falls; every player with a real selection
   // somewhere in their career keeps the full boost.
-  if (wasEverAllStarCaliber(span.playerName)) return spacingCorrection;
+  if (wasEverAllStarCaliber(span.playerName)) {
+    // PG is left on its own numbers (user, 2026-09-24: "PG liczy całkiem ok, problem przy pozycjach
+    // wyżej"): with the cap applied ~9 shooter-playmaker PGs sitting on the PG-archetype 75 line
+    // (Billups, Murray, Maxey, Garland, ...) fell 15 points into "Sixth Man" for a 1-4 point raw drop.
+    if (span.primaryPosition === 'PG') return spacingCorrection;
+    // 2026-09-24, adjacent-span audit (Ray Allen 2009-11 -> 2010-12: rawSum 74.3 -> 70.9 yet TAL
+    // 71 -> 81; Paul George 2022-24 78 vs 2023-25 88 on a LOWER rawSum). The validated-player
+    // exemption above keeps the FULL boost (up to x1.18) right up to the star gate, then the
+    // above-gate branch drops it to ~flat: TAL was non-monotonic in rawSum, a ridge of 3-16
+    // points sitting just below TAL 70 (112 spans out-earned the same profile just above the
+    // gate; 108 of them ever-All-Stars) — a declining Ray Allen / late Reggie Miller read better
+    // than their own primes. The boosted output may not exceed what this profile earns AT the
+    // gate, plus a tolerated `EXEMPT_RIDGE_HEIGHT` of residual boost, minus `EXEMPT_RIDGE_SLOPE`
+    // per rawSum point of distance below it: untouched far below the gate (role-player range),
+    // identical at and above it. First version (height 0, slope 0.5) removed the ridge entirely and
+    // the user judged it too harsh overall (224 spans, 68 by >= 8) while liking the four named
+    // cases (George 2023-25, Markkanen, Korver, Herro); height 4 / slope 0.3 keeps those at
+    // -8..-12 and cuts the mass to 95 spans (14 by >= 8). Known cascade, NOT caused by this rule:
+    // ~9 shooter-playmaker PGs sitting on the 75 line of the PG-archetype Sixth Man entry
+    // (`PG_ARCHETYPE_ENTRY_TAL_CEILING`, grades.ts) tip over it (Murray, Maxey, Billups...).
+    const xGate = ALL_STAR_TAL_FLOOR / flat;
+    const residual = Math.min((spacingCorrection - flat) * ABOVE_STAR_SPACING_RETENTION, ABOVE_STAR_SPACING_MAX_GAIN);
+    const ridgeCap = xGate * (flat + residual) + EXEMPT_RIDGE_HEIGHT - EXEMPT_RIDGE_SLOPE * (xGate - rawSumForGate);
+    return Math.min(spacingCorrection, ridgeCap / rawSumForGate);
+  }
   const flatResult = rawSumForGate * flat;
   const taper = clamp01((ALL_STAR_TAL_FLOOR - flatResult) / SPACING_BOOST_TAPER_BAND);
   return flat + (spacingCorrection - flat) * taper;
@@ -2015,7 +2042,7 @@ export function computeUncappedOffensiveTalent(span: PlayerSpan): number {
  */
 export function normalizedDefenseForFit(span: PlayerSpan): number {
   const { defense } = rawComponents(span, false);
-  const scale = DEFENSE_TAL_SCALE_BY_POSITION[span.primaryPosition];
+  const scale = DEFENSE_TAL_SCALE_BY_POSITION[functionalPosition(span)];
   const scaled = DEFENSE_FLOOR + (defense - DEFENSE_FLOOR) * scale;
   return Math.max(0, Math.min(100, Math.round(scaled)));
 }
