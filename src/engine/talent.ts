@@ -1775,6 +1775,21 @@ const NAMED_TAL_PENALTY: ReadonlyMap<string, number> = new Map(
     { name: 'Anthony Davis', spanLabel: '2018-20', penalty: 3 },
     { name: 'Anthony Davis', spanLabel: '2019-21', penalty: 3 },
     { name: 'Jalen Williams', spanLabel: '2023-25', penalty: 4 },
+    // 2026-09-24, user-reported: both were picked around rounds 3-4 of an ALL-TIME draft (median
+    // picks 35 / 53 over 4 simulated drafts) — real, fine players, just not first-rounds material.
+    // Porzingis: 86in/240lb with only 7.8 rpg is a real physical mismatch by all-time standards
+    // (fine next to a bulkier PF, which is a fit question, not a draft-position one), and his 87
+    // rides all three defense bonuses (synergy +7, gate bump +12, DARKO +9) maxed at once.
+    // Lewis: 2007-09 read All-NBA (84) on a baseTal of 62.85 via the career-wide spacing-taper
+    // bypass. Neither has a mechanism-level lever that doesn't also hit real stars (sum-cap hits
+    // Duncan/Garnett/Gobert; a wider taper band moved 110 spans incl. Ray Allen/Reggie Miller;
+    // BMI/functional-size hits Kareem/Wemby/Paul George) — hence the project's named-exception tool.
+    { name: 'Kristaps Porziņģis', spanLabel: '2021-23', penalty: 6 },
+    { name: 'Kristaps Porziņģis', spanLabel: '2022-24', penalty: 6 },
+    { name: 'Rashard Lewis', spanLabel: '2005-07', penalty: 5 },
+    { name: 'Rashard Lewis', spanLabel: '2006-08', penalty: 6 },
+    { name: 'Rashard Lewis', spanLabel: '2007-09', penalty: 6 },
+    { name: 'Rashard Lewis', spanLabel: '2008-10', penalty: 6 },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.penalty]),
 );
 
