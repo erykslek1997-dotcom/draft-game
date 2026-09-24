@@ -5,6 +5,8 @@
  */
 export const DRAFT_SAVE_KEY = 'draftverse.draftSave.v1';
 export const DRAFT_SAVE_SUMMARY_KEY = 'draftverse.draftSaveSummary.v1';
+/** The Team tab's in-progress rotation edits (RotationBuilder's `persistKey`), part of the same save. */
+export const DRAFT_ROTATION_KEY = 'draftverse.draftRotation.v1';
 
 export interface DraftSaveSummary {
   teamName: string;
@@ -29,6 +31,7 @@ export function clearDraftSave(): void {
   try {
     window.localStorage.removeItem(DRAFT_SAVE_KEY);
     window.localStorage.removeItem(DRAFT_SAVE_SUMMARY_KEY);
+    window.localStorage.removeItem(DRAFT_ROTATION_KEY);
   } catch {
     // Storage unavailable — nothing was saved either.
   }

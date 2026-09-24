@@ -69,6 +69,29 @@ interface Props {
    * own Team tab) is `suggestBasicRotation` — a legal but deliberately unoptimized starting point,
    * shown with a note saying so. */
   seedStrategy?: 'optimal' | 'basic';
+  /** 2026-09-24: localStorage key to keep in-progress edits under (the Team tab passes the saved-
+   * draft key, so a resumed draft comes back with the rotation the player had set). Restored only
+   * when it was saved for exactly this roster. */
+  persistKey?: string;
+}
+
+interface PersistedRows {
+  rosterIds: string[];
+  rows: RowsBySlot;
+}
+
+function readPersistedRows(key: string | undefined, roster: PlayerSpan[]): RowsBySlot | null {
+  if (!key) return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as PersistedRows;
+    const ids = roster.map((p) => p.id);
+    if (!Array.isArray(saved?.rosterIds) || saved.rosterIds.join('|') !== ids.join('|')) return null;
+    return STARTER_SLOTS.every((slot) => Array.isArray(saved.rows?.[slot])) ? saved.rows : null;
+  } catch {
+    return null;
+  }
 }
 
 interface Row {
@@ -146,11 +169,24 @@ function RotationBuilderComponent({
   confirmDisabledHint,
   rosterComplete = true,
   seedStrategy = 'optimal',
+  persistKey,
 }: Props) {
-  const [rows, setRows] = useState<RowsBySlot>(() => buildInitialRows(roster, initialRotation, rosterComplete, seedStrategy));
+  const [restoredRows] = useState(() => readPersistedRows(persistKey, roster));
+  const [rows, setRows] = useState<RowsBySlot>(
+    () => restoredRows ?? buildInitialRows(roster, initialRotation, rosterComplete, seedStrategy),
+  );
+  useEffect(() => {
+    if (!persistKey) return;
+    try {
+      const saved: PersistedRows = { rosterIds: roster.map((p) => p.id), rows };
+      window.localStorage.setItem(persistKey, JSON.stringify(saved));
+    } catch {
+      // Not persisted — edits still work for this session.
+    }
+  }, [persistKey, roster, rows]);
   // Whether the rows currently on screen came from the automatic seed and haven't been touched —
   // drives the "suggested, not optimized" note below.
-  const [isSuggestion, setIsSuggestion] = useState(() => rosterComplete && !initialRotation && seedStrategy === 'basic');
+  const [isSuggestion, setIsSuggestion] = useState(() => !restoredRows && rosterComplete && !initialRotation && seedStrategy === 'basic');
   // 2026-09-24: the Team tab mounts this from the human's FIRST pick, with every slot empty until
   // the roster is full — and nothing ever filled it after that, so the player faced ten blank
   // controls at the end of the draft. Seed it the moment the roster completes, but only if the

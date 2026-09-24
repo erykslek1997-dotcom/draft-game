@@ -21,6 +21,7 @@ import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { ShareCardStarter } from './shareCardImage';
 import type { FeedbackEntry } from './FeedbackToggle';
 import { clearDraftSave, loadDraft, saveDraft } from './draftSave';
+import { AI_SPEED_LABELS, useAiSpeed } from './aiSpeed';
 
 // 2026-09-17, user's own ask: a real "how to play?" affordance on the lottery screen, now that
 // the intro's own always-visible rules list is gone (see App.tsx). This is the same five-item
@@ -73,16 +74,8 @@ interface Props {
  * only loads this component (via `React.lazy`) once the user clicks "Start Draft," at which point
  * the load is expected and can show a real loading state instead of stalling the whole app before
  * it's shown anything at all. See the user's own report: "the game feels slow with loading data."
+ * (Docstring for the `GameShell` component below.)
  */
-const AI_SPEEDS = [
-  { label: 'Slow', delayMs: 1100 },
-  { label: 'Normal', delayMs: 450 },
-  { label: 'Fast', delayMs: 180 },
-  { label: 'Instant', delayMs: 0 },
-] as const;
-const DEFAULT_AI_SPEED_INDEX = 1;
-const AI_SPEED_STORAGE_KEY = 'draftverse.aiSpeed';
-const AI_SPEED_LABELS = AI_SPEEDS.map((s) => s.label);
 
 /** `?draftSeed=123` on the URL replays a specific draft — the seed `createDraft` logs to the
  * console in dev. Any non-finite value is ignored and a fresh random seed is drawn as usual. */
@@ -218,25 +211,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // 2026-09-24, user's own call ("przywróćmy pasek"): the CPU-speed control is back, this time in
   // Player Mode too — at a fixed 'Normal' a human waited 10-30s between their own picks with
   // nothing to do (the board stays browsable during CPU turns either way). Remembered per browser
-  // so a player who prefers 'Instant' doesn't have to pick it again every draft.
-  const [aiSpeedIndex, setAiSpeedIndex] = useState<number>(() => {
-    try {
-      const raw = window.localStorage.getItem(AI_SPEED_STORAGE_KEY);
-      const saved = raw === null ? NaN : Number(raw);
-      return Number.isInteger(saved) && saved >= 0 && saved < AI_SPEEDS.length ? saved : DEFAULT_AI_SPEED_INDEX;
-    } catch {
-      return DEFAULT_AI_SPEED_INDEX;
-    }
-  });
-  function handleAiSpeedChange(index: number) {
-    setAiSpeedIndex(index);
-    try {
-      window.localStorage.setItem(AI_SPEED_STORAGE_KEY, String(index));
-    } catch {
-      // Storage blocked (private mode etc.) — the choice still applies for this draft.
-    }
-  }
-  const aiSpeed = AI_SPEEDS[aiSpeedIndex];
+  // so a player who prefers 'Instant' doesn't have to pick it again every draft (aiSpeed.ts,
+  // shared with Quick 5).
+  const aiSpeed = useAiSpeed();
   // Owned here (not inside DraftBoard) so live in-draft reactions survive the phase transition
   // into ResultsScreen's export — see FeedbackToggle's own docstring for why this replaced the
   // old too_high/too_low dropdown flow.
@@ -267,8 +244,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
 
   // Auto-resolve AI turns during the draft — never in Commissioner Mode, where every team's pick
   // comes from the human via `handlePick` instead (see the effect's own early-return below).
-  // `aiSpeed` still paces this effect (pinned at 'Normal' on this branch — see its own docstring
-  // above).
+  // `aiSpeed` (the player's CPU-speed choice, see aiSpeed.ts) paces this effect.
   useEffect(() => {
     if (phase !== 'draft' || draftState.complete || draftState.commissionerMode) return;
     const teamIdx = currentTeamIndex(draftState);
@@ -422,8 +398,8 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           onSubmitTeam={handleSubmitTeam}
           onSwapHumanSpan={handleSwapHumanSpan}
           aiSpeedLabels={AI_SPEED_LABELS}
-          aiSpeedIndex={aiSpeedIndex}
-          onAiSpeedChange={handleAiSpeedChange}
+          aiSpeedIndex={aiSpeed.index}
+          onAiSpeedChange={aiSpeed.setIndex}
           onExit={handleReset}
         />
       )}

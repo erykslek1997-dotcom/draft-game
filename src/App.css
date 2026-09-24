@@ -4671,8 +4671,8 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
 /* 2026-09-24: the "your turn" counterpart of `.at-cpu-turn-banner` above — accent-coloured and
    sticky so it stays in view while scrolling the player cards, and it carries this pick's real
    shot budget (`pickBudget`, draft.ts). */
+.at-turn-sticky { position: sticky; top: 0; z-index: 5; }
 .at-your-turn-banner {
-  position: sticky; top: 0; z-index: 5;
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
   font-size: 13px; color: var(--at-ink);
   background: color-mix(in srgb, var(--at-accent) 18%, var(--at-paper));

@@ -40,6 +40,8 @@ import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
+import { AiSpeedControl, DraftTicker, LeaveDraftDialog } from './DraftChrome';
+import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
 
 /** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
  * players; anyone past it is reachable via search or a position filter (both land well under the
@@ -177,7 +179,10 @@ const TIER_FRAME_COLOR: Record<DisplayOverallTier, string> = {
   'All-NBA': '#8b9bf7',
   MVP: '#ec8ecb',
   'Greatest peak': '#ffdc9b',
-  GOAT: '#ffd479',
+  // 2026-09-24: was '#ffd479', a near-twin of Greatest peak's gold right above it — the two top
+  // rungs were indistinguishable on the card frames and the tier key. Platinum reads as "above
+  // gold" without colliding with any other tier's hue.
+  GOAT: '#f2f4f8',
 };
 
 /** Best-first order for the Draft tab's tier colour key. */
@@ -681,12 +686,7 @@ export default function DraftBoard({
   // the player cards — collapsed there to a one-line summary so your own turn opens on players.
   const isStackedLayout = useMediaQuery(STACKED_LAYOUT_QUERY);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  useEffect(() => {
-    if (!confirmExit) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setConfirmExit(false);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [confirmExit]);
+  const closeExitDialog = useCallback(() => setConfirmExit(false), []);
   // Defaults open in Commissioner Mode: every pick needs its reasoning box reachable right after
   // it's made, across up to 144 picks — an extra click to reveal it every single time would be a
   // real friction cost at that volume.
@@ -1104,7 +1104,7 @@ export default function DraftBoard({
           pickNumber: h.pickNumber,
           teamCode: teamCodeByTeamId.get(h.teamId) ?? '',
           isHuman: Boolean(team?.isHuman),
-          playerName: spanById.get(h.playerId)?.playerName ?? '—',
+          shortName: shortPlayerName(spanById.get(h.playerId)?.playerName ?? '—'),
         };
       });
   }, [state.history, state.teams, teamCodeByTeamId]);
@@ -1148,32 +1148,15 @@ export default function DraftBoard({
         ← Menu
       </button>
       {confirmExit && (
-        <div className="mode-help-backdrop" onClick={() => setConfirmExit(false)}>
-          <div
-            className="mode-help-modal at-exit-modal"
-            role="alertdialog"
-            aria-modal="true"
-            aria-label="Leave the draft?"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mode-help-modal-head">
-              <span className="mode-help-modal-title at-cond">Leave the draft?</span>
-            </div>
-            <p className="at-exit-modal-text">
-              {state.commissionerMode
-                ? 'This draft is not saved — leaving ends it.'
-                : "Your draft is saved. You can pick it up again from the main menu with “Continue draft”."}
-            </p>
-            <div className="at-exit-modal-actions">
-              <button type="button" className="secondary-btn" onClick={() => setConfirmExit(false)} autoFocus>
-                Keep drafting
-              </button>
-              <button type="button" className="primary-btn" onClick={onExit}>
-                Back to menu
-              </button>
-            </div>
-          </div>
-        </div>
+        <LeaveDraftDialog
+          text={
+            state.commissionerMode
+              ? 'This draft is not saved — leaving ends it.'
+              : 'Your draft is saved. You can pick it up again from the main menu with “Continue draft”.'
+          }
+          onStay={closeExitDialog}
+          onLeave={onExit}
+        />
       )}
       <div className="at-board-brand at-cond">All-Time NBA Draft</div>
       <div className="at-topbar">
@@ -1188,22 +1171,7 @@ export default function DraftBoard({
             </button>
           ))}
         </div>
-        {!state.complete && (
-          <div className="at-speed" role="group" aria-label="CPU pick speed">
-            <span className="at-speed-label at-cond">CPU speed</span>
-            {aiSpeedLabels.map((label, i) => (
-              <button
-                key={label}
-                type="button"
-                className={`at-speed-btn at-cond ${i === aiSpeedIndex ? 'at-active' : ''}`}
-                aria-pressed={i === aiSpeedIndex}
-                onClick={() => onAiSpeedChange(i)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
+        {!state.complete && <AiSpeedControl labels={aiSpeedLabels} index={aiSpeedIndex} onChange={onAiSpeedChange} />}
       </div>
 
       {/* 2026-08-16, user's own ask: no visible toggle button anymore (first moved out of the
@@ -1233,36 +1201,15 @@ export default function DraftBoard({
               laptop screen (and several phone screens) before the first player card. It now
               starts collapsed to a one-line ticker (who's on the clock, the latest picks, when
               you pick next); the full board is one click away and the choice is remembered. */}
-          <div className="at-ticker">
-            <span className="at-ticker-now">
-              {canPick && currentTeam.isHuman ? (
-                <b className="at-ticker-you">You're on the clock</b>
-              ) : state.complete ? (
-                <b>Draft complete</b>
-              ) : (
-                <>
-                  <span className="at-ticker-label">On the clock</span> <b>{teamLabel(currentTeam)}</b>
-                </>
-              )}
-              {!state.complete && !(canPick && currentTeam.isHuman) && humanPicksAway !== null && (
-                <span className="at-ticker-next">
-                  · you pick {humanPicksAway === 1 ? 'next' : `in ${humanPicksAway} picks`}
-                </span>
-              )}
-            </span>
-            {recentPicks.length > 0 && (
-              <span className="at-ticker-recent" aria-label="Latest picks">
-                {recentPicks.map((p) => (
-                  <span key={p.pickNumber} className={`at-ticker-pick ${p.isHuman ? 'is-you' : ''}`}>
-                    <span className="at-ticker-pick-no">#{p.pickNumber}</span> {p.teamCode} {shortPlayerName(p.playerName)}
-                  </span>
-                ))}
-              </span>
-            )}
-            <button type="button" className="at-ticker-toggle at-cond" aria-expanded={boardOpen} onClick={toggleBoard}>
-              {boardOpen ? 'Hide board ▴' : 'Full board ▾'}
-            </button>
-          </div>
+          <DraftTicker
+            youOnClock={canPick && currentTeam.isHuman}
+            complete={state.complete}
+            onClockLabel={teamLabel(currentTeam)}
+            picksAway={humanPicksAway}
+            recentPicks={recentPicks}
+            boardOpen={boardOpen}
+            onToggleBoard={toggleBoard}
+          />
           {boardOpen && (
             <>
           <div className="at-grid-scroll-nav">
@@ -1368,34 +1315,36 @@ export default function DraftBoard({
               instead, with just this small notice (not a block) while it's not your turn. The
               actual Draft buttons below are `disabled` via `canPick`, not hidden, so browsing/
               searching/expanding a row to look at a player works identically either way. */}
-          {!canPick ? (
-            <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
-          ) : (
-            // 2026-09-24: the only "your turn" signal used to be the CPU banner above silently
-            // disappearing (plus the "on the clock" cell in the board, usually scrolled out of
-            // view) — and nothing on screen said how much of the cap this pick could actually use.
-            <div className="at-your-turn-banner" role="status">
-              <span className="at-your-turn-title at-cond">Your pick</span>
-              <span>
-                Round {state.round + 1}/{ROUNDS} · up to <b>{currentBudget.maxThisPick}</b> shots this pick
-                {currentBudget.slotsLeft > 1 && (
-                  <span className="at-your-turn-reserve">
-                    {' '}
-                    ({currentBudget.reserved} kept for your other {currentBudget.slotsLeft - 1} pick
-                    {currentBudget.slotsLeft - 1 === 1 ? '' : 's'})
-                  </span>
-                )}
-              </span>
-            </div>
-          )}
-          {canPick && !anyVisibleLegal && (
-            <div className="at-budget-notice">
-              <span>None of the players shown fit this pick — max {currentBudget.maxThisPick} shots.</span>
-              <button type="button" className="at-budget-notice-btn at-cond" onClick={showAffordable}>
-                Show players that fit
-              </button>
-            </div>
-          )}
+          <div className="at-turn-sticky">
+            {!canPick ? (
+              <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
+            ) : (
+              // 2026-09-24: the only "your turn" signal used to be the CPU banner above silently
+              // disappearing (plus the "on the clock" cell in the board, usually scrolled out of
+              // view) — and nothing on screen said how much of the cap this pick could actually use.
+              <div className="at-your-turn-banner" role="status">
+                <span className="at-your-turn-title at-cond">Your pick</span>
+                <span>
+                  Round {state.round + 1}/{ROUNDS} · up to <b>{currentBudget.maxThisPick}</b> shots this pick
+                  {currentBudget.slotsLeft > 1 && (
+                    <span className="at-your-turn-reserve">
+                      {' '}
+                      ({currentBudget.reserved} kept for your other {currentBudget.slotsLeft - 1} pick
+                      {currentBudget.slotsLeft - 1 === 1 ? '' : 's'})
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+            {canPick && !anyVisibleLegal && (
+              <div className="at-budget-notice">
+                <span>None of the players shown fit this pick — max {currentBudget.maxThisPick} shots.</span>
+                <button type="button" className="at-budget-notice-btn at-cond" onClick={showAffordable}>
+                  Show players that fit
+                </button>
+              </div>
+            )}
+          </div>
           {/* 2026-09-11, user's own inspiration screenshot: Draft + Team merged into one screen —
               player cards on the left, a persistent "Your Five" sidebar on the right (replaces
               the draft-order pip strip this had for one round of live-testing — that was a step
@@ -2129,6 +2078,7 @@ export default function DraftBoard({
                 roster={chosenHumanRoster}
                 rosterComplete={draftComplete}
                 seedStrategy="basic"
+                persistKey={state.commissionerMode ? undefined : DRAFT_ROTATION_KEY}
                 onConfirm={handleRotationConfirm}
                 confirmLabel="Submit Team"
                 // The span dropdown deliberately lists every span (comparing them by cost is the

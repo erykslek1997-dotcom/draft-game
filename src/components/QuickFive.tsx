@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
@@ -8,6 +8,8 @@ import {
   resolveQuickAiPickIfNeeded,
   autoFinishQuickDraft,
   isQuickPickLegal,
+  quickPickBlockReason,
+  quickPickBudget,
   finalizeQuickRotation,
   QUICK_CAP_LIMIT,
   QUICK_ROUNDS,
@@ -25,6 +27,8 @@ import { Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
 import DraftLottery from './DraftLottery';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
+import { AI_SPEED_LABELS, useAiSpeed } from './aiSpeed';
+import { AiSpeedControl, DraftTicker, LeaveDraftDialog, type TickerPick } from './DraftChrome';
 
 interface Props {
   humanTeamName?: string;
@@ -65,6 +69,22 @@ const QUICK_HOW_TO_PLAY = [
 export default function QuickFive({ humanTeamName, onExit }: Props) {
   const [state, setState] = useState<QuickDraftState>(() => createQuickDraft(humanTeamName));
   const [phase, setPhase] = useState<Phase>('lottery');
+  // 2026-09-24: same CPU-speed choice as the All-Time Draft (aiSpeed.ts), a "← Menu" with a
+  // confirm instead of a bare Exit at the very bottom, and every phase opening at the top.
+  const aiSpeed = useAiSpeed();
+  const [confirmExit, setConfirmExit] = useState(false);
+  const closeExitDialog = useCallback(() => setConfirmExit(false), []);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [phase]);
+  /** New draft (no seed) or "Rematch this board" (same seed), straight from the results. */
+  function restart(seed?: number) {
+    const humanName = state.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
+    setState(createQuickDraft(humanName, seed));
+    setSearch('');
+    setSelectedPosition('ALL');
+    setPhase('lottery');
+  }
   const [autoFinishing, setAutoFinishing] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL'>('ALL');
@@ -82,9 +102,9 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
     const timer = setTimeout(() => {
       const next = resolveQuickAiPickIfNeeded(state);
       if (next) setState(next);
-    }, 450);
+    }, aiSpeed.delayMs);
     return () => clearTimeout(timer);
-  }, [state, phase, autoFinishing]);
+  }, [state, phase, autoFinishing, aiSpeed.delayMs]);
 
   // Once the draft ends, move straight to results — no rotation-building step at all (user's own
   // spec: "bez etapu budowania rotacji/minut — od razu wynik").
@@ -107,9 +127,26 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
 
   return (
     <div className="at-shell">
-      <div className="at-board-brand at-cond">Quick 5</div>
+      {phase !== 'lottery' && (
+        <button
+          type="button"
+          className="at-menu-btn at-cond"
+          onClick={() => (phase === 'results' ? onExit() : setConfirmExit(true))}
+        >
+          ← Menu
+        </button>
+      )}
+      {confirmExit && (
+        <LeaveDraftDialog text="Quick 5 drafts aren't saved — leaving ends this one." onStay={closeExitDialog} onLeave={onExit} />
+      )}
+      {phase !== 'lottery' && <div className="at-board-brand at-cond">Quick 5</div>}
+      {phase === 'draft' && !state.complete && (
+        <div className="at-topbar">
+          <AiSpeedControl labels={AI_SPEED_LABELS} index={aiSpeed.index} onChange={aiSpeed.setIndex} />
+        </div>
+      )}
       {phase === 'lottery' && (
-        <DraftLottery teams={state.teams} onDone={() => setPhase('draft')} howToPlay={QUICK_HOW_TO_PLAY} />
+        <DraftLottery teams={state.teams} onDone={() => setPhase('draft')} howToPlay={QUICK_HOW_TO_PLAY} onExit={onExit} />
       )}
       {phase === 'draft' && (
         <QuickDraftBoard
@@ -128,13 +165,14 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
           teamIdx={teamIdx}
         />
       )}
-      {phase === 'results' && <QuickResults state={state} teamCodeByTeamId={teamCodeByTeamId} onExit={onExit} />}
-      {phase !== 'results' && (
-        <div className="game-controls">
-          <button className="secondary-btn reset-btn" onClick={onExit}>
-            Exit
-          </button>
-        </div>
+      {phase === 'results' && (
+        <QuickResults
+          state={state}
+          teamCodeByTeamId={teamCodeByTeamId}
+          onExit={onExit}
+          onNewDraft={() => restart()}
+          onRematch={() => restart(state.seed)}
+        />
       )}
     </div>
   );
@@ -190,10 +228,16 @@ function QuickDraftBoard({
   // Cheap pass only: drop drafted players, position filter, search box, tier sort — no per-player
   // tier-lookup call here, that's all already done once in `allEnrichedOnce` above. Re-runs on
   // every pick AND every keystroke, same as DraftBoard.tsx's own `groups` memo.
+  // 2026-09-24: this pick's shot budget (the same "can you still fill the five?" rule every team
+  // now plays under) and an "only players that fit" filter the stuck-board notice can switch on.
+  const budget = useMemo(() => quickPickBudget(state), [state]);
+  const [onlyFits, setOnlyFits] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return allEnrichedOnce
       .filter((e) => !state.draftedIds.has(e.span.id))
+      .filter((e) => (onlyFits && canPick ? isQuickPickLegal(state, e.span.id) : true))
       .filter((e) => (selectedPosition !== 'ALL' ? e.span.primaryPosition === selectedPosition : true))
       .filter((e) => e.span.playerName.toLowerCase().includes(q))
       .sort((a, b) => {
@@ -202,7 +246,33 @@ function QuickDraftBoard({
         return allStarCount(b.span.playerName) - allStarCount(a.span.playerName);
       })
       .slice(0, 80);
-  }, [state.draftedIds, search, selectedPosition]);
+  }, [state, search, selectedPosition, onlyFits, canPick]);
+  const anyLegal = !canPick || filtered.some((e) => isQuickPickLegal(state, e.span.id));
+  const recentPicks: TickerPick[] = useMemo(() => {
+    const spanById = new Map(state.teams.flatMap((t) => t.roster.map((p) => [p.id, p] as const)));
+    return state.history
+      .slice(-4)
+      .reverse()
+      .map((h) => {
+        const name = spanById.get(h.playerId)?.playerName ?? '—';
+        const parts = name.split(' ');
+        return {
+          pickNumber: h.pickNumber,
+          teamCode: teamCodeByTeamId.get(h.teamId) ?? '',
+          isHuman: Boolean(state.teams.find((t) => t.id === h.teamId)?.isHuman),
+          shortName: parts.length < 2 ? name : `${parts[0][0]}. ${parts[parts.length - 1]}`,
+        };
+      });
+  }, [state.history, state.teams, teamCodeByTeamId]);
+  const picksAway = useMemo(() => {
+    const start = state.round * TEAM_COUNT + state.pickInRound;
+    for (let k = start; k < TEAM_COUNT * QUICK_ROUNDS; k++) {
+      const round = Math.floor(k / TEAM_COUNT);
+      const pick = k % TEAM_COUNT;
+      if (state.teams[round % 2 === 0 ? pick : TEAM_COUNT - 1 - pick].isHuman) return k - start;
+    }
+    return null;
+  }, [state.round, state.pickInRound, state.teams]);
 
   const humanFgas = humanTeam.roster.map((p) => p.fga);
   // Not `capRemaining` from positions.ts — that hardcodes the real 9-man CAP_LIMIT (100.9), wrong
@@ -220,6 +290,16 @@ function QuickDraftBoard({
 
   return (
     <div className="at-card">
+      <DraftTicker
+        youOnClock={canPick}
+        complete={state.complete}
+        onClockLabel={teamLabel(currentTeam)}
+        picksAway={picksAway}
+        recentPicks={recentPicks}
+        boardOpen={boardOpen}
+        onToggleBoard={() => setBoardOpen((o) => !o)}
+      />
+      {boardOpen && (
       <div className="at-grid-scroll" style={{ marginBottom: 16 }}>
         <table className="at-ov-grid">
           <thead>
@@ -274,7 +354,43 @@ function QuickDraftBoard({
         </table>
       </div>
 
-      {!canPick && <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>}
+      )}
+
+      <div style={{ height: 12 }} />
+      <div className="at-turn-sticky">
+        {!canPick ? (
+          <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
+        ) : (
+          <div className="at-your-turn-banner" role="status">
+            <span className="at-your-turn-title at-cond">Your pick</span>
+            <span>
+              Round {state.round + 1}/{QUICK_ROUNDS} · up to <b>{budget.maxThisPick}</b> shots this pick
+              {budget.slotsLeft > 1 && (
+                <span className="at-your-turn-reserve">
+                  {' '}
+                  ({budget.reserved} kept for your other {budget.slotsLeft - 1} pick{budget.slotsLeft - 1 === 1 ? '' : 's'})
+                </span>
+              )}
+            </span>
+          </div>
+        )}
+        {canPick && !anyLegal && (
+          <div className="at-budget-notice">
+            <span>None of the players shown fit this pick — max {budget.maxThisPick} shots.</span>
+            <button
+              type="button"
+              className="at-budget-notice-btn at-cond"
+              onClick={() => {
+                setSearch('');
+                setSelectedPosition('ALL');
+                setOnlyFits(true);
+              }}
+            >
+              Show players that fit
+            </button>
+          </div>
+        )}
+      </div>
 
       <ShotsMeter used={humanShotsUsed} cap={QUICK_CAP_LIMIT} label="Your shots" />
 
@@ -342,6 +458,9 @@ function QuickDraftBoard({
             {pos}
           </button>
         ))}
+        <button className={onlyFits ? 'active' : ''} aria-pressed={onlyFits} onClick={() => setOnlyFits((v) => !v)}>
+          Fits my budget
+        </button>
       </div>
 
       {/* 2026-09-11, user-reported live ("widok graczy" screenshot, then "może używajmy podobnych
@@ -360,9 +479,11 @@ function QuickDraftBoard({
               title={
                 !canPick
                   ? `${teamLabel(currentTeam)} is picking…`
-                  : !legal
-                    ? 'Not a legal pick right now — over the 70-shot cap, or your roster is already full.'
-                    : span.playerName
+                  : legal
+                    ? span.playerName
+                    : quickPickBlockReason(state, span.id) === 'reserve'
+                      ? `Too expensive right now — you need to keep ${budget.reserved} shots for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. Max for this pick: ${budget.maxThisPick} shots.`
+                      : `Over the ${QUICK_CAP_LIMIT}-shot cap — pick a cheaper player.`
               }
               onClick={() => onPick(span.id)}
             >
@@ -408,10 +529,14 @@ function QuickResults({
   state,
   teamCodeByTeamId,
   onExit,
+  onNewDraft,
+  onRematch,
 }: {
   state: QuickDraftState;
   teamCodeByTeamId: Map<string, string>;
   onExit: () => void;
+  onNewDraft: () => void;
+  onRematch: () => void;
 }) {
   const ranked = useMemo(() => {
     return state.teams
@@ -494,8 +619,14 @@ function QuickResults({
       </div>
 
       <div className="bf-submit-row bf-result-actions">
-        <button className="at-draft-btn bf-submit" onClick={onExit}>
-          Exit
+        <button className="at-draft-btn bf-submit" onClick={onNewDraft}>
+          New draft
+        </button>
+        <button className="secondary-btn" onClick={onRematch} title="Same 16 teams, same draft order — try a different plan.">
+          Rematch this board
+        </button>
+        <button className="secondary-btn" onClick={onExit}>
+          Main menu
         </button>
       </div>
     </div>
