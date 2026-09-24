@@ -63,7 +63,11 @@ const reportedEliteCore = team('reported-elite-core-with-bench-targets', [
   // DARKO/RAPTOR/BPM2 coverage (all three +1.6 to +3 on defense — he was a genuinely good defensive
   // PG, not the box-only ~D-TAL 40 misread this fixture relied on). Kenny Anderson '1999-01' is the
   // real "exploitable bench guard" this roster needs: a mild measured negative on all three sources.
-  pick('Kenny Anderson', '1999-01'),
+  // 2026-09-24: was '1999-01'. The real-data excess is now pooled toward the player's own baseline
+  // (darkoCorrection.ts `blendedExcess`), which lifted that span's D-TAL 42 -> 48 — above the PG
+  // huntable bar, so the roster's one real target vanished (0 targetable minutes). '1997-99' (D-TAL 33)
+  // is the same player's genuinely exploitable stretch and lands on the original 14 minutes.
+  pick('Kenny Anderson', '1997-99'),
   pick('Jon Barry', '2001-03'),
 ]);
 const reportedThreeLayerCore = team('reported-jordan-mobley-gobert-core', [
