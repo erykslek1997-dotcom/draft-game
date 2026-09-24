@@ -159,6 +159,8 @@ for (const [label, fixtureTeam] of Object.entries(fixtures)) {
 check(stableFired > 0, 'CLOSING_FIVE_STABLE fires on at least one real fixture (threeLayer/movementCoverage/starJustified all measured to)');
 // 2026-09-23: twoBig's own measured tradeoff moved 0.113 -> 0.10 (Dirk Nowitzki 2006-08's D-TAL
 // capped further by `UNCORROBORATED_CEILING`'s 78->58 drop) — insights.ts's own bar moved with it.
-check(tradeoffFired > 0, 'CLOSING_FIVE_REQUIRES_TRADEOFF fires on at least one real fixture (twoBig measures a real two-player, 0.10 closing tradeoff)');
+// 2026-09-24: twoBig's measured tradeoff moved 0.0967 -> 0.087 (real-data excess pooling and the
+// matchup discount); insights.ts's bar moved 0.09 -> 0.08 with it.
+check(tradeoffFired > 0, 'CLOSING_FIVE_REQUIRES_TRADEOFF fires on at least one real fixture (twoBig measures a real two-player, ~0.09 closing tradeoff)');
 
 console.log('Closing-lineup tests complete.');

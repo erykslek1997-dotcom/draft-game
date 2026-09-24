@@ -90,9 +90,9 @@ function getRegression(field: 'darkoDefense' | 'raptorDefense' | 'matchupDefense
  * here collapses the excess for the very defenders the correction protects (a good box model
  * leaves no residual), so only the cap raise below shipped.
  */
-function coveredExcessParts(span: PlayerSpan): { excess: number; count: number }[] {
+function coveredExcessParts(span: PlayerSpan): { excess: number; count: number; isMatchup?: boolean }[] {
   const defImpact = computeDefensiveImpact(span);
-  const parts: { excess: number; count: number }[] = [];
+  const parts: { excess: number; count: number; isMatchup?: boolean }[] = [];
 
   const ddpmCov = ddpmCoverageForSpan(span);
   if (ddpmCov) {
@@ -107,17 +107,40 @@ function coveredExcessParts(span: PlayerSpan): { excess: number; count: number }
   const matchupCov = matchupCoverageForSpan(span);
   if (matchupCov) {
     const { slope, intercept } = getRegression('matchupDefense');
-    parts.push({ excess: matchupCov.avg - (slope * defImpact + intercept), count: matchupCov.count });
+    parts.push({ excess: matchupCov.avg - (slope * defImpact + intercept), count: matchupCov.count, isMatchup: true });
   }
   return parts;
 }
 
-/** Raw, unpooled blend: the count-weighted mean of every tracking source's excess. */
+/**
+ * 2026-09-24, user ("2 ściągamy" — Durant 2023-25 D-TAL 71 vs his own 55-64 target): per-source
+ * persistence between non-overlapping spans 2 years apart is DDPM corr 0.79 / slope 0.86, RAPTOR 0.58 /
+ * 0.61, and defended-FG% MATCHUP only 0.35 / 0.34 (SD 2.2, the noisiest and least-covered source: 1679
+ * spans). Durant's late spans read matchup +4.6/+4.6/+5.75 (2+ SD) against DDPM ~+1 and dominated the
+ * blend (excess +2.3, D-TAL 76) while his box defense is lower than in his prime. Shrinking EVERY source
+ * by its slope broke the elite defenders whose hidden value is DDPM/RAPTOR (Duncan, Wallace, 13-14/46 on
+ * the reference suite); shrinking matchup for everyone hurt the ones whose matchup credit is real
+ * (Draymond, Davis, Wembanyama: 10/46). What separates them is recognition: a matchup read is trusted in
+ * full once the league itself voted the player All-Defense (accolade rate >= `MATCHUP_FULL_TRUST_RATE`,
+ * the same 0.45 as `recognitionCeiling` in defensiveTalent.ts), and shrunk toward
+ * `MATCHUP_TRUST_NO_RECOGNITION` without any. 0.44 is the measured slope (0.34) softened to the power
+ * 0.75, because the pooling below already shrinks the blend. Reference suite stays 7/46 (Durant 2022-26
+ * -> 60/60/61, inside his band; Lillard 2022-24 35 vs 40-54 is the cost), Wembanyama 90, Gobert 94.
+ */
+const MATCHUP_TRUST_NO_RECOGNITION = 0.44;
+const MATCHUP_FULL_TRUST_RATE = 0.45;
+function matchupTrust(span: PlayerSpan): number {
+  const recognised = Math.min(1, individualDefenseRate(span) / MATCHUP_FULL_TRUST_RATE);
+  return MATCHUP_TRUST_NO_RECOGNITION + (1 - MATCHUP_TRUST_NO_RECOGNITION) * recognised;
+}
+
+/** Raw, unpooled blend: the count-weighted mean of every tracking source's excess (matchup discounted). */
 function rawTrackingExcess(span: PlayerSpan): number | null {
   const parts = coveredExcessParts(span);
   if (parts.length === 0) return null;
+  const trust = matchupTrust(span);
   const totalWeight = parts.reduce((sum, p) => sum + p.count, 0);
-  return parts.reduce((sum, p) => sum + p.excess * p.count, 0) / totalWeight;
+  return parts.reduce((sum, p) => sum + p.excess * (p.isMatchup ? trust : 1) * p.count, 0) / totalWeight;
 }
 
 /**
