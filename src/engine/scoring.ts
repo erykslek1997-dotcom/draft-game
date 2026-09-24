@@ -762,7 +762,24 @@ export function defenseScore(team: Team): number {
     linearScore -
     defensiveHuntability(team).penalty +
     defensiveCohesion(team).defenseScoreBonus;
-  return Math.round(Math.max(0, Math.min(100, adjusted)));
+  return Math.round(Math.max(0, Math.min(100, applyDefenseKnee(adjusted))));
+}
+
+/**
+ * 2026-09-24, user-reported after several passes ("nadal zbyt duża przewaga nad atakiem" — top
+ * teams' Defense still outruns Offense): diminishing returns above `DEFENSE_SCORE_KNEE`, each
+ * point past it counting `DEFENSE_SCORE_KNEE_SLOPE`. Same shape as the offense gradient the user
+ * designed (raw 85 -> 81, 90 -> 83). Measured on 128 seeded AI-drafted teams (top-3 per draft):
+ * mean Defense-minus-Offense gap +2.6 -> +0.3, teams with a gap >= 10 9/24 -> 4/24, top-1 gap
+ * +5.4 -> +2.5, Defense >90 in 4/128 teams -> 0, while the mean Defense of ALL teams moves only
+ * 69.9 -> 69.4 (a top-only lever). Rejected: rescaling `DEFENSE_SCORE_ANCHORS.best` (108 lowers
+ * every team ~4 points, mean 65.8) and halving the cohesion bonus (gap only +0.7, and it touches
+ * structural credit tuned over several sessions).
+ */
+const DEFENSE_SCORE_KNEE = 80;
+const DEFENSE_SCORE_KNEE_SLOPE = 0.5;
+function applyDefenseKnee(score: number): number {
+  return score > DEFENSE_SCORE_KNEE ? DEFENSE_SCORE_KNEE + (score - DEFENSE_SCORE_KNEE) * DEFENSE_SCORE_KNEE_SLOPE : score;
 }
 
 /**

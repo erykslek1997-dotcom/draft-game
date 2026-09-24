@@ -290,7 +290,11 @@ check(eliteCohesion.eliteShell >= 99, 'reported elite roster completes confirmed
 // Battier 2005-07 from 89 to 84 — a real-data-only defender with no selection in that window.
 // `eliteShell` still reads 100 and the projected DRTG below still lands 85.00; only the minutes-
 // weighted average feels the bench piece. Re-measured directly (96), not guessed.
-check(defenseScore(reportedElite) >= 96, 'complete all-time defensive shell reaches the practical Defense ceiling');
+// 2026-09-24 (second move today): >=96 -> >=88 after `scoring.ts`'s `applyDefenseKnee` (80 / slope
+// 0.5): the same complete shell that read 96 now reads 88 — the "practical ceiling" for Defense is
+// ~90 by design now (adjusted 100 -> 90), so this still asserts a genuinely complete shell tops
+// the scale. Re-measured directly (88), not guessed.
+check(defenseScore(reportedElite) >= 88, 'complete all-time defensive shell reaches the practical Defense ceiling');
 check(Math.abs(eliteProjection.defense - 85) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
 
 console.log('Defensive huntability tests complete.');

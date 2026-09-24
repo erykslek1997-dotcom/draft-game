@@ -45,10 +45,13 @@ export function evaluateHistoricalChallenges(
     conditions,
   });
 
+  // 2026-09-24: the Defense thresholds below moved 85 -> 83 and 82 -> 81 with defenseScore's knee
+  // (scoring.ts `applyDefenseKnee`, 80 / slope 0.5): the same team that used to read 85 now reads
+  // 82.5, so the bars were rescaled through the knee to keep these challenges as hard as before.
   return [
     build('detroit-2004', 'No-Offense Superstar Defense', '2004 Detroit Pistons', 'Defensive identity badge', [
       condition('No OTAL 90+ offensive player', maxOffensiveTalent < 90, `max ${Math.round(maxOffensiveTalent)}`),
-      condition('Defense minimum 85', breakdown.defenseScore >= 85, `${breakdown.defenseScore}`),
+      condition('Defense minimum 83', breakdown.defenseScore >= 83, `${breakdown.defenseScore}`),
       condition('Defensive roles minimum 85', fit.components.defensiveRoleCoverage >= 85, `${fit.components.defensiveRoleCoverage}`),
       condition('PO profile minimum 78', season.playoffs >= 78, `${season.playoffs}`),
     ]),
@@ -60,7 +63,7 @@ export function evaluateHistoricalChallenges(
     ]),
     build('twin-towers', 'Twin Towers', '1999 San Antonio Spurs', 'Paint control badge', [
       condition('Two rim protectors in the starting five', rimProtectors >= 2, `${rimProtectors}`),
-      condition('Defense minimum 82', breakdown.defenseScore >= 82, `${breakdown.defenseScore}`),
+      condition('Defense minimum 81', breakdown.defenseScore >= 81, `${breakdown.defenseScore}`),
       condition('Spacing minimum 65', breakdown.spacingScore >= 65, `${breakdown.spacingScore}`),
       condition('Rebounding minimum 80', fit.components.reboundingBalance >= 80, `${fit.components.reboundingBalance}`),
     ]),
@@ -102,7 +105,7 @@ export function evaluateHistoricalChallenges(
       condition('RS profile minimum 78', season.regularSeason >= 78, `${season.regularSeason}`),
     ]),
     build('grit-and-grind', 'Grit and Grind', '2011–13 Memphis Grizzlies', 'Bully-ball badge', [
-      condition('Defense minimum 82', breakdown.defenseScore >= 82, `${breakdown.defenseScore}`),
+      condition('Defense minimum 81', breakdown.defenseScore >= 81, `${breakdown.defenseScore}`),
       condition('Rebounding minimum 78', fit.components.reboundingBalance >= 78, `${fit.components.reboundingBalance}`),
       condition('Guard containment minimum 75', fit.inputs.guardContainment >= 75, `${fit.inputs.guardContainment}`),
       condition('Spacing at most 58', breakdown.spacingScore <= 58, `${breakdown.spacingScore}`),
