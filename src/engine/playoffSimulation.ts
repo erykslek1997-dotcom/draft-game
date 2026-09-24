@@ -1,7 +1,6 @@
 import type { Team } from './types';
 import { TEAM_COUNT } from './positions';
 import { projectMatchup, type MatchupTeamCache } from './matchup';
-import { SEED_ORDER_16 } from './leagueSimulation';
 import { buildMatchupCache, type SeasonStandingsRow } from './seasonSimulation';
 
 /**
@@ -16,12 +15,21 @@ import { buildMatchupCache, type SeasonStandingsRow } from './seasonSimulation';
  * Deliberately its own file, not folded into `seasonSimulation.ts` — a season and a playoff
  * bracket are two genuinely different rolls (re-rolling the playoffs alone, from the SAME already-
  * rolled season standings, is a real, expected use case: "same season, let's see the playoffs
- * again"), so they need independent state/re-roll buttons in the UI. Reuses `SEED_ORDER_16` from
+ * again"), so they need independent state/re-roll buttons in the UI.
  * `leagueSimulation.ts` (the exact same bracket construction, just seeded by a different source and
  * resolved by a different method) rather than a second copy.
  */
 
-const ROUND_LABELS: readonly string[] = ['First Round', 'Quarterfinals', 'Semifinals', 'Finals'];
+/**
+ * 2026-09-24, user's own call ("po symulacji sezonu top8 wchodzi"): only the top 8 of the simulated
+ * season make these playoffs — it used to seed all 16, so a 5-77 team still got a bracket spot.
+ * Deliberately NOT applied to `leagueSimulation.ts`'s title odds (the hero's "Title odds"), which
+ * stay the separate 16-team expectation they always were; the user chose to keep that as is.
+ * Standard 8-team bracket: 1v8 / 4v5 on one side, 2v7 / 3v6 on the other.
+ */
+export const PLAYOFF_TEAM_COUNT = 8;
+const SEED_ORDER_8 = [1, 8, 4, 5, 2, 7, 3, 6];
+const ROUND_LABELS: readonly string[] = ['Quarterfinals', 'Semifinals', 'Finals'];
 
 export interface PlayoffSeriesResult {
   round: number;
@@ -36,8 +44,8 @@ export interface PlayoffSeriesResult {
 }
 
 export interface PlayoffResult {
-  /** One entry per round, in order — `rounds[0]` is the 8-series First Round (16 teams),
-   * `rounds[3]` is the 1-series Finals. */
+  /** One entry per round, in order — `rounds[0]` is the 4-series Quarterfinals (top 8 of the
+   * season), `rounds[2]` is the 1-series Finals. */
   rounds: PlayoffSeriesResult[][];
   championId: string;
 }
@@ -66,11 +74,9 @@ function simulateSeries(
 }
 
 /**
- * Simulates a full 16-team single-elimination playoff bracket, seeded by `standings` (expected to
- * be a `simulateSeason` result for these same teams — the caller's responsibility, not re-derived
- * here). Returns `null` for anything other than the real game's fixed 16-team case (same
- * defensive-guard shape as `evaluateLeague`'s own `teams.length !== 16` check) — the bracket
- * construction only makes sense at that exact size.
+ * Simulates an 8-team single-elimination playoff bracket from the top 8 of `standings` (expected
+ * to be a `simulateSeason` result for these same teams — the caller's responsibility, not
+ * re-derived here). Returns `null` for anything other than the real game's fixed 16-team league.
  */
 export function simulatePlayoffs(
   teams: Team[],
@@ -86,8 +92,8 @@ export function simulatePlayoffs(
   const teamIdBySeed = new Map(standings.map((row) => [row.rank, row.teamId]));
   const cacheById = cacheByTeamId ?? buildMatchupCache(teams);
 
-  let currentIds = SEED_ORDER_16.map((seed) => teamIdBySeed.get(seed));
-  let currentSeeds = [...SEED_ORDER_16];
+  let currentIds = SEED_ORDER_8.map((seed) => teamIdBySeed.get(seed));
+  let currentSeeds = [...SEED_ORDER_8];
   if (currentIds.some((id) => id === undefined)) return null; // malformed standings — defensive, not expected
 
   const rounds: PlayoffSeriesResult[][] = [];

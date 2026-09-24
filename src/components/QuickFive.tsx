@@ -28,7 +28,7 @@ import DraftLottery from './DraftLottery';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
 import { AI_SPEED_LABELS, useAiSpeed } from './aiSpeed';
-import { AiSpeedControl, DraftTicker, LeaveDraftDialog, type TickerPick } from './DraftChrome';
+import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, TurnBudgetText, type TickerPick } from './DraftChrome';
 
 interface Props {
   humanTeamName?: string;
@@ -72,6 +72,7 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
   // 2026-09-24: same CPU-speed choice as the All-Time Draft (aiSpeed.ts), a "← Menu" with a
   // confirm instead of a bare Exit at the very bottom, and every phase opening at the top.
   const aiSpeed = useAiSpeed();
+  const [boardOpen, setBoardOpen] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const closeExitDialog = useCallback(() => setConfirmExit(false), []);
   useEffect(() => {
@@ -143,6 +144,7 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
       {phase === 'draft' && !state.complete && (
         <div className="at-topbar">
           <AiSpeedControl labels={AI_SPEED_LABELS} index={aiSpeed.index} onChange={aiSpeed.setIndex} />
+          <BoardToggleButton open={boardOpen} onToggle={() => setBoardOpen((o) => !o)} />
         </div>
       )}
       {phase === 'lottery' && (
@@ -163,6 +165,7 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
           onAutoFinish={handleAutoFinish}
           autoFinishing={autoFinishing}
           teamIdx={teamIdx}
+          boardOpen={boardOpen}
         />
       )}
       {phase === 'results' && (
@@ -210,6 +213,7 @@ function QuickDraftBoard({
   onAutoFinish,
   autoFinishing,
   teamIdx,
+  boardOpen,
 }: {
   state: QuickDraftState;
   canPick: boolean;
@@ -224,6 +228,7 @@ function QuickDraftBoard({
   onAutoFinish: () => void;
   autoFinishing: boolean;
   teamIdx: number;
+  boardOpen: boolean;
 }) {
   // Cheap pass only: drop drafted players, position filter, search box, tier sort — no per-player
   // tier-lookup call here, that's all already done once in `allEnrichedOnce` above. Re-runs on
@@ -232,7 +237,6 @@ function QuickDraftBoard({
   // now plays under) and an "only players that fit" filter the stuck-board notice can switch on.
   const budget = useMemo(() => quickPickBudget(state), [state]);
   const [onlyFits, setOnlyFits] = useState(false);
-  const [boardOpen, setBoardOpen] = useState(false);
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return allEnrichedOnce
@@ -296,8 +300,6 @@ function QuickDraftBoard({
         onClockLabel={teamLabel(currentTeam)}
         picksAway={picksAway}
         recentPicks={recentPicks}
-        boardOpen={boardOpen}
-        onToggleBoard={() => setBoardOpen((o) => !o)}
       />
       {boardOpen && (
       <div className="at-grid-scroll" style={{ marginBottom: 16 }}>
@@ -363,15 +365,13 @@ function QuickDraftBoard({
         ) : (
           <div className="at-your-turn-banner" role="status">
             <span className="at-your-turn-title at-cond">Your pick</span>
-            <span>
-              Round {state.round + 1}/{QUICK_ROUNDS} · up to <b>{budget.maxThisPick}</b> shots this pick
-              {budget.slotsLeft > 1 && (
-                <span className="at-your-turn-reserve">
-                  {' '}
-                  ({budget.reserved} kept for your other {budget.slotsLeft - 1} pick{budget.slotsLeft - 1 === 1 ? '' : 's'})
-                </span>
-              )}
-            </span>
+            <TurnBudgetText
+              round={state.round + 1}
+              rounds={QUICK_ROUNDS}
+              capLeft={budget.capLeft}
+              slotsLeft={budget.slotsLeft}
+              maxThisPick={budget.maxThisPick}
+            />
           </div>
         )}
         {canPick && !anyLegal && (
