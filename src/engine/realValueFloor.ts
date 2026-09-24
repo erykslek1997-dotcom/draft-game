@@ -50,9 +50,21 @@ const SUSTAINED_MIN_SPANS = 3;
  * this project's own disclosed LOW-CONFIDENCE similarity estimates, especially pre-1974. This
  * function instead admits `measured-blend` spans (real historicalApm/PIPM, whether or not DARKO
  * also happens to contribute) while still excluding `bpm2-fallback` outright — a real measured
- * source shouldn't need DARKO specifically to count as real. */
-function eligibleForFloor(rv: { isModernEra: boolean; source: 'measured-blend' | 'bpm2-fallback' }): boolean {
-  return rv.isModernEra || rv.source === 'measured-blend';
+ * source shouldn't need DARKO specifically to count as real.
+ *
+ * 2026-09-24, plan item 8: the remaining `bpm2-fallback` gap. Bill Russell 1965-67 (rv 7.0, All-NBA)
+ * still read Role Player TAL 57, Willis Reed's MVP-year span TAL 56, Bob Cousy (13x All-Star) 54-59.
+ * A `bpm2-fallback` span is now admitted ONLY when the league itself voted the player All-NBA in
+ * that window — an independent real signal that turns a similarity estimate into a corroborated
+ * one, exactly how `ALLSTAR_FLOOR_RV_WITH_ALL_NBA` already treats a real selection. Measured over
+ * the draft pool: 32 spans / 11 players raised (Russell, Cousy, Schayes, Johnston, Macauley, Reed,
+ * Frazier, Bing, Pettit, Wilt 1970-72, Robertson 1970-72), none lowered; the rv bars, the sustained
+ * rule and the All-star cap are unchanged. */
+function eligibleForFloor(
+  span: PlayerSpan,
+  rv: { isModernEra: boolean; source: 'measured-blend' | 'bpm2-fallback' },
+): boolean {
+  return rv.isModernEra || rv.source === 'measured-blend' || madeAllNbaInSpan(span.playerName, span.spanLabel);
 }
 
 const sustained = new Set<string>();
@@ -60,7 +72,7 @@ const sustained = new Set<string>();
   const counts = new Map<string, number>();
   for (const s of players) {
     const rv = blendedRealValueForSpan(s);
-    if (rv && eligibleForFloor(rv) && rv.value >= SUSTAINED_BAR) {
+    if (rv && eligibleForFloor(s, rv) && rv.value >= SUSTAINED_BAR) {
       const k = normalizePlayerName(s.playerName);
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }
@@ -73,7 +85,7 @@ export type RealValueFloor = Extract<OverallTier, 'All-star' | 'Starter'> | null
 export function realValueTierFloor(span: PlayerSpan): RealValueFloor {
   if (!sustained.has(normalizePlayerName(span.playerName))) return null;
   const rv = blendedRealValueForSpan(span);
-  if (!rv || !eligibleForFloor(rv)) return null;
+  if (!rv || !eligibleForFloor(span, rv)) return null;
   const allStarBar = madeAllNbaInSpan(span.playerName, span.spanLabel)
     ? ALLSTAR_FLOOR_RV_WITH_ALL_NBA
     : ALLSTAR_FLOOR_RV;
