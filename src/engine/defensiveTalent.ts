@@ -421,7 +421,13 @@ function perimeterStopperFloor(span: PlayerSpan): number {
   if (!detail) return 0;
   if (detail.matchupDefense === null || detail.matchupDefense > PERIM_STOPPER_MATCHUP_DRAG) return 0;
   if (detail.onOffDdpm !== null && detail.onOffDdpm < -0.3) return 0;
-  const { raptorDefense: r, bpm2Defense: b } = detail;
+  const { raptorDefense, bpm2Defense: b } = detail;
+  // 2026-09-24, user ("PJ Tucker wpada w słabego obrońcę?"): RAPTOR only exists from 2014-15 on and
+  // some seasons simply lack it, so the floor silently could not fire for exactly the class it was
+  // built for — P.J. Tucker 2016-18 (Wing Stopper, matchup -2.68, DDPM +0.5, BPM2 +0.91, no RAPTOR)
+  // read D-TAL 12 between neighbours at 51 and 26. Without RAPTOR, a non-negative on/off DDPM is the
+  // second corroborating source (same thresholds); with RAPTOR nothing changes.
+  const r = raptorDefense ?? (detail.onOffDdpm !== null && detail.onOffDdpm >= 0 ? detail.onOffDdpm : null);
   if (r === null || b === null || r < 0 || b < 0) return 0;
   if (r < PERIM_STOPPER_CORROBORATION && b < PERIM_STOPPER_CORROBORATION) return 0;
   const frac = Math.min(1, Math.min(r, b) / PERIM_STOPPER_FULL_CORROBORATION);
