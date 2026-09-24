@@ -221,6 +221,27 @@ const PF_PENALTY_TAPER_START = 66;
  * role player, well below the band, keeps the full boost. */
 const SPACING_BOOST_TAPER_BAND = 9;
 
+/**
+ * 2026-09-24, user-reported ("defensywni PG bez rzutu — wymarły archetyp w nowoczesnej
+ * koszykówce", Buse/Twardzik/McMillan/Ward): a point guard with almost no offensive load and no
+ * shot is a dead archetype by modern standards, yet the engine barely charged for it — the
+ * pre-3PT-line exemption below shielded every pre-1980 span (Buse 1976-80, Twardzik) outright,
+ * and the penalty vanished for good above the All-Star gate (TAL 70). User's explicit calls:
+ * (1) the penalty SHOULD apply to pre-line spans too, (2) the gate should sit higher.
+ *
+ * Scoped to PG with `fga < NON_SHOOTING_PG_FGA_CEILING` on purpose: every pre-1980 player reads
+ * spacing 0 (no 3PA existed), so lifting the exemption globally would punish Oscar Robertson /
+ * Cousy / Frazier — high-usage scorers with no 3-point attempts to take — exactly the "real
+ * opportunity" case the exemption was written for. Low FGA is the "no shot AND no offensive load"
+ * signature the user is describing. Above the gate the penalty now FADES linearly to zero over
+ * `PG_NON_SHOOTER_PENALTY_GATE`-`ALL_STAR_TAL_FLOOR` points instead of vanishing at a cliff.
+ */
+const NON_SHOOTING_PG_FGA_CEILING = 10;
+const PG_NON_SHOOTER_PENALTY_GATE = 85;
+function isNonShootingPointGuard(span: PlayerSpan): boolean {
+  return span.primaryPosition === 'PG' && span.fga < NON_SHOOTING_PG_FGA_CEILING;
+}
+
 function roleSpacingAdjustedCorrection(span: PlayerSpan): number {
   const spacing = computeSpacing(span);
   const positionFlat = POSITION_TALENT_CORRECTION[span.primaryPosition];
@@ -240,7 +261,7 @@ function roleSpacingAdjustedCorrection(span: PlayerSpan): number {
   // could theoretically still clear PLUS_SHOOTER_SPACING via non-3PT gravity inputs, though in
   // practice it never will pre-1980 since 3PA is always 0 then) — this only intercepts the
   // punishment direction.
-  if (raw < positionFlat && predatesThreePointLine(span.spanLabel)) return positionFlat;
+  if (raw < positionFlat && predatesThreePointLine(span.spanLabel) && !isNonShootingPointGuard(span)) return positionFlat;
   return raw;
 }
 
@@ -319,6 +340,13 @@ function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number
     return Math.max(flat, centerSpacingBoost(span));
   }
   if (baseTal >= ALL_STAR_TAL_FLOOR) {
+    if (span.primaryPosition === 'PG') {
+      const penalty = roleSpacingAdjustedCorrection(span);
+      if (penalty < flat) {
+        const t = clamp01((baseTal - ALL_STAR_TAL_FLOOR) / (PG_NON_SHOOTER_PENALTY_GATE - ALL_STAR_TAL_FLOOR));
+        return penalty + t * (flat - penalty);
+      }
+    }
     // Above the star gate the spacing adjustment doesn't apply in full, but the old hard `return
     // flat` was a cliff for elite spacers crossing TAL 70 (see `ABOVE_STAR_SPACING_RETENTION`).
     // Keep a small, capped fraction of the sub-gate boost — SG/SF/PF only, and only in the

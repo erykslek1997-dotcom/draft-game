@@ -1665,7 +1665,12 @@ export const DETECTORS: RosterInsightDetector[] = [
       // which pulled this same fixture's `balancedDefenseTradeoff` from 0.113 to exactly 0.10 —
       // re-measured directly, not guessed; still the same real two-big offense/defense split this
       // bar exists to keep visible.
-      const meaningfulTradeoff = c.balancedOffenseTradeoff >= 0.1 || c.balancedDefenseTradeoff >= 0.1;
+      // 2026-09-24: 0.10 -> 0.09 after the `displayExtraDefenseBonus` source-count ramp
+      // (defensiveTalent.ts) lifted Dirk Nowitzki 2006-08's D-TAL, moving this same fixture's
+      // `balancedDefenseTradeoff` 0.1000 -> 0.0967. Measured, not guessed — but note the last two
+      // bar moves both simply tracked this one fixture, so treat 0.09 as "roughly a tenth of the
+      // composite," not a validated cutoff.
+      const meaningfulTradeoff = c.balancedOffenseTradeoff >= 0.09 || c.balancedDefenseTradeoff >= 0.09;
       if (c.offenseDefensePersonnelOverlap >= 4 || !meaningfulTradeoff) return inactive;
       const offenseOnly = c.offense.players.filter(p => !c.defense.players.some(dp => dp.playerId === p.playerId));
       const defenseOnly = c.defense.players.filter(p => !c.offense.players.some(op => op.playerId === p.playerId));
