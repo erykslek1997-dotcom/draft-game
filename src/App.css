@@ -4081,8 +4081,10 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   .at-merge-team-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
   /* Both panels are always showing side by side at this width, so switching between them no
      longer does anything — the topbar's Draft/Team pill pair (and the sidebar's own "Team tab"
-     jump link, hidden via DraftBoard.tsx's own `isWideLayout` check) would just be dead chrome. */
-  .at-topbar { display: none; }
+     jump link, hidden via DraftBoard.tsx's own `isWideLayout` check) would just be dead chrome.
+     2026-09-24: only the tab pills are hidden now — the topbar also carries the CPU-speed
+     control, which hiding the whole bar made unreachable on wide screens. */
+  .at-topbar .at-tabs { display: none; }
 }
 
 .at-draft-workspace {
@@ -5047,58 +5049,12 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-lottery .at-board-brand { border-bottom: none; padding: 0 0 4px; margin-bottom: 0; }
 .at-lottery-sub { color: var(--at-ink-soft); font-size: 13px; margin: 0 0 22px; }
 
-/* 2026-09-14, user-reported live: this cap (920px) dated from when `#root` itself boxed the whole
-   app into a centered ~1126px card (see index.css's own comment on that removal) — 920px was
-   already most of the available width back then. Now that the shell spans the full viewport, the
-   same 920px cap left this grid a narrow island in the middle of a much wider screen, forcing
-   every column back down near its 220px floor and truncating longer team names ("Winston-Salem
-   Cowboys" -> "Winston-Salem C..."). Both numbers raised together — 280px floor, 1320px cap — so
-   a still-narrow (tablet/mobile) viewport keeps the same graceful auto-fill column drop this had
-   before, while a normal desktop width now settles on 4 wide ~320px+ columns with room for a full
-   name, number, code pill and YOU tag without eliding anything. */
-.at-lottery-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 10px; margin: 0 auto 24px; max-width: 1320px;
-}
-.at-lottery-slot {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--at-paper-raised); border: 1px solid var(--at-line); border-radius: 10px;
-  padding: 10px 12px; min-height: 44px; text-align: left;
-  transition: background .2s, border-color .2s, transform .2s;
-}
-.at-lottery-num {
-  flex: none; min-width: 26px; font-size: 12px; font-weight: 700;
-  color: var(--at-ink-faint); font-variant-numeric: tabular-nums;
-}
-.at-lottery-unrevealed { color: var(--at-ink-faint); font-size: 15px; font-weight: 700; opacity: 0.5; }
-.at-lottery-team {
-  display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
-  color: var(--at-ink); min-width: 0; flex: 1;
-  animation: at-lottery-pop .25s ease-out;
-}
-.at-lottery-slot.at-revealed { background: var(--at-pill); }
-/* 2026-08-19: switched from the shared blue accent to the NBA-red accent-2 specifically so "your
-   team" visually pops against a board otherwise entirely blue team chips — the same blue/red
-   contrast the real NBA logo itself uses, not just a brighter shade of the same colour every
-   other pill already has. */
-.at-lottery-slot.at-you {
-  background: color-mix(in srgb, var(--at-accent-2) 22%, var(--at-pill));
-  border-color: var(--at-accent-2);
-  transform: scale(1.03);
-}
+/* The red "YOU" tag, used next to the human team on the draft boards. NBA-red accent-2 so "your
+   team" pops against the otherwise all-blue team chips. */
 .at-lottery-you-tag {
   flex: none; background: var(--at-accent-2); color: var(--at-accent-2-ink);
   font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em;
   border-radius: 999px; padding: 2px 7px;
-}
-/* 2026-09-11, Self-Scout Report finding #2 — `.at-team-name-full`'s shared base rule (8px left
-   margin, bold, full ink color) is reused as-is; this only adds the truncation `.at-lottery-team`'s
-   flex row needs so a long name ("Winston-Salem Cowboys") shrinks with an ellipsis instead of
-   wrapping the slot taller or pushing the YOU tag out. */
-/* 2026-09-24: wraps instead of an ellipsis — the one name every player looks for on this screen
-   is their own, and it was the one getting cut ("Oklahoma City Wa…"). */
-.at-lottery-name-full {
-  flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.25;
 }
 @keyframes at-lottery-pop {
   from { opacity: 0; transform: scale(0.85); }
@@ -5109,12 +5065,56 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
    (this component's own root class) already aliases to its dark board values — see that alias
    block's own comment in App.css. No extra dark-mode styling needed here as a result; this block
    only needs its own spacing/alignment. */
-.at-lottery-howtoplay { max-width: 640px; margin: 0 auto 20px; text-align: left; }
+.at-lottery-howtoplay { max-width: 640px; margin: 22px auto 0; text-align: left; }
 .at-lottery-howtoplay .how-to-play-btn { display: block; margin: 0 auto 14px; }
 
 .at-lottery-continue { margin-top: 4px; }
 .at-lottery-skip {
   margin-top: 4px; font-size: 11.5px; padding: 6px 14px; opacity: 0.75;
+}
+
+/* 2026-09-24: slot-machine reveal of the human's own draft slot (DraftLottery.tsx), replacing the
+   16-card reveal of every team. The title's blue/red bar used to run into the How-to-play button
+   right under it; that button now sits below the result instead, and the subtitle gets room. */
+.at-lottery .at-board-brand + .at-lottery-sub { margin-top: 18px; }
+.at-reel {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 18px 34px 16px; margin: 0 auto 18px; border-radius: 18px;
+  border: 1px solid var(--at-line); background: var(--at-paper);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), var(--at-shadow);
+}
+.at-reel-label, .at-reel-of { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); }
+.at-reel-window {
+  display: block; width: 190px; height: 104px; overflow: hidden; border-radius: 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(255,255,255,0.03) 50%, rgba(0,0,0,0.55));
+  border: 1px solid var(--at-line);
+}
+.at-reel-number {
+  display: block; font-size: 72px; line-height: 104px; font-weight: 800; color: var(--at-ink);
+  font-variant-numeric: tabular-nums; animation: at-reel-roll .09s linear;
+}
+@keyframes at-reel-roll {
+  from { transform: translateY(-45%); opacity: 0.35; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.at-reel--done { border-color: var(--at-accent-2); box-shadow: 0 0 0 1px var(--at-accent-2), 0 0 32px color-mix(in srgb, var(--at-accent-2) 45%, transparent); }
+.at-reel--done .at-reel-number { color: var(--at-accent-2); animation: at-reel-land .45s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes at-reel-land {
+  from { transform: scale(0.7); }
+  to { transform: scale(1); }
+}
+.at-lottery-result { animation: at-lottery-pop .3s ease-out; margin-bottom: 18px; }
+.at-lottery-team-line { font-size: 15px; color: var(--at-ink); margin: 0 0 10px; }
+.at-lottery-picks-label { font-size: 12px; color: var(--at-ink-soft); margin: 0 0 8px; }
+.at-lottery-picks { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 560px; margin: 0 auto; }
+.at-lottery-pick {
+  font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+  background: var(--at-pill); color: var(--at-ink); font-variant-numeric: tabular-nums;
+}
+.at-lottery-pick-round { color: var(--at-ink-faint); font-weight: 600; margin-right: 2px; }
+.at-lottery-actions { margin-top: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .at-reel-number, .at-reel--done .at-reel-number, .at-lottery-result { animation: none; }
 }
 
 /* 2026-09-24: RotationBuilder's "this is only a suggestion" note and its visible reason for a
@@ -5210,12 +5210,17 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 }
 .at-ticker-pick.is-you { color: var(--at-accent-2); }
 .at-ticker-pick-no { color: var(--at-ink-faint); }
+/* 2026-09-24, user-reported live ("full board mało widoczny"): was a dark pill pushed to the far
+   right edge — on a wide screen, a thousand-plus pixels away from anything else. Now an accent
+   button right after the on-the-clock status (see `order` below), where the eye already is. */
 .at-ticker-toggle {
-  margin-left: auto; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
-  border: 1px solid var(--at-line); border-radius: 999px; padding: 5px 12px;
-  background: var(--at-paper); color: var(--at-ink-soft);
+  order: -1; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+  border: 1px solid var(--at-accent); border-radius: 999px; padding: 6px 14px;
+  background: color-mix(in srgb, var(--at-accent) 16%, var(--at-paper)); color: var(--at-accent);
 }
-.at-ticker-toggle:hover { color: var(--at-ink); }
+.at-ticker-toggle:hover { background: var(--at-accent); color: var(--at-accent-ink); }
+.at-ticker-toggle:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+.at-ticker-now { order: -2; }
 .at-ticker + .at-grid-scroll-nav,
 .at-ticker + .at-grid-scroll { margin-top: 12px; }
 .at-draft-sidebar-head--toggle {
@@ -5228,4 +5233,26 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 @media (max-width: 640px) {
   /* One scrollable line of tier swatches on phones instead of three wrapped rows. */
   .at-tier-key { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+}
+
+/* 2026-09-24, user-reported live ("dużo wolnego miejsca"): the card's lower half was mostly empty
+   — two small buttons stacked in the bottom-right corner. Now a box-score line plus the two actions
+   side by side across the full width (Draft as the larger, easier target). */
+.at-player-card-season {
+  font-size: 10px; letter-spacing: 0.04em; color: var(--at-ink-faint);
+  padding-top: 5px; border-top: 1px solid var(--at-line);
+}
+.at-player-card-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; text-align: center;
+  font-size: 9.5px; letter-spacing: 0.05em; color: var(--at-ink-faint); font-variant-numeric: tabular-nums;
+}
+.at-player-card-stats > span { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.at-player-card-stats b { color: var(--at-ink); font-size: 13px; font-weight: 700; letter-spacing: 0; }
+.at-player-card-foot { justify-content: stretch; }
+.at-player-card-actions { flex-direction: row; align-items: stretch; width: 100%; gap: 6px; }
+.at-player-card-actions .at-player-card-peek { flex: 1 1 0; height: 28px; }
+.at-player-card-actions .at-player-card-draft { flex: 1.3 1 0; height: 28px; font-size: 12px; }
+.at-player-card-pos { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+@media (max-width: 640px) {
+  .at-ticker-recent { flex: 1 1 100%; }
 }

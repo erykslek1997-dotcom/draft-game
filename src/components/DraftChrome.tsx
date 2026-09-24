@@ -83,7 +83,7 @@ export function DraftTicker({
         </span>
       )}
       <button type="button" className="at-ticker-toggle at-cond" aria-expanded={boardOpen} onClick={onToggleBoard}>
-        {boardOpen ? 'Hide board ▴' : 'Full board ▾'}
+        {boardOpen ? 'Hide draft board ▴' : 'Show full draft board ▾'}
       </button>
     </div>
   );
