@@ -1,7 +1,7 @@
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
-import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes } from '../engine/rotation';
+import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes, suggestBasicRotation } from '../engine/rotation';
 import { computeDurability, maxSustainableMinutes } from '../engine/durability';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { displayTalentForSpan, offensiveGrade, defensiveGrade } from '../engine/grades';
@@ -64,6 +64,11 @@ interface Props {
    * which only ever seeds this from an already-final team) — the Team tab call site is the only
    * one that passes `false` while picks remain. */
   rosterComplete?: boolean;
+  /** 2026-09-24: how an empty editor gets seeded once the roster is complete. 'optimal' (default,
+   * the Results screen's AI-team correction reuse) is `autoAssignRotation`; 'basic' (the human's
+   * own Team tab) is `suggestBasicRotation` — a legal but deliberately unoptimized starting point,
+   * shown with a note saying so. */
+  seedStrategy?: 'optimal' | 'basic';
 }
 
 interface Row {
@@ -81,8 +86,14 @@ const MAX_ROWS_PER_SLOT = 4;
 /** `rosterComplete = false` skips `autoAssignRotation` entirely and returns every slot empty —
  * see `Props.rosterComplete`'s own comment for why: auto-assigning against a still-growing roster
  * produces a partial, nonsensical fill instead of waiting for all 9 picks to actually be in. */
-function buildInitialRows(roster: PlayerSpan[], seed?: Rotation | null, rosterComplete = true): RowsBySlot {
-  const source = rosterComplete ? (seed ?? autoAssignRotation(roster)) : { slots: {} as Record<Position, SlotAssignment[]> };
+function buildInitialRows(
+  roster: PlayerSpan[],
+  seed?: Rotation | null,
+  rosterComplete = true,
+  seedStrategy: 'optimal' | 'basic' = 'optimal',
+): RowsBySlot {
+  const autoSeed = () => (seedStrategy === 'basic' ? suggestBasicRotation(roster) : autoAssignRotation(roster));
+  const source = rosterComplete ? (seed ?? autoSeed()) : { slots: {} as Record<Position, SlotAssignment[]> };
   const result = {} as RowsBySlot;
   for (const slot of STARTER_SLOTS) {
     const assignments = source.slots[slot] ?? [];
@@ -134,8 +145,26 @@ function RotationBuilderComponent({
   confirmDisabled,
   confirmDisabledHint,
   rosterComplete = true,
+  seedStrategy = 'optimal',
 }: Props) {
-  const [rows, setRows] = useState<RowsBySlot>(() => buildInitialRows(roster, initialRotation, rosterComplete));
+  const [rows, setRows] = useState<RowsBySlot>(() => buildInitialRows(roster, initialRotation, rosterComplete, seedStrategy));
+  // Whether the rows currently on screen came from the automatic seed and haven't been touched —
+  // drives the "suggested, not optimized" note below.
+  const [isSuggestion, setIsSuggestion] = useState(() => rosterComplete && !initialRotation && seedStrategy === 'basic');
+  // 2026-09-24: the Team tab mounts this from the human's FIRST pick, with every slot empty until
+  // the roster is full — and nothing ever filled it after that, so the player faced ten blank
+  // controls at the end of the draft. Seed it the moment the roster completes, but only if the
+  // player hasn't already started setting it by hand while picks were still coming in.
+  useEffect(() => {
+    if (!rosterComplete || initialRotation) return;
+    const untouched = STARTER_SLOTS.every((slot) => rows[slot].every((r) => !r.playerId));
+    if (!untouched) return;
+    setRows(buildInitialRows(roster, null, true, seedStrategy));
+    setIsSuggestion(seedStrategy === 'basic');
+    // Only the incomplete -> complete transition matters here; `roster` changing afterwards
+    // remounts this component via its `key` in DraftBoard instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rosterComplete]);
   // 2026-09-16, user-reported live ("jak ustalam minuty zawodnika, to wkurzające jest jak tam
   // nic nie może być... jak wykasuje wszystko to pojawia się zero"): the minutes `<input>` below
   // is fully controlled off `row.minutes` (a plain number) — clearing it to type a fresh value
@@ -149,6 +178,7 @@ function RotationBuilderComponent({
   const [minutesDraft, setMinutesDraft] = useState<Record<string, string>>({});
 
   function updateRow(slot: Position, rowIdx: number, patch: Partial<Row>) {
+    setIsSuggestion(false);
     setRows((prev) => {
       const next = { ...prev, [slot]: [...prev[slot]] };
       next[slot][rowIdx] = { ...next[slot][rowIdx], ...patch };
@@ -157,10 +187,12 @@ function RotationBuilderComponent({
   }
 
   function addRow(slot: Position) {
+    setIsSuggestion(false);
     setRows((prev) => ({ ...prev, [slot]: [...prev[slot], { playerId: '', minutes: 0 }] }));
   }
 
   function removeRow(slot: Position, rowIdx: number) {
+    setIsSuggestion(false);
     setRows((prev) => ({ ...prev, [slot]: prev[slot].filter((_, i) => i !== rowIdx) }));
   }
 
@@ -199,6 +231,14 @@ function RotationBuilderComponent({
   };
   const bench = benchWithMinutes(previewTeam);
 
+  const submitBlockedReason = confirmDisabled
+    ? confirmDisabledHint
+    : slotErrors.length > 0
+      ? `Every position needs a starter and exactly ${GAME_MINUTES} minutes — still open: ${slotErrors.join(', ')}.`
+      : overworkedPlayers.length > 0
+        ? `Nobody can play more than ${GAME_MINUTES} minutes: ${overworkedPlayers.map((p) => p.playerName).join(', ')}.`
+        : undefined;
+
   function handleConfirm() {
     if (!allValid) return;
     onConfirm({ slots: rowsToSlots(rows) });
@@ -222,6 +262,13 @@ function RotationBuilderComponent({
           (Quick Five, Best Five, the Draft tab's own team strip) already established, with the
           native controls heavily reskinned rather than swapped for a custom dropdown — same real
           <select>/<input>, so nothing about keyboard/accessibility behavior changed underneath. */}
+      {isSuggestion && (
+        <p className="rotation-suggestion-note">
+          Suggested lineup — filled in from your draft order and listed positions only, not optimized.
+          It's probably not your best rotation: check who starts where and how the minutes are split.
+        </p>
+      )}
+
       <div className="rotation-cards">
         {STARTER_SLOTS.map((slot) => {
           const total = slotTotal(rows, slot);
@@ -382,11 +429,14 @@ function RotationBuilderComponent({
       <button
         className="primary-btn"
         disabled={!allValid || confirmDisabled}
-        title={!allValid ? undefined : confirmDisabled ? confirmDisabledHint : undefined}
+        title={submitBlockedReason}
         onClick={handleConfirm}
       >
         {confirmLabel ?? (onCancel ? 'Save Rotation' : 'Confirm Rotation & See Results')}
       </button>
+      {/* 2026-09-24: a disabled Submit used to explain itself only through a hover tooltip, and
+          not at all when the rotation itself was the blocker. */}
+      {submitBlockedReason && <p className="rotation-submit-hint">{submitBlockedReason}</p>}
       {onCancel && (
         <button className="secondary-btn" onClick={onCancel}>
           Cancel

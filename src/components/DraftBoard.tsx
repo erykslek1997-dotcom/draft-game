@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
-import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, type DraftState } from '../engine/draft';
+import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
 import { CAP_LIMIT, ROSTER_SIZE, capRemaining, totalFga, STARTER_SLOTS } from '../engine/positions';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
-import { effectiveTalent } from '../engine/grades';
+import { effectiveTalent, displayTalentForSpan } from '../engine/grades';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing, spacingTier, type SpacingTier } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
@@ -80,6 +80,10 @@ interface Props {
    * drafted, and never busts the real cap) — so every other read of the human's roster
    * (`isPickLegal`'s lookahead included) sees the same, single, real number from that point on. */
   onSwapHumanSpan: (playerName: string, newSpanId: string) => void;
+  /** 2026-09-24: CPU pick pacing control (owned by GameShell, which runs the AI-turn timer). */
+  aiSpeedLabels: readonly string[];
+  aiSpeedIndex: number;
+  onAiSpeedChange: (index: number) => void;
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -174,6 +178,21 @@ const TIER_FRAME_COLOR: Record<DisplayOverallTier, string> = {
   GOAT: '#ffd479',
 };
 
+/** Best-first order for the Draft tab's tier colour key. */
+const TIER_KEY_ORDER: DisplayOverallTier[] = [
+  'GOAT',
+  'Greatest peak',
+  'MVP',
+  'All-NBA',
+  'All-star',
+  'Starter',
+  'Sixth Man',
+  'Role Player',
+  'Bench Warmer',
+  'Cigarette Butt',
+  'Salary Glue',
+];
+
 /** Shared by `OverallTierBadge` and every "TAL {number}" display site — building this once and
  * reusing it for both the badge and the number next to it is what guarantees they can never
  * disagree (see `displayTalentForSpan`'s own docstring for why they used to). `playerName` is
@@ -186,6 +205,20 @@ export { tierContextFor };
 export function OverallTierBadge({ span }: { span: PlayerSpan }) {
   const tier = displayedOverallTier(span);
   return <span className={`tier-badge ${OVERALL_TIER_CLASS[tier]}`}>{tier}</span>;
+}
+
+/** Tooltip for a Draft button — says WHY a pick is blocked instead of one generic "over the cap"
+ * line, since since 2026-09-24 a pick can also be blocked for leaving too little for the rest of
+ * the roster (`pickBlockReason`'s 'reserve'), not only for busting the cap outright. */
+function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, currentTeam: Team, label?: string): string | undefined {
+  if (!canPick) return `${teamLabel(currentTeam)} is picking…`;
+  const reason = pickBlockReason(state, spanId);
+  if (reason === 'cap') return 'Over the shots cap — pick a cheaper player, or a cheaper season for this one.';
+  if (reason === 'reserve') {
+    const budget = pickBudget(state);
+    return `Too expensive right now — you need to keep ${budget.reserved} shots for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. Max for this pick: ${budget.maxThisPick} shots.`;
+  }
+  return label;
 }
 
 /** 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
@@ -274,13 +307,7 @@ function PlayerPeekModal({
                         type="button"
                         className="at-draft-btn"
                         disabled={!legal}
-                        title={
-                          !canPick
-                            ? `${teamLabel(currentTeam)} is picking…`
-                            : !legal
-                              ? 'Over the shots cap — pick something else first, or a cheaper season for this player.'
-                              : undefined
-                        }
+                        title={draftButtonTitle(state, span.id, canPick, currentTeam)}
                         onClick={() => onPick(span.id)}
                       >
                         Draft
@@ -564,6 +591,9 @@ export default function DraftBoard({
   onPickReasoningChange,
   onSubmitTeam,
   onSwapHumanSpan,
+  aiSpeedLabels,
+  aiSpeedIndex,
+  onAiSpeedChange,
 }: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
@@ -834,8 +864,8 @@ export default function DraftBoard({
   // 2026-08-19, user's explicit ask ("FULL BOARD FOR HUMAN" / "show everyone" — confirmed via
   // AskUserQuestion, scoped to visibility only): this used to filter down to only cap-legal
   // spans, so a genuinely affordable player could vanish from the list entirely if some OTHER
-  // span of theirs happened to fail the (now also-removed, see draft.ts's own docstring on
-  // `strictPickLegal`) lookahead check. Every undrafted span now stays visible regardless of
+  // span of theirs happened to fail the lookahead check (`strictPickLegal`, draft.ts — which
+  // since 2026-09-24 applies to the human again, gating the Draft button, never visibility). Every undrafted span now stays visible regardless of
   // legality — the actual 100.9 FGA cap itself is untouched and still real; a span that would
   // bust it outright still can't actually be drafted (`isPickLegal` still gates the Draft button
   // itself, at both the collapsed and expanded row below), it just isn't hidden from view first.
@@ -1025,6 +1055,22 @@ export default function DraftBoard({
     });
   }
 
+  // 2026-09-24: budget for whoever is on the clock (the human outside Commissioner Mode) — drives
+  // the "Your pick" banner, the stuck-board notice below it and the sidebar's own budget line.
+  const currentBudget = useMemo(() => pickBudget(state), [state]);
+  const anyVisibleLegal = useMemo(
+    () =>
+      !canPick ||
+      groups.slice(0, visibleCount).some((g) => g.spans.some((s) => isPickLegal(state, s.id))),
+    [canPick, groups, visibleCount, state],
+  );
+  function showAffordable() {
+    setSearch('');
+    setSelectedPosition('ALL');
+    setFgaMin('0');
+    setFgaMax(String(Math.floor(currentBudget.maxThisPick * 10) / 10));
+  }
+
   const TABS: ReadonlyArray<{ id: AtTab; label: string }> = [
     { id: 'draft', label: 'Draft' },
     { id: 'team', label: 'Team' },
@@ -1047,6 +1093,22 @@ export default function DraftBoard({
             </button>
           ))}
         </div>
+        {!state.complete && (
+          <div className="at-speed" role="group" aria-label="CPU pick speed">
+            <span className="at-speed-label at-cond">CPU speed</span>
+            {aiSpeedLabels.map((label, i) => (
+              <button
+                key={label}
+                type="button"
+                className={`at-speed-btn at-cond ${i === aiSpeedIndex ? 'at-active' : ''}`}
+                aria-pressed={i === aiSpeedIndex}
+                onClick={() => onAiSpeedChange(i)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 2026-08-16, user's own ask: no visible toggle button anymore (first moved out of the
@@ -1173,8 +1235,33 @@ export default function DraftBoard({
               instead, with just this small notice (not a block) while it's not your turn. The
               actual Draft buttons below are `disabled` via `canPick`, not hidden, so browsing/
               searching/expanding a row to look at a player works identically either way. */}
-          {!canPick && (
+          {!canPick ? (
             <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
+          ) : (
+            // 2026-09-24: the only "your turn" signal used to be the CPU banner above silently
+            // disappearing (plus the "on the clock" cell in the board, usually scrolled out of
+            // view) — and nothing on screen said how much of the cap this pick could actually use.
+            <div className="at-your-turn-banner" role="status">
+              <span className="at-your-turn-title at-cond">Your pick</span>
+              <span>
+                Round {state.round + 1}/{ROUNDS} · up to <b>{currentBudget.maxThisPick}</b> shots this pick
+                {currentBudget.slotsLeft > 1 && (
+                  <span className="at-your-turn-reserve">
+                    {' '}
+                    ({currentBudget.reserved} kept for your other {currentBudget.slotsLeft - 1} pick
+                    {currentBudget.slotsLeft - 1 === 1 ? '' : 's'})
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
+          {canPick && !anyVisibleLegal && (
+            <div className="at-budget-notice">
+              <span>None of the players shown fit this pick — max {currentBudget.maxThisPick} shots.</span>
+              <button type="button" className="at-budget-notice-btn at-cond" onClick={showAffordable}>
+                Show players that fit
+              </button>
+            </div>
           )}
           {/* 2026-09-11, user's own inspiration screenshot: Draft + Team merged into one screen —
               player cards on the left, a persistent "Your Five" sidebar on the right (replaces
@@ -1214,6 +1301,19 @@ export default function DraftBoard({
                   </button>
                 ))}
               </div>
+              {/* 2026-09-24: the card frames' tier colours had no key anywhere on the Draft tab —
+                  only a per-card hover title. Compact, always-visible strip, best tier first. */}
+              {!showJudgeMetrics && (
+                <div className="at-tier-key" aria-label="Card frame colours by tier">
+                  <span className="at-tier-key-label at-cond">Tiers</span>
+                  {TIER_KEY_ORDER.map((tier) => (
+                    <span key={tier} className="at-tier-key-item">
+                      <span className="at-tier-key-swatch" style={{ background: TIER_FRAME_COLOR[tier] }} aria-hidden />
+                      {tier}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* 2026-09-01: the Draft-tab player list is the same expandable-list shape as the
                   Cap Sheet (`.player-group` accordion + `.span-table`), condensed to match it —
@@ -1274,13 +1374,7 @@ export default function DraftBoard({
                           <button
                             className="at-draft-btn pg-draft"
                             disabled={!canPick || !isPickLegal(state, group.bestTalentSpan.id)}
-                            title={
-                              !canPick
-                                ? `${teamLabel(currentTeam)} is picking…`
-                                : !isPickLegal(state, group.bestTalentSpan.id)
-                                  ? 'Over the shots cap — pick something else first, or a cheaper season for this player.'
-                                  : undefined
-                            }
+                            title={draftButtonTitle(state, group.bestTalentSpan.id, canPick, currentTeam)}
                             onClick={(e) => {
                               e.stopPropagation();
                               onPick(group.bestTalentSpan.id);
@@ -1333,13 +1427,7 @@ export default function DraftBoard({
                                       <button
                                         className="at-draft-btn"
                                         disabled={!canPick || !isPickLegal(state, span.id)}
-                                        title={
-                                          !canPick
-                                            ? `${teamLabel(currentTeam)} is picking…`
-                                            : !isPickLegal(state, span.id)
-                                              ? 'Over the shots cap — pick something else first, or a cheaper season for this player.'
-                                              : undefined
-                                        }
+                                        title={draftButtonTitle(state, span.id, canPick, currentTeam)}
                                         onClick={() => onPick(span.id)}
                                       >
                                         Draft
@@ -1427,9 +1515,20 @@ export default function DraftBoard({
                           <Face name={group.playerName} size="md" />
                           <ShotChip fga={target.fga} cap={CAP_LIMIT} />
                         </div>
-                        <span className="at-player-card-name">
-                          {shortenName(group.playerName)}
-                          <span className="at-player-card-pos"> – {naturalPosition(group.playerName)}</span>
+                        {/* 2026-09-24: name and position used to share one `nowrap` + ellipsis
+                            line, so any position pair (or a merely long surname) got cut to
+                            "Stephen Curry – …". The name now gets its own line (wrapping up to two)
+                            and the position sits on a meta line with the card's TAL — the one
+                            number that says how good this season is, next to the colour frame that
+                            only says which tier it lands in. */}
+                        <span className="at-player-card-name" title={group.playerName}>
+                          {shortenName(group.playerName, 18)}
+                        </span>
+                        <span className="at-player-card-meta">
+                          <span className="at-player-card-pos">{naturalPosition(group.playerName)}</span>
+                          <span className="at-player-card-tal" title="Talent rating of the season this card drafts">
+                            TAL <b>{displayTalentForSpan(tierContextFor(target))}</b>
+                          </span>
                         </span>
                         <div className="at-player-card-foot">
                           <span className="at-player-card-actions">
@@ -1445,13 +1544,7 @@ export default function DraftBoard({
                               type="button"
                               className="at-player-card-draft"
                               disabled={!legal}
-                              title={
-                                !canPick
-                                  ? `${teamLabel(currentTeam)} is picking…`
-                                  : !legal
-                                    ? 'Over the shots cap — pick something else first, or a cheaper season for this player.'
-                                    : `Draft ${group.playerName}`
-                              }
+                              title={draftButtonTitle(state, target.id, canPick, currentTeam, `Draft ${group.playerName}`)}
                               onClick={() => onPick(target.id)}
                             >
                               Draft
@@ -1570,6 +1663,11 @@ export default function DraftBoard({
               <p className="at-draft-sidebar-cap-label">
                 Cap remaining: <b>{capRemaining(currentFgas)}</b> shots
               </p>
+              {canPick && currentBudget.slotsLeft > 1 && (
+                <p className="at-draft-sidebar-cap-label">
+                  Max this pick: <b>{currentBudget.maxThisPick}</b> shots
+                </p>
+              )}
             </div>
             <div className="at-draft-sidebar-slots">
               {STARTER_SLOTS.map((slot) => {
@@ -1879,6 +1977,7 @@ export default function DraftBoard({
                 key={spanVersion}
                 roster={chosenHumanRoster}
                 rosterComplete={draftComplete}
+                seedStrategy="basic"
                 onConfirm={handleRotationConfirm}
                 confirmLabel="Submit Team"
                 // The span dropdown deliberately lists every span (comparing them by cost is the

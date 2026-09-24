@@ -76,6 +76,8 @@ const AI_SPEEDS = [
   { label: 'Instant', delayMs: 0 },
 ] as const;
 const DEFAULT_AI_SPEED_INDEX = 1;
+const AI_SPEED_STORAGE_KEY = 'draftverse.aiSpeed';
+const AI_SPEED_LABELS = AI_SPEEDS.map((s) => s.label);
 
 /** `?draftSeed=123` on the URL replays a specific draft — the seed `createDraft` logs to the
  * console in dev. Any non-finite value is ignored and a fresh random seed is drawn as usual. */
@@ -182,11 +184,28 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // this reveal step is) runs once, right after Start Draft, before the real board appears.
   const [phase, setPhase] = useState<Phase>('lottery');
   const [finalTeams, setFinalTeams] = useState<Team[] | null>(null);
-  // 2026-09-11, player-skeleton branch: the CPU-speed slider that used to set this is gone (Tester
-  // Mode only — see the docstring at the top of this file), so `aiSpeed` is now a plain constant
-  // pinned at its old default ('Normal') instead of `useState` — same real AI-turn pacing a player
-  // would expect, just no longer changeable from anywhere.
-  const aiSpeed = AI_SPEEDS[DEFAULT_AI_SPEED_INDEX];
+  // 2026-09-24, user's own call ("przywróćmy pasek"): the CPU-speed control is back, this time in
+  // Player Mode too — at a fixed 'Normal' a human waited 10-30s between their own picks with
+  // nothing to do (the board stays browsable during CPU turns either way). Remembered per browser
+  // so a player who prefers 'Instant' doesn't have to pick it again every draft.
+  const [aiSpeedIndex, setAiSpeedIndex] = useState<number>(() => {
+    try {
+      const raw = window.localStorage.getItem(AI_SPEED_STORAGE_KEY);
+      const saved = raw === null ? NaN : Number(raw);
+      return Number.isInteger(saved) && saved >= 0 && saved < AI_SPEEDS.length ? saved : DEFAULT_AI_SPEED_INDEX;
+    } catch {
+      return DEFAULT_AI_SPEED_INDEX;
+    }
+  });
+  function handleAiSpeedChange(index: number) {
+    setAiSpeedIndex(index);
+    try {
+      window.localStorage.setItem(AI_SPEED_STORAGE_KEY, String(index));
+    } catch {
+      // Storage blocked (private mode etc.) — the choice still applies for this draft.
+    }
+  }
+  const aiSpeed = AI_SPEEDS[aiSpeedIndex];
   // Owned here (not inside DraftBoard) so live in-draft reactions survive the phase transition
   // into ResultsScreen's export — see FeedbackToggle's own docstring for why this replaced the
   // old too_high/too_low dropdown flow.
@@ -341,6 +360,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           onPickReasoningChange={handlePickReasoningChange}
           onSubmitTeam={handleSubmitTeam}
           onSwapHumanSpan={handleSwapHumanSpan}
+          aiSpeedLabels={AI_SPEED_LABELS}
+          aiSpeedIndex={aiSpeedIndex}
+          onAiSpeedChange={handleAiSpeedChange}
         />
       )}
       {phase === 'results' && finalTeams && (

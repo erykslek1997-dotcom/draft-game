@@ -3974,6 +3974,16 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   gap: 16px; margin-bottom: 18px; padding: 4px 2px;
 }
 .at-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+/* 2026-09-24: CPU pick-speed control, back in Player Mode (GameShell's `AI_SPEEDS`). */
+.at-speed { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.at-speed-label { font-size: 11px; color: var(--at-ink-faint); letter-spacing: 0.06em; text-transform: uppercase; margin-right: 4px; }
+.at-speed-btn {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line);
+  background: var(--at-paper-raised); color: var(--at-ink-soft);
+  border-radius: 999px; padding: 5px 11px; font-size: 11px; font-weight: 700;
+}
+.at-speed-btn.at-active { background: var(--at-accent); color: var(--at-accent-ink); border-color: var(--at-accent); }
+.at-speed-btn:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 
 .at-board-brand {
   text-align: center;
@@ -4131,9 +4141,8 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   font-size: 12px;
   font-weight: 600;
   color: var(--at-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 .at-sidebar-slot-empty {
   font-size: 11.5px;
@@ -4259,20 +4268,36 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
    `white-space: nowrap` + ellipsis rather than letting a long combination wrap — `shortenName`
    already keeps most names short, but a wide position pair (PG/SG) on an unshortened short name
    can still be the widest line on a 150px card. */
+/* 2026-09-24: name on its own line again, allowed to wrap to two lines instead of being cut with
+   an ellipsis (see the JSX comment on `.at-player-card-meta`). */
 .at-player-card-name {
   font-size: 13px;
   font-weight: 700;
   color: var(--at-ink);
   line-height: 1.25;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+}
+.at-player-card-meta {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
+  font-size: 10.5px;
 }
 .at-player-card-pos {
-  font-size: 10.5px;
   font-weight: 500;
   color: var(--at-ink-faint);
 }
+.at-player-card-tal { color: var(--at-ink-soft); white-space: nowrap; }
+.at-player-card-tal b { color: var(--tier-frame, var(--at-ink)); font-size: 12px; }
+.at-tier-key {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+  font-size: 10.5px; color: var(--at-ink-soft); margin: 2px 0 12px;
+}
+.at-tier-key-label { color: var(--at-ink-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+.at-tier-key-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.at-tier-key-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .at-player-card-foot {
   display: flex;
   align-items: center;
@@ -4609,6 +4634,31 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
   font-size: 12.5px; font-style: italic; color: var(--at-ink-soft);
   background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px;
   padding: 8px 14px; margin-bottom: 12px;
+}
+/* 2026-09-24: the "your turn" counterpart of `.at-cpu-turn-banner` above — accent-coloured and
+   sticky so it stays in view while scrolling the player cards, and it carries this pick's real
+   shot budget (`pickBudget`, draft.ts). */
+.at-your-turn-banner {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  font-size: 13px; color: var(--at-ink);
+  background: color-mix(in srgb, var(--at-accent) 18%, var(--at-paper));
+  border: 1px solid var(--at-accent); border-radius: 10px;
+  padding: 9px 14px; margin-bottom: 12px;
+}
+.at-your-turn-title { font-weight: 800; color: var(--at-accent); letter-spacing: 0.06em; text-transform: uppercase; }
+.at-your-turn-reserve { color: var(--at-ink-soft); }
+.at-budget-notice {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  font-size: 12.5px; color: var(--at-ink);
+  background: color-mix(in srgb, var(--at-accent-2) 14%, var(--at-paper));
+  border: 1px solid var(--at-accent-2); border-radius: 10px;
+  padding: 9px 14px; margin-bottom: 12px;
+}
+.at-budget-notice-btn {
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  border: none; border-radius: 999px; padding: 6px 14px;
+  background: var(--at-accent-2); color: var(--at-accent-2-ink);
 }
 .at-why-btn {
   font: inherit; cursor: pointer; border: 1px solid var(--at-line); background: none; color: var(--at-ink-soft);
@@ -5012,8 +5062,10 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
    margin, bold, full ink color) is reused as-is; this only adds the truncation `.at-lottery-team`'s
    flex row needs so a long name ("Winston-Salem Cowboys") shrinks with an ellipsis instead of
    wrapping the slot taller or pushing the YOU tag out. */
+/* 2026-09-24: wraps instead of an ellipsis — the one name every player looks for on this screen
+   is their own, and it was the one getting cut ("Oklahoma City Wa…"). */
 .at-lottery-name-full {
-  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.25;
 }
 @keyframes at-lottery-pop {
   from { opacity: 0; transform: scale(0.85); }
@@ -5030,4 +5082,31 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-lottery-continue { margin-top: 4px; }
 .at-lottery-skip {
   margin-top: 4px; font-size: 11.5px; padding: 6px 14px; opacity: 0.75;
+}
+
+/* 2026-09-24: RotationBuilder's "this is only a suggestion" note and its visible reason for a
+   disabled Submit (previously a hover-only tooltip, or nothing at all). */
+.rotation-suggestion-note {
+  font-size: 12.5px; line-height: 1.5; color: var(--at-ink, var(--text));
+  border: 1px dashed var(--at-accent, var(--border)); border-radius: 10px;
+  padding: 8px 12px; margin: 4px 0 12px;
+}
+.rotation-submit-hint { font-size: 12px; color: var(--at-ink-soft, var(--text)); margin: 8px 0 0; }
+
+/* 2026-09-24: phone layout for the results screen — ranking rows wrap their score chips onto a
+   second line instead of squeezing the team name into a 4-line column and clipping the chips off
+   the right edge, and the one-row matchup table becomes a wrapping grid (MatchupMatrix.tsx). */
+.matchup-matrix-compact { display: none; }
+@media (max-width: 640px) {
+  .team-result-header { flex-wrap: wrap; row-gap: 6px; }
+  .team-result-title { flex: 1 1 calc(100% - 24px); min-width: 0; overflow-wrap: anywhere; }
+  .team-result-header-mini { flex-wrap: wrap; margin-left: 20px; }
+  .team-result-header > .score-chip { margin-left: 20px; }
+  .matchup-matrix-scroll.has-compact { display: none; }
+  .matchup-matrix-compact {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 8px 0;
+  }
+  .matchup-matrix-compact-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .matchup-matrix-compact-cell.is-open { outline-color: rgba(255, 255, 255, 0.8); }
+  .matchup-matrix-compact-code { font-size: 10px; font-weight: 600; opacity: 0.85; letter-spacing: 0.03em; }
 }

@@ -376,6 +376,60 @@ function cloneRotation(rotation: Rotation): Rotation {
   return { slots };
 }
 
+/**
+ * 2026-09-24, user's own call: the human's Team-tab rotation used to start completely empty
+ * (10+ dropdowns/minute boxes before "Submit Team" even enabled), after the earlier one-click
+ * optimal auto-fill was removed for doing the thinking for the player. This is the middle ground
+ * the user asked for — a complete, legal starting point that is deliberately NOT optimized: it
+ * reads only draft order and listed positions (no talent, fit, durability or minutes tuning), so
+ * the player still has real decisions left to make and the UI says as much next to it.
+ *
+ * Starters: for each slot, the earliest-drafted unused player whose primary position matches,
+ * then one who has really played it, then anyone eligible, then anyone left — 36 minutes each.
+ * Backups: 12 minutes per slot, earliest-drafted bench player who fits (each bench player covers
+ * at most two slots), falling back to any bench player, then to the thinnest-used starter.
+ */
+export function suggestBasicRotation(roster: PlayerSpan[]): Rotation {
+  const slots = emptySlots();
+  const used = new Set<string>();
+  const starters: PlayerSpan[] = [];
+  const tiers: ((p: PlayerSpan, slot: Position) => boolean)[] = [
+    (p, slot) => p.primaryPosition === slot,
+    (p, slot) => isRealPositionFit(p, slot),
+    (p, slot) => isPositionEligible(p, slot),
+    () => true,
+  ];
+  for (const slot of STARTER_SLOTS) {
+    let pick: PlayerSpan | undefined;
+    for (const fits of tiers) {
+      pick = roster.find((p) => !used.has(p.id) && fits(p, slot));
+      if (pick) break;
+    }
+    if (!pick) continue;
+    used.add(pick.id);
+    starters.push(pick);
+    slots[slot].push({ playerId: pick.id, minutes: STARTER_MINUTES });
+  }
+  const bench = roster.filter((p) => !used.has(p.id));
+  const benchSlotsUsed = new Map<string, number>();
+  const backupMinutes = GAME_MINUTES - STARTER_MINUTES;
+  for (const slot of STARTER_SLOTS) {
+    if (slots[slot].length === 0) continue;
+    const free = (p: PlayerSpan) => (benchSlotsUsed.get(p.id) ?? 0) < MAX_DISTINCT_BACKUP_SLOTS;
+    const backup =
+      bench.find((p) => free(p) && isRealPositionFit(p, slot)) ??
+      bench.find((p) => free(p) && isPositionEligible(p, slot)) ??
+      bench.find(free);
+    if (backup) {
+      benchSlotsUsed.set(backup.id, (benchSlotsUsed.get(backup.id) ?? 0) + 1);
+      slots[slot].push({ playerId: backup.id, minutes: backupMinutes });
+    } else {
+      slots[slot][0].minutes = GAME_MINUTES;
+    }
+  }
+  return { slots };
+}
+
 export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
   const cacheKey = roster.map((p) => p.id).join('|');
   const cached = autoAssignRotationCache.get(cacheKey);
