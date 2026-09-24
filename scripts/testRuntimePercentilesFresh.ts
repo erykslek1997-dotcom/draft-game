@@ -9,12 +9,13 @@
 import { players } from '../src/data/players';
 import type { Position } from '../src/data/schema';
 import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { functionalPosition } from '../src/engine/functionalPosition';
 import { normalizedDefenseForFit } from '../src/engine/talent';
 import { runtimeDefenseTalentPercentile, runtimeImpliedDefensePercentile } from '../src/engine/runtimePercentiles';
 
 function sortedByPosition(valueOf: (p: (typeof players)[number]) => number): Map<Position, number[]> {
   const m = new Map<Position, number[]>();
-  for (const p of players) (m.get(p.primaryPosition) ?? m.set(p.primaryPosition, []).get(p.primaryPosition)!).push(valueOf(p));
+  for (const p of players) (m.get(functionalPosition(p)) ?? m.set(functionalPosition(p), []).get(functionalPosition(p))!).push(valueOf(p));
   for (const v of m.values()) v.sort((a, b) => a - b);
   return m;
 }
@@ -28,10 +29,10 @@ let staleD = 0;
 let staleI = 0;
 let worst = 0;
 for (const p of players) {
-  const ds = dSorted.get(p.primaryPosition)!;
+  const ds = dSorted.get(functionalPosition(p))!;
   const dv = dValue.get(p.id)!;
   const dNow = ds.filter((x) => x < dv).length / ds.length;
-  const is = iSorted.get(p.primaryPosition)!;
+  const is = iSorted.get(functionalPosition(p))!;
   const iv = iValue.get(p.id)!;
   const iNow = (is.filter((x) => x < iv).length + is.filter((x) => x <= iv).length) / (2 * is.length);
   const dGap = Math.abs(dNow - runtimeDefenseTalentPercentile(p));

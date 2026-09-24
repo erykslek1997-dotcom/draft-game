@@ -3,6 +3,7 @@ import { normalizePlayerName } from '../data/schema';
 import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE, predatesThreePointLine } from './era';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseMalus } from './darkoCorrection';
+import { functionalPosition } from './functionalPosition';
 import { rimPressureOffenseTerm } from './rimPressure';
 import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
@@ -2041,7 +2042,7 @@ export function computeUncappedOffensiveTalent(span: PlayerSpan): number {
  */
 export function normalizedDefenseForFit(span: PlayerSpan): number {
   const { defense } = rawComponents(span, false);
-  const scale = DEFENSE_TAL_SCALE_BY_POSITION[span.primaryPosition];
+  const scale = DEFENSE_TAL_SCALE_BY_POSITION[functionalPosition(span)];
   const scaled = DEFENSE_FLOOR + (defense - DEFENSE_FLOOR) * scale;
   return Math.max(0, Math.min(100, Math.round(scaled)));
 }

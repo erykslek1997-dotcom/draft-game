@@ -2,6 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
+import { functionalPosition } from './functionalPosition';
 import { hasDefenseAwardCoverage, individualDefenseRate } from './defensiveAccolades';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import { teamDefenseContextForSpan } from './teamDefenseLookup';
@@ -588,7 +589,7 @@ const UNDERSIZED_BIG_HEIGHT_THRESHOLD: Partial<Record<Position, number>> = { PF:
 const UNDERSIZED_BIG_MALUS_SCALE = 5;
 const MAX_UNDERSIZED_BIG_MALUS = 15;
 function undersizedBigMalus(span: PlayerSpan): number {
-  const threshold = UNDERSIZED_BIG_HEIGHT_THRESHOLD[span.primaryPosition];
+  const threshold = UNDERSIZED_BIG_HEIGHT_THRESHOLD[functionalPosition(span)];
   if (threshold === undefined) return 0;
   const height = getHeightInches(span.playerName);
   if (height === undefined) return 0;
@@ -628,7 +629,7 @@ export function computeDefensiveTalent(span: PlayerSpan): number {
     accoladeRate + (darkoDefenseBonus(span) / DARKO_CORROBORATION_NORMALIZER) * DARKO_CORROBORATION_WEIGHT,
   );
   const corroborationCeiling = UNCORROBORATED_CEILING + (100 - UNCORROBORATED_CEILING) * corroborationStrength;
-  const base = Math.min(ladderPoints(span.primaryPosition, displayDefenseRaw(span)), corroborationCeiling);
+  const base = Math.min(ladderPoints(functionalPosition(span), displayDefenseRaw(span)), corroborationCeiling);
   const credited = Math.min(
     recognitionCeiling(span, accoladeRate),
     base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE - undersizedBigMalus(span),
