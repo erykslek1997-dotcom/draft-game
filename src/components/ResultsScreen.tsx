@@ -1033,10 +1033,10 @@ function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): Team
  * pairs, round sizes 8/4/2/1) and kept deliberately simple pixel arithmetic rather than anything
  * relying on runtime-measured layout, but a first look from the user is still the real check.
  */
-const BRACKET_CARD_W = 200;
+const BRACKET_CARD_W = 236;
 const BRACKET_CARD_H = 46;
 const BRACKET_ROW_UNIT = 58;
-const BRACKET_COL_GAP = 26;
+const BRACKET_COL_GAP = 22;
 const BRACKET_COL_W = BRACKET_CARD_W + BRACKET_COL_GAP;
 
 /** 2026-09-24: the bracket's size now follows the actual result (the simulated playoffs became
@@ -1089,20 +1089,24 @@ interface BracketTeamRowProps {
 // series winners were drawn in the same blue the standings used for "you". Now: the human's row
 // gets the red "you" treatment (tint + tag outside the truncated name), and a winner is marked by
 // weight and a check, the loser dimmed — no colour shared with "you".
-function BracketTeamRow({ team, seed, isWinner }: BracketTeamRowProps) {
+function BracketTeamRow({ team, seed, isWinner, games }: BracketTeamRowProps & { games: number }) {
   if (!team) return null;
   return (
     <div
       className={`bracket-team-row ${isWinner ? 'bracket-team-winner' : 'bracket-team-loser'} ${team.isHuman ? 'bracket-team-you' : ''}`}
+      title={team.isHuman ? `${teamLabel(team)} (you)` : teamLabel(team)}
     >
       <span className="bracket-seed">#{seed}</span>
       <span className="bracket-team-name">{teamLabel(team)}</span>
-      {team.isHuman && <span className="bracket-you-tag">YOU</span>}
-      {isWinner && <span className="bracket-win-mark" aria-label="won the series">✓</span>}
+      <span className="bracket-games">{games}</span>
     </div>
   );
 }
 
+// 2026-09-24, user-reported live ("dość brzydko"): the shared "4-3" badge floated over the
+// second row (squeezing both names), and "you" was a tinted, struck-through row plus a big pill.
+// Each row now carries its own game count (winner's in bold), and "you" is just the red accent:
+// name colour + a thin left bar, with a thin red frame on the series.
 function BracketMatchCard({
   series,
   teamById,
@@ -1114,18 +1118,31 @@ function BracketMatchCard({
 }) {
   const teamA = teamById(series.teamAId);
   const teamB = teamById(series.teamBId);
-  const higherTally = Math.max(series.gamesWonA, series.gamesWonB);
-  const lowerTally = Math.min(series.gamesWonA, series.gamesWonB);
   const involvesYou = Boolean(teamA?.isHuman || teamB?.isHuman);
   return (
     <div className={`bracket-match ${involvesYou ? 'bracket-match--you' : ''}`} style={style} title={series.roundLabel}>
-      <BracketTeamRow team={teamA} seed={series.teamASeed} isWinner={series.winnerId === series.teamAId} />
-      <BracketTeamRow team={teamB} seed={series.teamBSeed} isWinner={series.winnerId === series.teamBId} />
-      <span className="bracket-score">
-        {higherTally}-{lowerTally}
-      </span>
+      <BracketTeamRow team={teamA} seed={series.teamASeed} isWinner={series.winnerId === series.teamAId} games={series.gamesWonA} />
+      <BracketTeamRow team={teamB} seed={series.teamBSeed} isWinner={series.winnerId === series.teamBId} games={series.gamesWonB} />
     </div>
   );
+}
+
+/** One sentence on how the human team's playoff run ended — the bracket alone only shows it in
+ * the rounds it reached, so an early exit was easy to miss. */
+function humanPlayoffRun(result: PlayoffResult, teamById: (id: string) => Team | undefined): string | null {
+  const human = result.rounds.flat().find((s) => teamById(s.teamAId)?.isHuman || teamById(s.teamBId)?.isHuman);
+  if (!human) return null;
+  const humanId = teamById(human.teamAId)?.isHuman ? human.teamAId : human.teamBId;
+  if (result.championId === humanId) return 'Your run: champions! 🏆';
+  const lost = result.rounds.flat().find((s) => (s.teamAId === humanId || s.teamBId === humanId) && s.winnerId !== humanId);
+  if (!lost) return null;
+  const youAreA = lost.teamAId === humanId;
+  const opponent = teamById(youAreA ? lost.teamBId : lost.teamAId);
+  const own = youAreA ? lost.gamesWonA : lost.gamesWonB;
+  const theirs = youAreA ? lost.gamesWonB : lost.gamesWonA;
+  const seed = youAreA ? lost.teamBSeed : lost.teamASeed;
+  const stage = lost.roundLabel === 'Finals' ? 'lost in the Finals' : `knocked out in the ${lost.roundLabel}`;
+  return `Your run: ${stage}, ${own}-${theirs} vs #${seed} ${opponent ? teamLabel(opponent) : ''}.`;
 }
 
 /** Below this width the tree (even scaled) gets unreadable — rounds are listed top to bottom instead. */
@@ -1210,6 +1227,7 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
 
   const champion = teamById(result.championId);
 
+  const runLine = humanPlayoffRun(result, teamById);
   const championLine = champion && (
     <p className={`playoff-champion ${champion.isHuman ? 'playoff-champion--you' : ''}`}>
       🏆 Champion: {teamLabel(champion)} {champion.isHuman ? '(You)' : ''}
@@ -1219,6 +1237,7 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
   if (available !== null && available < BRACKET_LIST_BREAKPOINT) {
     return (
       <div className="bracket-scroll" ref={containerRef}>
+        {runLine && <p className="playoff-run">{runLine}</p>}
         {result.rounds.map((round, i) => (
           <div className="bracket-list-round" key={i}>
             <span className="bracket-list-round-label at-cond">{round[0]?.roundLabel}</span>
@@ -1239,6 +1258,7 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
 
   return (
     <div className="bracket-scroll" ref={containerRef}>
+      {runLine && <p className="playoff-run">{runLine}</p>}
       <div style={{ width: BRACKET_WIDTH * scale, height: treeHeight * scale }}>
       <div
         className="bracket-tree"

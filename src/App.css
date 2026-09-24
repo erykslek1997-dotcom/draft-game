@@ -3635,22 +3635,16 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   text-overflow: ellipsis;
 }
 
-.bracket-team-winner {
-  font-weight: 700;
-  color: var(--at-ink, inherit);
-}
-.bracket-team-loser { opacity: 0.55; }
-.bracket-win-mark { flex: none; font-size: 11px; color: #7fd68a; }
+.bracket-team-winner { font-weight: 700; color: var(--at-ink, inherit); }
+.bracket-team-loser { color: var(--at-ink-faint); }
+/* The human's team: red accent name + thin left bar (no tint, no strike-through, no pill). */
 .bracket-team-you {
-  opacity: 1;
-  margin: 0 -6px;
-  padding-left: 6px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--at-accent-2) 22%, transparent);
-  box-shadow: inset 3px 0 0 var(--at-accent-2);
+  color: var(--at-accent-2); font-weight: 700;
+  margin-left: -6px; padding-left: 6px; box-shadow: inset 3px 0 0 var(--at-accent-2);
 }
-.bracket-team-you.bracket-team-loser .bracket-team-name { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--at-accent-2) 70%, transparent); }
-.bracket-match--you { border-color: var(--at-accent-2); box-shadow: 0 0 0 1px var(--at-accent-2); }
+.bracket-games { margin-left: auto; flex: none; min-width: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.bracket-match--you { border-color: color-mix(in srgb, var(--at-accent-2) 70%, var(--at-line)); }
+.playoff-run { font-size: 13.5px; font-weight: 700; color: var(--at-accent-2); margin: 0 0 12px; }
 
 .bracket-you-tag {
   flex: none;
@@ -3670,18 +3664,6 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 .bracket-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .bracket-list-grid .bracket-match { position: relative; min-height: 46px; }
 
-.bracket-score {
-  position: absolute;
-  right: 5px;
-  bottom: 4px;
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  color: var(--at-ink-soft);
-  background: var(--at-paper-raised);
-  padding: 1px 4px;
-  border-radius: 3px;
-  line-height: 1.2;
-}
 
 .playoff-champion {
   margin: 10px 0 0;
