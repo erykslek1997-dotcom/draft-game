@@ -704,9 +704,23 @@ function weakOffensiveCenterCap(raw: number): number {
   return Math.min(raw, Math.max(80, raw * 0.4 + 47));
 }
 
+/**
+ * 2026-09-24 correction to the widening above: a single 75 bar for every slot was universal, not
+ * "weak" — measured on 96 seeded AI-drafted teams, 99% had at least one starter under O-TAL 75
+ * (mean 1.9), so the cap moved 44% of all teams and crushed the top end (uncapped max 95 -> 89,
+ * teams above 90: 6 -> 0; the ten best offenses all landed on 83-85). Centers keep the 75 bar the
+ * original request (Gobert, O-TAL 62) was built on; every other slot now needs a genuinely weak
+ * O-TAL (< 55: McMillan 40, Ward 43, Bowen 39). Same sample: 22/96 teams touched, mean 79.2 vs
+ * 80.4 uncapped, max 92, two teams still above 90.
+ */
+const WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING = 55;
+
 function hasWeakOffensiveStarter(team: Team): boolean {
   return primaryStarters(team).some(
-    ({ player, minutes }) => minutes > 0 && computeOffensiveTalent(player) < LOW_OFFENSE_BIG_OTAL_CEILING,
+    ({ player, minutes }) =>
+      minutes > 0 &&
+      computeOffensiveTalent(player) <
+        (player.primaryPosition === 'C' ? LOW_OFFENSE_BIG_OTAL_CEILING : WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING),
   );
 }
 
