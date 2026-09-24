@@ -8,6 +8,7 @@ import {
   totalFga,
   buildCheapestLookup,
   canFillFromLookup,
+  MARGIN_PER_CONTENDING_TEAM,
   isRealPositionFit,
   type CheapestLookup,
 } from './positions';
@@ -178,10 +179,11 @@ function isCapLegal(currentFgas: number[], candidateFga: number): boolean {
   return totalFga([...currentFgas, candidateFga]) <= QUICK_CAP_LIMIT;
 }
 
-/** Same three-tier shape as `draft.ts`'s `isPickLegal` — full lookahead for the human ONLY on
- * cap-legality (see that file's own docstring on why the human's own turn skips the "will this
- * strand me" foresight check entirely, "FULL BOARD FOR HUMAN"), full lookahead for AI teams,
- * degrading to plain cap-legal, then a last-resort cheapest-available escape hatch. */
+/** Same three-tier shape as `draft.ts`'s `isPickLegal` — full "can you still fill the five?"
+ * lookahead for every team, degrading to plain cap-legal, then a last-resort cheapest-available
+ * escape hatch. 2026-09-24: the human used to skip the lookahead here too (same change as
+ * draft.ts's `strictPickLegal`) — three ~20-shot stars left ~10 shots for two picks and a board
+ * of greyed-out cards; `quickPickBudget` below is what the UI shows so the rule is visible. */
 function strictPickLegal(state: QuickDraftState, playerId: string): boolean {
   const player = playersById.get(playerId);
   if (!player || state.draftedIds.has(playerId)) return false;
@@ -189,7 +191,6 @@ function strictPickLegal(state: QuickDraftState, playerId: string): boolean {
   const team = state.teams[currentTeamIndex(state)];
   const currentFgas = team.roster.map((p) => p.fga);
   if (!isCapLegal(currentFgas, player.fga)) return false;
-  if (team.isHuman) return true;
 
   const slotsLeftAfterPick = QUICK_ROSTER_SIZE - team.roster.length - 1;
   if (slotsLeftAfterPick === 0) return true;
@@ -233,6 +234,38 @@ export function isQuickPickLegal(state: QuickDraftState, playerId: string): bool
   if (!noCapLegalPickExists(state)) return false;
   const cheapestAvailable = [...availablePlayers(state)].sort((a, b) => a.fga - b.fga)[0];
   return cheapestAvailable?.id === playerId;
+}
+
+/** `draft.ts`'s `pickBudget`, for the 5-round / 70-shot Quick 5 draft. */
+export interface QuickPickBudget {
+  capLeft: number;
+  slotsLeft: number;
+  reserved: number;
+  maxThisPick: number;
+}
+
+export function quickPickBudget(state: QuickDraftState): QuickPickBudget {
+  const team = state.teams[currentTeamIndex(state)];
+  const capLeft = QUICK_CAP_LIMIT - totalFga(team.roster.map((p) => p.fga));
+  const slotsLeft = Math.max(0, QUICK_ROSTER_SIZE - team.roster.length);
+  const slotsAfter = Math.max(0, slotsLeft - 1);
+  let reserved = 0;
+  if (slotsAfter > 0) {
+    const { sorted } = getCheapestLookup(state);
+    for (let i = 0; i < slotsAfter && i < sorted.length; i++) reserved += sorted[i].fga;
+    reserved += MARGIN_PER_CONTENDING_TEAM * (TEAM_COUNT - 1) * slotsAfter;
+  }
+  const round1 = (n: number) => Math.round(n * 10) / 10;
+  return { capLeft: round1(capLeft), slotsLeft, reserved: round1(reserved), maxThisPick: round1(Math.max(0, capLeft - reserved)) };
+}
+
+/** Why `playerId` can't be drafted right now, for button tooltips — `null` when it can. */
+export function quickPickBlockReason(state: QuickDraftState, playerId: string): 'cap' | 'reserve' | null {
+  if (isQuickPickLegal(state, playerId)) return null;
+  const player = playersById.get(playerId);
+  if (!player) return 'cap';
+  const team = state.teams[currentTeamIndex(state)];
+  return isCapLegal(team.roster.map((p) => p.fga), player.fga) ? 'reserve' : 'cap';
 }
 
 export function makeQuickPick(state: QuickDraftState, playerId: string): QuickDraftState {

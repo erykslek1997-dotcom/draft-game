@@ -5,6 +5,8 @@ import './App.css';
 // eager bundle without regressing the "zero engine dependency until Start Draft" load-time split
 // this file's own docstrings already care about (see DISPLAY_ROSTER_SIZE's comment below).
 import { randomTeamNames } from './engine/teamNames';
+import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
+import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
 /**
  * 2026-09-11, `player-skeleton` branch: the real Tester Mode / Player Mode split (mode picker,
@@ -27,9 +29,17 @@ import { randomTeamNames } from './engine/teamNames';
 // real-data corrections) — the user's own report: "the game feels slow with loading data."
 // Nothing about showing the intro text or the position/search UI actually needs that data;
 // it's only real work once a draft is actually rendered.
-const GameShell = lazy(() => import('./components/GameShell'));
-const BestFive = lazy(() => import('./components/BestFive'));
-const QuickFive = lazy(() => import('./components/QuickFive'));
+// 2026-09-24: routed through `loadGameModule` (gameLoader.ts) so the wait shows a real download
+// percentage, then a "Preparing players" stage, instead of one static line of text.
+const GameShell = lazy(() => loadGameModule(() => import('./components/GameShell')));
+const BestFive = lazy(() => loadGameModule(() => import('./components/BestFive')));
+const QuickFive = lazy(() => loadGameModule(() => import('./components/QuickFive')));
+
+function useLoadStatus(): LoadStatus {
+  const [loadStatus, setLoadStatus] = useState(getLoadStatus);
+  useEffect(() => subscribeLoadStatus(setLoadStatus), []);
+  return loadStatus;
+}
 
 type View = 'intro' | 'game' | 'bestfive' | 'quickfive';
 
@@ -85,11 +95,43 @@ const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: stri
   ],
 };
 
-function LoadingPanel({ label }: { label: string }) {
+function LoadingPanel() {
+  const { stage, progress } = useLoadStatus();
+  const downloading = stage === 'idle' || stage === 'download';
+  const pct = downloading && progress !== null ? Math.round(progress * 100) : null;
   return (
-    <div className="loading-panel">
-      <p>{label}</p>
+    <div className="loading-panel" role="status" aria-live="polite">
+      <p className="loading-panel-label">
+        {downloading ? 'Downloading player data' : 'Preparing players'}
+        {pct !== null ? ` — ${pct}%` : '…'}
+      </p>
+      <div className="loading-bar" aria-hidden>
+        {pct !== null ? (
+          <span className="loading-bar-fill" style={{ width: `${pct}%` }} />
+        ) : (
+          <span className="loading-bar-indeterminate" />
+        )}
+      </div>
+      <p className="loading-panel-hint">
+        {downloading
+          ? '80 years of real NBA seasons — this only downloads once.'
+          : 'Rating every season in the pool — a few more seconds.'}
+      </p>
     </div>
+  );
+}
+
+/** Small status line under the mode cards while the data downloads in the background. */
+function IntroDataStatus() {
+  const { stage, progress } = useLoadStatus();
+  // Nothing to report when there was no real download to track (dev server, or a failed prefetch
+  // that the mode's own import will simply retry).
+  if (stage === 'idle' || progress === null) return null;
+  const ready = stage !== 'download';
+  return (
+    <p className={`intro-data-status ${ready ? 'is-ready' : ''}`} role="status">
+      {ready ? '✓ Player data ready' : `Loading player data… ${progress !== null ? Math.round(progress * 100) : 0}%`}
+    </p>
   );
 }
 
@@ -106,7 +148,28 @@ function sharedDraftSeedFromUrl(): number | null {
 
 function App() {
   const [view, setView] = useState<View>('intro');
-  const sharedDraftSeed = useMemo(sharedDraftSeedFromUrl, []);
+  // Re-read whenever the intro is shown: GameShell strips a shared link's params from the URL once
+  // it has used them (2026-09-24), so the "Duel loaded" banner must not outlive that.
+  const sharedDraftSeed = useMemo(() => (view === 'intro' ? sharedDraftSeedFromUrl() : null), [view]);
+  // 2026-09-24: the autosaved All-Time Draft (components/draftSave.ts), if any — re-read on every
+  // return to the intro, since leaving a draft or finishing one changes it.
+  const savedDraft = useMemo<DraftSaveSummary | null>(() => (view === 'intro' ? readDraftSaveSummary() : null), [view]);
+  const [resumeDraft, setResumeDraft] = useState(false);
+  const [confirmNewDraft, setConfirmNewDraft] = useState(false);
+  function startNewDraft() {
+    if (savedDraft && !confirmNewDraft) {
+      setConfirmNewDraft(true);
+      return;
+    }
+    clearDraftSave();
+    setConfirmNewDraft(false);
+    setResumeDraft(false);
+    setView('game');
+  }
+  function continueDraft() {
+    setResumeDraft(true);
+    setView('game');
+  }
   // 2026-08-16, user's own ask ("żeby wiedział jaką drużynę ma" — so they can actually recognize
   // their own team): the human's own team used to always get one of the same random "Place
   // Mascot" names as the 15 CPU teams, indistinguishable from them anywhere it's listed (Overview
@@ -123,13 +186,25 @@ function App() {
     setExpandedHelp((current) => (current === mode ? null : mode));
   }
   useEffect(() => {
-    if (!expandedHelp) return;
+    window.scrollTo(0, 0);
+  }, [view]);
+  // 2026-09-24: start downloading the player data as soon as the menu is up — by the time the
+  // player has read the modes and picked a team name, most or all of it is already here.
+  useEffect(() => {
+    const t = setTimeout(() => void prefetchGameData(), 300);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (!expandedHelp && !confirmNewDraft) return;
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setExpandedHelp(null);
+      if (e.key === 'Escape') {
+        setExpandedHelp(null);
+        setConfirmNewDraft(false);
+      }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [expandedHelp]);
+  }, [expandedHelp, confirmNewDraft]);
 
   return (
     <div className="app-shell">
@@ -171,6 +246,16 @@ function App() {
                   🔗 Duel loaded — Start Draft gives you the exact same 16-team board a friend already played.
                 </p>
               )}
+              {savedDraft && (
+                <div className="saved-draft-banner">
+                  <span>
+                    Draft in progress — <b>{savedDraft.teamName}</b>, {savedDraft.humanPicks}/{savedDraft.rosterSize} picks made.
+                  </span>
+                  <button type="button" className="saved-draft-continue at-cond" onClick={continueDraft}>
+                    Continue draft
+                  </button>
+                </div>
+              )}
               <div className="team-name-row">
                 <label htmlFor="intro-team-name" className="team-name-label">
                   Your team
@@ -207,7 +292,7 @@ function App() {
                 it — the other two are real, equal-footing choices, not afterthoughts. */}
             <div className="mode-grid">
               <div className="mode-card-wrap">
-                <button className="mode-card mode-card--featured" onClick={() => setView('game')}>
+                <button className="mode-card mode-card--featured" onClick={startNewDraft}>
                   <span className="mode-card-icon" aria-hidden>
                     🏀
                   </span>
@@ -269,8 +354,36 @@ function App() {
                   ?
                 </button>
               </div>
+              <IntroDataStatus />
             </div>
           </div>
+          {confirmNewDraft && savedDraft && (
+            <div className="mode-help-backdrop" onClick={() => setConfirmNewDraft(false)}>
+              <div
+                className="mode-help-modal"
+                role="alertdialog"
+                aria-modal="true"
+                aria-label="Start a new draft?"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mode-help-modal-head">
+                  <span className="mode-help-modal-title at-cond">Start a new draft?</span>
+                </div>
+                <p className="saved-draft-confirm-text">
+                  Your draft in progress ({savedDraft.teamName}, {savedDraft.humanPicks}/{savedDraft.rosterSize} picks) will be
+                  discarded.
+                </p>
+                <div className="saved-draft-confirm-actions">
+                  <button type="button" className="secondary-btn" onClick={continueDraft} autoFocus>
+                    Continue that draft
+                  </button>
+                  <button type="button" className="primary-btn" onClick={startNewDraft}>
+                    Start new draft
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {expandedHelp && (
             <div className="mode-help-backdrop" onClick={() => setExpandedHelp(null)}>
               <div
@@ -300,19 +413,25 @@ function App() {
       )}
 
       {view === 'game' && (
-        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
-          <GameShell mode="player" commissionerMode={false} humanTeamName={teamName} onExit={() => setView('intro')} />
+        <Suspense fallback={<LoadingPanel />}>
+          <GameShell
+            mode="player"
+            commissionerMode={false}
+            humanTeamName={teamName}
+            resume={resumeDraft}
+            onExit={() => setView('intro')}
+          />
         </Suspense>
       )}
 
       {view === 'bestfive' && (
-        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
+        <Suspense fallback={<LoadingPanel />}>
           <BestFive mode="player" onBack={() => setView('intro')} />
         </Suspense>
       )}
 
       {view === 'quickfive' && (
-        <Suspense fallback={<LoadingPanel label="Loading player data…" />}>
+        <Suspense fallback={<LoadingPanel />}>
           <QuickFive humanTeamName={teamName} onExit={() => setView('intro')} />
         </Suspense>
       )}

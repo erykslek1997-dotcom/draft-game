@@ -18,6 +18,8 @@ interface Props {
    * QuickFive its own 5-round/no-bench version), the toggle/panel itself is shared. Optional so a
    * caller that hasn't been given rules yet doesn't render a dead button. */
   howToPlay?: HowToPlayItem[];
+  /** 2026-09-24: a way back to the main menu before the draft starts. */
+  onExit?: () => void;
 }
 
 const REVEAL_INTERVAL_MS = 320;
@@ -61,7 +63,7 @@ function shuffledIndices(count: number): number[] {
  * component goes straight to revealing again, for every mode, matching its own original
  * always-autoplay behavior before that split existed.
  */
-export default function DraftLottery({ teams, onDone, howToPlay }: Props) {
+export default function DraftLottery({ teams, onDone, howToPlay, onExit }: Props) {
   const teamCodeByTeamId = useMemo(() => teamCodes(teams), [teams]);
   const revealOrder = useMemo(() => shuffledIndices(teams.length), [teams]);
   const [revealedCount, setRevealedCount] = useState(0);
@@ -81,6 +83,11 @@ export default function DraftLottery({ teams, onDone, howToPlay }: Props) {
 
   return (
     <div className="at-shell at-lottery">
+      {onExit && (
+        <button type="button" className="at-menu-btn at-cond" onClick={onExit}>
+          ← Menu
+        </button>
+      )}
       <div className="at-board-brand at-cond">Draft Lottery</div>
 
       {howToPlay && howToPlay.length > 0 && (

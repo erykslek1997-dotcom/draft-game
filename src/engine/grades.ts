@@ -1,4 +1,5 @@
 import type { Position, PlayerSpan } from '../data/schema';
+import { precomputedEffectiveTalent, precomputedSThreshold } from './precomputedTiers';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import {
@@ -138,14 +139,25 @@ let defensiveSThreshold: number | null = null;
  */
 export function offensiveGrade(value: number, uncappedValue: number = value): Grade {
   if (offensiveSThreshold === null) {
-    offensiveSThreshold = computeSThresholdByPlayerPeak((p) => computeUncappedOffensiveTalent(p));
+    offensiveSThreshold =
+      precomputedSThreshold('offense') ?? computeSThresholdByPlayerPeak((p) => computeUncappedOffensiveTalent(p));
   }
   return uncappedValue >= offensiveSThreshold ? 'S' : letterForValue(value);
 }
 
+/** Both pool-wide S cutoffs, computed live — for `scripts/buildPrecomputedTiers.ts` only (the
+ * grade functions themselves read the precomputed values first in production builds). */
+export function liveSThresholds(): { offense: number; defense: number } {
+  return {
+    offense: computeSThresholdByPlayerPeak((p) => computeUncappedOffensiveTalent(p)),
+    defense: computeSThreshold(draftPool.map((p) => computeDefensiveTalent(p))),
+  };
+}
+
 export function defensiveGrade(value: number): Grade {
   if (defensiveSThreshold === null) {
-    defensiveSThreshold = computeSThreshold(draftPool.map((p) => computeDefensiveTalent(p)));
+    defensiveSThreshold =
+      precomputedSThreshold('defense') ?? computeSThreshold(draftPool.map((p) => computeDefensiveTalent(p)));
   }
   return value >= defensiveSThreshold ? 'S' : letterForDefensiveTalent(value);
 }
@@ -1367,7 +1379,8 @@ const effectiveTalentCache = new Map<string, number>();
 export function effectiveTalent(span: PlayerSpan): number {
   const cached = effectiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
-  const result = displayTalentForSpan(tierContextFor(span));
+  // Production builds ship this precomputed (precomputedTiers.ts) — same value, no start-up cost.
+  const result = precomputedEffectiveTalent(span.id) ?? displayTalentForSpan(tierContextFor(span));
   effectiveTalentCache.set(span.id, result);
   return result;
 }

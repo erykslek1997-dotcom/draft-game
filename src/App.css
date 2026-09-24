@@ -487,10 +487,42 @@
 
 .loading-panel {
   text-align: center;
-  padding: 60px 0;
+  padding: 60px 16px;
   color: var(--text);
   font-size: 15px;
+  max-width: 420px;
+  margin: 0 auto;
 }
+/* 2026-09-24: real progress bar for the data download (gameLoader.ts). The indeterminate variant
+   animates `transform` only, so it keeps moving on the compositor even while the engine's module
+   evaluation blocks the main thread during "Preparing players". */
+.loading-panel-label { font-weight: 700; margin: 0 0 12px; font-variant-numeric: tabular-nums; color: #cfe3f7; }
+.loading-panel-hint { font-size: 12.5px; color: #7f96b3; margin: 12px 0 0; }
+.loading-bar {
+  position: relative; height: 8px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, currentColor 15%, transparent);
+}
+.loading-bar-fill {
+  position: absolute; inset: 0 auto 0 0; border-radius: 999px;
+  background: #4a9eda; transition: width .2s ease-out;
+}
+.loading-bar-indeterminate {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 999px;
+  background: #4a9eda; animation: loading-bar-slide 1.2s ease-in-out infinite;
+}
+@keyframes loading-bar-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar-indeterminate { animation: none; width: 100%; opacity: 0.5; }
+}
+.intro-data-status {
+  grid-column: 1 / -1;
+  text-align: center; font-size: 12px; color: #7f96b3; margin: 18px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+.intro-data-status.is-ready { color: #7fd68a; }
 
 .game-controls {
   display: flex;
@@ -2059,6 +2091,7 @@ select {
   padding: 18px 20px 24px;
 }
 .results-screen > .results-hero { order: -1; }
+.results-screen > .results-verdict { order: -1; }
 .results-screen > .results-actions { order: 7; }
 /* 2026-09-14, user-reported live, TWICE (a persistent sidebar, then a shared full-width
    `.results-top-panels` row — see git history for that full story). 2026-09-18, user-reported live
@@ -3974,6 +4007,16 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   gap: 16px; margin-bottom: 18px; padding: 4px 2px;
 }
 .at-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+/* 2026-09-24: CPU pick-speed control, back in Player Mode (GameShell's `AI_SPEEDS`). */
+.at-speed { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.at-speed-label { font-size: 11px; color: var(--at-ink-faint); letter-spacing: 0.06em; text-transform: uppercase; margin-right: 4px; }
+.at-speed-btn {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line);
+  background: var(--at-paper-raised); color: var(--at-ink-soft);
+  border-radius: 999px; padding: 5px 11px; font-size: 11px; font-weight: 700;
+}
+.at-speed-btn.at-active { background: var(--at-accent); color: var(--at-accent-ink); border-color: var(--at-accent); }
+.at-speed-btn:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 
 .at-board-brand {
   text-align: center;
@@ -4131,9 +4174,8 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   font-size: 12px;
   font-weight: 600;
   color: var(--at-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 .at-sidebar-slot-empty {
   font-size: 11.5px;
@@ -4259,20 +4301,36 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
    `white-space: nowrap` + ellipsis rather than letting a long combination wrap — `shortenName`
    already keeps most names short, but a wide position pair (PG/SG) on an unshortened short name
    can still be the widest line on a 150px card. */
+/* 2026-09-24: name on its own line again, allowed to wrap to two lines instead of being cut with
+   an ellipsis (see the JSX comment on `.at-player-card-meta`). */
 .at-player-card-name {
   font-size: 13px;
   font-weight: 700;
   color: var(--at-ink);
   line-height: 1.25;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+}
+.at-player-card-meta {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
+  font-size: 10.5px;
 }
 .at-player-card-pos {
-  font-size: 10.5px;
   font-weight: 500;
   color: var(--at-ink-faint);
 }
+.at-player-card-tal { color: var(--at-ink-soft); white-space: nowrap; }
+.at-player-card-tal b { color: var(--tier-frame, var(--at-ink)); font-size: 12px; }
+.at-tier-key {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+  font-size: 10.5px; color: var(--at-ink-soft); margin: 2px 0 12px;
+}
+.at-tier-key-label { color: var(--at-ink-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+.at-tier-key-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.at-tier-key-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .at-player-card-foot {
   display: flex;
   align-items: center;
@@ -4609,6 +4667,31 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
   font-size: 12.5px; font-style: italic; color: var(--at-ink-soft);
   background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px;
   padding: 8px 14px; margin-bottom: 12px;
+}
+/* 2026-09-24: the "your turn" counterpart of `.at-cpu-turn-banner` above — accent-coloured and
+   sticky so it stays in view while scrolling the player cards, and it carries this pick's real
+   shot budget (`pickBudget`, draft.ts). */
+.at-turn-sticky { position: sticky; top: 0; z-index: 5; }
+.at-your-turn-banner {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  font-size: 13px; color: var(--at-ink);
+  background: color-mix(in srgb, var(--at-accent) 18%, var(--at-paper));
+  border: 1px solid var(--at-accent); border-radius: 10px;
+  padding: 9px 14px; margin-bottom: 12px;
+}
+.at-your-turn-title { font-weight: 800; color: var(--at-accent); letter-spacing: 0.06em; text-transform: uppercase; }
+.at-your-turn-reserve { color: var(--at-ink-soft); }
+.at-budget-notice {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  font-size: 12.5px; color: var(--at-ink);
+  background: color-mix(in srgb, var(--at-accent-2) 14%, var(--at-paper));
+  border: 1px solid var(--at-accent-2); border-radius: 10px;
+  padding: 9px 14px; margin-bottom: 12px;
+}
+.at-budget-notice-btn {
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  border: none; border-radius: 999px; padding: 6px 14px;
+  background: var(--at-accent-2); color: var(--at-accent-2-ink);
 }
 .at-why-btn {
   font: inherit; cursor: pointer; border: 1px solid var(--at-line); background: none; color: var(--at-ink-soft);
@@ -5012,8 +5095,10 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
    margin, bold, full ink color) is reused as-is; this only adds the truncation `.at-lottery-team`'s
    flex row needs so a long name ("Winston-Salem Cowboys") shrinks with an ellipsis instead of
    wrapping the slot taller or pushing the YOU tag out. */
+/* 2026-09-24: wraps instead of an ellipsis — the one name every player looks for on this screen
+   is their own, and it was the one getting cut ("Oklahoma City Wa…"). */
 .at-lottery-name-full {
-  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.25;
 }
 @keyframes at-lottery-pop {
   from { opacity: 0; transform: scale(0.85); }
@@ -5030,4 +5115,117 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-lottery-continue { margin-top: 4px; }
 .at-lottery-skip {
   margin-top: 4px; font-size: 11.5px; padding: 6px 14px; opacity: 0.75;
+}
+
+/* 2026-09-24: RotationBuilder's "this is only a suggestion" note and its visible reason for a
+   disabled Submit (previously a hover-only tooltip, or nothing at all). */
+.rotation-suggestion-note {
+  font-size: 12.5px; line-height: 1.5; color: var(--at-ink, var(--text));
+  border: 1px dashed var(--at-accent, var(--border)); border-radius: 10px;
+  padding: 8px 12px; margin: 4px 0 12px;
+}
+.rotation-submit-hint { font-size: 12px; color: var(--at-ink-soft, var(--text)); margin: 8px 0 0; }
+
+/* 2026-09-24: phone layout for the results screen — ranking rows wrap their score chips onto a
+   second line instead of squeezing the team name into a 4-line column and clipping the chips off
+   the right edge, and the one-row matchup table becomes a wrapping grid (MatchupMatrix.tsx). */
+.matchup-matrix-compact { display: none; }
+@media (max-width: 640px) {
+  .team-result-header { flex-wrap: wrap; row-gap: 6px; }
+  .team-result-title { flex: 1 1 calc(100% - 24px); min-width: 0; overflow-wrap: anywhere; }
+  .team-result-header-mini { flex-wrap: wrap; margin-left: 20px; }
+  .team-result-header > .score-chip { margin-left: 20px; }
+  .matchup-matrix-scroll.has-compact { display: none; }
+  .matchup-matrix-compact {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 8px 0;
+  }
+  .matchup-matrix-compact-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .matchup-matrix-compact-cell.is-open { outline-color: rgba(255, 255, 255, 0.8); }
+  .matchup-matrix-compact-code { font-size: 10px; font-weight: 600; opacity: 0.85; letter-spacing: 0.03em; }
+}
+
+/* 2026-09-24: "← Menu" on the lottery and draft screens, plus the leave-draft confirm. */
+.at-menu-btn {
+  position: absolute; top: 14px; left: 14px; z-index: 6;
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--at-line); border-radius: 999px; padding: 6px 12px;
+  background: var(--at-paper-raised); color: var(--at-ink-soft);
+}
+.at-menu-btn:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
+.at-menu-btn:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+.at-exit-modal-text { font-size: 13.5px; line-height: 1.5; margin: 4px 0 16px; }
+.at-exit-modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.at-shell:has(> .at-menu-btn) { position: relative; }
+@media (max-width: 640px) {
+  .at-menu-btn { top: 8px; left: 8px; padding: 5px 10px; }
+  .at-shell:has(> .at-menu-btn) > .at-board-brand { padding-top: 52px; }
+}
+
+/* 2026-09-24: "Why you finished here" — insights + one tip + the replay actions, right under the
+   hero (ResultsScreen.tsx `ResultsVerdict`). */
+.results-verdict {
+  border: 1px solid var(--at-line); border-radius: 14px; background: var(--at-paper-raised);
+  padding: 16px 18px; margin: 0 0 16px;
+}
+.results-verdict-title { font-size: 18px; margin: 0 0 12px; color: var(--at-ink); }
+.results-verdict-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 20px; }
+.results-verdict-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.results-verdict-col--good .results-verdict-label { color: #7fd68a; }
+.results-verdict-col--bad .results-verdict-label { color: #f0a868; }
+.results-verdict-col ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
+.results-verdict-tip {
+  margin: 14px 0 0; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; line-height: 1.5;
+  color: var(--at-ink); background: color-mix(in srgb, var(--at-accent) 12%, var(--at-paper));
+  border: 1px solid color-mix(in srgb, var(--at-accent) 45%, transparent);
+}
+.results-verdict-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.results-hero-stat-of { font-size: 0.45em; opacity: 0.6; margin-left: 2px; font-weight: 600; }
+
+/* 2026-09-24: intro "Continue draft" banner + the confirm shown before a new draft replaces it. */
+.saved-draft-banner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px;
+  margin: 0 auto 18px; padding: 10px 14px; max-width: 420px;
+  border: 1px solid #4a9eda; border-radius: 10px; font-size: 13px; color: #cfe3f7;
+  background: rgba(74, 158, 218, 0.12);
+}
+.saved-draft-continue {
+  font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; border: none;
+  border-radius: 999px; padding: 7px 16px; background: #4a9eda; color: #06070c;
+}
+.saved-draft-confirm-text { font-size: 13.5px; line-height: 1.5; margin: 4px 0 16px; }
+.saved-draft-confirm-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* 2026-09-24: collapsed draft board ticker (DraftBoard.tsx) + the phone "Your Team" toggle. */
+.at-ticker {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12.5px; color: var(--at-ink-soft);
+}
+.at-ticker-now b { color: var(--at-ink); }
+.at-ticker-label { color: var(--at-ink-faint); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.06em; }
+.at-ticker-you { color: var(--at-accent) !important; text-transform: uppercase; letter-spacing: 0.04em; }
+.at-ticker-next { margin-left: 4px; }
+.at-ticker-recent { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
+.at-ticker-pick {
+  white-space: nowrap; font-size: 11.5px; padding: 3px 8px; border-radius: 999px;
+  background: var(--at-pill); color: var(--at-ink-soft);
+}
+.at-ticker-pick.is-you { color: var(--at-accent-2); }
+.at-ticker-pick-no { color: var(--at-ink-faint); }
+.at-ticker-toggle {
+  margin-left: auto; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--at-line); border-radius: 999px; padding: 5px 12px;
+  background: var(--at-paper); color: var(--at-ink-soft);
+}
+.at-ticker-toggle:hover { color: var(--at-ink); }
+.at-ticker + .at-grid-scroll-nav,
+.at-ticker + .at-grid-scroll { margin-top: 12px; }
+.at-draft-sidebar-head--toggle {
+  width: 100%; font: inherit; cursor: pointer; background: none; border: none; padding: 0; color: inherit;
+  text-align: left;
+}
+@media (max-width: 640px) {
+  .at-ticker-recent .at-ticker-pick:nth-child(n + 3) { display: none; }
+}
+@media (max-width: 640px) {
+  /* One scrollable line of tier swatches on phones instead of three wrapped rows. */
+  .at-tier-key { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
 }

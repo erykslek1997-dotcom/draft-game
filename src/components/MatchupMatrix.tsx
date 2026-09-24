@@ -58,7 +58,35 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
           <i>Favorite</i>
         </span>
       </div>
-      <div className="matchup-matrix-scroll">
+      {/* 2026-09-24: on a phone the one-row, 16-column table below needs ~760px of sideways
+          scrolling with nothing hinting at it. Narrow screens get the same cells as a wrapping
+          grid instead (CSS swaps which of the two is shown); same click-to-open behaviour. */}
+      {visibleRows.length === 1 && (
+        <div className="matchup-matrix-compact">
+          {ordered
+            .filter((column) => column.teamId !== visibleRows[0].teamId)
+            .map((column) => {
+              const row = visibleRows[0];
+              const probability = row.matchups.find((entry) => entry.opponentId === column.teamId)?.seriesWinProb ?? 0.5;
+              const isOpen = selected?.teamId === row.teamId && selected?.opponentId === column.teamId;
+              return (
+                <button
+                  key={column.teamId}
+                  className={`matchup-matrix-cell matchup-matrix-compact-cell ${isOpen ? 'is-open' : ''}`}
+                  style={{ backgroundColor: matchupCellColor(probability) }}
+                  title={`#${column.globalRank} ${teamLabel(teamById.get(column.teamId)!)}`}
+                  onClick={() => setSelected(isOpen ? null : { teamId: row.teamId, opponentId: column.teamId })}
+                >
+                  <span className="matchup-matrix-compact-code">
+                    #{column.globalRank} {codeByTeamId.get(column.teamId)}
+                  </span>
+                  {Math.round(probability * 100)}%
+                </button>
+              );
+            })}
+        </div>
+      )}
+      <div className={`matchup-matrix-scroll ${visibleRows.length === 1 ? 'has-compact' : ''}`}>
         <table className="at-roster-table matchup-matrix-table">
           <thead><tr><th>Opponent</th>{ordered.map((row) => (
             <th key={row.teamId} title={`#${row.globalRank} ${teamLabel(teamById.get(row.teamId)!)}`}>

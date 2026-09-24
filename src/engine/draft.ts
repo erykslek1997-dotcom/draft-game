@@ -13,6 +13,7 @@ import {
   totalFga,
   buildCheapestLookup,
   canFillFromLookup,
+  MARGIN_PER_CONTENDING_TEAM,
   type CheapestLookup,
 } from './positions';
 import { pickForAi, type AiDraftRuleset, type AiDraftStrategy } from './aiDrafter';
@@ -226,7 +227,12 @@ function strictPickLegal(state: DraftState, playerId: string): boolean {
   const team = state.teams[currentTeamIndex(state)];
   const currentFgas = team.roster.map((p) => p.fga);
   if (!isPickCapLegal(currentFgas, player.fga)) return false;
-  if (team.isHuman) return true;
+  // 2026-09-24: the human used to skip the lookahead below (`if (team.isHuman) return true`),
+  // which let a normal-looking run of star picks spend ~99 of 100.9 shots with 4 slots still
+  // open — every card on the board then went grey with no explanation and the draft sat waiting
+  // forever on a pick only the single cheapest player in the whole pool could satisfy (tier 3 of
+  // `isPickLegal`). The human now gets the exact same "can you still fill the roster?" check the
+  // CPU teams always had; `pickBudget` below is what the UI shows so this never feels arbitrary.
 
   const slotsLeftAfterPick = ROSTER_SIZE - team.roster.length - 1;
   if (slotsLeftAfterPick === 0) return true;
@@ -277,6 +283,50 @@ function noCapLegalPickExists(state: DraftState): boolean {
  * Shared by `makePick` and the UI, so a button that looks enabled never silently does
  * nothing when clicked.
  */
+/**
+ * What the team on the clock can spend on THIS pick and still be able to fill every remaining
+ * slot — the same cheapest-players-plus-contention-margin reserve `strictPickLegal` enforces,
+ * surfaced as a number the UI can show ("max 14.2 shots this pick"). `maxThisPick` is a guide,
+ * not the legality rule itself (`isPickLegal` stays the one gate): it assumes the reserve is
+ * filled by the currently-cheapest distinct players, which is exactly what the lookahead does
+ * except in the rare case where the candidate IS one of those cheapest players.
+ */
+export interface PickBudget {
+  capLeft: number;
+  slotsLeft: number;
+  /** Shots set aside for the slots after this one. */
+  reserved: number;
+  maxThisPick: number;
+}
+
+export function pickBudget(state: DraftState, team: Team = state.teams[currentTeamIndex(state)]): PickBudget {
+  const capLeft = CAP_LIMIT - totalFga(team.roster.map((p) => p.fga));
+  const slotsLeft = Math.max(0, ROSTER_SIZE - team.roster.length);
+  const slotsAfter = Math.max(0, slotsLeft - 1);
+  let reserved = 0;
+  if (slotsAfter > 0) {
+    const { sorted } = getCheapestLookup(state);
+    for (let i = 0; i < slotsAfter && i < sorted.length; i++) reserved += sorted[i].fga;
+    reserved += MARGIN_PER_CONTENDING_TEAM * (TEAM_COUNT - 1) * slotsAfter;
+  }
+  const round1 = (n: number) => Math.round(n * 10) / 10;
+  return {
+    capLeft: round1(capLeft),
+    slotsLeft,
+    reserved: round1(reserved),
+    maxThisPick: round1(Math.max(0, capLeft - reserved)),
+  };
+}
+
+/** Why `playerId` can't be drafted right now, for button tooltips — `null` when it can. */
+export function pickBlockReason(state: DraftState, playerId: string): 'cap' | 'reserve' | null {
+  if (isPickLegal(state, playerId)) return null;
+  const player = playersById.get(playerId);
+  if (!player) return 'cap';
+  const team = state.teams[currentTeamIndex(state)];
+  return isPickCapLegal(team.roster.map((p) => p.fga), player.fga) ? 'reserve' : 'cap';
+}
+
 export function isPickLegal(state: DraftState, playerId: string): boolean {
   if (state.complete) return false;
   const player = playersById.get(playerId);

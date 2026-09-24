@@ -1,7 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { computeOffensiveTalent, computeDefensiveTalent } from './talent';
+import { tierContextWithSixthMan } from './sixthMan';
 import { effectiveTalent } from './grades';
 
 /**
@@ -27,7 +27,12 @@ import { effectiveTalent } from './grades';
  * normalized halves, same anchoring `twoWaySynergyBonus` (talent.ts) already uses for the same
  * "genuinely balanced beats one-sided" idea. */
 function twoWayBalance(span: PlayerSpan): number {
-  return Math.min(computeOffensiveTalent(span), computeDefensiveTalent(span));
+  // Read through the (memoized, and in production builds precomputed — see precomputedTiers.ts)
+  // tier context rather than calling computeOffensiveTalent/computeDefensiveTalent directly: its
+  // `otal`/`dtal` ARE those two values, and going direct here forced the full talent pipeline to
+  // run at start-up just to break ties (2026-09-24 load-time profile).
+  const ctx = tierContextWithSixthMan(span);
+  return Math.min(ctx.otal, ctx.dtal);
 }
 
 /**

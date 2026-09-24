@@ -85,12 +85,20 @@ export const POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
  * and lowercases; not meant for display.
  */
 export function normalizePlayerName(name: string): string {
-  return name
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
+  // Memoized (2026-09-24): called for every span in dozens of module-load lookup builds — a
+  // measured ~1s of the initial load on its own, recomputing the same ~1.4k names over and over.
+  let normalized = normalizedNameCache.get(name);
+  if (normalized === undefined) {
+    normalized = name
+      .normalize('NFKD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .trim();
+    normalizedNameCache.set(name, normalized);
+  }
+  return normalized;
 }
+const normalizedNameCache = new Map<string, string>();
 
 /**
  * On-ball archetypes that "need the ball," weighted by how much stacking them actually

@@ -169,6 +169,9 @@ interface Props {
   history: DraftHistoryEntry[];
   mode: 'developer' | 'player';
   onRestart: () => void;
+  /** 2026-09-24: start a new draft straight from the results — `seed` given = the same board
+   * again ("Rematch"), omitted = a fresh random one ("New draft"). */
+  onRematch?: (seed?: number) => void;
   /** Read-only here — reactions made live during the draft (see `DraftHistory`/`GameShell`).
    * Folded into the same export as this screen's own roster-row reactions so a single downloaded
    * file has everything. */
@@ -688,8 +691,13 @@ function HeroResult({
       </div>
       <div className="results-hero-stats">
         <div className={`results-hero-stat results-hero-overall score-t${scoreBand(overall)}`}>
-          <span className="results-hero-stat-label">Final Power Ranking</span>
-          <span className="results-hero-stat-value">{overall}</span>
+          {/* 2026-09-24: was "Final Power Ranking" — a bare "46" under that label read as a rank
+              (46th), right next to the real rank ("16th / 16"). It's the 0-100 team rating. */}
+          <span className="results-hero-stat-label">Team rating</span>
+          <span className="results-hero-stat-value">
+            {overall}
+            <small className="results-hero-stat-of">/100</small>
+          </span>
         </div>
         {titleOdds !== null && (
           <div className="results-hero-stat">
@@ -910,8 +918,8 @@ function ShareModal({
         <span className={`share-modal-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
         <div className="share-modal-stats">
           <div className="share-modal-stat">
-            <span>Final Power Ranking</span>
-            <b>{overall}</b>
+            <span>Team rating</span>
+            <b>{overall}/100</b>
           </div>
           {titleOdds !== null && (
             <div className="share-modal-stat">
@@ -1397,7 +1405,87 @@ export function downloadFeedback(
   URL.revokeObjectURL(url);
 }
 
-export default function ResultsScreen({ teams, history, onRestart, draftSeed, challenger }: Props) {
+/** 2026-09-24: one concrete thing to try next draft, keyed to the human team's weakest score —
+ * the results screen used to show the numbers (often a harsh 16th/16, 0% everywhere) without
+ * ever saying what to do differently. */
+const NEXT_DRAFT_TIP: Record<string, string> = {
+  Talent: 'Your top-end talent was the gap. Spend your early picks on the best player available, then fill needs later.',
+  'Bench Depth': 'Your bench gave back too much. Keep a few shots for the last rounds so your 6th–9th men can actually play.',
+  Offense: "Your offense stalled. Draft at least one real shot creator, and don't stack non-shooters in the starting five.",
+  Defense: "Defense sank this team. Opponents hunt stars who can't defend — spend a mid-round pick on a rim protector or a wing stopper.",
+  Spacing: 'The floor was too cramped. Put two or three real outside shooters around your stars.',
+  Fit: "The pieces overlapped. Too many players who need the ball, or who do the same job — balance creators, shooters and defenders.",
+  Rotation: 'Your rotation cost you. Start players at their own positions and keep minutes within each player’s durability cap.',
+};
+
+function ResultsVerdict({
+  team,
+  scores,
+  onNewDraft,
+  onRematch,
+  onMenu,
+}: {
+  team: Team;
+  scores: Record<string, number>;
+  onNewDraft?: () => void;
+  onRematch?: () => void;
+  onMenu: () => void;
+}) {
+  const insights = useMemo(() => generateRosterInsights(buildTeamFeatureSnapshot(team)), [team]);
+  const strengths = insights.strengths.slice(0, 2);
+  const concerns = insights.concerns.slice(0, 2);
+  const [weakestLabel] = Object.entries(scores).sort((a, b) => a[1] - b[1])[0] ?? [];
+  const tip = weakestLabel ? NEXT_DRAFT_TIP[weakestLabel] : undefined;
+  return (
+    <section className="results-verdict" aria-label="Why you finished here">
+      <h2 className="results-verdict-title at-cond">Why you finished here</h2>
+      <div className="results-verdict-cols">
+        {strengths.length > 0 && (
+          <div className="results-verdict-col results-verdict-col--good">
+            <span className="results-verdict-label">What worked</span>
+            <ul>
+              {strengths.map((i) => (
+                <li key={i.id}>{i.message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {concerns.length > 0 && (
+          <div className="results-verdict-col results-verdict-col--bad">
+            <span className="results-verdict-label">What held you back</span>
+            <ul>
+              {concerns.map((i) => (
+                <li key={i.id}>{i.message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+      {tip && (
+        <p className="results-verdict-tip">
+          <b>Next draft:</b> {tip}
+        </p>
+      )}
+      <div className="results-verdict-actions">
+        {onNewDraft && (
+          <button type="button" className="primary-btn" onClick={onNewDraft}>
+            New draft
+          </button>
+        )}
+        {onRematch && (
+          <button type="button" className="secondary-btn" onClick={onRematch} title="Same 16 teams, same draft order — try a different plan.">
+            Rematch this board
+          </button>
+        )}
+        <button type="button" className="secondary-btn" onClick={onMenu}>
+          Main menu
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export default function ResultsScreen({ teams, history, onRestart, onRematch, draftSeed, challenger }: Props) {
   // Lookups used inside render loops (matchup opponents, draft-order rows, the bracket tree) —
   // Maps, not repeated `.find` over `teams` / the 9451-span `draftPool`.
   const teamsById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
@@ -1614,7 +1702,7 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
       <p className="player-notes-hint">
         Rolls a full regular season, game by game, using each pairing's real projected win probability — the roll shown
         is whichever of {SEASON_SIM_POOL_SIZE} background simulations landed closest to the typical outcome for your
-        team. Separate from the Final Power Ranking above.
+        team. Separate from the final ranking above.
       </p>
       <button
         className="secondary-btn"
@@ -1732,6 +1820,23 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
           failureMode={heroFit?.inputs.archetypeReport?.failureMode ?? null}
           starters={heroStarters}
           roster={heroRoster}
+        />
+      )}
+      {heroRanked?.team.isHuman && (
+        <ResultsVerdict
+          team={displayTeam(heroRanked.team)}
+          scores={{
+            Talent: heroRanked.breakdown.talentScore,
+            'Bench Depth': heroRanked.breakdown.benchDepthScore,
+            Offense: heroRanked.breakdown.offenseScore,
+            Defense: heroRanked.breakdown.defenseScore,
+            Spacing: heroRanked.breakdown.spacingScore,
+            Fit: heroRanked.breakdown.fitScore,
+            Rotation: heroRanked.breakdown.rotationScore,
+          }}
+          onNewDraft={onRematch ? () => onRematch() : undefined}
+          onRematch={onRematch ? () => onRematch(draftSeed) : undefined}
+          onMenu={onRestart}
         />
       )}
       {/* 2026-09-14, user-reported live ("ogromnie dużo miejsca na dużym ekranie, można zrobić
@@ -1995,7 +2100,7 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
                 <details className="result-accordion-section championship-section">
                   <summary>Championship odds</summary>
                   {leagueEvalRow && (
-                    <div className="championship-summary" title="Simulated over the full 16-team bracket, seeded by the Final Power Ranking.">
+                    <div className="championship-summary" title="Simulated over the full 16-team bracket, seeded by the final ranking.">
                       <div className="championship-headline">
                         <span className="championship-headline-stat">
                           <b><AnimatedPercent value={leagueEvalRow.championshipProbability} /></b>
@@ -2130,7 +2235,13 @@ export default function ResultsScreen({ teams, history, onRestart, draftSeed, ch
         );
       })}
       <div className="results-actions">
-        <button className="secondary-btn" onClick={onRestart}>Play again</button>
+        {onRematch && (
+          <button className="primary-btn" onClick={() => onRematch()}>New draft</button>
+        )}
+        {onRematch && (
+          <button className="secondary-btn" onClick={() => onRematch(draftSeed)}>Rematch this board</button>
+        )}
+        <button className="secondary-btn" onClick={onRestart}>Main menu</button>
       </div>
     </div>
   );
