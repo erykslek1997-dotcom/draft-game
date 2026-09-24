@@ -43,7 +43,7 @@ type Phase = 'lottery' | 'draft' | 'results';
 const QUICK_HOW_TO_PLAY = [
   { title: 'Draft', body: `${TEAM_COUNT} teams take turns, ${QUICK_ROUNDS} rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
   { title: 'Shot cap', body: `Every pick costs shots. Your five starters have to fit under ${QUICK_CAP_LIMIT} shots.` },
-  { title: 'Peak only', body: "No span picking — every player is shown at their single best season, so each pick is quick." },
+  { title: 'Peak only', body: "No choosing years — every player is shown at his single best season, so each pick is quick." },
   { title: 'Grading', body: 'The judge scores your five the same way the full draft does — talent, offense, defense, spacing, fit — right after your last pick.' },
 ];
 

@@ -31,7 +31,7 @@ import { AI_SPEED_LABELS, useAiSpeed } from './aiSpeed';
 const DRAFT_HOW_TO_PLAY = [
   { title: 'Draft', body: `${TEAM_COUNT} teams take turns, ${ROSTER_SIZE} rounds — one player each round. You control one team; the rest are CPU.` },
   { title: 'Shot cap', body: `Every pick costs shots. Your whole roster has to fit under ${CAP_LIMIT} shots — the best player isn't always the pick that fits.` },
-  { title: 'Spans', body: "You're not limited to a player's peak — draft any real multi-season window of their career. A cheaper, less-peak span can be the one that fits your cap." },
+  { title: 'Years', body: "Every player comes with several stretches of his career (e.g. 1996-98 vs 2003-05). The draft takes his best one; in the Team tab you can switch to other years — a cheaper, less-peak stretch can be what fits your cap." },
   { title: 'Rotation', body: `Set minutes for your 5 starters and ${BENCH_SLOT_COUNT} bench players — the Team tab opens for it as soon as you have your first pick, no need to wait for the draft to finish.` },
   { title: 'Grading', body: 'The judge scores every team — talent, offense, defense, spacing, fit, rotation — and ranks the whole field, yours included.' },
 ];

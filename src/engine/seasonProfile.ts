@@ -74,11 +74,11 @@ export function seasonProfile(breakdown: ScoreBreakdown, fit: FitScoreResult): S
         ? 'Regular-season machine'
         : 'Balanced contender';
   const explanation = label === 'Playoff riser'
-    ? 'Playoff structure, half-court creation and defensive coverage improve relative value.'
+    ? 'Built for the playoffs: half-court scoring and defense matter more once rotations shorten.'
     : label === 'Regular-season machine'
-      ? 'Depth and rotation stability carry more of the value than the closing-lineup profile.'
+      ? 'Depth wins regular-season games, but the playoff closing lineup is less convincing.'
       : label === 'Fragile in both phases'
-        ? 'The roster lacks both regular-season stability and a dependable playoff identity.'
-        : 'The roster retains most of its regular-season value when rotations shorten.';
+        ? 'Neither the depth for the regular season nor a clear playoff identity.'
+        : 'Keeps most of its value when the playoff rotation shortens.';
   return { regularSeason, playoffs, label, explanation };
 }

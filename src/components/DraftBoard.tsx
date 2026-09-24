@@ -270,7 +270,7 @@ function PlayerPeekModal({
           <div>
             <h2 className="player-peek-name">{group.playerName}</h2>
             <span className="player-peek-sub">
-              {naturalPosition(group.playerName)} · {group.spans.length} season{group.spans.length > 1 ? 's' : ''} available
+              {naturalPosition(group.playerName)} · {group.spans.length} stretch{group.spans.length > 1 ? 'es' : ''} of his career to choose from
             </span>
           </div>
         </div>
@@ -278,7 +278,7 @@ function PlayerPeekModal({
           <table className="span-table at-draft-span-table">
             <thead>
               <tr>
-                <th>Span</th>
+                <th>Years</th>
                 <th>Pos</th>
                 <th>Tier</th>
                 <th className="num">PTS</th>
@@ -548,11 +548,11 @@ export function AtGrade({ grade }: { grade: Grade }) {
    questions (raw quality vs. how well that quality travels next to another star), not two
    readings of the same idea. */
 const TAG_LEGEND: ReadonlyArray<{ name: string; tiers: string[]; text: string }> = [
-  { name: 'Talent (TAL)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "This player's own overall value — scoring, efficiency, playmaking and defensive activity blended into one box-score-derived number (a transparent stand-in for models like Basketball-Index's O-LEBRON). Named tiers from Cigarette Butt to GOAT, off the player's single best-TAL span." },
-  { name: 'Offense (OFF) / Defense (DEF)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'The same idea as Talent, split into its offense-only and defense-only halves. Letter grade S–F — S is reserved for the 3 best in the current pool.' },
-  { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "A different question from Talent/Offense/Defense: not how good this player is, but how well their game travels next to another ball-dominant star — an efficient off-ball scorer or a versatile defender ports well even at a modest overall Talent, and a ball-dominant star can port poorly despite elite Talent. Same S–F letter-grade scale." },
-  { name: '3PT (SPC)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How much this player's outside shooting forces a defense to respect the perimeter — real, era-scaled 3-point volume and accuracy. Same S–F letter-grade scale." },
-  { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "Real share of possible team games actually played in this span. Same S–F letter-grade scale." },
+  { name: 'Talent (TAL)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How good the player was in those years, all in one number — scoring, efficiency, playmaking and defense. The named tiers (Cigarette Butt up to GOAT) come from it." },
+  { name: 'Offense (OFF) / Defense (DEF)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'Talent split into its offensive and defensive halves, as a letter grade from F to S. S is kept for the 3 best in the pool.' },
+  { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How well his game fits next to other stars. A shooter who doesn't need the ball, or a defender who can guard anyone, fits almost anywhere; a star who needs the ball fits worse next to another one. Same F–S scale." },
+  { name: '3PT (SPC)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How much his outside shooting forces defenses to guard him away from the basket, adjusted for his era. Same F–S scale." },
+  { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How many of his team's games he actually played in those years. Same F–S scale." },
   // 2026-08-19, user's explicit ask ("hide playoffs and make everything in one line"): the
   // Playoffs entry used to sit alone on its own short second row (5 cards fit one row, the 6th
   // wrapped) — dropped so the remaining 5 fit one line cleanly, per the same ask. The actual
@@ -1468,7 +1468,7 @@ export default function DraftBoard({
                           <table className="span-table at-draft-span-table">
                             <thead>
                               <tr>
-                                <th>Span</th>
+                                <th>Years</th>
                                 <th>Pos</th>
                                 <th className="num">Shots</th>
                                 <th className="num">TAL</th>
@@ -1612,7 +1612,7 @@ export default function DraftBoard({
                             wykorzystać"): the season's own headline box line, the same numbers the
                             Scouting report opens with — the card had the room, and it's the first
                             thing a player checks before a pick. */}
-                        <span className="at-player-card-season">{target.spanLabel} season</span>
+                        <span className="at-player-card-season">{target.spanLabel} averages</span>
                         <span className="at-player-card-stats">
                           <span><b>{target.box.ppg.toFixed(1)}</b>PTS</span>
                           <span><b>{target.box.rpg.toFixed(1)}</b>REB</span>
@@ -1688,7 +1688,7 @@ export default function DraftBoard({
                 <p className="at-caption" style={{ marginTop: 0 }}>
                   {showJudgeMetrics
                     ? "Peak shots = cost of this player's highest-Talent season. Lowest shots = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one."
-                    : 'Draft picks his best season. Tap Scouting report to compare his other seasons — you can still switch to a different one afterward, in the Team tab.'}
+                    : 'Draft takes the years shown on the card — his best stretch. Open Scouting to compare his other years; you can still switch later in the Team tab.'}
                 </p>
                 {showJudgeMetrics && (
                   <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
@@ -1820,7 +1820,7 @@ export default function DraftBoard({
                 at a real, separate click target — no longer needs its own redundant `isWideLayout`
                 check now that the parent already gates it. */}
             <p className="at-draft-sidebar-hint">
-              Span swaps and rotation minutes live on the{' '}
+              Change a player's years or set minutes in the{' '}
               <button type="button" className="at-inline-link" onClick={() => setActiveTab('team')}>
                 Team tab
               </button>
@@ -1874,7 +1874,7 @@ export default function DraftBoard({
                   <th>Rnd</th>
                   <th>Pos</th>
                   <th>Player</th>
-                  <th>Span</th>
+                  <th>Years</th>
                   {/* 2026-08-19, user's explicit ask ("show offense, defense, portability etc
                       with S-F value"): the same judge letter-grades the Draft tab already shows
                       per candidate, now visible for your own already-locked-in roster too.
@@ -2001,7 +2001,7 @@ export default function DraftBoard({
           )}
           <p className="at-caption">
             {isViewingHumanRoster
-              ? `You drafted the player, not a specific era — the Span dropdown above picks which career window to actually roster. A cheaper season frees shots for the rest of the draft; a pricier one is fine as long as the whole roster stays under ${CAP_LIMIT} shots when you submit. Rotation minutes are set below.`
+              ? `Each player's Years menu picks which stretch of his career you use. Cheaper years free up shots for the rest of the draft; pricier ones are fine as long as the whole roster stays under ${CAP_LIMIT} shots when you submit. Minutes are set in Rotation below.`
               : 'Rotation minutes are set below, in this same tab.'}
           </p>
           {/* 2026-08-19, user's explicit ask ("you can add glossary under TEAM"): the roster table

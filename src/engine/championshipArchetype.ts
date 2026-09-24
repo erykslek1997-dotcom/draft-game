@@ -33,13 +33,13 @@ export interface ChampionshipStructureResult {
 const clamp = (value: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, value));
 
 const ARCHETYPE_REPORTS: Record<ChampionshipArchetype, { strengths: string[]; requirements: string[]; failureMode: string }> = {
-  'Two-way engine': { strengths: ['elite creation and defensive pressure'], requirements: ['primary star who can defend or be protected'], failureMode: 'the star is overloaded and the supporting creation disappears' },
-  'Creator + rim anchor': { strengths: ['paint pressure', 'defensive back-line'], requirements: ['credible shooting around the creator'], failureMode: 'spacing collapses against a loaded defense' },
-  'Motion spacing + switch defense': { strengths: ['multiple shooting outlets', 'low-huntability defense'], requirements: ['at least two real perimeter stoppers'], failureMode: 'there is no late-clock creator when the motion is denied' },
-  'Post hub + shooters': { strengths: ['half-court creation', 'inside-out passing'], requirements: ['shooters who punish help rotations'], failureMode: 'the hub is forced into inefficient isolations' },
-  'Defensive superteam': { strengths: ['high defensive floor and ceiling'], requirements: ['one reliable source of half-court offense'], failureMode: 'the defense cannot compensate for a stagnant offense' },
-  'Big two-way + shooting': { strengths: ['size, rim pressure and spacing'], requirements: ['mobile frontcourt defenders'], failureMode: 'slow bigs are pulled into repeated perimeter actions' },
-  'Heliocentric star + specialists': { strengths: ['elite shot creation with simple role clarity'], requirements: ['low-usage spacing and defensive specialists'], failureMode: 'the star is trapped or forced off the ball' },
+  'Two-way engine': { strengths: ['elite creation and defensive pressure'], requirements: ['primary star who can defend or be protected'], failureMode: 'your star wears down and nobody else can create' },
+  'Creator + rim anchor': { strengths: ['paint pressure', 'defensive back-line'], requirements: ['credible shooting around the creator'], failureMode: "defenses pack the paint if the shooting isn't there" },
+  'Motion spacing + switch defense': { strengths: ['multiple shooting outlets', 'low-huntability defense'], requirements: ['at least two real perimeter stoppers'], failureMode: 'nobody can create a shot once the ball movement is shut down' },
+  'Post hub + shooters': { strengths: ['half-court creation', 'inside-out passing'], requirements: ['shooters who punish help rotations'], failureMode: 'the post hub gets stuck in bad one-on-ones' },
+  'Defensive superteam': { strengths: ['high defensive floor and ceiling'], requirements: ['one reliable source of half-court offense'], failureMode: "great defense can't make up for an offense that stalls" },
+  'Big two-way + shooting': { strengths: ['size, rim pressure and spacing'], requirements: ['mobile frontcourt defenders'], failureMode: 'slow bigs get dragged out to guard the perimeter' },
+  'Heliocentric star + specialists': { strengths: ['elite shot creation with simple role clarity'], requirements: ['low-usage spacing and defensive specialists'], failureMode: 'the star gets trapped and nobody else can take over' },
   'Balanced two-way contender': { strengths: ['few matchup-specific weaknesses', 'portable lineups'], requirements: ['two credible creators and two-way minutes'], failureMode: 'the roster lacks a single advantage that can decide a close series' },
   'Fragile specialist mix': { strengths: ['can win a narrow matchup'], requirements: ['careful opponent selection'], failureMode: 'a single weak link is repeatedly targeted' },
 };
@@ -182,4 +182,26 @@ export function championshipStructureForRoster(
       : undefined,
     notes,
   };
+}
+
+/**
+ * 2026-09-24, player-facing copy pass: the archetype names are STYLE matches (what shape of
+ * champion this roster resembles), but several read as a quality verdict — "Defensive superteam"
+ * showed up on a 16th-place team whose Defense score was 54. Every UI label goes through this so
+ * the player reads a style, not a grade; the internal names (used by scoring and tests) are unchanged.
+ */
+const ARCHETYPE_DISPLAY_NAMES: Record<ChampionshipArchetype, string> = {
+  'Two-way engine': 'Two-way star',
+  'Creator + rim anchor': 'Creator + rim protector',
+  'Motion spacing + switch defense': 'Shooting + switching',
+  'Post hub + shooters': 'Post hub + shooters',
+  'Defensive superteam': 'Defense-first',
+  'Big two-way + shooting': 'Big lineup + shooting',
+  'Heliocentric star + specialists': 'One star + specialists',
+  'Balanced two-way contender': 'Balanced two-way',
+  'Fragile specialist mix': 'Fragile specialist mix',
+};
+
+export function archetypeDisplayName(archetype: ChampionshipArchetype | string): string {
+  return ARCHETYPE_DISPLAY_NAMES[archetype as ChampionshipArchetype] ?? archetype;
 }
