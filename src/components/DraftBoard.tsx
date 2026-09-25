@@ -250,6 +250,17 @@ function YearsPicker({
 }) {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.id === selectedId) ?? options[0];
+  // 2026-09-25, user ("przesunięcie w lewo pozwoli na sprawdzenie całego składu"): the sheet docks
+  // to the left edge on wide screens and stays open after a pick, so the Team table's grade
+  // columns stay visible and update live while you click through the years. The row being edited
+  // is highlighted in the table.
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const row = triggerRef.current?.closest('tr');
+    if (!row) return;
+    row.classList.toggle('is-editing-years', open);
+    return () => row.classList.remove('is-editing-years');
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
@@ -258,7 +269,7 @@ function YearsPicker({
   }, [open]);
   return (
     <>
-      <button type="button" className="years-picker-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
+      <button ref={triggerRef} type="button" className="years-picker-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
         <EraYears span={selected} />
         <span className="years-picker-cost">
           <CapIcon size={12} /> {selected.fga.toFixed(1)}
@@ -266,7 +277,7 @@ function YearsPicker({
         <span className="years-picker-caret" aria-hidden>▾</span>
       </button>
       {open && (
-        <div className="player-peek-overlay" onClick={() => setOpen(false)}>
+        <div className="player-peek-overlay years-picker-overlay" onClick={() => setOpen(false)}>
           <div
             className="player-peek-card years-picker-sheet"
             onClick={(e) => e.stopPropagation()}
@@ -281,7 +292,7 @@ function YearsPicker({
               <Face name={playerName} size="md" />
               <div>
                 <h2 className="player-peek-name">{playerName}</h2>
-                <span className="player-peek-sub">Which years of his career do you play?</span>
+                <span className="player-peek-sub">Which years of his career do you play? Pick one to see his row update.</span>
               </div>
             </div>
             <ul className="years-picker-list">
@@ -293,10 +304,7 @@ function YearsPicker({
                     <button
                       type="button"
                       className={`years-picker-option${isSelected ? ' is-selected' : ''}`}
-                      onClick={() => {
-                        onSelect(o.id);
-                        setOpen(false);
-                      }}
+                      onClick={() => onSelect(o.id)}
                     >
                       <EraYears span={o} />
                       <span className="years-picker-tier">{showTal ? `TAL ${effectiveTalent(o)} · ${tier}` : tier}</span>
@@ -304,24 +312,6 @@ function YearsPicker({
                         <CapIcon size={13} /> {o.fga.toFixed(1)}
                       </span>
                       <span className="years-picker-check" aria-hidden>{isSelected ? '✓' : ''}</span>
-                      {/* 2026-09-25, user-reported ("okienko zasłania pół statystyk ... oceny
-                          rozpisane już przy latach"): the same six grades as the Team table's
-                          columns, per window, so years can be compared without closing the sheet. */}
-                      <span className="years-picker-grades">
-                        {[
-                          ['OFF', offensiveGrade(computeOffensiveTalent(o), computeUncappedOffensiveTalent(o))],
-                          ['DEF', defensiveGrade(computeDefensiveTalent(o))],
-                          ['O-POR', offensivePortabilityGrade(computeOffensivePortability(o))],
-                          ['D-POR', defensivePortabilityGrade(computeDefensivePortability(o))],
-                          ['SPC', spacingGrade(computeSpacing(o), o)],
-                          ['DUR', durabilityGrade(computeDurability(o))],
-                        ].map(([label, grade]) => (
-                          <span key={label} className="years-picker-grade">
-                            <small>{label}</small>
-                            <AtGrade grade={grade as Grade} />
-                          </span>
-                        ))}
-                      </span>
                     </button>
                   </li>
                 );
@@ -2202,7 +2192,7 @@ export default function DraftBoard({
                     ? (spanOpt.options.find((o) => o.id === (humanSpanSelection[spanOpt.key] ?? spanOpt.draftedSpan.id)) ?? p)
                     : p;
                   return (
-                    <tr key={p.id}>
+                    <tr key={normalizePlayerName(p.playerName)}>
                       <td>R{i + 1}</td>
                       <td>
                         <span className="pos-pill">{p.primaryPosition}</span>
