@@ -1349,6 +1349,7 @@ export default function DraftBoard({
                   slotsLeft={currentBudget.slotsLeft}
                   maxThisPick={currentBudget.maxThisPick}
                   priciestAvailable={priciestAvailable}
+                  capTotal={CAP_LIMIT}
                 />
               </div>
             )}
