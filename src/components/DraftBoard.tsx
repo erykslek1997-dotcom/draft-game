@@ -275,6 +275,13 @@ function YearsPicker({
     row.classList.toggle('is-editing-years', open);
     return () => row.classList.remove('is-editing-years');
   }, [open]);
+  // Follow-up ("zasłania graczy których mamy w składzie"): on wide screens the page shifts right
+  // by the sheet's width while it is open, so the roster's names stay visible next to it.
+  useEffect(() => {
+    if (!open) return;
+    document.documentElement.classList.add('years-sheet-open');
+    return () => document.documentElement.classList.remove('years-sheet-open');
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
