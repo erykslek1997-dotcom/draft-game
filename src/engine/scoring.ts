@@ -823,11 +823,17 @@ export function offenseScore(team: Team): number {
   return offenseScoreBreakdown(team).score;
 }
 
-export function defenseScore(team: Team): number {
-  const linearScore = rescaleToFullRange(
+/** The team's minutes-weighted D-TAL on the Defense score's own 0-100 scale, before the
+ * huntability penalty, cohesion bonus and knee — the defense mirror of the O-TAL bar. */
+export function teamDefensiveTalentScore(team: Team): number {
+  return rescaleToFullRange(
     benchBoostedWeightedAverage(team, (p) => computeDefensiveTalent(p), true, BENCH_WEIGHT_DEFENSE),
     DEFENSE_SCORE_ANCHORS,
   );
+}
+
+export function defenseScore(team: Team): number {
+  const linearScore = teamDefensiveTalentScore(team);
   // Linear minute-weighting lets an elite anchor conceal several attackable defenders. In a
   // series those minutes are hunted repeatedly, so the shared nonlinear penalty stacks every
   // weak stint instead of stopping after the first bad player. At the opposite extreme, a full

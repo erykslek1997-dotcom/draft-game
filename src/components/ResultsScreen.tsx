@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { realSecondaryPositions } from '../engine/positionCompetence';
-import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
+import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { PLAYOFF_TEAM_COUNT, simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
@@ -360,6 +360,7 @@ function HeroResult({
   identity,
   failureMode,
   weakDefenders,
+  defenseTalent,
   starters,
   roster,
   challenger,
@@ -388,6 +389,7 @@ function HeroResult({
   identity: string | null;
   failureMode: string | null;
   weakDefenders: { name: string; dtal: number; minutes: number }[];
+  defenseTalent: number | null;
   starters: ShareCardStarter[];
   roster: ShareRosterRow[];
   /** 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest empty
@@ -763,9 +765,11 @@ function HeroResult({
                 <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
                 {offenseDetail && <MetricBar label="Spacing fit" value={offenseDetail.spacing} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
                 <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
+                {offenseDetail && <MetricBar label="Playmaking" value={offenseDetail.playmaking} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />}
               </div>
               <div className="analysis-bars-col analysis-bars-col--defense">
                 <span className="analysis-bars-col-label">Defense details</span>
+                {defenseTalent !== null && <MetricBar label="D-TAL" value={defenseTalent} hint="Team defensive talent — the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure." />}
                 <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
                 <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
                 <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
@@ -2164,6 +2168,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           identity={heroStyle.label}
           failureMode={heroStyle.failureMode}
           weakDefenders={heroWeakDefenders}
+          defenseTalent={heroRanked ? Math.round(teamDefensiveTalentScore(displayTeam(heroRanked.team))) : null}
           starters={heroStarters}
           roster={heroRoster}
         />
