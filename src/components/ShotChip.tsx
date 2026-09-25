@@ -65,7 +65,7 @@ export function shotBudgetTier(fga: number, cap: number): 'cheap' | 'mid' | 'pri
 /** 2026-09-25, user's own pick ("nazwiemy to caps, jako waluta w grze… nawiązanie do cap space"):
  * the draft currency is "caps" — a bottle cap is both a nod to the salary cap and a classic
  * game currency. Under the hood a player's price is still his real shots per game (FGA). Drawn
- * as a plain crimped bottle cap seen from above, no brand. */
+ * as a plain crimped bottle cap seen from above with a basketball on its face, no brand. */
 const CAP_EDGE_POINTS = Array.from({ length: 42 }, (_, i) => {
   const angle = (i / 42) * Math.PI * 2;
   const r = i % 2 === 0 ? 11.6 : 10.2;
@@ -77,8 +77,15 @@ export function CapIcon({ size = 14 }: { size?: number }) {
     <svg className="cap-icon" width={size} height={size} viewBox="0 0 24 24" aria-hidden focusable="false">
       <polygon points={CAP_EDGE_POINTS} fill="#a8791f" />
       <circle cx="12" cy="12" r="9" fill="#e2b545" />
-      <circle cx="12" cy="12" r="6.6" fill="none" stroke="#b8872a" strokeWidth="1.1" />
-      <ellipse cx="9.6" cy="8.8" rx="2.6" ry="1.4" fill="#fff" opacity="0.45" transform="rotate(-30 9.6 8.8)" />
+      {/* basketball in the middle of the cap */}
+      <circle cx="12" cy="12" r="6.4" fill="#e8762c" stroke="#7a3510" strokeWidth="0.8" />
+      <g fill="none" stroke="#3b1a08" strokeWidth="0.75" strokeLinecap="round">
+        <line x1="12" y1="5.6" x2="12" y2="18.4" />
+        <line x1="5.6" y1="12" x2="18.4" y2="12" />
+        <path d="M7.4 7.5 Q10 12 7.4 16.5" />
+        <path d="M16.6 7.5 Q14 12 16.6 16.5" />
+      </g>
+      <ellipse cx="8.6" cy="7.2" rx="2.2" ry="1.1" fill="#fff" opacity="0.35" transform="rotate(-35 8.6 7.2)" />
     </svg>
   );
 }
