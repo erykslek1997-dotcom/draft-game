@@ -27,6 +27,7 @@ import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
 import { archetypeDisplayName, DEFENSE_FIRST_MIN_SCORE, teamStyleFor } from '../engine/championshipArchetype';
+import { bestHistoricalComp, type HistoricalCompMatch } from '../engine/historicalComps';
 import { type FeedbackEntry } from './FeedbackToggle';
 // 2026-08-16, user's own ask ("dodasz to też na ostatni ekran ocen?"): reuses the exact same
 // hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
@@ -361,6 +362,7 @@ function HeroResult({
   failureMode,
   weakDefenders,
   defenseTalent,
+  comp,
   starters,
   roster,
   challenger,
@@ -390,6 +392,7 @@ function HeroResult({
   failureMode: string | null;
   weakDefenders: { name: string; dtal: number; minutes: number }[];
   defenseTalent: number | null;
+  comp: HistoricalCompMatch | null;
   starters: ShareCardStarter[];
   roster: ShareRosterRow[];
   /** 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest empty
@@ -709,7 +712,7 @@ function HeroResult({
             : <>You have the best team rating in the field.</>}
         </p>
       )}
-      {(identity || failureMode) && (
+      {(identity || failureMode || comp) && (
         // 2026-09-24 copy pass: labelled as a STYLE ("Team style: Defense-first") and a risk, so it
         // no longer reads as a quality verdict next to a mediocre Defense score.
         <p className="results-hero-identity">
@@ -720,6 +723,11 @@ function HeroResult({
           )}
           {identity && failureMode && ' — '}
           {failureMode && <span>main risk: {failureMode}</span>}
+          {comp && (
+            <span className="results-hero-comp" title={`Closest historical profile: ${comp.comp.blurb}. Match compares this roster's scores, as percentiles of drafted rosters, with what defined that team.`}>
+              Plays like the <b>{comp.comp.team}</b> <small>{comp.match}% match</small>
+            </span>
+          )}
         </p>
       )}
       {/* 2026-09-14, DRAFT per user's own request ("możesz mi pokazać design zanim wprowadzisz") —
@@ -2168,6 +2176,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           identity={heroStyle.label}
           failureMode={heroStyle.failureMode}
           weakDefenders={heroWeakDefenders}
+          comp={heroRanked && heroFit ? bestHistoricalComp(displayTeam(heroRanked.team), heroRanked.breakdown, heroFit) : null}
           defenseTalent={heroRanked ? Math.round(teamDefensiveTalentScore(displayTeam(heroRanked.team))) : null}
           starters={heroStarters}
           roster={heroRoster}

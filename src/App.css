@@ -6316,3 +6316,6 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 /* 2026-09-25: names the rotation's weakest defenders under the hero's Defense details. */
 .results-hero-weak { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: var(--at-ink-soft); }
 .results-hero-weak b { color: var(--at-ink); font-weight: 700; }
+/* 2026-09-25: "Plays like the 2004 Detroit Pistons" — its own line under the team style. */
+.results-hero-comp { display: block; margin-top: 4px; }
+.results-hero-comp small { margin-left: 6px; font-size: 11px; color: var(--at-ink-faint); }
