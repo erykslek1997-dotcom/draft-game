@@ -62,8 +62,44 @@ export function shotBudgetTier(fga: number, cap: number): 'cheap' | 'mid' | 'pri
   return 'pricey';
 }
 
+/** 2026-09-25, user's own pick ("nazwiemy to caps, jako waluta w grze… nawiązanie do cap space"):
+ * the draft currency is "caps" — a bottle cap is both a nod to the salary cap and a classic
+ * game currency. Under the hood a player's price is still his real shots per game (FGA). Drawn
+ * as a plain crimped bottle cap seen from above, no brand. */
+const CAP_EDGE_POINTS = Array.from({ length: 42 }, (_, i) => {
+  const angle = (i / 42) * Math.PI * 2;
+  const r = i % 2 === 0 ? 11.6 : 10.2;
+  return `${(12 + r * Math.cos(angle)).toFixed(2)},${(12 + r * Math.sin(angle)).toFixed(2)}`;
+}).join(' ');
+
+export function CapIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg className="cap-icon" width={size} height={size} viewBox="0 0 24 24" aria-hidden focusable="false">
+      <polygon points={CAP_EDGE_POINTS} fill="#a8791f" />
+      <circle cx="12" cy="12" r="9" fill="#e2b545" />
+      <circle cx="12" cy="12" r="6.6" fill="none" stroke="#b8872a" strokeWidth="1.1" />
+      <ellipse cx="9.6" cy="8.8" rx="2.6" ry="1.4" fill="#fff" opacity="0.45" transform="rotate(-30 9.6 8.8)" />
+    </svg>
+  );
+}
+
+/** An amount of caps: icon + number (whole numbers unless `decimals` asks otherwise). */
+export function Caps({ value, decimals = 0, size }: { value: number; decimals?: number; size?: number }) {
+  return (
+    <span className="caps-amount" title="caps">
+      <CapIcon size={size} />
+      {value.toFixed(decimals)}
+    </span>
+  );
+}
+
 export function ShotChip({ fga, cap }: { fga: number; cap: number }) {
-  return <span className={`bf-shot-chip bf-shot-chip--${shotBudgetTier(fga, cap)}`}>{Math.round(fga)} shots</span>;
+  return (
+    <span className={`bf-shot-chip bf-shot-chip--${shotBudgetTier(fga, cap)}`} title={`Costs ${Math.round(fga)} caps`}>
+      <CapIcon size={11} />
+      {Math.round(fga)}
+    </span>
+  );
 }
 
 /** 2026-09-11, user-reported live on Szybka 5 ("cap bardziej widoczny"): the plain-text "Cap
@@ -71,12 +107,12 @@ export function ShotChip({ fga, cap }: { fga: number; cap: number }) {
  * filled track), shared so both modes get one visible, consistent cap readout instead of two
  * different-looking ones. Whole-number display throughout — the underlying cap math stays exact
  * decimal, only what's shown is rounded (same "zaokrąglnijmy shots" ask applied everywhere). */
-export function ShotsMeter({ used, cap, label = 'Shots' }: { used: number; cap: number; label?: string }) {
+export function ShotsMeter({ used, cap, label = 'Caps' }: { used: number; cap: number; label?: string }) {
   const over = used > cap;
   return (
     <div className={`bf-shots-meter ${over ? 'bf-shots-meter--over' : ''}`}>
       <span className="bf-shots-label">
-        {label}: <b>{Math.round(used)}</b> / {Math.round(cap)}
+        <CapIcon size={16} /> {label}: <b>{Math.round(used)}</b> / {Math.round(cap)}
         {over && ' — over the cap'}
       </span>
       <span className="bf-shots-track">

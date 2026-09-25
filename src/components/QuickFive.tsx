@@ -23,7 +23,7 @@ import { allStarCount } from '../engine/allStarLookup';
 import { tierRank, overallTierForSpan } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { teamCodes, teamLabel } from '../engine/teamNames';
-import { Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
+import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
 import DraftLottery from './DraftLottery';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
@@ -42,7 +42,7 @@ type Phase = 'lottery' | 'draft' | 'results';
 // choice, a different cap/round count).
 const QUICK_HOW_TO_PLAY = [
   { title: 'Draft', body: `${TEAM_COUNT} teams take turns, ${QUICK_ROUNDS} rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
-  { title: 'Shot cap', body: `Every pick costs shots. Your five starters have to fit under ${QUICK_CAP_LIMIT} shots.` },
+  { title: 'Caps', body: `Every pick costs caps — his shots per game in those years. Your five starters have to fit under ${QUICK_CAP_LIMIT} caps.` },
   { title: 'Peak only', body: "No choosing years — every player is shown at his single best season, so each pick is quick." },
   { title: 'Grading', body: 'The judge scores your five the same way the full draft does — talent, offense, defense, spacing, fit — right after your last pick.' },
 ];
@@ -376,7 +376,7 @@ function QuickDraftBoard({
         )}
         {canPick && !anyLegal && (
           <div className="at-budget-notice">
-            <span>None of the players shown fit this pick — max {budget.maxThisPick} shots.</span>
+            <span>None of the players shown fit this pick — max <CapIcon /> {budget.maxThisPick} caps.</span>
             <button
               type="button"
               className="at-budget-notice-btn at-cond"
@@ -392,7 +392,7 @@ function QuickDraftBoard({
         )}
       </div>
 
-      <ShotsMeter used={humanShotsUsed} cap={QUICK_CAP_LIMIT} label="Your shots" />
+      <ShotsMeter used={humanShotsUsed} cap={QUICK_CAP_LIMIT} label="Your caps" />
 
       {/* 2026-09-11, user-reported live: "ważne żebyśmy mogli zobaczyć własny zespoł bo nie wiem
           ile mam zabranych rzutów" — the cap number alone didn't show WHICH players it came from.
@@ -482,8 +482,8 @@ function QuickDraftBoard({
                   : legal
                     ? span.playerName
                     : quickPickBlockReason(state, span.id) === 'reserve'
-                      ? `Too expensive right now — you need to keep ${budget.reserved} shots for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. Max for this pick: ${budget.maxThisPick} shots.`
-                      : `Over the ${QUICK_CAP_LIMIT}-shot cap — pick a cheaper player.`
+                      ? `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. Max for this pick: ${budget.maxThisPick} caps.`
+                      : `Over the ${QUICK_CAP_LIMIT}-cap limit — pick a cheaper player.`
               }
               onClick={() => onPick(span.id)}
             >

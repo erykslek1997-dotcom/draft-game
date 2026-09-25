@@ -38,7 +38,7 @@ import { type FeedbackEntry } from './FeedbackToggle';
 // throw the work away — see [[player_skeleton_and_new_modes]].
 import MatchupMatrix from './MatchupMatrix';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
-import { Face, shortenName } from './ShotChip';
+import { CapIcon, Face, shortenName } from './ShotChip';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, season-sim pool) — real work deferred until the
@@ -1502,7 +1502,7 @@ export function downloadFeedback(
  * ever saying what to do differently. */
 const NEXT_DRAFT_TIP: Record<string, string> = {
   Talent: 'Your top-end talent was the gap. Spend your early picks on the best player available, then fill needs later.',
-  'Bench Depth': 'Your bench gave back too much. Keep a few shots for the last rounds so your 6th–9th men can actually play.',
+  'Bench Depth': 'Your bench gave back too much. Keep some caps for the last rounds so your 6th–9th men can actually play.',
   Offense: "Your offense stalled. Draft at least one real shot creator, and don't stack non-shooters in the starting five.",
   Defense: "Defense sank this team. Opponents hunt stars who can't defend — spend a mid-round pick on a rim protector or a wing stopper.",
   Spacing: 'The floor was too cramped. Put two or three real outside shooters around your stars.',
@@ -2130,7 +2130,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   <ScoreChip label="Spacing" value={breakdown.spacingScore} />
                   <ScoreChip label="Fit" value={breakdown.fitScore} />
                   <ScoreChip label="Rotation" value={breakdown.rotationScore} />
-                  <span className="fga-spent">Shots spent: {totalFga.toFixed(1)} / {CAP_LIMIT}</span>
+                  <span className="fga-spent"><CapIcon /> Caps spent: {totalFga.toFixed(1)} / {CAP_LIMIT}</span>
                 </div>
                 {/* 2026-09-11, Scouting Report finding: Era Ball surfaces its named archetype tags
                     right on the player list; ours was only visible after opening "Team analysis".

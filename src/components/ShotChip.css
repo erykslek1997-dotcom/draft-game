@@ -61,7 +61,9 @@
    Cap-relative color (cheap/mid/pricey — see `shotBudgetTier`'s own docstring for why this is
    safe to color without leaking the hidden talent judgment "blind scouting" hides). */
 .bf-shot-chip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 10.5px;
   font-weight: 700;
   padding: 1px 6px;
@@ -158,4 +160,19 @@
 }
 .bf-face--empty {
   background: color-mix(in srgb, var(--at-ink) 8%, transparent);
+}
+
+/* ---- caps: the draft currency's bottle-cap icon + amount (see CapIcon in ShotChip.tsx). */
+.cap-icon {
+  display: inline-block;
+  flex: none;
+  vertical-align: -0.18em;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
+}
+.caps-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }

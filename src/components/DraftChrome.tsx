@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { CapIcon } from './ShotChip';
 
 /**
  * 2026-09-24: small pieces of draft-screen chrome shared by the All-Time Draft (DraftBoard) and
@@ -157,11 +158,11 @@ export function TurnBudgetText({
       Round {round}/{rounds} ·{' '}
       {slotsLeft <= 1 ? (
         <>
-          <b>{left}</b> shots left for your last pick
+          <CapIcon /> <b>{left}</b> caps left for your last pick
         </>
       ) : (
         <>
-          <b>{left}</b> shots left for your last {slotsLeft} picks — about <b>{perPick}</b> each
+          <CapIcon /> <b>{left}</b> caps left for your last {slotsLeft} picks — about <b>{perPick}</b> each
           <span className="at-your-turn-reserve"> (max {maxThisPick.toFixed(1)} on this one)</span>
         </>
       )}

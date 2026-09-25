@@ -768,7 +768,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const s = t.fgaEfficiencyScore ?? 0;
       return s >= 0.70
-        ? hit(s, 0.90, teamConfidence(t), 'You got a lot for your shot budget — very little wasted.', { values: { fgaEfficiencyScore: s, totalFga: t.totalFga } })
+        ? hit(s, 0.90, teamConfidence(t), 'You got a lot for your caps — very little wasted.', { values: { fgaEfficiencyScore: s, totalFga: t.totalFga } })
         : inactive;
     }
   },
@@ -1312,7 +1312,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const f = t.fgaEfficiencyScore ?? 0;
       const c = t.lowUsageComplementCount ?? 0;
       return d >= ELITE_BARS.defensiveLayering - 0.05 && f >= 0.72 && c >= 2
-        ? hit((d + f) / 2, 0.92, teamConfidence(t), 'Several cheap players give you elite defense, leaving more shots for your scorers.', { values: { defensiveLayeringScore: d, fgaEfficiencyScore: f, lowUsageComplementCount: c } }, 0.95)
+        ? hit((d + f) / 2, 0.92, teamConfidence(t), 'Several cheap players give you elite defense, leaving more caps for your scorers.', { values: { defensiveLayeringScore: d, fgaEfficiencyScore: f, lowUsageComplementCount: c } }, 0.95)
         : inactive;
     }
   },
@@ -1407,7 +1407,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const f = t.fgaEfficiencyScore ?? 0;
       const n = t.netRatingProjection ?? 0;
       return f >= 0.78 && n >= 3
-        ? hit(0.60 + f * 0.35, 0.96, teamConfidence(t), 'A lot of team impact for the shots you spent.', { values: { fgaEfficiencyScore: f, netRatingProjection: n, totalFga: t.totalFga } }, 0.98)
+        ? hit(0.60 + f * 0.35, 0.96, teamConfidence(t), 'A lot of team impact for the caps you spent.', { values: { fgaEfficiencyScore: f, netRatingProjection: n, totalFga: t.totalFga } }, 0.98)
         : inactive;
     }
   },
@@ -1578,7 +1578,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           Math.min(0.88, 0.62 + 0.08 * count),
           0.88,
           teamConfidence(t),
-          `${displayNameList(names)} ${plural(names, 'gives', 'give')} real value on eight shots or fewer, saving shots for your stars.`,
+          `${displayNameList(names)} ${plural(names, 'gives', 'give')} real value for 8 caps or less, saving caps for your stars.`,
           { players: names, values: { lowFgaImpactCount: count, maxQualifyingFga: TEAM_MODEL_THRESHOLDS.lowFga, minimumQualifyingMinutes: TEAM_MODEL_THRESHOLDS.lowFgaMinutes } },
           0.96,
         )
@@ -1603,7 +1603,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           0.78,
           0.94,
           teamConfidence(t),
-          `${stars[0].playerName}'s shots are well spent — nobody else creates like him, and there's still room for a real eight-man rotation.`,
+          `${stars[0].playerName} is worth his caps — nobody else creates like him, and there's still room for a real eight-man rotation.`,
           { players: [stars[0].playerName], values: { starFga: stars[0].fga, offensiveImpact: stars[0].offensiveImpact ?? 0, playoffRotationDepthScore: depth, benchDropoffScore: dropoff } },
           0.98,
         )
@@ -1624,7 +1624,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           Math.max(0.64, 1 - depth, dropoff),
           0.92,
           teamConfidence(t),
-          `${stars[0].playerName} costs ${stars[0].fga.toFixed(1)} shots, and the roster around him is thin because of it.`,
+          `${stars[0].playerName} costs ${stars[0].fga.toFixed(1)} caps, and the roster around him is thin because of it.`,
           { players: [stars[0].playerName], values: { starFga: stars[0].fga, totalFga: t.totalFga, playoffRotationDepthScore: depth, benchDropoffScore: dropoff } },
           0.96,
         )
@@ -1644,7 +1644,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           0.68,
           0.80,
           teamConfidence(t),
-          `${displayNameList(names)} can sit out the playoff rotation without hurting you — eight others cover the minutes and the ninth spot cost few shots.`,
+          `${displayNameList(names)} can sit out the playoff rotation without hurting you — eight others cover the minutes and the ninth spot cost few caps.`,
           { players: names, values: { deadRosterSlotCount: dead, deadRosterSlotFga: t.deadRosterSlotFga ?? 0, meaningfulPlayoffPlayerCount: t.meaningfulPlayoffPlayerCount ?? 0 } },
           0.98,
         )
@@ -1662,7 +1662,7 @@ export const DETECTORS: RosterInsightDetector[] = [
         (t.severePositionalCompromiseCount ?? 0) > 0 ||
         (t.minutesCeilingViolationCount ?? 0) > 0;
       const message = expensiveDeadSlot && !strained
-        ? `${displayNameList(names)} ${plural(names, 'costs', 'cost')} ${(t.deadRosterSlotFga ?? 0).toFixed(1)} shots but won't play in the playoffs — shots that could have gone elsewhere.`
+        ? `${displayNameList(names)} ${plural(names, 'costs', 'cost')} ${(t.deadRosterSlotFga ?? 0).toFixed(1)} caps but won't play in the playoffs — caps that could have gone elsewhere.`
         : `${displayNameList(names)} ${plural(names, "isn't", "aren't")} good enough to play, so the rest of your rotation has to cover too many minutes or play out of position.`;
       return t.players.length === 9 && dead > 0 && (expensiveDeadSlot || strained)
         ? hit(

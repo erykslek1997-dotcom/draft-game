@@ -89,7 +89,7 @@ export function evaluateHistoricalChallenges(
       condition('FIT minimum 75', breakdown.fitScore >= 75, `${breakdown.fitScore}`),
     ]),
     build('fga-glue', 'Salary Glue', 'Low-usage championship role players', 'Cap alchemist badge', [
-      condition('At least two players below 2 shots', gluePlayers >= 2, `${gluePlayers}`),
+      condition('At least two players costing under 2 caps', gluePlayers >= 2, `${gluePlayers}`),
       condition('PO profile minimum 80', season.playoffs >= 80, `${season.playoffs}`),
       condition('Bench depth minimum 70', breakdown.benchDepthScore >= 70, `${breakdown.benchDepthScore}`),
       condition('Rotation minimum 75', breakdown.rotationScore >= 75, `${breakdown.rotationScore}`),
