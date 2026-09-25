@@ -32,6 +32,7 @@ import { pickForAi } from '../src/engine/aiDrafter';
 import { TEAM_COUNT } from '../src/engine/positions';
 import { mulberry32, mixSeed } from '../src/engine/rng';
 import { normalizePlayerName } from '../src/data/schema';
+import { draftPool } from '../src/data/draftPool';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BASELINE_PATH = join(HERE, 'aiPickRegression.baseline.json');
@@ -54,6 +55,9 @@ interface Snapshot {
 }
 
 const byId = new Map(activeDraftPool.map((p) => [p.id, p]));
+// `draftedIds` also retires the drafted player's spans from the FULL pool (any career year is
+// draftable), so names have to resolve against that, not just the lean active pool.
+const nameById = new Map([...draftPool, ...activeDraftPool].map((p) => [p.id, p.playerName]));
 
 function pickAt(seed: number, pickNumber: number, rosterIds: string[], draftedNames: string[]): { id: string; label: string } {
   const roster = rosterIds.map((id) => byId.get(id)!);
@@ -74,7 +78,7 @@ function captureSnapshots(seed: number): Snapshot[] {
       const teamIdx = currentTeamIndex(s);
       const rosterIds = s.teams[teamIdx].roster.map((p) => p.id);
       const draftedNames = [
-        ...new Set([...s.draftedIds].map((id) => normalizePlayerName(byId.get(id)!.playerName))),
+        ...new Set([...s.draftedIds].map((id) => normalizePlayerName(nameById.get(id)!))),
       ];
       const { id, label } = pickAt(seed, pn, rosterIds, draftedNames);
       out.push({ seed, pickNumber: pn, teamIdx, rosterIds, draftedNames, expectedPickId: id, expectedPickLabel: label });
