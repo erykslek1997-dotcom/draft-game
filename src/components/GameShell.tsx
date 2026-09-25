@@ -252,8 +252,10 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // Auto-resolve AI turns during the draft — never in Commissioner Mode, where every team's pick
   // comes from the human via `handlePick` instead (see the effect's own early-return below).
   // `aiSpeed` (the player's CPU-speed choice, see aiSpeed.ts) paces this effect.
+  // 2026-09-25: held while the Draft Desk is open, so the board doesn't race on under it.
+  const [deskOpen, setDeskOpen] = useState(false);
   useEffect(() => {
-    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode) return;
+    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || deskOpen) return;
     const teamIdx = currentTeamIndex(draftState);
     if (draftState.teams[teamIdx].isHuman) return;
     const timer = setTimeout(() => {
@@ -261,7 +263,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       if (next) setDraftState(next);
     }, aiSpeed.delayMs);
     return () => clearTimeout(timer);
-  }, [draftState, phase, aiSpeed.delayMs]);
+  }, [draftState, phase, aiSpeed.delayMs, deskOpen]);
 
   // Once the draft finishes, AI rosters are re-optimized once via the same knapsack
   // `optimizeSpans` used everywhere else (capped at CAP_LIMIT, matching the cap they drafted
@@ -409,6 +411,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           aiSpeedIndex={aiSpeed.index}
           onAiSpeedChange={aiSpeed.setIndex}
           onExit={handleReset}
+          onDeskOpenChange={setDeskOpen}
         />
       )}
       {phase === 'results' && finalTeams && (

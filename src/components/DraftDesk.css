@@ -1,0 +1,92 @@
+/* 2026-09-25: Draft Desk (DraftDesk.tsx) — mockup C, "debate thread". Reads the `.at-shell`
+   tokens it's mounted under (DraftBoard), so it follows the board's own palette. */
+.desk-backdrop { background: rgba(2, 4, 8, 0.72); z-index: 1000; } /* above the board's floating buttons (z 60), like the other overlays */
+
+.desk-modal {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  background: var(--at-paper-raised);
+  color: var(--at-ink);
+  border: 1px solid var(--at-accent);
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  text-align: left;
+}
+
+.desk-talk { padding: 26px 28px; display: flex; flex-direction: column; gap: 14px; border-right: 1px solid var(--at-line); min-width: 0; }
+.desk-kicker { display: flex; align-items: center; gap: 10px; }
+.desk-live {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px; border-radius: 6px;
+  background: var(--at-brand-red); color: #fff;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.12em;
+}
+.desk-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: desk-pulse 1.4s ease-in-out infinite; }
+.desk-kicker-text { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; color: var(--at-pill-ink); text-transform: uppercase; }
+.at-shell .desk-title { margin: 0; font-family: 'Bitter', Georgia, serif; font-size: 28px; font-weight: 800; line-height: 1.2; color: var(--at-ink); }
+
+.desk-thread { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.desk-line { display: flex; gap: 12px; align-items: flex-start; animation: desk-in 260ms ease-out; }
+.desk-avatar {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--at-t2); border: 1px solid var(--at-t5); color: var(--at-t2-ink);
+}
+.desk-line-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.desk-speaker { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-t2-ink); }
+.desk-bubble {
+  margin: 0; padding: 10px 14px;
+  border-radius: 4px 12px 12px 12px;
+  background: var(--at-pill); border: 1px solid var(--at-line);
+  font-family: 'Bitter', Georgia, serif; font-size: 16px; font-weight: 600; line-height: 1.45; color: var(--at-ink);
+}
+.desk-typing { display: inline-flex; gap: 5px; align-items: center; width: fit-content; }
+.desk-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--at-ink-soft); animation: desk-dot 1s ease-in-out infinite; }
+.desk-typing i:nth-child(2) { animation-delay: 0.15s; }
+.desk-typing i:nth-child(3) { animation-delay: 0.3s; }
+
+.desk-side {
+  padding: 26px 22px; display: flex; flex-direction: column; gap: 14px;
+  background: var(--at-paper); border-radius: 0 14px 14px 0;
+}
+.desk-side-label, .desk-consensus-label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--at-ink-soft); }
+.desk-roster { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.desk-roster-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 12px 5px 5px; border-radius: 999px;
+  background: var(--at-pill); border: 1px solid var(--at-line);
+}
+.desk-roster-name { flex-grow: 1; font-size: 13px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desk-roster-pos { font-size: 11px; color: var(--at-ink-soft); }
+.desk-consensus {
+  margin-top: auto; padding: 14px; border-radius: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  background: color-mix(in srgb, var(--at-accent) 14%, var(--at-paper-raised));
+  border: 1px solid var(--at-t5);
+}
+.desk-consensus-label { color: var(--at-pill-ink); }
+.desk-consensus-text { font-size: 14px; font-weight: 600; line-height: 1.45; }
+.desk-consensus--pending .desk-consensus-text { color: var(--at-ink-soft); }
+.desk-close { margin-top: 0; min-height: 48px; width: 100%; } /* the board's own primary-button look */
+
+@keyframes desk-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes desk-dot { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+@keyframes desk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  .desk-line, .desk-live-dot, .desk-typing i { animation: none; }
+}
+
+/* Phone: one column — the talk, then the roster, consensus and button. */
+@media (max-width: 760px) {
+  .mode-help-backdrop.desk-backdrop { padding: 0; align-items: stretch; }
+  .desk-modal { grid-template-columns: minmax(0, 1fr); max-height: 100vh; height: 100%; border-radius: 0; border: 0; }
+  .desk-talk { padding: 20px 16px 8px; border-right: 0; }
+  .at-shell .desk-title { font-size: 23px; }
+  .desk-bubble { font-size: 15px; }
+  .desk-avatar { width: 34px; height: 34px; }
+  .desk-side { padding: 12px 16px 24px; border-radius: 0; background: transparent; }
+  .desk-consensus { margin-top: 0; }
+}
