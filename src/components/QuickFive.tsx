@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { realSecondaryPositions } from '../engine/positionCompetence';
-import type { Position } from '../data/schema';
+import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
   createQuickDraft,
@@ -29,7 +29,7 @@ import DraftLottery from './DraftLottery';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
 import { AI_SPEED_LABELS, useAiSpeed } from './aiSpeed';
-import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, TurnBudgetText, type TickerPick } from './DraftChrome';
+import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPressureNote, TurnBudgetText, type TickerPick } from './DraftChrome';
 
 interface Props {
   humanTeamName?: string;
@@ -296,6 +296,10 @@ function QuickDraftBoard({
     () => bestPrimaryAssignment(humanTeam.roster).assignment,
     [humanTeam.roster],
   );
+  const humanStarters = useMemo(
+    () => Object.values(humanAssignment).filter((p): p is PlayerSpan => Boolean(p)),
+    [humanAssignment],
+  );
 
   return (
     <div className="at-card">
@@ -379,6 +383,7 @@ function QuickDraftBoard({
               priciestAvailable={priciestAvailable}
               capTotal={QUICK_CAP_LIMIT}
             />
+            <RimPressureNote starters={humanStarters} />
           </div>
         )}
         {canPick && !anyLegal && (

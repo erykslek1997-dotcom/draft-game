@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import type { PlayerSpan } from '../data/schema';
+import { rimPressureTeam } from '../engine/rimPressure';
 import { CapIcon } from './ShotChip';
 
 /**
@@ -151,6 +153,24 @@ function pacingHint(capTotal: number | undefined, capLeft: number, rounds: numbe
   if (spentPerPick > evenShare * 1.25) return 'you’ve spent big — cheaper picks will have to follow';
   if (spentPerPick < evenShare * 0.8) return 'you’ve saved caps — room for another star';
   return 'right on pace — keep mixing stars and value';
+}
+
+/** 2026-09-25, user-reported ("miałem niski rim pressure… nie ma żadnej takiej informacji podczas
+ * draftu"): the results screen scores team rim pressure, but nothing warned about it while there
+ * was still time to fix it. Same `rimPressureTeam` the fit score reads, on the current starters.
+ * Below 55 is roughly the bottom tenth of finished CPU fives (seeded full drafts, 2026-09-25);
+ * held back until three starters are in, when one pick can't yet be the whole story. */
+const RIM_PRESSURE_WARN_BELOW = 55;
+const RIM_PRESSURE_WARN_MIN_STARTERS = 3;
+
+export function RimPressureNote({ starters }: { starters: PlayerSpan[] }) {
+  if (starters.length < RIM_PRESSURE_WARN_MIN_STARTERS || starters.length > 5) return null;
+  if (rimPressureTeam(starters) >= RIM_PRESSURE_WARN_BELOW) return null;
+  return (
+    <span className="at-your-turn-need">
+      ⚠ Low rim pressure — nobody in your five attacks the basket yet. Look for a slasher or a big who finishes inside.
+    </span>
+  );
 }
 
 export function TurnBudgetText({

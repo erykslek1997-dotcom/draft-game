@@ -4693,6 +4693,9 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
 }
 .at-your-turn-title { font-weight: 800; color: var(--at-accent); letter-spacing: 0.06em; text-transform: uppercase; }
 .at-your-turn-reserve { color: var(--at-ink-soft); }
+/* 2026-09-25: a roster gap the result screen will score (RimPressureNote, DraftChrome.tsx) —
+   its own line so it reads as a warning, not more budget text. */
+.at-your-turn-need { flex-basis: 100%; font-weight: 600; color: var(--at-accent-2); }
 .at-budget-notice {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
   font-size: 12.5px; color: var(--at-ink);
@@ -6176,4 +6179,45 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-shell .years-picker-done {
   width: 100%;
   margin: 0;
+}
+
+/* 2026-09-25, user-reported live (phone screenshot of the share card: names cut to "S…", minutes
+   and "sh" running into the next column): each contributor's meta is now two parts — minutes and
+   caps — shown inline on wide screens and stacked under a centred face on phones, where five
+   columns only leave ~60px each. */
+.share-modal-face-meta { display: inline-flex; gap: 4px; }
+.share-modal-face-caps::before { content: '·'; margin-right: 4px; }
+@media (max-width: 560px) {
+  .share-modal-face-row { gap: 4px; }
+  .share-modal-face-group { padding: 6px 3px; }
+  .share-modal-face-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 3px;
+  }
+  .share-modal-face-info { align-items: center; width: 100%; }
+  .share-modal-face-name { font-size: 10px; }
+  .share-modal-face-meta { flex-direction: column; gap: 0; align-items: center; }
+  .share-modal-face-caps::before { content: none; }
+}
+.share-modal-save {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.share-modal-save .primary-btn { margin: 0; }
+.share-modal-save-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.share-modal-save-preview {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
 }

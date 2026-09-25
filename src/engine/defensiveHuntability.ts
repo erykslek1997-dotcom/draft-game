@@ -293,6 +293,26 @@ const NORMALIZATION_DTAL = POSITIONS.reduce((sum, pos) => {
  * discounted by `BENCH_COMPETITION_DISCOUNT` to reflect facing real bench-level opposition on
  * average, not starter-level.
  */
+/**
+ * 2026-09-25, user-reported ("Marc Gasol i Mitchell Robinson targetable? Dpoy i all defense Marc
+ * i ceniony w defensywie Robinson"): two gates on who counts as a hunt target at all.
+ *  - A marginal gap is not a weak link: Gasol 2015-17 (D-TAL 61) sat 1.2 points under his
+ *    cohort bar and was named alongside a genuine target like Nash (35.9 under). Only a real
+ *    shortfall counts.
+ *  - A rim-protector-role big who actually blocks shots is not who offenses hunt. Mitchell
+ *    Robinson (1.7-2.2 bpg) reads D-TAL 52-59 only because his span has no defensive award to
+ *    corroborate it (the uncorroborated ceiling); a real shot-blocker at the rim is the thing a
+ *    hunting offense avoids, not the target.
+ */
+const HUNTABLE_MIN_SHORTFALL = 5;
+const REAL_SHOT_BLOCKER_BPG = 1.5;
+function isRealShotBlocker(player: PlayerSpan): boolean {
+  return (
+    RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) &&
+    player.box.bpg >= REAL_SHOT_BLOCKER_BPG
+  );
+}
+
 export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
   const minutesByPlayer = new Map<string, number>();
   // Same starter/bench split `scoring.ts`'s `benchBoostedWeightedAverage` already keys off of —
@@ -315,7 +335,7 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
     const defensiveTalent = computeDefensiveTalent(player);
     const rawShortfall = Math.max(0, averageDtalFor(player) - defensiveTalent);
     const shortfall = rawShortfall * athleticismShortfallFactor(player);
-    return minutes > 0 && shortfall > 0
+    return minutes > 0 && shortfall >= HUNTABLE_MIN_SHORTFALL && !isRealShotBlocker(player)
       ? [{ playerId: player.id, playerName: player.playerName, minutes, competitionAdjustedMinutes, defensiveTalent, shortfall }]
       : [];
   }).sort((left, right) => right.shortfall * right.competitionAdjustedMinutes - left.shortfall * left.competitionAdjustedMinutes);

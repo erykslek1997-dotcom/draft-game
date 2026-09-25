@@ -615,6 +615,15 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     // All-NBA -> MVP (93). His neighbouring peak spans stay All-NBA; this keeps the one outlier in
     // line with them.
     { name: 'Kevin Johnson', spanLabel: '1989-91', cap: 'All-NBA' as OverallTier },
+    // 2026-09-25, user ("Draymond, Towns, Ingles za wysoko"): see the matching
+    // `NAMED_DISPLAY_TAL` numbers. Ingles 2019-21 (10.9 ppg) read All-NBA 82 — 77 from the formula
+    // plus a +4.6 D-TAL bridge nudge; a role starter, not an All-NBA peak.
+    { name: 'Draymond Green', spanLabel: '2015-17', cap: 'All-NBA' as OverallTier },
+    { name: 'Draymond Green', spanLabel: '2016-18', cap: 'All-NBA' as OverallTier },
+    { name: 'Draymond Green', spanLabel: '2017-19', cap: 'All-star' as OverallTier },
+    { name: 'Karl-Anthony Towns', spanLabel: '2018-20', cap: 'All-NBA' as OverallTier },
+    { name: 'Joe Ingles', spanLabel: '2019-21', cap: 'Starter' as OverallTier },
+    { name: 'Joe Ingles', spanLabel: '2018-20', cap: 'Starter' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
@@ -664,6 +673,15 @@ const NAMED_DISPLAY_TAL: ReadonlyMap<string, number> = new Map(
     { name: 'Clyde Drexler', spanLabel: '1989-91', tal: 87 },
     { name: 'Clyde Drexler', spanLabel: '1990-92', tal: 87 },
     { name: 'Ray Allen', spanLabel: '2000-02', tal: 87 },
+    // 2026-09-25, user ("Draymond, Towns, Ingles za wysoko" — all three drafted far above their
+    // standing: Draymond ~30th, Ingles ~45th on average). Matching `NAMED_TIER_DOWNCAPS` entries.
+    { name: 'Draymond Green', spanLabel: '2015-17', tal: 82 },
+    { name: 'Draymond Green', spanLabel: '2014-16', tal: 81 },
+    { name: 'Draymond Green', spanLabel: '2016-18', tal: 80 },
+    { name: 'Draymond Green', spanLabel: '2017-19', tal: 78 },
+    { name: 'Karl-Anthony Towns', spanLabel: '2018-20', tal: 82 },
+    { name: 'Joe Ingles', spanLabel: '2019-21', tal: 68 },
+    { name: 'Joe Ingles', spanLabel: '2018-20', tal: 66 },
     { name: 'Jerry West', spanLabel: '1971-73', tal: 90 },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tal] as const),
 );
@@ -1277,6 +1295,13 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   // span if one ever existed.
   const raise = namedTierRaise(ctx.playerName, ctx.spanLabel);
   if (raise && tierRank(raise) > tierRank(result)) return raise;
+  // 2026-09-25, user-reported (Drexler's draft card framed All-star while it read TAL 87): a span
+  // with BOTH a named downcap and a named display number was hand-set to exactly that badge and
+  // number. Later formula drift (his D-TAL now grades C+, so the SG two-way cap fires) pulled the
+  // badge below the number it still shows. For those spans the named tier is exact, not a cap.
+  if (downcap && namedDisplayTal(ctx.playerName, ctx.spanLabel) !== undefined && tierRank(result) < tierRank(downcap)) {
+    return downcap;
+  }
   return result;
 }
 
