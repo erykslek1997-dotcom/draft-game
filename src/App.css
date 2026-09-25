@@ -6139,10 +6139,13 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
     justify-content: flex-start;
     align-items: stretch;
     padding: 0;
-    background: rgba(0, 0, 0, 0.18);
+    background: transparent;
   }
+  /* The page makes room for the docked sheet instead of sitting under it. */
+  html.years-sheet-open body { padding-left: 352px; }
   .at-shell .years-picker-overlay .years-picker-sheet {
-    width: 380px;
+    box-sizing: border-box;
+    width: 340px;
     max-height: none;
     height: 100%;
     border-radius: 0 14px 14px 0;
