@@ -22,6 +22,9 @@ interface Props {
 }
 
 /** Tick delays for the reel, fast to slow — a slot machine winding down onto the result. */
+/** How long the lottery screen settles in before the reel starts. */
+const LOTTERY_INTRO_MS = 1300;
+
 function reelDelays(): number[] {
   const delays: number[] = [];
   for (let d = 45; d < 420; d *= 1.13) delays.push(Math.round(d));
@@ -84,6 +87,14 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [archiveFact] = useState(() => DRAFT_ARCHIVE_FACTS[Math.floor(Math.random() * DRAFT_ARCHIVE_FACTS.length)]);
   const done = tick >= delays.length;
+  // 2026-09-25, user ("ekran losowania odpala się bardzo szybko, powinno być powolne wejście"): the
+  // screen fades in and the reel sits still for a beat before it starts spinning.
+  const [started, setStarted] = useState(() => prefersReducedMotion());
+  useEffect(() => {
+    if (started) return;
+    const id = window.setTimeout(() => setStarted(true), LOTTERY_INTRO_MS);
+    return () => window.clearTimeout(id);
+  }, [started]);
   useEffect(() => {
     if (!done || !onRevealed) return;
     // Let the result paint first; preparing the data blocks the main thread for a moment.
@@ -92,17 +103,17 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
   }, [done, onRevealed]);
 
   useEffect(() => {
-    if (done) return;
+    if (done || !started) return;
     const timer = setTimeout(() => setTick((t) => t + 1), delays[tick]);
     return () => clearTimeout(timer);
-  }, [tick, done, delays]);
+  }, [tick, done, delays, started]);
 
   // Counts up through the numbers like a reel and lands exactly on the real slot on the last tick.
   const shown = ((((slot - 1 - (delays.length - tick)) % teamCount) + teamCount) % teamCount) + 1;
   const picks = useMemo(() => snakePickNumbers(slot, teamCount, rounds), [slot, teamCount, rounds]);
 
   return (
-    <div className="at-shell at-lottery">
+    <div className={`at-shell at-lottery${started ? ' is-started' : ''}`}>
       {onExit && (
         <button type="button" className="at-menu-btn at-cond" onClick={onExit}>
           ← Menu

@@ -1,6 +1,7 @@
 /* 2026-09-25: Draft Desk (DraftDesk.tsx) — mockup C, "debate thread". Reads the `.at-shell`
    tokens it's mounted under (DraftBoard), so it follows the board's own palette. */
-.desk-backdrop { background: rgba(2, 4, 8, 0.72); z-index: 1000; } /* above the board's floating buttons (z 60), like the other overlays */
+.desk-backdrop { background: rgba(2, 4, 8, 0.72); z-index: 1000; animation: desk-fade 450ms ease-out; }
+.desk-modal { animation: desk-rise 520ms cubic-bezier(0.2, 0.8, 0.2, 1); } /* above the board's floating buttons (z 60), like the other overlays */
 
 .desk-modal {
   width: min(980px, 100%);
@@ -72,11 +73,13 @@
 .desk-consensus--pending .desk-consensus-text { color: var(--at-ink-soft); }
 .desk-close { margin-top: 0; min-height: 48px; width: 100%; } /* the board's own primary-button look */
 
+@keyframes desk-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes desk-rise { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
 @keyframes desk-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes desk-dot { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 @keyframes desk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) {
-  .desk-line, .desk-live-dot, .desk-typing i { animation: none; }
+  .desk-backdrop, .desk-modal, .desk-line, .desk-live-dot, .desk-typing i { animation: none; }
 }
 
 /* Phone: one column — the talk, then the roster, consensus and button. */
