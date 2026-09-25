@@ -6078,3 +6078,8 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   background: #0f1827;
   color: #eef4fb;
 }
+/* Playtester, third pass ("góra okej, ale pozycje dalej ciemno"): the position filters kept an old
+   base rule that dims every idle pill to 55% opacity, so they stayed dark whatever their colours
+   were. Full opacity, same as the top-bar buttons. */
+.at-shell .at-filter-pill,
+.at-shell .at-filter-pill:hover { opacity: 1; }
