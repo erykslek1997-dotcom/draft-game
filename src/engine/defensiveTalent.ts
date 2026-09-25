@@ -7,6 +7,7 @@ import { functionalPosition } from './functionalPosition';
 import { hasDefenseAwardCoverage, individualDefenseRate } from './defensiveAccolades';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import { teamDefenseContextForSpan } from './teamDefenseLookup';
+import { bpm2CoverageForSpan, ddpmCoverageForSpan, matchupCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
 
 /**
  * D-TAL — "how good is this player defensively," 0-100, per position.
@@ -389,6 +390,33 @@ function onOffDefenseFloor(span: PlayerSpan): number {
   return atMin + frac * (atCap - atMin);
 }
 
+/**
+ * 2026-09-25, user-reported (Bryon Russell 1999-01, the starting SF of a strong Jazz defense, at
+ * D-TAL 45 with DARKO +0.5, RAPTOR +0.9 and DBPM +0.5 all positive): the box ladder reads a wing
+ * with 1.4 steals / 0.3 blocks as below average and the real-data corrections only partly lift it.
+ * Guards and wings only: when at least three real defensive sources cover the span and EVERY one
+ * reads clearly positive, the span is at least an average defender: `CONSENSUS_FLOOR_BASE` (55, roughly the average
+ * D-TAL), rising to `CONSENSUS_FLOOR_TOP` as the weakest of them reaches +1.0.
+ */
+const CONSENSUS_MIN_SOURCES = 3;
+const CONSENSUS_MIN_VALUE = 0.3;
+const CONSENSUS_FULL_VALUE = 1.0;
+const CONSENSUS_FLOOR_BASE = 55;
+const CONSENSUS_FLOOR_TOP = 60;
+function consensusPositiveFloor(span: PlayerSpan): number {
+  // Perimeter only: for bigs, box-derived DBPM/RAPTOR ride rebounds and blocks, and a backup
+  // centre with mild positives everywhere (Matt Bonner, Michael Ruffin) is not an average defender.
+  if (span.primaryPosition === 'PF' || span.primaryPosition === 'C') return 0;
+  const values = [ddpmCoverageForSpan(span), raptorCoverageForSpan(span), matchupCoverageForSpan(span), bpm2CoverageForSpan(span)]
+    .filter((c): c is { avg: number; count: number } => c !== null)
+    .map((c) => c.avg);
+  if (values.length < CONSENSUS_MIN_SOURCES) return 0;
+  const weakest = Math.min(...values);
+  if (weakest < CONSENSUS_MIN_VALUE) return 0;
+  const t = Math.min(1, (weakest - CONSENSUS_MIN_VALUE) / (CONSENSUS_FULL_VALUE - CONSENSUS_MIN_VALUE));
+  return CONSENSUS_FLOOR_BASE + t * (CONSENSUS_FLOOR_TOP - CONSENSUS_FLOOR_BASE);
+}
+
 const PERIMETER_STOPPER_ROLES: readonly string[] = ['Wing Stopper', 'Chaser'];
 const PERIM_STOPPER_MATCHUP_DRAG = -1.5;
 const PERIM_STOPPER_CORROBORATION = 0.7;
@@ -652,6 +680,7 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
           teamDefenseCorroborationFloor(span),
           perimeterStopperFloor(span),
           corroboratedAllDefenseFloor(span),
+          consensusPositiveFloor(span),
         ),
       ),
     ),
