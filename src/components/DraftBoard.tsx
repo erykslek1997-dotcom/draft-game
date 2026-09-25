@@ -43,7 +43,9 @@ import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
-import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPressureNote, TurnBudgetText } from './DraftChrome';
+import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, TurnBudgetText } from './DraftChrome';
+import { DraftDesk } from './DraftDesk';
+import { buildDraftDesk, type DraftDeskResult } from '../engine/draftDesk';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
 
 /** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
@@ -91,6 +93,8 @@ interface Props {
   onAiSpeedChange: (index: number) => void;
   /** 2026-09-24: back to the main menu (after a confirm — the draft is autosaved, see draftSave.ts). */
   onExit: () => void;
+  /** 2026-09-25: the Draft Desk is open — GameShell holds CPU picks until it closes. */
+  onDeskOpenChange?: (open: boolean) => void;
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -821,6 +825,7 @@ export default function DraftBoard({
   aiSpeedIndex,
   onAiSpeedChange,
   onExit,
+  onDeskOpenChange,
 }: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
@@ -1113,10 +1118,31 @@ export default function DraftBoard({
     () => bestPrimaryAssignment(humanTeam.roster).assignment,
     [humanTeam.roster],
   );
-  const humanStarters = useMemo(
-    () => Object.values(humanAssignment).filter((p): p is PlayerSpan => Boolean(p)),
-    [humanAssignment],
-  );
+
+  // 2026-09-25, user's ask: the Draft Desk — three pundits on the human's first three picks, once
+  // per full draft (it replaces the in-banner rim-pressure hint here; Quick 5 keeps the hint).
+  // Keyed by the draft's seed so a resumed draft that already showed it doesn't show it again.
+  const DESK_TRIGGER_PICKS = 3;
+  const [desk, setDesk] = useState<DraftDeskResult | null>(null);
+  const deskChecked = useRef(false);
+  useEffect(() => {
+    if (state.commissionerMode || deskChecked.current || humanTeam.roster.length !== DESK_TRIGGER_PICKS) return;
+    deskChecked.current = true;
+    const key = `draftverse.deskShown.${state.seed}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, '1');
+    } catch {
+      // storage blocked: still show it, just can't remember it across a reload
+    }
+    setDesk(buildDraftDesk(humanTeam.roster, ROUNDS - DESK_TRIGGER_PICKS));
+  }, [humanTeam.roster, state.commissionerMode, state.seed]);
+  useEffect(() => {
+    onDeskOpenChange?.(desk !== null);
+  }, [desk, onDeskOpenChange]);
+  // Leaving the draft with the desk open must not leave CPU picks held for the next one.
+  useEffect(() => () => onDeskOpenChange?.(false), [onDeskOpenChange]);
+  const closeDesk = useCallback(() => setDesk(null), []);
 
   // True whenever the Team tab's roster table is actually showing the human's own roster — always
   // true outside Commissioner Mode (`teamForPanels` IS `humanTeam` then), only sometimes true
@@ -1430,6 +1456,7 @@ export default function DraftBoard({
           onLeave={onExit}
         />
       )}
+      {desk && <DraftDesk roster={humanTeam.roster} desk={desk} onClose={closeDesk} />}
       <div className="at-board-brand at-cond">All-Time NBA Draft</div>
       <div className="at-topbar" ref={topbarRef}>
         <div className="at-tabs" role="tablist">
@@ -1617,7 +1644,6 @@ export default function DraftBoard({
                   priciestAvailable={priciestAvailable}
                   capTotal={CAP_LIMIT}
                 />
-                <RimPressureNote starters={humanStarters} />
                 {/* 2026-09-25, playtester feedback: the "only players that fit" filter used to be
                     reachable only once every visible card was out of reach (e.g. not after resuming
                     a saved draft). It's offered whenever the per-pick ceiling rules someone out. */}
