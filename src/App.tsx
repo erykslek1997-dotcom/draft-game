@@ -1,10 +1,15 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 // Plain, data-free module (place/mascot string arrays + a shuffle helper, no engine/dataset
 // imports of its own — verified directly, not assumed) — safe to pull into the intro screen's
 // eager bundle without regressing the "zero engine dependency until Start Draft" load-time split
 // this file's own docstrings already care about (see DISPLAY_ROSTER_SIZE's comment below).
 import { randomTeamNames } from './engine/teamNames';
+import { initialTeamsForSeed } from './engine/draftSetup';
+import { ROSTER_SIZE } from './engine/positions';
+import { randomSeed } from './engine/rng';
+import type { Team } from './engine/types';
+import DraftLottery from './components/DraftLottery';
 import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
@@ -31,7 +36,17 @@ import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, t
 // it's only real work once a draft is actually rendered.
 // 2026-09-24: routed through `loadGameModule` (gameLoader.ts) so the wait shows a real download
 // percentage, then a "Preparing players" stage, instead of one static line of text.
-const GameShell = lazy(() => loadGameModule(() => import('./components/GameShell')));
+// 2026-09-25: one shared promise, so the intro's early lottery can start preparing the draft module
+// (and its player data) before React asks for it.
+let gameShellPromise: ReturnType<typeof loadGameShellUncached> | null = null;
+function loadGameShellUncached() {
+  return loadGameModule(() => import('./components/GameShell'));
+}
+function loadGameShell() {
+  gameShellPromise ??= loadGameShellUncached();
+  return gameShellPromise;
+}
+const GameShell = lazy(loadGameShell);
 const BestFive = lazy(() => loadGameModule(() => import('./components/BestFive')));
 const QuickFive = lazy(() => loadGameModule(() => import('./components/QuickFive')));
 
@@ -156,6 +171,15 @@ function App() {
   const savedDraft = useMemo<DraftSaveSummary | null>(() => (view === 'intro' ? readDraftSaveSummary() : null), [view]);
   const [resumeDraft, setResumeDraft] = useState(false);
   const [confirmNewDraft, setConfirmNewDraft] = useState(false);
+  // 2026-09-25, user's ask ("zamiast długiego paska ładowania skracamy go czasowo, ładowanie
+  // nadal w tle"): a new draft opens straight on its lottery — seed and teams need no player
+  // data (engine/draftSetup.ts) — while the data keeps loading behind it. The draft module is
+  // prepared once the reel stops, and the board opens with exactly this seed and these teams.
+  const [earlyDraft, setEarlyDraft] = useState<{ seed: number; teams: Team[] } | null>(null);
+  const [earlyLotteryDone, setEarlyLotteryDone] = useState(false);
+  const prepareDraft = useCallback(() => {
+    void loadGameShell();
+  }, []);
   function startNewDraft() {
     if (savedDraft && !confirmNewDraft) {
       setConfirmNewDraft(true);
@@ -164,10 +188,15 @@ function App() {
     clearDraftSave();
     setConfirmNewDraft(false);
     setResumeDraft(false);
+    const seed = sharedDraftSeedFromUrl() ?? randomSeed();
+    setEarlyDraft({ seed, teams: initialTeamsForSeed(seed, teamName) });
+    setEarlyLotteryDone(false);
+    void prefetchGameData();
     setView('game');
   }
   function continueDraft() {
     setResumeDraft(true);
+    setEarlyDraft(null);
     setView('game');
   }
   // 2026-08-16, user's own ask ("żeby wiedział jaką drużynę ma" — so they can actually recognize
@@ -412,13 +441,24 @@ function App() {
         </div>
       )}
 
-      {view === 'game' && (
+      {view === 'game' && earlyDraft && !resumeDraft && !earlyLotteryDone && (
+        <DraftLottery
+          teams={earlyDraft.teams}
+          rounds={ROSTER_SIZE}
+          onDone={() => setEarlyLotteryDone(true)}
+          onRevealed={prepareDraft}
+          howToPlay={MODE_HOW_TO_PLAY.draft}
+          onExit={() => setView('intro')}
+        />
+      )}
+      {view === 'game' && (resumeDraft || !earlyDraft || earlyLotteryDone) && (
         <Suspense fallback={<LoadingPanel />}>
           <GameShell
             mode="player"
             commissionerMode={false}
             humanTeamName={teamName}
             resume={resumeDraft}
+            preset={resumeDraft ? undefined : earlyDraft ?? undefined}
             onExit={() => setView('intro')}
           />
         </Suspense>

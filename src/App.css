@@ -5778,3 +5778,26 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
     0 0 8px rgba(94, 200, 255, 0.35),
     0 2px 4px rgba(0, 0, 0, 0.45);
 }
+
+/* 2026-09-25, scouting report: every career window on record + 3 full reports per draft. */
+.at-shell .player-peek-head { flex-wrap: wrap; }
+.at-shell .player-peek-scout { margin-left: auto; }
+.at-shell .player-peek-scout-btn { margin: 0; }
+.at-shell .player-peek-scouted {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--at-good, #7fd68a);
+}
+.at-shell .player-peek-row--off td { color: var(--at-ink-faint); }
+.at-shell .player-peek-off-note {
+  font-size: 10.5px;
+  color: var(--at-ink-faint);
+  white-space: nowrap;
+}
+/* Room for every career window and, once scouted, seven more grade columns. */
+.at-shell .player-peek-card {
+  width: min(1180px, 100%);
+  max-height: min(720px, 88vh);
+}
