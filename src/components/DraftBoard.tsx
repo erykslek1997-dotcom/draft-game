@@ -304,6 +304,24 @@ function YearsPicker({
                         <CapIcon size={13} /> {o.fga.toFixed(1)}
                       </span>
                       <span className="years-picker-check" aria-hidden>{isSelected ? '✓' : ''}</span>
+                      {/* 2026-09-25, user-reported ("okienko zasłania pół statystyk ... oceny
+                          rozpisane już przy latach"): the same six grades as the Team table's
+                          columns, per window, so years can be compared without closing the sheet. */}
+                      <span className="years-picker-grades">
+                        {[
+                          ['OFF', offensiveGrade(computeOffensiveTalent(o), computeUncappedOffensiveTalent(o))],
+                          ['DEF', defensiveGrade(computeDefensiveTalent(o))],
+                          ['O-POR', offensivePortabilityGrade(computeOffensivePortability(o))],
+                          ['D-POR', defensivePortabilityGrade(computeDefensivePortability(o))],
+                          ['SPC', spacingGrade(computeSpacing(o), o)],
+                          ['DUR', durabilityGrade(computeDurability(o))],
+                        ].map(([label, grade]) => (
+                          <span key={label} className="years-picker-grade">
+                            <small>{label}</small>
+                            <AtGrade grade={grade as Grade} />
+                          </span>
+                        ))}
+                      </span>
                     </button>
                   </li>
                 );

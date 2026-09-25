@@ -1880,7 +1880,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         team. Separate from the final ranking above.
       </p>
       <button
-        className="secondary-btn"
+        className="primary-btn season-sim-btn"
         onClick={() => {
           if (!seasonStandings) {
             // 2026-09-14: prefers the background pool's representative pick; falls back to one
@@ -1949,7 +1949,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 keeping the same season standings as the seed. */}
             {!playoffResult && (
               <button
-                className="secondary-btn playoff-sim-btn"
+                className="primary-btn playoff-sim-btn"
                 onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings, matchupCache))}
               >
                 🏆 Simulate the playoffs

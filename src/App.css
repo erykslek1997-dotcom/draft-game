@@ -6083,3 +6083,73 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
    were. Full opacity, same as the top-bar buttons. */
 .at-shell .at-filter-pill,
 .at-shell .at-filter-pill:hover { opacity: 1; }
+
+/* 2026-09-25, user-reported (results screen "New draft / Rematch this board / Main menu" row:
+   "mało spójne z resztą"): the legacy primary/secondary buttons kept the old flat accent pill and
+   a borderless dark pill while every other control moved to the calm retro treatment above.
+   Every primary/secondary button in the shell now uses it too — secondary is the idle retro
+   button, primary is the cream "active" stock with the red/blue stripe, the one strong mark in
+   a row. Only colour/frame is set here; each variant keeps its own spacing rules. */
+.at-shell .secondary-btn {
+  border: 1.5px solid #8fb0da;
+  background: linear-gradient(180deg, #22344f, #1a2840);
+  color: #eef4fb;
+  box-shadow:
+    inset 0 0 0 2px rgba(5, 7, 12, 0.9),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.at-shell .secondary-btn:hover:not(:disabled) {
+  border-color: #c4d8f2;
+  background: linear-gradient(180deg, #2a4062, #20304b);
+  color: #ffffff;
+}
+.at-shell .primary-btn {
+  border: 1.5px solid #d9cba6;
+  color: #13295a;
+  background:
+    linear-gradient(to top, #1d428a 0 2px, #f6eedb 2px 3px, #c8102e 3px 5px, transparent 5px),
+    linear-gradient(180deg, #fbf5e6, #ece0c3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 2px 6px rgba(0, 0, 0, 0.45);
+}
+.at-shell .primary-btn:hover:not(:disabled) {
+  border-color: #f0e3c0;
+  background:
+    linear-gradient(to top, #1d428a 0 2px, #f6eedb 2px 3px, #c8102e 3px 5px, transparent 5px),
+    linear-gradient(180deg, #fffaf0, #f3e8cf);
+}
+.at-shell .primary-btn:disabled,
+.at-shell .secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Same one-baseline fix as the verdict row, for the row at the bottom of the results. */
+.at-shell .results-actions > button {
+  margin: 0;
+}
+
+/* 2026-09-25: grade strip under each window in the Years sheet (see YearsPicker). The sheet grows
+   to fit six labelled pills in one row; on a phone they wrap to 3 + 3. */
+.at-shell .years-picker-sheet { width: min(600px, 100%); }
+.at-shell .years-picker-grades {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.at-shell .years-picker-grade {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.at-shell .years-picker-grade small {
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--at-ink-faint);
+}
+@media (max-width: 520px) {
+  .at-shell .years-picker-grades { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
