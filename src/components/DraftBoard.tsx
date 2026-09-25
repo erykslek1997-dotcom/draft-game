@@ -225,7 +225,7 @@ function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, c
   if (reason === 'cap') return 'Over the cap — pick a cheaper player, or cheaper years for this one.';
   if (reason === 'reserve') {
     const budget = pickBudget(state);
-    return `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. Max for this pick: ${budget.maxThisPick} caps.`;
+    return `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${budget.maxThisPick} caps.`;
   }
   return label;
 }
@@ -1086,6 +1086,10 @@ export default function DraftBoard({
     return { groups: matched.slice(0, DRAFT_LIST_LIMIT), totalMatched: matched.length };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enrichedGroups, state.draftedIds, selectedPosition, search, mode, needBiasActive, openStarterPositions]);
+  const priciestAvailable = useMemo(
+    () => state.pool.reduce((max, p) => (!state.draftedIds.has(p.id) && p.fga > max ? p.fga : max), 0),
+    [state.pool, state.draftedIds],
+  );
 
   function toggleExpand(name: string) {
     setExpanded((prev) => {
@@ -1344,12 +1348,13 @@ export default function DraftBoard({
                   capLeft={currentBudget.capLeft}
                   slotsLeft={currentBudget.slotsLeft}
                   maxThisPick={currentBudget.maxThisPick}
+                  priciestAvailable={priciestAvailable}
                 />
               </div>
             )}
             {canPick && !anyVisibleLegal && (
               <div className="at-budget-notice">
-                <span>None of the players shown fit this pick — max <CapIcon /> {currentBudget.maxThisPick} caps.</span>
+                <span>None of the players shown fit this pick — it can cost up to <CapIcon /> {currentBudget.maxThisPick} caps.</span>
                 <button type="button" className="at-budget-notice-btn at-cond" onClick={showAffordable}>
                   Show players that fit
                 </button>
@@ -1377,7 +1382,7 @@ export default function DraftBoard({
                   <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
                 </div>
               </div>
-              <div className="at-controls-row" style={{ marginTop: -4 }}>
+              <div className="at-controls-row at-position-filters">
                 <button
                   className={`at-filter-pill at-cond ${selectedPosition === 'ALL' ? 'at-active' : ''}`}
                   onClick={() => setSelectedPosition('ALL')}
@@ -1880,6 +1885,7 @@ export default function DraftBoard({
               {isWideLayout ? 'No picks yet — draft your first player on the left.' : 'No picks yet — head to the Draft tab.'}
             </div>
           ) : (
+            <div className="at-table-scroll">
             <table className="at-roster-table">
               <thead>
                 <tr>
@@ -2015,6 +2021,7 @@ export default function DraftBoard({
                 })}
               </tbody>
             </table>
+            </div>
           )}
           <p className="at-caption">
             {isViewingHumanRoster

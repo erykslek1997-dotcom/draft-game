@@ -237,6 +237,10 @@ function QuickDraftBoard({
   // now plays under) and an "only players that fit" filter the stuck-board notice can switch on.
   const budget = useMemo(() => quickPickBudget(state), [state]);
   const [onlyFits, setOnlyFits] = useState(false);
+  const priciestAvailable = useMemo(
+    () => allEnrichedOnce.reduce((max, e) => (!state.draftedIds.has(e.span.id) && e.span.fga > max ? e.span.fga : max), 0),
+    [allEnrichedOnce, state.draftedIds],
+  );
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return allEnrichedOnce
@@ -371,12 +375,13 @@ function QuickDraftBoard({
               capLeft={budget.capLeft}
               slotsLeft={budget.slotsLeft}
               maxThisPick={budget.maxThisPick}
+              priciestAvailable={priciestAvailable}
             />
           </div>
         )}
         {canPick && !anyLegal && (
           <div className="at-budget-notice">
-            <span>None of the players shown fit this pick — max <CapIcon /> {budget.maxThisPick} caps.</span>
+            <span>None of the players shown fit this pick — it can cost up to <CapIcon /> {budget.maxThisPick} caps.</span>
             <button
               type="button"
               className="at-budget-notice-btn at-cond"
@@ -449,7 +454,7 @@ function QuickDraftBoard({
           {autoFinishing ? 'Finishing…' : 'Auto-finish'}
         </button>
       </div>
-      <div className="at-controls-row" style={{ marginTop: -4 }}>
+      <div className="at-controls-row">
         <button className={selectedPosition === 'ALL' ? 'active' : ''} onClick={() => setSelectedPosition('ALL')}>
           ALL
         </button>
@@ -482,7 +487,7 @@ function QuickDraftBoard({
                   : legal
                     ? span.playerName
                     : quickPickBlockReason(state, span.id) === 'reserve'
-                      ? `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. Max for this pick: ${budget.maxThisPick} caps.`
+                      ? `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${budget.maxThisPick} caps.`
                       : `Over the ${QUICK_CAP_LIMIT}-cap limit — pick a cheaper player.`
               }
               onClick={() => onPick(span.id)}

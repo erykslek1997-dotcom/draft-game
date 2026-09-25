@@ -5697,3 +5697,69 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   font-weight: 500;
   opacity: 0.8;
 }
+
+/* 2026-09-25, spacing/layout audit — measured on a 390px phone:
+   - Draft screen was 1015px wide (sideways scroll): in the stacked (column) layout the workspace
+     kept `align-items: flex-start`, so the player-card area sized itself to its content's one-line
+     width (976px) instead of the screen. Stretch it in the stacked layout.
+   - The Team table ran 482px off-screen; it now scrolls inside its own box like the other tables. */
+@media (max-width: 860px) {
+  .at-draft-workspace { align-items: stretch; }
+}
+/* Even vertical rhythm inside the blocks the audit flagged (gaps varied 0-34px between siblings):
+   one gap per block, headings sit 8px above what they label. */
+.at-shell .at-draft-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.at-shell .at-draft-main > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.at-shell .rotation-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.at-shell .rotation-builder > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.at-shell .rotation-builder > h2,
+.at-shell .rotation-builder > h3 {
+  margin-bottom: -8px;
+}
+.at-shell .results-hero-bars-note { margin-bottom: 0; }
+.at-shell .results-hero-actions { margin-top: 16px; }
+.at-shell .matchup-matrix-section > h3 { margin: 0 0 12px; }
+.at-shell .matchup-matrix-legend { margin-bottom: 12px; }
+.at-shell .results-hero-scores,
+.at-shell .results-hero-rotation {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.at-shell .results-hero-scores > *,
+.at-shell .results-hero-rotation > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.at-shell .results-hero-scores > .share-modal-face-group-label,
+.at-shell .results-hero-rotation > .share-modal-face-group-label {
+  margin-bottom: -8px;
+}
+.at-shell .qf-team-panel { margin-bottom: 14px; }
+/* On a phone the six position pills wrapped as 4 + 2; one even row of six instead. */
+@media (max-width: 560px) {
+  .at-shell .at-position-filters {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .at-shell .at-position-filters .at-filter-pill {
+    padding-left: 0;
+    padding-right: 0;
+    text-align: center;
+  }
+}
