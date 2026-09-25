@@ -55,8 +55,8 @@ function classify(pos: Position, from: Position, s: PlayerSpan, h: number, share
         if (h >= 76) return 'emergency';
         return 'none';
       }
-      if (h && h <= 78 && (handler || spacing >= 65 || b.apg >= 3.5)) return 'full';
-      if (h && h <= 79) return 'emergency';
+      if (h && h <= 78) return handler || spacing >= 65 || b.apg >= 3.5 ? 'full' : 'none';
+      if (h === 79) return 'emergency';
       if (h === 80) return dtal >= 80 ? 'partial' : 'emergency';
       return 'none';
     case 'SF':
