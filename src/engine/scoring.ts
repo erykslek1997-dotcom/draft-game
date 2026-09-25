@@ -683,7 +683,12 @@ function eliteOffensiveEngineFloorContribution(team: Team): number {
     return (playmakingScoreForPlayer(player) ?? 0) >= DEFENSIVE_CENTER_ENGINE_PLAYMAKING_FLOOR;
   });
   if (!engineAssignment) return 0;
-  return ELITE_OFFENSIVE_ENGINE_FLOOR * (engineAssignment.minutes / STARTER_MINUTES);
+  // 2026-09-25, user-reported ("jeśli podłoga ataku Jokicia jest taka sama jak Goberta, to poważny
+  // błąd w silniku"): the minutes share was never capped at 1, so an engine playing 40 minutes
+  // lifted the floor to 80 (72 x 40/36) instead of the intended 72 — enough to pull a Gobert
+  // team's real 72 and a Jokic team's real 77.5 onto the same 80. The share only scales the floor
+  // DOWN for an engine playing less than a starter's minutes, never above ELITE_OFFENSIVE_ENGINE_FLOOR.
+  return ELITE_OFFENSIVE_ENGINE_FLOOR * Math.min(1, engineAssignment.minutes / STARTER_MINUTES);
 }
 
 /**
