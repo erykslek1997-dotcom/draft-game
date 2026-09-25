@@ -5961,3 +5961,44 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .caps-info-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .caps-info-head h2 { margin: 0; font-size: 20px; color: var(--at-ink); }
 .caps-info-foot { font-size: 12px; color: var(--at-ink-faint); }
+
+/* 2026-09-25, playtester feedback round. */
+.at-shell .at-board-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--at-accent);
+  background: color-mix(in srgb, var(--at-paper-raised) 88%, var(--at-accent));
+  color: var(--at-ink);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+}
+.at-shell .at-banner-fit-btn { margin: 8px 0 0; }
+.at-shell .at-scout-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--at-ink-soft);
+}
+.at-shell .at-scout-hint b { color: var(--at-ink); }
+/* Playtester screenshot: on a slightly wider phone (above the 480px switch) each ranking card's
+   detailed rotation squeezed five columns, and the TAL badges covered the minutes. The detailed
+   tiles need more room, so they go two-up (odd last one centred) below 700px. */
+@media (max-width: 700px) {
+  .at-shell .results-hero-rotation-columns.rotation-columns--detailed {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .at-shell .rotation-columns--detailed > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 3px);
+  }
+}

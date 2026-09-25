@@ -861,6 +861,19 @@ export default function DraftBoard({
   // for it (mobile-only, see `.at-grid-scroll-nav`'s own CSS) — `scrollBy` already clamps at
   // both ends, so no separate "can I still scroll further" state is needed.
   const gridScrollRef = useRef<HTMLDivElement>(null);
+  // 2026-09-25, playtester feedback ("jak przewinąłem niżej… nie mogę podejrzeć całego draft
+  // boarda"): once the top bar scrolls away, a small floating button opens the board and jumps
+  // back up to it.
+  const topbarRef = useRef<HTMLDivElement>(null);
+  const boardAnchorRef = useRef<HTMLDivElement>(null);
+  const [topbarVisible, setTopbarVisible] = useState(true);
+  useEffect(() => {
+    const el = topbarRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([entry]) => setTopbarVisible(entry.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   function scrollGrid(direction: 1 | -1) {
     gridScrollRef.current?.scrollBy({ left: direction * 280, behavior: 'smooth' });
   }
@@ -1375,7 +1388,7 @@ export default function DraftBoard({
         />
       )}
       <div className="at-board-brand at-cond">All-Time NBA Draft</div>
-      <div className="at-topbar">
+      <div className="at-topbar" ref={topbarRef}>
         <div className="at-tabs" role="tablist">
           {TABS.map((tab) => (
             <button
@@ -1390,6 +1403,18 @@ export default function DraftBoard({
         {!state.complete && <AiSpeedControl labels={aiSpeedLabels} index={aiSpeedIndex} onChange={onAiSpeedChange} />}
         {(isWideLayout || activeTab === 'draft') && <BoardToggleButton open={boardOpen} onToggle={toggleBoard} />}
       </div>
+      {!topbarVisible && !state.complete && (isWideLayout || activeTab === 'draft') && (
+        <button
+          type="button"
+          className="at-board-fab"
+          onClick={() => {
+            if (!boardOpen) toggleBoard();
+            window.requestAnimationFrame(() => boardAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+          }}
+        >
+          📋 Draft board
+        </button>
+      )}
 
       {/* 2026-08-16, user's own ask: no visible toggle button anymore (first moved out of the
           deleted status chip, then asked to drop entirely) — `showHistory` just keeps its
@@ -1418,6 +1443,7 @@ export default function DraftBoard({
               laptop screen (and several phone screens) before the first player card. It now
               starts collapsed to a one-line ticker (who's on the clock, the latest picks, when
               you pick next); the full board is one click away and the choice is remembered. */}
+          <div ref={boardAnchorRef} className="at-board-anchor" />
           <DraftTicker
             youOnClock={canPick && currentTeam.isHuman}
             complete={state.complete}
@@ -1548,6 +1574,14 @@ export default function DraftBoard({
                   priciestAvailable={priciestAvailable}
                   capTotal={CAP_LIMIT}
                 />
+                {/* 2026-09-25, playtester feedback: the "only players that fit" filter used to be
+                    reachable only once every visible card was out of reach (e.g. not after resuming
+                    a saved draft). It's offered whenever the per-pick ceiling rules someone out. */}
+                {currentBudget.maxThisPick < priciestAvailable && Number(fgaMax) !== Math.floor(currentBudget.maxThisPick * 10) / 10 && (
+                  <button type="button" className="at-budget-notice-btn at-cond at-banner-fit-btn" onClick={showAffordable}>
+                    Show only players that fit
+                  </button>
+                )}
               </div>
             )}
             {canPick && !anyVisibleLegal && (
@@ -1763,6 +1797,12 @@ export default function DraftBoard({
                   stats, without the grid's row heights jumping around per-card. An arrow still
                   drafts the best season immediately, no modal needed for the common case. Player
                   mode only — developer/tester mode keeps the dense table above unchanged. */}
+              {!showJudgeMetrics && scoutedPlayers.size < SCOUT_REPORTS_PER_DRAFT && (
+                <p className="at-scout-hint">
+                  🔍 <b>{SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size} scouting report{SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size === 1 ? '' : 's'} left</b> — open a
+                  player’s Scouting and tap “Scout him” to see his tier and offense, defense and fit grades.
+                </p>
+              )}
               {!showJudgeMetrics && (
                 <div className="at-player-cards">
                   {groups.slice(0, visibleCount).map((group) => {

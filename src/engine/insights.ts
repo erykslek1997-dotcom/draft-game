@@ -350,6 +350,20 @@ function preThreePointNote(players: PlayerTeamFeature[]): string {
   return ` (${displayNames(early)} played before the 3-point line existed)`;
 }
 
+/** 2026-09-25, user-reported live ("Durant, Nash and Gobert are all stars who need the ball and a lot
+ * of shots" — Gobert barely needs the ball, and Nash creates shots for others): a player only
+ * competes for SHOTS if he actually takes a lot of them, plays a ball-dominant role, and isn't a
+ * pass-first creator (lots of assists for his shot volume). */
+function isPassFirst(p: PlayerTeamFeature): boolean {
+  return (p.apg ?? 0) >= 7 && (p.apg ?? 0) >= p.fga * 0.5;
+}
+function isShotHungry(p: PlayerTeamFeature): boolean {
+  return p.fga >= 16 && (p.highUsageWeight ?? 0) > 0 && !isPassFirst(p);
+}
+function shotHungryRotation(t: TeamFeatureSnapshot): PlayerTeamFeature[] {
+  return t.players.filter(p => p.minutes >= 20 && isShotHungry(p)).sort((a, b) => b.fga - a.fga);
+}
+
 /** Cheap players who still give real value, best value first — for "bargain" strengths. */
 function bargains(t: TeamFeatureSnapshot): PlayerTeamFeature[] {
   return t.players
@@ -825,10 +839,10 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'MULTIPLE_HIGH_USAGE_PLAYERS', type: 'concern', category: 'usage',
     suppressionGroup: 'usage_negative',
     evaluate: t => {
-      const n = t.highUsagePlayerCount ?? 0;
+      const hungry = shotHungryRotation(t);
       const overlap = t.usageOverlapScore ?? 0;
-      return n >= 3 && overlap >= 0.48
-        ? hit(0.45 + overlap * 0.45, 0.93, teamConfidence(t), `${n} players in the rotation need the ball in their hands — there may not be enough touches to go around.`, { values: { highUsagePlayerCount: n, usageOverlapScore: overlap } })
+      return hungry.length >= 3 && overlap >= 0.48
+        ? hit(0.45 + overlap * 0.45, 0.93, teamConfidence(t), `${displayNames(hungry)} all want the ball and a lot of shots — there may not be enough to go around.`, { players: hungry.map(p => p.playerName), values: { highUsagePlayerCount: hungry.length, usageOverlapScore: overlap } })
         : inactive;
     }
   },
@@ -836,10 +850,10 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'SEVERE_USAGE_COLLISION', type: 'concern', category: 'usage',
     suppressionGroup: 'usage_negative', suppresses: ['MULTIPLE_HIGH_USAGE_PLAYERS'],
     evaluate: t => {
-      const n = t.highUsagePlayerCount ?? 0;
+      const hungry = shotHungryRotation(t);
       const overlap = t.usageOverlapScore ?? 0;
-      return n >= 3 && overlap >= 0.75
-        ? hit(overlap, 0.96, teamConfidence(t), 'Too many players who need the ball — your stars will be fighting over the same possessions.', { values: { highUsagePlayerCount: n, usageOverlapScore: overlap } })
+      return hungry.length >= 3 && overlap >= 0.75
+        ? hit(overlap, 0.96, teamConfidence(t), `${displayNames(hungry)} all need the ball to score — they'll be fighting over the same possessions.`, { players: hungry.map(p => p.playerName), values: { highUsagePlayerCount: hungry.length, usageOverlapScore: overlap } })
         : inactive;
     }
   },
@@ -1422,8 +1436,9 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const overlap = t.usageOverlapScore ?? 0;
       const compression = t.fgaCompressionScore ?? 0;
-      const stars = t.players.filter(p => (p.tal ?? 0) >= 85 && p.minutes >= 24);
-      return stars.length >= 3 && Math.max(overlap, compression) >= 0.65
+      const stars = t.players.filter(p => (p.tal ?? 0) >= 85 && p.minutes >= 24 && isShotHungry(p));
+      const starShots = stars.reduce((sum, p) => sum + p.fga, 0);
+      return stars.length >= 3 && starShots >= 55 && Math.max(overlap, compression) >= 0.65
         ? hit(Math.max(overlap, compression), 0.96, teamConfidence(t), `${displayNames(stars)} are all stars who need the ball and a lot of shots — there isn't enough to go around.`, { players: stars.map(p => p.playerName), values: { usageOverlapScore: overlap, fgaCompressionScore: compression } }, 0.95)
         : inactive;
     }

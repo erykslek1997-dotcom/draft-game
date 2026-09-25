@@ -268,6 +268,27 @@ const hackTeam = team('hack-a-shaq', [
 const hack = detector('FREE_THROW_LIABILITY', buildTeamFeatureSnapshot(hackTeam));
 check(hack.active && Boolean(hack.message?.includes("Shaquille O'Neal")) && Boolean(hack.message?.includes('52%')), "Shaq's 52% free throws register as a late-game liability");
 
+// 2026-09-25, user-reported live: "Kevin Durant, Steve Nash and Rudy Gobert are all stars who need the
+// ball and a lot of shots" — Gobert barely touches the ball and Nash sets others up. Neither may
+// be named as a shot-hungry star.
+const durantNashGobert = generateRosterInsights(buildTeamFeatureSnapshot(team('durant-nash-gobert', [
+  pick('Steve Nash', '2005-07'),
+  pick('Klay Thompson', '2014-16'),
+  pick('Kevin Durant', '2012-14'),
+  pick('Draymond Green', '2015-17'),
+  pick('Rudy Gobert', '2020-22'),
+  pick('Andre Iguodala', '2011-13'),
+  pick('Tyson Chandler', '2011-13'),
+  pick('Shane Battier', '2005-07'),
+  pick('Larry Smith', '1991-93'),
+])));
+check(
+  durantNashGobert.allActiveInsights
+    .filter((i) => /shots|need the ball|want the ball/.test(i.message) && /usage|USAGE|STAR_POWER_WITH/.test(i.id))
+    .every((i) => !i.message.includes('Rudy Gobert') && !i.message.includes('Steve Nash')),
+  'a pass-first creator (Nash) and a rim-running big (Gobert) are never called shot-hungry stars',
+);
+
 // 2026-09-05: the real-drafted-sample cross-team checks (two full seeded drafts + statistical
 // sanity checks across all 32 resulting rosters) moved to testInsightsSlow.ts -- run separately
 // in `npm test` but skipped by `npm run test:fast`. See that file's own docstring.
