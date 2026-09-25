@@ -5661,3 +5661,8 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   padding: 1px 7px;
   margin: 2px 0;
 }
+/* "averages" rides inside the era stamp on player cards — one tag instead of stamp + loose word. */
+.at-shell .era-stamp .era-stamp-suffix {
+  font-weight: 500;
+  opacity: 0.8;
+}

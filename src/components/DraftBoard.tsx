@@ -1628,7 +1628,7 @@ export default function DraftBoard({
                             Scouting report opens with — the card had the room, and it's the first
                             thing a player checks before a pick. */}
                         <span className="at-player-card-season">
-                          <EraYears span={target} /> averages
+                          <EraYears span={target} suffix="averages" />
                         </span>
                         <span className="at-player-card-stats">
                           <span><b>{target.box.ppg.toFixed(1)}</b>PTS</span>
