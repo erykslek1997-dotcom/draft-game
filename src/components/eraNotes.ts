@@ -18,7 +18,7 @@ export function hadStealsBlocksRecorded(span: Pick<PlayerSpan, 'spanLabel'>): bo
   return stealsBlocksFullyRecorded(span.spanLabel);
 }
 
-export type EraKey = 'vintage' | 'showtime' | 'jordan' | 'deadball';
+export type EraKey = 'vintage' | 'showtime' | 'jordan' | 'deadball' | 'modern';
 
 export interface EraStamp {
   key: EraKey;
@@ -29,8 +29,8 @@ export interface EraStamp {
 /**
  * 2026-09-25, user's follow-up ("mamy tylko vintage smaczki, może coś z okresu Bird/Magic, Jordan
  * era, deadball era"): each older era gets its own small years stamp, styled after its time.
- * Picked by the span's middle season (season-end years); anything from 2011 on is the modern game
- * the rest of the UI already looks like, so it gets no stamp.
+ * Picked by the span's middle season (season-end years); anything from 2011 on is the
+ * Pace & space era.
  */
 export function eraStamp(span: Pick<PlayerSpan, 'spanLabel'>): EraStamp | null {
   if (predatesThreePointLine(span.spanLabel)) {
@@ -42,5 +42,5 @@ export function eraStamp(span: Pick<PlayerSpan, 'spanLabel'>): EraStamp | null {
   if (mid <= 1990) return { key: 'showtime', title: 'Showtime era (1980-1991) — Bird vs. Magic, and the 3-point line’s first decade.' };
   if (mid <= 1998) return { key: 'jordan', title: 'Jordan era (1991-1998) — six titles in eight years, hand-checking still legal.' };
   if (mid <= 2010) return { key: 'deadball', title: 'Deadball era (1999-2010) — slow pace, half-court grind and the lowest scoring since the shot clock arrived.' };
-  return null;
+  return { key: 'modern', title: 'Pace & space era (2011-today) — threes, switching everything and the fastest pace since the late ’80s.' };
 }
