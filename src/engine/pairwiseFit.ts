@@ -48,6 +48,21 @@ function isRealInitiator(player: PlayerSpan): boolean {
   );
 }
 
+/**
+ * 2026-09-25 engine audit: on-ball demand is a SHOT-volume signal (real usage%, or FGA x archetype
+ * weight before 1996), so a pass-first lead guard never reaches 0.5 on it. Before 1996 a Primary
+ * Ball Handler needs 18+ FGA to clear it and the playmaking fallback tops out at 0.49, which
+ * silently dropped Magic, Stockton, Kevin Johnson, Mark Price and Terry Porter (24 spans at O-TAL
+ * 80+) out of `mismatchStructureScore` entirely (0 instead of ~60). An elite-passing Primary Ball
+ * Handler runs the offense regardless of how many shots he takes himself.
+ */
+function isElitePassFirstLead(player: PlayerSpan): boolean {
+  return (
+    player.offensiveArchetype === 'Primary Ball Handler' &&
+    (playmakingScoreForPlayer(player) ?? 0) >= PNR_LEAD_PLAYMAKING
+  );
+}
+
 function findLeadInitiator(
   starters: PlayerSpan[],
   demandByPlayer: number[],
@@ -60,7 +75,7 @@ function findLeadInitiator(
   return (
     starters
       .map((player, index) => ({ player, index }))
-      .filter(({ player, index }) => demandByPlayer[index] >= 0.5 && isRealInitiator(player))
+      .filter(({ player, index }) => isRealInitiator(player) && (demandByPlayer[index] >= 0.5 || isElitePassFirstLead(player)))
       .sort((a, b) => demandByPlayer[b.index] - demandByPlayer[a.index])[0] ?? null
   );
 }
