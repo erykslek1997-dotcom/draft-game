@@ -1,4 +1,5 @@
 import { activeDraftPool, type DraftState } from '../engine/draft';
+import { draftPool } from '../data/draftPool';
 import { ROSTER_SIZE } from '../engine/positions';
 import type { ChallengeChallenger } from './ResultsScreen';
 import { DRAFT_SAVE_KEY, DRAFT_SAVE_SUMMARY_KEY, clearDraftSave, type DraftSaveSummary } from '../draftSaveSummary';
@@ -49,7 +50,9 @@ export function loadDraft(): { state: DraftState; challenger?: ChallengeChalleng
     };
     // A save from an older data build can reference players that no longer exist — refuse it
     // rather than resume into a board with phantom picks.
-    const poolIds = new Set(activeDraftPool.map((p) => p.id));
+    // Any window in the database is valid: the human can draft years outside the lean pool, and
+    // drafting a player retires every one of his windows (see draft.ts).
+    const poolIds = new Set([...activeDraftPool, ...draftPool].map((p) => p.id));
     if (!saved.state.draftedIds.every((id) => poolIds.has(id))) {
       clearDraftSave();
       return null;

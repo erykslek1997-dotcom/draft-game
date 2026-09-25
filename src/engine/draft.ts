@@ -66,9 +66,17 @@ export interface DraftState {
 
 // --- One-time-per-dataset lookups, built once at module load rather than re-scanning the
 // full player list (thousands of entries) on every single candidate check. ---
-const playersById = new Map<string, PlayerSpan>(players.map((p) => [p.id, p]));
+// 2026-09-25, user-reported live ("nie mogę wydraftować" — the scouting modal listed a star's other
+// years but none could be drafted): these lookups used to cover only the active (lean) pool, which
+// keeps just a star's peak windows. They now cover every career window in the database, so the
+// human can draft any year the scouting modal shows (the Team tab already let them switch to any
+// of them after the pick), and drafting one window retires ALL of that player's windows. The CPU
+// teams still choose only from `state.pool`.
+const draftPoolIds = new Set(draftPool.map((p) => p.id));
+const allKnownSpans = [...draftPool, ...players.filter((p) => !draftPoolIds.has(p.id))];
+const playersById = new Map<string, PlayerSpan>(allKnownSpans.map((p) => [p.id, p]));
 const spansByNormalizedName = new Map<string, PlayerSpan[]>();
-for (const p of players) {
+for (const p of allKnownSpans) {
   const key = normalizePlayerName(p.playerName);
   const arr = spansByNormalizedName.get(key);
   if (arr) arr.push(p);

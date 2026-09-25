@@ -253,8 +253,9 @@ function fullCareerFor(playerName: string): PlayerSpan[] {
 
 /** 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
  * glass on a player face-card opens this instead of expanding the card in place.
- * 2026-09-25: lists every career window on record (raw box score only), in career order; the ones
- * in this draft carry a Draft button. A scouting report (3 per draft) adds his tier and the
+ * 2026-09-25: lists every career window on record (raw box score only), in career order, each
+ * one draftable (draft.ts knows every window, not just the lean pool's). A scouting report (3 per
+ * draft) adds his tier and the
  * offense/defense/portability/spacing/durability grades for every window. */
 function PlayerPeekModal({
   group,
@@ -283,7 +284,6 @@ function PlayerPeekModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const draftableIds = useMemo(() => new Set(group.spans.map((span) => span.id)), [group.spans]);
   const rows = useMemo(() => {
     const byId = new Map<string, PlayerSpan>();
     for (const span of fullCareerFor(group.playerName)) byId.set(span.id, span);
@@ -308,8 +308,7 @@ function PlayerPeekModal({
           <div>
             <h2 className="player-peek-name">{group.playerName}</h2>
             <span className="player-peek-sub">
-              {naturalPosition(group.playerName)} · {rows.length} stretch{rows.length > 1 ? 'es' : ''} of his career on record ·{' '}
-              {group.spans.length} in this draft
+              {naturalPosition(group.playerName)} · {rows.length} stretch{rows.length > 1 ? 'es' : ''} of his career to choose from
             </span>
           </div>
           <div className="player-peek-scout">
@@ -332,9 +331,6 @@ function PlayerPeekModal({
             )}
           </div>
         </div>
-        {rows.length > group.spans.length && (
-          <p className="player-peek-note">Faded rows are his other years — for reference only, they aren’t in this draft.</p>
-        )}
         <div className="table-scroll">
           <table className="span-table at-draft-span-table">
             <thead>
@@ -366,57 +362,54 @@ function PlayerPeekModal({
             </thead>
             <tbody>
               {rows.map((span) => {
-                const inDraft = draftableIds.has(span.id);
-                const legal = inDraft && canPick && isPickLegal(state, span.id);
+                const legal = canPick && isPickLegal(state, span.id);
                 return (
-                  <tr key={span.id} className={inDraft ? undefined : 'player-peek-row--off'}>
-                    <td><EraYears span={span} /></td>
-                    <td>{span.primaryPosition}</td>
-                    <td className="num">{span.box.ppg.toFixed(1)}</td>
-                    <td className="num">{span.box.apg.toFixed(1)}</td>
-                    <td className="num">{span.box.rpg.toFixed(1)}</td>
+                  <tr key={span.id}>
+                    <td className="peek-years"><EraYears span={span} /></td>
+                    <td data-label="Pos">{span.primaryPosition}</td>
+                    <td className="num" data-label="PTS">{span.box.ppg.toFixed(1)}</td>
+                    <td className="num" data-label="AST">{span.box.apg.toFixed(1)}</td>
+                    <td className="num" data-label="REB">{span.box.rpg.toFixed(1)}</td>
                     {hadStealsBlocksRecorded(span) ? (
                       <>
-                        <td className="num">{span.box.spg.toFixed(1)}</td>
-                        <td className="num">{span.box.bpg.toFixed(1)}</td>
+                        <td className="num" data-label="STL">{span.box.spg.toFixed(1)}</td>
+                        <td className="num" data-label="BLK">{span.box.bpg.toFixed(1)}</td>
                       </>
                     ) : (
                       <>
-                        <td className="num era-na" title={STEALS_BLOCKS_NOTE}>{NOT_YET}</td>
-                        <td className="num era-na" title={STEALS_BLOCKS_NOTE}>{NOT_YET}</td>
+                        <td className="num era-na" data-label="STL" title={STEALS_BLOCKS_NOTE}>{NOT_YET}</td>
+                        <td className="num era-na" data-label="BLK" title={STEALS_BLOCKS_NOTE}>{NOT_YET}</td>
                       </>
                     )}
-                    <td className="num">{(span.box.fgPct * 100).toFixed(1)}%</td>
+                    <td className="num" data-label="FG%">{(span.box.fgPct * 100).toFixed(1)}%</td>
                     {hadThreePointLine(span) ? (
-                      <td className="num">{(span.box.threePct * 100).toFixed(1)}%</td>
+                      <td className="num" data-label="3PT%">{(span.box.threePct * 100).toFixed(1)}%</td>
                     ) : (
-                      <td className="num era-na" title={THREE_POINT_LINE_NOTE}>{NOT_YET}</td>
+                      <td className="num era-na" data-label="3PT%" title={THREE_POINT_LINE_NOTE}>{NOT_YET}</td>
                     )}
-                    <td className="num">{(span.box.ftPct * 100).toFixed(1)}%</td>
-                    <td className="num">{span.fga.toFixed(1)}</td>
+                    <td className="num" data-label="FT%">{(span.box.ftPct * 100).toFixed(1)}%</td>
+                    <td className="num" data-label="Caps">{span.fga.toFixed(1)}</td>
                     {scouted && (
                       <>
-                        <td className="tier-cell">{overallTierForSpan(tierContextFor(span))}</td>
-                        <td><AtGrade grade={offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))} /></td>
-                        <td><AtGrade grade={defensiveGrade(computeDefensiveTalent(span))} /></td>
-                        <td><AtGrade grade={offensivePortabilityGrade(computeOffensivePortability(span))} /></td>
-                        <td><AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(span))} /></td>
-                        <td><AtGrade grade={spacingGrade(computeSpacing(span), span)} /></td>
-                        <td><AtGrade grade={durabilityGrade(computeDurability(span))} /></td>
+                        <td className="tier-cell peek-tier" data-label="Tier">{overallTierForSpan(tierContextFor(span))}</td>
+                        <td data-label="OFF"><AtGrade grade={offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))} /></td>
+                        <td data-label="DEF"><AtGrade grade={defensiveGrade(computeDefensiveTalent(span))} /></td>
+                        <td data-label="O-POR"><AtGrade grade={offensivePortabilityGrade(computeOffensivePortability(span))} /></td>
+                        <td data-label="D-POR"><AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(span))} /></td>
+                        <td data-label="SPC"><AtGrade grade={spacingGrade(computeSpacing(span), span)} /></td>
+                        <td data-label="DUR"><AtGrade grade={durabilityGrade(computeDurability(span))} /></td>
                       </>
                     )}
-                    <td>
-                      {inDraft ? (
-                        <button
-                          type="button"
-                          className="at-draft-btn"
-                          disabled={!legal}
-                          title={draftButtonTitle(state, span.id, canPick, currentTeam)}
-                          onClick={() => onPick(span.id)}
-                        >
-                          Draft
-                        </button>
-                      ) : null}
+                    <td className="peek-action">
+                      <button
+                        type="button"
+                        className="at-draft-btn"
+                        disabled={!legal}
+                        title={draftButtonTitle(state, span.id, canPick, currentTeam)}
+                        onClick={() => onPick(span.id)}
+                      >
+                        Draft
+                      </button>
                     </td>
                   </tr>
                 );

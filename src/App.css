@@ -5790,21 +5790,10 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   text-transform: uppercase;
   color: var(--at-good, #7fd68a);
 }
-.at-shell .player-peek-row--off td { color: var(--at-ink-faint); }
-.at-shell .player-peek-off-note {
-  font-size: 10.5px;
-  color: var(--at-ink-faint);
-  white-space: nowrap;
-}
 /* Room for every career window and, once scouted, seven more grade columns. */
 .at-shell .player-peek-card {
   width: min(1180px, 100%);
   max-height: min(720px, 88vh);
-}
-.at-shell .player-peek-note {
-  margin: -6px 0 10px;
-  font-size: 11.5px;
-  color: var(--at-ink-faint);
 }
 /* The close ✕ sits dead-centre in its circle (the glyph's own line box pushed it off-centre). */
 .at-shell .player-peek-close {
@@ -5813,4 +5802,52 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   padding: 0;
   font-size: 13px;
   line-height: 0;
+}
+
+/* 2026-09-25, user-reported live on a phone ("scouting report nie działa"): the report did apply,
+   but its grade columns sat far to the right behind the table's sideways scroll, under the
+   sticky Draft column. On a narrow screen each career window is now a small card — years and
+   Draft on top, then every stat (and, once scouted, tier + grades) as labelled cells. */
+@media (max-width: 640px) {
+  .at-shell .player-peek-card .at-draft-span-table thead { display: none; }
+  .at-shell .player-peek-card .at-draft-span-table,
+  .at-shell .player-peek-card .at-draft-span-table tbody { display: block; width: 100%; }
+  .at-shell .player-peek-card .at-draft-span-table tr {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px 6px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--at-line);
+  }
+  .at-shell .player-peek-card .at-draft-span-table td {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 0;
+    border: 0;
+    position: static;
+    background: none;
+    text-align: left;
+    font-size: 12.5px;
+  }
+  .at-shell .player-peek-card .at-draft-span-table td[data-label]::before {
+    content: attr(data-label);
+    font-size: 9.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--at-ink-faint);
+  }
+  .at-shell .player-peek-card .at-draft-span-table td.peek-years {
+    grid-column: 1 / 4;
+    order: -2;
+    justify-content: center;
+  }
+  .at-shell .player-peek-card .at-draft-span-table td.peek-action {
+    grid-column: 4 / 6;
+    order: -1;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .at-shell .player-peek-card .at-draft-span-table td.peek-tier { grid-column: span 2; }
 }
