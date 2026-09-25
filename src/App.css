@@ -5498,3 +5498,60 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-shell .at-lottery-actions > button {
   margin: 0;
 }
+
+/* 2026-09-25, user-reported live on a phone ("jeden kafelek oddzielnie brzydko wygląda"): the 7
+   score chips wrapped as a flex row, so whatever didn't fit (usually Rotation) sat alone on its
+   own line. Now an even grid of equal tiles — one row of 7 when the column is wide enough, 4 + 3
+   otherwise — with the label stacked over the number so every tile has the same width. Applies to
+   the hero's Team profile, each ranking card's chips and the share card. */
+.results-hero-scores,
+.team-result-body,
+.share-modal-card {
+  container-type: inline-size;
+}
+.results-hero-scores-row,
+.team-result-body .subscores,
+.share-modal-scores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+@container (min-width: 600px) {
+  .results-hero-scores-row,
+  .team-result-body .subscores,
+  .share-modal-scores {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+.results-hero-scores-row .score-chip,
+.team-result-body .subscores .score-chip,
+.share-modal-scores .score-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 5px 4px 6px;
+  text-align: center;
+}
+.results-hero-scores-row .score-chip-label,
+.team-result-body .subscores .score-chip-label,
+.share-modal-scores .score-chip-label {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.results-hero-scores-row .score-chip-value,
+.team-result-body .subscores .score-chip-value,
+.share-modal-scores .score-chip-value {
+  font-size: 17px;
+  line-height: 1.1;
+}
+.team-result-body .subscores .fga-spent {
+  grid-column: 1 / -1;
+  justify-self: start;
+}

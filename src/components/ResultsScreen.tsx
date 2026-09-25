@@ -745,7 +745,7 @@ function HeroResult({
           <span className="share-modal-face-group-label">Team profile</span>
           <div className="results-hero-scores-row">
             <ScoreChip label="Talent" value={Math.round(talentScore)} />
-            <ScoreChip label="Bench Depth" value={Math.round(benchDepthScore)} />
+            <ScoreChip label="Bench" value={Math.round(benchDepthScore)} />
             <ScoreChip label="Offense" value={Math.round(offenseScore)} />
             <ScoreChip label="Defense" value={Math.round(defenseScore)} />
             <ScoreChip label="Spacing" value={Math.round(spacingScore)} />
@@ -931,7 +931,7 @@ function ShareModal({
         )}
         <div className="share-modal-scores">
           <ScoreChip label="Talent" value={scores.talent} />
-          <ScoreChip label="Bench Depth" value={scores.benchDepth} />
+          <ScoreChip label="Bench" value={scores.benchDepth} />
           <ScoreChip label="Offense" value={scores.offense} />
           <ScoreChip label="Defense" value={scores.defense} />
           <ScoreChip label="Spacing" value={scores.spacing} />
@@ -2124,7 +2124,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
               <div className="team-result-body">
                 <div className="subscores">
                   <ScoreChip label="Talent" value={breakdown.talentScore} />
-                  <ScoreChip label="Bench Depth" value={breakdown.benchDepthScore} />
+                  <ScoreChip label="Bench" value={breakdown.benchDepthScore} />
                   <ScoreChip label="Offense" value={breakdown.offenseScore} />
                   <ScoreChip label="Defense" value={breakdown.defenseScore} />
                   <ScoreChip label="Spacing" value={breakdown.spacingScore} />
