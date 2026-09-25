@@ -99,3 +99,28 @@ export function boxRatesForSpan(
 }
 
 const SHARED_MAP = buildBoxRatesYearMap();
+
+/**
+ * 2026-09-25: league free-throw environment per season (FTA/FGA over every player in the export),
+ * for comparing free-throw volume across eras — the 1960s drew roughly half again as many free
+ * throws per shot as the 1990s. Clamped to 0.24-0.60: the late-1940s/early-1950s rows are too
+ * sparse to trust (1952 reads 1.5).
+ */
+const LEAGUE_FT_RATE_BY_END_YEAR = (() => {
+  const totals = new Map<number, { fta: number; fga: number }>();
+  for (const r of boxRates) {
+    const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
+    const t = totals.get(endYear) ?? { fta: 0, fga: 0 };
+    t.fta += r.fta;
+    t.fga += r.fga;
+    totals.set(endYear, t);
+  }
+  return new Map([...totals].map(([year, t]) => [year, Math.min(0.6, Math.max(0.24, t.fta / Math.max(1, t.fga)))]));
+})();
+
+/** Average league FTA/FGA over a span's seasons (0.29, the 1997+ norm, where a season is missing). */
+export function leagueFtRateForSpan(span: PlayerSpan): number {
+  const years = spanEndYears(span.spanLabel);
+  if (years.length === 0) return 0.29;
+  return years.reduce((sum, y) => sum + (LEAGUE_FT_RATE_BY_END_YEAR.get(y) ?? 0.29), 0) / years.length;
+}

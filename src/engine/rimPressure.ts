@@ -1,7 +1,7 @@
 import type { OffensiveArchetype, PlayerSpan } from '../data/schema';
 import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import { computeOffensiveProfile } from './offensiveProfile';
-import { boxRatesForSpan } from './boxRatesLookup';
+import { boxRatesForSpan, leagueFtRateForSpan } from './boxRatesLookup';
 
 /**
  * "Rim pressure" — how much a player forces the defense to send help at the rim / build its game
@@ -275,6 +275,73 @@ function dominantInteriorScorerFloor(span: PlayerSpan): number {
   return DOMINANT_SCORER_FLOOR;
 }
 
+/**
+ * 2026-09-25, user-confirmed ("trzeba poprawić tych przed 1997"): pre-1997 spans have no
+ * shot-location data, and the proxy below this used to gate to C/PF only — every pre-1997 guard
+ * and wing read exactly 0 (Jordan 1987-89, Drexler, Dr. J, Isiah, Dantley), which the fit score and
+ * the Draft Desk then read as "nobody gets to the rim."
+ *
+ * Box-score proxy, fitted on every 1997+ guard/wing span (where the zone-data read below is the
+ * truth): free throws drawn per game — the strongest single signal (r = 0.77), era-adjusted twice
+ * (pace, and the league's own FTA/FGA that season: the 1960s drew ~1.5x the free throws per shot the
+ * 1990s did) — plus pace-adjusted scoring and FG%. A linear fit compresses the top (LeBron's 89
+ * reads 54), so its score is mapped onto the real 1997+ distribution by quantile: the proxy's top
+ * 3% gets the real top 3%'s values. Fit R² 0.69, mean error 3.6. Known blind spot: a jump-shooter
+ * who draws fouls (Harden reads high) — free throws can't say where the foul happened.
+ *
+ * Regenerate `PERIMETER_PROXY_*` with `npx tsx scripts/buildPerimeterRimProxy.ts` (it prints them).
+ * Fit-only, like everything here: `rimPressure()` / TAL are untouched.
+ */
+const PERIMETER_PROXY_FT_RATE_REF = 0.29; // league FTA/FGA of the 1997+ training seasons
+const PERIMETER_PROXY_FTA_KNEE = 3; // era-adjusted FTA/g below this adds nothing
+export function perimeterRimFeatures(span: PlayerSpan): { fta: number; ppg: number; fg: number } | null {
+  const rates = boxRatesForSpan(span);
+  if (!rates) return null;
+  const pace = paceFactor(span);
+  return {
+    fta: rates.ftaPerGame * pace * (PERIMETER_PROXY_FT_RATE_REF / leagueFtRateForSpan(span)),
+    ppg: span.box.ppg * pace,
+    fg: span.box.fgPct,
+  };
+}
+export function perimeterRimScore(f: { fta: number; ppg: number; fg: number }, w: readonly number[] = PERIMETER_PROXY_WEIGHTS): number {
+  return w[0] + w[1] * Math.max(0, f.fta - PERIMETER_PROXY_FTA_KNEE) + w[2] * f.ppg + w[3] * f.fg;
+}
+// --- baked by scripts/buildPerimeterRimProxy.ts ---
+// 4100 guard/wing spans, 1997+
+const PERIMETER_PROXY_WEIGHTS = [-35.54, 6.161, 0.265, 79.572];
+const PERIMETER_PROXY_SCORE_RUNGS: number[] = [-8.719, -2.645, -1.63, -0.923, -0.314, 0.243, 0.745, 1.286, 1.786, 2.3, 2.849, 3.495, 4.202, 5.203, 6.451, 7.93, 10.62, 14.144, 19.482, 22.672, 26.099, 31.553, 35.357, 38.804, 42.113, 45.175, 47.67, 51.165, 52.248, 53.938, 58.032, 59.892, 66.71];
+const PERIMETER_PROXY_VALUE_RUNGS: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.045, 1.46, 3.466, 5.432, 7.73, 10.656, 14.855, 19.837, 23.007, 27.465, 34.753, 39.889, 45.97, 49.972, 54.32, 63.331, 74.798, 78.421, 82.956, 85.575, 90.736, 95.674];
+// --- end baked ---
+/**
+ * User's call, 2026-09-25 ("Jordan powinien być blisko 100 szczerze"): the box proxy puts Jordan
+ * 1986-93 at 42-81 — on par with Wade 2008-10 (79), the closest real profiles being LeBron 2008-10
+ * (89), Wade, Durant and SGA — held down by the 1980s' higher league free-throw rate. The user rates
+ * the Bulls-era Jordan as a rim attacker near the very top, so these spans get a floor. Only the
+ * pre-1997 spans: 1995-98 have real shot-location data (14-30, a mid-range scorer by then).
+ */
+const NAMED_PERIMETER_RIM_FLOOR: Record<string, number> = {
+  'Michael Jordan': 95,
+};
+function perimeterRimProxy(span: PlayerSpan): number {
+  return Math.max(perimeterRimProxyModel(span), NAMED_PERIMETER_RIM_FLOOR[span.playerName] ?? 0);
+}
+function perimeterRimProxyModel(span: PlayerSpan): number {
+  const f = perimeterRimFeatures(span);
+  if (!f) return 0;
+  const score = perimeterRimScore(f);
+  const S = PERIMETER_PROXY_SCORE_RUNGS;
+  const V = PERIMETER_PROXY_VALUE_RUNGS;
+  if (score <= S[0]) return V[0];
+  for (let i = 1; i < S.length; i++) {
+    if (score <= S[i]) {
+      const t = S[i] === S[i - 1] ? 1 : (score - S[i - 1]) / (S[i] - S[i - 1]);
+      return V[i - 1] + t * (V[i] - V[i - 1]);
+    }
+  }
+  return V[V.length - 1];
+}
+
 export function rimPressureForFit(span: PlayerSpan): number {
   const prof = computeOffensiveProfile(span);
   let base: number;
@@ -299,9 +366,12 @@ export function rimPressureForFit(span: PlayerSpan): number {
       );
     }
   } else {
-    // pre-1997: no shot-location data to improve on — fall back to the existing archetype-gated
-    // proxy, which already gates to C/PF, then apply the dominant-interior-scorer floor.
-    base = Math.max(rimPressure(span), dominantInteriorScorerFloor(span));
+    // pre-1997: no shot-location data to improve on — bigs keep the existing archetype-gated
+    // proxy plus the dominant-interior-scorer floor; guards and wings get the box-score proxy
+    // above (they used to read a flat 0).
+    base = span.primaryPosition === 'C' || span.primaryPosition === 'PF'
+      ? Math.max(rimPressure(span), dominantInteriorScorerFloor(span))
+      : perimeterRimProxy(span);
   }
   const isBig = span.primaryPosition === 'C' || span.primaryPosition === 'PF';
   return isBig ? bigPositionalFloor(base) : base;
