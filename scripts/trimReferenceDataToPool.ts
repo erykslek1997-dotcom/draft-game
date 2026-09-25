@@ -23,25 +23,25 @@
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { draftPool } from '../src/data/draftPool';
 import { normalizePlayerName } from '../src/data/schema';
+import { resolveSourceName, seasonEndYearOf } from '../src/data/sourceNameResolver';
 
 const poolNames = new Set(draftPool.map((p) => normalizePlayerName(p.playerName)));
-// The pool de-dup made "Ron Artest" his single canonical span name, but DARKO/RAPTOR/BPM2 key
-// him only as "Metta World Peace" -- add that source name so his rows survive the trim (the
-// runtime alias in blendedDefenseLookup.ts then resolves the span back to it). Same one entry
-// availabilityLookup/pipmLookup already carry.
-poolNames.add(normalizePlayerName('Metta World Peace'));
+// 2026-09-25: rows are matched through `resolveSourceName` (src/data/sourceNameResolver.ts), the
+// same resolver the runtime lookups use — so "Metta World Peace", "Jimmy Butler III", "Enes Kanter",
+// "Larry Nance Sr." etc. survive the trim under the pool player they belong to.
 console.log('draft pool: unique normalized names:', poolNames.size);
 
-function trim(srcPath: string, outPath: string, nameField: string, retainedFields?: string[]) {
+function trim(srcPath: string, outPath: string, nameField: string, retainedFields?: string[], compact = false) {
+  const keyOf = (r: Record<string, unknown>) => resolveSourceName(String(r[nameField]), seasonEndYearOf(String(r.season)));
   const raw = JSON.parse(readFileSync(srcPath, 'utf8')) as Record<string, unknown>[];
   const before = raw.length;
-  const beforeNames = new Set(raw.map((r) => normalizePlayerName(String(r[nameField]))));
+  const beforeNames = new Set(raw.map(keyOf));
 
-  const matched = raw.filter((r) => poolNames.has(normalizePlayerName(String(r[nameField]))));
+  const matched = raw.filter((r) => poolNames.has(keyOf(r)));
   const trimmed = retainedFields
     ? matched.map((row) => Object.fromEntries(retainedFields.map((field) => [field, row[field]])))
     : matched;
-  const afterNames = new Set(trimmed.map((r) => normalizePlayerName(String(r[nameField]))));
+  const afterNames = new Set(matched.map(keyOf));
 
   // Coverage-preservation check: every pool player who had ANY row in the source must still
   // have their full set of rows after trimming — this only drops rows for players who can
@@ -54,15 +54,15 @@ function trim(srcPath: string, outPath: string, nameField: string, retainedField
     }
   }
   for (const name of afterNames) {
-    const beforeCount = raw.filter((r) => normalizePlayerName(String(r[nameField])) === name).length;
-    const afterCount = trimmed.filter((r) => normalizePlayerName(String(r[nameField])) === name).length;
+    const beforeCount = raw.filter((r) => keyOf(r) === name).length;
+    const afterCount = matched.filter((r) => keyOf(r) === name).length;
     if (beforeCount !== afterCount) {
       console.log(`  ROW COUNT MISMATCH for ${name}: before=${beforeCount} after=${afterCount}`);
       coverageOk = false;
     }
   }
 
-  writeFileSync(outPath, JSON.stringify(trimmed, null, 1));
+  writeFileSync(outPath, compact ? `${JSON.stringify(trimmed)}\n` : JSON.stringify(trimmed, null, 1));
   const beforeBytes = statSync(srcPath).size;
   const afterBytes = statSync(outPath).size;
   console.log(
@@ -87,7 +87,10 @@ const ok6 = trim(
   ['name', 'season', 'dbpm', 'bpm'],
 );
 
-if (!ok1 || !ok2 || !ok3 || !ok4 || !ok5 || !ok6) {
+// Compact, like extractPlayoffBpm2.ts writes it (that script needs the external master CSV).
+const ok7 = trim('src/data/awards/bpm2Playoffs.json', 'src/data/awards/bpm2Playoffs.pool.json', 'name', undefined, true);
+
+if (!ok1 || !ok2 || !ok3 || !ok4 || !ok5 || !ok6 || !ok7) {
   console.log('\nFAIL — do not point the lookup files at the .pool.json outputs');
   process.exit(1);
 }

@@ -33,6 +33,7 @@
  */
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import salaries from '../data/awards/salaries.json';
 import draftHistory from '../data/awards/draftHistory.json';
 import { draftPool } from '../data/draftPool';
@@ -97,7 +98,7 @@ const TIER_MARKET_USD: Record<OverallTier, number> = {
 /** normalized player name -> { pick, draftYear } from the committed draft-history table. */
 const draftInfoByName = new Map<string, { pick: number; year: number }>();
 for (const row of draftHistory as { name: string; season: string; overallPick: number }[]) {
-  const key = normalizePlayerName(row.name);
+  const key = resolveSourceName(row.name);
   if (!key || draftInfoByName.has(key)) continue;
   const year = parseInt(row.season, 10);
   if (row.overallPick > 0 && Number.isFinite(year)) {

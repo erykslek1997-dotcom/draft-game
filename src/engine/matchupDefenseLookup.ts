@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
 // .pool.json is matchupDefense.json trimmed to only players who ever appear in draftPool.json,
 // same pattern as darkoLookup.ts/raptorLookup.ts/pipmLookup.ts's own trims.
@@ -35,8 +36,8 @@ const matchupDefense = matchupDefenseData as MatchupDefenseRow[];
 export function buildMatchupDefenseYearMap(): Map<string, Map<number, number>> {
   const byNameYear = new Map<string, Map<number, number>>();
   for (const r of matchupDefense) {
-    const key = normalizePlayerName(r.name);
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
+    const key = resolveSourceName(r.name, endYear);
     let yearMap = byNameYear.get(key);
     if (!yearMap) {
       yearMap = new Map();

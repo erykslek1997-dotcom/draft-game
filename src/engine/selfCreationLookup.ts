@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
 import selfCreationData from '../data/awards/selfCreation.json';
 
@@ -52,8 +53,8 @@ export function buildSelfCreationYearMap(field: SelfCreationField): Map<string, 
     if (rate === null) continue;
     const weight = field === 'unassisted3Pt' ? r.threePointersMade : r.fieldGoalsMade;
     if (weight < minMakes) continue;
-    const key = normalizePlayerName(r.name);
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
+    const key = resolveSourceName(r.name, endYear);
     let yearMap = byNameYear.get(key);
     if (!yearMap) {
       yearMap = new Map();

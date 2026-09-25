@@ -1,4 +1,5 @@
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import careerAveragesData from '../data/careerAverages.json';
 
 /** Mirrors `scripts/buildCareerAverages.ts`'s own `CareerAverageRow` shape — duplicated rather
@@ -31,17 +32,8 @@ export interface CareerAverageRow {
 const rows = careerAveragesData as CareerAverageRow[];
 
 const byName = new Map<string, CareerAverageRow>();
-for (const r of rows) byName.set(normalizePlayerName(r.name), r);
+for (const r of rows) byName.set(resolveSourceName(r.name), r);
 
-/** Same curated-vs-source name mismatches `availabilityLookup.ts` already documents and
- * resolves — kept in sync with that file's own `NAME_ALIASES` rather than re-deriving it. */
-const NAME_ALIASES: Record<string, string> = {
-  'ron artest': 'Metta World Peace',
-};
-for (const [from, to] of Object.entries(NAME_ALIASES)) {
-  const target = byName.get(normalizePlayerName(to));
-  if (target) byName.set(normalizePlayerName(from), target);
-}
 
 export function careerAveragesFor(playerName: string): CareerAverageRow | null {
   return byName.get(normalizePlayerName(playerName)) ?? null;

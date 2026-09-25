@@ -14,6 +14,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { draftPool } from '../src/data/draftPool';
+import { resolveSourceName, seasonEndYearOf } from '../src/data/sourceNameResolver';
 import { normalizePlayerName } from '../src/data/schema';
 
 const MASTER_FILE =
@@ -106,7 +107,8 @@ for (const source of parsed) {
 }
 
 const poolNames = new Set(draftPool.map((span) => normalizePlayerName(span.playerName)));
-const poolRows = rows.filter((row) => poolNames.has(normalizePlayerName(row.name)));
+// Same resolver as the runtime lookups and trimReferenceDataToPool.ts ("Jimmy Butler III" etc.).
+const poolRows = rows.filter((row) => poolNames.has(resolveSourceName(row.name, seasonEndYearOf(row.season))));
 
 writeFileSync('src/data/awards/bpm2Playoffs.json', `${JSON.stringify(rows, null, 2)}\n`);
 writeFileSync('src/data/awards/bpm2Playoffs.pool.json', `${JSON.stringify(poolRows)}\n`);

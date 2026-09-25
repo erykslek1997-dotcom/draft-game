@@ -1,6 +1,7 @@
 import allNbaData from '../data/awards/allNba.json';
 import allStarsData from '../data/awards/allStars.json';
 import { normalizeAwardName } from './allStarLookup';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
 
 /**
@@ -33,11 +34,12 @@ interface AllStarRow {
 
 const validated = new Set<string>();
 for (const r of allStarsData as AllStarRow[]) {
-  if (r.count > 0) validated.add(normalizeAwardName(r.name));
+  if (r.count > 0) validated.add(resolveSourceName(normalizeAwardName(r.name)));
 }
 for (const s of allNbaData as AllNbaSeason[]) {
+  const endYear = parseInt(s.season.slice(0, 4), 10) + 1;
   for (const tier of s.tiers) {
-    for (const n of tier) validated.add(normalizeAwardName(n));
+    for (const n of tier) validated.add(resolveSourceName(normalizeAwardName(n), endYear));
   }
 }
 
@@ -52,7 +54,7 @@ for (const s of allNbaData as { season: string; tiers: string[][] }[]) {
   const endYear = parseInt(s.season.slice(0, 4), 10) + 1;
   for (const tier of s.tiers) {
     for (const n of tier) {
-      const k = normalizeAwardName(n);
+      const k = resolveSourceName(normalizeAwardName(n), endYear);
       let set = allNbaEndYears.get(k);
       if (!set) allNbaEndYears.set(k, (set = new Set()));
       set.add(endYear);

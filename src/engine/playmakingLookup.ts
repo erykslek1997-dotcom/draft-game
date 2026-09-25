@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName, seasonEndYearOf } from '../data/sourceNameResolver';
 import playmakingData from '../data/awards/playmaking.json';
 
 /**
@@ -21,7 +22,7 @@ const rows = playmakingData as PlaymakingRow[];
 
 const byName = new Map<string, PlaymakingRow>();
 for (const r of rows) {
-  const key = normalizePlayerName(r.name);
+  const key = resolveSourceName(r.name, seasonEndYearOf(r.selectedSeason));
   // A few players appear more than once across export revisions in principle — keep the
   // higher score if that ever happens, rather than an arbitrary last-write-wins.
   const existing = byName.get(key);

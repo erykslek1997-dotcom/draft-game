@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import usageData from '../data/awards/usage.json';
 import { spanEndYears } from './era';
 
@@ -25,13 +26,13 @@ const rows = usageData as UsageRow[];
 const byNameYear = new Map<string, Map<number, UsageRow>>();
 
 for (const row of rows) {
-  const name = normalizePlayerName(row.name);
   // row.season is "YYYY-YY" in START-year form (e.g. "2005-06"); spanEndYears works in END-year
   // form (e.g. spanLabel "2005-07" -> [2006, 2007]) — convert once here so lookups below are a
   // plain year-keyed map, matching playoffBpm2Lookup.ts's own convention.
   const startYear = Number(row.season.slice(0, 4));
   if (!Number.isFinite(startYear)) continue;
   const endYear = startYear + 1;
+  const name = resolveSourceName(row.name, endYear);
   const yearMap = byNameYear.get(name) ?? new Map<number, UsageRow>();
   yearMap.set(endYear, row);
   byNameYear.set(name, yearMap);

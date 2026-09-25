@@ -1,7 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
-import { applySourceNameAliases } from '../data/sourceNameAliases';
 import boxRatesData from '../data/awards/boxRates.json';
 
 /**
@@ -40,8 +40,8 @@ const boxRates = boxRatesData as BoxRateRow[];
 export function buildBoxRatesYearMap(): Map<string, Map<number, BoxRateRow>> {
   const byNameYear = new Map<string, Map<number, BoxRateRow>>();
   for (const r of boxRates) {
-    const key = normalizePlayerName(r.name);
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
+    const key = resolveSourceName(r.name, endYear);
     let yearMap = byNameYear.get(key);
     if (!yearMap) {
       yearMap = new Map();
@@ -49,7 +49,6 @@ export function buildBoxRatesYearMap(): Map<string, Map<number, BoxRateRow>> {
     }
     yearMap.set(endYear, r);
   }
-  applySourceNameAliases(byNameYear);
   return byNameYear;
 }
 

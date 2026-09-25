@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
 import availabilityData from '../data/awards/availability.json';
 
@@ -24,29 +25,12 @@ interface AvailabilityRow {
 }
 const rows = availabilityData as AvailabilityRow[];
 
-/**
- * Players the hand-typed curated rows in `players.ts` name differently from the source export.
- * `normalizePlayerName` only strips accents and case, so a legal name change is invisible to it.
- *
- * This is the complete list, not a sample: the generated and curated-expanded spans are built
- * *from* this same source so they match by construction, leaving only the ~120 hand-typed rows
- * able to disagree — and a full sweep found exactly one (`scripts/checkDurabilityTargets.ts`
- * reports any that appear later as unrated spans).
- */
-const NAME_ALIASES: Record<string, string> = {
-  'ron artest': 'Metta World Peace',
-};
-
 const byName = new Map<string, AvailabilityRow[]>();
 for (const r of rows) {
-  const key = normalizePlayerName(r.name);
+  const key = resolveSourceName(r.name, r.endYear + 1);
   const list = byName.get(key);
   if (list) list.push(r);
   else byName.set(key, [r]);
-}
-for (const [from, to] of Object.entries(NAME_ALIASES)) {
-  const target = byName.get(normalizePlayerName(to));
-  if (target) byName.set(normalizePlayerName(from), target);
 }
 
 export interface AvailabilityEntry {

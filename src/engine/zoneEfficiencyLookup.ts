@@ -1,7 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
-import { applySourceNameAliases } from '../data/sourceNameAliases';
 import zoneData from '../data/awards/zoneEfficiency.json';
 
 /**
@@ -24,8 +24,8 @@ const zone = zoneData as ZoneRow[];
 export function buildZoneYearMap(): Map<string, Map<number, ZoneRow>> {
   const byNameYear = new Map<string, Map<number, ZoneRow>>();
   for (const r of zone) {
-    const key = normalizePlayerName(r.name);
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
+    const key = resolveSourceName(r.name, endYear);
     let yearMap = byNameYear.get(key);
     if (!yearMap) {
       yearMap = new Map();
@@ -33,7 +33,6 @@ export function buildZoneYearMap(): Map<string, Map<number, ZoneRow>> {
     }
     yearMap.set(endYear, r);
   }
-  applySourceNameAliases(byNameYear);
   return byNameYear;
 }
 

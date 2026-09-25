@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
 import allDefenseData from '../data/awards/allDefense.json';
 import dpoyData from '../data/awards/dpoy.json';
@@ -45,22 +46,14 @@ const ALL_D_SECOND_WEIGHT = 0.45;
  * (SG, 1996-2000). The per-year overlap check meant this silently cost Jr. his two 1st-team
  * selections rather than mis-crediting Sr., but it did cost them — his D-TAL was reading as a
  * non-DPOY defender. */
-const AWARD_NAME_ALIASES: Record<string, string> = {
-  'jaren jackson': 'Jaren Jackson Jr.',
-  'andriej kirilenko': 'Andrei Kirilenko',
-  'lew alcindor': 'Kareem Abdul-Jabbar',
-  'wayne rollins': 'Tree Rollins',
-  'don watts': 'Slick Watts',
-  'george t. johnson': 'George Johnson',
-  'micheal ray richardson': 'Michael Ray Richardson',
-};
 
 /** Both award exports carry a trailing "()" on many rows — an extraction artifact from the
  * source tables' footnote markers ("Walt Frazier ()"). Left unstripped it silently dropped ~25
  * selections, including Kareem's, Pippen's, Ewing's and Wade's. */
-function awardKey(name: string): string {
-  const cleaned = normalizePlayerName(name.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' '));
-  return normalizePlayerName(AWARD_NAME_ALIASES[cleaned] ?? cleaned);
+function awardKey(name: string, seasonEndYear?: number): string {
+  // Source names resolve to the pool's key for that season (`sourceNameResolver.ts` — it also
+  // carries this file's old aliases: Jaren Jackson Jr., Kirilenko, Alcindor, Tree Rollins, ...).
+  return resolveSourceName(name.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim(), seasonEndYear);
 }
 
 const allDefenseRows = allDefenseData as { season: string; tiers: string[][] }[];
@@ -71,7 +64,7 @@ for (const row of allDefenseRows) {
   const endYear = parseInt(row.season.slice(0, 4), 10) + 1;
   row.tiers.forEach((tier, index) => {
     for (const name of tier) {
-      const key = awardKey(name);
+      const key = awardKey(name, endYear);
       let years = tierByNameYear.get(key);
       if (!years) {
         years = new Map();
@@ -85,7 +78,7 @@ for (const row of allDefenseRows) {
 const dpoyYearsByName = new Map<string, Set<number>>();
 for (const row of dpoyData as { season: string; name: string }[]) {
   const endYear = parseInt(row.season.slice(0, 4), 10) + 1;
-  const key = awardKey(row.name);
+  const key = awardKey(row.name, endYear);
   let years = dpoyYearsByName.get(key);
   if (!years) {
     years = new Set();
