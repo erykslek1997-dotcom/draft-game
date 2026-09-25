@@ -205,3 +205,30 @@ const ARCHETYPE_DISPLAY_NAMES: Record<ChampionshipArchetype, string> = {
 export function archetypeDisplayName(archetype: ChampionshipArchetype | string): string {
   return ARCHETYPE_DISPLAY_NAMES[archetype as ChampionshipArchetype] ?? archetype;
 }
+
+/**
+ * 2026-09-25, user-reported live ("dlaczego dostał tak po dupie w defense" / "nie rozumiem niskiej
+ * oceny w defense jeśli jest tag DEFENSE FIRST"): 'Defensive superteam' is picked from defensive
+ * ROLE counts (enough perimeter stoppers + rim anchors), while the Defense score reads how GOOD
+ * those defenders are — a roster with every role filled by average defenders got "Defense-first"
+ * next to a Defense score in the 60s. The style tag now needs the score to back it: below
+ * `DEFENSE_FIRST_MIN_SCORE` the tag is dropped and the next style moves up. Its risk line
+ * described the dropped style, so it goes too.
+ */
+export const DEFENSE_FIRST_MIN_SCORE = 75;
+
+export function teamStyleFor(
+  primary: ChampionshipArchetype | undefined,
+  secondary: ChampionshipArchetype | undefined,
+  failureMode: string | null,
+  defenseScore: number,
+): { label: string | null; failureMode: string | null } {
+  const backed = (a: ChampionshipArchetype | undefined) => (a === 'Defensive superteam' && defenseScore < DEFENSE_FIRST_MIN_SCORE ? undefined : a);
+  const p = backed(primary);
+  const s = backed(secondary);
+  const shown = [p, s].filter((a): a is ChampionshipArchetype => a !== undefined);
+  return {
+    label: shown.length > 0 ? shown.map(archetypeDisplayName).join(' + ') : null,
+    failureMode: p === primary ? failureMode : null,
+  };
+}

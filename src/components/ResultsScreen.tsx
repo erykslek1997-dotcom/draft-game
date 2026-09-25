@@ -26,7 +26,7 @@ import { generateRosterInsights, insightContextFor } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
-import { archetypeDisplayName } from '../engine/championshipArchetype';
+import { archetypeDisplayName, DEFENSE_FIRST_MIN_SCORE, teamStyleFor } from '../engine/championshipArchetype';
 import { type FeedbackEntry } from './FeedbackToggle';
 // 2026-08-16, user's own ask ("dodasz to też na ostatni ekran ocen?"): reuses the exact same
 // hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
@@ -359,6 +359,7 @@ function HeroResult({
   draftSeed,
   identity,
   failureMode,
+  weakDefenders,
   starters,
   roster,
   challenger,
@@ -386,6 +387,7 @@ function HeroResult({
   draftSeed: number;
   identity: string | null;
   failureMode: string | null;
+  weakDefenders: { name: string; dtal: number; minutes: number }[];
   starters: ShareCardStarter[];
   roster: ShareRosterRow[];
   /** 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest empty
@@ -768,6 +770,17 @@ function HeroResult({
                 <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
                 <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
                 <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
+                {weakDefenders.length > 0 && (
+                  <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down.">
+                    Weakest links:{' '}
+                    {weakDefenders.map((row, i) => (
+                      <span key={row.name}>
+                        {i > 0 && ' · '}
+                        <b>{shortenName(row.name)}</b> D-TAL {row.dtal} ({row.minutes} min)
+                      </span>
+                    ))}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -1694,6 +1707,8 @@ function RotationColumns({
   );
 }
 
+/** Rotation players below this D-TAL are named under the hero's Defense details. */
+const WEAK_DEFENDER_DTAL = 50;
 /** Below this many minutes at a slot, a non-starter is shown on the column's spot line. */
 const SPOT_MINUTES = 6;
 
@@ -1903,6 +1918,32 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked?.team.id, scoredTeams],
   );
+  const heroStyle = teamStyleFor(
+    heroFit?.inputs.primaryArchetype,
+    heroFit?.inputs.secondaryArchetype,
+    heroFit?.inputs.archetypeReport?.failureMode ?? null,
+    heroRanked?.breakdown.defenseScore ?? 0,
+  );
+  // 2026-09-25, user-reported live ("super skład, dlaczego dostał tak po dupie w defense?"): the
+  // Defense score is a minutes-weighted D-TAL average, so one or two weak defenders playing big
+  // minutes drag it down — and nothing on screen said who. Rotation players (15+ min) under
+  // `WEAK_DEFENDER_DTAL`, weakest first, at most two.
+  const heroWeakDefenders = useMemo(() => {
+    if (!heroRanked) return [];
+    const minutes = new Map<string, { player: ResolvedSlotAssignment['player']; minutes: number }>();
+    for (const entry of allAssignments(displayTeam(heroRanked.team))) {
+      const row = minutes.get(entry.player.id) ?? { player: entry.player, minutes: 0 };
+      row.minutes += entry.minutes;
+      minutes.set(entry.player.id, row);
+    }
+    return [...minutes.values()]
+      .filter((row) => row.minutes >= 15)
+      .map((row) => ({ name: row.player.playerName, dtal: Math.round(computeDefensiveTalent(row.player)), minutes: Math.round(row.minutes) }))
+      .filter((row) => row.dtal < WEAK_DEFENDER_DTAL)
+      .sort((a, b) => a.dtal - b.dtal)
+      .slice(0, 2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroRanked?.team.id, scoredTeams]);
   // 2026-09-16, user-reported live ("zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn
   // z pozycjami i minutami"): the hero's own "Starting five"/"Bench" split named a player's
   // CARD position (their primary position for bench rows — see `heroRoster` above), not which
@@ -2120,13 +2161,9 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           draftSeed={draftSeed}
           challenger={challenger}
           seasonSimSlot={seasonSimSlot}
-          identity={
-            heroFit?.inputs.primaryArchetype
-              ? archetypeDisplayName(heroFit.inputs.primaryArchetype) +
-                (heroFit.inputs.secondaryArchetype ? ` + ${archetypeDisplayName(heroFit.inputs.secondaryArchetype)}` : '')
-              : null
-          }
-          failureMode={heroFit?.inputs.archetypeReport?.failureMode ?? null}
+          identity={heroStyle.label}
+          failureMode={heroStyle.failureMode}
+          weakDefenders={heroWeakDefenders}
           starters={heroStarters}
           roster={heroRoster}
         />
@@ -2272,14 +2309,22 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     moved up here next to the tags it's actually describing. */}
                 {fitDetail && fitDetail.inputs.championshipArchetypes.length > 0 && (
                   <div className="identity-chip-row">
-                    {fitDetail.inputs.championshipArchetypes.map((entry, i) => (
-                      <span key={entry.archetype} className={`identity-chip ${i > 0 ? 'identity-chip-secondary' : ''}`}>
-                        {archetypeDisplayName(entry.archetype)}
-                      </span>
-                    ))}
-                    {fitDetail.inputs.archetypeReport?.failureMode && (
-                      <span className="identity-risk">main risk: {fitDetail.inputs.archetypeReport.failureMode}</span>
-                    )}
+                    {fitDetail.inputs.championshipArchetypes
+                      .filter((entry) => entry.archetype !== 'Defensive superteam' || breakdown.defenseScore >= DEFENSE_FIRST_MIN_SCORE)
+                      .map((entry, i) => (
+                        <span key={entry.archetype} className={`identity-chip ${i > 0 ? 'identity-chip-secondary' : ''}`}>
+                          {archetypeDisplayName(entry.archetype)}
+                        </span>
+                      ))}
+                    {(() => {
+                      const risk = teamStyleFor(
+                        fitDetail.inputs.primaryArchetype,
+                        fitDetail.inputs.secondaryArchetype,
+                        fitDetail.inputs.archetypeReport?.failureMode ?? null,
+                        breakdown.defenseScore,
+                      ).failureMode;
+                      return risk && <span className="identity-risk">main risk: {risk}</span>;
+                    })()}
                   </div>
                 )}
                 {fitDetail && (
