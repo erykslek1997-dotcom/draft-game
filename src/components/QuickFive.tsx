@@ -376,6 +376,7 @@ function QuickDraftBoard({
               slotsLeft={budget.slotsLeft}
               maxThisPick={budget.maxThisPick}
               priciestAvailable={priciestAvailable}
+              capTotal={QUICK_CAP_LIMIT}
             />
           </div>
         )}

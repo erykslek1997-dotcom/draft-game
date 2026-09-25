@@ -138,6 +138,21 @@ export function LeaveDraftDialog({ text, onStay, onLeave }: { text: string; onSt
  * and fill the rest with the cheapest bodies in the pool. It now leads with what's left and the
  * even split across the remaining picks; the hard maximum is only a quiet footnote.
  */
+/** 2026-09-25, user's ask ("rundy 1-4 mogą być od siebie zależne… w pierwszej rundzie 'pick smart,
+ * but don't look at the cost', i później opis w zależności co wybraliśmy"): while the per-pick
+ * ceiling still rules nobody out, a short read on how you've been spending instead — measured
+ * against an even split of the cap over the whole draft. */
+function pacingHint(capTotal: number | undefined, capLeft: number, rounds: number, slotsLeft: number): string | null {
+  if (capTotal == null) return null;
+  const picksMade = rounds - slotsLeft;
+  if (picksMade <= 0) return 'pick smart — the cost doesn’t matter yet';
+  const evenShare = capTotal / rounds;
+  const spentPerPick = (capTotal - capLeft) / picksMade;
+  if (spentPerPick > evenShare * 1.25) return 'you’ve spent big — cheaper picks will have to follow';
+  if (spentPerPick < evenShare * 0.8) return 'you’ve saved caps — room for another star';
+  return 'right on pace — keep mixing stars and value';
+}
+
 export function TurnBudgetText({
   round,
   rounds,
@@ -145,6 +160,7 @@ export function TurnBudgetText({
   slotsLeft,
   maxThisPick,
   priciestAvailable,
+  capTotal,
 }: {
   round: number;
   rounds: number;
@@ -155,8 +171,11 @@ export function TurnBudgetText({
    * mentioning once it's below that — early on "can cost up to 78.6" rules nobody out and just
    * reads as noise (user-reported live: "78.6 nadal trochę dziwnie"). */
   priciestAvailable?: number;
+  /** The whole cap, for the early-round pacing hint. */
+  capTotal?: number;
 }) {
   const ceilingMatters = priciestAvailable == null || maxThisPick < priciestAvailable;
+  const hint = ceilingMatters ? null : pacingHint(capTotal, capLeft, rounds, slotsLeft);
   const perPick = (slotsLeft > 0 ? capLeft / slotsLeft : capLeft).toFixed(1);
   const left = capLeft.toFixed(1);
   return (
@@ -172,6 +191,7 @@ export function TurnBudgetText({
           {ceilingMatters && (
             <span className="at-your-turn-reserve"> · this pick can cost up to {maxThisPick.toFixed(1)}</span>
           )}
+          {hint && <span className="at-your-turn-reserve"> · {hint}</span>}
         </>
       )}
     </span>
