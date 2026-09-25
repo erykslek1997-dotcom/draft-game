@@ -6015,9 +6015,11 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-shell .at-board-toggle,
 .at-shell .at-filter-pill,
 .at-shell .retro-btn {
-  border: 1px solid #243246;
-  background: linear-gradient(180deg, #121b28, #0b111a);
-  color: #b9c7da;
+  /* Playtester: on a darker monitor the old #243246 edge vanished — the pills didn't read as
+     buttons. A clearly visible steel-blue edge and slightly brighter lettering. */
+  border: 1px solid #4a6384;
+  background: linear-gradient(180deg, #152032, #0d1420);
+  color: #d0dbe9;
   box-shadow:
     inset 0 0 0 2px rgba(5, 7, 12, 0.9),
     inset 0 0 0 3px rgba(255, 255, 255, 0.05),
@@ -6029,7 +6031,7 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-shell .at-board-toggle:hover,
 .at-shell .at-filter-pill:hover,
 .at-shell .retro-btn:hover {
-  border-color: #3b5373;
+  border-color: #7a9cc6;
   color: #eef4fb;
 }
 .at-shell .at-tab-btn.at-active,
