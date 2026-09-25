@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
@@ -620,7 +621,8 @@ function recognitionCeiling(span: PlayerSpan, accoladeRate: number): number {
   return NO_RECOGNITION_DTAL_CEILING + (100 - NO_RECOGNITION_DTAL_CEILING) * Math.min(1, accoladeRate / RECOGNITION_FULL_RATE);
 }
 
-export function computeDefensiveTalent(span: PlayerSpan): number {
+export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
   const cached = defensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const accoladeRate = individualDefenseRate(span);

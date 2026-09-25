@@ -1,4 +1,5 @@
 import type { Position, PlayerSpan } from '../data/schema';
+import { ratingSpan } from './ratingPosition';
 import { precomputedEffectiveTalent, precomputedSThreshold } from './precomputedTiers';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
@@ -1424,7 +1425,8 @@ export function displayNumberForSpan(span: PlayerSpan, ctx: TierGateContext): nu
  * re-exports this for its own and `DraftPoolBrowser.tsx`'s existing call sites — no behavior
  * change there, purely a move.
  */
-export function tierContextFor(span: PlayerSpan): TierGateContext {
+export function tierContextFor(rawSpan: PlayerSpan): TierGateContext {
+  const span = ratingSpan(rawSpan);
   const playoffBpm = playoffBpm2ForSpan(span);
   return {
     position: span.primaryPosition,
