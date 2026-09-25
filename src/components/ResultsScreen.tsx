@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown } from '../engine/scoring';
+import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { PLAYOFF_TEAM_COUNT, simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
@@ -21,7 +21,7 @@ import { computeDurability } from '../engine/durability';
 import { projectedNetRating } from '../engine/netRatingProjection';
 import { fitScore, type FitScoreResult } from '../engine/fit';
 import { defensiveHuntability } from '../engine/defensiveHuntability';
-import { generateRosterInsights } from '../engine/insights';
+import { generateRosterInsights, insightContextFor } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
@@ -1579,12 +1579,16 @@ function RotationColumns({
 function ResultsVerdict({
   team,
   rank,
+  fieldSize,
+  breakdown,
   scores,
   onNewDraft,
   onRematch,
   onMenu,
 }: {
   team: Team;
+  fieldSize: number;
+  breakdown: ScoreBreakdown;
   /** Final ranking place — the card's tone follows it (2026-09-24, user-reported live: "wygrałem,
    * czy jest sens żeby mnie pouczało?" — a champion got a "what held you back" list and a
    * "Next draft:" lecture). 1st: why you won + the one thing a rival could exploit, no advice.
@@ -1595,7 +1599,10 @@ function ResultsVerdict({
   onRematch?: () => void;
   onMenu: () => void;
 }) {
-  const insights = useMemo(() => generateRosterInsights(buildTeamFeatureSnapshot(team)), [team]);
+  const insights = useMemo(
+    () => generateRosterInsights(buildTeamFeatureSnapshot(team), undefined, insightContextFor(breakdown, rank, fieldSize)),
+    [team, breakdown, rank, fieldSize],
+  );
   const won = rank === 1;
   const contender = rank > 1 && rank <= 4;
   const strengths = insights.strengths.slice(0, won ? 3 : 2);
@@ -2007,6 +2014,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         <ResultsVerdict
           team={displayTeam(heroRanked.team)}
           rank={heroRanked.rank}
+          fieldSize={ranked.length}
+          breakdown={heroRanked.breakdown}
           scores={{
             Talent: heroRanked.breakdown.talentScore,
             'Bench Depth': heroRanked.breakdown.benchDepthScore,
@@ -2089,7 +2098,9 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         // Only computed for expanded teams (the notes panel is the one thing that reads it) —
         // `buildTeamFeatureSnapshot` does real per-starter pool scans, not free enough to run
         // unconditionally for all `ranked.length` teams on every render.
-        const insights = isExpanded ? generateRosterInsights(buildTeamFeatureSnapshot(shownTeam)) : null;
+        const insights = isExpanded
+          ? generateRosterInsights(buildTeamFeatureSnapshot(shownTeam), undefined, insightContextFor(breakdown, rank, ranked.length))
+          : null;
         return (
           <div key={team.id} className={`team-result rank-${rank} ${team.isHuman ? 'is-human-team' : ''} ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}>
             <button className="team-result-header" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>

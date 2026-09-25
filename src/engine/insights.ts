@@ -314,6 +314,23 @@ export function scoreInsight(
 
 const inactive: DetectorResult = { active: false };
 
+function huntableStarterMessage(starters: string[], others: string[], minutes: number): string {
+  const lead = `${displayNameList(starters)} ${plural(starters, 'is a starter', 'are starters')} opponents will attack on defense`;
+  return others.length > 0
+    ? `${lead}; with ${displayNameList(others)} too, that's ${minutes} targetable minutes your teammates can only partly cover.`
+    : `${lead} — ${minutes} targetable minutes your teammates can only partly cover.`;
+}
+
+/** Names the bench players who don't shoot, so the concern says who drags the spacing down. */
+function benchSpacingMessage(t: TeamFeatureSnapshot): string {
+  const nonShooters = t.bench
+    .filter(p => p.minutes >= 8 && !p.isSpacingArchetype)
+    .sort((a, b) => b.minutes - a.minutes);
+  return nonShooters.length > 0
+    ? `Spacing falls apart when the bench comes in — ${displayNames(nonShooters, 3)} ${plural(nonShooters, "doesn't", "don't")} shoot from outside.`
+    : 'Spacing falls apart when the bench comes in.';
+}
+
 // 2026-09-24, player-facing copy pass ("wejdź w rolę gracza"): lists read as English ("A, B and
 // C", "A, B and 2 more") instead of comma dumps with a "+1 more" tail, and `plural` below keeps
 // verbs in agreement ("Diop, Powell and Andersen are…", not "…is").
@@ -324,11 +341,13 @@ function joinNames(visible: string[], hidden: number): string {
 }
 
 function displayNames(players: { playerName: string }[], limit = 3): string {
-  return joinNames(players.slice(0, limit).map((player) => player.playerName), Math.max(0, players.length - limit));
+  return displayNameList(players.map((player) => player.playerName), limit);
 }
 
+/** "A, B and 1 more" hides a name to save exactly one name — just show it. */
 function displayNameList(names: string[], limit = 3): string {
-  return joinNames(names.slice(0, limit), Math.max(0, names.length - limit));
+  const shown = names.length === limit + 1 ? names.length : limit;
+  return joinNames(names.slice(0, shown), Math.max(0, names.length - shown));
 }
 
 /** `one` for a single subject, `many` otherwise — `plural(names, 'is', 'are')`. */
@@ -458,6 +477,24 @@ export const EXPLICIT_SUPPRESSION: Partial<Record<DetectorId, DetectorId[]>> = {
  * real overlapping window a live team could land in. */
 const WEAK_STARTING_REBOUNDING_THRESHOLD = 0.62;
 
+/** 2026-09-25, user-reported live ("elite" on almost every team): in an all-time draft every roster
+ * has stars, so the old bars fired on most of the field — ELITE_PRIMARY_CREATOR on 92% of 192
+ * AI-drafted teams (12 seeded drafts), STRONG_STARTING_REBOUNDING 92%, DEFENSIVE_COVERAGE_CAPACITY_ELITE
+ * 63%, ELITE_DEFENSIVE_LAYERING 76%. A strength only means something when it sets the team apart,
+ * so each bar is now set where roughly the top quarter-to-third of that same sample clears it
+ * (several of these inputs are capped at 1.0 / 100, so the top of the scale is where the real
+ * separation lives). Measured values in the comments. */
+const ELITE_BARS = {
+  primaryCreatorImpact: 100, // 31% (was 82: 92%)
+  starterRebounding: 0.99,   // 35% (was 0.68: 92%)
+  defensiveCoverage: 0.90,   // 30% (was 0.82: 63%)
+  defensiveLayering: 1.0,    // 27% (was 0.82: 76%)
+  perimeterDefense: 0.9,     // 29% (was 0.80: 54%)
+  rimProtection: 0.95,       // 42% (was 0.82: 51%; the input saturates, can't separate further)
+  twoWayImpact: 80,          // 18% (was 75: 39%)
+  lowUsageComplements: 6,    // 32% (was 5: 70%)
+} as const;
+
 export const DETECTORS: RosterInsightDetector[] = [
   {
     id: 'ELITE_PRIMARY_CREATOR', type: 'strength', category: 'creation',
@@ -467,7 +504,7 @@ export const DETECTORS: RosterInsightDetector[] = [
         .filter(p => (p.highUsageWeight ?? 0) >= 0.5 && p.minutes >= 24)
         .sort((a, b) => (b.offensiveImpact ?? 0) - (a.offensiveImpact ?? 0));
       const lead = creators[0];
-      return lead && (lead.offensiveImpact ?? 0) >= 82
+      return lead && (lead.offensiveImpact ?? 0) >= ELITE_BARS.primaryCreatorImpact
         ? hit((lead.offensiveImpact ?? 0) / 100, 0.94, teamConfidence(t), `${lead.playerName} is an elite shot creator — he can get a good look out of almost any possession.`, { players: [lead.playerName], values: { offensiveImpact: lead.offensiveImpact ?? 0, minutes: lead.minutes } }, 0.95)
         : inactive;
     }
@@ -619,7 +656,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const b = t.benchSpacingStrength ?? 0;
       const drop = a - b;
       return drop >= 0.28 && b <= 0.52
-        ? hit(0.55 + drop * 0.65, 0.78, teamConfidence(t), 'Spacing falls apart when the bench comes in.', { values: { starterSpacingStrength: a, benchSpacingStrength: b, drop } })
+        ? hit(0.55 + drop * 0.65, 0.78, teamConfidence(t), benchSpacingMessage(t), { values: { starterSpacingStrength: a, benchSpacingStrength: b, drop } })
         : inactive;
     }
   },
@@ -744,7 +781,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'LOW_USAGE_COMPLEMENTS', type: 'strength', category: 'fit',
     evaluate: t => {
       const n = t.lowUsageComplementCount ?? 0;
-      return n >= 5
+      return n >= ELITE_BARS.lowUsageComplements
         ? hit(0.50 + n * 0.09, 0.82, teamConfidence(t), `${n} players give you useful minutes without needing a lot of shots.`, { values: { lowUsageComplementCount: n } })
         : inactive;
     }
@@ -796,7 +833,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const s = t.perimeterDefenseScore ?? 0;
       const n = t.starterPerimeterDefenderCount ?? 0;
-      return s >= 0.80 && n >= 2
+      return s >= ELITE_BARS.perimeterDefense && n >= 2
         ? hit(s, 0.94, teamConfidence(t), "Elite perimeter defense — several players can guard the other team's best scorers.", { values: { perimeterDefenseScore: s, starterPerimeterDefenderCount: n } })
         : inactive;
     }
@@ -874,7 +911,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       // Requiring a real second rim-protector-tagged player closes the gap with no overlap
       // (SINGLE_RIM_PROTECTOR_DEPENDENCY's own count is exactly 1).
       const depth = t.rimProtectorCount ?? 0;
-      return s >= 0.82 && depth >= 2
+      return s >= ELITE_BARS.rimProtection && depth >= 2
         ? hit(s, 0.95, teamConfidence(t), 'Elite rim protection — opponents will struggle to score inside.', { values: { rimProtectionScore: s, rimProtectorCount: depth } })
         : inactive;
     }
@@ -917,7 +954,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const rim = t.players
         .filter(p => p.isRimProtectorRole && (p.defensiveImpact ?? 0) >= 60 && p.minutes >= 18)
         .sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0))[0];
-      return s >= 0.82
+      return s >= ELITE_BARS.defensiveLayering
         ? hit(s, 0.98, teamConfidence(t), `${perimeter?.playerName ?? 'Strong perimeter defense'} out front and ${rim?.playerName ?? 'a real rim protector'} behind him make you very hard to score on.`, { players: [perimeter?.playerName, rim?.playerName].filter((name): name is string => Boolean(name)), values: { defensiveLayeringScore: s } })
         : inactive;
     }
@@ -989,7 +1026,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const s = t.starterReboundingScore ?? 0;
       const rebounders = [...t.starters].sort((a, b) => (b.rpg ?? 0) - (a.rpg ?? 0)).slice(0, 2);
-      return s >= 0.68
+      return s >= ELITE_BARS.starterRebounding
         ? hit(s, 0.80, teamConfidence(t), `${displayNames(rebounders)} ${plural(rebounders, 'makes', 'make')} your starting five strong on the boards.`, { players: rebounders.map(p => p.playerName), values: { starterReboundingScore: s } })
         : inactive;
     }
@@ -1055,7 +1092,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const over = t.players.filter(p => p.minuteCeiling != null && p.minutes > p.minuteCeiling);
       return over.length === 1
-        ? hit(0.62 + (over[0].minutes - (over[0].minuteCeiling ?? over[0].minutes)) / 20, 0.86, teamConfidence(t), `${over[0].playerName} plays ${over[0].minutes} minutes but can only handle about ${over[0].minuteCeiling}.`, { players: [over[0].playerName], values: { minutes: over[0].minutes, minuteCeiling: over[0].minuteCeiling ?? 0 } }, 0.9)
+        ? hit(0.62 + (over[0].minutes - (over[0].minuteCeiling ?? over[0].minutes)) / 20, 0.86, teamConfidence(t), `${over[0].playerName} plays ${over[0].minutes} minutes but can only handle about ${over[0].minuteCeiling} — move some of those minutes to the bench.`, { players: [over[0].playerName], values: { minutes: over[0].minutes, minuteCeiling: over[0].minuteCeiling ?? 0 } }, 0.9)
         : inactive;
     }
   },
@@ -1066,7 +1103,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const n = t.minutesCeilingViolationCount ?? 0;
       const ps = t.players.filter(p => p.minuteCeiling != null && p.minutes > p.minuteCeiling);
       return n >= 2
-        ? hit(0.55 + n * 0.10, 0.90, teamConfidence(t), `${n} players are playing more minutes than they can handle.`, { players: ps.map(p => p.playerName), values: { minutesCeilingViolationCount: n }, notes: ps.map(p => `${p.playerName}: ${p.minutes}/${p.minuteCeiling} min`) })
+        ? hit(0.55 + n * 0.10, 0.90, teamConfidence(t), `${joinNames(ps.slice(0, 3).map(p => `${p.playerName} (${p.minutes} of ${p.minuteCeiling} min)`), Math.max(0, ps.length - 3))} play more minutes than they can handle — move some of those minutes to the bench.`, { players: ps.map(p => p.playerName), values: { minutesCeilingViolationCount: n }, notes: ps.map(p => `${p.playerName}: ${p.minutes}/${p.minuteCeiling} min`) })
         : inactive;
     }
   },
@@ -1078,7 +1115,7 @@ export const DETECTORS: RosterInsightDetector[] = [
         return (p.tal ?? 0) >= 90 && p.minutes < target - 4;
       });
       return underused.length > 0
-        ? hit(0.72, 0.88, teamConfidence(t), `${displayNames(underused)} ${plural(underused, 'is', 'are')} good enough to play more than ${plural(underused, 'he gets', 'they get')} — talent left on the bench.`, { players: underused.map(p => p.playerName), values: { underusedStarCount: underused.length }, notes: underused.map(p => `${p.playerName}: ${p.minutes} min`) }, 0.94)
+        ? hit(0.72, 0.88, teamConfidence(t), `${joinNames(underused.slice(0, 3).map(p => `${p.playerName} (${p.minutes} min)`), Math.max(0, underused.length - 3))} ${plural(underused, 'is', 'are')} good enough to play more — take minutes from a weaker backup.`, { players: underused.map(p => p.playerName), values: { underusedStarCount: underused.length }, notes: underused.map(p => `${p.playerName}: ${p.minutes} min`) }, 0.94)
         : inactive;
     }
   },
@@ -1175,7 +1212,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'ELITE_TWO_WAY_CORE', type: 'strength', category: 'two_way',
     evaluate: t => {
       const twoWay = t.starters
-        .filter(p => (p.offensiveImpact ?? 0) >= 75 && (p.defensiveImpact ?? 0) >= 75)
+        .filter(p => (p.offensiveImpact ?? 0) >= ELITE_BARS.twoWayImpact && (p.defensiveImpact ?? 0) >= ELITE_BARS.twoWayImpact)
         .sort((a, b) => (b.overallImpact ?? 0) - (a.overallImpact ?? 0));
       return twoWay.length >= 2
         ? hit(0.76 + twoWay.length * 0.06, 0.94, teamConfidence(t), `${displayNames(twoWay)} ${plural(twoWay, 'is', 'are')} great at both ends — no need to sub for offense or defense.`, { players: twoWay.map(p => p.playerName), values: { eliteTwoWayCount: twoWay.length } }, 0.98)
@@ -1274,7 +1311,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const d = t.defensiveLayeringScore ?? 0;
       const f = t.fgaEfficiencyScore ?? 0;
       const c = t.lowUsageComplementCount ?? 0;
-      return d >= 0.78 && f >= 0.68 && c >= 2
+      return d >= ELITE_BARS.defensiveLayering - 0.05 && f >= 0.72 && c >= 2
         ? hit((d + f) / 2, 0.92, teamConfidence(t), 'Several cheap players give you elite defense, leaving more shots for your scorers.', { values: { defensiveLayeringScore: d, fgaEfficiencyScore: f, lowUsageComplementCount: c } }, 0.95)
         : inactive;
     }
@@ -1482,7 +1519,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const coverage = t.defensiveCoverageCapacity ?? 0;
       const confirmed = t.defensiveCoverageConfirmedLayers ?? 0;
-      return coverage >= TEAM_MODEL_THRESHOLDS.eliteDefensiveCoverage && confirmed === 3
+      return coverage >= Math.max(TEAM_MODEL_THRESHOLDS.eliteDefensiveCoverage, ELITE_BARS.defensiveCoverage) && confirmed === 3
         ? hit(
           coverage,
           0.94,
@@ -1524,7 +1561,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           Math.max(exposure, 0.62),
           0.96,
           teamConfidence(t),
-          `${displayNameList(names)} ${plural(names, 'is a starter', 'are starters')} opponents will attack on defense — with ${displayNameList(rotationTargets)}, that's ${t.defensiveTargetableMinutes ?? 0} targetable minutes your teammates can only partly cover.`,
+          huntableStarterMessage(names, rotationTargets.filter(name => !names.includes(name)), t.defensiveTargetableMinutes ?? 0),
           { players: rotationTargets, values: { huntabilityExposureScore: exposure, huntabilityMitigationScore: t.huntabilityMitigationScore ?? 0, defensiveTargetableMinutes: t.defensiveTargetableMinutes ?? 0 } },
           0.98,
         )
@@ -1626,7 +1663,7 @@ export const DETECTORS: RosterInsightDetector[] = [
         (t.minutesCeilingViolationCount ?? 0) > 0;
       const message = expensiveDeadSlot && !strained
         ? `${displayNameList(names)} ${plural(names, 'costs', 'cost')} ${(t.deadRosterSlotFga ?? 0).toFixed(1)} shots but won't play in the playoffs — shots that could have gone elsewhere.`
-        : `${displayNameList(names)} ${plural(names, 'is', 'are')} out of the rotation, and the rest of the roster still isn't deep enough for the playoffs.`;
+        : `${displayNameList(names)} ${plural(names, "isn't", "aren't")} good enough to play, so the rest of your rotation has to cover too many minutes or play out of position.`;
       return t.players.length === 9 && dead > 0 && (expensiveDeadSlot || strained)
         ? hit(
           0.72,
@@ -1651,7 +1688,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           c.balanced.score,
           0.80,
           teamConfidence(t),
-          `${displayNames(t.players.filter(p => c.balanced.players.some(bp => bp.playerId === p.playerId)))} are your closing lineup at both ends — no need to choose between offense and defense late in games.`,
+          `${displayNames(t.players.filter(p => c.balanced.players.some(bp => bp.playerId === p.playerId)), 5)} are your closing lineup at both ends — no need to choose between offense and defense late in games.`,
           { players: c.balanced.players.map(p => p.playerName), values: { offenseDefensePersonnelOverlap: overlap, balancedOffenseTradeoff: c.balancedOffenseTradeoff, balancedDefenseTradeoff: c.balancedDefenseTradeoff, balancedScore: c.balanced.score } },
           0.9,
         )
@@ -1742,39 +1779,186 @@ function dedupeGroups(items: RosterInsight[]): RosterInsight[] {
   return [...free, ...winners];
 }
 
-/** 2026-09-17, user-reported live ("przydałoby się to bardziej czytelne i uporządkowane, dużo razy
- * powtarza się to samo nazwisko, raz jest opisany atak, później defensywa, znowu atak" — this
- * would read better grouped, right now it jumps offense/defense/offense): the final strengths/
- * concerns lists were sorted purely by raw `score`, and every detector already carries its own
- * topic `category` (spacing/rim_protection/rebounding/rotation/etc.) that was never used for
- * anything but suppression grouping. Re-orders the ALREADY-SELECTED top N (never changes which
- * insights get picked, or their score-driven priority — that logic is untouched) so same-category
- * items sit together, ordered by each category's own first (highest-scoring) member. A stable
- * group-by achieves this for free: `items` arrives sorted by score, so a category's first
- * occurrence is its best member, and grouping preserves each member's relative order within its
- * group. */
-function groupByCategory(items: RosterInsight[]): RosterInsight[] {
-  const order: InsightCategory[] = [];
-  const groups = new Map<InsightCategory, RosterInsight[]>();
-  for (const item of items) {
-    if (!groups.has(item.category)) {
-      groups.set(item.category, []);
-      order.push(item.category);
-    }
-    groups.get(item.category)!.push(item);
-  }
-  return order.flatMap((category) => groups.get(category)!);
-}
-
 export interface InsightEngineOutput {
   strengths: RosterInsight[];
   concerns: RosterInsight[];
   allActiveInsights: RosterInsight[];
 }
 
+/** The team's 0-100 score chips the results screen shows next to the text. */
+export type InsightScoreArea = 'offense' | 'defense' | 'spacing' | 'benchDepth' | 'rotation' | 'fit';
+
+/** What the results screen knows beyond the roster itself. Optional: without it the lists fall
+ * back to a neutral size and no chip checks. */
+export interface InsightContext {
+  /** Where the team finished: 1 = best in the field, 0 = worst. */
+  standing?: number;
+  scores?: Partial<Record<InsightScoreArea, number>>;
+}
+
+export function insightContextFor(
+  breakdown: { offenseScore: number; defenseScore: number; spacingScore: number; benchDepthScore: number; rotationScore: number; fitScore: number },
+  rank: number,
+  fieldSize: number,
+): InsightContext {
+  return {
+    standing: fieldSize > 1 ? 1 - (rank - 1) / (fieldSize - 1) : 0.5,
+    scores: {
+      offense: breakdown.offenseScore,
+      defense: breakdown.defenseScore,
+      spacing: breakdown.spacingScore,
+      benchDepth: breakdown.benchDepthScore,
+      rotation: breakdown.rotationScore,
+      fit: breakdown.fitScore,
+    },
+  };
+}
+
+/**
+ * 2026-09-25, user-reported live (player-perspective copy review): the lists read as noise —
+ * every team got 7 strengths whatever its finish (bottom-3 and top-3 of 192 AI teams both averaged
+ * 7.0), the same topic came up 2-3 times per list, a strength and a concern often said opposite
+ * things ("a defender for every spot" next to "X and Y are defensive weak spots": 50 of 192 teams),
+ * text disagreed with the score chips (Bench Depth 75+ next to "not deep enough": 36 teams), and
+ * the biggest problem wasn't first. Selection below, on top of the unchanged detectors/scores:
+ * - topics: one sentence per topic per side; a strength and a concern on the same narrow topic
+ *   (or a listed cross-topic pair) never both show — the chip for that area decides which is
+ *   true, otherwise the stronger signal wins.
+ * - chip consistency: no strength about an area scored under 55, no concern about one scored 75+.
+ * - names: a strength that only repeats players an earlier strength already credited is skipped.
+ * - priority: a concern about the team's weakest area jumps ahead, so the first concern is what
+ *   cost the most points; commonplace strengths (things almost every drafted team has) sink.
+ * - size: 2-5 strengths and 2-5 concerns depending on the team's finish.
+ */
+type InsightTopic =
+  | 'creation' | 'usage' | 'spacing' | 'perimeter_def' | 'rim_def' | 'team_def' | 'weak_link_def'
+  | 'rebounding' | 'position' | 'minutes' | 'depth' | 'closing' | 'structure';
+
+const CATEGORY_TOPIC: Record<InsightCategory, InsightTopic> = {
+  creation: 'creation', usage: 'usage', fga: 'usage', off_ball: 'usage', fit: 'usage', redundancy: 'usage',
+  spacing: 'spacing', shooting: 'spacing',
+  perimeter_defense: 'perimeter_def', rim_protection: 'rim_def', defensive_structure: 'team_def',
+  rebounding: 'rebounding', position: 'position', rotation: 'minutes', depth: 'depth',
+  two_way: 'closing', cross: 'structure',
+};
+
+const TOPIC_OVERRIDE: Partial<Record<DetectorId, InsightTopic>> = {
+  STAR_POWER_WITHOUT_USAGE_COLLISION: 'usage',
+  STAR_POWER_WITH_USAGE_COLLISION: 'usage',
+  LOW_FGA_HIGH_IMPACT_CONSTRUCTION: 'usage',
+  GOOD_SPACING_BUT_ONE_NONSHOOTER_BOTTLENECK: 'spacing',
+  ELITE_CREATION_POOR_SPACING: 'spacing',
+  ELITE_SPACING_WEAK_CREATION: 'creation',
+  ELITE_DEFENSE_LOW_FGA_COST: 'team_def',
+  // One named player opponents go after is a different claim from "the team defends well" — both
+  // can be true (a Jordan/Gobert frame around a Brunson), so they only clash with each other.
+  DEFENSIVE_WEAK_LINK: 'weak_link_def',
+  MULTIPLE_DEFENSIVE_WEAK_LINKS: 'weak_link_def',
+  HUNTABLE_STARTER_EXPOSED: 'weak_link_def',
+  HUNTABLE_SPECIALIST_MITIGATED: 'weak_link_def',
+  RIM_PROTECTION_BUT_POOR_PERIMETER_DEFENSE: 'perimeter_def',
+  PERIMETER_DEFENSE_BUT_NO_RIM_PROTECTION: 'rim_def',
+  GREAT_STARTERS_WEAK_BENCH: 'depth',
+  STRONG_CORE_FRAGILE_ROTATION: 'depth',
+  MULTIPLE_PATHS_TO_VIABLE_LINEUP: 'depth',
+  DEAD_NINTH_SLOT_ACCEPTABLE: 'depth',
+  DEAD_SLOT_HURTS_ROTATION: 'depth',
+  ROLE_FLEXIBILITY_HIGH: 'position',
+  ROLE_FLEXIBILITY_LOW: 'position',
+  CLOSING_FIVE_STABLE: 'closing',
+  CLOSING_FIVE_REQUIRES_TRADEOFF: 'closing',
+  DEFENSE_AT_COST_OF_SPACING: 'closing',
+};
+
+/** Pairs on different topics that still contradict each other when read side by side. */
+const TEAM_DEFENSE_HOLES: DetectorId[] = ['NO_WING_STOPPER', 'NO_POA_DEFENDER', 'NO_RIM_PROTECTOR', 'PERIMETER_DEFENSE_BUT_NO_RIM_PROTECTION', 'RIM_PROTECTION_BUT_POOR_PERIMETER_DEFENSE'];
+const CROSS_TOPIC_CONFLICTS: Partial<Record<DetectorId, DetectorId[]>> = {
+  CLOSING_FIVE_STABLE: ['NON_SPACER_OVERLOAD', 'MULTIPLE_NON_SPACERS', 'LOW_STARTING_SPACING'],
+  NO_MAJOR_STRUCTURAL_HOLE: ['MULTIPLE_NON_SPACERS', 'NON_SPACER_OVERLOAD', ...TEAM_DEFENSE_HOLES],
+  // "…and can switch screens" can't sit next to several defenders opponents hunt.
+  DEFENSIVE_COVERAGE_CAPACITY_ELITE: [...TEAM_DEFENSE_HOLES, 'MULTIPLE_DEFENSIVE_WEAK_LINKS'],
+  ELITE_DEFENSIVE_LAYERING: TEAM_DEFENSE_HOLES,
+  BALANCED_DEFENSIVE_COVERAGE: TEAM_DEFENSE_HOLES,
+  ELITE_DEFENSE_LOW_FGA_COST: [...TEAM_DEFENSE_HOLES, 'MULTIPLE_DEFENSIVE_WEAK_LINKS'],
+};
+
+const TOPIC_AREA: Partial<Record<InsightTopic, InsightScoreArea>> = {
+  creation: 'offense', usage: 'fit', spacing: 'spacing',
+  perimeter_def: 'defense', rim_def: 'defense', team_def: 'defense', weak_link_def: 'defense',
+  minutes: 'rotation', position: 'rotation', depth: 'benchDepth',
+};
+
+/** Strengths nearly every drafted roster has (measured 56-97% of 192 AI teams) — true, but they
+ * don't tell a player anything about THIS team, so they only fill space nothing better wants. */
+const COMMONPLACE_STRENGTHS = new Set<DetectorId>([
+  'POA_DEFENDER_PRESENT', 'WING_STOPPER_PRESENT', 'RIM_PROTECTION_CONTINUITY', 'MATCHUP_SPECIALIST_AVAILABLE',
+  'SECONDARY_CREATION_PRESENT', 'MULTIPLE_CREATION_SOURCES', 'STRETCH_BIG_VALUE', 'EFFICIENT_FGA_BUDGET',
+]);
+
+const topicOf = (i: RosterInsight): InsightTopic => TOPIC_OVERRIDE[i.id] ?? CATEGORY_TOPIC[i.category];
+const broadTopicOf = (i: RosterInsight): string => {
+  const topic = topicOf(i);
+  return topic.endsWith('_def') ? 'defense' : topic;
+};
+
+function contradicts(a: RosterInsight, b: RosterInsight): boolean {
+  if (a.type === b.type) return false;
+  const [strength, concern] = a.type === 'strength' ? [a, b] : [b, a];
+  return topicOf(strength) === topicOf(concern) || (CROSS_TOPIC_CONFLICTS[strength.id]?.includes(concern.id) ?? false);
+}
+
+function selectForDisplay(eligible: RosterInsight[], config: typeof DEFAULT_INSIGHT_CONFIG, context: InsightContext) {
+  const chipFor = (i: RosterInsight): number | undefined => {
+    const area = TOPIC_AREA[topicOf(i)];
+    return area ? context.scores?.[area] : undefined;
+  };
+  const tilt = context.standing == null ? 0 : (context.standing - 0.5) * 0.1;
+  const priority = (i: RosterInsight): number => {
+    const chip = chipFor(i);
+    if (i.type === 'strength') {
+      return i.score + tilt
+        - (COMMONPLACE_STRENGTHS.has(i.id) ? 0.08 : 0)
+        + (chip == null ? 0 : 0.15 * clamp01((chip - 70) / 30));
+    }
+    return i.score - tilt + (chip == null ? 0 : 0.3 * clamp01((70 - chip) / 40));
+  };
+  const slots = context.standing == null
+    ? { strength: config.targetPerSide, concern: config.targetPerSide }
+    : { strength: 2 + Math.round(context.standing * 3), concern: 2 + Math.round((1 - context.standing) * 3) };
+
+  const candidates = eligible
+    .filter(i => {
+      const chip = chipFor(i);
+      if (chip == null) return true;
+      return i.type === 'strength' ? chip >= 55 : chip < 75;
+    })
+    .map(i => ({ insight: i, priority: priority(i) }))
+    .sort((a, b) => b.priority - a.priority);
+
+  const picked: RosterInsight[] = [];
+  for (const { insight } of candidates) {
+    const side = picked.filter(p => p.type === insight.type);
+    if (side.length >= Math.min(slots[insight.type], config.maxPerSide)) continue;
+    if (side.some(p => broadTopicOf(p) === broadTopicOf(insight))) continue;
+    // A higher-priority item on the other side already made the opposite claim.
+    if (picked.some(p => contradicts(p, insight))) continue;
+    const names = insight.evidence.players ?? [];
+    if (insight.type === 'strength' && names.length > 0) {
+      const credited = new Set(side.flatMap(p => p.evidence.players ?? []));
+      if (names.every(name => credited.has(name))) continue;
+    }
+    picked.push(insight);
+  }
+  return {
+    strengths: picked.filter(i => i.type === 'strength'),
+    concerns: picked.filter(i => i.type === 'concern'),
+  };
+}
+
 export function generateRosterInsights(
   team: TeamFeatureSnapshot,
   config = DEFAULT_INSIGHT_CONFIG,
+  context: InsightContext = {},
 ): InsightEngineOutput {
   const raw = DETECTORS
     .map(d => {
@@ -1787,12 +1971,8 @@ export function generateRosterInsights(
     .sort((a, b) => b.score - a.score);
 
   const eligible = ranked.filter(i => i.score >= config.minScore);
-  // `allActiveInsights` below stays in raw score order (debug/tooling reads it as a priority
-  // ranking) — only the two DISPLAY lists get grouped by topic, once selection is already final.
-  const strengths = groupByCategory(eligible.filter(i => i.type === 'strength').slice(0, config.maxPerSide));
-  const concerns = groupByCategory(eligible.filter(i => i.type === 'concern').slice(0, config.maxPerSide));
-
-  return { strengths, concerns, allActiveInsights: ranked };
+  // `allActiveInsights` stays in raw score order (debug/tooling reads it as a priority ranking).
+  return { ...selectForDisplay(eligible, config, context), allActiveInsights: ranked };
 }
 
 export function toInsightDebugRows(output: InsightEngineOutput) {

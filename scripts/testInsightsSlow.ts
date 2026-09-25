@@ -1,7 +1,8 @@
 import { autoFinishDraft, createDraft } from '../src/engine/draft';
 import { buildTeamFeatureSnapshot } from '../src/engine/insightMapper';
-import { generateRosterInsights } from '../src/engine/insights';
+import { generateRosterInsights, insightContextFor } from '../src/engine/insights';
 import { autoAssignRotation } from '../src/engine/rotation';
+import { scoreTeam } from '../src/engine/scoring';
 
 /**
  * 2026-09-05: split out of testInsights.ts — this is the one part of that file slow enough to
@@ -31,15 +32,24 @@ function seededRandom(seed: number): () => number {
 }
 
 const outputs = [];
+const samples: { standing: number; breakdown: ReturnType<typeof scoreTeam>; output: ReturnType<typeof generateRosterInsights> }[] = [];
 const originalRandom = Math.random;
 try {
   for (const seed of [73_001, 73_002]) {
     Math.random = seededRandom(seed);
     const state = autoFinishDraft(createDraft(false));
     check(state.complete, `seed ${seed} completes for insight coverage`);
-    for (const draftedTeam of state.teams) {
+    const scored = state.teams.map((draftedTeam) => {
       const rotated = { ...draftedTeam, rotation: autoAssignRotation(draftedTeam.roster) };
-      outputs.push(generateRosterInsights(buildTeamFeatureSnapshot(rotated)));
+      return { rotated, breakdown: scoreTeam(rotated) };
+    });
+    const order = [...scored].sort((a, b) => b.breakdown.overall - a.breakdown.overall);
+    for (const entry of scored) {
+      const rank = order.indexOf(entry) + 1;
+      const context = insightContextFor(entry.breakdown, rank, scored.length);
+      const output = generateRosterInsights(buildTeamFeatureSnapshot(entry.rotated), undefined, context);
+      outputs.push(output);
+      samples.push({ standing: context.standing ?? 0.5, breakdown: entry.breakdown, output });
     }
   }
 } finally {
@@ -69,6 +79,15 @@ const contradictoryPairs = [
   ['BALANCED_DEFENSIVE_COVERAGE', 'DEFENSIVE_WEAK_LINK'],
   ['OFFENSIVE_ROLES_COMPLEMENTARY', 'TOO_MANY_FINISHERS'],
   ['SECONDARY_CREATION_PRESENT', 'CREATION_SHORTAGE'],
+  // 2026-09-25, found in a 192-team sweep of the displayed lists (see insights.ts selectForDisplay).
+  ['DEFENSIVE_COVERAGE_CAPACITY_ELITE', 'MULTIPLE_DEFENSIVE_WEAK_LINKS'],
+  ['ELITE_DEFENSE_LOW_FGA_COST', 'MULTIPLE_DEFENSIVE_WEAK_LINKS'],
+  ['SPACING_DISTRIBUTED', 'GOOD_SPACING_BUT_ONE_NONSHOOTER_BOTTLENECK'],
+  ['ELITE_PRIMARY_CREATOR', 'ELITE_SPACING_WEAK_CREATION'],
+  ['LOW_USAGE_COMPLEMENTS', 'STAR_POWER_WITH_USAGE_COLLISION'],
+  ['LOW_USAGE_COMPLEMENTS', 'MULTIPLE_HIGH_USAGE_PLAYERS'],
+  ['STAR_POWER_WITHOUT_USAGE_COLLISION', 'MULTIPLE_HIGH_USAGE_PLAYERS'],
+  ['CLOSING_FIVE_STABLE', 'NON_SPACER_OVERLOAD'],
 ] as const;
 let respectsCap = true;
 let strengthsUnique = true;
@@ -86,6 +105,7 @@ for (const output of outputs) {
 check(respectsCap, 'insight panel respects the seven-per-side readability cap');
 check(strengthsUnique, 'strength messages do not duplicate within a roster');
 check(concernsUnique, 'concern messages do not duplicate within a roster');
+if (contradictions.length) console.log(contradictions);
 check(contradictions.length === 0, 'positive and negative descriptions do not contradict each other');
 
 const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
@@ -93,8 +113,28 @@ const avgStrengths = average(outputs.map((output) => output.strengths.length));
 const avgConcerns = average(outputs.map((output) => output.concerns.length));
 const uniqueIds = new Set(outputs.flatMap((output) => output.allActiveInsights.map((insight) => insight.id)));
 console.log({ rosters: outputs.length, avgStrengths, avgConcerns, uniqueActiveDetectors: uniqueIds.size });
-check(avgStrengths >= 3, 'real drafted rosters average at least three meaningful strengths');
-check(avgConcerns >= 3, 'real drafted rosters average at least three meaningful concerns');
+check(avgStrengths >= 2.5, 'real drafted rosters average at least two and a half strengths');
+check(avgConcerns >= 1.5, 'real drafted rosters average at least one and a half concerns');
+// 2026-09-25: the lists follow the finish — a bottom team reads mostly what held it back, a top
+// team mostly what worked (before, both averaged 7 strengths).
+const top = samples.filter((sample) => sample.standing >= 0.75);
+const bottom = samples.filter((sample) => sample.standing <= 0.25);
+check(
+  average(top.map((s) => s.output.strengths.length)) > average(top.map((s) => s.output.concerns.length)),
+  'top-quarter teams get more strengths than concerns',
+);
+check(
+  average(bottom.map((s) => s.output.concerns.length)) > average(bottom.map((s) => s.output.strengths.length)),
+  'bottom-quarter teams get more concerns than strengths',
+);
+check(
+  samples.every((s) => s.output.concerns.every((i) => !['DEAD_SLOT_HURTS_ROTATION', 'GREAT_STARTERS_WEAK_BENCH', 'TOP_HEAVY_ROTATION'].includes(i.id) || s.breakdown.benchDepthScore < 75)),
+  'no thin-bench concern next to a Bench Depth chip of 75+',
+);
+check(
+  samples.every((s) => s.output.strengths.every((i) => !['DEFENSIVE_COVERAGE_CAPACITY_ELITE', 'ELITE_DEFENSIVE_LAYERING', 'ELITE_DEFENSE_LOW_FGA_COST', 'ELITE_PERIMETER_DEFENSE', 'ELITE_RIM_PROTECTION'].includes(i.id) || s.breakdown.defenseScore >= 55)),
+  'no elite-defense strength next to a Defense chip under 55',
+);
 check(uniqueIds.size >= 25, 'real drafted rosters activate a broad variety of description types');
 
 console.log('Roster insight (slow, real-sample) tests complete.');
