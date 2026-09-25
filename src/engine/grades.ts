@@ -606,6 +606,11 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     { name: 'Clyde Drexler', spanLabel: '1989-91', cap: 'All-NBA' as OverallTier },
     { name: 'Clyde Drexler', spanLabel: '1990-92', cap: 'All-NBA' as OverallTier },
     { name: 'Ray Allen', spanLabel: '2000-02', cap: 'All-NBA' as OverallTier },
+    // 2026-09-25, user ("Kevin Johnson przesada"): the every-position playmaking bonus lifted his
+    // 1989-91 O-TAL from 84 to exactly 85, the A- line PG's MVP gate reads, and the badge jumped
+    // All-NBA -> MVP (93). His neighbouring peak spans stay All-NBA; this keeps the one outlier in
+    // line with them.
+    { name: 'Kevin Johnson', spanLabel: '1989-91', cap: 'All-NBA' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
 );
 
