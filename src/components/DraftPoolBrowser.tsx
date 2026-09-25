@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { realSecondaryPositions } from '../engine/positionCompetence';
 import type { Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
@@ -259,7 +260,7 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                                 <td>{span.spanLabel}</td>
                                 <td>
                                   {span.primaryPosition}
-                                  {span.secondaryPositions.length ? ` / ${span.secondaryPositions.join(',')}` : ''}
+                                  {realSecondaryPositions(span).length ? ` / ${realSecondaryPositions(span).join(',')}` : ''}
                                 </td>
                                 <td>{span.fga.toFixed(1)}</td>
                                 {showJudgeMetrics && <td>{displayNumberForSpan(span, tierContextFor(span))}</td>}

@@ -15,7 +15,7 @@ import { rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { LOW_OFFENSE_BIG_OTAL_CEILING, LOW_USAGE_BIG_FGA_CEILING } from './aiDrafter';
-import { isNamedPgEligible } from './pgEligibility';
+import { positionCompetence, PARTIAL_POSITION_GRACE_MINUTES } from './positionCompetence';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { maxSustainableMinutes } from './durability';
 import { effectiveTalent, overallTierForSpan, tierRank } from './grades';
@@ -1194,19 +1194,22 @@ export function rotationScore(team: Team): RotationScoreResult {
   // Scoped to PG only (not every downward slot — ball-handling competence doesn't make a guard a
   // credible power forward) and to guards/wings only (an elite-passing big, e.g. Draymond/Jokić,
   // still isn't a positional point guard — that's a different kind of "can play the point").
-  const isElitePlaymakingGuardOrWing = (player: PlayerSpan): boolean =>
-    player.primaryPosition !== 'C' &&
-    player.primaryPosition !== 'PF' &&
-    isNamedPgEligible(player);
+  // 2026-09-25: the named PG list above now lives in `positionCompetence.ts` (it seeds 'partial'
+  // at PG there) together with every other position — a 'full' second position is never a
+  // downward misuse, and a 'partial' one covers `PARTIAL_POSITION_GRACE_MINUTES` before the
+  // ramp starts (Wade/Manu can run point for stretches, not a whole game).
   const downwardOffenders: string[] = [];
   let downwardPenalty = 0;
   for (const { slot, player, minutes } of allAssignments(team)) {
     if (minutes <= 0) continue;
     if (player.primaryPosition === slot) continue;
-    if (player.secondaryPositions.includes(slot)) continue;
     if (isUpwardSlide(player, slot)) continue;
-    if (slot === 'PG' && isElitePlaymakingGuardOrWing(player)) continue;
-    const grace = DOWNWARD_POSITION_GRACE_MINUTES[player.primaryPosition];
+    const competence = positionCompetence(player, slot);
+    if (competence === 'natural' || competence === 'full') continue;
+    const grace = Math.max(
+      DOWNWARD_POSITION_GRACE_MINUTES[player.primaryPosition],
+      competence === 'partial' ? PARTIAL_POSITION_GRACE_MINUTES : 0,
+    );
     const rampMinutes = Math.max(0, minutes - grace);
     const rampSpan = Math.max(1, DOWNWARD_POSITION_FULL_PENALTY_MINUTES - grace);
     const penalty = DOWNWARD_POSITION_PENALTY[player.primaryPosition] * Math.min(1, rampMinutes / rampSpan);

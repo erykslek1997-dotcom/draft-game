@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { realSecondaryPositions } from './positionCompetence';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
   STARTER_SLOTS,
@@ -1719,7 +1720,7 @@ export function pickForAi(
   if (roster.length >= STARTER_LOCK_ROSTER_SIZE) {
     const withoutRedundantBenchPicks = phaseFilteredCandidates.filter((p) => {
       if (effectiveTalent(p) >= ELITE_TALENT_REDUNDANCY_EXEMPTION) return true;
-      const positions = [p.primaryPosition, ...p.secondaryPositions];
+      const positions = [p.primaryPosition, ...realSecondaryPositions(p)];
       return positions.some((pos) => roster.filter((r) => isRealPositionFit(r, pos)).length < REAL_FIT_REDUNDANCY_THRESHOLD);
     });
     if (withoutRedundantBenchPicks.length > 0) phaseFilteredCandidates = withoutRedundantBenchPicks;
@@ -1804,7 +1805,7 @@ export function pickForAi(
     // this file (`lacksBenchShotCreator`, `lacksSixthMan`) is already scoped.
     if (inBenchRound) {
       let positionalNeed = 0;
-      for (const pos of [p.primaryPosition, ...p.secondaryPositions]) {
+      for (const pos of [p.primaryPosition, ...realSecondaryPositions(p)]) {
         if (needs.emptySlots.includes(pos)) positionalNeed += 1.5;
         else if (needs.thinSlots.includes(pos)) {
           positionalNeed += needs.looselyBackedThinSlots.includes(pos) ? 0.5 : 1.3;
@@ -1831,8 +1832,8 @@ export function pickForAi(
       else if (needs.thinSlots.includes(p.primaryPosition)) {
         need += needs.looselyBackedThinSlots.includes(p.primaryPosition) ? 0.5 : 1.3;
       }
-      else if (p.secondaryPositions.some((s) => needs.emptySlots.includes(s))) need += 0.8;
-      else if (p.secondaryPositions.some((s) => needs.thinSlots.includes(s))) need += 0.6;
+      else if (realSecondaryPositions(p).some((s) => needs.emptySlots.includes(s))) need += 0.8;
+      else if (realSecondaryPositions(p).some((s) => needs.thinSlots.includes(s))) need += 0.6;
     }
     need += starterUpgradeBonus(p, needs);
     if (needs.avgSpacing < SPACING_DEPTH_THRESHOLD) {

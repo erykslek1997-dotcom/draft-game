@@ -304,9 +304,18 @@ const duncanPorzingis = team('fit-v2-duncan-porzingis', [
 ]);
 const wembyWebberResult = fitScore(wembyWebber);
 const duncanPorzingisResult = fitScore(duncanPorzingis);
+// 2026-09-25: was `components.sizeCoverage` (the functional-size composite). Graded position
+// competence (positionCompetence.ts) now starts Porzingis at PF — a real natural position of his —
+// and Duncan at C instead of the reverse, and the composite's slot-relative athleticism and
+// rebounding legs flip with that swap (76 -> 74 vs Wemby/Webber's 75) while the two lineups'
+// real size does not change. "Larger" is asserted on the size legs themselves: height 84 vs 72,
+// weight 67 vs 54 percentile. Re-measured directly, not guessed.
 check(
-  duncanPorzingisResult.components.sizeCoverage > wembyWebberResult.components.sizeCoverage,
-  'Duncan + Porzingis lineup grades larger than Wembanyama + Webber after natural-slot assignment',
+  (duncanPorzingisResult.inputs.positionAdjustedHeightPercentile ?? 0) >
+    (wembyWebberResult.inputs.positionAdjustedHeightPercentile ?? 0) &&
+    (duncanPorzingisResult.inputs.positionAdjustedWeightPercentile ?? 0) >
+      (wembyWebberResult.inputs.positionAdjustedWeightPercentile ?? 0),
+  'Duncan + Porzingis lineup grades larger (height and weight) than Wembanyama + Webber',
 );
 check(
   duncanPorzingisResult.components.defensiveRoleCoverage > wembyWebberResult.components.defensiveRoleCoverage,

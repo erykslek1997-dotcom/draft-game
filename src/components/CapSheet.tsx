@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
+import { realSecondaryPositions } from '../engine/positionCompetence';
 import './CapSheet.css';
 import type { Position, PlayerSpan } from '../data/schema';
 import { draftPool } from '../data/draftPool';
@@ -301,7 +302,7 @@ export default function CapSheet({ onBack }: Props) {
                                     <td>{s.spanLabel}</td>
                                     <td>
                                       {s.primaryPosition}
-                                      {s.secondaryPositions.length ? ` / ${s.secondaryPositions.join(',')}` : ''}
+                                      {realSecondaryPositions(s).length ? ` / ${realSecondaryPositions(s).join(',')}` : ''}
                                     </td>
                                     <td>
                                       <OverallTierBadge span={s} />

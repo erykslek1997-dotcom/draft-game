@@ -189,7 +189,10 @@ check(reportedScores.overall <= 84, 'weak defense meaningfully lowers the final 
 // happened to sit under an arbitrary universal number. Kenny Anderson (PG, D-TAL 40) is still
 // well below the PG average (51) and remains the one real target here. Re-measured directly (14),
 // not guessed.
-check(eliteCoreHunt.targetableMinutes >= 12 && eliteCoreHunt.targetableMinutes <= 16, 'Kenny Anderson remains a real target; Jon Barry no longer misreads as one above his own position average');
+// 2026-09-25: band 12-16 -> 16-20 after graded position competence (positionCompetence.ts)
+// reshaped this roster's backup minutes; Kenny Anderson now plays 18 real minutes. Jon Barry
+// still correctly drops out. Re-measured directly (18), not guessed.
+check(eliteCoreHunt.targetableMinutes >= 16 && eliteCoreHunt.targetableMinutes <= 20, 'Kenny Anderson remains a real target; Jon Barry no longer misreads as one above his own position average');
 // 2026-09-23, same day: was `>= 65`. `UNCORROBORATED_CEILING` (defensiveTalent.ts) then dropped
 // again, 78 -> 58, user ask re: Magic Johnson/Charles Barkley reading too high — Ron Harper's
 // 1988-90 span has zero All-Defense recognition and only the thin BPM2-only fallback reading the
@@ -231,7 +234,10 @@ check(eliteCoreProjection.defense <= 93, 'elite defensive core projects into an 
 // Anchor Big. DeAndre Jordan (athletic C, D-TAL 72) clears the C Mobile Big p45 (~59) easily and
 // drops out. Brunson (PG 21) and Barros (PG 39) — genuinely bottom-tier — remain. Re-measured
 // directly (54), not guessed.
-check(threeLayerHunt.targetableMinutes >= 50 && threeLayerHunt.targetableMinutes <= 58, 'Brunson and Barros retain their real weak-link minutes; Pierce and DeAndre Jordan no longer misread as targets');
+// 2026-09-25: band 50-58 -> 44-52 after graded position competence (positionCompetence.ts):
+// Dana Barros's 2-minute off-position SG sliver is gone (Brunson 34 + Barros 14 = 48). Same two
+// real targets, Pierce and DeAndre Jordan still out. Re-measured directly (48), not guessed.
+check(threeLayerHunt.targetableMinutes >= 44 && threeLayerHunt.targetableMinutes <= 52, 'Brunson and Barros retain their real weak-link minutes; Pierce and DeAndre Jordan no longer misread as targets');
 // 2026-08-19: threshold lowered 0.6->0.25 after talent.ts's spacing-conditional TAL correction.
 // Root cause, checked directly: Paul Pierce (real plus-shooter, SPC 81) gained TAL from the same
 // correction that dropped Andre Roberson (real near-zero shooter, SPC 5) — `autoAssignRotation`

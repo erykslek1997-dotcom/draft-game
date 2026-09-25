@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { realSecondaryPositions } from './positionCompetence';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { spanEndYears } from './era';
@@ -269,7 +270,7 @@ export function galleryEntries(): GalleryEntry[] {
       return {
         id: span.id,
         name: g.name,
-        naturalPos: [span.primaryPosition, ...span.secondaryPositions.slice(0, 1)].join('/'),
+        naturalPos: [span.primaryPosition, ...realSecondaryPositions(span).slice(0, 1)].join('/'),
         careerPos: span.primaryPosition,
         bestTier: tier,
         rarity: rarityForTier(tier),

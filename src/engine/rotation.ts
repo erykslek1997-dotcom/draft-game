@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { positionCompetence, realSecondaryPositions, COMPETENCE_MULTIPLIER } from './positionCompetence';
 import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositionFit, positionDistance, isUpwardSlide, hardLockedPosition } from './positions';
 // 2026-08-19: `computeTalent` import replaced with `effectiveTalent` (grades.ts) throughout —
 // every real starter/backup assignment decision here now uses the same tier-capped number
@@ -170,8 +171,11 @@ function starterFitMultiplier(player: PlayerSpan, slot: Position): number {
   // is — it would defeat the whole point if the starter search alone could still ignore it.
   const lock = hardLockedPosition(player);
   if (lock) return slot === lock ? 1 : 0;
-  if (slot === player.primaryPosition || player.secondaryPositions.includes(slot)) return 1;
-  if (positionDistance(player.primaryPosition, slot) === 1) {
+  // 2026-09-25: graded competence (positionCompetence.ts) — a real second position costs a
+  // marginal drop, and an adjacent slot only counts when the player can play it in an emergency.
+  const competence = positionCompetence(player, slot);
+  if (competence === 'natural' || competence === 'full' || competence === 'partial') return COMPETENCE_MULTIPLIER[competence];
+  if (competence === 'emergency') {
     if (!isUpwardSlide(player, slot)) return STARTER_FALLBACK_DOWN_MULTIPLIER;
     return effectiveTalent(player) >= STARTER_UP_SLIDE_ELITE_TALENT_FLOOR
       ? STARTER_FALLBACK_UP_MULTIPLIER
@@ -419,7 +423,7 @@ export function suggestBasicRotation(roster: PlayerSpan[]): Rotation {
   const fitRank = (p: PlayerSpan, slot: Position) =>
     p.primaryPosition === slot
       ? 0
-      : p.secondaryPositions.includes(slot)
+      : realSecondaryPositions(p).includes(slot)
         ? 1
         : isUpwardSlide(p, slot) && isPositionEligible(p, slot)
           ? 2
@@ -435,7 +439,7 @@ export function suggestBasicRotation(roster: PlayerSpan[]): Rotation {
   // position (LeBron at PG) and leaves a later slot to a player who can't really start there.
   const starterTiers: ((p: PlayerSpan, slot: Position) => boolean)[] = [
     (p, slot) => p.primaryPosition === slot && canStart(p),
-    (p, slot) => p.secondaryPositions.includes(slot) && canStart(p),
+    (p, slot) => realSecondaryPositions(p).includes(slot) && canStart(p),
     (p, slot) => isRealPositionFit(p, slot) && canStart(p),
     (p, slot) => p.primaryPosition === slot,
     (p, slot) => isRealPositionFit(p, slot),
@@ -1145,7 +1149,7 @@ function rebalanceCrossSlotMinutes(
   for (const primarySlot of STARTER_SLOTS) {
     const starter = primaryBySlot[primarySlot];
     if (!starter) continue;
-    for (const secondarySlot of starter.secondaryPositions) {
+    for (const secondarySlot of realSecondaryPositions(starter)) {
       if (secondarySlot === primarySlot) continue;
       const secondaryAssignments = slots[secondarySlot];
 

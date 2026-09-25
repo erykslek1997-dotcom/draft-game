@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { positionCompetence, COMPETENCE_MULTIPLIER } from './positionCompetence';
 import { normalizePlayerName } from '../data/schema';
 
 export const CAP_LIMIT = 100.9;
@@ -82,21 +83,28 @@ export function hardLockedPosition(player: PlayerSpan): Position | null {
 /**
  * Multiplier applied to a player's talent when assigned to a given slot, or 0 if the
  * assignment isn't realistic at all. A `HARD_POSITION_LOCKS` entry overrides everything else
- * unconditionally. Otherwise: primary position 1.0, an explicitly listed secondary position 0.9,
- * a position one spot away on the PG-SG-SF-PF-C spectrum but not explicitly listed:
- * `ADJACENT_UP_FALLBACK`/`ADJACENT_DOWN_FALLBACK` depending on direction (see `isUpwardSlide`).
- * Two or more spots away and not explicitly listed — a true center at point guard, a point
- * guard at center — isn't a realistic assignment at all, hence 0 rather than a soft penalty.
+ * unconditionally. Otherwise it follows the player's graded competence (`positionCompetence.ts`):
+ * natural 1.0, a 'full' second position 0.975, 'partial' 0.945, 'emergency'
+ * `ADJACENT_UP_FALLBACK`/`ADJACENT_DOWN_FALLBACK` depending on direction (see `isUpwardSlide`),
+ * and 'none' 0 — a slot the player can't realistically play, not a soft penalty.
  */
 export function positionFitMultiplier(player: PlayerSpan, slot: Position): number {
   const lock = hardLockedPosition(player);
   if (lock) return slot === lock ? 1 : 0;
-  if (slot === player.primaryPosition) return 1;
-  if (player.secondaryPositions.includes(slot)) return 0.9;
-  if (positionDistance(player.primaryPosition, slot) === 1) {
-    return isUpwardSlide(player, slot) ? ADJACENT_UP_FALLBACK : ADJACENT_DOWN_FALLBACK;
+  // 2026-09-25: graded per player (`positionCompetence.ts`) instead of "listed secondary 0.9,
+  // any adjacent slot 0.85/0.5". A real second position now costs only a marginal drop, and an
+  // adjacent slot a player can't really play is no longer free to fill.
+  const competence = positionCompetence(player, slot);
+  switch (competence) {
+    case 'natural':
+    case 'full':
+    case 'partial':
+      return COMPETENCE_MULTIPLIER[competence];
+    case 'emergency':
+      return isUpwardSlide(player, slot) ? ADJACENT_UP_FALLBACK : ADJACENT_DOWN_FALLBACK;
+    case 'none':
+      return 0;
   }
-  return 0;
 }
 
 export function isPositionEligible(player: PlayerSpan, slot: Position): boolean {

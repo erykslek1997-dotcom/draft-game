@@ -71,7 +71,11 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // real shift documented on `testDefensiveHuntability.ts`'s "two-anchor foundation" check this same
 // date. Barros's own real-position (PG) minutes are untouched; only his SG sliver shrank.
 // Re-measured directly (50), not guessed.
-check(weakLinkInsight?.message.includes('50 targetable minutes'), 'weak-link description reports the real 50-minute cost');
+// 2026-09-25: 50 -> 66. Graded position competence (positionCompetence.ts) rates DeAndre Jordan,
+// a classic center, as unable to play PF, so the 18 PF backup minutes he used to cover at a 0.5
+// fit now go to Larry Smith at his natural PF — and Smith is a genuine weak defender, so he joins
+// Brunson and Barros as a named target. Re-measured directly (66), not guessed.
+check(weakLinkInsight?.message.includes('66 targetable minutes'), 'weak-link description reports the real 66-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
@@ -104,7 +108,11 @@ const movementCoverageTeam = team('team-model-movement-coverage', [
   // span where Korver's own D-TAL (22) genuinely is bottom-tier. Still a validated movement
   // shooter in this window, so the movement-gravity checks above are unaffected.
   pick('Kyle Korver', '2016-18'),
-  pick('Tyson Chandler', '2011-13'),
+  // 2026-09-25: was Tyson Chandler 2011-13. Graded position competence (positionCompetence.ts)
+  // rates a classic center as unable to play PF, so Larry Smith had to cover the PF backup
+  // minutes and stopped being this fixture's dead ninth slot. Elton Brand 2012-14 is a real
+  // backup big for both PF and C, keeping the "eight meaningful players + a dead ninth" shape.
+  pick('Elton Brand', '2012-14'),
   pick('Andre Iguodala', '2011-13'),
   pick('Larry Smith', '1991-93'),
 ]);

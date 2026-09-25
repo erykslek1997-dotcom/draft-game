@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { realSecondaryPositions } from '../engine/positionCompetence';
 import type { Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
@@ -476,7 +477,7 @@ function QuickDraftBoard({
       <div className="qf-pool">
         {filtered.map(({ span }) => {
           const legal = canPick && isQuickPickLegal(state, span.id);
-          const position = span.secondaryPositions.length > 0 ? `${span.primaryPosition}/${span.secondaryPositions[0]}` : span.primaryPosition;
+          const position = realSecondaryPositions(span).length > 0 ? `${span.primaryPosition}/${realSecondaryPositions(span)[0]}` : span.primaryPosition;
           return (
             <button
               key={span.id}
