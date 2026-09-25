@@ -2,6 +2,7 @@ import type { OffensiveArchetype, PlayerSpan } from '../data/schema';
 import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import { computeOffensiveProfile } from './offensiveProfile';
 import { boxRatesForSpan, leagueFtRateForSpan } from './boxRatesLookup';
+import { historicalRimPressureEvidenceForSpan } from '../data/historicalRimPressureEvidence';
 
 /**
  * "Rim pressure" — how much a player forces the defense to send help at the rim / build its game
@@ -312,13 +313,33 @@ export function perimeterRimScore(f: { fta: number; ppg: number; fg: number }, w
 const PERIMETER_PROXY_WEIGHTS = [-35.393, 5.978, 0.263, 79.231];
 const PERIMETER_PROXY_SCORE_RUNGS: number[] = [-8.69, -2.641, -1.619, -0.924, -0.325, 0.225, 0.726, 1.268, 1.77, 2.27, 2.826, 3.476, 4.186, 5.25, 6.515, 8.038, 10.719, 14.379, 19.381, 22.652, 26.179, 31.876, 35.113, 38.548, 41.01, 44.81, 47.038, 50.35, 51.069, 53.255, 58.374, 59.581, 66.706];
 const PERIMETER_PROXY_VALUE_RUNGS: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.072, 1.474, 3.466, 5.471, 7.778, 10.721, 14.946, 19.843, 23.168, 27.617, 34.661, 39.878, 45.687, 49.585, 54.319, 63.331, 73.322, 76.71, 81.488, 85.575, 90.736, 95.674];
+// slasher reference group: 1321 spans with rim share >= 0.35
+const PERIMETER_PROXY_SLASHER_SCORE_RUNGS: number[] = [-5.763, -1.409, -0.443, 0.456, 1.265, 1.932, 2.645, 3.225, 3.757, 4.404, 5.25, 6.026, 6.985, 8.002, 9.755, 11.931, 15.296, 19.332, 24.813, 27.812, 30.877, 35.149, 37.929, 42.433, 45.411, 48.527, 49.081, 50.712, 51.069, 53.255, 54.974, 59.247, 62.672];
+const PERIMETER_PROXY_SLASHER_VALUE_RUNGS: number[] = [0, 0, 0, 0, 0, 0, 1.627, 3.526, 5.048, 6.605, 8.063, 9.598, 11.23, 13.297, 15.404, 17.448, 19.983, 24.774, 31.002, 34.004, 38.642, 45.97, 49.972, 55.689, 71.686, 81.488, 84.576, 87.953, 88.6, 90.736, 91.709, 93.832, 95.674];
 // --- end baked ---
+/**
+ * 2026-09-25, user's choice after dropping a one-name floor for Jordan ("ręczna podłoga Jordana nie
+ * jest rozwiązaniem wobec reszty"; option 2): at the top of the scale the all-perimeter mapping
+ * mixes two populations with the same free-throw volume — foul-drawing jump shooters (Harden,
+ * Doncic: proxy 90+, real 45-50) and genuine slashers (LeBron, Wade: proxy 75-81, real 86-89) —
+ * and so undersells the slashers. For a player on the documented, Greatest75-verified slasher list
+ * (`historicalRimPressureEvidence.ts`: Jordan, Dominique Wilkins, Baylor), the same score is read
+ * against real 1997+ slashers only — spans taking at least `SLASHER_RIM_SHARE` of their shots at
+ * the rim (LeBron 2008-10 is 38%). In-group fit R² 0.79 (LeBron 2008-10 89 -> 89). Everyone else
+ * keeps the all-perimeter mapping. Result: Jordan 1986-88 89, 1987-89 85, 1989-91 55; Dominique's
+ * peak 54; Baylor's 41 — their own box lines still decide, the list only picks the reference group.
+ */
+export const SLASHER_RIM_SHARE = 0.35;
+function isVerifiedSlasher(span: PlayerSpan): boolean {
+  return historicalRimPressureEvidenceForSpan(span, 'Slasher') !== null;
+}
 function perimeterRimProxy(span: PlayerSpan): number {
   const f = perimeterRimFeatures(span);
   if (!f) return 0;
   const score = perimeterRimScore(f);
-  const S = PERIMETER_PROXY_SCORE_RUNGS;
-  const V = PERIMETER_PROXY_VALUE_RUNGS;
+  const slasher = isVerifiedSlasher(span);
+  const S = slasher ? PERIMETER_PROXY_SLASHER_SCORE_RUNGS : PERIMETER_PROXY_SCORE_RUNGS;
+  const V = slasher ? PERIMETER_PROXY_SLASHER_VALUE_RUNGS : PERIMETER_PROXY_VALUE_RUNGS;
   if (score <= S[0]) return V[0];
   for (let i = 1; i < S.length; i++) {
     if (score <= S[i]) {
