@@ -144,13 +144,19 @@ export function TurnBudgetText({
   capLeft,
   slotsLeft,
   maxThisPick,
+  priciestAvailable,
 }: {
   round: number;
   rounds: number;
   capLeft: number;
   slotsLeft: number;
   maxThisPick: number;
+  /** Cost of the most expensive player still on the board. The per-pick ceiling is only worth
+   * mentioning once it's below that — early on "can cost up to 78.6" rules nobody out and just
+   * reads as noise (user-reported live: "78.6 nadal trochę dziwnie"). */
+  priciestAvailable?: number;
 }) {
+  const ceilingMatters = priciestAvailable == null || maxThisPick < priciestAvailable;
   const perPick = (slotsLeft > 0 ? capLeft / slotsLeft : capLeft).toFixed(1);
   const left = capLeft.toFixed(1);
   return (
@@ -163,7 +169,9 @@ export function TurnBudgetText({
       ) : (
         <>
           <CapIcon /> <b>{left}</b> caps left for your last {slotsLeft} picks — about <b>{perPick}</b> each
-          <span className="at-your-turn-reserve"> (max {maxThisPick.toFixed(1)} on this one)</span>
+          {ceilingMatters && (
+            <span className="at-your-turn-reserve"> · this pick can cost up to {maxThisPick.toFixed(1)}</span>
+          )}
         </>
       )}
     </span>
