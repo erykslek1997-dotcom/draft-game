@@ -29,6 +29,14 @@ function applyRuntimeParity(span: PlayerSpan): PlayerSpan {
   ) {
     return { ...span, primaryPosition: 'PF', secondaryPositions: ['C'] };
   }
+  // Harden 2015-onward — primary PG (see `POSITION_OVERRIDES` in players.ts).
+  if (
+    span.playerName === 'James Harden' &&
+    ['2015-17', '2017-19', '2018-20', '2019-21'].includes(span.spanLabel) &&
+    span.primaryPosition === 'SG'
+  ) {
+    return { ...span, primaryPosition: 'PG', secondaryPositions: ['SG'] };
+  }
   // `DEFENSIVE_ROLE_OVERRIDES` parity (see players.ts) — pool JSON is precomputed, mirror until rebuild.
   if (span.playerName === 'Magic Johnson' && span.spanLabel === '1989-91' && span.defensiveRole === 'Low Activity') {
     return { ...span, defensiveRole: 'Wing Stopper' };

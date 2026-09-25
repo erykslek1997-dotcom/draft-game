@@ -31,6 +31,9 @@ function pick(name: string, spanLabel: string): PlayerSpan {
 // 2026-09-16: Marion's own peak window shifted again (2005-07 -> 2006-08) after the D-TAL
 // graduated-corroboration-ceiling fix (defensiveTalent.ts) nudged which of his windows reads
 // highest — same underlying stretch of his career, same fixture intent, updated span label.
+//
+// 2026-09-25: Arenas's peak window shifted the same way (2004-06 -> 2005-07) after the
+// every-position playmaking bonus (talent.ts) — same fixture intent, updated span label.
 const pickedBefore83 = [
   'Larry Bird', 'LeBron James', 'Stephen Curry', 'Nikola Jokic', 'Kevin Durant', 'Michael Jordan',
   "Shaquille O'Neal", 'James Harden', 'Hakeem Olajuwon', 'Shai Gilgeous-Alexander', 'Joel Embiid',
@@ -54,7 +57,7 @@ const roster = [
   pick('Anthony Davis', '2017-19'),
   pick('Kristaps Porzingis', '2022-24'),
   pick('Shawn Marion', '2006-08'),
-  pick('Gilbert Arenas', '2004-06'),
+  pick('Gilbert Arenas', '2005-07'),
 ];
 const draftedNames = new Set(pickedBefore83.map(normalizePlayerName));
 const available = activeDraftPool.filter((candidate) => !draftedNames.has(normalizePlayerName(candidate.playerName)));

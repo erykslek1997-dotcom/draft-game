@@ -455,8 +455,11 @@ const PG_ARCHETYPE_REAL_SCORER_OTAL = 64;
  * so scoped to this exact (player, span) pair only, not a pattern to extend without being asked
  * again (same warning `GOAT_NAMES` carries).
  */
+// 2026-09-25, user: Harden's 2015-onward spans are now primary PG (players.ts POSITION_OVERRIDES)
+// and his 2018-20 span was explicitly moved back to MVP 92 like the rest of his peak — the entry
+// was removed. The mechanism stays for a future explicit ask.
 const NAMED_TIER_EXCEPTIONS: ReadonlySet<string> = new Set(
-  [{ name: 'James Harden', spanLabel: '2018-20' }].map((e) => `${normalizePlayerName(e.name)}|${e.spanLabel}`),
+  ([] as { name: string; spanLabel: string }[]).map((e) => `${normalizePlayerName(e.name)}|${e.spanLabel}`),
 );
 
 function hasNamedTierException(playerName?: string, spanLabel?: string): boolean {

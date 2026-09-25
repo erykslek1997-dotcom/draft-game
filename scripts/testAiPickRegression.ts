@@ -54,13 +54,13 @@ interface Snapshot {
   expectedPickLabel: string;
 }
 
-const byId = new Map(activeDraftPool.map((p) => [p.id, p]));
 // `draftedIds` also retires the drafted player's spans from the FULL pool (any career year is
 // draftable), so names have to resolve against that, not just the lean active pool.
-const nameById = new Map([...draftPool, ...activeDraftPool].map((p) => [p.id, p.playerName]));
+const spanById = new Map([...draftPool, ...activeDraftPool].map((p) => [p.id, p]));
+const nameById = new Map([...spanById].map(([id, p]) => [id, p.playerName]));
 
 function pickAt(seed: number, pickNumber: number, rosterIds: string[], draftedNames: string[]): { id: string; label: string } {
-  const roster = rosterIds.map((id) => byId.get(id)!);
+  const roster = rosterIds.map((id) => spanById.get(id)!);
   const drafted = new Set(draftedNames);
   const available = activeDraftPool.filter((p) => !drafted.has(normalizePlayerName(p.playerName)));
   const rng = mulberry32(mixSeed(seed, pickNumber));
