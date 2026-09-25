@@ -16,6 +16,9 @@ interface Props {
   howToPlay?: HowToPlayItem[];
   /** 2026-09-24: a way back to the main menu before the draft starts. */
   onExit?: () => void;
+  /** Called once the reel has stopped on the result — the intro's early lottery uses it to start
+   * preparing the player data while the player reads the result, not mid-spin. */
+  onRevealed?: () => void;
 }
 
 /** Tick delays for the reel, fast to slow — a slot machine winding down onto the result. */
@@ -72,7 +75,7 @@ function snakePickNumbers(slot: number, teamCount: number, rounds: number): numb
  * single slot-machine reel spins through the numbers and winds down onto YOUR pick, then spells
  * out what that slot means in a snake draft — every overall pick you'll make.
  */
-export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit }: Props) {
+export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit, onRevealed }: Props) {
   const human = teams.find((t) => t.isHuman) ?? teams[0];
   const teamCount = teams.length;
   const slot = human.draftSlot;
@@ -81,6 +84,12 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit 
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [archiveFact] = useState(() => DRAFT_ARCHIVE_FACTS[Math.floor(Math.random() * DRAFT_ARCHIVE_FACTS.length)]);
   const done = tick >= delays.length;
+  useEffect(() => {
+    if (!done || !onRevealed) return;
+    // Let the result paint first; preparing the data blocks the main thread for a moment.
+    const id = window.setTimeout(onRevealed, 250);
+    return () => window.clearTimeout(id);
+  }, [done, onRevealed]);
 
   useEffect(() => {
     if (done) return;

@@ -45,6 +45,9 @@ const DRAFT_HOW_TO_PLAY = [
 type Phase = 'lottery' | 'draft' | 'results';
 
 interface Props {
+  /** 2026-09-25: seed + teams of a draft whose lottery the intro already showed while the player
+   * data was still loading (see draftSetup.ts) — the draft is built from exactly these. */
+  preset?: { seed: number; teams: Team[] };
   mode: 'developer' | 'player';
   /** 2026-08-07, user explicit ask: manually pick for every one of the 16 teams (not just the
    * one randomly-assigned human slot), with an optional causal reasoning note per pick. Deliberately
@@ -182,10 +185,12 @@ function stripSharedLinkParams() {
   if (changed) window.history.replaceState(window.history.state, '', url.toString());
 }
 
-export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false }: Props) {
+export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false, preset }: Props) {
   const [resumed] = useState(() => (resume && !commissionerMode ? loadDraft() : null));
   const [draftState, setDraftState] = useState<DraftState>(
-    () => resumed?.state ?? createDraft(commissionerMode, undefined, humanTeamName, seedFromUrl()),
+    () =>
+      resumed?.state ??
+      createDraft(commissionerMode, undefined, humanTeamName, preset?.seed ?? seedFromUrl(), preset?.teams),
   );
   const [challenger, setChallenger] = useState<ChallengeChallenger | undefined>(() =>
     resumed ? resumed.challenger : challengerFromUrl(),
@@ -207,7 +212,8 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // 2026-08-16, user's own ask: a visible lottery-reveal moment for the already-randomized slot
   // assignment (see DraftLottery.tsx's own docstring — the randomization itself isn't new, only
   // this reveal step is) runs once, right after Start Draft, before the real board appears.
-  const [phase, setPhase] = useState<Phase>(resumed ? 'draft' : 'lottery');
+  // A draft whose lottery already ran on the intro (App.tsx's early lottery) starts on the board.
+  const [phase, setPhase] = useState<Phase>(resumed || preset ? 'draft' : 'lottery');
   const [finalTeams, setFinalTeams] = useState<Team[] | null>(null);
   // 2026-09-24, user's own call ("przywróćmy pasek"): the CPU-speed control is back, this time in
   // Player Mode too — at a fixed 'Normal' a human waited 10-30s between their own picks with

@@ -4,7 +4,7 @@ import { draftPool } from '../data/draftPool';
 import { DRAFT_EXPERIMENT } from './draftExperiment';
 import { peakDraftPool } from './peakDraftPool';
 import { leanDraftPool } from './leanDraftPool';
-import { randomTeamNames } from './teamNames';
+import { createInitialTeams } from './draftSetup';
 import {
   ROSTER_SIZE,
   CAP_LIMIT,
@@ -97,26 +97,7 @@ const noCapLegalCache = new WeakMap<DraftState, boolean>();
  * the other 15 stay on the normal random generator untouched. A blank/whitespace-only
  * `humanTeamName` is treated the same as not passing one at all (falls through to the random
  * draw) rather than shipping a team with an empty name. */
-export function createInitialTeams(humanTeamName?: string, rng: () => number = Math.random): Team[] {
-  const humanIndex = Math.floor(rng() * TEAM_COUNT);
-  const names = randomTeamNames(TEAM_COUNT);
-  const trimmedHumanName = humanTeamName?.trim();
-  if (trimmedHumanName) names[humanIndex] = trimmedHumanName;
-  const teams: Team[] = [];
-  for (let i = 0; i < TEAM_COUNT; i++) {
-    // `draftSlot` is 1-based and equals the team's position in round 1 — the same index the snake
-    // order runs off — so "Kentucky Chickens #4" tells a drafter exactly when that team picks.
-    teams.push({
-      id: `t${i}`,
-      name: names[i],
-      draftSlot: i + 1,
-      isHuman: i === humanIndex,
-      roster: [],
-      rotation: null,
-    });
-  }
-  return teams;
-}
+export { createInitialTeams } from './draftSetup';
 
 /**
  * `seed` (uint32) is optional: omitted, a fresh random one is drawn per draft. Pass one to replay
@@ -129,6 +110,8 @@ export function createDraft(
   pool: PlayerSpan[] = players,
   humanTeamName?: string,
   seed: number = randomSeed(),
+  /** Teams already drawn for this seed (the intro's early lottery, see draftSetup.ts). */
+  presetTeams?: Team[],
 ): DraftState {
   // Optional-chained: `import.meta.env` is undefined when an engine test script runs this under
   // tsx (no Vite), and `.DEV` on undefined would throw.
@@ -137,7 +120,7 @@ export function createDraft(
     console.info(`[draft] seed ${seed} — pass ?draftSeed=${seed} to replay this draft`);
   }
   return {
-    teams: createInitialTeams(humanTeamName, mulberry32(mixSeed(seed, 0))),
+    teams: presetTeams ?? createInitialTeams(humanTeamName, mulberry32(mixSeed(seed, 0))),
     draftedIds: new Set(),
     round: 0,
     pickInRound: 0,

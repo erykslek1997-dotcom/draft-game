@@ -15,6 +15,7 @@ import type { Rotation, Team } from '../engine/types';
 import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
 import { NOT_YET, STEALS_BLOCKS_NOTE, THREE_POINT_LINE_NOTE, hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
 import { EraYears } from './EraYears';
+import { draftPool as fullDraftPool } from '../data/draftPool';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import {
   offensiveGrade,
@@ -230,10 +231,31 @@ function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, c
   return label;
 }
 
+/** 2026-09-25, user's ask ("rozszerzenie scouting report o wszystkie sezony, tylko surowe
+ * statystyki; gracz może 3 razy w ciągu draftu użyć scouta żeby pokazać dokładnie offense,
+ * defense itd"): how many full scouting reports a draft allows. */
+export const SCOUT_REPORTS_PER_DRAFT = 3;
+
+/** Every career window the database has for a player, including the ones this draft's lean pool
+ * leaves out (a star keeps only his peak windows there). Built once, on first open. */
+let fullCareerByPlayer: Map<string, PlayerSpan[]> | null = null;
+function fullCareerFor(playerName: string): PlayerSpan[] {
+  if (!fullCareerByPlayer) {
+    fullCareerByPlayer = new Map();
+    for (const span of fullDraftPool) {
+      const list = fullCareerByPlayer.get(span.playerName);
+      if (list) list.push(span);
+      else fullCareerByPlayer.set(span.playerName, [span]);
+    }
+  }
+  return fullCareerByPlayer.get(playerName) ?? [];
+}
+
 /** 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
- * glass on a player face-card opens this instead of expanding the card in place: every available
- * season with real box-score stats and its own Draft button, the same content the card's earlier
- * inline expand showed, just with room to show all of it at once instead of a "Show more" toggle. */
+ * glass on a player face-card opens this instead of expanding the card in place.
+ * 2026-09-25: lists every career window on record (raw box score only), in career order; the ones
+ * in this draft carry a Draft button. A scouting report (3 per draft) adds his tier and the
+ * offense/defense/portability/spacing/durability grades for every window. */
 function PlayerPeekModal({
   group,
   state,
@@ -241,6 +263,9 @@ function PlayerPeekModal({
   currentTeam,
   onClose,
   onPick,
+  scouted,
+  scoutsLeft,
+  onScout,
 }: {
   group: { playerName: string; spans: PlayerSpan[]; spansByAiValue: PlayerSpan[] };
   state: DraftState;
@@ -248,12 +273,23 @@ function PlayerPeekModal({
   currentTeam: Team;
   onClose: () => void;
   onPick: (id: string) => void;
+  scouted: boolean;
+  scoutsLeft: number;
+  onScout: () => void;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  const draftableIds = useMemo(() => new Set(group.spans.map((span) => span.id)), [group.spans]);
+  const rows = useMemo(() => {
+    const byId = new Map<string, PlayerSpan>();
+    for (const span of fullCareerFor(group.playerName)) byId.set(span.id, span);
+    for (const span of group.spans) byId.set(span.id, span);
+    return [...byId.values()].sort((a, b) => a.spanLabel.localeCompare(b.spanLabel));
+  }, [group.playerName, group.spans]);
 
   return (
     <div className="player-peek-overlay" onClick={onClose}>
@@ -272,8 +308,28 @@ function PlayerPeekModal({
           <div>
             <h2 className="player-peek-name">{group.playerName}</h2>
             <span className="player-peek-sub">
-              {naturalPosition(group.playerName)} · {group.spans.length} stretch{group.spans.length > 1 ? 'es' : ''} of his career to choose from
+              {naturalPosition(group.playerName)} · {rows.length} stretch{rows.length > 1 ? 'es' : ''} of his career on record ·{' '}
+              {group.spans.length} in this draft
             </span>
+          </div>
+          <div className="player-peek-scout">
+            {scouted ? (
+              <span className="player-peek-scouted">✓ Scouting report</span>
+            ) : (
+              <button
+                type="button"
+                className="secondary-btn player-peek-scout-btn"
+                disabled={scoutsLeft <= 0}
+                onClick={onScout}
+                title={
+                  scoutsLeft > 0
+                    ? 'Reveal his tier and offense, defense, portability, spacing and durability grades for every stretch.'
+                    : 'You have used all your scouting reports for this draft.'
+                }
+              >
+                🔍 Scout him · {scoutsLeft}/{SCOUT_REPORTS_PER_DRAFT} left
+              </button>
+            )}
           </div>
         </div>
         <div className="table-scroll">
@@ -282,7 +338,6 @@ function PlayerPeekModal({
               <tr>
                 <th>Years</th>
                 <th>Pos</th>
-                <th>Tier</th>
                 <th className="num">PTS</th>
                 <th className="num">AST</th>
                 <th className="num">REB</th>
@@ -290,19 +345,30 @@ function PlayerPeekModal({
                 <th className="num">BLK</th>
                 <th className="num">FG%</th>
                 <th className="num">3PT%</th>
+                <th className="num">FT%</th>
                 <th className="num">Caps</th>
+                {scouted && (
+                  <>
+                    <th>Tier</th>
+                    <th title="Offense">OFF</th>
+                    <th title="Defense">DEF</th>
+                    <th title="Offensive portability">O-POR</th>
+                    <th title="Defensive portability">D-POR</th>
+                    <th title="Spacing">SPC</th>
+                    <th title="Durability">DUR</th>
+                  </>
+                )}
                 <th />
               </tr>
             </thead>
             <tbody>
-              {group.spansByAiValue.map((span) => {
-                const ctx = tierContextFor(span);
-                const legal = canPick && isPickLegal(state, span.id);
+              {rows.map((span) => {
+                const inDraft = draftableIds.has(span.id);
+                const legal = inDraft && canPick && isPickLegal(state, span.id);
                 return (
-                  <tr key={span.id}>
+                  <tr key={span.id} className={inDraft ? undefined : 'player-peek-row--off'}>
                     <td><EraYears span={span} /></td>
                     <td>{span.primaryPosition}</td>
-                    <td className="tier-cell">{overallTierForSpan(ctx)}</td>
                     <td className="num">{span.box.ppg.toFixed(1)}</td>
                     <td className="num">{span.box.apg.toFixed(1)}</td>
                     <td className="num">{span.box.rpg.toFixed(1)}</td>
@@ -323,17 +389,35 @@ function PlayerPeekModal({
                     ) : (
                       <td className="num era-na" title={THREE_POINT_LINE_NOTE}>{NOT_YET}</td>
                     )}
+                    <td className="num">{(span.box.ftPct * 100).toFixed(1)}%</td>
                     <td className="num">{span.fga.toFixed(1)}</td>
+                    {scouted && (
+                      <>
+                        <td className="tier-cell">{overallTierForSpan(tierContextFor(span))}</td>
+                        <td><AtGrade grade={offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))} /></td>
+                        <td><AtGrade grade={defensiveGrade(computeDefensiveTalent(span))} /></td>
+                        <td><AtGrade grade={offensivePortabilityGrade(computeOffensivePortability(span))} /></td>
+                        <td><AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(span))} /></td>
+                        <td><AtGrade grade={spacingGrade(computeSpacing(span), span)} /></td>
+                        <td><AtGrade grade={durabilityGrade(computeDurability(span))} /></td>
+                      </>
+                    )}
                     <td>
-                      <button
-                        type="button"
-                        className="at-draft-btn"
-                        disabled={!legal}
-                        title={draftButtonTitle(state, span.id, canPick, currentTeam)}
-                        onClick={() => onPick(span.id)}
-                      >
-                        Draft
-                      </button>
+                      {inDraft ? (
+                        <button
+                          type="button"
+                          className="at-draft-btn"
+                          disabled={!legal}
+                          title={draftButtonTitle(state, span.id, canPick, currentTeam)}
+                          onClick={() => onPick(span.id)}
+                        >
+                          Draft
+                        </button>
+                      ) : (
+                        <span className="player-peek-off-note" title="This stretch isn't in this draft's pool — shown for reference.">
+                          not in draft
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -665,6 +749,33 @@ export default function DraftBoard({
   // single name (not a Set like `expanded`, which developer mode's own accordion still uses
   // unchanged) — only one card can be peeked at a time.
   const [peekPlayer, setPeekPlayer] = useState<string | null>(null);
+  // Scouting reports used this draft — kept per draft seed so a resumed draft remembers them.
+  const scoutKey = `draftverse.scouted.v1.${state.seed}`;
+  const [scoutedPlayers, setScoutedPlayers] = useState<Set<string>>(() => {
+    try {
+      // Drop reports left over from earlier drafts.
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('draftverse.scouted.v1.') && key !== scoutKey) localStorage.removeItem(key);
+      }
+      const raw = localStorage.getItem(scoutKey);
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
+  function scoutPlayer(name: string) {
+    setScoutedPlayers((prev) => {
+      if (prev.has(name) || prev.size >= SCOUT_REPORTS_PER_DRAFT) return prev;
+      const next = new Set(prev).add(name);
+      try {
+        localStorage.setItem(scoutKey, JSON.stringify([...next]));
+      } catch {
+        // storage unavailable — the reports still work for this session
+      }
+      return next;
+    });
+  }
   const [evidenceOpen, setEvidenceOpen] = useState<Set<string>>(new Set());
   // 2026-09-12, user-reported live (mobile screenshot: all 9 round columns squeezed to fit,
   // wrapping names onto 2-4 lines each) — real horizontal scroll (restored below, mobile-only)
@@ -1007,6 +1118,10 @@ export default function DraftBoard({
         // what the comment already said was true; still never DISPLAYED as a raw number in player
         // mode (only the coarser tier badge is), so this doesn't reveal anything new on-screen.
         bestTalent: effectiveTalent(bestTalentSpan),
+        // The TAL number the card itself shows for this player's best span — the list is ordered
+        // by it so the visible numbers read top to bottom (user's ask: "kolejność od TAL dla
+        // spójności").
+        bestDisplayTal: displayTalentForSpan(tierContextFor(bestTalentSpan)),
         // 2026-08-08, user's v0.2 rating batch: GOAT has no ceiling of its own
         // (`tierCeiling('GOAT')` is `Infinity`), so a GOAT-tier span's `bestTalent` number can
         // land on the exact same value as a merely-Greatest-Peak span (both 98, say) — found
@@ -1075,6 +1190,11 @@ export default function DraftBoard({
           // previous All-Star-count/raw-`bestTalent` order survives as the tiebreak WITHIN a tier,
           // same "fully deterministic and quality-ordered, never shown to the player" reasoning the
           // 2026-08-16 fix below already established for those two.
+          // 2026-09-25, user's ask ("kolejność pokazywania zawodników od TAL dla spójności"): the
+          // card shows a TAL number, so the list now follows it; tier, then All-Star count, then the
+          // raw number only break ties between equal visible TALs.
+          const talDiff = b.bestDisplayTal - a.bestDisplayTal;
+          if (talDiff !== 0) return talDiff;
           const tierDiff = tierRank(b.bestTier) - tierRank(a.bestTier);
           if (tierDiff !== 0) return tierDiff;
           const starDiff = allStarCount(b.playerName) - allStarCount(a.playerName);
@@ -1681,6 +1801,9 @@ export default function DraftBoard({
                       onPick(id);
                       setPeekPlayer(null);
                     }}
+                    scouted={scoutedPlayers.has(group.playerName)}
+                    scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
+                    onScout={() => scoutPlayer(group.playerName)}
                   />
                 );
               })()}
