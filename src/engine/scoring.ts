@@ -610,6 +610,43 @@ export function offensiveCohesion(team: Team): OffensiveCohesionResult {
 }
 
 /**
+ * 2026-09-25, user-reported ("5 różnicy między Jokiciem a Gobertem nie ma sensu, możliwe że
+ * najlepszy w historii gracz w ataku vs słaby ofensywie center"): every offense component is a
+ * minutes-weighted team average, so one starter is at most ~15% of each — swapping the best
+ * offensive player ever (O-TAL 100) for a weak-offense center (Gobert, 63) moved the whole
+ * offense by ~5 points. `offensiveCohesion` only rewards a PAIR of elite scorers, so a single
+ * all-time engine had no star term at all. This is that term: an additive lift keyed on the best
+ * starter's own O-TAL, scaled by his starter-minutes share (a bench-minutes star leverages less),
+ * applied before the weak-starter cap so a star can't carry a lineup with a real offensive hole
+ * past it. Spans -2 (no starter at O-TAL 85+) to +6 (a full-minutes O-TAL 100 engine) rather than
+ * 0 to +8: a third of AI teams start an O-TAL 100 player, so a pure bonus shifted the whole league
+ * (mean 77.0 -> 80.3 over 192 seeded teams); the offset keeps the same 8-point star-vs-no-star
+ * spread with less drift (mean 78.9, teams above 90: 3 -> 14 of 192). Same Billups/White/E. Jones/
+ * Pippen shell: Jokic 77 -> 83, Gobert stays 72 (engine floor).
+ */
+export const MAX_SUPERSTAR_ENGINE_BONUS = 6;
+const NO_SUPERSTAR_ENGINE_MALUS = 2;
+const SUPERSTAR_ENGINE_OTAL_START = 85;
+const SUPERSTAR_ENGINE_OTAL_FULL = 100;
+
+export function superstarEngineBonus(team: Team): number {
+  let best = 0;
+  for (const { player, minutes } of primaryStarters(team)) {
+    if (minutes <= 0) continue;
+    const readiness = Math.max(
+      0,
+      Math.min(
+        1,
+        (computeOffensiveTalent(player) - SUPERSTAR_ENGINE_OTAL_START) /
+          (SUPERSTAR_ENGINE_OTAL_FULL - SUPERSTAR_ENGINE_OTAL_START),
+      ),
+    );
+    best = Math.max(best, readiness * Math.min(1, minutes / STARTER_MINUTES));
+  }
+  return best * (MAX_SUPERSTAR_ENGINE_BONUS + NO_SUPERSTAR_ENGINE_MALUS) - NO_SUPERSTAR_ENGINE_MALUS;
+}
+
+/**
  * 2026-09-16, user's direct follow-up on `OFFENSE_SPACING_ELITE_ENGINE_BONUS` above ("chodzi mi
  * żeby można było zbudować wokół Nasha kompletnie defensywny zespół który i tak będzie mocny w
  * ataku" — a team built around a real elite offensive engine should be able to field an
@@ -741,7 +778,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
-  const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus));
+  const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
   const cappedBlended = hasWeakOffensiveStarter(team) ? weakOffensiveCenterCap(blended) : blended;
   const score = Math.round(Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)));
   return { ...components, score };
