@@ -6003,28 +6003,46 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   }
 }
 
-/* 2026-09-25, user's ask ("przyciski można w stylu tych smaczków z innych er" → the Expand/Collapse
-   buttons and the ranking cards' section headers): each one is an era sticker — Rotation in
-   Showtime stripes, Team analysis in Jordan-era teal/purple, Championship odds on vintage
-   parchment, Draft order in Deadball chrome, All metrics in Pace & space glass. The coloured rail
-   they used to carry is dropped; the sticker is the landmark now. */
-.at-shell .result-accordion-section > summary:has(.section-stamp) { border-left-color: transparent; gap: 8px; min-height: 40px; }
-.at-shell .section-stamp {
-  font-size: 12px;
-  padding: 2px 9px;
-  cursor: pointer;
-  letter-spacing: 0.03em;
+.at-shell .expand-all-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* 2026-09-25, user's follow-up ("zamiast naklejek zrobić to w podobnym stylu ale mniej chaotyczne",
+   screenshots: the top bar — Draft/Team, CPU speed, Show draft board — and the position filters):
+   one calm retro treatment instead of a different sticker per button. Idle buttons are dark with a
+   faint printed double frame; the active one is cream jersey stock with navy lettering and a thin
+   red/blue stripe along the bottom — the Showtime pinstripe, used once, as the "you are here" mark. */
+.at-shell .at-tab-btn,
+.at-shell .at-speed-btn,
+.at-shell .at-board-toggle,
+.at-shell .at-filter-pill,
+.at-shell .retro-btn {
+  border: 1px solid #243246;
+  background: linear-gradient(180deg, #121b28, #0b111a);
+  color: #b9c7da;
+  box-shadow:
+    inset 0 0 0 2px rgba(5, 7, 12, 0.9),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
-.at-shell .era-stamp.stamp-btn {
-  font: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 7px 14px 9px;
-  margin: 0;
-  cursor: pointer;
-  border-width: 0;
+.at-shell .at-tab-btn:hover,
+.at-shell .at-speed-btn:hover,
+.at-shell .at-board-toggle:hover,
+.at-shell .at-filter-pill:hover,
+.at-shell .retro-btn:hover {
+  border-color: #3b5373;
+  color: #eef4fb;
 }
-.at-shell .era-stamp--deadball.stamp-btn { border-width: 0; }
-.at-shell .expand-all-controls { display: flex; gap: 12px; flex-wrap: wrap; }
+.at-shell .at-tab-btn.at-active,
+.at-shell .at-speed-btn.at-active,
+.at-shell .at-speed-btn[aria-pressed='true'],
+.at-shell .at-filter-pill.at-active,
+.at-shell .at-board-toggle[aria-expanded='true'] {
+  border-color: #d9cba6;
+  color: #13295a;
+  background:
+    linear-gradient(to top, #1d428a 0 2px, #f6eedb 2px 3px, #c8102e 3px 5px, transparent 5px),
+    linear-gradient(180deg, #fbf5e6, #ece0c3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 2px 6px rgba(0, 0, 0, 0.45);
+}

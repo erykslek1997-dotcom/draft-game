@@ -2054,11 +2054,11 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       <MatchupMatrix teams={scoredTeams} evaluations={leagueEval} focusTeamId={scoredTeams.find((team) => team.isHuman)?.id} />
       <h2 className="results-section-title">Final team ranking</h2>
       <div className="expand-all-controls">
-        <button className="secondary-btn era-stamp era-stamp--showtime stamp-btn" onClick={() => setExpandedTeamIds(new Set(teams.map((t) => t.id)))}>
+        <button className="secondary-btn retro-btn" onClick={() => setExpandedTeamIds(new Set(teams.map((t) => t.id)))}>
           Expand all
         </button>
         <button
-          className="secondary-btn era-stamp era-stamp--deadball stamp-btn"
+          className="secondary-btn retro-btn"
           onClick={() => setExpandedTeamIds(new Set<string>())}
         >
           Collapse all
@@ -2163,7 +2163,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 )}
                 {fitDetail && (
                   <details className="result-accordion-section team-analysis-section">
-                    <summary><span className="era-stamp era-stamp--jordan section-stamp">Team analysis</span></summary>
+                    <summary>Team analysis</summary>
                     {insights && (
                       <div className="notes notes-split analysis-insights analysis-insights-lead">
                         <div className="notes-column notes-strengths">
@@ -2228,7 +2228,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                       <MetricBar label="Title structure" value={fitDetail.components.championshipStructure} hint="How closely the roster's shape matches real championship rosters." />
                     </div>
                     <details className="analysis-raw">
-                      <summary><span className="era-stamp era-stamp--modern section-stamp">All metrics &amp; inputs</span></summary>
+                      <summary>All metrics &amp; inputs</summary>
                       {offenseDetail && (
                         <>
                           <div className="analysis-section-heading">Offense</div>
@@ -2295,7 +2295,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   </details>
                 )}
                 <details className="result-accordion-section championship-section">
-                  <summary><span className="era-stamp era-stamp--vintage section-stamp">Championship odds</span></summary>
+                  <summary>Championship odds</summary>
                   {leagueEvalRow && (
                     <div className="championship-summary" title="Simulated over the full 16-team bracket, seeded by the final ranking.">
                       <div className="championship-headline">
@@ -2325,7 +2325,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                       right above it (e.g. +8.2 net for a 16th-place, 0%-odds team). */}
                 </details>
                 <details className="result-accordion-section rotation-panel">
-                  <summary><span className="era-stamp era-stamp--showtime section-stamp">Rotation</span></summary>
+                  <summary>Rotation</summary>
                   {/* 2026-09-24, user's own ask ("a gdyby to dla wszystkich takimi kafelkami
                       zastąpić?"): every team's rotation now uses the same per-position tiles as the
                       hero's own Rotation panel, instead of a long one-row-per-stint list. */}
@@ -2337,7 +2337,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   />
                 </details>
                 <details className="result-accordion-section draft-order">
-                  <summary><span className="era-stamp era-stamp--deadball section-stamp">Draft order</span></summary>
+                  <summary>Draft order</summary>
                   <ol>
                     {teamHistory.map((entry) => {
                       const p = playerById(entry.playerId);
