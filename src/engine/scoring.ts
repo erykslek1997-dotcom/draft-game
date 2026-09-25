@@ -5,7 +5,6 @@ import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions
 import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact } from './talent';
 import { isPlusShooter } from './shooting';
 import {
-  computeSpacing,
   isShootingAnomalyPlayer,
   spacingBreakdown,
   selfCreationRate,
@@ -13,6 +12,7 @@ import {
   WALKING_GRAVITY_FLOOR,
 } from './spacing';
 import { rimPressureTeam } from './rimPressure';
+import { teamSpacingValue } from './midrangeGravity';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { LOW_OFFENSE_BIG_OTAL_CEILING, LOW_USAGE_BIG_FGA_CEILING } from './aiDrafter';
 import { isNamedPgEligible } from './pgEligibility';
@@ -922,7 +922,7 @@ const TWO_NON_SPACER_STARTERS_CEILING = 75;
 const NON_SPACER_PG_STARTER_CEILING = 65;
 
 function spacingNonSpacerCeiling(starterAssignments: ReturnType<typeof primaryStarters>): number {
-  const hardNonSpacers = starterAssignments.filter(({ player }) => computeSpacing(player) < 30);
+  const hardNonSpacers = starterAssignments.filter(({ player }) => teamSpacingValue(player) < 30);
   if (hardNonSpacers.length < 2) return 100;
   const pgIsNonSpacer = hardNonSpacers.some(({ slot }) => slot === 'PG');
   return pgIsNonSpacer ? NON_SPACER_PG_STARTER_CEILING : TWO_NON_SPACER_STARTERS_CEILING;
@@ -936,18 +936,18 @@ export function spacingScore(team: Team): number {
   // See `BENCH_INFLUENCE_BOOST`'s own docstring above — the multi-gravity/anomaly-floor logic
   // below already gives bench-minute shooters full (not minutes-diluted) credit on its own terms,
   // so only this base weighted average needs the same boost offense/defense already get.
-  const fullRotationBase = benchBoostedWeightedAverage(team, computeSpacing, false);
+  const fullRotationBase = benchBoostedWeightedAverage(team, teamSpacingValue, false);
   // A team is judged first by the five opponents actually have to guard to open each game.
   // Bench shooting still matters, but cannot turn a Wade/Iguodala/Webber front line into an
   // elite-spacing starting lineup merely because Barry or Bonner appears later in the rotation.
   const starterAssignments = primaryStarters(team);
   const starters = starterAssignments.map((entry) => entry.player);
   const starterBase = starters.length > 0
-    ? starters.reduce((sum, player) => sum + computeSpacing(player), 0) / starters.length
+    ? starters.reduce((sum, player) => sum + teamSpacingValue(player), 0) / starters.length
     : fullRotationBase;
   const base = fullRotationBase * 0.35 + starterBase * 0.65;
   const plusShooterCount = starters.filter(isPlusShooter).length;
-  const hardNonSpacerCount = starters.filter((player) => computeSpacing(player) < 30).length;
+  const hardNonSpacerCount = starters.filter((player) => teamSpacingValue(player) < 30).length;
   const nonSpacerCeiling = spacingNonSpacerCeiling(starterAssignments);
 
   // 2026-08-19, user-reported: a real Paul George "Walking gravity" span (SPC 100, no Curry on
