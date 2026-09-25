@@ -87,6 +87,7 @@ function toPlayerFeature(
         assignedSlots.reduce((sum, a) => sum + a.minutes, 0)
       : 1;
   const movement = movementShootingForSpan(p);
+  const startYear = Number.parseInt(p.spanLabel, 10);
   return {
     playerId: p.id,
     playerName: p.playerName,
@@ -129,6 +130,15 @@ function toPlayerFeature(
     movementShooting: movement.score,
     movementShootingConfidence: movement.confidence,
     movementShootingEvidence: movement.evidence || undefined,
+    ppg: p.box.ppg,
+    apg: p.box.apg,
+    spg: p.box.spg,
+    bpg: p.box.bpg,
+    ftPct: p.box.ftPct,
+    startYear,
+    // Steals and blocks became official stats in 1973-74. Older spans carry either 0/0 ("not
+    // recorded") or an estimate — never quote either as a real number.
+    defensiveStatsTracked: startYear >= 1974,
   };
 }
 
