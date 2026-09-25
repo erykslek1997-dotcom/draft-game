@@ -1,4 +1,5 @@
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
+import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
 import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE, predatesThreePointLine } from './era';
 import { computeDefensiveImpact } from './defense';
@@ -1448,7 +1449,8 @@ export interface TalentBreakdown {
   positionCorrection: number;
 }
 
-export function talentBreakdown(span: PlayerSpan): TalentBreakdown {
+export function talentBreakdown(rawSpan: PlayerSpan): TalentBreakdown {
+  const span = ratingSpan(rawSpan);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(talentScaled(span, 1.0)))));
   const usageScaleApplied = usageOffenseScaleTapered(span, baseTal);
 
@@ -1714,7 +1716,8 @@ const talentCache = new Map<string, number>();
  * revert (the TAL/O-TAL formula experiments that session added were reverted; this one small,
  * safe export survived because GOAT tier itself was explicitly kept).
  */
-export function rawUncappedTalent(span: PlayerSpan): number {
+export function rawUncappedTalent(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
   const baseScaled = talentScaled(span, 1.0);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
   const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
@@ -1850,7 +1853,8 @@ function namedTalPenalty(span: PlayerSpan): number {
   return NAMED_TAL_PENALTY.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0;
 }
 
-export function computeTalent(span: PlayerSpan): number {
+export function computeTalent(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
   const cached = talentCache.get(span.id);
   if (cached !== undefined) return cached;
 
@@ -1883,7 +1887,8 @@ export function computeTalent(span: PlayerSpan): number {
  * already earned on other merits before this bonus existed (Hakeem/Duncan/Robinson/Kareem — all
  * unaffected, their pre-bonus number already cleared MVP on its own).
  */
-export function computeTalentWithoutEliteDefenseBonus(span: PlayerSpan): number {
+export function computeTalentWithoutEliteDefenseBonus(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
   const ceiling = Math.min(
     pgOffenseGradeCeiling(span),
     pgDefenseGradeCeiling(span),
@@ -1908,7 +1913,8 @@ export function computeTalentWithoutEliteDefenseBonus(span: PlayerSpan): number 
  * Thomas, Steve Nash) — both hard TAL thresholds a <=8-point correction would otherwise flip. The
  * numeric value everywhere else keeps the full bridged number.
  */
-export function computeTalentWithoutBridge(span: PlayerSpan): number {
+export function computeTalentWithoutBridge(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
   const ceiling = Math.min(
     pgOffenseGradeCeiling(span),
     pgDefenseGradeCeiling(span),
@@ -2011,7 +2017,8 @@ const DEFENSE_TAL_SCALE_BY_POSITION: Record<Position, number> = {
  */
 const offensiveTalentCache = new Map<string, number>();
 
-export function computeOffensiveTalent(span: PlayerSpan): number {
+export function computeOffensiveTalent(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
   const cached = offensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const { offense } = rawComponents(span, false);
@@ -2038,7 +2045,8 @@ export function computeOffensiveTalent(span: PlayerSpan): number {
 /** Same 2026-08-16 memoization as `computeOffensiveTalent` above, same reason. */
 const uncappedOffensiveTalentCache = new Map<string, number>();
 
-export function computeUncappedOffensiveTalent(span: PlayerSpan): number {
+export function computeUncappedOffensiveTalent(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
   const cached = uncappedOffensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const { offense } = rawComponents(span, false);
