@@ -6002,3 +6002,29 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
     width: calc(50% - 3px);
   }
 }
+
+/* 2026-09-25, user's ask ("przyciski można w stylu tych smaczków z innych er" → the Expand/Collapse
+   buttons and the ranking cards' section headers): each one is an era sticker — Rotation in
+   Showtime stripes, Team analysis in Jordan-era teal/purple, Championship odds on vintage
+   parchment, Draft order in Deadball chrome, All metrics in Pace & space glass. The coloured rail
+   they used to carry is dropped; the sticker is the landmark now. */
+.at-shell .result-accordion-section > summary:has(.section-stamp) { border-left-color: transparent; gap: 8px; min-height: 40px; }
+.at-shell .section-stamp {
+  font-size: 12px;
+  padding: 2px 9px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+}
+.at-shell .era-stamp.stamp-btn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 7px 14px 9px;
+  margin: 0;
+  cursor: pointer;
+  border-width: 0;
+}
+.at-shell .era-stamp--deadball.stamp-btn { border-width: 0; }
+.at-shell .expand-all-controls { display: flex; gap: 12px; flex-wrap: wrap; }
