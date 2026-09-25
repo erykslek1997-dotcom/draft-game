@@ -340,7 +340,13 @@ const POSITION_OVERRIDES: { name: string; spanLabel: string; position: Position;
   // auto-tagged primary PG (secondary SG) — moving it to primary SG. `keepOldAsSecondary: true`
   // here (unlike Pierce/Barkley above) because the old primary (PG) is a real, legitimate
   // secondary for him, not a data bug being purged — he genuinely ran point in that stretch too.
-  { name: 'James Harden', spanLabel: '2018-20', position: 'SG', keepOldAsSecondary: true },
+  // 2026-09-25, user ("Hardena od 2015 reszta kariery liczymy jako PG"): superseded the SG call
+  // above for 2018-20 — every Harden span from 2015 on is primary PG with SG as a real secondary.
+  // 2016-18 and 2020-onward were already PG in the source data; these four were SG-tagged.
+  { name: 'James Harden', spanLabel: '2015-17', position: 'PG', keepOldAsSecondary: true },
+  { name: 'James Harden', spanLabel: '2017-19', position: 'PG', keepOldAsSecondary: true },
+  { name: 'James Harden', spanLabel: '2018-20', position: 'PG', keepOldAsSecondary: true },
+  { name: 'James Harden', spanLabel: '2019-21', position: 'PG', keepOldAsSecondary: true },
   // 2026-08-13, user-reported: Kyrie Irving's 2022-24 span (Dallas, alongside Luka Dončić) is
   // auto-tagged SG — the only one of his 8 real spans that isn't PG (2011-19 all read PG with no
   // secondary at all, same as this override leaves it). Same class of bug as Pierce above, not a
