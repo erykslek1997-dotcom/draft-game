@@ -5,16 +5,18 @@
  *  - PERIMETER_PROXY_WEIGHTS: least squares of the target on [1, FTA over the knee, ppg, FG%]
  *  - SCORE/VALUE rungs: matching quantiles of that linear score and of the target, so the proxy
  *    reproduces the real distribution (a plain linear fit compresses the top).
+ *  - SLASHER rungs: the same, over real slashers only (rim share >= SLASHER_RIM_SHARE) — the
+ *    reference group for the verified-slasher list.
  *
  * Run: npx tsx scripts/buildPerimeterRimProxy.ts
  */
 import { draftPool } from '../src/data/draftPool';
-import { rimPressureForFit, perimeterRimFeatures, perimeterRimScore } from '../src/engine/rimPressure';
+import { rimPressureForFit, perimeterRimFeatures, perimeterRimScore, SLASHER_RIM_SHARE } from '../src/engine/rimPressure';
 import { computeOffensiveProfile } from '../src/engine/offensiveProfile';
 
 const train = draftPool
   .filter((s) => s.primaryPosition !== 'C' && s.primaryPosition !== 'PF' && computeOffensiveProfile(s).hasZoneData)
-  .map((s) => ({ f: perimeterRimFeatures(s), y: rimPressureForFit(s) }))
+  .map((s) => ({ f: perimeterRimFeatures(s), y: rimPressureForFit(s), rimShare: computeOffensiveProfile(s).rimShare }))
   .filter((r): r is { f: NonNullable<typeof r.f>; y: number } => r.f !== null);
 
 // Least squares: basis = the score's own terms (unit weights on each, one at a time).
@@ -52,3 +54,9 @@ console.log(`// ${train.length} guard/wing spans, 1997+`);
 console.log(`const PERIMETER_PROXY_WEIGHTS = [${w.map(round).join(', ')}];`);
 console.log(`const PERIMETER_PROXY_SCORE_RUNGS: number[] = [${Q.map((q) => round(quant(scores, q))).join(', ')}];`);
 console.log(`const PERIMETER_PROXY_VALUE_RUNGS: number[] = [${Q.map((q) => round(quant(values, q))).join(', ')}];`);
+const slashers = train.filter((r) => r.rimShare >= SLASHER_RIM_SHARE);
+const sScores = slashers.map((r) => perimeterRimScore(r.f, w)).sort((a, c) => a - c);
+const sValues = slashers.map((r) => r.y).sort((a, c) => a - c);
+console.log(`// slasher reference group: ${slashers.length} spans with rim share >= ${SLASHER_RIM_SHARE}`);
+console.log(`const PERIMETER_PROXY_SLASHER_SCORE_RUNGS: number[] = [${Q.map((q) => round(quant(sScores, q))).join(', ')}];`);
+console.log(`const PERIMETER_PROXY_SLASHER_VALUE_RUNGS: number[] = [${Q.map((q) => round(quant(sValues, q))).join(', ')}];`);
