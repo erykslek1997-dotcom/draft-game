@@ -10,6 +10,7 @@ import { ROSTER_SIZE } from './engine/positions';
 import { randomSeed } from './engine/rng';
 import type { Team } from './engine/types';
 import DraftLottery from './components/DraftLottery';
+import { CapsInfoHost } from './components/CapIcon';
 import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
@@ -237,6 +238,7 @@ function App() {
 
   return (
     <div className="app-shell">
+      <CapsInfoHost />
       {/* 2026-08-16, user's own report: the intro screen's big "All-Time Draft" title and the
           in-draft shell's own "All-Time Draft" wordmark (DraftBoard.tsx's `.at-wordmark`) both
           rendered at once once a draft started, since this header used to show on every view

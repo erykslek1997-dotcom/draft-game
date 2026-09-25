@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CapIcon } from './CapIcon';
 import { headshotUrl } from '../data/headshots';
 import './ShotChip.css';
 
@@ -62,44 +63,6 @@ export function shotBudgetTier(fga: number, cap: number): 'cheap' | 'mid' | 'pri
   return 'pricey';
 }
 
-/** 2026-09-25, user's own pick ("nazwiemy to caps, jako waluta w grze… nawiązanie do cap space"):
- * the draft currency is "caps" — a bottle cap is both a nod to the salary cap and a classic
- * game currency. Under the hood a player's price is still his real shots per game (FGA). Drawn
- * as a plain crimped bottle cap seen from above with a basketball on its face, no brand. */
-const CAP_EDGE_POINTS = Array.from({ length: 42 }, (_, i) => {
-  const angle = (i / 42) * Math.PI * 2;
-  const r = i % 2 === 0 ? 11.6 : 10.2;
-  return `${(12 + r * Math.cos(angle)).toFixed(2)},${(12 + r * Math.sin(angle)).toFixed(2)}`;
-}).join(' ');
-
-export function CapIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg className="cap-icon" width={size} height={size} viewBox="0 0 24 24" aria-hidden focusable="false">
-      <polygon points={CAP_EDGE_POINTS} fill="#a8791f" />
-      <circle cx="12" cy="12" r="9" fill="#e2b545" />
-      {/* basketball in the middle of the cap */}
-      <circle cx="12" cy="12" r="6.4" fill="#e8762c" stroke="#7a3510" strokeWidth="0.8" />
-      <g fill="none" stroke="#3b1a08" strokeWidth="0.75" strokeLinecap="round">
-        <line x1="12" y1="5.6" x2="12" y2="18.4" />
-        <line x1="5.6" y1="12" x2="18.4" y2="12" />
-        <path d="M7.4 7.5 Q10 12 7.4 16.5" />
-        <path d="M16.6 7.5 Q14 12 16.6 16.5" />
-      </g>
-      <ellipse cx="8.6" cy="7.2" rx="2.2" ry="1.1" fill="#fff" opacity="0.35" transform="rotate(-35 8.6 7.2)" />
-    </svg>
-  );
-}
-
-/** An amount of caps: icon + number (whole numbers unless `decimals` asks otherwise). */
-export function Caps({ value, decimals = 0, size }: { value: number; decimals?: number; size?: number }) {
-  return (
-    <span className="caps-amount" title="caps">
-      <CapIcon size={size} />
-      {value.toFixed(decimals)}
-    </span>
-  );
-}
-
 export function ShotChip({ fga, cap }: { fga: number; cap: number }) {
   return (
     <span className={`bf-shot-chip bf-shot-chip--${shotBudgetTier(fga, cap)}`} title={`Costs ${Math.round(fga)} caps`}>
@@ -128,3 +91,5 @@ export function ShotsMeter({ used, cap, label = 'Caps' }: { used: number; cap: n
     </div>
   );
 }
+
+export { CapIcon, Caps, CapsInfoHost } from './CapIcon';
