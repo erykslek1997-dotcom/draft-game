@@ -4,6 +4,7 @@ import { computeOffensiveTalent } from './talent';
 import { isPlusShooter } from './shooting';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { rimPressureForFit } from './rimPressure';
+import { teamSpacingValue } from './midrangeGravity';
 
 /**
  * G6a — archetype-pair anti-patterns. `fitScore` grades every starter's role in isolation and
@@ -109,7 +110,7 @@ export function pairwiseFitNotes(
 ): string[] {
   if (starters.length < 5) return [];
   const notes: string[] = [];
-  const spacing = starters.map(computeSpacing);
+  const spacing = starters.map(teamSpacingValue);
   const plusShooter = starters.map(isPlusShooter);
 
   // 1. Two post-up hubs sharing the frontcourt — both operate from the block, the paint clogs
@@ -280,7 +281,7 @@ export function mismatchStructureScore(
   const lead = findLeadInitiator(starters, demandByPlayer);
   if (!lead) return 0;
 
-  const spacing = starters.map(computeSpacing);
+  const spacing = starters.map(teamSpacingValue);
   let bestGravity = 0;
   let screenerIndex = -1;
   starters.forEach((player, index) => {
