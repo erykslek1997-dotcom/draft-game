@@ -439,6 +439,8 @@ const PG_DEFENSE_ONLY_OTAL_FLOOR: Grade = 'B-';
  * O-TAL 67). A span with a real offensive engine isn't a "shit player" regardless of the other two
  * factors — at this O-TAL it drops one tier less far (Sixth Man, not Bench Warmer). */
 const PG_ARCHETYPE_REAL_SCORER_OTAL = 64;
+/** How many tiers the PG archetype rule may lower a span below its otherwise-capped tier. */
+const PG_ARCHETYPE_MAX_TIER_DROP = 1;
 
 /** Position-specific downward tier caps, applied ascending so a player can trip more than one
  * (the most restrictive wins — see `stricterTier` fold below). Every threshold reuses the exact
@@ -1265,6 +1267,13 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
         tierRank(archetypeCap) < tierRank('All-star')
       ) {
         archetypeCap = 'All-star';
+      }
+      // 2026-09-25, user-reported (Mike Conley 2013-15 / 2014-16 / 2015-17 read 68 / 49 / 78 on
+      // near-identical offense; 0.3 apg or 5 D-TAL points flipped whole tiers): the archetype read
+      // may pull a span down at most one tier from where every other rule put it — a profile
+      // limit, not a 3-tier drop from a hard threshold.
+      if (archetypeCap && tierRank(capped) - tierRank(archetypeCap) > PG_ARCHETYPE_MAX_TIER_DROP) {
+        archetypeCap = TIER_ORDER[tierRank(capped) - PG_ARCHETYPE_MAX_TIER_DROP];
       }
       if (archetypeCap) capped = stricterTier(capped, archetypeCap);
     }
