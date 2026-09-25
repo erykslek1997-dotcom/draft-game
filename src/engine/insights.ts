@@ -76,6 +76,19 @@ export interface PlayerTeamFeature {
   movementShooting?: number;   // 0..1, only incumbent or explicitly validated role evidence
   movementShootingConfidence?: number; // 0..1
   movementShootingEvidence?: string;
+  // 2026-09-25 (descriptions part 2): real box-score lines so descriptions can name what a player
+  // actually did (assists, steals, blocks, free throws) and when he played.
+  ppg?: number;
+  apg?: number;
+  spg?: number;
+  bpg?: number;
+  ftPct?: number;
+  /** First season of the span, e.g. 1966 for "1966-68". */
+  startYear?: number;
+  /** False before 1973-74, when the NBA started recording steals and blocks. */
+  defensiveStatsTracked?: boolean;
+  /** Every season of the span came before the 3-point line (1979-80). */
+  playedBeforeThreePointLine?: boolean;
 }
 
 export interface TeamFeatureSnapshot {
@@ -245,7 +258,9 @@ export type DetectorId =
   | 'LOW_FGA_ROTATION_VALUE' | 'STAR_FGA_COST_JUSTIFIED'
   | 'STAR_FGA_COST_HURTS_DEPTH' | 'DEAD_NINTH_SLOT_ACCEPTABLE'
   | 'DEAD_SLOT_HURTS_ROTATION'
-  | 'CLOSING_FIVE_STABLE' | 'CLOSING_FIVE_REQUIRES_TRADEOFF';
+  | 'CLOSING_FIVE_STABLE' | 'CLOSING_FIVE_REQUIRES_TRADEOFF'
+  | 'ELITE_FLOOR_GENERAL' | 'NO_TRUE_PLAYMAKER' | 'FREE_THROW_LIABILITY'
+  | 'BALL_HAWKS' | 'SHOT_BLOCKING_ANCHOR' | 'NO_GO_TO_SCORER';
 
 export interface RosterInsight {
   id: DetectorId;
@@ -319,6 +334,89 @@ function huntableStarterMessage(starters: string[], others: string[], minutes: n
   return others.length > 0
     ? `${lead}; with ${displayNameList(others)} too, that's ${minutes} targetable minutes your teammates can only partly cover.`
     : `${lead} — ${minutes} targetable minutes your teammates can only partly cover.`;
+}
+
+/** The 3-point line arrived in 1979-80; a span that ended before it never had one to shoot from. */
+function playedBeforeThreePointLine(p: PlayerTeamFeature): boolean {
+  return p.playedBeforeThreePointLine === true;
+}
+
+/** " — X played before the 3-point line existed" for the named non-shooters it applies to, so a
+ * 1960s guard isn't described as someone who simply can't shoot. */
+function preThreePointNote(players: PlayerTeamFeature[]): string {
+  const early = players.filter(playedBeforeThreePointLine);
+  if (early.length === 0) return '';
+  if (early.length === players.length && players.length > 1) return ' — none of them had a 3-point line to shoot from';
+  return ` (${displayNames(early)} played before the 3-point line existed)`;
+}
+
+/** Cheap players who still give real value, best value first — for "bargain" strengths. */
+function bargains(t: TeamFeatureSnapshot): PlayerTeamFeature[] {
+  return t.players
+    .filter(p => p.fga <= 10 && p.minutes >= 12 && (p.overallImpact ?? 0) >= 60)
+    .sort((a, b) => (b.overallImpact ?? 0) / Math.max(b.fga, 2) - (a.overallImpact ?? 0) / Math.max(a.fga, 2));
+}
+
+function spacingConcentratedMessage(t: TeamFeatureSnapshot): string {
+  const shooters = t.players.filter(p => p.isSpacingArchetype && p.minutes >= 12).sort((a, b) => b.minutes - a.minutes);
+  if (shooters.length === 0) return 'Your outside shooting comes from just one or two players.';
+  return `Your outside shooting comes down to ${displayNames(shooters.slice(0, 2))} — when ${plural(shooters.slice(0, 2), 'he sits', 'they sit')}, the paint fills up.`;
+}
+
+function nonSpacerOverloadMessage(t: TeamFeatureSnapshot, count: number): string {
+  const nonShooters = t.starters.filter(p => !p.isSpacingArchetype);
+  if (nonShooters.length === 0) return `${count} of your starters don't shoot from outside — defenses will pack the paint and your offense gets cramped.`;
+  return `${displayNames(nonShooters, 4)} don't shoot from outside — defenses will pack the paint and your offense gets cramped${preThreePointNote(nonShooters)}.`;
+}
+
+function elitePerimeterMessage(t: TeamFeatureSnapshot): string {
+  const defenders = t.players
+    .filter(p => p.isPerimeterDefenderRole && p.minutes >= 15 && (p.defensiveImpact ?? 0) >= 60)
+    .sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0));
+  return defenders.length >= 2
+    ? `Elite perimeter defense — ${displayNames(defenders)} can all take the other team's best scorer.`
+    : "Elite perimeter defense — several players can guard the other team's best scorers.";
+}
+
+function eliteRimMessage(t: TeamFeatureSnapshot): string {
+  const bigs = t.players
+    .filter(p => p.isRimProtectorRole && p.minutes >= 12)
+    .sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0));
+  if (bigs.length === 0) return 'Elite rim protection — opponents will struggle to score inside.';
+  const lead = bigs[0];
+  const blocks = lead.defensiveStatsTracked !== false && (lead.bpg ?? 0) >= 1.5 ? ` (${(lead.bpg ?? 0).toFixed(1)} blocks a game)` : '';
+  const partner = bigs[1] ? ` and ${bigs[1].playerName}` : '';
+  return `Elite rim protection — ${lead.playerName}${blocks}${partner} make scoring inside a real struggle.`;
+}
+
+function bargainMessage(t: TeamFeatureSnapshot, fallback: string): string {
+  const best = bargains(t).slice(0, 2);
+  if (best.length === 0) return fallback;
+  return `${fallback.replace(/\.$/, '')}: ${joinNames(best.map(capsText), 0)} ${plural(best, 'gives', 'give')} you real value for very little.`;
+}
+
+function weakBenchMessage(t: TeamFeatureSnapshot): string {
+  const weakest = t.bench
+    .filter(p => p.minutes >= 8)
+    .sort((a, b) => (a.overallImpact ?? 0) - (b.overallImpact ?? 0))
+    .slice(0, 2);
+  return weakest.length > 0
+    ? `Your starting five is strong, but the team drops off when ${displayNames(weakest)} ${plural(weakest, 'comes', 'come')} in.`
+    : 'Your starting five is strong, but the team drops off when the bench comes in.';
+}
+
+function creatorsPoorSpacingMessage(t: TeamFeatureSnapshot): string {
+  const creators = t.players
+    .filter(p => (p.highUsageWeight ?? 0) >= 0.5 && p.minutes >= 24)
+    .sort((a, b) => (b.offensiveImpact ?? 0) - (a.offensiveImpact ?? 0))
+    .slice(0, 2);
+  return creators.length > 0
+    ? `${displayNames(creators)} can create ${plural(creators, 'his', 'their')} own shots, but poor spacing lets defenses load up on ${plural(creators, 'him', 'them')}.`
+    : 'Great shot creators, but poor spacing makes their job harder.';
+}
+
+function capsText(p: PlayerTeamFeature): string {
+  return `${p.playerName} (${Math.round(p.fga)} caps)`;
 }
 
 /** Names the bench players who don't shoot, so the concern says who drags the spacing down. */
@@ -633,7 +731,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       if (s > 0.45) return inactive;
       const nonShooters = t.starters.filter(p => !p.isSpacingArchetype);
       return n >= 2
-        ? hit(0.55 + (n - 2) * 0.18, 0.92, teamConfidence(t), `${displayNames(nonShooters)} don't shoot from outside, so defenders can leave them and crowd the paint.`, { players: nonShooters.map(p => p.playerName), values: { starterNonSpacerCount: n } })
+        ? hit(0.55 + (n - 2) * 0.18, 0.92, teamConfidence(t), `${displayNames(nonShooters)} don't shoot from outside, so defenders can leave them and crowd the paint${preThreePointNote(nonShooters)}.`, { players: nonShooters.map(p => p.playerName), values: { starterNonSpacerCount: n } })
         : inactive;
     }
   },
@@ -644,7 +742,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const share = t.topShooterMinuteShare ?? 0;
       const n = t.plusShooterCount ?? 0;
       return share >= 0.42 && n <= 3
-        ? hit(0.5 + share * 0.45, 0.83, teamConfidence(t), 'Your outside shooting comes from just one or two players.', { values: { topShooterMinuteShare: share, plusShooterCount: n } })
+        ? hit(0.5 + share * 0.45, 0.83, teamConfidence(t), spacingConcentratedMessage(t), { values: { topShooterMinuteShare: share, plusShooterCount: n } })
         : inactive;
     }
   },
@@ -709,7 +807,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const frontcourt = t.starters.filter(p => p.primaryPosition === 'PF' || p.primaryPosition === 'C');
       const shootingBigs = frontcourt.filter(p => p.isSpacingArchetype);
       return frontcourt.length >= 2 && shootingBigs.length === 0
-        ? hit(0.73, 0.88, teamConfidence(t), `Your starting bigs (${displayNames(frontcourt)}) don't shoot from outside, so the paint gets crowded.`, { players: frontcourt.map(p => p.playerName), values: { frontcourtSpacingCount: 0 } }, 0.9)
+        ? hit(0.73, 0.88, teamConfidence(t), `Your starting bigs (${displayNames(frontcourt)}) don't shoot from outside, so the paint gets crowded${preThreePointNote(frontcourt)}.`, { players: frontcourt.map(p => p.playerName), values: { frontcourtSpacingCount: 0 } }, 0.9)
         : inactive;
     }
   },
@@ -768,7 +866,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const s = t.fgaEfficiencyScore ?? 0;
       return s >= 0.70
-        ? hit(s, 0.90, teamConfidence(t), 'You got a lot for your caps — very little wasted.', { values: { fgaEfficiencyScore: s, totalFga: t.totalFga } })
+        ? hit(s, 0.90, teamConfidence(t), bargainMessage(t, 'You got a lot for your caps — very little wasted.'), { values: { fgaEfficiencyScore: s, totalFga: t.totalFga } })
         : inactive;
     }
   },
@@ -834,7 +932,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const s = t.perimeterDefenseScore ?? 0;
       const n = t.starterPerimeterDefenderCount ?? 0;
       return s >= ELITE_BARS.perimeterDefense && n >= 2
-        ? hit(s, 0.94, teamConfidence(t), "Elite perimeter defense — several players can guard the other team's best scorers.", { values: { perimeterDefenseScore: s, starterPerimeterDefenderCount: n } })
+        ? hit(s, 0.94, teamConfidence(t), elitePerimeterMessage(t), { values: { perimeterDefenseScore: s, starterPerimeterDefenderCount: n } })
         : inactive;
     }
   },
@@ -912,7 +1010,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       // (SINGLE_RIM_PROTECTOR_DEPENDENCY's own count is exactly 1).
       const depth = t.rimProtectorCount ?? 0;
       return s >= ELITE_BARS.rimProtection && depth >= 2
-        ? hit(s, 0.95, teamConfidence(t), 'Elite rim protection — opponents will struggle to score inside.', { values: { rimProtectionScore: s, rimProtectorCount: depth } })
+        ? hit(s, 0.95, teamConfidence(t), eliteRimMessage(t), { values: { rimProtectionScore: s, rimProtectorCount: depth } })
         : inactive;
     }
   },
@@ -1291,7 +1389,9 @@ export const DETECTORS: RosterInsightDetector[] = [
       const nonShooters = t.starters.filter(p => !p.isSpacingArchetype);
       const shooters = t.starterPlusShooterCount ?? 0;
       return shooters >= 4 && nonShooters.length === 1
-        ? hit(0.64, 0.83, teamConfidence(t), `${nonShooters[0].playerName} is the only starter who doesn't shoot from outside, so defenders know exactly who to leave.`, { players: [nonShooters[0].playerName], values: { starterPlusShooterCount: shooters, starterNonSpacerCount: 1 } }, 0.92)
+        ? hit(0.64, 0.83, teamConfidence(t), playedBeforeThreePointLine(nonShooters[0])
+          ? `${nonShooters[0].playerName} played before the 3-point line and is your only starter who doesn't shoot from outside, so defenders know exactly who to leave.`
+          : `${nonShooters[0].playerName} is the only starter who doesn't shoot from outside, so defenders know exactly who to leave.`, { players: [nonShooters[0].playerName], values: { starterPlusShooterCount: shooters, starterNonSpacerCount: 1 } }, 0.92)
         : inactive;
     }
   },
@@ -1342,7 +1442,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       // never fire. Lowered to 0.26 (real p90), matching the same recalibration TOP_HEAVY_ROTATION
       // just got for the identical underlying number.
       return tal >= 78 && drop >= 0.26
-        ? hit(drop, 0.90, teamConfidence(t), 'Your starting five is strong, but the team drops off when the bench comes in.', { values: { weightedStarterTal: tal, benchDropoffScore: drop } }, 0.95)
+        ? hit(drop, 0.90, teamConfidence(t), weakBenchMessage(t), { values: { weightedStarterTal: tal, benchDropoffScore: drop } }, 0.95)
         : inactive;
     }
   },
@@ -1377,7 +1477,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const c = t.creatorCount ?? 0;
       const s = t.starterSpacingStrength ?? 1;
       return c >= 2 && s <= 0.42
-        ? hit(0.58 + (1 - s) * 0.32, 0.94, teamConfidence(t), 'Great shot creators, but poor spacing makes their job harder.', { values: { creatorCount: c, starterSpacingStrength: s } }, 0.95)
+        ? hit(0.58 + (1 - s) * 0.32, 0.94, teamConfidence(t), creatorsPoorSpacingMessage(t), { values: { creatorCount: c, starterSpacingStrength: s } }, 0.95)
         : inactive;
     }
   },
@@ -1407,7 +1507,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const f = t.fgaEfficiencyScore ?? 0;
       const n = t.netRatingProjection ?? 0;
       return f >= 0.78 && n >= 3
-        ? hit(0.60 + f * 0.35, 0.96, teamConfidence(t), 'A lot of team impact for the caps you spent.', { values: { fgaEfficiencyScore: f, netRatingProjection: n, totalFga: t.totalFga } }, 0.98)
+        ? hit(0.60 + f * 0.35, 0.96, teamConfidence(t), bargainMessage(t, 'A lot of team impact for the caps you spent.'), { values: { fgaEfficiencyScore: f, netRatingProjection: n, totalFga: t.totalFga } }, 0.98)
         : inactive;
     }
   },
@@ -1506,7 +1606,7 @@ export const DETECTORS: RosterInsightDetector[] = [
           penalty,
           0.94,
           teamConfidence(t),
-          `${count} of your starters don't shoot from outside — defenses will pack the paint and your offense gets cramped.`,
+          nonSpacerOverloadMessage(t, count),
           { values: { starterNonSpacerCount: count, nonlinearNonSpacerPenalty: penalty, movementShootingStrength: t.movementShootingStrength ?? 0, frontcourtSpacingStrength: t.frontcourtSpacingStrength ?? 0 } },
           0.96,
         )
@@ -1738,6 +1838,77 @@ export const DETECTORS: RosterInsightDetector[] = [
       );
     }
   },
+  // ---- 2026-09-25, descriptions part 2: detectors that read real box-score lines, so the text can
+  // say what a player actually did. Bars measured on 192 AI-drafted teams (12 seeded drafts).
+  {
+    // Best rotation passer at 10.5+ assists: ~22% of teams (median best passer: 8.8).
+    id: 'ELITE_FLOOR_GENERAL', type: 'strength', category: 'creation',
+    evaluate: t => {
+      const passer = [...t.players].filter(p => p.minutes >= 28).sort((a, b) => (b.apg ?? 0) - (a.apg ?? 0))[0];
+      return passer && (passer.apg ?? 0) >= 10.5
+        ? hit(0.70 + Math.min(0.2, ((passer.apg ?? 0) - 10.5) / 15), 0.88, teamConfidence(t), `${passer.playerName} runs the show — ${(passer.apg ?? 0).toFixed(1)} assists a game, so your scorers get easy looks.`, { players: [passer.playerName], values: { apg: passer.apg ?? 0 } }, 0.94)
+        : inactive;
+    }
+  },
+  {
+    // Nobody in the rotation above 6.5 assists: ~8% of teams.
+    id: 'NO_TRUE_PLAYMAKER', type: 'concern', category: 'creation',
+    evaluate: t => {
+      const rotation = t.players.filter(p => p.minutes >= 18);
+      const best = [...rotation].sort((a, b) => (b.apg ?? 0) - (a.apg ?? 0))[0];
+      return best && (best.apg ?? 0) < 6.5
+        ? hit(0.74, 0.88, teamConfidence(t), `Your best passer, ${best.playerName}, averaged just ${(best.apg ?? 0).toFixed(1)} assists — expect a lot of one-on-one basketball.`, { players: [best.playerName], values: { bestApg: best.apg ?? 0 } }, 0.94)
+        : inactive;
+    }
+  },
+  {
+    // A heavy-minutes starter under 55% at the line — the Hack-a-Shaq problem.
+    id: 'FREE_THROW_LIABILITY', type: 'concern', category: 'rotation',
+    evaluate: t => {
+      const poor = t.starters
+        .filter(p => p.minutes >= 28 && (p.ftPct ?? 1) > 0 && (p.ftPct ?? 1) < 0.55)
+        .sort((a, b) => (a.ftPct ?? 1) - (b.ftPct ?? 1));
+      const worst = poor[0];
+      return worst
+        ? hit(0.62 + (0.55 - (worst.ftPct ?? 0.55)) * 0.8, 0.82, teamConfidence(t), `${worst.playerName} made only ${Math.round((worst.ftPct ?? 0) * 100)}% of his free throws — in a close game, opponents can foul him on purpose.`, { players: [worst.playerName], values: { ftPct: worst.ftPct ?? 0 } }, 0.95)
+        : inactive;
+    }
+  },
+  {
+    // Steals only count where they were recorded (1973-74 on).
+    id: 'BALL_HAWKS', type: 'strength', category: 'perimeter_defense',
+    evaluate: t => {
+      const hawks = t.players
+        .filter(p => p.minutes >= 24 && p.defensiveStatsTracked !== false && (p.spg ?? 0) >= 2.0)
+        .sort((a, b) => (b.spg ?? 0) - (a.spg ?? 0));
+      const active = hawks.length >= 2 || (hawks[0]?.spg ?? 0) >= 2.5;
+      return active
+        ? hit(0.66 + hawks.length * 0.05, 0.84, teamConfidence(t), `${joinNames(hawks.slice(0, 3).map(p => `${p.playerName} (${(p.spg ?? 0).toFixed(1)} steals)`), Math.max(0, hawks.length - 3))} turn${hawks.length === 1 ? 's' : ''} defense into easy fast-break points.`, { players: hawks.map(p => p.playerName), values: { ballHawkCount: hawks.length } }, 0.94)
+        : inactive;
+    }
+  },
+  {
+    // Blocks only count where they were recorded (1973-74 on).
+    id: 'SHOT_BLOCKING_ANCHOR', type: 'strength', category: 'rim_protection',
+    evaluate: t => {
+      const anchor = t.players
+        .filter(p => p.minutes >= 24 && p.defensiveStatsTracked !== false)
+        .sort((a, b) => (b.bpg ?? 0) - (a.bpg ?? 0))[0];
+      return anchor && (anchor.bpg ?? 0) >= 3.0
+        ? hit(0.68 + Math.min(0.2, ((anchor.bpg ?? 0) - 3) / 10), 0.86, teamConfidence(t), `${anchor.playerName} blocked ${(anchor.bpg ?? 0).toFixed(1)} shots a game — every drive into the paint is a gamble.`, { players: [anchor.playerName], values: { bpg: anchor.bpg ?? 0 } }, 0.95)
+        : inactive;
+    }
+  },
+  {
+    // No starter at 24+ points a game.
+    id: 'NO_GO_TO_SCORER', type: 'concern', category: 'creation',
+    evaluate: t => {
+      const top = [...t.starters].sort((a, b) => (b.ppg ?? 0) - (a.ppg ?? 0))[0];
+      return top && (top.ppg ?? 0) < 24
+        ? hit(0.72, 0.86, teamConfidence(t), `Your top scorer, ${top.playerName}, averaged ${(top.ppg ?? 0).toFixed(1)} points — when the offense stalls, there's no one to hand the ball to.`, { players: [top.playerName], values: { topPpg: top.ppg ?? 0 } }, 0.94)
+        : inactive;
+    }
+  },
 ];
 
 function materialize(d: RosterInsightDetector, r: DetectorResult): RosterInsight {
@@ -1821,7 +1992,7 @@ export function insightContextFor(
  * things ("a defender for every spot" next to "X and Y are defensive weak spots": 50 of 192 teams),
  * text disagreed with the score chips (Bench Depth 75+ next to "not deep enough": 36 teams), and
  * the biggest problem wasn't first. Selection below, on top of the unchanged detectors/scores:
- * - topics: one sentence per topic per side; a strength and a concern on the same narrow topic
+ * - topics: one sentence per narrow topic per side (two at most per broad one, e.g. defense); a strength and a concern on the same narrow topic
  *   (or a listed cross-topic pair) never both show — the chip for that area decides which is
  *   true, otherwise the stronger signal wins.
  * - chip consistency: no strength about an area scored under 55, no concern about one scored 75+.
@@ -1832,7 +2003,7 @@ export function insightContextFor(
  */
 type InsightTopic =
   | 'creation' | 'usage' | 'spacing' | 'perimeter_def' | 'rim_def' | 'team_def' | 'weak_link_def'
-  | 'rebounding' | 'position' | 'minutes' | 'depth' | 'closing' | 'structure';
+  | 'rebounding' | 'position' | 'minutes' | 'depth' | 'closing' | 'structure' | 'playmaking' | 'free_throws';
 
 const CATEGORY_TOPIC: Record<InsightCategory, InsightTopic> = {
   creation: 'creation', usage: 'usage', fga: 'usage', off_ball: 'usage', fit: 'usage', redundancy: 'usage',
@@ -1866,6 +2037,9 @@ const TOPIC_OVERRIDE: Partial<Record<DetectorId, InsightTopic>> = {
   ROLE_FLEXIBILITY_HIGH: 'position',
   ROLE_FLEXIBILITY_LOW: 'position',
   CLOSING_FIVE_STABLE: 'closing',
+  ELITE_FLOOR_GENERAL: 'playmaking',
+  NO_TRUE_PLAYMAKER: 'playmaking',
+  FREE_THROW_LIABILITY: 'free_throws',
   CLOSING_FIVE_REQUIRES_TRADEOFF: 'closing',
   DEFENSE_AT_COST_OF_SPACING: 'closing',
 };
@@ -1883,7 +2057,7 @@ const CROSS_TOPIC_CONFLICTS: Partial<Record<DetectorId, DetectorId[]>> = {
 };
 
 const TOPIC_AREA: Partial<Record<InsightTopic, InsightScoreArea>> = {
-  creation: 'offense', usage: 'fit', spacing: 'spacing',
+  creation: 'offense', playmaking: 'offense', usage: 'fit', spacing: 'spacing',
   perimeter_def: 'defense', rim_def: 'defense', team_def: 'defense', weak_link_def: 'defense',
   minutes: 'rotation', position: 'rotation', depth: 'benchDepth',
 };
@@ -1893,6 +2067,7 @@ const TOPIC_AREA: Partial<Record<InsightTopic, InsightScoreArea>> = {
 const COMMONPLACE_STRENGTHS = new Set<DetectorId>([
   'POA_DEFENDER_PRESENT', 'WING_STOPPER_PRESENT', 'RIM_PROTECTION_CONTINUITY', 'MATCHUP_SPECIALIST_AVAILABLE',
   'SECONDARY_CREATION_PRESENT', 'MULTIPLE_CREATION_SOURCES', 'STRETCH_BIG_VALUE', 'EFFICIENT_FGA_BUDGET',
+  'NATURAL_POSITION_ROTATION',
 ]);
 
 const topicOf = (i: RosterInsight): InsightTopic => TOPIC_OVERRIDE[i.id] ?? CATEGORY_TOPIC[i.category];
@@ -1939,7 +2114,10 @@ function selectForDisplay(eligible: RosterInsight[], config: typeof DEFAULT_INSI
   for (const { insight } of candidates) {
     const side = picked.filter(p => p.type === insight.type);
     if (side.length >= Math.min(slots[insight.type], config.maxPerSide)) continue;
-    if (side.some(p => broadTopicOf(p) === broadTopicOf(insight))) continue;
+    // One sentence per narrow topic, and at most two on the same broad one (e.g. perimeter and
+    // rim defense can both show, a third defense line can't).
+    if (side.some(p => topicOf(p) === topicOf(insight))) continue;
+    if (side.filter(p => broadTopicOf(p) === broadTopicOf(insight)).length >= 2) continue;
     // A higher-priority item on the other side already made the opposite claim.
     if (picked.some(p => contradicts(p, insight))) continue;
     const names = insight.evidence.players ?? [];

@@ -225,6 +225,49 @@ check(
   'contextual nonlinear spacing detector suppresses the older generic non-spacer message',
 );
 
+// 2026-09-25, descriptions part 2: box-score detectors quote real numbers only, and a pre-3-point-
+// line non-shooter is described as exactly that.
+const oldSchool = team('old-school', [
+  pick('Oscar Robertson', '1961-63'),
+  pick('Jerry West', '1965-67'),
+  pick('Elgin Baylor', '1960-62'),
+  pick('Bill Russell', '1964-66'),
+  pick('Wilt Chamberlain', '1966-68'),
+  pick('Mark Eaton', '1983-85'),
+  pick('Ricky Rubio', '2012-14'),
+  pick('Rajon Rondo', '2009-11'),
+  pick('Ben Wallace', '2002-04'),
+]);
+const oldSchoolSnapshot = buildTeamFeatureSnapshot(oldSchool);
+check(
+  oldSchoolSnapshot.players.filter((p) => (p.startYear ?? 0) < 1974).every((p) => p.defensiveStatsTracked === false),
+  'pre-1973-74 spans are flagged as having no recorded steals/blocks',
+);
+const oldSchoolInsights = generateRosterInsights(oldSchoolSnapshot);
+const quotedDefense = oldSchoolInsights.allActiveInsights.filter((i) => i.id === 'BALL_HAWKS' || i.id === 'SHOT_BLOCKING_ANCHOR');
+check(
+  quotedDefense.every((i) => !['Oscar Robertson', 'Jerry West', 'Elgin Baylor', 'Bill Russell', 'Wilt Chamberlain'].some((name) => i.message.includes(name))),
+  'steals/blocks descriptions never quote a pre-1973-74 player',
+);
+const nonShooterLines = oldSchoolInsights.allActiveInsights.filter((i) => i.message.includes("don't shoot from outside") && i.message.includes('Wilt Chamberlain'));
+check(
+  nonShooterLines.length > 0 && nonShooterLines.every((i) => i.message.includes('3-point line')),
+  'a pre-1980 non-shooter is described as playing before the 3-point line',
+);
+const hackTeam = team('hack-a-shaq', [
+  pick('Jason Kidd', '1998-00'),
+  pick('Kobe Bryant', '1999-01'),
+  pick('Glen Rice', '1997-99'),
+  pick('Robert Horry', '1997-99'),
+  pick("Shaquille O'Neal", '1999-01'),
+  pick('Derek Fisher', '1998-00'),
+  pick('Rick Fox', '1998-00'),
+  pick('A.C. Green', '1998-00'),
+  pick('Larry Smith', '1991-93'),
+]);
+const hack = detector('FREE_THROW_LIABILITY', buildTeamFeatureSnapshot(hackTeam));
+check(hack.active && Boolean(hack.message?.includes("Shaquille O'Neal")) && Boolean(hack.message?.includes('52%')), "Shaq's 52% free throws register as a late-game liability");
+
 // 2026-09-05: the real-drafted-sample cross-team checks (two full seeded drafts + statistical
 // sanity checks across all 32 resulting rosters) moved to testInsightsSlow.ts -- run separately
 // in `npm test` but skipped by `npm run test:fast`. See that file's own docstring.

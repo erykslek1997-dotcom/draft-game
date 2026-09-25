@@ -71,12 +71,12 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.bf-shot-chip--cheap { background: color-mix(in srgb, #4fc98b 22%, transparent); color: #4fc98b; }
+.bf-shot-chip--cheap { background: color-mix(in srgb, var(--at-good, #7fd68a) 22%, transparent); color: var(--at-good, #7fd68a); }
 /* 2026-09-11, user-reported live ("ten szary przy 16 shots można dać na żółty") — the mid tier
    used to reuse the plain ink-soft grey, which read as "no signal" next to the green/red ends of
    the same scale. Amber keeps the cheap→mid→pricey ramp reading as one continuous scale instead
    of green/nothing/red. */
-.bf-shot-chip--mid { background: color-mix(in srgb, #e0b23d 22%, transparent); color: #e0b23d; }
+.bf-shot-chip--mid { background: color-mix(in srgb, var(--at-gold, #ffd479) 22%, transparent); color: var(--at-gold, #ffd479); }
 .bf-shot-chip--pricey { background: color-mix(in srgb, var(--at-brand-red) 24%, transparent); color: #e8859a; }
 
 /* ---- component bars — shared by BestFive.tsx's own result screen and QuickFive.tsx's

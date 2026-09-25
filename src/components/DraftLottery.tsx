@@ -41,6 +41,19 @@ function narrowPickColumns(count: number): number {
 }
 
 /** Overall pick numbers (1-based) a team in `slot` makes in a snake draft. */
+/** 2026-09-25, NBA-era touch: one real piece of draft history under the result. Every line is a
+ * well-documented fact — keep it that way if you add more. */
+const DRAFT_ARCHIVE_FACTS = [
+  'The first NBA draft lottery, in 1985, drew envelopes from a hopper. The Knicks won it and took Patrick Ewing.',
+  'From 1966 to 1984 the No. 1 pick came down to a coin flip between the worst team in each conference.',
+  'In 1979 the Lakers won the coin flip — with a pick they had acquired from the New Orleans Jazz — and drafted Magic Johnson.',
+  'In 1984 Houston took Hakeem Olajuwon first. Michael Jordan went third, to Chicago.',
+  'Until 1965 teams could make a "territorial pick" of a local star before the draft — that is how Wilt Chamberlain became a Philadelphia Warrior.',
+  'Kobe Bryant was drafted 13th in 1996 by the Charlotte Hornets and traded to the Lakers.',
+  'Since 2019 the three worst teams share the best lottery odds: 14% each at the No. 1 pick.',
+  'The league held its first draft in 1947, back when it was still the BAA.',
+];
+
 function snakePickNumbers(slot: number, teamCount: number, rounds: number): number[] {
   return Array.from({ length: rounds }, (_, r) => {
     const pickInRound = r % 2 === 0 ? slot - 1 : teamCount - slot;
@@ -66,6 +79,7 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit 
   const delays = useMemo(reelDelays, []);
   const [tick, setTick] = useState(() => (prefersReducedMotion() ? delays.length : 0));
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [archiveFact] = useState(() => DRAFT_ARCHIVE_FACTS[Math.floor(Math.random() * DRAFT_ARCHIVE_FACTS.length)]);
   const done = tick >= delays.length;
 
   useEffect(() => {
@@ -118,6 +132,12 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit 
             ))}
           </div>
         </div>
+      )}
+
+      {done && (
+        <p className="at-lottery-archive">
+          <span className="at-vintage-years">From the archives</span> {archiveFact}
+        </p>
       )}
 
       <div className="at-lottery-actions">
