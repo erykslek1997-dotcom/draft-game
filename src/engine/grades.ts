@@ -893,9 +893,16 @@ function tierCaps(
       // with A-+ defense — display-only, does not touch TAL/sorting/scoring.
       if (gradeAtLeast(dtalGrade, 'A-') && !gradeAtLeast(otalGrade, 'B-')) caps.push('All-star');
       break;
-    case 'PF':
+    case 'PF': {
       if (!gradeAtLeast(otalGrade, 'C+')) caps.push('All-star');
+      // 2026-09-25, user ("Draymond zdecydowanie za wysoko"): PF had no gate above All-star, so an
+      // offense grade crossing C+ (Draymond Green 2015-17, O-TAL 64 -> 68 after the every-position
+      // playmaking bonus) jumped the badge from All-NBA straight to Greatest peak. MVP and above
+      // now need at least a B- offense, whatever the defense: Kevin Garnett 2006-08 and Anthony
+      // Davis 2019-21 (both B-) keep MVP; Draymond's defense-first peak tops out at All-NBA.
+      if (!gradeAtLeast(otalGrade, 'B-')) caps.push('All-NBA');
       break;
+    }
     case 'C': {
       // 2026-08-05: "Greatest peak" needs real A- offense — Robinson/Olajuwon-type exception for
       // a true S-grade defense (an elite-enough anchor overrides the offensive requirement
