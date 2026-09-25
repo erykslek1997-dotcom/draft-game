@@ -42,14 +42,30 @@ export function Caps({ value, decimals = 0, size }: { value: number; decimals?: 
 /** 2026-09-25, user's ask ("jak ktoś kliknie na ikonę caps to pop-up który wyjaśnia co to jest"):
  * mounted once at the app root. A click on any caps icon that isn't inside a button or link (where
  * the click belongs to that control) opens this short explainer. */
+const CAPS_INFO_HIDDEN_KEY = 'draftverse.capsInfoHidden.v1';
+
+function capsInfoHidden(): boolean {
+  try {
+    return window.localStorage.getItem(CAPS_INFO_HIDDEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/* 2026-09-25, user's follow-up ("jakby ktoś wcisnął caps na karcie gracza to również pop-up, ale
+ * można dać opcję 'don't show this again' żeby nie klikać w to przypadkiem"): the whole cost chip on
+ * a player card opens it too, and a checkbox turns every trigger off for good in this browser. */
 export function CapsInfoHost() {
   const [open, setOpen] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const target = e.target as Element | null;
       const icon = target?.closest?.('[data-caps-info]');
       if (!icon || icon.closest('button, a, select, label')) return;
+      if (capsInfoHidden()) return;
       e.preventDefault();
+      setDontShowAgain(false);
       setOpen(true);
     };
     document.addEventListener('click', onClick);
@@ -62,10 +78,20 @@ export function CapsInfoHost() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
   if (!open) return null;
+  const close = () => {
+    if (dontShowAgain) {
+      try {
+        window.localStorage.setItem(CAPS_INFO_HIDDEN_KEY, '1');
+      } catch {
+        // storage unavailable — it just shows again next time
+      }
+    }
+    setOpen(false);
+  };
   return (
-    <div className="at-shell caps-info-overlay" onClick={() => setOpen(false)}>
+    <div className="at-shell caps-info-overlay" onClick={close}>
       <div className="caps-info-card" role="dialog" aria-modal="true" aria-label="What are caps?" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="player-peek-close" onClick={() => setOpen(false)} aria-label="Close">
+        <button type="button" className="player-peek-close" onClick={close} aria-label="Close">
           ✕
         </button>
         <div className="caps-info-head">
@@ -81,6 +107,15 @@ export function CapsInfoHost() {
           bargains later — a cheaper stretch of the same player’s career can be the one that fits.
         </p>
         <p className="caps-info-foot">The name is a nod to the NBA’s salary cap.</p>
+        <div className="caps-info-actions">
+          <label className="caps-info-dont">
+            <input type="checkbox" checked={dontShowAgain} onChange={(e) => setDontShowAgain(e.target.checked)} />
+            Don’t show this again
+          </label>
+          <button type="button" className="primary-btn caps-info-ok" onClick={close}>
+            Got it
+          </button>
+        </div>
       </div>
     </div>
   );

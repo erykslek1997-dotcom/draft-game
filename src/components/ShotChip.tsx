@@ -65,7 +65,7 @@ export function shotBudgetTier(fga: number, cap: number): 'cheap' | 'mid' | 'pri
 
 export function ShotChip({ fga, cap }: { fga: number; cap: number }) {
   return (
-    <span className={`bf-shot-chip bf-shot-chip--${shotBudgetTier(fga, cap)}`} title={`Costs ${Math.round(fga)} caps`}>
+    <span className={`bf-shot-chip bf-shot-chip--${shotBudgetTier(fga, cap)}`} title={`Costs ${Math.round(fga)} caps`} data-caps-info>
       <CapIcon size={11} />
       {Math.round(fga)}
     </span>

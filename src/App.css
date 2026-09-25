@@ -6046,3 +6046,22 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     0 2px 6px rgba(0, 0, 0, 0.45);
 }
+.caps-info-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.caps-info-dont {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--at-ink-soft);
+  cursor: pointer;
+}
+.caps-info-dont input { accent-color: var(--at-accent); width: 16px; height: 16px; }
+.at-shell .caps-info-ok { margin: 0; }
+.bf-shot-chip[data-caps-info] { cursor: help; }
