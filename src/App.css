@@ -5595,3 +5595,12 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-lottery-archive .at-vintage-years {
   margin-right: 6px;
 }
+
+/* 2026-09-25, user-reported live ("nierówne odległości"): the lottery's blocks were spaced by a
+   mix of margins (18 / 32 / 24px between them). One 22px rhythm: reel → result → archive note →
+   Play → How to play. */
+.at-lottery .at-reel { margin-bottom: 0; }
+.at-lottery .at-lottery-result { margin: 22px 0 0; }
+.at-lottery .at-lottery-archive { margin: 22px auto 0; }
+.at-lottery .at-lottery-actions { margin-top: 22px; }
+.at-lottery .at-lottery-howtoplay { margin-top: 22px; }
