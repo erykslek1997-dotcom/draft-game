@@ -5607,7 +5607,7 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 
 /* ---- 2026-09-25, era stamps (user's follow-up: "może coś z okresu Bird/Magic, Jordan era,
    deadball era"). A span's years get a small stamp styled after its era — see eraStamp() in
-   eraNotes.ts for the cut-offs. Modern spans (2011+) keep the plain look the rest of the UI has. */
+   eraNotes.ts for the cut-offs. Modern spans (2011+) get the Pace & space stamp. */
 .at-shell .era-stamp {
   --era-tilt: 0deg;
   display: inline-block;
@@ -5762,4 +5762,19 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
     padding-right: 0;
     text-align: center;
   }
+}
+/* Pace & space era (2011-today), added on the user's follow-up ("i nowoczesni zawodnicy też
+   powinni coś mieć"): today's broadcast graphics — dark glass, electric-blue edge glow. */
+.at-shell .era-stamp--modern {
+  --era-tilt: 1deg;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #e3f5ff;
+  background: linear-gradient(135deg, rgba(94, 200, 255, 0.22), rgba(29, 66, 138, 0.55));
+  border-radius: 5px;
+  box-shadow:
+    inset 0 0 0 1px rgba(94, 200, 255, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 8px rgba(94, 200, 255, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.45);
 }
