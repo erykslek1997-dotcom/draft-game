@@ -231,6 +231,9 @@ function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, c
   return label;
 }
 
+/** How many of a player's best windows the Years sheet shows before "Show all". */
+const YEARS_PICKER_TOP_COUNT = 5;
+
 /** 2026-09-25, user-reported live ("może ten widok dostosować pod UI?"): the Team tab's Years menu
  * was a native `<select>`, so on a phone it opened the OS's own plain white list. Now a button
  * that opens an in-game sheet — era stamp, cost in caps and tier for every stretch, the current
@@ -249,7 +252,18 @@ function YearsPicker({
   onSelect: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [showAllYears, setShowAllYears] = useState(false);
   const selected = options.find((o) => o.id === selectedId) ?? options[0];
+  // 2026-09-25, user ("tabela jest za długa. Kilka najlepszych sezonów i przycisk show more"):
+  // the sheet opens on his best windows by TAL (in career order) plus the current pick, with the
+  // rest one click away.
+  const chronological = [...options].sort((a, b) => a.spanLabel.localeCompare(b.spanLabel));
+  const bestIds = new Set(
+    [...options].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, YEARS_PICKER_TOP_COUNT).map((o) => o.id),
+  );
+  bestIds.add(selected.id);
+  const visibleOptions = showAllYears ? chronological : chronological.filter((o) => bestIds.has(o.id));
+  const hiddenCount = chronological.length - visibleOptions.length;
   // 2026-09-25, user ("przesunięcie w lewo pozwoli na sprawdzenie całego składu"): the sheet docks
   // to the left edge on wide screens and stays open after a pick, so the Team table's grade
   // columns stay visible and update live while you click through the years. The row being edited
@@ -296,7 +310,7 @@ function YearsPicker({
               </div>
             </div>
             <ul className="years-picker-list">
-              {[...options].sort((a, b) => a.spanLabel.localeCompare(b.spanLabel)).map((o) => {
+              {visibleOptions.map((o) => {
                 const isSelected = o.id === selectedId;
                 const tier = overallTierForSpan(tierContextFor(o));
                 return (
@@ -317,6 +331,16 @@ function YearsPicker({
                 );
               })}
             </ul>
+            {(hiddenCount > 0 || showAllYears) && chronological.length > YEARS_PICKER_TOP_COUNT + 1 && (
+              <button type="button" className="secondary-btn years-picker-more" onClick={() => setShowAllYears((v) => !v)}>
+                {showAllYears ? 'Show best years only' : `Show all ${chronological.length} windows`}
+              </button>
+            )}
+            <div className="years-picker-footer">
+              <button type="button" className="primary-btn years-picker-done" onClick={() => setOpen(false)}>
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
