@@ -1,6 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { spanEndYears } from './era';
+import { applySourceNameAliases } from '../data/sourceNameAliases';
 import zoneData from '../data/awards/zoneEfficiency.json';
 
 /**
@@ -32,6 +33,7 @@ export function buildZoneYearMap(): Map<string, Map<number, ZoneRow>> {
     }
     yearMap.set(endYear, r);
   }
+  applySourceNameAliases(byNameYear);
   return byNameYear;
 }
 

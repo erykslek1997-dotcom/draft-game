@@ -1,6 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { spanEndYears } from './era';
+import { applySourceNameAliases } from '../data/sourceNameAliases';
 import boxRatesData from '../data/awards/boxRates.json';
 
 /**
@@ -48,6 +49,7 @@ export function buildBoxRatesYearMap(): Map<string, Map<number, BoxRateRow>> {
     }
     yearMap.set(endYear, r);
   }
+  applySourceNameAliases(byNameYear);
   return byNameYear;
 }
 
@@ -60,6 +62,19 @@ export interface SpanBoxRates {
   orebPerGame: number;
   drebPerGame: number;
   orebReliable: boolean;
+}
+
+/**
+ * 2026-09-25, found auditing pre-1997 rim pressure: the export's FGA column is corrupt in much of
+ * its early data — about 90% of 1950-54 rows, a third of 1960-64, ~6% of 1965-69, near-none after
+ * (Oscar Robertson 1960-61 reads 1194 FGA for a real ~1600, Jerry West 791 for 1264, Bailey Howell
+ * 1959-60 fewer attempts than makes). FTA, FGM and points are right. A row whose implied FG% is
+ * impossible (over 60%, or more makes than attempts) — or too small to judge — isn't trusted for
+ * FGA. The 60% bar spares every real season in the export after 1980 but for a handful of centers.
+ */
+function hasPlausibleFga(r: BoxRateRow): boolean {
+  if (r.fga <= 0) return r.fgm <= 0;
+  return r.fgm / r.fga <= 0.6;
 }
 
 /**
@@ -88,10 +103,14 @@ export function boxRatesForSpan(
     { g: 0, fta: 0, fga: 0, oreb: 0, dreb: 0 },
   );
   if (sum.g === 0) return null;
+  // A corrupt FGA (see `hasPlausibleFga`) would inflate FTA/FGA — fall back to the pool's own
+  // verified per-game FGA for the span (Oscar 1960-62: 22.7, matching the real record).
+  const ftaPerGame = sum.fta / sum.g;
+  const ftRate = rows.every(hasPlausibleFga) ? sum.fta / Math.max(1, sum.fga) : ftaPerGame / Math.max(1, span.fga);
   return {
     games: sum.g,
-    ftRate: sum.fta / Math.max(1, sum.fga),
-    ftaPerGame: sum.fta / sum.g,
+    ftRate,
+    ftaPerGame,
     orebPerGame: sum.oreb / sum.g,
     drebPerGame: sum.dreb / sum.g,
     orebReliable: rows.every((r) => r.orebOk === 1),
@@ -101,21 +120,36 @@ export function boxRatesForSpan(
 const SHARED_MAP = buildBoxRatesYearMap();
 
 /**
- * 2026-09-25: league free-throw environment per season (FTA/FGA over every player in the export),
- * for comparing free-throw volume across eras — the 1960s drew roughly half again as many free
- * throws per shot as the 1990s. Clamped to 0.24-0.60: the late-1940s/early-1950s rows are too
- * sparse to trust (1952 reads 1.5).
+ * 2026-09-25: league free-throw environment per season (FTA/FGA), for comparing free-throw volume
+ * across eras — the early 1960s drew ~0.39 free throws per shot, the 1990s ~0.32, today ~0.25.
+ * Built only from rows with a plausible FGA (`hasPlausibleFga`) and at least 50 attempts; a season
+ * with fewer than 20 such rows (everything before ~1956) borrows the nearest season that has them.
+ * Checked against the real league record: 1961-62 reads 0.379 (real 0.39), 1964-65 0.377.
  */
 const LEAGUE_FT_RATE_BY_END_YEAR = (() => {
-  const totals = new Map<number, { fta: number; fga: number }>();
+  const totals = new Map<number, { fta: number; fga: number; rows: number }>();
   for (const r of boxRates) {
+    if (r.fga < 50 || !hasPlausibleFga(r)) continue;
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
-    const t = totals.get(endYear) ?? { fta: 0, fga: 0 };
+    const t = totals.get(endYear) ?? { fta: 0, fga: 0, rows: 0 };
     t.fta += r.fta;
     t.fga += r.fga;
+    t.rows++;
     totals.set(endYear, t);
   }
-  return new Map([...totals].map(([year, t]) => [year, Math.min(0.6, Math.max(0.24, t.fta / Math.max(1, t.fga)))]));
+  const reliable = [...totals].filter(([, t]) => t.rows >= 20).sort((a, b) => a[0] - b[0]);
+  const rateOf = (t: { fta: number; fga: number }) => t.fta / t.fga;
+  const out = new Map<number, number>();
+  const last = reliable[reliable.length - 1][0];
+  for (let y = 1946; y <= last; y++) {
+    const own = totals.get(y);
+    if (own && own.rows >= 20) out.set(y, rateOf(own));
+    else {
+      const nearest = reliable.reduce((best, cur) => (Math.abs(cur[0] - y) < Math.abs(best[0] - y) ? cur : best));
+      out.set(y, rateOf(nearest[1]));
+    }
+  }
+  return out;
 })();
 
 /** Average league FTA/FGA over a span's seasons (0.29, the 1997+ norm, where a season is missing). */

@@ -308,25 +308,12 @@ export function perimeterRimScore(f: { fta: number; ppg: number; fg: number }, w
   return w[0] + w[1] * Math.max(0, f.fta - PERIMETER_PROXY_FTA_KNEE) + w[2] * f.ppg + w[3] * f.fg;
 }
 // --- baked by scripts/buildPerimeterRimProxy.ts ---
-// 4100 guard/wing spans, 1997+
-const PERIMETER_PROXY_WEIGHTS = [-35.54, 6.161, 0.265, 79.572];
-const PERIMETER_PROXY_SCORE_RUNGS: number[] = [-8.719, -2.645, -1.63, -0.923, -0.314, 0.243, 0.745, 1.286, 1.786, 2.3, 2.849, 3.495, 4.202, 5.203, 6.451, 7.93, 10.62, 14.144, 19.482, 22.672, 26.099, 31.553, 35.357, 38.804, 42.113, 45.175, 47.67, 51.165, 52.248, 53.938, 58.032, 59.892, 66.71];
-const PERIMETER_PROXY_VALUE_RUNGS: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.045, 1.46, 3.466, 5.432, 7.73, 10.656, 14.855, 19.837, 23.007, 27.465, 34.753, 39.889, 45.97, 49.972, 54.32, 63.331, 74.798, 78.421, 82.956, 85.575, 90.736, 95.674];
+// 4178 guard/wing spans, 1997+
+const PERIMETER_PROXY_WEIGHTS = [-35.393, 5.978, 0.263, 79.231];
+const PERIMETER_PROXY_SCORE_RUNGS: number[] = [-8.69, -2.641, -1.619, -0.924, -0.325, 0.225, 0.726, 1.268, 1.77, 2.27, 2.826, 3.476, 4.186, 5.25, 6.515, 8.038, 10.719, 14.379, 19.381, 22.652, 26.179, 31.876, 35.113, 38.548, 41.01, 44.81, 47.038, 50.35, 51.069, 53.255, 58.374, 59.581, 66.706];
+const PERIMETER_PROXY_VALUE_RUNGS: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.072, 1.474, 3.466, 5.471, 7.778, 10.721, 14.946, 19.843, 23.168, 27.617, 34.661, 39.878, 45.687, 49.585, 54.319, 63.331, 73.322, 76.71, 81.488, 85.575, 90.736, 95.674];
 // --- end baked ---
-/**
- * User's call, 2026-09-25 ("Jordan powinien być blisko 100 szczerze"): the box proxy puts Jordan
- * 1986-93 at 42-81 — on par with Wade 2008-10 (79), the closest real profiles being LeBron 2008-10
- * (89), Wade, Durant and SGA — held down by the 1980s' higher league free-throw rate. The user rates
- * the Bulls-era Jordan as a rim attacker near the very top, so these spans get a floor. Only the
- * pre-1997 spans: 1995-98 have real shot-location data (14-30, a mid-range scorer by then).
- */
-const NAMED_PERIMETER_RIM_FLOOR: Record<string, number> = {
-  'Michael Jordan': 95,
-};
 function perimeterRimProxy(span: PlayerSpan): number {
-  return Math.max(perimeterRimProxyModel(span), NAMED_PERIMETER_RIM_FLOOR[span.playerName] ?? 0);
-}
-function perimeterRimProxyModel(span: PlayerSpan): number {
   const f = perimeterRimFeatures(span);
   if (!f) return 0;
   const score = perimeterRimScore(f);
