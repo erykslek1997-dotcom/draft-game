@@ -2115,7 +2115,12 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   <ScoreChip label="OFF" value={breakdown.offenseScore} />
                   <ScoreChip label="DEF" value={breakdown.defenseScore} />
                   {leagueEvalRow && (
-                    <span className="mini-fact">🏆 {(leagueEvalRow.championshipProbability * 100).toFixed(1)}%</span>
+                    <span
+                      className="mini-fact"
+                      title="Title odds: how often this team won a 16-team bracket of best-of-7 series, simulated 20,000 times. Each series is decided by projected point differential and how the two teams match up — not by the Rating — so two teams with the same Rating can have very different odds."
+                    >
+                      🏆 {(leagueEvalRow.championshipProbability * 100).toFixed(1)}%
+                    </span>
                   )}
                 </span>
               )}
