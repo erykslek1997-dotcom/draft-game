@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
@@ -279,13 +280,21 @@ function YearsPicker({
     row.classList.toggle('is-editing-years', open);
     return () => row.classList.remove('is-editing-years');
   }, [open]);
-  // Follow-up ("zasłania graczy których mamy w składzie"): on wide screens the page shifts right
-  // by the sheet's width while it is open, so the roster's names stay visible next to it.
+  // 2026-09-25 ("zbyt bardzo na lewo … między draft board a rotację"): on wide screens the sheet
+  // renders inline in the slot between the Team table and the Rotation card (no overlay, nothing
+  // covered); phones keep the centred sheet.
+  const [inlineSlot, setInlineSlot] = useState<HTMLElement | null>(null);
+  const inlineRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    document.documentElement.classList.add('years-sheet-open');
-    return () => document.documentElement.classList.remove('years-sheet-open');
+    const wide = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 900px)').matches;
+    const slot = wide ? document.getElementById('years-sheet-slot') : null;
+    // The slot is `display: none` while empty (CSS) — only the tab switch's inline style hides it for real.
+    setInlineSlot(slot && slot.style.display !== 'none' ? slot : null);
   }, [open]);
+  useEffect(() => {
+    if (open && inlineSlot) inlineRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [open, inlineSlot]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
@@ -301,7 +310,54 @@ function YearsPicker({
         </span>
         <span className="years-picker-caret" aria-hidden>▾</span>
       </button>
-      {open && (
+      {open && inlineSlot && createPortal(
+        <div ref={inlineRef} className="years-picker-inline" role="region" aria-label={`${playerName} — choose years`}>
+  <button type="button" className="player-peek-close" onClick={() => setOpen(false)} aria-label="Close">
+      ✕
+    </button>
+    <div className="player-peek-head">
+      <Face name={playerName} size="md" />
+      <div>
+        <h2 className="player-peek-name">{playerName}</h2>
+        <span className="player-peek-sub">Which years of his career do you play? Pick one to see his row update.</span>
+      </div>
+    </div>
+    <ul className="years-picker-list">
+      {visibleOptions.map((o) => {
+        const isSelected = o.id === selectedId;
+        const tier = overallTierForSpan(tierContextFor(o));
+        return (
+          <li key={o.id}>
+            <button
+              type="button"
+              className={`years-picker-option${isSelected ? ' is-selected' : ''}`}
+              onClick={() => onSelect(o.id)}
+            >
+              <EraYears span={o} />
+              <span className="years-picker-tier">{showTal ? `TAL ${effectiveTalent(o)} · ${tier}` : tier}</span>
+              <span className="years-picker-cost">
+                <CapIcon size={13} /> {o.fga.toFixed(1)}
+              </span>
+              <span className="years-picker-check" aria-hidden>{isSelected ? '✓' : ''}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+    {(hiddenCount > 0 || showAllYears) && chronological.length > YEARS_PICKER_TOP_COUNT + 1 && (
+      <button type="button" className="secondary-btn years-picker-more" onClick={() => setShowAllYears((v) => !v)}>
+        {showAllYears ? 'Show best years only' : `Show all ${chronological.length} windows`}
+      </button>
+    )}
+    <div className="years-picker-footer">
+      <button type="button" className="primary-btn years-picker-done" onClick={() => setOpen(false)}>
+        Done
+      </button>
+    </div>
+        </div>,
+        inlineSlot,
+      )}
+      {open && !inlineSlot && (
         <div className="player-peek-overlay years-picker-overlay" onClick={() => setOpen(false)}>
           <div
             className="player-peek-card years-picker-sheet"
@@ -1124,6 +1180,9 @@ export default function DraftBoard({
   // Keyed by the draft's seed so a resumed draft that already showed it doesn't show it again.
   const DESK_TRIGGER_PICKS = 3;
   const [desk, setDesk] = useState<DraftDeskResult | null>(null);
+  const [deskQueued, setDeskQueued] = useState(false);
+  const deskTimer = useRef<number | undefined>(undefined);
+  const DESK_OPEN_DELAY_MS = 1800;
   const deskChecked = useRef(false);
   useEffect(() => {
     if (state.commissionerMode || deskChecked.current || humanTeam.roster.length !== DESK_TRIGGER_PICKS) return;
@@ -1135,11 +1194,19 @@ export default function DraftBoard({
     } catch {
       // storage blocked: still show it, just can't remember it across a reload
     }
-    setDesk(buildDraftDesk(humanTeam.roster, ROUNDS - DESK_TRIGGER_PICKS));
+    // 2026-09-25, user ("mam wrażenie że za szybko wyskakuje"): the third pick lands on the board
+    // first; the desk opens a beat later. CPU picks already wait during that beat.
+    setDeskQueued(true);
+    const roster = humanTeam.roster;
+    deskTimer.current = window.setTimeout(() => {
+      setDeskQueued(false);
+      setDesk(buildDraftDesk(roster, ROUNDS - DESK_TRIGGER_PICKS));
+    }, DESK_OPEN_DELAY_MS);
   }, [humanTeam.roster, state.commissionerMode, state.seed]);
+  useEffect(() => () => window.clearTimeout(deskTimer.current), []);
   useEffect(() => {
-    onDeskOpenChange?.(desk !== null);
-  }, [desk, onDeskOpenChange]);
+    onDeskOpenChange?.(desk !== null || deskQueued);
+  }, [desk, deskQueued, onDeskOpenChange]);
   // Leaving the draft with the desk open must not leave CPU picks held for the next one.
   useEffect(() => () => onDeskOpenChange?.(false), [onDeskOpenChange]);
   const closeDesk = useCallback(() => setDesk(null), []);
@@ -2367,6 +2434,10 @@ export default function DraftBoard({
           2026-09-14: `isWideLayout` added to this same condition — on a wide screen this card sits
           permanently visible in the merged Team column (see `.at-merge-team-col` above), same
           "mounted, just hidden" shape this already used for the tab case. */}
+      {/* 2026-09-25, user ("jest zbyt bardzo na lewo, może uda się to zmieścić między draft board a
+          rotację?"): on wide screens the Years picker opens here, inline between the Team table and
+          the Rotation card, instead of docking over the left edge of the page. */}
+      <div id="years-sheet-slot" className="years-sheet-slot" style={(isWideLayout || activeTab === 'team') ? undefined : { display: 'none' }} />
       <div className="at-card" style={(isWideLayout || activeTab === 'team') ? undefined : { display: 'none' }}>
           <h1 className="at-panel-title at-cond">Rotation</h1>
           {humanTeam.roster.length === 0 ? (

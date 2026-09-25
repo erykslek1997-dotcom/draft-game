@@ -755,14 +755,14 @@ function HeroResult({
           </div>
           {fitDetail && (
             <div className="analysis-bars-split results-hero-bars">
-              <div className="analysis-bars-col">
+              <div className="analysis-bars-col analysis-bars-col--offense">
                 <span className="analysis-bars-col-label">Offense details</span>
                 {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
                 <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
                 {offenseDetail && <MetricBar label="Spacing fit" value={offenseDetail.spacing} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
                 <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
               </div>
-              <div className="analysis-bars-col">
+              <div className="analysis-bars-col analysis-bars-col--defense">
                 <span className="analysis-bars-col-label">Defense details</span>
                 <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
                 <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
@@ -1019,11 +1019,11 @@ function ShareModal({
                 {bySlot.map(({ slot, rows }) => (
                   <div className="share-modal-face-group" key={slot}>
                     <span className="share-modal-face-group-label">{slot}</span>
-                    {rows.map((row) => (
+                    {rows.filter((row) => row.minutes > 0 && (row.isStarter || row.minutes >= SPOT_MINUTES)).map((row) => (
                       <div className="share-modal-face-card" key={`${row.position}-${row.name}`}>
                         <Face name={row.name} size="sm" />
                         <span className="share-modal-face-info">
-                          <span className="share-modal-face-name">{shortenName(row.name)}</span>
+                          <span className="share-modal-face-name">{shortenName(row.name, 11)}</span>
                           <span className="share-modal-face-meta">
                             <span>{Math.round(row.minutes)}m</span>
                             <span className="share-modal-face-caps">{row.fga.toFixed(1)} caps</span>
@@ -1031,6 +1031,14 @@ function ShareModal({
                         </span>
                       </div>
                     ))}
+                    {rows.some((row) => row.minutes > 0 && !row.isStarter && row.minutes < SPOT_MINUTES) && (
+                      <span className="rotation-spot-line">
+                        + {rows
+                          .filter((row) => row.minutes > 0 && !row.isStarter && row.minutes < SPOT_MINUTES)
+                          .map((row) => `${shortenName(row.name, 12)} ${Math.round(row.minutes)}m`)
+                          .join(' · ')}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1069,15 +1077,22 @@ function ScoreChip({ label, value }: { label: string; value: number }) {
 /** A labelled 0-100 bar for the Team-analysis profile row — a fill proportional to the value,
  * tinted by the same band ladder the score chips use, so a weak axis is a short red bar and a
  * strong one a long green bar without the reader parsing 8 numbers. */
+/** 2026-09-25, user ("hover nad statystyką żeby użytkownik wiedział co jest czym"): the hint
+ * used to live in a `title` attribute — invisible on phones, slow on desktop. It's a real tooltip
+ * now: hover on desktop, tap/focus on touch (the row is focusable), with an "i" marker. */
 function MetricBar({ label, value, hint }: { label: string; value: number; hint?: string }) {
   const v = Math.max(0, Math.min(100, Math.round(value)));
   return (
-    <div className="metric-bar" title={hint}>
-      <span className="metric-bar-label">{label}</span>
+    <div className={`metric-bar${hint ? ' has-tip' : ''}`} tabIndex={hint ? 0 : undefined} aria-label={hint ? `${label} ${v}. ${hint}` : undefined}>
+      <span className="metric-bar-label">
+        {label}
+        {hint && <span className="metric-bar-info" aria-hidden>i</span>}
+      </span>
       <span className="metric-bar-track">
         <span className="metric-bar-fill" style={{ width: `${v}%`, background: qualityColor(v) }} />
       </span>
       <span className="metric-bar-value">{v}</span>
+      {hint && <span className="metric-bar-tip" role="tooltip">{hint}</span>}
     </div>
   );
 }
@@ -1630,10 +1645,16 @@ function RotationColumns({
             if (aIsStarter !== bIsStarter) return aIsStarter ? -1 : 1;
             return b.minutes - a.minutes;
           });
+        // 2026-09-25, user ("trzeba coś z tymi graczami po 2 minuty zrobić, psują wizualnie"): a
+        // backup with a few spot minutes at a slot no longer gets a full row — they're listed on
+        // one quiet line under the column; zero-minute rows are dropped.
+        const isSpot = (e: ResolvedSlotAssignment) =>
+          e.minutes < SPOT_MINUTES && !starterKeys.has(`${e.slot}|${e.player.id}`);
+        const spot = entries.filter((e) => e.minutes > 0 && isSpot(e));
         return (
           <div className="results-hero-rotation-col" key={slot}>
             <span className="results-hero-rotation-col-label">{slot}</span>
-            {entries.map((e) => {
+            {entries.filter((e) => e.minutes > 0 && !isSpot(e)).map((e) => {
               const total = totalMinutesByPlayerId?.get(e.player.id) ?? e.minutes;
               const offPosition = positionFitMultiplier(e.player, slot) < 0.9;
               return (
@@ -1661,12 +1682,20 @@ function RotationColumns({
                 </div>
               );
             })}
+            {spot.length > 0 && (
+              <span className="rotation-spot-line" title="Spot minutes at this position">
+                + {spot.map((e) => `${shortenName(e.player.playerName, 12)} ${Math.round(e.minutes)}m`).join(' · ')}
+              </span>
+            )}
           </div>
         );
       })}
     </div>
   );
 }
+
+/** Below this many minutes at a slot, a non-starter is shown on the column's spot line. */
+const SPOT_MINUTES = 6;
 
 function ResultsVerdict({
   team,
@@ -2300,14 +2329,14 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                         whole-roster read (neither purely offense nor defense), so it gets its own
                         full-width row below both columns rather than an arbitrary side. */}
                     <div className="analysis-bars-split">
-                      <div className="analysis-bars-col">
+                      <div className="analysis-bars-col analysis-bars-col--offense">
                         <span className="analysis-bars-col-label">Offense details</span>
                         {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
                         <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
                         {offenseDetail && <MetricBar label="Spacing fit" value={offenseDetail.spacing} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
                         <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
                       </div>
-                      <div className="analysis-bars-col">
+                      <div className="analysis-bars-col analysis-bars-col--defense">
                         <span className="analysis-bars-col-label">Defense details</span>
                         <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
                         <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
