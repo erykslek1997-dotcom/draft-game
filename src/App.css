@@ -229,7 +229,7 @@
 .historical-challenge-card[open] > summary::before { transform: rotate(90deg); }
 .historical-challenge-card ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
 
-.condition-met { color: #79c99a; }
+.condition-met { color: var(--at-good, #7fd68a); }
 .condition-missed { color: #d68b8b; }
 
 .intro-columns {
@@ -522,7 +522,7 @@
   text-align: center; font-size: 12px; color: #7f96b3; margin: 18px 0 0;
   font-variant-numeric: tabular-nums;
 }
-.intro-data-status.is-ready { color: #7fd68a; }
+.intro-data-status.is-ready { color: var(--at-good, #7fd68a); }
 
 .game-controls {
   display: flex;
@@ -1367,7 +1367,7 @@ select {
   color: var(--text);
 }
 .rotation-minutes-input:disabled { opacity: 0.4; }
-.rotation-minutes-input.minutes-warning { border-color: #f5a623; outline-color: #f5a623; }
+.rotation-minutes-input.minutes-warning { border-color: var(--at-warn, #f0a868); outline-color: var(--at-warn, #f0a868); }
 @media (max-width: 480px) {
   .rotation-card-row { flex-wrap: wrap; }
   .rotation-card-row-main { flex-basis: 100%; order: -1; }
@@ -1442,8 +1442,8 @@ select {
 }
 
 .slot-row input[type='number'].minutes-warning {
-  border-color: #f5a623;
-  outline-color: #f5a623;
+  border-color: var(--at-warn, #f0a868);
+  outline-color: var(--at-warn, #f0a868);
 }
 
 .remove-row-btn {
@@ -1459,7 +1459,7 @@ select {
 }
 
 .validation-warning {
-  color: #f5a623;
+  color: var(--at-warn, #f0a868);
   font-size: 13px;
   margin: 8px 0;
 }
@@ -2264,8 +2264,8 @@ select {
   background: color-mix(in srgb, var(--at-pill, var(--bg)) 40%, transparent);
 }
 .challenge-compare-side--winner {
-  border-color: #79c99a;
-  background: color-mix(in srgb, #79c99a 16%, transparent);
+  border-color: var(--at-good, #7fd68a);
+  background: color-mix(in srgb, var(--at-good, #7fd68a) 16%, transparent);
 }
 .challenge-compare-label {
   font-size: 11px;
@@ -2324,7 +2324,7 @@ select {
 .challenge-compare-metric-row .challenge-compare-metric-value:first-child { text-align: right; }
 .challenge-compare-metric-row .challenge-compare-metric-value:last-child { text-align: left; }
 .challenge-compare-metric-value--winner {
-  color: #79c99a;
+  color: var(--at-good, #7fd68a);
 }
 /* 2026-09-17, same-day follow-up ("krótkie porównanie składów + share") — a compact per-slot
    starting-five comparison and a share action inside the popup itself. */
@@ -3458,14 +3458,14 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
    colours inside the always-dark board ResultsScreen now renders on. Forced to the lighter
    dark-friendly variant whenever nested in `.at-shell`, same fix shape as the evidence-panel
    override above. */
-.at-shell .notes-strengths strong { color: #7fd68a; }
-.at-shell .notes-concerns strong { color: #f0a868; }
+.at-shell .notes-strengths strong { color: var(--at-good, #7fd68a); }
+.at-shell .notes-concerns strong { color: var(--at-warn, #f0a868); }
 @media (prefers-color-scheme: dark) {
   .notes-strengths strong {
-    color: #7fd68a;
+    color: var(--at-good, #7fd68a);
   }
   .notes-concerns strong {
-    color: #f0a868;
+    color: var(--at-warn, #f0a868);
   }
 }
 
@@ -5193,8 +5193,8 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .results-verdict-title { font-size: 18px; margin: 0 0 12px; color: var(--at-ink); }
 .results-verdict-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 20px; }
 .results-verdict-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.results-verdict-col--good .results-verdict-label { color: #7fd68a; }
-.results-verdict-col--bad .results-verdict-label { color: #f0a868; }
+.results-verdict-col--good .results-verdict-label { color: var(--at-good, #7fd68a); }
+.results-verdict-col--bad .results-verdict-label { color: var(--at-warn, #f0a868); }
 .results-verdict-col ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
 .results-verdict-tip {
   margin: 14px 0 0; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; line-height: 1.5;
@@ -5279,8 +5279,8 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 }
 .results-hero-bars-note { font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); margin: 6px 0 12px; }
 .bracket-scroll > div:first-child { overflow: hidden; margin: 0 auto; }
-.results-verdict--won { border-color: color-mix(in srgb, #ffd479 55%, var(--at-line)); }
-.results-verdict--won .results-verdict-title { color: #ffd479; }
+.results-verdict--won { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 55%, var(--at-line)); }
+.results-verdict--won .results-verdict-title { color: var(--at-gold, #ffd479); }
 
 /* 2026-09-24: detailed variant of the rotation tiles (RotationColumns), used in every team's
    Rotation section of the ranking: a TAL badge per player and a total when minutes are split. */
@@ -5296,3 +5296,205 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .season-standings-out td { opacity: 0.6; }
 .season-standings-out.season-standings-you td { opacity: 1; }
 .season-playoff-note { font-size: 12.5px; color: var(--at-ink-soft); margin: 10px 0 0; }
+
+
+/* 2026-09-25, visual consistency pass: the game shell is dark no matter what the OS theme is (see
+   `.at-shell`), but these badge palettes only switched to their dark variants under
+   `prefers-color-scheme: dark` — on a light-mode OS the same tier pills came out as pastel light
+   fills inside the dark board. Every dark variant below is the existing one, just pinned to the
+   shell so it applies on every OS theme. Generated from the media blocks above; keep in sync. */
+.at-shell .tier-non {
+    background: #3d1414;
+    color: #f09595;
+}
+.at-shell .tier-bad {
+    background: #3a2206;
+    color: #fac775;
+}
+.at-shell .tier-avg {
+    background: #2e2e2c;
+    color: #b4b2a9;
+}
+.at-shell .tier-good {
+    background: #0d302a;
+    color: #5dcaa5;
+}
+.at-shell .tier-great {
+    background: #221e4d;
+    color: #afa9ec;
+}
+.at-shell .tier-gravity {
+    background: #0a2947;
+    color: #85b7eb;
+}
+.at-shell .tier-anomaly {
+    background: linear-gradient(96deg, #4a3200, #4a1030);
+    color: #ffdc9b;
+}
+.at-shell .rating-cigarette {
+    background: #2c2b28;
+    color: #b3b0a8;
+}
+.at-shell .rating-glue {
+    background: #16283d;
+    color: #82b5ea;
+}
+.at-shell .rating-bench {
+    background: #3a2412;
+    color: #f0a868;
+}
+.at-shell .rating-role {
+    background: #322c08;
+    color: #e8d461;
+}
+.at-shell .rating-starter {
+    background: #12281a;
+    color: #7fd68a;
+}
+.at-shell .rating-allstar {
+    background: #072c30;
+    color: #6fd9e6;
+}
+.at-shell .rating-allnba {
+    /* 2026-09-12, code-review fix: color updated to match the Draft tab's own card border/corner
+       for this tier (`TIER_FRAME_COLOR['All-NBA']` in DraftBoard.tsx) — that one moved off this
+       exact `#b2a3f2` on the user's own report ("kolor różowy w all-nba nie do końca mi się
+       podoba", too close to MVP's pink) but this text badge, shown elsewhere (Team roster table,
+       Rotation, the peek modal), never got the same update, so the same tier read as two
+       different colors depending on which screen you were looking at. */
+    background: #241c47;
+    color: #8b9bf7;
+}
+.at-shell .rating-mvp {
+    background: #3a1230;
+    color: #ec8ecb;
+}
+.at-shell .rating-peak {
+    background: linear-gradient(96deg, #4a3200, #5a3900);
+    color: #ffdc9b;
+}
+.at-shell .playoff-bronze-drop {
+    background: #3a1c14;
+    color: #f2a08c;
+}
+.at-shell .playoff-silver-drop {
+    background: #4a1f14;
+    color: #f5866a;
+}
+.at-shell .playoff-gold-drop {
+    background: #5c1f11;
+    color: #ff8a68;
+}
+.at-shell .playoff-platinum-drop {
+    background: linear-gradient(96deg, #7a1c0f, #3d0e08);
+    color: #ffb199;
+}
+.at-shell .playoff-bronze-rise {
+    background: #143a1c;
+    color: #8ee29a;
+}
+.at-shell .playoff-silver-rise {
+    background: #0f4a1e;
+    color: #7bdb8c;
+}
+.at-shell .playoff-gold-rise {
+    background: #0c5c22;
+    color: #6bea82;
+}
+.at-shell .playoff-platinum-rise {
+    background: linear-gradient(96deg, #0e7d3a, #0a4d24);
+    color: #baffcb;
+}
+.at-shell .dur-dnp {
+    background: #2c2b28;
+    color: #b3b0a8;
+}
+.at-shell .dur-walking-glass {
+    background: #16283f;
+    color: #8fb8ea;
+}
+.at-shell .dur-street-clothes {
+    background: #1a3049;
+    color: #a0c4ee;
+}
+.at-shell .dur-load-management {
+    background: #1e3a56;
+    color: #b0cef1;
+}
+.at-shell .dur-reliable {
+    background: #234668;
+    color: #c3dbf5;
+}
+.at-shell .dur-unbreakable {
+    background: #29537a;
+    color: #d6e6f8;
+}
+.at-shell .dur-ironman {
+    background: linear-gradient(96deg, #3b5bc9, #7c3aed);
+    color: #ffffff;
+}
+.at-shell .sample-limited {
+    border-color: #d9ac5c;
+    color: #d9ac5c;
+}
+.at-shell .evidence-panel-wrap {
+    background: #232220;
+}
+.at-shell .evidence-panel-label {
+    color: #a8a49a;
+}
+.at-shell .evidence-column h4 {
+    color: #a8a49a;
+}
+.at-shell .notes-strengths strong {
+    color: var(--at-good, #7fd68a);
+}
+.at-shell .notes-concerns strong {
+    color: var(--at-warn, #f0a868);
+}
+
+/* ---- 2026-09-25, visual consistency pass (user's ask: "czy wszystkie kolory, fonty, elementy
+   wizualne są ze sobą spójne"). Measured in the browser across intro/lottery/draft/team/results/
+   Best 5/Quick 5 before this block:
+   - a few headings (intro title, Team h2, results section titles, the scouting modal's player
+     name) fell back to the app-wide system-ui font instead of the shell's mono;
+   - buttons came in five corner shapes (2/6/8/10px and full pill) and 11-18px type;
+   - "good / warning / bad / gold" were ~20 unrelated hex values (6 greens, 8 ambers, 5 reds).
+   One semantic palette + one button shape + one heading font, everything else untouched. */
+.at-shell {
+  --at-good: #7fd68a;
+  --at-warn: #f0a868;
+  --at-gold: #ffd479;
+  --at-bad: var(--at-accent-2);
+  --at-radius-card: 10px;
+}
+.at-shell h1,
+.at-shell h2,
+.at-shell h3,
+.at-shell h4 {
+  font-family: inherit;
+}
+.at-shell .primary-btn,
+.at-shell .secondary-btn,
+.at-shell .results-hero-copy {
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 18px;
+}
+/* Cards share one corner radius. The intro's mode cards stay square on purpose: their terminal
+   corner brackets are drawn for sharp corners. */
+.at-shell .bf-slot,
+.at-shell .bf-pool-card {
+  border-radius: var(--at-radius-card);
+}
+/* Buttons in a flex action row line up on one baseline — the legacy .primary-btn/.secondary-btn
+   margins (built for stacked, standalone buttons) pushed "New draft" lower than its neighbours. */
+.at-shell .results-verdict-actions > button,
+.at-shell .results-hero-actions > button,
+.at-shell .at-lottery-actions > button {
+  margin: 0;
+}

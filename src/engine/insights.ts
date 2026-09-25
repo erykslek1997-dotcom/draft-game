@@ -413,6 +413,16 @@ function weakBenchMessage(t: TeamFeatureSnapshot): string {
     : 'Your starting five is strong, but the team drops off when the bench comes in.';
 }
 
+function creatorsPoorSpacingMessage(t: TeamFeatureSnapshot): string {
+  const creators = t.players
+    .filter(p => (p.highUsageWeight ?? 0) >= 0.5 && p.minutes >= 24)
+    .sort((a, b) => (b.offensiveImpact ?? 0) - (a.offensiveImpact ?? 0))
+    .slice(0, 2);
+  return creators.length > 0
+    ? `${displayNames(creators)} can create ${plural(creators, 'his', 'their')} own shots, but poor spacing lets defenses load up on ${plural(creators, 'him', 'them')}.`
+    : 'Great shot creators, but poor spacing makes their job harder.';
+}
+
 function capsText(p: PlayerTeamFeature): string {
   return `${p.playerName} (${Math.round(p.fga)} caps)`;
 }
@@ -1475,7 +1485,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const c = t.creatorCount ?? 0;
       const s = t.starterSpacingStrength ?? 1;
       return c >= 2 && s <= 0.42
-        ? hit(0.58 + (1 - s) * 0.32, 0.94, teamConfidence(t), 'Great shot creators, but poor spacing makes their job harder.', { values: { creatorCount: c, starterSpacingStrength: s } }, 0.95)
+        ? hit(0.58 + (1 - s) * 0.32, 0.94, teamConfidence(t), creatorsPoorSpacingMessage(t), { values: { creatorCount: c, starterSpacingStrength: s } }, 0.95)
         : inactive;
     }
   },
