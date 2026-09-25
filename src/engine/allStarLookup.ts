@@ -1,4 +1,5 @@
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import allStarsData from '../data/awards/allStars.json';
 
 /**
@@ -24,7 +25,8 @@ export function normalizeAwardName(name: string): string {
 }
 
 const countByName = new Map<string, number>();
-for (const r of allStars) countByName.set(normalizeAwardName(r.name), r.count);
+// Source names resolve to the pool's key ("Nate Archibald" -> Tiny, "Penny Hardaway" -> Anfernee).
+for (const r of allStars) countByName.set(resolveSourceName(normalizeAwardName(r.name), r.years[0]), r.count);
 
 export function allStarCount(playerName: string): number {
   return countByName.get(normalizeAwardName(playerName)) ?? 0;

@@ -1,4 +1,5 @@
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import allDefenseData from '../data/awards/allDefense.json';
 import allNbaData from '../data/awards/allNba.json';
 import allStarsData from '../data/awards/allStars.json';
@@ -22,60 +23,31 @@ export interface AccoladeBadge {
   title: string;
 }
 
-const NAME_ALIASES: Record<string, string> = {
-  'andriej kirilenko': 'Andrei Kirilenko',
-  'don watts': 'Slick Watts',
-  'george t. johnson': 'George Johnson',
-  'jaren jackson': 'Jaren Jackson Jr.',
-  'lew alcindor': 'Kareem Abdul-Jabbar',
-  'micheal ray richardson': 'Michael Ray Richardson',
-  'wayne rollins': 'Tree Rollins',
-};
-
-function awardKey(name: string): string {
-  const cleaned = normalizePlayerName(
-    name
-      .replace(/[†§*^‡]/g, '')
-      .replace(/\([^)]*\)/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim(),
-  );
-  return normalizePlayerName(NAME_ALIASES[cleaned] ?? cleaned);
+/** Award tables carry footnote marks ("Kyle Lowry†") and a trailing "()" extraction artifact. */
+function cleanAwardName(name: string): string {
+  return name.replace(/[†§*^‡]/g, '').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function increment(map: Map<string, number>, name: string): void {
-  const key = awardKey(name);
-  map.set(key, (map.get(key) ?? 0) + 1);
+/** A SOURCE award name, resolved to the pool's key for that season (`sourceNameResolver.ts`:
+ * "Akeem Olajuwon" 1986-90 is Hakeem, All-Defense "Jaren Jackson" 2019+ is Jr., not his father). */
+function sourceAwardKey(name: string, seasonEndYear?: number): string {
+  return resolveSourceName(cleanAwardName(name), seasonEndYear);
 }
 
-const allStarByName = new Map<string, number>();
+/** A pool player's own key — no aliasing on this side. */
+function poolKey(playerName: string): string {
+  return normalizePlayerName(cleanAwardName(playerName));
+}
+
 const allStarYearsByName = new Map<string, Set<number>>();
 for (const row of allStarsData as { name: string; count: number; years: number[] }[]) {
-  allStarByName.set(awardKey(row.name), row.count);
-  allStarYearsByName.set(awardKey(row.name), new Set(row.years));
-}
-
-function countTeamSelections(rows: { tiers: string[][] }[]): Map<string, number> {
-  const result = new Map<string, number>();
-  for (const row of rows) {
-    for (const tier of row.tiers) {
-      for (const name of tier) increment(result, name);
-    }
+  for (const year of row.years) {
+    const key = sourceAwardKey(row.name, year);
+    const years = allStarYearsByName.get(key) ?? new Set<number>();
+    years.add(year);
+    allStarYearsByName.set(key, years);
   }
-  return result;
 }
-
-function countIndividualAwards(rows: { name: string }[]): Map<string, number> {
-  const result = new Map<string, number>();
-  for (const row of rows) increment(result, row.name);
-  return result;
-}
-
-const allNbaByName = countTeamSelections(allNbaData as { tiers: string[][] }[]);
-const allDefenseByName = countTeamSelections(allDefenseData as { tiers: string[][] }[]);
-const mvpByName = countIndividualAwards(mvpData as { name: string }[]);
-const dpoyByName = countIndividualAwards(dpoyData as { name: string }[]);
-const greatest75 = new Set((greatest75Data as string[]).map(awardKey));
 
 function teamSelectionYears(rows: { season: string; tiers: string[][] }[]): Map<string, Set<number>> {
   const result = new Map<string, Set<number>>();
@@ -83,7 +55,7 @@ function teamSelectionYears(rows: { season: string; tiers: string[][] }[]): Map<
     const year = Number(row.season.slice(0, 4)) + 1;
     for (const tier of row.tiers) {
       for (const name of tier) {
-        const key = awardKey(name);
+        const key = sourceAwardKey(name, year);
         const years = result.get(key) ?? new Set<number>();
         years.add(year);
         result.set(key, years);
@@ -96,13 +68,16 @@ function teamSelectionYears(rows: { season: string; tiers: string[][] }[]): Map<
 function individualAwardYears(rows: { season: string; name: string }[]): Map<string, Set<number>> {
   const result = new Map<string, Set<number>>();
   for (const row of rows) {
-    const key = awardKey(row.name);
+    const year = Number(row.season.slice(0, 4)) + 1;
+    const key = sourceAwardKey(row.name, year);
     const years = result.get(key) ?? new Set<number>();
-    years.add(Number(row.season.slice(0, 4)) + 1);
+    years.add(year);
     result.set(key, years);
   }
   return result;
 }
+
+const greatest75 = new Set((greatest75Data as string[]).map((n) => sourceAwardKey(n)));
 
 const allNbaYearsByName = teamSelectionYears(allNbaData as { season: string; tiers: string[][] }[]);
 const allDefenseYearsByName = teamSelectionYears(allDefenseData as { season: string; tiers: string[][] }[]);
@@ -110,13 +85,13 @@ const mvpYearsByName = individualAwardYears(mvpData as { season: string; name: s
 const dpoyYearsByName = individualAwardYears(dpoyData as { season: string; name: string }[]);
 
 export function careerAccoladesFor(playerName: string): CareerAccolades {
-  const key = awardKey(playerName);
+  const key = poolKey(playerName);
   return {
-    allStar: allStarByName.get(key) ?? 0,
-    allNba: allNbaByName.get(key) ?? 0,
-    allDefense: allDefenseByName.get(key) ?? 0,
-    mvp: mvpByName.get(key) ?? 0,
-    dpoy: dpoyByName.get(key) ?? 0,
+    allStar: allStarYearsByName.get(key)?.size ?? 0,
+    allNba: allNbaYearsByName.get(key)?.size ?? 0,
+    allDefense: allDefenseYearsByName.get(key)?.size ?? 0,
+    mvp: mvpYearsByName.get(key)?.size ?? 0,
+    dpoy: dpoyYearsByName.get(key)?.size ?? 0,
     greatest75: greatest75.has(key),
   };
 }
@@ -130,7 +105,7 @@ function countCoveredYears(map: Map<string, Set<number>>, key: string, covered: 
 }
 
 export function accoladesForSpan(playerName: string, spanLabel: string): CareerAccolades {
-  const key = awardKey(playerName);
+  const key = poolKey(playerName);
   const covered = new Set(spanEndYears(spanLabel));
   return {
     allStar: countCoveredYears(allStarYearsByName, key, covered),

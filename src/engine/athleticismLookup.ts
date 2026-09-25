@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
 import athleticismData from '../data/awards/athleticism.json';
 
@@ -39,8 +40,8 @@ interface YearEntry {
 
 const byNameYear = new Map<string, Map<number, YearEntry>>();
 for (const r of rows) {
-  const key = normalizePlayerName(r.name);
   const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
+  const key = resolveSourceName(r.name, endYear);
   let yearMap = byNameYear.get(key);
   if (!yearMap) {
     yearMap = new Map();

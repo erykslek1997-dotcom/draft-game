@@ -31,23 +31,20 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
       (Drexler? Dr. J? inni) — każdy wymaga tej samej weryfikacji co obecni. Znany słaby punkt modelu:
       gracze wymuszający faule przy rzutach z dystansu (Harden) — udział trójek nie przenosi się
       uczciwie między epokami (w latach 80. Magic spadał do 0), więc nie jest w modelu.
-- [ ] **Luki w danych źródłowych (audyt 2026-09-25)** — nic jeszcze nie naprawione, zmienia TAL/D-TAL
-      wielu graczy, więc wymaga decyzji:
-      1. *Nieaktualne pliki `*.pool.json`* (przycięte do puli przed jej rozszerzeniem): gracze dodani
-         później są w pełnym pliku, ale nie w przyciętym — BPM2 250, DARKO 214, PIPM 195, RAPTOR 179,
-         historyczny APM 140, matchup defense 125 graczy (np. Austin Rivers, Terrence Ross, Wayne
-         Ellington, Gary Trent Jr., Hal Greer). Naprawa: ponowny `scripts/trimReferenceDataToPool.ts`.
-      2. *Inna pisownia nazwisk w poszczególnych źródłach* (aliasy są dziś tylko dla box score i stref
-         rzutów, `src/data/sourceNameAliases.ts`): BPM2 — Jimmy Butler („Jimmy Butler III”), Archibald,
-         Lever, Free, Nenê, Steve Smith, J.R. Smith; DARKO — Nic Claxton („Nicolas Claxton”);
-         PIPM — Jaren Jackson Jr./Michael Porter Jr./Otto Porter Jr. (bez „Jr.”), JJ Redick („J.J.
-         Redick”); playmaking — CJ McCollum („C.J. McCollum”), JJ Redick, Otto Porter Jr.
-      3. *Historyczny APM (1977-2016)* nie ma w ogóle m.in. Kareema, Birda, McAdoo, Havlicka, Frazier —
-         wygląda na niepełne źródło, nie błąd nazwisk.
-      4. *Atletyczność* nie ma graczy z lat 50. (Mikan, Johnston, Arizin) — brak w źródle.
-      Zera w statystykach sezonów są w porządku: przechwyty/bloki sprzed 1974 silnik traktuje jako
-      brak danych; bloki 0 po 1980 to zaokrąglone 0.0-0.1 u rozgrywających.
-
+- [x] **Luki w danych źródłowych (audyt 2026-09-25) — naprawione tego samego dnia.** Wspólny
+      resolver nazwisk (`src/data/sourceNameResolver.ts`: dokładne → alias → forma kanoniczna + rok,
+      rozdziela ojców i synów) we wszystkich lookupach i nagrodach; pliki `*.pool.json` przycięte na
+      nowo. Odzyskane m.in. All-NBA Hakeema 1986-90 („Akeem”), Archibalda, Penny'ego, Amar'e.
+      Zostają luki samego źródła: historyczny APM ma realnie dane dopiero od 1994 (przed 1994 po 1-5
+      graczy na sezon, brak 1992-93) — do sprawdzenia, czy arkusz „Historical APM Grid.xlsx” ma więcej
+      w innych zakładkach niż „All Scaled”; atletyczność bez graczy z lat 50.
+- [ ] **Próg gwiazdy w `positionCorrectionFor` (talent.ts)** — znany klif: PG tuż pod
+      `ALL_STAR_TAL_FLOOR` dostaje pełny bonus za spacing (~×1.15), tuż nad nim nie. Mark Price
+      1993-95 przeskoczył 70 → 84 przy zmianie premii self-creation o 0.11 (2026-09-25). Opisane w
+      kodzie jako odłożone („star-gate untangle”).
+- [ ] **Przebudowa wpływu playoffs na TAL** (2026-09-25, „na przyszłość do zapamiętania”): obecny
+      mechanizm do przemyślenia od nowa; nawet jeśli Malone byłby karany tak samo, kara/bonus za
+      playoffs powinna być widoczna w ocenach offense i defense, nie tylko w samym TAL.
 - [ ] **Salary-cap mode: eksplozja klamry (clamp) w pierwszych latach realnego capu (~1984-88)**
       (znalezione 2026-09-07, przykład: Bill Walton). Prawdziwy cap w 1984-85 to zaledwie $3.6M
       CAŁEJ drużyny — więc dowolna "normalna" realna pensja weterana z tamtych lat stanowi ogromny

@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import playoffBpm2Data from '../data/awards/bpm2Playoffs.pool.json';
 import { spanEndYears } from './era';
 
@@ -33,8 +34,8 @@ const rows = playoffBpm2Data as PlayoffBpm2Row[];
 const byNameYear = new Map<string, Map<number, PlayoffBpm2Row>>();
 
 for (const row of rows) {
-  const name = normalizePlayerName(row.name);
   const endYear = Number(row.season.slice(0, 4)) + 1;
+  const name = resolveSourceName(row.name, endYear);
   const yearMap = byNameYear.get(name) ?? new Map<number, PlayoffBpm2Row>();
   yearMap.set(endYear, row);
   byNameYear.set(name, yearMap);

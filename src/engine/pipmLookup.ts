@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { resolveSourceName } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
 // .pool.json is pipm.json trimmed to only players who ever appear in draftPool.json, same
 // pattern as darkoLookup.ts/historicalApmLookup.ts's own trims. Calibration scripts that need
@@ -42,28 +43,17 @@ interface PipmRow {
 }
 const pipm = pipmData as PipmRow[];
 
-/** Same alias the source data needs for his early career — mirrors availabilityLookup.ts's
- * NAME_ALIASES exactly (this source, like that one, only ever uses "Metta World Peace", never
- * "Ron Artest"). */
-const NAME_ALIASES: Record<string, string> = {
-  'ron artest': 'Metta World Peace',
-};
-
 export function buildPipmYearMap(): Map<string, Map<number, number>> {
   const byNameYear = new Map<string, Map<number, number>>();
   for (const r of pipm) {
-    const key = normalizePlayerName(r.name);
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
+    const key = resolveSourceName(r.name, endYear);
     let yearMap = byNameYear.get(key);
     if (!yearMap) {
       yearMap = new Map();
       byNameYear.set(key, yearMap);
     }
     yearMap.set(endYear, r.pipm);
-  }
-  for (const [from, to] of Object.entries(NAME_ALIASES)) {
-    const target = byNameYear.get(normalizePlayerName(to));
-    if (target) byNameYear.set(normalizePlayerName(from), target);
   }
   return byNameYear;
 }

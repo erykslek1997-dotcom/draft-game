@@ -41,20 +41,12 @@ export interface SourceCoverage {
   count: number;
 }
 
-/**
- * The pool de-dup (2026-08) made "Ron Artest" the single canonical span name for his whole
- * 1999-2017 career, but every real plus-minus source here (DARKO, RAPTOR, BPM2) only ever keys
- * him as "Metta World Peace" -- so without this alias his entire career got ZERO real-data
- * correction and his post-decline, post-All-Defense spans (2008-13) read pure box: D-TAL 45-56
- * for the primary wing defender of the 2010 champions. `availabilityLookup.ts` and
- * `pipmLookup.ts` already carry the exact same one-entry alias for the exact same reason. */
-const REAL_DATA_NAME_ALIASES: Record<string, string> = {
-  [normalizePlayerName('Ron Artest')]: normalizePlayerName('Metta World Peace'),
-};
+/** Source rows are keyed by the pool's own name (`resolveSourceName` in each source's lookup
+ * resolves "Metta World Peace" and the like), so a span looks itself up directly. */
 
 function coverageForSpan(span: PlayerSpan, byNameYear: Map<string, Map<number, number>>): SourceCoverage | null {
   const norm = normalizePlayerName(span.playerName);
-  const yearMap = byNameYear.get(REAL_DATA_NAME_ALIASES[norm] ?? norm);
+  const yearMap = byNameYear.get(norm);
   if (!yearMap) return null;
   const values = spanEndYears(span.spanLabel)
     .map((y) => yearMap.get(y))
