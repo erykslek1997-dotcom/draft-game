@@ -6156,3 +6156,21 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-shell tr.is-editing-years > td:first-child {
   box-shadow: inset 3px 0 0 var(--at-accent);
 }
+
+/* 2026-09-25: Years sheet — "Show all" toggle and a Done button pinned to the bottom (the corner
+   ✕ alone read as unclear). */
+.at-shell .years-picker-more {
+  display: block;
+  margin: 10px auto 0;
+}
+.at-shell .years-picker-footer {
+  position: sticky;
+  bottom: 0;
+  margin: 12px -4px -4px;
+  padding: 12px 4px 4px;
+  background: inherit;
+}
+.at-shell .years-picker-done {
+  width: 100%;
+  margin: 0;
+}
