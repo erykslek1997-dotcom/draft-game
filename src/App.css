@@ -5604,3 +5604,60 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-lottery .at-lottery-archive { margin: 22px auto 0; }
 .at-lottery .at-lottery-actions { margin-top: 22px; }
 .at-lottery .at-lottery-howtoplay { margin-top: 22px; }
+
+/* ---- 2026-09-25, era stamps (user's follow-up: "może coś z okresu Bird/Magic, Jordan era,
+   deadball era"). A span's years get a small stamp styled after its era — see eraStamp() in
+   eraNotes.ts for the cut-offs. Modern spans (2005+) keep the plain look the rest of the UI has. */
+.at-shell .era-stamp {
+  display: inline-block;
+  font-size: 10.5px;
+  line-height: 1.5;
+  padding: 0 5px;
+  border-radius: 2px;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+/* Vintage (before the 3-point line): old program card — parchment, brass, serif. */
+.at-shell .era-stamp--vintage {
+  font-family: 'Bitter', Georgia, serif;
+  font-weight: 700;
+  color: #3d2b1f;
+  background: #ece0c3;
+  border: 1px solid #a97c37;
+  transform: rotate(-2deg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+/* Showtime (Bird / Magic, 1980-1991): 80s cardboard — cream stock, red and blue pinstripes. */
+.at-shell .era-stamp--showtime {
+  font-weight: 800;
+  font-style: italic;
+  color: #1d3f8f;
+  background: #fbf3dc;
+  border-top: 2px solid #c8102e;
+  border-bottom: 2px solid #1d428a;
+  transform: rotate(-1deg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+/* Jordan era (1991-1998): 90s expansion-team graphics — teal-to-purple, slanted and loud. */
+.at-shell .era-stamp--jordan {
+  font-weight: 800;
+  font-style: italic;
+  color: #fff;
+  background: linear-gradient(100deg, #00a3ad, #5b2a86);
+  transform: skewX(-8deg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+/* Deadball era (1999-2004): grinding half-court years — gunmetal, dashed, no flash. */
+.at-shell .era-stamp--deadball {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #c3cad4;
+  background: #2a2f37;
+  border: 1px dashed #6b7480;
+}
+.at-shell .bf-pool-season.era-stamp {
+  font-size: 14px;
+  padding: 1px 7px;
+  margin: 2px 0;
+}

@@ -4,7 +4,7 @@
  * dash with the reason on hover, instead of a misleading 0.0.
  */
 import type { PlayerSpan } from '../data/schema';
-import { predatesThreePointLine, stealsBlocksFullyRecorded } from '../engine/era';
+import { predatesThreePointLine, spanEndYears, stealsBlocksFullyRecorded } from '../engine/era';
 
 export const NOT_YET = '—';
 export const THREE_POINT_LINE_NOTE = 'No 3-point line yet — it arrived in 1979-80.';
@@ -18,7 +18,29 @@ export function hadStealsBlocksRecorded(span: Pick<PlayerSpan, 'spanLabel'>): bo
   return stealsBlocksFullyRecorded(span.spanLabel);
 }
 
-/** Spans that ended before the 3-point line get the vintage trading-card look. */
-export function isVintageSpan(span: Pick<PlayerSpan, 'spanLabel'>): boolean {
-  return predatesThreePointLine(span.spanLabel);
+export type EraKey = 'vintage' | 'showtime' | 'jordan' | 'deadball';
+
+export interface EraStamp {
+  key: EraKey;
+  /** Hover text: which era and why it's remembered. */
+  title: string;
+}
+
+/**
+ * 2026-09-25, user's follow-up ("mamy tylko vintage smaczki, może coś z okresu Bird/Magic, Jordan
+ * era, deadball era"): each older era gets its own small years stamp, styled after its time.
+ * Picked by the span's middle season (season-end years); anything from 2005 on is the modern game
+ * the rest of the UI already looks like, so it gets no stamp.
+ */
+export function eraStamp(span: Pick<PlayerSpan, 'spanLabel'>): EraStamp | null {
+  if (predatesThreePointLine(span.spanLabel)) {
+    return { key: 'vintage', title: 'Vintage era — played before the 3-point line (1979-80).' };
+  }
+  const years = spanEndYears(span.spanLabel);
+  if (years.length === 0) return null;
+  const mid = years[Math.floor((years.length - 1) / 2)];
+  if (mid <= 1990) return { key: 'showtime', title: 'Showtime era (1980-1991) — Bird vs. Magic, and the 3-point line’s first decade.' };
+  if (mid <= 1998) return { key: 'jordan', title: 'Jordan era (1991-1998) — six titles in eight years, hand-checking still legal.' };
+  if (mid <= 2004) return { key: 'deadball', title: 'Deadball era (1999-2004) — slow pace, hand-checking and the lowest scoring since the shot clock arrived.' };
+  return null;
 }

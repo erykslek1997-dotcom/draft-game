@@ -3,7 +3,8 @@ import './BestFive.css';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
 import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
-import { hadStealsBlocksRecorded, hadThreePointLine, isVintageSpan } from './eraNotes';
+import { hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
+import { EraYears } from './EraYears';
 import { currentStreak, recordDailyResult, savedDailyLineup, type Streak } from './bestFiveProgress';
 import {
   dailyPool,
@@ -271,7 +272,7 @@ export default function BestFive({ onBack }: Props) {
                           Five pick actually turns on: which career window you're drafting. Plain,
                           larger text (`.bf-pool-season`, pool-card only) makes it the card's real
                           lead without spending padding on a box in an already-tight ~140px card. */}
-                      <span className={`bf-pool-season${isVintageSpan(span) ? ' at-vintage-years' : ''}`}>{span.spanLabel}</span>
+                      <EraYears span={span} className="bf-pool-season" />
                       {/* 2026-09-11, user-reported live ("dopisek pozycji na karcie nie ma sensu"):
                           this picker is already scoped to one slot (`SLOT_LABEL[activeSlot]` in
                           the header above — "Pick your point guard"), so repeating the position on
