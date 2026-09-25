@@ -675,6 +675,15 @@ export function superstarEngineBonus(team: Team): number {
 const ELITE_OFFENSIVE_ENGINE_FLOOR = 72;
 
 /**
+ * 2026-09-25 engine audit: the spacing half of the engine gate used to be the shooting tier alone
+ * ("Walking gravity"), so role shooters with no engine to speak of (Hedo Turkoglu O-TAL 69,
+ * Khris Middleton 75, Ryan Anderson 57) floored their team at 72 while Kevin Garnett (O-TAL 82,
+ * no jumper) got nothing — swapping KG for Ryan Anderson raised team offense 52 -> 64. A shooter
+ * now also needs a genuine star O-TAL to count as an engine (Curry 98, Nash 97, Dirk 90 still do).
+ */
+const GRAVITY_ENGINE_OTAL_FLOOR = 85;
+
+/**
  * 2026-09-23, user ("defensywni centrzy zbyt op - zbyt mało zaniżają ofensywę... brak elitarnego
  * playmakera obok defensywnego centra = spadek w ataku"): the "cheap because it isn't an
  * offense" low-usage defensive anchor `lowUsageBigMalus` (aiDrafter.ts) already targets for
@@ -712,9 +721,10 @@ function eliteOffensiveEngineFloorContribution(team: Team): number {
   );
   const engineAssignment = starters.find(({ player, minutes }) => {
     if (minutes <= 0) return false;
+    const otal = computeOffensiveTalent(player);
     const clearsSoloOffenseBar =
-      spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR ||
-      computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL;
+      otal >= ELITE_SCORING_GRAVITY_OTAL ||
+      (spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR && otal >= GRAVITY_ENGINE_OTAL_FLOOR);
     if (!clearsSoloOffenseBar) return false;
     if (!hasStartingDefensiveCenter) return true;
     return (playmakingScoreForPlayer(player) ?? 0) >= DEFENSIVE_CENTER_ENGINE_PLAYMAKING_FLOOR;
