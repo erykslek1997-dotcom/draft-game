@@ -22,6 +22,32 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
 
 ## Decyzje kalibracyjne czekające na Twoją ocenę
 
+- [ ] **Rim pressure — lista zweryfikowanych slasherów do rozszerzenia** (2026-09-25, "wrócić do
+      tego"). Sprzed 1997 obwodowi dostają rim pressure z modelu box score (rzuty wolne z korektą
+      na epokę + punkty + FG%, `perimeterRimProxy` w rimPressure.ts). Gracze z listy
+      `historicalRimPressureEvidence.ts` (Greatest75: Jordan, Dominique, Baylor) są porównywani tylko
+      z prawdziwymi slasherami od 1997 (≥35% rzutów spod kosza). Wyniki: Jordan 86-88 89 / 87-89 87,
+      Dominique szczyt 52, Baylor 41. Do decyzji: czy dopisać kolejnych udokumentowanych slasherów
+      (Drexler? Dr. J? inni) — każdy wymaga tej samej weryfikacji co obecni. Znany słaby punkt modelu:
+      gracze wymuszający faule przy rzutach z dystansu (Harden) — udział trójek nie przenosi się
+      uczciwie między epokami (w latach 80. Magic spadał do 0), więc nie jest w modelu.
+- [ ] **Luki w danych źródłowych (audyt 2026-09-25)** — nic jeszcze nie naprawione, zmienia TAL/D-TAL
+      wielu graczy, więc wymaga decyzji:
+      1. *Nieaktualne pliki `*.pool.json`* (przycięte do puli przed jej rozszerzeniem): gracze dodani
+         później są w pełnym pliku, ale nie w przyciętym — BPM2 250, DARKO 214, PIPM 195, RAPTOR 179,
+         historyczny APM 140, matchup defense 125 graczy (np. Austin Rivers, Terrence Ross, Wayne
+         Ellington, Gary Trent Jr., Hal Greer). Naprawa: ponowny `scripts/trimReferenceDataToPool.ts`.
+      2. *Inna pisownia nazwisk w poszczególnych źródłach* (aliasy są dziś tylko dla box score i stref
+         rzutów, `src/data/sourceNameAliases.ts`): BPM2 — Jimmy Butler („Jimmy Butler III”), Archibald,
+         Lever, Free, Nenê, Steve Smith, J.R. Smith; DARKO — Nic Claxton („Nicolas Claxton”);
+         PIPM — Jaren Jackson Jr./Michael Porter Jr./Otto Porter Jr. (bez „Jr.”), JJ Redick („J.J.
+         Redick”); playmaking — CJ McCollum („C.J. McCollum”), JJ Redick, Otto Porter Jr.
+      3. *Historyczny APM (1977-2016)* nie ma w ogóle m.in. Kareema, Birda, McAdoo, Havlicka, Frazier —
+         wygląda na niepełne źródło, nie błąd nazwisk.
+      4. *Atletyczność* nie ma graczy z lat 50. (Mikan, Johnston, Arizin) — brak w źródle.
+      Zera w statystykach sezonów są w porządku: przechwyty/bloki sprzed 1974 silnik traktuje jako
+      brak danych; bloki 0 po 1980 to zaokrąglone 0.0-0.1 u rozgrywających.
+
 - [ ] **Salary-cap mode: eksplozja klamry (clamp) w pierwszych latach realnego capu (~1984-88)**
       (znalezione 2026-09-07, przykład: Bill Walton). Prawdziwy cap w 1984-85 to zaledwie $3.6M
       CAŁEJ drużyny — więc dowolna "normalna" realna pensja weterana z tamtych lat stanowi ogromny
