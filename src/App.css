@@ -6017,9 +6017,12 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-shell .retro-btn {
   /* Playtester: on a darker monitor the old #243246 edge vanished — the pills didn't read as
      buttons. A clearly visible steel-blue edge and slightly brighter lettering. */
-  border: 1px solid #4a6384;
-  background: linear-gradient(180deg, #152032, #0d1420);
-  color: #d0dbe9;
+  /* Second pass, playtester: still hard to see at low screen brightness. Border contrast against
+     the page is now ~8.6:1 (was 3.1:1, and 1.5:1 before that), 1.5px wide, on a fill that sits
+     clearly above the page background, with near-white lettering. */
+  border: 1.5px solid #8fb0da;
+  background: linear-gradient(180deg, #22344f, #1a2840);
+  color: #eef4fb;
   box-shadow:
     inset 0 0 0 2px rgba(5, 7, 12, 0.9),
     inset 0 0 0 3px rgba(255, 255, 255, 0.05),
@@ -6031,8 +6034,9 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-shell .at-board-toggle:hover,
 .at-shell .at-filter-pill:hover,
 .at-shell .retro-btn:hover {
-  border-color: #7a9cc6;
-  color: #eef4fb;
+  border-color: #c4d8f2;
+  background: linear-gradient(180deg, #2a4062, #20304b);
+  color: #ffffff;
 }
 .at-shell .at-tab-btn.at-active,
 .at-shell .at-speed-btn.at-active,
@@ -6067,3 +6071,10 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .caps-info-dont input { accent-color: var(--at-accent); width: 16px; height: 16px; }
 .at-shell .caps-info-ok { margin: 0; }
 .bf-shot-chip[data-caps-info] { cursor: help; }
+/* Same low-brightness pass for the search box and the caps range inputs next to the filters. */
+.at-shell .at-search-input,
+.at-shell .at-fga-input {
+  border: 1.5px solid #5f7ea6;
+  background: #0f1827;
+  color: #eef4fb;
+}
