@@ -29,7 +29,7 @@ export interface EraStamp {
 /**
  * 2026-09-25, user's follow-up ("mamy tylko vintage smaczki, może coś z okresu Bird/Magic, Jordan
  * era, deadball era"): each older era gets its own small years stamp, styled after its time.
- * Picked by the span's middle season (season-end years); anything from 2005 on is the modern game
+ * Picked by the span's middle season (season-end years); anything from 2011 on is the modern game
  * the rest of the UI already looks like, so it gets no stamp.
  */
 export function eraStamp(span: Pick<PlayerSpan, 'spanLabel'>): EraStamp | null {
@@ -41,6 +41,6 @@ export function eraStamp(span: Pick<PlayerSpan, 'spanLabel'>): EraStamp | null {
   const mid = years[Math.floor((years.length - 1) / 2)];
   if (mid <= 1990) return { key: 'showtime', title: 'Showtime era (1980-1991) — Bird vs. Magic, and the 3-point line’s first decade.' };
   if (mid <= 1998) return { key: 'jordan', title: 'Jordan era (1991-1998) — six titles in eight years, hand-checking still legal.' };
-  if (mid <= 2004) return { key: 'deadball', title: 'Deadball era (1999-2004) — slow pace, hand-checking and the lowest scoring since the shot clock arrived.' };
+  if (mid <= 2010) return { key: 'deadball', title: 'Deadball era (1999-2010) — slow pace, half-court grind and the lowest scoring since the shot clock arrived.' };
   return null;
 }

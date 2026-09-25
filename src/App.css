@@ -5607,7 +5607,7 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 
 /* ---- 2026-09-25, era stamps (user's follow-up: "może coś z okresu Bird/Magic, Jordan era,
    deadball era"). A span's years get a small stamp styled after its era — see eraStamp() in
-   eraNotes.ts for the cut-offs. Modern spans (2005+) keep the plain look the rest of the UI has. */
+   eraNotes.ts for the cut-offs. Modern spans (2011+) keep the plain look the rest of the UI has. */
 .at-shell .era-stamp {
   display: inline-block;
   font-size: 10.5px;
@@ -5648,7 +5648,7 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
-/* Deadball era (1999-2004): grinding half-court years — gunmetal, dashed, no flash. */
+/* Deadball era (1999-2010): grinding half-court years — gunmetal, dashed, no flash. */
 .at-shell .era-stamp--deadball {
   font-weight: 700;
   letter-spacing: 0.04em;
