@@ -5801,3 +5801,16 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   width: min(1180px, 100%);
   max-height: min(720px, 88vh);
 }
+.at-shell .player-peek-note {
+  margin: -6px 0 10px;
+  font-size: 11.5px;
+  color: var(--at-ink-faint);
+}
+/* The close ✕ sits dead-centre in its circle (the glyph's own line box pushed it off-centre). */
+.at-shell .player-peek-close {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 13px;
+  line-height: 0;
+}

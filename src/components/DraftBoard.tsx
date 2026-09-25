@@ -332,6 +332,9 @@ function PlayerPeekModal({
             )}
           </div>
         </div>
+        {rows.length > group.spans.length && (
+          <p className="player-peek-note">Faded rows are his other years — for reference only, they aren’t in this draft.</p>
+        )}
         <div className="table-scroll">
           <table className="span-table at-draft-span-table">
             <thead>
@@ -413,11 +416,7 @@ function PlayerPeekModal({
                         >
                           Draft
                         </button>
-                      ) : (
-                        <span className="player-peek-off-note" title="This stretch isn't in this draft's pool — shown for reference.">
-                          not in draft
-                        </span>
-                      )}
+                      ) : null}
                     </td>
                   </tr>
                 );
