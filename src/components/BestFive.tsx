@@ -3,6 +3,7 @@ import './BestFive.css';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
 import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
+import { hadStealsBlocksRecorded, hadThreePointLine, isVintageSpan } from './eraNotes';
 import { currentStreak, recordDailyResult, savedDailyLineup, type Streak } from './bestFiveProgress';
 import {
   dailyPool,
@@ -50,7 +51,13 @@ function boxLineShort(s: PlayerSpan): string {
 }
 function boxLineDetail(s: PlayerSpan): string {
   const b = s.box;
-  return `${b.spg.toFixed(1)} stl · ${b.bpg.toFixed(1)} blk · ${Math.round(b.fgPct * 100)}% FG · ${Math.round(b.threePct * 100)}% 3P`;
+  // Stats that didn't exist yet in his era are left out rather than shown as a misleading 0.
+  const parts = [
+    ...(hadStealsBlocksRecorded(s) ? [`${b.spg.toFixed(1)} stl`, `${b.bpg.toFixed(1)} blk`] : []),
+    `${Math.round(b.fgPct * 100)}% FG`,
+    hadThreePointLine(s) ? `${Math.round(b.threePct * 100)}% 3P` : 'no 3-pt line',
+  ];
+  return parts.join(' · ');
 }
 function boxLine(s: PlayerSpan): string {
   return `${boxLineShort(s)} · ${boxLineDetail(s)}`;
@@ -264,7 +271,7 @@ export default function BestFive({ onBack }: Props) {
                           Five pick actually turns on: which career window you're drafting. Plain,
                           larger text (`.bf-pool-season`, pool-card only) makes it the card's real
                           lead without spending padding on a box in an already-tight ~140px card. */}
-                      <span className="bf-pool-season">{span.spanLabel}</span>
+                      <span className={`bf-pool-season${isVintageSpan(span) ? ' at-vintage-years' : ''}`}>{span.spanLabel}</span>
                       {/* 2026-09-11, user-reported live ("dopisek pozycji na karcie nie ma sensu"):
                           this picker is already scoped to one slot (`SLOT_LABEL[activeSlot]` in
                           the header above — "Pick your point guard"), so repeating the position on

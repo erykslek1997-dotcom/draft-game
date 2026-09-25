@@ -13,6 +13,7 @@ import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
 import type { Rotation, Team } from '../engine/types';
 import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
+import { NOT_YET, STEALS_BLOCKS_NOTE, THREE_POINT_LINE_NOTE, hadStealsBlocksRecorded, hadThreePointLine, isVintageSpan } from './eraNotes';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import {
   offensiveGrade,
@@ -298,16 +299,29 @@ function PlayerPeekModal({
                 const legal = canPick && isPickLegal(state, span.id);
                 return (
                   <tr key={span.id}>
-                    <td>{span.spanLabel}</td>
+                    <td>{isVintageSpan(span) ? <span className="at-vintage-years" title="Played before the 3-point line (1979-80)">{span.spanLabel}</span> : span.spanLabel}</td>
                     <td>{span.primaryPosition}</td>
                     <td className="tier-cell">{overallTierForSpan(ctx)}</td>
                     <td className="num">{span.box.ppg.toFixed(1)}</td>
                     <td className="num">{span.box.apg.toFixed(1)}</td>
                     <td className="num">{span.box.rpg.toFixed(1)}</td>
-                    <td className="num">{span.box.spg.toFixed(1)}</td>
-                    <td className="num">{span.box.bpg.toFixed(1)}</td>
+                    {hadStealsBlocksRecorded(span) ? (
+                      <>
+                        <td className="num">{span.box.spg.toFixed(1)}</td>
+                        <td className="num">{span.box.bpg.toFixed(1)}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="num era-na" title={STEALS_BLOCKS_NOTE}>{NOT_YET}</td>
+                        <td className="num era-na" title={STEALS_BLOCKS_NOTE}>{NOT_YET}</td>
+                      </>
+                    )}
                     <td className="num">{(span.box.fgPct * 100).toFixed(1)}%</td>
-                    <td className="num">{(span.box.threePct * 100).toFixed(1)}%</td>
+                    {hadThreePointLine(span) ? (
+                      <td className="num">{(span.box.threePct * 100).toFixed(1)}%</td>
+                    ) : (
+                      <td className="num era-na" title={THREE_POINT_LINE_NOTE}>{NOT_YET}</td>
+                    )}
                     <td className="num">{span.fga.toFixed(1)}</td>
                     <td>
                       <button
@@ -1612,7 +1626,13 @@ export default function DraftBoard({
                             wykorzystać"): the season's own headline box line, the same numbers the
                             Scouting report opens with — the card had the room, and it's the first
                             thing a player checks before a pick. */}
-                        <span className="at-player-card-season">{target.spanLabel} averages</span>
+                        {isVintageSpan(target) ? (
+                          <span className="at-player-card-season" title="Played before the 3-point line (1979-80)">
+                            <span className="at-vintage-years">{target.spanLabel}</span> averages
+                          </span>
+                        ) : (
+                          <span className="at-player-card-season">{target.spanLabel} averages</span>
+                        )}
                         <span className="at-player-card-stats">
                           <span><b>{target.box.ppg.toFixed(1)}</b>PTS</span>
                           <span><b>{target.box.rpg.toFixed(1)}</b>REB</span>

@@ -228,6 +228,16 @@ export function predatesThreePointLine(spanLabel: string): boolean {
   return years.every((y) => y < FIRST_THREE_POINT_LINE_END_YEAR);
 }
 
+/** Steals and blocks became official stats in 1973-74 (season end year 1974). A span with any
+ * earlier season carries 0s or estimates for them, never a full real record. */
+export const FIRST_STEALS_BLOCKS_END_YEAR = 1974;
+
+export function stealsBlocksFullyRecorded(spanLabel: string): boolean {
+  const years = spanEndYears(spanLabel);
+  if (years.length === 0) return true;
+  return years[0] >= FIRST_STEALS_BLOCKS_END_YEAR;
+}
+
 /**
  * Multiplier putting a span's raw 3PA/game onto the modern (2024-26) volume scale, so
  * "how much did this player shoot from three, relative to what was normal at the time" is

@@ -87,6 +87,8 @@ export interface PlayerTeamFeature {
   startYear?: number;
   /** False before 1973-74, when the NBA started recording steals and blocks. */
   defensiveStatsTracked?: boolean;
+  /** Every season of the span came before the 3-point line (1979-80). */
+  playedBeforeThreePointLine?: boolean;
 }
 
 export interface TeamFeatureSnapshot {
@@ -334,19 +336,9 @@ function huntableStarterMessage(starters: string[], others: string[], minutes: n
     : `${lead} — ${minutes} targetable minutes your teammates can only partly cover.`;
 }
 
-/** Last season of a span label ("1966-68" -> 1968, "1998-02" -> 2002). */
-function spanEndYear(p: PlayerTeamFeature): number {
-  const [start, end] = p.spanLabel.split('-');
-  const startYear = Number.parseInt(start, 10);
-  if (!end) return startYear;
-  const century = Math.floor(startYear / 100) * 100;
-  const endYear = century + Number.parseInt(end, 10);
-  return endYear < startYear ? endYear + 100 : endYear;
-}
-
 /** The 3-point line arrived in 1979-80; a span that ended before it never had one to shoot from. */
 function playedBeforeThreePointLine(p: PlayerTeamFeature): boolean {
-  return spanEndYear(p) <= 1979;
+  return p.playedBeforeThreePointLine === true;
 }
 
 /** " — X played before the 3-point line existed" for the named non-shooters it applies to, so a

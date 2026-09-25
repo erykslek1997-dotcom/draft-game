@@ -10,6 +10,7 @@ import { isPlusShooter } from './shooting';
 import { maxSustainableMinutes, computeDurability } from './durability';
 import { allAssignments, primaryStarters, benchWithMinutes, totalMinutesForPlayer, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
 import { projectedNetRating } from './netRatingProjection';
+import { predatesThreePointLine, stealsBlocksFullyRecorded } from './era';
 import { benchDepthScore, talentScore } from './scoring';
 import { draftPool as allPoolPlayers } from '../data/draftPool';
 import { defensiveHuntability } from './defensiveHuntability';
@@ -138,7 +139,8 @@ function toPlayerFeature(
     startYear,
     // Steals and blocks became official stats in 1973-74. Older spans carry either 0/0 ("not
     // recorded") or an estimate — never quote either as a real number.
-    defensiveStatsTracked: startYear >= 1974,
+    defensiveStatsTracked: stealsBlocksFullyRecorded(p.spanLabel),
+    playedBeforeThreePointLine: predatesThreePointLine(p.spanLabel),
   };
 }
 
