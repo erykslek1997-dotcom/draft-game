@@ -6130,26 +6130,29 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   margin: 0;
 }
 
-/* 2026-09-25: grade strip under each window in the Years sheet (see YearsPicker). The sheet grows
-   to fit six labelled pills in one row; on a phone they wrap to 3 + 3. */
-.at-shell .years-picker-sheet { width: min(600px, 100%); }
-.at-shell .years-picker-grades {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
+/* 2026-09-25, user ("przesunięcie w lewo pozwoli na sprawdzenie całego składu"): on wide screens
+   the Years sheet docks to the left edge over a light scrim, so the Team table's grade columns stay
+   readable and update live while the sheet stays open. The row being edited is marked in the
+   table. Phones keep the centred sheet (the table is a card list there). */
+@media (min-width: 900px) {
+  .at-shell .years-picker-overlay {
+    justify-content: flex-start;
+    align-items: stretch;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.18);
+  }
+  .at-shell .years-picker-overlay .years-picker-sheet {
+    width: 380px;
+    max-height: none;
+    height: 100%;
+    border-radius: 0 14px 14px 0;
+    border-left: 0;
+    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.55);
+  }
 }
-.at-shell .years-picker-grade {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
+.at-shell tr.is-editing-years > td {
+  background: color-mix(in srgb, var(--at-accent) 16%, transparent);
 }
-.at-shell .years-picker-grade small {
-  font-size: 9.5px;
-  letter-spacing: 0.06em;
-  color: var(--at-ink-faint);
-}
-@media (max-width: 520px) {
-  .at-shell .years-picker-grades { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.at-shell tr.is-editing-years > td:first-child {
+  box-shadow: inset 3px 0 0 var(--at-accent);
 }
