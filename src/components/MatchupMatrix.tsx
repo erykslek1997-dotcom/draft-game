@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { fitScore } from '../engine/fit';
 import type { TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { explainMatchup } from '../engine/matchupExplanation';
+import { archetypeDisplayName } from '../engine/championshipArchetype';
 import { teamCodes, teamLabel } from '../engine/teamNames';
 import type { Team } from '../engine/types';
 
@@ -49,9 +50,9 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
   if (ordered.length < 2) return null;
   return (
     <section className="matchup-matrix-section">
-      <h3>Your team's matchups — BO7</h3>
+      <h3>Your chances in a best-of-7 series</h3>
       <div className="matchup-matrix-legend">
-        <p className="player-notes-hint">Click a percentage to view the matchup analysis. The row shows your team.</p>
+        <p className="player-notes-hint">Your chance to beat each team in a best-of-7 series. Click one for the breakdown.</p>
         <span className="matchup-matrix-scale">
           <i>Underdog</i>
           <span className="matchup-matrix-scale-bar" aria-hidden />
@@ -136,8 +137,8 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
         <div className="fit-v2-shadow-panel matchup-matrix-detail">
           <div className="matchup-detail-heading">
             <span className="fit-v2-shadow-label">{teamLabel(detail.team)} vs {teamLabel(detail.opponent)}</span>
-            <strong>{(detail.matchup.seriesWinProb * 100).toFixed(0)}% series win probability</strong>
-            <span className="matchup-detail-margin">Projected margin: {detail.margin >= 0 ? '+' : ''}{detail.margin.toFixed(1)}</span>
+            <strong>{(detail.matchup.seriesWinProb * 100).toFixed(0)}% chance to win the series</strong>
+            <span className="matchup-detail-margin">Projected margin: {detail.margin >= 0 ? '+' : ''}{detail.margin.toFixed(1)} pts a game</span>
             <button className="matchup-detail-close" onClick={() => setSelected(null)} aria-label="Close matchup analysis">
               ✕
             </button>
@@ -146,9 +147,9 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
           <div className="matchup-detail-grid">
             {([
               ['Creation', detail.ownFit.components.creationStructure, detail.opponentFit.components.creationStructure],
-              ['Spacing', detail.ownFit.components.spacingCompatibility, detail.opponentFit.components.spacingCompatibility],
+              ['Spacing fit', detail.ownFit.components.spacingCompatibility, detail.opponentFit.components.spacingCompatibility],
               ['Rim pressure', detail.ownFit.components.rimPressureTeam, detail.opponentFit.components.rimPressureTeam],
-              ['Defense', detail.ownFit.components.defensiveRoleCoverage, detail.opponentFit.components.defensiveRoleCoverage],
+              ['Role coverage', detail.ownFit.components.defensiveRoleCoverage, detail.opponentFit.components.defensiveRoleCoverage],
               ['Size', detail.ownFit.components.sizeCoverage, detail.opponentFit.components.sizeCoverage],
               ['Rebounding', detail.ownFit.components.reboundingBalance, detail.opponentFit.components.reboundingBalance],
               ['Switchability', detail.ownFit.components.switchability, detail.opponentFit.components.switchability],
@@ -166,9 +167,9 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
               Switchability, Hunt resistance) without adding a new decision-relevant read; profile
               stays as the two-line summary. */}
           <div className="matchup-detail-notes">
-            <span><b>Your profile:</b> {detail.ownArchetype ?? '—'}</span>
-            <span><b>Opponent profile:</b> {detail.opponentArchetype ?? '—'}</span>
-            {detail.ownFit.inputs.defensiveWeakLinkIsHuntable && <span><b>Target to protect:</b> {detail.ownFit.inputs.defensiveWeakLinkPlayer ?? 'weak link'}</span>}
+            <span><b>Your style:</b> {detail.ownArchetype ? archetypeDisplayName(detail.ownArchetype) : '—'}</span>
+            <span><b>Their style:</b> {detail.opponentArchetype ? archetypeDisplayName(detail.opponentArchetype) : '—'}</span>
+            {detail.ownFit.inputs.defensiveWeakLinkIsHuntable && <span><b>Your defender they'll attack:</b> {detail.ownFit.inputs.defensiveWeakLinkPlayer ?? 'weak link'}</span>}
           </div>
         </div>
       )}

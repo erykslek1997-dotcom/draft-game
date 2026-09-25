@@ -12,7 +12,7 @@ import { allStarCount } from '../engine/allStarLookup';
 import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
 import type { Rotation, Team } from '../engine/types';
-import { Face, ShotChip, shortenName } from './ShotChip';
+import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import {
   offensiveGrade,
@@ -220,10 +220,10 @@ export function OverallTierBadge({ span }: { span: PlayerSpan }) {
 function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, currentTeam: Team, label?: string): string | undefined {
   if (!canPick) return `${teamLabel(currentTeam)} is picking…`;
   const reason = pickBlockReason(state, spanId);
-  if (reason === 'cap') return 'Over the shots cap — pick a cheaper player, or a cheaper season for this one.';
+  if (reason === 'cap') return 'Over the cap — pick a cheaper player, or cheaper years for this one.';
   if (reason === 'reserve') {
     const budget = pickBudget(state);
-    return `Too expensive right now — you need to keep ${budget.reserved} shots for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. Max for this pick: ${budget.maxThisPick} shots.`;
+    return `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. Max for this pick: ${budget.maxThisPick} caps.`;
   }
   return label;
 }
@@ -270,7 +270,7 @@ function PlayerPeekModal({
           <div>
             <h2 className="player-peek-name">{group.playerName}</h2>
             <span className="player-peek-sub">
-              {naturalPosition(group.playerName)} · {group.spans.length} season{group.spans.length > 1 ? 's' : ''} available
+              {naturalPosition(group.playerName)} · {group.spans.length} stretch{group.spans.length > 1 ? 'es' : ''} of his career to choose from
             </span>
           </div>
         </div>
@@ -278,7 +278,7 @@ function PlayerPeekModal({
           <table className="span-table at-draft-span-table">
             <thead>
               <tr>
-                <th>Span</th>
+                <th>Years</th>
                 <th>Pos</th>
                 <th>Tier</th>
                 <th className="num">PTS</th>
@@ -288,7 +288,7 @@ function PlayerPeekModal({
                 <th className="num">BLK</th>
                 <th className="num">FG%</th>
                 <th className="num">3PT%</th>
-                <th className="num">Shots</th>
+                <th className="num">Caps</th>
                 <th />
               </tr>
             </thead>
@@ -548,11 +548,11 @@ export function AtGrade({ grade }: { grade: Grade }) {
    questions (raw quality vs. how well that quality travels next to another star), not two
    readings of the same idea. */
 const TAG_LEGEND: ReadonlyArray<{ name: string; tiers: string[]; text: string }> = [
-  { name: 'Talent (TAL)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "This player's own overall value — scoring, efficiency, playmaking and defensive activity blended into one box-score-derived number (a transparent stand-in for models like Basketball-Index's O-LEBRON). Named tiers from Cigarette Butt to GOAT, off the player's single best-TAL span." },
-  { name: 'Offense (OFF) / Defense (DEF)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'The same idea as Talent, split into its offense-only and defense-only halves. Letter grade S–F — S is reserved for the 3 best in the current pool.' },
-  { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "A different question from Talent/Offense/Defense: not how good this player is, but how well their game travels next to another ball-dominant star — an efficient off-ball scorer or a versatile defender ports well even at a modest overall Talent, and a ball-dominant star can port poorly despite elite Talent. Same S–F letter-grade scale." },
-  { name: '3PT (SPC)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How much this player's outside shooting forces a defense to respect the perimeter — real, era-scaled 3-point volume and accuracy. Same S–F letter-grade scale." },
-  { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "Real share of possible team games actually played in this span. Same S–F letter-grade scale." },
+  { name: 'Talent (TAL)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How good the player was in those years, all in one number — scoring, efficiency, playmaking and defense. The named tiers (Cigarette Butt up to GOAT) come from it." },
+  { name: 'Offense (OFF) / Defense (DEF)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'Talent split into its offensive and defensive halves, as a letter grade from F to S. S is kept for the 3 best in the pool.' },
+  { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How well his game fits next to other stars. A shooter who doesn't need the ball, or a defender who can guard anyone, fits almost anywhere; a star who needs the ball fits worse next to another one. Same F–S scale." },
+  { name: '3PT (SPC)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How much his outside shooting forces defenses to guard him away from the basket, adjusted for his era. Same F–S scale." },
+  { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How many of his team's games he actually played in those years. Same F–S scale." },
   // 2026-08-19, user's explicit ask ("hide playoffs and make everything in one line"): the
   // Playoffs entry used to sit alone on its own short second row (5 cards fit one row, the 6th
   // wrapped) — dropped so the remaining 5 fit one line cleanly, per the same ask. The actual
@@ -1334,7 +1334,7 @@ export default function DraftBoard({
             )}
             {canPick && !anyVisibleLegal && (
               <div className="at-budget-notice">
-                <span>None of the players shown fit this pick — max {currentBudget.maxThisPick} shots.</span>
+                <span>None of the players shown fit this pick — max <CapIcon /> {currentBudget.maxThisPick} caps.</span>
                 <button type="button" className="at-budget-notice-btn at-cond" onClick={showAffordable}>
                   Show players that fit
                 </button>
@@ -1357,7 +1357,7 @@ export default function DraftBoard({
                   onChange={(e) => setSearch(e.target.value)}
                 />
                 <div className="at-fga-filter">
-                  <label>Filter shots</label>
+                  <label><CapIcon /> Caps</label>
                   <input className="at-fga-input" value={fgaMin} onChange={(e) => setFgaMin(e.target.value)} />
                   <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
                 </div>
@@ -1443,7 +1443,7 @@ export default function DraftBoard({
                             </>
                           ) : (
                             <>
-                              {fgaRange} <span className="lbl">shots</span>
+                              <CapIcon /> {fgaRange} <span className="lbl">caps</span>
                             </>
                           )}
                         </span>
@@ -1468,9 +1468,9 @@ export default function DraftBoard({
                           <table className="span-table at-draft-span-table">
                             <thead>
                               <tr>
-                                <th>Span</th>
+                                <th>Years</th>
                                 <th>Pos</th>
-                                <th className="num">Shots</th>
+                                <th className="num">Caps</th>
                                 <th className="num">TAL</th>
                                 <th>O</th>
                                 <th>D</th>
@@ -1612,7 +1612,7 @@ export default function DraftBoard({
                             wykorzystać"): the season's own headline box line, the same numbers the
                             Scouting report opens with — the card had the room, and it's the first
                             thing a player checks before a pick. */}
-                        <span className="at-player-card-season">{target.spanLabel} season</span>
+                        <span className="at-player-card-season">{target.spanLabel} averages</span>
                         <span className="at-player-card-stats">
                           <span><b>{target.box.ppg.toFixed(1)}</b>PTS</span>
                           <span><b>{target.box.rpg.toFixed(1)}</b>REB</span>
@@ -1687,8 +1687,8 @@ export default function DraftBoard({
               <div className="at-legend-row">
                 <p className="at-caption" style={{ marginTop: 0 }}>
                   {showJudgeMetrics
-                    ? "Peak shots = cost of this player's highest-Talent season. Lowest shots = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one."
-                    : 'Draft picks his best season. Tap Scouting report to compare his other seasons — you can still switch to a different one afterward, in the Team tab.'}
+                    ? "Peak caps = cost of this player's highest-Talent season. Lowest caps = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one."
+                    : 'Draft takes the years shown on the card — his best stretch. Open Scouting to compare his other years; you can still switch later in the Team tab.'}
                 </p>
                 {showJudgeMetrics && (
                   <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
@@ -1739,7 +1739,7 @@ export default function DraftBoard({
               >
                 <h2 className="at-cond">Your Team</h2>
                 <span className="at-draft-sidebar-count">
-                  {humanTeam.roster.length}/{ROSTER_SIZE} · {capRemaining(currentFgas)} shots left {sidebarOpen ? '▴' : '▾'}
+                  {humanTeam.roster.length}/{ROSTER_SIZE} · <CapIcon /> {capRemaining(currentFgas)} caps left {sidebarOpen ? '▴' : '▾'}
                 </span>
               </button>
             ) : (
@@ -1765,7 +1765,7 @@ export default function DraftBoard({
                 />
               </div>
               <p className="at-draft-sidebar-cap-label">
-                Cap remaining: <b>{capRemaining(currentFgas)}</b> shots
+                <CapIcon size={16} /> Caps left: <b>{capRemaining(currentFgas)}</b>
               </p>
               {canPick && currentBudget.slotsLeft > 1 && (
                 <p className="at-draft-sidebar-cap-label">
@@ -1820,7 +1820,7 @@ export default function DraftBoard({
                 at a real, separate click target — no longer needs its own redundant `isWideLayout`
                 check now that the parent already gates it. */}
             <p className="at-draft-sidebar-hint">
-              Span swaps and rotation minutes live on the{' '}
+              Change a player's years or set minutes in the{' '}
               <button type="button" className="at-inline-link" onClick={() => setActiveTab('team')}>
                 Team tab
               </button>
@@ -1845,7 +1845,7 @@ export default function DraftBoard({
           <h1 className="at-panel-title at-cond">Team</h1>
           <div className={`at-cap-meter${isViewingHumanRoster && chosenRosterOverCap ? ' at-cap-meter--over' : ''}`}>
             <span className="at-cap-label">
-              <b>{totalFga(displayFgas).toFixed(1)}</b> / {CAP_LIMIT} shots
+              <CapIcon size={16} /> <b>{totalFga(displayFgas).toFixed(1)}</b> / {CAP_LIMIT} caps
               {isViewingHumanRoster && chosenRosterOverCap && ' — over cap'}
             </span>
             <div className="at-cap-track">
@@ -1874,7 +1874,7 @@ export default function DraftBoard({
                   <th>Rnd</th>
                   <th>Pos</th>
                   <th>Player</th>
-                  <th>Span</th>
+                  <th>Years</th>
                   {/* 2026-08-19, user's explicit ask ("show offense, defense, portability etc
                       with S-F value"): the same judge letter-grades the Draft tab already shows
                       per candidate, now visible for your own already-locked-in roster too.
@@ -1901,7 +1901,7 @@ export default function DraftBoard({
                   <th style={{ textAlign: 'center' }}>D-POR</th>
                   <th style={{ textAlign: 'center' }}>SPC</th>
                   <th style={{ textAlign: 'center' }}>DUR</th>
-                  <th>Shots</th>
+                  <th>Caps</th>
                 </tr>
               </thead>
               <tbody>
@@ -1963,7 +1963,7 @@ export default function DraftBoard({
                                     comparing spans by cost is the actual reason to open this
                                     dropdown in the first place — the table's column duplicates the
                                     SELECTED option only, never every option being compared. */}
-                                {o.spanLabel} — {o.fga.toFixed(1)} shots —{' '}
+                                {o.spanLabel} — {o.fga.toFixed(1)} caps —{' '}
                                 {showJudgeMetrics
                                   ? `TAL ${effectiveTalent(o)} — ${overallTierForSpan(tierContextFor(o))}`
                                   : overallTierForSpan(tierContextFor(o))}
@@ -2001,7 +2001,7 @@ export default function DraftBoard({
           )}
           <p className="at-caption">
             {isViewingHumanRoster
-              ? `You drafted the player, not a specific era — the Span dropdown above picks which career window to actually roster. A cheaper season frees shots for the rest of the draft; a pricier one is fine as long as the whole roster stays under ${CAP_LIMIT} shots when you submit. Rotation minutes are set below.`
+              ? `Each player's Years menu picks which stretch of his career you use. Cheaper years free up caps for the rest of the draft; pricier ones are fine as long as the whole roster stays under ${CAP_LIMIT} caps when you submit. Minutes are set in Rotation below.`
               : 'Rotation minutes are set below, in this same tab.'}
           </p>
           {/* 2026-08-19, user's explicit ask ("you can add glossary under TEAM"): the roster table
@@ -2097,7 +2097,7 @@ export default function DraftBoard({
                   !state.complete
                     ? `Finish drafting all ${ROSTER_SIZE} picks before you can submit.`
                     : chosenRosterOverCap
-                      ? `Your chosen spans total ${chosenRosterFga.toFixed(1)} shots — over the ${CAP_LIMIT} cap. Pick cheaper spans in the Team table above.`
+                      ? `Your chosen years cost ${chosenRosterFga.toFixed(1)} caps — over the ${CAP_LIMIT} cap. Pick cheaper years in the Team table above.`
                       : undefined
                 }
               />

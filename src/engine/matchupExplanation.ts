@@ -27,16 +27,16 @@ export function explainMatchup({ own, opponent, seriesWinProb }: MatchupExplanat
   const defenseGap = diff(own.components.defensiveRoleCoverage, opponent.components.defensiveRoleCoverage);
   const creationGap = diff(own.components.creationStructure, opponent.components.creationStructure);
   const sizeGap = diff(own.components.sizeCoverage, opponent.components.sizeCoverage);
-  if (spacingGap >= 10) edges.push({ edge: 'own', text: 'your spacing advantage makes corner help difficult' });
-  else if (spacingGap <= -10) edges.push({ edge: 'opp', text: 'they can load the paint against your weaker spacing' });
-  if (defenseGap >= 10) edges.push({ edge: 'own', text: 'you have more answers at the point of attack and on the wings' });
-  else if (defenseGap <= -10) edges.push({ edge: 'opp', text: 'their creation can attack your weaker perimeter matchups' });
-  if (creationGap >= 10) edges.push({ edge: 'own', text: 'your creation has more margin late in the shot clock' });
-  else if (creationGap <= -10) edges.push({ edge: 'opp', text: 'you may be forced to play without a primary creator' });
-  if (sizeGap <= -12) edges.push({ edge: 'opp', text: 'their size advantage increases pressure on the glass and at the rim' });
-  else if (sizeGap >= 12) edges.push({ edge: 'own', text: 'your functional-size advantage limits their offense at the rim' });
+  if (spacingGap >= 10) edges.push({ edge: 'own', text: 'your better spacing makes it hard for them to help off your shooters' });
+  else if (spacingGap <= -10) edges.push({ edge: 'opp', text: 'your weaker spacing lets them pack the paint' });
+  if (defenseGap >= 10) edges.push({ edge: 'own', text: 'you have better defenders for their guards and wings' });
+  else if (defenseGap <= -10) edges.push({ edge: 'opp', text: 'their scorers can attack your weaker perimeter defenders' });
+  if (creationGap >= 10) edges.push({ edge: 'own', text: 'you have more players who can create a shot late in the clock' });
+  else if (creationGap <= -10) edges.push({ edge: 'opp', text: 'they have more players who can create their own shot' });
+  if (sizeGap <= -12) edges.push({ edge: 'opp', text: "they're bigger — more pressure on the boards and at the rim" });
+  else if (sizeGap >= 12) edges.push({ edge: 'own', text: "you're bigger, which limits their scoring at the rim" });
   if (own.inputs.defensiveWeakLinkIsHuntable && own.inputs.defensiveWeakLinkResistance < opponent.inputs.huntingPotential) {
-    edges.push({ edge: 'opp', text: `${own.inputs.defensiveWeakLinkPlayer ?? 'your weakest defender'} can be targeted` });
+    edges.push({ edge: 'opp', text: `${own.inputs.defensiveWeakLinkPlayer ?? 'your weakest defender'} will be targeted on defense` });
   }
 
   // For a clear result, only the notes that point the SAME way as the result actually explain it —
@@ -50,10 +50,12 @@ export function explainMatchup({ own, opponent, seriesWinProb }: MatchupExplanat
   if (reasons.length === 0) {
     reasons.push(
       decisive
-        ? 'the result is driven mostly by the talent and depth gap, not a scheme conflict'
-        : 'neither side has a decisive structural edge — expect a close series',
+        ? 'it comes down mostly to talent and depth, not style'
+        : 'neither side has a clear edge — expect a close series',
     );
   }
   const confidence = seriesWinProb >= 0.6 ? 'Favorable matchup.' : seriesWinProb <= 0.4 ? 'Difficult matchup.' : 'Even matchup.';
-  return [`${confidence} ${reasons.slice(0, 2).join('; ')}.`];
+  // 2026-09-24 copy pass: capitalised after the full stop ("Difficult matchup. they can…").
+  const detail = reasons.slice(0, 2).join('; ');
+  return [`${confidence} ${detail.charAt(0).toUpperCase()}${detail.slice(1)}.`];
 }

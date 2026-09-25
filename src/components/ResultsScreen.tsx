@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown } from '../engine/scoring';
+import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { PLAYOFF_TEAM_COUNT, simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
@@ -21,10 +21,11 @@ import { computeDurability } from '../engine/durability';
 import { projectedNetRating } from '../engine/netRatingProjection';
 import { fitScore, type FitScoreResult } from '../engine/fit';
 import { defensiveHuntability } from '../engine/defensiveHuntability';
-import { generateRosterInsights } from '../engine/insights';
+import { generateRosterInsights, insightContextFor } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
+import { archetypeDisplayName } from '../engine/championshipArchetype';
 import { type FeedbackEntry } from './FeedbackToggle';
 // 2026-08-16, user's own ask ("dodasz to też na ostatni ekran ocen?"): reuses the exact same
 // hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
@@ -37,7 +38,7 @@ import { type FeedbackEntry } from './FeedbackToggle';
 // throw the work away — see [[player_skeleton_and_new_modes]].
 import MatchupMatrix from './MatchupMatrix';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
-import { Face, shortenName } from './ShotChip';
+import { CapIcon, Face, shortenName } from './ShotChip';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, season-sim pool) — real work deferred until the
@@ -687,7 +688,10 @@ function HeroResult({
           </span>
         </div>
         {titleOdds !== null && (
-          <div className="results-hero-stat">
+          <div
+            className="results-hero-stat"
+            title="Chance to win a 16-team playoff seeded by the final ranking, over thousands of simulations. The season simulation below plays its own top-8 playoffs."
+          >
             <span className="results-hero-stat-label">Title odds</span>
             <AnimatedPercent value={titleOdds} className="results-hero-stat-value" />
           </div>
@@ -696,15 +700,21 @@ function HeroResult({
       {gap !== null && (
         <p className="results-hero-gap">
           {gap > 0
-            ? <>Overall #1 in the field: <b>{topOverall}</b> — you're <b>{gap}</b> back.</>
-            : <>You have the best Overall in the field.</>}
+            ? <>Best team rating in the field: <b>{topOverall}</b> — you're <b>{gap}</b> behind.</>
+            : <>You have the best team rating in the field.</>}
         </p>
       )}
       {(identity || failureMode) && (
+        // 2026-09-24 copy pass: labelled as a STYLE ("Team style: Defense-first") and a risk, so it
+        // no longer reads as a quality verdict next to a mediocre Defense score.
         <p className="results-hero-identity">
-          {identity && <b>{identity}</b>}
+          {identity && (
+            <>
+              Team style: <b>{identity}</b>
+            </>
+          )}
           {identity && failureMode && ' — '}
-          {failureMode && <span>{failureMode}</span>}
+          {failureMode && <span>main risk: {failureMode}</span>}
         </p>
       )}
       {/* 2026-09-14, DRAFT per user's own request ("możesz mi pokazać design zanim wprowadzisz") —
@@ -1033,10 +1043,10 @@ function feedbackFor(record: Record<string, TeamFeedback>, teamId: string): Team
  * pairs, round sizes 8/4/2/1) and kept deliberately simple pixel arithmetic rather than anything
  * relying on runtime-measured layout, but a first look from the user is still the real check.
  */
-const BRACKET_CARD_W = 200;
+const BRACKET_CARD_W = 236;
 const BRACKET_CARD_H = 46;
 const BRACKET_ROW_UNIT = 58;
-const BRACKET_COL_GAP = 26;
+const BRACKET_COL_GAP = 22;
 const BRACKET_COL_W = BRACKET_CARD_W + BRACKET_COL_GAP;
 
 /** 2026-09-24: the bracket's size now follows the actual result (the simulated playoffs became
@@ -1089,20 +1099,24 @@ interface BracketTeamRowProps {
 // series winners were drawn in the same blue the standings used for "you". Now: the human's row
 // gets the red "you" treatment (tint + tag outside the truncated name), and a winner is marked by
 // weight and a check, the loser dimmed — no colour shared with "you".
-function BracketTeamRow({ team, seed, isWinner }: BracketTeamRowProps) {
+function BracketTeamRow({ team, seed, isWinner, games }: BracketTeamRowProps & { games: number }) {
   if (!team) return null;
   return (
     <div
       className={`bracket-team-row ${isWinner ? 'bracket-team-winner' : 'bracket-team-loser'} ${team.isHuman ? 'bracket-team-you' : ''}`}
+      title={team.isHuman ? `${teamLabel(team)} (you)` : teamLabel(team)}
     >
       <span className="bracket-seed">#{seed}</span>
       <span className="bracket-team-name">{teamLabel(team)}</span>
-      {team.isHuman && <span className="bracket-you-tag">YOU</span>}
-      {isWinner && <span className="bracket-win-mark" aria-label="won the series">✓</span>}
+      <span className="bracket-games">{games}</span>
     </div>
   );
 }
 
+// 2026-09-24, user-reported live ("dość brzydko"): the shared "4-3" badge floated over the
+// second row (squeezing both names), and "you" was a tinted, struck-through row plus a big pill.
+// Each row now carries its own game count (winner's in bold), and "you" is just the red accent:
+// name colour + a thin left bar, with a thin red frame on the series.
 function BracketMatchCard({
   series,
   teamById,
@@ -1114,18 +1128,31 @@ function BracketMatchCard({
 }) {
   const teamA = teamById(series.teamAId);
   const teamB = teamById(series.teamBId);
-  const higherTally = Math.max(series.gamesWonA, series.gamesWonB);
-  const lowerTally = Math.min(series.gamesWonA, series.gamesWonB);
   const involvesYou = Boolean(teamA?.isHuman || teamB?.isHuman);
   return (
     <div className={`bracket-match ${involvesYou ? 'bracket-match--you' : ''}`} style={style} title={series.roundLabel}>
-      <BracketTeamRow team={teamA} seed={series.teamASeed} isWinner={series.winnerId === series.teamAId} />
-      <BracketTeamRow team={teamB} seed={series.teamBSeed} isWinner={series.winnerId === series.teamBId} />
-      <span className="bracket-score">
-        {higherTally}-{lowerTally}
-      </span>
+      <BracketTeamRow team={teamA} seed={series.teamASeed} isWinner={series.winnerId === series.teamAId} games={series.gamesWonA} />
+      <BracketTeamRow team={teamB} seed={series.teamBSeed} isWinner={series.winnerId === series.teamBId} games={series.gamesWonB} />
     </div>
   );
+}
+
+/** One sentence on how the human team's playoff run ended — the bracket alone only shows it in
+ * the rounds it reached, so an early exit was easy to miss. */
+function humanPlayoffRun(result: PlayoffResult, teamById: (id: string) => Team | undefined): string | null {
+  const human = result.rounds.flat().find((s) => teamById(s.teamAId)?.isHuman || teamById(s.teamBId)?.isHuman);
+  if (!human) return null;
+  const humanId = teamById(human.teamAId)?.isHuman ? human.teamAId : human.teamBId;
+  if (result.championId === humanId) return 'Your run: champions! 🏆';
+  const lost = result.rounds.flat().find((s) => (s.teamAId === humanId || s.teamBId === humanId) && s.winnerId !== humanId);
+  if (!lost) return null;
+  const youAreA = lost.teamAId === humanId;
+  const opponent = teamById(youAreA ? lost.teamBId : lost.teamAId);
+  const own = youAreA ? lost.gamesWonA : lost.gamesWonB;
+  const theirs = youAreA ? lost.gamesWonB : lost.gamesWonA;
+  const seed = youAreA ? lost.teamBSeed : lost.teamASeed;
+  const stage = lost.roundLabel === 'Finals' ? 'lost in the Finals' : `knocked out in the ${lost.roundLabel}`;
+  return `Your run: ${stage}, ${own}-${theirs} vs #${seed} ${opponent ? teamLabel(opponent) : ''}.`;
 }
 
 /** Below this width the tree (even scaled) gets unreadable — rounds are listed top to bottom instead. */
@@ -1210,6 +1237,7 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
 
   const champion = teamById(result.championId);
 
+  const runLine = humanPlayoffRun(result, teamById);
   const championLine = champion && (
     <p className={`playoff-champion ${champion.isHuman ? 'playoff-champion--you' : ''}`}>
       🏆 Champion: {teamLabel(champion)} {champion.isHuman ? '(You)' : ''}
@@ -1219,6 +1247,7 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
   if (available !== null && available < BRACKET_LIST_BREAKPOINT) {
     return (
       <div className="bracket-scroll" ref={containerRef}>
+        {runLine && <p className="playoff-run">{runLine}</p>}
         {result.rounds.map((round, i) => (
           <div className="bracket-list-round" key={i}>
             <span className="bracket-list-round-label at-cond">{round[0]?.roundLabel}</span>
@@ -1239,6 +1268,7 @@ function PlayoffBracketTree({ result, teamById }: { result: PlayoffResult; teamB
 
   return (
     <div className="bracket-scroll" ref={containerRef}>
+      {runLine && <p className="playoff-run">{runLine}</p>}
       <div style={{ width: BRACKET_WIDTH * scale, height: treeHeight * scale }}>
       <div
         className="bracket-tree"
@@ -1472,12 +1502,12 @@ export function downloadFeedback(
  * ever saying what to do differently. */
 const NEXT_DRAFT_TIP: Record<string, string> = {
   Talent: 'Your top-end talent was the gap. Spend your early picks on the best player available, then fill needs later.',
-  'Bench Depth': 'Your bench gave back too much. Keep a few shots for the last rounds so your 6th–9th men can actually play.',
+  'Bench Depth': 'Your bench gave back too much. Keep some caps for the last rounds so your 6th–9th men can actually play.',
   Offense: "Your offense stalled. Draft at least one real shot creator, and don't stack non-shooters in the starting five.",
   Defense: "Defense sank this team. Opponents hunt stars who can't defend — spend a mid-round pick on a rim protector or a wing stopper.",
   Spacing: 'The floor was too cramped. Put two or three real outside shooters around your stars.',
   Fit: "The pieces overlapped. Too many players who need the ball, or who do the same job — balance creators, shooters and defenders.",
-  Rotation: 'Your rotation cost you. Start players at their own positions and keep minutes within each player’s durability cap.',
+  Rotation: 'Your rotation cost you. Start players at their own positions and don’t play anyone more minutes than he can handle.',
 };
 
 /**
@@ -1549,12 +1579,16 @@ function RotationColumns({
 function ResultsVerdict({
   team,
   rank,
+  fieldSize,
+  breakdown,
   scores,
   onNewDraft,
   onRematch,
   onMenu,
 }: {
   team: Team;
+  fieldSize: number;
+  breakdown: ScoreBreakdown;
   /** Final ranking place — the card's tone follows it (2026-09-24, user-reported live: "wygrałem,
    * czy jest sens żeby mnie pouczało?" — a champion got a "what held you back" list and a
    * "Next draft:" lecture). 1st: why you won + the one thing a rival could exploit, no advice.
@@ -1565,7 +1599,10 @@ function ResultsVerdict({
   onRematch?: () => void;
   onMenu: () => void;
 }) {
-  const insights = useMemo(() => generateRosterInsights(buildTeamFeatureSnapshot(team)), [team]);
+  const insights = useMemo(
+    () => generateRosterInsights(buildTeamFeatureSnapshot(team), undefined, insightContextFor(breakdown, rank, fieldSize)),
+    [team, breakdown, rank, fieldSize],
+  );
   const won = rank === 1;
   const contender = rank > 1 && rank <= 4;
   const strengths = insights.strengths.slice(0, won ? 3 : 2);
@@ -1964,8 +2001,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           seasonSimSlot={seasonSimSlot}
           identity={
             heroFit?.inputs.primaryArchetype
-              ? heroFit.inputs.primaryArchetype +
-                (heroFit.inputs.secondaryArchetype ? ` + ${heroFit.inputs.secondaryArchetype}` : '')
+              ? archetypeDisplayName(heroFit.inputs.primaryArchetype) +
+                (heroFit.inputs.secondaryArchetype ? ` + ${archetypeDisplayName(heroFit.inputs.secondaryArchetype)}` : '')
               : null
           }
           failureMode={heroFit?.inputs.archetypeReport?.failureMode ?? null}
@@ -1977,6 +2014,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         <ResultsVerdict
           team={displayTeam(heroRanked.team)}
           rank={heroRanked.rank}
+          fieldSize={ranked.length}
+          breakdown={heroRanked.breakdown}
           scores={{
             Talent: heroRanked.breakdown.talentScore,
             'Bench Depth': heroRanked.breakdown.benchDepthScore,
@@ -2036,7 +2075,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           totalMinutesByPlayerId.set(a.player.id, (totalMinutesByPlayerId.get(a.player.id) ?? 0) + a.minutes);
         }
         const starterKeys = new Set(primaryStarters(shownTeam).map((entry) => `${entry.slot}|${entry.player.id}`));
-        const netRating = projectedNetRating(shownTeam);
         const leagueEvalRow = leagueEvalByTeamId.get(team.id);
         const teamHistory = history.filter((h) => h.teamId === team.id).sort((a, b) => a.pickNumber - b.pickNumber);
         const isExpanded = expandedTeamIds.has(team.id);
@@ -2060,7 +2098,9 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         // Only computed for expanded teams (the notes panel is the one thing that reads it) —
         // `buildTeamFeatureSnapshot` does real per-starter pool scans, not free enough to run
         // unconditionally for all `ranked.length` teams on every render.
-        const insights = isExpanded ? generateRosterInsights(buildTeamFeatureSnapshot(shownTeam)) : null;
+        const insights = isExpanded
+          ? generateRosterInsights(buildTeamFeatureSnapshot(shownTeam), undefined, insightContextFor(breakdown, rank, ranked.length))
+          : null;
         return (
           <div key={team.id} className={`team-result rank-${rank} ${team.isHuman ? 'is-human-team' : ''} ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}>
             <button className="team-result-header" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
@@ -2068,7 +2108,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
               <span className="team-result-title">
                 #{rank} — {teamLabel(team)} {team.isHuman ? '(You)' : ''}
               </span>
-              <ScoreChip label="Overall" value={breakdown.overall} />
+              <ScoreChip label="Rating" value={breakdown.overall} />
               {!isExpanded && (
                 <span className="team-result-header-mini">
                   <ScoreChip label="TAL" value={breakdown.talentScore} />
@@ -2090,7 +2130,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   <ScoreChip label="Spacing" value={breakdown.spacingScore} />
                   <ScoreChip label="Fit" value={breakdown.fitScore} />
                   <ScoreChip label="Rotation" value={breakdown.rotationScore} />
-                  <span className="fga-spent">Shots spent: {totalFga.toFixed(1)} / {CAP_LIMIT}</span>
+                  <span className="fga-spent"><CapIcon /> Caps spent: {totalFga.toFixed(1)} / {CAP_LIMIT}</span>
                 </div>
                 {/* 2026-09-11, Scouting Report finding: Era Ball surfaces its named archetype tags
                     right on the player list; ours was only visible after opening "Team analysis".
@@ -2108,11 +2148,11 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   <div className="identity-chip-row">
                     {fitDetail.inputs.championshipArchetypes.map((entry, i) => (
                       <span key={entry.archetype} className={`identity-chip ${i > 0 ? 'identity-chip-secondary' : ''}`}>
-                        {entry.archetype}
+                        {archetypeDisplayName(entry.archetype)}
                       </span>
                     ))}
                     {fitDetail.inputs.archetypeReport?.failureMode && (
-                      <span className="identity-risk">risk: {fitDetail.inputs.archetypeReport.failureMode}</span>
+                      <span className="identity-risk">main risk: {fitDetail.inputs.archetypeReport.failureMode}</span>
                     )}
                   </div>
                 )}
@@ -2149,7 +2189,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     {rsPoProfile && (
                       <div className="analysis-identity">
                         <p className="analysis-identity-line">
-                          <b>Season profile:</b> {rsPoProfile.label} (RS {rsPoProfile.regularSeason} · PO {rsPoProfile.playoffs}). {rsPoProfile.explanation}
+                          <b>Season profile:</b> {rsPoProfile.label} (regular season {rsPoProfile.regularSeason} · playoffs {rsPoProfile.playoffs}). {rsPoProfile.explanation}
                         </p>
                       </div>
                     )}
@@ -2188,7 +2228,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                         <>
                           <div className="analysis-section-heading">Offense</div>
                           <span className="fit-detail-metric"><b>O-TAL</b><strong>{Math.round(offenseDetail.otal)}</strong></span>
-                          <span className="fit-detail-metric"><b>Spacing</b><strong>{Math.round(offenseDetail.spacing)}</strong></span>
+                          <span className="fit-detail-metric"><b>Spacing fit</b><strong>{Math.round(offenseDetail.spacing)}</strong></span>
                           <span className="fit-detail-metric"><b>Rim pressure</b><strong>{Math.round(offenseDetail.rimPressure)}</strong></span>
                           <span className="fit-detail-metric"><b>Playmaking</b><strong>{Math.round(offenseDetail.playmaking)}</strong></span>
                           <span className="fit-detail-metric"><b>Self-creation</b><strong>{Math.round(offenseDetail.selfCreation)}</strong></span>
@@ -2202,9 +2242,9 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                       )}
                       <div className="analysis-section-heading">Fit &amp; defense</div>
                       <span className="fit-detail-metric"><b>Creation</b><strong>{Math.round(fitDetail.components.creationStructure)}</strong></span>
-                      <span className="fit-detail-metric"><b>Spacing compatibility</b><strong>{Math.round(fitDetail.components.spacingCompatibility)}</strong></span>
+                      <span className="fit-detail-metric"><b>Lineup spacing</b><strong>{Math.round(fitDetail.components.spacingCompatibility)}</strong></span>
                       <span className="fit-detail-metric"><b>Rim pressure (fit)</b><strong>{Math.round(fitDetail.components.rimPressureTeam)}</strong></span>
-                      <span className="fit-detail-metric"><b>Defensive roles</b><strong>{Math.round(fitDetail.components.defensiveRoleCoverage)}</strong></span>
+                      <span className="fit-detail-metric"><b>Role coverage</b><strong>{Math.round(fitDetail.components.defensiveRoleCoverage)}</strong></span>
                       <span className="fit-detail-metric"><b>Switchability</b><strong>{Math.round(fitDetail.components.switchability)}</strong></span>
                       <span className="fit-detail-metric"><b>Hunt resistance</b><strong>{Math.round(fitDetail.components.huntResistance)}</strong></span>
                       {fitDetail.components.defensiveCohesion > 0 && (
@@ -2214,34 +2254,34 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                       <span className="fit-detail-metric"><b>Functional size</b><strong>{Math.round(fitDetail.components.sizeCoverage)}</strong></span>
                       <span className="fit-detail-metric"><b>Championship structure</b><strong>{Math.round(fitDetail.components.championshipStructure)}</strong></span>
                       {fitDetail.inputs.championshipArchetypes.length > 0 && (
-                        <span className="fit-detail-wide"><b>Archetypes</b> {fitDetail.inputs.championshipArchetypes.map((entry) => `${entry.archetype} ${entry.share}%`).join(' · ')}</span>
+                        <span className="fit-detail-wide"><b>Style match</b> {fitDetail.inputs.championshipArchetypes.map((entry) => `${archetypeDisplayName(entry.archetype)} ${entry.share}%`).join(' · ')}</span>
                       )}
                       {fitDetail.inputs.archetypeReport && (
                         <span className="fit-detail-wide"><b>Profile:</b> {fitDetail.inputs.archetypeReport.strengths.join(' · ')}.</span>
                       )}
                       <span className="fit-v2-shadow-detail">
-                        <b>Defenders:</b> POA {fitDetail.inputs.guardContainmentProvider ?? '—'} {Math.round(fitDetail.inputs.guardContainment)}
-                        {!fitDetail.inputs.guardContainmentConfirmed && ' (inferred)'}
+                        <b>Defenders:</b> on-ball {fitDetail.inputs.guardContainmentProvider ?? '—'} {Math.round(fitDetail.inputs.guardContainment)}
+                        {!fitDetail.inputs.guardContainmentConfirmed && ' (estimated)'}
                         {' · '}wing {fitDetail.inputs.wingCoverageProvider ?? '—'} {Math.round(fitDetail.inputs.wingCoverage)}
-                        {!fitDetail.inputs.wingCoverageConfirmed && ' (inferred)'}
+                        {!fitDetail.inputs.wingCoverageConfirmed && ' (estimated)'}
                         {' · '}rim {fitDetail.inputs.rimProtectionProvider ?? '—'} {Math.round(fitDetail.inputs.rimProtection)}
-                        {!fitDetail.inputs.rimProtectionConfirmed && ' (inferred)'}
+                        {!fitDetail.inputs.rimProtectionConfirmed && ' (estimated)'}
                         {fitDetail.inputs.defensiveWeakLinkIsHuntable &&
                           <>
                             {' · '}weak link {fitDetail.inputs.defensiveWeakLinkPlayer ?? '—'} {Math.round(fitDetail.inputs.defensiveWeakLinkResistance)}
-                            {fitDetail.inputs.defensiveWeakLinkCover > 0 && ` · shell cover +${fitDetail.inputs.defensiveWeakLinkCover}`}
+                            {fitDetail.inputs.defensiveWeakLinkCover > 0 && ` · team help +${fitDetail.inputs.defensiveWeakLinkCover}`}
                           </>
                         }
                       </span>
                       {huntability && huntability.offenders.length > 0 && (
                         <span className="fit-v2-shadow-detail">
-                          <b>Weak-link targets:</b> {huntability.offenders.slice(0, 4).map((offender) =>
-                            `${offender.playerName} D${offender.defensiveTalent}/${offender.minutes}m`,
+                          <b>Weakest defenders:</b> {huntability.offenders.slice(0, 4).map((offender) =>
+                            `${offender.playerName} (defense ${offender.defensiveTalent}, ${offender.minutes} min)`,
                           ).join(' · ')}
                         </span>
                       )}
                       <span className="fit-v2-shadow-detail">
-                        <b>Size inputs:</b> height {Math.round(fitDetail.inputs.positionAdjustedHeightPercentile ?? 50)}
+                        <b>Size vs. position:</b> height {Math.round(fitDetail.inputs.positionAdjustedHeightPercentile ?? 50)}
                         {' · '}strength {Math.round(fitDetail.inputs.positionAdjustedWeightPercentile ?? 50)}
                         {' · '}athleticism {Math.round(fitDetail.inputs.positionAdjustedAthleticismPercentile ?? 50)}
                         {' · '}rebounding {Math.round(fitDetail.inputs.positionAdjustedReboundingPercentile)}
@@ -2260,28 +2300,24 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                         </span>
                         <span className="championship-headline-stat">
                           <b>{(leagueEvalRow.avgSeriesWinProb * 100).toFixed(0)}%</b>
-                          <i>avg BO7 series win</i>
+                          <i>avg chance to win a series</i>
                         </span>
                       </div>
                       <span>
-                        Best matchup: vs {teamLabel(teamById(leagueEvalRow.bestMatchup.opponentId)!)} (
-                        {(leagueEvalRow.bestMatchup.seriesWinProb * 100).toFixed(0)}%)
+                        Your best chance: vs {teamLabel(teamById(leagueEvalRow.bestMatchup.opponentId)!)} (
+                        {(leagueEvalRow.bestMatchup.seriesWinProb * 100).toFixed(0)}% to win the series)
                         {bestMatchupExplanation && ` — ${bestMatchupExplanation}`}
                       </span>
                       <span>
-                        Toughest matchup: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} (
-                        {(leagueEvalRow.worstMatchup.seriesWinProb * 100).toFixed(0)}%)
+                        Toughest opponent: vs {teamLabel(teamById(leagueEvalRow.worstMatchup.opponentId)!)} (
+                        {(leagueEvalRow.worstMatchup.seriesWinProb * 100).toFixed(0)}% to win the series)
                         {worstMatchupExplanation && worstMatchupExplanation !== bestMatchupExplanation && ` — ${worstMatchupExplanation}`}
                       </span>
                     </div>
                   )}
-                  {/* The raw regression estimate is kept for texture but demoted to a footnote: for
-                      an all-time field it extrapolates past its real-NBA training range and its
-                      rank order no longer drives the bracket (see matchup.ts, 2026-09-09), so it
-                      shouldn't sit level with the odds it used to disagree with. */}
-                  <p className="net-rating-footnote" title="Real-NBA-units regression (points per 100 possessions), fitted on real NBA team-seasons. Separate from the bracket sim above.">
-                    Raw net-rating estimate: {netRating.net >= 0 ? '+' : ''}{netRating.net.toFixed(1)} (ORTG {netRating.offense.toFixed(1)} / DRTG {netRating.defense.toFixed(1)})
-                  </p>
+                  {/* 2026-09-24 copy pass: the "Raw net-rating estimate" footnote is gone from the player
+                      view — a separate regression that routinely disagreed with the ranking and odds
+                      right above it (e.g. +8.2 net for a 16th-place, 0%-odds team). */}
                 </details>
                 <details className="result-accordion-section rotation-panel">
                   <summary>Rotation</summary>

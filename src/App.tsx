@@ -75,22 +75,22 @@ const MODE_HOW_TO_PLAY_TITLE: Record<'draft' | 'bestfive' | 'quickfive', string>
 const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: string; body: string }[]> = {
   draft: [
     { title: 'Draft', body: `16 teams take turns, ${DISPLAY_ROSTER_SIZE} rounds — one player each round. You control one team; the rest are CPU.` },
-    { title: 'Shot cap', body: `Every pick costs shots. Your whole roster has to fit under ${DISPLAY_CAP_LIMIT} shots — the best player isn't always the pick that fits.` },
-    { title: 'Spans', body: "You're not limited to a player's peak — draft any real multi-season window of their career. A cheaper, less-peak span can be the one that fits your cap." },
+    { title: 'Caps', body: `Every pick costs caps — a player's price is how many shots a game he took in those years. Your whole roster has to fit under ${DISPLAY_CAP_LIMIT} caps, so the best player isn't always the pick that fits.` },
+    { title: 'Years', body: "Every player comes with several stretches of his career (e.g. 1996-98 vs 2003-05). The draft takes his best one; in the Team tab you can switch to other years — a cheaper, less-peak stretch can be what fits your cap." },
     { title: 'Rotation', body: `Set minutes for your 5 starters and ${DISPLAY_BENCH_SLOT_COUNT} bench players — the Team tab opens for it as soon as you have your first pick, no need to wait for the draft to finish.` },
     { title: 'Grading', body: 'The judge scores every team — talent, offense, defense, spacing, fit, rotation — and ranks the whole field, yours included.' },
   ],
   bestfive: [
     { title: 'Pick five', body: 'One player per position — PG/SG/SF/PF/C — from today’s pool.' },
-    { title: 'Shot cap', body: 'Your five have to fit under today’s cap, shown by the meter above the board.' },
+    { title: 'Caps', body: 'Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.' },
     { title: 'Submit once', body: 'No re-picking after you see your score for today’s puzzle.' },
     { title: 'Grading', body: 'You’re scored on talent, offense, defense, spacing, and fit, then compared against par.' },
     { title: 'Practice anytime', body: 'Today’s puzzle is once a day — a practice board gives you a fresh random pool whenever you want another rep.' },
   ],
   quickfive: [
     { title: 'Draft', body: `16 teams take turns, 5 rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
-    { title: 'Shot cap', body: `Every pick costs shots. Your five starters have to fit under ${DISPLAY_QUICK_CAP_LIMIT} shots.` },
-    { title: 'Peak only', body: "No span picking — every player is shown at their single best season, so each pick is quick." },
+    { title: 'Caps', body: `Every pick costs caps — his shots per game in those years. Your five starters have to fit under ${DISPLAY_QUICK_CAP_LIMIT} caps.` },
+    { title: 'Peak only', body: "No choosing years — every player is shown at his single best season, so each pick is quick." },
     { title: 'Grading', body: 'The judge scores your five the same way the full draft does — talent, offense, defense, spacing, fit — right after your last pick.' },
   ],
 };
@@ -318,7 +318,7 @@ function App() {
                     🧩
                   </span>
                   <span className="mode-card-name at-cond">Best 5</span>
-                  <span className="mode-card-desc">Daily puzzle — pick five under a shot cap, beat the field.</span>
+                  <span className="mode-card-desc">Daily puzzle — pick five under a cap, beat the field.</span>
                 </button>
                 <button
                   type="button"
@@ -339,7 +339,7 @@ function App() {
                     ⚡
                   </span>
                   <span className="mode-card-name at-cond">Quick 5</span>
-                  <span className="mode-card-desc">5 rounds, a {DISPLAY_QUICK_CAP_LIMIT}-shot cap — a real draft in a few minutes.</span>
+                  <span className="mode-card-desc">5 rounds, {DISPLAY_QUICK_CAP_LIMIT} caps to spend — a real draft in a few minutes.</span>
                 </button>
                 <button
                   type="button"

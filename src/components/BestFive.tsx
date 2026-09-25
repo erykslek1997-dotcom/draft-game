@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import './BestFive.css';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
-import { Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
+import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
 import { currentStreak, recordDailyResult, savedDailyLineup, type Streak } from './bestFiveProgress';
 import {
   dailyPool,
@@ -190,7 +190,7 @@ export default function BestFive({ onBack }: Props) {
       {showHowToPlay && (
         <ol className="how-to-play-panel">
           <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C — from today’s pool.</li>
-          <li><b>Shot cap.</b> Your five have to fit under today’s cap, shown by the meter above the board.</li>
+          <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.</li>
           <li><b>Submit once.</b> No re-picking after you see your score for today’s puzzle.</li>
           <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against par.</li>
           <li><b>Practice anytime.</b> Today’s puzzle is once a day — a practice board gives you a fresh random pool whenever you want another rep.</li>
@@ -285,7 +285,7 @@ export default function BestFive({ onBack }: Props) {
             <button
               className="at-draft-btn bf-submit"
               disabled={!complete || overCap}
-              title={overCap ? `Over the ${shotsCap}-shot cap — swap out a costlier pick first.` : undefined}
+              title={overCap ? `Over the ${shotsCap}-cap limit — swap out a costlier pick first.` : undefined}
               onClick={submit}
             >
               Submit lineup
@@ -368,7 +368,7 @@ function BestFiveResult({
           <b>{targets.optimal}</b> engine’s best
         </span>
         <span className="bf-muted">
-          {Math.round(yourShots)} / {shotsCap} shots
+          <CapIcon /> {Math.round(yourShots)} / {shotsCap} caps
         </span>
       </div>
 

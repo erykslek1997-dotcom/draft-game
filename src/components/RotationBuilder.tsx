@@ -284,9 +284,9 @@ function RotationBuilderComponent({
     <div className="rotation-builder">
       <h2>Set Your Rotation</h2>
       <p>
-        Each position totals {GAME_MINUTES} minutes, split across a starter and one or more backups. A backup can
-        cover more than one position (e.g. a combo guard backing up both PG and SG), and a 3rd contributor can pick
-        up minutes a single backup can't (minutes/positions caps permitting).
+        Every position needs {GAME_MINUTES} minutes a game: the starter plays most of them and backups cover the rest.
+        One backup can cover two positions (e.g. a combo guard backing up both PG and SG), and a third player can
+        fill in minutes one backup can't.
       </p>
 
       {/* 2026-09-11, user-reported live ("głębsza przebudowa", "brzydko to wygląda") — the table
@@ -358,7 +358,7 @@ function RotationBuilderComponent({
                         <span className="rotation-card-row-meta">
                           <span
                             className="durability-cap"
-                            title={`Durability-safe minutes cap, DUR ${computeDurability(selectedPlayer)}`}
+                            title={`Most minutes he can handle without wearing down (durability ${computeDurability(selectedPlayer)})`}
                           >
                             cap {maxSustainableMinutes(selectedPlayer, MAX_MINUTES_PER_PLAYER)}m
                           </span>
@@ -430,14 +430,14 @@ function RotationBuilderComponent({
 
       {overworkedPlayers.length > 0 && (
         <p className="validation-error">
-          Over 48 total minutes: {overworkedPlayers.map((p) => p.playerName).join(', ')}
+          Playing more than 48 minutes a game (not possible): {overworkedPlayers.map((p) => p.playerName).join(', ')}
         </p>
       )}
 
       {durabilityOverworked.length > 0 && (
         <p className="validation-warning">
-          Past their durability-safe minutes (allowed, but costs Rotation score):{' '}
-          {durabilityOverworked.map(({ player, minutes, cap }) => `${player.playerName} (${minutes}/${cap}m)`).join(', ')}
+          Playing more minutes than they can handle (allowed, but it lowers your Rotation score):{' '}
+          {durabilityOverworked.map(({ player, minutes, cap }) => `${player.playerName} (${minutes} of ${cap} min)`).join(', ')}
         </p>
       )}
 
