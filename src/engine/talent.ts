@@ -451,15 +451,28 @@ const PLAYMAKING_DIMINISHING_RATE = 0.15;
  * never lower a non-passer's own number — McAdoo/Ewing/Howard fall in relative standing because
  * passers now separate further above them, not because their own TAL drops.
  */
-const CENTER_PLAYMAKING_BONUS_APG_THRESHOLD = 4;
+/**
+ * 2026-09-25, user ("W zasadzie każda pozycja powinna mieć bonus za playmaking"): the same
+ * position-relative bonus now applies at every slot, not just C. A PF passer (Kevin Garnett 5.5
+ * apg, Draymond Green 7.2) got nothing extra while a center with the same assists did. Each
+ * threshold sits near that position's own ~90th percentile of pace-adjusted apg (FGA >= 8 spans:
+ * PG 9.2, SG 5.3, SF 4.4, PF 4.0, C 3.7), so it separates genuine playmakers for their position
+ * from ordinary ones exactly as the center bar above does. C keeps its original 4.
+ */
+const PLAYMAKING_BONUS_APG_THRESHOLD: Record<Position, number> = { PG: 10, SG: 6, SF: 4.5, PF: 4, C: 4 };
 const CENTER_PLAYMAKING_BONUS_SCALE = 2.5;
 const MAX_CENTER_PLAYMAKING_BONUS = 12;
+const NON_CENTER_PLAYMAKING_BONUS_SCALE = 1.0;
+const MAX_NON_CENTER_PLAYMAKING_BONUS = 6;
 
-function centerPlaymakingBonus(position: Position, apg: number, paceFactor: number): number {
-  if (position !== 'C') return 0;
-  const excess = effectivePlaymakingApg(apg) - CENTER_PLAYMAKING_BONUS_APG_THRESHOLD;
+function positionPlaymakingBonus(position: Position, apg: number, paceFactor: number): number {
+  const excess = effectivePlaymakingApg(apg) - PLAYMAKING_BONUS_APG_THRESHOLD[position];
   if (excess <= 0) return 0;
-  return Math.min(MAX_CENTER_PLAYMAKING_BONUS, excess * CENTER_PLAYMAKING_BONUS_SCALE) * paceFactor;
+  const bonus =
+    position === 'C'
+      ? Math.min(MAX_CENTER_PLAYMAKING_BONUS, excess * CENTER_PLAYMAKING_BONUS_SCALE)
+      : Math.min(MAX_NON_CENTER_PLAYMAKING_BONUS, excess * NON_CENTER_PLAYMAKING_BONUS_SCALE);
+  return bonus * paceFactor;
 }
 
 /** Below this FGA, the `efficiency` term (relativeTs * 140) gets scaled down — direct
@@ -832,7 +845,7 @@ function rawComponents(
   const efficiency =
     relativeTs * 140 * lowUsageEfficiencyFactor(span.fga) * (relativeTs > 0 ? assistedEfficiencyFactor(span) : 1);
   const playmaking = effectivePlaymakingApg(box.apg) * paceFactor * 1.7;
-  const centerPlaymaking = centerPlaymakingBonus(span.primaryPosition, box.apg, paceFactor);
+  const centerPlaymaking = positionPlaymakingBonus(span.primaryPosition, box.apg, paceFactor);
   const isCurry = normalizePlayerName(span.playerName) === normalizePlayerName('Stephen Curry');
   const gravityCap = applyCurryException && isCurry ? CURRY_GRAVITY_CAP : MAX_SHOOTING_GRAVITY_BONUS;
   const gravity = Math.max(-gravityCap, Math.min(gravityCap, shootingGravity(span) * SHOOTING_GRAVITY_SCALE));
@@ -1727,26 +1740,31 @@ export function rawUncappedTalent(span: PlayerSpan): number {
  * reaches (let alone exceeds) the ceiling, so the underlying rule this whole mechanism exists for
  * — weak offense/defense can't reach "Greatest peak"/"MVP" tier — still holds exactly. Band (4)
  * chosen deliberately small: this is meant to break exact ties among already-capped players, not
- * meaningfully re-open the gap the ceiling was built to close. K=2.5 spreads real single-point
- * gaps (Luka, excess 1) visibly from Stockton/Paul/Lillard's shared excess (2) and Oscar's larger
- * excess (3) — checked against this exact top-20 list before shipping, all 5 of the 93-cluster
- * and all 3 of the 87-cluster now separate.
+ * meaningfully re-open the gap the ceiling was built to close. (2026-09-25: the original curve
+ * ran backwards — see the fix note inside `applyGradeCeiling`.)
  */
 const GRADE_CEILING_BAND = 4;
-const GRADE_CEILING_SOFT_K = 2.5;
 
 /** Exported so `grades.ts`'s `displayTalentForSpan` can apply the identical soft-compression to
  * its own hard `Math.min(tal, tierCeiling)` clamp — the exact same "different players, same
  * flattened number" problem, one layer up (tier-badge display rather than the internal TAL
  * ceiling above), found the same day auditing the PG top-of-pool cluster the user reported. Same
- * band/K reused rather than re-tuned separately: no principled reason the two layers should
- * compress by different amounts, and one shared constant pair is one less thing to drift out of
+ * band reused rather than re-tuned separately: no principled reason the two layers should
+ * compress by different amounts, and one shared constant is one less thing to drift out of
  * sync. Safe for `ceiling = Infinity` (grades.ts's own `tierCeiling('Greatest peak' | 'GOAT')`) —
  * the `ceiling >= 100` guard below already short-circuits before any arithmetic touches it. */
 export function applyGradeCeiling(value: number, ceiling: number): number {
   if (ceiling >= 100 || value <= ceiling) return value;
+  // 2026-09-25 fix: the original soft form (`ceiling - BAND * (1 - exp(-excess / K))`) ran
+  // backwards — it started AT the ceiling for a zero excess and fell toward ceiling - BAND as the
+  // excess grew, so the further a span cleared its ceiling the LOWER it landed (Oscar Robertson,
+  // excess 3, under Luka, excess 1), and raising a player's offense could drop his TAL. Now a
+  // span over its ceiling lands in (ceiling - 1.5, ceiling) and climbs toward the ceiling as the
+  // excess grows. Spans at or under the ceiling are untouched, so the board below every ceiling
+  // stays exactly as calibrated; the only cost is that a span barely over lands up to ~1.5 under
+  // one sitting exactly on it.
   const excess = value - ceiling;
-  return ceiling - GRADE_CEILING_BAND * (1 - Math.exp(-excess / GRADE_CEILING_SOFT_K));
+  return ceiling - GRADE_CEILING_BAND * Math.exp(-(excess + GRADE_CEILING_BAND) / GRADE_CEILING_BAND);
 }
 
 /**
