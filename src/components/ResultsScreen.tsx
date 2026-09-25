@@ -888,10 +888,63 @@ function ShareModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // 2026-09-25, user-reported ("brak możliwości zapisu"): the card had no way to be saved at all
+  // since the hand-drawn canvas twin was removed (see shareCardImage.ts). It is now captured
+  // straight from this DOM with html-to-image, so the saved PNG always matches the card. Phones
+  // get the system share sheet (save to photos) when available; otherwise a download, and the
+  // image is also shown in place so an in-app browser that blocks both (Messenger) can still
+  // long-press it to save.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [saveState, setSaveState] = useState<'idle' | 'building' | 'error'>('idle');
+  const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null);
+  useEffect(() => () => {
+    if (savedImageUrl) URL.revokeObjectURL(savedImageUrl);
+  }, [savedImageUrl]);
+  const saveImage = async () => {
+    const card = cardRef.current;
+    if (!card) return;
+    setSaveState('building');
+    try {
+      const { toBlob } = await import('html-to-image');
+      const background = getComputedStyle(card).backgroundColor;
+      const blob = await toBlob(card, {
+        pixelRatio: 2,
+        backgroundColor: background && background !== 'rgba(0, 0, 0, 0)' ? background : '#0b0f17',
+        filter: (node) => !(node instanceof HTMLElement && node.dataset.shareExclude !== undefined),
+      });
+      if (!blob) throw new Error('empty image');
+      const filename = `${teamName.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'my-team'}-all-time-draft.png`;
+      const file = new File([blob], filename, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: `${teamName} — All-Time Draft` });
+          setSaveState('idle');
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            setSaveState('idle');
+            return;
+          }
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      setSavedImageUrl(url);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setSaveState('idle');
+    } catch {
+      setSaveState('error');
+    }
+  };
+
   return (
     <div className="share-modal-overlay" onClick={onClose}>
-      <div className="share-modal-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Share result">
-        <button type="button" className="share-modal-close" onClick={onClose} aria-label="Close">
+      <div ref={cardRef} className="share-modal-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Share result">
+        <button type="button" className="share-modal-close" onClick={onClose} aria-label="Close" data-share-exclude>
           ✕
         </button>
         <span className="share-modal-team">{teamName}</span>
@@ -972,7 +1025,8 @@ function ShareModal({
                         <span className="share-modal-face-info">
                           <span className="share-modal-face-name">{shortenName(row.name)}</span>
                           <span className="share-modal-face-meta">
-                            {Math.round(row.minutes)}m · {row.fga.toFixed(1)} sh
+                            <span>{Math.round(row.minutes)}m</span>
+                            <span className="share-modal-face-caps">{row.fga.toFixed(1)} caps</span>
                           </span>
                         </span>
                       </div>
@@ -983,6 +1037,18 @@ function ShareModal({
             </div>
           );
         })()}
+        <div className="share-modal-save" data-share-exclude>
+          <button type="button" className="primary-btn" onClick={saveImage} disabled={saveState === 'building'}>
+            {saveState === 'building' ? 'Preparing image…' : '💾 Save image'}
+          </button>
+          {saveState === 'error' && <p className="share-modal-save-note">Couldn’t build the image here — take a screenshot instead.</p>}
+          {savedImageUrl && (
+            <>
+              <p className="share-modal-save-note">If nothing downloaded, press and hold the image below to save it.</p>
+              <img className="share-modal-save-preview" src={savedImageUrl} alt={`${teamName} result card`} />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1511,6 +1577,31 @@ const NEXT_DRAFT_TIP: Record<string, string> = {
   Rotation: 'Your rotation cost you. Start players at their own positions and don’t play anyone more minutes than he can handle.',
 };
 
+/** 2026-09-25, user-reported ("Too many players needed the ball — nie jest to skład który wymaga
+ * dużo piłki"): Fit blends ten separate components, so one generic "too many ball-dominant
+ * players" line was wrong whenever creation wasn't the problem (that roster had Creation 95 and
+ * Spacing fit 95; Switchability and Rim pressure were the real gaps). The Fit tip now names the
+ * weakest component. */
+const FIT_COMPONENT_TIP: Record<keyof FitScoreResult['components'], string> = {
+  creationStructure: 'The ball had too many owners, or none. Build around one or two creators and surround them with finishers and shooters.',
+  spacingCompatibility: 'Your non-shooters got in each other’s way. Pair every big who can’t shoot with shooters, not with another non-shooter.',
+  defensiveRoleCoverage: 'A defensive job was left empty. Make sure you have both a rim protector and a wing who can take the other team’s best scorer.',
+  switchability: 'Your lineup couldn’t switch. Opponents drag your slowest big or smallest guard into pick-and-rolls — add defenders who can guard several positions.',
+  huntResistance: 'Opponents had someone to pick on. Every weak defender you start becomes their go-to matchup — cover him or bench him.',
+  defensiveCohesion: 'Your defenders didn’t add up to a unit. Anchor the paint and the perimeter together instead of stacking one kind of stopper.',
+  rimPressureTeam: 'Nobody attacked the rim. Add a slasher or a big who finishes inside and draws fouls, so the defense can’t just stay home on shooters.',
+  reboundingBalance: 'You lost the glass. Start at least one real rebounder in the frontcourt.',
+  sizeCoverage: 'You were too small for your positions. Bigger bodies at the forward spots stop teams from bullying you inside.',
+  championshipStructure: 'There was no clear pecking order. Title teams have one or two stars and role players who fit around them.',
+};
+
+function nextDraftTip(label: string, team: Team): string | undefined {
+  if (label !== 'Fit') return NEXT_DRAFT_TIP[label];
+  const components = fitScore(team).components;
+  const [weakest] = (Object.entries(components) as [keyof typeof components, number][]).sort((a, b) => a[1] - b[1])[0] ?? [];
+  return weakest ? FIT_COMPONENT_TIP[weakest] : NEXT_DRAFT_TIP.Fit;
+}
+
 /**
  * One tile per position with every contributor's face, name and minutes — the hero's Rotation
  * panel, and (since 2026-09-24) every team's own Rotation section in the ranking below. `detailed`
@@ -1609,7 +1700,7 @@ function ResultsVerdict({
   const strengths = insights.strengths.slice(0, won ? 3 : 2);
   const concerns = insights.concerns.slice(0, won ? 1 : 2);
   const [weakestLabel] = Object.entries(scores).sort((a, b) => a[1] - b[1])[0] ?? [];
-  const tip = !won && weakestLabel ? NEXT_DRAFT_TIP[weakestLabel] : undefined;
+  const tip = !won && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined;
   const title = won ? 'Why you won' : 'Why you finished here';
   return (
     <section className={`results-verdict ${won ? 'results-verdict--won' : ''}`} aria-label={title}>

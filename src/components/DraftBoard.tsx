@@ -43,7 +43,7 @@ import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
-import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, TurnBudgetText } from './DraftChrome';
+import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPressureNote, TurnBudgetText } from './DraftChrome';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
 
 /** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
@@ -1113,6 +1113,10 @@ export default function DraftBoard({
     () => bestPrimaryAssignment(humanTeam.roster).assignment,
     [humanTeam.roster],
   );
+  const humanStarters = useMemo(
+    () => Object.values(humanAssignment).filter((p): p is PlayerSpan => Boolean(p)),
+    [humanAssignment],
+  );
 
   // True whenever the Team tab's roster table is actually showing the human's own roster — always
   // true outside Commissioner Mode (`teamForPanels` IS `humanTeam` then), only sometimes true
@@ -1613,6 +1617,7 @@ export default function DraftBoard({
                   priciestAvailable={priciestAvailable}
                   capTotal={CAP_LIMIT}
                 />
+                <RimPressureNote starters={humanStarters} />
                 {/* 2026-09-25, playtester feedback: the "only players that fit" filter used to be
                     reachable only once every visible card was out of reach (e.g. not after resuming
                     a saved draft). It's offered whenever the per-pick ceiling rules someone out. */}

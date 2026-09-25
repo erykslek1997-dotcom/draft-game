@@ -35,7 +35,10 @@ const outputs = [];
 const samples: { standing: number; breakdown: ReturnType<typeof scoreTeam>; output: ReturnType<typeof generateRosterInsights> }[] = [];
 const originalRandom = Math.random;
 try {
-  for (const seed of [73_001, 73_002]) {
+  // 2026-09-25: two seeds -> six. With 16 teams a draft, two drafts gave the bottom/top-quarter
+  // checks 8 rosters each, and main sat within one roster of failing them; six drafts (24 each)
+  // measure the rule instead of the sample.
+  for (const seed of [73_001, 73_002, 73_003, 73_004, 73_005, 73_006]) {
     Math.random = seededRandom(seed);
     const state = autoFinishDraft(createDraft(false));
     check(state.complete, `seed ${seed} completes for insight coverage`);
@@ -114,7 +117,11 @@ const avgConcerns = average(outputs.map((output) => output.concerns.length));
 const uniqueIds = new Set(outputs.flatMap((output) => output.allActiveInsights.map((insight) => insight.id)));
 console.log({ rosters: outputs.length, avgStrengths, avgConcerns, uniqueActiveDetectors: uniqueIds.size });
 check(avgStrengths >= 2.5, 'real drafted rosters average at least two and a half strengths');
-check(avgConcerns >= 1.5, 'real drafted rosters average at least one and a half concerns');
+// 2026-09-25: floor 1.5 -> 1.4 (main read exactly 1.5 on the old two seeds). The user-reported huntability fix
+// (real shot blockers and near-bar defenders like Marc Gasol / Mitchell Robinson are no longer
+// "targetable") removes false MULTIPLE_DEFENSIVE_WEAK_LINKS / HUNTABLE_STARTER_EXPOSED concerns —
+// over these six seeds 21->15 and 11->8, average 1.69 -> 1.49.
+check(avgConcerns >= 1.4, 'real drafted rosters average at least 1.4 concerns');
 // 2026-09-25: the lists follow the finish — a bottom team reads mostly what held it back, a top
 // team mostly what worked (before, both averaged 7 strengths).
 const top = samples.filter((sample) => sample.standing >= 0.75);
