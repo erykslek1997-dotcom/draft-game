@@ -5504,11 +5504,6 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
    own line. Now an even grid of equal tiles — one row of 7 when the column is wide enough, 4 + 3
    otherwise — with the label stacked over the number so every tile has the same width. Applies to
    the hero's Team profile, each ranking card's chips and the share card. */
-.results-hero-scores,
-.team-result-body,
-.share-modal-card {
-  container-type: inline-size;
-}
 .results-hero-scores-row,
 .team-result-body .subscores,
 .share-modal-scores {
@@ -5516,12 +5511,14 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
-@container (min-width: 600px) {
-  .results-hero-scores-row,
-  .team-result-body .subscores,
-  .share-modal-scores {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-  }
+/* One row of seven wherever the block is wide enough. (These were container queries; inline-size
+   containment made Chrome size the stacked hero block as if it were zero-wide — ~1260px tall
+   around ~650px of content on a phone — so plain viewport queries instead.) */
+@media (min-width: 1100px) {
+  .results-hero-scores-row { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+}
+@media (min-width: 700px) {
+  .team-result-body .subscores { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 }
 .results-hero-scores-row .score-chip,
 .team-result-body .subscores .score-chip,
@@ -5851,3 +5848,116 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   }
   .at-shell .player-peek-card .at-draft-span-table td.peek-tier { grid-column: span 2; }
 }
+
+/* 2026-09-25, user-reported live on a phone:
+   - "duża przerwa": stacked on a phone, the hero's profile block kept its row-layout
+     `flex: 1 1 400px` and grew to ~1260px tall around ~650px of content. It sizes to its content
+     once the dashboard is a column.
+   - "wyśrodkowanie centra": with two position cards per row, C sat alone on the left of the last
+     row; the odd last card now sits centred. */
+@media (max-width: 560px) {
+  .at-shell .results-hero-dashboard > .results-hero-scores,
+  .at-shell .results-hero-dashboard > .results-hero-rotation {
+    flex: 0 0 auto;
+  }
+}
+@media (max-width: 480px) {
+  .at-shell .results-hero-rotation-columns > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 3px);
+  }
+}
+.at-shell .bench-unused {
+  font-size: 12.5px;
+  color: var(--at-ink-soft);
+}
+
+/* Years picker (Team tab) — replaces the native <select>. */
+.at-shell .years-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--at-line);
+  background: var(--at-pill);
+  color: var(--at-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.at-shell .years-picker-btn:hover { border-color: var(--at-accent); }
+.at-shell .years-picker-caret { color: var(--at-ink-faint); font-size: 10px; }
+.at-shell .years-picker-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+  color: var(--at-ink-soft);
+}
+.at-shell .years-picker-sheet { width: min(460px, 100%); }
+.at-shell .years-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.at-shell .years-picker-option {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto 18px;
+  align-items: center;
+  gap: 12px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--at-line);
+  background: var(--at-paper);
+  color: var(--at-ink);
+  cursor: pointer;
+}
+.at-shell .years-picker-option:hover { border-color: var(--at-accent); }
+.at-shell .years-picker-option.is-selected {
+  border-color: var(--at-accent);
+  background: color-mix(in srgb, var(--at-accent) 12%, var(--at-paper));
+}
+.at-shell .years-picker-tier { color: var(--at-ink-soft); }
+.at-shell .years-picker-check { color: var(--at-accent); font-weight: 800; }
+
+/* Caps explainer — opened by clicking any caps icon. */
+.cap-icon[data-caps-info] { cursor: help; }
+.caps-info-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  min-height: 0;
+}
+.caps-info-card {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 22px 22px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--at-line);
+  background: var(--at-paper-raised);
+  color: var(--at-ink-soft);
+  font-size: 13.5px;
+  line-height: 1.6;
+  text-align: left;
+  box-shadow: var(--at-shadow);
+}
+.caps-info-card p { margin: 0 0 10px; }
+.caps-info-card b { color: var(--at-ink); }
+.caps-info-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.caps-info-head h2 { margin: 0; font-size: 20px; color: var(--at-ink); }
+.caps-info-foot { font-size: 12px; color: var(--at-ink-faint); }

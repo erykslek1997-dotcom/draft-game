@@ -4,32 +4,11 @@ import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes, suggestBasicRotation } from '../engine/rotation';
 import { computeDurability, maxSustainableMinutes } from '../engine/durability';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
-import { displayTalentForSpan, offensiveGrade, defensiveGrade } from '../engine/grades';
-import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
+import { offensiveGrade, defensiveGrade } from '../engine/grades';
 import { AtGrade, OverallTierBadge } from './DraftBoard';
 import { Face } from './ShotChip';
 import type { Rotation, SlotAssignment, Team } from '../engine/types';
 
-/** 2026-08-19, user's explicit ask ("maybe in TEAM section we can see player value in offense
- * defense etc"): a per-row Offense/Defense/Tier readout for whichever player is currently
- * assigned to a slot — the pick is already locked in by the time anyone reaches this screen, so
- * showing real letter grades here (same `AtGrade`/`OverallTierBadge` the Draft tab already uses)
- * enriches understanding without spoiling anything upstream. Only rendered once a player is
- * actually selected — an empty row has nothing to grade yet.
- * 2026-08-19 follow-up: briefly gated the two `AtGrade`s to Tester Mode for consistency with the
- * Team tab's own roster table — reverted same-day on the user's own direct clarification: Player
- * Mode's "blind scouting" is specifically about the DRAFT decision (Draft tab), not about hiding
- * what you already own. "you kind of drafting blindly but you can see what did you draft" — once
- * a player is actually on the roster, showing the full picture here is the point, not a leak. */
-function PlayerValueBadges({ player }: { player: PlayerSpan }) {
-  return (
-    <span className="rotation-value-badges">
-      <OverallTierBadge span={player} />
-      <AtGrade grade={offensiveGrade(computeOffensiveTalent(player), computeUncappedOffensiveTalent(player))} />
-      <AtGrade grade={defensiveGrade(computeDefensiveTalent(player))} />
-    </span>
-  );
-}
 
 interface Props {
   roster: PlayerSpan[];
@@ -441,26 +420,18 @@ function RotationBuilderComponent({
         </p>
       )}
 
-      <h3>Bench ({bench.length})</h3>
-      <ul className="bench-list">
-        {bench.map(({ player, minutes }) => (
-          <li key={player.id} className="bench-list-row">
-            <Face name={player.playerName} />
-            <span className="bench-list-name">
-              {player.playerName} ({player.spanLabel})
-              <span className="bench-list-role">{player.offensiveArchetype} / {player.defensiveRole}</span>
-            </span>
-            {/* 2026-08-19, user's explicit ask: real Offense/Defense/Tier badges here too, same
-                component the rotation rows above now use — a bare "TAL 68" text string used to be
-                the only signal, with no sense of what it means on this game's own scale. */}
-            <span className="bench-list-meta">
-              <PlayerValueBadges player={player} />
-              <span className="mini-fact">TAL {displayTalentForSpan(tierContextFor(player))}</span>
-              <span className="mini-fact">{minutes} min</span>
-            </span>
-          </li>
-        ))}
-      </ul>
+      {/* 2026-09-25, user's question ("czy ten bench jest potrzebny?"): the old bench list repeated
+          every backup the position cards above already show (with the same grades and minutes).
+          The one thing only it told you — who isn't playing at all — stays, as a single line. */}
+      {bench.some(({ minutes }) => minutes === 0) && (
+        <p className="bench-unused">
+          Not playing:{' '}
+          {bench
+            .filter(({ minutes }) => minutes === 0)
+            .map(({ player }) => `${player.playerName} (${player.spanLabel})`)
+            .join(', ')}
+        </p>
+      )}
 
       <button
         className="primary-btn"

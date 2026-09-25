@@ -231,6 +231,91 @@ function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, c
   return label;
 }
 
+/** 2026-09-25, user-reported live ("może ten widok dostosować pod UI?"): the Team tab's Years menu
+ * was a native `<select>`, so on a phone it opened the OS's own plain white list. Now a button
+ * that opens an in-game sheet — era stamp, cost in caps and tier for every stretch, the current
+ * one marked. */
+function YearsPicker({
+  playerName,
+  options,
+  selectedId,
+  showTal,
+  onSelect,
+}: {
+  playerName: string;
+  options: PlayerSpan[];
+  selectedId: string;
+  showTal: boolean;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.id === selectedId) ?? options[0];
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+  return (
+    <>
+      <button type="button" className="years-picker-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
+        <EraYears span={selected} />
+        <span className="years-picker-cost">
+          <CapIcon size={12} /> {selected.fga.toFixed(1)}
+        </span>
+        <span className="years-picker-caret" aria-hidden>▾</span>
+      </button>
+      {open && (
+        <div className="player-peek-overlay" onClick={() => setOpen(false)}>
+          <div
+            className="player-peek-card years-picker-sheet"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${playerName} — choose years`}
+          >
+            <button type="button" className="player-peek-close" onClick={() => setOpen(false)} aria-label="Close">
+              ✕
+            </button>
+            <div className="player-peek-head">
+              <Face name={playerName} size="md" />
+              <div>
+                <h2 className="player-peek-name">{playerName}</h2>
+                <span className="player-peek-sub">Which years of his career do you play?</span>
+              </div>
+            </div>
+            <ul className="years-picker-list">
+              {[...options].sort((a, b) => a.spanLabel.localeCompare(b.spanLabel)).map((o) => {
+                const isSelected = o.id === selectedId;
+                const tier = overallTierForSpan(tierContextFor(o));
+                return (
+                  <li key={o.id}>
+                    <button
+                      type="button"
+                      className={`years-picker-option${isSelected ? ' is-selected' : ''}`}
+                      onClick={() => {
+                        onSelect(o.id);
+                        setOpen(false);
+                      }}
+                    >
+                      <EraYears span={o} />
+                      <span className="years-picker-tier">{showTal ? `TAL ${effectiveTalent(o)} · ${tier}` : tier}</span>
+                      <span className="years-picker-cost">
+                        <CapIcon size={13} /> {o.fga.toFixed(1)}
+                      </span>
+                      <span className="years-picker-check" aria-hidden>{isSelected ? '✓' : ''}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 /** 2026-09-25, user's ask ("rozszerzenie scouting report o wszystkie sezony, tylko surowe
  * statystyki; gracz może 3 razy w ciągu draftu użyć scouta żeby pokazać dokładnie offense,
  * defense itd"): how many full scouting reports a draft allows. */
@@ -2078,37 +2163,13 @@ export default function DraftBoard({
                       </td>
                       <td>
                         {spanOpt ? (
-                          <select
-                            className="at-span-picker-select"
-                            value={effective.id}
-                            onChange={(e) => setHumanSpan(spanOpt.key, e.target.value, spanOpt.playerName, spanOpt.options)}
-                          >
-                            {spanOpt.options.map((o) => (
-                              <option key={o.id} value={o.id}>
-                                {/* 2026-08-19, user-reported real gap: this dropdown isn't scoped
-                                    to Tester Mode at all — it's shared with player mode, which
-                                    means the raw exact TAL number leaked here regardless of the
-                                    "blind scouting" design everywhere else on this screen.
-                                    `<option>` text can't hold a styled badge, so the tier NAME
-                                    stands in for the number in player mode — same coarse,
-                                    non-precise signal as the Draft tab's own Tier badge, no
-                                    exact figure a beginner could just sort by.
-                                    2026-08-19 follow-up: dropped the trailing "— FGA {n}" here,
-                                    reasoning the table's own FGA column already showed it — true
-                                    only for whichever ONE option is currently selected, not the
-                                    other options sitting in this same dropdown. Same-day, second
-                                    follow-up ("span list can show FGA becasue we need to click for
-                                    every one to look how much it costs"): put back, since
-                                    comparing spans by cost is the actual reason to open this
-                                    dropdown in the first place — the table's column duplicates the
-                                    SELECTED option only, never every option being compared. */}
-                                {o.spanLabel} — {o.fga.toFixed(1)} caps —{' '}
-                                {showJudgeMetrics
-                                  ? `TAL ${effectiveTalent(o)} — ${overallTierForSpan(tierContextFor(o))}`
-                                  : overallTierForSpan(tierContextFor(o))}
-                              </option>
-                            ))}
-                          </select>
+                          <YearsPicker
+                            playerName={spanOpt.playerName}
+                            options={spanOpt.options}
+                            selectedId={effective.id}
+                            showTal={showJudgeMetrics}
+                            onSelect={(id) => setHumanSpan(spanOpt.key, id, spanOpt.playerName, spanOpt.options)}
+                          />
                         ) : (
                           p.spanLabel
                         )}
