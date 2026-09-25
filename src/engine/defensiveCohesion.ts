@@ -32,6 +32,12 @@ const FULL_PROVIDER_MINUTES = 24;
 // practice — it still needs `averageDefensiveTalent >= AVERAGE_START` (80), a separate hard gate.
 const PROVIDER_START = 68;
 const PROVIDER_FULL = 85;
+/** Share of the three-layer credit an elite perimeter pair earns with no real rim protector. */
+const PERIMETER_ONLY_CORE_SHARE = 0.6;
+/** Extra share when a defensive PF starts beside a center who doesn't protect the rim. */
+const PF_SUPPORT_CORE_SHARE = 0.3;
+/** D-TAL where that PF starts to count (Kemp's 58-64, Grant's ~70, Garnett/Green 90+ ramp up). */
+const PF_SUPPORT_START = 55;
 // 2026-08-31: measured against the real (no context-adjustment) D-TAL distribution for
 // Anchor Big/Mobile Big spans (1293 spans: p85=81, p90=86, p95=92). Mobley's 2023-25 span (83,
 // the weakest of this mechanism's own named motivating examples — Duncan/Robinson/Wembanyama all
@@ -323,7 +329,30 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
   // with no coherent defensive spine. Keep the full no-weak-link shell gate above, but retain a
   // bounded amount of credit for three genuinely strong layers. The 50% floor applies only to
   // the structural bonus; every weak minute is still charged in `defensiveHuntability`.
-  const threeLayerCore = providerReadiness * (0.5 + resistanceReadiness * 0.5);
+  // 2026-09-25, user-reported (a Billups / Eddie Jones / Battier / Kemp shell around Jokic read
+  // Defense 68 vs 80 with Duncan in the middle — "zbyt dużą karę ma skład z Jokiciem mimo
+  // defensywnej obudowy"): with no real rim protector the `min` above zeroes the whole structural
+  // credit, however elite the perimeter layers are. A strong point-of-attack + wing pair now earns
+  // part of it on its own (PERIMETER_ONLY_CORE_SHARE), and more when a defensive PF starts next
+  // to a center who isn't a rim protector — the classic way to patch the missing layer
+  // (PF_SUPPORT_CORE_SHARE, scaled by that PF's D-TAL). Never more than a true three-layer core.
+  const perimeterReadiness = clamp01(
+    (Math.min(poaStrength, wingStrength) - PROVIDER_START) / (PROVIDER_FULL - PROVIDER_START),
+  );
+  const starterEntries = primaryStarters(team);
+  const startingCenter = starterEntries.find((entry) => entry.slot === 'C')?.player ?? null;
+  const startingPf = starterEntries.find((entry) => entry.slot === 'PF')?.player ?? null;
+  const centerProtectsRim =
+    startingCenter != null &&
+    RIM_ROLES.includes(startingCenter.defensiveRole) &&
+    computeDefensiveTalent(startingCenter) >= PROVIDER_START;
+  const pfSupport =
+    !centerProtectsRim && startingPf != null
+      ? clamp01((computeDefensiveTalent(startingPf) - PF_SUPPORT_START) / (PROVIDER_FULL - PF_SUPPORT_START))
+      : 0;
+  const perimeterOnlyCore = perimeterReadiness * (PERIMETER_ONLY_CORE_SHARE + PF_SUPPORT_CORE_SHARE * pfSupport);
+  const coreReadiness = Math.max(providerReadiness, Math.min(perimeterOnlyCore, perimeterReadiness));
+  const threeLayerCore = coreReadiness * (0.5 + resistanceReadiness * 0.5);
   const eliteShellBonus = completeness * MAX_ELITE_SHELL_DEFENSE_BONUS;
   const threeLayerCoreBonus = threeLayerCore * MAX_THREE_LAYER_CORE_DEFENSE_BONUS;
   const secondRimReadiness = clamp01(
