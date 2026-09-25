@@ -1,0 +1,186 @@
+{
+ "Allen Iverson": {
+  "SF": "none"
+ },
+ "Anthony Davis": {
+  "SF": "none"
+ },
+ "Bill Russell": {
+  "PF": "none"
+ },
+ "Bob McAdoo": {
+  "PF": "partial"
+ },
+ "Chauncey Billups": {
+  "SG": "none"
+ },
+ "Chris Paul": {
+  "SG": "none"
+ },
+ "Clyde Drexler": {
+  "PG": "none",
+  "SF": "partial"
+ },
+ "David Robinson": {
+  "PF": "none"
+ },
+ "Dirk Nowitzki": {
+  "C": "partial",
+  "SF": "none"
+ },
+ "Draymond Green": {
+  "C": "partial",
+  "SF": "emergency"
+ },
+ "Dwight Howard": {
+  "PF": "none"
+ },
+ "Dwyane Wade": {
+  "PG": "partial",
+  "SF": "none"
+ },
+ "Gary Payton": {
+  "SG": "emergency"
+ },
+ "Giannis Antetokounmpo": {
+  "C": "emergency",
+  "SF": "none",
+  "SG": "none"
+ },
+ "Grant Hill": {
+  "PF": "partial",
+  "SG": "emergency"
+ },
+ "Hakeem Olajuwon": {
+  "PF": "none"
+ },
+ "Isiah Thomas": {
+  "SG": "none"
+ },
+ "James Harden": {
+  "SF": "none"
+ },
+ "Jason Kidd": {
+  "SG": "emergency"
+ },
+ "Jayson Tatum": {
+  "PF": "partial",
+  "SG": "none"
+ },
+ "Jerry West": {
+  "SF": "none"
+ },
+ "Joel Embiid": {
+  "PF": "none"
+ },
+ "John Havlicek": {
+  "PF": "none",
+  "PG": "none"
+ },
+ "John Stockton": {
+  "SG": "none"
+ },
+ "Julius Erving": {
+  "PF": "partial",
+  "SG": "none"
+ },
+ "Kareem Abdul-Jabbar": {
+  "PF": "none"
+ },
+ "Karl Malone": {
+  "C": "partial",
+  "SF": "none"
+ },
+ "Kawhi Leonard": {
+  "PF": "partial",
+  "SG": "full"
+ },
+ "Kevin Durant": {
+  "PF": "full",
+  "SG": "none"
+ },
+ "Kevin Garnett": {
+  "C": "partial",
+  "SF": "none"
+ },
+ "Kobe Bryant": {
+  "PG": "none",
+  "SF": "emergency"
+ },
+ "Larry Bird": {
+  "C": "none",
+  "SG": "none"
+ },
+ "LeBron James": {
+  "C": "none",
+  "PG": "full",
+  "SG": "partial"
+ },
+ "Luka Doncic": {
+  "SG": "full"
+ },
+ "Magic Johnson": {
+  "SG": "full",
+  "SF": "full"
+ },
+ "Michael Jordan": {
+  "PG": "emergency",
+  "SF": "full"
+ },
+ "Nikola Jokic": {
+  "PF": "none"
+ },
+ "Oscar Robertson": {
+  "SG": "partial"
+ },
+ "Patrick Ewing": {
+  "PF": "none"
+ },
+ "Paul George": {
+  "PF": "partial",
+  "SG": "partial"
+ },
+ "Ray Allen": {
+  "PG": "none",
+  "SF": "none"
+ },
+ "Rudy Gobert": {
+  "PF": "none"
+ },
+ "Scottie Pippen": {
+  "PF": "partial",
+  "SG": "partial"
+ },
+ "Shai Gilgeous-Alexander": {
+  "SG": "full"
+ },
+ "Shaquille O'Neal": {
+  "PF": "none"
+ },
+ "Stephen Curry": {
+  "SG": "emergency"
+ },
+ "Steve Nash": {
+  "SG": "none"
+ },
+ "Tim Duncan": {
+  "PF": "full"
+ },
+ "Tracy McGrady": {
+  "PF": "none",
+  "PG": "emergency"
+ },
+ "Victor Wembanyama": {
+  "PF": "full"
+ },
+ "Vince Carter": {
+  "PF": "none",
+  "PG": "none"
+ },
+ "Walt Frazier": {
+  "SG": "partial"
+ },
+ "Wilt Chamberlain": {
+  "PF": "none"
+ }
+}

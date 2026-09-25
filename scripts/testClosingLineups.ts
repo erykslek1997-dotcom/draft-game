@@ -59,7 +59,11 @@ const fixtures: Record<string, Team> = {
     pick('Tyson Chandler', '2011-13'),
     pick('Thabo Sefolosha', '2011-13'),
     pick('Steve Blake', '2008-10'),
-    pick('Larry Smith', '1991-93'),
+    // 2026-09-25: Larry Smith -> Dennis Rodman. Graded position competence (positionCompetence.ts)
+    // no longer lets a classic center (Lopez/Chandler) close at PF, which is what used to create
+    // this fixture's two-big closing choice (tradeoff fell 0.087 -> 0.047 with Smith). A real
+    // defense-first PF restores the same offense-vs-defense choice at that spot (measured 0.103).
+    pick('Dennis Rodman', '1991-93'),
   ]),
   starJustified: team('closing-star-justified', [
     pick('Chris Paul', '2012-14'),

@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { realSecondaryPositions } from './positionCompetence';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import type { Team } from './types';
 import type { PlayerTeamFeature, TeamFeatureSnapshot } from './insights';
@@ -98,7 +99,7 @@ function toPlayerFeature(
     rpg: p.box.rpg,
     tal: effectiveTalent(p),
     primaryPosition: p.primaryPosition,
-    secondaryPositions: p.secondaryPositions,
+    secondaryPositions: realSecondaryPositions(p),
     offensiveArchetype: p.offensiveArchetype,
     defensiveRole: p.defensiveRole,
     highUsageWeight: HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0,
@@ -125,7 +126,7 @@ function toPlayerFeature(
     // APPROXIMATION: no real "how many distinct roles has this player actually played" signal
     // exists — approximated from how many secondary positions the span carries (0 -> single-role,
     // 2+ -> fully flexible).
-    roleFlexibility: clamp01((p.secondaryPositions.length ?? 0) / 2),
+    roleFlexibility: clamp01(realSecondaryPositions(p).length / 2),
     starterSlot,
     spacingImpact: normalize(computeSpacing(p), SPACING_LO, SPACING_HI),
     movementShooting: movement.score,
@@ -222,7 +223,7 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
   // position nor a listed secondary — same real-fit definition `assessNeeds`/`isRealPositionFit`
   // (positions.ts) already use, applied per assignment rather than per player.
   const positionalCompromises = assignments.filter(
-    (a) => a.minutes > 0 && a.player.primaryPosition !== a.slot && !a.player.secondaryPositions.includes(a.slot),
+    (a) => a.minutes > 0 && a.player.primaryPosition !== a.slot && !realSecondaryPositions(a.player).includes(a.slot),
   );
   const positionalCompromisePlayers = [...new Set(positionalCompromises.map((assignment) => assignment.player.playerName))];
   const severePositionalCompromises = positionalCompromises.filter(

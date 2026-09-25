@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { realSecondaryPositions } from '../engine/positionCompetence';
 import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
@@ -1422,7 +1423,7 @@ export function buildFeedbackExport(
         playerName: p.playerName,
         spanLabel: p.spanLabel,
         primaryPosition: p.primaryPosition,
-        secondaryPositions: p.secondaryPositions,
+        secondaryPositions: realSecondaryPositions(p),
         fga: p.fga,
         TAL: effectiveTalent(p),
         OTAL: computeOffensiveTalent(p),

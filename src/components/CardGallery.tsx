@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { realSecondaryPositions } from '../engine/positionCompetence';
 import './CardGallery.css';
 import type { Position } from '../data/schema';
 import { POSITIONS } from '../data/schema';
@@ -281,7 +282,7 @@ function SpanBlock({ row, lead }: { row: CardSpanRow; lead: boolean }) {
       <div className="pc-span-head">
         <span className="pc-span-label">
           {s.spanLabel} · {s.primaryPosition}
-          {s.secondaryPositions.length > 0 && `/${s.secondaryPositions.join(',')}`}
+          {realSecondaryPositions(s).length > 0 && `/${realSecondaryPositions(s).join(',')}`}
         </span>
         <span className="pc-span-tal">
           <b>{row.tal}</b> {row.tier}

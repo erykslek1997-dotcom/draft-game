@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { realSecondaryPositions } from '../engine/positionCompetence';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName, type PlayerSpan, type Position } from '../data/schema';
 import { fitScore } from '../engine/fit';
@@ -8,7 +9,7 @@ import { seasonProfile } from '../engine/seasonProfile';
 import { effectiveTalent } from '../engine/grades';
 import type { Rotation, Team } from '../engine/types';
 
-const positionsFor = (player: PlayerSpan) => new Set<Position>([player.primaryPosition, ...player.secondaryPositions]);
+const positionsFor = (player: PlayerSpan) => new Set<Position>([player.primaryPosition, ...realSecondaryPositions(player)]);
 const signed = (value: number) => `${value > 0 ? '+' : ''}${value}`;
 
 function replacePlayer(team: Team, outgoingId: string, incoming: PlayerSpan): Team {
