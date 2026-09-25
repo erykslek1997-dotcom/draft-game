@@ -30,7 +30,7 @@ const text = (roster: PlayerSpan[]) => buildDraftDesk(roster, 6).turns.map((t) =
 // The user's own report: an all-shooting start with no rim pressure.
 check(/rim/.test(text(['Stephen Curry', 'Klay Thompson', 'Dirk Nowitzki'].map(peak))), 'Curry/Klay/Dirk: the desk raises the rim');
 check(!/Nobody gets to the rim/.test(text(['LeBron James', "Shaquille O'Neal", 'Kyle Korver'].map(peak))), 'LeBron/Shaq/Korver: no "nobody gets to the rim"');
-// Pre-1997 perimeter spans read 0 rim pressure (no shot-location data): the desk must not claim it.
+// Pre-1997 guards/wings used to read 0 rim pressure (no shot-location data) — Jordan 1987-89 attacks the rim.
 check(!/Nobody gets to the rim/.test(text(['Michael Jordan', 'Draymond Green', 'Vince Carter'].map(peak))), 'Jordan 1987-89: no rim-pressure claim');
 check(/protects the rim/.test(buildDraftDesk(['James Harden', 'Russell Westbrook', 'Allen Iverson'].map(peak), 6).consensus), 'three guards: consensus asks for a rim protector');
 

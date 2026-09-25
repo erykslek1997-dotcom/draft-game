@@ -5,7 +5,6 @@ import { computeDefensiveTalent } from './defensiveTalent';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { rimPressureForFit, rimPressureTeam } from './rimPressure';
 import { effectiveTalent } from './grades';
-import { computeOffensiveProfile } from './offensiveProfile';
 
 /**
  * 2026-09-25, user's ask (in place of the in-draft rim-pressure hint: "wypowiedzi ekspertów którzy
@@ -91,14 +90,8 @@ function takesFor(roster: PlayerSpan[]): Take[] {
       line: `${list(shooters)} both stretch the floor. That’s real room to operate.` });
   }
 
-  // Pre-1997 spans have no shot-location data, and `rimPressureForFit` then only credits C/PF —
-  // Jordan 1987-89 reads 0. Until that proxy covers perimeter players, the desk stays quiet on
-  // rim pressure for any roster holding one, rather than telling Jordan he never gets to the rim.
-  const rimBlind = roster.some((p) => p.primaryPosition !== 'C' && p.primaryPosition !== 'PF' && !computeOffensiveProfile(p).hasZoneData);
   const rim = rimPressureTeam(roster);
-  if (rimBlind) {
-    // no read either way
-  } else if (rim < 55) {
+  if (rim < 55) {
     takes.push({ topic: 'rimPressure', expert: 'analyst', kind: 'concern', weight: 0.6 + (55 - rim) / 100,
       line: 'Nobody gets to the rim. Defenses will stay home on the shooters and live with long twos.',
       advice: 'a slasher or a big who finishes inside' });
