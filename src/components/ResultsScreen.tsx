@@ -1062,9 +1062,9 @@ function ShareModal({
                         {rows
                           .filter((row) => row.minutes > 0 && !row.isStarter && row.minutes < SPOT_MINUTES)
                           .map((row) => (
-                            <span className="rotation-spot-entry" key={row.name}>
+                            <span className="rotation-spot-entry" key={row.name} title={`${row.name} · ${Math.round(row.minutes)} min`}>
                               <Face name={row.name} size="xs" />
-                              {shortenName(row.name, 12)} {Math.round(row.minutes)}m
+                              {Math.round(row.minutes)}m
                             </span>
                           ))}
                       </span>
@@ -1754,11 +1754,11 @@ function RotationColumns({
               );
             })}
             {spot.length > 0 && (
-              <span className="rotation-spot-line" title="Spot minutes at this position">
+              <span className="rotation-spot-line" aria-label="Spot minutes at this position">
                 {spot.map((e) => (
-                  <span className="rotation-spot-entry" key={e.player.id}>
+                  <span className="rotation-spot-entry" key={e.player.id} title={`${e.player.playerName} (${e.player.spanLabel}) · ${Math.round(e.minutes)} min`}>
                     <Face name={e.player.playerName} size="xs" />
-                    {shortenName(e.player.playerName, 12)} {Math.round(e.minutes)}m
+                    {Math.round(e.minutes)}m
                   </span>
                 ))}
               </span>

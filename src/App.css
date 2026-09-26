@@ -6255,8 +6255,8 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   border-top: 1px dashed var(--at-line, #16222f);
   font-size: 11px; color: var(--at-ink-faint, #48586d); line-height: 1.4;
 }
-/* 2026-09-26, user ("małe twarze tam gdzie jest Magic i Carter?"): each spot-minute backup gets a
-   16px face, same as the full rows' 26px one. */
+/* 2026-09-26, user ("małe twarze tam gdzie jest Magic i Carter?", then "może bez nazwisk tylko
+   twarze?"): each spot-minute backup is a 16px face + minutes; the name is in the tooltip. */
 .rotation-spot-entry { display: inline-flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; }
 .rotation-spot-entry .bf-face { flex-shrink: 0; }
 
