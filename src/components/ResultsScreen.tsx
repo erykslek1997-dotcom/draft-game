@@ -267,7 +267,7 @@ const EMPTY_FEEDBACK: TeamFeedback = { userRank: '', rankingNote: '', playerNote
  * different semantic axis from a single player's TAL tier — reusing the CSS variables, not the
  * player-specific component.
  */
-function scoreBand(score: number): 1 | 2 | 3 | 4 | 5 | 6 {
+export function scoreBand(score: number): 1 | 2 | 3 | 4 | 5 | 6 {
   if (score < 17) return 1;
   if (score < 33) return 2;
   if (score < 50) return 3;
@@ -285,7 +285,7 @@ function scoreBand(score: number): 1 | 2 | 3 | 4 | 5 | 6 {
  * still read as visibly different shades, the actual "gradient" the ask was for. Same red/green
  * hue endpoints `MatchupMatrix.tsx`'s own diverging scale uses, for one consistent "how good is
  * this number" visual language across the app's judgment displays. */
-function qualityColor(v: number): string {
+export function qualityColor(v: number): string {
   const t = Math.max(0, Math.min(100, v)) / 100;
   const hue = 2 + t * 146;
   const saturation = 42 + Math.abs(t - 0.5) * 34;
@@ -1098,7 +1098,7 @@ function ShareModal({
   );
 }
 
-function ScoreChip({ label, value }: { label: string; value: number }) {
+export function ScoreChip({ label, value }: { label: string; value: number }) {
   // `borderBottomColor` only actually shows once `.subscores .score-chip` gives the chip a
   // visible bottom border (see App.css) — harmless to set unconditionally on the compact header
   // mini-chips too, which just never render a border to show it on.
@@ -1116,7 +1116,7 @@ function ScoreChip({ label, value }: { label: string; value: number }) {
 /** 2026-09-25, user ("hover nad statystyką żeby użytkownik wiedział co jest czym"): the hint
  * used to live in a `title` attribute — invisible on phones, slow on desktop. It's a real tooltip
  * now: hover on desktop, tap/focus on touch (the row is focusable), with an "i" marker. */
-function MetricBar({ label, value, hint }: { label: string; value: number; hint?: string }) {
+export function MetricBar({ label, value, hint }: { label: string; value: number; hint?: string }) {
   const v = Math.max(0, Math.min(100, Math.round(value)));
   return (
     <div className={`metric-bar${hint ? ' has-tip' : ''}`} tabIndex={hint ? 0 : undefined} aria-label={hint ? `${label} ${v}. ${hint}` : undefined}>
