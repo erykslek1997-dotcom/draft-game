@@ -2,7 +2,7 @@ import type { OffensiveArchetype, PlayerSpan } from '../data/schema';
 import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import { computeOffensiveProfile } from './offensiveProfile';
 import { boxRatesForSpan, leagueFtRateForSpan } from './boxRatesLookup';
-import { historicalRimPressureEvidenceForSpan } from '../data/historicalRimPressureEvidence';
+import { rimPressureEvidenceWeight } from '../data/historicalRimPressureEvidence';
 
 /**
  * "Rim pressure" — how much a player forces the defense to send help at the rim / build its game
@@ -330,16 +330,7 @@ const PERIMETER_PROXY_SLASHER_VALUE_RUNGS: number[] = [0, 0, 0, 0, 0, 0, 1.627, 
  * peak 54; Baylor's 41 — their own box lines still decide, the list only picks the reference group.
  */
 export const SLASHER_RIM_SHARE = 0.35;
-function isVerifiedSlasher(span: PlayerSpan): boolean {
-  return historicalRimPressureEvidenceForSpan(span, 'Slasher') !== null;
-}
-function perimeterRimProxy(span: PlayerSpan): number {
-  const f = perimeterRimFeatures(span);
-  if (!f) return 0;
-  const score = perimeterRimScore(f);
-  const slasher = isVerifiedSlasher(span);
-  const S = slasher ? PERIMETER_PROXY_SLASHER_SCORE_RUNGS : PERIMETER_PROXY_SCORE_RUNGS;
-  const V = slasher ? PERIMETER_PROXY_SLASHER_VALUE_RUNGS : PERIMETER_PROXY_VALUE_RUNGS;
+function mapRungs(score: number, S: readonly number[], V: readonly number[]): number {
   if (score <= S[0]) return V[0];
   for (let i = 1; i < S.length; i++) {
     if (score <= S[i]) {
@@ -348,6 +339,18 @@ function perimeterRimProxy(span: PlayerSpan): number {
     }
   }
   return V[V.length - 1];
+}
+/** 2026-09-26: graded, from the user's rated list (`historicalRimPressureEvidence.ts`) — a
+ * `mocny` slasher reads fully against the real-slasher group, `dobry` 75%, `sredni` 50%, the
+ * rest of the way against all perimeter players. */
+function perimeterRimProxy(span: PlayerSpan): number {
+  const f = perimeterRimFeatures(span);
+  if (!f) return 0;
+  const score = perimeterRimScore(f);
+  const all = mapRungs(score, PERIMETER_PROXY_SCORE_RUNGS, PERIMETER_PROXY_VALUE_RUNGS);
+  const weight = rimPressureEvidenceWeight(span, 'Slasher');
+  if (weight <= 0) return all;
+  return all + weight * (mapRungs(score, PERIMETER_PROXY_SLASHER_SCORE_RUNGS, PERIMETER_PROXY_SLASHER_VALUE_RUNGS) - all);
 }
 
 export function rimPressureForFit(span: PlayerSpan): number {

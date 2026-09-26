@@ -262,9 +262,9 @@ function scoreOffense(span: PlayerSpan, context: RoleFitContext, confidence: Rol
   const slasherRimEvidence = rimPressureEvidenceFor('Slasher');
   const athleticFinisherRimEvidence = rimPressureEvidenceFor('Athletic Finisher');
   const rollCutRimEvidence = rimPressureEvidenceFor('Roll & Cut Big');
-  const slasherRimNote = slasherRimEvidence ? `historical validation: ${slasherRimEvidence.note}` : null;
-  const athleticFinisherRimNote = athleticFinisherRimEvidence ? `historical validation: ${athleticFinisherRimEvidence.note}` : null;
-  const rollCutRimNote = rollCutRimEvidence ? `historical validation: ${rollCutRimEvidence.note}` : null;
+  const slasherRimNote = slasherRimEvidence ? `historical validation: rated ${slasherRimEvidence.strength} (user list)` : null;
+  const athleticFinisherRimNote = athleticFinisherRimEvidence ? `historical validation: rated ${athleticFinisherRimEvidence.strength} (user list)` : null;
+  const rollCutRimNote = rollCutRimEvidence ? `historical validation: rated ${rollCutRimEvidence.strength} (user list)` : null;
   const rimShareScore = rim ? clampScore(((rim.share - 0.2) / 0.6) * 100) : 100 - p('threeRate');
   const rimAccuracyScore = rim ? clampScore(((rim.pct - 0.5) / 0.25) * 100) : p('fgPct');
   const lowUsage = 100 - p('fga');
