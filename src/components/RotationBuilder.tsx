@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes, suggestBasicRotation } from '../engine/rotation';
@@ -84,6 +84,14 @@ interface Row {
 type RowsBySlot = Record<Position, Row[]>;
 
 const MAX_ROWS_PER_SLOT = 4;
+/** Minutes a −/+ tap moves (group C mockup 21B). */
+const MINUTE_STEP = 2;
+
+/** Where a dragged or tap-selected player comes from: the bench, or a row of another position. */
+interface MoveSource {
+  playerId: string;
+  from?: { slot: Position; rowIdx: number };
+}
 
 /** `rosterComplete = false` skips `autoAssignRotation` entirely and returns every slot empty —
  * see `Props.rosterComplete`'s own comment for why: auto-assigning against a still-growing roster
@@ -191,6 +199,11 @@ function RotationBuilderComponent({
   // reacting as you type); losing focus while empty just reverts the box to the last committed
   // value instead of silently zeroing it.
   const [minutesDraft, setMinutesDraft] = useState<Record<string, string>>({});
+  // Group C mockup 21: tap-to-place selection (phone) and the drag in progress (desktop).
+  const [selected, setSelected] = useState<MoveSource | null>(null);
+  const [dragging, setDragging] = useState<MoveSource | null>(null);
+  const [dropSlot, setDropSlot] = useState<Position | null>(null);
+  const splitBarRefs = useRef<Partial<Record<Position, HTMLSpanElement | null>>>({});
 
   function updateRow(slot: Position, rowIdx: number, patch: Partial<Row>) {
     setIsSuggestion(false);
@@ -209,6 +222,123 @@ function RotationBuilderComponent({
   function removeRow(slot: Position, rowIdx: number) {
     setIsSuggestion(false);
     setRows((prev) => ({ ...prev, [slot]: prev[slot].filter((_, i) => i !== rowIdx) }));
+  }
+
+  /**
+   * Group C mockup 21: put a player into a position by drag (desktop) or tap (phone).
+   * - Onto an existing row: that row changes player, minutes stay.
+   * - Onto the position: a new row that takes half of the last row's minutes, so the total stays.
+   * A player moved out of another position hands his minutes to the row above him there, so that
+   * position keeps its total too.
+   */
+  function placePlayer(source: MoveSource, slot: Position, targetRowIdx?: number) {
+    setIsSuggestion(false);
+    setRows((prev) => {
+      const next = { ...prev } as RowsBySlot;
+      let moved = 0;
+      if (source.from) {
+        const { slot: fromSlot, rowIdx } = source.from;
+        if (fromSlot === slot && (targetRowIdx === undefined || targetRowIdx === rowIdx)) return prev;
+        const fromRows = [...prev[fromSlot]];
+        moved = fromRows[rowIdx]?.minutes ?? 0;
+        if (fromRows.length > 1) {
+          fromRows.splice(rowIdx, 1);
+          const heir = Math.max(0, rowIdx - 1);
+          fromRows[heir] = { ...fromRows[heir], minutes: fromRows[heir].minutes + moved };
+        } else {
+          fromRows[0] = { playerId: '', minutes: fromRows[0].minutes };
+        }
+        next[fromSlot] = fromRows;
+      }
+      const target = [...next[slot]];
+      if (targetRowIdx !== undefined && target[targetRowIdx]) {
+        target[targetRowIdx] = { ...target[targetRowIdx], playerId: source.playerId };
+      } else if (!target[0]?.playerId) {
+        target[0] = { playerId: source.playerId, minutes: target[0]?.minutes || GAME_MINUTES };
+      } else if (target.length < MAX_ROWS_PER_SLOT) {
+        const last = target.length - 1;
+        const share = Math.floor(target[last].minutes / 2 / MINUTE_STEP) * MINUTE_STEP;
+        target[last] = { ...target[last], minutes: target[last].minutes - share };
+        target.push({ playerId: source.playerId, minutes: share });
+      } else {
+        return prev;
+      }
+      next[slot] = target;
+      return next;
+    });
+    setMinutesDraft({});
+    setSelected(null);
+    setDragging(null);
+    setDropSlot(null);
+  }
+
+  function stepMinutes(slot: Position, rowIdx: number, delta: number) {
+    const row = rows[slot][rowIdx];
+    if (!row?.playerId) return;
+    setMinutesDraft((prev) => {
+      const key = `${slot}-${rowIdx}`;
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    updateRow(slot, rowIdx, { minutes: Math.max(0, Math.min(GAME_MINUTES, row.minutes + delta)) });
+  }
+
+  /** Dragging the divider between two neighbouring rows in a position's bar moves minutes between
+   * just those two, so the position's total never changes. */
+  function startSplitDrag(event: ReactPointerEvent<HTMLSpanElement>, slot: Position, leftIdx: number) {
+    const bar = splitBarRefs.current[slot];
+    if (!bar) return;
+    event.preventDefault();
+    const handle = event.currentTarget;
+    handle.setPointerCapture(event.pointerId);
+    const filled = rows[slot].map((r, i) => ({ r, i })).filter(({ r }) => r.playerId);
+    const pos = filled.findIndex(({ i }) => i === leftIdx);
+    const right = filled[pos + 1];
+    if (!right) return;
+    const before = filled.slice(0, pos).reduce((sum, { r }) => sum + r.minutes, 0);
+    const pairTotal = filled[pos].r.minutes + right.r.minutes;
+    const move = (e: PointerEvent) => {
+      const rect = bar.getBoundingClientRect();
+      const atMinute = Math.round(((e.clientX - rect.left) / rect.width) * GAME_MINUTES);
+      const leftMinutes = Math.max(0, Math.min(pairTotal, atMinute - before));
+      setIsSuggestion(false);
+      setRows((prev) => {
+        const list = [...prev[slot]];
+        list[leftIdx] = { ...list[leftIdx], minutes: leftMinutes };
+        list[right.i] = { ...list[right.i], minutes: pairTotal - leftMinutes };
+        return { ...prev, [slot]: list };
+      });
+    };
+    const stop = () => {
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', stop);
+      handle.removeEventListener('pointercancel', stop);
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', stop);
+    handle.addEventListener('pointercancel', stop);
+  }
+
+  function splitHandleKey(event: ReactKeyboardEvent<HTMLSpanElement>, slot: Position, leftIdx: number) {
+    const filled = rows[slot].map((r, i) => ({ r, i })).filter(({ r }) => r.playerId);
+    const pos = filled.findIndex(({ i }) => i === leftIdx);
+    const right = filled[pos + 1];
+    if (!right) return;
+    const delta = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
+    if (!delta) return;
+    event.preventDefault();
+    const leftMinutes = filled[pos].r.minutes + delta;
+    const rightMinutes = right.r.minutes - delta;
+    if (leftMinutes < 0 || rightMinutes < 0) return;
+    setIsSuggestion(false);
+    setRows((prev) => {
+      const list = [...prev[slot]];
+      list[leftIdx] = { ...list[leftIdx], minutes: leftMinutes };
+      list[right.i] = { ...list[right.i], minutes: rightMinutes };
+      return { ...prev, [slot]: list };
+    });
   }
 
   /** Natural fits first, then the out-of-position fallbacks, so the sensible picks are on top. */
@@ -284,13 +414,43 @@ function RotationBuilderComponent({
         </p>
       )}
 
+      <p className="rotation-dnd-hint">
+        Drag a player from the bench onto a position, or between positions, and drag the divider in a position's bar to
+        split its {GAME_MINUTES} minutes. On a phone, tap a bench player, then a position.
+      </p>
+
       <div className="rotation-cards">
         {STARTER_SLOTS.map((slot) => {
           const total = slotTotal(rows, slot);
           const canAddMore = rows[slot].length < MAX_ROWS_PER_SLOT;
           const full = total === GAME_MINUTES;
+          const active = dragging ?? selected;
+          const activePlayer = active ? roster.find((p) => p.id === active.playerId) : undefined;
+          const fits = activePlayer ? isPositionEligible(activePlayer, slot) : false;
+          const filled = rows[slot].map((row, idx) => ({ row, idx })).filter(({ row }) => row.playerId);
+          const cardClass = [
+            'rotation-card',
+            full ? 'rotation-card--full' : 'rotation-card--short',
+            active ? (fits ? 'rotation-card--fits' : 'rotation-card--off') : '',
+            dragging && dropSlot === slot ? 'rotation-card--drop' : '',
+          ].join(' ');
           return (
-            <div key={slot} className={`rotation-card ${full ? 'rotation-card--full' : 'rotation-card--short'}`}>
+            <div
+              key={slot}
+              className={cardClass}
+              onDragOver={(e) => {
+                if (!dragging) return;
+                e.preventDefault();
+                if (dropSlot !== slot) setDropSlot(slot);
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropSlot((cur) => (cur === slot ? null : cur));
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragging) placePlayer(dragging, slot);
+              }}
+            >
               <div className="rotation-card-head">
                 <span className="rotation-card-pos at-cond">{slot}</span>
                 <span className="rotation-card-minutes-track">
@@ -303,12 +463,76 @@ function RotationBuilderComponent({
                   {total}/{GAME_MINUTES}
                 </span>
               </div>
+              {filled.length > 0 && (
+                <span className="rotation-split" ref={(el) => { splitBarRefs.current[slot] = el; }}>
+                  {filled.map(({ row, idx }, k) => {
+                    const player = roster.find((p) => p.id === row.playerId);
+                    return (
+                      <span
+                        key={idx}
+                        className={`rotation-split-seg is-${Math.min(k, 2)}`}
+                        style={{ width: `${(row.minutes / GAME_MINUTES) * 100}%` }}
+                        title={`${player?.playerName ?? ''} ${row.minutes} min`}
+                      >
+                        <span className="rotation-split-label">
+                          {player ? player.playerName.split(' ').slice(-1)[0] : ''} {row.minutes}
+                        </span>
+                        {k < filled.length - 1 && (
+                          <span
+                            className="rotation-split-handle"
+                            role="slider"
+                            tabIndex={0}
+                            aria-label={`Minutes split between ${player?.playerName ?? 'this player'} and the next player at ${slot}`}
+                            aria-valuemin={0}
+                            aria-valuemax={row.minutes + filled[k + 1].row.minutes}
+                            aria-valuenow={row.minutes}
+                            onPointerDown={(e) => startSplitDrag(e, slot, idx)}
+                            onKeyDown={(e) => splitHandleKey(e, slot, idx)}
+                          />
+                        )}
+                      </span>
+                    );
+                  })}
+                </span>
+              )}
               {rows[slot].map((row, rowIdx) => {
                 const selectedPlayer = row.playerId ? roster.find((p) => p.id === row.playerId) : undefined;
                 return (
-                  <div key={rowIdx} className="rotation-card-row">
+                  <div
+                    key={rowIdx}
+                    className="rotation-card-row"
+                    onDragOver={(e) => {
+                      if (!dragging) return;
+                      e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                      if (!dragging) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      placePlayer(dragging, slot, rowIdx);
+                    }}
+                  >
                     {selectedPlayer ? (
-                      <Face name={selectedPlayer.playerName} />
+                      <span
+                        className="rotation-drag-handle"
+                        draggable
+                        title={`Drag ${selectedPlayer.playerName} to another position`}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', selectedPlayer.id);
+                          setDragging({ playerId: selectedPlayer.id, from: { slot, rowIdx } });
+                        }}
+                        onDragEnd={() => { setDragging(null); setDropSlot(null); }}
+                      >
+                        <svg className="rotation-grip" width="10" height="14" viewBox="0 0 10 14" aria-hidden="true">
+                          <g fill="currentColor">
+                            <circle cx="2" cy="2" r="1.3" /><circle cx="8" cy="2" r="1.3" />
+                            <circle cx="2" cy="7" r="1.3" /><circle cx="8" cy="7" r="1.3" />
+                            <circle cx="2" cy="12" r="1.3" /><circle cx="8" cy="12" r="1.3" />
+                          </g>
+                        </svg>
+                        <Face name={selectedPlayer.playerName} />
+                      </span>
                     ) : (
                       <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />
                     )}
@@ -347,42 +571,62 @@ function RotationBuilderComponent({
                         </span>
                       )}
                     </div>
-                    {/* 2026-09-11, internal UI audit finding #3 ("Self-Scout Report"): an empty
-                        starter row used to show a real "36" in this field before anyone was
-                        assigned — the state still defaults new rows to 36 (so picking a starter
-                        fills in a sensible minutes value for free, unchanged), but the field now
-                        only displays it once `playerId` is actually set, matching the disabled
-                        state it's already in either way. */}
-                    <input
-                      type="number"
-                      min={0}
-                      max={GAME_MINUTES}
-                      value={row.playerId ? (minutesDraft[`${slot}-${rowIdx}`] ?? String(row.minutes)) : ''}
-                      placeholder="—"
-                      disabled={!row.playerId}
-                      className={`rotation-minutes-input ${row.playerId && overCapIds.has(row.playerId) ? 'minutes-warning' : ''}`}
-                      onChange={(e) => {
-                        const key = `${slot}-${rowIdx}`;
-                        const text = e.target.value;
-                        setMinutesDraft((prev) => ({ ...prev, [key]: text }));
-                        // Leave `row.minutes` alone while the box is genuinely empty or the user
-                        // is still mid-keystroke on a partial number — only a value that already
-                        // parses commits, same "don't snap to 0" reasoning as the state comment
-                        // above.
-                        if (text === '') return;
-                        const parsed = Number(text);
-                        if (!Number.isNaN(parsed)) updateRow(slot, rowIdx, { minutes: parsed });
-                      }}
-                      onBlur={() => {
-                        const key = `${slot}-${rowIdx}`;
-                        setMinutesDraft((prev) => {
-                          if (!(key in prev)) return prev;
-                          const next = { ...prev };
-                          delete next[key];
-                          return next;
-                        });
-                      }}
-                    />
+                    <span className="rotation-stepper">
+                      <button
+                        type="button"
+                        className="rotation-step-btn"
+                        aria-label={`${MINUTE_STEP} minutes less`}
+                        disabled={!row.playerId || row.minutes <= 0}
+                        onClick={() => stepMinutes(slot, rowIdx, -MINUTE_STEP)}
+                      >
+                        −
+                      </button>
+                      {/* 2026-09-11, internal UI audit finding #3 ("Self-Scout Report"): an empty
+                          starter row used to show a real "36" in this field before anyone was
+                          assigned — the state still defaults new rows to 36 (so picking a starter
+                          fills in a sensible minutes value for free, unchanged), but the field now
+                          only displays it once `playerId` is actually set, matching the disabled
+                          state it's already in either way. */}
+                      <input
+                        type="number"
+                        min={0}
+                        max={GAME_MINUTES}
+                        value={row.playerId ? (minutesDraft[`${slot}-${rowIdx}`] ?? String(row.minutes)) : ''}
+                        placeholder="—"
+                        disabled={!row.playerId}
+                        className={`rotation-minutes-input ${row.playerId && overCapIds.has(row.playerId) ? 'minutes-warning' : ''}`}
+                        onChange={(e) => {
+                          const key = `${slot}-${rowIdx}`;
+                          const text = e.target.value;
+                          setMinutesDraft((prev) => ({ ...prev, [key]: text }));
+                          // Leave `row.minutes` alone while the box is genuinely empty or the user
+                          // is still mid-keystroke on a partial number — only a value that already
+                          // parses commits, same "don't snap to 0" reasoning as the state comment
+                          // above.
+                          if (text === '') return;
+                          const parsed = Number(text);
+                          if (!Number.isNaN(parsed)) updateRow(slot, rowIdx, { minutes: parsed });
+                        }}
+                        onBlur={() => {
+                          const key = `${slot}-${rowIdx}`;
+                          setMinutesDraft((prev) => {
+                            if (!(key in prev)) return prev;
+                            const next = { ...prev };
+                            delete next[key];
+                            return next;
+                          });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="rotation-step-btn"
+                        aria-label={`${MINUTE_STEP} minutes more`}
+                        disabled={!row.playerId || row.minutes >= GAME_MINUTES}
+                        onClick={() => stepMinutes(slot, rowIdx, MINUTE_STEP)}
+                      >
+                        +
+                      </button>
+                    </span>
                     {rowIdx > 0 && (
                       <button className="remove-row-btn" title="Remove this contributor" onClick={() => removeRow(slot, rowIdx)}>
                         ×
@@ -391,6 +635,20 @@ function RotationBuilderComponent({
                   </div>
                 );
               })}
+              {selected && activePlayer ? (
+                <button
+                  type="button"
+                  className={`rotation-drop-zone is-tap ${fits ? 'is-fit' : 'is-off'}`}
+                  disabled={!canAddMore && !!rows[slot][0]?.playerId}
+                  onClick={() => placePlayer(selected, slot)}
+                >
+                  Add {activePlayer.playerName.split(' ').slice(-1)[0]} here{fits ? '' : ' (out of position)'}
+                </button>
+              ) : (
+                <span className={`rotation-drop-zone${dragging && dropSlot === slot ? ' is-over' : ''}`} aria-hidden>
+                  {dragging ? (dropSlot === slot ? 'Drop here to add' : fits ? 'Fits here' : 'Out of position') : '+ drag a player here'}
+                </span>
+              )}
               {canAddMore && (
                 <button className="add-row-btn" onClick={() => addRow(slot)}>
                   + add contributor
@@ -420,18 +678,56 @@ function RotationBuilderComponent({
         </p>
       )}
 
-      {/* 2026-09-25, user's question ("czy ten bench jest potrzebny?"): the old bench list repeated
-          every backup the position cards above already show (with the same grades and minutes).
-          The one thing only it told you — who isn't playing at all — stays, as a single line. */}
+      {/* 2026-09-25: the old bench list repeated every backup the cards above show; only who isn't
+          playing at all stays. Group C mockup 21: those players are now drag / tap sources. */}
       {bench.some(({ minutes }) => minutes === 0) && (
-        <p className="bench-unused">
-          Not playing:{' '}
-          {bench
-            .filter(({ minutes }) => minutes === 0)
-            .map(({ player }) => `${player.playerName} (${player.spanLabel})`)
-            .join(', ')}
-        </p>
+        <div className="rotation-bench">
+          <span className="rotation-bench-title">Bench — not in the rotation</span>
+          <div className="rotation-bench-chips">
+            {bench
+              .filter(({ minutes }) => minutes === 0)
+              .map(({ player }) => {
+                const isSelected = selected?.playerId === player.id && !selected.from;
+                return (
+                  <button
+                    type="button"
+                    key={player.id}
+                    className={`rotation-bench-chip${isSelected ? ' is-selected' : ''}`}
+                    draggable
+                    aria-pressed={isSelected}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', player.id);
+                      setDragging({ playerId: player.id });
+                    }}
+                    onDragEnd={() => { setDragging(null); setDropSlot(null); }}
+                    onClick={() => setSelected(isSelected ? null : { playerId: player.id })}
+                  >
+                    <Face name={player.playerName} />
+                    <span className="rotation-bench-name">{player.playerName} ({player.spanLabel})</span>
+                    <OverallTierBadge span={player} />
+                  </button>
+                );
+              })}
+          </div>
+        </div>
       )}
+
+      {selected && (() => {
+        const player = roster.find((p) => p.id === selected.playerId);
+        return player ? (
+          <div className="rotation-selected-bar" role="status">
+            <Face name={player.playerName} />
+            <span className="rotation-selected-text">
+              <b>{player.playerName} selected</b>
+              <span>Tap a position to add him</span>
+            </span>
+            <button type="button" className="rotation-selected-cancel" aria-label="Cancel selection" onClick={() => setSelected(null)}>
+              ×
+            </button>
+          </div>
+        ) : null;
+      })()}
 
       <button
         className="primary-btn"

@@ -118,6 +118,19 @@ export interface HistoricalCompMatch {
   match: number;
 }
 
+const COMP_TEAM_CODES: Record<string, string> = {
+  pistons: 'DET', bulls: 'CHI', lakers: 'LAL', suns: 'PHX', spurs: 'SAS', rockets: 'HOU', warriors: 'GSW',
+  clippers: 'LAC', grizzlies: 'MEM', heat: 'MIA', celtics: 'BOS', nuggets: 'DEN', bucks: 'MIL', knicks: 'NYK',
+  blazers: 'POR', sixers: 'PHI', magic: 'ORL', jazz: 'UTA', mavericks: 'DAL', thunder: 'OKC', raptors: 'TOR',
+};
+
+/** Franchise code and season for a comp's team badge (`TeamTile`), from its id ("pistons-2004"). */
+export function compBadge(comp: HistoricalComp): { code: string; seasonEnd: number } | null {
+  const [nickname, year] = comp.id.split('-');
+  const code = COMP_TEAM_CODES[nickname];
+  return code && Number(year) ? { code, seasonEnd: Number(year) } : null;
+}
+
 /** Below this, no comp is shown — the roster doesn't look like any of them. */
 export const HISTORICAL_COMP_MIN_MATCH = 70;
 

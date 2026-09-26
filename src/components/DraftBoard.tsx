@@ -16,6 +16,8 @@ import type { Rotation, Team } from '../engine/types';
 import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
 import { NOT_YET, STEALS_BLOCKS_NOTE, THREE_POINT_LINE_NOTE, hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
 import { EraYears } from './EraYears';
+import { TeamChip } from './TeamBadge';
+import { teamsForSpan } from '../engine/spanTeams';
 import { draftPool as fullDraftPool } from '../data/draftPool';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import {
@@ -2009,6 +2011,9 @@ export default function DraftBoard({
                             thing a player checks before a pick. */}
                         <span className="at-player-card-season">
                           <EraYears span={target} suffix="averages" />
+                          {teamsForSpan(target).slice(0, 2).map((t) => (
+                            <TeamChip key={t.code} code={t.code} seasonEnd={t.seasonEnd} />
+                          ))}
                         </span>
                         <span className="at-player-card-stats">
                           <span><b>{target.box.ppg.toFixed(1)}</b>PTS</span>

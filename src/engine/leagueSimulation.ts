@@ -47,23 +47,39 @@ export interface TeamLeagueEvaluation {
   bestMatchup: MatchupSummary;
   worstMatchup: MatchupSummary;
   championshipProbability: number;
+  /** Chance to win each round of the 16-team bracket: [round 1, round 2 (reach the semis), semis
+   * (reach the finals), finals (the title)]. The last entry equals `championshipProbability`. */
+  roundWinProbabilities: number[];
+  /** The opponent this team most often meets in each round it reaches, in bracket order
+   * (`opponentId` null for a round it never reached in the simulation). */
+  likelyPath: { opponentId: string | null; share: number }[];
 }
 
 /** One Monte Carlo pass through the bracket. `winProb(aIdx, bIdx)` returns aIdx's series win
  * probability against bIdx (indices into `seededTeamIds`, 0-based, already in rank order). */
-function simulateOneBracket(seededTeamIds: string[], winProb: (aId: string, bId: string) => number): string {
+function simulateOneBracket(
+  seededTeamIds: string[],
+  winProb: (aId: string, bId: string) => number,
+  onSeries?: (round: number, winner: string, a: string, b: string) => void,
+): string {
   let current = SEED_ORDER_16.map((seed) => seededTeamIds[seed - 1]);
+  let round = 0;
   while (current.length > 1) {
     const next: string[] = [];
     for (let i = 0; i < current.length; i += 2) {
       const a = current[i];
       const b = current[i + 1];
-      next.push(Math.random() < winProb(a, b) ? a : b);
+      const winner = Math.random() < winProb(a, b) ? a : b;
+      onSeries?.(round, winner, a, b);
+      next.push(winner);
     }
     current = next;
+    round++;
   }
   return current[0];
 }
+
+const BRACKET_ROUNDS = 4;
 
 /**
  * Full league evaluation for a completed 16-team draft. Returns one entry per team, indexed the
@@ -113,9 +129,21 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
   const winProb = (aId: string, bId: string) => matchupByPair.get(`${aId}|${bId}`)?.seriesWinProbA ?? 0.5;
 
   const championshipCount = new Map<string, number>(teams.map((t) => [t.id, 0]));
+  const roundWins = new Map<string, number[]>(teams.map((t) => [t.id, new Array(BRACKET_ROUNDS).fill(0)]));
+  // Per team and round: how often each opponent stood across the series.
+  const opponents = new Map<string, Map<string, number>[]>(
+    teams.map((t) => [t.id, Array.from({ length: BRACKET_ROUNDS }, () => new Map<string, number>())]),
+  );
+  const recordSeries = (round: number, winner: string, a: string, b: string) => {
+    roundWins.get(winner)![round]++;
+    for (const [self, other] of [[a, b], [b, a]]) {
+      const counts = opponents.get(self)![round];
+      counts.set(other, (counts.get(other) ?? 0) + 1);
+    }
+  };
   if (teams.length === 16) {
     for (let i = 0; i < simulations; i++) {
-      const champion = simulateOneBracket(seededTeamIds, winProb);
+      const champion = simulateOneBracket(seededTeamIds, winProb, recordSeries);
       championshipCount.set(champion, (championshipCount.get(champion) ?? 0) + 1);
     }
   }
@@ -144,6 +172,12 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
       bestMatchup: best,
       worstMatchup: worst,
       championshipProbability: teams.length === 16 ? (championshipCount.get(team.id) ?? 0) / simulations : 0,
+      roundWinProbabilities: roundWins.get(team.id)!.map((wins) => (teams.length === 16 ? wins / simulations : 0)),
+      likelyPath: opponents.get(team.id)!.map((counts) => {
+        const total = [...counts.values()].reduce((sum, n) => sum + n, 0);
+        const [opponentId, n] = [...counts.entries()].reduce<[string | null, number]>((best, entry) => (entry[1] > best[1] ? entry : best), [null, 0]);
+        return { opponentId, share: total > 0 ? n / total : 0 };
+      }),
     };
   });
 }
