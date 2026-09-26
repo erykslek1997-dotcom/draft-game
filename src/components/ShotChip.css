@@ -153,6 +153,11 @@
   height: 26px;
   font-size: 9.5px;
 }
+.bf-face--xs {
+  width: 16px;
+  height: 16px;
+  font-size: 7px;
+}
 .bf-face--md {
   width: 40px;
   height: 40px;
