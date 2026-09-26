@@ -207,3 +207,163 @@
   .qf-field { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .qf-field-card { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 6px 10px; }
 }
+
+/* ---- the draw (2026-09-26, the user: "brakuje tego dopaminowego hitu niczym z kasyna") ----
+   Five cards dealt per turn, turned over one after another; All-NBA and up glow in their tier
+   colour, Greatest peak/GOAT shimmer. Between turns the same five slots wait face down. */
+.qf-draw {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid var(--at-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--at-paper) 70%, transparent);
+}
+.qf-draw.is-live {
+  border-color: color-mix(in srgb, var(--at-accent) 45%, var(--at-line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--at-accent) 15%, transparent), 0 10px 30px -18px var(--at-accent);
+}
+.qf-draw-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin-bottom: 16px;
+}
+.qf-draw-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--at-ink);
+}
+.qf-draw-sub {
+  font-size: 13px;
+  color: var(--at-ink-soft);
+  flex: 1 1 240px;
+}
+.qf-draw-flash {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 999px;
+  animation: qf-flash-in 0.5s var(--reveal-delay, 1s) both cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.qf-draw-flash.is-hot {
+  color: #1a0f16;
+  background: #ec8ecb;
+}
+.qf-draw-flash.is-jackpot {
+  color: #2a1c00;
+  background: linear-gradient(100deg, #ffdc9b 20%, #fff6de 50%, #ffdc9b 80%);
+  background-size: 200% 100%;
+  animation:
+    qf-flash-in 0.5s var(--reveal-delay, 1s) both cubic-bezier(0.2, 1.6, 0.4, 1),
+    qf-shimmer 1.6s calc(var(--reveal-delay, 1s) + 0.5s) linear infinite;
+}
+.qf-draw-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+.qf-draw-slot {
+  display: flex;
+  perspective: 900px;
+  border-radius: 12px;
+  min-height: 250px;
+}
+.qf-draw-flip {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  transform-style: preserve-3d;
+  animation: qf-deal 0.55s calc(var(--i, 0) * 160ms) both cubic-bezier(0.3, 1.25, 0.5, 1);
+}
+.qf-draw-flip > .at-player-card {
+  flex: 1;
+  min-width: 0;
+  backface-visibility: hidden;
+}
+.qf-draw-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  border: 2px solid color-mix(in srgb, var(--at-accent) 40%, var(--at-line));
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--at-accent) 30%, transparent) 0 18%, transparent 19%),
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)) 0 8px, var(--at-paper) 8px 16px);
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+}
+.qf-draw-back.is-static {
+  position: relative;
+  flex: 1;
+  transform: none;
+  opacity: 0.55;
+}
+.qf-draw-slot.is-hot .at-player-card {
+  box-shadow: 0 0 0 1px var(--tier-frame), 0 0 22px -4px var(--tier-frame);
+}
+.qf-draw-slot.is-jackpot .at-player-card {
+  box-shadow: 0 0 0 1px var(--tier-frame), 0 0 30px 0 var(--tier-frame);
+  animation: qf-glow 1.8s calc(var(--i, 0) * 160ms + 0.55s) ease-in-out infinite;
+}
+.qf-draw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+@keyframes qf-deal {
+  0% { transform: translateY(18px) rotateY(180deg); opacity: 0; }
+  35% { opacity: 1; }
+  100% { transform: translateY(0) rotateY(0deg); opacity: 1; }
+}
+@keyframes qf-flash-in {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes qf-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes qf-glow {
+  0%, 100% { box-shadow: 0 0 0 1px var(--tier-frame), 0 0 18px -2px var(--tier-frame); }
+  50% { box-shadow: 0 0 0 1px var(--tier-frame), 0 0 36px 4px var(--tier-frame); }
+}
+@media (max-width: 900px) {
+  .qf-draw-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .qf-draw { padding: 16px 0 0; border: none; border-top: 1px solid var(--at-line); border-radius: 0; background: none; box-shadow: none; }
+  .qf-draw.is-live { box-shadow: none; }
+  .qf-draw-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .qf-draw-slot { min-height: 220px; }
+  .qf-draw-slot.is-waiting:nth-child(n + 3) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qf-draw-flip,
+  .qf-draw-flash,
+  .qf-draw-slot.is-jackpot .at-player-card { animation: none; }
+}
+
+/* Result screen (2026-09-26): the All-Time Draft's results hero, cut down to a five. */
+.qf-result .results-hero { margin-bottom: 24px; }
+.qf-result .qf-why { margin-top: 14px; }
+.qf-result .results-section-title { margin: 8px 0 12px; }
+.qf-field-score {
+  flex: none;
+  min-width: 34px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.qf-field-card .qf-field-score { color: #fff; opacity: 1; }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
@@ -7,9 +7,12 @@ import {
   makeQuickPick,
   resolveQuickAiPickIfNeeded,
   autoFinishQuickDraft,
-  isQuickPickLegal,
-  quickPickBlockReason,
   quickPickBudget,
+  humanOffer,
+  quickOfferTier,
+  rerollHumanOffer,
+  QUICK_OFFER_SIZE,
+  QUICK_REROLLS,
   finalizeQuickRotation,
   QUICK_CAP_LIMIT,
   QUICK_ROUNDS,
@@ -19,19 +22,18 @@ import { peakDraftPool } from '../engine/peakDraftPool';
 import { totalFga, TEAM_COUNT, STARTER_SLOTS } from '../engine/positions';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import { scoreLineup, WEIGHTED_AXES, WEAK_AXIS_REASON, type Lineup, type LineupScore } from '../engine/bestFive';
-import { allStarCount } from '../engine/allStarLookup';
-import { tierRank, overallTierForSpan, displayTalentForSpan } from '../engine/grades';
+import { tierRank, displayTalentForSpan } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { teamCodes, teamLabel } from '../engine/teamNames';
-import { CapIcon, Face, ShotChip, ShotsMeter } from './ShotChip';
-import { DraftPlayerCard } from './DraftPlayerCard';
+import { Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
+import { DraftPlayerCard, TIER_FRAME_COLOR } from './DraftPlayerCard';
 import { TeamTile } from './TeamBadge';
 import { markStepDone } from './pathProgress';
 import { rankTeams } from '../engine/scoring';
 import { fitScore } from '../engine/fit';
 import { bestHistoricalComp, compBadge } from '../engine/historicalComps';
 import DraftLottery from './DraftLottery';
-import { ALL_POSITIONS } from './DraftBoard';
+import { MetricBar, ScoreChip, qualityColor, scoreBand } from './ResultsScreen';
 import './QuickFive.css';
 import { AI_SPEED_LABELS, useAiSpeed } from './aiSpeed';
 import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPressureNote, TurnBudgetText, type TickerPick } from './DraftChrome';
@@ -50,6 +52,7 @@ type Phase = 'lottery' | 'draft' | 'results';
 // choice, a different cap/round count).
 const QUICK_HOW_TO_PLAY = [
   { title: 'Draft', body: `${TEAM_COUNT} teams take turns, ${QUICK_ROUNDS} rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
+  { title: 'The draw', body: `Each turn you're dealt ${QUICK_OFFER_SIZE} players who fit your caps — top tiers are rare cards. Draft one, or redraw once per draft.` },
   { title: 'Caps', body: `Every pick costs caps — his shots per game in those years. Your five starters have to fit under ${QUICK_CAP_LIMIT} caps.` },
   { title: 'Peak only', body: "No choosing years — every player is shown at his single best season, so each pick is quick." },
   { title: 'Grading', body: 'The judge scores your five the same way the full draft does — talent, offense, defense, spacing, fit — right after your last pick.' },
@@ -90,13 +93,9 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep }: Props) 
   function restart(seed?: number) {
     const humanName = state.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
     setState(createQuickDraft(humanName, seed));
-    setSearch('');
-    setSelectedPosition('ALL');
     setPhase('lottery');
   }
   const [autoFinishing, setAutoFinishing] = useState(false);
-  const [search, setSearch] = useState('');
-  const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL'>('ALL');
 
   const teamIdx = currentTeamIndex(state);
   const currentTeam = state.teams[teamIdx];
@@ -165,11 +164,8 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep }: Props) 
           currentTeam={currentTeam}
           humanTeam={humanTeam}
           teamCodeByTeamId={teamCodeByTeamId}
-          search={search}
-          setSearch={setSearch}
-          selectedPosition={selectedPosition}
-          setSelectedPosition={setSelectedPosition}
           onPick={handlePick}
+          onReroll={() => setState((s) => rerollHumanOffer(s))}
           onAutoFinish={handleAutoFinish}
           autoFinishing={autoFinishing}
           teamIdx={teamIdx}
@@ -190,38 +186,14 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep }: Props) 
   );
 }
 
-/**
- * 2026-09-11, user-reported live ("długi czas ładowania po wciśnięciu play"): the whole candidate
- * pool's expensive per-player tier lookup (`overallTierForSpan`/`tierContextFor` chain through
- * several real-data corrections, not cheap — DraftBoard.tsx's own "bardzo wolno" perf bug,
- * 2026-09-02, was exactly this same trap) used to be recomputed on EVERY pick, because it lived in
- * a `useMemo` keyed on `state` (which changes every pick, correctly, but only the "which players
- * are still available" part actually needs to). Built once here, at module scope, over the whole
- * immutable `peakDraftPool` — same fix shape DraftBoard.tsx's own `enrichedGroups` memo already
- * uses — so a pick, a search keystroke, or a position-filter click only ever re-runs the CHEAP
- * filter/sort pass in `filtered` below, never this. One entry per player already (see this file's
- * own top docstring), so no per-player span-grouping/reduce is needed here at all, unlike
- * DraftBoard.tsx's own multi-span pool.
- */
-/** Cards shown at first and per "See more" — same paging as the All-Time Draft grid. */
-const QUICK_VISIBLE_STEP = 30;
-
-const allEnrichedOnce = peakDraftPool.map((span) => ({
-  span,
-  tier: overallTierForSpan(tierContextFor(span)),
-}));
-
 function QuickDraftBoard({
   state,
   canPick,
   currentTeam,
   humanTeam,
   teamCodeByTeamId,
-  search,
-  setSearch,
-  selectedPosition,
-  setSelectedPosition,
   onPick,
+  onReroll,
   onAutoFinish,
   autoFinishing,
   teamIdx,
@@ -232,43 +204,31 @@ function QuickDraftBoard({
   currentTeam: Team;
   humanTeam: Team;
   teamCodeByTeamId: Map<string, string>;
-  search: string;
-  setSearch: (v: string) => void;
-  selectedPosition: Position | 'ALL';
-  setSelectedPosition: (v: Position | 'ALL') => void;
   onPick: (id: string) => void;
+  onReroll: () => void;
   onAutoFinish: () => void;
   autoFinishing: boolean;
   teamIdx: number;
   boardOpen: boolean;
 }) {
-  // Cheap pass only: drop drafted players, position filter, search box, tier sort — no per-player
-  // tier-lookup call here, that's all already done once in `allEnrichedOnce` above. Re-runs on
-  // every pick AND every keystroke, same as DraftBoard.tsx's own `groups` memo.
   // 2026-09-24: this pick's shot budget (the same "can you still fill the five?" rule every team
   // now plays under) and an "only players that fit" filter the stuck-board notice can switch on.
   const budget = useMemo(() => quickPickBudget(state), [state]);
-  const [onlyFits, setOnlyFits] = useState(false);
   const priciestAvailable = useMemo(
-    () => allEnrichedOnce.reduce((max, e) => (!state.draftedIds.has(e.span.id) && e.span.fga > max ? e.span.fga : max), 0),
-    [allEnrichedOnce, state.draftedIds],
+    () => peakDraftPool.reduce((max, p) => (!state.draftedIds.has(p.id) && p.fga > max ? p.fga : max), 0),
+    [state.draftedIds],
   );
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return allEnrichedOnce
-      .filter((e) => !state.draftedIds.has(e.span.id))
-      .filter((e) => (onlyFits && canPick ? isQuickPickLegal(state, e.span.id) : true))
-      .filter((e) => (selectedPosition !== 'ALL' ? e.span.primaryPosition === selectedPosition : true))
-      .filter((e) => e.span.playerName.toLowerCase().includes(q))
-      .sort((a, b) => {
-        const tierDiff = tierRank(b.tier) - tierRank(a.tier);
-        if (tierDiff !== 0) return tierDiff;
-        return allStarCount(b.span.playerName) - allStarCount(a.span.playerName);
-      })
-      .slice(0, 80);
-  }, [state, search, selectedPosition, onlyFits, canPick]);
-  const [visibleCount, setVisibleCount] = useState(QUICK_VISIBLE_STEP);
-  const anyLegal = !canPick || filtered.slice(0, visibleCount).some((e) => isQuickPickLegal(state, e.span.id));
+  const offer = useMemo(() => (canPick ? humanOffer(state) : []), [state, canPick]);
+  const drawKey = `${state.history.length}-${state.rerollsUsed}`;
+  const drawHeat = useMemo(() => {
+    const best = Math.max(-1, ...offer.map((p) => {
+      const t = quickOfferTier(p);
+      return t === 'Salary Glue' ? -1 : tierRank(t);
+    }));
+    if (best >= tierRank('Greatest peak')) return { level: 'jackpot', label: 'Jackpot!' };
+    if (best >= tierRank('MVP')) return { level: 'hot', label: 'MVP pull' };
+    return null;
+  }, [offer]);
   const recentPicks: TickerPick[] = useMemo(() => {
     const spanById = new Map(state.teams.flatMap((t) => t.roster.map((p) => [p.id, p] as const)));
     return state.history
@@ -398,22 +358,6 @@ function QuickDraftBoard({
             <RimPressureNote starters={humanStarters} />
           </div>
         )}
-        {canPick && !anyLegal && (
-          <div className="at-budget-notice">
-            <span>None of the players shown fit this pick — it can cost up to <CapIcon /> {budget.maxThisPick} caps.</span>
-            <button
-              type="button"
-              className="at-budget-notice-btn at-cond"
-              onClick={() => {
-                setSearch('');
-                setSelectedPosition('ALL');
-                setOnlyFits(true);
-              }}
-            >
-              Show players that fit
-            </button>
-          </div>
-        )}
       </div>
 
       <ShotsMeter used={humanShotsUsed} cap={QUICK_CAP_LIMIT} label="Your caps" />
@@ -466,68 +410,75 @@ function QuickDraftBoard({
         ) : null;
       })()}
 
-      <div className="at-controls-row">
-        <input
-          className="at-search-input"
-          placeholder="Search players…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <button className="secondary-btn" style={{ marginLeft: 'auto' }} disabled={autoFinishing} onClick={onAutoFinish}>
-          {autoFinishing ? 'Finishing…' : 'Auto-finish'}
-        </button>
-      </div>
-      <div className="at-controls-row at-position-filters">
-        <button className={`at-filter-pill at-cond ${selectedPosition === 'ALL' ? 'at-active' : ''}`} onClick={() => setSelectedPosition('ALL')}>
-          All
-        </button>
-        {ALL_POSITIONS.map((pos) => (
-          <button key={pos} className={`at-filter-pill at-cond ${selectedPosition === pos ? 'at-active' : ''}`} onClick={() => setSelectedPosition(pos)}>
-            {pos}
+      {/* 2026-09-26, the user: "brakuje tego dopaminowego hitu niczym z kasyna. Ograniczmy wybór
+          do 5 graczy. Niech po każdym wyborze gracz widzi jacy gracze się losują." No browsing the
+          pool: each turn deals five legal players (`humanOffer`), turned over one by one, the rare
+          tiers lit up. Between turns the five cards wait face down. */}
+      <section className={`qf-draw${canPick ? ' is-live' : ''}`} aria-live="polite">
+        <div className="qf-draw-head">
+          <span className="qf-draw-title at-cond">{canPick ? 'Your draw' : 'Next draw'}</span>
+          <span className="qf-draw-sub">
+            {canPick
+              ? 'Five players dealt from the pool — the higher the tier, the rarer the card. Draft one.'
+              : picksAway
+                ? `Your cards turn over in ${picksAway} pick${picksAway === 1 ? '' : 's'}.`
+                : 'Waiting for the board…'}
+          </span>
+          {canPick && drawHeat && (
+            <span key={drawKey} className={`qf-draw-flash is-${drawHeat.level}`} style={{ '--reveal-delay': `${QUICK_OFFER_SIZE * 160 + 350}ms` } as CSSProperties}>
+              {drawHeat.label}
+            </span>
+          )}
+        </div>
+        <div className="qf-draw-cards" key={canPick ? drawKey : 'waiting'}>
+          {canPick
+            ? offer.map((span, i) => {
+                const tier = quickOfferTier(span);
+                const rank = tier === 'Salary Glue' ? -1 : tierRank(tier);
+                const heat = rank >= tierRank('Greatest peak') ? ' is-jackpot' : rank >= tierRank('All-NBA') ? ' is-hot' : '';
+                return (
+                  <div
+                    key={span.id}
+                    className={`qf-draw-slot${heat}`}
+                    style={{ '--i': i, '--tier-frame': TIER_FRAME_COLOR[tier] } as CSSProperties}
+                  >
+                    <div className="qf-draw-flip">
+                      <DraftPlayerCard
+                        span={span}
+                        cap={QUICK_CAP_LIMIT}
+                        tier={tier}
+                        legal
+                        draftTitle={`Draft ${span.playerName}`}
+                        onDraft={() => onPick(span.id)}
+                      />
+                      <span className="qf-draw-back" aria-hidden />
+                    </div>
+                  </div>
+                );
+              })
+            : Array.from({ length: QUICK_OFFER_SIZE }, (_, i) => (
+                <div key={i} className="qf-draw-slot is-waiting" aria-hidden>
+                  <span className="qf-draw-back is-static" />
+                </div>
+              ))}
+        </div>
+        <div className="qf-draw-actions">
+          {canPick && (
+            <button
+              type="button"
+              className="secondary-btn"
+              disabled={state.rerollsUsed >= QUICK_REROLLS}
+              title="Deal five new cards for this pick — once per draft."
+              onClick={onReroll}
+            >
+              Redraw ({QUICK_REROLLS - state.rerollsUsed} left)
+            </button>
+          )}
+          <button className="secondary-btn" disabled={autoFinishing} onClick={onAutoFinish}>
+            {autoFinishing ? 'Finishing…' : 'Auto-finish'}
           </button>
-        ))}
-        <button className={`at-filter-pill at-cond ${onlyFits ? 'at-active' : ''}`} aria-pressed={onlyFits} onClick={() => setOnlyFits((v) => !v)}>
-          Fits my budget
-        </button>
-      </div>
-
-      {/* 2026-09-26 (the user: "quick 5 może bardziej przypominać normalny draft"): the same
-          player cards as the All-Time Draft — tier frame, TAL, team chips, the season's box line —
-          without the Scouting button, since every player comes at his single best season here. */}
-      <div className="at-player-cards">
-        {filtered.slice(0, visibleCount).map(({ span, tier }) => {
-          const legal = canPick && isQuickPickLegal(state, span.id);
-          return (
-            <DraftPlayerCard
-              key={span.id}
-              span={span}
-              cap={QUICK_CAP_LIMIT}
-              tier={span.fga < 2 ? 'Salary Glue' : tier}
-              legal={legal}
-              draftTitle={
-                !canPick
-                  ? `${teamLabel(currentTeam)} is picking…`
-                  : legal
-                    ? `Draft ${span.playerName}`
-                    : quickPickBlockReason(state, span.id) === 'reserve'
-                      ? `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${budget.maxThisPick} caps.`
-                      : `Over the ${QUICK_CAP_LIMIT}-cap limit — pick a cheaper player.`
-              }
-              onDraft={() => onPick(span.id)}
-            />
-          );
-        })}
-      </div>
-      {visibleCount < filtered.length && (
-        <button
-          type="button"
-          className="at-legend-toggle"
-          style={{ marginTop: 10 }}
-          onClick={() => setVisibleCount((c) => Math.min(filtered.length, c + QUICK_VISIBLE_STEP))}
-        >
-          See {Math.min(QUICK_VISIBLE_STEP, filtered.length - visibleCount)} more ({filtered.length - visibleCount} left)
-        </button>
-      )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -611,57 +562,115 @@ function QuickResults({
   // already computes but nothing here was reading yet.
   const weakest = [...WEIGHTED_AXES].sort((a, b) => human.score[a.key] - human.score[b.key])[0];
 
+  const fit = useMemo(() => fitScore(human.team), [human]);
+  const starters = STARTER_SLOTS.map((slot) => {
+    const id = human.team.rotation?.slots[slot]?.[0]?.playerId;
+    return { slot, player: id ? human.team.roster.find((p) => p.id === id) : undefined };
+  });
+  const top = ranked[0].score.composite;
+
+  // 2026-09-26, the user: "ekran końcowy może być tak samo zaprojektowany jak ten w all-time
+  // drafcie, po prostu mniej szczegółowy". The All-Time Draft's results hero (finish, rating,
+  // style, team profile chips, a few bars, the lineup by position), cut down to a five.
   return (
-    <div className="at-card bf-result">
-      <div className={`qf-hero qf-hero-t${tier.tone}`}>
-        <span className="qf-hero-rank">
-          {ordinal(humanRank)} of {TEAM_COUNT} — {tier.label}
-        </span>
-        <span className="qf-hero-team">{teamLabel(human.team)} · score {human.score.composite}</span>
-        {comp && (
-          <span className="qf-hero-comp">
-            {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
-            <span>Plays like the <b>{comp.comp.team}</b> <small>{comp.match}% match</small></span>
+    <div className="at-card bf-result qf-result">
+      <header className="results-hero">
+        <div className="results-hero-finish">
+          <span className="results-hero-eyebrow">You finished</span>
+          <span className="results-hero-rank">
+            <b>{ordinal(humanRank)}</b>
+            <i>/ {TEAM_COUNT}</i>
           </span>
-        )}
-      </div>
-
-      <div className="bf-bars">
-        {barKeys.map((key) => (
-          <div key={key} className="bf-bar-row">
-            <span className="bf-bar-label at-cond">{key[0].toUpperCase() + key.slice(1)}</span>
-            <span className="bf-bar-track">
-              <span className="bf-bar-fill" style={{ width: `${Math.max(0, Math.min(100, human.score[key] as number))}%` }} />
+          <span className={`results-hero-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
+          <span className="results-hero-team">{teamLabel(human.team)}</span>
+        </div>
+        <div className="results-hero-stats">
+          <div className={`results-hero-stat results-hero-overall score-t${scoreBand(human.score.composite)}`}>
+            <span className="results-hero-stat-label">Team rating</span>
+            <span className="results-hero-stat-value">
+              {human.score.composite}
+              <small className="results-hero-stat-of">/100</small>
             </span>
-            <span className="bf-bar-val">{Math.round(human.score[key] as number)}</span>
           </div>
-        ))}
-      </div>
-
-      <div className="qf-why">
-        <p>
-          Your weakest axis is <b>{weakest.label} ({Math.round(human.score[weakest.key])})</b>. {WEAK_AXIS_REASON[weakest.key](human.score)}
+        </div>
+        <p className="results-hero-gap">
+          {top > human.score.composite
+            ? <>Best team rating in the field: <b>{top}</b> — you're <b>{top - human.score.composite}</b> behind.</>
+            : <>You have the best team rating in the field.</>}
         </p>
-        {human.score.weakLink && (
-          <p>
-            Defensively, <b>{human.score.weakLink}</b> is the softest spot — an opponent will attack him every possession.
+        {comp && (
+          <p className="results-hero-identity">
+            <span className="results-hero-comp">
+              {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
+              <span>Plays like the <b>{comp.comp.team}</b> <small>{comp.match}% match</small></span>
+            </span>
           </p>
         )}
-        {human.score.notes[0] && <p>{human.score.notes[0]}</p>}
-      </div>
+        <div className="results-hero-dashboard">
+          <div className="results-hero-scores">
+            <span className="share-modal-face-group-label">Team profile</span>
+            <div className="results-hero-scores-row">
+              {barKeys.map((key) => (
+                <ScoreChip key={key} label={key[0].toUpperCase() + key.slice(1)} value={Math.round(human.score[key] as number)} />
+              ))}
+            </div>
+            <div className="analysis-bars-split results-hero-bars">
+              <div className="analysis-bars-col analysis-bars-col--offense">
+                <span className="analysis-bars-col-label">Offense</span>
+                <MetricBar label="Creation" value={fit.components.creationStructure} hint="Half-court shot creation the five can generate on its own." />
+                <MetricBar label="Rim pressure" value={fit.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
+              </div>
+              <div className="analysis-bars-col analysis-bars-col--defense">
+                <span className="analysis-bars-col-label">Defense</span>
+                <MetricBar label="Role coverage" value={fit.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim." />
+                <MetricBar label="Hunt resistance" value={fit.components.huntResistance} hint="How well the five hides its weakest defender in a playoff series." />
+              </div>
+            </div>
+            <div className="qf-why">
+              <p>
+                Your weakest axis is <b>{weakest.label} ({Math.round(human.score[weakest.key])})</b>. {WEAK_AXIS_REASON[weakest.key](human.score)}
+              </p>
+              {human.score.weakLink && (
+                <p>
+                  Defensively, <b>{human.score.weakLink}</b> is the softest spot — an opponent will attack him every possession.
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="results-hero-rotation">
+            <span className="share-modal-face-group-label">Starting five</span>
+            <div className="results-hero-rotation-columns">
+              {starters.map(({ slot, player }) => {
+                const tal = player ? displayTalentForSpan(tierContextFor(player)) : 0;
+                return (
+                  <div className="results-hero-rotation-col" key={slot}>
+                    <span className="results-hero-rotation-col-label">{slot}</span>
+                    {player && (
+                      <div className="results-hero-rotation-entry" title={`${player.playerName} (${player.spanLabel})`}>
+                        <Face name={player.playerName} size="sm" />
+                        <span className="results-hero-rotation-entry-info">
+                          <span className="results-hero-rotation-entry-name">{shortenName(player.playerName, 12)}</span>
+                          <span className="results-hero-rotation-entry-min">{player.spanLabel}</span>
+                        </span>
+                        <span className="rotation-entry-tal" style={{ background: qualityColor(tal) }}>{tal}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </header>
 
-      <div className="at-legend-row" style={{ marginTop: 4 }}>
-        <p className="at-caption" style={{ marginTop: 0 }}>
-          Field
-        </p>
-      </div>
+      <h2 className="results-section-title">Final team ranking</h2>
       <div className="qf-field">
         {ranked.map((r, i) => (
           <div key={r.team.id} className={`qf-field-card ${r.team.isHuman ? 'qf-field-card--you' : ''}`} title={teamCodeByTeamId.get(r.team.id)}>
             <strong>
               {i + 1}. {teamLabel(r.team)} {r.team.isHuman && '(You)'}
             </strong>
-            <span>score {r.score.composite}</span>
+            <span className="qf-field-score" style={{ background: qualityColor(r.score.composite) }}>{r.score.composite}</span>
           </div>
         ))}
       </div>
