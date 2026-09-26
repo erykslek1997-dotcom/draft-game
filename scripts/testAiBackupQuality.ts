@@ -1,5 +1,6 @@
 import { assessNeeds, pickForAi } from '../src/engine/aiDrafter';
 import { activeDraftPool } from '../src/engine/draft';
+import { players } from '../src/data/players';
 import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
 import { displayTalentForSpan, tierContextFor } from '../src/engine/grades';
 import { CAP_LIMIT } from '../src/engine/positions';
@@ -9,8 +10,11 @@ function check(condition: unknown, message: string): asserts condition {
   console.log(`PASS: ${message}`);
 }
 
+/** A rostered (already drafted) span: read from the full span list, not the lean draft pool — the
+ * pool keeps changing which windows it shows as TAL moves (the notes below), while the roster
+ * this fixture reproduces is fixed. */
 function pick(name: string, spanLabel: string): PlayerSpan {
-  const player = activeDraftPool.find(
+  const player = players.find(
     (candidate) => normalizePlayerName(candidate.playerName) === normalizePlayerName(name) && candidate.spanLabel === spanLabel,
   );
   if (!player) throw new Error(`Missing backup-quality fixture: ${name}, ${spanLabel}`);

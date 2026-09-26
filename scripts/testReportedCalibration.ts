@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { draftPool } from '../src/data/draftPool';
 import type { PlayerSpan } from '../src/data/schema';
-import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { computeDefensiveTalent, computeDefensiveTalentRegularSeason } from '../src/engine/defensiveTalent';
 import { autoAssignRotation, totalMinutesForPlayer } from '../src/engine/rotation';
 import { benchDepthScore, defenseScore, offenseScore, rotationScore, spacingScore } from '../src/engine/scoring';
 import { fitScore } from '../src/engine/fit';
@@ -39,7 +39,8 @@ const klayPostInjury = span('Klay Thompson', '2022-24');
 // liability" a D-/F grade claims. Opp TS% (-0.9pp with him on, real shot-quality signal) leans
 // the read modestly positive on top of that, so the floor lands at 60 — roughly the 60th
 // percentile of his own real peer group (SG Wing Stopper/Chaser), not a claim of being elite.
-assert(computeDefensiveTalent(klayPrime) === 60, 'Klay 2015-17 is floored to a modestly-above-peer-median defender (real WOWY: flat DEF, better Opp TS%).');
+// Regular-season D-TAL: the displayed one adds the playoff defense on top (`playoffImpact.ts`).
+assert(computeDefensiveTalentRegularSeason(klayPrime) === 60, 'Klay 2015-17 is floored to a modestly-above-peer-median defender (real WOWY: flat DEF, better Opp TS%).');
 // 2026-08-31, user's own follow-up catch: a one-off named TAL bonus was tried to carry this same
 // evidence into real draft value (not just the badge), then reverted — it applied to only this
 // ONE Klay span, so 2017-19 (real D-TAL 67, C+, already genuinely higher than 2015-17's floored

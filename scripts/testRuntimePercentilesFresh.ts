@@ -8,7 +8,7 @@
  */
 import { players } from '../src/data/players';
 import type { Position } from '../src/data/schema';
-import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { computeDefensiveTalentRegularSeason as computeDefensiveTalent } from '../src/engine/defensiveTalent';
 import { functionalPosition } from '../src/engine/functionalPosition';
 import { normalizedDefenseForFit } from '../src/engine/talent';
 import { runtimeDefenseTalentPercentile, runtimeImpliedDefensePercentile } from '../src/engine/runtimePercentiles';
