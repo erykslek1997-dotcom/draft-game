@@ -64,7 +64,7 @@
 /* ---- slot row ---- */
 .bf-slot-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -147,11 +147,16 @@
   text-transform: uppercase;
   margin-bottom: 8px;
 }
-/* 3×3 board — the nine-player pool as a grid of tiles */
+/* The five dealt for a position, one row on desktop (2026-09-26: five per slot, was 3×3). */
 .bf-pool {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 760px) {
+  .bf-pool {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 @media (max-width: 460px) {
   .bf-pool {
@@ -501,3 +506,47 @@
 .bf-submit-hint.is-ready { color: var(--at-good, #7fd68a); }
 .bf-submit-row { flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .bf-pool-teams { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+
+/* ---- the deal (2026-09-26, the user: "brakuje tego dopaminowego hitu niczym z kasyna") ----
+   A position's five turn over one after another the first time it comes up; a slot not dealt yet
+   sits face down in the slot row. */
+.bf-picker-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--at-ink); }
+.bf-picker-sub { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--at-ink-soft); }
+.bf-deal { position: relative; display: flex; perspective: 900px; }
+.bf-deal > .bf-pool-card { flex: 1; min-width: 0; }
+.bf-deal-back { display: none; }
+.bf-pool--dealing .bf-deal { transform-style: preserve-3d; animation: bf-deal 0.55s calc(var(--i, 0) * 170ms) both cubic-bezier(0.3, 1.25, 0.5, 1); }
+.bf-pool--dealing .bf-deal > .bf-pool-card { backface-visibility: hidden; }
+.bf-pool--dealing .bf-deal-back {
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--at-accent) 40%, var(--at-line));
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--at-accent) 30%, transparent) 0 16%, transparent 17%),
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)) 0 8px, var(--at-paper) 8px 16px);
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+}
+/* Transform only: an opacity below 1 flattens the 3D context and shows the card's mirrored back. */
+@keyframes bf-deal {
+  0% { transform: translateY(16px) rotateY(180deg); }
+  100% { transform: translateY(0) rotateY(0deg); }
+}
+.bf-slot--hidden { cursor: default; opacity: 0.75; border-style: dashed; }
+.bf-slot--hidden .bf-slot-name { color: var(--at-ink-faint); }
+.bf-face--card {
+  border-radius: 6px;
+  background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 18%, var(--at-paper)) 0 5px, var(--at-paper) 5px 10px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bf-pool--dealing .bf-deal { animation: none; }
+  .bf-pool--dealing .bf-deal-back { display: none; }
+}
+.bf-slot { min-width: 0; }
+.bf-slot-name { overflow-wrap: break-word; }
+@media (max-width: 460px) {
+  .bf-slot { padding-left: 3px; padding-right: 3px; }
+  .bf-slot-name { font-size: 9.5px; letter-spacing: -0.02em; max-width: 100%; overflow: hidden; overflow-wrap: normal; text-overflow: ellipsis; }
+}

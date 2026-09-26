@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import './BestFive.css';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
@@ -110,6 +110,11 @@ export default function BestFive({ onBack, onNextStep }: Props) {
   const [initialDaily] = useState(() => savedDailyLineup(today, pool));
   const [lineup, setLineup] = useState<Lineup>(() => initialDaily ?? {});
   const [activeSlot, setActiveSlot] = useState<Position | null>(initialDaily ? null : 'PG');
+  // 2026-09-26, the user: "ograniczmy wybór do 5 graczy. Niech po każdym wyborze gracz widzi jacy
+  // gracze się losują." Positions are dealt one at a time: a slot's five stay face down until the
+  // pick before it, then turn over card by card (`freshSlot` plays that reveal once).
+  const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(initialDaily ? STARTER_SLOTS : ['PG']));
+  const [freshSlot, setFreshSlot] = useState<Position | null>(initialDaily ? null : 'PG');
   const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(() =>
     initialDaily ? resultFor(initialDaily, pool, shotsCap) : null,
   );
@@ -125,9 +130,16 @@ export default function BestFive({ onBack, onNextStep }: Props) {
 
   function pick(slot: Position, span: PlayerSpan) {
     setLineup((prev) => ({ ...prev, [slot]: span }));
-    // Advance to the next still-empty slot; if there is none (board full, or re-picking the last
-    // gap), stay on the current slot so the picker stays open for another change of mind.
-    const nextEmpty = STARTER_SLOTS.find((s) => s !== slot && !lineup[s] && s !== activeSlot);
+    // Advance to the next still-empty slot, in PG→C order; if there is none (board full, or
+    // re-picking the last gap), stay on the current slot so the picker stays open for another
+    // change of mind. A slot seen for the first time gets dealt.
+    const nextEmpty = STARTER_SLOTS.find((s) => s !== slot && !lineup[s]);
+    if (nextEmpty && !revealed.has(nextEmpty)) {
+      setRevealed((prev) => new Set(prev).add(nextEmpty));
+      setFreshSlot(nextEmpty);
+    } else {
+      setFreshSlot(null);
+    }
     setActiveSlot(nextEmpty ?? activeSlot);
   }
 
@@ -149,6 +161,8 @@ export default function BestFive({ onBack, onNextStep }: Props) {
   function resetPicks() {
     setLineup({});
     setActiveSlot('PG');
+    setRevealed(new Set(['PG']));
+    setFreshSlot('PG');
     setResult(null);
   }
 
@@ -165,6 +179,8 @@ export default function BestFive({ onBack, onNextStep }: Props) {
     if (played) {
       setLineup(played);
       setActiveSlot(null);
+      setRevealed(new Set(STARTER_SLOTS));
+      setFreshSlot(null);
       setResult(resultFor(played, dailyPoolToday, dailyShotsCap(today)));
     } else {
       resetPicks();
@@ -202,7 +218,7 @@ export default function BestFive({ onBack, onNextStep }: Props) {
 
       {showHowToPlay && (
         <ol className="how-to-play-panel">
-          <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C — from today’s pool.</li>
+          <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C. Each position deals five players, and the next position turns over after you pick.</li>
           <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.</li>
           <li><b>Submit once.</b> No re-picking after you see your score for today’s puzzle.</li>
           <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against par.</li>
@@ -226,19 +242,25 @@ export default function BestFive({ onBack, onNextStep }: Props) {
           <div className="bf-slot-row">
             {STARTER_SLOTS.map((slot) => {
               const s = lineup[slot];
+              const dealt = revealed.has(slot);
               return (
                 <button
                   key={slot}
-                  className={`bf-slot ${activeSlot === slot ? 'bf-slot--active' : ''} ${s ? 'bf-slot--filled' : ''}`}
-                  onClick={() => setActiveSlot(slot)}
+                  className={`bf-slot ${activeSlot === slot ? 'bf-slot--active' : ''} ${s ? 'bf-slot--filled' : ''} ${dealt ? '' : 'bf-slot--hidden'}`}
+                  disabled={!dealt}
+                  title={dealt ? s?.playerName : 'Dealt after your previous pick'}
+                  onClick={() => {
+                    setFreshSlot(null);
+                    setActiveSlot(slot);
+                  }}
                 >
                   <span className="bf-slot-pos at-cond">{slot}</span>
-                  {s ? <Face name={s.playerName} /> : <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />}
-                  <span className="bf-slot-name">{s ? s.playerName : 'Tap to pick'}</span>
+                  {s ? <Face name={s.playerName} /> : <span className={`bf-face bf-face--sm bf-face--empty${dealt ? '' : ' bf-face--card'}`} aria-hidden />}
+                  <span className="bf-slot-name">{s ? shortenName(s.playerName, 0) : dealt ? 'Tap to pick' : 'Face down'}</span>
                   {s && <span className="bf-season bf-season--sm">{s.spanLabel}</span>}
                   {s && (
                     <span className="bf-slot-box">
-                      {boxLineShort(s)} · <ShotChip fga={s.fga} cap={shotsCap} />
+                      <ShotChip fga={s.fga} cap={shotsCap} />
                     </span>
                   )}
                   {s && (
@@ -262,13 +284,20 @@ export default function BestFive({ onBack, onNextStep }: Props) {
 
           {activeSlot && (
             <div className="bf-picker">
-              <div className="bf-picker-head at-cond">Pick your {SLOT_LABEL[activeSlot].toLowerCase()}</div>
-              <div className="bf-pool">
-                {pool.bySlot[activeSlot].map((span) => {
+              <div className="bf-picker-head at-cond">
+                Your draw · {SLOT_LABEL[activeSlot].toLowerCase()}
+                <span className="bf-picker-sub">
+                  {STARTER_SLOTS.indexOf(activeSlot) < STARTER_SLOTS.length - 1
+                    ? 'Five dealt for this spot — the next position turns over after you pick.'
+                    : 'Last spot — five dealt.'}
+                </span>
+              </div>
+              <div className={`bf-pool${freshSlot === activeSlot ? ' bf-pool--dealing' : ''}`} key={activeSlot}>
+                {pool.bySlot[activeSlot].map((span, i) => {
                   const chosen = lineup[activeSlot]?.id === span.id;
                   return (
+                    <div className="bf-deal" key={span.id} style={{ '--i': i } as CSSProperties}>
                     <button
-                      key={span.id}
                       className={`bf-pool-card ${chosen ? 'bf-pool-card--chosen' : ''}`}
                       title={span.playerName}
                       onClick={() => pick(activeSlot, span)}
@@ -297,6 +326,8 @@ export default function BestFive({ onBack, onNextStep }: Props) {
                       <span className="bf-pool-box">{boxLineShort(span)}</span>
                       <span className="bf-pool-box bf-pool-box--sub">{boxLineDetail(span)}</span>
                     </button>
+                    <span className="bf-deal-back" aria-hidden />
+                    </div>
                   );
                 })}
               </div>

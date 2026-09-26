@@ -14,8 +14,7 @@ import {
 } from './positions';
 import { pickForAi, type AiDraftRuleset } from './aiDrafter';
 import { bestPrimaryAssignment } from './rotation';
-import { effectiveTalent, displayTalentForSpan, overallTierForSpan, tierRank, type OverallTier } from './grades';
-import { tierContextWithSixthMan } from './sixthMan';
+import { effectiveTalent } from './grades';
 import { mulberry32, mixSeed, randomSeed } from './rng';
 import type { DraftHistoryEntry, Team, Rotation, SlotAssignment } from './types';
 
@@ -100,8 +99,6 @@ export interface QuickDraftState {
   complete: boolean;
   history: DraftHistoryEntry[];
   seed: number;
-  /** Redraws the human has spent this draft (see `humanOffer`). */
-  rerollsUsed: number;
 }
 
 const availableCache = new WeakMap<QuickDraftState, PlayerSpan[]>();
@@ -138,7 +135,6 @@ export function createQuickDraft(humanTeamName?: string, seed: number = randomSe
     complete: false,
     history: [],
     seed,
-    rerollsUsed: 0,
   };
 }
 
@@ -430,105 +426,4 @@ export function finalizeQuickRotation(team: Team): Team {
     slots[slot] = p ? [{ playerId: p.id, minutes: 48 } satisfies SlotAssignment] : [];
   }
   return { ...team, rotation: { slots } };
-}
-
-/**
- * 2026-09-26, the user: "brakuje tego dopaminowego hitu niczym z kasyna. Ograniczmy wybór do 5
- * graczy." On their turn the human no longer browses the whole pool: they get a draw of
- * `QUICK_OFFER_SIZE` legal players. Each card first rolls a tier by `OFFER_TIER_WEIGHTS` (only
- * tiers with a legal player left take part), then a player inside it, so the top tiers stay rare
- * however many role players the pool holds. The draw always carries at least one All-star or
- * better while one is legal, so a bad roll never leaves the human far behind the CPU teams, who
- * still pick from the full pool. Deterministic per pick and per redraw.
- */
-export const QUICK_OFFER_SIZE = 5;
-export const QUICK_REROLLS = 1;
-
-type OfferTier = OverallTier | 'Salary Glue';
-
-const OFFER_TIER_WEIGHTS: Record<OfferTier, number> = {
-  GOAT: 2,
-  'Greatest peak': 4,
-  MVP: 8,
-  'All-NBA': 16,
-  'All-star': 22,
-  Starter: 22,
-  'Sixth Man': 6,
-  'Role Player': 10,
-  'Bench Warmer': 6,
-  'Cigarette Butt': 3,
-  'Salary Glue': 1,
-};
-
-const offerTierCache = new Map<string, OfferTier>();
-
-/** The tier a draft card shows for `span` (the Quick 5 board's own rule: under 2 shots is Salary Glue). */
-export function quickOfferTier(span: PlayerSpan): OfferTier {
-  let tier = offerTierCache.get(span.id);
-  if (!tier) {
-    tier = span.fga < 2 ? 'Salary Glue' : overallTierForSpan(tierContextWithSixthMan(span));
-    offerTierCache.set(span.id, tier);
-  }
-  return tier;
-}
-
-const STAR_RANK = tierRank('All-star');
-
-function isStarTier(tier: OfferTier): boolean {
-  return tier !== 'Salary Glue' && tierRank(tier) >= STAR_RANK;
-}
-
-function drawOne(candidates: PlayerSpan[], rng: () => number): PlayerSpan {
-  const byTier = new Map<OfferTier, PlayerSpan[]>();
-  for (const p of candidates) {
-    const tier = quickOfferTier(p);
-    const list = byTier.get(tier);
-    if (list) list.push(p);
-    else byTier.set(tier, [p]);
-  }
-  const tiers = [...byTier.keys()];
-  const total = tiers.reduce((sum, t) => sum + OFFER_TIER_WEIGHTS[t], 0);
-  let roll = rng() * total;
-  let chosen = tiers[tiers.length - 1];
-  for (const t of tiers) {
-    roll -= OFFER_TIER_WEIGHTS[t];
-    if (roll < 0) {
-      chosen = t;
-      break;
-    }
-  }
-  const list = byTier.get(chosen)!;
-  return list[Math.floor(rng() * list.length)];
-}
-
-/** The human's draw for the current pick: up to `QUICK_OFFER_SIZE` legal players, highest TAL first. */
-export function humanOffer(state: QuickDraftState): PlayerSpan[] {
-  if (state.complete) return [];
-  const legal = availablePlayers(state).filter((p) => isQuickPickLegal(state, p.id));
-  if (legal.length <= QUICK_OFFER_SIZE) return sortOffer(legal);
-  const rng = mulberry32(mixSeed(state.seed, 1000 + state.history.length * 8 + state.rerollsUsed));
-  const offer: PlayerSpan[] = [];
-  let pool = legal;
-  while (offer.length < QUICK_OFFER_SIZE) {
-    const pick = drawOne(pool, rng);
-    offer.push(pick);
-    pool = pool.filter((p) => p.id !== pick.id);
-  }
-  if (!offer.some((p) => isStarTier(quickOfferTier(p)))) {
-    const stars = pool.filter((p) => isStarTier(quickOfferTier(p)));
-    if (stars.length > 0) offer[offer.length - 1] = drawOne(stars, rng);
-  }
-  return sortOffer(offer);
-}
-
-/** Highest TAL first — the number printed on the card (the user: "segregowanie według TAL"). */
-function sortOffer(offer: PlayerSpan[]): PlayerSpan[] {
-  const tal = (p: PlayerSpan) => displayTalentForSpan(tierContextWithSixthMan(p));
-  return [...offer].sort((a, b) => tal(b) - tal(a));
-}
-
-/** Spend one of the human's redraws: a fresh draw for the same pick. */
-export function rerollHumanOffer(state: QuickDraftState): QuickDraftState {
-  if (state.rerollsUsed >= QUICK_REROLLS) return state;
-  return { ...state, rerollsUsed: state.rerollsUsed + 1 };
 }

@@ -58,7 +58,9 @@ function bestSpanByPlayer(): Map<string, PlayerSpan> {
 // daily pool
 // ---------------------------------------------------------------------------
 
-export const POOL_PER_SLOT = 9;
+/** 2026-09-26, the user: "ograniczmy wybór do 5 graczy" — one headliner plus four, dealt one
+ * position at a time (BestFive.tsx reveals each slot's five after the previous pick). */
+export const POOL_PER_SLOT = 5;
 
 /**
  * Exactly ONE genuine headliner per slot — the tempting "lazy pick" — drawn from the top of the
@@ -66,15 +68,15 @@ export const POOL_PER_SLOT = 9;
  * (par = grab the five headliners) without the pool being a wall of all-time greats: the old
  * design forced ≥2 top-15-TAL players per slot AND weighted the whole draw toward All-Stars, so
  * Curry + Jordan + LeBron + Garnett + Robinson could all sit on one board. Now a slot is 1 star
- * + 8 starters/role-players, and picking all five stars is explicitly par, not a win.
+ * + 4 starters/role-players, and picking all five stars is explicitly par, not a win.
  */
 const HEADLINER_BUCKET = 12;
 const HEADLINER_PER_SLOT = 1;
-/** The other 8 come from the top of the position by talent (all legitimate NBA starters) but
+/** The other 4 come from the top of the position by talent (all legitimate NBA starters) but
  * weighted the OTHER way — toward players the casual fan has heard LESS of — so the puzzle is
  * about which role players fit, not which superstar to grab. */
 const BODY_BUCKET = 42;
-/** Hard cap: at most this many multi-time All-Stars (5+ selections) among the 8 body picks, so a
+/** Hard cap: at most this many multi-time All-Stars (5+ selections) among the 4 body picks, so a
  * board is at most 1 headliner + 2 stars per slot no matter how the weighted draw lands — the
  * weights alone can't guarantee it because the top of a position is inherently decorated. */
 const BODY_STAR_CAP = 2;
@@ -133,7 +135,7 @@ export function dailyPool(key: string = dayKey()): DailyPool {
       chosen.push(s);
       taken.add(s.playerName);
     }
-    // 8 body: legitimate starters from the top of the position, weighted toward LESS-decorated
+    // 4 body: legitimate starters from the top of the position, weighted toward LESS-decorated
     // names, with a per-slot cap on multi-time All-Stars AND the board-wide greats budget.
     const body = ranked.slice(0, BODY_BUCKET).filter((s) => !taken.has(s.playerName));
     let bodyStars = 0;
@@ -148,8 +150,8 @@ export function dailyPool(key: string = dayKey()): DailyPool {
       taken.add(s.playerName);
     }
     // Floor guard: BODY_BUCKET (42) per position always leaves headroom today, but if the star /
-    // greats caps ever starve a thin position below a full nine, top up from the ranked list
-    // ignoring those caps — a slot with fewer than nine options would break the picker.
+    // greats caps ever starve a thin position below a full five, top up from the ranked list
+    // ignoring those caps — a slot with fewer than five options would break the picker.
     if (chosen.length < POOL_PER_SLOT) {
       for (const s of ranked) {
         if (chosen.length >= POOL_PER_SLOT) break;
@@ -180,9 +182,17 @@ const SHOTS_CAP_MAX = 90;
 /** Deterministic daily shots budget for the five starters. Hand-estimated range, same
  * "tuned, not derived" status the original 100.9 FGA cap started at — not yet checked against a
  * real sample of boundary-legal fives the way that cap eventually was. */
+/** 2026-09-26: five players per slot instead of nine, so a rolled cap could fall below the
+ * cheapest possible five (5 boards in 120). The cap keeps `CAP_FLOOR_MARGIN` caps above that
+ * cheapest five, so every board is solvable with room for at least one real choice. */
+const CAP_FLOOR_MARGIN = 12;
+
 export function dailyShotsCap(key: string = dayKey()): number {
   const rng = mulberry32(seedFromKey(`${key}:cap`));
-  return Math.round(SHOTS_CAP_MIN + rng() * (SHOTS_CAP_MAX - SHOTS_CAP_MIN));
+  const rolled = Math.round(SHOTS_CAP_MIN + rng() * (SHOTS_CAP_MAX - SHOTS_CAP_MIN));
+  const pool = dailyPool(key);
+  const cheapest = STARTER_SLOTS.reduce((sum, slot) => sum + Math.min(...pool.bySlot[slot].map((p) => p.fga)), 0);
+  return Math.max(rolled, Math.ceil(cheapest + CAP_FLOOR_MARGIN));
 }
 
 export function lineupShots(lineup: Partial<Record<Position, PlayerSpan>>): number {
