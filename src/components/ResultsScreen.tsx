@@ -5,6 +5,7 @@ import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimul
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { PLAYOFF_TEAM_COUNT, simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
 import { STARTER_SLOTS, CAP_LIMIT, positionFitMultiplier } from '../engine/positions';
+import type { Position } from '../data/schema';
 import { allAssignments, benchWithMinutes, primaryStarters, type ResolvedSlotAssignment } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
@@ -390,7 +391,7 @@ function HeroResult({
   draftSeed: number;
   identity: string | null;
   failureMode: string | null;
-  weakDefenders: { name: string; dtal: number; minutes: number }[];
+  weakDefenders: { name: string; slot: Position; dtal: number; minutes: number }[];
   defenseTalent: number | null;
   comp: HistoricalCompMatch | null;
   starters: ShareCardStarter[];
@@ -783,12 +784,12 @@ function HeroResult({
                 <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
                 <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
                 {weakDefenders.length > 0 && (
-                  <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down.">
+                  <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down. Weak means the bottom third of rotation players at that position.">
                     Weakest links:{' '}
                     {weakDefenders.map((row, i) => (
                       <span key={row.name}>
                         {i > 0 && ' · '}
-                        <b>{shortenName(row.name)}</b> D-TAL {row.dtal} ({row.minutes} min)
+                        <b>{shortenName(row.name)}</b> D-TAL {row.dtal} at {row.slot} ({row.minutes} min)
                       </span>
                     ))}
                   </p>
@@ -1719,8 +1720,13 @@ function RotationColumns({
   );
 }
 
-/** Rotation players below this D-TAL are named under the hero's Defense details. */
-const WEAK_DEFENDER_DTAL = 50;
+/**
+ * Rotation players below their slot's value are named under the hero's Defense details.
+ * 2026-09-26, the user ("50 dla słabego obrońcy zbyt ogólne, zależy od pozycji"): the bottom third
+ * of rotation-calibre spans (TAL 55+) at each position — a C at 50 is a weak C (median 61), a PG
+ * at 45 is an ordinary PG (median 49).
+ */
+const WEAK_DEFENDER_DTAL: Record<Position, number> = { PG: 37, SG: 33, SF: 35, PF: 46, C: 58 };
 /** Below this many minutes at a slot, a non-starter is shown on the column's spot line. */
 const SPOT_MINUTES = 6;
 
@@ -1939,20 +1945,25 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   // 2026-09-25, user-reported live ("super skład, dlaczego dostał tak po dupie w defense?"): the
   // Defense score is a minutes-weighted D-TAL average, so one or two weak defenders playing big
   // minutes drag it down — and nothing on screen said who. Rotation players (15+ min) under
-  // `WEAK_DEFENDER_DTAL`, weakest first, at most two.
+  // `WEAK_DEFENDER_DTAL` for the slot they play most, furthest below it first, at most two.
   const heroWeakDefenders = useMemo(() => {
     if (!heroRanked) return [];
-    const minutes = new Map<string, { player: ResolvedSlotAssignment['player']; minutes: number }>();
+    const minutes = new Map<string, { player: ResolvedSlotAssignment['player']; minutes: number; bySlot: Map<Position, number> }>();
     for (const entry of allAssignments(displayTeam(heroRanked.team))) {
-      const row = minutes.get(entry.player.id) ?? { player: entry.player, minutes: 0 };
+      const row = minutes.get(entry.player.id) ?? { player: entry.player, minutes: 0, bySlot: new Map<Position, number>() };
       row.minutes += entry.minutes;
+      row.bySlot.set(entry.slot, (row.bySlot.get(entry.slot) ?? 0) + entry.minutes);
       minutes.set(entry.player.id, row);
     }
     return [...minutes.values()]
       .filter((row) => row.minutes >= 15)
-      .map((row) => ({ name: row.player.playerName, dtal: Math.round(computeDefensiveTalent(row.player)), minutes: Math.round(row.minutes) }))
-      .filter((row) => row.dtal < WEAK_DEFENDER_DTAL)
-      .sort((a, b) => a.dtal - b.dtal)
+      .map((row) => {
+        const slot = [...row.bySlot.entries()].sort((a, b) => b[1] - a[1])[0][0];
+        const dtal = Math.round(computeDefensiveTalent(row.player));
+        return { name: row.player.playerName, slot, dtal, minutes: Math.round(row.minutes), gap: WEAK_DEFENDER_DTAL[slot] - dtal };
+      })
+      .filter((row) => row.gap > 0)
+      .sort((a, b) => b.gap - a.gap)
       .slice(0, 2);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [heroRanked?.team.id, scoredTeams]);
