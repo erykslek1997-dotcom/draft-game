@@ -621,3 +621,14 @@
 @media (prefers-reduced-motion: reduce) {
   .bf-result:not(.qf-result) > *, .bf-result:not(.qf-result) > .bf-bars .bf-bar-fill { animation: none !important; }
 }
+
+/* Before the lever: the reels sit still under a card back. */
+.bf-machine.is-idle { cursor: default; }
+.bf-machine.is-idle .bf-reel-strip { animation: none; visibility: hidden; }
+.bf-machine.is-idle .bf-reel {
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--at-accent) 28%, transparent) 0 14%, transparent 15%),
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 12%, var(--at-paper)) 0 8px, var(--at-paper) 8px 16px);
+}
+.bf-machine.is-idle .bf-reel::before, .bf-machine.is-idle .bf-reel::after { display: none; }
+.bf-machine-lever { display: flex; justify-content: center; margin-top: 12px; }

@@ -8,6 +8,7 @@ import { EraYears } from './EraYears';
 import { TeamChip } from './TeamBadge';
 import { teamsForSpan } from '../engine/spanTeams';
 import { markStepDone } from './pathProgress';
+import { SpinLever } from './SpinLever';
 import { currentStreak, recordDailyResult, savedDailyLineup, type Streak } from './bestFiveProgress';
 import {
   dailyPool,
@@ -407,6 +408,8 @@ function SlotMachine({ pool, slot, onDone }: { pool: DailyPool; slot: Position; 
   const { reels, nearMisses } = useMemo(() => slotReels(pool, slot), [pool, slot]);
   const dealt = pool.bySlot[slot];
   const [stopped, setStopped] = useState(0);
+  // Waits for the lever (2026-09-26: "element wizualny który daje nam możliwość wystartowania").
+  const [spinning, setSpinning] = useState(false);
   const allStopped = stopped >= dealt.length;
   useEffect(() => {
     if (prefersReducedMotion()) onDone();
@@ -418,7 +421,14 @@ function SlotMachine({ pool, slot, onDone }: { pool: DailyPool; slot: Position; 
     return () => window.clearTimeout(t);
   }, [allStopped, nearMisses.length, onDone]);
   return (
-    <div className="bf-machine" role="button" tabIndex={0} aria-label="Dealing — tap to skip" onClick={onDone} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onDone()}>
+    <div
+      className={`bf-machine${spinning ? '' : ' is-idle'}`}
+      role={spinning ? 'button' : undefined}
+      tabIndex={spinning ? 0 : undefined}
+      aria-label={spinning ? 'Dealing — tap to skip' : undefined}
+      onClick={spinning ? onDone : undefined}
+      onKeyDown={(e) => spinning && (e.key === 'Enter' || e.key === ' ') && onDone()}
+    >
       <div className="bf-pool bf-reels">
         {dealt.map((final, i) => (
           <div key={final.id} className={`bf-reel${i < stopped ? ' is-stopped' : ''}`}>
@@ -438,8 +448,15 @@ function SlotMachine({ pool, slot, onDone }: { pool: DailyPool; slot: Position; 
           </div>
         ))}
       </div>
+      {!spinning && (
+        <div className="bf-machine-lever">
+          <SpinLever onPull={() => setSpinning(true)} label="Pull to deal" />
+        </div>
+      )}
       <p className={`bf-machine-foot${allStopped ? ' is-done' : ''}`} aria-live="polite">
-        {!allStopped ? (
+        {!spinning ? (
+          <>Five {SLOT_LABEL[slot].toLowerCase()}s are loaded — pull the lever.</>
+        ) : !allStopped ? (
           <>Dealing… <span className="bf-muted">tap to skip</span></>
         ) : nearMisses.length > 0 ? (
           <>So close — <b>{nearMisses.join(' · ')}</b> flew past.</>
