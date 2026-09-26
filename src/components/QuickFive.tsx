@@ -34,7 +34,7 @@ import DraftLottery from './DraftLottery';
 import { MetricBar, ScoreChip, qualityColor, scoreBand } from './ResultsScreen';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
-import { AI_SPEED_LABELS, useAiSpeed } from './aiSpeed';
+import { AI_SPEED_LABELS, cpuPickDelay, useAiSpeed } from './aiSpeed';
 import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPressureNote, TurnBudgetText, type TickerPick } from './DraftChrome';
 
 interface Props {
@@ -112,7 +112,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep }: Props) 
     const timer = setTimeout(() => {
       const next = resolveQuickAiPickIfNeeded(state);
       if (next) setState(next);
-    }, aiSpeed.delayMs);
+    }, cpuPickDelay(aiSpeed.delayMs, state.history.length, TEAM_COUNT));
     return () => clearTimeout(timer);
   }, [state, phase, autoFinishing, aiSpeed.delayMs]);
 
@@ -313,7 +313,7 @@ function QuickDraftBoard({
   );
 
   return (
-    <div className="at-card">
+    <div className="at-card at-stage-in">
       {boardOpen && (
       <div className="at-grid-scroll" style={{ marginBottom: 16 }}>
         <table className="at-ov-grid">
@@ -381,7 +381,13 @@ function QuickDraftBoard({
           progress={{ picksMade: state.history.length, totalPicks: TEAM_COUNT * QUICK_ROUNDS, round: Math.min(state.round + 1, QUICK_ROUNDS), rounds: QUICK_ROUNDS }}
         />
         {!canPick ? (
-          <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
+          <div className={`at-cpu-turn-banner${state.history.length === 0 ? ' is-opening' : ''}`}>
+            {state.history.length === 0 ? (
+              <>The draft is about to begin — <b>{teamLabel(currentTeam)}</b> is on the clock with pick 1.</>
+            ) : (
+              <>{teamLabel(currentTeam)} is picking…</>
+            )}
+          </div>
         ) : (
           <div className="at-your-turn-banner" role="status">
             <span className="at-your-turn-title at-cond">Your pick</span>

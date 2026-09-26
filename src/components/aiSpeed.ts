@@ -34,3 +34,19 @@ export function useAiSpeed(): { index: number; delayMs: number; setIndex: (index
   }
   return { index, delayMs: AI_SPEEDS[index].delayMs, setIndex };
 }
+
+/**
+ * 2026-09-26, the user: "jak odpalamy draft to spokojnie, niech użytkownik się oswoi, pierwsze
+ * picki AI nie muszą być zrobione od razu". The opening pick waits `OPENING_PAUSE_MS` (the board
+ * settles in and the "draft is about to begin" line shows), and the first round of CPU picks runs
+ * at least at `FIRST_ROUND_MIN_MS` — half that at 'Instant' — so the first sixteen picks can be
+ * read one by one. After round one the chosen speed applies as before.
+ */
+export const OPENING_PAUSE_MS = 2600;
+const FIRST_ROUND_MIN_MS = 1300;
+
+export function cpuPickDelay(chosenMs: number, picksMade: number, teamCount: number): number {
+  if (picksMade === 0) return OPENING_PAUSE_MS;
+  if (picksMade < teamCount) return Math.max(chosenMs, chosenMs === 0 ? FIRST_ROUND_MIN_MS / 2 : FIRST_ROUND_MIN_MS);
+  return chosenMs;
+}

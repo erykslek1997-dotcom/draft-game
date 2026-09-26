@@ -1674,7 +1674,7 @@ export default function DraftBoard({
           so this wrapper is otherwise invisible to the existing single-column tabbed flow. */}
       <div className="at-merge-row">
       {(isWideLayout || activeTab === 'draft') && (
-        <div className="at-card at-merge-draft">
+        <div className="at-card at-merge-draft at-stage-in">
           <h1 className="at-panel-title at-cond">Draft</h1>
           {/* 2026-08-16, user's own ask: a CPU turn used to hide this whole panel behind a full
               "X is thinking…" placeholder — the player list is browsable at all times now
@@ -1691,7 +1691,13 @@ export default function DraftBoard({
               progress={{ picksMade: state.history.length, totalPicks: TEAM_COUNT * ROUNDS, round: Math.min(state.round + 1, ROUNDS), rounds: ROUNDS }}
             />
             {!canPick ? (
-              <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
+              <div className={`at-cpu-turn-banner${state.history.length === 0 ? ' is-opening' : ''}`}>
+            {state.history.length === 0 ? (
+              <>The draft is about to begin — <b>{teamLabel(currentTeam)}</b> is on the clock with pick 1.</>
+            ) : (
+              <>{teamLabel(currentTeam)} is picking…</>
+            )}
+          </div>
             ) : (
               // 2026-09-24: the only "your turn" signal used to be the CPU banner above silently
               // disappearing (plus the "on the clock" cell in the board, usually scrolled out of

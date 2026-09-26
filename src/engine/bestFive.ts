@@ -538,3 +538,50 @@ export function explainResult(lineup: Lineup, pool: DailyPool, targets: DailyTar
     tookLazyPick,
   };
 }
+
+// ---------------------------------------------------------------------------
+// slot-machine reels — 2026-09-26, the user: "losując karty w daily deal, może być naprawdę jak w
+// kasynie na maszynie, widzimy jak śmigają nam gracze i co mogliśmy ominąć". Purely cosmetic: the
+// deal itself is `dailyPool`; these are the faces that spin past on each of a slot's five reels
+// before it stops on the dealt player. Drawn from the same position's top of the board, one big
+// name planted just before the stop on some reels (the near miss), deterministic per board.
+// ---------------------------------------------------------------------------
+
+export interface SlotReels {
+  /** One strip per dealt card, in `pool.bySlot[slot]` order; the dealt player is NOT included. */
+  reels: PlayerSpan[][];
+  /** Recognisable names that spun past this slot, for the "flew past" line. */
+  nearMisses: string[];
+}
+
+const REEL_BUCKET = 60;
+const NEAR_MISS_AS = 6;
+
+export function slotReels(pool: DailyPool, slot: Position, baseLength = 9, stepLength = 3): SlotReels {
+  const rng = mulberry32(seedFromKey(`${pool.key}:reel:${slot}`));
+  const dealtNames = new Set(pool.bySlot[slot].map((s) => s.playerName));
+  const ranked = [...bestSpanByPlayer().values()]
+    .filter((s) => s.primaryPosition === slot && !dealtNames.has(s.playerName))
+    .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))
+    .slice(0, REEL_BUCKET);
+  const stars = ranked.filter((s) => allStarCount(s.playerName) >= NEAR_MISS_AS);
+  const pickFrom = (list: PlayerSpan[]) => list[Math.floor(rng() * list.length)];
+  const nearMisses = new Set<string>();
+  const reels = pool.bySlot[slot].map((_, i) => {
+    const length = baseLength + i * stepLength;
+    const strip: PlayerSpan[] = [];
+    for (let k = 0; k < length; k++) {
+      let next = pickFrom(ranked);
+      while (strip.length > 0 && next.playerName === strip[strip.length - 1].playerName && ranked.length > 1) next = pickFrom(ranked);
+      strip.push(next);
+    }
+    // The near miss: a star one notch above the stop on about half the reels.
+    if (stars.length > 0 && rng() < 0.5) {
+      const star = pickFrom(stars);
+      strip[strip.length - 1] = star;
+      nearMisses.add(star.playerName);
+    }
+    return strip;
+  });
+  return { reels, nearMisses: [...nearMisses] };
+}
