@@ -1925,13 +1925,12 @@ const NAMED_TAL_PENALTY: ReadonlyMap<string, number> = new Map(
     // bypass. Neither has a mechanism-level lever that doesn't also hit real stars (sum-cap hits
     // Duncan/Garnett/Gobert; a wider taper band moved 110 spans incl. Ray Allen/Reggie Miller;
     // BMI/functional-size hits Kareem/Wemby/Paul George) — hence the project's named-exception tool.
-    { name: 'Kristaps Porziņģis', spanLabel: '2021-23', penalty: 6 },
+    // 2026-09-26, the user: Porziņģis's penalties are lifted to see how the AI treats him now.
     // Second pass, same day: over 6 seeded drafts Porzingis was still taken ONLY via 2022-24 (TAL
     // 81 after -6) at picks 30/32/49/49/65, and Lewis via his UNPENALIZED 2000-02 (TAL 79) at 58-69
     // once the penalized 2005-10 spans fell behind it — so 2022-24 goes to -10 (87 -> 77), Lewis
     // 2007-09 to -10 (84 -> 74) and 2000-02 gets its own -5 (79 -> 74), capping every Lewis span
     // near 74 (All-star tier: a fine player, not a first-rounds pick).
-    { name: 'Kristaps Porziņģis', spanLabel: '2022-24', penalty: 10 },
     // Lewis eased in a third pass: -10/-5 (ceiling 74) left him drafted in only 2 of 6 seeded
     // drafts, at picks 84 and 106 — past "not the first rounds" into "nobody takes him".
     { name: 'Rashard Lewis', spanLabel: '2000-02', penalty: 1 },

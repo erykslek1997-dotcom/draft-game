@@ -208,12 +208,12 @@
       "luka doncic",
       "charles barkley",
       "jerry west",
-      "klay thompson",
+      "kristaps porzingis",
       "steve nash",
-      "eddie jones"
+      "vince carter"
     ],
-    "expectedPickId": "cartevi01-cw-2001-2002",
-    "expectedPickLabel": "Vince Carter | 2000-02"
+    "expectedPickId": "klay-14-16",
+    "expectedPickLabel": "Klay Thompson | 2014-16"
   },
   {
     "seed": 7,
@@ -265,23 +265,23 @@
       "luka doncic",
       "charles barkley",
       "jerry west",
-      "klay thompson",
+      "kristaps porzingis",
       "steve nash",
-      "eddie jones",
       "vince carter",
+      "klay thompson",
       "tracy mcgrady",
       "pau gasol",
       "chauncey billups",
       "patrick ewing",
       "al horford",
-      "ray allen",
+      "eddie jones",
       "jayson tatum",
       "wilt chamberlain",
       "rasheed wallace",
-      "ben wallace"
+      "deandre jordan"
     ],
-    "expectedPickId": "loveke01-2014-2015",
-    "expectedPickLabel": "Kevin Love | 2013-15"
+    "expectedPickId": "richmmi01-1996-1997",
+    "expectedPickLabel": "Mitch Richmond | 1995-97"
   },
   {
     "seed": 7,
@@ -333,22 +333,22 @@
       "luka doncic",
       "charles barkley",
       "jerry west",
-      "klay thompson",
+      "kristaps porzingis",
       "steve nash",
-      "eddie jones",
       "vince carter",
+      "klay thompson",
       "tracy mcgrady",
       "pau gasol",
       "chauncey billups",
       "patrick ewing",
       "al horford",
-      "ray allen",
+      "eddie jones",
       "jayson tatum",
       "wilt chamberlain",
       "rasheed wallace",
-      "ben wallace",
-      "kevin love",
-      "karl-anthony towns",
+      "deandre jordan",
+      "mitch richmond",
+      "ray allen",
       "rudy gobert",
       "mark price",
       "andrei kirilenko",
@@ -481,7 +481,7 @@
     "teamIdx": 0,
     "rosterIds": [
       "jamesle01-cw-2009-2010",
-      "klay-14-16"
+      "mobleev01-2025-2026"
     ],
     "draftedNames": [
       "lebron james",
@@ -515,10 +515,10 @@
       "alonzo mourning",
       "bill walton",
       "kawhi leonard",
-      "klay thompson"
+      "evan mobley"
     ],
-    "expectedPickId": "townska01-2019-2020",
-    "expectedPickLabel": "Karl-Anthony Towns | 2018-20"
+    "expectedPickId": "mitchdo01-2023-2024",
+    "expectedPickLabel": "Donovan Mitchell | 2022-24"
   },
   {
     "seed": 42,
@@ -560,21 +560,21 @@
       "alonzo mourning",
       "bill walton",
       "kawhi leonard",
-      "klay thompson",
-      "karl-anthony towns",
-      "rudy gobert",
-      "manu ginobili",
-      "tracy mcgrady",
+      "evan mobley",
+      "donovan mitchell",
       "draymond green",
-      "eddie jones",
+      "manu ginobili",
+      "charles barkley",
+      "al horford",
+      "reggie miller",
       "vince carter",
       "wilt chamberlain",
-      "bill russell",
-      "reggie miller",
+      "ray allen",
+      "klay thompson",
       "anthony edwards"
     ],
-    "expectedPickId": "willija06-2024-2025",
-    "expectedPickLabel": "Jalen Williams | 2023-25"
+    "expectedPickId": "mcgratr01-2003-2004",
+    "expectedPickLabel": "Tracy McGrady | 2002-04"
   },
   {
     "seed": 42,
@@ -583,7 +583,7 @@
     "rosterIds": [
       "garnett-02-04",
       "stockjo01-cw-1991-1992",
-      "miller-93-95"
+      "klay-14-16"
     ],
     "draftedNames": [
       "lebron james",
@@ -617,32 +617,32 @@
       "alonzo mourning",
       "bill walton",
       "kawhi leonard",
-      "klay thompson",
-      "karl-anthony towns",
-      "rudy gobert",
-      "manu ginobili",
-      "tracy mcgrady",
+      "evan mobley",
+      "donovan mitchell",
       "draymond green",
-      "eddie jones",
+      "manu ginobili",
+      "charles barkley",
+      "al horford",
+      "reggie miller",
       "vince carter",
       "wilt chamberlain",
-      "bill russell",
-      "reggie miller",
-      "anthony edwards",
-      "donovan mitchell",
-      "chauncey billups",
       "ray allen",
+      "klay thompson",
+      "anthony edwards",
+      "tracy mcgrady",
+      "chauncey billups",
+      "eddie jones",
       "paul george",
       "jayson tatum",
       "terry porter",
-      "al horford",
-      "evan mobley",
+      "rasheed wallace",
       "jalen williams",
-      "ben wallace",
-      "shane battier"
+      "pau gasol",
+      "bill russell",
+      "andrei kirilenko"
     ],
-    "expectedPickId": "kirilan01-2004-2005",
-    "expectedPickLabel": "Andrei Kirilenko | 2003-05"
+    "expectedPickId": "goberru01-cw-2018-2019",
+    "expectedPickLabel": "Rudy Gobert | 2017-19"
   },
   {
     "seed": 42,
@@ -650,8 +650,8 @@
     "teamIdx": 0,
     "rosterIds": [
       "jamesle01-cw-2009-2010",
-      "klay-14-16",
-      "townska01-2019-2020"
+      "mobleev01-2025-2026",
+      "mitchdo01-2023-2024"
     ],
     "draftedNames": [
       "lebron james",
@@ -685,41 +685,41 @@
       "alonzo mourning",
       "bill walton",
       "kawhi leonard",
-      "klay thompson",
-      "karl-anthony towns",
-      "rudy gobert",
-      "manu ginobili",
-      "tracy mcgrady",
+      "evan mobley",
+      "donovan mitchell",
       "draymond green",
-      "eddie jones",
+      "manu ginobili",
+      "charles barkley",
+      "al horford",
+      "reggie miller",
       "vince carter",
       "wilt chamberlain",
-      "bill russell",
-      "reggie miller",
-      "anthony edwards",
-      "donovan mitchell",
-      "chauncey billups",
       "ray allen",
+      "klay thompson",
+      "anthony edwards",
+      "tracy mcgrady",
+      "chauncey billups",
+      "eddie jones",
       "paul george",
       "jayson tatum",
       "terry porter",
-      "al horford",
-      "evan mobley",
+      "rasheed wallace",
       "jalen williams",
-      "ben wallace",
-      "shane battier",
+      "pau gasol",
+      "bill russell",
       "andrei kirilenko",
-      "mark price",
+      "rudy gobert",
+      "karl-anthony towns",
       "kyle lowry",
       "joe ingles",
-      "grant hill",
+      "kevin mchale",
       "paul pierce",
-      "pau gasol",
-      "charles barkley",
-      "rasheed wallace"
+      "mark price",
+      "chris webber",
+      "patrick ewing"
     ],
-    "expectedPickId": "siakapa01-2025-2026",
-    "expectedPickLabel": "Pascal Siakam | 2024-26"
+    "expectedPickId": "blaylmo01-1995-1996",
+    "expectedPickLabel": "Mookie Blaylock | 1994-96"
   },
   {
     "seed": 123456,
@@ -1079,7 +1079,7 @@
       "chauncey billups",
       "pascal siakam"
     ],
-    "expectedPickId": "mingya01-2008-2009",
-    "expectedPickLabel": "Yao Ming | 2007-09"
+    "expectedPickId": "lowryky01-2017-2018",
+    "expectedPickLabel": "Kyle Lowry | 2016-18"
   }
 ]
