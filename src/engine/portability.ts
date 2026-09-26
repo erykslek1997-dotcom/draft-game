@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { SPACING_ARCHETYPES } from '../data/schema';
 import { computeSpacing } from './spacing';
-import { positionAdjustedTsBaseline } from './era';
+import { eraBaseline, positionAdjustedTsBaseline } from './era';
 import { lowUsageEfficiencyFactor, extremeUsageRatioPenalty } from './talent';
 import {
   runtimeDefenseTalentPercentile,
@@ -189,6 +189,26 @@ function defensePercentileForPosition(span: PlayerSpan): number {
  * dataset) now spreads across the entire A+-through-F range instead of clustering S-B.
  */
 const SELF_CREATION_MAX_PENALTY = 30;
+/**
+ * 2026-09-26, the user (Jrue Holiday F next to Kyle Lowry A+; "passing też okej, ale powinno brać
+ * pod uwagę np. usg%"): two changes to how the self-creation rank becomes a penalty.
+ * - Curve: `percentile ^ 1.5` instead of linear — the middle of the distribution (a normal lead
+ *   guard) pays little, the full 30 is reserved for the most self-reliant spans.
+ * - Passing relative to usage: a player who needs the ball but creates for others travels better
+ *   than one who only shoots. Share of his finished plays that are assists, `AST / (AST + PTS /
+ *   (2 TS%))` (the denominator is his scoring possessions, i.e. usage without turnovers), cuts the
+ *   penalty by up to `PASSING_OFFSET_MAX` between `PASS_SHARE_START` and `PASS_SHARE_FULL`.
+ */
+const SELF_CREATION_PENALTY_CURVE = 1.5;
+const PASSING_OFFSET_MAX = 0.4;
+const PASS_SHARE_START = 0.15;
+const PASS_SHARE_FULL = 0.4;
+function passingOffset(span: PlayerSpan): number {
+  const scoringPossessions = span.box.ppg / (2 * Math.max(0.3, span.box.tsPct));
+  const passShare = span.box.apg / Math.max(0.1, span.box.apg + scoringPossessions);
+  const t = Math.max(0, Math.min(1, (passShare - PASS_SHARE_START) / (PASS_SHARE_FULL - PASS_SHARE_START)));
+  return PASSING_OFFSET_MAX * t;
+}
 
 /**
  * 2026-08-07, user explicit ask, real gap found and confirmed with data: "all-time great centers
@@ -244,10 +264,45 @@ const RIM_TARGET_GOOD_PCT = 60;
 const RIM_TARGET_SCALE = 2.0;
 const MAX_RIM_TARGET_VALUE = 24;
 const RIM_TARGET_POSITIONS: ReadonlySet<Position> = new Set(['PF', 'C']);
+/**
+ * 2026-09-26, the user (Ewing's O-POR F across his whole career, Hakeem 1993-95 F, Bill Russell):
+ * the "accepted gap" above — no zone data before 1997, so every earlier big got 0 here — put
+ * pre-1997 centers at the bottom of a C scale stretched by modern rim targets (Gobert/Shaq +24).
+ * Spans without zone data now get an ESTIMATE from box stats, a least-squares fit on the 2,150
+ * PF/C spans that have both (corr 0.78 with the real term): era-relative TS% and FG%, FT% (low =
+ * rim player), free throws per shot, 3PA, blocks, assists per shot and the offensive archetype.
+ * Artis Gilmore 1980-82 ~23, McHale ~17, Ewing 1987-89 ~14, Hakeem 1993-95 ~10, Russell ~4.
+ * Order: [1, relTs, eraRelFg, ftPct, min(3PA,5), ftaPerFga, rpg, bpg, apgPerFga, rollCut, post, stretch].
+ */
+const RIM_TARGET_BOX_WEIGHTS = [-20.12, 42.692, 68.604, -12.96, 0.503, 0.689, -0.112, 0.731, 7.945, -1.487, -0.456, -0.721];
+const RIM_TARGET_ERA_REFERENCE_TS = 0.535;
+function estimatedRimTargetValue(span: PlayerSpan): number {
+  const { avgTs } = eraBaseline(span.spanLabel);
+  const scoringPossessions = span.box.ppg / (2 * Math.max(0.3, span.box.tsPct));
+  const fta = Math.max(0, (scoringPossessions - span.fga) / 0.44);
+  const shots = Math.max(1, span.fga);
+  const features = [
+    1,
+    span.box.tsPct - avgTs,
+    span.box.fgPct - (avgTs - RIM_TARGET_ERA_REFERENCE_TS),
+    span.box.ftPct,
+    Math.min(span.box.threePA, 5),
+    fta / shots,
+    span.box.rpg,
+    span.box.bpg,
+    span.box.apg / shots,
+    span.offensiveArchetype === 'Roll & Cut Big' ? 1 : 0,
+    span.offensiveArchetype === 'Post Scorer' ? 1 : 0,
+    span.offensiveArchetype === 'Stretch Big' ? 1 : 0,
+  ];
+  const value = features.reduce((sum, x, i) => sum + x * RIM_TARGET_BOX_WEIGHTS[i], 0);
+  return Math.max(0, Math.min(MAX_RIM_TARGET_VALUE, value));
+}
+
 function rimTargetValue(span: PlayerSpan): number {
   if (!RIM_TARGET_POSITIONS.has(span.primaryPosition)) return 0;
   const totals = runtimeZoneTotalsForSpan(span);
-  if (!totals) return 0;
+  if (!totals) return span.fga >= 5 ? estimatedRimTargetValue(span) : 0;
   const classified = totals.rimFga + totals.midFga + totals.threeFga;
   if (classified < 150) return 0; // same volume floor as playmakingThreeLevel.ts's zone-based terms
   const rimShare = totals.rimFga / classified;
@@ -305,7 +360,8 @@ export function offenseComponents(span: PlayerSpan): OffenseComponents {
     shootPct * shootPct * SPACING_VALUE_SCALE +
     (SPACING_ARCHETYPES.includes(span.offensiveArchetype) ? SPACING_ARCHETYPE_BONUS : 0);
   const rimTarget = rimTargetValue(span);
-  const rawUsagePenalty = runtimeSelfCreationPercentile(span) * SELF_CREATION_MAX_PENALTY;
+  const rawUsagePenalty =
+    Math.pow(runtimeSelfCreationPercentile(span), SELF_CREATION_PENALTY_CURVE) * SELF_CREATION_MAX_PENALTY * (1 - passingOffset(span));
   const usagePenalty = BIG_SELF_CREATION_POSITIONS.has(span.primaryPosition)
     ? rawUsagePenalty * BIG_SELF_CREATION_PENALTY_SCALE
     : rawUsagePenalty;
