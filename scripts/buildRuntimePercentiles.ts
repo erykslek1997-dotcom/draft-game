@@ -22,7 +22,7 @@
 import { writeFileSync } from 'node:fs';
 import { players } from '../src/data/players';
 import type { PlayerSpan, Position } from '../src/data/schema';
-import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { computeDefensiveTalentRegularSeason as computeDefensiveTalent } from '../src/engine/defensiveTalent';
 import { functionalPosition } from '../src/engine/functionalPosition';
 import { normalizedDefenseForFit } from '../src/engine/talent';
 import { selfCreationPercentileForPortability } from '../src/engine/selfCreationSimilarity';

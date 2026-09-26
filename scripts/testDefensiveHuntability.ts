@@ -42,7 +42,12 @@ const control = team('defensive-control', [
   pick('Shane Battier', '2005-07'),
   pick('Tyson Chandler', '2011-13'),
 ]);
-const reportedElite = team('reported-elite-defense', [
+// 2026-09-26: this roster's rotation is pinned to the one the user reported (Moncrief starting,
+// Hardaway backing up both guard spots). With the displayed TAL now reading overlapping neighbour
+// windows (grades.ts `displayTalentForSpan`), Moncrief 1981-83 reads 75 (his 1980-82 window is 58)
+// and the auto rotation would start Hardaway instead — a different lineup from the one these
+// checks are about.
+const reportedEliteRoster = [
   pick('Jason Kidd', '1998-00'),
   pick('Sidney Moncrief', '1981-83'),
   pick('Anfernee Hardaway', '1995-97'),
@@ -51,7 +56,20 @@ const reportedElite = team('reported-elite-defense', [
   pick('Draymond Green', '2015-17'),
   pick('Hakeem Olajuwon', '1991-93'),
   pick('Mitchell Robinson', '2020-22'),
-]);
+];
+const idOf = (name: string) => reportedEliteRoster.find((p) => p.playerName === name)!.id;
+const reportedElite: Team = {
+  ...team('reported-elite-defense', reportedEliteRoster),
+  rotation: {
+    slots: {
+      PG: [{ playerId: idOf('Jason Kidd'), minutes: 34 }, { playerId: idOf('Anfernee Hardaway'), minutes: 14 }],
+      SG: [{ playerId: idOf('Sidney Moncrief'), minutes: 34 }, { playerId: idOf('Anfernee Hardaway'), minutes: 14 }],
+      SF: [{ playerId: idOf('Scottie Pippen'), minutes: 30 }, { playerId: idOf('Shane Battier'), minutes: 18 }],
+      PF: [{ playerId: idOf('Draymond Green'), minutes: 40 }, { playerId: idOf('Scottie Pippen'), minutes: 8 }],
+      C: [{ playerId: idOf('Hakeem Olajuwon'), minutes: 36 }, { playerId: idOf('Mitchell Robinson'), minutes: 12 }],
+    },
+  },
+};
 const reportedEliteCore = team('reported-elite-core-with-bench-targets', [
   pick('Ron Harper', '1988-90'),
   pick('Jrue Holiday', '2017-19'),

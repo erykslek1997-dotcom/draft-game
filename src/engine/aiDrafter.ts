@@ -729,9 +729,17 @@ function plannedPlayableReserveFga(slotsRemaining: number): number {
  * `RESERVE_HARD_FLOOR_FRACTION` below: a loosened, but still real, hard wall.
  */
 const RESERVE_BREACH_PENALTY_PER_FGA = 4;
+/**
+ * 2026-09-26: the linear rate let a LARGE breach through as easily as the small one it was
+ * written for — with the smoothed displayed TAL a 20-FGA Donovan Mitchell at pick 78 bought a
+ * 5.4-FGA breach (18.6 left for four bench spots) for 21.6 points of value. The quadratic term
+ * keeps a Kidd-sized near-miss cheap (1.2 FGA: 4.8 -> 7.0) and makes a real raid on the bench
+ * budget expensive (5.4 FGA: 21.6 -> 65.3), matching this penalty's own stated intent.
+ */
+const RESERVE_BREACH_PENALTY_QUADRATIC = 1.5;
 function reserveBreachPenalty(capRemainingAfterPick: number, slotsLeftAfterPick: number): number {
   const breach = plannedPlayableReserveFga(slotsLeftAfterPick) - capRemainingAfterPick;
-  return breach > 0 ? breach * RESERVE_BREACH_PENALTY_PER_FGA : 0;
+  return breach > 0 ? breach * RESERVE_BREACH_PENALTY_PER_FGA + breach * breach * RESERVE_BREACH_PENALTY_QUADRATIC : 0;
 }
 
 /**

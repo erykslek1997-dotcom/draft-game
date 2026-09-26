@@ -8,6 +8,7 @@ import { hasDefenseAwardCoverage, individualDefenseRate } from './defensiveAccol
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import { teamDefenseContextForSpan } from './teamDefenseLookup';
 import { bpm2CoverageForSpan, ddpmCoverageForSpan, matchupCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
+import { playoffImpactForSpan } from './playoffImpact';
 
 /**
  * D-TAL — "how good is this player defensively," 0-100, per position.
@@ -652,7 +653,13 @@ function recognitionCeiling(span: PlayerSpan, accoladeRate: number): number {
   return NO_RECOGNITION_DTAL_CEILING + (100 - NO_RECOGNITION_DTAL_CEILING) * Math.min(1, accoladeRate / RECOGNITION_FULL_RATE);
 }
 
-export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
+/**
+ * D-TAL from the regular season alone. TAL's own internals (the D-TAL -> TAL bridge through
+ * `runtimePercentiles.json`, `eliteDefenseTalBonus`) read this one: the playoff part reaches TAL
+ * directly through `playoffTalentTerm`, so reading the playoff-inclusive D-TAL there too would
+ * count it twice.
+ */
+export function computeDefensiveTalentRegularSeason(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = defensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
@@ -684,5 +691,23 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   const floored = withoutConsensus < CONSENSUS_FLOOR_BASE ? Math.max(withoutConsensus, consensusPositiveFloor(span)) : withoutConsensus;
   const result = Math.max(0, Math.min(100, Math.round(floored)));
   defensiveTalentCache.set(span.id, result);
+  return result;
+}
+
+/**
+ * The displayed D-TAL: the regular-season ladder plus the defensive half of the playoff impact
+ * (`playoffImpact.ts` — playoff DBPM against what a player of that regular-season level usually
+ * does in the playoffs), in TAL points.
+ */
+const playoffDefensiveTalentCache = new Map<string, number>();
+export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
+  const cached = playoffDefensiveTalentCache.get(span.id);
+  if (cached !== undefined) return cached;
+  const result = Math.max(
+    0,
+    Math.min(100, Math.round(computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense)),
+  );
+  playoffDefensiveTalentCache.set(span.id, result);
   return result;
 }

@@ -1,7 +1,8 @@
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
-import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE, predatesThreePointLine } from './era';
+import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE, predatesThreePointLine, spanEndYears } from './era';
+import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseMalus } from './darkoCorrection';
 import { functionalPosition } from './functionalPosition';
@@ -9,10 +10,11 @@ import { rimPressureOffenseTerm } from './rimPressure';
 import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
 import { computeSpacing } from './spacing';
-import { computeDefensiveTalent } from './defensiveTalent';
+import { computeDefensiveTalent, computeDefensiveTalentRegularSeason } from './defensiveTalent';
+import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
+import { liftForReducedRole } from './reducedRole';
 import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
-import { playoffPerformanceBonus } from './playoffPerformanceLookup';
 import { playmakingThreeLevelOffenseAdjustment } from './playmakingThreeLevel';
 import { wasEverAllStarCaliber } from './allNbaLookup';
 import { selfCreationPercentileForPortability } from './selfCreationSimilarity';
@@ -222,8 +224,6 @@ const PF_PENALTY_TAPER_START = 66;
  * 2004-06, a one-year elite-shooting fluke reading All-NBA on C+/D grades). A genuine floor-spacing
  * role player, well below the band, keeps the full boost. */
 const SPACING_BOOST_TAPER_BAND = 9;
-const EXEMPT_RIDGE_HEIGHT = 4;
-const EXEMPT_RIDGE_SLOPE = 0.3;
 
 /**
  * 2026-09-24, user-reported ("defensywni PG bez rzutu — wymarły archetyp w nowoczesnej
@@ -246,8 +246,42 @@ function isNonShootingPointGuard(span: PlayerSpan): boolean {
   return span.primaryPosition === 'PG' && span.fga < NON_SHOOTING_PG_FGA_CEILING;
 }
 
+/**
+ * 2026-09-26, the user (Troy Murphy 2008-10 TAL 72 over Chris Bosh's Toronto prime at 54-60:
+ * "no-name Troy Murphy lepszy od HoF Bosha"): SPACING reads threes only, so a big whose floor
+ * game was the long two — Bosh (57% of his shots from mid-range at 44%), David West, Aldridge —
+ * took the full non-shooter penalty below the star gate, like a big who never left the paint.
+ * Before the stretch-four era the long two WAS a big's floor-spacing. For PF/C spans with zone
+ * data, mid-range share and accuracy earn a spacing equivalent for this correction only (never
+ * the displayed SPC), capped at `PLUS_SHOOTER_SPACING` — it lifts the penalty but can't earn the
+ * shooter boost, since a long two doesn't bend a defense like a three. Full credit for spans
+ * ending by 2012, fading to none by 2018.
+ */
+const MID_RANGE_FG_START = 38;
+const MID_RANGE_FG_FULL = 46;
+const MID_RANGE_SHARE_START = 0.3;
+const MID_RANGE_SHARE_FULL = 0.6;
+const MID_RANGE_SPACING_SCALE = 90;
+const MID_RANGE_CREDIT_FULL_UNTIL = 2012;
+const MID_RANGE_CREDIT_GONE_BY = 2018;
+function midRangeSpacingEquivalent(span: PlayerSpan): number {
+  if (span.primaryPosition !== 'PF' && span.primaryPosition !== 'C') return 0;
+  const years = spanEndYears(span.spanLabel);
+  if (years.length === 0) return 0;
+  const lastYear = Math.max(...years);
+  const eraFactor = clamp01((MID_RANGE_CREDIT_GONE_BY - lastYear) / (MID_RANGE_CREDIT_GONE_BY - MID_RANGE_CREDIT_FULL_UNTIL));
+  if (eraFactor <= 0) return 0;
+  const totals = runtimeZoneTotalsForSpan(span);
+  if (!totals) return 0;
+  const classified = totals.rimFga + totals.midFga + totals.threeFga;
+  if (classified < 150 || totals.midFga <= 0) return 0;
+  const accuracy = clamp01(((totals.midFgm / totals.midFga) * 100 - MID_RANGE_FG_START) / (MID_RANGE_FG_FULL - MID_RANGE_FG_START));
+  const volume = clamp01((totals.midFga / classified - MID_RANGE_SHARE_START) / (MID_RANGE_SHARE_FULL - MID_RANGE_SHARE_START));
+  return Math.min(PLUS_SHOOTER_SPACING, MID_RANGE_SPACING_SCALE * accuracy * volume * eraFactor);
+}
+
 function roleSpacingAdjustedCorrection(span: PlayerSpan): number {
-  const spacing = computeSpacing(span);
+  const spacing = Math.max(computeSpacing(span), midRangeSpacingEquivalent(span));
   const positionFlat = POSITION_TALENT_CORRECTION[span.primaryPosition];
   let raw: number;
   if (spacing >= SPACING_CORRECTION_ELITE_SPACING) {
@@ -325,15 +359,68 @@ function centerSpacingBoost(span: PlayerSpan): number {
  * specifically because `talentBreakdown` never feeds back into `computeTalent` itself, unlike
  * this function's other call site.
  */
+/**
+ * 2026-09-26, the user ("gradientowe rozwiązanie bez dużych skoków"; the star gate as a cliff:
+ * Mark Price 1993-95 fell 85 -> 70 when a +1-2 portability nudge carried his rawSum over TAL 70,
+ * Dana Barros went 69 -> 80 the other way; Troy Murphy's full 1.18 boost from 54 -> 72). Below
+ * the gate a span read its full spacing adjustment, above it (roughly) the position's flat value —
+ * a switch at exactly 70, patched per case over time (the Mike James taper, the ever-All-Star
+ * ridge cap with its PG exemption). Now the two regimes BLEND linearly across
+ * `STAR_GATE_BLEND_HALF` points either side of the gate on the flat-corrected value, so TAL moves
+ * continuously with rawSum everywhere. The ever-All-Star ridge cap and its PG exemption are
+ * retired (the blend is what they approximated); the Mike James taper stays — it is about fluke
+ * box lines from never-validated players, not about the gate's shape.
+ */
+const STAR_GATE_BLEND_HALF = 10;
+
+/** The correction a span reads well above the star gate (the pre-2026-09-26 above-gate branch). */
+function aboveGateCorrection(span: PlayerSpan, baseTal: number, flat: number): number {
+  if (span.primaryPosition === 'PG') {
+    const penalty = roleSpacingAdjustedCorrection(span);
+    if (penalty < flat) {
+      const t = clamp01((baseTal - ALL_STAR_TAL_FLOOR) / (PG_NON_SHOOTER_PENALTY_GATE - ALL_STAR_TAL_FLOOR));
+      return penalty + t * (flat - penalty);
+    }
+  }
+  // Above the star gate the spacing adjustment doesn't apply in full; keep a small, capped
+  // fraction of the boost — SG/SF/PF only, and only in the All-star band (below the All-NBA
+  // floor); the penalty side vanishes here, so a non-shooting star reads flat, never below.
+  if (baseTal >= ALL_NBA_TAL_FLOOR) return flat;
+  // PF's All-star-band lift (see `PF_ALLSTAR_BAND_CORRECTION`) — shooting or not.
+  const bandFloor = span.primaryPosition === 'PF' ? PF_ALLSTAR_BAND_CORRECTION : flat;
+  if (!ABOVE_STAR_SPACING_POSITIONS.has(span.primaryPosition)) return bandFloor;
+  const residual = (roleSpacingAdjustedCorrection(span) - flat) * ABOVE_STAR_SPACING_RETENTION;
+  return Math.max(bandFloor, flat + Math.min(residual, ABOVE_STAR_SPACING_MAX_GAIN));
+}
+
+/** The correction a span reads well below the star gate. */
+function belowGateCorrection(span: PlayerSpan, rawSumForGate: number, flat: number): number {
+  const spacingCorrection = roleSpacingAdjustedCorrection(span);
+  if (spacingCorrection <= flat) {
+    // Penalty side (no floor-spacing). For PF only, ease the non-shooter penalty toward
+    // `PF_ALLSTAR_BAND_CORRECTION` as the flat-corrected number climbs to the gate — see that
+    // constant's docstring. Every other position, and a PF below `PF_PENALTY_TAPER_START`, keeps
+    // the full penalty.
+    if (span.primaryPosition !== 'PF' || spacingCorrection >= PF_ALLSTAR_BAND_CORRECTION) return spacingCorrection;
+    const t = clamp01((rawSumForGate * flat - PF_PENALTY_TAPER_START) / (ALL_STAR_TAL_FLOOR - PF_PENALTY_TAPER_START));
+    return spacingCorrection + t * (PF_ALLSTAR_BAND_CORRECTION - spacingCorrection);
+  }
+  // 2026-08-31 (Mike James 2004-06 at TAL 82 on C+/D grades) + 2026-09-01 ("if they made any
+  // accolades in their career they're validated"): a player the league never recognised as an
+  // All-Star keeps less of the boost as he nears the gate — a one-year shooting fluke shouldn't
+  // ride it into the star tiers. Validated players keep the full boost; the blend handles the gate.
+  if (wasEverAllStarCaliber(span.playerName)) return spacingCorrection;
+  const taper = clamp01((ALL_STAR_TAL_FLOOR - rawSumForGate * flat) / SPACING_BOOST_TAPER_BAND);
+  return flat + (spacingCorrection - flat) * taper;
+}
+
 function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number {
   // Magic Johnson (see docstring above) + LeBron James: the TALENT NUMBER reads as if SF, no
   // matter which position the share-classifier tagged the span. `span.primaryPosition` is left
   // untouched — both still show / filter / draft as their tagged position everywhere else.
   // 2026-09-02, user: LeBron's Miami spans are classified PF (small-ball 4) and his Lakers spans
   // PG, so they eat the PF 0.93 / PG 0.972 correction — a haircut calibrated for box-inflated
-  // back-to-the-basket bigs and scoring-light PGs, neither of which a point-forward is. His SF
-  // spans (2003-2012, incl. the 2008-10 statistical peak) are unaffected; this only lifts the
-  // non-SF spans the classifier scattered him across.
+  // back-to-the-basket bigs and scoring-light PGs, neither of which a point-forward is.
   if (POSITION_CORRECTION_AS_SF.has(normalizePlayerName(span.playerName))) {
     return POSITION_TALENT_CORRECTION.SF;
   }
@@ -343,79 +430,14 @@ function positionCorrectionFor(span: PlayerSpan, rawSumForGate?: number): number
     if (baseTal >= ALL_NBA_TAL_FLOOR) return flat;
     return Math.max(flat, centerSpacingBoost(span));
   }
-  if (baseTal >= ALL_STAR_TAL_FLOOR) {
-    if (span.primaryPosition === 'PG') {
-      const penalty = roleSpacingAdjustedCorrection(span);
-      if (penalty < flat) {
-        const t = clamp01((baseTal - ALL_STAR_TAL_FLOOR) / (PG_NON_SHOOTER_PENALTY_GATE - ALL_STAR_TAL_FLOOR));
-        return penalty + t * (flat - penalty);
-      }
-    }
-    // Above the star gate the spacing adjustment doesn't apply in full, but the old hard `return
-    // flat` was a cliff for elite spacers crossing TAL 70 (see `ABOVE_STAR_SPACING_RETENTION`).
-    // Keep a small, capped fraction of the sub-gate boost — SG/SF/PF only, and only in the
-    // All-star band (below the All-NBA floor); the penalty side still vanishes here
-    // (`Math.max(flat, ...)`), so a non-shooting star still reads flat, never below.
-    if (baseTal >= ALL_NBA_TAL_FLOOR) return flat;
-    // PF's All-star-band lift (see `PF_ALLSTAR_BAND_CORRECTION`) — applies whether or not the span
-    // also spaces the floor, so a non-shooting All-star PF (Barkley) gets it too.
-    const bandFloor = span.primaryPosition === 'PF' ? PF_ALLSTAR_BAND_CORRECTION : flat;
-    if (!ABOVE_STAR_SPACING_POSITIONS.has(span.primaryPosition)) return bandFloor;
-    const residual = (roleSpacingAdjustedCorrection(span) - flat) * ABOVE_STAR_SPACING_RETENTION;
-    return Math.max(bandFloor, flat + Math.min(residual, ABOVE_STAR_SPACING_MAX_GAIN));
+  // The display-only call (`talentBreakdown`, no `rawSumForGate`) reads the span's own regime.
+  if (rawSumForGate === undefined) {
+    return baseTal >= ALL_STAR_TAL_FLOOR ? aboveGateCorrection(span, baseTal, flat) : roleSpacingAdjustedCorrection(span);
   }
-  const spacingCorrection = roleSpacingAdjustedCorrection(span);
-  // 2026-08-31, user-reported (Mike James 2004-06 at TAL 82 / All-NBA on C+/D grades): the star gate
-  // above is a hard cliff checked on the PRE-boost value `rawSum * flat`, and the boost it applies
-  // can be as large as 1.18 — a span whose flat value is ~68 (just under the gate) rides the +18%
-  // straight to ~82. Taper the boost back to flat over `SPACING_BOOST_TAPER_BAND` points below the
-  // gate. The display-only call (`talentBreakdown`, no `rawSumForGate`) is untouched — a real
-  // floor-spacing role player well below the band keeps the full boost.
-  if (rawSumForGate === undefined) return spacingCorrection;
-  if (spacingCorrection <= flat) {
-    // Penalty side (no floor-spacing). For PF only, ease the non-shooter penalty toward
-    // `PF_ALLSTAR_BAND_CORRECTION` as the flat-corrected number climbs to the gate — see that
-    // constant's docstring. Every other position, and a PF below `PF_PENALTY_TAPER_START`, keeps
-    // the full penalty.
-    if (span.primaryPosition !== 'PF' || spacingCorrection >= PF_ALLSTAR_BAND_CORRECTION) return spacingCorrection;
-    const t = clamp01(
-      (rawSumForGate * flat - PF_PENALTY_TAPER_START) / (ALL_STAR_TAL_FLOOR - PF_PENALTY_TAPER_START),
-    );
-    return spacingCorrection + t * (PF_ALLSTAR_BAND_CORRECTION - spacingCorrection);
-  }
-  // 2026-09-01, user's rule ("if they made any accolades in their career, not just this season,
-  // they're validated"): the taper can't tell a fluke box line from a genuine prime span on the
-  // counting stats alone. A player the league ever recognized as an All-Star / All-NBA pick is
-  // exempt — Mike James (never, in any season) still falls; every player with a real selection
-  // somewhere in their career keeps the full boost.
-  if (wasEverAllStarCaliber(span.playerName)) {
-    // PG is left on its own numbers (user, 2026-09-24: "PG liczy całkiem ok, problem przy pozycjach
-    // wyżej"): with the cap applied ~9 shooter-playmaker PGs sitting on the PG-archetype 75 line
-    // (Billups, Murray, Maxey, Garland, ...) fell 15 points into "Sixth Man" for a 1-4 point raw drop.
-    if (span.primaryPosition === 'PG') return spacingCorrection;
-    // 2026-09-24, adjacent-span audit (Ray Allen 2009-11 -> 2010-12: rawSum 74.3 -> 70.9 yet TAL
-    // 71 -> 81; Paul George 2022-24 78 vs 2023-25 88 on a LOWER rawSum). The validated-player
-    // exemption above keeps the FULL boost (up to x1.18) right up to the star gate, then the
-    // above-gate branch drops it to ~flat: TAL was non-monotonic in rawSum, a ridge of 3-16
-    // points sitting just below TAL 70 (112 spans out-earned the same profile just above the
-    // gate; 108 of them ever-All-Stars) — a declining Ray Allen / late Reggie Miller read better
-    // than their own primes. The boosted output may not exceed what this profile earns AT the
-    // gate, plus a tolerated `EXEMPT_RIDGE_HEIGHT` of residual boost, minus `EXEMPT_RIDGE_SLOPE`
-    // per rawSum point of distance below it: untouched far below the gate (role-player range),
-    // identical at and above it. First version (height 0, slope 0.5) removed the ridge entirely and
-    // the user judged it too harsh overall (224 spans, 68 by >= 8) while liking the four named
-    // cases (George 2023-25, Markkanen, Korver, Herro); height 4 / slope 0.3 keeps those at
-    // -8..-12 and cuts the mass to 95 spans (14 by >= 8). Known cascade, NOT caused by this rule:
-    // ~9 shooter-playmaker PGs sitting on the 75 line of the PG-archetype Sixth Man entry
-    // (`PG_ARCHETYPE_ENTRY_TAL_CEILING`, grades.ts) tip over it (Murray, Maxey, Billups...).
-    const xGate = ALL_STAR_TAL_FLOOR / flat;
-    const residual = Math.min((spacingCorrection - flat) * ABOVE_STAR_SPACING_RETENTION, ABOVE_STAR_SPACING_MAX_GAIN);
-    const ridgeCap = xGate * (flat + residual) + EXEMPT_RIDGE_HEIGHT - EXEMPT_RIDGE_SLOPE * (xGate - rawSumForGate);
-    return Math.min(spacingCorrection, ridgeCap / rawSumForGate);
-  }
-  const flatResult = rawSumForGate * flat;
-  const taper = clamp01((ALL_STAR_TAL_FLOOR - flatResult) / SPACING_BOOST_TAPER_BAND);
-  return flat + (spacingCorrection - flat) * taper;
+  const w = clamp01((baseTal - (ALL_STAR_TAL_FLOOR - STAR_GATE_BLEND_HALF)) / (2 * STAR_GATE_BLEND_HALF));
+  const below = belowGateCorrection(span, rawSumForGate, flat);
+  const above = aboveGateCorrection(span, baseTal, flat);
+  return below + w * (above - below);
 }
 
 /** Assist rate above which marginal playmaking value tapers off, and the rate it tapers to.
@@ -852,6 +874,10 @@ const LUKA_WING_BLEND = 1.0;
  * on, it was suppressing Curry's own O-TAL below Steve Nash's (96 vs 97) — the opposite of
  * "best-in-position." `computeTalent` passes true; the split metrics pass false so every
  * player's split reads off the same uncapped gravity term. */
+const EFFICIENCY_REFERENCE_TSA = 17;
+const EFFICIENCY_VOLUME_MIN = 0.6;
+const EFFICIENCY_VOLUME_MAX = 1.6;
+
 function rawComponents(
   span: PlayerSpan,
   applyCurryException: boolean,
@@ -867,8 +893,17 @@ function rawComponents(
   // `assistedEfficiencyFactor` only ever discounts a CREDIT (relativeTs > 0) — a genuinely
   // below-average finishing big's efficiency penalty is real regardless of who set him up, so
   // the dampening never softens that direction.
+  // 2026-09-26, the user (Chris Bosh's Toronto prime, 22.5 ppg at .58 TS, rating barely above
+  // Troy Murphy's 14 ppg at .60): efficiency was credited per percentage point regardless of how
+  // many shots it was earned on, so +4% TS on 16 FGA counted the same as +4% on 11 — the points a
+  // player adds over average are relative TS times his true shot attempts. Scaled by true shot
+  // attempts relative to `EFFICIENCY_REFERENCE_TSA` (a 15-FGA starter's load, where the old
+  // term already sat), so a normal starter reads as before; the low-usage dampener already covers
+  // the small-sample side and stays.
+  const trueShotAttempts = box.ppg / (2 * Math.max(0.3, box.tsPct));
+  const volumeWeight = Math.max(EFFICIENCY_VOLUME_MIN, Math.min(EFFICIENCY_VOLUME_MAX, trueShotAttempts / EFFICIENCY_REFERENCE_TSA));
   const efficiency =
-    relativeTs * 140 * lowUsageEfficiencyFactor(span.fga) * (relativeTs > 0 ? assistedEfficiencyFactor(span) : 1);
+    relativeTs * 140 * volumeWeight * lowUsageEfficiencyFactor(span.fga) * (relativeTs > 0 ? assistedEfficiencyFactor(span) : 1);
   const playmaking = effectivePlaymakingApg(box.apg) * paceFactor * 1.7;
   const centerPlaymaking = positionPlaymakingBonus(span.primaryPosition, box.apg, paceFactor);
   const isCurry = normalizePlayerName(span.playerName) === normalizePlayerName('Stephen Curry');
@@ -1278,7 +1313,8 @@ const ELITE_DEFENSE_BONUS_THRESHOLD = 85;
 const MAX_ELITE_DEFENSE_BONUS = 15;
 
 function eliteDefenseTalBonus(span: PlayerSpan): number {
-  const dtal = computeDefensiveTalent(span);
+  // Regular-season D-TAL: the playoff defense already reaches TAL through `playoffTalentTerm`.
+  const dtal = computeDefensiveTalentRegularSeason(span);
   return Math.min(MAX_ELITE_DEFENSE_BONUS, Math.max(0, dtal - ELITE_DEFENSE_BONUS_THRESHOLD));
 }
 
@@ -1402,7 +1438,7 @@ function talentScaled(span: PlayerSpan, usageScale: number, includeEliteDefenseB
   const hiddenValue = hiddenValueBonus(span);
   const portability = portabilityBonus(span);
   const roleScalability = roleScalabilityBonus(span);
-  const playoffPerformance = playoffPerformanceBonus(span);
+  const playoffPerformance = playoffTalentTerm(span);
   const selfCreation = selfCreationTalentBonus(span);
   const eliteDefense = includeEliteDefenseBonus ? eliteDefenseTalBonus(span) : 0;
 
@@ -1432,13 +1468,18 @@ function talentScaled(span: PlayerSpan, usageScale: number, includeEliteDefenseB
   // reward his shooting, not touch his defense at all. Scoped to the offense-derived term only;
   // every other position is completely unaffected (this branch only ever fires for C, and only
   // changes anything when `correction` differs from the flat correction).
-  if (span.primaryPosition === 'C') {
-    const flat = POSITION_TALENT_CORRECTION.C;
-    const offenseTerm = offense * 0.6 * 2.15;
-    const restOfRawSum = rawSum - offenseTerm;
-    return offenseTerm * correction + restOfRawSum * flat;
-  }
-  return rawSum * correction;
+  //
+  // 2026-09-26, the user (Troy Murphy 2008-10 at TAL 72 over Bosh's prime; accepted "mnożnik za
+  // spacing tylko na część ofensywną"): the same scoping now applies at every position. The
+  // spacing boost/penalty is a claim about offense the box score misses; multiplying the defense
+  // term and every bonus by it let a shooter's weak defense and a non-shooter's good defense both
+  // swing with his jump shot. Only the correction's distance from the position's flat value is
+  // scoped — a span on the flat correction reads exactly as before.
+  const flat = POSITION_CORRECTION_AS_SF.has(normalizePlayerName(span.playerName))
+    ? POSITION_TALENT_CORRECTION.SF
+    : POSITION_TALENT_CORRECTION[span.primaryPosition];
+  const offenseTerm = offense * 0.6 * 2.15;
+  return rawSum * flat + offenseTerm * (correction - flat);
 }
 
 /**
@@ -1492,7 +1533,7 @@ export function talentBreakdown(rawSpan: PlayerSpan): TalentBreakdown {
     hiddenValue: hiddenValueBonus(span),
     portability: portabilityBonus(span),
     roleScalability: roleScalabilityBonus(span),
-    playoffPerformance: playoffPerformanceBonus(span),
+    playoffPerformance: playoffTalentTerm(span),
     selfCreation: selfCreationTalentBonus(span),
     darkoDefenseBonus: darkoDefenseBonus(span),
     darkoDefenseMalus: darkoDefenseMalus(span),
@@ -1634,13 +1675,40 @@ export function isCP3TwoWayExempt(playerName: string, otal: number, dtal: number
   );
 }
 
+/**
+ * 2026-09-26, the user ("płynnie, bez dużych skoków"): the PG/SF grade ceilings below were steps —
+ * one O-TAL or D-TAL point across a letter-grade line moved the ceiling 6-8 TAL points (LeBron
+ * 2015-17 held at 87 by a D-TAL of 59). Each step is now a linear ramp across
+ * ±`GRADE_CEILING_RAMP` points around its old threshold: `steps` are [threshold, ceiling below it]
+ * pairs in rising order, the ceiling above the last one is 100.
+ */
+const GRADE_CEILING_RAMP = 5;
+function rampedCeiling(value: number, steps: readonly (readonly [number, number])[]): number {
+  let ceiling = 100;
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const [threshold, below] = steps[i];
+    const t = Math.max(0, Math.min(1, (value - (threshold - GRADE_CEILING_RAMP)) / (2 * GRADE_CEILING_RAMP)));
+    ceiling = below + (ceiling - below) * t;
+  }
+  return ceiling;
+}
+
+/** CP3's two-way exemption as a 0-1 share: it fades in over the last `GRADE_CEILING_RAMP` O-TAL
+ * points below its floor instead of switching on at it (his 2010-13 windows sit at O-TAL 77-80
+ * once the playoffs count). `grades.ts` lifts the badge cap for any share above 0. */
+export function cp3TwoWayExemptionShare(playerName: string, otal: number, dtal: number): number {
+  if (!isCP3TwoWayExempt(playerName, CP3_TWO_WAY_OFFENSE_FLOOR, dtal)) return 0;
+  return Math.max(0, Math.min(1, (otal - (CP3_TWO_WAY_OFFENSE_FLOOR - GRADE_CEILING_RAMP)) / GRADE_CEILING_RAMP));
+}
+
 function pgOffenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'PG') return 100;
   const otal = computeOffensiveTalent(span);
-  if (otal >= PG_OFFENSE_GRADE_A_FLOOR) return 100;
-  if (isCP3TwoWayExempt(span.playerName, otal, computeDefensiveTalent(span))) return 100;
-  if (otal >= PG_OFFENSE_GRADE_B_FLOOR) return PG_MVP_TIER_CAP;
-  return PG_ALL_NBA_TIER_CAP;
+  const ceiling = rampedCeiling(otal, [
+    [PG_OFFENSE_GRADE_B_FLOOR, PG_ALL_NBA_TIER_CAP],
+    [PG_OFFENSE_GRADE_A_FLOOR, PG_MVP_TIER_CAP],
+  ]);
+  return ceiling + (100 - ceiling) * cp3TwoWayExemptionShare(span.playerName, otal, computeDefensiveTalent(span));
 }
 
 /**
@@ -1672,7 +1740,7 @@ const PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION = 95;
 function pgDefenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'PG') return 100;
   if (computeOffensiveTalent(span) >= PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION) return 100;
-  return computeDefensiveTalent(span) >= PG_DEFENSE_GRADE_C_FLOOR ? 100 : PG_MVP_TIER_CAP;
+  return rampedCeiling(computeDefensiveTalent(span), [[PG_DEFENSE_GRADE_C_FLOOR, PG_MVP_TIER_CAP]]);
 }
 
 /**
@@ -1686,7 +1754,7 @@ const SF_OFFENSE_GRADE_B_PLUS_FLOOR = 80;
 
 function sfOffenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'SF') return 100;
-  return computeOffensiveTalent(span) >= SF_OFFENSE_GRADE_B_PLUS_FLOOR ? 100 : PG_MVP_TIER_CAP;
+  return rampedCeiling(computeOffensiveTalent(span), [[SF_OFFENSE_GRADE_B_PLUS_FLOOR, PG_MVP_TIER_CAP]]);
 }
 
 /**
@@ -1707,10 +1775,10 @@ const SF_ALL_STAR_TIER_CAP = 79;
 function sfDefenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'SF') return 100;
   if (normalizePlayerName(span.playerName) === normalizePlayerName('Kevin Durant')) return 100;
-  const dtal = computeDefensiveTalent(span);
-  if (dtal >= SF_DEFENSE_GRADE_C_FLOOR) return 100;
-  if (dtal >= SF_DEFENSE_GRADE_D_PLUS_FLOOR) return SF_ALL_NBA_TIER_CAP;
-  return SF_ALL_STAR_TIER_CAP;
+  return rampedCeiling(computeDefensiveTalent(span), [
+    [SF_DEFENSE_GRADE_D_PLUS_FLOOR, SF_ALL_STAR_TIER_CAP],
+    [SF_DEFENSE_GRADE_C_FLOOR, SF_ALL_NBA_TIER_CAP],
+  ]);
 }
 
 /**
@@ -1897,7 +1965,11 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   // outside the two-pass gate it would otherwise be able to move (see `dtalBridgeCorrection`).
   const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
-  const result = Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
+  const capped = Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
+  // A smaller role next to a star with efficiency held reads toward the player's own earlier
+  // level (`reducedRole.ts` — Bosh in Miami). The reference window never qualifies itself, so this
+  // recursion is one level deep.
+  const result = Math.round(liftForReducedRole(span, capped, computeTalent));
   talentCache.set(span.id, result);
   return result;
 }
@@ -2048,8 +2120,10 @@ export function computeOffensiveTalent(rawSpan: PlayerSpan): number {
   if (cached !== undefined) return cached;
   const { offense } = rawComponents(span, false);
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
-  const scaled = offense * scale + intercept;
-  const result = Math.max(0, Math.min(100, Math.round(scaled)));
+  // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
+  // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
+  const scaled = offense * scale + intercept + playoffImpactForSpan(span).offense;
+  const result = Math.max(0, Math.min(100, Math.round(liftForReducedRole(span, scaled, computeOffensiveTalent))));
   offensiveTalentCache.set(span.id, result);
   return result;
 }
@@ -2076,8 +2150,10 @@ export function computeUncappedOffensiveTalent(rawSpan: PlayerSpan): number {
   if (cached !== undefined) return cached;
   const { offense } = rawComponents(span, false);
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
-  const scaled = offense * scale + intercept;
-  const result = Math.max(0, Math.round(scaled));
+  // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
+  // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
+  const scaled = offense * scale + intercept + playoffImpactForSpan(span).offense;
+  const result = Math.max(0, Math.round(liftForReducedRole(span, scaled, computeUncappedOffensiveTalent)));
   uncappedOffensiveTalentCache.set(span.id, result);
   return result;
 }

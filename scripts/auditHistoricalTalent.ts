@@ -23,7 +23,7 @@ import { buildPipmYearMap, avgPipmForSpan } from '../src/engine/pipmLookup';
 import { getPrimeWowyrByPlayerName } from '../src/engine/wowyrLookup';
 import { individualDefenseRate } from '../src/engine/defensiveAccolades';
 import { portabilityBonus } from '../src/engine/portabilityCorrection';
-import { playoffPerformanceBonus } from '../src/engine/playoffPerformanceLookup';
+import { playoffTalentTerm } from '../src/engine/playoffImpact';
 import { computeDefensiveImpact } from '../src/engine/defense';
 import { darkoDefenseBonus, darkoDefenseMalus } from '../src/engine/darkoCorrection';
 import coefficients from '../src/data/awards/correctionCoefficients.json';
@@ -115,7 +115,7 @@ for (const name of WATCH) {
       individualDefenseRate(peak).toFixed(2).padStart(5),
       extremeUsageRatioPenalty(peak).toFixed(2).padStart(7),
       portabilityBonus(peak).toFixed(2).padStart(5),
-      playoffPerformanceBonus(peak).toFixed(2).padStart(5),
+      playoffTalentTerm(peak).toFixed(2).padStart(5),
     ].join(' '),
   );
   if (ddpm || raptor) {

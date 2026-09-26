@@ -2116,7 +2116,9 @@ function selectForDisplay(eligible: RosterInsight[], config: typeof DEFAULT_INSI
   };
   const slots = context.standing == null
     ? { strength: config.targetPerSide, concern: config.targetPerSide }
-    : { strength: 2 + Math.round(context.standing * 3), concern: 2 + Math.round((1 - context.standing) * 3) };
+    // A bottom team reads one or two strengths, a top team five (2026-09-26: with fewer concerns
+    // available to a weak roster, the old 2-strength floor let the two sides tie).
+    : { strength: 1 + Math.round(context.standing * 4), concern: 2 + Math.round((1 - context.standing) * 3) };
 
   const candidates = eligible
     .filter(i => {

@@ -12,7 +12,7 @@ import {
   computeTalentWithoutBridge,
   rawUncappedTalent,
   applyGradeCeiling,
-  isCP3TwoWayExempt,
+  cp3TwoWayExemptionShare,
   hackLiabilityPenalty,
 } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
@@ -20,7 +20,7 @@ import { computeSpacing, computeRawSpacing } from './spacing';
 import { computeDurability } from './durability';
 import { spanEndYears } from './era';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
-import { playoffPerformanceBonus } from './playoffPerformanceLookup';
+import { playoffTalentTerm } from './playoffImpact';
 import { realValueTierFloor } from './realValueFloor';
 import { madeAllNbaInSpan } from './allNbaLookup';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
@@ -1025,10 +1025,9 @@ export interface TierGateContext {
    * pair, not player alone, same scoping reason `GREATEST_PEAK_TIER_BONUS` in aiDrafter.ts uses
    * for its own named-span bonuses). */
   spanLabel?: string;
-  /** Optional — real, un-tier-scaled playoff efficiency signal (negative = a real collapse,
-   * positive = a real riser; see `PLAYOFF_COLLAPSE_TIER_CAP` below for why this exists and why it
-   * gates the TIER rather than the number). Left optional for the same reason as the other
-   * context fields: synthetic/validation contexts default to no signal (0). */
+  /** Optional — the span's playoff impact in TAL points (`playoffImpact.ts`'s `playoffTalentTerm`:
+   * playoff offense + defense + Finals MVP; negative = worse than expected). Already inside `tal`;
+   * carried here for display (the riser/dropper badge). Synthetic contexts default to 0. */
   playoffCollapse?: number;
   /** 2026-08-14, user's own "Sixth Man" tag idea (`sixthMan.ts`'s own docstring has the full
    * derivation/thresholds) — a real instant-offense-off-the-bench profile, deliberately computed
@@ -1088,33 +1087,9 @@ export interface TierGateContext {
  */
 const GOAT_NAMES: ReadonlySet<string> = new Set(['Michael Jordan', 'LeBron James', 'Stephen Curry'].map(normalizePlayerName));
 
-/**
- * 2026-08-12, prototype: user's own follow-up on the playoff-performance work this session —
- * Embiid's real, repeated playoff efficiency collapses (measured directly from real playoff-vs-
- * regular-season TS%, opponent-defense-adjusted; see the playoff-BPM/TS-delta session work)
- * barely move his DISPLAYED TAL even with a tier-scaled additive malus up to 3.5x, because his
- * raw (pre-softcap) value sits at 109-120 — deep enough into `softCapTalent`'s asymptotic
- * compression that no realistically-sized additive number moves the shown TAL at all. Confirmed
- * directly: a -10.2 to -10.8 malus (the tier-scaled attempt) only ever moved his displayed TAL by
- * 1 point.
- *
- * Gating the TIER BADGE instead, exactly the same shape as every other rule in `tierCaps` below
- * (position-specific FGA/grade gates), sidesteps the softcap fight entirely: "Greatest peak"/
- * "GOAT" is a claim about being one of the best seasons ever, and a real, evidence-based,
- * opponent-adjusted playoff collapse is real counter-evidence against that specific claim,
- * independent of how compressed the underlying number is. Position-agnostic (a real collapse is
- * not a position-specific concept), unlike the rest of `tierCaps`.
- *
- * Thresholds are the same base (un-tier-scaled) signal already built and validated this session
- * (TS%-delta vs opponent toughness, REF=8/POWER=1.5 curve, capped ±5) — NOT run through the tier
- * multiplier, since the whole point of this mechanism is to stop depending on the number being
- * large enough to survive the softcap. A genuinely severe reading (clearing roughly 40% of that
- * curve's own ±5 range) removes eligibility for "Greatest peak"/"GOAT"; a reading at or near the
- * curve's own cap removes eligibility for "MVP" too. Still a prototype — not yet validated against
- * the project's usual Taylor top-10/GOAT-40/blast-radius checks before shipping.
- */
-const PLAYOFF_COLLAPSE_MVP_CAP_THRESHOLD = -2;
-const PLAYOFF_COLLAPSE_ALL_NBA_CAP_THRESHOLD = -4;
+// 2026-09-26: the playoff-collapse tier caps (-2 -> max MVP, -4 -> max All-NBA) are gone — the
+// playoff rebuild (`playoffImpact.ts`) moves the number itself, both ways, instead of switching
+// the badge at a threshold.
 
 /**
  * 2026-08-13, user proposal for the McAdoo/Lanier "accepted pre-DARKO gap" bucket (see
@@ -1145,7 +1120,7 @@ function isUnvalidatedPre1976Span(spanLabel: string, playerName?: string): boole
  * higher) for anyone who doesn't. `overallTier` itself stays exported and untouched, since
  * scoring.ts and any non-per-player context has no single (position, O-TAL, D-TAL, FGA) tuple
  * to gate on. */
-export function overallTierForSpan(ctx: TierGateContext): OverallTier {
+function ruleTierForSpan(ctx: TierGateContext): OverallTier {
   const base = overallTier(ctx.tal);
   const otalGrade = offensiveGrade(ctx.otal, ctx.otalUncapped ?? ctx.otal);
   const dtalGrade = defensiveGrade(ctx.dtal);
@@ -1156,11 +1131,8 @@ export function overallTierForSpan(ctx: TierGateContext): OverallTier {
     ctx.fga,
     hasNamedTierException(ctx.playerName, ctx.spanLabel),
     ctx.otal,
-    isCP3TwoWayExempt(ctx.playerName ?? '', ctx.otal, ctx.dtal),
+    cp3TwoWayExemptionShare(ctx.playerName ?? '', ctx.otal, ctx.dtal) > 0,
   );
-  const playoffCollapse = ctx.playoffCollapse ?? 0;
-  if (playoffCollapse <= PLAYOFF_COLLAPSE_ALL_NBA_CAP_THRESHOLD) caps.push('All-NBA');
-  else if (playoffCollapse <= PLAYOFF_COLLAPSE_MVP_CAP_THRESHOLD) caps.push('MVP');
   if (ctx.spanLabel && isUnvalidatedPre1976Span(ctx.spanLabel, ctx.playerName)) caps.push('All-NBA');
   const downcap = namedTierDowncap(ctx.playerName, ctx.spanLabel);
   if (downcap) caps.push(downcap);
@@ -1384,10 +1356,10 @@ const PLAYOFF_VALIDATED_ALL_NBA_TAL_FLOOR = 82;
 /** A hack-liability penalty at or above this (talent.ts) voids the playoff-validated All-NBA floor. */
 const HACK_DISQUALIFIES_ALL_NBA_FLOOR_AT = 2;
 
-export function displayTalentForSpan(ctx: TierGateContext): number {
+function unsmoothedDisplayTalent(ctx: TierGateContext): number {
   const override = namedDisplayTal(ctx.playerName, ctx.spanLabel);
   if (override !== undefined) return override;
-  const cappedTier = overallTierForSpan(ctx);
+  const cappedTier = ruleTierForSpan(ctx);
   const raw = Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
   // Only when a deliberate raise (a `NAMED_TIER_RAISES` entry, or the sustained real-value floor)
   // is actually what produced this span's displayed tier — every other span (the vast majority)
@@ -1405,6 +1377,85 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
     return Math.max(raw, floor);
   }
   return raw;
+}
+
+/**
+ * 2026-09-26, the user ("płynnie robimy" — gradient, no big jumps; "sąsiednie sezony reagują na
+ * siebie"): the rule tiers above are switches — the PG archetype cap (max Starter = 69), the
+ * playoff-validated All-NBA floor (82), the position caps — so a 1-2 point move in the raw number
+ * flipped a whole tier and 10-14 displayed points (Stockton 82 / 70 / 82 / 70, Kemp 63 / 82 / 60,
+ * Billups 2002-04 / 2003-05 81 / 69). Adjacent windows share two of their three seasons, so the
+ * displayed number now reads 50% its own span and 25% each overlapping neighbour (same player,
+ * start year +-1, renormalised at a career's ends). Measured on the pool: adjacent jumps of 12+
+ * on near-identical O-TAL/D-TAL 163 -> 14, all adjacent jumps of 10+ 1,645 -> 333. The badge
+ * follows the smoothed number (see `overallTierForSpan`).
+ */
+const SMOOTH_OWN_WEIGHT = 0.5;
+const SMOOTH_NEIGHBOUR_WEIGHT = 0.25;
+let poolByPlayerStart: Map<string, Map<number, PlayerSpan>> | null = null;
+function neighbourSpans(playerName: string, spanLabel: string): PlayerSpan[] {
+  if (!poolByPlayerStart) {
+    poolByPlayerStart = new Map();
+    for (const span of draftPool) {
+      const key = normalizePlayerName(span.playerName);
+      const byStart = poolByPlayerStart.get(key) ?? new Map<number, PlayerSpan>();
+      byStart.set(Number.parseInt(span.spanLabel.slice(0, 4), 10), span);
+      poolByPlayerStart.set(key, byStart);
+    }
+  }
+  const start = Number.parseInt(spanLabel.slice(0, 4), 10);
+  const byStart = poolByPlayerStart.get(normalizePlayerName(playerName));
+  if (!byStart) return [];
+  return [byStart.get(start - 1), byStart.get(start + 1)].filter((s): s is PlayerSpan => s !== undefined);
+}
+
+/** `sixthMan.ts` registers its context builder here (it imports this file, so this file can't
+ * import it back) — a neighbour is read with the same Sixth-Man flavour as the span asking. */
+let sixthManContextProvider: ((span: PlayerSpan) => TierGateContext) | null = null;
+export function registerSixthManContextProvider(provider: (span: PlayerSpan) => TierGateContext): void {
+  sixthManContextProvider = provider;
+}
+
+const smoothedDisplayCache = new Map<string, number>();
+export function displayTalentForSpan(ctx: TierGateContext): number {
+  const own = unsmoothedDisplayTalent(ctx);
+  if (!ctx.playerName || !ctx.spanLabel) return own;
+  if (namedDisplayTal(ctx.playerName, ctx.spanLabel) !== undefined) return own;
+  const flavour = ctx.isSixthMan !== undefined && sixthManContextProvider ? 's' : 'p';
+  const key = `${flavour}|${normalizePlayerName(ctx.playerName)}|${ctx.spanLabel}|${ctx.tal}`;
+  const hit = smoothedDisplayCache.get(key);
+  if (hit !== undefined) return hit;
+  let sum = SMOOTH_OWN_WEIGHT * own;
+  let weight = SMOOTH_OWN_WEIGHT;
+  for (const neighbour of neighbourSpans(ctx.playerName, ctx.spanLabel)) {
+    const neighbourCtx = flavour === 's' && sixthManContextProvider ? sixthManContextProvider(neighbour) : tierContextFor(neighbour);
+    sum += SMOOTH_NEIGHBOUR_WEIGHT * unsmoothedDisplayTalent(neighbourCtx);
+    weight += SMOOTH_NEIGHBOUR_WEIGHT;
+  }
+  const result = Math.round(sum / weight);
+  smoothedDisplayCache.set(key, result);
+  return result;
+}
+
+function tierBand(tier: OverallTier): [number, number] {
+  if (tier === 'GOAT') return [OVERALL_TIER_FLOORS.find(([, n]) => n === 'Greatest peak')![0], Infinity];
+  if (tier === 'Sixth Man') return [tierFloor('Role Player'), tierCeiling('Sixth Man')];
+  return [tierFloor(tier), tierCeiling(tier)];
+}
+
+/**
+ * The badge. The rule tier above (`ruleTierForSpan`) stands whenever the smoothed number still
+ * sits inside that tier's band; when smoothing moved the number out of it, the badge follows the
+ * number, so badge and number never disagree. The GOAT relabel survives on a Greatest-peak number.
+ */
+export function overallTierForSpan(ctx: TierGateContext): OverallTier {
+  const rule = ruleTierForSpan(ctx);
+  const number = displayTalentForSpan(ctx);
+  const [lo, hi] = tierBand(rule);
+  if (number >= lo && number <= hi) return rule;
+  const byNumber = overallTier(number);
+  if (rule === 'GOAT' && byNumber === 'Greatest peak') return 'GOAT';
+  return byNumber;
 }
 
 /**
@@ -1474,10 +1525,7 @@ export function tierContextFor(rawSpan: PlayerSpan): TierGateContext {
     fga: span.fga,
     playerName: span.playerName,
     spanLabel: span.spanLabel,
-    // Same real, un-scaled playoff-collapse signal already feeding computeTalent's additive term
-    // (talent.ts, via playoffPerformanceBonus) — see this file's own docstring on why the top of
-    // the scale needs a tier cap instead of a bigger additive number (softCapTalent absorption).
-    playoffCollapse: playoffPerformanceBonus(span),
+    playoffCollapse: playoffTalentTerm(span),
     spacing: computeSpacing(span),
     apg: span.box.apg,
     talWithoutEliteDefenseBonus: computeTalentWithoutEliteDefenseBonus(span),

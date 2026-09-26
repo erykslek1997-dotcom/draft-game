@@ -1,5 +1,6 @@
 import { assessNeeds, pickForAi } from '../src/engine/aiDrafter';
 import { activeDraftPool } from '../src/engine/draft';
+import { players } from '../src/data/players';
 import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
 import { displayTalentForSpan, tierContextFor } from '../src/engine/grades';
 import { CAP_LIMIT } from '../src/engine/positions';
@@ -9,8 +10,11 @@ function check(condition: unknown, message: string): asserts condition {
   console.log(`PASS: ${message}`);
 }
 
+/** A rostered (already drafted) span: read from the full span list, not the lean draft pool — the
+ * pool keeps changing which windows it shows as TAL moves (the notes below), while the roster
+ * this fixture reproduces is fixed. */
 function pick(name: string, spanLabel: string): PlayerSpan {
-  const player = activeDraftPool.find(
+  const player = players.find(
     (candidate) => normalizePlayerName(candidate.playerName) === normalizePlayerName(name) && candidate.spanLabel === spanLabel,
   );
   if (!player) throw new Error(`Missing backup-quality fixture: ${name}, ${spanLabel}`);
@@ -32,6 +36,8 @@ function pick(name: string, spanLabel: string): PlayerSpan {
 // graduated-corroboration-ceiling fix (defensiveTalent.ts) nudged which of his windows reads
 // highest — same underlying stretch of his career, same fixture intent, updated span label.
 //
+// 2026-09-26: Marion's peak window moved back (2006-08 -> 2005-07) once the displayed TAL started
+// reading overlapping neighbour windows (grades.ts `displayTalentForSpan`) — same fixture intent.
 // 2026-09-25: Arenas's peak window shifted the same way (2004-06 -> 2005-07) after the
 // every-position playmaking bonus (talent.ts) — same fixture intent, updated span label.
 const pickedBefore83 = [
@@ -56,7 +62,7 @@ const roster = [
   pick('Magic Johnson', '1989-91'),
   pick('Anthony Davis', '2017-19'),
   pick('Kristaps Porzingis', '2022-24'),
-  pick('Shawn Marion', '2006-08'),
+  pick('Shawn Marion', '2005-07'),
   pick('Gilbert Arenas', '2005-07'),
 ];
 const draftedNames = new Set(pickedBefore83.map(normalizePlayerName));

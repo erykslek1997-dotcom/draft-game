@@ -107,7 +107,10 @@ const movementCoverageTeam = team('team-model-movement-coverage', [
   // reading — the point of the check below is "a real defensive liability registers", so use the
   // span where Korver's own D-TAL (22) genuinely is bottom-tier. Still a validated movement
   // shooter in this window, so the movement-gravity checks above are unaffected.
-  pick('Kyle Korver', '2016-18'),
+  // 2026-09-26: 2016-18 now draws only ~6 auto-rotation minutes (seven meaningful players, so the
+  // dead-ninth check below lost its "eight meaningful" premise). 2015-17 plays ~14, is still a
+  // validated movement shooter and still a named huntable target.
+  pick('Kyle Korver', '2015-17'),
   // 2026-09-25: was Tyson Chandler 2011-13. Graded position competence (positionCompetence.ts)
   // rates a classic center as unable to play PF, so Larry Smith had to cover the PF backup
   // minutes and stopped being this fixture's dead ninth slot. Elton Brand 2012-14 is a real

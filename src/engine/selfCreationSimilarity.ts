@@ -272,6 +272,50 @@ export function selfCreationForPortability(span: PlayerSpan): number {
  * bands, full 13,145-span dataset) spreads across the whole A+-through-F range rather than
  * clustering S-B, which was the user's second complaint.
  */
+/**
+ * 2026-09-26, the user ("gradientowe rozwiązanie bez dużych skoków, sąsiednie sezony reagują na
+ * siebie"): the raw per-span estimate could swing hard between overlapping three-season windows
+ * (Jrue Holiday 0.88 -> 0.48 -> 0.10 percentile across adjacent spans), and the usage penalty read
+ * it rank-linearly, so O-POR jumped F -> B- -> A+. Adjacent windows share two of their three
+ * seasons, so each span now reads 50% itself and 25% each overlapping neighbour (same player,
+ * start year +-1), renormalised at the ends of a career. The percentile below is taken over the
+ * smoothed values for the whole population, so the scale itself is unchanged.
+ */
+const SMOOTH_SELF_WEIGHT = 0.5;
+const SMOOTH_NEIGHBOUR_WEIGHT = 0.25;
+let spansByPlayerStart: Map<string, Map<number, PlayerSpan>> | null = null;
+function neighbourSpan(span: PlayerSpan, offset: number): PlayerSpan | undefined {
+  if (!spansByPlayerStart) {
+    spansByPlayerStart = new Map();
+    for (const candidate of players) {
+      const key = normalizePlayerName(candidate.playerName);
+      const byStart = spansByPlayerStart.get(key) ?? new Map<number, PlayerSpan>();
+      byStart.set(Number.parseInt(candidate.spanLabel.slice(0, 4), 10), candidate);
+      spansByPlayerStart.set(key, byStart);
+    }
+  }
+  const start = Number.parseInt(span.spanLabel.slice(0, 4), 10);
+  return spansByPlayerStart.get(normalizePlayerName(span.playerName))?.get(start + offset);
+}
+const smoothedCache = new Map<string, number>();
+export function smoothedSelfCreationForPortability(span: PlayerSpan): number {
+  const key = `${normalizePlayerName(span.playerName)}|${span.spanLabel}`;
+  const hit = smoothedCache.get(key);
+  if (hit !== undefined) return hit;
+  let sum = SMOOTH_SELF_WEIGHT * selfCreationForPortability(span);
+  let weight = SMOOTH_SELF_WEIGHT;
+  for (const offset of [-1, 1]) {
+    const neighbour = neighbourSpan(span, offset);
+    if (neighbour) {
+      sum += SMOOTH_NEIGHBOUR_WEIGHT * selfCreationForPortability(neighbour);
+      weight += SMOOTH_NEIGHBOUR_WEIGHT;
+    }
+  }
+  const value = sum / weight;
+  smoothedCache.set(key, value);
+  return value;
+}
+
 let percentileSortedByPositionBuilt: Map<Position, Float64Array> | null = null;
 function percentileSortedByPosition(): Map<Position, Float64Array> {
   if (percentileSortedByPositionBuilt) return percentileSortedByPositionBuilt;
@@ -279,7 +323,7 @@ function percentileSortedByPosition(): Map<Position, Float64Array> {
   const byPos = new Map<Position, number[]>();
   for (const span of players) {
     const arr = byPos.get(span.primaryPosition) ?? [];
-    arr.push(selfCreationForPortability(span));
+    arr.push(smoothedSelfCreationForPortability(span));
     byPos.set(span.primaryPosition, arr);
   }
   for (const [pos, arr] of byPos) {
@@ -294,7 +338,7 @@ function percentileSortedByPosition(): Map<Position, Float64Array> {
 export function selfCreationPercentileForPortability(span: PlayerSpan): number {
   const sorted = percentileSortedByPosition().get(span.primaryPosition);
   if (!sorted || sorted.length === 0) return 0.5;
-  const value = selfCreationForPortability(span);
+  const value = smoothedSelfCreationForPortability(span);
   let lo = 0;
   let hi = sorted.length;
   while (lo < hi) {
