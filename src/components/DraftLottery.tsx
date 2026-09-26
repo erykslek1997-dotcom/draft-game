@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { SpinLever } from './SpinLever';
 import type { CSSProperties, ReactNode } from 'react';
 import type { Team } from '../engine/types';
 
@@ -22,9 +23,6 @@ interface Props {
 }
 
 /** Tick delays for the reel, fast to slow — a slot machine winding down onto the result. */
-/** How long the lottery screen settles in before the reel starts. */
-const LOTTERY_INTRO_MS = 1300;
-
 function reelDelays(): number[] {
   const delays: number[] = [];
   for (let d = 45; d < 420; d *= 1.13) delays.push(Math.round(d));
@@ -88,13 +86,9 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
   const [archiveFact] = useState(() => DRAFT_ARCHIVE_FACTS[Math.floor(Math.random() * DRAFT_ARCHIVE_FACTS.length)]);
   const done = tick >= delays.length;
   // 2026-09-25, user ("ekran losowania odpala się bardzo szybko, powinno być powolne wejście"): the
-  // screen fades in and the reel sits still for a beat before it starts spinning.
+  // screen fades in and the reel sits still before it spins. 2026-09-26 ("element wizualny który
+  // daje nam możliwość wystartowania"): it now waits for the player to pull the lever.
   const [started, setStarted] = useState(() => prefersReducedMotion());
-  useEffect(() => {
-    if (started) return;
-    const id = window.setTimeout(() => setStarted(true), LOTTERY_INTRO_MS);
-    return () => window.clearTimeout(id);
-  }, [started]);
   useEffect(() => {
     if (!done || !onRevealed) return;
     // Let the result paint first; preparing the data blocks the main thread for a moment.
@@ -120,16 +114,21 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
         </button>
       )}
       <div className="at-board-brand at-cond">Draft Lottery</div>
-      <p className="at-lottery-sub">{done ? 'The balls have spoken.' : 'Drawing your draft slot…'}</p>
+      <p className="at-lottery-sub">
+        {done ? 'The balls have spoken.' : started ? 'Drawing your draft slot…' : 'Pull the lever to draw your draft slot.'}
+      </p>
 
-      <div className={`at-reel ${done ? 'at-reel--done' : ''}`} aria-live="polite">
-        <span className="at-reel-label at-cond">Your pick</span>
-        <span className="at-reel-window">
-          <span key={tick} className="at-reel-number at-cond">
-            #{shown}
+      <div className="at-reel-row">
+        <div className={`at-reel ${done ? 'at-reel--done' : ''}`} aria-live="polite">
+          <span className="at-reel-label at-cond">Your pick</span>
+          <span className="at-reel-window">
+            <span key={tick} className="at-reel-number at-cond">
+              {started ? `#${shown}` : '?'}
+            </span>
           </span>
-        </span>
-        <span className="at-reel-of">of {teamCount}</span>
+          <span className="at-reel-of">of {teamCount}</span>
+        </div>
+        {!done && <SpinLever onPull={() => setStarted(true)} label={started ? 'Drawing…' : 'Pull'} />}
       </div>
 
       {done && (

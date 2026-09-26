@@ -6847,3 +6847,76 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   .results-screen > .results-hero ~ *, .qf-result > .results-hero ~ *,
   .at-stage-in > *, .at-ticker-pick, .at-cpu-turn-banner.is-opening { animation: none !important; }
 }
+
+/* ---- Spin lever (SpinLever.tsx): a one-armed-bandit arm that starts a draw ---- */
+.spin-lever {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--at-ink);
+  font: inherit;
+}
+.spin-lever:disabled { cursor: default; opacity: 0.5; }
+.spin-lever:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 4px; border-radius: 12px; }
+.spin-lever-track { position: relative; width: 44px; height: 132px; }
+.spin-lever-base {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 76px;
+  height: 18px;
+  border-radius: 6px;
+  background: linear-gradient(#2a3a4f, #111a26);
+  border: 1px solid var(--at-line);
+}
+.spin-lever-arm {
+  position: absolute;
+  left: 19px;
+  width: 6px;
+  top: 16px;
+  height: 69px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #8ea3bd, #e6eef8 45%, #6d819b);
+  transform-origin: 50% 100%;
+}
+.spin-lever-knob {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff9a8f, var(--at-brand-red, #c8102e) 55%, #6d0818);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 16px color-mix(in srgb, var(--at-brand-red, #c8102e) 45%, transparent);
+}
+.spin-lever:not(:disabled):not(.is-pulled) .spin-lever-knob { animation: lever-beckon 1.6s ease-in-out infinite; }
+.spin-lever:hover:not(:disabled):not(.is-pulled) .spin-lever-knob { animation-duration: 0.8s; }
+.spin-lever.is-pulled .spin-lever-arm { animation: lever-arm 0.9s cubic-bezier(0.5, 0, 0.3, 1) both; }
+.spin-lever.is-pulled .spin-lever-knob { animation: lever-knob 0.9s cubic-bezier(0.5, 0, 0.3, 1) both; }
+.spin-lever-label { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-accent); }
+@keyframes lever-beckon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+}
+@keyframes lever-arm {
+  0% { transform: scaleY(1); }
+  42% { transform: scaleY(-0.55); }
+  60% { transform: scaleY(-0.55); }
+  100% { transform: scaleY(1); }
+}
+@keyframes lever-knob {
+  0% { transform: translateY(0); }
+  42% { transform: translateY(107px); }
+  60% { transform: translateY(107px); }
+  100% { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin-lever-knob, .spin-lever-arm { animation: none !important; }
+}
+.at-reel-row { display: flex; align-items: center; justify-content: center; gap: 18px; }
+.at-reel-row .spin-lever { margin-top: -6px; }
