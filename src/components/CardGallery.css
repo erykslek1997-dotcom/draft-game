@@ -596,3 +596,4 @@
   color: var(--at-ink-faint);
   font-style: italic;
 }
+.cg-mini-teams:has(.team-chip) { display: flex; gap: 3px; min-height: 16px; }

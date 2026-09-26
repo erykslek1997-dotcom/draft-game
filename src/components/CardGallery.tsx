@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { realSecondaryPositions } from '../engine/positionCompetence';
+import { TeamChip } from './TeamBadge';
 import './CardGallery.css';
 import type { Position } from '../data/schema';
 import { POSITIONS } from '../data/schema';
@@ -175,7 +176,11 @@ function MiniCard({ entry, onOpen }: { entry: GalleryEntry; onOpen: () => void }
         </span>
       </span>
       <span className="cg-mini-name">{entry.name}</span>
-      <span className="cg-mini-teams">{entry.teams || 'NBA'}</span>
+      <span className="cg-mini-teams">
+        {entry.teamBadges.length > 0
+          ? entry.teamBadges.slice(0, 3).map((t) => <TeamChip key={t.code} code={t.code} seasonEnd={t.seasonEnd} />)
+          : 'NBA'}
+      </span>
       <span className="cg-mini-accolades">
         {entry.accolades.length > 0 ? entry.accolades.map((accolade) => (
           <span key={accolade.title} className="cg-mini-accolade" title={accolade.title}>

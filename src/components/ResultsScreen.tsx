@@ -28,7 +28,8 @@ import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
 import { archetypeDisplayName, DEFENSE_FIRST_MIN_SCORE, teamStyleFor } from '../engine/championshipArchetype';
-import { bestHistoricalComp, type HistoricalCompMatch } from '../engine/historicalComps';
+import { bestHistoricalComp, compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
+import { TeamTile } from './TeamBadge';
 import { type FeedbackEntry } from './FeedbackToggle';
 // 2026-08-16, user's own ask ("dodasz to też na ostatni ekran ocen?"): reuses the exact same
 // hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
@@ -729,7 +730,8 @@ function HeroResult({
           {failureMode && <span>main risk: {failureMode}</span>}
           {comp && (
             <span className="results-hero-comp" title={`Closest historical profile: ${comp.comp.blurb}. Match compares this roster's scores, as percentiles of drafted rosters, with what defined that team.`}>
-              Plays like the <b>{comp.comp.team}</b> <small>{comp.match}% match</small>
+              {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
+              <span>Plays like the <b>{comp.comp.team}</b> <small>{comp.match}% match</small></span>
             </span>
           )}
         </p>

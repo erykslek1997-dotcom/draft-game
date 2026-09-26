@@ -1,7 +1,8 @@
 import type { FitScoreResult } from '../engine/fit';
 import type { TeamMetricValues } from '../engine/teamMetrics';
 import type { DefensiveHuntabilityResult } from '../engine/defensiveHuntability';
-import type { HistoricalCompMatch } from '../engine/historicalComps';
+import { compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
+import { TeamTile } from './TeamBadge';
 import { archetypeDisplayName } from '../engine/championshipArchetype';
 
 /** Same red→green judgment scale as ResultsScreen's metric bars. */
@@ -159,7 +160,10 @@ export default function AllMetrics({ values, field, offenseScore, defenseScore, 
             </div>
           )}
           {comp && (
-            <span>Plays like the <b>{comp.comp.team}</b> <span className="all-metrics-caption">{comp.match}% match</span></span>
+            <span className="all-metrics-comp">
+              {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
+              <span>Plays like the <b>{comp.comp.team}</b> <span className="all-metrics-caption">{comp.match}% match</span></span>
+            </span>
           )}
           {inputs.archetypeReport && inputs.archetypeReport.strengths.length > 0 && (
             <span className="all-metrics-caption">Strengths: {inputs.archetypeReport.strengths.join(' · ')}.</span>
