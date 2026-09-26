@@ -187,7 +187,7 @@ export interface GalleryEntry {
   careerYears: string;
   teams: string;
   /** Team chips for the window (code + last season with that team). */
-  teamBadges: { code: string; seasonEnd: number }[];
+  teamBadges: { code: string; seasonStart: number; seasonEnd: number }[];
   accolades: AccoladeBadge[];
   tal: number | string;
   box: Pick<PlayerSpan['box'], 'ppg' | 'rpg' | 'apg' | 'spg' | 'bpg' | 'threePct'>;
@@ -281,6 +281,7 @@ export function galleryEntries(): GalleryEntry[] {
         teams: compactTeams(teams),
         teamBadges: teams.map((code) => ({
           code,
+          seasonStart: Math.min(...spanSeasons.filter((season) => season.team === code).map((season) => season.seasonEnd)),
           seasonEnd: Math.max(...spanSeasons.filter((season) => season.team === code).map((season) => season.seasonEnd)),
         })),
         accolades: featuredAccoladesFor(g.name, championships, span.spanLabel),

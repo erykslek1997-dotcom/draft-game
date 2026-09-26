@@ -6667,3 +6667,19 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .team-chip-text { padding: 3px 6px 3px 5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .all-metrics-comp { display: flex; align-items: center; gap: 10px; }
 
+/* Draft card: position next to the name, team chips on the meta line (2026-09-26). */
+.at-player-card-pos-inline { font-size: 10.5px; font-weight: 500; color: var(--at-ink-faint); white-space: nowrap; }
+.at-player-card-teams { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
+.at-player-card-meta { align-items: center; }
+.peek-teams { white-space: nowrap; }
+.peek-teams .team-chip + .team-chip { margin-left: 3px; }
+@media (max-width: 640px) {
+  .at-shell .player-peek-card .at-draft-span-table td.peek-teams {
+    grid-column: span 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    white-space: normal;
+  }
+  .at-shell .player-peek-card .at-draft-span-table td.peek-teams::before { flex-basis: 100%; }
+}

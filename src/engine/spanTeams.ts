@@ -6,7 +6,8 @@ const career = careerData as Record<string, { seasons: { seasonEnd: number; team
 
 export interface SpanTeam {
   code: string;
-  /** The last season of the window the player spent with this team. */
+  /** First and last season (end years) of the window the player spent with this team. */
+  seasonStart: number;
   seasonEnd: number;
 }
 
@@ -18,7 +19,7 @@ export function teamsForSpan(span: Pick<PlayerSpan, 'playerName' | 'spanLabel'>)
   for (const s of seasons) {
     const last = out[out.length - 1];
     if (last?.code === s.team) last.seasonEnd = s.seasonEnd;
-    else out.push({ code: s.team, seasonEnd: s.seasonEnd });
+    else out.push({ code: s.team, seasonStart: s.seasonEnd, seasonEnd: s.seasonEnd });
   }
   return out;
 }

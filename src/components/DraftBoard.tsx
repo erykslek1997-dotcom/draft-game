@@ -522,6 +522,7 @@ function PlayerPeekModal({
             <thead>
               <tr>
                 <th>Years</th>
+                <th>Team</th>
                 <th>Pos</th>
                 <th className="num">PTS</th>
                 <th className="num">AST</th>
@@ -552,6 +553,11 @@ function PlayerPeekModal({
                 return (
                   <tr key={span.id}>
                     <td className="peek-years"><EraYears span={span} /></td>
+                    <td className="peek-teams" data-label="Team">
+                      {teamsForSpan(span).map((t) => (
+                        <TeamChip key={t.code} code={t.code} seasonStart={t.seasonStart} seasonEnd={t.seasonEnd} />
+                      ))}
+                    </td>
                     <td data-label="Pos">{span.primaryPosition}</td>
                     <td className="num" data-label="PTS">{span.box.ppg.toFixed(1)}</td>
                     <td className="num" data-label="AST">{span.box.apg.toFixed(1)}</td>
@@ -1996,11 +2002,19 @@ export default function DraftBoard({
                             and the position sits on a meta line with the card's TAL — the one
                             number that says how good this season is, next to the colour frame that
                             only says which tier it lands in. */}
+                        {/* 2026-09-26, user's layout call: the position sits next to the name and
+                            the team chips take its old place on the meta line — every club of the
+                            two-season window, each with the seasons spent there. */}
                         <span className="at-player-card-name" title={group.playerName}>
-                          {shortenName(group.playerName, 18)}
+                          {shortenName(group.playerName, 18)}{' '}
+                          <span className="at-player-card-pos-inline">{naturalPosition(group.playerName)}</span>
                         </span>
                         <span className="at-player-card-meta">
-                          <span className="at-player-card-pos">{naturalPosition(group.playerName)}</span>
+                          <span className="at-player-card-teams">
+                            {teamsForSpan(target).map((t) => (
+                              <TeamChip key={t.code} code={t.code} seasonStart={t.seasonStart} seasonEnd={t.seasonEnd} />
+                            ))}
+                          </span>
                           <span className="at-player-card-tal" title="Talent rating of the season this card drafts">
                             TAL <b>{displayTalentForSpan(tierContextFor(target))}</b>
                           </span>
@@ -2011,9 +2025,6 @@ export default function DraftBoard({
                             thing a player checks before a pick. */}
                         <span className="at-player-card-season">
                           <EraYears span={target} suffix="averages" />
-                          {teamsForSpan(target).slice(0, 2).map((t) => (
-                            <TeamChip key={t.code} code={t.code} seasonEnd={t.seasonEnd} />
-                          ))}
                         </span>
                         <span className="at-player-card-stats">
                           <span><b>{target.box.ppg.toFixed(1)}</b>PTS</span>
