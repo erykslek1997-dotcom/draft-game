@@ -1,5 +1,5 @@
 {
-  "note": "NBA Finals MVP by season end year, 1969-2025. Entered by hand 2026-09-26 (no Finals MVP source file existed and Basketball-Reference was unreachable from the build environment) — review against an official list. 2026 (champion NYK in playoffSeriesOutcomes.json) intentionally left out until confirmed.",
+  "note": "NBA Finals MVP by season end year, 1969-2026. Entered by hand 2026-09-26 (no Finals MVP source file existed and Basketball-Reference was unreachable from the build environment); 2026 (Jalen Brunson, NYK) confirmed by the user.",
   "winners": [
     { "season": 1969, "name": "Jerry West" },
     { "season": 1970, "name": "Willis Reed" },
@@ -57,6 +57,7 @@
     { "season": 2022, "name": "Stephen Curry" },
     { "season": 2023, "name": "Nikola Jokić" },
     { "season": 2024, "name": "Jaylen Brown" },
-    { "season": 2025, "name": "Shai Gilgeous-Alexander" }
+    { "season": 2025, "name": "Shai Gilgeous-Alexander" },
+    { "season": 2026, "name": "Jalen Brunson" }
   ]
 }
