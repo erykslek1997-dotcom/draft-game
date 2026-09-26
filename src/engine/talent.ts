@@ -10,10 +10,11 @@ import { rimPressureOffenseTerm } from './rimPressure';
 import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
 import { computeSpacing } from './spacing';
-import { computeDefensiveTalent } from './defensiveTalent';
+import { computeDefensiveTalent, computeDefensiveTalentRegularSeason } from './defensiveTalent';
+import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
+import { liftForReducedRole } from './reducedRole';
 import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
-import { playoffPerformanceBonus } from './playoffPerformanceLookup';
 import { playmakingThreeLevelOffenseAdjustment } from './playmakingThreeLevel';
 import { wasEverAllStarCaliber } from './allNbaLookup';
 import { selfCreationPercentileForPortability } from './selfCreationSimilarity';
@@ -1312,7 +1313,8 @@ const ELITE_DEFENSE_BONUS_THRESHOLD = 85;
 const MAX_ELITE_DEFENSE_BONUS = 15;
 
 function eliteDefenseTalBonus(span: PlayerSpan): number {
-  const dtal = computeDefensiveTalent(span);
+  // Regular-season D-TAL: the playoff defense already reaches TAL through `playoffTalentTerm`.
+  const dtal = computeDefensiveTalentRegularSeason(span);
   return Math.min(MAX_ELITE_DEFENSE_BONUS, Math.max(0, dtal - ELITE_DEFENSE_BONUS_THRESHOLD));
 }
 
@@ -1436,7 +1438,7 @@ function talentScaled(span: PlayerSpan, usageScale: number, includeEliteDefenseB
   const hiddenValue = hiddenValueBonus(span);
   const portability = portabilityBonus(span);
   const roleScalability = roleScalabilityBonus(span);
-  const playoffPerformance = playoffPerformanceBonus(span);
+  const playoffPerformance = playoffTalentTerm(span);
   const selfCreation = selfCreationTalentBonus(span);
   const eliteDefense = includeEliteDefenseBonus ? eliteDefenseTalBonus(span) : 0;
 
@@ -1531,7 +1533,7 @@ export function talentBreakdown(rawSpan: PlayerSpan): TalentBreakdown {
     hiddenValue: hiddenValueBonus(span),
     portability: portabilityBonus(span),
     roleScalability: roleScalabilityBonus(span),
-    playoffPerformance: playoffPerformanceBonus(span),
+    playoffPerformance: playoffTalentTerm(span),
     selfCreation: selfCreationTalentBonus(span),
     darkoDefenseBonus: darkoDefenseBonus(span),
     darkoDefenseMalus: darkoDefenseMalus(span),
@@ -1673,13 +1675,40 @@ export function isCP3TwoWayExempt(playerName: string, otal: number, dtal: number
   );
 }
 
+/**
+ * 2026-09-26, the user ("płynnie, bez dużych skoków"): the PG/SF grade ceilings below were steps —
+ * one O-TAL or D-TAL point across a letter-grade line moved the ceiling 6-8 TAL points (LeBron
+ * 2015-17 held at 87 by a D-TAL of 59). Each step is now a linear ramp across
+ * ±`GRADE_CEILING_RAMP` points around its old threshold: `steps` are [threshold, ceiling below it]
+ * pairs in rising order, the ceiling above the last one is 100.
+ */
+const GRADE_CEILING_RAMP = 5;
+function rampedCeiling(value: number, steps: readonly (readonly [number, number])[]): number {
+  let ceiling = 100;
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const [threshold, below] = steps[i];
+    const t = Math.max(0, Math.min(1, (value - (threshold - GRADE_CEILING_RAMP)) / (2 * GRADE_CEILING_RAMP)));
+    ceiling = below + (ceiling - below) * t;
+  }
+  return ceiling;
+}
+
+/** CP3's two-way exemption as a 0-1 share: it fades in over the last `GRADE_CEILING_RAMP` O-TAL
+ * points below its floor instead of switching on at it (his 2010-13 windows sit at O-TAL 77-80
+ * once the playoffs count). `grades.ts` lifts the badge cap for any share above 0. */
+export function cp3TwoWayExemptionShare(playerName: string, otal: number, dtal: number): number {
+  if (!isCP3TwoWayExempt(playerName, CP3_TWO_WAY_OFFENSE_FLOOR, dtal)) return 0;
+  return Math.max(0, Math.min(1, (otal - (CP3_TWO_WAY_OFFENSE_FLOOR - GRADE_CEILING_RAMP)) / GRADE_CEILING_RAMP));
+}
+
 function pgOffenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'PG') return 100;
   const otal = computeOffensiveTalent(span);
-  if (otal >= PG_OFFENSE_GRADE_A_FLOOR) return 100;
-  if (isCP3TwoWayExempt(span.playerName, otal, computeDefensiveTalent(span))) return 100;
-  if (otal >= PG_OFFENSE_GRADE_B_FLOOR) return PG_MVP_TIER_CAP;
-  return PG_ALL_NBA_TIER_CAP;
+  const ceiling = rampedCeiling(otal, [
+    [PG_OFFENSE_GRADE_B_FLOOR, PG_ALL_NBA_TIER_CAP],
+    [PG_OFFENSE_GRADE_A_FLOOR, PG_MVP_TIER_CAP],
+  ]);
+  return ceiling + (100 - ceiling) * cp3TwoWayExemptionShare(span.playerName, otal, computeDefensiveTalent(span));
 }
 
 /**
@@ -1711,7 +1740,7 @@ const PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION = 95;
 function pgDefenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'PG') return 100;
   if (computeOffensiveTalent(span) >= PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION) return 100;
-  return computeDefensiveTalent(span) >= PG_DEFENSE_GRADE_C_FLOOR ? 100 : PG_MVP_TIER_CAP;
+  return rampedCeiling(computeDefensiveTalent(span), [[PG_DEFENSE_GRADE_C_FLOOR, PG_MVP_TIER_CAP]]);
 }
 
 /**
@@ -1725,7 +1754,7 @@ const SF_OFFENSE_GRADE_B_PLUS_FLOOR = 80;
 
 function sfOffenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'SF') return 100;
-  return computeOffensiveTalent(span) >= SF_OFFENSE_GRADE_B_PLUS_FLOOR ? 100 : PG_MVP_TIER_CAP;
+  return rampedCeiling(computeOffensiveTalent(span), [[SF_OFFENSE_GRADE_B_PLUS_FLOOR, PG_MVP_TIER_CAP]]);
 }
 
 /**
@@ -1746,10 +1775,10 @@ const SF_ALL_STAR_TIER_CAP = 79;
 function sfDefenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'SF') return 100;
   if (normalizePlayerName(span.playerName) === normalizePlayerName('Kevin Durant')) return 100;
-  const dtal = computeDefensiveTalent(span);
-  if (dtal >= SF_DEFENSE_GRADE_C_FLOOR) return 100;
-  if (dtal >= SF_DEFENSE_GRADE_D_PLUS_FLOOR) return SF_ALL_NBA_TIER_CAP;
-  return SF_ALL_STAR_TIER_CAP;
+  return rampedCeiling(computeDefensiveTalent(span), [
+    [SF_DEFENSE_GRADE_D_PLUS_FLOOR, SF_ALL_STAR_TIER_CAP],
+    [SF_DEFENSE_GRADE_C_FLOOR, SF_ALL_NBA_TIER_CAP],
+  ]);
 }
 
 /**
@@ -1936,7 +1965,11 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   // outside the two-pass gate it would otherwise be able to move (see `dtalBridgeCorrection`).
   const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
-  const result = Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
+  const capped = Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
+  // A smaller role next to a star with efficiency held reads toward the player's own earlier
+  // level (`reducedRole.ts` — Bosh in Miami). The reference window never qualifies itself, so this
+  // recursion is one level deep.
+  const result = Math.round(liftForReducedRole(span, capped, computeTalent));
   talentCache.set(span.id, result);
   return result;
 }
@@ -2087,8 +2120,10 @@ export function computeOffensiveTalent(rawSpan: PlayerSpan): number {
   if (cached !== undefined) return cached;
   const { offense } = rawComponents(span, false);
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
-  const scaled = offense * scale + intercept;
-  const result = Math.max(0, Math.min(100, Math.round(scaled)));
+  // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
+  // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
+  const scaled = offense * scale + intercept + playoffImpactForSpan(span).offense;
+  const result = Math.max(0, Math.min(100, Math.round(liftForReducedRole(span, scaled, computeOffensiveTalent))));
   offensiveTalentCache.set(span.id, result);
   return result;
 }
@@ -2115,8 +2150,10 @@ export function computeUncappedOffensiveTalent(rawSpan: PlayerSpan): number {
   if (cached !== undefined) return cached;
   const { offense } = rawComponents(span, false);
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
-  const scaled = offense * scale + intercept;
-  const result = Math.max(0, Math.round(scaled));
+  // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
+  // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
+  const scaled = offense * scale + intercept + playoffImpactForSpan(span).offense;
+  const result = Math.max(0, Math.round(liftForReducedRole(span, scaled, computeUncappedOffensiveTalent)));
   uncappedOffensiveTalentCache.set(span.id, result);
   return result;
 }

@@ -12,7 +12,7 @@ import {
   computeTalentWithoutBridge,
   rawUncappedTalent,
   applyGradeCeiling,
-  isCP3TwoWayExempt,
+  cp3TwoWayExemptionShare,
   hackLiabilityPenalty,
 } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
@@ -20,7 +20,7 @@ import { computeSpacing, computeRawSpacing } from './spacing';
 import { computeDurability } from './durability';
 import { spanEndYears } from './era';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
-import { playoffPerformanceBonus } from './playoffPerformanceLookup';
+import { playoffTalentTerm } from './playoffImpact';
 import { realValueTierFloor } from './realValueFloor';
 import { madeAllNbaInSpan } from './allNbaLookup';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
@@ -1025,10 +1025,9 @@ export interface TierGateContext {
    * pair, not player alone, same scoping reason `GREATEST_PEAK_TIER_BONUS` in aiDrafter.ts uses
    * for its own named-span bonuses). */
   spanLabel?: string;
-  /** Optional — real, un-tier-scaled playoff efficiency signal (negative = a real collapse,
-   * positive = a real riser; see `PLAYOFF_COLLAPSE_TIER_CAP` below for why this exists and why it
-   * gates the TIER rather than the number). Left optional for the same reason as the other
-   * context fields: synthetic/validation contexts default to no signal (0). */
+  /** Optional — the span's playoff impact in TAL points (`playoffImpact.ts`'s `playoffTalentTerm`:
+   * playoff offense + defense + Finals MVP; negative = worse than expected). Already inside `tal`;
+   * carried here for display (the riser/dropper badge). Synthetic contexts default to 0. */
   playoffCollapse?: number;
   /** 2026-08-14, user's own "Sixth Man" tag idea (`sixthMan.ts`'s own docstring has the full
    * derivation/thresholds) — a real instant-offense-off-the-bench profile, deliberately computed
@@ -1088,33 +1087,9 @@ export interface TierGateContext {
  */
 const GOAT_NAMES: ReadonlySet<string> = new Set(['Michael Jordan', 'LeBron James', 'Stephen Curry'].map(normalizePlayerName));
 
-/**
- * 2026-08-12, prototype: user's own follow-up on the playoff-performance work this session —
- * Embiid's real, repeated playoff efficiency collapses (measured directly from real playoff-vs-
- * regular-season TS%, opponent-defense-adjusted; see the playoff-BPM/TS-delta session work)
- * barely move his DISPLAYED TAL even with a tier-scaled additive malus up to 3.5x, because his
- * raw (pre-softcap) value sits at 109-120 — deep enough into `softCapTalent`'s asymptotic
- * compression that no realistically-sized additive number moves the shown TAL at all. Confirmed
- * directly: a -10.2 to -10.8 malus (the tier-scaled attempt) only ever moved his displayed TAL by
- * 1 point.
- *
- * Gating the TIER BADGE instead, exactly the same shape as every other rule in `tierCaps` below
- * (position-specific FGA/grade gates), sidesteps the softcap fight entirely: "Greatest peak"/
- * "GOAT" is a claim about being one of the best seasons ever, and a real, evidence-based,
- * opponent-adjusted playoff collapse is real counter-evidence against that specific claim,
- * independent of how compressed the underlying number is. Position-agnostic (a real collapse is
- * not a position-specific concept), unlike the rest of `tierCaps`.
- *
- * Thresholds are the same base (un-tier-scaled) signal already built and validated this session
- * (TS%-delta vs opponent toughness, REF=8/POWER=1.5 curve, capped ±5) — NOT run through the tier
- * multiplier, since the whole point of this mechanism is to stop depending on the number being
- * large enough to survive the softcap. A genuinely severe reading (clearing roughly 40% of that
- * curve's own ±5 range) removes eligibility for "Greatest peak"/"GOAT"; a reading at or near the
- * curve's own cap removes eligibility for "MVP" too. Still a prototype — not yet validated against
- * the project's usual Taylor top-10/GOAT-40/blast-radius checks before shipping.
- */
-const PLAYOFF_COLLAPSE_MVP_CAP_THRESHOLD = -2;
-const PLAYOFF_COLLAPSE_ALL_NBA_CAP_THRESHOLD = -4;
+// 2026-09-26: the playoff-collapse tier caps (-2 -> max MVP, -4 -> max All-NBA) are gone — the
+// playoff rebuild (`playoffImpact.ts`) moves the number itself, both ways, instead of switching
+// the badge at a threshold.
 
 /**
  * 2026-08-13, user proposal for the McAdoo/Lanier "accepted pre-DARKO gap" bucket (see
@@ -1156,11 +1131,8 @@ function ruleTierForSpan(ctx: TierGateContext): OverallTier {
     ctx.fga,
     hasNamedTierException(ctx.playerName, ctx.spanLabel),
     ctx.otal,
-    isCP3TwoWayExempt(ctx.playerName ?? '', ctx.otal, ctx.dtal),
+    cp3TwoWayExemptionShare(ctx.playerName ?? '', ctx.otal, ctx.dtal) > 0,
   );
-  const playoffCollapse = ctx.playoffCollapse ?? 0;
-  if (playoffCollapse <= PLAYOFF_COLLAPSE_ALL_NBA_CAP_THRESHOLD) caps.push('All-NBA');
-  else if (playoffCollapse <= PLAYOFF_COLLAPSE_MVP_CAP_THRESHOLD) caps.push('MVP');
   if (ctx.spanLabel && isUnvalidatedPre1976Span(ctx.spanLabel, ctx.playerName)) caps.push('All-NBA');
   const downcap = namedTierDowncap(ctx.playerName, ctx.spanLabel);
   if (downcap) caps.push(downcap);
@@ -1553,10 +1525,7 @@ export function tierContextFor(rawSpan: PlayerSpan): TierGateContext {
     fga: span.fga,
     playerName: span.playerName,
     spanLabel: span.spanLabel,
-    // Same real, un-scaled playoff-collapse signal already feeding computeTalent's additive term
-    // (talent.ts, via playoffPerformanceBonus) — see this file's own docstring on why the top of
-    // the scale needs a tier cap instead of a bigger additive number (softCapTalent absorption).
-    playoffCollapse: playoffPerformanceBonus(span),
+    playoffCollapse: playoffTalentTerm(span),
     spacing: computeSpacing(span),
     apg: span.box.apg,
     talWithoutEliteDefenseBonus: computeTalentWithoutEliteDefenseBonus(span),
