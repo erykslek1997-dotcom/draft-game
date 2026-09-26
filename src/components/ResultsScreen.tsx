@@ -784,7 +784,7 @@ function HeroResult({
                 <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
                 <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
                 {weakDefenders.length > 0 && (
-                  <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down. Weak means the bottom third of rotation players at that position.">
+                  <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down. Weak means below the median rotation player at that position.">
                     Weakest links:{' '}
                     {weakDefenders.map((row, i) => (
                       <span key={row.name}>
@@ -1722,11 +1722,11 @@ function RotationColumns({
 
 /**
  * Rotation players below their slot's value are named under the hero's Defense details.
- * 2026-09-26, the user ("50 dla słabego obrońcy zbyt ogólne, zależy od pozycji"): the bottom third
- * of rotation-calibre spans (TAL 55+) at each position — a C at 50 is a weak C (median 61), a PG
- * at 45 is an ordinary PG (median 49).
+ * 2026-09-26, the user ("50 dla słabego obrońcy zbyt ogólne, zależy od pozycji"; then, of a bottom-
+ * third cut, "zbyt mało surowe"): the MEDIAN D-TAL of rotation-calibre spans (TAL 55+) at each
+ * position — a C at 55 is a below-average C, a PG at 45 a below-average PG.
  */
-const WEAK_DEFENDER_DTAL: Record<Position, number> = { PG: 37, SG: 33, SF: 35, PF: 46, C: 58 };
+const WEAK_DEFENDER_DTAL: Record<Position, number> = { PG: 49, SG: 43, SF: 47, PF: 58, C: 61 };
 /** Below this many minutes at a slot, a non-starter is shown on the column's spot line. */
 const SPOT_MINUTES = 6;
 
