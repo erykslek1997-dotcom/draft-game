@@ -190,7 +190,7 @@ export interface InsightEvidence {
 export type DetectorId =
   | 'ELITE_PRIMARY_CREATOR' | 'MULTIPLE_CREATION_SOURCES'
   | 'SECONDARY_CREATION_PRESENT' | 'CREATION_SHORTAGE'
-  | 'SINGLE_CREATOR_DEPENDENCY' | 'BENCH_CREATION_SHORTAGE'
+  | 'SINGLE_CREATOR_DEPENDENCY' | 'BENCH_CREATION_SHORTAGE' | 'OFFENSE_IS_THE_WEAK_SIDE'
   | 'CREATION_SURVIVES_STAR_REST'
   | 'EFFICIENT_FGA_BUDGET' | 'HIGH_TALENT_PER_FGA'
   | 'STAR_FGA_COMPRESSION' | 'MULTIPLE_HIGH_USAGE_PLAYERS'
@@ -2018,7 +2018,8 @@ export function insightContextFor(
  */
 type InsightTopic =
   | 'creation' | 'usage' | 'spacing' | 'perimeter_def' | 'rim_def' | 'team_def' | 'weak_link_def'
-  | 'rebounding' | 'position' | 'minutes' | 'depth' | 'closing' | 'structure' | 'playmaking' | 'free_throws';
+  | 'rebounding' | 'position' | 'minutes' | 'depth' | 'closing' | 'structure' | 'playmaking' | 'free_throws'
+  | 'offense_level';
 
 const CATEGORY_TOPIC: Record<InsightCategory, InsightTopic> = {
   creation: 'creation', usage: 'usage', fga: 'usage', off_ball: 'usage', fit: 'usage', redundancy: 'usage',
@@ -2029,6 +2030,7 @@ const CATEGORY_TOPIC: Record<InsightCategory, InsightTopic> = {
 };
 
 const TOPIC_OVERRIDE: Partial<Record<DetectorId, InsightTopic>> = {
+  OFFENSE_IS_THE_WEAK_SIDE: 'offense_level',
   STAR_POWER_WITHOUT_USAGE_COLLISION: 'usage',
   STAR_POWER_WITH_USAGE_COLLISION: 'usage',
   LOW_FGA_HIGH_IMPACT_CONSTRUCTION: 'usage',
@@ -2072,7 +2074,7 @@ const CROSS_TOPIC_CONFLICTS: Partial<Record<DetectorId, DetectorId[]>> = {
 };
 
 const TOPIC_AREA: Partial<Record<InsightTopic, InsightScoreArea>> = {
-  creation: 'offense', playmaking: 'offense', usage: 'fit', spacing: 'spacing',
+  creation: 'offense', playmaking: 'offense', offense_level: 'offense', usage: 'fit', spacing: 'spacing',
   perimeter_def: 'defense', rim_def: 'defense', team_def: 'defense', weak_link_def: 'defense',
   minutes: 'rotation', position: 'rotation', depth: 'benchDepth',
 };
@@ -2148,6 +2150,32 @@ function selectForDisplay(eligible: RosterInsight[], config: typeof DEFAULT_INSI
   };
 }
 
+/**
+ * 2026-09-26: once Offense moved onto the Defense score's scale (scoring.ts
+ * `calibrateOffenseToDefenseScale`), weak-offense teams finished at the bottom with no line
+ * saying so — the offense detectors describe HOW an offense is built (creation, spacing), not how
+ * good the result is, while defense has several result-level concerns. Offense under
+ * `WEAK_OFFENSE_SCORE` (roughly the bottom quarter of drafted rosters), and weaker than the
+ * defense, is named as the side that held the team back.
+ */
+const WEAK_OFFENSE_SCORE = 68;
+function weakOffenseInsight(context: InsightContext): RosterInsight | null {
+  const offense = context.scores?.offense;
+  const defense = context.scores?.defense;
+  if (offense == null || offense >= WEAK_OFFENSE_SCORE || (defense != null && defense <= offense)) return null;
+  const severity = clamp01(0.55 + (WEAK_OFFENSE_SCORE - offense) / 30);
+  const relevance = 0.8;
+  const confidence = 0.8;
+  const uniqueness = 0.8;
+  return {
+    id: 'OFFENSE_IS_THE_WEAK_SIDE', type: 'concern', category: 'creation',
+    severity, relevance, confidence, uniqueness,
+    score: scoreInsight(severity, relevance, confidence, uniqueness),
+    message: `The offense (${Math.round(offense)}) is the weak side — it scores in the bottom quarter of drafted rosters and trails this team's own defense.`,
+    evidence: { values: { offense: Math.round(offense) } },
+  };
+}
+
 export function generateRosterInsights(
   team: TeamFeatureSnapshot,
   config = DEFAULT_INSIGHT_CONFIG,
@@ -2163,6 +2191,8 @@ export function generateRosterInsights(
   const ranked = dedupeGroups(applyExplicitSuppression(raw))
     .sort((a, b) => b.score - a.score);
 
+  const weakOffense = weakOffenseInsight(context);
+  if (weakOffense) ranked.push(weakOffense);
   const eligible = ranked.filter(i => i.score >= config.minScore);
   // `allActiveInsights` stays in raw score order (debug/tooling reads it as a priority ranking).
   return { ...selectForDisplay(eligible, config, context), allActiveInsights: ranked };

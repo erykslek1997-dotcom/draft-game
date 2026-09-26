@@ -815,8 +815,24 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
   const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
   const cappedBlended = hasWeakOffensiveStarter(team) ? weakOffensiveCenterCap(blended) : blended;
-  const score = Math.round(Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)));
+  const score = Math.round(calibrateOffenseToDefenseScale(Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team))));
   return { ...components, score };
+}
+
+/**
+ * 2026-09-26, the user ("przydałoby się równiejsze"): on 192 seeded AI rosters Offense averaged
+ * 86.2 (sd 6.5, 10 teams pinned at 100) against Defense 74.1 (sd 9.3) — spacing and rim pressure,
+ * two of the blend's inputs, read 100 for roughly half of all drafted fives, so Offense sat high and
+ * barely separated teams while Defense carried most of the ranking. The final Offense number is
+ * mapped linearly onto the Defense score's own mean and spread, so a given distance from an
+ * average roster means the same on both sides. The components (and their bars) are unchanged.
+ */
+const OFFENSE_RAW_MEAN = 86.2;
+const OFFENSE_RAW_SD = 6.45;
+const DEFENSE_MEAN = 74.1;
+const DEFENSE_SD = 9.31;
+function calibrateOffenseToDefenseScale(raw: number): number {
+  return Math.max(0, Math.min(100, DEFENSE_MEAN + (raw - OFFENSE_RAW_MEAN) * (DEFENSE_SD / OFFENSE_RAW_SD)));
 }
 
 export function offenseScore(team: Team): number {
