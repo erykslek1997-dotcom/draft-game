@@ -873,6 +873,10 @@ const LUKA_WING_BLEND = 1.0;
  * on, it was suppressing Curry's own O-TAL below Steve Nash's (96 vs 97) — the opposite of
  * "best-in-position." `computeTalent` passes true; the split metrics pass false so every
  * player's split reads off the same uncapped gravity term. */
+const EFFICIENCY_REFERENCE_TSA = 17;
+const EFFICIENCY_VOLUME_MIN = 0.6;
+const EFFICIENCY_VOLUME_MAX = 1.6;
+
 function rawComponents(
   span: PlayerSpan,
   applyCurryException: boolean,
@@ -888,8 +892,17 @@ function rawComponents(
   // `assistedEfficiencyFactor` only ever discounts a CREDIT (relativeTs > 0) — a genuinely
   // below-average finishing big's efficiency penalty is real regardless of who set him up, so
   // the dampening never softens that direction.
+  // 2026-09-26, the user (Chris Bosh's Toronto prime, 22.5 ppg at .58 TS, rating barely above
+  // Troy Murphy's 14 ppg at .60): efficiency was credited per percentage point regardless of how
+  // many shots it was earned on, so +4% TS on 16 FGA counted the same as +4% on 11 — the points a
+  // player adds over average are relative TS times his true shot attempts. Scaled by true shot
+  // attempts relative to `EFFICIENCY_REFERENCE_TSA` (a 15-FGA starter's load, where the old
+  // term already sat), so a normal starter reads as before; the low-usage dampener already covers
+  // the small-sample side and stays.
+  const trueShotAttempts = box.ppg / (2 * Math.max(0.3, box.tsPct));
+  const volumeWeight = Math.max(EFFICIENCY_VOLUME_MIN, Math.min(EFFICIENCY_VOLUME_MAX, trueShotAttempts / EFFICIENCY_REFERENCE_TSA));
   const efficiency =
-    relativeTs * 140 * lowUsageEfficiencyFactor(span.fga) * (relativeTs > 0 ? assistedEfficiencyFactor(span) : 1);
+    relativeTs * 140 * volumeWeight * lowUsageEfficiencyFactor(span.fga) * (relativeTs > 0 ? assistedEfficiencyFactor(span) : 1);
   const playmaking = effectivePlaymakingApg(box.apg) * paceFactor * 1.7;
   const centerPlaymaking = positionPlaymakingBonus(span.primaryPosition, box.apg, paceFactor);
   const isCurry = normalizePlayerName(span.playerName) === normalizePlayerName('Stephen Curry');
