@@ -22,7 +22,7 @@ import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { ShareCardStarter } from './shareCardImage';
 import type { FeedbackEntry } from './FeedbackToggle';
 import { clearDraftSave, loadDraft, saveDraft } from './draftSave';
-import { AI_SPEED_LABELS, useAiSpeed } from './aiSpeed';
+import { AI_SPEED_LABELS, cpuPickDelay, useAiSpeed } from './aiSpeed';
 
 // 2026-09-17, user's own ask: a real "how to play?" affordance on the lottery screen, now that
 // the intro's own always-visible rules list is gone (see App.tsx). This is the same five-item
@@ -261,7 +261,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     const timer = setTimeout(() => {
       const next = resolveAiPickIfNeeded(draftState);
       if (next) setDraftState(next);
-    }, aiSpeed.delayMs);
+    }, cpuPickDelay(aiSpeed.delayMs, draftState.history.length, draftState.teams.length));
     return () => clearTimeout(timer);
   }, [draftState, phase, aiSpeed.delayMs, deskOpen]);
 

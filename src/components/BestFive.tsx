@@ -23,6 +23,7 @@ import {
   WEIGHTED_AXES,
   AXIS_GLOSSARY,
   dayKey,
+  slotReels,
   type Lineup,
   type LineupScore,
   type DailyPool,
@@ -112,9 +113,11 @@ export default function BestFive({ onBack, onNextStep }: Props) {
   const [activeSlot, setActiveSlot] = useState<Position | null>(initialDaily ? null : 'PG');
   // 2026-09-26, the user: "ograniczmy wybór do 5 graczy. Niech po każdym wyborze gracz widzi jacy
   // gracze się losują." Positions are dealt one at a time: a slot's five stay face down until the
-  // pick before it, then turn over card by card (`freshSlot` plays that reveal once).
+  // pick before it, then spin in on a slot machine (`spinSlot`, once per slot; `landedSlot` pops
+  // the cards in after it stops).
   const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(initialDaily ? STARTER_SLOTS : ['PG']));
   const [freshSlot, setFreshSlot] = useState<Position | null>(initialDaily ? null : 'PG');
+  const [landedSlot, setLandedSlot] = useState<Position | null>(null);
   const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(() =>
     initialDaily ? resultFor(initialDaily, pool, shotsCap) : null,
   );
@@ -292,7 +295,18 @@ export default function BestFive({ onBack, onNextStep }: Props) {
                     : 'Last spot — five dealt.'}
                 </span>
               </div>
-              <div className={`bf-pool${freshSlot === activeSlot ? ' bf-pool--dealing' : ''}`} key={activeSlot}>
+              {freshSlot === activeSlot ? (
+                <SlotMachine
+                  key={`${pool.key}-${activeSlot}`}
+                  pool={pool}
+                  slot={activeSlot}
+                  onDone={() => {
+                    setLandedSlot(activeSlot);
+                    setFreshSlot(null);
+                  }}
+                />
+              ) : (
+              <div className={`bf-pool${landedSlot === activeSlot ? ' bf-pool--landed' : ''}`} key={activeSlot}>
                 {pool.bySlot[activeSlot].map((span, i) => {
                   const chosen = lineup[activeSlot]?.id === span.id;
                   return (
@@ -326,11 +340,11 @@ export default function BestFive({ onBack, onNextStep }: Props) {
                       <span className="bf-pool-box">{boxLineShort(span)}</span>
                       <span className="bf-pool-box bf-pool-box--sub">{boxLineDetail(span)}</span>
                     </button>
-                    <span className="bf-deal-back" aria-hidden />
                     </div>
                   );
                 })}
               </div>
+              )}
             </div>
           )}
 
@@ -367,6 +381,72 @@ export default function BestFive({ onBack, onNextStep }: Props) {
           onNextStep={onNextStep}
         />
       )}
+    </div>
+  );
+}
+
+/** Milliseconds reel `i` spins before it stops — each reel stops a beat after the one before. */
+const reelDuration = (i: number) => 1200 + i * 380;
+
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 2026-09-26, the user: "losując karty w daily deal, może być naprawdę jak w kasynie na maszynie,
+ * widzimy jak śmigają nam gracze i co mogliśmy ominąć". A position's five come in on five reels:
+ * faces from the top of that position blur past, each reel stops on its dealt player a beat
+ * after the one to its left, and the stars that flew past are named once all five stop. Tap to
+ * skip; reduced motion skips it outright.
+ */
+function SlotMachine({ pool, slot, onDone }: { pool: DailyPool; slot: Position; onDone: () => void }) {
+  const { reels, nearMisses } = useMemo(() => slotReels(pool, slot), [pool, slot]);
+  const dealt = pool.bySlot[slot];
+  const [stopped, setStopped] = useState(0);
+  const allStopped = stopped >= dealt.length;
+  useEffect(() => {
+    if (prefersReducedMotion()) onDone();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!allStopped) return;
+    const t = window.setTimeout(onDone, nearMisses.length > 0 ? 1700 : 800);
+    return () => window.clearTimeout(t);
+  }, [allStopped, nearMisses.length, onDone]);
+  return (
+    <div className="bf-machine" role="button" tabIndex={0} aria-label="Dealing — tap to skip" onClick={onDone} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onDone()}>
+      <div className="bf-pool bf-reels">
+        {dealt.map((final, i) => (
+          <div key={final.id} className={`bf-reel${i < stopped ? ' is-stopped' : ''}`}>
+            <div
+              className="bf-reel-strip"
+              style={{ '--n': reels[i].length, '--dur': `${reelDuration(i)}ms` } as CSSProperties}
+              onAnimationEnd={(e) => e.target === e.currentTarget && setStopped((n) => n + 1)}
+            >
+              {[...reels[i], final].map((span, k) => (
+                <div className="bf-reel-item" key={k}>
+                  <Face name={span.playerName} size="md" />
+                  <span className="bf-reel-name">{shortenName(span.playerName, 0)}</span>
+                  <span className="bf-reel-season">{span.spanLabel}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className={`bf-machine-foot${allStopped ? ' is-done' : ''}`} aria-live="polite">
+        {!allStopped ? (
+          <>Dealing… <span className="bf-muted">tap to skip</span></>
+        ) : nearMisses.length > 0 ? (
+          <>So close — <b>{nearMisses.join(' · ')}</b> flew past.</>
+        ) : (
+          <>Your five are in.</>
+        )}
+      </p>
     </div>
   );
 }

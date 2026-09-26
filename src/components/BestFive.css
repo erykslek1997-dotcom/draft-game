@@ -512,28 +512,81 @@
    sits face down in the slot row. */
 .bf-picker-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--at-ink); }
 .bf-picker-sub { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--at-ink-soft); }
-.bf-deal { position: relative; display: flex; perspective: 900px; }
+.bf-deal { position: relative; display: flex; }
 .bf-deal > .bf-pool-card { flex: 1; min-width: 0; }
-.bf-deal-back { display: none; }
-.bf-pool--dealing .bf-deal { transform-style: preserve-3d; animation: bf-deal 0.55s calc(var(--i, 0) * 170ms) both cubic-bezier(0.3, 1.25, 0.5, 1); }
-.bf-pool--dealing .bf-deal > .bf-pool-card { backface-visibility: hidden; }
-.bf-pool--dealing .bf-deal-back {
-  display: block;
-  position: absolute;
-  inset: 0;
+/* Cards pop in once the machine stops. */
+.bf-pool--landed .bf-deal { animation: bf-land 0.45s calc(var(--i, 0) * 70ms) both cubic-bezier(0.3, 1.5, 0.5, 1); }
+@keyframes bf-land {
+  from { transform: scale(0.92); opacity: 0.4; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ---- the slot machine (2026-09-26: "jak w kasynie na maszynie") ---- */
+.bf-machine { cursor: pointer; outline: none; }
+.bf-machine:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 4px; border-radius: 10px; }
+.bf-reel {
+  --reel-h: 150px;
+  position: relative;
+  height: var(--reel-h);
+  overflow: hidden;
+  border: 1px solid var(--at-line);
   border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--at-accent) 40%, var(--at-line));
-  background:
-    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--at-accent) 30%, transparent) 0 16%, transparent 17%),
-    repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)) 0 8px, var(--at-paper) 8px 16px);
-  transform: rotateY(180deg);
-  backface-visibility: hidden;
+  background: var(--at-paper);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-/* Transform only: an opacity below 1 flattens the 3D context and shows the card's mirrored back. */
-@keyframes bf-deal {
-  0% { transform: translateY(16px) rotateY(180deg); }
-  100% { transform: translateY(0) rotateY(0deg); }
+.bf-reel::before,
+.bf-reel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28%;
+  z-index: 1;
+  pointer-events: none;
 }
+.bf-reel::before { top: 0; background: linear-gradient(var(--at-paper), transparent); }
+.bf-reel::after { bottom: 0; background: linear-gradient(transparent, var(--at-paper)); }
+.bf-reel.is-stopped {
+  border-color: var(--at-accent);
+  animation: bf-reel-stop 0.6s ease-out;
+}
+.bf-reel.is-stopped::before,
+.bf-reel.is-stopped::after { opacity: 0; transition: opacity 0.3s; }
+@keyframes bf-reel-stop {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--at-accent) 70%, transparent); }
+  100% { box-shadow: 0 0 0 10px transparent; }
+}
+.bf-reel-strip {
+  animation: bf-spin var(--dur, 1500ms) cubic-bezier(0.2, 0.65, 0.25, 1) forwards;
+  will-change: transform;
+}
+@keyframes bf-spin {
+  0% { transform: translateY(0); filter: blur(2.5px); }
+  80% { filter: blur(0.6px); }
+  90% { transform: translateY(calc(var(--n) * -1 * var(--reel-h) - 14px)); filter: blur(0); }
+  100% { transform: translateY(calc(var(--n) * -1 * var(--reel-h))); filter: blur(0); }
+}
+.bf-reel-item {
+  height: var(--reel-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 6px;
+  text-align: center;
+}
+.bf-reel-name { font-size: 13px; font-weight: 700; color: var(--at-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.bf-reel-season { font-size: 11px; color: var(--at-ink-soft); }
+.bf-machine-foot {
+  margin: 14px 0 0;
+  min-height: 1.5em;
+  font-size: 13px;
+  color: var(--at-ink-soft);
+  text-align: center;
+}
+.bf-machine-foot.is-done { color: var(--at-ink); animation: bf-land 0.4s both; }
+.bf-machine-foot b { color: var(--at-gold, #ffd479); }
 .bf-slot--hidden { cursor: default; opacity: 0.75; border-style: dashed; }
 .bf-slot--hidden .bf-slot-name { color: var(--at-ink-faint); }
 .bf-face--card {
@@ -541,12 +594,30 @@
   background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 18%, var(--at-paper)) 0 5px, var(--at-paper) 5px 10px);
 }
 @media (prefers-reduced-motion: reduce) {
-  .bf-pool--dealing .bf-deal { animation: none; }
-  .bf-pool--dealing .bf-deal-back { display: none; }
+  .bf-pool--landed .bf-deal,
+  .bf-reel-strip,
+  .bf-reel.is-stopped { animation: none; }
 }
 .bf-slot { min-width: 0; }
 .bf-slot-name { overflow-wrap: break-word; }
 @media (max-width: 460px) {
   .bf-slot { padding-left: 3px; padding-right: 3px; }
   .bf-slot-name { font-size: 9.5px; letter-spacing: -0.02em; max-width: 100%; overflow: hidden; overflow-wrap: normal; text-overflow: ellipsis; }
+}
+@media (max-width: 460px) {
+  .bf-reel { --reel-h: 120px; }
+  .bf-reel-item { gap: 4px; }
+}
+
+/* Result, a piece at a time (2026-09-26, see App.css "Staged reveals"): the grade, then the
+   numbers, the bars filling, and the why. */
+.bf-result:not(.qf-result) > * { animation: stage-up 0.55s both ease-out; }
+.bf-result:not(.qf-result) > :nth-child(1) { animation: stage-pop 0.7s 0.15s both; }
+.bf-result:not(.qf-result) > :nth-child(2) { animation-delay: 0.8s; }
+.bf-result:not(.qf-result) > :nth-child(3) { animation-delay: 1.2s; }
+.bf-result:not(.qf-result) > :nth-child(4) { animation-delay: 1.9s; }
+.bf-result:not(.qf-result) > :nth-child(n + 5) { animation-delay: 2.3s; }
+.bf-result:not(.qf-result) > .bf-bars .bf-bar-fill { transform-origin: left center; animation: stage-fill 0.8s 1.35s both cubic-bezier(0.2, 0.7, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .bf-result:not(.qf-result) > *, .bf-result:not(.qf-result) > .bf-bars .bf-bar-fill { animation: none !important; }
 }
