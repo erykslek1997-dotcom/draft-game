@@ -344,7 +344,8 @@ const OVERALL_TIER_FLOORS: ReadonlyArray<readonly [number, OverallTier]> = [
   [70, 'All-star'],
   [80, 'All-NBA'],
   [88, 'MVP'],
-  [94, 'Greatest peak'],
+  // 2026-09-26, the user ("za dużo graczy w greatest peak"): 94 -> 96; MVP is now 88-95.
+  [96, 'Greatest peak'],
 ];
 
 export function overallTier(value: number): OverallTier {
