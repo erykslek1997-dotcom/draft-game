@@ -1,7 +1,7 @@
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
-import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE, predatesThreePointLine, spanEndYears } from './era';
+import { eraBaseline, positionAdjustedTsBaseline, LEAGUE_PACE_BASELINE, predatesThreePointLine, reboundAvailabilityFactor, spanEndYears } from './era';
 import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseMalus } from './darkoCorrection';
@@ -718,7 +718,7 @@ const MAX_REBOUND_VERSATILITY_BONUS = 5;
 function reboundingVersatilityBonus(span: PlayerSpan, paceFactor: number): number {
   const threshold = REBOUND_VERSATILITY_THRESHOLD[span.primaryPosition];
   if (threshold === undefined) return 0;
-  const adjustedRpg = span.box.rpg * paceFactor;
+  const adjustedRpg = span.box.rpg * paceFactor * reboundAvailabilityFactor(span.spanLabel);
   const excess = adjustedRpg - threshold;
   return excess > 0 ? Math.min(MAX_REBOUND_VERSATILITY_BONUS, excess * REBOUND_VERSATILITY_SCALE) : 0;
 }
@@ -900,7 +900,10 @@ function rawComponents(
   // attempts relative to `EFFICIENCY_REFERENCE_TSA` (a 15-FGA starter's load, where the old
   // term already sat), so a normal starter reads as before; the low-usage dampener already covers
   // the small-sample side and stays.
-  const trueShotAttempts = (box.ppg * paceFactor) / (2 * Math.max(0.3, box.tsPct));
+  // Pace only DEFLATES the volume (the fast 1950s-60s, where 30 ppg was not 30 of today's): the
+  // reference load was set on raw scoring, so inflating the slow 1999-2014 seasons read Kobe
+  // 2011-13 at 92 (+11) on volume alone.
+  const trueShotAttempts = (box.ppg * Math.min(1, paceFactor)) / (2 * Math.max(0.3, box.tsPct));
   const volumeWeight = Math.max(EFFICIENCY_VOLUME_MIN, Math.min(EFFICIENCY_VOLUME_MAX, trueShotAttempts / EFFICIENCY_REFERENCE_TSA));
   const efficiency =
     relativeTs * 140 * volumeWeight * lowUsageEfficiencyFactor(span.fga) * (relativeTs > 0 ? assistedEfficiencyFactor(span) : 1);

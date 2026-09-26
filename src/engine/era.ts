@@ -370,3 +370,45 @@ export function positionAdjustedTsBaseline(position: Position, fga: number, span
   const slope = USAGE_TS_SLOPE[position] ?? 0;
   return avgTs + POSITION_TS_OFFSET[position] - slope * (fga - USAGE_REFERENCE_FGA);
 }
+
+/**
+ * 2026-09-26, the user ("dodaj korektę na zbiórki z lat 60"): the pace adjustment evens out the
+ * number of possessions, not the number of MISSES — early-era shooting missed far more often, so
+ * each possession left more rebounds to collect, and the top rebounders of the 1950s-60s read
+ * inflated even after pace (90th percentile of pace-adjusted C rebounding: 18.6 in the 1960s vs
+ * ~12 in every other decade). Rebounds are scaled by missed-shot share against a modern league
+ * (FG% 46%): `(1 - 0.46) / (1 - league FG%)`. League FG% is from the historical league totals
+ * (the season baselines file carries TS% only, and not reliably before 1970); only the seasons
+ * before 1970, where league FG% sat clearly below that, are lowered — nothing is raised.
+ */
+const REBOUND_REFERENCE_FG = 0.46;
+const LEAGUE_FG_BY_END_YEAR: [number, number][] = [
+  [1951, 0.357], [1955, 0.385], [1958, 0.383], [1960, 0.41], [1962, 0.426], [1965, 0.426],
+  [1967, 0.441], [1969, 0.441], [1970, 0.46],
+];
+
+function leagueFgForYear(year: number): number {
+  const table = LEAGUE_FG_BY_END_YEAR;
+  if (year <= table[0][0]) return table[0][1];
+  if (year >= table[table.length - 1][0]) return REBOUND_REFERENCE_FG;
+  for (let i = 1; i < table.length; i++) {
+    const [y1, f1] = table[i];
+    if (year <= y1) {
+      const [y0, f0] = table[i - 1];
+      return f0 + ((year - y0) / (y1 - y0)) * (f1 - f0);
+    }
+  }
+  return REBOUND_REFERENCE_FG;
+}
+
+const reboundFactorCache = new Map<string, number>();
+/** Multiplier (<= 1) for a span's rebounds: fewer misses to go after in the modern game. */
+export function reboundAvailabilityFactor(spanLabel: string): number {
+  const hit = reboundFactorCache.get(spanLabel);
+  if (hit !== undefined) return hit;
+  const years = spanEndYears(spanLabel);
+  const factors = years.map((y) => Math.min(1, (1 - REBOUND_REFERENCE_FG) / (1 - leagueFgForYear(y))));
+  const result = factors.length ? factors.reduce((a, b) => a + b, 0) / factors.length : 1;
+  reboundFactorCache.set(spanLabel, result);
+  return result;
+}
