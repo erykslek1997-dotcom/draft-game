@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './BestFive.css';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
 import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
 import { hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
 import { EraYears } from './EraYears';
+import { TeamChip } from './TeamBadge';
+import { teamsForSpan } from '../engine/spanTeams';
+import { markStepDone } from './pathProgress';
 import { currentStreak, recordDailyResult, savedDailyLineup, type Streak } from './bestFiveProgress';
 import {
   dailyPool,
@@ -32,6 +35,8 @@ interface Props {
   /** Return to the host app's intro. Omitted in the standalone web export, where the "← Back"
    * control is simply not rendered. */
   onBack?: () => void;
+  /** The next step of the learning path (Quick 5), offered on the result screen. */
+  onNextStep?: () => void;
 }
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
@@ -81,7 +86,7 @@ const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 's
  * Deliberately a standalone screen off the intro (same footing as `CapSheet` / `DraftPoolBrowser`)
  * — it has no draft, no lottery, no AI, none of `GameShell`'s phase machine applies.
  */
-export default function BestFive({ onBack }: Props) {
+export default function BestFive({ onBack, onNextStep }: Props) {
   const today = useMemo(() => dayKey(), []);
 
   // The first board of the day is the daily puzzle; "New board" rolls a fresh random pool so the
@@ -213,6 +218,10 @@ export default function BestFive({ onBack }: Props) {
           </p>
 
           <ShotsMeter used={shotsUsed} cap={shotsCap} />
+          <p className="bf-caps-note">
+            <CapIcon /> Caps = a player’s shots per game in those years. A high-usage star eats the budget, so the five
+            have to fit under today’s {shotsCap}.
+          </p>
 
           <div className="bf-slot-row">
             {STARTER_SLOTS.map((slot) => {
@@ -273,6 +282,11 @@ export default function BestFive({ onBack }: Props) {
                           larger text (`.bf-pool-season`, pool-card only) makes it the card's real
                           lead without spending padding on a box in an already-tight ~140px card. */}
                       <EraYears span={span} className="bf-pool-season" />
+                      <span className="bf-pool-teams">
+                        {teamsForSpan(span).map((t) => (
+                          <TeamChip key={t.code} code={t.code} seasonStart={t.seasonStart} seasonEnd={t.seasonEnd} />
+                        ))}
+                      </span>
                       {/* 2026-09-11, user-reported live ("dopisek pozycji na karcie nie ma sensu"):
                           this picker is already scoped to one slot (`SLOT_LABEL[activeSlot]` in
                           the header above — "Pick your point guard"), so repeating the position on
@@ -298,6 +312,13 @@ export default function BestFive({ onBack }: Props) {
             >
               Submit lineup
             </button>
+            <span className={`bf-submit-hint${complete && !overCap ? ' is-ready' : ''}`} role="status">
+              {overCap
+                ? `Over the cap by ${(shotsUsed - shotsCap).toFixed(1)} — swap a costlier pick.`
+                : complete
+                  ? 'Ready to submit.'
+                  : `Pick ${5 - filledCount} more to submit.`}
+            </span>
           </div>
         </div>
       )}
@@ -312,6 +333,7 @@ export default function BestFive({ onBack }: Props) {
           streak={isDaily ? streak : null}
           onNewBoard={newBoard}
           onBackToDaily={backToDaily}
+          onNextStep={onNextStep}
         />
       )}
     </div>
@@ -340,6 +362,7 @@ function BestFiveResult({
   streak,
   onNewBoard,
   onBackToDaily,
+  onNextStep,
 }: {
   lineup: Lineup;
   pool: DailyPool;
@@ -349,7 +372,9 @@ function BestFiveResult({
   streak: Streak | null;
   onNewBoard: () => void;
   onBackToDaily: () => void;
+  onNextStep?: () => void;
 }) {
+  useEffect(() => markStepDone('bestfive'), []);
   const { score, targets, grade } = result;
   const explain = useMemo(() => explainResult(lineup, pool, targets, shotsCap), [lineup, pool, targets, shotsCap]);
   const [showGlossary, setShowGlossary] = useState(false);
@@ -508,6 +533,17 @@ function BestFiveResult({
           )}
           That’s today’s puzzle done — a new one unlocks tomorrow. Practice boards are unlimited.
         </p>
+      )}
+      {onNextStep && (
+        <div className="path-next">
+          <span>
+            <b>Next step: Quick 5.</b> The same five and the same judge — but drafted live against 15 CPU teams that take
+            your targets first.
+          </span>
+          <button className="at-draft-btn" onClick={onNextStep}>
+            Play Quick 5
+          </button>
+        </div>
       )}
       <div className="bf-submit-row bf-result-actions">
         <button className="at-draft-btn bf-submit" onClick={onNewBoard}>

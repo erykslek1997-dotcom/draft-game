@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DraftPlayerCard, TIER_FRAME_COLOR } from './DraftPlayerCard';
 import { createPortal } from 'react-dom';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
@@ -178,22 +179,6 @@ function displayedOverallTier(span: PlayerSpan): DisplayOverallTier {
    own pastel pink (#ec8ecb) that the two read as near-neighbors instead of distinct rungs. Shifted
    cooler/bluer (indigo, not lavender) so it stays clearly on the blue side of MVP's pink — same
    "cyan -> indigo -> magenta -> gold" ladder this palette was always meant to read as. */
-const TIER_FRAME_COLOR: Record<DisplayOverallTier, string> = {
-  'Salary Glue': '#82b5ea',
-  'Cigarette Butt': '#b3b0a8',
-  'Bench Warmer': '#f0a868',
-  'Role Player': '#e8d461',
-  'Sixth Man': '#c1440e',
-  Starter: '#7fd68a',
-  'All-star': '#6fd9e6',
-  'All-NBA': '#8b9bf7',
-  MVP: '#ec8ecb',
-  'Greatest peak': '#ffdc9b',
-  // 2026-09-24: was '#ffd479', a near-twin of Greatest peak's gold right above it — the two top
-  // rungs were indistinguishable on the card frames and the tier key. Platinum reads as "above
-  // gold" without colliding with any other tier's hue.
-  GOAT: '#f2f4f8',
-};
 
 /** Best-first order for the Draft tab's tier colour key. */
 const TIER_KEY_ORDER: DisplayOverallTier[] = [
@@ -1979,83 +1964,18 @@ export default function DraftBoard({
                     // either way and removes the landmine if that gating ever changes.
                     const target = bestLegal ? best : group.spansByTal.find((s) => canPick && isPickLegal(state, s.id)) ?? best;
                     const legal = canPick && isPickLegal(state, target.id);
-                    const tierFrameColor = TIER_FRAME_COLOR[displayedOverallTier(target)];
                     return (
-                      <div
-                        className="at-player-card"
+                      <DraftPlayerCard
                         key={group.playerName}
-                        style={{ '--tier-frame': tierFrameColor } as CSSProperties}
-                      >
-                        <span className="at-player-card-corner" title={displayedOverallTier(target)} aria-hidden />
-                        {/* 2026-09-12, code-review finding: the tier used to be a text badge in
-                            this card's own accessibility tree; moving it to a colored border/
-                            corner (this same session, "wariant A") dropped that entirely — the
-                            corner is aria-hidden and its `title` is a mouse-hover-only affordance,
-                            so a screen-reader, keyboard-only, or touch user got no tier signal at
-                            all. Same information, visually hidden instead of removed: sighted
-                            mouse users still read the tier from color/hover exactly as before. */}
-                        <span className="at-sr-only">{displayedOverallTier(target)} tier</span>
-                        <div className="at-player-card-top">
-                          <Face name={group.playerName} size="md" />
-                          <ShotChip fga={target.fga} cap={CAP_LIMIT} />
-                        </div>
-                        {/* 2026-09-24: name and position used to share one `nowrap` + ellipsis
-                            line, so any position pair (or a merely long surname) got cut to
-                            "Stephen Curry – …". The name now gets its own line (wrapping up to two)
-                            and the position sits on a meta line with the card's TAL — the one
-                            number that says how good this season is, next to the colour frame that
-                            only says which tier it lands in. */}
-                        {/* 2026-09-26, user's layout call: the position sits next to the name and
-                            the team chips take its old place on the meta line — every club of the
-                            two-season window, each with the seasons spent there. */}
-                        <span className="at-player-card-name" title={group.playerName}>
-                          {shortenName(group.playerName, 18)}{' '}
-                          <span className="at-player-card-pos-inline">{naturalPosition(group.playerName)}</span>
-                        </span>
-                        <span className="at-player-card-meta">
-                          <span className="at-player-card-teams">
-                            {teamsForSpan(target).map((t) => (
-                              <TeamChip key={t.code} code={t.code} seasonStart={t.seasonStart} seasonEnd={t.seasonEnd} />
-                            ))}
-                          </span>
-                          <span className="at-player-card-tal" title="Talent rating of the season this card drafts">
-                            TAL <b>{displayTalentForSpan(tierContextFor(target))}</b>
-                          </span>
-                        </span>
-                        {/* 2026-09-24, user-reported live ("dużo wolnego miejsca które można
-                            wykorzystać"): the season's own headline box line, the same numbers the
-                            Scouting report opens with — the card had the room, and it's the first
-                            thing a player checks before a pick. */}
-                        <span className="at-player-card-season">
-                          <EraYears span={target} suffix="averages" />
-                        </span>
-                        <span className="at-player-card-stats">
-                          <span><b>{target.box.ppg.toFixed(1)}</b>PTS</span>
-                          <span><b>{target.box.rpg.toFixed(1)}</b>REB</span>
-                          <span><b>{target.box.apg.toFixed(1)}</b>AST</span>
-                        </span>
-                        <div className="at-player-card-foot">
-                          <span className="at-player-card-actions">
-                            <button
-                              type="button"
-                              className="at-player-card-peek"
-                              title={`${group.spans.length} season${group.spans.length > 1 ? 's' : ''} available`}
-                              onClick={() => setPeekPlayer(group.playerName)}
-                            >
-                              Scouting
-                            </button>
-                            <button
-                              type="button"
-                              className="at-player-card-draft"
-                              disabled={!legal}
-                              title={draftButtonTitle(state, target.id, canPick, currentTeam, `Draft ${group.playerName}`)}
-                              onClick={() => onPick(target.id)}
-                            >
-                              Draft
-                            </button>
-                          </span>
-                        </div>
-                      </div>
+                        span={target}
+                        cap={CAP_LIMIT}
+                        tier={displayedOverallTier(target)}
+                        legal={legal}
+                        draftTitle={draftButtonTitle(state, target.id, canPick, currentTeam, `Draft ${group.playerName}`)}
+                        onDraft={() => onPick(target.id)}
+                        scoutingTitle={`${group.spans.length} season${group.spans.length > 1 ? 's' : ''} available`}
+                        onScouting={() => setPeekPlayer(group.playerName)}
+                      />
                     );
                   })}
                 </div>

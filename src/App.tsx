@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
+import { stepDone } from './components/pathProgress';
 // Plain, data-free module (place/mascot string arrays + a shuffle helper, no engine/dataset
 // imports of its own — verified directly, not assumed) — safe to pull into the intro screen's
 // eager bundle without regressing the "zero engine dependency until Start Draft" load-time split
@@ -321,33 +322,16 @@ function App() {
                 the reference's own colors/branding. Draft keeps the visual weight it earns from
                 every other piece of this screen (hero, tagline, How to Play) already being about
                 it — the other two are real, equal-footing choices, not afterthoughts. */}
-            <div className="mode-grid">
-              <div className="mode-card-wrap">
-                <button className="mode-card mode-card--featured" onClick={startNewDraft}>
-                  <span className="mode-card-icon" aria-hidden>
-                    🏀
-                  </span>
-                  <span className="mode-card-name at-cond">All-Time Draft</span>
-                  <span className="mode-card-desc">16 teams, {DISPLAY_ROSTER_SIZE} rounds — real AI reacting to every pick you make.</span>
-                </button>
-                <button
-                  type="button"
-                  className="mode-card-help"
-                  aria-label="How to play: All-Time Draft"
-                  aria-haspopup="dialog"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleHelp('draft');
-                  }}
-                >
-                  ?
-                </button>
-              </div>
+            <div className="mode-grid mode-grid--path">
+              {/* 2026-09-26, the user's learning path: Best 5 (caps, positions, how a five is
+                  judged) -> Quick 5 (a short live draft) -> the All-Time Draft. The cards read as
+                  those three steps, each with a tick once it's been played through. */}
               <div className="mode-card-wrap">
                 <button className="mode-card" onClick={() => setView('bestfive')}>
                   <span className="mode-card-icon" aria-hidden>
                     🧩
                   </span>
+                  <span className="mode-card-step at-cond">Step 1 · learn the caps{stepDone('bestfive') ? ' ✓' : ''}</span>
                   <span className="mode-card-name at-cond">Best 5</span>
                   <span className="mode-card-desc">Daily puzzle — pick five under a cap, beat the field.</span>
                 </button>
@@ -369,6 +353,7 @@ function App() {
                   <span className="mode-card-icon" aria-hidden>
                     ⚡
                   </span>
+                  <span className="mode-card-step at-cond">Step 2 · your first draft{stepDone('quickfive') ? ' ✓' : ''}</span>
                   <span className="mode-card-name at-cond">Quick 5</span>
                   <span className="mode-card-desc">5 rounds, {DISPLAY_QUICK_CAP_LIMIT} caps to spend — a real draft in a few minutes.</span>
                 </button>
@@ -380,6 +365,28 @@ function App() {
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleHelp('quickfive');
+                  }}
+                >
+                  ?
+                </button>
+              </div>
+              <div className="mode-card-wrap">
+                <button className="mode-card mode-card--featured" onClick={startNewDraft}>
+                  <span className="mode-card-icon" aria-hidden>
+                    🏀
+                  </span>
+                  <span className="mode-card-step at-cond">Step 3 · the full game{stepDone('draft') ? ' ✓' : ''}</span>
+                  <span className="mode-card-name at-cond">All-Time Draft</span>
+                  <span className="mode-card-desc">16 teams, {DISPLAY_ROSTER_SIZE} rounds — real AI reacting to every pick you make.</span>
+                </button>
+                <button
+                  type="button"
+                  className="mode-card-help"
+                  aria-label="How to play: All-Time Draft"
+                  aria-haspopup="dialog"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleHelp('draft');
                   }}
                 >
                   ?
@@ -468,13 +475,13 @@ function App() {
 
       {view === 'bestfive' && (
         <Suspense fallback={<LoadingPanel />}>
-          <BestFive mode="player" onBack={() => setView('intro')} />
+          <BestFive mode="player" onBack={() => setView('intro')} onNextStep={() => setView('quickfive')} />
         </Suspense>
       )}
 
       {view === 'quickfive' && (
         <Suspense fallback={<LoadingPanel />}>
-          <QuickFive humanTeamName={teamName} onExit={() => setView('intro')} />
+          <QuickFive humanTeamName={teamName} onExit={() => setView('intro')} onNextStep={() => (readDraftSaveSummary() ? setView('intro') : startNewDraft())} />
         </Suspense>
       )}
     </div>
