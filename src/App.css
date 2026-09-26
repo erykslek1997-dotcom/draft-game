@@ -3119,10 +3119,13 @@ select {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 14px;
 }
+/* Holds only the AllMetrics panel now, which lays itself out. */
+.analysis-raw[open]:has(> .all-metrics) { display: block; }
 .analysis-raw[open] > summary,
 .analysis-raw > .analysis-section-heading,
 .analysis-raw > .fit-detail-wide,
-.analysis-raw > .fit-v2-shadow-detail { grid-column: 1 / -1; }
+.analysis-raw > .fit-v2-shadow-detail,
+.analysis-raw > .all-metrics { grid-column: 1 / -1; }
 .analysis-raw > .fit-detail-metric {
   display: flex;
   justify-content: space-between;
@@ -3137,37 +3140,94 @@ select {
   .analysis-raw > .fit-detail-wide,
   .analysis-raw > .fit-v2-shadow-detail { grid-column: auto; }
 }
-.championship-summary {
+/* Championship odds panel (group C mockup 17, ChampionshipOdds.tsx). */
+.title-odds {
   display: grid;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 18px;
+  margin-top: 10px;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
-.championship-headline {
+.title-odds-headline {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 22px;
-  margin-bottom: 4px;
+  align-items: flex-end;
+  gap: 10px 36px;
 }
-.championship-headline-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.championship-headline-stat b {
-  font-size: 21px;
+.title-odds-headline span { display: flex; flex-direction: column; gap: 2px; }
+.title-odds-headline b {
+  font-size: 18px;
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--at-ink);
 }
-.championship-headline-stat i {
+.title-odds-headline b.is-lead { font-size: 26px; color: var(--at-gold, #ffd479); }
+.title-odds-headline i,
+.title-odds-kicker {
   font-style: normal;
   font-size: 10.5px;
-  color: var(--at-ink-faint);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--at-ink-faint);
+}
+.title-odds-kicker { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: var(--at-ink-soft); }
+.title-odds-kicker.is-gold { color: var(--at-gold, #ffd479); }
+.title-odds-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 32px;
+}
+.title-odds-grid.has-rule {
+  border-top: 1px solid color-mix(in srgb, var(--at-line, var(--border)) 70%, transparent);
+  padding-top: 16px;
+}
+.title-odds-block { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.title-odds-round,
+.title-odds-field {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+.title-odds-round {
+  grid-template-columns: minmax(0, 130px) minmax(0, 1fr) 44px;
+  padding-left: 8px;
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--at-gold, #ffd479) 70%, transparent);
+}
+.title-odds-round > span:first-child { color: var(--at-ink-soft); }
+.title-odds-field { grid-template-columns: 20px minmax(0, 170px) minmax(0, 1fr) 44px; }
+.title-odds-round b,
+.title-odds-field b { text-align: right; color: var(--at-ink); }
+.title-odds-rank { color: var(--at-ink-faint); }
+.title-odds-name { color: var(--at-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.title-odds-field.is-own .title-odds-name,
+.title-odds-field.is-own b { color: var(--at-gold, #ffd479); font-weight: 800; }
+.title-odds-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--at-ink) 9%, transparent);
+  overflow: hidden;
+}
+.title-odds-track > span { display: block; height: 100%; border-radius: 999px; background: var(--at-brand-blue, #2f74b8); }
+.title-odds-field.is-own .title-odds-track > span { background: var(--at-gold, #ffd479); }
+.title-odds-note { margin: 0; font-size: 11px; color: var(--at-ink-faint); }
+.title-odds-matchup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.title-odds-matchup p { margin: 0; color: var(--at-ink); }
+.title-odds-matchup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.title-odds-matchup-head b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.title-odds-matchup.is-best .title-odds-kicker,
+.title-odds-matchup.is-best .title-odds-matchup-head b { color: var(--at-good, #7fd68a); }
+.title-odds-matchup.is-worst .title-odds-kicker,
+.title-odds-matchup.is-worst .title-odds-matchup-head b { color: var(--at-warn, #f0a868); }
+.title-odds-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.title-odds-chips span { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-variant-numeric: tabular-nums; }
+.title-odds-chips .is-plus { background: color-mix(in srgb, var(--at-good, #7fd68a) 16%, transparent); color: var(--at-good, #7fd68a); }
+.title-odds-chips .is-minus { background: color-mix(in srgb, var(--at-warn, #f0a868) 16%, transparent); color: var(--at-warn, #f0a868); }
+@media (max-width: 700px) {
+  .title-odds-grid { grid-template-columns: minmax(0, 1fr); }
+  .title-odds-headline b.is-lead { font-size: 22px; }
 }
 .net-rating-footnote {
   margin: 9px 0 0;
@@ -6330,3 +6390,78 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 /* 2026-09-25: "Plays like the 2004 Detroit Pistons" — its own line under the team style. */
 .results-hero-comp { display: block; margin-top: 4px; }
 .results-hero-comp small { margin-left: 6px; font-size: 11px; color: var(--at-ink-faint); }
+
+/* "All metrics & inputs" (group C mockup 19, AllMetrics.tsx). */
+.all-metrics { display: grid; gap: 16px; margin-top: 10px; font-size: 12px; line-height: 1.45; }
+.all-metrics-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 16px; font-size: 11px; color: var(--at-ink-faint); }
+.all-metrics-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.all-metrics-legend-tick { display: inline-block; width: 2px; height: 12px; background: var(--at-ink); }
+.all-metrics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 32px; }
+.all-metrics-grid.is-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--at-line, var(--border)) 70%, transparent);
+  padding-top: 16px;
+}
+.all-metrics-col { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.all-metrics-kicker { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-soft); }
+.all-metrics-kicker.is-offense { color: var(--at-offense, #f0a45c); }
+.all-metrics-kicker.is-defense { color: var(--at-defense, #5ec8ff); }
+.all-metrics-row {
+  display: grid;
+  grid-template-columns: minmax(0, 140px) minmax(0, 1fr) 30px 40px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  padding-left: 8px;
+}
+.all-metrics-row.is-offense { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--at-offense, #f0a45c) 70%, transparent); }
+.all-metrics-row.is-defense { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--at-defense, #5ec8ff) 70%, transparent); }
+.all-metrics-row.is-body { grid-template-columns: minmax(0, 96px) minmax(0, 1fr) 30px; padding-left: 0; }
+.all-metrics-row b { text-align: right; color: var(--at-ink); }
+.all-metrics-label { color: var(--at-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.all-metrics-track { position: relative; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--at-ink) 9%, transparent); }
+.all-metrics-fill { display: block; height: 100%; border-radius: 999px; }
+.all-metrics-median { position: absolute; top: -3px; width: 2px; height: 12px; margin-left: -1px; background: var(--at-ink); }
+.all-metrics-rank { text-align: right; color: var(--at-ink-faint); }
+.all-metrics-rank.is-top { color: var(--at-good, #7fd68a); }
+.all-metrics-rank.is-bottom { color: var(--at-warn, #f0a868); }
+.all-metrics-guards { display: grid; gap: 8px; }
+.all-metrics-guards > div { display: grid; grid-template-columns: 64px minmax(0, 1fr) 30px; gap: 10px; align-items: center; }
+.all-metrics-guards b { text-align: right; font-variant-numeric: tabular-nums; }
+.all-metrics-estimated {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  background: color-mix(in srgb, var(--at-warn, #f0a868) 16%, transparent);
+  color: var(--at-warn, #f0a868);
+}
+.all-metrics-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--at-line, var(--border));
+  background: var(--at-paper, var(--bg));
+}
+.all-metrics-caption { font-size: 11px; color: var(--at-ink-faint); }
+.all-metrics-styles { display: flex; flex-wrap: wrap; gap: 6px; }
+.all-metrics-styles span {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--at-pill, var(--bg));
+  color: var(--at-ink-soft);
+}
+.all-metrics-styles span.is-primary {
+  font-weight: 700;
+  background: color-mix(in srgb, var(--at-brand-blue, #2f74b8) 30%, var(--at-paper, var(--bg)));
+  color: var(--at-ink);
+}
+@media (max-width: 800px) {
+  .all-metrics-grid,
+  .all-metrics-grid.is-three { grid-template-columns: minmax(0, 1fr); }
+  .all-metrics-legend { justify-content: flex-start; }
+  .all-metrics-row { grid-template-columns: minmax(0, 112px) minmax(0, 1fr) 26px 36px; gap: 6px; }
+}
