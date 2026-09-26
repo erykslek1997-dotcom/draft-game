@@ -1443,8 +1443,48 @@ function namedPlayerCeiling(playerName: string | undefined): number {
   return (playerName && NAMED_PLAYER_DISPLAY_CEILING.get(normalizePlayerName(playerName))) || Infinity;
 }
 
+/**
+ * Same pass, the other direction: a player's PEAK the user reads higher ("Pau 84, Marc 83, Bosh
+ * 79"). The whole prime moves up with it — every window within `TARGET_FULL_RANGE` of the peak
+ * gets the full lift, fading to none `TARGET_FADE_RANGE` further down — so the career keeps its
+ * shape instead of one window jumping. Raise only.
+ */
+const NAMED_PLAYER_PEAK_TARGET: ReadonlyMap<string, number> = new Map(
+  [
+    ['Pau Gasol', 84],
+    ['Marc Gasol', 83],
+    ['Chris Bosh', 79],
+  ].map(([name, target]) => [normalizePlayerName(name as string), target as number]),
+);
+const TARGET_FULL_RANGE = 12;
+const TARGET_FADE_RANGE = 12;
+const peakCache = new Map<string, number>();
+
+function playerPeakDisplay(playerName: string): number {
+  const key = normalizePlayerName(playerName);
+  const hit = peakCache.get(key);
+  if (hit !== undefined) return hit;
+  const peak = Math.max(
+    ...draftPool.filter((s) => normalizePlayerName(s.playerName) === key).map((s) => smoothedDisplayTalent(tierContextFor(s))),
+  );
+  peakCache.set(key, peak);
+  return peak;
+}
+
+function namedPeakLift(playerName: string | undefined, value: number): number {
+  const target = playerName ? NAMED_PLAYER_PEAK_TARGET.get(normalizePlayerName(playerName)) : undefined;
+  if (target === undefined) return 0;
+  const peak = playerPeakDisplay(playerName!);
+  const lift = target - peak;
+  if (lift <= 0) return 0;
+  const below = peak - value;
+  const share = below <= TARGET_FULL_RANGE ? 1 : Math.max(0, 1 - (below - TARGET_FULL_RANGE) / TARGET_FADE_RANGE);
+  return Math.round(lift * share);
+}
+
 export function displayTalentForSpan(ctx: TierGateContext): number {
-  return Math.min(namedPlayerCeiling(ctx.playerName), smoothedDisplayTalent(ctx));
+  const smoothed = smoothedDisplayTalent(ctx);
+  return Math.min(namedPlayerCeiling(ctx.playerName), smoothed + namedPeakLift(ctx.playerName, smoothed));
 }
 
 function smoothedDisplayTalent(ctx: TierGateContext): number {
