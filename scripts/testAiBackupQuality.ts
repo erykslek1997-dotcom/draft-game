@@ -32,6 +32,8 @@ function pick(name: string, spanLabel: string): PlayerSpan {
 // graduated-corroboration-ceiling fix (defensiveTalent.ts) nudged which of his windows reads
 // highest — same underlying stretch of his career, same fixture intent, updated span label.
 //
+// 2026-09-26: Marion's peak window moved back (2006-08 -> 2005-07) once the displayed TAL started
+// reading overlapping neighbour windows (grades.ts `displayTalentForSpan`) — same fixture intent.
 // 2026-09-25: Arenas's peak window shifted the same way (2004-06 -> 2005-07) after the
 // every-position playmaking bonus (talent.ts) — same fixture intent, updated span label.
 const pickedBefore83 = [
@@ -56,7 +58,7 @@ const roster = [
   pick('Magic Johnson', '1989-91'),
   pick('Anthony Davis', '2017-19'),
   pick('Kristaps Porzingis', '2022-24'),
-  pick('Shawn Marion', '2006-08'),
+  pick('Shawn Marion', '2005-07'),
   pick('Gilbert Arenas', '2005-07'),
 ];
 const draftedNames = new Set(pickedBefore83.map(normalizePlayerName));

@@ -6,7 +6,7 @@ import {
   computeUncappedOffensiveTalent,
   computeTalentWithoutBridge,
 } from './talent';
-import { offensiveGrade, defensiveGrade, tierContextFor, effectiveTalent, type Grade, type TierGateContext } from './grades';
+import { offensiveGrade, defensiveGrade, tierContextFor, effectiveTalent, registerSixthManContextProvider, type Grade, type TierGateContext } from './grades';
 import { blendedRealValueForSpan } from './blendedRealValueLookup';
 import { madeAllNbaInSpan } from './allNbaLookup';
 
@@ -148,3 +148,4 @@ export function tierContextWithSixthMan(span: PlayerSpan): TierGateContext {
   tierContextWithSixthManCache.set(span.id, result);
   return result;
 }
+registerSixthManContextProvider(tierContextWithSixthMan);

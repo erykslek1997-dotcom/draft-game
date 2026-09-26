@@ -1145,7 +1145,7 @@ function isUnvalidatedPre1976Span(spanLabel: string, playerName?: string): boole
  * higher) for anyone who doesn't. `overallTier` itself stays exported and untouched, since
  * scoring.ts and any non-per-player context has no single (position, O-TAL, D-TAL, FGA) tuple
  * to gate on. */
-export function overallTierForSpan(ctx: TierGateContext): OverallTier {
+function ruleTierForSpan(ctx: TierGateContext): OverallTier {
   const base = overallTier(ctx.tal);
   const otalGrade = offensiveGrade(ctx.otal, ctx.otalUncapped ?? ctx.otal);
   const dtalGrade = defensiveGrade(ctx.dtal);
@@ -1384,10 +1384,10 @@ const PLAYOFF_VALIDATED_ALL_NBA_TAL_FLOOR = 82;
 /** A hack-liability penalty at or above this (talent.ts) voids the playoff-validated All-NBA floor. */
 const HACK_DISQUALIFIES_ALL_NBA_FLOOR_AT = 2;
 
-export function displayTalentForSpan(ctx: TierGateContext): number {
+function unsmoothedDisplayTalent(ctx: TierGateContext): number {
   const override = namedDisplayTal(ctx.playerName, ctx.spanLabel);
   if (override !== undefined) return override;
-  const cappedTier = overallTierForSpan(ctx);
+  const cappedTier = ruleTierForSpan(ctx);
   const raw = Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
   // Only when a deliberate raise (a `NAMED_TIER_RAISES` entry, or the sustained real-value floor)
   // is actually what produced this span's displayed tier — every other span (the vast majority)
@@ -1405,6 +1405,85 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
     return Math.max(raw, floor);
   }
   return raw;
+}
+
+/**
+ * 2026-09-26, the user ("płynnie robimy" — gradient, no big jumps; "sąsiednie sezony reagują na
+ * siebie"): the rule tiers above are switches — the PG archetype cap (max Starter = 69), the
+ * playoff-validated All-NBA floor (82), the position caps — so a 1-2 point move in the raw number
+ * flipped a whole tier and 10-14 displayed points (Stockton 82 / 70 / 82 / 70, Kemp 63 / 82 / 60,
+ * Billups 2002-04 / 2003-05 81 / 69). Adjacent windows share two of their three seasons, so the
+ * displayed number now reads 50% its own span and 25% each overlapping neighbour (same player,
+ * start year +-1, renormalised at a career's ends). Measured on the pool: adjacent jumps of 12+
+ * on near-identical O-TAL/D-TAL 163 -> 14, all adjacent jumps of 10+ 1,645 -> 333. The badge
+ * follows the smoothed number (see `overallTierForSpan`).
+ */
+const SMOOTH_OWN_WEIGHT = 0.5;
+const SMOOTH_NEIGHBOUR_WEIGHT = 0.25;
+let poolByPlayerStart: Map<string, Map<number, PlayerSpan>> | null = null;
+function neighbourSpans(playerName: string, spanLabel: string): PlayerSpan[] {
+  if (!poolByPlayerStart) {
+    poolByPlayerStart = new Map();
+    for (const span of draftPool) {
+      const key = normalizePlayerName(span.playerName);
+      const byStart = poolByPlayerStart.get(key) ?? new Map<number, PlayerSpan>();
+      byStart.set(Number.parseInt(span.spanLabel.slice(0, 4), 10), span);
+      poolByPlayerStart.set(key, byStart);
+    }
+  }
+  const start = Number.parseInt(spanLabel.slice(0, 4), 10);
+  const byStart = poolByPlayerStart.get(normalizePlayerName(playerName));
+  if (!byStart) return [];
+  return [byStart.get(start - 1), byStart.get(start + 1)].filter((s): s is PlayerSpan => s !== undefined);
+}
+
+/** `sixthMan.ts` registers its context builder here (it imports this file, so this file can't
+ * import it back) — a neighbour is read with the same Sixth-Man flavour as the span asking. */
+let sixthManContextProvider: ((span: PlayerSpan) => TierGateContext) | null = null;
+export function registerSixthManContextProvider(provider: (span: PlayerSpan) => TierGateContext): void {
+  sixthManContextProvider = provider;
+}
+
+const smoothedDisplayCache = new Map<string, number>();
+export function displayTalentForSpan(ctx: TierGateContext): number {
+  const own = unsmoothedDisplayTalent(ctx);
+  if (!ctx.playerName || !ctx.spanLabel) return own;
+  if (namedDisplayTal(ctx.playerName, ctx.spanLabel) !== undefined) return own;
+  const flavour = ctx.isSixthMan !== undefined && sixthManContextProvider ? 's' : 'p';
+  const key = `${flavour}|${normalizePlayerName(ctx.playerName)}|${ctx.spanLabel}|${ctx.tal}`;
+  const hit = smoothedDisplayCache.get(key);
+  if (hit !== undefined) return hit;
+  let sum = SMOOTH_OWN_WEIGHT * own;
+  let weight = SMOOTH_OWN_WEIGHT;
+  for (const neighbour of neighbourSpans(ctx.playerName, ctx.spanLabel)) {
+    const neighbourCtx = flavour === 's' && sixthManContextProvider ? sixthManContextProvider(neighbour) : tierContextFor(neighbour);
+    sum += SMOOTH_NEIGHBOUR_WEIGHT * unsmoothedDisplayTalent(neighbourCtx);
+    weight += SMOOTH_NEIGHBOUR_WEIGHT;
+  }
+  const result = Math.round(sum / weight);
+  smoothedDisplayCache.set(key, result);
+  return result;
+}
+
+function tierBand(tier: OverallTier): [number, number] {
+  if (tier === 'GOAT') return [OVERALL_TIER_FLOORS.find(([, n]) => n === 'Greatest peak')![0], Infinity];
+  if (tier === 'Sixth Man') return [tierFloor('Role Player'), tierCeiling('Sixth Man')];
+  return [tierFloor(tier), tierCeiling(tier)];
+}
+
+/**
+ * The badge. The rule tier above (`ruleTierForSpan`) stands whenever the smoothed number still
+ * sits inside that tier's band; when smoothing moved the number out of it, the badge follows the
+ * number, so badge and number never disagree. The GOAT relabel survives on a Greatest-peak number.
+ */
+export function overallTierForSpan(ctx: TierGateContext): OverallTier {
+  const rule = ruleTierForSpan(ctx);
+  const number = displayTalentForSpan(ctx);
+  const [lo, hi] = tierBand(rule);
+  if (number >= lo && number <= hi) return rule;
+  const byNumber = overallTier(number);
+  if (rule === 'GOAT' && byNumber === 'Greatest peak') return 'GOAT';
+  return byNumber;
 }
 
 /**
