@@ -395,11 +395,14 @@ function onOffDefenseFloor(span: PlayerSpan): number {
  * D-TAL 45 with DARKO +0.5, RAPTOR +0.9 and DBPM +0.5 all positive): the box ladder reads a wing
  * with 1.4 steals / 0.3 blocks as below average and the real-data corrections only partly lift it.
  * Guards and wings only: when at least three real defensive sources cover the span and EVERY one
- * reads clearly positive, the span is at least an average defender: `CONSENSUS_FLOOR_BASE` (55, roughly the average
- * D-TAL), rising to `CONSENSUS_FLOOR_TOP` as the weakest of them reaches +1.0.
+ * reads at least +0.45, the span is at least an average defender: `CONSENSUS_FLOOR_BASE` (55,
+ * roughly the average D-TAL), rising to `CONSENSUS_FLOOR_TOP` as the weakest of them reaches +1.0.
+ * 2026-09-26, the user's review: +0.3 let team-context positives lift Korver/Mullin-type shooters,
+ * and a 59 -> 60 nudge put LeBron 2015-17 over a tier threshold (87 -> 98) — raised to +0.45 (DARKO steps by 0.5, BPM2 of 0.49 still counts), and
+ * the floor now only applies to spans the other paths read below `CONSENSUS_FLOOR_BASE`.
  */
 const CONSENSUS_MIN_SOURCES = 3;
-const CONSENSUS_MIN_VALUE = 0.3;
+const CONSENSUS_MIN_VALUE = 0.45;
 const CONSENSUS_FULL_VALUE = 1.0;
 const CONSENSUS_FLOOR_BASE = 55;
 const CONSENSUS_FLOOR_TOP = 60;
@@ -668,23 +671,18 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
     NAMED_DTAL_FLOOR.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0,
     NAMED_DTAL_FLOOR_ALL_SPANS.get(normalizePlayerName(span.playerName)) ?? 0,
   );
-  const result = Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(
-        Math.max(
-          credited,
-          namedFloor,
-          onOffDefenseFloor(span),
-          teamDefenseCorroborationFloor(span),
-          perimeterStopperFloor(span),
-          corroboratedAllDefenseFloor(span),
-          consensusPositiveFloor(span),
-        ),
-      ),
-    ),
+  const withoutConsensus = Math.max(
+    credited,
+    namedFloor,
+    onOffDefenseFloor(span),
+    teamDefenseCorroborationFloor(span),
+    perimeterStopperFloor(span),
+    corroboratedAllDefenseFloor(span),
   );
+  // The consensus floor only rescues spans the other paths read as BELOW average; an already
+  // average-or-better defender is left alone, so it can't nudge a star over a tier threshold.
+  const floored = withoutConsensus < CONSENSUS_FLOOR_BASE ? Math.max(withoutConsensus, consensusPositiveFloor(span)) : withoutConsensus;
+  const result = Math.max(0, Math.min(100, Math.round(floored)));
   defensiveTalentCache.set(span.id, result);
   return result;
 }
