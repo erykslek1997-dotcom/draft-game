@@ -1,7 +1,7 @@
 import { computeOffensiveTalent } from './talent';
 import { primaryStarters } from './rotation';
 import type { FitScoreResult } from './fit';
-import type { ScoreBreakdown } from './scoring';
+import { offenseScoreBreakdown, type ScoreBreakdown } from './scoring';
 import type { SeasonProfileResult } from './seasonProfile';
 import type { Team } from './types';
 
@@ -32,8 +32,8 @@ export function evaluateHistoricalChallenges(
   const starters = primaryStarters(team).map((entry) => entry.player);
   const rimProtectors = starters.filter((player) => player.defensiveRole === 'Anchor Big' || player.defensiveRole === 'Mobile Big').length;
   const maxOffensiveTalent = Math.max(...team.roster.map(computeOffensiveTalent));
-  const gluePlayers = team.roster.filter((player) => player.fga < 2).length;
   const lowUsageSpecialists = team.roster.filter((player) => player.fga <= 8).length;
+  const playmaking = offenseScoreBreakdown(team).playmaking;
   const trueCenters = starters.filter((player) => player.primaryPosition === 'C' && player.defensiveRole === 'Anchor Big').length;
   const build = (id: string, title: string, inspiration: string, bonus: string, conditions: HistoricalChallengeCondition[]): HistoricalChallengeResult => ({
     id,
@@ -88,21 +88,20 @@ export function evaluateHistoricalChallenges(
       // than ~85-88. 75 preserves this as a genuine elite-fit gate on the new scale.
       condition('FIT minimum 75', breakdown.fitScore >= 75, `${breakdown.fitScore}`),
     ]),
-    build('fga-glue', 'Salary Glue', 'Low-usage championship role players', 'Cap alchemist badge', [
-      condition('At least two players costing under 2 caps', gluePlayers >= 2, `${gluePlayers}`),
-      condition('PO profile minimum 80', season.playoffs >= 80, `${season.playoffs}`),
-      condition('Bench depth minimum 70', breakdown.benchDepthScore >= 70, `${breakdown.benchDepthScore}`),
-      condition('Rotation minimum 75', breakdown.rotationScore >= 75, `${breakdown.rotationScore}`),
-    ]),
     // 2026-09-12, user's own ask ("dodajmy więcej archetypów"): three more, built from
     // components/inputs the existing seven never touch (`huntingPotential`/`mismatchStructure`,
     // `guardContainment`, `rimPressureTeam`) so each reads as its own distinct identity rather
     // than a reshuffled version of one already above.
+    // 2026-09-26, the user ("Lob city zwiększyć wymagania"): 78% of AI rosters completed it —
+    // rim pressure and primary creation read 100 for most drafted fives. Now it asks for what
+    // made those Clippers: a table-setting passer (team playmaking), rim pressure at the cap,
+    // two rim-running bigs who own the glass, and a real regular season.
     build('lob-city', 'Lob City', '2012–15 LA Clippers', 'Alley-oop badge', [
-      condition('Rim pressure minimum 80', fit.components.rimPressureTeam >= 80, `${fit.components.rimPressureTeam}`),
-      condition('Primary creation minimum 80', fit.inputs.primaryCreationSignal >= 80, `${Math.round(fit.inputs.primaryCreationSignal)}`),
-      condition('Spacing minimum 60', breakdown.spacingScore >= 60, `${breakdown.spacingScore}`),
-      condition('RS profile minimum 78', season.regularSeason >= 78, `${season.regularSeason}`),
+      condition('Rim pressure 100', fit.components.rimPressureTeam >= 100, `${fit.components.rimPressureTeam}`),
+      condition('Playmaking minimum 88', playmaking >= 88, `${Math.round(playmaking)}`),
+      condition('Two rim-running bigs in the starting five', rimProtectors >= 2, `${rimProtectors}`),
+      condition('Rebounding minimum 85', fit.components.reboundingBalance >= 85, `${fit.components.reboundingBalance}`),
+      condition('RS profile minimum 88', season.regularSeason >= 88, `${season.regularSeason}`),
     ]),
     build('grit-and-grind', 'Grit and Grind', '2011–13 Memphis Grizzlies', 'Bully-ball badge', [
       condition('Defense minimum 81', breakdown.defenseScore >= 81, `${breakdown.defenseScore}`),
