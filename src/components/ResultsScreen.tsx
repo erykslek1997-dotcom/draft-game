@@ -1613,13 +1613,13 @@ export function downloadFeedback(
  * the results screen used to show the numbers (often a harsh 16th/16, 0% everywhere) without
  * ever saying what to do differently. */
 const NEXT_DRAFT_TIP: Record<string, string> = {
-  Talent: 'Your top-end talent was the gap. Spend your early picks on the best player available, then fill needs later.',
-  'Bench Depth': 'Your bench gave back too much. Keep some caps for the last rounds so your 6th–9th men can actually play.',
-  Offense: "Your offense stalled. Draft at least one real shot creator, and don't stack non-shooters in the starting five.",
-  Defense: "Defense sank this team. Opponents hunt stars who can't defend — spend a mid-round pick on a rim protector or a wing stopper.",
-  Spacing: 'The floor was too cramped. Put two or three real outside shooters around your stars.',
-  Fit: "The pieces overlapped. Too many players who need the ball, or who do the same job — balance creators, shooters and defenders.",
-  Rotation: 'Your rotation cost you. Start players at their own positions and don’t play anyone more minutes than he can handle.',
+  Talent: 'Top-end talent was the main gap. Spend early picks on the best player available and fill needs later.',
+  'Bench Depth': 'The bench gave back ground. Save some caps for the late rounds so your 6th–9th men can hold their own.',
+  Offense: 'The offense trailed the field. A second shot creator and more shooting around the stars would help.',
+  Defense: "Defense was the main gap. Opponents target stars who can't defend — a mid-round rim protector or wing stopper would help.",
+  Spacing: 'The floor got crowded. Two or three reliable outside shooters around your stars would open it up.',
+  Fit: 'Some pieces overlapped — several players who want the ball or do the same job. Balance creators, shooters and defenders.',
+  Rotation: 'The rotation cost some points. Start players at their natural positions and keep minutes within what each can handle.',
 };
 
 /** 2026-09-25, user-reported ("Too many players needed the ball — nie jest to skład który wymaga
@@ -1628,16 +1628,16 @@ const NEXT_DRAFT_TIP: Record<string, string> = {
  * Spacing fit 95; Switchability and Rim pressure were the real gaps). The Fit tip now names the
  * weakest component. */
 const FIT_COMPONENT_TIP: Record<keyof FitScoreResult['components'], string> = {
-  creationStructure: 'The ball had too many owners, or none. Build around one or two creators and surround them with finishers and shooters.',
-  spacingCompatibility: 'Your non-shooters got in each other’s way. Pair every big who can’t shoot with shooters, not with another non-shooter.',
-  defensiveRoleCoverage: 'A defensive job was left empty. Make sure you have both a rim protector and a wing who can take the other team’s best scorer.',
-  switchability: 'Your lineup couldn’t switch. Opponents drag your slowest big or smallest guard into pick-and-rolls — add defenders who can guard several positions.',
-  huntResistance: 'Opponents had someone to pick on. Every weak defender you start becomes their go-to matchup — cover him or bench him.',
-  defensiveCohesion: 'Your defenders didn’t add up to a unit. Anchor the paint and the perimeter together instead of stacking one kind of stopper.',
-  rimPressureTeam: 'Nobody attacked the rim. Add a slasher or a big who finishes inside and draws fouls, so the defense can’t just stay home on shooters.',
-  reboundingBalance: 'You lost the glass. Start at least one real rebounder in the frontcourt.',
-  sizeCoverage: 'You were too small for your positions. Bigger bodies at the forward spots stop teams from bullying you inside.',
-  championshipStructure: 'There was no clear pecking order. Title teams have one or two stars and role players who fit around them.',
+  creationStructure: 'Creation was unbalanced — too many ball-handlers, or too few. Build around one or two creators with finishers and shooters around them.',
+  spacingCompatibility: 'The non-shooters got in each other’s way. Pair each big who doesn’t shoot with shooters rather than another non-shooter.',
+  defensiveRoleCoverage: 'One defensive job was left thin. Aim for both a rim protector and a wing who can take the other team’s best scorer.',
+  switchability: 'The lineup struggled to switch. Opponents can pull your slowest big or smallest guard into pick-and-rolls — defenders who guard several positions help.',
+  huntResistance: 'Opponents had a clear matchup to target. Every weaker defender you start becomes their go-to — cover him with help or limit his minutes.',
+  defensiveCohesion: 'The defenders didn’t quite add up to a unit. Pair a paint anchor with perimeter stoppers instead of stacking one kind.',
+  rimPressureTeam: 'Too reliant on jump shooting — the lineup lacked an inside finisher. A slasher or a big who scores at the rim and draws fouls would balance it.',
+  reboundingBalance: 'Rebounding was a weakness. One real rebounder in the frontcourt would help.',
+  sizeCoverage: 'The lineup was undersized for its positions. Bigger bodies at the forward spots help against physical teams.',
+  championshipStructure: 'The pecking order was unclear. Title teams have one or two stars and role players built around them.',
 };
 
 /**
@@ -1650,10 +1650,10 @@ const FIT_COMPONENT_TIP: Record<keyof FitScoreResult['components'], string> = {
  */
 const MEDIAN_OTAL_BY_SLOT: Record<Position, number> = { PG: 63, SG: 67, SF: 63, PF: 64, C: 62 };
 const OFFENSE_PART_TIP: Record<'spacing' | 'rimPressure' | 'playmaking' | 'selfCreation', string> = {
-  spacing: 'Put more shooters around your creators so the floor stays open.',
-  rimPressure: 'Nobody attacked the rim — add a slasher or a big who finishes inside and draws fouls.',
-  playmaking: 'Add a real passer so your scorers get the ball in rhythm.',
-  selfCreation: 'Late in the clock nobody could create a shot — add a scorer who can beat his man.',
+  spacing: 'More shooting around your creators would open the floor.',
+  rimPressure: 'The offense was too reliant on jump shooting — it lacked an inside finisher.',
+  playmaking: 'A true passer would get your scorers the ball in rhythm.',
+  selfCreation: 'Late in the clock it lacked someone who can create his own shot.',
 };
 function offenseTip(team: Team): string {
   const minutes = new Map<string, { player: ResolvedSlotAssignment['player']; total: number; bySlot: Map<Position, number> }>();
@@ -1676,8 +1676,8 @@ function offenseTip(team: Team): string {
   const [weakestPart] = (['spacing', 'rimPressure', 'playmaking', 'selfCreation'] as const)
     .map((k) => [k, parts[k]] as const)
     .sort((a, b) => a[1] - b[1])[0];
-  if (!drag) return `Your offense trailed the field. ${OFFENSE_PART_TIP[weakestPart]}`;
-  return `Your offense trailed the field, and ${drag.row.player.playerName} was the biggest drag: O-TAL ${drag.otal} in ${Math.round(drag.row.total)} minutes at ${drag.slot}, where a typical rotation player reads ${MEDIAN_OTAL_BY_SLOT[drag.slot]}. ${OFFENSE_PART_TIP[weakestPart]}`;
+  if (!drag) return `The offense trailed the field. ${OFFENSE_PART_TIP[weakestPart]}`;
+  return `The offense trailed the field, and ${drag.row.player.playerName} gave it the least: O-TAL ${drag.otal} in ${Math.round(drag.row.total)} minutes at ${drag.slot}, where a typical rotation player reads ${MEDIAN_OTAL_BY_SLOT[drag.slot]}. ${OFFENSE_PART_TIP[weakestPart]}`;
 }
 
 function nextDraftTip(label: string, team: Team): string | undefined {
