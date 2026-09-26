@@ -391,7 +391,7 @@ function App() {
           {confirmNewDraft && savedDraft && (
             <div className="mode-help-backdrop" onClick={() => setConfirmNewDraft(false)}>
               <div
-                className="mode-help-modal"
+                className="mode-help-modal saved-draft-confirm-modal"
                 role="alertdialog"
                 aria-modal="true"
                 aria-label="Start a new draft?"
