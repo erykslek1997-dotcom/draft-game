@@ -5219,7 +5219,14 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   border-radius: 999px; padding: 7px 16px; background: #4a9eda; color: #06070c;
 }
 .saved-draft-confirm-text { font-size: 13.5px; line-height: 1.5; margin: 4px 0 16px; }
-.saved-draft-confirm-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.saved-draft-confirm-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: stretch; flex-wrap: wrap; }
+/* 2026-09-26, user-reported ("lewy górny róg się rozjeżdża, przyciski nierówne"): the two buttons
+   kept their legacy standalone margins (primary 16px on top, secondary 8px/16px), so they sat at
+   different heights, and the extra bottom margin overflowed the modal — its scrollbars pushed the
+   terminal corner brackets out of place. Same one-baseline fix as the verdict/results rows, and a
+   confirm this short never needs to scroll. */
+.saved-draft-confirm-actions > button { margin: 0; min-height: 44px; }
+.saved-draft-confirm-modal { overflow: visible; }
 
 /* 2026-09-24: collapsed draft board ticker (DraftBoard.tsx) + the phone "Your Team" toggle. */
 .at-ticker {
