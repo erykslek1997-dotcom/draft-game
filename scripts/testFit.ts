@@ -188,8 +188,11 @@ const reportedSwitchability = team('fit-v2-reported-switchability', [
   pick('Ben Wallace', '2001-03'),
 ]);
 const reportedSwitchabilityResult = fitScore(reportedSwitchability);
+// 2026-09-26: switchability rescaled so an all-time switching five (Payton/Jordan/Pippen/Garnett/
+// Green) reads ~100 (fit.ts `rescaleSwitchability`); this roster moved 69 -> 82. "Good, not
+// elite" is now 70-89 — still well short of the elite five.
 check(
-  reportedSwitchabilityResult.inputs.switchability >= 65 && reportedSwitchabilityResult.inputs.switchability <= 80,
+  reportedSwitchabilityResult.inputs.switchability >= 70 && reportedSwitchabilityResult.inputs.switchability <= 89,
   'Kidd/Klay/LeBron/Barkley/Porzingis starting five grades as good, not elite, switchability',
 );
 

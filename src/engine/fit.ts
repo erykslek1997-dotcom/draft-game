@@ -21,7 +21,7 @@ import { computeOffensiveTalent } from './talent';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
 import { defensiveHuntability } from './defensiveHuntability';
-import { defensiveCohesion, MAX_DEFENSE_SCORE_BONUS } from './defensiveCohesion';
+import { defensiveCohesion } from './defensiveCohesion';
 import { rimPressureTeam } from './rimPressure';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 // Boolean predicate only (is this player a hard whole-career era override) — NOT a
@@ -243,6 +243,20 @@ function weightedAvailable(values: Array<{ value: number | null; weight: number 
   const totalWeight = available.reduce((sum, entry) => sum + entry.weight, 0);
   if (totalWeight === 0) return null;
   return available.reduce((sum, entry) => sum + entry.value * entry.weight, 0) / totalWeight;
+}
+
+/**
+ * 2026-09-26, the user ("Switchability też powinno być możliwe do osiągnięcia 100"): three of the
+ * four per-player inputs above are percentiles (athleticism, functional size — each averaging 50
+ * by construction) or single-position versatility (35), so even an all-time switching five raw-
+ * scored 76 and drafted rosters topped out at 72. The raw lineup value is mapped so a genuinely
+ * elite switching five (Payton / Jordan / Pippen / Garnett / Green: raw 76) reads 100 and a five of
+ * stay-home, single-position non-switchers (raw ~35) reads 0.
+ */
+const SWITCHABILITY_RAW_FLOOR = 35;
+const SWITCHABILITY_RAW_ELITE = 76;
+function rescaleSwitchability(raw: number): number {
+  return clamp(((raw - SWITCHABILITY_RAW_FLOOR) / (SWITCHABILITY_RAW_ELITE - SWITCHABILITY_RAW_FLOOR)) * 100);
 }
 
 function positionVersatilityScore(player: PlayerSpan): number {
@@ -881,7 +895,7 @@ export function fitScore(team: Team): FitScoreResult {
   // A switching scheme is limited by both the lineup's general versatility and its least
   // switchable starter. Starter-only; full-rotation D-TAL huntability is the separate
   // `huntResistance` component below.
-  const switchability = Math.round(mean(individualSwitchability) * 0.75 + Math.min(...individualSwitchability) * 0.25);
+  const switchability = Math.round(rescaleSwitchability(mean(individualSwitchability) * 0.75 + Math.min(...individualSwitchability) * 0.25));
   if (reboundingBalance < 35) notes.push('The starting five is weak on the glass relative to its assigned positions.');
   if (sizeCoverage < 35) notes.push('The starting five lacks functional size relative to its assigned positions.');
 
@@ -894,10 +908,9 @@ export function fitScore(team: Team): FitScoreResult {
   // BONUS` specifically (a comment here even still said "18," a value from an even earlier cut) —
   // stale the moment ANY sibling path's own cap became the larger one, most recently
   // `weakLinkOvercomeBonus`'s 28, which pushed this over 100 (up to ~467) and was shown raw to
-  // the user in Team analysis. `MAX_DEFENSE_SCORE_BONUS` is the real, always-current ceiling.
+  // the user in Team analysis. 2026-09-26: now `structureScore`, read against the elite-shell cap.
   const huntResistance = defensiveHuntability(team).resistance;
-  const cohesionBonusRaw = defensiveCohesion(team).defenseScoreBonus;
-  const defensiveCohesionComponent = Math.round((cohesionBonusRaw / MAX_DEFENSE_SCORE_BONUS) * 100);
+  const defensiveCohesionComponent = Math.round(defensiveCohesion(team).structureScore);
   const rimPressureTeamComponent = Math.round(rimPressureTeam(starters));
 
   const components: FitScoreComponents = {

@@ -167,6 +167,15 @@ export interface DefensiveCohesionResult {
    * shape is present. */
   weakLinkOvercome: number;
   defenseScoreBonus: number;
+  /**
+   * 0-100 display/fit reading of the structure, 2026-09-26 (the user: Defensive cohesion could
+   * never pass 21). It used to be `defenseScoreBonus / MAX_DEFENSE_SCORE_BONUS`, and that max is
+   * the rare weak-link path's 28 — so a complete elite shell (6 of 28) read 21. Now each path is
+   * read against the elite-shell ceiling (`MAX_ELITE_SHELL_DEFENSE_BONUS`): a complete no-weak-
+   * link shell or a full two-anchor backline reads 100, a full three-layer core 83, and a fully
+   * engaged weak-link-overcome shell 100.
+   */
+  structureScore: number;
   averageDefensiveTalent: number;
   poaProvider: string | null;
   wingProvider: string | null;
@@ -220,6 +229,7 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
       backlineFoundation: 0,
       weakLinkOvercome: 0,
       defenseScoreBonus: 0,
+      structureScore: 0,
       averageDefensiveTalent: 0,
       poaProvider: null,
       wingProvider: null,
@@ -448,6 +458,7 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     backlineFoundation,
     weakLinkOvercome,
     defenseScoreBonus: Math.max(eliteShellBonus, threeLayerCoreBonus, backlineFoundationBonus, blendedWeakLinkOvercomeBonus),
+    structureScore: Math.min(100, Math.max(otherDefenseBonusesMax / MAX_ELITE_SHELL_DEFENSE_BONUS, weakLinkOvercome) * 100),
     averageDefensiveTalent,
     poaProvider: poa?.player.playerName ?? null,
     wingProvider: wing?.player.playerName ?? null,
