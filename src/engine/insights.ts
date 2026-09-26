@@ -672,7 +672,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     id: 'CREATION_SHORTAGE', type: 'concern', category: 'creation',
     suppressionGroup: 'creation_negative',
     evaluate: t => (t.creatorCount ?? 0) === 0
-      ? hit(0.92, 0.98, teamConfidence(t), 'Nobody can reliably create a shot on his own — the offense stalls once the first option is taken away.', { values: { creatorCount: 0 } }, 0.95)
+      ? hit(0.92, 0.98, teamConfidence(t), 'The rotation lacks a reliable self-creator — the offense can bog down once the first option is taken away.', { values: { creatorCount: 0 } }, 0.95)
       : inactive
   },
   {
@@ -1000,14 +1000,14 @@ export const DETECTORS: RosterInsightDetector[] = [
       // Mirrors defensiveCohesion: a strong guard Wing Stopper/Chaser can credibly take the ball
       // even when the incumbent role label is not literally `Point of Attack`.
       const has = t.players.some(isCrediblePoa);
-      return !has ? hit(0.72, 0.89, teamConfidence(t), "Nobody in your rotation can really slow down the other team's lead ball handler.", { values: { hasPOADefender: false } }) : inactive;
+      return !has ? hit(0.72, 0.89, teamConfidence(t), "The rotation lacks a defender who can slow the other team's lead ball handler.", { values: { hasPOADefender: false } }) : inactive;
     }
   },
   {
     id: 'NO_WING_STOPPER', type: 'concern', category: 'perimeter_defense',
     suppressionGroup: 'perimeter_negative',
     evaluate: t => !t.players.some(isCredibleWingStopper)
-      ? hit(0.70, 0.88, teamConfidence(t), 'Nobody in your rotation can really guard elite scoring wings.', { values: { hasWingStopper: false } }, 0.9)
+      ? hit(0.70, 0.88, teamConfidence(t), 'The rotation lacks a defender for elite scoring wings.', { values: { hasWingStopper: false } }, 0.9)
       : inactive
   },
   {
@@ -1920,7 +1920,7 @@ export const DETECTORS: RosterInsightDetector[] = [
     evaluate: t => {
       const top = [...t.starters].sort((a, b) => (b.ppg ?? 0) - (a.ppg ?? 0))[0];
       return top && (top.ppg ?? 0) < 24
-        ? hit(0.72, 0.86, teamConfidence(t), `Your top scorer, ${top.playerName}, averaged ${(top.ppg ?? 0).toFixed(1)} points — when the offense stalls, there's no one to hand the ball to.`, { players: [top.playerName], values: { topPpg: top.ppg ?? 0 } }, 0.94)
+        ? hit(0.72, 0.86, teamConfidence(t), `Your top scorer, ${top.playerName}, averaged ${(top.ppg ?? 0).toFixed(1)} points — the offense lacks a go-to scorer for when it bogs down.`, { players: [top.playerName], values: { topPpg: top.ppg ?? 0 } }, 0.94)
         : inactive;
     }
   },

@@ -33,13 +33,13 @@ export interface ChampionshipStructureResult {
 const clamp = (value: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, value));
 
 const ARCHETYPE_REPORTS: Record<ChampionshipArchetype, { strengths: string[]; requirements: string[]; failureMode: string }> = {
-  'Two-way engine': { strengths: ['elite creation and defensive pressure'], requirements: ['primary star who can defend or be protected'], failureMode: 'your star wears down and nobody else can create' },
+  'Two-way engine': { strengths: ['elite creation and defensive pressure'], requirements: ['primary star who can defend or be protected'], failureMode: 'the star can wear down with little creation behind him' },
   'Creator + rim anchor': { strengths: ['paint pressure', 'defensive back-line'], requirements: ['credible shooting around the creator'], failureMode: "defenses pack the paint if the shooting isn't there" },
-  'Motion spacing + switch defense': { strengths: ['multiple shooting outlets', 'low-huntability defense'], requirements: ['at least two real perimeter stoppers'], failureMode: 'nobody can create a shot once the ball movement is shut down' },
+  'Motion spacing + switch defense': { strengths: ['multiple shooting outlets', 'low-huntability defense'], requirements: ['at least two real perimeter stoppers'], failureMode: 'the offense can bog down once ball movement is taken away' },
   'Post hub + shooters': { strengths: ['half-court creation', 'inside-out passing'], requirements: ['shooters who punish help rotations'], failureMode: 'the post hub gets stuck in bad one-on-ones' },
   'Defensive superteam': { strengths: ['high defensive floor and ceiling'], requirements: ['one reliable source of half-court offense'], failureMode: "great defense can't make up for an offense that stalls" },
   'Big two-way + shooting': { strengths: ['size, rim pressure and spacing'], requirements: ['mobile frontcourt defenders'], failureMode: 'slow bigs get dragged out to guard the perimeter' },
-  'Heliocentric star + specialists': { strengths: ['elite shot creation with simple role clarity'], requirements: ['low-usage spacing and defensive specialists'], failureMode: 'the star gets trapped and nobody else can take over' },
+  'Heliocentric star + specialists': { strengths: ['elite shot creation with simple role clarity'], requirements: ['low-usage spacing and defensive specialists'], failureMode: 'the star can get trapped with little help to take over' },
   'Balanced two-way contender': { strengths: ['few matchup-specific weaknesses', 'portable lineups'], requirements: ['two credible creators and two-way minutes'], failureMode: 'the roster lacks a single advantage that can decide a close series' },
   'Fragile specialist mix': { strengths: ['can win a narrow matchup'], requirements: ['careful opponent selection'], failureMode: 'a single weak link is repeatedly targeted' },
 };
