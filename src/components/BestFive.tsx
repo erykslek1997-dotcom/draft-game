@@ -189,7 +189,7 @@ export default function BestFive({ onBack, onNextStep }: Props) {
 
   return (
     <div className="at-shell best-five">
-      <div className="at-board-brand at-cond">Build the Best 5</div>
+      <div className="at-board-brand at-cond">Daily Deal</div>
       <div className="bf-subhead">
         <span className="bf-date">
           {isDaily ? `Daily puzzle · ${formatDisplayDate(today)}` : `Practice board #${board.n}`}
@@ -568,11 +568,11 @@ function BestFiveResult({
       {onNextStep && (
         <div className="path-next">
           <span>
-            <b>Next step: Quick 5.</b> The same five and the same judge — but drafted live against 15 CPU teams that take
+            <b>Next step: Mini Draft.</b> The same five and the same judge — but drafted live against 15 CPU teams that take
             your targets first.
           </span>
           <button className="at-draft-btn" onClick={onNextStep}>
-            Play Quick 5
+            Play Mini Draft
           </button>
         </div>
       )}
