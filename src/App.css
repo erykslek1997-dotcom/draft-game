@@ -6696,3 +6696,37 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-ticker-progress-text b { color: var(--at-ink); }
 .at-ticker-progress-track { flex: 1; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--at-ink) 10%, transparent); overflow: hidden; }
 .at-ticker-progress-track > span { display: block; height: 100%; border-radius: 999px; background: var(--at-accent, #6cc3ff); }
+
+/* Learning path (2026-09-26): step labels on the menu cards and a "next step" block on results. */
+.mode-card-step {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--at-accent, #6cc3ff);
+  margin-bottom: 2px;
+}
+.path-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 16px 0 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--at-accent, #6cc3ff) 45%, var(--at-line, var(--border)));
+  background: color-mix(in srgb, var(--at-accent, #6cc3ff) 8%, var(--at-paper, var(--bg)));
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--at-ink-soft, var(--text));
+}
+.path-next > span { flex: 1 1 280px; }
+.path-next b { color: var(--at-ink, var(--text)); }
+/* The step label sits above the name in the text column; the icon spans all three rows. */
+.mode-grid--path .mode-card { grid-template-rows: auto auto auto; }
+.mode-grid--path .mode-card-icon { grid-row: 1 / span 3; }
+.mode-grid--path .mode-card-step { grid-column: 2; grid-row: 1; }
+.mode-grid--path .mode-card-name { grid-row: 2; }
+.mode-grid--path .mode-card-desc { grid-column: 2; grid-row: 3; }

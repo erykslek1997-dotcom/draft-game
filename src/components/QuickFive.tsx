@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { realSecondaryPositions } from '../engine/positionCompetence';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
@@ -21,10 +20,16 @@ import { totalFga, TEAM_COUNT, STARTER_SLOTS } from '../engine/positions';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import { scoreLineup, WEIGHTED_AXES, WEAK_AXIS_REASON, type Lineup, type LineupScore } from '../engine/bestFive';
 import { allStarCount } from '../engine/allStarLookup';
-import { tierRank, overallTierForSpan } from '../engine/grades';
+import { tierRank, overallTierForSpan, displayTalentForSpan } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { teamCodes, teamLabel } from '../engine/teamNames';
-import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
+import { CapIcon, Face, ShotChip, ShotsMeter } from './ShotChip';
+import { DraftPlayerCard } from './DraftPlayerCard';
+import { TeamTile } from './TeamBadge';
+import { markStepDone } from './pathProgress';
+import { rankTeams } from '../engine/scoring';
+import { fitScore } from '../engine/fit';
+import { bestHistoricalComp, compBadge } from '../engine/historicalComps';
 import DraftLottery from './DraftLottery';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
@@ -34,6 +39,8 @@ import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPr
 interface Props {
   humanTeamName?: string;
   onExit: () => void;
+  /** The next step of the learning path (the All-Time Draft), offered on the result screen. */
+  onNextStep?: () => void;
 }
 
 type Phase = 'lottery' | 'draft' | 'results';
@@ -67,7 +74,7 @@ const QUICK_HOW_TO_PLAY = [
  * tier-capped-peak span per player), not `draft.ts`'s own multi-span `activeDraftPool` — there is
  * no span picker anywhere in this mode, by design, not just by omission.
  */
-export default function QuickFive({ humanTeamName, onExit }: Props) {
+export default function QuickFive({ humanTeamName, onExit, onNextStep }: Props) {
   const [state, setState] = useState<QuickDraftState>(() => createQuickDraft(humanTeamName));
   const [phase, setPhase] = useState<Phase>('lottery');
   // 2026-09-24: same CPU-speed choice as the All-Time Draft (aiSpeed.ts), a "← Menu" with a
@@ -176,6 +183,7 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
           onExit={onExit}
           onNewDraft={() => restart()}
           onRematch={() => restart(state.seed)}
+          onNextStep={onNextStep}
         />
       )}
     </div>
@@ -195,6 +203,9 @@ export default function QuickFive({ humanTeamName, onExit }: Props) {
  * own top docstring), so no per-player span-grouping/reduce is needed here at all, unlike
  * DraftBoard.tsx's own multi-span pool.
  */
+/** Cards shown at first and per "See more" — same paging as the All-Time Draft grid. */
+const QUICK_VISIBLE_STEP = 30;
+
 const allEnrichedOnce = peakDraftPool.map((span) => ({
   span,
   tier: overallTierForSpan(tierContextFor(span)),
@@ -256,7 +267,8 @@ function QuickDraftBoard({
       })
       .slice(0, 80);
   }, [state, search, selectedPosition, onlyFits, canPick]);
-  const anyLegal = !canPick || filtered.some((e) => isQuickPickLegal(state, e.span.id));
+  const [visibleCount, setVisibleCount] = useState(QUICK_VISIBLE_STEP);
+  const anyLegal = !canPick || filtered.slice(0, visibleCount).some((e) => isQuickPickLegal(state, e.span.id));
   const recentPicks: TickerPick[] = useMemo(() => {
     const spanById = new Map(state.teams.flatMap((t) => t.roster.map((p) => [p.id, p] as const)));
     return state.history
@@ -303,13 +315,6 @@ function QuickDraftBoard({
 
   return (
     <div className="at-card">
-      <DraftTicker
-        youOnClock={canPick}
-        complete={state.complete}
-        onClockLabel={teamLabel(currentTeam)}
-        picksAway={picksAway}
-        recentPicks={recentPicks}
-      />
       {boardOpen && (
       <div className="at-grid-scroll" style={{ marginBottom: 16 }}>
         <table className="at-ov-grid">
@@ -367,8 +372,15 @@ function QuickDraftBoard({
 
       )}
 
-      <div style={{ height: 12 }} />
       <div className="at-turn-sticky">
+        <DraftTicker
+          youOnClock={canPick}
+          complete={state.complete}
+          onClockLabel={teamLabel(currentTeam)}
+          picksAway={picksAway}
+          recentPicks={recentPicks}
+          progress={{ picksMade: state.history.length, totalPicks: TEAM_COUNT * QUICK_ROUNDS, round: Math.min(state.round + 1, QUICK_ROUNDS), rounds: QUICK_ROUNDS }}
+        />
         {!canPick ? (
           <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
         ) : (
@@ -423,12 +435,16 @@ function QuickDraftBoard({
               <span className="qf-team-card-slot at-cond">{slot}</span>
               <Face name={p.playerName} />
               <span className="qf-team-card-name">{p.playerName}</span>
-              <ShotChip fga={p.fga} cap={QUICK_CAP_LIMIT} />
+              <span className="qf-team-card-tal">
+                <span>TAL <b>{displayTalentForSpan(tierContextFor(p))}</b></span>
+                <ShotChip fga={p.fga} cap={QUICK_CAP_LIMIT} />
+              </span>
             </div>
           ) : (
             <div className="qf-team-empty" key={slot}>
               <span className="qf-team-card-slot at-cond">{slot}</span>
-              <span aria-hidden>?</span>
+              <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />
+              <span className="qf-team-empty-text">Open</span>
             </div>
           );
         })}
@@ -461,52 +477,57 @@ function QuickDraftBoard({
           {autoFinishing ? 'Finishing…' : 'Auto-finish'}
         </button>
       </div>
-      <div className="at-controls-row">
-        <button className={selectedPosition === 'ALL' ? 'active' : ''} onClick={() => setSelectedPosition('ALL')}>
-          ALL
+      <div className="at-controls-row at-position-filters">
+        <button className={`at-filter-pill at-cond ${selectedPosition === 'ALL' ? 'at-active' : ''}`} onClick={() => setSelectedPosition('ALL')}>
+          All
         </button>
         {ALL_POSITIONS.map((pos) => (
-          <button key={pos} className={selectedPosition === pos ? 'active' : ''} onClick={() => setSelectedPosition(pos)}>
+          <button key={pos} className={`at-filter-pill at-cond ${selectedPosition === pos ? 'at-active' : ''}`} onClick={() => setSelectedPosition(pos)}>
             {pos}
           </button>
         ))}
-        <button className={onlyFits ? 'active' : ''} aria-pressed={onlyFits} onClick={() => setOnlyFits((v) => !v)}>
+        <button className={`at-filter-pill at-cond ${onlyFits ? 'at-active' : ''}`} aria-pressed={onlyFits} onClick={() => setOnlyFits((v) => !v)}>
           Fits my budget
         </button>
       </div>
 
-      {/* 2026-09-11, user-reported live ("widok graczy" screenshot, then "może używajmy podobnych
-          kafelków jak w build the best 5? face card + shots i tyle") — replaces the flat
-          DraftBoard-style text row this used to be with the same card-grid shape Best Five's own
-          `.bf-pool-card` uses: a face, a name, and the shot cost, nothing else. */}
-      <div className="qf-pool">
-        {filtered.map(({ span }) => {
+      {/* 2026-09-26 (the user: "quick 5 może bardziej przypominać normalny draft"): the same
+          player cards as the All-Time Draft — tier frame, TAL, team chips, the season's box line —
+          without the Scouting button, since every player comes at his single best season here. */}
+      <div className="at-player-cards">
+        {filtered.slice(0, visibleCount).map(({ span, tier }) => {
           const legal = canPick && isQuickPickLegal(state, span.id);
-          const position = realSecondaryPositions(span).length > 0 ? `${span.primaryPosition}/${realSecondaryPositions(span)[0]}` : span.primaryPosition;
           return (
-            <button
+            <DraftPlayerCard
               key={span.id}
-              className="qf-pool-card"
-              disabled={!legal}
-              title={
+              span={span}
+              cap={QUICK_CAP_LIMIT}
+              tier={span.fga < 2 ? 'Salary Glue' : tier}
+              legal={legal}
+              draftTitle={
                 !canPick
                   ? `${teamLabel(currentTeam)} is picking…`
                   : legal
-                    ? span.playerName
+                    ? `Draft ${span.playerName}`
                     : quickPickBlockReason(state, span.id) === 'reserve'
                       ? `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${budget.maxThisPick} caps.`
                       : `Over the ${QUICK_CAP_LIMIT}-cap limit — pick a cheaper player.`
               }
-              onClick={() => onPick(span.id)}
-            >
-              <Face name={span.playerName} size="md" />
-              <span className="qf-pool-name">{shortenName(span.playerName)}</span>
-              <span className="qf-pool-pos">{position}</span>
-              <ShotChip fga={span.fga} cap={QUICK_CAP_LIMIT} />
-            </button>
+              onDraft={() => onPick(span.id)}
+            />
           );
         })}
       </div>
+      {visibleCount < filtered.length && (
+        <button
+          type="button"
+          className="at-legend-toggle"
+          style={{ marginTop: 10 }}
+          onClick={() => setVisibleCount((c) => Math.min(filtered.length, c + QUICK_VISIBLE_STEP))}
+        >
+          See {Math.min(QUICK_VISIBLE_STEP, filtered.length - visibleCount)} more ({filtered.length - visibleCount} left)
+        </button>
+      )}
     </div>
   );
 }
@@ -543,13 +564,16 @@ function QuickResults({
   onExit,
   onNewDraft,
   onRematch,
+  onNextStep,
 }: {
   state: QuickDraftState;
   teamCodeByTeamId: Map<string, string>;
   onExit: () => void;
   onNewDraft: () => void;
   onRematch: () => void;
+  onNextStep?: () => void;
 }) {
+  useEffect(() => markStepDone('quickfive'), []);
   const ranked = useMemo(() => {
     return state.teams
       .map((team) => {
@@ -572,6 +596,12 @@ function QuickResults({
 
   const humanRank = ranked.findIndex((r) => r.team.isHuman) + 1;
   const human = ranked[humanRank - 1];
+  // "Plays like" from the same comp engine as the All-Time Draft's results, read on the finalized
+  // fives (starters only, 48 minutes each).
+  const comp = useMemo(() => {
+    const breakdown = rankTeams(ranked.map((r) => r.team)).find((r) => r.team.id === human.team.id)?.breakdown;
+    return breakdown ? bestHistoricalComp(human.team, breakdown, fitScore(human.team)) : null;
+  }, [ranked, human]);
   const tier = resultTier(humanRank, TEAM_COUNT);
   const barKeys: (keyof LineupScore)[] = ['talent', 'offense', 'defense', 'spacing', 'fit'];
 
@@ -587,7 +617,13 @@ function QuickResults({
         <span className="qf-hero-rank">
           {ordinal(humanRank)} of {TEAM_COUNT} — {tier.label}
         </span>
-        <span className="qf-hero-team">{teamLabel(human.team)} · {human.score.composite} composite</span>
+        <span className="qf-hero-team">{teamLabel(human.team)} · score {human.score.composite}</span>
+        {comp && (
+          <span className="qf-hero-comp">
+            {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
+            <span>Plays like the <b>{comp.comp.team}</b> <small>{comp.match}% match</small></span>
+          </span>
+        )}
       </div>
 
       <div className="bf-bars">
@@ -621,15 +657,26 @@ function QuickResults({
       </div>
       <div className="qf-field">
         {ranked.map((r, i) => (
-          <div key={r.team.id} className={`qf-field-card ${r.team.isHuman ? 'qf-field-card--you' : ''}`}>
+          <div key={r.team.id} className={`qf-field-card ${r.team.isHuman ? 'qf-field-card--you' : ''}`} title={teamCodeByTeamId.get(r.team.id)}>
             <strong>
-              {i + 1}. {teamCodeByTeamId.get(r.team.id)} {r.team.isHuman && '(You)'}
+              {i + 1}. {teamLabel(r.team)} {r.team.isHuman && '(You)'}
             </strong>
-            <span>{r.score.composite} composite</span>
+            <span>score {r.score.composite}</span>
           </div>
         ))}
       </div>
 
+      {onNextStep && (
+        <div className="path-next">
+          <span>
+            <b>Next step: the All-Time Draft.</b> Sixteen teams, nine rounds, a bench and a rotation to set — the same
+            judge, a whole roster.
+          </span>
+          <button className="at-draft-btn" onClick={onNextStep}>
+            Start the All-Time Draft
+          </button>
+        </div>
+      )}
       <div className="bf-submit-row bf-result-actions">
         <button className="at-draft-btn bf-submit" onClick={onNewDraft}>
           New draft

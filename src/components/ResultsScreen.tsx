@@ -42,6 +42,7 @@ import { type FeedbackEntry } from './FeedbackToggle';
 // throw the work away — see [[player_skeleton_and_new_modes]].
 import MatchupMatrix from './MatchupMatrix';
 import ChampionshipOdds from './ChampionshipOdds';
+import { markStepDone } from './pathProgress';
 import AllMetrics from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
@@ -1872,6 +1873,8 @@ function ResultsVerdict({
 }
 
 export default function ResultsScreen({ teams, history, onRestart, onRematch, draftSeed, challenger }: Props) {
+  // Step 3 of the menu's learning path is done once a full draft reaches its results.
+  useEffect(() => markStepDone('draft'), []);
   // Lookups used inside render loops (matchup opponents, draft-order rows, the bracket tree) —
   // Maps, not repeated `.find` over `teams` / the 9451-span `draftPool`.
   const teamsById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
