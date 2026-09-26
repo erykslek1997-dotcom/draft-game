@@ -9,6 +9,7 @@ import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import { teamDefenseContextForSpan } from './teamDefenseLookup';
 import { bpm2CoverageForSpan, ddpmCoverageForSpan, matchupCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
 import { playoffImpactForSpan } from './playoffImpact';
+import { namedShiftFor, namedShiftRegistered } from './namedShift';
 
 /**
  * D-TAL — "how good is this player defensively," 0-100, per position.
@@ -700,14 +701,38 @@ export function computeDefensiveTalentRegularSeason(rawSpan: PlayerSpan): number
  * does in the playoffs), in TAL points.
  */
 const playoffDefensiveTalentCache = new Map<string, number>();
-export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
+/** D-TAL before any named adjustment — what the tier pipeline (grades.ts, talent.ts's grade
+ * ceilings, sixthMan.ts) reads, so the named shift below never feeds back into itself. */
+/**
+ * 2026-09-26, the user ("Marion ręcznie +10 D-TAL"): named, whole-career D-TAL additions for a
+ * defender the inputs undersell. Shawn Marion guarded 1 through 5 for Phoenix defenses that were
+ * weak around him and never made an All-Defense team in an era whose forward spots went to
+ * Kirilenko, Artest, Duncan, Garnett and Ben Wallace — so the recognition-driven parts of D-TAL
+ * never credit him. Added on top of the measured value, every window.
+ */
+const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([[normalizePlayerName('Shawn Marion'), 10]]);
+
+export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = playoffDefensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
+  const bonus = NAMED_DTAL_BONUS.get(normalizePlayerName(span.playerName)) ?? 0;
   const result = Math.max(
     0,
-    Math.min(100, Math.round(computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense)),
+    Math.min(100, Math.round(computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense + bonus)),
   );
   playoffDefensiveTalentCache.set(span.id, result);
+  return result;
+}
+
+/** The D-TAL everything else reads: the base plus its share of a named TAL adjustment
+ * (`namedShift.ts`). */
+const shiftedDefensiveTalentCache = new Map<string, number>();
+export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
+  const cached = shiftedDefensiveTalentCache.get(span.id);
+  if (cached !== undefined) return cached;
+  const result = Math.max(0, Math.min(100, Math.round(computeDefensiveTalentBase(span) + namedShiftFor(span).defense)));
+  if (namedShiftRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
 }

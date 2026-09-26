@@ -51,6 +51,9 @@ interface Take {
   advice?: string;
 }
 
+/** Below both, the anchor really doesn't deter anyone at the rim. */
+const RIM_SOFT_DTAL = 62;
+const RIM_SOFT_BLOCKS = 1.3;
 const ON_BALL_ARCHETYPES = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'];
 const NAME_SUFFIXES = new Set(['Jr.', 'Sr.', 'II', 'III', 'IV']);
 
@@ -118,9 +121,15 @@ function takesFor(roster: PlayerSpan[]): Take[] {
   } else if (d(anchor) >= 88) {
     takes.push({ topic: 'rimProtection', expert: 'coach', kind: 'strength', weight: 0.8,
       line: `${deskName(anchor)} behind them changes everything. Nobody’s getting easy layups.` });
-  } else if (d(anchor) < 70) {
+  } else if (d(anchor) < RIM_SOFT_DTAL && anchor.box.bpg < RIM_SOFT_BLOCKS) {
     takes.push({ topic: 'rimProtection', expert: 'coach', kind: 'concern', weight: 0.5,
       line: `${deskName(anchor)} is back there, but he’s not scaring anybody at the rim.`,
+      advice: 'a big who protects the rim' });
+  } else if (d(anchor) < 70) {
+    // 2026-09-26, user-reported (Embiid 2023-25, D-TAL 63 with 1.7 blocks): a big who still
+    // contests at the rim reads as solid-but-not-a-wall, not as someone nobody fears.
+    takes.push({ topic: 'rimProtection', expert: 'coach', kind: 'concern', weight: 0.3,
+      line: `${deskName(anchor)} holds the paint, but he’s not the wall that shuts drives down on his own.`,
       advice: 'a big who protects the rim' });
   }
 

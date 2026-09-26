@@ -49,15 +49,29 @@ export function DraftTicker({
   onClockLabel,
   picksAway,
   recentPicks,
+  progress,
 }: {
   youOnClock: boolean;
   complete: boolean;
   onClockLabel: string;
   picksAway: number | null;
   recentPicks: TickerPick[];
+  /** 2026-09-26 ("przylepiony pasek powinien bardziej pokazywać przebieg draftu"): the overall pick
+   * count and round, shown as a thin bar under the ticker in the sticky header. */
+  progress?: { picksMade: number; totalPicks: number; round: number; rounds: number };
 }) {
   return (
     <div className="at-ticker">
+      {progress && (
+        <span className="at-ticker-progress" aria-label={`Pick ${Math.min(progress.picksMade + 1, progress.totalPicks)} of ${progress.totalPicks}`}>
+          <span className="at-ticker-progress-text">
+            Pick <b>{Math.min(progress.picksMade + 1, progress.totalPicks)}</b>/{progress.totalPicks} · Round {progress.round}/{progress.rounds}
+          </span>
+          <span className="at-ticker-progress-track" aria-hidden>
+            <span style={{ width: `${(progress.picksMade / progress.totalPicks) * 100}%` }} />
+          </span>
+        </span>
+      )}
       <span className="at-ticker-now">
         {youOnClock ? (
           <b className="at-ticker-you">You're on the clock</b>

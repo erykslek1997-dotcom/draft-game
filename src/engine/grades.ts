@@ -3,11 +3,12 @@ import { ratingSpan } from './ratingPosition';
 import { precomputedEffectiveTalent, precomputedSThreshold } from './precomputedTiers';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
+import { registerNamedShift } from './namedShift';
 import {
   computeTalent,
-  computeOffensiveTalent,
-  computeUncappedOffensiveTalent,
-  computeDefensiveTalent,
+  computeOffensiveTalentBase,
+  computeUncappedOffensiveTalentBase,
+  computeDefensiveTalentBase,
   computeTalentWithoutEliteDefenseBonus,
   computeTalentWithoutBridge,
   rawUncappedTalent,
@@ -142,7 +143,7 @@ let defensiveSThreshold: number | null = null;
 export function offensiveGrade(value: number, uncappedValue: number = value): Grade {
   if (offensiveSThreshold === null) {
     offensiveSThreshold =
-      precomputedSThreshold('offense') ?? computeSThresholdByPlayerPeak((p) => computeUncappedOffensiveTalent(p));
+      precomputedSThreshold('offense') ?? computeSThresholdByPlayerPeak((p) => computeUncappedOffensiveTalentBase(p));
   }
   return uncappedValue >= offensiveSThreshold ? 'S' : letterForValue(value);
 }
@@ -151,15 +152,15 @@ export function offensiveGrade(value: number, uncappedValue: number = value): Gr
  * grade functions themselves read the precomputed values first in production builds). */
 export function liveSThresholds(): { offense: number; defense: number } {
   return {
-    offense: computeSThresholdByPlayerPeak((p) => computeUncappedOffensiveTalent(p)),
-    defense: computeSThreshold(draftPool.map((p) => computeDefensiveTalent(p))),
+    offense: computeSThresholdByPlayerPeak((p) => computeUncappedOffensiveTalentBase(p)),
+    defense: computeSThreshold(draftPool.map((p) => computeDefensiveTalentBase(p))),
   };
 }
 
 export function defensiveGrade(value: number): Grade {
   if (defensiveSThreshold === null) {
     defensiveSThreshold =
-      precomputedSThreshold('defense') ?? computeSThreshold(draftPool.map((p) => computeDefensiveTalent(p)));
+      precomputedSThreshold('defense') ?? computeSThreshold(draftPool.map((p) => computeDefensiveTalentBase(p)));
   }
   return value >= defensiveSThreshold ? 'S' : letterForDefensiveTalent(value);
 }
@@ -1436,6 +1437,8 @@ const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(
     ['Ray Allen', 85], // high-mid All-NBA
     ['Kevin Johnson', 85], // high-mid All-NBA
     ['Chris Mullin', 83],
+    ['Joel Embiid', 95], // top of MVP, not Greatest peak
+    ['Donovan Mitchell', 86], // All-NBA, not MVP
   ].map(([name, ceiling]) => [normalizePlayerName(name as string), ceiling as number]),
 );
 
@@ -1443,8 +1446,71 @@ function namedPlayerCeiling(playerName: string | undefined): number {
   return (playerName && NAMED_PLAYER_DISPLAY_CEILING.get(normalizePlayerName(playerName))) || Infinity;
 }
 
+/**
+ * Same pass, the other direction: a player's PEAK the user reads higher ("Pau 84, Marc 83, Bosh
+ * 79"). The whole prime moves up with it — every window within `TARGET_FULL_RANGE` of the peak
+ * gets the full lift, fading to none `TARGET_FADE_RANGE` further down — so the career keeps its
+ * shape instead of one window jumping. Raise only.
+ */
+const NAMED_PLAYER_PEAK_TARGET: ReadonlyMap<string, number> = new Map(
+  [
+    ['Pau Gasol', 84],
+    ['Marc Gasol', 83],
+    ['Chris Bosh', 79],
+  ].map(([name, target]) => [normalizePlayerName(name as string), target as number]),
+);
+const TARGET_FULL_RANGE = 12;
+const TARGET_FADE_RANGE = 12;
+const peakCache = new Map<string, number>();
+
+function playerPeakDisplay(playerName: string): number {
+  const key = normalizePlayerName(playerName);
+  const hit = peakCache.get(key);
+  if (hit !== undefined) return hit;
+  const peak = Math.max(
+    ...draftPool.filter((s) => normalizePlayerName(s.playerName) === key).map((s) => smoothedDisplayTalent(tierContextFor(s))),
+  );
+  peakCache.set(key, peak);
+  return peak;
+}
+
+function namedPeakLift(playerName: string | undefined, value: number): number {
+  const target = playerName ? NAMED_PLAYER_PEAK_TARGET.get(normalizePlayerName(playerName)) : undefined;
+  if (target === undefined) return 0;
+  const peak = playerPeakDisplay(playerName!);
+  const lift = target - peak;
+  if (lift <= 0) return 0;
+  const below = peak - value;
+  const share = below <= TARGET_FULL_RANGE ? 1 : Math.max(0, 1 - (below - TARGET_FULL_RANGE) / TARGET_FADE_RANGE);
+  return Math.round(lift * share);
+}
+
+/** TAL points of a named adjustment -> O-TAL / D-TAL points: a TAL point is worth about this
+ * much on the side it lands on (O-TAL's scale is ~1.3 per TAL-weighted offense point). */
+const NAMED_SHIFT_SCALE = 1.3;
+
+/**
+ * How a named adjustment on this window's displayed TAL splits into O-TAL and D-TAL: by where
+ * the player's value sits — each side's margin over an average 50 — so a scorer's cut or lift
+ * lands mostly on offense and a defender's mostly on defense (Bosh +10 -> ~O +9 / D +4).
+ */
+function namedShiftForSpan(span: PlayerSpan): { offense: number; defense: number } {
+  const name = span.playerName;
+  const key = normalizePlayerName(name);
+  if (!NAMED_PLAYER_DISPLAY_CEILING.has(key) && !NAMED_PLAYER_PEAK_TARGET.has(key)) return { offense: 0, defense: 0 };
+  const ctx = tierContextFor(span);
+  const delta = displayTalentForSpan(ctx) - smoothedDisplayTalent(ctx);
+  if (delta === 0) return { offense: 0, defense: 0 };
+  const o = Math.max(1, (ctx.otalUncapped ?? ctx.otal) - 50);
+  const d = Math.max(1, ctx.dtal - 50);
+  const share = o / (o + d);
+  return { offense: delta * share * NAMED_SHIFT_SCALE, defense: delta * (1 - share) * NAMED_SHIFT_SCALE };
+}
+registerNamedShift(namedShiftForSpan);
+
 export function displayTalentForSpan(ctx: TierGateContext): number {
-  return Math.min(namedPlayerCeiling(ctx.playerName), smoothedDisplayTalent(ctx));
+  const smoothed = smoothedDisplayTalent(ctx);
+  return Math.min(namedPlayerCeiling(ctx.playerName), smoothed + namedPeakLift(ctx.playerName, smoothed));
 }
 
 function smoothedDisplayTalent(ctx: TierGateContext): number {
@@ -1549,9 +1615,9 @@ export function tierContextFor(rawSpan: PlayerSpan): TierGateContext {
   return {
     position: span.primaryPosition,
     tal: computeTalent(span),
-    otal: computeOffensiveTalent(span),
-    otalUncapped: computeUncappedOffensiveTalent(span),
-    dtal: computeDefensiveTalent(span),
+    otal: computeOffensiveTalentBase(span),
+    otalUncapped: computeUncappedOffensiveTalentBase(span),
+    dtal: computeDefensiveTalentBase(span),
     fga: span.fga,
     playerName: span.playerName,
     spanLabel: span.spanLabel,
