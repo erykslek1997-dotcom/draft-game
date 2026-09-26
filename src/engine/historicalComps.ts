@@ -96,6 +96,20 @@ export const HISTORICAL_COMPS: readonly HistoricalComp[] = [
   { id: 'rockets-1994', team: '1994 Houston Rockets', blurb: 'a post hub surrounded by shooters', profile: { rimProtectors: 80, spacing: 75, primaryCreation: 70, bigPlaymaking: 80, defense: 80 } },
   { id: 'celtics-2008', team: '2008 Boston Celtics', blurb: 'three stars buying into defense', profile: { defense: 97, starCount: 95, spacing: 70, offense: 70 } },
   { id: 'nuggets-2023', team: '2023 Denver Nuggets', blurb: 'offense run through a passing big', profile: { bigPlaymaking: 99, playmaking: 90, offense: 90, spacing: 70 } },
+  // 2026-09-26, the user ("można zwiększyć"): twelve more, each defined by a feature mix none of
+  // the sixteen above already uses as its core.
+  { id: 'bucks-1971', team: '1971 Milwaukee Bucks', blurb: 'a dominant big fed by a great passer', profile: { topStar: 99, playmaking: 85, rimProtectors: 80, offense: 90 } },
+  { id: 'knicks-1970', team: '1970 New York Knicks', blurb: 'team defense and the extra pass, no one star', profile: { playmaking: 85, defense: 90, switchability: 80, topStar: 30 } },
+  { id: 'blazers-1977', team: '1977 Portland Trail Blazers', blurb: 'a passing center anchoring both ends', profile: { bigPlaymaking: 95, defense: 80, rebounding: 85, topStar: 30 } },
+  { id: 'sixers-1983', team: '1983 Philadelphia 76ers', blurb: 'athletes attacking the rim and owning the glass', profile: { defense: 90, rimPressure: 90, rebounding: 90, size: 85, spacing: 25 } },
+  { id: 'celtics-1986', team: '1986 Boston Celtics', blurb: 'a passing frontcourt with stars at every spot', profile: { offense: 90, defense: 80, bigPlaymaking: 90, playmaking: 90, starCount: 90 } },
+  { id: 'magic-1995', team: '1995 Orlando Magic', blurb: 'a force in the paint and shooters around him', profile: { topStar: 90, rimPressure: 90, spacing: 85, defense: 35 } },
+  { id: 'jazz-1998', team: '1998 Utah Jazz', blurb: 'pick-and-roll precision over star power', profile: { playmaking: 95, offense: 80, rebounding: 75, starCount: 35, spacing: 60 } },
+  { id: 'mavericks-2011', team: '2011 Dallas Mavericks', blurb: 'a stretch-big star and a floor full of shooters', profile: { spacing: 92, topStar: 85, rimProtectors: 45, defense: 60 } },
+  { id: 'thunder-2012', team: '2012 Oklahoma City Thunder', blurb: 'young scorers who get downhill', profile: { topStar: 95, rimPressure: 90, starCount: 90, playmaking: 40, defense: 70 } },
+  { id: 'raptors-2019', team: '2019 Toronto Raptors', blurb: 'long, switching defenders around one closer', profile: { defense: 85, switchability: 85, spacing: 75, starCount: 45 } },
+  { id: 'lakers-2020', team: '2020 Los Angeles Lakers', blurb: 'a point forward and two bigs walling off the rim', profile: { size: 95, rimProtectors: 90, playmaking: 90, defense: 90, spacing: 30 } },
+  { id: 'bucks-2021', team: '2021 Milwaukee Bucks', blurb: 'size and downhill force at every position', profile: { rimPressure: 95, size: 85, defense: 85, spacing: 55 } },
 ];
 
 export interface HistoricalCompMatch {
