@@ -85,8 +85,8 @@ const DISPLAY_BENCH_SLOT_COUNT = 4;
  * counterparts if the rules ever change. */
 const MODE_HOW_TO_PLAY_TITLE: Record<'draft' | 'bestfive' | 'quickfive', string> = {
   draft: 'All-Time Draft',
-  bestfive: 'Best 5',
-  quickfive: 'Quick 5',
+  bestfive: 'Daily Deal',
+  quickfive: 'Mini Draft',
 };
 
 const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: string; body: string }[]> = {
@@ -98,7 +98,7 @@ const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: stri
     { title: 'Grading', body: 'The judge scores every team — talent, offense, defense, spacing, fit, rotation — and ranks the whole field, yours included.' },
   ],
   bestfive: [
-    { title: 'Pick five', body: 'One player per position — PG/SG/SF/PF/C — from today’s pool.' },
+    { title: 'The deal', body: 'Five players are dealt for each position, PG to C. Pick one and the next position turns over.' },
     { title: 'Caps', body: 'Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.' },
     { title: 'Submit once', body: 'No re-picking after you see your score for today’s puzzle.' },
     { title: 'Grading', body: 'You’re scored on talent, offense, defense, spacing, and fit, then compared against par.' },
@@ -329,16 +329,16 @@ function App() {
               <div className="mode-card-wrap">
                 <button className="mode-card" onClick={() => setView('bestfive')}>
                   <span className="mode-card-icon" aria-hidden>
-                    🧩
+                    🃏
                   </span>
                   <span className="mode-card-step at-cond">Step 1 · learn the caps{stepDone('bestfive') ? ' ✓' : ''}</span>
-                  <span className="mode-card-name at-cond">Best 5</span>
-                  <span className="mode-card-desc">Daily puzzle — pick five under a cap, beat the field.</span>
+                  <span className="mode-card-name at-cond">Daily Deal</span>
+                  <span className="mode-card-desc">Daily puzzle — five cards dealt per position, build a five under the cap.</span>
                 </button>
                 <button
                   type="button"
                   className="mode-card-help"
-                  aria-label="How to play: Best 5"
+                  aria-label="How to play: Daily Deal"
                   aria-haspopup="dialog"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -354,13 +354,13 @@ function App() {
                     ⚡
                   </span>
                   <span className="mode-card-step at-cond">Step 2 · your first draft{stepDone('quickfive') ? ' ✓' : ''}</span>
-                  <span className="mode-card-name at-cond">Quick 5</span>
+                  <span className="mode-card-name at-cond">Mini Draft</span>
                   <span className="mode-card-desc">5 rounds, {DISPLAY_QUICK_CAP_LIMIT} caps to spend — a real draft in a few minutes.</span>
                 </button>
                 <button
                   type="button"
                   className="mode-card-help"
-                  aria-label="How to play: Quick 5"
+                  aria-label="How to play: Mini Draft"
                   aria-haspopup="dialog"
                   onClick={(e) => {
                     e.stopPropagation();

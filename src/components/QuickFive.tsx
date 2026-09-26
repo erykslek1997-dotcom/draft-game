@@ -147,9 +147,9 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep }: Props) 
         </button>
       )}
       {confirmExit && (
-        <LeaveDraftDialog text="Quick 5 drafts aren't saved — leaving ends this one." onStay={closeExitDialog} onLeave={onExit} />
+        <LeaveDraftDialog text="Mini Drafts aren't saved — leaving ends this one." onStay={closeExitDialog} onLeave={onExit} />
       )}
-      {phase !== 'lottery' && <div className="at-board-brand at-cond">Quick 5</div>}
+      {phase !== 'lottery' && <div className="at-board-brand at-cond">Mini Draft</div>}
       {phase === 'draft' && !state.complete && (
         <div className="at-topbar">
           <AiSpeedControl labels={AI_SPEED_LABELS} index={aiSpeed.index} onChange={aiSpeed.setIndex} />
