@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { realSecondaryPositions } from '../engine/positionCompetence';
-import { rankTeams, offenseScoreBreakdown, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
+import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { PLAYOFF_TEAM_COUNT, simulatePlayoffs, type PlayoffResult, type PlayoffSeriesResult } from '../engine/playoffSimulation';
 import { STARTER_SLOTS, CAP_LIMIT, positionFitMultiplier } from '../engine/positions';
+import type { Position } from '../data/schema';
 import { allAssignments, benchWithMinutes, primaryStarters, type ResolvedSlotAssignment } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import { normalizePlayerName } from '../data/schema';
@@ -26,7 +27,8 @@ import { generateRosterInsights, insightContextFor } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
-import { archetypeDisplayName } from '../engine/championshipArchetype';
+import { archetypeDisplayName, DEFENSE_FIRST_MIN_SCORE, teamStyleFor } from '../engine/championshipArchetype';
+import { bestHistoricalComp, type HistoricalCompMatch } from '../engine/historicalComps';
 import { type FeedbackEntry } from './FeedbackToggle';
 // 2026-08-16, user's own ask ("dodasz to też na ostatni ekran ocen?"): reuses the exact same
 // hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
@@ -359,6 +361,9 @@ function HeroResult({
   draftSeed,
   identity,
   failureMode,
+  weakDefenders,
+  defenseTalent,
+  comp,
   starters,
   roster,
   challenger,
@@ -386,6 +391,9 @@ function HeroResult({
   draftSeed: number;
   identity: string | null;
   failureMode: string | null;
+  weakDefenders: { name: string; slot: Position; dtal: number; minutes: number }[];
+  defenseTalent: number | null;
+  comp: HistoricalCompMatch | null;
   starters: ShareCardStarter[];
   roster: ShareRosterRow[];
   /** 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest empty
@@ -705,7 +713,7 @@ function HeroResult({
             : <>You have the best team rating in the field.</>}
         </p>
       )}
-      {(identity || failureMode) && (
+      {(identity || failureMode || comp) && (
         // 2026-09-24 copy pass: labelled as a STYLE ("Team style: Defense-first") and a risk, so it
         // no longer reads as a quality verdict next to a mediocre Defense score.
         <p className="results-hero-identity">
@@ -716,6 +724,11 @@ function HeroResult({
           )}
           {identity && failureMode && ' — '}
           {failureMode && <span>main risk: {failureMode}</span>}
+          {comp && (
+            <span className="results-hero-comp" title={`Closest historical profile: ${comp.comp.blurb}. Match compares this roster's scores, as percentiles of drafted rosters, with what defined that team.`}>
+              Plays like the <b>{comp.comp.team}</b> <small>{comp.match}% match</small>
+            </span>
+          )}
         </p>
       )}
       {/* 2026-09-14, DRAFT per user's own request ("możesz mi pokazać design zanim wprowadzisz") —
@@ -761,13 +774,26 @@ function HeroResult({
                 <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
                 {offenseDetail && <MetricBar label="Spacing fit" value={offenseDetail.spacing} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
                 <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
+                {offenseDetail && <MetricBar label="Playmaking" value={offenseDetail.playmaking} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />}
               </div>
               <div className="analysis-bars-col analysis-bars-col--defense">
                 <span className="analysis-bars-col-label">Defense details</span>
+                {defenseTalent !== null && <MetricBar label="D-TAL" value={defenseTalent} hint="Team defensive talent — the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure." />}
                 <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
                 <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
                 <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
                 <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
+                {weakDefenders.length > 0 && (
+                  <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down. Weak means below the median rotation player at that position.">
+                    Weakest links:{' '}
+                    {weakDefenders.map((row, i) => (
+                      <span key={row.name}>
+                        {i > 0 && ' · '}
+                        <b>{shortenName(row.name)}</b> D-TAL {row.dtal} at {row.slot} ({row.minutes} min)
+                      </span>
+                    ))}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -1694,6 +1720,13 @@ function RotationColumns({
   );
 }
 
+/**
+ * Rotation players below their slot's value are named under the hero's Defense details.
+ * 2026-09-26, the user ("50 dla słabego obrońcy zbyt ogólne, zależy od pozycji"; then, of a bottom-
+ * third cut, "zbyt mało surowe"): the MEDIAN D-TAL of rotation-calibre spans (TAL 55+) at each
+ * position — a C at 55 is a below-average C, a PG at 45 a below-average PG.
+ */
+const WEAK_DEFENDER_DTAL: Record<Position, number> = { PG: 49, SG: 43, SF: 47, PF: 58, C: 61 };
 /** Below this many minutes at a slot, a non-starter is shown on the column's spot line. */
 const SPOT_MINUTES = 6;
 
@@ -1903,6 +1936,37 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked?.team.id, scoredTeams],
   );
+  const heroStyle = teamStyleFor(
+    heroFit?.inputs.primaryArchetype,
+    heroFit?.inputs.secondaryArchetype,
+    heroFit?.inputs.archetypeReport?.failureMode ?? null,
+    heroRanked?.breakdown.defenseScore ?? 0,
+  );
+  // 2026-09-25, user-reported live ("super skład, dlaczego dostał tak po dupie w defense?"): the
+  // Defense score is a minutes-weighted D-TAL average, so one or two weak defenders playing big
+  // minutes drag it down — and nothing on screen said who. Rotation players (15+ min) under
+  // `WEAK_DEFENDER_DTAL` for the slot they play most, furthest below it first, at most two.
+  const heroWeakDefenders = useMemo(() => {
+    if (!heroRanked) return [];
+    const minutes = new Map<string, { player: ResolvedSlotAssignment['player']; minutes: number; bySlot: Map<Position, number> }>();
+    for (const entry of allAssignments(displayTeam(heroRanked.team))) {
+      const row = minutes.get(entry.player.id) ?? { player: entry.player, minutes: 0, bySlot: new Map<Position, number>() };
+      row.minutes += entry.minutes;
+      row.bySlot.set(entry.slot, (row.bySlot.get(entry.slot) ?? 0) + entry.minutes);
+      minutes.set(entry.player.id, row);
+    }
+    return [...minutes.values()]
+      .filter((row) => row.minutes >= 15)
+      .map((row) => {
+        const slot = [...row.bySlot.entries()].sort((a, b) => b[1] - a[1])[0][0];
+        const dtal = Math.round(computeDefensiveTalent(row.player));
+        return { name: row.player.playerName, slot, dtal, minutes: Math.round(row.minutes), gap: WEAK_DEFENDER_DTAL[slot] - dtal };
+      })
+      .filter((row) => row.gap > 0)
+      .sort((a, b) => b.gap - a.gap)
+      .slice(0, 2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroRanked?.team.id, scoredTeams]);
   // 2026-09-16, user-reported live ("zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn
   // z pozycjami i minutami"): the hero's own "Starting five"/"Bench" split named a player's
   // CARD position (their primary position for bench rows — see `heroRoster` above), not which
@@ -2120,13 +2184,11 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           draftSeed={draftSeed}
           challenger={challenger}
           seasonSimSlot={seasonSimSlot}
-          identity={
-            heroFit?.inputs.primaryArchetype
-              ? archetypeDisplayName(heroFit.inputs.primaryArchetype) +
-                (heroFit.inputs.secondaryArchetype ? ` + ${archetypeDisplayName(heroFit.inputs.secondaryArchetype)}` : '')
-              : null
-          }
-          failureMode={heroFit?.inputs.archetypeReport?.failureMode ?? null}
+          identity={heroStyle.label}
+          failureMode={heroStyle.failureMode}
+          weakDefenders={heroWeakDefenders}
+          comp={heroRanked && heroFit ? bestHistoricalComp(displayTeam(heroRanked.team), heroRanked.breakdown, heroFit) : null}
+          defenseTalent={heroRanked ? Math.round(teamDefensiveTalentScore(displayTeam(heroRanked.team))) : null}
           starters={heroStarters}
           roster={heroRoster}
         />
@@ -2272,14 +2334,22 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     moved up here next to the tags it's actually describing. */}
                 {fitDetail && fitDetail.inputs.championshipArchetypes.length > 0 && (
                   <div className="identity-chip-row">
-                    {fitDetail.inputs.championshipArchetypes.map((entry, i) => (
-                      <span key={entry.archetype} className={`identity-chip ${i > 0 ? 'identity-chip-secondary' : ''}`}>
-                        {archetypeDisplayName(entry.archetype)}
-                      </span>
-                    ))}
-                    {fitDetail.inputs.archetypeReport?.failureMode && (
-                      <span className="identity-risk">main risk: {fitDetail.inputs.archetypeReport.failureMode}</span>
-                    )}
+                    {fitDetail.inputs.championshipArchetypes
+                      .filter((entry) => entry.archetype !== 'Defensive superteam' || breakdown.defenseScore >= DEFENSE_FIRST_MIN_SCORE)
+                      .map((entry, i) => (
+                        <span key={entry.archetype} className={`identity-chip ${i > 0 ? 'identity-chip-secondary' : ''}`}>
+                          {archetypeDisplayName(entry.archetype)}
+                        </span>
+                      ))}
+                    {(() => {
+                      const risk = teamStyleFor(
+                        fitDetail.inputs.primaryArchetype,
+                        fitDetail.inputs.secondaryArchetype,
+                        fitDetail.inputs.archetypeReport?.failureMode ?? null,
+                        breakdown.defenseScore,
+                      ).failureMode;
+                      return risk && <span className="identity-risk">main risk: {risk}</span>;
+                    })()}
                   </div>
                 )}
                 {fitDetail && (

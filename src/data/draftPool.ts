@@ -41,6 +41,17 @@ function applyRuntimeParity(span: PlayerSpan): PlayerSpan {
   if (span.playerName === 'Magic Johnson' && span.spanLabel === '1989-91' && span.defensiveRole === 'Low Activity') {
     return { ...span, defensiveRole: 'Wing Stopper' };
   }
+  if (
+    span.playerName === 'Stephen Curry' &&
+    ['2013-15', '2014-16', '2015-17', '2016-18'].includes(span.spanLabel) &&
+    span.defensiveRole === 'Low Activity'
+  ) {
+    return { ...span, defensiveRole: 'Chaser' };
+  }
+  // `SECONDARY_POSITION_ADDITIONS` parity: Draymond gains C (players.ts grants it to every span).
+  if (span.playerName === 'Draymond Green' && span.primaryPosition !== 'C' && !span.secondaryPositions.includes('C')) {
+    return { ...span, secondaryPositions: [...span.secondaryPositions, 'C'] };
+  }
   return span;
 }
 

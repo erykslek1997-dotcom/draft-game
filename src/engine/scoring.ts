@@ -314,26 +314,40 @@ export function benchDepthScore(team: Team): number {
  * alongside this change).
  */
 const BENCH_INFLUENCE_BOOST = 1.5;
+/**
+ * 2026-09-25, user ("ławka powinna mieć mniejszy impact" -> "offense x1,2 defense 0,8 spacing
+ * 1,2"): one boost for all three axes over-weighted a weak bench defender (Matt Bonner's 16 minutes
+ * counted like 24 in Defense) while bench players mostly defend other benches. Per axis now:
+ * offense and spacing keep a mild boost (a second unit still has to score and space), defense
+ * counts bench minutes at 0.8 — below their real share, since backups face backups
+ * (`defensiveHuntability`'s own `BENCH_COMPETITION_DISCOUNT` already charges weak-link minutes at 0.4).
+ */
+const BENCH_WEIGHT_OFFENSE = 1.2;
+const BENCH_WEIGHT_DEFENSE = 0.8;
+const BENCH_WEIGHT_SPACING = 1.2;
 
 /** Shared weighted-minutes reducer for `offenseScore`/`defenseScore`/`spacingScore` below —
  * same shape three times over, differing only in which per-player metric and whether
  * `positionFitMultiplier` applies (spacing deliberately excludes it — see its own docstring). */
 function benchBoostedWeightedAverage(
   team: Team,
-  valueFor: (player: PlayerSpan) => number,
+  valueFor: (player: PlayerSpan, slot: Position) => number,
   applyFitMultiplier: boolean,
+  benchWeight: number = BENCH_INFLUENCE_BOOST,
 ): number {
   const assignments = allAssignments(team);
   const fullMinutes = STARTER_SLOTS.length * GAME_MINUTES;
   if (assignments.length === 0 || fullMinutes === 0) return 0;
   const starterKeys = new Set(primaryStarters(team).map((s) => `${s.slot}|${s.player.id}`));
   let rawAssignedMinutes = 0;
+  let weightSum = 0;
   const weighted = assignments.reduce((sum, { slot, player, minutes }) => {
     rawAssignedMinutes += minutes;
     const isBench = !starterKeys.has(`${slot}|${player.id}`);
-    const effectiveMinutes = isBench ? minutes * BENCH_INFLUENCE_BOOST : minutes;
+    const effectiveMinutes = isBench ? minutes * benchWeight : minutes;
+    weightSum += effectiveMinutes;
     const fitMultiplier = applyFitMultiplier ? positionFitMultiplier(player, slot) : 1;
-    return sum + valueFor(player) * fitMultiplier * effectiveMinutes;
+    return sum + valueFor(player, slot) * fitMultiplier * effectiveMinutes;
   }, 0);
   // Normally the rotation fills every slot to exactly 48 (Σ = 240) so this divides by `fullMinutes`
   // and nothing changes. But `autoAssignRotation` deliberately leaves a slot short when a
@@ -344,8 +358,19 @@ function benchBoostedWeightedAverage(
   // roster-construction gap stays the concern of bench-depth / rotation / fit, not a silent hit
   // here. Can only ever affect a rotation that already failed to fill 240; every real 9-man
   // roster is untouched.
-  return weighted / Math.min(fullMinutes, rawAssignedMinutes || fullMinutes);
+  // 2026-09-25: a true weighted average (÷ the weighted minutes), times `LEGACY_BENCH_SCALE` —
+  // the old reducer divided the bench-boosted sum by the plain 240, so the boost inflated the whole
+  // number (~x1.14 for a typical 66 bench minutes) and every anchor was fitted on that inflated
+  // scale. Dividing by the weights makes a bench-weight change move only the starter/bench MIX;
+  // the constant keeps the anchors' scale. The short-rotation case above is still covered: a
+  // missing slot adds no weight, so it can't dilute the average.
+  void fullMinutes;
+  void rawAssignedMinutes;
+  return weightSum > 0 ? (weighted / weightSum) * LEGACY_BENCH_SCALE : 0;
 }
+/** The old reducer's typical inflation (bench-boosted sum ÷ 240 at x1.5), measured on 128 seeded
+ * CPU rosters — keeps OFFENSE/DEFENSE/SPACING_SCORE_ANCHORS on the scale they were fitted on. */
+const LEGACY_BENCH_SCALE = 1.1375;
 
 /** Minutes-weighted team average of O-TAL, the same shape as `talentScore` but reading off the
  * split offense component instead of the blended number.
@@ -524,9 +549,9 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
   // call: no — two non-shooting starters cap the team's spacing story regardless of how good the
   // engine running it is. Reusing the same ceiling here closes that gap; the bonus can still lift a
   // team TOWARD the ceiling, just never past it.
-  const spacingCeiling = spacingNonSpacerCeiling(starterAssignments);
+  const spacingCeiling = spacingNonSpacerCeiling(starterAssignments, restSpacesForCenter(starterAssignments));
   return {
-    otal: rescaleToFullRange(benchBoostedWeightedAverage(team, computeOffensiveTalent, true), OFFENSE_SCORE_ANCHORS),
+    otal: rescaleToFullRange(benchBoostedWeightedAverage(team, (p) => computeOffensiveTalent(p), true, BENCH_WEIGHT_OFFENSE), OFFENSE_SCORE_ANCHORS),
     spacing: Math.min(spacingCeiling, hasElitePlaymakingEngine ? Math.min(100, rawSpacing + OFFENSE_SPACING_ELITE_ENGINE_BONUS) : rawSpacing),
     rimPressure: rimPressureTeam(starters),
     playmaking: teamPlaymakingQuality(starters),
@@ -790,19 +815,41 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
   const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
   const cappedBlended = hasWeakOffensiveStarter(team) ? weakOffensiveCenterCap(blended) : blended;
-  const score = Math.round(Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)));
+  const score = Math.round(calibrateOffenseToDefenseScale(Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team))));
   return { ...components, score };
+}
+
+/**
+ * 2026-09-26, the user ("przydałoby się równiejsze"): on 192 seeded AI rosters Offense averaged
+ * 86.2 (sd 6.5, 10 teams pinned at 100) against Defense 74.1 (sd 9.3) — spacing and rim pressure,
+ * two of the blend's inputs, read 100 for roughly half of all drafted fives, so Offense sat high and
+ * barely separated teams while Defense carried most of the ranking. The final Offense number is
+ * mapped linearly onto the Defense score's own mean and spread, so a given distance from an
+ * average roster means the same on both sides. The components (and their bars) are unchanged.
+ */
+const OFFENSE_RAW_MEAN = 86.2;
+const OFFENSE_RAW_SD = 6.45;
+const DEFENSE_MEAN = 74.1;
+const DEFENSE_SD = 9.31;
+function calibrateOffenseToDefenseScale(raw: number): number {
+  return Math.max(0, Math.min(100, DEFENSE_MEAN + (raw - OFFENSE_RAW_MEAN) * (DEFENSE_SD / OFFENSE_RAW_SD)));
 }
 
 export function offenseScore(team: Team): number {
   return offenseScoreBreakdown(team).score;
 }
 
-export function defenseScore(team: Team): number {
-  const linearScore = rescaleToFullRange(
-    benchBoostedWeightedAverage(team, computeDefensiveTalent, true),
+/** The team's minutes-weighted D-TAL on the Defense score's own 0-100 scale, before the
+ * huntability penalty, cohesion bonus and knee — the defense mirror of the O-TAL bar. */
+export function teamDefensiveTalentScore(team: Team): number {
+  return rescaleToFullRange(
+    benchBoostedWeightedAverage(team, (p) => computeDefensiveTalent(p), true, BENCH_WEIGHT_DEFENSE),
     DEFENSE_SCORE_ANCHORS,
   );
+}
+
+export function defenseScore(team: Team): number {
+  const linearScore = teamDefensiveTalentScore(team);
   // Linear minute-weighting lets an elite anchor conceal several attackable defenders. In a
   // series those minutes are hunted repeatedly, so the shared nonlinear penalty stacks every
   // weak stint instead of stopping after the first bad player. At the opposite extreme, a full
@@ -921,8 +968,27 @@ const TWO_SHOOTER_LINEUP_SPACING_FLOOR = 45;
 const TWO_NON_SPACER_STARTERS_CEILING = 75;
 const NON_SPACER_PG_STARTER_CEILING = 65;
 
-function spacingNonSpacerCeiling(starterAssignments: ReturnType<typeof primaryStarters>): number {
-  const hardNonSpacers = starterAssignments.filter(({ player }) => teamSpacingValue(player) < 30);
+/**
+ * 2026-09-25, user ("C powinno karać dopiero jeśli reszta spacingu ssie"): one non-shooting big in
+ * a four-out lineup is normal basketball, not a spacing hole. When the four non-C starters average
+ * at least `C_SPACING_REST_FLOOR` (65 — between the 25th and 50th percentile of CPU fives), a
+ * player's minutes at C read at least `C_SPACING_NEUTRAL` and he stops counting as a hard
+ * non-spacer. A lineup whose other four don't shoot still pays in full for a non-shooting C.
+ */
+const C_SPACING_REST_FLOOR = 65;
+const C_SPACING_NEUTRAL = 45;
+function restSpacesForCenter(starterAssignments: ReturnType<typeof primaryStarters>): boolean {
+  const others = starterAssignments.filter(({ slot }) => slot !== 'C');
+  if (others.length === 0) return false;
+  return others.reduce((sum, { player }) => sum + teamSpacingValue(player), 0) / others.length >= C_SPACING_REST_FLOOR;
+}
+function spacingValueAt(player: PlayerSpan, slot: Position, cCovered: boolean): number {
+  const value = teamSpacingValue(player);
+  return slot === 'C' && cCovered ? Math.max(value, C_SPACING_NEUTRAL) : value;
+}
+
+function spacingNonSpacerCeiling(starterAssignments: ReturnType<typeof primaryStarters>, cCovered = false): number {
+  const hardNonSpacers = starterAssignments.filter(({ player, slot }) => spacingValueAt(player, slot, cCovered) < 30);
   if (hardNonSpacers.length < 2) return 100;
   const pgIsNonSpacer = hardNonSpacers.some(({ slot }) => slot === 'PG');
   return pgIsNonSpacer ? NON_SPACER_PG_STARTER_CEILING : TWO_NON_SPACER_STARTERS_CEILING;
@@ -936,19 +1002,20 @@ export function spacingScore(team: Team): number {
   // See `BENCH_INFLUENCE_BOOST`'s own docstring above — the multi-gravity/anomaly-floor logic
   // below already gives bench-minute shooters full (not minutes-diluted) credit on its own terms,
   // so only this base weighted average needs the same boost offense/defense already get.
-  const fullRotationBase = benchBoostedWeightedAverage(team, teamSpacingValue, false);
   // A team is judged first by the five opponents actually have to guard to open each game.
   // Bench shooting still matters, but cannot turn a Wade/Iguodala/Webber front line into an
   // elite-spacing starting lineup merely because Barry or Bonner appears later in the rotation.
   const starterAssignments = primaryStarters(team);
+  const cCovered = restSpacesForCenter(starterAssignments);
+  const fullRotationBase = benchBoostedWeightedAverage(team, (p, slot) => spacingValueAt(p, slot, cCovered), false, BENCH_WEIGHT_SPACING);
   const starters = starterAssignments.map((entry) => entry.player);
-  const starterBase = starters.length > 0
-    ? starters.reduce((sum, player) => sum + teamSpacingValue(player), 0) / starters.length
+  const starterBase = starterAssignments.length > 0
+    ? starterAssignments.reduce((sum, { player, slot }) => sum + spacingValueAt(player, slot, cCovered), 0) / starterAssignments.length
     : fullRotationBase;
   const base = fullRotationBase * 0.35 + starterBase * 0.65;
   const plusShooterCount = starters.filter(isPlusShooter).length;
-  const hardNonSpacerCount = starters.filter((player) => teamSpacingValue(player) < 30).length;
-  const nonSpacerCeiling = spacingNonSpacerCeiling(starterAssignments);
+  const hardNonSpacerCount = starterAssignments.filter(({ player, slot }) => spacingValueAt(player, slot, cCovered) < 30).length;
+  const nonSpacerCeiling = spacingNonSpacerCeiling(starterAssignments, cCovered);
 
   // 2026-08-19, user-reported: a real Paul George "Walking gravity" span (SPC 100, no Curry on
   // the roster) got NONE of this mechanic's credit — both the single-player floor and the
