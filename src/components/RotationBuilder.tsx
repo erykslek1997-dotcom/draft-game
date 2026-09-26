@@ -392,10 +392,9 @@ function RotationBuilderComponent({
   return (
     <div className="rotation-builder">
       <h2>Set Your Rotation</h2>
-      <p>
-        Every position needs {GAME_MINUTES} minutes a game: the starter plays most of them and backups cover the rest.
-        One backup can cover two positions (e.g. a combo guard backing up both PG and SG), and a third player can
-        fill in minutes one backup can't.
+      <p className="rotation-intro">
+        Every position needs {GAME_MINUTES} minutes: a starter plus backups. Drag players (or tap on a phone) and drag
+        the divider in a position's bar to split its minutes.
       </p>
 
       {/* 2026-09-11, user-reported live ("głębsza przebudowa", "brzydko to wygląda") — the table
@@ -413,11 +412,6 @@ function RotationBuilderComponent({
           It's probably not your best rotation: check who starts where and how the minutes are split.
         </p>
       )}
-
-      <p className="rotation-dnd-hint">
-        Drag a player from the bench onto a position, or between positions, and drag the divider in a position's bar to
-        split its {GAME_MINUTES} minutes. On a phone, tap a bench player, then a position.
-      </p>
 
       <div className="rotation-cards">
         {STARTER_SLOTS.map((slot) => {
@@ -571,7 +565,7 @@ function RotationBuilderComponent({
                         </span>
                       )}
                     </div>
-                    <span className="rotation-stepper">
+                    {row.playerId && <span className="rotation-stepper">
                       <button
                         type="button"
                         className="rotation-step-btn"
@@ -626,7 +620,7 @@ function RotationBuilderComponent({
                       >
                         +
                       </button>
-                    </span>
+                    </span>}
                     {rowIdx > 0 && (
                       <button className="remove-row-btn" title="Remove this contributor" onClick={() => removeRow(slot, rowIdx)}>
                         ×
@@ -644,12 +638,12 @@ function RotationBuilderComponent({
                 >
                   Add {activePlayer.playerName.split(' ').slice(-1)[0]} here{fits ? '' : ' (out of position)'}
                 </button>
-              ) : (
-                <span className={`rotation-drop-zone${dragging && dropSlot === slot ? ' is-over' : ''}`} aria-hidden>
-                  {dragging ? (dropSlot === slot ? 'Drop here to add' : fits ? 'Fits here' : 'Out of position') : '+ drag a player here'}
+              ) : dragging ? (
+                <span className={`rotation-drop-zone${dropSlot === slot ? ' is-over' : ''}`} aria-hidden>
+                  {dropSlot === slot ? 'Drop here to add' : fits ? 'Fits here' : 'Out of position'}
                 </span>
-              )}
-              {canAddMore && (
+              ) : null}
+              {canAddMore && rows[slot][0]?.playerId && (
                 <button className="add-row-btn" onClick={() => addRow(slot)}>
                   + add contributor
                 </button>

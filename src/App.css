@@ -6683,3 +6683,16 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   }
   .at-shell .player-peek-card .at-draft-span-table td.peek-teams::before { flex-basis: 100%; }
 }
+/* Compact rotation builder (2026-09-26, "rotacja zbyt duża"). */
+.rotation-intro { font-size: 12px; margin: 4px 0 0; color: var(--at-ink-soft, var(--text)); }
+.rotation-cards { gap: 8px; margin: 10px 0 14px; }
+.rotation-card { padding: 8px 10px 8px; }
+.rotation-card-row { padding: 5px 0; gap: 8px; }
+.add-row-btn { margin-top: 4px; padding: 3px 8px; font-size: 11px; }
+/* Draft progress in the sticky header ticker (2026-09-26). */
+.at-turn-sticky .at-ticker { padding: 6px 0 4px; }
+.at-ticker-progress { display: flex; align-items: center; gap: 8px; flex-basis: 100%; font-size: 11px; color: var(--at-ink-faint); }
+.at-ticker-progress-text { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.at-ticker-progress-text b { color: var(--at-ink); }
+.at-ticker-progress-track { flex: 1; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--at-ink) 10%, transparent); overflow: hidden; }
+.at-ticker-progress-track > span { display: block; height: 100%; border-radius: 999px; background: var(--at-accent, #6cc3ff); }

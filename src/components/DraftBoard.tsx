@@ -1579,7 +1579,9 @@ export default function DraftBoard({
       )}
 
       {activeTab === 'draft' && (
-        <div className="at-card" style={{ marginBottom: 16 }}>
+        // The ticker moved into the Draft card's sticky header (2026-09-26); with the board
+        // collapsed this wrapper holds only the scroll anchor, so it drops its card chrome.
+        <div className={boardOpen ? 'at-card' : undefined} style={boardOpen ? { marginBottom: 16 } : undefined}>
           {/* 2026-08-16, user's own ask: the "Overview" title + explainer caption are gone in
               developer mode too now — previously kept there (player mode dropped them first,
               2026-08-13) but the grid itself (all 16 teams × round) still says everything it
@@ -1589,13 +1591,6 @@ export default function DraftBoard({
               starts collapsed to a one-line ticker (who's on the clock, the latest picks, when
               you pick next); the full board is one click away and the choice is remembered. */}
           <div ref={boardAnchorRef} className="at-board-anchor" />
-          <DraftTicker
-            youOnClock={canPick && currentTeam.isHuman}
-            complete={state.complete}
-            onClockLabel={teamLabel(currentTeam)}
-            picksAway={humanPicksAway}
-            recentPicks={recentPicks}
-          />
           {boardOpen && (
             <>
           <div className="at-grid-scroll-nav">
@@ -1702,6 +1697,14 @@ export default function DraftBoard({
               actual Draft buttons below are `disabled` via `canPick`, not hidden, so browsing/
               searching/expanding a row to look at a player works identically either way. */}
           <div className="at-turn-sticky">
+            <DraftTicker
+              youOnClock={canPick && currentTeam.isHuman}
+              complete={state.complete}
+              onClockLabel={teamLabel(currentTeam)}
+              picksAway={humanPicksAway}
+              recentPicks={recentPicks}
+              progress={{ picksMade: state.history.length, totalPicks: TEAM_COUNT * ROUNDS, round: Math.min(state.round + 1, ROUNDS), rounds: ROUNDS }}
+            />
             {!canPick ? (
               <div className="at-cpu-turn-banner">{teamLabel(currentTeam)} is picking…</div>
             ) : (

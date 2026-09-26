@@ -6,6 +6,7 @@
 import type { PlayerSpan } from './schema';
 import data from './draftPool.json';
 import { auditedPrimaryDefensiveRole, buildRoleFitContext } from '../engine/roleFitShadow';
+import { runtimeAvailabilityForSpan } from '../engine/runtimeSpanLookups';
 
 // The JSON is a precomputed build artifact, but position corrections in players.ts must also be
 // visible immediately without reselecting the entire talent-sensitive pool (a full rebuild churns
@@ -60,7 +61,18 @@ const defensiveRoleAuditContext = buildRoleFitContext(positionCorrectedPool);
 
 /** Legacy Anchor/Mobile tags are replaced at load time by the audited physical/statistical
  * primary role. The full multi-role profile is still calculated separately by FIT. */
-export const draftPool: PlayerSpan[] = positionCorrectedPool.map((span) => ({
+/**
+ * 2026-09-26, user-reported (Joel Embiid 2023-25 as his card: 58 of 164 games): a window the
+ * player missed most of is not a draftable season. Read as availability (games / possible
+ * games) so lockout-shortened windows stay in; below `MIN_AVAILABILITY_PCT` the window is dropped.
+ */
+const MIN_AVAILABILITY_PCT = 50;
+function playedEnough(span: PlayerSpan): boolean {
+  const availability = runtimeAvailabilityForSpan(span);
+  return !availability || availability.availability >= MIN_AVAILABILITY_PCT;
+}
+
+export const draftPool: PlayerSpan[] = positionCorrectedPool.filter(playedEnough).map((span) => ({
   ...span,
   defensiveRole: auditedPrimaryDefensiveRole(span, defensiveRoleAuditContext),
 }));

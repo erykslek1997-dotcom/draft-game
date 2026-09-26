@@ -1,9 +1,9 @@
 import type { PlayerSpan } from '../data/schema';
 import { precomputedTierContext } from './precomputedTiers';
 import {
-  computeOffensiveTalent,
-  computeDefensiveTalent,
-  computeUncappedOffensiveTalent,
+  computeOffensiveTalentBase,
+  computeDefensiveTalentBase,
+  computeUncappedOffensiveTalentBase,
   computeTalentWithoutBridge,
 } from './talent';
 import { offensiveGrade, defensiveGrade, tierContextFor, effectiveTalent, registerSixthManContextProvider, type Grade, type TierGateContext } from './grades';
@@ -94,10 +94,10 @@ export function isSixthManProfile(span: PlayerSpan): boolean {
   if (computeTalentWithoutBridge(span) >= SIXTH_MAN_TAL_CEILING) return false;
   if (span.fga >= SIXTH_MAN_FGA_CEILING) return false;
   if (span.box.apg >= SIXTH_MAN_APG_CEILING) return false;
-  const otal = computeOffensiveTalent(span);
-  const otalGrade = offensiveGrade(otal, computeUncappedOffensiveTalent(span));
+  const otal = computeOffensiveTalentBase(span);
+  const otalGrade = offensiveGrade(otal, computeUncappedOffensiveTalentBase(span));
   if (!gradeAtLeast(otalGrade, SIXTH_MAN_OFFENSE_FLOOR)) return false;
-  const dtalGrade = defensiveGrade(computeDefensiveTalent(span));
+  const dtalGrade = defensiveGrade(computeDefensiveTalentBase(span));
   if (gradeAtLeast(dtalGrade, SIXTH_MAN_DEFENSE_CEILING)) return false;
   // 2026-09-01, user-reported (Jimmy Butler / Paul Pierce / Pau Gasol on title teams reading
   // "Sixth Man"): the tag's box gates catch a full starter whose real plus-minus record clearly

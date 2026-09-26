@@ -10,7 +10,8 @@ import { rimPressureOffenseTerm } from './rimPressure';
 import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
 import { computeSpacing } from './spacing';
-import { computeDefensiveTalent, computeDefensiveTalentRegularSeason } from './defensiveTalent';
+import { computeDefensiveTalent, computeDefensiveTalentBase, computeDefensiveTalentRegularSeason } from './defensiveTalent';
+import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
 import { liftForReducedRole } from './reducedRole';
 import { individualDefenseRate } from './defensiveAccolades';
@@ -33,7 +34,7 @@ import { portabilityBonus, roleScalabilityBonus } from './portabilityCorrection'
 export { computeDefensiveImpact };
 // D-TAL lives in its own file now (it has its own calibration — see defensiveTalent.ts), but
 // stays re-exported here so every caller keeps importing the three judge metrics from one place.
-export { computeDefensiveTalent };
+export { computeDefensiveTalent, computeDefensiveTalentBase };
 
 /**
  * Talent is computed from box-score inputs rather than hand-typed per player,
@@ -1418,7 +1419,7 @@ export function dtalBridgeCorrection(span: PlayerSpan): number {
   const smoothed = DTAL_BRIDGE_SMOOTH * Math.tanh((DTAL_BRIDGE_GAIN * rankGap) / DTAL_BRIDGE_SMOOTH);
   if (smoothed >= 0) return Math.min(smoothed, DTAL_BRIDGE_UP_CAP);
   const down = Math.min(-smoothed, DTAL_BRIDGE_DOWN_CAP);
-  const otal = computeOffensiveTalent(span);
+  const otal = computeOffensiveTalentBase(span);
   const eliteOffenseDamp =
     1 -
     clamp01(
@@ -1706,12 +1707,12 @@ export function cp3TwoWayExemptionShare(playerName: string, otal: number, dtal: 
 
 function pgOffenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'PG') return 100;
-  const otal = computeOffensiveTalent(span);
+  const otal = computeOffensiveTalentBase(span);
   const ceiling = rampedCeiling(otal, [
     [PG_OFFENSE_GRADE_B_FLOOR, PG_ALL_NBA_TIER_CAP],
     [PG_OFFENSE_GRADE_A_FLOOR, PG_MVP_TIER_CAP],
   ]);
-  return ceiling + (100 - ceiling) * cp3TwoWayExemptionShare(span.playerName, otal, computeDefensiveTalent(span));
+  return ceiling + (100 - ceiling) * cp3TwoWayExemptionShare(span.playerName, otal, computeDefensiveTalentBase(span));
 }
 
 /**
@@ -1742,8 +1743,8 @@ const PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION = 95;
 
 function pgDefenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'PG') return 100;
-  if (computeOffensiveTalent(span) >= PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION) return 100;
-  return rampedCeiling(computeDefensiveTalent(span), [[PG_DEFENSE_GRADE_C_FLOOR, PG_MVP_TIER_CAP]]);
+  if (computeOffensiveTalentBase(span) >= PG_DEFENSE_CAP_ELITE_OFFENSE_EXEMPTION) return 100;
+  return rampedCeiling(computeDefensiveTalentBase(span), [[PG_DEFENSE_GRADE_C_FLOOR, PG_MVP_TIER_CAP]]);
 }
 
 /**
@@ -1757,7 +1758,7 @@ const SF_OFFENSE_GRADE_B_PLUS_FLOOR = 80;
 
 function sfOffenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'SF') return 100;
-  return rampedCeiling(computeOffensiveTalent(span), [[SF_OFFENSE_GRADE_B_PLUS_FLOOR, PG_MVP_TIER_CAP]]);
+  return rampedCeiling(computeOffensiveTalentBase(span), [[SF_OFFENSE_GRADE_B_PLUS_FLOOR, PG_MVP_TIER_CAP]]);
 }
 
 /**
@@ -1778,7 +1779,7 @@ const SF_ALL_STAR_TIER_CAP = 79;
 function sfDefenseGradeCeiling(span: PlayerSpan): number {
   if (span.primaryPosition !== 'SF') return 100;
   if (normalizePlayerName(span.playerName) === normalizePlayerName('Kevin Durant')) return 100;
-  return rampedCeiling(computeDefensiveTalent(span), [
+  return rampedCeiling(computeDefensiveTalentBase(span), [
     [SF_DEFENSE_GRADE_D_PLUS_FLOOR, SF_ALL_STAR_TIER_CAP],
     [SF_DEFENSE_GRADE_C_FLOOR, SF_ALL_NBA_TIER_CAP],
   ]);
@@ -2116,7 +2117,8 @@ const DEFENSE_TAL_SCALE_BY_POSITION: Record<Position, number> = {
  */
 const offensiveTalentCache = new Map<string, number>();
 
-export function computeOffensiveTalent(rawSpan: PlayerSpan): number {
+/** O-TAL before any named adjustment (see `computeDefensiveTalentBase`). */
+export function computeOffensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = offensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
@@ -2125,7 +2127,7 @@ export function computeOffensiveTalent(rawSpan: PlayerSpan): number {
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
   const scaled = offense * scale + intercept + playoffImpactForSpan(span).offense;
-  const result = Math.max(0, Math.min(100, Math.round(liftForReducedRole(span, scaled, computeOffensiveTalent))));
+  const result = Math.max(0, Math.min(100, Math.round(liftForReducedRole(span, scaled, computeOffensiveTalentBase))));
   offensiveTalentCache.set(span.id, result);
   return result;
 }
@@ -2146,7 +2148,7 @@ export function computeOffensiveTalent(rawSpan: PlayerSpan): number {
 /** Same 2026-08-16 memoization as `computeOffensiveTalent` above, same reason. */
 const uncappedOffensiveTalentCache = new Map<string, number>();
 
-export function computeUncappedOffensiveTalent(rawSpan: PlayerSpan): number {
+export function computeUncappedOffensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = uncappedOffensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
@@ -2155,7 +2157,7 @@ export function computeUncappedOffensiveTalent(rawSpan: PlayerSpan): number {
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
   const scaled = offense * scale + intercept + playoffImpactForSpan(span).offense;
-  const result = Math.max(0, Math.round(liftForReducedRole(span, scaled, computeUncappedOffensiveTalent)));
+  const result = Math.max(0, Math.round(liftForReducedRole(span, scaled, computeUncappedOffensiveTalentBase)));
   uncappedOffensiveTalentCache.set(span.id, result);
   return result;
 }
@@ -2174,4 +2176,26 @@ export function normalizedDefenseForFit(span: PlayerSpan): number {
   const scale = DEFENSE_TAL_SCALE_BY_POSITION[functionalPosition(span)];
   const scaled = DEFENSE_FLOOR + (defense - DEFENSE_FLOOR) * scale;
   return Math.max(0, Math.min(100, Math.round(scaled)));
+}
+
+/** The O-TAL everything else reads: the base plus its share of a named TAL adjustment
+ * (`namedShift.ts`). */
+const shiftedOffensiveTalentCache = new Map<string, number>();
+export function computeOffensiveTalent(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
+  const cached = shiftedOffensiveTalentCache.get(span.id);
+  if (cached !== undefined) return cached;
+  const result = Math.max(0, Math.min(100, Math.round(computeOffensiveTalentBase(span) + namedShiftFor(span).offense)));
+  if (namedShiftRegistered()) shiftedOffensiveTalentCache.set(span.id, result);
+  return result;
+}
+
+const shiftedUncappedOffensiveTalentCache = new Map<string, number>();
+export function computeUncappedOffensiveTalent(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
+  const cached = shiftedUncappedOffensiveTalentCache.get(span.id);
+  if (cached !== undefined) return cached;
+  const result = Math.max(0, Math.round(computeUncappedOffensiveTalentBase(span) + namedShiftFor(span).offense));
+  if (namedShiftRegistered()) shiftedUncappedOffensiveTalentCache.set(span.id, result);
+  return result;
 }
