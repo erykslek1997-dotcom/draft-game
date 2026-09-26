@@ -1059,10 +1059,14 @@ function ShareModal({
                     ))}
                     {rows.some((row) => row.minutes > 0 && !row.isStarter && row.minutes < SPOT_MINUTES) && (
                       <span className="rotation-spot-line">
-                        + {rows
+                        {rows
                           .filter((row) => row.minutes > 0 && !row.isStarter && row.minutes < SPOT_MINUTES)
-                          .map((row) => `${shortenName(row.name, 12)} ${Math.round(row.minutes)}m`)
-                          .join(' · ')}
+                          .map((row) => (
+                            <span className="rotation-spot-entry" key={row.name}>
+                              <Face name={row.name} size="xs" />
+                              {shortenName(row.name, 12)} {Math.round(row.minutes)}m
+                            </span>
+                          ))}
                       </span>
                     )}
                   </div>
@@ -1636,7 +1640,48 @@ const FIT_COMPONENT_TIP: Record<keyof FitScoreResult['components'], string> = {
   championshipStructure: 'There was no clear pecking order. Title teams have one or two stars and role players who fit around them.',
 };
 
+/**
+ * 2026-09-26, user-reported (Nash / Holiday / Durant / Jackson Jr. / Bill Russell: Offense 71 with
+ * Creation 95 and Spacing fit 99, told to "draft a real shot creator and don't stack non-shooters";
+ * "rozumiem że Bill Russell zaniżył atak, ale to powinno być powodem"): the Offense tip was one
+ * generic sentence. It now names the heaviest drag — the rotation player (20+ min) furthest under
+ * the median O-TAL of rotation players at the slot he plays most — and the weakest part of the
+ * offense's own blend.
+ */
+const MEDIAN_OTAL_BY_SLOT: Record<Position, number> = { PG: 63, SG: 67, SF: 63, PF: 64, C: 62 };
+const OFFENSE_PART_TIP: Record<'spacing' | 'rimPressure' | 'playmaking' | 'selfCreation', string> = {
+  spacing: 'Put more shooters around your creators so the floor stays open.',
+  rimPressure: 'Nobody attacked the rim — add a slasher or a big who finishes inside and draws fouls.',
+  playmaking: 'Add a real passer so your scorers get the ball in rhythm.',
+  selfCreation: 'Late in the clock nobody could create a shot — add a scorer who can beat his man.',
+};
+function offenseTip(team: Team): string {
+  const minutes = new Map<string, { player: ResolvedSlotAssignment['player']; total: number; bySlot: Map<Position, number> }>();
+  for (const entry of allAssignments(team)) {
+    const row = minutes.get(entry.player.id) ?? { player: entry.player, total: 0, bySlot: new Map<Position, number>() };
+    row.total += entry.minutes;
+    row.bySlot.set(entry.slot, (row.bySlot.get(entry.slot) ?? 0) + entry.minutes);
+    minutes.set(entry.player.id, row);
+  }
+  const drag = [...minutes.values()]
+    .filter((row) => row.total >= 20)
+    .map((row) => {
+      const slot = [...row.bySlot.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      const otal = Math.round(computeOffensiveTalent(row.player));
+      return { row, slot, otal, gap: MEDIAN_OTAL_BY_SLOT[slot] - otal };
+    })
+    .filter((d) => d.gap >= 5)
+    .sort((a, b) => b.gap * b.row.total - a.gap * a.row.total)[0];
+  const parts = offenseScoreBreakdown(team);
+  const [weakestPart] = (['spacing', 'rimPressure', 'playmaking', 'selfCreation'] as const)
+    .map((k) => [k, parts[k]] as const)
+    .sort((a, b) => a[1] - b[1])[0];
+  if (!drag) return `Your offense trailed the field. ${OFFENSE_PART_TIP[weakestPart]}`;
+  return `Your offense trailed the field, and ${drag.row.player.playerName} was the biggest drag: O-TAL ${drag.otal} in ${Math.round(drag.row.total)} minutes at ${drag.slot}, where a typical rotation player reads ${MEDIAN_OTAL_BY_SLOT[drag.slot]}. ${OFFENSE_PART_TIP[weakestPart]}`;
+}
+
 function nextDraftTip(label: string, team: Team): string | undefined {
+  if (label === 'Offense') return offenseTip(team);
   if (label !== 'Fit') return NEXT_DRAFT_TIP[label];
   const components = fitScore(team).components;
   const [weakest] = (Object.entries(components) as [keyof typeof components, number][]).sort((a, b) => a[1] - b[1])[0] ?? [];
@@ -1710,7 +1755,12 @@ function RotationColumns({
             })}
             {spot.length > 0 && (
               <span className="rotation-spot-line" title="Spot minutes at this position">
-                + {spot.map((e) => `${shortenName(e.player.playerName, 12)} ${Math.round(e.minutes)}m`).join(' · ')}
+                {spot.map((e) => (
+                  <span className="rotation-spot-entry" key={e.player.id}>
+                    <Face name={e.player.playerName} size="xs" />
+                    {shortenName(e.player.playerName, 12)} {Math.round(e.minutes)}m
+                  </span>
+                ))}
               </span>
             )}
           </div>
@@ -1736,6 +1786,7 @@ function ResultsVerdict({
   fieldSize,
   breakdown,
   scores,
+  fieldMedians,
   onNewDraft,
   onRematch,
   onMenu,
@@ -1749,6 +1800,7 @@ function ResultsVerdict({
    * 2nd-4th: the tip becomes "to get over the top". Everyone else: as before. */
   rank: number;
   scores: Record<string, number>;
+  fieldMedians: Record<string, number>;
   onNewDraft?: () => void;
   onRematch?: () => void;
   onMenu: () => void;
@@ -1761,7 +1813,8 @@ function ResultsVerdict({
   const contender = rank > 1 && rank <= 4;
   const strengths = insights.strengths.slice(0, won ? 3 : 2);
   const concerns = insights.concerns.slice(0, won ? 1 : 2);
-  const [weakestLabel] = Object.entries(scores).sort((a, b) => a[1] - b[1])[0] ?? [];
+  const [weakestLabel] =
+    Object.entries(scores).sort((a, b) => a[1] - (fieldMedians[a[0]] ?? 0) - (b[1] - (fieldMedians[b[0]] ?? 0)))[0] ?? [];
   const tip = !won && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined;
   const title = won ? 'Why you won' : 'Why you finished here';
   return (
@@ -1936,6 +1989,25 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked?.team.id, scoredTeams],
   );
+  // 2026-09-26: the "Next draft" tip names the area furthest BELOW THE FIELD, not the lowest raw
+  // number — the chips sit on different scales (Rotation reads ~95 for most teams, Offense and
+  // Defense average ~74), so the raw minimum was nearly always Offense after its recalibration.
+  const fieldMedians = useMemo(() => {
+    const median = (values: number[]) => {
+      const sorted = [...values].sort((a, b) => a - b);
+      return sorted[Math.floor(sorted.length / 2)] ?? 0;
+    };
+    const b = ranked.map((r) => r.breakdown);
+    return {
+      Talent: median(b.map((x) => x.talentScore)),
+      'Bench Depth': median(b.map((x) => x.benchDepthScore)),
+      Offense: median(b.map((x) => x.offenseScore)),
+      Defense: median(b.map((x) => x.defenseScore)),
+      Spacing: median(b.map((x) => x.spacingScore)),
+      Fit: median(b.map((x) => x.fitScore)),
+      Rotation: median(b.map((x) => x.rotationScore)),
+    } as Record<string, number>;
+  }, [ranked]);
   const heroStyle = teamStyleFor(
     heroFit?.inputs.primaryArchetype,
     heroFit?.inputs.secondaryArchetype,
@@ -2208,6 +2280,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
             Fit: heroRanked.breakdown.fitScore,
             Rotation: heroRanked.breakdown.rotationScore,
           }}
+          fieldMedians={fieldMedians}
           onNewDraft={onRematch ? () => onRematch() : undefined}
           onRematch={onRematch ? () => onRematch(draftSeed) : undefined}
           onMenu={onRestart}

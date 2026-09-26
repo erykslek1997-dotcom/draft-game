@@ -33,7 +33,7 @@ export function shortenName(name: string, maxLen = 15): string {
 
 /** Headshot with a monogram fallback (no image, or the image 404s). Faces come from the shared
  * `data/headshots` lookup Codex built for the Card Collection. */
-export function Face({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
+export function Face({ name, size = 'sm' }: { name: string; size?: 'xs' | 'sm' | 'md' }) {
   const src = headshotUrl(name);
   // Track the src that failed, not a bare boolean — so when this same <Face> instance is reused
   // for a different player (React keeps it mounted across slot re-picks), a new `src` clears the

@@ -6251,10 +6251,14 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 
 /* 2026-09-25: spot-minute backups on one quiet line under a rotation column (ResultsScreen). */
 .rotation-spot-line {
-  display: block; margin-top: 6px; padding-top: 6px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 6px; padding-top: 6px;
   border-top: 1px dashed var(--at-line, #16222f);
   font-size: 11px; color: var(--at-ink-faint, #48586d); line-height: 1.4;
 }
+/* 2026-09-26, user ("małe twarze tam gdzie jest Magic i Carter?"): each spot-minute backup gets a
+   16px face, same as the full rows' 26px one. */
+.rotation-spot-entry { display: inline-flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; }
+.rotation-spot-entry .bf-face { flex-shrink: 0; }
 
 /* 2026-09-25, user ("rotacja się rozjeżdża"): the share modal is ~566px wide on every screen, so
    each of the five slot columns is ~100px — never enough for face + name + "36m · 12.0 caps" on
