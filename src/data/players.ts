@@ -596,6 +596,16 @@ const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: Defensi
   // actually assigned him. (His TAL already reads with an SF position correction — see
   // `POSITION_CORRECTION_AS_SF` in talent.ts — so a wing defensive role is consistent.)
   { name: 'Magic Johnson', spanLabel: '1989-91', role: 'Wing Stopper' },
+  // 2026-09-26, found auditing why the 2015-17 Death Lineup read below-average switchability:
+  // Curry's 2009-14 windows are Chaser, then the curated 2015-17 anchor (tagged 'Low Activity'
+  // with no stated source, unlike Magic's Taylor-backed tag above) cascaded to 2013-18 — the very
+  // windows where his real-source D-TAL is HIGHEST (62-67, 1.8-2.1 spg). He was hidden on
+  // off-ball assignments, not inactive; Chaser matches his own adjacent windows. 2017-19 onward
+  // (D-TAL 31-48) keeps Low Activity.
+  { name: 'Stephen Curry', spanLabel: '2013-15', role: 'Chaser' },
+  { name: 'Stephen Curry', spanLabel: '2014-16', role: 'Chaser' },
+  { name: 'Stephen Curry', spanLabel: '2015-17', role: 'Chaser' },
+  { name: 'Stephen Curry', spanLabel: '2016-18', role: 'Chaser' },
 ];
 
 function applyDefensiveRoleOverrides(spans: PlayerSpan[]): PlayerSpan[] {
@@ -696,6 +706,9 @@ const SECONDARY_POSITION_ADDITIONS: { name: string; position: Position }[] = [
   // a real PF/SF tweener career-wide, not just eligible on the two touched spans.
   { name: 'Robert Covington', position: 'PF' },
   { name: 'Robert Covington', position: 'SF' },
+  // 2026-09-26: Draymond's PF-primary windows listed PF alone, so his positional versatility (and
+  // switchability) read like a stay-home four despite years as the Warriors' small-ball center.
+  { name: 'Draymond Green', position: 'C' },
 ];
 
 /**

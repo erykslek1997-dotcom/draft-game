@@ -203,7 +203,7 @@
       "draymond green",
       "rudy gobert",
       "al horford",
-      "jerry west",
+      "alonzo mourning",
       "mark price",
       "klay thompson",
       "reggie miller",
@@ -260,7 +260,7 @@
       "draymond green",
       "rudy gobert",
       "al horford",
-      "jerry west",
+      "alonzo mourning",
       "mark price",
       "klay thompson",
       "reggie miller",
@@ -280,8 +280,8 @@
       "pau gasol",
       "shawn kemp"
     ],
-    "expectedPickId": "russebi01-cw-1959-1960",
-    "expectedPickLabel": "Bill Russell | 1958-60"
+    "expectedPickId": "mingya01-2005-2006",
+    "expectedPickLabel": "Yao Ming | 2004-06"
   },
   {
     "seed": 7,
@@ -328,7 +328,7 @@
       "draymond green",
       "rudy gobert",
       "al horford",
-      "jerry west",
+      "alonzo mourning",
       "mark price",
       "klay thompson",
       "reggie miller",
@@ -347,13 +347,13 @@
       "wesley person",
       "pau gasol",
       "shawn kemp",
-      "bill russell",
+      "yao ming",
       "chauncey billups",
       "kyle lowry",
       "jalen williams",
       "kevin mchale",
       "kevin love",
-      "ben wallace",
+      "chris mullin",
       "terry porter",
       "og anunoby"
     ],
@@ -378,8 +378,8 @@
       "lebron james",
       "michael jordan"
     ],
-    "expectedPickId": "curry-15-17",
-    "expectedPickLabel": "Stephen Curry | 2015-17"
+    "expectedPickId": "curryst01-cw-2015-2016",
+    "expectedPickLabel": "Stephen Curry | 2014-16"
   },
   {
     "seed": 42,
