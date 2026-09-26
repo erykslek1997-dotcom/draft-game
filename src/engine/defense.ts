@@ -1,5 +1,5 @@
 import type { DefensiveRole, PlayerSpan, Position } from '../data/schema';
-import { eraBaseline, LEAGUE_PACE_BASELINE, stealRateEraResidual } from './era';
+import { eraBaseline, LEAGUE_PACE_BASELINE, reboundAvailabilityFactor, stealRateEraResidual } from './era';
 
 /**
  * Box-score-only defensive impact — split out from talent.ts so `darkoCorrection.ts` can
@@ -68,7 +68,7 @@ const ROLE_SCALE_MAX = 1.8;
  * pace-adjustment math (and so the two can't drift apart). */
 export function reboundingTerm(span: PlayerSpan): number {
   const { pace } = eraBaseline(span.spanLabel);
-  return span.box.rpg * (LEAGUE_PACE_BASELINE / pace) * 0.9;
+  return span.box.rpg * (LEAGUE_PACE_BASELINE / pace) * reboundAvailabilityFactor(span.spanLabel) * 0.9;
 }
 
 /**
