@@ -1418,7 +1418,36 @@ export function registerSixthManContextProvider(provider: (span: PlayerSpan) => 
 }
 
 const smoothedDisplayCache = new Map<string, number>();
+/**
+ * 2026-09-26, the user's calibration pass after the smooth-TAL / playoff rebuild: named ceilings
+ * on a player's DISPLAYED number, every window — the rebuild lifted high-volume guards and
+ * early-era scorers past where the user reads them ("Oscar do low MVP, okolice Westa", "Lillard
+ * max All-NBA", "Mullin z 87 bardziej na 83"). A ceiling, never a raise; applied after the
+ * neighbour smoothing, so no window can climb back over it, and the badge follows the number.
+ * Draft value reads the same number (`effectiveTalent`).
+ */
+const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(
+  [
+    ['Oscar Robertson', 90], // low MVP, next to Jerry West's peak (90)
+    ['Damian Lillard', 87], // top of All-NBA
+    ['Anthony Edwards', 87], // top of All-NBA
+    ['Gilbert Arenas', 84], // mid All-NBA
+    ['DeMarcus Cousins', 81], // low All-NBA
+    ['Ray Allen', 85], // high-mid All-NBA
+    ['Kevin Johnson', 85], // high-mid All-NBA
+    ['Chris Mullin', 83],
+  ].map(([name, ceiling]) => [normalizePlayerName(name as string), ceiling as number]),
+);
+
+function namedPlayerCeiling(playerName: string | undefined): number {
+  return (playerName && NAMED_PLAYER_DISPLAY_CEILING.get(normalizePlayerName(playerName))) || Infinity;
+}
+
 export function displayTalentForSpan(ctx: TierGateContext): number {
+  return Math.min(namedPlayerCeiling(ctx.playerName), smoothedDisplayTalent(ctx));
+}
+
+function smoothedDisplayTalent(ctx: TierGateContext): number {
   const own = unsmoothedDisplayTalent(ctx);
   if (!ctx.playerName || !ctx.spanLabel) return own;
   if (namedDisplayTal(ctx.playerName, ctx.spanLabel) !== undefined) return own;

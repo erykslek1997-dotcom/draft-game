@@ -900,7 +900,7 @@ function rawComponents(
   // attempts relative to `EFFICIENCY_REFERENCE_TSA` (a 15-FGA starter's load, where the old
   // term already sat), so a normal starter reads as before; the low-usage dampener already covers
   // the small-sample side and stays.
-  const trueShotAttempts = box.ppg / (2 * Math.max(0.3, box.tsPct));
+  const trueShotAttempts = (box.ppg * paceFactor) / (2 * Math.max(0.3, box.tsPct));
   const volumeWeight = Math.max(EFFICIENCY_VOLUME_MIN, Math.min(EFFICIENCY_VOLUME_MAX, trueShotAttempts / EFFICIENCY_REFERENCE_TSA));
   const efficiency =
     relativeTs * 140 * volumeWeight * lowUsageEfficiencyFactor(span.fga) * (relativeTs > 0 ? assistedEfficiencyFactor(span) : 1);
