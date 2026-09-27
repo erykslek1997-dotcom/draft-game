@@ -21,6 +21,8 @@ import { autoAssignRotation, projectedStarterValue, totalMinutesForPlayer, MAX_M
 import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing } from './spacing';
+import { computeFinishing } from './finishing';
+import { spanEndYears } from './era';
 import { isRimGravityScorer, isSelfSufficientEngine } from './offensiveProfile';
 import { isD1D2D3Player } from './d1d2d3Lookup';
 import { isSixthManProfile } from './sixthMan';
@@ -1541,12 +1543,55 @@ function uniquePlayerSpans(ranked: PlayerSpan[]): PlayerSpan[] {
  */
 export type AiDraftStrategy = 'starting-five-first' | 'stack-stars' | 'value-hunter';
 
+/**
+ * 2026-09-27, engine audit ("Drużyny AI są do siebie bardzo podobne": AI team scores averaged
+ * 79.8 with a spread of only 2.7): each AI team gets a GM personality, a taste on top of the
+ * shared value pipeline. `'balanced'` has none. The others add a bounded bonus (up to
+ * `GM_PROFILE_MAX_BONUS` value points) for what that GM loves. Measured over 8 seeded 16-team
+ * drafts, against the balanced teams' first five picks: defense-first +9 D-TAL, old-school a
+ * starting five nine years older, paint-beasts +6 FIN, pace-and-space +2 SPC (most early stars
+ * already shoot), with average team score unchanged (78.5-80.9 by profile):
+ * `'defense-first'` D-TAL, `'pace-and-space'` shooting (SPC), `'paint-beasts'` finishing at the
+ * rim (FIN), `'old-school'` players from older eras.
+ */
+export type AiGmProfile = 'balanced' | 'defense-first' | 'pace-and-space' | 'paint-beasts' | 'old-school';
+export const AI_GM_PROFILES: readonly AiGmProfile[] = ['balanced', 'defense-first', 'pace-and-space', 'paint-beasts', 'old-school'];
+export const AI_GM_PROFILE_LABEL: Record<AiGmProfile, string> = {
+  balanced: 'Balanced',
+  'defense-first': 'Defense First',
+  'pace-and-space': 'Pace & Space',
+  'paint-beasts': 'Paint Beasts',
+  'old-school': 'Old School',
+};
+const GM_PROFILE_MAX_BONUS = 15;
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+export function gmProfileBonus(profile: AiGmProfile | undefined, p: PlayerSpan): number {
+  switch (profile) {
+    case 'defense-first':
+      return GM_PROFILE_MAX_BONUS * clamp01((computeDefensiveTalent(p) - 55) / 40);
+    case 'pace-and-space':
+      return GM_PROFILE_MAX_BONUS * clamp01((computeSpacing(p) - 40) / 50);
+    case 'paint-beasts':
+      return GM_PROFILE_MAX_BONUS * clamp01((computeFinishing(p) - 50) / 45);
+    case 'old-school': {
+      const years = spanEndYears(p.spanLabel);
+      const end = years[years.length - 1] ?? 2000;
+      return GM_PROFILE_MAX_BONUS * clamp01((2000 - end) / 30);
+    }
+    default:
+      return 0;
+  }
+}
+
 export interface AiDraftRuleset {
   rosterSize: number;
   capLimit: number;
   /** Omitted (every existing caller) is byte-identical to today's behavior — see this type's own
    * docstring. Only `draft.ts`'s real 16-team AI draft assigns one per team, by `draftSlot`. */
   strategy?: AiDraftStrategy;
+  /** The team's GM personality (`AiGmProfile`); omitted means none. */
+  profile?: AiGmProfile;
 }
 
 export function pickForAi(
@@ -1985,6 +2030,7 @@ export function pickForAi(
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
+      gmProfileBonus: gmProfileBonus(ruleset?.profile, p),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);

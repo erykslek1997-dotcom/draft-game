@@ -1,10 +1,11 @@
+import { AI_GM_PROFILE_LABEL } from '../engine/aiDrafter';
 import { computeFinishing } from '../engine/finishing';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DraftPlayerCard, TIER_FRAME_COLOR } from './DraftPlayerCard';
 import { createPortal } from 'react-dom';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
-import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
+import { TEAM_COUNT, ROUNDS, aiProfileForSlot, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
 import { CAP_LIMIT, ROSTER_SIZE, capRemaining, totalFga, STARTER_SLOTS } from '../engine/positions';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { effectiveTalent, displayTalentForSpan } from '../engine/grades';
@@ -1627,6 +1628,11 @@ export default function DraftBoard({
                       <span className="at-team-name-full">
                         {teamLabel(team)}
                         {team.isHuman && <span className="at-lottery-you-tag">YOU</span>}
+                        {!team.isHuman && (
+                          <span className="at-gm-tag" title="This GM's drafting taste">
+                            {AI_GM_PROFILE_LABEL[aiProfileForSlot(state.seed, team.draftSlot)]}
+                          </span>
+                        )}
                       </span>
                     </td>
                     {Array.from({ length: ROUNDS }, (_, r) => {
@@ -1699,7 +1705,12 @@ export default function DraftBoard({
             {state.history.length === 0 ? (
               <>The draft is about to begin — <b>{teamLabel(currentTeam)}</b> is on the clock with pick 1.</>
             ) : (
-              <>{teamLabel(currentTeam)} is picking…</>
+              <>
+                {teamLabel(currentTeam)} is picking…
+                {!currentTeam.isHuman && (
+                  <span className="at-gm-tag">{AI_GM_PROFILE_LABEL[aiProfileForSlot(state.seed, currentTeam.draftSlot)]}</span>
+                )}
+              </>
             )}
           </div>
             ) : (
