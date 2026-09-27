@@ -813,7 +813,6 @@ const DEFENSE_FLOOR = 20;
  * Curry or undercorrecting everyone else). */
 const SHOOTING_GRAVITY_SCALE = 12;
 const MAX_SHOOTING_GRAVITY_BONUS = 5;
-const CURRY_GRAVITY_CAP = 3;
 
 /**
  * 2026-08-08, user's own direct ask, after a dry-run comparison (same technique as Magic's SF
@@ -875,6 +874,33 @@ const LUKA_WING_BLEND = 1.0;
  * on, it was suppressing Curry's own O-TAL below Steve Nash's (96 vs 97) — the opposite of
  * "best-in-position." `computeTalent` passes true; the split metrics pass false so every
  * player's split reads off the same uncapped gravity term. */
+/**
+ * 2026-09-27, the user ("Curry spadł za wielu graczy... shooting anomaly powinno podnosić
+ * znacznie TAL"; target: his best window level with Jokić's, "one in a lifetime offensive maszyna
+ * ale bez two way impactu"). `shootingGravity` rewards 3PT volume x era-relative accuracy, but the
+ * shared bonus above caps at +5, so Curry's gravity (0.93 at his peak, the highest in the dataset,
+ * Klay's best is 0.60, just under the start of this range) earned exactly what a good specialist earns, and the offense term itself
+ * already sits at its 100 ceiling for every elite scorer. This credits only the part of gravity
+ * past the specialist range (`SHOOTING_ANOMALY_START`), and only on a real shot load: a
+ * catch-and-shoot role player with the same rate on 8 shots (Korver 2013-15, 0.74) is not bending
+ * a defense the way a primary option taking 20 is, so the credit ramps in between
+ * `SHOOTING_ANOMALY_LOAD_START` and `SHOOTING_ANOMALY_LOAD_FULL` FGA. Replaces the old named Curry
+ * caps (`CURRY_GRAVITY_CAP` here and `CURRY_MULTI_LEVEL_CAP` in playmakingThreeLevel.ts), which only
+ * existed to keep him under Jordan/LeBron while the whole scale was squeezed under 100; on the
+ * uncapped scale they sit 15+ points clear anyway.
+ */
+const SHOOTING_ANOMALY_START = 0.62;
+const SHOOTING_ANOMALY_LOAD_START = 10;
+const SHOOTING_ANOMALY_LOAD_FULL = 18;
+const SHOOTING_ANOMALY_SCALE = 98;
+
+export function shootingAnomalyBonus(span: PlayerSpan): number {
+  const excess = shootingGravity(span) - SHOOTING_ANOMALY_START;
+  if (excess <= 0) return 0;
+  const load = Math.max(0, Math.min(1, (span.fga - SHOOTING_ANOMALY_LOAD_START) / (SHOOTING_ANOMALY_LOAD_FULL - SHOOTING_ANOMALY_LOAD_START)));
+  return excess * load * SHOOTING_ANOMALY_SCALE;
+}
+
 const EFFICIENCY_REFERENCE_TSA = 17;
 const EFFICIENCY_VOLUME_MIN = 0.6;
 const EFFICIENCY_VOLUME_MAX = 1.6;
@@ -910,8 +936,9 @@ function rawComponents(
     relativeTs * 140 * volumeWeight * lowUsageEfficiencyFactor(span.fga) * (relativeTs > 0 ? assistedEfficiencyFactor(span) : 1);
   const playmaking = effectivePlaymakingApg(box.apg) * paceFactor * 1.7;
   const centerPlaymaking = positionPlaymakingBonus(span.primaryPosition, box.apg, paceFactor);
-  const isCurry = normalizePlayerName(span.playerName) === normalizePlayerName('Stephen Curry');
-  const gravityCap = applyCurryException && isCurry ? CURRY_GRAVITY_CAP : MAX_SHOOTING_GRAVITY_BONUS;
+  // 2026-09-27: the named Curry cap on this term (3 instead of 5) is gone; see
+  // `shootingAnomalyBonus` for how his outlier shooting is now valued.
+  const gravityCap = MAX_SHOOTING_GRAVITY_BONUS;
   const gravity = Math.max(-gravityCap, Math.min(gravityCap, shootingGravity(span) * SHOOTING_GRAVITY_SCALE));
   // 2026-08-07, second pass (see playmakingThreeLevel.ts's own header for the full story of the
   // first pass, reverted, and this scoped-down retry) — playmaking quality + 3-level/rim-finishing
@@ -1461,6 +1488,7 @@ function talentScaled(span: PlayerSpan, usageScale: number, includeEliteDefenseB
     roleScalability +
     playoffPerformance +
     selfCreation +
+    shootingAnomalyBonus(span) +
     eliteDefense;
   const correction = positionCorrectionFor(span, rawSum);
   // 2026-08-31, user-reported (batch feedback: Brad Miller/Arvydas Sabonis/Karl-Anthony Towns —
@@ -1501,6 +1529,7 @@ export interface TalentBreakdown {
   usagePenalty: number;
   extremeUsagePenalty: number;
   hiddenValue: number;
+  shootingAnomaly: number;
   portability: number;
   roleScalability: number;
   playoffPerformance: number;
@@ -1539,6 +1568,7 @@ export function talentBreakdown(rawSpan: PlayerSpan): TalentBreakdown {
     roleScalability: roleScalabilityBonus(span),
     playoffPerformance: playoffTalentTerm(span),
     selfCreation: selfCreationTalentBonus(span),
+    shootingAnomaly: shootingAnomalyBonus(span),
     darkoDefenseBonus: darkoDefenseBonus(span),
     darkoDefenseMalus: darkoDefenseMalus(span),
     defenseCorroborated: corroborated || isDualSourceConfirmedBig(span) || hasPositiveRawDefense(span),

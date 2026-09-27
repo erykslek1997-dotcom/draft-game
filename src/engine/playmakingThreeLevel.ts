@@ -1,5 +1,4 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { normalizePlayerName } from '../data/schema';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 
@@ -225,9 +224,10 @@ const MULTI_LEVEL_MIN_FGA = 12;
  * gravity cap's own "back to roughly its old effective level" standard — the pre-this-change
  * Taylor top-10 ordering (0.891) is the validated baseline this is restoring, not a new target.
  */
-const CURRY_MULTI_LEVEL_CAP = 0;
+// 2026-09-27: `CURRY_MULTI_LEVEL_CAP` removed with the Curry gravity cap in talent.ts (see
+// `shootingAnomalyBonus` there); the parameter below is kept only for call-site compatibility.
 
-export function multiLevelScoringBonus(span: PlayerSpan, applyCurryException: boolean = true): number {
+export function multiLevelScoringBonus(span: PlayerSpan, _applyCurryException: boolean = true): number {
   if (span.fga < MULTI_LEVEL_MIN_FGA) return 0;
   const shares = classifiedZoneShares(span);
   if (!shares) return 0;
@@ -240,8 +240,6 @@ export function multiLevelScoringBonus(span: PlayerSpan, applyCurryException: bo
   const qualifyingZones = zones.filter(([, share]) => share >= ZONE_MIN_SHARE);
   if (qualifyingZones.length < 3) return 0;
   const excessSum = qualifyingZones.reduce((sum, [zone, , acc]) => sum + Math.max(0, acc * 100 - ZONE_GOOD_PCT[zone]), 0);
-  const isCurry = applyCurryException && normalizePlayerName(span.playerName) === normalizePlayerName('Stephen Curry');
-  if (isCurry) return CURRY_MULTI_LEVEL_CAP;
   const scale = span.primaryPosition === 'PG' ? PG_MULTI_LEVEL_SCALE : MULTI_LEVEL_SCALE;
   const cap = span.primaryPosition === 'PG' ? MAX_PG_MULTI_LEVEL_BONUS : MAX_MULTI_LEVEL_BONUS;
   return Math.min(cap, excessSum * scale);

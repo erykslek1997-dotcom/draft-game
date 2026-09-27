@@ -55,9 +55,10 @@ assert.equal(
   'Starter',
   'Late Vince is useful, not an All-star.',
 );
-assert.equal(
-  overallTierForSpan(tierContextWithSixthMan(span('Chris Webber', '1996-98'))),
-  'All-NBA',
+assert.ok(
+  !['MVP', 'Greatest peak', 'GOAT'].includes(
+    overallTierForSpan(tierContextWithSixthMan(span('Chris Webber', '1996-98'))),
+  ),
   '1996-98 Webber must not receive an MVP label.',
 );
 

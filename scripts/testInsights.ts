@@ -201,13 +201,16 @@ check(!detector('STAR_FGA_COST_HURTS_DEPTH', starJustified).active, 'justified s
 // wing span — so the fixture again represents a real star-plus-thin-depth roster (54% falloff)
 // under the current calibration, rather than loosening the assertion to match a roster that no
 // longer tests the scenario it's named for.
+// 2026-09-27: the user tier calibration flattened the core's display TAL (Jordan 103, Gobert 81),
+// which left the falloff at 0.49, a hair under the 0.50 trigger. Charlie Ward (61) swapped for
+// Carlos Arroyo's 2006-08 backup-PG span (30) at the same 6.2 FGA, restoring a real thin bench.
 const exposedStarTeam = team('team-model-exposed-star', [
   pick('Jalen Brunson', '2024-26'),
   pick('Michael Jordan', '1990-92'),
   pick('Paul Pierce', '2009-11'),
   pick('Evan Mobley', '2023-25'),
   pick('Rudy Gobert', '2020-22'),
-  pick('Charlie Ward', '1999-01'),
+  pick('Carlos Arroyo', '2006-08'),
   pick('Ira Newble', '2003-05'),
   pick('Bill Cartwright', '1990-92'),
   pick('Greg Anderson', '1989-91'),
