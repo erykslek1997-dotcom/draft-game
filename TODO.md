@@ -21,6 +21,8 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
       Działający, ale nieużywany kod: przeglądarka puli graczy, przeglądarka kontraktów (salary cap),
       galeria kart z nagrodami, wyzwania w stylu słynnych drużyn, panel „what if”. Opis w README
       w archiwum; pliki są też w historii gita (commit „Archive unused features”).
+- [ ] **Jednorazowe skrypty analityczne (archiwum `draftverse-oneoff-scripts.zip`, 2026-09-27).**
+      138 skryptów check/audit/calibrate/diagnose itp.; buildery danych, testy i walidatory zostały.
 
 - [ ] **Wyzwania dnia (daily challenges) dla wszystkich trybów.** Twoje pomysły z 2026-09-26/27:
       - Mini Draft: każdego dnia inny limit FGA i zbanowani gracze.
