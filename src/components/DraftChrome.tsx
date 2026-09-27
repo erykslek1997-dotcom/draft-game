@@ -32,6 +32,16 @@ export function AiSpeedControl({
           {label}
         </button>
       ))}
+      {/* 2026-09-27 UI audit: on a phone the four speed pills took a row of their own; there
+          it is one button that steps to the next speed (CSS picks which one shows). */}
+      <button
+        type="button"
+        className="at-speed-cycle at-cond"
+        onClick={() => onChange((index + 1) % labels.length)}
+        aria-label={`CPU speed: ${labels[index]}. Tap for the next speed.`}
+      >
+        CPU: {labels[index]} ⟳
+      </button>
     </div>
   );
 }
@@ -160,7 +170,10 @@ export function DraftStatusBar({
 export function BoardToggleButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
     <button type="button" className="at-board-toggle at-cond" aria-expanded={open} onClick={onToggle}>
-      {open ? 'Hide draft board ▴' : 'Show draft board ▾'}
+      <span className="at-board-toggle-long">{open ? 'Hide draft board ▴' : 'Show draft board ▾'}</span>
+      <span className="at-board-toggle-short" aria-hidden>
+        📋 Board
+      </span>
     </button>
   );
 }

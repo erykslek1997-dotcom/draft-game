@@ -6863,3 +6863,28 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .challenge-note { display: inline-block; margin-top: 2px; font-size: 12px; color: var(--at-ink-soft); }
 .challenge-note--won { color: var(--at-t6); }
 .challenge-note--lost { color: var(--at-brand-red, #e05a5a); }
+
+/* ---- 2026-09-27 UI audit: the draft board's top on a phone. The players started ~800px down
+   under ten rows of chrome; now tabs, CPU speed and the board button share one row, and the
+   "Draft" heading (the tab already says it) is dropped below the side-by-side width. ---- */
+.at-speed-cycle, .at-board-toggle-short { display: none; }
+.at-speed-cycle {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line);
+  background: var(--at-paper-raised); color: var(--at-ink-soft);
+  border-radius: 999px; padding: 6px 11px; font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+@media (max-width: 899px) {
+  .at-merge-draft > .at-panel-title { display: none; }
+}
+@media (max-width: 640px) {
+  .at-topbar { flex-wrap: nowrap; gap: 6px; margin-bottom: 10px; justify-content: space-between; }
+  .at-topbar .at-tabs { flex-wrap: nowrap; gap: 4px; }
+  .at-topbar .at-tab-btn { padding-left: 12px; padding-right: 12px; }
+  .at-speed > .at-speed-label, .at-speed > .at-speed-btn { display: none; }
+  .at-speed-cycle { display: inline-flex; }
+  .at-board-toggle { padding: 6px 10px; white-space: nowrap; }
+  .at-board-toggle-long { display: none; }
+  .at-board-toggle-short { display: inline; }
+}
+/* Team tab mid-draft: what to do with picks not placed yet (RotationBuilder). */
+.rotation-bench-hint { display: block; margin: 2px 0 8px; font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); }
