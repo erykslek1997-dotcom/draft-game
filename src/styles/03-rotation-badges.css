@@ -1,0 +1,865 @@
+/* Rotation builder */
+
+/* 2026-08-19, user-reported ("Rotation screen looks kinda ugly tbh"): this used to cap out at a
+   narrow 640px single column — reasonable for the original plain-form version, but cramped now
+   that each row also carries real Offense/Defense/Tier badges (see `PlayerValueBadges`,
+   RotationBuilder.tsx) alongside the dropdown. Widened to use the same card width the rest of
+   the redesigned shell gets, so this doesn't read as a narrower, older-feeling screen sitting
+   inside an otherwise full-width board. */
+.rotation-builder {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+/* 2026-09-14, user-reported live ("font tutaj nie pasuje do reszty"): RotationBuilder predates
+   the NBA-board redesign (see `.at-shell`'s own comment above on why it and ResultsScreen only
+   got their COLOR tokens aliased, not a typography pass) — its `<h2>`/intro `<p>` were still
+   plain index.css defaults (weight 500, loose -0.24px tracking, sentence case), sitting directly
+   under the board's own "ROTATION" `.at-panel-title` (bold/uppercase/tracked `.at-cond`), which
+   read as two different typefaces even though both are actually `var(--sans)`. Restyled to the
+   same small bold-uppercase-tracked label language every other card/table heading on the board
+   already uses (`.at-draft-sidebar-bench-label`, `.at-lottery-sub`, table `th`s, etc.) instead of
+   the untouched legacy heading styles. `h3` (the "Bench" sub-header further down) gets the exact
+   same treatment as `.at-draft-sidebar-bench-label`, since it's the same "Bench" concept. */
+.rotation-builder h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--at-ink, var(--text-h));
+  margin: 0 0 8px;
+}
+.rotation-builder > p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--at-ink-soft, var(--text));
+  margin: 0 0 16px;
+}
+.rotation-builder h3 {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint, var(--text));
+  margin: 0 0 8px;
+}
+
+.span-selection-screen {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.span-selection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.span-selection-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.span-selection-name {
+  width: 160px;
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.span-selection-row select {
+  flex: 1;
+}
+
+.span-selection-totals {
+  display: flex;
+  gap: 20px;
+  font-weight: 600;
+  margin: 16px 0;
+}
+
+/* 2026-09-11, user-reported live ("głębsza przebudowa", "brzydko to wygląda") — replaces the
+   2026-08-19 table rebuild (which itself replaced an earlier card-per-position grid). That table
+   matched the Team roster table's row shape, but its `<select>`/`<input type=number>` were bare,
+   unstyled native form chrome — the one surface left in the app that didn't share the Face-avatar
+   + colored-pill language Quick Five/Best Five/the Draft tab's own team strip all use. Real cards
+   again, but built from that same shared language this time (see RotationBuilder.tsx's own JSX
+   comment for the full reasoning), with the native controls heavily reskinned rather than
+   replaced — same real `<select>`/`<input>` underneath, unchanged keyboard/a11y behavior. */
+.rotation-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 20px;
+}
+.rotation-card {
+  border: 1px solid var(--at-line, var(--border));
+  border-radius: 10px;
+  padding: 10px 12px 12px;
+  background: var(--at-paper, var(--bg));
+}
+.rotation-card--short {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--at-line, var(--border)));
+}
+.rotation-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.rotation-card-pos {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--at-accent, var(--accent));
+  min-width: 26px;
+}
+.rotation-card-minutes-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--at-line, var(--border));
+  overflow: hidden;
+}
+.rotation-card-minutes-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--at-accent, var(--accent));
+}
+.rotation-card--short .rotation-card-minutes-fill { background: var(--danger); }
+.rotation-card-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px dashed color-mix(in srgb, var(--at-line, var(--border)) 70%, transparent);
+}
+.rotation-card-row:first-of-type { border-top: none; }
+.rotation-card-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rotation-select {
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--at-line, var(--border));
+  background: var(--at-pill, var(--bg));
+  color: var(--at-pill-ink, var(--text));
+}
+.rotation-select:focus-visible { outline: 2px solid var(--at-accent, var(--accent)); outline-offset: -1px; }
+.rotation-card-row-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rotation-minutes-input {
+  width: 48px;
+  flex: none;
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--at-line, var(--border));
+  background: var(--at-pill, var(--bg));
+  color: var(--text);
+}
+.rotation-minutes-input:disabled { opacity: 0.4; }
+.rotation-minutes-input.minutes-warning { border-color: var(--at-warn, #f0a868); outline-color: var(--at-warn, #f0a868); }
+@media (max-width: 480px) {
+  .rotation-card-row { flex-wrap: wrap; }
+  .rotation-card-row-main { flex-basis: 100%; order: -1; }
+}
+
+/* 2026-08-19, user's explicit ask: real per-player value context right where a rotation decision
+   is actually made, not just a name in a dropdown. Same `.tier-badge`/`.at-grade-badge` pill
+   shapes the rest of the app already uses for this exact data — no new visual language invented.
+   Still used by the Bench reference list below (plain player rows, not a table). */
+.rotation-value-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.bench-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.bench-list-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 4px;
+  border-bottom: 1px dashed var(--border);
+  font-size: 14px;
+}
+.bench-list-row:last-child {
+  border-bottom: none;
+}
+.bench-list-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+.bench-list-role {
+  display: block;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.75;
+}
+.bench-list-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  /* 2026-09-11: Face avatar added as the row's own leading element (RotationBuilder.tsx) — this
+     does what the row's old `justify-content: space-between` did with exactly 2 children, now
+     that there are 3 (Face, name, meta). */
+  margin-left: auto;
+}
+
+.minutes-ok {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.minutes-bad {
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.durability-cap {
+  color: var(--text);
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+.slot-row input[type='number'].minutes-warning {
+  border-color: var(--at-warn, #f0a868);
+  outline-color: var(--at-warn, #f0a868);
+}
+
+.remove-row-btn {
+  padding: 0 8px;
+  line-height: 1.6;
+  color: var(--danger);
+}
+
+.add-row-btn {
+  margin-top: 6px;
+  font-size: 12px;
+  padding: 3px 8px;
+}
+
+.validation-warning {
+  color: var(--at-warn, #f0a868);
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.validation-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+/* Draft history */
+
+.draft-history {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.draft-history h4 {
+  margin: 0 0 8px;
+}
+
+.history-empty {
+  color: var(--text);
+  font-size: 13px;
+  margin: 0;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.history-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--border);
+  flex-wrap: wrap;
+}
+
+.history-pick {
+  color: var(--accent);
+  font-weight: 700;
+  width: 34px;
+}
+
+.history-team {
+  width: 110px;
+  color: var(--text);
+}
+
+.history-player {
+  flex: 1;
+}
+
+/* Player pool grouped by player */
+
+.player-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.player-group {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.player-group-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 0;
+  background: var(--bg);
+  text-align: left;
+  /* On a narrow screen the name + every stat span can't all fit — previously this just
+     clipped silently (the parent .player-group sets overflow: hidden), so TAL/O-TAL/D-TAL/
+     POR/IMP were invisible with no way to reach them. Scrolls horizontally instead, same
+     pattern as .table-scroll below for the expanded span table. */
+  overflow-x: auto;
+}
+
+.pg-caret {
+  width: 12px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.pg-name {
+  flex-shrink: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Stable whole-career position label (e.g. "PG/SG") shown right next to the name — a quick
+   identity cue for a player the user doesn't recognize, deliberately muted so it doesn't compete
+   with the name itself. */
+.pg-natural-position {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.pg-meta {
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* SPACING tier pills. Each tier gets a fill from its own colour family with text from the
+   dark end of that same family — never plain grey — so the label stays legible against the
+   tint. Dark-mode variants below invert that pairing (dark fill, light text) rather than
+   reusing the light fills, which would go muddy on a dark surface. */
+.tier-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.tier-non {
+  background: #fcebeb;
+  color: #a32d2d;
+}
+.tier-bad {
+  background: #faeeda;
+  color: #854f0b;
+}
+.tier-avg {
+  background: #f1efe8;
+  color: #5f5e5a;
+}
+.tier-good {
+  background: #e1f5ee;
+  color: #0f6e56;
+}
+.tier-great {
+  background: #eeedfe;
+  color: #534ab7;
+}
+.tier-gravity {
+  background: #e6f1fb;
+  color: #185fa5;
+}
+
+/* One player only (Stephen Curry — see spacing.ts's SHOOTING_ANOMALY_PLAYER). Deliberately the
+   one badge that doesn't follow the cool-to-warm family the other six use: it isn't a rung on
+   the same ladder, so it shouldn't read like one. */
+.tier-anomaly {
+  background: linear-gradient(96deg, #ffe9b0, #ffd0e8);
+  color: #7a3b00;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tier-non {
+    background: #3d1414;
+    color: #f09595;
+  }
+  .tier-bad {
+    background: #3a2206;
+    color: #fac775;
+  }
+  .tier-avg {
+    background: #2e2e2c;
+    color: #b4b2a9;
+  }
+  .tier-good {
+    background: #0d302a;
+    color: #5dcaa5;
+  }
+  .tier-great {
+    background: #221e4d;
+    color: #afa9ec;
+  }
+  .tier-gravity {
+    background: #0a2947;
+    color: #85b7eb;
+  }
+
+  .tier-anomaly {
+    background: linear-gradient(96deg, #4a3200, #4a1030);
+    color: #ffdc9b;
+  }
+}
+
+/* Overall-rating tier pills (Cigarette Butt .. Greatest peak) — same .tier-badge shape as the
+   SPACING pills above, but a fully distinct 8-hue palette (grey -> brown -> olive -> green ->
+   cyan -> indigo -> magenta -> gold) so the two badge columns never read as the same scale when
+   they sit in the same row. Greatest peak gets the one gradient treatment, same reasoning as
+   .tier-anomaly: the rarest tier shouldn't look like a rung on the plain ladder below it. */
+.rating-cigarette {
+  background: #ece9e6;
+  color: #6e6b64;
+}
+.rating-glue {
+  background: #e4edf8;
+  color: #315f91;
+}
+.rating-bench {
+  background: #f6e8de;
+  color: #8f5323;
+}
+.rating-role {
+  background: #f5f0d0;
+  color: #7a6a12;
+}
+/* Sixth Man — deliberately NOT another rung on the grey->gold ladder above (a role description,
+   not a power ranking, same reasoning the playoff Riser/Dropper badges use their own fully
+   separate red/green palette): a warm terracotta that doesn't sit anywhere else in this ladder. */
+.rating-sixthman {
+  background: #ffe3d6;
+  color: #c1440e;
+}
+.rating-starter {
+  background: #e6f2e2;
+  color: #3a7a3f;
+}
+.rating-allstar {
+  background: #ddf3f5;
+  color: #0e7a8a;
+}
+.rating-allnba {
+  background: #ece7fb;
+  color: #5b3fb0;
+}
+.rating-mvp {
+  background: #fbe6f3;
+  color: #a3227a;
+}
+.rating-peak {
+  background: linear-gradient(96deg, #ffe9b0, #ffd479);
+  color: #7a4b00;
+  font-weight: 700;
+}
+/* GOAT — one rung above .rating-peak, deliberately not another shade of gold (it would just
+   read as "brighter Greatest peak" in a shared row): near-black with a bright gold border/text,
+   the one badge on this ladder that breaks the warm-gold family entirely, same reasoning
+   .tier-anomaly/.playoff-*-gold already use for their own rarest tier. */
+.rating-goat {
+  background: linear-gradient(96deg, #1a1a1a, #2e2e2e);
+  color: #ffd479;
+  border: 1px solid #ffd479;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .rating-cigarette {
+    background: #2c2b28;
+    color: #b3b0a8;
+  }
+  .rating-glue {
+    background: #16283d;
+    color: #82b5ea;
+  }
+  .rating-bench {
+    background: #3a2412;
+    color: #f0a868;
+  }
+  .rating-role {
+    background: #322c08;
+    color: #e8d461;
+  }
+  .rating-starter {
+    background: #12281a;
+    color: #7fd68a;
+  }
+  .rating-allstar {
+    background: #072c30;
+    color: #6fd9e6;
+  }
+  .rating-allnba {
+    /* 2026-09-12, code-review fix: color updated to match the Draft tab's own card border/corner
+       for this tier (`TIER_FRAME_COLOR['All-NBA']` in DraftBoard.tsx) — that one moved off this
+       exact `#b2a3f2` on the user's own report ("kolor różowy w all-nba nie do końca mi się
+       podoba", too close to MVP's pink) but this text badge, shown elsewhere (Team roster table,
+       Rotation, the peek modal), never got the same update, so the same tier read as two
+       different colors depending on which screen you were looking at. */
+    background: #241c47;
+    color: #8b9bf7;
+  }
+  .rating-mvp {
+    background: #3a1230;
+    color: #ec8ecb;
+  }
+  .rating-peak {
+    background: linear-gradient(96deg, #4a3200, #5a3900);
+    color: #ffdc9b;
+  }
+}
+
+/* Playoff-performance tag pills — a third palette, fully distinct from both SPACING's and the
+   overall-rating's own hue families: red = efficiency dropped in the playoffs relative to the
+   league average, green = rose above it, darkening with tier. Platinum (the rarest, most
+   extreme tier on each side) gets the one gradient treatment, same reasoning as .tier-anomaly/
+   .rating-peak — but in vivid red/green rather than gold, so it can't be mistaken for either of
+   those two existing gradients when badges from different columns sit in the same row. */
+.playoff-bronze-drop {
+  background: #fbe4e1;
+  color: #a13d2c;
+}
+.playoff-silver-drop {
+  background: #f7c9c2;
+  color: #8a2f1f;
+}
+.playoff-gold-drop {
+  background: #f0a89c;
+  color: #6e2013;
+}
+.playoff-platinum-drop {
+  background: linear-gradient(96deg, #d9432b, #7a1c0f);
+  color: #ffffff;
+  font-weight: 700;
+}
+.playoff-bronze-rise {
+  background: #e1f3e2;
+  color: #2c7a34;
+}
+.playoff-silver-rise {
+  background: #c3e8c7;
+  color: #1f6626;
+}
+.playoff-gold-rise {
+  background: #9edaa6;
+  color: #14501a;
+}
+.playoff-platinum-rise {
+  background: linear-gradient(96deg, #22c55e, #0e7d3a);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .playoff-bronze-drop {
+    background: #3a1c14;
+    color: #f2a08c;
+  }
+  .playoff-silver-drop {
+    background: #4a1f14;
+    color: #f5866a;
+  }
+  .playoff-gold-drop {
+    background: #5c1f11;
+    color: #ff8a68;
+  }
+  .playoff-platinum-drop {
+    background: linear-gradient(96deg, #7a1c0f, #3d0e08);
+    color: #ffb199;
+  }
+  .playoff-bronze-rise {
+    background: #143a1c;
+    color: #8ee29a;
+  }
+  .playoff-silver-rise {
+    background: #0f4a1e;
+    color: #7bdb8c;
+  }
+  .playoff-gold-rise {
+    background: #0c5c22;
+    color: #6bea82;
+  }
+  .playoff-platinum-rise {
+    background: linear-gradient(96deg, #0e7d3a, #0a4d24);
+    color: #baffcb;
+  }
+}
+
+/* DUR tier pills (durability.ts) — a fourth palette, blue-to-violet, distinct from SPACING's
+   cool-to-warm, the overall rating's grey-to-gold, and playoff performance's red/green. DNP
+   reads as flat grey (off/unplayable, not a rung on the blue ladder). Ironman gets the one
+   gradient treatment, same reasoning as the other three families' rarest-tier gradients. */
+.dur-dnp {
+  background: #ece9e6;
+  color: #6e6b64;
+}
+.dur-walking-glass {
+  background: #e6eef8;
+  color: #3a5f8a;
+}
+.dur-street-clothes {
+  background: #d5e5f5;
+  color: #2f5580;
+}
+.dur-load-management {
+  background: #c3dbf2;
+  color: #24507d;
+}
+.dur-reliable {
+  background: #a8cdf0;
+  color: #1a4270;
+}
+.dur-unbreakable {
+  background: #8fb8ea;
+  color: #142f5c;
+}
+.dur-ironman {
+  background: linear-gradient(96deg, #1e3a8a, #4c1d95);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dur-dnp {
+    background: #2c2b28;
+    color: #b3b0a8;
+  }
+  .dur-walking-glass {
+    background: #16283f;
+    color: #8fb8ea;
+  }
+  .dur-street-clothes {
+    background: #1a3049;
+    color: #a0c4ee;
+  }
+  .dur-load-management {
+    background: #1e3a56;
+    color: #b0cef1;
+  }
+  .dur-reliable {
+    background: #234668;
+    color: #c3dbf5;
+  }
+  .dur-unbreakable {
+    background: #29537a;
+    color: #d6e6f8;
+  }
+  .dur-ironman {
+    background: linear-gradient(96deg, #3b5bc9, #7c3aed);
+    color: #ffffff;
+  }
+}
+
+/* G_SMALL_SAMPLE badge (sampleSize.ts) — a single boolean flag, not a tier ladder, so it
+   deliberately doesn't take a fifth hue family the way SPACING/rating/playoff/DUR each did.
+   Dashed border reads as "advisory" rather than "graded," matching what it actually is: a caution
+   about the underlying data, not a judgment on the player. */
+.sample-limited {
+  background: transparent;
+  border: 1px dashed #a3792f;
+  color: #a3792f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sample-limited {
+    border-color: #d9ac5c;
+    color: #d9ac5c;
+  }
+}
+
+/* G_BLACK_BOX (evidenceReport.ts) — plain-text panel, not a badge, so it gets its own small block
+   rather than reusing .tier-badge's pill styling. */
+
+/* Rendered as a sibling of `.table-scroll`, not a row inside it — a colSpan row that lives inside
+   a horizontally-scrolling table only shows whatever slice of itself the table happens to be
+   scrolled to, which cut off the evidence text on first ship. Full page width, no scroll. */
+.evidence-panel-wrap {
+  margin-top: 8px;
+  padding: 12px 16px;
+  background: #faf9f6;
+  border-radius: 6px;
+}
+
+.evidence-panel-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #78756d;
+  margin-bottom: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .evidence-panel-wrap {
+    background: #232220;
+  }
+  .evidence-panel-label {
+    color: #a8a49a;
+  }
+}
+
+.evidence-report {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  text-align: left;
+}
+
+.evidence-column {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.evidence-column h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #78756d;
+}
+
+.evidence-column ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.evidence-column li {
+  margin-bottom: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .evidence-column h4 {
+    color: #a8a49a;
+  }
+}
+
+.span-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.span-table th,
+.span-table td {
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-provenance-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.data-measured {
+  color: #70d6a4;
+  background: rgb(25 105 72 / 20%);
+}
+
+.data-mixed {
+  color: #f4c86a;
+  background: rgb(131 91 24 / 22%);
+}
+
+.data-manual {
+  color: #ff8f8f;
+  background: rgb(139 43 43 / 22%);
+}
+
+/* The stat columns are wide enough to need horizontal scrolling on a narrow screen, but the
+   Draft button must never scroll out of reach — pin it to the left edge (2026-08-13, user
+   feedback: had to scroll right past every stat column just to click Draft). ".Why?" stays
+   pinned to the right edge for the same reason, on the opposite side. */
+.span-table th:first-child,
+.span-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+}
+
+.span-table th:last-child,
+.span-table td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  text-align: right;
+}

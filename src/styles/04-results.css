@@ -1,0 +1,1807 @@
+/* Results screen */
+
+.results-screen {
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  margin: 0 auto;
+  /* `.at-shell` (now always applied alongside this class — see ResultsScreen.tsx) resets its own
+     padding to 0 since DraftBoard.tsx's children (`.at-card`/`.at-topbar`) each carry their own —
+     this screen's children mostly do too (`.team-result`, `.season-sim-panel`, etc. are all their
+     own bordered boxes), but the outer edge still needs some breathing room against the dark
+     rounded card. */
+  padding: 18px 20px 24px;
+}
+.results-screen > .at-board-brand { order: -2; }
+.results-screen > .results-hero { order: -1; }
+.results-screen > .results-verdict { order: -1; }
+.results-screen > .results-actions { order: 7; }
+/* 2026-09-14, user-reported live, TWICE (a persistent sidebar, then a shared full-width
+   `.results-top-panels` row — see git history for that full story). 2026-09-18, user-reported live
+   again ("simulate season można dać nad rotacją... dzięki temu można zmieścić matchups bez
+   potrzeby suwaka" — freeing full width removes the matrix's own horizontal scroll slider): the
+   season-sim panel that used to share this row moved into the hero's Rotation column (see
+   `seasonSimSlot` in ResultsScreen.tsx) once it became a small, fixed-size popup trigger instead
+   of an inline-growing table, so the matrix now renders alone, directly, at full width — no
+   wrapper needed any more. `order` still places every top-level piece of this screen against
+   `.results-screen`'s own flex column. */
+.results-screen .matchup-matrix-section { order: 1; }
+.results-screen .results-section-title { order: 2; }
+.results-screen .expand-all-controls { order: 3; }
+/* 2026-09-27 results audit (pack B): your team stays at its own place in the ranking (was pulled
+   out above the matchup table, with the rest of the field below it). */
+.results-screen .team-result { order: 4; width: 100%; }
+@media (min-width: 1300px) {
+  .results-screen { max-width: 1500px; }
+}
+
+/* 2026-09-09: the payoff header. The player came back to this screen to see how THEIR roster did —
+   this block says it in one glance (finish position, the Final Power Ranking number, title odds,
+   roster identity) before the 16 uniform accordion cards below. Deliberately the one element on
+   the screen that breaks the flat card rhythm. */
+.results-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px 20px;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--at-accent) 16%, transparent), transparent 60%),
+    var(--at-paper-raised);
+  box-shadow: var(--shadow);
+}
+.results-hero-finish {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.results-hero-eyebrow {
+  flex-basis: 100%;
+  color: var(--at-ink-faint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.results-hero-rank {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--at-ink);
+}
+.results-hero-rank b { font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; }
+.results-hero-rank i { font-style: normal; font-size: 15px; color: var(--at-ink-soft); }
+.results-hero-team {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--at-ink);
+}
+/* 2026-09-11: names the outcome, not just the rank number — see HeroResult's own docstring. Reuses
+   the score-band tone family (t1 weakest/reddest through t6 strongest) rather than a new palette. */
+.results-hero-tier {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.results-hero-tier-t1, .results-hero-tier-t2 { background: color-mix(in srgb, var(--at-accent-2) 24%, transparent); color: color-mix(in srgb, var(--at-accent-2) 55%, white); }
+.results-hero-tier-t3 { background: color-mix(in srgb, #c58f3c 26%, transparent); color: #e8b568; }
+.results-hero-tier-t4 { background: color-mix(in srgb, var(--at-t5) 34%, transparent); color: var(--at-t6-ink); }
+.results-hero-tier-t5 { background: color-mix(in srgb, var(--at-t6) 40%, transparent); color: #fff; }
+.results-hero-tier-t6 { background: var(--at-t6); color: #fff; }
+/* 2026-09-17, "Duel na seedzie" follow-up (user: "nie ma na koniec porównania obu draftów" — the
+   challenge link connects two people but never compares their results): auto-opens once when a
+   challenge-link draft's Results screen mounts (see HeroResult's own `compareOpen` docstring). */
+.challenge-compare-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 60;
+}
+.challenge-compare-modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  padding: 26px 24px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--at-line, var(--border));
+  background: var(--at-paper-raised, var(--bg));
+  box-shadow: var(--at-shadow, var(--shadow));
+  text-align: center;
+}
+.challenge-compare-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  line-height: 1;
+}
+.challenge-compare-title {
+  margin: 0 0 18px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.challenge-compare-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.challenge-compare-side {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--at-line, var(--border));
+  background: color-mix(in srgb, var(--at-pill, var(--bg)) 40%, transparent);
+}
+.challenge-compare-side--winner {
+  border-color: var(--at-good, #7fd68a);
+  background: color-mix(in srgb, var(--at-good, #7fd68a) 16%, transparent);
+}
+.challenge-compare-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--at-ink-faint, var(--text));
+}
+.challenge-compare-team {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.challenge-compare-overall {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: 1;
+}
+.challenge-compare-rank {
+  font-size: 11.5px;
+  color: var(--at-ink-faint, var(--text));
+}
+.challenge-compare-vs {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--at-ink-faint, var(--text));
+  text-transform: uppercase;
+}
+/* 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy") — the 7-metric breakdown, laid
+   out as your-value / label / their-value so both numbers read at a glance without a header row. */
+.challenge-compare-metrics {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--at-line, var(--border));
+}
+.challenge-compare-metric-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+}
+.challenge-compare-metric-label {
+  font-size: 11px;
+  text-align: center;
+  color: var(--at-ink-faint, var(--text));
+}
+.challenge-compare-metric-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--at-ink-soft, var(--text));
+}
+.challenge-compare-metric-row .challenge-compare-metric-value:first-child { text-align: right; }
+.challenge-compare-metric-row .challenge-compare-metric-value:last-child { text-align: left; }
+.challenge-compare-metric-value--winner {
+  color: var(--at-good, #7fd68a);
+}
+/* 2026-09-17, same-day follow-up ("krótkie porównanie składów + share") — a compact per-slot
+   starting-five comparison and a share action inside the popup itself. */
+.challenge-compare-roster {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--at-line, var(--border));
+  text-align: left;
+}
+.challenge-compare-roster-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--at-ink-faint, var(--text));
+  margin-bottom: 8px;
+}
+.challenge-compare-roster-row {
+  display: grid;
+  grid-template-columns: 30px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+}
+.challenge-compare-roster-slot {
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--at-ink-faint, var(--text));
+}
+.challenge-compare-roster-name {
+  font-size: 12.5px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 2026-09-17, same-day follow-up (user: "dałoby radę zrobić tam rotacje tak jak na koniec
+   draftu") — one block per slot (not a single grid row) since either side can now show more than
+   one contributor for it, matching the single-player hero's own `results-hero-rotation` columns. */
+.challenge-compare-rotation-slot {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--at-line, var(--border));
+}
+.challenge-compare-rotation-slot:last-child {
+  border-bottom: none;
+}
+.challenge-compare-rotation-slot .challenge-compare-roster-slot {
+  display: block;
+  margin-bottom: 4px;
+}
+.challenge-compare-rotation-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.challenge-compare-rotation-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.challenge-compare-rotation-col--right {
+  align-items: flex-end;
+}
+.challenge-compare-rotation-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.challenge-compare-rotation-col--right .challenge-compare-rotation-entry {
+  flex-direction: row-reverse;
+}
+.challenge-compare-rotation-name {
+  font-size: 12.5px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.challenge-compare-rotation-min {
+  font-size: 11px;
+  color: var(--at-ink-faint, var(--text));
+  flex-shrink: 0;
+}
+.challenge-compare-rotation-empty {
+  font-size: 12px;
+  color: var(--at-ink-faint, var(--text));
+}
+.challenge-compare-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.challenge-compare-share,
+.challenge-compare-download {
+  flex: 1 1 0;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.challenge-compare-share {
+  background: var(--at-brand-blue, var(--accent));
+  border-color: var(--at-brand-blue, var(--accent));
+  color: #fff;
+}
+.challenge-compare-download {
+  background: transparent;
+  border-color: var(--at-line, var(--border));
+  color: var(--text-h);
+}
+.challenge-compare-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--at-ink-faint, var(--text));
+  line-height: 1.5;
+}
+
+/* "Overall #1 in the field: X — you're Y back" — the benchmark line from the Scouting Report
+   audit (HoopsMatic shows "best squad you could've signed would win 11.29%"). Sits above the
+   identity line, no border of its own, so the two read as one continuous payoff paragraph. */
+.results-hero-identity {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--at-ink-soft);
+}
+.results-hero-identity b { color: var(--at-ink); font-weight: 700; }
+/* 2026-09-14, DRAFT v3 — see this row's own JSX comment (ResultsScreen.tsx) for the full "why".
+   v1 drew direct criticism ("myślę że stać cię na kilka razy lepszy projekt"); v2 fixed the visual
+   weight but was still, per the follow-up ask, "bardzo skrócona wersja" of a real dashboard. v3
+   gives each labelled half real width to hold its now-bigger content (a 2-column MetricBar
+   breakdown; two face-card rows, Starting five + Bench) instead of shrink-wrapping to content —
+   `flex-basis` on both so they wrap to full width individually well before either gets squeezed
+   narrow. Top-aligned, not centered — the two halves are genuinely different heights. */
+.results-hero-dashboard {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px 28px;
+  margin: 4px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.results-hero-scores { display: flex; flex-direction: column; gap: 8px; flex: 1 1 400px; min-width: 0; }
+/* Wraps for the same reason `.subscores` (the "Final team ranking" list's own copy of this same
+   7-chip row) already wraps — seven full-word chips (Talent/Bench Depth/Offense/Defense/Spacing/
+   Fit/Rotation, not the old 3-letter OFF/DEF/SPC) routinely don't fit one line at this column's
+   own ~400px basis. */
+.results-hero-scores-row { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Bumped up from the compact header-strip size `.score-chip` defaults to (same move
+   `.subscores .score-chip` already makes for its own, equally prominent context) — this is one of
+   two headline halves of the hero now, not a footnote. */
+.results-hero-dashboard .score-chip {
+  padding: 4px 10px 5px;
+  border-radius: 8px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.22);
+}
+.results-hero-dashboard .score-chip-value { font-size: 15px; font-variant-numeric: tabular-nums; }
+.results-hero-bars { margin-top: 2px; }
+.results-hero-rotation { display: flex; flex-direction: column; gap: 8px; flex: 1 1 360px; min-width: 0; }
+/* 2026-09-16, user-reported live ("zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn z
+   pozycjami i minutami") — replaces the old two-group (Starting five/Bench) face-card rows. Five
+   equal columns, one per `STARTER_SLOTS` position — each a light bordered card (same recipe as
+   `.share-modal-face-card`, just taller to hold a variable number of stacked contributors instead
+   of exactly one) so a slot with 2-3 real contributors (a backup, maybe a 3rd sliver) reads as one
+   coherent group instead of scattering its players across two unrelated old groups by role. */
+.results-hero-rotation-columns {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.results-hero-rotation-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  min-width: 0;
+}
+.results-hero-rotation-col-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint, var(--muted));
+  text-align: center;
+}
+.results-hero-rotation-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+.results-hero-rotation-col > .results-hero-rotation-entry:first-of-type { padding-top: 0; border-top: none; }
+.results-hero-rotation-entry-info { display: flex; flex-direction: column; gap: 0; min-width: 0; line-height: 1.25; }
+.results-hero-rotation-entry-name {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.results-hero-rotation-entry-min {
+  font-size: 9.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 480px) {
+  /* Five columns of a 26px face + two lines of text each get too narrow to read below this width
+     — same "stack instead of squeeze" call the dashboard's own 560px breakpoint already makes for
+     its two halves. */
+  .results-hero-rotation-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* 2026-09-11, Scouting Report finding: every competitor treats "share this" as part of the
+   payoff (Share result / Challenge a friend); this screen had no path from seeing a result to
+   sending it to the group chat at all. Clipboard-only — no share-sheet/backend dependency, which
+   matches "closed friend group who already coordinate outside the app." */
+/* 2026-09-18: moved from its own full-width row below the whole hero dashboard into
+   `.results-hero-scores` itself (see that JSX's own comment) — `grid-column: 1 / -1` was a leftover
+   from when this sat directly under a grid container; it's a normal flex-column child now, so that
+   rule is dropped along with it. Slightly larger top margin than before (was 4px) now that it
+   trails the bars directly instead of the whole dashboard row. */
+.results-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.results-hero-copy {
+  padding: 7px 14px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--at-accent) 12%, transparent);
+  color: var(--at-accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color .12s ease;
+}
+.results-hero-copy:hover { background: color-mix(in srgb, var(--at-accent) 20%, transparent); }
+
+/* 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
+   ekran z naszymi wynikami?") — a real preview card instead of a blind clipboard copy. Reuses the
+   hero's own `.results-hero-tier-t{N}` tone classes so the tier pill reads identically here. */
+.share-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+.share-modal-card {
+  position: relative;
+  /* 2026-09-12, user-reported live ("brzydota szczerze" — a screenshot of exactly this modal with
+     the new face-card roster jammed into the old 380px width, no spacing at all between position/
+     name/minutes): widened to fit 5 starter face-cards across one real row, matching the ask
+     ("dwóch rzędach, s5 i bench"). See `.share-modal-face-*` below for the cards themselves. */
+  width: min(520px, 100%);
+  background: var(--at-paper-raised, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+.share-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+}
+.share-modal-close:hover { color: var(--text); border-color: var(--muted); }
+.share-modal-team {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.share-modal-rank {
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+.share-modal-rank i {
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 4px;
+}
+.share-modal-tier {
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.share-modal-identity {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0;
+}
+.share-modal-identity b { color: var(--text); }
+/* 2026-09-18, user-reported live ("można dodać tu podstawowe metryki" — the basic metrics could
+   go here too): the same 7 `ScoreChip`s the hero's own "Team profile" row already shows, wrapped
+   to fit this narrower modal instead of the hero's own single wide row. */
+.share-modal-scores {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 2px;
+}
+.share-modal-copy {
+  margin-top: 12px;
+  width: 100%;
+}
+/* 2026-09-12, user-reported live ("usuń copy as text, dodaj dodatkowe informacje jak roster,
+   rotacja itd") — "Copy as text" is gone (the PNG below covers strictly more now, so the two-
+   action row this class used to lay out side by side is back down to the single full-width
+   button `.share-modal-copy` already handles); this section is the modal's own new roster read-
+   out, matching what the downloadable PNG now also carries. Two-column grid so all 9 rows fit
+   without the modal growing very tall — `auto 1fr auto auto` keeps the position/minutes/shots
+   columns snug and lets the name take whatever's left. */
+.share-modal-roster {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.share-modal-roster-label {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+/* 2026-09-12, user's own follow-up ask ("dodać face cards w dwóch rzędach, s5 i bench") replaced
+   the plain two-column text grid above with two real rows of face-cards — same `Face` avatar the
+   Draft tab's own "Your Five" sidebar and Rotation cards already use, so this modal finally
+   matches the headshot row the downloadable PNG (`shareCardImage.ts`) already had. */
+/* 2026-09-18: one bordered card per SLOT (was per-player) — same column treatment
+   `.results-hero-rotation-col` already uses above, so a slot with 2-3 real contributors reads as
+   one coherent group instead of a row of individually-bordered player cards with no visual link
+   between a starter and the bench player covering his other minutes.
+   2026-09-18 follow-up, user-reported live (screenshot: the 5th card wrapped to its own row): a
+   fixed 96px card width times 5 (plus gaps) came to 504px, wider than `.share-modal-card`'s own
+   476px content box (520px card minus its 22px side padding twice) — close enough to fit 4 cards
+   on a line but never 5. Switched the row to a 5-column grid instead of flex-wrap, so it always
+   divides the real available width into exactly 5 columns rather than wrapping once a fixed card
+   width doesn't happen to fit; `min-width: 0` lets a long name's existing ellipsis do its job
+   inside a narrower grid cell instead of forcing the column wider. */
+.share-modal-face-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+.share-modal-face-group-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+.share-modal-face-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.share-modal-face-card {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+.share-modal-face-group > .share-modal-face-card:first-of-type { padding-top: 0; border-top: none; }
+.share-modal-face-info { display: flex; flex-direction: column; gap: 0; min-width: 0; line-height: 1.25; }
+.share-modal-face-name {
+  max-width: 100%;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.share-modal-face-meta {
+  font-size: 9px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* "Challenge a friend" — 2026-09-11, "Duel na seedzie": same button shape as Copy result, second
+   accent (red, not blue) so the two distinct payoffs (brag about MY score / invite the SAME board)
+   read as visually separate actions, not a repeated control. */
+.results-hero-challenge {
+  border-color: var(--at-accent-2, var(--accent-border));
+  background: color-mix(in srgb, var(--at-accent-2, var(--at-accent)) 12%, transparent);
+  color: var(--at-accent-2, var(--at-accent));
+}
+.results-hero-challenge:hover { background: color-mix(in srgb, var(--at-accent-2, var(--at-accent)) 20%, transparent); }
+@media (max-width: 560px) {
+  .results-hero { grid-template-columns: 1fr; }
+  /* Below this width `.results-hero-rotation`'s own `flex: 1` only had a narrow leftover sliver
+     next to the fixed-width score-chip column to lay 88px player cards into — stack the two
+     labelled halves instead, each then getting the full row width. */
+  .results-hero-dashboard { flex-direction: column; align-items: stretch; }
+}
+
+/* 2026-08-14, results-screen redesign: a 6-band amber ramp for TEAM-level 0-100 scores
+   (Talent/Offense/Defense/Spacing/Fit/Rotation/Overall/per-player TAL-in-a-row), same warm
+   grey->gold philosophy as `.rating-*`'s player-tier ladder. Originally its own literal palette
+   (this screen hadn't been migrated into `.at-shell` yet — see that section's own header
+   comment); now that ResultsScreen always renders inside `.at-shell` (2026-08-16), reads the same
+   `--at-t1`..`--at-t6` ramp the Draft tab's tier dots/grade badges use directly, one shared ramp
+   instead of two that happened to agree, and the separate light/dark branch this used to need is
+   gone along with it (`--at-t*` is fixed-dark now, like the rest of the shell). */
+.score-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.score-chip-label {
+  font-weight: 600;
+  opacity: 0.85;
+}
+.score-chip-value {
+  font-weight: 700;
+}
+/* 2026-09-11: `.score-chip`'s background/border-bottom moved to an inline continuous red→green
+   scale computed in `ScoreChip` itself (ResultsScreen.tsx's own `qualityColor`) — see that
+   component's docstring for why the discrete `score-t1..6` bands it used to read (and
+   `results-hero-overall.score-t1..6` below, which is unrelated and still uses them) are gone
+   from here specifically. */
+
+/* 2026-09-09: the seven sub-axis chips sat in a narrow blue band (a 48 and an 80 were three shades
+   apart and read as "all the same"). In the expanded card they get a bit more room, the value in
+   tabular numerals at a larger size, and a semantic underline (red = weak axis, gold = middling,
+   bright = strong) so a soft spot is spottable without reading every number. The compact header
+   mini-chips are left alone. */
+.subscores .score-chip {
+  padding: 3px 9px 4px;
+  border-radius: 7px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.22);
+}
+.subscores .score-chip .score-chip-value {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+/* border-bottom-color itself now comes from `ScoreChip`'s own inline `qualityColor` style. */
+
+.team-result {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+.team-result.is-human-team {
+  border-color: var(--at-accent-2, var(--accent));
+  background: color-mix(in srgb, var(--at-accent-2, var(--accent)) 12%, transparent);
+}
+.team-result.is-expanded { margin: 8px 0 12px; }
+
+/* ---- One ranking row for both drafts (RankRowSummary, 2026-09-27 results audit pack B): place,
+   team, title odds, rating — one line, on a phone too. ---- */
+.rank-list { display: flex; flex-direction: column; gap: 4px; }
+.rank-list > .rank-row {
+  padding: 8px 12px;
+  border: 1px solid var(--at-line, var(--border));
+  border-radius: 8px;
+  background: var(--at-paper, transparent);
+}
+.rank-list > .rank-row.is-you {
+  border-color: var(--at-accent-2, var(--accent));
+  background: color-mix(in srgb, var(--at-accent-2, var(--accent)) 12%, var(--at-paper, transparent));
+}
+.rank-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.team-result-header.rank-row { padding: 8px 12px; }
+.rank-row-pos {
+  flex: none;
+  min-width: 22px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--at-ink-faint, var(--muted));
+  font-variant-numeric: tabular-nums;
+}
+.rank-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--at-ink, var(--text));
+  overflow-wrap: anywhere;
+}
+.rank-row-you {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+  background: var(--at-accent-2, var(--accent));
+  color: #fff;
+}
+.rank-row-odds {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--at-ink-soft, var(--text));
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rank-row-rating {
+  flex: none;
+  min-width: 34px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 12.5px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.team-result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.team-result-header:hover {
+  background: var(--panel-hover, rgba(0, 0, 0, 0.03));
+}
+.team-result-toggle {
+  color: var(--accent);
+  font-size: 12px;
+  width: 10px;
+}
+.team-result-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14px;
+  padding: 4px 18px 14px;
+  border-top: 1px solid var(--border);
+}
+.team-result-body > .subscores,
+.team-result-body > .identity-chip-row,
+.team-result-body > .net-rating-projection,
+.team-result-body > .notes,
+.team-result-body > .draft-order { flex: 0 0 100%; }
+.team-result-body > .subscores,
+.team-result-body > .identity-chip-row { order: 0; }
+.team-result-body > .net-rating-projection { order: 2; }
+.team-result-body > .notes,
+.team-result-body > .draft-order { order: 4; }
+.team-result-body > details.fit-v2-shadow-panel {
+  order: 1;
+  flex: 1 1 calc(50% - 14px);
+  align-self: flex-start;
+  min-width: 0;
+}
+.team-result-body > .bench-panel {
+  order: 1;
+  flex: 1 1 calc(50% - 14px);
+  min-width: 280px;
+  align-self: flex-start;
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+.team-result-body > .rotation-panel {
+  order: 3;
+  flex: 0 0 100%;
+}
+@media (max-width: 760px) {
+  .team-result-body > details.fit-v2-shadow-panel,
+  .team-result-body > .bench-panel { flex-basis: 100%; }
+}
+.expand-all-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* Results use one accordion vocabulary.  The old screen mixed bordered cards, dashed FIT boxes
+   and bare headings, which made the information hierarchy hard to scan. */
+.team-result-body > .result-accordion-section {
+  flex: 0 0 100%;
+  box-sizing: border-box;
+  order: 10;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--at-paper-raised) 88%, transparent);
+  overflow: hidden;
+}
+.team-result-body > .rotation-panel { order: 1; }
+.team-result-body > .team-analysis-section { order: 2; }
+.team-result-body > .championship-section { order: 3; }
+.team-result-body > .draft-order { order: 5; }
+
+/* 2026-09-09: six identical grey bars gave the drill-down no landmarks. A 3px colour rail on the
+   summary — one hue per section kind — lets the eye jump straight to the one it wants without
+   adding a row of decorative icons. */
+.result-accordion-section > summary { border-left: 3px solid transparent; padding-left: 9px; }
+.rotation-panel > summary { border-left-color: color-mix(in srgb, var(--at-t5) 85%, white); }
+.team-analysis-section > summary { border-left-color: var(--at-ink-faint); }
+.championship-section > summary { border-left-color: var(--at-brand-red); }
+
+.draft-order > summary { border-left-color: color-mix(in srgb, var(--at-t3) 80%, white); }
+
+.result-accordion-section > summary {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 11px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 750;
+  list-style: none;
+}
+.result-accordion-section > summary::-webkit-details-marker { display: none; }
+.result-accordion-section > summary::before {
+  content: '›';
+  width: 12px;
+  color: var(--accent);
+  font-size: 17px;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform .14s ease;
+}
+.result-accordion-section[open] > summary {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+.result-accordion-section[open] > summary::before { transform: rotate(90deg); }
+.result-accordion-section[open] > :not(summary) {
+  box-sizing: border-box;
+  max-width: calc(100% - 22px);
+  margin-left: 11px;
+  margin-right: 11px;
+}
+.result-accordion-section[open] > :last-child { margin-bottom: 11px; }
+.analysis-section-heading {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.analysis-insights {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+/* 2026-09-09: Strengths/Concerns is the one human-readable takeaway in this section — it now
+   leads instead of sitting under a 17-row metric dump, so no divider above it. */
+.analysis-insights-lead {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: none;
+}
+/* 2026-09-09 restructure: Team analysis now leads with identity + season-profile prose and
+   Strengths/Concerns, then a scannable row of labelled bars for the key axes; the full raw metric
+   grid sits behind a nested "All metrics & inputs" toggle for anyone who wants the numbers. */
+.team-analysis-section[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.analysis-identity {
+  margin: 6px 0 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.analysis-identity-line {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--at-ink-soft);
+}
+.analysis-identity-line b { color: var(--at-ink); font-weight: 700; }
+.analysis-bars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 16px;
+  margin: 8px 0 4px;
+}
+/* 2026-09-11, user-reported live ("ofensywne statystyki po lewej, defensywne po prawej") — two
+   explicit columns (offense/defense), not one auto-flowing grid whose row-major fill mixed them
+   by accident. */
+.analysis-bars-split {
+  display: flex;
+  gap: 5px 20px;
+  margin: 8px 0 2px;
+}
+.analysis-bars-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.analysis-bars-col-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+  margin-bottom: 1px;
+}
+.analysis-bars-full { margin: 6px 0 4px; }
+@media (max-width: 620px) {
+  .analysis-bars-split { flex-direction: column; gap: 10px; }
+}
+.metric-bar {
+  display: grid;
+  /* 2026-09-24: 92px cut "Switchability", "Hunt resistance" and "Role coverage" to an ellipsis;
+     sized to the longest label now. */
+  grid-template-columns: 118px 1fr 26px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+.metric-bar-label { color: var(--at-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.metric-bar-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--at-ink) 9%, transparent);
+  overflow: hidden;
+}
+.metric-bar-fill { display: block; height: 100%; border-radius: 999px; }
+.metric-bar-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--at-ink);
+}
+/* 2026-09-11: `.metric-bar-fill`'s color moved to an inline continuous scale (`qualityColor` in
+   ResultsScreen.tsx) — see `ScoreChip`'s own docstring, same fix for the same reason. */
+
+.analysis-raw {
+  margin-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  padding-top: 6px;
+}
+.analysis-raw > summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--at-ink-faint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 0;
+}
+.analysis-raw > summary::-webkit-details-marker { display: none; }
+.analysis-raw > summary::before { content: '▸ '; }
+.analysis-raw[open] > summary::before { content: '▾ '; }
+.analysis-raw[open] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+/* Holds only the AllMetrics panel now, which lays itself out. */
+.analysis-raw[open]:has(> .all-metrics) { display: block; }
+.analysis-raw[open] > summary,
+.analysis-raw > .analysis-section-heading,
+.analysis-raw > .fit-detail-wide,
+.analysis-raw > .fit-v2-shadow-detail,
+.analysis-raw > .all-metrics { grid-column: 1 / -1; }
+.analysis-raw > .fit-detail-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+@media (max-width: 620px) {
+  .analysis-bars { grid-template-columns: 1fr; }
+  .analysis-raw[open] { grid-template-columns: 1fr; }
+  .analysis-raw > .analysis-section-heading,
+  .analysis-raw > .fit-detail-wide,
+  .analysis-raw > .fit-v2-shadow-detail { grid-column: auto; }
+}
+/* Championship odds panel (group C mockup 17, ChampionshipOdds.tsx). */
+.title-odds {
+  display: grid;
+  gap: 18px;
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.title-odds-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 36px;
+}
+.title-odds-headline span { display: flex; flex-direction: column; gap: 2px; }
+.title-odds-headline b {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--at-ink);
+}
+.title-odds-headline b.is-lead { font-size: 26px; color: var(--at-gold, #ffd479); }
+.title-odds-headline i,
+.title-odds-kicker {
+  font-style: normal;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+.title-odds-kicker { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: var(--at-ink-soft); }
+.title-odds-kicker.is-gold { color: var(--at-gold, #ffd479); }
+.title-odds-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 32px;
+}
+.title-odds-grid.has-rule {
+  border-top: 1px solid color-mix(in srgb, var(--at-line, var(--border)) 70%, transparent);
+  padding-top: 16px;
+}
+.title-odds-block { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.title-odds-round,
+.title-odds-field {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+.title-odds-round {
+  grid-template-columns: minmax(0, 130px) minmax(0, 1fr) 44px;
+  padding-left: 8px;
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--at-gold, #ffd479) 70%, transparent);
+}
+.title-odds-round > span:first-child { color: var(--at-ink-soft); }
+.title-odds-field { grid-template-columns: 20px minmax(0, 170px) minmax(0, 1fr) 44px; }
+.title-odds-round b,
+.title-odds-field b { text-align: right; color: var(--at-ink); }
+.title-odds-rank { color: var(--at-ink-faint); }
+.title-odds-name { color: var(--at-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.title-odds-field.is-own .title-odds-name,
+.title-odds-field.is-own b { color: var(--at-gold, #ffd479); font-weight: 800; }
+.title-odds-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--at-ink) 9%, transparent);
+  overflow: hidden;
+}
+.title-odds-track > span { display: block; height: 100%; border-radius: 999px; background: var(--at-brand-blue, #2f74b8); }
+.title-odds-field.is-own .title-odds-track > span { background: var(--at-gold, #ffd479); }
+.title-odds-note { margin: 0; font-size: 11px; color: var(--at-ink-faint); }
+.title-odds-matchup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.title-odds-matchup p { margin: 0; color: var(--at-ink); }
+.title-odds-matchup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.title-odds-matchup-head b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.title-odds-matchup.is-best .title-odds-kicker,
+.title-odds-matchup.is-best .title-odds-matchup-head b { color: var(--at-good, #7fd68a); }
+.title-odds-matchup.is-worst .title-odds-kicker,
+.title-odds-matchup.is-worst .title-odds-matchup-head b { color: var(--at-warn, #f0a868); }
+.title-odds-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.title-odds-chips span { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-variant-numeric: tabular-nums; }
+.title-odds-chips .is-plus { background: color-mix(in srgb, var(--at-good, #7fd68a) 16%, transparent); color: var(--at-good, #7fd68a); }
+.title-odds-chips .is-minus { background: color-mix(in srgb, var(--at-warn, #f0a868) 16%, transparent); color: var(--at-warn, #f0a868); }
+@media (max-width: 700px) {
+  .title-odds-grid { grid-template-columns: minmax(0, 1fr); }
+  .title-odds-headline b.is-lead { font-size: 22px; }
+}
+.net-rating-footnote {
+  margin: 9px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--at-ink-faint);
+  line-height: 1.4;
+}
+
+.team-result.rank-1 {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.subscores {
+  display: flex;
+  align-items: center;
+  /* Wraps because this row grew to seven items (Talent/Offense/Defense/Spacing/Durability/Fit/
+     Rotation). Without it flex forces them onto one line and they overflow the card on a narrow
+     screen — the same way .player-group-header clipped its right-hand stats before it was given
+     its own overflow handling. */
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.fga-spent {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-left: 4px;
+}
+/* 2026-09-11: the roster's named archetype(s), promoted out of the "Team analysis" accordion so
+   every card's identity reads at a glance — see the render site's own comment. */
+.identity-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -2px 0 10px;
+}
+.identity-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--at-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--at-accent) 13%, transparent);
+  color: var(--at-accent);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.identity-chip-secondary {
+  border-color: color-mix(in srgb, var(--at-ink) 25%, transparent);
+  background: color-mix(in srgb, var(--at-ink) 8%, transparent);
+  color: var(--at-ink-soft);
+}
+/* 2026-09-11: the risk line that used to live as a separate "Identity:" paragraph down in "Team
+   analysis" — moved next to the chips it actually describes (see the chip-row's own JSX comment). */
+.identity-risk {
+  align-self: center;
+  font-size: 11.5px;
+  color: var(--at-ink-faint);
+}
+
+.fit-v2-shadow-panel {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin: -2px 0 10px;
+  padding: 7px 10px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  color: var(--text);
+  font-size: 11px;
+}
+.fit-v2-shadow-label {
+  color: var(--accent);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+summary.fit-v2-shadow-label {
+  flex-basis: 100%;
+  cursor: pointer;
+  list-style-position: inside;
+  padding: 2px 0;
+}
+details.fit-v2-shadow-panel:not([open]) {
+  display: block;
+}
+details.fit-v2-shadow-panel[open] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+}
+details.fit-v2-shadow-panel[open] > summary { grid-column: 1 / -1; }
+details.fit-v2-shadow-panel[open] > .fit-detail-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 3px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+.fit-detail-metric b { color: var(--muted); font-weight: 500; }
+.fit-detail-metric strong { color: var(--text); }
+details.fit-v2-shadow-panel[open] > .fit-detail-wide,
+details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail { grid-column: 1 / -1; }
+.fit-detail-wide,
+details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail {
+  display: block;
+  min-width: 0;
+  padding: 6px 0 2px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  line-height: 1.5;
+}
+.fit-detail-wide b,
+details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text); }
+@media (max-width: 620px) {
+  details.fit-v2-shadow-panel[open] { grid-template-columns: 1fr; }
+  details.fit-v2-shadow-panel[open] > .fit-detail-wide,
+  details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail { grid-column: auto; }
+}
+/* 2026-09-16, user-reported live ("bardzo brzydko to wygląda" — a screenshot of exactly this
+   panel, text visibly running together: "...Kareem Abdul-Jabbar 98Weak-link targets:..."). The
+   only `display: block` this class had was scoped to `details.fit-v2-shadow-panel[open] > ...`
+   (a few lines up) — a container class this element hasn't actually been rendered inside since
+   the raw-metrics panel was migrated to `.analysis-raw` (ResultsScreen.tsx). That scoped rule's
+   `grid-column: 1 / -1` (analysis-raw's own version, above) still applied, but with no `display`
+   override winning, this stayed a plain inline `<span>` — three of them back to back with no line
+   break between. Unscoped so it holds regardless of which container renders it. */
+.fit-v2-shadow-detail {
+  display: block;
+  flex-basis: 100%;
+  padding: 6px 0 2px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  line-height: 1.5;
+  color: var(--muted);
+}
+/* First one right under `.fit-detail-wide`'s own "Profile:" line doesn't need a second divider
+   stacked directly on that one's bottom padding. */
+.fit-detail-wide + .fit-v2-shadow-detail { border-top: none; padding-top: 2px; }
+
+/* Deliberately visually distinct from .subscores above — a real-NBA-units estimate (points per
+   100 possessions), not another 0-100 relative score, so it shouldn't read as one more entry in
+   that same row (see netRatingProjection.ts's own docstring on why the two are kept separate). */
+.net-rating-projection {
+  font-style: italic;
+  color: var(--text);
+  opacity: 0.85;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  margin: 0.55rem 0;
+}
+
+.matchup-explanation {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.lineup {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.rotation-panel > div { width: 100%; }
+.rotation-bench-list { margin-top: 0; }
+/* 2026-09-16, user-reported live ("po prostu wizualnie to tak słabo wygląda") — was a plain
+   outlined rectangle (no fill), the one badge in this row not using the app's established
+   colored-pill language. Solid fill now, tone matching what the label itself means (starter =
+   accent, same blue the rest of the app uses for "this one's live/active"; bench = a quieter
+   neutral fill instead of an empty outline). */
+.rotation-role-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 7px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+.rotation-role-badge.is-starter { background: color-mix(in srgb, var(--accent) 24%, transparent); color: var(--accent); }
+.rotation-role-badge.is-bench { background: color-mix(in srgb, var(--muted) 18%, transparent); color: var(--muted); }
+/* 2026-09-11: small "natural position" flag when a player is slotted off their primary position —
+   see the rotation-panel render site's own comment. Cheap, additive to the existing Concerns prose. */
+.rotation-natural-pos {
+  margin-left: 3px;
+  color: var(--at-accent-2);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.lineup ul {
+  margin: 4px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.rotation-slot-group {
+  margin-bottom: 6px;
+}
+
+.rotation-slot-label {
+  font-weight: 700;
+  color: var(--accent);
+  display: inline-block;
+  padding-left: 12px;
+}
+
+.rotation-slot-entries li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0 2px 12px;
+  flex-wrap: wrap;
+}
+.player-row-name {
+  flex: 1 1 auto;
+  min-width: 140px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-row-meta {
+  display: flex;
+  align-items: center;
+  /* `ScoreChip` (the TAL readout replacing the old bare-text + border-left divider) carries its
+     own visual weight already, so this row just needs a small gap before it instead of a divider. */
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.player-row-minutes {
+  display: inline-flex;
+  align-items: center;
+}
+.player-row-total-min {
+  color: var(--at-ink-faint);
+  font-size: 10px;
+  margin-left: 3px;
+}
+@media (max-width: 620px) {
+  /* 2026-09-11, user-reported live ("te dwie minuty na C tak mało estetycznie wyglądają") — this
+     row (minutes + the "(N total)" annotation + TAL — box score/shooting were dropped from this
+     view entirely 2026-09-14, see the rotation-panel render site's own comment) used to scroll
+     sideways at narrow widths, `white-space: nowrap`'d into a single line with no visible scroll
+     affordance — a short annotation like "(34 total)" could sit just past the fold, invisible
+     unless you knew to scroll for it. Wraps onto a second line instead: nothing gets hidden. */
+  .rotation-slot-entries li { align-items: flex-start; }
+  .player-row-meta {
+    width: 100%;
+    white-space: normal;
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+}
+
+.notes ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+/* 2026-08-14, results-screen redesign: `breakdown.notes` (scoring.ts) is a flat string list with
+   praise ("Clean creation hierarchy...") and real warnings ("...underplayed", "...over their
+   tier's minutes ceiling") reading identically before this — see `isConcernNote`'s own docstring
+   in ResultsScreen.tsx for the keyword split. Two columns so a genuine concern can't hide inside
+   a wall of praise; single column (concerns hidden entirely) when there simply are none. */
+.notes-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 16px;
+}
+.notes-strengths strong {
+  color: #2f7d3a;
+}
+.notes-concerns strong {
+  color: #b3540c;
+}
+/* 2026-08-16: `.at-shell` no longer follows `prefers-color-scheme` (it's fixed-dark — see that
+   section's own comment), so a system-light visitor would otherwise get these light-mode-tuned
+   colours inside the always-dark board ResultsScreen now renders on. Forced to the lighter
+   dark-friendly variant whenever nested in `.at-shell`, same fix shape as the evidence-panel
+   override above. */
+.at-shell .notes-strengths strong { color: var(--at-good, #7fd68a); }
+.at-shell .notes-concerns strong { color: var(--at-warn, #f0a868); }
+@media (prefers-color-scheme: dark) {
+  .notes-strengths strong {
+    color: var(--at-good, #7fd68a);
+  }
+  .notes-concerns strong {
+    color: var(--at-warn, #f0a868);
+  }
+}
+
+.draft-order ol {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  font-size: 13px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.draft-order li {
+  padding: 2px 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+/* 2026-08-19, user's own idea ("PR works as it works, but user can simulate 82 game season"):
+   same bordered-panel treatment as the rest of this screen's own sibling "extra info" blocks, not
+   a new visual language. The standings table reuses `.at-roster-table`'s own styling directly (see
+   App.tsx-adjacent `table.at-roster-table` rules) rather than a duplicate set of column rules.
+   2026-09-14: the `.left-on-board` sibling this comment originally pointed at is gone (user-
+   reported live, "usuń" — removed from ResultsScreen.tsx along with its CSS) — reworded rather
+   than left dangling on a class that no longer exists. */
+.season-sim-panel {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.season-sim-panel h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+/* 2026-09-18, user-reported live ("może zamiast rozwijanej listy, niech to będzie popup" — a
+   popup instead of an inline-growing list): standings + playoff bracket used to render inline and
+   grow `.season-sim-panel` tall the moment a result existed — now they live in this overlay
+   instead, same backdrop/modal/close-button language `.challenge-compare-*` already established
+   for the Challenge-a-friend popup, just wider (a 5-column standings table for 16 teams, plus
+   `.bracket-scroll`'s own horizontal-scrolling bracket, both want more room than that narrower
+   modal). `max-height`/`overflow-y` since standings + a full bracket can run taller than the
+   viewport, unlike the shorter challenge popup. */
+.season-sim-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 60;
+}
+.season-sim-modal {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 26px 24px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--at-line, var(--border));
+  background: var(--at-paper-raised, var(--bg));
+  box-shadow: var(--at-shadow, var(--shadow));
+}
+.season-sim-modal h3 {
+  margin: 0 0 4px;
+  font-size: 19px;
+  text-align: center;
+}
+.season-sim-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.season-standings-table {
+  margin-top: 10px;
+}
+
+/* 2026-09-24: "you" is the red accent everywhere (draft board, lottery) — here too, as a tinted
+   row with a left bar, instead of blue text that matched the bracket's old winner colour. */
+.season-standings-you td {
+  font-weight: 700;
+  color: var(--at-ink, inherit);
+  background: color-mix(in srgb, var(--at-accent-2) 16%, transparent);
+}
+.season-standings-you td:first-child { box-shadow: inset 3px 0 0 var(--at-accent-2); }
+.season-sim-modal--wide { max-width: min(1340px, 96vw); }
+
+/* 2026-08-19, same-day follow-up ("can we add playoffs?") — the bracket sits directly under the
+   standings table it was seeded from, same panel, no visual break between "here's the season" and
+   "here's what it led to." */
+.playoff-sim-btn {
+  margin-top: 12px;
+}
+
+/* 2026-08-19, user's own ask ("can you make playoff bracket like that?" — a CBS Sports-style
+   two-side bracket screenshot): replaces the old flat per-round text list (`.playoff-round`/
+   `.playoff-series-row`, both removed) with a real tree layout. See PlayoffBracketTree's own
+   docstring in ResultsScreen.tsx for why plain pixel math drives both the cards and the
+   connector lines — every coordinate here just positions what that component already computed,
+   nothing is re-derived in CSS. `.bracket-scroll` matches this project's own established
+   "wide content scrolls in its own container" pattern (same shape as `.at-grid-scroll` for the
+   Overview grid) since the full bracket is wider than most viewports. */
+.bracket-scroll {
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.bracket-tree {
+  position: relative;
+}
+
+.bracket-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.bracket-line {
+  fill: none;
+  stroke: var(--at-line);
+  stroke-width: 1.5;
+}
+
+.bracket-match {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--at-paper);
+  border: 1px solid var(--at-line);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.bracket-team-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  /* 2026-09-12, user-reported live (screenshot: a long team name's tail overlapping the series
+     score digits) — `.bracket-score` sits absolutely in the card's bottom-right corner, but this
+     row's own text used the card's FULL width with nothing reserved for it, so a name that (with
+     its seed prefix) nearly filled the 176px card ran its ellipsis right up against — sometimes
+     under — the score badge instead of stopping short of it. */
+  padding: 1px 30px 1px 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.bracket-seed {
+  font-size: 10px;
+  color: var(--at-ink-faint);
+  min-width: 16px;
+}
+
+.bracket-team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bracket-team-winner { font-weight: 700; color: var(--at-ink, inherit); }
+.bracket-team-loser { color: var(--at-ink-faint); }
+/* The human's team: red accent name + thin left bar (no tint, no strike-through, no pill). */
+.bracket-team-you {
+  color: var(--at-accent-2); font-weight: 700;
+  margin-left: -6px; padding-left: 6px; box-shadow: inset 3px 0 0 var(--at-accent-2);
+}
+.bracket-games { margin-left: auto; flex: none; min-width: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.bracket-match--you { border-color: color-mix(in srgb, var(--at-accent-2) 70%, var(--at-line)); }
+.playoff-run { font-size: 13.5px; font-weight: 700; color: var(--at-accent-2); margin: 0 0 12px; }
+
+.bracket-you-tag {
+  flex: none;
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--at-accent-2);
+  color: var(--at-accent-2-ink);
+}
+.playoff-champion--you { color: var(--at-accent-2); }
+/* Phone layout: rounds listed top to bottom (PlayoffBracketTree). */
+.bracket-list-round { margin-top: 12px; }
+.bracket-list-round-label { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); margin-bottom: 6px; }
+.bracket-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bracket-list-grid .bracket-match { position: relative; min-height: 46px; }
+
+.playoff-champion {
+  margin: 10px 0 0;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.team-feedback {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  font-size: 13px;
+}
+
+.team-feedback label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.results-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.feedback-field {
+  margin-bottom: 8px;
+}
+
+.feedback-field select {
+  margin-left: 6px;
+}
+
+.user-rank-input {
+  margin-left: 6px;
+  width: 56px;
+  font: inherit;
+}
+
+.user-rank-hint {
+  margin-left: 8px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* 2026-08-09, user's explicit ask: the per-team ranking number moved out of each team's own
+   feedback block into one consolidated section at the end of the results screen, right before
+   the Draft Again / export actions. */
+.user-power-ranking {
+  border-top: 1px solid var(--border, #ddd);
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.user-power-ranking-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.user-power-ranking-label {
+  min-width: 220px;
+  font-weight: 500;
+}
+
+.user-power-ranking-row .feedback-textarea {
+  flex-basis: 100%;
+  margin-top: 4px;
+}
+
+.feedback-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  resize: vertical;
+  margin-top: 4px;
+}
+
+.player-notes-hint {
+  font-size: 12px;
+  opacity: 0.7;
+  margin: 6px 0;
+}
+
+/* Shared tick/cross feedback control (FeedbackToggle) — used on draft-history picks and on
+   each roster row here. Deliberately small/inline so it never dominates the row it sits on. */
+.feedback-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.feedback-toggle-btn {
+  min-width: 22px;
+  padding: 1px 5px;
+  line-height: 1.4;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.feedback-toggle-ok.active {
+  background: #1f9d63;
+  border-color: #1f9d63;
+  color: #fff;
+}
+
+.feedback-toggle-flag.active {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.feedback-toggle-reason {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  width: 180px;
+  max-width: 44vw;
+}
+
+/* Commissioner Mode's per-pick causal-reasoning box — same shape/sizing as .feedback-toggle-reason
+   above (same "small inline note next to a history row" role), just wider since it's meant to
+   carry a real sentence of reasoning, not a short complaint. */
+.commissioner-reasoning-input {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  width: 320px;
+  max-width: 50vw;
+}
+
+/* CPU pick-speed slider. Tester-Mode-only (see GameShell.tsx) — deliberately in normal flow
+   (centred under the header buttons) rather than absolutely positioned like .reset-btn. */
+.ai-speed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.ai-speed input[type='range'] {
+  width: 110px;
+  accent-color: var(--accent);
+}
+
+/* Fixed width so stepping Slow -> Instant doesn't shift the slider sideways under the cursor
+   mid-drag. */
+.ai-speed-value {
+  min-width: 52px;
+  text-align: left;
+  font-weight: 600;
+}

@@ -1,0 +1,380 @@
+/* ======================================================================
+   All-Time Fantasy redesign (2026-08-13) — new tab shell + Draft panel.
+   Scoped entirely under `.at-shell` / `at-*` class names so it can roll
+   out panel-by-panel without touching the rest of the app's existing
+   look (DraftPoolBrowser/ResultsScreen/RotationBuilder are untouched).
+   Tokens and structure ported from the agreed mockup artifact
+   (636d5807-a772-4b58-882c-026b3ac50b7b) — see
+   draft_game_ui_redesign_spec.md memory for the full design history.
+   ====================================================================== */
+
+/* 2026-08-16, user's own ask: restyled after a photo of the real NBA Draft broadcast board (the
+   giant "PICK # / TEAM / PLAYER" jumbotron) — confirmed via clarifying question this covers the
+   whole shell (topbar/tabs/Overview/Draft/Team), and that team "logos" become short letter codes
+   (`teamInitials()` in teamNames.ts) since these are procedurally-generated fictional franchises
+   with no real artwork, not literal NBA branding/logos/wordmark, which aren't reproduced anywhere
+   here. Fixed dark always — a light-mode jumbotron isn't really a thing a broadcast board does,
+   so unlike the rest of the app this no longer follows `prefers-color-scheme`; the
+   `[data-at-theme="light"]` escape hatch this replaced was dead code (never set anywhere in the
+   app) so nothing depended on keeping it.
+   2026-08-19, user's explicit ask ("NBA-touch", full broadcast redesign, real NBA logo hex given
+   directly: blue #1D428A / red #C8102E): the warm-gold accent family above is retired in favour
+   of the real two-colour NBA identity. `--at-brand-blue`/`--at-brand-red` carry the exact logo
+   hexes, for large solid fills (header bar, primary buttons, the "your team" highlight) where
+   full saturation reads fine. `--at-accent`/`--at-accent-2` are brightened derivatives (`color-
+   mix` against white) for small UI at low pixel counts — outlines, focus rings, tab underlines,
+   tier dots — where the raw brand blue in particular reads too dark/muddy against the near-black
+   `--at-paper`. Red becomes the app's one alert/negative colour (on-the-clock pulse, warnings,
+   "concern" emphasis) instead of the several unrelated hardcoded reds that used to be scattered
+   through this file (now consolidated into the app-wide `--danger` token, aliased to this shell's
+   `--at-accent-2` — see that alias block below) — one real brand red standing in for all of them. */
+/* 2026-09-18, user's own ask ("main menu było git, reszta dostosowana do tego miała być" — the
+   intro screen's own JetBrains-Mono/cyan terminal experiment, see `.at-intro-terminal` below, was
+   the right call, and the rest of the shell should move to match it, not the other way round).
+   Retires the navy/red broadcast-board palette above in favour of a terminal identity — but tuned
+   back toward this project's own real NBA colour, not the generic aqua-cyan the intro experiment
+   borrowed from its draftballr.com reference ("pokombinować z kolorami żeby były bardziej spójne z
+   paletą NBA draft"): `--at-accent` is still a `color-mix` off the real NBA logo blue
+   (`--at-brand-blue`, unchanged hex), just brightened toward an electric glow-blue instead of
+   toward flat white, so every existing consumer of `--at-accent`/`--accent` across the whole shell
+   inherits a colour genuinely rooted in this game's own brand token, not an unrelated import.
+   `--at-brand-red` is untouched and stays alert-only (on-the-clock pulse, danger, warnings) — confirmed
+   live against the new background on the Lottery/Draft/Team tabs. `.at-cond` (below) switched from
+   a hardcoded `var(--sans)` to `inherit` in the same pass so headings/tab labels/panel titles pick
+   up this shell's new mono font instead of silently staying sans-serif. */
+.at-shell {
+  --at-paper: #05070c;
+  --at-paper-raised: #0a0f18;
+  --at-ink: #eef4fb;
+  --at-ink-soft: #7f96b3;
+  --at-ink-faint: #48586d;
+  --at-pill: #0d151f;
+  --at-pill-ink: #6cc3ff;
+  --at-line: #16222f;
+  --at-brand-blue: #1D428A;
+  --at-brand-red: #C8102E;
+  --at-accent: color-mix(in srgb, var(--at-brand-blue) 40%, #5ec8ff 60%);
+  --at-accent-ink: #06070c;
+  --at-accent-2: color-mix(in srgb, var(--at-brand-red) 72%, white);
+  --at-accent-2-ink: #ffffff;
+
+  /* Same calm, sequential scale, re-tuned to the electric-blue terminal accent instead of the
+     older flat navy. Green/red remain reserved for semantic outcomes such as a favorable or
+     unfavorable matchup, instead of competing with scores. */
+  --at-t1: #0c1a2c; --at-t1-ink: #7f96b3;
+  --at-t2: #102846; --at-t2-ink: #a9c7e8;
+  --at-t3: #14395f; --at-t3-ink: #cfe3f7;
+  --at-t4: #184c7c; --at-t4-ink: #eef4fb;
+  --at-t5: #2f74b8; --at-t5-ink: #ffffff;
+  --at-t6: #5ec8ff; --at-t6-ink: #06070c;
+
+  --at-shadow: 0 1px 2px rgba(0,0,0,0.6), 0 10px 26px rgba(0,0,0,0.45);
+
+  /* 2026-08-16, user's own ask: bring ResultsScreen (the final Power Ranking screen) onto the
+     same dark board as the Draft screen. Rather than rewrite every one of ResultsScreen's own
+     existing rules (`.team-result`, `.feedback-textarea`, plain `<button>`/`<input>`, dozens
+     more — it predates this redesign and still reads off the app-wide `--bg`/`--text`/
+     `--border`/`--accent` tokens from index.css, same as the intro screen), alias those app-wide
+     token NAMES to this shell's own dark values, scoped to `.at-shell` only. Every existing rule
+     that already reads `var(--bg)`/`var(--text)`/etc. picks up the dark board automatically by
+     just being nested inside `.at-shell` — confirmed DraftBoard.tsx's own markup never uses
+     these plain names itself (only `--at-*`), so this can't double-apply or conflict with
+     anything already working. `.evidence-panel-wrap` needed its own explicit override earlier
+     precisely because it uses literal hex, not these tokens — this alias doesn't touch it. */
+  --bg: var(--at-paper-raised);
+  --text: var(--at-ink-soft);
+  --text-h: var(--at-ink);
+  --border: var(--at-line);
+  --accent: var(--at-accent);
+  --accent-bg: color-mix(in srgb, var(--at-accent) 14%, transparent);
+  --accent-border: color-mix(in srgb, var(--at-accent) 45%, transparent);
+  /* Same alias shape, for anything nested in `.at-shell` that reads the plain `--danger` name
+     (e.g. `.fail-banner`, `.minutes-bad`) — resolves to this shell's own red instead of index.css's
+     standalone dark-mode red, so the two reds never drift apart on-screen. */
+  --danger: var(--at-accent-2);
+  --danger-bg: color-mix(in srgb, var(--at-accent-2) 14%, transparent);
+  --danger-border: color-mix(in srgb, var(--at-accent-2) 45%, transparent);
+  --shadow: var(--at-shadow);
+
+  font-family: 'JetBrains Mono', var(--mono), ui-monospace, Consolas, monospace;
+  background: var(--at-paper);
+  background-image:
+    radial-gradient(120% 90% at 20% 0%, color-mix(in srgb, var(--at-brand-blue) 30%, transparent), transparent 55%),
+    repeating-linear-gradient(180deg, color-mix(in srgb, var(--at-accent) 3%, transparent) 0px, color-mix(in srgb, var(--at-accent) 3%, transparent) 1px, transparent 1px, transparent 3px);
+  color: var(--at-ink);
+  border-radius: 16px;
+  padding: 0;
+}
+
+/* 2026-08-16, user's own report: the horizontal scroll on the Overview grid (and any other
+   scrollable region in here — the Draft table, the per-span sub-tables) rendered with the
+   visitor's plain native OS scrollbar — light grey track/thumb, visibly foreign sitting on the
+   dark board. Firefox reads `scrollbar-color`/`scrollbar-width`; Chromium/Safari read the
+   `::-webkit-scrollbar*` pseudo-elements — both included so it's consistent regardless of
+   browser. Scoped to `.at-shell` only, doesn't touch scrollbars anywhere else in the app. */
+.at-shell { scrollbar-color: var(--at-pill) var(--at-paper); scrollbar-width: thin; }
+.at-shell ::-webkit-scrollbar { height: 10px; width: 10px; }
+.at-shell ::-webkit-scrollbar-track { background: var(--at-paper); }
+.at-shell ::-webkit-scrollbar-thumb { background: var(--at-pill); border-radius: 999px; border: 2px solid var(--at-paper); }
+.at-shell ::-webkit-scrollbar-thumb:hover { background: var(--at-accent); }
+
+/* Pick-number badge ("1", "2"...) and team-code chip ("BOI", "SLC"...) — the two elements the
+   real board's numbered squares + team logo pairing decompose into for us. Small, filled,
+   monospace-leaning tabular numerals so a 1-digit and 3-digit pick number don't jitter the
+   layout next to each other. */
+.at-pick-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 20px; padding: 0 5px; margin-right: 8px;
+  border-radius: 5px; background: var(--at-pill); color: var(--at-ink-soft);
+  font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+/* 2026-09-11, user-reported live ("takie dwa kwadraty wyglądają bardzo archaicznie" — Szybka 5's
+   overview grid, where this chip sits right next to the equally-badge-shaped `.at-lottery-you-tag`
+   on the human's row): was a flat solid rectangle, radius 6px — read as dated next to everything
+   else on the board being a pill or a circle. Full pill shape + a soft gradient/sheen give it the
+   same rounded, slightly-dimensional feel as `.at-lottery-you-tag` and the shot chips, instead of
+   a flat corporate-badge rectangle. Shared with DraftBoard.tsx's own overview grid and
+   DraftLottery.tsx, so the uplift applies everywhere this chip appears, not just Szybka 5. */
+.at-team-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 34px; height: 22px; padding: 0 7px; margin-right: 8px;
+  border-radius: 999px;
+  background: linear-gradient(155deg, color-mix(in srgb, white 16%, var(--at-accent)), var(--at-accent) 70%);
+  color: var(--at-accent-ink);
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.03em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+
+/* 2026-08-16, user's own report ("czcionka mi się tutaj nie podoba"): this used to pull in a
+   condensed display face (Haettenschweiler/Impact) for every tab/pill/panel-title in the shell —
+   read as much heavier/shoutier than the rest of the app, which is plain `var(--sans)`
+   everywhere else. Same bold-uppercase "badge" identity, just the app's own typeface instead of
+   a second, unrelated one.
+   2026-09-18: hardcoded `var(--sans)` replaced with `inherit` now that `.at-shell` sets its own
+   mono font-family (see that rule's own 2026-09-18 comment) — this class still only owns weight/
+   spacing/case, never its own typeface, so it rides whatever font the surrounding shell picks
+   instead of silently opting back out of the mono terminal look everywhere it's used. */
+.at-cond {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* 2026-08-16: the wordmark moved onto its own full-width line above the board (`.at-board-brand`
+   below), and the status chip (pick counter / whose-turn text) was removed from the board
+   entirely per the user's own ask — its "Show History" toggle was dropped too, in a same-session
+   follow-up ask, rather than relocated (see the DraftHistory render's own JSX comment). Tabs are
+   the only thing left in this row, so it's just centred now — no more balancing act against a
+   second item. */
+.at-topbar {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 16px; margin-bottom: 18px; padding: 4px 2px;
+}
+.at-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+/* 2026-09-24: CPU pick-speed control, back in Player Mode (GameShell's `AI_SPEEDS`). */
+.at-speed { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.at-speed-label { font-size: 11px; color: var(--at-ink-faint); letter-spacing: 0.06em; text-transform: uppercase; margin-right: 4px; }
+.at-speed-btn {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line);
+  background: var(--at-paper-raised); color: var(--at-ink-soft);
+  border-radius: 999px; padding: 5px 11px; font-size: 11px; font-weight: 700;
+}
+.at-speed-btn.at-active { background: var(--at-accent); color: var(--at-accent-ink); border-color: var(--at-accent); }
+.at-speed-btn:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+
+.at-board-brand {
+  text-align: center;
+  font-size: 30px;
+  letter-spacing: 0.01em;
+  padding: 24px 0 22px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--at-line);
+  position: relative;
+}
+/* 2026-08-19, "NBA-touch" ask: a blue-to-red bar under the main wordmark, echoing the real NBA
+   logo's own blue-left/red-right silhouette split — the one place in the shell that gets the pure
+   brand hexes side by side rather than the brightened UI variants, since this is a big enough
+   solid block to carry full saturation without reading muddy. Sits on top of the plain line-
+   bottom border above (kept as a 1px fallback for anywhere this pseudo-element doesn't reach,
+   e.g. `.at-lottery .at-board-brand` which removes the border entirely). */
+.at-board-brand::after {
+  content: '';
+  position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%);
+  width: 120px; height: 3px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--at-brand-blue) 0%, var(--at-brand-blue) 45%, var(--at-brand-red) 55%, var(--at-brand-red) 100%);
+}
+.at-lottery .at-board-brand::after { bottom: -5px; }
+.at-tab-btn {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line);
+  background: var(--at-paper-raised); color: var(--at-ink-soft);
+  border-radius: 999px; padding: 8px 16px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.at-tab-btn.at-active { background: var(--at-brand-blue); color: #ffffff; border-color: var(--at-brand-blue); }
+.at-tab-btn:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+
+.at-card {
+  background: var(--at-paper-raised); border: 1px solid var(--at-line);
+  border-radius: 16px; padding: 20px 22px 18px; box-shadow: var(--at-shadow);
+}
+.at-panel-title { font-size: 30px; margin: -4px 0 14px; }
+
+/* 2026-09-11: the own-team pip strip this used to be (`.at-own-team-strip`/`.at-own-team-pip`,
+   "można dodać mała informację o graczach jakich posiadamy") was a same-session stepping stone —
+   superseded a few messages later by the real "Your Five" sidebar below, which shows the same
+   info position-organized instead of by draft order. Rules removed with it. */
+
+/* 2026-09-11, user's own inspiration screenshot: Draft + Team merged into one screen — player
+   cards + a persistent "Your Five" sidebar, side by side. See DraftBoard.tsx's own JSX comments
+   (`at-draft-workspace`) for the exact scoping of this pass. */
+/* 2026-09-14, user-reported live ("za dużo tego na desktopie... połączmy wszystko w jeden ekran"):
+   a genuinely wide monitor (now that `#root` spans the full viewport instead of a boxed ~1126px
+   card — see index.css's own comment) left a large blank column next to the Draft tab's "Your
+   Five" sidebar while the Team roster table + Rotation minutes editor sat a tab-click away, on an
+   otherwise-empty screen. `.at-merge-row` wraps the Draft workspace card and a new
+   `.at-merge-team-col` (Team roster + Rotation, see DraftBoard.tsx's own JSX comments on both) —
+   below `WIDE_LAYOUT_QUERY` this is just a plain block, so narrow/default screens stack exactly as
+   before this pass; at that width both panels are also kept mounted simultaneously (DraftBoard.tsx
+   `isWideLayout`), so this only has to place them, not reveal anything CSS-hidden. The 1600px
+   threshold matches that same JS breakpoint exactly — `.rotation-builder`'s own 820px max-width
+   and the Team table's 11 columns both want real room, more than a three-way split would leave. */
+@media (min-width: 1600px) {
+  .at-merge-row { display: flex; align-items: flex-start; gap: 20px; }
+  .at-merge-draft { flex: 1 1 0; min-width: 0; margin-bottom: 0; }
+  .at-merge-team-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  /* Both panels are always showing side by side at this width, so switching between them no
+     longer does anything — the topbar's Draft/Team pill pair (and the sidebar's own "Team tab"
+     jump link, hidden via DraftBoard.tsx's own `isWideLayout` check) would just be dead chrome.
+     2026-09-24: only the tab pills are hidden now — the topbar also carries the CPU-speed
+     control, which hiding the whole bar made unreachable on wide screens. */
+  .at-topbar .at-tabs { display: none; }
+}
+
+.at-draft-workspace {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+.at-draft-main {
+  flex: 1;
+  min-width: 0;
+}
+.at-draft-sidebar {
+  flex: none;
+  width: 260px;
+  position: sticky;
+  top: 12px;
+  border: 1px solid var(--at-line);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--at-paper-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.at-draft-sidebar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.at-draft-sidebar-head h2 {
+  font-size: 14px;
+  margin: 0;
+  color: var(--at-ink);
+}
+.at-draft-sidebar-count {
+  font-size: 12px;
+  color: var(--at-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.at-draft-sidebar-cap-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.at-draft-sidebar-cap {
+  width: 100%;
+  height: 8px;
+}
+.at-draft-sidebar-cap-label {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--at-ink-faint);
+}
+.at-draft-sidebar-cap-label b {
+  color: var(--at-ink);
+  font-variant-numeric: tabular-nums;
+}
+.at-draft-sidebar-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.at-sidebar-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px dashed var(--at-line);
+  border-radius: 8px;
+  min-height: 38px;
+}
+.at-sidebar-slot--filled {
+  border-style: solid;
+  background: color-mix(in srgb, var(--at-accent) 6%, transparent);
+}
+.at-sidebar-slot-pos {
+  flex: none;
+  width: 24px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--at-ink-faint);
+}
+.at-sidebar-slot--filled .at-sidebar-slot-pos {
+  color: var(--at-accent);
+}
+.at-sidebar-slot-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--at-ink);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.at-sidebar-slot-empty {
+  font-size: 11.5px;
+  color: var(--at-ink-faint);
+}
+.at-draft-sidebar-bench {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--at-line);
+}
+.at-draft-sidebar-bench-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+}
+.at-draft-sidebar-hint {
+  font-size: 11px;
+  color: var(--at-ink-faint);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+.at-inline-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--at-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}

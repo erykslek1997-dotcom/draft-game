@@ -1,0 +1,306 @@
+/* ---- Staged reveals (2026-09-26, the user: "użytkownik jest BOMBARDOWANY wszystkim na raz i
+   oczy uciekają w każdą stronę. Nie ma też budowania żadnej ekscytacji") ----
+   Screens come in a piece at a time on first mount, in reading order: the headline first, the
+   numbers after it, the detail last. Animations only run when an element mounts, so a re-render
+   never replays them; reduced motion turns them all off. */
+@keyframes stage-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes stage-pop {
+  0% { opacity: 0; transform: scale(0.85); }
+  70% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes stage-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Menu: the three steps of the path, one after another. */
+.mode-grid--path > .mode-card-wrap { animation: stage-up 0.5s both ease-out; }
+.mode-grid--path > .mode-card-wrap:nth-child(1) { animation-delay: 0.15s; }
+.mode-grid--path > .mode-card-wrap:nth-child(2) { animation-delay: 0.4s; }
+.mode-grid--path > .mode-card-wrap:nth-child(3) { animation-delay: 0.65s; }
+
+/* Results hero (All-Time Draft and Mini Draft). 2026-09-27 results audit: the whole hero lands
+   at once, like Roulette's scoreboard ("wynik nie pokazuje od razu") — one quick rise, the chips
+   and bars finish filling within half a second, the rest of the page right behind. */
+/* Opacity only: a transform animation on the hero (even one that ends at `none`) makes it the
+   containing block of the share card's fixed overlay, which then opened inside the hero. */
+.results-hero { animation: stage-fade 0.35s both ease-out; }
+@keyframes stage-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.results-hero-rank { animation: stage-pop 0.4s both; display: inline-block; }
+.results-hero-scores-row > * { animation: stage-pop 0.3s 0.1s both; }
+.results-hero-dashboard .metric-bar-fill { transform-origin: left center; animation: stage-fill 0.6s 0.15s both cubic-bezier(0.2, 0.7, 0.2, 1); }
+.results-screen > .results-hero ~ *,
+.qf-result > .results-hero ~ * { animation: stage-up 0.35s 0.15s both ease-out; }
+
+/* Draft boards: the turn bar first, then your team, then the players. */
+.at-stage-in > * { animation: stage-up 0.5s both ease-out; }
+.at-stage-in > :nth-child(1) { animation-delay: 0.1s; }
+.at-stage-in > :nth-child(2) { animation-delay: 0.3s; }
+.at-stage-in > :nth-child(3) { animation-delay: 0.5s; }
+.at-stage-in > :nth-child(4) { animation-delay: 0.7s; }
+.at-stage-in > :nth-child(5) { animation-delay: 0.85s; }
+.at-stage-in > :nth-child(n + 6) { animation-delay: 1s; }
+
+/* A new pick slides into the ticker instead of just appearing. */
+.at-ticker-pick { animation: ticker-in 0.45s both cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.at-ticker-recent > .at-ticker-pick:first-child { box-shadow: 0 0 0 1px color-mix(in srgb, var(--at-accent) 55%, transparent); }
+@keyframes ticker-in {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: none; }
+}
+.at-cpu-turn-banner.is-opening { font-style: normal; color: var(--at-ink); border-color: color-mix(in srgb, var(--at-accent) 50%, var(--at-line)); animation: stage-up 0.6s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-grid--path > .mode-card-wrap,
+  .results-hero, .results-hero-finish, .results-hero-rank, .results-hero-tier,
+  .results-hero-identity, .results-hero-dashboard, .results-hero-scores-row > *,
+  .results-hero-dashboard .metric-bar-fill, .results-hero-rotation-col,
+  .results-screen > .results-hero ~ *, .qf-result > .results-hero ~ *,
+  .at-stage-in > *, .at-ticker-pick, .at-cpu-turn-banner.is-opening { animation: none !important; }
+}
+
+/* ---- Spin lever (SpinLever.tsx): a one-armed-bandit arm that starts a draw ---- */
+.spin-lever {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--at-ink);
+  font: inherit;
+}
+.spin-lever:disabled { cursor: default; opacity: 0.5; }
+.spin-lever:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 4px; border-radius: 12px; }
+.spin-lever-track { position: relative; width: 44px; height: 132px; }
+.spin-lever-base {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 76px;
+  height: 18px;
+  border-radius: 6px;
+  background: linear-gradient(#2a3a4f, #111a26);
+  border: 1px solid var(--at-line);
+}
+.spin-lever-arm {
+  position: absolute;
+  left: 19px;
+  width: 6px;
+  top: 16px;
+  height: 69px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #8ea3bd, #e6eef8 45%, #6d819b);
+  transform-origin: 50% 100%;
+}
+.spin-lever-knob {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff9a8f, var(--at-brand-red, #c8102e) 55%, #6d0818);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 16px color-mix(in srgb, var(--at-brand-red, #c8102e) 45%, transparent);
+}
+.spin-lever:not(:disabled):not(.is-pulled) .spin-lever-knob { animation: lever-beckon 1.6s ease-in-out infinite; }
+.spin-lever:hover:not(:disabled):not(.is-pulled) .spin-lever-knob { animation-duration: 0.8s; }
+.spin-lever.is-pulled .spin-lever-arm { animation: lever-arm 0.9s cubic-bezier(0.5, 0, 0.3, 1) both; }
+.spin-lever.is-pulled .spin-lever-knob { animation: lever-knob 0.9s cubic-bezier(0.5, 0, 0.3, 1) both; }
+.spin-lever-label { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-accent); }
+@keyframes lever-beckon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+}
+@keyframes lever-arm {
+  0% { transform: scaleY(1); }
+  42% { transform: scaleY(-0.55); }
+  60% { transform: scaleY(-0.55); }
+  100% { transform: scaleY(1); }
+}
+@keyframes lever-knob {
+  0% { transform: translateY(0); }
+  42% { transform: translateY(107px); }
+  60% { transform: translateY(107px); }
+  100% { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin-lever-knob, .spin-lever-arm { animation: none !important; }
+}
+.at-reel-row { display: flex; align-items: center; justify-content: center; gap: 18px; }
+.at-reel-row .spin-lever { margin-top: -6px; }
+
+/* 2026-09-27: a player the AI took stays in the list, dimmed and stamped, until the human's turn
+   (DraftBoard.tsx `ghosts`); then the taken cards fold away in one slow sweep (GHOST_SWEEP_MS). */
+.at-ghost-card { position: relative; display: grid; }
+.at-ghost-card > .at-player-card {
+  opacity: 0.32; filter: grayscale(1); pointer-events: none;
+  transition: opacity 0.8s ease, filter 0.8s ease;
+  animation: at-ghost-dim 0.8s ease;
+}
+.at-ghost-card > .at-player-card .at-player-card-draft,
+.at-ghost-card > .at-player-card .at-player-card-peek { visibility: hidden; }
+.at-ghost-stamp {
+  position: absolute; left: 12px; right: 12px; bottom: 14px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--at-ink); text-align: left; pointer-events: none;
+}
+.at-ghost-card.is-leaving { animation: at-ghost-leave 1.3s ease forwards; overflow: hidden; }
+@keyframes at-ghost-dim { from { opacity: 1; filter: none; } }
+@keyframes at-ghost-leave {
+  0% { opacity: 1; transform: none; }
+  45% { opacity: 0; transform: scale(0.94); }
+  100% { opacity: 0; transform: scale(0.94); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .at-ghost-card > .at-player-card, .at-ghost-card.is-leaving { animation: none; transition: none; }
+}
+
+/* 2026-09-27: one thin draft status line (DraftChrome.tsx DraftStatusBar) instead of the ticker
+   chip row and the "is picking…" banner. */
+.at-status-bar {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  min-height: 40px; padding: 8px 12px; margin-bottom: 10px;
+  background: color-mix(in srgb, var(--at-paper) 92%, transparent);
+  border: 1px solid var(--at-line); border-radius: 10px;
+  font-size: 12.5px; color: var(--at-ink-soft); overflow: hidden;
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+.at-status-pick { flex: none; color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
+.at-status-last { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 2026-09-27 UI audit: on a phone the last pick wraps instead of cutting the name ("L. Bi…"). */
+@media (max-width: 560px) {
+  .at-status-last { white-space: normal; overflow: visible; line-height: 1.3; }
+}
+.at-status-last b { color: var(--at-ink); font-weight: 700; }
+.at-status-until {
+  flex: none; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 999px;
+  background: color-mix(in srgb, var(--at-accent) 16%, transparent); color: var(--at-accent);
+}
+.at-status-until:empty { display: none; }
+.at-status-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: color-mix(in srgb, var(--at-ink) 8%, transparent); }
+.at-status-progress > span { display: block; height: 100%; background: var(--at-accent); transition: width 0.4s ease; }
+.at-status-bar.is-yours { background: color-mix(in srgb, var(--at-brand-red) 22%, var(--at-paper)); border-color: color-mix(in srgb, var(--at-brand-red) 55%, var(--at-line)); }
+.at-status-bar.is-yours .at-status-until { background: var(--at-accent-2); color: var(--at-accent-2-ink); }
+
+/* 2026-09-27: the full draft board as a panel from the right edge (DraftBoard.tsx boardOpen). */
+.at-board-drawer-backdrop {
+  position: fixed; inset: 0; z-index: 900; background: rgba(2, 4, 8, 0.55);
+  display: flex; justify-content: flex-end; animation: at-drawer-fade 0.25s ease;
+}
+.at-board-drawer {
+  width: min(760px, 100%); height: 100%; overflow: auto;
+  background: var(--at-paper-raised); border-left: 1px solid var(--at-line);
+  box-shadow: -24px 0 48px rgba(0, 0, 0, 0.5);
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px));
+  animation: at-drawer-in 0.3s ease;
+}
+.at-board-drawer-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 10px; font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink);
+}
+.at-board-drawer-close {
+  font: inherit; font-size: 11px; cursor: pointer; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--at-line); background: transparent; color: var(--at-ink-soft);
+}
+.at-board-drawer-close:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+@keyframes at-drawer-in { from { transform: translateX(40px); opacity: 0; } }
+@keyframes at-drawer-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .at-board-drawer, .at-board-drawer-backdrop { animation: none; } }
+
+/* 2026-09-27: phone team dock (DraftBoard.tsx .at-team-dock) — the team stays at the bottom of the
+   screen while browsing; the header opens the full card as a sheet. */
+@media (max-width: 860px) {
+  .at-draft-sidebar.at-team-dock {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 800; width: auto; order: 0;
+    margin: 0; border-radius: 14px 14px 0 0; border-bottom: none;
+    background: color-mix(in srgb, var(--at-paper-raised) 96%, transparent);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.45);
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    max-height: 70vh; overflow: auto;
+  }
+  .at-team-dock .at-draft-sidebar-head--toggle { padding: 2px 0 6px; }
+  .at-draft-workspace { padding-bottom: 150px; }
+  .at-shell .at-board-fab { bottom: calc(118px + env(safe-area-inset-bottom, 0px)); }
+}
+.at-team-dock-slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; cursor: pointer; }
+.at-team-dock-slot {
+  display: grid; justify-items: center; gap: 1px; padding: 6px 2px; min-width: 0;
+  border: 1px dashed var(--at-line); border-radius: 8px;
+  font-size: 10.5px; color: var(--at-ink-faint);
+}
+.at-team-dock-slot > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.at-team-dock-slot b { font-size: 10.5px; color: var(--at-ink-soft); }
+.at-team-dock-slot.is-filled { border-style: solid; border-color: color-mix(in srgb, var(--at-accent) 55%, var(--at-line)); color: var(--at-ink); background: color-mix(in srgb, var(--at-accent) 10%, transparent); }
+.at-team-dock-slot.is-filled b { color: var(--at-accent); }
+/* 2026-09-27: the draft workspace fades in without a transform — a transform animation (even one
+   that ends at `none`) makes it the containing block of the fixed phone team dock inside it. */
+.at-stage-in > .at-draft-workspace { animation-name: at-stage-fade; }
+@keyframes at-stage-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- Scoreboard (ScoreBoard.tsx), 2026-09-27 results audit pack C: the same three numbers on
+   every result screen, your own first and in the score colour scale. ---- */
+.score-board-wrap { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+.score-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 520px; }
+.score-board-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 8px 4px; border-radius: 10px; text-align: center;
+  background: color-mix(in srgb, var(--at-ink) 5%, transparent);
+  border: 1px solid var(--at-line);
+}
+.score-board-cell b {
+  font-size: 24px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums;
+  color: var(--at-ink-soft);
+}
+.score-board-cell > span {
+  font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--at-ink-faint);
+}
+.score-board-cell--you { border-color: transparent; }
+.score-board-cell--you b { font-size: 30px; color: #fff; }
+.score-board-cell--you > span { color: color-mix(in srgb, #fff 80%, transparent); }
+.score-board-note { font-size: 11.5px; color: var(--at-ink-faint); }
+.score-board-note b { color: var(--at-ink); }
+/* Mini Draft / Roulette share card (ShareResultModal.tsx): the mode above the team, the scoreboard centred. */
+.share-modal-mode { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); }
+.share-modal-card .score-board-wrap { align-items: center; width: 100%; }
+.share-modal-card .score-board { width: 100%; }
+/* "⚔️ Your friend scored 74 on this board — you won the challenge." (ChallengeNote, ScoreBoard.tsx) */
+.challenge-note { display: inline-block; margin-top: 2px; font-size: 12px; color: var(--at-ink-soft); }
+.challenge-note--won { color: var(--at-t6); }
+.challenge-note--lost { color: var(--at-brand-red, #e05a5a); }
+
+/* ---- 2026-09-27 UI audit: the draft board's top on a phone. The players started ~800px down
+   under ten rows of chrome; now tabs, CPU speed and the board button share one row, and the
+   "Draft" heading (the tab already says it) is dropped below the side-by-side width. ---- */
+.at-speed-cycle, .at-board-toggle-short { display: none; }
+.at-speed-cycle {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line);
+  background: var(--at-paper-raised); color: var(--at-ink-soft);
+  border-radius: 999px; padding: 6px 11px; font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+@media (max-width: 899px) {
+  .at-merge-draft > .at-panel-title { display: none; }
+}
+@media (max-width: 640px) {
+  .at-topbar { flex-wrap: nowrap; gap: 6px; margin-bottom: 10px; justify-content: space-between; }
+  .at-topbar .at-tabs { flex-wrap: nowrap; gap: 4px; }
+  .at-topbar .at-tab-btn { padding-left: 12px; padding-right: 12px; }
+  .at-speed > .at-speed-label, .at-speed > .at-speed-btn { display: none; }
+  .at-speed-cycle { display: inline-flex; }
+  .at-board-toggle { padding: 6px 10px; white-space: nowrap; }
+  .at-board-toggle-long { display: none; }
+  .at-board-toggle-short { display: inline; }
+}
+/* Team tab mid-draft: what to do with picks not placed yet (RotationBuilder). */
+.rotation-bench-hint { display: block; margin: 2px 0 8px; font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); }
