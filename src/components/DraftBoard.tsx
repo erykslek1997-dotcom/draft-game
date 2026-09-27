@@ -49,7 +49,7 @@ import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
-import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, TurnBudgetText } from './DraftChrome';
+import { AiSpeedControl, BoardToggleButton, DraftStatusBar, LeaveDraftDialog, TurnBudgetText } from './DraftChrome';
 import { DraftDesk } from './DraftDesk';
 import { buildDraftDesk, type DraftDeskResult } from '../engine/draftDesk';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
@@ -861,7 +861,8 @@ function useMediaQuery(query: string): boolean {
 const WIDE_LAYOUT_QUERY = '(min-width: 1600px)';
 /** Must match the `max-width: 860px` rule in App.css that stacks `.at-draft-workspace`. */
 const STACKED_LAYOUT_QUERY = '(max-width: 860px)';
-const BOARD_OPEN_STORAGE_KEY = 'draftverse.boardOpen';
+/** How long the taken cards take to fold away when the player's own turn comes. */
+const GHOST_SWEEP_MS = 1300;
 const RECENT_PICKS_SHOWN = 4;
 
 export default function DraftBoard({
@@ -978,23 +979,20 @@ export default function DraftBoard({
   const isWideLayout = useMediaQuery(WIDE_LAYOUT_QUERY);
   const [showLegend, setShowLegend] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
-  const [boardOpen, setBoardOpen] = useState(() => {
-    try {
-      return window.localStorage.getItem(BOARD_OPEN_STORAGE_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
+  // 2026-09-27: the board is a panel over the list now, so it always starts closed (it used to
+  // remember being open, which would cover the list on the next visit).
+  const [boardOpen, setBoardOpen] = useState(false);
   function toggleBoard() {
-    setBoardOpen((open) => {
-      try {
-        window.localStorage.setItem(BOARD_OPEN_STORAGE_KEY, open ? '0' : '1');
-      } catch {
-        // Not remembered — still toggles for this session.
-      }
-      return !open;
-    });
+    setBoardOpen((open) => !open);
   }
+  useEffect(() => {
+    if (!boardOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setBoardOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [boardOpen]);
   // 2026-09-24: below the stacked-layout breakpoint the "Your Team" card sits between the board and
   // the player cards — collapsed there to a one-line summary so your own turn opens on players.
   const isStackedLayout = useMediaQuery(STACKED_LAYOUT_QUERY);
@@ -1391,10 +1389,46 @@ export default function DraftBoard({
   );
   const needBiasActive = selectedPosition === 'ALL' && !search && humanTeam.roster.length >= 3 && openStarterPositions.size > 0;
 
+  // 2026-09-27, the user (after the "Druga runda bez chaosu" mockup): while the AI picks, the list
+  // no longer reflows under the player's finger. A player the AI takes stays in his place, dimmed
+  // and stamped "Taken #18 · BAL"; the taken cards fold away in one slow sweep when the player's
+  // own turn comes (`GHOST_SWEEP_MS`). The human's own picks leave at once.
+  const spanById = useMemo(() => new Map(state.pool.map((s) => [s.id, s])), [state.pool]);
+  const [settledAt, setSettledAt] = useState(state.history.length);
+  const [sweeping, setSweeping] = useState(false);
+  const settledFrom = Math.min(settledAt, state.history.length);
+  const ghosts = useMemo(() => {
+    const taken = new Map<string, { pickNumber: number; teamCode: string }>();
+    for (const entry of state.history.slice(settledFrom)) {
+      if (entry.teamId === humanTeam.id) continue;
+      const span = spanById.get(entry.playerId);
+      if (!span) continue;
+      taken.set(normalizePlayerName(span.playerName), { pickNumber: entry.pickNumber, teamCode: teamCodeByTeamId.get(entry.teamId) ?? '' });
+    }
+    return taken;
+  }, [state.history, settledFrom, humanTeam.id, spanById, teamCodeByTeamId]);
+  const hasGhosts = ghosts.size > 0;
+  useEffect(() => {
+    if (!canPick || state.complete || !hasGhosts) return;
+    const target = state.history.length;
+    setSweeping(true);
+    const timer = window.setTimeout(() => {
+      setSettledAt(target);
+      setSweeping(false);
+    }, GHOST_SWEEP_MS);
+    // A pick made mid-sweep (or leaving the screen) settles at once instead of leaving the sweep on.
+    return () => {
+      window.clearTimeout(timer);
+      setSettledAt((at) => Math.max(at, target));
+      setSweeping(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canPick, state.complete, hasGhosts]);
+
   const { groups, totalMatched } = useMemo(() => {
     const q = search.toLowerCase();
     const matched = enrichedGroups
-      .filter((g) => !state.draftedIds.has(g.spans[0].id))
+      .filter((g) => !state.draftedIds.has(g.spans[0].id) || ghosts.has(normalizePlayerName(g.playerName)))
       .filter((g) => (selectedPosition !== 'ALL' ? careerPosition(g) === selectedPosition : true))
       .filter((g) => g.playerName.toLowerCase().includes(q))
       .sort((a, b) => {
@@ -1542,8 +1576,7 @@ export default function DraftBoard({
           type="button"
           className="at-board-fab"
           onClick={() => {
-            if (!boardOpen) toggleBoard();
-            window.requestAnimationFrame(() => boardAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+            setBoardOpen(true);
           }}
         >
           📋 Draft board
@@ -1570,7 +1603,7 @@ export default function DraftBoard({
       {activeTab === 'draft' && (
         // The ticker moved into the Draft card's sticky header (2026-09-26); with the board
         // collapsed this wrapper holds only the scroll anchor, so it drops its card chrome.
-        <div className={boardOpen ? 'at-card' : undefined} style={boardOpen ? { marginBottom: 16 } : undefined}>
+        <div>
           {/* 2026-08-16, user's own ask: the "Overview" title + explainer caption are gone in
               developer mode too now — previously kept there (player mode dropped them first,
               2026-08-13) but the grid itself (all 16 teams × round) still says everything it
@@ -1580,8 +1613,16 @@ export default function DraftBoard({
               starts collapsed to a one-line ticker (who's on the clock, the latest picks, when
               you pick next); the full board is one click away and the choice is remembered. */}
           <div ref={boardAnchorRef} className="at-board-anchor" />
+          {/* 2026-09-27: the full board opens as a panel from the right edge over the list (the
+              user: "nie wiem czy użytkowników będzie interesować co robi AI aż w tak dużym
+              stopniu żeby zabierało tyle ekranu"); the list and the status line stay underneath. */}
           {boardOpen && (
-            <>
+            <div className="at-board-drawer-backdrop" onClick={toggleBoard}>
+            <div className="at-board-drawer" role="dialog" aria-label="Draft board" onClick={(e) => e.stopPropagation()}>
+          <div className="at-board-drawer-head">
+            <span className="at-cond">Draft board · Round {Math.min(state.round + 1, ROUNDS)}/{ROUNDS}</span>
+            <button type="button" className="at-board-drawer-close at-cond" onClick={toggleBoard}>Close</button>
+          </div>
           <div className="at-grid-scroll-nav">
             <button type="button" className="at-grid-scroll-btn" onClick={() => scrollGrid(-1)} aria-label="Scroll rounds left">
               ‹
@@ -1667,7 +1708,8 @@ export default function DraftBoard({
               </tbody>
             </table>
           </div>
-            </>
+            </div>
+            </div>
           )}
         </div>
       )}
@@ -1686,23 +1728,15 @@ export default function DraftBoard({
               actual Draft buttons below are `disabled` via `canPick`, not hidden, so browsing/
               searching/expanding a row to look at a player works identically either way. */}
           <div className="at-turn-sticky">
-            <DraftTicker
+            <DraftStatusBar
               youOnClock={canPick && currentTeam.isHuman}
               complete={state.complete}
               onClockLabel={teamLabel(currentTeam)}
               picksAway={humanPicksAway}
-              recentPicks={recentPicks}
+              latestPick={recentPicks[0] ?? null}
               progress={{ picksMade: state.history.length, totalPicks: TEAM_COUNT * ROUNDS, round: Math.min(state.round + 1, ROUNDS), rounds: ROUNDS }}
             />
-            {!canPick ? (
-              <div className={`at-cpu-turn-banner${state.history.length === 0 ? ' is-opening' : ''}`}>
-            {state.history.length === 0 ? (
-              <>The draft is about to begin — <b>{teamLabel(currentTeam)}</b> is on the clock with pick 1.</>
-            ) : (
-              <>{teamLabel(currentTeam)} is picking…</>
-            )}
-          </div>
-            ) : (
+            {!canPick ? null : (
               // 2026-09-24: the only "your turn" signal used to be the CPU banner above silently
               // disappearing (plus the "on the clock" cell in the board, usually scrolled out of
               // view) — and nothing on screen said how much of the cap this pick could actually use.
@@ -1975,8 +2009,9 @@ export default function DraftBoard({
                     // value order, computed alongside `spansByAiValue`) is the correct source
                     // either way and removes the landmine if that gating ever changes.
                     const target = bestLegal ? best : group.spansByTal.find((s) => canPick && isPickLegal(state, s.id)) ?? best;
-                    const legal = canPick && isPickLegal(state, target.id);
-                    return (
+                    const ghost = ghosts.get(normalizePlayerName(group.playerName));
+                    const legal = !ghost && canPick && isPickLegal(state, target.id);
+                    const card = (
                       <DraftPlayerCard
                         key={group.playerName}
                         span={target}
@@ -1988,6 +2023,13 @@ export default function DraftBoard({
                         scoutingTitle={`${group.spans.length} season${group.spans.length > 1 ? 's' : ''} available`}
                         onScouting={() => setPeekPlayer(group.playerName)}
                       />
+                    );
+                    if (!ghost) return card;
+                    return (
+                      <div key={group.playerName} className={`at-ghost-card${sweeping ? ' is-leaving' : ''}`} aria-label={`${group.playerName}, taken with pick ${ghost.pickNumber}`}>
+                        {card}
+                        <span className="at-ghost-stamp at-cond">Taken #{ghost.pickNumber} · {ghost.teamCode}</span>
+                      </div>
                     );
                   })}
                 </div>
@@ -2080,7 +2122,7 @@ export default function DraftBoard({
               simultaneously visible there, so this is the only roster glance available while
               browsing the player pool. */}
           {!isWideLayout && (
-          <aside className="at-draft-sidebar">
+          <aside className={`at-draft-sidebar${isStackedLayout ? ' at-team-dock' : ''}${isStackedLayout && sidebarOpen ? ' is-open' : ''}`}>
             {isStackedLayout ? (
               <button
                 type="button"
@@ -2090,10 +2132,28 @@ export default function DraftBoard({
               >
                 <h2 className="at-cond">Your Team</h2>
                 <span className="at-draft-sidebar-count">
-                  {humanTeam.roster.length}/{ROSTER_SIZE} · <CapIcon /> {capRemaining(currentFgas)} caps left {sidebarOpen ? '▴' : '▾'}
+                  {humanTeam.roster.length}/{ROSTER_SIZE} · <CapIcon /> {capRemaining(currentFgas)} caps left
+                  {currentBudget.slotsLeft > 1 && ` · ~${(currentBudget.capLeft / currentBudget.slotsLeft).toFixed(1)}/pick`} {sidebarOpen ? '▾' : '▴'}
                 </span>
               </button>
-            ) : (
+            ) : null}
+            {/* 2026-09-27, the user ("żeby nie trzeba było klikać TEAM żeby widzieć co mamy"): on a
+                phone the team is docked to the bottom of the screen; the five starter spots stay
+                in view while browsing, and a tap on the header opens the full card. */}
+            {isStackedLayout && !sidebarOpen && (
+              <div className="at-team-dock-slots" onClick={() => setSidebarOpen(true)}>
+                {STARTER_SLOTS.map((slot) => {
+                  const p = humanAssignment[slot];
+                  return (
+                    <span key={slot} className={`at-team-dock-slot${p ? ' is-filled' : ''}`} title={p?.playerName}>
+                      <b className="at-cond">{slot}</b>
+                      <span>{p ? shortenName(p.playerName).split(' ').slice(-1)[0] : 'open'}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            {!isStackedLayout && (
               <div className="at-draft-sidebar-head">
                 <h2 className="at-cond">Your Team</h2>
                 <span className="at-draft-sidebar-count">{humanTeam.roster.length}/{ROSTER_SIZE}</span>
