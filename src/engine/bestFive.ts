@@ -59,8 +59,10 @@ function bestSpanByPlayer(): Map<string, PlayerSpan> {
 // ---------------------------------------------------------------------------
 
 /** 2026-09-26, the user: "ograniczmy wybór do 5 graczy" — one headliner plus four, dealt one
- * position at a time (BestFive.tsx reveals each slot's five after the previous pick). */
-export const POOL_PER_SLOT = 5;
+ * position at a time (BestFive.tsx reveals each slot's five after the previous pick).
+ * 2026-09-27, the user: "można zrobić 4 sloty, obok dźwignia" — four per position, one headliner
+ * plus three, so a position's deal fits one row of reels beside the lever. */
+export const POOL_PER_SLOT = 4;
 
 /**
  * Exactly ONE genuine headliner per slot — the tempting "lazy pick" — drawn from the top of the
@@ -630,7 +632,7 @@ export interface SlotReels {
 const REEL_BUCKET = 60;
 const NEAR_MISS_AS = 6;
 
-export function slotReels(pool: DailyPool, slot: Position, baseLength = 9, stepLength = 3): SlotReels {
+export function slotReels(pool: DailyPool, slot: Position, baseLength = 16, stepLength = 5): SlotReels {
   const rng = mulberry32(seedFromKey(`${pool.key}:reel:${slot}`));
   const dealtNames = new Set(pool.bySlot[slot].map((s) => s.playerName));
   const ranked = [...bestSpanByPlayer().values()]

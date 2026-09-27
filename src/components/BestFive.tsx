@@ -223,7 +223,7 @@ export default function BestFive({ onBack, onNextStep }: Props) {
 
       {showHowToPlay && (
         <ol className="how-to-play-panel">
-          <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C. Each position deals five players, and the next position turns over after you pick.</li>
+          <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C. Each position deals four players, and the next position turns over after you pick.</li>
           <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.</li>
           <li><b>Submit once.</b> No re-picking after you see your score for today’s puzzle.</li>
           <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against par.</li>
@@ -293,8 +293,8 @@ export default function BestFive({ onBack, onNextStep }: Props) {
                 Your draw · {SLOT_LABEL[activeSlot].toLowerCase()}
                 <span className="bf-picker-sub">
                   {STARTER_SLOTS.indexOf(activeSlot) < STARTER_SLOTS.length - 1
-                    ? 'Five dealt for this spot — the next position turns over after you pick.'
-                    : 'Last spot — five dealt.'}
+                    ? 'Four dealt for this spot — the next position turns over after you pick.'
+                    : 'Last spot — four dealt.'}
                 </span>
               </div>
               {freshSlot === activeSlot ? (
@@ -387,8 +387,9 @@ export default function BestFive({ onBack, onNextStep }: Props) {
   );
 }
 
-/** Milliseconds reel `i` spins before it stops — each reel stops a beat after the one before. */
-const reelDuration = (i: number) => 1200 + i * 380;
+/** Milliseconds reel `i` spins before it stops — each reel stops a beat after the one before.
+ * 2026-09-27, the user ("po dźwigni za krótko"): about 2.6 s for the first reel, 4.6 s for the last. */
+const reelDuration = (i: number) => 2600 + i * 650;
 
 function prefersReducedMotion(): boolean {
   try {
@@ -430,7 +431,8 @@ function SlotMachine({ pool, slot, onDone }: { pool: DailyPool; slot: Position; 
       onClick={spinning ? onDone : undefined}
       onKeyDown={(e) => spinning && (e.key === 'Enter' || e.key === ' ') && onDone()}
     >
-      <div className="bf-pool bf-reels">
+      <div className="bf-cabinet">
+      <div className="bf-reels">
         {dealt.map((final, i) => (
           <div key={final.id} className={`bf-reel${i < stopped ? ' is-stopped' : ''}`}>
             <div
@@ -449,14 +451,15 @@ function SlotMachine({ pool, slot, onDone }: { pool: DailyPool; slot: Position; 
           </div>
         ))}
       </div>
-      {!spinning && (
-        <div className="bf-machine-lever">
-          <SpinLever onPull={() => setSpinning(true)} label="Pull to deal" />
-        </div>
-      )}
+      {/* 2026-09-27, the user: "4 sloty, obok dźwignia" — the lever stands beside the reels, as on
+          a one-armed bandit, and stays there (pulled down) while they spin. */}
+      <div className="bf-machine-lever" onClick={(e) => e.stopPropagation()}>
+        <SpinLever onPull={() => setSpinning(true)} label={spinning ? 'Dealing' : 'Pull'} disabled={spinning && allStopped} />
+      </div>
+      </div>
       <p className={`bf-machine-foot${allStopped ? ' is-done' : ''}`} aria-live="polite">
         {!spinning ? (
-          <>Five {SLOT_LABEL[slot].toLowerCase()}s are loaded — pull the lever.</>
+          <>Four {SLOT_LABEL[slot].toLowerCase()}s are loaded — pull the lever.</>
         ) : !allStopped ? (
           <>Dealing… <span className="bf-muted">tap to skip</span></>
         ) : nearMisses.length > 0 ? (

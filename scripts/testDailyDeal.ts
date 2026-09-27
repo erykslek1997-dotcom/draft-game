@@ -1,4 +1,4 @@
-import { dailyBoard, dailyTargets, isChalkBoard, lineupShots, talMaxLineup } from '../src/engine/bestFive';
+import { POOL_PER_SLOT, dailyBoard, dailyTargets, isChalkBoard, lineupShots, talMaxLineup } from '../src/engine/bestFive';
 import { STARTER_SLOTS } from '../src/engine/positions';
 
 /**
@@ -21,7 +21,7 @@ for (let i = 0; i < DAYS; i++) {
     const again = dailyBoard(`${key}`);
     check(STARTER_SLOTS.every((s) => again.pool.bySlot[s].map((p) => p.id).join() === board.pool.bySlot[s].map((p) => p.id).join()) && again.cap === board.cap, 'the same seed deals the same board');
   }
-  check(STARTER_SLOTS.every((s) => board.pool.bySlot[s].length === 5), `${key}: five players in every slot`);
+  check(STARTER_SLOTS.every((s) => board.pool.bySlot[s].length === POOL_PER_SLOT), `${key}: ${POOL_PER_SLOT} players in every slot`);
   check(lineupShots(talMaxLineup(board.pool, board.cap)) <= board.cap, `${key}: the lazy pick can be trimmed under the cap`);
   if (isChalkBoard(dailyTargets(board.pool, board.cap))) chalk++;
 }
