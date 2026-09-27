@@ -12,6 +12,7 @@ import {
   defensiveGrade,
   offensivePortabilityGrade,
   defensivePortabilityGrade,
+  finishingGrade,
   type OverallTier,
   type Grade,
 } from './grades';
@@ -24,6 +25,7 @@ import {
 } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing, spacingTier, type SpacingTier } from './spacing';
+import { computeFinishing } from './finishing';
 import { computeDurability, durabilityTier, type DurabilityTier } from './durability';
 import { playoffPerformanceTier, type PlayoffPerformanceTier } from './playoffPerformanceLookup';
 import { buildEvidenceReport, type EvidenceReport } from './evidenceReport';
@@ -315,6 +317,8 @@ export interface CardSpanRow {
   dporGrade: Grade;
   spacing: number;
   spacingTier: SpacingTier;
+  finishing: number;
+  finishingGrade: Grade;
   durability: number;
   durabilityTier: DurabilityTier;
   playoffTier: PlayoffPerformanceTier | null;
@@ -349,6 +353,8 @@ function cardSpanRow(span: PlayerSpan): CardSpanRow {
     dporGrade: defensivePortabilityGrade(computeDefensivePortability(span)),
     spacing: computeSpacing(span),
     spacingTier: spacingTier(span),
+    finishing: computeFinishing(span),
+    finishingGrade: finishingGrade(computeFinishing(span)),
     durability: computeDurability(span),
     durabilityTier: durabilityTier(span),
     playoffTier: playoffPerformanceTier(span),
