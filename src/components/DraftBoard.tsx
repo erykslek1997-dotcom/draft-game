@@ -1555,7 +1555,7 @@ export default function DraftBoard({
         />
       )}
       {desk && <DraftDesk roster={humanTeam.roster} desk={desk} onClose={closeDesk} />}
-      <div className="at-board-brand at-cond">All-Time NBA Draft</div>
+      <div className="at-board-brand at-cond">All-Time Draft</div>
       <div className="at-topbar" ref={topbarRef}>
         <div className="at-tabs" role="tablist">
           {TABS.map((tab) => (

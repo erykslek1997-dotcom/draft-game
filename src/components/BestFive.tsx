@@ -162,18 +162,19 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
 
   return (
     <div className="at-shell best-five">
+      {/* 2026-09-27 UI audit: the same "← Menu" in the top corner as the drafts (was "← Back" on
+          the right next to "How to play?", with a "Board #n" nobody needed). */}
+      {onBack && (
+        <button type="button" className="at-menu-btn at-cond" onClick={onBack}>
+          ← Menu
+        </button>
+      )}
       <div className="at-board-brand at-cond">Roulette</div>
       <div className="bf-subhead">
-        <span className="bf-date">Board #{board.n}</span>
         <span className="bf-subhead-actions">
           <button className="at-legend-toggle at-cond" onClick={() => setShowHowToPlay((v) => !v)}>
             {showHowToPlay ? 'Hide how to play' : 'How to play?'}
           </button>
-          {onBack && (
-            <button className="at-legend-toggle at-cond" onClick={onBack}>
-              ← Back
-            </button>
-          )}
         </span>
       </div>
 
@@ -189,15 +190,12 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
 
       {!result && (
         <div className="at-card">
-          <p className="bf-intro">
-            One player per position from this deal. The five biggest names usually <em>isn’t</em> the
-            answer — spacing and rim protection matter. No score until you submit.
-          </p>
-
           <ShotsMeter used={shotsUsed} cap={shotsCap} />
+          {/* 2026-09-27 UI audit: one line instead of an intro paragraph plus a caps note that both
+              explained the board — the slot machine now sits higher on a phone. */}
           <p className="bf-caps-note">
-            <CapIcon /> Caps = a player’s shots per game in those years. A high-usage star eats the budget, so the five
-            have to fit under this board’s {shotsCap}.
+            <CapIcon /> One player per position; each costs his shots per game in caps. The biggest names usually
+            aren’t the answer — spacing and rim protection matter.
           </p>
 
           <div className="bf-slot-row">

@@ -10,30 +10,14 @@
 .bf-subhead {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   margin: 2px 2px 12px;
-}
-.bf-date {
-  font-size: 12px;
-  letter-spacing: 0.03em;
-  color: var(--at-ink-faint);
 }
 .bf-subhead-actions {
   display: flex;
   gap: 10px;
   align-items: baseline;
-}
-
-.bf-intro {
-  margin: 0 0 16px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--at-ink-soft);
-}
-.bf-intro em {
-  color: var(--at-ink);
-  font-style: italic;
 }
 
 /* ---- shots-cost twist + face avatar: moved to `./ShotChip.css` (imported by ShotChip.tsx itself)
@@ -625,7 +609,8 @@
   .bf-cabinet { gap: 6px; padding: 10px 6px 10px 8px; }
   .bf-reels { gap: 5px; padding: 6px; }
   .bf-cabinet .bf-reel { --reel-h: 112px; }
-  .bf-cabinet .bf-reel-name { font-size: 10.5px; }
+  /* 2026-09-27 UI audit: "I. Tho…" — the name wraps onto a second line instead of being cut. */
+  .bf-cabinet .bf-reel-name { font-size: 9.5px; letter-spacing: -0.03em; white-space: normal; overflow-wrap: break-word; line-height: 1.15; text-align: center; }
   .bf-cabinet .bf-reel-season { font-size: 9.5px; }
   .bf-cabinet .bf-reel-item { padding: 0 3px; }
 }

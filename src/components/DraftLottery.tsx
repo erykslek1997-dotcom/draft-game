@@ -165,7 +165,14 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
             Play
           </button>
         ) : (
-          <button className="secondary-btn at-lottery-skip" onClick={() => setTick(delays.length)}>
+          <button
+            className="secondary-btn at-lottery-skip"
+            onClick={() => {
+              // Skip also counts as pulling the lever — without it the reel kept showing "?".
+              setStarted(true);
+              setTick(delays.length);
+            }}
+          >
             Skip
           </button>
         )}
