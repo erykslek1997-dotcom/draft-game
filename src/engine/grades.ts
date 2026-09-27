@@ -1490,7 +1490,7 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
   const legacy = legacyDisplayTalent(ctx);
   if (ctx.playerName && ctx.rawTal !== undefined && tierCalibrationFor(ctx.playerName)) {
     const name = ctx.playerName;
-    const calibrated = calibratedDisplayTalent(name, ctx.spanLabel, ctx.rawTal, windowMeasure(legacy, ctx.rawTal), () => reviewedWindowMeasure(name));
+    const calibrated = calibratedDisplayTalent(name, ctx.spanLabel, ctx.rawTal, windowMeasure(legacy, ctx.rawTal), () => reviewedWindow(name));
     if (calibrated !== undefined) return calibrated;
   }
   return ctx.playerName ? Math.min(UNCALIBRATED_DISPLAY_MAX, legacy) : legacy;
@@ -1501,20 +1501,21 @@ function legacyDisplayTalent(ctx: TierGateContext): number {
   return Math.min(namedPlayerCeiling(ctx.playerName), smoothed + namedPeakLift(ctx.playerName, smoothed));
 }
 
-const reviewedMeasureCache = new Map<string, number | undefined>();
-/** `windowMeasure` of the window the user tiered, looked up once per player. */
-function reviewedWindowMeasure(playerName: string): number | undefined {
+const reviewedWindowCache = new Map<string, { measure: number; rawTal: number } | undefined>();
+/** `windowMeasure` and raw TAL of the window the user tiered, looked up once per player. */
+function reviewedWindow(playerName: string): { measure: number; rawTal: number } | undefined {
   const key = normalizePlayerName(playerName);
-  if (reviewedMeasureCache.has(key)) return reviewedMeasureCache.get(key);
+  if (reviewedWindowCache.has(key)) return reviewedWindowCache.get(key);
   const entry = tierCalibrationFor(playerName);
   const span = entry && draftPool.find((candidate) => normalizePlayerName(candidate.playerName) === key && candidate.spanLabel === entry.spanLabel);
-  let measure: number | undefined;
+  let result: { measure: number; rawTal: number } | undefined;
   if (span) {
     const ctx = tierContextFor(span);
-    measure = windowMeasure(legacyDisplayTalent(ctx), ctx.rawTal ?? ctx.tal);
+    const rawTal = ctx.rawTal ?? ctx.tal;
+    result = { measure: windowMeasure(legacyDisplayTalent(ctx), rawTal), rawTal };
   }
-  reviewedMeasureCache.set(key, measure);
-  return measure;
+  reviewedWindowCache.set(key, result);
+  return result;
 }
 
 function smoothedDisplayTalent(ctx: TierGateContext): number {

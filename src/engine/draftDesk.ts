@@ -129,7 +129,7 @@ function takesFor(roster: PlayerSpan[]): Take[] {
     // 2026-09-26, user-reported (Embiid 2023-25, D-TAL 63 with 1.7 blocks): a big who still
     // contests at the rim reads as solid-but-not-a-wall, not as someone nobody fears.
     takes.push({ topic: 'rimProtection', expert: 'coach', kind: 'concern', weight: 0.3,
-      line: `${deskName(anchor)} holds the paint, but he’s not the wall that shuts drives down on his own.`,
+      line: `${deskName(anchor)} holds the paint, but he’s not the rim protector who shuts drives down on his own.`,
       advice: 'a big who protects the rim' });
   }
 

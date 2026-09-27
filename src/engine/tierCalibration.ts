@@ -45,9 +45,10 @@ const entries = new Map<string, CalibrationEntry>(
 const nudges = new Map<string, number>(Object.entries(USER_TAL_NUDGE).map(([name, nudge]) => [normalizePlayerName(name), nudge]));
 
 /** The reviewed window's TAL: its place in the tier's band plus the user's nudge, kept in the band. */
-function reviewedTalent(playerName: string, tier: OverallTier, raw: number): number {
+function reviewedTalent(playerName: string, tier: OverallTier, raw: number, keepInBand = true): number {
   const [lo, hi] = TIER_BANDS[tier]!;
-  return Math.max(lo, Math.min(hi, placeInBand(tier, raw) + (nudges.get(normalizePlayerName(playerName)) ?? 0)));
+  const value = placeInBand(tier, raw, keepInBand) + (nudges.get(normalizePlayerName(playerName)) ?? 0);
+  return keepInBand ? Math.max(lo, Math.min(hi, value)) : value;
 }
 
 const windowTiers = new Map<string, OverallTier>(
@@ -61,11 +62,12 @@ for (const { rawAtReview, tier } of entries.values()) {
   else rawRangeByTier.set(tier, [Math.min(range[0], rawAtReview), Math.max(range[1], rawAtReview)]);
 }
 
-function placeInBand(tier: OverallTier, raw: number): number {
+function placeInBand(tier: OverallTier, raw: number, keepInBand = true): number {
   const [lo, hi] = TIER_BANDS[tier]!;
   const [rmin, rmax] = rawRangeByTier.get(tier)!;
   if (rmax <= rmin) return hi;
-  const share = Math.max(0, Math.min(1, (raw - rmin) / (rmax - rmin)));
+  const unclamped = (raw - rmin) / (rmax - rmin);
+  const share = keepInBand ? Math.max(0, Math.min(1, unclamped)) : unclamped;
   return Math.round(lo + share * (hi - lo));
 }
 
@@ -76,22 +78,25 @@ export function tierCalibrationFor(playerName: string): CalibrationEntry | undef
 
 /**
  * Displayed TAL for a window of a tiered player; `undefined` for everyone else. `measure` is this
- * window's `windowMeasure`, `reviewedMeasure` the reviewed window's.
+ * window's `windowMeasure`; `reviewedWindow` gives the reviewed window's measure and raw TAL.
  */
 export function calibratedDisplayTalent(
   playerName: string,
   spanLabel: string | undefined,
   rawTal: number,
   measure: number,
-  reviewedMeasure: () => number | undefined,
+  reviewedWindow: () => { measure: number; rawTal: number } | undefined,
 ): number | undefined {
   const entry = tierCalibrationFor(playerName);
   if (!entry) return undefined;
   if (spanLabel === entry.spanLabel) return reviewedTalent(playerName, entry.tier, rawTal);
-  const reviewed = reviewedTalent(playerName, entry.tier, entry.rawAtReview);
-  const anchor = reviewedMeasure();
+  const anchor = reviewedWindow();
   if (anchor === undefined) return Math.min(TIER_BANDS[entry.tier]![1], Math.round(measure));
-  const value = Math.round(reviewed - (anchor - measure));
+  // The reviewed window's current number, so its other windows move with it when the engine changes.
+  // Not held in the band here: when the engine lifts the reviewed window past the top of its band,
+  // its other windows should not read as having fallen away from it.
+  const reviewed = reviewedTalent(playerName, entry.tier, anchor.rawTal, false);
+  const value = Math.round(reviewed - (anchor.measure - measure));
   const windowTier = windowTiers.get(`${normalizePlayerName(playerName)}|${spanLabel}`);
   const floor = windowTier ? TIER_BANDS[windowTier]![0] : 0;
   return Math.max(floor, Math.min(TIER_BANDS[entry.tier]![1], value));
