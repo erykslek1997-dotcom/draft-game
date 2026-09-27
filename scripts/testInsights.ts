@@ -75,7 +75,9 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // a classic center, as unable to play PF, so the 18 PF backup minutes he used to cover at a 0.5
 // fit now go to Larry Smith at his natural PF — and Smith is a genuine weak defender, so he joins
 // Brunson and Barros as a named target. Re-measured directly (66), not guessed.
-check(weakLinkInsight?.message.includes('66 targetable minutes'), 'weak-link description reports the real 66-minute cost');
+// 2026-09-27: 66 -> 62 after durability gained the half era correction and the playoff-workload
+// boost, which moved rotation minute caps. Same three named targets. Re-measured directly (62).
+check(weakLinkInsight?.message.includes('62 targetable minutes'), 'weak-link description reports the real 62-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),

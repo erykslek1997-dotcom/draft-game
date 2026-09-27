@@ -1,5 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { runtimeAvailabilityForSpan } from './runtimeSpanLookups';
+import { spanEndYears } from './era';
+import { playoffLoadForSpan } from './playoffImpact';
 
 /**
  * DURABILITY (DUR) — "how much of his team's schedule did this player actually play," on the same
@@ -27,6 +29,50 @@ import { runtimeAvailabilityForSpan } from './runtimeSpanLookups';
  * thresholds below (94+/85+/etc.) are specified against a raw percentage, and only mean what
  * they're supposed to mean on this scale, not on a ~50-centered era-relative one.
  */
+
+/**
+ * 2026-09-27, the user picked the half era correction (option 2 of three shown): raw availability
+ * still decides the tiers, but half of each era's gap to the whole pool's median is added back.
+ * Median availability of all pool spans, and per season (centre of the window) the median of the
+ * spans within three years of it; seasons outside the table use its nearest end. Among players
+ * of TAL 70+, Ironman was 70% of 1960s windows and 9% of 2020s ones on the raw scale; with half
+ * the gap added back it is 35-60% for every decade through the 2010s and 18% in the 2020s, whose
+ * load management is partly real.
+ */
+const POOL_MEDIAN_AVAILABILITY = 89.6;
+const ERA_CORRECTION_SHARE = 0.5;
+const ERA_MEDIAN_AVAILABILITY: ReadonlyArray<readonly [number, number]> = [
+  [1953, 98.6], [1954, 98.9], [1955, 98.6], [1956, 98.6], [1957, 98.3], [1958, 97.9], [1959, 97.2],
+  [1960, 96.9], [1961, 96.9], [1962, 96.8], [1963, 96.2], [1964, 96.2], [1965, 96.2], [1966, 95.7],
+  [1967, 95.7], [1968, 95.7], [1969, 95.7], [1970, 95.7], [1971, 95.7], [1972, 95.1], [1973, 95.1],
+  [1974, 94.5], [1975, 94.5], [1976, 94.5], [1977, 94.5], [1978, 94.5], [1979, 94.5], [1980, 94.5],
+  [1981, 95.1], [1982, 94.5], [1983, 94.5], [1984, 94.5], [1985, 93.9], [1986, 93.3], [1987, 93.3],
+  [1988, 93.3], [1989, 93.3], [1990, 93.3], [1991, 92.7], [1992, 92.7], [1993, 92.1], [1994, 91.5],
+  [1995, 90.9], [1996, 90.2], [1997, 90.2], [1998, 90.2], [1999, 90.2], [2000, 89.6], [2001, 89.6],
+  [2002, 89.4], [2003, 89.0], [2004, 88.4], [2005, 88.4], [2006, 88.1], [2007, 87.8], [2008, 88.4],
+  [2009, 88.4], [2010, 88.4], [2011, 88.4], [2012, 88.4], [2013, 87.8], [2014, 87.8], [2015, 87.2],
+  [2016, 86.6], [2017, 86.6], [2018, 85.7], [2019, 84.8], [2020, 84.1], [2021, 83.5], [2022, 83.0],
+  [2023, 82.5], [2024, 81.8], [2025, 81.7], [2026, 82.3],
+];
+const eraMedianByYear = new Map(ERA_MEDIAN_AVAILABILITY);
+
+function eraCorrection(spanLabel: string): number {
+  const years = spanEndYears(spanLabel);
+  if (years.length === 0) return 0;
+  const first = ERA_MEDIAN_AVAILABILITY[0][0];
+  const last = ERA_MEDIAN_AVAILABILITY[ERA_MEDIAN_AVAILABILITY.length - 1][0];
+  const centre = Math.round(years.reduce((sum, y) => sum + y, 0) / years.length);
+  const median = eraMedianByYear.get(Math.max(first, Math.min(last, centre)))!;
+  return ERA_CORRECTION_SHARE * (POOL_MEDIAN_AVAILABILITY - median);
+}
+
+/**
+ * 2026-09-27, the user: players who carried heavy playoff minutes get a durability boost. Up to
+ * this many availability points for a window whose every season was a full deep-run workload
+ * (`playoffLoadForSpan`, measured against each year's own heaviest playoff minutes). A boost
+ * only: missing the playoffs says nothing about the player's body.
+ */
+const MAX_PLAYOFF_LOAD_BOOST = 4;
 
 export type DurabilityTier = 'DNP' | 'Walking Glass' | 'Street Clothes' | 'Load Management' | 'Reliable' | 'Unbreakable' | 'Ironman';
 
@@ -72,7 +118,11 @@ export interface DurabilityBreakdown {
   availability: number | null;
   games: number | null;
   possibleGames: number | null;
-  /** This IS the raw availability (rounded), not a percentile — see file header. */
+  /** Availability points added or removed for the era (`eraCorrection`). */
+  eraShift: number;
+  /** Availability points added for playoff workload (`MAX_PLAYOFF_LOAD_BOOST`). */
+  playoffBoost: number;
+  /** Raw availability plus the era correction and playoff boost, rounded and held to 0-100. */
   points: number;
   tier: DurabilityTier;
   /** False when no source span matched, in which case DUR falls back to `UNRATED_FALLBACK`
@@ -92,16 +142,20 @@ export function durabilityBreakdown(span: PlayerSpan): DurabilityBreakdown {
   const entry = runtimeAvailabilityForSpan(span);
   if (!entry) {
     return {
-      availability: null, games: null, possibleGames: null,
+      availability: null, games: null, possibleGames: null, eraShift: 0, playoffBoost: 0,
       points: UNRATED_FALLBACK, tier: tierFor(UNRATED_FALLBACK), rated: false,
     };
   }
   const availability = Math.min(MAX_AVAILABILITY, entry.availability);
-  const points = Math.round(availability);
+  const eraShift = eraCorrection(span.spanLabel);
+  const playoffBoost = MAX_PLAYOFF_LOAD_BOOST * playoffLoadForSpan(span);
+  const points = Math.round(Math.max(0, Math.min(MAX_AVAILABILITY, availability + eraShift + playoffBoost)));
   return {
     availability,
     games: entry.games,
     possibleGames: entry.possibleGames,
+    eraShift,
+    playoffBoost,
     points,
     tier: tierFor(points),
     rated: true,

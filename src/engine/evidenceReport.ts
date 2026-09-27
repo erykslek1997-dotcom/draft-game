@@ -178,7 +178,7 @@ function durabilityFact(span: PlayerSpan): Candidate {
   const lowTier = dur.tier === 'DNP' || dur.tier === 'Walking Glass' || dur.tier === 'Street Clothes';
   if (!lowTier) return null;
   return {
-    text: `Real availability data shows this span was often unavailable (${dur.tier}, ${dur.points}% of his teams' games) — the ceiling this rating implies assumes health that wasn't always there.`,
+    text: `Real availability data shows this span was often unavailable (${dur.tier}, ${Math.round(dur.availability ?? dur.points)}% of his teams' games) — the ceiling this rating implies assumes health that wasn't always there.`,
     magnitude: 100 - dur.points,
   };
 }
