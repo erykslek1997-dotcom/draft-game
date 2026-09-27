@@ -11,8 +11,7 @@ import { markStepDone } from './pathProgress';
 import { SpinLever } from './SpinLever';
 import { currentStreak, recordDailyResult, savedDailyLineup, type Streak } from './bestFiveProgress';
 import {
-  dailyPool,
-  dailyShotsCap,
+  dailyBoard,
   dailyTargets,
   lineupShots,
   scoreLineup,
@@ -94,11 +93,13 @@ export default function BestFive({ onBack, onNextStep }: Props) {
   // The first board of the day is the daily puzzle; "New board" rolls a fresh random pool so the
   // mode stays playable while there's no backend enforcing one scored attempt per day.
   const [board, setBoard] = useState<{ seed: string; n: number }>({ seed: today, n: 0 });
-  const pool: DailyPool = useMemo(() => dailyPool(board.seed), [board.seed]);
   // 2026-09-11, user's own ask: "dodajemy koszt gracza w shots i oprócz codziennej puli graczy
-  // będzie losowa liczba między 60 a 90" — a daily-seeded shots budget for the five starters,
-  // same deterministic-per-day pattern as the pool itself (see dailyShotsCap's own docstring).
-  const shotsCap = useMemo(() => dailyShotsCap(board.seed), [board.seed]);
+  // będzie losowa liczba między 60 a 90" — a daily-seeded shots budget for the five starters.
+  // 2026-09-27: pool and cap come together from `dailyBoard`, which skips boards where the five
+  // biggest names are already about the best answer (see its docstring).
+  const dealt = useMemo(() => dailyBoard(board.seed), [board.seed]);
+  const pool: DailyPool = dealt.pool;
+  const shotsCap = dealt.cap;
   const isDaily = board.seed === today;
 
   // 2026-09-24: today's puzzle is really once a day now — an already-submitted daily lineup is
@@ -178,14 +179,14 @@ export default function BestFive({ onBack, onNextStep }: Props) {
 
   function backToDaily() {
     setBoard({ seed: today, n: 0 });
-    const dailyPoolToday = dailyPool(today);
-    const played = savedDailyLineup(today, dailyPoolToday);
+    const dailyToday = dailyBoard(today);
+    const played = savedDailyLineup(today, dailyToday.pool);
     if (played) {
       setLineup(played);
       setActiveSlot(null);
       setRevealed(new Set(STARTER_SLOTS));
       setFreshSlot(null);
-      setResult(resultFor(played, dailyPoolToday, dailyShotsCap(today)));
+      setResult(resultFor(played, dailyToday.pool, dailyToday.cap));
     } else {
       resetPicks();
     }
