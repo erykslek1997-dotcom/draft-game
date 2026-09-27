@@ -36,6 +36,7 @@ export type PrecomputedTierRow = [
   playoffValidatedAllNba: 0 | 1,
   isSixthMan: 0 | 1,
   effectiveTalent: number,
+  rawTal: number,
 ];
 
 export function toPrecomputedRow(span: PlayerSpan, ctx: TierGateContext, effective: number): PrecomputedTierRow {
@@ -55,6 +56,7 @@ export function toPrecomputedRow(span: PlayerSpan, ctx: TierGateContext, effecti
     ctx.playoffValidatedAllNba ? 1 : 0,
     ctx.isSixthMan ? 1 : 0,
     effective,
+    ctx.rawTal ?? ctx.tal,
   ];
 }
 
@@ -110,6 +112,7 @@ export function contextFromRow(span: PlayerSpan, row: PrecomputedTierRow): TierG
     fga: span.fga,
     playerName: span.playerName,
     spanLabel: span.spanLabel,
+    rawTal: row[15],
     playoffCollapse: row[6],
     spacing: row[7],
     apg: row[8],

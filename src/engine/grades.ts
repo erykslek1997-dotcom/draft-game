@@ -4,6 +4,7 @@ import { precomputedEffectiveTalent, precomputedSThreshold } from './precomputed
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { registerNamedShift } from './namedShift';
+import { calibratedDisplayTalent, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX } from './tierCalibration';
 import {
   computeTalent,
   computeOffensiveTalentBase,
@@ -1000,6 +1001,8 @@ export interface TierGateContext {
    * pair, not player alone, same scoping reason `GREATEST_PEAK_TIER_BONUS` in aiDrafter.ts uses
    * for its own named-span bonuses). */
   spanLabel?: string;
+  /** Raw (uncapped) TAL — places a player the user tiered inside his tier's band (tierCalibration.ts). */
+  rawTal?: number;
   /** Optional — the span's playoff impact in TAL points (`playoffImpact.ts`'s `playoffTalentTerm`:
    * playoff offense + defense + Finals MVP; negative = worse than expected). Already inside `tal`;
    * carried here for display (the riser/dropper badge). Synthetic contexts default to 0. */
@@ -1482,8 +1485,15 @@ function namedShiftForSpan(span: PlayerSpan): { offense: number; defense: number
 registerNamedShift(namedShiftForSpan);
 
 export function displayTalentForSpan(ctx: TierGateContext): number {
+  // 2026-09-27: the user's tier table (tierCalibration.ts) decides the number for the 200 players
+  // it covers; everyone else keeps the rules below, held under the top of All-star.
+  if (ctx.playerName && ctx.rawTal !== undefined) {
+    const calibrated = calibratedDisplayTalent(ctx.playerName, ctx.spanLabel, ctx.rawTal);
+    if (calibrated !== undefined) return calibrated;
+  }
   const smoothed = smoothedDisplayTalent(ctx);
-  return Math.min(namedPlayerCeiling(ctx.playerName), smoothed + namedPeakLift(ctx.playerName, smoothed));
+  const legacy = Math.min(namedPlayerCeiling(ctx.playerName), smoothed + namedPeakLift(ctx.playerName, smoothed));
+  return ctx.playerName ? Math.min(UNCALIBRATED_DISPLAY_MAX, legacy) : legacy;
 }
 
 function smoothedDisplayTalent(ctx: TierGateContext): number {
@@ -1518,6 +1528,18 @@ function tierBand(tier: OverallTier): [number, number] {
  * number, so badge and number never disagree. The GOAT relabel survives on a Greatest-peak number.
  */
 export function overallTierForSpan(ctx: TierGateContext): OverallTier {
+  const calibration = ctx.playerName ? tierCalibrationFor(ctx.playerName) : undefined;
+  if (calibration) {
+    if (ctx.spanLabel === calibration.spanLabel) return calibration.tier;
+    const number = displayTalentForSpan(ctx);
+    const byNumber: OverallTier = number >= 100 ? 'GOAT' : overallTier(number);
+    return tierRank(byNumber) > tierRank(calibration.tier) ? calibration.tier : byNumber;
+  }
+  const legacy = legacyOverallTierForSpan(ctx);
+  return ctx.playerName && tierRank(legacy) > tierRank(UNCALIBRATED_TIER_MAX) ? UNCALIBRATED_TIER_MAX : legacy;
+}
+
+function legacyOverallTierForSpan(ctx: TierGateContext): OverallTier {
   const rule = ruleTierForSpan(ctx);
   const number = displayTalentForSpan(ctx);
   const [lo, hi] = tierBand(rule);
@@ -1559,19 +1581,12 @@ export function effectiveTalent(span: PlayerSpan): number {
 }
 
 /**
- * The GOAT tier's own "give them 100+" ask. First shipped showing the real uncapped number
- * (`rawUncappedTalent`, talent.ts — skips the soft-cap's asymptotic approach-to-100 and the
- * final clamp, e.g. Jordan's peak spans read 115-131 raw); user's own direct follow-up asked for
- * the literal string "100+" instead — "ładniej wizualnie się będzie prezentować" (looks nicer
- * visually) — a specific number like "131" reads as an odd, arbitrary figure rather than a
- * deliberate "beyond the scale" flourish. `rawUncappedTalent` is still what GATES this (only
- * genuinely above-100-raw spans show it — no GOAT-tier span is ever actually below 100 raw in
- * practice, since the tier itself requires "Greatest peak" first, but checking directly rather
- * than assuming keeps this honest if that ever changes).
+ * The number a card shows next to TAL. Used to be the literal string "100+" for GOAT windows;
+ * since the user tier calibration (2026-09-27, tierCalibration.ts) GOAT windows carry their own
+ * number above 100 (Jordan 105, LeBron 104), so this is now just the display talent.
  */
-export function displayNumberForSpan(span: PlayerSpan, ctx: TierGateContext): number | string {
-  if (overallTierForSpan(ctx) !== 'GOAT') return displayTalentForSpan(ctx);
-  return rawUncappedTalent(span) > 100 ? '100+' : rawUncappedTalent(span);
+export function displayNumberForSpan(_span: PlayerSpan, ctx: TierGateContext): number | string {
+  return displayTalentForSpan(ctx);
 }
 
 /**
@@ -1594,6 +1609,7 @@ export function tierContextFor(rawSpan: PlayerSpan): TierGateContext {
     fga: span.fga,
     playerName: span.playerName,
     spanLabel: span.spanLabel,
+    rawTal: rawUncappedTalent(span),
     playoffCollapse: playoffTalentTerm(span),
     spacing: computeSpacing(span),
     apg: span.box.apg,

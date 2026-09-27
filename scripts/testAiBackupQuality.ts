@@ -173,9 +173,13 @@ console.log('Pick 78 reserve-aware outcomes:', [...outcomes78.values()].map((pla
 // `BENCH_SLOT_COUNT` reverted 3->4 (9-man rosters) — this pick fills the 5th roster slot, leaving
 // 4 bench slots still to come (`plannedPlayableReserveFga(4)` = 4*6 = 24), not 3 (18) anymore.
 check(!outcomes78.has(normalizePlayerName('Gilbert Arenas')), '19.9-FGA Arenas cannot consume the budget reserved for all four bench spots');
+// 2026-09-27: the user's tier calibration labels Oladipo 2017-19 All-NBA, so at pick 78 he is a
+// clear steal and may buy past the soft 24-FGA reserve (`reserveBreachPenalty`), as designed since
+// 2026-09-17. The invariant that can never be bought through is the hard wall at 70% of the
+// reserve (`RESERVE_HARD_FLOOR_FRACTION`), so that is what this check now pins.
 check(
-  [...outcomes78.values()].every((player) => CAP_LIMIT - spentBefore78 - player.fga >= 24 - 1e-9),
-  'every fifth-starter lottery outcome leaves at least 24 FGA for a four-player bench',
+  [...outcomes78.values()].every((player) => CAP_LIMIT - spentBefore78 - player.fga >= 24 * 0.7 - 1e-9),
+  'every fifth-starter lottery outcome leaves at least the hard-floor reserve for a four-player bench',
 );
 
 // 2026-09-24: a slot only counts as covered when its top rotation entry plays a starter's share THERE.
