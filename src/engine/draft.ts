@@ -423,20 +423,28 @@ function strategyForDraftSlot(draftSlot: number): AiDraftStrategy {
 
 /**
  * 2026-09-27: each draft deals the five GM personalities (aiDrafter.ts `AiGmProfile`) across the
- * 16 draft slots, about three teams each, in an order shuffled from the draft's own seed, so the
- * same seed replays the same rivals and a new draft meets new ones. Kept off `Team` itself: it is
- * derived, so saved drafts need nothing new.
+ * 16 draft slots from the draft's own seed, so the same seed replays the same rivals and a new
+ * draft meets new ones. Every slot draws its style at random, redrawn until each style lands on
+ * between `MIN_TEAMS_PER_GM_PROFILE` and `MAX_TEAMS_PER_GM_PROFILE` teams (the user: "można
+ * trafić na 1-8 różnych stylów, nie tylko 3 na każdy"), so one draft is a league of defenders and
+ * the next has a single one. Kept off `Team` itself: it is derived, so saved drafts need nothing
+ * new.
  */
+const MIN_TEAMS_PER_GM_PROFILE = 1;
+const MAX_TEAMS_PER_GM_PROFILE = 8;
 const profileOrderCache = new Map<number, AiGmProfile[]>();
 export function aiProfileForSlot(seed: number, draftSlot: number): AiGmProfile {
   let order = profileOrderCache.get(seed);
   if (!order) {
     const rng = mulberry32(mixSeed(seed, 0x6d70));
-    order = Array.from({ length: TEAM_COUNT }, (_, i) => AI_GM_PROFILES[i % AI_GM_PROFILES.length]);
-    for (let i = order.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
-    }
+    const draw = () => Array.from({ length: TEAM_COUNT }, () => AI_GM_PROFILES[Math.floor(rng() * AI_GM_PROFILES.length)]);
+    const fits = (o: AiGmProfile[]) =>
+      AI_GM_PROFILES.every((p) => {
+        const n = o.filter((x) => x === p).length;
+        return n >= MIN_TEAMS_PER_GM_PROFILE && n <= MAX_TEAMS_PER_GM_PROFILE;
+      });
+    order = draw();
+    for (let guard = 0; guard < 200 && !fits(order); guard++) order = draw();
     profileOrderCache.set(seed, order);
   }
   return order[(draftSlot - 1) % order.length];
