@@ -676,7 +676,16 @@ function RotationBuilderComponent({
           playing at all stays. Group C mockup 21: those players are now drag / tap sources. */}
       {bench.some(({ minutes }) => minutes === 0) && (
         <div className="rotation-bench">
-          <span className="rotation-bench-title">Bench — not in the rotation</span>
+          {/* 2026-09-27 UI audit: mid-draft this read like an error on the first pick. The rotation
+              stays the player's own call (no auto-fill, per the 2026-09-16 ask), so the label just
+              says what happens: place them now, or get a starting suggestion when the draft ends. */}
+          <span className="rotation-bench-title">{rosterComplete ? 'Bench — not in the rotation' : 'Drafted — not placed yet'}</span>
+          {!rosterComplete && (
+            <span className="rotation-bench-hint">
+              Tap a player, then a position above to place him now — or leave it: when the draft ends you get a starting
+              rotation to adjust.
+            </span>
+          )}
           <div className="rotation-bench-chips">
             {bench
               .filter(({ minutes }) => minutes === 0)
