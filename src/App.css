@@ -2103,11 +2103,12 @@ select {
    of an inline-growing table, so the matrix now renders alone, directly, at full width — no
    wrapper needed any more. `order` still places every top-level piece of this screen against
    `.results-screen`'s own flex column. */
-.results-screen .results-section-title { order: 0; }
-.results-screen .team-result { order: 5; width: 100%; }
-.results-screen .team-result.is-human-team { order: 1; }
-.results-screen .matchup-matrix-section { order: 2; }
-.results-screen .expand-all-controls { order: 4; }
+.results-screen .matchup-matrix-section { order: 1; }
+.results-screen .results-section-title { order: 2; }
+.results-screen .expand-all-controls { order: 3; }
+/* 2026-09-27 results audit (pack B): your team stays at its own place in the ranking (was pulled
+   out above the matchup table, with the rest of the field below it). */
+.results-screen .team-result { order: 4; width: 100%; }
 @media (min-width: 1300px) {
   .results-screen { max-width: 1500px; }
 }
@@ -2853,8 +2854,75 @@ select {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
   overflow: hidden;
+}
+.team-result.is-human-team {
+  border-color: var(--at-accent-2, var(--accent));
+  background: color-mix(in srgb, var(--at-accent-2, var(--accent)) 12%, transparent);
+}
+.team-result.is-expanded { margin: 8px 0 12px; }
+
+/* ---- One ranking row for both drafts (RankRowSummary, 2026-09-27 results audit pack B): place,
+   team, title odds, rating — one line, on a phone too. ---- */
+.rank-list { display: flex; flex-direction: column; gap: 4px; }
+.rank-list > .rank-row {
+  padding: 8px 12px;
+  border: 1px solid var(--at-line, var(--border));
+  border-radius: 8px;
+  background: var(--at-paper, transparent);
+}
+.rank-list > .rank-row.is-you {
+  border-color: var(--at-accent-2, var(--accent));
+  background: color-mix(in srgb, var(--at-accent-2, var(--accent)) 12%, var(--at-paper, transparent));
+}
+.rank-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.team-result-header.rank-row { padding: 8px 12px; }
+.rank-row-pos {
+  flex: none;
+  min-width: 22px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--at-ink-faint, var(--muted));
+  font-variant-numeric: tabular-nums;
+}
+.rank-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--at-ink, var(--text));
+  overflow-wrap: anywhere;
+}
+.rank-row-you {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+  background: var(--at-accent-2, var(--accent));
+  color: #fff;
+}
+.rank-row-odds {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--at-ink-soft, var(--text));
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rank-row-rating {
+  flex: none;
+  min-width: 34px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 12.5px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .team-result-header {
@@ -2877,21 +2945,6 @@ select {
   color: var(--accent);
   font-size: 12px;
   width: 10px;
-}
-.team-result-title {
-  font-weight: 700;
-  flex: 1;
-}
-.team-result-header-mini {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.mini-fact {
-  font-size: 12px;
-  color: var(--text);
-  opacity: 0.75;
-  white-space: nowrap;
 }
 .team-result-body {
   display: flex;
@@ -5218,10 +5271,6 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
    the right edge, and the one-row matchup table becomes a wrapping grid (MatchupMatrix.tsx). */
 .matchup-matrix-compact { display: none; }
 @media (max-width: 640px) {
-  .team-result-header { flex-wrap: wrap; row-gap: 6px; }
-  .team-result-title { flex: 1 1 calc(100% - 24px); min-width: 0; overflow-wrap: anywhere; }
-  .team-result-header-mini { flex-wrap: wrap; margin-left: 20px; }
-  .team-result-header > .score-chip { margin-left: 20px; }
   .matchup-matrix-scroll.has-compact { display: none; }
   .matchup-matrix-compact {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 8px 0;
@@ -5265,7 +5314,6 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   color: var(--at-ink); background: color-mix(in srgb, var(--at-accent) 12%, var(--at-paper));
   border: 1px solid color-mix(in srgb, var(--at-accent) 45%, transparent);
 }
-.results-verdict-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 .results-hero-stat-of { font-size: 0.45em; opacity: 0.6; margin-left: 2px; font-weight: 600; }
 
 /* 2026-09-24: intro "Continue draft" banner + the confirm shown before a new draft replaces it. */
@@ -5567,7 +5615,7 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 }
 /* Buttons in a flex action row line up on one baseline — the legacy .primary-btn/.secondary-btn
    margins (built for stacked, standalone buttons) pushed "New draft" lower than its neighbours. */
-.at-shell .results-verdict-actions > button,
+.at-shell .bf-result-actions > button,
 .at-shell .results-hero-actions > button,
 .at-shell .at-lottery-actions > button {
   margin: 0;

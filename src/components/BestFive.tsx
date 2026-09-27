@@ -612,7 +612,7 @@ function BestFiveResult({
         </div>
       )}
       <div className="bf-submit-row bf-result-actions">
-        <button className="at-draft-btn bf-submit" onClick={onNewBoard}>
+        <button className="primary-btn" onClick={onNewBoard}>
           New board
         </button>
       </div>

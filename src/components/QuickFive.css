@@ -140,37 +140,6 @@
 .qf-why p { margin: 0 0 6px; }
 .qf-why p:last-child { margin-bottom: 0; }
 
-/* ---- field / leaderboard — a real wrapping grid, NOT `.at-tag-legend` (that's `flex-wrap:
-   nowrap`, built for a small fixed-count legend — reusing it here silently clipped teams 11-16
-   off-screen with no scroll, the exact "nie widać wszystkich zespołów" bug). ---- */
-.qf-field {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 8px;
-}
-.qf-field-card {
-  padding: 8px 10px;
-  border: 1px solid var(--at-line);
-  border-radius: 8px;
-  background: var(--at-paper);
-}
-.qf-field-card strong {
-  display: block;
-  font-size: 12px;
-  color: var(--at-ink);
-  margin-bottom: 2px;
-}
-.qf-field-card span {
-  font-size: 11px;
-  color: var(--at-ink-faint);
-  font-variant-numeric: tabular-nums;
-}
-.qf-field-card--you {
-  border-color: var(--at-accent-2);
-  background: color-mix(in srgb, var(--at-accent-2) 16%, var(--at-paper));
-}
-.qf-field-card--you strong { color: var(--at-ink); }
-
 /* 2026-09-26 (Quick 5 closer to the All-Time Draft): the five slots read as the draft's own team
    panel — a card per position with face, name, TAL and cost, open slots marked as such. */
 .qf-team-panel {
@@ -202,11 +171,6 @@
 .qf-hero-comp { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 12.5px; color: var(--at-ink-soft); }
 .qf-hero-comp small { margin-left: 6px; color: var(--at-ink-faint); }
 .qf-hero { display: flex; flex-direction: column; }
-.qf-field { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
-@media (max-width: 640px) {
-  .qf-field { grid-template-columns: minmax(0, 1fr); gap: 4px; }
-  .qf-field-card { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 6px 10px; }
-}
 
 /* Search row: search box, the "only players I can afford" switch, Auto-finish. */
 .qf-search-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
@@ -252,18 +216,6 @@
 .qf-result .results-hero { margin-bottom: 24px; }
 .qf-result .qf-why { margin-top: 14px; }
 .qf-result .results-section-title { margin: 8px 0 12px; }
-.qf-field-score {
-  flex: none;
-  min-width: 34px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  color: #fff;
-  font-weight: 800;
-  font-size: 12px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-.qf-field-card .qf-field-score { color: #fff; opacity: 1; }
 
 /* 2026-09-27 results audit: the Mini Draft starting five cut names to "Cha…" on desktop, where five
    columns share half the hero. Stacked inside each column instead: face and TAL on one line, then

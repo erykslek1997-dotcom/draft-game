@@ -693,7 +693,7 @@ function HeroResult({
         <span className="results-hero-team">{teamName}</span>
       </div>
       <div className="results-hero-stats">
-        <div className={`results-hero-stat results-hero-overall score-t${scoreBand(overall)}`}>
+        <div className="results-hero-stat results-hero-overall" style={{ background: qualityColor(overall) }}>
           {/* 2026-09-24: was "Final Power Ranking" — a bare "46" under that label read as a rank
               (46th), right next to the real rank ("16th / 16"). It's the 0-100 team rating. */}
           <span className="results-hero-stat-label">Team rating</span>
@@ -1096,6 +1096,30 @@ function ShareModal({
         </div>
       </div>
     </div>
+  );
+}
+
+/** 2026-09-27 results audit (pack B): one ranking row for both drafts — place, team, title odds
+ * when the mode has them, and the rating in the same color scale as every other score. The
+ * All-Time Draft puts it inside its expandable header; the Mini Draft shows it as a plain row. */
+export function RankRowSummary({ rank, label, isHuman, rating, titleOdds }: { rank: number; label: string; isHuman: boolean; rating: number; titleOdds?: number | null }) {
+  return (
+    <>
+      <span className="rank-row-pos">{rank}</span>
+      <span className="rank-row-name">{label}</span>
+      {isHuman && <span className="rank-row-you">You</span>}
+      {titleOdds != null && (
+        <span
+          className="rank-row-odds"
+          title="Title odds: how often this team won a 16-team bracket of best-of-7 series, simulated 20,000 times. Each series is decided by projected point differential and how the two teams match up — not by the Rating — so two teams with the same Rating can have very different odds."
+        >
+          🏆 {titleOdds > 0 && titleOdds < 0.01 ? '<1' : Math.round(titleOdds * 100)}%
+        </span>
+      )}
+      <span className="rank-row-rating" style={{ background: qualityColor(rating) }}>
+        {rating}
+      </span>
+    </>
   );
 }
 
@@ -1795,9 +1819,6 @@ function ResultsVerdict({
   breakdown,
   scores,
   fieldMedians,
-  onNewDraft,
-  onRematch,
-  onMenu,
 }: {
   team: Team;
   fieldSize: number;
@@ -1809,9 +1830,6 @@ function ResultsVerdict({
   rank: number;
   scores: Record<string, number>;
   fieldMedians: Record<string, number>;
-  onNewDraft?: () => void;
-  onRematch?: () => void;
-  onMenu: () => void;
 }) {
   const insights = useMemo(
     () => generateRosterInsights(buildTeamFeatureSnapshot(team), undefined, insightContextFor(breakdown, rank, fieldSize)),
@@ -1855,21 +1873,6 @@ function ResultsVerdict({
           <b>{contender ? 'To get over the top:' : 'Next draft:'}</b> {tip}
         </p>
       )}
-      <div className="results-verdict-actions">
-        {onNewDraft && (
-          <button type="button" className="primary-btn" onClick={onNewDraft}>
-            New draft
-          </button>
-        )}
-        {onRematch && (
-          <button type="button" className="secondary-btn" onClick={onRematch} title="Same 16 teams, same draft order — try a different plan.">
-            Rematch this board
-          </button>
-        )}
-        <button type="button" className="secondary-btn" onClick={onMenu}>
-          Main menu
-        </button>
-      </div>
     </section>
   );
 }
@@ -2303,9 +2306,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
             Rotation: heroRanked.breakdown.rotationScore,
           }}
           fieldMedians={fieldMedians}
-          onNewDraft={onRematch ? () => onRematch() : undefined}
-          onRematch={onRematch ? () => onRematch(draftSeed) : undefined}
-          onMenu={onRestart}
         />
       )}
       {/* 2026-09-14, user-reported live ("ogromnie dużo miejsca na dużym ekranie, można zrobić
@@ -2383,27 +2383,15 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           : null;
         return (
           <div key={team.id} className={`team-result rank-${rank} ${team.isHuman ? 'is-human-team' : ''} ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}>
-            <button className="team-result-header" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
+            <button className="team-result-header rank-row" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
               <span className="team-result-toggle">{isExpanded ? '▾' : '▸'}</span>
-              <span className="team-result-title">
-                #{rank} — {teamLabel(team)} {team.isHuman ? '(You)' : ''}
-              </span>
-              <ScoreChip label="Rating" value={breakdown.overall} />
-              {!isExpanded && (
-                <span className="team-result-header-mini">
-                  <ScoreChip label="TAL" value={breakdown.talentScore} />
-                  <ScoreChip label="OFF" value={breakdown.offenseScore} />
-                  <ScoreChip label="DEF" value={breakdown.defenseScore} />
-                  {leagueEvalRow && (
-                    <span
-                      className="mini-fact"
-                      title="Title odds: how often this team won a 16-team bracket of best-of-7 series, simulated 20,000 times. Each series is decided by projected point differential and how the two teams match up — not by the Rating — so two teams with the same Rating can have very different odds."
-                    >
-                      🏆 {(leagueEvalRow.championshipProbability * 100).toFixed(1)}%
-                    </span>
-                  )}
-                </span>
-              )}
+              <RankRowSummary
+                rank={rank}
+                label={teamLabel(team)}
+                isHuman={team.isHuman}
+                rating={breakdown.overall}
+                titleOdds={leagueEvalRow?.championshipProbability ?? null}
+              />
             </button>
             {isExpanded && (
               <div className="team-result-body">

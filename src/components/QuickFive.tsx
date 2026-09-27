@@ -31,7 +31,7 @@ import { rankTeams } from '../engine/scoring';
 import { fitScore } from '../engine/fit';
 import { bestHistoricalComp, compBadge } from '../engine/historicalComps';
 import DraftLottery from './DraftLottery';
-import { MetricBar, ScoreChip, qualityColor, scoreBand } from './ResultsScreen';
+import { MetricBar, RankRowSummary, ScoreChip, qualityColor } from './ResultsScreen';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
 import { AI_SPEED_LABELS, cpuPickDelay, useAiSpeed } from './aiSpeed';
@@ -643,7 +643,7 @@ function QuickResults({
           <span className="results-hero-team">{teamLabel(human.team)}</span>
         </div>
         <div className="results-hero-stats">
-          <div className={`results-hero-stat results-hero-overall score-t${scoreBand(human.score.composite)}`}>
+          <div className="results-hero-stat results-hero-overall" style={{ background: qualityColor(human.score.composite) }}>
             <span className="results-hero-stat-label">Team rating</span>
             <span className="results-hero-stat-value">
               {human.score.composite}
@@ -722,13 +722,10 @@ function QuickResults({
       </header>
 
       <h2 className="results-section-title">Final team ranking</h2>
-      <div className="qf-field">
+      <div className="rank-list">
         {ranked.map((r, i) => (
-          <div key={r.team.id} className={`qf-field-card ${r.team.isHuman ? 'qf-field-card--you' : ''}`} title={teamCodeByTeamId.get(r.team.id)}>
-            <strong>
-              {i + 1}. {teamLabel(r.team)} {r.team.isHuman && '(You)'}
-            </strong>
-            <span className="qf-field-score" style={{ background: qualityColor(r.score.composite) }}>{r.score.composite}</span>
+          <div key={r.team.id} className={`rank-row ${r.team.isHuman ? 'is-you' : ''}`} title={teamCodeByTeamId.get(r.team.id)}>
+            <RankRowSummary rank={i + 1} label={teamLabel(r.team)} isHuman={r.team.isHuman} rating={r.score.composite} />
           </div>
         ))}
       </div>
@@ -745,7 +742,7 @@ function QuickResults({
         </div>
       )}
       <div className="bf-submit-row bf-result-actions">
-        <button className="at-draft-btn bf-submit" onClick={onNewDraft}>
+        <button className="primary-btn" onClick={onNewDraft}>
           New draft
         </button>
         <button className="secondary-btn" onClick={onRematch} title="Same 16 teams, same draft order — try a different plan.">
