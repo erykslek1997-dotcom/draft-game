@@ -6761,6 +6761,10 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 }
 .at-status-pick { flex: none; color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
 .at-status-last { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 2026-09-27 UI audit: on a phone the last pick wraps instead of cutting the name ("L. Bi…"). */
+@media (max-width: 560px) {
+  .at-status-last { white-space: normal; overflow: visible; line-height: 1.3; }
+}
 .at-status-last b { color: var(--at-ink); font-weight: 700; }
 .at-status-until {
   flex: none; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
