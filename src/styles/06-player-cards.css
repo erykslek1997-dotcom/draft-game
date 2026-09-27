@@ -1,0 +1,409 @@
+/* ---- player face-cards (replaces the accordion list, player mode only) ---- */
+/* 2026-09-14, user-reported live ("nie potrzeba aż tak dużo nazwisk na jednym ekranie"): this grid
+   is `auto-fit`, so it doesn't keep adding MORE 150px columns forever as its container grows —
+   fine up through a normal desktop width, but on a genuinely wide monitor (especially now that
+   `.at-draft-main` can fill half a full-bleed 1600px+ shell — see index.css's own comment on
+   `#root` no longer boxing the app into a ~1126px card) that used to mean 10-12 skinny columns of
+   player cards at once, not a handful of comfortably-sized ones.
+   First fix (same day) capped this unconditionally at `max-width: 900px` — but that assumed the
+   freed width always gets picked up by a sibling Team column, which is only true at
+   `isWideLayout`'s own `WIDE_LAYOUT_QUERY` (1600px, DraftBoard.tsx). Below that breakpoint the
+   Draft tab renders ALONE (tab-switched, no Team column beside it — same threshold `.at-merge-row`
+   itself gates on above), so the flat cap just left dead, un-absorbed space to the right on any
+   wide-but-sub-1600px window — exactly what the user then reported live ("w zależności od
+   szerokości zostaje empty space po prawej"). Second fix scoped the cap to that same media query —
+   fine on a normal wide desktop (Draft's own ~50% flex share lands close to 900px anyway), but a
+   genuinely ultra-wide monitor gives `.at-merge-draft` a much bigger flex share than 900px, and the
+   flat cap doesn't grow with it — exactly the SAME dead-space complaint again, live on ultra-wide
+   ("nadal zostaje miejsce po prawej stronie w sekcji draft"), just at a bigger breakpoint. Capping
+   the CARD's own max width instead of the grid's fixes both directions at once: `auto-fit` still
+   adds more columns as the container actually grows (so it always fills real width, no dead zone
+   at any monitor size), but no single column can grow past 190px, so it never regresses to the
+   original "10-12 skinny 150px columns" complaint either — a wider container just means more ~5-7
+   comfortably-sized columns instead of nothing. `auto-fit` (not `auto-fill`) so an under-full last
+   row's unused tracks collapse instead of reserving dead width. Left-aligned (no `margin: auto`) so
+   it stays flush under the search bar above it rather than centering into its own separate island. */
+.at-player-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+@media (min-width: 1600px) {
+  .at-player-cards { grid-template-columns: repeat(auto-fit, minmax(150px, 190px)); }
+}
+.at-player-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 2px solid var(--tier-frame, var(--at-line));
+  border-radius: 10px;
+  background: var(--at-paper);
+  position: relative;
+  overflow: hidden;
+}
+.at-player-card--open {
+  border-color: var(--at-accent);
+}
+/* 2026-09-12, user's chosen "wariant A": the tier that used to be a text badge in the top-right
+   corner is now this card's own border color (set via the `--tier-frame` custom property, one
+   real hex per tier — see `TIER_FRAME_COLOR` in DraftBoard.tsx) plus this small corner flag, a
+   second read of the same color for anyone scanning a dense grid rather than one card at a time.
+   Classic corner-ribbon CSS triangle: a 0x0 box whose border widths are 0/22/22/0 (top/right/
+   bottom/left) draws only the right-hand wedge once every other edge is transparent. */
+.at-player-card-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 22px 22px 0;
+  border-color: transparent var(--tier-frame, var(--at-line)) transparent transparent;
+  pointer-events: none;
+}
+/* 2026-09-12, code-review fix: standard visually-hidden pattern — present in the accessibility
+   tree (screen readers, browser "find in page") but occupies no visual space and is invisible to
+   sighted users. Used to restore the tier text `.at-player-card-corner` moved off-tree. */
+.at-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.at-player-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+/* 2026-09-12, user's own follow-up ask ("Imię nazwisko - PG/SG"): name and position used to be
+   two stacked lines; merged into one ("L. James – PG/SG") now that the tier badge's move to the
+   card's own border/corner (see `.at-player-card-corner`) freed a line of vertical room anyway.
+   `white-space: nowrap` + ellipsis rather than letting a long combination wrap — `shortenName`
+   already keeps most names short, but a wide position pair (PG/SG) on an unshortened short name
+   can still be the widest line on a 150px card. */
+/* 2026-09-24: name on its own line again, allowed to wrap to two lines instead of being cut with
+   an ellipsis (see the JSX comment on `.at-player-card-meta`). */
+.at-player-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--at-ink);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.at-player-card-meta {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
+  font-size: 10.5px;
+}
+.at-player-card-pos {
+  font-weight: 500;
+  color: var(--at-ink-faint);
+}
+.at-player-card-tal { color: var(--at-ink-soft); white-space: nowrap; }
+.at-player-card-tal b { color: var(--tier-frame, var(--at-ink)); font-size: 12px; }
+.at-tier-key {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+  font-size: 10.5px; color: var(--at-ink-soft); margin: 2px 0 12px;
+}
+.at-tier-key-label { color: var(--at-ink-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+.at-tier-key-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.at-tier-key-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.at-player-card-foot {
+  display: flex;
+  align-items: center;
+  /* The Shot chip moved up next to the Face avatar (freed by the tier badge's move to the card's
+     own border/corner, see `.at-player-card-corner`) — this row now holds only the two action
+     buttons, right-aligned under the name/position lines instead of splitting the row with them. */
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.at-player-card-actions {
+  display: flex;
+  flex-direction: column;
+  /* 2026-09-12, user-reported live ("skrócić przycisk Draft"): a flex column's default
+     `align-items: stretch` was forcing "Draft" (a short word) to stretch to match "Scouting
+     report"'s own, much wider, content width. `flex-end` lets each button size to its own text
+     instead, right-aligned under the name/position line above. */
+  align-items: flex-end;
+  gap: 4px;
+}
+.at-player-card-peek,
+.at-player-card-draft {
+  height: 22px;
+  padding: 0 10px;
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid var(--at-line);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 2026-09-12, user-reported live ("kolor w scouting report też nie do końca mi siedzi"): a filled
+   navy pill next to the vivid blue Draft button and the card's own new tier-colored border was a
+   third competing block of color on one small card. Ghost/ ​outline treatment instead — no fill,
+   just the same border every other neutral pill in this app already uses — so Draft (still solid,
+   still the one clearly "primary" action) and the tier frame stay the only real color on the card. */
+.at-player-card-peek {
+  background: transparent;
+  color: var(--at-ink-soft);
+}
+.at-player-card-draft {
+  background: var(--at-accent);
+  color: var(--at-accent-ink);
+  border-color: transparent;
+  font-weight: 700;
+}
+.at-player-card-draft:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.at-player-card-spans {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--at-line);
+}
+.at-player-card-span-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--at-ink-soft);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.at-player-card-span-row:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--at-accent) 8%, transparent);
+  border-color: var(--at-line);
+}
+.at-player-card-span-row:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.at-player-card-span-label {
+  flex: 1;
+  font-weight: 600;
+}
+.at-player-card-more {
+  align-self: center;
+  margin-top: 2px;
+}
+@media (max-width: 860px) {
+  .at-draft-workspace { flex-direction: column; }
+  /* 2026-09-12, user-reported live ("your team powinien być między draft board a polem
+     graczy"): column layout stacks in DOM order by default, which put "Your Five" (this card)
+     dead last — below the whole player-card grid, the opposite of where it's useful. `order: -1`
+     moves it ahead of `.at-draft-main` (the search/filter row + player cards, still one visual
+     unit together) without touching DOM order or component structure, landing it exactly between
+     the round-by-round board above `.at-draft-workspace` and the player pool below. */
+  .at-draft-sidebar { width: 100%; position: static; order: -1; }
+}
+
+/* 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
+   glass on a player card opens this instead of expanding the card in place. Same overlay pattern
+   `.share-modal-overlay`/`.share-modal-card` already established (ResultsScreen.tsx), just a
+   wider card since this one holds a real stats table instead of a summary. */
+.player-peek-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+.player-peek-card {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: min(560px, 85vh);
+  overflow-y: auto;
+  background: var(--at-paper-raised);
+  border: 1px solid var(--at-line);
+  border-radius: 14px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+.player-peek-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--at-line);
+  background: transparent;
+  color: var(--at-ink-faint);
+  cursor: pointer;
+  line-height: 1;
+}
+.player-peek-close:hover { color: var(--at-ink); border-color: var(--at-ink-faint); }
+.player-peek-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-right: 30px;
+}
+.player-peek-name {
+  font-size: 18px;
+  margin: 0;
+  color: var(--at-ink);
+}
+.player-peek-sub {
+  font-size: 12px;
+  color: var(--at-ink-faint);
+}
+.at-controls-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+
+.at-search-input {
+  font: inherit; font-size: 13px; padding: 9px 14px; border-radius: 999px;
+  border: 1px solid var(--at-line); background: var(--at-paper); color: var(--at-ink);
+  min-width: 200px;
+}
+.at-search-input::placeholder { color: var(--at-ink-faint); }
+.at-search-input:focus, .at-fga-input:focus { outline: 2px solid var(--at-accent); outline-offset: 1px; }
+
+.at-fga-filter { display: flex; align-items: center; gap: 8px; }
+/* 2026-09-12, user-reported live (screenshot): "FILTER SHOTS" at `--at-ink-faint` (the app's
+   dimmest ink) + 10px read as barely-there next to the bold, full-size "0"/"30" pills right next
+   to it — bumped to the same `--at-ink-soft` weight the search placeholder and other row labels
+   use, and a touch larger. */
+.at-fga-filter label {
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-soft);
+}
+/* 2026-09-12, user-reported live, same screenshot ("ikony można zmniejszyć" — the min/max shot
+   pills read as oversized icon-like badges next to the label they belong to): narrower and less
+   padded, so they sit as a compact pair of numbers rather than competing for attention with the
+   label naming them. */
+.at-fga-input {
+  width: 38px; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; text-align: center;
+  border-radius: 999px; border: 1px solid var(--at-line); background: var(--at-pill); color: var(--at-pill-ink);
+  padding: 5px 2px; font-weight: 700;
+}
+
+.at-filter-pill {
+  font: inherit; cursor: pointer; border: none;
+  background: var(--at-pill); color: var(--at-pill-ink); border-radius: 999px;
+  font-size: 12.5px; font-weight: 700; padding: 8px 18px;
+  opacity: 0.55; transition: opacity .15s, box-shadow .15s;
+}
+.at-filter-pill.at-active { opacity: 1; box-shadow: 0 0 0 2px var(--at-accent) inset; }
+.at-filter-pill:hover { opacity: 0.85; }
+
+/* ---- dot tags (Talent / 3PT / Durability / Playoffs — real named tier systems) ---- */
+.at-dot-wrap {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; cursor: default; border-radius: 50%;
+}
+.at-dot-wrap:focus-visible { outline: 2px solid var(--at-ink-soft); outline-offset: 2px; }
+.at-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--at-ink) 14%, transparent);
+}
+.at-dot.at-t1 { background: var(--at-t1); } .at-dot.at-t2 { background: var(--at-t2); } .at-dot.at-t3 { background: var(--at-t3); }
+.at-dot.at-t4 { background: var(--at-t4); } .at-dot.at-t5 { background: var(--at-t5); } .at-dot.at-t6 { background: var(--at-t6); }
+
+.at-dot-wrap::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translate(-50%, 4px); background: var(--at-pill); color: var(--at-pill-ink);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
+  padding: 6px 10px; border-radius: 7px; box-shadow: var(--at-shadow);
+  opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
+}
+.at-dot-wrap::before {
+  content: ''; position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translate(-50%, 4px);
+  border: 5px solid transparent; border-top-color: var(--at-pill);
+  opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
+}
+.at-dot-wrap:hover::after, .at-dot-wrap:hover::before,
+.at-dot-wrap:focus-visible::after, .at-dot-wrap:focus-visible::before {
+  opacity: 1; transform: translate(-50%, 0);
+}
+
+/* ---- generic name tooltip (team names) — 2026-08-16, user's own ask: team names in the
+   Overview grid and the Lottery reveal grid used to sit next to the chip unconditionally, eating
+   real width in already-cramped layouts; the chip alone already IDs a team uniquely, so the full
+   name now only exists as an on-hover/focus popover. Same visual mechanics as `.at-dot-wrap`
+   above (`data-tip`), just not constrained to a 20px circle so it can wrap a chip of any size. */
+.at-name-tip { position: relative; cursor: default; }
+.at-name-tip:focus-visible { outline: 2px solid var(--at-ink-soft); outline-offset: 2px; }
+/* 2026-08-16, user-reported ("nie działa to dobrze" — screenshot showed the popover text cut off
+   mid-word): this used to be centred on the trigger (`left: 50%; transform: translate(-50%, …)`),
+   same as `.at-dot-wrap`'s own tooltip above — fine for a dot that's rarely near an edge, but the
+   Overview grid's team chips sit in a `position: sticky; left: 0` column inside a horizontally
+   SCROLLING container (`.at-grid-scroll { overflow-x: auto }`); a centred popover on a chip
+   that's already at the sticky column's own left edge pushes half its width into the clipped,
+   scrolled-past region to the left, which `overflow-x: auto` cuts off outright — there's no
+   scrolling-away from that clip the way there could be for a mis-positioned but still-reachable
+   element. Left-anchored instead (opens rightward from the trigger's own left edge, not its
+   centre): the chip is always the leftmost thing in its cell, so there's real room to the right
+   (into the scrollable content) but effectively none to the left (already sticky-pinned at 0). */
+.at-name-tip::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 0;
+  transform: translate(0, 4px); background: var(--at-pill); color: var(--at-pill-ink);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
+  padding: 6px 10px; border-radius: 7px; box-shadow: var(--at-shadow);
+  opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
+}
+.at-name-tip::before {
+  content: ''; position: absolute; bottom: calc(100% + 3px); left: 10px; transform: translate(0, 4px);
+  border: 5px solid transparent; border-top-color: var(--at-pill);
+  opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
+}
+.at-name-tip:hover::after, .at-name-tip:hover::before,
+.at-name-tip:focus-visible::after, .at-name-tip:focus-visible::before {
+  opacity: 1; transform: translate(0, 0);
+}
+
+/* ---- letter-grade badges (Offense/Defense/Portability/Impact — no named tiers yet, so the
+   real letter stays visible rather than being hidden behind an anonymous dot+tooltip). Ramped
+   into the same t1-t6 colour family by grade rank so the row still reads as a "how good" signal
+   at a glance, without inventing tier names that don't exist yet. */
+.at-grade-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 20px; padding: 0 6px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+/* 2026-09-11: grade coloring moved to an inline red→green scale computed in `AtGrade` itself
+   (DraftBoard.tsx) — see that component's own docstring for why it split off the shared
+   `at-t1..at-t6` tone ramp. */
+
+/* ---- player-mode expanded-span Tag badge — 2026-08-16, user's own ask to surface TAL + a named
+   tag ("np. greatest peak") in the player-mode Draft tab's expanded per-span table, which used
+   to hide every judge metric on purpose (see that table's own header comment on the 2026-08-13
+   "blind scouting" redesign). Same t1-t6 colour family as `.at-grade-badge`/`.at-dot` above, just
+   sized for a whole tier NAME ("Greatest peak") instead of a single letter or a bare 12px dot. */
+.at-tag-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
+}
+.at-tag-badge.at-t1 { background: var(--at-t1); color: var(--at-t1-ink); }
+.at-tag-badge.at-t2 { background: var(--at-t2); color: var(--at-t2-ink); }
+.at-tag-badge.at-t3 { background: var(--at-t3); color: var(--at-t3-ink); }
+.at-tag-badge.at-t4 { background: var(--at-t4); color: var(--at-t4-ink); }
+.at-tag-badge.at-t5 { background: var(--at-t5); color: var(--at-t5-ink); }
+.at-tag-badge.at-t6 { background: var(--at-t6); color: var(--at-t6-ink); }

@@ -1,0 +1,422 @@
+/* ---- Draft table ---- */
+.at-table-scroll { overflow-x: auto; }
+table.at-draft-table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 10px; }
+table.at-draft-table th {
+  text-align: left; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--at-ink-faint); padding: 0 10px 8px; border-bottom: 1px solid var(--at-line); white-space: nowrap;
+  position: sticky; top: 0; background: var(--at-paper-raised);
+}
+table.at-draft-table td {
+  padding: 8px 6px; border-bottom: 1px solid var(--at-line); vertical-align: middle;
+  white-space: nowrap; text-align: center;
+}
+table.at-draft-table td.at-player-cell, table.at-draft-table td.at-fga-num { text-align: left; padding: 8px 10px; }
+table.at-draft-table td:first-child { text-align: left; padding: 8px 6px 8px 10px; }
+table.at-draft-table tbody tr:hover { background: color-mix(in srgb, var(--at-accent) 6%, transparent); }
+/* Player-mode only: fixed column widths (set via <colgroup> in DraftBoard.tsx) so PTS/AST/REB/
+   STL/BLK/FG%/3PT%/FGA land in the exact same horizontal position on this summary row and on
+   every row of the expanded per-span table below it (.at-span-subtable--player) — same career
+   number, same column, visibly reinforcing that it's the same number rather than a coincidence.
+   Long player names wrap instead of forcing the column wider, since a fixed layout can't grow a
+   column to fit content the way the default auto layout does. */
+table.at-draft-table--player, table.at-span-subtable--player { table-layout: fixed; }
+table.at-draft-table--player td.at-player-cell { white-space: normal; }
+.at-player-cell { font-weight: 700; }
+.at-player-cell .at-span { display: block; font-weight: 400; color: var(--at-ink-faint); font-size: 11px; }
+.at-fga-num { font-variant-numeric: tabular-nums; color: var(--at-ink-soft); }
+.at-fga-num b { color: var(--at-ink); }
+.at-caption { font-size: 11px; color: var(--at-ink-faint); margin-top: 12px; line-height: 1.6; }
+
+.at-draft-btn {
+  font: inherit; cursor: pointer; border: none; background: var(--at-accent); color: var(--at-accent-ink);
+  border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 700;
+}
+.at-draft-btn:hover { filter: brightness(1.08); }
+/* 2026-08-16: the player list stays visible/browsable during a CPU turn now (see the JSX comment
+   on `canPick`) — the Draft button itself is what's actually gated, `disabled` rather than hidden
+   so a row you're inspecting doesn't visibly rearrange the moment the turn changes. */
+.at-draft-btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; }
+
+/* Small notice shown above the Draft panel during a CPU turn — replaces the old full-panel
+   "X is thinking…" placeholder that used to hide the player list entirely. */
+.at-cpu-turn-banner {
+  font-size: 12.5px; font-style: italic; color: var(--at-ink-soft);
+  background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px;
+  padding: 8px 14px; margin-bottom: 12px;
+}
+/* 2026-09-24: the "your turn" counterpart of `.at-cpu-turn-banner` above — accent-coloured and
+   sticky so it stays in view while scrolling the player cards, and it carries this pick's real
+   shot budget (`pickBudget`, draft.ts). */
+.at-turn-sticky { position: sticky; top: 0; z-index: 5; }
+.at-your-turn-banner {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  font-size: 13px; color: var(--at-ink);
+  background: color-mix(in srgb, var(--at-accent) 18%, var(--at-paper));
+  border: 1px solid var(--at-accent); border-radius: 10px;
+  padding: 9px 14px; margin-bottom: 12px;
+}
+.at-your-turn-title { font-weight: 800; color: var(--at-accent); letter-spacing: 0.06em; text-transform: uppercase; }
+.at-your-turn-reserve { color: var(--at-ink-soft); }
+/* 2026-09-25: a roster gap the result screen will score (RimPressureNote, DraftChrome.tsx) —
+   its own line so it reads as a warning, not more budget text. */
+.at-your-turn-need { flex-basis: 100%; font-weight: 600; color: var(--at-accent-2); }
+.at-budget-notice {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  font-size: 12.5px; color: var(--at-ink);
+  background: color-mix(in srgb, var(--at-accent-2) 14%, var(--at-paper));
+  border: 1px solid var(--at-accent-2); border-radius: 10px;
+  padding: 9px 14px; margin-bottom: 12px;
+}
+.at-budget-notice-btn {
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  border: none; border-radius: 999px; padding: 6px 14px;
+  background: var(--at-accent-2); color: var(--at-accent-2-ink);
+}
+.at-why-btn {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line); background: none; color: var(--at-ink-soft);
+  border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 700;
+}
+.at-why-btn:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
+
+/* 2026-08-16, caught while verifying the broadcast-board redesign: `.evidence-panel-wrap` (the
+   "Why?" panel) is a shared component also used outside `.at-shell`, so it's styled off the
+   plain app-level `--bg`/`--text` tokens and `prefers-color-scheme`, not `--at-*`. That was fine
+   while `.at-shell` itself followed the system theme, but now that the shell is fixed-dark
+   regardless of system preference, a light-system visitor got a near-white panel (its own
+   ambient text inheriting `.at-shell`'s now-white `--at-ink`, i.e. white-on-near-white) floating
+   in the dark board. Re-themed here, scoped to `.at-shell`, so the panel it lives in always
+   matches the board it's actually rendered on instead of the visitor's OS setting. */
+.at-shell .evidence-panel-wrap { background: var(--at-paper); border: 1px solid var(--at-line); color: var(--at-ink-soft); }
+.at-shell .evidence-panel-label { color: var(--at-ink-faint); }
+.at-shell .evidence-column h4 { color: var(--at-ink-faint); }
+.at-expand-toggle {
+  font: inherit; cursor: pointer; background: none; border: none; color: var(--at-ink-faint);
+  font-size: 12px; padding: 2px 4px; transition: transform .15s;
+  display: inline-block;
+}
+.at-expand-toggle.at-open { transform: rotate(90deg); }
+
+/* Per-span sub-table shown when a player row expands — same dot/grade system, indented under
+   the collapsed row it belongs to. */
+table.at-span-subtable { border-collapse: collapse; width: 100%; font-size: 12px; margin: 4px 0 10px 26px; }
+table.at-span-subtable th {
+  text-align: left; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--at-ink-faint); padding: 0 8px 6px; border-bottom: 1px solid var(--at-line);
+}
+table.at-span-subtable td { padding: 6px 8px; border-bottom: 1px solid var(--at-line); text-align: center; }
+table.at-span-subtable td:first-child, table.at-span-subtable td.at-player-cell { text-align: left; }
+/* 2026-08-16, user-reported: the main table's own PTS-FGA/TAL cells (`table.at-draft-table
+   td.at-fga-num`, above) are LEFT-aligned, but that override is scoped to `.at-draft-table`
+   specifically — this sub-table's OWN base `td` rule (centered, just above) was still winning for
+   its `.at-fga-num` cells, so the same numbers sat center-aligned here vs. left-aligned one row up
+   even after matching column widths and adding the class. Matched explicitly rather than assuming
+   the class alone would cross table boundaries. Tag gets the same explicit left pin (`.at-tag-cell`)
+   so a short pill (MVP) and a long one (Greatest peak) both start at the same x. */
+table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { text-align: left; }
+
+/* 2026-09-01: the Draft tab's player list uses the Cap Sheet expandable-list shape
+   (`.player-groups` > `.player-group` > `.player-group-header` + `.span-table`) instead of the
+   stacked `.at-draft-table` + `.at-span-subtable` above (those rules are kept only for reference
+   — nothing renders them any more). Condensed to match the Cap Sheet's density: one tight header
+   row per player, plain-text stat cells, only the tier is a pill. The shared `.player-group*` /
+   `.span-table` rules read the plain `--bg`/`--border`/`--accent`/`--text` names, which
+   `.at-shell` aliases to its dark board values; everything below is just spacing/typography. */
+/* 2026-09-02: matched to the Cap Sheet's calm reading hierarchy after "all-time cap dalej
+   bardziej czytelne" — the loud parts were the saturated gold tier PILL and the solid-blue Draft
+   button repeating down every row. Now: tier is plain muted mono text inside one right-aligned
+   "best <tier> · <TAL|FGA>" summary string (no pill anywhere in the list), the Draft button is a
+   quiet outline/ghost button, the position is a thin outlined chip, and rows are a flat
+   hairline-separated list (no rounded card borders / gaps). */
+.at-shell .at-draft-groups { margin-top: 10px; display: flex; flex-direction: column; gap: 0; }
+.at-shell .at-draft-more-note { margin: 12px 2px 0; opacity: 0.7; font-style: italic; }
+.at-shell .at-draft-groups .player-group {
+  border: 0;
+  border-bottom: 1px solid var(--at-line);
+  border-radius: 0;
+}
+.at-shell .at-draft-groups .player-group-header {
+  /* base `.player-group-header` is content-box (no global border-box reset in this app), so its
+     `width: 100%` + padding overflowed `.player-group`'s content box and the `overflow: hidden`
+     there clipped the right edge. */
+  box-sizing: border-box;
+  cursor: pointer;
+  gap: 4px 10px;
+  padding: 9px 6px;
+  min-height: 30px;
+  flex-wrap: wrap;
+  /* no `overflow` / `transition` here: the content is minimal now (fits, or wraps), and ~140
+     clip contexts + transitionable elements were a real render cost. */
+  overflow: visible;
+  font-size: 12.5px;
+}
+.at-shell .at-draft-groups .player-group-header:hover {
+  background: color-mix(in srgb, var(--at-accent) 6%, transparent);
+}
+.at-shell .at-draft-groups .player-group-header:focus-visible {
+  outline: 2px solid var(--at-accent);
+  outline-offset: -2px;
+}
+.at-shell .at-draft-groups .pg-caret { width: 10px; color: var(--at-ink-faint); }
+.at-shell .at-draft-groups .pg-name { font-size: 13px; font-weight: 600; color: var(--at-ink); }
+/* position → thin outlined chip, like the Cap Sheet */
+.at-shell .at-draft-groups .pg-natural-position {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border: 1px solid var(--at-line);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--at-ink-faint);
+  opacity: 1;
+}
+.at-shell .at-draft-groups .pg-meta { color: var(--at-ink-faint); opacity: 1; }
+/* the one calm data string on the right — monospace, muted, labels dimmer than values */
+.at-shell .at-draft-groups .pg-summary {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: var(--at-ink-soft);
+  white-space: nowrap;
+}
+.at-shell .at-draft-groups .pg-summary .lbl { color: var(--at-ink-faint); }
+/* Draft button → quiet ghost, same shape as `.at-why-btn` (not the solid-blue `.at-draft-btn`) */
+.at-shell .at-draft-groups .pg-draft {
+  background: none;
+  border: 1px solid var(--at-line);
+  color: var(--at-ink-soft);
+  border-radius: 5px;
+  padding: 3px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  filter: none;
+}
+.at-shell .at-draft-groups .pg-draft:hover:not(:disabled) {
+  border-color: var(--at-accent);
+  color: var(--at-ink);
+  background: color-mix(in srgb, var(--at-accent) 12%, transparent);
+}
+.at-shell .at-draft-groups .pg-draft:disabled { opacity: 0.3; }
+
+/* the expanded per-span table — Cap Sheet density, plain text, no pills */
+.at-shell .at-draft-groups .table-scroll {
+  border-top: 1px solid var(--at-line);
+  padding: 2px 0 8px;
+}
+.at-shell .at-draft-groups .span-table { font-size: 12px; }
+.at-shell .at-draft-groups .span-table th,
+.at-shell .at-draft-groups .span-table td {
+  padding: 3px 8px;
+  border-top: 1px solid color-mix(in srgb, var(--at-line) 55%, transparent);
+}
+.at-shell .at-draft-groups .span-table td.tier-cell {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--at-ink-soft);
+}
+/* the expanded table's Draft / Why? buttons — plain text links, not chunky pills */
+.at-shell .at-draft-groups .span-table .at-draft-btn,
+.at-shell .at-draft-groups .span-table .at-why-btn {
+  background: none;
+  border: 1px solid var(--at-line);
+  color: var(--at-ink-soft);
+  padding: 2px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 4px;
+  line-height: 1.3;
+  filter: none;
+}
+.at-shell .at-draft-groups .span-table .at-draft-btn:hover:not(:disabled),
+.at-shell .at-draft-groups .span-table .at-why-btn:hover {
+  border-color: var(--at-accent);
+  color: var(--at-ink);
+}
+.at-shell .at-draft-groups .span-table .at-draft-btn:disabled { opacity: 0.3; }
+.at-shell .at-draft-groups .span-table thead th {
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--at-ink-faint);
+  border-top: 0;
+}
+.at-shell .at-draft-groups .span-table th.num,
+.at-shell .at-draft-groups .span-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.at-shell .at-draft-groups .span-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--at-accent) 6%, transparent);
+}
+
+.at-legend-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.at-legend-toggle {
+  font: inherit; cursor: pointer; border: 1px solid var(--at-line); background: none; color: var(--at-ink-soft);
+  border-radius: 999px; padding: 6px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+  white-space: nowrap; margin-top: 12px; transition: color .15s, border-color .15s;
+}
+.at-legend-toggle:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
+
+/* 2026-08-19, user's explicit ask ("make everything in one line"): forced exactly 5 equal-width
+   flex columns (`flex: 1 1 0`, `flex-wrap: nowrap`) so the row never wrapped to a second line —
+   but that meant each card's real width was whatever the container happened to divide by 5, with
+   no floor, so a merely-normal-width screen squeezed headings like "OFFENSE (OFF) / DEFENSE (DEF)"
+   into 2-3 ragged lines fighting the dot swatches beside them for space.
+   2026-09-14, user-reported live ("spójniej i ładniej"): back to a real responsive grid with a
+   floor wide enough for every heading in the current 5-card set to sit on one line — wrapping to a
+   second ROW on a narrow screen (one clean line of cards, then another) reads far more deliberate
+   than 5 cards each internally wrapping its own heading like this did. No column count hardcoded
+   against the array length, same as before. */
+.at-tag-legend {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--at-line);
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px;
+}
+/* Swatches moved off to the side of a wrapping heading (the old layout) and onto their own row
+   above it — a small horizontal key strip that reads as "here's the color scale," followed by the
+   heading and body getting the card's FULL width to themselves, so the heading only ever needs to
+   wrap for being genuinely long, never for sharing space with the dots. */
+.at-tag-legend-item {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px; padding: 12px 14px;
+}
+.at-tag-legend-item .at-swatches { display: flex; flex-direction: row; gap: 4px; }
+.at-tag-legend-item .at-dot { width: 16px; height: 6px; border-radius: 3px; }
+.at-tag-legend-item h5 {
+  margin: 0; font-size: 12px; letter-spacing: 0.03em; font-weight: 700; color: var(--at-ink);
+}
+.at-tag-legend-item p { margin: 0; font-size: 12px; color: var(--at-ink-soft); line-height: 1.5; }
+
+/* ---- Overview panel (team x round grid) ---- */
+.at-ov-meta { font-size: 12px; color: var(--at-ink-soft); margin-bottom: 10px; }
+/* 2026-08-13: no vertical cap — TEAM_COUNT is a fixed 16, so the grid never has more rows than
+   that; the old 480px max-height forced an inner vertical scrollbar to see the last several
+   teams even though the row count can't grow. Horizontal scroll stays (9 round columns at
+   108px min-width each is wider than most viewports). */
+.at-grid-scroll { overflow-x: auto; overflow-y: visible; border: 1px solid var(--at-line); border-radius: 10px; }
+table.at-ov-grid { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
+table.at-ov-grid thead th {
+  position: sticky; top: 0; background: var(--at-pill); color: var(--at-pill-ink);
+  z-index: 2; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 9px 10px; text-align: left; white-space: nowrap;
+}
+table.at-ov-grid thead th.at-rnd { text-align: center; min-width: 108px; }
+/* 2026-08-19, widened 168->236px alongside the full-name change below — the chip alone fit 168,
+   chip + a real team name needs more room. Narrow-viewport override further down still shrinks
+   this back to a chip-only 54px, unaffected by this change. */
+table.at-ov-grid thead th.at-teamcol { position: sticky; left: 0; z-index: 3; min-width: 236px; }
+table.at-ov-grid tbody td.at-teamcol {
+  position: sticky; left: 0; background: var(--at-paper-raised); z-index: 1;
+  border-right: 1px solid var(--at-line); font-weight: 700; white-space: nowrap; padding: 8px 10px;
+  /* 2026-08-16, user's own report (screenshot at a narrow width): this cell's content read as
+     centred — it was never given its own `text-align`, so it fell through to the generic
+     `tbody td` rule below (`text-align: center`), the one property that rule didn't already
+     override. Pinned explicitly rather than relying on cascade order not to regress again. */
+  text-align: left;
+}
+table.at-ov-grid tbody tr.at-you td.at-teamcol { background: color-mix(in srgb, var(--at-ink) 6%, var(--at-paper-raised)); }
+.at-team-name-full { margin-left: 8px; font-weight: 600; color: var(--at-ink); }
+.at-team-name-full .at-lottery-you-tag { margin-left: 6px; }
+/* 2026-08-19: on-the-clock row now reads in the NBA-red accent with a small pulsing dot, same
+   "live" broadcast-graphics language real sports scoreboards use for whoever's up next — the
+   flat neutral highlight this replaced didn't distinguish "the moment that's actually happening
+   right now" from any other pick-in-progress state. */
+table.at-ov-grid tbody tr.at-clock td.at-teamcol { background: color-mix(in srgb, var(--at-accent-2) 16%, var(--at-paper-raised)); }
+table.at-ov-grid tbody td { padding: 8px 10px; border-top: 1px solid var(--at-line); white-space: nowrap; text-align: center; }
+table.at-ov-grid tbody td.at-pickcell { color: var(--at-ink); text-align: left; }
+table.at-ov-grid tbody td.at-empty { color: var(--at-ink-faint); font-style: italic; }
+table.at-ov-grid tbody td.at-onclock { color: var(--at-accent-2); font-weight: 700; font-style: italic; }
+table.at-ov-grid tbody td.at-onclock::before {
+  content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px;
+  border-radius: 999px; background: var(--at-accent-2); animation: at-live-pulse 1.4s ease-in-out infinite;
+}
+@keyframes at-live-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--at-accent-2) 55%, transparent); }
+  50% { opacity: 0.55; box-shadow: 0 0 0 4px color-mix(in srgb, var(--at-accent-2) 0%, transparent); }
+}
+
+/* Full name (desktop/tablet) vs "F. Last" (narrow, see the media query below) — same element
+   pair pattern for both, CSS-only toggle so there's no resize listener/JS width check involved. */
+.at-name-short { display: none; }
+
+/* Scroll-nav affordance for the round grid below — two tappable arrows + a one-time hint text,
+   hidden by default (desktop already scrolls fine with a trackpad/wheel, or just fits) and shown
+   only inside the mobile media query below. */
+.at-grid-scroll-nav { display: none; }
+.at-grid-scroll-btn {
+  flex: none; width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--at-line);
+  background: var(--at-pill); color: var(--at-pill-ink); font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.at-grid-scroll-hint { font-size: 10.5px; color: var(--at-ink-faint); text-align: center; flex: 1; }
+
+/* 2026-08-16, user's own ask at the time ("damy radę zmieścić wszystkie 8 picków na jednym
+   boardzie"): squeezed all round columns to fit the viewport with `table-layout: fixed`, wrapping
+   names onto multiple lines to make it work.
+   2026-09-12, user-reported live (mobile screenshot, that exact squeeze: "M. Jordan" wrapped
+   across 2 lines, "S. Gilgeous-Alexander" across 4) — reversed: real horizontal scroll instead,
+   sized so about two round columns are visible at a time (matching the explicit ask), with the
+   arrow-button affordance above for anyone who doesn't think to swipe a table. Team column and
+   the "F. Last" short-name format stay from the original pass — both are still the right call
+   for a narrow column, independent of which scroll strategy the round columns use. */
+@media (max-width: 640px) {
+  .at-grid-scroll-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  table.at-ov-grid thead th.at-rnd { min-width: 132px; padding: 7px 8px; font-size: 9px; }
+  table.at-ov-grid thead th.at-teamcol { width: 54px; min-width: 54px; padding: 7px 6px; }
+  table.at-ov-grid tbody td.at-teamcol { width: 54px; padding: 6px; white-space: normal; font-size: 12px; }
+  table.at-ov-grid tbody td.at-pickcell { padding: 5px 8px; font-size: 10.5px; }
+  .at-name-full { display: none; }
+  .at-name-short { display: inline; }
+  .at-team-chip { min-width: 0; height: 17px; padding: 0 4px; font-size: 9px; margin: 0 0 3px; display: inline-flex; }
+  .at-pick-badge { min-width: 0; height: 15px; padding: 0 4px; font-size: 8.5px; margin: 0 0 2px; display: inline-flex; }
+  /* 2026-08-19: the full-name addition above is a wide-viewport convenience (real spare room in
+     that column) — at this width the column is back to a 54px chip-only budget, same reasoning
+     the chip-narrowing comment right above already gives, so the name goes back to hover-only. */
+  .at-team-name-full { display: none; }
+}
+
+/* ---- Team panel (own roster during the draft) ---- */
+.at-cap-meter { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.at-cap-track { flex: 1; min-width: 160px; height: 9px; border-radius: 999px; background: var(--at-line); overflow: hidden; }
+.at-cap-fill { height: 100%; background: var(--at-accent); border-radius: 999px; }
+.at-cap-label {
+  font-size: 12px; color: var(--at-ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
+}
+.at-cap-label b { color: var(--at-ink); }
+.at-cap-meter--over .at-cap-label,
+.at-cap-meter--over .at-cap-label b { color: var(--danger); }
+.at-cap-meter--over .at-cap-fill { background: var(--danger); }
+
+/* 2026-08-19, user's explicit ask ("make it more tight"): row padding cut roughly in half —
+   this table gained four new grade columns (Off/Def/O-POR/D-POR) in the same pass, so a tighter
+   vertical rhythm matters even more now than it did at the old 4-column width. */
+table.at-roster-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.at-roster-table th {
+  text-align: left; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--at-ink-faint); padding: 0 8px 6px; border-bottom: 1px solid var(--at-line);
+}
+table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-line); vertical-align: middle; }
+
+/* 2026-09-14, user-reported live: the Player cell's new face-card avatar (DraftBoard.tsx) — same
+   `.bf-face` small headshot the Draft tab's cards/sidebar/Rotation rows already use, just inline
+   with the name instead of stacked above it, since a table row is a lot shorter than a card. */
+.at-roster-player-cell { display: flex; align-items: center; gap: 8px; }
+
+.at-empty-slot { color: var(--at-ink-faint); font-style: italic; }
+.at-placeholder { color: var(--at-ink-soft); font-size: 13px; padding: 30px 10px; text-align: center; }
+
+/* ---- Team tab's inline span dropdown — 2026-08-16, user's own two-step ask: span selection
+   first moved off its own dedicated screen into the Team tab, then (same-day follow-up, "span na
+   spokojnie można zmieścić w zakładce Team") folded directly into the roster table's own Span
+   cell instead of repeating the same player list a second time just below it. `RotationBuilder`
+   right below keeps its own pre-existing `.rotation-builder` styling, untouched. */
+/* 2026-08-19, user's explicit ask ("make span tighter"): this used to stretch to its full `<td>`
+   width, which grew very wide once the roster table gained six more columns (Off/Def/O-POR/
+   D-POR/SPC/DUR) — capped so it no longer crowds them out, and its own padding trimmed to match
+   the table's own tightened row rhythm from the same pass. */
+.at-span-picker-select {
+  max-width: 260px; font: inherit; font-size: 12.5px; padding: 5px 8px; border-radius: 999px;
+  border: 1px solid var(--at-line); background: var(--at-pill); color: var(--at-pill-ink);
+}

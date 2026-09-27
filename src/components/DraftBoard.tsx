@@ -1,7 +1,6 @@
 import { computeFinishing } from '../engine/finishing';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DraftPlayerCard, TIER_FRAME_COLOR } from './DraftPlayerCard';
-import { createPortal } from 'react-dom';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
@@ -16,11 +15,6 @@ import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
 import type { Rotation, Team } from '../engine/types';
 import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
-import { NOT_YET, STEALS_BLOCKS_NOTE, THREE_POINT_LINE_NOTE, hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
-import { EraYears } from './EraYears';
-import { TeamChip } from './TeamBadge';
-import { teamsForSpan } from '../engine/spanTeams';
-import { draftPool as fullDraftPool } from '../data/draftPool';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import {
   offensiveGrade,
@@ -53,6 +47,8 @@ import { AiSpeedControl, BoardToggleButton, DraftStatusBar, LeaveDraftDialog, Tu
 import { DraftDesk } from './DraftDesk';
 import { buildDraftDesk, type DraftDeskResult } from '../engine/draftDesk';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
+import { YearsPicker } from './YearsPicker';
+import { PlayerPeekModal } from './PlayerPeekModal';
 
 /** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
  * players; anyone past it is reachable via search or a position filter (both land well under the
@@ -214,7 +210,7 @@ export function OverallTierBadge({ span }: { span: PlayerSpan }) {
 /** Tooltip for a Draft button — says WHY a pick is blocked instead of one generic "over the cap"
  * line, since since 2026-09-24 a pick can also be blocked for leaving too little for the rest of
  * the roster (`pickBlockReason`'s 'reserve'), not only for busting the cap outright. */
-function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, currentTeam: Team, label?: string): string | undefined {
+export function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, currentTeam: Team, label?: string): string | undefined {
   if (!canPick) return `${teamLabel(currentTeam)} is picking…`;
   const reason = pickBlockReason(state, spanId);
   if (reason === 'cap') return 'Over the cap — pick a cheaper player, or cheaper years for this one.';
@@ -225,383 +221,12 @@ function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, c
   return label;
 }
 
-/** How many of a player's best windows the Years sheet shows before "Show all". */
-const YEARS_PICKER_TOP_COUNT = 5;
-
-/** 2026-09-25, user-reported live ("może ten widok dostosować pod UI?"): the Team tab's Years menu
- * was a native `<select>`, so on a phone it opened the OS's own plain white list. Now a button
- * that opens an in-game sheet — era stamp, cost in caps and tier for every stretch, the current
- * one marked. */
-function YearsPicker({
-  playerName,
-  options,
-  selectedId,
-  showTal,
-  onSelect,
-}: {
-  playerName: string;
-  options: PlayerSpan[];
-  selectedId: string;
-  showTal: boolean;
-  onSelect: (id: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [showAllYears, setShowAllYears] = useState(false);
-  const selected = options.find((o) => o.id === selectedId) ?? options[0];
-  // 2026-09-25, user ("tabela jest za długa. Kilka najlepszych sezonów i przycisk show more"):
-  // the sheet opens on his best windows by TAL (in career order) plus the current pick, with the
-  // rest one click away.
-  const chronological = [...options].sort((a, b) => a.spanLabel.localeCompare(b.spanLabel));
-  const bestIds = new Set(
-    [...options].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, YEARS_PICKER_TOP_COUNT).map((o) => o.id),
-  );
-  bestIds.add(selected.id);
-  const visibleOptions = showAllYears ? chronological : chronological.filter((o) => bestIds.has(o.id));
-  const hiddenCount = chronological.length - visibleOptions.length;
-  // 2026-09-25, user ("przesunięcie w lewo pozwoli na sprawdzenie całego składu"): the sheet docks
-  // to the left edge on wide screens and stays open after a pick, so the Team table's grade
-  // columns stay visible and update live while you click through the years. The row being edited
-  // is highlighted in the table.
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const row = triggerRef.current?.closest('tr');
-    if (!row) return;
-    row.classList.toggle('is-editing-years', open);
-    return () => row.classList.remove('is-editing-years');
-  }, [open]);
-  // 2026-09-25 ("zbyt bardzo na lewo … między draft board a rotację"): on wide screens the sheet
-  // renders inline in the slot between the Team table and the Rotation card (no overlay, nothing
-  // covered); phones keep the centred sheet.
-  const [inlineSlot, setInlineSlot] = useState<HTMLElement | null>(null);
-  const inlineRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const wide = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 900px)').matches;
-    const slot = wide ? document.getElementById('years-sheet-slot') : null;
-    // The slot is `display: none` while empty (CSS) — only the tab switch's inline style hides it for real.
-    setInlineSlot(slot && slot.style.display !== 'none' ? slot : null);
-  }, [open]);
-  useEffect(() => {
-    if (open && inlineSlot) inlineRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [open, inlineSlot]);
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
-  return (
-    <>
-      <button ref={triggerRef} type="button" className="years-picker-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
-        <EraYears span={selected} />
-        <span className="years-picker-cost">
-          <CapIcon size={12} /> {selected.fga.toFixed(1)}
-        </span>
-        <span className="years-picker-caret" aria-hidden>▾</span>
-      </button>
-      {open && inlineSlot && createPortal(
-        <div ref={inlineRef} className="years-picker-inline" role="region" aria-label={`${playerName} — choose years`}>
-  <button type="button" className="player-peek-close" onClick={() => setOpen(false)} aria-label="Close">
-      ✕
-    </button>
-    <div className="player-peek-head">
-      <Face name={playerName} size="md" />
-      <div>
-        <h2 className="player-peek-name">{playerName}</h2>
-        <span className="player-peek-sub">Which years of his career do you play? Pick one to see his row update.</span>
-      </div>
-    </div>
-    <ul className="years-picker-list">
-      {visibleOptions.map((o) => {
-        const isSelected = o.id === selectedId;
-        const tier = overallTierForSpan(tierContextFor(o));
-        return (
-          <li key={o.id}>
-            <button
-              type="button"
-              className={`years-picker-option${isSelected ? ' is-selected' : ''}`}
-              onClick={() => onSelect(o.id)}
-            >
-              <EraYears span={o} />
-              <span className="years-picker-tier">{showTal ? `TAL ${effectiveTalent(o)} · ${tier}` : tier}</span>
-              <span className="years-picker-cost">
-                <CapIcon size={13} /> {o.fga.toFixed(1)}
-              </span>
-              <span className="years-picker-check" aria-hidden>{isSelected ? '✓' : ''}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-    {(hiddenCount > 0 || showAllYears) && chronological.length > YEARS_PICKER_TOP_COUNT + 1 && (
-      <button type="button" className="secondary-btn years-picker-more" onClick={() => setShowAllYears((v) => !v)}>
-        {showAllYears ? 'Show best years only' : `Show all ${chronological.length} windows`}
-      </button>
-    )}
-    <div className="years-picker-footer">
-      <button type="button" className="primary-btn years-picker-done" onClick={() => setOpen(false)}>
-        Done
-      </button>
-    </div>
-        </div>,
-        inlineSlot,
-      )}
-      {open && !inlineSlot && (
-        <div className="player-peek-overlay years-picker-overlay" onClick={() => setOpen(false)}>
-          <div
-            className="player-peek-card years-picker-sheet"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${playerName} — choose years`}
-          >
-            <button type="button" className="player-peek-close" onClick={() => setOpen(false)} aria-label="Close">
-              ✕
-            </button>
-            <div className="player-peek-head">
-              <Face name={playerName} size="md" />
-              <div>
-                <h2 className="player-peek-name">{playerName}</h2>
-                <span className="player-peek-sub">Which years of his career do you play? Pick one to see his row update.</span>
-              </div>
-            </div>
-            <ul className="years-picker-list">
-              {visibleOptions.map((o) => {
-                const isSelected = o.id === selectedId;
-                const tier = overallTierForSpan(tierContextFor(o));
-                return (
-                  <li key={o.id}>
-                    <button
-                      type="button"
-                      className={`years-picker-option${isSelected ? ' is-selected' : ''}`}
-                      onClick={() => onSelect(o.id)}
-                    >
-                      <EraYears span={o} />
-                      <span className="years-picker-tier">{showTal ? `TAL ${effectiveTalent(o)} · ${tier}` : tier}</span>
-                      <span className="years-picker-cost">
-                        <CapIcon size={13} /> {o.fga.toFixed(1)}
-                      </span>
-                      <span className="years-picker-check" aria-hidden>{isSelected ? '✓' : ''}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            {(hiddenCount > 0 || showAllYears) && chronological.length > YEARS_PICKER_TOP_COUNT + 1 && (
-              <button type="button" className="secondary-btn years-picker-more" onClick={() => setShowAllYears((v) => !v)}>
-                {showAllYears ? 'Show best years only' : `Show all ${chronological.length} windows`}
-              </button>
-            )}
-            <div className="years-picker-footer">
-              <button type="button" className="primary-btn years-picker-done" onClick={() => setOpen(false)}>
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
 
 /** 2026-09-25, user's ask ("rozszerzenie scouting report o wszystkie sezony, tylko surowe
  * statystyki; gracz może 3 razy w ciągu draftu użyć scouta żeby pokazać dokładnie offense,
  * defense itd"): how many full scouting reports a draft allows. */
 export const SCOUT_REPORTS_PER_DRAFT = 3;
 
-/** Every career window the database has for a player, including the ones this draft's lean pool
- * leaves out (a star keeps only his peak windows there). Built once, on first open. */
-let fullCareerByPlayer: Map<string, PlayerSpan[]> | null = null;
-function fullCareerFor(playerName: string): PlayerSpan[] {
-  if (!fullCareerByPlayer) {
-    fullCareerByPlayer = new Map();
-    for (const span of fullDraftPool) {
-      const list = fullCareerByPlayer.get(span.playerName);
-      if (list) list.push(span);
-      else fullCareerByPlayer.set(span.playerName, [span]);
-    }
-  }
-  return fullCareerByPlayer.get(playerName) ?? [];
-}
-
-/** 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
- * glass on a player face-card opens this instead of expanding the card in place.
- * 2026-09-25: lists every career window on record (raw box score only), in career order, each
- * one draftable (draft.ts knows every window, not just the lean pool's). A scouting report (3 per
- * draft) adds his tier and the
- * offense/defense/portability/spacing/durability grades for every window. */
-function PlayerPeekModal({
-  group,
-  state,
-  canPick,
-  currentTeam,
-  onClose,
-  onPick,
-  scouted,
-  scoutsLeft,
-  onScout,
-}: {
-  group: { playerName: string; spans: PlayerSpan[]; spansByAiValue: PlayerSpan[] };
-  state: DraftState;
-  canPick: boolean;
-  currentTeam: Team;
-  onClose: () => void;
-  onPick: (id: string) => void;
-  scouted: boolean;
-  scoutsLeft: number;
-  onScout: () => void;
-}) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  const rows = useMemo(() => {
-    const byId = new Map<string, PlayerSpan>();
-    for (const span of fullCareerFor(group.playerName)) byId.set(span.id, span);
-    for (const span of group.spans) byId.set(span.id, span);
-    return [...byId.values()].sort((a, b) => a.spanLabel.localeCompare(b.spanLabel));
-  }, [group.playerName, group.spans]);
-
-  return (
-    <div className="player-peek-overlay" onClick={onClose}>
-      <div
-        className="player-peek-card"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${group.playerName} — seasons`}
-      >
-        <button type="button" className="player-peek-close" onClick={onClose} aria-label="Close">
-          ✕
-        </button>
-        <div className="player-peek-head">
-          <Face name={group.playerName} size="md" />
-          <div>
-            <h2 className="player-peek-name">{group.playerName}</h2>
-            <span className="player-peek-sub">
-              {naturalPosition(group.playerName)} · {rows.length} stretch{rows.length > 1 ? 'es' : ''} of his career to choose from
-            </span>
-          </div>
-          <div className="player-peek-scout">
-            {scouted ? (
-              <span className="player-peek-scouted">✓ Scouting report</span>
-            ) : (
-              <button
-                type="button"
-                className="secondary-btn player-peek-scout-btn"
-                disabled={scoutsLeft <= 0}
-                onClick={onScout}
-                title={
-                  scoutsLeft > 0
-                    ? 'Reveal his tier and offense, defense, portability, spacing and durability grades for every stretch.'
-                    : 'You have used all your scouting reports for this draft.'
-                }
-              >
-                🔍 Scout him · {scoutsLeft}/{SCOUT_REPORTS_PER_DRAFT} left
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="table-scroll">
-          <table className="span-table at-draft-span-table">
-            <thead>
-              <tr>
-                <th>Years</th>
-                <th>Team</th>
-                <th>Pos</th>
-                <th className="num">PTS</th>
-                <th className="num">AST</th>
-                <th className="num">REB</th>
-                <th className="num">STL</th>
-                <th className="num">BLK</th>
-                <th className="num">FG%</th>
-                <th className="num">3PT%</th>
-                <th className="num">FT%</th>
-                <th className="num">Caps</th>
-                {scouted && (
-                  <>
-                    <th>Tier</th>
-                    <th title="Offense">OFF</th>
-                    <th title="Defense">DEF</th>
-                    <th title="Offensive portability">O-POR</th>
-                    <th title="Defensive portability">D-POR</th>
-                    <th title="Spacing">SPC</th>
-                    <th title="Finishing">FIN</th>
-                    <th title="Durability">DUR</th>
-                  </>
-                )}
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((span) => {
-                const legal = canPick && isPickLegal(state, span.id);
-                return (
-                  <tr key={span.id}>
-                    <td className="peek-years"><EraYears span={span} /></td>
-                    <td className="peek-teams" data-label="Team">
-                      {teamsForSpan(span).map((t) => (
-                        <TeamChip key={t.code} code={t.code} seasonStart={t.seasonStart} seasonEnd={t.seasonEnd} />
-                      ))}
-                    </td>
-                    <td data-label="Pos">{span.primaryPosition}</td>
-                    <td className="num" data-label="PTS">{span.box.ppg.toFixed(1)}</td>
-                    <td className="num" data-label="AST">{span.box.apg.toFixed(1)}</td>
-                    <td className="num" data-label="REB">{span.box.rpg.toFixed(1)}</td>
-                    {hadStealsBlocksRecorded(span) ? (
-                      <>
-                        <td className="num" data-label="STL">{span.box.spg.toFixed(1)}</td>
-                        <td className="num" data-label="BLK">{span.box.bpg.toFixed(1)}</td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="num era-na" data-label="STL" title={STEALS_BLOCKS_NOTE}>{NOT_YET}</td>
-                        <td className="num era-na" data-label="BLK" title={STEALS_BLOCKS_NOTE}>{NOT_YET}</td>
-                      </>
-                    )}
-                    <td className="num" data-label="FG%">{(span.box.fgPct * 100).toFixed(1)}%</td>
-                    {hadThreePointLine(span) ? (
-                      <td className="num" data-label="3PT%">{(span.box.threePct * 100).toFixed(1)}%</td>
-                    ) : (
-                      <td className="num era-na" data-label="3PT%" title={THREE_POINT_LINE_NOTE}>{NOT_YET}</td>
-                    )}
-                    <td className="num" data-label="FT%">{(span.box.ftPct * 100).toFixed(1)}%</td>
-                    <td className="num" data-label="Caps">{span.fga.toFixed(1)}</td>
-                    {scouted && (
-                      <>
-                        <td className="tier-cell peek-tier" data-label="Tier">{overallTierForSpan(tierContextFor(span))}</td>
-                        <td data-label="OFF"><AtGrade grade={offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))} /></td>
-                        <td data-label="DEF"><AtGrade grade={defensiveGrade(computeDefensiveTalent(span))} /></td>
-                        <td data-label="O-POR"><AtGrade grade={offensivePortabilityGrade(computeOffensivePortability(span))} /></td>
-                        <td data-label="D-POR"><AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(span))} /></td>
-                        <td data-label="SPC"><AtGrade grade={spacingGrade(computeSpacing(span), span)} /></td>
-                        <td data-label="FIN"><AtGrade grade={finishingGrade(computeFinishing(span), span)} /></td>
-                        <td data-label="DUR"><AtGrade grade={durabilityGrade(computeDurability(span))} /></td>
-                      </>
-                    )}
-                    <td className="peek-action">
-                      <button
-                        type="button"
-                        className="at-draft-btn"
-                        disabled={!legal}
-                        title={draftButtonTitle(state, span.id, canPick, currentTeam)}
-                        onClick={() => onPick(span.id)}
-                      >
-                        Draft
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /** Real playoff-performance tag (see `playoffPerformanceLookup.ts`) — a third, fully distinct
  * palette (red family = dropped efficiency, green family = rose above it) so it can't be

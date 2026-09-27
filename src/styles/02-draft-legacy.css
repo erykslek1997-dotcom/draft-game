@@ -1,0 +1,88 @@
+/* Draft board */
+
+.team-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .team-panels {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.team-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.team-panel.active {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.team-panel h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.cap-meter {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.roster-count {
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.mini-roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.mini-roster li {
+  padding: 2px 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.cap-remaining {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.player-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.player-table th,
+.player-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.player-table tr.illegal {
+  opacity: 0.35;
+}
+
+.cpu-thinking {
+  padding: 40px;
+  text-align: center;
+  color: var(--text);
+  font-style: italic;
+}

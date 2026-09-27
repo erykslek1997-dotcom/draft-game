@@ -353,7 +353,7 @@ export async function buildDuelCardBlob(data: DuelCardData): Promise<Blob | null
       // used to fill each half by `mine/(mine+theirs)` — a relative-SHARE fraction, correct for two
       // numbers that sum to a whole (like a vote split), wrong for two independent 0-100 scores,
       // where it left roughly half the bar empty even for a near-maxed value. Every one of these 7
-      // metrics is already a 0-100 score (see `ScoreChip`/`scoreBand` in ResultsScreen.tsx) — fill
+      // metrics is already a 0-100 score (see `ScoreChip`/`qualityColor` in ResultsScreen.tsx) — fill
       // length is now a direct percentage of that real, fixed scale instead.
       const leftW = (barHalf * mine) / 100;
       const rightW = (barHalf * theirs) / 100;
