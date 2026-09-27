@@ -662,3 +662,13 @@
   .bf-cabinet .bf-reel-season { font-size: 9.5px; }
   .bf-cabinet .bf-reel-item { padding: 0 3px; }
 }
+
+/* 2026-09-27: picks are final, so a card that would leave the open positions unfillable under the
+   cap is shut, with the overage written on it. */
+.bf-pool-card--blocked { opacity: 0.42; filter: grayscale(0.7); cursor: not-allowed; position: relative; }
+.bf-pool-over {
+  position: absolute; top: 8px; left: 8px; right: 8px; z-index: 1;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--at-accent-2, #ff8a9a); text-align: center;
+}
+.bf-slot--filled:disabled { opacity: 1; cursor: default; }
