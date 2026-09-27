@@ -236,3 +236,37 @@ export function playoffTalentTerm(span: PlayerSpan): number {
   const p = playoffImpactForSpan(span);
   return p.offense + p.defense + p.finalsMvp;
 }
+
+/**
+ * 2026-09-27, the user ("gracze którzy w PO grali więcej minut dostawali boost"): how much of a
+ * deep playoff run's workload the player carried, 0-1, averaged over the window's seasons. A
+ * season counts in full at three quarters of that year's heaviest playoff minutes (the playoffs
+ * ran 10-14 games in the 1950s and 20-25 today, so each year is measured against its own
+ * ceiling); a season without playoff minutes counts 0. Feeds durability only as a boost.
+ */
+const FULL_LOAD_SHARE_OF_YEAR_MAX = 0.75;
+let yearMaxMinutes: Map<number, number> | null = null;
+export function playoffLoadForSpan(span: PlayerSpan): number {
+  const d = data();
+  if (!yearMaxMinutes) {
+    yearMaxMinutes = new Map();
+    for (const r of poData as PoRow[]) {
+      const y = seasonEndYearOf(r.season);
+      yearMaxMinutes.set(y, Math.max(yearMaxMinutes.get(y) ?? 0, r.minutes));
+    }
+    yearMaxMinutes.set(MERGED_PLAYOFF_YEAR - 1, yearMaxMinutes.get(MERGED_PLAYOFF_YEAR) ?? 0);
+  }
+  const key = normalizePlayerName(span.playerName);
+  const years = spanEndYears(span.spanLabel);
+  if (years.length === 0) return 0;
+  const used = new Set<PoRow>();
+  let sum = 0;
+  for (const year of years) {
+    const p = d.po.get(`${key}|${year}`);
+    const max = yearMaxMinutes.get(year);
+    if (!p || !max || used.has(p)) continue;
+    used.add(p);
+    sum += Math.min(1, p.minutes / (FULL_LOAD_SHARE_OF_YEAR_MAX * max));
+  }
+  return sum / years.length;
+}
