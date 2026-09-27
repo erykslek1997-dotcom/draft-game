@@ -192,7 +192,7 @@ export default function BestFive({ onBack, onNextStep }: Props) {
 
   return (
     <div className="at-shell best-five">
-      <div className="at-board-brand at-cond">Daily Deal</div>
+      <div className="at-board-brand at-cond">Roulette</div>
       <div className="bf-subhead">
         <span className="bf-date">
           {isDaily ? `Daily puzzle · ${formatDisplayDate(today)}` : `Practice board #${board.n}`}

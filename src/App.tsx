@@ -85,7 +85,7 @@ const DISPLAY_BENCH_SLOT_COUNT = 4;
  * counterparts if the rules ever change. */
 const MODE_HOW_TO_PLAY_TITLE: Record<'draft' | 'bestfive' | 'quickfive', string> = {
   draft: 'All-Time Draft',
-  bestfive: 'Daily Deal',
+  bestfive: 'Roulette',
   quickfive: 'Mini Draft',
 };
 
@@ -332,13 +332,13 @@ function App() {
                     🃏
                   </span>
                   <span className="mode-card-step at-cond">Step 1 · learn the caps{stepDone('bestfive') ? ' ✓' : ''}</span>
-                  <span className="mode-card-name at-cond">Daily Deal</span>
+                  <span className="mode-card-name at-cond">Roulette</span>
                   <span className="mode-card-desc">Daily puzzle — four cards dealt per position, build a five under the cap.</span>
                 </button>
                 <button
                   type="button"
                   className="mode-card-help"
-                  aria-label="How to play: Daily Deal"
+                  aria-label="How to play: Roulette"
                   aria-haspopup="dialog"
                   onClick={(e) => {
                     e.stopPropagation();
