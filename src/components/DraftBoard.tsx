@@ -1462,7 +1462,7 @@ export default function DraftBoard({
       });
     return { groups: matched.slice(0, DRAFT_LIST_LIMIT), totalMatched: matched.length };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enrichedGroups, state.draftedIds, selectedPosition, search, mode, needBiasActive, openStarterPositions]);
+  }, [enrichedGroups, state.draftedIds, ghosts, selectedPosition, search, mode, needBiasActive, openStarterPositions]);
   const priciestAvailable = useMemo(
     () => state.pool.reduce((max, p) => (!state.draftedIds.has(p.id) && p.fga > max ? p.fga : max), 0),
     [state.pool, state.draftedIds],
@@ -1741,7 +1741,6 @@ export default function DraftBoard({
               // disappearing (plus the "on the clock" cell in the board, usually scrolled out of
               // view) — and nothing on screen said how much of the cap this pick could actually use.
               <div className="at-your-turn-banner" role="status">
-                <span className="at-your-turn-title at-cond">Your pick</span>
                 <TurnBudgetText
                   round={state.round + 1}
                   rounds={ROUNDS}
