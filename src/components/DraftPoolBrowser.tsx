@@ -6,6 +6,7 @@ import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiv
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing } from '../engine/spacing';
 import { computeDurability } from '../engine/durability';
+import { computeFinishing } from '../engine/finishing';
 import { allStarCount } from '../engine/allStarLookup';
 import { offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, displayTalentForSpan, displayNumberForSpan, overallTierForSpan, tierRank } from '../engine/grades';
 import {
@@ -241,6 +242,7 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                               {showJudgeMetrics && <th>O-POR</th>}
                               {showJudgeMetrics && <th>D-POR</th>}
                               {showJudgeMetrics && <th>SPC</th>}
+                              {showJudgeMetrics && <th>FIN</th>}
                               {showJudgeMetrics && <th>Shooter</th>}
                               {showJudgeMetrics && <th>Playoffs</th>}
                               {showJudgeMetrics && <th>DUR</th>}
@@ -276,6 +278,7 @@ export default function DraftPoolBrowser({ mode, onBack }: Props) {
                                 {showJudgeMetrics && <td>{offensivePortabilityGrade(computeOffensivePortability(span))}</td>}
                                 {showJudgeMetrics && <td>{defensivePortabilityGrade(computeDefensivePortability(span))}</td>}
                                 {showJudgeMetrics && <td>{computeSpacing(span)}</td>}
+                                {showJudgeMetrics && <td>{computeFinishing(span)}</td>}
                                 {showJudgeMetrics && (
                                   <td>
                                     <SpacingTierBadge span={span} />

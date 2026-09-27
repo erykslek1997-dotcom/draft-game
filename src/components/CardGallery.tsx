@@ -303,6 +303,7 @@ function SpanBlock({ row, lead }: { row: CardSpanRow; lead: boolean }) {
         <Metric label="O-POR" value={row.oporGrade} />
         <Metric label="D-POR" value={row.dporGrade} />
         <Metric label="SPC" value={`${row.spacing} · ${row.spacingTier}`} />
+        <Metric label="FIN" value={`${row.finishing} · ${row.finishingGrade}`} />
         <Metric label="DUR" value={`${row.durability} · ${row.durabilityTier}`} />
         {row.playoffTier && <Metric label="Playoffs" value={row.playoffTier} />}
         <Metric label="Archetype" value={row.archetype} />

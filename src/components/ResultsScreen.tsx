@@ -20,6 +20,7 @@ import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing } from '../engine/spacing';
 import { computeDurability } from '../engine/durability';
+import { computeFinishing } from '../engine/finishing';
 import { projectedNetRating } from '../engine/netRatingProjection';
 import { fitScore, type FitScoreResult } from '../engine/fit';
 import { defensiveHuntability } from '../engine/defensiveHuntability';
@@ -1548,6 +1549,7 @@ export function buildFeedbackExport(
         OPOR: computeOffensivePortability(p),
         DPOR: computeDefensivePortability(p),
         SPC: computeSpacing(p),
+        FIN: computeFinishing(p),
         DUR: computeDurability(p),
       }));
       const fb = feedbackFor(feedback, team.id);

@@ -19,6 +19,7 @@ import {
 } from './talent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing, computeRawSpacing } from './spacing';
+import { computeFinishing, namedFinishingS } from './finishing';
 import { computeDurability } from './durability';
 import { spanEndYears } from './era';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
@@ -295,6 +296,24 @@ export function spacingGrade(value: number, span?: PlayerSpan): Grade {
   const rawGrade = rawSpacingGrade(span);
   const cappedRank = Math.min(gradeRank(eraScaledGrade), gradeRank(rawGrade) + 1);
   return GRADE_ORDER[cappedRank];
+}
+
+let finishingGradeSortedValues: number[] | null = null; // sorted ascending, cached once
+let finishingGradeSThreshold: number | null = null;
+
+/**
+ * FINISHING (finishing.ts) is graded like SPACING: percentile rank in the real pool first, then
+ * the shared letter bands, so a letter means the same share of the pool on both.
+ */
+export function finishingGrade(value: number, span?: PlayerSpan): Grade {
+  if (span && namedFinishingS(span, value)) return 'S';
+  if (finishingGradeSortedValues === null) {
+    finishingGradeSortedValues = draftPool.map((p) => computeFinishing(p)).sort((a, b) => a - b);
+  }
+  if (finishingGradeSThreshold === null) {
+    finishingGradeSThreshold = percentileRank(computeSThreshold(finishingGradeSortedValues), finishingGradeSortedValues);
+  }
+  return gradeForValue(percentileRank(value, finishingGradeSortedValues), finishingGradeSThreshold);
 }
 
 let durabilityGradeSThreshold: number | null = null;

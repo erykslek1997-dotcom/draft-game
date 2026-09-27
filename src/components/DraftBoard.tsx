@@ -1,3 +1,4 @@
+import { computeFinishing } from '../engine/finishing';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DraftPlayerCard, TIER_FRAME_COLOR } from './DraftPlayerCard';
 import { createPortal } from 'react-dom';
@@ -28,6 +29,7 @@ import {
   defensivePortabilityGrade,
   spacingGrade,
   durabilityGrade,
+  finishingGrade,
   overallTierForSpan,
   displayNumberForSpan,
   tierRank,
@@ -526,6 +528,7 @@ function PlayerPeekModal({
                     <th title="Offensive portability">O-POR</th>
                     <th title="Defensive portability">D-POR</th>
                     <th title="Spacing">SPC</th>
+                    <th title="Finishing">FIN</th>
                     <th title="Durability">DUR</th>
                   </>
                 )}
@@ -574,6 +577,7 @@ function PlayerPeekModal({
                         <td data-label="O-POR"><AtGrade grade={offensivePortabilityGrade(computeOffensivePortability(span))} /></td>
                         <td data-label="D-POR"><AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(span))} /></td>
                         <td data-label="SPC"><AtGrade grade={spacingGrade(computeSpacing(span), span)} /></td>
+                        <td data-label="FIN"><AtGrade grade={finishingGrade(computeFinishing(span), span)} /></td>
                         <td data-label="DUR"><AtGrade grade={durabilityGrade(computeDurability(span))} /></td>
                       </>
                     )}
@@ -819,7 +823,7 @@ const TAG_LEGEND: ReadonlyArray<{ name: string; tiers: string[]; text: string }>
   { name: 'Talent (TAL)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How good the player was in those years, all in one number — scoring, efficiency, playmaking and defense. The named tiers (Cigarette Butt up to GOAT) come from it." },
   { name: 'Offense (OFF) / Defense (DEF)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'Talent split into its offensive and defensive halves, as a letter grade from F to S. S is kept for the 3 best in the pool.' },
   { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How well his game fits next to other stars. A shooter who doesn't need the ball, or a defender who can guard anyone, fits almost anywhere; a star who needs the ball fits worse next to another one. Same F–S scale." },
-  { name: '3PT (SPC)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How much his outside shooting forces defenses to guard him away from the basket, adjusted for his era. Same F–S scale." },
+  { name: '3PT (SPC) / Finishing (FIN)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "SPC: how much his outside shooting forces defenses to guard him away from the basket, adjusted for his era. FIN: how much he finishes at the rim for his position — how many shots at the basket he takes, how often they go in, and fouls drawn. Same F–S scale." },
   { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How many of his team's games he actually played in those years. Same F–S scale." },
   // 2026-08-19, user's explicit ask ("hide playoffs and make everything in one line"): the
   // Playoffs entry used to sit alone on its own short second row (5 cards fit one row, the 6th
@@ -1868,6 +1872,7 @@ export default function DraftBoard({
                                 <th>O-POR</th>
                                 <th>D-POR</th>
                                 <th className="num">SPC</th>
+                                <th className="num">FIN</th>
                                 <th className="num">DUR</th>
                                 <th>Tier</th>
                                 <th />
@@ -1889,6 +1894,7 @@ export default function DraftBoard({
                                     <td>{offensivePortabilityGrade(computeOffensivePortability(span))}</td>
                                     <td>{defensivePortabilityGrade(computeDefensivePortability(span))}</td>
                                     <td className="num">{computeSpacing(span)}</td>
+                                    <td className="num">{computeFinishing(span)}</td>
                                     <td className="num">{computeDurability(span)}</td>
                                     <td className="tier-cell">{overallTierForSpan(ctx)}</td>
                                     <td><SmallSampleBadge span={span} /></td>
@@ -2246,6 +2252,7 @@ export default function DraftBoard({
                   <th style={{ textAlign: 'center' }}>O-POR</th>
                   <th style={{ textAlign: 'center' }}>D-POR</th>
                   <th style={{ textAlign: 'center' }}>SPC</th>
+                  <th style={{ textAlign: 'center' }}>FIN</th>
                   <th style={{ textAlign: 'center' }}>DUR</th>
                   <th>Caps</th>
                 </tr>
@@ -2310,6 +2317,9 @@ export default function DraftBoard({
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <AtGrade grade={spacingGrade(computeSpacing(effective), effective)} />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <AtGrade grade={finishingGrade(computeFinishing(effective), effective)} />
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <AtGrade grade={durabilityGrade(computeDurability(effective))} />
