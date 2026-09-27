@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { computeOffensiveProfile } from './offensiveProfile';
 import { boxRatesForSpan } from './boxRatesLookup';
@@ -10,18 +11,21 @@ import { eraBaseline, LEAGUE_PACE_BASELINE, spanEndYears } from './era';
  * volume; the user: "Curry 25 czy Nash 5 pokazują wady... kończyli na wysokim procencie jak na
  * niskich graczy". So this is finishing skill, read against players of the same position:
  *
- * - 55% how often his shots at the rim go in (1997+ shot-zone data), pulled toward the position's
+ * - 25% how often his shots at the rim go in (1997+ shot-zone data), pulled toward the position's
  *   median when he took few of them;
- * - 30% how many shots at the rim he took per game, pace-adjusted;
- * - 15% how often he drew fouls (FTA / FGA).
+ * - 55% how many shots at the rim he took per game, pace-adjusted;
+ * - 20% how often he drew fouls (FTA / FGA).
+ *
+ * Weights set with the user the same day: volume first ("Westbrook 85, Nash 70"); these give
+ * Westbrook 2015-17 86 and Nash 2005-07 71.
  *
  * Each part is a 0-100 percentile among the pool's spans of the same position. Before 1997 there
  * are no shot zones: two-point FG% (against the same position in the same decade) stands in for
  * rim accuracy and two-point attempts for rim attempts.
  */
-const ACCURACY_WEIGHT = 0.55;
-const VOLUME_WEIGHT = 0.3;
-const FOUL_WEIGHT = 0.15;
+const ACCURACY_WEIGHT = 0.25;
+const VOLUME_WEIGHT = 0.55;
+const FOUL_WEIGHT = 0.2;
 /** Rim attempts per game at which a player's own accuracy counts half, the position median half. */
 const ACCURACY_SHRINK_ATTEMPTS = 1.5;
 const TWO_POINT_SHRINK_ATTEMPTS = 3;
@@ -128,4 +132,14 @@ export function computeFinishing(span: PlayerSpan): number {
   );
   valueCache.set(span.id, value);
   return value;
+}
+
+/**
+ * The user, 2026-09-27: "Shaq i LeBron ręcznie S". Their windows that already read elite (FIN 90+)
+ * get the S grade; the number itself is untouched.
+ */
+const NAMED_FINISHING_S = new Set(["Shaquille O'Neal", 'LeBron James'].map(normalizePlayerName));
+const NAMED_FINISHING_S_MIN_VALUE = 90;
+export function namedFinishingS(span: PlayerSpan, value: number): boolean {
+  return value >= NAMED_FINISHING_S_MIN_VALUE && NAMED_FINISHING_S.has(normalizePlayerName(span.playerName));
 }

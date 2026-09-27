@@ -577,7 +577,7 @@ function PlayerPeekModal({
                         <td data-label="O-POR"><AtGrade grade={offensivePortabilityGrade(computeOffensivePortability(span))} /></td>
                         <td data-label="D-POR"><AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(span))} /></td>
                         <td data-label="SPC"><AtGrade grade={spacingGrade(computeSpacing(span), span)} /></td>
-                        <td data-label="FIN"><AtGrade grade={finishingGrade(computeFinishing(span))} /></td>
+                        <td data-label="FIN"><AtGrade grade={finishingGrade(computeFinishing(span), span)} /></td>
                         <td data-label="DUR"><AtGrade grade={durabilityGrade(computeDurability(span))} /></td>
                       </>
                     )}
@@ -823,7 +823,7 @@ const TAG_LEGEND: ReadonlyArray<{ name: string; tiers: string[]; text: string }>
   { name: 'Talent (TAL)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How good the player was in those years, all in one number — scoring, efficiency, playmaking and defense. The named tiers (Cigarette Butt up to GOAT) come from it." },
   { name: 'Offense (OFF) / Defense (DEF)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'Talent split into its offensive and defensive halves, as a letter grade from F to S. S is kept for the 3 best in the pool.' },
   { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How well his game fits next to other stars. A shooter who doesn't need the ball, or a defender who can guard anyone, fits almost anywhere; a star who needs the ball fits worse next to another one. Same F–S scale." },
-  { name: '3PT (SPC) / Finishing (FIN)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "SPC: how much his outside shooting forces defenses to guard him away from the basket, adjusted for his era. FIN: how well he finishes at the rim for his position — how often those shots go in, how many he takes, and fouls drawn. Same F–S scale." },
+  { name: '3PT (SPC) / Finishing (FIN)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "SPC: how much his outside shooting forces defenses to guard him away from the basket, adjusted for his era. FIN: how much he finishes at the rim for his position — how many shots at the basket he takes, how often they go in, and fouls drawn. Same F–S scale." },
   { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How many of his team's games he actually played in those years. Same F–S scale." },
   // 2026-08-19, user's explicit ask ("hide playoffs and make everything in one line"): the
   // Playoffs entry used to sit alone on its own short second row (5 cards fit one row, the 6th
@@ -2319,7 +2319,7 @@ export default function DraftBoard({
                         <AtGrade grade={spacingGrade(computeSpacing(effective), effective)} />
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <AtGrade grade={finishingGrade(computeFinishing(effective))} />
+                        <AtGrade grade={finishingGrade(computeFinishing(effective), effective)} />
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <AtGrade grade={durabilityGrade(computeDurability(effective))} />

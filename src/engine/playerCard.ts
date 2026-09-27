@@ -354,7 +354,7 @@ function cardSpanRow(span: PlayerSpan): CardSpanRow {
     spacing: computeSpacing(span),
     spacingTier: spacingTier(span),
     finishing: computeFinishing(span),
-    finishingGrade: finishingGrade(computeFinishing(span)),
+    finishingGrade: finishingGrade(computeFinishing(span), span),
     durability: computeDurability(span),
     durabilityTier: durabilityTier(span),
     playoffTier: playoffPerformanceTier(span),
