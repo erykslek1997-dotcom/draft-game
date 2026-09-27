@@ -1550,19 +1550,14 @@ export type AiDraftStrategy = 'starting-five-first' | 'stack-stars' | 'value-hun
  * `GM_PROFILE_MAX_BONUS` value points) for what that GM loves. Measured over 8 seeded 16-team
  * drafts, against the balanced teams' first five picks: defense-first +9 D-TAL, old-school a
  * starting five nine years older, paint-beasts +6 FIN, pace-and-space +2 SPC (most early stars
- * already shoot), with average team score unchanged (78.5-80.9 by profile):
+ * already shoot), with average team score unchanged (78.5-80.9 by profile). Hidden from the
+ * player on purpose (the user: "człowiek nie powinien tego widzieć"); rivals just draft
+ * differently:
  * `'defense-first'` D-TAL, `'pace-and-space'` shooting (SPC), `'paint-beasts'` finishing at the
  * rim (FIN), `'old-school'` players from older eras.
  */
 export type AiGmProfile = 'balanced' | 'defense-first' | 'pace-and-space' | 'paint-beasts' | 'old-school';
 export const AI_GM_PROFILES: readonly AiGmProfile[] = ['balanced', 'defense-first', 'pace-and-space', 'paint-beasts', 'old-school'];
-export const AI_GM_PROFILE_LABEL: Record<AiGmProfile, string> = {
-  balanced: 'Balanced',
-  'defense-first': 'Defense First',
-  'pace-and-space': 'Pace & Space',
-  'paint-beasts': 'Paint Beasts',
-  'old-school': 'Old School',
-};
 const GM_PROFILE_MAX_BONUS = 15;
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
