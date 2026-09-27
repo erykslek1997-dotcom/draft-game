@@ -1,5 +1,6 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { SPACING_ARCHETYPES } from '../data/schema';
+import { SPACING_ARCHETYPES, normalizePlayerName } from '../data/schema';
+import { players } from '../data/players';
 import { computeSpacing } from './spacing';
 import { eraBaseline, positionAdjustedTsBaseline } from './era';
 import { lowUsageEfficiencyFactor, extremeUsageRatioPenalty } from './talent';
@@ -211,6 +212,57 @@ function passingOffset(span: PlayerSpan): number {
 }
 
 /**
+ * 2026-09-27, the user ("Lowry/Holiday portability — nadal nie działa"): Jrue Holiday's New
+ * Orleans peak (2016-20, listed SG) read O-POR F because he was that team's lead creator (86th
+ * percentile self-creation among SGs), even though the same player later ran a low-usage,
+ * catch-and-shoot role for two title teams (Boston 2023-25: 20th percentile, efficient). A span
+ * says what a player DID; portability asks what he CAN do next to other stars. So the
+ * self-creation penalty shrinks when the same player proved, in another stretch of real
+ * minutes, that he can play efficiently without creating his own shot: full proof at or below
+ * `PROVEN_OFF_BALL_FULL` self-creation percentile, none above `PROVEN_OFF_BALL_NONE`, from spans
+ * with at least `PROVEN_OFF_BALL_MIN_FGA` shots a game and TS% at or above his position's
+ * baseline, that start after his first lead-creator span. Up to `PROVEN_OFF_BALL_MAX_RELIEF` of
+ * the penalty goes. Measured: 149 players move, the scaled-down stars one would name (Bosh in
+ * Miami, Durant in Golden State, Robinson next to Duncan, Mullin, Hornacek, Holiday); Harden and
+ * early-career role players who later became creators do not.
+ */
+const PROVEN_OFF_BALL_FULL = 0.3;
+const PROVEN_OFF_BALL_NONE = 0.5;
+const PROVEN_OFF_BALL_MIN_FGA = 8;
+const PROVEN_OFF_BALL_MAX_RELIEF = 0.7;
+const PROVEN_OFF_BALL_CREATOR_PCT = 0.6;
+let provenOffBallByPlayer: Map<string, number> | null = null;
+function provenOffBall(span: PlayerSpan): number {
+  if (!provenOffBallByPlayer) {
+    provenOffBallByPlayer = new Map();
+    const startYear = (label: string) => Number(label.slice(0, 4));
+    const byPlayer = new Map<string, PlayerSpan[]>();
+    for (const other of players) {
+      if (other.fga < PROVEN_OFF_BALL_MIN_FGA) continue;
+      const key = normalizePlayerName(other.playerName);
+      byPlayer.set(key, [...(byPlayer.get(key) ?? []), other]);
+    }
+    for (const [key, spans] of byPlayer) {
+      // Only a smaller role taken AFTER he had been a lead creator counts: a young role player
+      // who later became a heliocentric star (Harden in OKC, early Kawhi) proved nothing about
+      // scaling down.
+      const creatorStarts = spans.filter((o) => runtimeSelfCreationPercentile(o) >= PROVEN_OFF_BALL_CREATOR_PCT).map((o) => startYear(o.spanLabel));
+      if (creatorStarts.length === 0) continue;
+      const firstCreator = Math.min(...creatorStarts);
+      let best = 0;
+      for (const o of spans) {
+        if (startYear(o.spanLabel) <= firstCreator) continue;
+        if (o.box.tsPct < positionAdjustedTsBaseline(o.primaryPosition, o.fga, o.spanLabel)) continue;
+        const pct = runtimeSelfCreationPercentile(o);
+        best = Math.max(best, Math.max(0, Math.min(1, (PROVEN_OFF_BALL_NONE - pct) / (PROVEN_OFF_BALL_NONE - PROVEN_OFF_BALL_FULL))));
+      }
+      if (best > 0) provenOffBallByPlayer.set(key, best);
+    }
+  }
+  return provenOffBallByPlayer.get(normalizePlayerName(span.playerName)) ?? 0;
+}
+
+/**
  * 2026-08-07, user explicit ask, real gap found and confirmed with data: "all-time great centers
  * who are big targets in the paint that are easy to pass to" (Rudy Gobert named directly — "does
  * not have ball in his hands for any other purpose than finish under basket") were reading C-/D
@@ -361,7 +413,10 @@ export function offenseComponents(span: PlayerSpan): OffenseComponents {
     (SPACING_ARCHETYPES.includes(span.offensiveArchetype) ? SPACING_ARCHETYPE_BONUS : 0);
   const rimTarget = rimTargetValue(span);
   const rawUsagePenalty =
-    Math.pow(runtimeSelfCreationPercentile(span), SELF_CREATION_PENALTY_CURVE) * SELF_CREATION_MAX_PENALTY * (1 - passingOffset(span));
+    Math.pow(runtimeSelfCreationPercentile(span), SELF_CREATION_PENALTY_CURVE) *
+    SELF_CREATION_MAX_PENALTY *
+    (1 - passingOffset(span)) *
+    (1 - PROVEN_OFF_BALL_MAX_RELIEF * provenOffBall(span));
   const usagePenalty = BIG_SELF_CREATION_POSITIONS.has(span.primaryPosition)
     ? rawUsagePenalty * BIG_SELF_CREATION_PENALTY_SCALE
     : rawUsagePenalty;
