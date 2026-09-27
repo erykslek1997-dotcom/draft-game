@@ -1,4 +1,4 @@
-import { POOL_PER_SLOT, dailyBoard, dailyTargets, isChalkBoard, lineupShots, talMaxLineup } from '../src/engine/bestFive';
+import { POOL_PER_SLOT, dailyBoard, dailyTargets, isChalkBoard, lineupShots, talMaxLineup, teaserFor } from '../src/engine/bestFive';
 import { STARTER_SLOTS } from '../src/engine/positions';
 
 /**
@@ -23,6 +23,8 @@ for (let i = 0; i < DAYS; i++) {
   }
   check(STARTER_SLOTS.every((s) => board.pool.bySlot[s].length === POOL_PER_SLOT), `${key}: ${POOL_PER_SLOT} players in every slot`);
   check(lineupShots(talMaxLineup(board.pool, board.cap)) <= board.cap, `${key}: the lazy pick can be trimmed under the cap`);
+  check(STARTER_SLOTS.every((s) => teaserFor(board.pool, s) !== undefined), `${key}: every position has a star to show face up`);
+  check(STARTER_SLOTS.every((s) => board.pool.bySlot[s].every((p) => board.pool.roles[p.id] !== undefined)), `${key}: every dealt card has a role`);
   if (isChalkBoard(dailyTargets(board.pool, board.cap))) chalk++;
 }
 check(chalk <= 2, `at most 2 of ${DAYS} daily boards are chalk (got ${chalk})`);

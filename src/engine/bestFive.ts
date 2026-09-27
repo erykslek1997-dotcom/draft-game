@@ -7,6 +7,10 @@ import { talentScore, offenseScore, defenseScore, spacingScore } from './scoring
 import { fitScore } from './fit';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
 import { mulberry32, hashSeed } from './rng';
+import { computeOffensiveTalent } from './talent';
+import { computeDefensiveTalent } from './defensiveTalent';
+import { computeSpacing } from './spacing';
+import { computeFinishing } from './finishing';
 
 // Re-exported for API stability — `mulberry32` used to be defined and exported here.
 export { mulberry32 } from './rng';
@@ -73,27 +77,33 @@ export const POOL_PER_SLOT = 4;
  * + 4 starters/role-players, and picking all five stars is explicitly par, not a win.
  */
 const HEADLINER_BUCKET = 12;
-const HEADLINER_PER_SLOT = 1;
-/** The other 4 come from the top of the position by talent (all legitimate NBA starters) but
- * weighted the OTHER way — toward players the casual fan has heard LESS of — so the puzzle is
- * about which role players fit, not which superstar to grab. */
+/** Fallback draw for a role that found no one: legitimate starters weighted toward lesser names. */
 const BODY_BUCKET = 42;
-/** Hard cap: at most this many multi-time All-Stars (5+ selections) among the 4 body picks, so a
- * board is at most 1 headliner + 2 stars per slot no matter how the weighted draw lands — the
- * weights alone can't guarantee it because the top of a position is inherently decorated. */
-const BODY_STAR_CAP = 2;
-const BODY_STAR_AS = 5;
 /** Board-wide budget for genuine all-time greats (8+ All-Stars — roughly "a casual fan names this
  * an all-time great"): at most 2 per board, so a legend is a rare treat and most slots are a
- * choice between good starters. The per-slot caps above still let 5 mega-headliners land on one
- * board by RNG; this is the real limiter. Slot order for spending the budget is seed-shuffled so
+ * choice between good starters. This is what keeps five mega-headliners off one board. Slot order for spending the budget is seed-shuffled so
  * it isn't always PG/SG that get the greats. */
 const GREAT_AS = 8;
 const GREATS_PER_BOARD = 2;
 
+/**
+ * 2026-09-27, the user ("generowanie graczy... żeby gracz miał więcej przemyśleń czy warto iść w
+ * tego gracza"; chose four hidden roles, a computed cap and a face-up teaser): each position deals
+ * one card of each role, so every pick is a different kind of bet. The role is never shown.
+ * - `star`: the headliner — top of the position, recognisable, expensive.
+ * - `value`: cheap and solid; saves caps for later positions.
+ * - `specialist`: elite at one thing (defense, shooting, finishing) and weak at another, so he is
+ *   worth it only if the rest of the five covers the weakness.
+ * - `surprise`: either an under-the-radar player rated higher than his name suggests, or a famous
+ *   name in one of his lesser stretches, priced like the name.
+ */
+export type DealRole = 'star' | 'value' | 'specialist' | 'surprise';
+
 export interface DailyPool {
   key: string;
   bySlot: Record<Position, PlayerSpan[]>;
+  /** Hidden role of every dealt card, by span id. */
+  roles: Record<string, DealRole>;
 }
 
 /** Weighted random order, no replacement (Efraimidis–Spirakis): key each item `rng^(1/weight)`,
@@ -110,6 +120,40 @@ const recognisability = (s: PlayerSpan) => allStarCount(s.playerName) + 1;
  * by an absurd margin (0 AS → 3.5, 2 AS → 2.5, 5 AS → 1.0, 7+ AS → floor 0.4). */
 const obscurity = (s: PlayerSpan) => Math.max(0.4, 3.5 - allStarCount(s.playerName) * 0.5);
 
+/** The legitimate-starter bucket each role draws from, by the position's own talent order. */
+const ROLE_BUCKET = 60;
+/** A value card costs at most this share of the bucket's shot costs (30th percentile). */
+const VALUE_FGA_QUANTILE = 0.3;
+/** Specialist: at or above this position-relative percentile on one axis, at or below the weak
+ * line on another. */
+const SPECIALIST_HIGH = 0.85;
+const SPECIALIST_LOW = 0.35;
+/** Surprise, under-the-radar kind: at most this many All-Star picks, inside this talent rank. */
+const SLEEPER_MAX_AS = 1;
+const SLEEPER_MAX_RANK = 30;
+/** Surprise, famous-name kind: a player with this many All-Star picks, in a stretch at least this
+ * many TAL below his best one. */
+const NAME_TRAP_MIN_AS = 6;
+const NAME_TRAP_MIN_DROP = 8;
+
+let spansByPlayerCache: Map<string, PlayerSpan[]> | null = null;
+function spansByPlayer(): Map<string, PlayerSpan[]> {
+  if (spansByPlayerCache) return spansByPlayerCache;
+  const m = new Map<string, PlayerSpan[]>();
+  for (const s of draftPool) m.set(s.playerName, [...(m.get(s.playerName) ?? []), s]);
+  spansByPlayerCache = m;
+  return m;
+}
+
+function percentileWithin(values: number[]): (v: number) => number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return (v) => {
+    let lo = 0;
+    while (lo < sorted.length && sorted[lo] <= v) lo++;
+    return sorted.length ? lo / sorted.length : 0.5;
+  };
+}
+
 export function dailyPool(key: string = dayKey()): DailyPool {
   const rng = mulberry32(seedFromKey(key));
   const best = bestSpanByPlayer();
@@ -119,82 +163,118 @@ export function dailyPool(key: string = dayKey()): DailyPool {
 
   const isGreat = (s: PlayerSpan) => allStarCount(s.playerName) >= GREAT_AS;
   let boardGreats = 0;
+  const roles: Record<string, DealRole> = {};
 
   const bySlot = {} as Record<Position, PlayerSpan[]>;
   // Spend the board-wide greats budget in a seed-shuffled slot order, but render PG..C.
   for (const slot of weightedShuffle(STARTER_SLOTS.slice(), rng, () => 1)) {
     const ranked = buckets[slot].slice().sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
-
+    const bucket = ranked.slice(0, ROLE_BUCKET);
     const chosen: PlayerSpan[] = [];
     const taken = new Set<string>();
-    // 1 headliner: a recognisable star from the very top of the position — unless the board's
-    // greats budget is spent, in which case the top all-time greats are skipped and the headliner
-    // is the most recognisable merely-good starter.
-    for (const s of weightedShuffle(ranked.slice(0, HEADLINER_BUCKET), rng, recognisability)) {
-      if (chosen.length >= HEADLINER_PER_SLOT) break;
-      if (isGreat(s) && boardGreats >= GREATS_PER_BOARD) continue;
+    const allowed = (s: PlayerSpan) => !taken.has(s.playerName) && !(isGreat(s) && boardGreats >= GREATS_PER_BOARD);
+    const take = (s: PlayerSpan | undefined, role: DealRole) => {
+      if (!s) return false;
       if (isGreat(s)) boardGreats++;
       chosen.push(s);
       taken.add(s.playerName);
-    }
-    // 4 body: legitimate starters from the top of the position, weighted toward LESS-decorated
-    // names, with a per-slot cap on multi-time All-Stars AND the board-wide greats budget.
-    const body = ranked.slice(0, BODY_BUCKET).filter((s) => !taken.has(s.playerName));
-    let bodyStars = 0;
-    for (const s of weightedShuffle(body, rng, obscurity)) {
-      if (chosen.length >= POOL_PER_SLOT) break;
-      if (isGreat(s) && boardGreats >= GREATS_PER_BOARD) continue;
-      const isStar = allStarCount(s.playerName) >= BODY_STAR_AS;
-      if (isStar && bodyStars >= BODY_STAR_CAP) continue;
-      if (isGreat(s)) boardGreats++;
-      if (isStar) bodyStars++;
-      chosen.push(s);
-      taken.add(s.playerName);
-    }
-    // Floor guard: BODY_BUCKET (42) per position always leaves headroom today, but if the star /
-    // greats caps ever starve a thin position below a full five, top up from the ranked list
-    // ignoring those caps — a slot with fewer than five options would break the picker.
-    if (chosen.length < POOL_PER_SLOT) {
-      for (const s of ranked) {
-        if (chosen.length >= POOL_PER_SLOT) break;
-        if (taken.has(s.playerName)) continue;
-        chosen.push(s);
-        taken.add(s.playerName);
+      roles[s.id] = role;
+      return true;
+    };
+
+    // Star.
+    take(weightedShuffle(ranked.slice(0, HEADLINER_BUCKET), rng, recognisability).find(allowed), 'star');
+
+    // Value: among the cheaper third of the bucket, the most talent per shot is likeliest.
+    const fgaCut = [...bucket.map((s) => s.fga)].sort((a, b) => a - b)[Math.floor(bucket.length * VALUE_FGA_QUANTILE)] ?? Infinity;
+    take(
+      weightedShuffle(bucket.filter((s) => s.fga <= fgaCut && allowed(s)), rng, (s) => Math.pow(effectiveTalent(s) / Math.max(4, s.fga), 3)).at(0),
+      'value',
+    );
+
+    // Specialist: elite on one axis, weak on another, measured against the bucket.
+    const axes = [computeDefensiveTalent, computeSpacing, computeFinishing, computeOffensiveTalent];
+    const pct = axes.map((f) => percentileWithin(bucket.map(f)));
+    const specialistScore = (s: PlayerSpan) => {
+      const p = axes.map((f, i) => pct[i](f(s)));
+      const high = Math.max(p[0], p[1], p[2]);
+      const low = Math.min(...p.filter((_, i) => i !== p.indexOf(high)));
+      return high >= SPECIALIST_HIGH && low <= SPECIALIST_LOW ? high - low : 0;
+    };
+    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, specialistScore).at(0), 'specialist');
+
+    // Surprise: a sleeper or a famous name in a lesser stretch, one or the other by coin flip.
+    const sleeper = () =>
+      weightedShuffle(ranked.slice(0, SLEEPER_MAX_RANK).filter((s) => allowed(s) && allStarCount(s.playerName) <= SLEEPER_MAX_AS), rng, () => 1).at(0);
+    const nameTrap = () => {
+      const candidates: PlayerSpan[] = [];
+      for (const top of ranked.slice(0, ROLE_BUCKET)) {
+        if (!allowed(top) || allStarCount(top.playerName) < NAME_TRAP_MIN_AS) continue;
+        const bestTal = effectiveTalent(top);
+        for (const other of spansByPlayer().get(top.playerName) ?? []) {
+          if (other.primaryPosition === slot && bestTal - effectiveTalent(other) >= NAME_TRAP_MIN_DROP && other.fga >= fgaCut) candidates.push(other);
+        }
       }
+      return weightedShuffle(candidates, rng, () => 1).at(0);
+    };
+    const coin = rng() < 0.5;
+    take((coin ? nameTrap() : sleeper()) ?? (coin ? sleeper() : nameTrap()), 'surprise');
+
+    // Fill any role that found no one (thin positions) with the old obscure-starter draw, then,
+    // as a last resort, straight from the ranked list — a slot must always deal POOL_PER_SLOT.
+    for (const s of weightedShuffle(ranked.slice(0, BODY_BUCKET), rng, obscurity)) {
+      if (chosen.length >= POOL_PER_SLOT) break;
+      if (allowed(s)) take(s, 'value');
     }
-    // Blind: display order is neutral (alphabetical), never by talent.
-    bySlot[slot] = chosen.sort((a, b) => a.playerName.localeCompare(b.playerName));
+    for (const s of ranked) {
+      if (chosen.length >= POOL_PER_SLOT) break;
+      if (!taken.has(s.playerName)) take(s, 'value');
+    }
+    // Blind: display order is neutral (alphabetical), never by talent or role.
+    bySlot[slot] = chosen.slice(0, POOL_PER_SLOT).sort((a, b) => a.playerName.localeCompare(b.playerName));
   }
 
-  return { key, bySlot };
+  return { key, bySlot, roles };
+}
+
+/** The face-up teaser for a position (the user's option A): its star, dealt before the position
+ * itself turns over, so a player can decide whether to save caps for him. */
+export function teaserFor(pool: DailyPool, slot: Position): PlayerSpan | undefined {
+  return pool.bySlot[slot].find((s) => pool.roles[s.id] === 'star');
 }
 
 // ---------------------------------------------------------------------------
 // shots-cost twist — 2026-09-11, user's own ask: "dodajemy koszt gracza w shots i oprócz
 // codziennej puli graczy będzie losowa liczba między 60 a 90" (add each candidate's shot cost,
 // plus a random number between 60-90 alongside the daily pool). Same deterministic-per-day
-// pattern as `dailyPool` — a distinct RNG stream (`:cap` key suffix) so the cap doesn't
-// correlate with which players happen to be in the pool, but every player worldwide still sees
-// the same number on the same calendar date.
+// pattern as `dailyPool`. Since 2026-09-27 the number is computed from the board instead of
+// rolled (see `computedShotsCap`).
 // ---------------------------------------------------------------------------
 
-const SHOTS_CAP_MIN = 60;
-const SHOTS_CAP_MAX = 90;
-
-/** Deterministic daily shots budget for the five starters. Hand-estimated range, same
- * "tuned, not derived" status the original 100.9 FGA cap started at — not yet checked against a
- * real sample of boundary-legal fives the way that cap eventually was. */
 /** 2026-09-26: five players per slot instead of nine, so a rolled cap could fall below the
  * cheapest possible five (5 boards in 120). The cap keeps `CAP_FLOOR_MARGIN` caps above that
  * cheapest five, so every board is solvable with room for at least one real choice. */
 const CAP_FLOOR_MARGIN = 12;
 
+/**
+ * 2026-09-27 (the user's option B): the cap is computed from the board, no longer rolled. It
+ * starts from the five value cards and adds `STAR_BUDGET_SHARE` of what it would cost to swap
+ * all five for the stars, so roughly two of the five stars fit and every star is a real decision.
+ * Never below the cheapest five plus `CAP_FLOOR_MARGIN`.
+ */
+const STAR_BUDGET_SHARE = 0.45;
+export function computedShotsCap(pool: DailyPool): number {
+  const cardOf = (slot: Position, role: DealRole) => pool.bySlot[slot].find((s) => pool.roles[s.id] === role);
+  const cheapestOf = (slot: Position) => Math.min(...pool.bySlot[slot].map((p) => p.fga));
+  const valueFive = STARTER_SLOTS.reduce((sum, slot) => sum + (cardOf(slot, 'value')?.fga ?? cheapestOf(slot)), 0);
+  const starFive = STARTER_SLOTS.reduce((sum, slot) => sum + (cardOf(slot, 'star')?.fga ?? cheapestOf(slot)), 0);
+  const cheapest = STARTER_SLOTS.reduce((sum, slot) => sum + cheapestOf(slot), 0);
+  const cap = Math.round(valueFive + STAR_BUDGET_SHARE * Math.max(0, starFive - valueFive));
+  return Math.max(cap, Math.ceil(cheapest + CAP_FLOOR_MARGIN));
+}
+
 export function dailyShotsCap(key: string = dayKey()): number {
-  const rng = mulberry32(seedFromKey(`${key}:cap`));
-  const rolled = Math.round(SHOTS_CAP_MIN + rng() * (SHOTS_CAP_MAX - SHOTS_CAP_MIN));
-  const pool = dailyPool(key);
-  const cheapest = STARTER_SLOTS.reduce((sum, slot) => sum + Math.min(...pool.bySlot[slot].map((p) => p.fga)), 0);
-  return Math.max(rolled, Math.ceil(cheapest + CAP_FLOOR_MARGIN));
+  return computedShotsCap(dailyPool(key));
 }
 
 export function lineupShots(lineup: Partial<Record<Position, PlayerSpan>>): number {
@@ -464,12 +544,11 @@ const BOARD_MIN_GAP = 4;
 /** Pool variants tried per seed, each with a few caps, before settling for the best seen. */
 const BOARD_POOL_TRIES = 6;
 
-function capCandidates(poolKey: string, pool: DailyPool): number[] {
+function capCandidates(pool: DailyPool): number[] {
   const cheapest = STARTER_SLOTS.reduce((sum, slot) => sum + Math.min(...pool.bySlot[slot].map((p) => p.fga)), 0);
-  const floor = Math.max(SHOTS_CAP_MIN, Math.ceil(cheapest + CAP_FLOOR_MARGIN));
-  const rolled = dailyShotsCap(poolKey);
-  const all = [rolled, Math.round((floor + SHOTS_CAP_MAX) / 2)].filter((c) => c >= floor);
-  return [...new Set(all)];
+  const floor = Math.ceil(cheapest + CAP_FLOOR_MARGIN);
+  const cap = computedShotsCap(pool);
+  return [...new Set([cap, cap + 3, cap - 3].filter((c) => c >= floor))];
 }
 
 /** Lower bound on how far the engine's best beats the lazy pick: a short climb from the lazy
@@ -490,7 +569,7 @@ export function dailyBoard(seed: string = dayKey()): DailyBoard {
   search: for (let attempt = 0; attempt < BOARD_POOL_TRIES; attempt++) {
     const poolKey = attempt === 0 ? seed : `${seed}~${attempt}`;
     const pool = dailyPool(poolKey);
-    for (const cap of capCandidates(poolKey, pool)) {
+    for (const cap of capCandidates(pool)) {
       const gap = quickGap(pool, cap);
       if (gap > bestGap) {
         bestGap = gap;
