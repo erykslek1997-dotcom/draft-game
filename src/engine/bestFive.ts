@@ -273,12 +273,24 @@ function strengthWords(s: PlayerSpan): string | null {
   const [edge, words] = signals.reduce((a, b) => (b[0] > a[0] ? b : a));
   return edge > 0 ? words : null;
 }
-function identityWords(s: PlayerSpan): string {
-  const as = allStarCount(s.playerName);
-  if (as >= 10) return `A ${as}-time All-Star is in the next deal.`;
-  if (as >= 5) return 'A multiple-time All-Star is in the next deal.';
-  if (as >= 1) return 'An All-Star is in the next deal.';
-  return 'Someone few people remember is in the next deal.';
+/**
+ * 2026-09-27, the user ("A 14-time All-Star is in the next deal — za mocno sugeruje, że ktoś
+ * mocny"): no counts. The opening line only says whether the subject was ever an All-Star, in
+ * words that fit a star and a bait alike, picked by the rumor's own seed.
+ */
+const ALL_STAR_OPENERS = [
+  'Someone in the next deal has been an All-Star.',
+  'There’s a familiar face in the next deal.',
+  'Scouts keep circling one name in the next deal.',
+  'One of the next four has played on the big stage.',
+];
+const UNKNOWN_OPENERS = [
+  'Someone in the next deal is better than his name.',
+  'The box score liked one of the next four more than the fans did.',
+];
+function identityWords(s: PlayerSpan, rng: () => number): string {
+  const list = allStarCount(s.playerName) >= 1 ? ALL_STAR_OPENERS : UNKNOWN_OPENERS;
+  return list[Math.floor(rng() * list.length)];
 }
 
 export function rumorFor(pool: DailyPool, slot: Position): Rumor | undefined {
@@ -297,7 +309,7 @@ export function rumorFor(pool: DailyPool, slot: Position): Rumor | undefined {
   const detailRng = mulberry32(seedFromKey(`${pool.key}:rumor:${slot}`));
   const strength = strengthWords(subject);
   const detail = strength && detailRng() < 0.7 ? `${strength} ${costWords(subject.fga)}` : costWords(subject.fga);
-  return { text: `${identityWords(subject)} ${detail}`, bait: Boolean(bait) };
+  return { text: `${identityWords(subject, detailRng)} ${detail}`, bait: Boolean(bait) };
 }
 
 // ---------------------------------------------------------------------------
