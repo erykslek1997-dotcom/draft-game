@@ -1909,6 +1909,9 @@ function lukaMvpTierCeiling(span: PlayerSpan): number {
  * by an unusually large `darkoDefenseBonus` (+9, near the ceiling) stacking on the +7 synergy —
  * 16 points of two-way credit for a third-year wing, plausibly team-context-inflated (OKC's #1
  * defense). -4 puts a clean gap below the Butler/Pierce peak-All-NBA band the user cited.
+ * 2026-09-27, engine audit: removed. The two-sided plus-minus correction (historicalApmCorrection)
+ * now takes -1.9 off the same span, and the named -4 stacked on top of it held a real 2025
+ * All-NBA season at All-star (78). Without it the span reads 81, All-NBA.
  */
 const NAMED_TAL_PENALTY: ReadonlyMap<string, number> = new Map(
   [
@@ -1919,7 +1922,6 @@ const NAMED_TAL_PENALTY: ReadonlyMap<string, number> = new Map(
     { name: 'Anthony Davis', spanLabel: '2017-19', penalty: 3 },
     { name: 'Anthony Davis', spanLabel: '2018-20', penalty: 3 },
     { name: 'Anthony Davis', spanLabel: '2019-21', penalty: 3 },
-    { name: 'Jalen Williams', spanLabel: '2023-25', penalty: 4 },
     // 2026-09-24, user-reported: both were picked around rounds 3-4 of an ALL-TIME draft (median
     // picks 35 / 53 over 4 simulated drafts) — real, fine players, just not first-rounds material.
     // Porzingis: 86in/240lb with only 7.8 rpg is a real physical mismatch by all-time standards

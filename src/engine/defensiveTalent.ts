@@ -263,6 +263,7 @@ function ladderPoints(position: Position, raw: number): number {
 // solidly above the SF/PF Wing Stopper median, matching the RAPM read, without claiming the
 // A-grade the eye test alone might. Same one-(player, span) shape as the Klay entry above.
 const NAMED_DTAL_FLOOR: ReadonlyMap<string, number> = new Map(
+  // 2026-09-27, engine audit: Scottie Barnes 2022-24 (floor 44) removed — his D-TAL now reads 52.
   [
     { name: 'Klay Thompson', spanLabel: '2015-17', floor: 60 },
     { name: 'Toumani Camara', spanLabel: '2023-25', floor: 74 },
@@ -276,7 +277,6 @@ const NAMED_DTAL_FLOOR: ReadonlyMap<string, number> = new Map(
     // average defender, not the bottom-15% liability the shortfall math produced. His 2024-26
     // span (real matchup +1.2 / BPM2 +1.6, All-Defensive) is handled by
     // `corroboratedAllDefenseFloor` below.
-    { name: 'Scottie Barnes', spanLabel: '2022-24', floor: 44 },
   ].map((e) => [
     `${normalizePlayerName(e.name)}|${e.spanLabel}`,
     e.floor,
