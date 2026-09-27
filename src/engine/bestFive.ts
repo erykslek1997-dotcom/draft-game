@@ -330,9 +330,10 @@ export function talMaxLineup(pool: DailyPool, cap?: number): Record<Position, Pl
   return cap != null ? repairToCap(naive, pool, cap) : naive;
 }
 
-export function solveDailyOptimal(pool: DailyPool, cap?: number): SolvedLineup {
+type FiveScorer = (five: Record<Position, PlayerSpan>) => LineupScore;
+function cachedScorer(): FiveScorer {
   const cache = new Map<string, LineupScore>();
-  const sc = (five: Record<Position, PlayerSpan>): LineupScore => {
+  return (five) => {
     const key = STARTER_SLOTS.map((s) => five[s].id).join('|');
     let r = cache.get(key);
     if (!r) {
@@ -341,6 +342,41 @@ export function solveDailyOptimal(pool: DailyPool, cap?: number): SolvedLineup {
     }
     return r;
   };
+}
+
+/** Single-swap hill climb from `start`, never leaving the shots cap. */
+function climb(
+  start: Record<Position, PlayerSpan>,
+  pool: DailyPool,
+  cap: number | undefined,
+  sc: FiveScorer,
+  maxPasses = 8,
+): { five: Record<Position, PlayerSpan>; composite: number } {
+  let five = { ...start };
+  let cur = sc(five).composite;
+  let improved = true;
+  let guard = 0;
+  while (improved && guard++ < maxPasses) {
+    improved = false;
+    for (const slot of STARTER_SLOTS) {
+      for (const cand of pool.bySlot[slot]) {
+        if (cand.id === five[slot].id) continue;
+        const trial = { ...five, [slot]: cand };
+        if (cap != null && lineupShots(trial) > cap) continue; // reject illegal swaps
+        const s = sc(trial).composite;
+        if (s > cur + 1e-6) {
+          five = trial;
+          cur = s;
+          improved = true;
+        }
+      }
+    }
+  }
+  return { five, composite: cur };
+}
+
+export function solveDailyOptimal(pool: DailyPool, cap?: number): SolvedLineup {
+  const sc = cachedScorer();
 
   const rng = mulberry32(seedFromKey(`${pool.key}:solve`));
 
@@ -358,26 +394,7 @@ export function solveDailyOptimal(pool: DailyPool, cap?: number): SolvedLineup {
   let bestFive: Record<Position, PlayerSpan> | null = null;
   let bestComposite = -1;
   for (const start of starts) {
-    let five = { ...start };
-    let cur = sc(five).composite;
-    let improved = true;
-    let guard = 0;
-    while (improved && guard++ < 8) {
-      improved = false;
-      for (const slot of STARTER_SLOTS) {
-        for (const cand of pool.bySlot[slot]) {
-          if (cand.id === five[slot].id) continue;
-          const trial = { ...five, [slot]: cand };
-          if (cap != null && lineupShots(trial) > cap) continue; // reject illegal swaps
-          const s = sc(trial).composite;
-          if (s > cur + 1e-6) {
-            five = trial;
-            cur = s;
-            improved = true;
-          }
-        }
-      }
-    }
+    const { five, composite: cur } = climb(start, pool, cap, sc);
     if (cur > bestComposite) {
       bestComposite = cur;
       bestFive = five;
@@ -426,6 +443,62 @@ export function gradeVsPar(score: number, par: number, optimal: number): GolfGra
  * there's little room to out-think it, so par is the ceiling for most players. */
 export function isChalkBoard(targets: DailyTargets): boolean {
   return targets.optimal - targets.par < 3;
+}
+
+// ---------------------------------------------------------------------------
+// board selection — 2026-09-27, engine audit: 65% of daily boards were chalk (the five biggest
+// names, trimmed to the cap, within 3 points of the engine's best), so there was nothing to
+// out-think. A board is now the first of a few deterministic (pool, cap) candidates on which
+// the lazy pick can be clearly beaten; same seed, same board, for everyone.
+// ---------------------------------------------------------------------------
+
+export interface DailyBoard {
+  pool: DailyPool;
+  cap: number;
+}
+
+/** How far a single climb from the lazy pick must get above it for the board to count. */
+const BOARD_MIN_GAP = 4;
+/** Pool variants tried per seed, each with a few caps, before settling for the best seen. */
+const BOARD_POOL_TRIES = 6;
+
+function capCandidates(poolKey: string, pool: DailyPool): number[] {
+  const cheapest = STARTER_SLOTS.reduce((sum, slot) => sum + Math.min(...pool.bySlot[slot].map((p) => p.fga)), 0);
+  const floor = Math.max(SHOTS_CAP_MIN, Math.ceil(cheapest + CAP_FLOOR_MARGIN));
+  const rolled = dailyShotsCap(poolKey);
+  const all = [rolled, Math.round((floor + SHOTS_CAP_MAX) / 2)].filter((c) => c >= floor);
+  return [...new Set(all)];
+}
+
+/** Lower bound on how far the engine's best beats the lazy pick: a short climb from the lazy
+ * pick (two passes keep a board check to a few dozen lineup scores on a phone). */
+const QUICK_GAP_PASSES = 2;
+function quickGap(pool: DailyPool, cap: number): number {
+  const sc = cachedScorer();
+  const lazy = talMaxLineup(pool, cap);
+  return climb(lazy, pool, cap, sc, QUICK_GAP_PASSES).composite - sc(lazy).composite;
+}
+
+const boardCache = new Map<string, DailyBoard>();
+export function dailyBoard(seed: string = dayKey()): DailyBoard {
+  const hit = boardCache.get(seed);
+  if (hit) return hit;
+  let best: DailyBoard | null = null;
+  let bestGap = -Infinity;
+  search: for (let attempt = 0; attempt < BOARD_POOL_TRIES; attempt++) {
+    const poolKey = attempt === 0 ? seed : `${seed}~${attempt}`;
+    const pool = dailyPool(poolKey);
+    for (const cap of capCandidates(poolKey, pool)) {
+      const gap = quickGap(pool, cap);
+      if (gap > bestGap) {
+        bestGap = gap;
+        best = { pool, cap };
+      }
+      if (gap >= BOARD_MIN_GAP) break search;
+    }
+  }
+  boardCache.set(seed, best!);
+  return best!;
 }
 
 export const GRADE_LABEL: Record<GolfGrade, string> = {
