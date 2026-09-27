@@ -20,11 +20,14 @@ import coefficients from '../data/awards/correctionCoefficients.json';
  * matched pool is mostly 1997+, so a single regression would calibrate old-school spans against
  * a mostly-modern baseline.
  *
- * Asymmetric and capped like every other real-data correction in this project (darkoDefenseBonus,
- * the DARKO-defense floor's rebounding-versatility bonus): only ever ADDS talent when real value
- * exceeds prediction, never subtracts when it falls short - a negative residual usually means
- * the player benefited from favorable circumstances (great teammates, era) real plus-minus can't
- * cleanly separate from individual skill, which isn't grounds to mark someone down.
+ * 2026-09-27, the user (engine audit, "sprawdź wagę wpływu"): now two-sided. It used to only ever
+ * ADD talent, on the argument that a negative residual may reflect circumstances rather than
+ * skill. The audit showed the one-sided version is exactly why high-volume, low-impact scorers
+ * needed hand-made caps: Monta Ellis's peak sits at the 91st percentile of raw TAL and the 5th of
+ * measured impact, Jalen Rose 92nd vs 26th. A simulated two-sided version lowered 11 of the
+ * user's hand-lowered players and none of the hand-raised ones. The downward side stays
+ * deliberately more careful than the upward one: measured plus-minus only (no BPM2 fallback, so
+ * pre-1974 legends are untouched), a dead zone for small shortfalls, and a lower cap.
  */
 /**
  * Precomputed by `scripts/precomputeCorrectionCoefficients.ts` from the full ~13,145-span
@@ -64,12 +67,19 @@ function getPre1997Regression(): { slope: number; intercept: number } {
  * `alltime_draft_game_project.md` memory for the before/after numbers. */
 const EXCESS_TO_BONUS_SCALE = 1.2;
 const MAX_HIDDEN_VALUE_BONUS = 6;
+/** Shortfalls smaller than this (in plus-minus points) are treated as noise. */
+const SHORTFALL_DEAD_ZONE = 0.3;
+const MAX_HIDDEN_VALUE_MALUS = 4;
 
+/** Real plus-minus against what the box score predicts, as TAL points: up to +6 when the player
+ * did more for his team than his numbers say, down to -4 when he did clearly less. */
 export function hiddenValueBonus(span: PlayerSpan): number {
   const real = blendedRealValueForSpan(span);
   if (real === null) return 0;
   const { slope, intercept } = real.isModernEra ? getModernRegression() : getPre1997Regression();
   const expected = slope * rawTalentBlend(span) + intercept;
   const excess = real.value - expected;
-  return excess > 0 ? Math.min(MAX_HIDDEN_VALUE_BONUS, excess * EXCESS_TO_BONUS_SCALE) : 0;
+  if (excess > 0) return Math.min(MAX_HIDDEN_VALUE_BONUS, excess * EXCESS_TO_BONUS_SCALE);
+  if (real.source !== 'measured-blend' || excess > -SHORTFALL_DEAD_ZONE) return 0;
+  return -Math.min(MAX_HIDDEN_VALUE_MALUS, (-excess - SHORTFALL_DEAD_ZONE) * EXCESS_TO_BONUS_SCALE);
 }

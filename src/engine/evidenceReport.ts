@@ -106,6 +106,12 @@ export function buildEvidenceReport(span: PlayerSpan): EvidenceReport {
   ];
 
   const counterCandidates: Candidate[] = [
+    -b.hiddenValue >= NOISE_FLOOR
+      ? {
+          text: `Real plus-minus data shows his teams did less with him than his box score suggests — the numbers ran ahead of his impact on winning (${fmt(b.hiddenValue)} TAL).`,
+          magnitude: -b.hiddenValue,
+        }
+      : null,
     b.extremeUsagePenalty >= NOISE_FLOOR
       ? {
           text: `Shoots at a high volume relative to his own playmaking output — some of the raw scoring volume looks like empty usage rather than offense that creates easier looks for others (${fmt(-b.extremeUsagePenalty)} TAL).`,
