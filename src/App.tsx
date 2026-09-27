@@ -98,7 +98,7 @@ const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: stri
     { title: 'Grading', body: 'The judge scores every team — talent, offense, defense, spacing, fit, rotation — and ranks the whole field, yours included.' },
   ],
   bestfive: [
-    { title: 'The deal', body: 'Five players are dealt for each position, PG to C. Pick one and the next position turns over.' },
+    { title: 'The deal', body: 'Four players are dealt for each position, PG to C. Pick one and the next position turns over.' },
     { title: 'Caps', body: 'Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.' },
     { title: 'Submit once', body: 'No re-picking after you see your score for today’s puzzle.' },
     { title: 'Grading', body: 'You’re scored on talent, offense, defense, spacing, and fit, then compared against par.' },
@@ -333,7 +333,7 @@ function App() {
                   </span>
                   <span className="mode-card-step at-cond">Step 1 · learn the caps{stepDone('bestfive') ? ' ✓' : ''}</span>
                   <span className="mode-card-name at-cond">Daily Deal</span>
-                  <span className="mode-card-desc">Daily puzzle — five cards dealt per position, build a five under the cap.</span>
+                  <span className="mode-card-desc">Daily puzzle — four cards dealt per position, build a five under the cap.</span>
                 </button>
                 <button
                   type="button"
