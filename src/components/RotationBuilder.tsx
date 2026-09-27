@@ -668,7 +668,7 @@ function RotationBuilderComponent({
       {durabilityOverworked.length > 0 && (
         <p className="validation-warning">
           Playing more minutes than they can handle (allowed, but it lowers your Rotation score):{' '}
-          {durabilityOverworked.map(({ player, minutes, cap }) => `${player.playerName} (${minutes} of ${cap} min)`).join(', ')}
+          {durabilityOverworked.map(({ player, minutes, cap }) => `${player.playerName} (${minutes} min, can handle ${cap})`).join(', ')}
         </p>
       )}
 

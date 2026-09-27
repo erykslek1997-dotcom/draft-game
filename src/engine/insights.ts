@@ -1215,7 +1215,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const n = t.minutesCeilingViolationCount ?? 0;
       const ps = t.players.filter(p => p.minuteCeiling != null && p.minutes > p.minuteCeiling);
       return n >= 2
-        ? hit(0.55 + n * 0.10, 0.90, teamConfidence(t), `${joinNames(ps.slice(0, 3).map(p => `${p.playerName} (${p.minutes} of ${p.minuteCeiling} min)`), Math.max(0, ps.length - 3))} play more minutes than they can handle — move some of those minutes to the bench.`, { players: ps.map(p => p.playerName), values: { minutesCeilingViolationCount: n }, notes: ps.map(p => `${p.playerName}: ${p.minutes}/${p.minuteCeiling} min`) })
+        ? hit(0.55 + n * 0.10, 0.90, teamConfidence(t), `${joinNames(ps.slice(0, 3).map(p => `${p.playerName} (${p.minutes} min, can handle ${p.minuteCeiling})`), Math.max(0, ps.length - 3))} play more minutes than they can handle — move some of those minutes to the bench.`, { players: ps.map(p => p.playerName), values: { minutesCeilingViolationCount: n }, notes: ps.map(p => `${p.playerName}: ${p.minutes}/${p.minuteCeiling} min`) })
         : inactive;
     }
   },
