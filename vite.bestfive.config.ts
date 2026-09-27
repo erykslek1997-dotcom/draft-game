@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { copyFileSync, writeFileSync } from 'node:fs';
+import { compactJson } from './compactJson.ts';
 
 /**
  * Standalone build of just the "Build the Best 5" daily puzzle -> `dist-bestfive/`.
@@ -27,6 +28,7 @@ const NETLIFY_TOML = `# Standalone Build the Best 5 — this folder IS the publi
 export default defineConfig({
   plugins: [
     react(),
+    compactJson(),
     {
       name: 'bestfive-deploy-files',
       closeBundle() {

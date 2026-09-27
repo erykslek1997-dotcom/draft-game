@@ -35,12 +35,13 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
       Podstawa technicznie jest gotowa: dzienne ziarno (`dayKey`/`hashSeed` w bestFive.ts) i
       deterministyczny wybór planszy (`dailyBoard`), którego można użyć przy wyzwaniach.
 - [ ] **Odchudzenie paczki silnika.** Audyt 2026-09-27: jeden plik JS waży 29,8 MB (4,5 MB po
-      kompresji) i pobiera się przy wejściu w każdy tryb, także w Daily Deal. Na telefonie to
-      najdłuższe czekanie w grze. Plan:
+      kompresji) i pobiera się przy wejściu w każdy tryb, także w Roulette. Na telefonie to
+      najdłuższe czekanie w grze. Krok 1 zrobiony 2026-09-27: bezstratny zapis kolumnowy danych
+      w buildzie (`compactJson.ts`) — 16,4 MB (3,7 MB po kompresji). Dalej:
       - rozdzielić dane: Daily Deal i Mini Draft potrzebują tylko okien „peak” i gotowych ocen
         (precomputed), a pełne okna i surowe dane źródłowe dopiero All-Time Draft (dynamiczny
         `import()`);
-      - przy okazji zmierzyć czas wyboru planszy Daily Deal na telefonie (dziś 0,6 s średnio,
+      - przy okazji zmierzyć czas wyboru planszy Roulette na telefonie (dziś 0,6 s średnio,
         1,2 s najdłużej w Node) i ewentualnie zapisywać wynik w localStorage.
 
 ## Decyzje kalibracyjne czekające na Twoją ocenę
