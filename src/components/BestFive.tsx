@@ -24,6 +24,7 @@ import {
   AXIS_GLOSSARY,
   dayKey,
   slotReels,
+  teaserFor,
   type Lineup,
   type LineupScore,
   type DailyPool,
@@ -223,7 +224,7 @@ export default function BestFive({ onBack, onNextStep }: Props) {
 
       {showHowToPlay && (
         <ol className="how-to-play-panel">
-          <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C. Each position deals four players, and the next position turns over after you pick. Picks are final: no going back.</li>
+          <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C. Each position deals four players, and the next position turns over after you pick. Picks are final: no going back. One card of the next position lies face up while you choose — decide whether to save caps for him.</li>
           <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.</li>
           <li><b>Submit once.</b> No re-picking after you see your score for today’s puzzle.</li>
           <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against par.</li>
@@ -337,6 +338,25 @@ export default function BestFive({ onBack, onNextStep }: Props) {
                 })}
               </div>
               )}
+              {(() => {
+                // 2026-09-27 (the user's option A): the next position's star lies face up before
+                // that position turns over, so the question "save caps for him?" is real.
+                const next = STARTER_SLOTS.find((sl) => sl !== activeSlot && !lineup[sl] && !revealed.has(sl));
+                const star = next ? teaserFor(pool, next) : undefined;
+                if (!next || !star) return null;
+                return (
+                  <div className="bf-teaser" aria-label={`Face up in the ${SLOT_LABEL[next].toLowerCase()} deal`}>
+                    <span className="bf-teaser-label at-cond">Next deal · {SLOT_LABEL[next].toLowerCase()}</span>
+                    <span className="bf-teaser-card">
+                      <Face name={star.playerName} />
+                      <span className="bf-teaser-name">{shortenName(star.playerName)}</span>
+                      <EraYears span={star} className="bf-teaser-season" />
+                      <ShotChip fga={star.fga} cap={shotsCap} />
+                    </span>
+                    <span className="bf-teaser-note">One of the four, face up. The other three turn over after this pick.</span>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
