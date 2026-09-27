@@ -264,3 +264,10 @@
   font-variant-numeric: tabular-nums;
 }
 .qf-field-card .qf-field-score { color: #fff; opacity: 1; }
+
+/* 2026-09-27 results audit: the Mini Draft starting five cut names to "Cha…" on desktop, where five
+   columns share half the hero. Stacked inside each column instead: face and TAL on one line, then
+   the full name (wrapping) and the years. */
+.qf-result .results-hero-rotation-entry { flex-wrap: wrap; align-items: flex-start; row-gap: 4px; }
+.qf-result .results-hero-rotation-entry-info { order: 3; flex-basis: 100%; }
+.qf-result .results-hero-rotation-entry-name { white-space: normal; overflow-wrap: anywhere; font-size: 11px; line-height: 1.3; }

@@ -2090,6 +2090,7 @@ select {
      rounded card. */
   padding: 18px 20px 24px;
 }
+.results-screen > .at-board-brand { order: -2; }
 .results-screen > .results-hero { order: -1; }
 .results-screen > .results-verdict { order: -1; }
 .results-screen > .results-actions { order: 7; }
@@ -6364,8 +6365,9 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 }
 .metric-bar-tip {
   display: none;
-  position: absolute; left: 0; top: calc(100% + 6px); z-index: 30;
-  width: min(340px, 90vw); padding: 8px 10px; border-radius: 8px;
+  /* Spans its own bar instead of a fixed width, so on a phone it never runs off the right edge. */
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30;
+  max-width: 340px; padding: 8px 10px; border-radius: 8px;
   background: var(--at-paper, #05070c); border: 1px solid var(--at-line, #16222f);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
   font-size: 12px; line-height: 1.45; color: var(--at-ink); white-space: normal; font-weight: 500;
@@ -6794,32 +6796,15 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .mode-grid--path > .mode-card-wrap:nth-child(2) { animation-delay: 0.4s; }
 .mode-grid--path > .mode-card-wrap:nth-child(3) { animation-delay: 0.65s; }
 
-/* Results hero (All-Time Draft and Mini Draft): where you finished, then the rating, then the
-   style line, then the dashboard, whose chips pop one by one and whose bars fill. */
-.results-hero-finish { animation: stage-up 0.6s 0.1s both ease-out; }
-.results-hero-rank { animation: stage-pop 0.6s 0.35s both; display: inline-block; }
-.results-hero-tier { animation: stage-pop 0.5s 0.8s both; }
-.results-hero-stats { animation: stage-up 0.6s 1.1s both ease-out; }
-.results-hero-gap { animation: stage-up 0.5s 1.5s both ease-out; }
-.results-hero-identity { animation: stage-up 0.5s 1.8s both ease-out; }
-.results-hero-dashboard { animation: stage-up 0.6s 2.1s both ease-out; }
-.results-hero-scores-row > * { animation: stage-pop 0.45s both; }
-.results-hero-scores-row > :nth-child(1) { animation-delay: 2.3s; }
-.results-hero-scores-row > :nth-child(2) { animation-delay: 2.42s; }
-.results-hero-scores-row > :nth-child(3) { animation-delay: 2.54s; }
-.results-hero-scores-row > :nth-child(4) { animation-delay: 2.66s; }
-.results-hero-scores-row > :nth-child(5) { animation-delay: 2.78s; }
-.results-hero-scores-row > :nth-child(6) { animation-delay: 2.9s; }
-.results-hero-scores-row > :nth-child(7) { animation-delay: 3.02s; }
-.results-hero-dashboard .metric-bar-fill { transform-origin: left center; animation: stage-fill 0.8s 3s both cubic-bezier(0.2, 0.7, 0.2, 1); }
-.results-hero-rotation-col { animation: stage-up 0.45s both ease-out; }
-.results-hero-rotation-col:nth-child(1) { animation-delay: 2.5s; }
-.results-hero-rotation-col:nth-child(2) { animation-delay: 2.62s; }
-.results-hero-rotation-col:nth-child(3) { animation-delay: 2.74s; }
-.results-hero-rotation-col:nth-child(4) { animation-delay: 2.86s; }
-.results-hero-rotation-col:nth-child(5) { animation-delay: 2.98s; }
+/* Results hero (All-Time Draft and Mini Draft). 2026-09-27 results audit: the whole hero lands
+   at once, like Roulette's scoreboard ("wynik nie pokazuje od razu") — one quick rise, the chips
+   and bars finish filling within half a second, the rest of the page right behind. */
+.results-hero { animation: stage-up 0.35s both ease-out; }
+.results-hero-rank { animation: stage-pop 0.4s both; display: inline-block; }
+.results-hero-scores-row > * { animation: stage-pop 0.3s 0.1s both; }
+.results-hero-dashboard .metric-bar-fill { transform-origin: left center; animation: stage-fill 0.6s 0.15s both cubic-bezier(0.2, 0.7, 0.2, 1); }
 .results-screen > .results-hero ~ *,
-.qf-result > .results-hero ~ * { animation: stage-up 0.6s 3.2s both ease-out; }
+.qf-result > .results-hero ~ * { animation: stage-up 0.35s 0.15s both ease-out; }
 
 /* Draft boards: the turn bar first, then your team, then the players. */
 .at-stage-in > * { animation: stage-up 0.5s both ease-out; }
@@ -6841,7 +6826,7 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 
 @media (prefers-reduced-motion: reduce) {
   .mode-grid--path > .mode-card-wrap,
-  .results-hero-finish, .results-hero-rank, .results-hero-tier, .results-hero-stats, .results-hero-gap,
+  .results-hero, .results-hero-finish, .results-hero-rank, .results-hero-tier, .results-hero-stats, .results-hero-gap,
   .results-hero-identity, .results-hero-dashboard, .results-hero-scores-row > *,
   .results-hero-dashboard .metric-bar-fill, .results-hero-rotation-col,
   .results-screen > .results-hero ~ *, .qf-result > .results-hero ~ *,

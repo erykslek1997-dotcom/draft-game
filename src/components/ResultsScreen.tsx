@@ -2250,6 +2250,11 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     // `.at-shell` token-aliasing comment in App.css for how the rest of this file's existing
     // classes (never touched here) pick up the dark palette just by being nested inside this.
     <div className="results-screen at-shell">
+      {/* 2026-09-27 results audit: the same "← Menu" + mode title the Mini Draft result has. */}
+      <button type="button" className="at-menu-btn at-cond" onClick={onRestart}>
+        ← Menu
+      </button>
+      <div className="at-board-brand at-cond">All-Time Draft</div>
       {heroRanked && (
         <HeroResult
           teamName={heroRanked.team.name}
