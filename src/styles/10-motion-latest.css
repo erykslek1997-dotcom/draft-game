@@ -26,13 +26,8 @@
 /* Results hero (All-Time Draft and Mini Draft). 2026-09-27 results audit: the whole hero lands
    at once, like Roulette's scoreboard ("wynik nie pokazuje od razu") — one quick rise, the chips
    and bars finish filling within half a second, the rest of the page right behind. */
-/* Opacity only: a transform animation on the hero (even one that ends at `none`) makes it the
-   containing block of the share card's fixed overlay, which then opened inside the hero. */
-.results-hero { animation: stage-fade 0.35s both ease-out; }
-@keyframes stage-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+/* The hero itself is not animated: any animation on it (transform, or even opacity) walls its
+   dialogs — the share card, the season results — into the hero, under the sections after it. */
 .results-hero-rank { animation: stage-pop 0.4s both; display: inline-block; }
 .results-hero-scores-row > * { animation: stage-pop 0.3s 0.1s both; }
 .results-hero-dashboard .metric-bar-fill { transform-origin: left center; animation: stage-fill 0.6s 0.15s both cubic-bezier(0.2, 0.7, 0.2, 1); }
@@ -59,7 +54,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mode-grid--path > .mode-card-wrap,
-  .results-hero, .results-hero-finish, .results-hero-rank, .results-hero-tier,
+  .results-hero-finish, .results-hero-rank, .results-hero-tier,
   .results-hero-identity, .results-hero-dashboard, .results-hero-scores-row > *,
   .results-hero-dashboard .metric-bar-fill, .results-hero-rotation-col,
   .results-screen > .results-hero ~ *, .qf-result > .results-hero ~ *,
