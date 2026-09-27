@@ -1,5 +1,9 @@
 import { Fragment, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import './BestFive.css';
+import { ChallengeNote, ScoreBoard } from './ScoreBoard';
+import ShareResultModal from './ShareResultModal';
+import { copyLink } from './shareSave';
+import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
 import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
@@ -37,6 +41,8 @@ interface Props {
   onBack?: () => void;
   /** The next step of the learning path (Quick 5), offered on the result screen. */
   onNextStep?: () => void;
+  /** A friend's "Challenge a friend" link: their deal and their score. */
+  challenge?: ModeChallenge;
 }
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
@@ -74,11 +80,11 @@ const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 's
  * Deliberately a standalone screen off the intro (same footing as `CapSheet` / `DraftPoolBrowser`)
  * — it has no draft, no lottery, no AI, none of `GameShell`'s phase machine applies.
  */
-export default function BestFive({ onBack, onNextStep }: Props) {
+export default function BestFive({ onBack, onNextStep, challenge }: Props) {
   // 2026-09-27, the user: "Usuńmy daily challenge. Dodamy go osobnym przyciskiem jak będziemy
   // robić porządnie daily challenge". Every board is a fresh random deal; the old daily puzzle and
   // streak (bestFiveProgress.ts) are in git history for when the daily challenge gets built.
-  const [board, setBoard] = useState<{ seed: string; n: number }>(() => ({ seed: randomSeed(1), n: 1 }));
+  const [board, setBoard] = useState<{ seed: string; n: number }>(() => ({ seed: challenge?.seed ?? randomSeed(1), n: 1 }));
   // 2026-09-11, user's own ask: "dodajemy koszt gracza w shots i oprócz codziennej puli graczy
   // będzie losowa liczba między 60 a 90" — a seeded shots budget for the five starters.
   // 2026-09-27: pool and cap come together from `dailyBoard`, which skips boards where the five
@@ -332,6 +338,8 @@ export default function BestFive({ onBack, onNextStep }: Props) {
           shotsCap={shotsCap}
           onNewBoard={newBoard}
           onNextStep={onNextStep}
+          seed={board.seed}
+          challenge={challenge && challenge.seed === board.seed ? challenge : undefined}
         />
       )}
     </div>
@@ -450,6 +458,9 @@ function randomSeed(n: number): string {
   return `roulette-${n}-${Math.floor(Math.random() * 1e9)}`;
 }
 
+/** The draft finish tiers' colour tone for each Roulette grade (same words, same colours). */
+const GRADE_TONE: Record<GolfGrade, 1 | 2 | 3 | 4 | 5 | 6> = { eagle: 6, birdie: 5, par: 4, bogey: 3, 'double-bogey': 2 };
+
 function BestFiveResult({
   lineup,
   pool,
@@ -457,6 +468,8 @@ function BestFiveResult({
   shotsCap,
   onNewBoard,
   onNextStep,
+  seed,
+  challenge,
 }: {
   lineup: Lineup;
   pool: DailyPool;
@@ -464,8 +477,18 @@ function BestFiveResult({
   shotsCap: number;
   onNewBoard: () => void;
   onNextStep?: () => void;
+  seed: string;
+  challenge?: ModeChallenge;
 }) {
   useEffect(() => markStepDone('bestfive'), []);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  async function challengeFriend() {
+    if (await copyLink(modeChallengeLink('roulette', seed, result.score.composite))) {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  }
   const { score, targets, grade } = result;
   const explain = useMemo(() => explainResult(lineup, pool, targets, shotsCap), [lineup, pool, targets, shotsCap]);
   const [showGlossary, setShowGlossary] = useState(false);
@@ -483,24 +506,56 @@ function BestFiveResult({
           <span className="bf-grade-label at-cond">{GRADE_LABEL[grade]}</span>
           <span className="bf-grade-blurb">{GRADE_BLURB[grade]}</span>
         </div>
-        <div className="bf-board">
-          <div className="bf-board-cell bf-board-cell--you">
-            <b>{score.composite}</b>
-            <span className="at-cond">Your five</span>
-          </div>
-          <div className="bf-board-cell">
-            <b>{targets.par}</b>
-            <span className="at-cond">Fan-vote five</span>
-          </div>
-          <div className="bf-board-cell">
-            <b>{targets.optimal}</b>
-            <span className="at-cond">Best on the board</span>
-          </div>
+        <ScoreBoard
+          cells={[
+            { label: 'Your five', value: score.composite, you: score.composite },
+            { label: 'Fan-vote five', value: targets.par, title: 'The five biggest names in the deal' },
+            { label: 'Best on the board', value: targets.optimal },
+          ]}
+          note={
+            <>
+              <CapIcon /> {Math.round(yourShots)} / {shotsCap} caps · fan-vote five = the five biggest names
+              {challenge?.vs != null && (
+                <>
+                  <br />
+                  <ChallengeNote yours={score.composite} theirs={challenge.vs} />
+                </>
+              )}
+            </>
+          }
+        />
+        <div className="results-hero-actions">
+          <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
+            📤 Share the result
+          </button>
+          <button
+            type="button"
+            className="results-hero-copy results-hero-challenge"
+            onClick={challengeFriend}
+            title="Copies a link that deals a friend the exact same Roulette board, with your score to beat."
+          >
+            {linkCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
+          </button>
         </div>
-        <span className="bf-board-caps">
-          <CapIcon /> {Math.round(yourShots)} / {shotsCap} caps · fan-vote five = the five biggest names
-        </span>
       </div>
+      {shareOpen && (
+        <ShareResultModal
+          onClose={() => setShareOpen(false)}
+          mode="Roulette"
+          title="My Roulette five"
+          tier={{ label: GRADE_LABEL[grade], tone: GRADE_TONE[grade] }}
+          cells={[
+            { label: 'Your five', value: score.composite, you: score.composite },
+            { label: 'Fan-vote five', value: targets.par },
+            { label: 'Best on the board', value: targets.optimal },
+          ]}
+          chips={AXES.map(({ key, label }) => ({ label, value: Math.round(score[key]) }))}
+          five={STARTER_SLOTS.flatMap((slot) => {
+            const p = lineup[slot];
+            return p ? [{ slot, name: p.playerName, years: p.spanLabel }] : [];
+          })}
+        />
+      )}
 
       <div className="bf-bars">
         {AXES.map(({ key, label, context }) => (

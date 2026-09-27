@@ -652,13 +652,15 @@ export function dailyBoard(seed: string = dayKey()): DailyBoard {
 }
 
 /** 2026-09-27, the user: "bardziej koszykarskie sformułowania". The grade keys stay golf (they are
- * stored in daily progress); what the player reads is where the five would finish a season. */
+ * stored in daily progress); what the player reads is where the five would finish a season.
+ * 2026-09-27 results audit pack C: the same words the drafts' finish tiers use
+ * (`resultTierLabel` in ResultsScreen.tsx), so all three modes speak one language. */
 export const GRADE_LABEL: Record<GolfGrade, string> = {
-  eagle: 'Title team',
+  eagle: 'Dynasty',
   birdie: 'Contender',
-  par: 'Playoff team',
-  bogey: 'Play-in',
-  'double-bogey': 'Lottery',
+  par: 'Playoff Lock',
+  bogey: 'Play-In Fight',
+  'double-bogey': 'Lottery Team',
 };
 
 export const GRADE_BLURB: Record<GolfGrade, string> = {

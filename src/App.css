@@ -2132,6 +2132,7 @@ select {
   box-shadow: var(--shadow);
 }
 .results-hero-finish {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -2173,44 +2174,6 @@ select {
 .results-hero-tier-t4 { background: color-mix(in srgb, var(--at-t5) 34%, transparent); color: var(--at-t6-ink); }
 .results-hero-tier-t5 { background: color-mix(in srgb, var(--at-t6) 40%, transparent); color: #fff; }
 .results-hero-tier-t6 { background: var(--at-t6); color: #fff; }
-.results-hero-stats {
-  display: flex;
-  gap: 8px;
-}
-.results-hero-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 74px;
-  padding: 8px 12px;
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--at-ink) 6%, transparent);
-  text-align: right;
-}
-.results-hero-stat-label {
-  color: var(--at-ink-faint);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.results-hero-stat-value {
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  color: var(--at-ink);
-}
-.results-hero-overall {
-  background: var(--at-t5);
-}
-.results-hero-overall.score-t1, .results-hero-overall.score-t2 { background: var(--at-t2); }
-.results-hero-overall.score-t3 { background: var(--at-t3); }
-.results-hero-overall.score-t4 { background: var(--at-t4); }
-.results-hero-overall.score-t5 { background: var(--at-t5); }
-.results-hero-overall.score-t6 { background: var(--at-t6); }
-.results-hero-overall .results-hero-stat-label { color: color-mix(in srgb, #fff 78%, transparent); }
-.results-hero-overall .results-hero-stat-value { color: #fff; }
 /* 2026-09-17, "Duel na seedzie" follow-up (user: "nie ma na koniec porównania obu draftów" — the
    challenge link connects two people but never compares their results): auto-opens once when a
    challenge-link draft's Results screen mounts (see HeroResult's own `compareOpen` docstring). */
@@ -2449,17 +2412,6 @@ select {
 /* "Overall #1 in the field: X — you're Y back" — the benchmark line from the Scouting Report
    audit (HoopsMatic shows "best squad you could've signed would win 11.29%"). Sits above the
    identity line, no border of its own, so the two read as one continuous payoff paragraph. */
-.results-hero-gap {
-  grid-column: 1 / -1;
-  margin: 2px 0 0;
-  padding-top: 10px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: var(--at-ink-soft);
-}
-.results-hero-gap b { color: var(--at-ink); font-weight: 700; }
-.results-hero-gap + .results-hero-identity { border-top: none; padding-top: 4px; }
 .results-hero-identity {
   grid-column: 1 / -1;
   margin: 2px 0 0;
@@ -2660,29 +2612,7 @@ select {
   font-size: 12px;
   font-weight: 700;
 }
-.share-modal-stats {
-  display: flex;
-  gap: 22px;
-  margin: 10px 0 2px;
-}
-.share-modal-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-.share-modal-stat span {
-  font-size: 10.5px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.share-modal-stat b {
-  font-size: 22px;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-.share-modal-gap, .share-modal-identity {
+.share-modal-identity {
   font-size: 12.5px;
   color: var(--muted);
   margin: 0;
@@ -2795,8 +2725,6 @@ select {
 .results-hero-challenge:hover { background: color-mix(in srgb, var(--at-accent-2, var(--at-accent)) 20%, transparent); }
 @media (max-width: 560px) {
   .results-hero { grid-template-columns: 1fr; }
-  .results-hero-stats { justify-content: flex-start; }
-  .results-hero-stat { text-align: left; }
   /* Below this width `.results-hero-rotation`'s own `flex: 1` only had a narrow leftover sliver
      next to the fixed-width score-chip column to lay 88px player cards into — stack the two
      labelled halves instead, each then getting the full row width. */
@@ -5314,7 +5242,6 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
   color: var(--at-ink); background: color-mix(in srgb, var(--at-accent) 12%, var(--at-paper));
   border: 1px solid color-mix(in srgb, var(--at-accent) 45%, transparent);
 }
-.results-hero-stat-of { font-size: 0.45em; opacity: 0.6; margin-left: 2px; font-weight: 600; }
 
 /* 2026-09-24: intro "Continue draft" banner + the confirm shown before a new draft replaces it. */
 .saved-draft-banner {
@@ -6847,7 +6774,13 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 /* Results hero (All-Time Draft and Mini Draft). 2026-09-27 results audit: the whole hero lands
    at once, like Roulette's scoreboard ("wynik nie pokazuje od razu") — one quick rise, the chips
    and bars finish filling within half a second, the rest of the page right behind. */
-.results-hero { animation: stage-up 0.35s both ease-out; }
+/* Opacity only: a transform animation on the hero (even one that ends at `none`) makes it the
+   containing block of the share card's fixed overlay, which then opened inside the hero. */
+.results-hero { animation: stage-fade 0.35s both ease-out; }
+@keyframes stage-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 .results-hero-rank { animation: stage-pop 0.4s both; display: inline-block; }
 .results-hero-scores-row > * { animation: stage-pop 0.3s 0.1s both; }
 .results-hero-dashboard .metric-bar-fill { transform-origin: left center; animation: stage-fill 0.6s 0.15s both cubic-bezier(0.2, 0.7, 0.2, 1); }
@@ -6874,7 +6807,7 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 
 @media (prefers-reduced-motion: reduce) {
   .mode-grid--path > .mode-card-wrap,
-  .results-hero, .results-hero-finish, .results-hero-rank, .results-hero-tier, .results-hero-stats, .results-hero-gap,
+  .results-hero, .results-hero-finish, .results-hero-rank, .results-hero-tier,
   .results-hero-identity, .results-hero-dashboard, .results-hero-scores-row > *,
   .results-hero-dashboard .metric-bar-fill, .results-hero-rotation-col,
   .results-screen > .results-hero ~ *, .qf-result > .results-hero ~ *,
@@ -7059,3 +6992,34 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
    that ends at `none`) makes it the containing block of the fixed phone team dock inside it. */
 .at-stage-in > .at-draft-workspace { animation-name: at-stage-fade; }
 @keyframes at-stage-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- Scoreboard (ScoreBoard.tsx), 2026-09-27 results audit pack C: the same three numbers on
+   every result screen, your own first and in the score colour scale. ---- */
+.score-board-wrap { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+.score-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 520px; }
+.score-board-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 8px 4px; border-radius: 10px; text-align: center;
+  background: color-mix(in srgb, var(--at-ink) 5%, transparent);
+  border: 1px solid var(--at-line);
+}
+.score-board-cell b {
+  font-size: 24px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums;
+  color: var(--at-ink-soft);
+}
+.score-board-cell > span {
+  font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--at-ink-faint);
+}
+.score-board-cell--you { border-color: transparent; }
+.score-board-cell--you b { font-size: 30px; color: #fff; }
+.score-board-cell--you > span { color: color-mix(in srgb, #fff 80%, transparent); }
+.score-board-note { font-size: 11.5px; color: var(--at-ink-faint); }
+.score-board-note b { color: var(--at-ink); }
+/* Mini Draft / Roulette share card (ShareResultModal.tsx): the mode above the team, the scoreboard centred. */
+.share-modal-mode { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); }
+.share-modal-card .score-board-wrap { align-items: center; width: 100%; }
+.share-modal-card .score-board { width: 100%; }
+/* "⚔️ Your friend scored 74 on this board — you won the challenge." (ChallengeNote, ScoreBoard.tsx) */
+.challenge-note { display: inline-block; margin-top: 2px; font-size: 12px; color: var(--at-ink-soft); }
+.challenge-note--won { color: var(--at-t6); }
+.challenge-note--lost { color: var(--at-brand-red, #e05a5a); }
