@@ -1,5 +1,5 @@
 import { normalizePlayerName } from '../data/schema';
-import { USER_TIER_CALIBRATION } from '../data/userTierCalibration';
+import { USER_TIER_CALIBRATION, USER_WINDOW_TIERS } from '../data/userTierCalibration';
 import type { OverallTier } from './grades';
 
 /**
@@ -42,6 +42,10 @@ const entries = new Map<string, CalibrationEntry>(
   USER_TIER_CALIBRATION.map(([name, spanLabel, rawAtReview, tier]) => [normalizePlayerName(name), { spanLabel, rawAtReview, tier }]),
 );
 
+const windowTiers = new Map<string, OverallTier>(
+  USER_WINDOW_TIERS.map(([name, spanLabel, tier]) => [`${normalizePlayerName(name)}|${spanLabel}`, tier]),
+);
+
 const rawRangeByTier = new Map<OverallTier, [number, number]>();
 for (const { rawAtReview, tier } of entries.values()) {
   const range = rawRangeByTier.get(tier);
@@ -80,7 +84,9 @@ export function calibratedDisplayTalent(
   const anchor = reviewedMeasure();
   if (anchor === undefined) return Math.min(TIER_BANDS[entry.tier]![1], Math.round(measure));
   const value = Math.round(reviewed - (anchor - measure));
-  return Math.max(0, Math.min(TIER_BANDS[entry.tier]![1], value));
+  const windowTier = windowTiers.get(`${normalizePlayerName(playerName)}|${spanLabel}`);
+  const floor = windowTier ? TIER_BANDS[windowTier]![0] : 0;
+  return Math.max(floor, Math.min(TIER_BANDS[entry.tier]![1], value));
 }
 
 /** Highest TAL a player outside the table can show: everyone the user left untiered sits below

@@ -224,3 +224,12 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
   ['Goran Dragić', '2012-14', 73, 'Sixth Man'],
   ['Joe Ingles', '2019-21', 73, 'Sixth Man'],
 ];
+
+/**
+ * Single windows the user tiered on their own, beyond the one reviewed window per player. The
+ * window reads at least the bottom of that tier's band (never above the player's own tier).
+ * 2026-09-27: Curry 2016-18 at Greatest peak (the user, on the review page).
+ */
+export const USER_WINDOW_TIERS: ReadonlyArray<readonly [name: string, spanLabel: string, tier: OverallTier]> = [
+  ['Stephen Curry', '2016-18', 'Greatest peak'],
+];
