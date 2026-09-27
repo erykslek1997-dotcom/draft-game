@@ -100,6 +100,58 @@ export function DraftTicker({
 }
 
 /**
+ * 2026-09-27, the user ("po zakończeniu 1st round nadal chaos"; the "Druga runda bez chaosu"
+ * mockup): one thin line replaces the ticker's chip row and the "X is picking…" banner. Pick and
+ * round on the left, the latest pick in the middle, and on the right how far away the player's
+ * own pick is; it turns red when he is on the clock. A 2px progress line runs along the bottom.
+ */
+export function DraftStatusBar({
+  youOnClock,
+  complete,
+  onClockLabel,
+  picksAway,
+  latestPick,
+  progress,
+}: {
+  youOnClock: boolean;
+  complete: boolean;
+  onClockLabel: string;
+  picksAway: number | null;
+  latestPick: TickerPick | null;
+  progress: { picksMade: number; totalPicks: number; round: number; rounds: number };
+}) {
+  const pickNo = Math.min(progress.picksMade + 1, progress.totalPicks);
+  return (
+    <div className={`at-status-bar${youOnClock ? ' is-yours' : ''}`} role="status" aria-live="polite">
+      <span className="at-status-pick">
+        #{pickNo} · R{progress.round}/{progress.rounds}
+      </span>
+      <span className="at-status-last">
+        {complete ? (
+          <b>Draft complete</b>
+        ) : latestPick ? (
+          <>
+            <b>{latestPick.isHuman ? 'You' : latestPick.teamCode}</b> took <b>{latestPick.shortName}</b>
+          </>
+        ) : (
+          <>
+            <b>{onClockLabel}</b> is on the clock
+          </>
+        )}
+      </span>
+      {!complete && (
+        <span className="at-status-until at-cond">
+          {youOnClock ? 'Your pick' : picksAway === null ? '' : picksAway === 1 ? 'You next' : `You in ${picksAway}`}
+        </span>
+      )}
+      <span className="at-status-progress" aria-hidden>
+        <span style={{ width: `${(progress.picksMade / progress.totalPicks) * 100}%` }} />
+      </span>
+    </div>
+  );
+}
+
+/**
  * Show/hide the full draft board. 2026-09-24, user-reported live ("nachodzi na siebie, i trochę nie
  * pasuje, może tam gdzie szybkość go damy?"): it first sat inside the ticker row, crowding the
  * latest-picks chips and butting into the opened board; it now lives in the top bar next to the
