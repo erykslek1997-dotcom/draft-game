@@ -237,10 +237,67 @@ export function dailyPool(key: string = dayKey()): DailyPool {
   return { key, bySlot, roles };
 }
 
-/** The face-up teaser for a position (the user's option A): its star, dealt before the position
- * itself turns over, so a player can decide whether to save caps for him. */
+/** The next position's star (used by tests and the rumor below). */
 export function teaserFor(pool: DailyPool, slot: Position): PlayerSpan | undefined {
   return pool.bySlot[slot].find((s) => pool.roles[s.id] === 'star');
+}
+
+/**
+ * 2026-09-27, the user: instead of naming the next position's star, a line of scouting talk
+ * "co może być baitem albo prawdą", two baits per board, no reveal afterwards, cost in words.
+ * Every rumor is literally true of one of the next position's four cards, but it does not say
+ * which. A true rumor describes that position's star. A bait describes the card that sounds better
+ * than it plays: the famous name in a lesser stretch if there is one, otherwise the specialist
+ * (only his strength is mentioned). Which positions carry the bait is drawn from the board's seed.
+ */
+export interface Rumor {
+  text: string;
+  bait: boolean;
+}
+const BAITS_PER_BOARD = 2;
+
+function costWords(fga: number): string {
+  if (fga >= 21) return 'He won’t come cheap.';
+  if (fga >= 17) return 'Priced like a first option.';
+  if (fga >= 12) return 'Mid-range price tag.';
+  return 'Cheap, too.';
+}
+function strengthWords(s: PlayerSpan): string | null {
+  const signals: [number, string][] = [
+    [computeSpacing(s) - 75, 'Can really shoot it.'],
+    [computeDefensiveTalent(s) - 80, 'Locks people up.'],
+    [computeFinishing(s) - 80, 'Lives at the rim.'],
+    [computeOffensiveTalent(s) - 85, 'Gets buckets.'],
+    [(s.box.apg - 7.5) * 4, 'Runs the whole show.'],
+  ];
+  const [edge, words] = signals.reduce((a, b) => (b[0] > a[0] ? b : a));
+  return edge > 0 ? words : null;
+}
+function identityWords(s: PlayerSpan): string {
+  const as = allStarCount(s.playerName);
+  if (as >= 10) return `A ${as}-time All-Star is in the next deal.`;
+  if (as >= 5) return 'A multiple-time All-Star is in the next deal.';
+  if (as >= 1) return 'An All-Star is in the next deal.';
+  return 'Someone few people remember is in the next deal.';
+}
+
+export function rumorFor(pool: DailyPool, slot: Position): Rumor | undefined {
+  const rng = mulberry32(seedFromKey(`${pool.key}:rumor`));
+  const baitSlots = new Set(weightedShuffle(STARTER_SLOTS.slice(1), rng, () => 1).slice(0, BAITS_PER_BOARD));
+  const cards = pool.bySlot[slot];
+  const byRole = (role: DealRole) => cards.find((s) => pool.roles[s.id] === role);
+  const star = byRole('star');
+  const surprise = byRole('surprise');
+  const bestTal = (s: PlayerSpan) => Math.max(...(spansByPlayer().get(s.playerName) ?? [s]).map(effectiveTalent));
+  const nameTrap = surprise && allStarCount(surprise.playerName) >= NAME_TRAP_MIN_AS && bestTal(surprise) - effectiveTalent(surprise) >= NAME_TRAP_MIN_DROP ? surprise : undefined;
+  const bait = baitSlots.has(slot) ? nameTrap ?? byRole('specialist') : undefined;
+  const subject = bait ?? star;
+  if (!subject) return undefined;
+  // A bait reads exactly like a true rumor: same identity line (All-Star count), same wording.
+  const detailRng = mulberry32(seedFromKey(`${pool.key}:rumor:${slot}`));
+  const strength = strengthWords(subject);
+  const detail = strength && detailRng() < 0.7 ? `${strength} ${costWords(subject.fga)}` : costWords(subject.fga);
+  return { text: `${identityWords(subject)} ${detail}`, bait: Boolean(bait) };
 }
 
 // ---------------------------------------------------------------------------
