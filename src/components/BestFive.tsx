@@ -9,7 +9,6 @@ import { TeamChip } from './TeamBadge';
 import { teamsForSpan } from '../engine/spanTeams';
 import { markStepDone } from './pathProgress';
 import { SpinLever } from './SpinLever';
-import { currentStreak, recordDailyResult, savedDailyLineup, type Streak } from './bestFiveProgress';
 import {
   dailyBoard,
   dailyTargets,
@@ -22,7 +21,6 @@ import {
   GRADE_BLURB,
   WEIGHTED_AXES,
   AXIS_GLOSSARY,
-  dayKey,
   slotReels,
   rumorFor,
   type Lineup,
@@ -42,15 +40,6 @@ interface Props {
 }
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
-
-/** 2026-09-11, user-reported live: "mało interesująca data" — the raw ISO `dayKey()` string
- * ("2026-09-11") read as a database timestamp, not a daily-puzzle date. Formats the SAME string
- * (never a live `Date`, so a practice-board's own synthetic seed never gets fed through this) into
- * a real weekday + month/day, `Date.UTC` since `dayKey` is already UTC-anchored. */
-function formatDisplayDate(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
-}
 
 /** Blind-scouting box stats, never the engine's TAL. `boxLineShort` = the pts/reb/ast triple;
  * `boxLineDetail` = the rest of a normal stat line — steals, blocks, FG%, 3P%. */
@@ -77,8 +66,8 @@ const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 's
 ];
 
 /**
- * "Build the Best 5" — the entry-level daily puzzle. Pick one player per position from a
- * daily-rotated pool of 45, blind-submit, then see a golf-style grade against the engine's own
+ * Roulette (was "Build the Best 5" / Daily Deal) — pick one player per position from a
+ * random deal, blind-submit, then see a golf-style grade against the engine's own
  * best lineup from that pool. See `engine/bestFive.ts` for the pool generation, the 5-man
  * scoring (a synthetic `Team` scored on the engine's real axes) and the par bands.
  *
@@ -86,42 +75,33 @@ const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 's
  * — it has no draft, no lottery, no AI, none of `GameShell`'s phase machine applies.
  */
 export default function BestFive({ onBack, onNextStep }: Props) {
-  const today = useMemo(() => dayKey(), []);
-
-  // The first board of the day is the daily puzzle; "New board" rolls a fresh random pool so the
-  // mode stays playable while there's no backend enforcing one scored attempt per day.
-  const [board, setBoard] = useState<{ seed: string; n: number }>({ seed: today, n: 0 });
+  // 2026-09-27, the user: "Usuńmy daily challenge. Dodamy go osobnym przyciskiem jak będziemy
+  // robić porządnie daily challenge". Every board is a fresh random deal; the old daily puzzle and
+  // streak (bestFiveProgress.ts) are in git history for when the daily challenge gets built.
+  const [board, setBoard] = useState<{ seed: string; n: number }>(() => ({ seed: randomSeed(1), n: 1 }));
   // 2026-09-11, user's own ask: "dodajemy koszt gracza w shots i oprócz codziennej puli graczy
-  // będzie losowa liczba między 60 a 90" — a daily-seeded shots budget for the five starters.
+  // będzie losowa liczba między 60 a 90" — a seeded shots budget for the five starters.
   // 2026-09-27: pool and cap come together from `dailyBoard`, which skips boards where the five
   // biggest names are already about the best answer (see its docstring).
   const dealt = useMemo(() => dailyBoard(board.seed), [board.seed]);
   const pool: DailyPool = dealt.pool;
   const shotsCap = dealt.cap;
-  const isDaily = board.seed === today;
 
-  // 2026-09-24: today's puzzle is really once a day now — an already-submitted daily lineup is
-  // restored (and its result shown) instead of a fresh board after a refresh; see
-  // bestFiveProgress.ts. The score is recomputed from the saved picks, never stored twice.
   function resultFor(l: Lineup, p: DailyPool, cap: number) {
     const score = scoreLineup(l);
     const targets = dailyTargets(p, cap);
     return { score, targets, grade: gradeVsPar(score.composite, targets.par, targets.optimal) };
   }
-  const [initialDaily] = useState(() => savedDailyLineup(today, pool));
-  const [lineup, setLineup] = useState<Lineup>(() => initialDaily ?? {});
-  const [activeSlot, setActiveSlot] = useState<Position | null>(initialDaily ? null : 'PG');
+  const [lineup, setLineup] = useState<Lineup>({});
+  const [activeSlot, setActiveSlot] = useState<Position | null>('PG');
   // 2026-09-26, the user: "ograniczmy wybór do 5 graczy. Niech po każdym wyborze gracz widzi jacy
   // gracze się losują." Positions are dealt one at a time: a slot's five stay face down until the
   // pick before it, then spin in on a slot machine (`spinSlot`, once per slot; `landedSlot` pops
   // the cards in after it stops).
-  const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(initialDaily ? STARTER_SLOTS : ['PG']));
-  const [freshSlot, setFreshSlot] = useState<Position | null>(initialDaily ? null : 'PG');
+  const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(['PG']));
+  const [freshSlot, setFreshSlot] = useState<Position | null>('PG');
   const [landedSlot, setLandedSlot] = useState<Position | null>(null);
-  const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(() =>
-    initialDaily ? resultFor(initialDaily, pool, shotsCap) : null,
-  );
-  const [streak, setStreak] = useState<Streak>(() => currentStreak(today));
+  const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(null);
   // 2026-09-17, user's own ask: a real "how to play?" affordance on every mode, now that the
   // intro screen's own always-visible rules list is gone.
   const [showHowToPlay, setShowHowToPlay] = useState(false);
@@ -158,7 +138,6 @@ export default function BestFive({ onBack, onNextStep }: Props) {
     if (!complete || overCap) return;
     const next = resultFor(lineup, pool, shotsCap);
     setResult(next);
-    if (isDaily) setStreak(recordDailyResult(today, lineup, next.grade, next.score.composite));
   }
 
   function resetPicks() {
@@ -169,48 +148,21 @@ export default function BestFive({ onBack, onNextStep }: Props) {
     setResult(null);
   }
 
-  /** Fresh random pool — a practice board, not today's puzzle. */
+  /** A fresh random deal. */
   function newBoard() {
-    setBoard((b) => ({ seed: `practice-${today}-${b.n + 1}-${Math.floor(Math.random() * 1e9)}`, n: b.n + 1 }));
+    setBoard((b) => ({ seed: randomSeed(b.n + 1), n: b.n + 1 }));
     resetPicks();
-  }
-
-  function backToDaily() {
-    setBoard({ seed: today, n: 0 });
-    const dailyToday = dailyBoard(today);
-    const played = savedDailyLineup(today, dailyToday.pool);
-    if (played) {
-      setLineup(played);
-      setActiveSlot(null);
-      setRevealed(new Set(STARTER_SLOTS));
-      setFreshSlot(null);
-      setResult(resultFor(played, dailyToday.pool, dailyToday.cap));
-    } else {
-      resetPicks();
-    }
   }
 
   return (
     <div className="at-shell best-five">
       <div className="at-board-brand at-cond">Roulette</div>
       <div className="bf-subhead">
-        <span className="bf-date">
-          {isDaily ? `Daily puzzle · ${formatDisplayDate(today)}` : `Practice board #${board.n}`}
-          {streak.current > 0 && (
-            <span className="bf-streak" title={`Best streak: ${streak.best} days`}>
-              {' '}· 🔥 {streak.current}-day streak
-            </span>
-          )}
-        </span>
+        <span className="bf-date">Board #{board.n}</span>
         <span className="bf-subhead-actions">
           <button className="at-legend-toggle at-cond" onClick={() => setShowHowToPlay((v) => !v)}>
             {showHowToPlay ? 'Hide how to play' : 'How to play?'}
           </button>
-          {!isDaily && (
-            <button className="at-legend-toggle at-cond" onClick={backToDaily}>
-              Today’s puzzle
-            </button>
-          )}
           {onBack && (
             <button className="at-legend-toggle at-cond" onClick={onBack}>
               ← Back
@@ -222,24 +174,24 @@ export default function BestFive({ onBack, onNextStep }: Props) {
       {showHowToPlay && (
         <ol className="how-to-play-panel">
           <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C. Each position deals four players, and the next position turns over after you pick. Picks are final: no going back. While you choose, the scouts drop a word about the next deal. It is always true of one of its four players — but not always the one worth saving caps for.</li>
-          <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.</li>
-          <li><b>Submit once.</b> No re-picking after you see your score for today’s puzzle.</li>
+          <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under the board’s cap, shown by the meter above it.</li>
+          <li><b>Submit once.</b> No re-picking after you see your score.</li>
           <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against the fan-vote five (the five biggest names) and the best five on the board.</li>
-          <li><b>Practice anytime.</b> Today’s puzzle is once a day — a practice board gives you a fresh random pool whenever you want another rep.</li>
+          <li><b>Spin again.</b> Every new board is a fresh random deal.</li>
         </ol>
       )}
 
       {!result && (
         <div className="at-card">
           <p className="bf-intro">
-            One player per position from today’s pool. The five biggest names usually <em>isn’t</em> the
+            One player per position from this deal. The five biggest names usually <em>isn’t</em> the
             answer — spacing and rim protection matter. No score until you submit.
           </p>
 
           <ShotsMeter used={shotsUsed} cap={shotsCap} />
           <p className="bf-caps-note">
             <CapIcon /> Caps = a player’s shots per game in those years. A high-usage star eats the budget, so the five
-            have to fit under today’s {shotsCap}.
+            have to fit under this board’s {shotsCap}.
           </p>
 
           <div className="bf-slot-row">
@@ -378,10 +330,7 @@ export default function BestFive({ onBack, onNextStep }: Props) {
           pool={pool}
           result={result}
           shotsCap={shotsCap}
-          isDaily={isDaily}
-          streak={isDaily ? streak : null}
           onNewBoard={newBoard}
-          onBackToDaily={backToDaily}
           onNextStep={onNextStep}
         />
       )}
@@ -497,25 +446,23 @@ function CmpCell({ span, tone }: { span: PlayerSpan | null | undefined; tone: 'h
   );
 }
 
+function randomSeed(n: number): string {
+  return `roulette-${n}-${Math.floor(Math.random() * 1e9)}`;
+}
+
 function BestFiveResult({
   lineup,
   pool,
   result,
   shotsCap,
-  isDaily,
-  streak,
   onNewBoard,
-  onBackToDaily,
   onNextStep,
 }: {
   lineup: Lineup;
   pool: DailyPool;
   result: { score: LineupScore; targets: DailyTargets; grade: GolfGrade };
   shotsCap: number;
-  isDaily: boolean;
-  streak: Streak | null;
   onNewBoard: () => void;
-  onBackToDaily: () => void;
   onNextStep?: () => void;
 }) {
   useEffect(() => markStepDone('bestfive'), []);
@@ -592,7 +539,7 @@ function BestFiveResult({
             {chalkGap <= 0
               ? `already is the best five on the board (${targets.optimal})`
               : `was within ${chalkGap} of the best five on the board (${targets.optimal})`}
-            . Not much room to out-coach it today.
+            . Not much room to out-coach it on this deal.
           </p>
         )}
         {explain.tookLazyPick && !isChalkBoard(targets) && (
@@ -653,16 +600,6 @@ function BestFiveResult({
         </div>
       </div>
 
-      {isDaily && (
-        <p className="bf-daily-done">
-          {streak && streak.current > 0 && (
-            <>
-              🔥 <b>{streak.current}-day streak</b> (best {streak.best}).{' '}
-            </>
-          )}
-          That’s today’s puzzle done — a new one unlocks tomorrow. Practice boards are unlimited.
-        </p>
-      )}
       {onNextStep && (
         <div className="path-next">
           <span>
@@ -676,13 +613,8 @@ function BestFiveResult({
       )}
       <div className="bf-submit-row bf-result-actions">
         <button className="at-draft-btn bf-submit" onClick={onNewBoard}>
-          {isDaily ? 'Practice board' : 'New board'}
+          New board
         </button>
-        {!isDaily && (
-          <button className="at-legend-toggle at-cond" onClick={onBackToDaily}>
-            Back to today’s puzzle
-          </button>
-        )}
       </div>
     </div>
   );

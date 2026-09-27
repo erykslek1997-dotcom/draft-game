@@ -99,10 +99,10 @@ const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: stri
   ],
   bestfive: [
     { title: 'The deal', body: 'Four players are dealt for each position, PG to C. Pick one and the next position turns over.' },
-    { title: 'Caps', body: 'Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.' },
-    { title: 'Submit once', body: 'No re-picking after you see your score for today’s puzzle.' },
+    { title: 'Caps', body: 'Every player costs caps — his shots per game in those years. Your five have to fit under the board’s cap, shown by the meter above it.' },
+    { title: 'Submit once', body: 'No re-picking after you see your score.' },
     { title: 'Grading', body: 'You’re scored on talent, offense, defense, spacing, and fit, then compared against the fan-vote five.' },
-    { title: 'Practice anytime', body: 'Today’s puzzle is once a day — a practice board gives you a fresh random pool whenever you want another rep.' },
+    { title: 'Spin again', body: 'Every new board is a fresh random deal.' },
   ],
   quickfive: [
     { title: 'Draft', body: `16 teams take turns, 5 rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
@@ -333,7 +333,7 @@ function App() {
                   </span>
                   <span className="mode-card-step at-cond">Step 1 · learn the caps{stepDone('bestfive') ? ' ✓' : ''}</span>
                   <span className="mode-card-name at-cond">Roulette</span>
-                  <span className="mode-card-desc">Daily puzzle — four cards dealt per position, build a five under the cap.</span>
+                  <span className="mode-card-desc">Four cards dealt per position — build a five under the cap.</span>
                 </button>
                 <button
                   type="button"
