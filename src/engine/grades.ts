@@ -4,7 +4,7 @@ import { precomputedEffectiveTalent, precomputedSThreshold } from './precomputed
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { registerNamedShift } from './namedShift';
-import { calibratedDisplayTalent, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX } from './tierCalibration';
+import { calibratedDisplayTalent, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
 import {
   computeTalent,
   computeOffensiveTalentBase,
@@ -1487,13 +1487,34 @@ registerNamedShift(namedShiftForSpan);
 export function displayTalentForSpan(ctx: TierGateContext): number {
   // 2026-09-27: the user's tier table (tierCalibration.ts) decides the number for the 200 players
   // it covers; everyone else keeps the rules below, held under the top of All-star.
-  if (ctx.playerName && ctx.rawTal !== undefined) {
-    const calibrated = calibratedDisplayTalent(ctx.playerName, ctx.spanLabel, ctx.rawTal);
+  const legacy = legacyDisplayTalent(ctx);
+  if (ctx.playerName && ctx.rawTal !== undefined && tierCalibrationFor(ctx.playerName)) {
+    const name = ctx.playerName;
+    const calibrated = calibratedDisplayTalent(name, ctx.spanLabel, ctx.rawTal, windowMeasure(legacy, ctx.rawTal), () => reviewedWindowMeasure(name));
     if (calibrated !== undefined) return calibrated;
   }
-  const smoothed = smoothedDisplayTalent(ctx);
-  const legacy = Math.min(namedPlayerCeiling(ctx.playerName), smoothed + namedPeakLift(ctx.playerName, smoothed));
   return ctx.playerName ? Math.min(UNCALIBRATED_DISPLAY_MAX, legacy) : legacy;
+}
+
+function legacyDisplayTalent(ctx: TierGateContext): number {
+  const smoothed = smoothedDisplayTalent(ctx);
+  return Math.min(namedPlayerCeiling(ctx.playerName), smoothed + namedPeakLift(ctx.playerName, smoothed));
+}
+
+const reviewedMeasureCache = new Map<string, number | undefined>();
+/** `windowMeasure` of the window the user tiered, looked up once per player. */
+function reviewedWindowMeasure(playerName: string): number | undefined {
+  const key = normalizePlayerName(playerName);
+  if (reviewedMeasureCache.has(key)) return reviewedMeasureCache.get(key);
+  const entry = tierCalibrationFor(playerName);
+  const span = entry && draftPool.find((candidate) => normalizePlayerName(candidate.playerName) === key && candidate.spanLabel === entry.spanLabel);
+  let measure: number | undefined;
+  if (span) {
+    const ctx = tierContextFor(span);
+    measure = windowMeasure(legacyDisplayTalent(ctx), ctx.rawTal ?? ctx.tal);
+  }
+  reviewedMeasureCache.set(key, measure);
+  return measure;
 }
 
 function smoothedDisplayTalent(ctx: TierGateContext): number {

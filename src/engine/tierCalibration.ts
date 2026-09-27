@@ -9,7 +9,7 @@ import type { OverallTier } from './grades';
  * his raw (uncapped) TAL sits among the other reviewed players of that tier, so the order inside
  * a tier still comes from the engine while the tier itself comes from the table. GOAT runs past
  * 100 (the user: "GOAT 100+"). His other windows are measured from the reviewed one on one shared
- * raw-to-TAL scale (`scaleFromRaw`), and never read above his reviewed tier.
+ * `windowMeasure`, and never read above his reviewed tier.
  */
 const TIER_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = {
   GOAT: [104, 105],
@@ -21,32 +21,15 @@ const TIER_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = {
   'Sixth Man': [58, 66],
 };
 
-/** Raw TAL -> TAL on one continuous scale, anchored near each tier's median reviewed raw (Starter
- * 76, All-star 82, All-NBA 90, MVP 105, Greatest peak 132, GOAT 162). Only differences along it
- * are used: how far a player's other windows sit below (or above) his reviewed one. */
-const SCALE_ANCHORS: ReadonlyArray<readonly [number, number]> = [
-  [0, 0],
-  [40, 40],
-  [60, 58],
-  [76, 64],
-  [82, 75],
-  [90, 84],
-  [105, 92],
-  [132, 97.5],
-  [162, 104.5],
-  [200, 110],
-];
-
-function scaleFromRaw(raw: number): number {
-  if (raw <= SCALE_ANCHORS[0][0]) return SCALE_ANCHORS[0][1];
-  for (let i = 1; i < SCALE_ANCHORS.length; i++) {
-    const [x1, y1] = SCALE_ANCHORS[i];
-    if (raw <= x1) {
-      const [x0, y0] = SCALE_ANCHORS[i - 1];
-      return y0 + ((raw - x0) / (x1 - x0)) * (y1 - y0);
-    }
-  }
-  return SCALE_ANCHORS[SCALE_ANCHORS.length - 1][1];
+/**
+ * How far one window sits from another, in TAL. The measure is the old displayed TAL (smoothed
+ * across neighbouring windows, so a raw dip from an injury year does not sink a window), plus a
+ * share of the raw talent above 100 that the old display's soft cap folded into 97-99. Without
+ * that share every LeBron window from 2007 to 2024 would read as the same 99.
+ */
+const RAW_EXCESS_SHARE = 0.14;
+export function windowMeasure(legacyDisplay: number, rawTal: number): number {
+  return legacyDisplay + RAW_EXCESS_SHARE * Math.max(0, rawTal - 100);
 }
 
 interface CalibrationEntry {
@@ -79,17 +62,28 @@ export function tierCalibrationFor(playerName: string): CalibrationEntry | undef
   return entries.get(normalizePlayerName(playerName));
 }
 
-/** Displayed TAL for a window of a tiered player; `undefined` for everyone else. */
-export function calibratedDisplayTalent(playerName: string, spanLabel: string | undefined, rawTal: number): number | undefined {
+/**
+ * Displayed TAL for a window of a tiered player; `undefined` for everyone else. `measure` is this
+ * window's `windowMeasure`, `reviewedMeasure` the reviewed window's.
+ */
+export function calibratedDisplayTalent(
+  playerName: string,
+  spanLabel: string | undefined,
+  rawTal: number,
+  measure: number,
+  reviewedMeasure: () => number | undefined,
+): number | undefined {
   const entry = tierCalibrationFor(playerName);
   if (!entry) return undefined;
   if (spanLabel === entry.spanLabel) return placeInBand(entry.tier, rawTal);
   const reviewed = placeInBand(entry.tier, entry.rawAtReview);
-  const value = Math.round(reviewed - (scaleFromRaw(entry.rawAtReview) - scaleFromRaw(rawTal)));
+  const anchor = reviewedMeasure();
+  if (anchor === undefined) return Math.min(TIER_BANDS[entry.tier]![1], Math.round(measure));
+  const value = Math.round(reviewed - (anchor - measure));
   return Math.max(0, Math.min(TIER_BANDS[entry.tier]![1], value));
 }
 
 /** Highest TAL a player outside the table can show: everyone the user left untiered sits below
- * the 200 he did tier, so none of them reads above the top of All-star. */
+ * the 200 who were, so none of them reads above the top of All-star. */
 export const UNCALIBRATED_DISPLAY_MAX = 79;
 export const UNCALIBRATED_TIER_MAX: OverallTier = 'All-star';
