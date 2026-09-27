@@ -608,6 +608,26 @@ const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: Defensi
   { name: 'Stephen Curry', spanLabel: '2016-18', role: 'Chaser' },
 ];
 
+/**
+ * 2026-09-27, engine audit: offensive archetypes the generated classifier gets wrong because the
+ * source tagged the window at a different position. Jalen Williams 2023-25 was logged as a PF
+ * (small-ball minutes on OKC), so the classifier gave him `Versatile Big`, a big-man archetype
+ * that drives rim-pressure eligibility, portability and team fit. He is an SF (see
+ * `POSITION_OVERRIDES`), and his adjacent 2022-24 window already reads `Secondary Ball Handler`.
+ */
+const OFFENSIVE_ARCHETYPE_OVERRIDES: { name: string; spanLabel: string; archetype: OffensiveArchetype }[] = [
+  { name: 'Jalen Williams', spanLabel: '2023-25', archetype: 'Secondary Ball Handler' },
+];
+
+function applyOffensiveArchetypeOverrides(spans: PlayerSpan[]): PlayerSpan[] {
+  return spans.map((span) => {
+    const override = OFFENSIVE_ARCHETYPE_OVERRIDES.find(
+      (o) => normalizePlayerName(o.name) === normalizePlayerName(span.playerName) && o.spanLabel === span.spanLabel,
+    );
+    return override ? { ...span, offensiveArchetype: override.archetype } : span;
+  });
+}
+
 function applyDefensiveRoleOverrides(spans: PlayerSpan[]): PlayerSpan[] {
   return spans.map((span) => {
     const override = DEFENSIVE_ROLE_OVERRIDES.find(
@@ -850,7 +870,9 @@ const positionCorrectedPlayers: PlayerSpan[] = applyForcedPositionProfiles(
     applySecondaryPositionRemovals(
       applySecondaryPositionAdditions(
         applyDefensiveRoleOverrides(
-          applyPrimaryPositionReclassifications(applyPositionOverrides([...curatedPlayers, ...dedupedGeneratedPlayers, ...curatedExpandedSpans])),
+          applyOffensiveArchetypeOverrides(
+            applyPrimaryPositionReclassifications(applyPositionOverrides([...curatedPlayers, ...dedupedGeneratedPlayers, ...curatedExpandedSpans])),
+          ),
         ),
       ),
     ),

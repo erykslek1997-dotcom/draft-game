@@ -14,6 +14,11 @@ import { runtimeAvailabilityForSpan } from '../engine/runtimeSpanLookups';
 // parity adjustments mirror what `players.ts`'s `POSITION_OVERRIDES` / `SECONDARY_POSITION_
 // ADDITIONS` already do to the full archive; the next intentional pool rebuild bakes them into JSON.
 function applyRuntimeParity(span: PlayerSpan): PlayerSpan {
+  // Jalen Williams 2023-25 — PF-logged window classified `Versatile Big` (see
+  // `OFFENSIVE_ARCHETYPE_OVERRIDES` in players.ts); he is an SF ball-handling wing.
+  if (span.playerName === 'Jalen Williams' && span.spanLabel === '2023-25' && span.offensiveArchetype === 'Versatile Big') {
+    return { ...span, offensiveArchetype: 'Secondary Ball Handler' };
+  }
   // Olynyk — real C/PF, only his PF eligibility changed.
   if (span.playerName === 'Kelly Olynyk' && span.primaryPosition !== 'PF' && !span.secondaryPositions.includes('PF')) {
     return { ...span, secondaryPositions: [...span.secondaryPositions, 'PF'] };

@@ -506,30 +506,13 @@ function hasNamedTierException(playerName?: string, spanLabel?: string): boolean
  * existing named downcaps below, not a new general PG rule.
  */
 const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
+  // 2026-09-27, engine audit: entries the engine now reproduces on its own were removed (checked by
+  // switching every named correction off and comparing TAL and tier on every span): Kirilenko,
+  // McCollum, McMillan, Jim Jackson, Stephen Jackson, Walt Williams, Jason Terry, Dirk Nowitzki,
+  // Gobert and Tatum. Comments below that still name them describe why they were added.
   [
-    { name: 'Andrei Kirilenko', spanLabel: '2004-06', cap: 'All-NBA' as OverallTier },
-    { name: 'CJ McCollum', spanLabel: '2020-22', cap: 'All-star' as OverallTier },
     { name: 'Vince Carter', spanLabel: '2012-14', cap: 'Starter' as OverallTier },
     { name: 'Chris Webber', spanLabel: '1996-98', cap: 'All-NBA' as OverallTier },
-    // 2026-08-31 (D-TAL->TAL bridge pass): McMillan's 1992-94 peak (O-TAL 42 / D-TAL 99 — a genuine
-    // 2x All-Defense 1st-team perimeter menace, real DPOY-vote-adjacent) is the one span where the
-    // bridge's rank-relative defensive credit alone carries a near-zero offensive game to All-star.
-    // User's explicit call: cap it. 'Starter' is exactly its non-bridge tier — the bridge can still
-    // move the NUMBER, it just can't wear an All-star badge on defense alone. A named single-span
-    // exception, not a slope: the same "defensive specialist reaching All-star" question for every
-    // 3-and-D wing (Danny Green / P.J. Tucker / OG Anunoby) is a feature of the bridge, not a bug.
-    { name: 'Nate McMillan', spanLabel: '1992-94', cap: 'Starter' as OverallTier },
-    // 2026-08-31, follow-up on the bridge: SF has only two tier-cap rules and neither catches a
-    // "mediocre offense + mediocre defense" wing, so a +5 bridge correction tips a handful of
-    // journeyman SF spans across the All-star floor (70). PG's own archetype caps catch the PG
-    // equivalents; SF has no such net. A blanket SF "sub-C+ offense AND sub-D+ defense -> Starter"
-    // rule was measured and rejected — SF O-TAL grades run low for real scorers, so it also caught
-    // Jamal Mashburn, Dan Majerle, Danny Granger and Jaylen Brown 2023-25 (a 23-ppg All-NBA wing
-    // reading "O C"). Named downcaps for the three whose non-bridge TAL was genuinely below the
-    // All-star floor and whose profile is journeyman both ways (O C-, D D-/D+/F).
-    { name: 'Jim Jackson', spanLabel: '2003-05', cap: 'Starter' as OverallTier },
-    { name: 'Stephen Jackson', spanLabel: '2003-05', cap: 'Starter' as OverallTier },
-    { name: 'Walt Williams', spanLabel: '1995-97', cap: 'Starter' as OverallTier },
     // 2026-09-01, SG audit: two never-All-Star empty-volume scorers whose O-TAL alone carries them
     // to All-star while every real plus-minus source has them clearly net-negative. The SG two-way
     // cap holds them at All-star (out of All-NBA) but has no lower rung. Monta Ellis 2009-11 (25.5
@@ -538,7 +521,6 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     // pre-Sixth-Man-of-the-Year). Both scoped single spans — their real, positive-value seasons
     // (Terry's Mavs/Sixth Man years, Ellis's later Mavs/Pacers) are untouched.
     { name: 'Monta Ellis', spanLabel: '2009-11', cap: 'Starter' as OverallTier },
-    { name: 'Jason Terry', spanLabel: '2000-02', cap: 'Starter' as OverallTier },
     // 2026-09-01, SF audit: same empty-volume pattern as the two SG downcaps above. Jalen Rose's
     // 1999-2002 Pacers peak (19-20 ppg lead scorer, incl. the 2000 Finals run) reads All-star off
     // O-TAL alone while every plus-minus source has him net-negative (rv -0.64 / -0.87, D-TAL D)
@@ -558,8 +540,6 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     // AD were also flagged "~3 too high" but a downcap to MVP over-corrects them to ~90 — that
     // trio is the deferred "top of the scale is compressed" session, left alone here.)
     { name: 'DeMarcus Cousins', spanLabel: '2014-16', cap: 'All-NBA' as OverallTier },
-    { name: 'Dirk Nowitzki', spanLabel: '2002-04', cap: 'MVP' as OverallTier },
-    { name: 'Dirk Nowitzki', spanLabel: '2004-06', cap: 'MVP' as OverallTier },
     { name: 'Karl Malone', spanLabel: '1992-94', cap: 'MVP' as OverallTier },
     { name: 'Karl Malone', spanLabel: '1994-96', cap: 'MVP' as OverallTier },
     // 2026-09-09, user batch feedback ("Draymond wskoczył na greatest peak", "Gobert do
@@ -578,8 +558,6 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     // star caps at All-NBA" rule is exactly the kind of position-rule refinement `NAMED_TIER_
     // EXCEPTIONS`'s own docstring records as repeatedly cascading into other positions — named.
     { name: 'Draymond Green', spanLabel: '2014-16', cap: 'All-NBA' as OverallTier },
-    { name: 'Rudy Gobert', spanLabel: '2019-21', cap: 'All-NBA' as OverallTier },
-    { name: 'Rudy Gobert', spanLabel: '2020-22', cap: 'All-NBA' as OverallTier },
     // 2026-09-09, user batch feedback ("Webber zawsze narzekałem, reszta git" — of the
     // AI-over-drafted volume forwards, Barkley/Drexler are friend-group taste to leave alone,
     // Webber genuinely reads a rung high). Only 2000-02 (cTAL/eTAL 90) sits in 'MVP'; his other
@@ -598,7 +576,6 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     // Every span here is the one currently winning `bestTalentSpan` for its player (or, for
     // Drexler, the full cluster of spans that would otherwise just hand the badge to the next one
     // down) — see `NAMED_DISPLAY_TAL` below for the matching number on each of these.
-    { name: 'Jayson Tatum', spanLabel: '2022-24', cap: 'All-NBA' as OverallTier },
     { name: 'Manu Ginóbili', spanLabel: '2006-08', cap: 'All-NBA' as OverallTier },
     { name: 'Karl Malone', spanLabel: '1993-95', cap: 'MVP' as OverallTier },
     { name: 'Karl Malone', spanLabel: '1989-91', cap: 'MVP' as OverallTier },
@@ -655,8 +632,8 @@ function namedTierDowncap(playerName?: string, spanLabel?: string): OverallTier 
  * `effectiveTalent` and thus gameplay. Not in TAYLOR_TOP10 / GOAT-40 — anchors unaffected.
  */
 const NAMED_DISPLAY_TAL: ReadonlyMap<string, number> = new Map(
+  // 2026-09-27, engine audit: Jayson Tatum's two entries removed — both spans read 87 without them.
   [
-    { name: 'Jayson Tatum', spanLabel: '2021-23', tal: 87 },
     // 2026-09-16 batch (see the matching `NAMED_TIER_DOWNCAPS`/`NAMED_TIER_RAISES` entries above
     // for the full "why" on each) — explicit numbers so the badge and the number agree without
     // relying on `applyGradeCeiling`'s auto-compression, which has previously undershot a tier's
@@ -664,7 +641,6 @@ const NAMED_DISPLAY_TAL: ReadonlyMap<string, number> = new Map(
     // above). All-NBA group lands at 87 (top of its 80-87 band); MVP group at 93 (top of its
     // 88-93 band, the exact number the user asked for); West at 90 ("w okolicy 90" — mid-band,
     // not the ceiling, since only a modest raise was asked for there).
-    { name: 'Jayson Tatum', spanLabel: '2022-24', tal: 87 },
     { name: 'Manu Ginóbili', spanLabel: '2006-08', tal: 87 },
     { name: 'Karl Malone', spanLabel: '1993-95', tal: 93 },
     { name: 'Karl Malone', spanLabel: '1989-91', tal: 93 },
@@ -715,8 +691,9 @@ function namedDisplayTal(playerName?: string, spanLabel?: string): number | unde
  * is also taught about it (see its own docstring) so the badge and the number stay in agreement.
  */
 const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
+  // 2026-09-27, engine audit: Klay Thompson, Kobe Bryant, Tracy McGrady, Christian Laettner and
+  // Shawn Kemp removed — the engine now lands each of them on the same tier without a raise.
   [
-    { name: 'Klay Thompson', spanLabel: '2015-17', tier: 'All-NBA' as OverallTier },
     // 2026-08-31, user's SG-cap review: the SG `!gradeAtLeast(dtalGrade, 'C') && !A+ offense ->
     // All-star` rule (built to cap modern empty-volume scorers like Zach LaVine 2020-22) also
     // dumps two genuine peak-scoring seasons — Kobe 2004-06 (35.4 ppg, O A/92, real 1st-team
@@ -724,8 +701,6 @@ const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
     // way to All-star on their weak defense. Loosening the rule's A+ bar to A re-frees LaVine
     // (also O A/94), so a named raise to the tier they actually earned instead. Not MVP — that
     // still wants real two-way value they don't have; All-NBA matches the real award.
-    { name: 'Kobe Bryant', spanLabel: '2004-06', tier: 'All-NBA' as OverallTier },
-    { name: 'Tracy McGrady', spanLabel: '2002-04', tier: 'All-NBA' as OverallTier },
     // 2026-09-01, PF audit follow-up to the reference-data trim fix: `realValueFloor.ts`'s
     // sustained-real-value floor requires `rv.isModernEra` (real DARKO coverage, ~1997+), which
     // exists because pre-DARKO plus-minus data was assumed too thin to trust. But these three
@@ -737,9 +712,7 @@ const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
     // Bill Russell/Oscar Robertson - clearly not scoped to the PF gap being fixed here, touches
     // Taylor/GOAT-validated eras. Three narrow named raises instead, same shape as Klay/Kobe/
     // T-Mac above - each one individually verified past the floor's real threshold, not a rule.
-    { name: 'Christian Laettner', spanLabel: '1996-98', tier: 'Starter' as OverallTier },
     { name: 'Larry Nance', spanLabel: '1983-85', tier: 'Starter' as OverallTier },
-    { name: 'Shawn Kemp', spanLabel: '1992-94', tier: 'Starter' as OverallTier },
     // 2026-09-01, PF audit: Elvin Hayes 1972-74 (both seasons real All-NBA 2nd team) reads Bench
     // Warmer / TAL 43 purely because the NBA didn't record blocks until 1973-74. His own adjacent,
     // 2/3-overlapping 1973-75 span (also All-NBA both years, same player, same skills) lands
