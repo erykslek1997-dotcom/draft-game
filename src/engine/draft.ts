@@ -424,30 +424,42 @@ function strategyForDraftSlot(draftSlot: number): AiDraftStrategy {
 /**
  * 2026-09-27: each draft deals the five GM personalities (aiDrafter.ts `AiGmProfile`) across the
  * 16 draft slots from the draft's own seed, so the same seed replays the same rivals and a new
- * draft meets new ones. Every slot draws its style at random, redrawn until each style lands on
- * between `MIN_TEAMS_PER_GM_PROFILE` and `MAX_TEAMS_PER_GM_PROFILE` teams (the user: "można
- * trafić na 1-8 różnych stylów, nie tylko 3 na każdy"), so one draft is a league of defenders and
- * the next has a single one. Kept off `Team` itself: it is derived, so saved drafts need nothing
- * new.
+ * draft meets new ones. Every slot draws its style at random, redrawn until no style lands on more
+ * than `MAX_TEAMS_PER_GM_PROFILE` teams; a style may not appear at all. Each GM also draws how
+ * hard he leans on his taste (`GM_STRENGTH_MIN`-`GM_STRENGTH_MAX` value points), so one "Defense
+ * First" GM mildly prefers defenders and another takes them at almost any cost. The user: "można
+ * trafić na 1-8 różnych stylów, nie tylko 3 na każdy", then both "styl może się nie pojawić" and
+ * "losowa siła gustu". Kept off `Team` itself: it is derived, so saved drafts need nothing new.
  */
-const MIN_TEAMS_PER_GM_PROFILE = 1;
 const MAX_TEAMS_PER_GM_PROFILE = 8;
-const profileOrderCache = new Map<number, AiGmProfile[]>();
-export function aiProfileForSlot(seed: number, draftSlot: number): AiGmProfile {
-  let order = profileOrderCache.get(seed);
-  if (!order) {
+const GM_STRENGTH_MIN = 5;
+const GM_STRENGTH_MAX = 25;
+interface AiGm {
+  profile: AiGmProfile;
+  strength: number;
+}
+const gmCache = new Map<number, AiGm[]>();
+function aiGmsForSeed(seed: number): AiGm[] {
+  let gms = gmCache.get(seed);
+  if (!gms) {
     const rng = mulberry32(mixSeed(seed, 0x6d70));
     const draw = () => Array.from({ length: TEAM_COUNT }, () => AI_GM_PROFILES[Math.floor(rng() * AI_GM_PROFILES.length)]);
-    const fits = (o: AiGmProfile[]) =>
-      AI_GM_PROFILES.every((p) => {
-        const n = o.filter((x) => x === p).length;
-        return n >= MIN_TEAMS_PER_GM_PROFILE && n <= MAX_TEAMS_PER_GM_PROFILE;
-      });
-    order = draw();
+    const fits = (o: AiGmProfile[]) => AI_GM_PROFILES.every((p) => o.filter((x) => x === p).length <= MAX_TEAMS_PER_GM_PROFILE);
+    let order = draw();
     for (let guard = 0; guard < 200 && !fits(order); guard++) order = draw();
-    profileOrderCache.set(seed, order);
+    const strengthRng = mulberry32(mixSeed(seed, 0x6d71));
+    gms = order.map((profile) => ({ profile, strength: GM_STRENGTH_MIN + strengthRng() * (GM_STRENGTH_MAX - GM_STRENGTH_MIN) }));
+    gmCache.set(seed, gms);
   }
-  return order[(draftSlot - 1) % order.length];
+  return gms;
+}
+export function aiProfileForSlot(seed: number, draftSlot: number): AiGmProfile {
+  const gms = aiGmsForSeed(seed);
+  return gms[(draftSlot - 1) % gms.length].profile;
+}
+function aiProfileStrengthForSlot(seed: number, draftSlot: number): number {
+  const gms = aiGmsForSeed(seed);
+  return gms[(draftSlot - 1) % gms.length].strength;
 }
 
 function resolveAutomatedPick(state: DraftState): DraftState | null {
@@ -471,6 +483,7 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
     capLimit: CAP_LIMIT,
     strategy: strategyForDraftSlot(team.draftSlot),
     profile: aiProfileForSlot(state.seed, team.draftSlot),
+    profileStrength: aiProfileStrengthForSlot(state.seed, team.draftSlot),
   };
   const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber, rng, ruleset);
   const preferredState = makePick(state, preferred.id);
