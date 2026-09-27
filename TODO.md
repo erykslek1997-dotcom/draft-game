@@ -46,6 +46,16 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
       - przy okazji zmierzyć czas wyboru planszy Roulette na telefonie (dziś 0,6 s średnio,
         1,2 s najdłużej w Node) i ewentualnie zapisywać wynik w localStorage.
 
+## Po wstępnym wypuszczeniu gry
+
+- [ ] **Skrócenie komentarzy-dziennika** (ustalone 2026-09-27: „zrobimy to, ale po wstępnym
+      wypuszczeniu gry”). Komentarze to ~14,5 tys. z 47,9 tys. linii w `src/` (30%), w tym 1274
+      datowanych notatek. Najwięcej w silniku: `talent.ts` 62%, `aiDrafter.ts` 56%, `grades.ts` 54%,
+      `scoring.ts` 49%, `rotation.ts` 45%, `defensiveTalent.ts` 61%, `portability.ts` 63%.
+      Cel: zostawić „dlaczego” i liczby kalibracji (oraz Twoje decyzje w jednej linijce), wyciąć
+      kronikę zmian i powtórzenia — szacunkowo 6–8 tys. linii mniej. Tylko czytelność kodu, gra
+      bez zmian; ręcznie, plik po pliku, zaczynając od `talent.ts`.
+
 ## Decyzje kalibracyjne czekające na Twoją ocenę
 
 - [ ] **Rim pressure — lista zweryfikowanych slasherów do rozszerzenia** (2026-09-25, "wrócić do
