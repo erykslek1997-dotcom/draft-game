@@ -5014,6 +5014,13 @@ table.at-ov-grid tbody td.at-teamcol {
 table.at-ov-grid tbody tr.at-you td.at-teamcol { background: color-mix(in srgb, var(--at-ink) 6%, var(--at-paper-raised)); }
 .at-team-name-full { margin-left: 8px; font-weight: 600; color: var(--at-ink); }
 .at-team-name-full .at-lottery-you-tag { margin-left: 6px; }
+/* 2026-09-27: AI GM personality (aiDrafter.ts AiGmProfile), a quiet outline next to the name so
+   it reads as flavour, not as a second "YOU" badge. */
+.at-gm-tag {
+  display: inline-block; margin-left: 6px; vertical-align: 1px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--at-ink-soft); border: 1px solid var(--at-line); border-radius: 999px; padding: 1px 7px;
+}
 /* 2026-08-19: on-the-clock row now reads in the NBA-red accent with a small pulsing dot, same
    "live" broadcast-graphics language real sports scoreboards use for whoever's up next — the
    flat neutral highlight this replaced didn't distinguish "the moment that's actually happening

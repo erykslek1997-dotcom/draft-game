@@ -16,7 +16,7 @@ import {
   MARGIN_PER_CONTENDING_TEAM,
   type CheapestLookup,
 } from './positions';
-import { pickForAi, type AiDraftRuleset, type AiDraftStrategy } from './aiDrafter';
+import { pickForAi, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
 import { mulberry32, mixSeed, randomSeed } from './rng';
 import type { DraftHistoryEntry, Team } from './types';
 
@@ -421,6 +421,27 @@ function strategyForDraftSlot(draftSlot: number): AiDraftStrategy {
   return 'starting-five-first';
 }
 
+/**
+ * 2026-09-27: each draft deals the five GM personalities (aiDrafter.ts `AiGmProfile`) across the
+ * 16 draft slots, about three teams each, in an order shuffled from the draft's own seed, so the
+ * same seed replays the same rivals and a new draft meets new ones. Kept off `Team` itself: it is
+ * derived, so saved drafts need nothing new.
+ */
+const profileOrderCache = new Map<number, AiGmProfile[]>();
+export function aiProfileForSlot(seed: number, draftSlot: number): AiGmProfile {
+  let order = profileOrderCache.get(seed);
+  if (!order) {
+    const rng = mulberry32(mixSeed(seed, 0x6d70));
+    order = Array.from({ length: TEAM_COUNT }, (_, i) => AI_GM_PROFILES[i % AI_GM_PROFILES.length]);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    profileOrderCache.set(seed, order);
+  }
+  return order[(draftSlot - 1) % order.length];
+}
+
 function resolveAutomatedPick(state: DraftState): DraftState | null {
   const teamIdx = currentTeamIndex(state);
   const team = state.teams[teamIdx];
@@ -437,7 +458,12 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
   // the AI re-runs over the legal subset, that second lottery just draws the next value from the
   // same stream — still fully determined by the seed.
   const rng = mulberry32(mixSeed(state.seed, pickNumber));
-  const ruleset: AiDraftRuleset = { rosterSize: ROSTER_SIZE, capLimit: CAP_LIMIT, strategy: strategyForDraftSlot(team.draftSlot) };
+  const ruleset: AiDraftRuleset = {
+    rosterSize: ROSTER_SIZE,
+    capLimit: CAP_LIMIT,
+    strategy: strategyForDraftSlot(team.draftSlot),
+    profile: aiProfileForSlot(state.seed, team.draftSlot),
+  };
   const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber, rng, ruleset);
   const preferredState = makePick(state, preferred.id);
   if (preferredState !== state) return preferredState;
