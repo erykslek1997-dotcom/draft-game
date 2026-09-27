@@ -12,13 +12,28 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
 
 ## Przed wypuszczeniem dla znajomych
 
-- [ ] **`npm test`/`npm run test:fast` obecnie czerwone** (2026-09-07): `testClosingLineups.ts` —
-      `CLOSING_FIVE_REQUIRES_TRADEOFF fires on at least one real fixture (twoBig measures a real
-      two-player, 0.113 closing tradeoff)`. Próg 0.11 w tym teście prawdopodobnie zdryfował przez
-      późniejszą kalibrację silnika (ten sam wzorzec co poprawki testInsights.ts na starcie tej
-      sesji) — potwierdzone: powtarza się niezależnie od dzisiejszej pracy nad pensjami (`git
-      stash` + rerun, identyczny fail). Nie naprawione — nikt nie prosił, tylko odnotowane po
-      drodze. Warto poprawić przed premierą, żeby `npm test` znowu przechodziło w całości.
+- [x] **`npm test`/`npm run test:fast` obecnie czerwone** (2026-09-07, `testClosingLineups.ts`) —
+      2026-09-27: cały `npm test` przechodzi.
+
+## Następne w kolejce (odłożone 2026-09-27, „zapisz na przyszłość”)
+
+- [ ] **Wyzwania dnia (daily challenges) dla wszystkich trybów.** Twoje pomysły z 2026-09-26/27:
+      - Mini Draft: każdego dnia inny limit FGA i zbanowani gracze.
+      - All-Time Draft: to samo plus „the bomb”.
+      - Blokady tematyczne, np. zakaz graczy, którzy kiedykolwiek grali w Lakers.
+      - Daily Deal: osobny wariant wyzwania.
+      - Globalny ranking dopiero z serwerem („będzie”); do tego czasu wynik tylko lokalnie.
+      - Makiety tych ekranów są na stronie z mockupami z 2026-09-26.
+      Podstawa technicznie jest gotowa: dzienne ziarno (`dayKey`/`hashSeed` w bestFive.ts) i
+      deterministyczny wybór planszy (`dailyBoard`), którego można użyć przy wyzwaniach.
+- [ ] **Odchudzenie paczki silnika.** Audyt 2026-09-27: jeden plik JS waży 29,8 MB (4,5 MB po
+      kompresji) i pobiera się przy wejściu w każdy tryb, także w Daily Deal. Na telefonie to
+      najdłuższe czekanie w grze. Plan:
+      - rozdzielić dane: Daily Deal i Mini Draft potrzebują tylko okien „peak” i gotowych ocen
+        (precomputed), a pełne okna i surowe dane źródłowe dopiero All-Time Draft (dynamiczny
+        `import()`);
+      - przy okazji zmierzyć czas wyboru planszy Daily Deal na telefonie (dziś 0,6 s średnio,
+        1,2 s najdłużej w Node) i ewentualnie zapisywać wynik w localStorage.
 
 ## Decyzje kalibracyjne czekające na Twoją ocenę
 
