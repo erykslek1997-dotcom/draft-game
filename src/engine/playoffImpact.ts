@@ -36,6 +36,15 @@ const RELIABILITY_MINUTES = 400;
 /** The per-side cap grows with the playoff sample: full `MAX_COMPONENT` from this many minutes. */
 const FULL_CAP_MINUTES = 800;
 const MAX_COMPONENT = 10;
+/**
+ * 2026-09-27: a playoff drop is shrunk and capped harder than a playoff rise. Measured on this
+ * data, a player's playoff residual barely repeats from one year to the next (r 0.03-0.05; 0.13-0.14
+ * for stars), so most of a drop is noise, injuries included ("większość graczy na czas playoffs
+ * jest często poobijana"). A negative side needs 2000 playoff minutes for half weight (400 for a
+ * positive one) and tops out at 5 TAL instead of 10.
+ */
+const NEGATIVE_RELIABILITY_MINUTES = 2000;
+const MAX_NEGATIVE_COMPONENT = 5;
 const MIN_SEASON_MINUTES_FOR_FIT = 150;
 const SHIELD_START_BPM = 4;
 const SHIELD_FULL_BPM = 8;
@@ -207,12 +216,14 @@ export function playoffImpactForSpan(span: PlayerSpan): PlayoffImpact {
     weight += seasonWeight;
     minutes += p.minutes;
   }
-  const reliability = minutes / (minutes + RELIABILITY_MINUTES);
-  const cap = MAX_COMPONENT * Math.min(1, minutes / FULL_CAP_MINUTES);
-  const clampSide = (v: number) => Math.max(-cap, Math.min(cap, v));
+  const capShare = Math.min(1, minutes / FULL_CAP_MINUTES);
+  const side = (residual: number) => {
+    if (residual >= 0) return Math.min(MAX_COMPONENT * capShare, residual * (minutes / (minutes + RELIABILITY_MINUTES)) * TAL_POINTS_PER_BPM);
+    return Math.max(-MAX_NEGATIVE_COMPONENT * capShare, residual * (minutes / (minutes + NEGATIVE_RELIABILITY_MINUTES)) * TAL_POINTS_PER_BPM);
+  };
   const result: PlayoffImpact = {
-    offense: weight > 0 ? clampSide((sumO / weight) * reliability * TAL_POINTS_PER_BPM) : 0,
-    defense: weight > 0 ? clampSide((sumD / weight) * reliability * TAL_POINTS_PER_BPM) : 0,
+    offense: weight > 0 ? side(sumO / weight) : 0,
+    defense: weight > 0 ? side(sumD / weight) : 0,
     finalsMvp: Math.min(FINALS_MVP_MAX, mvps * FINALS_MVP_POINTS),
     playoffMinutes: Math.round(minutes),
   };
