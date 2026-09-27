@@ -1,5 +1,5 @@
 import { normalizePlayerName } from '../data/schema';
-import { USER_TIER_CALIBRATION, USER_WINDOW_TIERS } from '../data/userTierCalibration';
+import { USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_WINDOW_TIERS } from '../data/userTierCalibration';
 import type { OverallTier } from './grades';
 
 /**
@@ -42,6 +42,14 @@ const entries = new Map<string, CalibrationEntry>(
   USER_TIER_CALIBRATION.map(([name, spanLabel, rawAtReview, tier]) => [normalizePlayerName(name), { spanLabel, rawAtReview, tier }]),
 );
 
+const nudges = new Map<string, number>(Object.entries(USER_TAL_NUDGE).map(([name, nudge]) => [normalizePlayerName(name), nudge]));
+
+/** The reviewed window's TAL: its place in the tier's band plus the user's nudge, kept in the band. */
+function reviewedTalent(playerName: string, tier: OverallTier, raw: number): number {
+  const [lo, hi] = TIER_BANDS[tier]!;
+  return Math.max(lo, Math.min(hi, placeInBand(tier, raw) + (nudges.get(normalizePlayerName(playerName)) ?? 0)));
+}
+
 const windowTiers = new Map<string, OverallTier>(
   USER_WINDOW_TIERS.map(([name, spanLabel, tier]) => [`${normalizePlayerName(name)}|${spanLabel}`, tier]),
 );
@@ -79,8 +87,8 @@ export function calibratedDisplayTalent(
 ): number | undefined {
   const entry = tierCalibrationFor(playerName);
   if (!entry) return undefined;
-  if (spanLabel === entry.spanLabel) return placeInBand(entry.tier, rawTal);
-  const reviewed = placeInBand(entry.tier, entry.rawAtReview);
+  if (spanLabel === entry.spanLabel) return reviewedTalent(playerName, entry.tier, rawTal);
+  const reviewed = reviewedTalent(playerName, entry.tier, entry.rawAtReview);
   const anchor = reviewedMeasure();
   if (anchor === undefined) return Math.min(TIER_BANDS[entry.tier]![1], Math.round(measure));
   const value = Math.round(reviewed - (anchor - measure));

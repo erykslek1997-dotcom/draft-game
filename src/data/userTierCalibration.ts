@@ -233,3 +233,28 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
 export const USER_WINDOW_TIERS: ReadonlyArray<readonly [name: string, spanLabel: string, tier: OverallTier]> = [
   ['Stephen Curry', '2016-18', 'Greatest peak'],
 ];
+
+/**
+ * Small TAL nudges inside the player's own tier, from the second review page (2026-09-27): the
+ * user marked these "a little higher" or "a little lower" without asking for a tier change. The
+ * nudge moves every window of the player; the reviewed window stays inside its tier's band.
+ */
+const NUDGE = 3;
+export const USER_TAL_NUDGE: Readonly<Record<string, number>> = {
+  'Andre Iguodala': NUDGE,
+  'Anfernee Hardaway': NUDGE,
+  'Bam Adebayo': NUDGE,
+  'Bill Russell': NUDGE,
+  'Derrick White': NUDGE,
+  'Eddie Jones': NUDGE,
+  'Jalen Brunson': NUDGE,
+  'Jimmy Butler': NUDGE,
+  'Kyle Lowry': NUDGE,
+  'Mike Conley': NUDGE,
+  'Paul George': NUDGE,
+  'Shai Gilgeous-Alexander': NUDGE,
+  'Yao Ming': NUDGE,
+  'Damian Lillard': -NUDGE,
+  'Gilbert Arenas': -NUDGE,
+  'Victor Oladipo': -NUDGE,
+};
