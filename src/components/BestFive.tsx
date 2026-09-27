@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import './BestFive.css';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
@@ -66,9 +66,6 @@ function boxLineDetail(s: PlayerSpan): string {
     hadThreePointLine(s) ? `${Math.round(b.threePct * 100)}% 3P` : 'no 3-pt line',
   ];
   return parts.join(' · ');
-}
-function boxLine(s: PlayerSpan): string {
-  return `${boxLineShort(s)} · ${boxLineDetail(s)}`;
 }
 
 const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 'spacing' | 'fit'>; label: string; context?: boolean }[] = [
@@ -227,7 +224,7 @@ export default function BestFive({ onBack, onNextStep }: Props) {
           <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C. Each position deals four players, and the next position turns over after you pick. Picks are final: no going back. While you choose, the scouts drop a word about the next deal. It is always true of one of its four players — but not always the one worth saving caps for.</li>
           <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.</li>
           <li><b>Submit once.</b> No re-picking after you see your score for today’s puzzle.</li>
-          <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against par.</li>
+          <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against the fan-vote five (the five biggest names) and the best five on the board.</li>
           <li><b>Practice anytime.</b> Today’s puzzle is once a day — a practice board gives you a fresh random pool whenever you want another rep.</li>
         </ol>
       )}
@@ -483,12 +480,22 @@ function SlotMachine({ pool, slot, onDone }: { pool: DailyPool; slot: Position; 
  * bullet-by-bullet breakdown starts — the same job the grade banner's own blurb does for the
  * headline number. One line, keyed off the grade itself, not a repeat of any line below it. */
 const RESULT_LEAD: Record<GolfGrade, string> = {
-  eagle: 'You out-scouted the engine on a board that had a real trap to avoid.',
-  birdie: 'You saw past the obvious five — here’s exactly where you got the edge.',
-  par: 'A safe, sensible five. Here’s the upside you left on the board.',
-  bogey: 'Something in this five is fighting itself — here’s what.',
+  eagle: 'You out-scouted everyone on a board that had a real trap to avoid.',
+  birdie: 'You saw past the obvious five — here’s where you won the matchup.',
+  par: 'A safe, sensible five. Here’s the upside you left on the bench.',
+  bogey: 'Something in this five is fighting itself — here’s what the tape shows.',
   'double-bogey': 'This five doesn’t play as a team yet — here’s where it breaks down.',
 };
+
+function CmpCell({ span, tone }: { span: PlayerSpan | null | undefined; tone: 'hit' | 'miss' | 'best' }) {
+  if (!span) return <span />;
+  return (
+    <span className={`bf-cmp-cell bf-cmp-cell--${tone}`}>
+      <span className="bf-cmp-name">{span.playerName}</span>
+      <span className="bf-cmp-season">{span.spanLabel}</span>
+    </span>
+  );
+}
 
 function BestFiveResult({
   lineup,
@@ -522,23 +529,29 @@ function BestFiveResult({
 
   return (
     <div className="at-card bf-result">
+      {/* 2026-09-27, the user: "wynik nie pokazuje od razu" — grade and the three numbers land
+          together in one scoreboard, no staged wait. */}
       <div className={`bf-grade bf-grade--${grade}`}>
-        <span className="bf-grade-label at-cond">{GRADE_LABEL[grade]}</span>
-        <span className="bf-grade-blurb">{GRADE_BLURB[grade]}</span>
-      </div>
-
-      <div className="bf-scoreline">
-        <span>
-          <b>{score.composite}</b> your lineup
-        </span>
-        <span>
-          <b>{targets.par}</b> par <span className="bf-muted">(five biggest names)</span>
-        </span>
-        <span>
-          <b>{targets.optimal}</b> engine’s best
-        </span>
-        <span className="bf-muted">
-          <CapIcon /> {Math.round(yourShots)} / {shotsCap} caps
+        <div className="bf-grade-top">
+          <span className="bf-grade-label at-cond">{GRADE_LABEL[grade]}</span>
+          <span className="bf-grade-blurb">{GRADE_BLURB[grade]}</span>
+        </div>
+        <div className="bf-board">
+          <div className="bf-board-cell bf-board-cell--you">
+            <b>{score.composite}</b>
+            <span className="at-cond">Your five</span>
+          </div>
+          <div className="bf-board-cell">
+            <b>{targets.par}</b>
+            <span className="at-cond">Fan-vote five</span>
+          </div>
+          <div className="bf-board-cell">
+            <b>{targets.optimal}</b>
+            <span className="at-cond">Best on the board</span>
+          </div>
+        </div>
+        <span className="bf-board-caps">
+          <CapIcon /> {Math.round(yourShots)} / {shotsCap} caps · fan-vote five = the five biggest names
         </span>
       </div>
 
@@ -571,39 +584,39 @@ function BestFiveResult({
       </div>
 
       <div className="bf-why">
-        <div className="bf-why-head at-cond">Why this score</div>
+        <div className="bf-why-head at-cond">Film room</div>
         <p className="bf-why-line bf-why-lead">{RESULT_LEAD[grade]}</p>
         {isChalkBoard(targets) && (
           <p className="bf-why-line">
-            Chalk board — the five biggest names ({targets.par}){' '}
+            Chalk board — the fan-vote five ({targets.par}){' '}
             {chalkGap <= 0
-              ? `already match the engine’s best (${targets.optimal})`
-              : `were within ${chalkGap} of the engine’s best (${targets.optimal})`}
-            . Not much room to out-think it today.
+              ? `already is the best five on the board (${targets.optimal})`
+              : `was within ${chalkGap} of the best five on the board (${targets.optimal})`}
+            . Not much room to out-coach it today.
           </p>
         )}
         {explain.tookLazyPick && !isChalkBoard(targets) && (
           <p className="bf-why-line">
-            You picked the five biggest names — that’s exactly par ({targets.par}). The pool almost always
-            hides a better-fitting lineup among the lesser names.
+            You started the five biggest names — that’s the fan-vote five ({targets.par}). The deal almost always
+            hides a better-fitting lineup among the role players.
           </p>
         )}
         <p className="bf-why-line">
-          Your weakest axis is <b>{explain.weakest.label} ({explain.weakest.value})</b>. {explain.weakest.reason}
+          Your weak spot is <b>{explain.weakest.label} ({explain.weakest.value})</b>. {explain.weakest.reason}
         </p>
-        {score.weakLink && (
+        {score.weakLink && explain.weakest.axis !== 'defense' && (
           <p className="bf-why-line">
-            Defensively, <b>{score.weakLink}</b> is the softest spot — an opponent will attack him every possession.
+            On defense, <b>{score.weakLink}</b> is the one they’ll hunt — every switch, every possession.
           </p>
         )}
         {explain.engineEdge.length > 0 && (
           <p className="bf-why-line">
-            The engine’s best five ({targets.optimal}) beats yours mostly on{' '}
+            The best five on the board ({targets.optimal}) wins the matchup mostly on{' '}
             <b>{explain.engineEdge[0].label} (+{explain.engineEdge[0].delta})</b>
             {explain.engineEdge[1] && `, then ${explain.engineEdge[1].label} (+${explain.engineEdge[1].delta})`}
             {explain.swaps.length > 0 && (
               <>
-                {' '}— it plays{' '}
+                {' '}— it starts{' '}
                 {explain.swaps.map((s, i) => (
                   <span key={s.slot}>
                     {i > 0 && (i === explain.swaps.length - 1 ? ' and ' : ', ')}
@@ -618,47 +631,26 @@ function BestFiveResult({
       </div>
 
       <div className="bf-optimal">
-        <div className="bf-optimal-head at-cond">
-          <span>Your five</span>
-          <span>The engine’s best</span>
+        <div className="bf-optimal-title at-cond">
+          Starting five <span>{STARTER_SLOTS.filter((slot) => lineup[slot]?.id === targets.optimalFive[slot].id).length}/5 match the best</span>
         </div>
-        {STARTER_SLOTS.map((slot) => {
-          const engine = targets.optimalFive[slot];
-          const yours = lineup[slot];
-          const hit = !!yours && yours.id === engine.id;
-          return (
-            <div key={slot} className={`bf-cmp-row ${hit ? 'bf-cmp-row--hit' : ''}`}>
-              <span className="bf-cmp-pos at-cond">{slot}</span>
-              {yours && (
-                <div className="bf-cmp-side">
-                  <Face name={yours.playerName} />
-                  <span className="bf-cmp-body">
-                    <span className="bf-cmp-nameline">
-                      <span className="bf-cmp-name">{yours.playerName}</span>
-                      <span className="bf-season bf-season--sm">{yours.spanLabel}</span>
-                    </span>
-                    <span className="bf-cmp-box">{boxLine(yours)}</span>
-                  </span>
-                </div>
-              )}
-              <span className="bf-cmp-mid at-cond">{hit ? '✓' : '→'}</span>
-              {hit ? (
-                <span className="bf-cmp-match at-cond">nailed it</span>
-              ) : (
-                <div className="bf-cmp-side bf-cmp-side--engine">
-                  <Face name={engine.playerName} />
-                  <span className="bf-cmp-body">
-                    <span className="bf-cmp-nameline">
-                      <span className="bf-cmp-name">{engine.playerName}</span>
-                      <span className="bf-season bf-season--sm">{engine.spanLabel}</span>
-                    </span>
-                    <span className="bf-cmp-box">{boxLine(engine)}</span>
-                  </span>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        <div className="bf-cmp">
+          <span />
+          <span className="bf-cmp-head at-cond">You</span>
+          <span className="bf-cmp-head at-cond">Best</span>
+          {STARTER_SLOTS.map((slot) => {
+            const engine = targets.optimalFive[slot];
+            const yours = lineup[slot];
+            const hit = !!yours && yours.id === engine.id;
+            return (
+              <Fragment key={slot}>
+                <span className={`bf-cmp-pos at-cond ${hit ? 'bf-cmp-pos--hit' : ''}`}>{slot}</span>
+                <CmpCell span={yours} tone={hit ? 'hit' : 'miss'} />
+                {hit ? <span className="bf-cmp-same at-cond">✓ same</span> : <CmpCell span={engine} tone="best" />}
+              </Fragment>
+            );
+          })}
+        </div>
       </div>
 
       {isDaily && (

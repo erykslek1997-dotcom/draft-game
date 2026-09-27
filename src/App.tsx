@@ -101,7 +101,7 @@ const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: stri
     { title: 'The deal', body: 'Four players are dealt for each position, PG to C. Pick one and the next position turns over.' },
     { title: 'Caps', body: 'Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.' },
     { title: 'Submit once', body: 'No re-picking after you see your score for today’s puzzle.' },
-    { title: 'Grading', body: 'You’re scored on talent, offense, defense, spacing, and fit, then compared against par.' },
+    { title: 'Grading', body: 'You’re scored on talent, offense, defense, spacing, and fit, then compared against the fan-vote five.' },
     { title: 'Practice anytime', body: 'Today’s puzzle is once a day — a practice board gives you a fresh random pool whenever you want another rep.' },
   ],
   quickfive: [

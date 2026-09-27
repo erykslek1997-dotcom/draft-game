@@ -651,20 +651,22 @@ export function dailyBoard(seed: string = dayKey()): DailyBoard {
   return best!;
 }
 
+/** 2026-09-27, the user: "bardziej koszykarskie sformułowania". The grade keys stay golf (they are
+ * stored in daily progress); what the player reads is where the five would finish a season. */
 export const GRADE_LABEL: Record<GolfGrade, string> = {
-  eagle: 'Eagle',
-  birdie: 'Birdie',
-  par: 'Par',
-  bogey: 'Bogey',
-  'double-bogey': 'Double bogey',
+  eagle: 'Title team',
+  birdie: 'Contender',
+  par: 'Playoff team',
+  bogey: 'Play-in',
+  'double-bogey': 'Lottery',
 };
 
 export const GRADE_BLURB: Record<GolfGrade, string> = {
-  eagle: 'You matched the engine’s own best lineup from today’s pool.',
-  birdie: 'You beat the lazy pick — five biggest names isn’t the answer.',
-  par: 'You landed on what just grabbing the five biggest names gets you.',
-  bogey: 'A notch below the safe pick — something in the five isn’t fitting.',
-  'double-bogey': 'The pieces don’t fit — check spacing and rim protection.',
+  eagle: 'You drew up the exact five the film room would start. Hang the banner.',
+  birdie: 'You beat the fan-vote five — the biggest names weren’t the best team.',
+  par: 'Same number as starting the five biggest names. Solid, but no edge.',
+  bogey: 'A step behind the fan-vote five — something in the rotation isn’t clicking.',
+  'double-bogey': 'The pieces don’t play together — check the spacing and who protects the rim.',
 };
 
 // ---------------------------------------------------------------------------
