@@ -133,11 +133,19 @@ export default function BestFive({ onBack, onNextStep }: Props) {
   const shotsUsed = lineupShots(lineup);
   const overCap = shotsUsed > shotsCap;
 
+  // 2026-09-27, the user ("kolejna rzecz, która doda sporo emocji. Nie można cofnąć picku"): a
+  // pick is final — no clearing, no re-opening a filled position. So a player who would leave the
+  // positions still open unfillable under the cap (even at their cheapest dealt option) can't be
+  // taken; his card says by how much he's over.
+  const cheapestLeft = (except: Position) =>
+    STARTER_SLOTS.filter((s) => s !== except && !lineup[s]).reduce((sum, s) => sum + Math.min(...pool.bySlot[s].map((p) => p.fga)), 0);
+  const overBy = (slot: Position, span: PlayerSpan) => shotsUsed + span.fga + cheapestLeft(slot) - shotsCap;
+
   function pick(slot: Position, span: PlayerSpan) {
+    if (lineup[slot] || overBy(slot, span) > 1e-9) return;
     setLineup((prev) => ({ ...prev, [slot]: span }));
-    // Advance to the next still-empty slot, in PG→C order; if there is none (board full, or
-    // re-picking the last gap), stay on the current slot so the picker stays open for another
-    // change of mind. A slot seen for the first time gets dealt.
+    // Advance to the next still-empty slot, in PG→C order; the picker closes after the last one.
+    // A slot seen for the first time gets dealt.
     const nextEmpty = STARTER_SLOTS.find((s) => s !== slot && !lineup[s]);
     if (nextEmpty && !revealed.has(nextEmpty)) {
       setRevealed((prev) => new Set(prev).add(nextEmpty));
@@ -145,15 +153,7 @@ export default function BestFive({ onBack, onNextStep }: Props) {
     } else {
       setFreshSlot(null);
     }
-    setActiveSlot(nextEmpty ?? activeSlot);
-  }
-
-  function clear(slot: Position) {
-    setLineup((prev) => {
-      const next = { ...prev };
-      delete next[slot];
-      return next;
-    });
+    setActiveSlot(nextEmpty ?? null);
   }
 
   function submit() {
@@ -223,7 +223,7 @@ export default function BestFive({ onBack, onNextStep }: Props) {
 
       {showHowToPlay && (
         <ol className="how-to-play-panel">
-          <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C. Each position deals four players, and the next position turns over after you pick.</li>
+          <li><b>Pick five.</b> One player per position — PG/SG/SF/PF/C. Each position deals four players, and the next position turns over after you pick. Picks are final: no going back.</li>
           <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under today’s cap, shown by the meter above the board.</li>
           <li><b>Submit once.</b> No re-picking after you see your score for today’s puzzle.</li>
           <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against par.</li>
@@ -252,8 +252,8 @@ export default function BestFive({ onBack, onNextStep }: Props) {
                 <button
                   key={slot}
                   className={`bf-slot ${activeSlot === slot ? 'bf-slot--active' : ''} ${s ? 'bf-slot--filled' : ''} ${dealt ? '' : 'bf-slot--hidden'}`}
-                  disabled={!dealt}
-                  title={dealt ? s?.playerName : 'Dealt after your previous pick'}
+                  disabled={!dealt || Boolean(s)}
+                  title={s ? `${s.playerName} — picks are final` : dealt ? undefined : 'Dealt after your previous pick'}
                   onClick={() => {
                     setFreshSlot(null);
                     setActiveSlot(slot);
@@ -268,20 +268,6 @@ export default function BestFive({ onBack, onNextStep }: Props) {
                       <ShotChip fga={s.fga} cap={shotsCap} />
                     </span>
                   )}
-                  {s && (
-                    <span
-                      className="bf-slot-clear"
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Clear ${slot}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clear(slot);
-                      }}
-                    >
-                      ✕
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -293,8 +279,8 @@ export default function BestFive({ onBack, onNextStep }: Props) {
                 Your draw · {SLOT_LABEL[activeSlot].toLowerCase()}
                 <span className="bf-picker-sub">
                   {STARTER_SLOTS.indexOf(activeSlot) < STARTER_SLOTS.length - 1
-                    ? 'Four dealt for this spot — the next position turns over after you pick.'
-                    : 'Last spot — four dealt.'}
+                    ? 'Four dealt for this spot — picks are final, the next position turns over after you pick.'
+                    : 'Last spot — four dealt. Picks are final.'}
                 </span>
               </div>
               {freshSlot === activeSlot ? (
@@ -311,13 +297,17 @@ export default function BestFive({ onBack, onNextStep }: Props) {
               <div className={`bf-pool${landedSlot === activeSlot ? ' bf-pool--landed' : ''}`} key={activeSlot}>
                 {pool.bySlot[activeSlot].map((span, i) => {
                   const chosen = lineup[activeSlot]?.id === span.id;
+                  const over = overBy(activeSlot, span);
+                  const blocked = over > 1e-9;
                   return (
                     <div className="bf-deal" key={span.id} style={{ '--i': i } as CSSProperties}>
                     <button
-                      className={`bf-pool-card ${chosen ? 'bf-pool-card--chosen' : ''}`}
-                      title={span.playerName}
+                      className={`bf-pool-card ${chosen ? 'bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
+                      title={blocked ? `${span.playerName} would leave no room under the cap` : span.playerName}
+                      disabled={blocked}
                       onClick={() => pick(activeSlot, span)}
                     >
+                      {blocked && <span className="bf-pool-over at-cond">Over the cap by {over.toFixed(1)}</span>}
                       <Face name={span.playerName} size="md" />
                       <span className="bf-pool-name">{shortenName(span.playerName)}</span>
                       {/* 2026-09-11, user-reported live ("mało przestrzeni tutaj... sezon zwykły
@@ -354,14 +344,14 @@ export default function BestFive({ onBack, onNextStep }: Props) {
             <button
               className="at-draft-btn bf-submit"
               disabled={!complete || overCap}
-              title={overCap ? `Over the ${shotsCap}-cap limit — swap out a costlier pick first.` : undefined}
+              title={overCap ? `Over the ${shotsCap}-cap limit.` : undefined}
               onClick={submit}
             >
               Submit lineup
             </button>
             <span className={`bf-submit-hint${complete && !overCap ? ' is-ready' : ''}`} role="status">
               {overCap
-                ? `Over the cap by ${(shotsUsed - shotsCap).toFixed(1)} — swap a costlier pick.`
+                ? `Over the cap by ${(shotsUsed - shotsCap).toFixed(1)}.`
                 : complete
                   ? 'Ready to submit.'
                   : `Pick ${5 - filledCount} more to submit.`}
