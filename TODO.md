@@ -17,6 +17,11 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
 
 ## Następne w kolejce (odłożone 2026-09-27, „zapisz na przyszłość”)
 
+- [ ] **Pomysły na przyszłość (archiwum `draftverse-future-ideas.zip`, usunięte z repo 2026-09-27).**
+      Działający, ale nieużywany kod: przeglądarka puli graczy, przeglądarka kontraktów (salary cap),
+      galeria kart z nagrodami, wyzwania w stylu słynnych drużyn, panel „what if”. Opis w README
+      w archiwum; pliki są też w historii gita (commit „Archive unused features”).
+
 - [ ] **Wyzwania dnia (daily challenges) dla wszystkich trybów.** Twoje pomysły z 2026-09-26/27:
       - Mini Draft: każdego dnia inny limit FGA i zbanowani gracze.
       - All-Time Draft: to samo plus „the bomb”.

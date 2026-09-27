@@ -3,9 +3,7 @@
   text-align: left;
 }
 
-.matchup-matrix-section,
-.historical-challenges-panel,
-.what-if-panel {
+.matchup-matrix-section {
   margin: 1rem 0;
 }
 
@@ -84,8 +82,7 @@
   font-size: 12px;
 }
 
-.matchup-matrix-detail,
-.what-if-panel {
+.matchup-matrix-detail {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
@@ -148,89 +145,15 @@
   .matchup-detail-grid { grid-template-columns: repeat(2, minmax(130px, 1fr)); }
 }
 
-.what-if-panel label {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-}
-
-.what-if-panel select,
-.what-if-panel input {
-  max-width: 22rem;
-}
-
-.what-if-panel > summary {
-  flex-basis: 100%;
-  cursor: pointer;
-}
-
-.historical-challenges-panel > summary {
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.historical-challenge-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.5rem;
-  margin-top: 0.55rem;
-  align-items: start;
-}
-
-.historical-challenge-card {
-  padding: 0.6rem 0.7rem;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  border: 1px solid var(--border, #30343c);
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.025);
-}
-
 /* 2026-09-12, user-reported live ("to jest zbyt duże zanim rozwiniemy" — a closed card, which
    shows nothing but its one-line title + %, was taking the same padding/font as an open one full
    of conditions, so a 0-7/N attempt read as a grid of oversized near-empty boxes). Collapsed cards
    get a visibly tighter footprint; `[open]` keeps the roomier padding/type since it's actually
    showing detail then. */
-.historical-challenge-card:not([open]) {
-  padding: 0.4rem 0.55rem;
-}
-.historical-challenge-card:not([open]) > summary {
-  font-size: 0.8rem;
-  line-height: 1.25;
-}
 
-.historical-challenge-card.is-complete {
-  border-color: #4e9f70;
-}
-
-.historical-challenge-card span,
-.historical-challenge-card small {
-  display: block;
-  margin-top: 0.3rem;
-}
 /* Each card is its own `<details>` now (see HistoricalChallengesPanel.tsx) — the summary carries
    the same bold title treatment `strong` used to, just as a real disclosure widget instead of
    static text, with the browser's default marker swapped for a rotating chevron. */
-.historical-challenge-card > summary {
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  list-style: none;
-}
-.historical-challenge-card > summary::-webkit-details-marker { display: none; }
-.historical-challenge-card > summary::before {
-  content: '▸';
-  display: inline-block;
-  margin-right: 5px;
-  font-size: 0.75rem;
-  color: var(--muted);
-  transition: transform 0.12s;
-}
-.historical-challenge-card[open] > summary::before { transform: rotate(90deg); }
-.historical-challenge-card ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
-
-.condition-met { color: var(--at-good, #7fd68a); }
-.condition-missed { color: #d68b8b; }
 
 .intro-columns {
   max-width: 960px;
@@ -1038,15 +961,6 @@ select {
 
 /* Draft board */
 
-.draft-status {
-  font-size: 16px;
-  margin-bottom: 16px;
-  padding: 10px 14px;
-  border: 1px solid var(--accent-border);
-  background: var(--accent-bg);
-  border-radius: 8px;
-}
-
 .team-panels {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -1100,61 +1014,8 @@ select {
   border-bottom: 1px dashed var(--border);
 }
 
-.pool-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
 .cap-remaining {
   margin-left: auto;
-  font-weight: 600;
-}
-
-.position-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
-  margin: 24px 0;
-}
-
-.position-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 24px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--panel-bg, transparent);
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.position-card:hover {
-  border-color: var(--accent, #888);
-}
-
-.position-card-label {
-  font-size: 1.8rem;
-  font-weight: 700;
-}
-
-.position-card-count {
-  font-size: 0.85rem;
-  opacity: 0.75;
-}
-
-.browse-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.browse-title {
   font-weight: 600;
 }
 
@@ -1472,11 +1333,6 @@ select {
 
 /* Draft history */
 
-.history-toggle {
-  margin-left: 16px;
-  font-size: 13px;
-}
-
 .draft-history {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1582,24 +1438,10 @@ select {
   white-space: nowrap;
 }
 
-.pg-meta,
-.pg-fga,
-.pg-tal,
-.pg-otal,
-.pg-dtal,
-.pg-por,
-.pg-imp,
-.pg-spc {
+.pg-meta {
   font-size: 13px;
   color: var(--text);
   white-space: nowrap;
-}
-
-.pg-otal,
-.pg-dtal,
-.pg-imp,
-.pg-spc {
-  opacity: 0.75;
 }
 
 /* SPACING tier pills. Each tier gets a fill from its own colour family with text from the
@@ -1946,10 +1788,6 @@ select {
 
 /* G_BLACK_BOX (evidenceReport.ts) — plain-text panel, not a badge, so it gets its own small block
    rather than reusing .tier-badge's pill styling. */
-.evidence-toggle {
-  font-size: 11px;
-  padding: 2px 8px;
-}
 
 /* Rendered as a sibling of `.table-scroll`, not a row inside it — a colSpan row that lives inside
    a horizontally-scrolling table only shows whatever slice of itself the table happens to be
@@ -2943,9 +2781,9 @@ select {
 .rotation-panel > summary { border-left-color: color-mix(in srgb, var(--at-t5) 85%, white); }
 .team-analysis-section > summary { border-left-color: var(--at-ink-faint); }
 .championship-section > summary { border-left-color: var(--at-brand-red); }
-.historical-challenges-panel > summary { border-left-color: #7a6bd6; }
+
 .draft-order > summary { border-left-color: color-mix(in srgb, var(--at-t3) 80%, white); }
-.what-if-panel > summary { border-left-color: #3f9b7a; }
+
 .result-accordion-section > summary {
   display: flex;
   align-items: center;
@@ -3705,7 +3543,6 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 .bracket-list-round-label { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); margin-bottom: 6px; }
 .bracket-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .bracket-list-grid .bracket-match { position: relative; min-height: 46px; }
-
 
 .playoff-champion {
   margin: 10px 0 0;
@@ -5345,7 +5182,6 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .season-standings-out td { opacity: 0.6; }
 .season-standings-out.season-standings-you td { opacity: 1; }
 .season-playoff-note { font-size: 12.5px; color: var(--at-ink-soft); margin: 10px 0 0; }
-
 
 /* 2026-09-25, visual consistency pass: the game shell is dark no matter what the OS theme is (see
    `.at-shell`), but these badge palettes only switched to their dark variants under
