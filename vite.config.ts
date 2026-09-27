@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import type { Plugin } from 'vite'
+import { compactJson } from './compactJson.ts'
 
 /**
  * 2026-09-24: the engine's player data ships as one ~25MB JS chunk, and "Loading player data…"
@@ -34,7 +35,7 @@ function dataChunkManifest(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), dataChunkManifest()],
+  plugins: [react(), compactJson(), dataChunkManifest()],
   // GitHub Pages serves a project site from a subpath (github.io/<repo>/), not the domain root —
   // every asset URL Vite emits needs this prefix or they 404 once deployed. Netlify (the previous
   // host) served from the root, so this wasn't needed there.
