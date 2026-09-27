@@ -268,46 +268,6 @@
   flex-direction: column;
   gap: 2px;
 }
-.bf-board {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.bf-board-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 8px 4px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--at-paper) 70%, transparent);
-  border: 1px solid var(--at-line);
-  text-align: center;
-}
-.bf-board-cell b {
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-  color: var(--at-ink-soft);
-}
-.bf-board-cell span {
-  font-size: 10.5px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--at-ink-faint);
-}
-.bf-board-cell--you {
-  border-color: var(--at-ink);
-}
-.bf-board-cell--you b {
-  font-size: 32px;
-  color: var(--at-ink);
-}
-.bf-board-caps {
-  font-size: 11px;
-  color: var(--at-ink-faint);
-}
 .bf-grade--eagle {
   background: color-mix(in srgb, var(--at-t6) 22%, var(--at-paper));
 }

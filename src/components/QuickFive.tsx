@@ -34,6 +34,10 @@ import DraftLottery from './DraftLottery';
 import { MetricBar, RankRowSummary, ScoreChip, qualityColor } from './ResultsScreen';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
+import { ChallengeNote, ScoreBoard } from './ScoreBoard';
+import ShareResultModal from './ShareResultModal';
+import { copyLink } from './shareSave';
+import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import { AI_SPEED_LABELS, cpuPickDelay, useAiSpeed } from './aiSpeed';
 import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPressureNote, TurnBudgetText, type TickerPick } from './DraftChrome';
 
@@ -42,6 +46,8 @@ interface Props {
   onExit: () => void;
   /** The next step of the learning path (the All-Time Draft), offered on the result screen. */
   onNextStep?: () => void;
+  /** A friend's "Challenge a friend" link: their board and their score. */
+  challenge?: ModeChallenge;
 }
 
 type Phase = 'lottery' | 'draft' | 'results';
@@ -75,8 +81,8 @@ const QUICK_HOW_TO_PLAY = [
  * tier-capped-peak span per player), not `draft.ts`'s own multi-span `activeDraftPool` — there is
  * no span picker anywhere in this mode, by design, not just by omission.
  */
-export default function QuickFive({ humanTeamName, onExit, onNextStep }: Props) {
-  const [state, setState] = useState<QuickDraftState>(() => createQuickDraft(humanTeamName));
+export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge }: Props) {
+  const [state, setState] = useState<QuickDraftState>(() => createQuickDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined));
   const [phase, setPhase] = useState<Phase>('lottery');
   // 2026-09-24: same CPU-speed choice as the All-Time Draft (aiSpeed.ts), a "← Menu" with a
   // confirm instead of a bare Exit at the very bottom, and every phase opening at the top.
@@ -185,6 +191,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep }: Props) 
           onNewDraft={() => restart()}
           onRematch={() => restart(state.seed)}
           onNextStep={onNextStep}
+          challenge={challenge && Number(challenge.seed) === state.seed ? challenge : undefined}
         />
       )}
     </div>
@@ -574,6 +581,7 @@ function QuickResults({
   onNewDraft,
   onRematch,
   onNextStep,
+  challenge,
 }: {
   state: QuickDraftState;
   teamCodeByTeamId: Map<string, string>;
@@ -581,8 +589,11 @@ function QuickResults({
   onNewDraft: () => void;
   onRematch: () => void;
   onNextStep?: () => void;
+  challenge?: ModeChallenge;
 }) {
   useEffect(() => markStepDone('quickfive'), []);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const ranked = useMemo(() => {
     return state.teams
       .map((team) => {
@@ -626,6 +637,17 @@ function QuickResults({
     return { slot, player: id ? human.team.roster.find((p) => p.id === id) : undefined };
   });
   const top = ranked[0].score.composite;
+  const boardCells = [
+    { label: 'Your team', value: human.score.composite, you: human.score.composite },
+    { label: 'Best in field', value: top },
+    { label: 'Behind the best', value: top > human.score.composite ? top - human.score.composite : '—' },
+  ];
+  async function challengeFriend() {
+    if (await copyLink(modeChallengeLink('mini', state.seed, human.score.composite, teamLabel(human.team)))) {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  }
 
   // 2026-09-26, the user: "ekran końcowy może być tak samo zaprojektowany jak ten w all-time
   // drafcie, po prostu mniej szczegółowy". The All-Time Draft's results hero (finish, rating,
@@ -642,20 +664,10 @@ function QuickResults({
           <span className={`results-hero-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
           <span className="results-hero-team">{teamLabel(human.team)}</span>
         </div>
-        <div className="results-hero-stats">
-          <div className="results-hero-stat results-hero-overall" style={{ background: qualityColor(human.score.composite) }}>
-            <span className="results-hero-stat-label">Team rating</span>
-            <span className="results-hero-stat-value">
-              {human.score.composite}
-              <small className="results-hero-stat-of">/100</small>
-            </span>
-          </div>
-        </div>
-        <p className="results-hero-gap">
-          {top > human.score.composite
-            ? <>Best team rating in the field: <b>{top}</b> — you're <b>{top - human.score.composite}</b> behind.</>
-            : <>You have the best team rating in the field.</>}
-        </p>
+        <ScoreBoard
+          cells={boardCells}
+          note={challenge?.vs != null && <ChallengeNote yours={human.score.composite} theirs={challenge.vs} who={challenge.vsName} />}
+        />
         {comp && (
           <p className="results-hero-identity">
             <span className="results-hero-comp">
@@ -694,6 +706,19 @@ function QuickResults({
                 </p>
               )}
             </div>
+            <div className="results-hero-actions">
+              <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
+                📤 Share the result
+              </button>
+              <button
+                type="button"
+                className="results-hero-copy results-hero-challenge"
+                onClick={challengeFriend}
+                title="Copies a link that gives a friend the exact same 16-team board, with your score to beat."
+              >
+                {linkCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
+              </button>
+            </div>
           </div>
           <div className="results-hero-rotation">
             <span className="share-modal-face-group-label">Starting five</span>
@@ -719,6 +744,23 @@ function QuickResults({
             </div>
           </div>
         </div>
+        {shareOpen && (
+          <ShareResultModal
+            onClose={() => setShareOpen(false)}
+            mode="Mini Draft"
+            title={teamLabel(human.team)}
+            headline={
+              <>
+                <b>{ordinal(humanRank)}</b>
+                <i>/ {TEAM_COUNT}</i>
+              </>
+            }
+            tier={tier}
+            cells={boardCells}
+            chips={barKeys.map((k) => ({ label: k.charAt(0).toUpperCase() + k.slice(1), value: Math.round(human.score[k] as number) }))}
+            five={starters.flatMap(({ slot, player }) => (player ? [{ slot, name: player.playerName, years: player.spanLabel }] : []))}
+          />
+        )}
       </header>
 
       <h2 className="results-section-title">Final team ranking</h2>

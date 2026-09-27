@@ -13,6 +13,7 @@ import type { Team } from './engine/types';
 import DraftLottery from './components/DraftLottery';
 import { CapsInfoHost } from './components/CapIcon';
 import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
+import { takeModeChallengeFromUrl, type ModeChallenge } from './modeChallenge';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
 /**
@@ -164,7 +165,11 @@ function sharedDraftSeedFromUrl(): number | null {
 }
 
 function App() {
-  const [view, setView] = useState<View>('intro');
+  // 2026-09-27: a Mini Draft / Roulette "Challenge a friend" link opens straight on that board.
+  const [modeChallenge] = useState<ModeChallenge | null>(() => takeModeChallengeFromUrl());
+  const [view, setView] = useState<View>(() =>
+    modeChallenge?.mode === 'mini' ? 'quickfive' : modeChallenge?.mode === 'roulette' ? 'bestfive' : 'intro',
+  );
   // Re-read whenever the intro is shown: GameShell strips a shared link's params from the URL once
   // it has used them (2026-09-24), so the "Duel loaded" banner must not outlive that.
   const sharedDraftSeed = useMemo(() => (view === 'intro' ? sharedDraftSeedFromUrl() : null), [view]);
@@ -475,13 +480,23 @@ function App() {
 
       {view === 'bestfive' && (
         <Suspense fallback={<LoadingPanel />}>
-          <BestFive mode="player" onBack={() => setView('intro')} onNextStep={() => setView('quickfive')} />
+          <BestFive
+            mode="player"
+            onBack={() => setView('intro')}
+            onNextStep={() => setView('quickfive')}
+            challenge={modeChallenge?.mode === 'roulette' ? modeChallenge : undefined}
+          />
         </Suspense>
       )}
 
       {view === 'quickfive' && (
         <Suspense fallback={<LoadingPanel />}>
-          <QuickFive humanTeamName={teamName} onExit={() => setView('intro')} onNextStep={() => (readDraftSaveSummary() ? setView('intro') : startNewDraft())} />
+          <QuickFive
+            humanTeamName={teamName}
+            onExit={() => setView('intro')}
+            onNextStep={() => (readDraftSaveSummary() ? setView('intro') : startNewDraft())}
+            challenge={modeChallenge?.mode === 'mini' ? modeChallenge : undefined}
+          />
         </Suspense>
       )}
     </div>

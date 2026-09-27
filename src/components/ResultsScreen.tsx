@@ -48,6 +48,8 @@ import AllMetrics from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 import { CapIcon, Face, shortenName } from './ShotChip';
+import { ScoreBoard } from './ScoreBoard';
+import { shareFilename, useSaveCardImage } from './shareSave';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, season-sim pool) — real work deferred until the
@@ -692,33 +694,19 @@ function HeroResult({
         <span className={`results-hero-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
         <span className="results-hero-team">{teamName}</span>
       </div>
-      <div className="results-hero-stats">
-        <div className="results-hero-stat results-hero-overall" style={{ background: qualityColor(overall) }}>
-          {/* 2026-09-24: was "Final Power Ranking" — a bare "46" under that label read as a rank
-              (46th), right next to the real rank ("16th / 16"). It's the 0-100 team rating. */}
-          <span className="results-hero-stat-label">Team rating</span>
-          <span className="results-hero-stat-value">
-            {overall}
-            <small className="results-hero-stat-of">/100</small>
-          </span>
-        </div>
-        {titleOdds !== null && (
-          <div
-            className="results-hero-stat"
-            title="Chance to win a 16-team playoff seeded by the final ranking, over thousands of simulations. The season simulation below plays its own top-8 playoffs."
-          >
-            <span className="results-hero-stat-label">Title odds</span>
-            <AnimatedPercent value={titleOdds} className="results-hero-stat-value" />
-          </div>
-        )}
-      </div>
-      {gap !== null && (
-        <p className="results-hero-gap">
-          {gap > 0
-            ? <>Best team rating in the field: <b>{topOverall}</b> — you're <b>{gap}</b> behind.</>
-            : <>You have the best team rating in the field.</>}
-        </p>
-      )}
+      <ScoreBoard
+        cells={[
+          { label: isHuman ? 'Your team' : 'Team rating', value: overall, you: overall },
+          { label: 'Best in field', value: topOverall ?? overall },
+          ...(titleOdds !== null
+            ? [{
+                label: 'Title odds',
+                value: <AnimatedPercent value={titleOdds} />,
+                title: 'Chance to win a 16-team playoff seeded by the final ranking, over thousands of simulations. The season simulation below plays its own top-8 playoffs.',
+              }]
+            : [{ label: 'Behind the best', value: gap !== null && gap > 0 ? gap : '—' }]),
+        ]}
+      />
       {(identity || failureMode || comp) && (
         // 2026-09-24 copy pass: labelled as a STYLE ("Team style: Defense-first") and a risk, so it
         // no longer reads as a quality verdict next to a mediocre Defense score.
@@ -921,58 +909,14 @@ function ShareModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // 2026-09-25, user-reported ("brak możliwości zapisu"): the card had no way to be saved at all
-  // since the hand-drawn canvas twin was removed (see shareCardImage.ts). It is now captured
-  // straight from this DOM with html-to-image, so the saved PNG always matches the card. Phones
-  // get the system share sheet (save to photos) when available; otherwise a download, and the
-  // image is also shown in place so an in-app browser that blocks both (Messenger) can still
-  // long-press it to save.
+  // 2026-09-25, user-reported ("brak możliwości zapisu"): the card is saved as a PNG captured
+  // from this DOM — the logic now lives in shareSave.ts, shared with the other modes' share cards.
   const cardRef = useRef<HTMLDivElement>(null);
-  const [saveState, setSaveState] = useState<'idle' | 'building' | 'error'>('idle');
-  const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null);
-  useEffect(() => () => {
-    if (savedImageUrl) URL.revokeObjectURL(savedImageUrl);
-  }, [savedImageUrl]);
-  const saveImage = async () => {
-    const card = cardRef.current;
-    if (!card) return;
-    setSaveState('building');
-    try {
-      const { toBlob } = await import('html-to-image');
-      const background = getComputedStyle(card).backgroundColor;
-      const blob = await toBlob(card, {
-        pixelRatio: 2,
-        backgroundColor: background && background !== 'rgba(0, 0, 0, 0)' ? background : '#0b0f17',
-        filter: (node) => !(node instanceof HTMLElement && node.dataset.shareExclude !== undefined),
-      });
-      if (!blob) throw new Error('empty image');
-      const filename = `${teamName.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'my-team'}-all-time-draft.png`;
-      const file = new File([blob], filename, { type: 'image/png' });
-      if (navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: `${teamName} — All-Time Draft` });
-          setSaveState('idle');
-          return;
-        } catch (error) {
-          if (error instanceof DOMException && error.name === 'AbortError') {
-            setSaveState('idle');
-            return;
-          }
-        }
-      }
-      const url = URL.createObjectURL(blob);
-      setSavedImageUrl(url);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setSaveState('idle');
-    } catch {
-      setSaveState('error');
-    }
-  };
+  const { saveState, savedImageUrl, saveImage } = useSaveCardImage(
+    cardRef,
+    shareFilename(teamName, 'all-time-draft'),
+    `${teamName} — All-Time Draft`,
+  );
 
   return (
     <div className="share-modal-overlay" onClick={onClose}>
@@ -986,29 +930,15 @@ function ShareModal({
           <i>/ {fieldSize}</i>
         </div>
         <span className={`share-modal-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
-        <div className="share-modal-stats">
-          <div className="share-modal-stat">
-            <span>Team rating</span>
-            <b>{overall}/100</b>
-          </div>
-          {titleOdds !== null && (
-            <div className="share-modal-stat">
-              <span>Title odds</span>
-              <b>{(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%</b>
-            </div>
-          )}
-        </div>
-        {gap !== null && (
-          <p className="share-modal-gap">
-            {gap > 0 ? (
-              <>
-                Overall #1 in the field: <b>{topOverall}</b> — you're <b>{gap}</b> back.
-              </>
-            ) : (
-              'You have the best Overall in the field.'
-            )}
-          </p>
-        )}
+        <ScoreBoard
+          cells={[
+            { label: 'Your team', value: overall, you: overall },
+            { label: 'Best in field', value: topOverall ?? overall },
+            titleOdds !== null
+              ? { label: 'Title odds', value: `${(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%` }
+              : { label: 'Behind the best', value: gap !== null && gap > 0 ? gap : '—' },
+          ]}
+        />
         {(identity || failureMode) && (
           <p className="share-modal-identity">
             {identity && <b>{identity}</b>}
