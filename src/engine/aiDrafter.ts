@@ -1547,7 +1547,7 @@ export type AiDraftStrategy = 'starting-five-first' | 'stack-stars' | 'value-hun
  * 2026-09-27, engine audit ("Drużyny AI są do siebie bardzo podobne": AI team scores averaged
  * 79.8 with a spread of only 2.7): each AI team gets a GM personality, a taste on top of the
  * shared value pipeline. `'balanced'` has none. The others add a bounded bonus (up to
- * `GM_PROFILE_MAX_BONUS` value points) for what that GM loves. Measured over 8 seeded 16-team
+ * `strength` value points, 15 unless the caller sets it) for what that GM loves. Measured over 8 seeded 16-team
  * drafts, against the balanced teams' first five picks: defense-first +9 D-TAL, old-school a
  * starting five nine years older, paint-beasts +6 FIN, pace-and-space +2 SPC (most early stars
  * already shoot), with average team score unchanged (78.5-80.9 by profile). Hidden from the
@@ -1558,10 +1558,12 @@ export type AiDraftStrategy = 'starting-five-first' | 'stack-stars' | 'value-hun
  */
 export type AiGmProfile = 'balanced' | 'defense-first' | 'pace-and-space' | 'paint-beasts' | 'old-school';
 export const AI_GM_PROFILES: readonly AiGmProfile[] = ['balanced', 'defense-first', 'pace-and-space', 'paint-beasts', 'old-school'];
-const GM_PROFILE_MAX_BONUS = 15;
+/** Default strength of a taste when the caller gives none; `draft.ts` draws one per GM. */
+const GM_PROFILE_DEFAULT_BONUS = 15;
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
-export function gmProfileBonus(profile: AiGmProfile | undefined, p: PlayerSpan): number {
+export function gmProfileBonus(profile: AiGmProfile | undefined, p: PlayerSpan, strength = GM_PROFILE_DEFAULT_BONUS): number {
+  const GM_PROFILE_MAX_BONUS = strength;
   switch (profile) {
     case 'defense-first':
       return GM_PROFILE_MAX_BONUS * clamp01((computeDefensiveTalent(p) - 55) / 40);
@@ -1587,6 +1589,8 @@ export interface AiDraftRuleset {
   strategy?: AiDraftStrategy;
   /** The team's GM personality (`AiGmProfile`); omitted means none. */
   profile?: AiGmProfile;
+  /** How hard that GM leans on the taste: its maximum bonus in value points. */
+  profileStrength?: number;
 }
 
 export function pickForAi(
@@ -2025,7 +2029,7 @@ export function pickForAi(
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
-      gmProfileBonus: gmProfileBonus(ruleset?.profile, p),
+      gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
