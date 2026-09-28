@@ -737,3 +737,5 @@
 .bf-streak-30 .bf-face--card { background: repeating-linear-gradient(45deg, #1a2644 0 5px, #122038 5px 10px) !important; box-shadow: inset 0 0 0 2px var(--at-gold, #ffd479); }
 /* 100 days: the Hall of Fame plaque. */
 .bf-hof-plaque { display: inline-block; margin-left: 8px; padding: 0 7px; border-radius: 4px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #1b1404; background: linear-gradient(135deg, #fff3cf, #ffd479 60%, #b98a1c); }
+
+.bf-daily-replay { display: block; margin: 12px auto 0; }

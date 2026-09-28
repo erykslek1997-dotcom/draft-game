@@ -3,7 +3,7 @@ import './BestFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
 import { ScoreChip } from './ResultsScreen';
 import ShareResultModal from './ShareResultModal';
-import { currentStreak, dailySeed, recordDailyResult, savedDailyLineup, streakRewardClasses, untilTomorrow, localDayKey, STREAK_TIERS, type Streak } from './dailyProgress';
+import { clearDailyResult, DAILY_REPLAY_FOR_TESTING, currentStreak, dailySeed, recordDailyResult, savedDailyLineup, streakRewardClasses, untilTomorrow, localDayKey, STREAK_TIERS, type Streak } from './dailyProgress';
 import { dailyMeta, type LegendFive } from '../engine/dailyMeta';
 import { expectedMargin, legendLineup, simulateLiveGame, type LiveGameResult } from '../engine/liveGame';
 import LiveGame from './LiveGame';
@@ -150,6 +150,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
   const [activeSlot, setActiveSlot] = useState<Position | null>(savedDaily ? null : order[0]);
   const [streak, setStreak] = useState<Streak | null>(() => (daily ? currentStreak(daily) : null));
   const [match, setMatch] = useState<LiveGameResult | null>(() => (savedDaily ? matchFor(savedDaily) : null));
+  // Submitted in this visit: the game plays live. A daily reopened later opens on its final.
+  const [justSubmitted, setJustSubmitted] = useState(false);
   // 2026-09-26, the user: "ograniczmy wybór do 5 graczy. Niech po każdym wyborze gracz widzi jacy
   // gracze się losują." Positions are dealt one at a time: a slot's five stay face down until the
   // pick before it, then spin in on the slot machine (`freshSlot`, once per slot).
@@ -207,6 +209,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
     if (daily) {
       const match = matchFor(lineup);
       setMatch(match);
+      setJustSubmitted(true);
       setStreak(
         recordDailyResult(daily, lineup, next.grade, next.score.composite, {
           game: match && meta ? { you: match.final[0], them: match.final[1], opponent: meta.opponent.short } : undefined,
@@ -222,6 +225,14 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
     setRevealed(new Set([order[0]]));
     setFreshSlot(order[0]);
     setResult(null);
+  }
+
+  /** Testing only (`DAILY_REPLAY_FOR_TESTING`): play today's daily board again from the start. */
+  function replayDaily() {
+    if (!daily) return;
+    setStreak(clearDailyResult(daily));
+    setMatch(null);
+    resetPicks();
   }
 
   /** A fresh random deal. */
@@ -443,6 +454,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
           result={result}
           shotsCap={shotsCap}
           onNewBoard={newBoard}
+          onReplayDaily={daily && DAILY_REPLAY_FOR_TESTING ? replayDaily : undefined}
           daily={daily}
           streak={streak}
           onNextStep={onNextStep}
@@ -451,7 +463,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
           joker={joker}
           opponent={meta?.opponent}
           match={match}
-          fresh={!savedDaily}
+          fresh={justSubmitted}
         />
       )}
     </div>
@@ -630,6 +642,7 @@ function BestFiveResult({
   result,
   shotsCap,
   onNewBoard,
+  onReplayDaily,
   daily,
   streak,
   onNextStep,
@@ -645,6 +658,7 @@ function BestFiveResult({
   result: { score: LineupScore; targets: DailyTargets; grade: GolfGrade };
   shotsCap: number;
   onNewBoard: () => void;
+  onReplayDaily?: () => void;
   daily?: string;
   streak?: Streak | null;
   onNextStep?: () => void;
@@ -909,6 +923,11 @@ function BestFiveResult({
           {streak && streak.current > 0 && <>🔥 {streak.current}-day streak{streak.best > streak.current ? ` (best ${streak.best})` : ''}. </>}
           A new one in {untilTomorrow()}.
           {streak && <StreakTrack best={streak.best} current={streak.current} />}
+          {onReplayDaily && (
+            <button type="button" className="secondary-btn bf-daily-replay" onClick={onReplayDaily}>
+              Play today again (testing)
+            </button>
+          )}
         </div>
       ) : (
         <div className="bf-submit-row bf-result-actions">
