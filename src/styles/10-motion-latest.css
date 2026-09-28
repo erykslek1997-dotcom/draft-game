@@ -131,8 +131,6 @@
 @media (prefers-reduced-motion: reduce) {
   .spin-lever-knob, .spin-lever-arm { animation: none !important; }
 }
-.at-reel-row { display: flex; align-items: center; justify-content: center; gap: 18px; }
-.at-reel-row .spin-lever { margin-top: -6px; }
 
 /* 2026-09-27: a player the AI took stays in the list, dimmed and stamped, until the human's turn
    (DraftBoard.tsx `ghosts`); then the taken cards fold away in one slow sweep (GHOST_SWEEP_MS). */
