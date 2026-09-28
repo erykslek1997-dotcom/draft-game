@@ -30,11 +30,11 @@ graczy do siebie i rotację. Nie ma serwera — cała gra, łącznie z oceną, d
 
 | Tryb | Co robi gracz | Główny plik |
 |---|---|---|
-| **Roulette** | Losuje po 4 graczy na każdą pozycję (automat z dźwignią), wybiera piątkę pod limit capów danej planszy. Wynik porównany z „fan-vote five” (5 największych nazwisk) i najlepszą możliwą piątką. | `src/components/BestFive.tsx`, `src/engine/bestFive.ts` |
+| **Slot Machine** | Losuje po 4 graczy na każdą pozycję (automat z dźwignią), wybiera piątkę pod limit capów danej planszy. Wynik porównany z „fan-vote five” (5 największych nazwisk) i najlepszą możliwą piątką. | `src/components/BestFive.tsx`, `src/engine/bestFive.ts` |
 | **Mini Draft** | Draft na żywo: 16 drużyn, 5 rund, limit 70 capów, tylko pierwsza piątka. | `src/components/QuickFive.tsx`, `src/engine/quickDraft.ts` |
 | **All-Time Draft** | Pełna gra: 16 drużyn, 9 rund, limit 100,9 capa, ławka i rotacja minut. Ranking całej ligi, symulacja sezonu i playoffs. | `src/components/GameShell.tsx`, `DraftBoard.tsx`, `ResultsScreen.tsx`, `src/engine/draft.ts` |
 
-Menu układa je w ścieżkę nauki: krok 1 Roulette (uczy capów), krok 2 Mini Draft, krok 3 All-Time.
+Menu układa je w ścieżkę nauki: krok 1 Slot Machine (uczy capów), krok 2 Mini Draft, krok 3 All-Time.
 
 ## Technologia
 
@@ -74,7 +74,7 @@ Najważniejsze grupy:
 | Draft | `draft.ts`, `quickDraft.ts`, `positions.ts`, `aiDrafter.ts` | Kolejność wyborów, limit capów, legalność wyboru, decyzje 15 drużyn komputera. |
 | Symulacje | `leagueSimulation.ts`, `seasonSimulation.ts`, `playoffSimulation.ts` | Szanse w serii do 4 zwycięstw, sezon 82 meczów, drabinka playoffs. |
 | Opisy | `insights.ts`, `insightMapper.ts`, `draftDesk.ts`, `historicalComps.ts` | Zdania „co zadziałało / co zawiodło”, komentatorzy po 3. picku, „gra jak Detroit 2004”. |
-| Roulette | `bestFive.ts` | Losowanie planszy, limit capów, najlepsza piątka, ocena wyniku. |
+| Slot Machine | `bestFive.ts` | Losowanie planszy, limit capów, najlepsza piątka, ocena wyniku. |
 | Dostęp do danych | `*Lookup.ts` (22 pliki) | Każdy czyta jedno źródło danych (np. `bpm2Lookup.ts`, `usageLookup.ts`) i odpowiada na pytanie o konkretny okres kariery. |
 
 ### `src/data` — dane
@@ -93,7 +93,7 @@ Każdy ekran to komponent React. Najważniejsze:
 - `GameShell.tsx` — prowadzi All-Time Draft przez etapy: loteria → draft → wyniki.
 - `DraftBoard.tsx` — ekran draftu (karty graczy, zakładka Team, rotacja).
 - `ResultsScreen.tsx` — wyniki All-Time: tablica wyniku, ranking, szanse w seriach, sezon.
-- `BestFive.tsx`, `QuickFive.tsx` — całe tryby Roulette i Mini Draft.
+- `BestFive.tsx`, `QuickFive.tsx` — całe tryby Slot Machine i Mini Draft.
 - Wspólne klocki: `ScoreBoard.tsx` (tablica wyniku), `ShotChip.tsx` (capy i twarze graczy),
   `DraftChrome.tsx` (pasek statusu draftu), `DraftLottery.tsx` (losowanie miejsca w drafcie).
 
@@ -125,7 +125,7 @@ Dwa ważne szczegóły:
 |---|---|
 | Drużyny w drafcie | 16 |
 | Skład All-Time | 9 (5 w pierwszej piątce + 4 na ławce) |
-| Limit capów | 100,9 (All-Time), 70 (Mini Draft), ustalany osobno dla każdej planszy (Roulette) |
+| Limit capów | 100,9 (All-Time), 70 (Mini Draft), ustalany osobno dla każdej planszy (Slot Machine) |
 | Pula draftu | 10 161 okresów kariery, 1 438 graczy |
 | Testy | 25 plików w `scripts/test*.ts`; `npm test` uruchamia 24 z nich |
 

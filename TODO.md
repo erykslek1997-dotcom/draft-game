@@ -24,6 +24,12 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
 - [ ] **Jednorazowe skrypty analityczne (archiwum `draftverse-oneoff-scripts.zip`, 2026-09-27).**
       138 skryptów check/audit/calibrate/diagnose itp.; buildery danych, testy i walidatory zostały.
 
+- [ ] **Ton wyniku względem miejsca w Mini i All-Time (odłożone 2026-09-28, „zapiszmy to na
+      przyszłość”).** W Slot Machine film room ocenia względem najlepszej piątki na planszy: im
+      bliżej, tym więcej pochwał, a najniższa oś to „sufit planszy”, nie błąd. W draftach nie da się
+      policzyć najlepszej możliwej drużyny (CPU zabiera graczy), więc propozycja: ton według miejsca —
+      1. miejsce już dziś same pochwały; rozszerzyć na top 3, gdzie słabości tylko jako „co mogłoby
+      zagrozić”.
 - [ ] **Wyzwania dnia (daily challenges) dla wszystkich trybów.** Twoje pomysły z 2026-09-26/27:
       - Mini Draft: każdego dnia inny limit FGA i zbanowani gracze.
       - All-Time Draft: to samo plus „the bomb”.
