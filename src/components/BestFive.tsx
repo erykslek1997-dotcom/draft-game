@@ -16,7 +16,6 @@ import { markStepDone } from './pathProgress';
 import { SpinLever } from './SpinLever';
 import {
   dailyBoard,
-  dailyTargets,
   lineupShots,
   scoreLineup,
   gradeVsPar,
@@ -27,6 +26,9 @@ import {
   WEIGHTED_AXES,
   AXIS_GLOSSARY,
   slotReels,
+  dealFor,
+  boardTargets,
+  boardHeadline,
   rumorFor,
   type Lineup,
   type LineupScore,
@@ -95,9 +97,11 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
   const pool: DailyPool = dealt.pool;
   const shotsCap = dealt.cap;
 
+  // 2026-09-28: each position shows DEAL_SIZE of its pool, dealt for the five so far. The grade is
+  // against `boardTargets` — the same fan-vote five and best five for every path through the seed.
   function resultFor(l: Lineup, p: DailyPool, cap: number) {
     const score = scoreLineup(l);
-    const targets = dailyTargets(p, cap);
+    const targets = boardTargets(p, cap);
     return { score, targets, grade: gradeVsPar(score.composite, targets.par, targets.optimal) };
   }
   const [lineup, setLineup] = useState<Lineup>({});
@@ -111,6 +115,14 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
   // 2026-09-17, user's own ask: a real "how to play?" affordance on every mode, now that the
   // intro screen's own always-visible rules list is gone.
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+
+  /** A position's deal: fixed by the picks before it (positions go in order, picks are final). */
+  const dealOf = (slot: Position): PlayerSpan[] => {
+    const before: Lineup = {};
+    for (const s of STARTER_SLOTS.slice(0, STARTER_SLOTS.indexOf(slot))) if (lineup[s]) before[s] = lineup[s];
+    return dealFor(pool, slot, before, shotsCap);
+  };
+  const headline = useMemo(() => boardHeadline(pool, shotsCap), [pool, shotsCap]);
 
   const filledCount = STARTER_SLOTS.filter((s) => lineup[s]).length;
   const complete = filledCount === 5;
@@ -198,6 +210,17 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
             aren’t the answer — spacing and rim protection matter.
           </p>
 
+          {headline && (
+            <div className="bf-headline" aria-label="Tonight's headliner">
+              <span className="bf-headline-label at-cond">In this deal · {SLOT_LABEL[headline.slot].toLowerCase()}</span>
+              <p className="bf-headline-text">
+                <b>{headline.span.playerName}</b> ({headline.span.spanLabel}) is waiting at {headline.slot}. Build around him right and
+                he can win you the board — but he won’t come cheap
+                {headline.slot === 'PG' ? ', and every cap he takes is one the rest of the five can’t have.' : ', so play the cards before him well.'}
+              </p>
+            </div>
+          )}
+
           <div className="bf-slot-row">
             {STARTER_SLOTS.map((slot) => {
               const s = lineup[slot];
@@ -244,6 +267,7 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
                 key={`${pool.key}-${activeSlot}`}
                 pool={pool}
                 slot={activeSlot}
+                cards={dealOf(activeSlot)}
                 fresh={freshSlot === activeSlot}
                 onDone={() => setFreshSlot(null)}
                 renderCard={(span) => {
@@ -360,20 +384,23 @@ function prefersReducedMotion(): boolean {
 function SlotMachine({
   pool,
   slot,
+  cards,
   fresh,
   onDone,
   renderCard,
 }: {
   pool: DailyPool;
   slot: Position;
+  /** The position's deal (`dealFor`). */
+  cards: PlayerSpan[];
   /** First visit to this position: the reels wait for the lever and spin. Otherwise they stand
    * open on the dealt cards. */
   fresh: boolean;
   onDone: () => void;
   renderCard: (span: PlayerSpan) => ReactNode;
 }) {
-  const { reels, nearMisses } = useMemo(() => slotReels(pool, slot), [pool, slot]);
-  const dealt = pool.bySlot[slot];
+  const { reels, nearMisses } = useMemo(() => slotReels(pool, slot, cards.length), [pool, slot, cards.length]);
+  const dealt = cards;
   const [stoppedCount, setStopped] = useState(0);
   // Waits for the lever (2026-09-26: "element wizualny który daje nam możliwość wystartowania").
   const [spinning, setSpinning] = useState(false);
@@ -526,7 +553,10 @@ function BestFiveResult({
     }
   }
   const { score, targets, grade } = result;
-  const explain = useMemo(() => explainResult(lineup, pool, targets, shotsCap), [lineup, pool, targets, shotsCap]);
+  const explain = useMemo(
+    () => explainResult(lineup, pool, targets, shotsCap),
+    [lineup, pool, targets, shotsCap],
+  );
   const [showGlossary, setShowGlossary] = useState(false);
   const yourShots = useMemo(() => lineupShots(lineup), [lineup]);
 

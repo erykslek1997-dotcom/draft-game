@@ -642,3 +642,13 @@
 .bf-axis-best { margin-top: 4px; }
 .bf-axis-best > span { text-align: center; font-size: 10.5px; color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
 .bf-axis-best::before { content: 'Best five on the board'; grid-column: 1 / -1; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); text-align: center; }
+
+/* 2026-09-28: the board's named headliner — sometimes the key to the best five, sometimes the trap. */
+.bf-headline {
+  margin: 4px 0 14px; padding: 10px 14px; border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--at-gold, #ffd479) 45%, var(--at-line));
+  background: color-mix(in srgb, var(--at-gold, #ffd479) 7%, var(--at-paper));
+}
+.bf-headline-label { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-gold, #ffd479); margin-bottom: 4px; }
+.bf-headline-text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
+.bf-headline-text b { color: var(--at-ink); }
