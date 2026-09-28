@@ -413,15 +413,18 @@ function tierForPoints(span: PlayerSpan, points: number): SpacingTier {
  * 2026-09-28, the user: "okres skróconej linii jest niewyważony" and "spacing powinien być też
  * obliczany lekko na podstawie walidacji z sąsiednich sezonów". A window's spacing is checked
  * against the same player's neighbouring windows: 60% its own, 15% each window one year either
- * side, 5% each two years either side (whatever exists in the archive). Windows with seasons on
- * the shortened 22-foot line (1994-95 to 1996-97) count half as much for each such season, so a
- * short-line window leans on the seasons around it. That line inflated players who only started
- * shooting because of it (Pippen 1995-97 88 -> 81, Clifford Robinson 1994-96 92 -> 75) and sank
- * shooters whose percentage dipped a few points (Terry Porter 1995-97 15 -> 32); stars barely
- * move (Curry, Dirk, Reggie Miller within a few points). Every spacing consumer reads this.
+ * side, 5% each two and three years either side (whatever exists in the archive). A window loses
+ * 90% of its weight for each season it has on the shortened 22-foot line (1994-95 to 1996-97), so
+ * a short-line window leans on the restored-line seasons around it — the third-year reach exists
+ * so a window in the middle of the short-line years still finds one. Follow-up the same day
+ * ("Pippen nadal za mocny, sezon skróconej linii liczy za mocno"): the first cut (50% off, two
+ * years' reach) left Pippen 1995-97 at 81. That line inflated players who only started shooting
+ * because of it (Pippen 1995-97 88 -> 62, Clifford Robinson 1994-96 92 -> 50) and sank shooters
+ * whose percentage dipped a few points (Terry Porter 1995-97 15 -> 57); real shooters barely move
+ * (Reggie Miller 94, Glen Rice 93, Tim Hardaway 72). Every spacing consumer reads this.
  */
-const SMOOTH_WEIGHT_BY_DISTANCE = [0.6, 0.15, 0.05] as const;
-const SHORTENED_LINE_SMOOTH_DISCOUNT = 0.5;
+const SMOOTH_WEIGHT_BY_DISTANCE = [0.6, 0.15, 0.05, 0.05] as const;
+const SHORTENED_LINE_SMOOTH_DISCOUNT = 0.9;
 
 let windowsByPlayerYears: Map<string, PlayerSpan> | null = null;
 function windowKey(playerName: string, endYears: number[]): string {
@@ -447,7 +450,8 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
   const own = rawSpacingBreakdown(span);
   let sum = 0;
   let weight = 0;
-  for (let shift = -2; shift <= 2; shift++) {
+  const reach = SMOOTH_WEIGHT_BY_DISTANCE.length - 1;
+  for (let shift = -reach; shift <= reach; shift++) {
     const window = shift === 0 ? span : neighbourWindow(span, shift);
     if (!window) continue;
     const w = SMOOTH_WEIGHT_BY_DISTANCE[Math.abs(shift)] * (1 - SHORTENED_LINE_SMOOTH_DISCOUNT * shortenedLineShare(window));
