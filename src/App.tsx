@@ -14,7 +14,9 @@ import DraftLottery from './components/DraftLottery';
 import { CapsInfoHost } from './components/CapIcon';
 import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
 import { takeModeChallengeFromUrl, type ModeChallenge } from './modeChallenge';
-import { currentStreak, dailyEntry, localDayKey } from './components/dailyProgress';
+import { currentStreak, dailyEntry, dailySeed, localDayKey, yesterdayJoker } from './components/dailyProgress';
+// Seed-only (rng + a list of names): safe for the menu, which must not pull the engine in.
+import { dailyMeta } from './engine/dailyMeta';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
 /**
@@ -69,11 +71,32 @@ function DailyStrip({ onPlay }: { onPlay: () => void }) {
   const today = localDayKey();
   const played = dailyEntry(today);
   const streak = currentStreak(today);
+  // 2026-09-28, Daily Slot Machine 2.0: the opponent and where the Joker shows up are known from the
+  // seed alone (`dailyMeta` is rng-only, no engine), but never the Joker's name — that's on the board.
+  const meta = dailyMeta(dailySeed(today));
+  const yesterday = yesterdayJoker(today);
+  const game = played?.game;
   return (
-    <button type="button" className={`mode-card-daily${played ? ' is-played' : ''}`} onClick={onPlay}>
+    <button type="button" className={`mode-card-daily${played ? ' is-played' : ''}${streak.best >= 3 ? ' is-hot' : ''}`} onClick={onPlay}>
       <span className="mode-card-daily-label at-cond">📅 Daily board</span>
       <span className="mode-card-daily-state">{played ? `✓ played · ${played.composite}` : 'one try today'}</span>
       {streak.current > 0 && <span className="mode-card-daily-streak">🔥 {streak.current}</span>}
+      <span className="mode-card-daily-meta">
+        {game ? (
+          <>
+            {game.you > game.them ? 'Beat' : 'Lost to'} the {game.opponent} <b>{game.you}–{game.them}</b>
+          </>
+        ) : (
+          <>
+            Tonight: <b>vs {meta.opponent.short}</b> · 🃏 Joker at <b>{meta.jokerSlot}</b>
+          </>
+        )}
+      </span>
+      {yesterday && (
+        <span className="mode-card-daily-meta">
+          Yesterday’s Joker: <b>{yesterday.name}</b> — {yesterday.worth ? 'the best five took him.' : 'the best five skipped him.'}
+        </span>
+      )}
     </button>
   );
 }

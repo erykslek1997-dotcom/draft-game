@@ -3,7 +3,10 @@ import './BestFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
 import { ScoreChip } from './ResultsScreen';
 import ShareResultModal from './ShareResultModal';
-import { currentStreak, dailySeed, recordDailyResult, savedDailyLineup, untilTomorrow, type Streak } from './dailyProgress';
+import { currentStreak, dailySeed, recordDailyResult, savedDailyLineup, streakRewardClasses, untilTomorrow, localDayKey, STREAK_TIERS, type Streak } from './dailyProgress';
+import { dailyMeta, type LegendFive } from '../engine/dailyMeta';
+import { expectedMargin, legendLineup, simulateLiveGame, type LiveGameResult } from '../engine/liveGame';
+import LiveGame from './LiveGame';
 import { copyLink } from './shareSave';
 import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import type { PlayerSpan, Position } from '../data/schema';
@@ -30,6 +33,9 @@ import {
   dealFor,
   boardTargets,
   dealHint,
+  dailyGame,
+  fanVoteFive,
+  type DailyJoker,
   type Lineup,
   type LineupScore,
   type DailyPool,
@@ -109,9 +115,27 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
   // będzie losowa liczba między 60 a 90" — a seeded shots budget for the five starters.
   // 2026-09-27: pool and cap come together from `dailyBoard`, which skips boards where the five
   // biggest names are already about the best answer (see its docstring).
-  const dealt = useMemo(() => dailyBoard(board.seed), [board.seed]);
+  // 2026-09-28, Daily Slot Machine 2.0: the daily board has its own position order, a Joker and an
+  // opponent (`dailyMeta` / `dailyGame`); a random board keeps PG→C and no Joker.
+  const meta = useMemo(() => (daily ? dailyMeta(board.seed) : null), [daily, board.seed]);
+  const dealt = useMemo(
+    () => (meta ? dailyGame(board.seed, meta) : { ...dailyBoard(board.seed), order: STARTER_SLOTS, joker: null as DailyJoker | null }),
+    [meta, board.seed],
+  );
   const pool: DailyPool = dealt.pool;
   const shotsCap = dealt.cap;
+  const order = dealt.order;
+  const joker = dealt.joker;
+  // Streak rewards (cosmetic): the gold lever, gold reel frames and retro card backs, by best streak.
+  const rewardClasses = useMemo(() => streakRewardClasses(currentStreak(daily ?? localDayKey()).best), [daily]);
+  /** The live game against the opponent of the day — the same five on the same day plays the same game. */
+  const matchFor = (l: Lineup): LiveGameResult | null => {
+    if (!meta) return null;
+    const legends = legendLineup(meta.opponent);
+    if (!legends) return null;
+    const margin = expectedMargin(l, fanVoteFive(pool, shotsCap), legends);
+    return simulateLiveGame(l, legends, margin, `${board.seed}:${STARTER_SLOTS.map((s) => l[s]?.id).join(',')}`, joker?.span.id);
+  };
 
   // 2026-09-28: each position shows DEAL_SIZE of its pool, dealt for the five so far. The grade is
   // against `boardTargets` — the same fan-vote five and best five for every path through the seed.
@@ -123,13 +147,14 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
   // The daily board already played today opens straight on its result.
   const savedDaily = useMemo(() => (daily ? savedDailyLineup(daily, pool) : null), [daily, pool]);
   const [lineup, setLineup] = useState<Lineup>(() => savedDaily ?? {});
-  const [activeSlot, setActiveSlot] = useState<Position | null>(savedDaily ? null : 'PG');
+  const [activeSlot, setActiveSlot] = useState<Position | null>(savedDaily ? null : order[0]);
   const [streak, setStreak] = useState<Streak | null>(() => (daily ? currentStreak(daily) : null));
+  const [match, setMatch] = useState<LiveGameResult | null>(() => (savedDaily ? matchFor(savedDaily) : null));
   // 2026-09-26, the user: "ograniczmy wybór do 5 graczy. Niech po każdym wyborze gracz widzi jacy
   // gracze się losują." Positions are dealt one at a time: a slot's five stay face down until the
   // pick before it, then spin in on the slot machine (`freshSlot`, once per slot).
-  const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(savedDaily ? STARTER_SLOTS : ['PG']));
-  const [freshSlot, setFreshSlot] = useState<Position | null>(savedDaily ? null : 'PG');
+  const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(savedDaily ? STARTER_SLOTS : [order[0]]));
+  const [freshSlot, setFreshSlot] = useState<Position | null>(savedDaily ? null : order[0]);
   const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(() =>
     savedDaily ? resultFor(savedDaily, pool, shotsCap) : null,
   );
@@ -137,12 +162,15 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
   // intro screen's own always-visible rules list is gone.
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
-  /** A position's deal: fixed by the picks before it (positions go in order, picks are final). */
-  const dealOf = (slot: Position): PlayerSpan[] => {
+  /** The picks made before `slot` in the day's order. */
+  const picksBefore = (slot: Position): Lineup => {
     const before: Lineup = {};
-    for (const s of STARTER_SLOTS.slice(0, STARTER_SLOTS.indexOf(slot))) if (lineup[s]) before[s] = lineup[s];
-    return dealFor(pool, slot, before, shotsCap);
+    for (const s of order.slice(0, order.indexOf(slot))) if (lineup[s]) before[s] = lineup[s];
+    return before;
   };
+  /** A position's deal: fixed by the picks before it (positions go in order, picks are final). The
+   * daily Joker, when this is his position, comes last, on top of the four. */
+  const dealOf = (slot: Position): PlayerSpan[] => dealFor(pool, slot, picksBefore(slot), shotsCap);
 
   const filledCount = STARTER_SLOTS.filter((s) => lineup[s]).length;
   const complete = filledCount === 5;
@@ -160,9 +188,9 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
   function pick(slot: Position, span: PlayerSpan) {
     if (lineup[slot] || overBy(slot, span) > 1e-9) return;
     setLineup((prev) => ({ ...prev, [slot]: span }));
-    // Advance to the next still-empty slot, in PG→C order; the picker closes after the last one.
-    // A slot seen for the first time gets dealt.
-    const nextEmpty = STARTER_SLOTS.find((s) => s !== slot && !lineup[s]);
+    // Advance to the next still-empty slot, in the board's order; the picker closes after the last
+    // one. A slot seen for the first time gets dealt.
+    const nextEmpty = order.find((s) => s !== slot && !lineup[s]);
     if (nextEmpty && !revealed.has(nextEmpty)) {
       setRevealed((prev) => new Set(prev).add(nextEmpty));
       setFreshSlot(nextEmpty);
@@ -176,14 +204,23 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
     if (!complete || overCap) return;
     const next = resultFor(lineup, pool, shotsCap);
     setResult(next);
-    if (daily) setStreak(recordDailyResult(daily, lineup, next.grade, next.score.composite));
+    if (daily) {
+      const match = matchFor(lineup);
+      setMatch(match);
+      setStreak(
+        recordDailyResult(daily, lineup, next.grade, next.score.composite, {
+          game: match && meta ? { you: match.final[0], them: match.final[1], opponent: meta.opponent.short } : undefined,
+          joker: joker ? { name: joker.span.playerName, span: joker.span.spanLabel, worth: joker.worth } : undefined,
+        }),
+      );
+    }
   }
 
   function resetPicks() {
     setLineup({});
-    setActiveSlot('PG');
-    setRevealed(new Set(['PG']));
-    setFreshSlot('PG');
+    setActiveSlot(order[0]);
+    setRevealed(new Set([order[0]]));
+    setFreshSlot(order[0]);
     setResult(null);
   }
 
@@ -194,7 +231,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
   }
 
   return (
-    <div className="at-shell best-five">
+    <div className={`at-shell best-five ${rewardClasses}`}>
       {/* 2026-09-27 UI audit: the same "← Menu" in the top corner as the drafts (was "← Back" on
           the right next to "How to play?", with a "Board #n" nobody needed). */}
       {onBack && (
@@ -207,8 +244,10 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
         <p className="bf-daily-sub">
           {formatDay(daily)} · one board for everyone, one try
           {streak && streak.current > 0 && <> · 🔥 {streak.current}-day streak</>}
+          {streak && streak.best >= 100 && <span className="bf-hof-plaque at-cond">Hall of Fame</span>}
         </p>
       )}
+      {daily && meta && !result && <DailyIntro joker={joker} opponent={meta.opponent} order={order} />}
       <div className="bf-subhead">
         <span className="bf-subhead-actions">
           <button className="at-legend-toggle at-cond" onClick={() => setShowHowToPlay((v) => !v)}>
@@ -223,7 +262,15 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
           <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under the board’s cap, shown by the meter above it.</li>
           <li><b>Submit once.</b> No re-picking after you see your score.</li>
           <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against the fan-vote five (the five biggest names) and the best five on the board.</li>
-          <li><b>Spin again.</b> Every new board is a fresh random deal.</li>
+          {daily ? (
+            <>
+              <li><b>Today’s order.</b> The daily board deals the positions in its own order, a different one every day.</li>
+              <li><b>The Joker.</b> One legend a day, announced up front. He comes as a fifth, gold card at his position, at his full price. Some days he’s worth saving for, some days he isn’t — that’s the call.</li>
+              <li><b>Game of the day.</b> Your five then plays a legendary team, live. The engine decides who’s better — beat the five biggest names on the board and you’ll usually beat them too.</li>
+            </>
+          ) : (
+            <li><b>Spin again.</b> Every new board is a fresh random deal.</li>
+          )}
         </ol>
       )}
 
@@ -239,7 +286,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
 
 
           <div className="bf-slot-row">
-            {STARTER_SLOTS.map((slot) => {
+            {order.map((slot) => {
               const s = lineup[slot];
               const dealt = revealed.has(slot);
               return (
@@ -253,7 +300,10 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
                     setActiveSlot(slot);
                   }}
                 >
-                  <span className="bf-slot-pos at-cond">{slot}</span>
+                  <span className="bf-slot-pos at-cond">
+                    {slot}
+                    {joker?.slot === slot && !s && <span className="bf-slot-joker" title="The Joker shows up here">🃏</span>}
+                  </span>
                   {s ? <Face name={s.playerName} /> : <span className={`bf-face bf-face--sm bf-face--empty${dealt ? '' : ' bf-face--card'}`} aria-hidden />}
                   <span className="bf-slot-name">{s ? shortenName(s.playerName, 0) : dealt ? 'Tap to pick' : 'Face down'}</span>
                   {s && <span className="bf-season bf-season--sm">{s.spanLabel}</span>}
@@ -272,16 +322,14 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
               <div className="bf-picker-head at-cond">
                 Your draw · {SLOT_LABEL[activeSlot].toLowerCase()}
                 <span className="bf-picker-sub">
-                  {STARTER_SLOTS.indexOf(activeSlot) < STARTER_SLOTS.length - 1
+                  {order.indexOf(activeSlot) < order.length - 1
                     ? 'Four dealt for this spot — picks are final, the next position turns over after you pick.'
                     : 'Last spot — four dealt. Picks are final.'}
                 </span>
               </div>
               {(() => {
                 // 2026-09-28: the one hint left — what the five is missing, when this deal can cover it.
-                const before: Lineup = {};
-                for (const sl of STARTER_SLOTS.slice(0, STARTER_SLOTS.indexOf(activeSlot))) if (lineup[sl]) before[sl] = lineup[sl];
-                const hint = dealHint(pool, activeSlot, before, shotsCap);
+                const hint = dealHint(pool, activeSlot, picksBefore(activeSlot), shotsCap);
                 if (!hint) return null;
                 return <p className="bf-deal-hint">{DEAL_HINT[hint.need](hint.have)}</p>;
               })()}
@@ -292,9 +340,40 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
                 key={`${pool.key}-${activeSlot}`}
                 pool={pool}
                 slot={activeSlot}
-                cards={dealOf(activeSlot)}
+                cards={dealOf(activeSlot).filter((c) => c.id !== joker?.span.id)}
                 fresh={freshSlot === activeSlot}
                 onDone={() => setFreshSlot(null)}
+                // 2026-09-28, Daily Slot Machine 2.0: the Joker, on top of the four once they're dealt, at
+                // full price — greyed out, with what's missing, when earlier picks spent the room.
+                after={
+                joker && joker.slot === activeSlot ? (() => {
+                  const span = joker.span;
+                  const over = overBy(activeSlot, span);
+                  const blocked = over > 1e-9;
+                  const chosen = lineup[activeSlot]?.id === span.id;
+                  return (
+                    <button
+                      className={`bf-pool-card bf-joker-card${chosen ? ' bf-pool-card--chosen' : ''}${blocked ? ' is-locked' : ''}`}
+                      disabled={blocked}
+                      title={blocked ? `${span.playerName} doesn't fit under the cap any more` : span.playerName}
+                      onClick={() => pick(activeSlot, span)}
+                    >
+                      <span className="bf-joker-tag at-cond">🃏 Joker</span>
+                      <Face name={span.playerName} size="md" />
+                      <span className="bf-joker-body">
+                        <span className="bf-pool-name">{span.playerName}</span>
+                        <EraYears span={span} className="bf-pool-season" />
+                        <span className="bf-pool-box">{boxLineShort(span)}</span>
+                        <span className="bf-pool-box bf-pool-box--sub">{boxLineDetail(span)}</span>
+                        {blocked && <span className="bf-joker-why">Needs {over.toFixed(1)} more caps — they went on earlier picks.</span>}
+                      </span>
+                      <span className="bf-pool-meta">
+                        <ShotChip fga={span.fga} cap={shotsCap} />
+                      </span>
+                    </button>
+                  );
+                })() : null
+                }
                 renderCard={(span) => {
                   const chosen = lineup[activeSlot]?.id === span.id;
                   const over = overBy(activeSlot, span);
@@ -369,6 +448,10 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
           onNextStep={onNextStep}
           seed={board.seed}
           challenge={challenge && challenge.seed === board.seed ? challenge : undefined}
+          joker={joker}
+          opponent={meta?.opponent}
+          match={match}
+          fresh={!savedDaily}
         />
       )}
     </div>
@@ -401,6 +484,7 @@ function SlotMachine({
   fresh,
   onDone,
   renderCard,
+  after,
 }: {
   pool: DailyPool;
   slot: Position;
@@ -411,6 +495,8 @@ function SlotMachine({
   fresh: boolean;
   onDone: () => void;
   renderCard: (span: PlayerSpan) => ReactNode;
+  /** Shown under the cabinet once every reel has stopped (the daily Joker). */
+  after?: ReactNode;
 }) {
   const { reels, nearMisses } = useMemo(() => slotReels(pool, slot, cards.length), [pool, slot, cards.length]);
   const dealt = cards;
@@ -469,6 +555,7 @@ function SlotMachine({
         <SpinLever onPull={() => setSpinning(true)} label={!fresh ? 'Dealt' : spinning ? 'Dealing' : 'Pull'} disabled={!fresh || (spinning && allStopped)} />
       </div>
       </div>
+      {allStopped && after && <div onClick={(e) => e.stopPropagation()}>{after}</div>}
       <p className={`bf-machine-foot${allStopped ? ' is-done' : ''}`} aria-live="polite">
         {fresh && !spinning ? (
           <>Four {SLOT_LABEL[slot].toLowerCase()}s are loaded — pull the lever.</>
@@ -548,6 +635,10 @@ function BestFiveResult({
   onNextStep,
   seed,
   challenge,
+  joker,
+  opponent,
+  match,
+  fresh,
 }: {
   lineup: Lineup;
   pool: DailyPool;
@@ -559,8 +650,29 @@ function BestFiveResult({
   onNextStep?: () => void;
   seed: string;
   challenge?: ModeChallenge;
+  joker?: DailyJoker | null;
+  opponent?: LegendFive;
+  match?: LiveGameResult | null;
+  /** Just submitted (the game plays live); a daily reopened later shows its final straight away. */
+  fresh?: boolean;
 }) {
   useEffect(() => markStepDone('bestfive'), []);
+  const [copied, setCopied] = useState(false);
+  /** 2026-09-28, the user chose the minimal share: date, grade, streak and the game — nothing about
+   * the five or the Joker, so it spoils nothing for anyone who hasn't played today. */
+  async function copyDailyResult() {
+    if (!daily) return;
+    const lines = [
+      `Daily Slot Machine · ${formatDay(daily)}`,
+      `🏀 ${GRADE_LABEL[result.grade]}${streak && streak.current > 0 ? ` · 🔥 ${streak.current}` : ''}`,
+      ...(match && opponent ? [match.final[0] > match.final[1] ? `🏆 Beat the ${opponent.short} ${match.final[0]}–${match.final[1]}` : `❌ Lost to the ${opponent.short} ${match.final[0]}–${match.final[1]}`] : []),
+      `${window.location.origin}${window.location.pathname}`,
+    ];
+    if (await copyLink(lines.join('\n'))) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
   const [shareOpen, setShareOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   async function challengeFriend() {
@@ -584,6 +696,8 @@ function BestFiveResult({
 
   return (
     <div className="at-card bf-result">
+      {daily && match && opponent && <LiveGame game={match} opponent={opponent} autoStart={Boolean(fresh)} />}
+      {daily && joker && <JokerLine joker={joker} took={lineup[joker.slot]?.id === joker.span.id} />}
       {/* 2026-09-27, the user: "wynik nie pokazuje od razu" — grade and the three numbers land
           together in one scoreboard, no staged wait. */}
       <div className={`bf-grade bf-grade--${grade}`}>
@@ -613,6 +727,11 @@ function BestFiveResult({
           <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
             📤 Share the result
           </button>
+          {daily && (
+            <button type="button" className="results-hero-copy" onClick={copyDailyResult} title="Copies a spoiler-free line: date, grade, streak and the game">
+              {copied ? '✓ Copied' : '📋 Copy result'}
+            </button>
+          )}
           <button
             type="button"
             className="results-hero-copy results-hero-challenge"
@@ -789,6 +908,7 @@ function BestFiveResult({
           <b>That’s today’s board.</b>{' '}
           {streak && streak.current > 0 && <>🔥 {streak.current}-day streak{streak.best > streak.current ? ` (best ${streak.best})` : ''}. </>}
           A new one in {untilTomorrow()}.
+          {streak && <StreakTrack best={streak.best} current={streak.current} />}
         </div>
       ) : (
         <div className="bf-submit-row bf-result-actions">
@@ -796,6 +916,75 @@ function BestFiveResult({
             New board
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+/** 2026-09-28, Daily Slot Machine 2.0: what the day is known by before the first pull — the Joker
+ * (announced in full, so saving caps for him is a plan, not luck) and the opponent. */
+function DailyIntro({ joker, opponent, order }: { joker: DailyJoker | null; opponent: LegendFive; order: Position[] }) {
+  return (
+    <div className="bf-daily-intro">
+      {joker && (
+        <div className="bf-daily-banner bf-daily-banner--joker">
+          <span className="bf-daily-banner-k at-cond">🃏 Tonight’s Joker</span>
+          <span className="bf-daily-banner-v">
+            {joker.span.playerName} <span className="bf-daily-banner-chip">{joker.span.spanLabel}</span>
+          </span>
+          <span className="bf-daily-banner-d">
+            A fifth, gold card when you reach <b>{joker.slot}</b> (pick {order.indexOf(joker.slot) + 1} of 5). Full price:{' '}
+            <b>{joker.span.fga.toFixed(1)} caps</b>. Save room — or don’t.
+          </span>
+        </div>
+      )}
+      <div className="bf-daily-banner bf-daily-banner--opp">
+        <span className="bf-daily-banner-k at-cond">Game of the day</span>
+        <span className="bf-daily-banner-v">{opponent.name}</span>
+        <span className="bf-daily-banner-d">
+          {opponent.players.join(' · ')} — your five plays them live after the last pick. Order today: {order.join(' → ')}.
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** The Joker's verdict — only on your own result, never in the shared line. */
+function JokerLine({ joker, took }: { joker: DailyJoker; took: boolean }) {
+  const name = joker.span.playerName;
+  const edge = Math.abs(joker.edge);
+  const text = took
+    ? joker.worth
+      ? `Joker: worth it. The best five took ${name} too.`
+      : `Joker: too pricey today. The best five skipped ${name} and spread those caps around${edge ? ` (${edge} points better)` : ''}.`
+    : joker.worth
+      ? `Joker: you passed. The best five saved up for ${name}${edge ? ` (+${edge})` : ''}.`
+      : `Joker: right call. The best five skipped ${name} too.`;
+  return (
+    <p className={`bf-joker-line${took ? ' is-took' : ''}`}>
+      🃏 {text}
+    </p>
+  );
+}
+
+/** Streak rewards, by the best streak (cosmetic, kept once earned). */
+function StreakTrack({ best, current }: { best: number; current: number }) {
+  const next = STREAK_TIERS.find((t) => best < t.days);
+  return (
+    <div className="bf-streak-track" aria-label="Streak rewards">
+      <div className="bf-streak-tiers">
+        {STREAK_TIERS.map((t) => (
+          <span key={t.days} className={`bf-streak-tier${best >= t.days ? ' is-got' : ''}${next === t ? ' is-next' : ''}`} title={t.reward}>
+            <span className="bf-streak-dot" aria-hidden />
+            <b>{t.days}</b>
+            <span>{t.reward}</span>
+          </span>
+        ))}
+      </div>
+      {next && (
+        <span className="bf-streak-next">
+          {next.days - current} more {next.days - current === 1 ? 'day' : 'days'} in a row: {next.reward.toLowerCase()}.
+        </span>
       )}
     </div>
   );

@@ -38,7 +38,11 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
         plansza dziennie dla wszystkich (lokalna północ), jedno podejście, seria dni, wynik dnia
         w przeglądarce (`src/components/dailyProgress.ts`). Bez dziennych zasad (limity, bany) —
         na razie tylko wspólna plansza.
-      - [ ] **Daily Slot Machine 2.0 — ustalone 2026-09-28, do wdrożenia.** Makiety:
+      - [x] **Daily Slot Machine 2.0 — wdrożone 2026-09-28** (`engine/dailyMeta.ts`, `dailyGame` w
+        `engine/bestFive.ts`, `engine/liveGame.ts`, `components/LiveGame.tsx`, test
+        `scripts/testLiveGame.ts`). Jeden mecz, nie seria. Legendy grają na poziomie piątki
+        „fan-vote” dnia: różnica z `projectMatchup` (ty vs legendy) minus (fan-vote vs legendy).
+        Joker opłacalny w ok. 40–45% dni (pomiar na 90 dniach) — można podkręcić. Makiety:
         `docs/mockups/daily-slot-machine.html` (i artefakt z tej sesji). Decyzje:
         - **Joker** (wariant A): jeden legendarny gracz dnia, pełna cena (jego FGA, bez zniżki),
           pojawia się jako 5. złota karta na swojej pozycji; wyszarzony, gdy brakuje capów

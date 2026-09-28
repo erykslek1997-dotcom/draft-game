@@ -638,3 +638,102 @@
 /* 2026-09-28: the one hint left in the Slot Machine — what the five is missing (dealHint). */
 .bf-deal-hint { margin: 2px 0 10px; font-size: 12.5px; color: var(--at-accent); }
 .bf-deal-hint::before { content: '💡 '; }
+
+/* ---------------------------------------------------------------------------
+   2026-09-28, Daily Slot Machine 2.0: the Joker, the opponent of the day, the live game and the
+   streak rewards.
+   --------------------------------------------------------------------------- */
+.bf-daily-intro { display: grid; gap: 8px; margin: 12px 0; }
+@media (min-width: 720px) { .bf-daily-intro { grid-template-columns: 1fr 1fr; } }
+.bf-daily-banner { display: flex; flex-direction: column; gap: 3px; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--at-line); background: var(--at-paper-raised, var(--at-paper)); }
+.bf-daily-banner-k { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.bf-daily-banner-v { font-size: 15px; font-weight: 800; color: var(--at-ink); }
+.bf-daily-banner-d { font-size: 12px; color: var(--at-ink-soft); line-height: 1.45; }
+.bf-daily-banner-d b { color: var(--at-ink); }
+.bf-daily-banner-chip { font-size: 11px; font-weight: 700; border: 1px solid currentColor; border-radius: 5px; padding: 0 5px; margin-left: 4px; color: var(--at-gold, #ffd479); vertical-align: 2px; }
+.bf-daily-banner--joker { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 55%, var(--at-line)); background: linear-gradient(135deg, color-mix(in srgb, var(--at-gold, #ffd479) 16%, var(--at-paper)), var(--at-paper) 70%); }
+.bf-daily-banner--joker .bf-daily-banner-k { color: var(--at-gold, #ffd479); }
+.bf-daily-banner--opp .bf-daily-banner-k { color: var(--at-accent-2, #d94a60); }
+
+.bf-slot-joker { margin-left: 3px; font-size: 11px; }
+
+.bf-joker-card {
+  flex-direction: row; align-items: center; gap: 12px; width: 100%; margin-top: 8px; padding: 10px 12px; text-align: left; position: relative;
+  border: 1.5px solid var(--at-gold, #ffd479);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--at-gold, #ffd479) 22%, var(--at-paper)), var(--at-paper) 70%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--at-gold, #ffd479) 12%, transparent), 0 6px 18px color-mix(in srgb, var(--at-gold, #ffd479) 14%, transparent);
+}
+.bf-joker-card:hover { border-color: var(--at-gold, #ffd479); }
+.bf-joker-card .bf-joker-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.bf-joker-card .bf-pool-name { color: var(--at-ink); }
+.bf-joker-tag { position: absolute; top: 6px; right: 10px; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; color: var(--at-gold, #ffd479); }
+.bf-joker-card .bf-pool-meta { align-self: flex-end; }
+.bf-joker-card.is-locked { filter: grayscale(1); opacity: 0.6; box-shadow: none; border-style: dashed; cursor: not-allowed; }
+.bf-joker-why { font-size: 11.5px; font-weight: 700; color: var(--at-bad, #d94a60); }
+.bf-joker-line { margin: 10px 0 0; padding: 7px 11px; border-left: 3px solid var(--at-gold, #ffd479); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--at-ink-soft); background: color-mix(in srgb, var(--at-gold, #ffd479) 8%, var(--at-paper)); }
+.bf-joker-line.is-took { color: var(--at-ink); }
+
+.bf-live { border: 1px solid var(--at-line); border-radius: 12px; padding: 12px; margin-bottom: 14px; background: var(--at-paper); }
+.bf-live-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.bf-live-title { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-accent-2, #d94a60); }
+.bf-live-sub { font-size: 12px; color: var(--at-ink-soft); }
+.bf-live-board { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--at-ink) 5%, var(--at-paper)); }
+.bf-live-board > div:first-child, .bf-live-right { display: flex; flex-direction: column; }
+.bf-live-right { text-align: right; }
+.bf-live-team { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-ink-faint); }
+.bf-live-pts { font-size: 30px; font-weight: 800; line-height: 1.1; color: var(--at-ink); font-variant-numeric: tabular-nums; }
+.bf-live-clock { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--at-ink-faint); }
+.bf-live-clock b { font-size: 13px; color: var(--at-ink); }
+.bf-live-wp { margin-top: 8px; }
+.bf-live-wp-bar { height: 6px; border-radius: 4px; overflow: hidden; background: var(--at-accent-2, #d94a60); }
+.bf-live-wp-bar i { display: block; height: 100%; background: var(--at-accent); transition: width 0.25s; }
+.bf-live-wp-lbl { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--at-ink-faint); margin-top: 3px; }
+.bf-live-qs { display: grid; grid-template-columns: 48px repeat(4, 1fr) 44px; gap: 2px; margin-top: 8px; font-size: 11.5px; text-align: center; font-variant-numeric: tabular-nums; }
+.bf-live-qs > span { padding: 2px 0; border-radius: 4px; background: color-mix(in srgb, var(--at-ink) 5%, var(--at-paper)); color: var(--at-ink-soft); }
+.bf-live-qs > span:first-child, .bf-live-qs .is-head { background: none; color: var(--at-ink-faint); font-weight: 700; }
+.bf-live-qs .is-name { text-align: left; padding-left: 6px; font-weight: 800; color: var(--at-ink); }
+.bf-live-qs .is-total { font-weight: 800; color: var(--at-ink); }
+.bf-live-feed { display: flex; flex-direction: column; gap: 3px; height: 190px; overflow: hidden; margin-top: 10px; -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
+.bf-live-feed > div { display: grid; grid-template-columns: 40px 1fr auto; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 12px; color: var(--at-ink-soft); background: color-mix(in srgb, var(--at-ink) 4%, var(--at-paper)); animation: bf-live-pop 0.25s ease-out; }
+.bf-live-feed > .is-you { border-left: 2px solid var(--at-accent); }
+.bf-live-feed > .is-them { border-left: 2px solid var(--at-accent-2, #d94a60); }
+.bf-live-feed > .is-joker { border-left: 2px solid var(--at-gold, #ffd479); background: linear-gradient(90deg, color-mix(in srgb, var(--at-gold, #ffd479) 16%, var(--at-paper)), var(--at-paper)); color: var(--at-ink); }
+.bf-live-feed > .is-quarter { display: block; text-align: center; background: none; font-weight: 800; color: var(--at-gold, #ffd479); }
+.bf-live-t, .bf-live-s { color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
+@keyframes bf-live-pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.bf-live-final { margin: 10px 0 0; padding: 10px; border-radius: 10px; text-align: center; font-weight: 800; color: var(--at-ink); background: color-mix(in srgb, var(--at-good, #58c28a) 14%, var(--at-paper)); border: 1px solid color-mix(in srgb, var(--at-good, #58c28a) 45%, var(--at-line)); }
+.bf-live-final.is-loss { background: color-mix(in srgb, var(--at-bad, #d94a60) 12%, var(--at-paper)); border-color: color-mix(in srgb, var(--at-bad, #d94a60) 40%, var(--at-line)); }
+.bf-live-final small { display: block; margin-top: 3px; font-weight: 600; color: var(--at-ink-soft); }
+.bf-live-ctl { display: flex; gap: 8px; margin-top: 10px; }
+.bf-live-ctl > button { flex: 1; }
+.bf-live-box { margin-top: 10px; }
+.bf-live-box summary { cursor: pointer; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-ink-faint); }
+.bf-live-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.bf-live-table caption { text-align: left; font-size: 11px; font-weight: 800; color: var(--at-ink-faint); padding-bottom: 2px; }
+.bf-live-table th, .bf-live-table td { padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--at-line); color: var(--at-ink-soft); }
+.bf-live-table thead th { font-weight: 700; color: var(--at-ink-faint); }
+.bf-live-table tbody th { text-align: left; font-weight: 700; color: var(--at-ink); }
+.bf-live-table thead th:first-child { text-align: left; }
+.bf-live-table tr.is-joker th, .bf-live-table tr.is-joker td { color: var(--at-gold, #ffd479); }
+@media (prefers-reduced-motion: reduce) { .bf-live-feed > div { animation: none; } .bf-live-wp-bar i { transition: none; } }
+
+/* Streak rewards — cosmetic, by best streak. */
+.bf-streak-track { margin-top: 12px; }
+.bf-streak-tiers { display: grid; grid-template-columns: repeat(5, 1fr); }
+.bf-streak-tier { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding-top: 22px; font-size: 10.5px; color: var(--at-ink-faint); }
+.bf-streak-tier::before { content: ''; position: absolute; top: 8px; left: 0; right: 0; height: 3px; background: var(--at-line); }
+.bf-streak-tier.is-got::before { background: var(--at-gold, #ffd479); }
+.bf-streak-dot { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); width: 15px; height: 15px; border-radius: 50%; background: var(--at-paper); border: 2px solid var(--at-line); }
+.bf-streak-tier.is-got .bf-streak-dot { background: var(--at-gold, #ffd479); border-color: #fff3cf; }
+.bf-streak-tier.is-next .bf-streak-dot { border-color: var(--at-gold, #ffd479); }
+.bf-streak-tier b { font-size: 12px; color: var(--at-ink); }
+.bf-streak-next { display: block; margin-top: 8px; font-size: 12px; }
+/* 7 days: gold lever. */
+.bf-streak-7 .spin-lever-knob { background: radial-gradient(circle at 35% 35%, #fff3cf, #ffd479 55%, #8e6b12) !important; box-shadow: 0 0 10px rgba(255, 212, 121, 0.55); }
+.bf-streak-7 .spin-lever-arm { background: linear-gradient(90deg, #a6801e, #ffd479, #a6801e) !important; }
+/* 14 days: gold reel frames. */
+.bf-streak-14 .bf-reel { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--at-gold, #ffd479) 70%, transparent); }
+/* 30 days: retro card backs on the face-down positions. */
+.bf-streak-30 .bf-face--card { background: repeating-linear-gradient(45deg, #1a2644 0 5px, #122038 5px 10px) !important; box-shadow: inset 0 0 0 2px var(--at-gold, #ffd479); }
+/* 100 days: the Hall of Fame plaque. */
+.bf-hof-plaque { display: inline-block; margin-left: 8px; padding: 0 7px; border-radius: 4px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #1b1404; background: linear-gradient(135deg, #fff3cf, #ffd479 60%, #b98a1c); }
