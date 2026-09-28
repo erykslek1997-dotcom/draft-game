@@ -36,6 +36,7 @@ import {
   type DailyTargets,
   type GolfGrade,
   type ResultExplanation,
+  type BoardHeadline,
 } from '../engine/bestFive';
 
 interface Props {
@@ -47,6 +48,12 @@ interface Props {
   onNextStep?: () => void;
   /** A friend's "Challenge a friend" link: their deal and their score. */
   challenge?: ModeChallenge;
+}
+
+/** "Walt Frazier" → "Frazier"; "Michael Porter Jr." → "Porter". */
+function surname(name: string): string {
+  const parts = name.split(' ').filter((p) => !/^(Jr\.?|Sr\.?|II|III|IV)$/.test(p));
+  return parts[parts.length - 1] ?? name;
 }
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
@@ -216,9 +223,8 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
               <p className="bf-headline-text">
                 {/* No years: which stretch of his career is dealt is part of the read (sometimes it's a
                     late-career card priced like the name). */}
-                <b>{headline.span.playerName}</b> is in this deal, at {headline.slot}. Build around him right and he can win you
-                the board — but he won’t come cheap
-                {headline.slot === 'PG' ? ', and every cap he takes is one the rest of the five can’t have.' : ', so play the cards before him well.'}
+                <b>{headline.span.playerName}</b> is in this deal, at {headline.slot}. The right {surname(headline.span.playerName)} can
+                win you the board — check the years before you build around him.
               </p>
             </div>
           )}
@@ -357,6 +363,7 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
           onNewBoard={newBoard}
           onNextStep={onNextStep}
           seed={board.seed}
+          headline={headline}
           challenge={challenge && challenge.seed === board.seed ? challenge : undefined}
         />
       )}
@@ -534,6 +541,7 @@ function BestFiveResult({
   onNewBoard,
   onNextStep,
   seed,
+  headline,
   challenge,
 }: {
   lineup: Lineup;
@@ -543,6 +551,7 @@ function BestFiveResult({
   onNewBoard: () => void;
   onNextStep?: () => void;
   seed: string;
+  headline?: BoardHeadline;
   challenge?: ModeChallenge;
 }) {
   useEffect(() => markStepDone('bestfive'), []);
@@ -732,6 +741,25 @@ function BestFiveResult({
               </p>
             )}
           </>
+        )}
+        {/* 2026-09-28, user-reported ("nie rozumiem tego z Frazierem"): the board's headliner is
+            settled here — the real thing, or which stage of his career the trap card was. */}
+        {headline && (
+          <p className="bf-why-line bf-why-headline">
+            {headline.trap ? (
+              <>
+                The headliner was the trap: <b>{headline.stage === 'late' ? 'late-career' : 'young'} {surname(headline.span.playerName)}</b>{' '}
+                ({headline.span.spanLabel}), priced like the name
+                {headline.prime && <> — his best stretch was {headline.prime.spanLabel}</>}
+                {lineup[headline.slot]?.id === headline.span.id ? '. You bought the name.' : '. You read it right.'}
+              </>
+            ) : (
+              <>
+                The headliner was the real thing: <b>{headline.span.playerName}</b> ({headline.span.spanLabel}) is in the best five
+                {lineup[headline.slot]?.id === headline.span.id ? ' — good read.' : '.'}
+              </>
+            )}
+          </p>
         )}
       </div>
 

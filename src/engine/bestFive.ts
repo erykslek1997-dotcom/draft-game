@@ -11,6 +11,7 @@ import { computeOffensiveTalent } from './talent';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { computeSpacing } from './spacing';
 import { computeFinishing } from './finishing';
+import { spanEndYears } from './era';
 
 // Re-exported for API stability — `mulberry32` used to be defined and exported here.
 export { mulberry32 } from './rng';
@@ -1018,14 +1019,40 @@ export function boardTargets(pool: DailyPool, cap: number): DailyTargets {
  * the start of a board names a player — by name only, no years — who is always dealt at his
  * position. Usually he is the real thing: a star from the board's best five. About one board in
  * three it's a trap, and (the user's follow-up: "prawda ALE może to być np. bardzo stary Hakeem,
- * można się pobawić spanami") the name is still true but the card is one of his lesser stretches —
- * the famous name in a late or early span, priced like the name. With no such card on the board the
- * trap is a big star who isn't in the best five. The wording is the same either way.
+ * można się pobawić spanami") the name is still true but the card is from plainly another stage of
+ * his career (`careerStage`) — late-career Hakeem, priced like the name. Boards without such a
+ * card get a real headliner. The wording is the same either way and tells the player to check the
+ * years.
  */
 export interface BoardHeadline {
   slot: Position;
   span: PlayerSpan;
   trap: boolean;
+  /** On a trap: which end of his career the dealt card is from, and his best stretch. */
+  stage?: 'late' | 'early';
+  prime?: PlayerSpan;
+}
+
+/**
+ * 2026-09-28, user-reported ("nie rozumiem tego z Frazierem"): Frazier 1973-75 counted as a
+ * "lesser stretch" (8 TAL under his 1970-72) but is still a 28-30-year-old Frazier scoring 21 a
+ * night — nothing on the card says "old". A trap card must now come from plainly another stage of
+ * his career: at least TRAP_LATE_GAP seasons after his best window, or ending at least
+ * TRAP_EARLY_GAP seasons before it, and a TRAP_MIN_DROP talent fall.
+ */
+const TRAP_MIN_DROP = 12;
+const TRAP_LATE_GAP = 4;
+const TRAP_EARLY_GAP = 2;
+function careerStage(span: PlayerSpan): { stage: 'late' | 'early'; prime: PlayerSpan } | undefined {
+  const spans = spansByPlayer().get(span.playerName) ?? [span];
+  const prime = spans.reduce((a, b) => (effectiveTalent(b) > effectiveTalent(a) ? b : a));
+  if (effectiveTalent(prime) - effectiveTalent(span) < TRAP_MIN_DROP) return undefined;
+  const years = spanEndYears(span.spanLabel);
+  const primeYears = spanEndYears(prime.spanLabel);
+  if (!years.length || !primeYears.length) return undefined;
+  if (Math.min(...years) - Math.max(...primeYears) >= TRAP_LATE_GAP) return { stage: 'late', prime };
+  if (Math.min(...primeYears) - Math.max(...years) >= TRAP_EARLY_GAP) return { stage: 'early', prime };
+  return undefined;
 }
 const HEADLINE_TRAP_SHARE = 0.35;
 const headlineCache = new Map<string, BoardHeadline | undefined>();
@@ -1046,21 +1073,25 @@ export function boardHeadline(pool: DailyPool, cap: number): BoardHeadline | und
     const star = pool.bySlot[slot].find((c) => pool.roles[c.id] === 'star');
     return star && optimal[slot]?.id === star.id ? [{ slot, span: star }] : [];
   }).sort((a, b) => byFame(a.span, b.span));
-  const bestTal = (s: PlayerSpan) => Math.max(...(spansByPlayer().get(s.playerName) ?? [s]).map(effectiveTalent));
   const lesserSpans = STARTER_SLOTS.flatMap((slot) =>
-    pool.bySlot[slot]
-      .filter((c) => optimal[slot]?.id !== c.id && allStarCount(c.playerName) >= NAME_TRAP_MIN_AS && bestTal(c) - effectiveTalent(c) >= NAME_TRAP_MIN_DROP && fitsDeal(slot, c))
-      .map((span) => ({ slot, span })),
+    pool.bySlot[slot].flatMap((c) => {
+      const stage = optimal[slot]?.id !== c.id && allStarCount(c.playerName) >= NAME_TRAP_MIN_AS && fitsDeal(slot, c) ? careerStage(c) : undefined;
+      return stage ? [{ slot, span: c, ...stage }] : [];
+    }),
   ).sort((a, b) => byFame(a.span, b.span));
-  const priceyStars = STARTER_SLOTS.flatMap((slot) => {
-    const star = pool.bySlot[slot].find((c) => pool.roles[c.id] === 'star');
-    return star && optimal[slot]?.id !== star.id ? [{ slot, span: star }] : [];
-  }).sort((a, b) => b.span.fga - a.span.fga || byFame(a.span, b.span));
 
+  // A trap only when the board has a plainly-other-stage card; otherwise the headliner is real.
   const wantTrap = rng() < HEADLINE_TRAP_SHARE;
-  const trap = lesserSpans[0] ?? priceyStars[0];
-  const chosen = wantTrap ? trap ?? truths[0] : truths[0] ?? trap;
-  const result = chosen ? { slot: chosen.slot, span: chosen.span, trap: optimal[chosen.slot]?.id !== chosen.span.id } : undefined;
+  const trap = lesserSpans[0];
+  let result: BoardHeadline | undefined;
+  if (wantTrap && trap) result = { slot: trap.slot, span: trap.span, trap: true, stage: trap.stage, prime: trap.prime };
+  else if (truths[0]) result = { slot: truths[0].slot, span: truths[0].span, trap: false };
+  else if (trap) result = { slot: trap.slot, span: trap.span, trap: true, stage: trap.stage, prime: trap.prime };
+  else {
+    // No star in the best five and no trap card: the best five's most famous player headlines.
+    const famous = STARTER_SLOTS.map((slot) => ({ slot, span: optimal[slot] })).filter((x) => x.span).sort((a, b) => byFame(a.span, b.span))[0];
+    if (famous) result = { slot: famous.slot, span: famous.span, trap: false };
+  }
   headlineCache.set(cacheKey, result);
   return result;
 }
