@@ -12,10 +12,25 @@ const STORAGE_KEY = 'draftverse.dailySlot.v1';
 /** Kept local (not engine/positions) so the menu can read the streak without loading the engine. */
 const STARTER_SLOTS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 
+/** 2026-09-28, Daily Slot Machine 2.0: the game against the opponent of the day and the Joker,
+ * kept so the menu can show the score and, the next day, whether the Joker was worth it. */
+export interface DailyGameRecord {
+  you: number;
+  them: number;
+  opponent: string;
+}
+export interface DailyJokerRecord {
+  name: string;
+  span: string;
+  worth: boolean;
+}
+
 interface DailyEntry {
   lineupIds: Partial<Record<Position, string>>;
   grade: GolfGrade;
   composite: number;
+  game?: DailyGameRecord;
+  joker?: DailyJokerRecord;
 }
 
 export interface Streak {
@@ -74,9 +89,15 @@ export function currentStreak(today: string): Streak {
 }
 
 /** Today's result, if already played. */
-export function dailyEntry(today: string): { grade: GolfGrade; composite: number } | null {
+export function dailyEntry(today: string): { grade: GolfGrade; composite: number; game?: DailyGameRecord } | null {
   const entry = read().daily[today];
-  return entry ? { grade: entry.grade, composite: entry.composite } : null;
+  return entry ? { grade: entry.grade, composite: entry.composite, game: entry.game } : null;
+}
+
+/** Yesterday's Joker, if yesterday's board was played — shown on the menu the day after, so today's
+ * result never gives away whether today's Joker is worth it. */
+export function yesterdayJoker(today: string): DailyJokerRecord | null {
+  return read().daily[previousDay(today)]?.joker ?? null;
 }
 
 /** Today's already-submitted lineup, rebuilt from the day's pool, or null if not played yet. */
@@ -93,7 +114,13 @@ export function savedDailyLineup(today: string, pool: DailyPool): Lineup | null 
 }
 
 /** Records today's submission (once) and advances the streak. Returns the updated streak. */
-export function recordDailyResult(today: string, lineup: Lineup, grade: GolfGrade, composite: number): Streak {
+export function recordDailyResult(
+  today: string,
+  lineup: Lineup,
+  grade: GolfGrade,
+  composite: number,
+  extra: { game?: DailyGameRecord; joker?: DailyJokerRecord } = {},
+): Streak {
   const progress = read();
   if (progress.daily[today]) return currentStreak(today);
   const lineupIds: Partial<Record<Position, string>> = {};
@@ -105,9 +132,28 @@ export function recordDailyResult(today: string, lineup: Lineup, grade: GolfGrad
   const recentDays = Object.keys(progress.daily).sort().slice(-30);
   const daily: Record<string, DailyEntry> = {};
   for (const day of recentDays) daily[day] = progress.daily[day];
-  daily[today] = { lineupIds, grade, composite };
+  daily[today] = { lineupIds, grade, composite, ...extra };
   write({ daily, streak });
   return streak;
+}
+
+/**
+ * 2026-09-28, the user (Daily Slot Machine 2.0): streak rewards — cosmetic only, earned by the best
+ * streak so they stay once earned.
+ */
+export const STREAK_TIERS: { days: number; reward: string }[] = [
+  { days: 3, reward: 'Flame on the daily strip' },
+  { days: 7, reward: 'Gold lever' },
+  { days: 14, reward: 'Gold reel frames' },
+  { days: 30, reward: 'Retro card backs' },
+  { days: 100, reward: 'Hall of Fame plaque' },
+];
+
+/** The streak-reward classes earned so far (`bf-streak-7` …), for the slot machine's cosmetics. */
+export function streakRewardClasses(best: number): string {
+  return STREAK_TIERS.filter((t) => best >= t.days)
+    .map((t) => `bf-streak-${t.days}`)
+    .join(' ');
 }
 
 /** Time until the next local midnight, e.g. "5h 12m". */

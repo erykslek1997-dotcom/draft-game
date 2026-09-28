@@ -102,7 +102,7 @@ const GREATS_PER_BOARD = 2;
  * - `surprise`: either an under-the-radar player rated higher than his name suggests, or a famous
  *   name in one of his lesser stretches, priced like the name.
  */
-export type DealRole = 'star' | 'value' | 'specialist' | 'surprise';
+export type DealRole = 'star' | 'value' | 'specialist' | 'surprise' | 'joker';
 
 export interface DailyPool {
   key: string;
@@ -394,7 +394,7 @@ export interface LineupScore {
 /** A synthetic `Team` with a MANUAL 48-min-per-slot rotation. `autoAssignRotation` is
  * deliberately avoided: on a bare 5-man roster it leaves sub-Starter-tier slots empty and
  * overworks the rest, which zeroes `fitScore` and spams false overwork notes. */
-function lineupTeam(lineup: Lineup): Team {
+export function lineupTeam(lineup: Lineup): Team {
   const slots = {} as Rotation['slots'];
   for (const slot of STARTER_SLOTS) {
     const s = lineup[slot];
@@ -860,8 +860,9 @@ export function slotReels(pool: DailyPool, slot: Position, count = DEAL_SIZE, ba
 // ---------------------------------------------------------------------------
 
 const optimalCache = new Map<string, Record<Position, PlayerSpan>>();
+const optimalKey = (pool: DailyPool, cap: number) => `${pool.key}|${cap}|${STARTER_SLOTS.map((s) => pool.bySlot[s].length).join()}`;
 function boardOptimal(pool: DailyPool, cap: number): Record<Position, PlayerSpan> {
-  const key = `${pool.key}|${cap}|${STARTER_SLOTS.map((s) => pool.bySlot[s].length).join()}`;
+  const key = optimalKey(pool, cap);
   let five = optimalCache.get(key);
   if (!five) {
     five = solveDailyOptimal(pool, cap).five;
@@ -901,7 +902,9 @@ export function dealHint(pool: DailyPool, slot: Position, lineup: Lineup, cap: n
 }
 
 export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: number): PlayerSpan[] {
-  const cards = pool.bySlot[slot];
+  // The daily Joker is never one of the four: it comes on top of the deal, last (see `dailyGame`).
+  const joker = pool.bySlot[slot].find((s) => pool.roles[s.id] === 'joker');
+  const cards = pool.bySlot[slot].filter((s) => s !== joker);
   const picks = STARTER_SLOTS.map((s) => lineup[s]).filter((p): p is PlayerSpan => Boolean(p));
   const rng = mulberry32(seedFromKey(`${pool.key}:deal:${slot}:${picks.map((p) => p.id).join(',')}`));
   const openAfter = STARTER_SLOTS.filter((s) => s !== slot && !lineup[s]);
@@ -918,7 +921,8 @@ export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: nu
   // same five for everyone who plays the seed, and a challenge compares like with like. It can be
   // over the caps left (that's the cost of an earlier pick); it only gives way when the deal would
   // otherwise have fewer than two cards to afford.
-  add(boardOptimal(pool, cap)[slot]);
+  const winning = boardOptimal(pool, cap)[slot];
+  if (winning !== joker) add(winning);
   const [need] = needsOf(picks);
   if (need) add(cards.filter((s) => !hand.includes(s) && fits(s)).sort((a, b) => need.score(b) - need.score(a))[0]);
   for (const s of weightedShuffle(cards.filter((c) => !hand.includes(c)), rng, () => 1)) add(s);
@@ -931,7 +935,8 @@ export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: nu
     if (out < 0) break;
     hand[out] = spare;
   }
-  return hand.sort((a, b) => a.playerName.localeCompare(b.playerName));
+  hand.sort((a, b) => a.playerName.localeCompare(b.playerName));
+  return joker ? [...hand, joker] : hand;
 }
 
 /**
@@ -943,4 +948,96 @@ export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: nu
 export function boardTargets(pool: DailyPool, cap: number): DailyTargets {
   const winning = boardOptimal(pool, cap);
   return { par: scoreLineup(fanVoteFive(pool, cap)).composite, optimal: scoreLineup(winning).composite, optimalFive: winning };
+}
+
+// ---------------------------------------------------------------------------
+// the daily Joker — 2026-09-28, the user (Daily Slot Machine 2.0, variant A): one legend a day,
+// announced from the start, dealt as a fifth card at his position at full price (his real shots
+// per game). Whether he is worth the caps is a coin flip of the day's seed: the Joker is picked so
+// the best five on the board takes him on about half of days, and never on a rule a player could
+// learn ("always take him" / "never take him").
+// ---------------------------------------------------------------------------
+
+export interface DailyJoker {
+  span: PlayerSpan;
+  slot: Position;
+  /** The best five on the board takes him. */
+  worth: boolean;
+  /** The best five with him minus the best five without him, in points (negative: not worth it). */
+  edge: number;
+}
+
+export interface DailyGame extends DailyBoard {
+  order: Position[];
+  joker: DailyJoker | null;
+}
+
+/** A legend: this many All-Star picks or more. */
+const JOKER_MIN_AS = 6;
+/** Legends tried per day before settling for whichever came closest to the day's coin. */
+const JOKER_TRIES = 10;
+/** A legend's stretches within this much TAL of his best can be his Joker card. */
+const JOKER_SPAN_TAL = 6;
+/** A clear call either way: the best five with him this many points above (or below) without. */
+const JOKER_CLEAR_EDGE = 2;
+
+/** The best five that has `joker` at `slot`, under the cap — null when he can never fit. */
+function bestWithJoker(pool: DailyPool, cap: number, slot: Position, joker: PlayerSpan, passes: number, sc: FiveScorer): { five: Record<Position, PlayerSpan>; composite: number } | null {
+  const restricted: DailyPool = { ...pool, bySlot: { ...pool.bySlot, [slot]: [joker] } };
+  const start = repairToCap({ ...boardOptimal(pool, cap), [slot]: joker }, restricted, cap);
+  if (lineupShots(start) > cap) return null;
+  return climb(start, restricted, cap, sc, passes);
+}
+
+const gameCache = new Map<string, DailyGame>();
+/** The day's board plus its position order and Joker (`dailyMeta` sets the order and his slot). */
+export function dailyGame(seed: string, meta: { order: Position[]; jokerSlot: Position }): DailyGame {
+  const hit = gameCache.get(seed);
+  if (hit) return hit;
+  const board = dailyBoard(seed);
+  const { pool, cap } = board;
+  const slot = meta.jokerSlot;
+  const rng = mulberry32(seedFromKey(`${seed}:joker`));
+  const wantWorth = rng() < 0.5;
+  const sc = cachedScorer();
+  const base = sc(boardOptimal(pool, cap)).composite;
+  const onBoard = new Set(STARTER_SLOTS.flatMap((s) => pool.bySlot[s].map((p) => p.playerName)));
+  const otherCheapest = STARTER_SLOTS.filter((s) => s !== slot).reduce((sum, s) => sum + Math.min(...pool.bySlot[s].map((p) => p.fga)), 0);
+  // Any of a legend's stretches close to his best, so a cheaper one can make a Joker worth it.
+  const legends = [...bestSpanByPlayer().values()]
+    .filter((best) => allStarCount(best.playerName) >= JOKER_MIN_AS && !onBoard.has(best.playerName))
+    .flatMap((best) => (spansByPlayer().get(best.playerName) ?? []).filter((s) => effectiveTalent(best) - effectiveTalent(s) <= JOKER_SPAN_TAL))
+    .filter((s) => s.primaryPosition === slot && s.fga + otherCheapest <= cap - 1);
+  // A day that wants him worth it looks first among the legends who give the most per shot.
+  const perShot = (s: PlayerSpan) => effectiveTalent(s) / Math.max(4, s.fga);
+  const tries = wantWorth
+    ? weightedShuffle([...legends].sort((a, b) => perShot(b) - perShot(a)).slice(0, JOKER_TRIES * 2), rng, () => 1)
+    : weightedShuffle(legends, rng, (s) => Math.sqrt(allStarCount(s.playerName)));
+  const seen = new Set<string>();
+  let chosen: { span: PlayerSpan; miss: number } | null = null;
+  for (const span of tries.filter((s) => !seen.has(s.playerName) && seen.add(s.playerName)).slice(0, JOKER_TRIES)) {
+    const quick = bestWithJoker(pool, cap, slot, span, wantWorth ? 3 : 1, sc);
+    if (!quick) continue;
+    const edge = quick.composite - base;
+    // How far this legend is from the call the day wants.
+    const miss = wantWorth ? Math.max(0, JOKER_CLEAR_EDGE - edge) : Math.max(0, edge + JOKER_CLEAR_EDGE);
+    if (!chosen || miss < chosen.miss) chosen = { span, miss };
+    if (miss === 0) break;
+  }
+  if (!chosen) {
+    const game = { ...board, order: meta.order, joker: null };
+    gameCache.set(seed, game);
+    return game;
+  }
+  const joker = chosen.span;
+  const withHim = bestWithJoker(pool, cap, slot, joker, 4, sc)!;
+  const edge = Math.round(withHim.composite - base);
+  const worth = withHim.composite > base;
+  const bySlot = { ...pool.bySlot, [slot]: [...pool.bySlot[slot], joker] };
+  const augmented: DailyPool = { key: pool.key, bySlot, roles: { ...pool.roles, [joker.id]: 'joker' } };
+  // The board with the Joker on it: its best five is whichever is better, with him or without.
+  optimalCache.set(optimalKey(augmented, cap), worth ? withHim.five : boardOptimal(pool, cap));
+  const game: DailyGame = { pool: augmented, cap, order: meta.order, joker: { span: joker, slot, worth, edge } };
+  gameCache.set(seed, game);
+  return game;
 }
