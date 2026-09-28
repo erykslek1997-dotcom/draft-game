@@ -27,7 +27,8 @@
 }
 .desk-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: desk-pulse 1.4s ease-in-out infinite; }
 .desk-kicker-text { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; color: var(--at-pill-ink); text-transform: uppercase; }
-.at-shell .desk-title { margin: 0; font-family: 'Bitter', Georgia, serif; font-size: 28px; font-weight: 800; line-height: 1.2; color: var(--at-ink); }
+/* 2026-09-28 playtest: the shell's own mono face (was Bitter, the only serif copy in the game). */
+.at-shell .desk-title { margin: 0; font-family: inherit; font-size: 24px; font-weight: 800; line-height: 1.25; color: var(--at-ink); }
 
 .desk-thread { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .desk-line { display: flex; gap: 12px; align-items: flex-start; animation: desk-in 260ms ease-out; }
@@ -42,7 +43,7 @@
   margin: 0; padding: 10px 14px;
   border-radius: 4px 12px 12px 12px;
   background: var(--at-pill); border: 1px solid var(--at-line);
-  font-family: 'Bitter', Georgia, serif; font-size: 16px; font-weight: 600; line-height: 1.45; color: var(--at-ink);
+  font-family: inherit; font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--at-ink);
 }
 .desk-typing { display: inline-flex; gap: 5px; align-items: center; width: fit-content; }
 .desk-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--at-ink-soft); animation: desk-dot 1s ease-in-out infinite; }
@@ -87,8 +88,8 @@
   .mode-help-backdrop.desk-backdrop { padding: 0; align-items: stretch; }
   .desk-modal { grid-template-columns: minmax(0, 1fr); max-height: 100vh; height: 100%; border-radius: 0; border: 0; }
   .desk-talk { padding: 20px 16px 8px; border-right: 0; }
-  .at-shell .desk-title { font-size: 23px; }
-  .desk-bubble { font-size: 15px; }
+  .at-shell .desk-title { font-size: 20px; }
+  .desk-bubble { font-size: 13.5px; }
   .desk-avatar { width: 34px; height: 34px; }
   .desk-side { padding: 12px 16px 24px; border-radius: 0; background: transparent; }
   .desk-consensus { margin-top: 0; }

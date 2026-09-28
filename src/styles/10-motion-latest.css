@@ -131,8 +131,6 @@
 @media (prefers-reduced-motion: reduce) {
   .spin-lever-knob, .spin-lever-arm { animation: none !important; }
 }
-.at-reel-row { display: flex; align-items: center; justify-content: center; gap: 18px; }
-.at-reel-row .spin-lever { margin-top: -6px; }
 
 /* 2026-09-27: a player the AI took stays in the list, dimmed and stamped, until the human's turn
    (DraftBoard.tsx `ghosts`); then the taken cards fold away in one slow sweep (GHOST_SWEEP_MS). */
@@ -299,3 +297,28 @@
 }
 /* Team tab mid-draft: what to do with picks not placed yet (RotationBuilder). */
 .rotation-bench-hint { display: block; margin: 2px 0 8px; font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); }
+
+/* 2026-09-28 playtest: New draft / Rematch / Main menu at the end of a result wrapped 2 + 1 on a
+   phone, "Main menu" alone on its own line. One centred row when it fits, an even column when not. */
+.at-shell .end-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 10px; }
+.at-shell .end-actions > button { margin: 0; }
+@media (max-width: 560px) {
+  .at-shell .end-actions { flex-direction: column; align-items: stretch; max-width: 300px; margin-left: auto; margin-right: auto; }
+}
+
+/* 2026-09-28 playtest: on a phone the Team tab's roster table runs well past the screen (eleven
+   columns of grades) and read as cut off. The round column goes (the rows are in pick order
+   anyway) and the player's name stays pinned while the grades scroll under it. */
+@media (max-width: 640px) {
+  .at-roster-table .at-roster-rnd { display: none; }
+  .at-roster-table .at-roster-sticky { position: sticky; left: 0; z-index: 1; background: var(--at-paper-raised); }
+}
+
+/* 2026-09-28 playtest: "Skip to my pick" in the Mini Draft's CPU-turn banner. */
+.at-skip-to-me {
+  font: inherit; font-size: 11.5px; font-weight: 800; cursor: pointer; margin-left: 10px;
+  border: 1px solid var(--at-accent); border-radius: 999px; padding: 4px 12px;
+  background: color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)); color: var(--at-accent);
+}
+.at-skip-to-me:hover { background: var(--at-accent); color: var(--at-accent-ink); }
+.at-skip-to-me:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }

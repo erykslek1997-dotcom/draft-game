@@ -951,7 +951,7 @@ function offenseTip(team: Team): string {
   return `The offense trailed the field, and ${drag.row.player.playerName} gave it the least: O-TAL ${drag.otal} in ${Math.round(drag.row.total)} minutes at ${drag.slot}, where a typical rotation player reads ${MEDIAN_OTAL_BY_SLOT[drag.slot]}. ${OFFENSE_PART_TIP[weakestPart]}`;
 }
 
-function nextDraftTip(label: string, team: Team): string | undefined {
+export function nextDraftTip(label: string, team: Team): string | undefined {
   if (label === 'Offense') return offenseTip(team);
   if (label !== 'Fit') return NEXT_DRAFT_TIP[label];
   const components = fitScore(team).components;
@@ -1804,7 +1804,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           </div>
         );
       })}
-      <div className="results-actions">
+      <div className="results-actions end-actions">
         {onRematch && (
           <button className="primary-btn" onClick={() => onRematch()}>New draft</button>
         )}

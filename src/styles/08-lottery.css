@@ -27,36 +27,19 @@
   margin-top: 4px; font-size: 11.5px; padding: 6px 14px; opacity: 0.75;
 }
 
-/* 2026-09-24: slot-machine reveal of the human's own draft slot (DraftLottery.tsx), replacing the
-   16-card reveal of every team. The title's blue/red bar used to run into the How-to-play button
-   right under it; that button now sits below the result instead, and the subtitle gets room. */
+/* 2026-09-28: the lottery drum (lotteryDrum.ts) replaced the slot-machine reel and its lever. The
+   line under the title narrates the draw; a red dot blinks while the player's ball comes out. */
 .at-lottery .at-board-brand + .at-lottery-sub { margin-top: 18px; }
-.at-reel {
-  display: inline-flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 18px 34px 16px; margin: 0 auto 18px; border-radius: 18px;
-  border: 1px solid var(--at-line); background: var(--at-paper);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), var(--at-shadow);
-}
-.at-reel-label, .at-reel-of { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); }
-.at-reel-window {
-  display: block; width: 190px; height: 104px; overflow: hidden; border-radius: 12px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(255,255,255,0.03) 50%, rgba(0,0,0,0.55));
-  border: 1px solid var(--at-line);
-}
-.at-reel-number {
-  display: block; font-size: 72px; line-height: 104px; font-weight: 800; color: var(--at-ink);
-  font-variant-numeric: tabular-nums; animation: at-reel-roll .09s linear;
-}
-@keyframes at-reel-roll {
-  from { transform: translateY(-45%); opacity: 0.35; }
-  to { transform: translateY(0); opacity: 1; }
-}
-.at-reel--done { border-color: var(--at-accent-2); box-shadow: 0 0 0 1px var(--at-accent-2), 0 0 32px color-mix(in srgb, var(--at-accent-2) 45%, transparent); }
-.at-reel--done .at-reel-number { color: var(--at-accent-2); animation: at-reel-land .45s cubic-bezier(.2, 1.6, .4, 1); }
-@keyframes at-reel-land {
-  from { transform: scale(0.7); }
-  to { transform: scale(1); }
-}
+.at-lottery-sub { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 1.5em; }
+.at-lottery-sub-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--at-accent-2); display: none; }
+.at-lottery-sub.is-hot { color: var(--at-ink); }
+.at-lottery-sub.is-hot .at-lottery-sub-dot { display: block; animation: at-lottery-blink 1s ease-in-out infinite; }
+@keyframes at-lottery-blink { 50% { opacity: 0.25; } }
+.at-drum { display: block; width: 100%; max-width: 400px; height: auto; margin: 0 auto 8px; }
+.at-lottery-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.at-lottery-actions > .primary-btn { margin: 0; }
+.at-lottery-secondary { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.at-lottery-secondary > button { margin: 0; }
 .at-lottery-result { animation: at-lottery-pop .3s ease-out; margin-bottom: 18px; }
 .at-lottery-team-line { font-size: 15px; color: var(--at-ink); margin: 0 0 10px; }
 .at-lottery-picks-label { font-size: 12px; color: var(--at-ink-soft); margin: 0 0 8px; }
@@ -79,9 +62,8 @@
   background: var(--at-pill); color: var(--at-ink); font-variant-numeric: tabular-nums;
 }
 .at-lottery-pick-round { color: var(--at-ink-faint); font-weight: 600; margin-right: 2px; }
-.at-lottery-actions { margin-top: 4px; }
 @media (prefers-reduced-motion: reduce) {
-  .at-reel-number, .at-reel--done .at-reel-number, .at-lottery-result { animation: none; }
+  .at-lottery-result, .at-lottery-sub.is-hot .at-lottery-sub-dot { animation: none; }
 }
 
 /* 2026-09-24: RotationBuilder's "this is only a suggestion" note and its visible reason for a
@@ -96,15 +78,17 @@
 /* 2026-09-24: phone layout for the results screen — ranking rows wrap their score chips onto a
    second line instead of squeezing the team name into a 4-line column and clipping the chips off
    the right edge, and the one-row matchup table becomes a wrapping grid (MatchupMatrix.tsx). */
-.matchup-matrix-compact { display: none; }
-@media (max-width: 640px) {
-  .matchup-matrix-scroll.has-compact { display: none; }
-  .matchup-matrix-compact {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 8px 0;
-  }
-  .matchup-matrix-compact-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-  .matchup-matrix-compact-cell.is-open { outline-color: rgba(255, 255, 255, 0.8); }
-  .matchup-matrix-compact-code { font-size: 10px; font-weight: 600; opacity: 0.85; letter-spacing: 0.03em; }
+/* 2026-09-28 playtest: the one-row, 15-column table scrolled sideways even on a 1280px screen, so
+   the wrapping grid is now used at every width whenever it's just your own row. */
+.matchup-matrix-scroll.has-compact { display: none; }
+.matchup-matrix-compact {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 8px 0;
+}
+.matchup-matrix-compact-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.matchup-matrix-compact-cell.is-open { outline-color: rgba(255, 255, 255, 0.8); }
+.matchup-matrix-compact-code { font-size: 10px; font-weight: 600; opacity: 0.85; letter-spacing: 0.03em; }
+@media (min-width: 900px) {
+  .matchup-matrix-compact { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 }
 
 /* 2026-09-24: "← Menu" on the lottery and draft screens, plus the leave-draft confirm. */

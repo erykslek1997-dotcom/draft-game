@@ -1907,9 +1907,9 @@ export default function DraftBoard({
                       is independently scannable/sortable-by-eye instead of a merged label. Round
                       before Position (follow-up ask) — draft order is the more natural first read
                       of this table (it's a Round-by-round pick list), position is secondary. */}
-                  <th>Rnd</th>
+                  <th className="at-roster-rnd">Rnd</th>
                   <th>Pos</th>
-                  <th>Player</th>
+                  <th className="at-roster-sticky">Player</th>
                   <th>Years</th>
                   {/* 2026-08-19, user's explicit ask ("show offense, defense, portability etc
                       with S-F value"): the same judge letter-grades the Draft tab already shows
@@ -1958,11 +1958,11 @@ export default function DraftBoard({
                     : p;
                   return (
                     <tr key={normalizePlayerName(p.playerName)}>
-                      <td>R{i + 1}</td>
+                      <td className="at-roster-rnd">R{i + 1}</td>
                       <td>
                         <span className="pos-pill">{p.primaryPosition}</span>
                       </td>
-                      <td>
+                      <td className="at-roster-sticky">
                         {/* 2026-09-14, user-reported live ("niech wszystko będzie w skali S-F i
                             wtedy zrobimy miejsce na facecardy"): SPC/DUR moving off wide named-text
                             badges onto the same compact `AtGrade` pill every other column already

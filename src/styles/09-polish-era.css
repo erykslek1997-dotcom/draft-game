@@ -65,6 +65,9 @@
 @media (min-width: 700px) {
   .team-result-body .subscores { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 }
+/* 2026-09-28 playtest: Mini Draft and Roulette have five scores — 4 + 1 left "Fit" alone on a
+   phone. Five across at every width. */
+.results-hero-scores-row.results-hero-scores-row--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .results-hero-scores-row .score-chip,
 .team-result-body .subscores .score-chip,
 .share-modal-scores .score-chip {
@@ -141,7 +144,6 @@
 /* 2026-09-25, user-reported live ("nierówne odległości"): the lottery's blocks were spaced by a
    mix of margins (18 / 32 / 24px between them). One 22px rhythm: reel → result → archive note →
    Play → How to play. */
-.at-lottery .at-reel { margin-bottom: 0; }
 .at-lottery .at-lottery-result { margin: 22px 0 0; }
 .at-lottery .at-lottery-archive { margin: 22px auto 0; }
 .at-lottery .at-lottery-actions { margin-top: 22px; }
@@ -851,12 +853,11 @@
 /* 2026-09-25, user ("powinno być powolne wejście"): the lottery fades in, the reel rises a beat
    later and starts spinning after LOTTERY_INTRO_MS (DraftLottery.tsx). */
 .at-lottery { animation: at-lottery-enter 700ms ease-out both; }
-.at-lottery .at-reel { animation: at-lottery-rise 800ms 350ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-.at-lottery:not(.is-started) .at-reel-number { opacity: 0.35; }
+.at-lottery .at-drum { animation: at-lottery-rise 800ms 350ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 @keyframes at-lottery-enter { from { opacity: 0; } to { opacity: 1; } }
 @keyframes at-lottery-rise { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .at-lottery, .at-lottery .at-reel { animation: none; }
+  .at-lottery, .at-lottery .at-drum { animation: none; }
 }
 /* 2026-09-25: names the rotation's weakest defenders under the hero's Defense details. */
 .results-hero-weak { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: var(--at-ink-soft); }

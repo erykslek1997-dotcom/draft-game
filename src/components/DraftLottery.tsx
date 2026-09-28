@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { SpinLever } from './SpinLever';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createLotteryDrum, drumHeight, type LotteryDrum } from './lotteryDrum';
 import type { CSSProperties, ReactNode } from 'react';
 import type { Team } from '../engine/types';
 
@@ -22,16 +22,10 @@ interface Props {
   onRevealed?: () => void;
 }
 
-/** Tick delays for the reel, fast to slow — a slot machine winding down onto the result. */
-function reelDelays(): number[] {
-  const delays: number[] = [];
-  for (let d = 45; d < 420; d *= 1.13) delays.push(Math.round(d));
-  return delays;
-}
-
-function prefersReducedMotion(): boolean {
+const MUTE_KEY = 'draftverse.lotteryMuted';
+function readMuted(): boolean {
   try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return window.localStorage.getItem(MUTE_KEY) === '1';
   } catch {
     return false;
   }
@@ -75,20 +69,44 @@ function snakePickNumbers(slot: number, teamCount: number, rounds: number): numb
  * CPU teams nobody cares about at this point (the draft board's ticker shows them anyway). Now a
  * single slot-machine reel spins through the numbers and winds down onto YOUR pick, then spells
  * out what that slot means in a snake draft — every overall pick you'll make.
+ *
+ * 2026-09-28, user ("zastąpić mechanizm dźwigni ... na klasyczne kulki"): the reel and its lever
+ * gave way to a lottery drum — one white ball per CPU team and a red one for the player drop into
+ * the draft order one by one, and the pick the red ball lands in is the slot (lotteryDrum.ts).
  */
 export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit, onRevealed }: Props) {
   const human = teams.find((t) => t.isHuman) ?? teams[0];
   const teamCount = teams.length;
   const slot = human.draftSlot;
-  const delays = useMemo(reelDelays, []);
-  const [tick, setTick] = useState(() => (prefersReducedMotion() ? delays.length : 0));
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [archiveFact] = useState(() => DRAFT_ARCHIVE_FACTS[Math.floor(Math.random() * DRAFT_ARCHIVE_FACTS.length)]);
-  const done = tick >= delays.length;
-  // 2026-09-25, user ("ekran losowania odpala się bardzo szybko, powinno być powolne wejście"): the
-  // screen fades in and the reel sits still before it spins. 2026-09-26 ("element wizualny który
-  // daje nam możliwość wystartowania"): it now waits for the player to pull the lever.
-  const [started, setStarted] = useState(() => prefersReducedMotion());
+  const [started, setStarted] = useState(false);
+  const [done, setDone] = useState(false);
+  const [status, setStatus] = useState({ text: 'Your ball is the red one.', hot: false });
+  const [muted, setMuted] = useState(readMuted);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drumRef = useRef<LotteryDrum | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const drum = createLotteryDrum(canvas, {
+      slot,
+      teamCount,
+      onStatus: (text, hot) => setStatus({ text, hot }),
+      onLanded: () => { setStarted(true); setDone(true); },
+    });
+    drumRef.current = drum;
+    return () => { drum.destroy(); drumRef.current = null; };
+  }, [slot, teamCount]);
+  useEffect(() => {
+    drumRef.current?.setMuted(muted);
+    try {
+      window.localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+    } catch {
+      // storage blocked: the choice just lasts for this screen
+    }
+  }, [muted]);
   useEffect(() => {
     if (!done || !onRevealed) return;
     // Let the result paint first; preparing the data blocks the main thread for a moment.
@@ -96,14 +114,6 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
     return () => window.clearTimeout(id);
   }, [done, onRevealed]);
 
-  useEffect(() => {
-    if (done || !started) return;
-    const timer = setTimeout(() => setTick((t) => t + 1), delays[tick]);
-    return () => clearTimeout(timer);
-  }, [tick, done, delays, started]);
-
-  // Counts up through the numbers like a reel and lands exactly on the real slot on the last tick.
-  const shown = ((((slot - 1 - (delays.length - tick)) % teamCount) + teamCount) % teamCount) + 1;
   const picks = useMemo(() => snakePickNumbers(slot, teamCount, rounds), [slot, teamCount, rounds]);
 
   return (
@@ -114,22 +124,18 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
         </button>
       )}
       <div className="at-board-brand at-cond">Draft Lottery</div>
-      <p className="at-lottery-sub">
-        {done ? 'The balls have spoken.' : started ? 'Drawing your draft slot…' : 'Pull the lever to draw your draft slot.'}
+      <p className={`at-lottery-sub${status.hot ? ' is-hot' : ''}`} aria-live="polite">
+        <span className="at-lottery-sub-dot" aria-hidden />
+        {status.text}
       </p>
 
-      <div className="at-reel-row">
-        <div className={`at-reel ${done ? 'at-reel--done' : ''}`} aria-live="polite">
-          <span className="at-reel-label at-cond">Your pick</span>
-          <span className="at-reel-window">
-            <span key={tick} className="at-reel-number at-cond">
-              {started ? `#${shown}` : '?'}
-            </span>
-          </span>
-          <span className="at-reel-of">of {teamCount}</span>
-        </div>
-        {!done && <SpinLever onPull={() => setStarted(true)} label={started ? 'Drawing…' : 'Pull'} />}
-      </div>
+      <canvas
+        ref={canvasRef}
+        className="at-drum"
+        width={800}
+        height={drumHeight(teamCount) * 2}
+        aria-label={`Lottery drum: ${teamCount} team balls, yours in red, dropping into the draft order`}
+      />
 
       {done && (
         <div className="at-lottery-result">
@@ -164,18 +170,32 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
           <button className="primary-btn at-lottery-continue" onClick={onDone}>
             Play
           </button>
-        ) : (
+        ) : !started ? (
           <button
-            className="secondary-btn at-lottery-skip"
+            className="primary-btn at-lottery-draw"
             onClick={() => {
-              // Skip also counts as pulling the lever — without it the reel kept showing "?".
               setStarted(true);
-              setTick(delays.length);
+              drumRef.current?.start();
             }}
           >
-            Skip
+            Draw
           </button>
-        )}
+        ) : null}
+        <div className="at-lottery-secondary">
+          {!done && (
+            <button className="secondary-btn at-lottery-skip" onClick={() => drumRef.current?.finish()}>
+              Skip
+            </button>
+          )}
+          <button
+            type="button"
+            className="secondary-btn at-lottery-skip at-lottery-mute"
+            aria-pressed={muted}
+            onClick={() => setMuted((m) => !m)}
+          >
+            {muted ? 'Sound off' : 'Sound on'}
+          </button>
+        </div>
       </div>
 
       {howToPlay && howToPlay.length > 0 && (
