@@ -156,6 +156,28 @@ export function streakRewardClasses(best: number): string {
     .join(' ');
 }
 
+/**
+ * 2026-09-28, the user: "na czas testów odblokuj mi możliwość wielokrotnego daily". While this is
+ * true the daily result offers "Play today again", which forgets today's result and undoes the day it
+ * added to the streak. Set to false to restore one try a day.
+ */
+export const DAILY_REPLAY_FOR_TESTING = true;
+
+/** Forgets today's result and takes back the streak day it added (testing only). */
+export function clearDailyResult(today: string): Streak {
+  const progress = read();
+  if (!progress.daily[today]) return currentStreak(today);
+  const daily = { ...progress.daily };
+  delete daily[today];
+  let streak = progress.streak;
+  if (streak.lastDay === today) {
+    const current = streak.current - 1;
+    streak = { current, best: streak.best, lastDay: current > 0 ? previousDay(today) : null };
+  }
+  write({ daily, streak });
+  return currentStreak(today);
+}
+
 /** Time until the next local midnight, e.g. "5h 12m". */
 export function untilTomorrow(now: Date = new Date()): string {
   const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
