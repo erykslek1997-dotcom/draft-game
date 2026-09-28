@@ -66,7 +66,12 @@ function bestSpanByPlayer(): Map<string, PlayerSpan> {
  * position at a time (BestFive.tsx reveals each slot's five after the previous pick).
  * 2026-09-27, the user: "można zrobić 4 sloty, obok dźwignia" — four per position, one headliner
  * plus three, so a position's deal fits one row of reels beside the lever. */
-export const POOL_PER_SLOT = 4;
+export const POOL_PER_SLOT = 8;
+/** 2026-09-28, the user ("powinna zawsze być jakaś opcja, generować więcej kart i być reaktywne do
+ * tego co brakuje"; chose a fixed pool with a reactive deal): each position has POOL_PER_SLOT
+ * cards and the machine shows DEAL_SIZE of them, picked for the five being built (`dealFor`). The
+ * pool is the same for everyone on a seed, so challenges stay comparable. */
+export const DEAL_SIZE = 4;
 
 /**
  * Exactly ONE genuine headliner per slot — the tempting "lazy pick" — drawn from the top of the
@@ -220,6 +225,14 @@ export function dailyPool(key: string = dayKey()): DailyPool {
     const coin = rng() < 0.5;
     take((coin ? nameTrap() : sleeper()) ?? (coin ? sleeper() : nameTrap()), 'surprise');
 
+    // The larger pool (2026-09-28): a second value card and a second specialist, so a deal can
+    // always offer something affordable and something that covers what the five is missing.
+    take(
+      weightedShuffle(bucket.filter((s) => s.fga <= fgaCut && allowed(s)), rng, (s) => Math.pow(effectiveTalent(s) / Math.max(4, s.fga), 3)).at(0),
+      'value',
+    );
+    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, specialistScore).at(0), 'specialist');
+
     // Fill any role that found no one (thin positions) with the old obscure-starter draw, then,
     // as a last resort, straight from the ranked list — a slot must always deal POOL_PER_SLOT.
     for (const s of weightedShuffle(ranked.slice(0, BODY_BUCKET), rng, obscurity)) {
@@ -320,6 +333,20 @@ const UNKNOWN_OPENERS = [
 ];
 function identityWords(s: PlayerSpan, rng: () => number): string {
   return pickFrom(allStarCount(s.playerName) >= 1 ? ALL_STAR_OPENERS : UNKNOWN_OPENERS, rng);
+}
+
+/** The card a position's rumor talks about (the star, or on a bait position the card that sounds
+ * better than it plays). Always part of that position's deal, so the rumor stays true. */
+export function rumorSubject(pool: DailyPool, slot: Position): PlayerSpan | undefined {
+  const rng = mulberry32(seedFromKey(`${pool.key}:rumor`));
+  const baitSlots = new Set(weightedShuffle(STARTER_SLOTS.slice(1), rng, () => 1).slice(0, BAITS_PER_BOARD));
+  const cards = pool.bySlot[slot];
+  const byRole = (role: DealRole) => cards.find((s) => pool.roles[s.id] === role);
+  const surprise = byRole('surprise');
+  const bestTal = (s: PlayerSpan) => Math.max(...(spansByPlayer().get(s.playerName) ?? [s]).map(effectiveTalent));
+  const nameTrap = surprise && allStarCount(surprise.playerName) >= NAME_TRAP_MIN_AS && bestTal(surprise) - effectiveTalent(surprise) >= NAME_TRAP_MIN_DROP ? surprise : undefined;
+  const bait = baitSlots.has(slot) ? nameTrap ?? byRole('specialist') : undefined;
+  return bait ?? byRole('star');
 }
 
 export function rumorFor(pool: DailyPool, slot: Position): Rumor | undefined {
@@ -502,6 +529,27 @@ export interface SolvedLineup {
  * puzzle asks you to beat — see `parFor`. `cap`, when given, repairs the naive pick down to a
  * legal one (see `repairToCap`) — the "five biggest names" IS the naive move even under a shots
  * cap, it just might need trimming first. */
+/** 2026-09-28: the fan-vote five is the highest-TAL five among the cards every path is dealt
+ * (`namesPool`), trimmed to the cap. It used to read the whole pool; with a reactive deal that
+ * could be a card a player never saw. The board's winning card is left out, or the fan-vote five
+ * would often simply be the best five. */
+export function fanVoteFive(pool: DailyPool, cap?: number): Record<Position, PlayerSpan> {
+  return talMaxLineup(namesPool(pool), cap);
+}
+
+/** The cards every path is dealt, other than the board's winning card: the star, the rumor's
+ * subject and the cheapest card at each position — what "the biggest names" is picked from. */
+function namesPool(pool: DailyPool): DailyPool {
+  const bySlot = Object.fromEntries(
+    STARTER_SLOTS.map((slot) => {
+      const cards = pool.bySlot[slot];
+      const core = new Set([cards.find((c) => pool.roles[c.id] === 'star'), rumorSubject(pool, slot), [...cards].sort((a, b) => a.fga - b.fga)[0]]);
+      return [slot, cards.filter((c) => core.has(c))];
+    }),
+  ) as Record<Position, PlayerSpan[]>;
+  return { key: pool.key, bySlot, roles: pool.roles };
+}
+
 export function talMaxLineup(pool: DailyPool, cap?: number): Record<Position, PlayerSpan> {
   const naive = Object.fromEntries(
     STARTER_SLOTS.map((slot) => [
@@ -656,7 +704,7 @@ function capCandidates(pool: DailyPool): number[] {
 const QUICK_GAP_PASSES = 2;
 function quickGap(pool: DailyPool, cap: number): number {
   const sc = cachedScorer();
-  const lazy = talMaxLineup(pool, cap);
+  const lazy = fanVoteFive(pool, cap);
   return climb(lazy, pool, cap, sc, QUICK_GAP_PASSES).composite - sc(lazy).composite;
 }
 
@@ -780,7 +828,7 @@ export function explainResult(lineup: Lineup, pool: DailyPool, targets: DailyTar
   const optScore = scoreLineup(targets.optimalFive);
   // Same (possibly cap-repaired) lazy five `targets.par` was scored from — comparing against the
   // pure uncapped naive pick here would make "you took the lazy pick" disagree with par itself.
-  const lazy = talMaxLineup(pool, cap);
+  const lazy = fanVoteFive(pool, cap);
 
   const weakestKey = [...WEIGHTED_AXES].sort((a, b) => score[a.key] - score[b.key])[0];
   const engineEdge = WEIGHTED_AXES.map((a) => ({
@@ -851,7 +899,7 @@ export interface SlotReels {
 const REEL_BUCKET = 60;
 const NEAR_MISS_AS = 6;
 
-export function slotReels(pool: DailyPool, slot: Position, baseLength = 16, stepLength = 5): SlotReels {
+export function slotReels(pool: DailyPool, slot: Position, count = DEAL_SIZE, baseLength = 16, stepLength = 5): SlotReels {
   const rng = mulberry32(seedFromKey(`${pool.key}:reel:${slot}`));
   const dealtNames = new Set(pool.bySlot[slot].map((s) => s.playerName));
   const ranked = [...bestSpanByPlayer().values()]
@@ -861,7 +909,7 @@ export function slotReels(pool: DailyPool, slot: Position, baseLength = 16, step
   const stars = ranked.filter((s) => allStarCount(s.playerName) >= NEAR_MISS_AS);
   const pickFrom = (list: PlayerSpan[]) => list[Math.floor(rng() * list.length)];
   const nearMisses = new Set<string>();
-  const reels = pool.bySlot[slot].map((_, i) => {
+  const reels = Array.from({ length: count }, (_, i) => {
     const length = baseLength + i * stepLength;
     const strip: PlayerSpan[] = [];
     for (let k = 0; k < length; k++) {
@@ -878,4 +926,114 @@ export function slotReels(pool: DailyPool, slot: Position, baseLength = 16, step
     return strip;
   });
   return { reels, nearMisses: [...nearMisses] };
+}
+
+// ---------------------------------------------------------------------------
+// the reactive deal — 2026-09-28, the user: "powinna zawsze być jakaś opcja, generować więcej kart
+// i być reaktywne do tego co brakuje". Of a position's POOL_PER_SLOT cards the machine shows
+// DEAL_SIZE, chosen for the five so far. Always in: the star (the temptation), the rumor's
+// subject (so the rumor stays true), the cheapest card (so the cap can always be met) and the
+// board's winning card at this position (so the best five is the same for everyone). Then the
+// card that best covers what the five lacks, then the rest by the deal's own seed — swapping in
+// affordable cards until at least two fit the caps left. Same pool and same picks deal the same
+// cards, so a challenge played the same way is the same game.
+// ---------------------------------------------------------------------------
+
+const optimalCache = new Map<string, Record<Position, PlayerSpan>>();
+function boardOptimal(pool: DailyPool, cap: number): Record<Position, PlayerSpan> {
+  const key = `${pool.key}|${cap}|${STARTER_SLOTS.map((s) => pool.bySlot[s].length).join()}`;
+  let five = optimalCache.get(key);
+  if (!five) {
+    five = solveDailyOptimal(pool, cap).five;
+    optimalCache.set(key, five);
+  }
+  return five;
+}
+
+/** What the five so far is missing, strongest need first. */
+function needsOf(picks: PlayerSpan[]): ((s: PlayerSpan) => number)[] {
+  if (picks.length === 0) return [];
+  const shooters = picks.filter((p) => computeSpacing(p) >= 65).length;
+  const stoppers = picks.filter((p) => computeDefensiveTalent(p) >= 75).length;
+  const creators = picks.filter((p) => computeOffensiveTalent(p) >= 85 || p.box.apg >= 6).length;
+  const needs: [number, (s: PlayerSpan) => number][] = [
+    [2 - shooters, computeSpacing],
+    [2 - stoppers, computeDefensiveTalent],
+    [1 - creators, (s) => computeOffensiveTalent(s) + s.box.apg * 2],
+  ];
+  return needs.filter(([gap]) => gap > 0).sort((a, b) => b[0] - a[0]).map(([, f]) => f);
+}
+
+export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: number): PlayerSpan[] {
+  const cards = pool.bySlot[slot];
+  const picks = STARTER_SLOTS.map((s) => lineup[s]).filter((p): p is PlayerSpan => Boolean(p));
+  const rng = mulberry32(seedFromKey(`${pool.key}:deal:${slot}:${picks.map((p) => p.id).join(',')}`));
+  const openAfter = STARTER_SLOTS.filter((s) => s !== slot && !lineup[s]);
+  const room = cap - lineupShots(lineup) - openAfter.reduce((sum, s) => sum + Math.min(...pool.bySlot[s].map((p) => p.fga)), 0);
+  const fits = (s: PlayerSpan) => s.fga <= room + 1e-9;
+
+  const hand: PlayerSpan[] = [];
+  const add = (s: PlayerSpan | undefined) => {
+    if (s && hand.length < DEAL_SIZE && !hand.includes(s)) hand.push(s);
+  };
+  add(cards.find((s) => pool.roles[s.id] === 'star'));
+  add(rumorSubject(pool, slot));
+  add([...cards].sort((a, b) => a.fga - b.fga)[0]);
+  // The board's winning card at this position, dealt on every path — so "best on the board" is the
+  // same five for everyone who plays the seed, and a challenge compares like with like. It can be
+  // over the caps left (that's the cost of an earlier pick); it only gives way when the deal would
+  // otherwise have fewer than two cards to afford.
+  add(boardOptimal(pool, cap)[slot]);
+  const [need] = needsOf(picks);
+  if (need) add(cards.filter((s) => !hand.includes(s) && fits(s)).sort((a, b) => need(b) - need(a))[0]);
+  for (const s of weightedShuffle(cards.filter((c) => !hand.includes(c)), rng, () => 1)) add(s);
+  // At least two cards the caps left can pay for.
+  const star = cards.find((s) => pool.roles[s.id] === 'star');
+  const keep = new Set([star, rumorSubject(pool, slot), [...cards].sort((a, b) => a.fga - b.fga)[0]].filter(Boolean));
+  for (const spare of cards.filter((c) => !hand.includes(c) && fits(c))) {
+    if (hand.filter(fits).length >= 2) break;
+    const out = hand.findIndex((c) => !fits(c) && !keep.has(c));
+    if (out < 0) break;
+    hand[out] = spare;
+  }
+  return hand.sort((a, b) => a.playerName.localeCompare(b.playerName));
+}
+
+/**
+ * What a board is graded against, the same for everyone who plays the seed whatever their path:
+ * "best on the board" is the board's winning five (dealt on every path to a player who follows it),
+ * and the fan-vote five is the highest-TAL five among the cards every path is dealt
+ * (`fanVoteFive`) — never a card someone might not have seen.
+ */
+export function boardTargets(pool: DailyPool, cap: number): DailyTargets {
+  const winning = boardOptimal(pool, cap);
+  return { par: scoreLineup(fanVoteFive(pool, cap)).composite, optimal: scoreLineup(winning).composite, optimalFive: winning };
+}
+
+/**
+ * 2026-09-28, the user: "można np zasugerować po imieniu i nazwisku że na pozycji X czeka na nas
+ * all-time great który może wygrać nam rozgrywkę, ale trzeba dobrze rozegrać karty" — and chose
+ * that it is sometimes a trap. One line at the start of a board names a star who is always dealt
+ * at his position. Usually he belongs in the board's best five; about one board in three he is the
+ * trap — a big name who eats the cap the rest of the five needs. The wording is the same either way.
+ */
+export interface BoardHeadline {
+  slot: Position;
+  span: PlayerSpan;
+  trap: boolean;
+}
+const HEADLINE_TRAP_SHARE = 0.35;
+export function boardHeadline(pool: DailyPool, cap: number): BoardHeadline | undefined {
+  const rng = mulberry32(seedFromKey(`${pool.key}:headline`));
+  const optimal = boardOptimal(pool, cap);
+  const stars = STARTER_SLOTS.flatMap((slot) => {
+    const star = pool.bySlot[slot].find((s) => pool.roles[s.id] === 'star');
+    return star ? [{ slot, span: star, inBest: optimal[slot]?.id === star.id }] : [];
+  });
+  const byFame = (a: { span: PlayerSpan }, b: { span: PlayerSpan }) => allStarCount(b.span.playerName) - allStarCount(a.span.playerName) || effectiveTalent(b.span) - effectiveTalent(a.span);
+  const truths = stars.filter((s) => s.inBest).sort(byFame);
+  const traps = stars.filter((s) => !s.inBest).sort((a, b) => b.span.fga - a.span.fga || byFame(a, b));
+  const wantTrap = rng() < HEADLINE_TRAP_SHARE;
+  const chosen = (wantTrap ? traps[0] ?? truths[0] : truths[0] ?? traps[0]);
+  return chosen ? { slot: chosen.slot, span: chosen.span, trap: !chosen.inBest } : undefined;
 }
