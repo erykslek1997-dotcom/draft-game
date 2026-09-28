@@ -11,7 +11,6 @@ import { computeOffensiveTalent } from './talent';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { computeSpacing } from './spacing';
 import { computeFinishing } from './finishing';
-import { spanEndYears } from './era';
 
 // Re-exported for API stability — `mulberry32` used to be defined and exported here.
 export { mulberry32 } from './rng';
@@ -251,124 +250,9 @@ export function dailyPool(key: string = dayKey()): DailyPool {
   return { key, bySlot, roles };
 }
 
-/** The next position's star (used by tests and the rumor below). */
+/** A position's star (used by tests). */
 export function teaserFor(pool: DailyPool, slot: Position): PlayerSpan | undefined {
   return pool.bySlot[slot].find((s) => pool.roles[s.id] === 'star');
-}
-
-/**
- * 2026-09-27, the user: instead of naming the next position's star, a line of scouting talk
- * "co może być baitem albo prawdą", two baits per board, no reveal afterwards, cost in words.
- * Every rumor is literally true of one of the next position's four cards, but it does not say
- * which. A true rumor describes that position's star. A bait describes the card that sounds better
- * than it plays: the famous name in a lesser stretch if there is one, otherwise the specialist
- * (only his strength is mentioned). Which positions carry the bait is drawn from the board's seed.
- */
-export interface Rumor {
-  text: string;
-  bait: boolean;
-}
-const BAITS_PER_BOARD = 2;
-
-/**
- * 2026-09-28, the user ("opisy nic nie mówią bo są zbyt podobne"): every rumor used to be one of a
- * handful of fixed lines, so after a few boards they all read alike. Each part now has several
- * wordings (picked by the rumor's own seed), the strength reads more signals, and about half the
- * rumors add one more true detail — the subject's era or what he did on the glass — so the talk
- * is specific enough to argue with. Still true of exactly the card it describes, still silent on
- * which card that is.
- */
-const COST_WORDS: [number, string[]][] = [
-  [21, ['He won’t come cheap.', 'He’ll eat a big chunk of the cap.', 'Bring your wallet.']],
-  [17, ['Priced like a first option.', 'Not cheap — first-option money.', 'You’ll pay for him.']],
-  [12, ['Mid-range price tag.', 'Won’t break the bank, won’t come free.', 'Fair price, if the scouts are right.']],
-  [0, ['Cheap, too.', 'And he costs next to nothing.', 'Bargain-bin price.']],
-];
-function pickFrom<T>(list: T[], rng: () => number): T {
-  return list[Math.floor(rng() * list.length)];
-}
-function costWords(fga: number, rng: () => number): string {
-  return pickFrom((COST_WORDS.find(([min]) => fga >= min) ?? COST_WORDS[COST_WORDS.length - 1])[1], rng);
-}
-function strengthWords(s: PlayerSpan, rng: () => number): string | null {
-  const signals: [number, string[]][] = [
-    [computeSpacing(s) - 75, ['Can really shoot it.', 'Defenses can’t leave him open.', 'Stretches the floor.']],
-    [computeDefensiveTalent(s) - 80, ['Locks people up.', 'Nobody wants to be guarded by him.', 'A real stopper.']],
-    [computeFinishing(s) - 80, ['Lives at the rim.', 'Finishes through contact.', 'Gets to the basket at will.']],
-    [computeOffensiveTalent(s) - 85, ['Gets buckets.', 'Scores from anywhere.', 'A go-to scorer.']],
-    [(s.box.apg - 7.5) * 4, ['Runs the whole show.', 'Makes everyone around him better.', 'A true table-setter.']],
-    [(s.box.rpg - 11) * 3, ['Owns the glass.', 'Every rebound is his.', 'A monster on the boards.']],
-  ];
-  const [edge, words] = signals.reduce((a, b) => (b[0] > a[0] ? b : a));
-  return edge > 0 ? pickFrom(words, rng) : null;
-}
-/** One more true detail about the subject: when he played. */
-function eraWords(s: PlayerSpan, rng: () => number): string | null {
-  const years = s.spanLabel.match(/\d{4}/g)?.map(Number) ?? [];
-  if (years.length === 0) return null;
-  const mid = (years[0] + years[years.length - 1]) / 2;
-  if (mid < 1980) return pickFrom(['Old-school — from before the three-point line mattered.', 'A name from the seventies or earlier.'], rng);
-  if (mid < 1990) return pickFrom(['An eighties guy.', 'Came up in the Magic-and-Bird years.'], rng);
-  if (mid < 2000) return pickFrom(['A nineties player.', 'From the Jordan era.'], rng);
-  if (mid < 2012) return pickFrom(['From the 2000s.', 'Peaked before the three-point boom.'], rng);
-  return pickFrom(['A modern player.', 'From the pace-and-space era.'], rng);
-}
-/**
- * 2026-09-27, the user ("A 14-time All-Star is in the next deal — za mocno sugeruje, że ktoś
- * mocny"): no counts. The opening line only says whether the subject was ever an All-Star, in
- * words that fit a star and a bait alike, picked by the rumor's own seed.
- */
-const ALL_STAR_OPENERS = [
-  'Someone in the next deal has been an All-Star.',
-  'There’s a familiar face in the next deal.',
-  'Scouts keep circling one name in the next deal.',
-  'One of the next four has played on the big stage.',
-  'The phones are ringing about one of the next four.',
-  'A name you know is coming up.',
-];
-const UNKNOWN_OPENERS = [
-  'Someone in the next deal is better than his name.',
-  'The box score liked one of the next four more than the fans did.',
-  'There’s a quiet one in the next deal the scouts won’t shut up about.',
-  'You might not know one of the next four. The tape does.',
-];
-function identityWords(s: PlayerSpan, rng: () => number): string {
-  return pickFrom(allStarCount(s.playerName) >= 1 ? ALL_STAR_OPENERS : UNKNOWN_OPENERS, rng);
-}
-
-/** The card a position's rumor talks about (the star, or on a bait position the card that sounds
- * better than it plays). Always part of that position's deal, so the rumor stays true. */
-export function rumorSubject(pool: DailyPool, slot: Position): PlayerSpan | undefined {
-  const rng = mulberry32(seedFromKey(`${pool.key}:rumor`));
-  const baitSlots = new Set(weightedShuffle(STARTER_SLOTS.slice(1), rng, () => 1).slice(0, BAITS_PER_BOARD));
-  const cards = pool.bySlot[slot];
-  const byRole = (role: DealRole) => cards.find((s) => pool.roles[s.id] === role);
-  const surprise = byRole('surprise');
-  const bestTal = (s: PlayerSpan) => Math.max(...(spansByPlayer().get(s.playerName) ?? [s]).map(effectiveTalent));
-  const nameTrap = surprise && allStarCount(surprise.playerName) >= NAME_TRAP_MIN_AS && bestTal(surprise) - effectiveTalent(surprise) >= NAME_TRAP_MIN_DROP ? surprise : undefined;
-  const bait = baitSlots.has(slot) ? nameTrap ?? byRole('specialist') : undefined;
-  return bait ?? byRole('star');
-}
-
-export function rumorFor(pool: DailyPool, slot: Position): Rumor | undefined {
-  const rng = mulberry32(seedFromKey(`${pool.key}:rumor`));
-  const baitSlots = new Set(weightedShuffle(STARTER_SLOTS.slice(1), rng, () => 1).slice(0, BAITS_PER_BOARD));
-  const cards = pool.bySlot[slot];
-  const byRole = (role: DealRole) => cards.find((s) => pool.roles[s.id] === role);
-  const star = byRole('star');
-  const surprise = byRole('surprise');
-  const bestTal = (s: PlayerSpan) => Math.max(...(spansByPlayer().get(s.playerName) ?? [s]).map(effectiveTalent));
-  const nameTrap = surprise && allStarCount(surprise.playerName) >= NAME_TRAP_MIN_AS && bestTal(surprise) - effectiveTalent(surprise) >= NAME_TRAP_MIN_DROP ? surprise : undefined;
-  const bait = baitSlots.has(slot) ? nameTrap ?? byRole('specialist') : undefined;
-  const subject = bait ?? star;
-  if (!subject) return undefined;
-  // A bait reads exactly like a true rumor: same identity line (All-Star count), same wording.
-  const detailRng = mulberry32(seedFromKey(`${pool.key}:rumor:${slot}`));
-  const opener = identityWords(subject, detailRng);
-  const strength = strengthWords(subject, detailRng);
-  const era = detailRng() < 0.5 ? eraWords(subject, detailRng) : null;
-  const parts = [opener, era, strength && detailRng() < 0.8 ? strength : null, costWords(subject.fga, detailRng)];
-  return { text: parts.filter(Boolean).join(' '), bait: Boolean(bait) };
 }
 
 // ---------------------------------------------------------------------------
@@ -538,13 +422,13 @@ export function fanVoteFive(pool: DailyPool, cap?: number): Record<Position, Pla
   return talMaxLineup(namesPool(pool), cap);
 }
 
-/** The cards every path is dealt, other than the board's winning card: the star, the rumor's
- * subject and the cheapest card at each position — what "the biggest names" is picked from. */
+/** The cards every path is dealt, other than the board's winning card: the star and the cheapest
+ * card at each position — what "the biggest names" is picked from. */
 function namesPool(pool: DailyPool): DailyPool {
   const bySlot = Object.fromEntries(
     STARTER_SLOTS.map((slot) => {
       const cards = pool.bySlot[slot];
-      const core = new Set([cards.find((c) => pool.roles[c.id] === 'star'), rumorSubject(pool, slot), [...cards].sort((a, b) => a.fga - b.fga)[0]]);
+      const core = new Set([cards.find((c) => pool.roles[c.id] === 'star'), [...cards].sort((a, b) => a.fga - b.fga)[0]]);
       return [slot, cards.filter((c) => core.has(c))];
     }),
   ) as Record<Position, PlayerSpan[]>;
@@ -932,9 +816,9 @@ export function slotReels(pool: DailyPool, slot: Position, count = DEAL_SIZE, ba
 // ---------------------------------------------------------------------------
 // the reactive deal — 2026-09-28, the user: "powinna zawsze być jakaś opcja, generować więcej kart
 // i być reaktywne do tego co brakuje". Of a position's POOL_PER_SLOT cards the machine shows
-// DEAL_SIZE, chosen for the five so far. Always in: the star (the temptation), the rumor's
-// subject (so the rumor stays true), the cheapest card (so the cap can always be met) and the
-// board's winning card at this position (so the best five is the same for everyone). Then the
+// DEAL_SIZE, chosen for the five so far. Always in: the star (the temptation), the cheapest card
+// (so the cap can always be met) and the board's winning card at this position (so the best five
+// is the same for everyone). Then the
 // card that best covers what the five lacks, then the rest by the deal's own seed — swapping in
 // affordable cards until at least two fit the caps left. Same pool and same picks deal the same
 // cards, so a challenge played the same way is the same game.
@@ -951,18 +835,34 @@ function boardOptimal(pool: DailyPool, cap: number): Record<Position, PlayerSpan
   return five;
 }
 
+export type DealNeed = 'shooting' | 'defense' | 'creation';
 /** What the five so far is missing, strongest need first. */
-function needsOf(picks: PlayerSpan[]): ((s: PlayerSpan) => number)[] {
+function needsOf(picks: PlayerSpan[]): { key: DealNeed; have: number; score: (s: PlayerSpan) => number }[] {
   if (picks.length === 0) return [];
   const shooters = picks.filter((p) => computeSpacing(p) >= 65).length;
   const stoppers = picks.filter((p) => computeDefensiveTalent(p) >= 75).length;
   const creators = picks.filter((p) => computeOffensiveTalent(p) >= 85 || p.box.apg >= 6).length;
-  const needs: [number, (s: PlayerSpan) => number][] = [
-    [2 - shooters, computeSpacing],
-    [2 - stoppers, computeDefensiveTalent],
-    [1 - creators, (s) => computeOffensiveTalent(s) + s.box.apg * 2],
+  const needs: [number, DealNeed, number, (s: PlayerSpan) => number][] = [
+    [2 - shooters, 'shooting', shooters, computeSpacing],
+    [2 - stoppers, 'defense', stoppers, computeDefensiveTalent],
+    [1 - creators, 'creation', creators, (s) => computeOffensiveTalent(s) + s.box.apg * 2],
   ];
-  return needs.filter(([gap]) => gap > 0).sort((a, b) => b[0] - a[0]).map(([, f]) => f);
+  return needs.filter(([gap]) => gap > 0).sort((a, b) => b[0] - a[0]).map(([, key, have, score]) => ({ key, have, score }));
+}
+
+/**
+ * 2026-09-28, the user ("wyrzućmy wszystko, ewentualnie zostawić tylko jakieś drobne
+ * podpowiedzi"): the headliner and the rumors are gone; what's left is one small, always-true hint
+ * per deal — what the five so far is missing, when the deal has a card that covers it (`dealFor`
+ * deals one). It never says which card.
+ */
+export function dealHint(pool: DailyPool, slot: Position, lineup: Lineup, cap: number): { need: DealNeed; have: number } | undefined {
+  const picks = STARTER_SLOTS.map((s) => lineup[s]).filter((p): p is PlayerSpan => Boolean(p));
+  const [need] = needsOf(picks);
+  if (!need) return undefined;
+  const best = [...pool.bySlot[slot]].sort((a, b) => need.score(b) - need.score(a))[0];
+  const threshold = need.key === 'shooting' ? (s: PlayerSpan) => computeSpacing(s) >= 65 : need.key === 'defense' ? (s: PlayerSpan) => computeDefensiveTalent(s) >= 75 : (s: PlayerSpan) => computeOffensiveTalent(s) >= 85 || s.box.apg >= 6;
+  return dealFor(pool, slot, lineup, cap).some(threshold) && best ? { need: need.key, have: need.have } : undefined;
 }
 
 export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: number): PlayerSpan[] {
@@ -978,21 +878,18 @@ export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: nu
     if (s && hand.length < DEAL_SIZE && !hand.includes(s)) hand.push(s);
   };
   add(cards.find((s) => pool.roles[s.id] === 'star'));
-  add(rumorSubject(pool, slot));
   add([...cards].sort((a, b) => a.fga - b.fga)[0]);
-  const headliner = boardHeadline(pool, cap);
-  if (headliner?.slot === slot) add(headliner.span);
   // The board's winning card at this position, dealt on every path — so "best on the board" is the
   // same five for everyone who plays the seed, and a challenge compares like with like. It can be
   // over the caps left (that's the cost of an earlier pick); it only gives way when the deal would
   // otherwise have fewer than two cards to afford.
   add(boardOptimal(pool, cap)[slot]);
   const [need] = needsOf(picks);
-  if (need) add(cards.filter((s) => !hand.includes(s) && fits(s)).sort((a, b) => need(b) - need(a))[0]);
+  if (need) add(cards.filter((s) => !hand.includes(s) && fits(s)).sort((a, b) => need.score(b) - need.score(a))[0]);
   for (const s of weightedShuffle(cards.filter((c) => !hand.includes(c)), rng, () => 1)) add(s);
   // At least two cards the caps left can pay for.
   const star = cards.find((s) => pool.roles[s.id] === 'star');
-  const keep = new Set([star, rumorSubject(pool, slot), [...cards].sort((a, b) => a.fga - b.fga)[0], headliner?.slot === slot ? headliner.span : undefined].filter(Boolean));
+  const keep = new Set([star, [...cards].sort((a, b) => a.fga - b.fga)[0]].filter(Boolean));
   for (const spare of cards.filter((c) => !hand.includes(c) && fits(c))) {
     if (hand.filter(fits).length >= 2) break;
     const out = hand.findIndex((c) => !fits(c) && !keep.has(c));
@@ -1011,87 +908,4 @@ export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: nu
 export function boardTargets(pool: DailyPool, cap: number): DailyTargets {
   const winning = boardOptimal(pool, cap);
   return { par: scoreLineup(fanVoteFive(pool, cap)).composite, optimal: scoreLineup(winning).composite, optimalFive: winning };
-}
-
-/**
- * 2026-09-28, the user: "można np zasugerować po imieniu i nazwisku że na pozycji X czeka na nas
- * all-time great który może wygrać nam rozgrywkę, ale trzeba dobrze rozegrać karty". One line at
- * the start of a board names a player — by name only, no years — who is always dealt at his
- * position. Usually he is the real thing: a star from the board's best five. About one board in
- * three it's a trap, and (the user's follow-up: "prawda ALE może to być np. bardzo stary Hakeem,
- * można się pobawić spanami") the name is still true but the card is from plainly another stage of
- * his career (`careerStage`) — late-career Hakeem, priced like the name. Boards without such a
- * card get a real headliner. The wording is the same either way and tells the player to check the
- * years.
- */
-export interface BoardHeadline {
-  slot: Position;
-  span: PlayerSpan;
-  trap: boolean;
-  /** On a trap: which end of his career the dealt card is from, and his best stretch. */
-  stage?: 'late' | 'early';
-  prime?: PlayerSpan;
-}
-
-/**
- * 2026-09-28, user-reported ("nie rozumiem tego z Frazierem"): Frazier 1973-75 counted as a
- * "lesser stretch" (8 TAL under his 1970-72) but is still a 28-30-year-old Frazier scoring 21 a
- * night — nothing on the card says "old". A trap card must now come from plainly another stage of
- * his career: at least TRAP_LATE_GAP seasons after his best window, or ending at least
- * TRAP_EARLY_GAP seasons before it, and a TRAP_MIN_DROP talent fall.
- */
-const TRAP_MIN_DROP = 12;
-const TRAP_LATE_GAP = 4;
-const TRAP_EARLY_GAP = 2;
-function careerStage(span: PlayerSpan): { stage: 'late' | 'early'; prime: PlayerSpan } | undefined {
-  const spans = spansByPlayer().get(span.playerName) ?? [span];
-  const prime = spans.reduce((a, b) => (effectiveTalent(b) > effectiveTalent(a) ? b : a));
-  if (effectiveTalent(prime) - effectiveTalent(span) < TRAP_MIN_DROP) return undefined;
-  const years = spanEndYears(span.spanLabel);
-  const primeYears = spanEndYears(prime.spanLabel);
-  if (!years.length || !primeYears.length) return undefined;
-  if (Math.min(...years) - Math.max(...primeYears) >= TRAP_LATE_GAP) return { stage: 'late', prime };
-  if (Math.min(...primeYears) - Math.max(...years) >= TRAP_EARLY_GAP) return { stage: 'early', prime };
-  return undefined;
-}
-const HEADLINE_TRAP_SHARE = 0.35;
-const headlineCache = new Map<string, BoardHeadline | undefined>();
-export function boardHeadline(pool: DailyPool, cap: number): BoardHeadline | undefined {
-  const cacheKey = `${pool.key}|${cap}`;
-  if (headlineCache.has(cacheKey)) return headlineCache.get(cacheKey);
-  const rng = mulberry32(seedFromKey(`${pool.key}:headline`));
-  const optimal = boardOptimal(pool, cap);
-  const byFame = (a: PlayerSpan, b: PlayerSpan) => allStarCount(b.playerName) - allStarCount(a.playerName) || effectiveTalent(b) - effectiveTalent(a);
-  // A position's always-dealt cards; the headliner has to fit in the deal alongside them.
-  const mustAt = (slot: Position) => {
-    const cards = pool.bySlot[slot];
-    return new Set([cards.find((c) => pool.roles[c.id] === 'star'), rumorSubject(pool, slot), [...cards].sort((a, b) => a.fga - b.fga)[0], optimal[slot]].filter(Boolean));
-  };
-  const fitsDeal = (slot: Position, span: PlayerSpan) => mustAt(slot).has(span) || mustAt(slot).size < DEAL_SIZE;
-
-  const truths = STARTER_SLOTS.flatMap((slot) => {
-    const star = pool.bySlot[slot].find((c) => pool.roles[c.id] === 'star');
-    return star && optimal[slot]?.id === star.id ? [{ slot, span: star }] : [];
-  }).sort((a, b) => byFame(a.span, b.span));
-  const lesserSpans = STARTER_SLOTS.flatMap((slot) =>
-    pool.bySlot[slot].flatMap((c) => {
-      const stage = optimal[slot]?.id !== c.id && allStarCount(c.playerName) >= NAME_TRAP_MIN_AS && fitsDeal(slot, c) ? careerStage(c) : undefined;
-      return stage ? [{ slot, span: c, ...stage }] : [];
-    }),
-  ).sort((a, b) => byFame(a.span, b.span));
-
-  // A trap only when the board has a plainly-other-stage card; otherwise the headliner is real.
-  const wantTrap = rng() < HEADLINE_TRAP_SHARE;
-  const trap = lesserSpans[0];
-  let result: BoardHeadline | undefined;
-  if (wantTrap && trap) result = { slot: trap.slot, span: trap.span, trap: true, stage: trap.stage, prime: trap.prime };
-  else if (truths[0]) result = { slot: truths[0].slot, span: truths[0].span, trap: false };
-  else if (trap) result = { slot: trap.slot, span: trap.span, trap: true, stage: trap.stage, prime: trap.prime };
-  else {
-    // No star in the best five and no trap card: the best five's most famous player headlines.
-    const famous = STARTER_SLOTS.map((slot) => ({ slot, span: optimal[slot] })).filter((x) => x.span).sort((a, b) => byFame(a.span, b.span))[0];
-    if (famous) result = { slot: famous.slot, span: famous.span, trap: false };
-  }
-  headlineCache.set(cacheKey, result);
-  return result;
 }

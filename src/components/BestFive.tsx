@@ -28,15 +28,14 @@ import {
   slotReels,
   dealFor,
   boardTargets,
-  boardHeadline,
-  rumorFor,
+  dealHint,
   type Lineup,
   type LineupScore,
   type DailyPool,
   type DailyTargets,
   type GolfGrade,
   type ResultExplanation,
-  type BoardHeadline,
+  type DealNeed,
 } from '../engine/bestFive';
 
 interface Props {
@@ -50,11 +49,12 @@ interface Props {
   challenge?: ModeChallenge;
 }
 
-/** "Walt Frazier" → "Frazier"; "Michael Porter Jr." → "Porter". */
-function surname(name: string): string {
-  const parts = name.split(' ').filter((p) => !/^(Jr\.?|Sr\.?|II|III|IV)$/.test(p));
-  return parts[parts.length - 1] ?? name;
-}
+/** The deal hint, by what the five so far is missing (`dealHint`). Never names the card. */
+const DEAL_HINT: Record<DealNeed, (have: number) => string> = {
+  shooting: (have) => (have === 0 ? 'No shooters yet — one of these four can space the floor.' : 'One shooter so far — this deal has another.'),
+  defense: (have) => (have === 0 ? 'Nobody who can guard yet — one of these four can.' : 'One stopper so far — this deal has a second.'),
+  creation: () => 'Nobody creates his own shot yet — one of these four can.',
+};
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
 
@@ -129,7 +129,6 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
     for (const s of STARTER_SLOTS.slice(0, STARTER_SLOTS.indexOf(slot))) if (lineup[s]) before[s] = lineup[s];
     return dealFor(pool, slot, before, shotsCap);
   };
-  const headline = useMemo(() => boardHeadline(pool, shotsCap), [pool, shotsCap]);
 
   const filledCount = STARTER_SLOTS.filter((s) => lineup[s]).length;
   const complete = filledCount === 5;
@@ -217,17 +216,6 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
             aren’t the answer — spacing and rim protection matter.
           </p>
 
-          {headline && (
-            <div className="bf-headline" aria-label="Tonight's headliner">
-              <span className="bf-headline-label at-cond">In this deal · {SLOT_LABEL[headline.slot].toLowerCase()}</span>
-              <p className="bf-headline-text">
-                {/* No years: which stretch of his career is dealt is part of the read (sometimes it's a
-                    late-career card priced like the name). */}
-                <b>{headline.span.playerName}</b> is in this deal, at {headline.slot}. The right {surname(headline.span.playerName)} can
-                win you the board — check the years before you build around him.
-              </p>
-            </div>
-          )}
 
           <div className="bf-slot-row">
             {STARTER_SLOTS.map((slot) => {
@@ -268,6 +256,14 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
                     : 'Last spot — four dealt. Picks are final.'}
                 </span>
               </div>
+              {(() => {
+                // 2026-09-28: the one hint left — what the five is missing, when this deal can cover it.
+                const before: Lineup = {};
+                for (const sl of STARTER_SLOTS.slice(0, STARTER_SLOTS.indexOf(activeSlot))) if (lineup[sl]) before[sl] = lineup[sl];
+                const hint = dealHint(pool, activeSlot, before, shotsCap);
+                if (!hint) return null;
+                return <p className="bf-deal-hint">{DEAL_HINT[hint.need](hint.have)}</p>;
+              })()}
               {/* 2026-09-28, the user ("jeden widok byłby lepszy"): the deal no longer switches to a
                   separate card grid once the reels stop — each reel opens up into its card, in the
                   same cabinet, and a position you come back to shows its cards there too. */}
@@ -317,20 +313,6 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
                   );
                 }}
               />
-              {(() => {
-                // 2026-09-27: a line of scouting talk about the next position — true of one of its
-                // four cards, but sometimes about the card that sounds better than it plays.
-                const next = STARTER_SLOTS.find((sl) => sl !== activeSlot && !lineup[sl] && !revealed.has(sl));
-                const rumor = next ? rumorFor(pool, next) : undefined;
-                if (!next || !rumor) return null;
-                return (
-                  <div className="bf-teaser" aria-label={`Word on the ${SLOT_LABEL[next].toLowerCase()} deal`}>
-                    <span className="bf-teaser-label at-cond">Word on the next deal · {SLOT_LABEL[next].toLowerCase()}</span>
-                    <q className="bf-teaser-rumor">{rumor.text}</q>
-                    <span className="bf-teaser-note">Scouts talk. Not everything they say is worth the caps.</span>
-                  </div>
-                );
-              })()}
             </div>
           )}
 
@@ -363,7 +345,6 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
           onNewBoard={newBoard}
           onNextStep={onNextStep}
           seed={board.seed}
-          headline={headline}
           challenge={challenge && challenge.seed === board.seed ? challenge : undefined}
         />
       )}
@@ -541,7 +522,6 @@ function BestFiveResult({
   onNewBoard,
   onNextStep,
   seed,
-  headline,
   challenge,
 }: {
   lineup: Lineup;
@@ -551,7 +531,6 @@ function BestFiveResult({
   onNewBoard: () => void;
   onNextStep?: () => void;
   seed: string;
-  headline?: BoardHeadline;
   challenge?: ModeChallenge;
 }) {
   useEffect(() => markStepDone('bestfive'), []);
@@ -741,25 +720,6 @@ function BestFiveResult({
               </p>
             )}
           </>
-        )}
-        {/* 2026-09-28, user-reported ("nie rozumiem tego z Frazierem"): the board's headliner is
-            settled here — the real thing, or which stage of his career the trap card was. */}
-        {headline && (
-          <p className="bf-why-line bf-why-headline">
-            {headline.trap ? (
-              <>
-                The headliner was the trap: <b>{headline.stage === 'late' ? 'late-career' : 'young'} {surname(headline.span.playerName)}</b>{' '}
-                ({headline.span.spanLabel}), priced like the name
-                {headline.prime && <> — his best stretch was {headline.prime.spanLabel}</>}
-                {lineup[headline.slot]?.id === headline.span.id ? '. You bought the name.' : '. You read it right.'}
-              </>
-            ) : (
-              <>
-                The headliner was the real thing: <b>{headline.span.playerName}</b> ({headline.span.spanLabel}) is in the best five
-                {lineup[headline.slot]?.id === headline.span.id ? ' — good read.' : '.'}
-              </>
-            )}
-          </p>
         )}
       </div>
 

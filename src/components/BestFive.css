@@ -608,15 +608,6 @@
 }
 .bf-slot--filled:disabled { opacity: 1; cursor: default; }
 
-/* 2026-09-27: scouting talk about the next deal, under the current one (true or bait). */
-.bf-teaser {
-  display: grid; gap: 6px; margin-top: 14px; padding: 10px 12px;
-  border: 1px dashed color-mix(in srgb, var(--at-accent) 45%, var(--at-line)); border-radius: 12px;
-  background: color-mix(in srgb, var(--at-accent) 6%, transparent);
-}
-.bf-teaser-label { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-accent); }
-.bf-teaser-rumor { font-size: 14px; line-height: 1.5; color: var(--at-ink); font-style: italic; quotes: '“' '”'; }
-.bf-teaser-note { font-size: 11.5px; color: var(--at-ink-faint); }
 
 /* 2026-09-28, the user ("jeden widok byłby lepszy"): a stopped reel opens into its card, in the
    same cabinet — no second card grid. The reel frame gives way to the card's own border. */
@@ -643,13 +634,7 @@
 .bf-axis-best > span { text-align: center; font-size: 10.5px; color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
 .bf-axis-best::before { content: 'Best five on the board'; grid-column: 1 / -1; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); text-align: center; }
 
-/* 2026-09-28: the board's named headliner — sometimes the key to the best five, sometimes the trap. */
-.bf-headline {
-  margin: 4px 0 14px; padding: 10px 14px; border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--at-gold, #ffd479) 45%, var(--at-line));
-  background: color-mix(in srgb, var(--at-gold, #ffd479) 7%, var(--at-paper));
-}
-.bf-headline-label { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-gold, #ffd479); margin-bottom: 4px; }
-.bf-headline-text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
-.bf-headline-text b { color: var(--at-ink); }
-.bf-why-headline { border-top: 1px dashed var(--at-line); padding-top: 8px; margin-top: 4px; }
+
+/* 2026-09-28: the one hint left in the Slot Machine — what the five is missing (dealHint). */
+.bf-deal-hint { margin: 2px 0 10px; font-size: 12.5px; color: var(--at-accent); }
+.bf-deal-hint::before { content: '💡 '; }

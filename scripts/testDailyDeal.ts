@@ -1,4 +1,4 @@
-import { DEAL_SIZE, POOL_PER_SLOT, boardHeadline, dailyBoard, dailyTargets, dealFor, isChalkBoard, lineupShots, rumorFor, rumorSubject, boardTargets, talMaxLineup, teaserFor, type Lineup } from '../src/engine/bestFive';
+import { DEAL_SIZE, POOL_PER_SLOT, dailyBoard, dealFor, dealHint, isChalkBoard, lineupShots, boardTargets, talMaxLineup, teaserFor, type Lineup } from '../src/engine/bestFive';
 import type { PlayerSpan, Position } from '../src/data/schema';
 import { STARTER_SLOTS } from '../src/engine/positions';
 
@@ -26,27 +26,21 @@ for (let i = 0; i < DAYS; i++) {
   check(lineupShots(talMaxLineup(board.pool, board.cap)) <= board.cap, `${key}: the lazy pick can be trimmed under the cap`);
   check(STARTER_SLOTS.every((s) => teaserFor(board.pool, s) !== undefined), `${key}: every position has a star to show face up`);
   check(STARTER_SLOTS.every((s) => board.pool.bySlot[s].every((p) => board.pool.roles[p.id] !== undefined)), `${key}: every dealt card has a role`);
-  const rumors = STARTER_SLOTS.slice(1).map((s) => rumorFor(board.pool, s));
-  check(rumors.every((r) => r && r.text.length > 20), `${key}: every later position has a rumor`);
-  check(rumors.filter((r) => r?.bait).length <= 2, `${key}: at most two rumors are bait`);
   if (isChalkBoard(boardTargets(board.pool, board.cap))) chalk++;
 }
 check(chalk <= 2, `at most 2 of ${DAYS} daily boards are chalk (got ${chalk})`);
 
 /**
  * 2026-09-28, the reactive deal: each position shows DEAL_SIZE of its POOL_PER_SLOT cards, dealt for
- * the five so far. Along random paths through 20 boards: the star and the rumor's subject are
- * always dealt, at least two cards always fit the caps left, the five always completes under the
- * cap, the named headliner is dealt at his position, and the best five is dealt on every path and
- * never worse than the fan-vote five. Same picks, same deal.
+ * the five so far. Along random paths through 20 boards: the star is always dealt, at least two
+ * cards always fit the caps left, the five always completes under the cap, the best five is never
+ * worse than the fan-vote five, and there is no hint before the first pick. Same picks, same deal.
  */
 let seenChalk = 0;
 let paths = 0;
 for (let i = 0; i < DAYS; i++) {
   const key = new Date(start.getTime() + i * 864e5).toISOString().slice(0, 10);
   const { pool, cap } = dailyBoard(key);
-  const headline = boardHeadline(pool, cap);
-  check(headline !== undefined, `${key}: the board names a headliner`);
   for (let path = 0; path < 4; path++) {
     let r = (i * 7 + path * 13 + 1) % 97;
     const rnd = () => ((r = (r * 48271) % 2147483647) / 2147483647);
@@ -60,9 +54,8 @@ for (let i = 0; i < DAYS; i++) {
       if (hand.length !== DEAL_SIZE) throw new Error(`FAIL: ${key}: ${slot} deals ${hand.length} cards`);
       const star = pool.bySlot[slot].find((c) => pool.roles[c.id] === 'star');
       if (star && !hand.includes(star)) throw new Error(`FAIL: ${key}: ${slot} deal is missing its star`);
-      const subject = rumorSubject(pool, slot);
-      if (subject && !hand.includes(subject)) throw new Error(`FAIL: ${key}: ${slot} deal is missing the rumor's subject`);
-      if (headline && headline.slot === slot && !hand.includes(headline.span)) throw new Error(`FAIL: ${key}: the headliner is not dealt`);
+      const hint = dealHint(pool, slot, lineup, cap);
+      if (hint && lineup.PG === undefined) throw new Error(`FAIL: ${key}: a hint before any pick`);
       const openAfter = (['PG', 'SG', 'SF', 'PF', 'C'] as Position[]).filter((s) => s !== slot && !lineup[s]);
       const room = cap - lineupShots(lineup) - openAfter.reduce((sum, s) => sum + Math.min(...pool.bySlot[s].map((p) => p.fga)), 0);
       const affordable = hand.filter((c) => c.fga <= room + 1e-9);
@@ -89,6 +82,6 @@ for (let i = 0; i < DAYS; i++) {
   }
 }
 check(true, `${DAYS} boards: the best five is dealt, card by card, to a player who follows it`);
-check(true, `${paths} random paths: stars, rumor subjects and the headliner always dealt, two affordable cards every deal, every five completes under the cap`);
+check(true, `${paths} random paths: stars always dealt, two affordable cards every deal, every five completes under the cap`);
 console.log(`(info) boards that are chalk against the path-independent targets: ${seenChalk} of ${paths}`);
 console.log('Daily Deal tests complete.');
