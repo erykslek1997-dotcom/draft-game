@@ -14,6 +14,7 @@ import DraftLottery from './components/DraftLottery';
 import { CapsInfoHost } from './components/CapIcon';
 import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
 import { takeModeChallengeFromUrl, type ModeChallenge } from './modeChallenge';
+import { currentStreak, dailyEntry, localDayKey } from './components/dailyProgress';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
 /**
@@ -59,7 +60,31 @@ function useLoadStatus(): LoadStatus {
   return loadStatus;
 }
 
-type View = 'intro' | 'game' | 'bestfive' | 'quickfive';
+/**
+ * 2026-09-28, the user: "okej, teraz daily … na ten moment tylko slot machine". The menu's daily
+ * entry: today's date, the streak, and whether today's board is already played.
+ */
+function DailyCard({ onPlay }: { onPlay: () => void }) {
+  const today = localDayKey();
+  const played = dailyEntry(today);
+  const streak = currentStreak(today);
+  return (
+    <button type="button" className={`daily-card${played ? ' is-played' : ''}`} onClick={onPlay}>
+      <span className="daily-card-icon" aria-hidden>
+        📅
+      </span>
+      <span className="daily-card-text">
+        <span className="daily-card-title at-cond">Daily Slot Machine</span>
+        <span className="daily-card-desc">
+          {played ? `Played today — you scored ${played.composite}. A new board at midnight.` : 'One board for everyone today. One try.'}
+        </span>
+      </span>
+      {streak.current > 0 && <span className="daily-card-streak">🔥 {streak.current}</span>}
+    </button>
+  );
+}
+
+type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily';
 
 /** Roster-size figure shown in the Draft mode card's own one-line description, kept in sync with
  * `engine/positions.ts`'s real `ROSTER_SIZE` by the standing check in
@@ -328,6 +353,7 @@ function App() {
                 every other piece of this screen (hero, tagline, How to Play) already being about
                 it — the other two are real, equal-footing choices, not afterthoughts. */}
             <div className="mode-grid mode-grid--path">
+              <DailyCard onPlay={() => setView('daily')} />
               {/* 2026-09-26, the user's learning path: Best 5 (caps, positions, how a five is
                   judged) -> Quick 5 (a short live draft) -> the All-Time Draft. The cards read as
                   those three steps, each with a tick once it's been played through. */}
@@ -486,6 +512,12 @@ function App() {
             onNextStep={() => setView('quickfive')}
             challenge={modeChallenge?.mode === 'roulette' ? modeChallenge : undefined}
           />
+        </Suspense>
+      )}
+
+      {view === 'daily' && (
+        <Suspense fallback={<LoadingPanel />}>
+          <BestFive mode="player" daily={localDayKey()} onBack={() => setView('intro')} />
         </Suspense>
       )}
 

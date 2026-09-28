@@ -34,10 +34,10 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
       - Mini Draft: każdego dnia inny limit FGA i zbanowani gracze.
       - All-Time Draft: to samo plus „the bomb”.
       - Blokady tematyczne, np. zakaz graczy, którzy kiedykolwiek grali w Lakers.
-      - Roulette (dawniej Daily Deal): dzienne wyzwanie jako osobny przycisk. 2026-09-27 usunięte
-        z samego trybu — stara wersja (dzienna plansza, jedno podejście, seria dni) jest w historii
-        gita: `src/components/bestFiveProgress.ts` i `BestFive.tsx` sprzed PR „Roulette: drop the
-        daily puzzle”.
+      - [x] Slot Machine: **zrobione 2026-09-28** — karta „Daily Slot Machine” w menu, jedna
+        plansza dziennie dla wszystkich (lokalna północ), jedno podejście, seria dni, wynik dnia
+        w przeglądarce (`src/components/dailyProgress.ts`). Bez dziennych zasad (limity, bany) —
+        na razie tylko wspólna plansza.
       - Globalny ranking dopiero z serwerem („będzie”); do tego czasu wynik tylko lokalnie.
       - Makiety tych ekranów są na stronie z mockupami z 2026-09-26.
       Podstawa technicznie jest gotowa: dzienne ziarno (`dayKey`/`hashSeed` w bestFive.ts) i

@@ -3,6 +3,7 @@ import './BestFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
 import { ScoreChip } from './ResultsScreen';
 import ShareResultModal from './ShareResultModal';
+import { currentStreak, dailySeed, recordDailyResult, savedDailyLineup, untilTomorrow, type Streak } from './dailyProgress';
 import { copyLink } from './shareSave';
 import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import type { PlayerSpan, Position } from '../data/schema';
@@ -47,6 +48,8 @@ interface Props {
   onNextStep?: () => void;
   /** A friend's "Challenge a friend" link: their deal and their score. */
   challenge?: ModeChallenge;
+  /** The Daily Slot Machine: today's local date. One board for everyone, one attempt, a streak. */
+  daily?: string;
 }
 
 /** The deal hint, by what the five so far is missing (`dealHint`). Never names the card. */
@@ -55,6 +58,12 @@ const DEAL_HINT: Record<DealNeed, (have: number) => string> = {
   defense: (have) => (have === 0 ? 'Nobody who can guard yet — one of these four can.' : 'One stopper so far — this deal has a second.'),
   creation: () => 'Nobody creates his own shot yet — one of these four can.',
 };
+
+/** "2026-09-28" → "Sep 28". */
+function formatDay(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
 
@@ -91,11 +100,11 @@ const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 's
  * Deliberately a standalone screen off the intro (same footing as `CapSheet` / `DraftPoolBrowser`)
  * — it has no draft, no lottery, no AI, none of `GameShell`'s phase machine applies.
  */
-export default function BestFive({ onBack, onNextStep, challenge }: Props) {
+export default function BestFive({ onBack, onNextStep, challenge, daily }: Props) {
   // 2026-09-27, the user: "Usuńmy daily challenge. Dodamy go osobnym przyciskiem jak będziemy
   // robić porządnie daily challenge". Every board is a fresh random deal; the old daily puzzle and
   // streak (bestFiveProgress.ts) are in git history for when the daily challenge gets built.
-  const [board, setBoard] = useState<{ seed: string; n: number }>(() => ({ seed: challenge?.seed ?? randomSeed(1), n: 1 }));
+  const [board, setBoard] = useState<{ seed: string; n: number }>(() => ({ seed: daily ? dailySeed(daily) : challenge?.seed ?? randomSeed(1), n: 1 }));
   // 2026-09-11, user's own ask: "dodajemy koszt gracza w shots i oprócz codziennej puli graczy
   // będzie losowa liczba między 60 a 90" — a seeded shots budget for the five starters.
   // 2026-09-27: pool and cap come together from `dailyBoard`, which skips boards where the five
@@ -111,14 +120,19 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
     const targets = boardTargets(p, cap);
     return { score, targets, grade: gradeVsPar(score.composite, targets.par, targets.optimal) };
   }
-  const [lineup, setLineup] = useState<Lineup>({});
-  const [activeSlot, setActiveSlot] = useState<Position | null>('PG');
+  // The daily board already played today opens straight on its result.
+  const savedDaily = useMemo(() => (daily ? savedDailyLineup(daily, pool) : null), [daily, pool]);
+  const [lineup, setLineup] = useState<Lineup>(() => savedDaily ?? {});
+  const [activeSlot, setActiveSlot] = useState<Position | null>(savedDaily ? null : 'PG');
+  const [streak, setStreak] = useState<Streak | null>(() => (daily ? currentStreak(daily) : null));
   // 2026-09-26, the user: "ograniczmy wybór do 5 graczy. Niech po każdym wyborze gracz widzi jacy
   // gracze się losują." Positions are dealt one at a time: a slot's five stay face down until the
   // pick before it, then spin in on the slot machine (`freshSlot`, once per slot).
-  const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(['PG']));
-  const [freshSlot, setFreshSlot] = useState<Position | null>('PG');
-  const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(null);
+  const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(savedDaily ? STARTER_SLOTS : ['PG']));
+  const [freshSlot, setFreshSlot] = useState<Position | null>(savedDaily ? null : 'PG');
+  const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(() =>
+    savedDaily ? resultFor(savedDaily, pool, shotsCap) : null,
+  );
   // 2026-09-17, user's own ask: a real "how to play?" affordance on every mode, now that the
   // intro screen's own always-visible rules list is gone.
   const [showHowToPlay, setShowHowToPlay] = useState(false);
@@ -162,6 +176,7 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
     if (!complete || overCap) return;
     const next = resultFor(lineup, pool, shotsCap);
     setResult(next);
+    if (daily) setStreak(recordDailyResult(daily, lineup, next.grade, next.score.composite));
   }
 
   function resetPicks() {
@@ -187,7 +202,13 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
           ← Menu
         </button>
       )}
-      <div className="at-board-brand at-cond">Slot Machine</div>
+      <div className="at-board-brand at-cond">{daily ? 'Daily Slot Machine' : 'Slot Machine'}</div>
+      {daily && (
+        <p className="bf-daily-sub">
+          {formatDay(daily)} · one board for everyone, one try
+          {streak && streak.current > 0 && <> · 🔥 {streak.current}-day streak</>}
+        </p>
+      )}
       <div className="bf-subhead">
         <span className="bf-subhead-actions">
           <button className="at-legend-toggle at-cond" onClick={() => setShowHowToPlay((v) => !v)}>
@@ -343,6 +364,8 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
           result={result}
           shotsCap={shotsCap}
           onNewBoard={newBoard}
+          daily={daily}
+          streak={streak}
           onNextStep={onNextStep}
           seed={board.seed}
           challenge={challenge && challenge.seed === board.seed ? challenge : undefined}
@@ -520,6 +543,8 @@ function BestFiveResult({
   result,
   shotsCap,
   onNewBoard,
+  daily,
+  streak,
   onNextStep,
   seed,
   challenge,
@@ -529,6 +554,8 @@ function BestFiveResult({
   result: { score: LineupScore; targets: DailyTargets; grade: GolfGrade };
   shotsCap: number;
   onNewBoard: () => void;
+  daily?: string;
+  streak?: Streak | null;
   onNextStep?: () => void;
   seed: string;
   challenge?: ModeChallenge;
@@ -600,7 +627,7 @@ function BestFiveResult({
         <ShareResultModal
           onClose={() => setShareOpen(false)}
           mode="Slot Machine"
-          title="My Slot Machine five"
+          title={daily ? `Daily Slot Machine · ${formatDay(daily)}` : 'My Slot Machine five'}
           tier={{ label: GRADE_LABEL[grade], tone: GRADE_TONE[grade] }}
           cells={[
             { label: 'Your five', value: score.composite, you: score.composite },
@@ -757,11 +784,19 @@ function BestFiveResult({
           </button>
         </div>
       )}
-      <div className="bf-submit-row bf-result-actions">
-        <button className="primary-btn" onClick={onNewBoard}>
-          New board
-        </button>
-      </div>
+      {daily ? (
+        <div className="bf-daily-done">
+          <b>That’s today’s board.</b>{' '}
+          {streak && streak.current > 0 && <>🔥 {streak.current}-day streak{streak.best > streak.current ? ` (best ${streak.best})` : ''}. </>}
+          A new one in {untilTomorrow()}.
+        </div>
+      ) : (
+        <div className="bf-submit-row bf-result-actions">
+          <button className="primary-btn" onClick={onNewBoard}>
+            New board
+          </button>
+        </div>
+      )}
     </div>
   );
 }
