@@ -28,6 +28,7 @@ import { realValueTierFloor } from './realValueFloor';
 import { madeAllNbaInSpan } from './allNbaLookup';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 import calibrationAnchors from '../data/calibrationAnchors.json';
+import { RIM_BONUS_TIER_HOLDS } from '../data/rimBonusTierHolds';
 
 /**
  * Letter-grade display for O-TAL/D-TAL, purely a UI presentation layer over the existing
@@ -1464,7 +1465,22 @@ function namedShiftForSpan(span: PlayerSpan): { offense: number; defense: number
 }
 registerNamedShift(namedShiftForSpan);
 
+/** 2026-09-28: best windows held at the tier they had before the finishing-based rim bonus
+ * (`src/data/rimBonusTierHolds.ts`). */
+const rimBonusHolds = new Map<string, OverallTier>(
+  RIM_BONUS_TIER_HOLDS.map(([name, spanLabel, tier]) => [`${normalizePlayerName(name)}|${spanLabel}`, tier]),
+);
+function rimBonusHold(ctx: TierGateContext): OverallTier | undefined {
+  return ctx.playerName && ctx.spanLabel ? rimBonusHolds.get(`${normalizePlayerName(ctx.playerName)}|${ctx.spanLabel}`) : undefined;
+}
+
 export function displayTalentForSpan(ctx: TierGateContext): number {
+  const value = displayTalentUnheld(ctx);
+  const hold = rimBonusHold(ctx);
+  return hold ? Math.min(value, tierCeiling(hold)) : value;
+}
+
+function displayTalentUnheld(ctx: TierGateContext): number {
   // 2026-09-27: the user's tier table (tierCalibration.ts) decides the number for the 200 players
   // it covers; everyone else keeps the rules below, held under the top of All-star.
   const legacy = legacyDisplayTalent(ctx);
@@ -1542,6 +1558,12 @@ function tierBand(tier: OverallTier): [number, number] {
  * number, so badge and number never disagree. The GOAT relabel survives on a Greatest-peak number.
  */
 export function overallTierForSpan(ctx: TierGateContext): OverallTier {
+  const tier = overallTierUnheld(ctx);
+  const hold = rimBonusHold(ctx);
+  return hold && tierRank(tier) > tierRank(hold) ? hold : tier;
+}
+
+function overallTierUnheld(ctx: TierGateContext): OverallTier {
   const calibration = ctx.playerName ? tierCalibrationFor(ctx.playerName) : undefined;
   if (calibration) {
     if (ctx.spanLabel === calibration.spanLabel) return calibration.tier;
