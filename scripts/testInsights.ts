@@ -206,11 +206,15 @@ check(!detector('STAR_FGA_COST_HURTS_DEPTH', starJustified).active, 'justified s
 // 2026-09-27: the user tier calibration flattened the core's display TAL (Jordan 103, Gobert 81),
 // which left the falloff at 0.49, a hair under the 0.50 trigger. Charlie Ward (61) swapped for
 // Carlos Arroyo's 2006-08 backup-PG span (30) at the same 6.2 FGA, restoring a real thin bench.
+// 2026-09-28: neighbour-season spacing smoothing lifted Jordan 1990-92 to 42 (his 1993 window
+// shoots better), so he stopped counting as a hard non-spacer and the five had only one. Evan
+// Mobley 2023-25 (38) swapped for his own 2022-24 span (11, 11.6 FGA) — the pre-jumper Mobley —
+// which gives the five two real non-spacers again.
 const exposedStarTeam = team('team-model-exposed-star', [
   pick('Jalen Brunson', '2024-26'),
   pick('Michael Jordan', '1990-92'),
   pick('Paul Pierce', '2009-11'),
-  pick('Evan Mobley', '2023-25'),
+  pick('Evan Mobley', '2022-24'),
   pick('Rudy Gobert', '2020-22'),
   pick('Carlos Arroyo', '2006-08'),
   pick('Ira Newble', '2003-05'),
