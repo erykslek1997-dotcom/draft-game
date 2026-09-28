@@ -310,13 +310,16 @@ const CAP_FLOOR_MARGIN = 12;
  * Never below the cheapest five plus `CAP_FLOOR_MARGIN`.
  */
 const STAR_BUDGET_SHARE = 0.45;
-export function computedShotsCap(pool: DailyPool): number {
+/** 2026-09-28, the user ("daily za dużo fga, mały challenge"): the daily board's cap is tighter —
+ * about one star fits, not two — so saving caps (for the Joker or anyone) is a real decision. */
+export const DAILY_STAR_BUDGET_SHARE = 0.1;
+export function computedShotsCap(pool: DailyPool, starShare = STAR_BUDGET_SHARE): number {
   const cardOf = (slot: Position, role: DealRole) => pool.bySlot[slot].find((s) => pool.roles[s.id] === role);
   const cheapestOf = (slot: Position) => Math.min(...pool.bySlot[slot].map((p) => p.fga));
   const valueFive = STARTER_SLOTS.reduce((sum, slot) => sum + (cardOf(slot, 'value')?.fga ?? cheapestOf(slot)), 0);
   const starFive = STARTER_SLOTS.reduce((sum, slot) => sum + (cardOf(slot, 'star')?.fga ?? cheapestOf(slot)), 0);
   const cheapest = STARTER_SLOTS.reduce((sum, slot) => sum + cheapestOf(slot), 0);
-  const cap = Math.round(valueFive + STAR_BUDGET_SHARE * Math.max(0, starFive - valueFive));
+  const cap = Math.round(valueFive + starShare * Math.max(0, starFive - valueFive));
   return Math.max(cap, Math.ceil(cheapest + CAP_FLOOR_MARGIN));
 }
 
@@ -612,10 +615,10 @@ const BOARD_MIN_GAP = 4;
 /** Pool variants tried per seed, each with a few caps, before settling for the best seen. */
 const BOARD_POOL_TRIES = 6;
 
-function capCandidates(pool: DailyPool): number[] {
+function capCandidates(pool: DailyPool, starShare?: number): number[] {
   const cheapest = STARTER_SLOTS.reduce((sum, slot) => sum + Math.min(...pool.bySlot[slot].map((p) => p.fga)), 0);
   const floor = Math.ceil(cheapest + CAP_FLOOR_MARGIN);
-  const cap = computedShotsCap(pool);
+  const cap = computedShotsCap(pool, starShare);
   return [...new Set([cap, cap + 3, cap - 3].filter((c) => c >= floor))];
 }
 
@@ -629,15 +632,16 @@ function quickGap(pool: DailyPool, cap: number): number {
 }
 
 const boardCache = new Map<string, DailyBoard>();
-export function dailyBoard(seed: string = dayKey()): DailyBoard {
-  const hit = boardCache.get(seed);
+export function dailyBoard(seed: string = dayKey(), starShare?: number): DailyBoard {
+  const cacheKey = `${seed}|${starShare ?? ''}`;
+  const hit = boardCache.get(cacheKey);
   if (hit) return hit;
   let best: DailyBoard | null = null;
   let bestGap = -Infinity;
   search: for (let attempt = 0; attempt < BOARD_POOL_TRIES; attempt++) {
     const poolKey = attempt === 0 ? seed : `${seed}~${attempt}`;
     const pool = dailyPool(poolKey);
-    for (const cap of capCandidates(pool)) {
+    for (const cap of capCandidates(pool, starShare)) {
       const gap = quickGap(pool, cap);
       if (gap > bestGap) {
         bestGap = gap;
@@ -646,7 +650,7 @@ export function dailyBoard(seed: string = dayKey()): DailyBoard {
       if (gap >= BOARD_MIN_GAP) break search;
     }
   }
-  boardCache.set(seed, best!);
+  boardCache.set(cacheKey, best!);
   return best!;
 }
 
@@ -994,7 +998,7 @@ const gameCache = new Map<string, DailyGame>();
 export function dailyGame(seed: string, meta: { order: Position[]; jokerSlot: Position }): DailyGame {
   const hit = gameCache.get(seed);
   if (hit) return hit;
-  const board = dailyBoard(seed);
+  const board = dailyBoard(seed, DAILY_STAR_BUDGET_SHARE);
   const { pool, cap } = board;
   const slot = meta.jokerSlot;
   const rng = mulberry32(seedFromKey(`${seed}:joker`));

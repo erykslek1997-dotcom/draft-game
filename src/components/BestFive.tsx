@@ -310,8 +310,10 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
           </p>
 
 
+          {/* 2026-09-28, the user ("pozycje niech będą ustawione w zwykłej kolejności ale losowanie
+              nadal losowe"): the row stays PG→C; the daily board still deals them in its own order. */}
           <div className="bf-slot-row">
-            {order.map((slot) => {
+            {STARTER_SLOTS.map((slot) => {
               const s = lineup[slot];
               const dealt = revealed.has(slot);
               return (
