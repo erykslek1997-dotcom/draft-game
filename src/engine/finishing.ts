@@ -113,6 +113,23 @@ function percentile(value: number, sorted: number[]): number {
   return (100 * (below + equal / 2)) / sorted.length;
 }
 
+/**
+ * The comparison group for a span. The groups are built from the draft pool, but the engine also
+ * rates windows outside it (the full archive), so a pre-1997 position/decade the pool never saw
+ * falls back to the nearest decade with that position, then to the zone-era group.
+ */
+function referenceFor(refs: Map<string, Reference>, position: Position, f: Features): Reference {
+  const exact = refs.get(referenceKey(position, f));
+  if (exact) return exact;
+  if (!f.zone) {
+    for (let step = 10; step <= 60; step += 10) {
+      const near = refs.get(`b|${position}|${f.decade - step}`) ?? refs.get(`b|${position}|${f.decade + step}`);
+      if (near) return near;
+    }
+  }
+  return refs.get(`z|${position}`)!;
+}
+
 const valueCache = new Map<string, number>();
 /** FINISHING on the 0-100 scale the other judge metrics use. */
 export function computeFinishing(span: PlayerSpan): number {
@@ -120,7 +137,7 @@ export function computeFinishing(span: PlayerSpan): number {
   if (hit !== undefined) return hit;
   references ??= buildReferences();
   const f = cachedFeatures(span);
-  const ref = references.get(referenceKey(span.primaryPosition, f))!;
+  const ref = referenceFor(references, span.primaryPosition, f);
   const shrink = f.zone ? ACCURACY_SHRINK_ATTEMPTS : TWO_POINT_SHRINK_ATTEMPTS;
   const trust = f.attempts / (f.attempts + shrink);
   const accuracy = ref.medianAccuracy + (f.accuracy - ref.medianAccuracy) * trust;

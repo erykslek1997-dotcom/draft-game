@@ -3,6 +3,7 @@ import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import { computeOffensiveProfile } from './offensiveProfile';
 import { boxRatesForSpan, leagueFtRateForSpan } from './boxRatesLookup';
 import { rimPressureEvidenceWeight } from '../data/historicalRimPressureEvidence';
+import { computeFinishing } from './finishing';
 
 /**
  * "Rim pressure" — how much a player forces the defense to send help at the rim / build its game
@@ -389,26 +390,23 @@ export function rimPressureForFit(span: PlayerSpan): number {
 }
 
 /**
- * Extra `rawComponents.offense` points for rim pressure, on the same additive scale as the
- * `gravity` (arc-spacing) term next to it. Cap 5; baseline 60 so an above-average interior
- * finisher who is not a genuine focal point contributes nothing.
+ * Extra `rawComponents.offense` points for pressure on the rim, on the same additive scale as the
+ * `gravity` (arc-spacing) term next to it: (FIN - 60) / 8, capped at +5.
  *
- * The zone-data path (1997+, real rim volume/accuracy/share) uses `K = 8`, so the Shaq/Giannis
- * tier (`rimPressure` ~100) hits the ceiling. The pre-1996-97 box PROXY path is coarser — no zone
- * data, so it can't tell a devastating low-volume finisher (McHale, a #3 option shooting 60% on
- * 15 FGA) from a true 20-FGA focal point — so it gets a gentler `K = 12`: Kareem / Karl Malone /
- * Moses / Ewing land ~+3-4 instead of maxing the cap.
+ * 2026-09-28, the user ("Curry mając około 70, powinien też coś dostawać"): this used to read
+ * `rimPressure()` above 60, which is built for interior focal points — only Shaq-type bigs ever
+ * cleared it (Giannis 2018-20 read 55.7, LeBron and every guard 0), and it discounted anyone whose
+ * rim attempts were a small share of a big three-point diet. It now reads FINISHING (FIN,
+ * `finishing.ts`): rim volume, accuracy and fouls drawn against players of the same position, which
+ * puts Curry 2016-18 at 75 (+1.9), Westbrook at 86 (+3.3), LeBron 93 (+4.1), Giannis 98 (+4.8) and
+ * Shaq 96 (+4.5, was +5). Team rim pressure (`rimPressureTeam`, fit) is unchanged.
  */
-const RIM_PRESSURE_BASELINE = 60;
-const RIM_PRESSURE_K_ZONE = 8;
-const RIM_PRESSURE_K_PROXY = 12;
+const RIM_PRESSURE_FIN_BASELINE = 60;
+const RIM_PRESSURE_FIN_K = 8;
 const RIM_PRESSURE_CAP = 5;
 
 export function rimPressureOffenseTerm(span: PlayerSpan): number {
-  const rp = rimPressure(span);
-  if (rp <= 0) return 0;
-  const k = computeOffensiveProfile(span).hasZoneData ? RIM_PRESSURE_K_ZONE : RIM_PRESSURE_K_PROXY;
-  return clamp((rp - RIM_PRESSURE_BASELINE) / k, 0, RIM_PRESSURE_CAP);
+  return clamp((computeFinishing(span) - RIM_PRESSURE_FIN_BASELINE) / RIM_PRESSURE_FIN_K, 0, RIM_PRESSURE_CAP);
 }
 
 /**
