@@ -78,15 +78,17 @@
 /* 2026-09-24: phone layout for the results screen — ranking rows wrap their score chips onto a
    second line instead of squeezing the team name into a 4-line column and clipping the chips off
    the right edge, and the one-row matchup table becomes a wrapping grid (MatchupMatrix.tsx). */
-.matchup-matrix-compact { display: none; }
-@media (max-width: 640px) {
-  .matchup-matrix-scroll.has-compact { display: none; }
-  .matchup-matrix-compact {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 8px 0;
-  }
-  .matchup-matrix-compact-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-  .matchup-matrix-compact-cell.is-open { outline-color: rgba(255, 255, 255, 0.8); }
-  .matchup-matrix-compact-code { font-size: 10px; font-weight: 600; opacity: 0.85; letter-spacing: 0.03em; }
+/* 2026-09-28 playtest: the one-row, 15-column table scrolled sideways even on a 1280px screen, so
+   the wrapping grid is now used at every width whenever it's just your own row. */
+.matchup-matrix-scroll.has-compact { display: none; }
+.matchup-matrix-compact {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 8px 0;
+}
+.matchup-matrix-compact-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.matchup-matrix-compact-cell.is-open { outline-color: rgba(255, 255, 255, 0.8); }
+.matchup-matrix-compact-code { font-size: 10px; font-weight: 600; opacity: 0.85; letter-spacing: 0.03em; }
+@media (min-width: 900px) {
+  .matchup-matrix-compact { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 }
 
 /* 2026-09-24: "← Menu" on the lottery and draft screens, plus the leave-draft confirm. */

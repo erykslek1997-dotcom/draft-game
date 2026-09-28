@@ -57,11 +57,15 @@ export function randomTeamNames(count: number): string[] {
   return names;
 }
 
-/** How a team is written wherever it's shown: "Kentucky Chickens #4", the #N being its
- * round-1 draft slot. One helper so the board, the history and the results screen can't drift
- * into three different formats. */
+/** How a team is written wherever it's shown. One helper so the board, the history and the
+ * results screen can't drift into different formats.
+ *
+ * 2026-09-28 playtest: it used to be "Kentucky Chickens #4", the #N being the round-1 draft slot,
+ * but it read as part of the name, and the All-Time hero printed the bare name while Mini and every
+ * ranking added the number. Names are unique within a draft, and the slot is already shown where
+ * it matters (the pick counter, the lottery), so the label is just the name. */
 export function teamLabel(team: Team): string {
-  return `${team.name} #${team.draftSlot}`;
+  return team.name;
 }
 
 /** `team.name` is always "Place Mascot" with the mascot a single MASCOTS token (see above) and

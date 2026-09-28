@@ -56,8 +56,10 @@ const FLOOR_Y = C.y + R + 20;
 const HATCH = { x: C.x, y: C.y + R };
 const TILE_W = 40, TILE_H = 40, TILE_GAP = 6, BOARD_Y = 420, PER_ROW = 8;
 
-/** Wait before drawing pick n, seconds: the top picks, where the tension is, are slow. */
-const gapBefore = (n: number) => (n <= 4 ? 0.85 : n <= 7 ? 0.55 : 0.32);
+/** Wait before drawing pick n, seconds: the top picks, where the tension is, are slow; past them
+ * the balls come out close together, several in the air at once (2026-09-28 playtest: pick #16
+ * took ~10 s, now ~7). */
+const gapBefore = (n: number) => (n <= 3 ? 0.7 : n <= 6 ? 0.4 : 0.22);
 
 export function drumHeight(teamCount: number): number {
   return BOARD_Y + Math.ceil(teamCount / PER_ROW) * (TILE_H + 8) - 10;
@@ -256,7 +258,7 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
     if (phase !== 'idle') return;
     audio = audio ?? createAudio();
     if (audio && audio.ac.state === 'suspended') void audio.ac.resume();
-    phase = 'drawing'; nextAt = vt + 1.1;
+    phase = 'drawing'; nextAt = vt + 0.9;
     opts.onStatus('Mixing…', false);
     sfx.whoosh();
   }

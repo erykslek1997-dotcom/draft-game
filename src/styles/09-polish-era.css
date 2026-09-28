@@ -65,6 +65,9 @@
 @media (min-width: 700px) {
   .team-result-body .subscores { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 }
+/* 2026-09-28 playtest: Mini Draft and Roulette have five scores — 4 + 1 left "Fit" alone on a
+   phone. Five across at every width. */
+.results-hero-scores-row.results-hero-scores-row--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .results-hero-scores-row .score-chip,
 .team-result-body .subscores .score-chip,
 .share-modal-scores .score-chip {

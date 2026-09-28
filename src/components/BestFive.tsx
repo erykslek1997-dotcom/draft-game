@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import './BestFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
+import { ScoreChip } from './ResultsScreen';
 import ShareResultModal from './ShareResultModal';
 import { copyLink } from './shareSave';
 import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
@@ -555,16 +556,15 @@ function BestFiveResult({
         />
       )}
 
-      <div className="bf-bars">
-        {AXES.map(({ key, label, context }) => (
-          <div key={key} className={`bf-bar-row ${context ? 'bf-bar-row--context' : ''}`}>
-            <span className="bf-bar-label at-cond">{label}</span>
-            <span className="bf-bar-track">
-              <span className="bf-bar-fill" style={{ width: `${Math.max(0, Math.min(100, score[key]))}%` }} />
-            </span>
-            <span className="bf-bar-val">{Math.round(score[key])}</span>
-          </div>
-        ))}
+      {/* 2026-09-28 playtest: the same "Team profile" tiles as the Mini and All-Time results
+          (they were bars here, tiles there, for the same five numbers). */}
+      <div className="bf-bars results-hero-scores">
+        <span className="share-modal-face-group-label">Team profile</span>
+        <div className="results-hero-scores-row results-hero-scores-row--5">
+          {AXES.map(({ key, label }) => (
+            <ScoreChip key={key} label={label} value={Math.round(score[key])} />
+          ))}
+        </div>
         <p className="bf-weights at-cond">
           Score = {weightsLine}. Spacing is diagnostic — it feeds Offense and Fit.
           <button className="bf-glossary-toggle at-cond" onClick={() => setShowGlossary((v) => !v)}>

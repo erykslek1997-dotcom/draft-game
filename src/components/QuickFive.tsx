@@ -31,7 +31,7 @@ import { rankTeams } from '../engine/scoring';
 import { fitScore } from '../engine/fit';
 import { bestHistoricalComp, compBadge } from '../engine/historicalComps';
 import DraftLottery from './DraftLottery';
-import { MetricBar, RankRowSummary, ScoreChip, qualityColor } from './ResultsScreen';
+import { MetricBar, RankRowSummary, ScoreChip, nextDraftTip, qualityColor } from './ResultsScreen';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
@@ -81,6 +81,9 @@ const QUICK_HOW_TO_PLAY = [
  * tier-capped-peak span per player), not `draft.ts`'s own multi-span `activeDraftPool` — there is
  * no span picker anywhere in this mode, by design, not just by omission.
  */
+/** CPU pick delay while "Skip to my pick" runs, ms. */
+const RUSH_PICK_MS = 90;
+
 export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge }: Props) {
   const [state, setState] = useState<QuickDraftState>(() => createQuickDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined));
   const [phase, setPhase] = useState<Phase>('lottery');
@@ -111,6 +114,14 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   const canPick = currentTeam.isHuman;
   const teamCodeByTeamId = useMemo(() => teamCodes(state.teams), [state.teams]);
 
+  // 2026-09-28 playtest: with a late slot the player sat through nine calm first-round CPU picks
+  // before touching anything. "Skip to my pick" runs the CPU picks quickly up to the player's next
+  // turn, then the chosen pace is back.
+  const [rushToMe, setRushToMe] = useState(false);
+  useEffect(() => {
+    if (canPick) setRushToMe(false);
+  }, [canPick]);
+
   // Auto-resolve CPU turns, same pacing the main draft's default 'Normal' speed uses.
   useEffect(() => {
     if (phase !== 'draft' || state.complete || autoFinishing) return;
@@ -118,9 +129,9 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
     const timer = setTimeout(() => {
       const next = resolveQuickAiPickIfNeeded(state);
       if (next) setState(next);
-    }, cpuPickDelay(aiSpeed.delayMs, state.history.length, TEAM_COUNT));
+    }, rushToMe ? RUSH_PICK_MS : cpuPickDelay(aiSpeed.delayMs, state.history.length, TEAM_COUNT));
     return () => clearTimeout(timer);
-  }, [state, phase, autoFinishing, aiSpeed.delayMs]);
+  }, [state, phase, autoFinishing, aiSpeed.delayMs, rushToMe]);
 
   // Once the draft ends, move straight to results — no rotation-building step at all (user's own
   // spec: "bez etapu budowania rotacji/minut — od razu wynik").
@@ -181,6 +192,8 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
           autoFinishing={autoFinishing}
           teamIdx={teamIdx}
           boardOpen={boardOpen}
+          rushToMe={rushToMe}
+          onRushToMe={() => setRushToMe(true)}
         />
       )}
       {phase === 'results' && (
@@ -236,6 +249,8 @@ function QuickDraftBoard({
   autoFinishing,
   teamIdx,
   boardOpen,
+  rushToMe,
+  onRushToMe,
 }: {
   state: QuickDraftState;
   canPick: boolean;
@@ -249,6 +264,8 @@ function QuickDraftBoard({
   onPick: (id: string) => void;
   onAutoFinish: () => void;
   autoFinishing: boolean;
+  rushToMe: boolean;
+  onRushToMe: () => void;
   teamIdx: number;
   boardOpen: boolean;
 }) {
@@ -390,9 +407,14 @@ function QuickDraftBoard({
         {!canPick ? (
           <div className={`at-cpu-turn-banner${state.history.length === 0 ? ' is-opening' : ''}`}>
             {state.history.length === 0 ? (
-              <>The draft is about to begin — <b>{teamLabel(currentTeam)}</b> is on the clock with pick 1.</>
+              <>The draft is about to begin — <b>{teamLabel(currentTeam)}</b> is on the clock with pick 1. {picksAway != null && <> You pick at #{picksAway + 1}.</>}</>
             ) : (
               <>{teamLabel(currentTeam)} is picking…</>
+            )}
+            {picksAway != null && picksAway > 1 && !rushToMe && (
+              <button type="button" className="at-skip-to-me at-cond" onClick={onRushToMe}>
+                Skip to my pick →
+              </button>
             )}
           </div>
         ) : (
@@ -629,7 +651,19 @@ function QuickResults({
   // Same weakest-axis reasoning Best Five's own result screen uses (`WEAK_AXIS_REASON`, exported
   // from bestFive.ts for exactly this reuse), plus the same fit weak-link/notes `scoreLineup`
   // already computes but nothing here was reading yet.
-  const weakest = [...WEIGHTED_AXES].sort((a, b) => human.score[a.key] - human.score[b.key])[0];
+  // 2026-09-28 playtest: the weakest axis is the one furthest below the field median, not the
+  // lowest raw number (the scales differ) — the same reading the All-Time "Next draft:" tip uses,
+  // and the tip added here names the same axis the sentence above it does. No tip for the winner.
+  const weakest = useMemo(() => {
+    const median = (values: number[]) => [...values].sort((x, y) => x - y)[Math.floor(values.length / 2)] ?? 0;
+    return [...WEIGHTED_AXES].sort(
+      (a, b) => human.score[a.key] - median(ranked.map((r) => r.score[a.key])) - (human.score[b.key] - median(ranked.map((r) => r.score[b.key]))),
+    )[0];
+  }, [ranked, human]);
+  const nextTip = useMemo(
+    () => (humanRank === 1 ? undefined : nextDraftTip(weakest.label, human.team)),
+    [weakest, human, humanRank],
+  );
 
   const fit = useMemo(() => fitScore(human.team), [human]);
   const starters = STARTER_SLOTS.map((slot) => {
@@ -679,7 +713,7 @@ function QuickResults({
         <div className="results-hero-dashboard">
           <div className="results-hero-scores">
             <span className="share-modal-face-group-label">Team profile</span>
-            <div className="results-hero-scores-row">
+            <div className="results-hero-scores-row results-hero-scores-row--5">
               {barKeys.map((key) => (
                 <ScoreChip key={key} label={key[0].toUpperCase() + key.slice(1)} value={Math.round(human.score[key] as number)} />
               ))}
@@ -703,6 +737,11 @@ function QuickResults({
               {human.score.weakLink && (
                 <p>
                   Defensively, <b>{human.score.weakLink}</b> is the softest spot — an opponent will attack him every possession.
+                </p>
+              )}
+              {nextTip && (
+                <p className="results-verdict-tip">
+                  <b>{humanRank <= 4 ? 'To get over the top:' : 'Next draft:'}</b> {nextTip}
                 </p>
               )}
             </div>
@@ -783,7 +822,7 @@ function QuickResults({
           </button>
         </div>
       )}
-      <div className="bf-submit-row bf-result-actions">
+      <div className="bf-submit-row bf-result-actions end-actions">
         <button className="primary-btn" onClick={onNewDraft}>
           New draft
         </button>

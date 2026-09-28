@@ -199,7 +199,7 @@ const ARCHETYPE_DISPLAY_NAMES: Record<ChampionshipArchetype, string> = {
   'Big two-way + shooting': 'Big lineup + shooting',
   'Heliocentric star + specialists': 'One star + specialists',
   'Balanced two-way contender': 'Balanced two-way',
-  'Fragile specialist mix': 'Fragile specialist mix',
+  'Fragile specialist mix': 'Fragile mix of specialists',
 };
 
 export function archetypeDisplayName(archetype: ChampionshipArchetype | string): string {
@@ -217,6 +217,22 @@ export function archetypeDisplayName(archetype: ChampionshipArchetype | string):
  */
 export const DEFENSE_FIRST_MIN_SCORE = 75;
 
+/**
+ * 2026-09-28 playtest: two styles were joined with " + ", which ran into the "+" inside the names
+ * themselves ("Creator + rim protector + Fragile specialist mix"). The second style now reads as a
+ * lean ("Creator + rim protector, leaning Shooting + switching"), and the fragile style — a caveat,
+ * not a style of its own — as "…, but fragile".
+ */
+function styleLabel(shown: ChampionshipArchetype[]): string | null {
+  const [first, second] = shown;
+  if (!first) return null;
+  const name = archetypeDisplayName(first);
+  if (!second) return name;
+  if (second === 'Fragile specialist mix') return `${name}, but fragile`;
+  if (first === 'Fragile specialist mix') return `${archetypeDisplayName(second)}, but fragile`;
+  return `${name}, leaning ${archetypeDisplayName(second)}`;
+}
+
 export function teamStyleFor(
   primary: ChampionshipArchetype | undefined,
   secondary: ChampionshipArchetype | undefined,
@@ -228,7 +244,7 @@ export function teamStyleFor(
   const s = backed(secondary);
   const shown = [p, s].filter((a): a is ChampionshipArchetype => a !== undefined);
   return {
-    label: shown.length > 0 ? shown.map(archetypeDisplayName).join(' + ') : null,
+    label: styleLabel(shown),
     failureMode: p === primary ? failureMode : null,
   };
 }

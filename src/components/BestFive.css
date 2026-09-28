@@ -530,7 +530,11 @@
   padding: 0 6px;
   text-align: center;
 }
-.bf-reel-name { font-size: 13px; font-weight: 700; color: var(--at-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* 2026-09-28 playtest: two lines instead of an ellipsis ("S. Gilgeous-Ale…") — the card has the room. */
+.bf-reel-name {
+  font-size: 13px; font-weight: 700; color: var(--at-ink); max-width: 100%; text-align: center; line-height: 1.2;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere;
+}
 .bf-reel-season { font-size: 11px; color: var(--at-ink-soft); }
 .bf-machine-foot {
   margin: 14px 0 0;
