@@ -256,22 +256,48 @@ export interface Rumor {
 }
 const BAITS_PER_BOARD = 2;
 
-function costWords(fga: number): string {
-  if (fga >= 21) return 'He won’t come cheap.';
-  if (fga >= 17) return 'Priced like a first option.';
-  if (fga >= 12) return 'Mid-range price tag.';
-  return 'Cheap, too.';
+/**
+ * 2026-09-28, the user ("opisy nic nie mówią bo są zbyt podobne"): every rumor used to be one of a
+ * handful of fixed lines, so after a few boards they all read alike. Each part now has several
+ * wordings (picked by the rumor's own seed), the strength reads more signals, and about half the
+ * rumors add one more true detail — the subject's era or what he did on the glass — so the talk
+ * is specific enough to argue with. Still true of exactly the card it describes, still silent on
+ * which card that is.
+ */
+const COST_WORDS: [number, string[]][] = [
+  [21, ['He won’t come cheap.', 'He’ll eat a big chunk of the cap.', 'Bring your wallet.']],
+  [17, ['Priced like a first option.', 'Not cheap — first-option money.', 'You’ll pay for him.']],
+  [12, ['Mid-range price tag.', 'Won’t break the bank, won’t come free.', 'Fair price, if the scouts are right.']],
+  [0, ['Cheap, too.', 'And he costs next to nothing.', 'Bargain-bin price.']],
+];
+function pickFrom<T>(list: T[], rng: () => number): T {
+  return list[Math.floor(rng() * list.length)];
 }
-function strengthWords(s: PlayerSpan): string | null {
-  const signals: [number, string][] = [
-    [computeSpacing(s) - 75, 'Can really shoot it.'],
-    [computeDefensiveTalent(s) - 80, 'Locks people up.'],
-    [computeFinishing(s) - 80, 'Lives at the rim.'],
-    [computeOffensiveTalent(s) - 85, 'Gets buckets.'],
-    [(s.box.apg - 7.5) * 4, 'Runs the whole show.'],
+function costWords(fga: number, rng: () => number): string {
+  return pickFrom((COST_WORDS.find(([min]) => fga >= min) ?? COST_WORDS[COST_WORDS.length - 1])[1], rng);
+}
+function strengthWords(s: PlayerSpan, rng: () => number): string | null {
+  const signals: [number, string[]][] = [
+    [computeSpacing(s) - 75, ['Can really shoot it.', 'Defenses can’t leave him open.', 'Stretches the floor.']],
+    [computeDefensiveTalent(s) - 80, ['Locks people up.', 'Nobody wants to be guarded by him.', 'A real stopper.']],
+    [computeFinishing(s) - 80, ['Lives at the rim.', 'Finishes through contact.', 'Gets to the basket at will.']],
+    [computeOffensiveTalent(s) - 85, ['Gets buckets.', 'Scores from anywhere.', 'A go-to scorer.']],
+    [(s.box.apg - 7.5) * 4, ['Runs the whole show.', 'Makes everyone around him better.', 'A true table-setter.']],
+    [(s.box.rpg - 11) * 3, ['Owns the glass.', 'Every rebound is his.', 'A monster on the boards.']],
   ];
   const [edge, words] = signals.reduce((a, b) => (b[0] > a[0] ? b : a));
-  return edge > 0 ? words : null;
+  return edge > 0 ? pickFrom(words, rng) : null;
+}
+/** One more true detail about the subject: when he played. */
+function eraWords(s: PlayerSpan, rng: () => number): string | null {
+  const years = s.spanLabel.match(/\d{4}/g)?.map(Number) ?? [];
+  if (years.length === 0) return null;
+  const mid = (years[0] + years[years.length - 1]) / 2;
+  if (mid < 1980) return pickFrom(['Old-school — from before the three-point line mattered.', 'A name from the seventies or earlier.'], rng);
+  if (mid < 1990) return pickFrom(['An eighties guy.', 'Came up in the Magic-and-Bird years.'], rng);
+  if (mid < 2000) return pickFrom(['A nineties player.', 'From the Jordan era.'], rng);
+  if (mid < 2012) return pickFrom(['From the 2000s.', 'Peaked before the three-point boom.'], rng);
+  return pickFrom(['A modern player.', 'From the pace-and-space era.'], rng);
 }
 /**
  * 2026-09-27, the user ("A 14-time All-Star is in the next deal — za mocno sugeruje, że ktoś
@@ -283,14 +309,17 @@ const ALL_STAR_OPENERS = [
   'There’s a familiar face in the next deal.',
   'Scouts keep circling one name in the next deal.',
   'One of the next four has played on the big stage.',
+  'The phones are ringing about one of the next four.',
+  'A name you know is coming up.',
 ];
 const UNKNOWN_OPENERS = [
   'Someone in the next deal is better than his name.',
   'The box score liked one of the next four more than the fans did.',
+  'There’s a quiet one in the next deal the scouts won’t shut up about.',
+  'You might not know one of the next four. The tape does.',
 ];
 function identityWords(s: PlayerSpan, rng: () => number): string {
-  const list = allStarCount(s.playerName) >= 1 ? ALL_STAR_OPENERS : UNKNOWN_OPENERS;
-  return list[Math.floor(rng() * list.length)];
+  return pickFrom(allStarCount(s.playerName) >= 1 ? ALL_STAR_OPENERS : UNKNOWN_OPENERS, rng);
 }
 
 export function rumorFor(pool: DailyPool, slot: Position): Rumor | undefined {
@@ -307,9 +336,11 @@ export function rumorFor(pool: DailyPool, slot: Position): Rumor | undefined {
   if (!subject) return undefined;
   // A bait reads exactly like a true rumor: same identity line (All-Star count), same wording.
   const detailRng = mulberry32(seedFromKey(`${pool.key}:rumor:${slot}`));
-  const strength = strengthWords(subject);
-  const detail = strength && detailRng() < 0.7 ? `${strength} ${costWords(subject.fga)}` : costWords(subject.fga);
-  return { text: `${identityWords(subject, detailRng)} ${detail}`, bait: Boolean(bait) };
+  const opener = identityWords(subject, detailRng);
+  const strength = strengthWords(subject, detailRng);
+  const era = detailRng() < 0.5 ? eraWords(subject, detailRng) : null;
+  const parts = [opener, era, strength && detailRng() < 0.8 ? strength : null, costWords(subject.fga, detailRng)];
+  return { text: parts.filter(Boolean).join(' '), bait: Boolean(bait) };
 }
 
 // ---------------------------------------------------------------------------
@@ -725,7 +756,24 @@ export interface ResultExplanation {
   swaps: { slot: Position; yours: string; engine: string }[];
   /** The player took the lazy "five biggest names" lineup. */
   tookLazyPick: boolean;
+  /** 2026-09-28, the user ("jeśli wybrałem najlepszy możliwy zespół to czy powinny być jakieś
+   * słabości wypisywane? Raczej im lepiej tym bardziej w stronę pochwał"): how far the five is from
+   * the best five on the board, which sets the film room's tone. */
+  gapToBest: number;
+  standing: 'best' | 'close' | 'off';
+  /** The best five's own axis values — the ceiling of this deal, shown next to yours. */
+  bestAxes: Record<WeightedAxis | 'spacing', number>;
+  /** The weakest axis is no worse than the best five's (within 2): the deal, not the pick. */
+  weakestIsBoardLimit: boolean;
+  /** Each of your picks that differs from the best five, by what it costs: the best five's score
+   * minus the best five with your player in that spot. Biggest cost first. */
+  pickCosts: { slot: Position; yours: string; best: string; cost: number; axis: string; axisDelta: number }[];
 }
+
+/** Within this many points of the best five on the board counts as matching it. */
+export const BEST_FIVE_TOLERANCE = 1;
+/** Within this many points reads as close: praise plus one concrete swap. */
+export const CLOSE_TO_BEST = 4;
 
 export function explainResult(lineup: Lineup, pool: DailyPool, targets: DailyTargets, cap?: number): ResultExplanation {
   const score = scoreLineup(lineup);
@@ -753,6 +801,20 @@ export function explainResult(lineup: Lineup, pool: DailyPool, targets: DailyTar
 
   const tookLazyPick = STARTER_SLOTS.every((slot) => lineup[slot]?.id === lazy[slot].id);
 
+  const gapToBest = Math.max(0, Math.round(targets.optimal - score.composite));
+  const standing = gapToBest <= BEST_FIVE_TOLERANCE ? 'best' : gapToBest <= CLOSE_TO_BEST ? 'close' : 'off';
+  const axisKeys = ['talent', 'offense', 'defense', 'spacing', 'fit'] as const;
+  const bestAxes = Object.fromEntries(axisKeys.map((k) => [k, Math.round(optScore[k])])) as Record<WeightedAxis | 'spacing', number>;
+  const pickCosts = STARTER_SLOTS.flatMap((slot) => {
+    const yours = lineup[slot];
+    const best = targets.optimalFive[slot];
+    if (!yours || !best || yours.id === best.id) return [];
+    const swapped = scoreLineup({ ...targets.optimalFive, [slot]: yours });
+    const [axis] = WEIGHTED_AXES.map((a) => ({ label: a.label, delta: Math.round(swapped[a.key] - optScore[a.key]) }))
+      .sort((a, b) => a.delta - b.delta);
+    return [{ slot, yours: yours.playerName, best: best.playerName, cost: Math.round(optScore.composite - swapped.composite), axis: axis.label, axisDelta: axis.delta }];
+  }).sort((a, b) => b.cost - a.cost);
+
   return {
     weakest: {
       axis: weakestKey.key,
@@ -763,6 +825,11 @@ export function explainResult(lineup: Lineup, pool: DailyPool, targets: DailyTar
     engineEdge,
     swaps,
     tookLazyPick,
+    gapToBest,
+    standing,
+    bestAxes,
+    weakestIsBoardLimit: score[weakestKey.key] >= optScore[weakestKey.key] - 2,
+    pickCosts,
   };
 }
 

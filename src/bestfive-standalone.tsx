@@ -18,7 +18,7 @@ const BestFive = lazy(() => import('./components/BestFive'));
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <div className="app-shell">
-      <Suspense fallback={<div className="loading-panel">Loading Roulette…</div>}>
+      <Suspense fallback={<div className="loading-panel">Loading Slot Machine…</div>}>
         <BestFive mode="player" />
       </Suspense>
     </div>

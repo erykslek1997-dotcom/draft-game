@@ -9,7 +9,7 @@
  */
 export interface ModeChallenge {
   mode: 'mini' | 'roulette';
-  /** Mini Draft seed (number) or Roulette deal seed (string), as the mode uses it. */
+  /** Mini Draft seed (number) or Slot Machine deal seed (string), as the mode uses it. */
   seed: string;
   /** The sender's score on that board. */
   vs: number | null;

@@ -28,10 +28,10 @@ export default function ShareResultModal({
   five,
 }: {
   onClose: () => void;
-  mode: 'Mini Draft' | 'Roulette';
-  /** Team name (Mini Draft) or "My Roulette five". */
+  mode: 'Mini Draft' | 'Slot Machine';
+  /** Team name (Mini Draft) or "My Slot Machine five". */
   title: string;
-  /** "4th / 16" style finish; omitted in Roulette, where the tier is the headline. */
+  /** "4th / 16" style finish; omitted in the Slot Machine, where the tier is the headline. */
   headline?: ReactNode;
   tier: { label: string; tone: 1 | 2 | 3 | 4 | 5 | 6 };
   cells: ScoreBoardCell[];

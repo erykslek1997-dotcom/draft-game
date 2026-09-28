@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { Fragment, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import './BestFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
 import { ScoreChip } from './ResultsScreen';
@@ -33,6 +33,7 @@ import {
   type DailyPool,
   type DailyTargets,
   type GolfGrade,
+  type ResultExplanation,
 } from '../engine/bestFive';
 
 interface Props {
@@ -103,11 +104,9 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
   const [activeSlot, setActiveSlot] = useState<Position | null>('PG');
   // 2026-09-26, the user: "ograniczmy wybór do 5 graczy. Niech po każdym wyborze gracz widzi jacy
   // gracze się losują." Positions are dealt one at a time: a slot's five stay face down until the
-  // pick before it, then spin in on a slot machine (`spinSlot`, once per slot; `landedSlot` pops
-  // the cards in after it stops).
+  // pick before it, then spin in on the slot machine (`freshSlot`, once per slot).
   const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(['PG']));
   const [freshSlot, setFreshSlot] = useState<Position | null>('PG');
-  const [landedSlot, setLandedSlot] = useState<Position | null>(null);
   const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(null);
   // 2026-09-17, user's own ask: a real "how to play?" affordance on every mode, now that the
   // intro screen's own always-visible rules list is gone.
@@ -170,7 +169,7 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
           ← Menu
         </button>
       )}
-      <div className="at-board-brand at-cond">Roulette</div>
+      <div className="at-board-brand at-cond">Slot Machine</div>
       <div className="bf-subhead">
         <span className="bf-subhead-actions">
           <button className="at-legend-toggle at-cond" onClick={() => setShowHowToPlay((v) => !v)}>
@@ -238,24 +237,20 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
                     : 'Last spot — four dealt. Picks are final.'}
                 </span>
               </div>
-              {freshSlot === activeSlot ? (
-                <SlotMachine
-                  key={`${pool.key}-${activeSlot}`}
-                  pool={pool}
-                  slot={activeSlot}
-                  onDone={() => {
-                    setLandedSlot(activeSlot);
-                    setFreshSlot(null);
-                  }}
-                />
-              ) : (
-              <div className={`bf-pool${landedSlot === activeSlot ? ' bf-pool--landed' : ''}`} key={activeSlot}>
-                {pool.bySlot[activeSlot].map((span, i) => {
+              {/* 2026-09-28, the user ("jeden widok byłby lepszy"): the deal no longer switches to a
+                  separate card grid once the reels stop — each reel opens up into its card, in the
+                  same cabinet, and a position you come back to shows its cards there too. */}
+              <SlotMachine
+                key={`${pool.key}-${activeSlot}`}
+                pool={pool}
+                slot={activeSlot}
+                fresh={freshSlot === activeSlot}
+                onDone={() => setFreshSlot(null)}
+                renderCard={(span) => {
                   const chosen = lineup[activeSlot]?.id === span.id;
                   const over = overBy(activeSlot, span);
                   const blocked = over > 1e-9;
                   return (
-                    <div className="bf-deal" key={span.id} style={{ '--i': i } as CSSProperties}>
                     <button
                       className={`bf-pool-card ${chosen ? 'bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
                       title={blocked ? `${span.playerName} would leave no room under the cap` : span.playerName}
@@ -287,11 +282,9 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
                       <span className="bf-pool-box">{boxLineShort(span)}</span>
                       <span className="bf-pool-box bf-pool-box--sub">{boxLineDetail(span)}</span>
                     </button>
-                    </div>
                   );
-                })}
-              </div>
-              )}
+                }}
+              />
               {(() => {
                 // 2026-09-27: a line of scouting talk about the next position — true of one of its
                 // four cards, but sometimes about the card that sounds better than it plays.
@@ -364,66 +357,87 @@ function prefersReducedMotion(): boolean {
  * after the one to its left, and the stars that flew past are named once all five stop. Tap to
  * skip; reduced motion skips it outright.
  */
-function SlotMachine({ pool, slot, onDone }: { pool: DailyPool; slot: Position; onDone: () => void }) {
+function SlotMachine({
+  pool,
+  slot,
+  fresh,
+  onDone,
+  renderCard,
+}: {
+  pool: DailyPool;
+  slot: Position;
+  /** First visit to this position: the reels wait for the lever and spin. Otherwise they stand
+   * open on the dealt cards. */
+  fresh: boolean;
+  onDone: () => void;
+  renderCard: (span: PlayerSpan) => ReactNode;
+}) {
   const { reels, nearMisses } = useMemo(() => slotReels(pool, slot), [pool, slot]);
   const dealt = pool.bySlot[slot];
-  const [stopped, setStopped] = useState(0);
+  const [stoppedCount, setStopped] = useState(0);
   // Waits for the lever (2026-09-26: "element wizualny który daje nam możliwość wystartowania").
   const [spinning, setSpinning] = useState(false);
+  const stopped = fresh ? stoppedCount : dealt.length;
   const allStopped = stopped >= dealt.length;
   useEffect(() => {
-    if (prefersReducedMotion()) onDone();
+    if (fresh && prefersReducedMotion()) onDone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
-    if (!allStopped) return;
+    if (!fresh || !allStopped) return;
     const t = window.setTimeout(onDone, nearMisses.length > 0 ? 1700 : 800);
     return () => window.clearTimeout(t);
-  }, [allStopped, nearMisses.length, onDone]);
+  }, [fresh, allStopped, nearMisses.length, onDone]);
+  const skippable = fresh && spinning && !allStopped;
   return (
     <div
-      className={`bf-machine${spinning ? '' : ' is-idle'}`}
-      role={spinning ? 'button' : undefined}
-      tabIndex={spinning ? 0 : undefined}
-      aria-label={spinning ? 'Dealing — tap to skip' : undefined}
-      onClick={spinning ? onDone : undefined}
-      onKeyDown={(e) => spinning && (e.key === 'Enter' || e.key === ' ') && onDone()}
+      className={`bf-machine${fresh && !spinning ? ' is-idle' : ''}${allStopped ? ' is-open' : ''}`}
+      role={skippable ? 'button' : undefined}
+      tabIndex={skippable ? 0 : undefined}
+      aria-label={skippable ? 'Dealing — tap to skip' : undefined}
+      onClick={skippable ? onDone : undefined}
+      onKeyDown={(e) => skippable && (e.key === 'Enter' || e.key === ' ') && onDone()}
     >
       <div className="bf-cabinet">
       <div className="bf-reels">
         {dealt.map((final, i) => (
-          <div key={final.id} className={`bf-reel${i < stopped ? ' is-stopped' : ''}`}>
-            <div
-              className="bf-reel-strip"
-              style={{ '--n': reels[i].length, '--dur': `${reelDuration(i)}ms` } as CSSProperties}
-              onAnimationEnd={(e) => e.target === e.currentTarget && setStopped((n) => n + 1)}
-            >
-              {[...reels[i], final].map((span, k) => (
-                <div className="bf-reel-item" key={k}>
-                  <Face name={span.playerName} size="md" />
-                  <span className="bf-reel-name">{shortenName(span.playerName, 0)}</span>
-                  <span className="bf-reel-season">{span.spanLabel}</span>
-                </div>
-              ))}
-            </div>
+          <div key={final.id} className={`bf-reel${i < stopped ? ' is-stopped is-card' : ''}`} style={{ '--i': i } as CSSProperties}>
+            {i < stopped ? (
+              // A pick must not also count as the machine's tap-to-skip.
+              <div className="bf-reel-card" onClick={(e) => e.stopPropagation()}>{renderCard(final)}</div>
+            ) : (
+              <div
+                className="bf-reel-strip"
+                style={{ '--n': reels[i].length, '--dur': `${reelDuration(i)}ms` } as CSSProperties}
+                onAnimationEnd={(e) => e.target === e.currentTarget && setStopped((n) => n + 1)}
+              >
+                {[...reels[i], final].map((span, k) => (
+                  <div className="bf-reel-item" key={k}>
+                    <Face name={span.playerName} size="md" />
+                    <span className="bf-reel-name">{shortenName(span.playerName, 0)}</span>
+                    <span className="bf-reel-season">{span.spanLabel}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
       {/* 2026-09-27, the user: "4 sloty, obok dźwignia" — the lever stands beside the reels, as on
           a one-armed bandit, and stays there (pulled down) while they spin. */}
       <div className="bf-machine-lever" onClick={(e) => e.stopPropagation()}>
-        <SpinLever onPull={() => setSpinning(true)} label={spinning ? 'Dealing' : 'Pull'} disabled={spinning && allStopped} />
+        <SpinLever onPull={() => setSpinning(true)} label={!fresh ? 'Dealt' : spinning ? 'Dealing' : 'Pull'} disabled={!fresh || (spinning && allStopped)} />
       </div>
       </div>
       <p className={`bf-machine-foot${allStopped ? ' is-done' : ''}`} aria-live="polite">
-        {!spinning ? (
+        {fresh && !spinning ? (
           <>Four {SLOT_LABEL[slot].toLowerCase()}s are loaded — pull the lever.</>
         ) : !allStopped ? (
           <>Dealing… <span className="bf-muted">tap to skip</span></>
-        ) : nearMisses.length > 0 ? (
+        ) : fresh && nearMisses.length > 0 ? (
           <>So close — <b>{nearMisses.join(' · ')}</b> flew past.</>
         ) : (
-          <>Your five are in.</>
+          <>Pick one — picks are final.</>
         )}
       </p>
     </div>
@@ -443,6 +457,29 @@ const RESULT_LEAD: Record<GolfGrade, string> = {
   'double-bogey': 'This five doesn’t play as a team yet — here’s where it breaks down.',
 };
 
+/**
+ * The film room's first line. 2026-09-28, the user ("opisy nic nie mówią bo są zbyt podobne"): it
+ * used to be one fixed sentence per grade. It now follows how close the five is to the best five on
+ * the board, names the gap, and rotates between a few wordings by the board's seed.
+ */
+const LEAD_BEST = [
+  'Nobody builds a better five from this deal — this is the best team on the board.',
+  'You found the best five the deal had. There’s nothing on the tape to fix.',
+  'Best team on the board. Every card you passed on would have made it worse.',
+  'That’s the five the film room would have drawn up. Hang the banner.',
+];
+const LEAD_CLOSE = [
+  (gap: number) => `${gap} points off the best five on the board — one decision away from it.`,
+  (gap: number) => `Nearly the best team on the board: ${gap} points short, and it comes down to one spot.`,
+  (gap: number) => `A good five, ${gap} points behind the best one the deal had.`,
+];
+function filmRoomLead(explain: ResultExplanation, grade: GolfGrade, seed: string): string {
+  const pick = <T,>(list: T[]) => list[[...seed].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % list.length];
+  if (explain.standing === 'best') return pick(LEAD_BEST);
+  if (explain.standing === 'close') return pick(LEAD_CLOSE)(explain.gapToBest);
+  return `${RESULT_LEAD[grade]} The best five on the board was ${explain.gapToBest} points better.`;
+}
+
 function CmpCell({ span, tone }: { span: PlayerSpan | null | undefined; tone: 'hit' | 'miss' | 'best' }) {
   if (!span) return <span />;
   return (
@@ -457,7 +494,7 @@ function randomSeed(n: number): string {
   return `roulette-${n}-${Math.floor(Math.random() * 1e9)}`;
 }
 
-/** The draft finish tiers' colour tone for each Roulette grade (same words, same colours). */
+/** The draft finish tiers' colour tone for each Slot Machine grade (same words, same colours). */
 const GRADE_TONE: Record<GolfGrade, 1 | 2 | 3 | 4 | 5 | 6> = { eagle: 6, birdie: 5, par: 4, bogey: 3, 'double-bogey': 2 };
 
 function BestFiveResult({
@@ -494,6 +531,8 @@ function BestFiveResult({
   const yourShots = useMemo(() => lineupShots(lineup), [lineup]);
 
   const weightsLine = WEIGHTED_AXES.map((a) => `${a.pct}% ${a.label}`).join(' · ');
+  // Strongest axes against the field of this deal: the best five's own value is the yardstick.
+  const [strongest, secondStrongest] = [...WEIGHTED_AXES].sort((a, b) => score[b.key] - score[a.key]);
   const chalkGap = targets.optimal - targets.par;
 
   return (
@@ -531,7 +570,7 @@ function BestFiveResult({
             type="button"
             className="results-hero-copy results-hero-challenge"
             onClick={challengeFriend}
-            title="Copies a link that deals a friend the exact same Roulette board, with your score to beat."
+            title="Copies a link that deals a friend the exact same Slot Machine board, with your score to beat."
           >
             {linkCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
           </button>
@@ -540,8 +579,8 @@ function BestFiveResult({
       {shareOpen && (
         <ShareResultModal
           onClose={() => setShareOpen(false)}
-          mode="Roulette"
-          title="My Roulette five"
+          mode="Slot Machine"
+          title="My Slot Machine five"
           tier={{ label: GRADE_LABEL[grade], tone: GRADE_TONE[grade] }}
           cells={[
             { label: 'Your five', value: score.composite, you: score.composite },
@@ -565,6 +604,13 @@ function BestFiveResult({
             <ScoreChip key={key} label={label} value={Math.round(score[key])} />
           ))}
         </div>
+        {/* 2026-09-28, the user: the numbers read against what this deal allowed — the best five's
+            own value under each of yours. */}
+        <div className="results-hero-scores-row results-hero-scores-row--5 bf-axis-best" aria-label="Best five on the board">
+          {AXES.map(({ key }) => (
+            <span key={key} title="The best five on the board">vs {explain.bestAxes[key as keyof typeof explain.bestAxes]}</span>
+          ))}
+        </div>
         <p className="bf-weights at-cond">
           Score = {weightsLine}. Spacing is diagnostic — it feeds Offense and Fit.
           <button className="bf-glossary-toggle at-cond" onClick={() => setShowGlossary((v) => !v)}>
@@ -583,50 +629,77 @@ function BestFiveResult({
         )}
       </div>
 
+      {/* 2026-09-28, the user: "im lepiej tym bardziej w stronę pochwał". The film room's tone
+          follows how close the five is to the best five on the board: matching it gets praise and
+          the deal's own ceiling instead of a weakness; close gets praise plus the one pick that
+          made the difference; further off keeps the breakdown, now naming what each pick cost. */}
       <div className="bf-why">
         <div className="bf-why-head at-cond">Film room</div>
-        <p className="bf-why-line bf-why-lead">{RESULT_LEAD[grade]}</p>
-        {isChalkBoard(targets) && (
-          <p className="bf-why-line">
-            Chalk board — the fan-vote five ({targets.par}){' '}
-            {chalkGap <= 0
-              ? `already is the best five on the board (${targets.optimal})`
-              : `was within ${chalkGap} of the best five on the board (${targets.optimal})`}
-            . Not much room to out-coach it on this deal.
-          </p>
-        )}
-        {explain.tookLazyPick && !isChalkBoard(targets) && (
-          <p className="bf-why-line">
-            You started the five biggest names — that’s the fan-vote five ({targets.par}). The deal almost always
-            hides a better-fitting lineup among the role players.
-          </p>
-        )}
-        <p className="bf-why-line">
-          Your weak spot is <b>{explain.weakest.label} ({explain.weakest.value})</b>. {explain.weakest.reason}
-        </p>
-        {score.weakLink && explain.weakest.axis !== 'defense' && (
-          <p className="bf-why-line">
-            On defense, <b>{score.weakLink}</b> is the one they’ll hunt — every switch, every possession.
-          </p>
-        )}
-        {explain.engineEdge.length > 0 && (
-          <p className="bf-why-line">
-            The best five on the board ({targets.optimal}) wins the matchup mostly on{' '}
-            <b>{explain.engineEdge[0].label} (+{explain.engineEdge[0].delta})</b>
-            {explain.engineEdge[1] && `, then ${explain.engineEdge[1].label} (+${explain.engineEdge[1].delta})`}
-            {explain.swaps.length > 0 && (
-              <>
-                {' '}— it starts{' '}
-                {explain.swaps.map((s, i) => (
-                  <span key={s.slot}>
-                    {i > 0 && (i === explain.swaps.length - 1 ? ' and ' : ', ')}
-                    <b>{s.engine}</b> at {s.slot}
-                  </span>
-                ))}
-                .
-              </>
+        <p className="bf-why-line bf-why-lead">{filmRoomLead(explain, grade, seed)}</p>
+        {explain.standing === 'best' ? (
+          <>
+            <p className="bf-why-line">
+              It wins on <b>{strongest.label} ({Math.round(score[strongest.key])})</b>
+              {secondStrongest && (
+                <>
+                  {' '}and <b>{secondStrongest.label} ({Math.round(score[secondStrongest.key])})</b>
+                </>
+              )}
+              , and every one of the five is the right card at his spot.
+            </p>
+            <p className="bf-why-line bf-muted">
+              {explain.weakest.label} ({explain.weakest.value}) is the lowest number, but that’s the deal, not you — no
+              five on this board gets it higher without losing more elsewhere.
+            </p>
+          </>
+        ) : (
+          <>
+            {isChalkBoard(targets) && (
+              <p className="bf-why-line">
+                Chalk board — the fan-vote five ({targets.par}){' '}
+                {chalkGap <= 0
+                  ? `already is the best five on the board (${targets.optimal})`
+                  : `was within ${chalkGap} of the best five on the board (${targets.optimal})`}
+                . Not much room to out-coach it on this deal.
+              </p>
             )}
-          </p>
+            {explain.tookLazyPick && !isChalkBoard(targets) && (
+              <p className="bf-why-line">
+                You started the five biggest names — that’s the fan-vote five ({targets.par}). The deal hid a better-fitting
+                lineup among the role players.
+              </p>
+            )}
+            {explain.pickCosts[0] && (
+              <p className="bf-why-line">
+                {explain.standing === 'close' ? 'The difference is ' : 'Costliest pick: '}
+                <b>{explain.pickCosts[0].yours}</b> at {explain.pickCosts[0].slot} — <b>{explain.pickCosts[0].best}</b> there
+                is worth about <b>{explain.pickCosts[0].cost} points</b>
+                {explain.pickCosts[0].axisDelta < 0 && <>, most of it on {explain.pickCosts[0].axis} (−{Math.abs(explain.pickCosts[0].axisDelta)})</>}.
+                {explain.standing === 'off' && explain.pickCosts[1] && explain.pickCosts[1].cost > 0 && (
+                  <>
+                    {' '}Next: <b>{explain.pickCosts[1].yours}</b> at {explain.pickCosts[1].slot} instead of <b>{explain.pickCosts[1].best}</b> (
+                    {explain.pickCosts[1].cost}).
+                  </>
+                )}
+              </p>
+            )}
+            {explain.weakestIsBoardLimit ? (
+              <p className="bf-why-line">
+                Your lowest number, <b>{explain.weakest.label} ({explain.weakest.value})</b>, is as high as this deal goes — the
+                best five has {explain.bestAxes[explain.weakest.axis]} there too.
+              </p>
+            ) : (
+              <p className="bf-why-line">
+                Your weak spot is <b>{explain.weakest.label} ({explain.weakest.value})</b> — the best five has{' '}
+                {explain.bestAxes[explain.weakest.axis]}. {explain.weakest.reason}
+              </p>
+            )}
+            {explain.standing === 'off' && score.weakLink && explain.weakest.axis !== 'defense' && (
+              <p className="bf-why-line">
+                On defense, <b>{score.weakLink}</b> is the one they’ll hunt — every switch, every possession.
+              </p>
+            )}
+          </>
         )}
       </div>
 

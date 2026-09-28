@@ -131,22 +131,6 @@
   text-transform: uppercase;
   margin-bottom: 8px;
 }
-/* The five dealt for a position, one row on desktop (2026-09-26: five per slot, was 3×3). */
-.bf-pool {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-@media (max-width: 760px) {
-  .bf-pool {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 460px) {
-  .bf-pool {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 .bf-pool-card {
   display: flex;
   flex-direction: column;
@@ -466,10 +450,6 @@
    sits face down in the slot row. */
 .bf-picker-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--at-ink); }
 .bf-picker-sub { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--at-ink-soft); }
-.bf-deal { position: relative; display: flex; }
-.bf-deal > .bf-pool-card { flex: 1; min-width: 0; }
-/* Cards pop in once the machine stops. */
-.bf-pool--landed .bf-deal { animation: bf-land 0.45s calc(var(--i, 0) * 70ms) both cubic-bezier(0.3, 1.5, 0.5, 1); }
 @keyframes bf-land {
   from { transform: scale(0.92); opacity: 0.4; }
   to { transform: scale(1); opacity: 1; }
@@ -552,7 +532,6 @@
   background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 18%, var(--at-paper)) 0 5px, var(--at-paper) 5px 10px);
 }
 @media (prefers-reduced-motion: reduce) {
-  .bf-pool--landed .bf-deal,
   .bf-reel-strip,
   .bf-reel.is-stopped { animation: none; }
 }
@@ -638,3 +617,21 @@
 .bf-teaser-label { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-accent); }
 .bf-teaser-rumor { font-size: 14px; line-height: 1.5; color: var(--at-ink); font-style: italic; quotes: '“' '”'; }
 .bf-teaser-note { font-size: 11.5px; color: var(--at-ink-faint); }
+
+/* 2026-09-28, the user ("jeden widok byłby lepszy"): a stopped reel opens into its card, in the
+   same cabinet — no second card grid. The reel frame gives way to the card's own border. */
+.bf-reel.is-card { height: auto; overflow: visible; border-color: transparent; background: none; }
+.bf-reel.is-card::before, .bf-reel.is-card::after { display: none; }
+.bf-reel-card { display: flex; height: 100%; animation: bf-land 0.45s both cubic-bezier(0.3, 1.5, 0.5, 1); }
+.bf-reel-card > .bf-pool-card { flex: 1; min-width: 0; }
+.bf-machine.is-open { cursor: default; }
+.bf-machine.is-open .bf-reels { align-items: stretch; }
+@media (max-width: 560px) {
+  /* Four full cards don't fit across a phone: they settle two by two, the lever stays beside them. */
+  .bf-machine.is-open .bf-reels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bf-reel-card .bf-pool-box--sub { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .bf-reel-card { animation: none; } }
+.bf-axis-best { margin-top: 4px; }
+.bf-axis-best > span { text-align: center; font-size: 10.5px; color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
+.bf-axis-best::before { content: 'Best five on the board'; grid-column: 1 / -1; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); text-align: center; }
