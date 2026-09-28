@@ -14,7 +14,7 @@ import DraftLottery from './components/DraftLottery';
 import { CapsInfoHost } from './components/CapIcon';
 import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
 import { takeModeChallengeFromUrl, type ModeChallenge } from './modeChallenge';
-import { currentStreak, dailyEntry, dailySeed, localDayKey, yesterdayJoker } from './components/dailyProgress';
+import { DAILY_REPLAY_FOR_TESTING, currentStreak, dailyEntry, dailySeed, localDayKey, yesterdayJoker } from './components/dailyProgress';
 // Seed-only (rng + a list of names): safe for the menu, which must not pull the engine in.
 import { dailyMeta } from './engine/dailyMeta';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
@@ -79,7 +79,10 @@ function DailyStrip({ onPlay }: { onPlay: () => void }) {
   return (
     <button type="button" className={`mode-card-daily${played ? ' is-played' : ''}${streak.best >= 3 ? ' is-hot' : ''}`} onClick={onPlay}>
       <span className="mode-card-daily-label at-cond">📅 Daily board</span>
-      <span className="mode-card-daily-state">{played ? `✓ played · ${played.composite}` : 'one try today'}</span>
+      <span className="mode-card-daily-state">
+        {played ? `✓ played · ${played.composite}` : 'one try today'}
+        {DAILY_REPLAY_FOR_TESTING && ' · testing: replay on'}
+      </span>
       {streak.current > 0 && <span className="mode-card-daily-streak">🔥 {streak.current}</span>}
       <span className="mode-card-daily-meta">
         {game ? (
@@ -209,6 +212,7 @@ function sharedDraftSeedFromUrl(): number | null {
 function App() {
   // 2026-09-27: a Mini Draft / Roulette "Challenge a friend" link opens straight on that board.
   const [modeChallenge] = useState<ModeChallenge | null>(() => takeModeChallengeFromUrl());
+  const [dailyOffset, setDailyOffset] = useState(0);
   const [view, setView] = useState<View>(() =>
     modeChallenge?.mode === 'mini' ? 'quickfive' : modeChallenge?.mode === 'roulette' ? 'bestfive' : 'intro',
   );
@@ -534,7 +538,19 @@ function App() {
 
       {view === 'daily' && (
         <Suspense fallback={<LoadingPanel />}>
-          <BestFive mode="player" daily={localDayKey()} onBack={() => setView('intro')} />
+          {/* 2026-09-28, the user ("nadal mam zablokowane, zrób nowy daily"): while testing, any day's
+              board can be played — "Another day" steps to the next date's board. */}
+          <BestFive
+            key={dailyOffset}
+            mode="player"
+            daily={localDayKey(new Date(Date.now() + dailyOffset * 864e5))}
+            testDay={dailyOffset !== 0}
+            onAnotherDay={DAILY_REPLAY_FOR_TESTING ? () => setDailyOffset((n) => n + 1) : undefined}
+            onBack={() => {
+              setDailyOffset(0);
+              setView('intro');
+            }}
+          />
         </Suspense>
       )}
 

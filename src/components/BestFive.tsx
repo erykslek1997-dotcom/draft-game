@@ -56,6 +56,10 @@ interface Props {
   challenge?: ModeChallenge;
   /** The Daily Slot Machine: today's local date. One board for everyone, one attempt, a streak. */
   daily?: string;
+  /** Testing: a day other than today — played, never recorded. */
+  testDay?: boolean;
+  /** Testing: step to the next date's daily board. */
+  onAnotherDay?: () => void;
 }
 
 /** The deal hint, by what the five so far is missing (`dealHint`). Never names the card. */
@@ -106,7 +110,7 @@ const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 's
  * Deliberately a standalone screen off the intro (same footing as `CapSheet` / `DraftPoolBrowser`)
  * — it has no draft, no lottery, no AI, none of `GameShell`'s phase machine applies.
  */
-export default function BestFive({ onBack, onNextStep, challenge, daily }: Props) {
+export default function BestFive({ onBack, onNextStep, challenge, daily, testDay, onAnotherDay }: Props) {
   // 2026-09-27, the user: "Usuńmy daily challenge. Dodamy go osobnym przyciskiem jak będziemy
   // robić porządnie daily challenge". Every board is a fresh random deal; the old daily puzzle and
   // streak (bestFiveProgress.ts) are in git history for when the daily challenge gets built.
@@ -145,7 +149,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
     return { score, targets, grade: gradeVsPar(score.composite, targets.par, targets.optimal) };
   }
   // The daily board already played today opens straight on its result.
-  const savedDaily = useMemo(() => (daily ? savedDailyLineup(daily, pool) : null), [daily, pool]);
+  // While testing, a daily always opens on a fresh board.
+  const savedDaily = useMemo(() => (daily && !DAILY_REPLAY_FOR_TESTING ? savedDailyLineup(daily, pool) : null), [daily, pool]);
   const [lineup, setLineup] = useState<Lineup>(() => savedDaily ?? {});
   const [activeSlot, setActiveSlot] = useState<Position | null>(savedDaily ? null : order[0]);
   const [streak, setStreak] = useState<Streak | null>(() => (daily ? currentStreak(daily) : null));
@@ -210,6 +215,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
       const match = matchFor(lineup);
       setMatch(match);
       setJustSubmitted(true);
+      if (testDay) return;
       setStreak(
         recordDailyResult(daily, lineup, next.grade, next.score.composite, {
           game: match && meta ? { you: match.final[0], them: match.final[1], opponent: meta.opponent.short } : undefined,
@@ -256,6 +262,14 @@ export default function BestFive({ onBack, onNextStep, challenge, daily }: Props
           {formatDay(daily)} · one board for everyone, one try
           {streak && streak.current > 0 && <> · 🔥 {streak.current}-day streak</>}
           {streak && streak.best >= 100 && <span className="bf-hof-plaque at-cond">Hall of Fame</span>}
+        </p>
+      )}
+      {onAnotherDay && (
+        <p className="bf-daily-test">
+          Testing{testDay ? ` · board for ${formatDay(daily ?? '')}, not recorded` : ''} ·{' '}
+          <button type="button" className="at-legend-toggle at-cond" onClick={onAnotherDay}>
+            Another day’s board →
+          </button>
         </p>
       )}
       {daily && meta && !result && <DailyIntro joker={joker} opponent={meta.opponent} order={order} />}
