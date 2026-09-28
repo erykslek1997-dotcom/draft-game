@@ -739,3 +739,4 @@
 .bf-hof-plaque { display: inline-block; margin-left: 8px; padding: 0 7px; border-radius: 4px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #1b1404; background: linear-gradient(135deg, #fff3cf, #ffd479 60%, #b98a1c); }
 
 .bf-daily-replay { display: block; margin: 12px auto 0; }
+.bf-daily-test { text-align: center; font-size: 12px; color: var(--at-ink-faint); margin: 6px 0 0; }
