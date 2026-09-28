@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Slot Machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --text:#141a24; --muted:#5b6778; --line:#d8dee7; --note:#fff7df; --note-line:#ecd68f;
+  /* game palette (the frames are always the game's dark shell) */
+  --g-paper:#05070c; --g-panel:#0c1220; --g-panel-2:#121a2c; --g-ink:#eef4fb; --g-dim:#8a98ad; --g-line:#1f2a40;
+  --g-accent:#4492d0; --g-red:#d94a60; --g-gold:#ffd479; --g-cream:#f4ecd8; --g-green:#58c28a;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0b0e14; --surface:#131822; --text:#e7ecf3; --muted:#95a1b3; --line:#263041; --note:#2a2412; --note-line:#5b4b1c; }
+}
+:root[data-theme="dark"]{ --bg:#0b0e14; --surface:#131822; --text:#e7ecf3; --muted:#95a1b3; --line:#263041; --note:#2a2412; --note-line:#5b4b1c; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 Inter,system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 16px 64px}
+h1{font:800 26px/1.2 'JetBrains Mono',monospace;margin:0 0 6px;letter-spacing:-.5px}
+.lede{color:var(--muted);margin:0 0 26px;max-width:760px}
+section{margin:0 0 44px}
+h2{font:800 17px/1.3 'JetBrains Mono',monospace;margin:0 0 4px;display:flex;gap:10px;align-items:baseline}
+h2 .n{color:var(--g-accent)}
+.sub{color:var(--muted);margin:0 0 16px;max-width:820px}
+.row{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cap{font:600 12px/1.3 'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.note{background:var(--note);border:1px solid var(--note-line);border-radius:10px;padding:10px 13px;font-size:13.5px;max-width:360px}
+.note b{font-weight:700}
+.note ul{margin:4px 0 0;padding-left:18px}
+
+/* ---------- game frame ---------- */
+.phone{width:360px;max-width:100%;background:var(--g-paper);color:var(--g-ink);border-radius:22px;padding:18px 14px 20px;
+  font:13px/1.45 'JetBrains Mono',monospace;border:1px solid #1b2436;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.phone.wide{width:520px}
+.brand{font-weight:800;font-size:18px;letter-spacing:.02em;text-transform:uppercase}
+.brand small{display:block;font-size:11px;color:var(--g-dim);font-weight:600;letter-spacing:.08em;margin-top:2px}
+.dim{color:var(--g-dim)}
+.gold{color:var(--g-gold)}
+.red{color:var(--g-red)}
+.green{color:var(--g-green)}
+.btn{display:block;width:100%;text-align:center;font:800 14px 'JetBrains Mono',monospace;padding:11px;border-radius:10px;border:0;margin-top:12px;text-transform:uppercase;letter-spacing:.05em}
+.btn.primary{background:var(--g-cream);color:#0b1020;background-image:linear-gradient(90deg,transparent 0 calc(100% - 22px),var(--g-red) calc(100% - 22px) calc(100% - 15px),transparent calc(100% - 15px) calc(100% - 11px),var(--g-accent) calc(100% - 11px) calc(100% - 4px),transparent calc(100% - 4px))}
+.btn.secondary{background:#15213a;color:var(--g-ink);border:1px solid #243457}
+
+/* menu */
+.mode{background:var(--g-panel);border:1px solid var(--g-line);border-radius:14px;padding:14px;margin-top:10px}
+.mode h3{margin:0;font-size:15px;text-transform:uppercase;letter-spacing:.03em}
+.mode p{margin:4px 0 0;color:var(--g-dim);font-size:12px}
+.mode.muted{opacity:.45}
+.daily{margin-top:10px;border-top:1px dashed #26324a;padding-top:10px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.daily .t{font-weight:800;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase}
+.daily .t .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--g-red);margin-right:6px;vertical-align:1px}
+.daily .streak{font-weight:800;color:var(--g-gold);font-size:12.5px;text-align:right}
+.daily .meta{grid-column:1/-1;color:var(--g-dim);font-size:11.5px}
+.daily .meta b{color:var(--g-ink)}
+.daily .go{grid-column:1/-1;background:#15213a;border:1px solid #243457;border-radius:8px;padding:7px 10px;font-weight:800;font-size:12px;text-transform:uppercase;display:flex;justify-content:space-between}
+.chip{display:inline-block;border:1px solid #2a3957;border-radius:6px;padding:0 5px;font-size:10.5px;color:var(--g-dim);font-weight:600}
+.chip.gold{border-color:#6b5a2a;color:var(--g-gold)}
+
+/* start screen */
+.banner{border-radius:12px;padding:12px;margin-top:12px;position:relative;overflow:hidden}
+.banner .k{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.banner .v{font-size:15px;font-weight:800;margin-top:3px}
+.banner .d{font-size:11.5px;color:var(--g-dim);margin-top:3px}
+.banner.joker{background:linear-gradient(135deg,#2a2210,#161207 70%);border:1px solid #6b5a2a}
+.banner.joker .k{color:var(--g-gold)}
+.banner.opp{background:var(--g-panel);border:1px solid var(--g-line)}
+.banner.opp .k{color:var(--g-red)}
+.opp-five{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.opp-five span{font-size:10.5px;background:#141d31;border-radius:5px;padding:1px 6px;color:#c6d2e4}
+.meter{margin-top:14px}
+.meter .bar{height:8px;background:#141d31;border-radius:5px;overflow:hidden;margin-top:4px}
+.meter .bar i{display:block;height:100%;background:var(--g-accent)}
+.meter .lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--g-dim)}
+
+/* round */
+.slots{display:flex;gap:5px;margin:12px 0 4px}
+.slots span{flex:1;text-align:center;font-size:11px;font-weight:800;border-radius:6px;padding:4px 0;background:#101829;color:var(--g-dim)}
+.slots span.done{color:var(--g-ink);background:#15213a}
+.slots span.on{background:var(--g-accent);color:#fff}
+.hint{font-size:11.5px;color:var(--g-dim);margin:8px 0}
+.hint b{color:var(--g-ink)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.card{background:var(--g-panel-2);border:1px solid #22304b;border-radius:11px;padding:9px 9px 8px;min-height:104px;display:flex;flex-direction:column;gap:3px;position:relative}
+.card .nm{font-weight:800;font-size:12.5px;line-height:1.25}
+.card .yr{font-size:10.5px;color:var(--g-dim)}
+.card .st{font-size:10.5px;color:#b9c6da;margin-top:auto}
+.card .cost{position:absolute;top:8px;right:8px;font-size:10.5px;font-weight:800;color:var(--g-accent)}
+.card.pick{outline:2px solid var(--g-accent)}
+.card.over{opacity:.45}
+.card.over .cost{color:var(--g-red)}
+.joker-card{grid-column:1/-1;min-height:0;background:linear-gradient(135deg,#3a2d0e,#1d1606 65%);border:1.5px solid var(--g-gold);box-shadow:0 0 0 3px rgba(255,212,121,.08),0 6px 18px rgba(255,212,121,.12)}
+.joker-card .tag{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--g-gold)}
+.joker-card .cost{color:var(--g-gold)}
+.joker-card .st{color:#e8d7a8}
+.joker-card.locked{filter:grayscale(1);opacity:.55;box-shadow:none;border-style:dashed}
+.joker-card.locked .why{color:var(--g-red);font-weight:700;font-size:10.5px}
+
+/* result */
+.grade{display:flex;align-items:baseline;justify-content:space-between;margin-top:8px}
+.grade .g{font-size:26px;font-weight:800;color:var(--g-gold);text-transform:uppercase}
+.series{background:var(--g-panel);border:1px solid var(--g-line);border-radius:12px;padding:12px;margin-top:12px}
+.series .hd{display:flex;justify-content:space-between;font-weight:800}
+.games{display:flex;gap:5px;margin-top:9px}
+.games i{flex:1;height:26px;border-radius:6px;font-style:normal;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.games .w{background:rgba(88,194,138,.18);color:var(--g-green);border:1px solid rgba(88,194,138,.4)}
+.games .l{background:rgba(217,74,96,.14);color:var(--g-red);border:1px solid rgba(217,74,96,.35)}
+.lineup{margin-top:12px;display:flex;flex-direction:column;gap:4px}
+.lineup div{display:grid;grid-template-columns:28px 1fr auto;gap:8px;font-size:12px;padding:5px 8px;background:#0d1424;border-radius:7px}
+.lineup div b{color:var(--g-dim)}
+.lineup div.jk{background:linear-gradient(90deg,#2b220c,#0d1424);border:1px solid #6b5a2a}
+.jline{margin-top:10px;border-left:3px solid var(--g-gold);padding:6px 10px;background:#141007;border-radius:0 8px 8px 0;font-size:12px}
+.share{margin-top:12px;background:#0d1424;border:1px solid #243457;border-radius:10px;padding:10px 12px;white-space:pre;font-size:12.5px;line-height:1.5;overflow-x:auto}
+.foot{margin-top:10px;font-size:11px;color:var(--g-dim);text-align:center}
+
+/* streak track */
+.track{display:flex;gap:0;margin-top:12px;align-items:stretch}
+.tier{flex:1;text-align:center;position:relative;padding-top:26px}
+.tier::before{content:"";position:absolute;top:10px;left:0;right:0;height:3px;background:#1d2840}
+.tier.got::before{background:var(--g-gold)}
+.tier .dot{position:absolute;top:3px;left:50%;transform:translateX(-50%);width:17px;height:17px;border-radius:50%;background:#1d2840;border:2px solid #2d3b5a}
+.tier.got .dot{background:var(--g-gold);border-color:#fff3cf}
+.tier.next .dot{border-color:var(--g-gold)}
+.tier .d{font-weight:800;font-size:12px}
+.tier .r{font-size:10.5px;color:var(--g-dim);padding:0 3px}
+.rewards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.reward{background:var(--g-panel);border:1px solid var(--g-line);border-radius:10px;padding:8px;text-align:center;font-size:10.5px;color:var(--g-dim)}
+.reward .vis{height:58px;border-radius:8px;margin-bottom:6px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--g-ink)}
+.lever{background:#0d1424}
+.lever span{width:10px;height:44px;border-radius:5px;background:linear-gradient(#fff3cf,var(--g-gold) 40%,#a6801e);position:relative}
+.lever span::before{content:"";position:absolute;top:-10px;left:-6px;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3cf,var(--g-gold) 55%,#8e6b12)}
+.back{background:repeating-linear-gradient(45deg,#1a2644 0 6px,#122038 6px 12px);border:2px solid var(--g-gold);font-size:18px}
+.flame{background:#0d1424;font-size:22px}
+
+/* compare table */
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface);border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:700 12px 'JetBrains Mono',monospace;text-transform:uppercase;color:var(--muted);letter-spacing:.05em}
+tr:last-child td{border-bottom:0}
+.tablewrap{overflow-x:auto}
+.decide{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+.decide ol{margin:0;padding-left:20px}
+.decide li{margin:6px 0}
+.decide .opt{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted)}
+/* live game */
+.sb{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:var(--g-panel);border:1px solid var(--g-line);border-radius:12px;padding:10px 12px;margin-top:10px}
+.sb .tm{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--g-dim);text-transform:uppercase}
+.sb .pts{font-size:30px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.sb .r{text-align:right}
+.sb .clk{text-align:center;font-size:11px;color:var(--g-dim);font-weight:700}
+.sb .clk b{display:block;color:var(--g-ink);font-size:13px}
+.wp{margin-top:8px}
+.wp .bar{height:6px;border-radius:4px;background:var(--g-red);overflow:hidden}
+.wp .bar i{display:block;height:100%;background:var(--g-accent);transition:width .25s}
+.wp .lbl{display:flex;justify-content:space-between;font-size:10.5px;color:var(--g-dim);margin-top:3px}
+.qs{display:grid;grid-template-columns:44px repeat(4,1fr) 42px;gap:2px;font-size:11px;margin-top:8px;text-align:center}
+.qs span{padding:2px 0;background:#0d1424;border-radius:4px;font-variant-numeric:tabular-nums}
+.qs .h{background:none;color:var(--g-dim);font-weight:700}
+.qs .n{text-align:left;padding-left:6px;font-weight:800}
+.feed{margin-top:10px;height:176px;overflow:hidden;display:flex;flex-direction:column;gap:3px;mask-image:linear-gradient(#000 70%,transparent)}
+.feed div{display:grid;grid-template-columns:40px 1fr auto;gap:6px;font-size:11.5px;padding:4px 7px;border-radius:6px;background:#0d1424;animation:pop .25s ease-out}
+.feed div .t{color:var(--g-dim)}
+.feed div .s{font-variant-numeric:tabular-nums;color:var(--g-dim)}
+.feed div.us{border-left:2px solid var(--g-accent)}
+.feed div.them{border-left:2px solid var(--g-red)}
+.feed div.jk{background:linear-gradient(90deg,#2b220c,#0d1424);border-left:2px solid var(--g-gold)}
+.feed div.q{background:none;color:var(--g-gold);font-weight:800;grid-template-columns:1fr;text-align:center}
+@keyframes pop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.box{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px;background:none;border:0;border-radius:0}
+.box th,.box td{padding:3px 4px;border-bottom:1px solid #182238;text-align:right;color:var(--g-ink);font:inherit;font-size:11px;text-transform:none;letter-spacing:0}
+.box th{color:var(--g-dim);font-weight:700}
+.box td:first-child,.box th:first-child{text-align:left}
+.box tr.jk td{color:var(--g-gold)}
+.box tr.top td:first-child::after{content:" ★";color:var(--g-gold)}
+.boxhd{margin-top:12px;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--g-dim)}
+.ctl{display:flex;gap:6px;margin-top:10px}
+.ctl .btn{margin-top:0;font-size:12px;padding:9px}
+.final{display:none;text-align:center;margin-top:10px;padding:10px;border-radius:10px;background:rgba(88,194,138,.12);border:1px solid rgba(88,194,138,.4);font-weight:800}
+.final.loss{background:rgba(217,74,96,.12);border-color:rgba(217,74,96,.4)}
+.final small{display:block;font-weight:600;color:var(--g-dim);margin-top:2px}
+.series7{display:flex;gap:4px;margin-top:8px}
+.series7 i{flex:1;height:30px;border-radius:6px;font-style:normal;font-size:10px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.series7 .w{background:rgba(88,194,138,.18);color:var(--g-green)}
+.series7 .l{background:rgba(217,74,96,.14);color:var(--g-red)}
+.series7 .live{background:var(--g-gold);color:#1b1404}
+.chosen{display:inline-block;background:var(--g-green);color:#04140b;border-radius:6px;padding:0 7px;font-size:11px;font-weight:800;margin-left:6px;vertical-align:2px}
+@media (max-width:560px){ .phone.wide{width:100%} .note{max-width:100%} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Daily Slot Machine — makiety</h1>
+  <p class="lede">Joker (wariant A, pełna cena), przeciwnik dnia, share bez spoilerów i nagrody za streak. Wszystko to są statyczne makiety: nic z tego nie jest jeszcze w grze. Teksty w grze są po angielsku, a notatki po polsku. Liczby są przykładowe. Na dole jest lista rzeczy do decyzji.</p>
+
+  <!-- LIVE GAME (new) -->
+  <section id="live">
+    <h2><span class="n">NOWE</span> Mecz na żywo z przeciwnikiem dnia</h2>
+    <p class="sub">Ta makieta działa: kliknij <b>Tip-off</b>. Mecz jest liczony akcja po akcji ze statystyk graczy: ile rzucają, skuteczność, trójki, zbiórki, asysty, przechwyty i bloki. W grze stały seed dnia i składu sprawi, że ta sama piątka tego samego dnia zawsze da ten sam mecz. Tutaj seed jest wybrany na sztywno, żeby pokazać wygraną.</p>
+    <div class="row">
+      <div class="phone" id="game">
+        <div class="brand">Game of the day<small>Sep 28 · You vs 1995–96 Bulls</small></div>
+        <div class="sb">
+          <div><div class="tm">You</div><div class="pts" id="sU">0</div></div>
+          <div class="clk"><b id="clk">Q1 12:00</b><span id="clkSub">tip-off</span></div>
+          <div class="r"><div class="tm">'96 Bulls</div><div class="pts" id="sT">0</div></div>
+        </div>
+        <div class="wp"><div class="bar"><i id="wpBar" style="width:60%"></i></div><div class="lbl"><span id="wpU">You 60%</span><span>win probability</span><span id="wpT">40%</span></div></div>
+        <div class="qs" id="qs"></div>
+        <div class="feed" id="feed"><div class="q">Starting fives are on the floor.</div></div>
+        <div class="final" id="final"></div>
+        <div class="ctl" id="ctl">
+          <button class="btn primary" id="bPlay">Tip-off</button>
+        </div>
+        <div class="boxhd">Box score — You</div>
+        <table class="box" id="boxU"></table>
+        <div class="boxhd">Box score — '96 Bulls</div>
+        <table class="box" id="boxT"></table>
+      </div>
+      <div class="col" style="max-width:380px">
+        <div class="note" style="max-width:none">
+          <b>Jak to działa:</b>
+          <ul>
+            <li>Mecz ma około 100 posiadań na drużynę. Rzucający jest losowany według FGA, rodzaj rzutu według 3PA, celność według FG% i 3P%. Są też faule z rzutami wolnymi, straty, przechwyty, bloki, zbiórki w ataku i asysty według APG.</li>
+            <li>Suma punktów w box score zawsze równa się wynikowi.</li>
+            <li>Akcje Jokera są złote.</li>
+            <li>Trwa około 35 s, można przyspieszyć (×2) albo przejść od razu do wyniku.</li>
+            <li>Pasek szansy na wygraną startuje od przewagi przed meczem. W grze liczyłby ją model <code>projectMatchup</code> albo wynik Slot Machine.</li>
+          </ul>
+        </div>
+        <div class="note" style="max-width:none">
+          <b>Otwarte: jeden mecz czy seria?</b> Alternatywa to seria do 4 zwycięstw, w której mecze 1–6 rozstrzygają się od razu, a na żywo idzie tylko ostatni:
+          <div class="phone" style="width:100%;margin-top:8px;padding:12px">
+            <div class="brand" style="font-size:13px">Series · You 3–3 '96 Bulls</div>
+            <div class="series7"><i class="w">G1<br>W</i><i class="l">G2<br>L</i><i class="w">G3<br>W</i><i class="l">G4<br>L</i><i class="w">G5<br>W</i><i class="l">G6<br>L</i><i class="live">G7<br>LIVE</i></div>
+          </div>
+          Mecz 7 daje więcej emocji, ale wynik 3–3 trzeba by „ustawiać”, bo nie wynika naturalnie. Rekomenduję <b>jeden mecz</b>: jest prostszy i uczciwszy, a udostępniany wynik to jedna liczba („120–108”).
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1 MENU -->
+  <section>
+    <h2><span class="n">01</span> Menu — pasek Daily pod kartą Slot Machine</h2>
+    <p class="sub">To jest to, co już jest w grze, rozszerzone o przeciwnika dnia i zapowiedź Jokera. Po zagraniu pasek pokazuje wynik i wczorajszego Jokera.</p>
+    <div class="row">
+      <div class="col">
+        <div class="cap">Przed zagraniem</div>
+        <div class="phone">
+          <div class="brand">Draftverse<small>Choose a mode</small></div>
+          <div class="mode muted"><h3>All-Time Draft</h3><p>9 rounds · 16 teams</p></div>
+          <div class="mode">
+            <h3>Slot Machine</h3><p>Five positions, four reels each, one cap.</p>
+            <div class="daily">
+              <span class="t"><span class="dot"></span>Daily · Sep 28</span>
+              <span class="streak">🔥 12</span>
+              <span class="meta">Tonight: <b>vs '96 Bulls</b> · Joker at <b>C</b></span>
+              <span class="go"><span>Play today's board</span><span>→</span></span>
+            </div>
+          </div>
+          <div class="mode muted"><h3>Mini Draft</h3><p>5 rounds</p></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="cap">Po zagraniu</div>
+        <div class="phone">
+          <div class="brand">Draftverse<small>Choose a mode</small></div>
+          <div class="mode muted"><h3>All-Time Draft</h3><p>9 rounds · 16 teams</p></div>
+          <div class="mode">
+            <h3>Slot Machine</h3><p>Five positions, four reels each, one cap.</p>
+            <div class="daily">
+              <span class="t">✓ Daily · Birdie</span>
+              <span class="streak">🔥 13</span>
+              <span class="meta">Beat the '96 Bulls <b>120–108</b> · next board in <b>5h 12m</b></span>
+              <span class="meta">Yesterday's Joker: <b class="gold">Hakeem '93–'95</b> — the best five took him.</span>
+            </div>
+          </div>
+          <div class="mode muted"><h3>Mini Draft</h3><p>5 rounds</p></div>
+        </div>
+      </div>
+      <div class="note">
+        <b>Pomysł:</b> nazwisko Jokera nie pojawia się w menu, tylko pozycja („Joker at C”). Pełna karta Jokera jest dopiero na ekranie startowym.
+        <ul>
+          <li><b>„Yesterday's Joker”</b> odpowiada na „czy warto było”, ale dopiero dzień później. Dzisiejszy wynik niczego nie zdradza.</li>
+          <li>Nie ma backendu, więc nie da się pokazać „jaki % graczy go wziął”. Można tylko powiedzieć, czy brał go najlepszy skład.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 START -->
+  <section>
+    <h2><span class="n">02</span> Ekran startowy Daily</h2>
+    <p class="sub">Joker jest ogłoszony od początku: gracz wie, na której pozycji się pojawi, i może oszczędzać capy od PG. Przeciwnik dnia to prawdziwa legendarna piątka, z którą gramy serię.</p>
+    <div class="row">
+      <div class="phone">
+        <div class="brand">Daily Slot Machine<small>Sep 28 · one board, one try · 🔥 12</small></div>
+        <div class="banner joker">
+          <div class="k">🃏 Tonight's Joker</div>
+          <div class="v">Shaquille O'Neal <span class="chip gold">'00–'02</span></div>
+          <div class="d">Shows up as a 5th reel when you reach <b class="gold">C</b>. Full price: <b class="gold">20.4 caps</b>. Save room — or don't.</div>
+        </div>
+        <div class="banner opp">
+          <div class="k">Opponent of the day</div>
+          <div class="v">1995–96 Chicago Bulls</div>
+          <div class="opp-five"><span>Harper</span><span>Jordan</span><span>Pippen</span><span>Rodman</span><span>Longley</span></div>
+          <div class="d">After your fifth pick, your five plays them live.</div>
+        </div>
+        <div class="meter"><div class="lbl"><span>Caps</span><span>0 / 74</span></div><div class="bar"><i style="width:0"></i></div></div>
+        <button class="btn primary">Pull the lever</button>
+      </div>
+      <div class="note">
+        <b>Zasady Jokera (wariant A):</b>
+        <ul>
+          <li>Pozycja jest losowana z SF/PF/C, nigdy PG. Dzięki temu decyzja o oszczędzaniu zapada w pierwszych rundach.</li>
+          <li>Jego cena to prawdziwe FGA, bez zniżki. To zawsze najlepszy gracz na swojej pozycji, ale drogi.</li>
+          <li>Dobór dnia: silnik wybiera Jokera tak, żeby optymalna piątka brała go w około 50% dni. W pozostałe dni lepiej rozłożyć capy na resztę składu.</li>
+          <li>Jeśli Jokera nie weźmiesz, nie ma kary. Po prostu grasz normalną planszę.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 JOKER ROUND -->
+  <section>
+    <h2><span class="n">03</span> Runda z Jokerem — 4 bębny + złota karta</h2>
+    <p class="sub">Na pozycji Jokera pod czterema zwykłymi kartami pojawia się piąta, złota karta na całą szerokość. Jeśli brakuje na nią capów, jest wyszarzona i wyświetla, ile brakuje.</p>
+    <div class="row">
+      <div class="col">
+        <div class="cap">Stać cię (oszczędzałeś)</div>
+        <div class="phone">
+          <div class="brand">Daily Slot Machine<small>vs '96 Bulls · 🔥 12</small></div>
+          <div class="meter"><div class="lbl"><span>Caps</span><span>47.1 / 74 · 26.9 left</span></div><div class="bar"><i style="width:64%"></i></div></div>
+          <div class="slots"><span class="done">PG</span><span class="done">SG</span><span class="done">SF</span><span class="done">PF</span><span class="on">C</span></div>
+          <p class="hint">Scouts: <b>one of these five protects the rim better than anyone on the board.</b></p>
+          <div class="grid">
+            <div class="card"><span class="cost">14.8</span><span class="nm">Patrick Ewing</span><span class="yr">'89–'91</span><span class="st">26.0 pts · 11.2 reb</span></div>
+            <div class="card"><span class="cost">9.6</span><span class="nm">Alonzo Mourning</span><span class="yr">'98–'00</span><span class="st">20.4 pts · 3.3 blk</span></div>
+            <div class="card"><span class="cost">7.1</span><span class="nm">Marcus Camby</span><span class="yr">'06–'08</span><span class="st">12.5 pts · 3.4 blk</span></div>
+            <div class="card"><span class="cost">4.2</span><span class="nm">Ben Wallace</span><span class="yr">'02–'04</span><span class="st">15.4 reb · 3.2 blk</span></div>
+            <div class="card joker-card"><span class="tag">🃏 JOKER</span><span class="cost">20.4</span><span class="nm">Shaquille O'Neal</span><span class="yr">'00–'02 · Lakers</span><span class="st">28.4 pts · 12.7 reb · 58% FG</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="cap">Nie stać cię</div>
+        <div class="phone">
+          <div class="brand">Daily Slot Machine<small>vs '96 Bulls · 🔥 12</small></div>
+          <div class="meter"><div class="lbl"><span>Caps</span><span>61.0 / 74 · 13.0 left</span></div><div class="bar"><i style="width:82%"></i></div></div>
+          <div class="slots"><span class="done">PG</span><span class="done">SG</span><span class="done">SF</span><span class="done">PF</span><span class="on">C</span></div>
+          <p class="hint">Scouts: <b>one of these five protects the rim better than anyone on the board.</b></p>
+          <div class="grid">
+            <div class="card over"><span class="cost">14.8</span><span class="nm">Patrick Ewing</span><span class="yr">'89–'91</span><span class="st">Over the cap by 1.8</span></div>
+            <div class="card"><span class="cost">9.6</span><span class="nm">Alonzo Mourning</span><span class="yr">'98–'00</span><span class="st">20.4 pts · 3.3 blk</span></div>
+            <div class="card"><span class="cost">7.1</span><span class="nm">Marcus Camby</span><span class="yr">'06–'08</span><span class="st">12.5 pts · 3.4 blk</span></div>
+            <div class="card pick"><span class="cost">4.2</span><span class="nm">Ben Wallace</span><span class="yr">'02–'04</span><span class="st">15.4 reb · 3.2 blk</span></div>
+            <div class="card joker-card locked"><span class="tag">🃏 JOKER</span><span class="cost">20.4</span><span class="nm">Shaquille O'Neal</span><span class="yr">'00–'02 · Lakers</span><span class="why">Needs 7.4 more caps — you spent them earlier.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">
+        <b>Dlaczego to działa jako decyzja:</b> cena jest znana od startu, więc wybór zapada już przy PG i SG (tańsze karty = miejsce na Shaqa). Na samej pozycji C nie ma już decyzji, jest tylko wynik tego planowania.
+        <ul>
+          <li>Mechanika <code>dealFor</code> się nie zmienia. Joker to 5. karta ponad <code>DEAL_SIZE</code> i nie wlicza się do puli 8.</li>
+          <li>Wyszarzona karta daje nauczkę na jutro: „trzeba było oszczędzać”, ale nie mówi, czy było warto.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 RESULT -->
+  <section>
+    <h2><span class="n">04</span> Wynik — seria z przeciwnikiem + linia Jokera</h2>
+    <p class="sub">Seria do 4 zwycięstw wynika z różnicy wyniku twojej piątki i piątki przeciwnika (deterministycznie, z seedem dnia). Linia Jokera jest widoczna tylko na własnym ekranie wyniku.</p>
+    <div class="row">
+      <div class="phone">
+        <div class="brand">Daily Slot Machine<small>Sep 28 · done · 🔥 13</small></div>
+        <div class="grade"><span class="g">Birdie</span><span class="dim">1 off the best five</span></div>
+        <div class="series">
+          <div class="hd"><span>You vs '96 Bulls</span><span class="green">Won 4–2</span></div>
+          <div class="games"><i class="w">W</i><i class="l">L</i><i class="w">W</i><i class="w">W</i><i class="l">L</i><i class="w">W</i><i style="background:#0d1424;border:1px dashed #243457;color:#3a4866">—</i></div>
+          <div class="d dim" style="font-size:11px;margin-top:7px">Your rebounding won it. Their defense took games 2 and 5.</div>
+        </div>
+        <div class="lineup">
+          <div><b>PG</b><span>Mark Price '89–'91</span><span class="dim">12.9</span></div>
+          <div><b>SG</b><span>Joe Dumars '90–'92</span><span class="dim">13.4</span></div>
+          <div><b>SF</b><span>Shane Battier '05–'07</span><span class="dim">8.1</span></div>
+          <div><b>PF</b><span>Horace Grant '91–'93</span><span class="dim">9.8</span></div>
+          <div class="jk"><b class="gold">C</b><span>🃏 Shaquille O'Neal '00–'02</span><span class="gold">20.4</span></div>
+        </div>
+        <div class="jline">🃏 <b class="gold">Joker: worth it.</b> The best five took Shaq too. Without him, your best was 6 points lower.</div>
+        <button class="btn primary">Share result</button>
+        <p class="foot">Next board in 5h 12m</p>
+      </div>
+      <div class="col" style="max-width:380px">
+        <div class="cap">Warianty linii Jokera</div>
+        <div class="note" style="max-width:none">
+          <b>Wziąłeś, było warto:</b> „Joker: worth it. The best five took Shaq too.”<br>
+          <b>Wziąłeś, nie było warto:</b> „Joker: too pricey today. The best five skipped him and spread 20 caps across SG and PF.”<br>
+          <b>Nie wziąłeś, było warto:</b> „Joker: you passed. The best five saved up for him (+5).”<br>
+          <b>Nie wziąłeś, dobrze:</b> „Joker: right call. The best five skipped him too.”
+        </div>
+        <div class="note" style="max-width:none">
+          <b>Przeciwnik:</b> pula ok. 30 legendarnych piątek (’86 Celtics, ’96 Bulls, ’01 Lakers, ’14 Spurs, ’17 Warriors…), rotacja według seeda dnia. Liczba wygranych meczów zależy od różnicy wyniku, a zwycięzców pojedynczych meczów wybiera seed. Zdanie pod wynikiem mówi, którą oś wygrałeś, a którą przegrałeś (z <code>bestAxes</code>).
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 SHARE -->
+  <section>
+    <h2><span class="n">05</span> Share w stylu Wordle — dwa warianty</h2>
+    <p class="sub">To tekst kopiowany do schowka. Oba warianty nie zdradzają Jokera. Różnią się tym, ile mówią o twoim składzie.</p>
+    <div class="row">
+      <div class="col">
+        <div class="cap">A — minimum <span class="chosen">WYBRANY</span></div>
+        <div class="phone">
+          <div class="share">Daily Slot Machine · Sep 28
+⛳ Birdie · 🔥 13
+🏆 Beat the '96 Bulls 120–108
+draftverse ▸ erykslek1997-dotcom.github.io/draft-game</div>
+          <div class="note" style="margin-top:10px;color:#141a24;background:#fff7df">Zero informacji o składzie i Jokerze. Najbezpieczniejszy wariant.</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="cap">B — z paskiem pozycji</div>
+        <div class="phone">
+          <div class="share">Daily Slot Machine · Sep 28
+⛳ Birdie · 🔥 13
+PG SG SF PF C
+🟩 🟨 🟩 🟩 🟩
+🏆 Beat the '96 Bulls 4–2</div>
+          <div class="note" style="margin-top:10px;color:#141a24;background:#fff7df">🟩 to ten sam gracz co w najlepszej piątce, 🟨 blisko, ⬜ inny. Wygląda jak Wordle, ale 🟩 na C (pozycji Jokera) <b>zdradza</b>, czy Joker był w najlepszym składzie. Musiałoby być tam zawsze np. ⬛.</div>
+        </div>
+      </div>
+      <div class="note">
+        <b>Moja rekomendacja: A</b> albo B z pozycją Jokera zawsze zamaskowaną. Seria z przeciwnikiem daje już „opowieść”, a kwadraty dodają porównywalności z innymi graczami kosztem spoilera.
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 STREAK -->
+  <section>
+    <h2><span class="n">06</span> Nagrody za streak</h2>
+    <p class="sub">To wyłącznie kosmetyka: nic nie wpływa na wynik. Postęp jest trzymany w localStorage, tam gdzie już jest streak.</p>
+    <div class="row">
+      <div class="phone wide">
+        <div class="brand">Your streak<small>🔥 13 days · best 21</small></div>
+        <div class="track">
+          <div class="tier got"><span class="dot"></span><div class="d">3</div><div class="r">Flame on the daily strip</div></div>
+          <div class="tier got"><span class="dot"></span><div class="d">7</div><div class="r">Gold lever</div></div>
+          <div class="tier next"><span class="dot"></span><div class="d">14</div><div class="r">Gold reel frames</div></div>
+          <div class="tier"><span class="dot"></span><div class="d">30</div><div class="r">Retro card back</div></div>
+          <div class="tier"><span class="dot"></span><div class="d">100</div><div class="r">Hall of Fame plaque</div></div>
+        </div>
+        <div class="rewards">
+          <div class="reward"><div class="vis flame">🔥</div>3 days</div>
+          <div class="reward"><div class="vis lever"><span></span></div>7 days — lever</div>
+          <div class="reward"><div class="vis back">DV</div>30 days — card back</div>
+        </div>
+        <p class="foot">1 day to go: gold reel frames</p>
+      </div>
+      <div class="note">
+        <b>Do rozważenia:</b>
+        <ul>
+          <li>Czy nagrody zostają po zerwaniu streaka (liczy się <i>best</i>), czy znikają (liczy się <i>current</i>)? Proponuję <b>best</b>: mniej frustracji.</li>
+          <li>„Streak freeze” (1 opuszczony dzień na 7) daje mniej frustracji, ale więcej logiki.</li>
+          <li>Gdzie pokazać tor: w menu po kliknięciu 🔥 czy na ekranie wyniku, gdy odblokujesz poziom.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 DECISIONS -->
+  <section>
+    <h2><span class="n">07</span> Do decyzji</h2>
+    <div class="decide">
+      <ol>
+        <li>✓ <b>Joker w menu:</b> tylko pozycja.</li>
+        <li>✓ <b>Kolejność pozycji:</b> losowa każdego dnia. Joker może trafić na dowolną pozycję, ale nigdy w 1. ani 2. rundzie.</li>
+        <li>✓ <b>Joker opłaca się w około 50% dni</b> i silnik to wymusza.</li>
+        <li>✓ <b>Spoiler:</b> linia Jokera tylko na własnym wyniku + „Yesterday's Joker” w menu.</li>
+        <li>✓ <b>Share:</b> wariant A.</li>
+        <li>… <b>Przeciwnik:</b> mecz na żywo (makieta na górze). Otwarte: jeden mecz czy seria z na żywo tylko ostatnim meczem?<div class="opt">rekomendacja: jeden mecz</div></li>
+        <li>✓ <b>Streak:</b> progi 3/7/14/30/100, nagrody według <i>best</i>, bez freeze.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  // name, short, pos, ppg, fga, 3pa, fg%, 3p%, ft%, rpg, apg, spg, bpg, moves
+  var BIG=['layup','dunk','hook shot','putback'], WING=['pull-up jumper','driving layup','floater','mid-range jumper'];
+  function P(n,s,pos,fga,tpa,fg,tp,ft,rpg,apg,spg,bpg,moves,joker){return {n:n,s:s,pos:pos,fga:fga,tpa:tpa,fg:fg,tp:tp,ft:ft,rpg:rpg,apg:apg,spg:spg,bpg:bpg,moves:moves,joker:!!joker};}
+  var US=[
+    P('Mark Price','Price','PG',12.9,4.0,.48,.41,.92,3.2,8.7,1.3,.1,['pull-up jumper','floater','pick-and-roll pull-up']),
+    P('Joe Dumars','Dumars','SG',13.4,3.0,.48,.38,.85,2.4,5.0,.9,.1,WING),
+    P('Shane Battier','Battier','SF',8.1,4.6,.45,.40,.78,5.1,1.8,1.0,1.0,['cutting layup','baseline jumper']),
+    P('Horace Grant','Grant','PF',9.8,.1,.54,.10,.72,9.5,2.8,1.1,1.0,['face-up jumper','putback','dunk']),
+    P("Shaquille O'Neal",'Shaq','C',20.4,0,.575,0,.52,12.7,3.5,.6,2.4,['drop-step dunk','jump hook','dunk','power layup'],true)
+  ];
+  var THEM=[
+    P('Ron Harper','Harper','PG',6.5,2.0,.47,.27,.75,2.7,2.6,1.3,.3,['driving layup','post-up jumper']),
+    P('Michael Jordan','Jordan','SG',22.6,3.2,.495,.427,.83,6.6,4.3,2.2,.5,['fadeaway jumper','pull-up jumper','reverse layup','dunk']),
+    P('Scottie Pippen','Pippen','SF',16.0,4.4,.463,.374,.68,6.4,5.9,1.7,.7,['transition dunk','driving layup','pull-up jumper']),
+    P('Dennis Rodman','Rodman','PF',4.2,.1,.48,.11,.53,14.9,2.5,.6,.4,['putback','tip-in']),
+    P('Luc Longley','Longley','C',8.0,0,.48,0,.77,5.1,1.9,.5,1.1,['hook shot','layup'])
+  ];
+  function twoPct(p){var a2=p.fga-p.tpa;return a2>0?Math.min(.68,(p.fga*p.fg-p.tpa*p.tp)/a2):.45;}
+  function rng(seed){var s=seed>>>0;return function(){s=(s+0x6D2B79F5)>>>0;var t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
+  function pick(r,arr,w){var tot=0,i;for(i=0;i<arr.length;i++)tot+=w(arr[i]);var x=r()*tot;for(i=0;i<arr.length;i++){x-=w(arr[i]);if(x<=0)return arr[i];}return arr[arr.length-1];}
+  function erf(x){var s=x<0?-1:1;x=Math.abs(x);var t=1/(1+.3275911*x);return s*(1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x));}
+  var PRE=4; // pre-game edge, points
+  function winProb(m,left){var sd=12*Math.sqrt(Math.max(left,.002));return .5*(1+erf((m+PRE*left)/(sd*Math.SQRT2)));}
+
+  // One full game, returned as a list of possession snapshots.
+  function simulate(seed){
+    var r=rng(seed),POSS=200,teams=[US,THEM],score=[0,0],q=[[0,0,0,0],[0,0,0,0]],box=[{},{}],ev=[];
+    teams.forEach(function(t,i){t.forEach(function(p){box[i][p.s]={pts:0,reb:0,ast:0,stl:0,blk:0,fgm:0,fga:0};});});
+    for(var k=0;k<POSS;k++){
+      var o=k%2,d=1-o,off=teams[o],def=teams[d],qi=Math.floor(k/50),line=null,joker=false,pts=0,guard=0;
+      var clockLeft=48*60-(k+1)*14.4;
+      do{
+        guard++;
+        if(r()<.12){ // turnover
+          if(r()<.55){var st=pick(r,def,function(p){return p.spg+.2;}),lost=pick(r,off,function(p){return p.fga;});box[d][st.s].stl++;line={side:d,txt:st.s+' steals it from '+lost.s,jk:st.joker};}
+          break;
+        }
+        var sh=pick(r,off,function(p){return p.fga;}),three=r()<sh.tpa/sh.fga,bs=box[o][sh.s];
+        if(r()<.09){ // shooting foul
+          var fts=three?3:2,m=0;for(var f=0;f<fts;f++)if(r()<sh.ft)m++;
+          bs.pts+=m;pts+=m;line={side:o,txt:sh.s+' '+m+'/'+fts+' at the line',jk:sh.joker,quiet:m===0};break;
+        }
+        bs.fga++;
+        var make=r()<(three?sh.tp:twoPct(sh));
+        if(make){
+          var v=three?3:2,and=!three&&r()<.05;bs.fgm++;bs.pts+=v;pts+=v;
+          var mv=three?(r()<.3?'corner three':'three'):sh.moves[Math.floor(r()*sh.moves.length)],txt=sh.s+' '+mv;
+          if(and&&r()<sh.ft){bs.pts++;pts++;txt+=', and one';}
+          if(r()<.6){var mates=off.filter(function(p){return p!==sh;}),a=pick(r,mates,function(p){return p.apg+.3;});box[o][a.s].ast++;txt+=' (ast '+a.s+')';joker=joker||a.joker;}
+          line={side:o,txt:txt,jk:sh.joker||joker};break;
+        }
+        if(!three&&r()<.07){var bl=pick(r,def,function(p){return p.bpg+.05;});box[d][bl.s].blk++;line={side:d,txt:bl.s+' blocks '+sh.s,jk:bl.joker};}
+        if(r()<.26){var or_=pick(r,off,function(p){return p.rpg;});box[o][or_.s].reb++;continue;}
+        var dr=pick(r,def,function(p){return p.rpg;});box[d][dr.s].reb++;break;
+      }while(guard<4);
+      score[o]+=pts;q[o][qi]+=pts;
+      ev.push({k:k,line:line,side:o,score:score.slice(),q:[q[0].slice(),q[1].slice()],box:JSON.parse(JSON.stringify(box)),left:clockLeft,qi:qi});
+    }
+    return ev;
+  }
+  // Mockup only: take the first seed where you win by 5–12, so the demo shows a close win.
+  var SEED=1,EV;
+  for(;SEED<500;SEED++){EV=simulate(SEED);var f=EV[EV.length-1].score,m=f[0]-f[1];if(m>=5&&m<=12)break;}
+
+  var $=function(id){return document.getElementById(id);};
+  function clock(e){var qi=Math.min(3,e.qi),inQ=Math.max(0,e.left-(3-qi)*720),mm=Math.floor(inQ/60),ss=Math.floor(inQ%60);return 'Q'+(qi+1)+' '+mm+':'+(ss<10?'0':'')+ss;}
+  function renderBox(el,side,b,top){
+    var rows='<tr><th>Player</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>FG</th></tr>';
+    (side===0?US:THEM).forEach(function(p){var s=b[side][p.s],cls=(p.joker?'jk ':'')+(top===p.s?'top':'');
+      rows+='<tr class="'+cls+'"><td>'+(p.joker?'🃏 ':'')+p.s+'</td><td>'+s.pts+'</td><td>'+s.reb+'</td><td>'+s.ast+'</td><td>'+s.stl+'</td><td>'+s.blk+'</td><td>'+s.fgm+'-'+s.fga+'</td></tr>';});
+    el.innerHTML=rows;
+  }
+  function renderQs(e,done){
+    var h='<span class="h"></span><span class="h">Q1</span><span class="h">Q2</span><span class="h">Q3</span><span class="h">Q4</span><span class="h">T</span>';
+    ['You','CHI'].forEach(function(n,i){h+='<span class="n">'+n+'</span>';for(var j=0;j<4;j++)h+='<span>'+(j<=e.qi||done?e.q[i][j]:'')+'</span>';h+='<span><b>'+e.score[i]+'</b></span>';});
+    $('qs').innerHTML=h;
+  }
+  function setWp(e){var p=winProb(e.score[0]-e.score[1],Math.max(0,e.left)/2880);if(e.left<=0)p=e.score[0]>e.score[1]?1:0;var pc=Math.round(p*100);$('wpBar').style.width=pc+'%';$('wpU').textContent='You '+pc+'%';$('wpT').textContent=(100-pc)+'%';}
+  function addFeed(cls,t,txt,s){var d=document.createElement('div');d.className=cls;d.innerHTML=cls==='q'?txt:'<span class="t">'+t+'</span><span>'+txt+'</span><span class="s">'+s+'</span>';var fd=$('feed');fd.insertBefore(d,fd.firstChild);while(fd.children.length>14)fd.removeChild(fd.lastChild);}
+  function topOf(b){var best=null,v=-1;US.forEach(function(p){var s=b[0][p.s],x=s.pts+s.reb+s.ast;if(x>v){v=x;best=p.s;}});return best;}
+  function show(i){
+    var e=EV[i];$('sU').textContent=e.score[0];$('sT').textContent=e.score[1];$('clk').textContent=clock(e);$('clkSub').textContent='live';
+    renderQs(e,false);setWp(e);renderBox($('boxU'),0,e.box,null);renderBox($('boxT'),1,e.box,null);
+    if(e.line&&!e.line.quiet)addFeed(e.line.jk?'jk':(e.line.side===0?'us':'them'),clock(e).slice(3),e.line.txt,e.score[0]+'–'+e.score[1]);
+    if((e.k+1)%50===0&&e.k<199)addFeed('q','','End of Q'+(e.qi+1)+' · You '+e.score[0]+'–'+e.score[1],'');
+  }
+  function finish(){
+    var e=EV[EV.length-1],top=topOf(e.box),s=e.box[0][top],win=e.score[0]>e.score[1];
+    $('sU').textContent=e.score[0];$('sT').textContent=e.score[1];$('clk').textContent='Final';$('clkSub').textContent='';
+    renderQs(e,true);setWp(e);renderBox($('boxU'),0,e.box,top);renderBox($('boxT'),1,e.box,null);
+    // After a skip the feed would still show the moment you skipped at, so rebuild it from the last plays of the game.
+    $('feed').innerHTML='';
+    EV.slice(-40).forEach(function(x){if(x.line&&!x.line.quiet)addFeed(x.line.jk?'jk':(x.line.side===0?'us':'them'),clock(x).slice(3),x.line.txt,x.score[0]+'–'+x.score[1]);});
+    addFeed('q','','Final · You '+e.score[0]+'–'+e.score[1],'');
+    var fin=$('final');fin.className='final'+(win?'':' loss');fin.style.display='block';
+    fin.innerHTML=(win?'You beat the ’96 Bulls ':'The ’96 Bulls beat you ')+Math.max(e.score[0],e.score[1])+'–'+Math.min(e.score[0],e.score[1])+'<small>★ '+top+': '+s.pts+' pts · '+s.reb+' reb · '+s.ast+' ast</small>';
+    $('ctl').innerHTML='<button class="btn secondary" id="bReplay">Watch again</button>';$('bReplay').onclick=start;
+  }
+  var timer=null,idx=0,speed=1;
+  function tick(){if(idx>=EV.length){timer=null;finish();return;}show(idx++);timer=setTimeout(tick,175/speed);}
+  function start(){
+    if(timer)clearTimeout(timer);idx=0;speed=1;$('final').style.display='none';$('feed').innerHTML='<div class="q">Tip-off!</div>';
+    $('ctl').innerHTML='<button class="btn secondary" id="bFast">×2</button><button class="btn primary" id="bSkip">Skip to final</button>';
+    $('bFast').onclick=function(){speed=speed===1?2:1;this.textContent=speed===1?'×2':'×1';};
+    $('bSkip').onclick=function(){clearTimeout(timer);timer=null;idx=EV.length;finish();};
+    tick();
+  }
+  // initial (pre-game) state
+  var z=EV[0];renderQs({q:[[0,0,0,0],[0,0,0,0]],score:[0,0],qi:-1},false);
+  var empty=[{},{}];US.forEach(function(p){empty[0][p.s]={pts:0,reb:0,ast:0,stl:0,blk:0,fgm:0,fga:0};});THEM.forEach(function(p){empty[1][p.s]={pts:0,reb:0,ast:0,stl:0,blk:0,fgm:0,fga:0};});
+  renderBox($('boxU'),0,empty,null);renderBox($('boxT'),1,empty,null);setWp({score:[0,0],left:2880});
+  $('bPlay').onclick=start;
+})();
+</script>
+</body>
+</html>

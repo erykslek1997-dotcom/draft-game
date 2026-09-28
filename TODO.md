@@ -38,6 +38,27 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
         plansza dziennie dla wszystkich (lokalna północ), jedno podejście, seria dni, wynik dnia
         w przeglądarce (`src/components/dailyProgress.ts`). Bez dziennych zasad (limity, bany) —
         na razie tylko wspólna plansza.
+      - [ ] **Daily Slot Machine 2.0 — ustalone 2026-09-28, do wdrożenia.** Makiety:
+        `docs/mockups/daily-slot-machine.html` (i artefakt z tej sesji). Decyzje:
+        - **Joker** (wariant A): jeden legendarny gracz dnia, pełna cena (jego FGA, bez zniżki),
+          pojawia się jako 5. złota karta na swojej pozycji; wyszarzony, gdy brakuje capów
+          („Needs 7.4 more caps”). Na ekranie startowym pełna karta, w menu **tylko pozycja**
+          („Joker at C”). Silnik dobiera Jokera tak, żeby najlepsza piątka brała go w **~50% dni**.
+        - **Kolejność pozycji losowana codziennie**; Joker na dowolnej pozycji, ale nigdy w 1. ani 2.
+          rundzie (musi być na czym oszczędzać). Sprawdzić `dealFor`/`boardTargets` przy innej
+          kolejności niż PG→C.
+        - **Spoiler:** linia Jokera („worth it / too pricey / you passed / right call”) tylko na własnym
+          wyniku; w menu następnego dnia „Yesterday's Joker: X — the best five took him / skipped him”.
+        - **Share: wariant A** — data, ocena, streak, wynik meczu z przeciwnikiem; nic o składzie ani Jokerze.
+        - **Przeciwnik dnia + mecz na żywo:** legendarna piątka (’96 Bulls, ’86 Celtics…), mecz
+          akcja po akcji (~35 s, ×2, „Skip to final”), tablica, pasek szansy, kwarty, box score,
+          najlepszy gracz. Seed = dzień + skład. Różnica punktów ma pochodzić z silnika
+          (`projectMatchup` — sprawdzić, czy działa dla 5 graczy; inaczej z wyniku Slot Machine),
+          a fit ma być widoczny w akcjach (spacing, straty przy zbyt wielu „ball-dominant”,
+          atakowanie słabego obrońcy, krycie). Makieta liczy tylko ze statystyk, bez fitu.
+          **Otwarte:** jeden mecz (rekomendacja) czy seria z na żywo tylko ostatnim meczem.
+        - **Streak:** progi 3/7/14/30/100 (płomień, złota dźwignia, złote ramki bębnów, retro
+          rewers karty, tablica HoF), tylko kosmetyka, liczone wg **best**, bez freeze.
       - Globalny ranking dopiero z serwerem („będzie”); do tego czasu wynik tylko lokalnie.
       - Makiety tych ekranów są na stronie z mockupami z 2026-09-26.
       Podstawa technicznie jest gotowa: dzienne ziarno (`dayKey`/`hashSeed` w bestFive.ts) i
