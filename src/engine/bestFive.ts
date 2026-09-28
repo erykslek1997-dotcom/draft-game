@@ -81,7 +81,7 @@ export const DEAL_SIZE = 4;
  * Curry + Jordan + LeBron + Garnett + Robinson could all sit on one board. Now a slot is 1 star
  * + 4 starters/role-players, and picking all five stars is explicitly par, not a win.
  */
-const HEADLINER_BUCKET = 12;
+const HEADLINER_BUCKET = 20;
 /** Fallback draw for a role that found no one: legitimate starters weighted toward lesser names. */
 const BODY_BUCKET = 42;
 /** Board-wide budget for genuine all-time greats (8+ All-Stars — roughly "a casual fan names this
@@ -126,20 +126,22 @@ const recognisability = (s: PlayerSpan) => allStarCount(s.playerName) + 1;
 const obscurity = (s: PlayerSpan) => Math.max(0.4, 3.5 - allStarCount(s.playerName) * 0.5);
 
 /** The legitimate-starter bucket each role draws from, by the position's own talent order. */
-const ROLE_BUCKET = 60;
+const ROLE_BUCKET = 90;
 /** A value card costs at most this share of the bucket's shot costs (30th percentile). */
-const VALUE_FGA_QUANTILE = 0.3;
+const VALUE_FGA_QUANTILE = 0.4;
 /** Specialist: at or above this position-relative percentile on one axis, at or below the weak
  * line on another. */
-const SPECIALIST_HIGH = 0.85;
-const SPECIALIST_LOW = 0.35;
+const SPECIALIST_HIGH = 0.8;
+const SPECIALIST_LOW = 0.4;
 /** Surprise, under-the-radar kind: at most this many All-Star picks, inside this talent rank. */
 const SLEEPER_MAX_AS = 1;
-const SLEEPER_MAX_RANK = 30;
+const SLEEPER_MAX_RANK = 50;
 /** Surprise, famous-name kind: a player with this many All-Star picks, in a stretch at least this
  * many TAL below his best one. */
 const NAME_TRAP_MIN_AS = 6;
 const NAME_TRAP_MIN_DROP = 8;
+/** A star or sleeper can be dealt in any of his stretches this close to his best. */
+const SPAN_VARIETY_TAL = 4;
 
 let spansByPlayerCache: Map<string, PlayerSpan[]> | null = null;
 function spansByPlayer(): Map<string, PlayerSpan[]> {
@@ -187,15 +189,32 @@ export function dailyPool(key: string = dayKey()): DailyPool {
       return true;
     };
 
-    // Star.
-    take(weightedShuffle(ranked.slice(0, HEADLINER_BUCKET), rng, recognisability).find(allowed), 'star');
+    /**
+     * 2026-09-28, user-reported ("gracze są dość podobni cały czas"): over 60 boards only 217
+     * players ever came up and Bo Outlaw was on 39 of them — every role drew with a steep weight
+     * (value by talent-per-shot cubed, specialist by how lopsided he is, star from the top 12), so
+     * the same few won every time. Roles now draw evenly from a wider field: the star from the top
+     * HEADLINER_BUCKET with a gentle nod to fame, value from the better two thirds of the cheap cards,
+     * the specialist from everyone lopsided enough; and a star or sleeper can come in any of his
+     * stretches within SPAN_VARIETY_TAL of his best, not always the same one.
+     */
+    const anySpan = (s: PlayerSpan | undefined) => {
+      if (!s) return s;
+      const top = effectiveTalent(s);
+      const options = (spansByPlayer().get(s.playerName) ?? [s]).filter((o) => o.primaryPosition === slot && top - effectiveTalent(o) <= SPAN_VARIETY_TAL);
+      return options[Math.floor(rng() * options.length)] ?? s;
+    };
 
-    // Value: among the cheaper third of the bucket, the most talent per shot is likeliest.
+    // Star.
+    take(anySpan(weightedShuffle(ranked.slice(0, HEADLINER_BUCKET), rng, (s) => Math.sqrt(recognisability(s))).find(allowed)), 'star');
+
+    // Value: evenly among the better two thirds (by talent per shot) of the cheaper 40% of the bucket.
     const fgaCut = [...bucket.map((s) => s.fga)].sort((a, b) => a - b)[Math.floor(bucket.length * VALUE_FGA_QUANTILE)] ?? Infinity;
-    take(
-      weightedShuffle(bucket.filter((s) => s.fga <= fgaCut && allowed(s)), rng, (s) => Math.pow(effectiveTalent(s) / Math.max(4, s.fga), 3)).at(0),
-      'value',
-    );
+    const perShot = (s: PlayerSpan) => effectiveTalent(s) / Math.max(4, s.fga);
+    const cheap = bucket.filter((s) => s.fga <= fgaCut);
+    const valueCut = cheap.map(perShot).sort((a, b) => a - b)[Math.floor(cheap.length / 3)] ?? 0;
+    const valueCards = () => weightedShuffle(cheap.filter((s) => allowed(s) && perShot(s) >= valueCut), rng, () => 1).at(0);
+    take(valueCards(), 'value');
 
     // Specialist: elite on one axis, weak on another, measured against the bucket.
     const axes = [computeDefensiveTalent, computeSpacing, computeFinishing, computeOffensiveTalent];
@@ -206,11 +225,11 @@ export function dailyPool(key: string = dayKey()): DailyPool {
       const low = Math.min(...p.filter((_, i) => i !== p.indexOf(high)));
       return high >= SPECIALIST_HIGH && low <= SPECIALIST_LOW ? high - low : 0;
     };
-    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, specialistScore).at(0), 'specialist');
+    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, () => 1).at(0), 'specialist');
 
     // Surprise: a sleeper or a famous name in a lesser stretch, one or the other by coin flip.
     const sleeper = () =>
-      weightedShuffle(ranked.slice(0, SLEEPER_MAX_RANK).filter((s) => allowed(s) && allStarCount(s.playerName) <= SLEEPER_MAX_AS), rng, () => 1).at(0);
+      anySpan(weightedShuffle(ranked.slice(0, SLEEPER_MAX_RANK).filter((s) => allowed(s) && allStarCount(s.playerName) <= SLEEPER_MAX_AS), rng, () => 1).at(0));
     const nameTrap = () => {
       const candidates: PlayerSpan[] = [];
       for (const top of ranked.slice(0, ROLE_BUCKET)) {
@@ -227,11 +246,8 @@ export function dailyPool(key: string = dayKey()): DailyPool {
 
     // The larger pool (2026-09-28): a second value card and a second specialist, so a deal can
     // always offer something affordable and something that covers what the five is missing.
-    take(
-      weightedShuffle(bucket.filter((s) => s.fga <= fgaCut && allowed(s)), rng, (s) => Math.pow(effectiveTalent(s) / Math.max(4, s.fga), 3)).at(0),
-      'value',
-    );
-    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, specialistScore).at(0), 'specialist');
+    take(valueCards(), 'value');
+    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, () => 1).at(0), 'specialist');
 
     // Fill any role that found no one (thin positions) with the old obscure-starter draw, then,
     // as a last resort, straight from the ranked list — a slot must always deal POOL_PER_SLOT.
