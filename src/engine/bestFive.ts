@@ -979,6 +979,8 @@ export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: nu
   add(cards.find((s) => pool.roles[s.id] === 'star'));
   add(rumorSubject(pool, slot));
   add([...cards].sort((a, b) => a.fga - b.fga)[0]);
+  const headliner = boardHeadline(pool, cap);
+  if (headliner?.slot === slot) add(headliner.span);
   // The board's winning card at this position, dealt on every path — so "best on the board" is the
   // same five for everyone who plays the seed, and a challenge compares like with like. It can be
   // over the caps left (that's the cost of an earlier pick); it only gives way when the deal would
@@ -989,7 +991,7 @@ export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: nu
   for (const s of weightedShuffle(cards.filter((c) => !hand.includes(c)), rng, () => 1)) add(s);
   // At least two cards the caps left can pay for.
   const star = cards.find((s) => pool.roles[s.id] === 'star');
-  const keep = new Set([star, rumorSubject(pool, slot), [...cards].sort((a, b) => a.fga - b.fga)[0]].filter(Boolean));
+  const keep = new Set([star, rumorSubject(pool, slot), [...cards].sort((a, b) => a.fga - b.fga)[0], headliner?.slot === slot ? headliner.span : undefined].filter(Boolean));
   for (const spare of cards.filter((c) => !hand.includes(c) && fits(c))) {
     if (hand.filter(fits).length >= 2) break;
     const out = hand.findIndex((c) => !fits(c) && !keep.has(c));
@@ -1012,10 +1014,13 @@ export function boardTargets(pool: DailyPool, cap: number): DailyTargets {
 
 /**
  * 2026-09-28, the user: "można np zasugerować po imieniu i nazwisku że na pozycji X czeka na nas
- * all-time great który może wygrać nam rozgrywkę, ale trzeba dobrze rozegrać karty" — and chose
- * that it is sometimes a trap. One line at the start of a board names a star who is always dealt
- * at his position. Usually he belongs in the board's best five; about one board in three he is the
- * trap — a big name who eats the cap the rest of the five needs. The wording is the same either way.
+ * all-time great który może wygrać nam rozgrywkę, ale trzeba dobrze rozegrać karty". One line at
+ * the start of a board names a player — by name only, no years — who is always dealt at his
+ * position. Usually he is the real thing: a star from the board's best five. About one board in
+ * three it's a trap, and (the user's follow-up: "prawda ALE może to być np. bardzo stary Hakeem,
+ * można się pobawić spanami") the name is still true but the card is one of his lesser stretches —
+ * the famous name in a late or early span, priced like the name. With no such card on the board the
+ * trap is a big star who isn't in the best five. The wording is the same either way.
  */
 export interface BoardHeadline {
   slot: Position;
@@ -1023,17 +1028,39 @@ export interface BoardHeadline {
   trap: boolean;
 }
 const HEADLINE_TRAP_SHARE = 0.35;
+const headlineCache = new Map<string, BoardHeadline | undefined>();
 export function boardHeadline(pool: DailyPool, cap: number): BoardHeadline | undefined {
+  const cacheKey = `${pool.key}|${cap}`;
+  if (headlineCache.has(cacheKey)) return headlineCache.get(cacheKey);
   const rng = mulberry32(seedFromKey(`${pool.key}:headline`));
   const optimal = boardOptimal(pool, cap);
-  const stars = STARTER_SLOTS.flatMap((slot) => {
-    const star = pool.bySlot[slot].find((s) => pool.roles[s.id] === 'star');
-    return star ? [{ slot, span: star, inBest: optimal[slot]?.id === star.id }] : [];
-  });
-  const byFame = (a: { span: PlayerSpan }, b: { span: PlayerSpan }) => allStarCount(b.span.playerName) - allStarCount(a.span.playerName) || effectiveTalent(b.span) - effectiveTalent(a.span);
-  const truths = stars.filter((s) => s.inBest).sort(byFame);
-  const traps = stars.filter((s) => !s.inBest).sort((a, b) => b.span.fga - a.span.fga || byFame(a, b));
+  const byFame = (a: PlayerSpan, b: PlayerSpan) => allStarCount(b.playerName) - allStarCount(a.playerName) || effectiveTalent(b) - effectiveTalent(a);
+  // A position's always-dealt cards; the headliner has to fit in the deal alongside them.
+  const mustAt = (slot: Position) => {
+    const cards = pool.bySlot[slot];
+    return new Set([cards.find((c) => pool.roles[c.id] === 'star'), rumorSubject(pool, slot), [...cards].sort((a, b) => a.fga - b.fga)[0], optimal[slot]].filter(Boolean));
+  };
+  const fitsDeal = (slot: Position, span: PlayerSpan) => mustAt(slot).has(span) || mustAt(slot).size < DEAL_SIZE;
+
+  const truths = STARTER_SLOTS.flatMap((slot) => {
+    const star = pool.bySlot[slot].find((c) => pool.roles[c.id] === 'star');
+    return star && optimal[slot]?.id === star.id ? [{ slot, span: star }] : [];
+  }).sort((a, b) => byFame(a.span, b.span));
+  const bestTal = (s: PlayerSpan) => Math.max(...(spansByPlayer().get(s.playerName) ?? [s]).map(effectiveTalent));
+  const lesserSpans = STARTER_SLOTS.flatMap((slot) =>
+    pool.bySlot[slot]
+      .filter((c) => optimal[slot]?.id !== c.id && allStarCount(c.playerName) >= NAME_TRAP_MIN_AS && bestTal(c) - effectiveTalent(c) >= NAME_TRAP_MIN_DROP && fitsDeal(slot, c))
+      .map((span) => ({ slot, span })),
+  ).sort((a, b) => byFame(a.span, b.span));
+  const priceyStars = STARTER_SLOTS.flatMap((slot) => {
+    const star = pool.bySlot[slot].find((c) => pool.roles[c.id] === 'star');
+    return star && optimal[slot]?.id !== star.id ? [{ slot, span: star }] : [];
+  }).sort((a, b) => b.span.fga - a.span.fga || byFame(a.span, b.span));
+
   const wantTrap = rng() < HEADLINE_TRAP_SHARE;
-  const chosen = (wantTrap ? traps[0] ?? truths[0] : truths[0] ?? traps[0]);
-  return chosen ? { slot: chosen.slot, span: chosen.span, trap: !chosen.inBest } : undefined;
+  const trap = lesserSpans[0] ?? priceyStars[0];
+  const chosen = wantTrap ? trap ?? truths[0] : truths[0] ?? trap;
+  const result = chosen ? { slot: chosen.slot, span: chosen.span, trap: optimal[chosen.slot]?.id !== chosen.span.id } : undefined;
+  headlineCache.set(cacheKey, result);
+  return result;
 }

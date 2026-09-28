@@ -214,8 +214,10 @@ export default function BestFive({ onBack, onNextStep, challenge }: Props) {
             <div className="bf-headline" aria-label="Tonight's headliner">
               <span className="bf-headline-label at-cond">In this deal · {SLOT_LABEL[headline.slot].toLowerCase()}</span>
               <p className="bf-headline-text">
-                <b>{headline.span.playerName}</b> ({headline.span.spanLabel}) is waiting at {headline.slot}. Build around him right and
-                he can win you the board — but he won’t come cheap
+                {/* No years: which stretch of his career is dealt is part of the read (sometimes it's a
+                    late-career card priced like the name). */}
+                <b>{headline.span.playerName}</b> is in this deal, at {headline.slot}. Build around him right and he can win you
+                the board — but he won’t come cheap
                 {headline.slot === 'PG' ? ', and every cap he takes is one the rest of the five can’t have.' : ', so play the cards before him well.'}
               </p>
             </div>
