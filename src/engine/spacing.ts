@@ -1,6 +1,8 @@
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { eraScaledThreePA, spanEndYears } from './era';
+import { players } from '../data/players';
+import { draftPool } from '../data/draftPool';
 
 /**
  * SPACING — "how much does this player's shooting bend a defense," on the same 0-100 display
@@ -361,7 +363,7 @@ function hasManualWalkingGravity(span: PlayerSpan): boolean {
  * ladders here (a copy would drift). Omitting it is the production path and behaves exactly as
  * before — nothing in `src/` passes it.
  */
-export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): SpacingBreakdown {
+function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): SpacingBreakdown {
   const position = span.primaryPosition;
   const scaledThreePA = eraScaledThreePA(span.spanLabel, span.box.threePA);
   const selfCreation = selfCreationOverride ?? selfCreationRate(span);
@@ -393,6 +395,10 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
   }
   if (hasManualWalkingGravity(span)) points = Math.max(points, WALKING_GRAVITY_FLOOR);
 
+  return { scaledThreePA, accuracyPoints, volumePoints, rawVolumePoints, points, tier: tierForPoints(span, points) };
+}
+
+function tierForPoints(span: PlayerSpan, points: number): SpacingTier {
   let tier: SpacingTier = 'Non-shooter';
   for (const [floor, named] of TIER_FLOORS) {
     if (points >= floor) tier = named;
@@ -400,8 +406,62 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
   if (tier === 'Walking gravity' && normalizePlayerName(span.playerName) === normalizePlayerName(SHOOTING_ANOMALY_PLAYER)) {
     tier = 'Shooting anomaly';
   }
+  return tier;
+}
 
-  return { scaledThreePA, accuracyPoints, volumePoints, rawVolumePoints, points, tier };
+/**
+ * 2026-09-28, the user: "okres skróconej linii jest niewyważony" and "spacing powinien być też
+ * obliczany lekko na podstawie walidacji z sąsiednich sezonów". A window's spacing is checked
+ * against the same player's neighbouring windows: 60% its own, 15% each window one year either
+ * side, 5% each two and three years either side (whatever exists in the archive). A window loses
+ * 90% of its weight for each season it has on the shortened 22-foot line (1994-95 to 1996-97), so
+ * a short-line window leans on the restored-line seasons around it — the third-year reach exists
+ * so a window in the middle of the short-line years still finds one. Follow-up the same day
+ * ("Pippen nadal za mocny, sezon skróconej linii liczy za mocno"): the first cut (50% off, two
+ * years' reach) left Pippen 1995-97 at 81. That line inflated players who only started shooting
+ * because of it (Pippen 1995-97 88 -> 62, Clifford Robinson 1994-96 92 -> 50) and sank shooters
+ * whose percentage dipped a few points (Terry Porter 1995-97 15 -> 57); real shooters barely move
+ * (Reggie Miller 94, Glen Rice 93, Tim Hardaway 72). Every spacing consumer reads this.
+ */
+const SMOOTH_WEIGHT_BY_DISTANCE = [0.6, 0.15, 0.05, 0.05] as const;
+const SHORTENED_LINE_SMOOTH_DISCOUNT = 0.9;
+
+let windowsByPlayerYears: Map<string, PlayerSpan> | null = null;
+function windowKey(playerName: string, endYears: number[]): string {
+  return `${normalizePlayerName(playerName)}|${endYears.join(',')}`;
+}
+function neighbourWindow(span: PlayerSpan, shift: number): PlayerSpan | undefined {
+  if (!windowsByPlayerYears) {
+    windowsByPlayerYears = new Map();
+    for (const s of [...players, ...draftPool]) windowsByPlayerYears.set(windowKey(s.playerName, spanEndYears(s.spanLabel)), s);
+  }
+  return windowsByPlayerYears.get(windowKey(span.playerName, spanEndYears(span.spanLabel).map((y) => y + shift)));
+}
+function shortenedLineShare(span: PlayerSpan): number {
+  const years = spanEndYears(span.spanLabel);
+  return years.length === 0 ? 0 : years.filter((y) => SHORTENED_LINE_END_YEARS.has(y)).length / years.length;
+}
+
+const smoothedCache = new Map<string, SpacingBreakdown>();
+export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): SpacingBreakdown {
+  if (selfCreationOverride !== undefined) return rawSpacingBreakdown(span, selfCreationOverride);
+  const hit = smoothedCache.get(span.id);
+  if (hit) return hit;
+  const own = rawSpacingBreakdown(span);
+  let sum = 0;
+  let weight = 0;
+  const reach = SMOOTH_WEIGHT_BY_DISTANCE.length - 1;
+  for (let shift = -reach; shift <= reach; shift++) {
+    const window = shift === 0 ? span : neighbourWindow(span, shift);
+    if (!window) continue;
+    const w = SMOOTH_WEIGHT_BY_DISTANCE[Math.abs(shift)] * (1 - SHORTENED_LINE_SMOOTH_DISCOUNT * shortenedLineShare(window));
+    sum += w * (shift === 0 ? own.points : rawSpacingBreakdown(window).points);
+    weight += w;
+  }
+  const points = weight > 0 ? sum / weight : own.points;
+  const result = { ...own, points, tier: tierForPoints(span, points) };
+  smoothedCache.set(span.id, result);
+  return result;
 }
 
 /** SPACING on the 0-100 scale the other judge metrics use. */

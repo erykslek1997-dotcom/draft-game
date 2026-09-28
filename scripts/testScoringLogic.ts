@@ -92,10 +92,13 @@ const recomputedOverall = Math.round(
 );
 assert(breakdown.overall === recomputedOverall, 'Overall is the 50/50 quality-vs-fit blend, quality folding in rotation and fit folding in offense/defense');
 
+// 2026-09-28: neighbour-season spacing smoothing reads Chris Webber 1996-98 (two of its three
+// seasons on the shortened line) at 43, no longer a shooter, and this "four-shooter" five fell to
+// 74. Swapped for Dirk Nowitzki 2001-03 (same 17.5-ish FGA), a real stretch four: 86 again.
 const strongComplementaryBench = team('strong-complementary-bench', [
   pick('Nikola Jokic', '2021-23'),
   pick('Manu Ginóbili', '2006-08'),
-  pick('Chris Webber', '1996-98'),
+  pick('Dirk Nowitzki', '2001-03'),
   pick('Jrue Holiday', '2021-23'),
   pick('Ron Artest', '2006-08'),
   pick('OG Anunoby', '2022-24'),
