@@ -27,6 +27,7 @@ import { playoffTalentTerm } from './playoffImpact';
 import { realValueTierFloor } from './realValueFloor';
 import { madeAllNbaInSpan } from './allNbaLookup';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
+import calibrationAnchors from '../data/calibrationAnchors.json';
 
 /**
  * Letter-grade display for O-TAL/D-TAL, purely a UI presentation layer over the existing
@@ -1480,9 +1481,21 @@ function legacyDisplayTalent(ctx: TierGateContext): number {
   return Math.min(namedPlayerCeiling(ctx.playerName), smoothed + namedPeakLift(ctx.playerName, smoothed));
 }
 
-const reviewedWindowCache = new Map<string, { measure: number; rawTal: number } | undefined>();
-/** `windowMeasure` and raw TAL of the window the user tiered, looked up once per player. */
+/**
+ * The reviewed window's measure and raw TAL as they stood when the table was last reviewed
+ * (`src/data/calibrationAnchors.json`, written by `scripts/buildCalibrationAnchors.ts`).
+ * 2026-09-28: frozen because the live measure jumps when an engine change nudges the reviewed
+ * window across a tier line (Conley 2015-17: engine TAL 79 -> 80 moved every other Conley window
+ * down 7). With the anchor frozen, each other window moves only by its own change.
+ */
+const CALIBRATION_ANCHORS = calibrationAnchors as Record<string, { measure: number; rawTal: number }>;
 function reviewedWindow(playerName: string): { measure: number; rawTal: number } | undefined {
+  return CALIBRATION_ANCHORS[normalizePlayerName(playerName)] ?? liveReviewedWindow(playerName);
+}
+
+const reviewedWindowCache = new Map<string, { measure: number; rawTal: number } | undefined>();
+/** `windowMeasure` and raw TAL of the window the user tiered, from the engine as it is now. */
+export function liveReviewedWindow(playerName: string): { measure: number; rawTal: number } | undefined {
   const key = normalizePlayerName(playerName);
   if (reviewedWindowCache.has(key)) return reviewedWindowCache.get(key);
   const entry = tierCalibrationFor(playerName);
