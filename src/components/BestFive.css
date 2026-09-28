@@ -652,3 +652,4 @@
 .bf-headline-label { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-gold, #ffd479); margin-bottom: 4px; }
 .bf-headline-text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
 .bf-headline-text b { color: var(--at-ink); }
+.bf-why-headline { border-top: 1px dashed var(--at-line); padding-top: 8px; margin-top: 4px; }
