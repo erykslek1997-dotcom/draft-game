@@ -323,22 +323,20 @@
 .at-skip-to-me:hover { background: var(--at-accent); color: var(--at-accent-ink); }
 .at-skip-to-me:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 
-/* 2026-09-28: the Daily Slot Machine — the menu's daily entry and the daily board's own lines. */
-.daily-card {
-  grid-column: 1 / -1; box-sizing: border-box;
-  display: flex; align-items: center; gap: 12px; width: 100%; margin: 0;
-  padding: 12px 16px; border-radius: 14px; cursor: pointer; text-align: left; font: inherit;
-  border: 1px solid color-mix(in srgb, var(--at-gold, #ffd479) 55%, #16222f);
-  background: color-mix(in srgb, var(--at-gold, #ffd479) 8%, #0a0f18); color: #eef4fb;
+/* 2026-09-28: the Daily Slot Machine — a strip under the Slot Machine card in the menu, and the
+   daily board's own lines. */
+.mode-card-daily {
+  display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
+  margin-top: -1px; padding: 8px 14px; cursor: pointer; font: inherit; text-align: left;
+  border: 1px solid color-mix(in srgb, var(--at-gold, #ffd479) 55%, #16222f); border-radius: 0 0 6px 6px;
+  background: color-mix(in srgb, var(--at-gold, #ffd479) 9%, #0a0f18); color: #eef4fb;
 }
-.daily-card:hover { border-color: var(--at-gold, #ffd479); }
-.daily-card:focus-visible { outline: 2px solid var(--at-gold, #ffd479); outline-offset: 2px; }
-.daily-card.is-played { opacity: 0.8; }
-.daily-card-icon { font-size: 24px; }
-.daily-card-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.daily-card-title { font-size: 14px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-gold, #ffd479); }
-.daily-card-desc { font-size: 12.5px; color: #a9bdd4; }
-.daily-card-streak { font-size: 15px; font-weight: 800; white-space: nowrap; }
+.mode-card-daily:hover { border-color: var(--at-gold, #ffd479); }
+.mode-card-daily:focus-visible { outline: 2px solid var(--at-gold, #ffd479); outline-offset: 2px; }
+.mode-card-daily-label { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-gold, #ffd479); }
+.mode-card-daily-state { flex: 1; font-size: 12px; color: #a9bdd4; }
+.mode-card-daily.is-played .mode-card-daily-state { color: #7fd68a; }
+.mode-card-daily-streak { font-size: 13px; font-weight: 800; white-space: nowrap; }
 .bf-daily-sub { text-align: center; font-size: 12.5px; color: var(--at-ink-soft); margin: 8px 0 0; }
 .bf-daily-done {
   margin-top: 16px; padding: 12px 14px; border-radius: 12px; text-align: center; font-size: 13.5px; line-height: 1.5;
