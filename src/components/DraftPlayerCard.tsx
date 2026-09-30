@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import type { OverallTier } from '../engine/grades';
-import { displayTalentForSpan } from '../engine/grades';
+import { displayTalentForSpan, formatTal } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { naturalPosition } from '../engine/naturalPosition';
 import { Face, ShotChip, shortenName } from './ShotChip';
@@ -83,7 +83,7 @@ export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, o
       {!blind && (
         <span className="at-player-card-meta">
           <span className="at-player-card-tal" title="Talent rating of the season this card drafts">
-            TAL <b>{displayTalentForSpan(tierContextFor(span))}</b>
+            TAL <b>{formatTal(displayTalentForSpan(tierContextFor(span)))}</b>
           </span>
         </span>
       )}

@@ -23,6 +23,7 @@ import { championshipStructureForRoster, type ChampionshipStructureResult } from
 import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
 import { rimPressureTeam } from './rimPressure';
+import { teamSpacingValue } from './midrangeGravity';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 // Boolean predicate only (is this player a hard whole-career era override) — NOT a
 // `computeDefensiveTalent` value; the module keeps its "no talent-number input" rule.
@@ -108,22 +109,35 @@ export const SPACING_BOTTLENECK_SCALE = 0.65;
  * `checkNeverDrafted`/AI-pick-regression green after this change; re-run both if either dataset
  * ever needs re-validating.
  */
+/**
+ * 2026-09-30, engine calibration session 1 (the user: Nash + Malone Fit 71, Stockton + Garnett 77,
+ * but Giannis + Kareem 82 and CP3 + Bird + a ball-dominant Grant Hill 75): ~60% of this table was
+ * defensive fit, so Fit mostly re-read defense, and the offensive side had no term for the most
+ * basic complement in basketball — a ball-screen initiator with a big who rolls or pops.
+ * `pairingStructure` (the pick-and-roll structure `offenseScore` already reads as
+ * `mismatchStructure`) joins at 0.10 and creation — where crowded on-ball demand is charged —
+ * rises to 0.15; the defensive terms give up the difference. Offense-side now ~0.45 of the table.
+ */
 export const FIT_WEIGHTS = {
-  creationStructure: 0.10,
+  creationStructure: 0.15,
+  pairingStructure: 0.10,
   spacingCompatibility: 0.08,
-  defensiveRoleCoverage: 0.12,
-  switchability: 0.18,
-  huntResistance: 0.13,
-  defensiveCohesion: 0.10,
-  rimPressureTeam: 0.07,
+  defensiveRoleCoverage: 0.10,
+  switchability: 0.14,
+  huntResistance: 0.11,
+  defensiveCohesion: 0.09,
+  rimPressureTeam: 0.06,
   reboundingBalance: 0.02,
-  sizeCoverage: 0.07,
-  championshipStructure: 0.13,
+  sizeCoverage: 0.04,
+  championshipStructure: 0.11,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
 const HARD_NON_SPACER_FLOOR = 30;
 const FRONTCOURT_SPACING_FLOOR = 40;
+/** A frontcourt non-shooter at or above this O-TAL is a real paint scorer (see `paintOverlapPenalty`). */
+const PAINT_SCORER_OTAL_FLOOR = 70;
+const PAINT_OVERLAP_PENALTY = 7;
 /** Hoisted out of `fitScore`'s body (2026-09-16) and exported so `scoring.ts`'s `offenseScore`
  * blend can apply the SAME "elite playmaking engine" gate to its own raw-spacing term — see that
  * function's own docstring for why. Values and meaning unchanged from where they used to live
@@ -153,6 +167,9 @@ const SWITCHABILITY_ROLE_SCORE: Record<DefensiveRole, number> = {
 
 export interface FitScoreComponents {
   creationStructure: number;
+  /** Pick-and-roll structure: a real initiator with a screener who rolls or pops, in space
+   * (`mismatchStructureScore`, pairwiseFit.ts), 0-100. */
+  pairingStructure: number;
   spacingCompatibility: number;
   defensiveRoleCoverage: number;
   /** Lineup switching capability, 0-100 — promoted from a diagnostic-only input on 2026-09-04
@@ -597,6 +614,7 @@ export function fitScore(team: Team): FitScoreResult {
       score: 0,
       components: {
         creationStructure: 0,
+        pairingStructure: 0,
         spacingCompatibility: 0,
         defensiveRoleCoverage: 0,
         switchability: 0,
@@ -915,6 +933,7 @@ export function fitScore(team: Team): FitScoreResult {
 
   const components: FitScoreComponents = {
     creationStructure,
+    pairingStructure: mismatchStructure,
     spacingCompatibility,
     defensiveRoleCoverage,
     switchability,
@@ -941,7 +960,21 @@ export function fitScore(team: Team): FitScoreResult {
     SPACING_BOTTLENECK_MAX_PENALTY,
     Math.max(0, (SPACING_BOTTLENECK_FLOOR - spacingCompatibility) * SPACING_BOTTLENECK_SCALE),
   );
-  const score = Math.round(clamp(weightedScore - spacingBottleneckPenalty));
+  // 2026-09-30, engine calibration session 1 (the user, on Giannis + Kareem at Fit 82: "Giannis
+  // nie rzuca a zawsze wokół siebie miał elitarny spacing"; the game's own risk line already said
+  // "defenses pack the paint"): two frontcourt starters who carry a real scoring load but can't
+  // shoot from outside score in the same few feet — each one past the first costs Fit.
+  const paintScorers = starterEntries.filter(
+    ({ player, slot }) =>
+      (slot === 'PF' || slot === 'C') &&
+      teamSpacingValue(player) < HARD_NON_SPACER_FLOOR &&
+      computeOffensiveTalent(player) >= PAINT_SCORER_OTAL_FLOOR,
+  );
+  const paintOverlapPenalty = Math.max(0, paintScorers.length - 1) * PAINT_OVERLAP_PENALTY;
+  if (paintOverlapPenalty > 0) {
+    notes.push(`${paintScorers.map(({ player }) => player.playerName).join(' and ')} both score in the paint without an outside shot.`);
+  }
+  const score = Math.round(clamp(weightedScore - spacingBottleneckPenalty - paintOverlapPenalty));
   if (spacingBottleneckPenalty >= 2) {
     notes.push(`Spacing compatibility caps overall fit (-${Math.round(spacingBottleneckPenalty)}).`);
   }

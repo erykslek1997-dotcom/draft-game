@@ -124,7 +124,10 @@ const MARGIN_STD_DEV = 13.822;
  * #16 lands near a +12 margin, in line with a real #1-vs-#16 net-rating gap. The champion now
  * tracks the ranking; a close all-time field still spreads the odds rather than crowning one team.
  */
-const OVERALL_MARGIN_WEIGHT = 0.7;
+// 2026-09-30, engine calibration session 1 (the user: two teams at overall 83 held 33% and 19%
+// title odds): 0.7 still let the net-rating regression — which leans on projected DRTG — swing the
+// title race between teams the ranking calls even. 0.85 keeps it as texture only.
+const OVERALL_MARGIN_WEIGHT = 0.85;
 const OVERALL_POINTS_PER_UNIT = 1.0;
 
 /** Abramowitz-Stegun 7.1.26 approximation of the error function — accurate to ~1.5e-7, the

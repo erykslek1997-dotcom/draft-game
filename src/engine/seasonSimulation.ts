@@ -20,7 +20,7 @@ export function buildMatchupCache(teams: Team[]): Map<string, MatchupTeamCache> 
     teams.map((t) => [
       t.id,
       {
-        overall: scoreTeam(t).overall,
+        overall: scoreTeam(t).overallExact,
         netRating: projectedNetRating(t).net,
         huntingPotential: fitScore(t).inputs.huntingPotential,
         huntability: defensiveHuntability(t),

@@ -20,7 +20,7 @@ import { totalFga, TEAM_COUNT, STARTER_SLOTS } from '../engine/positions';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import { scoreLineup, WEIGHTED_AXES, WEAK_AXIS_REASON, type Lineup, type LineupScore } from '../engine/bestFive';
 import { allStarCount } from '../engine/allStarLookup';
-import { overallTierForSpan, displayTalentForSpan } from '../engine/grades';
+import { overallTierForSpan, displayTalentForSpan, formatTal } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { teamCodes, teamLabel } from '../engine/teamNames';
 import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
@@ -470,7 +470,7 @@ function QuickDraftBoard({
               <Face name={p.playerName} />
               <span className="qf-team-card-name">{p.playerName}</span>
               <span className="qf-team-card-tal">
-                <span>TAL <b>{displayTalentForSpan(tierContextFor(p))}</b></span>
+                <span>TAL <b>{formatTal(displayTalentForSpan(tierContextFor(p)))}</b></span>
                 <ShotChip fga={p.fga} cap={QUICK_CAP_LIMIT} />
               </span>
             </div>
@@ -774,7 +774,7 @@ function QuickResults({
                           <span className="results-hero-rotation-entry-name">{shortenName(player.playerName, 12)}</span>
                           <span className="results-hero-rotation-entry-min">{player.spanLabel}</span>
                         </span>
-                        <span className="rotation-entry-tal" style={{ background: qualityColor(tal) }}>{tal}</span>
+                        <span className="rotation-entry-tal" style={{ background: qualityColor(tal) }}>{formatTal(tal)}</span>
                       </div>
                     )}
                   </div>

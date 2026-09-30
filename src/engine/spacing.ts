@@ -325,6 +325,28 @@ export function isShootingAnomalyPlayer(span: PlayerSpan): boolean {
  */
 export const SHOOTING_ANOMALY_TEAM_SPACING_FLOOR = 85;
 
+/**
+ * 2026-09-30, engine calibration session 1 (the user: Steve Nash 85 below Anthony Edwards 94,
+ * Billups and Korver 90): the accuracy ladder tops out at 41.5%, so a historically accurate
+ * shooter on moderate volume (Nash 2004-06: 43.6% on 3.6 a game) can only earn his volume
+ * shortfall back through volume. Each point of 3P% above the top rung is worth 1.25 spacing points
+ * toward the volume the shooter doesn't take, up to `ACCURACY_OVERFLOW_MAX` — only for a real
+ * volume shooter (volume ladder at least `ACCURACY_OVERFLOW_MIN_VOLUME`), so a big going 5-for-11
+ * never qualifies. Real 3P% only (not the self-creation-discounted bar the ladder reads), so a
+ * pull-up volume shooter at 39% gains nothing. Nash 2004-06 85 -> 96, level with Ray Allen.
+ */
+const ACCURACY_OVERFLOW_MAX = 2.5;
+const ACCURACY_OVERFLOW_PER_POINT = 1.25;
+const ACCURACY_OVERFLOW_MIN_VOLUME = 5;
+function accuracyOverflowPoints(position: Position, threePct: number, volumePoints: number): number {
+  if (volumePoints < ACCURACY_OVERFLOW_MIN_VOLUME) return 0;
+  const ladder = ACCURACY_LADDERS[position];
+  const topRung = ladder[ladder.length - 1][0];
+  const overflow = (threePct - topRung) * 100 * ACCURACY_OVERFLOW_PER_POINT;
+  if (overflow <= 0) return 0;
+  return Math.min(ACCURACY_OVERFLOW_MAX, overflow, 10 - volumePoints);
+}
+
 function ladderScore(ladder: Ladder, value: number): number {
   let points = 0;
   for (const [minimum, awarded] of ladder) {
@@ -377,7 +399,7 @@ function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): S
   const rawVolumePoints = ladderScore(VOLUME_LADDERS[position], scaledThreePA * volumeKicker);
   const volumePoints = Math.min(rawVolumePoints, accuracyPoints + VOLUME_ACCURACY_HEADROOM);
 
-  const ladderPoints = accuracyPoints + volumePoints;
+  const ladderPoints = accuracyPoints + volumePoints + accuracyOverflowPoints(position, span.box.threePct - shortenedLineAccuracyDiscount(span.spanLabel), volumePoints);
   const selfCreationBonus =
     accuracyPoints >= SELF_CREATION_BONUS_MIN_ACCURACY && volumePoints >= SELF_CREATION_BONUS_MIN_VOLUME
       ? SELF_CREATION_BONUS * selfCreation * (1 - ladderPoints / MAX_SPACING_POINTS)
@@ -495,7 +517,7 @@ export function rawSpacingPoints(span: PlayerSpan): number {
     span.box.threePA >= SELF_CREATION_RAW_VOLUME_GATE ? 1 + SELF_CREATION_VOLUME_KICKER * selfCreation : 1;
   const rawVolumePoints = ladderScore(VOLUME_LADDERS[position], span.box.threePA * volumeKicker);
   const volumePoints = Math.min(rawVolumePoints, accuracyPoints + VOLUME_ACCURACY_HEADROOM);
-  const ladderPoints = accuracyPoints + volumePoints;
+  const ladderPoints = accuracyPoints + volumePoints + accuracyOverflowPoints(position, span.box.threePct - shortenedLineAccuracyDiscount(span.spanLabel), volumePoints);
   const selfCreationBonus =
     accuracyPoints >= SELF_CREATION_BONUS_MIN_ACCURACY && volumePoints >= SELF_CREATION_BONUS_MIN_VOLUME
       ? SELF_CREATION_BONUS * selfCreation * (1 - ladderPoints / MAX_SPACING_POINTS)

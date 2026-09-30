@@ -105,7 +105,7 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
     ranked.map(({ team, breakdown }) => [
       team.id,
       {
-        overall: breakdown.overall,
+        overall: breakdown.overallExact,
         netRating: projectedNetRating(team).net,
         huntingPotential: fitScore(team).inputs.huntingPotential,
         huntability: defensiveHuntability(team),

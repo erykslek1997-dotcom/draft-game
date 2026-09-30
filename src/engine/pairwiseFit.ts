@@ -306,5 +306,13 @@ export function mismatchStructureScore(
   const surroundingSpacing = surroundingValues.length > 0
     ? surroundingValues.reduce((sum, value) => sum + value, 0) / surroundingValues.length
     : 0;
-  return Math.round(bestGravity * (1 - SURROUNDING_SPACING_WEIGHT) + surroundingSpacing * SURROUNDING_SPACING_WEIGHT);
+  const structure = bestGravity * (1 - SURROUNDING_SPACING_WEIGHT) + surroundingSpacing * SURROUNDING_SPACING_WEIGHT;
+  // 2026-09-30, engine calibration session 1 (the user: Nash + Malone and Stockton + Garnett are
+  // the pick-and-roll everyone builds around, yet read like any initiator with any screener): the
+  // pairing is only as dangerous as the man running it — scaled by the lead's own playmaking.
+  const leadPlaymaking = playmakingScoreForPlayer(lead.player) ?? 50;
+  const initiatorQuality = INITIATOR_QUALITY_FLOOR + (1 - INITIATOR_QUALITY_FLOOR) * Math.min(1, leadPlaymaking / INITIATOR_QUALITY_FULL);
+  return Math.round(structure * initiatorQuality);
 }
+const INITIATOR_QUALITY_FLOOR = 0.7;
+const INITIATOR_QUALITY_FULL = 90;

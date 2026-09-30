@@ -19,9 +19,38 @@ drużynę w tabeli wyników i zgłaszasz, co się nie zgadza; poprawiamy i powta
 
 - [x] **Przycisk testowy AUTO-FINISH w pełnym drafcie** (2026-09-30) — „Auto-finish (testing)” nad
       planszą: dokańcza draft (Twoje picki też robi AI), buduje rotację i od razu pokazuje wyniki,
-      ok. 15 s. Flaga `AUTO_FINISH_FOR_TESTING` w `src/components/GameShell.tsx`. (S)
-- [ ] **Sesje kalibracyjne: Twoja ocena drużyn → poprawki** — lista uwag z każdej sesji ląduje tu
-      jako punkty. (L)
+      ok. 15 s. Flaga `AUTO_FINISH_FOR_TESTING` w `src/components/testingFlags.ts`. (S)
+- [x] **Eksport wszystkich składów** (2026-09-30) — „Export all teams (testing)” na dole ekranu
+      wyników kopiuje każdą drużynę (oceny, składniki, lata graczy, minuty, O/D/SPC) do schowka;
+      wklejasz do czatu. Flaga `TEAM_EXPORT_FOR_TESTING` (`testingFlags.ts`). U mnie to samo robi
+      `npm run calibrate:report` (wylosowane ligi) i `npm run calibrate:reference` (Twoje drużyny
+      z sesji 1 + Twoje werdykty jako testy).
+- [x] **Sesja kalibracyjna 1** (2026-09-30), wprowadzone:
+  1. Offense: O-TAL drużyny ważony gwiazdami (30/24/18/15/13%), większa waga talentu w bloku
+     ataku, „cap za słabego ofensywnie startera” zamieniony na karę proporcjonalną; paski
+     składników w tej samej skali co kafelek; atak i obrona mają równy rozrzut (76 ± 8).
+  2. D-TAL: podłoga dla uznanych obrońców (All-Defense/DPOY) i dla potwierdzonych danymi obrońców
+     obręczy (Lopez 66 → 74–82, Turner 59 → 76, Claxton 59 → 76, R. Williams 60 → 82,
+     Bridges 66 → 74, Malone 1997-99 75 → 88). Bird / McAdoo / McMillan bez zmian — dane (All-D) je wspierają; do
+     ponownej oceny, jeśli dalej wyglądają za wysoko.
+  3. Rotacja: kara za small-ball (skrzydłowy na PF/C ponad 12 min), bonusy nie „chowają” już kar
+     powyżej 100.
+  4. Defense 69 dla Pippen/Wallace — po poprawkach D-TAL ~75; kara za Nasha zostaje.
+  5. Fit: nowa składowa „pairing” (pick-and-roll: rozgrywający + rolujący/rzucający wysoki,
+     skalowana jakością rozgrywającego), większa waga kreacji, mniejsza obrony; kara za dwóch
+     punktujących wysokich bez rzutu (Giannis + Kareem).
+  6. Ranking przestał być ustalany przez samą obronę (efekt punktu 1).
+  7. Spacing: niższy sufit przy dwóch nierzucających starterach (65/58); bonus „elitarnego
+     silnika” tylko dla silnika, który sam rzuca.
+  8. Spacing gracza: nadwyżka celności ponad 41.5% uzupełnia brak objętości (Nash 85 → 95).
+  9. „Defense-first” tylko gdy obrona ≥ atak + 5.
+  10. Remisy w rankingu i rozstawieniu rozstrzyga dokładna ocena; szanse na tytuł mocniej
+      oparte na ocenie ogólnej (0.85).
+  11. (Etap 2) Rotacja sytuacyjna (strzelec / obrońca na jednej pozycji) — niezrobione, czeka.
+  12. TAL powyżej 99 wyświetlany jako „99+”.
+  - Pierdoły: nazwisko w linii „spot minutes” w rotacji. Zdjęcia Kidda, Harpera i ~260 innych to
+    zaślepka z cdn.nba.com — sieć środowiska blokuje pobranie innych; potrzebne źródło zdjęć.
+- [ ] **Kolejne sesje kalibracyjne: Twoja ocena drużyn → poprawki** (L)
 - [ ] **Akceptacja silnika** — Twoje „ok, silnik gra”, zanim ruszymy symulacje.
 
 Otwarte tematy silnika (Twoja ocena; bierzemy, gdy wyjdą w sesjach):
@@ -132,8 +161,8 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 - [ ] **Ton wyniku według miejsca** — ten sam co w Mini.
 - [ ] **Tempo draftu AI (AI-4)** — naprawione tylko zawieszanie w połowie draftu. (S)
 - [ ] **Daily dla All-Time** — limit FGA, bany, „the bomb”. (M)
-- [ ] **Wyłączyć AUTO-FINISH przed wypuszczeniem** — `AUTO_FINISH_FOR_TESTING = false`
-      w `src/components/GameShell.tsx`. (S)
+- [ ] **Wyłączyć narzędzia kalibracji przed wypuszczeniem** — `AUTO_FINISH_FOR_TESTING` i
+      `TEAM_EXPORT_FOR_TESTING` = false w `src/components/testingFlags.ts`. (S)
 - [ ] **Playtest całego trybu + lista poprawek** (S)
 
 ### 3.4 Wspólne dla wszystkich trybów (po trzech trybach)

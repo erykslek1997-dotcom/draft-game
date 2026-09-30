@@ -712,14 +712,62 @@ const playoffDefensiveTalentCache = new Map<string, number>();
  */
 const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([[normalizePlayerName('Shawn Marion'), 10]]);
 
+/**
+ * 2026-09-30, engine calibration session 1 (the user, on Brook Lopez 66 / Mikal Bridges 66 /
+ * Robert Williams 60 / Nic Claxton 59 / Myles Turner 59): modern defenders whose value is rim
+ * deterrence or a tough assignment read as average, because the C ladder is built on rebounding
+ * volume and the real-data sources' excess over the box expectation stays small when the box
+ * already "expects" a good defender. Two floors, both after the regular-season value (so TAL's
+ * own D-TAL bridge and the runtime percentiles are untouched — they feed Defense, huntability and
+ * matchups):
+ *
+ * - Recognition: an All-Defense/DPOY span is at least a good defender — 60, rising to 88 at an
+ *   accolade rate of 0.75 (a 1st-team every season). Lopez 2022-24 (0.38) -> 74, Bridges 2021-23
+ *   (0.38) -> 74, Mobley 2024-26 (0.5) -> 79 (83 with his playoffs), Malone 1997-99 75 -> 88.
+ * - Rim protection: a C/PF blocking 1.6+ a game whose two strongest real sources (on/off DDPM,
+ *   RAPTOR, defended FG%, BPM2) average +1.0 or better, with no source below -1.5 other than the
+ *   matchup read (harsh on bigs who switch onto scorers): 66, rising to 82 at +2.5. Turner
+ *   2018-20 -> 76, Claxton 2022-24 -> 76, Robert Williams 2020-22 -> 82.
+ */
+const RECOGNIZED_DEFENDER_FLOOR_MIN = 60;
+const RECOGNIZED_DEFENDER_FLOOR_MAX = 88;
+const RECOGNIZED_DEFENDER_FULL_RATE = 0.75;
+function recognizedDefenderFloor(span: PlayerSpan): number {
+  const rate = individualDefenseRate(span);
+  if (rate <= 0) return 0;
+  return RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+}
+
+const RIM_PROTECTOR_MIN_BLOCKS = 1.6;
+const RIM_PROTECTOR_SOURCE_MIN = 1.0;
+const RIM_PROTECTOR_SOURCE_FULL = 2.5;
+const RIM_PROTECTOR_SOURCE_VETO = -1.5;
+const RIM_PROTECTOR_FLOOR_MIN = 66;
+const RIM_PROTECTOR_FLOOR_MAX = 82;
+function rimProtectorFloor(span: PlayerSpan): number {
+  if (span.primaryPosition !== 'C' && span.primaryPosition !== 'PF') return 0;
+  if (span.box.bpg < RIM_PROTECTOR_MIN_BLOCKS) return 0;
+  const detail = realDefenseExcessDetail(span);
+  if (!detail) return 0;
+  const tracking = [detail.onOffDdpm, detail.raptorDefense, detail.bpm2Defense].filter((v): v is number => v !== null && v !== undefined);
+  if (tracking.some((v) => v < RIM_PROTECTOR_SOURCE_VETO)) return 0;
+  const all = [...tracking, ...(detail.matchupDefense !== null && detail.matchupDefense !== undefined ? [detail.matchupDefense] : [])].sort((a, b) => b - a);
+  if (all.length < 2) return 0;
+  const strength = (all[0] + all[1]) / 2;
+  if (strength < RIM_PROTECTOR_SOURCE_MIN) return 0;
+  const frac = Math.min(1, (strength - RIM_PROTECTOR_SOURCE_MIN) / (RIM_PROTECTOR_SOURCE_FULL - RIM_PROTECTOR_SOURCE_MIN));
+  return RIM_PROTECTOR_FLOOR_MIN + frac * (RIM_PROTECTOR_FLOOR_MAX - RIM_PROTECTOR_FLOOR_MIN);
+}
+
 export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = playoffDefensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const bonus = NAMED_DTAL_BONUS.get(normalizePlayerName(span.playerName)) ?? 0;
+  const measured = computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense + bonus;
   const result = Math.max(
     0,
-    Math.min(100, Math.round(computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense + bonus)),
+    Math.min(100, Math.round(Math.max(measured, recognizedDefenderFloor(span), rimProtectorFloor(span)))),
   );
   playoffDefensiveTalentCache.set(span.id, result);
   return result;
