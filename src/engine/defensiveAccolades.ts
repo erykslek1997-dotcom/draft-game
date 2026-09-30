@@ -147,3 +147,37 @@ export function individualDefenseRate(span: PlayerSpan): number {
   }
   return Math.min(1, total / years.length);
 }
+
+/**
+ * 2026-09-30, engine calibration session 5 (the user, on Paul George 2019-21 at D 63 and Raja
+ * Bell 2004-06 at 30 beside 74-82 windows): a recognition counted only inside the window that
+ * contains it, so a span one season off an All-Defense year read as if the player had never
+ * defended. Here a recognition also carries to the seasons around it, fading with distance
+ * (half one season away, a quarter two away). Used only for the team-level D-TAL floor — the
+ * card tiers keep reading `individualDefenseRate`.
+ */
+const NEIGHBOUR_SEASON_DECAY = [1, 0.5, 0.25];
+export function individualDefenseRateWithNeighbours(span: PlayerSpan): number {
+  const { first, last } = awardCoverageWindow();
+  const years = spanEndYears(span.spanLabel).filter((y) => y >= first && y <= last);
+  if (years.length === 0) return 0;
+  const key = normalizePlayerName(span.playerName);
+  const tiers = tierByNameYear.get(key);
+  const dpoyYears = dpoyYearsByName.get(key);
+  if (!tiers && !dpoyYears) return 0;
+  const recognition = (year: number): number => {
+    const tier = tiers?.get(year);
+    let value = tier === 1 ? ALL_D_FIRST_WEIGHT : tier === 2 ? ALL_D_SECOND_WEIGHT : 0;
+    if (dpoyYears?.has(year)) value = Math.max(value, DPOY_WEIGHT);
+    return value;
+  };
+  let total = 0;
+  for (const year of years) {
+    let best = 0;
+    NEIGHBOUR_SEASON_DECAY.forEach((decay, distance) => {
+      best = Math.max(best, recognition(year - distance) * decay, recognition(year + distance) * decay);
+    });
+    total += best;
+  }
+  return Math.min(1, total / years.length);
+}

@@ -17,7 +17,7 @@ import { isPlusShooter } from './shooting';
 import { computeSpacing, isShootingAnomalyPlayer, selfCreationRate } from './spacing';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { usageForSpan, type UsageSpanValue } from './usageLookup';
-import { computeOffensiveTalent } from './talent';
+import { computeDefensiveTalent, computeOffensiveTalent } from './talent';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
 import { defensiveHuntability } from './defensiveHuntability';
@@ -25,9 +25,8 @@ import { defensiveCohesion } from './defensiveCohesion';
 import { rimPressureForFit, rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
-// Boolean predicate only (is this player a hard whole-career era override) — NOT a
-// `computeDefensiveTalent` value; the module keeps its "no talent-number input" rule.
-import { hasEraOverrideDefenseFloor } from './defensiveTalent';
+// Boolean predicate only (is this player a hard whole-career era override).
+import { hasEraOverrideDefenseFloor, registerDefensiveNeighbourWindows } from './defensiveTalent';
 import { spacingScore } from './scoring';
 import type { Team } from './types';
 
@@ -35,7 +34,9 @@ import type { Team } from './types';
  * `fitScore` — how well the starting five's roles actually complement each other. Answers
  * "how well do these five starters complement each other?" and deliberately avoids re-awarding
  * raw quality already owned by TAL/OFF/DEF elsewhere in `scoring.ts`:
- * - no `computeTalent` or `computeDefensiveTalent` input;
+ * - no `computeTalent` input; `computeDefensiveTalent` only grounds the defensive role layers
+ *   (2026-09-30, session 5 — a role tag says who can do a job, D-TAL how well), never as a
+ *   quality term of its own;
  * - no talent-per-FGA/cap-efficiency term;
  * - no average shooting-quality bonus (only lineup geometry and rim-gravity interactions);
  * - no rotation/minutes/position-fit penalty.
@@ -313,6 +314,24 @@ function percentile(sorted: number[], value: number): number {
 }
 
 const roleContext = buildRoleFitContext(players);
+
+// The same player's windows one season earlier and later, for D-TAL's neighbour blend
+// (defensiveTalent.ts `registerDefensiveNeighbourWindows`).
+const windowsByLabel = new Map<string, PlayerSpan>();
+for (const span of players) windowsByLabel.set(`${span.playerName}|${span.spanLabel}`, span);
+function shiftedLabel(label: string, by: number): string | null {
+  const match = /^(\d{4})-(\d{2})$/.exec(label);
+  if (!match) return null;
+  const start = Number(match[1]);
+  const length = (Number(match[2]) - (start % 100) + 100) % 100;
+  return `${start + by}-${String((start + by + length) % 100).padStart(2, '0')}`;
+}
+registerDefensiveNeighbourWindows((span) =>
+  [-1, 1]
+    .map((by) => shiftedLabel(span.spanLabel, by))
+    .map((label) => (label ? windowsByLabel.get(`${span.playerName}|${label}`) : undefined))
+    .filter((neighbour): neighbour is PlayerSpan => neighbour !== undefined),
+);
 const roleProfileCache = new Map<string, ShadowRoleProfile>();
 function shadowRoles(player: PlayerSpan): ShadowRoleProfile {
   const cached = roleProfileCache.get(player.id);
@@ -341,7 +360,29 @@ function offensiveRoleScore(profile: ShadowRoleProfile, roles: OffensiveArchetyp
   );
 }
 
+/**
+ * 2026-09-30, engine calibration session 5 (the user: Towns at D-TAL 35 read a 93 rim protector,
+ * Westbrook at 57 a 94 point-of-attack stopper, Reggie Miller at 48 the "weak link" of his five at
+ * 91 while Holiday at 87 read only 80): the role score below says whether a player can do the
+ * job (his tag, box evidence), not how well — that is his D-TAL. The layer score blends the two,
+ * D-TAL carrying the larger share.
+ */
+const ROLE_EVIDENCE_SHARE = 0.4;
+function groundedInDefensiveTalent(profile: ShadowRoleProfile, roleScore: number): number {
+  if (roleScore <= 0) return roleScore;
+  const player = players.find((candidate) => candidate.id === profile.playerId);
+  if (!player) return roleScore;
+  return roleScore * ROLE_EVIDENCE_SHARE + computeDefensiveTalent(player) * (1 - ROLE_EVIDENCE_SHARE);
+}
+
 function defensiveRoleScore(profile: ShadowRoleProfile, roles: DefensiveRole[]): number {
+  const evidence = defensiveRoleEvidence(profile, roles);
+  const grounded = groundedInDefensiveTalent(profile, evidence);
+  // An inferred (non-incumbent) role keeps its "credible, not elite" cap.
+  return roles.includes(profile.incumbentDefensiveRole) ? grounded : Math.min(ADDITIONAL_ROLE_CREDIT_FLOOR, grounded);
+}
+
+function defensiveRoleEvidence(profile: ShadowRoleProfile, roles: DefensiveRole[]): number {
   // A curated incumbent tag proves that the player can nominally perform the job, but not that
   // the lineup has elite coverage there. Start it at a credible 80 and let the shadow role-fit
   // evidence (position-scaled STL/BLK/RPG) raise it. Treating every incumbent tag as 100 made

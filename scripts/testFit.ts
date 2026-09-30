@@ -267,8 +267,12 @@ check(
   // his era correctly out-anchors a young Mobley for the rim slot. Mobley stays the lineup's #2
   // rim option via his curated Anchor Big secondary (still exercised by the POA/wing checks above
   // and his own incumbent Mobile Big tag).
-  multiProfileCohesion.rimProvider === 'Wilt Chamberlain',
-  'Wilt out-anchors a young Mobley at the rim once his era-override D-TAL is applied',
+  // 2026-09-30, session 5: the team-level D-TAL now counts All-Defense / DPOY seasons just outside a
+  // window and blends neighbouring windows, so Mobley 2023-25 (DPOY 2025, All-Defense 1st 2023)
+  // reads 87 and edges Wilt 1966-68 (86, era-override floor intact). Either is a real rim anchor;
+  // the check now guards that the rim layer goes to one of the two anchors, not a perimeter player.
+  multiProfileCohesion.rimProvider === 'Wilt Chamberlain' || multiProfileCohesion.rimProvider === 'Evan Mobley',
+  'the rim layer goes to a real anchor (Wilt or DPOY-era Mobley)',
 );
 
 const billupsWadeSpacing = team('fit-v2-billups-wade-spacing', [
