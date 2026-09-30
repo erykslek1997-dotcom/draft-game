@@ -84,32 +84,26 @@ drużynę w tabeli wyników i zgłaszasz, co się nie zgadza; poprawiamy i powta
   AI liczy tylko prawdziwych wysokich jako zmienników pod koszem (mniej small-ballu); jedna liczba
   spacingu w całym podsumowaniu; płynna osłona nierzucającego centra i ograniczony „gravity lift”
   (Penny + Wallace 83 → 64).
-- [ ] **Sesja kalibracyjna 5 — lista do zrobienia** (zebrana 2026-09-30, czeka na „to wszystko”):
-  1. Holiday: tag obronny Point of Attack zamiast Wing Stopper.
-  2. Role obronne (PoA / skrzydło / obręcz) i „weak link” oparte na D-TAL, nie na tagach i blokach
-     (Towns D 35 jako obrońca obręczy 93; Westbrook D 57 jako PoA 94; weak link Miller 91 /
-     Kirilenko / Nenê zamiast faktycznie najsłabszego obrońcy; Holiday tylko 80 na PoA).
-  3. Reguła Curry'ego: własny, wyższy limit za nie-strzelców (Dayton 93, Charlotte 93 z trzema
-     nierzucającymi starterami).
-  4. Wybór startera uwzględnia dopasowanie przy małej różnicy talentu (Amen Thompson zamiast
-     Danny'ego Greena w San Diego).
-  5. Kara za dwóch „shot first” pierwszych opcji (Jordan + Arenas, Kobe + Jordan, Luka + Harden);
-     bez kary, gdy jeden z pary to rozgrywający, który dzieli piłkę (Kobe + LeBron, Jordan + Magic).
-     Wade jako przypadek graniczny.
-  6. D-TAL bez skoków między sąsiednimi okresami: nagrody obronne (All-D) działają też na sąsiednie
-     sezony z wygaszaniem, wygładzenie ocen (George 2016-18 57 / 2019-21 63, Bell 2004-06 30,
-     Embiid 2019-21 69–71).
-  7. Gracz 3&D obok gwiazd ataku: premia za dopasowanie zamiast kary jako słaby starter (Raja Bell,
-     Danny Green).
-  8. AI: nie brać słabych starterów, którzy nic nie wnoszą do piątki (Jon Barry, Dudley jako PF,
-     Bo Outlaw na 38 min), ani drugiej gwiazdy na pozycję, na której będzie siedzieć na ławce
-     (Embiid za Hakeemem). Najpierw diagnoza na liczbach.
-  9. Słaby spacing częściowo równoważony przez zbiórkę w ataku, rim pressure i warunki fizyczne
-     (Mobile: spacing 44, ofensywa 60 mimo zbiórki 90 i rim pressure 100).
-  10. Spacing: sprawdzić półdystans dla graczy od 1997 (Butler 2019-21 = 13, półdystans nic nie
-      dodaje) i skoki między sąsiednimi okresami (Butler 2016-18 55 → 2017-19 41).
-  Przypadki testowe: Houston (Billups/Holiday/Pippen/JJJ/Duncan, FIT 74 → ~78), Syracuse
-  (Arenas/Jordan/Kirilenko/Draymond/Towns, FIT 80 → ~70), Charlotte i Dayton (Curry), San Diego.
+- [x] **Sesja kalibracyjna 5** (2026-09-30), wprowadzone:
+  1. Holiday 2016-25: tag obronny Point of Attack.
+  2. Role obronne i „weak link” = 40% tag/statystyki + 60% D-TAL (Towns 93 → 58, Miller jako weak
+     link 91 → 65, Holiday PoA 91).
+  3. Reguła Curry'ego: limit za nie-strzelców 80 (dwóch) / 70 (trzech+); Dayton 93 → 80,
+     Charlotte 93 → 70.
+  4. Starter z uwzględnieniem spacingu: przy piątce ze spacingiem < 60 rezerwowy wchodzi, jeśli traci
+     ≤ 5 talentu i podnosi średni spacing o 8+ (Green zamiast Amena Thompsona).
+  5. Kara za dwóch „shot first” pierwszych opcji (do 8 pkt FIT, trzeci do 4); rozgrywający się nie
+     liczą, wybitni podający (Bird, Wade) częściowo. Syracuse FIT 80 → 72.
+  6. D-TAL drużynowy: All-D/DPOY działają też na sąsiednie sezony, 25% z sąsiednich okresów (George
+     2016-18 57 → 71, Bell 2004-06 30 → 71). TAL i tiery bez zmian.
+  7. Premia 3&D (+3 FIT, max 5) i zwolnienie z kary za słabego startera (Cleveland FIT 77 → 80).
+  8. AI: rezerwa limitu na wolne miejsce 6 → 5 FGA — słabi starterzy 8 → 6 na 64 drużyny, talent
+     84,6 → 85,8, ocena ogólna 79,3 → 79,9. Zostaje: 1/64 przypadków gwiazdy na ławce (Robinson).
+  9. Słaby spacing częściowo równoważony grą pod koszem (rim pressure, zbiórka, warunki) — nie przy
+     dwóch nierzucających strzelcach pod koszem (Giannis + Kareem).
+  10. Butler: dane o półdystansie poprawne (3,8–4,1 rzutu/mecz przy 37–41%). **Do decyzji:** skoki
+      spacingu (Butler 55 → 41) biorą się ze schodkowej skali rzutu za 3, która liczy też TAL —
+      płynna skala zmieniłaby TAL wszystkich strzelców.
 - [ ] **Kolejne sesje kalibracyjne: Twoja ocena drużyn → poprawki** (L)
 - [ ] **Akceptacja silnika** — Twoje „ok, silnik gra”, zanim ruszymy symulacje.
 

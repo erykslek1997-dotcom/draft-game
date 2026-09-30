@@ -948,7 +948,8 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // field down (70.1 -> 66.3) and the raw offense field with it (85.2 -> 84.1).
 // Session 5: the interior spacing cover, the 3&D weak-starter exemption and spacing-aware starters
 // lifted the raw field 84.2 -> 85.2 on the same seeds.
-const OFFENSE_RAW_MEAN = 83.2;
+// Then the AI's lower cap reserve (stronger fifth starters) lifted it again, 85.2 -> 86.4.
+const OFFENSE_RAW_MEAN = 84.4;
 const OFFENSE_RAW_SD = 8.5;
 const DEFENSE_RAW_MEAN = 77.4;
 const DEFENSE_RAW_SD = 8.2;
