@@ -10,6 +10,7 @@ import { teamDefenseContextForSpan } from './teamDefenseLookup';
 import { bpm2CoverageForSpan, ddpmCoverageForSpan, matchupCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
 import { playoffImpactForSpan } from './playoffImpact';
 import { namedShiftFor, namedShiftRegistered } from './namedShift';
+import { blendWithNeighbours, neighbourWindowsFor, neighbourWindowsRegistered, onNeighbourWindowsRegistered } from './neighbourWindows';
 
 /**
  * D-TAL — "how good is this player defensively," 0-100, per position.
@@ -830,15 +831,10 @@ export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
  *   fading with distance (`individualDefenseRateWithNeighbours`);
  * - the value is blended with the same player's neighbouring windows (one season earlier / later),
  *   `NEIGHBOUR_WINDOW_SHARE` of the result.
- * The neighbouring windows come from a registered lookup (fit.ts registers the player list), so
- * this module doesn't import the data layer.
+ * The neighbouring windows come from `neighbourWindows.ts` (registered by fit.ts).
  */
 const NEIGHBOUR_WINDOW_SHARE = 0.25;
-let neighbourWindowsFor: ((span: PlayerSpan) => PlayerSpan[]) | null = null;
-export function registerDefensiveNeighbourWindows(fn: (span: PlayerSpan) => PlayerSpan[]): void {
-  neighbourWindowsFor = fn;
-  shiftedDefensiveTalentCache.clear();
-}
+onNeighbourWindowsRegistered(() => shiftedDefensiveTalentCache.clear());
 
 function neighbourAwareFloor(span: PlayerSpan): number {
   const rate = individualDefenseRateWithNeighbours(span);
@@ -858,11 +854,8 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   const cached = shiftedDefensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const own = ownWindowDefense(span);
-  const neighbours = neighbourWindowsFor ? neighbourWindowsFor(span).map((n) => ownWindowDefense(ratingSpan(n))) : [];
-  const blended = neighbours.length > 0
-    ? own * (1 - NEIGHBOUR_WINDOW_SHARE) + (neighbours.reduce((sum, v) => sum + v, 0) / neighbours.length) * NEIGHBOUR_WINDOW_SHARE
-    : own;
-  const result = Math.max(0, Math.min(100, Math.round(blended)));
-  if (namedShiftRegistered() && neighbourWindowsFor) shiftedDefensiveTalentCache.set(span.id, result);
+  const neighbours = neighbourWindowsFor(span).map((n) => ownWindowDefense(ratingSpan(n)));
+  const result = Math.max(0, Math.min(100, Math.round(blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE))));
+  if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
 }

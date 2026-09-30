@@ -541,7 +541,9 @@ export function solveDailyOptimal(pool: DailyPool, cap?: number): SolvedLineup {
 
   const rng = mulberry32(seedFromKey(`${pool.key}:solve`));
 
-  const starts: Record<Position, PlayerSpan>[] = [talMaxLineup(pool, cap)];
+  // 2026-09-30: the fan-vote five is also a start, so the solved five can never come out below
+  // the board's par (a local climb from the other starts could, when a Fit term moved).
+  const starts: Record<Position, PlayerSpan>[] = [talMaxLineup(pool, cap), ...(cap != null ? [fanVoteFive(pool, cap)] : [])];
   for (let r = 0; r < 4; r++) {
     const rand = Object.fromEntries(
       STARTER_SLOTS.map((s) => {
