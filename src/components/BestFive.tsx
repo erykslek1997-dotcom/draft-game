@@ -1,4 +1,6 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject, type ReactNode } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type ReactNode } from 'react';
+import { deckSfx, deckSoundsMuted, setDeckSoundsMuted } from './deckSounds';
+import { teamColors } from '../data/teamColors';
 import './BestFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
 import { ScoreChip } from './ResultsScreen';
@@ -218,6 +220,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   function pick(slot: Position, span: PlayerSpan) {
     if (lineup[slot] || overBy(slot, span) > 1e-9) return;
     setLineup((prev) => ({ ...prev, [slot]: span }));
+    deckSfx.pick();
     if (!daily) aiTakes(slot);
     const j = jokerAt(slot);
     setJokerReveal(j ? { joker: j, took: span.id === j.card.id } : null);
@@ -448,13 +451,24 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
                       </button>
                     );
                   }
+                  // 2026-09-30, the user chose the Premium card: a band in his team's colours on top,
+                  // the headshot ringed in them, a sheen as it turns over.
+                  const team = teamsForSpan(span)[0];
+                  const colors = team ? teamColors(team.code, team.seasonEnd) : null;
                   return (
                     <button
-                      className={`bf-pool-card ${chosen ? 'bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
+                      className={`bf-pool-card bf-premium ${chosen ? 'bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
                       title={blocked ? `${span.playerName} would leave no room under the cap` : span.playerName}
                       disabled={blocked}
                       onClick={() => pick(activeSlot, span)}
+                      style={colors ? ({ '--tc': colors.primary, '--tc-ink': colors.primaryInk, '--tc2': colors.secondary } as CSSProperties) : undefined}
                     >
+                      <span className="bf-card-band at-cond" aria-hidden>
+                        <span>{team?.code ?? ''}</span>
+                        <span>{activeSlot}</span>
+                      </span>
+                      <span className="bf-card-sheen" aria-hidden />
+                      <span className="bf-card-glare" aria-hidden />
                       {blocked && <span className="bf-pool-over at-cond">Over the cap by {over.toFixed(1)}</span>}
                       <Face name={span.playerName} size="md" />
                       <span className="bf-pool-name">{shortenName(span.playerName)}</span>
@@ -567,13 +581,41 @@ function DealtCard({ pile, fly, children }: { pile: RefObject<HTMLDivElement | n
       { duration: DEAL_FLIGHT_MS, easing: 'cubic-bezier(0.2, 0.8, 0.25, 1)' },
     );
     backRef.current?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.69 }, { opacity: 0, offset: 0.7 }, { opacity: 0 }], { duration: DEAL_FLIGHT_MS, fill: 'none' });
+    deckSfx.deal();
+    const flip = window.setTimeout(() => deckSfx.flip(), DEAL_FLIGHT_MS * 0.62);
+    return () => window.clearTimeout(flip);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div ref={ref} className="bf-hand-face">
+    <div ref={ref} className={`bf-hand-face${fly ? ' is-dealt' : ''}`}>
       {children}
       <span ref={backRef} className="bf-fly-back" aria-hidden />
     </div>
+  );
+}
+
+/** 2026-09-30, the user chose the fanned hand: each card turned a little and set on an arc. */
+function fanStyle(i: number, n: number): CSSProperties {
+  const mid = (n - 1) / 2;
+  return { '--r': `${(i - mid) * 3}deg`, '--y': `${Math.round((i - mid) * (i - mid) * 4)}px` } as CSSProperties;
+}
+
+/** The table's sound switch (remembered in this browser). */
+function SoundToggle() {
+  const [muted, setMuted] = useState(deckSoundsMuted);
+  return (
+    <button
+      type="button"
+      className="bf-sound-btn"
+      aria-pressed={muted}
+      title={muted ? 'Sound off' : 'Sound on'}
+      onClick={() => {
+        setDeckSoundsMuted(!muted);
+        setMuted(!muted);
+      }}
+    >
+      {muted ? '🔇' : '🔊'}
+    </button>
   );
 }
 
@@ -624,7 +666,17 @@ function DeckHand({
       <div className="bf-deck-table">
         <div className={`bf-hand${cards.length > 4 ? ' is-5' : ''}`}>
           {cards.map((card, i) => (
-            <div key={card.id} className="bf-hand-card">
+            <div
+              key={card.id}
+              className="bf-hand-card"
+              style={fanStyle(i, cards.length)}
+              onMouseMove={(e) => {
+                // Premium cards catch the light where the pointer is.
+                const r = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--gx', `${((e.clientX - r.left) / r.width) * 100}%`);
+                e.currentTarget.style.setProperty('--gy', `${((e.clientY - r.top) / r.height) * 100}%`);
+              }}
+            >
               {i < shown ? (
                 <DealtCard pile={pile} fly={drawing}>
                   {renderCard(card)}
@@ -643,7 +695,14 @@ function DeckHand({
           <span />
         </div>
         {fresh && !drawing && !allUp ? (
-          <button type="button" className="primary-btn bf-draw-btn" onClick={() => setDrawing(true)}>
+          <button
+            type="button"
+            className="primary-btn bf-draw-btn"
+            onClick={() => {
+              deckSfx.shuffle();
+              setDrawing(true);
+            }}
+          >
             Draw {cards.length} {SLOT_LABEL[slot].toLowerCase()}s
           </button>
         ) : !allUp ? (
@@ -651,6 +710,7 @@ function DeckHand({
         ) : (
           <span>Pick one — picks are final.</span>
         )}
+        <SoundToggle />
       </div>
     </div>
   );
@@ -1121,8 +1181,13 @@ function aiOpponent(ai: Lineup): LegendFive | undefined {
 
 /** 2026-09-30: the Joker of the round just played, turned over once a card was picked. */
 function JokerReveal({ joker, took }: { joker: DailyJoker; took: boolean }) {
+  useEffect(() => {
+    if (!took) return;
+    if (joker.legend) deckSfx.jackpot();
+    else deckSfx.scrub();
+  }, [joker, took]);
   return (
-    <p className={`bf-joker-reveal${joker.legend ? ' is-legend' : ' is-scrub'}`} role="status">
+    <p className={`bf-joker-reveal${joker.legend ? ' is-legend' : ' is-scrub'}${took ? ' is-took' : ''}`} role="status">
       🃏 The {joker.slot} Joker was <b>{joker.span.playerName}</b> {joker.span.spanLabel} — {joker.legend ? 'a legend' : 'a scrub'}.{' '}
       {took ? (joker.legend ? 'Jackpot.' : 'Ouch.') : joker.legend ? 'He got away.' : 'Good dodge.'}
     </p>
