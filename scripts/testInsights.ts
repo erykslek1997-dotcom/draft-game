@@ -77,7 +77,10 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // Brunson and Barros as a named target. Re-measured directly (66), not guessed.
 // 2026-09-27: 66 -> 62 after durability gained the half era correction and the playoff-workload
 // boost, which moved rotation minute caps. Same three named targets. Re-measured directly (62).
-check(weakLinkInsight?.message.includes('62 targetable minutes'), 'weak-link description reports the real 62-minute cost');
+// 2026-09-30: 62 -> 70 with the whole-roster minute solve (minuteAllocation.ts): Brunson now covers
+// 8 SG minutes as well as his 26 at PG (34 total), where the old greedy fill gave that SG time to
+// others. Same three named targets. Re-measured directly (70).
+check(weakLinkInsight?.message.includes('70 targetable minutes'), 'weak-link description reports the real 70-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
@@ -187,7 +190,11 @@ const expensiveStarWithDepth = team('team-model-star-justified', [
   pick('Tyson Chandler', '2011-13'),
   pick('Andre Iguodala', '2011-13'),
   pick('Thabo Sefolosha', '2011-13'),
-  pick('Larry Smith', '1991-93'),
+  // 2026-09-30: was Larry Smith 1991-93 — under the whole-roster minute solve (minuteAllocation.ts)
+  // a Bench Warmer ninth man at 10 minutes left the fixture a 7-man playoff rotation, so the
+  // detector's own "robust eight-man group" premise no longer held. A rotation-grade backup big
+  // restores the premise the check is about.
+  pick('Nick Collison', '2010-12'),
 ]);
 const starJustified = buildTeamFeatureSnapshot(expensiveStarWithDepth);
 check(starJustified.totalFga <= CAP_LIMIT, 'justified-star fixture respects the real FGA cap');

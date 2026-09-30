@@ -26,7 +26,12 @@ import { teamSpacingValue } from './midrangeGravity';
 const HARD_NON_SPACER_SPC = 30;
 const DRIVE_HUB_SPACING_CEILING = 50;
 const POST_CENTER_SPACING_CEILING = 20;
-const POST_CENTER_PASSING_EXEMPTION = 70;
+// 2026-09-30, engine calibration session 2: the note fired on Stockton + Hakeem, CP3 + Duncan and
+// LeBron + Walton. A passing big (Walton 60, Duncan 65) or one with a face-up midrange game (team
+// spacing value from midrange gravity >= POST_CENTER_FACE_UP_FLOOR — Duncan, Mourning) is a real
+// pick-and-roll partner; the note keeps pure block scorers (Shaq, Howard).
+const POST_CENTER_PASSING_EXEMPTION = 60;
+const POST_CENTER_FACE_UP_FLOOR = 15;
 const HIGH_USAGE_OTAL = 82;
 /** A starter contributes their offensive "system" (pattern 5) only if they're a real scoring
  * option at this level — a Slasher/Off-Screen role player whose archetype implies more primacy
@@ -152,7 +157,8 @@ export function pairwiseFitNotes(
       computeSpacing(p) < POST_CENTER_SPACING_CEILING &&
       // a high-post passing big (Gasol, Sabonis, Jokić-type) is a real pick-and-roll partner even
       // without a jumper — the tension is with a pure block-scorer who neither pops nor reads.
-      (playmakingScoreForPlayer(p) ?? 0) < POST_CENTER_PASSING_EXEMPTION,
+      (playmakingScoreForPlayer(p) ?? 0) < POST_CENTER_PASSING_EXEMPTION &&
+      teamSpacingValue(p) < POST_CENTER_FACE_UP_FLOOR,
   );
   if (pgLead && postCenter) {
     notes.push(

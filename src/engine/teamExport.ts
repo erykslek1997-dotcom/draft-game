@@ -12,7 +12,7 @@ import { computeDefensiveTalent, computeOffensiveTalent } from './talent';
 import { computeSpacing } from './spacing';
 import { displayTalentForSpan, formatTal } from './grades';
 import { tierContextWithSixthMan as tierContextFor } from './sixthMan';
-import { archetypeDisplayName, teamStyleFor } from './championshipArchetype';
+import { archetypeDisplayName, defenseFirstBacked, teamStyleFor } from './championshipArchetype';
 import { STARTER_SLOTS } from './positions';
 
 /**
@@ -46,7 +46,9 @@ export function exportLeagueText(
       `Defense: D-TAL ${r(teamDefensiveTalentScore(team))} · Coverage ${r(c.defensiveRoleCoverage)} · Switch ${r(c.switchability)} · Hunt ${r(c.huntResistance)} · Reb ${r(c.reboundingBalance)}`,
     );
     const style = teamStyleFor(fit.inputs.primaryArchetype, fit.inputs.secondaryArchetype, fit.inputs.archetypeReport?.failureMode ?? null, b.defenseScore, b.offenseScore);
-    const archetypes = [fit.inputs.primaryArchetype, fit.inputs.secondaryArchetype].filter(Boolean).map((a) => archetypeDisplayName(a as string));
+    const archetypes = [fit.inputs.primaryArchetype, fit.inputs.secondaryArchetype]
+      .filter((a) => a && (a !== 'Defensive superteam' || defenseFirstBacked(b.defenseScore, b.offenseScore)))
+      .map((a) => archetypeDisplayName(a as string));
     lines.push(`Style: ${style.label ?? '—'}${archetypes.length ? ` (${archetypes.join(' + ')})` : ''}${style.failureMode ? ` · risk: ${style.failureMode}` : ''}`);
     lines.push(`Fit: ${Object.entries(c).map(([k, v]) => `${k} ${r(v)}`).join(' · ')}`);
     const fi = fit.inputs;
