@@ -14,7 +14,7 @@ import { playmakingScoreForPlayer } from './playmakingLookup';
 import { primaryStarters } from './rotation';
 import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
 import { isPlusShooter } from './shooting';
-import { computeSpacing, isShootingAnomalyPlayer, spacingBreakdown, selfCreationRate, WALKING_GRAVITY_FLOOR } from './spacing';
+import { computeSpacing, isShootingAnomalyPlayer, selfCreationRate } from './spacing';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { usageForSpan, type UsageSpanValue } from './usageLookup';
 import { computeOffensiveTalent } from './talent';
