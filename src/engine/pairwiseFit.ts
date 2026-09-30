@@ -62,9 +62,13 @@ function isRealInitiator(player: PlayerSpan): boolean {
  * 80+) out of `mismatchStructureScore` entirely (0 instead of ~60). An elite-passing Primary Ball
  * Handler runs the offense regardless of how many shots he takes himself.
  */
+// 2026-09-30, engine calibration session 3 (the user: "popraw" — Lowry + Duncan and Conley + David
+// Robinson read a pick-and-roll structure of 0): a pass-first Secondary Ball Handler at the
+// point (Lowry, Conley — playmaking ~90) takes few shots, so his on-ball demand stays under 0.5
+// and he never counted as the lead, leaving the five with no initiator at all.
 function isElitePassFirstLead(player: PlayerSpan): boolean {
   return (
-    player.offensiveArchetype === 'Primary Ball Handler' &&
+    (player.offensiveArchetype === 'Primary Ball Handler' || player.offensiveArchetype === 'Secondary Ball Handler') &&
     (playmakingScoreForPlayer(player) ?? 0) >= PNR_LEAD_PLAYMAKING
   );
 }
