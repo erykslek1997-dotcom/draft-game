@@ -5,6 +5,7 @@ import {
   makePick,
   resolveAiPickIfNeeded,
   isHumanRosterImpossible,
+  autoFinishDraft,
   TEAM_COUNT,
   ROUNDS,
   type DraftState,
@@ -80,6 +81,15 @@ interface Props {
  * it's shown anything at all. See the user's own report: "the game feels slow with loading data."
  * (Docstring for the `GameShell` component below.)
  */
+
+/** 2026-09-30, the user ("do szybszej kalibracji potrzebuję testowego przycisku AUTOFINISH podczas
+ * pełnego draftu"): hands every remaining pick, yours included, to the CPU drafter and goes
+ * straight to the results with an auto-built rotation, so each team can be judged fast. For the
+ * engine calibration only — set to false before release (TODO.md, Etap 1 and 3.3). */
+export const AUTO_FINISH_FOR_TESTING = true;
+/** Picks resolved per `setTimeout(0)` frame (audit AI-4: one synchronous call froze the page). */
+const AUTO_FINISH_CHUNK = 6;
+const TOTAL_PICKS = TEAM_COUNT * ROUNDS;
 
 /** `?draftSeed=123` on the URL replays a specific draft — the seed `createDraft` logs to the
  * console in dev. Any non-finite value is ignored and a fresh random seed is drawn as usual. */
@@ -254,8 +264,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // `aiSpeed` (the player's CPU-speed choice, see aiSpeed.ts) paces this effect.
   // 2026-09-25: held while the Draft Desk is open, so the board doesn't race on under it.
   const [deskOpen, setDeskOpen] = useState(false);
+  const [autoFinishing, setAutoFinishing] = useState(false);
   useEffect(() => {
-    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || deskOpen) return;
+    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || deskOpen || autoFinishing) return;
     const teamIdx = currentTeamIndex(draftState);
     if (draftState.teams[teamIdx].isHuman) return;
     const timer = setTimeout(() => {
@@ -263,7 +274,26 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       if (next) setDraftState(next);
     }, cpuPickDelay(aiSpeed.delayMs, draftState.history.length, draftState.teams.length));
     return () => clearTimeout(timer);
-  }, [draftState, phase, aiSpeed.delayMs, deskOpen]);
+  }, [draftState, phase, aiSpeed.delayMs, deskOpen, autoFinishing]);
+
+  // AUTO-FINISH (testing): resolves the draft in small chunks so the page keeps painting the
+  // progress, then submits your team as drafted with an auto-built rotation.
+  useEffect(() => {
+    if (!autoFinishing || phase !== 'draft') return;
+    const timer = setTimeout(() => {
+      if (draftState.complete) {
+        const human = draftState.teams.find((t) => t.isHuman);
+        setAutoFinishing(false);
+        if (human) handleSubmitTeam(human.roster, autoAssignRotation(human.roster));
+        return;
+      }
+      const next = autoFinishDraft(draftState, AUTO_FINISH_CHUNK);
+      if (next.history.length > draftState.history.length) setDraftState(next);
+      else setAutoFinishing(false);
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFinishing, draftState, phase]);
 
   // Once the draft finishes, AI rosters are re-optimized once via the same knapsack
   // `optimizeSpans` used everywhere else (capped at CAP_LIMIT, matching the cap they drafted
@@ -395,6 +425,13 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           howToPlay={DRAFT_HOW_TO_PLAY}
           onExit={handleReset}
         />
+      )}
+      {phase === 'draft' && AUTO_FINISH_FOR_TESTING && !commissionerMode && (
+        <div className="game-controls at-test-bar">
+          <button className="secondary-btn auto-finish-btn" onClick={() => setAutoFinishing(true)} disabled={autoFinishing}>
+            {autoFinishing ? `Finishing… ${draftState.history.length} / ${TOTAL_PICKS}` : 'Auto-finish (testing)'}
+          </button>
+        </div>
       )}
       {phase === 'draft' && (
         <DraftBoard
