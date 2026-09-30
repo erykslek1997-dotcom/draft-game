@@ -606,6 +606,12 @@ const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: Defensi
   { name: 'Stephen Curry', spanLabel: '2014-16', role: 'Chaser' },
   { name: 'Stephen Curry', spanLabel: '2015-17', role: 'Chaser' },
   { name: 'Stephen Curry', spanLabel: '2016-18', role: 'Chaser' },
+  // 2026-09-30, engine calibration session 5 (the user: "Holiday zmiana na PoA"): from New Orleans
+  // through Milwaukee and Boston Holiday was the guard his teams put on the opponent's best
+  // ball-handler; the box classifier scattered his prime across Chaser / Wing Stopper / Helper.
+  ...['2016-18', '2017-19', '2018-20', '2019-21', '2020-22', '2021-23', '2022-24', '2023-25'].map(
+    (spanLabel) => ({ name: 'Jrue Holiday', spanLabel, role: 'Point of Attack' as DefensiveRole }),
+  ),
 ];
 
 /**

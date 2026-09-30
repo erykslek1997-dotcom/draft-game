@@ -4,7 +4,7 @@ import { normalizePlayerName } from '../data/schema';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
 import { functionalPosition } from './functionalPosition';
-import { hasDefenseAwardCoverage, individualDefenseRate } from './defensiveAccolades';
+import { hasDefenseAwardCoverage, individualDefenseRate, individualDefenseRateWithNeighbours } from './defensiveAccolades';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import { teamDefenseContextForSpan } from './teamDefenseLookup';
 import { bpm2CoverageForSpan, ddpmCoverageForSpan, matchupCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
@@ -820,14 +820,49 @@ export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   return result;
 }
 
+/**
+ * 2026-09-30, engine calibration session 5 (the user: "George tak nisko w D?" — Paul George read
+ * 76 / 57 / 81 / 82 / 63 across consecutive windows, Raja Bell 30 then 74, Embiid 82 / 71 / 72 /
+ * 82): a three-season window swaps one season at a time, so its defense can't honestly swing 20-44
+ * points. Two changes, both only in the D-TAL the team scores and the card's D read (the tier
+ * pipeline keeps `computeDefensiveTalentBase`):
+ * - the recognized-defender floor also counts All-Defense / DPOY seasons just outside the window,
+ *   fading with distance (`individualDefenseRateWithNeighbours`);
+ * - the value is blended with the same player's neighbouring windows (one season earlier / later),
+ *   `NEIGHBOUR_WINDOW_SHARE` of the result.
+ * The neighbouring windows come from a registered lookup (fit.ts registers the player list), so
+ * this module doesn't import the data layer.
+ */
+const NEIGHBOUR_WINDOW_SHARE = 0.25;
+let neighbourWindowsFor: ((span: PlayerSpan) => PlayerSpan[]) | null = null;
+export function registerDefensiveNeighbourWindows(fn: (span: PlayerSpan) => PlayerSpan[]): void {
+  neighbourWindowsFor = fn;
+  shiftedDefensiveTalentCache.clear();
+}
+
+function neighbourAwareFloor(span: PlayerSpan): number {
+  const rate = individualDefenseRateWithNeighbours(span);
+  if (rate <= 0) return 0;
+  return RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+}
+
+function ownWindowDefense(span: PlayerSpan): number {
+  return Math.max(computeDefensiveTalentBase(span) + namedShiftFor(span).defense, neighbourAwareFloor(span));
+}
+
 /** The D-TAL everything else reads: the base plus its share of a named TAL adjustment
- * (`namedShift.ts`). */
+ * (`namedShift.ts`), with the neighbouring-season corrections above. */
 const shiftedDefensiveTalentCache = new Map<string, number>();
 export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = shiftedDefensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
-  const result = Math.max(0, Math.min(100, Math.round(computeDefensiveTalentBase(span) + namedShiftFor(span).defense)));
-  if (namedShiftRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
+  const own = ownWindowDefense(span);
+  const neighbours = neighbourWindowsFor ? neighbourWindowsFor(span).map((n) => ownWindowDefense(ratingSpan(n))) : [];
+  const blended = neighbours.length > 0
+    ? own * (1 - NEIGHBOUR_WINDOW_SHARE) + (neighbours.reduce((sum, v) => sum + v, 0) / neighbours.length) * NEIGHBOUR_WINDOW_SHARE
+    : own;
+  const result = Math.max(0, Math.min(100, Math.round(blended)));
+  if (namedShiftRegistered() && neighbourWindowsFor) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
 }

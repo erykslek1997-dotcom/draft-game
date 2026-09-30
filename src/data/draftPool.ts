@@ -54,6 +54,12 @@ function applyRuntimeParity(span: PlayerSpan): PlayerSpan {
   ) {
     return { ...span, defensiveRole: 'Chaser' };
   }
+  if (
+    span.playerName === 'Jrue Holiday' &&
+    ['2016-18', '2017-19', '2018-20', '2019-21', '2020-22', '2021-23', '2022-24', '2023-25'].includes(span.spanLabel)
+  ) {
+    return { ...span, defensiveRole: 'Point of Attack' };
+  }
   // `SECONDARY_POSITION_ADDITIONS` parity: Draymond gains C (players.ts grants it to every span).
   if (span.playerName === 'Draymond Green' && span.primaryPosition !== 'C' && !span.secondaryPositions.includes('C')) {
     return { ...span, secondaryPositions: [...span.secondaryPositions, 'C'] };

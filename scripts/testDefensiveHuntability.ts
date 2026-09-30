@@ -297,7 +297,10 @@ check(threeLayerDefense >= 65 && threeLayerDefense <= 76, 'Jordan plus the two-a
 // fixture — a small, correct-direction shift (less weak-link-guard time at SG, more from a D-TAL
 // 99 real fit) that nudged this roster's projected DRTG from 95.x to 94.9. Re-measured directly,
 // not guessed; still clearly short of the elite ~85 target, so "bounded correction" still holds.
-check(threeLayerProjection.defense >= 94 && threeLayerProjection.defense <= 98, 'two-anchor foundation earns only a bounded DRTG correction');
+// 2026-09-30, session 5: band 94-98 -> 92-98. The team-level D-TAL now counts All-Defense seasons
+// just outside a window and blends neighbouring windows, which lifts Mobley's DPOY-era read; this
+// fixture's projected DRTG moves 94.9 -> 93.3, still well short of the elite ~85 target.
+check(threeLayerProjection.defense >= 92 && threeLayerProjection.defense <= 98, 'two-anchor foundation earns only a bounded DRTG correction');
 // 2026-09-05: exact 100 -> >=99 after `defensiveHuntability.ts`'s position-relative average
 // ceiling first shipped position-only: Mitchell Robinson's 63 D-TAL sat a touch below the flat C
 // average (71), registering a tiny (12-minute, 0.19-penalty) shortfall the old flat 60 couldn't
