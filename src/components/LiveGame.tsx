@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LegendFive } from '../engine/dailyMeta';
-import type { BoxLineStats, GameMoment, LiveGameResult } from '../engine/liveGame';
+import { pregameOdds, type BoxLineStats, type GameMoment, type LiveGameResult } from '../engine/liveGame';
 
 /**
  * 2026-09-28, the user ("symulacja super"): the daily five's game against the opponent of the day,
@@ -101,6 +101,12 @@ export default function LiveGame({ game, opponent, autoStart }: { game: LiveGame
 
   const p = Math.round(winProbability(now, game.expectedMargin) * 100);
   const won = game.final[0] > game.final[1];
+  // 2026-09-30, the user chose A + B: a clear favourite always wins; a close game shows its odds up
+  // front and calls an upset an upset.
+  const odds = pregameOdds(game.expectedMargin);
+  const favourite = game.expectedMargin >= 0;
+  const upset = !odds.clear && won !== favourite;
+  const youPct = Math.round(odds.you * 100);
   const lines = now?.lines ?? [game.labels[0].map(zero), game.labels[1].map(zero)];
 
   function start() {
@@ -115,6 +121,16 @@ export default function LiveGame({ game, opponent, autoStart }: { game: LiveGame
         <span className="bf-live-title at-cond">Game of the day</span>
         <span className="bf-live-sub">You vs {opponent.name}</span>
       </div>
+      <p className="bf-live-odds">
+        Pre-game:{' '}
+        {odds.clear ? (
+          <b>{favourite ? 'you are the clear favourite' : `the ${opponent.short} ${opponent.id === 'ai' ? 'is' : 'are'} the clear favourite`}</b>
+        ) : (
+          <>
+            <b>You {youPct}%</b> · {opponent.short} {100 - youPct}% — a close one
+          </>
+        )}
+      </p>
       <div className="bf-live-board">
         <div>
           <span className="bf-live-team at-cond">You</span>
@@ -167,10 +183,12 @@ export default function LiveGame({ game, opponent, autoStart }: { game: LiveGame
       </div>
       {done && (
         <p className={`bf-live-final${won ? '' : ' is-loss'}`} role="status">
+          {upset && <span className="bf-live-upset">Upset! </span>}
           {won ? `You beat the ${opponent.short} ` : `The ${opponent.short} beat you `}
           {Math.max(...game.final)}–{Math.min(...game.final)}
           <small>
             ★ {game.star.name}: {game.star.line.pts} pts · {game.star.line.reb} reb · {game.star.line.ast} ast. {game.recap}
+            {upset && (won ? ` You had a ${youPct}% chance.` : ` You were ${youPct}% favourites — it happens in close games.`)}
           </small>
         </p>
       )}

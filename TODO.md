@@ -38,6 +38,13 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
         plansza dziennie dla wszystkich (lokalna północ), jedno podejście, seria dni, wynik dnia
         w przeglądarce (`src/components/dailyProgress.ts`). Bez dziennych zasad (limity, bany) —
         na razie tylko wspólna plansza.
+      - [x] **Draw Five, runda 2 — 2026-09-30.** Daily: 5 kart w linii; w 1–3 losowych rundach jedna z
+        nich to zakryty Joker (pozycyjny, 50/50 legenda albo leszcz, po środkowej cenie pozycji),
+        odkrywany po wyborze. Poprzedni Joker ze spadającą ceną usunięty. Rozdanie: karta leci z
+        talii i odwraca się (animacja A). Wybory nigdy nie są blokowane przez capy: minimum na
+        otwarte pozycje to najtańszy gracz w całej grze (`slotFloor`), a rozdanie dobiera tanich
+        graczy spoza planszy, gdy trzeba. Mecz: faworyt o ≥5 pkt zawsze wygrywa, w wyrównanych
+        meczach kursy przed meczem i „Upset!”.
       - [x] **Draw Five — wdrożone 2026-09-30.** Slot Machine to teraz talia kart (makieta:
         artefakt „Draw Five Deck”). Zwykły tryb: gra z AI (Pro), które dostaje z tej samej talii
         4 karty pozycji, które nie przyszły do gracza, pilnuje capów, a na końcu mecz na żywo

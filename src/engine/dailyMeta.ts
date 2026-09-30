@@ -48,47 +48,30 @@ export const LEGEND_FIVES: LegendFive[] = [
 export interface DailyMeta {
   /** The order the positions are dealt in today. */
   order: Position[];
-  /** Where today's Joker plays — never the first or second position dealt. */
-  jokerSlot: Position;
   opponent: LegendFive;
-  /** The round (index in `order`) after which the Joker leaves the table if nobody has bought him,
-   * or null when he stays until his own round. Fixed by the seed, so the same for everyone. */
-  jokerLeavesAfter: number | null;
 }
 
 /**
- * 2026-09-30, the user (Draw Five, Joker variant C): the Joker sits on the table from the first
- * round and his price drops by this share every round until his own position comes up.
+ * 2026-09-30, the user (daily Joker, fourth take: "pozycyjny, nie wiemy kim jest — 50/50 między
+ * legendą a leszczem, trafiamy go losowo, 5 kart w linii, od 1–3 razy w ciągu gry"): the daily deals
+ * five cards a position, and in one to three rounds one of them is a face-down Joker — a player at
+ * that position who is a legend or a scrub, even odds, seen only once he's picked. Which rounds and
+ * who he is are `dailyGame`'s (engine); only these numbers live here for the menu.
  */
-export const JOKER_DROP_PCT = 0.12;
-/** The chance, shown on his card, that the Joker leaves the table after round 1, 2, 3, 4 (the user
- * chose a rising chance you can see over a hidden moment). */
-export const JOKER_LEAVE_CHANCE = [0.2, 0.4, 0.6, 0.8];
-
-/** The Joker's price in round `round` (0-based) — full price in the first round, then 12% less every
- * round, no lower than in his own round. One decimal, like every other cap cost. */
-export function jokerPriceAt(fullPrice: number, round: number, jokerRound: number): number {
-  return Math.round(fullPrice * Math.pow(1 - JOKER_DROP_PCT, Math.max(0, Math.min(round, jokerRound))) * 10) / 10;
-}
+export const DAILY_HAND_SIZE = 5;
+export const JOKERS_MIN = 1;
+export const JOKERS_MAX = 3;
 
 /**
  * 2026-09-28, the user ("kto powiedział że losowanie pozycji musi zaczynać się na PG?"): the
- * positions come in a different order every day, and the Joker can be at any of them as long as at
- * least two picks come before it — there has to be something to save caps on.
+ * positions come in a different order every day.
  */
 export function dailyMeta(seed: string): DailyMeta {
   const rng = mulberry32(hashSeed(`${seed}:meta`));
   const order = SLOTS.map((s) => ({ s, k: rng() }))
     .sort((a, b) => a.k - b.k)
     .map((x) => x.s);
-  const jokerSlot = order[2 + Math.floor(rng() * 3)];
+  rng(); // was the table Joker's position; kept so each day keeps its opponent
   const opponent = LEGEND_FIVES[Math.floor(rng() * LEGEND_FIVES.length)];
-  let jokerLeavesAfter: number | null = null;
-  for (let r = 0; r < order.indexOf(jokerSlot); r++) {
-    if (rng() < JOKER_LEAVE_CHANCE[r]) {
-      jokerLeavesAfter = r;
-      break;
-    }
-  }
-  return { order, jokerSlot, opponent, jokerLeavesAfter };
+  return { order, opponent };
 }

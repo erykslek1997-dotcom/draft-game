@@ -760,13 +760,50 @@
     radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--at-accent) 28%, transparent) 0 12%, transparent 13%),
     repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)) 0 7px, var(--at-paper) 7px 14px);
 }
-.bf-hand-face { display: flex; height: 100%; animation: bf-flip-in 0.42s both cubic-bezier(0.3, 0.8, 0.3, 1); transform-origin: center; }
-.bf-hand-face > .bf-pool-card { flex: 1; min-width: 0; height: 100%; overflow: hidden; justify-content: center; }
-@keyframes bf-flip-in {
-  0% { transform: rotateY(90deg) scale(0.96); opacity: 0.4; }
-  100% { transform: rotateY(0) scale(1); opacity: 1; }
+.bf-hand-face { position: relative; display: flex; height: 100%; transform-origin: center; }
+/* The card's back, shown while it flies off the deck (deal animation A, BestFive.tsx DealtCard). */
+.bf-fly-back {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; border-radius: 10px;
+  border: 2px solid color-mix(in srgb, var(--at-accent) 40%, var(--at-line));
+  background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)) 0 7px, var(--at-paper) 7px 14px);
 }
-.bf-deck-foot { margin-top: 12px; text-align: center; font-size: 13px; color: var(--at-ink-soft); min-height: 38px; display: flex; align-items: center; justify-content: center; }
+.bf-streak-30 .bf-fly-back { background: repeating-linear-gradient(45deg, #1a2644 0 6px, #122038 6px 12px); border-color: var(--at-gold, #ffd479); }
+.bf-hand-face > .bf-pool-card { flex: 1; min-width: 0; height: 100%; overflow: hidden; justify-content: center; }
+.bf-deck-foot { margin-top: 12px; text-align: center; font-size: 13px; color: var(--at-ink-soft); min-height: 38px; display: flex; align-items: center; justify-content: center; gap: 14px; }
+.bf-pile { position: relative; width: 34px; height: 46px; flex: none; }
+.bf-pile span {
+  position: absolute; inset: 0; border-radius: 5px;
+  border: 1.5px solid color-mix(in srgb, var(--at-accent) 40%, var(--at-line));
+  background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)) 0 4px, var(--at-paper) 4px 8px);
+}
+.bf-pile span:nth-child(1) { transform: translate(3px, 3px); }
+.bf-pile span:nth-child(2) { transform: translate(1.5px, 1.5px); }
+/* The daily's five-card hand: one row; on a phone it scrolls sideways, card by card. */
+.bf-hand.is-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 560px) {
+  /* Five across a phone: compact cards — name, years, price, the stat line. */
+  .bf-hand.is-5 { gap: 4px; }
+  .bf-hand.is-5 > .bf-hand-card { height: 176px; }
+  .bf-hand.is-5 .bf-pool-card { padding: 6px 3px; gap: 3px; }
+  .bf-hand.is-5 .bf-pool-teams, .bf-hand.is-5 .bf-pool-box--sub { display: none; }
+  .bf-hand.is-5 .bf-face { width: 30px; height: 30px; font-size: 10px; }
+  .bf-hand.is-5 .bf-pool-name { font-size: 10px; line-height: 1.15; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .bf-hand.is-5 .bf-pool-season { font-size: 10px; }
+  .bf-hand.is-5 .bf-pool-box { font-size: 9px; letter-spacing: -0.03em; }
+  .bf-hand.is-5 .bf-pool-over { font-size: 8px; left: 2px; right: 2px; }
+  .bf-hand.is-5 .bf-joker-q { font-size: 30px; }
+}
+/* The face-down Joker in a hand. */
+.bf-hand .bf-joker-card {
+  flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: auto; margin: 0; text-align: center;
+}
+.bf-hand .bf-joker-card .bf-joker-tag { position: static; }
+.bf-joker-q { font-size: 44px; font-weight: 800; line-height: 1; color: var(--at-gold, #ffd479); text-shadow: 0 0 18px color-mix(in srgb, var(--at-gold, #ffd479) 50%, transparent); }
+.bf-joker-reveal { margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; font-size: 13px; color: var(--at-ink); border: 1px solid var(--at-line); animation: bf-land 0.4s both; }
+.bf-joker-reveal.is-legend { border-color: var(--at-gold, #ffd479); background: color-mix(in srgb, var(--at-gold, #ffd479) 12%, var(--at-paper)); }
+.bf-joker-reveal.is-scrub { border-color: color-mix(in srgb, var(--at-bad, #d94a60) 45%, var(--at-line)); background: color-mix(in srgb, var(--at-bad, #d94a60) 8%, var(--at-paper)); }
+.bf-joker-line p { margin: 2px 0; }
+.bf-joker-line p.is-took { color: var(--at-ink); }
 .bf-deck.is-open .bf-deck-foot { color: var(--at-ink); }
 .bf-draw-btn { min-width: 220px; }
 @media (max-width: 560px) {
@@ -774,7 +811,6 @@
   .bf-hand-card { height: 208px; }
   .bf-hand-face .bf-pool-box--sub { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .bf-hand-face { animation: none; } }
 
 .bf-ai { margin: 4px 0 12px; padding: 8px 10px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--at-accent-2, #d94a60) 35%, var(--at-line)); background: color-mix(in srgb, var(--at-accent-2, #d94a60) 5%, var(--at-paper)); }
 .bf-ai-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--at-ink-soft); }
@@ -814,3 +850,6 @@
 .bf-streak-7 .bf-draw-btn { background: linear-gradient(135deg, #fff3cf, #ffd479 60%, #b98a1c); color: #1b1404; }
 .bf-streak-14 .bf-hand-face > .bf-pool-card { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 70%, var(--at-line)); }
 .bf-streak-30 .bf-hand-back { background: repeating-linear-gradient(45deg, #1a2644 0 6px, #122038 6px 12px); border-color: var(--at-gold, #ffd479); }
+.bf-live-odds { margin: 6px 0 0; font-size: 12px; color: var(--at-ink-soft); }
+.bf-live-odds b { color: var(--at-ink); }
+.bf-live-upset { color: var(--at-gold, #ffd479); }

@@ -1,4 +1,4 @@
-import { DEAL_SIZE, POOL_PER_SLOT, dailyBoard, dealFor, dealHint, isChalkBoard, lineupShots, boardTargets, talMaxLineup, teaserFor, type Lineup } from '../src/engine/bestFive';
+import { slotFloor, DEAL_SIZE, POOL_PER_SLOT, dailyBoard, dealFor, dealHint, isChalkBoard, lineupShots, boardTargets, talMaxLineup, teaserFor, type Lineup } from '../src/engine/bestFive';
 import type { PlayerSpan, Position } from '../src/data/schema';
 import { STARTER_SLOTS } from '../src/engine/positions';
 
@@ -57,9 +57,11 @@ for (let i = 0; i < DAYS; i++) {
       const hint = dealHint(pool, slot, lineup, cap);
       if (hint && lineup.PG === undefined) throw new Error(`FAIL: ${key}: a hint before any pick`);
       const openAfter = (['PG', 'SG', 'SF', 'PF', 'C'] as Position[]).filter((s) => s !== slot && !lineup[s]);
-      const room = cap - lineupShots(lineup) - openAfter.reduce((sum, s) => sum + Math.min(...pool.bySlot[s].map((p) => p.fga)), 0);
+      // 2026-09-30: what the open positions must still cost is their cheapest player in the whole
+      // game (`slotFloor`) — the deal tops up from outside the board when it has to.
+      const room = cap - lineupShots(lineup) - openAfter.reduce((sum, s) => sum + slotFloor(s), 0);
       const affordable = hand.filter((c) => c.fga <= room + 1e-9);
-      if (affordable.length < Math.min(2, pool.bySlot[slot].filter((c) => c.fga <= room + 1e-9).length)) throw new Error(`FAIL: ${key}: ${slot} deal has ${affordable.length} affordable cards`);
+      if (affordable.length < 2) throw new Error(`FAIL: ${key}: ${slot} deal has ${affordable.length} affordable cards`);
       lineup[slot] = affordable[Math.floor(rnd() * affordable.length)];
     }
     if (lineupShots(lineup) > cap + 1e-9) throw new Error(`FAIL: ${key}: a path finished over the cap`);

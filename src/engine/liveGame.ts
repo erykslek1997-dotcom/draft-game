@@ -2,7 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { STARTER_SLOTS } from './positions';
 import { mulberry32, hashSeed } from './rng';
-import { projectMatchup } from './matchup';
+import { gameWinProbability, projectMatchup } from './matchup';
 import { lineupTeam, scoreLineup, type Lineup } from './bestFive';
 import type { LegendFive } from './dailyMeta';
 
@@ -147,7 +147,35 @@ interface Player {
   joker: boolean;
 }
 
+/**
+ * 2026-09-30, the user ("zrobiłem najlepszą piątkę i przegrałem, słaby user experience"; chose A + B):
+ * a clear favourite — this many points or more by the model — always wins; the game only goes
+ * either way when it's close. `upset` marks a close game the favourite lost.
+ */
+export const CLEAR_FAVOURITE = 5;
+
+/** The model's call before tip-off: the favourite's win chance, or "clear" when it can't be lost. */
+export function pregameOdds(margin: number): { you: number; clear: boolean } {
+  if (Math.abs(margin) >= CLEAR_FAVOURITE) return { you: margin > 0 ? 1 : 0, clear: true };
+  return { you: gameWinProbability(margin), clear: false };
+}
+
 export function simulateLiveGame(
+  yours: Lineup,
+  legends: Lineup,
+  margin: number,
+  seed: string,
+  jokerId?: string,
+): LiveGameResult {
+  // Deterministic retakes: the first game of the seed whose winner agrees with a clear favourite.
+  let game = playGame(yours, legends, margin, seed, jokerId);
+  for (let take = 1; take < 40 && Math.abs(margin) >= CLEAR_FAVOURITE && game.final[0] > game.final[1] !== margin > 0; take++) {
+    game = playGame(yours, legends, margin, `${seed}~${take}`, jokerId);
+  }
+  return game;
+}
+
+function playGame(
   yours: Lineup,
   legends: Lineup,
   margin: number,
