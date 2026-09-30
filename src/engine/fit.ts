@@ -141,6 +141,10 @@ export const FIT_WEIGHTS = {
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
 const HARD_NON_SPACER_FLOOR = 30;
+const SPACING_SHORTFALL_FLOOR = 60;
+const SPACING_SHORTFALL_COST = 32;
+const LONE_BIG_SHORTFALL_SHARE = 0.5;
+const SPACING_RELIEF_MAX = 0.15;
 const FRONTCOURT_SPACING_FLOOR = 40;
 /** A frontcourt non-shooter at or above this O-TAL is a real paint scorer (see `paintOverlapPenalty`). */
 const PAINT_SCORER_OTAL_FLOOR = 70;
@@ -148,7 +152,7 @@ const PAINT_OVERLAP_PENALTY = 7;
 /** Hoisted out of `fitScore`'s body (2026-09-16) and exported so `scoring.ts`'s `offenseScore`
  * blend can apply the SAME "elite playmaking engine" gate to its own raw-spacing term — see that
  * function's own docstring for why. Values and meaning unchanged from where they used to live
- * inline just above `hasGravityStarter`/`hasElitePrimaryCreator` below. */
+ * inline in `fitScore`'s old step-count spacing geometry (replaced 2026-09-30). */
 export const ELITE_SCORING_GRAVITY_OTAL = 95;
 export const ELITE_PRIMARY_CREATOR_THRESHOLD = 85;
 const FUNCTIONAL_SIZE_WEIGHTS = {
@@ -431,12 +435,21 @@ const athleticismBySlot = Object.fromEntries(
   ]),
 ) as Record<Position, number[]>;
 
+/**
+ * 2026-09-30, engine calibration session 4 (the user: "czasem mam wrażenie jakby był losowy"): was a
+ * step table (100 up to 2.0, 85 to 2.5, 60 to 3.0), so 1.99 and 2.01 sat 15 points apart and a
+ * crowded 2.4 read almost ideal. Now a straight line from the ideal band.
+ */
+const DEMAND_IDEAL_LOW = 0.8;
+const DEMAND_IDEAL_HIGH = 1.9;
+const DEMAND_CROWDING_COST = 32;
+const DEMAND_VACUUM_COST = 100;
 function demandBalance(onBallDemand: number, primarySignal: number): number {
-  if (onBallDemand <= 0.25) return primarySignal >= 85 ? 85 : 20;
-  if (onBallDemand <= 2) return 100;
-  if (onBallDemand <= 2.5) return 85;
-  if (onBallDemand <= 3) return 60;
-  return clamp(60 - (onBallDemand - 3) * 35);
+  if (onBallDemand < DEMAND_IDEAL_LOW) {
+    const vacuum = clamp(100 - (DEMAND_IDEAL_LOW - onBallDemand) * DEMAND_VACUUM_COST);
+    return primarySignal >= 85 ? Math.max(vacuum, 85) : vacuum;
+  }
+  return clamp(100 - Math.max(0, onBallDemand - DEMAND_IDEAL_HIGH) * DEMAND_CROWDING_COST);
 }
 
 /**
@@ -596,20 +609,6 @@ function starterOnBallDemand(profile: ShadowRoleProfile, span: PlayerSpan): numb
   return Math.max(archetypeWeight, postFloor, playmakingDemand);
 }
 
-function geometryScore(hardNonSpacers: number): number {
-  return [100, 82, 52, 22, 5, 0][Math.min(5, hardNonSpacers)];
-}
-
-function rimSupportScore(rimGravityScorers: number, plusShooters: number, hasAnomaly: boolean): number {
-  if (rimGravityScorers === 0) return 100;
-  if (hasAnomaly) return 100;
-  return [0, 45, 80, 100][Math.min(3, plusShooters)];
-}
-
-function frontcourtGeometryScore(nonSpacers: number): number {
-  return [100, 75, 25][Math.min(2, nonSpacers)];
-}
-
 export function fitScore(team: Team): FitScoreResult {
   const starterEntries = primaryStarters(team);
   const starters = starterEntries.map((entry) => entry.player);
@@ -719,8 +718,10 @@ export function fitScore(team: Team): FitScoreResult {
       'Roll & Cut Big',
     ]) >= ADDITIONAL_ROLE_CREDIT_FLOOR;
   }).length;
-  const primaryCreationScore = normalize(primaryCreationSignal, 50, 85);
-  const secondaryCreationScore = 40 + normalize(secondaryCreationSignal, 40, 75) * 0.6;
+  // 2026-09-30, session 4: the old ranges topped out at 85 / 75, so most drafted fives maxed both
+  // and every lead creator read the same. Now the scale runs to the real top of the pool.
+  const primaryCreationScore = normalize(primaryCreationSignal, 55, 100);
+  const secondaryCreationScore = 40 + normalize(secondaryCreationSignal, 45, 95) * 0.6;
   // 2026-09-05, user's call ("powinno to liczyć w fit"): a five committed to 3+ co-primary
   // offensive systems (pairwiseFit pattern 5) genuinely lacks a playoff identity — dock it from
   // creationStructure rather than leaving it note-only.
@@ -748,66 +749,30 @@ export function fitScore(team: Team): FitScoreResult {
   const frontcourt = starterEntries.filter((entry) => entry.slot === 'PF' || entry.slot === 'C').map((entry) => entry.player);
   const frontcourtNonSpacerCount = frontcourt.filter((player) => computeSpacing(player) < FRONTCOURT_SPACING_FLOOR).length;
 
-  // An elite-gravity shooter makes help defense costly: collapsing onto him opens 4-on-3 the
-  // non-shooters' own teammates can punish, so the raw hard-non-spacer count overstates how
-  // cramped a compressed floor (2+ hard non-spacers) really is. Discount one non-spacer of
-  // geometry cost, a second when the lineup can actually punish the rotation (a real secondary
-  // creator, or a rim-gravity release valve). `spacingScore` in scoring.ts already carries an
-  // equivalent multi-gravity floor; `spacingCompatibility` never picked it up. Only geometryScore
-  // is softened — frontcourtGeometryScore still charges two non-shooting bigs, so a gravity
-  // starter eases the penalty but never erases it.
-  //
-  // 2026-09-04, user-reported (D2 #2, Jordan+Haliburton+Malone+Howard): `spacingBreakdown` is
-  // purely arc/3PT gravity, so peak Jordan (1989-91, O-TAL 100, minimal 3PA — the league barely
-  // shot 3s yet) reads 16.8 points, under `WALKING_GRAVITY_FLOOR` (19), and never triggers this
-  // discount despite being exactly the kind of scorer real defenses double-teamed and warped
-  // around. `eliteScoringGravity` is a second, independent path to the same flag: an O-TAL >= 95
-  // span (the ~59-span, all-time-great tier — Jordan/Harden/Luka/prime-LeBron-band; already-
-  // covered arc shooters like Nash/Miller/Allen also clear it, so no double mechanism for them)
-  // draws enough defensive attention on pure scoring gravity alone, independent of shot selection.
-  const hasGravityStarter =
-    starters.some((player) => spacingBreakdown(player).points >= WALKING_GRAVITY_FLOOR) ||
-    starters.some((player) => computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL);
-  // 2026-09-12, user's own idea, live ("wybitny rozgrywający jest w stanie wykreować ofensywę
-  // mimo słabego spacingu, co pozwala na zbieranie większej ilości defensywnego talentu" — an
-  // elite playmaker can manufacture good offense despite weak spacing, which should let the roster
-  // spend more of its budget on defensive talent instead): `hasGravityStarter` above is entirely
-  // about drawing defensive ATTENTION (a shooting or scoring threat), which is one real way to
-  // make a help defense pay for collapsing on a non-shooter — but not the only one. A genuine
-  // elite-passing hub (Nash/Magic/Stockton-tier) makes the SAME defense pay a different way: he
-  // finds the cutter/roller the help just left open, independent of whether he draws gravity
-  // himself. First attempt at this folded the creator check only into `canPunishHelp` (the
-  // discount's SECOND, larger tier) while leaving it gated behind `hasGravityStarter` for even the
-  // first tier — measured directly against this exact fix's own motivating case (Nash + two
-  // traditional bigs) and it changed nothing, because that five has no real gravity shooter at
-  // all, so the whole branch stayed closed regardless. `hasElitePrimaryCreator` is instead its own,
-  // independent path into the discount, not an amplifier nested under the gravity gate. `85`
-  // reuses `primaryCreationScore`'s own normalization ceiling a few lines up — the same bar this
-  // function already treats as "maxed-out primary creation" — rather than inventing a second,
-  // separate threshold for the same underlying signal.
-  const hasElitePrimaryCreator = primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD;
-  const canPunishHelp = secondaryCreationSignal >= 75 || hasElitePrimaryCreator || starters.some(isRimGravityScorer);
-  // 2026-09-17, audit-found: this discount used to require `hardNonSpacerCount >= 2` to engage
-  // at all, so a lineup with exactly ONE hard non-spacer (strictly better personnel) never got
-  // it, while a lineup with TWO (strictly worse) could. Verified live: swapping a real lineup's
-  // PG from Chris Paul (1 hard non-spacer, no discount, geometryScore(1)=82) to Ben Simmons
-  // 2017-19 (a genuine zero-shooting liability, 2 hard non-spacers, discount fires, ->
-  // geometryScore(0)=100) RAISED `spacingCompatibility` and the overall FIT score — adding a
-  // worse shooter scored higher. Lowering the gate to `>= 1` lets the same elite-creator/gravity
-  // rescue apply uniformly starting at one non-spacer, so a one-non-spacer five can reach at
-  // least the same floor a two-non-spacer five with the same qualifying starter would — fewer
-  // non-spacers can no longer score worse than more.
-  const geometryNonSpacerCount =
-    (hasGravityStarter || hasElitePrimaryCreator) && hardNonSpacerCount >= 1
-      ? Math.max(0, hardNonSpacerCount - (canPunishHelp ? 2 : 1))
-      : hardNonSpacerCount;
-
-  const spacingCompatibility = Math.round(
-    geometryScore(geometryNonSpacerCount) * 0.45 +
-      rimSupportScore(rimGravityScorerCount, plusShooterCount, hasShootingAnomaly) * 0.35 +
-      frontcourtGeometryScore(frontcourtNonSpacerCount) * 0.20,
-  );
-  if (geometryNonSpacerCount >= 2) notes.push(`${hardNonSpacerCount} hard non-spacers compress the starting lineup.`);
+  // 2026-09-30, engine calibration session 4 (the user, on Oscar + LeBron + Howard at Fit 88: "czasem
+  // mam wrażenie jakby był losowy"): geometry used to count hard non-spacers on 3PT spacing alone and
+  // let one elite creator erase up to two of them, so that five read 95 — as if everyone shot. It is
+  // now continuous and on the same spacing value the Spacing score uses (midrange gravity included):
+  // every starter below `SPACING_SHORTFALL_FLOOR` costs in proportion to his shortfall, the lineup's
+  // least-spacing big counts half (one non-shooting big is a normal shape), and an elite creator or
+  // scorer only softens the cost. Shooter support is the three best spacers' level, for every five.
+  const lineupSpacing = starterEntries.map(({ player }) => teamSpacingValue(player));
+  const shortfalls = lineupSpacing.map((value) => clamp((SPACING_SHORTFALL_FLOOR - value) / SPACING_SHORTFALL_FLOOR, 0, 1));
+  const bigIndices = starterEntries.map((entry, index) => (entry.slot === 'PF' || entry.slot === 'C' ? index : -1)).filter((index) => index >= 0);
+  if (bigIndices.length > 0) {
+    const worstBig = bigIndices.reduce((worst, index) => (shortfalls[index] > shortfalls[worst] ? index : worst), bigIndices[0]);
+    shortfalls[worstBig] *= LONE_BIG_SHORTFALL_SHARE;
+  }
+  const bestPlaymaking = Math.max(...starters.map((player) => playmakingScoreForPlayer(player) ?? 0));
+  const bestScoringGravity = Math.max(...starters.map(computeOffensiveTalent));
+  const spacingRelief =
+    SPACING_RELIEF_MAX * Math.max(clamp((bestPlaymaking - 75) / 20, 0, 1), clamp((bestScoringGravity - 85) / 15, 0, 1));
+  const geometry = clamp(100 - SPACING_SHORTFALL_COST * shortfalls.reduce((sum, value) => sum + value, 0) * (1 - spacingRelief));
+  const topSpacers = [...lineupSpacing].sort((a, b) => b - a).slice(0, 3);
+  const shooterSupport = clamp(((mean(topSpacers) - 40) / 40) * 100);
+  const spacingCompatibility = Math.round(geometry * 0.7 + shooterSupport * 0.3);
+  const compressingStarters = shortfalls.filter((value) => value >= 0.5).length;
+  if (compressingStarters >= 2) notes.push(`${compressingStarters} non-spacing starters compress the starting lineup.`);
   if (rimGravityScorerCount > 0 && plusShooterCount < 2 && !hasShootingAnomaly) {
     notes.push('Rim gravity does not have enough shooting support.');
   }

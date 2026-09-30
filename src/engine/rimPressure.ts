@@ -426,7 +426,7 @@ export function rimPressureOffenseTerm(span: PlayerSpan): number {
  *  - team offensive rebounds per game across starters, but only where the export's OREB split is
  *    reliable (1983-84+); pre-1983 spans get the neutral midpoint rather than a halved count.
  */
-const RIM_TEAM_BASE_ANCHOR = 45; // starters-mean rimPressureForFit that reads as a full interior five (re-derived 2026-09-04 for the smoothed/floored fit variant — a hypothetical Shaq+Duncan+D.Robinson five reads ~49)
+const RIM_TEAM_BASE_ANCHOR = 55; // starters-mean rimPressureForFit that reads as a full interior five before the FT / offensive-glass bonuses. 2026-09-30, calibration session 4 (the user: "nie jest zbyt łatwo w takim razie żeby to zrobić?"): was 45, and 41 of 64 drafted fives hit 100 (17 at 55) — an all-time Shaq + Duncan + D. Robinson five (~49) now reaches 100 only with its FT and offensive-glass bonuses.
 const RIM_TEAM_FT_BONUS_MAX = 16;
 const RIM_TEAM_OREB_BONUS_MAX = 12;
 
