@@ -38,6 +38,14 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
         plansza dziennie dla wszystkich (lokalna północ), jedno podejście, seria dni, wynik dnia
         w przeglądarce (`src/components/dailyProgress.ts`). Bez dziennych zasad (limity, bany) —
         na razie tylko wspólna plansza.
+      - [ ] **Draw Five multiplayer na żywo (na później, 2026-09-30).** Użytkownik woli grę w tym samym
+        czasie („wolę irl”) niż pojedynek asynchroniczny przez link. Plan: pokój z linku
+        (`…/draft-game/#room=ab12`), jedna talia, gracze dobierają na zmianę i widzą ruchy od razu,
+        na końcu mecz na żywo. Potrzebny backend czasu rzeczywistego — darmowy Supabase (albo
+        Firebase): konto zakłada użytkownik, klucz idzie do konfiguracji. Do obsłużenia: poczekalnia,
+        czyja tura, rozłączenia i zamknięta karta. Awaryjnie: WebRTC przez publiczny serwer PeerJS
+        (bez konta, ale bez gwarancji). Pojedynek przez link (seed + 5 wyborów w linku, bez serwera)
+        można zrobić osobno w każdej chwili.
       - [x] **Draw Five, runda 2 — 2026-09-30.** Daily: 5 kart w linii; w 1–3 losowych rundach jedna z
         nich to zakryty Joker (pozycyjny, 50/50 legenda albo leszcz, po środkowej cenie pozycji),
         odkrywany po wyborze. Poprzedni Joker ze spadającą ceną usunięty. Rozdanie: karta leci z
