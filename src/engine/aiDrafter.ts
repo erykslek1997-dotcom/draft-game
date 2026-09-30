@@ -703,7 +703,13 @@ const MAX_FGA_PENALTY = 1.3;
  * one ordinary reserve. If no candidate preserves this reserve, normal hard-cap legality remains
  * the fallback, so the draft can always finish.
  */
-const PLAYABLE_RESERVE_FGA_PER_SLOT = 6;
+// 2026-09-30, engine calibration session 5 (the user: "niepotrzebnie AI wybiera słabego startera
+// Jon Barry / John Collins"): at 6 a round-5 pick with ~30 FGA left and five slots to fill could
+// spend only ~7, so the fifth starter went to Danny Green / Jared Dudley while Drexler, Hardaway,
+// Grant Hill and Erving (TAL 86-87) sat in the pool. Measured on seeds 101/202/303/404: 6 -> 5 cuts
+// weak starters (TAL < 65, not 3&D) 8 -> 6 and lifts talent 84.6 -> 85.8, rotation 95.9 -> 96.8 and
+// overall 79.3 -> 79.9, for a bench 73.0 -> 72.2; 4.5 thinned benches to 69.6 for no overall gain.
+const PLAYABLE_RESERVE_FGA_PER_SLOT = 5;
 const TRUE_CAP_GLUE_FGA_CEILING = 2;
 
 function plannedPlayableReserveFga(slotsRemaining: number): number {
