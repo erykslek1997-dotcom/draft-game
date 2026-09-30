@@ -282,9 +282,12 @@ const billupsWadeSpacing = team('fit-v2-billups-wade-spacing', [
   pick('Brent Barry', '2005-07'),
   pick('Adrian Griffin', '2004-06'),
 ]);
+// 2026-09-30, session 4: was 65-75. A gravity shooter now lifts the five by at most
+// GRAVITY_FLOOR_MAX_LIFT raw points (the user, on Hardaway + Ben Wallace reading 83), so one Billups
+// beside Wade (9), Iguodala (43), Webber (36) and Embiid (56) reads below average (51), not solid.
 check(
-  scoreTeam(billupsWadeSpacing).spacingScore >= 65 && scoreTeam(billupsWadeSpacing).spacingScore <= 75,
-  'one Billups gravity span makes Wade/Iguodala/Webber/Embiid solid, not elite, spacing',
+  scoreTeam(billupsWadeSpacing).spacingScore >= 45 && scoreTeam(billupsWadeSpacing).spacingScore <= 60,
+  'one Billups gravity span lifts Wade/Iguodala/Webber/Embiid only to below-average spacing',
 );
 
 const wembyWebber = team('fit-v2-wemby-webber', [
