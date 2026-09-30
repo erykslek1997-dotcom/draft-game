@@ -23,6 +23,8 @@ export interface DailyJokerRecord {
   name: string;
   span: string;
   worth: boolean;
+  /** What was paid for him, if he was bought (Draw Five: his price drops every round). */
+  paid?: number;
 }
 
 interface DailyEntry {
@@ -94,6 +96,11 @@ export function dailyEntry(today: string): { grade: GolfGrade; composite: number
   return entry ? { grade: entry.grade, composite: entry.composite, game: entry.game } : null;
 }
 
+/** What today's Joker was bought for, if he was — so a reopened daily shows the price paid. */
+export function savedDailyJokerPaid(today: string): number | null {
+  return read().daily[today]?.joker?.paid ?? null;
+}
+
 /** Yesterday's Joker, if yesterday's board was played — shown on the menu the day after, so today's
  * result never gives away whether today's Joker is worth it. */
 export function yesterdayJoker(today: string): DailyJokerRecord | null {
@@ -143,8 +150,8 @@ export function recordDailyResult(
  */
 export const STREAK_TIERS: { days: number; reward: string }[] = [
   { days: 3, reward: 'Flame on the daily strip' },
-  { days: 7, reward: 'Gold lever' },
-  { days: 14, reward: 'Gold reel frames' },
+  { days: 7, reward: 'Gold draw button' },
+  { days: 14, reward: 'Gold card frames' },
   { days: 30, reward: 'Retro card backs' },
   { days: 100, reward: 'Hall of Fame plaque' },
 ];

@@ -7,6 +7,7 @@ import { talentScore, offenseScore, defenseScore, spacingScore } from './scoring
 import { fitScore } from './fit';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
 import { mulberry32, hashSeed } from './rng';
+import { jokerPriceAt } from './dailyMeta';
 import { computeOffensiveTalent } from './talent';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { computeSpacing } from './spacing';
@@ -915,7 +916,7 @@ export function dealHint(pool: DailyPool, slot: Position, lineup: Lineup, cap: n
 }
 
 export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: number): PlayerSpan[] {
-  // The daily Joker is never one of the four: it comes on top of the deal, last (see `dailyGame`).
+  // The daily Joker is never one of the four: he sits on the table, bought separately (`dailyGame`).
   const joker = pool.bySlot[slot].find((s) => pool.roles[s.id] === 'joker');
   const cards = pool.bySlot[slot].filter((s) => s !== joker);
   const picks = STARTER_SLOTS.map((s) => lineup[s]).filter((p): p is PlayerSpan => Boolean(p));
@@ -948,8 +949,8 @@ export function dealFor(pool: DailyPool, slot: Position, lineup: Lineup, cap: nu
     if (out < 0) break;
     hand[out] = spare;
   }
-  hand.sort((a, b) => a.playerName.localeCompare(b.playerName));
-  return joker ? [...hand, joker] : hand;
+  // The Joker is never dealt: in Draw Five he sits on the table (see `dailyGame`).
+  return hand.sort((a, b) => a.playerName.localeCompare(b.playerName));
 }
 
 /**
@@ -972,8 +973,16 @@ export function boardTargets(pool: DailyPool, cap: number): DailyTargets {
 // ---------------------------------------------------------------------------
 
 export interface DailyJoker {
+  /** The legend at his full price (his real shots per game). */
   span: PlayerSpan;
   slot: Position;
+  /** His position's round (index in the day's order). */
+  round: number;
+  /** The last round he's on the table: he leaves after it (his own round, or earlier by the seed). */
+  availableUntil: number;
+  /** His price in that last round — the lowest he ever costs today, and what "best on the board"
+   * is measured with. */
+  bestPrice: number;
   /** The best five on the board takes him. */
   worth: boolean;
   /** The best five with him minus the best five without him, in points (negative: not worth it). */
@@ -1004,12 +1013,18 @@ function bestWithJoker(pool: DailyPool, cap: number, slot: Position, joker: Play
 
 const gameCache = new Map<string, DailyGame>();
 /** The day's board plus its position order and Joker (`dailyMeta` sets the order and his slot). */
-export function dailyGame(seed: string, meta: { order: Position[]; jokerSlot: Position }): DailyGame {
+export function dailyGame(seed: string, meta: { order: Position[]; jokerSlot: Position; jokerLeavesAfter: number | null }): DailyGame {
   const hit = gameCache.get(seed);
   if (hit) return hit;
   const board = dailyBoard(seed, true);
   const { pool, cap } = board;
   const slot = meta.jokerSlot;
+  // 2026-09-30, Draw Five: the Joker's price drops every round he stays on the table, so the best
+  // five on the board is measured with him at his lowest price that day (hindsight — whoever waited
+  // exactly as long as it was safe).
+  const round = meta.order.indexOf(slot);
+  const availableUntil = Math.min(round, meta.jokerLeavesAfter ?? round);
+  const atBest = (s: PlayerSpan): PlayerSpan => ({ ...s, fga: jokerPriceAt(s.fga, availableUntil, round) });
   const rng = mulberry32(seedFromKey(`${seed}:joker`));
   const wantWorth = rng() < 0.5;
   const sc = cachedScorer();
@@ -1020,7 +1035,7 @@ export function dailyGame(seed: string, meta: { order: Position[]; jokerSlot: Po
   const legends = [...bestSpanByPlayer().values()]
     .filter((best) => allStarCount(best.playerName) >= JOKER_MIN_AS && !onBoard.has(best.playerName))
     .flatMap((best) => (spansByPlayer().get(best.playerName) ?? []).filter((s) => effectiveTalent(best) - effectiveTalent(s) <= JOKER_SPAN_TAL))
-    .filter((s) => s.primaryPosition === slot && s.fga + otherCheapest <= cap - 1);
+    .filter((s) => s.primaryPosition === slot && atBest(s).fga + otherCheapest <= cap - 1);
   // A day that wants him worth it looks first among the legends who give the most per shot.
   const perShot = (s: PlayerSpan) => effectiveTalent(s) / Math.max(4, s.fga);
   const tries = wantWorth
@@ -1029,7 +1044,7 @@ export function dailyGame(seed: string, meta: { order: Position[]; jokerSlot: Po
   const seen = new Set<string>();
   let chosen: { span: PlayerSpan; miss: number } | null = null;
   for (const span of tries.filter((s) => !seen.has(s.playerName) && seen.add(s.playerName)).slice(0, JOKER_TRIES)) {
-    const quick = bestWithJoker(pool, cap, slot, span, wantWorth ? 3 : 1, sc);
+    const quick = bestWithJoker(pool, cap, slot, atBest(span), wantWorth ? 3 : 1, sc);
     if (!quick) continue;
     const edge = quick.composite - base;
     // How far this legend is from the call the day wants.
@@ -1043,14 +1058,20 @@ export function dailyGame(seed: string, meta: { order: Position[]; jokerSlot: Po
     return game;
   }
   const joker = chosen.span;
-  const withHim = bestWithJoker(pool, cap, slot, joker, 4, sc)!;
+  const cheapest = atBest(joker);
+  const withHim = bestWithJoker(pool, cap, slot, cheapest, 4, sc)!;
   const edge = Math.round(withHim.composite - base);
   const worth = withHim.composite > base;
-  const bySlot = { ...pool.bySlot, [slot]: [...pool.bySlot[slot], joker] };
+  const bySlot = { ...pool.bySlot, [slot]: [...pool.bySlot[slot], cheapest] };
   const augmented: DailyPool = { key: pool.key, bySlot, roles: { ...pool.roles, [joker.id]: 'joker' } };
   // The board with the Joker on it: its best five is whichever is better, with him or without.
   optimalCache.set(optimalKey(augmented, cap), worth ? withHim.five : boardOptimal(pool, cap));
-  const game: DailyGame = { pool: augmented, cap, order: meta.order, joker: { span: joker, slot, worth, edge } };
+  const game: DailyGame = {
+    pool: augmented,
+    cap,
+    order: meta.order,
+    joker: { span: joker, slot, round, availableUntil, bestPrice: cheapest.fga, worth, edge },
+  };
   gameCache.set(seed, game);
   return game;
 }
