@@ -1,10 +1,10 @@
-import { Fragment, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject, type ReactNode } from 'react';
 import './BestFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
 import { ScoreChip } from './ResultsScreen';
 import ShareResultModal from './ShareResultModal';
-import { clearDailyResult, DAILY_REPLAY_FOR_TESTING, currentStreak, dailySeed, recordDailyResult, savedDailyJokerPaid, savedDailyLineup, streakRewardClasses, untilTomorrow, localDayKey, STREAK_TIERS, type Streak } from './dailyProgress';
-import { dailyMeta, jokerPriceAt, JOKER_LEAVE_CHANCE, type LegendFive } from '../engine/dailyMeta';
+import { clearDailyResult, DAILY_REPLAY_FOR_TESTING, currentStreak, dailySeed, recordDailyResult, savedDailyLineup, streakRewardClasses, untilTomorrow, localDayKey, STREAK_TIERS, type Streak } from './dailyProgress';
+import { dailyMeta, DAILY_HAND_SIZE, JOKERS_MAX, JOKERS_MIN, type LegendFive } from '../engine/dailyMeta';
 import { expectedMargin, headToHeadMargin, legendLineup, simulateLiveGame, type LiveGameResult } from '../engine/liveGame';
 import LiveGame from './LiveGame';
 import { copyLink } from './shareSave';
@@ -33,6 +33,8 @@ import {
   dealHint,
   dailyGame,
   DEAL_SIZE,
+  slotFloor,
+  spanById,
   fanVoteFive,
   type DailyJoker,
   type Lineup,
@@ -122,13 +124,15 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   // opponent (`dailyMeta` / `dailyGame`); a random board keeps PG→C and no Joker.
   const meta = useMemo(() => (daily ? dailyMeta(board.seed) : null), [daily, board.seed]);
   const dealt = useMemo(
-    () => (meta ? dailyGame(board.seed, meta) : { ...dailyBoard(board.seed), order: STARTER_SLOTS, joker: null as DailyJoker | null }),
+    () => (meta ? dailyGame(board.seed, meta) : { ...dailyBoard(board.seed), order: STARTER_SLOTS, jokers: [] as DailyJoker[] }),
     [meta, board.seed],
   );
   const pool: DailyPool = dealt.pool;
   const shotsCap = dealt.cap;
   const order = dealt.order;
-  const joker = dealt.joker;
+  const jokers = dealt.jokers;
+  const jokerAt = (slot: Position) => jokers.find((j) => j.slot === slot);
+  const isJokerCard = (span: PlayerSpan) => jokers.some((j) => j.card.id === span.id && j.slot === span.primaryPosition);
   // Streak rewards (cosmetic): the gold lever, gold reel frames and retro card backs, by best streak.
   const rewardClasses = useMemo(() => streakRewardClasses(currentStreak(daily ?? localDayKey()).best), [daily]);
   /** The live game: the daily plays the opponent of the day, a regular board the AI's five. The
@@ -138,7 +142,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
     if (meta) {
       const legends = legendLineup(meta.opponent);
       if (!legends) return null;
-      return simulateLiveGame(l, legends, expectedMargin(l, fanVoteFive(pool, shotsCap), legends), seedOf, joker?.span.id);
+      const tookJoker = jokers.find((j) => l[j.slot]?.id === j.card.id);
+      return simulateLiveGame(l, legends, expectedMargin(l, fanVoteFive(pool, shotsCap), legends), seedOf, tookJoker?.span.id);
     }
     if (!STARTER_SLOTS.every((s) => ai[s])) return null;
     return simulateLiveGame(l, ai, headToHeadMargin(l, ai), seedOf);
@@ -153,13 +158,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   }
   // The daily board already played today opens straight on its result.
   // While testing, a daily always opens on a fresh board.
-  const savedDaily = useMemo(() => {
-    const saved = daily && !DAILY_REPLAY_FOR_TESTING ? savedDailyLineup(daily, pool) : null;
-    // The Joker comes back at the price that was paid for him, not his lowest one.
-    const paid = daily ? savedDailyJokerPaid(daily) : null;
-    if (saved && joker && paid != null && saved[joker.slot]?.id === joker.span.id) saved[joker.slot] = { ...joker.span, fga: paid };
-    return saved;
-  }, [daily, pool, joker]);
+  const savedDaily = useMemo(() => (daily && !DAILY_REPLAY_FOR_TESTING ? savedDailyLineup(daily, pool, spanById) : null), [daily, pool]);
   const [lineup, setLineup] = useState<Lineup>(() => savedDaily ?? {});
   const [activeSlot, setActiveSlot] = useState<Position | null>(savedDaily ? null : order[0]);
   const [streak, setStreak] = useState<Streak | null>(() => (daily ? currentStreak(daily) : null));
@@ -168,8 +167,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   // gets the four cards of the position that didn't come to you.
   const [aiLineup, setAiLineup] = useState<Lineup>({});
   const [aiLog, setAiLog] = useState<string | null>(null);
-  // The round the daily Joker was bought in (he fills his position right away).
-  const [jokerBoughtRound, setJokerBoughtRound] = useState<number | null>(null);
+  // The daily Joker of the round just played, turned over once a card was picked.
+  const [jokerReveal, setJokerReveal] = useState<{ joker: DailyJoker; took: boolean } | null>(null);
   // Submitted in this visit: the game plays live. A daily reopened later opens on its final.
   const [justSubmitted, setJustSubmitted] = useState(false);
   // 2026-09-26, the user: "ograniczmy wybór do 5 graczy. Niech po każdym wyborze gracz widzi jacy
@@ -184,24 +183,23 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   // intro screen's own always-visible rules list is gone.
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
-  /** The picks made before `slot` in the day's order — the Joker too, if he was bought in an
-   * earlier round. */
+  /** The picks made before `slot` in the day's order. */
   const picksBefore = (slot: Position): Lineup => {
-    const idx = order.indexOf(slot);
     const before: Lineup = {};
-    for (const s of order.slice(0, idx)) if (lineup[s]) before[s] = lineup[s];
-    if (joker && jokerBoughtRound !== null && jokerBoughtRound < idx && lineup[joker.slot]) before[joker.slot] = lineup[joker.slot];
+    for (const s of order.slice(0, order.indexOf(slot))) if (lineup[s]) before[s] = lineup[s];
     return before;
   };
-  /** A position's deal: fixed by the picks before it (positions go in order, picks are final). */
-  const dealOf = (slot: Position): PlayerSpan[] => dealFor(pool, slot, picksBefore(slot), shotsCap);
-
-  // The daily Joker (2026-09-30, Draw Five, variant C): on the table from the first round, 12%
-  // cheaper every round, with a rising chance shown on his card that he leaves after this round.
-  const roundIdx = activeSlot ? order.indexOf(activeSlot) : order.length;
-  const jokerTaken = !!joker && lineup[joker.slot]?.id === joker.span.id;
-  const jokerOnTable = !!joker && !jokerTaken && !lineup[joker.slot] && roundIdx <= joker.availableUntil;
-  const jokerPrice = joker ? jokerPriceAt(joker.span.fga, roundIdx, joker.round) : 0;
+  /** A position's deal: fixed by the picks before it (positions go in order, picks are final). The
+   * daily deals five, one of them a face-down Joker in his rounds. */
+  const dealOf = (slot: Position): PlayerSpan[] => {
+    if (!daily) return dealFor(pool, slot, picksBefore(slot), shotsCap);
+    const j = jokerAt(slot);
+    const hand = dealFor(pool, slot, picksBefore(slot), shotsCap, j ? DAILY_HAND_SIZE - 1 : DAILY_HAND_SIZE);
+    if (!j) return hand;
+    const withJoker = [...hand];
+    withJoker.splice(Math.min(j.place, withJoker.length), 0, j.card);
+    return withJoker;
+  };
 
   const filledCount = STARTER_SLOTS.filter((s) => lineup[s]).length;
   const complete = filledCount === 5;
@@ -212,14 +210,17 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   // pick is final — no clearing, no re-opening a filled position. So a player who would leave the
   // positions still open unfillable under the cap (even at their cheapest dealt option) can't be
   // taken; his card says by how much he's over.
-  const cheapestLeft = (except: Position) =>
-    STARTER_SLOTS.filter((s) => s !== except && !lineup[s]).reduce((sum, s) => sum + Math.min(...pool.bySlot[s].map((p) => p.fga)), 0);
+  // 2026-09-30, the user ("nie powinno mnie blokować"): what the open positions must still cost is
+  // their cheapest player in the whole game — the later deals top up to fit (`dealFor`).
+  const cheapestLeft = (except: Position) => STARTER_SLOTS.filter((s) => s !== except && !lineup[s]).reduce((sum, s) => sum + slotFloor(s), 0);
   const overBy = (slot: Position, span: PlayerSpan) => shotsUsed + span.fga + cheapestLeft(slot) - shotsCap;
 
   function pick(slot: Position, span: PlayerSpan) {
     if (lineup[slot] || overBy(slot, span) > 1e-9) return;
     setLineup((prev) => ({ ...prev, [slot]: span }));
     if (!daily) aiTakes(slot);
+    const j = jokerAt(slot);
+    setJokerReveal(j ? { joker: j, took: span.id === j.card.id } : null);
     // Advance to the next still-empty slot, in the board's order; the picker closes after the last
     // one. A slot seen for the first time gets dealt.
     const nextEmpty = order.find((s) => s !== slot && !lineup[s]);
@@ -255,17 +256,6 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
     setAiLog(`AI drew ${hand.map((c) => shortenName(c.playerName, 0)).join(', ')} — took ${choice.playerName}.`);
   }
 
-  /** Daily: buy the Joker off the table at this round's price. He takes his position right away. */
-  function buyJoker() {
-    if (!joker || !jokerOnTable || freshSlot === activeSlot) return;
-    const span = { ...joker.span, fga: jokerPrice };
-    if (overBy(joker.slot, span) > 1e-9) return;
-    if (joker.slot === activeSlot) return pick(joker.slot, span);
-    setLineup((prev) => ({ ...prev, [joker.slot]: span }));
-    setRevealed((prev) => new Set(prev).add(joker.slot));
-    setJokerBoughtRound(roundIdx);
-  }
-
   function submit() {
     if (!complete || overCap) return;
     const next = resultFor(lineup, pool, shotsCap);
@@ -278,9 +268,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
       setStreak(
         recordDailyResult(daily, lineup, next.grade, next.score.composite, {
           game: match && meta ? { you: match.final[0], them: match.final[1], opponent: meta.opponent.short } : undefined,
-          joker: joker
-            ? { name: joker.span.playerName, span: joker.span.spanLabel, worth: joker.worth, paid: jokerTaken ? lineup[joker.slot]?.fga : undefined }
-            : undefined,
+          jokers: jokers.map((j) => ({ name: j.span.playerName, legend: j.legend, slot: j.slot })),
         }),
       );
     }
@@ -290,7 +278,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
     setLineup({});
     setAiLineup({});
     setAiLog(null);
-    setJokerBoughtRound(null);
+    setJokerReveal(null);
     setMatch(null);
     setJustSubmitted(false);
     setActiveSlot(order[0]);
@@ -338,7 +326,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
           </button>
         </p>
       )}
-      {daily && meta && !result && <DailyIntro joker={joker} opponent={meta.opponent} order={order} />}
+      {daily && meta && !result && <DailyIntro opponent={meta.opponent} order={order} />}
       <div className="bf-subhead">
         <span className="bf-subhead-actions">
           <button className="at-legend-toggle at-cond" onClick={() => setShowHowToPlay((v) => !v)}>
@@ -356,7 +344,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
           {daily ? (
             <>
               <li><b>Today’s order.</b> The daily board deals the positions in its own order, a different one every day.</li>
-              <li><b>The Joker.</b> One legend a day sits on the table from the first round. His price drops 12% every round — but after each round there’s a chance, shown on his card, that he leaves. Buy him on any turn and he takes his position right away.</li>
+              <li><b>Jokers.</b> The daily deals five cards a position. In {JOKERS_MIN} to {JOKERS_MAX} of the rounds one of them is a face-down Joker at the position’s middle price: even odds a legend or a scrub. You only find out who he is when you pick him.</li>
               <li><b>Game of the day.</b> Your five then plays a legendary team, live. The engine decides who’s better — beat the five biggest names on the board and you’ll usually beat them too.</li>
             </>
           ) : (
@@ -399,7 +387,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
                 >
                   <span className="bf-slot-pos at-cond">
                     {slot}
-                    {joker?.slot === slot && !s && <span className="bf-slot-joker" title="The Joker shows up here">🃏</span>}
+                    {s && isJokerCard(s) && <span className="bf-slot-joker" title="A Joker">🃏</span>}
                   </span>
                   {s ? <Face name={s.playerName} /> : <span className={`bf-face bf-face--sm bf-face--empty${dealt ? '' : ' bf-face--card'}`} aria-hidden />}
                   <span className="bf-slot-name">{s ? shortenName(s.playerName, 0) : dealt ? 'Tap to pick' : 'Face down'}</span>
@@ -430,20 +418,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
                 if (!hint) return null;
                 return <p className="bf-deal-hint">{DEAL_HINT[hint.need](hint.have)}</p>;
               })()}
-              {daily && joker && (
-                <JokerTable
-                  joker={joker}
-                  price={jokerPrice}
-                  onTable={jokerOnTable}
-                  taken={jokerTaken}
-                  roundIdx={roundIdx}
-                  canBuy={jokerOnTable && freshSlot !== activeSlot && overBy(joker.slot, { ...joker.span, fga: jokerPrice }) <= 1e-9}
-                  waiting={freshSlot === activeSlot}
-                  over={overBy(joker.slot, { ...joker.span, fga: jokerPrice })}
-                  shotsCap={shotsCap}
-                  onBuy={buyJoker}
-                />
-              )}
+              {jokerReveal && <JokerReveal {...jokerReveal} />}
               <DeckHand
                 key={`${pool.key}-${activeSlot}`}
                 slot={activeSlot}
@@ -454,6 +429,25 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
                   const chosen = lineup[activeSlot]?.id === span.id;
                   const over = overBy(activeSlot, span);
                   const blocked = over > 1e-9;
+                  // 2026-09-30: a Joker lies face down — who he is shows only once he's picked.
+                  if (jokerAt(activeSlot)?.card.id === span.id) {
+                    return (
+                      <button
+                        className={`bf-pool-card bf-joker-card${blocked ? ' is-locked' : ''}`}
+                        title="A Joker: even odds a legend or a scrub"
+                        disabled={blocked}
+                        onClick={() => pick(activeSlot, span)}
+                      >
+                        <span className="bf-joker-tag at-cond">🃏 Joker</span>
+                        <span className="bf-joker-q" aria-hidden>?</span>
+                        <span className="bf-pool-name">Legend or scrub?</span>
+                        <span className="bf-pool-meta">
+                          <ShotChip fga={span.fga} cap={shotsCap} />
+                        </span>
+                        <span className="bf-pool-box">50 / 50</span>
+                      </button>
+                    );
+                  }
                   return (
                     <button
                       className={`bf-pool-card ${chosen ? 'bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
@@ -525,7 +519,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
           onNextStep={onNextStep}
           seed={board.seed}
           challenge={challenge && challenge.seed === board.seed ? challenge : undefined}
-          joker={joker}
+          jokers={jokers}
           opponent={meta?.opponent ?? aiOpponent(aiLineup)}
           match={match}
           fresh={justSubmitted}
@@ -535,8 +529,9 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   );
 }
 
-/** Milliseconds between two cards turning over. */
-const FLIP_STEP_MS = 180;
+/** Milliseconds between two cards leaving the deck, and one card's flight (land + turn over). */
+const DEAL_STEP_MS = 170;
+const DEAL_FLIGHT_MS = 640;
 
 function prefersReducedMotion(): boolean {
   try {
@@ -547,10 +542,47 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * 2026-09-30, the user (Draw Five: "zmieniamy slot machine na deck kart"): a position's four come off
- * the deck — the hand waits face down until "Draw", then turns over card by card. The mechanics are
- * the slot machine's (a reactive four-card deal per position, picks final); only the table changed.
- * A position you come back to shows its cards face up. Reduced motion turns them over at once.
+ * One dealt card. 2026-09-30, the user chose deal animation A from the card-motion mockup: the card
+ * leaves the deck face down, flies to its place and turns over as it lands.
+ */
+function DealtCard({ pile, fly, children }: { pile: RefObject<HTMLDivElement | null>; fly: boolean; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const backRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const from = pile.current;
+    if (!fly || !el || !from || typeof el.animate !== 'function') return;
+    const a = from.getBoundingClientRect();
+    const b = el.getBoundingClientRect();
+    const dx = a.left + a.width / 2 - (b.left + b.width / 2);
+    const dy = a.top + a.height / 2 - (b.top + b.height / 2);
+    const scale = Math.min(1, a.width / Math.max(1, b.width));
+    el.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px) scale(${scale}) rotate(-6deg)` },
+        { transform: 'translate(0, 0) scale(1) rotate(0deg)', offset: 0.55 },
+        { transform: 'scaleX(0.02)', offset: 0.7 },
+        { transform: 'none' },
+      ],
+      { duration: DEAL_FLIGHT_MS, easing: 'cubic-bezier(0.2, 0.8, 0.25, 1)' },
+    );
+    backRef.current?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.69 }, { opacity: 0, offset: 0.7 }, { opacity: 0 }], { duration: DEAL_FLIGHT_MS, fill: 'none' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <div ref={ref} className="bf-hand-face">
+      {children}
+      <span ref={backRef} className="bf-fly-back" aria-hidden />
+    </div>
+  );
+}
+
+/**
+ * 2026-09-30, the user (Draw Five: "zmieniamy slot machine na deck kart"): a position's cards come
+ * off the deck — the hand waits face down until "Draw", then each card flies from the deck and turns
+ * over (deal animation A). The mechanics are the slot machine's (a reactive deal per position, picks
+ * final); only the table changed. A position you come back to shows its cards face up. Reduced
+ * motion deals them face up at once.
  */
 function DeckHand({
   slot,
@@ -560,13 +592,14 @@ function DeckHand({
   renderCard,
 }: {
   slot: Position;
-  /** The position's deal (`dealFor`). */
+  /** The position's deal (`dealFor`; five cards in the daily). */
   cards: PlayerSpan[];
   /** First visit to this position: the hand waits face down for "Draw". */
   fresh: boolean;
   onDone: () => void;
   renderCard: (span: PlayerSpan) => ReactNode;
 }) {
+  const pile = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(fresh ? 0 : cards.length);
   const [drawing, setDrawing] = useState(false);
   useEffect(() => {
@@ -579,31 +612,42 @@ function DeckHand({
   useEffect(() => {
     if (!drawing) return;
     if (shown >= cards.length) {
-      const t = window.setTimeout(onDone, 350);
+      const t = window.setTimeout(onDone, DEAL_FLIGHT_MS);
       return () => window.clearTimeout(t);
     }
-    const t = window.setTimeout(() => setShown((n) => n + 1), shown === 0 ? 120 : FLIP_STEP_MS);
+    const t = window.setTimeout(() => setShown((n) => n + 1), shown === 0 ? 60 : DEAL_STEP_MS);
     return () => window.clearTimeout(t);
   }, [drawing, shown, cards.length, onDone]);
   const allUp = shown >= cards.length;
   return (
     <div className={`bf-deck${allUp ? ' is-open' : ''}`}>
       <div className="bf-deck-table">
-        <div className="bf-hand">
+        <div className={`bf-hand${cards.length > 4 ? ' is-5' : ''}`}>
           {cards.map((card, i) => (
-            <div key={card.id} className={`bf-hand-card${i < shown ? ' is-up' : ''}`} style={{ '--i': i } as CSSProperties}>
-              {i < shown ? <div className="bf-hand-face">{renderCard(card)}</div> : <div className="bf-hand-back" aria-hidden />}
+            <div key={card.id} className="bf-hand-card">
+              {i < shown ? (
+                <DealtCard pile={pile} fly={drawing}>
+                  {renderCard(card)}
+                </DealtCard>
+              ) : (
+                <div className="bf-hand-back" aria-hidden />
+              )}
             </div>
           ))}
         </div>
       </div>
       <div className="bf-deck-foot" aria-live="polite">
+        <div className="bf-pile" ref={pile} aria-hidden>
+          <span />
+          <span />
+          <span />
+        </div>
         {fresh && !drawing && !allUp ? (
           <button type="button" className="primary-btn bf-draw-btn" onClick={() => setDrawing(true)}>
-            Draw four {SLOT_LABEL[slot].toLowerCase()}s
+            Draw {cards.length} {SLOT_LABEL[slot].toLowerCase()}s
           </button>
         ) : !allUp ? (
-          <span>Drawing…</span>
+          <span>Dealing…</span>
         ) : (
           <span>Pick one — picks are final.</span>
         )}
@@ -677,7 +721,7 @@ function BestFiveResult({
   onNextStep,
   seed,
   challenge,
-  joker,
+  jokers,
   opponent,
   match,
   fresh,
@@ -693,7 +737,7 @@ function BestFiveResult({
   onNextStep?: () => void;
   seed: string;
   challenge?: ModeChallenge;
-  joker?: DailyJoker | null;
+  jokers?: DailyJoker[];
   opponent?: LegendFive;
   match?: LiveGameResult | null;
   /** Just submitted (the game plays live); a daily reopened later shows its final straight away. */
@@ -740,7 +784,7 @@ function BestFiveResult({
   return (
     <div className="at-card bf-result">
       {match && opponent && <LiveGame game={match} opponent={opponent} autoStart={Boolean(fresh)} />}
-      {daily && joker && <JokerLine joker={joker} took={lineup[joker.slot]?.id === joker.span.id} />}
+      {daily && jokers && <JokerRecap jokers={jokers} lineup={lineup} />}
       {/* 2026-09-27, the user: "wynik nie pokazuje od razu" — grade and the three numbers land
           together in one scoreboard, no staged wait. */}
       <div className={`bf-grade bf-grade--${grade}`}>
@@ -971,21 +1015,19 @@ function BestFiveResult({
 
 /** 2026-09-28, Daily Slot Machine 2.0: what the day is known by before the first pull — the Joker
  * (announced in full, so saving caps for him is a plan, not luck) and the opponent. */
-function DailyIntro({ joker, opponent, order }: { joker: DailyJoker | null; opponent: LegendFive; order: Position[] }) {
+function DailyIntro({ opponent, order }: { opponent: LegendFive; order: Position[] }) {
   return (
     <div className="bf-daily-intro">
-      {joker && (
-        <div className="bf-daily-banner bf-daily-banner--joker">
-          <span className="bf-daily-banner-k at-cond">🃏 Tonight’s Joker</span>
-          <span className="bf-daily-banner-v">
-            {joker.span.playerName} <span className="bf-daily-banner-chip">{joker.span.spanLabel}</span>
-          </span>
-          <span className="bf-daily-banner-d">
-            On the table from the first round. Plays <b>{joker.slot}</b> (pick {joker.round + 1} of 5). Starts at{' '}
-            <b>{joker.span.fga.toFixed(1)} caps</b>, 12% cheaper every round — but he may leave the table after any round.
-          </span>
-        </div>
-      )}
+      <div className="bf-daily-banner bf-daily-banner--joker">
+        <span className="bf-daily-banner-k at-cond">🃏 Jokers in the deck</span>
+        <span className="bf-daily-banner-v">
+          {JOKERS_MIN}–{JOKERS_MAX} face-down cards today
+        </span>
+        <span className="bf-daily-banner-d">
+          Five cards a position. Somewhere in today’s hands, a gold card at the position’s middle price: <b>50% a legend</b>,{' '}
+          <b>50% a scrub</b>. You find out when you pick him.
+        </span>
+      </div>
       <div className="bf-daily-banner bf-daily-banner--opp">
         <span className="bf-daily-banner-k at-cond">Game of the day</span>
         <span className="bf-daily-banner-v">{opponent.name}</span>
@@ -997,21 +1039,21 @@ function DailyIntro({ joker, opponent, order }: { joker: DailyJoker | null; oppo
   );
 }
 
-/** The Joker's verdict — only on your own result, never in the shared line. */
-function JokerLine({ joker, took }: { joker: DailyJoker; took: boolean }) {
-  const name = joker.span.playerName;
-  const edge = Math.abs(joker.edge);
-  const text = took
-    ? joker.worth
-      ? `Joker: worth it. The best five took ${name} too.`
-      : `Joker: too pricey today. The best five skipped ${name} and spread those caps around${edge ? ` (${edge} points better)` : ''}.`
-    : joker.worth
-      ? `Joker: you passed. The best five saved up for ${name}${edge ? ` (+${edge})` : ''}.`
-      : `Joker: right call. The best five skipped ${name} too.`;
+/** The day's Jokers turned over — only on your own result, never in the shared line. */
+function JokerRecap({ jokers, lineup }: { jokers: DailyJoker[]; lineup: Lineup }) {
+  if (jokers.length === 0) return null;
   return (
-    <p className={`bf-joker-line${took ? ' is-took' : ''}`}>
-      🃏 {text}
-    </p>
+    <div className="bf-joker-line">
+      {jokers.map((j) => {
+        const took = lineup[j.slot]?.id === j.card.id;
+        return (
+          <p key={j.slot} className={took ? 'is-took' : undefined}>
+            🃏 {j.slot} Joker: <b>{j.span.playerName}</b> {j.span.spanLabel} — {j.legend ? 'a legend' : 'a scrub'}.{' '}
+            {took ? (j.legend ? 'You hit the jackpot.' : 'You drew the short straw.') : j.legend ? 'You left him on the table.' : 'You dodged him.'}
+          </p>
+        );
+      })}
+    </div>
   );
 }
 
@@ -1077,74 +1119,12 @@ function aiOpponent(ai: Lineup): LegendFive | undefined {
   };
 }
 
-/**
- * 2026-09-30, the user (Draw Five, Joker variant C, "rosnąca szansa na karcie, -12% ok"): the daily
- * Joker on the table — his price this round, what he'll cost next round, and the chance he leaves
- * after this round. Bought on any turn once the hand is drawn; he takes his position right away.
- */
-function JokerTable({
-  joker,
-  price,
-  onTable,
-  taken,
-  roundIdx,
-  canBuy,
-  waiting,
-  over,
-  shotsCap,
-  onBuy,
-}: {
-  joker: DailyJoker;
-  price: number;
-  onTable: boolean;
-  taken: boolean;
-  roundIdx: number;
-  canBuy: boolean;
-  waiting: boolean;
-  over: number;
-  shotsCap: number;
-  onBuy: () => void;
-}) {
-  const span = joker.span;
-  const lastChance = roundIdx >= joker.round;
-  const leave = !lastChance ? JOKER_LEAVE_CHANCE[roundIdx] : null;
-  const next = jokerPriceAt(span.fga, roundIdx + 1, joker.round);
-  const state = taken ? 'is-taken' : onTable ? '' : 'is-gone';
+/** 2026-09-30: the Joker of the round just played, turned over once a card was picked. */
+function JokerReveal({ joker, took }: { joker: DailyJoker; took: boolean }) {
   return (
-    <div className={`bf-joker-table ${state}`}>
-      <Face name={span.playerName} size="md" />
-      <div className="bf-joker-body">
-        <span className="bf-joker-tag at-cond">🃏 Joker · {joker.slot}</span>
-        <span className="bf-pool-name">{span.playerName}</span>
-        <EraYears span={span} className="bf-pool-season" />
-        <span className="bf-pool-box">{boxLineShort(span)}</span>
-        {taken ? (
-          <span className="bf-joker-state is-yours">Yours — he plays {joker.slot}.</span>
-        ) : !onTable ? (
-          <span className="bf-joker-state">He left the table.</span>
-        ) : (
-          <>
-            <span className="bf-joker-price">
-              <ShotChip fga={price} cap={shotsCap} />
-              {price < span.fga && <s>{span.fga.toFixed(1)}</s>}
-            </span>
-            <span className="bf-joker-odds">
-              {lastChance ? (
-                <>Last chance — he leaves after this round.</>
-              ) : (
-                <>
-                  Next round: {next.toFixed(1)} caps · <b>{Math.round((leave ?? 0) * 100)}%</b> he leaves after this round
-                </>
-              )}
-            </span>
-          </>
-        )}
-      </div>
-      {onTable && !taken && (
-        <button type="button" className="bf-joker-buy" disabled={!canBuy} onClick={onBuy}>
-          {waiting ? 'Draw first' : over > 1e-9 ? `${over.toFixed(1)} caps short` : `Buy · ${price.toFixed(1)}`}
-        </button>
-      )}
-    </div>
+    <p className={`bf-joker-reveal${joker.legend ? ' is-legend' : ' is-scrub'}`} role="status">
+      🃏 The {joker.slot} Joker was <b>{joker.span.playerName}</b> {joker.span.spanLabel} — {joker.legend ? 'a legend' : 'a scrub'}.{' '}
+      {took ? (joker.legend ? 'Jackpot.' : 'Ouch.') : joker.legend ? 'He got away.' : 'Good dodge.'}
+    </p>
   );
 }

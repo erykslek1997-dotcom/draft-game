@@ -1,4 +1,4 @@
-import type { Position } from '../data/schema';
+import type { PlayerSpan, Position } from '../data/schema';
 import type { DailyPool, GolfGrade, Lineup } from '../engine/bestFive';
 
 /**
@@ -19,12 +19,11 @@ export interface DailyGameRecord {
   them: number;
   opponent: string;
 }
+/** 2026-09-30: a daily Joker as it turned out — shown on the menu the next day. */
 export interface DailyJokerRecord {
   name: string;
-  span: string;
-  worth: boolean;
-  /** What was paid for him, if he was bought (Draw Five: his price drops every round). */
-  paid?: number;
+  legend: boolean;
+  slot: Position;
 }
 
 interface DailyEntry {
@@ -32,7 +31,7 @@ interface DailyEntry {
   grade: GolfGrade;
   composite: number;
   game?: DailyGameRecord;
-  joker?: DailyJokerRecord;
+  jokers?: DailyJokerRecord[];
 }
 
 export interface Streak {
@@ -96,24 +95,21 @@ export function dailyEntry(today: string): { grade: GolfGrade; composite: number
   return entry ? { grade: entry.grade, composite: entry.composite, game: entry.game } : null;
 }
 
-/** What today's Joker was bought for, if he was — so a reopened daily shows the price paid. */
-export function savedDailyJokerPaid(today: string): number | null {
-  return read().daily[today]?.joker?.paid ?? null;
-}
-
-/** Yesterday's Joker, if yesterday's board was played — shown on the menu the day after, so today's
- * result never gives away whether today's Joker is worth it. */
-export function yesterdayJoker(today: string): DailyJokerRecord | null {
-  return read().daily[previousDay(today)]?.joker ?? null;
+/** Yesterday's Jokers, if yesterday's board was played — shown on the menu the day after, so
+ * today's result never gives away who today's Jokers are. */
+export function yesterdayJokers(today: string): DailyJokerRecord[] {
+  return read().daily[previousDay(today)]?.jokers ?? [];
 }
 
 /** Today's already-submitted lineup, rebuilt from the day's pool, or null if not played yet. */
-export function savedDailyLineup(today: string, pool: DailyPool): Lineup | null {
+export function savedDailyLineup(today: string, pool: DailyPool, resolve?: (id: string) => PlayerSpan | undefined): Lineup | null {
   const entry = read().daily[today];
   if (!entry) return null;
   const lineup: Lineup = {};
   for (const slot of STARTER_SLOTS) {
-    const span = pool.bySlot[slot].find((s) => s.id === entry.lineupIds[slot]);
+    // A pick can also be a cheap player the deal topped up with from outside the board.
+    const id = entry.lineupIds[slot];
+    const span = pool.bySlot[slot].find((s) => s.id === id) ?? (id ? resolve?.(id) : undefined);
     if (!span) return null;
     lineup[slot] = span;
   }
@@ -126,7 +122,7 @@ export function recordDailyResult(
   lineup: Lineup,
   grade: GolfGrade,
   composite: number,
-  extra: { game?: DailyGameRecord; joker?: DailyJokerRecord } = {},
+  extra: { game?: DailyGameRecord; jokers?: DailyJokerRecord[] } = {},
 ): Streak {
   const progress = read();
   if (progress.daily[today]) return currentStreak(today);

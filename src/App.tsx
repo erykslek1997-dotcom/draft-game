@@ -14,9 +14,9 @@ import DraftLottery from './components/DraftLottery';
 import { CapsInfoHost } from './components/CapIcon';
 import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
 import { takeModeChallengeFromUrl, type ModeChallenge } from './modeChallenge';
-import { DAILY_REPLAY_FOR_TESTING, currentStreak, dailyEntry, dailySeed, localDayKey, yesterdayJoker } from './components/dailyProgress';
+import { DAILY_REPLAY_FOR_TESTING, currentStreak, dailyEntry, dailySeed, localDayKey, yesterdayJokers } from './components/dailyProgress';
 // Seed-only (rng + a list of names): safe for the menu, which must not pull the engine in.
-import { dailyMeta } from './engine/dailyMeta';
+import { dailyMeta, JOKERS_MAX, JOKERS_MIN } from './engine/dailyMeta';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
 /**
@@ -74,7 +74,7 @@ function DailyStrip({ onPlay }: { onPlay: () => void }) {
   // 2026-09-28, Daily Slot Machine 2.0: the opponent and where the Joker shows up are known from the
   // seed alone (`dailyMeta` is rng-only, no engine), but never the Joker's name — that's on the board.
   const meta = dailyMeta(dailySeed(today));
-  const yesterday = yesterdayJoker(today);
+  const yesterday = yesterdayJokers(today);
   const game = played?.game;
   return (
     <button type="button" className={`mode-card-daily${played ? ' is-played' : ''}${streak.best >= 3 ? ' is-hot' : ''}`} onClick={onPlay}>
@@ -91,13 +91,19 @@ function DailyStrip({ onPlay }: { onPlay: () => void }) {
           </>
         ) : (
           <>
-            Tonight: <b>vs {meta.opponent.short}</b> · 🃏 Joker at <b>{meta.jokerSlot}</b>
+            Tonight: <b>vs {meta.opponent.short}</b> · 🃏 {JOKERS_MIN}–{JOKERS_MAX} Jokers in the deck
           </>
         )}
       </span>
-      {yesterday && (
+      {yesterday.length > 0 && (
         <span className="mode-card-daily-meta">
-          Yesterday’s Joker: <b>{yesterday.name}</b> — {yesterday.worth ? 'the best five took him.' : 'the best five skipped him.'}
+          Yesterday’s {yesterday.length > 1 ? 'Jokers' : 'Joker'}:{' '}
+          {yesterday.map((j, i) => (
+            <span key={j.slot}>
+              {i > 0 && ' · '}
+              <b>{j.name}</b> ({j.legend ? 'legend' : 'scrub'})
+            </span>
+          ))}
         </span>
       )}
     </button>

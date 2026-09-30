@@ -1,14 +1,15 @@
-import { boardTargets, dailyGame, dealFor, fanVoteFive, type Lineup } from '../src/engine/bestFive';
-import { dailyMeta, jokerPriceAt, LEGEND_FIVES } from '../src/engine/dailyMeta';
-import { expectedMargin, legendLineup, simulateLiveGame } from '../src/engine/liveGame';
+import { boardTargets, dailyGame, dealFor, fanVoteFive, lineupShots, slotFloor, type Lineup } from '../src/engine/bestFive';
+import { allStarCount } from '../src/engine/allStarLookup';
+import { DAILY_HAND_SIZE, dailyMeta, JOKERS_MAX, JOKERS_MIN, LEGEND_FIVES } from '../src/engine/dailyMeta';
+import { CLEAR_FAVOURITE, expectedMargin, legendLineup, simulateLiveGame } from '../src/engine/liveGame';
 import { STARTER_SLOTS } from '../src/engine/positions';
 
 /**
- * Daily Slot Machine 2.0 (2026-09-28): the Joker, the daily position order and the live game
- * against the opponent of the day. Pins that every legend five resolves, the Joker never comes in
- * the first two positions and is never dealt (since Draw Five he sits on the table at a dropping
- * price), the live game lands on the model's margin on average, and its box score always adds up to
- * the final.
+ * The daily and the live game. Pins that every legend five resolves; the daily's hidden Jokers (1–3
+ * a day, each a legend or a scrub at his position, at the position's middle price, never dealt by
+ * `dealFor` — BestFive.tsx lays his card in the hand); that a deal always leaves a card the caps can
+ * pay for, however much was spent before (the top-up, 2026-09-30); that a clear favourite always
+ * wins the live game; and that its box score adds up to the final.
  */
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`FAIL: ${message}`);
@@ -19,30 +20,37 @@ for (const legend of LEGEND_FIVES) check(legendLineup(legend) !== null, `${legen
 
 const DAYS = 8;
 const start = new Date('2026-11-01T12:00:00Z');
-let worth = 0;
+let legendJokers = 0;
+let jokerCount = 0;
 for (let i = 0; i < DAYS; i++) {
   const seed = `daily:${new Date(start.getTime() + i * 864e5).toISOString().slice(0, 10)}`;
   const meta = dailyMeta(seed);
   check(meta.order.slice().sort().join() === [...STARTER_SLOTS].sort().join(), `${seed}: the order deals every position once`);
-  check(meta.order.indexOf(meta.jokerSlot) >= 2, `${seed}: the Joker is not in the first two positions`);
   const game = dailyGame(seed, meta);
-  check(game.joker !== null, `${seed}: there is a Joker`);
-  const joker = game.joker!;
-  if (joker.worth) worth++;
-  check(joker.availableUntil <= joker.round && (meta.jokerLeavesAfter === null || joker.availableUntil === Math.min(meta.jokerLeavesAfter, joker.round)), `${seed}: the Joker is on the table until round ${joker.availableUntil + 1}`);
-  check(joker.bestPrice <= joker.span.fga && joker.bestPrice === jokerPriceAt(joker.span.fga, joker.availableUntil, joker.round), `${seed}: best price ${joker.bestPrice} (full ${joker.span.fga})`);
-  const targets = boardTargets(game.pool, game.cap);
-  check(joker.worth === (targets.optimalFive[joker.slot].id === joker.span.id), `${seed}: "worth it" matches whether the best five takes him`);
-  // Follow the best five in the day's order.
+  const { jokers } = game;
+  check(jokers.length >= JOKERS_MIN && jokers.length <= JOKERS_MAX && new Set(jokers.map((j) => j.slot)).size === jokers.length, `${seed}: ${jokers.length} Jokers, each in his own round`);
+  for (const j of jokers) {
+    jokerCount++;
+    if (j.legend) legendJokers++;
+    check(j.span.primaryPosition === j.slot && meta.order[j.round] === j.slot, `${seed}: the ${j.slot} Joker plays his round's position`);
+    check(j.legend ? allStarCount(j.span.playerName) >= 6 : allStarCount(j.span.playerName) < 6, `${seed}: ${j.span.playerName} is ${j.legend ? 'a legend' : 'a scrub'}`);
+    check(j.card.fga === j.price && j.card.id === j.span.id && j.place >= 0 && j.place < DAILY_HAND_SIZE, `${seed}: his card costs the flat ${j.price}`);
+  }
+  // Spend big: take the dearest card that still leaves the cheapest players in the game for the
+  // rest; every deal must still hold a card the caps can pay for.
   const lineup: Lineup = {};
   for (const slot of meta.order) {
-    const hand = dealFor(game.pool, slot, lineup, game.cap);
-    check(hand.length === 4 && hand.every((c) => c.id !== joker.span.id), `${seed}: ${slot} deals four, never the Joker (he sits on the table)`);
-    lineup[slot] = targets.optimalFive[slot];
+    const hand = dealFor(game.pool, slot, lineup, game.cap, DAILY_HAND_SIZE - (jokers.some((j) => j.slot === slot) ? 1 : 0));
+    check(hand.every((c) => !jokers.some((j) => j.card.id === c.id)), `${seed}: ${slot} never deals a Joker itself`);
+    const floorRest = STARTER_SLOTS.filter((s) => s !== slot && !lineup[s]).reduce((sum, s) => sum + slotFloor(s), 0);
+    const affordable = hand.filter((c) => lineupShots(lineup) + c.fga + floorRest <= game.cap + 1e-9);
+    check(affordable.length >= 1, `${seed}: after spending big, the ${slot} deal still has ${affordable.length} affordable card(s)`);
+    lineup[slot] = [...affordable].sort((a, b) => b.fga - a.fga)[0];
   }
+  check(lineupShots(lineup) <= game.cap + 1e-9, `${seed}: the big spender still ends under the cap (${lineupShots(lineup).toFixed(1)} / ${game.cap})`);
   check(dailyGame(seed, meta) === game, `${seed}: the same seed, the same game`);
 }
-console.log(`Joker worth it on ${worth}/${DAYS} days`);
+console.log(`Jokers: ${legendJokers} legends of ${jokerCount}`);
 
 // The live game: margin on average, box score adds up, deterministic.
 const seed = 'daily:2026-11-01';
@@ -53,21 +61,28 @@ const legends = legendLineup(meta.opponent)!;
 const fan = fanVoteFive(game.pool, game.cap);
 const m = expectedMargin(targets.optimalFive, fan, legends);
 check(m > expectedMargin(fan, fan, legends), 'the best five is a bigger favourite than the fan-vote five');
-for (const target of [-12, 0, 10]) {
+{
+  // A close game is open: with no edge, the sides split about evenly and land level on average.
   let sum = 0;
   const N = 300;
   for (let i = 0; i < N; i++) {
-    const r = simulateLiveGame(targets.optimalFive, legends, target, `calib-${target}-${i}`);
+    const r = simulateLiveGame(targets.optimalFive, legends, 0, `calib-0-${i}`);
     sum += r.final[0] - r.final[1];
   }
-  const avg = sum / N;
-  console.log(`target ${target}: average margin ${avg.toFixed(1)}`);
-  // The tilt is one constant for every pair of fives, so how far a blowout lands varies a little
-  // with who's playing; within 3.5 points of the model is the bar.
-  check(Math.abs(avg - target) <= 3.5, `a ${target}-point favourite wins by about ${target} on average`);
+  console.log(`even game: average margin ${(sum / N).toFixed(1)}`);
+  check(Math.abs(sum / N) <= 3.5, 'an even game lands about level on average');
 }
-const a = simulateLiveGame(targets.optimalFive, legends, m, seed, game.joker?.span.id);
-const b = simulateLiveGame(targets.optimalFive, legends, m, seed, game.joker?.span.id);
+for (const target of [-12, -CLEAR_FAVOURITE, CLEAR_FAVOURITE, 10]) {
+  let wins = 0;
+  const N = 60;
+  for (let i = 0; i < N; i++) {
+    const r = simulateLiveGame(targets.optimalFive, legends, target, `clear-${target}-${i}`);
+    if ((r.final[0] > r.final[1]) === target > 0) wins++;
+  }
+  check(wins === N, `a clear ${Math.abs(target)}-point favourite wins every game (${wins}/${N})`);
+}
+const a = simulateLiveGame(targets.optimalFive, legends, m, seed);
+const b = simulateLiveGame(targets.optimalFive, legends, m, seed);
 check(a.final.join() === b.final.join() && a.moments.length === b.moments.length, 'the same five on the same day plays the same game');
 for (const side of [0, 1] as const) {
   const pts = Object.values(a.box[side]).reduce((sum, l) => sum + l.pts, 0);
