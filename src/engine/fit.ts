@@ -149,6 +149,11 @@ const FRONTCOURT_SPACING_FLOOR = 40;
 /** A frontcourt non-shooter at or above this O-TAL is a real paint scorer (see `paintOverlapPenalty`). */
 const PAINT_SCORER_OTAL_FLOOR = 70;
 const PAINT_OVERLAP_PENALTY = 7;
+const BALL_DOMINANT_DEMAND_FLOOR = 0.3;
+const BALL_DOMINANT_DEMAND_RANGE = 0.4;
+const OFF_BALL_SHOOTING_FULL = 55;
+const OFF_BALL_MIDRANGE_SHARE = 0.25;
+const OFF_BALL_NON_SHOOTER_COST = 14;
 /** Hoisted out of `fitScore`'s body (2026-09-16) and exported so `scoring.ts`'s `offenseScore`
  * blend can apply the SAME "elite playmaking engine" gate to its own raw-spacing term — see that
  * function's own docstring for why. Values and meaning unchanged from where they used to live
@@ -245,6 +250,8 @@ export interface FitScoreInputs {
   positionAdjustedAthleticismPercentile: number | null;
   functionalSizePercentile: number | null;
   additionalRoleCredits: string[];
+  /** Points taken off the weighted blend for paint overlap and for ball-dominant non-shooters. */
+  lineupPenalty: number;
   championshipArchetypes: ChampionshipStructureResult['archetypes'];
   primaryArchetype?: ChampionshipStructureResult['primaryArchetype'];
   secondaryArchetype?: ChampionshipStructureResult['secondaryArchetype'];
@@ -663,6 +670,7 @@ export function fitScore(team: Team): FitScoreResult {
         positionAdjustedAthleticismPercentile: null,
         functionalSizePercentile: null,
         additionalRoleCredits: [],
+        lineupPenalty: 0,
       championshipArchetypes: [],
       primaryArchetype: undefined,
       secondaryArchetype: undefined,
@@ -943,10 +951,31 @@ export function fitScore(team: Team): FitScoreResult {
       computeOffensiveTalent(player) >= PAINT_SCORER_OTAL_FLOOR,
   );
   const paintOverlapPenalty = Math.max(0, paintScorers.length - 1) * PAINT_OVERLAP_PENALTY;
+  // 2026-09-30, engine calibration session 4 (the user, on Oscar Robertson + LeBron James: "chodzi o
+  // dwóch ball dominant kiedy jeden z nich nie rzuca"): two perimeter starters who both need the
+  // ball take turns off it, and one who can't shoot from outside then lets his man sag into the
+  // paint. Charged per starter: how ball-dominant he is x how ball-dominant the other one is x how
+  // far his off-ball shooting falls short (3PT spacing; midrange counts a quarter off the ball).
+  const perimeterIndices = starterEntries.map((entry, index) => (entry.slot === 'PF' || entry.slot === 'C' ? -1 : index)).filter((index) => index >= 0);
+  const ballDominance = demandByPlayer.map((demand) => clamp((demand - BALL_DOMINANT_DEMAND_FLOOR) / BALL_DOMINANT_DEMAND_RANGE, 0, 1));
+  let offBallPenalty = 0;
+  const offBallLiabilities: string[] = [];
+  for (const i of perimeterIndices) {
+    const other = Math.max(0, ...perimeterIndices.filter((j) => j !== i).map((j) => ballDominance[j]));
+    const three = computeSpacing(starters[i]);
+    const offBallShooting = three + OFF_BALL_MIDRANGE_SHARE * Math.max(0, teamSpacingValue(starters[i]) - three);
+    const shortfall = clamp((OFF_BALL_SHOOTING_FULL - offBallShooting) / OFF_BALL_SHOOTING_FULL, 0, 1);
+    const cost = ballDominance[i] * other * shortfall * OFF_BALL_NON_SHOOTER_COST;
+    if (cost >= 2) offBallLiabilities.push(starters[i].playerName);
+    offBallPenalty += cost;
+  }
+  if (offBallLiabilities.length > 0) {
+    notes.push(`${offBallLiabilities.join(' and ')} ${offBallLiabilities.length > 1 ? 'need' : 'needs'} the ball but can't space the floor when a teammate has it.`);
+  }
   if (paintOverlapPenalty > 0) {
     notes.push(`${paintScorers.map(({ player }) => player.playerName).join(' and ')} both score in the paint without an outside shot.`);
   }
-  const score = Math.round(clamp(weightedScore - spacingBottleneckPenalty - paintOverlapPenalty));
+  const score = Math.round(clamp(weightedScore - spacingBottleneckPenalty - paintOverlapPenalty - offBallPenalty));
   if (spacingBottleneckPenalty >= 2) {
     notes.push(`Spacing compatibility caps overall fit (-${Math.round(spacingBottleneckPenalty)}).`);
   }
@@ -987,6 +1016,7 @@ export function fitScore(team: Team): FitScoreResult {
       positionAdjustedAthleticismPercentile,
       functionalSizePercentile,
       additionalRoleCredits,
+      lineupPenalty: paintOverlapPenalty + offBallPenalty,
       championshipArchetypes: championshipStructure.archetypes,
       primaryArchetype: championshipStructure.primaryArchetype,
       secondaryArchetype: championshipStructure.secondaryArchetype,

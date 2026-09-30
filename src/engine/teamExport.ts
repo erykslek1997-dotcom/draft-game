@@ -6,7 +6,7 @@ import { teamSpacingValue } from './midrangeGravity';
 import { maxSustainableMinutes } from './durability';
 import { overallTierForSpan } from './grades';
 import { MAX_MINUTES_PER_PLAYER } from './rotation';
-import { fitScore } from './fit';
+import { fitScore, FIT_WEIGHTS } from './fit';
 import { allAssignments } from './rotation';
 import { computeDefensiveTalent, computeOffensiveTalent } from './talent';
 import { computeSpacing } from './spacing';
@@ -43,14 +43,17 @@ export function exportLeagueText(
       `Offense: raw ${off.raw.toFixed(1)} · O-TAL ${r(off.otal)} · Creation ${r(c.creationStructure)} · Spacing fit ${r(off.spacing)} · Rim ${r(c.rimPressureTeam)} · Playmaking ${r(off.playmaking)} · Self-creation ${r(off.selfCreation)} · Mismatch ${r(off.mismatchStructure)}`,
     );
     lines.push(
-      `Defense: D-TAL ${r(teamDefensiveTalentScore(team))} · Coverage ${r(c.defensiveRoleCoverage)} · Switch ${r(c.switchability)} · Hunt ${r(c.huntResistance)} · Reb ${r(c.reboundingBalance)}`,
+      `Defense: D-TAL ${r(teamDefensiveTalentScore(team))} · Coverage ${r(c.defensiveRoleCoverage)} · Switch ${r(c.switchability)} · Hunt ${r(c.huntResistance)} · Cohesion ${r(c.defensiveCohesion)} · Reb ${r(c.reboundingBalance)}`,
     );
     const style = teamStyleFor(fit.inputs.primaryArchetype, fit.inputs.secondaryArchetype, fit.inputs.archetypeReport?.failureMode ?? null, b.defenseScore, b.offenseScore);
     const archetypes = [fit.inputs.primaryArchetype, fit.inputs.secondaryArchetype]
       .filter((a) => a && (a !== 'Defensive superteam' || defenseFirstBacked(b.defenseScore, b.offenseScore)))
       .map((a) => archetypeDisplayName(a as string));
     lines.push(`Style: ${style.label ?? '—'}${archetypes.length ? ` (${archetypes.join(' + ')})` : ''}${style.failureMode ? ` · risk: ${style.failureMode}` : ''}`);
-    lines.push(`Fit: ${Object.entries(c).map(([k, v]) => `${k} ${r(v)}`).join(' · ')}`);
+    // Hunt and cohesion carry no Fit weight (Defense applies them), so they sit on the Defense line.
+    const weighted = Object.entries(c).filter(([k]) => FIT_WEIGHTS[k as keyof typeof FIT_WEIGHTS] > 0);
+    const penalty = fit.inputs.lineupPenalty;
+    lines.push(`Fit: ${weighted.map(([k, v]) => `${k} ${r(v)}`).join(' · ')}${penalty >= 0.5 ? ` · lineup penalty −${r(penalty)}` : ''}`);
     const fi = fit.inputs;
     lines.push(
       `Fit inputs: on-ball demand ${fi.onBallDemand.toFixed(2)} · creators ${r(fi.primaryCreationSignal)}/${r(fi.secondaryCreationSignal)} · plus shooters ${fi.plusShooterCount} · hard non-spacers ${fi.hardNonSpacerCount} · POA ${fi.guardContainmentProvider ?? '—'} ${r(fi.guardContainment)} · wing ${fi.wingCoverageProvider ?? '—'} ${r(fi.wingCoverage)} · rim ${fi.rimProtectionProvider ?? '—'} ${r(fi.rimProtection)} · weak link ${fi.defensiveWeakLinkPlayer ?? '—'} ${r(fi.defensiveWeakLinkResistance)}`,

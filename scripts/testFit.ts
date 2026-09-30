@@ -129,7 +129,8 @@ for (const [label, result] of [['cramped', crampedResult], ['balanced', balanced
     SPACING_BOTTLENECK_MAX_PENALTY,
     Math.max(0, (SPACING_BOTTLENECK_FLOOR - result.components.spacingCompatibility) * SPACING_BOTTLENECK_SCALE),
   );
-  const recomputed = Math.round(Math.max(0, Math.min(100, weightedBlend - spacingBottleneckPenalty)));
+  // 2026-09-30: plus the lineup penalties (paint overlap, ball-dominant non-shooters).
+  const recomputed = Math.round(Math.max(0, Math.min(100, weightedBlend - spacingBottleneckPenalty - result.inputs.lineupPenalty)));
   check(result.score === recomputed, `${label} total is exactly the documented component blend`);
 }
 
