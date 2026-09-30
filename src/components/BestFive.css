@@ -853,3 +853,107 @@
 .bf-live-odds { margin: 6px 0 0; font-size: 12px; color: var(--at-ink-soft); }
 .bf-live-odds b { color: var(--at-ink); }
 .bf-live-upset { color: var(--at-gold, #ffd479); }
+
+/* ---------------------------------------------------------------------------
+   2026-09-30, the user ("Premium, wachlarz, granatowy stół, dźwięki tak"): the card-table look from
+   the draw mockup — a navy felt table with a gold rail, a fanned hand, Premium cards in the team's
+   colours, a glowing Joker, and the reveal's jackpot / thud.
+   --------------------------------------------------------------------------- */
+.bf-deck-table {
+  position: relative; padding: 18px 22px 30px; border: 0;
+  background:
+    radial-gradient(90% 75% at 50% 12%, color-mix(in srgb, var(--at-accent) 22%, #0d1a33) 0%, #0b1428 50%, #070d1c 85%, #050912 100%);
+  box-shadow: inset 0 0 0 2px #0a1224, inset 0 0 0 4px #b48a3a, inset 0 0 0 6px #070b14, inset 0 12px 40px rgba(0, 0, 0, 0.55);
+  border-radius: 18px;
+}
+.bf-deck-table::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: repeating-radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 4px);
+}
+/* The fan: each card turned a little and set on an arc; the card under the pointer comes up. */
+.bf-hand { align-items: start; padding-top: 6px; }
+.bf-hand-card { transform: translateY(var(--y, 0px)) rotate(var(--r, 0deg)); transition: transform 0.22s ease; transform-origin: 50% 100%; position: relative; }
+.bf-deck.is-open .bf-hand-card:hover { transform: translateY(calc(var(--y, 0px) - 12px)) rotate(0deg) scale(1.04); z-index: 3; }
+.bf-hand-back {
+  border: 2px solid #b48a3a;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 212, 121, 0.22) 0 14%, transparent 15%),
+    repeating-linear-gradient(45deg, #1b2a52 0 6px, #122043 6px 12px);
+  box-shadow: inset 0 0 0 3px #0e1733;
+}
+.bf-fly-back { border-color: #b48a3a; background: radial-gradient(circle at 50% 50%, rgba(255, 212, 121, 0.22) 0 14%, transparent 15%), repeating-linear-gradient(45deg, #1b2a52 0 6px, #122043 6px 12px); }
+.bf-pile span { border-color: #b48a3a; background: repeating-linear-gradient(45deg, #1b2a52 0 4px, #122043 4px 8px); }
+
+/* The Draw button: gold and breathing until pressed. */
+.bf-draw-btn {
+  border-radius: 999px; background: linear-gradient(135deg, #fff3cf, #ffd479 55%, #c3922a); color: #1b1404;
+  animation: bf-draw-pulse 1.6s ease-in-out infinite;
+}
+@keyframes bf-draw-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 212, 121, 0.55), 0 8px 22px rgba(0, 0, 0, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(255, 212, 121, 0), 0 8px 22px rgba(0, 0, 0, 0.4); }
+}
+.bf-sound-btn { flex: none; border: 1px solid var(--at-line); border-radius: 8px; background: none; padding: 4px 8px; font-size: 14px; cursor: pointer; }
+
+/* Premium card. */
+.bf-hand .bf-pool-card.bf-premium {
+  position: relative; overflow: hidden; padding-top: 24px;
+  border: 2px solid color-mix(in srgb, var(--tc, var(--at-accent)) 60%, #e8d9a8);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tc, var(--at-accent)) 30%, #0f1627) 0 30%, #0f1627 60%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+.bf-card-band {
+  position: absolute; top: 0; left: 0; right: 0; height: 20px; padding: 0 7px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  background: var(--tc, var(--at-accent)); color: var(--tc-ink, #fff);
+  border-bottom: 2px solid var(--tc2, transparent);
+}
+.bf-hand .bf-premium .bf-face { box-shadow: 0 0 0 3px #0f1627, 0 0 0 5px var(--tc, var(--at-accent)); }
+.bf-hand .bf-premium .bf-pool-name { color: #fff; font-weight: 800; }
+.bf-card-sheen, .bf-card-glare { position: absolute; inset: 0; pointer-events: none; }
+.bf-card-sheen { background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.35) 46%, transparent 60%); transform: translateX(-120%); }
+.bf-hand-face.is-dealt .bf-card-sheen { animation: bf-sheen 0.9s 0.45s ease-out; }
+@keyframes bf-sheen { to { transform: translateX(120%); } }
+.bf-card-glare { background: radial-gradient(circle at var(--gx, 50%) var(--gy, 40%), rgba(255, 255, 255, 0.16), transparent 45%); opacity: 0; transition: opacity 0.2s; }
+.bf-deck.is-open .bf-hand-card:hover .bf-card-glare { opacity: 1; }
+.bf-hand .bf-pool-card--chosen.bf-premium { box-shadow: 0 0 0 3px var(--at-gold, #ffd479), 0 6px 16px rgba(0, 0, 0, 0.45); }
+
+/* The Joker glows and throws off sparks. */
+.bf-hand .bf-joker-card {
+  background: radial-gradient(circle at 50% 38%, #5a4312, #241906 70%); border: 2px solid var(--at-gold, #ffd479);
+  animation: bf-joker-glow 1.8s ease-in-out infinite; position: relative; overflow: hidden;
+}
+@keyframes bf-joker-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 212, 121, 0.35), 0 6px 18px rgba(255, 212, 121, 0.15); }
+  50% { box-shadow: 0 0 0 5px rgba(255, 212, 121, 0.12), 0 6px 26px rgba(255, 212, 121, 0.4); }
+}
+.bf-hand .bf-joker-card::after {
+  content: ''; position: absolute; inset: -20%; pointer-events: none;
+  background:
+    radial-gradient(2px 2px at 20% 30%, #fff3cf, transparent), radial-gradient(2px 2px at 70% 20%, #fff3cf, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffd479, transparent), radial-gradient(2px 2px at 85% 65%, #fff3cf, transparent);
+  animation: bf-sparks 2.4s linear infinite;
+}
+@keyframes bf-sparks { from { transform: translateY(8%); opacity: 0.2; } 50% { opacity: 1; } to { transform: translateY(-8%); opacity: 0.2; } }
+.bf-joker-q { animation: bf-q-pulse 1.4s ease-in-out infinite; }
+@keyframes bf-q-pulse { 50% { transform: scale(1.12); } }
+
+/* The reveal: gold pop for a legend you took, a thud for a scrub. */
+.bf-joker-reveal.is-took.is-legend { animation: bf-jackpot 0.7s both; box-shadow: 0 0 0 0 rgba(255, 212, 121, 0.6); }
+@keyframes bf-jackpot {
+  0% { transform: scale(0.9); opacity: 0; box-shadow: 0 0 0 0 rgba(255, 212, 121, 0.7); }
+  60% { transform: scale(1.04); opacity: 1; }
+  100% { transform: none; box-shadow: 0 0 0 16px rgba(255, 212, 121, 0); }
+}
+.bf-joker-reveal.is-took.is-scrub { animation: bf-thud 0.5s both; }
+@keyframes bf-thud { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+@media (prefers-reduced-motion: reduce) {
+  .bf-draw-btn, .bf-hand .bf-joker-card, .bf-hand .bf-joker-card::after, .bf-joker-q, .bf-joker-reveal { animation: none !important; }
+  .bf-hand-card { transition: none; }
+}
+@media (max-width: 560px) {
+  /* A gentler fan on a phone, so the outer cards stay on screen. */
+  .bf-deck-table { padding: 14px 10px 22px; }
+  .bf-hand-card { transform: translateY(calc(var(--y, 0px) * 0.5)) rotate(calc(var(--r, 0deg) * 0.5)); }
+}
