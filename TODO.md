@@ -123,6 +123,14 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ---
 
+- [ ] **Porządna kalibracja rzutu z półdystansu sprzed 1997** (po akceptacji silnika, przed
+      symulacjami) — dziś `PRE_ZONE_MIDRANGE_SPACING` w `src/engine/midrangeGravity.ts` to ręczna
+      lista ~70 graczy z wartościami „z reputacji”. Do zrobienia porządnie: pełny przegląd
+      graczy sprzed 1996-97 bez danych stref (nie tylko top O-TAL), źródło dla każdej wartości
+      (opisy, highlighty, % z gry w strefach tam, gdzie da się odtworzyć), spójność z danymi po
+      1997 (KG, Webber, Malone 1996-98), przegląd razem z Tobą. Rozważyć też to samo dla
+      rzutu za 3 przed 1979-80 (brak linii — West, Oscar, Havlicek). (M)
+
 ## Etap 2. Symulacje — po akceptacji silnika
 
 - [ ] **Mecz na żywo mocniej na silniku** — dziś box score jest wyrównywany i przechylany marginesem
