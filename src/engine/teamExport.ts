@@ -1,5 +1,11 @@
 import type { Team } from './types';
-import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore } from './scoring';
+import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, rotationScore } from './scoring';
+import { rimPressureForFit } from './rimPressure';
+import { playmakingScoreForPlayer } from './playmakingLookup';
+import { teamSpacingValue } from './midrangeGravity';
+import { maxSustainableMinutes } from './durability';
+import { overallTierForSpan } from './grades';
+import { MAX_MINUTES_PER_PLAYER } from './rotation';
 import { fitScore } from './fit';
 import { allAssignments } from './rotation';
 import { computeDefensiveTalent, computeOffensiveTalent } from './talent';
@@ -26,7 +32,7 @@ export function exportLeagueText(
   for (const { team, breakdown: b, rank } of ranked) {
     const odds = opts.titleOdds?.get(team.id);
     const oddsText = odds === undefined ? '' : ` · title ${odds > 0 && odds < 0.01 ? '<1' : Math.round(odds * 100)}%`;
-    lines.push(`#${rank} ${team.name}${team.isHuman ? ' (YOU)' : ''} — overall ${b.overall}${oddsText}`);
+    lines.push(`#${rank} ${team.name}${team.isHuman ? ' (YOU)' : ''} — overall ${b.overall} (${b.overallExact.toFixed(2)})${oddsText}`);
     lines.push(
       `Talent ${r(b.talentScore)} · Bench ${r(b.benchDepthScore)} · Offense ${r(b.offenseScore)} · Defense ${r(b.defenseScore)} · Spacing ${r(b.spacingScore)} · Fit ${r(b.fitScore)} · Rotation ${r(b.rotationScore)}`,
     );
@@ -42,12 +48,23 @@ export function exportLeagueText(
     const style = teamStyleFor(fit.inputs.primaryArchetype, fit.inputs.secondaryArchetype, fit.inputs.archetypeReport?.failureMode ?? null, b.defenseScore, b.offenseScore);
     const archetypes = [fit.inputs.primaryArchetype, fit.inputs.secondaryArchetype].filter(Boolean).map((a) => archetypeDisplayName(a as string));
     lines.push(`Style: ${style.label ?? '—'}${archetypes.length ? ` (${archetypes.join(' + ')})` : ''}${style.failureMode ? ` · risk: ${style.failureMode}` : ''}`);
+    lines.push(`Fit: ${Object.entries(c).map(([k, v]) => `${k} ${r(v)}`).join(' · ')}`);
+    const fi = fit.inputs;
+    lines.push(
+      `Fit inputs: on-ball demand ${fi.onBallDemand.toFixed(2)} · creators ${r(fi.primaryCreationSignal)}/${r(fi.secondaryCreationSignal)} · plus shooters ${fi.plusShooterCount} · hard non-spacers ${fi.hardNonSpacerCount} · POA ${fi.guardContainmentProvider ?? '—'} ${r(fi.guardContainment)} · wing ${fi.wingCoverageProvider ?? '—'} ${r(fi.wingCoverage)} · rim ${fi.rimProtectionProvider ?? '—'} ${r(fi.rimProtection)} · weak link ${fi.defensiveWeakLinkPlayer ?? '—'} ${r(fi.defensiveWeakLinkResistance)}`,
+    );
+    if (fit.notes.length) lines.push(`Fit notes: ${fit.notes.join(' | ')}`);
+    const rot = rotationScore(team);
+    const rotParts = Object.entries(rot.components).filter(([, v]) => v !== 0).map(([k, v]) => `${k} ${r(v)}`);
+    lines.push(`Rotation: ${rotParts.join(' · ') || '—'}`);
+    if (rot.notes.length) lines.push(`Rotation notes: ${rot.notes.join(' | ')}`);
+    lines.push('Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min');
     const bySlot = allAssignments(team);
     for (const slot of STARTER_SLOTS) {
       for (const e of bySlot.filter((a) => a.slot === slot && a.minutes > 0)) {
         const p = e.player;
         lines.push(
-          `  ${slot.padEnd(2)} ${p.playerName} ${p.spanLabel} · ${Math.round(e.minutes)}m · TAL ${formatTal(displayTalentForSpan(tierContextFor(p)))} · O ${r(computeOffensiveTalent(p))} / D ${r(computeDefensiveTalent(p))} · SPC ${r(computeSpacing(p))} · FGA ${p.fga.toFixed(1)}`,
+          `  ${slot.padEnd(2)} ${p.playerName} ${p.spanLabel} (${p.primaryPosition}) · ${Math.round(e.minutes)}m · TAL ${formatTal(displayTalentForSpan(tierContextFor(p)))} ${overallTierForSpan(tierContextFor(p))} · O ${r(computeOffensiveTalent(p))} / D ${r(computeDefensiveTalent(p))} · SPC ${r(computeSpacing(p))}(${r(teamSpacingValue(p))}) · rim ${r(rimPressureForFit(p))} · PM ${playmakingScoreForPlayer(p) === null ? '—' : r(playmakingScoreForPlayer(p)!)} · FGA ${p.fga.toFixed(1)} · ${p.offensiveArchetype} / ${p.defensiveRole} · max ${r(maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER))}m`,
         );
       }
     }
