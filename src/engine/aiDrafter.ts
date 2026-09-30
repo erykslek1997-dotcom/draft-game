@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { realSecondaryPositions } from './positionCompetence';
+import { positionCompetence, realSecondaryPositions } from './positionCompetence';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
   STARTER_SLOTS,
@@ -528,6 +528,20 @@ const ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT = 0.6;
 /** Real minutes at a slot below which its top rotation entry is a nominal cover, not a starter (a third of the game). */
 const MIN_STARTER_MINUTES_AT_SLOT = 16;
 
+/**
+ * 2026-09-30, engine calibration session 4 (the user: "zbyt często drużyny idą w small-ball"): a
+ * wing who can only partly play the four (Clifford Robinson, Kukoč, Ingles) counted as real depth
+ * there, so a team with one real PF and two centres (who can't play the four) never looked for a
+ * backup and its wings covered the PF minutes. In the frontcourt only a natural or full four/five
+ * is depth.
+ */
+function coversSlotForDepth(player: PlayerSpan, slot: Position): boolean {
+  if (!isRealPositionFit(player, slot)) return false;
+  if (slot !== 'PF' && slot !== 'C') return true;
+  const competence = positionCompetence(player, slot);
+  return competence === 'natural' || competence === 'full';
+}
+
 export function assessNeeds(roster: PlayerSpan[]): NeedContext {
   const { slots } = autoAssignRotation(roster);
 
@@ -604,7 +618,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
     if (emptySlots.includes(slot)) return false;
     const realFitMinutes = slots[slot].reduce((sum, a) => {
       const player = roster.find((p) => p.id === a.playerId);
-      return player && isRealPositionFit(player, slot) ? sum + a.minutes : sum;
+      return player && coversSlotForDepth(player, slot) ? sum + a.minutes : sum;
     }, 0);
     return realFitMinutes < GAME_MINUTES;
   });

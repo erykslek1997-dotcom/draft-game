@@ -117,6 +117,9 @@ function optimalMinutesRotationBonus(team: Team): { bonus: number; notes: string
   const uncappedTotalOptimal = rows.reduce((sum, r) => (r.durabilityCapped ? sum : sum + r.target.optimal), 0);
   const redistributionScale = uncappedTotalOptimal > 0 ? 1 + shortfall / uncappedTotalOptimal : 1;
 
+  // 2026-09-30, session 4: the tier minimum is a starter's guarantee (minuteAllocation.ts) — a bench
+  // All-star behind a better starter at his only position isn't a benched star.
+  const starterIds = new Set(primaryStarters(team).map((entry) => entry.player.id));
   const notes: string[] = [];
   let closenessSum = 0;
   let closenessCount = 0;
@@ -129,7 +132,7 @@ function optimalMinutesRotationBonus(team: Team): { bonus: number; notes: string
       closenessSum += closeness;
       closenessCount += 1;
     }
-    if (r.effectiveMinimal !== null && r.actual < r.effectiveMinimal) {
+    if (r.effectiveMinimal !== null && starterIds.has(r.player.id) && r.actual < r.effectiveMinimal) {
       starPenalty += UNDERPLAYED_STAR_PENALTY;
       notes.push(`${r.player.playerName} (${r.tier}) underplayed: ${r.actual}/${r.effectiveMinimal} min minimum.`);
     }

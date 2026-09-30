@@ -158,7 +158,10 @@ export function allocateMinutes(
     const talent = effectiveTalent(player);
     const homeSlot = starterSlotById.get(player.id);
     const usefulBench = !homeSlot && player.fga >= 2 && talent >= USEFUL_BENCH_TALENT_FLOOR ? Math.min(USEFUL_BENCH_MINUTES, ceiling) : 0;
-    const floor = Math.min(profile.minimal ?? 0, ceiling);
+    // 2026-09-30, session 4 (the user, on Dwight Howard 24 / Hassan Whiteside 24 and Mourning 24 /
+    // Ben Wallace 24): a tier's minimum is a starter's guarantee. A bench All-star has no other slot
+    // to take it from, so on the bench it only bought him the starter's own minutes.
+    const floor = homeSlot ? Math.min(profile.minimal ?? 0, ceiling) : 0;
     const optimal = Math.min(Math.max(profile.optimal, floor, usefulBench), ceiling);
     // Pieces of this player's supply, cheapest first.
     const pieces: Array<[upTo: number, cost: number]> = [
