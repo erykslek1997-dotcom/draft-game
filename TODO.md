@@ -62,6 +62,15 @@ drużynę w tabeli wyników i zgłaszasz, co się nie zgadza; poprawiamy i powta
   4. Notatka „block-camping center” nie łapie już podających i rzucających z półdystansu wysokich
      (Walton, Duncan, Mourning); zostaje dla czystych graczy tyłem do kosza (Shaq, Howard, Hakeem).
   5. Eksport: styl w nawiasie bez odrzuconego „Defense-first”.
+- [x] **Sesja kalibracyjna 3** (2026-09-30), wprowadzone:
+  1. Pick-and-roll: rozgrywający-podający typu „Secondary Ball Handler” (Lowry, Conley) liczy się
+     jako prowadzący akcję — wcześniej drużyny z nimi miały strukturę 0.
+  2. Ręczna kalibracja rzutu z półdystansu dla graczy sprzed 1997 (brak danych stref):
+     `PRE_ZONE_MIDRANGE_SPACING` w `src/engine/midrangeGravity.ts` (West 75, Jordan 75, McAdoo 72,
+     Gervin 70, Malone 60, Oscar 60, Ewing 55, Hakeem 45, Kareem 25…). Tylko spacing drużyny, nie
+     TAL — do poprawiania wedle uznania; wartości widać w eksporcie jako SPC(team).
+  3. Billups 2007-09 D-TAL 26 — zgodne z danymi (DDPM −1,5, RAPTOR −0,7); bez zmian.
+  4. Rozkład minut Magica (24 PG + 8 SG + 8 SF) — OK, bez zmian.
 - [ ] **Kolejne sesje kalibracyjne: Twoja ocena drużyn → poprawki** (L)
 - [ ] **Akceptacja silnika** — Twoje „ok, silnik gra”, zanim ruszymy symulacje.
 
