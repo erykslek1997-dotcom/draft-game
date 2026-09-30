@@ -22,12 +22,13 @@ import { athleticismScoreForSpan } from './athleticismLookup';
 import { championshipStructureForRoster, type ChampionshipStructureResult } from './championshipArchetype';
 import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
-import { rimPressureTeam } from './rimPressure';
+import { rimPressureForFit, rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 // Boolean predicate only (is this player a hard whole-career era override) — NOT a
 // `computeDefensiveTalent` value; the module keeps its "no talent-number input" rule.
 import { hasEraOverrideDefenseFloor } from './defensiveTalent';
+import { spacingScore } from './scoring';
 import type { Team } from './types';
 
 /**
@@ -70,9 +71,9 @@ export const HUNTABLE_WEAK_LINK_THRESHOLD = 50;
 /** Spacing bottleneck applied to the final fit score below — exported alongside `FIT_WEIGHTS` so
  * a test recomputing "the documented component blend" can reproduce this term too, rather than
  * hardcoding a second copy of these numbers. See the constant's own use site for the rationale. */
-export const SPACING_BOTTLENECK_FLOOR = 75;
+export const SPACING_BOTTLENECK_FLOOR = 60;
 export const SPACING_BOTTLENECK_MAX_PENALTY = 18;
-export const SPACING_BOTTLENECK_SCALE = 0.65;
+export const SPACING_BOTTLENECK_SCALE = 0.5;
 
 // 2026-09-04, the `scoreTeam` refactor (`overall = TAL·0.5 + FIT·0.5`, user's model): `fitScore`
 // is now the whole "does this roster cohere" half, so it absorbs signals that used to live only
@@ -142,9 +143,9 @@ export const FIT_WEIGHTS = {
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
 const HARD_NON_SPACER_FLOOR = 30;
 const SPACING_SHORTFALL_FLOOR = 60;
-const SPACING_SHORTFALL_COST = 32;
 const LONE_BIG_SHORTFALL_SHARE = 0.5;
-const SPACING_RELIEF_MAX = 0.15;
+const OFF_BALL_SHOOTER_SPACING = 65;
+const OFF_BALL_ROLL_RIM = 50;
 const FRONTCOURT_SPACING_FLOOR = 40;
 /** A frontcourt non-shooter at or above this O-TAL is a real paint scorer (see `paintOverlapPenalty`). */
 const PAINT_SCORER_OTAL_FLOOR = 70;
@@ -715,8 +716,16 @@ export function fitScore(team: Team): FitScoreResult {
     .sort((a, b) => b - a);
   const primaryCreationSignal = creationSignals[0] ?? 0;
   const secondaryCreationSignal = creationSignals[1] ?? 0;
+  // 2026-09-30, session 4 (the user rated Paul + Holiday + Durant + Bosh + Mourning above a five the
+  // engine preferred): an off-ball complement was an archetype tag only, so a real catch-and-shoot
+  // threat or rim-running big with another tag (Holiday, Mourning) never counted. The measured skill
+  // counts now too: team spacing value `OFF_BALL_SHOOTER_SPACING`+, or a big with real rim pressure.
   const offBallComplementCount = profiles.filter((profile, index) => {
     if (demandByPlayer[index] >= 0.75) return false;
+    const player = starters[index];
+    const slot = starterEntries[index].slot;
+    if (teamSpacingValue(player) >= OFF_BALL_SHOOTER_SPACING) return true;
+    if ((slot === 'PF' || slot === 'C') && rimPressureForFit(player) >= OFF_BALL_ROLL_RIM) return true;
     return offensiveRoleScore(profile, [
       'Off Screen Shooter',
       'Movement Shooter',
@@ -757,13 +766,9 @@ export function fitScore(team: Team): FitScoreResult {
   const frontcourt = starterEntries.filter((entry) => entry.slot === 'PF' || entry.slot === 'C').map((entry) => entry.player);
   const frontcourtNonSpacerCount = frontcourt.filter((player) => computeSpacing(player) < FRONTCOURT_SPACING_FLOOR).length;
 
-  // 2026-09-30, engine calibration session 4 (the user, on Oscar + LeBron + Howard at Fit 88: "czasem
-  // mam wrażenie jakby był losowy"): geometry used to count hard non-spacers on 3PT spacing alone and
-  // let one elite creator erase up to two of them, so that five read 95 — as if everyone shot. It is
-  // now continuous and on the same spacing value the Spacing score uses (midrange gravity included):
-  // every starter below `SPACING_SHORTFALL_FLOOR` costs in proportion to his shortfall, the lineup's
-  // least-spacing big counts half (one non-shooting big is a normal shape), and an elite creator or
-  // scorer only softens the cost. Shooter support is the three best spacers' level, for every five.
+  // 2026-09-30, engine calibration session 4: which starters cramp the floor, for the note below —
+  // each one's shortfall under `SPACING_SHORTFALL_FLOOR` on the team spacing value, with the
+  // lineup's least-spacing big counted half (one non-shooting big is a normal shape).
   const lineupSpacing = starterEntries.map(({ player }) => teamSpacingValue(player));
   const shortfalls = lineupSpacing.map((value) => clamp((SPACING_SHORTFALL_FLOOR - value) / SPACING_SHORTFALL_FLOOR, 0, 1));
   const bigIndices = starterEntries.map((entry, index) => (entry.slot === 'PF' || entry.slot === 'C' ? index : -1)).filter((index) => index >= 0);
@@ -771,14 +776,9 @@ export function fitScore(team: Team): FitScoreResult {
     const worstBig = bigIndices.reduce((worst, index) => (shortfalls[index] > shortfalls[worst] ? index : worst), bigIndices[0]);
     shortfalls[worstBig] *= LONE_BIG_SHORTFALL_SHARE;
   }
-  const bestPlaymaking = Math.max(...starters.map((player) => playmakingScoreForPlayer(player) ?? 0));
-  const bestScoringGravity = Math.max(...starters.map(computeOffensiveTalent));
-  const spacingRelief =
-    SPACING_RELIEF_MAX * Math.max(clamp((bestPlaymaking - 75) / 20, 0, 1), clamp((bestScoringGravity - 85) / 15, 0, 1));
-  const geometry = clamp(100 - SPACING_SHORTFALL_COST * shortfalls.reduce((sum, value) => sum + value, 0) * (1 - spacingRelief));
-  const topSpacers = [...lineupSpacing].sort((a, b) => b - a).slice(0, 3);
-  const shooterSupport = clamp(((mean(topSpacers) - 40) / 40) * 100);
-  const spacingCompatibility = Math.round(geometry * 0.7 + shooterSupport * 0.3);
+  // Same session, the user: several spacing numbers in one summary are confusing. Fit's spacing is
+  // the team Spacing score itself; the shortfalls above only name the starters who cramp the floor.
+  const spacingCompatibility = Math.round(spacingScore(team));
   const compressingStarters = shortfalls.filter((value) => value >= 0.5).length;
   if (compressingStarters >= 2) notes.push(`${compressingStarters} non-spacing starters compress the starting lineup.`);
   if (rimGravityScorerCount > 0 && plusShooterCount < 2 && !hasShootingAnomaly) {
@@ -934,8 +934,9 @@ export function fitScore(team: Team): FitScoreResult {
   // Fit is not fully compensatory: excellent creation/defense cannot make a cramped half-court
   // geometry disappear. The weighted average previously let Spacing compatibility 66 coexist
   // with Fit 78, which overstated how portable the lineup actually was. This bounded bottleneck
-  // begins below a genuinely healthy 75 and tops out at 18 points, so poor spacing matters
-  // without zeroing every historically non-modern lineup.
+  // begins below 60 on the team Spacing score (2026-09-30: was 75 on the old, higher-reading
+  // compatibility scale) and tops out at 18 points, so poor spacing matters without zeroing every
+  // historically non-modern lineup.
   const spacingBottleneckPenalty = Math.min(
     SPACING_BOTTLENECK_MAX_PENALTY,
     Math.max(0, (SPACING_BOTTLENECK_FLOOR - spacingCompatibility) * SPACING_BOTTLENECK_SCALE),

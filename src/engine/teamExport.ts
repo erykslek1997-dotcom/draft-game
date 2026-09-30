@@ -40,7 +40,7 @@ export function exportLeagueText(
     const fit = fitScore(team);
     const c = fit.components;
     lines.push(
-      `Offense: raw ${off.raw.toFixed(1)} · O-TAL ${r(off.otal)} · Creation ${r(c.creationStructure)} · Spacing fit ${r(off.spacing)} · Rim ${r(c.rimPressureTeam)} · Playmaking ${r(off.playmaking)} · Self-creation ${r(off.selfCreation)} · Mismatch ${r(off.mismatchStructure)}`,
+      `Offense: raw ${off.raw.toFixed(1)} · O-TAL ${r(off.otal)} · Creation ${r(c.creationStructure)} · Rim ${r(c.rimPressureTeam)} · Playmaking ${r(off.playmaking)} · Self-creation ${r(off.selfCreation)} · Mismatch ${r(off.mismatchStructure)}`,
     );
     lines.push(
       `Defense: D-TAL ${r(teamDefensiveTalentScore(team))} · Coverage ${r(c.defensiveRoleCoverage)} · Switch ${r(c.switchability)} · Hunt ${r(c.huntResistance)} · Cohesion ${r(c.defensiveCohesion)} · Reb ${r(c.reboundingBalance)}`,
@@ -51,7 +51,8 @@ export function exportLeagueText(
       .map((a) => archetypeDisplayName(a as string));
     lines.push(`Style: ${style.label ?? '—'}${archetypes.length ? ` (${archetypes.join(' + ')})` : ''}${style.failureMode ? ` · risk: ${style.failureMode}` : ''}`);
     // Hunt and cohesion carry no Fit weight (Defense applies them), so they sit on the Defense line.
-    const weighted = Object.entries(c).filter(([k]) => FIT_WEIGHTS[k as keyof typeof FIT_WEIGHTS] > 0);
+    // Spacing is the team Spacing score, printed once above.
+    const weighted = Object.entries(c).filter(([k]) => FIT_WEIGHTS[k as keyof typeof FIT_WEIGHTS] > 0 && k !== 'spacingCompatibility');
     const penalty = fit.inputs.lineupPenalty;
     lines.push(`Fit: ${weighted.map(([k, v]) => `${k} ${r(v)}`).join(' · ')}${penalty >= 0.5 ? ` · lineup penalty −${r(penalty)}` : ''}`);
     const fi = fit.inputs;

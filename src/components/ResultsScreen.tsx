@@ -723,7 +723,6 @@ function HeroResult({
                 <span className="analysis-bars-col-label">Offense details</span>
                 {offenseDetail && <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />}
                 <MetricBar label="Creation" value={offenseScale(fitDetail.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
-                {offenseDetail && <MetricBar label="Spacing fit" value={offenseScale(offenseDetail.spacing)} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
                 <MetricBar label="Rim pressure" value={offenseScale(fitDetail.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
                 {offenseDetail && <MetricBar label="Playmaking" value={offenseScale(offenseDetail.playmaking)} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />}
               </div>
@@ -1741,7 +1740,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                         <span className="analysis-bars-col-label">Offense details</span>
                         {offenseDetail && <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />}
                         <MetricBar label="Creation" value={offenseScale(fitDetail.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
-                        {offenseDetail && <MetricBar label="Spacing fit" value={offenseScale(offenseDetail.spacing)} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
                         <MetricBar label="Rim pressure" value={offenseScale(fitDetail.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
                       </div>
                       <div className="analysis-bars-col analysis-bars-col--defense">

@@ -20,7 +20,7 @@ interface MetricDef {
 const OFFENSE_METRICS: MetricDef[] = [
   { key: 'otal', label: 'O-TAL', hint: 'Team offensive talent.' },
   { key: 'creation', label: 'Creation', hint: 'Half-court shot creation the roster can generate on its own.' },
-  { key: 'spacing', label: 'Spacing fit', hint: 'Shooting around your creators, as the offense uses it.' },
+  { key: 'spacing', label: 'Spacing', hint: 'The team Spacing score — how well the rotation spaces the floor.' },
   { key: 'rim', label: 'Rim pressure', hint: 'How much the five collectively bends a defense at the rim.' },
   { key: 'playmaking', label: 'Playmaking', hint: 'Passing and organising the offense.' },
   { key: 'selfCreation', label: 'Self-creation', hint: 'Players who can make their own shot.' },
