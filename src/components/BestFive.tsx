@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type ReactNode } from 'react';
 import { deckSfx, deckSoundsMuted, setDeckSoundsMuted } from './deckSounds';
-import { teamColors } from '../data/teamColors';
 import './BestFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
 import { ScoreChip } from './ResultsScreen';
@@ -14,9 +13,7 @@ import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
 import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
-import { hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
-import { EraYears } from './EraYears';
-import { teamsForSpan } from '../engine/spanTeams';
+import { DraftPlayerCard } from './DraftPlayerCard';
 import { markStepDone } from './pathProgress';
 import {
   dailyBoard,
@@ -78,22 +75,6 @@ function formatDay(day: string): string {
 }
 
 const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
-
-/** Blind-scouting box stats, never the engine's TAL. `boxLineShort` = the pts/reb/ast triple;
- * `boxLineDetail` = the rest of a normal stat line — steals, blocks, FG%, 3P%. */
-function boxLineShort(s: PlayerSpan): string {
-  return `${s.box.ppg.toFixed(1)} / ${s.box.rpg.toFixed(1)} / ${s.box.apg.toFixed(1)}`;
-}
-function boxLineDetail(s: PlayerSpan): string {
-  const b = s.box;
-  // Stats that didn't exist yet in his era are left out rather than shown as a misleading 0.
-  const parts = [
-    ...(hadStealsBlocksRecorded(s) ? [`${b.spg.toFixed(1)} stl`, `${b.bpg.toFixed(1)} blk`] : []),
-    `${Math.round(b.fgPct * 100)}% FG`,
-    hadThreePointLine(s) ? `${Math.round(b.threePct * 100)}% 3P` : 'no 3-pt line',
-  ];
-  return parts.join(' · ');
-}
 
 const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 'spacing' | 'fit'>; label: string; context?: boolean }[] = [
   { key: 'talent', label: 'Talent' },
@@ -455,46 +436,24 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
                       </button>
                     );
                   }
-                  // 2026-09-30, the user chose the Premium card: a band in his team's colours on top,
-                  // the headshot ringed in them, a sheen as it turns over. 2026-09-30, the user ("dwa razy
-                  // widać kto gdzie gra"): the band is the only place the teams show — every team of
-                  // the span, no chips below; and no position (the picker already names it).
-                  const teams = teamsForSpan(span);
-                  const team = teams[0];
-                  const colors = team ? teamColors(team.code, team.seasonEnd) : null;
+                  // 2026-09-30, the user ("karty żeby wyglądały tak samo jak w każdym trybie"): the
+                  // draft card of every mode, dealt blind — the team band on top, no tier frame, no
+                  // TAL, no position (the picker names it); the whole card is the pick.
                   return (
-                    <button
-                      className={`bf-pool-card bf-premium ${chosen ? 'bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
+                    <DraftPlayerCard
+                      blind
+                      span={span}
+                      cap={shotsCap}
+                      tier="Starter"
+                      legal={!blocked}
+                      onDraft={() => pick(activeSlot, span)}
+                      className={`bf-deal-card${chosen ? ' bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
                       title={blocked ? `${span.playerName} would leave no room under the cap` : span.playerName}
-                      disabled={blocked}
-                      onClick={() => pick(activeSlot, span)}
-                      style={colors ? ({ '--tc': colors.primary, '--tc-ink': colors.primaryInk, '--tc2': colors.secondary } as CSSProperties) : undefined}
                     >
-                      <span className="bf-card-band at-cond" title={teams.map((t) => `${t.code} ${t.seasonStart - 1}–${String(t.seasonEnd).slice(2)}`).join(', ')}>
-                        {teams.map((t) => t.code).join(' · ')}
-                      </span>
                       <span className="bf-card-sheen" aria-hidden />
                       <span className="bf-card-glare" aria-hidden />
                       {blocked && <span className="bf-pool-over at-cond">Over the cap by {over.toFixed(1)}</span>}
-                      <Face name={span.playerName} size="md" />
-                      <span className="bf-pool-name">{shortenName(span.playerName)}</span>
-                      {/* 2026-09-11, user-reported live ("mało przestrzeni tutaj... sezon zwykły
-                          font i najbardziej widoczny, później statystyki") — the badge treatment
-                          (`.bf-season`, bold+boxed) read as chrome, not the headline info a Best
-                          Five pick actually turns on: which career window you're drafting. Plain,
-                          larger text (`.bf-pool-season`, pool-card only) makes it the card's real
-                          lead without spending padding on a box in an already-tight ~140px card. */}
-                      <EraYears span={span} className="bf-pool-season" />
-                      {/* 2026-09-11, user-reported live ("dopisek pozycji na karcie nie ma sensu"):
-                          this picker is already scoped to one slot (`SLOT_LABEL[activeSlot]` in
-                          the header above — "Pick your point guard"), so repeating the position on
-                          every card under it was pure noise, not new information. */}
-                      <span className="bf-pool-meta">
-                        <ShotChip fga={span.fga} cap={shotsCap} />
-                      </span>
-                      <span className="bf-pool-box">{boxLineShort(span)}</span>
-                      <span className="bf-pool-box bf-pool-box--sub">{boxLineDetail(span)}</span>
-                    </button>
+                    </DraftPlayerCard>
                   );
                 }}
               />

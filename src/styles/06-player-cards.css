@@ -407,3 +407,31 @@
 .at-tag-badge.at-t4 { background: var(--at-t4); color: var(--at-t4-ink); }
 .at-tag-badge.at-t5 { background: var(--at-t5); color: var(--at-t5-ink); }
 .at-tag-badge.at-t6 { background: var(--at-t6); color: var(--at-t6-ink); }
+
+/* 2026-09-30, the user's "wariant A": one player card in every mode — the team band across the
+   top (split per team, widths by seasons, see TeamBand.tsx) and the face ringed in the team's
+   colour. The tier corner drops below the band. */
+.at-team-band {
+  display: flex; flex: none; height: 18px; margin: -10px -10px 0; overflow: hidden;
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; line-height: 1;
+}
+.at-team-band.is-empty { background: var(--at-line); }
+.at-team-band-seg {
+  flex-basis: 0; min-width: 4px; display: flex; align-items: center; justify-content: center;
+  overflow: hidden; white-space: nowrap; text-overflow: clip;
+  background: var(--tc, var(--at-accent)); color: var(--tc-ink, #fff);
+  border-bottom: 2px solid var(--tc2, transparent);
+}
+.at-team-band-seg + .at-team-band-seg { box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.35); }
+.at-player-card .at-player-card-corner { top: 18px; }
+.at-player-card .at-player-card-top .bf-face { box-shadow: 0 0 0 2px var(--at-paper), 0 0 0 4px var(--ring, var(--at-line)); }
+.at-player-card .at-player-card-top { padding: 3px 3px 0; }
+
+/* Draw Five's blind card: the same card as a button, a neutral gold frame instead of the tier. */
+.at-player-card--blind {
+  font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; margin: 0;
+  border-color: color-mix(in srgb, var(--at-gold, #ffd479) 60%, var(--at-line));
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.at-player-card--blind:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4); }
+.at-player-card--blind:disabled { cursor: not-allowed; }
