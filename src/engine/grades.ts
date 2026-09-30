@@ -1474,6 +1474,12 @@ function rimBonusHold(ctx: TierGateContext): OverallTier | undefined {
   return ctx.playerName && ctx.spanLabel ? rimBonusHolds.get(`${normalizePlayerName(ctx.playerName)}|${ctx.spanLabel}`) : undefined;
 }
 
+/** 2026-09-30, the user ("GOAT - TAL 99+"): the TAL scale tops out at 99 on screen — a GOAT-tier
+ * window reads "99+" wherever a TAL number is shown; the value itself stays uncapped. */
+export function formatTal(value: number): string {
+  return value > 99 ? '99+' : String(Math.round(value));
+}
+
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const value = displayTalentUnheld(ctx);
   const hold = rimBonusHold(ctx);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
+import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { PLAYOFF_TEAM_COUNT, simulatePlayoffs, type PlayoffResult } from '../engine/playoffSimulation';
@@ -13,7 +13,7 @@ import { computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent
 // `effectiveTalent` for every plain TAL read; `displayTalentForSpan` stays separately imported
 // for the two call sites below that use the Sixth-Man-aware `tierContextWithSixthMan` context
 // instead of the plain one `effectiveTalent` builds internally.
-import { displayTalentForSpan } from '../engine/grades';
+import { displayTalentForSpan, formatTal } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { fitScore, type FitScoreResult } from '../engine/fit';
 import { defensiveHuntability } from '../engine/defensiveHuntability';
@@ -21,7 +21,7 @@ import { generateRosterInsights, insightContextFor } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
-import { archetypeDisplayName, DEFENSE_FIRST_MIN_SCORE, teamStyleFor } from '../engine/championshipArchetype';
+import { archetypeDisplayName, defenseFirstBacked, teamStyleFor } from '../engine/championshipArchetype';
 import { bestHistoricalComp, compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
 import { TeamTile } from './TeamBadge';
 import { type FeedbackEntry } from './FeedbackToggle';
@@ -37,6 +37,8 @@ import { type FeedbackEntry } from './FeedbackToggle';
 import MatchupMatrix from './MatchupMatrix';
 import ChampionshipOdds from './ChampionshipOdds';
 import { markStepDone } from './pathProgress';
+import { TEAM_EXPORT_FOR_TESTING } from './testingFlags';
+import { exportLeagueText } from '../engine/teamExport';
 import AllMetrics from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
@@ -719,11 +721,11 @@ function HeroResult({
             <div className="analysis-bars-split results-hero-bars">
               <div className="analysis-bars-col analysis-bars-col--offense">
                 <span className="analysis-bars-col-label">Offense details</span>
-                {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
-                <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
-                {offenseDetail && <MetricBar label="Spacing fit" value={offenseDetail.spacing} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
-                <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
-                {offenseDetail && <MetricBar label="Playmaking" value={offenseDetail.playmaking} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />}
+                {offenseDetail && <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />}
+                <MetricBar label="Creation" value={offenseScale(fitDetail.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
+                {offenseDetail && <MetricBar label="Spacing fit" value={offenseScale(offenseDetail.spacing)} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
+                <MetricBar label="Rim pressure" value={offenseScale(fitDetail.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
+                {offenseDetail && <MetricBar label="Playmaking" value={offenseScale(offenseDetail.playmaking)} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />}
               </div>
               <div className="analysis-bars-col analysis-bars-col--defense">
                 <span className="analysis-bars-col-label">Defense details</span>
@@ -900,6 +902,7 @@ const NEXT_DRAFT_TIP: Record<string, string> = {
  * weakest component. */
 const FIT_COMPONENT_TIP: Record<keyof FitScoreResult['components'], string> = {
   creationStructure: 'Creation was unbalanced — too many ball-handlers, or too few. Build around one or two creators with finishers and shooters around them.',
+  pairingStructure: 'No real pick-and-roll pairing. A ball-handler who runs the screen with a big who rolls hard or pops to shoot is the simplest offense there is.',
   spacingCompatibility: 'The non-shooters got in each other’s way. Pair each big who doesn’t shoot with shooters rather than another non-shooter.',
   defensiveRoleCoverage: 'One defensive job was left thin. Aim for both a rim protector and a wing who can take the other team’s best scorer.',
   switchability: 'The lineup struggled to switch. Opponents can pull your slowest big or smallest guard into pick-and-rolls — defenders who guard several positions help.',
@@ -1018,7 +1021,7 @@ function RotationColumns({
                   </span>
                   {detailed && (
                     <span className="rotation-entry-tal" style={{ background: qualityColor(displayTalentForSpan(tierContextFor(e.player))) }}>
-                      {displayTalentForSpan(tierContextFor(e.player))}
+                      {formatTal(displayTalentForSpan(tierContextFor(e.player)))}
                     </span>
                   )}
                 </div>
@@ -1029,7 +1032,8 @@ function RotationColumns({
                 {spot.map((e) => (
                   <span className="rotation-spot-entry" key={e.player.id} title={`${e.player.playerName} (${e.player.spanLabel}) · ${Math.round(e.minutes)} min`}>
                     <Face name={e.player.playerName} size="xs" />
-                    {Math.round(e.minutes)}m
+                    {/* 2026-09-30, the user read a face with only "4m" next to it as a missing name. */}
+                    {shortenName(e.player.playerName, 12)} {Math.round(e.minutes)}m
                   </span>
                 ))}
               </span>
@@ -1114,6 +1118,14 @@ function ResultsVerdict({
       )}
     </section>
   );
+}
+
+/** 2026-09-30, engine calibration session 1 (the user: "Offense 74 przy składnikach 86–100 —
+ * kafelek w innej skali niż paski"): the Offense score is the ingredients' blend mapped onto the
+ * Defense score's scale (`calibrateOffenseToDefenseScale`); the ingredient bars go through the same
+ * mapping, so the score always sits among its bars. */
+function offenseScale(value: number): number {
+  return Math.round(calibrateOffenseToDefenseScale(value));
 }
 
 export default function ResultsScreen({ teams, history, onRestart, onRematch, draftSeed, challenger }: Props) {
@@ -1272,6 +1284,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     heroFit?.inputs.secondaryArchetype,
     heroFit?.inputs.archetypeReport?.failureMode ?? null,
     heroRanked?.breakdown.defenseScore ?? 0,
+    heroRanked?.breakdown.offenseScore,
   );
   // 2026-09-25, user-reported live ("super skład, dlaczego dostał tak po dupie w defense?"): the
   // Defense score is a minutes-weighted D-TAL average, so one or two weak defenders playing big
@@ -1659,7 +1672,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 {fitDetail && fitDetail.inputs.championshipArchetypes.length > 0 && (
                   <div className="identity-chip-row">
                     {fitDetail.inputs.championshipArchetypes
-                      .filter((entry) => entry.archetype !== 'Defensive superteam' || breakdown.defenseScore >= DEFENSE_FIRST_MIN_SCORE)
+                      .filter((entry) => entry.archetype !== 'Defensive superteam' || defenseFirstBacked(breakdown.defenseScore, breakdown.offenseScore))
                       .map((entry, i) => (
                         <span key={entry.archetype} className={`identity-chip ${i > 0 ? 'identity-chip-secondary' : ''}`}>
                           {archetypeDisplayName(entry.archetype)}
@@ -1671,6 +1684,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                         fitDetail.inputs.secondaryArchetype,
                         fitDetail.inputs.archetypeReport?.failureMode ?? null,
                         breakdown.defenseScore,
+                        breakdown.offenseScore,
                       ).failureMode;
                       return risk && <span className="identity-risk">main risk: {risk}</span>;
                     })()}
@@ -1725,10 +1739,10 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <div className="analysis-bars-split">
                       <div className="analysis-bars-col analysis-bars-col--offense">
                         <span className="analysis-bars-col-label">Offense details</span>
-                        {offenseDetail && <MetricBar label="O-TAL" value={offenseDetail.otal} hint="Team offensive talent." />}
-                        <MetricBar label="Creation" value={fitDetail.components.creationStructure} hint="Half-court shot creation the roster can generate on its own." />
-                        {offenseDetail && <MetricBar label="Spacing fit" value={offenseDetail.spacing} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
-                        <MetricBar label="Rim pressure" value={fitDetail.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
+                        {offenseDetail && <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />}
+                        <MetricBar label="Creation" value={offenseScale(fitDetail.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
+                        {offenseDetail && <MetricBar label="Spacing fit" value={offenseScale(offenseDetail.spacing)} hint="Spacing as the offense uses it — shooting around your creators, where an elite playmaker can cover for a non-shooter. Not the same number as the Spacing score above, which is the roster's plain shooting average." />}
+                        <MetricBar label="Rim pressure" value={offenseScale(fitDetail.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
                       </div>
                       <div className="analysis-bars-col analysis-bars-col--defense">
                         <span className="analysis-bars-col-label">Defense details</span>
@@ -1812,7 +1826,34 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           <button className="secondary-btn" onClick={() => onRematch(draftSeed)}>Rematch this board</button>
         )}
         <button className="secondary-btn" onClick={onRestart}>Main menu</button>
+        {TEAM_EXPORT_FOR_TESTING && <TeamExportButton teams={scoredTeams} seed={draftSeed} leagueEval={leagueEval} />}
       </div>
     </div>
+  );
+}
+
+/** Engine calibration (testing): copies every team as text to paste into a calibration session;
+ * falls back to downloading a .txt where the clipboard is unavailable. */
+function TeamExportButton({ teams, seed, leagueEval }: { teams: Team[]; seed: number; leagueEval: TeamLeagueEvaluation[] }) {
+  const [state, setState] = useState<'idle' | 'copied' | 'saved'>('idle');
+  async function handle() {
+    const text = exportLeagueText(teams, { seed, titleOdds: new Map(leagueEval.map((e) => [e.teamId, e.championshipProbability])) });
+    try {
+      await navigator.clipboard.writeText(text);
+      setState('copied');
+    } catch {
+      const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `draft-export-${seed}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setState('saved');
+    }
+  }
+  return (
+    <button className="secondary-btn team-export-btn" onClick={handle} title="Copies every team's scores, players and minutes as text">
+      {state === 'copied' ? '✓ Copied — paste it in the chat' : state === 'saved' ? '✓ Saved as .txt' : 'Export all teams (testing)'}
+    </button>
   );
 }

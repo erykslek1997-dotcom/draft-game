@@ -216,6 +216,16 @@ export function archetypeDisplayName(archetype: ChampionshipArchetype | string):
  * described the dropped style, so it goes too.
  */
 export const DEFENSE_FIRST_MIN_SCORE = 75;
+/**
+ * 2026-09-30, engine calibration session 1 (the user, on Stockton + Allen + Garnett tagged
+ * "Defense-first"): the tag also needs the defense to be the team's stronger side — Defense at
+ * least `DEFENSE_FIRST_MIN_MARGIN` above Offense — not just a full set of defensive roles.
+ */
+export const DEFENSE_FIRST_MIN_MARGIN = 5;
+export function defenseFirstBacked(defenseScore: number, offenseScore?: number): boolean {
+  if (defenseScore < DEFENSE_FIRST_MIN_SCORE) return false;
+  return offenseScore === undefined || defenseScore - offenseScore >= DEFENSE_FIRST_MIN_MARGIN;
+}
 
 /**
  * 2026-09-28 playtest: two styles were joined with " + ", which ran into the "+" inside the names
@@ -238,8 +248,9 @@ export function teamStyleFor(
   secondary: ChampionshipArchetype | undefined,
   failureMode: string | null,
   defenseScore: number,
+  offenseScore?: number,
 ): { label: string | null; failureMode: string | null } {
-  const backed = (a: ChampionshipArchetype | undefined) => (a === 'Defensive superteam' && defenseScore < DEFENSE_FIRST_MIN_SCORE ? undefined : a);
+  const backed = (a: ChampionshipArchetype | undefined) => (a === 'Defensive superteam' && !defenseFirstBacked(defenseScore, offenseScore) ? undefined : a);
   const p = backed(primary);
   const s = backed(secondary);
   const shown = [p, s].filter((a): a is ChampionshipArchetype => a !== undefined);

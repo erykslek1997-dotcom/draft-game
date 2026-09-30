@@ -18,6 +18,7 @@ import { normalizePlayerName } from '../data/schema';
 import type { PlayerSpan } from '../data/schema';
 import type { Rotation, Team } from '../engine/types';
 import DraftBoard from './DraftBoard';
+import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
 import DraftLottery from './DraftLottery';
 import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { ShareCardStarter } from './shareCardImage';
@@ -82,11 +83,6 @@ interface Props {
  * (Docstring for the `GameShell` component below.)
  */
 
-/** 2026-09-30, the user ("do szybszej kalibracji potrzebuję testowego przycisku AUTOFINISH podczas
- * pełnego draftu"): hands every remaining pick, yours included, to the CPU drafter and goes
- * straight to the results with an auto-built rotation, so each team can be judged fast. For the
- * engine calibration only — set to false before release (TODO.md, Etap 1 and 3.3). */
-export const AUTO_FINISH_FOR_TESTING = true;
 /** Picks resolved per `setTimeout(0)` frame (audit AI-4: one synchronous call froze the page). */
 const AUTO_FINISH_CHUNK = 6;
 const TOTAL_PICKS = TEAM_COUNT * ROUNDS;

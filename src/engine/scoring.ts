@@ -148,6 +148,9 @@ export interface ScoreBreakdown {
   fitScore: number;
   rotationScore: number;
   overall: number;
+  /** `overall` before rounding — breaks ties in the ranking and the playoff seeding, so two teams
+   * shown at the same rounded number are still ordered by the model, not by list order. */
+  overallExact: number;
   notes: string[];
 }
 
@@ -322,7 +325,7 @@ const BENCH_INFLUENCE_BOOST = 1.5;
  * counts bench minutes at 0.8 — below their real share, since backups face backups
  * (`defensiveHuntability`'s own `BENCH_COMPETITION_DISCOUNT` already charges weak-link minutes at 0.4).
  */
-const BENCH_WEIGHT_OFFENSE = 1.2;
+// Offense's bench share moved to `STAR_OTAL_BENCH_SHARE` (2026-09-30).
 const BENCH_WEIGHT_DEFENSE = 0.8;
 const BENCH_WEIGHT_SPACING = 1.2;
 
@@ -467,11 +470,16 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // 3x that. Moved weight from OTAL into spacing (0.405->0.34, 0.135->0.20) rather than inventing a
 // new penalty mechanism — same six components, same 1.0 sum, just closer to how much a genuinely
 // broken floor should cost an NBA-realistic offense relative to raw scoring talent.
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.34;
-const OFFENSE_SPACING_BLEND_WEIGHT = 0.2;
-const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.135;
-const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.135;
-const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.09;
+// 2026-09-30, engine calibration session 1 (the user: LeBron + Luka, Nash + Kobe + Malone and
+// Stockton + Allen + Garnett all read an average Offense next to Giannis + Kareem): the structure
+// components (spacing, rim pressure, playmaking...) swing 60-100 between rosters and decided
+// Offense on their own, while the talent term moved a few points. Talent now carries the largest
+// share, and it's star-weighted (see `starWeightedOffensiveTalent`).
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.46;
+const OFFENSE_SPACING_BLEND_WEIGHT = 0.18;
+const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.1;
+const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.1;
+const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.07;
 /** 2026-09-05, user's explicit follow-up to `huntingPotential` (matchup.ts): playmaking and
  * self-creation already price individual SKILL into `offenseScore` on their own terms above.
  * "podpięte pod offense" turned out to mean something genuinely different, not a restatement of
@@ -483,7 +491,7 @@ const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.09;
  * skill rating. Reads `fitScore` here (already computed elsewhere in `scoreTeam`, but not
  * threaded through this function) rather than recomputing the underlying shadow-role-profile
  * machinery a second time. */
-const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.10;
+const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.09;
 
 /** The 6 raw 0-100 dimensions `offenseScore` blends, exposed together so the UI can show
  * playmaking/self-creation individually — 2026-09-05, user's explicit ask ("playmaking i shot
@@ -501,6 +509,8 @@ export interface OffenseScoreComponents {
 }
 export interface OffenseScoreBreakdown extends OffenseScoreComponents {
   score: number;
+  /** The blended offense before it is mapped onto the Defense score's scale (calibration export). */
+  raw: number;
 }
 
 // 2026-09-16, user-reported live with a real example (Nash + Erving-peak + Garnett-peak + Ewing —
@@ -522,6 +532,34 @@ export interface OffenseScoreBreakdown extends OffenseScoreComponents {
 // `mismatchStructure` below too, instead of the pre-existing redundant second call.
 const OFFENSE_SPACING_ELITE_ENGINE_BONUS = 15;
 
+/**
+ * 2026-09-30, engine calibration session 1: team offensive talent, weighted toward its best
+ * scorers. A minutes-weighted average treats a LeBron and a Walton alike, so two all-time
+ * engines next to two ordinary starters averaged out to the same number as five good players —
+ * but an offense runs through its best two or three. The starters' O-TAL (after position fit),
+ * best first, weighs 30/24/18/15/13%; the bench adds its minutes-weighted average at
+ * `STAR_OTAL_BENCH_SHARE`.
+ */
+const STAR_OTAL_WEIGHTS = [0.3, 0.24, 0.18, 0.15, 0.13];
+const STAR_OTAL_BENCH_SHARE = 0.18;
+export function starWeightedOffensiveTalent(team: Team): number {
+  const starters = primaryStarters(team);
+  if (starters.length === 0) return 0;
+  const values = starters
+    .map(({ player, slot }) => computeOffensiveTalent(player) * positionFitMultiplier(player, slot))
+    .sort((a, b) => b - a);
+  const weights = STAR_OTAL_WEIGHTS.slice(0, values.length);
+  const weightSum = weights.reduce((sum, w) => sum + w, 0);
+  const starterValue = values.reduce((sum, v, i) => sum + v * weights[i], 0) / weightSum;
+  const starterKeys = new Set(starters.map((s) => `${s.slot}|${s.player.id}`));
+  const bench = allAssignments(team).filter((a) => a.minutes > 0 && !starterKeys.has(`${a.slot}|${a.player.id}`));
+  const benchMinutes = bench.reduce((sum, a) => sum + a.minutes, 0);
+  if (benchMinutes <= 0) return starterValue;
+  const benchValue =
+    bench.reduce((sum, a) => sum + computeOffensiveTalent(a.player) * positionFitMultiplier(a.player, a.slot) * a.minutes, 0) / benchMinutes;
+  return starterValue * (1 - STAR_OTAL_BENCH_SHARE) + benchValue * STAR_OTAL_BENCH_SHARE;
+}
+
 function offenseScoreComponents(team: Team): OffenseScoreComponents {
   const starterAssignments = primaryStarters(team);
   const starters = starterAssignments.map((entry) => entry.player);
@@ -536,8 +574,16 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
   // OTAL-based half is not: raw scoring talent isn't specifically a 3PT-shooting signal, so a
   // Nash-caliber engine who ISN'T necessarily a plus shooter still earns this credit on its own
   // terms, matching the mechanic's original Nash/Erving/Garnett/Ewing motivation. Kept OTAL-only.
-  const hasEliteScoringEngine = starters.some((player) => computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL);
-  const hasElitePrimaryCreator = fit.inputs.primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD;
+  // 2026-09-30, engine calibration session 1 (the user, on Giannis + Kareem: "Giannis nie rzuca a
+  // zawsze wokół siebie miał elitarny spacing"): the credit exists for an engine who makes spacing
+  // matter less — Nash, a shooter-passer. A paint-bound engine who can't shoot himself needs MORE
+  // spacing around him, not less, so an engine only counts if he isn't a hard non-spacer himself.
+  const spacingEngines = starters.filter((player) => teamSpacingValue(player) >= HARD_NON_SPACER_VALUE);
+  const hasEliteScoringEngine = spacingEngines.some((player) => computeOffensiveTalent(player) >= ELITE_SCORING_GRAVITY_OTAL);
+  const leadEngine = [...starters].sort((a, b) => computeOffensiveTalent(b) - computeOffensiveTalent(a))[0];
+  const hasElitePrimaryCreator =
+    fit.inputs.primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD &&
+    (!leadEngine || teamSpacingValue(leadEngine) >= HARD_NON_SPACER_VALUE);
   const hasElitePlaymakingEngine = hasEliteScoringEngine || hasElitePrimaryCreator;
   const rawSpacing = spacingScore(team);
   // 2026-09-18, user-reported live ("90 nadal za dużo w mojej opinii" — 90 is still too much,
@@ -551,7 +597,7 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
   // team TOWARD the ceiling, just never past it.
   const spacingCeiling = spacingNonSpacerCeiling(starterAssignments, restSpacesForCenter(starterAssignments));
   return {
-    otal: rescaleToFullRange(benchBoostedWeightedAverage(team, (p) => computeOffensiveTalent(p), true, BENCH_WEIGHT_OFFENSE), OFFENSE_SCORE_ANCHORS),
+    otal: rescaleToFullRange(starWeightedOffensiveTalent(team), OFFENSE_SCORE_ANCHORS),
     spacing: Math.min(spacingCeiling, hasElitePlaymakingEngine ? Math.min(100, rawSpacing + OFFENSE_SPACING_ELITE_ENGINE_BONUS) : rawSpacing),
     rimPressure: rimPressureTeam(starters),
     playmaking: teamPlaymakingQuality(starters),
@@ -777,8 +823,23 @@ function eliteOffensiveEngineFloorContribution(team: Team): number {
  * the 75-point bar reads as "not a real all-time offensive threat," which is exactly as fair a
  * question for a starting PG/wing as it is for a center, not something specific to size.
  */
-function weakOffensiveCenterCap(raw: number): number {
-  return Math.min(raw, Math.max(80, raw * 0.4 + 47));
+// 2026-09-30, engine calibration session 1: the gradient cap below turned into a ceiling almost
+// every roster hit — any starter under the bar (a defensive centre, a 3-and-D guard) pulled the
+// blend to ~80-84 whatever the stars around him, so Nash + Kobe + Malone next to Ben Wallace and
+// LeBron + Luka next to Walton read as average offenses (the user: "LeBron + Luka = 74 =
+// Nash–Kobe–Malone ≈ Giannis–Kareem"). Now a penalty sized by how far each such starter falls
+// under the bar and how much he plays, so a weak link still costs points but the talent around
+// him keeps separating teams. Ben Wallace (O-TAL 46, 36 min at C) costs ~4.
+const WEAK_OFFENSIVE_STARTER_PENALTY_PER_POINT = 0.15;
+const WEAK_OFFENSIVE_STARTER_MAX_PENALTY = 8;
+function weakOffensiveStarterPenalty(team: Team): number {
+  const total = primaryStarters(team).reduce((sum, { player, minutes }) => {
+    if (minutes <= 0) return sum;
+    const bar = player.primaryPosition === 'C' ? LOW_OFFENSE_BIG_OTAL_CEILING : WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING;
+    const gap = bar - computeOffensiveTalent(player);
+    return gap > 0 ? sum + gap * WEAK_OFFENSIVE_STARTER_PENALTY_PER_POINT * Math.min(1, minutes / STARTER_MINUTES) : sum;
+  }, 0);
+  return Math.min(WEAK_OFFENSIVE_STARTER_MAX_PENALTY, total);
 }
 
 /**
@@ -792,14 +853,6 @@ function weakOffensiveCenterCap(raw: number): number {
  */
 const WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING = 55;
 
-function hasWeakOffensiveStarter(team: Team): boolean {
-  return primaryStarters(team).some(
-    ({ player, minutes }) =>
-      minutes > 0 &&
-      computeOffensiveTalent(player) <
-        (player.primaryPosition === 'C' ? LOW_OFFENSE_BIG_OTAL_CEILING : WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING),
-  );
-}
 
 /** Single source of truth for the weighted blend — `offenseScore` (the number every other
  * consumer reads) and `offenseScoreBreakdown` (the UI's per-dimension view) both build on this so
@@ -814,9 +867,10 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
   const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
-  const cappedBlended = hasWeakOffensiveStarter(team) ? weakOffensiveCenterCap(blended) : blended;
-  const score = Math.round(calibrateOffenseToDefenseScale(Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team))));
-  return { ...components, score };
+  const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team));
+  const raw = Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team));
+  const score = Math.round(calibrateOffenseToDefenseScale(raw));
+  return { ...components, score, raw };
 }
 
 /**
@@ -827,11 +881,15 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
  * mapped linearly onto the Defense score's own mean and spread, so a given distance from an
  * average roster means the same on both sides. The components (and their bars) are unchanged.
  */
-const OFFENSE_RAW_MEAN = 86.2;
-const OFFENSE_RAW_SD = 6.45;
-const DEFENSE_MEAN = 74.1;
-const DEFENSE_SD = 9.31;
-function calibrateOffenseToDefenseScale(raw: number): number {
+// 2026-09-30, engine calibration session 1: re-measured after the star-weighted offense and the
+// D-TAL floors (64 seeded AI leagues' teams, `scripts/calibrationReport.ts 101,202,303,404`): raw
+// offense 85.0 / 8.6, Defense 76.3 / 8.3.
+const OFFENSE_RAW_MEAN = 85.0;
+const OFFENSE_RAW_SD = 8.6;
+const DEFENSE_MEAN = 76.3;
+const DEFENSE_SD = 8.3;
+/** Also maps each offense ingredient bar, so the bars and the Offense score share one scale. */
+export function calibrateOffenseToDefenseScale(raw: number): number {
   return Math.max(0, Math.min(100, DEFENSE_MEAN + (raw - OFFENSE_RAW_MEAN) * (DEFENSE_SD / OFFENSE_RAW_SD)));
 }
 
@@ -965,8 +1023,14 @@ const TWO_SHOOTER_LINEUP_SPACING_FLOOR = 45;
  * (`hasCurry`/`isCurry`), matching that mechanic's explicit "regardless of who else is out there"
  * design commitment.
  */
-const TWO_NON_SPACER_STARTERS_CEILING = 75;
-const NON_SPACER_PG_STARTER_CEILING = 65;
+// 2026-09-30, engine calibration session 1 (the user: Billups + Tatum + Caruso around Giannis and
+// Kareem read Spacing 75, above Stockton/Allen/Hornacek/Garnett's 71 — "Giannis nie rzuca a zawsze
+// wokół siebie miał elitarny spacing"): 75/65 let two shooters and two non-shooting bigs read as a
+// good floor. Lowered so two hard non-spacers in the five always cost the team real spacing.
+const TWO_NON_SPACER_STARTERS_CEILING = 65;
+const NON_SPACER_PG_STARTER_CEILING = 58;
+/** A starter below this team-spacing value is a hard non-spacer a defense can leave. */
+const HARD_NON_SPACER_VALUE = 30;
 
 /**
  * 2026-09-25, user ("C powinno karać dopiero jeśli reszta spacingu ssie"): one non-shooting big in
@@ -1093,6 +1157,9 @@ export interface RotationScoreComponents {
   durabilityOverwork: number;
   optimalMinutes: number;
   downwardPosition: number;
+  smallBall: number;
+  /** The part of the bonuses above 100, taken back before the penalties (≤ 0). */
+  bonusCap: number;
   tierMinutesOverage: number;
   weakStarterTransform: number;
 }
@@ -1113,6 +1180,8 @@ export function rotationScore(team: Team): RotationScoreResult {
     durabilityOverwork: 0,
     optimalMinutes: 0,
     downwardPosition: 0,
+    smallBall: 0,
+    bonusCap: 0,
     tierMinutesOverage: 0,
     weakStarterTransform: 0,
   };
@@ -1207,6 +1276,14 @@ export function rotationScore(team: Team): RotationScoreResult {
   score += optimalBonus;
   components.optimalMinutes = optimalBonus;
   notes.push(...optimalNotes);
+  // 2026-09-30, engine calibration session 1 (the user: "Rotation zawsze 100"): the bonuses above
+  // could lift the score well past 100 before the penalties below were taken, so most misuses
+  // were absorbed by the headroom and the clamp at the end read 100 regardless. Bonuses now top
+  // out at 100 first; every penalty below comes off a real 100.
+  if (score > 100) {
+    components.bonusCap = 100 - score;
+    score = 100;
+  }
 
   // 2026-08-07, user's explicit rule: playing BELOW your natural position (toward the
   // perimeter) is realistically bad and costs real rotation value — even for bench minutes,
@@ -1290,6 +1367,32 @@ export function rotationScore(team: Team): RotationScoreResult {
     score -= penalty;
     components.downwardPosition = -penalty;
     notes.push(`Playing below natural position: ${downwardOffenders.join(', ')}.`);
+  }
+
+  // 2026-09-30, engine calibration session 1 (the user, on Kawhi Leonard at PF for 30 minutes and
+  // Klay Thompson at SF for 40 while Bo Outlaw and Robert Williams sat: "zbyt dużej zabawy
+  // small-ballem"): upward slides were free, so a guard or wing playing the four or five all game
+  // cost nothing. A stretch of small-ball is normal; past `SMALL_BALL_GRACE_MINUTES` a perimeter
+  // player at PF/C costs rotation value, ramping to the full cost at a starter's 36 minutes.
+  const SMALL_BALL_PENALTY: Partial<Record<Position, number>> = { PF: 8, C: 15 };
+  const SMALL_BALL_GRACE_MINUTES = 12;
+  const MAX_SMALL_BALL_PENALTY = 20;
+  let smallBallPenalty = 0;
+  const smallBallOffenders: string[] = [];
+  for (const { slot, player, minutes } of allAssignments(team)) {
+    const full = SMALL_BALL_PENALTY[slot];
+    if (!full || minutes <= SMALL_BALL_GRACE_MINUTES) continue;
+    if (player.primaryPosition === 'PF' || player.primaryPosition === 'C') continue;
+    const competence = positionCompetence(player, slot);
+    if (competence === 'natural' || competence === 'full') continue;
+    smallBallPenalty += full * Math.min(1, (minutes - SMALL_BALL_GRACE_MINUTES) / (STARTER_MINUTES - SMALL_BALL_GRACE_MINUTES));
+    smallBallOffenders.push(`${player.playerName} (${player.primaryPosition}) at ${slot} (${minutes}m)`);
+  }
+  if (smallBallPenalty > 0) {
+    const penalty = Math.min(MAX_SMALL_BALL_PENALTY, Math.round(smallBallPenalty));
+    score -= penalty;
+    components.smallBall = -penalty;
+    notes.push(`Heavy small-ball: ${smallBallOffenders.join(', ')}.`);
   }
 
   // 2026-08-07, user's explicit rule: each overall tier has a real minutes ceiling, not just an
@@ -1489,10 +1592,10 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const spacing = spacingScore(team);
   const fit = fitScore(team);
   const rotation = rotationScore(team);
-  const overall = Math.round(
+  const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +
-      teamFitCompositeScore(fit.score, offense, defense) * (1 - QUALITY_FIT_SPLIT),
-  );
+    teamFitCompositeScore(fit.score, offense, defense) * (1 - QUALITY_FIT_SPLIT);
+  const overall = Math.round(overallExact);
   return {
     talentScore: talent,
     benchDepthScore: benchDepth,
@@ -1502,12 +1605,15 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     fitScore: fit.score,
     rotationScore: rotation.score,
     overall,
+    overallExact,
     notes: [...fit.notes, ...rotation.notes],
   };
 }
 
 export function rankTeams(teams: Team[]): { team: Team; breakdown: ScoreBreakdown; rank: number }[] {
   const scored = teams.map((team) => ({ team, breakdown: scoreTeam(team) }));
-  scored.sort((a, b) => b.breakdown.overall - a.breakdown.overall);
+  // 2026-09-30, engine calibration session 1 (two teams at 83 held 33% and 19% title odds): ties
+  // on the rounded number used to fall back to list order, which also decided the bracket seed.
+  scored.sort((a, b) => b.breakdown.overallExact - a.breakdown.overallExact);
   return scored.map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
