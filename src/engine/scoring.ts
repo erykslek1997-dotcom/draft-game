@@ -889,7 +889,10 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // for recognized / rim-protecting / box-elite defenders lifted the raw Defense field to 77.4 / 8.2
 // (45.8% of teams over 80, `testDefenseDistribution`'s 45% guard), so Defense is mapped too.
 // Raw fields measured with `scripts/calibrationReport.ts 101,202,303,404` (64 teams).
-const OFFENSE_RAW_MEAN = 84.1;
+// 2026-09-30, session 4: the team rim-pressure anchor (45 -> 55) and the continuous pick-and-roll
+// structure moved the raw field down 0.8 on the same seeds (85.6 -> 84.8); the mean follows so the
+// Offense level stays where the session-2 scale put it.
+const OFFENSE_RAW_MEAN = 83.3;
 const OFFENSE_RAW_SD = 8.5;
 const DEFENSE_RAW_MEAN = 77.4;
 const DEFENSE_RAW_SD = 8.2;

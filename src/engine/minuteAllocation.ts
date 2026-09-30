@@ -34,6 +34,10 @@ const USEFUL_BENCH_MINUTES = 12;
 const USEFUL_BENCH_TALENT_FLOOR = 55;
 const USEFUL_BENCH_BONUS = 25;
 const PAST_OPTIMAL_TALENT_SHARE = 0.5;
+/** 2026-09-30, the user ("prawie każdy dostaje 40 minut, psuje immersje"): past `HEAVY_LOAD_MINUTES`
+ * a minute costs almost its whole value — a star plays 39-40 only when the bench truly can't cover. */
+const HEAVY_LOAD_MINUTES = 38;
+const HEAVY_LOAD_TALENT_SHARE = 0.9;
 const PAST_CEILING_COST = 150;
 const PAST_DURABILITY_COST = 2000;
 /** A guard or wing playing the four or five (small-ball) — the same cost the rotation score charges. */
@@ -161,7 +165,8 @@ export function allocateMinutes(
       [floor, -TIER_FLOOR_BONUS],
       [usefulBench, -USEFUL_BENCH_BONUS],
       [optimal, 0],
-      [ceiling, talent * PAST_OPTIMAL_TALENT_SHARE],
+      [Math.min(ceiling, Math.max(optimal, HEAVY_LOAD_MINUTES)), talent * PAST_OPTIMAL_TALENT_SHARE],
+      [ceiling, talent * HEAVY_LOAD_TALENT_SHARE],
       [durability, PAST_CEILING_COST],
       [maxMinutesPerPlayer, PAST_DURABILITY_COST],
     ];

@@ -271,58 +271,73 @@ export function offensiveSystemOverloadPenalty(starters: PlayerSpan[], demandByP
  *    for free regardless of how good the two-man game is. (This is where a Curry + Kareem pairing
  *    lands moderate rather than elite — the action is real, the floor around it is cramped.)
  *
- * Hard-gated at 0 when there's no real initiator+screener pair at all — a genuine two-man action
- * either exists or it doesn't, there's no partial credit for "sort of."
+ * 2026-09-30, engine calibration session 4 (the user: "czasem mam wrażenie jakby był losowy"): this
+ * used to be hard-gated — no qualifying initiator, or no big over a roll floor with the right tag,
+ * and the whole component read 0 (Harden + Gasol + Kareem did), one tag away from 80. It is now
+ * continuous: the best ball-screen runner on the floor leads, scaled by how real an initiator he
+ * is; every frontcourt starter is a screener, credited for roll gravity (full for a roll/post
+ * archetype, part for any other big) or pop gravity (his real spacing value), whichever is larger.
  */
 const SURROUNDING_SPACING_WEIGHT = 0.4;
-/** Real Roll & Cut Bigs sit ~50+, elite rim scorers (Kareem/Shaq/Malone) at the 100 ceiling,
- * Jokić/Dwight-type post scorers ~55-65, Pau Gasol ~34; face-up "Versatile Big" tags (KG, Bosh,
- * Horford) and low-volume roll bigs sit at the ~15 floor and are meant to fall out — they get
- * their gravity from the POP branch instead if they actually shoot. */
-const ROLL_GRAVITY_FLOOR = 30;
 const ROLL_SCREENER_ARCHETYPES: readonly OffensiveArchetype[] = ['Roll & Cut Big', 'Versatile Big', 'Post Scorer'];
+const OFF_ARCHETYPE_ROLL_SHARE = 0.6;
+const UNTAGGED_POP_SHARE = 0.85;
+/** A wing or guard screening in a five with no big in that spot — a real action, a lesser one. */
+const NON_BIG_SCREENER_SHARE = 0.7;
+const INITIATOR_ARCHETYPE_FACTOR: Partial<Record<OffensiveArchetype, number>> = {
+  'Primary Ball Handler': 1,
+  'Secondary Ball Handler': 0.9,
+  'Shot Creator': 0.85,
+  'Versatile Big': 0.75,
+};
+const OTHER_INITIATOR_FACTOR = 0.6;
+const INITIATOR_QUALITY_FLOOR = 0.4;
+const INITIATOR_QUALITY_FULL = 90;
+/** A lead who can't shoot lets his man go under the screen (Ben Simmons): the action loses its
+ * first threat. Full credit from `LEAD_SHOOTING_FULL` spacing value up. */
+const LEAD_SHOOTING_FLOOR = 0.75;
+const LEAD_SHOOTING_FULL = 60;
+
+function initiatorRating(player: PlayerSpan): number {
+  return (INITIATOR_ARCHETYPE_FACTOR[player.offensiveArchetype] ?? OTHER_INITIATOR_FACTOR) * (playmakingScoreForPlayer(player) ?? 40);
+}
+
+function screenerGravity(player: PlayerSpan, slot: Position): number {
+  const roll = rimPressureForFit(player) * (ROLL_SCREENER_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : OFF_ARCHETYPE_ROLL_SHARE);
+  const popTagged = player.offensiveArchetype === 'Stretch Big' || player.offensiveArchetype === 'Versatile Big' || isPlusShooter(player);
+  const pop = teamSpacingValue(player) * (popTagged ? 1 : UNTAGGED_POP_SHARE);
+  return Math.max(roll, pop) * (slot === 'PF' || slot === 'C' ? 1 : NON_BIG_SCREENER_SHARE);
+}
 
 export function mismatchStructureScore(
   starters: PlayerSpan[],
   slots: Position[],
-  demandByPlayer: number[],
+  _demandByPlayer: number[],
 ): number {
   if (starters.length < 5) return 0;
-  const lead = findLeadInitiator(starters, demandByPlayer);
-  if (!lead) return 0;
-
-  const spacing = starters.map(teamSpacingValue);
+  const ratings = starters.map(initiatorRating);
+  const leadIndex = ratings.indexOf(Math.max(...ratings));
+  const hasBig = slots.some((slot, index) => index !== leadIndex && (slot === 'PF' || slot === 'C'));
   let bestGravity = 0;
   let screenerIndex = -1;
   starters.forEach((player, index) => {
-    if (index === lead.index) return;
-    if (slots[index] !== 'PF' && slots[index] !== 'C') return;
-    let gravity = 0;
-    if (ROLL_SCREENER_ARCHETYPES.includes(player.offensiveArchetype)) {
-      const rim = rimPressureForFit(player);
-      if (rim >= ROLL_GRAVITY_FLOOR) gravity = Math.max(gravity, rim);
-    }
-    if (player.offensiveArchetype === 'Stretch Big' || player.offensiveArchetype === 'Versatile Big' || isPlusShooter(player)) {
-      gravity = Math.max(gravity, spacing[index]);
-    }
+    if (index === leadIndex) return;
+    if (hasBig && slots[index] !== 'PF' && slots[index] !== 'C') return;
+    const gravity = screenerGravity(player, slots[index]);
     if (gravity > bestGravity) {
       bestGravity = gravity;
       screenerIndex = index;
     }
   });
-  if (screenerIndex < 0 || bestGravity <= 0) return 0;
-
-  const surroundingValues = spacing.filter((_, index) => index !== lead.index && index !== screenerIndex);
-  const surroundingSpacing = surroundingValues.length > 0
-    ? surroundingValues.reduce((sum, value) => sum + value, 0) / surroundingValues.length
-    : 0;
+  if (screenerIndex < 0) return 0;
+  const spacing = starters.map(teamSpacingValue);
+  const surroundingValues = spacing.filter((_, index) => index !== leadIndex && index !== screenerIndex);
+  const surroundingSpacing = surroundingValues.reduce((sum, value) => sum + value, 0) / surroundingValues.length;
   const structure = bestGravity * (1 - SURROUNDING_SPACING_WEIGHT) + surroundingSpacing * SURROUNDING_SPACING_WEIGHT;
   // 2026-09-30, engine calibration session 1 (the user: Nash + Malone and Stockton + Garnett are
   // the pick-and-roll everyone builds around, yet read like any initiator with any screener): the
-  // pairing is only as dangerous as the man running it — scaled by the lead's own playmaking.
-  const leadPlaymaking = playmakingScoreForPlayer(lead.player) ?? 50;
-  const initiatorQuality = INITIATOR_QUALITY_FLOOR + (1 - INITIATOR_QUALITY_FLOOR) * Math.min(1, leadPlaymaking / INITIATOR_QUALITY_FULL);
-  return Math.round(structure * initiatorQuality);
+  // pairing is only as dangerous as the man running it — scaled by the lead's own rating.
+  const initiatorQuality = INITIATOR_QUALITY_FLOOR + (1 - INITIATOR_QUALITY_FLOOR) * Math.min(1, ratings[leadIndex] / INITIATOR_QUALITY_FULL);
+  const leadShooting = LEAD_SHOOTING_FLOOR + (1 - LEAD_SHOOTING_FLOOR) * Math.min(1, spacing[leadIndex] / LEAD_SHOOTING_FULL);
+  return Math.round(Math.min(100, structure) * initiatorQuality * leadShooting);
 }
-const INITIATOR_QUALITY_FLOOR = 0.7;
-const INITIATOR_QUALITY_FULL = 90;

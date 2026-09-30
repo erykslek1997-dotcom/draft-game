@@ -71,6 +71,14 @@ drużynę w tabeli wyników i zgłaszasz, co się nie zgadza; poprawiamy i powta
      TAL — do poprawiania wedle uznania; wartości widać w eksporcie jako SPC(team).
   3. Billups 2007-09 D-TAL 26 — zgodne z danymi (DDPM −1,5, RAPTOR −0,7); bez zmian.
   4. Rozkład minut Magica (24 PG + 8 SG + 8 SF) — OK, bez zmian.
+- [x] **Sesja kalibracyjna 4** (2026-09-30), wprowadzone:
+  1. Minuty 39–40 prawie nieopłacalne — gwiazda gra 40 tylko przy braku zmiennika na pozycji.
+  2. FIT bez progów: pick-and-roll, kreacja i spacing liczone w sposób ciągły (bez skoków 0↔80
+     i „jeden kreator kasuje dwóch nie-strzelców”); spacing na tej samej wartości co Spacing
+     drużyny (z półdystansem). Prowadzący PnR bez rzutu (Simmons) daje słabszą akcję.
+  3. Rim pressure drużyny: 100 miało 41/64 drużyn, teraz 17/64.
+  4. Do zrobienia: AI draftu ocenia wybór po pozycji i asystach, nie po realnej zmianie FIT/ofensywy
+     (Baron Davis obok Wade'a i KD).
 - [ ] **Kolejne sesje kalibracyjne: Twoja ocena drużyn → poprawki** (L)
 - [ ] **Akceptacja silnika** — Twoje „ok, silnik gra”, zanim ruszymy symulacje.
 

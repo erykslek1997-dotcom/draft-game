@@ -80,7 +80,9 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // 2026-09-30: 62 -> 70 with the whole-roster minute solve (minuteAllocation.ts): Brunson now covers
 // 8 SG minutes as well as his 26 at PG (34 total), where the old greedy fill gave that SG time to
 // others. Same three named targets. Re-measured directly (70).
-check(weakLinkInsight?.message.includes('70 targetable minutes'), 'weak-link description reports the real 70-minute cost');
+// 2026-09-30: 70 -> 72 with the heavy-load band (minutes 38-40 priced near their full value), which
+// moves two star minutes to the named bench targets. Re-measured directly (72).
+check(weakLinkInsight?.message.includes('72 targetable minutes'), 'weak-link description reports the real 72-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
