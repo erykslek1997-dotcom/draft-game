@@ -903,7 +903,9 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // 2026-09-30, session 4: the team rim-pressure anchor (45 -> 55) and the continuous pick-and-roll
 // structure moved the raw field down 0.8 on the same seeds (85.6 -> 84.8); the mean follows so the
 // Offense level stays where the session-2 scale put it.
-const OFFENSE_RAW_MEAN = 83.3;
+// Same session, later: the continuous centre cover and the capped gravity lift moved the Spacing
+// field down (70.1 -> 66.3) and the raw offense field with it (85.2 -> 84.1).
+const OFFENSE_RAW_MEAN = 82.2;
 const OFFENSE_RAW_SD = 8.5;
 const DEFENSE_RAW_MEAN = 77.4;
 const DEFENSE_RAW_SD = 8.2;
@@ -991,6 +993,11 @@ function applyDefenseKnee(score: number): number {
  * fix, it's the spacing question being closed, regardless of who else is out there.
  */
 const MULTI_GRAVITY_TEAM_SPACING_CAP = 97;
+/** 2026-09-30, engine calibration session 4 (the user, on Hardaway + Mitchell + Leonard +
+ * Wembanyama + Ben Wallace at Spacing 83): a gravity shooter's floor lifted any five to 80 raw
+ * whatever the other starters did. Gravity still lifts the five, by at most this much (raw points,
+ * before the display rescale); Curry's own rules are unchanged. */
+const GRAVITY_FLOOR_MAX_LIFT = 8;
 // A non-Curry walking-gravity shooter raises the offense's geometry substantially, but cannot
 // supply Curry's off-ball/on-ball floor by himself. This sits at a strong, not elite, raw team
 // spacing level; it is blended only across the shooter's actual starter minutes below.
@@ -1063,17 +1070,26 @@ const HARD_NON_SPACER_VALUE = 30;
  */
 const C_SPACING_REST_FLOOR = 65;
 const C_SPACING_NEUTRAL = 45;
-function restSpacesForCenter(starterAssignments: ReturnType<typeof primaryStarters>): boolean {
+/**
+ * 2026-09-30, engine calibration session 4 (the user: "mam wrażenie że spacing się posypał" —
+ * Hardaway + Wallace read 83 while LeBron + Gobert read 52): this was a cliff — at a 65 average
+ * around him a non-shooting centre read 45, at 64.9 he read his own 0, a 9-point swing in the
+ * five's average. The cover now grows with the other four's shooting, from none at
+ * `C_SPACING_COVER_START` to the full neutral value at `C_SPACING_REST_FLOOR` + 10.
+ */
+const C_SPACING_COVER_START = 50;
+function restSpacesForCenter(starterAssignments: ReturnType<typeof primaryStarters>): number {
   const others = starterAssignments.filter(({ slot }) => slot !== 'C');
-  if (others.length === 0) return false;
-  return others.reduce((sum, { player }) => sum + teamSpacingValue(player), 0) / others.length >= C_SPACING_REST_FLOOR;
+  if (others.length === 0) return 0;
+  const rest = others.reduce((sum, { player }) => sum + teamSpacingValue(player), 0) / others.length;
+  return Math.max(0, Math.min(1, (rest - C_SPACING_COVER_START) / (C_SPACING_REST_FLOOR + 10 - C_SPACING_COVER_START)));
 }
-function spacingValueAt(player: PlayerSpan, slot: Position, cCovered: boolean): number {
+function spacingValueAt(player: PlayerSpan, slot: Position, cCover: number): number {
   const value = teamSpacingValue(player);
-  return slot === 'C' && cCovered ? Math.max(value, C_SPACING_NEUTRAL) : value;
+  return slot === 'C' ? value + Math.max(0, C_SPACING_NEUTRAL - value) * cCover : value;
 }
 
-function spacingNonSpacerCeiling(starterAssignments: ReturnType<typeof primaryStarters>, cCovered = false): number {
+function spacingNonSpacerCeiling(starterAssignments: ReturnType<typeof primaryStarters>, cCovered = 0): number {
   const hardNonSpacers = starterAssignments.filter(({ player, slot }) => spacingValueAt(player, slot, cCovered) < 30);
   if (hardNonSpacers.length < 2) return 100;
   const pgIsNonSpacer = hardNonSpacers.some(({ slot }) => slot === 'PG');
@@ -1130,7 +1146,7 @@ export function spacingScore(team: Team): number {
     const avgThreatShare =
       uniqueThreats.reduce((sum, { minutes }) => sum + Math.max(0, Math.min(1, minutes / STARTER_MINUTES)), 0) /
       uniqueThreats.length;
-    const floored = Math.max(base, MULTI_WALKING_GRAVITY_TEAM_SPACING_FLOOR);
+    const floored = Math.min(Math.max(base, MULTI_WALKING_GRAVITY_TEAM_SPACING_FLOOR), base + GRAVITY_FLOOR_MAX_LIFT);
     const withGravityFloor = base * (1 - avgThreatShare) + floored * avgThreatShare;
     const baseScore = rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS);
     return Math.round(Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore));
@@ -1156,7 +1172,7 @@ export function spacingScore(team: Team): number {
     const threatShare = Math.max(0, Math.min(1, threatMinutes / STARTER_MINUTES));
     const isCurry = isShootingAnomalyPlayer(gravityThreatAssignments[0]!.player);
     const floor = isCurry ? SHOOTING_ANOMALY_TEAM_SPACING_FLOOR : SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR;
-    const floored = Math.max(base, floor);
+    const floored = isCurry ? Math.max(base, floor) : Math.min(Math.max(base, floor), base + GRAVITY_FLOOR_MAX_LIFT);
     const withGravityFloor = base * (1 - threatShare) + floored * threatShare;
     const baseScore = rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS);
     return Math.round(isCurry ? baseScore : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore));
