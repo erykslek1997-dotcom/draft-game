@@ -118,18 +118,25 @@ export const SPACING_BOTTLENECK_SCALE = 0.65;
  * `mismatchStructure`) joins at 0.10 and creation — where crowded on-ball demand is charged —
  * rises to 0.15; the defensive terms give up the difference. Offense-side now ~0.45 of the table.
  */
+/*
+ * 2026-09-30, engine calibration session 2 (the user, on the #1 team — Offense 68, Spacing 43 —
+ * riding Defense 89 and a Fit of 83 built from Hunt 100 and Cohesion 100): `huntResistance` and
+ * `defensiveCohesion` are the same two signals `defenseScore` already applies (the huntability
+ * penalty and the cohesion bonus), so a strong defense was scored twice. Both stay visible as
+ * components but carry no Fit weight; their share goes to the lineup-coherence terms.
+ */
 export const FIT_WEIGHTS = {
-  creationStructure: 0.15,
-  pairingStructure: 0.10,
-  spacingCompatibility: 0.08,
-  defensiveRoleCoverage: 0.10,
-  switchability: 0.14,
-  huntResistance: 0.11,
-  defensiveCohesion: 0.09,
-  rimPressureTeam: 0.06,
+  creationStructure: 0.18,
+  pairingStructure: 0.13,
+  spacingCompatibility: 0.11,
+  defensiveRoleCoverage: 0.12,
+  switchability: 0.15,
+  huntResistance: 0,
+  defensiveCohesion: 0,
+  rimPressureTeam: 0.08,
   reboundingBalance: 0.02,
-  sizeCoverage: 0.04,
-  championshipStructure: 0.11,
+  sizeCoverage: 0.05,
+  championshipStructure: 0.16,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;

@@ -884,10 +884,17 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // 2026-09-30, engine calibration session 1: re-measured after the star-weighted offense and the
 // D-TAL floors (64 seeded AI leagues' teams, `scripts/calibrationReport.ts 101,202,303,404`): raw
 // offense 85.0 / 8.6, Defense 76.3 / 8.3.
-const OFFENSE_RAW_MEAN = 85.0;
-const OFFENSE_RAW_SD = 8.6;
-const DEFENSE_MEAN = 76.3;
-const DEFENSE_SD = 8.3;
+// 2026-09-30, session 2: both sides now map onto one fixed scale — the Defense score's pre-session
+// level (mean 74.1, sd 9.31) — instead of Offense chasing wherever Defense drifted. The D-TAL floors
+// for recognized / rim-protecting / box-elite defenders lifted the raw Defense field to 77.4 / 8.2
+// (45.8% of teams over 80, `testDefenseDistribution`'s 45% guard), so Defense is mapped too.
+// Raw fields measured with `scripts/calibrationReport.ts 101,202,303,404` (64 teams).
+const OFFENSE_RAW_MEAN = 84.1;
+const OFFENSE_RAW_SD = 8.5;
+const DEFENSE_RAW_MEAN = 77.4;
+const DEFENSE_RAW_SD = 8.2;
+const DEFENSE_MEAN = 74.1;
+const DEFENSE_SD = 9.31;
 /** Also maps each offense ingredient bar, so the bars and the Offense score share one scale. */
 export function calibrateOffenseToDefenseScale(raw: number): number {
   return Math.max(0, Math.min(100, DEFENSE_MEAN + (raw - OFFENSE_RAW_MEAN) * (DEFENSE_SD / OFFENSE_RAW_SD)));
@@ -919,7 +926,8 @@ export function defenseScore(team: Team): number {
     linearScore -
     defensiveHuntability(team).penalty +
     defensiveCohesion(team).defenseScoreBonus;
-  return Math.round(Math.max(0, Math.min(100, applyDefenseKnee(adjusted))));
+  const kneed = Math.max(0, Math.min(100, applyDefenseKnee(adjusted)));
+  return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD))));
 }
 
 /**

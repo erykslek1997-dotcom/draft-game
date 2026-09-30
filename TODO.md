@@ -50,6 +50,18 @@ drużynę w tabeli wyników i zgłaszasz, co się nie zgadza; poprawiamy i powta
   12. TAL powyżej 99 wyświetlany jako „99+”.
   - Pierdoły: nazwisko w linii „spot minutes” w rotacji. Zdjęcia Kidda, Harpera i ~260 innych to
     zaślepka z cdn.nba.com — sieć środowiska blokuje pobranie innych; potrzebne źródło zdjęć.
+- [x] **Sesja kalibracyjna 2** (2026-09-30), wprowadzone:
+  1. Obrona liczona podwójnie: „Hunt resistance” i „spójność obrony” wychodzą z wag Fit (są już
+     w Defense). Atak i obrona mapowane na jedną skalę (74 ± 9).
+  2. Rotacja przepisana: minuty liczone naraz dla całej drużyny (`engine/minuteAllocation.ts`,
+     min-cost flow) z limitami zdrowia i tieru, minimami dla gwiazd, grą dwie pozycje od swojej
+     tylko w ostateczności. Test `testRotationInvariants.ts` na 48 drużynach: 0 naruszeń.
+  3. D-TAL: podłoga „statystyki elitarne + dane potwierdzają” (Kirilenko 2002-04 71 → 90),
+     podłoga „dane neutralne” dla graczy z przeciętnymi statystykami (Batum 2012-14 39 → 48).
+     Jaylen Brown 2023-25 O-TAL 67 zostaje — skuteczność poniżej ligi w tych latach.
+  4. Notatka „block-camping center” nie łapie już podających i rzucających z półdystansu wysokich
+     (Walton, Duncan, Mourning); zostaje dla czystych graczy tyłem do kosza (Shaq, Howard, Hakeem).
+  5. Eksport: styl w nawiasie bez odrzuconego „Defense-first”.
 - [ ] **Kolejne sesje kalibracyjne: Twoja ocena drużyn → poprawki** (L)
 - [ ] **Akceptacja silnika** — Twoje „ok, silnik gra”, zanim ruszymy symulacje.
 

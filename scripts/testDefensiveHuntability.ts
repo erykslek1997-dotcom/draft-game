@@ -255,7 +255,11 @@ check(eliteCoreProjection.defense <= 93, 'elite defensive core projects into an 
 // 2026-09-25: band 50-58 -> 44-52 after graded position competence (positionCompetence.ts):
 // Dana Barros's 2-minute off-position SG sliver is gone (Brunson 34 + Barros 14 = 48). Same two
 // real targets, Pierce and DeAndre Jordan still out. Re-measured directly (48), not guessed.
-check(threeLayerHunt.targetableMinutes >= 44 && threeLayerHunt.targetableMinutes <= 52, 'Brunson and Barros retain their real weak-link minutes; Pierce and DeAndre Jordan no longer misread as targets');
+// 2026-09-30: band 44-52 -> 58-66 with the whole-roster minute solve (minuteAllocation.ts): Jordan
+// fills SG to his 40-minute cap, so Brunson's last minutes come at SG and Barros covers more PG
+// (Brunson 34 + Barros 28 = 62). Same two targets; Pierce and DeAndre Jordan still out. Re-measured
+// directly (62), not guessed.
+check(threeLayerHunt.targetableMinutes >= 58 && threeLayerHunt.targetableMinutes <= 66, 'Brunson and Barros retain their real weak-link minutes; Pierce and DeAndre Jordan no longer misread as targets');
 // 2026-08-19: threshold lowered 0.6->0.25 after talent.ts's spacing-conditional TAL correction.
 // Root cause, checked directly: Paul Pierce (real plus-shooter, SPC 81) gained TAL from the same
 // correction that dropped Andre Roberson (real near-zero shooter, SPC 5) — `autoAssignRotation`

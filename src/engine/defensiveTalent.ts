@@ -759,6 +759,53 @@ function rimProtectorFloor(span: PlayerSpan): number {
   return RIM_PROTECTOR_FLOOR_MIN + frac * (RIM_PROTECTOR_FLOOR_MAX - RIM_PROTECTOR_FLOOR_MIN);
 }
 
+/**
+ * 2026-09-30, engine calibration session 2 (the user asked to check Kirilenko 2002-04 at 71 and
+ * Batum's prime at 35-43):
+ *
+ * - Box-elite, data-confirmed: a span whose box read sits at its position's 84th-percentile rung or
+ *   higher AND whose real-data sources (on/off DDPM, RAPTOR, BPM2) include two at +2.0 or better is
+ *   an elite defender even without an All-Defense selection in the window — the corroboration
+ *   ceiling only saw the tiny *excess* over the box expectation (the box already expects a great
+ *   defender). Floor: its own ladder read, capped at `BOX_ELITE_CONFIRMED_CAP`. Kirilenko 2002-04
+ *   (RAPTOR +2.8, BPM2 +2.9) 71 -> 90.
+ * - Neutral data: a guard or wing whose box reads at least a median defender, covered by three
+ *   sources, none below -1.0 and averaging -0.25 or better, is an average-ish defender, not the bottom-quartile read a box shortfall produced.
+ *   Floor `NEUTRAL_DATA_FLOOR`. Batum 2012-14 (DDPM -1.0, RAPTOR +0.2, BPM2 +0.9) 39 -> 48.
+ */
+const BOX_ELITE_RUNG_INDEX = 7;
+const BOX_ELITE_SOURCE_MIN = 2.0;
+const BOX_ELITE_CONFIRMED_CAP = 90;
+function boxEliteConfirmedFloor(span: PlayerSpan): number {
+  const detail = realDefenseExcessDetail(span);
+  if (!detail) return 0;
+  const strong = [detail.onOffDdpm, detail.raptorDefense, detail.bpm2Defense].filter((v): v is number => v != null && v >= BOX_ELITE_SOURCE_MIN);
+  if (strong.length < 2) return 0;
+  const position = functionalPosition(span);
+  const raw = displayDefenseRaw(span);
+  if (raw < LADDER_RAW_BY_POSITION[position][BOX_ELITE_RUNG_INDEX]) return 0;
+  return Math.min(BOX_ELITE_CONFIRMED_CAP, ladderPoints(position, raw));
+}
+
+const NEUTRAL_DATA_MIN_SOURCES = 3;
+const NEUTRAL_DATA_WORST = -1.0;
+const NEUTRAL_DATA_MEAN = -0.25;
+const NEUTRAL_DATA_FLOOR = 48;
+const NEUTRAL_DATA_BOX_RUNG_INDEX = 4;
+function neutralDataFloor(span: PlayerSpan): number {
+  if (span.primaryPosition === 'PF' || span.primaryPosition === 'C') return 0;
+  const detail = realDefenseExcessDetail(span);
+  if (!detail) return 0;
+  const values = [detail.onOffDdpm, detail.raptorDefense, detail.matchupDefense, detail.bpm2Defense].filter((v): v is number => v != null);
+  if (values.length < NEUTRAL_DATA_MIN_SOURCES) return 0;
+  // Only where the box itself reads at least a median defender — the floor undoes an overreacting
+  // shortfall malus, it doesn't lift a shooter whose box never saw defense (Korver).
+  if (computeDefensiveImpact(span) < LADDER_RAW_BY_POSITION[functionalPosition(span)][NEUTRAL_DATA_BOX_RUNG_INDEX]) return 0;
+  if (Math.min(...values) < NEUTRAL_DATA_WORST) return 0;
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  return mean >= NEUTRAL_DATA_MEAN ? NEUTRAL_DATA_FLOOR : 0;
+}
+
 export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = playoffDefensiveTalentCache.get(span.id);
@@ -767,7 +814,7 @@ export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   const measured = computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense + bonus;
   const result = Math.max(
     0,
-    Math.min(100, Math.round(Math.max(measured, recognizedDefenderFloor(span), rimProtectorFloor(span)))),
+    Math.min(100, Math.round(Math.max(measured, recognizedDefenderFloor(span), rimProtectorFloor(span), boxEliteConfirmedFloor(span), neutralDataFloor(span)))),
   );
   playoffDefensiveTalentCache.set(span.id, result);
   return result;
