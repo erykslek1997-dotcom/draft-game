@@ -92,6 +92,11 @@ export function expectedMargin(yours: Lineup, fanVote: Lineup, legends: Lineup):
   return Math.max(-25, Math.min(25, m - 1));
 }
 
+/** 2026-09-30, Draw Five vs the AI: the model's margin for one five against another, straight. */
+export function headToHeadMargin(yours: Lineup, theirs: Lineup): number {
+  return Math.max(-25, Math.min(25, projectMatchup(lineupTeam(yours), lineupTeam(theirs)).marginA));
+}
+
 const POSSESSIONS = 200;
 const GAME_SECONDS = 48 * 60;
 const TURNOVER = 0.12;

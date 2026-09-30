@@ -131,7 +131,7 @@ const DISPLAY_BENCH_SLOT_COUNT = 4;
  * counterparts if the rules ever change. */
 const MODE_HOW_TO_PLAY_TITLE: Record<'draft' | 'bestfive' | 'quickfive', string> = {
   draft: 'All-Time Draft',
-  bestfive: 'Slot Machine',
+  bestfive: 'Draw Five',
   quickfive: 'Mini Draft',
 };
 
@@ -144,11 +144,11 @@ const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: stri
     { title: 'Grading', body: 'The judge scores every team — talent, offense, defense, spacing, fit, rotation — and ranks the whole field, yours included.' },
   ],
   bestfive: [
-    { title: 'The deal', body: 'Four players are dealt for each position, PG to C. Pick one and the next position turns over.' },
+    { title: 'The deck', body: 'Shuffled as the game loads. Draw four cards for each position, pick one, and the next position comes up.' },
     { title: 'Caps', body: 'Every player costs caps — his shots per game in those years. Your five have to fit under the board’s cap, shown by the meter above it.' },
     { title: 'Submit once', body: 'No re-picking after you see your score.' },
     { title: 'Grading', body: 'You’re scored on talent, offense, defense, spacing, and fit, then compared against the fan-vote five.' },
-    { title: 'Spin again', body: 'Every new board is a fresh random deal.' },
+    { title: 'Against the AI', body: 'The AI drafts its own five from the same deck under the same cap — then the two fives play a live game.' },
   ],
   quickfive: [
     { title: 'Draft', body: `16 teams take turns, 5 rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
@@ -383,13 +383,13 @@ function App() {
                     🃏
                   </span>
                   <span className="mode-card-step at-cond">Step 1 · learn the caps{stepDone('bestfive') ? ' ✓' : ''}</span>
-                  <span className="mode-card-name at-cond">Slot Machine</span>
-                  <span className="mode-card-desc">Four cards dealt per position — build a five under the cap.</span>
+                  <span className="mode-card-name at-cond">Draw Five</span>
+                  <span className="mode-card-desc">Draw four cards per position, build a five under the cap — then beat the AI’s five.</span>
                 </button>
                 <button
                   type="button"
                   className="mode-card-help"
-                  aria-label="How to play: Slot Machine"
+                  aria-label="How to play: Draw Five"
                   aria-haspopup="dialog"
                   onClick={(e) => {
                     e.stopPropagation();

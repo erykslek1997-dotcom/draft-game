@@ -38,6 +38,13 @@ migawkami z lipca/sierpnia, nic tu od nich nie zależy.)
         plansza dziennie dla wszystkich (lokalna północ), jedno podejście, seria dni, wynik dnia
         w przeglądarce (`src/components/dailyProgress.ts`). Bez dziennych zasad (limity, bany) —
         na razie tylko wspólna plansza.
+      - [x] **Draw Five — wdrożone 2026-09-30.** Slot Machine to teraz talia kart (makieta:
+        artefakt „Draw Five Deck”). Zwykły tryb: gra z AI (Pro), które dostaje z tej samej talii
+        4 karty pozycji, które nie przyszły do gracza, pilnuje capów, a na końcu mecz na żywo
+        (`headToHeadMargin`). Daily: Joker leży na stole od 1. rundy, tanieje o 12% co rundę,
+        szansa odejścia rośnie 20/40/60/80% i jest widoczna na karcie (`dailyMeta`:
+        `jokerLeavesAfter`, `jokerPriceAt`). „Best on the board” liczy Jokera po najniższej cenie,
+        po jakiej był dostępny. Do zrobienia: poziomy AI (Rookie/Legend), karty taktyki w meczu.
       - [x] **Daily Slot Machine 2.0 — wdrożone 2026-09-28** (`engine/dailyMeta.ts`, `dailyGame` w
         `engine/bestFive.ts`, `engine/liveGame.ts`, `components/LiveGame.tsx`, test
         `scripts/testLiveGame.ts`). Jeden mecz, nie seria. Legendy grają na poziomie piątki

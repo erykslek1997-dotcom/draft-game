@@ -28,7 +28,7 @@ export default function ShareResultModal({
   five,
 }: {
   onClose: () => void;
-  mode: 'Mini Draft' | 'Slot Machine';
+  mode: 'Mini Draft' | 'Draw Five';
   /** Team name (Mini Draft) or "My Slot Machine five". */
   title: string;
   /** "4th / 16" style finish; omitted in the Slot Machine, where the tier is the headline. */

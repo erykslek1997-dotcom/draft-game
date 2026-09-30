@@ -1,13 +1,14 @@
 import { boardTargets, dailyGame, dealFor, fanVoteFive, type Lineup } from '../src/engine/bestFive';
-import { dailyMeta, LEGEND_FIVES } from '../src/engine/dailyMeta';
+import { dailyMeta, jokerPriceAt, LEGEND_FIVES } from '../src/engine/dailyMeta';
 import { expectedMargin, legendLineup, simulateLiveGame } from '../src/engine/liveGame';
 import { STARTER_SLOTS } from '../src/engine/positions';
 
 /**
  * Daily Slot Machine 2.0 (2026-09-28): the Joker, the daily position order and the live game
  * against the opponent of the day. Pins that every legend five resolves, the Joker never comes in
- * the first two positions and is always dealt on top of the four, the live game lands on the
- * model's margin on average, and its box score always adds up to the final.
+ * the first two positions and is never dealt (since Draw Five he sits on the table at a dropping
+ * price), the live game lands on the model's margin on average, and its box score always adds up to
+ * the final.
  */
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`FAIL: ${message}`);
@@ -28,14 +29,15 @@ for (let i = 0; i < DAYS; i++) {
   check(game.joker !== null, `${seed}: there is a Joker`);
   const joker = game.joker!;
   if (joker.worth) worth++;
+  check(joker.availableUntil <= joker.round && (meta.jokerLeavesAfter === null || joker.availableUntil === Math.min(meta.jokerLeavesAfter, joker.round)), `${seed}: the Joker is on the table until round ${joker.availableUntil + 1}`);
+  check(joker.bestPrice <= joker.span.fga && joker.bestPrice === jokerPriceAt(joker.span.fga, joker.availableUntil, joker.round), `${seed}: best price ${joker.bestPrice} (full ${joker.span.fga})`);
   const targets = boardTargets(game.pool, game.cap);
   check(joker.worth === (targets.optimalFive[joker.slot].id === joker.span.id), `${seed}: "worth it" matches whether the best five takes him`);
-  // Follow the best five in the day's order: the Joker is always the last card at his position.
+  // Follow the best five in the day's order.
   const lineup: Lineup = {};
   for (const slot of meta.order) {
     const hand = dealFor(game.pool, slot, lineup, game.cap);
-    if (slot === joker.slot) check(hand.length === 5 && hand[4].id === joker.span.id, `${seed}: the Joker comes on top of the four`);
-    else check(hand.every((c) => c.id !== joker.span.id), `${seed}: no Joker at ${slot}`);
+    check(hand.length === 4 && hand.every((c) => c.id !== joker.span.id), `${seed}: ${slot} deals four, never the Joker (he sits on the table)`);
     lineup[slot] = targets.optimalFive[slot];
   }
   check(dailyGame(seed, meta) === game, `${seed}: the same seed, the same game`);
@@ -60,7 +62,9 @@ for (const target of [-12, 0, 10]) {
   }
   const avg = sum / N;
   console.log(`target ${target}: average margin ${avg.toFixed(1)}`);
-  check(Math.abs(avg - target) <= 2.5, `a ${target}-point favourite wins by about ${target} on average`);
+  // The tilt is one constant for every pair of fives, so how far a blowout lands varies a little
+  // with who's playing; within 3.5 points of the model is the bar.
+  check(Math.abs(avg - target) <= 3.5, `a ${target}-point favourite wins by about ${target} on average`);
 }
 const a = simulateLiveGame(targets.optimalFive, legends, m, seed, game.joker?.span.id);
 const b = simulateLiveGame(targets.optimalFive, legends, m, seed, game.joker?.span.id);

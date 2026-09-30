@@ -48,9 +48,27 @@ export const LEGEND_FIVES: LegendFive[] = [
 export interface DailyMeta {
   /** The order the positions are dealt in today. */
   order: Position[];
-  /** Where today's Joker shows up — never the first or second position dealt. */
+  /** Where today's Joker plays — never the first or second position dealt. */
   jokerSlot: Position;
   opponent: LegendFive;
+  /** The round (index in `order`) after which the Joker leaves the table if nobody has bought him,
+   * or null when he stays until his own round. Fixed by the seed, so the same for everyone. */
+  jokerLeavesAfter: number | null;
+}
+
+/**
+ * 2026-09-30, the user (Draw Five, Joker variant C): the Joker sits on the table from the first
+ * round and his price drops by this share every round until his own position comes up.
+ */
+export const JOKER_DROP_PCT = 0.12;
+/** The chance, shown on his card, that the Joker leaves the table after round 1, 2, 3, 4 (the user
+ * chose a rising chance you can see over a hidden moment). */
+export const JOKER_LEAVE_CHANCE = [0.2, 0.4, 0.6, 0.8];
+
+/** The Joker's price in round `round` (0-based) — full price in the first round, then 12% less every
+ * round, no lower than in his own round. One decimal, like every other cap cost. */
+export function jokerPriceAt(fullPrice: number, round: number, jokerRound: number): number {
+  return Math.round(fullPrice * Math.pow(1 - JOKER_DROP_PCT, Math.max(0, Math.min(round, jokerRound))) * 10) / 10;
 }
 
 /**
@@ -65,5 +83,12 @@ export function dailyMeta(seed: string): DailyMeta {
     .map((x) => x.s);
   const jokerSlot = order[2 + Math.floor(rng() * 3)];
   const opponent = LEGEND_FIVES[Math.floor(rng() * LEGEND_FIVES.length)];
-  return { order, jokerSlot, opponent };
+  let jokerLeavesAfter: number | null = null;
+  for (let r = 0; r < order.indexOf(jokerSlot); r++) {
+    if (rng() < JOKER_LEAVE_CHANCE[r]) {
+      jokerLeavesAfter = r;
+      break;
+    }
+  }
+  return { order, jokerSlot, opponent, jokerLeavesAfter };
 }

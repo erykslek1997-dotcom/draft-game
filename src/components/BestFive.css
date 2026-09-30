@@ -740,3 +740,77 @@
 
 .bf-daily-replay { display: block; margin: 12px auto 0; }
 .bf-daily-test { text-align: center; font-size: 12px; color: var(--at-ink-faint); margin: 6px 0 0; }
+
+/* ---------------------------------------------------------------------------
+   2026-09-30, Draw Five: the deck replaces the slot machine — four cards per position turn over
+   off the deck; the AI's five; the daily Joker on the table.
+   --------------------------------------------------------------------------- */
+.bf-deck-table {
+  padding: 10px; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--at-good, #58c28a) 30%, var(--at-line));
+  background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--at-good, #58c28a) 12%, var(--at-paper)), var(--at-paper) 75%);
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+.bf-hand { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.bf-hand-card { height: 226px; min-width: 0; perspective: 800px; }
+.bf-hand-back {
+  height: 100%; border-radius: 10px;
+  border: 2px solid color-mix(in srgb, var(--at-accent) 40%, var(--at-line));
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--at-accent) 28%, transparent) 0 12%, transparent 13%),
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)) 0 7px, var(--at-paper) 7px 14px);
+}
+.bf-hand-face { display: flex; height: 100%; animation: bf-flip-in 0.42s both cubic-bezier(0.3, 0.8, 0.3, 1); transform-origin: center; }
+.bf-hand-face > .bf-pool-card { flex: 1; min-width: 0; height: 100%; overflow: hidden; justify-content: center; }
+@keyframes bf-flip-in {
+  0% { transform: rotateY(90deg) scale(0.96); opacity: 0.4; }
+  100% { transform: rotateY(0) scale(1); opacity: 1; }
+}
+.bf-deck-foot { margin-top: 12px; text-align: center; font-size: 13px; color: var(--at-ink-soft); min-height: 38px; display: flex; align-items: center; justify-content: center; }
+.bf-deck.is-open .bf-deck-foot { color: var(--at-ink); }
+.bf-draw-btn { min-width: 220px; }
+@media (max-width: 560px) {
+  .bf-hand { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bf-hand-card { height: 208px; }
+  .bf-hand-face .bf-pool-box--sub { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .bf-hand-face { animation: none; } }
+
+.bf-ai { margin: 4px 0 12px; padding: 8px 10px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--at-accent-2, #d94a60) 35%, var(--at-line)); background: color-mix(in srgb, var(--at-accent-2, #d94a60) 5%, var(--at-paper)); }
+.bf-ai-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--at-ink-soft); }
+.bf-ai-head .at-cond { font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-accent-2, #d94a60); }
+.bf-ai-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+.bf-ai-slot { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; border-radius: 6px; border: 1px dashed var(--at-line); font-size: 10.5px; color: var(--at-ink-faint); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bf-ai-slot b { font-size: 10px; }
+.bf-ai-slot.is-filled { border-style: solid; color: var(--at-ink); }
+.bf-ai-log { margin: 6px 0 0; font-size: 11.5px; color: var(--at-ink-soft); }
+
+.bf-joker-table {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; position: relative;
+  border: 1.5px solid var(--at-gold, #ffd479);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--at-gold, #ffd479) 22%, var(--at-paper)), var(--at-paper) 70%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--at-gold, #ffd479) 12%, transparent);
+}
+.bf-joker-table .bf-joker-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.bf-joker-table .bf-joker-tag { position: static; }
+.bf-joker-table .bf-pool-name { color: var(--at-ink); font-weight: 800; }
+.bf-joker-price { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 12px; color: var(--at-ink-faint); }
+.bf-joker-odds { font-size: 11.5px; color: var(--at-ink-soft); }
+.bf-joker-odds b { color: var(--at-accent-2, #d94a60); }
+.bf-joker-state { font-size: 12px; font-weight: 700; color: var(--at-ink-soft); }
+.bf-joker-state.is-yours { color: var(--at-good, #58c28a); }
+.bf-joker-buy {
+  flex: none; font: inherit; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 9px 12px; border-radius: 8px; border: 0; cursor: pointer; background: var(--at-gold, #ffd479); color: #1b1404;
+}
+.bf-joker-buy:disabled { opacity: 0.45; cursor: not-allowed; }
+.bf-joker-table.is-gone { filter: grayscale(1); opacity: 0.55; border-style: dashed; box-shadow: none; }
+.bf-joker-table.is-taken { border-color: var(--at-good, #58c28a); }
+@media (max-width: 460px) {
+  .bf-joker-table { flex-wrap: wrap; }
+  .bf-joker-buy { width: 100%; }
+}
+/* Streak rewards restyled for the deck: 7 days a gold draw button, 14 gold card frames, 30 retro backs. */
+.bf-streak-7 .bf-draw-btn { background: linear-gradient(135deg, #fff3cf, #ffd479 60%, #b98a1c); color: #1b1404; }
+.bf-streak-14 .bf-hand-face > .bf-pool-card { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 70%, var(--at-line)); }
+.bf-streak-30 .bf-hand-back { background: repeating-linear-gradient(45deg, #1a2644 0 6px, #122038 6px 12px); border-color: var(--at-gold, #ffd479); }
