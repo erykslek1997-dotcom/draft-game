@@ -43,7 +43,18 @@ function prefersReducedMotion(): boolean {
   }
 }
 
-export default function LiveGame({ game, opponent, autoStart }: { game: LiveGameResult; opponent: LegendFive; autoStart: boolean }) {
+export default function LiveGame({
+  game,
+  opponent,
+  autoStart,
+  onFinish,
+}: {
+  game: LiveGameResult;
+  opponent: LegendFive;
+  autoStart: boolean;
+  /** Called once the final is on the board (played out or skipped). */
+  onFinish?: () => void;
+}) {
   const total = game.moments.length;
   // -1: before tip-off. `total`: final.
   const [shown, setShown] = useState(autoStart && !prefersReducedMotion() ? -1 : total);
@@ -66,6 +77,9 @@ export default function LiveGame({ game, opponent, autoStart }: { game: LiveGame
   }, [running, shown, speed, total]);
 
   const done = shown >= total;
+  useEffect(() => {
+    if (done) onFinish?.();
+  }, [done, onFinish]);
   const now = shown > 0 ? game.moments[Math.min(shown, total) - 1] : undefined;
   const score = now?.score ?? [0, 0];
   const quarters = useMemo(() => {

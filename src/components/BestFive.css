@@ -957,3 +957,37 @@
   .bf-deck-table { padding: 14px 10px 22px; }
   .bf-hand-card { transform: translateY(calc(var(--y, 0px) * 0.5)) rotate(calc(var(--r, 0deg) * 0.5)); }
 }
+
+/* 2026-09-30, the user ("animacja losowania i wyboru kart również obecna dla AI"): the AI's hand
+   comes off the deck and turns over, then the card it took lifts out; its newest pick lands in its
+   five once that has played. Paced like your own deal. */
+.bf-ai-hand { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
+.bf-ai-card { height: 46px; animation: bf-ai-deal 0.6s calc(var(--i) * 0.45s) both cubic-bezier(0.2, 0.8, 0.25, 1); }
+/* The turn is a squeeze and swap (no 3D), so fading the cards it didn't take can't show the backs. */
+.bf-ai-card-in { position: relative; display: block; height: 100%; animation: bf-ai-turn 0.5s calc(var(--i) * 0.45s + 0.5s) both; }
+.bf-ai-card-back, .bf-ai-card-face { position: absolute; inset: 0; border-radius: 6px; }
+.bf-ai-card-back { background: repeating-linear-gradient(45deg, #3a1624 0 5px, #2a101a 5px 10px); border: 1.5px solid #8a3a4e; animation: bf-ai-hide 0.5s calc(var(--i) * 0.45s + 0.5s) both; }
+.bf-ai-card-face {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 700; line-height: 1.15; text-align: center; padding: 2px;
+  background: var(--at-paper); border: 1px solid var(--at-line); color: var(--at-ink-soft); overflow: hidden;
+  animation: bf-ai-show 0.5s calc(var(--i) * 0.45s + 0.5s) both;
+}
+.bf-ai-card-face small { font-size: 9.5px; color: var(--at-ink-faint); }
+.bf-ai-card.is-took .bf-ai-card-face { border-color: var(--at-accent-2, #d94a60); color: var(--at-ink); }
+.bf-ai-card.is-took { animation: bf-ai-deal 0.6s calc(var(--i) * 0.45s) both cubic-bezier(0.2, 0.8, 0.25, 1), bf-ai-take 0.5s 2.6s both; border-radius: 6px; }
+.bf-ai-card:not(.is-took) { animation: bf-ai-deal 0.6s calc(var(--i) * 0.45s) both cubic-bezier(0.2, 0.8, 0.25, 1), bf-ai-fade 0.4s 2.6s forwards; }
+@keyframes bf-ai-deal { from { transform: translate(-40px, -24px) scale(0.6) rotate(-10deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes bf-ai-turn { 0% { transform: scaleX(1); } 50% { transform: scaleX(0.02); } 100% { transform: scaleX(1); } }
+@keyframes bf-ai-hide { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes bf-ai-show { 0%, 49% { opacity: 0; } 50%, 100% { opacity: 1; } }
+@keyframes bf-ai-take { to { transform: translateY(-6px) scale(1.06); box-shadow: 0 0 0 2px var(--at-accent-2, #d94a60); } }
+@keyframes bf-ai-fade { to { opacity: 0.35; } }
+.bf-ai-slot.is-new { animation: bf-ai-land 0.45s 3s both cubic-bezier(0.3, 1.5, 0.5, 1); }
+@keyframes bf-ai-land { from { opacity: 0; transform: scale(1.2); } to { opacity: 1; transform: none; } }
+/* The card's band carries only the team codes now. */
+.bf-card-band { justify-content: center; }
+@media (prefers-reduced-motion: reduce) {
+  .bf-ai-card, .bf-ai-card-in, .bf-ai-card-back, .bf-ai-card-face, .bf-ai-slot.is-new { animation: none !important; }
+  .bf-ai-card-back { opacity: 0; }
+}

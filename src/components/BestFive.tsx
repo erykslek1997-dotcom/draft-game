@@ -16,7 +16,6 @@ import { STARTER_SLOTS } from '../engine/positions';
 import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
 import { hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
 import { EraYears } from './EraYears';
-import { TeamChip } from './TeamBadge';
 import { teamsForSpan } from '../engine/spanTeams';
 import { markStepDone } from './pathProgress';
 import {
@@ -155,7 +154,11 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   // against `boardTargets` — the same fan-vote five and best five for every path through the seed.
   function resultFor(l: Lineup, p: DailyPool, cap: number) {
     const score = scoreLineup(l);
-    const targets = boardTargets(p, cap);
+    const board = boardTargets(p, cap);
+    // 2026-09-30, the user ("your five lepsze od the best on the board?"): a five can beat the
+    // engine's search — with a Joker, a card the deal topped up from outside the board, or one the
+    // search missed. Then that five is the best on the board.
+    const targets = score.composite > board.optimal ? { ...board, optimal: score.composite, optimalFive: l as Record<Position, PlayerSpan> } : board;
     return { score, targets, grade: gradeVsPar(score.composite, targets.par, targets.optimal) };
   }
   // The daily board already played today opens straight on its result.
@@ -168,7 +171,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   // 2026-09-30, Draw Five vs the AI: the AI drafts its own five from the same deck — each round it
   // gets the four cards of the position that didn't come to you.
   const [aiLineup, setAiLineup] = useState<Lineup>({});
-  const [aiLog, setAiLog] = useState<string | null>(null);
+  // The AI's last round: the hand it drew and the card it took (animated like yours).
+  const [aiLog, setAiLog] = useState<{ slot: Position; hand: PlayerSpan[]; took: string } | null>(null);
   // The daily Joker of the round just played, turned over once a card was picked.
   const [jokerReveal, setJokerReveal] = useState<{ joker: DailyJoker; took: boolean } | null>(null);
   // Submitted in this visit: the game plays live. A daily reopened later opens on its final.
@@ -256,7 +260,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
       ? fits.reduce((best, c) => (scoreLineup({ ...ai, [slot]: c }).composite > scoreLineup({ ...ai, [slot]: best }).composite ? c : best))
       : [...hand].sort((a, b) => a.fga - b.fga)[0];
     setAiLineup({ ...ai, [slot]: choice });
-    setAiLog(`AI drew ${hand.map((c) => shortenName(c.playerName, 0)).join(', ')} — took ${choice.playerName}.`);
+    setAiLog({ slot, hand, took: choice.id });
   }
 
   function submit() {
@@ -452,8 +456,11 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
                     );
                   }
                   // 2026-09-30, the user chose the Premium card: a band in his team's colours on top,
-                  // the headshot ringed in them, a sheen as it turns over.
-                  const team = teamsForSpan(span)[0];
+                  // the headshot ringed in them, a sheen as it turns over. 2026-09-30, the user ("dwa razy
+                  // widać kto gdzie gra"): the band is the only place the teams show — every team of
+                  // the span, no chips below; and no position (the picker already names it).
+                  const teams = teamsForSpan(span);
+                  const team = teams[0];
                   const colors = team ? teamColors(team.code, team.seasonEnd) : null;
                   return (
                     <button
@@ -463,9 +470,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
                       onClick={() => pick(activeSlot, span)}
                       style={colors ? ({ '--tc': colors.primary, '--tc-ink': colors.primaryInk, '--tc2': colors.secondary } as CSSProperties) : undefined}
                     >
-                      <span className="bf-card-band at-cond" aria-hidden>
-                        <span>{team?.code ?? ''}</span>
-                        <span>{activeSlot}</span>
+                      <span className="bf-card-band at-cond" title={teams.map((t) => `${t.code} ${t.seasonStart - 1}–${String(t.seasonEnd).slice(2)}`).join(', ')}>
+                        {teams.map((t) => t.code).join(' · ')}
                       </span>
                       <span className="bf-card-sheen" aria-hidden />
                       <span className="bf-card-glare" aria-hidden />
@@ -479,11 +485,6 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
                           larger text (`.bf-pool-season`, pool-card only) makes it the card's real
                           lead without spending padding on a box in an already-tight ~140px card. */}
                       <EraYears span={span} className="bf-pool-season" />
-                      <span className="bf-pool-teams">
-                        {teamsForSpan(span).map((t) => (
-                          <TeamChip key={t.code} code={t.code} seasonStart={t.seasonStart} seasonEnd={t.seasonEnd} />
-                        ))}
-                      </span>
                       {/* 2026-09-11, user-reported live ("dopisek pozycji na karcie nie ma sensu"):
                           this picker is already scoped to one slot (`SLOT_LABEL[activeSlot]` in
                           the header above — "Pick your point guard"), so repeating the position on
@@ -544,8 +545,9 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
 }
 
 /** Milliseconds between two cards leaving the deck, and one card's flight (land + turn over). */
-const DEAL_STEP_MS = 170;
-const DEAL_FLIGHT_MS = 640;
+// 2026-09-30, the user ("ZA SZYBKO"): slowed from 170 / 640 ms.
+const DEAL_STEP_MS = 480;
+const DEAL_FLIGHT_MS = 950;
 
 function prefersReducedMotion(): boolean {
   try {
@@ -644,8 +646,11 @@ function DeckHand({
   const pile = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(fresh ? 0 : cards.length);
   const [drawing, setDrawing] = useState(false);
+  // Every card has landed and turned over (the last one flies a moment after it leaves the deck).
+  const [settled, setSettled] = useState(!fresh);
   useEffect(() => {
     if (fresh && prefersReducedMotion()) {
+      setSettled(true);
       setShown(cards.length);
       onDone();
     }
@@ -654,13 +659,17 @@ function DeckHand({
   useEffect(() => {
     if (!drawing) return;
     if (shown >= cards.length) {
-      const t = window.setTimeout(onDone, DEAL_FLIGHT_MS);
+      const t = window.setTimeout(() => {
+        setSettled(true);
+        onDone();
+      }, DEAL_FLIGHT_MS);
       return () => window.clearTimeout(t);
     }
-    const t = window.setTimeout(() => setShown((n) => n + 1), shown === 0 ? 60 : DEAL_STEP_MS);
+    // The last card waits a beat longer — a little suspense.
+    const t = window.setTimeout(() => setShown((n) => n + 1), shown === 0 ? 250 : shown === cards.length - 1 ? DEAL_STEP_MS + 350 : DEAL_STEP_MS);
     return () => window.clearTimeout(t);
   }, [drawing, shown, cards.length, onDone]);
-  const allUp = shown >= cards.length;
+  const allUp = shown >= cards.length && settled;
   return (
     <div className={`bf-deck${allUp ? ' is-open' : ''}`}>
       <div className="bf-deck-table">
@@ -805,6 +814,7 @@ function BestFiveResult({
 }) {
   useEffect(() => markStepDone('bestfive'), []);
   const [copied, setCopied] = useState(false);
+  const [gameOver, setGameOver] = useState(!(fresh && match));
   /** 2026-09-28, the user chose the minimal share: date, grade, streak and the game — nothing about
    * the five or the Joker, so it spoils nothing for anyone who hasn't played today. */
   async function copyDailyResult() {
@@ -843,7 +853,11 @@ function BestFiveResult({
 
   return (
     <div className="at-card bf-result">
-      {match && opponent && <LiveGame game={match} opponent={opponent} autoStart={Boolean(fresh)} />}
+      {match && opponent && <LiveGame game={match} opponent={opponent} autoStart={Boolean(fresh)} onFinish={() => setGameOver(true)} />}
+      {/* 2026-09-30, the user ("wynik widoczny po meczu"): the grade, the numbers and the film room
+          wait until the game has been played (or skipped). */}
+      {gameOver && (
+        <>
       {daily && jokers && <JokerRecap jokers={jokers} lineup={lineup} />}
       {/* 2026-09-27, the user: "wynik nie pokazuje od razu" — grade and the three numbers land
           together in one scoreboard, no staged wait. */}
@@ -1069,6 +1083,8 @@ function BestFiveResult({
           </button>
         </div>
       )}
+        </>
+      )}
     </div>
   );
 }
@@ -1141,7 +1157,10 @@ function StreakTrack({ best, current }: { best: number; current: number }) {
 }
 
 /** 2026-09-30, Draw Five vs the AI: its five so far, its caps and what it drew last. */
-function AiFive({ lineup, cap, log }: { lineup: Lineup; cap: number; log: string | null }) {
+function AiFive({ lineup, cap, log }: { lineup: Lineup; cap: number; log: { slot: Position; hand: PlayerSpan[]; took: string } | null }) {
+  // 2026-09-30, the user ("animacja losowania i wyboru kart również obecna dla AI"): the AI's hand
+  // comes off the deck and turns over like yours, then the card it takes lifts out and lands in its
+  // five. Its newest pick shows once that has played.
   const used = lineupShots(lineup);
   return (
     <div className="bf-ai">
@@ -1155,14 +1174,28 @@ function AiFive({ lineup, cap, log }: { lineup: Lineup; cap: number; log: string
         {STARTER_SLOTS.map((slot) => {
           const p = lineup[slot];
           return (
-            <span key={slot} className={`bf-ai-slot${p ? ' is-filled' : ''}`}>
+            <span key={slot} className={`bf-ai-slot${p ? ' is-filled' : ''}${p && log?.slot === slot ? ' is-new' : ''}`}>
               <b>{slot}</b>
               {p ? shortenName(p.playerName, 0) : '—'}
             </span>
           );
         })}
       </div>
-      {log && <p className="bf-ai-log">{log}</p>}
+      {log && (
+        <div className="bf-ai-hand" key={`${log.slot}-${log.took}`} aria-label={`The AI drew ${log.hand.map((c) => c.playerName).join(', ')} and took ${log.hand.find((c) => c.id === log.took)?.playerName}`}>
+          {log.hand.map((c, i) => (
+            <span key={c.id} className={`bf-ai-card${c.id === log.took ? ' is-took' : ''}`} style={{ '--i': i } as CSSProperties}>
+              <span className="bf-ai-card-in">
+                <span className="bf-ai-card-back" aria-hidden />
+                <span className="bf-ai-card-face">
+                  {shortenName(c.playerName, 0)}
+                  <small>{c.fga.toFixed(1)}</small>
+                </span>
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
