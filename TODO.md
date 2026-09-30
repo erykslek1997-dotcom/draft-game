@@ -172,6 +172,17 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ## Etap 2. Symulacje — po akceptacji silnika
 
+Decyzje (2026-09-30):
+- Sezon zasadniczy szybki (bez odtwarzania meczów); dokładna symulacja dopiero w play-offach.
+- Zderzenie stylów drużyn (rim pressure vs ochrona obręczy, spacing vs obwód/switch, gwiazda 1-na-1
+  vs najlepszy obrońca, zbiórka/warunki) waży **więcej** — zestawienia mają realnie mieszać
+  w play-offach, ocena ogólna zostaje podstawą.
+- Kontuzje: **nie**.
+- Statystyki graczy z sezonu i nagrody (MVP, DPOY, 6MOY): tak, ale później.
+- Mecz na żywo: poziom szczegółu do wyboru przez użytkownika (sam wynik i statystyki meczu albo
+  przebieg akcja po akcji).
+- Kalibracja losowości na NBA: faworyt serii wygrywa ~75–85%, najlepsza drużyna ~25–35% na tytuł.
+
 - [ ] **Mecz na żywo mocniej na silniku** — dziś box score jest wyrównywany i przechylany marginesem
       modelu (`liveGame.ts`, `TILT_PER_POINT`); docelowo przebieg meczu z ofensywy/obrony, fitu,
       rotacji i słabości drużyn (kto kogo kryje, kto rzuca w clutchu). Wspólny dla Draw Five i daily.
