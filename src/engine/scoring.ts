@@ -504,7 +504,11 @@ const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.09;
  * came from a weak engine, weak self-creation, or just poor spacing. */
 export interface OffenseScoreComponents {
   otal: number;
+  /** The team Spacing score, unchanged. */
   spacing: number;
+  /** Extra spacing credit an elite creator or scorer who can shoot earns the offense (0-15),
+   * blended with `spacing` but not displayed as a spacing number of its own. */
+  engineSpacingCover: number;
   rimPressure: number;
   playmaking: number;
   selfCreation: number;
@@ -601,7 +605,11 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
   const spacingCeiling = spacingNonSpacerCeiling(starterAssignments, restSpacesForCenter(starterAssignments));
   return {
     otal: rescaleToFullRange(starWeightedOffensiveTalent(team), OFFENSE_SCORE_ANCHORS),
-    spacing: Math.min(spacingCeiling, hasElitePlaymakingEngine ? Math.min(100, rawSpacing + OFFENSE_SPACING_ELITE_ENGINE_BONUS) : rawSpacing),
+    // 2026-09-30, session 4 (the user: several spacing numbers in one summary are confusing): the
+    // offense's spacing is the team Spacing score as is; the engine's cover for weak spacing is its
+    // own ingredient, blended with it but never shown as a second spacing number.
+    spacing: rawSpacing,
+    engineSpacingCover: hasElitePlaymakingEngine ? Math.max(0, Math.min(spacingCeiling, 100, rawSpacing + OFFENSE_SPACING_ELITE_ENGINE_BONUS) - rawSpacing) : 0,
     rimPressure: rimPressureTeam(starters),
     playmaking: teamPlaymakingQuality(starters),
     selfCreation: teamSelfCreationQuality(starters),
@@ -864,7 +872,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
     components.otal * OFFENSE_OTAL_BLEND_WEIGHT +
-    components.spacing * OFFENSE_SPACING_BLEND_WEIGHT +
+    (components.spacing + components.engineSpacingCover) * OFFENSE_SPACING_BLEND_WEIGHT +
     components.rimPressure * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
     components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +

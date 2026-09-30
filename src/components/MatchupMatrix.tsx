@@ -147,7 +147,7 @@ export default function MatchupMatrix({ teams, evaluations, focusTeamId }: { tea
           <div className="matchup-detail-grid">
             {([
               ['Creation', detail.ownFit.components.creationStructure, detail.opponentFit.components.creationStructure],
-              ['Spacing fit', detail.ownFit.components.spacingCompatibility, detail.opponentFit.components.spacingCompatibility],
+              ['Spacing', detail.ownFit.components.spacingCompatibility, detail.opponentFit.components.spacingCompatibility],
               ['Rim pressure', detail.ownFit.components.rimPressureTeam, detail.opponentFit.components.rimPressureTeam],
               ['Role coverage', detail.ownFit.components.defensiveRoleCoverage, detail.opponentFit.components.defensiveRoleCoverage],
               ['Size', detail.ownFit.components.sizeCoverage, detail.opponentFit.components.sizeCoverage],
