@@ -3,84 +3,28 @@
 Żywy backlog. Edytuj ten plik bezpośrednio, kiedy coś zostanie zdecydowane, wypuszczone albo nowo
 otwarte — to jedno miejsce do sprawdzenia "co się dzieje z tym projektem".
 
-**Zasada (2026-09-30, Twoja decyzja): dopracowujemy tryby gry po kolei — Draw Five → Mini Draft →
-All-Time Draft.** W każdym trybie: najpierw to, co najbardziej scala grę, i to, co łatwe; na koniec
-pełny playtest trybu (z telefonem) i lista poprawek. Kolejność jeszcze do przemyślenia.
+**Kolejność (2026-09-30, Twoja decyzja): najpierw kalibracja silnika — to punkt wyjścia całości.
+Po wstępnych testach silnika i Twojej akceptacji robimy porządnie symulacje (mecze i playoffy na
+silniku). Dopiero potem pojedyncze „pierdoły” w trybach, po kolei: Draw Five → Mini Draft →
+All-Time Draft, każdy zakończony playtestem.**
 
 Trudność: **S** = kilka godzin, **M** = jedna runda zmian, **L** = kilka rund.
 
 ---
 
-## 1. Draw Five (zwykły + daily) — w pracy
+## Etap 1. Kalibracja silnika — TERAZ
 
-Jak jest teraz: talia kart zamiast slot machine. Zwykły tryb to gra z AI (Pro), które dostaje z tej
-samej talii 4 karty pozycji, które nie przyszły do gracza; na końcu mecz na żywo. Daily: 5 kart na
-pozycję, w 1–3 rundach zakryty Joker (legenda albo leszcz, 50/50), mecz z legendarną piątką, streak,
-share bez spoilerów. Granatowy stół, wachlarz, karty Premium, dźwięki. Szczegóły w historii na dole.
+Jak pracujemy: grasz pełny draft (All-Time) przyciskiem testowym **AUTO-FINISH**, oceniasz każdą
+drużynę w tabeli wyników i zgłaszasz, co się nie zgadza; poprawiamy i powtarzamy.
 
-- [ ] **Wyłączyć tryb testowy daily przed wypuszczeniem** — `DAILY_REPLAY_FOR_TESTING = false`
-      w `src/components/dailyProgress.ts` (znika „Play today again”, „Another day's board” i świeża
-      plansza przy każdym wejściu). Zostaje włączony, dopóki testujesz. (S)
-- [ ] **Podpowiedź dopiero po dociągnięciu kart** — dziś „One shooter so far — this deal has
-      another” widać przed Draw. (S)
-- [ ] **Animacja wyboru karty: lot do slotu** — wariant z makiety „Draw Five Card Motion”;
-      wdrożone jest tylko rozdanie (wariant A). (S)
-- [ ] **Poziomy AI: Rookie / Pro / Legend** — Rookie z losowością i słabością do wielkich nazwisk,
-      Legend bez błędów. Dziś tylko Pro. (M)
-- [ ] **Balans po graniu** — Joker (częstość legendy i leszcza, cena = środkowa cena pozycji),
-      limit capów w daily (`DAILY_CAP_ROOM = 15`), jak często AI wygrywa, tempo rozdania. (S–M)
-- [ ] **Playtest całego trybu + lista poprawek** (S)
-- Później:
-  - [ ] Karty taktyki w meczu („Zone defense”, „Clutch timeout”…) — zagrywane w trakcie meczu na
-        żywo. (L)
-  - [ ] Pojedynek przez link — seed + 5 wyborów w linku, bez serwera; znajomy drafuje z tej samej
-        talii, potem mecz. Tani krok przed multiplayerem. (M)
-  - [ ] Multiplayer na żywo — patrz „Później”.
+- [x] **Przycisk testowy AUTO-FINISH w pełnym drafcie** (2026-09-30) — „Auto-finish (testing)” nad
+      planszą: dokańcza draft (Twoje picki też robi AI), buduje rotację i od razu pokazuje wyniki,
+      ok. 15 s. Flaga `AUTO_FINISH_FOR_TESTING` w `src/components/GameShell.tsx`. (S)
+- [ ] **Sesje kalibracyjne: Twoja ocena drużyn → poprawki** — lista uwag z każdej sesji ląduje tu
+      jako punkty. (L)
+- [ ] **Akceptacja silnika** — Twoje „ok, silnik gra”, zanim ruszymy symulacje.
 
-## 2. Mini Draft
-
-- [ ] **Playtest pod kątem spójności z Draw Five** — wygląd kart, stół, tempo, dźwięki. (S)
-- [ ] **Ton wyniku według miejsca** (odłożone 2026-09-28). W Draw Five film room ocenia względem
-      najlepszej piątki na planszy: im bliżej, tym więcej pochwał, a najniższa oś to „sufit
-      planszy”, nie błąd. W draftach nie da się policzyć najlepszej możliwej drużyny (CPU zabiera
-      graczy), więc ton według miejsca: 1. miejsce już dziś same pochwały; rozszerzyć na top 3, gdzie
-      słabości tylko jako „co mogłoby zagrozić”. Wspólne z All-Time. (M)
-- [ ] **Mecz na żywo na koniec?** — do decyzji: w Mini jest 16 drużyn i wynik to miejsce w lidze.
-      (M–L)
-- [ ] **Daily dla Mini** — każdego dnia inny limit FGA, zbanowani gracze, tematy (np. zakaz graczy,
-      którzy grali w Lakers). Podstawa gotowa: dzienne ziarno i `dailyProgress.ts`. (M)
-- [ ] **Playtest całego trybu + lista poprawek** (S)
-
-## 3. All-Time Draft
-
-- [ ] **Playtest pod kątem spójności z resztą** (S)
-- [ ] **Ton wyniku według miejsca** — ten sam co w Mini.
-- [ ] **Tempo draftu AI (AI-4)** — naprawione tylko zawieszanie w połowie draftu, ogólne tempo
-      i czas nie ruszone. (S)
-- [ ] **Daily dla All-Time** — limit FGA, bany, „the bomb”. (M)
-- [ ] **Kalibracja silnika — tylko to, co realnie wyjdzie w graniu** (lista w „Kalibracja”). 
-- [ ] **Playtest całego trybu + lista poprawek** (S)
-
-## Wspólne dla wszystkich trybów (po trzech trybach)
-
-- [ ] **Mniejsza paczka danych** — dziś otwarcie trybu trwa ok. 5 s, na telefonie najdłużej. Jeden
-      plik JS: 16,4 MB (3,7 MB po kompresji) po kroku 1 (`compactJson.ts`, 2026-09-27). Dalej:
-      rozdzielić dane — Draw Five i Mini Draft potrzebują tylko okien „peak” i gotowych ocen
-      (precomputed), pełne okna i surowe dane dopiero All-Time Draft (dynamiczny `import()`); zmierzyć
-      wybór planszy Draw Five na telefonie (w Node ok. 1–2 s) i ewentualnie zapisywać go
-      w localStorage. (L)
-- [ ] **Globalny ranking** — dopiero z serwerem; do tego czasu wyniki tylko lokalnie.
-- Po wypuszczeniu gry:
-  - [ ] **Skrócenie komentarzy-dziennika** (ustalone 2026-09-27). Komentarze to ~30% linii w `src/`,
-        w tym ~1300 datowanych notatek; najwięcej w `talent.ts`, `aiDrafter.ts`, `grades.ts`,
-        `scoring.ts`, `rotation.ts`, `defensiveTalent.ts`, `portability.ts`. Zostawić „dlaczego”,
-        liczby kalibracji i Twoje decyzje w jednej linijce; wyciąć kronikę. Szacunkowo 6–8 tys. linii
-        mniej. Ręcznie, plik po pliku, od `talent.ts`. (L)
-  - [ ] **Rejestr nazwanych wyjątków** dla per-gracz override'ów w `talent.ts`/`grades.ts`. (M)
-
----
-
-## Kalibracja silnika (Twoja ocena; robimy, gdy wyjdzie w graniu)
+Otwarte tematy silnika (Twoja ocena; bierzemy, gdy wyjdą w sesjach):
 
 - [ ] **Próg gwiazdy w `positionCorrectionFor` (talent.ts)** — klif: PG tuż pod
       `ALL_STAR_TAL_FLOOR` dostaje pełny bonus za spacing (~×1.15), tuż nad nim nie. Mark Price
@@ -129,6 +73,88 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ---
 
+## Etap 2. Symulacje — po akceptacji silnika
+
+- [ ] **Mecz na żywo mocniej na silniku** — dziś box score jest wyrównywany i przechylany marginesem
+      modelu (`liveGame.ts`, `TILT_PER_POINT`); docelowo przebieg meczu z ofensywy/obrony, fitu,
+      rotacji i słabości drużyn (kto kogo kryje, kto rzuca w clutchu). Wspólny dla Draw Five i daily.
+      (L)
+- [ ] **Symulacja sezonu i playoffów w draftach** — przegląd tego, co jest (`engine/playoffSimulation.ts`), pod ten
+      sam silnik; wyniki muszą się zgadzać z oceną drużyn. (M–L)
+- [ ] **Mecz na żywo na koniec Mini?** — do decyzji: w Mini jest 16 drużyn i wynik to miejsce
+      w lidze. (M–L)
+- [ ] **Balans po symulacjach** — jak często AI wygrywa, Joker (częstość legendy i leszcza, cena),
+      limit capów w daily (`DAILY_CAP_ROOM = 15`). (S–M)
+
+---
+
+## Etap 3. Pierdoły w trybach, po kolei
+
+### 3.1 Draw Five (zwykły + daily)
+
+Jak jest teraz: talia kart zamiast slot machine. Zwykły tryb to gra z AI (Pro), które dostaje z tej
+samej talii 4 karty pozycji, które nie przyszły do gracza; na końcu mecz na żywo. Daily: 5 kart na
+pozycję, w 1–3 rundach zakryty Joker (legenda albo leszcz, 50/50), mecz z legendarną piątką, streak,
+share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w ciemno.
+
+- [ ] **Stół** — scena stołu z perspektywą i AI naprzeciwko (makieta „Draw Five Table”), spójna
+      z resztą UI: ten sam nagłówek, przyciski, wiersze slotów; capy bez żetonów. (M)
+- [ ] **Ta sama karta na ekranach wyników** — wiersze slotów i wyniki w wersji kompaktowej karty. (S–M)
+- [ ] **Podpowiedzi — czy w ogóle potrzebne?** Propozycja: miernik potrzeb drużyny albo usunąć.
+      Jeśli zostają: dopiero po dociągnięciu kart (dziś widać je przed Draw). (S)
+- [ ] **Karty reaktywne, które kuszą** — np. mocna karta, kiedy wydałeś już dużo capów; bez
+      dopisku. (M)
+- [ ] **Poziomy AI losowe** — Rookie / Pro / Legend losowane na mecz (Rookie z losowością
+      i słabością do wielkich nazwisk, Legend bez błędów). Dziś tylko Pro. (M)
+- [ ] **Animacja wyboru karty: lot do slotu** — wariant z makiety „Draw Five Card Motion”. (S)
+- [ ] **Playtest całego trybu + lista poprawek** (S)
+- [ ] **Wyłączyć tryb testowy daily przed wypuszczeniem** — `DAILY_REPLAY_FOR_TESTING = false`
+      w `src/components/dailyProgress.ts`. Na samym końcu. (S)
+- Później:
+  - [ ] Karty taktyki w meczu („Zone defense”, „Clutch timeout”…). (L)
+  - [ ] Pojedynek przez link — seed + 5 wyborów w linku, bez serwera. (M)
+  - [ ] Multiplayer na żywo — patrz „Później”.
+
+### 3.2 Mini Draft
+
+- [ ] **Playtest pod kątem spójności z Draw Five** — wygląd kart, stół, tempo, dźwięki. (S)
+- [ ] **Ton wyniku według miejsca** (odłożone 2026-09-28). W draftach nie da się policzyć
+      najlepszej możliwej drużyny (CPU zabiera graczy), więc ton według miejsca: 1. miejsce już dziś
+      same pochwały; rozszerzyć na top 3, gdzie słabości tylko jako „co mogłoby zagrozić”. Wspólne
+      z All-Time. (M)
+- [ ] **Daily dla Mini** — każdego dnia inny limit FGA, zbanowani gracze, tematy. Podstawa gotowa:
+      dzienne ziarno i `dailyProgress.ts`. (M)
+- [ ] **Playtest całego trybu + lista poprawek** (S)
+
+### 3.3 All-Time Draft
+
+- [ ] **Playtest pod kątem spójności z resztą** (S)
+- [ ] **Ton wyniku według miejsca** — ten sam co w Mini.
+- [ ] **Tempo draftu AI (AI-4)** — naprawione tylko zawieszanie w połowie draftu. (S)
+- [ ] **Daily dla All-Time** — limit FGA, bany, „the bomb”. (M)
+- [ ] **Wyłączyć AUTO-FINISH przed wypuszczeniem** — `AUTO_FINISH_FOR_TESTING = false`
+      w `src/components/GameShell.tsx`. (S)
+- [ ] **Playtest całego trybu + lista poprawek** (S)
+
+### 3.4 Wspólne dla wszystkich trybów (po trzech trybach)
+
+- [ ] **Mniejsza paczka danych** — dziś otwarcie trybu trwa ok. 5 s, na telefonie najdłużej. Jeden
+      plik JS: 16,4 MB (3,7 MB po kompresji) po kroku 1 (`compactJson.ts`, 2026-09-27). Dalej:
+      rozdzielić dane — Draw Five i Mini Draft potrzebują tylko okien „peak” i gotowych ocen
+      (precomputed), pełne okna i surowe dane dopiero All-Time Draft (dynamiczny `import()`); zmierzyć
+      wybór planszy Draw Five na telefonie (w Node ok. 1–2 s) i ewentualnie zapisywać go
+      w localStorage. (L)
+- [ ] **Globalny ranking** — dopiero z serwerem; do tego czasu wyniki tylko lokalnie.
+- Po wypuszczeniu gry:
+  - [ ] **Skrócenie komentarzy-dziennika** (ustalone 2026-09-27). Komentarze to ~30% linii w `src/`,
+        w tym ~1300 datowanych notatek; najwięcej w `talent.ts`, `aiDrafter.ts`, `grades.ts`,
+        `scoring.ts`, `rotation.ts`, `defensiveTalent.ts`, `portability.ts`. Zostawić „dlaczego”,
+        liczby kalibracji i Twoje decyzje w jednej linijce; wyciąć kronikę. Szacunkowo 6–8 tys. linii
+        mniej. Ręcznie, plik po pliku, od `talent.ts`. (L)
+  - [ ] **Rejestr nazwanych wyjątków** dla per-gracz override'ów w `talent.ts`/`grades.ts`. (M)
+
+---
+
 ## Później
 
 - [ ] **Multiplayer Draw Five na żywo** (2026-09-30, „wolę irl”). Pokój z linku
@@ -169,6 +195,9 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ## Historia (wypuszczone)
 
+- **2026-09-30 — Jedna karta gracza:** karta draftu (wariant A) we wszystkich trybach: pas drużyn
+  u góry podzielony według sezonów, kody drużyn, lata po najechaniu, twarz w kolorze drużyny; Draw
+  Five rozdaje tę samą kartę w ciemno (bez TAL, pozycji i przycisków). Makieta: „One Card”.
 - **2026-09-30 — Draw Five:** talia zamiast slot machine; gra z AI z tej samej talii; rozdanie
   z animacją (karta leci i się odwraca); wybory nigdy nie są blokowane przez capy (`slotFloor`,
   dobieranie tanich graczy spoza planszy); mecz na żywo, w którym faworyt o ≥5 pkt zawsze wygrywa, a

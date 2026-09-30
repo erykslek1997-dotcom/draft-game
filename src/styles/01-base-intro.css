@@ -958,3 +958,6 @@ select {
   color: var(--text-h);
   max-width: 320px;
 }
+/* 2026-09-30: the testing AUTO-FINISH bar of the full draft (GameShell, AUTO_FINISH_FOR_TESTING). */
+.at-test-bar { margin: 8px 0 10px; }
+.at-test-bar .auto-finish-btn { border-style: dashed; font-variant-numeric: tabular-nums; }
