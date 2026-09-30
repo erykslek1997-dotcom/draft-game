@@ -509,6 +509,9 @@ export interface OffenseScoreComponents {
   /** Extra spacing credit an elite creator or scorer who can shoot earns the offense (0-15),
    * blended with `spacing` but not displayed as a spacing number of its own. */
   engineSpacingCover: number;
+  /** Part of the spacing shortfall a paint-and-glass offense makes up (rim pressure, rebounding,
+   * size) — blended with `spacing`, not displayed as a spacing number. */
+  interiorSpacingCover: number;
   rimPressure: number;
   playmaking: number;
   selfCreation: number;
@@ -538,6 +541,34 @@ export interface OffenseScoreBreakdown extends OffenseScoreComponents {
 // cost of a genuinely bad-shooting frontcourt. `fitScore(team)` is computed once and reused for
 // `mismatchStructure` below too, instead of the pre-existing redundant second call.
 const OFFENSE_SPACING_ELITE_ENGINE_BONUS = 15;
+
+/**
+ * 2026-09-30, engine calibration session 5 (the user: "czasem spacing u niektórych drużyn ssie i nie
+ * widać żeby odbijało się w czymś innym co mogłoby być mocniejsze" — Kidd / Edwards / Pippen / Nenê
+ * / David Robinson: Spacing 44, Offense 60, beside rim pressure 100, rebounding 90, size 82): a five
+ * built to live in the paint and on the glass trades spacing for something real. Up to
+ * `INTERIOR_COVER_SHARE` of the spacing shortfall is made up, scaled by how strong that interior
+ * game is (rim pressure half, rebounding and functional size a quarter each), from nothing at
+ * `INTERIOR_STRENGTH_START` to full at `INTERIOR_STRENGTH_FULL`.
+ */
+const INTERIOR_COVER_SHARE = 0.35;
+const INTERIOR_STRENGTH_START = 60;
+const INTERIOR_STRENGTH_FULL = 95;
+const PAINT_SCORER_OTAL = 70;
+const PAINT_SCORER_MAX_SPACING = 30;
+/** Two frontcourt starters who carry a real scoring load but don't shoot from outside. */
+export function paintScorerOverlap(starterAssignments: ReturnType<typeof primaryStarters>): boolean {
+  return (
+    starterAssignments.filter(
+      ({ player, slot }) =>
+        (slot === 'PF' || slot === 'C') && teamSpacingValue(player) < PAINT_SCORER_MAX_SPACING && computeOffensiveTalent(player) >= PAINT_SCORER_OTAL,
+    ).length >= 2
+  );
+}
+export function interiorStrength(rimPressure: number, rebounding: number, size: number): number {
+  const interior = rimPressure * 0.5 + rebounding * 0.25 + size * 0.25;
+  return Math.max(0, Math.min(1, (interior - INTERIOR_STRENGTH_START) / (INTERIOR_STRENGTH_FULL - INTERIOR_STRENGTH_START)));
+}
 
 /**
  * 2026-09-30, engine calibration session 1: team offensive talent, weighted toward its best
@@ -603,14 +634,21 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
   // engine running it is. Reusing the same ceiling here closes that gap; the bonus can still lift a
   // team TOWARD the ceiling, just never past it.
   const spacingCeiling = spacingNonSpacerCeiling(starterAssignments, restSpacesForCenter(starterAssignments));
+  const engineSpacingCover = hasElitePlaymakingEngine ? Math.max(0, Math.min(spacingCeiling, 100, rawSpacing + OFFENSE_SPACING_ELITE_ENGINE_BONUS) - rawSpacing) : 0;
+  const rimPressure = rimPressureTeam(starters);
   return {
     otal: rescaleToFullRange(starWeightedOffensiveTalent(team), OFFENSE_SCORE_ANCHORS),
     // 2026-09-30, session 4 (the user: several spacing numbers in one summary are confusing): the
     // offense's spacing is the team Spacing score as is; the engine's cover for weak spacing is its
     // own ingredient, blended with it but never shown as a second spacing number.
     spacing: rawSpacing,
-    engineSpacingCover: hasElitePlaymakingEngine ? Math.max(0, Math.min(spacingCeiling, 100, rawSpacing + OFFENSE_SPACING_ELITE_ENGINE_BONUS) - rawSpacing) : 0,
-    rimPressure: rimPressureTeam(starters),
+    engineSpacingCover,
+    // Two paint scorers who can't shoot (Giannis + Kareem) crowd the same space the interior game
+    // needs, so they earn no cover — the user's session-1 verdict on exactly that five.
+    interiorSpacingCover: paintScorerOverlap(starterAssignments)
+      ? 0
+      : Math.max(0, 100 - rawSpacing - engineSpacingCover) * INTERIOR_COVER_SHARE * interiorStrength(rimPressure, fit.components.reboundingBalance, fit.components.sizeCoverage),
+    rimPressure,
     playmaking: teamPlaymakingQuality(starters),
     selfCreation: teamSelfCreationQuality(starters),
     mismatchStructure: fit.inputs.mismatchStructure,
@@ -846,6 +884,9 @@ const WEAK_OFFENSIVE_STARTER_MAX_PENALTY = 8;
 function weakOffensiveStarterPenalty(team: Team): number {
   const total = primaryStarters(team).reduce((sum, { player, minutes }) => {
     if (minutes <= 0) return sum;
+    // 2026-09-30, session 5: a 3&D starter (shoots and defends) is in the five for exactly that;
+    // his low O-TAL is the role, not a weak link (Fit credits him instead).
+    if (player.primaryPosition !== 'C' && player.primaryPosition !== 'PF' && teamSpacingValue(player) >= 70 && computeDefensiveTalent(player) >= 75) return sum;
     const bar = player.primaryPosition === 'C' ? LOW_OFFENSE_BIG_OTAL_CEILING : WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING;
     const gap = bar - computeOffensiveTalent(player);
     return gap > 0 ? sum + gap * WEAK_OFFENSIVE_STARTER_PENALTY_PER_POINT * Math.min(1, minutes / STARTER_MINUTES) : sum;
@@ -872,7 +913,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
     components.otal * OFFENSE_OTAL_BLEND_WEIGHT +
-    (components.spacing + components.engineSpacingCover) * OFFENSE_SPACING_BLEND_WEIGHT +
+    (components.spacing + components.engineSpacingCover + components.interiorSpacingCover) * OFFENSE_SPACING_BLEND_WEIGHT +
     components.rimPressure * OFFENSE_RIM_PRESSURE_BLEND_WEIGHT +
     components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
@@ -905,7 +946,9 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // Offense level stays where the session-2 scale put it.
 // Same session, later: the continuous centre cover and the capped gravity lift moved the Spacing
 // field down (70.1 -> 66.3) and the raw offense field with it (85.2 -> 84.1).
-const OFFENSE_RAW_MEAN = 82.2;
+// Session 5: the interior spacing cover, the 3&D weak-starter exemption and spacing-aware starters
+// lifted the raw field 84.2 -> 85.2 on the same seeds.
+const OFFENSE_RAW_MEAN = 83.2;
 const OFFENSE_RAW_SD = 8.5;
 const DEFENSE_RAW_MEAN = 77.4;
 const DEFENSE_RAW_SD = 8.2;
@@ -998,6 +1041,15 @@ const MULTI_GRAVITY_TEAM_SPACING_CAP = 97;
  * whatever the other starters did. Gravity still lifts the five, by at most this much (raw points,
  * before the display rescale); Curry's own rules are unchanged. */
 const GRAVITY_FLOOR_MAX_LIFT = 8;
+/** 2026-09-30, engine calibration session 5 (the user, on Curry with Wade, Gasol and Mourning
+ * reading Spacing 93, and Curry with Iguodala, Barkley and Wilt 93): Curry still lifts a five
+ * further than anyone (his "Curry + another gravity shooter = 100" rule stands for a real
+ * shooting lineup), but non-shooting starters beside him now cost too — a ceiling of their own,
+ * higher than everyone else's 58/65. */
+function curryNonSpacerCeiling(hardNonSpacers: number): number {
+  if (hardNonSpacers <= 1) return 100;
+  return hardNonSpacers === 2 ? 80 : 70;
+}
 // A non-Curry walking-gravity shooter raises the offense's geometry substantially, but cannot
 // supply Curry's off-ball/on-ball floor by himself. This sits at a strong, not elite, raw team
 // spacing level; it is blended only across the shooter's actual starter minutes below.
@@ -1141,7 +1193,7 @@ export function spacingScore(team: Team): number {
     // strong bounded floor (see `MULTI_WALKING_GRAVITY_TEAM_SPACING_FLOOR`'s own note) and still
     // pay for non-shooters around them over the minutes the threats aren't both on the floor.
     const hasCurry = gravityThreatAssignments.some(({ player }) => isShootingAnomalyPlayer(player));
-    if (hasCurry) return 100;
+    if (hasCurry) return curryNonSpacerCeiling(hardNonSpacerCount);
     const uniqueThreats = [...new Map(gravityThreatAssignments.map((entry) => [entry.player.id, entry])).values()];
     const avgThreatShare =
       uniqueThreats.reduce((sum, { minutes }) => sum + Math.max(0, Math.min(1, minutes / STARTER_MINUTES)), 0) /
@@ -1175,7 +1227,7 @@ export function spacingScore(team: Team): number {
     const floored = isCurry ? Math.max(base, floor) : Math.min(Math.max(base, floor), base + GRAVITY_FLOOR_MAX_LIFT);
     const withGravityFloor = base * (1 - threatShare) + floored * threatShare;
     const baseScore = rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS);
-    return Math.round(isCurry ? baseScore : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore));
+    return Math.round(isCurry ? Math.min(curryNonSpacerCeiling(hardNonSpacerCount), baseScore) : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore));
   }
 
   const baseScore = rescaleToFullRange(base, SPACING_SCORE_ANCHORS);

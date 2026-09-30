@@ -10,6 +10,7 @@ import { allocateMinutes } from './minuteAllocation';
 import { overallTierForSpan, effectiveTalent } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan } from './rotationRoleMinutes';
+import { teamSpacingValue } from './midrangeGravity';
 import type { Rotation, SlotAssignment, Team } from './types';
 
 export const GAME_MINUTES = 48;
@@ -313,10 +314,58 @@ export function bestPrimaryAssignment(
   }
 
   search(0, 0, 0);
-  const result = { assignment: best, score: bestScore === -Infinity ? 0 : bestScore };
+  const swapped = bestScore === -Infinity ? null : spacingAwareStarterSwaps(best, roster, valueFor);
+  const result = swapped ?? { assignment: best, score: bestScore === -Infinity ? 0 : bestScore };
   if (bestPrimaryAssignmentCache.size >= BEST_PRIMARY_ASSIGNMENT_CACHE_CAP) bestPrimaryAssignmentCache.clear();
   bestPrimaryAssignmentCache.set(cacheKey, result);
   return result;
+}
+
+/**
+ * 2026-09-30, engine calibration session 5 (the user, on San Diego starting Amen Thompson — spacing
+ * 0 — ahead of Danny Green — 85 — next to Westbrook, Kawhi, Mobley and David Robinson): the search
+ * above ranks starters by talent x position fit alone. A five that needs shooting (average team
+ * spacing under `SWAP_SPACING_NEED`) now swaps a starter for a bench player at the same slot
+ * when the talent given up is at most `SWAP_MAX_TALENT_LOSS` and the five's average spacing gains
+ * at least `SWAP_MIN_SPACING_GAIN`. One swap per slot, the largest spacing gain first.
+ */
+const SWAP_SPACING_NEED = 60;
+const SWAP_MAX_TALENT_LOSS = 5;
+const SWAP_MIN_SPACING_GAIN = 8;
+function spacingAwareStarterSwaps(
+  best: Partial<Record<Position, PlayerSpan>>,
+  roster: PlayerSpan[],
+  valueFor: (player: PlayerSpan, slot: Position) => number,
+): { assignment: Partial<Record<Position, PlayerSpan>>; score: number } | null {
+  const lineup = { ...best };
+  const lineupSpacing = () => {
+    const five = STARTER_SLOTS.map((slot) => lineup[slot]).filter((p): p is PlayerSpan => p !== undefined);
+    return five.length === 0 ? 0 : five.reduce((sum, p) => sum + teamSpacingValue(p), 0) / five.length;
+  };
+  let changed = false;
+  for (let pass = 0; pass < STARTER_SLOTS.length; pass++) {
+    const base = lineupSpacing();
+    if (base >= SWAP_SPACING_NEED) break;
+    const inLineup = new Set(STARTER_SLOTS.map((slot) => lineup[slot]?.id).filter(Boolean));
+    let bestSwap: { slot: Position; player: PlayerSpan; gain: number } | null = null;
+    for (const slot of STARTER_SLOTS) {
+      const incumbent = lineup[slot];
+      if (!incumbent) continue;
+      for (const candidate of roster) {
+        if (inLineup.has(candidate.id)) continue;
+        const candidateValue = valueFor(candidate, slot);
+        if (candidateValue <= 0 || valueFor(incumbent, slot) - candidateValue > SWAP_MAX_TALENT_LOSS) continue;
+        const gain = (teamSpacingValue(candidate) - teamSpacingValue(incumbent)) / STARTER_SLOTS.length;
+        if (gain >= SWAP_MIN_SPACING_GAIN && (!bestSwap || gain > bestSwap.gain)) bestSwap = { slot, player: candidate, gain };
+      }
+    }
+    if (!bestSwap) break;
+    lineup[bestSwap.slot] = bestSwap.player;
+    changed = true;
+  }
+  if (!changed) return null;
+  const score = STARTER_SLOTS.reduce((sum, slot) => sum + (lineup[slot] ? valueFor(lineup[slot]!, slot) : 0), 0);
+  return { assignment: lineup, score };
 }
 
 /** Total value (`computeTalent * starterFitMultiplier`, summed) of the true best starting five

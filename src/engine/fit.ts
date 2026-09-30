@@ -26,8 +26,10 @@ import { rimPressureForFit, rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 // Boolean predicate only (is this player a hard whole-career era override).
-import { hasEraOverrideDefenseFloor, registerDefensiveNeighbourWindows } from './defensiveTalent';
-import { spacingScore } from './scoring';
+import { hasEraOverrideDefenseFloor } from './defensiveTalent';
+import { registerNeighbourWindows } from './neighbourWindows';
+import { interiorStrength, spacingScore } from './scoring';
+import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import type { Team } from './types';
 
 /**
@@ -147,6 +149,18 @@ const SPACING_SHORTFALL_FLOOR = 60;
 const LONE_BIG_SHORTFALL_SHARE = 0.5;
 const OFF_BALL_SHOOTER_SPACING = 65;
 const OFF_BALL_ROLL_RIM = 50;
+const INTERIOR_BOTTLENECK_RELIEF = 0.5;
+const SHOT_FIRST_FGA_START = 15;
+const SHOT_FIRST_FGA_FULL = 20;
+const SHOT_FIRST_SECOND_COST = 8;
+const SHOT_FIRST_THIRD_COST = 4;
+const SHOT_FIRST_SHARING_START = 85;
+const SHOT_FIRST_SHARING_RELIEF = 0.6;
+const THREE_AND_D_SPACING = 70;
+const THREE_AND_D_DEFENSE = 75;
+const THREE_AND_D_STAR_OTAL = 85;
+const THREE_AND_D_CREDIT = 3;
+const THREE_AND_D_MAX_CREDIT = 5;
 const FRONTCOURT_SPACING_FLOOR = 40;
 /** A frontcourt non-shooter at or above this O-TAL is a real paint scorer (see `paintOverlapPenalty`). */
 const PAINT_SCORER_OTAL_FLOOR = 70;
@@ -252,7 +266,9 @@ export interface FitScoreInputs {
   positionAdjustedAthleticismPercentile: number | null;
   functionalSizePercentile: number | null;
   additionalRoleCredits: string[];
-  /** Points taken off the weighted blend for paint overlap and for ball-dominant non-shooters. */
+  /** Points taken off the weighted blend (paint overlap, ball-dominant non-shooters, shot-first
+   * overlap), less the credits (interior relief of the spacing bottleneck, 3&D complements) —
+   * negative when the credits win. */
   lineupPenalty: number;
   championshipArchetypes: ChampionshipStructureResult['archetypes'];
   primaryArchetype?: ChampionshipStructureResult['primaryArchetype'];
@@ -315,8 +331,8 @@ function percentile(sorted: number[], value: number): number {
 
 const roleContext = buildRoleFitContext(players);
 
-// The same player's windows one season earlier and later, for D-TAL's neighbour blend
-// (defensiveTalent.ts `registerDefensiveNeighbourWindows`).
+// The same player's windows one season earlier and later, for the neighbour blends in team D-TAL
+// and team spacing (`neighbourWindows.ts`).
 const windowsByLabel = new Map<string, PlayerSpan>();
 for (const span of players) windowsByLabel.set(`${span.playerName}|${span.spanLabel}`, span);
 function shiftedLabel(label: string, by: number): string | null {
@@ -326,7 +342,7 @@ function shiftedLabel(label: string, by: number): string | null {
   const length = (Number(match[2]) - (start % 100) + 100) % 100;
   return `${start + by}-${String((start + by + length) % 100).padStart(2, '0')}`;
 }
-registerDefensiveNeighbourWindows((span) =>
+registerNeighbourWindows((span) =>
   [-1, 1]
     .map((by) => shiftedLabel(span.spanLabel, by))
     .map((label) => (label ? windowsByLabel.get(`${span.playerName}|${label}`) : undefined))
@@ -1011,13 +1027,62 @@ export function fitScore(team: Team): FitScoreResult {
     if (cost >= 2) offBallLiabilities.push(starters[i].playerName);
     offBallPenalty += cost;
   }
+  // 2026-09-30, engine calibration session 5 (the user, on Arenas + Jordan at Fit 80: "dwóch graczy
+  // kłócących się o piłkę ma znaczenie ... nie chodzi o karanie np. Kobe + LeBron. Ale Arenas i
+  // Jordan to dwóch 'shot first' z mentalem pierwszej opcji"): perimeter scorers whose job is
+  // their own shot (a Shot Creator / Slasher tag) at a first-option load — shot volume put on
+  // today's pace — want the same possessions. A lead who organises the offense (Primary or
+  // Secondary Ball Handler: LeBron, Magic) is not counted, so Kobe + LeBron pays nothing. The
+  // second such scorer costs `SHOT_FIRST_SECOND_COST` at full load, a third `SHOT_FIRST_THIRD_COST`.
+  const shotFirstLoads = starterEntries
+    .map(({ player, slot }) => {
+      if (slot === 'PF' || slot === 'C') return { player, load: 0 };
+      if (player.offensiveArchetype !== 'Shot Creator' && player.offensiveArchetype !== 'Slasher') return { player, load: 0 };
+      const paceAdjustedFga = player.fga * (LEAGUE_PACE_BASELINE / eraBaseline(player.spanLabel).pace);
+      // A scorer who is also an elite passer (Bird, Wade) shares the ball more than his tag says.
+      const sharing = clamp(((playmakingScoreForPlayer(player) ?? 0) - SHOT_FIRST_SHARING_START) / 10, 0, 1) * SHOT_FIRST_SHARING_RELIEF;
+      return { player, load: clamp((paceAdjustedFga - SHOT_FIRST_FGA_START) / (SHOT_FIRST_FGA_FULL - SHOT_FIRST_FGA_START), 0, 1) * (1 - sharing) };
+    })
+    .filter(({ load }) => load > 0)
+    .sort((a, b) => b.load - a.load);
+  const shotFirstOverlapPenalty =
+    (shotFirstLoads[1]?.load ?? 0) * SHOT_FIRST_SECOND_COST + (shotFirstLoads[2]?.load ?? 0) * SHOT_FIRST_THIRD_COST;
+  if (shotFirstOverlapPenalty >= 2) {
+    const names = shotFirstLoads.slice(0, 3).map(({ player }) => player.playerName);
+    notes.push(`${names.join(' and ')} are ${names.length > 2 ? 'all' : 'both'} shot-first first options — they want the same possessions.`);
+  }
+  // 2026-09-30, engine calibration session 5 (the user, on Raja Bell beside Magic, George and
+  // Embiid: "przy tak ofensywnym talencie Bell ma bronić i rzucać z cornera"; Danny Green likewise):
+  // a low-usage perimeter starter who shoots (team spacing `THREE_AND_D_SPACING`+) and defends
+  // (D-TAL `THREE_AND_D_DEFENSE`+) is the complement a star-heavy five wants, not a weak link.
+  // Credit per such starter when at least two teammates are real scorers (O-TAL
+  // `THREE_AND_D_STAR_OTAL`+), capped at `THREE_AND_D_MAX_CREDIT`.
+  const scorers = starters.filter((player) => computeOffensiveTalent(player) >= THREE_AND_D_STAR_OTAL);
+  const threeAndD = starterEntries.filter(
+    ({ player, slot }, index) =>
+      slot !== 'PF' && slot !== 'C' &&
+      demandByPlayer[index] < 0.75 &&
+      teamSpacingValue(player) >= THREE_AND_D_SPACING &&
+      computeDefensiveTalent(player) >= THREE_AND_D_DEFENSE &&
+      scorers.filter((scorer) => scorer.id !== player.id).length >= 2,
+  );
+  const threeAndDCredit = Math.min(THREE_AND_D_MAX_CREDIT, threeAndD.length * THREE_AND_D_CREDIT);
+  if (threeAndDCredit > 0) {
+    notes.push(`${threeAndD.map(({ player }) => player.playerName).join(' and ')} ${threeAndD.length > 1 ? 'defend and space' : 'defends and spaces'} the floor around the scorers — the right complement.`);
+  }
   if (offBallLiabilities.length > 0) {
     notes.push(`${offBallLiabilities.join(' and ')} ${offBallLiabilities.length > 1 ? 'need' : 'needs'} the ball but can't space the floor when a teammate has it.`);
   }
   if (paintOverlapPenalty > 0) {
     notes.push(`${paintScorers.map(({ player }) => player.playerName).join(' and ')} both score in the paint without an outside shot.`);
   }
-  const score = Math.round(clamp(weightedScore - spacingBottleneckPenalty - paintOverlapPenalty - offBallPenalty));
+  // 2026-09-30, session 5: a five that trades spacing for paint and glass (rim pressure, rebounding,
+  // size) pays up to half less of the spacing bottleneck — the same interior strength the offense
+  // credits (`interiorStrength`, scoring.ts).
+  const interiorRelief = paintScorers.length >= 2
+    ? 0
+    : spacingBottleneckPenalty * INTERIOR_BOTTLENECK_RELIEF * interiorStrength(rimPressureTeamComponent, reboundingBalance, sizeCoverage);
+  const score = Math.round(clamp(weightedScore - spacingBottleneckPenalty - paintOverlapPenalty - offBallPenalty - shotFirstOverlapPenalty + interiorRelief + threeAndDCredit));
   if (spacingBottleneckPenalty >= 2) {
     notes.push(`Spacing compatibility caps overall fit (-${Math.round(spacingBottleneckPenalty)}).`);
   }
@@ -1058,7 +1123,7 @@ export function fitScore(team: Team): FitScoreResult {
       positionAdjustedAthleticismPercentile,
       functionalSizePercentile,
       additionalRoleCredits,
-      lineupPenalty: paintOverlapPenalty + offBallPenalty,
+      lineupPenalty: paintOverlapPenalty + offBallPenalty + shotFirstOverlapPenalty - interiorRelief - threeAndDCredit,
       championshipArchetypes: championshipStructure.archetypes,
       primaryArchetype: championshipStructure.primaryArchetype,
       secondaryArchetype: championshipStructure.secondaryArchetype,
