@@ -36,6 +36,14 @@ const MAX_POST_DRAFT_TALENT_DROP = 6;
  * cap-legal roster and tier 3 reopened every span of every player, trading a star down to fund the
  * rest. The drafted roster was cap-legal, so keeping each drafted span keeps tier 1 feasible.
  */
+/*
+ * 2026-10-01, user-approved (bench-quality pass): a swap also keeps the drafted span's primary
+ * position and, if the drafted span met the starter standard (starterStandard.ts), that standard.
+ * Bam Adebayo drafted at PF 2019-21 (TAL 77) was swapped to his C-primary 2020-22 (79) and became a
+ * 12-minute backup centre while Bo Outlaw started at PF; Horry 2004-06 and Ingles 2016-18 were
+ * swapped to higher-TAL windows that neither space nor defend. 200 drafts: rosters with 3+ centres
+ * 1,044 -> 727, overall 79.58 -> 79.75.
+ */
 function peakProtectedOptions(options: PlayerSpan[], draftedSpan: PlayerSpan): PlayerSpan[] {
   if (options.length === 0) return options;
   const bestTalent = Math.max(...options.map(effectiveTalent));

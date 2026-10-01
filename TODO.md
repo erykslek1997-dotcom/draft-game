@@ -143,10 +143,11 @@ Otwarte tematy silnika (Twoja ocena; bierzemy, gdy wyjdą w sesjach):
       GM-a liczy się w połowie dla graczy, którzy dziury nie łatają. Wynik: kara w Offense dla
       nieuzasadnionych. 100 draftów: nieuzasadnieni starterzy 58 → 27, TAL < 50 7 → 2. Dobór
       okresów po drafcie zawsze zostawia okres z draftu (Carter/Tatum nie spadają o 25 TAL).
-- [ ] **Jakość ławek** — średnie TAL ławki ~52–53 (starterzy ~87). Z poprawką doboru okresów
-      (zachowuje pozycję główną i standard startera; WIP na gałęzi, czeka na decyzję) ławka spada
-      jeszcze o ~1 TAL (53.3 → 52.4). Zbadać, co AI bierze w rundach 6–9 i czy da się podnieść
-      ławkę bez psucia piątki i limitu.
+- [x] **Jakość ławek (2026-10-01)** — zasada pokrycia (zmiennik TAL ≥ 55 na obwód i dla dużych,
+      rundy z ≥ 2 pickami), rezerwa 6 FGA na wolne miejsce, dobór okresów zachowuje pozycję i
+      standard startera. 200 draftów: ławka 60.8 → 61.8 (najsłabsze 10%: 54.3 → 56.5), bez
+      zmiennika na obwodzie 358 → 24, bez dużego 558 → 195, 3+ C 1044 → 626, wynik 79.58 → 79.76,
+      piątka −0.49 TAL. Zostaje: brak zmiennika PG (~620 drużyn; obwód liczony razem).
 - [ ] **„Bo Outlaw”** — po poprawce doboru okresów zostaje 8 nieuzasadnionych starterów na 100
       draftów, w tym Bo Outlaw 1998-00 ×5 (PF, TAL 62, spacing 0, D 87). Tanich PF ze standardem
       (FGA < 9) jest tylko 7 graczy; wariant b (premia za kończącą się podaż PF) nie pomógł.
