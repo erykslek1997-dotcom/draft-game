@@ -626,7 +626,9 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
     fit.inputs.primaryCreationSignal >= ELITE_PRIMARY_CREATOR_THRESHOLD &&
     (!leadEngine || teamSpacingValue(leadEngine) >= HARD_NON_SPACER_VALUE);
   const hasElitePlaymakingEngine = hasEliteScoringEngine || hasElitePrimaryCreator;
-  const rawSpacing = spacingScore(team);
+  // 2026-10-01: the offense blend reads the unrounded spacing — a one-minute rotation change could
+  // tip the rounded score a whole point (Tulsa 67 -> 68, +0.38 raw offense) across .5.
+  const rawSpacing = spacingScoreExact(team);
   // 2026-09-18, user-reported live ("90 nadal za dużo w mojej opinii" — 90 is still too much,
   // after the fix below had already brought a real Magic Johnson/Klay Thompson/Paul Pierce/Shawn
   // Kemp/Dwight Howard construction from 100 to 90): the elite-engine bonus itself was still
@@ -1162,7 +1164,8 @@ function spacingNonSpacerCeiling(starterAssignments: ReturnType<typeof primarySt
   return pgIsNonSpacer ? NON_SPACER_PG_STARTER_CEILING : TWO_NON_SPACER_STARTERS_CEILING;
 }
 
-export function spacingScore(team: Team): number {
+/** Unrounded team spacing; `spacingScore` rounds it for display and Fit. */
+export function spacingScoreExact(team: Team): number {
   const assignments = allAssignments(team);
   const totalMinutes = STARTER_SLOTS.length * GAME_MINUTES;
   if (assignments.length === 0 || totalMinutes === 0) return 0;
@@ -1215,7 +1218,7 @@ export function spacingScore(team: Team): number {
     const floored = Math.min(Math.max(base, MULTI_WALKING_GRAVITY_TEAM_SPACING_FLOOR), base + GRAVITY_FLOOR_MAX_LIFT);
     const withGravityFloor = base * (1 - avgThreatShare) + floored * avgThreatShare;
     const baseScore = rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS);
-    return Math.round(Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore));
+    return Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore);
   }
 
   // A single Walking-gravity span is an enormous individual asset, but it is not automatically
@@ -1241,7 +1244,7 @@ export function spacingScore(team: Team): number {
     const floored = isCurry ? Math.max(base, floor) : Math.min(Math.max(base, floor), base + GRAVITY_FLOOR_MAX_LIFT);
     const withGravityFloor = base * (1 - threatShare) + floored * threatShare;
     const baseScore = rescaleToFullRange(withGravityFloor, SPACING_SCORE_ANCHORS);
-    return Math.round(isCurry ? Math.min(curryNonSpacerCeiling(hardNonSpacerCount), baseScore) : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore));
+    return isCurry ? Math.min(curryNonSpacerCeiling(hardNonSpacerCount), baseScore) : Math.min(MULTI_GRAVITY_TEAM_SPACING_CAP, nonSpacerCeiling, baseScore);
   }
 
   const baseScore = rescaleToFullRange(base, SPACING_SCORE_ANCHORS);
@@ -1251,7 +1254,11 @@ export function spacingScore(team: Team): number {
       : plusShooterCount >= 2
         ? TWO_SHOOTER_LINEUP_SPACING_FLOOR
         : 0;
-  return Math.round(Math.min(nonSpacerCeiling, Math.max(baseScore, constructionFloor)));
+  return Math.min(nonSpacerCeiling, Math.max(baseScore, constructionFloor));
+}
+
+export function spacingScore(team: Team): number {
+  return Math.round(spacingScoreExact(team));
 }
 
 export interface RotationScoreComponents {
