@@ -1,6 +1,6 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
-import { positionCompetence, type PositionCompetence } from './positionCompetence';
+import { positionCompetenceScore } from './positionCompetence';
 import { effectiveTalent } from './grades';
 import { maxSustainableMinutes } from './durability';
 import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE, OVERRUN_BANDS } from './rotationRoleMinutes';
@@ -56,19 +56,32 @@ const STARTER_CORE_BONUS = 60;
 const OWN_SLOT_BONUS = 12;
 
 /**
- * 2026-10-01, the user ("skalowalne do minut?"): how a player's value at a position that isn't his
- * own fades with the minutes he plays there, on top of his competence multiplier
- * (positionFitMultiplier). [minutes up to, share of value]. A 'full' second position barely fades;
- * a 'partial' one is fine for a stretch and costly for a game; an 'emergency' fit is a few minutes'
- * answer. The rotation grade prices the same thing with its downward and small-ball ramps.
+ * 2026-10-01, the user ("skalowalne do minut?", then "bramki zamykające"): how a player's value at a
+ * position that isn't his own fades with the minutes he plays there, on top of his competence fit
+ * (positionFitMultiplier). The first `OFF_POSITION_FREE_MINUTES` keep full value; past them the
+ * share falls linearly to `0.50 + 0.47 × score` at a whole game, where score is the continuous
+ * competence score (positionCompetence.ts): 0.92 for a real second position (0.9), 0.78 at 0.6 and
+ * about 0.5 for a fit that barely exists. A short stretch is nearly free, a whole game is not, and
+ * the solver itself, not a threshold, decides when a weak fit stops being worth playing.
  */
 const GAME_SLOT_MINUTES = 48;
-const OFF_POSITION_MINUTE_CURVE: Partial<Record<PositionCompetence, Array<[number, number]>>> = {
-  natural: [[GAME_SLOT_MINUTES, 1]],
-  full: [[12, 1], [24, 0.99], [GAME_SLOT_MINUTES, 0.97]],
-  partial: [[12, 1], [24, 0.95], [GAME_SLOT_MINUTES, 0.87]],
-  emergency: [[6, 1], [18, 0.85], [GAME_SLOT_MINUTES, 0.7]],
-};
+const OFF_POSITION_FREE_MINUTES = 12;
+const OFF_POSITION_STEP_MINUTES = 6;
+const OFF_POSITION_FLOOR = 0.5;
+const OFF_POSITION_SCORE_WEIGHT = 0.47;
+
+function offPositionCurve(score: number): Array<[number, number]> {
+  if (score >= 1) return [[GAME_SLOT_MINUTES, 1]];
+  const share48 = OFF_POSITION_FLOOR + OFF_POSITION_SCORE_WEIGHT * Math.min(1, score);
+  const curve: Array<[number, number]> = [[OFF_POSITION_FREE_MINUTES, 1]];
+  const span = GAME_SLOT_MINUTES - OFF_POSITION_FREE_MINUTES;
+  for (let upTo = OFF_POSITION_FREE_MINUTES + OFF_POSITION_STEP_MINUTES; upTo <= GAME_SLOT_MINUTES; upTo += OFF_POSITION_STEP_MINUTES) {
+    // Each step is priced at its midpoint on the linear fade.
+    const mid = upTo - OFF_POSITION_STEP_MINUTES / 2 - OFF_POSITION_FREE_MINUTES;
+    curve.push([upTo, 1 - (1 - share48) * (mid / span)]);
+  }
+  return curve;
+}
 
 interface Arc {
   to: number;
@@ -301,8 +314,8 @@ function solveMinutes(
         flow.add(playerNode(i), slotNode(j), slotUnits, -value * UNIT);
       } else {
         // Off his own position a player's value fades with the minutes he spends there
-        // (`OFF_POSITION_MINUTE_CURVE`): a short stretch is nearly free, a whole game is not.
-        const curve = OFF_POSITION_MINUTE_CURVE[positionCompetence(player, slot)] ?? OFF_POSITION_MINUTE_CURVE.natural!;
+        // (`offPositionCurve`): a short stretch is nearly free, a whole game is not.
+        const curve = offPositionCurve(positionCompetenceScore(player, slot));
         let reached = 0;
         for (const [upTo, share] of curve) {
           const units = Math.floor(Math.min(upTo, GAME_SLOT_MINUTES) / UNIT) - Math.floor(reached / UNIT);

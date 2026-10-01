@@ -21,12 +21,12 @@ import competenceData from '../data/positionCompetence.json';
  */
 export type PositionCompetence = 'natural' | 'full' | 'partial' | 'emergency' | 'none';
 
-type Entry = { nat: Position[]; pos: Partial<Record<Position, Exclude<PositionCompetence, 'natural' | 'none'>>> };
+type Entry = { nat: Position[]; pos: Partial<Record<Position, number>> };
 const DATA = competenceData as Record<string, Entry>;
 const POSITION_ORDER: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 
-/** Multipliers on a player's value in a slot. `full`/`partial` stay at or above the 0.9 line
- * the engine reads as a real position fit; `emergency` keeps the old adjacent fallback. */
+/** Multipliers on a player's value in a slot at the score anchors (0.9 and 0.6), interpolated in
+ * between by `positionFitMultiplier` (positions.ts); `emergency` keeps the old adjacent fallback. */
 export const COMPETENCE_MULTIPLIER = { natural: 1, full: 0.975, partial: 0.945 } as const;
 export const EMERGENCY_UP_MULTIPLIER = 0.85;
 export const EMERGENCY_DOWN_MULTIPLIER = 0.5;
@@ -38,19 +38,40 @@ function entryFor(span: PlayerSpan): Entry | undefined {
   return DATA[normalizePlayerName(span.playerName)];
 }
 
-export function positionCompetence(span: PlayerSpan, slot: Position): PositionCompetence {
-  if (slot === span.primaryPosition) return 'natural';
+/**
+ * 2026-10-01, the user ("bramki zamykające", "0,1 zbiórki nie może kogoś zablokować"): how well a
+ * player plays `slot` as a continuous score — 1 at his span's own position, up to 0.9 at another,
+ * 0 when closed. The build script lowers it smoothly for each missing trait instead of opening
+ * discrete levels at thresholds. A span outside the built table falls back to the old rules.
+ */
+export const NATURAL_SCORE = 1;
+/** Another of the player's natural positions (Harden's SG-tagged span at PG). */
+const OTHER_NATURAL_SCORE = 0.95;
+const UNLISTED_SECONDARY_SCORE = 0.9;
+const UNLISTED_ADJACENT_SCORE = 0.25;
+/** Score bands behind the discrete levels the rest of the engine reads (depth, grace, cards). */
+export const FULL_SCORE = 0.75;
+export const PARTIAL_SCORE = 0.47;
+
+export function positionCompetenceScore(span: PlayerSpan, slot: Position): number {
+  if (slot === span.primaryPosition) return NATURAL_SCORE;
   const entry = entryFor(span);
   if (!entry) {
-    // A span outside the built table (not in the draft pool): the pre-table rules.
-    if (span.secondaryPositions.includes(slot)) return 'full';
+    if (span.secondaryPositions.includes(slot)) return UNLISTED_SECONDARY_SCORE;
     return Math.abs(POSITION_ORDER.indexOf(slot) - POSITION_ORDER.indexOf(span.primaryPosition)) === 1
-      ? 'emergency'
-      : 'none';
+      ? UNLISTED_ADJACENT_SCORE
+      : 0;
   }
-  // Another of the player's natural positions (Harden's SG-tagged span at PG).
-  if (entry.nat.includes(slot)) return 'full';
-  return entry.pos[slot] ?? 'none';
+  if (entry.nat.includes(slot)) return OTHER_NATURAL_SCORE;
+  return entry.pos[slot] ?? 0;
+}
+
+export function positionCompetence(span: PlayerSpan, slot: Position): PositionCompetence {
+  if (slot === span.primaryPosition) return 'natural';
+  const score = positionCompetenceScore(span, slot);
+  if (score >= FULL_SCORE) return 'full';
+  if (score >= PARTIAL_SCORE) return 'partial';
+  return score > 0 ? 'emergency' : 'none';
 }
 
 /** The positions a player genuinely plays besides this span's tag (`full` first, then

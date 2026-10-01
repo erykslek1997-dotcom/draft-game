@@ -86,8 +86,9 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // value, not minutes): the stars play their tier minutes and the named bench targets fewer. Same
 // three named targets. Re-measured directly (66).
 // 2026-10-01: 66 -> 65 with per-36 position competence and the off-position minute curve, which
-// reshuffle one backup minute. Re-measured directly (65).
-check(weakLinkInsight?.message.includes('65 targetable minutes'), 'weak-link description reports the real 65-minute cost');
+// reshuffle one backup minute. Re-measured directly (65). Same day, 65 -> 64 with the continuous
+// competence score. Re-measured directly (64).
+check(weakLinkInsight?.message.includes('64 targetable minutes'), 'weak-link description reports the real 64-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
@@ -135,8 +136,9 @@ const movementCoverageTeam = team('team-model-movement-coverage', [
   // backup big for both PF and C, keeping the "eight meaningful players + a dead ninth" shape.
   // 2026-10-01: was Elton Brand 2012-14. Per-36 position competence lets Shane Battier cover PF
   // as a small-ball four, so Brand fell to 8 minutes and the roster had seven meaningful players.
-  // Taj Gibson 2012-14 earns real backup big minutes and keeps the shape.
-  pick('Taj Gibson', '2012-14'),
+  // Taj Gibson 2012-14 earned real backup big minutes and kept the shape; with the continuous
+  // competence score he fell back under the meaningful line, and Nick Collison 2009-11 keeps it.
+  pick('Nick Collison', '2009-11'),
   pick('Andre Iguodala', '2011-13'),
   pick('Larry Smith', '1991-93'),
 ]);

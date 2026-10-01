@@ -1,8 +1,7 @@
 /**
  * Writes src/data/positionCompetence.json — for every player in the draft pool, his natural
- * position(s) and how well he can play each other position: 'full' (played it for real),
- * 'partial' (can, but not for a whole game), 'emergency' (only when nothing better exists).
- * Anything not listed is 'none' (not a realistic assignment). Read by positionCompetence.ts.
+ * position(s) and a score in (0, 0.9] for how well he can play each other position (see `score`).
+ * Anything not listed is closed (not a realistic assignment). Read by positionCompetence.ts.
  *
  * 2026-09-25, user's multi-position ask ("wielopozycyjność ... na marginalnych spadkach"). The
  * levels come from a skill-profile classifier (height, rebounding, playmaking, defense, shooting)
@@ -26,7 +25,6 @@ import { getHeightInches } from '../src/data/heightLookup';
 import { effectiveTalent } from '../src/engine/grades';
 import { isNamedPgEligible } from '../src/engine/pgEligibility';
 import { positionDistance, hardLockedPosition } from '../src/engine/positions';
-import { playmakingScoreForPlayer } from '../src/engine/playmakingLookup';
 import { computeSpacing } from '../src/engine/spacing';
 import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
 import { per36 } from '../src/engine/minutesPerGame';
@@ -37,67 +35,77 @@ const POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 const HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'];
 const SMALL_BALL_C_ROLES = ['Switch Big', 'Mobile Big', 'Helper', 'Anchor Big'];
 
+/** The best a non-natural position can score (natural positions are 1). */
+const MAX_SCORE = 0.9;
+/** The user's own hand decisions, as scores. */
+const LEVEL_SCORE: Record<Exclude<Level, 'none'>, number> = { full: 0.9, partial: 0.6, emergency: 0.25 };
+
+/** `weight` per unit the value misses `target` by, capped so one weak trait never closes a position. */
+function shortfall(value: number, target: number, weight: number, cap: number): number {
+  return Math.min(cap, weight * Math.max(0, target - value));
+}
+
 /**
- * Heights are inches (6'6" = 78). `share` = fraction of the player's spans listing `pos`.
+ * How well a player plays `pos` coming from his nearest natural position `from`, as a score in
+ * (0, 0.9], or 0 when the position is closed. Heights are inches (6'6" = 78, 0 = unknown, never
+ * penalised). `share` = fraction of the player's spans listing `pos`.
  *
- * 2026-10-01, the user ("wielopozycyjność do sprawdzenia, może zbyt twarde limity", then "jak
- * wymagamy 5+ zbiórek, a ktoś gra 20 minut, to tego nie osiągnie"): counting stats are read per 36
- * minutes (`per36`, minutesPerGame.ts), and the adjacent-position rules are looser — 86% of
- * centres, 80% of point guards and 67% of shooting guards had no real second position, wings
- * needed 6.5 rebounds a game to play SF, and no power forward over 6'6" could play SF at all.
+ * 2026-10-01, the user ("wielopozycyjność ... może zbyt twarde limity", then "bramki zamykające"
+ * and "0,1 zbiórki nie może kogoś zablokować"): instead of a ladder of thresholds that opens a
+ * level, every adjacent position starts open and each missing trait costs a penalty that grows
+ * linearly with the shortfall and is capped per trait. score = 0.9 × e^(−Σ penalties), so no
+ * single statistic closes a position and a tenth of a rebound moves the score by a fraction of a
+ * percent. Counting stats are per 36 minutes (`per36`, minutesPerGame.ts). Only non-adjacent
+ * positions (and the user's own decisions) are closed outright; a weak fit stays possible and the
+ * minute solver prices it with the minutes played there (minuteAllocation.ts).
  */
-function classify(pos: Position, from: Position, s: PlayerSpan, h: number, share: number): Level {
+function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: number): number {
   const b = s.box;
   const rpg = per36(b.rpg, s);
   const apg = per36(b.apg, s);
   const bpg = per36(b.bpg, s);
-  const pm = playmakingScoreForPlayer(s) ?? 0;
   const spacing = computeSpacing(s);
   const dtal = computeDefensiveTalent(s);
   const handler = HANDLERS.includes(s.offensiveArchetype);
+  const below = (target: number, weight: number, cap: number) => (h ? shortfall(h, target, weight, cap) : 0);
+  const above = (target: number, weight: number, cap: number) => (h ? shortfall(-h, -target, weight, cap) : 0);
+  let penalty: number;
   switch (pos) {
-    case 'PG':
-      if (share >= 0.5 && apg >= 6.5) return 'full';
-      if (isNamedPgEligible(s)) return 'partial';
-      // A point forward (LeBron, Pippen, Grant Hill) runs the offence for stretches.
-      if (handler && (apg >= 6.5 || pm >= 90)) return h <= 80 && apg >= 7 ? 'partial' : 'emergency';
-      return 'none';
+    case 'PG': {
+      const named = isNamedPgEligible(s);
+      // Two slots away only a ball-handling wing runs the offence (a point forward: LeBron, Pippen).
+      if (!named && from !== 'SG' && !(from === 'SF' && handler)) return 0;
+      penalty = (named ? 0 : shortfall(apg, 7, 0.1, 0.6)) + (named || handler ? 0 : 0.2) + (from === 'SG' || named ? 0 : 0.5);
+      break;
+    }
     case 'SG':
-      if (from === 'PG') {
-        if (h >= 77) return 'full';
-        if (h >= 75) return 'partial';
-        return 'emergency';
-      }
-      if (h && h <= 79) return handler || spacing >= 65 || apg >= 3.5 ? 'full' : 'partial';
-      if (h === 80) return dtal >= 80 ? 'partial' : 'emergency';
-      if (h === 81) return 'emergency';
-      return 'none';
+      if (from === 'PG') penalty = below(76, 0.1, 0.8);
+      else if (from === 'SF') penalty = above(79, 0.12, 0.8) + (handler || spacing >= 65 ? 0 : shortfall(apg, 3.5, 0.08, 0.4));
+      else return 0;
+      break;
     case 'SF':
-      if (from === 'PG' || from === 'SG') {
-        if (h >= 78 && rpg >= 5.5) return dtal >= 85 ? 'full' : 'partial';
-        if (h >= 77) return rpg >= 5 || dtal >= 75 ? 'partial' : 'emergency';
-        if (h >= 76) return 'emergency';
-        return 'none';
-      }
-      if (from === 'PF') {
-        if (h && h <= 80) return spacing >= 50 || handler || apg >= 3 ? 'partial' : 'emergency';
-        if (h && h <= 82) return handler || spacing >= 60 ? 'partial' : 'emergency';
-      }
-      return 'none';
+      if (from === 'SG') {
+        penalty = Math.max(0, below(78, 0.12, 0.8) + shortfall(rpg, 5.5, 0.08, 0.4) - Math.min(0.15, 0.005 * Math.max(0, dtal - 70)));
+      } else if (from === 'PF') {
+        penalty = above(80, 0.1, 0.8) + (handler ? 0 : shortfall(spacing, 50, 0.005, 0.4));
+      } else return 0;
+      break;
     case 'PF':
-      if (from === 'C') return share >= 0.5 ? 'full' : 'none';
-      if (h >= 82) return 'full';
-      if (rpg >= 6 && ((h >= 79 && (dtal >= 70 || rpg >= 7.3)) || (h >= 78 && dtal >= 85))) return 'partial';
-      if (h >= 79 && rpg >= 5.5) return 'partial';
-      if (h >= 78) return 'emergency';
-      return 'none';
+      // The user's rule: a centre plays the four only if he really did (half his spans list it).
+      if (from === 'C') return share >= 0.5 ? MAX_SCORE : 0;
+      if (from !== 'SF') return 0;
+      penalty = below(79, 0.1, 0.8) + shortfall(rpg, 6.5, 0.08, 0.4);
+      break;
     case 'C':
-      if (s.primaryPosition !== 'PF') return 'none';
-      if (h >= 81 && rpg >= 9) return 'partial';
-      if (rpg >= 7 && bpg >= 1 && SMALL_BALL_C_ROLES.includes(s.defensiveRole)) return 'partial';
-      if (h >= 80 && rpg >= 8) return 'emergency';
-      return 'none';
+      if (from !== 'PF') return 0;
+      penalty = Math.max(
+        0,
+        below(82, 0.1, 0.8) + shortfall(rpg, 9, 0.06, 0.4) + shortfall(bpg, 1.2, 0.15, 0.4) -
+          (SMALL_BALL_C_ROLES.includes(s.defensiveRole) ? 0.2 : 0),
+      );
+      break;
   }
+  return Math.round(MAX_SCORE * Math.exp(-penalty) * 100) / 100;
 }
 
 const overrides = JSON.parse(
@@ -112,7 +120,7 @@ for (const span of draftPool) {
   byName.set(span.playerName, list);
 }
 
-type Entry = { nat: Position[]; pos: Partial<Record<Position, Exclude<Level, 'none'>>> };
+type Entry = { nat: Position[]; pos: Partial<Record<Position, number>> };
 const out: Record<string, Entry> = {};
 const tally: Record<string, number> = {};
 for (const [name, spans] of byName) {
@@ -132,14 +140,13 @@ for (const [name, spans] of byName) {
     for (const pos of POSITIONS) {
       if (nat.includes(pos)) continue;
       const from = [...nat].sort((a, b) => positionDistance(a, pos) - positionDistance(b, pos))[0];
-      const adjacent = positionDistance(from, pos) === 1;
       const listed = spans.filter((s) => s.secondaryPositions.includes(pos) || s.primaryPosition === pos).length;
-      const pgList = pos === 'PG' && isNamedPgEligible(spans[0]);
-      // PG is two slots from SF, but a point forward still runs the offence (classify's PG case).
-      const auto: Level = adjacent || pgList || pos === 'PG' ? classify(pos, from, peak, height, listed / spans.length) : 'none';
-      const level = userLevels[pos] ?? auto;
-      tally[level] = (tally[level] ?? 0) + 1;
-      if (level !== 'none') entry.pos[pos] = level;
+      const auto = score(pos, from, peak, height, listed / spans.length);
+      const userLevel = userLevels[pos];
+      const value = userLevel === undefined ? auto : userLevel === 'none' ? 0 : LEVEL_SCORE[userLevel];
+      const bucket = value >= 0.75 ? 'full' : value >= 0.47 ? 'partial' : value > 0 ? 'emergency' : 'none';
+      tally[bucket] = (tally[bucket] ?? 0) + 1;
+      if (value > 0) entry.pos[pos] = value;
     }
   }
   out[key] = entry;

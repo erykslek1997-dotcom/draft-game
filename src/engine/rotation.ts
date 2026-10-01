@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { positionCompetence, realSecondaryPositions, COMPETENCE_MULTIPLIER } from './positionCompetence';
+import { positionCompetence, realSecondaryPositions } from './positionCompetence';
 import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositionFit, isUpwardSlide, hardLockedPosition } from './positions';
 // 2026-08-19: `computeTalent` import replaced with `effectiveTalent` (grades.ts) throughout —
 // every real starter/backup assignment decision here now uses the same tier-capped number
@@ -158,10 +158,11 @@ function starterFitMultiplier(player: PlayerSpan, slot: Position): number {
   // to a natural point guard when the roster has one of similar quality — a non-PG starts there
   // only when he is clearly better (about 6 TAL and up), otherwise he plays his own slot or comes
   // off the bench.
-  if (slot === 'PG' && competence !== 'natural' && (competence === 'full' || competence === 'partial')) {
-    return COMPETENCE_MULTIPLIER[competence] * NON_NATURAL_PG_STARTER_SHARE;
+  // 2026-10-01: a real second position reads the continuous fit (positionFitMultiplier).
+  if (slot === 'PG' && (competence === 'full' || competence === 'partial')) {
+    return positionFitMultiplier(player, slot) * NON_NATURAL_PG_STARTER_SHARE;
   }
-  if (competence === 'natural' || competence === 'full' || competence === 'partial') return COMPETENCE_MULTIPLIER[competence];
+  if (competence === 'natural' || competence === 'full' || competence === 'partial') return positionFitMultiplier(player, slot);
   if (competence === 'emergency') {
     if (!isUpwardSlide(player, slot)) return STARTER_FALLBACK_DOWN_MULTIPLIER;
     return effectiveTalent(player) >= STARTER_UP_SLIDE_ELITE_TALENT_FLOOR

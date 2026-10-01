@@ -352,8 +352,8 @@
       "al horford",
       "ray allen",
       "dwight howard",
-      "anthony edwards",
-      "shawn marion",
+      "evan mobley",
+      "chris bosh",
       "anfernee hardaway",
       "paul pierce"
     ],
@@ -635,11 +635,11 @@
       "steve nash",
       "evan mobley",
       "alonzo mourning",
-      "jimmy butler",
       "reggie miller",
+      "ray allen",
       "al horford",
-      "kyle lowry",
-      "ray allen"
+      "jimmy butler",
+      "terry porter"
     ],
     "expectedPickId": "howardw01-2009-2010",
     "expectedPickLabel": "Dwight Howard | 2008-10"
@@ -703,23 +703,23 @@
       "steve nash",
       "evan mobley",
       "alonzo mourning",
-      "jimmy butler",
       "reggie miller",
-      "al horford",
-      "kyle lowry",
       "ray allen",
+      "al horford",
+      "jimmy butler",
+      "terry porter",
       "dwight howard",
       "rudy gobert",
-      "mike conley",
+      "charlie ward",
       "klay thompson",
-      "chris mullin",
-      "chauncey billups",
+      "clyde drexler",
+      "charles barkley",
       "chet holmgren",
       "bill walton",
-      "terry porter"
+      "kyle lowry"
     ],
-    "expectedPickId": "barklch01-cw-1992-1993",
-    "expectedPickLabel": "Charles Barkley | 1991-93"
+    "expectedPickId": "siakapa01-2025-2026",
+    "expectedPickLabel": "Pascal Siakam | 2024-26"
   },
   {
     "seed": 123456,
@@ -999,11 +999,11 @@
       "paul pierce",
       "ray allen",
       "jayson tatum",
-      "jalen williams",
+      "marc gasol",
       "shane battier"
     ],
-    "expectedPickId": "drexlcl01-cw-1992-1993",
-    "expectedPickLabel": "Clyde Drexler | 1991-93"
+    "expectedPickId": "willija06-2024-2025",
+    "expectedPickLabel": "Jalen Williams | 2023-25"
   },
   {
     "seed": 123456,
@@ -1067,19 +1067,19 @@
       "paul pierce",
       "ray allen",
       "jayson tatum",
-      "jalen williams",
+      "marc gasol",
       "shane battier",
-      "clyde drexler",
+      "jalen williams",
       "jimmy butler",
-      "dwight howard",
-      "al horford",
       "alonzo mourning",
-      "hersey hawkins",
+      "al horford",
+      "terry porter",
+      "chris mullin",
       "bob mcadoo",
-      "rudy gobert",
-      "mike conley"
+      "dikembe mutombo",
+      "dwight howard"
     ],
-    "expectedPickId": "hardaan01-1994-1995",
-    "expectedPickLabel": "Anfernee Hardaway | 1993-95"
+    "expectedPickId": "boshch01-2014-2015",
+    "expectedPickLabel": "Chris Bosh | 2013-15"
   }
 ]
