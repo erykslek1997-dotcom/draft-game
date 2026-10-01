@@ -75,7 +75,9 @@ function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: n
       const named = isNamedPgEligible(s);
       // Two slots away only a ball-handling wing runs the offence (a point forward: LeBron, Pippen).
       if (!named && from !== 'SG' && !(from === 'SF' && handler)) return 0;
-      penalty = (named ? 0 : shortfall(apg, 7, 0.1, 0.6)) + (named || handler ? 0 : 0.2) + (from === 'SG' || named ? 0 : 0.5);
+      // Running the offence is a skill, not a body type: a shooter with no handling (Korver, 2.5
+      // assists per 36) is an emergency answer at the point, not a partial one.
+      penalty = (named ? 0 : shortfall(apg, 7, 0.15, 1)) + (named || handler ? 0 : 0.4) + (from === 'SG' || named ? 0 : 0.5);
       break;
     }
     case 'SG':
