@@ -143,6 +143,7 @@ const STARTER_FALLBACK_DOWN_MULTIPLIER = 0.12;
  * with an arbitrary discount. Dropped to full parity with primary (1.0): a real secondary now
  * means exactly what the tag claims, no residual penalty for being "merely" secondary.
  */
+const NON_NATURAL_PG_STARTER_SHARE = 0.94;
 function starterFitMultiplier(player: PlayerSpan, slot: Position): number {
   // Named hard locks (Barkley PF-only, Pierce SF-only — see `positions.ts`) apply here too:
   // this search has its own separate fit function precisely so the visible starting five can be
@@ -153,6 +154,13 @@ function starterFitMultiplier(player: PlayerSpan, slot: Position): number {
   // 2026-09-25: graded competence (positionCompetence.ts) — a real second position costs a
   // marginal drop, and an adjacent slot only counts when the player can play it in an emergency.
   const competence = positionCompetence(player, slot);
+  // 2026-10-01, the user (Ginóbili starting at PG over Chauncey Billups): the point guard spot goes
+  // to a natural point guard when the roster has one of similar quality — a non-PG starts there
+  // only when he is clearly better (about 6 TAL and up), otherwise he plays his own slot or comes
+  // off the bench.
+  if (slot === 'PG' && competence !== 'natural' && (competence === 'full' || competence === 'partial')) {
+    return COMPETENCE_MULTIPLIER[competence] * NON_NATURAL_PG_STARTER_SHARE;
+  }
   if (competence === 'natural' || competence === 'full' || competence === 'partial') return COMPETENCE_MULTIPLIER[competence];
   if (competence === 'emergency') {
     if (!isUpwardSlide(player, slot)) return STARTER_FALLBACK_DOWN_MULTIPLIER;
