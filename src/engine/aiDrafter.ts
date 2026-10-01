@@ -718,7 +718,7 @@ const MAX_FGA_PENALTY = 1.3;
 // Grant Hill and Erving (TAL 86-87) sat in the pool. Measured on seeds 101/202/303/404: 6 -> 5 cuts
 // weak starters (TAL < 65, not 3&D) 8 -> 6 and lifts talent 84.6 -> 85.8, rotation 95.9 -> 96.8 and
 // overall 79.3 -> 79.9, for a bench 73.0 -> 72.2; 4.5 thinned benches to 69.6 for no overall gain.
-const PLAYABLE_RESERVE_FGA_PER_SLOT = 5;
+const PLAYABLE_RESERVE_FGA_PER_SLOT = 6;
 const TRUE_CAP_GLUE_FGA_CEILING = 2;
 
 function plannedPlayableReserveFga(slotsRemaining: number): number {
@@ -1460,6 +1460,16 @@ const NEED_RAMP_ROSTER_SIZE = 4;
 /** See `holesOpen` in `pickForAi`. */
 const HOLE_URGENCY_NEED_BONUS = 1.0;
 const HOLE_GM_TASTE_SHARE = 0.5;
+const BENCH_COVER_TALENT = 55;
+const BENCH_COVER_GROUPS: Position[][] = [['PG', 'SG', 'SF'], ['PF', 'C']];
+function coversGroup(p: PlayerSpan, slots: Position[]): boolean {
+  return effectiveTalent(p) >= BENCH_COVER_TALENT && slots.some((slot) => isRealPositionFit(p, slot));
+}
+function benchPlayersOf(roster: PlayerSpan[]): PlayerSpan[] {
+  const rotation = autoAssignRotation(roster);
+  const starters = new Set(STARTER_SLOTS.map((slot) => rotation.slots[slot][0]?.playerId).filter(Boolean));
+  return roster.filter((p) => !starters.has(p.id));
+}
 
 /** Collapse adjacent career spans only after they have been ranked, so one real player receives
  * one lottery place while their best context-specific span remains available. */
@@ -2205,6 +2215,16 @@ export function pickForAi(
       // filter above (never forces an unplayable/replacement-level pick) and still falls back to
       // the full playable set if no gap-fitting candidate exists, so a thin position that
       // genuinely has no board option left can never dead-end the draft.
+      // EXPERIMENT (bench B): while a group (perimeter / bigs) has no bench backup at TAL 55+ and at
+      // least two picks remain, only candidates who give it one stay in the lottery.
+      if (picksIncludingThisOne >= 2) {
+        const benchNow = benchPlayersOf(roster);
+        const missingGroups = BENCH_COVER_GROUPS.filter((slots) => !benchNow.some((b) => coversGroup(b, slots)));
+        if (missingGroups.length > 0) {
+          const fixers = playable.filter((entry) => missingGroups.some((slots) => coversGroup(entry.player, slots)));
+          if (fixers.length > 0) lotteryCandidates = playable = fixers;
+        }
+      }
       const gapPositions = STARTER_SLOTS.filter((slot) => needs.emptySlots.includes(slot) || needs.thinSlots.includes(slot));
       if (gapPositions.length > 0) {
         const playableGapFit = playable.filter((entry) => gapPositions.some((slot) => isRealPositionFit(entry.player, slot)));

@@ -1,6 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
+import { meetsStarterStandard } from './starterStandard';
 import { effectiveTalent } from './grades';
 import { CAP_LIMIT, positionDistance } from './positions';
 
@@ -38,8 +39,13 @@ const MAX_POST_DRAFT_TALENT_DROP = 6;
 function peakProtectedOptions(options: PlayerSpan[], draftedSpan: PlayerSpan): PlayerSpan[] {
   if (options.length === 0) return options;
   const bestTalent = Math.max(...options.map(effectiveTalent));
+  const keepsStandard = meetsStarterStandard(draftedSpan);
   return options.filter(
-    (option) => option.id === draftedSpan.id || effectiveTalent(option) >= bestTalent - MAX_POST_DRAFT_TALENT_DROP,
+    (option) =>
+      option.id === draftedSpan.id ||
+      (effectiveTalent(option) >= bestTalent - MAX_POST_DRAFT_TALENT_DROP &&
+        option.primaryPosition === draftedSpan.primaryPosition &&
+        (!keepsStandard || meetsStarterStandard(option))),
   );
 }
 
