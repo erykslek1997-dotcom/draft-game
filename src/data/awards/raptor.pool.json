@@ -5,6 +5,21 @@
   "raptorDefense": -1.478
  },
  {
+  "name": "Tariq Abdul-Wahad",
+  "season": "1997-98",
+  "raptorDefense": -1.187
+ },
+ {
+  "name": "Tariq Abdul-Wahad",
+  "season": "1998-99",
+  "raptorDefense": -0.257
+ },
+ {
+  "name": "Tariq Abdul-Wahad",
+  "season": "1999-00",
+  "raptorDefense": -0.458
+ },
+ {
   "name": "Shareef Abdur-Rahim",
   "season": "1997-98",
   "raptorDefense": -1.151
@@ -68,6 +83,16 @@
   "name": "Alex Abrines",
   "season": "2018-19",
   "raptorDefense": 1.886
+ },
+ {
+  "name": "Precious Achiuwa",
+  "season": "2020-21",
+  "raptorDefense": 0.955
+ },
+ {
+  "name": "Precious Achiuwa",
+  "season": "2021-22",
+  "raptorDefense": 2.144
  },
  {
   "name": "Quincy Acy",
@@ -220,6 +245,26 @@
   "raptorDefense": -1.524
  },
  {
+  "name": "Alexis Ajinca",
+  "season": "2013-14",
+  "raptorDefense": -0.753
+ },
+ {
+  "name": "Alexis Ajinca",
+  "season": "2014-15",
+  "raptorDefense": 1.376
+ },
+ {
+  "name": "Alexis Ajinca",
+  "season": "2015-16",
+  "raptorDefense": 1.292
+ },
+ {
+  "name": "Alexis Ajinca",
+  "season": "2016-17",
+  "raptorDefense": 1.23
+ },
+ {
   "name": "LaMarcus Aldridge",
   "season": "2006-07",
   "raptorDefense": 0.059
@@ -310,6 +355,21 @@
   "raptorDefense": -1.889
  },
  {
+  "name": "Courtney Alexander",
+  "season": "2000-01",
+  "raptorDefense": -2.772
+ },
+ {
+  "name": "Courtney Alexander",
+  "season": "2001-02",
+  "raptorDefense": -1.948
+ },
+ {
+  "name": "Courtney Alexander",
+  "season": "2002-03",
+  "raptorDefense": -1.281
+ },
+ {
   "name": "Nickeil Alexander-Walker",
   "season": "2019-20",
   "raptorDefense": -1.707
@@ -363,6 +423,71 @@
   "name": "Jarrett Allen",
   "season": "2021-22",
   "raptorDefense": 4.089
+ },
+ {
+  "name": "Lavoy Allen",
+  "season": "2011-12",
+  "raptorDefense": 1.467
+ },
+ {
+  "name": "Lavoy Allen",
+  "season": "2012-13",
+  "raptorDefense": 0.417
+ },
+ {
+  "name": "Lavoy Allen",
+  "season": "2013-14",
+  "raptorDefense": -0.317
+ },
+ {
+  "name": "Lavoy Allen",
+  "season": "2014-15",
+  "raptorDefense": 1.648
+ },
+ {
+  "name": "Lavoy Allen",
+  "season": "2015-16",
+  "raptorDefense": -0.427
+ },
+ {
+  "name": "Lavoy Allen",
+  "season": "2016-17",
+  "raptorDefense": -0.571
+ },
+ {
+  "name": "Malik Allen",
+  "season": "2002-03",
+  "raptorDefense": -0.738
+ },
+ {
+  "name": "Malik Allen",
+  "season": "2003-04",
+  "raptorDefense": -0.801
+ },
+ {
+  "name": "Malik Allen",
+  "season": "2004-05",
+  "raptorDefense": -2.183
+ },
+ {
+  "name": "Malik Allen",
+  "season": "2005-06",
+  "raptorDefense": 0.601
+ },
+ {
+  "name": "Malik Allen",
+  "season": "2006-07",
+  "raptorDefense": 0.001
+ },
+ {
+  "name": "Malik Allen",
+  "season": "2007-08",
+  "raptorDefense": -1.241
+ },
+ {
+  "name": "Malik Allen",
+  "season": "2008-09",
+  "raptorDefense": -0.315
  },
  {
   "name": "Ray Allen",
@@ -563,6 +688,21 @@
   "name": "Jose Alvarado",
   "season": "2021-22",
   "raptorDefense": 4.342
+ },
+ {
+  "name": "John Amaechi",
+  "season": "1999-00",
+  "raptorDefense": -0.358
+ },
+ {
+  "name": "John Amaechi",
+  "season": "2000-01",
+  "raptorDefense": -2.219
+ },
+ {
+  "name": "John Amaechi",
+  "season": "2001-02",
+  "raptorDefense": -3.175
  },
  {
   "name": "Al-Farouq Aminu",
@@ -1140,6 +1280,16 @@
   "raptorDefense": 0.94
  },
  {
+  "name": "Pero Antic",
+  "season": "2013-14",
+  "raptorDefense": 0.7
+ },
+ {
+  "name": "Pero Antic",
+  "season": "2014-15",
+  "raptorDefense": 1.26
+ },
+ {
   "name": "OG Anunoby",
   "season": "2017-18",
   "raptorDefense": 1.413
@@ -1475,6 +1625,41 @@
   "raptorDefense": 0.278
  },
  {
+  "name": "Darrell Arthur",
+  "season": "2008-09",
+  "raptorDefense": 1.254
+ },
+ {
+  "name": "Darrell Arthur",
+  "season": "2010-11",
+  "raptorDefense": 1.553
+ },
+ {
+  "name": "Darrell Arthur",
+  "season": "2012-13",
+  "raptorDefense": -1.955
+ },
+ {
+  "name": "Darrell Arthur",
+  "season": "2013-14",
+  "raptorDefense": 1.889
+ },
+ {
+  "name": "Darrell Arthur",
+  "season": "2014-15",
+  "raptorDefense": 4.658
+ },
+ {
+  "name": "Darrell Arthur",
+  "season": "2015-16",
+  "raptorDefense": 1.764
+ },
+ {
+  "name": "Darrell Arthur",
+  "season": "2016-17",
+  "raptorDefense": -0.657
+ },
+ {
   "name": "Omer Asik",
   "season": "2010-11",
   "raptorDefense": 3.752
@@ -1665,6 +1850,26 @@
   "raptorDefense": -5.673
  },
  {
+  "name": "Isaac Austin",
+  "season": "1997-98",
+  "raptorDefense": -1.03
+ },
+ {
+  "name": "Isaac Austin",
+  "season": "1998-99",
+  "raptorDefense": 1.38
+ },
+ {
+  "name": "Isaac Austin",
+  "season": "1999-00",
+  "raptorDefense": -1.337
+ },
+ {
+  "name": "Isaac Austin",
+  "season": "2000-01",
+  "raptorDefense": -0.213
+ },
+ {
   "name": "Deni Avdija",
   "season": "2020-21",
   "raptorDefense": 0.629
@@ -1673,6 +1878,16 @@
   "name": "Deni Avdija",
   "season": "2021-22",
   "raptorDefense": 2.026
+ },
+ {
+  "name": "Gustavo Ayon",
+  "season": "2011-12",
+  "raptorDefense": 2.436
+ },
+ {
+  "name": "Gustavo Ayon",
+  "season": "2012-13",
+  "raptorDefense": 0.341
  },
  {
   "name": "Deandre Ayton",
@@ -1738,6 +1953,26 @@
   "name": "Luke Babbitt",
   "season": "2017-18",
   "raptorDefense": -2.344
+ },
+ {
+  "name": "Dwayne Bacon",
+  "season": "2017-18",
+  "raptorDefense": -1.391
+ },
+ {
+  "name": "Dwayne Bacon",
+  "season": "2018-19",
+  "raptorDefense": -2.816
+ },
+ {
+  "name": "Dwayne Bacon",
+  "season": "2019-20",
+  "raptorDefense": -0.43
+ },
+ {
+  "name": "Dwayne Bacon",
+  "season": "2020-21",
+  "raptorDefense": -1.743
  },
  {
   "name": "Vin Baker",
@@ -1878,6 +2113,11 @@
   "name": "Marcus Banks",
   "season": "2007-08",
   "raptorDefense": -2.443
+ },
+ {
+  "name": "Dalano Banton",
+  "season": "2021-22",
+  "raptorDefense": 0.195
  },
  {
   "name": "Leandro Barbosa",
@@ -2675,6 +2915,46 @@
   "raptorDefense": -6.13
  },
  {
+  "name": "Aron Baynes",
+  "season": "2013-14",
+  "raptorDefense": -1.054
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2014-15",
+  "raptorDefense": 1.678
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2015-16",
+  "raptorDefense": 0.008
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2016-17",
+  "raptorDefense": 4.497
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2017-18",
+  "raptorDefense": 3.234
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2018-19",
+  "raptorDefense": 3.516
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2019-20",
+  "raptorDefense": 0.089
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2020-21",
+  "raptorDefense": 0.675
+ },
+ {
   "name": "Kent Bazemore",
   "season": "2013-14",
   "raptorDefense": 0.446
@@ -2718,6 +2998,21 @@
   "name": "Kent Bazemore",
   "season": "2021-22",
   "raptorDefense": 3.703
+ },
+ {
+  "name": "Darius Bazley",
+  "season": "2019-20",
+  "raptorDefense": 3.024
+ },
+ {
+  "name": "Darius Bazley",
+  "season": "2020-21",
+  "raptorDefense": -0.645
+ },
+ {
+  "name": "Darius Bazley",
+  "season": "2021-22",
+  "raptorDefense": -0.761
  },
  {
   "name": "Bradley Beal",
@@ -2995,6 +3290,21 @@
   "raptorDefense": 0.896
  },
  {
+  "name": "Dragan Bender",
+  "season": "2016-17",
+  "raptorDefense": -0.2
+ },
+ {
+  "name": "Dragan Bender",
+  "season": "2017-18",
+  "raptorDefense": -1.028
+ },
+ {
+  "name": "Dragan Bender",
+  "season": "2018-19",
+  "raptorDefense": -1.848
+ },
+ {
   "name": "Jonathan Bender",
   "season": "2000-01",
   "raptorDefense": -0.669
@@ -3008,6 +3318,16 @@
   "name": "Jonathan Bender",
   "season": "2002-03",
   "raptorDefense": -0.356
+ },
+ {
+  "name": "Corey Benjamin",
+  "season": "1999-00",
+  "raptorDefense": -0.82
+ },
+ {
+  "name": "Corey Benjamin",
+  "season": "2000-01",
+  "raptorDefense": -1.774
  },
  {
   "name": "Davis Bertans",
@@ -3123,6 +3443,16 @@
   "name": "Patrick Beverley",
   "season": "2021-22",
   "raptorDefense": 1.939
+ },
+ {
+  "name": "Saddiq Bey",
+  "season": "2020-21",
+  "raptorDefense": -1.935
+ },
+ {
+  "name": "Saddiq Bey",
+  "season": "2021-22",
+  "raptorDefense": -2.42
  },
  {
   "name": "Mike Bibby",
@@ -3310,6 +3640,31 @@
   "raptorDefense": -2.495
  },
  {
+  "name": "Khem Birch",
+  "season": "2017-18",
+  "raptorDefense": 1.464
+ },
+ {
+  "name": "Khem Birch",
+  "season": "2018-19",
+  "raptorDefense": 3.8
+ },
+ {
+  "name": "Khem Birch",
+  "season": "2019-20",
+  "raptorDefense": 1.323
+ },
+ {
+  "name": "Khem Birch",
+  "season": "2020-21",
+  "raptorDefense": 1.879
+ },
+ {
+  "name": "Khem Birch",
+  "season": "2021-22",
+  "raptorDefense": -0.319
+ },
+ {
   "name": "Goga Bitadze",
   "season": "2020-21",
   "raptorDefense": -0.392
@@ -3410,6 +3765,31 @@
   "raptorDefense": 1.747
  },
  {
+  "name": "DeJuan Blair",
+  "season": "2009-10",
+  "raptorDefense": 0.803
+ },
+ {
+  "name": "DeJuan Blair",
+  "season": "2010-11",
+  "raptorDefense": 0.95
+ },
+ {
+  "name": "DeJuan Blair",
+  "season": "2011-12",
+  "raptorDefense": -0.362
+ },
+ {
+  "name": "DeJuan Blair",
+  "season": "2012-13",
+  "raptorDefense": 1.312
+ },
+ {
+  "name": "DeJuan Blair",
+  "season": "2013-14",
+  "raptorDefense": 0.563
+ },
+ {
   "name": "Steve Blake",
   "season": "2003-04",
   "raptorDefense": -0.965
@@ -3473,6 +3853,46 @@
   "name": "Steve Blake",
   "season": "2015-16",
   "raptorDefense": -2.029
+ },
+ {
+  "name": "Andray Blatche",
+  "season": "2006-07",
+  "raptorDefense": -1.423
+ },
+ {
+  "name": "Andray Blatche",
+  "season": "2007-08",
+  "raptorDefense": -0.813
+ },
+ {
+  "name": "Andray Blatche",
+  "season": "2008-09",
+  "raptorDefense": 0.505
+ },
+ {
+  "name": "Andray Blatche",
+  "season": "2009-10",
+  "raptorDefense": 0.65
+ },
+ {
+  "name": "Andray Blatche",
+  "season": "2010-11",
+  "raptorDefense": 0.22
+ },
+ {
+  "name": "Andray Blatche",
+  "season": "2011-12",
+  "raptorDefense": -0.988
+ },
+ {
+  "name": "Andray Blatche",
+  "season": "2012-13",
+  "raptorDefense": 1.233
+ },
+ {
+  "name": "Andray Blatche",
+  "season": "2013-14",
+  "raptorDefense": 1.567
  },
  {
   "name": "Mookie Blaylock",
@@ -3905,6 +4325,46 @@
   "raptorDefense": -0.019
  },
  {
+  "name": "Trevor Booker",
+  "season": "2010-11",
+  "raptorDefense": -0.856
+ },
+ {
+  "name": "Trevor Booker",
+  "season": "2011-12",
+  "raptorDefense": -0.102
+ },
+ {
+  "name": "Trevor Booker",
+  "season": "2012-13",
+  "raptorDefense": -0.452
+ },
+ {
+  "name": "Trevor Booker",
+  "season": "2013-14",
+  "raptorDefense": -2.756
+ },
+ {
+  "name": "Trevor Booker",
+  "season": "2014-15",
+  "raptorDefense": 0.875
+ },
+ {
+  "name": "Trevor Booker",
+  "season": "2015-16",
+  "raptorDefense": 1.609
+ },
+ {
+  "name": "Trevor Booker",
+  "season": "2016-17",
+  "raptorDefense": 1.155
+ },
+ {
+  "name": "Trevor Booker",
+  "season": "2017-18",
+  "raptorDefense": -1.175
+ },
+ {
   "name": "Josh Boone",
   "season": "2006-07",
   "raptorDefense": -0.181
@@ -3923,6 +4383,21 @@
   "name": "Josh Boone",
   "season": "2009-10",
   "raptorDefense": 0.714
+ },
+ {
+  "name": "Calvin Booth",
+  "season": "2000-01",
+  "raptorDefense": 0.38
+ },
+ {
+  "name": "Calvin Booth",
+  "season": "2002-03",
+  "raptorDefense": 0.403
+ },
+ {
+  "name": "Calvin Booth",
+  "season": "2003-04",
+  "raptorDefense": -0.309
  },
  {
   "name": "Carlos Boozer",
@@ -4640,6 +5115,16 @@
   "raptorDefense": 3.143
  },
  {
+  "name": "MarShon Brooks",
+  "season": "2011-12",
+  "raptorDefense": -3.158
+ },
+ {
+  "name": "MarShon Brooks",
+  "season": "2012-13",
+  "raptorDefense": -0.743
+ },
+ {
   "name": "Bruce Brown",
   "season": "2018-19",
   "raptorDefense": 2.414
@@ -4658,6 +5143,21 @@
   "name": "Bruce Brown",
   "season": "2021-22",
   "raptorDefense": 0.319
+ },
+ {
+  "name": "Chucky Brown",
+  "season": "1997-98",
+  "raptorDefense": -1.585
+ },
+ {
+  "name": "Chucky Brown",
+  "season": "1998-99",
+  "raptorDefense": -1.54
+ },
+ {
+  "name": "Chucky Brown",
+  "season": "1999-00",
+  "raptorDefense": -1.301
  },
  {
   "name": "Dee Brown",
@@ -4758,6 +5258,111 @@
   "name": "Jaylen Brown",
   "season": "2021-22",
   "raptorDefense": 1.008
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2001-02",
+  "raptorDefense": -1.107
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2002-03",
+  "raptorDefense": 0.312
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2003-04",
+  "raptorDefense": -0.626
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2004-05",
+  "raptorDefense": -1.373
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2005-06",
+  "raptorDefense": -0.301
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2006-07",
+  "raptorDefense": 0.664
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2007-08",
+  "raptorDefense": 0.824
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2008-09",
+  "raptorDefense": 1.317
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2009-10",
+  "raptorDefense": -0.57
+ },
+ {
+  "name": "Kwame Brown",
+  "season": "2010-11",
+  "raptorDefense": -0.465
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "1997-98",
+  "raptorDefense": 1.558
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "1998-99",
+  "raptorDefense": 1.091
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "1999-00",
+  "raptorDefense": 1.118
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "2000-01",
+  "raptorDefense": 2.119
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "2001-02",
+  "raptorDefense": 1.342
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "2002-03",
+  "raptorDefense": -0.02
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "2003-04",
+  "raptorDefense": 1.695
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "2004-05",
+  "raptorDefense": 0.465
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "2005-06",
+  "raptorDefense": 0.452
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "2006-07",
+  "raptorDefense": 1.898
+ },
+ {
+  "name": "P.J. Brown",
+  "season": "2007-08",
+  "raptorDefense": -0.45
  },
  {
   "name": "Randy Brown",
@@ -4975,6 +5580,21 @@
   "raptorDefense": -3.763
  },
  {
+  "name": "Mark Bryant",
+  "season": "1997-98",
+  "raptorDefense": 0.665
+ },
+ {
+  "name": "Mark Bryant",
+  "season": "1998-99",
+  "raptorDefense": -1
+ },
+ {
+  "name": "Mark Bryant",
+  "season": "1999-00",
+  "raptorDefense": -1.261
+ },
+ {
   "name": "Thomas Bryant",
   "season": "2018-19",
   "raptorDefense": -1.703
@@ -5093,6 +5713,21 @@
   "name": "Jud Buechler",
   "season": "2001-02",
   "raptorDefense": -1.082
+ },
+ {
+  "name": "Rodney Buford",
+  "season": "2000-01",
+  "raptorDefense": -2.037
+ },
+ {
+  "name": "Rodney Buford",
+  "season": "2001-02",
+  "raptorDefense": -2.78
+ },
+ {
+  "name": "Rodney Buford",
+  "season": "2004-05",
+  "raptorDefense": -0.746
  },
  {
   "name": "Matt Bullard",
@@ -5475,6 +6110,31 @@
   "raptorDefense": -3.183
  },
  {
+  "name": "Jason Caffey",
+  "season": "1997-98",
+  "raptorDefense": -1.89
+ },
+ {
+  "name": "Jason Caffey",
+  "season": "1998-99",
+  "raptorDefense": -0.95
+ },
+ {
+  "name": "Jason Caffey",
+  "season": "1999-00",
+  "raptorDefense": -1.915
+ },
+ {
+  "name": "Jason Caffey",
+  "season": "2000-01",
+  "raptorDefense": -1.724
+ },
+ {
+  "name": "Jason Caffey",
+  "season": "2002-03",
+  "raptorDefense": -1.316
+ },
+ {
   "name": "Michael Cage",
   "season": "1997-98",
   "raptorDefense": 1.29
@@ -5825,6 +6485,16 @@
   "raptorDefense": -1.174
  },
  {
+  "name": "Chris Carr",
+  "season": "1997-98",
+  "raptorDefense": -2.767
+ },
+ {
+  "name": "Chris Carr",
+  "season": "1999-00",
+  "raptorDefense": -2.019
+ },
+ {
   "name": "DeMarre Carroll",
   "season": "2009-10",
   "raptorDefense": -0.27
@@ -5963,6 +6633,41 @@
   "name": "Jevon Carter",
   "season": "2021-22",
   "raptorDefense": -0.909
+ },
+ {
+  "name": "Michael Carter-Williams",
+  "season": "2013-14",
+  "raptorDefense": 0.633
+ },
+ {
+  "name": "Michael Carter-Williams",
+  "season": "2014-15",
+  "raptorDefense": 1.838
+ },
+ {
+  "name": "Michael Carter-Williams",
+  "season": "2015-16",
+  "raptorDefense": 2.343
+ },
+ {
+  "name": "Michael Carter-Williams",
+  "season": "2016-17",
+  "raptorDefense": 2.446
+ },
+ {
+  "name": "Michael Carter-Williams",
+  "season": "2017-18",
+  "raptorDefense": 3.291
+ },
+ {
+  "name": "Michael Carter-Williams",
+  "season": "2019-20",
+  "raptorDefense": 3.007
+ },
+ {
+  "name": "Michael Carter-Williams",
+  "season": "2020-21",
+  "raptorDefense": 3.349
  },
  {
   "name": "Vince Carter",
@@ -6510,6 +7215,41 @@
   "raptorDefense": -1.107
  },
  {
+  "name": "Calbert Cheaney",
+  "season": "1997-98",
+  "raptorDefense": -0.176
+ },
+ {
+  "name": "Calbert Cheaney",
+  "season": "1998-99",
+  "raptorDefense": -0.777
+ },
+ {
+  "name": "Calbert Cheaney",
+  "season": "1999-00",
+  "raptorDefense": -1.25
+ },
+ {
+  "name": "Calbert Cheaney",
+  "season": "2001-02",
+  "raptorDefense": -1.278
+ },
+ {
+  "name": "Calbert Cheaney",
+  "season": "2002-03",
+  "raptorDefense": 0.058
+ },
+ {
+  "name": "Calbert Cheaney",
+  "season": "2003-04",
+  "raptorDefense": -0.525
+ },
+ {
+  "name": "Calbert Cheaney",
+  "season": "2004-05",
+  "raptorDefense": -0.342
+ },
+ {
   "name": "Pete Chilcutt",
   "season": "1997-98",
   "raptorDefense": -0.239
@@ -6615,6 +7355,26 @@
   "raptorDefense": 1.725
  },
  {
+  "name": "Josh Christopher",
+  "season": "2021-22",
+  "raptorDefense": -2.725
+ },
+ {
+  "name": "Marquese Chriss",
+  "season": "2016-17",
+  "raptorDefense": -1.322
+ },
+ {
+  "name": "Marquese Chriss",
+  "season": "2017-18",
+  "raptorDefense": 0.252
+ },
+ {
+  "name": "Marquese Chriss",
+  "season": "2019-20",
+  "raptorDefense": 1.179
+ },
+ {
   "name": "Brandon Clarke",
   "season": "2019-20",
   "raptorDefense": 0.734
@@ -6628,6 +7388,21 @@
   "name": "Brandon Clarke",
   "season": "2021-22",
   "raptorDefense": 1.692
+ },
+ {
+  "name": "Earl Clark",
+  "season": "2011-12",
+  "raptorDefense": -0.093
+ },
+ {
+  "name": "Earl Clark",
+  "season": "2012-13",
+  "raptorDefense": -0.743
+ },
+ {
+  "name": "Earl Clark",
+  "season": "2013-14",
+  "raptorDefense": -2.679
  },
  {
   "name": "Ian Clark",
@@ -6648,6 +7423,66 @@
   "name": "Ian Clark",
   "season": "2018-19",
   "raptorDefense": -3.038
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2014-15",
+  "raptorDefense": -1.582
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2015-16",
+  "raptorDefense": -2.214
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2016-17",
+  "raptorDefense": -1.144
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2017-18",
+  "raptorDefense": -0.711
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2018-19",
+  "raptorDefense": -2.078
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2019-20",
+  "raptorDefense": -1.854
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2020-21",
+  "raptorDefense": -1.257
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2021-22",
+  "raptorDefense": -0.392
+ },
+ {
+  "name": "Keon Clark",
+  "season": "1999-00",
+  "raptorDefense": 0.813
+ },
+ {
+  "name": "Keon Clark",
+  "season": "2000-01",
+  "raptorDefense": -0.85
+ },
+ {
+  "name": "Keon Clark",
+  "season": "2001-02",
+  "raptorDefense": 0.214
+ },
+ {
+  "name": "Keon Clark",
+  "season": "2002-03",
+  "raptorDefense": 3.15
  },
  {
   "name": "Nicolas Claxton",
@@ -6990,6 +7825,21 @@
   "raptorDefense": 0.764
  },
  {
+  "name": "Zach Collins",
+  "season": "2017-18",
+  "raptorDefense": -1.549
+ },
+ {
+  "name": "Zach Collins",
+  "season": "2018-19",
+  "raptorDefense": -0.574
+ },
+ {
+  "name": "Zach Collins",
+  "season": "2021-22",
+  "raptorDefense": -0.046
+ },
+ {
   "name": "Mike Conley",
   "season": "2007-08",
   "raptorDefense": -2.106
@@ -7083,6 +7933,26 @@
   "name": "Pat Connaughton",
   "season": "2021-22",
   "raptorDefense": 0.229
+ },
+ {
+  "name": "Brian Cook",
+  "season": "2004-05",
+  "raptorDefense": -1.032
+ },
+ {
+  "name": "Brian Cook",
+  "season": "2005-06",
+  "raptorDefense": -0.549
+ },
+ {
+  "name": "Brian Cook",
+  "season": "2006-07",
+  "raptorDefense": -0.626
+ },
+ {
+  "name": "Brian Cook",
+  "season": "2007-08",
+  "raptorDefense": -1.52
  },
  {
   "name": "Daequan Cook",
@@ -7275,6 +8145,26 @@
   "raptorDefense": 0.044
  },
  {
+  "name": "Chris Crawford",
+  "season": "1998-99",
+  "raptorDefense": -1.654
+ },
+ {
+  "name": "Chris Crawford",
+  "season": "1999-00",
+  "raptorDefense": -1.743
+ },
+ {
+  "name": "Chris Crawford",
+  "season": "2000-01",
+  "raptorDefense": -1.87
+ },
+ {
+  "name": "Chris Crawford",
+  "season": "2003-04",
+  "raptorDefense": -1.93
+ },
+ {
   "name": "Jamal Crawford",
   "season": "2000-01",
   "raptorDefense": -1.667
@@ -7363,6 +8253,26 @@
   "name": "Jamal Crawford",
   "season": "2018-19",
   "raptorDefense": -5.811
+ },
+ {
+  "name": "Jordan Crawford",
+  "season": "2010-11",
+  "raptorDefense": -2.959
+ },
+ {
+  "name": "Jordan Crawford",
+  "season": "2011-12",
+  "raptorDefense": -3.911
+ },
+ {
+  "name": "Jordan Crawford",
+  "season": "2012-13",
+  "raptorDefense": -0.622
+ },
+ {
+  "name": "Jordan Crawford",
+  "season": "2013-14",
+  "raptorDefense": -2.057
  },
  {
   "name": "Javaris Crittenton",
@@ -7465,6 +8375,11 @@
   "raptorDefense": 1.579
  },
  {
+  "name": "Jarrett Culver",
+  "season": "2019-20",
+  "raptorDefense": -1.257
+ },
+ {
   "name": "Terry Cummings",
   "season": "1997-98",
   "raptorDefense": 0.224
@@ -7473,6 +8388,21 @@
   "name": "Terry Cummings",
   "season": "1998-99",
   "raptorDefense": 0.961
+ },
+ {
+  "name": "Vonteego Cummings",
+  "season": "1999-00",
+  "raptorDefense": -1.014
+ },
+ {
+  "name": "Vonteego Cummings",
+  "season": "2000-01",
+  "raptorDefense": -1.874
+ },
+ {
+  "name": "Vonteego Cummings",
+  "season": "2001-02",
+  "raptorDefense": -2.557
  },
  {
   "name": "Cade Cunningham",
@@ -7970,6 +8900,51 @@
   "raptorDefense": -1.711
  },
  {
+  "name": "Antonio Davis",
+  "season": "1997-98",
+  "raptorDefense": 0.669
+ },
+ {
+  "name": "Antonio Davis",
+  "season": "1998-99",
+  "raptorDefense": 0.054
+ },
+ {
+  "name": "Antonio Davis",
+  "season": "1999-00",
+  "raptorDefense": -0.128
+ },
+ {
+  "name": "Antonio Davis",
+  "season": "2000-01",
+  "raptorDefense": 0.468
+ },
+ {
+  "name": "Antonio Davis",
+  "season": "2001-02",
+  "raptorDefense": -0.048
+ },
+ {
+  "name": "Antonio Davis",
+  "season": "2002-03",
+  "raptorDefense": -1.019
+ },
+ {
+  "name": "Antonio Davis",
+  "season": "2003-04",
+  "raptorDefense": 0.421
+ },
+ {
+  "name": "Antonio Davis",
+  "season": "2004-05",
+  "raptorDefense": 1.55
+ },
+ {
+  "name": "Antonio Davis",
+  "season": "2005-06",
+  "raptorDefense": -1.124
+ },
+ {
   "name": "Anthony Davis",
   "season": "2012-13",
   "raptorDefense": 0.919
@@ -8195,6 +9170,46 @@
   "raptorDefense": -0.618
  },
  {
+  "name": "Glen Davis",
+  "season": "2007-08",
+  "raptorDefense": 0.916
+ },
+ {
+  "name": "Glen Davis",
+  "season": "2008-09",
+  "raptorDefense": 0.655
+ },
+ {
+  "name": "Glen Davis",
+  "season": "2009-10",
+  "raptorDefense": -0.986
+ },
+ {
+  "name": "Glen Davis",
+  "season": "2010-11",
+  "raptorDefense": 1.6
+ },
+ {
+  "name": "Glen Davis",
+  "season": "2011-12",
+  "raptorDefense": -0.444
+ },
+ {
+  "name": "Glen Davis",
+  "season": "2012-13",
+  "raptorDefense": 1.612
+ },
+ {
+  "name": "Glen Davis",
+  "season": "2013-14",
+  "raptorDefense": 0.326
+ },
+ {
+  "name": "Glen Davis",
+  "season": "2014-15",
+  "raptorDefense": 1.308
+ },
+ {
   "name": "Hubert Davis",
   "season": "1997-98",
   "raptorDefense": -2.651
@@ -8275,6 +9290,16 @@
   "raptorDefense": -2.077
  },
  {
+  "name": "Terry Davis",
+  "season": "1997-98",
+  "raptorDefense": -0.407
+ },
+ {
+  "name": "Terry Davis",
+  "season": "1998-99",
+  "raptorDefense": -0.928
+ },
+ {
   "name": "Terence Davis",
   "season": "2019-20",
   "raptorDefense": 0.269
@@ -8308,6 +9333,41 @@
   "name": "Austin Daye",
   "season": "2012-13",
   "raptorDefense": -0.64
+ },
+ {
+  "name": "Andrew DeClercq",
+  "season": "1997-98",
+  "raptorDefense": 1.489
+ },
+ {
+  "name": "Andrew DeClercq",
+  "season": "1998-99",
+  "raptorDefense": 1.156
+ },
+ {
+  "name": "Andrew DeClercq",
+  "season": "1999-00",
+  "raptorDefense": 1.08
+ },
+ {
+  "name": "Andrew DeClercq",
+  "season": "2000-01",
+  "raptorDefense": 1.212
+ },
+ {
+  "name": "Andrew DeClercq",
+  "season": "2001-02",
+  "raptorDefense": 0.575
+ },
+ {
+  "name": "Andrew DeClercq",
+  "season": "2002-03",
+  "raptorDefense": 1.092
+ },
+ {
+  "name": "Andrew DeClercq",
+  "season": "2003-04",
+  "raptorDefense": 1.194
  },
  {
   "name": "Dewayne Dedmon",
@@ -8348,6 +9408,21 @@
   "name": "Terry Dehere",
   "season": "1997-98",
   "raptorDefense": -1.43
+ },
+ {
+  "name": "Sam Dekker",
+  "season": "2016-17",
+  "raptorDefense": 0.009
+ },
+ {
+  "name": "Sam Dekker",
+  "season": "2017-18",
+  "raptorDefense": 0.893
+ },
+ {
+  "name": "Sam Dekker",
+  "season": "2018-19",
+  "raptorDefense": -1.843
  },
  {
   "name": "Malcolm Delaney",
@@ -8910,6 +9985,81 @@
   "raptorDefense": 1.204
  },
  {
+  "name": "Juan Dixon",
+  "season": "2002-03",
+  "raptorDefense": -1.49
+ },
+ {
+  "name": "Juan Dixon",
+  "season": "2003-04",
+  "raptorDefense": -1.473
+ },
+ {
+  "name": "Juan Dixon",
+  "season": "2004-05",
+  "raptorDefense": -1.996
+ },
+ {
+  "name": "Juan Dixon",
+  "season": "2005-06",
+  "raptorDefense": -2.127
+ },
+ {
+  "name": "Juan Dixon",
+  "season": "2006-07",
+  "raptorDefense": -0.63
+ },
+ {
+  "name": "Juan Dixon",
+  "season": "2007-08",
+  "raptorDefense": -0.349
+ },
+ {
+  "name": "Juan Dixon",
+  "season": "2008-09",
+  "raptorDefense": -1.535
+ },
+ {
+  "name": "Michael Doleac",
+  "season": "1998-99",
+  "raptorDefense": 0.449
+ },
+ {
+  "name": "Michael Doleac",
+  "season": "1999-00",
+  "raptorDefense": 0.668
+ },
+ {
+  "name": "Michael Doleac",
+  "season": "2000-01",
+  "raptorDefense": 0.66
+ },
+ {
+  "name": "Michael Doleac",
+  "season": "2001-02",
+  "raptorDefense": -2.005
+ },
+ {
+  "name": "Michael Doleac",
+  "season": "2002-03",
+  "raptorDefense": -2.093
+ },
+ {
+  "name": "Michael Doleac",
+  "season": "2003-04",
+  "raptorDefense": -0.025
+ },
+ {
+  "name": "Michael Doleac",
+  "season": "2004-05",
+  "raptorDefense": -0.135
+ },
+ {
+  "name": "Michael Doleac",
+  "season": "2006-07",
+  "raptorDefense": -0.125
+ },
+ {
   "name": "Luka Doncic",
   "season": "2018-19",
   "raptorDefense": -0.87
@@ -9005,6 +10155,21 @@
   "raptorDefense": -1.943
  },
  {
+  "name": "Damyean Dotson",
+  "season": "2018-19",
+  "raptorDefense": -1.215
+ },
+ {
+  "name": "Damyean Dotson",
+  "season": "2019-20",
+  "raptorDefense": -1.194
+ },
+ {
+  "name": "Damyean Dotson",
+  "season": "2020-21",
+  "raptorDefense": -2.371
+ },
+ {
   "name": "Chris Douglas-Roberts",
   "season": "2008-09",
   "raptorDefense": -1.23
@@ -9068,6 +10233,16 @@
   "name": "Toney Douglas",
   "season": "2015-16",
   "raptorDefense": -2.076
+ },
+ {
+  "name": "Sekou Doumbouya",
+  "season": "2019-20",
+  "raptorDefense": -3.933
+ },
+ {
+  "name": "Sekou Doumbouya",
+  "season": "2020-21",
+  "raptorDefense": -1.725
  },
  {
   "name": "Goran Dragic",
@@ -9160,6 +10335,26 @@
   "raptorDefense": 0.365
  },
  {
+  "name": "Predrag Drobnjak",
+  "season": "2001-02",
+  "raptorDefense": -1.773
+ },
+ {
+  "name": "Predrag Drobnjak",
+  "season": "2002-03",
+  "raptorDefense": -1.328
+ },
+ {
+  "name": "Predrag Drobnjak",
+  "season": "2003-04",
+  "raptorDefense": -2.47
+ },
+ {
+  "name": "Predrag Drobnjak",
+  "season": "2004-05",
+  "raptorDefense": -0.906
+ },
+ {
   "name": "Andre Drummond",
   "season": "2012-13",
   "raptorDefense": 1.869
@@ -9208,6 +10403,26 @@
   "name": "Andre Drummond",
   "season": "2021-22",
   "raptorDefense": 2.352
+ },
+ {
+  "name": "Chris Dudley",
+  "season": "1997-98",
+  "raptorDefense": 2.459
+ },
+ {
+  "name": "Chris Dudley",
+  "season": "1998-99",
+  "raptorDefense": 2.455
+ },
+ {
+  "name": "Chris Dudley",
+  "season": "1999-00",
+  "raptorDefense": 1.217
+ },
+ {
+  "name": "Chris Dudley",
+  "season": "2000-01",
+  "raptorDefense": 0.707
  },
  {
   "name": "Jared Dudley",
@@ -9845,6 +11060,66 @@
   "raptorDefense": -0.537
  },
  {
+  "name": "Francisco Elson",
+  "season": "2003-04",
+  "raptorDefense": 1.482
+ },
+ {
+  "name": "Francisco Elson",
+  "season": "2004-05",
+  "raptorDefense": 0.746
+ },
+ {
+  "name": "Francisco Elson",
+  "season": "2005-06",
+  "raptorDefense": 1.319
+ },
+ {
+  "name": "Francisco Elson",
+  "season": "2006-07",
+  "raptorDefense": 2.106
+ },
+ {
+  "name": "Francisco Elson",
+  "season": "2007-08",
+  "raptorDefense": 0.289
+ },
+ {
+  "name": "Francisco Elson",
+  "season": "2008-09",
+  "raptorDefense": 0.363
+ },
+ {
+  "name": "Francisco Elson",
+  "season": "2010-11",
+  "raptorDefense": -0.733
+ },
+ {
+  "name": "Melvin Ely",
+  "season": "2002-03",
+  "raptorDefense": -0.839
+ },
+ {
+  "name": "Melvin Ely",
+  "season": "2003-04",
+  "raptorDefense": -1.034
+ },
+ {
+  "name": "Melvin Ely",
+  "season": "2004-05",
+  "raptorDefense": -1.032
+ },
+ {
+  "name": "Melvin Ely",
+  "season": "2005-06",
+  "raptorDefense": -0.804
+ },
+ {
+  "name": "Melvin Ely",
+  "season": "2007-08",
+  "raptorDefense": -0.497
+ },
+ {
   "name": "Joel Embiid",
   "season": "2016-17",
   "raptorDefense": 5.6
@@ -10220,6 +11495,16 @@
   "raptorDefense": 1.934
  },
  {
+  "name": "Jamie Feick",
+  "season": "1998-99",
+  "raptorDefense": -0.657
+ },
+ {
+  "name": "Jamie Feick",
+  "season": "1999-00",
+  "raptorDefense": -0.397
+ },
+ {
   "name": "Cristiano Felicio",
   "season": "2016-17",
   "raptorDefense": 0.232
@@ -10570,6 +11855,41 @@
   "raptorDefense": 1.423
  },
  {
+  "name": "Marcus Fizer",
+  "season": "2000-01",
+  "raptorDefense": -3.52
+ },
+ {
+  "name": "Marcus Fizer",
+  "season": "2001-02",
+  "raptorDefense": -1.855
+ },
+ {
+  "name": "Marcus Fizer",
+  "season": "2002-03",
+  "raptorDefense": -2.005
+ },
+ {
+  "name": "Marcus Fizer",
+  "season": "2003-04",
+  "raptorDefense": -2.097
+ },
+ {
+  "name": "Marcus Fizer",
+  "season": "2004-05",
+  "raptorDefense": -1.314
+ },
+ {
+  "name": "Jonny Flynn",
+  "season": "2009-10",
+  "raptorDefense": -3.093
+ },
+ {
+  "name": "Jonny Flynn",
+  "season": "2010-11",
+  "raptorDefense": -2.485
+ },
+ {
   "name": "Bryn Forbes",
   "season": "2017-18",
   "raptorDefense": -1.257
@@ -10658,6 +11978,76 @@
   "name": "Danny Fortson",
   "season": "2004-05",
   "raptorDefense": -2.247
+ },
+ {
+  "name": "Greg Foster",
+  "season": "1997-98",
+  "raptorDefense": -0.944
+ },
+ {
+  "name": "Greg Foster",
+  "season": "1998-99",
+  "raptorDefense": -1.315
+ },
+ {
+  "name": "Greg Foster",
+  "season": "1999-00",
+  "raptorDefense": -1.685
+ },
+ {
+  "name": "Greg Foster",
+  "season": "2002-03",
+  "raptorDefense": -1.816
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2000-01",
+  "raptorDefense": 1.921
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2001-02",
+  "raptorDefense": 1.489
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2002-03",
+  "raptorDefense": 0.906
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2003-04",
+  "raptorDefense": 3.215
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2004-05",
+  "raptorDefense": 3.01
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2005-06",
+  "raptorDefense": 2.214
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2006-07",
+  "raptorDefense": 1.174
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2007-08",
+  "raptorDefense": 1.171
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2008-09",
+  "raptorDefense": 2.066
+ },
+ {
+  "name": "Jeff Foster",
+  "season": "2010-11",
+  "raptorDefense": 1.37
  },
  {
   "name": "Evan Fournier",
@@ -11008,6 +12398,66 @@
   "name": "Channing Frye",
   "season": "2017-18",
   "raptorDefense": -0.255
+ },
+ {
+  "name": "Lawrence Funderburke",
+  "season": "1997-98",
+  "raptorDefense": -1.623
+ },
+ {
+  "name": "Lawrence Funderburke",
+  "season": "1998-99",
+  "raptorDefense": -0.976
+ },
+ {
+  "name": "Lawrence Funderburke",
+  "season": "1999-00",
+  "raptorDefense": -0.248
+ },
+ {
+  "name": "Lawrence Funderburke",
+  "season": "2000-01",
+  "raptorDefense": -2.38
+ },
+ {
+  "name": "Lawrence Funderburke",
+  "season": "2001-02",
+  "raptorDefense": -1.177
+ },
+ {
+  "name": "Dan Gadzuric",
+  "season": "2002-03",
+  "raptorDefense": 1.349
+ },
+ {
+  "name": "Dan Gadzuric",
+  "season": "2003-04",
+  "raptorDefense": 1.884
+ },
+ {
+  "name": "Dan Gadzuric",
+  "season": "2004-05",
+  "raptorDefense": 1.636
+ },
+ {
+  "name": "Dan Gadzuric",
+  "season": "2005-06",
+  "raptorDefense": 0.652
+ },
+ {
+  "name": "Dan Gadzuric",
+  "season": "2006-07",
+  "raptorDefense": -1.029
+ },
+ {
+  "name": "Dan Gadzuric",
+  "season": "2007-08",
+  "raptorDefense": 0.129
+ },
+ {
+  "name": "Dan Gadzuric",
+  "season": "2008-09",
+  "raptorDefense": 0.982
  },
  {
   "name": "Daniel Gafford",
@@ -11610,6 +13060,26 @@
   "raptorDefense": 1.115
  },
  {
+  "name": "Matt Geiger",
+  "season": "1997-98",
+  "raptorDefense": 1.859
+ },
+ {
+  "name": "Matt Geiger",
+  "season": "1998-99",
+  "raptorDefense": 1.038
+ },
+ {
+  "name": "Matt Geiger",
+  "season": "1999-00",
+  "raptorDefense": 0.432
+ },
+ {
+  "name": "Matt Geiger",
+  "season": "2000-01",
+  "raptorDefense": -0.836
+ },
+ {
   "name": "Devean George",
   "season": "2000-01",
   "raptorDefense": -1.063
@@ -11993,6 +13463,26 @@
   "name": "Gordan Giricek",
   "season": "2007-08",
   "raptorDefense": 0.103
+ },
+ {
+  "name": "Dion Glover",
+  "season": "2000-01",
+  "raptorDefense": 0.683
+ },
+ {
+  "name": "Dion Glover",
+  "season": "2001-02",
+  "raptorDefense": -1.966
+ },
+ {
+  "name": "Dion Glover",
+  "season": "2002-03",
+  "raptorDefense": 0.252
+ },
+ {
+  "name": "Dion Glover",
+  "season": "2003-04",
+  "raptorDefense": -0.953
  },
  {
   "name": "Rudy Gobert",
@@ -13030,6 +14520,26 @@
   "raptorDefense": 4.034
  },
  {
+  "name": "Eddie Griffin",
+  "season": "2001-02",
+  "raptorDefense": 0.381
+ },
+ {
+  "name": "Eddie Griffin",
+  "season": "2002-03",
+  "raptorDefense": 1.815
+ },
+ {
+  "name": "Eddie Griffin",
+  "season": "2004-05",
+  "raptorDefense": 1.085
+ },
+ {
+  "name": "Eddie Griffin",
+  "season": "2005-06",
+  "raptorDefense": 1.638
+ },
+ {
   "name": "Quentin Grimes",
   "season": "2021-22",
   "raptorDefense": 1.434
@@ -13083,6 +14593,16 @@
   "name": "Rui Hachimura",
   "season": "2021-22",
   "raptorDefense": -2.973
+ },
+ {
+  "name": "PJ Hairston",
+  "season": "2014-15",
+  "raptorDefense": -0.798
+ },
+ {
+  "name": "PJ Hairston",
+  "season": "2015-16",
+  "raptorDefense": -2.356
  },
  {
   "name": "Tyrese Haliburton",
@@ -13163,6 +14683,26 @@
   "name": "Richard Hamilton",
   "season": "2012-13",
   "raptorDefense": -1.386
+ },
+ {
+  "name": "Tom Hammonds",
+  "season": "1997-98",
+  "raptorDefense": -1.996
+ },
+ {
+  "name": "Tom Hammonds",
+  "season": "1998-99",
+  "raptorDefense": -2.451
+ },
+ {
+  "name": "R.J. Hampton",
+  "season": "2020-21",
+  "raptorDefense": -4.532
+ },
+ {
+  "name": "R.J. Hampton",
+  "season": "2021-22",
+  "raptorDefense": -2.088
  },
  {
   "name": "Tyler Hansbrough",
@@ -13605,6 +15145,21 @@
   "raptorDefense": -0.493
  },
  {
+  "name": "David Harrison",
+  "season": "2004-05",
+  "raptorDefense": 0.374
+ },
+ {
+  "name": "David Harrison",
+  "season": "2005-06",
+  "raptorDefense": 2.31
+ },
+ {
+  "name": "David Harrison",
+  "season": "2007-08",
+  "raptorDefense": 0.351
+ },
+ {
   "name": "Devin Harris",
   "season": "2004-05",
   "raptorDefense": 0.856
@@ -13788,6 +15343,51 @@
   "name": "Lucious Harris",
   "season": "2004-05",
   "raptorDefense": -0.562
+ },
+ {
+  "name": "Othella Harrington",
+  "season": "1997-98",
+  "raptorDefense": -2.024
+ },
+ {
+  "name": "Othella Harrington",
+  "season": "1998-99",
+  "raptorDefense": -1.735
+ },
+ {
+  "name": "Othella Harrington",
+  "season": "1999-00",
+  "raptorDefense": -2.197
+ },
+ {
+  "name": "Othella Harrington",
+  "season": "2000-01",
+  "raptorDefense": 0.471
+ },
+ {
+  "name": "Othella Harrington",
+  "season": "2001-02",
+  "raptorDefense": 0.149
+ },
+ {
+  "name": "Othella Harrington",
+  "season": "2002-03",
+  "raptorDefense": -0.506
+ },
+ {
+  "name": "Othella Harrington",
+  "season": "2003-04",
+  "raptorDefense": -1.339
+ },
+ {
+  "name": "Othella Harrington",
+  "season": "2004-05",
+  "raptorDefense": 0.416
+ },
+ {
+  "name": "Othella Harrington",
+  "season": "2005-06",
+  "raptorDefense": -0.93
  },
  {
   "name": "Shaquille Harrison",
@@ -14190,6 +15790,16 @@
   "raptorDefense": -1.272
  },
  {
+  "name": "Killian Hayes",
+  "season": "2020-21",
+  "raptorDefense": -1.618
+ },
+ {
+  "name": "Killian Hayes",
+  "season": "2021-22",
+  "raptorDefense": -0.373
+ },
+ {
   "name": "Gordon Hayward",
   "season": "2010-11",
   "raptorDefense": -2.983
@@ -14450,6 +16060,51 @@
   "raptorDefense": 3.929
  },
  {
+  "name": "Juancho Hernangomez",
+  "season": "2016-17",
+  "raptorDefense": 1.255
+ },
+ {
+  "name": "Juancho Hernangomez",
+  "season": "2018-19",
+  "raptorDefense": 0.849
+ },
+ {
+  "name": "Juancho Hernangomez",
+  "season": "2019-20",
+  "raptorDefense": -0.1
+ },
+ {
+  "name": "Juancho Hernangomez",
+  "season": "2020-21",
+  "raptorDefense": -2.568
+ },
+ {
+  "name": "Juancho Hernangomez",
+  "season": "2021-22",
+  "raptorDefense": -0.031
+ },
+ {
+  "name": "Willy Hernangomez",
+  "season": "2016-17",
+  "raptorDefense": 0.211
+ },
+ {
+  "name": "Willy Hernangomez",
+  "season": "2018-19",
+  "raptorDefense": -4.007
+ },
+ {
+  "name": "Willy Hernangomez",
+  "season": "2020-21",
+  "raptorDefense": 0.467
+ },
+ {
+  "name": "Willy Hernangomez",
+  "season": "2021-22",
+  "raptorDefense": -2.05
+ },
+ {
   "name": "Tyler Herro",
   "season": "2019-20",
   "raptorDefense": -1.241
@@ -14533,6 +16188,41 @@
   "name": "Roy Hibbert",
   "season": "2016-17",
   "raptorDefense": 1.365
+ },
+ {
+  "name": "JJ Hickson",
+  "season": "2008-09",
+  "raptorDefense": -0.582
+ },
+ {
+  "name": "JJ Hickson",
+  "season": "2009-10",
+  "raptorDefense": -1.556
+ },
+ {
+  "name": "JJ Hickson",
+  "season": "2010-11",
+  "raptorDefense": -1.633
+ },
+ {
+  "name": "JJ Hickson",
+  "season": "2011-12",
+  "raptorDefense": -2.236
+ },
+ {
+  "name": "JJ Hickson",
+  "season": "2012-13",
+  "raptorDefense": -0.964
+ },
+ {
+  "name": "JJ Hickson",
+  "season": "2013-14",
+  "raptorDefense": -0.066
+ },
+ {
+  "name": "JJ Hickson",
+  "season": "2014-15",
+  "raptorDefense": -1.118
  },
  {
   "name": "Buddy Hield",
@@ -14773,6 +16463,36 @@
   "name": "Grant Hill",
   "season": "2011-12",
   "raptorDefense": 0.267
+ },
+ {
+  "name": "Jordan Hill",
+  "season": "2009-10",
+  "raptorDefense": -2.022
+ },
+ {
+  "name": "Jordan Hill",
+  "season": "2010-11",
+  "raptorDefense": -2.123
+ },
+ {
+  "name": "Jordan Hill",
+  "season": "2011-12",
+  "raptorDefense": -0.928
+ },
+ {
+  "name": "Jordan Hill",
+  "season": "2013-14",
+  "raptorDefense": -0.289
+ },
+ {
+  "name": "Jordan Hill",
+  "season": "2014-15",
+  "raptorDefense": 0.265
+ },
+ {
+  "name": "Jordan Hill",
+  "season": "2015-16",
+  "raptorDefense": -0.497
  },
  {
   "name": "Solomon Hill",
@@ -15765,6 +17485,66 @@
   "raptorDefense": 0.421
  },
  {
+  "name": "Kris Humphries",
+  "season": "2004-05",
+  "raptorDefense": -0.852
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2005-06",
+  "raptorDefense": -0.903
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2006-07",
+  "raptorDefense": -1.599
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2007-08",
+  "raptorDefense": -0.042
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2009-10",
+  "raptorDefense": -1.967
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2010-11",
+  "raptorDefense": 0.927
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2011-12",
+  "raptorDefense": 0.103
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2012-13",
+  "raptorDefense": -1.179
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2013-14",
+  "raptorDefense": 2.982
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2014-15",
+  "raptorDefense": 1.367
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2015-16",
+  "raptorDefense": -1.495
+ },
+ {
+  "name": "Kris Humphries",
+  "season": "2016-17",
+  "raptorDefense": 0.166
+ },
+ {
   "name": "De'Andre Hunter",
   "season": "2019-20",
   "raptorDefense": -1.315
@@ -15858,6 +17638,11 @@
   "name": "Bobby Hurley",
   "season": "1997-98",
   "raptorDefense": -3.348
+ },
+ {
+  "name": "Bones Hyland",
+  "season": "2021-22",
+  "raptorDefense": -1.551
  },
  {
   "name": "Serge Ibaka",
@@ -16605,6 +18390,26 @@
   "raptorDefense": -0.793
  },
  {
+  "name": "Josh Jackson",
+  "season": "2017-18",
+  "raptorDefense": -1.312
+ },
+ {
+  "name": "Josh Jackson",
+  "season": "2018-19",
+  "raptorDefense": 0.553
+ },
+ {
+  "name": "Josh Jackson",
+  "season": "2020-21",
+  "raptorDefense": 1.369
+ },
+ {
+  "name": "Josh Jackson",
+  "season": "2021-22",
+  "raptorDefense": -0.742
+ },
+ {
   "name": "Justin Jackson",
   "season": "2017-18",
   "raptorDefense": -1.438
@@ -16658,6 +18463,36 @@
   "name": "Mark Jackson",
   "season": "2003-04",
   "raptorDefense": -0.86
+ },
+ {
+  "name": "Marc Jackson",
+  "season": "2000-01",
+  "raptorDefense": -2.173
+ },
+ {
+  "name": "Marc Jackson",
+  "season": "2002-03",
+  "raptorDefense": -0.711
+ },
+ {
+  "name": "Marc Jackson",
+  "season": "2003-04",
+  "raptorDefense": -1.462
+ },
+ {
+  "name": "Marc Jackson",
+  "season": "2004-05",
+  "raptorDefense": -1.661
+ },
+ {
+  "name": "Marc Jackson",
+  "season": "2005-06",
+  "raptorDefense": -2.847
+ },
+ {
+  "name": "Marc Jackson",
+  "season": "2006-07",
+  "raptorDefense": -2.261
  },
  {
   "name": "Reggie Jackson",
@@ -16793,6 +18628,26 @@
   "name": "Casey Jacobsen",
   "season": "2007-08",
   "raptorDefense": -0.969
+ },
+ {
+  "name": "Jerome James",
+  "season": "2001-02",
+  "raptorDefense": 1.25
+ },
+ {
+  "name": "Jerome James",
+  "season": "2002-03",
+  "raptorDefense": 1.779
+ },
+ {
+  "name": "Jerome James",
+  "season": "2003-04",
+  "raptorDefense": 0.114
+ },
+ {
+  "name": "Jerome James",
+  "season": "2004-05",
+  "raptorDefense": 1.236
  },
  {
   "name": "LeBron James",
@@ -17330,6 +19185,26 @@
   "raptorDefense": -1.561
  },
  {
+  "name": "Yi Jianlian",
+  "season": "2007-08",
+  "raptorDefense": -0.149
+ },
+ {
+  "name": "Yi Jianlian",
+  "season": "2008-09",
+  "raptorDefense": -0.76
+ },
+ {
+  "name": "Yi Jianlian",
+  "season": "2009-10",
+  "raptorDefense": -0.225
+ },
+ {
+  "name": "Yi Jianlian",
+  "season": "2010-11",
+  "raptorDefense": -1.431
+ },
+ {
   "name": "Isaiah Joe",
   "season": "2021-22",
   "raptorDefense": 0.742
@@ -17558,6 +19433,16 @@
   "name": "Ervin Johnson",
   "season": "2003-04",
   "raptorDefense": 2.429
+ },
+ {
+  "name": "Ivan Johnson",
+  "season": "2011-12",
+  "raptorDefense": 0.54
+ },
+ {
+  "name": "Ivan Johnson",
+  "season": "2012-13",
+  "raptorDefense": 1.51
  },
  {
   "name": "James Johnson",
@@ -18190,6 +20075,16 @@
   "raptorDefense": -1.149
  },
  {
+  "name": "Popeye Jones",
+  "season": "2000-01",
+  "raptorDefense": -0.292
+ },
+ {
+  "name": "Popeye Jones",
+  "season": "2001-02",
+  "raptorDefense": 0.199
+ },
+ {
   "name": "Tre Jones",
   "season": "2021-22",
   "raptorDefense": 1.935
@@ -18425,6 +20320,36 @@
   "raptorDefense": 0.134
  },
  {
+  "name": "Frank Kaminsky",
+  "season": "2015-16",
+  "raptorDefense": 0.376
+ },
+ {
+  "name": "Frank Kaminsky",
+  "season": "2016-17",
+  "raptorDefense": -1.724
+ },
+ {
+  "name": "Frank Kaminsky",
+  "season": "2017-18",
+  "raptorDefense": -2.331
+ },
+ {
+  "name": "Frank Kaminsky",
+  "season": "2018-19",
+  "raptorDefense": 0.389
+ },
+ {
+  "name": "Frank Kaminsky",
+  "season": "2019-20",
+  "raptorDefense": -0.659
+ },
+ {
+  "name": "Frank Kaminsky",
+  "season": "2020-21",
+  "raptorDefense": -0.603
+ },
+ {
   "name": "Enes Kanter",
   "season": "2011-12",
   "raptorDefense": -1.64
@@ -18523,6 +20448,16 @@
   "name": "Adam Keefe",
   "season": "2000-01",
   "raptorDefense": -1.393
+ },
+ {
+  "name": "Ryan Kelly",
+  "season": "2013-14",
+  "raptorDefense": -1.881
+ },
+ {
+  "name": "Ryan Kelly",
+  "season": "2014-15",
+  "raptorDefense": -2.264
  },
  {
   "name": "Shawn Kemp",
@@ -18728,6 +20663,21 @@
   "name": "Jason Kidd",
   "season": "2012-13",
   "raptorDefense": 2.003
+ },
+ {
+  "name": "Sean Kilpatrick",
+  "season": "2015-16",
+  "raptorDefense": -6.042
+ },
+ {
+  "name": "Sean Kilpatrick",
+  "season": "2016-17",
+  "raptorDefense": -2.174
+ },
+ {
+  "name": "Sean Kilpatrick",
+  "season": "2017-18",
+  "raptorDefense": -4.526
  },
  {
   "name": "Andrei Kirilenko",
@@ -18975,6 +20925,26 @@
   "raptorDefense": -1.156
  },
  {
+  "name": "Travis Knight",
+  "season": "1997-98",
+  "raptorDefense": 0.663
+ },
+ {
+  "name": "Travis Knight",
+  "season": "1998-99",
+  "raptorDefense": 1.448
+ },
+ {
+  "name": "Kevin Knox",
+  "season": "2018-19",
+  "raptorDefense": -4.32
+ },
+ {
+  "name": "Kevin Knox II",
+  "season": "2019-20",
+  "raptorDefense": -1.712
+ },
+ {
   "name": "John Konchar",
   "season": "2020-21",
   "raptorDefense": 1.176
@@ -19148,6 +21118,41 @@
   "name": "Vit Krejci",
   "season": "2021-22",
   "raptorDefense": -2.968
+ },
+ {
+  "name": "Nenad Krstic",
+  "season": "2004-05",
+  "raptorDefense": -0.173
+ },
+ {
+  "name": "Nenad Krstic",
+  "season": "2005-06",
+  "raptorDefense": 0.136
+ },
+ {
+  "name": "Nenad Krstic",
+  "season": "2006-07",
+  "raptorDefense": -0.029
+ },
+ {
+  "name": "Nenad Krstic",
+  "season": "2007-08",
+  "raptorDefense": 0.32
+ },
+ {
+  "name": "Nenad Krstic",
+  "season": "2008-09",
+  "raptorDefense": 0.689
+ },
+ {
+  "name": "Nenad Krstic",
+  "season": "2009-10",
+  "raptorDefense": 0.119
+ },
+ {
+  "name": "Nenad Krstic",
+  "season": "2010-11",
+  "raptorDefense": -0.633
  },
  {
   "name": "Toni Kukoc",
@@ -19345,6 +21350,11 @@
   "raptorDefense": -0.792
  },
  {
+  "name": "Jock Landale",
+  "season": "2021-22",
+  "raptorDefense": -1.47
+ },
+ {
   "name": "Carl Landry",
   "season": "2007-08",
   "raptorDefense": -0.055
@@ -19403,6 +21413,21 @@
   "name": "Shane Larkin",
   "season": "2017-18",
   "raptorDefense": 1.554
+ },
+ {
+  "name": "Joffrey Lauvergne",
+  "season": "2015-16",
+  "raptorDefense": -2.068
+ },
+ {
+  "name": "Joffrey Lauvergne",
+  "season": "2016-17",
+  "raptorDefense": -1.22
+ },
+ {
+  "name": "Joffrey Lauvergne",
+  "season": "2017-18",
+  "raptorDefense": -4.818
  },
  {
   "name": "Zach LaVine",
@@ -19755,6 +21780,31 @@
   "raptorDefense": -0.574
  },
  {
+  "name": "Jon Leuer",
+  "season": "2011-12",
+  "raptorDefense": -0.613
+ },
+ {
+  "name": "Jon Leuer",
+  "season": "2013-14",
+  "raptorDefense": 0.261
+ },
+ {
+  "name": "Jon Leuer",
+  "season": "2014-15",
+  "raptorDefense": 0.013
+ },
+ {
+  "name": "Jon Leuer",
+  "season": "2015-16",
+  "raptorDefense": 0.337
+ },
+ {
+  "name": "Jon Leuer",
+  "season": "2016-17",
+  "raptorDefense": 0.454
+ },
+ {
   "name": "Caris LeVert",
   "season": "2016-17",
   "raptorDefense": -0.82
@@ -20038,6 +22088,21 @@
   "name": "Grant Long",
   "season": "2002-03",
   "raptorDefense": -1.312
+ },
+ {
+  "name": "Luc Longley",
+  "season": "1997-98",
+  "raptorDefense": 1.65
+ },
+ {
+  "name": "Luc Longley",
+  "season": "1998-99",
+  "raptorDefense": -0.247
+ },
+ {
+  "name": "Luc Longley",
+  "season": "1999-00",
+  "raptorDefense": 0.28
  },
  {
   "name": "Kevon Looney",
@@ -20530,6 +22595,26 @@
   "raptorDefense": 1.519
  },
  {
+  "name": "Todd MacCulloch",
+  "season": "1999-00",
+  "raptorDefense": 1.607
+ },
+ {
+  "name": "Todd MacCulloch",
+  "season": "2000-01",
+  "raptorDefense": -2.069
+ },
+ {
+  "name": "Todd MacCulloch",
+  "season": "2001-02",
+  "raptorDefense": 1.543
+ },
+ {
+  "name": "Todd MacCulloch",
+  "season": "2002-03",
+  "raptorDefense": 0.073
+ },
+ {
   "name": "Sam Mack",
   "season": "1997-98",
   "raptorDefense": -1.855
@@ -20573,6 +22658,36 @@
   "name": "Shelvin Mack",
   "season": "2018-19",
   "raptorDefense": -2.007
+ },
+ {
+  "name": "Mark Madsen",
+  "season": "2000-01",
+  "raptorDefense": -1.707
+ },
+ {
+  "name": "Mark Madsen",
+  "season": "2001-02",
+  "raptorDefense": -0.886
+ },
+ {
+  "name": "Mark Madsen",
+  "season": "2002-03",
+  "raptorDefense": -2.291
+ },
+ {
+  "name": "Mark Madsen",
+  "season": "2003-04",
+  "raptorDefense": 0.824
+ },
+ {
+  "name": "Mark Madsen",
+  "season": "2004-05",
+  "raptorDefense": 0.326
+ },
+ {
+  "name": "Mark Madsen",
+  "season": "2005-06",
+  "raptorDefense": 1.363
  },
  {
   "name": "Corey Maggette",
@@ -20865,6 +22980,11 @@
   "raptorDefense": 0.647
  },
  {
+  "name": "Tre Mann",
+  "season": "2021-22",
+  "raptorDefense": -1.432
+ },
+ {
   "name": "Stephon Marbury",
   "season": "1997-98",
   "raptorDefense": -1.556
@@ -21130,6 +23250,16 @@
   "raptorDefense": -1.97
  },
  {
+  "name": "Jarell Martin",
+  "season": "2016-17",
+  "raptorDefense": 0.885
+ },
+ {
+  "name": "Jarell Martin",
+  "season": "2017-18",
+  "raptorDefense": -0.526
+ },
+ {
   "name": "Kenyon Martin",
   "season": "2000-01",
   "raptorDefense": -0.026
@@ -21320,6 +23450,51 @@
   "raptorDefense": -2.899
  },
  {
+  "name": "Desmond Mason",
+  "season": "2000-01",
+  "raptorDefense": -1.528
+ },
+ {
+  "name": "Desmond Mason",
+  "season": "2001-02",
+  "raptorDefense": 0.101
+ },
+ {
+  "name": "Desmond Mason",
+  "season": "2002-03",
+  "raptorDefense": -1.166
+ },
+ {
+  "name": "Desmond Mason",
+  "season": "2003-04",
+  "raptorDefense": 0.095
+ },
+ {
+  "name": "Desmond Mason",
+  "season": "2004-05",
+  "raptorDefense": -2.469
+ },
+ {
+  "name": "Desmond Mason",
+  "season": "2005-06",
+  "raptorDefense": -0.949
+ },
+ {
+  "name": "Desmond Mason",
+  "season": "2006-07",
+  "raptorDefense": -1.521
+ },
+ {
+  "name": "Desmond Mason",
+  "season": "2007-08",
+  "raptorDefense": -0.257
+ },
+ {
+  "name": "Desmond Mason",
+  "season": "2008-09",
+  "raptorDefense": 0.268
+ },
+ {
   "name": "Roger Mason Jr.",
   "season": "2006-07",
   "raptorDefense": -2.559
@@ -21348,6 +23523,41 @@
   "name": "Roger Mason Jr.",
   "season": "2012-13",
   "raptorDefense": -1.653
+ },
+ {
+  "name": "Tony Massenburg",
+  "season": "1997-98",
+  "raptorDefense": -1.261
+ },
+ {
+  "name": "Tony Massenburg",
+  "season": "1998-99",
+  "raptorDefense": -1.154
+ },
+ {
+  "name": "Tony Massenburg",
+  "season": "2000-01",
+  "raptorDefense": -1.484
+ },
+ {
+  "name": "Tony Massenburg",
+  "season": "2001-02",
+  "raptorDefense": -2.351
+ },
+ {
+  "name": "Tony Massenburg",
+  "season": "2002-03",
+  "raptorDefense": -2.57
+ },
+ {
+  "name": "Tony Massenburg",
+  "season": "2003-04",
+  "raptorDefense": -2.938
+ },
+ {
+  "name": "Tony Massenburg",
+  "season": "2004-05",
+  "raptorDefense": -0.531
  },
  {
   "name": "Garrison Mathews",
@@ -21603,6 +23813,36 @@
   "name": "Luc Mbah a Moute",
   "season": "2017-18",
   "raptorDefense": 2.051
+ },
+ {
+  "name": "Ray McCallum",
+  "season": "2013-14",
+  "raptorDefense": 0.149
+ },
+ {
+  "name": "Ray McCallum",
+  "season": "2014-15",
+  "raptorDefense": -1.994
+ },
+ {
+  "name": "Rashad McCants",
+  "season": "2005-06",
+  "raptorDefense": -0.751
+ },
+ {
+  "name": "Rashad McCants",
+  "season": "2006-07",
+  "raptorDefense": -0.442
+ },
+ {
+  "name": "Rashad McCants",
+  "season": "2007-08",
+  "raptorDefense": -1.065
+ },
+ {
+  "name": "Rashad McCants",
+  "season": "2008-09",
+  "raptorDefense": -0.535
  },
  {
   "name": "Walter McCarty",
@@ -22055,6 +24295,46 @@
   "raptorDefense": 1.482
  },
  {
+  "name": "Jeff McInnis",
+  "season": "1999-00",
+  "raptorDefense": -2.382
+ },
+ {
+  "name": "Jeff McInnis",
+  "season": "2000-01",
+  "raptorDefense": -2.08
+ },
+ {
+  "name": "Jeff McInnis",
+  "season": "2001-02",
+  "raptorDefense": -1.987
+ },
+ {
+  "name": "Jeff McInnis",
+  "season": "2002-03",
+  "raptorDefense": -3.212
+ },
+ {
+  "name": "Jeff McInnis",
+  "season": "2003-04",
+  "raptorDefense": -1.481
+ },
+ {
+  "name": "Jeff McInnis",
+  "season": "2004-05",
+  "raptorDefense": -2.629
+ },
+ {
+  "name": "Jeff McInnis",
+  "season": "2006-07",
+  "raptorDefense": -2.937
+ },
+ {
+  "name": "Jeff McInnis",
+  "season": "2007-08",
+  "raptorDefense": -2.902
+ },
+ {
   "name": "Derrick McKey",
   "season": "1997-98",
   "raptorDefense": 1.3
@@ -22215,6 +24495,21 @@
   "raptorDefense": 1.799
  },
  {
+  "name": "Stanislav Medvedenko",
+  "season": "2001-02",
+  "raptorDefense": 0.309
+ },
+ {
+  "name": "Stanislav Medvedenko",
+  "season": "2002-03",
+  "raptorDefense": -2.212
+ },
+ {
+  "name": "Stanislav Medvedenko",
+  "season": "2003-04",
+  "raptorDefense": -0.649
+ },
+ {
   "name": "Jodie Meeks",
   "season": "2009-10",
   "raptorDefense": -2.186
@@ -22255,6 +24550,16 @@
   "raptorDefense": -2.078
  },
  {
+  "name": "Nicolo Melli",
+  "season": "2019-20",
+  "raptorDefense": -0.754
+ },
+ {
+  "name": "Nicolo Melli",
+  "season": "2020-21",
+  "raptorDefense": -0.171
+ },
+ {
   "name": "De'Anthony Melton",
   "season": "2018-19",
   "raptorDefense": 0.369
@@ -22273,6 +24578,41 @@
   "name": "De'Anthony Melton",
   "season": "2021-22",
   "raptorDefense": 1.944
+ },
+ {
+  "name": "Ron Mercer",
+  "season": "1997-98",
+  "raptorDefense": -0.707
+ },
+ {
+  "name": "Ron Mercer",
+  "season": "1998-99",
+  "raptorDefense": -0.242
+ },
+ {
+  "name": "Ron Mercer",
+  "season": "1999-00",
+  "raptorDefense": -1.101
+ },
+ {
+  "name": "Ron Mercer",
+  "season": "2000-01",
+  "raptorDefense": -2.455
+ },
+ {
+  "name": "Ron Mercer",
+  "season": "2001-02",
+  "raptorDefense": -1.288
+ },
+ {
+  "name": "Ron Mercer",
+  "season": "2002-03",
+  "raptorDefense": -0.946
+ },
+ {
+  "name": "Ron Mercer",
+  "season": "2003-04",
+  "raptorDefense": 0.052
  },
  {
   "name": "Chimezie Metu",
@@ -22323,6 +24663,36 @@
   "name": "Khris Middleton",
   "season": "2021-22",
   "raptorDefense": -0.668
+ },
+ {
+  "name": "Chris Mihm",
+  "season": "2000-01",
+  "raptorDefense": -1.459
+ },
+ {
+  "name": "Chris Mihm",
+  "season": "2001-02",
+  "raptorDefense": -0.851
+ },
+ {
+  "name": "Chris Mihm",
+  "season": "2002-03",
+  "raptorDefense": -1.374
+ },
+ {
+  "name": "Chris Mihm",
+  "season": "2003-04",
+  "raptorDefense": -1.001
+ },
+ {
+  "name": "Chris Mihm",
+  "season": "2004-05",
+  "raptorDefense": -0.958
+ },
+ {
+  "name": "Chris Mihm",
+  "season": "2005-06",
+  "raptorDefense": -1.233
  },
  {
   "name": "CJ Miles",
@@ -22413,6 +24783,36 @@
   "name": "Darius Miles",
   "season": "2005-06",
   "raptorDefense": 0.828
+ },
+ {
+  "name": "Darko Milicic",
+  "season": "2005-06",
+  "raptorDefense": -0.172
+ },
+ {
+  "name": "Darko Milicic",
+  "season": "2006-07",
+  "raptorDefense": 1.578
+ },
+ {
+  "name": "Darko Milicic",
+  "season": "2007-08",
+  "raptorDefense": 1.245
+ },
+ {
+  "name": "Darko Milicic",
+  "season": "2008-09",
+  "raptorDefense": 0.727
+ },
+ {
+  "name": "Darko Milicic",
+  "season": "2009-10",
+  "raptorDefense": -0.069
+ },
+ {
+  "name": "Darko Milicic",
+  "season": "2010-11",
+  "raptorDefense": 0.981
  },
  {
   "name": "Andre Miller",
@@ -22915,6 +25315,16 @@
   "raptorDefense": 3.525
  },
  {
+  "name": "Greg Minor",
+  "season": "1997-98",
+  "raptorDefense": -0.756
+ },
+ {
+  "name": "Greg Minor",
+  "season": "1998-99",
+  "raptorDefense": -1.732
+ },
+ {
   "name": "Nikola Mirotic",
   "season": "2014-15",
   "raptorDefense": 1.861
@@ -23050,6 +25460,66 @@
   "raptorDefense": 1.601
  },
  {
+  "name": "Nazr Mohammed",
+  "season": "2000-01",
+  "raptorDefense": -0.997
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2001-02",
+  "raptorDefense": -1.183
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2003-04",
+  "raptorDefense": -0.362
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2004-05",
+  "raptorDefense": 0.024
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2005-06",
+  "raptorDefense": 0.397
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2006-07",
+  "raptorDefense": -0.353
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2007-08",
+  "raptorDefense": -0.901
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2009-10",
+  "raptorDefense": -0.132
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2010-11",
+  "raptorDefense": -0.021
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2011-12",
+  "raptorDefense": -0.048
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2012-13",
+  "raptorDefense": 1.154
+ },
+ {
+  "name": "Nazr Mohammed",
+  "season": "2013-14",
+  "raptorDefense": 3.105
+ },
+ {
   "name": "Malik Monk",
   "season": "2017-18",
   "raptorDefense": -4.866
@@ -23118,6 +25588,26 @@
   "name": "Greg Monroe",
   "season": "2018-19",
   "raptorDefense": 0.148
+ },
+ {
+  "name": "Eric Montross",
+  "season": "1997-98",
+  "raptorDefense": -0.431
+ },
+ {
+  "name": "Eric Montross",
+  "season": "1998-99",
+  "raptorDefense": 0.962
+ },
+ {
+  "name": "Eric Montross",
+  "season": "2000-01",
+  "raptorDefense": -2.467
+ },
+ {
+  "name": "Eric Montross",
+  "season": "2001-02",
+  "raptorDefense": -0.496
  },
  {
   "name": "Moses Moody",
@@ -23405,6 +25895,36 @@
   "raptorDefense": -2.397
  },
  {
+  "name": "Donatas Motiejunas",
+  "season": "2012-13",
+  "raptorDefense": -2.477
+ },
+ {
+  "name": "Donatas Motiejunas",
+  "season": "2013-14",
+  "raptorDefense": 0.157
+ },
+ {
+  "name": "Donatas Motiejunas",
+  "season": "2014-15",
+  "raptorDefense": 0.771
+ },
+ {
+  "name": "Donatas Motiejunas",
+  "season": "2015-16",
+  "raptorDefense": 1.862
+ },
+ {
+  "name": "Hanno Mottola",
+  "season": "2000-01",
+  "raptorDefense": -2.782
+ },
+ {
+  "name": "Hanno Mottola",
+  "season": "2001-02",
+  "raptorDefense": -2.583
+ },
+ {
   "name": "Alonzo Mourning",
   "season": "1997-98",
   "raptorDefense": 2.162
@@ -23470,6 +25990,31 @@
   "raptorDefense": 1.165
  },
  {
+  "name": "Emmanuel Mudiay",
+  "season": "2015-16",
+  "raptorDefense": -1.991
+ },
+ {
+  "name": "Emmanuel Mudiay",
+  "season": "2016-17",
+  "raptorDefense": -3.958
+ },
+ {
+  "name": "Emmanuel Mudiay",
+  "season": "2017-18",
+  "raptorDefense": -2.448
+ },
+ {
+  "name": "Emmanuel Mudiay",
+  "season": "2018-19",
+  "raptorDefense": -2
+ },
+ {
+  "name": "Emmanuel Mudiay",
+  "season": "2019-20",
+  "raptorDefense": -1.581
+ },
+ {
   "name": "Shabazz Muhammad",
   "season": "2014-15",
   "raptorDefense": -2.252
@@ -23483,6 +26028,16 @@
   "name": "Shabazz Muhammad",
   "season": "2016-17",
   "raptorDefense": -1.638
+ },
+ {
+  "name": "Byron Mullens",
+  "season": "2011-12",
+  "raptorDefense": -2.943
+ },
+ {
+  "name": "Byron Mullens",
+  "season": "2012-13",
+  "raptorDefense": -3.333
  },
  {
   "name": "Chris Mullin",
@@ -23705,6 +26260,46 @@
   "raptorDefense": -3.15
  },
  {
+  "name": "Mike Muscala",
+  "season": "2014-15",
+  "raptorDefense": 0.035
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2015-16",
+  "raptorDefense": -0.278
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2016-17",
+  "raptorDefense": 0.525
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2017-18",
+  "raptorDefense": 0.084
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2018-19",
+  "raptorDefense": 0.123
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2019-20",
+  "raptorDefense": 1.24
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2020-21",
+  "raptorDefense": 2.066
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2021-22",
+  "raptorDefense": 3.323
+ },
+ {
   "name": "Dikembe Mutombo",
   "season": "1997-98",
   "raptorDefense": 2.406
@@ -23798,6 +26393,21 @@
   "name": "Bostjan Nachbar",
   "season": "2007-08",
   "raptorDefense": -2.428
+ },
+ {
+  "name": "Lee Nailon",
+  "season": "2001-02",
+  "raptorDefense": -1.318
+ },
+ {
+  "name": "Lee Nailon",
+  "season": "2003-04",
+  "raptorDefense": -3.622
+ },
+ {
+  "name": "Lee Nailon",
+  "season": "2004-05",
+  "raptorDefense": -0.859
  },
  {
   "name": "Eduardo Najera",
@@ -24085,6 +26695,26 @@
   "raptorDefense": -2.651
  },
  {
+  "name": "Tyrone Nesby",
+  "season": "1998-99",
+  "raptorDefense": 0.7
+ },
+ {
+  "name": "Tyrone Nesby",
+  "season": "1999-00",
+  "raptorDefense": -1.463
+ },
+ {
+  "name": "Tyrone Nesby",
+  "season": "2000-01",
+  "raptorDefense": -0.687
+ },
+ {
+  "name": "Tyrone Nesby",
+  "season": "2001-02",
+  "raptorDefense": 0.734
+ },
+ {
   "name": "Aaron Nesmith",
   "season": "2020-21",
   "raptorDefense": -0.9
@@ -24093,6 +26723,56 @@
   "name": "Aaron Nesmith",
   "season": "2021-22",
   "raptorDefense": 0.846
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "1999-00",
+  "raptorDefense": 0.322
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "2000-01",
+  "raptorDefense": 1.28
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "2001-02",
+  "raptorDefense": 1.438
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "2002-03",
+  "raptorDefense": 1.341
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "2003-04",
+  "raptorDefense": 3.05
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "2004-05",
+  "raptorDefense": 4.299
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "2005-06",
+  "raptorDefense": 3.622
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "2006-07",
+  "raptorDefense": 1.827
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "2007-08",
+  "raptorDefense": 1.204
+ },
+ {
+  "name": "Rasho Nesterovic",
+  "season": "2008-09",
+  "raptorDefense": 0.013
  },
  {
   "name": "Raul Neto",
@@ -24188,6 +26868,21 @@
   "name": "Georges Niang",
   "season": "2021-22",
   "raptorDefense": -1.414
+ },
+ {
+  "name": "Andrew Nicholson",
+  "season": "2012-13",
+  "raptorDefense": -0.039
+ },
+ {
+  "name": "Andrew Nicholson",
+  "season": "2013-14",
+  "raptorDefense": -0.791
+ },
+ {
+  "name": "Andrew Nicholson",
+  "season": "2015-16",
+  "raptorDefense": 0.915
  },
  {
   "name": "Joakim Noah",
@@ -24755,6 +27450,16 @@
   "raptorDefense": 2.015
  },
  {
+  "name": "Chuma Okeke",
+  "season": "2020-21",
+  "raptorDefense": 1.721
+ },
+ {
+  "name": "Chuma Okeke",
+  "season": "2021-22",
+  "raptorDefense": 1.079
+ },
+ {
   "name": "Elie Okobo",
   "season": "2018-19",
   "raptorDefense": -1.451
@@ -24948,6 +27653,46 @@
   "name": "Kevin Ollie",
   "season": "2008-09",
   "raptorDefense": -1.258
+ },
+ {
+  "name": "Michael Olowokandi",
+  "season": "1998-99",
+  "raptorDefense": -1.788
+ },
+ {
+  "name": "Michael Olowokandi",
+  "season": "1999-00",
+  "raptorDefense": -1.463
+ },
+ {
+  "name": "Michael Olowokandi",
+  "season": "2000-01",
+  "raptorDefense": -0.055
+ },
+ {
+  "name": "Michael Olowokandi",
+  "season": "2001-02",
+  "raptorDefense": 1.231
+ },
+ {
+  "name": "Michael Olowokandi",
+  "season": "2002-03",
+  "raptorDefense": 0.959
+ },
+ {
+  "name": "Michael Olowokandi",
+  "season": "2003-04",
+  "raptorDefense": 1.783
+ },
+ {
+  "name": "Michael Olowokandi",
+  "season": "2004-05",
+  "raptorDefense": 1.361
+ },
+ {
+  "name": "Michael Olowokandi",
+  "season": "2005-06",
+  "raptorDefense": 1.001
  },
  {
   "name": "Kelly Olynyk",
@@ -25340,6 +28085,51 @@
   "raptorDefense": 3.096
  },
  {
+  "name": "Travis Outlaw",
+  "season": "2004-05",
+  "raptorDefense": -0.018
+ },
+ {
+  "name": "Travis Outlaw",
+  "season": "2005-06",
+  "raptorDefense": -0.803
+ },
+ {
+  "name": "Travis Outlaw",
+  "season": "2006-07",
+  "raptorDefense": -0.017
+ },
+ {
+  "name": "Travis Outlaw",
+  "season": "2007-08",
+  "raptorDefense": -0.907
+ },
+ {
+  "name": "Travis Outlaw",
+  "season": "2008-09",
+  "raptorDefense": -1.349
+ },
+ {
+  "name": "Travis Outlaw",
+  "season": "2009-10",
+  "raptorDefense": -0.126
+ },
+ {
+  "name": "Travis Outlaw",
+  "season": "2010-11",
+  "raptorDefense": -1.311
+ },
+ {
+  "name": "Travis Outlaw",
+  "season": "2011-12",
+  "raptorDefense": -0.963
+ },
+ {
+  "name": "Travis Outlaw",
+  "season": "2013-14",
+  "raptorDefense": -1.334
+ },
+ {
   "name": "Doug Overton",
   "season": "2003-04",
   "raptorDefense": -2.341
@@ -25710,6 +28500,31 @@
   "raptorDefense": -3.059
  },
  {
+  "name": "Cherokee Parks",
+  "season": "1997-98",
+  "raptorDefense": 0.374
+ },
+ {
+  "name": "Cherokee Parks",
+  "season": "1998-99",
+  "raptorDefense": -1.198
+ },
+ {
+  "name": "Cherokee Parks",
+  "season": "1999-00",
+  "raptorDefense": 1.199
+ },
+ {
+  "name": "Cherokee Parks",
+  "season": "2000-01",
+  "raptorDefense": -0.502
+ },
+ {
+  "name": "Cherokee Parks",
+  "season": "2002-03",
+  "raptorDefense": -2.534
+ },
+ {
   "name": "Chandler Parsons",
   "season": "2011-12",
   "raptorDefense": 0.866
@@ -25743,6 +28558,21 @@
   "name": "Chandler Parsons",
   "season": "2017-18",
   "raptorDefense": -1.188
+ },
+ {
+  "name": "Eric Paschall",
+  "season": "2019-20",
+  "raptorDefense": -3.294
+ },
+ {
+  "name": "Eric Paschall",
+  "season": "2020-21",
+  "raptorDefense": -1.549
+ },
+ {
+  "name": "Eric Paschall",
+  "season": "2021-22",
+  "raptorDefense": -2.854
  },
  {
   "name": "Patrick Patterson",
@@ -26155,6 +28985,21 @@
   "raptorDefense": 1.532
  },
  {
+  "name": "Will Perdue",
+  "season": "1997-98",
+  "raptorDefense": 2.395
+ },
+ {
+  "name": "Will Perdue",
+  "season": "1998-99",
+  "raptorDefense": 1.564
+ },
+ {
+  "name": "Will Perdue",
+  "season": "1999-00",
+  "raptorDefense": -0.505
+ },
+ {
   "name": "Kendrick Perkins",
   "season": "2004-05",
   "raptorDefense": -0.82
@@ -26348,6 +29193,36 @@
   "name": "Morris Peterson",
   "season": "2009-10",
   "raptorDefense": -1.242
+ },
+ {
+  "name": "Johan Petro",
+  "season": "2005-06",
+  "raptorDefense": -1.453
+ },
+ {
+  "name": "Johan Petro",
+  "season": "2006-07",
+  "raptorDefense": -1.08
+ },
+ {
+  "name": "Johan Petro",
+  "season": "2007-08",
+  "raptorDefense": 0.91
+ },
+ {
+  "name": "Johan Petro",
+  "season": "2008-09",
+  "raptorDefense": -0.931
+ },
+ {
+  "name": "Johan Petro",
+  "season": "2010-11",
+  "raptorDefense": 0.971
+ },
+ {
+  "name": "Johan Petro",
+  "season": "2011-12",
+  "raptorDefense": -0.93
  },
  {
   "name": "Bobby Phills",
@@ -26665,6 +29540,66 @@
   "raptorDefense": 2.39
  },
  {
+  "name": "Aleksej Pokusevski",
+  "season": "2020-21",
+  "raptorDefense": -2.847
+ },
+ {
+  "name": "Aleksej Pokusevski",
+  "season": "2021-22",
+  "raptorDefense": -0.04
+ },
+ {
+  "name": "Scot Pollard",
+  "season": "1999-00",
+  "raptorDefense": 2.238
+ },
+ {
+  "name": "Scot Pollard",
+  "season": "2000-01",
+  "raptorDefense": 3.299
+ },
+ {
+  "name": "Scot Pollard",
+  "season": "2001-02",
+  "raptorDefense": 2.529
+ },
+ {
+  "name": "Scot Pollard",
+  "season": "2003-04",
+  "raptorDefense": 0.725
+ },
+ {
+  "name": "Scot Pollard",
+  "season": "2004-05",
+  "raptorDefense": 2.106
+ },
+ {
+  "name": "Scot Pollard",
+  "season": "2005-06",
+  "raptorDefense": 2.488
+ },
+ {
+  "name": "Olden Polynice",
+  "season": "1997-98",
+  "raptorDefense": 0.056
+ },
+ {
+  "name": "Olden Polynice",
+  "season": "1998-99",
+  "raptorDefense": -1.359
+ },
+ {
+  "name": "Olden Polynice",
+  "season": "1999-00",
+  "raptorDefense": 1.039
+ },
+ {
+  "name": "Olden Polynice",
+  "season": "2000-01",
+  "raptorDefense": 1.041
+ },
+ {
   "name": "Quincy Pondexter",
   "season": "2010-11",
   "raptorDefense": -0.508
@@ -26910,6 +29845,36 @@
   "raptorDefense": 0.391
  },
  {
+  "name": "Vitaly Potapenko",
+  "season": "1997-98",
+  "raptorDefense": -0.116
+ },
+ {
+  "name": "Vitaly Potapenko",
+  "season": "1998-99",
+  "raptorDefense": -0.833
+ },
+ {
+  "name": "Vitaly Potapenko",
+  "season": "1999-00",
+  "raptorDefense": -1.3
+ },
+ {
+  "name": "Vitaly Potapenko",
+  "season": "2000-01",
+  "raptorDefense": -1.583
+ },
+ {
+  "name": "Vitaly Potapenko",
+  "season": "2001-02",
+  "raptorDefense": -0.833
+ },
+ {
+  "name": "Vitaly Potapenko",
+  "season": "2003-04",
+  "raptorDefense": -2.846
+ },
+ {
   "name": "Dwight Powell",
   "season": "2015-16",
   "raptorDefense": 2.375
@@ -26958,6 +29923,26 @@
   "name": "Leon Powe",
   "season": "2008-09",
   "raptorDefense": 1.072
+ },
+ {
+  "name": "Josh Powell",
+  "season": "2007-08",
+  "raptorDefense": -3.261
+ },
+ {
+  "name": "Josh Powell",
+  "season": "2008-09",
+  "raptorDefense": -2.759
+ },
+ {
+  "name": "Josh Powell",
+  "season": "2009-10",
+  "raptorDefense": -2.465
+ },
+ {
+  "name": "Josh Powell",
+  "season": "2010-11",
+  "raptorDefense": -2.954
  },
  {
   "name": "Norman Powell",
@@ -27580,6 +30565,26 @@
   "raptorDefense": -1.7
  },
  {
+  "name": "Bryant Reeves",
+  "season": "1997-98",
+  "raptorDefense": -2.228
+ },
+ {
+  "name": "Bryant Reeves",
+  "season": "1998-99",
+  "raptorDefense": -2.739
+ },
+ {
+  "name": "Bryant Reeves",
+  "season": "1999-00",
+  "raptorDefense": -1.72
+ },
+ {
+  "name": "Bryant Reeves",
+  "season": "2000-01",
+  "raptorDefense": 1.028
+ },
+ {
   "name": "Khalid Reeves",
   "season": "1997-98",
   "raptorDefense": -1.24
@@ -27603,6 +30608,21 @@
   "name": "Don Reid",
   "season": "2001-02",
   "raptorDefense": 0.614
+ },
+ {
+  "name": "J.R. Reid",
+  "season": "1997-98",
+  "raptorDefense": -0.706
+ },
+ {
+  "name": "J.R. Reid",
+  "season": "1998-99",
+  "raptorDefense": 0.009
+ },
+ {
+  "name": "J.R. Reid",
+  "season": "1999-00",
+  "raptorDefense": -0.987
  },
  {
   "name": "Naz Reid",
@@ -28175,6 +31195,16 @@
   "raptorDefense": -2.513
  },
  {
+  "name": "James Robinson",
+  "season": "1997-98",
+  "raptorDefense": -2.881
+ },
+ {
+  "name": "James Robinson",
+  "season": "1998-99",
+  "raptorDefense": -1.91
+ },
+ {
   "name": "Mitchell Robinson",
   "season": "2018-19",
   "raptorDefense": 0.884
@@ -28243,6 +31273,16 @@
   "name": "Nate Robinson",
   "season": "2014-15",
   "raptorDefense": 0.315
+ },
+ {
+  "name": "Isaiah Roby",
+  "season": "2020-21",
+  "raptorDefense": -1.156
+ },
+ {
+  "name": "Isaiah Roby",
+  "season": "2021-22",
+  "raptorDefense": -1.312
  },
  {
   "name": "Dennis Rodman",
@@ -28530,6 +31570,51 @@
   "raptorDefense": -2.29
  },
  {
+  "name": "Malik Rose",
+  "season": "1998-99",
+  "raptorDefense": 2.782
+ },
+ {
+  "name": "Malik Rose",
+  "season": "1999-00",
+  "raptorDefense": 0.687
+ },
+ {
+  "name": "Malik Rose",
+  "season": "2000-01",
+  "raptorDefense": 0.938
+ },
+ {
+  "name": "Malik Rose",
+  "season": "2001-02",
+  "raptorDefense": 0.978
+ },
+ {
+  "name": "Malik Rose",
+  "season": "2002-03",
+  "raptorDefense": 0.289
+ },
+ {
+  "name": "Malik Rose",
+  "season": "2003-04",
+  "raptorDefense": -0.541
+ },
+ {
+  "name": "Malik Rose",
+  "season": "2004-05",
+  "raptorDefense": -0.469
+ },
+ {
+  "name": "Malik Rose",
+  "season": "2005-06",
+  "raptorDefense": -1.098
+ },
+ {
+  "name": "Malik Rose",
+  "season": "2006-07",
+  "raptorDefense": -1.191
+ },
+ {
   "name": "Quinton Ross",
   "season": "2004-05",
   "raptorDefense": -0.293
@@ -28780,6 +31865,31 @@
   "raptorDefense": -0.899
  },
  {
+  "name": "Kareem Rush",
+  "season": "2002-03",
+  "raptorDefense": -3.348
+ },
+ {
+  "name": "Kareem Rush",
+  "season": "2003-04",
+  "raptorDefense": -1.322
+ },
+ {
+  "name": "Kareem Rush",
+  "season": "2004-05",
+  "raptorDefense": -2.269
+ },
+ {
+  "name": "Kareem Rush",
+  "season": "2005-06",
+  "raptorDefense": -1.114
+ },
+ {
+  "name": "Kareem Rush",
+  "season": "2007-08",
+  "raptorDefense": -1.554
+ },
+ {
   "name": "Bryon Russell",
   "season": "1997-98",
   "raptorDefense": 1.161
@@ -28910,6 +32020,16 @@
   "raptorDefense": 2.281
  },
  {
+  "name": "Robert Sacre",
+  "season": "2013-14",
+  "raptorDefense": 0.211
+ },
+ {
+  "name": "Robert Sacre",
+  "season": "2014-15",
+  "raptorDefense": 0.48
+ },
+ {
   "name": "John Salmons",
   "season": "2002-03",
   "raptorDefense": -0.499
@@ -28983,6 +32103,31 @@
   "name": "JaKarr Sampson",
   "season": "2019-20",
   "raptorDefense": 1.953
+ },
+ {
+  "name": "Larry Sanders",
+  "season": "2010-11",
+  "raptorDefense": 1.658
+ },
+ {
+  "name": "Larry Sanders",
+  "season": "2011-12",
+  "raptorDefense": 3.806
+ },
+ {
+  "name": "Larry Sanders",
+  "season": "2012-13",
+  "raptorDefense": 4.046
+ },
+ {
+  "name": "Larry Sanders",
+  "season": "2013-14",
+  "raptorDefense": 1.488
+ },
+ {
+  "name": "Larry Sanders",
+  "season": "2014-15",
+  "raptorDefense": 2.709
  },
  {
   "name": "Dario Saric",
@@ -29200,6 +32345,41 @@
   "raptorDefense": -1.77
  },
  {
+  "name": "Mike Scott",
+  "season": "2013-14",
+  "raptorDefense": -2.945
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2014-15",
+  "raptorDefense": -2.154
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2015-16",
+  "raptorDefense": -1.057
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2017-18",
+  "raptorDefense": -1.892
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2018-19",
+  "raptorDefense": -2.183
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2019-20",
+  "raptorDefense": -1.558
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2020-21",
+  "raptorDefense": -0.099
+ },
+ {
   "name": "Malik Sealy",
   "season": "1997-98",
   "raptorDefense": 0.621
@@ -29285,9 +32465,54 @@
   "raptorDefense": -1.251
  },
  {
+  "name": "Wayne Selden",
+  "season": "2017-18",
+  "raptorDefense": -4.337
+ },
+ {
+  "name": "Wayne Selden",
+  "season": "2018-19",
+  "raptorDefense": -3.245
+ },
+ {
   "name": "Alperen Sengun",
   "season": "2021-22",
   "raptorDefense": -1.268
+ },
+ {
+  "name": "Kevin Seraphin",
+  "season": "2010-11",
+  "raptorDefense": -1.873
+ },
+ {
+  "name": "Kevin Seraphin",
+  "season": "2011-12",
+  "raptorDefense": 0.679
+ },
+ {
+  "name": "Kevin Seraphin",
+  "season": "2012-13",
+  "raptorDefense": -0.726
+ },
+ {
+  "name": "Kevin Seraphin",
+  "season": "2013-14",
+  "raptorDefense": 1.171
+ },
+ {
+  "name": "Kevin Seraphin",
+  "season": "2014-15",
+  "raptorDefense": -0.574
+ },
+ {
+  "name": "Kevin Seraphin",
+  "season": "2015-16",
+  "raptorDefense": 2.168
+ },
+ {
+  "name": "Kevin Seraphin",
+  "season": "2016-17",
+  "raptorDefense": -2.147
  },
  {
   "name": "Ramon Sessions",
@@ -29430,6 +32655,21 @@
   "raptorDefense": 0.937
  },
  {
+  "name": "Alexey Shved",
+  "season": "2012-13",
+  "raptorDefense": -0.764
+ },
+ {
+  "name": "Alexey Shved",
+  "season": "2013-14",
+  "raptorDefense": -0.022
+ },
+ {
+  "name": "Alexey Shved",
+  "season": "2014-15",
+  "raptorDefense": -2.74
+ },
+ {
   "name": "Pascal Siakam",
   "season": "2016-17",
   "raptorDefense": -0.267
@@ -29540,6 +32780,31 @@
   "raptorDefense": -2.467
  },
  {
+  "name": "Dickey Simpkins",
+  "season": "1997-98",
+  "raptorDefense": -1.693
+ },
+ {
+  "name": "Dickey Simpkins",
+  "season": "1998-99",
+  "raptorDefense": -0.368
+ },
+ {
+  "name": "Dickey Simpkins",
+  "season": "1999-00",
+  "raptorDefense": -1.871
+ },
+ {
+  "name": "Henry Sims",
+  "season": "2013-14",
+  "raptorDefense": -0.174
+ },
+ {
+  "name": "Henry Sims",
+  "season": "2014-15",
+  "raptorDefense": -1.897
+ },
+ {
   "name": "Jericho Sims",
   "season": "2021-22",
   "raptorDefense": 1.759
@@ -29640,6 +32905,16 @@
   "raptorDefense": -0.282
  },
  {
+  "name": "Reggie Slater",
+  "season": "1997-98",
+  "raptorDefense": -2.708
+ },
+ {
+  "name": "Reggie Slater",
+  "season": "2000-01",
+  "raptorDefense": -1.573
+ },
+ {
   "name": "Donald Sloan",
   "season": "2011-12",
   "raptorDefense": -3.333
@@ -29698,6 +32973,31 @@
   "name": "Charles Smith",
   "season": "2001-02",
   "raptorDefense": 0.241
+ },
+ {
+  "name": "Craig Smith",
+  "season": "2006-07",
+  "raptorDefense": -0.58
+ },
+ {
+  "name": "Craig Smith",
+  "season": "2007-08",
+  "raptorDefense": -2.08
+ },
+ {
+  "name": "Craig Smith",
+  "season": "2008-09",
+  "raptorDefense": -1.128
+ },
+ {
+  "name": "Craig Smith",
+  "season": "2009-10",
+  "raptorDefense": 0.08
+ },
+ {
+  "name": "Craig Smith",
+  "season": "2010-11",
+  "raptorDefense": -0.662
  },
  {
   "name": "Dennis Smith Jr.",
@@ -29768,6 +33068,56 @@
   "name": "Ish Smith",
   "season": "2021-22",
   "raptorDefense": -1.981
+ },
+ {
+  "name": "Jason Smith",
+  "season": "2007-08",
+  "raptorDefense": -0.797
+ },
+ {
+  "name": "Jason Smith",
+  "season": "2009-10",
+  "raptorDefense": -0.633
+ },
+ {
+  "name": "Jason Smith",
+  "season": "2010-11",
+  "raptorDefense": 0.213
+ },
+ {
+  "name": "Jason Smith",
+  "season": "2011-12",
+  "raptorDefense": 0.908
+ },
+ {
+  "name": "Jason Smith",
+  "season": "2012-13",
+  "raptorDefense": -0.465
+ },
+ {
+  "name": "Jason Smith",
+  "season": "2013-14",
+  "raptorDefense": -2.035
+ },
+ {
+  "name": "Jason Smith",
+  "season": "2014-15",
+  "raptorDefense": -2.679
+ },
+ {
+  "name": "Jason Smith",
+  "season": "2015-16",
+  "raptorDefense": -0.771
+ },
+ {
+  "name": "Jason Smith",
+  "season": "2016-17",
+  "raptorDefense": -0.643
+ },
+ {
+  "name": "Jalen Smith",
+  "season": "2021-22",
+  "raptorDefense": -0.542
  },
  {
   "name": "Joe Smith",
@@ -30135,6 +33485,111 @@
   "raptorDefense": 0.224
  },
  {
+  "name": "Kirk Snyder",
+  "season": "2004-05",
+  "raptorDefense": -2.701
+ },
+ {
+  "name": "Kirk Snyder",
+  "season": "2005-06",
+  "raptorDefense": -0.2
+ },
+ {
+  "name": "Kirk Snyder",
+  "season": "2006-07",
+  "raptorDefense": -0.235
+ },
+ {
+  "name": "Kirk Snyder",
+  "season": "2007-08",
+  "raptorDefense": -0.902
+ },
+ {
+  "name": "Darius Songaila",
+  "season": "2003-04",
+  "raptorDefense": -0.215
+ },
+ {
+  "name": "Darius Songaila",
+  "season": "2004-05",
+  "raptorDefense": 0.119
+ },
+ {
+  "name": "Darius Songaila",
+  "season": "2005-06",
+  "raptorDefense": 0.298
+ },
+ {
+  "name": "Darius Songaila",
+  "season": "2006-07",
+  "raptorDefense": -1.962
+ },
+ {
+  "name": "Darius Songaila",
+  "season": "2007-08",
+  "raptorDefense": 0.603
+ },
+ {
+  "name": "Darius Songaila",
+  "season": "2008-09",
+  "raptorDefense": 0.528
+ },
+ {
+  "name": "Darius Songaila",
+  "season": "2009-10",
+  "raptorDefense": -0.347
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2008-09",
+  "raptorDefense": -2.584
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2009-10",
+  "raptorDefense": -3.144
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2010-11",
+  "raptorDefense": 0.128
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2011-12",
+  "raptorDefense": -1.289
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2012-13",
+  "raptorDefense": -2.216
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2013-14",
+  "raptorDefense": -1.304
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2014-15",
+  "raptorDefense": -1.6
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2015-16",
+  "raptorDefense": 0.587
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2016-17",
+  "raptorDefense": 0.1
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2017-18",
+  "raptorDefense": -1.895
+ },
+ {
   "name": "Felton Spencer",
   "season": "1997-98",
   "raptorDefense": 0.646
@@ -30325,6 +33780,16 @@
   "raptorDefense": -3.202
  },
  {
+  "name": "Vladimir Stepania",
+  "season": "2001-02",
+  "raptorDefense": 1.126
+ },
+ {
+  "name": "Vladimir Stepania",
+  "season": "2002-03",
+  "raptorDefense": 1.529
+ },
+ {
   "name": "Lance Stephenson",
   "season": "2012-13",
   "raptorDefense": 1.082
@@ -30420,6 +33885,11 @@
   "raptorDefense": -1.657
  },
  {
+  "name": "Lamar Stevens",
+  "season": "2021-22",
+  "raptorDefense": -0.042
+ },
+ {
   "name": "Isaiah Stewart",
   "season": "2020-21",
   "raptorDefense": 3.057
@@ -30428,6 +33898,11 @@
   "name": "Isaiah Stewart",
   "season": "2021-22",
   "raptorDefense": 0.834
+ },
+ {
+  "name": "Michael Stewart",
+  "season": "1997-98",
+  "raptorDefense": 2.082
  },
  {
   "name": "Greg Stiemsma",
@@ -30680,6 +34155,16 @@
   "raptorDefense": -0.982
  },
  {
+  "name": "Salim Stoudamire",
+  "season": "2005-06",
+  "raptorDefense": -3.073
+ },
+ {
+  "name": "Salim Stoudamire",
+  "season": "2006-07",
+  "raptorDefense": -2.581
+ },
+ {
   "name": "Erick Strickland",
   "season": "1997-98",
   "raptorDefense": -1.6
@@ -30755,6 +34240,16 @@
   "raptorDefense": -2.318
  },
  {
+  "name": "Derek Strong",
+  "season": "1997-98",
+  "raptorDefense": -0.389
+ },
+ {
+  "name": "Derek Strong",
+  "season": "1998-99",
+  "raptorDefense": -1.018
+ },
+ {
   "name": "Max Strus",
   "season": "2020-21",
   "raptorDefense": -1.56
@@ -30820,6 +34315,26 @@
   "raptorDefense": 2.826
  },
  {
+  "name": "Jared Sullinger",
+  "season": "2012-13",
+  "raptorDefense": 0.761
+ },
+ {
+  "name": "Jared Sullinger",
+  "season": "2013-14",
+  "raptorDefense": 1.05
+ },
+ {
+  "name": "Jared Sullinger",
+  "season": "2014-15",
+  "raptorDefense": 0.49
+ },
+ {
+  "name": "Jared Sullinger",
+  "season": "2015-16",
+  "raptorDefense": 1.604
+ },
+ {
   "name": "Bob Sura",
   "season": "1997-98",
   "raptorDefense": -0.255
@@ -30858,6 +34373,61 @@
   "name": "Bob Sura",
   "season": "2004-05",
   "raptorDefense": 0.285
+ },
+ {
+  "name": "Mike Sweetney",
+  "season": "2003-04",
+  "raptorDefense": -1.047
+ },
+ {
+  "name": "Mike Sweetney",
+  "season": "2004-05",
+  "raptorDefense": -2.278
+ },
+ {
+  "name": "Mike Sweetney",
+  "season": "2005-06",
+  "raptorDefense": 1.478
+ },
+ {
+  "name": "Stromile Swift",
+  "season": "2000-01",
+  "raptorDefense": 0.35
+ },
+ {
+  "name": "Stromile Swift",
+  "season": "2001-02",
+  "raptorDefense": -0.616
+ },
+ {
+  "name": "Stromile Swift",
+  "season": "2002-03",
+  "raptorDefense": 0.504
+ },
+ {
+  "name": "Stromile Swift",
+  "season": "2003-04",
+  "raptorDefense": -0.156
+ },
+ {
+  "name": "Stromile Swift",
+  "season": "2004-05",
+  "raptorDefense": -0.291
+ },
+ {
+  "name": "Stromile Swift",
+  "season": "2005-06",
+  "raptorDefense": -0.134
+ },
+ {
+  "name": "Stromile Swift",
+  "season": "2006-07",
+  "raptorDefense": -0.98
+ },
+ {
+  "name": "Stromile Swift",
+  "season": "2007-08",
+  "raptorDefense": -1.143
  },
  {
   "name": "Wally Szczerbiak",
@@ -30943,6 +34513,46 @@
   "name": "Jayson Tatum",
   "season": "2021-22",
   "raptorDefense": 1.587
+ },
+ {
+  "name": "Maurice Taylor",
+  "season": "1997-98",
+  "raptorDefense": -2.171
+ },
+ {
+  "name": "Maurice Taylor",
+  "season": "1998-99",
+  "raptorDefense": -3.694
+ },
+ {
+  "name": "Maurice Taylor",
+  "season": "1999-00",
+  "raptorDefense": -1.77
+ },
+ {
+  "name": "Maurice Taylor",
+  "season": "2000-01",
+  "raptorDefense": -2.095
+ },
+ {
+  "name": "Maurice Taylor",
+  "season": "2002-03",
+  "raptorDefense": -2.309
+ },
+ {
+  "name": "Maurice Taylor",
+  "season": "2003-04",
+  "raptorDefense": -1.047
+ },
+ {
+  "name": "Maurice Taylor",
+  "season": "2004-05",
+  "raptorDefense": -1.154
+ },
+ {
+  "name": "Maurice Taylor",
+  "season": "2005-06",
+  "raptorDefense": -1.764
  },
  {
   "name": "Jeff Teague",
@@ -31245,6 +34855,41 @@
   "raptorDefense": 0.739
  },
  {
+  "name": "Cam Thomas",
+  "season": "2021-22",
+  "raptorDefense": -2.5
+ },
+ {
+  "name": "Etan Thomas",
+  "season": "2001-02",
+  "raptorDefense": 0.87
+ },
+ {
+  "name": "Etan Thomas",
+  "season": "2002-03",
+  "raptorDefense": -0.814
+ },
+ {
+  "name": "Etan Thomas",
+  "season": "2003-04",
+  "raptorDefense": -0.243
+ },
+ {
+  "name": "Etan Thomas",
+  "season": "2004-05",
+  "raptorDefense": -1.494
+ },
+ {
+  "name": "Etan Thomas",
+  "season": "2005-06",
+  "raptorDefense": 0.881
+ },
+ {
+  "name": "Etan Thomas",
+  "season": "2006-07",
+  "raptorDefense": 0.162
+ },
+ {
   "name": "Isaiah Thomas",
   "season": "2011-12",
   "raptorDefense": -2.457
@@ -31283,6 +34928,116 @@
   "name": "Isaiah Thomas",
   "season": "2019-20",
   "raptorDefense": -5.664
+ },
+ {
+  "name": "Kenny Thomas",
+  "season": "1999-00",
+  "raptorDefense": -0.444
+ },
+ {
+  "name": "Kenny Thomas",
+  "season": "2000-01",
+  "raptorDefense": -0.415
+ },
+ {
+  "name": "Kenny Thomas",
+  "season": "2001-02",
+  "raptorDefense": -0.111
+ },
+ {
+  "name": "Kenny Thomas",
+  "season": "2002-03",
+  "raptorDefense": -0.76
+ },
+ {
+  "name": "Kenny Thomas",
+  "season": "2003-04",
+  "raptorDefense": -0.247
+ },
+ {
+  "name": "Kenny Thomas",
+  "season": "2004-05",
+  "raptorDefense": -1.575
+ },
+ {
+  "name": "Kenny Thomas",
+  "season": "2005-06",
+  "raptorDefense": 0.669
+ },
+ {
+  "name": "Kenny Thomas",
+  "season": "2006-07",
+  "raptorDefense": -0.83
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "1998-99",
+  "raptorDefense": 1.546
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "1999-00",
+  "raptorDefense": 0.774
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2000-01",
+  "raptorDefense": 1.805
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2001-02",
+  "raptorDefense": 0.903
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2002-03",
+  "raptorDefense": 1.33
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2003-04",
+  "raptorDefense": 0.746
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2004-05",
+  "raptorDefense": 0.26
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2005-06",
+  "raptorDefense": 2.086
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2006-07",
+  "raptorDefense": 1.732
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2007-08",
+  "raptorDefense": 2.812
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2008-09",
+  "raptorDefense": 2.53
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2009-10",
+  "raptorDefense": 1.413
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2010-11",
+  "raptorDefense": 1.639
+ },
+ {
+  "name": "Kurt Thomas",
+  "season": "2011-12",
+  "raptorDefense": 2.235
  },
  {
   "name": "Lance Thomas",
@@ -31380,6 +35135,36 @@
   "raptorDefense": -0.292
  },
  {
+  "name": "Tyrus Thomas",
+  "season": "2006-07",
+  "raptorDefense": 2.476
+ },
+ {
+  "name": "Tyrus Thomas",
+  "season": "2007-08",
+  "raptorDefense": 1.766
+ },
+ {
+  "name": "Tyrus Thomas",
+  "season": "2008-09",
+  "raptorDefense": 1.42
+ },
+ {
+  "name": "Tyrus Thomas",
+  "season": "2009-10",
+  "raptorDefense": 2.29
+ },
+ {
+  "name": "Tyrus Thomas",
+  "season": "2010-11",
+  "raptorDefense": 1.137
+ },
+ {
+  "name": "Tyrus Thomas",
+  "season": "2011-12",
+  "raptorDefense": -0.313
+ },
+ {
   "name": "Hollis Thompson",
   "season": "2013-14",
   "raptorDefense": -3.019
@@ -31398,6 +35183,46 @@
   "name": "Hollis Thompson",
   "season": "2016-17",
   "raptorDefense": -1.237
+ },
+ {
+  "name": "Jason Thompson",
+  "season": "2008-09",
+  "raptorDefense": -0.136
+ },
+ {
+  "name": "Jason Thompson",
+  "season": "2009-10",
+  "raptorDefense": 0.085
+ },
+ {
+  "name": "Jason Thompson",
+  "season": "2010-11",
+  "raptorDefense": -0.132
+ },
+ {
+  "name": "Jason Thompson",
+  "season": "2011-12",
+  "raptorDefense": -0.145
+ },
+ {
+  "name": "Jason Thompson",
+  "season": "2012-13",
+  "raptorDefense": -0.991
+ },
+ {
+  "name": "Jason Thompson",
+  "season": "2013-14",
+  "raptorDefense": 0.272
+ },
+ {
+  "name": "Jason Thompson",
+  "season": "2014-15",
+  "raptorDefense": 0.176
+ },
+ {
+  "name": "Jason Thompson",
+  "season": "2015-16",
+  "raptorDefense": -2.209
  },
  {
   "name": "Klay Thompson",
@@ -31500,6 +35325,66 @@
   "raptorDefense": -0.595
  },
  {
+  "name": "Al Thornton",
+  "season": "2007-08",
+  "raptorDefense": -2.723
+ },
+ {
+  "name": "Al Thornton",
+  "season": "2008-09",
+  "raptorDefense": -2.94
+ },
+ {
+  "name": "Al Thornton",
+  "season": "2009-10",
+  "raptorDefense": -1.592
+ },
+ {
+  "name": "Al Thornton",
+  "season": "2010-11",
+  "raptorDefense": -0.761
+ },
+ {
+  "name": "Marcus Thornton",
+  "season": "2009-10",
+  "raptorDefense": -0.912
+ },
+ {
+  "name": "Marcus Thornton",
+  "season": "2010-11",
+  "raptorDefense": 0.008
+ },
+ {
+  "name": "Marcus Thornton",
+  "season": "2011-12",
+  "raptorDefense": -1.511
+ },
+ {
+  "name": "Marcus Thornton",
+  "season": "2012-13",
+  "raptorDefense": -2.836
+ },
+ {
+  "name": "Marcus Thornton",
+  "season": "2013-14",
+  "raptorDefense": -1.117
+ },
+ {
+  "name": "Marcus Thornton",
+  "season": "2014-15",
+  "raptorDefense": -0.23
+ },
+ {
+  "name": "Marcus Thornton",
+  "season": "2015-16",
+  "raptorDefense": -1.951
+ },
+ {
+  "name": "Marcus Thornton",
+  "season": "2016-17",
+  "raptorDefense": -4.162
+ },
+ {
   "name": "Otis Thorpe",
   "season": "1997-98",
   "raptorDefense": -1.856
@@ -31533,6 +35418,16 @@
   "name": "Matisse Thybulle",
   "season": "2021-22",
   "raptorDefense": 4.007
+ },
+ {
+  "name": "Xavier Tillman",
+  "season": "2020-21",
+  "raptorDefense": 0.436
+ },
+ {
+  "name": "Xavier Tillman",
+  "season": "2021-22",
+  "raptorDefense": 3.01
  },
  {
   "name": "Jamaal Tinsley",
@@ -31695,6 +35590,61 @@
   "raptorDefense": -1.184
  },
  {
+  "name": "Robert Traylor",
+  "season": "1998-99",
+  "raptorDefense": 2.81
+ },
+ {
+  "name": "Robert Traylor",
+  "season": "2000-01",
+  "raptorDefense": 0.932
+ },
+ {
+  "name": "Robert Traylor",
+  "season": "2001-02",
+  "raptorDefense": 0.046
+ },
+ {
+  "name": "Robert Traylor",
+  "season": "2002-03",
+  "raptorDefense": 2.311
+ },
+ {
+  "name": "Robert Traylor",
+  "season": "2003-04",
+  "raptorDefense": -0.281
+ },
+ {
+  "name": "Robert Traylor",
+  "season": "2004-05",
+  "raptorDefense": 0.199
+ },
+ {
+  "name": "Gary Trent",
+  "season": "1997-98",
+  "raptorDefense": -1.042
+ },
+ {
+  "name": "Gary Trent",
+  "season": "1998-99",
+  "raptorDefense": -0.89
+ },
+ {
+  "name": "Gary Trent",
+  "season": "2001-02",
+  "raptorDefense": -2.011
+ },
+ {
+  "name": "Gary Trent",
+  "season": "2002-03",
+  "raptorDefense": -0.856
+ },
+ {
+  "name": "Gary Trent",
+  "season": "2003-04",
+  "raptorDefense": -3.022
+ },
+ {
   "name": "Gary Trent Jr.",
   "season": "2019-20",
   "raptorDefense": -0.488
@@ -31708,6 +35658,31 @@
   "name": "Gary Trent Jr.",
   "season": "2021-22",
   "raptorDefense": -1.023
+ },
+ {
+  "name": "Jake Tsakalidis",
+  "season": "2000-01",
+  "raptorDefense": 0.499
+ },
+ {
+  "name": "Jake Tsakalidis",
+  "season": "2001-02",
+  "raptorDefense": 1.65
+ },
+ {
+  "name": "Jake Tsakalidis",
+  "season": "2002-03",
+  "raptorDefense": -0.017
+ },
+ {
+  "name": "Jake Tsakalidis",
+  "season": "2003-04",
+  "raptorDefense": -0.429
+ },
+ {
+  "name": "Jake Tsakalidis",
+  "season": "2005-06",
+  "raptorDefense": 0.052
  },
  {
   "name": "PJ Tucker",
@@ -32335,6 +36310,16 @@
   "raptorDefense": -2.478
  },
  {
+  "name": "Devin Vassell",
+  "season": "2020-21",
+  "raptorDefense": -0.656
+ },
+ {
+  "name": "Devin Vassell",
+  "season": "2021-22",
+  "raptorDefense": -0.565
+ },
+ {
   "name": "Jacque Vaughn",
   "season": "1999-00",
   "raptorDefense": -1.362
@@ -32398,6 +36383,51 @@
   "name": "Jan Vesely",
   "season": "2013-14",
   "raptorDefense": 4.382
+ },
+ {
+  "name": "Charlie Villanueva",
+  "season": "2005-06",
+  "raptorDefense": -1.51
+ },
+ {
+  "name": "Charlie Villanueva",
+  "season": "2006-07",
+  "raptorDefense": -1.124
+ },
+ {
+  "name": "Charlie Villanueva",
+  "season": "2007-08",
+  "raptorDefense": -3.591
+ },
+ {
+  "name": "Charlie Villanueva",
+  "season": "2008-09",
+  "raptorDefense": -0.911
+ },
+ {
+  "name": "Charlie Villanueva",
+  "season": "2009-10",
+  "raptorDefense": -3.037
+ },
+ {
+  "name": "Charlie Villanueva",
+  "season": "2010-11",
+  "raptorDefense": -1.836
+ },
+ {
+  "name": "Charlie Villanueva",
+  "season": "2012-13",
+  "raptorDefense": -0.739
+ },
+ {
+  "name": "Charlie Villanueva",
+  "season": "2014-15",
+  "raptorDefense": -3.074
+ },
+ {
+  "name": "Charlie Villanueva",
+  "season": "2015-16",
+  "raptorDefense": -1.215
  },
  {
   "name": "Gabe Vincent",
@@ -32655,6 +36685,41 @@
   "raptorDefense": -1.506
  },
  {
+  "name": "Dion Waiters",
+  "season": "2012-13",
+  "raptorDefense": -2.262
+ },
+ {
+  "name": "Dion Waiters",
+  "season": "2013-14",
+  "raptorDefense": -0.835
+ },
+ {
+  "name": "Dion Waiters",
+  "season": "2014-15",
+  "raptorDefense": -1.173
+ },
+ {
+  "name": "Dion Waiters",
+  "season": "2015-16",
+  "raptorDefense": -0.534
+ },
+ {
+  "name": "Dion Waiters",
+  "season": "2016-17",
+  "raptorDefense": 1.168
+ },
+ {
+  "name": "Dion Waiters",
+  "season": "2017-18",
+  "raptorDefense": -0.908
+ },
+ {
+  "name": "Dion Waiters",
+  "season": "2018-19",
+  "raptorDefense": -0.936
+ },
+ {
   "name": "Antoine Walker",
   "season": "1997-98",
   "raptorDefense": -0.039
@@ -32763,6 +36828,21 @@
   "name": "Kemba Walker",
   "season": "2021-22",
   "raptorDefense": 0.056
+ },
+ {
+  "name": "Lonnie Walker IV",
+  "season": "2019-20",
+  "raptorDefense": -1.156
+ },
+ {
+  "name": "Lonnie Walker IV",
+  "season": "2020-21",
+  "raptorDefense": -3.868
+ },
+ {
+  "name": "Lonnie Walker IV",
+  "season": "2021-22",
+  "raptorDefense": -1.826
  },
  {
   "name": "Samaki Walker",
@@ -32923,6 +37003,26 @@
   "name": "Gerald Wallace",
   "season": "2013-14",
   "raptorDefense": 1.604
+ },
+ {
+  "name": "John Wallace",
+  "season": "1997-98",
+  "raptorDefense": -1.811
+ },
+ {
+  "name": "John Wallace",
+  "season": "1998-99",
+  "raptorDefense": -1.817
+ },
+ {
+  "name": "John Wallace",
+  "season": "1999-00",
+  "raptorDefense": -1.357
+ },
+ {
+  "name": "John Wallace",
+  "season": "2000-01",
+  "raptorDefense": -1.953
  },
  {
   "name": "Rasheed Wallace",
@@ -33153,6 +37253,41 @@
   "name": "T.J. Warren",
   "season": "2019-20",
   "raptorDefense": 0.206
+ },
+ {
+  "name": "Hakim Warrick",
+  "season": "2005-06",
+  "raptorDefense": -2.101
+ },
+ {
+  "name": "Hakim Warrick",
+  "season": "2006-07",
+  "raptorDefense": -2.826
+ },
+ {
+  "name": "Hakim Warrick",
+  "season": "2007-08",
+  "raptorDefense": -2.434
+ },
+ {
+  "name": "Hakim Warrick",
+  "season": "2008-09",
+  "raptorDefense": -1.105
+ },
+ {
+  "name": "Hakim Warrick",
+  "season": "2009-10",
+  "raptorDefense": -2.241
+ },
+ {
+  "name": "Hakim Warrick",
+  "season": "2010-11",
+  "raptorDefense": -2.337
+ },
+ {
+  "name": "Hakim Warrick",
+  "season": "2011-12",
+  "raptorDefense": -3.053
  },
  {
   "name": "Eric Washington",
@@ -33418,6 +37553,16 @@
   "name": "Martell Webster",
   "season": "2013-14",
   "raptorDefense": -2.3
+ },
+ {
+  "name": "Sonny Weems",
+  "season": "2009-10",
+  "raptorDefense": -1.054
+ },
+ {
+  "name": "Sonny Weems",
+  "season": "2010-11",
+  "raptorDefense": -3.142
  },
  {
   "name": "Bonzi Wells",
@@ -33760,6 +37905,16 @@
   "raptorDefense": 3.106
  },
  {
+  "name": "DJ White",
+  "season": "2010-11",
+  "raptorDefense": -0.791
+ },
+ {
+  "name": "DJ White",
+  "season": "2011-12",
+  "raptorDefense": -2.157
+ },
+ {
   "name": "Hassan Whiteside",
   "season": "2014-15",
   "raptorDefense": 2.619
@@ -33798,6 +37953,41 @@
   "name": "Hassan Whiteside",
   "season": "2021-22",
   "raptorDefense": 2.261
+ },
+ {
+  "name": "Jahidi White",
+  "season": "1999-00",
+  "raptorDefense": 0.575
+ },
+ {
+  "name": "Jahidi White",
+  "season": "2000-01",
+  "raptorDefense": -1.503
+ },
+ {
+  "name": "Jahidi White",
+  "season": "2001-02",
+  "raptorDefense": 0.416
+ },
+ {
+  "name": "Jahidi White",
+  "season": "2003-04",
+  "raptorDefense": -0.913
+ },
+ {
+  "name": "Rodney White",
+  "season": "2002-03",
+  "raptorDefense": -0.633
+ },
+ {
+  "name": "Rodney White",
+  "season": "2003-04",
+  "raptorDefense": -1.079
+ },
+ {
+  "name": "Rodney White",
+  "season": "2004-05",
+  "raptorDefense": -0.559
  },
  {
   "name": "Chris Whitney",
@@ -33955,6 +38145,41 @@
   "raptorDefense": -1.463
  },
  {
+  "name": "Aaron Williams",
+  "season": "1997-98",
+  "raptorDefense": -0.664
+ },
+ {
+  "name": "Aaron Williams",
+  "season": "1999-00",
+  "raptorDefense": 0.515
+ },
+ {
+  "name": "Aaron Williams",
+  "season": "2000-01",
+  "raptorDefense": -0.23
+ },
+ {
+  "name": "Aaron Williams",
+  "season": "2001-02",
+  "raptorDefense": 0.897
+ },
+ {
+  "name": "Aaron Williams",
+  "season": "2002-03",
+  "raptorDefense": 0.255
+ },
+ {
+  "name": "Aaron Williams",
+  "season": "2003-04",
+  "raptorDefense": 0.443
+ },
+ {
+  "name": "Aaron Williams",
+  "season": "2005-06",
+  "raptorDefense": -1.178
+ },
+ {
   "name": "Alvin Williams",
   "season": "1997-98",
   "raptorDefense": -1.063
@@ -34100,6 +38325,36 @@
   "raptorDefense": -2.113
  },
  {
+  "name": "Derrick Williams",
+  "season": "2011-12",
+  "raptorDefense": -0.997
+ },
+ {
+  "name": "Derrick Williams",
+  "season": "2012-13",
+  "raptorDefense": -1.618
+ },
+ {
+  "name": "Derrick Williams",
+  "season": "2013-14",
+  "raptorDefense": -2.23
+ },
+ {
+  "name": "Derrick Williams",
+  "season": "2014-15",
+  "raptorDefense": -3.45
+ },
+ {
+  "name": "Derrick Williams",
+  "season": "2015-16",
+  "raptorDefense": -2.811
+ },
+ {
+  "name": "Derrick Williams",
+  "season": "2016-17",
+  "raptorDefense": -4.693
+ },
+ {
   "name": "Eric Williams",
   "season": "1998-99",
   "raptorDefense": -2.209
@@ -34153,6 +38408,16 @@
   "name": "Hot Rod Williams",
   "season": "1997-98",
   "raptorDefense": 1.76
+ },
+ {
+  "name": "Jayson Williams",
+  "season": "1997-98",
+  "raptorDefense": -0.332
+ },
+ {
+  "name": "Jayson Williams",
+  "season": "1998-99",
+  "raptorDefense": 0.968
  },
  {
   "name": "Jason Williams",
@@ -34248,6 +38513,36 @@
   "name": "Jerome Williams",
   "season": "2004-05",
   "raptorDefense": 1.269
+ },
+ {
+  "name": "Kevin Willis",
+  "season": "1997-98",
+  "raptorDefense": -0.945
+ },
+ {
+  "name": "Kevin Willis",
+  "season": "1998-99",
+  "raptorDefense": -0.806
+ },
+ {
+  "name": "Kevin Willis",
+  "season": "1999-00",
+  "raptorDefense": -1.03
+ },
+ {
+  "name": "Kevin Willis",
+  "season": "2000-01",
+  "raptorDefense": -1.827
+ },
+ {
+  "name": "Kevin Willis",
+  "season": "2001-02",
+  "raptorDefense": -0.128
+ },
+ {
+  "name": "Kevin Willis",
+  "season": "2002-03",
+  "raptorDefense": -1.057
  },
  {
   "name": "Kenrich Williams",
@@ -34490,6 +38785,21 @@
   "raptorDefense": -0.437
  },
  {
+  "name": "Marcus Williams",
+  "season": "2006-07",
+  "raptorDefense": -1.13
+ },
+ {
+  "name": "Marcus Williams",
+  "season": "2007-08",
+  "raptorDefense": -3.103
+ },
+ {
+  "name": "Marcus Williams",
+  "season": "2009-10",
+  "raptorDefense": -1.922
+ },
+ {
   "name": "Monty Williams",
   "season": "1997-98",
   "raptorDefense": -0.009
@@ -34548,6 +38858,36 @@
   "name": "Robert Williams III",
   "season": "2021-22",
   "raptorDefense": 3.016
+ },
+ {
+  "name": "Scott Williams",
+  "season": "1997-98",
+  "raptorDefense": 0.069
+ },
+ {
+  "name": "Scott Williams",
+  "season": "1999-00",
+  "raptorDefense": 0.196
+ },
+ {
+  "name": "Scott Williams",
+  "season": "2000-01",
+  "raptorDefense": 2.577
+ },
+ {
+  "name": "Scott Williams",
+  "season": "2001-02",
+  "raptorDefense": -0.909
+ },
+ {
+  "name": "Scott Williams",
+  "season": "2002-03",
+  "raptorDefense": -0.063
+ },
+ {
+  "name": "Scott Williams",
+  "season": "2003-04",
+  "raptorDefense": -0.007
  },
  {
   "name": "Shammond Williams",
@@ -34643,6 +38983,36 @@
   "name": "David Wingate",
   "season": "1997-98",
   "raptorDefense": -1.251
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2015-16",
+  "raptorDefense": 1.677
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2016-17",
+  "raptorDefense": 0.949
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2017-18",
+  "raptorDefense": 1.735
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2018-19",
+  "raptorDefense": 0.293
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2020-21",
+  "raptorDefense": 2.12
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2021-22",
+  "raptorDefense": 1.825
  },
  {
   "name": "Christian Wood",
@@ -34778,6 +39148,56 @@
   "name": "Dorell Wright",
   "season": "2014-15",
   "raptorDefense": 1.779
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "1997-98",
+  "raptorDefense": -0.183
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "1998-99",
+  "raptorDefense": -1.444
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "1999-00",
+  "raptorDefense": -0.482
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "2000-01",
+  "raptorDefense": -1.199
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "2001-02",
+  "raptorDefense": -0.906
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "2002-03",
+  "raptorDefense": -1.11
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "2003-04",
+  "raptorDefense": -0.395
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "2004-05",
+  "raptorDefense": 1.332
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "2005-06",
+  "raptorDefense": 2.089
+ },
+ {
+  "name": "Lorenzen Wright",
+  "season": "2006-07",
+  "raptorDefense": 0.773
  },
  {
   "name": "Nick Young",
@@ -34983,6 +39403,36 @@
   "name": "Cody Zeller",
   "season": "2020-21",
   "raptorDefense": 1.179
+ },
+ {
+  "name": "Tyler Zeller",
+  "season": "2012-13",
+  "raptorDefense": -0.707
+ },
+ {
+  "name": "Tyler Zeller",
+  "season": "2013-14",
+  "raptorDefense": 2.523
+ },
+ {
+  "name": "Tyler Zeller",
+  "season": "2014-15",
+  "raptorDefense": 0.461
+ },
+ {
+  "name": "Tyler Zeller",
+  "season": "2015-16",
+  "raptorDefense": 1.369
+ },
+ {
+  "name": "Tyler Zeller",
+  "season": "2016-17",
+  "raptorDefense": 1.07
+ },
+ {
+  "name": "Tyler Zeller",
+  "season": "2017-18",
+  "raptorDefense": -0.967
  },
  {
   "name": "Ivica Zubac",

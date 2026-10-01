@@ -18,9 +18,13 @@
  *  - `'lean'`  : `leanDraftPool` (~5200) — the user's refinement: peak-only for genuine offensive
  *    hubs, but every career window kept for role players / low-usage bigs (peak FGA < 12), so the
  *    cap dead-end can't be forced while the AI's candidate scan still shrinks ~45%.
+ *
+ * 2026-10-01, user's call after the pool audit ("jeśli jakiś gracz już jest to powinien mieć
+ * dostępne wszystkie spany"): back to `'full'` — every pool player gets every career window.
+ * Measured per-pick AI time is within noise of `'lean'` (~+5%); 100 drafts, 0 cap overruns.
  */
 export const DRAFT_EXPERIMENT = {
-  spanPoolMode: 'lean' as 'full' | 'peak' | 'lean',
+  spanPoolMode: 'full' as 'full' | 'peak' | 'lean',
   pruneToObservedAiPool: true,
   greatestPeakBonus: true,
   starterFiveLock: true,
