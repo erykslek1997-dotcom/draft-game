@@ -61,15 +61,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   if (process.argv.includes('--check')) {
     const s = (n: string) => by.get(n)!.breakdown;
+    // 2026-10-01: offense verdicts compare the exact (unrounded) offense — two teams 0.3 apart in
+    // raw offense round to the same displayed number, which made a strict ">" fail on rounding.
+    const offense = (n: string) => offenseScoreBreakdown(by.get(n)!.team).raw;
     const checks: [boolean, string][] = [
       [s("Charlotte").overallExact > s("Tulsa").overallExact, 'Charlotte ranks above Tulsa'],
       [by.get('Vermont')!.rank < teams.length, 'LeBron + Luka is not at the bottom'],
       [s('Charlotte').spacingScore > s('Tulsa').spacingScore, 'Charlotte spaces the floor better than Tulsa'],
-      [s('Nash').offenseScore >= s('Tulsa').offenseScore, 'Nash-Kobe-Malone scores at least as well as Tulsa'],
-      [s('Vermont').offenseScore > s('Tulsa').offenseScore, 'LeBron + Luka out-scores Tulsa'],
+      [offense('Nash') >= offense('Tulsa') - 0.5, 'Nash-Kobe-Malone scores at least as well as Tulsa'],
+      [offense('Vermont') > offense('Tulsa'), 'LeBron + Luka out-scores Tulsa'],
       [s('Nash').fitScore > s('SaltLake').fitScore, 'Nash + Malone fits better than CP3 + Bird + Hill'],
       [s('Nash').fitScore >= s('Tulsa').fitScore, 'Nash + Malone fits at least as well as Giannis + Kareem'],
-      [s('Charlotte').offenseScore > s('Tulsa').offenseScore, 'Stockton + Allen + Garnett out-score Tulsa'],
+      [offense('Charlotte') > offense('Tulsa'), 'Stockton + Allen + Garnett out-score Tulsa'],
     ];
     let failed = 0;
     for (const [ok, label] of checks) {

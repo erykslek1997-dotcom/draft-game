@@ -338,21 +338,46 @@ export const SHOOTING_ANOMALY_TEAM_SPACING_FLOOR = 85;
 const ACCURACY_OVERFLOW_MAX = 2.5;
 const ACCURACY_OVERFLOW_PER_POINT = 1.25;
 const ACCURACY_OVERFLOW_MIN_VOLUME = 5;
+// 2026-10-01 (continuous ladders): the volume gate fades in over the rung below it instead of
+// switching on at exactly 5 — Michael Porter Jr. at 4.5 volume points lost the whole 2.5.
 function accuracyOverflowPoints(position: Position, threePct: number, volumePoints: number): number {
-  if (volumePoints < ACCURACY_OVERFLOW_MIN_VOLUME) return 0;
+  const volumeGate = Math.max(0, Math.min(1, volumePoints - (ACCURACY_OVERFLOW_MIN_VOLUME - 1)));
+  if (volumeGate <= 0) return 0;
   const ladder = ACCURACY_LADDERS[position];
   const topRung = ladder[ladder.length - 1][0];
   const overflow = (threePct - topRung) * 100 * ACCURACY_OVERFLOW_PER_POINT;
   if (overflow <= 0) return 0;
-  return Math.min(ACCURACY_OVERFLOW_MAX, overflow, 10 - volumePoints);
+  return Math.min(ACCURACY_OVERFLOW_MAX, overflow, 10 - volumePoints) * volumeGate;
 }
 
+/**
+ * 2026-10-01, engine calibration session 5, point 10 (the user: "10. Ok"): the rungs used to be
+ * steps, so 35.9% vs 34.9% on the same volume moved Jimmy Butler's spacing 55 -> 41. The score
+ * now runs linearly between the rungs (details below).
+ */
 function ladderScore(ladder: Ladder, value: number): number {
-  let points = 0;
-  for (const [minimum, awarded] of ladder) {
-    if (value >= minimum) points = awarded;
+  const n = ladder.length;
+  if (n === 0) return 0;
+  // Knots through the middle of each rung, so on average across a rung the score matches the old
+  // step value and the scale's level doesn't drift up; the top rung holds from its own minimum. A
+  // zero rung that sits far below the first scoring one (accuracy: 0% -> 31%) is placed half an
+  // ordinary rung width below it, so a 20% shooter doesn't start collecting points.
+  const knots: Array<[number, number]> = ladder.map(([minimum, awarded], i) => {
+    if (i === n - 1) return [minimum, awarded];
+    const next = ladder[i + 1][0];
+    if (awarded === 0 && i + 2 < n) {
+      const ordinaryWidth = ladder[i + 2][0] - next;
+      return [Math.max(minimum, next - ordinaryWidth / 2), awarded];
+    }
+    return [(minimum + next) / 2, awarded];
+  });
+  if (value <= knots[0][0]) return value < ladder[0][0] ? 0 : knots[0][1];
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = knots[i];
+    const [x1, y1] = knots[i + 1];
+    if (value < x1) return x1 > x0 ? y0 + ((value - x0) / (x1 - x0)) * (y1 - y0) : y1;
   }
-  return points;
+  return knots[n - 1][1];
 }
 
 export interface SpacingBreakdown {
@@ -400,10 +425,11 @@ function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): S
   const volumePoints = Math.min(rawVolumePoints, accuracyPoints + VOLUME_ACCURACY_HEADROOM);
 
   const ladderPoints = accuracyPoints + volumePoints + accuracyOverflowPoints(position, span.box.threePct - shortenedLineAccuracyDiscount(span.spanLabel), volumePoints);
-  const selfCreationBonus =
-    accuracyPoints >= SELF_CREATION_BONUS_MIN_ACCURACY && volumePoints >= SELF_CREATION_BONUS_MIN_VOLUME
-      ? SELF_CREATION_BONUS * selfCreation * (1 - ladderPoints / MAX_SPACING_POINTS)
-      : 0;
+  // 2026-10-01 (continuous ladders): both gates fade in over one point below them.
+  const selfCreationGate =
+    Math.max(0, Math.min(1, accuracyPoints - (SELF_CREATION_BONUS_MIN_ACCURACY - 1))) *
+    Math.max(0, Math.min(1, volumePoints - (SELF_CREATION_BONUS_MIN_VOLUME - 1)));
+  const selfCreationBonus = SELF_CREATION_BONUS * selfCreation * (1 - ladderPoints / MAX_SPACING_POINTS) * selfCreationGate;
 
   let points = Math.min(MAX_SPACING_POINTS, ladderPoints + selfCreationBonus);
 
@@ -518,10 +544,11 @@ export function rawSpacingPoints(span: PlayerSpan): number {
   const rawVolumePoints = ladderScore(VOLUME_LADDERS[position], span.box.threePA * volumeKicker);
   const volumePoints = Math.min(rawVolumePoints, accuracyPoints + VOLUME_ACCURACY_HEADROOM);
   const ladderPoints = accuracyPoints + volumePoints + accuracyOverflowPoints(position, span.box.threePct - shortenedLineAccuracyDiscount(span.spanLabel), volumePoints);
-  const selfCreationBonus =
-    accuracyPoints >= SELF_CREATION_BONUS_MIN_ACCURACY && volumePoints >= SELF_CREATION_BONUS_MIN_VOLUME
-      ? SELF_CREATION_BONUS * selfCreation * (1 - ladderPoints / MAX_SPACING_POINTS)
-      : 0;
+  // 2026-10-01 (continuous ladders): both gates fade in over one point below them.
+  const selfCreationGate =
+    Math.max(0, Math.min(1, accuracyPoints - (SELF_CREATION_BONUS_MIN_ACCURACY - 1))) *
+    Math.max(0, Math.min(1, volumePoints - (SELF_CREATION_BONUS_MIN_VOLUME - 1)));
+  const selfCreationBonus = SELF_CREATION_BONUS * selfCreation * (1 - ladderPoints / MAX_SPACING_POINTS) * selfCreationGate;
   return Math.min(MAX_SPACING_POINTS, ladderPoints + selfCreationBonus);
 }
 
