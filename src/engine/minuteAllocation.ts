@@ -2,7 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
 import { effectiveTalent } from './grades';
 import { maxSustainableMinutes } from './durability';
-import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
+import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE, OVERRUN_BANDS } from './rotationRoleMinutes';
 
 /**
  * 2026-09-30, engine calibration session 2 (the user: "z takimi fuckapami jak w 2 to ciężko
@@ -39,6 +39,9 @@ const PAST_OPTIMAL_TALENT_SHARE = 0.5;
 const HEAVY_LOAD_MINUTES = 38;
 const HEAVY_LOAD_TALENT_SHARE = 0.9;
 const PAST_CEILING_COST = 150;
+const OVERRUN_FREE_TALENT_SHARE = 0.95;
+const OVERRUN_NOTICEABLE_TALENT_SHARE = 1.3;
+const OVERRUN_HEAVY_TALENT_SHARE = 1.8;
 const PAST_DURABILITY_COST = 2000;
 /** A guard or wing playing the four or five (small-ball) — the same cost the rotation score charges. */
 const SMALL_BALL_VALUE_SHARE = 0.9;
@@ -241,8 +244,7 @@ function solveMinutes(
     const profile = minuteProfileForSpan(player);
     const durability = Math.min(maxSustainableMinutes(player, maxMinutesPerPlayer), maxMinutesPerPlayer);
     // An odd limit fills to the next 2-minute unit (`MINUTES_CAP_TOLERANCE`, one minute over).
-    // An odd limit fills to the next 2-minute unit (`MINUTES_CAP_TOLERANCE`, one minute over).
-    const ceiling = Math.min(Math.ceil(Math.min(profile.ceiling, durability) / UNIT) * UNIT, durability);
+    const ceiling = Math.min(profile.ceiling, durability);
     const talent = effectiveTalent(player);
     const homeSlot = starterSlotById.get(player.id);
     const usefulBench = !homeSlot && player.fga >= 2 && talent >= USEFUL_BENCH_TALENT_FLOOR ? Math.min(USEFUL_BENCH_MINUTES, ceiling) : 0;
@@ -258,7 +260,12 @@ function solveMinutes(
       [optimal, 0],
       [Math.min(ceiling, Math.max(optimal, HEAVY_LOAD_MINUTES)), talent * PAST_OPTIMAL_TALENT_SHARE],
       [ceiling, talent * HEAVY_LOAD_TALENT_SHARE],
-      [durability, PAST_CEILING_COST],
+      // 2026-10-01, the user: the minutes limit is soft, its overrun priced in three rising bands
+      // (`OVERRUN_BANDS`, rotationRoleMinutes.ts) — a minute or two past it costs barely more than a
+      // heavy-load minute, three to four is felt, beyond that it is the old past-ceiling price.
+      [Math.min(durability, ceiling + OVERRUN_BANDS.freeUpTo), talent * OVERRUN_FREE_TALENT_SHARE],
+      [Math.min(durability, ceiling + OVERRUN_BANDS.noticeableUpTo), talent * OVERRUN_NOTICEABLE_TALENT_SHARE],
+      [durability, Math.max(PAST_CEILING_COST, talent * OVERRUN_HEAVY_TALENT_SHARE)],
       [maxMinutesPerPlayer, PAST_DURABILITY_COST],
     ];
     let reached = 0;
