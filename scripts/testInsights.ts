@@ -233,6 +233,9 @@ check(!detector('STAR_FGA_COST_HURTS_DEPTH', starJustified).active, 'justified s
 // shoots better), so he stopped counting as a hard non-spacer and the five had only one. Evan
 // Mobley 2023-25 (38) swapped for his own 2022-24 span (11, 11.6 FGA) — the pre-jumper Mobley —
 // which gives the five two real non-spacers again.
+// 2026-10-01: Bill Cartwright 1990-92 swapped for Primož Brezec 2005-07, another weak backup
+// centre. With minutes-based position competence Greg Anderson (who also played centre) took the
+// backup centre minutes and Cartwright became a real dead slot.
 const exposedStarTeam = team('team-model-exposed-star', [
   pick('Jalen Brunson', '2024-26'),
   pick('Michael Jordan', '1990-92'),
@@ -241,7 +244,7 @@ const exposedStarTeam = team('team-model-exposed-star', [
   pick('Rudy Gobert', '2020-22'),
   pick('Carlos Arroyo', '2006-08'),
   pick('Ira Newble', '2003-05'),
-  pick('Bill Cartwright', '1990-92'),
+  pick('Primož Brezec', '2005-07'),
   pick('Greg Anderson', '1989-91'),
 ]);
 const exposedStar = buildTeamFeatureSnapshot(exposedStarTeam);

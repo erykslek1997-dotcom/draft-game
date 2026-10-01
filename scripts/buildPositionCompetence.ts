@@ -39,6 +39,7 @@ const NAMED_PG_MAX_PENALTY = 0.4;
 const SMALL_BALL_C_ROLES = ['Switch Big', 'Mobile Big', 'Helper', 'Anchor Big'];
 
 const FIRST_BLOCKS_SEASON = 1974;
+const THREE_POINT_LINE_SEASON = 1980;
 function spanStartYear(s: PlayerSpan): number {
   return Number(s.spanLabel.slice(0, 4)) + 1;
 }
@@ -102,7 +103,11 @@ function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: n
       if (from === 'SG') {
         penalty = Math.max(0, below(78, 0.12, 0.8) + shortfall(rpg, 5.5, 0.08, 0.4) - Math.min(0.15, 0.005 * Math.max(0, dtal - 70)));
       } else if (from === 'PF') {
-        penalty = above(80, 0.1, 0.8) + (handler ? 0 : shortfall(spacing, 50, 0.005, 0.4));
+        // 2026-10-01, the user (Gasol, Bosh, Stoudemire as partial small forwards): a big four is
+        // not a wing — height and missing range weigh double. Before the three-point line
+        // (1979-80) spacing reads 0 for everyone, so only height counts there.
+        const range = handler || spanStartYear(s) < THREE_POINT_LINE_SEASON ? 0 : shortfall(spacing, 50, 0.01, 0.5);
+        penalty = above(80, 0.2, 1.2) + range;
       } else return 0;
       break;
     case 'PF':

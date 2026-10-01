@@ -56,30 +56,32 @@ const STARTER_CORE_BONUS = 60;
 const OWN_SLOT_BONUS = 12;
 
 /**
- * 2026-10-01, the user ("skalowalne do minut?", then "bramki zamykające"): how a player's value at a
- * position that isn't his own fades with the minutes he plays there, on top of his competence fit
- * (positionFitMultiplier). The first `OFF_POSITION_FREE_MINUTES` keep full value; past them the
- * share falls linearly to `0.50 + 0.47 × score` at a whole game, where score is the continuous
- * competence score (positionCompetence.ts): 0.92 for a real second position (0.9), 0.78 at 0.6 and
- * about 0.5 for a fit that barely exists. A short stretch is nearly free, a whole game is not, and
- * the solver itself, not a threshold, decides when a weak fit stops being worth playing.
+ * 2026-10-01, the user ("skalowalne do minut?", "bramki zamykające", then "traktuję to bardziej
+ * jako rozbicie minut na innej pozycji niż start na niej"): the competence score
+ * (positionCompetence.ts) is read as how many minutes a game a player can cover at a position
+ * that isn't his own — about 36 × score² (0.9 → 29, 0.75 → 20, 0.6 → 13, 0.4 → 6, 0.25 → 2).
+ * Those minutes keep their value; past them it drops fast (`OFF_POSITION_DROP`, two minutes per
+ * step) to `OFF_POSITION_FLOOR_SHARE`, so he goes past his stretch only when nobody fits better.
  */
 const GAME_SLOT_MINUTES = 48;
-const OFF_POSITION_FREE_MINUTES = 12;
-const OFF_POSITION_STEP_MINUTES = 6;
-const OFF_POSITION_FLOOR = 0.5;
-const OFF_POSITION_SCORE_WEIGHT = 0.47;
+const OFF_POSITION_MINUTES_PER_SCORE2 = 36;
+const OFF_POSITION_DROP = [0.85, 0.7, 0.55];
+const OFF_POSITION_FLOOR_SHARE = 0.45;
+
+export function offPositionMinutes(score: number): number {
+  return Math.floor((OFF_POSITION_MINUTES_PER_SCORE2 * score * score) / UNIT) * UNIT;
+}
 
 function offPositionCurve(score: number): Array<[number, number]> {
   if (score >= 1) return [[GAME_SLOT_MINUTES, 1]];
-  const share48 = OFF_POSITION_FLOOR + OFF_POSITION_SCORE_WEIGHT * Math.min(1, score);
-  const curve: Array<[number, number]> = [[OFF_POSITION_FREE_MINUTES, 1]];
-  const span = GAME_SLOT_MINUTES - OFF_POSITION_FREE_MINUTES;
-  for (let upTo = OFF_POSITION_FREE_MINUTES + OFF_POSITION_STEP_MINUTES; upTo <= GAME_SLOT_MINUTES; upTo += OFF_POSITION_STEP_MINUTES) {
-    // Each step is priced at its midpoint on the linear fade.
-    const mid = upTo - OFF_POSITION_STEP_MINUTES / 2 - OFF_POSITION_FREE_MINUTES;
-    curve.push([upTo, 1 - (1 - share48) * (mid / span)]);
+  let reached = offPositionMinutes(score);
+  const curve: Array<[number, number]> = reached > 0 ? [[reached, 1]] : [];
+  for (const share of OFF_POSITION_DROP) {
+    reached += UNIT;
+    if (reached >= GAME_SLOT_MINUTES) break;
+    curve.push([reached, share]);
   }
+  curve.push([GAME_SLOT_MINUTES, OFF_POSITION_FLOOR_SHARE]);
   return curve;
 }
 
