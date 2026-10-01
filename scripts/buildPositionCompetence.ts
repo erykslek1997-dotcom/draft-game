@@ -38,6 +38,11 @@ const PG_HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler'];
 const NAMED_PG_MAX_PENALTY = 0.4;
 const SMALL_BALL_C_ROLES = ['Switch Big', 'Mobile Big', 'Helper', 'Anchor Big'];
 
+const FIRST_BLOCKS_SEASON = 1974;
+function spanStartYear(s: PlayerSpan): number {
+  return Number(s.spanLabel.slice(0, 4)) + 1;
+}
+
 /** The best a non-natural position can score (natural positions are 1). */
 const MAX_SCORE = 0.9;
 /** The user's own hand decisions, as scores. */
@@ -107,10 +112,13 @@ function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: n
       penalty = below(79, 0.1, 0.8) + shortfall(rpg, 6.5, 0.08, 0.4);
       break;
     case 'C':
-      if (from !== 'PF') return 0;
+      // Only a true four slides to the five (a wing who also plays the four — Kukoč, Dudley — does not).
+      if (from !== 'PF' || s.primaryPosition !== 'PF') return 0;
       penalty = Math.max(
         0,
-        below(82, 0.1, 0.8) + shortfall(rpg, 9, 0.06, 0.4) + shortfall(bpg, 1.2, 0.15, 0.4) -
+        below(82, 0.1, 0.8) + shortfall(rpg, 9, 0.06, 0.4) +
+          // Blocks were first recorded in 1973-74; earlier spans are not penalised for a missing stat.
+          (spanStartYear(s) >= FIRST_BLOCKS_SEASON ? shortfall(bpg, 1.2, 0.15, 0.4) : 0) -
           (SMALL_BALL_C_ROLES.includes(s.defensiveRole) ? 0.2 : 0),
       );
       break;
