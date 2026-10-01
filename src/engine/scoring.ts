@@ -17,7 +17,7 @@ import { playmakingScoreForPlayer } from './playmakingLookup';
 import { LOW_OFFENSE_BIG_OTAL_CEILING, LOW_USAGE_BIG_FGA_CEILING } from './aiDrafter';
 import { positionCompetence, PARTIAL_POSITION_GRACE_MINUTES } from './positionCompetence';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
-import { maxSustainableMinutes } from './durability';
+import { maxSustainableMinutes, durabilityValueFactor } from './durability';
 import { effectiveTalent, overallTierForSpan, tierRank } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan } from './rotationRoleMinutes';
@@ -241,7 +241,7 @@ function rescaleToFullRange(raw: number, anchors: { worst: number; best: number 
 const STARTER_FLOOR_THRESHOLD = 70;
 const STARTER_FLOOR_PENALTY_PER_POINT = 0.6;
 export function talentScore(team: Team): number {
-  const starterTals = primaryStarters(team).map((entry) => effectiveTalent(entry.player));
+  const starterTals = primaryStarters(team).map((entry) => effectiveTalent(entry.player) * durabilityValueFactor(entry.player));
   if (starterTals.length === 0) return 0;
   const average = starterTals.reduce((sum, t) => sum + t, 0) / starterTals.length;
   const weakestStarter = Math.min(...starterTals);
@@ -271,7 +271,7 @@ export function benchDepthScore(team: Team): number {
   const activeIds = new Set(activeBench.map(({ player }) => player.id));
   const totalBenchMinutes = activeBench.reduce((sum, entry) => sum + entry.minutes, 0);
   const talentRaw = activeBench.reduce(
-    (sum, { player, minutes }) => sum + effectiveTalent(player) * minutes,
+    (sum, { player, minutes }) => sum + effectiveTalent(player) * durabilityValueFactor(player) * minutes,
     0,
   ) / totalBenchMinutes;
   // An active bench is minute-selected, so its weighted TAL naturally runs above the old bottom-

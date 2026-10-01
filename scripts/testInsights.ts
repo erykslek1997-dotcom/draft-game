@@ -82,7 +82,10 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // others. Same three named targets. Re-measured directly (70).
 // 2026-09-30: 70 -> 72 with the heavy-load band (minutes 38-40 priced near their full value), which
 // moves two star minutes to the named bench targets. Re-measured directly (72).
-check(weakLinkInsight?.message.includes('72 targetable minutes'), 'weak-link description reports the real 72-minute cost');
+// 2026-10-01: 72 -> 66 once missed games stopped capping minutes per game (durability now costs
+// value, not minutes): the stars play their tier minutes and the named bench targets fewer. Same
+// three named targets. Re-measured directly (66).
+check(weakLinkInsight?.message.includes('66 targetable minutes'), 'weak-link description reports the real 66-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),

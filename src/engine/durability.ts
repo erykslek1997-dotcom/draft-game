@@ -103,15 +103,6 @@ const TIER_FLOORS: ReadonlyArray<readonly [number, DurabilityTier]> = [
 ];
 
 /** User's exact spec — DNP means literally unplayable, not just a low cap. */
-const TIER_MINUTES_CAP: Record<DurabilityTier, number> = {
-  DNP: 0,
-  'Walking Glass': 22,
-  'Street Clothes': 26,
-  'Load Management': 30,
-  Reliable: 34,
-  Unbreakable: 38,
-  Ironman: 42,
-};
 
 export interface DurabilityBreakdown {
   /** Raw availability across the span, clamped to 100. Null when the span is unmatched. */
@@ -181,7 +172,26 @@ export function durabilityTier(span: PlayerSpan): DurabilityTier {
  */
 export function maxSustainableMinutes(span: PlayerSpan, ceiling: number): number {
   const tier = durabilityBreakdown(span).tier;
-  return Math.min(ceiling, TIER_MINUTES_CAP[tier]);
+  if (tier === 'DNP') return 0;
+  // 2026-10-01, the user's option 3: missed games no longer cut a player's minutes per game. The
+  // limit is what he really played (`realMinutesCapForSpan`, 1996-97 on); earlier spans keep only
+  // the tier ceiling (rotationRoleMinutes.ts). Availability now costs value instead
+  // (`durabilityValueFactor`).
+  return ceiling;
+}
+
+/**
+ * 2026-10-01, the user's option 3: a player who missed games is worth a little less to the team
+ * score, not fewer minutes in a game. Full value from 90 durability points, 0.3% less per point
+ * below, never under 0.91 (Embiid 2019-21, 74 points: 0.952).
+ */
+const DURABILITY_VALUE_FULL_POINTS = 90;
+const DURABILITY_VALUE_PER_POINT = 0.003;
+const DURABILITY_VALUE_FLOOR = 0.91;
+export function durabilityValueFactor(span: PlayerSpan): number {
+  const breakdown = durabilityBreakdown(span);
+  if (!breakdown.rated) return 1;
+  return Math.max(DURABILITY_VALUE_FLOOR, 1 - DURABILITY_VALUE_PER_POINT * Math.max(0, DURABILITY_VALUE_FULL_POINTS - breakdown.points));
 }
 
 /**

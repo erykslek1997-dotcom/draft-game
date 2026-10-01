@@ -2,7 +2,8 @@ import { memo, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardE
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes, suggestBasicRotation } from '../engine/rotation';
-import { computeDurability, maxSustainableMinutes } from '../engine/durability';
+import { computeDurability } from '../engine/durability';
+import { playableMinutesCap } from '../engine/rotationRoleMinutes';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { offensiveGrade, defensiveGrade } from '../engine/grades';
 import { AtGrade, OverallTierBadge } from './DraftBoard';
@@ -360,7 +361,7 @@ function RotationBuilderComponent({
   // costs rotationScore (see scoring.ts's DURABILITY_OVERWORK_PENALTY_*). Surfaced here so the
   // cost isn't a surprise on the results screen.
   const durabilityOverworked = roster
-    .map((p) => ({ player: p, minutes: playerTotalMinutes(rows, p.id), cap: maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER) }))
+    .map((p) => ({ player: p, minutes: playerTotalMinutes(rows, p.id), cap: playableMinutesCap(p, MAX_MINUTES_PER_PLAYER) }))
     .filter(({ minutes, cap }) => minutes > cap);
   const overCapIds = new Set(durabilityOverworked.map((o) => o.player.id));
 
@@ -557,7 +558,7 @@ function RotationBuilderComponent({
                             className="durability-cap"
                             title={`Most minutes he can handle without wearing down (durability ${computeDurability(selectedPlayer)})`}
                           >
-                            cap {maxSustainableMinutes(selectedPlayer, MAX_MINUTES_PER_PLAYER)}m
+                            cap {playableMinutesCap(selectedPlayer, MAX_MINUTES_PER_PLAYER)}m
                           </span>
                           <OverallTierBadge span={selectedPlayer} />
                           <AtGrade grade={offensiveGrade(computeOffensiveTalent(selectedPlayer), computeUncappedOffensiveTalent(selectedPlayer))} />
