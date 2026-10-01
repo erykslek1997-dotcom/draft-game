@@ -107,7 +107,11 @@ check(
 // Team Model v1 fixtures use nine real player spans and their real box/FGA/role data. No player
 // attributes are synthesized; only the normal auto-rotation decides assigned minutes.
 const movementCoverageTeam = team('team-model-movement-coverage', [
-  pick('Chris Paul', '2012-14'),
+  // 2026-10-01: was Chris Paul 2012-14. Star minutes now follow real playoff minutes (36 for that
+  // window), and with no second point guard he plays 40 — a real overload the detector flags, so
+  // the fixture lost its "structurally sound" premise. 2010-12 (39 playoff minutes, same FGA band)
+  // keeps it.
+  pick('Chris Paul', '2010-12'),
   pick('Klay Thompson', '2014-16'),
   pick('Shane Battier', '2005-07'),
   pick('Al Horford', '2017-19'),

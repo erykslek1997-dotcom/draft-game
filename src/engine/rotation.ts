@@ -10,7 +10,7 @@ import { allocateMinutes } from './minuteAllocation';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import { overallTierForSpan, effectiveTalent } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
-import { minuteProfileForSpan, playableMinutesCap } from './rotationRoleMinutes';
+import { minuteProfileForSpan, playableMinutesCap, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import { teamSpacingValue } from './midrangeGravity';
 import type { Rotation, SlotAssignment, Team } from './types';
 
@@ -667,7 +667,7 @@ function addMinuteTexture(roster: PlayerSpan[], slots: Record<Position, SlotAssi
   for (const slot of STARTER_SLOTS) for (const a of slots[slot]) totals.set(a.playerId, (totals.get(a.playerId) ?? 0) + a.minutes);
   const capOf = (id: string) => {
     const player = roster.find((p) => p.id === id);
-    return player ? playableMinutesCap(player, MAX_MINUTES_PER_PLAYER) : 0;
+    return player ? Math.min(MAX_MINUTES_PER_PLAYER, playableMinutesCap(player, MAX_MINUTES_PER_PLAYER) + MINUTES_CAP_TOLERANCE) : 0;
   };
   // Any minute moved could open room on a teammate who should be relieving an over-cap player.
   if ([...totals].some(([id, minutes]) => minutes > capOf(id))) return;

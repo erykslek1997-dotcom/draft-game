@@ -2,7 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
 import { effectiveTalent } from './grades';
 import { maxSustainableMinutes } from './durability';
-import { minuteProfileForSpan } from './rotationRoleMinutes';
+import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 
 /**
  * 2026-09-30, engine calibration session 2 (the user: "z takimi fuckapami jak w 2 to ciężko
@@ -156,7 +156,9 @@ export function allocateMinutes(
  */
 const MIN_STINT_MINUTES = 6;
 const MAX_SLOTS_PER_PLAYER = 2;
-const FRAGMENT_VALUE_TOLERANCE = 120;
+// 2026-10-01: 120 -> 200 once star minutes followed real playoff minutes (players in 3+ slots
+// 33 -> 22 on 3,200 AI teams).
+const FRAGMENT_VALUE_TOLERANCE = 200;
 const MAX_CONSOLIDATION_PASSES = 10;
 
 function consolidateRotation(
@@ -174,7 +176,7 @@ function consolidateRotation(
   const kept = new Set<string>();
   // Consolidation never pushes anyone further past his tier ceiling or durability.
   const limitById = new Map(
-    roster.map((p) => [p.id, Math.min(minuteProfileForSpan(p).ceiling, maxSustainableMinutes(p, maxMinutesPerPlayer), maxMinutesPerPlayer)]),
+    roster.map((p) => [p.id, Math.min(minuteProfileForSpan(p).ceiling + MINUTES_CAP_TOLERANCE, maxSustainableMinutes(p, maxMinutesPerPlayer), maxMinutesPerPlayer)]),
   );
   const overLimit = (grants: MinuteGrant[]) => {
     const total = new Map<string, number>();
@@ -238,7 +240,9 @@ function solveMinutes(
   roster.forEach((player, i) => {
     const profile = minuteProfileForSpan(player);
     const durability = Math.min(maxSustainableMinutes(player, maxMinutesPerPlayer), maxMinutesPerPlayer);
-    const ceiling = Math.min(profile.ceiling, durability);
+    // An odd limit fills to the next 2-minute unit (`MINUTES_CAP_TOLERANCE`, one minute over).
+    // An odd limit fills to the next 2-minute unit (`MINUTES_CAP_TOLERANCE`, one minute over).
+    const ceiling = Math.min(Math.ceil(Math.min(profile.ceiling, durability) / UNIT) * UNIT, durability);
     const talent = effectiveTalent(player);
     const homeSlot = starterSlotById.get(player.id);
     const usefulBench = !homeSlot && player.fga >= 2 && talent >= USEFUL_BENCH_TALENT_FLOOR ? Math.min(USEFUL_BENCH_MINUTES, ceiling) : 0;

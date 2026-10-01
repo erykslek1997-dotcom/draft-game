@@ -58,6 +58,13 @@ export function minuteProfileForSpan(span: PlayerSpan): TierMinuteProfile {
   return { ...tierProfile, ceiling: Math.min(MAX_REAL_MINUTES_CEILING, realCap) };
 }
 
+/**
+ * 2026-10-01, the user ("niech to przekracza o minutę"): a minutes limit may be overrun by one minute.
+ * The solver works in 2-minute units, so an odd limit (real playoff minutes, Duncan 37) is filled to
+ * the next even number rather than one short.
+ */
+export const MINUTES_CAP_TOLERANCE = 1;
+
 /** The most minutes a player can carry in one game: his minutes ceiling, zero for a DNP span. */
 export function playableMinutesCap(span: PlayerSpan, maxMinutesPerPlayer: number): number {
   return Math.min(minuteProfileForSpan(span).ceiling, maxSustainableMinutes(span, maxMinutesPerPlayer));
