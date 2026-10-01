@@ -137,6 +137,12 @@ Otwarte tematy silnika (Twoja ocena; bierzemy, gdy wyjdą w sesjach):
       223 graczy po 1997, których nie było (802 okresy, `scripts/addPost1997Players.ts`); gracze
       sprzed 1997 bez zmian. 100 draftów: 0 przekroczeń limitu, średnia drużyna 79.3 (było 79.4),
       3+ C 33% (było 37%), czas picku ~+5%. Pomijane gwiazdy (Iverson, King…) zaakceptowane.
+- [x] **Standard startera (2026-10-01)** — starter z TAL < 65 jest OK tylko jako role player z
+      TAL ≥ 50, spacing ≥ 55 i D-TAL ≥ 56 (`starterStandard.ts`, Twoje oceny 29 przypadków).
+      AI: dziura (pusta pozycja lub starter poniżej standardu) daje +1.0 need od 5. picku, a gust
+      GM-a liczy się w połowie dla graczy, którzy dziury nie łatają. Wynik: kara w Offense dla
+      nieuzasadnionych. 100 draftów: nieuzasadnieni starterzy 58 → 27, TAL < 50 7 → 2. Dobór
+      okresów po drafcie zawsze zostawia okres z draftu (Carter/Tatum nie spadają o 25 TAL).
 - [ ] **Metadane kart dla nowych graczy** — `npm run build:card-metadata` wymaga lokalnych danych
       (`C:\Users\Eryks\Desktop\player-data`); 223 nowych graczy nie ma drużyn na kartach ani zdjęć.
 
