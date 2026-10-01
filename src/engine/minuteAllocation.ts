@@ -59,17 +59,34 @@ const OWN_SLOT_BONUS = 12;
  * 2026-10-01, the user ("skalowalne do minut?", "bramki zamykające", then "traktuję to bardziej
  * jako rozbicie minut na innej pozycji niż start na niej"): the competence score
  * (positionCompetence.ts) is read as how many minutes a game a player can cover at a position
- * that isn't his own — about 36 × score² (0.9 → 29, 0.75 → 20, 0.6 → 13, 0.4 → 6, 0.25 → 2).
+ * that isn't his own, interpolated between the agreed anchors: 0.25 → 2, 0.4 → 6, 0.6 → 12,
+ * 0.75 → 20 and 0.9 (a real second position, a starter there) → the whole game.
  * Those minutes keep their value; past them it drops fast (`OFF_POSITION_DROP`, two minutes per
  * step) to `OFF_POSITION_FLOOR_SHARE`, so he goes past his stretch only when nobody fits better.
  */
 const GAME_SLOT_MINUTES = 48;
-const OFF_POSITION_MINUTES_PER_SCORE2 = 36;
+const OFF_POSITION_MINUTE_ANCHORS: Array<[number, number]> = [
+  [0, 0],
+  [0.25, 2],
+  [0.4, 6],
+  [0.6, 12],
+  [0.75, 20],
+  [0.9, GAME_SLOT_MINUTES],
+];
 const OFF_POSITION_DROP = [0.85, 0.7, 0.55];
 const OFF_POSITION_FLOOR_SHARE = 0.45;
 
 export function offPositionMinutes(score: number): number {
-  return Math.floor((OFF_POSITION_MINUTES_PER_SCORE2 * score * score) / UNIT) * UNIT;
+  let minutes = GAME_SLOT_MINUTES;
+  for (let i = 1; i < OFF_POSITION_MINUTE_ANCHORS.length; i++) {
+    const [s1, m1] = OFF_POSITION_MINUTE_ANCHORS[i];
+    if (score <= s1) {
+      const [s0, m0] = OFF_POSITION_MINUTE_ANCHORS[i - 1];
+      minutes = m0 + ((m1 - m0) * (score - s0)) / (s1 - s0);
+      break;
+    }
+  }
+  return Math.floor(minutes / UNIT) * UNIT;
 }
 
 function offPositionCurve(score: number): Array<[number, number]> {
