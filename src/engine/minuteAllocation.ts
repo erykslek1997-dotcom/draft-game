@@ -141,6 +141,86 @@ export function allocateMinutes(
   gameMinutes: number,
   maxMinutesPerPlayer: number,
 ): MinuteGrant[] {
+  return consolidateRotation(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer);
+}
+
+/**
+ * 2026-10-01, the user on two AI rotations ("LeBron rozjebany na 4 pozycjach wygląda brzydko", and
+ * a Kansas City SF column of Iguodala 38 / Green 4 / Bonga 4 / Eddie Jones 2): the flow has no
+ * notion of a player changing position, so a player who fits several slots equally well is spread
+ * across all of them in arbitrary shares. A fragment is any stint under `MIN_STINT_MINUTES`, or the
+ * smallest away-from-home stint of a player already in more than `MAX_SLOTS_PER_PLAYER` slots. The
+ * smallest fragment is forbidden and the whole allocation re-solved; the change is kept when the
+ * rotation's value drops by at most `FRAGMENT_VALUE_TOLERANCE`, otherwise that stint stays (it is
+ * genuinely needed: nobody else can cover those minutes). A starter's own slot is never forbidden.
+ */
+const MIN_STINT_MINUTES = 6;
+const MAX_SLOTS_PER_PLAYER = 2;
+const FRAGMENT_VALUE_TOLERANCE = 120;
+const MAX_CONSOLIDATION_PASSES = 10;
+
+function consolidateRotation(
+  roster: PlayerSpan[],
+  starterBySlot: Partial<Record<Position, PlayerSpan>>,
+  gameMinutes: number,
+  maxMinutesPerPlayer: number,
+): MinuteGrant[] {
+  const homeById = new Map<string, Position>();
+  for (const slot of STARTER_SLOTS) {
+    const starter = starterBySlot[slot];
+    if (starter) homeById.set(starter.id, slot);
+  }
+  const forbidden = new Set<string>();
+  const kept = new Set<string>();
+  // Consolidation never pushes anyone further past his tier ceiling or durability.
+  const limitById = new Map(
+    roster.map((p) => [p.id, Math.min(minuteProfileForSpan(p).ceiling, maxSustainableMinutes(p, maxMinutesPerPlayer), maxMinutesPerPlayer)]),
+  );
+  const overLimit = (grants: MinuteGrant[]) => {
+    const total = new Map<string, number>();
+    for (const g of grants) total.set(g.playerId, (total.get(g.playerId) ?? 0) + g.minutes);
+    let over = 0;
+    for (const [id, minutes] of total) over += Math.max(0, minutes - (limitById.get(id) ?? Infinity));
+    return over;
+  };
+  let best = solveMinutes(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer, forbidden);
+  for (let pass = 0; pass < MAX_CONSOLIDATION_PASSES; pass++) {
+    const fragment = smallestFragment(best.grants, homeById, kept);
+    if (!fragment) break;
+    const key = `${fragment.playerId}|${fragment.slot}`;
+    forbidden.add(key);
+    const trial = solveMinutes(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer, forbidden);
+    if (
+      trial.filled === best.filled &&
+      trial.cost - best.cost <= FRAGMENT_VALUE_TOLERANCE * UNIT &&
+      overLimit(trial.grants) <= overLimit(best.grants)
+    ) {
+      best = trial;
+    } else {
+      forbidden.delete(key);
+      kept.add(key);
+    }
+  }
+  return best.grants;
+}
+
+function smallestFragment(grants: MinuteGrant[], homeById: Map<string, Position>, kept: Set<string>): MinuteGrant | undefined {
+  const slotCount = new Map<string, number>();
+  for (const g of grants) slotCount.set(g.playerId, (slotCount.get(g.playerId) ?? 0) + 1);
+  const candidates = grants.filter((g) => {
+    if (homeById.get(g.playerId) === g.slot || kept.has(`${g.playerId}|${g.slot}`)) return false;
+    return g.minutes < MIN_STINT_MINUTES || (slotCount.get(g.playerId) ?? 0) > MAX_SLOTS_PER_PLAYER;
+  });
+  return candidates.sort((a, b) => a.minutes - b.minutes)[0];
+}
+
+function solveMinutes(
+  roster: PlayerSpan[],
+  starterBySlot: Partial<Record<Position, PlayerSpan>>,
+  gameMinutes: number,
+  maxMinutesPerPlayer: number,
+  forbidden: Set<string>,
+): { grants: MinuteGrant[]; cost: number; filled: number } {
   const starterSlotById = new Map<string, Position>();
   for (const slot of STARTER_SLOTS) {
     const starter = starterBySlot[slot];
@@ -184,6 +264,7 @@ export function allocateMinutes(
       reached = upTo;
     }
     STARTER_SLOTS.forEach((slot, j) => {
+      if (forbidden.has(`${player.id}|${slot}`)) return;
       const value = minuteValue(player, slot, homeSlot);
       if (slot === homeSlot) {
         const core = Math.floor(Math.min(STARTER_CORE_MINUTES, ceiling) / UNIT);
@@ -195,7 +276,9 @@ export function allocateMinutes(
     });
   });
   STARTER_SLOTS.forEach((_, j) => flow.add(slotNode(j), sink, slotUnits, 0));
-  flow.run(source, sink, slotUnits * STARTER_SLOTS.length);
+  const filled = flow.run(source, sink, slotUnits * STARTER_SLOTS.length);
+  let cost = 0;
+  for (const arcs of flow.graph) for (const arc of arcs) if (arc.initial > 0) cost += (arc.initial - arc.cap) * arc.cost;
 
   const grants: MinuteGrant[] = [];
   roster.forEach((player, i) => {
@@ -210,5 +293,5 @@ export function allocateMinutes(
       else grants.push({ playerId: player.id, slot, minutes: assigned * UNIT });
     }
   });
-  return grants;
+  return { grants, cost, filled };
 }
