@@ -8,7 +8,8 @@ import { computeOffensiveTalent, computeDefensiveTalent } from './talent';
 import { effectiveTalent } from './grades';
 import { computeSpacing, isShootingAnomalyPlayer } from './spacing';
 import { isPlusShooter } from './shooting';
-import { maxSustainableMinutes, computeDurability } from './durability';
+import { computeDurability } from './durability';
+import { playableMinutesCap } from './rotationRoleMinutes';
 import { allAssignments, primaryStarters, benchWithMinutes, totalMinutesForPlayer, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
 import { projectedNetRating } from './netRatingProjection';
 import { predatesThreePointLine, stealsBlocksFullyRecorded } from './era';
@@ -117,7 +118,7 @@ function toPlayerFeature(
     offensiveImpact: computeOffensiveTalent(p),
     defensiveImpact: computeDefensiveTalent(p),
     overallImpact: effectiveTalent(p),
-    minuteCeiling: maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER),
+    minuteCeiling: playableMinutesCap(p, MAX_MINUTES_PER_PLAYER),
     // APPROXIMATION: durability isn't separately exposed as a 0-1 "availability" read here;
     // `minuteCeiling` already carries the real durability signal for the detectors that use it
     // (MULTIPLE_MINUTES_CEILING_VIOLATIONS etc.), so `availability` is left undefined rather than

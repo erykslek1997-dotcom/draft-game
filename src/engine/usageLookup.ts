@@ -72,3 +72,27 @@ export function usageForSpan(span: PlayerSpan): UsageSpanValue | null {
     seasons: matched.length,
   };
 }
+
+/**
+ * 2026-10-01: real minutes per game over a span's covered seasons (games-weighted), the basis of the
+ * minutes limit (`realMinutesCapForSpan`). Null before 1996-97 or with too few covered games to
+ * read a role from.
+ */
+const MIN_GAMES_FOR_REAL_MINUTES = 40;
+export function realMinutesPerGame(span: PlayerSpan): number | null {
+  const yearMap = byNameYear.get(normalizePlayerName(span.playerName));
+  if (!yearMap) return null;
+  const matched = spanEndYears(span.spanLabel)
+    .map((year) => yearMap.get(year))
+    .filter((row): row is UsageRow => row !== undefined && row.games > 0);
+  const games = matched.reduce((sum, row) => sum + row.games, 0);
+  if (games < MIN_GAMES_FOR_REAL_MINUTES) return null;
+  return matched.reduce((sum, row) => sum + row.mpg * row.games, 0) / games;
+}
+
+/** Playoff rotations tighten: a player can carry this many minutes over his real average. */
+const PLAYOFF_MINUTES_MARGIN = 2;
+export function realMinutesCapForSpan(span: PlayerSpan): number | null {
+  const mpg = realMinutesPerGame(span);
+  return mpg === null ? null : Math.round(mpg + PLAYOFF_MINUTES_MARGIN);
+}
