@@ -97,3 +97,19 @@ export function playoffBpm2ForSpan(span: PlayerSpan): PlayoffBpm2SpanValue | nul
 export function playoffBpm2CoverageRows(): readonly PlayoffBpm2Row[] {
   return rows;
 }
+
+/**
+ * 2026-10-01: real playoff minutes per game over a span's seasons (1951-52 on), the basis of a star's
+ * minutes limit (rotationRoleMinutes.ts). Null under `MIN_PLAYOFF_GAMES_FOR_MINUTES` games.
+ */
+const MIN_PLAYOFF_GAMES_FOR_MINUTES = 8;
+export function playoffMinutesPerGame(span: PlayerSpan): number | null {
+  const yearMap = byNameYear.get(normalizePlayerName(span.playerName));
+  if (!yearMap) return null;
+  const matched = spanEndYears(span.spanLabel)
+    .map((year) => yearMap.get(year))
+    .filter((row): row is PlayoffBpm2Row => row !== undefined && row.games > 0);
+  const games = matched.reduce((sum, row) => sum + row.games, 0);
+  if (games < MIN_PLAYOFF_GAMES_FOR_MINUTES) return null;
+  return matched.reduce((sum, row) => sum + row.minutes, 0) / games;
+}
