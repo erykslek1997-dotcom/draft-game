@@ -10,7 +10,7 @@ import { allocateMinutes } from './minuteAllocation';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import { overallTierForSpan, effectiveTalent } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
-import { minuteProfileForSpan } from './rotationRoleMinutes';
+import { minuteProfileForSpan, playableMinutesCap } from './rotationRoleMinutes';
 import { teamSpacingValue } from './midrangeGravity';
 import type { Rotation, SlotAssignment, Team } from './types';
 
@@ -641,8 +641,55 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
     }
   }
   mergeTinyBackupSlivers(roster, slots, primaryBySlot);
+  addMinuteTexture(roster, slots);
 
   return { slots };
+}
+
+/**
+ * 2026-10-01, the user ("dodaj trochę sosu, żeby było 39, 37, 35 minut"): the minute solver works in
+ * 2-minute units, so every rotation read in even numbers. Each slot's first two rows (and second and
+ * third) trade one minute in a direction fixed by a hash of the two players, so the same roster
+ * always gets the same minutes. A trade is skipped when it would leave a stint under
+ * `TEXTURE_MIN_STINT`, takes from a deep-bench share (`TEXTURE_PROTECTED_TOTAL`, which the
+ * rotation-depth insights read) or pushes a player past his minutes cap; a roster already playing
+ * someone past his cap is left as solved. Slot totals never change.
+ */
+const TEXTURE_MIN_STINT = 6;
+const TEXTURE_PROTECTED_TOTAL = 16;
+function textureDirection(a: string, b: string, slot: string): number {
+  let h = 2166136261;
+  for (const ch of `${a}|${b}|${slot}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return ((h >>> 0) % 3) - 1;
+}
+function addMinuteTexture(roster: PlayerSpan[], slots: Record<Position, SlotAssignment[]>): void {
+  const totals = new Map<string, number>();
+  for (const slot of STARTER_SLOTS) for (const a of slots[slot]) totals.set(a.playerId, (totals.get(a.playerId) ?? 0) + a.minutes);
+  const capOf = (id: string) => {
+    const player = roster.find((p) => p.id === id);
+    return player ? playableMinutesCap(player, MAX_MINUTES_PER_PLAYER) : 0;
+  };
+  // Any minute moved could open room on a teammate who should be relieving an over-cap player.
+  if ([...totals].some(([id, minutes]) => minutes > capOf(id))) return;
+  for (const slot of STARTER_SLOTS) {
+    const rows = slots[slot];
+    for (let i = 0; i + 1 < rows.length && i < 2; i++) {
+      const up = rows[i];
+      const down = rows[i + 1];
+      if (up.playerId === down.playerId) continue;
+      const delta = textureDirection(up.playerId, down.playerId, slot);
+      if (delta === 0) continue;
+      const gain = delta > 0 ? up : down;
+      const give = delta > 0 ? down : up;
+      if (give.minutes - 1 < TEXTURE_MIN_STINT || gain.minutes < TEXTURE_MIN_STINT) continue;
+      if ((totals.get(give.playerId) ?? 0) <= TEXTURE_PROTECTED_TOTAL) continue;
+      if ((totals.get(gain.playerId) ?? 0) + 1 > capOf(gain.playerId)) continue;
+      gain.minutes += 1;
+      give.minutes -= 1;
+      totals.set(gain.playerId, (totals.get(gain.playerId) ?? 0) + 1);
+      totals.set(give.playerId, (totals.get(give.playerId) ?? 0) - 1);
+    }
+  }
 }
 
 /**
