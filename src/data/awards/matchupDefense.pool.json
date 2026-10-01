@@ -235,6 +235,26 @@
   "matchupDefense": 3.023
  },
  {
+  "name": "Aleksej Pokusevski",
+  "season": "2020-21",
+  "matchupDefense": -2.677
+ },
+ {
+  "name": "Aleksej Pokusevski",
+  "season": "2021-22",
+  "matchupDefense": 0.643
+ },
+ {
+  "name": "Aleksej Pokusevski",
+  "season": "2022-23",
+  "matchupDefense": 0.361
+ },
+ {
+  "name": "Aleksej Pokusevski",
+  "season": "2023-24",
+  "matchupDefense": -2.267
+ },
+ {
   "name": "Alex Abrines",
   "season": "2017-18",
   "matchupDefense": -2.492
@@ -318,6 +338,11 @@
   "name": "Alex Len",
   "season": "2024-25",
   "matchupDefense": -3.839
+ },
+ {
+  "name": "Alex Sarr",
+  "season": "2024-25",
+  "matchupDefense": -3.859
  },
  {
   "name": "Allen Crabbe",
@@ -640,6 +665,26 @@
   "matchupDefense": 2.172
  },
  {
+  "name": "Aron Baynes",
+  "season": "2017-18",
+  "matchupDefense": 2.397
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2018-19",
+  "matchupDefense": 2.844
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2019-20",
+  "matchupDefense": -4.016
+ },
+ {
+  "name": "Aron Baynes",
+  "season": "2020-21",
+  "matchupDefense": 1.062
+ },
+ {
   "name": "Arron Afflalo",
   "season": "2017-18",
   "matchupDefense": 2.215
@@ -848,6 +893,21 @@
   "name": "Ben Simmons",
   "season": "2024-25",
   "matchupDefense": 0.635
+ },
+ {
+  "name": "Bennedict Mathurin",
+  "season": "2022-23",
+  "matchupDefense": -0.568
+ },
+ {
+  "name": "Bennedict Mathurin",
+  "season": "2023-24",
+  "matchupDefense": -6.795
+ },
+ {
+  "name": "Bennedict Mathurin",
+  "season": "2024-25",
+  "matchupDefense": -3.162
  },
  {
   "name": "Bilal Coulibaly",
@@ -1060,6 +1120,21 @@
   "matchupDefense": -1.195
  },
  {
+  "name": "Bones Hyland",
+  "season": "2021-22",
+  "matchupDefense": 1.029
+ },
+ {
+  "name": "Bones Hyland",
+  "season": "2022-23",
+  "matchupDefense": -0.263
+ },
+ {
+  "name": "Bones Hyland",
+  "season": "2023-24",
+  "matchupDefense": -2.267
+ },
+ {
   "name": "Brad Wanamaker",
   "season": "2019-20",
   "matchupDefense": 0.209
@@ -1195,6 +1270,16 @@
   "matchupDefense": -6.117
  },
  {
+  "name": "Brice Sensabaugh",
+  "season": "2023-24",
+  "matchupDefense": 1.066
+ },
+ {
+  "name": "Brice Sensabaugh",
+  "season": "2024-25",
+  "matchupDefense": -2.393
+ },
+ {
   "name": "Brook Lopez",
   "season": "2017-18",
   "matchupDefense": 0.824
@@ -1295,6 +1380,11 @@
   "matchupDefense": -0.466
  },
  {
+  "name": "Bub Carrington",
+  "season": "2024-25",
+  "matchupDefense": -1.661
+ },
+ {
   "name": "Buddy Hield",
   "season": "2017-18",
   "matchupDefense": -0.925
@@ -1378,6 +1468,26 @@
   "name": "Caleb Martin",
   "season": "2024-25",
   "matchupDefense": -1.505
+ },
+ {
+  "name": "Cam Thomas",
+  "season": "2021-22",
+  "matchupDefense": -3.516
+ },
+ {
+  "name": "Cam Thomas",
+  "season": "2022-23",
+  "matchupDefense": 1.295
+ },
+ {
+  "name": "Cam Thomas",
+  "season": "2023-24",
+  "matchupDefense": -1.832
+ },
+ {
+  "name": "Cam Thomas",
+  "season": "2024-25",
+  "matchupDefense": -3.1
  },
  {
   "name": "Cameron Johnson",
@@ -1705,6 +1815,26 @@
   "matchupDefense": 3.801
  },
  {
+  "name": "Chuma Okeke",
+  "season": "2020-21",
+  "matchupDefense": -0.737
+ },
+ {
+  "name": "Chuma Okeke",
+  "season": "2021-22",
+  "matchupDefense": -2.185
+ },
+ {
+  "name": "Chuma Okeke",
+  "season": "2022-23",
+  "matchupDefense": 0.096
+ },
+ {
+  "name": "Chuma Okeke",
+  "season": "2023-24",
+  "matchupDefense": 1.447
+ },
+ {
   "name": "Cj Mccollum",
   "season": "2017-18",
   "matchupDefense": 2.233
@@ -1848,6 +1978,11 @@
   "name": "Cody Martin",
   "season": "2024-25",
   "matchupDefense": -0.935
+ },
+ {
+  "name": "Cody Williams",
+  "season": "2024-25",
+  "matchupDefense": -1.407
  },
  {
   "name": "Cody Zeller",
@@ -2090,6 +2225,21 @@
   "matchupDefense": -9.926
  },
  {
+  "name": "Dalano Banton",
+  "season": "2021-22",
+  "matchupDefense": 0.209
+ },
+ {
+  "name": "Dalano Banton",
+  "season": "2023-24",
+  "matchupDefense": 1.556
+ },
+ {
+  "name": "Dalano Banton",
+  "season": "2024-25",
+  "matchupDefense": 2.51
+ },
+ {
   "name": "Dalton Knecht",
   "season": "2024-25",
   "matchupDefense": -2.194
@@ -2183,6 +2333,26 @@
   "name": "Damion Lee",
   "season": "2022-23",
   "matchupDefense": -1.151
+ },
+ {
+  "name": "Damyean Dotson",
+  "season": "2017-18",
+  "matchupDefense": 10.801
+ },
+ {
+  "name": "Damyean Dotson",
+  "season": "2018-19",
+  "matchupDefense": -2.379
+ },
+ {
+  "name": "Damyean Dotson",
+  "season": "2019-20",
+  "matchupDefense": 0.174
+ },
+ {
+  "name": "Damyean Dotson",
+  "season": "2020-21",
+  "matchupDefense": 2.085
  },
  {
   "name": "Daniel Gafford",
@@ -2375,6 +2545,26 @@
   "matchupDefense": -2.583
  },
  {
+  "name": "Darius Bazley",
+  "season": "2019-20",
+  "matchupDefense": 0.485
+ },
+ {
+  "name": "Darius Bazley",
+  "season": "2020-21",
+  "matchupDefense": 1.193
+ },
+ {
+  "name": "Darius Bazley",
+  "season": "2021-22",
+  "matchupDefense": -2.047
+ },
+ {
+  "name": "Darius Bazley",
+  "season": "2022-23",
+  "matchupDefense": 0.311
+ },
+ {
   "name": "Darius Garland",
   "season": "2019-20",
   "matchupDefense": -6.3
@@ -2445,6 +2635,21 @@
   "matchupDefense": -4.192
  },
  {
+  "name": "David Roddy",
+  "season": "2022-23",
+  "matchupDefense": 3.809
+ },
+ {
+  "name": "David Roddy",
+  "season": "2023-24",
+  "matchupDefense": 2.376
+ },
+ {
+  "name": "David Roddy",
+  "season": "2024-25",
+  "matchupDefense": 1.596
+ },
+ {
   "name": "David West",
   "season": "2017-18",
   "matchupDefense": 4.099
@@ -2503,6 +2708,26 @@
   "name": "Davis Bertans",
   "season": "2023-24",
   "matchupDefense": -1.345
+ },
+ {
+  "name": "Day'Ron Sharpe",
+  "season": "2021-22",
+  "matchupDefense": -0.78
+ },
+ {
+  "name": "Day'Ron Sharpe",
+  "season": "2022-23",
+  "matchupDefense": -0.946
+ },
+ {
+  "name": "Day'Ron Sharpe",
+  "season": "2023-24",
+  "matchupDefense": -1.571
+ },
+ {
+  "name": "Day'Ron Sharpe",
+  "season": "2024-25",
+  "matchupDefense": 0.506
  },
  {
   "name": "De'Aaron Fox",
@@ -3180,6 +3405,31 @@
   "matchupDefense": -1.295
  },
  {
+  "name": "Devin Vassell",
+  "season": "2020-21",
+  "matchupDefense": -4.17
+ },
+ {
+  "name": "Devin Vassell",
+  "season": "2021-22",
+  "matchupDefense": -1.436
+ },
+ {
+  "name": "Devin Vassell",
+  "season": "2022-23",
+  "matchupDefense": -3.98
+ },
+ {
+  "name": "Devin Vassell",
+  "season": "2023-24",
+  "matchupDefense": -4.261
+ },
+ {
+  "name": "Devin Vassell",
+  "season": "2024-25",
+  "matchupDefense": -2.716
+ },
+ {
   "name": "Devonte' Graham",
   "season": "2018-19",
   "matchupDefense": -3.909
@@ -3263,6 +3513,16 @@
   "name": "Dillon Brooks",
   "season": "2024-25",
   "matchupDefense": 0.084
+ },
+ {
+  "name": "Dion Waiters",
+  "season": "2017-18",
+  "matchupDefense": 0.102
+ },
+ {
+  "name": "Dion Waiters",
+  "season": "2018-19",
+  "matchupDefense": 1.9
  },
  {
   "name": "Dirk Nowitzki",
@@ -3470,6 +3730,21 @@
   "matchupDefense": -2.136
  },
  {
+  "name": "Dragan Bender",
+  "season": "2017-18",
+  "matchupDefense": 1.462
+ },
+ {
+  "name": "Dragan Bender",
+  "season": "2018-19",
+  "matchupDefense": 1.491
+ },
+ {
+  "name": "Dragan Bender",
+  "season": "2019-20",
+  "matchupDefense": -1.125
+ },
+ {
   "name": "Draymond Green",
   "season": "2017-18",
   "matchupDefense": 2.524
@@ -3563,6 +3838,26 @@
   "name": "Duncan Robinson",
   "season": "2024-25",
   "matchupDefense": 0.095
+ },
+ {
+  "name": "Dwayne Bacon",
+  "season": "2017-18",
+  "matchupDefense": 2.489
+ },
+ {
+  "name": "Dwayne Bacon",
+  "season": "2018-19",
+  "matchupDefense": -0.725
+ },
+ {
+  "name": "Dwayne Bacon",
+  "season": "2019-20",
+  "matchupDefense": 2.693
+ },
+ {
+  "name": "Dwayne Bacon",
+  "season": "2020-21",
+  "matchupDefense": 0.566
  },
  {
   "name": "Dwight Howard",
@@ -3745,6 +4040,21 @@
   "matchupDefense": -5.963
  },
  {
+  "name": "Emmanuel Mudiay",
+  "season": "2017-18",
+  "matchupDefense": -2.853
+ },
+ {
+  "name": "Emmanuel Mudiay",
+  "season": "2018-19",
+  "matchupDefense": -0.156
+ },
+ {
+  "name": "Emmanuel Mudiay",
+  "season": "2019-20",
+  "matchupDefense": 1.513
+ },
+ {
   "name": "Enes Freedom",
   "season": "2017-18",
   "matchupDefense": -2.723
@@ -3833,6 +4143,21 @@
   "name": "Eric Gordon",
   "season": "2024-25",
   "matchupDefense": -1.119
+ },
+ {
+  "name": "Eric Paschall",
+  "season": "2019-20",
+  "matchupDefense": 0.931
+ },
+ {
+  "name": "Eric Paschall",
+  "season": "2020-21",
+  "matchupDefense": 1.115
+ },
+ {
+  "name": "Eric Paschall",
+  "season": "2021-22",
+  "matchupDefense": -2.62
  },
  {
   "name": "Ersan Ilyasova",
@@ -3943,6 +4268,26 @@
   "name": "Frank Jackson",
   "season": "2021-22",
   "matchupDefense": -2.399
+ },
+ {
+  "name": "Frank Kaminsky",
+  "season": "2017-18",
+  "matchupDefense": -3.452
+ },
+ {
+  "name": "Frank Kaminsky",
+  "season": "2018-19",
+  "matchupDefense": -4.526
+ },
+ {
+  "name": "Frank Kaminsky",
+  "season": "2019-20",
+  "matchupDefense": -4.774
+ },
+ {
+  "name": "Frank Kaminsky",
+  "season": "2020-21",
+  "matchupDefense": -2.474
  },
  {
   "name": "Frank Ntilikina",
@@ -4450,6 +4795,16 @@
   "matchupDefense": -3.626
  },
  {
+  "name": "Gradey Dick",
+  "season": "2023-24",
+  "matchupDefense": -4.441
+ },
+ {
+  "name": "Gradey Dick",
+  "season": "2024-25",
+  "matchupDefense": -3.012
+ },
+ {
   "name": "Grant Williams",
   "season": "2019-20",
   "matchupDefense": 3.327
@@ -4523,6 +4878,11 @@
   "name": "Greg Monroe",
   "season": "2018-19",
   "matchupDefense": -2.117
+ },
+ {
+  "name": "Guerschon Yabusele",
+  "season": "2024-25",
+  "matchupDefense": -5.18
  },
  {
   "name": "Gui Santos",
@@ -4805,6 +5165,21 @@
   "matchupDefense": 0.478
  },
  {
+  "name": "Isaiah Roby",
+  "season": "2020-21",
+  "matchupDefense": -4.831
+ },
+ {
+  "name": "Isaiah Roby",
+  "season": "2021-22",
+  "matchupDefense": -3.001
+ },
+ {
+  "name": "Isaiah Roby",
+  "season": "2022-23",
+  "matchupDefense": -6.517
+ },
+ {
   "name": "Isaiah Stewart",
   "season": "2020-21",
   "matchupDefense": 2.266
@@ -5008,6 +5383,21 @@
   "name": "Jaden Hardy",
   "season": "2024-25",
   "matchupDefense": -0.582
+ },
+ {
+  "name": "Jaden Ivey",
+  "season": "2022-23",
+  "matchupDefense": -2.578
+ },
+ {
+  "name": "Jaden Ivey",
+  "season": "2023-24",
+  "matchupDefense": -0.535
+ },
+ {
+  "name": "Jaden Ivey",
+  "season": "2024-25",
+  "matchupDefense": -1.225
  },
  {
   "name": "Jaden Mcdaniels",
@@ -5265,6 +5655,26 @@
   "matchupDefense": -0.299
  },
  {
+  "name": "Jalen Smith",
+  "season": "2021-22",
+  "matchupDefense": -0.643
+ },
+ {
+  "name": "Jalen Smith",
+  "season": "2022-23",
+  "matchupDefense": -0.211
+ },
+ {
+  "name": "Jalen Smith",
+  "season": "2023-24",
+  "matchupDefense": -3.061
+ },
+ {
+  "name": "Jalen Smith",
+  "season": "2024-25",
+  "matchupDefense": -0.641
+ },
+ {
   "name": "Jalen Suggs",
   "season": "2021-22",
   "matchupDefense": 2.979
@@ -5298,6 +5708,16 @@
   "name": "Jalen Williams",
   "season": "2024-25",
   "matchupDefense": 5.246
+ },
+ {
+  "name": "Jalen Wilson",
+  "season": "2023-24",
+  "matchupDefense": 1.839
+ },
+ {
+  "name": "Jalen Wilson",
+  "season": "2024-25",
+  "matchupDefense": -1.833
  },
  {
   "name": "Jamal Crawford",
@@ -5470,6 +5890,11 @@
   "matchupDefense": -6.411
  },
  {
+  "name": "Jarace Walker",
+  "season": "2024-25",
+  "matchupDefense": -6.927
+ },
+ {
   "name": "Jared Dudley",
   "season": "2017-18",
   "matchupDefense": -4.513
@@ -5478,6 +5903,16 @@
   "name": "Jared Dudley",
   "season": "2018-19",
   "matchupDefense": 1.896
+ },
+ {
+  "name": "Jarell Martin",
+  "season": "2017-18",
+  "matchupDefense": 1.544
+ },
+ {
+  "name": "Jarell Martin",
+  "season": "2018-19",
+  "matchupDefense": 0.396
  },
  {
   "name": "Jaren Jackson Jr.",
@@ -5575,6 +6010,16 @@
   "matchupDefense": 0.002
  },
  {
+  "name": "Jarrett Culver",
+  "season": "2019-20",
+  "matchupDefense": 1.169
+ },
+ {
+  "name": "Jarrett Culver",
+  "season": "2020-21",
+  "matchupDefense": 3.652
+ },
+ {
   "name": "Jarrett Jack",
   "season": "2017-18",
   "matchupDefense": -0.492
@@ -5670,6 +6115,11 @@
   "matchupDefense": 2.477
  },
  {
+  "name": "Jay Huff",
+  "season": "2024-25",
+  "matchupDefense": -0.798
+ },
+ {
   "name": "Jaylen Brown",
   "season": "2017-18",
   "matchupDefense": 3.699
@@ -5723,6 +6173,11 @@
   "name": "Jaylen Nowell",
   "season": "2022-23",
   "matchupDefense": -6.672
+ },
+ {
+  "name": "Jaylen Wells",
+  "season": "2024-25",
+  "matchupDefense": 1.764
  },
  {
   "name": "Jaylin Williams",
@@ -5915,6 +6370,21 @@
   "matchupDefense": -2.093
  },
  {
+  "name": "Jeremy Sochan",
+  "season": "2022-23",
+  "matchupDefense": -2.603
+ },
+ {
+  "name": "Jeremy Sochan",
+  "season": "2023-24",
+  "matchupDefense": -0.368
+ },
+ {
+  "name": "Jeremy Sochan",
+  "season": "2024-25",
+  "matchupDefense": 0.735
+ },
+ {
   "name": "Jerian Grant",
   "season": "2017-18",
   "matchupDefense": 0.372
@@ -6050,6 +6520,26 @@
   "matchupDefense": 5.466
  },
  {
+  "name": "Jock Landale",
+  "season": "2021-22",
+  "matchupDefense": 2.864
+ },
+ {
+  "name": "Jock Landale",
+  "season": "2022-23",
+  "matchupDefense": 1.216
+ },
+ {
+  "name": "Jock Landale",
+  "season": "2023-24",
+  "matchupDefense": 3.451
+ },
+ {
+  "name": "Jock Landale",
+  "season": "2024-25",
+  "matchupDefense": -4.171
+ },
+ {
   "name": "Jodie Meeks",
   "season": "2017-18",
   "matchupDefense": -1.372
@@ -6160,6 +6650,11 @@
   "matchupDefense": -0.451
  },
  {
+  "name": "Joffrey Lauvergne",
+  "season": "2017-18",
+  "matchupDefense": -9.674
+ },
+ {
   "name": "John Collins",
   "season": "2017-18",
   "matchupDefense": 0.927
@@ -6258,6 +6753,11 @@
   "name": "Johnny Davis",
   "season": "2023-24",
   "matchupDefense": -6.077
+ },
+ {
+  "name": "Jon Leuer",
+  "season": "2018-19",
+  "matchupDefense": -9.791
  },
  {
   "name": "Jonas Jerebko",
@@ -6365,6 +6865,46 @@
   "matchupDefense": 0.582
  },
  {
+  "name": "Jordan Clarkson",
+  "season": "2017-18",
+  "matchupDefense": -0.672
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2018-19",
+  "matchupDefense": 0.917
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2019-20",
+  "matchupDefense": 2.739
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2020-21",
+  "matchupDefense": 1.399
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2021-22",
+  "matchupDefense": 1.978
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2022-23",
+  "matchupDefense": 0.752
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2023-24",
+  "matchupDefense": -2.073
+ },
+ {
+  "name": "Jordan Clarkson",
+  "season": "2024-25",
+  "matchupDefense": -2.797
+ },
+ {
   "name": "Jordan Goodwin",
   "season": "2022-23",
   "matchupDefense": -0.413
@@ -6378,6 +6918,16 @@
   "name": "Jordan Goodwin",
   "season": "2024-25",
   "matchupDefense": -5.004
+ },
+ {
+  "name": "Jordan Hawkins",
+  "season": "2023-24",
+  "matchupDefense": 2.99
+ },
+ {
+  "name": "Jordan Hawkins",
+  "season": "2024-25",
+  "matchupDefense": -0.735
  },
  {
   "name": "Jordan Mclaughlin",
@@ -6480,6 +7030,16 @@
   "matchupDefense": -1.105
  },
  {
+  "name": "Josh Christopher",
+  "season": "2021-22",
+  "matchupDefense": -7.683
+ },
+ {
+  "name": "Josh Christopher",
+  "season": "2022-23",
+  "matchupDefense": -2.565
+ },
+ {
   "name": "Josh Giddey",
   "season": "2021-22",
   "matchupDefense": 1.735
@@ -6558,6 +7118,26 @@
   "name": "Josh Hart",
   "season": "2024-25",
   "matchupDefense": -1.525
+ },
+ {
+  "name": "Josh Jackson",
+  "season": "2017-18",
+  "matchupDefense": -3.735
+ },
+ {
+  "name": "Josh Jackson",
+  "season": "2018-19",
+  "matchupDefense": -0.685
+ },
+ {
+  "name": "Josh Jackson",
+  "season": "2020-21",
+  "matchupDefense": -2.25
+ },
+ {
+  "name": "Josh Jackson",
+  "season": "2021-22",
+  "matchupDefense": -2.398
  },
  {
   "name": "Josh Okogie",
@@ -6690,6 +7270,31 @@
   "matchupDefense": -0.973
  },
  {
+  "name": "Juancho Hernangomez",
+  "season": "2018-19",
+  "matchupDefense": 3.101
+ },
+ {
+  "name": "Juancho Hernangomez",
+  "season": "2019-20",
+  "matchupDefense": -5.709
+ },
+ {
+  "name": "Juancho Hernangomez",
+  "season": "2020-21",
+  "matchupDefense": -2.748
+ },
+ {
+  "name": "Juancho Hernangomez",
+  "season": "2021-22",
+  "matchupDefense": 1.574
+ },
+ {
+  "name": "Juancho Hernangomez",
+  "season": "2022-23",
+  "matchupDefense": -4.93
+ },
+ {
   "name": "Julian Champagnie",
   "season": "2023-24",
   "matchupDefense": 2.193
@@ -6818,6 +7423,31 @@
   "name": "Justin Jackson",
   "season": "2020-21",
   "matchupDefense": 0.456
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2017-18",
+  "matchupDefense": 3.071
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2018-19",
+  "matchupDefense": 1.778
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2020-21",
+  "matchupDefense": 0.016
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2021-22",
+  "matchupDefense": 3.861
+ },
+ {
+  "name": "Justise Winslow",
+  "season": "2022-23",
+  "matchupDefense": 2.308
  },
  {
   "name": "Jusuf Nurkić",
@@ -7305,6 +7935,26 @@
   "matchupDefense": 2.721
  },
  {
+  "name": "Kevin Knox Ii",
+  "season": "2018-19",
+  "matchupDefense": -1.143
+ },
+ {
+  "name": "Kevin Knox Ii",
+  "season": "2019-20",
+  "matchupDefense": 0.291
+ },
+ {
+  "name": "Kevin Knox Ii",
+  "season": "2020-21",
+  "matchupDefense": 2.935
+ },
+ {
+  "name": "Kevin Knox Ii",
+  "season": "2022-23",
+  "matchupDefense": 2.047
+ },
+ {
   "name": "Kevin Love",
   "season": "2017-18",
   "matchupDefense": -5.298
@@ -7400,6 +8050,41 @@
   "matchupDefense": 3.112
  },
  {
+  "name": "Keyonte George",
+  "season": "2023-24",
+  "matchupDefense": -1.426
+ },
+ {
+  "name": "Keyonte George",
+  "season": "2024-25",
+  "matchupDefense": -3.766
+ },
+ {
+  "name": "Khem Birch",
+  "season": "2017-18",
+  "matchupDefense": 0.54
+ },
+ {
+  "name": "Khem Birch",
+  "season": "2018-19",
+  "matchupDefense": 1.583
+ },
+ {
+  "name": "Khem Birch",
+  "season": "2019-20",
+  "matchupDefense": -1.081
+ },
+ {
+  "name": "Khem Birch",
+  "season": "2020-21",
+  "matchupDefense": 0.568
+ },
+ {
+  "name": "Khem Birch",
+  "season": "2021-22",
+  "matchupDefense": -2.581
+ },
+ {
   "name": "Khris Middleton",
   "season": "2017-18",
   "matchupDefense": -1.397
@@ -7438,6 +8123,26 @@
   "name": "Khris Middleton",
   "season": "2024-25",
   "matchupDefense": -0.435
+ },
+ {
+  "name": "Killian Hayes",
+  "season": "2020-21",
+  "matchupDefense": 0.37
+ },
+ {
+  "name": "Killian Hayes",
+  "season": "2021-22",
+  "matchupDefense": -0.893
+ },
+ {
+  "name": "Killian Hayes",
+  "season": "2022-23",
+  "matchupDefense": -2.114
+ },
+ {
+  "name": "Killian Hayes",
+  "season": "2023-24",
+  "matchupDefense": -5.617
  },
  {
   "name": "Kj Martin",
@@ -7620,6 +8325,11 @@
   "matchupDefense": 0.844
  },
  {
+  "name": "Kyle Filipowski",
+  "season": "2024-25",
+  "matchupDefense": -5.6
+ },
+ {
   "name": "Kyle Korver",
   "season": "2017-18",
   "matchupDefense": -1.32
@@ -7768,6 +8478,31 @@
   "name": "Kyrie Irving",
   "season": "2024-25",
   "matchupDefense": 0.621
+ },
+ {
+  "name": "Kyshawn George",
+  "season": "2024-25",
+  "matchupDefense": 4.613
+ },
+ {
+  "name": "Lamar Stevens",
+  "season": "2020-21",
+  "matchupDefense": 2.198
+ },
+ {
+  "name": "Lamar Stevens",
+  "season": "2021-22",
+  "matchupDefense": 3.955
+ },
+ {
+  "name": "Lamar Stevens",
+  "season": "2022-23",
+  "matchupDefense": 5.762
+ },
+ {
+  "name": "Lamar Stevens",
+  "season": "2023-24",
+  "matchupDefense": 2.278
  },
  {
   "name": "Lamarcus Aldridge",
@@ -8013,6 +8748,36 @@
   "name": "Lebron James",
   "season": "2024-25",
   "matchupDefense": 2.295
+ },
+ {
+  "name": "Lonnie Walker Iv",
+  "season": "2019-20",
+  "matchupDefense": -0.241
+ },
+ {
+  "name": "Lonnie Walker Iv",
+  "season": "2020-21",
+  "matchupDefense": -2.867
+ },
+ {
+  "name": "Lonnie Walker Iv",
+  "season": "2021-22",
+  "matchupDefense": 2.771
+ },
+ {
+  "name": "Lonnie Walker Iv",
+  "season": "2022-23",
+  "matchupDefense": -1.442
+ },
+ {
+  "name": "Lonnie Walker Iv",
+  "season": "2023-24",
+  "matchupDefense": 5.066
+ },
+ {
+  "name": "Lonnie Walker Iv",
+  "season": "2024-25",
+  "matchupDefense": -5.509
  },
  {
   "name": "Lonzo Ball",
@@ -8535,6 +9300,31 @@
   "matchupDefense": -0.758
  },
  {
+  "name": "Marquese Chriss",
+  "season": "2017-18",
+  "matchupDefense": 1.724
+ },
+ {
+  "name": "Marquese Chriss",
+  "season": "2018-19",
+  "matchupDefense": -5.73
+ },
+ {
+  "name": "Marquese Chriss",
+  "season": "2019-20",
+  "matchupDefense": -3.313
+ },
+ {
+  "name": "Marquese Chriss",
+  "season": "2021-22",
+  "matchupDefense": -0.373
+ },
+ {
+  "name": "Marreese Speights",
+  "season": "2017-18",
+  "matchupDefense": 1.613
+ },
+ {
   "name": "Marvin Williams",
   "season": "2017-18",
   "matchupDefense": 0.689
@@ -8588,6 +9378,11 @@
   "name": "Mason Plumlee",
   "season": "2024-25",
   "matchupDefense": -3.7
+ },
+ {
+  "name": "Matas Buzelis",
+  "season": "2024-25",
+  "matchupDefense": 0.928
  },
  {
   "name": "Matisse Thybulle",
@@ -8750,6 +9545,21 @@
   "matchupDefense": -1.484
  },
  {
+  "name": "Michael Carter-Williams",
+  "season": "2017-18",
+  "matchupDefense": -0.372
+ },
+ {
+  "name": "Michael Carter-Williams",
+  "season": "2019-20",
+  "matchupDefense": -1.254
+ },
+ {
+  "name": "Michael Carter-Williams",
+  "season": "2020-21",
+  "matchupDefense": 4.211
+ },
+ {
   "name": "Michael Kidd-Gilchrist",
   "season": "2017-18",
   "matchupDefense": -1.389
@@ -8858,6 +9668,61 @@
   "name": "Mike James",
   "season": "2017-18",
   "matchupDefense": -1.414
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2017-18",
+  "matchupDefense": 1.039
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2018-19",
+  "matchupDefense": -0.326
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2019-20",
+  "matchupDefense": -0.171
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2020-21",
+  "matchupDefense": 3.539
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2021-22",
+  "matchupDefense": 5.512
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2022-23",
+  "matchupDefense": 0.225
+ },
+ {
+  "name": "Mike Muscala",
+  "season": "2023-24",
+  "matchupDefense": -2.267
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2017-18",
+  "matchupDefense": 2.499
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2018-19",
+  "matchupDefense": 2.426
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2019-20",
+  "matchupDefense": 2.451
+ },
+ {
+  "name": "Mike Scott",
+  "season": "2020-21",
+  "matchupDefense": -0.876
  },
  {
   "name": "Miles Bridges",
@@ -9100,6 +9965,11 @@
   "matchupDefense": -0.797
  },
  {
+  "name": "Mouhamed Gueye",
+  "season": "2024-25",
+  "matchupDefense": 2.51
+ },
+ {
   "name": "Moussa Diabaté",
   "season": "2024-25",
   "matchupDefense": -0.912
@@ -9315,6 +10185,16 @@
   "matchupDefense": -2.549
  },
  {
+  "name": "Nick Smith Jr.",
+  "season": "2023-24",
+  "matchupDefense": 0.233
+ },
+ {
+  "name": "Nick Smith Jr.",
+  "season": "2024-25",
+  "matchupDefense": -4.336
+ },
+ {
   "name": "Nick Young",
   "season": "2017-18",
   "matchupDefense": 0.057
@@ -9388,6 +10268,16 @@
   "name": "Nicolas Batum",
   "season": "2024-25",
   "matchupDefense": 7.421
+ },
+ {
+  "name": "Nicolo Melli",
+  "season": "2019-20",
+  "matchupDefense": -4.34
+ },
+ {
+  "name": "Nicolo Melli",
+  "season": "2020-21",
+  "matchupDefense": -1.594
  },
  {
   "name": "Nik Stauskas",
@@ -9488,6 +10378,16 @@
   "name": "Nikola Vučević",
   "season": "2024-25",
   "matchupDefense": -0.573
+ },
+ {
+  "name": "Noah Clowney",
+  "season": "2023-24",
+  "matchupDefense": -4.222
+ },
+ {
+  "name": "Noah Clowney",
+  "season": "2024-25",
+  "matchupDefense": 0.884
  },
  {
   "name": "Noah Vonleh",
@@ -10105,6 +11005,31 @@
   "matchupDefense": 3.109
  },
  {
+  "name": "Precious Achiuwa",
+  "season": "2020-21",
+  "matchupDefense": -0.761
+ },
+ {
+  "name": "Precious Achiuwa",
+  "season": "2021-22",
+  "matchupDefense": 2.172
+ },
+ {
+  "name": "Precious Achiuwa",
+  "season": "2022-23",
+  "matchupDefense": -2.426
+ },
+ {
+  "name": "Precious Achiuwa",
+  "season": "2023-24",
+  "matchupDefense": 0.25
+ },
+ {
+  "name": "Precious Achiuwa",
+  "season": "2024-25",
+  "matchupDefense": -1.078
+ },
+ {
   "name": "Quentin Grimes",
   "season": "2021-22",
   "matchupDefense": -1.559
@@ -10128,6 +11053,21 @@
   "name": "Quincy Acy",
   "season": "2017-18",
   "matchupDefense": -0.755
+ },
+ {
+  "name": "R.J. Hampton",
+  "season": "2020-21",
+  "matchupDefense": -3.216
+ },
+ {
+  "name": "R.J. Hampton",
+  "season": "2021-22",
+  "matchupDefense": -3.714
+ },
+ {
+  "name": "R.J. Hampton",
+  "season": "2022-23",
+  "matchupDefense": -2.057
  },
  {
   "name": "Rajon Rondo",
@@ -10740,6 +11680,36 @@
   "matchupDefense": 3.302
  },
  {
+  "name": "Saddiq Bey",
+  "season": "2020-21",
+  "matchupDefense": -2.131
+ },
+ {
+  "name": "Saddiq Bey",
+  "season": "2021-22",
+  "matchupDefense": 0.79
+ },
+ {
+  "name": "Saddiq Bey",
+  "season": "2022-23",
+  "matchupDefense": -4.281
+ },
+ {
+  "name": "Saddiq Bey",
+  "season": "2023-24",
+  "matchupDefense": -2.506
+ },
+ {
+  "name": "Sam Dekker",
+  "season": "2017-18",
+  "matchupDefense": 0.111
+ },
+ {
+  "name": "Sam Dekker",
+  "season": "2018-19",
+  "matchupDefense": -3.219
+ },
+ {
   "name": "Sam Hauser",
   "season": "2022-23",
   "matchupDefense": 1.683
@@ -10800,6 +11770,16 @@
   "matchupDefense": 1.873
  },
  {
+  "name": "Scoot Henderson",
+  "season": "2023-24",
+  "matchupDefense": -5.679
+ },
+ {
+  "name": "Scoot Henderson",
+  "season": "2024-25",
+  "matchupDefense": -2.95
+ },
+ {
   "name": "Scottie Barnes",
   "season": "2021-22",
   "matchupDefense": -0.546
@@ -10818,6 +11798,21 @@
   "name": "Scottie Barnes",
   "season": "2024-25",
   "matchupDefense": 1.196
+ },
+ {
+  "name": "Sean Kilpatrick",
+  "season": "2017-18",
+  "matchupDefense": -5.687
+ },
+ {
+  "name": "Sekou Doumbouya",
+  "season": "2019-20",
+  "matchupDefense": -6.278
+ },
+ {
+  "name": "Sekou Doumbouya",
+  "season": "2020-21",
+  "matchupDefense": -1.689
  },
  {
   "name": "Semi Ojeleye",
@@ -10913,6 +11908,21 @@
   "name": "Shabazz Napier",
   "season": "2019-20",
   "matchupDefense": -3.944
+ },
+ {
+  "name": "Shaedon Sharpe",
+  "season": "2022-23",
+  "matchupDefense": -2.498
+ },
+ {
+  "name": "Shaedon Sharpe",
+  "season": "2023-24",
+  "matchupDefense": -5.113
+ },
+ {
+  "name": "Shaedon Sharpe",
+  "season": "2024-25",
+  "matchupDefense": -2.122
  },
  {
   "name": "Shai Gilgeous-Alexander",
@@ -11145,6 +12155,11 @@
   "matchupDefense": 1.916
  },
  {
+  "name": "Stephon Castle",
+  "season": "2024-25",
+  "matchupDefense": -0.993
+ },
+ {
   "name": "Sterling Brown",
   "season": "2017-18",
   "matchupDefense": -1.311
@@ -11353,6 +12368,21 @@
   "name": "Talen Horton-Tucker",
   "season": "2024-25",
   "matchupDefense": 4.417
+ },
+ {
+  "name": "Tari Eason",
+  "season": "2022-23",
+  "matchupDefense": -0.724
+ },
+ {
+  "name": "Tari Eason",
+  "season": "2023-24",
+  "matchupDefense": 4.563
+ },
+ {
+  "name": "Tari Eason",
+  "season": "2024-25",
+  "matchupDefense": 2.761
  },
  {
   "name": "Taurean Prince",
@@ -11930,6 +12960,21 @@
   "matchupDefense": -2.791
  },
  {
+  "name": "Tre Mann",
+  "season": "2021-22",
+  "matchupDefense": 0.728
+ },
+ {
+  "name": "Tre Mann",
+  "season": "2022-23",
+  "matchupDefense": 1.027
+ },
+ {
+  "name": "Tre Mann",
+  "season": "2023-24",
+  "matchupDefense": -3.814
+ },
+ {
   "name": "Trendon Watford",
   "season": "2021-22",
   "matchupDefense": -3.278
@@ -11973,6 +13018,11 @@
   "name": "Trevor Ariza",
   "season": "2021-22",
   "matchupDefense": -3.209
+ },
+ {
+  "name": "Trevor Booker",
+  "season": "2017-18",
+  "matchupDefense": 0.657
  },
  {
   "name": "Trey Burke",
@@ -12185,6 +13235,11 @@
   "matchupDefense": -5.285
  },
  {
+  "name": "Tyler Zeller",
+  "season": "2017-18",
+  "matchupDefense": -2.358
+ },
+ {
   "name": "Tyreke Evans",
   "season": "2017-18",
   "matchupDefense": 3.741
@@ -12395,6 +13450,16 @@
   "matchupDefense": 0.791
  },
  {
+  "name": "Wayne Selden",
+  "season": "2017-18",
+  "matchupDefense": -3.943
+ },
+ {
+  "name": "Wayne Selden",
+  "season": "2018-19",
+  "matchupDefense": 0.951
+ },
+ {
   "name": "Wendell Carter Jr.",
   "season": "2018-19",
   "matchupDefense": 0.065
@@ -12545,6 +13610,36 @@
   "matchupDefense": 0.613
  },
  {
+  "name": "Willy Hernangomez",
+  "season": "2017-18",
+  "matchupDefense": -3.04
+ },
+ {
+  "name": "Willy Hernangomez",
+  "season": "2018-19",
+  "matchupDefense": -6.585
+ },
+ {
+  "name": "Willy Hernangomez",
+  "season": "2019-20",
+  "matchupDefense": -2.983
+ },
+ {
+  "name": "Willy Hernangomez",
+  "season": "2020-21",
+  "matchupDefense": -5.803
+ },
+ {
+  "name": "Willy Hernangomez",
+  "season": "2021-22",
+  "matchupDefense": -7.227
+ },
+ {
+  "name": "Willy Hernangomez",
+  "season": "2022-23",
+  "matchupDefense": -7.299
+ },
+ {
   "name": "Wilson Chandler",
   "season": "2017-18",
   "matchupDefense": 0.662
@@ -12560,6 +13655,26 @@
   "matchupDefense": 3.654
  },
  {
+  "name": "Xavier Tillman",
+  "season": "2020-21",
+  "matchupDefense": 1.067
+ },
+ {
+  "name": "Xavier Tillman",
+  "season": "2021-22",
+  "matchupDefense": 1.085
+ },
+ {
+  "name": "Xavier Tillman",
+  "season": "2022-23",
+  "matchupDefense": 0.194
+ },
+ {
+  "name": "Xavier Tillman",
+  "season": "2023-24",
+  "matchupDefense": 0.987
+ },
+ {
   "name": "Yogi Ferrell",
   "season": "2017-18",
   "matchupDefense": -3.342
@@ -12568,6 +13683,46 @@
   "name": "Yogi Ferrell",
   "season": "2018-19",
   "matchupDefense": 0.511
+ },
+ {
+  "name": "Yves Missi",
+  "season": "2024-25",
+  "matchupDefense": -5.485
+ },
+ {
+  "name": "Zaccharie Risacher",
+  "season": "2024-25",
+  "matchupDefense": -2.736
+ },
+ {
+  "name": "Zach Collins",
+  "season": "2017-18",
+  "matchupDefense": 2.745
+ },
+ {
+  "name": "Zach Collins",
+  "season": "2018-19",
+  "matchupDefense": 0.287
+ },
+ {
+  "name": "Zach Collins",
+  "season": "2021-22",
+  "matchupDefense": -0.854
+ },
+ {
+  "name": "Zach Collins",
+  "season": "2022-23",
+  "matchupDefense": -2.221
+ },
+ {
+  "name": "Zach Collins",
+  "season": "2023-24",
+  "matchupDefense": -2.577
+ },
+ {
+  "name": "Zach Collins",
+  "season": "2024-25",
+  "matchupDefense": 2.738
  },
  {
   "name": "Zach Lavine",

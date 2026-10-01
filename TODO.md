@@ -133,6 +133,12 @@ Otwarte tematy silnika (Twoja ocena; bierzemy, gdy wyjdą w sesjach):
 - [ ] **Rozszerzenie rejestrów Movement Shooter / rim pressure** — małe, nazwane dodatki.
 - [ ] **Luki źródła danych** — historyczny APM realnie od 1994 (sprawdzić inne zakładki
       „Historical APM Grid.xlsx” niż „All Scaled”); atletyczność bez graczy z lat 50.
+- [x] **Pula draftu (2026-10-01)** — pełna pula (wszystkie okresy, `spanPoolMode: 'full'`) +
+      223 graczy po 1997, których nie było (802 okresy, `scripts/addPost1997Players.ts`); gracze
+      sprzed 1997 bez zmian. 100 draftów: 0 przekroczeń limitu, średnia drużyna 79.3 (było 79.4),
+      3+ C 33% (było 37%), czas picku ~+5%. Pomijane gwiazdy (Iverson, King…) zaakceptowane.
+- [ ] **Metadane kart dla nowych graczy** — `npm run build:card-metadata` wymaga lokalnych danych
+      (`C:\Users\Eryks\Desktop\player-data`); 223 nowych graczy nie ma drużyn na kartach ani zdjęć.
 
 ### Znane, zaakceptowane ograniczenia (nie odgrzewać bez nowych dowodów)
 
