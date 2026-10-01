@@ -713,13 +713,13 @@
       "charlie ward",
       "klay thompson",
       "clyde drexler",
-      "charles barkley",
+      "kyle lowry",
       "chet holmgren",
       "bill walton",
-      "kyle lowry"
+      "chauncey billups"
     ],
-    "expectedPickId": "siakapa01-2025-2026",
-    "expectedPickLabel": "Pascal Siakam | 2024-26"
+    "expectedPickId": "barklch01-cw-1992-1993",
+    "expectedPickLabel": "Charles Barkley | 1991-93"
   },
   {
     "seed": 123456,
@@ -1071,15 +1071,15 @@
       "shane battier",
       "jalen williams",
       "jimmy butler",
-      "alonzo mourning",
+      "dwight howard",
       "al horford",
-      "terry porter",
-      "chris mullin",
+      "alonzo mourning",
+      "hersey hawkins",
       "bob mcadoo",
-      "dikembe mutombo",
-      "dwight howard"
+      "rudy gobert",
+      "mike conley"
     ],
-    "expectedPickId": "boshch01-2014-2015",
-    "expectedPickLabel": "Chris Bosh | 2013-15"
+    "expectedPickId": "hardaan01-1994-1995",
+    "expectedPickLabel": "Anfernee Hardaway | 1993-95"
   }
 ]

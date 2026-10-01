@@ -33,6 +33,9 @@ import '../src/engine/fit';
 type Level = 'full' | 'partial' | 'emergency' | 'none';
 const POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 const HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'];
+const PG_HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler'];
+/** e^(−0.4) × 0.9 ≈ 0.6: a named point guard always covers a stretch at the point. */
+const NAMED_PG_MAX_PENALTY = 0.4;
 const SMALL_BALL_C_ROLES = ['Switch Big', 'Mobile Big', 'Helper', 'Anchor Big'];
 
 /** The best a non-natural position can score (natural positions are 1). */
@@ -72,12 +75,17 @@ function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: n
   let penalty: number;
   switch (pos) {
     case 'PG': {
+      // 2026-10-01, the user ("wskoczyć na PG powinno być najtrudniej"; Eddie Jones and Jason
+      // Richardson at the point were "gruba przesada"): the point is the hardest position to
+      // step into. Every non-PG pays a base cost, a steep cost per missing assist (per 36), and
+      // more without a real ball-handling role, so the best a non-PG reaches is about 0.7. The named
+      // PG list (Wade, Ginóbili, Hornacek) only guarantees a stretch at the point (0.6).
       const named = isNamedPgEligible(s);
-      // Two slots away only a ball-handling wing runs the offence (a point forward: LeBron, Pippen).
+      const ballHandler = PG_HANDLERS.includes(s.offensiveArchetype);
+      // Two slots away only a ball-handling wing runs the offence (a point forward: LeBron).
       if (!named && from !== 'SG' && !(from === 'SF' && handler)) return 0;
-      // Running the offence is a skill, not a body type: a shooter with no handling (Korver, 2.5
-      // assists per 36) is an emergency answer at the point, not a partial one.
-      penalty = (named ? 0 : shortfall(apg, 7, 0.15, 1)) + (named || handler ? 0 : 0.4) + (from === 'SG' || named ? 0 : 0.5);
+      penalty = 0.25 + shortfall(apg, 7, 0.3, 1.5) + (ballHandler ? 0 : 0.4) + (from === 'SG' || named ? 0 : 0.5);
+      if (named) penalty = Math.min(penalty, NAMED_PG_MAX_PENALTY);
       break;
     }
     case 'SG':
