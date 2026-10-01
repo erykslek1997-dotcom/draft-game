@@ -160,6 +160,11 @@ Otwarte tematy silnika (Twoja ocena; bierzemy, gdy wyjdą w sesjach):
       drużyny (×1 od 90 pkt, −0.3%/pkt, min 0.91); realne minuty/mecz (+2, od 1996-97) tylko
       podnoszą limit tieru. 200 draftów: odcinki < 6 min 373 → 54, gracze na 3+ pozycjach
       42 → 22, starterzy < 16 min u siebie 50 → 6, najsłabsza drużyna 62.6 → 68.5.
+- [x] **Minuty gwiazd z realnych playoffów (2026-10-01, opcja 1)** — limit gwiazd (od All-star)
+      = realne minuty/mecz w playoffach (≥ 8 meczów), inaczej RS + 2, inaczej tier; maks. 40; limit
+      wolno przekroczyć o 1 minutę. Embiid 2019-21 33 min, Giannis 34, Kawhi 35, LeBron 38.
+      Koszt: wynik −0.36, śmieciowe minuty 6.1 → 7.6, krótkie odcinki 54 → ~210. Naturalny PG
+      startuje na PG; minuty nieparzyste (urozmaicenie ±1).
 - [ ] **Metadane kart dla nowych graczy** — `npm run build:card-metadata` wymaga lokalnych danych
       (`C:\Users\Eryks\Desktop\player-data`); 223 nowych graczy nie ma drużyn na kartach ani zdjęć.
 
