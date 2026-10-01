@@ -27,10 +27,20 @@ const FGA_SCALE = 10;
  * a third-round star into a completely different, pre-prime version of the same player. */
 const MAX_POST_DRAFT_TALENT_DROP = 6;
 
-function peakProtectedOptions(options: PlayerSpan[]): PlayerSpan[] {
+/**
+ * 2026-10-01, user-approved after a 100-draft audit (Vince Carter 1999-01 TAL 86 -> 2011-13 TAL
+ * 61, Tatum 2022-24 87 -> 2017-19 60; 107 drops beyond the band on 99 of 1,600 teams): the span a
+ * player was actually drafted at always stays an option. A late glue pick drafted far from his own
+ * peak used to have no option inside the band at his drafted price, so tiers 1-2 below found no
+ * cap-legal roster and tier 3 reopened every span of every player, trading a star down to fund the
+ * rest. The drafted roster was cap-legal, so keeping each drafted span keeps tier 1 feasible.
+ */
+function peakProtectedOptions(options: PlayerSpan[], draftedSpan: PlayerSpan): PlayerSpan[] {
   if (options.length === 0) return options;
   const bestTalent = Math.max(...options.map(effectiveTalent));
-  return options.filter((option) => effectiveTalent(option) >= bestTalent - MAX_POST_DRAFT_TALENT_DROP);
+  return options.filter(
+    (option) => option.id === draftedSpan.id || effectiveTalent(option) >= bestTalent - MAX_POST_DRAFT_TALENT_DROP,
+  );
 }
 
 /**
@@ -120,8 +130,8 @@ export function optimizeSpans(roster: PlayerSpan[], capLimit: number = CAP_LIMIT
   //   3. drop the quality band too  (emergency legality — reopen every historical span)
   //   4. give up, keep the drafted roster
   return (
-    solve(positionBoundedPerPlayer.map(peakProtectedOptions)) ??
-    solve(allOptionsPerPlayer.map(peakProtectedOptions)) ??
+    solve(positionBoundedPerPlayer.map((options, i) => peakProtectedOptions(options, roster[i]))) ??
+    solve(allOptionsPerPlayer.map((options, i) => peakProtectedOptions(options, roster[i]))) ??
     solve(allOptionsPerPlayer) ??
     roster
   );
