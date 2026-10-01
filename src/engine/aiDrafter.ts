@@ -30,6 +30,7 @@ import { draftPool } from '../data/draftPool';
 import { DRAFT_EXPERIMENT } from './draftExperiment';
 import { madeAllNbaInSpan } from './allNbaLookup';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
+import { meetsStarterStandard } from './starterStandard';
 
 // ---------------------------------------------------------------------------
 // dev debug — off by default, no cost on the hot path. `draft.ts` flips it on from a dev-only
@@ -398,6 +399,11 @@ function samePositionRedundancyDiscount(roster: PlayerSpan[], p: PlayerSpan): nu
 
 interface NeedContext {
   emptySlots: Position[];
+  /** 2026-10-01: `emptySlots` plus every slot whose starter misses the user's starter standard
+   * (`meetsStarterStandard`, starterStandard.ts: TAL 65, or a role starter who both spaces and
+   * defends). Read only by the hole-urgency need bonus and the GM-taste cut in `pickForAi`; every
+   * older `emptySlots` mechanism keeps its own meaning. */
+  holeSlots: Position[];
   /** Has a real starter, but no realistic backup at all yet — distinct from `emptySlots`
    * (no starter) so bench-round picks still have a positional signal to follow once the
    * starting five is set, instead of going position-blind for the remaining 3-4 rounds. */
@@ -566,6 +572,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
   // genuinely lacks depth and stretching someone a slot is more realistic than nobody there.
   const starterPlayers: PlayerSpan[] = [];
   const emptySlots: Position[] = [];
+  const substandardSlots: Position[] = [];
   const starterTalentBySlot: Partial<Record<Position, number>> = {};
   for (const slot of STARTER_SLOTS) {
     const top = slots[slot][0];
@@ -580,6 +587,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
     if (player && top.minutes >= MIN_STARTER_MINUTES_AT_SLOT && isRealPositionFit(player, slot)) {
       starterPlayers.push(player);
       starterTalentBySlot[slot] = effectiveTalent(player);
+      if (!meetsStarterStandard(player)) substandardSlots.push(slot);
     } else {
       emptySlots.push(slot);
     }
@@ -629,6 +637,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
 
   return {
     emptySlots,
+    holeSlots: [...emptySlots, ...substandardSlots],
     thinSlots,
     looselyBackedThinSlots,
     avgSpacing:
@@ -1448,6 +1457,9 @@ const MAX_FGA_WASTE_ON_BENCH_PENALTY = 10;
  * Ramping need's influence in over a team's first few picks (full strength by its 4th pick)
  * lets pure talent decide the truly early picks and hands fit-awareness back for the rest. */
 const NEED_RAMP_ROSTER_SIZE = 4;
+/** See `holesOpen` in `pickForAi`. */
+const HOLE_URGENCY_NEED_BONUS = 1.0;
+const HOLE_GM_TASTE_SHARE = 0.5;
 
 /** Collapse adjacent career spans only after they have been ranked, so one real player receives
  * one lottery place while their best context-specific span remains available. */
@@ -1656,6 +1668,18 @@ export function pickForAi(
     strategyFgaCurve[ruleset?.strategy ?? 'starting-five-first'];
   const fgaPenalty = strategyBaseFgaPenalty + pressure * (strategyMaxFgaPenalty - strategyBaseFgaPenalty);
   const needRampProgress = Math.min(1, roster.length / NEED_RAMP_ROSTER_SIZE);
+  // 2026-10-01, user-approved after tracing every AI five that started a sub-50-TAL player (100
+  // drafts: 6 of 7 were 'stack-stars' teams, which skip the picks-4-5 starter lock by design,
+  // run by big-loving GMs). From the fifth pick on, a candidate who would fill a hole in the five
+  // (an empty slot, or one whose starter misses the user's starter standard) with a player who
+  // meets that standard gets a real need pull, and while any hole is open a GM's personal taste
+  // counts at half weight for players who fill none — Ben Wallace (+24 defense-first taste) as a
+  // second centre no longer outbids Bobby Jones for an empty PF.
+  const holesOpen = roster.length >= NEED_RAMP_ROSTER_SIZE && needs.holeSlots.length > 0;
+  const fillsHole = (p: PlayerSpan) =>
+    holesOpen &&
+    meetsStarterStandard(p) &&
+    needs.holeSlots.some((slot) => slot === p.primaryPosition || realSecondaryPositions(p).includes(slot));
 
   // A DNP-tier span (maxSustainableMinutes <= 0 — the player physically couldn't stay on the
   // floor across that real stretch, e.g. Joel Embiid's 2023-25 games-missed span) isn't a real
@@ -1918,6 +1942,7 @@ export function pickForAi(
       else if (realSecondaryPositions(p).some((s) => needs.thinSlots.includes(s))) need += 0.6;
     }
     need += starterUpgradeBonus(p, needs);
+    if (fillsHole(p)) need += HOLE_URGENCY_NEED_BONUS;
     if (needs.avgSpacing < SPACING_DEPTH_THRESHOLD) {
       const deficitRatio = (SPACING_DEPTH_THRESHOLD - needs.avgSpacing) / SPACING_DEPTH_THRESHOLD;
       need += deficitRatio * (computeSpacing(p) / 100) * SPACING_DEPTH_BONUS_SCALE;
@@ -2049,7 +2074,7 @@ export function pickForAi(
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
-      gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength),
+      gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);

@@ -4,6 +4,10 @@ import { draftPool } from '../data/draftPool';
 import { DRAFT_EXPERIMENT } from './draftExperiment';
 import { peakDraftPool } from './peakDraftPool';
 import { leanDraftPool } from './leanDraftPool';
+// Side effect: fit.ts registers the neighbour-window D-TAL blend (neighbourWindows.ts). Without it
+// the AI read a different D-TAL whenever the draft engine loaded before any Fit consumer (scripts,
+// tests), so the same seed could draft differently there than in the game.
+import './fit';
 import { createInitialTeams } from './draftSetup';
 import {
   ROSTER_SIZE,

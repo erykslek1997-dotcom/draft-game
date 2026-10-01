@@ -35,6 +35,7 @@ import {
 import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
 import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD } from './fit';
+import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 export type { FitScoreResult, FitScoreComponents } from './fit';
 
 /** Minimum defensive-impact score (box-score activity + rebounding + role weight) required,
@@ -886,11 +887,21 @@ const WEAK_OFFENSIVE_STARTER_MAX_PENALTY = 8;
 function weakOffensiveStarterPenalty(team: Team): number {
   const total = primaryStarters(team).reduce((sum, { player, minutes }) => {
     if (minutes <= 0) return sum;
-    // 2026-09-30, session 5: a 3&D starter (shoots and defends) is in the five for exactly that;
-    // his low O-TAL is the role, not a weak link (Fit credits him instead).
-    if (player.primaryPosition !== 'C' && player.primaryPosition !== 'PF' && teamSpacingValue(player) >= 70 && computeDefensiveTalent(player) >= 75) return sum;
     const bar = player.primaryPosition === 'C' ? LOW_OFFENSE_BIG_OTAL_CEILING : WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING;
-    const gap = bar - computeOffensiveTalent(player);
+    const offensiveGap = bar - computeOffensiveTalent(player);
+    let gap: number;
+    if (effectiveTalent(player) < STARTER_STANDARD_TAL) {
+      // 2026-10-01, the user's starter standard (starterStandard.ts): below TAL 65 only a role
+      // starter who both spaces and defends belongs in the five; anyone else is a hole, priced by
+      // how far he sits under the standard or the offensive bar, whichever is further.
+      if (isJustifiedRoleStarter(player)) return sum;
+      gap = Math.max(offensiveGap, STARTER_STANDARD_TAL - effectiveTalent(player));
+    } else {
+      // 2026-09-30, session 5: a 3&D starter (shoots and defends) is in the five for exactly that;
+      // his low O-TAL is the role, not a weak link (Fit credits him instead).
+      if (player.primaryPosition !== 'C' && player.primaryPosition !== 'PF' && teamSpacingValue(player) >= 70 && computeDefensiveTalent(player) >= 75) return sum;
+      gap = offensiveGap;
+    }
     return gap > 0 ? sum + gap * WEAK_OFFENSIVE_STARTER_PENALTY_PER_POINT * Math.min(1, minutes / STARTER_MINUTES) : sum;
   }, 0);
   return Math.min(WEAK_OFFENSIVE_STARTER_MAX_PENALTY, total);
