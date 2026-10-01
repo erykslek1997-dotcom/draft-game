@@ -20,7 +20,7 @@ import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCre
 import { maxSustainableMinutes, durabilityValueFactor } from './durability';
 import { effectiveTalent, overallTierForSpan, tierRank } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
-import { minuteProfileForSpan } from './rotationRoleMinutes';
+import { minuteProfileForSpan, minutesOverrunPenalty, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import {
   allAssignments,
   benchWithMinutes,
@@ -1523,7 +1523,6 @@ export function rotationScore(team: Team): RotationScoreResult {
   // error, while `MAX_TIER_OVERAGE_PENALTY` stays at 25 (already matches `DURABILITY_OVERWORK_
   // MAX_PENALTY`'s own ceiling nearby — a consistent, already-calibrated cap for "how much any
   // one minutes-deployment mistake can cost," not something this specific complaint asked to move).
-  const TIER_OVERAGE_PENALTY_PER_MINUTE = 2;
   const MAX_TIER_OVERAGE_PENALTY = 25;
   let tierOveragePenalty = 0;
   const tierOverageOffenders: string[] = [];
@@ -1533,15 +1532,17 @@ export function rotationScore(team: Team): RotationScoreResult {
     const tier = overallTierForSpan(tierContextWithSixthMan(p));
     const cap = minuteProfileForSpan(p).ceiling;
     if (minutes > cap) {
-      tierOveragePenalty += (minutes - cap) * TIER_OVERAGE_PENALTY_PER_MINUTE;
-      tierOverageOffenders.push(`${p.playerName} (${tier}) ${minutes}/${cap}m`);
+      // 2026-10-01, the user: a soft limit — 1-2 minutes over barely count, 3-4 are felt, beyond
+      // that it bites (`minutesOverrunPenalty`); only an overrun past the near-free band is named.
+      tierOveragePenalty += minutesOverrunPenalty(minutes - cap);
+      if (minutes - cap > MINUTES_CAP_TOLERANCE) tierOverageOffenders.push(`${p.playerName} (${tier}) ${minutes}/${cap}m`);
     }
   }
   if (tierOveragePenalty > 0) {
     const penalty = Math.min(MAX_TIER_OVERAGE_PENALTY, Math.round(tierOveragePenalty));
     score -= penalty;
-    components.tierMinutesOverage = -penalty;
-    notes.push(`Over their tier's real minutes ceiling: ${tierOverageOffenders.join(', ')}.`);
+    if (penalty > 0) components.tierMinutesOverage = -penalty;
+    if (tierOverageOffenders.length > 0) notes.push(`Over their tier's real minutes ceiling: ${tierOverageOffenders.join(', ')}.`);
   }
 
   // 2026-08-07, user's explicit rule: a genuinely weak starter (TAL<55 — below even "Starter"

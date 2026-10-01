@@ -8,7 +8,7 @@ import { optimizeSpans } from '../src/engine/spanOptimizer';
 import { autoAssignRotation, allAssignments, GAME_MINUTES, MAX_MINUTES_PER_PLAYER, isForcedStarSlot } from '../src/engine/rotation';
 import { positionFitMultiplier, STARTER_SLOTS, CAP_LIMIT } from '../src/engine/positions';
 import { maxSustainableMinutes } from '../src/engine/durability';
-import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE } from '../src/engine/rotationRoleMinutes';
+import { minuteProfileForSpan, OVERRUN_BANDS } from '../src/engine/rotationRoleMinutes';
 
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`FAIL: ${message}`);
@@ -56,8 +56,10 @@ for (const seed of [101, 202, 303]) {
         overDurability++;
         examples.push(`${p.playerName} ${minutes}/${maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER)} durability`);
       }
-      // A limit may be overrun by one minute (MINUTES_CAP_TOLERANCE, rotationRoleMinutes.ts).
-      if (minutes > minuteProfileForSpan(p).ceiling + MINUTES_CAP_TOLERANCE) {
+      // 2026-10-01: the limit is soft (rotationRoleMinutes.ts) — up to `OVERRUN_BANDS.noticeableUpTo`
+      // minutes over is a priced trade-off (a star's extra minutes over a Bench Warmer's), beyond that
+      // it is a mistake whenever a teammate could have taken them.
+      if (minutes > minuteProfileForSpan(p).ceiling + OVERRUN_BANDS.noticeableUpTo) {
         // Avoidable only if a teammate who plays one of his slots was still under his own limits.
         const hisSlots = assignments.filter((a) => a.player.id === p.id && a.minutes > 0).map((a) => a.slot);
         const cover = roster.filter(

@@ -162,8 +162,8 @@ Otwarte tematy silnika (Twoja ocena; bierzemy, gdy wyjdą w sesjach):
       42 → 22, starterzy < 16 min u siebie 50 → 6, najsłabsza drużyna 62.6 → 68.5.
 - [x] **Minuty gwiazd z realnych playoffów (2026-10-01, opcja 1)** — limit gwiazd (od All-star)
       = realne minuty/mecz w playoffach (≥ 8 meczów), inaczej RS + 2, inaczej tier; maks. 40; limit
-      wolno przekroczyć o 1 minutę. Embiid 2019-21 33 min, Giannis 34, Kawhi 35, LeBron 38.
-      Koszt: wynik −0.36, śmieciowe minuty 6.1 → 7.6, krótkie odcinki 54 → ~210. Naturalny PG
+      jest miękki (kara: +1–2 min prawie zero, +3–4 odczuwalna, >+4 mocna). Embiid 2019-21 33 min, Giannis 34, Kawhi 35, LeBron 38.
+      Koszt (z miękkim limitem): wynik 79.72 → 79.50, śmieciowe minuty 6.1 → 8.1, krótkie odcinki 54 → 123. Naturalny PG
       startuje na PG; minuty nieparzyste (urozmaicenie ±1).
 - [ ] **Metadane kart dla nowych graczy** — `npm run build:card-metadata` wymaga lokalnych danych
       (`C:\Users\Eryks\Desktop\player-data`); 223 nowych graczy nie ma drużyn na kartach ani zdjęć.

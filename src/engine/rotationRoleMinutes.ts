@@ -59,11 +59,27 @@ export function minuteProfileForSpan(span: PlayerSpan): TierMinuteProfile {
 }
 
 /**
- * 2026-10-01, the user ("niech to przekracza o minutę"): a minutes limit may be overrun by one minute.
- * The solver works in 2-minute units, so an odd limit (real playoff minutes, Duncan 37) is filled to
- * the next even number rather than one short.
+ * 2026-10-01, the user: the minutes limit is not a hard cap — "kary za przekraczanie, które dość
+ * szybko wystrzeliwują w górę: 1 do 2 minut prawie zerowe, 3 do 4 odczuwalne, +4 mocno odczuwalne".
+ * `MINUTES_CAP_TOLERANCE` is the near-free band; `minutesOverrunPenalty` prices any overrun for the
+ * rotation grade, and the minute solver (minuteAllocation.ts) prices the same three bands.
  */
-export const MINUTES_CAP_TOLERANCE = 1;
+export const MINUTES_CAP_TOLERANCE = 2;
+const OVERRUN_NOTICEABLE_UPTO = 4;
+const OVERRUN_PENALTY_PER_MINUTE = { free: 0.25, noticeable: 2, heavy: 5 } as const;
+export function minutesOverrunPenalty(minutesOver: number): number {
+  if (minutesOver <= 0) return 0;
+  const free = Math.min(minutesOver, MINUTES_CAP_TOLERANCE);
+  const noticeable = Math.min(Math.max(0, minutesOver - MINUTES_CAP_TOLERANCE), OVERRUN_NOTICEABLE_UPTO - MINUTES_CAP_TOLERANCE);
+  const heavy = Math.max(0, minutesOver - OVERRUN_NOTICEABLE_UPTO);
+  return (
+    free * OVERRUN_PENALTY_PER_MINUTE.free +
+    noticeable * OVERRUN_PENALTY_PER_MINUTE.noticeable +
+    heavy * OVERRUN_PENALTY_PER_MINUTE.heavy
+  );
+}
+/** Overrun bands for the minute solver: the near-free band ends here, the noticeable one here. */
+export const OVERRUN_BANDS = { freeUpTo: MINUTES_CAP_TOLERANCE, noticeableUpTo: OVERRUN_NOTICEABLE_UPTO } as const;
 
 /** The most minutes a player can carry in one game: his minutes ceiling, zero for a DNP span. */
 export function playableMinutesCap(span: PlayerSpan, maxMinutesPerPlayer: number): number {
