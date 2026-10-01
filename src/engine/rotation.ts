@@ -7,6 +7,7 @@ import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositio
 // `effectiveTalent`'s own docstring for the full "why").
 import { maxSustainableMinutes } from './durability';
 import { allocateMinutes } from './minuteAllocation';
+import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import { overallTierForSpan, effectiveTalent } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan } from './rotationRoleMinutes';
@@ -247,11 +248,20 @@ export function bestPrimaryAssignment(
       // two-way starting case" — had zero effect on whether the search would start him anyway.
       // Switched to the span-aware version so 'Sixth Man' is excluded from `STARTER_ELIGIBLE_
       // TIERS` exactly like every other below-Starter tier already is.
-      const belowStarterTier = !STARTER_ELIGIBLE_TIERS.has(overallTierForSpan(tierContextWithSixthMan(player)));
+      //
+      // 2026-10-01, the user's starter standard (starterStandard.ts): a role player who both spaces
+      // and defends belongs in the five whatever his tier label (Ingles 2017-19 is 'Sixth Man'), and
+      // a sub-65 starter who misses the standard is valued down by his gap to it, the same price
+      // Offense charges him — Charlie Ward (65) starts over Nate McMillan (61, no spacing), Ingles
+      // over Bo Outlaw.
+      const talent = effectiveTalent(player);
+      const justifiedRole = isJustifiedRoleStarter(player);
+      const belowStarterTier = !justifiedRole && !STARTER_ELIGIBLE_TIERS.has(overallTierForSpan(tierContextWithSixthMan(player)));
+      const standardGap = talent < STARTER_STANDARD_TAL && !justifiedRole ? STARTER_STANDARD_TAL - talent : 0;
       v =
         maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER) <= 0 || belowStarterTier
           ? 0
-          : effectiveTalent(player) * starterFitMultiplier(player, slot);
+          : Math.max(0, talent - standardGap) * starterFitMultiplier(player, slot);
       valueByPlayerSlot.set(key, v);
     }
     return v;

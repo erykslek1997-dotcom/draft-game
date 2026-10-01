@@ -148,9 +148,13 @@ Otwarte tematy silnika (Twoja ocena; bierzemy, gdy wyjdą w sesjach):
       standard startera. 200 draftów: ławka 60.8 → 61.8 (najsłabsze 10%: 54.3 → 56.5), bez
       zmiennika na obwodzie 358 → 24, bez dużego 558 → 195, 3+ C 1044 → 626, wynik 79.58 → 79.76,
       piątka −0.49 TAL. Zostaje: brak zmiennika PG (~620 drużyn; obwód liczony razem).
-- [ ] **„Bo Outlaw”** — po poprawce doboru okresów zostaje 8 nieuzasadnionych starterów na 100
-      draftów, w tym Bo Outlaw 1998-00 ×5 (PF, TAL 62, spacing 0, D 87). Tanich PF ze standardem
-      (FGA < 9) jest tylko 7 graczy; wariant b (premia za kończącą się podaż PF) nie pomógł.
+- [x] **„Bo Outlaw” (2026-10-01)** — wybór piątki zna standard startera: uzasadniony role player
+      startuje mimo tieru (Ingles 'Sixth Man'), a starter poniżej standardu jest wyceniany niżej
+      o lukę do 65 TAL (Ward przed McMillanem, Ingles przed Outlawem). 200 draftów: nieuzasadnieni
+      starterzy 23 → 14, TAL < 50 2 → 0, bez PG w składzie 8 → 3. Reszta to składy bez zmienników
+      na obwodzie (gwiazda PF/C gra na SG/SF, na jej pozycję wchodzi zmiennik), 2 na 16 000.
+- [x] **Brak zmiennika PG** — nie jest realnym problemem: minuty na PG grają prawie wyłącznie
+      gracze z realną pozycją PG (0.01 min/drużynę poza pozycją); zmiennikiem są starterzy SG z PG.
 - [ ] **Metadane kart dla nowych graczy** — `npm run build:card-metadata` wymaga lokalnych danych
       (`C:\Users\Eryks\Desktop\player-data`); 223 nowych graczy nie ma drużyn na kartach ani zdjęć.
 
