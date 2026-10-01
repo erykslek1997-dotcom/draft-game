@@ -29,6 +29,8 @@ import {
   GAME_MINUTES,
   MAX_MINUTES_PER_PLAYER,
   STARTER_MINUTES,
+  FORCED_STAR_SLOT_FIT,
+  isForcedStarSlot,
 } from './rotation';
 import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
@@ -1280,8 +1282,10 @@ export function rotationScore(team: Team): RotationScoreResult {
     return { score: 0, notes: ['Lineup incomplete.'], components };
   }
 
+  const starterSlotFit = (player: PlayerSpan, slot: Position) =>
+    isForcedStarSlot(player, slot) ? FORCED_STAR_SLOT_FIT : positionFitMultiplier(player, slot);
   const avgMultiplier =
-    starters.reduce((sum, { slot, player }) => sum + positionFitMultiplier(player, slot), 0) / starters.length;
+    starters.reduce((sum, { slot, player }) => sum + starterSlotFit(player, slot), 0) / starters.length;
   let score = Math.round(avgMultiplier * 100);
   components.basePositionFit = score;
 
@@ -1439,6 +1443,9 @@ export function rotationScore(team: Team): RotationScoreResult {
     if (minutes <= 0) continue;
     if (player.primaryPosition === slot) continue;
     if (isUpwardSlide(player, slot)) continue;
+    // A must-start star at the neighbouring position is the roster's forced answer, priced by the
+    // position-fit share above, not a downward-slide mistake.
+    if (isForcedStarSlot(player, slot)) continue;
     const competence = positionCompetence(player, slot);
     if (competence === 'natural' || competence === 'full') continue;
     const grace = Math.max(

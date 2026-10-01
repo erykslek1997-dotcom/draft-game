@@ -315,7 +315,8 @@ export function bestPrimaryAssignment(
 
   search(0, 0, 0);
   const swapped = bestScore === -Infinity ? null : spacingAwareStarterSwaps(best, roster, valueFor);
-  const result = swapped ?? { assignment: best, score: bestScore === -Infinity ? 0 : bestScore };
+  const searched = swapped ?? { assignment: best, score: bestScore === -Infinity ? 0 : bestScore };
+  const result = forceStarsIntoLineup(searched, roster, valueFor);
   if (bestPrimaryAssignmentCache.size >= BEST_PRIMARY_ASSIGNMENT_CACHE_CAP) bestPrimaryAssignmentCache.clear();
   bestPrimaryAssignmentCache.set(cacheKey, result);
   return result;
@@ -364,6 +365,51 @@ function spacingAwareStarterSwaps(
     changed = true;
   }
   if (!changed) return null;
+  const score = STARTER_SLOTS.reduce((sum, slot) => sum + (lineup[slot] ? valueFor(lineup[slot]!, slot) : 0), 0);
+  return { assignment: lineup, score };
+}
+
+/**
+ * 2026-10-01, the user ("David Robinson nie może wchodzić z ławki, forsowanie greatest peak i mvp do
+ * starting 5"): a GOAT / Greatest peak / MVP-tier player always starts. If the search left one on
+ * the bench (two such centres, say), he takes the slot he plays that costs the lineup least,
+ * displacing a lesser starter; with no such slot he starts at the neighbouring position anyway
+ * (Robinson at PF beside another centre) — the one exception to "a classic centre can't play the
+ * four", which the minute solver honours for a starter's home slot (minuteAllocation.ts).
+ */
+const MUST_START_TIERS = new Set(['GOAT', 'Greatest peak', 'MVP']);
+/** How the rotation score reads a must-start star placed at a neighbouring position he can't
+ * normally play — the same share the minute solver gives him there. */
+export const FORCED_STAR_SLOT_FIT = 0.75;
+/** True for a must-start star started at a slot he can't normally play (forceStarsIntoLineup). */
+export function isForcedStarSlot(player: PlayerSpan, slot: Position): boolean {
+  return (
+    positionFitMultiplier(player, slot) <= 0 &&
+    MUST_START_TIERS.has(overallTierForSpan(tierContextWithSixthMan(player))) &&
+    Math.abs(STARTER_SLOTS.indexOf(slot) - STARTER_SLOTS.indexOf(player.primaryPosition)) === 1
+  );
+}
+function forceStarsIntoLineup(
+  searched: { assignment: Partial<Record<Position, PlayerSpan>>; score: number },
+  roster: PlayerSpan[],
+  valueFor: (player: PlayerSpan, slot: Position) => number,
+): { assignment: Partial<Record<Position, PlayerSpan>>; score: number } {
+  const mustStart = (p: PlayerSpan) =>
+    MUST_START_TIERS.has(overallTierForSpan(tierContextWithSixthMan(p))) && maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER) > 0;
+  const lineup = { ...searched.assignment };
+  const starting = () => new Set(STARTER_SLOTS.map((slot) => lineup[slot]?.id).filter(Boolean));
+  const benchedStars = roster.filter((p) => mustStart(p) && !starting().has(p.id)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+  if (benchedStars.length === 0) return searched;
+  for (const star of benchedStars) {
+    const open = STARTER_SLOTS.filter((slot) => !lineup[slot] || !mustStart(lineup[slot]!));
+    const playable = open.filter((slot) => valueFor(star, slot) > 0);
+    const adjacent = open.filter((slot) => Math.abs(STARTER_SLOTS.indexOf(slot) - STARTER_SLOTS.indexOf(star.primaryPosition)) === 1);
+    const choices = playable.length > 0 ? playable : adjacent;
+    if (choices.length === 0) continue;
+    const cost = (slot: Position) => (lineup[slot] ? valueFor(lineup[slot]!, slot) : 0) - valueFor(star, slot);
+    const slot = [...choices].sort((a, b) => cost(a) - cost(b))[0];
+    lineup[slot] = star;
+  }
   const score = STARTER_SLOTS.reduce((sum, slot) => sum + (lineup[slot] ? valueFor(lineup[slot]!, slot) : 0), 0);
   return { assignment: lineup, score };
 }

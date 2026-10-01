@@ -5,7 +5,7 @@
  */
 import { createDraft, autoFinishDraft } from '../src/engine/draft';
 import { optimizeSpans } from '../src/engine/spanOptimizer';
-import { autoAssignRotation, allAssignments, GAME_MINUTES, MAX_MINUTES_PER_PLAYER } from '../src/engine/rotation';
+import { autoAssignRotation, allAssignments, GAME_MINUTES, MAX_MINUTES_PER_PLAYER, isForcedStarSlot } from '../src/engine/rotation';
 import { positionFitMultiplier, STARTER_SLOTS, CAP_LIMIT } from '../src/engine/positions';
 import { maxSustainableMinutes } from '../src/engine/durability';
 import { minuteProfileForSpan } from '../src/engine/rotationRoleMinutes';
@@ -39,7 +39,9 @@ for (const seed of [101, 202, 303]) {
     // Two positions away is a violation only when someone who can play the slot still had minutes
     // left under his durability — a roster with every such player maxed out has no better option.
     for (const a of assignments) {
-      if (a.minutes <= 0 || positionFitMultiplier(a.player, a.slot) > 0) continue;
+      // A must-start star started next to his position (rotation.ts forceStarsIntoLineup) is the
+      // intended placement, not a two-away filler.
+      if (a.minutes <= 0 || positionFitMultiplier(a.player, a.slot) > 0 || isForcedStarSlot(a.player, a.slot)) continue;
       const spare = roster.filter(
         (p) => positionFitMultiplier(p, a.slot) > 0 && (totals.get(p.id) ?? 0) < maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER),
       );

@@ -42,6 +42,8 @@ const PAST_CEILING_COST = 150;
 const PAST_DURABILITY_COST = 2000;
 /** A guard or wing playing the four or five (small-ball) — the same cost the rotation score charges. */
 const SMALL_BALL_VALUE_SHARE = 0.9;
+/** A forced star at the neighbouring position (a centre at the four) plays it at this share. */
+const FORCED_HOME_SLOT_SHARE = 0.75; // = rotation.ts FORCED_STAR_SLOT_FIT
 /** A starter's first `STARTER_CORE_MINUTES` at his own slot are worth `STARTER_CORE_BONUS` more a
  * minute; every minute there `OWN_SLOT_BONUS` more — enough to keep him home unless a gap elsewhere
  * needs him (Jordan sliding to SF so Kidd can cover SG, instead of a centre playing the wing). */
@@ -113,8 +115,10 @@ function isBig(position: Position): boolean {
 }
 
 /** Value of one minute of `player` at `slot`, before the per-piece prices. */
-function minuteValue(player: PlayerSpan, slot: Position): number {
+function minuteValue(player: PlayerSpan, slot: Position, homeSlot?: Position): number {
   const fit = positionFitMultiplier(player, slot);
+  // A must-start star placed next to his position (rotation.ts `forceStarsIntoLineup`) plays it.
+  if (fit <= 0 && slot === homeSlot) return effectiveTalent(player) * FORCED_HOME_SLOT_SHARE;
   if (fit <= 0) return -EMERGENCY_FIT_COST;
   const smallBall = isBig(slot) && !isBig(player.primaryPosition) ? SMALL_BALL_VALUE_SHARE : 1;
   return effectiveTalent(player) * fit * smallBall;
@@ -180,7 +184,7 @@ export function allocateMinutes(
       reached = upTo;
     }
     STARTER_SLOTS.forEach((slot, j) => {
-      const value = minuteValue(player, slot);
+      const value = minuteValue(player, slot, homeSlot);
       if (slot === homeSlot) {
         const core = Math.floor(Math.min(STARTER_CORE_MINUTES, ceiling) / UNIT);
         flow.add(playerNode(i), slotNode(j), core, -(value + OWN_SLOT_BONUS + STARTER_CORE_BONUS) * UNIT);
