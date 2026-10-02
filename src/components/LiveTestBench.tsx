@@ -3,6 +3,7 @@ import "./BestFive.css";
 import { spanById } from "../engine/bestFive";
 import { gameWinProbability, projectMatchup } from "../engine/matchup";
 import { playTeamGame } from "../engine/liveGame";
+import { modernBox } from "../engine/modernBox";
 import {
   autoAssignRotation,
   primaryStarters,
@@ -285,9 +286,9 @@ function stat(line: SeasonPlayerLine, key: SortKey): number {
   }
 }
 
-/** His real per-game number for the stats that have one in the data. */
+/** His per-game number translated to today's game (`modernBox.ts`; his real one from 2019 on). */
 function realValue(line: SeasonPlayerLine, key: SortKey): number | null {
-  const b = line.span.box;
+  const b = modernBox(line.span);
   if (key === "pts") return b.ppg;
   if (key === "reb") return b.rpg;
   if (key === "ast") return b.apg;
@@ -337,10 +338,10 @@ function seasonExportText(
   aw("6MOY", result.awards.sixthMan);
   out.push(
     "",
-    "PLAYERS — per game in the sim, (real) = his real per game; by team, most minutes first",
+    "PLAYERS — per game in the sim, (today) = his real per game translated to today's game; by team, most minutes first",
   );
   out.push(
-    `${pad("Player", 34)}${pad("Team", 14)}  G   MIN  PTS (real)   REB (real)   AST (real)   STL  BLK   TO  3PM  FG%  3P%  FT%  TS%`,
+    `${pad("Player", 34)}${pad("Team", 14)}  G   MIN  PTS (today)  REB (today)  AST (today)   STL  BLK   TO  3PM  FG%  3P%  FT%  TS%`,
   );
   for (const team of teams) {
     const lines = result.players
@@ -599,7 +600,7 @@ function SeasonBench() {
             </select>
             <span className="bench-hint">
               Per game. Click a column to sort. Small number = difference from
-              his real per-game average.
+              his real per-game average translated to today's game.
             </span>
           </div>
           <div className="bench-table-wrap">

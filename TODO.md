@@ -227,6 +227,24 @@ Decyzje (2026-09-30):
       połowa w sezonie, całość w playoffach i szansach na tytuł; mecz na żywo bez zmian. Wynik na
       4 ligach AI: najlepsza 53–57 W, najsłabsza 20–33 W; faworyt <1 pkt 54%, 1–2 pkt 64%, 2–4 pkt
       70%, 4+ pkt 84%; tytuł najlepszej 18–60% (średnio ~38%).
+- [x] **Tłumaczenie statystyk na dzisiejsze realia** (2026-10-02, `scripts/buildModernBox.ts` →
+      `modernBox.json`, `engine/modernBox.ts`; mecz na żywo gra tymi liczbami, ławka testowa
+      porównuje z nimi):
+      „gramy na zasady obecne”; baza = sezony 2019-20 – 2025-26 (tempo 101.0, TS 57.4%, 2P 53.9%,
+      3P 36.1%); spany od 2019 bez zmian. Ilość gry × tempo; zbiórki dodatkowo przez dostępność
+      piłek; ponad dzisiejszych liderów (top-3 średnich 3-letnich) połowa nadwyżki. Skuteczność:
+      za 2 połowa wzrostu ligowego 2P% (drugą połowę daje spacing w silniku), za 3 realna zmiana
+      ligowego 3P%, wolne bez zmian; przed 1980 całość × 0.75 („grali z bandą słabiaków”). Rzuty
+      gwiazd: FGA × tempo, ponad dzisiejszego lidera (22.7) tylko 25% nadwyżki — odebrane rzuty idą
+      w skuteczność (+0.25 TS za punkt usage) i asysty (jego asysty na rzut). Potem kontekst składu
+      (`contextStats.ts`). Wynik: Kobe 2005-07 33.5 pkt, Curry 2014-16 28.7 pkt, Wilt 1966-68 16.4 zb;
+      kalibracja sezonu bez zmian (RMSE ~4.5 W).
+- [ ] **Poprawić średnie ligowe sprzed 1980** — `awards/seasonBaselines.json` nie ma wielu sezonów
+      (np. 1966-67, 1975-76) i ma błędne wartości (1965-66 TS 54.3%, powinno być ~49%); silnik
+      bierze najbliższy znany sezon, więc Wilt/West 1965-68 i Kareem 1970-72 są liczeni od zawyżonej
+      bazy. `boxRates.json` też się nie nadaje (suma daje TS 64% w 1962 — niepełne rzuty). Źródło:
+      tabela „NBA League Averages” z Basketball-Reference albo statystyki drużyn z Kaggle — do
+      dostarczenia przez Ciebie. Wpływa też na obecny silnik (era, TS względem ligi). (S)
 - [ ] **Mecz na żywo na koniec Mini?** — do decyzji: w Mini jest 16 drużyn i wynik to miejsce
       w lidze. (M–L)
 - [ ] **Balans po symulacjach** — jak często AI wygrywa, Joker (częstość legendy i leszcza, cena),

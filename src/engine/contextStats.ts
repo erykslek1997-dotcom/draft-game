@@ -3,6 +3,7 @@ import contextData from '../data/spanContext.json';
 import { eraScaledThreePA } from './era';
 import { computeOffensiveTalent } from './talent';
 import { estimatedMinutesPerGame } from './minutesPerGame';
+import { modernBox } from './modernBox';
 
 /**
  * 2026-10-02, stage 2 (live game), the user: "realne skalowanie statystyk na to jaki jest skład —
@@ -75,7 +76,9 @@ function modernSpacing(mates: PlayerSpan[]): number {
 }
 
 function splitUsage(five: PlayerSpan[]): number[] {
-  const own = five.map((span) => context(span)[1] / 1000);
+  // A star who shot more than today's leaders claims less of the ball (`modernBox.ts`); his real
+  // usage stays the yardstick, so the shots he gives up come back as efficiency.
+  const own = five.map((span) => (context(span)[1] / 1000) * modernBox(span).usageFactor);
   const top = Math.max(...five.map((span) => computeOffensiveTalent(span)));
   const claim = five.map((span, i) => own[i] * (computeOffensiveTalent(span) / top) ** USAGE_OTAL_POWER);
   const lo = own.map((u) => u * USAGE_MIN_SHARE);
