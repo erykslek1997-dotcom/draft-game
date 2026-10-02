@@ -355,8 +355,10 @@ function solveMinutes(
 
   roster.forEach((player, i) => {
     const profile = minuteProfileForSpan(player);
-    const durability = Math.min(maxSustainableMinutes(player, maxMinutesPerPlayer), maxMinutesPerPlayer);
     const benchCap = starterSlotById.has(player.id) ? Infinity : player.id === sixthManId ? SIXTH_MAN_MINUTES_CAP : BENCH_MINUTES_CAP;
+    // The bench cap is firm: past it plus the near-free tolerance a minute costs like one past
+    // durability.
+    const durability = Math.min(maxSustainableMinutes(player, maxMinutesPerPlayer), maxMinutesPerPlayer, benchCap + MINUTES_CAP_TOLERANCE);
     // An odd limit fills to the next 2-minute unit (`MINUTES_CAP_TOLERANCE`, one minute over).
     const ceiling = Math.min(profile.ceiling, durability, benchCap);
     const talent = effectiveTalent(player);
