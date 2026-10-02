@@ -83,8 +83,8 @@ const OFF_POSITION_FLOOR_SHARE = 0.2;
  * same whoever he is, so every minute past his stretch also carries a flat cost, not only a share of
  * his own (small, for a bench player) value. */
 const OFF_POSITION_EXCESS_COST = 30;
-const BENCH_MINUTES_CAP = 28;
-const SIXTH_MAN_MINUTES_CAP = 32;
+export const BENCH_MINUTES_CAP = 28;
+export const SIXTH_MAN_MINUTES_CAP = 32;
 
 export function offPositionMinutes(score: number): number {
   let minutes = GAME_SLOT_MINUTES;
