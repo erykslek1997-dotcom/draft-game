@@ -23,6 +23,9 @@ const { draftPoolBeforeRoleAudit } = await import('../src/data/draftPool');
 const { DEFENSIVE_ROLE_OVERRIDES, OFFENSIVE_ARCHETYPE_OVERRIDES } = await import('../src/data/players');
 const { normalizePlayerName } = await import('../src/data/schema');
 const { auditedDefensiveRoles, auditedOffensiveArchetypes, roleAuditStats } = await import('../src/engine/roleAudit');
+const { buildRoleFitContext, computeShadowRoleProfile } = await import('../src/engine/roleFitShadow');
+const shadowContext = buildRoleFitContext(draftPoolBeforeRoleAudit);
+const MEASURED_SHOOTER_MIN_SCORE = 70;
 
 const key = (name: string, spanLabel: string) => `${normalizePlayerName(name)}|${spanLabel}`;
 const defenseLocked = new Set(DEFENSIVE_ROLE_OVERRIDES.map((o) => key(o.name, o.spanLabel)));
@@ -34,7 +37,10 @@ let defenseChanged = 0;
 let offenseChanged = 0;
 for (const span of [...draftPoolBeforeRoleAudit].sort((a, b) => a.id.localeCompare(b.id))) {
   const k = key(span.playerName, span.spanLabel);
-  const stats = roleAuditStats(span);
+  const shooterFit = computeShadowRoleProfile(span, shadowContext).offensiveFits.find(
+    (fit) => (fit.role === 'Off Screen Shooter' || fit.role === 'Movement Shooter') && fit.score >= MEASURED_SHOOTER_MIN_SCORE,
+  );
+  const stats = roleAuditStats(span, shooterFit?.role);
   const entry: { d?: DefensiveRole; o?: OffensiveArchetype } = {};
   if (!defenseLocked.has(k) && !DEFENSE_LOCKED_PLAYERS.has(normalizePlayerName(span.playerName))) {
     const role = auditedDefensiveRoles(span, stats)[0];

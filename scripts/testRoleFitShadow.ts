@@ -73,8 +73,11 @@ for (const [name, label] of [['Shane Battier', '2007-09'], ['Marcus Smart', '201
 
 const redick = players.find((player) => player.playerName === 'JJ Redick' && player.spanLabel === '2015-17');
 check(Boolean(redick), 'JJ Redick 2015-17 exists as a positive Off Screen control');
+const redickProfile = computeShadowRoleProfile(redick!, context);
+// Since the 2026-10-02 role audit his label itself reads Off Screen Shooter (taken from this same fit).
 check(
-  computeShadowRoleProfile(redick!, context).proposedOffensiveRoles.some((fit) => fit.role === 'Off Screen Shooter'),
+  redickProfile.incumbentOffensiveRole === 'Off Screen Shooter' ||
+    redickProfile.proposedOffensiveRoles.some((fit) => fit.role === 'Off Screen Shooter'),
   'JJ Redick 2015-17 remains an Off Screen proposal using measured PBP support',
 );
 

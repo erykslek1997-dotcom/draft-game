@@ -27,10 +27,13 @@ const isGuard = (s: PlayerSpan) => s.primaryPosition === 'PG' || s.primaryPositi
 export interface RoleAuditStats {
   blk: number; stl: number; reb: number; ast: number; fga: number; pts: number; tpa: number; tp: number;
   dtal: number; height: number; weight: number; athleticism: number | null; spacing: number;
+  /** Off Screen / Movement Shooter the play-by-play-backed shadow role fit supports, if any. */
+  measuredShooter?: OffensiveArchetype;
 }
 
-export function roleAuditStats(s: PlayerSpan): RoleAuditStats {
+export function roleAuditStats(s: PlayerSpan, measuredShooter?: OffensiveArchetype): RoleAuditStats {
   return {
+    measuredShooter,
     blk: per36(s.box.bpg, s), stl: per36(s.box.spg, s), reb: per36(s.box.rpg, s),
     ast: per36(s.box.apg, s), fga: per36(s.fga ?? 0, s), pts: per36(s.box.ppg, s),
     tpa: per36(s.box.threePA ?? 0, s), tp: s.box.threePct ?? 0,
@@ -67,10 +70,15 @@ function defenseCandidates(s: PlayerSpan, x: RoleAuditStats, k: number): Defensi
 }
 
 function offenseCandidates(s: PlayerSpan, x: RoleAuditStats, k: number): OffensiveArchetype[] {
-  const ast = x.ast + 0.5 * k, fga = x.fga + k, pts = x.pts + 1.5 * k, tpa = x.tpa + 0.5 * k, tp = x.tp + 0.02 * k;
+  const ast = x.ast + 0.75 * k, fga = x.fga + k, pts = x.pts + 1.5 * k, tpa = x.tpa + 0.5 * k, tp = x.tp + 0.02 * k;
   const out: OffensiveArchetype[] = [];
   if (isBig(s)) {
-    if (s.primaryPosition === 'PF' && fga >= 17 && pts >= 22 && (tpa >= 2 || k > 0)) out.push('Shot Creator');
+    // A high-volume four who takes threes but cannot make them (Giannis) attacks the rim off the
+    // dribble: Slasher, not Shot Creator. A four who never shoots threes (Karl Malone) is a post
+    // player and falls through to the big archetypes below.
+    const poorShooter = startYear(s) >= 1980 && x.tp < 0.32;
+    if (s.primaryPosition === 'PF' && fga >= 15 && x.tpa >= 1.5 && x.tpa < 5 + k && poorShooter) out.push('Slasher');
+    if (s.primaryPosition === 'PF' && fga >= 17 && pts >= 22 && (tpa >= 2 || k > 0) && !poorShooter) out.push('Shot Creator');
     if (ast >= 3.5) out.push('Versatile Big');
     if ((tpa >= 3 && tp >= 0.34) || (k > 0 && x.tpa >= 1.5 && x.tp >= 0.36)) out.push('Stretch Big');
     if (fga >= 12 && x.tpa < 1.5 + 0.5 * k) out.push('Post Scorer');
@@ -87,6 +95,7 @@ function offenseCandidates(s: PlayerSpan, x: RoleAuditStats, k: number): Offensi
   if (fga >= 17 && pts >= 22) out.push('Shot Creator');
   if (ast >= 4.5 && !out.includes('Primary Ball Handler')) out.push('Secondary Ball Handler');
   if (curatedShooter && tpa >= 3) out.push(s.offensiveArchetype);
+  else if (x.measuredShooter && tpa >= 3) out.push(x.measuredShooter);
   if (fga >= 13 && x.tpa < 3 + k) out.push('Slasher');
   if (tpa >= 5 && tp >= 0.36 && x.ast < 4.5 + 0.5 * k) out.push('Stationary Shooter');
   if (out.length === 0 || k > 0) out.push(x.spacing >= 60 - 5 * k ? 'Stationary Shooter' : 'Athletic Finisher');
