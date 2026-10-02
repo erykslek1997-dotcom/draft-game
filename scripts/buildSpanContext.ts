@@ -2,7 +2,7 @@
  * Writes src/data/spanContext.json — for every draft-pool span, the context the player actually
  * played in, read by `contextStats.ts` to re-scale his numbers to a new lineup:
  *   [teammates' three-point rate, usage rate, rim share of his two-point attempts, shot share of his
- *   plays], each x1000. The last is (FGA + 0.44 FTA) / (FGA + 0.44 FTA + TOV): usage counts turnovers
+ *   plays, free throws per field-goal attempt], each x1000. The last is (FGA + 0.44 FTA) / (FGA + 0.44 FTA + TOV): usage counts turnovers
  *   too, and a turnover-heavy point guard must not turn them into shots (2026-10-02, the user:
  *   "Stockton +4.5 ppg bez strat skuteczności wygląda sus").
  *
@@ -29,6 +29,7 @@ import usage from '../src/data/awards/usage.json';
 import baselines from '../src/data/awards/seasonBaselines.json';
 
 const ORIGINAL_SPACING_FLOOR = 0.15;
+const DEFAULT_FREE_THROW_RATE = 0.28;
 const RIM_SHARE_BY_POSITION: Record<string, number> = { PG: 0.42, SG: 0.42, SF: 0.5, PF: 0.6, C: 0.75 };
 const FGA_PER_POSSESSION = 0.87;
 
@@ -207,19 +208,35 @@ function shotShareOfPlays(span: PlayerSpan): number {
   return plays > 0 ? shots / plays : 1 - ASSUMED_TURNOVER_SHARE;
 }
 
+/** Free-throw attempts per field-goal attempt over the span's seasons (2026-10-02, the user: Kobe and
+ * McGrady at 54-55% TS — every player drew fouls at one league rate, which robbed the real foul
+ * drawers of a big part of their efficiency). */
+function freeThrowRate(span: PlayerSpan): number | null {
+  let fta = 0;
+  let fga = 0;
+  for (const end of spanEndYears(span.spanLabel)) {
+    const row = box.get(`${norm(span.playerName)}|${seasonOf(end)}`);
+    if (!row) continue;
+    fta += row.fta;
+    fga += row.fga;
+  }
+  return fga > 0 ? fta / fga : null;
+}
+
 function rimShareOfTwos(span: PlayerSpan): number {
   const zones = runtimeZoneTotalsForSpan(span);
   if (zones && zones.rimFga + zones.midFga > 0) return zones.rimFga / (zones.rimFga + zones.midFga);
   return RIM_SHARE_BY_POSITION[span.primaryPosition];
 }
 
-const out: Record<string, [number, number, number, number]> = {};
+const out: Record<string, [number, number, number, number, number]> = {};
 for (const span of [...draftPool].sort((a, b) => a.id.localeCompare(b.id))) {
   out[span.id] = [
     Math.round(teammatesThreeRate(span) * 1000),
     Math.round(usageRate(span) * 1000),
     Math.round(rimShareOfTwos(span) * 1000),
     Math.round(shotShareOfPlays(span) * 1000),
+    Math.round((freeThrowRate(span) ?? DEFAULT_FREE_THROW_RATE) * 1000),
   ];
 }
 writeFileSync(resolve(import.meta.dirname, '../src/data/spanContext.json'), `${JSON.stringify(out).replace(/\],"/g, '],\n"')}\n`);

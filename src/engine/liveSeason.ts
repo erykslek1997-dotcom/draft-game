@@ -51,6 +51,8 @@ export function gameScorePerGame(line: SeasonPlayerLine): number {
 /** Minimum share of the season a player must play to win an award. */
 const AWARD_MIN_GAMES = 58;
 const AWARD_MIN_MINUTES = 20;
+/** D-TAL points one point of team points allowed per game is worth in the DPOY vote. */
+const DPOY_POINTS_PER_ALLOWED = 3;
 
 /** The engine's own view of each team, to compare with how its season went: the score breakdown,
  * the rank by overall, and the wins the season projection expects over this schedule. */
@@ -156,7 +158,15 @@ export function simulateLiveSeason(teams: Team[], seed: string = String(Math.ran
     players,
     awards: {
       mvp: best(eligible, (l) => gameScorePerGame(l) * Math.sqrt(winPct.get(l.teamId) ?? 0)),
-      dpoy: best(eligible, (l) => computeDefensiveTalent(l.span) - 0.5 * ((pointsAllowed.get(l.teamId) ?? fewestAllowed) - fewestAllowed) + (l.totals.stl + l.totals.blk) / l.games),
+      // DPOY (2026-10-02, the user: "powinno oba"): his own defense AND his team's — D-TAL plus
+      // stocks, then the team's rank in points allowed weighs as much as a big D-TAL gap.
+      dpoy: best(
+        eligible,
+        (l) =>
+          computeDefensiveTalent(l.span) +
+          (2 * (l.totals.stl + l.totals.blk)) / l.games -
+          DPOY_POINTS_PER_ALLOWED * ((pointsAllowed.get(l.teamId) ?? fewestAllowed) - fewestAllowed),
+      ),
       sixthMan: best(eligible.filter((l) => !l.starter), gameScorePerGame),
     },
   };

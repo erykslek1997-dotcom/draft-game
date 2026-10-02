@@ -15,20 +15,20 @@ import { computeOffensiveTalent } from './talent';
  *   credited to the room itself (the user: "na ten moment połowa"), the rest to shot selection.
  * - The ball. The five's usage has to add up to 100%. Who keeps it is the engine's call (the user:
  *   "powinno zależeć od tego jak silnik ocenia skład"): each player's claim is his own usage
- *   weighted by his O-TAL against the five's best scorer, each held between 0.75x and 1.1x his own
+ *   weighted by his O-TAL against the five's best scorer, each held between 0.75x and 1.05x his own
  *   usage (never above 45%), what a capped player cannot take flowing to the others. A shot given up
  *   is a slightly better shot taken: +0.25 TS points per usage point.
  */
-const CONTEXT = contextData as unknown as Record<string, [number, number, number, number]>;
+const CONTEXT = contextData as unknown as Record<string, [number, number, number, number, number]>;
 
 const RIM_PER_SPACING = 0.108;
 const MID_PER_SPACING = 0.038;
 const TS_PER_USAGE = 0.25;
 const USAGE_OTAL_POWER = 1;
 const USAGE_MIN_SHARE = 0.75;
-const USAGE_MAX_GROWTH = 1.1;
+const USAGE_MAX_GROWTH = 1.05;
 const USAGE_MAX = 0.45;
-const DEFAULT_CONTEXT: [number, number, number, number] = [200, 200, 500, 880];
+const DEFAULT_CONTEXT: [number, number, number, number, number] = [200, 200, 500, 880, 280];
 
 export interface ContextLine {
   span: PlayerSpan;
@@ -44,9 +44,11 @@ export interface ContextLine {
   usageDelta: number;
   /** His weight when the five picks a shooter: usage minus the share of it that is turnovers. */
   shotWeight: number;
+  /** His real free-throw attempts per field-goal attempt. */
+  freeThrowRate: number;
 }
 
-function context(span: PlayerSpan): [number, number, number, number] {
+function context(span: PlayerSpan): [number, number, number, number, number] {
   return CONTEXT[span.id] ?? DEFAULT_CONTEXT;
 }
 
@@ -79,9 +81,14 @@ function splitUsage(five: PlayerSpan[]): number[] {
 
 /** Every player of a five, re-read for the other four. */
 export function contextLines(five: PlayerSpan[]): ContextLine[] {
-  const usage = splitUsage(five);
+  // The caps can leave the split short of (or over) 100%; the possessions are all used anyway, so
+  // each player's real share — and the efficiency cost of a bigger one — is his share of the total
+  // (2026-10-02: Kareem scored 31.5 beside four low-usage teammates at no cost).
+  const capped = splitUsage(five);
+  const total = capped.reduce((sum, u) => sum + u, 0) || 1;
+  const usage = capped.map((u) => u / total);
   return five.map((span, i) => {
-    const [originalSpacing, originalUsage, rimShare, shotShare] = context(span).map((v) => v / 1000);
+    const [originalSpacing, originalUsage, rimShare, shotShare, freeThrowRate] = context(span).map((v) => v / 1000);
     const spacing = modernSpacing(five.filter((_, j) => j !== i));
     const room = spacing - originalSpacing;
     return {
@@ -93,6 +100,7 @@ export function contextLines(five: PlayerSpan[]): ContextLine[] {
       twoPointDelta: room * (rimShare * RIM_PER_SPACING + (1 - rimShare) * MID_PER_SPACING),
       usageDelta: -TS_PER_USAGE * (usage[i] - originalUsage),
       shotWeight: usage[i] * shotShare,
+      freeThrowRate,
     };
   });
 }
