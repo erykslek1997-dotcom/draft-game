@@ -5,6 +5,7 @@ import { mulberry32, hashSeed } from './rng';
 import { gameWinProbability, projectMatchup } from './matchup';
 import { lineupTeam, scoreLineup, type Lineup } from './bestFive';
 import type { LegendFive } from './dailyMeta';
+import type { Team } from './types';
 import { contextLines } from './contextStats';
 
 /**
@@ -39,6 +40,8 @@ export interface BoxLineStats {
   ftm: number;
   fta: number;
   tov: number;
+  /** Minutes played (2026-10-02: full teams play their rotation). */
+  min: number;
 }
 
 export interface GamePlay {
@@ -111,7 +114,12 @@ const SHOOTING_FOUL = 0.09;
 const AND_ONE = 0.05;
 const OFF_REBOUND = 0.26;
 const ASSISTED = 0.6;
-const BLOCKED = 0.07;
+/** Assists go to the real passers: weight by assists per game to this power (2026-10-02 — linear
+ * weights spread them so evenly that Jokic averaged 5 and the league leader 9). */
+const ASSIST_WEIGHT_POWER = 1.6;
+// 2026-10-02: 0.07 gave a whole team ~1.8 blocks a game (an all-time season's leader 1.0); real
+// teams block ~5, on roughly a sixth of their opponents' missed twos.
+const BLOCKED = 0.17;
 /** Make-probability tilt per point of expected margin (calibrated in scripts/testLiveGame.ts). */
 const TILT_PER_POINT = 0.0066;
 /** A usage-driven change in true shooting moves three-point accuracy about two-thirds as much. */
@@ -154,11 +162,6 @@ interface Player {
   slot: Position;
   label: string;
   joker: boolean;
-  /** 2026-10-02: his numbers re-read for this five (`contextStats.ts`) — share of the shots and
-   * his two- and three-point percentages with the room and the usage he has here. */
-  shotShare: number;
-  twoPct: number;
-  threePct: number;
 }
 
 /**
@@ -189,6 +192,123 @@ export function simulateLiveGame(
   return game;
 }
 
+interface CourtPlayer {
+  player: Player;
+  /** His share of this five's shots and his percentages, re-read for this five (`contextStats.ts`). */
+  shotShare: number;
+  twoPct: number;
+  threePct: number;
+}
+
+interface GameRoster {
+  players: Player[];
+  /** Minutes each player is due at each slot (a five: 48 at his own slot). */
+  slotMinutes: Record<Position, { player: Player; minutes: number }[]>;
+  starters: Lineup;
+}
+
+function labelPlayers(spans: { span: PlayerSpan; slot: Position }[], joker: (s: PlayerSpan) => boolean): Player[] {
+  const names = new Map<string, number>();
+  for (const { span } of spans) names.set(lastName(span.playerName), (names.get(lastName(span.playerName)) ?? 0) + 1);
+  return spans.map(({ span, slot }) => ({
+    span,
+    slot,
+    label: (names.get(lastName(span.playerName)) ?? 0) > 1 ? span.playerName : lastName(span.playerName),
+    joker: joker(span),
+  }));
+}
+
+function rosterFromFive(five: Lineup, joker: (s: PlayerSpan) => boolean): GameRoster {
+  const players = labelPlayers(STARTER_SLOTS.map((slot) => ({ span: five[slot]!, slot })), joker);
+  const slotMinutes = {} as GameRoster['slotMinutes'];
+  STARTER_SLOTS.forEach((slot, i) => (slotMinutes[slot] = [{ player: players[i], minutes: 48 }]));
+  return { players, slotMinutes, starters: five };
+}
+
+/** 2026-10-02, stage 2: a full team plays its rotation — each slot's minutes as the engine set them. */
+function rosterFromTeam(team: Team): GameRoster {
+  const byId = new Map(team.roster.map((span) => [span.id, span]));
+  const order: { span: PlayerSpan; slot: Position }[] = [];
+  const seen = new Set<string>();
+  for (const slot of STARTER_SLOTS) {
+    for (const a of team.rotation?.slots[slot] ?? []) {
+      const span = byId.get(a.playerId);
+      if (span && !seen.has(span.id)) {
+        seen.add(span.id);
+        order.push({ span, slot });
+      }
+    }
+  }
+  const players = labelPlayers(order, () => false);
+  const playerById = new Map(players.map((p) => [p.span.id, p]));
+  const slotMinutes = {} as GameRoster['slotMinutes'];
+  const starters: Lineup = {};
+  for (const slot of STARTER_SLOTS) {
+    slotMinutes[slot] = (team.rotation?.slots[slot] ?? [])
+      .filter((a) => a.minutes > 0 && playerById.has(a.playerId))
+      .map((a) => ({ player: playerById.get(a.playerId)!, minutes: a.minutes }));
+    if (slotMinutes[slot][0]) starters[slot] = slotMinutes[slot][0].player.span;
+  }
+  return { players, slotMinutes, starters };
+}
+
+/** Substitutions: before each possession every slot keeps its man unless another is clearly more
+ * due (more of his minutes left, by `SUB_MARGIN`); nobody plays two slots at once, and the
+ * starters open the game. Each player ends close to the minutes the rotation gave him. */
+const SUB_MARGIN = 2;
+
+class Bench {
+  private roster: GameRoster;
+  private left: Map<Position, Map<Player, number>>;
+  private court = new Map<Position, Player>();
+  constructor(roster: GameRoster) {
+    this.roster = roster;
+    this.left = new Map(STARTER_SLOTS.map((slot) => [slot, new Map(roster.slotMinutes[slot].map((e) => [e.player, e.minutes]))]));
+  }
+  next(minutes: number): Player[] {
+    const taken = new Set<Player>();
+    const five: Player[] = [];
+    for (const slot of STARTER_SLOTS) {
+      const left = this.left.get(slot)!;
+      const current = this.court.get(slot);
+      let best: Player | undefined;
+      let bestLeft = -Infinity;
+      for (const [player, remaining] of left) {
+        if (taken.has(player)) continue;
+        if (remaining > bestLeft) {
+          best = player;
+          bestLeft = remaining;
+        }
+      }
+      let pick = best;
+      if (current && !taken.has(current) && (left.get(current) ?? 0) > 0 && bestLeft - (left.get(current) ?? 0) < SUB_MARGIN) pick = current;
+      if (!pick) pick = this.roster.players.find((p) => !taken.has(p));
+      if (!pick) continue;
+      taken.add(pick);
+      five.push(pick);
+      this.court.set(slot, pick);
+      if (left.has(pick)) left.set(pick, (left.get(pick) ?? 0) - minutes);
+    }
+    return five;
+  }
+}
+
+function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlayer[] {
+  const key = five.map((p) => p.span.id).join('|');
+  let court = cache.get(key);
+  if (!court) {
+    const lines = contextLines(five.map((p) => p.span));
+    court = five.map((player, i) => ({
+      player,
+      shotShare: lines[i].usage,
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + lines[i].twoPointDelta + lines[i].usageDelta)),
+      threePct: Math.max(0.15, Math.min(0.5, player.span.box.threePct + lines[i].usageDelta * THREE_PCT_PER_TS)),
+    }));
+    cache.set(key, court);
+  }
+  return court;
+}
+
 function playGame(
   yours: Lineup,
   legends: Lineup,
@@ -196,52 +316,60 @@ function playGame(
   seed: string,
   jokerId?: string,
 ): LiveGameResult {
+  return playRosters([rosterFromFive(yours, (s) => s.id === jokerId), rosterFromFive(legends, () => false)], margin, seed, true);
+}
+
+/**
+ * 2026-10-02, stage 2 (season on the live engine): two full teams play their rotations. No
+ * clear-favourite retakes — upsets happen. `record: false` skips the play-by-play (a season plays
+ * hundreds of these).
+ */
+export function playTeamGame(
+  a: Team,
+  b: Team,
+  margin: number,
+  seed: string,
+  /** `weakLinks`: each team's weakest defender (`teamWeakLink`), precomputed — a season reuses it. */
+  options: { record?: boolean; weakLinks?: [string | null, string | null] } = {},
+): LiveGameResult {
+  return playRosters([rosterFromTeam(a), rosterFromTeam(b)], margin, seed, options.record ?? true, options.weakLinks);
+}
+
+/** The starting five's weakest defender, the man the other side hunts. */
+export function teamWeakLink(team: Team): string | null {
+  return scoreLineup(rosterFromTeam(team).starters).weakLink;
+}
+
+const emptyLine = (): BoxLineStats => ({ pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0, min: 0 });
+
+function playRosters(
+  rosters: [GameRoster, GameRoster],
+  margin: number,
+  seed: string,
+  record: boolean,
+  weakLinks?: [string | null, string | null],
+): LiveGameResult {
   const rng = mulberry32(hashSeed(`${seed}:game`));
-  const sides: [Player[], Player[]] = [[], []];
-  const lineups = [yours, legends];
-  for (const side of [0, 1] as GameSide[]) {
-    const names = new Map<string, number>();
-    for (const slot of STARTER_SLOTS) {
-      const s = lineups[side][slot]!;
-      names.set(lastName(s.playerName), (names.get(lastName(s.playerName)) ?? 0) + 1);
-    }
-    for (const slot of STARTER_SLOTS) {
-      const s = lineups[side][slot]!;
-      const short = lastName(s.playerName);
-      sides[side].push({
-        span: s,
-        slot,
-        label: (names.get(short) ?? 0) > 1 ? s.playerName : short,
-        joker: side === 0 && s.id === jokerId,
-        shotShare: 0,
-        twoPct: 0,
-        threePct: 0,
-      });
-    }
-    const lines = contextLines(sides[side].map((p) => p.span));
-    sides[side].forEach((p, i) => {
-      const line = lines[i];
-      p.shotShare = line.usage;
-      p.twoPct = Math.max(0.3, Math.min(0.72, twoPointPct(p.span) + line.twoPointDelta + line.usageDelta));
-      p.threePct = Math.max(0.15, Math.min(0.5, p.span.box.threePct + line.usageDelta * THREE_PCT_PER_TS));
-    });
-  }
+  const courts = [new Map<string, CourtPlayer[]>(), new Map<string, CourtPlayer[]>()];
+  const starterFive = (r: GameRoster) => STARTER_SLOTS.map((slot) => r.slotMinutes[slot][0]?.player).filter((p): p is Player => Boolean(p));
+  const starting = [courtFor(courts[0], starterFive(rosters[0])), courtFor(courts[1], starterFive(rosters[1]))];
+  const benches = [new Bench(rosters[0]), new Bench(rosters[1])];
   // Level the two box scores first — the model's margin, not raw shooting numbers from different
   // eras, decides the game — then tilt by that margin. Free throws aren't scaled, so the field-goal
-  // scale is solved for equal expected points per shot including them.
-  const perShot = (team: Player[]) => {
-    const shots = team.reduce((sum, p) => sum + p.shotShare, 0) || 1;
+  // scale is solved for equal expected points per shot including them. Read off the starting fives.
+  const perShot = (team: CourtPlayer[]) => {
+    const shots = team.reduce((sum, c) => sum + c.shotShare, 0) || 1;
     let field = 0;
     let line = 0;
-    for (const p of team) {
-      const b = p.span.box;
-      const r3 = Math.min(0.9, b.threePA / Math.max(1, p.span.fga));
-      field += (p.shotShare / shots) * (1 - SHOOTING_FOUL) * (r3 * 3 * p.threePct + (1 - r3) * 2 * p.twoPct * (1 + (AND_ONE * b.ftPct) / 2));
-      line += (p.shotShare / shots) * SHOOTING_FOUL * (r3 * 3 + (1 - r3) * 2) * b.ftPct;
+    for (const c of team) {
+      const b = c.player.span.box;
+      const r3 = Math.min(0.9, b.threePA / Math.max(1, c.player.span.fga));
+      field += (c.shotShare / shots) * (1 - SHOOTING_FOUL) * (r3 * 3 * c.threePct + (1 - r3) * 2 * c.twoPct * (1 + (AND_ONE * b.ftPct) / 2));
+      line += (c.shotShare / shots) * SHOOTING_FOUL * (r3 * 3 + (1 - r3) * 2) * b.ftPct;
     }
     return { field, line };
   };
-  const eps = [perShot(sides[0]), perShot(sides[1])];
+  const eps = [perShot(starting[0]), perShot(starting[1])];
   const level = (eps[0].field + eps[0].line + eps[1].field + eps[1].line) / 2;
   const tilt = margin * TILT_PER_POINT;
   const makeScale: [number, number] = [
@@ -249,21 +377,29 @@ function playGame(
     ((level - eps[1].line) / eps[1].field) * (1 - tilt),
   ];
   const box: [Record<string, BoxLineStats>, Record<string, BoxLineStats>] = [{}, {}];
-  for (const side of [0, 1] as GameSide[]) for (const p of sides[side]) box[side][p.label] = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0 };
-  const hunted = [scoreLineup(legends).weakLink, scoreLineup(yours).weakLink];
+  for (const side of [0, 1] as GameSide[]) for (const p of rosters[side].players) box[side][p.label] = emptyLine();
+  const hunted = weakLinks ? [weakLinks[1], weakLinks[0]] : [scoreLineup(rosters[1].starters).weakLink, scoreLineup(rosters[0].starters).weakLink];
   const score: [number, number] = [0, 0];
   const quarters: [number[], number[]] = [[0, 0, 0, 0], [0, 0, 0, 0]];
   const moments: GameMoment[] = [];
   const snapshot = (): [BoxLineStats[], BoxLineStats[]] => [
-    sides[0].map((p) => ({ ...box[0][p.label] })),
-    sides[1].map((p) => ({ ...box[1][p.label] })),
+    rosters[0].players.map((p) => ({ ...box[0][p.label] })),
+    rosters[1].players.map((p) => ({ ...box[1][p.label] })),
   ];
+  const possessionMinutes = GAME_SECONDS / POSSESSIONS / 60;
+  let lastCourt: [CourtPlayer[], CourtPlayer[]] = [starting[0], starting[1]];
 
   for (let k = 0; k < POSSESSIONS; k++) {
+    const both: [CourtPlayer[], CourtPlayer[]] = [
+      courtFor(courts[0], benches[0].next(possessionMinutes)),
+      courtFor(courts[1], benches[1].next(possessionMinutes)),
+    ];
+    lastCourt = both;
+    for (const side of [0, 1] as GameSide[]) for (const c of both[side]) box[side][c.player.label].min += possessionMinutes;
     const o = (k % 2) as GameSide;
     const d = (1 - o) as GameSide;
-    const off = sides[o];
-    const def = sides[d];
+    const off = both[o];
+    const def = both[d].map((c) => c.player);
     const quarter = Math.min(3, Math.floor((k * 4) / POSSESSIONS));
     let play: GamePlay | null = null;
     let pts = 0;
@@ -271,16 +407,17 @@ function playGame(
       if (rng() < TURNOVER) {
         if (rng() < 0.55) {
           const thief = pickWeighted(rng, def, (p) => p.span.box.spg + 0.2);
-          const lost = pickWeighted(rng, off, (p) => p.span.fga);
+          const lost = pickWeighted(rng, off, (c) => c.shotShare).player;
           box[d][thief.label].stl++;
           box[o][lost.label].tov++;
           play = { side: d, text: `${thief.label} steals it from ${lost.label}`, joker: thief.joker, quiet: false };
         } else {
-          box[o][pickWeighted(rng, off, (p) => p.span.fga + p.span.box.apg).label].tov++;
+          box[o][pickWeighted(rng, off, (c) => c.shotShare + c.player.span.box.apg / 40).player.label].tov++;
         }
         break;
       }
-      const shooter = pickWeighted(rng, off, (p) => p.shotShare);
+      const shot = pickWeighted(rng, off, (c) => c.shotShare);
+      const shooter = shot.player;
       const line = box[o][shooter.label];
       const b = shooter.span.box;
       const three = rng() < Math.min(0.9, b.threePA / Math.max(1, shooter.span.fga));
@@ -297,7 +434,7 @@ function playGame(
       }
       line.fga++;
       if (three) line.tpa++;
-      const p = (three ? shooter.threePct : shooter.twoPct) * makeScale[o];
+      const p = (three ? shot.threePct : shot.twoPct) * makeScale[o];
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
@@ -323,7 +460,7 @@ function playGame(
         }
         let joker = shooter.joker;
         if (rng() < ASSISTED) {
-          const passer = pickWeighted(rng, off.filter((x) => x !== shooter), (x) => x.span.box.apg + 0.3);
+          const passer = pickWeighted(rng, off.filter((x) => x.player !== shooter), (x) => x.player.span.box.apg ** ASSIST_WEIGHT_POWER + 0.3).player;
           box[o][passer.label].ast++;
           text += ` (${passer.label} assist)`;
           joker = joker || passer.joker;
@@ -337,7 +474,7 @@ function playGame(
         play = { side: d, text: `${blocker.label} blocks ${shooter.label}`, joker: blocker.joker, quiet: false };
       }
       if (rng() < OFF_REBOUND) {
-        box[o][pickWeighted(rng, off, (x) => x.span.box.rpg).label].reb++;
+        box[o][pickWeighted(rng, off, (x) => x.player.span.box.rpg).player.label].reb++;
         continue;
       }
       box[d][pickWeighted(rng, def, (x) => x.span.box.rpg).label].reb++;
@@ -345,39 +482,43 @@ function playGame(
     }
     score[o] += pts;
     quarters[o][quarter] += pts;
-    moments.push({ left: Math.max(0, GAME_SECONDS - ((k + 1) * GAME_SECONDS) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
+    if (record) moments.push({ left: Math.max(0, GAME_SECONDS - ((k + 1) * GAME_SECONDS) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
   }
   // Overtime would need more possessions; a tie goes to whoever the model favours, on a last shot.
   if (score[0] === score[1]) {
     const o: GameSide = margin >= 0 ? 0 : 1;
-    const shooter = pickWeighted(rng, sides[o], (p) => p.span.fga);
+    const shooter = pickWeighted(rng, lastCourt[o], (c) => c.shotShare).player;
     box[o][shooter.label].pts += 2;
     box[o][shooter.label].fgm++;
     box[o][shooter.label].fga++;
     score[o] += 2;
     quarters[o][3] += 2;
-    moments.push({
-      left: 0,
-      quarter: 3,
-      score: [score[0], score[1]],
-      play: { side: o, text: `${shooter.label} at the buzzer — game winner`, joker: shooter.joker, quiet: false },
-      lines: snapshot(),
-    });
+    if (record)
+      moments.push({
+        left: 0,
+        quarter: 3,
+        score: [score[0], score[1]],
+        play: { side: o, text: `${shooter.label} at the buzzer — game winner`, joker: shooter.joker, quiet: false },
+        lines: snapshot(),
+      });
   }
+  for (const side of [0, 1] as GameSide[]) for (const p of rosters[side].players) box[side][p.label].min = Math.round(box[side][p.label].min);
 
-  const starOf = sides[0].reduce((best, p) => {
+  const mine = rosters[0].players;
+  const starOf = mine.reduce((best, p) => {
     const l = box[0][p.label];
     const bl = box[0][best.label];
     return l.pts + l.reb + l.ast > bl.pts + bl.reb + bl.ast ? p : best;
-  }, sides[0][0]);
+  }, mine[0]);
   const star = { name: starOf.label, line: box[0][starOf.label] };
   const won = score[0] > score[1];
+  const labelOf = (side: GameSide, name: string) => rosters[side].players.find((p) => p.span.playerName === name)?.label ?? name;
   const recap = won
     ? hunted[0]
-      ? `${star.name} led the way, and your five kept going at ${sides[1].find((p) => p.span.playerName === hunted[0])?.label ?? hunted[0]} on defense.`
+      ? `${star.name} led the way, and your five kept going at ${labelOf(1, hunted[0])} on defense.`
       : `${star.name} led the way — the five played like one.`
     : hunted[1]
-      ? `They kept hunting ${sides[0].find((p) => p.span.playerName === hunted[1])?.label ?? hunted[1]} on defense, and it cost you.`
+      ? `They kept hunting ${labelOf(0, hunted[1])} on defense, and it cost you.`
       : `They were the better team tonight — ${star.name} did what he could.`;
   return {
     moments,
@@ -385,9 +526,9 @@ function playGame(
     quarters,
     box,
     expectedMargin: margin,
-    players: [sides[0].map((p) => p.span), sides[1].map((p) => p.span)],
-    labels: [sides[0].map((p) => p.label), sides[1].map((p) => p.label)],
-    jokerLabel: sides[0].find((p) => p.joker)?.label ?? null,
+    players: [rosters[0].players.map((p) => p.span), rosters[1].players.map((p) => p.span)],
+    labels: [rosters[0].players.map((p) => p.label), rosters[1].players.map((p) => p.label)],
+    jokerLabel: mine.find((p) => p.joker)?.label ?? null,
     star,
     recap,
   };

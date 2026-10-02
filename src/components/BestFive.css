@@ -1016,3 +1016,48 @@
 .bench-team .bench-sub {
   opacity: 0.65;
 }
+.bench-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+.bench-season-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 8px 0 16px;
+}
+.bench-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.bench-link.is-active,
+.bf-btn.is-active {
+  font-weight: 800;
+  text-decoration: underline;
+}
+.bench-awards {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0;
+  font-size: 0.9rem;
+}
+.bench-awards b {
+  display: inline-block;
+  width: 3.4em;
+}
+.bench-hint,
+.bench-real {
+  opacity: 0.6;
+  font-size: 0.85em;
+}
+.bench-players td {
+  white-space: nowrap;
+}

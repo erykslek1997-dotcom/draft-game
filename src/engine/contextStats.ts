@@ -15,7 +15,7 @@ import { computeOffensiveTalent } from './talent';
  *   credited to the room itself (the user: "na ten moment połowa"), the rest to shot selection.
  * - The ball. The five's usage has to add up to 100%. Who keeps it is the engine's call (the user:
  *   "powinno zależeć od tego jak silnik ocenia skład"): each player's claim is his own usage
- *   weighted by his O-TAL against the five's best scorer, each held between half and 1.25x his own
+ *   weighted by his O-TAL against the five's best scorer, each held between 0.6x and 1.15x his own
  *   usage (never above 45%), what a capped player cannot take flowing to the others. A shot given up
  *   is a slightly better shot taken: +0.25 TS points per usage point.
  */
@@ -24,9 +24,9 @@ const CONTEXT = contextData as unknown as Record<string, [number, number, number
 const RIM_PER_SPACING = 0.108;
 const MID_PER_SPACING = 0.038;
 const TS_PER_USAGE = 0.25;
-const USAGE_OTAL_POWER = 2;
-const USAGE_MIN_SHARE = 0.5;
-const USAGE_MAX_GROWTH = 1.25;
+const USAGE_OTAL_POWER = 1;
+const USAGE_MIN_SHARE = 0.6;
+const USAGE_MAX_GROWTH = 1.15;
 const USAGE_MAX = 0.45;
 const DEFAULT_CONTEXT: [number, number, number] = [200, 200, 500];
 

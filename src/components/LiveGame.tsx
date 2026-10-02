@@ -243,7 +243,7 @@ export default function LiveGame({
 }
 
 function zero(): BoxLineStats {
-  return { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0 };
+  return { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0, min: 0 };
 }
 
 function QuarterRow({ name, q, total, upto }: { name: string; q: number[]; total: number; upto: number }) {
@@ -267,6 +267,7 @@ function BoxTable({ title, labels, lines, joker, star }: { title: string; labels
   const pct = (made: number, att: number) => (att > 0 ? `${Math.round((100 * made) / att)}%` : '—');
   const row = (l: BoxLineStats) => (
     <>
+      <td>{Math.round(l.min)}</td>
       <td>{l.pts}</td>
       <td>{l.reb}</td>
       <td>{l.ast}</td>
@@ -291,6 +292,7 @@ function BoxTable({ title, labels, lines, joker, star }: { title: string; labels
         <thead>
           <tr>
             <th scope="col">Player</th>
+            <th scope="col">MIN</th>
             <th scope="col">PTS</th>
             <th scope="col">REB</th>
             <th scope="col">AST</th>
@@ -324,7 +326,7 @@ function BoxTable({ title, labels, lines, joker, star }: { title: string; labels
           </tr>
           <tr className="bf-live-pct">
             <th scope="row" />
-            <td colSpan={6} />
+            <td colSpan={7} />
             <td>{pct(total.fgm, total.fga)}</td>
             <td>{pct(total.tpm, total.tpa)}</td>
             <td>{pct(total.ftm, total.fta)}</td>
