@@ -177,6 +177,13 @@ const THREE_PCT_PER_TS = 0.67;
  */
 const MAX_CONTEXT_GAIN = 0.02;
 const contextGain = (delta: number) => Math.min(MAX_CONTEXT_GAIN, delta);
+/**
+ * 2026-10-02, the user: "więcej minut = gorsza skuteczność". Past `FRESH_MINUTES` in a game, each
+ * minute takes this share off a player's chance to make a shot.
+ */
+const FRESH_MINUTES = 34;
+const FATIGUE_PER_MINUTE = 0.01;
+const fatigue = (minutes: number) => 1 - FATIGUE_PER_MINUTE * Math.max(0, minutes - FRESH_MINUTES);
 
 const BIG_MOVES = ['layup', 'dunk', 'hook shot', 'putback'];
 const WING_MOVES = ['pull-up jumper', 'driving layup', 'floater', 'mid-range jumper'];
@@ -411,14 +418,19 @@ function playRosters(
   const benches = [new Bench(rosters[0]), new Bench(rosters[1])];
   const schedule: [CourtPlayer[][], CourtPlayer[][]] = [[], []];
   for (let k = 0; k < POSSESSIONS; k++) for (const side of [0, 1] as GameSide[]) schedule[side].push(courtFor(courts[side], benches[side].next(possessionMinutes)));
-  const perShot = (team: CourtPlayer[]) => {
+  const tired = ([0, 1] as GameSide[]).map((side) => {
+    const minutes = new Map<string, number>();
+    for (const court of schedule[side]) for (const c of court) minutes.set(c.player.label, (minutes.get(c.player.label) ?? 0) + possessionMinutes);
+    return new Map([...minutes].map(([label, m]) => [label, fatigue(m)]));
+  });
+  const perShot = (team: CourtPlayer[], side: GameSide) => {
     const shots = team.reduce((sum, c) => sum + c.shotShare, 0) || 1;
     let field = 0;
     let line = 0;
     for (const c of team) {
       const b = c.player.span.box;
       const r3 = Math.min(0.9, b.threePA / Math.max(1, c.player.span.fga));
-      field += (c.shotShare / shots) * (1 - c.foul) * (r3 * 3 * c.threePct + (1 - r3) * 2 * c.twoPct * (1 + (AND_ONE * b.ftPct) / 2));
+      field += (c.shotShare / shots) * (tired[side].get(c.player.label) ?? 1) * (1 - c.foul) * (r3 * 3 * c.threePct + (1 - r3) * 2 * c.twoPct * (1 + (AND_ONE * b.ftPct) / 2));
       line += (c.shotShare / shots) * c.foul * (r3 * 3 + (1 - r3) * 2) * b.ftPct;
     }
     return { field, line };
@@ -435,7 +447,7 @@ function playRosters(
     let n = 0;
     schedule[side].forEach((court, k) => {
       if (k % 2 !== side) return;
-      const e = perShot(court);
+      const e = perShot(court, side);
       field += e.field;
       line += e.line;
       n++;
@@ -512,7 +524,7 @@ function playRosters(
       }
       line.fga++;
       if (three) line.tpa++;
-      const p = (three ? shot.threePct : shot.twoPct) * makeScale[o];
+      const p = (three ? shot.threePct : shot.twoPct) * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
