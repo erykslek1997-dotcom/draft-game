@@ -239,7 +239,20 @@ Decyzje (2026-09-30):
       w skuteczność (+0.25 TS za punkt usage) i asysty (jego asysty na rzut). Potem kontekst składu
       (`contextStats.ts`). Wynik: Kobe 2005-07 33.5 pkt, Curry 2014-16 28.7 pkt, Wilt 1966-68 16.4 zb;
       kalibracja sezonu bez zmian (RMSE ~4.5 W).
-- [ ] **Paczka „mecz na żywo 2” — zaakceptowana 2026-10-02, czeka na „start”** (M–L). Raport
+- [ ] **Etap 2b: silnik ↔ symulacja (korelacja w obie strony)** — decyzja 2026-10-02: „wszystko co
+      liczy silnik powinno mieć odzwierciedlenie w symulacji” i odwrotnie (co dzieje się w meczu,
+      silnik bierze pod uwagę). Miernik: wielkość wyrównania meczu do marginesu silnika — dąży do
+      zera, gdy same mechaniki meczu dają wynik silnika. Każdy etap: raport przed/po + akceptacja.
+  - **Etap 0: pomiar (bez zmian w kodzie)** — wagi składników; korelacja każdego składnika z jego
+    statystyką (silnik → symulacja); sezony bez wyrównania: ile wyniku dają same mechaniki, który
+    składnik symulacja potwierdza (symulacja → silnik); wielkość wyrównania jako start. — W TOKU.
+  - **Etap 1: fundamenty meczu** — paczka 2 niżej: pkt 1, 2, 3, 4, 6 + trzy poprawki z brancha.
+  - **Etap 2: kanały ataku** — margines rozbity na kanały: spacing, rim pressure (rzuty spod
+    kosza, wolne), kreacja (asysty, straty składu = pkt 5), self-creation, pairing, kilku graczy
+    potrzebujących piłki; czego silnik nie liczy (np. straty) — dodać do silnika.
+  - **Etap 3: kanały obrony** — obręcz, obwód, przechwyty, ogrywanie słabszego obrońcy, zbiórka.
+  - **Etap 4: testy obu kierunków w `npm test`** — korelacje składników + wielkość wyrównania.
+- [ ] **Paczka „mecz na żywo 2” (= etap 1 i część etapu 2 wyżej) — zaakceptowana 2026-10-02** (M–L). Raport
       przed/po przed merge'em. Na branchu (bez merge'a) czekają już: limit +2 pkt z kontekstu,
       udział w akcjach ponad realny tylko w słabym otoczeniu, liniowe zmęczenie od 36 min (1%/min).
   1. **Rosnąca krzywa zmęczenia, wspólna dla meczu i rotacji** — „im więcej minut, tym większa
