@@ -7,6 +7,7 @@ import { lineupTeam, scoreLineup, type Lineup } from './bestFive';
 import type { LegendFive } from './dailyMeta';
 import type { Team } from './types';
 import { contextLines } from './contextStats';
+import { modernBox } from './modernBox';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 
 /**
@@ -152,7 +153,8 @@ function rates(span: PlayerSpan) {
   let r = rateCache.get(span);
   if (!r) {
     const k = 36 / (estimatedMinutesPerGame(span) ?? 36);
-    r = { reb: span.box.rpg * k, ast: span.box.apg * k * (PASSING_HUBS[span.playerName] ?? 1), stl: span.box.spg * k, blk: span.box.bpg * k };
+    const m = modernBox(span);
+    r = { reb: m.rpg * k, ast: m.apg * k * (PASSING_HUBS[span.playerName] ?? 1), stl: m.spg * k, blk: m.bpg * k };
     rateCache.set(span, r);
   }
   return r;
@@ -193,12 +195,9 @@ function pickWeighted<T>(rng: () => number, items: T[], weight: (t: T) => number
   return items[items.length - 1];
 }
 
+/** His two-point % in today's game (`modernBox.ts`). */
 function twoPointPct(s: PlayerSpan): number {
-  const b = s.box;
-  const threeA = Math.min(b.threePA, s.fga * 0.9);
-  const twoA = s.fga - threeA;
-  if (twoA <= 0.5) return 0.45;
-  return Math.max(0.35, Math.min(0.68, (s.fga * b.fgPct - threeA * b.threePct) / twoA));
+  return Math.max(0.35, Math.min(0.68, modernBox(s).twoPct));
 }
 
 interface Player {
@@ -349,7 +348,7 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       shotShare: lines[i].shotWeight,
       foul: foulChance(lines[i].freeThrowRate),
       twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + lines[i].twoPointDelta + lines[i].usageDelta + lines[i].playmakingDelta)),
-      threePct: Math.max(0.15, Math.min(0.5, player.span.box.threePct + (lines[i].usageDelta + lines[i].playmakingDelta) * THREE_PCT_PER_TS)),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + (lines[i].usageDelta + lines[i].playmakingDelta) * THREE_PCT_PER_TS)),
     }));
     cache.set(key, court);
   }
