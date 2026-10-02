@@ -1,4 +1,5 @@
 import { players } from '../data/players';
+import { rimProtectionByNumbers } from './rimProtection';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import {
   HIGH_USAGE_ARCHETYPE_WEIGHT,
@@ -129,6 +130,11 @@ export const SPACING_BOTTLENECK_SCALE = 0.5;
  * penalty and the cohesion bonus), so a strong defense was scored twice. Both stay visible as
  * components but carry no Fit weight; their share goes to the lineup-coherence terms.
  */
+/** A big without a rim-protector label is credited this share of his rim reading by the numbers. */
+const UNLABELLED_RIM_SHARE = 0.9;
+/** Weight of the tie-break in the defensive layer assignment: a fraction of a point per D-TAL. */
+const LAYER_TIE_BREAK = 0.01;
+
 export const FIT_WEIGHTS = {
   creationStructure: 0.18,
   pairingStructure: 0.13,
@@ -845,15 +851,15 @@ export function fitScore(team: Team): FitScoreResult {
     notes.push('Rim gravity does not have enough shooting support.');
   }
 
-  const guardCandidates = profiles.map((profile, index) => ({
+  const guardRaw = profiles.map((profile, index) => ({
     player: starters[index],
     confirmed: profile.incumbentDefensiveRole === 'Point of Attack' || profile.incumbentDefensiveRole === 'Chaser',
     score: Math.max(
       defensiveRoleScore(profile, ['Point of Attack']),
       defensiveRoleScore(profile, ['Chaser']) * 0.85,
     ),
-  })).sort((a, b) => b.score - a.score || Number(b.confirmed) - Number(a.confirmed));
-  const wingCandidates = profiles.map((profile, index) => ({
+  }));
+  const wingRaw = profiles.map((profile, index) => ({
     player: starters[index],
     confirmed: profile.incumbentDefensiveRole === 'Wing Stopper',
     score: Math.max(
@@ -863,12 +869,50 @@ export function fitScore(team: Team): FitScoreResult {
       defensiveRoleScore(profile, ['Switch Big']) * 0.9,
       defensiveRoleScore(profile, ['Helper']) * 0.65,
     ),
-  })).sort((a, b) => b.score - a.score || Number(b.confirmed) - Number(a.confirmed));
-  const rimCandidates = profiles.map((profile, index) => ({
-    player: starters[index],
-    confirmed: profile.incumbentDefensiveRole === 'Anchor Big' || profile.incumbentDefensiveRole === 'Mobile Big',
-    score: defensiveRoleScore(profile, ['Anchor Big', 'Mobile Big', 'Switch Big']),
-  })).sort((a, b) => b.score - a.score || Number(b.confirmed) - Number(a.confirmed));
+  }));
+  // 2026-10-02, the user (Dirk read as a rim protector beside Jokić): rim protection is read from
+  // blocks and D-TAL (rimProtection.ts); the role label can lower that reading, never raise it, and a
+  // big without the label still protects the rim if his numbers say so.
+  const rimRaw = profiles.map((profile, index) => {
+    const player = starters[index];
+    const roleScore = defensiveRoleScore(profile, ['Anchor Big', 'Mobile Big', 'Switch Big']);
+    const byNumbers = rimProtectionByNumbers(player);
+    const isBig = starterEntries[index].slot === 'PF' || starterEntries[index].slot === 'C';
+    const score =
+      byNumbers === null ? roleScore : Math.max(Math.min(roleScore, byNumbers), isBig ? byNumbers * UNLABELLED_RIM_SHARE : 0);
+    return {
+      player,
+      confirmed: profile.incumbentDefensiveRole === 'Anchor Big' || profile.incumbentDefensiveRole === 'Mobile Big',
+      score,
+    };
+  });
+  // 2026-10-02, the user (Kevin Garnett as both the wing and the rim; Derrick White as the wing over
+  // Shawn Marion): the three layers go to three different starters, the assignment with the best
+  // total; a near-tie goes to the better defender, and the wing to a real forward over a guard.
+  const tieBreak = (index: number, layer: 'guard' | 'wing' | 'rim') =>
+    computeDefensiveTalent(starters[index]) * LAYER_TIE_BREAK +
+    (layer === 'wing' && (starterEntries[index].slot === 'SF' || starterEntries[index].slot === 'PF') ? LAYER_TIE_BREAK * 50 : 0);
+  let bestLayers: [number, number, number] | null = null;
+  let bestLayerScore = -Infinity;
+  for (let g = 0; g < starters.length; g++) {
+    for (let w = 0; w < starters.length; w++) {
+      if (w === g) continue;
+      for (let r = 0; r < starters.length; r++) {
+        if (r === g || r === w) continue;
+        const total =
+          guardRaw[g].score + wingRaw[w].score + rimRaw[r].score + tieBreak(g, 'guard') + tieBreak(w, 'wing') + tieBreak(r, 'rim');
+        if (total > bestLayerScore) {
+          bestLayerScore = total;
+          bestLayers = [g, w, r];
+        }
+      }
+    }
+  }
+  const leadWith = <T extends { score: number }>(list: T[], index: number | undefined) =>
+    index === undefined ? [...list].sort((a, b) => b.score - a.score) : [list[index], ...list.filter((_, i) => i !== index)];
+  const guardCandidates = leadWith(guardRaw, bestLayers?.[0]);
+  const wingCandidates = leadWith(wingRaw, bestLayers?.[1]);
+  const rimCandidates = leadWith(rimRaw, bestLayers?.[2]);
   const guardContainment = guardCandidates[0]?.score ?? 0;
   const wingCoverage = wingCandidates[0]?.score ?? 0;
   const rimProtection = rimCandidates[0]?.score ?? 0;

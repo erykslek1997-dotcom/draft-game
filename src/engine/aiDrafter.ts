@@ -1,6 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
+import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
   STARTER_SLOTS,
@@ -656,7 +657,8 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
       starterPlayers.length === 0
         ? 50
         : starterPlayers.reduce((sum, p) => sum + computeSpacing(p), 0) / starterPlayers.length,
-    lacksRimProtection: !starterPlayers.some((p) => RIM_PROTECTOR_ROLES.includes(p.defensiveRole)),
+    // 2026-10-02: a rim protector by the numbers (rimProtection.ts), not by the role label.
+    lacksRimProtection: !starterPlayers.some((p) => isRealRimProtector(p, RIM_PROTECTOR_ROLES.includes(p.defensiveRole))),
     perimeterDefenderStarterCount: starterPlayers.filter((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)).length,
     usageWeight: starterPlayers.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0), 0),
     avgDefensivePortability:
@@ -2058,7 +2060,7 @@ export function pickForAi(
       const deficitRatio = (SPACING_DEPTH_THRESHOLD - needs.avgSpacing) / SPACING_DEPTH_THRESHOLD;
       need += deficitRatio * (computeSpacing(p) / 100) * SPACING_DEPTH_BONUS_SCALE;
     }
-    if (needs.lacksRimProtection && RIM_PROTECTOR_ROLES.includes(p.defensiveRole)) need += 0.6;
+    if (needs.lacksRimProtection && isRealRimProtector(p, RIM_PROTECTOR_ROLES.includes(p.defensiveRole))) need += 0.6;
     // A real contender stacks 2-3 perimeter defenders, not one — taper the bonus over the first
     // two starters rather than dropping it to zero the moment one is aboard (see
     // `perimeterDefenderStarterCount`'s own docstring). Third and beyond: nothing.
@@ -2071,7 +2073,7 @@ export function pickForAi(
     }
     if (
       needs.usageWeight >= OFFENSE_HEAVY_USAGE_THRESHOLD &&
-      (RIM_PROTECTOR_ROLES.includes(p.defensiveRole) || PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole))
+      (isRealRimProtector(p, RIM_PROTECTOR_ROLES.includes(p.defensiveRole)) || PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole))
     ) {
       need += OFFENSE_HEAVY_DEFENSE_BONUS;
     }

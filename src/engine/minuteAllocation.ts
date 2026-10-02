@@ -251,6 +251,12 @@ function consolidateRotation(
   };
   let best = solveMinutes(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer, forbidden);
   const byId = new Map(roster.map((p) => [p.id, p]));
+  // A cleanup never pushes minutes onto a slot the player can't play at all (Bill Walton at PF).
+  const closedMinutes = (grants: MinuteGrant[]) =>
+    grants.reduce((sum, g) => {
+      const player = byId.get(g.playerId);
+      return player && homeById.get(g.playerId) !== g.slot && positionFitMultiplier(player, g.slot) <= 0 ? sum + g.minutes : sum;
+    }, 0);
   for (let pass = 0; pass < MAX_CONSOLIDATION_PASSES; pass++) {
     const fragment = smallestFragment(best.grants, homeById, kept, byId);
     if (!fragment) break;
@@ -279,7 +285,8 @@ function consolidateRotation(
       const acceptable =
         trial.filled === best.filled &&
         (tiny || trial.cost - best.cost <= FRAGMENT_VALUE_TOLERANCE * UNIT) &&
-        overLimit(trial.grants) <= overLimit(best.grants) + (tiny ? TINY_STINT_OVERRUN_ALLOWANCE : 0);
+        overLimit(trial.grants) <= overLimit(best.grants) + (tiny ? TINY_STINT_OVERRUN_ALLOWANCE : 0) &&
+        closedMinutes(trial.grants) <= closedMinutes(best.grants);
       if (acceptable && (!chosen || trial.cost < chosen.trial.cost)) chosen = { key, trial };
     }
     if (chosen) {
@@ -312,7 +319,10 @@ function consolidateRotation(
       forbidden.add(key);
       const trial = solveMinutes(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer, forbidden);
       forbidden.delete(key);
-      const acceptable = trial.filled === best.filled && overLimit(trial.grants) <= overLimit(best.grants) + TINY_STINT_OVERRUN_ALLOWANCE;
+      const acceptable =
+        trial.filled === best.filled &&
+        overLimit(trial.grants) <= overLimit(best.grants) + TINY_STINT_OVERRUN_ALLOWANCE &&
+        closedMinutes(trial.grants) <= closedMinutes(best.grants);
       if (acceptable && (!chosen || trial.cost < chosen.cost)) {
         chosen = trial;
         chosenKey = key;
