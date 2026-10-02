@@ -73,8 +73,11 @@ for (const [name, label] of [['Shane Battier', '2007-09'], ['Marcus Smart', '201
 
 const redick = players.find((player) => player.playerName === 'JJ Redick' && player.spanLabel === '2015-17');
 check(Boolean(redick), 'JJ Redick 2015-17 exists as a positive Off Screen control');
+const redickProfile = computeShadowRoleProfile(redick!, context);
+// Since the 2026-10-02 role audit his label itself reads Off Screen Shooter (taken from this same fit).
 check(
-  computeShadowRoleProfile(redick!, context).proposedOffensiveRoles.some((fit) => fit.role === 'Off Screen Shooter'),
+  redickProfile.incumbentOffensiveRole === 'Off Screen Shooter' ||
+    redickProfile.proposedOffensiveRoles.some((fit) => fit.role === 'Off Screen Shooter'),
   'JJ Redick 2015-17 remains an Off Screen proposal using measured PBP support',
 );
 
@@ -101,9 +104,12 @@ for (const name of ['James Harden', 'Luka Doncic', 'Jayson Tatum'] as const) {
   );
 }
 
-const validatedMovementNames = new Set(
-  HISTORICAL_MOVEMENT_SHOOTER_EVIDENCE.map((entry) => normalizePlayerName(entry.playerName)),
-);
+// 2026-10-02: the role audit also credits a neighbouring window's primary label, so a player whose
+// own curated label reads Movement Shooter in some window (Klay Thompson) counts as evidenced too.
+const validatedMovementNames = new Set([
+  ...HISTORICAL_MOVEMENT_SHOOTER_EVIDENCE.map((entry) => normalizePlayerName(entry.playerName)),
+  ...players.filter((span) => span.offensiveArchetype === 'Movement Shooter').map((span) => normalizePlayerName(span.playerName)),
+]);
 const inferredMovementNames = new Set(
   players
     .filter((span) =>

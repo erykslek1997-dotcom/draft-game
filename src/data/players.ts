@@ -5,6 +5,7 @@ import { curatedExpandedSpans } from './curatedExpandedSpans';
 import curatedVerifiedBoxData from './curatedVerifiedBox.json';
 import { getHeightInches } from './heightLookup';
 import { auditedPrimaryDefensiveRole, buildRoleFitContext } from '../engine/roleFitShadow';
+import { applyRoleAudit } from './roleAudit';
 
 /**
  * STARTER DATASET — placeholder for prototyping the draft/scoring mechanics.
@@ -542,7 +543,7 @@ function applyForcedPositionProfiles(spans: PlayerSpan[]): PlayerSpan[] {
  * 2023-25 (the original reported case, PF/SG dual tag) — DTAL moves 53->64, 54->66, 59->72
  * respectively.
  */
-const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: DefensiveRole }[] = [
+export const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: DefensiveRole }[] = [
   { name: 'OG Anunoby', spanLabel: '2023-25', role: 'Wing Stopper' },
   { name: 'OG Anunoby', spanLabel: '2024-26', role: 'Wing Stopper' },
   { name: 'Paul George', spanLabel: '2022-24', role: 'Wing Stopper' },
@@ -621,7 +622,7 @@ const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: Defensi
  * that drives rim-pressure eligibility, portability and team fit. He is an SF (see
  * `POSITION_OVERRIDES`), and his adjacent 2022-24 window already reads `Secondary Ball Handler`.
  */
-const OFFENSIVE_ARCHETYPE_OVERRIDES: { name: string; spanLabel: string; archetype: OffensiveArchetype }[] = [
+export const OFFENSIVE_ARCHETYPE_OVERRIDES: { name: string; spanLabel: string; archetype: OffensiveArchetype }[] = [
   { name: 'Jalen Williams', spanLabel: '2023-25', archetype: 'Secondary Ball Handler' },
 ];
 
@@ -886,7 +887,9 @@ const positionCorrectedPlayers: PlayerSpan[] = applyForcedPositionProfiles(
 );
 
 const defensiveRoleAuditContext = buildRoleFitContext(positionCorrectedPlayers);
-export const players: PlayerSpan[] = positionCorrectedPlayers.map((span) => ({
-  ...span,
-  defensiveRole: auditedPrimaryDefensiveRole(span, defensiveRoleAuditContext),
-}));
+export const players: PlayerSpan[] = positionCorrectedPlayers.map((span) =>
+  applyRoleAudit({
+    ...span,
+    defensiveRole: auditedPrimaryDefensiveRole(span, defensiveRoleAuditContext),
+  }),
+);

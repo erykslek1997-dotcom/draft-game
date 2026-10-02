@@ -7,6 +7,7 @@ import type { PlayerSpan } from './schema';
 import data from './draftPool.json';
 import { auditedPrimaryDefensiveRole, buildRoleFitContext } from '../engine/roleFitShadow';
 import { runtimeAvailabilityForSpan } from '../engine/runtimeSpanLookups';
+import { applyRoleAudit } from './roleAudit';
 
 // The JSON is a precomputed build artifact, but position corrections in players.ts must also be
 // visible immediately without reselecting the entire talent-sensitive pool (a full rebuild churns
@@ -83,7 +84,10 @@ function playedEnough(span: PlayerSpan): boolean {
   return !availability || availability.availability >= MIN_AVAILABILITY_PCT;
 }
 
-export const draftPool: PlayerSpan[] = positionCorrectedPool.filter(playedEnough).map((span) => ({
+/** The pool before `roleAudit.json` is applied — the input `scripts/buildRoleAudit.ts` audits. */
+export const draftPoolBeforeRoleAudit: PlayerSpan[] = positionCorrectedPool.filter(playedEnough).map((span) => ({
   ...span,
   defensiveRole: auditedPrimaryDefensiveRole(span, defensiveRoleAuditContext),
 }));
+
+export const draftPool: PlayerSpan[] = draftPoolBeforeRoleAudit.map(applyRoleAudit);

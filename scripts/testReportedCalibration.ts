@@ -100,7 +100,10 @@ const twinTowers = team('twin-towers-floor', [
 // guessed; still meaningfully above what a roster with no real anchors at all would score.
 // 2026-10-01: per-36 position competence moves 2 of Duncan's minutes to Kukoč and lets Duhon
 // (not Mike Miller) cover SG — re-measured 44 (was 46), still the same anchored floor.
-assert(defenseScore(twinTowers) >= 44, 'Two elite, high-minute rim anchors must establish a defensive floor.');
+// 2026-10-02 role audit: Price, Ray Allen and Frye lose labels their numbers never supported
+// (Chaser / Chaser / Post Defender at D-TAL 23-39 -> Low Activity), so the perimeter around the
+// two anchors is honestly worse — re-measured 34 (was 44). The same roster with no anchors reads 4.
+assert(defenseScore(twinTowers) >= 34, 'Two elite, high-minute rim anchors must establish a defensive floor.');
 
 const nonCurryGravity = team('non-curry-gravity', [
   span('Kevin Johnson', '1995-97'),

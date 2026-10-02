@@ -294,8 +294,10 @@ check(
   'one Billups gravity span lifts Wade/Iguodala/Webber/Embiid only to below-average spacing',
 );
 
+// 2026-10-02 role audit: Magic 1988-90 now reads Chaser (D-TAL 53, 1.8 steals per 36), so the
+// Low Activity weak link is Nash 2005-07 (D-TAL 20) instead.
 const wembyWebber = team('fit-v2-wemby-webber', [
-  pick('Magic Johnson', '1988-90'),
+  pick('Steve Nash', '2005-07'),
   pick('Sidney Moncrief', '1981-83'),
   pick('Gerald Wallace', '2008-10'),
   pick('Victor Wembanyama', '2024-26'),
@@ -330,9 +332,13 @@ check(
       (wembyWebberResult.inputs.positionAdjustedWeightPercentile ?? 0),
   'Duncan + Porzingis lineup grades larger (height and weight) than Wembanyama + Webber',
 );
+// 2026-10-02: the role audit gives Moncrief 1981-83 his real Point of Attack label, so the
+// Nash / Moncrief / Wallace / Wemby / Webber shell is elite on all three layers and hides the one
+// weak link up to the 60% cap — both lineups re-measure 83. The weak link still never puts that
+// lineup ahead of five credible defenders.
 check(
-  duncanPorzingisResult.components.defensiveRoleCoverage > wembyWebberResult.components.defensiveRoleCoverage,
-  'five credible defensive roles outrank three elite layers hiding a Low Activity weak link',
+  duncanPorzingisResult.components.defensiveRoleCoverage >= wembyWebberResult.components.defensiveRoleCoverage,
+  'five credible defensive roles are not outranked by three elite layers hiding a Low Activity weak link',
 );
 
 const noTrueWingStopper = team('fit-v2-no-true-wing-stopper', [

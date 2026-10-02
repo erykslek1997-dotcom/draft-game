@@ -11,6 +11,7 @@ import { historicalMovementShooterEvidenceForSpan } from '../data/historicalMove
 import { historicalRimPressureEvidenceForSpan, type RimPressureRole } from '../data/historicalRimPressureEvidence';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import { curatedSecondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
+import { auditAdditionalRoles } from '../data/roleAudit';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
@@ -439,6 +440,38 @@ export function auditedPrimaryDefensiveRole(span: PlayerSpan, context: RoleFitCo
   return fits.find((fit) => fit.role === 'Helper' && fit.score >= 50) ? 'Helper' : 'Low Activity';
 }
 
+/**
+ * 2026-10-02, the user ("zrób"): an audited span's additional roles are exactly the ones the role
+ * audit lists (`roleAudit.json` — the roles it also passes the gates for, plus its neighbouring
+ * windows' primary roles), so every role on the list the user approved is credited by FIT — at
+ * least at `AUDITED_ADDITIONAL_ROLE_SCORE` (FIT's additional-role credit floor, which also caps it).
+ * The evidence-backed proposals below (curated secondary roles, measured movement shooting) are
+ * kept alongside them: those are hand-checked calls the audit's box gates cannot see.
+ */
+const AUDITED_ADDITIONAL_ROLE_SCORE = 80;
+
+function auditedProposals<Role extends string>(
+  fits: RoleFitScore<Role>[],
+  roles: Role[],
+  incumbent: Role,
+  enabled: boolean,
+): RoleFitScore<Role>[] {
+  if (!enabled) return [];
+  const audited = roles
+    .filter((role) => role !== incumbent)
+    .map((role) => {
+      const fit = fits.find((candidate) => candidate.role === role);
+      return {
+        role,
+        score: Math.max(fit?.score ?? 0, AUDITED_ADDITIONAL_ROLE_SCORE),
+        confidence: fit?.confidence ?? 'medium',
+        evidence: [...(fit?.evidence ?? []), 'role audit (per-36 gates / neighbouring window)'],
+      };
+    });
+  const evidenced = proposedRoles(fits, incumbent, enabled).filter((fit) => !roles.includes(fit.role));
+  return [...audited, ...evidenced];
+}
+
 function proposedRoles<Role extends string>(fits: RoleFitScore<Role>[], incumbent: Role, enabled: boolean): RoleFitScore<Role>[] {
   if (!enabled) return [];
   return fits
@@ -454,6 +487,7 @@ export function computeShadowRoleProfile(
   const allowAdditionalRoles = options.allowAdditionalRoles ?? true;
   const offensiveFits = scoreOffense(span, context, options.offenseConfidence ?? 'medium');
   const defensiveFits = scoreDefense(span, context, options.defenseConfidence ?? 'medium', stocksAvailable);
+  const audit = auditAdditionalRoles(span.id);
   return {
     version: 'role-fit-shadow-v1',
     playerId: span.id,
@@ -461,8 +495,12 @@ export function computeShadowRoleProfile(
     incumbentDefensiveRole: span.defensiveRole,
     offensiveFits,
     defensiveFits,
-    proposedOffensiveRoles: proposedRoles(offensiveFits, span.offensiveArchetype, allowAdditionalRoles),
-    proposedDefensiveRoles: proposedRoles(defensiveFits, span.defensiveRole, allowAdditionalRoles && stocksAvailable),
+    proposedOffensiveRoles: audit
+      ? auditedProposals(offensiveFits, audit.offense, span.offensiveArchetype, allowAdditionalRoles)
+      : proposedRoles(offensiveFits, span.offensiveArchetype, allowAdditionalRoles),
+    proposedDefensiveRoles: audit
+      ? auditedProposals(defensiveFits, audit.defense, span.defensiveRole, allowAdditionalRoles && stocksAvailable)
+      : proposedRoles(defensiveFits, span.defensiveRole, allowAdditionalRoles && stocksAvailable),
     warnings: [...(options.warnings ?? []), ...(!stocksAvailable ? ['Defensive additions withheld: STL/BLK unavailable.'] : [])],
   };
 }

@@ -16,20 +16,30 @@ import { exportLeagueText } from '../src/engine/teamExport';
 import { CAP_LIMIT } from '../src/engine/positions';
 import type { Team } from '../src/engine/types';
 
-/** `Name:TAL` — the TAL badge the user's screenshot showed, which picks the player's window; a bare
- * name takes his best window (re-optimized under the cap with the rest of the roster). */
+/** `Name@span` — the exact window. `Name:TAL` — the TAL badge the user's screenshot showed, which
+ * picks the player's window; a bare name takes his best window (re-optimized under the cap with the
+ * rest of the roster).
+ * 2026-10-02: every roster is pinned to the windows those rules picked before the role audit — a
+ * one-point TAL shift (Giannis 2018-20 99 -> 98) silently swapped Tulsa onto Giannis 2020-22, so the
+ * verdicts stopped comparing the same teams the user judged. */
 export const REFERENCE_ROSTERS: Record<string, string[]> = {
-  Nash: ['Steve Nash', 'Kobe Bryant', 'Scottie Pippen', 'Karl Malone', 'Brook Lopez', 'Derek Fisher', 'James Posey', 'Ben Wallace'],
-  Tulsa: ['Chauncey Billups:82', 'Alex Caruso:68', 'Jayson Tatum:87', 'Giannis Antetokounmpo:99', 'Kareem Abdul-Jabbar:94', 'Thabo Sefolosha:49', 'Gerald Wallace:72', 'Mark Eaton:67'],
-  Charlotte: ['John Stockton:95', 'Ray Allen:86', 'Jalen Williams:83', 'Kevin Garnett:97', 'Marc Gasol:80', 'Jeff Hornacek:70', 'Robert Horry:68', 'Andrew Bogut:61'],
-  DesMoines: ['Jason Kidd:85', 'Ron Harper:74', 'Klay Thompson:85', 'Kawhi Leonard:98', 'Joel Embiid:98', 'David Wesley:66', 'Bo Outlaw:62', 'Robert Williams:64'],
-  SaltLake: ['Chris Paul:92', 'Derrick White:71', 'Grant Hill:81', 'Larry Bird:97', 'Bob McAdoo:91', 'Nate McMillan:59', 'Bruce Bowen:48', 'Nene:74'],
-  Dayton: ['Magic Johnson:92', 'Anthony Edwards:85', 'Clifford Robinson:73', 'Evan Mobley:83', 'Victor Wembanyama:91', 'Danny Ainge:66', 'Garrett Temple:42', 'Nic Claxton:66'],
-  Vermont: ['LeBron James:102', 'Luka Doncic:91', 'Chris Mullin:71', 'Kristaps Porzingis:82', 'Bill Walton:86', 'Brent Barry:59', 'Bryon Russell:58', 'Tiago Splitter:59'],
-  Oakland: ['Shai Gilgeous-Alexander:94', 'Donovan Mitchell:85', 'Mikal Bridges:66', 'Anthony Davis:91', 'Rudy Gobert:82', 'Amen Thompson:66', 'Nicolas Batum:62', 'Amir Johnson:54'],
+  Nash: ['Steve Nash@2006-08', 'Kobe Bryant@2007-09', 'Scottie Pippen@1990-92', 'Karl Malone@1991-93', 'Brook Lopez@2022-24', 'Derek Fisher@2006-08', 'James Posey@2003-05', 'Ben Wallace@2001-03'],
+  Tulsa: ['Chauncey Billups@2004-06', 'Alex Caruso@2022-24', 'Jayson Tatum@2023-25', 'Giannis Antetokounmpo@2018-20', 'Kareem Abdul-Jabbar@1977-79', 'Thabo Sefolosha@2011-13', 'Gerald Wallace@2008-10', 'Mark Eaton@1984-86'],
+  Charlotte: ['John Stockton@1989-91', 'Ray Allen@2000-02', 'Jalen Williams@2023-25', 'Kevin Garnett@2002-04', 'Marc Gasol@2011-13', 'Jeff Hornacek@1993-95', 'Robert Horry@1994-96', 'Andrew Bogut@2014-16'],
+  DesMoines: ['Jason Kidd@2004-06', 'Ron Harper@1988-90', 'Klay Thompson@2015-17', 'Kawhi Leonard@2015-17', 'Joel Embiid@2023-25', 'David Wesley@1997-99', 'Bo Outlaw@1998-00', 'Robert Williams@2020-22'],
+  SaltLake: ['Chris Paul@2012-14', 'Derrick White@2022-24', 'Grant Hill@1995-97', 'Larry Bird@1982-84', 'Bob McAdoo@1975-77', 'Nate McMillan@1992-94', 'Bruce Bowen@2000-02', 'Nenê@2009-11'],
+  Dayton: ['Magic Johnson@1983-85', 'Anthony Edwards@2022-24', 'Clifford Robinson@1998-00', 'Evan Mobley@2024-26', 'Victor Wembanyama@2024-26', 'Danny Ainge@1986-88', 'Garrett Temple@2014-16', 'Nic Claxton@2021-23'],
+  Vermont: ['LeBron James@2010-12', 'Luka Doncic@2020-22', 'Chris Mullin@1995-97', 'Kristaps Porziņģis@2022-24', 'Bill Walton@1976-78', 'Brent Barry@1999-01', 'Bryon Russell@1996-98', 'Tiago Splitter@2012-14'],
+  Oakland: ['Shai Gilgeous-Alexander@2022-24', 'Donovan Mitchell@2023-25', 'Mikal Bridges@2020-22', 'Anthony Davis@2022-24', 'Rudy Gobert@2016-18', 'Amen Thompson@2023-25', 'Nicolas Batum@2013-15', 'Amir Johnson@2010-12'],
 };
 
 function pickSpan(entry: string): { span: PlayerSpan; pinned: boolean } {
+  if (entry.includes('@')) {
+    const [exactName, label] = entry.split('@');
+    const span = spanOptionsFor(exactName).find((option) => option.spanLabel === label);
+    if (!span) throw new Error(`no span ${label} for ${exactName}`);
+    return { span, pinned: true };
+  }
   const [name, tal] = entry.split(':');
   const options = spanOptionsFor(name);
   if (options.length === 0) throw new Error(`no spans for ${name}`);
@@ -65,7 +75,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     // raw offense round to the same displayed number, which made a strict ">" fail on rounding.
     const offense = (n: string) => offenseScoreBreakdown(by.get(n)!.team).raw;
     const checks: [boolean, string][] = [
-      [s("Charlotte").overallExact > s("Tulsa").overallExact, 'Charlotte ranks above Tulsa'],
+      // 2026-10-02, the user after the role audit put Tulsa 1.4 ahead (Ray Allen / Hornacek lost
+      // labels their numbers never supported): "generalnie to są bardzo podobne składy" — the
+      // verdict is that the two read close, not a strict order.
+      [Math.abs(s('Charlotte').overallExact - s('Tulsa').overallExact) <= 2, 'Charlotte and Tulsa read close (within 2 points)'],
       [by.get('Vermont')!.rank < teams.length, 'LeBron + Luka is not at the bottom'],
       [s('Charlotte').spacingScore > s('Tulsa').spacingScore, 'Charlotte spaces the floor better than Tulsa'],
       [offense('Nash') >= offense('Tulsa') - 0.5, 'Nash-Kobe-Malone scores at least as well as Tulsa'],

@@ -131,7 +131,10 @@ const movementCoverageTeam = team('team-model-movement-coverage', [
   // validated movement shooter and still a named huntable target.
   // 2026-09-27: the two-sided plus-minus correction dropped 2015-17 to ~6 minutes as well;
   // 2012-14 plays ~14 and keeps every check below true.
-  pick('Kyle Korver', '2012-14'),
+  // 2026-10-02: the consistent-real-defense D-TAL floor lifts 2012-14 to 58 (his on/off, RAPTOR
+  // and BPM2 all read above average), so it is no longer a huntable target; 2015-17 (D-TAL 34,
+  // ~15 minutes) is, and keeps every check below true.
+  pick('Kyle Korver', '2015-17'),
   // 2026-09-25: was Tyson Chandler 2011-13. Graded position competence (positionCompetence.ts)
   // rates a classic center as unable to play PF, so Larry Smith had to cover the PF backup
   // minutes and stopped being this fixture's dead ninth slot. Elton Brand 2012-14 is a real
