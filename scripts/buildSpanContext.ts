@@ -29,6 +29,15 @@ import usage from '../src/data/awards/usage.json';
 import baselines from '../src/data/awards/seasonBaselines.json';
 
 const ORIGINAL_SPACING_FLOOR = 0.15;
+/**
+ * 2026-10-02, the user ("warto pamiętać że były inne zasady w obronie"): until 2001 zone defence was
+ * illegal (a defender could not wait in the paint), so a player had room even beside teammates who
+ * never shot threes. His original room for those seasons is at least what a team taking this share
+ * of its shots from three gives today (an estimate, to be calibrated); zone defence and the defensive
+ * three seconds came in 2001-02, and from then on the real rate counts.
+ */
+const RULES_SPACING = 0.35;
+const LAST_ILLEGAL_DEFENSE_SEASON = 2001;
 const DEFAULT_FREE_THROW_RATE = 0.28;
 const RIM_SHARE_BY_POSITION: Record<string, number> = { PG: 0.42, SG: 0.42, SF: 0.5, PF: 0.6, C: 0.75 };
 const FGA_PER_POSSESSION = 0.87;
@@ -122,10 +131,11 @@ function teammatesThreeRate(span: PlayerSpan): number {
     const own = box.get(`${me}|${season}`)?.fga ?? 0;
     const stints = teamsOf.get(`${me}|${end}`) ?? [];
     const myGames = stints.reduce((sum, s) => sum + s.games, 0);
+    let seasonThrees = 0;
+    let seasonShots = 0;
     if (myGames === 0) {
-      threes += teamShots * leagueRate;
-      shots += teamShots;
-      continue;
+      seasonThrees = teamShots * leagueRate;
+      seasonShots = teamShots;
     }
     for (const stint of stints) {
       const weight = stint.games / myGames;
@@ -141,9 +151,13 @@ function teammatesThreeRate(span: PlayerSpan): number {
         knownThrees += row.threePA * share;
       }
       const unknown = Math.max(0, teamShots - own - knownShots);
-      threes += weight * (knownThrees + unknown * leagueRate);
-      shots += weight * (knownShots + unknown);
+      seasonThrees += weight * (knownThrees + unknown * leagueRate);
+      seasonShots += weight * (knownShots + unknown);
     }
+    // Before zone defence was legal the rules kept the paint open whoever shot threes.
+    if (end <= LAST_ILLEGAL_DEFENSE_SEASON) seasonThrees = Math.max(seasonThrees, seasonShots * RULES_SPACING);
+    threes += seasonThrees;
+    shots += seasonShots;
   }
   return Math.max(ORIGINAL_SPACING_FLOOR, shots > 0 ? threes / shots : 0);
 }

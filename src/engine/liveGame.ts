@@ -8,6 +8,7 @@ import type { LegendFive } from './dailyMeta';
 import type { Team } from './types';
 import { contextLines } from './contextStats';
 import { modernBox } from './modernBox';
+import { fatigueShare } from './fatigue';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 
 /**
@@ -131,9 +132,12 @@ const OFF_REBOUND = 0.26;
 const ASSISTED = 0.55;
 const TYPICAL_MATES_ASSISTS_PER_36 = 14;
 const ASSISTED_RATE_POWER = 0.6;
+/** 2026-10-02: a five of Kidd, Simmons, Draymond and Jokic assisted 85% of its makes; the best real
+ * passing teams reach ~70%. */
+const MAX_ASSISTED = 0.75;
 function assistedChance(mates: CourtPlayer[]): number {
   const passing = mates.reduce((sum, c) => sum + rates(c.player.span).ast, 0);
-  return Math.max(0.4, Math.min(0.85, ASSISTED * (passing / TYPICAL_MATES_ASSISTS_PER_36) ** ASSISTED_RATE_POWER));
+  return Math.max(0.4, Math.min(MAX_ASSISTED, ASSISTED * (passing / TYPICAL_MATES_ASSISTS_PER_36) ** ASSISTED_RATE_POWER));
 }
 /** Assists go to the real passers: weight by assists per game to this power (2026-10-02 — linear
  * weights spread them so evenly that Jokic averaged 5 and the league leader 9). */
@@ -172,18 +176,18 @@ const MAX_NUDGE = 0.3;
 const THREE_PCT_PER_TS = 0.67;
 /**
  * 2026-10-02, the user (Jordan 37.8 a game beside Lowry, Bosh and Kareem — "czy powinien tyle
- * rzucać?"): room, a smaller share of the ball and better passers each lift a player, and together
- * they lifted a whole five of stars to 63-67% TS. Their sum is held to this many points of FG%.
+ * rzucać?"): a smaller share of the ball and better passers each lift a player, and together they
+ * lifted a whole five of stars to 63-67% TS. Their sum is held to this many points of FG%.
  */
 const MAX_CONTEXT_GAIN = 0.02;
 const contextGain = (delta: number) => Math.min(MAX_CONTEXT_GAIN, delta);
-/**
- * 2026-10-02, the user: "więcej minut = gorsza skuteczność". Past `FRESH_MINUTES` in a game, each
- * minute takes this share off a player's chance to make a shot.
- */
-const FRESH_MINUTES = 36;
-const FATIGUE_PER_MINUTE = 0.01;
-const fatigue = (minutes: number) => 1 - FATIGUE_PER_MINUTE * Math.max(0, minutes - FRESH_MINUTES);
+/** 2026-10-02, the user (Jordan beside four shooters and beside four non-shooters came out within a
+ * point of each other): the cap above was meant for the stacking of usage and passing, and it was
+ * swallowing the room a five gives. Room has its own, wider bounds, both ways. */
+const MAX_SPACING_GAIN = 0.04;
+const spacingGain = (delta: number) => Math.max(-MAX_SPACING_GAIN, Math.min(MAX_SPACING_GAIN, delta));
+/** A tired player makes fewer shots (`fatigue.ts`, the same curve the minute solver prices). */
+const fatigue = (minutes: number) => 1 - fatigueShare(minutes);
 
 const BIG_MOVES = ['layup', 'dunk', 'hook shot', 'putback'];
 const WING_MOVES = ['pull-up jumper', 'driving layup', 'floater', 'mid-range jumper'];
@@ -255,6 +259,8 @@ interface CourtPlayer {
   foul: number;
   /** His share of this five's shots and his percentages, re-read for this five (`contextStats.ts`). */
   shotShare: number;
+  /** His share of this five's turnovers: the part of his usage that ends in one (`contextStats.ts`). */
+  turnoverShare: number;
   twoPct: number;
   threePct: number;
 }
@@ -311,43 +317,79 @@ function rosterFromTeam(team: Team): GameRoster {
   return { players, slotMinutes, starters };
 }
 
-/** Substitutions: before each possession every slot keeps its man unless another is clearly more
- * due (more of his minutes left, by `SUB_MARGIN`); nobody plays two slots at once, and the
- * starters open the game. Each player ends close to the minutes the rotation gave him. */
-const SUB_MARGIN = 2;
+/** Substitutions: before each possession the five is chosen as a whole. Each man in each slot is
+ * "due" by how far he is behind an even pace through his minutes there (planned x elapsed share,
+ * minus what he has played); the man already on the floor counts `SUB_MARGIN` minutes extra, nobody
+ * plays two slots at once, and a man past his minutes plays only when nobody else can. The starters
+ * open the game. 2026-10-02: picking slot by slot, starters first, spent the starters' minutes early
+ * and left the bench for the end, where a backup listed at two slots could cover only one and a
+ * starter played past his minutes (Bird 37 -> 40). */
+const SUB_MARGIN = 4;
+const SPENT_PENALTY = 100;
 
 class Bench {
   private roster: GameRoster;
   private left: Map<Position, Map<Player, number>>;
+  private planned: Map<Position, Map<Player, number>>;
   private court = new Map<Position, Player>();
+  private elapsed = 0;
   constructor(roster: GameRoster) {
     this.roster = roster;
     this.left = new Map(STARTER_SLOTS.map((slot) => [slot, new Map(roster.slotMinutes[slot].map((e) => [e.player, e.minutes]))]));
+    this.planned = new Map(STARTER_SLOTS.map((slot) => [slot, new Map(roster.slotMinutes[slot].map((e) => [e.player, e.minutes]))]));
   }
   next(minutes: number): Player[] {
-    const taken = new Set<Player>();
-    const five: Player[] = [];
-    for (const slot of STARTER_SLOTS) {
+    const pace = Math.min(1, (this.elapsed + minutes) / 48);
+    // A starter is due first: at tip-off nobody has played, so the bigger planned share wins.
+    const options = STARTER_SLOTS.map((slot) => {
       const left = this.left.get(slot)!;
+      const planned = this.planned.get(slot)!;
       const current = this.court.get(slot);
-      let best: Player | undefined;
-      let bestLeft = -Infinity;
-      for (const [player, remaining] of left) {
-        if (taken.has(player)) continue;
-        if (remaining > bestLeft) {
-          best = player;
-          bestLeft = remaining;
+      return [...left].map(([player, remaining]) => {
+        const plan = planned.get(player) ?? 0;
+        const due = plan * pace - (plan - remaining);
+        return { player, score: due + (player === current ? SUB_MARGIN : 0) - (remaining <= 0 ? SPENT_PENALTY : 0) };
+      });
+    });
+    let best: (Player | undefined)[] = [];
+    let bestScore = -Infinity;
+    const pick: (Player | undefined)[] = [];
+    const taken = new Set<Player>();
+    const search = (i: number, score: number) => {
+      if (i === STARTER_SLOTS.length) {
+        if (score > bestScore) {
+          bestScore = score;
+          best = [...pick];
         }
+        return;
       }
-      let pick = best;
-      if (current && !taken.has(current) && (left.get(current) ?? 0) > 0 && bestLeft - (left.get(current) ?? 0) < SUB_MARGIN) pick = current;
-      if (!pick) pick = this.roster.players.find((p) => !taken.has(p));
-      if (!pick) continue;
-      taken.add(pick);
-      five.push(pick);
-      this.court.set(slot, pick);
-      if (left.has(pick)) left.set(pick, (left.get(pick) ?? 0) - minutes);
-    }
+      let any = false;
+      for (const o of options[i]) {
+        if (taken.has(o.player)) continue;
+        any = true;
+        taken.add(o.player);
+        pick[i] = o.player;
+        search(i + 1, score + o.score);
+        taken.delete(o.player);
+      }
+      if (!any) {
+        pick[i] = undefined;
+        search(i + 1, score - 2 * SPENT_PENALTY);
+      }
+    };
+    search(0, 0);
+    const five: Player[] = [];
+    const used = new Set(best.filter((p): p is Player => Boolean(p)));
+    STARTER_SLOTS.forEach((slot, i) => {
+      const chosen = best[i] ?? this.roster.players.find((p) => !used.has(p));
+      if (!chosen) return;
+      used.add(chosen);
+      five.push(chosen);
+      this.court.set(slot, chosen);
+      const left = this.left.get(slot)!;
+      if (left.has(chosen)) left.set(chosen, (left.get(chosen) ?? 0) - minutes);
+    });
+    this.elapsed += minutes;
     return five;
   }
 }
@@ -360,8 +402,9 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
+      turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight),
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + contextGain(lines[i].twoPointDelta + lines[i].usageDelta + lines[i].playmakingDelta))),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta + lines[i].playmakingDelta))),
       threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta + lines[i].playmakingDelta) * THREE_PCT_PER_TS)),
     }));
     cache.set(key, court);
@@ -392,7 +435,7 @@ export function playTeamGame(
   /** `weakLinks`: each team's weakest defender (`teamWeakLink`), precomputed — a season reuses it. */
   options: { record?: boolean; weakLinks?: [string | null, string | null] } = {},
 ): LiveGameResult {
-  return playRosters([rosterFromTeam(a), rosterFromTeam(b)], margin, seed, options.record ?? true, options.weakLinks);
+  return playRosters([rosterFromTeam(a), rosterFromTeam(b)], margin, seed, options.record ?? true, options.weakLinks, true);
 }
 
 /** The starting five's weakest defender, the man the other side hunts. */
@@ -408,6 +451,8 @@ function playRosters(
   seed: string,
   record: boolean,
   weakLinks?: [string | null, string | null],
+  /** Only a full rotation tires: a five alone (Daily, Draw Five) plays the whole game by design. */
+  tiring = false,
 ): LiveGameResult {
   const rng = mulberry32(hashSeed(`${seed}:game`));
   const courts = [new Map<string, CourtPlayer[]>(), new Map<string, CourtPlayer[]>()];
@@ -421,7 +466,7 @@ function playRosters(
   const tired = ([0, 1] as GameSide[]).map((side) => {
     const minutes = new Map<string, number>();
     for (const court of schedule[side]) for (const c of court) minutes.set(c.player.label, (minutes.get(c.player.label) ?? 0) + possessionMinutes);
-    return new Map([...minutes].map(([label, m]) => [label, fatigue(m)]));
+    return new Map([...minutes].map(([label, m]) => [label, tiring ? fatigue(m) : 1]));
   });
   const perShot = (team: CourtPlayer[], side: GameSide) => {
     const shots = team.reduce((sum, c) => sum + c.shotShare, 0) || 1;
@@ -482,14 +527,16 @@ function playRosters(
     let pts = 0;
     for (let guard = 0; guard < 4; guard++) {
       if (rng() < TURNOVER) {
+        // 2026-10-02 (Jordan 5.9 turnovers per 48 at 41% usage, Kidd 2.0): the ball is lost by whoever
+        // really lost it — his own turnover share of the five, not his share of the shots.
         if (rng() < 0.55) {
           const thief = pickWeighted(rng, def, (p) => rates(p.span).stl + 0.2);
-          const lost = pickWeighted(rng, off, (c) => c.shotShare).player;
+          const lost = pickWeighted(rng, off, (c) => c.turnoverShare).player;
           box[d][thief.label].stl++;
           box[o][lost.label].tov++;
           play = { side: d, text: `${thief.label} steals it from ${lost.label}`, joker: thief.joker, quiet: false };
         } else {
-          box[o][pickWeighted(rng, off, (c) => c.shotShare + rates(c.player.span).ast / 40).player.label].tov++;
+          box[o][pickWeighted(rng, off, (c) => c.turnoverShare).player.label].tov++;
         }
         break;
       }
