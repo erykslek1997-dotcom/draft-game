@@ -32,6 +32,12 @@ export interface BoxLineStats {
   blk: number;
   fgm: number;
   fga: number;
+  /** 2026-10-02, the user: "powinien być cały box score" — threes, free throws and turnovers. */
+  tpm: number;
+  tpa: number;
+  ftm: number;
+  fta: number;
+  tov: number;
 }
 
 export interface GamePlay {
@@ -220,7 +226,7 @@ function playGame(
     ((level - eps[1].line) / eps[1].field) * (1 - tilt),
   ];
   const box: [Record<string, BoxLineStats>, Record<string, BoxLineStats>] = [{}, {}];
-  for (const side of [0, 1] as GameSide[]) for (const p of sides[side]) box[side][p.label] = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0 };
+  for (const side of [0, 1] as GameSide[]) for (const p of sides[side]) box[side][p.label] = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0 };
   const hunted = [scoreLineup(legends).weakLink, scoreLineup(yours).weakLink];
   const score: [number, number] = [0, 0];
   const quarters: [number[], number[]] = [[0, 0, 0, 0], [0, 0, 0, 0]];
@@ -244,7 +250,10 @@ function playGame(
           const thief = pickWeighted(rng, def, (p) => p.span.box.spg + 0.2);
           const lost = pickWeighted(rng, off, (p) => p.span.fga);
           box[d][thief.label].stl++;
+          box[o][lost.label].tov++;
           play = { side: d, text: `${thief.label} steals it from ${lost.label}`, joker: thief.joker, quiet: false };
+        } else {
+          box[o][pickWeighted(rng, off, (p) => p.span.fga + p.span.box.apg).label].tov++;
         }
         break;
       }
@@ -256,16 +265,20 @@ function playGame(
         const attempts = three ? 3 : 2;
         let made = 0;
         for (let f = 0; f < attempts; f++) if (rng() < b.ftPct) made++;
+        line.fta += attempts;
+        line.ftm += made;
         line.pts += made;
         pts += made;
         play = { side: o, text: `${shooter.label} ${made}/${attempts} at the line`, joker: shooter.joker, quiet: made === 0 };
         break;
       }
       line.fga++;
+      if (three) line.tpa++;
       const p = (three ? b.threePct : twoPointPct(shooter.span)) * makeScale[o];
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
+        if (three) line.tpm++;
         line.pts += value;
         pts += value;
         const moves = movesFor(shooter.slot);
@@ -276,10 +289,14 @@ function playGame(
           const victim = def.find((x) => x.span.playerName === target);
           if (victim && victim.label !== shooter.label) text = `${shooter.label} attacks ${victim.label} — ${moves[Math.floor(rng() * moves.length)]}`;
         }
-        if (!three && rng() < AND_ONE && rng() < b.ftPct) {
-          line.pts++;
-          pts++;
-          text += ', and one';
+        if (!three && rng() < AND_ONE) {
+          line.fta++;
+          if (rng() < b.ftPct) {
+            line.ftm++;
+            line.pts++;
+            pts++;
+            text += ', and one';
+          }
         }
         let joker = shooter.joker;
         if (rng() < ASSISTED) {

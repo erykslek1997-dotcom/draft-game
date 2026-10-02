@@ -243,7 +243,7 @@ export default function LiveGame({
 }
 
 function zero(): BoxLineStats {
-  return { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0 };
+  return { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0 };
 }
 
 function QuarterRow({ name, q, total, upto }: { name: string; q: number[]; total: number; upto: number }) {
@@ -259,42 +259,78 @@ function QuarterRow({ name, q, total, upto }: { name: string; q: number[]; total
 }
 
 function BoxTable({ title, labels, lines, joker, star }: { title: string; labels: string[]; lines: BoxLineStats[]; joker: string | null; star: string | null }) {
+  const total = lines.reduce((sum, l) => {
+    const next = { ...sum };
+    for (const key of Object.keys(next) as (keyof BoxLineStats)[]) next[key] += l[key] ?? 0;
+    return next;
+  }, zero());
+  const pct = (made: number, att: number) => (att > 0 ? `${Math.round((100 * made) / att)}%` : '—');
+  const row = (l: BoxLineStats) => (
+    <>
+      <td>{l.pts}</td>
+      <td>{l.reb}</td>
+      <td>{l.ast}</td>
+      <td>{l.stl}</td>
+      <td>{l.blk}</td>
+      <td>{l.tov}</td>
+      <td>
+        {l.fgm}-{l.fga}
+      </td>
+      <td>
+        {l.tpm}-{l.tpa}
+      </td>
+      <td>
+        {l.ftm}-{l.fta}
+      </td>
+    </>
+  );
   return (
-    <table className="bf-live-table">
-      <caption>{title}</caption>
-      <thead>
-        <tr>
-          <th scope="col">Player</th>
-          <th scope="col">PTS</th>
-          <th scope="col">REB</th>
-          <th scope="col">AST</th>
-          <th scope="col">STL</th>
-          <th scope="col">BLK</th>
-          <th scope="col">FG</th>
-        </tr>
-      </thead>
-      <tbody>
-        {labels.map((name, i) => {
-          const l = lines[i];
-          return (
-            <tr key={name} className={name === joker ? 'is-joker' : undefined}>
-              <th scope="row">
-                {name === joker && '🃏 '}
-                {name}
-                {name === star && ' ★'}
-              </th>
-              <td>{l.pts}</td>
-              <td>{l.reb}</td>
-              <td>{l.ast}</td>
-              <td>{l.stl}</td>
-              <td>{l.blk}</td>
-              <td>
-                {l.fgm}-{l.fga}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className="bf-live-table-wrap">
+      <table className="bf-live-table">
+        <caption>{title}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Player</th>
+            <th scope="col">PTS</th>
+            <th scope="col">REB</th>
+            <th scope="col">AST</th>
+            <th scope="col">STL</th>
+            <th scope="col">BLK</th>
+            <th scope="col">TO</th>
+            <th scope="col">FG</th>
+            <th scope="col">3P</th>
+            <th scope="col">FT</th>
+          </tr>
+        </thead>
+        <tbody>
+          {labels.map((name, i) => {
+            const l = lines[i];
+            return (
+              <tr key={name} className={name === joker ? 'is-joker' : undefined}>
+                <th scope="row">
+                  {name === joker && '🃏 '}
+                  {name}
+                  {name === star && ' ★'}
+                </th>
+                {row(l)}
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="bf-live-total">
+            <th scope="row">Team</th>
+            {row(total)}
+          </tr>
+          <tr className="bf-live-pct">
+            <th scope="row" />
+            <td colSpan={6} />
+            <td>{pct(total.fgm, total.fga)}</td>
+            <td>{pct(total.tpm, total.tpa)}</td>
+            <td>{pct(total.ftm, total.fta)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   );
 }

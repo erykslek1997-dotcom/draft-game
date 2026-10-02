@@ -708,6 +708,9 @@
 .bf-live-ctl > button { flex: 1; }
 .bf-live-box { margin-top: 10px; }
 .bf-live-box summary { cursor: pointer; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-ink-faint); }
+.bf-live-table-wrap { overflow-x: auto; }
+.bf-live-table tfoot th, .bf-live-table tfoot td { font-weight: 800; color: var(--at-ink); border-bottom: none; }
+.bf-live-table .bf-live-pct td { font-weight: 600; color: var(--at-ink-faint); }
 .bf-live-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
 .bf-live-table caption { text-align: left; font-size: 11px; font-weight: 800; color: var(--at-ink-faint); padding-bottom: 2px; }
 .bf-live-table th, .bf-live-table td { padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--at-line); color: var(--at-ink-soft); }
@@ -1009,4 +1012,7 @@
 .bench-expect {
   font-size: 0.9rem;
   margin: 8px 0 12px;
+}
+.bench-team .bench-sub {
+  opacity: 0.65;
 }
