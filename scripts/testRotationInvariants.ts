@@ -8,7 +8,9 @@ import { optimizeSpans } from '../src/engine/spanOptimizer';
 import { autoAssignRotation, allAssignments, GAME_MINUTES, MAX_MINUTES_PER_PLAYER, isForcedStarSlot } from '../src/engine/rotation';
 import { positionFitMultiplier, STARTER_SLOTS, CAP_LIMIT } from '../src/engine/positions';
 import { maxSustainableMinutes } from '../src/engine/durability';
-import { minuteProfileForSpan, OVERRUN_BANDS } from '../src/engine/rotationRoleMinutes';
+import { minuteProfileForSpan, OVERRUN_BANDS, MINUTES_CAP_TOLERANCE } from '../src/engine/rotationRoleMinutes';
+import { BENCH_MINUTES_CAP, SIXTH_MAN_MINUTES_CAP } from '../src/engine/minuteAllocation';
+import { effectiveTalent } from '../src/engine/grades';
 
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`FAIL: ${message}`);
@@ -36,6 +38,11 @@ for (const seed of [101, 202, 303]) {
     for (const a of assignments) {
       totals.set(a.player.id, (totals.get(a.player.id) ?? 0) + a.minutes);
     }
+    // 2026-10-02: a bench player has no room past the bench cap (minuteAllocation.ts).
+    const starterIds = new Set(STARTER_SLOTS.map((slot) => team.rotation.slots[slot][0]?.playerId));
+    const sixthManId = roster.filter((p) => !starterIds.has(p.id)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0]?.id;
+    const benchRoom = (id: string) =>
+      starterIds.has(id) ? Infinity : (id === sixthManId ? SIXTH_MAN_MINUTES_CAP : BENCH_MINUTES_CAP) + MINUTES_CAP_TOLERANCE;
     // Two positions away is a violation only when someone who can play the slot still had minutes
     // left under his durability — a roster with every such player maxed out has no better option.
     for (const a of assignments) {
@@ -66,7 +73,7 @@ for (const seed of [101, 202, 303]) {
           (q) =>
             q.id !== p.id &&
             hisSlots.some((slot) => positionFitMultiplier(q, slot) > 0) &&
-            (totals.get(q.id) ?? 0) < Math.min(minuteProfileForSpan(q).ceiling, maxSustainableMinutes(q, MAX_MINUTES_PER_PLAYER)),
+            (totals.get(q.id) ?? 0) < Math.min(minuteProfileForSpan(q).ceiling, maxSustainableMinutes(q, MAX_MINUTES_PER_PLAYER), benchRoom(q.id)),
         );
         if (cover.length > 0) {
           overCeiling++;

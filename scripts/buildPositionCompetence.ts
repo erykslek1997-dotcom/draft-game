@@ -134,6 +134,10 @@ function score(
       // Only a true big slides to the five: a PF span of a player who is a four or five in at least
       // half his spans (2026-10-02, the user: Ingles, Diaw, Dean Wade at centre from a PF-tagged span).
       if (s.primaryPosition !== 'PF' || career.bigShare < CAREER_BIG_SHARE) return 0;
+      // 2026-10-02, the user (Robert Horry at centre: "ile on tam zagrał w karierze?" — never listed
+      // there, 4% of his play-by-play minutes): a four plays the five only if his career says so,
+      // the same career-share rule as PF → SF.
+      if (share < (career.peakStartYear >= MODERN_FORWARD_SEASON ? MODERN_SF_SHARE : CLASSIC_SF_SHARE)) return 0;
       penalty = Math.max(
         0,
         below(82, 0.1, 0.8) + shortfall(rpg, 9, 0.06, 0.4) +

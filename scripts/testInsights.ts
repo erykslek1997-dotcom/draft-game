@@ -88,7 +88,9 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // 2026-10-01: 66 -> 65 with per-36 position competence and the off-position minute curve, which
 // reshuffle one backup minute. Re-measured directly (65). Same day, 65 -> 64 with the continuous
 // competence score. Re-measured directly (64).
-check(weakLinkInsight?.message.includes('64 targetable minutes'), 'weak-link description reports the real 64-minute cost');
+// 2026-10-02: 64 -> 58 with the flat cost past optimal minutes (weak bench players play less).
+// Re-measured directly (58).
+check(weakLinkInsight?.message.includes('58 targetable minutes'), 'weak-link description reports the real 58-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),

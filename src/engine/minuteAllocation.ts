@@ -35,6 +35,7 @@ const USEFUL_BENCH_MINUTES = 12;
 const USEFUL_BENCH_TALENT_FLOOR = 55;
 const USEFUL_BENCH_BONUS = 25;
 const PAST_OPTIMAL_TALENT_SHARE = 0.5;
+const PAST_OPTIMAL_FLAT_COST = 12;
 /** 2026-09-30, the user ("prawie każdy dostaje 40 minut, psuje immersje"): past `HEAVY_LOAD_MINUTES`
  * a minute costs almost its whole value — a star plays 39-40 only when the bench truly can't cover. */
 const HEAVY_LOAD_MINUTES = 38;
@@ -82,8 +83,8 @@ const OFF_POSITION_FLOOR_SHARE = 0.2;
  * same whoever he is, so every minute past his stretch also carries a flat cost, not only a share of
  * his own (small, for a bench player) value. */
 const OFF_POSITION_EXCESS_COST = 30;
-const BENCH_MINUTES_CAP = 28;
-const SIXTH_MAN_MINUTES_CAP = 32;
+export const BENCH_MINUTES_CAP = 28;
+export const SIXTH_MAN_MINUTES_CAP = 32;
 
 export function offPositionMinutes(score: number): number {
   let minutes = GAME_SLOT_MINUTES;
@@ -256,11 +257,17 @@ function consolidateRotation(
     // 2026-10-02, the user (Cliff Robinson at SF/PF/C: the smallest stint, SF, was dropped and Nick
     // Collison covered SF instead of centre): a player in too many slots tries dropping each of his
     // away slots, and the best re-solve wins.
+    // 2026-10-02, the user (Bryon Russell 12 minutes, Ryan Bowen 16): a crowded slot tries dropping
+    // each of its backups, not just the smallest stint, so the weakest one goes.
     const options = fragment.overSlots
       ? best.grants
           .filter((g) => g.playerId === fragment.playerId && homeById.get(g.playerId) !== g.slot && !kept.has(`${g.playerId}|${g.slot}`))
           .map((g) => `${g.playerId}|${g.slot}`)
-      : [`${fragment.playerId}|${fragment.slot}`];
+      : fragment.crowded
+        ? best.grants
+            .filter((g) => g.slot === fragment.slot && homeById.get(g.playerId) !== g.slot && !kept.has(`${g.playerId}|${g.slot}`))
+            .map((g) => `${g.playerId}|${g.slot}`)
+        : [`${fragment.playerId}|${fragment.slot}`];
     let chosen: { key: string; trial: ReturnType<typeof solveMinutes> } | null = null;
     for (const key of options) {
       forbidden.add(key);
@@ -299,7 +306,7 @@ function smallestFragment(
   homeById: Map<string, Position>,
   kept: Set<string>,
   byId: Map<string, PlayerSpan>,
-): (MinuteGrant & { overSlots: boolean }) | undefined {
+): (MinuteGrant & { overSlots: boolean; crowded: boolean }) | undefined {
   const byPlayer = new Map<string, MinuteGrant[]>();
   for (const g of grants) byPlayer.set(g.playerId, [...(byPlayer.get(g.playerId) ?? []), g]);
   const tooManySlots = (id: string) => {
@@ -320,8 +327,11 @@ function smallestFragment(
   }
   const candidates = grants
     .filter((g) => homeById.get(g.playerId) !== g.slot && !kept.has(`${g.playerId}|${g.slot}`))
-    .map((g) => ({ ...g, overSlots: tooManySlots(g.playerId) }))
-    .filter((g) => g.minutes < MIN_STINT_MINUTES || g.overSlots || secondBackup.has(grants.find((x) => x.playerId === g.playerId && x.slot === g.slot)!));
+    .map((g) => {
+      const original = grants.find((x) => x.playerId === g.playerId && x.slot === g.slot)!;
+      return { ...g, overSlots: tooManySlots(g.playerId), crowded: secondBackup.has(original) };
+    })
+    .filter((g) => g.minutes < MIN_STINT_MINUTES || g.overSlots || g.crowded);
   return candidates.sort((a, b) => a.minutes - b.minutes)[0];
 }
 
@@ -374,7 +384,10 @@ function solveMinutes(
       [floor, -TIER_FLOOR_BONUS],
       [usefulBench, -USEFUL_BENCH_BONUS],
       [optimal, 0],
-      [Math.min(ceiling, Math.max(optimal, HEAVY_LOAD_MINUTES)), talent * PAST_OPTIMAL_TALENT_SHARE],
+      // 2026-10-02, the user (Matisse Thybulle 24 minutes, Ryan Bowen 16): past his optimal minutes a
+      // player also pays a flat cost, so a weak bench player's extra minutes are no longer cheap just
+      // because his share of a low TAL is small.
+      [Math.min(ceiling, Math.max(optimal, HEAVY_LOAD_MINUTES)), talent * PAST_OPTIMAL_TALENT_SHARE + PAST_OPTIMAL_FLAT_COST],
       [ceiling, talent * HEAVY_LOAD_TALENT_SHARE],
       // 2026-10-01, the user: the minutes limit is soft, its overrun priced in three rising bands
       // (`OVERRUN_BANDS`, rotationRoleMinutes.ts) — a minute or two past it costs barely more than a
