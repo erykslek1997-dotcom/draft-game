@@ -253,7 +253,15 @@ Decyzje (2026-09-30):
     mechaniki: obrona (−0.06 vs 0.21; ochrona obręczy/obwód nie zmieniają skuteczności rywala),
     zbiórka drużynowa (stałe 26% w ataku; korelacja −0.18), straty i przechwyty (stałe), fit
     (−0.01 vs 0.23), rotacja (0.01 vs 0.11), talent poza atakiem.
-  - **Etap 1: fundamenty meczu** — paczka 2 niżej: pkt 1, 2, 3, 4, 6 + trzy poprawki z brancha.
+  - **Etap 1: fundamenty meczu** — paczka 2 niżej: pkt 1, 2, 3, 4, 6 + trzy poprawki z brancha. —
+    ZROBIONY na branchu 2026-10-02/03 (bez merge'a, czeka na akceptację raportu): krzywa zmęczenia
+    `fatigue.ts` w meczu (tylko mecze z rotacją) i w `minuteAllocation.ts` (zamiast progu 38 min;
+    ciężkie przekroczenie limitu 1.8 → 2.5 wartości); zmiany w meczu rozłożone równo w czasie
+    (mecz trzyma minuty z rotacji, średnio ±0.1 min); spacing osobno (±4 pkt) od limitu +2;
+    spacing z zasad 35% do 2000-01 (`buildSpanContext.ts`); straty według udziału strat gracza;
+    asysty max 75%. Wynik: drużyny z kimś na 40 min 96 → 25 ze 160; same mechaniki 11% → 20%
+    marginesu; oceny drużyn średnio −0.06 (max ±1); 27/27 testów (przeliczone: obrona twin towers
+    32, weak-link 61 min).
   - **Etap 2: kanały ataku** — margines rozbity na kanały: spacing, rim pressure (rzuty spod
     kosza, wolne), kreacja (asysty, straty składu = pkt 5), self-creation, pairing, kilku graczy
     potrzebujących piłki; czego silnik nie liczy (np. straty) — dodać do silnika.
