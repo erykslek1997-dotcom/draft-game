@@ -12,7 +12,7 @@
   "PF": "partial"
  },
  "Chauncey Billups": {
-  "SG": "none"
+  "SG": "emergency"
  },
  "Chris Paul": {
   "SG": "none"
@@ -97,7 +97,8 @@
  },
  "Kevin Durant": {
   "PF": "full",
-  "SG": "none"
+  "SG": "none",
+  "PG": "none"
  },
  "Kevin Garnett": {
   "C": "partial",
@@ -109,7 +110,8 @@
  },
  "Larry Bird": {
   "C": "none",
-  "SG": "none"
+  "SG": "none",
+  "PG": "none"
  },
  "LeBron James": {
   "C": "none",
@@ -149,7 +151,8 @@
  },
  "Scottie Pippen": {
   "PF": "partial",
-  "SG": "partial"
+  "SG": "partial",
+  "PG": "none"
  },
  "Shai Gilgeous-Alexander": {
   "SG": "full"

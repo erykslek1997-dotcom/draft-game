@@ -85,7 +85,10 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // 2026-10-01: 72 -> 66 once missed games stopped capping minutes per game (durability now costs
 // value, not minutes): the stars play their tier minutes and the named bench targets fewer. Same
 // three named targets. Re-measured directly (66).
-check(weakLinkInsight?.message.includes('66 targetable minutes'), 'weak-link description reports the real 66-minute cost');
+// 2026-10-01: 66 -> 65 with per-36 position competence and the off-position minute curve, which
+// reshuffle one backup minute. Re-measured directly (65). Same day, 65 -> 64 with the continuous
+// competence score. Re-measured directly (64).
+check(weakLinkInsight?.message.includes('64 targetable minutes'), 'weak-link description reports the real 64-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
@@ -131,7 +134,12 @@ const movementCoverageTeam = team('team-model-movement-coverage', [
   // rates a classic center as unable to play PF, so Larry Smith had to cover the PF backup
   // minutes and stopped being this fixture's dead ninth slot. Elton Brand 2012-14 is a real
   // backup big for both PF and C, keeping the "eight meaningful players + a dead ninth" shape.
-  pick('Elton Brand', '2012-14'),
+  // 2026-10-01: was Elton Brand 2012-14. Per-36 position competence lets Shane Battier cover PF
+  // as a small-ball four, so Brand fell to 8 minutes and the roster had seven meaningful players.
+  // Taj Gibson 2012-14 earned real backup big minutes and kept the shape; with the continuous
+  // competence score he fell back under the meaningful line, and Nick Collison 2009-11 kept it;
+  // with per-span competence his 2010-12 window does.
+  pick('Nick Collison', '2010-12'),
   pick('Andre Iguodala', '2011-13'),
   pick('Larry Smith', '1991-93'),
 ]);
@@ -226,6 +234,9 @@ check(!detector('STAR_FGA_COST_HURTS_DEPTH', starJustified).active, 'justified s
 // shoots better), so he stopped counting as a hard non-spacer and the five had only one. Evan
 // Mobley 2023-25 (38) swapped for his own 2022-24 span (11, 11.6 FGA) — the pre-jumper Mobley —
 // which gives the five two real non-spacers again.
+// 2026-10-01: Bill Cartwright 1990-92 swapped for Primož Brezec 2005-07, another weak backup
+// centre. With minutes-based position competence Greg Anderson (who also played centre) took the
+// backup centre minutes and Cartwright became a real dead slot.
 const exposedStarTeam = team('team-model-exposed-star', [
   pick('Jalen Brunson', '2024-26'),
   pick('Michael Jordan', '1990-92'),
@@ -234,7 +245,7 @@ const exposedStarTeam = team('team-model-exposed-star', [
   pick('Rudy Gobert', '2020-22'),
   pick('Carlos Arroyo', '2006-08'),
   pick('Ira Newble', '2003-05'),
-  pick('Bill Cartwright', '1990-92'),
+  pick('Primož Brezec', '2005-07'),
   pick('Greg Anderson', '1989-91'),
 ]);
 const exposedStar = buildTeamFeatureSnapshot(exposedStarTeam);

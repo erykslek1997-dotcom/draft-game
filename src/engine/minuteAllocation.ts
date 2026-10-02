@@ -1,5 +1,6 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
+import { positionCompetenceScore } from './positionCompetence';
 import { effectiveTalent } from './grades';
 import { maxSustainableMinutes } from './durability';
 import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE, OVERRUN_BANDS } from './rotationRoleMinutes';
@@ -53,6 +54,55 @@ const FORCED_HOME_SLOT_SHARE = 0.75; // = rotation.ts FORCED_STAR_SLOT_FIT
 const STARTER_CORE_MINUTES = 24;
 const STARTER_CORE_BONUS = 60;
 const OWN_SLOT_BONUS = 12;
+
+/**
+ * 2026-10-01, the user ("skalowalne do minut?", "bramki zamykające", then "traktuję to bardziej
+ * jako rozbicie minut na innej pozycji niż start na niej"): the competence score
+ * (positionCompetence.ts) is read as how many minutes a game a player can cover at a position
+ * that isn't his own, interpolated between the agreed anchors: 0.25 → 2, 0.4 → 6, 0.6 → 12,
+ * 0.75 → 20 and 0.9 (a real second position, a starter there) → the whole game.
+ * Those minutes keep their value; past them it drops fast (`OFF_POSITION_DROP`, two minutes per
+ * step) to `OFF_POSITION_FLOOR_SHARE`, so he goes past his stretch only when nobody fits better.
+ */
+const GAME_SLOT_MINUTES = 48;
+const OFF_POSITION_MINUTE_ANCHORS: Array<[number, number]> = [
+  [0, 0],
+  [0.25, 2],
+  [0.4, 6],
+  [0.6, 12],
+  [0.75, 20],
+  [0.9, GAME_SLOT_MINUTES],
+];
+const OFF_POSITION_DROP = [0.85, 0.7, 0.55];
+/** A must-start star forced to a neighbouring slot he can't play covers it like a 0.4 fit (6 minutes). */
+const FORCED_CLOSED_SLOT_SCORE = 0.4;
+const OFF_POSITION_FLOOR_SHARE = 0.45;
+
+export function offPositionMinutes(score: number): number {
+  let minutes = GAME_SLOT_MINUTES;
+  for (let i = 1; i < OFF_POSITION_MINUTE_ANCHORS.length; i++) {
+    const [s1, m1] = OFF_POSITION_MINUTE_ANCHORS[i];
+    if (score <= s1) {
+      const [s0, m0] = OFF_POSITION_MINUTE_ANCHORS[i - 1];
+      minutes = m0 + ((m1 - m0) * (score - s0)) / (s1 - s0);
+      break;
+    }
+  }
+  return Math.floor(minutes / UNIT) * UNIT;
+}
+
+function offPositionCurve(score: number): Array<[number, number]> {
+  if (score >= 1) return [[GAME_SLOT_MINUTES, 1]];
+  let reached = offPositionMinutes(score);
+  const curve: Array<[number, number]> = reached > 0 ? [[reached, 1]] : [];
+  for (const share of OFF_POSITION_DROP) {
+    reached += UNIT;
+    if (reached >= GAME_SLOT_MINUTES) break;
+    curve.push([reached, share]);
+  }
+  curve.push([GAME_SLOT_MINUTES, OFF_POSITION_FLOOR_SHARE]);
+  return curve;
+}
 
 interface Arc {
   to: number;
@@ -278,11 +328,41 @@ function solveMinutes(
       if (forbidden.has(`${player.id}|${slot}`)) return;
       const value = minuteValue(player, slot, homeSlot);
       if (slot === homeSlot) {
-        const core = Math.floor(Math.min(STARTER_CORE_MINUTES, ceiling) / UNIT);
+        // 2026-10-02, the user (option a: a must-start centre beside another one, started at a
+        // four he can't play): a starter off his own position keeps that slot only for the minutes
+        // his competence covers there (`offPositionMinutes`; a forced, closed slot counts as
+        // `FORCED_CLOSED_SLOT_SCORE`), then fades like any off-position stretch and plays the rest
+        // at his own position.
+        const offPosition = slot !== player.primaryPosition;
+        const score = offPosition ? positionCompetenceScore(player, slot) || FORCED_CLOSED_SLOT_SCORE : 1;
+        const limit = offPosition ? offPositionMinutes(score) : GAME_SLOT_MINUTES;
+        const core = Math.floor(Math.min(STARTER_CORE_MINUTES, ceiling, limit) / UNIT);
         flow.add(playerNode(i), slotNode(j), core, -(value + OWN_SLOT_BONUS + STARTER_CORE_BONUS) * UNIT);
-        flow.add(playerNode(i), slotNode(j), slotUnits, -(value + OWN_SLOT_BONUS) * UNIT);
-      } else {
+        if (!offPosition || limit >= GAME_SLOT_MINUTES) {
+          flow.add(playerNode(i), slotNode(j), slotUnits, -(value + OWN_SLOT_BONUS) * UNIT);
+        } else {
+          let reached = core * UNIT;
+          // A forced, closed slot is not his position: past his stretch there it is worth nothing,
+          // so he stays only for the minutes nobody else covers better (the user kept those).
+          const curve: Array<[number, number]> = positionCompetenceScore(player, slot) > 0 ? offPositionCurve(score) : [[GAME_SLOT_MINUTES, 0]];
+          for (const [upTo, share] of curve) {
+            const units = Math.floor(Math.min(upTo, GAME_SLOT_MINUTES) / UNIT) - Math.floor(reached / UNIT);
+            if (units > 0) flow.add(playerNode(i), slotNode(j), units, -(value + OWN_SLOT_BONUS) * share * UNIT);
+            reached = Math.max(reached, upTo);
+          }
+        }
+      } else if (value <= 0) {
         flow.add(playerNode(i), slotNode(j), slotUnits, -value * UNIT);
+      } else {
+        // Off his own position a player's value fades with the minutes he spends there
+        // (`offPositionCurve`): a short stretch is nearly free, a whole game is not.
+        const curve = offPositionCurve(positionCompetenceScore(player, slot));
+        let reached = 0;
+        for (const [upTo, share] of curve) {
+          const units = Math.floor(Math.min(upTo, GAME_SLOT_MINUTES) / UNIT) - Math.floor(reached / UNIT);
+          if (units > 0) flow.add(playerNode(i), slotNode(j), units, -value * share * UNIT);
+          reached = upTo;
+        }
       }
     });
   });

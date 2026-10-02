@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { positionCompetence, COMPETENCE_MULTIPLIER } from './positionCompetence';
+import { positionCompetence, positionCompetenceScore, COMPETENCE_MULTIPLIER, PARTIAL_SCORE } from './positionCompetence';
 import { normalizePlayerName } from '../data/schema';
 
 export const CAP_LIMIT = 100.9;
@@ -84,9 +84,9 @@ export function hardLockedPosition(player: PlayerSpan): Position | null {
  * Multiplier applied to a player's talent when assigned to a given slot, or 0 if the
  * assignment isn't realistic at all. A `HARD_POSITION_LOCKS` entry overrides everything else
  * unconditionally. Otherwise it follows the player's graded competence (`positionCompetence.ts`):
- * natural 1.0, a 'full' second position 0.975, 'partial' 0.945, 'emergency'
+ * natural 1.0, then continuous in the competence score (see below) down to
  * `ADJACENT_UP_FALLBACK`/`ADJACENT_DOWN_FALLBACK` depending on direction (see `isUpwardSlide`),
- * and 'none' 0 — a slot the player can't realistically play, not a soft penalty.
+ * and 0 for a closed position — a slot the player can't realistically play, not a soft penalty.
  */
 export function positionFitMultiplier(player: PlayerSpan, slot: Position): number {
   const lock = hardLockedPosition(player);
@@ -94,17 +94,34 @@ export function positionFitMultiplier(player: PlayerSpan, slot: Position): numbe
   // 2026-09-25: graded per player (`positionCompetence.ts`) instead of "listed secondary 0.9,
   // any adjacent slot 0.85/0.5". A real second position now costs only a marginal drop, and an
   // adjacent slot a player can't really play is no longer free to fill.
-  const competence = positionCompetence(player, slot);
-  switch (competence) {
-    case 'natural':
-    case 'full':
-    case 'partial':
-      return COMPETENCE_MULTIPLIER[competence];
-    case 'emergency':
-      return isUpwardSlide(player, slot) ? ADJACENT_UP_FALLBACK : ADJACENT_DOWN_FALLBACK;
-    case 'none':
-      return 0;
+  // 2026-10-01, the user ("bramki zamykające"): the competence score is continuous, so is the fit.
+  // Anchors: score 0.9 → 0.975 (a real second position), 0.6 → 0.945, the partial line → 0.92,
+  // and 0.25 and below → the old emergency fallback, linear in between — no step anywhere.
+  const score = positionCompetenceScore(player, slot);
+  if (score >= 1) return 1;
+  if (score <= 0) return 0;
+  const emergency = isUpwardSlide(player, slot) ? ADJACENT_UP_FALLBACK : ADJACENT_DOWN_FALLBACK;
+  return interpolate(score, [
+    [EMERGENCY_SCORE, emergency],
+    [PARTIAL_SCORE, PARTIAL_LINE_FIT],
+    [0.6, COMPETENCE_MULTIPLIER.partial],
+    [0.9, COMPETENCE_MULTIPLIER.full],
+  ]);
+}
+
+const EMERGENCY_SCORE = 0.25;
+const PARTIAL_LINE_FIT = 0.92;
+
+function interpolate(x: number, points: Array<[number, number]>): number {
+  if (x <= points[0][0]) return points[0][1];
+  for (let i = 1; i < points.length; i++) {
+    const [x1, y1] = points[i];
+    if (x <= x1) {
+      const [x0, y0] = points[i - 1];
+      return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
+    }
   }
+  return points[points.length - 1][1];
 }
 
 export function isPositionEligible(player: PlayerSpan, slot: Position): boolean {
@@ -122,7 +139,10 @@ export function isPositionEligible(player: PlayerSpan, slot: Position): boolean 
  * that needs this distinction.
  */
 export function isRealPositionFit(player: PlayerSpan, slot: Position): boolean {
-  return positionFitMultiplier(player, slot) >= 0.9;
+  // 2026-10-01: the fit is continuous now, so read the competence band (natural, full, partial).
+  if (positionFitMultiplier(player, slot) <= 0) return false;
+  const competence = positionCompetence(player, slot);
+  return competence === 'natural' || competence === 'full' || competence === 'partial';
 }
 
 export function totalFga(rosterFgas: number[]): number {
