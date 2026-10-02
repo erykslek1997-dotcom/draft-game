@@ -5,16 +5,16 @@
  *
  * 2026-10-02, stage 2 (live game), the user: "realne skalowanie statystyk na to jaki jest skład —
  * Kobe grał w deadball, ale mając nowoczesny skład miałby więcej miejsca". Teammates come from the
- * player-season team data we have (`awards/teamDefense.json` with minutes from 1997,
- * `cardCareerMetadata.json` before that); their real three-point attempts from `awards/boxRates.json`;
- * the part of the team we cannot name is filled with that season's league rate. Before the 1980
+ * real season rosters (`raw/playerSeasonTeams.csv`, every season since 1947); their real
+ * three-point attempts from `awards/boxRates.json`; the little of the team we cannot match is filled
+ * with that season's league rate. Before the 1980
  * three-point line (and in the bricked-in early 80s) spacing came from long twos, so the rate is
  * floored at `ORIGINAL_SPACING_FLOOR`. Usage from `awards/usage.json` (1997 on), else estimated from
  * plays per minute against the season's pace.
  *
  * Run: npx tsx scripts/buildSpanContext.ts
  */
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { draftPool } from '../src/data/draftPool';
 import type { PlayerSpan } from '../src/data/schema';
@@ -24,8 +24,6 @@ import { runtimeZoneTotalsForSpan } from '../src/engine/runtimeSpanLookups';
 import boxRates from '../src/data/awards/boxRates.json';
 import usage from '../src/data/awards/usage.json';
 import baselines from '../src/data/awards/seasonBaselines.json';
-import teamDefense from '../src/data/awards/teamDefense.json';
-import career from '../src/data/cardCareerMetadata.json';
 
 const ORIGINAL_SPACING_FLOOR = 0.15;
 const RIM_SHARE_BY_POSITION: Record<string, number> = { PG: 0.42, SG: 0.42, SF: 0.5, PF: 0.6, C: 0.75 };
@@ -50,41 +48,92 @@ const pace = new Map((baselines as { season: string; pace: number | null }[]).ma
 const usageRows = new Map<string, { usgPct: number; games: number; mpg: number }>();
 for (const row of usage as { name: string; season: string; usgPct: number; games: number; mpg: number }[]) usageRows.set(`${norm(row.name)}|${row.season}`, row);
 
-const playerSeasons = (teamDefense as { playerSeasons: Record<string, Record<string, { team: string; min: number }>> }).playerSeasons;
-const careers = career as Record<string, { seasons: { seasonEnd: number; team: string }[] }>;
-const rosters = new Map<string, Set<string>>();
-const addToRoster = (end: number, team: string, name: string) => {
-  const key = `${end}|${team}`;
-  rosters.set(key, (rosters.get(key) ?? new Set()).add(name));
-};
-for (const [name, seasons] of Object.entries(playerSeasons)) for (const [end, v] of Object.entries(seasons)) addToRoster(Number(end), v.team, name);
-for (const [name, v] of Object.entries(careers)) for (const s of v.seasons) addToRoster(s.seasonEnd, s.team, norm(name));
-const teamOf = (name: string, end: number) =>
-  playerSeasons[norm(name)]?.[String(end)]?.team ?? careers[name]?.seasons.find((s) => s.seasonEnd === end)?.team ?? null;
+/**
+ * Every player's team(s) and games each season, 1947-2026 — the user's export of the Kaggle
+ * "Historical NBA Data and Player Box Scores" box scores, aggregated per player, season and team
+ * (`src/data/raw/playerSeasonTeams.csv`). Games, not minutes, weigh a traded player's season:
+ * minutes are missing for much of the pre-1970 data.
+ */
+type SeasonTeamRow = { name: string; seasonEnd: number; team: string; games: number };
+const seasonTeamRows: SeasonTeamRow[] = [];
+{
+  const text = readFileSync(resolve(import.meta.dirname, '../src/data/raw/playerSeasonTeams.csv'), 'utf8');
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  const header = parseCsvLine(lines[0]);
+  const at = (name: string) => header.indexOf(name);
+  for (const line of lines.slice(1)) {
+    const cells = parseCsvLine(line);
+    seasonTeamRows.push({ name: norm(cells[at('name')]), seasonEnd: Number(cells[at('seasonEnd')]), team: cells[at('team')], games: Number(cells[at('games')]) });
+  }
+}
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"' && line[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ',') {
+      out.push(cell);
+      cell = '';
+    } else cell += ch;
+  }
+  out.push(cell);
+  return out;
+}
+const rosters = new Map<string, { name: string; games: number }[]>();
+const teamsOf = new Map<string, { team: string; games: number }[]>();
+const seasonGames = new Map<string, number>();
+for (const row of seasonTeamRows) {
+  const rosterKey = `${row.seasonEnd}|${row.team}`;
+  rosters.set(rosterKey, [...(rosters.get(rosterKey) ?? []), { name: row.name, games: row.games }]);
+  const playerKey = `${row.name}|${row.seasonEnd}`;
+  teamsOf.set(playerKey, [...(teamsOf.get(playerKey) ?? []), { team: row.team, games: row.games }]);
+  seasonGames.set(playerKey, (seasonGames.get(playerKey) ?? 0) + row.games);
+}
 
+/** Teammates' three-point rate where he really played: every teammate's season attempts, scaled to
+ * the share of his season spent on that team; a traded player's teams weighed by his games there. */
 function teammatesThreeRate(span: PlayerSpan): number {
   let threes = 0;
   let shots = 0;
+  const me = norm(span.playerName);
   for (const end of spanEndYears(span.spanLabel)) {
     const season = seasonOf(end);
     const l = league.get(season);
     const leagueRate = l && l.fga > 0 ? l.tpa / l.fga : 0;
     const teamShots = (pace.get(season) ?? 100) * FGA_PER_POSSESSION * 82;
-    const own = box.get(`${norm(span.playerName)}|${season}`)?.fga ?? 0;
-    let knownShots = 0;
-    let knownThrees = 0;
-    const team = teamOf(span.playerName, end);
-    for (const mate of team ? rosters.get(`${end}|${team}`) ?? [] : []) {
-      if (mate === norm(span.playerName)) continue;
-      const row = box.get(`${mate}|${season}`);
-      if (row) {
-        knownShots += row.fga;
-        knownThrees += row.threePA;
-      }
+    const own = box.get(`${me}|${season}`)?.fga ?? 0;
+    const stints = teamsOf.get(`${me}|${end}`) ?? [];
+    const myGames = stints.reduce((sum, s) => sum + s.games, 0);
+    if (myGames === 0) {
+      threes += teamShots * leagueRate;
+      shots += teamShots;
+      continue;
     }
-    const unknown = Math.max(0, teamShots - own - knownShots);
-    threes += knownThrees + unknown * leagueRate;
-    shots += knownShots + unknown;
+    for (const stint of stints) {
+      const weight = stint.games / myGames;
+      let knownShots = 0;
+      let knownThrees = 0;
+      for (const mate of rosters.get(`${end}|${stint.team}`) ?? []) {
+        if (mate.name === me) continue;
+        const row = box.get(`${mate.name}|${season}`);
+        const total = seasonGames.get(`${mate.name}|${end}`) ?? 0;
+        if (!row || total === 0) continue;
+        const share = mate.games / total;
+        knownShots += row.fga * share;
+        knownThrees += row.threePA * share;
+      }
+      const unknown = Math.max(0, teamShots - own - knownShots);
+      threes += weight * (knownThrees + unknown * leagueRate);
+      shots += weight * (knownShots + unknown);
+    }
   }
   return Math.max(ORIGINAL_SPACING_FLOOR, shots > 0 ? threes / shots : 0);
 }
