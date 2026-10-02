@@ -56,6 +56,7 @@ const STARTER_CORE_BONUS = 60;
 const OWN_SLOT_BONUS = 12;
 
 /**
+ * 2026-10-02: past the stretch the share now drops 0.6 / 0.35 / 0.2 (the user: "twardszy limit").
  * 2026-10-01, the user ("skalowalne do minut?", "bramki zamykające", then "traktuję to bardziej
  * jako rozbicie minut na innej pozycji niż start na niej"): the competence score
  * (positionCompetence.ts) is read as how many minutes a game a player can cover at a position
@@ -73,10 +74,16 @@ const OFF_POSITION_MINUTE_ANCHORS: Array<[number, number]> = [
   [0.75, 20],
   [0.9, GAME_SLOT_MINUTES],
 ];
-const OFF_POSITION_DROP = [0.85, 0.7, 0.55];
+const OFF_POSITION_DROP = [0.6, 0.35, 0.2];
 /** A must-start star forced to a neighbouring slot he can't play covers it like a 0.4 fit (6 minutes). */
 const FORCED_CLOSED_SLOT_SCORE = 0.4;
-const OFF_POSITION_FLOOR_SHARE = 0.45;
+const OFF_POSITION_FLOOR_SHARE = 0.2;
+/** 2026-10-02, the user (Collison at SF, Sabonis at SF): a big out of position costs the team the
+ * same whoever he is, so every minute past his stretch also carries a flat cost, not only a share of
+ * his own (small, for a bench player) value. */
+const OFF_POSITION_EXCESS_COST = 30;
+const BENCH_MINUTES_CAP = 28;
+const SIXTH_MAN_MINUTES_CAP = 32;
 
 export function offPositionMinutes(score: number): number {
   let minutes = GAME_SLOT_MINUTES;
@@ -239,33 +246,76 @@ function consolidateRotation(
     return over;
   };
   let best = solveMinutes(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer, forbidden);
+  const byId = new Map(roster.map((p) => [p.id, p]));
   for (let pass = 0; pass < MAX_CONSOLIDATION_PASSES; pass++) {
-    const fragment = smallestFragment(best.grants, homeById, kept);
+    const fragment = smallestFragment(best.grants, homeById, kept, byId);
     if (!fragment) break;
-    const key = `${fragment.playerId}|${fragment.slot}`;
-    forbidden.add(key);
-    const trial = solveMinutes(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer, forbidden);
-    if (
-      trial.filled === best.filled &&
-      trial.cost - best.cost <= FRAGMENT_VALUE_TOLERANCE * UNIT &&
-      overLimit(trial.grants) <= overLimit(best.grants)
-    ) {
-      best = trial;
-    } else {
+    // 2026-10-02, the user (Cliff Robinson at SF/PF/C: the smallest stint, SF, was dropped and Nick
+    // Collison covered SF instead of centre): a player in too many slots tries dropping each of his
+    // away slots, and the best re-solve wins.
+    const options = fragment.overSlots
+      ? best.grants
+          .filter((g) => g.playerId === fragment.playerId && homeById.get(g.playerId) !== g.slot && !kept.has(`${g.playerId}|${g.slot}`))
+          .map((g) => `${g.playerId}|${g.slot}`)
+      : [`${fragment.playerId}|${fragment.slot}`];
+    let chosen: { key: string; trial: ReturnType<typeof solveMinutes> } | null = null;
+    for (const key of options) {
+      forbidden.add(key);
+      const trial = solveMinutes(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer, forbidden);
       forbidden.delete(key);
-      kept.add(key);
+      const acceptable =
+        trial.filled === best.filled &&
+        trial.cost - best.cost <= FRAGMENT_VALUE_TOLERANCE * UNIT &&
+        overLimit(trial.grants) <= overLimit(best.grants);
+      if (acceptable && (!chosen || trial.cost < chosen.trial.cost)) chosen = { key, trial };
+    }
+    if (chosen) {
+      forbidden.add(chosen.key);
+      best = chosen.trial;
+    } else {
+      for (const key of options) kept.add(key);
     }
   }
   return best.grants;
 }
 
-function smallestFragment(grants: MinuteGrant[], homeById: Map<string, Position>, kept: Set<string>): MinuteGrant | undefined {
-  const slotCount = new Map<string, number>();
-  for (const g of grants) slotCount.set(g.playerId, (slotCount.get(g.playerId) ?? 0) + 1);
-  const candidates = grants.filter((g) => {
-    if (homeById.get(g.playerId) === g.slot || kept.has(`${g.playerId}|${g.slot}`)) return false;
-    return g.minutes < MIN_STINT_MINUTES || (slotCount.get(g.playerId) ?? 0) > MAX_SLOTS_PER_PLAYER;
-  });
+/**
+ * 2026-10-02, the user: a third position is fine only when every stint is a real one (8+ minutes at
+ * a position he can really play, competence 0.6+); one backup per slot where possible (a slot's
+ * second backup under `SECOND_BACKUP_MIN_MINUTES` is a fragment).
+ */
+const THIRD_SLOT_MIN_MINUTES = 8;
+const THIRD_SLOT_MIN_SCORE = 0.6;
+const SECOND_BACKUP_MIN_MINUTES = 10;
+
+function smallestFragment(
+  grants: MinuteGrant[],
+  homeById: Map<string, Position>,
+  kept: Set<string>,
+  byId: Map<string, PlayerSpan>,
+): (MinuteGrant & { overSlots: boolean }) | undefined {
+  const byPlayer = new Map<string, MinuteGrant[]>();
+  for (const g of grants) byPlayer.set(g.playerId, [...(byPlayer.get(g.playerId) ?? []), g]);
+  const tooManySlots = (id: string) => {
+    const own = byPlayer.get(id) ?? [];
+    if (own.length <= MAX_SLOTS_PER_PLAYER) return false;
+    if (own.length > MAX_SLOTS_PER_PLAYER + 1) return true;
+    const player = byId.get(id);
+    return own.some(
+      (g) =>
+        g.minutes < THIRD_SLOT_MIN_MINUTES ||
+        (player !== undefined && homeById.get(id) !== g.slot && positionCompetenceScore(player, g.slot) < THIRD_SLOT_MIN_SCORE),
+    );
+  };
+  const secondBackup = new Set<MinuteGrant>();
+  for (const slot of STARTER_SLOTS) {
+    const backups = grants.filter((g) => g.slot === slot && homeById.get(g.playerId) !== slot).sort((a, b) => a.minutes - b.minutes);
+    if (backups.length >= 2 && backups[0].minutes < SECOND_BACKUP_MIN_MINUTES) secondBackup.add(backups[0]);
+  }
+  const candidates = grants
+    .filter((g) => homeById.get(g.playerId) !== g.slot && !kept.has(`${g.playerId}|${g.slot}`))
+    .map((g) => ({ ...g, overSlots: tooManySlots(g.playerId) }))
+    .filter((g) => g.minutes < MIN_STINT_MINUTES || g.overSlots || secondBackup.has(grants.find((x) => x.playerId === g.playerId && x.slot === g.slot)!));
   return candidates.sort((a, b) => a.minutes - b.minutes)[0];
 }
 
@@ -290,11 +340,19 @@ function solveMinutes(
   const flow = new MinCostFlow(sink + 1);
   const slotUnits = Math.floor(gameMinutes / UNIT);
 
+  // 2026-10-02, the user (Cliff Robinson's 34 bench minutes "dziwnie wygląda"): a bench player plays
+  // at most `BENCH_MINUTES_CAP`, the sixth man (the best bench player) `SIXTH_MAN_MINUTES_CAP`,
+  // whatever his tier would allow a starter.
+  const sixthManId = roster
+    .filter((p) => !starterSlotById.has(p.id))
+    .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0]?.id;
+
   roster.forEach((player, i) => {
     const profile = minuteProfileForSpan(player);
     const durability = Math.min(maxSustainableMinutes(player, maxMinutesPerPlayer), maxMinutesPerPlayer);
+    const benchCap = starterSlotById.has(player.id) ? Infinity : player.id === sixthManId ? SIXTH_MAN_MINUTES_CAP : BENCH_MINUTES_CAP;
     // An odd limit fills to the next 2-minute unit (`MINUTES_CAP_TOLERANCE`, one minute over).
-    const ceiling = Math.min(profile.ceiling, durability);
+    const ceiling = Math.min(profile.ceiling, durability, benchCap);
     const talent = effectiveTalent(player);
     const homeSlot = starterSlotById.get(player.id);
     const usefulBench = !homeSlot && player.fga >= 2 && talent >= USEFUL_BENCH_TALENT_FLOOR ? Math.min(USEFUL_BENCH_MINUTES, ceiling) : 0;
@@ -360,7 +418,7 @@ function solveMinutes(
         let reached = 0;
         for (const [upTo, share] of curve) {
           const units = Math.floor(Math.min(upTo, GAME_SLOT_MINUTES) / UNIT) - Math.floor(reached / UNIT);
-          if (units > 0) flow.add(playerNode(i), slotNode(j), units, -value * share * UNIT);
+          if (units > 0) flow.add(playerNode(i), slotNode(j), units, (-value * share + (share < 1 ? OFF_POSITION_EXCESS_COST : 0)) * UNIT);
           reached = upTo;
         }
       }

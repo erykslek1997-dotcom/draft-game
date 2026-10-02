@@ -21,7 +21,7 @@ import { resolve } from 'node:path';
 import { draftPool } from '../src/data/draftPool';
 import { normalizePlayerName } from '../src/data/schema';
 import type { PlayerSpan, Position } from '../src/data/schema';
-import { getHeightInches } from '../src/data/heightLookup';
+import { getBodyWeightLbs, getHeightInches } from '../src/data/heightLookup';
 import { effectiveTalent } from '../src/engine/grades';
 import { positionDistance, hardLockedPosition } from '../src/engine/positions';
 import { computeSpacing } from '../src/engine/spacing';
@@ -36,6 +36,11 @@ const HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creato
 const SMALL_BALL_C_ROLES = ['Switch Big', 'Mobile Big', 'Helper', 'Anchor Big'];
 
 const FIRST_BLOCKS_SEASON = 1974;
+/** First season (start year) of the positionless era for the PF → SF career-share rule. */
+const MODERN_FORWARD_SEASON = 2010;
+const MODERN_SF_SHARE = 0.15;
+const CLASSIC_SF_SHARE = 0.3;
+const CAREER_BIG_SHARE = 0.5;
 const THREE_POINT_LINE_SEASON = 1980;
 function spanStartYear(s: PlayerSpan): number {
   return Number(s.spanLabel.slice(0, 4)) + 1;
@@ -65,7 +70,15 @@ function shortfall(value: number, target: number, weight: number, cap: number): 
  * positions (and the user's own decisions) are closed outright; a weak fit stays possible and the
  * minute solver prices it with the minutes played there (minuteAllocation.ts).
  */
-function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: number, natural: Position[]): number {
+function score(
+  pos: Position,
+  from: Position,
+  s: PlayerSpan,
+  h: number,
+  share: number,
+  natural: Position[],
+  career: { bigShare: number; peakStartYear: number },
+): number {
   const b = s.box;
   const rpg = per36(b.rpg, s);
   const apg = per36(b.apg, s);
@@ -73,6 +86,11 @@ function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: n
   const spacing = computeSpacing(s);
   const dtal = computeDefensiveTalent(s);
   const handler = HANDLERS.includes(s.offensiveArchetype);
+  // 2026-10-02, the user (Dudley and OG at SG, McMillan at SF): a neighbouring position is one
+  // step from this span's own position, not from any position of his career.
+  if (pos !== 'PG' && Math.abs(POSITIONS.indexOf(pos) - POSITIONS.indexOf(s.primaryPosition)) !== 1) return 0;
+  if (pos !== 'PG') from = s.primaryPosition;
+  const weight = getBodyWeightLbs(s.playerName) ?? 0;
   const below = (target: number, weight: number, cap: number) => (h ? shortfall(h, target, weight, cap) : 0);
   const above = (target: number, weight: number, cap: number) => (h ? shortfall(-h, -target, weight, cap) : 0);
   let penalty: number;
@@ -88,8 +106,17 @@ function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: n
       break;
     case 'SF':
       if (from === 'SG') {
-        penalty = Math.max(0, below(78, 0.12, 0.8) + shortfall(rpg, 5.5, 0.08, 0.4) - Math.min(0.15, 0.005 * Math.max(0, dtal - 70)));
+        // 2026-10-02, the user (Jon Barry at SF: "wzrost nie ma takiego znaczenia jak defense i
+        // siła", "mocniej dokręć"): a guard guards forwards on defense and strength, height barely.
+        penalty =
+          below(77, 0.05, 0.4) +
+          shortfall(rpg, 5.5, 0.08, 0.4) +
+          shortfall(dtal, 70, 0.02, 0.6) +
+          (weight ? shortfall(weight, 215, 0.015, 0.4) : 0);
       } else if (from === 'PF') {
+        // 2026-10-02, the user: a four plays the three only if his career says so — SF listed in at
+        // least 15% of his spans (peak from 2010-11, positionless era) or 30% (earlier eras).
+        if (share < (career.peakStartYear >= MODERN_FORWARD_SEASON ? MODERN_SF_SHARE : CLASSIC_SF_SHARE)) return 0;
         // 2026-10-01, the user (Gasol, Bosh, Stoudemire as partial small forwards): a big four is
         // not a wing — height and missing range weigh double. Before the three-point line
         // (1979-80) spacing reads 0 for everyone, so only height counts there.
@@ -104,8 +131,9 @@ function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: n
       penalty = below(79, 0.1, 0.8) + shortfall(rpg, 6.5, 0.08, 0.4);
       break;
     case 'C':
-      // Only a true four slides to the five (a wing who also plays the four — Kukoč, Dudley — does not).
-      if (from !== 'PF' || s.primaryPosition !== 'PF') return 0;
+      // Only a true big slides to the five: a PF span of a player who is a four or five in at least
+      // half his spans (2026-10-02, the user: Ingles, Diaw, Dean Wade at centre from a PF-tagged span).
+      if (s.primaryPosition !== 'PF' || career.bigShare < CAREER_BIG_SHARE) return 0;
       penalty = Math.max(
         0,
         below(82, 0.1, 0.8) + shortfall(rpg, 9, 0.06, 0.4) +
@@ -151,6 +179,10 @@ for (const [name, spans] of byName) {
   const key = normalizePlayerName(name);
   if (!hardLockedPosition(spans[0])) {
     const height = getHeightInches(name) ?? 0;
+    const career = {
+      bigShare: spans.filter((s) => s.primaryPosition === 'PF' || s.primaryPosition === 'C').length / spans.length,
+      peakStartYear: Number(peak.spanLabel.slice(0, 4)),
+    };
     const userLevels = overridesByKey.get(key) ?? {};
     for (const pos of POSITIONS) {
       // A natural position scores 0.95 at runtime, except the point, which every span earns.
@@ -165,11 +197,12 @@ for (const [name, spans] of byName) {
       // `pos` for the review lists and for spans outside the table.
       for (const span of spans) {
         if (span.primaryPosition === pos) continue;
-        const value = fixed ?? score(pos, from, span, height, listed / spans.length, nat);
-        if (value > 0) (entry.s![span.spanLabel] ??= {})[pos] = value;
+        const value = fixed ?? score(pos, from, span, height, listed / spans.length, nat, career);
+        const own = (entry.s![span.spanLabel] ??= {});
+        if (value > 0) own[pos] = value;
       }
       if (nat.includes(pos)) continue;
-      const value = fixed ?? score(pos, from, peak, height, listed / spans.length, nat);
+      const value = fixed ?? score(pos, from, peak, height, listed / spans.length, nat, career);
       const bucket = value >= 0.75 ? 'full' : value >= 0.47 ? 'partial' : value > 0 ? 'emergency' : 'none';
       tally[bucket] = (tally[bucket] ?? 0) + 1;
       if (value > 0) entry.pos[pos] = value;

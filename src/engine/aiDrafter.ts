@@ -1,5 +1,6 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { positionCompetence, realSecondaryPositions } from './positionCompetence';
+import { positionCompetence, positionCompetenceScore, realSecondaryPositions } from './positionCompetence';
+import { offPositionMinutes } from './minuteAllocation';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
   STARTER_SLOTS,
@@ -628,7 +629,18 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
       const player = roster.find((p) => p.id === a.playerId);
       return player && coversSlotForDepth(player, slot) ? sum + a.minutes : sum;
     }, 0);
-    return realFitMinutes < GAME_MINUTES;
+    // 2026-10-02, the user (Duluth drafting Quinn Buckner behind Kidd with Derrick White starting at
+    // SG): the point's backup minutes are covered when a starter next to it really plays the point
+    // too — up to the minutes his competence covers there (minuteAllocation.ts).
+    const adjacentCover =
+      slot === 'PG'
+        ? STARTER_SLOTS.filter((other) => other === 'SG')
+            .map((other) => slots[other][0])
+            .map((a) => (a ? roster.find((p) => p.id === a.playerId) : undefined))
+            .filter((p): p is PlayerSpan => !!p && coversSlotForDepth(p, 'PG') && !slots.PG.some((a) => a.playerId === p.id))
+            .reduce((sum, p) => sum + offPositionMinutes(positionCompetenceScore(p, 'PG')), 0)
+        : 0;
+    return realFitMinutes + adjacentCover < GAME_MINUTES;
   });
   // See `NeedContext.looselyBackedThinSlots`'s own docstring.
   const looselyBackedThinSlots = thinSlots.filter((slot) =>
