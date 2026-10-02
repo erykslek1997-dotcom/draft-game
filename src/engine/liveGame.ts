@@ -5,6 +5,7 @@ import { mulberry32, hashSeed } from './rng';
 import { gameWinProbability, projectMatchup } from './matchup';
 import { lineupTeam, scoreLineup, type Lineup } from './bestFive';
 import type { LegendFive } from './dailyMeta';
+import { contextLines } from './contextStats';
 
 /**
  * 2026-09-28, the user (Daily Slot Machine 2.0: "możemy zrobić symulacje live? Z statystami"):
@@ -113,6 +114,8 @@ const ASSISTED = 0.6;
 const BLOCKED = 0.07;
 /** Make-probability tilt per point of expected margin (calibrated in scripts/testLiveGame.ts). */
 const TILT_PER_POINT = 0.0066;
+/** A usage-driven change in true shooting moves three-point accuracy about two-thirds as much. */
+const THREE_PCT_PER_TS = 0.67;
 
 const BIG_MOVES = ['layup', 'dunk', 'hook shot', 'putback'];
 const WING_MOVES = ['pull-up jumper', 'driving layup', 'floater', 'mid-range jumper'];
@@ -151,6 +154,11 @@ interface Player {
   slot: Position;
   label: string;
   joker: boolean;
+  /** 2026-10-02: his numbers re-read for this five (`contextStats.ts`) — share of the shots and
+   * his two- and three-point percentages with the room and the usage he has here. */
+  shotShare: number;
+  twoPct: number;
+  threePct: number;
 }
 
 /**
@@ -200,21 +208,36 @@ function playGame(
     for (const slot of STARTER_SLOTS) {
       const s = lineups[side][slot]!;
       const short = lastName(s.playerName);
-      sides[side].push({ span: s, slot, label: (names.get(short) ?? 0) > 1 ? s.playerName : short, joker: side === 0 && s.id === jokerId });
+      sides[side].push({
+        span: s,
+        slot,
+        label: (names.get(short) ?? 0) > 1 ? s.playerName : short,
+        joker: side === 0 && s.id === jokerId,
+        shotShare: 0,
+        twoPct: 0,
+        threePct: 0,
+      });
     }
+    const lines = contextLines(sides[side].map((p) => p.span));
+    sides[side].forEach((p, i) => {
+      const line = lines[i];
+      p.shotShare = line.usage;
+      p.twoPct = Math.max(0.3, Math.min(0.72, twoPointPct(p.span) + line.twoPointDelta + line.usageDelta));
+      p.threePct = Math.max(0.15, Math.min(0.5, p.span.box.threePct + line.usageDelta * THREE_PCT_PER_TS));
+    });
   }
   // Level the two box scores first — the model's margin, not raw shooting numbers from different
   // eras, decides the game — then tilt by that margin. Free throws aren't scaled, so the field-goal
   // scale is solved for equal expected points per shot including them.
   const perShot = (team: Player[]) => {
-    const shots = team.reduce((sum, p) => sum + p.span.fga, 0) || 1;
+    const shots = team.reduce((sum, p) => sum + p.shotShare, 0) || 1;
     let field = 0;
     let line = 0;
     for (const p of team) {
       const b = p.span.box;
       const r3 = Math.min(0.9, b.threePA / Math.max(1, p.span.fga));
-      field += (p.span.fga / shots) * (1 - SHOOTING_FOUL) * (r3 * 3 * b.threePct + (1 - r3) * 2 * twoPointPct(p.span) * (1 + (AND_ONE * b.ftPct) / 2));
-      line += (p.span.fga / shots) * SHOOTING_FOUL * (r3 * 3 + (1 - r3) * 2) * b.ftPct;
+      field += (p.shotShare / shots) * (1 - SHOOTING_FOUL) * (r3 * 3 * p.threePct + (1 - r3) * 2 * p.twoPct * (1 + (AND_ONE * b.ftPct) / 2));
+      line += (p.shotShare / shots) * SHOOTING_FOUL * (r3 * 3 + (1 - r3) * 2) * b.ftPct;
     }
     return { field, line };
   };
@@ -257,7 +280,7 @@ function playGame(
         }
         break;
       }
-      const shooter = pickWeighted(rng, off, (p) => p.span.fga);
+      const shooter = pickWeighted(rng, off, (p) => p.shotShare);
       const line = box[o][shooter.label];
       const b = shooter.span.box;
       const three = rng() < Math.min(0.9, b.threePA / Math.max(1, shooter.span.fga));
@@ -274,7 +297,7 @@ function playGame(
       }
       line.fga++;
       if (three) line.tpa++;
-      const p = (three ? b.threePct : twoPointPct(shooter.span)) * makeScale[o];
+      const p = (three ? shooter.threePct : shooter.twoPct) * makeScale[o];
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
