@@ -311,6 +311,8 @@ const HUNTABLE_MIN_SHORTFALL = 5;
 const DISPLAY_HEADROOM_FULL_MARGIN = 20;
 /** ...and one sitting right at the huntable line costs this many shown points. */
 const DISPLAY_HEADROOM_SPAN = 15;
+/** Defense points the weakest starter's headroom swings, centred (±half). */
+const HEADROOM_DEFENSE_POINTS = 3;
 const REAL_SHOT_BLOCKER_BPG = 1.5;
 function isRealShotBlocker(player: PlayerSpan): boolean {
   return (
@@ -355,15 +357,19 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
   // 2026-10-02, the user (Hunt resistance 100 for 30% of teams): the shown reading also grades how
   // close the five's weakest defender sits to his position's huntable bar, so a five with nobody
   // to hunt still reads 85 when one starter is right at the bar and 100 only with real headroom.
-  // Display only — `resistance` (read by defensiveCohesion.ts) is unchanged.
+  // `resistance` (read by defensiveCohesion.ts) stays the minutes-based reading.
   const starterMargins = primaryStarters(team).map(({ player }) =>
     isRealShotBlocker(player) ? DISPLAY_HEADROOM_FULL_MARGIN : computeDefensiveTalent(player) - averageDtalFor(player),
   );
   const weakestMargin = starterMargins.length > 0 ? Math.min(...starterMargins) : DISPLAY_HEADROOM_FULL_MARGIN;
   const headroom = Math.max(0, Math.min(1, (weakestMargin + HUNTABLE_MIN_SHORTFALL) / (DISPLAY_HEADROOM_FULL_MARGIN + HUNTABLE_MIN_SHORTFALL)));
   const resistance = Math.round(100 - (penalty / MAX_HUNTABILITY_PENALTY) * 100);
+  // 2026-10-02, the user ("dlaczego się nie liczą"): the same headroom reaches the Defense score,
+  // centred on a typical five so the scale doesn't move — a weakest starter right at the bar costs
+  // up to `HEADROOM_DEFENSE_POINTS / 2`, real headroom earns as much back.
+  const headroomPenalty = (0.5 - headroom) * HEADROOM_DEFENSE_POINTS;
   return {
-    penalty,
+    penalty: penalty + headroomPenalty,
     resistance,
     displayResistance: Math.max(0, Math.round(resistance - (1 - headroom) * DISPLAY_HEADROOM_SPAN)),
     targetableMinutes: offenders.reduce((sum, offender) => sum + offender.minutes, 0),

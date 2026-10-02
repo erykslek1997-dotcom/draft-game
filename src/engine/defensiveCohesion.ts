@@ -225,8 +225,8 @@ function clamp01(value: number): number {
  * `structureScore` is gated (a layer under the provider bar zeroes it), which is right for the
  * Defense bonus and wrong as a reading. The shown cohesion blends three continuous signals — the
  * weakest of the point-of-attack / wing / rim layers, the five's average D-TAL and its weakest
- * starter — with the structural bonus, so a five one layer short reads lower, not zero. Display
- * only: the Defense bonus is unchanged.
+ * starter — with the structural bonus, so a five one layer short reads lower, not zero. The
+ * Defense bonus reads it too (see `defenseScoreBonus`).
  */
 function cohesionDisplayScore(weakestLayer: number, averageDtal: number, weakestStarter: number, structure: number): number {
   const layers = clamp01((weakestLayer - 50) / 40);
@@ -469,6 +469,12 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     weakLinkOvercome,
   );
 
+  const displayScore = cohesionDisplayScore(
+    Math.min(poaStrength, wingStrength, rimStrength),
+    averageDefensiveTalent,
+    starterDefTals.length > 0 ? Math.min(...starterDefTals) : 0,
+    Math.min(100, Math.max(otherDefenseBonusesMax / MAX_ELITE_SHELL_DEFENSE_BONUS, weakLinkOvercome) * 100),
+  );
   return {
     eliteShell: Math.round(completeness * 100),
     completeness,
@@ -476,14 +482,18 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     drtgCompleteness,
     backlineFoundation,
     weakLinkOvercome,
-    defenseScoreBonus: Math.max(eliteShellBonus, threeLayerCoreBonus, backlineFoundationBonus, blendedWeakLinkOvercomeBonus),
-    structureScore: Math.min(100, Math.max(otherDefenseBonusesMax / MAX_ELITE_SHELL_DEFENSE_BONUS, weakLinkOvercome) * 100),
-    displayScore: cohesionDisplayScore(
-      Math.min(poaStrength, wingStrength, rimStrength),
-      averageDefensiveTalent,
-      starterDefTals.length > 0 ? Math.min(...starterDefTals) : 0,
-      Math.min(100, Math.max(otherDefenseBonusesMax / MAX_ELITE_SHELL_DEFENSE_BONUS, weakLinkOvercome) * 100),
+    // 2026-10-02, the user ("dlaczego się nie liczą"): the Defense bonus reads the same continuous
+    // cohesion the user sees (0 to MAX_ELITE_SHELL_DEFENSE_BONUS) in place of the gated elite-shell
+    // bonus, so a five one layer short earns a smaller bonus instead of none. The three-layer and
+    // backline paths stay as floors; the extreme-weak-link concealment keeps its own larger range.
+    defenseScoreBonus: Math.max(
+      (displayScore / 100) * MAX_ELITE_SHELL_DEFENSE_BONUS,
+      threeLayerCoreBonus,
+      backlineFoundationBonus,
+      weakLinkOvercome > 0 ? blendedWeakLinkOvercomeBonus : 0,
     ),
+    structureScore: Math.min(100, Math.max(otherDefenseBonusesMax / MAX_ELITE_SHELL_DEFENSE_BONUS, weakLinkOvercome) * 100),
+    displayScore,
     averageDefensiveTalent,
     poaProvider: poa?.player.playerName ?? null,
     wingProvider: wing?.player.playerName ?? null,
