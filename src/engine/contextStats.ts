@@ -82,7 +82,11 @@ function splitUsage(five: PlayerSpan[]): number[] {
   const top = Math.max(...five.map((span) => computeOffensiveTalent(span)));
   const claim = five.map((span, i) => own[i] * (computeOffensiveTalent(span) / top) ** USAGE_OTAL_POWER);
   const lo = own.map((u) => u * USAGE_MIN_SHARE);
-  const hi = own.map((u) => Math.min(USAGE_MAX, u * USAGE_MAX_GROWTH));
+  // Only a five that would leave possessions unused (its real usages add up to less than 100%) lets
+  // anyone take more than his real share (2026-10-02: Jordan took 37% beside Lowry and Bosh, more
+  // than with the Bulls).
+  const growth = Math.max(1, Math.min(USAGE_MAX_GROWTH, 1 / own.reduce((sum, u) => sum + u, 0)));
+  const hi = own.map((u) => Math.min(USAGE_MAX, u * growth));
   const share = (scale: number) => claim.map((c, i) => Math.max(lo[i], Math.min(hi[i], c * scale)));
   let scale = 1;
   for (let step = 0; step < 60; step++) {

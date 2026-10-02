@@ -170,6 +170,13 @@ const SHOTS_PER_TEAM = 98;
 const MAX_NUDGE = 0.3;
 /** A usage-driven change in true shooting moves three-point accuracy about two-thirds as much. */
 const THREE_PCT_PER_TS = 0.67;
+/**
+ * 2026-10-02, the user (Jordan 37.8 a game beside Lowry, Bosh and Kareem — "czy powinien tyle
+ * rzucać?"): room, a smaller share of the ball and better passers each lift a player, and together
+ * they lifted a whole five of stars to 63-67% TS. Their sum is held to this many points of FG%.
+ */
+const MAX_CONTEXT_GAIN = 0.02;
+const contextGain = (delta: number) => Math.min(MAX_CONTEXT_GAIN, delta);
 
 const BIG_MOVES = ['layup', 'dunk', 'hook shot', 'putback'];
 const WING_MOVES = ['pull-up jumper', 'driving layup', 'floater', 'mid-range jumper'];
@@ -347,8 +354,8 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       player,
       shotShare: lines[i].shotWeight,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + lines[i].twoPointDelta + lines[i].usageDelta + lines[i].playmakingDelta)),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + (lines[i].usageDelta + lines[i].playmakingDelta) * THREE_PCT_PER_TS)),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + contextGain(lines[i].twoPointDelta + lines[i].usageDelta + lines[i].playmakingDelta))),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta + lines[i].playmakingDelta) * THREE_PCT_PER_TS)),
     }));
     cache.set(key, court);
   }
