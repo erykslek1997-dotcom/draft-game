@@ -289,6 +289,42 @@ function consolidateRotation(
       for (const key of options) kept.add(key);
     }
   }
+  // 2026-10-02, the user (Duncan 23 at centre while Robert Williams plays 25 there; Westbrook split
+  // between the guard spots while Caruso plays 31): a starter leads his own slot. When a backup outplays
+  // him there because the starter's minutes went to another slot, that away stint is dropped (the best
+  // re-solve wins) as long as the roster still fills within the soft-cap band.
+  const leadOverlap = new Set<string>();
+  for (let pass = 0; pass < MAX_CONSOLIDATION_PASSES; pass++) {
+    const minutesAt = (id: string, slot: Position) => best.grants.find((g) => g.playerId === id && g.slot === slot)?.minutes ?? 0;
+    const offender = STARTER_SLOTS.map((slot) => ({ slot, starter: starterBySlot[slot] }))
+      .filter(({ slot, starter }) => {
+        if (!starter || leadOverlap.has(starter.id)) return false;
+        const own = minutesAt(starter.id, slot);
+        const away = best.grants.some((g) => g.playerId === starter.id && g.slot !== slot && g.minutes > 0);
+        return away && best.grants.some((g) => g.slot === slot && g.playerId !== starter.id && g.minutes > own);
+      })[0];
+    if (!offender) break;
+    const starterId = offender.starter!.id;
+    let chosen: ReturnType<typeof solveMinutes> | null = null;
+    let chosenKey = '';
+    for (const g of best.grants.filter((x) => x.playerId === starterId && x.slot !== offender.slot && x.minutes > 0)) {
+      const key = `${g.playerId}|${g.slot}`;
+      forbidden.add(key);
+      const trial = solveMinutes(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer, forbidden);
+      forbidden.delete(key);
+      const acceptable = trial.filled === best.filled && overLimit(trial.grants) <= overLimit(best.grants) + TINY_STINT_OVERRUN_ALLOWANCE;
+      if (acceptable && (!chosen || trial.cost < chosen.cost)) {
+        chosen = trial;
+        chosenKey = key;
+      }
+    }
+    if (chosen) {
+      forbidden.add(chosenKey);
+      best = chosen;
+    } else {
+      leadOverlap.add(starterId);
+    }
+  }
   return best.grants;
 }
 
