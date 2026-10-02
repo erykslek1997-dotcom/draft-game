@@ -12,7 +12,7 @@ Trudność: **S** = kilka godzin, **M** = jedna runda zmian, **L** = kilka rund.
 
 ---
 
-## Etap 1. Kalibracja silnika — TERAZ
+## Etap 1. Kalibracja silnika — ZAKOŃCZONY (2026-10-02)
 
 Jak pracujemy: grasz pełny draft (All-Time) przyciskiem testowym **AUTO-FINISH**, oceniasz każdą
 drużynę w tabeli wyników i zgłaszasz, co się nie zgadza; poprawiamy i powtarzamy.
@@ -104,10 +104,14 @@ drużynę w tabeli wyników i zgłaszasz, co się nie zgadza; poprawiamy i powta
   10. Butler: dane o półdystansie poprawne (3,8–4,1 rzutu/mecz przy 37–41%). **Do decyzji:** skoki
       spacingu (Butler 55 → 41) biorą się ze schodkowej skali rzutu za 3, która liczy też TAL —
       płynna skala zmieniłaby TAL wszystkich strzelców.
-- [ ] **Kolejne sesje kalibracyjne: Twoja ocena drużyn → poprawki** (L)
-- [ ] **Akceptacja silnika** — Twoje „ok, silnik gra”, zanim ruszymy symulacje.
+- [x] **Kolejne sesje kalibracyjne: Twoja ocena drużyn → poprawki** (2026-10-01/02) — kompetencje
+  pozycyjne per 36, limity minut i porządki w rotacji, AI wybiera pod wynik drużyny (lookahead od
+  5. picku), obrona łączy odporność na hunting i spójność, ochrona obręczy z liczb, warstwy obrony
+  na trzech różnych starterach, próg D-TAL dla zgodnie dodatnich danych, audyt wszystkich ról
+  z rolami dodatkowymi w Fit (#155–#162).
+- [x] **Akceptacja silnika** — 2026-10-02, Twoje „Silnik faza 1 zakończona”.
 
-Otwarte tematy silnika (Twoja ocena; bierzemy, gdy wyjdą w sesjach):
+Otwarte tematy silnika — na później (bierzemy, gdy wyjdą w grze albo w symulacjach):
 
 - [ ] **Próg gwiazdy w `positionCorrectionFor` (talent.ts)** — klif: PG tuż pod
       `ALL_STAR_TAL_FLOOR` dostaje pełny bonus za spacing (~×1.15), tuż nad nim nie. Mark Price
@@ -198,7 +202,7 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
       1997 (KG, Webber, Malone 1996-98), przegląd razem z Tobą. Rozważyć też to samo dla
       rzutu za 3 przed 1979-80 (brak linii — West, Oscar, Havlicek). (M)
 
-## Etap 2. Symulacje — po akceptacji silnika
+## Etap 2. Symulacje — TERAZ
 
 Decyzje (2026-09-30):
 - Sezon zasadniczy szybki (bez odtwarzania meczów); dokładna symulacja dopiero w play-offach.
