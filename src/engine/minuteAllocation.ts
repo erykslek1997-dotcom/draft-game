@@ -220,6 +220,9 @@ const MAX_SLOTS_PER_PLAYER = 2;
 // 33 -> 22 on 3,200 AI teams).
 const FRAGMENT_VALUE_TOLERANCE = 200;
 const MAX_CONSOLIDATION_PASSES = 10;
+/** Removing a sub-6-minute stint may push the roster up to this many minutes further past its
+ * limits — the soft cap's "barely felt" band (rotationRoleMinutes.ts). */
+const TINY_STINT_OVERRUN_ALLOWANCE = 4;
 
 function consolidateRotation(
   roster: PlayerSpan[],
@@ -263,10 +266,13 @@ function consolidateRotation(
       forbidden.add(key);
       const trial = solveMinutes(roster, starterBySlot, gameMinutes, maxMinutesPerPlayer, forbidden);
       forbidden.delete(key);
+      // A stint under `MIN_STINT_MINUTES` goes whenever the slots still fill without anyone pushed
+      // further past his limit — the user prefers a logical rotation to a few points of value.
+      const tiny = fragment.minutes < MIN_STINT_MINUTES;
       const acceptable =
         trial.filled === best.filled &&
-        trial.cost - best.cost <= FRAGMENT_VALUE_TOLERANCE * UNIT &&
-        overLimit(trial.grants) <= overLimit(best.grants);
+        (tiny || trial.cost - best.cost <= FRAGMENT_VALUE_TOLERANCE * UNIT) &&
+        overLimit(trial.grants) <= overLimit(best.grants) + (tiny ? TINY_STINT_OVERRUN_ALLOWANCE : 0);
       if (acceptable && (!chosen || trial.cost < chosen.trial.cost)) chosen = { key, trial };
     }
     if (chosen) {
