@@ -245,7 +245,14 @@ Decyzje (2026-09-30):
       zera, gdy same mechaniki meczu dają wynik silnika. Każdy etap: raport przed/po + akceptacja.
   - **Etap 0: pomiar (bez zmian w kodzie)** — wagi składników; korelacja każdego składnika z jego
     statystyką (silnik → symulacja); sezony bez wyrównania: ile wyniku dają same mechaniki, który
-    składnik symulacja potwierdza (symulacja → silnik); wielkość wyrównania jako start. — W TOKU.
+    składnik symulacja potwierdza (symulacja → silnik); wielkość wyrównania jako start. — ZROBIONY
+    2026-10-02 (10 lig × 16, sezon z wyrównaniem i bez): same mechaniki dają ~11% marginesu silnika
+    (bez wyrównania wygrane vs silnik: korelacja 0.20, RMSE 9.2 W; z wyrównaniem 0.85 / 4.3 W).
+    Mechanicznie działa atak (atak → pkt 0.49; 0.16 pkt bilansu za pkt ataku vs 0.21 w silniku),
+    ławka (0.15 vs 0.14), spacing → udział trójek, rim pressure → wolne, kreacja → asysty. Brak
+    mechaniki: obrona (−0.06 vs 0.21; ochrona obręczy/obwód nie zmieniają skuteczności rywala),
+    zbiórka drużynowa (stałe 26% w ataku; korelacja −0.18), straty i przechwyty (stałe), fit
+    (−0.01 vs 0.23), rotacja (0.01 vs 0.11), talent poza atakiem.
   - **Etap 1: fundamenty meczu** — paczka 2 niżej: pkt 1, 2, 3, 4, 6 + trzy poprawki z brancha.
   - **Etap 2: kanały ataku** — margines rozbity na kanały: spacing, rim pressure (rzuty spod
     kosza, wolne), kreacja (asysty, straty składu = pkt 5), self-creation, pairing, kilku graczy
