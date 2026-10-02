@@ -111,7 +111,14 @@ export function headToHeadMargin(yours: Lineup, theirs: Lineup): number {
 const POSSESSIONS = 200;
 const GAME_SECONDS = 48 * 60;
 const TURNOVER = 0.12;
-const SHOOTING_FOUL = 0.09;
+/**
+ * 2026-10-02: each shooter draws fouls at his own real rate. A trip is ~2.1 free throws and an
+ * and-one adds ~0.02 per shot, so a free-throw rate r (FTA per FGA) comes from a foul on a share
+ * f = (r - 0.02) / (2.1 + r - 0.02) of his shots.
+ */
+function foulChance(freeThrowRate: number): number {
+  return Math.max(0.02, Math.min(0.3, (freeThrowRate - 0.02) / (2.1 + freeThrowRate - 0.02)));
+}
 const AND_ONE = 0.05;
 const OFF_REBOUND = 0.26;
 /**
@@ -120,7 +127,7 @@ const OFF_REBOUND = 0.26;
  * a make was assisted follows the four teammates' combined assist rate (per 36) against a typical
  * four's, and the passer is then picked in plain proportion to his own rate.
  */
-const ASSISTED = 0.62;
+const ASSISTED = 0.55;
 const TYPICAL_MATES_ASSISTS_PER_36 = 14;
 const ASSISTED_RATE_POWER = 0.6;
 function assistedChance(mates: CourtPlayer[]): number {
@@ -130,7 +137,7 @@ function assistedChance(mates: CourtPlayer[]): number {
 /** Assists go to the real passers: weight by assists per game to this power (2026-10-02 — linear
  * weights spread them so evenly that Jokic averaged 5 and the league leader 9). */
 /** Rebounds concentrate on the real rebounders a little more than their rates alone. */
-const REBOUND_WEIGHT_POWER = 1.2;
+const REBOUND_WEIGHT_POWER = 1.1;
 /**
  * 2026-10-02, the user's season exports: who rebounds, assists, steals and blocks is weighted by
  * his rate PER MINUTE, not per game — a backup big's real rebounds came in fewer minutes (Gobert
@@ -229,6 +236,8 @@ export function simulateLiveGame(
 
 interface CourtPlayer {
   player: Player;
+  /** Share of his shots that draw a shooting foul. */
+  foul: number;
   /** His share of this five's shots and his percentages, re-read for this five (`contextStats.ts`). */
   shotShare: number;
   twoPct: number;
@@ -336,6 +345,7 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
+      foul: foulChance(lines[i].freeThrowRate),
       twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + lines[i].twoPointDelta + lines[i].usageDelta)),
       threePct: Math.max(0.15, Math.min(0.5, player.span.box.threePct + lines[i].usageDelta * THREE_PCT_PER_TS)),
     }));
@@ -400,8 +410,8 @@ function playRosters(
     for (const c of team) {
       const b = c.player.span.box;
       const r3 = Math.min(0.9, b.threePA / Math.max(1, c.player.span.fga));
-      field += (c.shotShare / shots) * (1 - SHOOTING_FOUL) * (r3 * 3 * c.threePct + (1 - r3) * 2 * c.twoPct * (1 + (AND_ONE * b.ftPct) / 2));
-      line += (c.shotShare / shots) * SHOOTING_FOUL * (r3 * 3 + (1 - r3) * 2) * b.ftPct;
+      field += (c.shotShare / shots) * (1 - c.foul) * (r3 * 3 * c.threePct + (1 - r3) * 2 * c.twoPct * (1 + (AND_ONE * b.ftPct) / 2));
+      line += (c.shotShare / shots) * c.foul * (r3 * 3 + (1 - r3) * 2) * b.ftPct;
     }
     return { field, line };
   };
@@ -468,7 +478,7 @@ function playRosters(
       const line = box[o][shooter.label];
       const b = shooter.span.box;
       const three = rng() < Math.min(0.9, b.threePA / Math.max(1, shooter.span.fga));
-      if (rng() < SHOOTING_FOUL) {
+      if (rng() < shot.foul) {
         const attempts = three ? 3 : 2;
         let made = 0;
         for (let f = 0; f < attempts; f++) if (rng() < b.ftPct) made++;
