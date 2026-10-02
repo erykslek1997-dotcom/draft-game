@@ -114,18 +114,28 @@ const TURNOVER = 0.12;
 const SHOOTING_FOUL = 0.09;
 const AND_ONE = 0.05;
 const OFF_REBOUND = 0.26;
-const ASSISTED = 0.66;
+/**
+ * 2026-10-02, the user (Kawhi at half his real assists beside Jokic: "grał w dzielących się piłką
+ * Spurs"): a five of good passers makes MORE assists, not the same number split thinner. The chance
+ * a make was assisted follows the four teammates' combined assist rate (per 36) against a typical
+ * four's, and the passer is then picked in plain proportion to his own rate.
+ */
+const ASSISTED = 0.62;
+const TYPICAL_MATES_ASSISTS_PER_36 = 14;
+const ASSISTED_RATE_POWER = 0.6;
+function assistedChance(mates: CourtPlayer[]): number {
+  const passing = mates.reduce((sum, c) => sum + rates(c.player.span).ast, 0);
+  return Math.max(0.4, Math.min(0.85, ASSISTED * (passing / TYPICAL_MATES_ASSISTS_PER_36) ** ASSISTED_RATE_POWER));
+}
 /** Assists go to the real passers: weight by assists per game to this power (2026-10-02 — linear
  * weights spread them so evenly that Jokic averaged 5 and the league leader 9). */
-const ASSIST_WEIGHT_POWER = 1.3;
 /** Rebounds concentrate on the real rebounders a little more than their rates alone. */
 const REBOUND_WEIGHT_POWER = 1.2;
 /**
  * 2026-10-02, the user's season exports: who rebounds, assists, steals and blocks is weighted by
  * his rate PER MINUTE, not per game — a backup big's real rebounds came in fewer minutes (Gobert
  * 3.6 boards in 14 minutes), and a starter's per-game totals over-weighed him against a bench
- * player. Assists use a milder power (1.6 left a second passer like Kawhi with half his real
- * assists) and one named exception: "żaden inny C w historii aż tak nie rozgrywał" — Jokic.
+ * player. One named exception for assists: "żaden inny C w historii aż tak nie rozgrywał" — Jokic.
  */
 const PASSING_HUBS: Record<string, number> = { 'Nikola Jokic': 2 };
 const rateCache = new WeakMap<PlayerSpan, { reb: number; ast: number; stl: number; blk: number }>();
@@ -496,8 +506,9 @@ function playRosters(
           }
         }
         let joker = shooter.joker;
-        if (rng() < ASSISTED) {
-          const passer = pickWeighted(rng, off.filter((x) => x.player !== shooter), (x) => rates(x.player.span).ast ** ASSIST_WEIGHT_POWER + 0.3).player;
+        const mates = off.filter((x) => x.player !== shooter);
+        if (rng() < assistedChance(mates)) {
+          const passer = pickWeighted(rng, mates, (x) => rates(x.player.span).ast + 0.3).player;
           box[o][passer.label].ast++;
           text += ` (${passer.label} assist)`;
           joker = joker || passer.joker;
