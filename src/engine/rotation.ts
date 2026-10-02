@@ -231,9 +231,29 @@ export function bestPrimaryAssignment(
   // about the value changes between nodes. This cache is scoped to one `bestPrimaryAssignment`
   // call (module-level state would go stale the moment `computeTalent`'s own inputs change).
   const valueByPlayerSlot = new Map<string, number>();
+  // 2026-10-02, the user (MVP Westbrook started at SG beside Mike Conley): the roster's best player
+  // starts at his own position; the search places everyone else around him.
+  // Every MVP-tier star likewise. Two stars of the same position (Robinson and Wembanyama) are left
+  // to the search, which finds the one who can really play next door.
+  const isStar = (p: PlayerSpan, index: number) => index === 0 || MUST_START_TIERS.has(overallTierForSpan(tierContextWithSixthMan(p)));
+  const ranked = [...roster].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+  const starsByPosition = new Map<Position, number>();
+  ranked.forEach((p, index) => {
+    if (isStar(p, index)) starsByPosition.set(p.primaryPosition, (starsByPosition.get(p.primaryPosition) ?? 0) + 1);
+  });
+  const pinnedIds = new Set<string>();
+  ranked.forEach((p, index) => {
+    if (!isStar(p, index) || hardLockedPosition(p) || maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER) <= 0) return;
+    if ((starsByPosition.get(p.primaryPosition) ?? 0) > 1) return;
+    pinnedIds.add(p.id);
+  });
   function valueFor(player: PlayerSpan, slot: Position): number {
     const key = `${player.id}|${slot}`;
     let v = valueByPlayerSlot.get(key);
+    if (v === undefined && pinnedIds.has(player.id) && slot !== player.primaryPosition) {
+      v = 0;
+      valueByPlayerSlot.set(key, v);
+    }
     if (v === undefined) {
       // A DNP-tier (durability cap 0) player contributes zero real minutes at ANY slot, no
       // matter how high their TAL — without this check the exact search below would still
