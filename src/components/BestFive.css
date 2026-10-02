@@ -1061,3 +1061,90 @@
 .bench-players td {
   white-space: nowrap;
 }
+
+/* Season bench tables: larger type, zebra rows, sticky header, the sorted column marked. */
+.bench-table-wrap {
+  overflow: auto;
+  max-height: 75vh;
+  border: 1px solid var(--at-line);
+  border-radius: 8px;
+}
+.bench-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--at-ink);
+}
+.bench-table th,
+.bench-table td {
+  padding: 6px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--at-line);
+  white-space: nowrap;
+}
+.bench-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--at-paper-raised, var(--at-paper));
+  color: var(--at-ink-soft);
+  font-size: 12px;
+  z-index: 1;
+}
+.bench-table tbody th {
+  text-align: left;
+  font-weight: 700;
+}
+.bench-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--at-ink) 4%, transparent);
+}
+.bench-table tbody tr:hover,
+.bench-table tr.is-picked {
+  background: color-mix(in srgb, var(--at-gold) 14%, transparent);
+}
+.bench-table .is-sorted {
+  background: color-mix(in srgb, var(--at-gold) 10%, transparent);
+  font-weight: 700;
+}
+.bench-sort {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.bench-dim {
+  color: var(--at-ink-faint);
+  font-weight: 400;
+}
+.bench-diff {
+  display: inline-block;
+  min-width: 3.4em;
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--at-ink-faint);
+  font-weight: 400;
+}
+.bench-diff.is-big {
+  color: var(--at-gold);
+  font-weight: 700;
+}
+.bench-awards li {
+  margin: 6px 0;
+  font-size: 15px;
+}
+.bench-table .bench-engine {
+  color: var(--at-ink-soft);
+}
+.bench-table thead .bench-engine {
+  color: var(--at-gold);
+}
+.bench-table .bench-engine.is-off {
+  color: var(--at-gold);
+  font-weight: 800;
+}
+.bench-season-grid {
+  display: flex;
+  flex-direction: column-reverse;
+}

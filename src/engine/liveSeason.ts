@@ -6,6 +6,7 @@ import { buildMatchupCache } from './seasonSimulation';
 import { playTeamGame, teamWeakLink, type BoxLineStats } from './liveGame';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { primaryStarters } from './rotation';
+import { scoreTeam } from './scoring';
 
 /**
  * 2026-10-02, stage 2, the user ("najwięcej by nam dała symulacja sezonu"): the regular season
@@ -32,7 +33,7 @@ export interface LiveSeasonResult {
 }
 
 const EXTRA_GAME_OFFSETS = new Set([1, 2, 3, 8]);
-function gamesForPair(i: number, j: number, count: number): number {
+export function gamesForPair(i: number, j: number, count: number): number {
   if (count !== TEAM_COUNT) return 5;
   const diff = Math.abs(i - j);
   return EXTRA_GAME_OFFSETS.has(Math.min(diff, count - diff)) ? 6 : 5;
@@ -50,6 +51,50 @@ export function gameScorePerGame(line: SeasonPlayerLine): number {
 /** Minimum share of the season a player must play to win an award. */
 const AWARD_MIN_GAMES = 58;
 const AWARD_MIN_MINUTES = 20;
+
+/** The engine's own view of each team, to compare with how its season went: the score breakdown,
+ * the rank by overall, and the wins the season projection expects over this schedule. */
+export interface EngineTeamView {
+  rank: number;
+  expectedWins: number;
+  overall: number;
+  talent: number;
+  offense: number;
+  defense: number;
+  spacing: number;
+  fit: number;
+}
+
+export function engineTeamViews(teams: Team[]): Map<string, EngineTeamView> {
+  const cache = buildMatchupCache(teams);
+  const expected = new Map(teams.map((t) => [t.id, 0]));
+  for (let i = 0; i < teams.length; i++) {
+    for (let j = i + 1; j < teams.length; j++) {
+      const a = teams[i];
+      const b = teams[j];
+      const p = projectMatchup(a, b, cache.get(a.id), cache.get(b.id), 'season').gameWinProbA;
+      const games = gamesForPair(i, j, teams.length);
+      expected.set(a.id, (expected.get(a.id) ?? 0) + games * p);
+      expected.set(b.id, (expected.get(b.id) ?? 0) + games * (1 - p));
+    }
+  }
+  const scored = teams.map((t) => ({ team: t, score: scoreTeam(t) })).sort((x, y) => y.score.overallExact - x.score.overallExact);
+  return new Map(
+    scored.map(({ team, score }, index) => [
+      team.id,
+      {
+        rank: index + 1,
+        expectedWins: expected.get(team.id) ?? 0,
+        overall: score.overall,
+        talent: score.talentScore,
+        offense: score.offenseScore,
+        defense: score.defenseScore,
+        spacing: score.spacingScore,
+        fit: score.fitScore,
+      },
+    ]),
+  );
+}
 
 export function simulateLiveSeason(teams: Team[], seed: string = String(Math.random())): LiveSeasonResult {
   const cache = buildMatchupCache(teams);
