@@ -40,7 +40,10 @@ const PAST_OPTIMAL_FLAT_COST = 12;
 const PAST_CEILING_COST = 150;
 const OVERRUN_FREE_TALENT_SHARE = 0.95;
 const OVERRUN_NOTICEABLE_TALENT_SHARE = 1.3;
-const OVERRUN_HEAVY_TALENT_SHARE = 1.8;
+/** 2026-10-02: raised from 1.8 with the fatigue curve — a star's tired 39th-40th minute now costs
+ * ~1.5x his value, and a minute 5+ past a teammate's limit ("+4 mocno odczuwalne") must stay the
+ * dearer of the two (Ginóbili 36 of 31 beside LeBron at 38). */
+const OVERRUN_HEAVY_TALENT_SHARE = 2.5;
 const PAST_DURABILITY_COST = 2000;
 /** A guard or wing playing the four or five (small-ball) — the same cost the rotation score charges. */
 const SMALL_BALL_VALUE_SHARE = 0.9;
