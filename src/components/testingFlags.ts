@@ -6,6 +6,9 @@
  *   the CPU drafter and goes straight to the results with an auto-built rotation.
  * - `TEAM_EXPORT_FOR_TESTING` (2026-09-30, the user: "może po prostu export po drafcie wszystkich
  *   składów?"): the results screen copies every team as text (`engine/teamExport.ts`).
+ * - `LIVE_TEST_BENCH_FOR_TESTING` (2026-10-02, the user: "oddzielny tryb do testów, dwie losowe
+ *   drużyny"): a menu card that opens the live-game test bench (`LiveTestBench.tsx`).
  */
 export const AUTO_FINISH_FOR_TESTING = true;
 export const TEAM_EXPORT_FOR_TESTING = true;
+export const LIVE_TEST_BENCH_FOR_TESTING = true;
