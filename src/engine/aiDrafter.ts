@@ -1661,7 +1661,7 @@ export interface AiDraftRuleset {
 
 /**
  * 2026-10-02, the user (Andre Roberson beside Giannis and Kirilenko, Matisse Thybulle, Dirk beside
- * Jokić: "wybiera jakieś śmieci których nikt nie zna i nic nie zapewniają rosterowi"): in bench rounds
+ * Jokić: "wybiera jakieś śmieci których nikt nie zna i nic nie zapewniają rosterowi"): from the fifth pick
  * the AI ranks its best candidates by what each one really adds — the whole team's score with him
  * (rotation, offense, defense, fit) — instead of the sum of hand-tuned need bonuses alone. More
  * defense on a roster that already defends adds little; shooting next to a five without it adds a
@@ -1671,10 +1671,70 @@ let teamScorer: ((roster: PlayerSpan[]) => number) | null = null;
 export function setAiTeamScorer(scorer: ((roster: PlayerSpan[]) => number) | null): void {
   teamScorer = scorer;
 }
-/** How many of the best-valued bench candidates are re-ranked by the team score. */
+/** How many of the best-valued candidates are re-ranked by the team score. */
 const TEAM_SCORE_SHORTLIST = 10;
-/** Team-score points one FGA of cap past this pick's fair share is worth to the picks still to come. */
-const TEAM_SCORE_FGA_OVER_BUDGET = 0.3;
+
+/** From the fifth pick the AI looks ahead (see `completeRosterGreedy`). */
+const LOOKAHEAD_ROSTER_SIZE = 4;
+/** The cheapest a fill is assumed to cost when reserving cap for the slots after it. */
+const LOOKAHEAD_MIN_FILL_FGA = 3;
+/** Team-score points the starting five's biggest gap is worth: a near-tie breaker, not a driver. */
+const NEAR_TIE_COMPLEMENT_POINTS = 0.3;
+
+/**
+ * Completes a roster with the best affordable players still on the board, covering each position
+ * at least twice first — the team a candidate leaves room for.
+ */
+function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[], capLeft: number, slots: number): PlayerSpan[] {
+  const out = [...roster];
+  const names = new Set(out.map((p) => normalizePlayerName(p.playerName)));
+  let cap = capLeft;
+  for (let i = 0; i < slots; i++) {
+    const reserve = (slots - i - 1) * LOOKAHEAD_MIN_FILL_FGA;
+    const counts = new Map<Position, number>();
+    for (const p of out) counts.set(p.primaryPosition, (counts.get(p.primaryPosition) ?? 0) + 1);
+    const thin = new Set(STARTER_SLOTS.filter((slot) => (counts.get(slot) ?? 0) < 2));
+    const affordable = (p: PlayerSpan) => p.fga <= cap - reserve && !names.has(normalizePlayerName(p.playerName));
+    const pick = byTalent.find((p) => affordable(p) && thin.has(p.primaryPosition)) ?? byTalent.find(affordable);
+    if (!pick) break;
+    out.push(pick);
+    names.add(normalizePlayerName(pick.playerName));
+    cap -= pick.fga;
+  }
+  return out;
+}
+
+interface FiveGaps {
+  spacing: number;
+  defense: number;
+  size: number;
+}
+/** How badly the current starting five lacks shooting, defense and size, each 0..1. */
+function startingFiveGaps(roster: PlayerSpan[]): FiveGaps {
+  if (roster.length === 0) return { spacing: 0, defense: 0, size: 0 };
+  const rotation = autoAssignRotation(roster);
+  const starters = STARTER_SLOTS.map((slot) => rotation.slots[slot][0]?.playerId)
+    .map((id) => roster.find((p) => p.id === id))
+    .filter((p): p is PlayerSpan => !!p);
+  if (starters.length === 0) return { spacing: 0, defense: 0, size: 0 };
+  const mean = (f: (p: PlayerSpan) => number) => starters.reduce((sum, p) => sum + f(p), 0) / starters.length;
+  const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+  const bigs = starters.filter((p) => p.primaryPosition === 'PF' || p.primaryPosition === 'C').length;
+  return {
+    spacing: clamp01((60 - mean((p) => computeSpacing(p))) / 25),
+    defense: clamp01((70 - mean((p) => computeDefensiveTalent(p))) / 20),
+    size: bigs >= 2 ? 0 : 1,
+  };
+}
+/** How well a candidate fills the five's biggest gap, 0..1. */
+function complementScore(gaps: FiveGaps, p: PlayerSpan): number {
+  const isBig = p.primaryPosition === 'PF' || p.primaryPosition === 'C';
+  return Math.max(
+    gaps.spacing * (computeSpacing(p) / 100),
+    gaps.defense * (computeDefensiveTalent(p) / 100),
+    gaps.size * (isBig ? 1 : 0),
+  );
+}
 
 export function pickForAi(
   roster: PlayerSpan[],
@@ -2273,13 +2333,31 @@ export function pickForAi(
     }
   }
 
-  if (inBenchRound && teamScorer) {
+  if (roster.length >= LOOKAHEAD_ROSTER_SIZE && teamScorer) {
+    // 2026-10-02, the user (late picks that "nic nie zapewniają": the cap spent on the first seven
+    // leaves only 3-FGA fringe players): each shortlisted candidate is judged by the team he leaves
+    // room for — the roster completed with the best affordable players still on the board — not by
+    // himself alone. Near-ties are broken by what the starting five lacks most.
+    const byTalent = available
+      .filter((p) => isDraftableDurability(p))
+      .sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
     const shortlist = lotteryCandidates.slice(0, Math.min(TEAM_SCORE_SHORTLIST, lotteryCandidates.length));
+    const gaps = startingFiveGaps(roster);
     const rescored = shortlist.map((entry) => {
-      const overall = teamScorer!([...roster, entry.player]);
-      const overBudget = Math.max(0, entry.player.fga - budgetPerSlot) * TEAM_SCORE_FGA_OVER_BUDGET;
-      const teamValue = overall - overBudget;
-      return { ...entry, value: teamValue, debug: entry.debug ? { ...entry.debug, teamOverall: overall, teamValue } : entry.debug };
+      const completed = completeRosterGreedy(
+        [...roster, entry.player],
+        byTalent,
+        capLimit - spent - entry.player.fga,
+        rosterSize - roster.length - 1,
+      );
+      const overall = teamScorer!(completed);
+      const complement = complementScore(gaps, entry.player) * NEAR_TIE_COMPLEMENT_POINTS;
+      const teamValue = overall + complement;
+      return {
+        ...entry,
+        value: teamValue,
+        debug: entry.debug ? { ...entry.debug, teamOverall: overall, complement, teamValue } : entry.debug,
+      };
     });
     lotteryCandidates = rescored.sort((a, b) => b.value - a.value);
   }
