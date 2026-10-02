@@ -239,6 +239,17 @@ Decyzje (2026-09-30):
       w skuteczność (+0.25 TS za punkt usage) i asysty (jego asysty na rzut). Potem kontekst składu
       (`contextStats.ts`). Wynik: Kobe 2005-07 33.5 pkt, Curry 2014-16 28.7 pkt, Wilt 1966-68 16.4 zb;
       kalibracja sezonu bez zmian (RMSE ~4.5 W).
+- [ ] **Rosnąca krzywa zmęczenia w meczu i w rotacji** (zaakceptowane 2026-10-02, czeka na „start”):
+      „im więcej minut, tym większa kara — żeby silnik sam dawał Jordanowi mniej minut”. Jedna
+      krzywa: każda minuta ponad 36 (próg do potwierdzenia: 36 albo 34–35) kosztuje coraz więcej —
+      37. −0.5%, 38. −1%, 39. −1.5%… celności, narastająco (38 min ≈ −1.5%, 40 ≈ −5%, 42 ≈ −10.5%).
+      Ta sama krzywa (a) w meczu na żywo zamiast dzisiejszej liniowej (1% za minutę od 36) i (b) jako
+      koszt minuty w `minuteAllocation.ts` zamiast progów optimum / 38 min — gwiazda gra 40 tylko
+      przy naprawdę złej ławce. Skutki: oceny drużyn (ławka znaczy więcej), AI, testy z minutami
+      (testInsights, rotacja, calibrationReference) do przeliczenia, werdykty z sesji kalibracyjnych
+      do sprawdzenia; raport przed/po przed merge'em. Na branchu (bez merge'a) czekają już: limit
+      +2 pkt z kontekstu, udział w akcjach ponad realny tylko w słabym otoczeniu, liniowe zmęczenie.
+      (M–L)
 - [ ] **Poprawić średnie ligowe sprzed 1980** — `awards/seasonBaselines.json` nie ma wielu sezonów
       (np. 1966-67, 1975-76) i ma błędne wartości (1965-66 TS 54.3%, powinno być ~49%); silnik
       bierze najbliższy znany sezon, więc Wilt/West 1965-68 i Kareem 1970-72 są liczeni od zawyżonej
