@@ -137,8 +137,9 @@ const movementCoverageTeam = team('team-model-movement-coverage', [
   // 2026-10-01: was Elton Brand 2012-14. Per-36 position competence lets Shane Battier cover PF
   // as a small-ball four, so Brand fell to 8 minutes and the roster had seven meaningful players.
   // Taj Gibson 2012-14 earned real backup big minutes and kept the shape; with the continuous
-  // competence score he fell back under the meaningful line, and Nick Collison 2009-11 keeps it.
-  pick('Nick Collison', '2009-11'),
+  // competence score he fell back under the meaningful line, and Nick Collison 2009-11 kept it;
+  // with per-span competence his 2010-12 window does.
+  pick('Nick Collison', '2010-12'),
   pick('Andre Iguodala', '2011-13'),
   pick('Larry Smith', '1991-93'),
 ]);

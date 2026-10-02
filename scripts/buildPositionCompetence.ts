@@ -23,19 +23,16 @@ import { normalizePlayerName } from '../src/data/schema';
 import type { PlayerSpan, Position } from '../src/data/schema';
 import { getHeightInches } from '../src/data/heightLookup';
 import { effectiveTalent } from '../src/engine/grades';
-import { isNamedPgEligible } from '../src/engine/pgEligibility';
 import { positionDistance, hardLockedPosition } from '../src/engine/positions';
 import { computeSpacing } from '../src/engine/spacing';
 import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
 import { per36 } from '../src/engine/minutesPerGame';
+import { pointGuardScore } from '../src/engine/positionCompetence';
 import '../src/engine/fit';
 
 type Level = 'full' | 'partial' | 'emergency' | 'none';
 const POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 const HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'];
-const PG_HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler'];
-/** e^(−0.4) × 0.9 ≈ 0.6: a named point guard always covers a stretch at the point. */
-const NAMED_PG_MAX_PENALTY = 0.4;
 const SMALL_BALL_C_ROLES = ['Switch Big', 'Mobile Big', 'Helper', 'Anchor Big'];
 
 const FIRST_BLOCKS_SEASON = 1974;
@@ -68,7 +65,7 @@ function shortfall(value: number, target: number, weight: number, cap: number): 
  * positions (and the user's own decisions) are closed outright; a weak fit stays possible and the
  * minute solver prices it with the minutes played there (minuteAllocation.ts).
  */
-function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: number): number {
+function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: number, natural: Position[]): number {
   const b = s.box;
   const rpg = per36(b.rpg, s);
   const apg = per36(b.apg, s);
@@ -80,20 +77,10 @@ function score(pos: Position, from: Position, s: PlayerSpan, h: number, share: n
   const above = (target: number, weight: number, cap: number) => (h ? shortfall(-h, -target, weight, cap) : 0);
   let penalty: number;
   switch (pos) {
-    case 'PG': {
-      // 2026-10-01, the user ("wskoczyć na PG powinno być najtrudniej"; Eddie Jones and Jason
-      // Richardson at the point were "gruba przesada"): the point is the hardest position to
-      // step into. Every non-PG pays a base cost, a steep cost per missing assist (per 36), and
-      // more without a real ball-handling role, so the best a non-PG reaches is about 0.7. The named
-      // PG list (Wade, Ginóbili, Hornacek) only guarantees a stretch at the point (0.6).
-      const named = isNamedPgEligible(s);
-      const ballHandler = PG_HANDLERS.includes(s.offensiveArchetype);
-      // Two slots away only a ball-handling wing runs the offence (a point forward: LeBron).
-      if (!named && from !== 'SG' && !(from === 'SF' && handler)) return 0;
-      penalty = 0.25 + shortfall(apg, 7, 0.3, 1.5) + (ballHandler ? 0 : 0.4) + (from === 'SG' || named ? 0 : 0.5);
-      if (named) penalty = Math.min(penalty, NAMED_PG_MAX_PENALTY);
-      break;
-    }
+    case 'PG':
+      // Scored per span at runtime (positionCompetence.ts `pointGuardScore`); this is the peak
+      // span's value, kept for the review lists.
+      return pointGuardScore(s, natural);
     case 'SG':
       if (from === 'PG') penalty = below(76, 0.1, 0.8);
       else if (from === 'SF') penalty = above(79, 0.12, 0.8) + (handler || spacing >= 65 ? 0 : shortfall(apg, 3.5, 0.08, 0.4));
@@ -143,7 +130,12 @@ for (const span of draftPool) {
   byName.set(span.playerName, list);
 }
 
-type Entry = { nat: Position[]; pos: Partial<Record<Position, number>> };
+type Entry = {
+  nat: Position[];
+  pos: Partial<Record<Position, number>>;
+  ov?: Position[];
+  s?: Record<string, Partial<Record<Position, number>>>;
+};
 const out: Record<string, Entry> = {};
 const tally: Record<string, number> = {};
 for (const [name, spans] of byName) {
@@ -155,21 +147,33 @@ for (const [name, spans] of byName) {
     .filter(([pos, count]) => count / spans.length >= 0.25 || pos === peak.primaryPosition)
     .map(([pos]) => pos)
     .sort((a, b) => POSITIONS.indexOf(a) - POSITIONS.indexOf(b));
-  const entry: Entry = { nat, pos: {} };
+  const entry: Entry = { nat, pos: {}, s: {} };
   const key = normalizePlayerName(name);
   if (!hardLockedPosition(spans[0])) {
     const height = getHeightInches(name) ?? 0;
     const userLevels = overridesByKey.get(key) ?? {};
     for (const pos of POSITIONS) {
-      if (nat.includes(pos)) continue;
+      // A natural position scores 0.95 at runtime, except the point, which every span earns.
+      if (nat.includes(pos) && pos !== 'PG') continue;
       const from = [...nat].sort((a, b) => positionDistance(a, pos) - positionDistance(b, pos))[0];
       const listed = spans.filter((s) => s.secondaryPositions.includes(pos) || s.primaryPosition === pos).length;
-      const auto = score(pos, from, peak, height, listed / spans.length);
       const userLevel = userLevels[pos];
-      const value = userLevel === undefined ? auto : userLevel === 'none' ? 0 : LEVEL_SCORE[userLevel];
+      const fixed = userLevel === undefined ? undefined : userLevel === 'none' ? 0 : LEVEL_SCORE[userLevel];
+      // 2026-10-01, the user ("nie powinno być liczone względem statystyk i momentu w karierze?"):
+      // each span is scored from its own numbers (rebounds, assists, blocks, range, defense);
+      // height and the positions he played stay the player's. The peak span's value is kept in
+      // `pos` for the review lists and for spans outside the table.
+      for (const span of spans) {
+        if (span.primaryPosition === pos) continue;
+        const value = fixed ?? score(pos, from, span, height, listed / spans.length, nat);
+        if (value > 0) (entry.s![span.spanLabel] ??= {})[pos] = value;
+      }
+      if (nat.includes(pos)) continue;
+      const value = fixed ?? score(pos, from, peak, height, listed / spans.length, nat);
       const bucket = value >= 0.75 ? 'full' : value >= 0.47 ? 'partial' : value > 0 ? 'emergency' : 'none';
       tally[bucket] = (tally[bucket] ?? 0) + 1;
       if (value > 0) entry.pos[pos] = value;
+      if (userLevel !== undefined) (entry.ov ??= []).push(pos);
     }
   }
   out[key] = entry;

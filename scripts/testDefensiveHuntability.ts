@@ -210,7 +210,9 @@ check(reportedScores.overall <= 84, 'weak defense meaningfully lowers the final 
 // 2026-09-25: band 12-16 -> 16-20 after graded position competence (positionCompetence.ts)
 // reshaped this roster's backup minutes; Kenny Anderson now plays 18 real minutes. Jon Barry
 // still correctly drops out. Re-measured directly (18), not guessed.
-check(eliteCoreHunt.targetableMinutes >= 16 && eliteCoreHunt.targetableMinutes <= 20, 'Kenny Anderson remains a real target; Jon Barry no longer misreads as one above his own position average');
+// 2026-10-02: band 16-20 -> 14-20 with minutes-based, per-span position competence; Kenny Anderson
+// plays 15 real minutes. Same single target. Re-measured directly (15).
+check(eliteCoreHunt.targetableMinutes >= 14 && eliteCoreHunt.targetableMinutes <= 20, 'Kenny Anderson remains a real target; Jon Barry no longer misreads as one above his own position average');
 // 2026-09-23, same day: was `>= 65`. `UNCORROBORATED_CEILING` (defensiveTalent.ts) then dropped
 // again, 78 -> 58, user ask re: Magic Johnson/Charles Barkley reading too high — Ron Harper's
 // 1988-90 span has zero All-Defense recognition and only the thin BPM2-only fallback reading the

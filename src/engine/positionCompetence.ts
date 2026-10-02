@@ -1,6 +1,8 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import competenceData from '../data/positionCompetence.json';
+import { per36 } from './minutesPerGame';
+import { isNamedPgEligible } from './pgEligibility';
 
 /**
  * 2026-09-25, user's multi-position ask ("wielopozycyjność ... na marginalnych spadkach"): how
@@ -21,7 +23,14 @@ import competenceData from '../data/positionCompetence.json';
  */
 export type PositionCompetence = 'natural' | 'full' | 'partial' | 'emergency' | 'none';
 
-type Entry = { nat: Position[]; pos: Partial<Record<Position, number>> };
+/** `pos` holds the peak span's scores, `s` every span's own (by span label), and `ov` the
+ * positions set by the user's own decisions (they win over every formula). */
+type Entry = {
+  nat: Position[];
+  pos: Partial<Record<Position, number>>;
+  ov?: Position[];
+  s?: Record<string, Partial<Record<Position, number>>>;
+};
 const DATA = competenceData as Record<string, Entry>;
 const POSITION_ORDER: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 
@@ -62,8 +71,50 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
       ? UNLISTED_ADJACENT_SCORE
       : 0;
   }
+  // Each span is scored from its own numbers (the build script); a natural position other than the
+  // point scores `OTHER_NATURAL_SCORE`.
+  const own = entry.s?.[span.spanLabel];
+  if (own) return own[slot] ?? (entry.nat.includes(slot) && slot !== 'PG' ? OTHER_NATURAL_SCORE : 0);
+  if (slot === 'PG' && !entry.ov?.includes('PG')) return pointGuardScore(span, entry.nat);
   if (entry.nat.includes(slot)) return OTHER_NATURAL_SCORE;
   return entry.pos[slot] ?? 0;
+}
+
+const PG_HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler'];
+const CREATORS = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'];
+const PG_ASSISTS_TARGET = 7;
+const PG_ASSIST_WEIGHT = 0.3;
+const PG_ASSIST_CAP = 1.5;
+/** e^(−0.4) × 0.9 ≈ 0.6: a named point guard always covers a stretch at the point. */
+const NAMED_PG_MAX_PENALTY = 0.4;
+
+/**
+ * 2026-10-01, the user ("wskoczyć na PG powinno być najtrudniej", then Caruso and Pressey running
+ * the point in teams with no natural PG: "zbicie wartości"): the point is scored per span, from
+ * that span's own assists (per 36) and role, and measured from that span's own position — not
+ * once per player from his peak. Caruso's 3-and-D years no longer inherit the point from his one
+ * PG-tagged span, and Pressey's late spans no longer inherit his point-forward peak.
+ *
+ *   PG among his natural positions (tagged there in a quarter of his spans): 0.95 at 7+ assists,
+ *     falling 0.3 per missing assist (West 6.1 → 0.73, Caruso 4.5 → 0.45).
+ *   Otherwise: a base 0.25 plus the same assist cost, 0.4 without a ball-handling role and 0.5
+ *     two slots away (a small forward); a power forward or centre never runs the point. A named
+ *     point guard (pgEligibility.ts) always keeps a stretch there (0.6).
+ */
+export function pointGuardScore(span: PlayerSpan, natural: Position[]): number {
+  const named = isNamedPgEligible(span);
+  const assistGap = Math.min(PG_ASSIST_CAP, PG_ASSIST_WEIGHT * Math.max(0, PG_ASSISTS_TARGET - per36(span.box.apg, span)));
+  let score: number;
+  if (natural.includes('PG')) {
+    score = OTHER_NATURAL_SCORE * Math.exp(-assistGap);
+  } else {
+    const from = span.primaryPosition;
+    if (!named && (from === 'PF' || from === 'C' || (from === 'SF' && !CREATORS.includes(span.offensiveArchetype)))) return 0;
+    let penalty = 0.25 + assistGap + (PG_HANDLERS.includes(span.offensiveArchetype) ? 0 : 0.4) + (from === 'SG' || named ? 0 : 0.5);
+    if (named) penalty = Math.min(penalty, NAMED_PG_MAX_PENALTY);
+    score = UNLISTED_SECONDARY_SCORE * Math.exp(-penalty);
+  }
+  return Math.round(score * 100) / 100;
 }
 
 export function positionCompetence(span: PlayerSpan, slot: Position): PositionCompetence {
