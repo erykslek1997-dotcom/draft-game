@@ -1,7 +1,10 @@
 /**
  * Writes src/data/spanContext.json — for every draft-pool span, the context the player actually
  * played in, read by `contextStats.ts` to re-scale his numbers to a new lineup:
- *   [teammates' three-point rate, usage rate, rim share of his two-point attempts], each x1000.
+ *   [teammates' three-point rate, usage rate, rim share of his two-point attempts, shot share of his
+ *   plays], each x1000. The last is (FGA + 0.44 FTA) / (FGA + 0.44 FTA + TOV): usage counts turnovers
+ *   too, and a turnover-heavy point guard must not turn them into shots (2026-10-02, the user:
+ *   "Stockton +4.5 ppg bez strat skuteczności wygląda sus").
  *
  * 2026-10-02, stage 2 (live game), the user: "realne skalowanie statystyk na to jaki jest skład —
  * Kobe grał w deadball, ale mając nowoczesny skład miałby więcej miejsca". Teammates come from the
@@ -138,7 +141,7 @@ function teammatesThreeRate(span: PlayerSpan): number {
   return Math.max(ORIGINAL_SPACING_FLOOR, shots > 0 ? threes / shots : 0);
 }
 
-function usageRate(span: PlayerSpan): number {
+function realUsage(span: PlayerSpan): number | null {
   let weighted = 0;
   let weight = 0;
   for (const end of spanEndYears(span.spanLabel)) {
@@ -148,8 +151,11 @@ function usageRate(span: PlayerSpan): number {
       weight += row.games * row.mpg;
     }
   }
-  if (weight > 0) return weighted / weight;
-  // Before 1997: plays per minute against the team's plays per minute (pace / 48).
+  return weight > 0 ? weighted / weight : null;
+}
+
+/** Plays per minute against the season's pace per minute — a usage estimate for seasons without one. */
+function usageProxy(span: PlayerSpan): number | null {
   let plays = 0;
   let games = 0;
   let paceGames = 0;
@@ -162,7 +168,43 @@ function usageRate(span: PlayerSpan): number {
     paceGames += (pace.get(seasonOf(end)) ?? 100) * row.g;
   }
   const mpg = estimatedMinutesPerGame(span) ?? 34;
-  return games > 0 ? plays / games / mpg / (paceGames / games / 48) : 0.2;
+  return games > 0 ? plays / games / mpg / (paceGames / games / 48) : null;
+}
+
+/**
+ * The proxy over-reads usage (a team has more plays than possessions — offensive rebounds), which
+ * gave pre-1997 players too many shots (Stockton). It is scaled by the median ratio of real usage
+ * to proxy over the seasons where both exist.
+ */
+const PROXY_SCALE = (() => {
+  const ratios: number[] = [];
+  for (const span of draftPool) {
+    const real = realUsage(span);
+    const proxy = usageProxy(span);
+    if (real && proxy && proxy > 0.05) ratios.push(real / proxy);
+  }
+  ratios.sort((a, b) => a - b);
+  return ratios.length > 0 ? ratios[Math.floor(ratios.length / 2)] : 1;
+})();
+console.log(`usage proxy scale (median real / proxy): ${PROXY_SCALE.toFixed(3)}`);
+
+function usageRate(span: PlayerSpan): number {
+  return realUsage(span) ?? (usageProxy(span) ?? 0.2 / PROXY_SCALE) * PROXY_SCALE;
+}
+
+/** Before turnovers were counted (1978) a play is assumed to end in a turnover 12% of the time. */
+const ASSUMED_TURNOVER_SHARE = 0.12;
+function shotShareOfPlays(span: PlayerSpan): number {
+  let shots = 0;
+  let plays = 0;
+  for (const end of spanEndYears(span.spanLabel)) {
+    const row = box.get(`${norm(span.playerName)}|${seasonOf(end)}`);
+    if (!row) continue;
+    const shotPlays = row.fga + 0.44 * row.fta;
+    shots += shotPlays;
+    plays += shotPlays + (row.tov > 0 ? row.tov : (ASSUMED_TURNOVER_SHARE / (1 - ASSUMED_TURNOVER_SHARE)) * shotPlays);
+  }
+  return plays > 0 ? shots / plays : 1 - ASSUMED_TURNOVER_SHARE;
 }
 
 function rimShareOfTwos(span: PlayerSpan): number {
@@ -171,9 +213,14 @@ function rimShareOfTwos(span: PlayerSpan): number {
   return RIM_SHARE_BY_POSITION[span.primaryPosition];
 }
 
-const out: Record<string, [number, number, number]> = {};
+const out: Record<string, [number, number, number, number]> = {};
 for (const span of [...draftPool].sort((a, b) => a.id.localeCompare(b.id))) {
-  out[span.id] = [Math.round(teammatesThreeRate(span) * 1000), Math.round(usageRate(span) * 1000), Math.round(rimShareOfTwos(span) * 1000)];
+  out[span.id] = [
+    Math.round(teammatesThreeRate(span) * 1000),
+    Math.round(usageRate(span) * 1000),
+    Math.round(rimShareOfTwos(span) * 1000),
+    Math.round(shotShareOfPlays(span) * 1000),
+  ];
 }
 writeFileSync(resolve(import.meta.dirname, '../src/data/spanContext.json'), `${JSON.stringify(out).replace(/\],"/g, '],\n"')}\n`);
 console.log(`spanContext.json: ${Object.keys(out).length} spans`);
