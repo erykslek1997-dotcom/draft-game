@@ -263,25 +263,27 @@ Decyzje (2026-09-30):
     1. Krycie jak trener: 120 przydziałów piątki, najgroźniejszy atakujący (usage × O-TAL) na
        najlepszego obrońcę w granicach tego, kogo może kryć (pozycje, role obronne; Pippen bierze
        mocnego PG). Rzut: 50% bezpośredni obrońca, 50% pomoc piątki.
-    2. Rzuty (? 65% budżetu): spod kosza — najlepszy obrońca obręczy na boisku (elitarny −5–8 pp,
-       więcej bloków); półdystans — obrońca + pomoc; za 3 — (?) głównie mniej rzutów, celność ~1 pp.
+    2. Rzuty (? 60% budżetu, propozycja z faulami: 60/20/12/8): spod kosza — najlepszy obrońca
+       obręczy na boisku (elitarny −5–8 pp, więcej bloków); półdystans — obrońca + pomoc; za 3 —
+       mniej rzutów i celność do −2–3 pp przy dobrym closeoucie (decyzja 2026-10-02).
     3. Straty i przechwyty (? 20%): nacisk obrońców (przechwyty, D-TAL obwodu) zamiast stałych 12%;
-       (?) szybka kontra po przechwycie ~60–65% (ok. 1.3 pkt, kończy przechwytujący/atletyczny),
-       po zbiórce w obronie ~10–15%.
+       szybka kontra po przechwycie ~60–65% (ok. 1.3 pkt, kończy przechwytujący/atletyczny), po
+       zbiórce w obronie 15% na razie (docelowo zależne od składu i tempa — brak danych).
     4. Zbiórka (? 15%): szansa na zbiórkę w ataku — zbierający obu piątek zamiast stałych 26%;
-       (?) dobitka ~35–40% (zbierający, spod kosza, faule) albo wznowienie na 14 s (więcej i celniejsze
-       trójki, mniej strat i asyst).
+       dobitka ~35–40% (zbierający, spod kosza, faule), a jeśli nie — oddanie na obwód i wznowienie
+       na 14 s (więcej i celniejsze trójki, mniej strat i asyst).
     5. Słaby strzelec: mecz bierze ocenę spacingu z silnika (`spacing.ts`: ilość + celność +
        wygładzenie + skrócona linia) — do miejsca dla kolegów, odpuszczania (jego obrońca pomaga przy
        koszu, on dostaje wolne trójki) i krycia (na nim chowa się słabego obrońcę).
     6. Ogrywanie słabego obrońcy: realne, nie tylko tekst — część akcji idzie na niego (więcej przy
        słabej hunt resistance); pełna wersja w typach akcji.
-    7. (?) Typy akcji i sposoby krycia — pick and roll / izolacja / gra tyłem / rzut z miejsca;
+    7. Typy akcji i sposoby krycia — pick and roll / izolacja / gra tyłem / rzut z miejsca;
        switch / drop / podwojenie; szukanie zmian (gdy jest kim zasłonić), short roll (Draymond,
-       Jokic), drop vs rzut po koźle. Propozycja: po etapach 1 i 3 (każdy krok mierzalny osobno).
-    8. (?) Faule: skłonność obrońcy, faule osobiste (problemy z faulami → ławka, 6 = koniec),
-       ostrożniejsza obrona, faule drużyny (bonus); faulowanie słabych z linii — później. Wymaga
-       eksportu fauli z Kaggle (`foulsPersonal`).
+       Jokic), drop vs rzut po koźle. Decyzja: po etapach 1 i 3 (każdy krok mierzalny osobno).
+    8. Faule (decyzja: od razu): skłonność obrońcy, faule osobiste (problemy z faulami → ławka, 6 = koniec),
+       ostrożniejsza obrona, faule drużyny (bonus); faulowanie słabych z linii — później. Czeka na
+       `PlayerSeasonStats.csv` (skrypt `nba-staty.zip` wysłany 2026-10-02: faule, zbiórki A/O,
+       przechwyty, straty, rzuty — może też posłużyć do średnich ligowych sprzed 1980).
     Druga strona: co mecz pokaże inaczej niż silnik (np. faule zabierające minuty, kontry) — raport
     i decyzja, czy poprawiamy silnik czy mecz.
   - **Etap 4: testy obu kierunków w `npm test`** — korelacje składników + wielkość wyrównania.
@@ -289,8 +291,8 @@ Decyzje (2026-09-30):
       przed/po przed merge'em. Na branchu (bez merge'a) czekają już: limit +2 pkt z kontekstu,
       udział w akcjach ponad realny tylko w słabym otoczeniu, liniowe zmęczenie od 36 min (1%/min).
   1. **Rosnąca krzywa zmęczenia, wspólna dla meczu i rotacji** — „im więcej minut, tym większa
-     kara, żeby silnik sam dawał Jordanowi mniej minut”. Każda minuta ponad 36 (próg do
-     potwierdzenia: 36 albo 34–35) kosztuje coraz więcej: 37. −0.5%, 38. −1%, 39. −1.5%…
+     kara, żeby silnik sam dawał Jordanowi mniej minut”. Każda minuta ponad 36 (próg
+     potwierdzony 2026-10-02) kosztuje coraz więcej: 37. −0.5%, 38. −1%, 39. −1.5%…
      (38 min ≈ −1.5%, 40 ≈ −5%, 42 ≈ −10.5% celności). W meczu zamiast liniowej; w
      `minuteAllocation.ts` jako koszt minuty zamiast progów optimum / 38 min. Dziś gwiazdy grają
      40–42 min, a dzisiejsze gwiazdy 30+ pkt grają ≤36.5. Skutki: oceny drużyn (ławka znaczy
