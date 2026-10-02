@@ -239,17 +239,30 @@ Decyzje (2026-09-30):
       w skuteczność (+0.25 TS za punkt usage) i asysty (jego asysty na rzut). Potem kontekst składu
       (`contextStats.ts`). Wynik: Kobe 2005-07 33.5 pkt, Curry 2014-16 28.7 pkt, Wilt 1966-68 16.4 zb;
       kalibracja sezonu bez zmian (RMSE ~4.5 W).
-- [ ] **Rosnąca krzywa zmęczenia w meczu i w rotacji** (zaakceptowane 2026-10-02, czeka na „start”):
-      „im więcej minut, tym większa kara — żeby silnik sam dawał Jordanowi mniej minut”. Jedna
-      krzywa: każda minuta ponad 36 (próg do potwierdzenia: 36 albo 34–35) kosztuje coraz więcej —
-      37. −0.5%, 38. −1%, 39. −1.5%… celności, narastająco (38 min ≈ −1.5%, 40 ≈ −5%, 42 ≈ −10.5%).
-      Ta sama krzywa (a) w meczu na żywo zamiast dzisiejszej liniowej (1% za minutę od 36) i (b) jako
-      koszt minuty w `minuteAllocation.ts` zamiast progów optimum / 38 min — gwiazda gra 40 tylko
-      przy naprawdę złej ławce. Skutki: oceny drużyn (ławka znaczy więcej), AI, testy z minutami
-      (testInsights, rotacja, calibrationReference) do przeliczenia, werdykty z sesji kalibracyjnych
-      do sprawdzenia; raport przed/po przed merge'em. Na branchu (bez merge'a) czekają już: limit
-      +2 pkt z kontekstu, udział w akcjach ponad realny tylko w słabym otoczeniu, liniowe zmęczenie.
-      (M–L)
+- [ ] **Paczka „mecz na żywo 2” — zaakceptowana 2026-10-02, czeka na „start”** (M–L). Raport
+      przed/po przed merge'em. Na branchu (bez merge'a) czekają już: limit +2 pkt z kontekstu,
+      udział w akcjach ponad realny tylko w słabym otoczeniu, liniowe zmęczenie od 36 min (1%/min).
+  1. **Rosnąca krzywa zmęczenia, wspólna dla meczu i rotacji** — „im więcej minut, tym większa
+     kara, żeby silnik sam dawał Jordanowi mniej minut”. Każda minuta ponad 36 (próg do
+     potwierdzenia: 36 albo 34–35) kosztuje coraz więcej: 37. −0.5%, 38. −1%, 39. −1.5%…
+     (38 min ≈ −1.5%, 40 ≈ −5%, 42 ≈ −10.5% celności). W meczu zamiast liniowej; w
+     `minuteAllocation.ts` jako koszt minuty zamiast progów optimum / 38 min. Dziś gwiazdy grają
+     40–42 min, a dzisiejsze gwiazdy 30+ pkt grają ≤36.5. Skutki: oceny drużyn (ławka znaczy
+     więcej), AI, testy z minutami (testInsights, rotacja, calibrationReference), werdykty z sesji.
+  2. **Spacing osobno od limitu** — limit +2 tylko na udział w akcjach i podania (to one nakładały
+     się w piątce gwiazd); spacing z własnym, wyższym limitem (~+4). Dziś limit zjada spacing:
+     Jordan ze strzelcami +2.0, bez rzutu +1.1.
+  3. **„Spacing z zasad” przed 2001-02** — do 2001 zakaz strefy (obrońca nie mógł czekać
+     w trumnie), więc miejsce było i bez trójek. Punkt odniesienia dla tych epok ~ drużyna
+     rzucająca dziś ~35% rzutów za 3 (szacunek, do skalibrowania np. na zmianie gry pod koszem po
+     legalizacji strefy). Skutek: Jordan obok strzelców zyskuje mniej, obok nierzucających traci
+     (dziś zyskuje nawet przy Rodmanie i B. Wallace).
+  4. **Straty według gracza** — dziś stratę dostaje się według udziału w rzutach, więc zbierają je
+     strzelcy (Jordan 5.9/48 min przy 41% akcji, Kidd 2.0, Simmons 2.1 — odwrotnie niż w
+     rzeczywistości). Ma być według realnej części akcji kończącej się stratą (`spanContext.json`).
+  5. **Straty według składu** — dziś stałe 12% na akcję (13–14.5 na mecz w każdej piątce). Szansa
+     ma wynikać ze strat tej piątki, przeliczonych na dziś względem ligi ich epoki.
+  6. **Sufit asyst** — udział trafień z asystą max 85% → ~75% (najlepsze realne drużyny ~70%).
 - [ ] **Poprawić średnie ligowe sprzed 1980** — `awards/seasonBaselines.json` nie ma wielu sezonów
       (np. 1966-67, 1975-76) i ma błędne wartości (1965-66 TS 54.3%, powinno być ~49%); silnik
       bierze najbliższy znany sezon, więc Wilt/West 1965-68 i Kareem 1970-72 są liczeni od zawyżonej
