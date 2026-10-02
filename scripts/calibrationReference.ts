@@ -75,7 +75,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     // raw offense round to the same displayed number, which made a strict ">" fail on rounding.
     const offense = (n: string) => offenseScoreBreakdown(by.get(n)!.team).raw;
     const checks: [boolean, string][] = [
-      [s("Charlotte").overallExact > s("Tulsa").overallExact, 'Charlotte ranks above Tulsa'],
+      // 2026-10-02, the user after the role audit put Tulsa 1.4 ahead (Ray Allen / Hornacek lost
+      // labels their numbers never supported): "generalnie to są bardzo podobne składy" — the
+      // verdict is that the two read close, not a strict order.
+      [Math.abs(s('Charlotte').overallExact - s('Tulsa').overallExact) <= 2, 'Charlotte and Tulsa read close (within 2 points)'],
       [by.get('Vermont')!.rank < teams.length, 'LeBron + Luka is not at the bottom'],
       [s('Charlotte').spacingScore > s('Tulsa').spacingScore, 'Charlotte spaces the floor better than Tulsa'],
       [offense('Nash') >= offense('Tulsa') - 0.5, 'Nash-Kobe-Malone scores at least as well as Tulsa'],
