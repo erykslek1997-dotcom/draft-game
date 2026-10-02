@@ -14,6 +14,7 @@ import DraftLottery from './components/DraftLottery';
 import { CapsInfoHost } from './components/CapIcon';
 import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
 import { takeModeChallengeFromUrl, type ModeChallenge } from './modeChallenge';
+import { LIVE_TEST_BENCH_FOR_TESTING } from './components/testingFlags';
 import { DAILY_REPLAY_FOR_TESTING, currentStreak, dailyEntry, dailySeed, localDayKey, yesterdayJokers } from './components/dailyProgress';
 // Seed-only (rng + a list of names): safe for the menu, which must not pull the engine in.
 import { dailyMeta, JOKERS_MAX, JOKERS_MIN } from './engine/dailyMeta';
@@ -55,6 +56,7 @@ function loadGameShell() {
 const GameShell = lazy(loadGameShell);
 const BestFive = lazy(() => loadGameModule(() => import('./components/BestFive')));
 const QuickFive = lazy(() => loadGameModule(() => import('./components/QuickFive')));
+const LiveTestBench = lazy(() => loadGameModule(() => import('./components/LiveTestBench')));
 
 function useLoadStatus(): LoadStatus {
   const [loadStatus, setLoadStatus] = useState(getLoadStatus);
@@ -110,7 +112,7 @@ function DailyStrip({ onPlay }: { onPlay: () => void }) {
   );
 }
 
-type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily';
+type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily' | 'livetest';
 
 /** Roster-size figure shown in the Draft mode card's own one-line description, kept in sync with
  * `engine/positions.ts`'s real `ROSTER_SIZE` by the standing check in
@@ -450,6 +452,18 @@ function App() {
                   ?
                 </button>
               </div>
+              {LIVE_TEST_BENCH_FOR_TESTING && (
+                <div className="mode-card-wrap">
+                  <button className="mode-card" onClick={() => setView('livetest')}>
+                    <span className="mode-card-icon" aria-hidden>
+                      🧪
+                    </span>
+                    <span className="mode-card-step at-cond">Testing</span>
+                    <span className="mode-card-name at-cond">Live game bench</span>
+                    <span className="mode-card-desc">Two random fives play a live game — check it against the engine.</span>
+                  </button>
+                </div>
+              )}
               <IntroDataStatus />
             </div>
           </div>
@@ -557,6 +571,12 @@ function App() {
               setView('intro');
             }}
           />
+        </Suspense>
+      )}
+
+      {view === 'livetest' && (
+        <Suspense fallback={<LoadingPanel />}>
+          <LiveTestBench onBack={() => setView('intro')} />
         </Suspense>
       )}
 

@@ -988,3 +988,25 @@
   .bf-hand.is-5 .bf-deal-card .at-player-card-stats b { font-size: 10px; }
   .bf-hand.is-5 .bf-deal-card .at-player-card-stats { font-size: 7.5px; gap: 1px; }
 }
+
+/* Live game test bench (LiveTestBench.tsx, testing only). */
+.bench-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.bench-team ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 0.9rem;
+}
+.bench-team li b {
+  display: inline-block;
+  width: 2.2em;
+}
+.bench-expect {
+  font-size: 0.9rem;
+  margin: 8px 0 12px;
+}

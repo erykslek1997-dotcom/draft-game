@@ -213,14 +213,20 @@ Decyzje (2026-09-30):
 - Statystyki graczy z sezonu i nagrody (MVP, DPOY, 6MOY): tak, ale później.
 - Mecz na żywo: poziom szczegółu do wyboru przez użytkownika (sam wynik i statystyki meczu albo
   przebieg akcja po akcji).
-- Kalibracja losowości na NBA: faworyt serii wygrywa ~75–85%, najlepsza drużyna ~25–35% na tytuł.
+- Kalibracja losowości na NBA: najlepsza drużyna ~25–35% na tytuł (więcej, gdy wyraźnie odskoczy).
+  Faworyt serii zależnie od różnicy oceny (2026-10-02 — w lidze AI czołowa ósemka mieści się w 3–4
+  pkt, więc sztywne 75–85% nie ma sensu): przy 1–2 pkt ~55–65%, przy 4+ pkt ~75–85%.
 
 - [ ] **Mecz na żywo mocniej na silniku** — dziś box score jest wyrównywany i przechylany marginesem
       modelu (`liveGame.ts`, `TILT_PER_POINT`); docelowo przebieg meczu z ofensywy/obrony, fitu,
       rotacji i słabości drużyn (kto kogo kryje, kto rzuca w clutchu). Wspólny dla Draw Five i daily.
       (L)
-- [ ] **Symulacja sezonu i playoffów w draftach** — przegląd tego, co jest (`engine/playoffSimulation.ts`), pod ten
-      sam silnik; wyniki muszą się zgadzać z oceną drużyn. (M–L)
+- [x] **Symulacja sezonu i playoffów w draftach** (2026-10-02) — w lidze 1 pkt oceny = 1,3 pkt
+      przewagi (było 1,0: sezony 41–41, najlepsza ~50 W); nowa warstwa zderzenia stylów (atak pod
+      kosz vs ochrona obręczy, spacing vs obwód/switch, gwiazda vs najlepszy obrońca, zbiórka) —
+      połowa w sezonie, całość w playoffach i szansach na tytuł; mecz na żywo bez zmian. Wynik na
+      4 ligach AI: najlepsza 53–57 W, najsłabsza 20–33 W; faworyt <1 pkt 54%, 1–2 pkt 64%, 2–4 pkt
+      70%, 4+ pkt 84%; tytuł najlepszej 18–60% (średnio ~38%).
 - [ ] **Mecz na żywo na koniec Mini?** — do decyzji: w Mini jest 16 drużyn i wynik to miejsce
       w lidze. (M–L)
 - [ ] **Balans po symulacjach** — jak często AI wygrywa, Joker (częstość legendy i leszcza, cena),
