@@ -181,7 +181,7 @@ const contextGain = (delta: number) => Math.min(MAX_CONTEXT_GAIN, delta);
  * 2026-10-02, the user: "więcej minut = gorsza skuteczność". Past `FRESH_MINUTES` in a game, each
  * minute takes this share off a player's chance to make a shot.
  */
-const FRESH_MINUTES = 34;
+const FRESH_MINUTES = 36;
 const FATIGUE_PER_MINUTE = 0.01;
 const fatigue = (minutes: number) => 1 - FATIGUE_PER_MINUTE * Math.max(0, minutes - FRESH_MINUTES);
 
