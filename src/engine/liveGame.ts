@@ -7,6 +7,7 @@ import { lineupTeam, scoreLineup, type Lineup } from './bestFive';
 import type { LegendFive } from './dailyMeta';
 import type { Team } from './types';
 import { contextLines } from './contextStats';
+import { estimatedMinutesPerGame } from './minutesPerGame';
 
 /**
  * 2026-09-28, the user (Daily Slot Machine 2.0: "możemy zrobić symulacje live? Z statystami"):
@@ -113,10 +114,30 @@ const TURNOVER = 0.12;
 const SHOOTING_FOUL = 0.09;
 const AND_ONE = 0.05;
 const OFF_REBOUND = 0.26;
-const ASSISTED = 0.6;
+const ASSISTED = 0.66;
 /** Assists go to the real passers: weight by assists per game to this power (2026-10-02 — linear
  * weights spread them so evenly that Jokic averaged 5 and the league leader 9). */
-const ASSIST_WEIGHT_POWER = 1.6;
+const ASSIST_WEIGHT_POWER = 1.3;
+/** Rebounds concentrate on the real rebounders a little more than their rates alone. */
+const REBOUND_WEIGHT_POWER = 1.2;
+/**
+ * 2026-10-02, the user's season exports: who rebounds, assists, steals and blocks is weighted by
+ * his rate PER MINUTE, not per game — a backup big's real rebounds came in fewer minutes (Gobert
+ * 3.6 boards in 14 minutes), and a starter's per-game totals over-weighed him against a bench
+ * player. Assists use a milder power (1.6 left a second passer like Kawhi with half his real
+ * assists) and one named exception: "żaden inny C w historii aż tak nie rozgrywał" — Jokic.
+ */
+const PASSING_HUBS: Record<string, number> = { 'Nikola Jokic': 2 };
+const rateCache = new WeakMap<PlayerSpan, { reb: number; ast: number; stl: number; blk: number }>();
+function rates(span: PlayerSpan) {
+  let r = rateCache.get(span);
+  if (!r) {
+    const k = 36 / (estimatedMinutesPerGame(span) ?? 36);
+    r = { reb: span.box.rpg * k, ast: span.box.apg * k * (PASSING_HUBS[span.playerName] ?? 1), stl: span.box.spg * k, blk: span.box.bpg * k };
+    rateCache.set(span, r);
+  }
+  return r;
+}
 // 2026-10-02: 0.07 gave a whole team ~1.8 blocks a game (an all-time season's leader 1.0); real
 // teams block ~5, on roughly a sixth of their opponents' missed twos.
 const BLOCKED = 0.17;
@@ -422,13 +443,13 @@ function playRosters(
     for (let guard = 0; guard < 4; guard++) {
       if (rng() < TURNOVER) {
         if (rng() < 0.55) {
-          const thief = pickWeighted(rng, def, (p) => p.span.box.spg + 0.2);
+          const thief = pickWeighted(rng, def, (p) => rates(p.span).stl + 0.2);
           const lost = pickWeighted(rng, off, (c) => c.shotShare).player;
           box[d][thief.label].stl++;
           box[o][lost.label].tov++;
           play = { side: d, text: `${thief.label} steals it from ${lost.label}`, joker: thief.joker, quiet: false };
         } else {
-          box[o][pickWeighted(rng, off, (c) => c.shotShare + c.player.span.box.apg / 40).player.label].tov++;
+          box[o][pickWeighted(rng, off, (c) => c.shotShare + rates(c.player.span).ast / 40).player.label].tov++;
         }
         break;
       }
@@ -476,7 +497,7 @@ function playRosters(
         }
         let joker = shooter.joker;
         if (rng() < ASSISTED) {
-          const passer = pickWeighted(rng, off.filter((x) => x.player !== shooter), (x) => x.player.span.box.apg ** ASSIST_WEIGHT_POWER + 0.3).player;
+          const passer = pickWeighted(rng, off.filter((x) => x.player !== shooter), (x) => rates(x.player.span).ast ** ASSIST_WEIGHT_POWER + 0.3).player;
           box[o][passer.label].ast++;
           text += ` (${passer.label} assist)`;
           joker = joker || passer.joker;
@@ -485,15 +506,15 @@ function playRosters(
         break;
       }
       if (!three && rng() < BLOCKED) {
-        const blocker = pickWeighted(rng, def, (x) => x.span.box.bpg + 0.05);
+        const blocker = pickWeighted(rng, def, (x) => rates(x.span).blk + 0.05);
         box[d][blocker.label].blk++;
         play = { side: d, text: `${blocker.label} blocks ${shooter.label}`, joker: blocker.joker, quiet: false };
       }
       if (rng() < OFF_REBOUND) {
-        box[o][pickWeighted(rng, off, (x) => x.player.span.box.rpg).player.label].reb++;
+        box[o][pickWeighted(rng, off, (x) => rates(x.player.span).reb ** REBOUND_WEIGHT_POWER).player.label].reb++;
         continue;
       }
-      box[d][pickWeighted(rng, def, (x) => x.span.box.rpg).label].reb++;
+      box[d][pickWeighted(rng, def, (x) => rates(x.span).reb ** REBOUND_WEIGHT_POWER).label].reb++;
       break;
     }
     score[o] += pts;
