@@ -257,7 +257,33 @@ Decyzje (2026-09-30):
   - **Etap 2: kanały ataku** — margines rozbity na kanały: spacing, rim pressure (rzuty spod
     kosza, wolne), kreacja (asysty, straty składu = pkt 5), self-creation, pairing, kilku graczy
     potrzebujących piłki; czego silnik nie liczy (np. straty) — dodać do silnika.
-  - **Etap 3: kanały obrony** — obręcz, obwód, przechwyty, ogrywanie słabszego obrońcy, zbiórka.
+  - **Etap 3: obrona jako mechanika** (plan 2026-10-02, decyzje otwarte oznaczone „?”). Zasada:
+    przeciętna obrona = zero efektu (średnie ligi bez zmian); siła tak, by same mechaniki dawały
+    obronie ~0.21 pkt bilansu za pkt oceny (dziś −0.06); wyrównanie zostaje jako zabezpieczenie.
+    1. Krycie jak trener: 120 przydziałów piątki, najgroźniejszy atakujący (usage × O-TAL) na
+       najlepszego obrońcę w granicach tego, kogo może kryć (pozycje, role obronne; Pippen bierze
+       mocnego PG). Rzut: 50% bezpośredni obrońca, 50% pomoc piątki.
+    2. Rzuty (? 65% budżetu): spod kosza — najlepszy obrońca obręczy na boisku (elitarny −5–8 pp,
+       więcej bloków); półdystans — obrońca + pomoc; za 3 — (?) głównie mniej rzutów, celność ~1 pp.
+    3. Straty i przechwyty (? 20%): nacisk obrońców (przechwyty, D-TAL obwodu) zamiast stałych 12%;
+       (?) szybka kontra po przechwycie ~60–65% (ok. 1.3 pkt, kończy przechwytujący/atletyczny),
+       po zbiórce w obronie ~10–15%.
+    4. Zbiórka (? 15%): szansa na zbiórkę w ataku — zbierający obu piątek zamiast stałych 26%;
+       (?) dobitka ~35–40% (zbierający, spod kosza, faule) albo wznowienie na 14 s (więcej i celniejsze
+       trójki, mniej strat i asyst).
+    5. Słaby strzelec: mecz bierze ocenę spacingu z silnika (`spacing.ts`: ilość + celność +
+       wygładzenie + skrócona linia) — do miejsca dla kolegów, odpuszczania (jego obrońca pomaga przy
+       koszu, on dostaje wolne trójki) i krycia (na nim chowa się słabego obrońcę).
+    6. Ogrywanie słabego obrońcy: realne, nie tylko tekst — część akcji idzie na niego (więcej przy
+       słabej hunt resistance); pełna wersja w typach akcji.
+    7. (?) Typy akcji i sposoby krycia — pick and roll / izolacja / gra tyłem / rzut z miejsca;
+       switch / drop / podwojenie; szukanie zmian (gdy jest kim zasłonić), short roll (Draymond,
+       Jokic), drop vs rzut po koźle. Propozycja: po etapach 1 i 3 (każdy krok mierzalny osobno).
+    8. (?) Faule: skłonność obrońcy, faule osobiste (problemy z faulami → ławka, 6 = koniec),
+       ostrożniejsza obrona, faule drużyny (bonus); faulowanie słabych z linii — później. Wymaga
+       eksportu fauli z Kaggle (`foulsPersonal`).
+    Druga strona: co mecz pokaże inaczej niż silnik (np. faule zabierające minuty, kontry) — raport
+    i decyzja, czy poprawiamy silnik czy mecz.
   - **Etap 4: testy obu kierunków w `npm test`** — korelacje składników + wielkość wyrównania.
 - [ ] **Paczka „mecz na żywo 2” (= etap 1 i część etapu 2 wyżej) — zaakceptowana 2026-10-02** (M–L). Raport
       przed/po przed merge'em. Na branchu (bez merge'a) czekają już: limit +2 pkt z kontekstu,
