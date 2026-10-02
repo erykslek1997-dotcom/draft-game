@@ -507,6 +507,32 @@ function corroboratedAllDTaperFrac(value: number, gate: number): number {
   return Math.min(1, (value - bandFloor) / CORROBORATED_ALL_D_TAPER_BAND);
 }
 
+/**
+ * 2026-10-02, user-approved (Dirk 2008-12 "zdecydowanie silniejszy pod koszem"): a span whose
+ * real defensive data agrees it was above average gets a floor tied to how far above. Needs at
+ * least two sources, none clearly negative (below -0.25), at least two positive, and a blended
+ * excess of +0.3 or more; the floor is 50 + 8 points per unit of blended excess (Dirk 2008-12
+ * moves from about 41 to about 56, Korver from 30 to 55).
+ */
+const CONSISTENT_REAL_DEFENSE_MIN_SOURCES = 2;
+const CONSISTENT_REAL_DEFENSE_NEGATIVE_LIMIT = -0.25;
+const CONSISTENT_REAL_DEFENSE_MIN_EXCESS = 0.3;
+const CONSISTENT_REAL_DEFENSE_FLOOR_BASE = 50;
+const CONSISTENT_REAL_DEFENSE_FLOOR_PER_EXCESS = 8;
+
+function consistentRealDefenseFloor(span: PlayerSpan): number {
+  const detail = realDefenseExcessDetail(span);
+  if (!detail) return 0;
+  const sources = [detail.onOffDdpm, detail.raptorDefense, detail.bpm2Defense, detail.matchupDefense].filter(
+    (value): value is number => value !== null,
+  );
+  if (sources.length < CONSISTENT_REAL_DEFENSE_MIN_SOURCES) return 0;
+  if (sources.some((value) => value < CONSISTENT_REAL_DEFENSE_NEGATIVE_LIMIT)) return 0;
+  if (sources.filter((value) => value > 0).length < CONSISTENT_REAL_DEFENSE_MIN_SOURCES) return 0;
+  if (detail.blendedExcess < CONSISTENT_REAL_DEFENSE_MIN_EXCESS) return 0;
+  return CONSISTENT_REAL_DEFENSE_FLOOR_BASE + CONSISTENT_REAL_DEFENSE_FLOOR_PER_EXCESS * detail.blendedExcess;
+}
+
 function corroboratedAllDefenseFloor(span: PlayerSpan): number {
   if (span.primaryPosition !== 'SG' && span.primaryPosition !== 'SF' && span.primaryPosition !== 'PF') return 0;
   if (individualDefenseRate(span) <= 0) return 0;
@@ -687,6 +713,7 @@ export function computeDefensiveTalentRegularSeason(rawSpan: PlayerSpan): number
     teamDefenseCorroborationFloor(span),
     perimeterStopperFloor(span),
     corroboratedAllDefenseFloor(span),
+    consistentRealDefenseFloor(span),
   );
   // The consensus floor only rescues spans the other paths read as BELOW average; an already
   // average-or-better defender is left alone, so it can't nudge a star over a tier threshold.
