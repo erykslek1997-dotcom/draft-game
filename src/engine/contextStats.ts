@@ -19,7 +19,7 @@ import { computeOffensiveTalent } from './talent';
  *   usage (never above 45%), what a capped player cannot take flowing to the others. A shot given up
  *   is a slightly better shot taken: +0.25 TS points per usage point.
  */
-const CONTEXT = contextData as unknown as Record<string, [number, number, number]>;
+const CONTEXT = contextData as unknown as Record<string, [number, number, number, number]>;
 
 const RIM_PER_SPACING = 0.108;
 const MID_PER_SPACING = 0.038;
@@ -28,7 +28,7 @@ const USAGE_OTAL_POWER = 1;
 const USAGE_MIN_SHARE = 0.75;
 const USAGE_MAX_GROWTH = 1.1;
 const USAGE_MAX = 0.45;
-const DEFAULT_CONTEXT: [number, number, number] = [200, 200, 500];
+const DEFAULT_CONTEXT: [number, number, number, number] = [200, 200, 500, 880];
 
 export interface ContextLine {
   span: PlayerSpan;
@@ -42,9 +42,11 @@ export interface ContextLine {
   twoPointDelta: number;
   /** Change to his shooting (all shots) from the usage he carries here. */
   usageDelta: number;
+  /** His weight when the five picks a shooter: usage minus the share of it that is turnovers. */
+  shotWeight: number;
 }
 
-function context(span: PlayerSpan): [number, number, number] {
+function context(span: PlayerSpan): [number, number, number, number] {
   return CONTEXT[span.id] ?? DEFAULT_CONTEXT;
 }
 
@@ -79,7 +81,7 @@ function splitUsage(five: PlayerSpan[]): number[] {
 export function contextLines(five: PlayerSpan[]): ContextLine[] {
   const usage = splitUsage(five);
   return five.map((span, i) => {
-    const [originalSpacing, originalUsage, rimShare] = context(span).map((v) => v / 1000);
+    const [originalSpacing, originalUsage, rimShare, shotShare] = context(span).map((v) => v / 1000);
     const spacing = modernSpacing(five.filter((_, j) => j !== i));
     const room = spacing - originalSpacing;
     return {
@@ -90,6 +92,7 @@ export function contextLines(five: PlayerSpan[]): ContextLine[] {
       usage: usage[i],
       twoPointDelta: room * (rimShare * RIM_PER_SPACING + (1 - rimShare) * MID_PER_SPACING),
       usageDelta: -TS_PER_USAGE * (usage[i] - originalUsage),
+      shotWeight: usage[i] * shotShare,
     };
   });
 }

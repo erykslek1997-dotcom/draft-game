@@ -304,7 +304,7 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const lines = contextLines(five.map((p) => p.span));
     court = five.map((player, i) => ({
       player,
-      shotShare: lines[i].usage,
+      shotShare: lines[i].shotWeight,
       twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + lines[i].twoPointDelta + lines[i].usageDelta)),
       threePct: Math.max(0.15, Math.min(0.5, player.span.box.threePct + lines[i].usageDelta * THREE_PCT_PER_TS)),
     }));
