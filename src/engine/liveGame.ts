@@ -121,7 +121,11 @@ const ASSIST_WEIGHT_POWER = 1.6;
 // teams block ~5, on roughly a sixth of their opponents' missed twos.
 const BLOCKED = 0.17;
 /** Make-probability tilt per point of expected margin (calibrated in scripts/testLiveGame.ts). */
-const TILT_PER_POINT = 0.0066;
+/** Scoring chances a team gets in a game (possessions after turnovers, plus offensive rebounds) —
+ * turns the engine's margin into a per-shot gap. */
+const SHOTS_PER_TEAM = 98;
+/** Largest share by which a team's shooting is nudged toward the engine's margin. */
+const MAX_NUDGE = 0.3;
 /** A usage-driven change in true shooting moves three-point accuracy about two-thirds as much. */
 const THREE_PCT_PER_TS = 0.67;
 
@@ -353,10 +357,11 @@ function playRosters(
   const courts = [new Map<string, CourtPlayer[]>(), new Map<string, CourtPlayer[]>()];
   const starterFive = (r: GameRoster) => STARTER_SLOTS.map((slot) => r.slotMinutes[slot][0]?.player).filter((p): p is Player => Boolean(p));
   const starting = [courtFor(courts[0], starterFive(rosters[0])), courtFor(courts[1], starterFive(rosters[1]))];
+  const possessionMinutes = GAME_SECONDS / POSSESSIONS / 60;
+  // The substitutions are deterministic, so the whole game's fives are known before tip-off.
   const benches = [new Bench(rosters[0]), new Bench(rosters[1])];
-  // Level the two box scores first — the model's margin, not raw shooting numbers from different
-  // eras, decides the game — then tilt by that margin. Free throws aren't scaled, so the field-goal
-  // scale is solved for equal expected points per shot including them. Read off the starting fives.
+  const schedule: [CourtPlayer[][], CourtPlayer[][]] = [[], []];
+  for (let k = 0; k < POSSESSIONS; k++) for (const side of [0, 1] as GameSide[]) schedule[side].push(courtFor(courts[side], benches[side].next(possessionMinutes)));
   const perShot = (team: CourtPlayer[]) => {
     const shots = team.reduce((sum, c) => sum + c.shotShare, 0) || 1;
     let field = 0;
@@ -369,13 +374,28 @@ function playRosters(
     }
     return { field, line };
   };
-  const eps = [perShot(starting[0]), perShot(starting[1])];
-  const level = (eps[0].field + eps[0].line + eps[1].field + eps[1].line) / 2;
-  const tilt = margin * TILT_PER_POINT;
-  const makeScale: [number, number] = [
-    ((level - eps[0].line) / eps[0].field) * (1 + tilt),
-    ((level - eps[1].line) / eps[1].field) * (1 - tilt),
-  ];
+  // 2026-10-02, the user's season export (good defenses finishing far above the engine's projection,
+  // Korver at 56% from three): the old version levelled both teams to one shooting level off the
+  // starting fives and tilted from there, which bent every player's percentages and left the bench
+  // out. Now each team keeps its own shooting — every five of the whole game, bench included — and
+  // only the GAP is nudged to the engine's margin: the smallest change that makes the average game
+  // land where the model says.
+  const natural = ([0, 1] as GameSide[]).map((side) => {
+    let field = 0;
+    let line = 0;
+    let n = 0;
+    schedule[side].forEach((court, k) => {
+      if (k % 2 !== side) return;
+      const e = perShot(court);
+      field += e.field;
+      line += e.line;
+      n++;
+    });
+    return { field: field / Math.max(1, n), line: line / Math.max(1, n) };
+  });
+  const gap = natural[0].field + natural[0].line - natural[1].field - natural[1].line;
+  const nudge = Math.max(-MAX_NUDGE, Math.min(MAX_NUDGE, (margin / SHOTS_PER_TEAM - gap) / (natural[0].field + natural[1].field)));
+  const makeScale: [number, number] = [1 + nudge, 1 - nudge];
   const box: [Record<string, BoxLineStats>, Record<string, BoxLineStats>] = [{}, {}];
   for (const side of [0, 1] as GameSide[]) for (const p of rosters[side].players) box[side][p.label] = emptyLine();
   const hunted = weakLinks ? [weakLinks[1], weakLinks[0]] : [scoreLineup(rosters[1].starters).weakLink, scoreLineup(rosters[0].starters).weakLink];
@@ -386,14 +406,10 @@ function playRosters(
     rosters[0].players.map((p) => ({ ...box[0][p.label] })),
     rosters[1].players.map((p) => ({ ...box[1][p.label] })),
   ];
-  const possessionMinutes = GAME_SECONDS / POSSESSIONS / 60;
   let lastCourt: [CourtPlayer[], CourtPlayer[]] = [starting[0], starting[1]];
 
   for (let k = 0; k < POSSESSIONS; k++) {
-    const both: [CourtPlayer[], CourtPlayer[]] = [
-      courtFor(courts[0], benches[0].next(possessionMinutes)),
-      courtFor(courts[1], benches[1].next(possessionMinutes)),
-    ];
+    const both: [CourtPlayer[], CourtPlayer[]] = [schedule[0][k], schedule[1][k]];
     lastCourt = both;
     for (const side of [0, 1] as GameSide[]) for (const c of both[side]) box[side][c.player.label].min += possessionMinutes;
     const o = (k % 2) as GameSide;
