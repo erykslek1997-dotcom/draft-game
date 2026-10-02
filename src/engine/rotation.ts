@@ -233,18 +233,20 @@ export function bestPrimaryAssignment(
   const valueByPlayerSlot = new Map<string, number>();
   // 2026-10-02, the user (MVP Westbrook started at SG beside Mike Conley): the roster's best player
   // starts at his own position; the search places everyone else around him.
-  // Every MVP-tier star likewise, unless a better star already holds that position.
+  // Every MVP-tier star likewise. Two stars of the same position (Robinson and Wembanyama) are left
+  // to the search, which finds the one who can really play next door.
+  const isStar = (p: PlayerSpan, index: number) => index === 0 || MUST_START_TIERS.has(overallTierForSpan(tierContextWithSixthMan(p)));
+  const ranked = [...roster].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+  const starsByPosition = new Map<Position, number>();
+  ranked.forEach((p, index) => {
+    if (isStar(p, index)) starsByPosition.set(p.primaryPosition, (starsByPosition.get(p.primaryPosition) ?? 0) + 1);
+  });
   const pinnedIds = new Set<string>();
-  const pinnedSlots = new Set<Position>();
-  [...roster]
-    .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))
-    .forEach((p, index) => {
-      if (hardLockedPosition(p) || pinnedSlots.has(p.primaryPosition)) return;
-      if (index > 0 && !MUST_START_TIERS.has(overallTierForSpan(tierContextWithSixthMan(p)))) return;
-      if (maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER) <= 0) return;
-      pinnedIds.add(p.id);
-      pinnedSlots.add(p.primaryPosition);
-    });
+  ranked.forEach((p, index) => {
+    if (!isStar(p, index) || hardLockedPosition(p) || maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER) <= 0) return;
+    if ((starsByPosition.get(p.primaryPosition) ?? 0) > 1) return;
+    pinnedIds.add(p.id);
+  });
   function valueFor(player: PlayerSpan, slot: Position): number {
     const key = `${player.id}|${slot}`;
     let v = valueByPlayerSlot.get(key);
