@@ -63,7 +63,7 @@ function simulateSeries(
   cacheA?: MatchupTeamCache,
   cacheB?: MatchupTeamCache,
 ): { winnerId: string; gamesWonA: number; gamesWonB: number } {
-  const { gameWinProbA } = projectMatchup(teamA, teamB, cacheA, cacheB);
+  const { gameWinProbA } = projectMatchup(teamA, teamB, cacheA, cacheB, 'playoffs');
   let gamesWonA = 0;
   let gamesWonB = 0;
   while (gamesWonA < 4 && gamesWonB < 4) {

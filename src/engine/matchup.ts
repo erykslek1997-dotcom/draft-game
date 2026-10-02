@@ -3,6 +3,8 @@ import { projectedNetRating } from './netRatingProjection';
 import { fitScore } from './fit';
 import { scoreTeam } from './scoring';
 import { defensiveHuntability, HUNTABILITY_DRTG_POINTS_PER_PENALTY, type DefensiveHuntabilityResult } from './defensiveHuntability';
+import { primaryStarters } from './rotation';
+import { computeOffensiveTalent } from './talent';
 
 /**
  * 2026-09-14, user-reported live (asking for more background season simulations "so the result is
@@ -23,7 +25,79 @@ export interface MatchupTeamCache {
   netRating?: number;
   huntingPotential?: number;
   huntability?: DefensiveHuntabilityResult;
+  style?: StyleProfile;
 }
+
+/**
+ * 2026-10-02, stage 2 (simulations), the user's decision: style clashes weigh MORE in a matchup —
+ * rim pressure against rim protection, spacing against perimeter / switch defense, a 1-on-1 star
+ * against the best stopper, and the glass. Each is a team number already in the engine.
+ */
+export interface StyleProfile {
+  rimAttack: number;
+  rimDefense: number;
+  spacing: number;
+  perimeterDefense: number;
+  star: number;
+  stopper: number;
+  glass: number;
+}
+
+export function styleProfile(team: Team): StyleProfile {
+  const fit = fitScore(team);
+  return {
+    rimAttack: fit.components.rimPressureTeam,
+    rimDefense: fit.inputs.rimProtection,
+    spacing: scoreTeam(team).spacingScore,
+    perimeterDefense: (fit.components.switchability + fit.inputs.wingCoverage + fit.inputs.guardContainment) / 3,
+    star: Math.max(0, ...primaryStarters(team).map((entry) => computeOffensiveTalent(entry.player))),
+    stopper: Math.max(fit.inputs.guardContainment, fit.inputs.wingCoverage),
+    glass: fit.components.reboundingBalance,
+  };
+}
+
+/** League mean / sd of each style number, measured on 64 AI-drafted teams (seeds 101/202/303/404). */
+const STYLE_NORMS: Record<keyof StyleProfile, [mean: number, sd: number]> = {
+  rimAttack: [80.3, 14.5],
+  rimDefense: [90.4, 7.8],
+  spacing: [67.7, 16.1],
+  perimeterDefense: [79.1, 6.4],
+  star: [97.8, 4.3],
+  stopper: [89.5, 6.5],
+  glass: [81.8, 6.1],
+};
+const STYLE_CLASHES: Array<[attack: keyof StyleProfile, defense: keyof StyleProfile]> = [
+  ['rimAttack', 'rimDefense'],
+  ['spacing', 'perimeterDefense'],
+  ['star', 'stopper'],
+  ['glass', 'glass'],
+];
+/** A clash only counts once the attack is clearly ahead of the defense it meets (in league sd),
+ * so two strong sides cancel and a plain difference in overall strength — already in `overall` —
+ * is not counted twice. Capped so one clash is worth at most 2 points; across AI leagues the whole
+ * layer moves a playoff margin by a median ~1.2 points (90th percentile ~3). */
+const STYLE_CLASH_THRESHOLD_Z = 0.5;
+const STYLE_CLASH_MAX_Z = 2.5;
+const STYLE_CLASH_POINTS_PER_Z = 1.0;
+
+const styleZ = (key: keyof StyleProfile, value: number) => (value - STYLE_NORMS[key][0]) / STYLE_NORMS[key][1];
+
+/** Points A gains from attacking where B is weak; the matchup margin takes A's edge minus B's. */
+export function styleClashEdge(a: StyleProfile, b: StyleProfile): number {
+  return STYLE_CLASHES.reduce((sum, [attack, defense]) => {
+    const gap = styleZ(attack, a[attack]) - styleZ(defense, b[defense]) - STYLE_CLASH_THRESHOLD_Z;
+    return sum + STYLE_CLASH_POINTS_PER_Z * Math.max(0, Math.min(STYLE_CLASH_MAX_Z - STYLE_CLASH_THRESHOLD_Z, gap));
+  }, 0);
+}
+
+/**
+ * Where the matchup is played. `single` (the live game: Draw Five, daily) keeps the original
+ * one-point-per-overall-point margin and no style layer. League play spreads the margin wider
+ * (`LEAGUE_OVERALL_POINTS_PER_UNIT`) and adds the style clash: half in the regular season, in full
+ * in the playoffs.
+ */
+export type MatchupContext = 'single' | 'season' | 'playoffs';
+const STYLE_WEIGHT: Record<MatchupContext, number> = { single: 0, season: 0.5, playoffs: 1 };
 
 /**
  * Pairwise matchup projection — "how would roster A actually do against roster B," the one large
@@ -129,6 +203,13 @@ const MARGIN_STD_DEV = 13.822;
 // title race between teams the ranking calls even. 0.85 keeps it as texture only.
 const OVERALL_MARGIN_WEIGHT = 0.85;
 const OVERALL_POINTS_PER_UNIT = 1.0;
+// 2026-10-02, stage 2: in league play one overall point was worth ~1 point of margin, so seasons
+// bunched around 41-41 (best team ~50 wins, worst ~30) and #1 vs #8 was close to a coin flip.
+// 1.3 (with the style layer below) spreads it to ~53-57 / ~20-33 wins; the best team's title odds
+// read 18-60% across seeds 101/202/303/404 (mean ~38%, 60% only for a league leader 1.8 clear of
+// #2); a favourite wins ~55% of series at <1 point apart, ~64% at 1-2, ~70% at 2-4, ~84% at 4+.
+// 2.0 pushed the best team to 40-64%.
+const LEAGUE_OVERALL_POINTS_PER_UNIT = 1.3;
 
 /** Abramowitz-Stegun 7.1.26 approximation of the error function — accurate to ~1.5e-7, the
  * standard closed-form approximation used when no stats library is available. */
@@ -194,11 +275,16 @@ export function projectMatchup(
    * works exactly as before this param existed. */
   cacheA?: MatchupTeamCache,
   cacheB?: MatchupTeamCache,
+  context: MatchupContext = 'single',
 ): MatchupProjection {
   const netMargin = (cacheA?.netRating ?? projectedNetRating(teamA).net) - (cacheB?.netRating ?? projectedNetRating(teamB).net);
   const oA = cacheA?.overall ?? scoreTeam(teamA).overall;
   const oB = cacheB?.overall ?? scoreTeam(teamB).overall;
-  const overallMargin = (oA - oB) * OVERALL_POINTS_PER_UNIT;
+  const overallMargin = (oA - oB) * (context === 'single' ? OVERALL_POINTS_PER_UNIT : LEAGUE_OVERALL_POINTS_PER_UNIT);
+  const styleWeight = STYLE_WEIGHT[context];
+  const styleA = styleWeight > 0 ? (cacheA?.style ?? styleProfile(teamA)) : null;
+  const styleB = styleWeight > 0 ? (cacheB?.style ?? styleProfile(teamB)) : null;
+  const styleMargin = styleA && styleB ? styleWeight * (styleClashEdge(styleA, styleB) - styleClashEdge(styleB, styleA)) : 0;
   // A hunting B's weak link helps A; B hunting A's weak link helps B — both fold into the one
   // shared margin (see `mismatchAdjustment`'s own docstring).
   const mismatchForA = mismatchAdjustment(teamA, teamB, cacheA, cacheB);
@@ -207,7 +293,8 @@ export function projectMatchup(
     OVERALL_MARGIN_WEIGHT * overallMargin +
     (1 - OVERALL_MARGIN_WEIGHT) * netMargin +
     mismatchForA -
-    mismatchForB;
+    mismatchForB +
+    styleMargin;
   const gameWinProbA = gameWinProbability(marginA);
   const seriesWinProbA = seriesWinProbability(gameWinProbA);
   return { marginA, gameWinProbA, seriesWinProbA };

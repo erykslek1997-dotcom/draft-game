@@ -1,6 +1,6 @@
 import type { Team } from './types';
 import { rankTeams } from './scoring';
-import { projectMatchup, seriesWinProbability, gameWinProbability, type MatchupProjection, type MatchupTeamCache } from './matchup';
+import { projectMatchup, seriesWinProbability, gameWinProbability, styleProfile, type MatchupProjection, type MatchupTeamCache } from './matchup';
 import { projectedNetRating } from './netRatingProjection';
 import { fitScore } from './fit';
 import { defensiveHuntability } from './defensiveHuntability';
@@ -109,6 +109,7 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
         netRating: projectedNetRating(team).net,
         huntingPotential: fitScore(team).inputs.huntingPotential,
         huntability: defensiveHuntability(team),
+        style: styleProfile(team),
       },
     ]),
   );
@@ -123,7 +124,7 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
   for (const a of teams) {
     for (const b of teams) {
       if (a.id === b.id) continue;
-      matchupByPair.set(`${a.id}|${b.id}`, projectMatchup(a, b, cacheByTeamId.get(a.id), cacheByTeamId.get(b.id)));
+      matchupByPair.set(`${a.id}|${b.id}`, projectMatchup(a, b, cacheByTeamId.get(a.id), cacheByTeamId.get(b.id), 'playoffs'));
     }
   }
   const winProb = (aId: string, bId: string) => matchupByPair.get(`${aId}|${bId}`)?.seriesWinProbA ?? 0.5;

@@ -1,6 +1,6 @@
 import type { Team } from './types';
 import { TEAM_COUNT } from './positions';
-import { projectMatchup, type MatchupTeamCache } from './matchup';
+import { projectMatchup, styleProfile, type MatchupTeamCache } from './matchup';
 import { scoreTeam } from './scoring';
 import { projectedNetRating } from './netRatingProjection';
 import { fitScore } from './fit';
@@ -24,6 +24,7 @@ export function buildMatchupCache(teams: Team[]): Map<string, MatchupTeamCache> 
         netRating: projectedNetRating(t).net,
         huntingPotential: fitScore(t).inputs.huntingPotential,
         huntability: defensiveHuntability(t),
+        style: styleProfile(t),
       },
     ]),
   );
@@ -127,7 +128,7 @@ export function simulateSeason(
       const teamA = teams[i];
       const teamB = teams[j];
       const gameCount = gamesScheduledForPair(i, j, teams.length);
-      const { gameWinProbA } = projectMatchup(teamA, teamB, cacheById.get(teamA.id), cacheById.get(teamB.id));
+      const { gameWinProbA } = projectMatchup(teamA, teamB, cacheById.get(teamA.id), cacheById.get(teamB.id), 'season');
       for (let g = 0; g < gameCount; g++) {
         if (Math.random() < gameWinProbA) {
           wins.set(teamA.id, (wins.get(teamA.id) ?? 0) + 1);
