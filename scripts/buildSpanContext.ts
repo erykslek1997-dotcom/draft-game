@@ -2,7 +2,7 @@
  * Writes src/data/spanContext.json — for every draft-pool span, the context the player actually
  * played in, read by `contextStats.ts` to re-scale his numbers to a new lineup:
  *   [teammates' three-point rate, usage rate, rim share of his two-point attempts, shot share of his
- *   plays, free throws per field-goal attempt], each x1000. The last is (FGA + 0.44 FTA) / (FGA + 0.44 FTA + TOV): usage counts turnovers
+ *   plays, free throws per field-goal attempt, teammates' assists per 36], each x1000. The last is (FGA + 0.44 FTA) / (FGA + 0.44 FTA + TOV): usage counts turnovers
  *   too, and a turnover-heavy point guard must not turn them into shots (2026-10-02, the user:
  *   "Stockton +4.5 ppg bez strat skuteczności wygląda sus").
  *
@@ -58,7 +58,7 @@ for (const row of usage as { name: string; season: string; usgPct: number; games
  * (`src/data/raw/playerSeasonTeams.csv`). Games, not minutes, weigh a traded player's season:
  * minutes are missing for much of the pre-1970 data.
  */
-type SeasonTeamRow = { name: string; seasonEnd: number; team: string; games: number };
+type SeasonTeamRow = { name: string; seasonEnd: number; team: string; games: number; minutes: number };
 const seasonTeamRows: SeasonTeamRow[] = [];
 {
   const text = readFileSync(resolve(import.meta.dirname, '../src/data/raw/playerSeasonTeams.csv'), 'utf8');
@@ -67,7 +67,13 @@ const seasonTeamRows: SeasonTeamRow[] = [];
   const at = (name: string) => header.indexOf(name);
   for (const line of lines.slice(1)) {
     const cells = parseCsvLine(line);
-    seasonTeamRows.push({ name: norm(cells[at('name')]), seasonEnd: Number(cells[at('seasonEnd')]), team: cells[at('team')], games: Number(cells[at('games')]) });
+    seasonTeamRows.push({
+      name: norm(cells[at('name')]),
+      seasonEnd: Number(cells[at('seasonEnd')]),
+      team: cells[at('team')],
+      games: Number(cells[at('games')]),
+      minutes: Number(cells[at('minutes')]) || 0,
+    });
   }
 }
 function parseCsvLine(line: string): string[] {
@@ -91,12 +97,12 @@ function parseCsvLine(line: string): string[] {
   out.push(cell);
   return out;
 }
-const rosters = new Map<string, { name: string; games: number }[]>();
+const rosters = new Map<string, { name: string; games: number; minutes: number }[]>();
 const teamsOf = new Map<string, { team: string; games: number }[]>();
 const seasonGames = new Map<string, number>();
 for (const row of seasonTeamRows) {
   const rosterKey = `${row.seasonEnd}|${row.team}`;
-  rosters.set(rosterKey, [...(rosters.get(rosterKey) ?? []), { name: row.name, games: row.games }]);
+  rosters.set(rosterKey, [...(rosters.get(rosterKey) ?? []), { name: row.name, games: row.games, minutes: row.minutes }]);
   const playerKey = `${row.name}|${row.seasonEnd}`;
   teamsOf.set(playerKey, [...(teamsOf.get(playerKey) ?? []), { team: row.team, games: row.games }]);
   seasonGames.set(playerKey, (seasonGames.get(playerKey) ?? 0) + row.games);
@@ -223,13 +229,45 @@ function freeThrowRate(span: PlayerSpan): number | null {
   return fga > 0 ? fta / fga : null;
 }
 
+/**
+ * How well his teammates passed: their minutes-weighted assists per 36 (2026-10-02, the user: "czy to
+ * bierze pod uwagę że KG ma lepszych playmakerów obok i dzięki temu powinien być bardziej
+ * efficient?"). Assists are known for draft-pool players (their span covering that season); anyone
+ * else counts as a typical role player. A teammate's weight is his minutes (games x 24 where the
+ * early data has no minutes).
+ */
+const ROLE_PLAYER_ASSISTS_PER_36 = 2.8;
+const poolByName = new Map<string, PlayerSpan[]>();
+for (const span of draftPool) poolByName.set(norm(span.playerName), [...(poolByName.get(norm(span.playerName)) ?? []), span]);
+function assistsPer36(name: string, end: number): number {
+  const span = (poolByName.get(name) ?? []).find((s) => spanEndYears(s.spanLabel).includes(end));
+  if (!span) return ROLE_PLAYER_ASSISTS_PER_36;
+  return (span.box.apg * 36) / (estimatedMinutesPerGame(span) ?? 32);
+}
+function teammatesAssistsPer36(span: PlayerSpan): number {
+  let weighted = 0;
+  let weight = 0;
+  const me = norm(span.playerName);
+  for (const end of spanEndYears(span.spanLabel)) {
+    for (const stint of teamsOf.get(`${me}|${end}`) ?? []) {
+      for (const mate of rosters.get(`${end}|${stint.team}`) ?? []) {
+        if (mate.name === me) continue;
+        const w = (mate.minutes > 0 ? mate.minutes : mate.games * 24) * stint.games;
+        weighted += w * assistsPer36(mate.name, end);
+        weight += w;
+      }
+    }
+  }
+  return weight > 0 ? weighted / weight : ROLE_PLAYER_ASSISTS_PER_36;
+}
+
 function rimShareOfTwos(span: PlayerSpan): number {
   const zones = runtimeZoneTotalsForSpan(span);
   if (zones && zones.rimFga + zones.midFga > 0) return zones.rimFga / (zones.rimFga + zones.midFga);
   return RIM_SHARE_BY_POSITION[span.primaryPosition];
 }
 
-const out: Record<string, [number, number, number, number, number]> = {};
+const out: Record<string, [number, number, number, number, number, number]> = {};
 for (const span of [...draftPool].sort((a, b) => a.id.localeCompare(b.id))) {
   out[span.id] = [
     Math.round(teammatesThreeRate(span) * 1000),
@@ -237,6 +275,7 @@ for (const span of [...draftPool].sort((a, b) => a.id.localeCompare(b.id))) {
     Math.round(rimShareOfTwos(span) * 1000),
     Math.round(shotShareOfPlays(span) * 1000),
     Math.round((freeThrowRate(span) ?? DEFAULT_FREE_THROW_RATE) * 1000),
+    Math.round(teammatesAssistsPer36(span) * 1000),
   ];
 }
 writeFileSync(resolve(import.meta.dirname, '../src/data/spanContext.json'), `${JSON.stringify(out).replace(/\],"/g, '],\n"')}\n`);

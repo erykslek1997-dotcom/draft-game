@@ -138,6 +138,8 @@ function assistedChance(mates: CourtPlayer[]): number {
  * weights spread them so evenly that Jokic averaged 5 and the league leader 9). */
 /** Rebounds concentrate on the real rebounders a little more than their rates alone. */
 const REBOUND_WEIGHT_POWER = 1.1;
+/** Offensive share of rebounds off a missed last free throw. */
+const FT_OFF_REBOUND = 0.14;
 /**
  * 2026-10-02, the user's season exports: who rebounds, assists, steals and blocks is weighted by
  * his rate PER MINUTE, not per game — a backup big's real rebounds came in fewer minutes (Gobert
@@ -346,8 +348,8 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       player,
       shotShare: lines[i].shotWeight,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + lines[i].twoPointDelta + lines[i].usageDelta)),
-      threePct: Math.max(0.15, Math.min(0.5, player.span.box.threePct + lines[i].usageDelta * THREE_PCT_PER_TS)),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + lines[i].twoPointDelta + lines[i].usageDelta + lines[i].playmakingDelta)),
+      threePct: Math.max(0.15, Math.min(0.5, player.span.box.threePct + (lines[i].usageDelta + lines[i].playmakingDelta) * THREE_PCT_PER_TS)),
     }));
     cache.set(key, court);
   }
@@ -481,12 +483,25 @@ function playRosters(
       if (rng() < shot.foul) {
         const attempts = three ? 3 : 2;
         let made = 0;
-        for (let f = 0; f < attempts; f++) if (rng() < b.ftPct) made++;
+        let lastMissed = false;
+        for (let f = 0; f < attempts; f++) {
+          lastMissed = rng() >= b.ftPct;
+          if (!lastMissed) made++;
+        }
         line.fta += attempts;
         line.ftm += made;
         line.pts += made;
         pts += made;
         play = { side: o, text: `${shooter.label} ${made}/${attempts} at the line`, joker: shooter.joker, quiet: made === 0 };
+        // A missed last free throw is a live ball (2026-10-02: every rebound in the league came off
+        // a missed field goal, ~3-4 a team short of a real game).
+        if (lastMissed) {
+          if (rng() < FT_OFF_REBOUND) {
+            box[o][pickWeighted(rng, off, (x) => rates(x.player.span).reb ** REBOUND_WEIGHT_POWER).player.label].reb++;
+            continue;
+          }
+          box[d][pickWeighted(rng, def, (x) => rates(x.span).reb ** REBOUND_WEIGHT_POWER).label].reb++;
+        }
         break;
       }
       line.fga++;

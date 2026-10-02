@@ -2,6 +2,7 @@ import type { PlayerSpan } from '../data/schema';
 import contextData from '../data/spanContext.json';
 import { eraScaledThreePA } from './era';
 import { computeOffensiveTalent } from './talent';
+import { estimatedMinutesPerGame } from './minutesPerGame';
 
 /**
  * 2026-10-02, stage 2 (live game), the user: "realne skalowanie statystyk na to jaki jest skład —
@@ -19,7 +20,7 @@ import { computeOffensiveTalent } from './talent';
  *   usage (never above 45%), what a capped player cannot take flowing to the others. A shot given up
  *   is a slightly better shot taken: +0.25 TS points per usage point.
  */
-const CONTEXT = contextData as unknown as Record<string, [number, number, number, number, number]>;
+const CONTEXT = contextData as unknown as Record<string, [number, number, number, number, number, number]>;
 
 const RIM_PER_SPACING = 0.108;
 const MID_PER_SPACING = 0.038;
@@ -28,7 +29,15 @@ const USAGE_OTAL_POWER = 1;
 const USAGE_MIN_SHARE = 0.75;
 const USAGE_MAX_GROWTH = 1.05;
 const USAGE_MAX = 0.45;
-const DEFAULT_CONTEXT: [number, number, number, number, number] = [200, 200, 500, 880, 280];
+/**
+ * Better passers beside him mean better shots (2026-10-02, the user, on KG): his shooting moves by
+ * `PLAYMAKING_PER_ASSIST` per assist per 36 the average teammate here gives beyond his real
+ * teammates' — an estimate (a five of elite passers ~+2 points of FG%), capped.
+ */
+const PLAYMAKING_PER_ASSIST = 0.006;
+const MAX_PLAYMAKING_DELTA = 0.03;
+const assistsPer36 = (span: PlayerSpan) => (span.box.apg * 36) / (estimatedMinutesPerGame(span) ?? 32);
+const DEFAULT_CONTEXT: [number, number, number, number, number, number] = [200, 200, 500, 880, 280, 3500];
 
 export interface ContextLine {
   span: PlayerSpan;
@@ -46,9 +55,11 @@ export interface ContextLine {
   shotWeight: number;
   /** His real free-throw attempts per field-goal attempt. */
   freeThrowRate: number;
+  /** Change to his shooting from how well the four teammates here pass, against his real ones. */
+  playmakingDelta: number;
 }
 
-function context(span: PlayerSpan): [number, number, number, number, number] {
+function context(span: PlayerSpan): [number, number, number, number, number, number] {
   return CONTEXT[span.id] ?? DEFAULT_CONTEXT;
 }
 
@@ -88,7 +99,8 @@ export function contextLines(five: PlayerSpan[]): ContextLine[] {
   const total = capped.reduce((sum, u) => sum + u, 0) || 1;
   const usage = capped.map((u) => u / total);
   return five.map((span, i) => {
-    const [originalSpacing, originalUsage, rimShare, shotShare, freeThrowRate] = context(span).map((v) => v / 1000);
+    const [originalSpacing, originalUsage, rimShare, shotShare, freeThrowRate, originalMatesAssists] = context(span).map((v) => v / 1000);
+    const matesAssists = five.filter((_, j) => j !== i).reduce((sum, m) => sum + assistsPer36(m), 0) / 4;
     const spacing = modernSpacing(five.filter((_, j) => j !== i));
     const room = spacing - originalSpacing;
     return {
@@ -101,6 +113,7 @@ export function contextLines(five: PlayerSpan[]): ContextLine[] {
       usageDelta: -TS_PER_USAGE * (usage[i] - originalUsage),
       shotWeight: usage[i] * shotShare,
       freeThrowRate,
+      playmakingDelta: Math.max(-MAX_PLAYMAKING_DELTA, Math.min(MAX_PLAYMAKING_DELTA, PLAYMAKING_PER_ASSIST * (matesAssists - originalMatesAssists))),
     };
   });
 }
