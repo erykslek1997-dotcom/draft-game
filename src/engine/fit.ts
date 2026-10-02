@@ -794,8 +794,11 @@ export function fitScore(team: Team): FitScoreResult {
   }).length;
   // 2026-09-30, session 4: the old ranges topped out at 85 / 75, so most drafted fives maxed both
   // and every lead creator read the same. Now the scale runs to the real top of the pool.
-  const primaryCreationScore = normalize(primaryCreationSignal, 55, 100);
-  const secondaryCreationScore = 40 + normalize(secondaryCreationSignal, 45, 95) * 0.6;
+  // 2026-10-02, the user (Creation 93 ranked 8th of 16; a quarter of teams at 97+): the lead
+  // creator reads from 70, the second creator from 55, and the off-ball complement needs four
+  // players for full credit.
+  const primaryCreationScore = normalize(primaryCreationSignal, 70, 100);
+  const secondaryCreationScore = 30 + normalize(secondaryCreationSignal, 55, 100) * 0.7;
   // 2026-09-05, user's call ("powinno to liczyć w fit"): a five committed to 3+ co-primary
   // offensive systems (pairwiseFit pattern 5) genuinely lacks a playoff identity — dock it from
   // creationStructure rather than leaving it note-only.
@@ -806,7 +809,7 @@ export function fitScore(team: Team): FitScoreResult {
       primaryCreationScore * 0.40 +
         demandBalance(onBallDemand, primaryCreationSignal) * 0.30 +
         secondaryCreationScore * 0.15 +
-        clamp((offBallComplementCount / 3) * 100) * 0.15 -
+        clamp((offBallComplementCount / 4) * 100) * 0.15 -
         systemOverloadPenalty,
     ),
   );
@@ -964,8 +967,8 @@ export function fitScore(team: Team): FitScoreResult {
   // stale the moment ANY sibling path's own cap became the larger one, most recently
   // `weakLinkOvercomeBonus`'s 28, which pushed this over 100 (up to ~467) and was shown raw to
   // the user in Team analysis. 2026-09-26: now `structureScore`, read against the elite-shell cap.
-  const huntResistance = defensiveHuntability(team).resistance;
-  const defensiveCohesionComponent = Math.round(defensiveCohesion(team).structureScore);
+  const huntResistance = defensiveHuntability(team).displayResistance;
+  const defensiveCohesionComponent = defensiveCohesion(team).displayScore;
   const rimPressureTeamComponent = Math.round(rimPressureTeam(starters));
 
   const components: FitScoreComponents = {
