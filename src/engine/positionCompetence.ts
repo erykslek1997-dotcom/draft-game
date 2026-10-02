@@ -3,6 +3,7 @@ import { normalizePlayerName } from '../data/schema';
 import competenceData from '../data/positionCompetence.json';
 import { per36 } from './minutesPerGame';
 import { isNamedPgEligible } from './pgEligibility';
+import { getHeightInches } from '../data/heightLookup';
 
 /**
  * 2026-09-25, user's multi-position ask ("wielopozycyjność ... na marginalnych spadkach"): how
@@ -62,8 +63,16 @@ const UNLISTED_ADJACENT_SCORE = 0.25;
 export const FULL_SCORE = 0.75;
 export const PARTIAL_SCORE = 0.47;
 
+/** 2026-10-02, the user (the AI started 5'11" Jim Les at SG): nobody under 6'2" plays SG unless it
+ * is his own primary position. */
+const MIN_SG_HEIGHT_INCHES = 74;
+
 export function positionCompetenceScore(span: PlayerSpan, slot: Position): number {
   if (slot === span.primaryPosition) return NATURAL_SCORE;
+  if (slot === 'SG') {
+    const height = getHeightInches(span.playerName);
+    if (height !== undefined && height < MIN_SG_HEIGHT_INCHES) return 0;
+  }
   const entry = entryFor(span);
   if (!entry) {
     if (span.secondaryPositions.includes(slot)) return UNLISTED_SECONDARY_SCORE;
