@@ -1659,6 +1659,23 @@ export interface AiDraftRuleset {
   profileStrength?: number;
 }
 
+/**
+ * 2026-10-02, the user (Andre Roberson beside Giannis and Kirilenko, Matisse Thybulle, Dirk beside
+ * Jokić: "wybiera jakieś śmieci których nikt nie zna i nic nie zapewniają rosterowi"): in bench rounds
+ * the AI ranks its best candidates by what each one really adds — the whole team's score with him
+ * (rotation, offense, defense, fit) — instead of the sum of hand-tuned need bonuses alone. More
+ * defense on a roster that already defends adds little; shooting next to a five without it adds a
+ * lot. Registered by draft.ts (scoring.ts imports this file, so it can't be imported here).
+ */
+let teamScorer: ((roster: PlayerSpan[]) => number) | null = null;
+export function setAiTeamScorer(scorer: ((roster: PlayerSpan[]) => number) | null): void {
+  teamScorer = scorer;
+}
+/** How many of the best-valued bench candidates are re-ranked by the team score. */
+const TEAM_SCORE_SHORTLIST = 10;
+/** Team-score points one FGA of cap past this pick's fair share is worth to the picks still to come. */
+const TEAM_SCORE_FGA_OVER_BUDGET = 0.3;
+
 export function pickForAi(
   roster: PlayerSpan[],
   currentFgas: number[],
@@ -2254,6 +2271,17 @@ export function pickForAi(
         if (playableGapFit.length > 0) lotteryCandidates = playableGapFit;
       }
     }
+  }
+
+  if (inBenchRound && teamScorer) {
+    const shortlist = lotteryCandidates.slice(0, Math.min(TEAM_SCORE_SHORTLIST, lotteryCandidates.length));
+    const rescored = shortlist.map((entry) => {
+      const overall = teamScorer!([...roster, entry.player]);
+      const overBudget = Math.max(0, entry.player.fga - budgetPerSlot) * TEAM_SCORE_FGA_OVER_BUDGET;
+      const teamValue = overall - overBudget;
+      return { ...entry, value: teamValue, debug: entry.debug ? { ...entry.debug, teamOverall: overall, teamValue } : entry.debug };
+    });
+    lotteryCandidates = rescored.sort((a, b) => b.value - a.value);
   }
 
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;

@@ -20,8 +20,16 @@ import {
   MARGIN_PER_CONTENDING_TEAM,
   type CheapestLookup,
 } from './positions';
-import { pickForAi, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
+import { pickForAi, setAiTeamScorer, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
+import { scoreTeam } from './scoring';
+import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
+
+// The AI's bench picks read the real team score (aiDrafter.ts `setAiTeamScorer`).
+setAiTeamScorer(
+  (roster) =>
+    scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact,
+);
 import type { DraftHistoryEntry, Team } from './types';
 
 export { TEAM_COUNT };
