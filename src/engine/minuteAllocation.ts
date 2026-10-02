@@ -74,6 +74,8 @@ const OFF_POSITION_MINUTE_ANCHORS: Array<[number, number]> = [
   [0.9, GAME_SLOT_MINUTES],
 ];
 const OFF_POSITION_DROP = [0.85, 0.7, 0.55];
+/** A must-start star forced to a neighbouring slot he can't play covers it like a 0.4 fit (6 minutes). */
+const FORCED_CLOSED_SLOT_SCORE = 0.4;
 const OFF_POSITION_FLOOR_SHARE = 0.45;
 
 export function offPositionMinutes(score: number): number {
@@ -326,9 +328,29 @@ function solveMinutes(
       if (forbidden.has(`${player.id}|${slot}`)) return;
       const value = minuteValue(player, slot, homeSlot);
       if (slot === homeSlot) {
-        const core = Math.floor(Math.min(STARTER_CORE_MINUTES, ceiling) / UNIT);
+        // 2026-10-02, the user (option a: a must-start centre beside another one, started at a
+        // four he can't play): a starter off his own position keeps that slot only for the minutes
+        // his competence covers there (`offPositionMinutes`; a forced, closed slot counts as
+        // `FORCED_CLOSED_SLOT_SCORE`), then fades like any off-position stretch and plays the rest
+        // at his own position.
+        const offPosition = slot !== player.primaryPosition;
+        const score = offPosition ? positionCompetenceScore(player, slot) || FORCED_CLOSED_SLOT_SCORE : 1;
+        const limit = offPosition ? offPositionMinutes(score) : GAME_SLOT_MINUTES;
+        const core = Math.floor(Math.min(STARTER_CORE_MINUTES, ceiling, limit) / UNIT);
         flow.add(playerNode(i), slotNode(j), core, -(value + OWN_SLOT_BONUS + STARTER_CORE_BONUS) * UNIT);
-        flow.add(playerNode(i), slotNode(j), slotUnits, -(value + OWN_SLOT_BONUS) * UNIT);
+        if (!offPosition || limit >= GAME_SLOT_MINUTES) {
+          flow.add(playerNode(i), slotNode(j), slotUnits, -(value + OWN_SLOT_BONUS) * UNIT);
+        } else {
+          let reached = core * UNIT;
+          // A forced, closed slot is not his position: past his stretch there it is worth nothing,
+          // so he stays only for the minutes nobody else covers better (the user kept those).
+          const curve: Array<[number, number]> = positionCompetenceScore(player, slot) > 0 ? offPositionCurve(score) : [[GAME_SLOT_MINUTES, 0]];
+          for (const [upTo, share] of curve) {
+            const units = Math.floor(Math.min(upTo, GAME_SLOT_MINUTES) / UNIT) - Math.floor(reached / UNIT);
+            if (units > 0) flow.add(playerNode(i), slotNode(j), units, -(value + OWN_SLOT_BONUS) * share * UNIT);
+            reached = Math.max(reached, upTo);
+          }
+        }
       } else if (value <= 0) {
         flow.add(playerNode(i), slotNode(j), slotUnits, -value * UNIT);
       } else {
