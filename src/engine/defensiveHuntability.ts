@@ -269,6 +269,8 @@ export interface DefensiveHuntabilityOffender {
 export interface DefensiveHuntabilityResult {
   penalty: number;
   resistance: number;
+  /** The Hunt resistance shown to the user (team analysis), graded by the weakest starter's headroom. */
+  displayResistance: number;
   targetableMinutes: number;
   offenders: DefensiveHuntabilityOffender[];
 }
@@ -305,6 +307,10 @@ const NORMALIZATION_DTAL = POSITIONS.reduce((sum, pos) => {
  *    hunting offense avoids, not the target.
  */
 const HUNTABLE_MIN_SHORTFALL = 5;
+/** The shown Hunt resistance: a weakest starter this far above his position bar reads full headroom. */
+const DISPLAY_HEADROOM_FULL_MARGIN = 20;
+/** ...and one sitting right at the huntable line costs this many shown points. */
+const DISPLAY_HEADROOM_SPAN = 15;
 const REAL_SHOT_BLOCKER_BPG = 1.5;
 function isRealShotBlocker(player: PlayerSpan): boolean {
   return (
@@ -346,9 +352,20 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
   );
   const penalty =
     rawPenalty * anchorDampening(team, minutesByPlayer);
+  // 2026-10-02, the user (Hunt resistance 100 for 30% of teams): the shown reading also grades how
+  // close the five's weakest defender sits to his position's huntable bar, so a five with nobody
+  // to hunt still reads 85 when one starter is right at the bar and 100 only with real headroom.
+  // Display only — `resistance` (read by defensiveCohesion.ts) is unchanged.
+  const starterMargins = primaryStarters(team).map(({ player }) =>
+    isRealShotBlocker(player) ? DISPLAY_HEADROOM_FULL_MARGIN : computeDefensiveTalent(player) - averageDtalFor(player),
+  );
+  const weakestMargin = starterMargins.length > 0 ? Math.min(...starterMargins) : DISPLAY_HEADROOM_FULL_MARGIN;
+  const headroom = Math.max(0, Math.min(1, (weakestMargin + HUNTABLE_MIN_SHORTFALL) / (DISPLAY_HEADROOM_FULL_MARGIN + HUNTABLE_MIN_SHORTFALL)));
+  const resistance = Math.round(100 - (penalty / MAX_HUNTABILITY_PENALTY) * 100);
   return {
     penalty,
-    resistance: Math.round(100 - (penalty / MAX_HUNTABILITY_PENALTY) * 100),
+    resistance,
+    displayResistance: Math.max(0, Math.round(resistance - (1 - headroom) * DISPLAY_HEADROOM_SPAN)),
     targetableMinutes: offenders.reduce((sum, offender) => sum + offender.minutes, 0),
     offenders,
   };

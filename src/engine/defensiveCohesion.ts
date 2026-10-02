@@ -176,6 +176,8 @@ export interface DefensiveCohesionResult {
    * engaged weak-link-overcome shell 100.
    */
   structureScore: number;
+  /** The Defensive cohesion shown to the user: continuous (see `cohesionDisplayScore`). */
+  displayScore: number;
   averageDefensiveTalent: number;
   poaProvider: string | null;
   wingProvider: string | null;
@@ -218,6 +220,22 @@ function clamp01(value: number): number {
  * 12-minute token specialist also cannot complete a layer — provider strength reaches full
  * availability at 24 assigned minutes.
  */
+/**
+ * 2026-10-02, the user (Defensive cohesion 0 for a third of teams, 100 for a few): the bonus behind
+ * `structureScore` is gated (a layer under the provider bar zeroes it), which is right for the
+ * Defense bonus and wrong as a reading. The shown cohesion blends three continuous signals — the
+ * weakest of the point-of-attack / wing / rim layers, the five's average D-TAL and its weakest
+ * starter — with the structural bonus, so a five one layer short reads lower, not zero. Display
+ * only: the Defense bonus is unchanged.
+ */
+function cohesionDisplayScore(weakestLayer: number, averageDtal: number, weakestStarter: number, structure: number): number {
+  const layers = clamp01((weakestLayer - 50) / 40);
+  const average = clamp01((averageDtal - 55) / 30);
+  const floor = clamp01((weakestStarter - 35) / 40);
+  const continuous = (0.4 * layers + 0.4 * average + 0.2 * floor) * 100;
+  return Math.round(0.6 * continuous + 0.4 * structure);
+}
+
 export function defensiveCohesion(team: Team): DefensiveCohesionResult {
   const assignments = allAssignments(team);
   if (assignments.length === 0) {
@@ -230,6 +248,7 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
       weakLinkOvercome: 0,
       defenseScoreBonus: 0,
       structureScore: 0,
+      displayScore: 0,
       averageDefensiveTalent: 0,
       poaProvider: null,
       wingProvider: null,
@@ -459,6 +478,12 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     weakLinkOvercome,
     defenseScoreBonus: Math.max(eliteShellBonus, threeLayerCoreBonus, backlineFoundationBonus, blendedWeakLinkOvercomeBonus),
     structureScore: Math.min(100, Math.max(otherDefenseBonusesMax / MAX_ELITE_SHELL_DEFENSE_BONUS, weakLinkOvercome) * 100),
+    displayScore: cohesionDisplayScore(
+      Math.min(poaStrength, wingStrength, rimStrength),
+      averageDefensiveTalent,
+      starterDefTals.length > 0 ? Math.min(...starterDefTals) : 0,
+      Math.min(100, Math.max(otherDefenseBonusesMax / MAX_ELITE_SHELL_DEFENSE_BONUS, weakLinkOvercome) * 100),
+    ),
     averageDefensiveTalent,
     poaProvider: poa?.player.playerName ?? null,
     wingProvider: wing?.player.playerName ?? null,
