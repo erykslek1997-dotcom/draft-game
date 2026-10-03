@@ -4,6 +4,7 @@ import { positionCompetenceScore } from './positionCompetence';
 import { effectiveTalent } from './grades';
 import { maxSustainableMinutes } from './durability';
 import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE, OVERRUN_BANDS } from './rotationRoleMinutes';
+import { FRESH_MINUTES, marginalFatigueCost } from './fatigue';
 
 /**
  * 2026-09-30, engine calibration session 2 (the user: "z takimi fuckapami jak w 2 to ciężko
@@ -36,14 +37,13 @@ const USEFUL_BENCH_TALENT_FLOOR = 55;
 const USEFUL_BENCH_BONUS = 25;
 const PAST_OPTIMAL_TALENT_SHARE = 0.5;
 const PAST_OPTIMAL_FLAT_COST = 12;
-/** 2026-09-30, the user ("prawie każdy dostaje 40 minut, psuje immersje"): past `HEAVY_LOAD_MINUTES`
- * a minute costs almost its whole value — a star plays 39-40 only when the bench truly can't cover. */
-const HEAVY_LOAD_MINUTES = 38;
-const HEAVY_LOAD_TALENT_SHARE = 0.9;
 const PAST_CEILING_COST = 150;
 const OVERRUN_FREE_TALENT_SHARE = 0.95;
 const OVERRUN_NOTICEABLE_TALENT_SHARE = 1.3;
-const OVERRUN_HEAVY_TALENT_SHARE = 1.8;
+/** 2026-10-02: raised from 1.8 with the fatigue curve — a star's tired 39th-40th minute now costs
+ * ~1.5x his value, and a minute 5+ past a teammate's limit ("+4 mocno odczuwalne") must stay the
+ * dearer of the two (Ginóbili 36 of 31 beside LeBron at 38). */
+const OVERRUN_HEAVY_TALENT_SHARE = 2.5;
 const PAST_DURABILITY_COST = 2000;
 /** A guard or wing playing the four or five (small-ball) — the same cost the rotation score charges. */
 const SMALL_BALL_VALUE_SHARE = 0.9;
@@ -433,8 +433,7 @@ function solveMinutes(
       // 2026-10-02, the user (Matisse Thybulle 24 minutes, Ryan Bowen 16): past his optimal minutes a
       // player also pays a flat cost, so a weak bench player's extra minutes are no longer cheap just
       // because his share of a low TAL is small.
-      [Math.min(ceiling, Math.max(optimal, HEAVY_LOAD_MINUTES)), talent * PAST_OPTIMAL_TALENT_SHARE + PAST_OPTIMAL_FLAT_COST],
-      [ceiling, talent * HEAVY_LOAD_TALENT_SHARE],
+      [ceiling, talent * PAST_OPTIMAL_TALENT_SHARE + PAST_OPTIMAL_FLAT_COST],
       // 2026-10-01, the user: the minutes limit is soft, its overrun priced in three rising bands
       // (`OVERRUN_BANDS`, rotationRoleMinutes.ts) — a minute or two past it costs barely more than a
       // heavy-load minute, three to four is felt, beyond that it is the old past-ceiling price.
@@ -443,10 +442,16 @@ function solveMinutes(
       [durability, Math.max(PAST_CEILING_COST, talent * OVERRUN_HEAVY_TALENT_SHARE)],
       [maxMinutesPerPlayer, PAST_DURABILITY_COST],
     ];
+    // Past `FRESH_MINUTES` every unit also pays the fatigue it puts on all his minutes
+    // (`fatigue.ts`) — the curve that replaced the old heavy-load band (38 minutes, 90% of his value).
     let reached = 0;
     for (const [upTo, cost] of pieces) {
       if (upTo <= reached) continue;
-      flow.add(source, playerNode(i), Math.floor(upTo / UNIT) - Math.floor(reached / UNIT), cost * UNIT);
+      const from = Math.floor(reached / UNIT);
+      const to = Math.floor(upTo / UNIT);
+      const fresh = Math.max(from, Math.min(to, Math.floor(FRESH_MINUTES / UNIT)));
+      if (fresh > from) flow.add(source, playerNode(i), fresh - from, cost * UNIT);
+      for (let u = fresh; u < to; u++) flow.add(source, playerNode(i), 1, (cost + talent * marginalFatigueCost((u + 0.5) * UNIT)) * UNIT);
       reached = upTo;
     }
     STARTER_SLOTS.forEach((slot, j) => {

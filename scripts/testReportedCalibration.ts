@@ -103,7 +103,9 @@ const twinTowers = team('twin-towers-floor', [
 // 2026-10-02 role audit: Price, Ray Allen and Frye lose labels their numbers never supported
 // (Chaser / Chaser / Post Defender at D-TAL 23-39 -> Low Activity), so the perimeter around the
 // two anchors is honestly worse — re-measured 34 (was 44). The same roster with no anchors reads 4.
-assert(defenseScore(twinTowers) >= 34, 'Two elite, high-minute rim anchors must establish a defensive floor.');
+// 2026-10-02 fatigue curve (fatigue.ts): the anchors' 38-39 minutes cost them a tired last stretch,
+// so Duncan and Robinson play 37 and Frye takes the rest — re-measured 32 (was 34/35).
+assert(defenseScore(twinTowers) >= 32, 'Two elite, high-minute rim anchors must establish a defensive floor.');
 
 const nonCurryGravity = team('non-curry-gravity', [
   span('Kevin Johnson', '1995-97'),

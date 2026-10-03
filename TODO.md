@@ -239,6 +239,86 @@ Decyzje (2026-09-30):
       w skuteczność (+0.25 TS za punkt usage) i asysty (jego asysty na rzut). Potem kontekst składu
       (`contextStats.ts`). Wynik: Kobe 2005-07 33.5 pkt, Curry 2014-16 28.7 pkt, Wilt 1966-68 16.4 zb;
       kalibracja sezonu bez zmian (RMSE ~4.5 W).
+- [ ] **Etap 2b: silnik ↔ symulacja (korelacja w obie strony)** — decyzja 2026-10-02: „wszystko co
+      liczy silnik powinno mieć odzwierciedlenie w symulacji” i odwrotnie (co dzieje się w meczu,
+      silnik bierze pod uwagę). Miernik: wielkość wyrównania meczu do marginesu silnika — dąży do
+      zera, gdy same mechaniki meczu dają wynik silnika. Każdy etap: raport przed/po + akceptacja.
+  - **Etap 0: pomiar (bez zmian w kodzie)** — wagi składników; korelacja każdego składnika z jego
+    statystyką (silnik → symulacja); sezony bez wyrównania: ile wyniku dają same mechaniki, który
+    składnik symulacja potwierdza (symulacja → silnik); wielkość wyrównania jako start. — ZROBIONY
+    2026-10-02 (10 lig × 16, sezon z wyrównaniem i bez): same mechaniki dają ~11% marginesu silnika
+    (bez wyrównania wygrane vs silnik: korelacja 0.20, RMSE 9.2 W; z wyrównaniem 0.85 / 4.3 W).
+    Mechanicznie działa atak (atak → pkt 0.49; 0.16 pkt bilansu za pkt ataku vs 0.21 w silniku),
+    ławka (0.15 vs 0.14), spacing → udział trójek, rim pressure → wolne, kreacja → asysty. Brak
+    mechaniki: obrona (−0.06 vs 0.21; ochrona obręczy/obwód nie zmieniają skuteczności rywala),
+    zbiórka drużynowa (stałe 26% w ataku; korelacja −0.18), straty i przechwyty (stałe), fit
+    (−0.01 vs 0.23), rotacja (0.01 vs 0.11), talent poza atakiem.
+  - **Etap 1: fundamenty meczu** — paczka 2 niżej: pkt 1, 2, 3, 4, 6 + trzy poprawki z brancha. —
+    ZROBIONY na branchu 2026-10-02/03 (bez merge'a, czeka na akceptację raportu): krzywa zmęczenia
+    `fatigue.ts` w meczu (tylko mecze z rotacją) i w `minuteAllocation.ts` (zamiast progu 38 min;
+    ciężkie przekroczenie limitu 1.8 → 2.5 wartości); zmiany w meczu rozłożone równo w czasie
+    (mecz trzyma minuty z rotacji, średnio ±0.1 min); spacing osobno (±4 pkt) od limitu +2;
+    spacing z zasad 35% do 2000-01 (`buildSpanContext.ts`); straty według udziału strat gracza;
+    asysty max 75%. Wynik: drużyny z kimś na 40 min 96 → 25 ze 160; same mechaniki 11% → 20%
+    marginesu; oceny drużyn średnio −0.06 (max ±1); 27/27 testów (przeliczone: obrona twin towers
+    32, weak-link 61 min).
+  - **Etap 2: kanały ataku** — margines rozbity na kanały: spacing, rim pressure (rzuty spod
+    kosza, wolne), kreacja (asysty, straty składu = pkt 5), self-creation, pairing, kilku graczy
+    potrzebujących piłki; czego silnik nie liczy (np. straty) — dodać do silnika.
+  - **Etap 3: obrona jako mechanika** (plan 2026-10-02, decyzje otwarte oznaczone „?”). Zasada:
+    przeciętna obrona = zero efektu (średnie ligi bez zmian); siła tak, by same mechaniki dawały
+    obronie ~0.21 pkt bilansu za pkt oceny (dziś −0.06); wyrównanie zostaje jako zabezpieczenie.
+    1. Krycie jak trener: 120 przydziałów piątki, najgroźniejszy atakujący (usage × O-TAL) na
+       najlepszego obrońcę w granicach tego, kogo może kryć (pozycje, role obronne; Pippen bierze
+       mocnego PG). Rzut: 50% bezpośredni obrońca, 50% pomoc piątki.
+    2. Rzuty (? 60% budżetu, propozycja z faulami: 60/20/12/8): spod kosza — najlepszy obrońca
+       obręczy na boisku (elitarny −5–8 pp, więcej bloków); półdystans — obrońca + pomoc; za 3 —
+       mniej rzutów i celność do −2–3 pp przy dobrym closeoucie (decyzja 2026-10-02).
+    3. Straty i przechwyty (? 20%): nacisk obrońców (przechwyty, D-TAL obwodu) zamiast stałych 12%;
+       szybka kontra po przechwycie ~60–65% (ok. 1.3 pkt, kończy przechwytujący/atletyczny), po
+       zbiórce w obronie 15% na razie (docelowo zależne od składu i tempa — brak danych).
+    4. Zbiórka (? 15%): szansa na zbiórkę w ataku — zbierający obu piątek zamiast stałych 26%;
+       dobitka ~35–40% (zbierający, spod kosza, faule), a jeśli nie — oddanie na obwód i wznowienie
+       na 14 s (więcej i celniejsze trójki, mniej strat i asyst).
+    5. Słaby strzelec: mecz bierze ocenę spacingu z silnika (`spacing.ts`: ilość + celność +
+       wygładzenie + skrócona linia) — do miejsca dla kolegów, odpuszczania (jego obrońca pomaga przy
+       koszu, on dostaje wolne trójki) i krycia (na nim chowa się słabego obrońcę).
+    6. Ogrywanie słabego obrońcy: realne, nie tylko tekst — część akcji idzie na niego (więcej przy
+       słabej hunt resistance); pełna wersja w typach akcji.
+    7. Typy akcji i sposoby krycia — pick and roll / izolacja / gra tyłem / rzut z miejsca;
+       switch / drop / podwojenie; szukanie zmian (gdy jest kim zasłonić), short roll (Draymond,
+       Jokic), drop vs rzut po koźle. Decyzja: po etapach 1 i 3 (każdy krok mierzalny osobno).
+    8. Faule (decyzja: od razu): skłonność obrońcy, faule osobiste (problemy z faulami → ławka, 6 = koniec),
+       ostrożniejsza obrona, faule drużyny (bonus); faulowanie słabych z linii — później. Czeka na
+       `PlayerSeasonStats.csv` (skrypt `nba-staty.zip` wysłany 2026-10-02: faule, zbiórki A/O,
+       przechwyty, straty, rzuty — może też posłużyć do średnich ligowych sprzed 1980).
+    Druga strona: co mecz pokaże inaczej niż silnik (np. faule zabierające minuty, kontry) — raport
+    i decyzja, czy poprawiamy silnik czy mecz.
+  - **Etap 4: testy obu kierunków w `npm test`** — korelacje składników + wielkość wyrównania.
+- [ ] **Paczka „mecz na żywo 2” (= etap 1 i część etapu 2 wyżej) — zaakceptowana 2026-10-02** (M–L). Raport
+      przed/po przed merge'em. Na branchu (bez merge'a) czekają już: limit +2 pkt z kontekstu,
+      udział w akcjach ponad realny tylko w słabym otoczeniu, liniowe zmęczenie od 36 min (1%/min).
+  1. **Rosnąca krzywa zmęczenia, wspólna dla meczu i rotacji** — „im więcej minut, tym większa
+     kara, żeby silnik sam dawał Jordanowi mniej minut”. Każda minuta ponad 36 (próg
+     potwierdzony 2026-10-02) kosztuje coraz więcej: 37. −0.5%, 38. −1%, 39. −1.5%…
+     (38 min ≈ −1.5%, 40 ≈ −5%, 42 ≈ −10.5% celności). W meczu zamiast liniowej; w
+     `minuteAllocation.ts` jako koszt minuty zamiast progów optimum / 38 min. Dziś gwiazdy grają
+     40–42 min, a dzisiejsze gwiazdy 30+ pkt grają ≤36.5. Skutki: oceny drużyn (ławka znaczy
+     więcej), AI, testy z minutami (testInsights, rotacja, calibrationReference), werdykty z sesji.
+  2. **Spacing osobno od limitu** — limit +2 tylko na udział w akcjach i podania (to one nakładały
+     się w piątce gwiazd); spacing z własnym, wyższym limitem (~+4). Dziś limit zjada spacing:
+     Jordan ze strzelcami +2.0, bez rzutu +1.1.
+  3. **„Spacing z zasad” przed 2001-02** — do 2001 zakaz strefy (obrońca nie mógł czekać
+     w trumnie), więc miejsce było i bez trójek. Punkt odniesienia dla tych epok ~ drużyna
+     rzucająca dziś ~35% rzutów za 3 (szacunek, do skalibrowania np. na zmianie gry pod koszem po
+     legalizacji strefy). Skutek: Jordan obok strzelców zyskuje mniej, obok nierzucających traci
+     (dziś zyskuje nawet przy Rodmanie i B. Wallace).
+  4. **Straty według gracza** — dziś stratę dostaje się według udziału w rzutach, więc zbierają je
+     strzelcy (Jordan 5.9/48 min przy 41% akcji, Kidd 2.0, Simmons 2.1 — odwrotnie niż w
+     rzeczywistości). Ma być według realnej części akcji kończącej się stratą (`spanContext.json`).
+  5. **Straty według składu** — dziś stałe 12% na akcję (13–14.5 na mecz w każdej piątce). Szansa
+     ma wynikać ze strat tej piątki, przeliczonych na dziś względem ligi ich epoki.
+  6. **Sufit asyst** — udział trafień z asystą max 85% → ~75% (najlepsze realne drużyny ~70%).
 - [ ] **Poprawić średnie ligowe sprzed 1980** — `awards/seasonBaselines.json` nie ma wielu sezonów
       (np. 1966-67, 1975-76) i ma błędne wartości (1965-66 TS 54.3%, powinno być ~49%); silnik
       bierze najbliższy znany sezon, więc Wilt/West 1965-68 i Kareem 1970-72 są liczeni od zawyżonej
