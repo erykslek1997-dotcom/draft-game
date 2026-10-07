@@ -18,62 +18,6 @@ export interface TickerPick {
   shortName: string;
 }
 
-export function DraftTicker({
-  youOnClock,
-  complete,
-  onClockLabel,
-  picksAway,
-  recentPicks,
-  progress,
-}: {
-  youOnClock: boolean;
-  complete: boolean;
-  onClockLabel: string;
-  picksAway: number | null;
-  recentPicks: TickerPick[];
-  /** 2026-09-26 ("przylepiony pasek powinien bardziej pokazywać przebieg draftu"): the overall pick
-   * count and round, shown as a thin bar under the ticker in the sticky header. */
-  progress?: { picksMade: number; totalPicks: number; round: number; rounds: number };
-}) {
-  return (
-    <div className="at-ticker">
-      {progress && (
-        <span className="at-ticker-progress" aria-label={`Pick ${Math.min(progress.picksMade + 1, progress.totalPicks)} of ${progress.totalPicks}`}>
-          <span className="at-ticker-progress-text">
-            Pick <b>{Math.min(progress.picksMade + 1, progress.totalPicks)}</b>/{progress.totalPicks} · Round {progress.round}/{progress.rounds}
-          </span>
-          <span className="at-ticker-progress-track" aria-hidden>
-            <span style={{ width: `${(progress.picksMade / progress.totalPicks) * 100}%` }} />
-          </span>
-        </span>
-      )}
-      <span className="at-ticker-now">
-        {youOnClock ? (
-          <b className="at-ticker-you">You're on the clock</b>
-        ) : complete ? (
-          <b>Draft complete</b>
-        ) : (
-          <>
-            <span className="at-ticker-label">On the clock</span> <b>{onClockLabel}</b>
-          </>
-        )}
-        {!complete && !youOnClock && picksAway !== null && (
-          <span className="at-ticker-next">· you pick {picksAway === 1 ? 'next' : `in ${picksAway} picks`}</span>
-        )}
-      </span>
-      {recentPicks.length > 0 && (
-        <span className="at-ticker-recent" aria-label="Latest picks">
-          {recentPicks.map((p) => (
-            <span key={p.pickNumber} className={`at-ticker-pick ${p.isHuman ? 'is-you' : ''}`}>
-              <span className="at-ticker-pick-no">#{p.pickNumber}</span> {p.teamCode} {p.shortName}
-            </span>
-          ))}
-        </span>
-      )}
-    </div>
-  );
-}
-
 /**
  * 2026-10-07, the UI simplification (approved mockup): one strip under the header replaces the
  * status line and the "Your pick" budget banner. Whose pick and the round on the left, your caps
@@ -269,30 +213,6 @@ export function LeaveDraftDialog({ text, onStay, onLeave }: { text: string; onSt
   );
 }
 
-/**
- * The "Your pick" banner's budget line, shared by the All-Time Draft and Quick 5.
- *
- * 2026-09-24, user-reported live ("to się matematycznie zgadza, ale sugeruje zapychanie pod
- * limit"): the first version led with the MAXIMUM this pick could cost ("up to 12.4 shots this
- * pick (7.6 kept for your other 3 picks)") — correct, but it read as advice to spend it all now
- * and fill the rest with the cheapest bodies in the pool. It now leads with what's left and the
- * even split across the remaining picks; the hard maximum is only a quiet footnote.
- */
-/** 2026-09-25, user's ask ("rundy 1-4 mogą być od siebie zależne… w pierwszej rundzie 'pick smart,
- * but don't look at the cost', i później opis w zależności co wybraliśmy"): while the per-pick
- * ceiling still rules nobody out, a short read on how you've been spending instead — measured
- * against an even split of the cap over the whole draft. */
-function pacingHint(capTotal: number | undefined, capLeft: number, rounds: number, slotsLeft: number): string | null {
-  if (capTotal == null) return null;
-  const picksMade = rounds - slotsLeft;
-  if (picksMade <= 0) return 'pick smart — the cost doesn’t matter yet';
-  const evenShare = capTotal / rounds;
-  const spentPerPick = (capTotal - capLeft) / picksMade;
-  if (spentPerPick > evenShare * 1.25) return 'you’ve spent big — cheaper picks will have to follow';
-  if (spentPerPick < evenShare * 0.8) return 'you’ve saved caps — room for another star';
-  return 'right on pace — keep mixing stars and value';
-}
-
 /** 2026-09-25, user-reported ("miałem niski rim pressure… nie ma żadnej takiej informacji podczas
  * draftu"): the results screen scores team rim pressure, but nothing warned about it while there
  * was still time to fix it. Same `rimPressureTeam` the fit score reads, on the current starters.
@@ -307,51 +227,6 @@ export function RimPressureNote({ starters }: { starters: PlayerSpan[] }) {
   return (
     <span className="at-your-turn-need">
       ⚠ Low rim pressure — nobody in your five attacks the basket yet. Look for a slasher or a big who finishes inside.
-    </span>
-  );
-}
-
-export function TurnBudgetText({
-  round,
-  rounds,
-  capLeft,
-  slotsLeft,
-  maxThisPick,
-  priciestAvailable,
-  capTotal,
-}: {
-  round: number;
-  rounds: number;
-  capLeft: number;
-  slotsLeft: number;
-  maxThisPick: number;
-  /** Cost of the most expensive player still on the board. The per-pick ceiling is only worth
-   * mentioning once it's below that — early on "can cost up to 78.6" rules nobody out and just
-   * reads as noise (user-reported live: "78.6 nadal trochę dziwnie"). */
-  priciestAvailable?: number;
-  /** The whole cap, for the early-round pacing hint. */
-  capTotal?: number;
-}) {
-  const ceilingMatters = priciestAvailable == null || maxThisPick < priciestAvailable;
-  const hint = ceilingMatters ? null : pacingHint(capTotal, capLeft, rounds, slotsLeft);
-  const perPick = (slotsLeft > 0 ? capLeft / slotsLeft : capLeft).toFixed(1);
-  const left = capLeft.toFixed(1);
-  return (
-    <span>
-      Round {round}/{rounds} ·{' '}
-      {slotsLeft <= 1 ? (
-        <>
-          <CapIcon /> <b>{left}</b> caps left for your last pick
-        </>
-      ) : (
-        <>
-          <CapIcon /> <b>{left}</b> caps left for your last {slotsLeft} picks — about <b>{perPick}</b> each
-          {ceilingMatters && (
-            <span className="at-your-turn-reserve"> · this pick can cost up to {maxThisPick.toFixed(1)}</span>
-          )}
-          {hint && <span className="at-your-turn-reserve"> · {hint}</span>}
-        </>
-      )}
     </span>
   );
 }

@@ -528,14 +528,7 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
   cursor: pointer;
 }
-.at-shell .at-banner-fit-btn { margin: 8px 0 0; }
-.at-shell .at-scout-hint {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--at-ink-soft);
-}
-.at-shell .at-scout-hint b { color: var(--at-ink); }
+
 /* Playtester screenshot: on a slightly wider phone (above the 480px switch) each ranking card's
    detailed rotation squeezed five columns, and the TAL badges covered the minutes. The detailed
    tiles need more room, so they go two-up (odd last one centred) below 700px. */
@@ -558,7 +551,6 @@
    faint printed double frame; the active one is cream jersey stock with navy lettering and a thin
    red/blue stripe along the bottom — the Showtime pinstripe, used once, as the "you are here" mark. */
 .at-shell .at-tab-btn,
-.at-shell .at-speed-btn,
 .at-shell .at-board-toggle,
 .at-shell .at-filter-pill,
 .at-shell .retro-btn {
@@ -577,7 +569,6 @@
   transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 .at-shell .at-tab-btn:hover,
-.at-shell .at-speed-btn:hover,
 .at-shell .at-board-toggle:hover,
 .at-shell .at-filter-pill:hover,
 .at-shell .retro-btn:hover {
@@ -586,8 +577,6 @@
   color: #ffffff;
 }
 .at-shell .at-tab-btn.at-active,
-.at-shell .at-speed-btn.at-active,
-.at-shell .at-speed-btn[aria-pressed='true'],
 .at-shell .at-filter-pill.at-active,
 .at-shell .at-board-toggle[aria-expanded='true'] {
   border-color: #d9cba6;
@@ -1142,9 +1131,7 @@
 .all-metrics-comp { display: flex; align-items: center; gap: 10px; }
 
 /* Draft card: position next to the name, team chips on the meta line (2026-09-26). */
-.at-player-card-pos-inline { font-size: 10.5px; font-weight: 500; color: var(--at-ink-faint); white-space: nowrap; }
-.at-player-card-teams { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
-.at-player-card-meta { align-items: center; }
+
 .peek-teams { white-space: nowrap; }
 .peek-teams .team-chip + .team-chip { margin-left: 3px; }
 @media (max-width: 640px) {
@@ -1164,12 +1151,6 @@
 .rotation-card-row { padding: 5px 0; gap: 8px; }
 .add-row-btn { margin-top: 4px; padding: 3px 8px; font-size: 11px; }
 /* Draft progress in the sticky header ticker (2026-09-26). */
-.at-turn-sticky .at-ticker { padding: 6px 0 4px; }
-.at-ticker-progress { display: flex; align-items: center; gap: 8px; flex-basis: 100%; font-size: 11px; color: var(--at-ink-faint); }
-.at-ticker-progress-text { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.at-ticker-progress-text b { color: var(--at-ink); }
-.at-ticker-progress-track { flex: 1; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--at-ink) 10%, transparent); overflow: hidden; }
-.at-ticker-progress-track > span { display: block; height: 100%; border-radius: 999px; background: var(--at-accent, #6cc3ff); }
 
 /* Learning path (2026-09-26): step labels on the menu cards and a "next step" block on results. */
 .mode-card-step {
@@ -1216,29 +1197,23 @@
   border-bottom: 1px solid var(--at-line);
   box-shadow: 0 12px 18px -16px rgba(0, 0, 0, 0.9);
 }
-.at-turn-sticky .at-your-turn-banner,
-.at-turn-sticky .at-cpu-turn-banner { margin-bottom: 10px; }
-.at-turn-sticky .at-ticker-recent { flex-wrap: nowrap; overflow: hidden; }
 
 /* Breathing room: more padding inside the panels and cards, and more space between sections. */
 .at-card { padding: 26px 26px 24px; }
 .at-player-cards { gap: 14px; }
 .at-player-card { padding: 12px 12px 12px; gap: 8px; }
-.at-your-turn-banner { padding: 12px 16px; gap: 6px 14px; }
-.at-cpu-turn-banner { padding: 12px 16px; }
+
 .qf-team-panel { gap: 10px; margin: 4px 0 20px; }
 .qf-team-card { padding: 7px 14px 7px 7px; }
 .qf-team-empty { padding: 7px 14px 7px 7px; }
 .at-controls-row { gap: 10px; }
-.at-topbar { gap: 10px 12px; }
+
 .mode-grid { gap: 14px; }
 .path-next { padding: 16px 18px; gap: 12px 16px; }
 
 @media (max-width: 640px) {
   .at-card { padding: 18px 16px 18px; }
   .at-turn-sticky { margin: 0 -16px 14px; padding: 8px 16px 0; }
-  .at-turn-sticky .at-your-turn-banner { font-size: 12px; padding: 8px 12px; line-height: 1.45; }
-  .at-turn-sticky .at-cpu-turn-banner { font-size: 12px; padding: 8px 12px; }
-  .at-turn-sticky .at-ticker { font-size: 11.5px; gap: 4px 10px; }
+
   .at-player-cards { gap: 12px; }
 }
