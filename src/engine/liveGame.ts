@@ -1,6 +1,6 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { STARTER_SLOTS } from './positions';
+import { STARTER_SLOTS, positionFitMultiplier } from './positions';
 import { mulberry32, hashSeed } from './rng';
 import { gameWinProbability, projectMatchup } from './matchup';
 import { lineupTeam, scoreLineup, type Lineup } from './bestFive';
@@ -9,6 +9,7 @@ import type { Team } from './types';
 import { contextLines } from './contextStats';
 import { modernBox } from './modernBox';
 import { fatigueShare } from './fatigue';
+import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { computeOffensiveTalent } from './talent';
@@ -602,6 +603,32 @@ export const SWITCH_TUNING = {
   iso: 0.12,
 };
 const REF_SWITCH = { mean: 64.6, sd: 15.6 };
+/**
+ * Step 6 (the user: rotation, "a i b"). (a) A man out of his position costs on offense too, not
+ * only in the matchups: the further from his own spot (`positionFitMultiplier`), the more he turns
+ * it over — most handling the ball at the point — and the worse he finishes inside, most at the
+ * four and five. (b) A man past his tier's minutes (`minuteProfileForSpan`, the rotation grade's
+ * own ceiling) tires on top of the usual fatigue: the first `MINUTES_CAP_TOLERANCE` minutes over are
+ * free, then each costs more than the one before (+4 over -0.8%, +8 over -5%).
+ */
+export const ROTATION_TUNING = {
+  tovAtPoint: 1.2,
+  tovAtGuard: 0.6,
+  tovElsewhere: 0.4,
+  twoInside: 0.06,
+  twoElsewhere: 0.03,
+  overStep: 0.0025,
+};
+function outOfPosition(span: PlayerSpan, slot: Position): { tov: number; two: number } {
+  const gap = Math.max(0, 1 - positionFitMultiplier(span, slot));
+  const tov = slot === 'PG' ? ROTATION_TUNING.tovAtPoint : slot === 'SG' ? ROTATION_TUNING.tovAtGuard : ROTATION_TUNING.tovElsewhere;
+  return { tov: 1 + tov * gap, two: gap * (slot === 'C' || slot === 'PF' ? ROTATION_TUNING.twoInside : ROTATION_TUNING.twoElsewhere) };
+}
+/** Fatigue for the minutes past his tier's ceiling. */
+function overTierShare(span: PlayerSpan, minutes: number): number {
+  const y = Math.max(0, minutes - minuteProfileForSpan(span).ceiling - MINUTES_CAP_TOLERANCE);
+  return ROTATION_TUNING.overStep * y * (y + 1);
+}
 /** The five's own turnover rate against an average five's (1 = average). */
 function ballSecurity(off: CourtPlayer[]): number {
   const own = off.reduce((s, c) => s + c.turnoverShare, 0) / REF_FIVE_TURNOVERS;
@@ -753,12 +780,13 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       return Math.max(0.02, 1 - ((1 - r3) * habits[i].two + r3 * habits[i].three));
     });
     const usageCost = owns.map(usageCostScale);
+    const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
-      turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight),
+      turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) + edges[i].two * (setups[i].two - habits[i].two))),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) + edges[i].two * (setups[i].two - habits[i].two))),
       threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three))),
       rimShare: lines[i].rimShare,
       rimPct: 0,
@@ -836,7 +864,8 @@ function playRosters(
   const tired = ([0, 1] as GameSide[]).map((side) => {
     const minutes = new Map<string, number>();
     for (const court of schedule[side]) for (const c of court) minutes.set(c.player.label, (minutes.get(c.player.label) ?? 0) + possessionMinutes);
-    return new Map([...minutes].map(([label, m]) => [label, tiring ? fatigue(m) : 1]));
+    const spanOf = new Map(rosters[side].players.map((p) => [p.label, p.span]));
+    return new Map([...minutes].map(([label, m]) => [label, tiring ? Math.max(0.5, fatigue(m) - overTierShare(spanOf.get(label)!, m)) : 1]));
   });
   // 2026-10-07, stage 2b step 3 (the user: defense as a mechanic, budget 60/28/8/4): who guards
   // whom and what the defense on the floor does to every shot, turnover, rebound and foul

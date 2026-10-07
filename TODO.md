@@ -290,7 +290,10 @@ Decyzje (2026-09-30):
        izolacji (końcówki zegara) — switchability 0.03 → 0.34 pkt/SD (85% silnika). Role coverage
        bez zmian w meczu (już 3–4× silnika) — decyzja: w kroku 7 rozważyć wyższą wagę w silniku.
     6. Rotacja — diagnoza wyżej; naprawa do decyzji (koszt gry poza pozycją w ataku / zawodnik
-       roli na dużych minutach / jedno z potrójnych karań w silniku).
+       roli na dużych minutach / jedno z potrójnych karań w silniku). Decyzja 2026-10-07: a + b —
+       gra poza pozycją: więcej strat (najbardziej na rozegraniu) i gorsze kończenie pod koszem;
+       minuty ponad limit poziomu: dodatkowe zmęczenie (2 min za darmo). Rotacja 0% → 28% silnika,
+       minuty ponad limit 0.009 → 0.052 na pkt (silnik 0.108).
     7. Kalibracja całości. 8. Testy dwustronne w `npm test`.
   - **Etap 3: obrona jako mechanika** (plan 2026-10-02, decyzje otwarte oznaczone „?”). Zasada:
     przeciętna obrona = zero efektu (średnie ligi bez zmian); siła tak, by same mechaniki dawały
