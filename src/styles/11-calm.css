@@ -414,3 +414,9 @@ span.at-pc-name { cursor: default; }
 .at-calm .at-merge-draft > .at-panel-title { display: none; }
 .at-calm .at-roster-table th { font-family: inherit; letter-spacing: 0.04em; }
 .at-calm .at-cap-meter { font-family: inherit; }
+.at-calm-select {
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--at-ink-soft); cursor: pointer;
+  background: var(--calm-raised); border: 1px solid var(--calm-line); border-radius: 999px; padding: 7px 12px;
+}
+.at-calm-select.is-on { color: var(--at-paper); background: var(--at-ink); border-color: var(--at-ink); }
+.at-calm-select:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }

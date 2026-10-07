@@ -53,3 +53,23 @@ export function cardRoles(span: PlayerSpan): string[] {
   else if (per36(span.box.rpg, span) >= REBOUNDER_PER_36) roles.push('Rebounder');
   return roles;
 }
+
+/**
+ * 2026-10-08 (the user: "po 1-2 rundach na boardzie zostają gracze na których nam nie zależy, i
+ * trzeba długo szukać"): role filters for the draft board, built on the same style labels the cards
+ * show — they find a kind of player, they don't judge fit.
+ */
+export const ROLE_FILTERS: Record<string, readonly string[]> = {
+  Shooter: ['Spot-up shooter', 'Movement shooter', 'Off-screen shooter', 'Stretch big'],
+  Creator: ['Shot creator', 'Slasher'],
+  Playmaker: ['Floor general', 'Playmaker', 'Playmaking big'],
+  'Rim protector': ['Rim protector', 'Shot blocker'],
+  'Perimeter D': ['On-ball defender', 'Wing stopper', 'Ball hawk'],
+  'Big man': ['Post scorer', 'Roll man', 'Rebounder', 'Versatile big', 'Post defender', 'Mobile defender', 'Switchable big'],
+};
+
+export function matchesRoleFilter(span: PlayerSpan, filter: string | null): boolean {
+  if (!filter) return true;
+  const wanted = ROLE_FILTERS[filter];
+  return cardRoles(span).some((role) => wanted.includes(role));
+}
