@@ -482,11 +482,16 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // components (spacing, rim pressure, playmaking...) swing 60-100 between rosters and decided
 // Offense on their own, while the talent term moved a few points. Talent now carries the largest
 // share, and it's star-weighted (see `starWeightedOffensiveTalent`).
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.46;
+// 2026-10-07, stage 2b step 7 (the user: "połowa drogi"): halfway toward the live game's measure
+// (1120 AI-drafted teams): playmaking ~4x and mismatch structure ~2.3x the engine's, self-creation
+// ~0, O-TAL and rim pressure about right. Spacing stays (the user: the game's spacing is too weak,
+// step 7.5); the others rescaled to keep the sum. Was: O-TAL .46, rim .10, playmaking .10,
+// self-creation .07, mismatch .09.
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.4;
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.18;
-const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.1;
-const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.1;
-const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.07;
+const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.09;
+const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.18;
+const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.032;
 /** 2026-09-05, user's explicit follow-up to `huntingPotential` (matchup.ts): playmaking and
  * self-creation already price individual SKILL into `offenseScore` on their own terms above.
  * "podpięte pod offense" turned out to mean something genuinely different, not a restatement of
@@ -498,7 +503,7 @@ const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.07;
  * skill rating. Reads `fitScore` here (already computed elsewhere in `scoreTeam`, but not
  * threaded through this function) rather than recomputing the underlying shadow-role-profile
  * machinery a second time. */
-const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.09;
+const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.118;
 
 /** The 6 raw 0-100 dimensions `offenseScore` blends, exposed together so the UI can show
  * playmaking/self-creation individually — 2026-09-05, user's explicit ask ("playmaking i shot
@@ -966,7 +971,8 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // Session 5: the interior spacing cover, the 3&D weak-starter exemption and spacing-aware starters
 // lifted the raw field 84.2 -> 85.2 on the same seeds.
 // Then the AI's lower cap reserve (stronger fifth starters) lifted it again, 85.2 -> 86.4.
-const OFFENSE_RAW_MEAN = 84.4;
+// 2026-10-07, stage 2b step 7: the new blend weights lift the raw field 0.6 on 60 AI drafts.
+const OFFENSE_RAW_MEAN = 85.0;
 const OFFENSE_RAW_SD = 8.5;
 const DEFENSE_RAW_MEAN = 77.4;
 const DEFENSE_RAW_SD = 8.2;
@@ -1689,9 +1695,11 @@ const QUALITY_FIT_SPLIT = 0.5;
  * which is itself a rough check that grouping them 50/50 isn't far from what the original
  * 6-way weights already implied.
  */
-const QUALITY_TALENT_WEIGHT = 0.30 / 0.48;
-const QUALITY_BENCH_WEIGHT = 0.10 / 0.48;
-const QUALITY_ROTATION_WEIGHT = 0.08 / 0.48;
+// 2026-10-07, stage 2b step 7: bench depth halfway toward the live game's measure (1.26x the
+// engine's), within the same .48 bucket. Was .30 / .10 / .08.
+const QUALITY_TALENT_WEIGHT = 0.289 / 0.48;
+const QUALITY_BENCH_WEIGHT = 0.113 / 0.48;
+const QUALITY_ROTATION_WEIGHT = 0.078 / 0.48;
 const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 const FIT_OFFENSE_WEIGHT = 0.17 / 0.52;
 const FIT_DEFENSE_WEIGHT = 0.17 / 0.52;
