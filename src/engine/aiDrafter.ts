@@ -31,6 +31,7 @@ import { isSixthManProfile } from './sixthMan';
 import { draftPool } from '../data/draftPool';
 import { DRAFT_EXPERIMENT } from './draftExperiment';
 import { madeAllNbaInSpan } from './allNbaLookup';
+import { hashSeed, mixSeed } from './rng';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 import { meetsStarterStandard } from './starterStandard';
 
@@ -1659,6 +1660,34 @@ export interface AiDraftRuleset {
   profile?: AiGmProfile;
   /** How hard that GM leans on the taste: its maximum bonus in value points. */
   profileStrength?: number;
+  /** Seed of this GM's own board (`boardNoise`); omitted means the shared board. */
+  boardSeed?: number;
+}
+
+/**
+ * 2026-10-07, the user ("nie chodzi żeby Battier nie był draftowany, ale czasem może być wybrany już
+ * w 4 rundzie a czasem w 7"): every GM read the same board, so a role player went within a round
+ * of the same spot every draft. Each GM now holds his own small opinion of every player — fixed for
+ * the draft, drawn from the draft's seed — worth `BOARD_NOISE_POINTS` value points (one standard
+ * deviation) and `BOARD_NOISE_TEAM_POINTS` team-overall points in the lookahead. Stars sit far
+ * apart and barely move; role players a few points apart reshuffle.
+ */
+const BOARD_NOISE_POINTS = 8;
+const BOARD_NOISE_TEAM_POINTS = 0.7;
+const boardNoiseCache = new Map<string, number>();
+function boardNoise(boardSeed: number | undefined, p: PlayerSpan): number {
+  if (boardSeed === undefined) return 0;
+  const key = `${boardSeed}|${p.playerName}`;
+  let n = boardNoiseCache.get(key);
+  if (n === undefined) {
+    // Roughly normal, mean 0, sd 1 (sum of three uniforms).
+    const h = hashSeed(key);
+    const u = (i: number) => (mixSeed(h, i) >>> 0) / 0x100000000;
+    n = (u(1) + u(2) + u(3) - 1.5) * 2;
+    if (boardNoiseCache.size > 200000) boardNoiseCache.clear();
+    boardNoiseCache.set(key, n);
+  }
+  return n;
 }
 
 /**
@@ -1682,6 +1711,10 @@ const LOOKAHEAD_ROSTER_SIZE = 4;
 const LOOKAHEAD_MIN_FILL_FGA = 3;
 /** Team-score points the starting five's biggest gap is worth: a near-tie breaker, not a driver. */
 const NEAR_TIE_COMPLEMENT_POINTS = 0.3;
+/** A GM's taste (`gmProfileBonus`, up to ~25 value points) in team-overall points when the lookahead
+ * compares candidates, and in talent points when he fills the rest of the roster in his head. */
+const LOOKAHEAD_TASTE_POINTS_PER_VALUE = 0.04;
+const LOOKAHEAD_TASTE_COMPLETION_SHARE = 0.5;
 
 /**
  * Completes a roster with the best affordable players still on the board, covering each position
@@ -2188,6 +2221,7 @@ export function pickForAi(
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
       gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
+      boardNoise: BOARD_NOISE_POINTS * boardNoise(ruleset?.boardSeed, p),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
@@ -2340,9 +2374,17 @@ export function pickForAi(
     // leaves only 3-FGA fringe players): each shortlisted candidate is judged by the team he leaves
     // room for — the roster completed with the best affordable players still on the board — not by
     // himself alone. Near-ties are broken by what the starting five lacks most.
+    // 2026-10-07, the user ("jeśli co draft AI dostaje różne osobowości, to dlaczego wszystko wygląda
+    // podobnie"): this team-level judgement used to be the same for every GM, so from the fifth
+    // pick on taste and strategy were gone and every team converged on the same few dozen role
+    // players. The GM now imagines the rest of his roster through his own taste, and his taste
+    // weighs on the final call (`LOOKAHEAD_TASTE_*`).
+    const taste = (p: PlayerSpan) => gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength);
     const byTalent = available
       .filter((p) => isDraftableDurability(p))
-      .sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+      .map((p) => ({ p, rank: effectiveTalent(p) + LOOKAHEAD_TASTE_COMPLETION_SHARE * taste(p) }))
+      .sort((a, b) => b.rank - a.rank)
+      .map((x) => x.p);
     const shortlist = lotteryCandidates.slice(0, Math.min(TEAM_SCORE_SHORTLIST, lotteryCandidates.length));
     const gaps = startingFiveGaps(roster);
     const rescored = shortlist.map((entry) => {
@@ -2354,7 +2396,7 @@ export function pickForAi(
       );
       const overall = teamScorer!(completed);
       const complement = complementScore(gaps, entry.player) * NEAR_TIE_COMPLEMENT_POINTS;
-      const teamValue = overall + complement;
+      const teamValue = overall + complement + LOOKAHEAD_TASTE_POINTS_PER_VALUE * taste(entry.player) + BOARD_NOISE_TEAM_POINTS * boardNoise(ruleset?.boardSeed, entry.player);
       return {
         ...entry,
         value: teamValue,
