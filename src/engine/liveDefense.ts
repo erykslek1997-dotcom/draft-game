@@ -26,6 +26,9 @@ export const REFERENCE = {
   stl36: { mean: 1.51, sd: 0.54 },
   dreb36: { mean: 5.9, sd: 2.47 },
   oreb36: { mean: 1.79, sd: 1.14 },
+  /** The rotation's minutes-weighted foul index: stars foul less per minute than their leagues
+   * did, so the average floor reads 0.85, not 1. */
+  foulIndex: 0.847,
 };
 
 export interface DefenderProfile {
@@ -40,7 +43,7 @@ export interface DefenderProfile {
   /** Rebounds per 36 at each end. */
   dreb36: number;
   oreb36: number;
-  /** Personal fouls against his era (1 = average). */
+  /** Personal fouls against his era, over the bench leagues' rotation average (1 = average). */
   foulIndex: number;
 }
 
@@ -68,7 +71,7 @@ export function defenderProfile(span: PlayerSpan): DefenderProfile {
       stl,
       dreb36: reb36 * (1 - orebShare / 1000),
       oreb36: reb36 * (orebShare / 1000),
-      foulIndex: foul / 1000,
+      foulIndex: foul / 1000 / REFERENCE.foulIndex,
     };
     profileCache.set(span, p);
   }

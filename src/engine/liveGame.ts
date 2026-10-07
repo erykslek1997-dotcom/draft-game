@@ -425,6 +425,10 @@ export const DEFENSE_TUNING = {
    * what the game now adds there, so his season lands on his own numbers. */
   halfCourt: 0.97,
   turnover: 0.133,
+  /** A player's real free-throw rate already holds his trips in the bonus, which the game now
+   * plays as their own fouls; shooting fouls give that back, so the league's free throws stay
+   * where the players' own numbers put them (~32 a team game). */
+  shootingFoul: 0.9,
 };
 /** Five-level reference: the best rim protector plus a share of the second, and both ends'
  * rebounding per 36 summed over a five (bench leagues, minutes-weighted). */
@@ -526,7 +530,7 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
     const m = cl.mods[i];
     const t = (tired.get(c.player.label) ?? 1) * scale;
     const r3 = Math.min(0.9, c.threeRate * m.threeRate);
-    const foulP = c.foul * m.foul;
+    const foulP = c.foul * m.foul * DEFENSE_TUNING.shootingFoul;
     const p3 = c.threePct * m.three * t;
     const p2 = (c.rimShare * c.rimPct * m.rim + (1 - c.rimShare) * c.midPct * m.mid) * t;
     const ft = c.player.span.box.ftPct;
@@ -781,7 +785,7 @@ function playRosters(
       const fresh = onBreak && guard === 0;
       const three = next !== 'putback' && rng() < (fresh ? BREAK_THREE_RATE : Math.min(0.9, shot.threeRate * (hunting ? 1 : mods.threeRate) * (next === 'reset' ? RESET_THREE_RATE : 1)));
       const atRim = !three && (next === 'putback' || fresh || rng() < shot.rimShare);
-      const foulChance = shot.foul * (hunting ? defenderProfile(defender.span).foulIndex ** DEFENSE_TUNING.foul : mods.foul) * (fresh || next === 'putback' ? BREAK_FOUL : 1);
+      const foulChance = DEFENSE_TUNING.shootingFoul * shot.foul * (hunting ? defenderProfile(defender.span).foulIndex ** DEFENSE_TUNING.foul : mods.foul) * (fresh || next === 'putback' ? BREAK_FOUL : 1);
       if (rng() < foulChance) {
         foul(d, defender, k, quarter);
         const ft = freeThrows(o, shooter, three ? 3 : 2);
