@@ -34,12 +34,21 @@ const DEFENSE_LABEL: Partial<Record<DefensiveRole, string>> = {
 };
 
 /** Rebounds per 36 that earn a "Rebounder" line when no defensive role does. */
-const REBOUNDER_PER_36 = 12;
+const REBOUNDER_PER_36 = 11;
+/** 2026-10-08 role audit (the user: "wszystko git"): two engine roles read too wide on a card.
+ * A Mobile Big is a "Shot blocker" only with real block numbers (Dirk, Pau and Webber read wrong),
+ * otherwise a "Mobile defender"; a Versatile Big is a "Playmaking big" only when he really passes
+ * (the engine's 3.5 assists per 36 took in Malone, Carmelo, Siakam), otherwise a "Versatile big". */
+const SHOT_BLOCKER_BLK_PER_36 = 1.8;
+const PLAYMAKING_BIG_AST_PER_36 = 5;
 
 /** Up to two style labels, offense first. */
 export function cardRoles(span: PlayerSpan): string[] {
-  const roles = [OFFENSE_LABEL[span.offensiveArchetype]];
-  const defense = DEFENSE_LABEL[span.defensiveRole];
+  let offense = OFFENSE_LABEL[span.offensiveArchetype];
+  if (span.offensiveArchetype === 'Versatile Big' && per36(span.box.apg, span) < PLAYMAKING_BIG_AST_PER_36) offense = 'Versatile big';
+  const roles = [offense];
+  let defense = DEFENSE_LABEL[span.defensiveRole];
+  if (span.defensiveRole === 'Mobile Big' && per36(span.box.bpg, span) < SHOT_BLOCKER_BLK_PER_36) defense = 'Mobile defender';
   if (defense) roles.push(defense);
   else if (per36(span.box.rpg, span) >= REBOUNDER_PER_36) roles.push('Rebounder');
   return roles;

@@ -458,20 +458,22 @@ const REF_FIVE_TURNOVERS = 0.1267;
 export const SETUP_TUNING = {
   twoBase: 0.02,
   twoSlope: 0.08,
-  threeBase: 0.01,
-  threeSlope: 0.05,
+  threeBase: 0.04,
+  threeSlope: 0.02,
   matesPower: 0.6,
 };
 /**
  * How much better his set-up shots are than his own, by type (the user, 2026-10-07: "uzależnij od
- * typu gracza"): the less he creates for himself, the worse the shots he does create — Korver's or
- * Klay's pull-up three is far below his catch-and-shoot one (~5-6 points), Curry's a couple, Harden's
- * about the same. Across the pool it averages ~4 points for threes and ~4 for twos.
+ * typu gracza"). Threes from NBA.com tracking 2015-16 to 2024-25 (catch-and-shoot against pull-up,
+ * the same player): the gap barely depends on the type — 4.5 points for shooters who rarely shoot
+ * off the catch, 5.9 for those who mostly do (Harden +4.4, Curry +3.9, Korver +4.6, Klay +3.7), so
+ * 4 points plus 2 times his set-up share. Twos keep the steeper curve: the same data reads 2 points
+ * for creators and 6-7 for finishers.
  */
 function setupEdge(habit: { two: number; three: number }): { two: number; three: number } {
   return {
     two: SETUP_TUNING.twoBase + SETUP_TUNING.twoSlope * habit.two ** 2,
-    three: SETUP_TUNING.threeBase + SETUP_TUNING.threeSlope * habit.three ** 3,
+    three: SETUP_TUNING.threeBase + SETUP_TUNING.threeSlope * habit.three,
   };
 }
 const UNASSISTED_TWOS = buildSelfCreationYearMap('unassisted2Pt');
@@ -659,11 +661,14 @@ const NON_SHOOTING_FOUL = 0.065;
 const BONUS_FOULS = 4;
 const FOUL_OUT = 6;
 const TROUBLE_SOFTEN = 0.6;
-/** Fast breaks: after a steal most trips run, after a defensive rebound some (the user: 15% until
- * there is data on tempo). A break is a shot at the rim with a head start, rarely a trailing three. */
+/** Fast breaks: after a steal most trips run, after a defensive rebound many. NBA play types
+ * 2015-16 to 2024-25: transition is 15.7% of trips at 1.11 points, ~1.15 times a half-court trip;
+ * here 15.5% at 1.37 against 1.17 (the drafted leagues score more), from 9% at 1.52 before the
+ * rebound share went up and the extra make chance at the rim came off (the half-strength defense on
+ * the first shot is the head start). */
 const BREAK_AFTER_STEAL = 0.62;
-const BREAK_AFTER_REBOUND = 0.15;
-const BREAK_RIM_BONUS = 0.12;
+const BREAK_AFTER_REBOUND = 0.38;
+const BREAK_RIM_BONUS = 0;
 const BREAK_THREE_RATE = 0.12;
 const BREAK_FOUL = 1.3;
 /** After an offensive rebound: a putback at the rim, or the ball back out on a 14-second clock —
