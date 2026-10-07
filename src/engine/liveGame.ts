@@ -11,6 +11,7 @@ import { modernBox } from './modernBox';
 import { fatigueShare } from './fatigue';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { playmakingScoreForPlayer } from './playmakingLookup';
+import { computeOffensiveTalent } from './talent';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { assignMatchups, defenderProfile, fiveDefense, REFERENCE, type DefenderProfile, type FiveDefense } from './liveDefense';
 
@@ -523,6 +524,55 @@ export const LATE_TUNING = {
   penalty: 0.06,
   creatorPower: 1.5,
 };
+/**
+ * Step 3b-A (the user: the star channel). A bigger or smaller share of the ball moves a player's
+ * shooting by 0.25 TS points per usage point on average (`contextStats.ts`), but not alike: a real
+ * creator takes the extra shots he is used to making himself and loses little (~0.1), a finisher
+ * or spot-up shooter made to create loses most (~0.4) — so a five with no one to take the shots
+ * pays for it, and a star beside specialists does not. By his share of unassisted makes. A smaller
+ * share of the ball (a star among stars) keeps the plain 0.25 gain for everyone.
+ */
+export const STAR_TUNING = {
+  usageCostMax: 0.4,
+  usageCostMin: 0.1,
+  creatorShare: 0.6,
+};
+/**
+ * Step 3b-B: a star beats good defense more often than anyone else — what makes him worth more
+ * against a good team. The cut a defense takes from his shots (contests, help, closeouts, fewer
+ * threes) is 70% of the usual for the best scorers (O-TAL 100), rising to the full cut at 85 and
+ * below (the user: "70% ok"). A bad defense helps everyone alike.
+ */
+const STAR_RESIST = { share: 0.3, from: 85, to: 100 };
+const starCache = new WeakMap<PlayerSpan, number>();
+function defenseResist(span: PlayerSpan): number {
+  let r = starCache.get(span);
+  if (r === undefined) {
+    const star = Math.max(0, Math.min(1, (computeOffensiveTalent(span) - STAR_RESIST.from) / (STAR_RESIST.to - STAR_RESIST.from)));
+    r = 1 - STAR_RESIST.share * star;
+    starCache.set(span, r);
+  }
+  return r;
+}
+/** How much of a star he is, 0 to 1 (O-TAL 85 -> 100). */
+const starness = (span: PlayerSpan) => (1 - defenseResist(span)) / STAR_RESIST.share;
+/**
+ * Step 3b-C: the end of a close game (last four minutes, within five). The ball goes to the star —
+ * his share of the shots grows by `focus` times his starness (NBA: a star's usage rises ~5-8 points
+ * in the clutch) — and every shot gets harder (clutch eFG ~3 points under the rest), the star's
+ * least. It barely moves the average margin; it decides close games.
+ */
+export const CLUTCH_TUNING = {
+  minutes: 4,
+  margin: 5,
+  focus: 0.8,
+  penalty: 0.03,
+  starKeep: 0.6,
+};
+function usageCostScale(ownShare: number): number {
+  const creator = Math.min(1, ownShare / STAR_TUNING.creatorShare);
+  return (STAR_TUNING.usageCostMax - (STAR_TUNING.usageCostMax - STAR_TUNING.usageCostMin) * creator) / 0.25;
+}
 /** The five's own turnover rate against an average five's (1 = average). */
 function ballSecurity(off: CourtPlayer[]): number {
   const own = off.reduce((s, c) => s + c.turnoverShare, 0) / REF_FIVE_TURNOVERS;
@@ -593,13 +643,15 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
   const fd = fiveDefense(defSpans);
   const guard = assignMatchups(off.map((c) => c.player.span), off.map((c) => c.usage), defSpans);
   const offOreb = off.reduce((s, c) => s + defenderProfile(c.player.span).oreb36, 0);
-  const mods = off.map((_, i) => {
+  const mods = off.map((c, i) => {
     const d = fd.profiles[guard[i]];
+    const resist = defenseResist(c.player.span);
+    const cut = (m: number) => (m < 1 ? 1 - (1 - m) * resist : m);
     return {
-      rim: clampMod(1 - DEFENSE_TUNING.rim * (fd.rim - DEFENSE_TUNING.refRim) - DEFENSE_TUNING.direct * d.dtal),
-      mid: clampMod(1 - DEFENSE_TUNING.mid * d.dtal - DEFENSE_TUNING.help * fd.perimeter),
-      three: clampMod(1 - DEFENSE_TUNING.three * d.perimeter),
-      threeRate: clampMod(1 - DEFENSE_TUNING.threeRate * fd.perimeter),
+      rim: cut(clampMod(1 - DEFENSE_TUNING.rim * (fd.rim - DEFENSE_TUNING.refRim) - DEFENSE_TUNING.direct * d.dtal)),
+      mid: cut(clampMod(1 - DEFENSE_TUNING.mid * d.dtal - DEFENSE_TUNING.help * fd.perimeter)),
+      three: cut(clampMod(1 - DEFENSE_TUNING.three * d.perimeter)),
+      threeRate: cut(clampMod(1 - DEFENSE_TUNING.threeRate * fd.perimeter)),
       foul: d.foulIndex ** DEFENSE_TUNING.foul,
     };
   });
@@ -659,13 +711,18 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const habits = five.map((p, i) => setupHabit(p.span, lines[i].originalUsage));
     const setups = habits.map((h, i) => ({ two: setupHere(h.two, lines[i]), three: setupHere(h.three, lines[i]) }));
     const edges = habits.map(setupEdge);
+    const owns = five.map((p, i) => {
+      const r3 = Math.min(0.9, p.span.box.threePA / Math.max(1, p.span.fga));
+      return Math.max(0.02, 1 - ((1 - r3) * habits[i].two + r3 * habits[i].three));
+    });
+    const usageCost = owns.map(usageCostScale);
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight),
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta) + edges[i].two * (setups[i].two - habits[i].two))),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three))),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) + edges[i].two * (setups[i].two - habits[i].two))),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three))),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
@@ -675,12 +732,8 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       setup3: setups[i].three,
       edge2: edges[i].two,
       edge3: edges[i].three,
-      ownShare: 0,
+      ownShare: owns[i],
     }));
-    court.forEach((c, i) => {
-      const r3 = c.threeRate;
-      c.ownShare = Math.max(0.02, 1 - ((1 - r3) * habits[i].two + r3 * habits[i].three));
-    });
     for (const c of court) {
       c.twoPct *= DEFENSE_TUNING.halfCourt;
       c.threePct *= DEFENSE_TUNING.halfCourt;
@@ -852,6 +905,7 @@ function playRosters(
     const def = defCourt.map((c) => c.player);
     const clash = clashFor(off, defCourt);
     const quarter = Math.min(3, Math.floor((k * 4) / POSSESSIONS));
+    const clutch = k >= POSSESSIONS * (1 - CLUTCH_TUNING.minutes / 48) && Math.abs(score[o] - score[d]) <= CLUTCH_TUNING.margin;
     let play: GamePlay | null = null;
     let pts = 0;
     const onBreak = breakNext[o];
@@ -890,10 +944,11 @@ function playRosters(
         break;
       }
       const late = next !== 'putback' && !(onBreak && guard === 0) && rng() < clash.lateP * (next === 'reset' ? LATE_TUNING.reset : 1);
+      const focus = (c: CourtPlayer) => (clutch ? 1 + CLUTCH_TUNING.focus * starness(c.player.span) : 1);
       const shooterIdx =
         next === 'putback' && putbackBy
           ? off.indexOf(putbackBy)
-          : off.indexOf(pickWeighted(rng, off, late ? (c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower : (c) => c.shotShare));
+          : off.indexOf(pickWeighted(rng, off, late ? (c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower * focus(c) : (c) => c.shotShare * focus(c)));
       const shot = off[shooterIdx];
       const shooter = shot.player;
       const line = box[o][shooter.label];
@@ -941,7 +996,8 @@ function playRosters(
       const setupShare = Math.min(0.97, (three ? shot.setup3 : shot.setup2) / (1 - LATE_TUNING.share));
       const setup = next !== 'putback' && !late && rng() < setupShare * (next === 'reset' ? RESET_ASSISTED : 1);
       const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare) - (late ? LATE_TUNING.penalty : 0);
-      const p = Math.max(0.05, base + edge) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
+      const pressure = clutch ? CLUTCH_TUNING.penalty * (1 - CLUTCH_TUNING.starKeep * starness(shooter.span)) : 0;
+      const p = Math.max(0.05, base + edge - pressure) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
