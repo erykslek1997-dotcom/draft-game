@@ -849,16 +849,9 @@ export function teamWeakLink(team: Team): string | null {
 
 const emptyLine = (): BoxLineStats => ({ pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0, pf: 0, min: 0 });
 
-function playRosters(
-  rosters: [GameRoster, GameRoster],
-  margin: number,
-  seed: string,
-  record: boolean,
-  weakLinks?: [string | null, string | null],
-  /** Only a full rotation tires: a five alone (Daily, Draw Five) plays the whole game by design. */
-  tiring = false,
-): LiveGameResult {
-  const rng = mulberry32(hashSeed(`${seed}:game`));
+/** Everything decided before tip-off: the whole game's fives (substitutions are deterministic), who
+ * tires, and the expected margin of the mechanics at a given shooting tilt (`gapAt`). */
+function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
   const courts = [new Map<string, CourtPlayer[]>(), new Map<string, CourtPlayer[]>()];
   const starterFive = (r: GameRoster) => STARTER_SLOTS.map((slot) => r.slotMinutes[slot][0]?.player).filter((p): p is Player => Boolean(p));
   const starting = [courtFor(courts[0], starterFive(rosters[0])), courtFor(courts[1], starterFive(rosters[1]))];
@@ -900,6 +893,35 @@ function playRosters(
   };
   const perTeam = POSSESSIONS / 2;
   const gapAt = (n: number) => perTeam * (meanPossession(0, 1 + n) - meanPossession(1, 1 - n));
+  return { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt, meanPossession };
+}
+
+/**
+ * 2026-10-07, stage 2b step 8: the margin the game's mechanics alone give team `a` over `b` — no
+ * nudge toward the engine, no dice. What the two-way test (`scripts/testTwoWay.ts`) checks the engine
+ * against.
+ */
+export function mechanicsMargin(a: Team, b: Team): number {
+  return gameSetup([rosterFromTeam(a), rosterFromTeam(b)], true).gapAt(0);
+}
+
+/** The same, each side's expected points per 100 trips: `a`'s offense against `b`'s defense, and back. */
+export function mechanicsPer100(a: Team, b: Team): [number, number] {
+  const setup = gameSetup([rosterFromTeam(a), rosterFromTeam(b)], true);
+  return [100 * setup.meanPossession(0, 1), 100 * setup.meanPossession(1, 1)];
+}
+
+function playRosters(
+  rosters: [GameRoster, GameRoster],
+  margin: number,
+  seed: string,
+  record: boolean,
+  weakLinks?: [string | null, string | null],
+  /** Only a full rotation tires: a five alone (Daily, Draw Five) plays the whole game by design. */
+  tiring = false,
+): LiveGameResult {
+  const rng = mulberry32(hashSeed(`${seed}:game`));
+  const { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt } = gameSetup(rosters, tiring);
   let nudge: number;
   if (gapAt(MAX_NUDGE) <= margin) nudge = MAX_NUDGE;
   else if (gapAt(-MAX_NUDGE) >= margin) nudge = -MAX_NUDGE;
