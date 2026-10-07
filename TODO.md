@@ -286,6 +286,9 @@ Decyzje (2026-09-30):
        silnika; w kroku 7 rozważyć wyższą wagę `pairingStructure` w silniku. Rim pressure: zapadanie
        obrony (lepsze trójki po wyjściu spod kosza) + faule obrońców obręczy.
     5. Defensywne części fitu (switchability vs ogrywanie, role coverage).
+       Zrobione 2026-10-07: zmiany krycia zmniejszają szukanie słabego ogniwa i dają więcej
+       izolacji (końcówki zegara) — switchability 0.03 → 0.34 pkt/SD (85% silnika). Role coverage
+       bez zmian w meczu (już 3–4× silnika) — decyzja: w kroku 7 rozważyć wyższą wagę w silniku.
     6. Rotacja — diagnoza wyżej; naprawa do decyzji (koszt gry poza pozycją w ataku / zawodnik
        roli na dużych minutach / jedno z potrójnych karań w silniku).
     7. Kalibracja całości. 8. Testy dwustronne w `npm test`.

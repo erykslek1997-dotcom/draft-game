@@ -13,6 +13,7 @@ import { estimatedMinutesPerGame } from './minutesPerGame';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { computeOffensiveTalent } from './talent';
 import { rimPressureTeam } from './rimPressure';
+import { fiveSwitchability } from './fit';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { assignMatchups, defenderProfile, fiveDefense, REFERENCE, type DefenderProfile, type FiveDefense } from './liveDefense';
 
@@ -589,6 +590,18 @@ export const RIM_TUNING = {
   helpFoulShare: 0.35,
 };
 const REF_RIM_PRESSURE = { mean: 71.3, sd: 20.5 };
+/**
+ * Step 5 (the user: switchability as a mechanic). A five that can switch takes the mismatch away: a
+ * weak defender is hunted less often (`hunt` per spread of the defense's switchability, Fit's own
+ * reading, `fiveSwitchability`), and the actions it kills leave more isolations — more trips that
+ * end late in the clock (`iso`), where the star who makes his own shot still gets his. Against the
+ * drafted rotation fives' 64.6 (spread 15.6).
+ */
+export const SWITCH_TUNING = {
+  hunt: 0.35,
+  iso: 0.12,
+};
+const REF_SWITCH = { mean: 64.6, sd: 15.6 };
 /** The five's own turnover rate against an average five's (1 = average). */
 function ballSecurity(off: CourtPlayer[]): number {
   const own = off.reduce((s, c) => s + c.turnoverShare, 0) / REF_FIVE_TURNOVERS;
@@ -662,6 +675,7 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
   const fd = fiveDefense(defSpans);
   const guard = assignMatchups(off.map((c) => c.player.span), off.map((c) => c.usage), defSpans);
   const offOreb = off.reduce((s, c) => s + defenderProfile(c.player.span).oreb36, 0);
+  const switchZ = Math.max(-2.5, Math.min(2.5, (fiveSwitchability(defSpans, STARTER_SLOTS) - REF_SWITCH.mean) / REF_SWITCH.sd));
   const mods = off.map((c, i) => {
     const d = fd.profiles[guard[i]];
     const resist = defenseResist(c.player.span);
@@ -682,10 +696,10 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
     stealShare: Math.max(0.35, Math.min(0.75, STEAL_SHARE * (1 + STEAL_K * fd.stl))),
     oreb: OFF_REBOUND * Math.exp(DEFENSE_TUNING.reb * ((offOreb - REF_FIVE_OREB) / SD_FIVE_OREB - (fd.dreb36 - REF_FIVE_DREB) / SD_FIVE_DREB)),
     foulRate: fd.profiles.reduce((s, p) => s + p.foulIndex ** DEFENSE_TUNING.foul, 0) / fd.profiles.length,
-    huntP: Math.min(MAX_HUNT, HUNT_PER_Z * fd.weakGap),
+    huntP: Math.min(MAX_HUNT, HUNT_PER_Z * fd.weakGap) * Math.max(0.2, 1 - SWITCH_TUNING.hunt * switchZ),
     rimZ: Math.max(-2.5, Math.min(2.5, (rimPressureTeam(off.map((c) => c.player.span)) - REF_RIM_PRESSURE.mean) / REF_RIM_PRESSURE.sd)),
     rimAnchor: fd.profiles.reduce((best, p, i) => (p.rim > fd.profiles[best].rim ? i : best), 0),
-    lateP: Math.min(0.3, LATE_TUNING.share * Math.exp(LATE_TUNING.defense * fd.perimeter - LATE_TUNING.handler * handlerZ(off))),
+    lateP: Math.min(0.3, LATE_TUNING.share * Math.exp(LATE_TUNING.defense * fd.perimeter - LATE_TUNING.handler * handlerZ(off) + SWITCH_TUNING.iso * switchZ)),
   };
 }
 
@@ -700,6 +714,8 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
   const shots = off.reduce((s, c) => s + c.shotShare, 0) || 1;
   const lateWeights = off.map((c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower);
   const lateTotal = lateWeights.reduce((s, v) => s + v, 0) || 1;
+  // Trips that go at the weakest defender: his own matchup gap, at the hunting rate.
+  const hunted = 1 + cl.huntP * (huntMod(cl.def.profiles[cl.def.weakest]) - 1);
   let value = 0;
   let miss = 0;
   off.forEach((c, i) => {
@@ -712,7 +728,7 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
     const two = c.rimShare * c.rimPct * m.rim + (1 - c.rimShare) * c.midPct * m.mid;
     // Normal trips at his average; late ones his own shot, minus the clock.
     for (const [w, p3, p2] of [
-      [((1 - cl.lateP) * c.shotShare) / shots, (c.threePct * m.three + RIM_TUNING.collapse * cl.rimZ * Math.min(0.97, c.setup3 / (1 - LATE_TUNING.share))) * t, two * t],
+      [((1 - cl.lateP) * c.shotShare) / shots, (c.threePct * m.three + RIM_TUNING.collapse * cl.rimZ * Math.min(0.97, c.setup3 / (1 - LATE_TUNING.share))) * t * hunted, two * t * hunted],
       [(cl.lateP * lateWeights[i]) / lateTotal, Math.max(0.05, c.threePct * m.three - c.edge3 * Math.min(0.97, c.setup3 / (1 - LATE_TUNING.share)) - LATE_TUNING.penalty) * t, Math.max(0.05, two - c.edge2 * Math.min(0.97, c.setup2 / (1 - LATE_TUNING.share)) - LATE_TUNING.penalty) * t],
     ]) {
       const field = r3 * 3 * p3 + (1 - r3) * 2 * p2 * (1 + (AND_ONE * ft) / 2);
