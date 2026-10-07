@@ -357,7 +357,7 @@ span.at-pc-name { cursor: default; }
 .rs-comp b { color: var(--at-warn); }
 .rs-comp small { color: var(--at-ink-faint); margin-left: 4px; }
 .at-calm .results-hero-rotation-col { min-width: 0; }
-.at-calm .rs-panel .results-hero-rotation-entry-name { white-space: normal; text-overflow: clip; line-height: 1.2; }
+.at-calm .rs-panel .results-hero-rotation-entry-name { white-space: normal; text-overflow: clip; line-height: 1.2; overflow-wrap: anywhere; }
 .rs-rivals { display: flex; flex-direction: column; gap: 12px; }
 .at-calm .results-actions.end-actions { margin-top: 24px; }
 
