@@ -299,6 +299,12 @@ Decyzje (2026-09-30):
        silnika na pkt overall i R² ≥ 0.35 (32 drużyny: 88%, 0.39), kontrasty mechanik (obrona,
        gwiazda, kreacja, rozegranie, spacing, chowanie słabego obrońcy, zbiórka w silniku), widełki
        średnich ligowych. `mechanicsMargin` / `mechanicsPer100` w `liveGame.ts`.
+    Dalej (decyzja 2026-10-07): typy akcji i krycia — odłożone. Kolejność: skrypt NBA.com
+    (`scripts/fetch_nba_stats.py`, uruchamia użytkownik) → przegląd danych → wnioski → luki silnik ↔
+    mecz (self-creation, creation structure, role coverage / pairing druga połowa) → mecz: free agents
+    po drafcie (3 graczy za 6 caps; zmiennicy przy faulach), bonus w ostatnich 2 min, tempo → UI
+    (przebudowa, „za dużo się dzieje”; potem stopniowo pod tryby gry). Liderzy fauli ~4.5 — zostaje
+    (w silnych składach to normalne, decyzja użytkownika).
     7.5. Spacing w meczu (decyzja 2026-10-07: wszystkie trzy części, limit ±6 pp): miejsce z oceny
        spacingu silnika (`teamSpacingValue`) zamiast udziału trójek, odpuszczanie niestrzelców (poniżej
        35), chowanie słabego obrońcy na graczu, który nie wykorzysta mismatchu (Bowen, Battier — nie Simmons czy Rodman; decyzja użytkownika). Spacing ataku 0.08 → 0.27 pkt/SD, spacing
