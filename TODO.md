@@ -282,6 +282,9 @@ Decyzje (2026-09-30):
     3b. Kanał gwiazdy (decyzja 2026-10-07): najlepszy gracz dostaje więcej piłek w ważnych akcjach
         i utrzymuje skuteczność — żeby championship structure działało jak w silniku.
     4. Pairing / pick and roll; rim pressure drużyny (faule, rzuty spod kosza).
+       Decyzja 2026-10-07: pick and roll bez nowej mechaniki — mecz już oddaje 177–190% pairingu
+       silnika; w kroku 7 rozważyć wyższą wagę `pairingStructure` w silniku. Rim pressure: zapadanie
+       obrony (lepsze trójki po wyjściu spod kosza) + faule obrońców obręczy.
     5. Defensywne części fitu (switchability vs ogrywanie, role coverage).
     6. Rotacja — diagnoza wyżej; naprawa do decyzji (koszt gry poza pozycją w ataku / zawodnik
        roli na dużych minutach / jedno z potrójnych karań w silniku).
