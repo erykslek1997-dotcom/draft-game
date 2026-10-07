@@ -311,7 +311,7 @@ function App() {
           instead of sitting on the plain app-wide light/dark tokens as a visibly different-looking
           "old UI" leftover — the first screen every session sees now matches the rest of the app. */}
       {view === 'intro' && (
-        <div className="at-shell at-intro at-intro-terminal">
+        <div className="at-shell at-intro at-intro-terminal at-calm">
           {/* 2026-09-17, user's own ask on a genuinely wide monitor: the whole screen used to be
               one narrow centred column pinned near the top, leaving most of a large display
               empty — `.intro-columns` splits it into a hero (wordmark + team name, vertically

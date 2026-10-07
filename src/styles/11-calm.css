@@ -380,3 +380,37 @@ span.at-pc-name { cursor: default; }
   background: var(--calm-raised-2); border: 1px solid var(--calm-line); color: var(--at-ink); box-shadow: none;
 }
 .qf-skip { margin-top: 8px; }
+
+/* ---- Shared: legacy buttons inside calm screens ---- */
+.at-calm .primary-btn,
+.at-calm .secondary-btn {
+  font-family: inherit; text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600;
+  border-radius: 999px; box-shadow: none; background-image: none;
+}
+.at-calm .primary-btn { background: var(--at-accent); color: var(--at-accent-ink); border: 0; }
+.at-calm .secondary-btn { background: var(--calm-raised-2); color: var(--at-ink); border: 1px solid var(--calm-line); }
+.at-calm .primary-btn:disabled, .at-calm .secondary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.at-calm h1, .at-calm h2, .at-calm h3 { font-family: inherit; }
+
+/* ---- Intro (menu): the terminal look without the terminal punctuation ---- */
+.at-calm.at-intro-terminal { font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif; }
+.at-calm.at-intro-terminal .app-header::before { content: 'Every era. One game.'; letter-spacing: 0.04em; text-transform: none; font-size: 13px; }
+.at-calm.at-intro-terminal .team-name-label::before,
+.at-calm.at-intro-terminal .team-name-label::after,
+.at-calm.at-intro-terminal .mode-card-name::before,
+.at-calm.at-intro-terminal .mode-card-name::after,
+.at-calm.at-intro-terminal .mode-help-modal-title::before,
+.at-calm.at-intro-terminal .mode-help-modal-title::after { content: none; }
+.at-calm.at-intro-terminal .app-header h1 { font-family: inherit; font-weight: 800; letter-spacing: 0.02em; }
+.at-calm.at-intro-terminal .mode-card-name { font-size: 18px; letter-spacing: 0; }
+.at-calm.at-intro-terminal .mode-card-step { font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.at-calm.at-intro-terminal .mode-card-desc { font-size: 14px; }
+.at-calm.at-intro-terminal .team-name-input { font-family: inherit; }
+
+/* ---- Team tab (All-Time Draft) ---- */
+.at-calm .at-panel-title {
+  font-size: 13px; font-weight: 600; color: var(--at-ink-faint); text-transform: uppercase; letter-spacing: 0.07em; margin: 8px 0 12px;
+}
+.at-calm .at-merge-draft > .at-panel-title { display: none; }
+.at-calm .at-roster-table th { font-family: inherit; letter-spacing: 0.04em; }
+.at-calm .at-cap-meter { font-family: inherit; }
