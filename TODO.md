@@ -265,6 +265,23 @@ Decyzje (2026-09-30):
   - **Etap 2: kanały ataku** — margines rozbity na kanały: spacing, rim pressure (rzuty spod
     kosza, wolne), kreacja (asysty, straty składu = pkt 5), self-creation, pairing, kilku graczy
     potrzebujących piłki; czego silnik nie liczy (np. straty) — dodać do silnika.
+    Plan 2026-10-07 (każdy krok osobno z raportem). Pomiar kroku 0 (1120 drużyn, oczekiwany
+    margines bez nudge'a): mecz oddaje 45% overall; playmaking −0.13 / self-creation −0.18 /
+    creation structure −0.26 / championship structure −0.44 pkt na SD (odwrotnie niż silnik),
+    rim pressure drużyny 0, rotacja ~0 (mecz nie ma kosztu gry poza pozycją w ataku, a silnik
+    liczy go trzy razy; minuty ponad poziom gracza nic w meczu nie kosztują); role coverage 3×
+    silniej niż w silniku. NBA atak (BBRef 2019-26): rzuty 68 / straty 16 / zbiórka 14 / faule 2,
+    SD TOV% 0.86 (mecz dziś ~0.4).
+    1. Prowadzenie piłki → straty (realne straty graczy piątki + jakość rozgrywającego).
+    2. Podanie → jakość rzutu (rzut po asyście +3–4 pp za 3; asysty elitarnych podających).
+    3. Self-creation → akcje na końcu zegara (bez kreacji ok. −4 pp, kreator ~0).
+    3b. Kanał gwiazdy (decyzja 2026-10-07): najlepszy gracz dostaje więcej piłek w ważnych akcjach
+        i utrzymuje skuteczność — żeby championship structure działało jak w silniku.
+    4. Pairing / pick and roll; rim pressure drużyny (faule, rzuty spod kosza).
+    5. Defensywne części fitu (switchability vs ogrywanie, role coverage).
+    6. Rotacja — diagnoza wyżej; naprawa do decyzji (koszt gry poza pozycją w ataku / zawodnik
+       roli na dużych minutach / jedno z potrójnych karań w silniku).
+    7. Kalibracja całości. 8. Testy dwustronne w `npm test`.
   - **Etap 3: obrona jako mechanika** (plan 2026-10-02, decyzje otwarte oznaczone „?”). Zasada:
     przeciętna obrona = zero efektu (średnie ligi bez zmian); siła tak, by same mechaniki dawały
     obronie ~0.21 pkt bilansu za pkt oceny (dziś −0.06); wyrównanie zostaje jako zabezpieczenie.

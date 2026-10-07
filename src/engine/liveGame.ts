@@ -10,6 +10,7 @@ import { contextLines } from './contextStats';
 import { modernBox } from './modernBox';
 import { fatigueShare } from './fatigue';
 import { estimatedMinutesPerGame } from './minutesPerGame';
+import { playmakingScoreForPlayer } from './playmakingLookup';
 import { assignMatchups, defenderProfile, fiveDefense, REFERENCE, type DefenderProfile, type FiveDefense } from './liveDefense';
 
 /**
@@ -430,6 +431,35 @@ export const DEFENSE_TUNING = {
    * where the players' own numbers put them (~32 a team game). */
   shootingFoul: 0.9,
 };
+/**
+ * 2026-10-07, stage 2b offense channels, step 1 (the user: ball handling -> turnovers). A five
+ * turns it over as often as its players really did — the sum of each one's turnover share of his
+ * usage, 0.131 a trip on average over 1920 drafted fives (starters and second units of 60 AI
+ * drafts), where the game used one flat rate — and a real lead handler on the floor takes care of
+ * the ball beyond that (best playmaking of the five: mean 92.8, spread 5.2).
+ */
+export const OFFENSE_TUNING = {
+  ownTurnovers: 0.6,
+  handler: 0.09,
+};
+const REF_FIVE_TURNOVERS = 0.1267;
+const REF_HANDLER = { mean: 92.8, sd: 5.2 };
+const handlerCache = new WeakMap<PlayerSpan, number>();
+function handlerScore(span: PlayerSpan): number {
+  let h = handlerCache.get(span);
+  if (h === undefined) {
+    h = playmakingScoreForPlayer(span) ?? 50;
+    handlerCache.set(span, h);
+  }
+  return h;
+}
+/** The five's own turnover rate against an average five's (1 = average). */
+function ballSecurity(off: CourtPlayer[]): number {
+  const own = off.reduce((s, c) => s + c.turnoverShare, 0) / REF_FIVE_TURNOVERS;
+  const handler = Math.max(...off.map((c) => handlerScore(c.player.span)));
+  const z = Math.max(-3, Math.min(2, (handler - REF_HANDLER.mean) / REF_HANDLER.sd));
+  return Math.max(0.6, Math.min(1.6, own ** OFFENSE_TUNING.ownTurnovers * Math.exp(-OFFENSE_TUNING.handler * z)));
+}
 /** Five-level reference: the best rim protector plus a share of the second, and both ends'
  * rebounding per 36 summed over a five (bench leagues, minutes-weighted). */
 const REF_FIVE_OREB = 5 * REFERENCE.oreb36.mean;
@@ -506,7 +536,7 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
     def: fd,
     guard,
     mods,
-    tovMul: clampMod(1 + DEFENSE_TUNING.tov * (0.5 * fd.perimeter + 0.5 * fd.stl)),
+    tovMul: clampMod(1 + DEFENSE_TUNING.tov * (0.5 * fd.perimeter + 0.5 * fd.stl)) * ballSecurity(off),
     stealShare: Math.max(0.35, Math.min(0.75, STEAL_SHARE * (1 + STEAL_K * fd.stl))),
     oreb: OFF_REBOUND * Math.exp(DEFENSE_TUNING.reb * ((offOreb - REF_FIVE_OREB) / SD_FIVE_OREB - (fd.dreb36 - REF_FIVE_DREB) / SD_FIVE_DREB)),
     foulRate: fd.profiles.reduce((s, p) => s + p.foulIndex ** DEFENSE_TUNING.foul, 0) / fd.profiles.length,
