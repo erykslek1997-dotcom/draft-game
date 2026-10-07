@@ -271,13 +271,17 @@ Decyzje (2026-09-30):
     1. Krycie jak trener: 120 przydziałów piątki, najgroźniejszy atakujący (usage × O-TAL) na
        najlepszego obrońcę w granicach tego, kogo może kryć (pozycje, role obronne; Pippen bierze
        mocnego PG). Rzut: 50% bezpośredni obrońca, 50% pomoc piątki.
-    2. Rzuty (? 60% budżetu, propozycja z faulami: 60/20/12/8): spod kosza — najlepszy obrońca
+    Budżet (decyzja 2026-10-07, z danych NBA 2019-26 — „cztery czynniki” 210 drużyn tłumaczą
+    99% różnic w DRtg: rzuty 62%, straty 28%, zbiórka 7%, faule 3%): **60 / 28 / 8 / 4**. Rozrzut
+    (najlepsze 10% obron): eFG rywala −1.8 pp, wymuszone straty +1.3, DRB% +1.9, FT/FGA rywala −2.3 pp
+    (`raw/teamAdvanced.csv`).
+    2. Rzuty (60% budżetu): spod kosza — najlepszy obrońca
        obręczy na boisku (elitarny −5–8 pp, więcej bloków); półdystans — obrońca + pomoc; za 3 —
        mniej rzutów i celność do −2–3 pp przy dobrym closeoucie (decyzja 2026-10-02).
-    3. Straty i przechwyty (? 20%): nacisk obrońców (przechwyty, D-TAL obwodu) zamiast stałych 12%;
+    3. Straty i przechwyty (28%): nacisk obrońców (przechwyty, D-TAL obwodu) zamiast stałych 12%;
        szybka kontra po przechwycie ~60–65% (ok. 1.3 pkt, kończy przechwytujący/atletyczny), po
        zbiórce w obronie 15% na razie (docelowo zależne od składu i tempa — brak danych).
-    4. Zbiórka (? 15%): szansa na zbiórkę w ataku — zbierający obu piątek zamiast stałych 26%;
+    4. Zbiórka (8%): szansa na zbiórkę w ataku — zbierający obu piątek zamiast stałych 26%;
        dobitka ~35–40% (zbierający, spod kosza, faule), a jeśli nie — oddanie na obwód i wznowienie
        na 14 s (więcej i celniejsze trójki, mniej strat i asyst).
     5. Słaby strzelec: mecz bierze ocenę spacingu z silnika (`spacing.ts`: ilość + celność +
