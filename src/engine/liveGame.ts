@@ -659,6 +659,9 @@ const HUNT_PER_DTAL = 0.03;
 /** Fouls away from the shot per trip, the bonus from the fifth team foul, six to foul out. */
 const NON_SHOOTING_FOUL = 0.065;
 const BONUS_FOULS = 4;
+/** 2026-10-08, the NBA's last-two-minutes rule: a team not yet in the penalty gives free throws from
+ * its second foul in the final two minutes of a quarter. */
+const LATE_PERIOD_SHARE = 2 / 12;
 const FOUL_OUT = 6;
 const TROUBLE_SOFTEN = 0.6;
 /** Fast breaks: after a steal most trips run, after a defensive rebound many. NBA play types
@@ -947,6 +950,8 @@ function playRosters(
   const score: [number, number] = [0, 0];
   const quarters: [number[], number[]] = [[0, 0, 0, 0], [0, 0, 0, 0]];
   const teamFouls: [number[], number[]] = [[0, 0, 0, 0], [0, 0, 0, 0]];
+  const lateFouls: [number[], number[]] = [[0, 0, 0, 0], [0, 0, 0, 0]];
+  const lateInQuarter = (k: number) => ((k * 4) / POSSESSIONS) % 1 >= 1 - LATE_PERIOD_SHARE;
   const fouledOut = [new Set<Player>(), new Set<Player>()];
   // A break the other way: set by a steal or a defensive rebound, used by that team's next trip.
   const breakNext: [number, number] = [0, 0];
@@ -962,6 +967,7 @@ function playRosters(
     const line = box[side][p.label];
     line.pf++;
     teamFouls[side][quarter]++;
+    if (lateInQuarter(k)) lateFouls[side][quarter]++;
     if (line.pf >= FOUL_OUT && !fouledOut[side].has(p)) {
       fouledOut[side].add(p);
       // His remaining minutes go to the bench: whoever is listed at his slot, else anyone free.
@@ -1012,7 +1018,7 @@ function playRosters(
     // Away from the ball: a foul that is not on a shot (side out, or two shots in the bonus).
     if (!onBreak && rng() < NON_SHOOTING_FOUL * clash.foulRate) {
       const fouler = pickWeighted(rng, def, (p) => defenderProfile(p.span).foulIndex ** DEFENSE_TUNING.foul);
-      const inBonus = teamFouls[d][quarter] >= BONUS_FOULS;
+      const inBonus = teamFouls[d][quarter] >= BONUS_FOULS || (lateInQuarter(k) && lateFouls[d][quarter] >= 1);
       foul(d, fouler, k, quarter);
       if (inBonus) {
         const fouled = pickWeighted(rng, off, (c) => c.shotShare).player;
