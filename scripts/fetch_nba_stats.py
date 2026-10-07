@@ -38,20 +38,24 @@ import urllib.parse
 import urllib.request
 
 BASE = "https://stats.nba.com/stats/"
+# 2026-10-07: the old x-nba-stats-origin / x-nba-stats-token headers now make stats.nba.com hang
+# (the request just times out); a plain browser's headers go through.
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+    "Host": "stats.nba.com",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip",
     "Referer": "https://www.nba.com/",
     "Origin": "https://www.nba.com",
     "Connection": "keep-alive",
-    "x-nba-stats-origin": "stats",
-    "x-nba-stats-token": "true",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
 }
 PAUSE_SECONDS = 1.5
 RETRIES = 4
-TIMEOUT_SECONDS = 60
+TIMEOUT_SECONDS = 30
 
 PLAY_TYPES = [
     "Isolation", "Transition", "PRBallHandler", "PRRollman", "Postup", "Spotup",
@@ -149,6 +153,13 @@ def main():
         "player_catch_shoot", "player_pull_up", "player_drives", "player_passing",
         "defense_overall", "defense_3pt", "defense_rim",
     ]}
+
+    print("Checking that stats.nba.com answers...")
+    h, rows = fetch("leaguedashteamstats", dict(DASH_FILTERS, MeasureType="Base", PerMode="PerGame", Season=args.seasons[-1], PaceAdjust="N", PlusMinus="N", Rank="N"), raw)
+    if not rows:
+        print("stats.nba.com did not answer. Try again in a few minutes, or from another network (a phone hotspot often works).")
+        sys.exit(1)
+    print(f"  OK ({len(rows)} teams)")
 
     for season in args.seasons:
         print(f"{season}")
