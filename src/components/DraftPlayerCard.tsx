@@ -1,11 +1,11 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import type { OverallTier } from '../engine/grades';
-import { displayTalentForSpan, formatTal } from '../engine/grades';
-import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { naturalPosition } from '../engine/naturalPosition';
-import { Face, ShotChip, shortenName } from './ShotChip';
+import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
 import { EraYears } from './EraYears';
+import { cardRoles } from './cardRoles';
+import { MagnifierIcon } from './MagnifierIcon';
 import { TeamBand, spanTeamColor } from './TeamBand';
 
 /** Card frame colour per tier (the All-Time Draft's "wariant A" tier frame), shared by every draft
@@ -50,43 +50,108 @@ interface DraftPlayerCardProps {
 
 /**
  * The player card of the All-Time Draft grid, shared with Quick 5 (2026-09-26, the user: "quick 5
- * może bardziej przypominać normalny draft"): tier frame, face, cost, name with position, team
- * band (see TeamBand), TAL, the season's box line and the actions. Draw Five deals the same card
- * face up but blind (`blind`).
+ * może bardziej przypominać normalny draft"). 2026-10-07, the UI simplification (approved mockup):
+ * team band, face, name, position · years, the tier and the cost, one or two style labels (see
+ * cardRoles), one box line and a single Draft button; a tap on the card opens Scouting. Every row
+ * has a fixed height so the cards line up across the grid. Draw Five deals its own
+ * blind layout (`blind`: no tier, TAL, position or buttons — the whole card is the pick).
  */
 export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, onScouting, scoutingTitle, blind, className, title, style, children }: DraftPlayerCardProps) {
   const ring = spanTeamColor(span);
   const vars = { ...(blind ? {} : { '--tier-frame': TIER_FRAME_COLOR[tier] }), ...(ring ? { '--ring': ring } : {}), ...style } as CSSProperties;
-  const body = (
-    <>
+  const cls = `at-player-card${blind ? ' at-player-card--blind' : ''}${className ? ` ${className}` : ''}`;
+  if (!blind) {
+    return (
+      <div
+        className={`${cls} at-pc${onScouting ? ' is-clickable' : ''}`}
+        style={vars}
+        title={title ?? (onScouting ? scoutingTitle : undefined)}
+        onClick={onScouting}
+      >
+        <TeamBand span={span} />
+        {children}
+        <div className="at-pc-head">
+          <Face name={span.playerName} size="md" />
+          <span className="at-pc-id">
+            {onScouting ? (
+              <button
+                type="button"
+                className="at-pc-name at-player-card-name"
+                title={scoutingTitle}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onScouting();
+                }}
+              >
+                {span.playerName}
+              </button>
+            ) : (
+              <span className="at-pc-name at-player-card-name">{span.playerName}</span>
+            )}
+            <span className="at-pc-meta">
+              {naturalPosition(span.playerName)} · {span.spanLabel}
+            </span>
+          </span>
+        </div>
+        <div className="at-pc-numbers">
+          <span className="at-pc-tier" title="Tier of the years this card drafts">
+            {tier}
+          </span>
+          <span className="at-pc-cost" title={`Costs ${Math.round(span.fga)} caps`}>
+            <CapIcon size={11} />
+            {Math.round(span.fga)}
+          </span>
+        </div>
+        <span className="at-pc-roles">
+          {cardRoles(span).map((role) => (
+            <span key={role}>{role}</span>
+          ))}
+        </span>
+        <div className="at-pc-statrow">
+          <span className="at-pc-line" title="Points · rebounds · assists a game">
+            {span.box.ppg.toFixed(1)} · {span.box.rpg.toFixed(1)} · {span.box.apg.toFixed(1)}
+          </span>
+          {onScouting && (
+            <button
+              type="button"
+              className="at-pc-scout"
+              aria-label={`Scouting: ${span.playerName}`}
+              title="Scouting — every stretch of his career"
+              onClick={(e) => {
+                e.stopPropagation();
+                onScouting();
+              }}
+            >
+              <MagnifierIcon />
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          className="at-pc-draft at-player-card-draft"
+          disabled={!legal}
+          title={draftTitle}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDraft();
+          }}
+        >
+          Draft
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button type="button" className={cls} style={vars} title={title ?? draftTitle} disabled={!legal} onClick={onDraft}>
       <TeamBand span={span} />
       {children}
-      {!blind && (
-        <>
-          <span className="at-player-card-corner" title={tier} aria-hidden />
-          <span className="at-sr-only">{tier} tier</span>
-        </>
-      )}
       <div className="at-player-card-top">
         <Face name={span.playerName} size="md" />
         <ShotChip fga={span.fga} cap={cap} />
       </div>
       <span className="at-player-card-name" title={span.playerName}>
         {shortenName(span.playerName, 18)}
-        {!blind && (
-          <>
-            {' '}
-            <span className="at-player-card-pos-inline">{naturalPosition(span.playerName)}</span>
-          </>
-        )}
       </span>
-      {!blind && (
-        <span className="at-player-card-meta">
-          <span className="at-player-card-tal" title="Talent rating of the season this card drafts">
-            TAL <b>{formatTal(displayTalentForSpan(tierContextFor(span)))}</b>
-          </span>
-        </span>
-      )}
       <span className="at-player-card-season">
         <EraYears span={span} suffix="averages" />
       </span>
@@ -95,33 +160,6 @@ export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, o
         <span><b>{span.box.rpg.toFixed(1)}</b>REB</span>
         <span><b>{span.box.apg.toFixed(1)}</b>AST</span>
       </span>
-      {!blind && (
-        <div className="at-player-card-foot">
-          <span className={`at-player-card-actions${onScouting ? '' : ' is-single'}`}>
-            {onScouting && (
-              <button type="button" className="at-player-card-peek" title={scoutingTitle} onClick={onScouting}>
-                Scouting
-              </button>
-            )}
-            <button type="button" className="at-player-card-draft" disabled={!legal} title={draftTitle} onClick={onDraft}>
-              Draft
-            </button>
-          </span>
-        </div>
-      )}
-    </>
-  );
-  const cls = `at-player-card${blind ? ' at-player-card--blind' : ''}${className ? ` ${className}` : ''}`;
-  if (blind) {
-    return (
-      <button type="button" className={cls} style={vars} title={title ?? draftTitle} disabled={!legal} onClick={onDraft}>
-        {body}
-      </button>
-    );
-  }
-  return (
-    <div className={cls} style={vars} title={title}>
-      {body}
-    </div>
+    </button>
   );
 }

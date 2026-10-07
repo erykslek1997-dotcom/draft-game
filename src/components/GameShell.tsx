@@ -24,7 +24,7 @@ import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { ShareCardStarter } from './shareCardImage';
 import type { FeedbackEntry } from './FeedbackToggle';
 import { clearDraftSave, loadDraft, saveDraft } from './draftSave';
-import { AI_SPEED_LABELS, cpuPickDelay, useAiSpeed } from './aiSpeed';
+import { cpuPickDelay } from './aiSpeed';
 
 // 2026-09-17, user's own ask: a real "how to play?" affordance on the lottery screen, now that
 // the intro's own always-visible rules list is gone (see App.tsx). This is the same five-item
@@ -221,12 +221,6 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // A draft whose lottery already ran on the intro (App.tsx's early lottery) starts on the board.
   const [phase, setPhase] = useState<Phase>(resumed || preset ? 'draft' : 'lottery');
   const [finalTeams, setFinalTeams] = useState<Team[] | null>(null);
-  // 2026-09-24, user's own call ("przywróćmy pasek"): the CPU-speed control is back, this time in
-  // Player Mode too — at a fixed 'Normal' a human waited 10-30s between their own picks with
-  // nothing to do (the board stays browsable during CPU turns either way). Remembered per browser
-  // so a player who prefers 'Instant' doesn't have to pick it again every draft (aiSpeed.ts,
-  // shared with Quick 5).
-  const aiSpeed = useAiSpeed();
   // Owned here (not inside DraftBoard) so live in-draft reactions survive the phase transition
   // into ResultsScreen's export — see FeedbackToggle's own docstring for why this replaced the
   // old too_high/too_low dropdown flow.
@@ -257,7 +251,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
 
   // Auto-resolve AI turns during the draft — never in Commissioner Mode, where every team's pick
   // comes from the human via `handlePick` instead (see the effect's own early-return below).
-  // `aiSpeed` (the player's CPU-speed choice, see aiSpeed.ts) paces this effect.
+  // `cpuPickDelay` (aiSpeed.ts) paces this effect.
   // 2026-09-25: held while the Draft Desk is open, so the board doesn't race on under it.
   const [deskOpen, setDeskOpen] = useState(false);
   const [autoFinishing, setAutoFinishing] = useState(false);
@@ -268,9 +262,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     const timer = setTimeout(() => {
       const next = resolveAiPickIfNeeded(draftState);
       if (next) setDraftState(next);
-    }, cpuPickDelay(aiSpeed.delayMs, draftState.history.length, draftState.teams.length));
+    }, cpuPickDelay(draftState.history.length, draftState.teams.length));
     return () => clearTimeout(timer);
-  }, [draftState, phase, aiSpeed.delayMs, deskOpen, autoFinishing]);
+  }, [draftState, phase, deskOpen, autoFinishing]);
 
   // AUTO-FINISH (testing): resolves the draft in small chunks so the page keeps painting the
   // progress, then submits your team as drafted with an auto-built rotation.
@@ -440,9 +434,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           onPickReasoningChange={handlePickReasoningChange}
           onSubmitTeam={handleSubmitTeam}
           onSwapHumanSpan={handleSwapHumanSpan}
-          aiSpeedLabels={AI_SPEED_LABELS}
-          aiSpeedIndex={aiSpeed.index}
-          onAiSpeedChange={aiSpeed.setIndex}
+          howToPlay={DRAFT_HOW_TO_PLAY}
           onExit={handleReset}
           onDeskOpenChange={setDeskOpen}
         />

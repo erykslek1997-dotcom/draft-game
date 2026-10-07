@@ -229,6 +229,28 @@ export function offensivePortabilityGrade(value: number): Grade {
   return gradeForValue(rank, offensivePortabilitySThreshold);
 }
 
+let defensivePortabilitySortedValues: number[] | null = null; // sorted ascending, cached once
+
+/**
+ * 2026-10-07, the scouting window (the user: "o-travels / d-travels, może połączyć w jedno
+ * określenie?"): one "Portability" grade for players — the mean of the stretch's percentile in
+ * the pool on offensive and on defensive portability, read on the usual letter scale. S only when
+ * both halves are S. The engine still uses the two values separately.
+ */
+export function portabilityGrade(span: PlayerSpan): Grade {
+  const off = computeOffensivePortability(span);
+  const def = computeDefensivePortability(span);
+  if (offensivePortabilityGrade(off) === 'S' && defensivePortabilityGrade(def) === 'S') return 'S';
+  if (offensivePortabilitySortedValues === null) {
+    offensivePortabilitySortedValues = draftPool.map((p) => computeOffensivePortability(p)).sort((a, b) => a - b);
+  }
+  if (defensivePortabilitySortedValues === null) {
+    defensivePortabilitySortedValues = draftPool.map((p) => computeDefensivePortability(p)).sort((a, b) => a - b);
+  }
+  const rank = (percentileRank(off, offensivePortabilitySortedValues) + percentileRank(def, defensivePortabilitySortedValues)) / 2;
+  return letterForValue(rank);
+}
+
 export function defensivePortabilityGrade(value: number): Grade {
   if (defensivePortabilitySThreshold === null) {
     defensivePortabilitySThreshold = computeSThreshold(draftPool.map((p) => computeDefensivePortability(p)));
