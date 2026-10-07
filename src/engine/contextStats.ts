@@ -58,6 +58,8 @@ export interface ContextLine {
   freeThrowRate: number;
   /** Change to his shooting from how well the four teammates here pass, against his real ones. */
   playmakingDelta: number;
+  /** Share of his two-point attempts taken at the rim. */
+  rimShare: number;
 }
 
 function context(span: PlayerSpan): [number, number, number, number, number, number] {
@@ -116,6 +118,7 @@ export function contextLines(five: PlayerSpan[]): ContextLine[] {
       spacing,
       originalUsage,
       usage: usage[i],
+      rimShare,
       twoPointDelta: room * (rimShare * RIM_PER_SPACING + (1 - rimShare) * MID_PER_SPACING),
       usageDelta: -TS_PER_USAGE * (usage[i] - originalUsage),
       shotWeight: usage[i] * shotShare,

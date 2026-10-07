@@ -129,6 +129,8 @@ export const SPACING_BOTTLENECK_SCALE = 0.5;
  * `defensiveCohesion` are the same two signals `defenseScore` already applies (the huntability
  * penalty and the cohesion bonus), so a strong defense was scored twice. Both stay visible as
  * components but carry no Fit weight; their share goes to the lineup-coherence terms.
+ * 2026-10-07: `reboundingBalance` the same way — the Defense and Offense scores now read the five's
+ * rebounding at each end (`teamGlass.ts`); its 0.02 went to `pairingStructure`.
  */
 /** A big without a rim-protector label is credited this share of his rim reading by the numbers. */
 const UNLABELLED_RIM_SHARE = 0.9;
@@ -137,14 +139,14 @@ const LAYER_TIE_BREAK = 0.01;
 
 export const FIT_WEIGHTS = {
   creationStructure: 0.18,
-  pairingStructure: 0.13,
+  pairingStructure: 0.15,
   spacingCompatibility: 0.11,
   defensiveRoleCoverage: 0.12,
   switchability: 0.15,
   huntResistance: 0,
   defensiveCohesion: 0,
   rimPressureTeam: 0.08,
-  reboundingBalance: 0.02,
+  reboundingBalance: 0,
   sizeCoverage: 0.05,
   championshipStructure: 0.16,
 } as const;

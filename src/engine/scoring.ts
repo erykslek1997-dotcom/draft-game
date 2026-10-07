@@ -34,6 +34,7 @@ import {
 } from './rotation';
 import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
+import { teamGlass } from './teamGlass';
 import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD } from './fit';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 export type { FitScoreResult, FitScoreComponents } from './fit';
@@ -936,7 +937,8 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
   const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team));
   const raw = Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team));
-  const score = Math.round(calibrateOffenseToDefenseScale(raw));
+  // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
+  const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints)));
   return { ...components, score, raw };
 }
 
@@ -1002,7 +1004,8 @@ export function defenseScore(team: Team): number {
     defensiveHuntability(team).penalty +
     defensiveCohesion(team).defenseScoreBonus;
   const kneed = Math.max(0, Math.min(100, applyDefenseKnee(adjusted)));
-  return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD))));
+  // 2026-10-07: defensive rebounding and fouls, on the final scale past the knee (see teamGlass.ts).
+  return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + teamGlass(team).defensePoints)));
 }
 
 /**

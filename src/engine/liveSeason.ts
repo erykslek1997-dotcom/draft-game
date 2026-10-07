@@ -39,7 +39,7 @@ export function gamesForPair(i: number, j: number, count: number): number {
   return EXTRA_GAME_OFFSETS.has(Math.min(diff, count - diff)) ? 6 : 5;
 }
 
-const zero = (): BoxLineStats => ({ pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0, min: 0 });
+const zero = (): BoxLineStats => ({ pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0, pf: 0, min: 0 });
 
 /** Hollinger-style game score per game, without fouls and the offensive/defensive rebound split. */
 export function gameScorePerGame(line: SeasonPlayerLine): number {

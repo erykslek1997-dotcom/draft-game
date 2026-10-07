@@ -78,13 +78,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       // 2026-10-02, the user after the role audit put Tulsa 1.4 ahead (Ray Allen / Hornacek lost
       // labels their numbers never supported): "generalnie to są bardzo podobne składy" — the
       // verdict is that the two read close, not a strict order.
-      [Math.abs(s('Charlotte').overallExact - s('Tulsa').overallExact) <= 2, 'Charlotte and Tulsa read close (within 2 points)'],
+      // 2026-10-07, the user ("A"): the five's rebounding now counts in Defense and Offense, and
+      // Tulsa's Giannis-Kareem-Eaton glass against Charlotte's small frontcourt opens 2.8 — accepted.
+      [Math.abs(s('Charlotte').overallExact - s('Tulsa').overallExact) <= 3, 'Charlotte and Tulsa read close (within 3 points)'],
       [by.get('Vermont')!.rank < teams.length, 'LeBron + Luka is not at the bottom'],
       [s('Charlotte').spacingScore > s('Tulsa').spacingScore, 'Charlotte spaces the floor better than Tulsa'],
       [offense('Nash') >= offense('Tulsa') - 0.5, 'Nash-Kobe-Malone scores at least as well as Tulsa'],
       [offense('Vermont') > offense('Tulsa'), 'LeBron + Luka out-scores Tulsa'],
       [s('Nash').fitScore > s('SaltLake').fitScore, 'Nash + Malone fits better than CP3 + Bird + Hill'],
-      [s('Nash').fitScore >= s('Tulsa').fitScore, 'Nash + Malone fits at least as well as Giannis + Kareem'],
+      // 2026-10-07, the user ("A"): Fit no longer weighs rebounding (Malone's glass moved to Defense
+      // and Offense), so "at least as well" became "about as well".
+      [s('Nash').fitScore >= s('Tulsa').fitScore - 1, 'Nash + Malone fits about as well as Giannis + Kareem (within 1)'],
       [offense('Charlotte') > offense('Tulsa'), 'Stockton + Allen + Garnett out-score Tulsa'],
     ];
     let failed = 0;
