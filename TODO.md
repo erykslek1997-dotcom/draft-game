@@ -297,7 +297,7 @@ Decyzje (2026-09-30):
     7. Kalibracja całości. 8. Testy dwustronne w `npm test`.
     7.5. Spacing w meczu (decyzja 2026-10-07: wszystkie trzy części, limit ±6 pp): miejsce z oceny
        spacingu silnika (`teamSpacingValue`) zamiast udziału trójek, odpuszczanie niestrzelców (poniżej
-       35), chowanie słabego obrońcy na niestrzelcu. Spacing ataku 0.08 → 0.27 pkt/SD, spacing
+       35), chowanie słabego obrońcy na graczu, który nie wykorzysta mismatchu (Bowen, Battier — nie Simmons czy Rodman; decyzja użytkownika). Spacing ataku 0.08 → 0.27 pkt/SD, spacing
        compatibility 0.04 → 0.58; overall 64% → 66%.
   - **Etap 3: obrona jako mechanika** (plan 2026-10-02, decyzje otwarte oznaczone „?”). Zasada:
     przeciętna obrona = zero efektu (średnie ligi bez zmian); siła tak, by same mechaniki dawały
