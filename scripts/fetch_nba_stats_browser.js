@@ -5,8 +5,9 @@
  * 1. Open https://www.nba.com/stats in Chrome or Edge and wait for the page to load.
  * 2. Press F12, open the "Console" tab. If it asks, type   allow pasting   and press Enter.
  * 3. Paste this whole file and press Enter.
- * 4. Leave the tab open. Progress shows in the console; at the end the browser downloads 12 CSV
- *    files (allow multiple downloads if it asks). Send them to Claude.
+ * 4. Leave the tab open. Progress shows in the console; at the end the browser saves one file,
+ *    nba_stats.json, to Downloads. Send it to Claude. If it didn't save, type nbaStatsDownload() in
+ *    the console and press Enter — the data stays on the page until you close the tab.
  *
  * To fetch only some seasons, change SEASONS below before pasting.
  */
@@ -51,16 +52,6 @@
       t.rows.push(d);
     }
   }
-  function download(name, t) {
-    const esc = (v) => (v == null ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
-    const csv = [t.columns.join(','), ...t.rows.map((r) => t.columns.map((c) => esc(r[c])).join(','))].join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `${name}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
 
   console.log('Checking that stats.nba.com answers...');
   const probe = await get('leaguedashteamstats', { ...DASH, MeasureType: 'Base', PerMode: 'PerGame', Season: SEASONS[SEASONS.length - 1], PaceAdjust: 'N', PlusMinus: 'N', Rank: 'N' });
@@ -89,14 +80,18 @@
     }
     console.log('  tracking done');
   }
-  for (const [name, t] of Object.entries(tables)) {
-    if (!t.rows.length) {
-      console.warn(`(nothing for ${name})`);
-      continue;
-    }
-    download(name, t);
-    console.log(`downloaded ${name}.csv: ${t.rows.length} rows`);
-    await sleep(500);
-  }
-  console.log('Done. Send the CSV files from your Downloads folder to Claude.');
+  // One file, not twelve: browsers block a page that starts many downloads at once (2026-10-07,
+  // only the first CSV arrived). Kept on the page too, so window.nbaStatsDownload() saves it again.
+  const bundle = JSON.stringify(tables);
+  window.nbaStatsDownload = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([bundle], { type: 'application/json' }));
+    a.download = 'nba_stats.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+  for (const [name, t] of Object.entries(tables)) console.log(`${name}: ${t.rows.length} rows`);
+  window.nbaStatsDownload();
+  console.log('Done: nba_stats.json is in your Downloads folder. Send it to Claude. If it did not save, type  nbaStatsDownload()  here and press Enter.');
 })();
