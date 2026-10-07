@@ -137,18 +137,26 @@ const UNLABELLED_RIM_SHARE = 0.9;
 /** Weight of the tie-break in the defensive layer assignment: a fraction of a point per D-TAL. */
 const LAYER_TIE_BREAK = 0.01;
 
+/*
+ * 2026-10-07, stage 2b step 7 (the user: "połowa drogi"): each weight moved halfway toward what the
+ * live game measured it worth (1120 AI-drafted teams, expected margin per point against the
+ * engine's): role coverage 3.2x and pairing 1.8x the engine's, creation structure ~0, the rest
+ * 0.5-0.9x. Spacing compatibility stays where it was (the user: the game models spacing too weakly,
+ * not the engine too strongly — step 7.5); the others are rescaled so the table still sums to 1.
+ * Was: creation .18, pairing .15, role coverage .12, switch .15, rim .08, size .05, title .16.
+ */
 export const FIT_WEIGHTS = {
-  creationStructure: 0.18,
-  pairingStructure: 0.15,
+  creationStructure: 0.087,
+  pairingStructure: 0.207,
   spacingCompatibility: 0.11,
-  defensiveRoleCoverage: 0.12,
-  switchability: 0.15,
+  defensiveRoleCoverage: 0.25,
+  switchability: 0.135,
   huntResistance: 0,
   defensiveCohesion: 0,
-  rimPressureTeam: 0.08,
+  rimPressureTeam: 0.058,
   reboundingBalance: 0,
-  sizeCoverage: 0.05,
-  championshipStructure: 0.16,
+  sizeCoverage: 0.038,
+  championshipStructure: 0.115,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
