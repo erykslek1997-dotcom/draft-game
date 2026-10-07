@@ -682,6 +682,56 @@ function starterOnBallDemand(profile: ShadowRoleProfile, span: PlayerSpan): numb
   return Math.max(archetypeWeight, postFloor, playmakingDemand);
 }
 
+/** A starter's body against the others at his slot: percentiles of rebounding, height, weight and
+ * athleticism, and the functional-size blend of them. */
+function physicalProfile(player: PlayerSpan, slot: Position) {
+  const rebound = percentile(rpgBySlot[slot], player.box.rpg);
+  const height = getHeightInches(player.playerName);
+  const weight = getBodyWeightLbs(player.playerName);
+  const athleticism = athleticismScoreForSpan(player);
+  const heightPercentile = height === undefined ? null : percentile(heightBySlot[slot], height);
+  const weightPercentile = weight === undefined ? null : percentile(weightBySlot[slot], weight);
+  const athleticismPercentile = athleticism === null ? null : percentile(athleticismBySlot[slot], athleticism);
+  return {
+    rebound,
+    height: heightPercentile,
+    weight: weightPercentile,
+    athleticism: athleticismPercentile,
+    functional: weightedAvailable([
+      { value: heightPercentile, weight: FUNCTIONAL_SIZE_WEIGHTS.height },
+      { value: weightPercentile, weight: FUNCTIONAL_SIZE_WEIGHTS.weight },
+      { value: athleticismPercentile, weight: FUNCTIONAL_SIZE_WEIGHTS.athleticism },
+      { value: rebound, weight: FUNCTIONAL_SIZE_WEIGHTS.rebounding },
+    ]),
+  };
+}
+
+function playerSwitchability(player: PlayerSpan, physical: { athleticism: number | null; functional: number | null }): number {
+  return weightedAvailable([
+    // A curated `Switch Big` secondary (defensiveRoleProfiles.ts) means "switches 1-5" even when
+    // the primary tag is the more conservative Anchor/Mobile Big — take the better of the two.
+    {
+      value: Math.max(
+        SWITCHABILITY_ROLE_SCORE[player.defensiveRole],
+        secondaryDefensiveRoleStrength(player, 'Switch Big') > 0 ? SWITCHABILITY_ROLE_SCORE['Switch Big'] : 0,
+      ),
+      weight: 0.40,
+    },
+    { value: positionVersatilityScore(player), weight: 0.30 },
+    { value: physical.athleticism, weight: 0.20 },
+    { value: physical.functional, weight: 0.10 },
+  ]) ?? 0;
+}
+
+/**
+ * A five's switchability, 0-100, as Fit reads it (the lineup's general versatility and its least
+ * switchable player). Exported for the live game (stage 2b step 5: switching against hunting).
+ */
+export function fiveSwitchability(players: PlayerSpan[], slots: Position[]): number {
+  const individual = players.map((p, i) => playerSwitchability(p, physicalProfile(p, slots[i])));
+  return rescaleSwitchability(mean(individual) * 0.75 + Math.min(...individual) * 0.25);
+}
+
 export function fitScore(team: Team): FitScoreResult {
   const starterEntries = primaryStarters(team);
   const starters = starterEntries.map((entry) => entry.player);
@@ -945,27 +995,7 @@ export function fitScore(team: Team): FitScoreResult {
     notes.push(`${weakLinkCandidates[0].player.playerName} is a huntable defensive weak link in the starting five.`);
   }
 
-  const physicalProfiles = starterEntries.map((entry) => {
-    const rebound = percentile(rpgBySlot[entry.slot], entry.player.box.rpg);
-    const height = getHeightInches(entry.player.playerName);
-    const weight = getBodyWeightLbs(entry.player.playerName);
-    const athleticism = athleticismScoreForSpan(entry.player);
-    const heightPercentile = height === undefined ? null : percentile(heightBySlot[entry.slot], height);
-    const weightPercentile = weight === undefined ? null : percentile(weightBySlot[entry.slot], weight);
-    const athleticismPercentile = athleticism === null ? null : percentile(athleticismBySlot[entry.slot], athleticism);
-    return {
-      rebound,
-      height: heightPercentile,
-      weight: weightPercentile,
-      athleticism: athleticismPercentile,
-      functional: weightedAvailable([
-        { value: heightPercentile, weight: FUNCTIONAL_SIZE_WEIGHTS.height },
-        { value: weightPercentile, weight: FUNCTIONAL_SIZE_WEIGHTS.weight },
-        { value: athleticismPercentile, weight: FUNCTIONAL_SIZE_WEIGHTS.athleticism },
-        { value: rebound, weight: FUNCTIONAL_SIZE_WEIGHTS.rebounding },
-      ]),
-    };
-  });
+  const physicalProfiles = starterEntries.map((entry) => physicalProfile(entry.player, entry.slot));
   const reboundPercentiles = physicalProfiles.map((profile) => profile.rebound);
   const heightPercentiles = physicalProfiles.flatMap((profile) => profile.height === null ? [] : [profile.height]);
   const weightPercentiles = physicalProfiles.flatMap((profile) => profile.weight === null ? [] : [profile.weight]);
@@ -982,20 +1012,7 @@ export function fitScore(team: Team): FitScoreResult {
   // real signals are renormalized; no average body is fabricated.
   const reboundingBalance = Math.round(positionAdjustedReboundingPercentile);
   const sizeCoverage = Math.round(functionalSizePercentile ?? 50);
-  const individualSwitchability = starters.map((player, index) => weightedAvailable([
-    // A curated `Switch Big` secondary (defensiveRoleProfiles.ts) means "switches 1-5" even when
-    // the primary tag is the more conservative Anchor/Mobile Big — take the better of the two.
-    {
-      value: Math.max(
-        SWITCHABILITY_ROLE_SCORE[player.defensiveRole],
-        secondaryDefensiveRoleStrength(player, 'Switch Big') > 0 ? SWITCHABILITY_ROLE_SCORE['Switch Big'] : 0,
-      ),
-      weight: 0.40,
-    },
-    { value: positionVersatilityScore(player), weight: 0.30 },
-    { value: physicalProfiles[index].athleticism, weight: 0.20 },
-    { value: physicalProfiles[index].functional, weight: 0.10 },
-  ]) ?? 0);
+  const individualSwitchability = starters.map((player, index) => playerSwitchability(player, physicalProfiles[index]));
   // A switching scheme is limited by both the lineup's general versatility and its least
   // switchable starter. Starter-only; full-rotation D-TAL huntability is the separate
   // `huntResistance` component below.
