@@ -261,6 +261,8 @@ interface CourtPlayer {
   setup3: number;
   edge2: number;
   edge3: number;
+  /** His share of unassisted makes — who takes the shot when the clock runs out. */
+  ownShare: number;
 }
 
 interface GameRoster {
@@ -417,7 +419,7 @@ export const DEFENSE_TUNING = {
   refRim: 1.26,
   /** A player's real percentages already hold his breaks and putbacks; the half court gives back
    * what the game now adds there, so his season lands on his own numbers. */
-  halfCourt: 0.975,
+  halfCourt: 0.99,
   turnover: 0.133,
   /** A player's real free-throw rate already holds his trips in the bonus, which the game now
    * plays as their own fouls; shooting fouls give that back, so the league's free throws stay
@@ -500,11 +502,31 @@ function handlerScore(span: PlayerSpan): number {
   }
   return h;
 }
+/** The best lead handler on the floor against a typical five's, as a z-score. */
+function handlerZ(off: CourtPlayer[]): number {
+  const handler = Math.max(...off.map((c) => handlerScore(c.player.span)));
+  return Math.max(-3, Math.min(2, (handler - REF_HANDLER.mean) / REF_HANDLER.sd));
+}
+/**
+ * Step 3 (the user: self-creation -> possessions that break down). Some trips get nothing and end
+ * with the clock running out — in the NBA ~8% of shots come with 0-4 seconds left, at an eFG ~11
+ * points under the league's. More of them after a reset to 14 seconds, against a strong perimeter
+ * defense, and without a real lead handler. The ball then goes to whoever can make his own shot
+ * (his share of unassisted makes, `ownShare`), the shot is never set up (so a catch-and-shoot
+ * player also pays his own-shot gap, `setupEdge`) and goes in `LATE_TUNING.penalty` less often.
+ */
+export const LATE_TUNING = {
+  share: 0.09,
+  reset: 1.8,
+  defense: 0.15,
+  handler: 0.15,
+  penalty: 0.06,
+  creatorPower: 1.5,
+};
 /** The five's own turnover rate against an average five's (1 = average). */
 function ballSecurity(off: CourtPlayer[]): number {
   const own = off.reduce((s, c) => s + c.turnoverShare, 0) / REF_FIVE_TURNOVERS;
-  const handler = Math.max(...off.map((c) => handlerScore(c.player.span)));
-  const z = Math.max(-3, Math.min(2, (handler - REF_HANDLER.mean) / REF_HANDLER.sd));
+  const z = handlerZ(off);
   return Math.max(0.6, Math.min(1.6, own ** OFFENSE_TUNING.ownTurnovers * Math.exp(-OFFENSE_TUNING.handler * z)));
 }
 /** Five-level reference: the best rim protector plus a share of the second, and both ends'
@@ -562,6 +584,8 @@ interface Clash {
   oreb: number;
   foulRate: number;
   huntP: number;
+  /** Chance an open trip breaks down to the end of the clock. */
+  lateP: number;
 }
 
 function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
@@ -588,6 +612,7 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
     oreb: OFF_REBOUND * Math.exp(DEFENSE_TUNING.reb * ((offOreb - REF_FIVE_OREB) / SD_FIVE_OREB - (fd.dreb36 - REF_FIVE_DREB) / SD_FIVE_DREB)),
     foulRate: fd.profiles.reduce((s, p) => s + p.foulIndex ** DEFENSE_TUNING.foul, 0) / fd.profiles.length,
     huntP: Math.min(MAX_HUNT, HUNT_PER_Z * fd.weakGap),
+    lateP: Math.min(0.3, LATE_TUNING.share * Math.exp(LATE_TUNING.defense * fd.perimeter - LATE_TUNING.handler * handlerZ(off))),
   };
 }
 
@@ -600,21 +625,27 @@ function huntMod(d: DefenderProfile): number {
  * nudge evens out (turnovers, second chances and free throws included). */
 function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, number>, scale: number): number {
   const shots = off.reduce((s, c) => s + c.shotShare, 0) || 1;
+  const lateWeights = off.map((c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower);
+  const lateTotal = lateWeights.reduce((s, v) => s + v, 0) || 1;
   let value = 0;
   let miss = 0;
   off.forEach((c, i) => {
-    const w = c.shotShare / shots;
     const m = cl.mods[i];
     const t = (tired.get(c.player.label) ?? 1) * scale;
     const r3 = Math.min(0.9, c.threeRate * m.threeRate);
     const foulP = c.foul * m.foul * DEFENSE_TUNING.shootingFoul;
-    const p3 = c.threePct * m.three * t;
-    const p2 = (c.rimShare * c.rimPct * m.rim + (1 - c.rimShare) * c.midPct * m.mid) * t;
     const ft = c.player.span.box.ftPct;
-    const field = r3 * 3 * p3 + (1 - r3) * 2 * p2 * (1 + (AND_ONE * ft) / 2);
     const line = (r3 * 3 + (1 - r3) * 2) * ft;
-    value += w * ((1 - foulP) * field + foulP * line);
-    miss += w * (1 - foulP) * (r3 * (1 - p3) + (1 - r3) * (1 - p2));
+    const two = c.rimShare * c.rimPct * m.rim + (1 - c.rimShare) * c.midPct * m.mid;
+    // Normal trips at his average; late ones his own shot, minus the clock.
+    for (const [w, p3, p2] of [
+      [((1 - cl.lateP) * c.shotShare) / shots, c.threePct * m.three * t, two * t],
+      [(cl.lateP * lateWeights[i]) / lateTotal, Math.max(0.05, c.threePct * m.three - c.edge3 * Math.min(0.97, c.setup3 / (1 - LATE_TUNING.share)) - LATE_TUNING.penalty) * t, Math.max(0.05, two - c.edge2 * Math.min(0.97, c.setup2 / (1 - LATE_TUNING.share)) - LATE_TUNING.penalty) * t],
+    ]) {
+      const field = r3 * 3 * p3 + (1 - r3) * 2 * p2 * (1 + (AND_ONE * ft) / 2);
+      value += w * ((1 - foulP) * field + foulP * line);
+      miss += w * (1 - foulP) * (r3 * (1 - p3) + (1 - r3) * (1 - p2));
+    }
   });
   const tov = DEFENSE_TUNING.turnover * cl.tovMul;
   return ((1 - tov) * value) / (1 - (1 - tov) * miss * cl.oreb);
@@ -644,7 +675,12 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       setup3: setups[i].three,
       edge2: edges[i].two,
       edge3: edges[i].three,
+      ownShare: 0,
     }));
+    court.forEach((c, i) => {
+      const r3 = c.threeRate;
+      c.ownShare = Math.max(0.02, 1 - ((1 - r3) * habits[i].two + r3 * habits[i].three));
+    });
     for (const c of court) {
       c.twoPct *= DEFENSE_TUNING.halfCourt;
       c.threePct *= DEFENSE_TUNING.halfCourt;
@@ -853,13 +889,17 @@ function playRosters(
         }
         break;
       }
-      const shooterIdx = next === 'putback' && putbackBy ? off.indexOf(putbackBy) : off.indexOf(pickWeighted(rng, off, (c) => c.shotShare));
+      const late = next !== 'putback' && !(onBreak && guard === 0) && rng() < clash.lateP * (next === 'reset' ? LATE_TUNING.reset : 1);
+      const shooterIdx =
+        next === 'putback' && putbackBy
+          ? off.indexOf(putbackBy)
+          : off.indexOf(pickWeighted(rng, off, late ? (c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower : (c) => c.shotShare));
       const shot = off[shooterIdx];
       const shooter = shot.player;
       const line = box[o][shooter.label];
       let defIdx = clash.guard[shooterIdx];
       let hunting = false;
-      if (next === 'open' && !onBreak && clash.def.weakest !== defIdx && rng() < clash.huntP) {
+      if (next === 'open' && !onBreak && !late && clash.def.weakest !== defIdx && rng() < clash.huntP) {
         defIdx = clash.def.weakest;
         hunting = true;
       }
@@ -897,10 +937,11 @@ function playRosters(
           ? Math.min(0.85, shot.rimPct + (fresh ? BREAK_RIM_BONUS : next === 'putback' ? PUTBACK_BONUS : 0)) * defended(mods.rim)
           : shot.midPct * defended(mods.mid);
       // Set up by a pass or his own; his percentages above are the average of the two.
-      const setupShare = three ? shot.setup3 : shot.setup2;
-      const setup = next !== 'putback' && rng() < setupShare * (next === 'reset' ? RESET_ASSISTED : 1);
-      const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare);
-      const p = (base + edge) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
+      // His real share holds his late-clock shots too, which are never set up: the others make up for it.
+      const setupShare = Math.min(0.97, (three ? shot.setup3 : shot.setup2) / (1 - LATE_TUNING.share));
+      const setup = next !== 'putback' && !late && rng() < setupShare * (next === 'reset' ? RESET_ASSISTED : 1);
+      const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare) - (late ? LATE_TUNING.penalty : 0);
+      const p = Math.max(0.05, base + edge) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
@@ -916,6 +957,7 @@ function playRosters(
               ? `${shooter.label} putback`
               : `${shooter.label} ${moves[Math.floor(rng() * moves.length)]}`;
         if (hunting) text = `${shooter.label} attacks ${defender.label} — ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
+        if (late) text = `${shooter.label} beats the shot clock — ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
         if (!three && rng() < AND_ONE * (fresh || next === 'putback' ? BREAK_FOUL : 1)) {
           foul(d, defender, k, quarter);
           line.fta++;
