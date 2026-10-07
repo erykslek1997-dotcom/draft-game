@@ -427,6 +427,19 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 - [ ] **Wyłączyć narzędzia kalibracji przed wypuszczeniem** — `AUTO_FINISH_FOR_TESTING` i
       `TEAM_EXPORT_FOR_TESTING` = false w `src/components/testingFlags.ts`. (S)
 - [ ] **Playtest całego trybu + lista poprawek** (S)
+- [ ] **Koła ratunkowe — osobna sesja** (ustalone 2026-10-07, makieta zaakceptowana:
+      `mock-cards2-*`). Każde raz na draft, przyciski w rzędzie filtrów w stylu „Affordable”:
+  - **War Room** — przez jeden pick board pokazuje tylko ~10–12 graczy, których wybiera Twój
+    front office (ranking po tym, ile dany gracz dodaje do oceny składu); pasek „your front office
+    cut the board to N players for this pick · Ends after your pick”.
+  - **Chalk Talk** — okienko z jednym zdaniem trenera o największej słabości składu (np. brak
+    obrony obręczy), z istniejących wykrywaczy słabości.
+  - **League Sources** — przycisk aktywny tylko w rundach 3–4 (znika po 4., jeśli niewykorzystany);
+    plotka bez nazwisk o tym, na co polują drużyny przed Twoim następnym pickiem („Three teams
+    are said to be hunting centers”).
+  - Odrzucone: 50/50 („nuda”), Insider („za mocne”). (M)
+- [ ] **Szukanie na boardzie po kilku rundach** (zgłoszone 2026-10-07): filtry ról na bazie etykiet
+      z kart (Shooter, Rim protector, Playmaker…) i sortowanie (TAL, koszt, TAL na caps). (S)
 
 ### 3.4 Wspólne dla wszystkich trybów (po trzech trybach)
 

@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import { isPickLegal, type DraftState } from '../engine/draft';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
-import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing } from '../engine/spacing';
 import type { Team } from '../engine/types';
 import { CapIcon, Face } from './ShotChip';
@@ -12,7 +11,7 @@ import { NOT_YET, STEALS_BLOCKS_NOTE, THREE_POINT_LINE_NOTE, hadStealsBlocksReco
 import { TeamChip } from './TeamBadge';
 import { teamsForSpan } from '../engine/spanTeams';
 import { draftPool as fullDraftPool } from '../data/draftPool';
-import { averageGrade, offensiveGrade, defensiveGrade, offensivePortabilityGrade, defensivePortabilityGrade, spacingGrade, durabilityGrade, finishingGrade, overallTierForSpan, type Grade } from '../engine/grades';
+import { offensiveGrade, defensiveGrade, portabilityGrade, spacingGrade, durabilityGrade, finishingGrade, overallTierForSpan, type Grade } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { computeDurability } from '../engine/durability';
 import { naturalPosition } from '../engine/naturalPosition';
@@ -60,20 +59,17 @@ function distinctStretches(rows: PlayerSpan[], cardSpan: PlayerSpan): PlayerSpan
 const pct = (v: number) => (v * 100).toFixed(1);
 
 function Grades({ span, all }: { span: PlayerSpan; all: boolean }) {
-  const offPor = offensivePortabilityGrade(computeOffensivePortability(span));
-  const defPor = defensivePortabilityGrade(computeDefensivePortability(span));
   const items: Array<[string, Grade, string]> = [
     ['Offense', offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span)), 'How good his offense is'],
     ['Defense', defensiveGrade(computeDefensiveTalent(span)), 'How good his defense is'],
     ['Spacing', spacingGrade(computeSpacing(span), span), 'How much room his shooting gives teammates'],
+    ['Portability', portabilityGrade(span), 'How well his game travels next to other stars, on both ends'],
     ...(all
       ? ([
-          ['Offense travels', offPor, 'How well his offense holds up next to other stars'],
-          ['Defense travels', defPor, 'How well his defense holds up in any lineup'],
           ['Finishing', finishingGrade(computeFinishing(span), span), 'Scoring at the rim'],
           ['Durability', durabilityGrade(computeDurability(span)), 'Games played'],
         ] as Array<[string, Grade, string]>)
-      : ([['Fits anywhere', averageGrade(offPor, defPor), 'How well his game travels next to other stars, on both ends']] as Array<[string, Grade, string]>)),
+      : []),
   ];
   return (
     <span className="pk-grades">
@@ -106,7 +102,9 @@ const tierOf = (span: PlayerSpan) => overallTierForSpan(tierContextFor(span));
  * też jest wszystkiego dużo"): it used to be one table of every career window × 12 box columns,
  * plus 8 grade columns after a scouting report. Now the stretch the card drafts sits on top with
  * one Draft button; the other stretches are one line each (years, box line, cost, and the tier
- * once scouted) and open in place for the rest of the numbers and their own Draft button. The
+ * once scouted) and open in place for the rest of the numbers and their own Draft button. Grades:
+ * Offense, Defense, Spacing and Portability (one grade for O-POR and D-POR) on top, Finishing and
+ * Durability behind "All grades". The
  * full career is still there behind "Show all".
  */
 export function PlayerPeekModal({

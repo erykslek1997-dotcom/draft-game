@@ -1418,6 +1418,8 @@ export default function DraftBoard({
               capLeft={humanBudget.capLeft}
               slotsLeft={humanBudget.slotsLeft}
               maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
+              scoutsLeft={showJudgeMetrics ? null : SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
+              onScoutsInfo={() => setHelpOpen(true)}
             />
             {canPick && !anyVisibleLegal && (
               <div className="at-budget-notice">
@@ -1436,9 +1438,9 @@ export default function DraftBoard({
               full rotation-minute editing — still on the Team tab). */}
           <div className="at-draft-workspace">
           <div className="at-draft-main">
-              {/* 2026-10-07, the UI simplification: one filter row. Players get an "Only what I can
-                  afford" switch instead of the min/max caps boxes (developer mode keeps the boxes);
-                  the tier key moved into the "?" dialog. */}
+              {/* 2026-10-07, the UI simplification: one filter row. Players get an "Affordable"
+                  pill (same shape as the position pills) instead of the min/max caps boxes
+                  (developer mode keeps the boxes); the tier key moved into the "?" dialog. */}
               <div className="at-calm-filters">
                 <input
                   className="at-calm-search"
@@ -1466,11 +1468,15 @@ export default function DraftBoard({
                     <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
                   </div>
                 ) : (
-                  <label className={`at-calm-toggle${affordableOnly ? ' is-on' : ''}`}>
-                    <input type="checkbox" checked={affordableOnly} onChange={(e) => setAffordableOnly(e.target.checked)} />
-                    <span className="at-calm-switch" aria-hidden />
-                    Only what I can afford
-                  </label>
+                  <button
+                    type="button"
+                    className={`at-calm-chip${affordableOnly ? ' is-on' : ''}`}
+                    aria-pressed={affordableOnly}
+                    title="Only players whose cost fits your next pick"
+                    onClick={() => setAffordableOnly((on) => !on)}
+                  >
+                    <CapIcon size={12} /> Affordable
+                  </button>
                 )}
               </div>
 

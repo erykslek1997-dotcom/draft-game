@@ -5,6 +5,7 @@ import { naturalPosition } from '../engine/naturalPosition';
 import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
 import { EraYears } from './EraYears';
 import { cardRoles } from './cardRoles';
+import { MagnifierIcon } from './MagnifierIcon';
 import { TeamBand, spanTeamColor } from './TeamBand';
 
 /** Card frame colour per tier (the All-Time Draft's "wariant A" tier frame), shared by every draft
@@ -106,9 +107,25 @@ export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, o
             <span key={role}>{role}</span>
           ))}
         </span>
-        <span className="at-pc-line" title="Points · rebounds · assists a game">
-          {span.box.ppg.toFixed(1)} · {span.box.rpg.toFixed(1)} · {span.box.apg.toFixed(1)}
-        </span>
+        <div className="at-pc-statrow">
+          <span className="at-pc-line" title="Points · rebounds · assists a game">
+            {span.box.ppg.toFixed(1)} · {span.box.rpg.toFixed(1)} · {span.box.apg.toFixed(1)}
+          </span>
+          {onScouting && (
+            <button
+              type="button"
+              className="at-pc-scout"
+              aria-label={`Scouting: ${span.playerName}`}
+              title="Scouting — every stretch of his career"
+              onClick={(e) => {
+                e.stopPropagation();
+                onScouting();
+              }}
+            >
+              <MagnifierIcon />
+            </button>
+          )}
+        </div>
         <button
           type="button"
           className="at-pc-draft at-player-card-draft"

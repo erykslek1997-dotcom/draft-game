@@ -3,6 +3,7 @@ import type { PlayerSpan } from '../data/schema';
 import { rimPressureTeam } from '../engine/rimPressure';
 import { CapIcon } from './ShotChip';
 import { TIER_FRAME_COLOR } from './DraftPlayerCard';
+import { MagnifierIcon } from './MagnifierIcon';
 
 /**
  * 2026-09-24: small pieces of draft-screen chrome shared by the All-Time Draft (DraftBoard) and
@@ -90,6 +91,8 @@ export function DraftStrip({
   capLeft,
   slotsLeft,
   maxThisPick,
+  scoutsLeft = null,
+  onScoutsInfo,
 }: {
   youOnClock: boolean;
   complete: boolean;
@@ -104,6 +107,9 @@ export function DraftStrip({
   slotsLeft: number;
   /** This pick's hard ceiling, only when it rules someone out. */
   maxThisPick: number | null;
+  /** Scouting reports left (null: not shown); the chip opens the "?" dialog that explains them. */
+  scoutsLeft?: number | null;
+  onScoutsInfo?: () => void;
 }) {
   const perPick = slotsLeft > 0 ? capLeft / slotsLeft : capLeft;
   return (
@@ -133,6 +139,11 @@ export function DraftStrip({
             {maxThisPick !== null && <> · max {maxThisPick.toFixed(1)} this pick</>}
           </span>
         </span>
+      )}
+      {scoutsLeft !== null && (
+        <button type="button" className="at-calm-strip-scouts" onClick={onScoutsInfo} title="Tap a player card to open his scouting page">
+          <MagnifierIcon /> {scoutsLeft} scouting report{scoutsLeft === 1 ? '' : 's'} left
+        </button>
       )}
       {recentPicks.length > 0 && (
         <span className="at-calm-strip-last">
