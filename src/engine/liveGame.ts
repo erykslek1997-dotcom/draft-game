@@ -255,9 +255,12 @@ interface CourtPlayer {
   threeRate: number;
   /** His share of the five's plays (who the defense guards first). */
   usage: number;
-  /** Share of his twos and threes set up by a pass in this five (`setupHere`). */
+  /** Share of his twos and threes set up by a pass in this five (`setupHere`), and how much better
+   * those go in than his own (`setupEdge`). */
   setup2: number;
   setup3: number;
+  edge2: number;
+  edge3: number;
 }
 
 interface GameRoster {
@@ -435,8 +438,8 @@ export const OFFENSE_TUNING = {
 const REF_FIVE_TURNOVERS = 0.1267;
 /**
  * Step 2 (the user: passing -> shot quality). Before a shot the game decides whether a pass set it
- * up or he made it himself; a set-up shot goes in more often (catch-and-shoot threes ~3.5 points
- * over pull-ups, set-up twos — cuts, rolls, dump-offs — ~5) and only a set-up make is an assist.
+ * up or he made it himself; a set-up shot goes in more often (`setupEdge`) and only a set-up make
+ * is an assist.
  * How many of his shots are set up is his own (the user: "kto bardziej rzuca po asystach"): the
  * share of his makes that were assisted, twos and threes apart, from play-by-play since 1996-97
  * (Korver 89% / 97%, Klay 64% / 92%, Curry 35% / 57%, Harden 12% / 16%); before that, a fit of
@@ -445,10 +448,24 @@ const REF_FIVE_TURNOVERS = 0.1267;
  * hold his real share, so he gains or loses only the difference.
  */
 export const SETUP_TUNING = {
-  two: 0.05,
-  three: 0.035,
+  twoBase: 0.02,
+  twoSlope: 0.08,
+  threeBase: 0.01,
+  threeSlope: 0.05,
   matesPower: 0.6,
 };
+/**
+ * How much better his set-up shots are than his own, by type (the user, 2026-10-07: "uzależnij od
+ * typu gracza"): the less he creates for himself, the worse the shots he does create — Korver's or
+ * Klay's pull-up three is far below his catch-and-shoot one (~5-6 points), Curry's a couple, Harden's
+ * about the same. Across the pool it averages ~4 points for threes and ~4 for twos.
+ */
+function setupEdge(habit: { two: number; three: number }): { two: number; three: number } {
+  return {
+    two: SETUP_TUNING.twoBase + SETUP_TUNING.twoSlope * habit.two ** 2,
+    three: SETUP_TUNING.threeBase + SETUP_TUNING.threeSlope * habit.three ** 3,
+  };
+}
 const UNASSISTED_TWOS = buildSelfCreationYearMap('unassisted2Pt');
 const UNASSISTED_THREES = buildSelfCreationYearMap('unassisted3Pt');
 const habitCache = new WeakMap<PlayerSpan, { two: number; three: number }>();
@@ -610,13 +627,14 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const lines = contextLines(five.map((p) => p.span));
     const habits = five.map((p, i) => setupHabit(p.span, lines[i].originalUsage));
     const setups = habits.map((h, i) => ({ two: setupHere(h.two, lines[i]), three: setupHere(h.three, lines[i]) }));
+    const edges = habits.map(setupEdge);
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight),
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta) + SETUP_TUNING.two * (setups[i].two - habits[i].two))),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta) * THREE_PCT_PER_TS + SETUP_TUNING.three * (setups[i].three - habits[i].three))),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta) + edges[i].two * (setups[i].two - habits[i].two))),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three))),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
@@ -624,6 +642,8 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       usage: lines[i].usage,
       setup2: setups[i].two,
       setup3: setups[i].three,
+      edge2: edges[i].two,
+      edge3: edges[i].three,
     }));
     for (const c of court) {
       c.twoPct *= DEFENSE_TUNING.halfCourt;
@@ -879,8 +899,8 @@ function playRosters(
       // Set up by a pass or his own; his percentages above are the average of the two.
       const setupShare = three ? shot.setup3 : shot.setup2;
       const setup = next !== 'putback' && rng() < setupShare * (next === 'reset' ? RESET_ASSISTED : 1);
-      const setupEdge = (three ? SETUP_TUNING.three : SETUP_TUNING.two) * (setup ? 1 - setupShare : -setupShare);
-      const p = (base + setupEdge) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
+      const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare);
+      const p = (base + edge) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
