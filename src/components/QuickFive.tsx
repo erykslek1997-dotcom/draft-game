@@ -40,7 +40,7 @@ import { copyLink } from './shareSave';
 import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import { cpuPickDelay } from './aiSpeed';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
-import { BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPressureNote, TurnBudgetText, type TickerPick } from './DraftChrome';
+import { BoardToggleButton, DraftStrip, LeaveDraftDialog, RimPressureNote, type TickerPick } from './DraftChrome';
 
 interface Props {
   humanTeamName?: string;
@@ -153,24 +153,27 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   }
 
   return (
-    <div className="at-shell">
+    <div className="at-shell at-calm">
+      {/* 2026-10-07, the UI simplification: the All-Time Draft's one-row header. */}
       {phase !== 'lottery' && (
-        <button
-          type="button"
-          className="at-menu-btn at-cond"
-          onClick={() => (phase === 'results' ? onExit() : setConfirmExit(true))}
-        >
-          ← Menu
-        </button>
+        <div className="at-calm-header">
+          <button
+            type="button"
+            className="at-calm-btn at-calm-btn--ghost"
+            onClick={() => (phase === 'results' ? onExit() : setConfirmExit(true))}
+          >
+            ← Menu
+          </button>
+          <h1 className="at-calm-title">Mini Draft</h1>
+          {phase === 'draft' && !state.complete ? (
+            <BoardToggleButton open={boardOpen} onToggle={() => setBoardOpen((o) => !o)} />
+          ) : (
+            <span className="rs-header-spacer" aria-hidden />
+          )}
+        </div>
       )}
       {confirmExit && (
         <LeaveDraftDialog text="Mini Drafts aren't saved — leaving ends this one." onStay={closeExitDialog} onLeave={onExit} />
-      )}
-      {phase !== 'lottery' && <div className="at-board-brand at-cond">Mini Draft</div>}
-      {phase === 'draft' && !state.complete && (
-        <div className="at-topbar">
-          <BoardToggleButton open={boardOpen} onToggle={() => setBoardOpen((o) => !o)} />
-        </div>
       )}
       {phase === 'lottery' && (
         <DraftLottery teams={state.teams} rounds={QUICK_ROUNDS} onDone={() => setPhase('draft')} howToPlay={QUICK_HOW_TO_PLAY} onExit={onExit} />
@@ -395,48 +398,31 @@ function QuickDraftBoard({
       )}
 
       <div className="at-turn-sticky">
-        <DraftTicker
+        <DraftStrip
           youOnClock={canPick}
           complete={state.complete}
           onClockLabel={teamLabel(currentTeam)}
           picksAway={picksAway}
-          recentPicks={recentPicks}
-          progress={{ picksMade: state.history.length, totalPicks: TEAM_COUNT * QUICK_ROUNDS, round: Math.min(state.round + 1, QUICK_ROUNDS), rounds: QUICK_ROUNDS }}
+          recentPicks={recentPicks.slice(0, 2)}
+          round={Math.min(state.round + 1, QUICK_ROUNDS)}
+          rounds={QUICK_ROUNDS}
+          progress={state.history.length / (TEAM_COUNT * QUICK_ROUNDS)}
+          capLeft={QUICK_CAP_LIMIT - humanShotsUsed}
+          slotsLeft={QUICK_ROUNDS - humanTeam.roster.length}
+          maxThisPick={canPick && budget.maxThisPick < priciestAvailable ? budget.maxThisPick : null}
         />
-        {!canPick ? (
-          <div className={`at-cpu-turn-banner${state.history.length === 0 ? ' is-opening' : ''}`}>
-            {state.history.length === 0 ? (
-              <>The draft is about to begin — <b>{teamLabel(currentTeam)}</b> is on the clock with pick 1. {picksAway != null && <> You pick at #{picksAway + 1}.</>}</>
-            ) : (
-              <>{teamLabel(currentTeam)} is picking…</>
-            )}
-            {picksAway != null && picksAway > 1 && !rushToMe && (
-              <button type="button" className="at-skip-to-me at-cond" onClick={onRushToMe}>
-                Skip to my pick →
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="at-your-turn-banner" role="status">
-            <span className="at-your-turn-title at-cond">Your pick</span>
-            <TurnBudgetText
-              round={state.round + 1}
-              rounds={QUICK_ROUNDS}
-              capLeft={budget.capLeft}
-              slotsLeft={budget.slotsLeft}
-              maxThisPick={budget.maxThisPick}
-              priciestAvailable={priciestAvailable}
-              capTotal={QUICK_CAP_LIMIT}
-            />
-            <RimPressureNote starters={humanStarters} />
-          </div>
+        {!canPick && picksAway != null && picksAway > 1 && !rushToMe && (
+          <button type="button" className="at-calm-btn qf-skip" onClick={onRushToMe}>
+            Skip to my pick →
+          </button>
         )}
+        {canPick && <RimPressureNote starters={humanStarters} />}
         {canPick && !anyLegal && (
           <div className="at-budget-notice">
             <span>None of the players shown fit this pick — it can cost up to <CapIcon /> {budget.maxThisPick} caps.</span>
             <button
               type="button"
-              className="at-budget-notice-btn at-cond"
+              className="at-calm-btn"
               onClick={() => {
                 setSearch('');
                 setSelectedPosition('ALL');
@@ -501,33 +487,40 @@ function QuickDraftBoard({
 
       {/* 2026-09-26, the user: "fits my budget wygląda dziwnie" — it sat among the round position
           pills and wrapped into a three-line blob on phones. Now a switch next to the search box. */}
-      <div className="at-controls-row qf-search-row">
+      <div className="at-calm-filters">
         <input
-          className="at-search-input"
+          className="at-calm-search"
           placeholder="Search players…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <label className={`qf-fits-toggle${onlyFits ? ' is-on' : ''}`}>
-          <input type="checkbox" checked={onlyFits} onChange={(e) => setOnlyFits(e.target.checked)} />
-          <span className="qf-fits-switch" aria-hidden />
-          Only players I can afford
-        </label>
+        <div className="at-calm-seg" role="group" aria-label="Position">
+          {(['ALL', ...ALL_POSITIONS] as const).map((pos) => (
+            <button
+              key={pos}
+              type="button"
+              aria-pressed={selectedPosition === pos}
+              className={selectedPosition === pos ? 'is-on' : ''}
+              onClick={() => setSelectedPosition(pos)}
+            >
+              {pos === 'ALL' ? 'All' : pos}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className={`at-calm-chip${onlyFits ? ' is-on' : ''}`}
+          aria-pressed={onlyFits}
+          title="Only players whose cost fits your next pick"
+          onClick={() => setOnlyFits((on) => !on)}
+        >
+          <CapIcon size={12} /> Affordable
+        </button>
         {AUTO_FINISH_FOR_TESTING && (
-          <button className="secondary-btn qf-autofinish" disabled={autoFinishing} onClick={onAutoFinish}>
+          <button type="button" className="at-calm-btn qf-autofinish" disabled={autoFinishing} onClick={onAutoFinish}>
             {autoFinishing ? 'Finishing…' : 'Auto-finish'}
           </button>
         )}
-      </div>
-      <div className="at-controls-row at-position-filters">
-        <button className={`at-filter-pill at-cond ${selectedPosition === 'ALL' ? 'at-active' : ''}`} onClick={() => setSelectedPosition('ALL')}>
-          All
-        </button>
-        {ALL_POSITIONS.map((pos) => (
-          <button key={pos} className={`at-filter-pill at-cond ${selectedPosition === pos ? 'at-active' : ''}`} onClick={() => setSelectedPosition(pos)}>
-            {pos}
-          </button>
-        ))}
       </div>
 
       {/* 2026-09-26 (the user: "quick 5 może bardziej przypominać normalny draft"): the same

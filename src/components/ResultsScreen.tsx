@@ -43,7 +43,6 @@ import AllMetrics from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 import { CapIcon, Face, shortenName } from './ShotChip';
-import { ScoreBoard } from './ScoreBoard';
 import { ShareModal } from './ResultsShareModal';
 import { PlayoffBracketTree } from './PlayoffBracketTree';
 
@@ -332,6 +331,9 @@ function HeroResult({
   roster,
   challenger,
   seasonSimSlot,
+  verdict,
+  rivals,
+  onNewDraft,
 }: {
   teamName: string;
   isHuman: boolean;
@@ -366,8 +368,15 @@ function HeroResult({
    * state) rather than threading every individual piece of that state down as its own prop — the
    * simplest way for a child this deep to render a parent-owned slot without duplicating state. */
   seasonSimSlot?: ReactNode;
+  /** 2026-10-07, the UI simplification: "What won it / what held you back", on the Your team tab. */
+  verdict?: ReactNode;
+  /** The matchup matrix and the full ranking, on the Rivals tab. */
+  rivals?: ReactNode;
+  onNewDraft?: () => void;
 }) {
   const [challengeCopied, setChallengeCopied] = useState(false);
+  const [tab, setTab] = useState<'team' | 'rivals'>('team');
+  const [showDetails, setShowDetails] = useState(false);
   // 2026-09-17, user-reported live ("więcej sosu, coś jak share po zakończonym drafcie" — more
   // sauce, like the share after a finished draft): the popup's own share action only ever copied a
   // link; this gives it real visual payoff — a downloadable head-to-head card
@@ -513,7 +522,8 @@ function HeroResult({
   }
 
   return (
-    <header className="results-hero">
+    <>
+    <header className="rs-hero">
       {challenger && compareOpen && (
         <div className="challenge-compare-backdrop" onClick={() => setCompareOpen(false)}>
           <div className="challenge-compare-modal" role="dialog" aria-modal="true" aria-label="Challenge comparison" onClick={(e) => e.stopPropagation()}>
@@ -641,157 +651,160 @@ function HeroResult({
           </div>
         </div>
       )}
-      <div className="results-hero-finish">
-        <span className="results-hero-eyebrow">{isHuman ? 'You finished' : 'Top of the field'}</span>
-        <span className="results-hero-rank">
-          <b>{ordinal(rank)}</b>
-          <i>/ {fieldSize}</i>
+      <div className="rs-hero-main">
+        <span className="rs-eyebrow">{isHuman ? 'You finished' : 'Top of the field'}</span>
+        <span className="rs-place">
+          {ordinal(rank)}
+          <small>of {fieldSize}</small>
         </span>
-        <span className={`results-hero-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
-        <span className="results-hero-team">{teamName}</span>
+        <span className="rs-team">
+          {teamName} <span className={`rs-tag rs-tag--t${tier.tone}`}>{tier.label}</span>
+        </span>
+        {(identity || failureMode) && (
+          // 2026-09-24 copy pass: labelled as a STYLE and a risk, so it doesn't read as a verdict.
+          <p className="rs-why">
+            {identity && (
+              <>
+                Team style: <b>{identity}</b>
+              </>
+            )}
+            {identity && failureMode && ' — '}
+            {failureMode && <span>main risk: {failureMode}</span>}
+          </p>
+        )}
       </div>
-      <ScoreBoard
-        cells={[
-          { label: isHuman ? 'Your team' : 'Team rating', value: overall, you: overall },
-          { label: 'Best in field', value: topOverall ?? overall },
-          ...(titleOdds !== null
-            ? [{
-                label: 'Title odds',
-                value: <AnimatedPercent value={titleOdds} />,
-                title: 'Chance to win a 16-team playoff seeded by the final ranking, over thousands of simulations. The season simulation below plays its own top-8 playoffs.',
-              }]
-            : [{ label: 'Behind the best', value: gap !== null && gap > 0 ? gap : '—' }]),
-        ]}
-      />
-      {(identity || failureMode || comp) && (
-        // 2026-09-24 copy pass: labelled as a STYLE ("Team style: Defense-first") and a risk, so it
-        // no longer reads as a quality verdict next to a mediocre Defense score.
-        <p className="results-hero-identity">
-          {identity && (
-            <>
-              Team style: <b>{identity}</b>
-            </>
-          )}
-          {identity && failureMode && ' — '}
-          {failureMode && <span>main risk: {failureMode}</span>}
-          {comp && (
-            <span className="results-hero-comp" title={`Closest historical profile: ${comp.comp.blurb}. Match compares this roster's scores, as percentiles of drafted rosters, with what defined that team.`}>
-              {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
-              <span>Plays like the <b>{comp.comp.team}</b> <small>{comp.match}% match</small></span>
-            </span>
-          )}
-        </p>
-      )}
-      {/* 2026-09-14, DRAFT per user's own request ("możesz mi pokazać design zanim wprowadzisz") —
-          batch item 3 ("ogromnie dużo miejsca na dużym ekranie, można zrobić cały dashboard").
-          V1 (plain text numbers + a thin pill-per-player strip) drew direct criticism live
-          ("myślę że stać cię na kilka razy lepszy projekt") — visually the "runt" of an otherwise
-          bold hero, and two new, unproven visual treatments instead of reusing ones already on
-          this screen. V2 fixed the visual weight (`ScoreChip`'s gradient pills, the ShareModal's
-          own bordered `.share-modal-face-card` for the starting five) but was still, per the same
-          follow-up ("nadal można dodać ławkę, offensive and defensive breakdown... to ma być
-          dashboard jako podsumowanie całego draftu, teraz to jest bardzo skrócona wersja"), an
-          abbreviated summary rather than the actual draft report. V3 added the two missing pieces,
-          both already fully computed elsewhere on this page for the human's own expanded card —
-          hoisted up here (`heroFit`/`heroOffenseDetail`) rather than recomputed: the SAME
-          Offense/Defense `MetricBar` breakdown "Team analysis" shows below (`.analysis-bars-*`),
-          and the bench half of `roster` (already carried all 9 players, not just the 5 starters).
-          V4, two more follow-ups the same day: "chyba damy radę zmieścić wszystko w tym hero
-          dashboard?" — Team profile now shows all 7 `ScoreChip`s the "Final team ranking" list
-          below already has (Talent/Bench Depth/Offense/Defense/Spacing/Fit/Rotation), not just
-          OFF/DEF/SPC. Then "zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn z
-          pozycjami i minutami" — Starting five/Bench (grouped by ROLE, and a bench row's own
-          `.primaryPosition` label didn't reflect which slot it actually backs up) replaced by one
-          "Rotation" section, 5 columns by SLOT (`heroAssignments`, the same per-slot shape the
-          "Rotation" accordion further down already builds via `allAssignments`) — a split
-          contributor now correctly shows under every slot they actually cover. */}
-      <div className="results-hero-dashboard">
-        <div className="results-hero-scores">
-          <span className="share-modal-face-group-label">Team profile</span>
-          <div className="results-hero-scores-row">
-            <ScoreChip label="Talent" value={Math.round(talentScore)} />
-            <ScoreChip label="Bench" value={Math.round(benchDepthScore)} />
-            <ScoreChip label="Offense" value={Math.round(offenseScore)} />
-            <ScoreChip label="Defense" value={Math.round(defenseScore)} />
-            <ScoreChip label="Spacing" value={Math.round(spacingScore)} />
-            <ScoreChip label="Fit" value={Math.round(fitScore)} />
-            <ScoreChip label="Rotation" value={Math.round(rotationScore)} />
-          </div>
-          {fitDetail && (
-            <div className="analysis-bars-split results-hero-bars">
-              <div className="analysis-bars-col analysis-bars-col--offense">
-                <span className="analysis-bars-col-label">Offense details</span>
-                {offenseDetail && <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />}
-                <MetricBar label="Creation" value={offenseScale(fitDetail.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
-                <MetricBar label="Rim pressure" value={offenseScale(fitDetail.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
-                {offenseDetail && <MetricBar label="Playmaking" value={offenseScale(offenseDetail.playmaking)} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />}
-              </div>
-              <div className="analysis-bars-col analysis-bars-col--defense">
-                <span className="analysis-bars-col-label">Defense details</span>
-                {defenseTalent !== null && <MetricBar label="D-TAL" value={defenseTalent} hint="Team defensive talent — the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure." />}
-                <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
-                <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
-                <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
-                <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
-                {weakDefenders.length > 0 && (
-                  <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down. Weak means below the median rotation player at that position.">
-                    Weakest links:{' '}
-                    {weakDefenders.map((row, i) => (
-                      <span key={row.name}>
-                        {i > 0 && ' · '}
-                        <b>{shortenName(row.name)}</b> D-TAL {row.dtal} at {row.slot} ({row.minutes} min)
-                      </span>
-                    ))}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-          {/* 2026-09-24, user-reported live ("defense w kafelku i niżej w pasku daje sprzeczne
-              sygnały"): the bars are separate ingredients, not re-statements of the chips above —
-              "Defense 69" chip vs a "Defense 85" bar read as a contradiction. The two clashing bars
-              were renamed (Role coverage, Spacing fit); this line says so for touch screens too,
-              where the bars' hover hints never show. */}
-          {fitDetail && (
-            <p className="results-hero-bars-note">
-              These are the ingredients behind the scores above, measured separately — e.g. Role coverage is whether
-              each defensive job is filled at all, the Defense score is how well it's done.
-            </p>
-          )}
-          {/* 2026-09-18, user-reported live ("share the result and challenge a friend można dać
-              wyżej w empty space który jest po lewej stronie") — this column's content (chips +
-              bars) is routinely shorter than the Rotation column beside it, leaving dead space
-              below it while these two buttons sat in their own full-width row underneath both
-              columns. Moved in here, right after the bars, so they fill that gap instead — same
-              "give the column's own empty space a job" move as `seasonSimSlot` in the Rotation
-              column just below. */}
-          <div className="results-hero-actions">
-            <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
-              📤 Share the result
-            </button>
-            <button
-              type="button"
-              className="results-hero-copy results-hero-challenge"
-              onClick={copyChallengeLink}
-              title="Copies a link that gives a friend the exact same 16-team draft board to react to."
-            >
-              {challengeCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
-            </button>
-          </div>
+      <div className="rs-kpis">
+        <div className="rs-kpi rs-kpi--you" title="The Final Power Ranking overall every team is judged by">
+          <b style={{ color: qualityColor(overall) }}>{overall}</b>
+          <span>{isHuman ? 'Your team' : 'Team rating'}</span>
         </div>
-        <div className="results-hero-rotation">
-          <span className="share-modal-face-group-label">Rotation</span>
-          <RotationColumns assignments={assignments} starterKeys={starterKeys} />
-          {/* 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest
-              empty space, dzięki temu można zmieścić matchups bez potrzeby suwaka" — put it above/
-              beside Rotation where there's empty space, so Matchups can fit full width without a
-              scroll slider): the Rotation cards rarely fill this column's full height, and the
-              season-sim panel is now a small fixed-size trigger (see its own docstring on
-              `seasonSimSlot`) regardless of whether a result exists, so it fits here without ever
-              growing into the huge inline table it used to become. */}
-          {seasonSimSlot}
+        <div className="rs-kpi">
+          <b>{topOverall ?? overall}</b>
+          <span>Best</span>
         </div>
+        {titleOdds !== null ? (
+          <div className="rs-kpi" title="Chance to win a 16-team playoff seeded by the final ranking, over thousands of simulations. The season simulation plays its own top-8 playoffs.">
+            <b>
+              <AnimatedPercent value={titleOdds} />
+            </b>
+            <span>Title odds</span>
+          </div>
+        ) : (
+          <div className="rs-kpi">
+            <b>{gap !== null && gap > 0 ? gap : '—'}</b>
+            <span>Behind the best</span>
+          </div>
+        )}
       </div>
+      <div className="rs-actions">
+        {seasonSimSlot}
+        <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
+          Share
+        </button>
+        <button
+          type="button"
+          className="at-calm-btn"
+          onClick={copyChallengeLink}
+          title="Copies a link that gives a friend the exact same 16-team draft board to react to."
+        >
+          {challengeCopied ? '✓ Link copied' : 'Challenge a friend'}
+        </button>
+        {onNewDraft && (
+          <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onNewDraft}>
+            New draft
+          </button>
+        )}
+      </div>
+    </header>
+    <nav className="rs-tabs" role="tablist">
+      {([['team', 'Your team'], ['rivals', 'Rivals']] as const).map(([id, label]) => (
+        <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>
+          {label}
+        </button>
+      ))}
+    </nav>
+    {tab === 'rivals' ? (
+      <div className="rs-rivals">{rivals}</div>
+    ) : (
+      <>
+        {verdict}
+        <div className="rs-cols">
+          <section className="rs-panel">
+            <h3 className="rs-panel-title">Team profile</h3>
+            {([
+              ['Talent', talentScore],
+              ['Offense', offenseScore],
+              ['Defense', defenseScore],
+              ['Spacing', spacingScore],
+              ['Fit', fitScore],
+              ['Bench', benchDepthScore],
+              ['Rotation', rotationScore],
+            ] as const).map(([label, value]) => (
+              <div className="rs-score" key={label}>
+                <span>{label}</span>
+                <span className="rs-score-bar">
+                  <i style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: qualityColor(value) }} />
+                </span>
+                <b style={{ color: qualityColor(Math.max(55, value)) }}>{Math.round(value)}</b>
+              </div>
+            ))}
+            {fitDetail && (
+              <button type="button" className="pk-link rs-more" aria-expanded={showDetails} onClick={() => setShowDetails((v) => !v)}>
+                {showDetails ? "Hide what's behind each score ▴" : "Show what's behind each score ▾"}
+              </button>
+            )}
+            {fitDetail && showDetails && (
+              <>
+                <div className="analysis-bars-split rs-details">
+                  <div className="analysis-bars-col analysis-bars-col--offense">
+                    <span className="analysis-bars-col-label">Offense details</span>
+                    {offenseDetail && <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />}
+                    <MetricBar label="Creation" value={offenseScale(fitDetail.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
+                    <MetricBar label="Rim pressure" value={offenseScale(fitDetail.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
+                    {offenseDetail && <MetricBar label="Playmaking" value={offenseScale(offenseDetail.playmaking)} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />}
+                  </div>
+                  <div className="analysis-bars-col analysis-bars-col--defense">
+                    <span className="analysis-bars-col-label">Defense details</span>
+                    {defenseTalent !== null && <MetricBar label="D-TAL" value={defenseTalent} hint="Team defensive talent — the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure." />}
+                    <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
+                    <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
+                    <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
+                    <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
+                    {weakDefenders.length > 0 && (
+                      <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down. Weak means below the median rotation player at that position.">
+                        Weakest links:{' '}
+                        {weakDefenders.map((row, i) => (
+                          <span key={row.name}>
+                            {i > 0 && ' · '}
+                            <b>{shortenName(row.name)}</b> D-TAL {row.dtal} at {row.slot} ({row.minutes} min)
+                          </span>
+                        ))}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <p className="results-hero-bars-note">
+                  These are the ingredients behind the scores above, measured separately — e.g. Role coverage is whether each
+                  defensive job is filled at all, the Defense score is how well it's done.
+                </p>
+              </>
+            )}
+          </section>
+          <section className="rs-panel">
+            <h3 className="rs-panel-title">Rotation</h3>
+            <RotationColumns assignments={assignments} starterKeys={starterKeys} />
+            {comp && (
+              <p className="rs-comp" title={`Closest historical profile: ${comp.comp.blurb}. Match compares this roster's scores, as percentiles of drafted rosters, with what defined that team.`}>
+                {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
+                <span>
+                  <b>Plays like</b> the {comp.comp.team} <small>{comp.match}% match</small>
+                </span>
+              </p>
+            )}
+          </section>
+        </div>
+      </>
+    )}
       {shareOpen && (
         <ShareModal
           onClose={() => setShareOpen(false)}
@@ -817,7 +830,7 @@ function HeroResult({
           }}
         />
       )}
-    </header>
+  </>
   );
 }
 
@@ -1399,15 +1412,11 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   // what lets it live inside the hero's Rotation column without ever pushing that column's height
   // around.
   const seasonSimSlot = (
-    <div className="season-sim-panel">
-      <h3>{seasonStandings ? 'Season results' : 'Simulate an 82-game season'}</h3>
-      <p className="player-notes-hint">
-        Rolls a full regular season, game by game, using each pairing's real projected win probability — the roll shown
-        is whichever of {SEASON_SIM_POOL_SIZE} background simulations landed closest to the typical outcome for your
-        team. Separate from the final ranking above.
-      </p>
+    <>
       <button
-        className="primary-btn season-sim-btn"
+        type="button"
+        className="rs-primary season-sim-btn"
+        title={`Rolls a full 82-game regular season, game by game, from each pairing's projected win probability — the roll shown is whichever of ${SEASON_SIM_POOL_SIZE} background simulations landed closest to the typical outcome for your team. Separate from the final ranking.`}
         onClick={() => {
           if (!seasonStandings) {
             // 2026-09-14: prefers the background pool's representative pick; falls back to one
@@ -1423,7 +1432,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           setSeasonModalOpen(true);
         }}
       >
-        {seasonStandings ? '📊 See season results' : '🏀 Simulate an 82-game season'}
+        {seasonStandings ? 'See season results' : 'Simulate a season'}
       </button>
       {seasonModalOpen && seasonStandings && (
         <div className="season-sim-backdrop" onClick={() => setSeasonModalOpen(false)}>
@@ -1496,19 +1505,22 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 
   return (
     // 2026-08-16, user's own ask: same fixed-dark broadcast board as the Draft screen — see the
     // `.at-shell` token-aliasing comment in App.css for how the rest of this file's existing
     // classes (never touched here) pick up the dark palette just by being nested inside this.
-    <div className="results-screen at-shell">
-      {/* 2026-09-27 results audit: the same "← Menu" + mode title the Mini Draft result has. */}
-      <button type="button" className="at-menu-btn at-cond" onClick={onRestart}>
-        ← Menu
-      </button>
-      <div className="at-board-brand at-cond">All-Time Draft</div>
+    <div className="results-screen at-shell at-calm">
+      {/* 2026-10-07, the UI simplification (approved mockup): the draft screen's one-row header. */}
+      <div className="at-calm-header">
+        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRestart}>
+          ← Menu
+        </button>
+        <h1 className="at-calm-title">All-Time Draft</h1>
+        <span className="rs-header-spacer" aria-hidden />
+      </div>
       {heroRanked && (
         <HeroResult
           teamName={heroRanked.team.name}
@@ -1539,9 +1551,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           defenseTalent={heroRanked ? Math.round(teamDefensiveTalentScore(displayTeam(heroRanked.team))) : null}
           starters={heroStarters}
           roster={heroRoster}
-        />
-      )}
-      {heroRanked?.team.isHuman && (
+          verdict={heroRanked?.team.isHuman && (
         <ResultsVerdict
           team={displayTeam(heroRanked.team)}
           rank={heroRanked.rank}
@@ -1559,27 +1569,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           fieldMedians={fieldMedians}
         />
       )}
-      {/* 2026-09-14, user-reported live ("ogromnie dużo miejsca na dużym ekranie, można zrobić
-          cały dashboard"): FIRST version of this fix put the matchup matrix + season sim in a
-          persistent sidebar next to the (much longer) team-card list. User-reported live again,
-          against a real screenshot: the matrix still got cut off inside that narrower column (it
-          wants real width — `.matchup-matrix-table`'s own 760px floor), and a sidebar that runs out
-          of content halfway down a 16-card list reads as an awkward, unbalanced split rather than a
-          real dashboard — "jesteśmy w stanie zmieścić wszystkie informacje na samej górze, nie
-          widzę sensu w rozbijaniu tego" (we can fit it all at the top, no point splitting this).
-          Reworked into `.results-top-panels`: the matrix + season sim sit side by side in one
-          full-width band right under the hero, each finally getting real width instead of sharing a
-          cramped column — the team-card list below goes back to full width too, since there's no
-          longer a second column competing with it for space. Below the dashboard breakpoint
-          `.results-top-panels` is `display: contents` (pure CSS, no JS) — its children become
-          direct flex items of `.results-screen` again, same `order`-based placement (this file's
-          own CSS, unchanged) as before any of this dashboard work existed. */}
-      {/* 2026-09-18, user-reported live ("simulate season można dać nad rotacją... dzięki temu
-          można zmieścić matchups bez potrzeby suwaka" — freeing full width removes the need for
-          the matrix's own horizontal scroll slider): the season-sim panel that used to share this
-          row moved into the hero's Rotation column (see `seasonSimSlot` above) once it became a
-          small, fixed-size popup trigger instead of an inline-growing table — the matrix no longer
-          has anything to share this row with, so it renders alone at full width. */}
+          rivals={
+            <>
       <MatchupMatrix teams={scoredTeams} evaluations={leagueEval} focusTeamId={scoredTeams.find((team) => team.isHuman)?.id} />
       <h2 className="results-section-title">Final team ranking</h2>
       <div className="expand-all-controls">
@@ -1816,14 +1807,37 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           </div>
         );
       })}
+            </>
+          }
+          onNewDraft={onRematch ? () => onRematch() : undefined}
+        />
+      )}
+      {/* 2026-09-14, user-reported live ("ogromnie dużo miejsca na dużym ekranie, można zrobić
+          cały dashboard"): FIRST version of this fix put the matchup matrix + season sim in a
+          persistent sidebar next to the (much longer) team-card list. User-reported live again,
+          against a real screenshot: the matrix still got cut off inside that narrower column (it
+          wants real width — `.matchup-matrix-table`'s own 760px floor), and a sidebar that runs out
+          of content halfway down a 16-card list reads as an awkward, unbalanced split rather than a
+          real dashboard — "jesteśmy w stanie zmieścić wszystkie informacje na samej górze, nie
+          widzę sensu w rozbijaniu tego" (we can fit it all at the top, no point splitting this).
+          Reworked into `.results-top-panels`: the matrix + season sim sit side by side in one
+          full-width band right under the hero, each finally getting real width instead of sharing a
+          cramped column — the team-card list below goes back to full width too, since there's no
+          longer a second column competing with it for space. Below the dashboard breakpoint
+          `.results-top-panels` is `display: contents` (pure CSS, no JS) — its children become
+          direct flex items of `.results-screen` again, same `order`-based placement (this file's
+          own CSS, unchanged) as before any of this dashboard work existed. */}
+      {/* 2026-09-18, user-reported live ("simulate season można dać nad rotacją... dzięki temu
+          można zmieścić matchups bez potrzeby suwaka" — freeing full width removes the need for
+          the matrix's own horizontal scroll slider): the season-sim panel that used to share this
+          row moved into the hero's Rotation column (see `seasonSimSlot` above) once it became a
+          small, fixed-size popup trigger instead of an inline-growing table — the matrix no longer
+          has anything to share this row with, so it renders alone at full width. */}
       <div className="results-actions end-actions">
         {onRematch && (
-          <button className="primary-btn" onClick={() => onRematch()}>New draft</button>
+          <button type="button" className="at-calm-btn" onClick={() => onRematch(draftSeed)}>Rematch this board</button>
         )}
-        {onRematch && (
-          <button className="secondary-btn" onClick={() => onRematch(draftSeed)}>Rematch this board</button>
-        )}
-        <button className="secondary-btn" onClick={onRestart}>Main menu</button>
+        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRestart}>Main menu</button>
         {TEAM_EXPORT_FOR_TESTING && <TeamExportButton teams={scoredTeams} seed={draftSeed} leagueEval={leagueEval} />}
       </div>
     </div>

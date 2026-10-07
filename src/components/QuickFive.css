@@ -176,41 +176,6 @@
 .qf-search-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
 .qf-search-row .at-search-input { flex: 1 1 200px; min-width: 0; }
 .qf-autofinish { margin-left: auto; }
-.qf-fits-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  color: var(--at-ink-soft);
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
-}
-.qf-fits-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.qf-fits-switch {
-  position: relative;
-  width: 32px;
-  height: 18px;
-  border-radius: 999px;
-  background: var(--at-pill);
-  border: 1px solid var(--at-line);
-  transition: background 0.15s;
-}
-.qf-fits-switch::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--at-ink-soft);
-  transition: transform 0.15s, background 0.15s;
-}
-.qf-fits-toggle.is-on { color: var(--at-ink); }
-.qf-fits-toggle.is-on .qf-fits-switch { background: color-mix(in srgb, var(--at-accent) 40%, var(--at-pill)); border-color: var(--at-accent); }
-.qf-fits-toggle.is-on .qf-fits-switch::after { transform: translateX(14px); background: var(--at-accent); }
-.qf-fits-toggle input:focus-visible + .qf-fits-switch { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 
 /* Result screen (2026-09-26): the All-Time Draft's results hero, cut down to a five. */
 .qf-result .results-hero { margin-bottom: 24px; }

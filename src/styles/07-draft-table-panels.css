@@ -39,24 +39,12 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
 
 /* Small notice shown above the Draft panel during a CPU turn — replaces the old full-panel
    "X is thinking…" placeholder that used to hide the player list entirely. */
-.at-cpu-turn-banner {
-  font-size: 12.5px; font-style: italic; color: var(--at-ink-soft);
-  background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px;
-  padding: 8px 14px; margin-bottom: 12px;
-}
+
 /* 2026-09-24: the "your turn" counterpart of `.at-cpu-turn-banner` above — accent-coloured and
    sticky so it stays in view while scrolling the player cards, and it carries this pick's real
    shot budget (`pickBudget`, draft.ts). */
 .at-turn-sticky { position: sticky; top: 0; z-index: 5; }
-.at-your-turn-banner {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
-  font-size: 13px; color: var(--at-ink);
-  background: color-mix(in srgb, var(--at-accent) 18%, var(--at-paper));
-  border: 1px solid var(--at-accent); border-radius: 10px;
-  padding: 9px 14px; margin-bottom: 12px;
-}
-.at-your-turn-title { font-weight: 800; color: var(--at-accent); letter-spacing: 0.06em; text-transform: uppercase; }
-.at-your-turn-reserve { color: var(--at-ink-soft); }
+
 /* 2026-09-25: a roster gap the result screen will score (RimPressureNote, DraftChrome.tsx) —
    its own line so it reads as a warning, not more budget text. */
 .at-your-turn-need { flex-basis: 100%; font-weight: 600; color: var(--at-accent-2); }

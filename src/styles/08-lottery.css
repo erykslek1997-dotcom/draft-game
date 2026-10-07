@@ -148,20 +148,7 @@
 .saved-draft-confirm-modal { overflow: visible; }
 
 /* 2026-09-24: collapsed draft board ticker (DraftBoard.tsx) + the phone "Your Team" toggle. */
-.at-ticker {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12.5px; color: var(--at-ink-soft);
-}
-.at-ticker-now b { color: var(--at-ink); }
-.at-ticker-label { color: var(--at-ink-faint); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.06em; }
-.at-ticker-you { color: var(--at-accent) !important; text-transform: uppercase; letter-spacing: 0.04em; }
-.at-ticker-next { margin-left: 4px; }
-.at-ticker-recent { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
-.at-ticker-pick {
-  white-space: nowrap; font-size: 11.5px; padding: 3px 8px; border-radius: 999px;
-  background: var(--at-pill); color: var(--at-ink-soft);
-}
-.at-ticker-pick.is-you { color: var(--at-accent-2); }
-.at-ticker-pick-no { color: var(--at-ink-faint); }
+
 /* 2026-09-24: show/hide-board button, in the top bar next to CPU speed (DraftChrome's
    BoardToggleButton) — accent-coloured so it doesn't read as one of the passive picks chips. */
 .at-board-toggle {
@@ -174,17 +161,15 @@
 /* 2026-09-25, user ("brak odległości, elementy wchodzą na siebie"): the old `.at-ticker + …` rule
    missed whenever the scroll nav between them was hidden (desktop), so the open board sat flush
    against the ticker. The ticker carries its own gap instead. */
-.at-ticker:not(:last-child) { margin-bottom: 16px; }
+
 .at-draft-sidebar-head--toggle {
   width: 100%; font: inherit; cursor: pointer; background: none; border: none; padding: 0; color: inherit;
   text-align: left;
 }
-@media (max-width: 640px) {
-  .at-ticker-recent .at-ticker-pick:nth-child(n + 3) { display: none; }
-}
+
 @media (max-width: 640px) {
   /* One scrollable line of tier swatches on phones instead of three wrapped rows. */
-  .at-tier-key { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+
 }
 
 /* 2026-09-24, user-reported live ("dużo wolnego miejsca"): the card's lower half was mostly empty
@@ -201,14 +186,7 @@
 }
 .at-player-card-stats > span { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
 .at-player-card-stats b { color: var(--at-ink); font-size: 13px; font-weight: 700; letter-spacing: 0; }
-.at-player-card-foot { justify-content: stretch; }
-.at-player-card-actions { flex-direction: row; align-items: stretch; width: 100%; gap: 6px; }
-.at-player-card-actions .at-player-card-peek { flex: 1 1 0; height: 28px; }
-.at-player-card-actions .at-player-card-draft { flex: 1.3 1 0; height: 28px; font-size: 12px; }
-.at-player-card-pos { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-@media (max-width: 640px) {
-  .at-ticker-recent { flex: 1 1 100%; }
-}
+
 .results-hero-bars-note { font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); margin: 6px 0 12px; }
 .bracket-scroll > div:first-child { overflow: hidden; margin: 0 auto; }
 .results-verdict--won { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 55%, var(--at-line)); }

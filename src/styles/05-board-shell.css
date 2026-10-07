@@ -167,21 +167,9 @@
    follow-up ask, rather than relocated (see the DraftHistory render's own JSX comment). Tabs are
    the only thing left in this row, so it's just centred now — no more balancing act against a
    second item. */
-.at-topbar {
-  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
-  gap: 16px; margin-bottom: 18px; padding: 4px 2px;
-}
+
 .at-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 /* 2026-09-24: CPU pick-speed control, back in Player Mode (GameShell's `AI_SPEEDS`). */
-.at-speed { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.at-speed-label { font-size: 11px; color: var(--at-ink-faint); letter-spacing: 0.06em; text-transform: uppercase; margin-right: 4px; }
-.at-speed-btn {
-  font: inherit; cursor: pointer; border: 1px solid var(--at-line);
-  background: var(--at-paper-raised); color: var(--at-ink-soft);
-  border-radius: 999px; padding: 5px 11px; font-size: 11px; font-weight: 700;
-}
-.at-speed-btn.at-active { background: var(--at-accent); color: var(--at-accent-ink); border-color: var(--at-accent); }
-.at-speed-btn:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 
 .at-board-brand {
   text-align: center;
@@ -249,7 +237,7 @@
      jump link, hidden via DraftBoard.tsx's own `isWideLayout` check) would just be dead chrome.
      2026-09-24: only the tab pills are hidden now — the topbar also carries the CPU-speed
      control, which hiding the whole bar made unreachable on wide screens. */
-  .at-topbar .at-tabs { display: none; }
+
 }
 
 .at-draft-workspace {

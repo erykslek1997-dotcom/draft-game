@@ -608,7 +608,6 @@
 }
 .bf-slot--filled:disabled { opacity: 1; cursor: default; }
 
-
 /* 2026-09-28, the user ("jeden widok byłby lepszy"): a stopped reel opens into its card, in the
    same cabinet — no second card grid. The reel frame gives way to the card's own border. */
 .bf-reel.is-card { overflow: visible; border-color: transparent; background: none; }
@@ -633,7 +632,6 @@
 .bf-axis-best { margin-top: 4px; }
 .bf-axis-best > span { text-align: center; font-size: 10.5px; color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
 .bf-axis-best::before { content: 'Best five on the board'; grid-column: 1 / -1; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); text-align: center; }
-
 
 /* 2026-09-28: the one hint left in the Slot Machine — what the five is missing (dealHint). */
 .bf-deal-hint { margin: 2px 0 10px; font-size: 12.5px; color: var(--at-accent); }

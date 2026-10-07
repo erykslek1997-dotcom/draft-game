@@ -42,26 +42,14 @@
   position: relative;
   overflow: hidden;
 }
-.at-player-card--open {
-  border-color: var(--at-accent);
-}
+
 /* 2026-09-12, user's chosen "wariant A": the tier that used to be a text badge in the top-right
    corner is now this card's own border color (set via the `--tier-frame` custom property, one
    real hex per tier — see `TIER_FRAME_COLOR` in DraftBoard.tsx) plus this small corner flag, a
    second read of the same color for anyone scanning a dense grid rather than one card at a time.
    Classic corner-ribbon CSS triangle: a 0x0 box whose border widths are 0/22/22/0 (top/right/
    bottom/left) draws only the right-hand wedge once every other edge is transparent. */
-.at-player-card-corner {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 22px 22px 0;
-  border-color: transparent var(--tier-frame, var(--at-line)) transparent transparent;
-  pointer-events: none;
-}
+
 /* 2026-09-12, code-review fix: standard visually-hidden pattern — present in the accessibility
    tree (screen readers, browser "find in page") but occupies no visual space and is invisible to
    sighted users. Used to restore the tier text `.at-player-card-corner` moved off-tree. */
@@ -100,44 +88,7 @@
   overflow: hidden;
   overflow-wrap: anywhere;
 }
-.at-player-card-meta {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
-  font-size: 10.5px;
-}
-.at-player-card-pos {
-  font-weight: 500;
-  color: var(--at-ink-faint);
-}
-.at-player-card-tal { color: var(--at-ink-soft); white-space: nowrap; }
-.at-player-card-tal b { color: var(--tier-frame, var(--at-ink)); font-size: 12px; }
-.at-tier-key {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
-  font-size: 10.5px; color: var(--at-ink-soft); margin: 2px 0 12px;
-}
-.at-tier-key-label { color: var(--at-ink-faint); letter-spacing: 0.06em; text-transform: uppercase; }
-.at-tier-key-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
-.at-tier-key-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-.at-player-card-foot {
-  display: flex;
-  align-items: center;
-  /* The Shot chip moved up next to the Face avatar (freed by the tier badge's move to the card's
-     own border/corner, see `.at-player-card-corner`) — this row now holds only the two action
-     buttons, right-aligned under the name/position lines instead of splitting the row with them. */
-  justify-content: flex-end;
-  margin-top: auto;
-  padding-top: 4px;
-}
-.at-player-card-actions {
-  display: flex;
-  flex-direction: column;
-  /* 2026-09-12, user-reported live ("skrócić przycisk Draft"): a flex column's default
-     `align-items: stretch` was forcing "Draft" (a short word) to stretch to match "Scouting
-     report"'s own, much wider, content width. `flex-end` lets each button size to its own text
-     instead, right-aligned under the name/position line above. */
-  align-items: flex-end;
-  gap: 4px;
-}
-.at-player-card-peek,
+
 .at-player-card-draft {
   height: 22px;
   padding: 0 10px;
@@ -157,10 +108,7 @@
    third competing block of color on one small card. Ghost/ ​outline treatment instead — no fill,
    just the same border every other neutral pill in this app already uses — so Draft (still solid,
    still the one clearly "primary" action) and the tier frame stay the only real color on the card. */
-.at-player-card-peek {
-  background: transparent;
-  color: var(--at-ink-soft);
-}
+
 .at-player-card-draft {
   background: var(--at-accent);
   color: var(--at-accent-ink);
@@ -171,45 +119,7 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
-.at-player-card-spans {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--at-line);
-}
-.at-player-card-span-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--at-ink-soft);
-  font-size: 11px;
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-}
-.at-player-card-span-row:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--at-accent) 8%, transparent);
-  border-color: var(--at-line);
-}
-.at-player-card-span-row:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.at-player-card-span-label {
-  flex: 1;
-  font-weight: 600;
-}
-.at-player-card-more {
-  align-self: center;
-  margin-top: 2px;
-}
+
 @media (max-width: 860px) {
   .at-draft-workspace { flex-direction: column; }
   /* 2026-09-12, user-reported live ("your team powinien być między draft board a polem
@@ -423,7 +333,7 @@
   border-bottom: 2px solid var(--tc2, transparent);
 }
 .at-team-band-seg + .at-team-band-seg { box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.35); }
-.at-player-card .at-player-card-corner { top: 18px; }
+
 .at-player-card .at-player-card-top .bf-face { box-shadow: 0 0 0 2px var(--at-paper), 0 0 0 4px var(--ring, var(--at-line)); }
 .at-player-card .at-player-card-top { padding: 3px 3px 0; }
 
