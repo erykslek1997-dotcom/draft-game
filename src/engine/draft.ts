@@ -514,6 +514,7 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
     strategy: strategyForDraftSlot(state.seed, team.draftSlot),
     profile: aiProfileForSlot(state.seed, team.draftSlot),
     profileStrength: aiProfileStrengthForSlot(state.seed, team.draftSlot),
+    boardSeed: mixSeed(state.seed, 0x7b00 + team.draftSlot),
   };
   const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber, rng, ruleset);
   const preferredState = makePick(state, preferred.id);

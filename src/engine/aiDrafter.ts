@@ -31,6 +31,7 @@ import { isSixthManProfile } from './sixthMan';
 import { draftPool } from '../data/draftPool';
 import { DRAFT_EXPERIMENT } from './draftExperiment';
 import { madeAllNbaInSpan } from './allNbaLookup';
+import { hashSeed, mixSeed } from './rng';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 import { meetsStarterStandard } from './starterStandard';
 
@@ -1659,6 +1660,34 @@ export interface AiDraftRuleset {
   profile?: AiGmProfile;
   /** How hard that GM leans on the taste: its maximum bonus in value points. */
   profileStrength?: number;
+  /** Seed of this GM's own board (`boardNoise`); omitted means the shared board. */
+  boardSeed?: number;
+}
+
+/**
+ * 2026-10-07, the user ("nie chodzi żeby Battier nie był draftowany, ale czasem może być wybrany już
+ * w 4 rundzie a czasem w 7"): every GM read the same board, so a role player went within a round
+ * of the same spot every draft. Each GM now holds his own small opinion of every player — fixed for
+ * the draft, drawn from the draft's seed — worth `BOARD_NOISE_POINTS` value points (one standard
+ * deviation) and `BOARD_NOISE_TEAM_POINTS` team-overall points in the lookahead. Stars sit far
+ * apart and barely move; role players a few points apart reshuffle.
+ */
+const BOARD_NOISE_POINTS = 5;
+const BOARD_NOISE_TEAM_POINTS = 0.4;
+const boardNoiseCache = new Map<string, number>();
+function boardNoise(boardSeed: number | undefined, p: PlayerSpan): number {
+  if (boardSeed === undefined) return 0;
+  const key = `${boardSeed}|${p.playerName}`;
+  let n = boardNoiseCache.get(key);
+  if (n === undefined) {
+    // Roughly normal, mean 0, sd 1 (sum of three uniforms).
+    const h = hashSeed(key);
+    const u = (i: number) => (mixSeed(h, i) >>> 0) / 0x100000000;
+    n = (u(1) + u(2) + u(3) - 1.5) * 2;
+    if (boardNoiseCache.size > 200000) boardNoiseCache.clear();
+    boardNoiseCache.set(key, n);
+  }
+  return n;
 }
 
 /**
@@ -2192,6 +2221,7 @@ export function pickForAi(
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
       gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
+      boardNoise: BOARD_NOISE_POINTS * boardNoise(ruleset?.boardSeed, p),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
@@ -2366,7 +2396,7 @@ export function pickForAi(
       );
       const overall = teamScorer!(completed);
       const complement = complementScore(gaps, entry.player) * NEAR_TIE_COMPLEMENT_POINTS;
-      const teamValue = overall + complement + LOOKAHEAD_TASTE_POINTS_PER_VALUE * taste(entry.player);
+      const teamValue = overall + complement + LOOKAHEAD_TASTE_POINTS_PER_VALUE * taste(entry.player) + BOARD_NOISE_TEAM_POINTS * boardNoise(ruleset?.boardSeed, entry.player);
       return {
         ...entry,
         value: teamValue,
