@@ -6,6 +6,7 @@ import { computeOffensiveTalent } from './talent';
 import { positionFitMultiplier, STARTER_SLOTS } from './positions';
 import { modernBox } from './modernBox';
 import { estimatedMinutesPerGame } from './minutesPerGame';
+import { teamSpacingValue } from './midrangeGravity';
 
 /**
  * 2026-10-07, stage 2b step 3 (the user: "obrona jako mechanika", budget 60/28/8/4 from the NBA's
@@ -104,7 +105,9 @@ const PERMUTATIONS: number[][] = (() => {
  * Returns, for each attacker (by index), the index of his defender.
  */
 export function assignMatchups(attackers: PlayerSpan[], usage: number[], defenders: PlayerSpan[]): number[] {
-  const danger = attackers.map((a, i) => usage[i] * computeOffensiveTalent(a));
+  // 2026-10-07, stage 2b step 7.5: a man who can't shoot is less of a threat off the ball — the
+  // defense can hide its weakest defender on him (Rodman, Ben Simmons).
+  const danger = attackers.map((a, i) => usage[i] * computeOffensiveTalent(a) * (0.6 + 0.4 * Math.min(1, teamSpacingValue(a) / 60)));
   const quality = defenders.map((d) => attackers.map((a, i) => (50 + 10 * defenderProfile(d).dtal) * guardFit(d, STARTER_SLOTS[i] ?? a.primaryPosition)));
   let best = PERMUTATIONS[0];
   let bestScore = -Infinity;

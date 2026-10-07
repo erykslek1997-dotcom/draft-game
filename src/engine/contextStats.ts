@@ -4,6 +4,7 @@ import { eraScaledThreePA } from './era';
 import { computeOffensiveTalent } from './talent';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { modernBox } from './modernBox';
+import { teamSpacingValue } from './midrangeGravity';
 
 /**
  * 2026-10-02, stage 2 (live game), the user: "realne skalowanie statystyk na to jaki jest skład —
@@ -72,6 +73,30 @@ function modernSpacing(mates: PlayerSpan[]): number {
   return shots > 0 ? threes / shots : 0;
 }
 
+/**
+ * 2026-10-07, stage 2b step 7.5 (the user: the game's spacing was too weak — only the teammates'
+ * three-point rate counted, not how well they shoot or the gravity the engine reads). The room a
+ * player gets is his four teammates' spacing as the engine values it (`teamSpacingValue`: accuracy,
+ * volume, the era's line, midrange gravity), against his real teammates' — known only as their
+ * three-point rate, carried onto the engine's scale by the pool's fit (7.4 + 66.1 x rate, r 0.74).
+ * A teammate who can't shoot at all (under `SAG_FROM`) gives less than his number says: his man
+ * sags into the paint (`SAG`, per point under), the real teammates' average read the same way.
+ */
+const ENGINE_SPACING_PER_RATE = { base: 7.4, slope: 66.1 };
+/** `center`: drafted fives out-space anyone's real teammates by this much on average; taken off so
+ * the league's scoring stays where it was and only the differences between fives remain. */
+export const SPACING_TUNING = { strength: 1, sagFrom: 35, sag: 0.6, center: 17 };
+const sagged = (value: number) => value - SPACING_TUNING.sag * Math.max(0, SPACING_TUNING.sagFrom - value);
+const spacingValueCache = new WeakMap<PlayerSpan, number>();
+function spacingValue(span: PlayerSpan): number {
+  let v = spacingValueCache.get(span);
+  if (v === undefined) {
+    v = teamSpacingValue(span);
+    spacingValueCache.set(span, v);
+  }
+  return v;
+}
+
 function splitUsage(five: PlayerSpan[]): number[] {
   // A star who shot more than today's leaders claims less of the ball (`modernBox.ts`); his real
   // usage stays the yardstick, so the shots he gives up come back as efficiency.
@@ -105,8 +130,12 @@ export function contextLines(five: PlayerSpan[]): ContextLine[] {
   return five.map((span, i) => {
     const [originalSpacing, originalUsage, rimShare, shotShare, freeThrowRate, originalMatesAssists] = context(span).map((v) => v / 1000);
     const matesAssists = five.filter((_, j) => j !== i).reduce((sum, m) => sum + assistsPer36(m), 0) / 4;
-    const spacing = modernSpacing(five.filter((_, j) => j !== i));
-    const room = spacing - originalSpacing;
+    const mates = five.filter((_, j) => j !== i);
+    const spacing = modernSpacing(mates);
+    const here = mates.reduce((sum, m) => sum + sagged(spacingValue(m)), 0) / mates.length;
+    const real = sagged(ENGINE_SPACING_PER_RATE.base + ENGINE_SPACING_PER_RATE.slope * originalSpacing);
+    // Back on the three-point-rate scale the coefficients below were fitted on.
+    const room = (SPACING_TUNING.strength * (here - real - SPACING_TUNING.center)) / ENGINE_SPACING_PER_RATE.slope;
     return {
       span,
       originalSpacing,
