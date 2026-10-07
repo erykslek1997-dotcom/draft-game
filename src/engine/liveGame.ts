@@ -411,15 +411,15 @@ const STEAL_SHARE = 0.55;
 const STEAL_K = 0.08;
 /** The defense knobs, in one place so the calibration scripts can sweep them. */
 export const DEFENSE_TUNING = {
-  rim: 0.055,
-  direct: 0.035,
-  mid: 0.045,
+  rim: 0.062,
+  direct: 0.04,
+  mid: 0.05,
   help: 0.015,
-  three: 0.04,
+  three: 0.045,
   threeRate: 0.08,
-  tov: 0.26,
+  tov: 0.28,
   reb: 0.1,
-  foul: 0.85,
+  foul: 0.65,
   refRim: 1.26,
   /** A player's real percentages already hold his breaks and putbacks; the half court gives back
    * what the game now adds there, so his season lands on his own numbers. */
@@ -581,14 +581,14 @@ function usageCostScale(ownShare: number): number {
  * (`rimShare`, his free-throw rate); what a five that keeps attacking the basket adds is the help it
  * draws: the defense collapses, and the threes kicked back out are better looks (`collapse` per
  * spread of the five's rim pressure, set-up threes only), and its rim protectors pick up fouls on
- * those drives (`foul`, and a third of the fouls at the rim go to the best rim protector on the floor
+ * those drives (`foul`, and a fifth of the fouls at the rim go to the best rim protector on the floor
  * rather than the man guarding the shooter). The five's rim pressure is the engine's
  * (`rimPressure.ts`), against the drafted rotation fives' 71 (spread 20.5).
  */
 export const RIM_TUNING = {
   collapse: 0.008,
   foul: 0.08,
-  helpFoulShare: 0.35,
+  helpFoulShare: 0.2,
 };
 const REF_RIM_PRESSURE = { mean: 71.3, sd: 20.5 };
 /**
@@ -978,7 +978,7 @@ function playRosters(
     breakNext[o] = 0;
     // Away from the ball: a foul that is not on a shot (side out, or two shots in the bonus).
     if (!onBreak && rng() < NON_SHOOTING_FOUL * clash.foulRate) {
-      const fouler = pickWeighted(rng, def, (p) => defenderProfile(p.span).foulIndex);
+      const fouler = pickWeighted(rng, def, (p) => defenderProfile(p.span).foulIndex ** DEFENSE_TUNING.foul);
       const inBonus = teamFouls[d][quarter] >= BONUS_FOULS;
       foul(d, fouler, k, quarter);
       if (inBonus) {
