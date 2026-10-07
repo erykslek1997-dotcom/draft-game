@@ -422,15 +422,33 @@ export function fastFinishDraft(state: DraftState): DraftState {
  * back to a direct legal scan as a final defensive guard. */
 /**
  * 2026-09-16, real 16-team AI-draft strategy mix ([[pickforai_stacked_fga_stars_bug]]) — see
- * `AiDraftRuleset`'s own docstring in aiDrafter.ts for the full rationale. Deterministic off each
- * team's `draftSlot` (1-16, fixed at `createInitialTeams` time) so a draft still replays exactly
- * from its `seed`. Roughly 6/5/5 across the three named strategies.
+ * `AiDraftRuleset`'s own docstring in aiDrafter.ts for the full rationale.
+ * 2026-10-07, the user ("a może co draft być to losowe? podczas testingu mam wrażenie że składy są
+ * podobne"): each draft now deals the strategies from its own seed instead of fixing them by draft
+ * slot, so pick 2 is not always the star-stacker. Every strategy lands on at least
+ * `MIN_TEAMS_PER_STRATEGY` and at most `MAX_TEAMS_PER_STRATEGY` teams; the same seed still replays
+ * the same draft.
  */
-function strategyForDraftSlot(draftSlot: number): AiDraftStrategy {
-  const bucket = draftSlot % 3;
-  if (bucket === 2) return 'stack-stars';
-  if (bucket === 0) return 'value-hunter';
-  return 'starting-five-first';
+const AI_DRAFT_STRATEGIES: readonly AiDraftStrategy[] = ['starting-five-first', 'stack-stars', 'value-hunter'];
+const MIN_TEAMS_PER_STRATEGY = 2;
+const MAX_TEAMS_PER_STRATEGY = 8;
+const strategyCache = new Map<number, AiDraftStrategy[]>();
+function strategyForDraftSlot(seed: number, draftSlot: number): AiDraftStrategy {
+  let order = strategyCache.get(seed);
+  if (!order) {
+    const rng = mulberry32(mixSeed(seed, 0x5f31));
+    const draw = () => Array.from({ length: TEAM_COUNT }, () => AI_DRAFT_STRATEGIES[Math.floor(rng() * AI_DRAFT_STRATEGIES.length)]);
+    const fits = (o: AiDraftStrategy[]) =>
+      AI_DRAFT_STRATEGIES.every((st) => {
+        const n = o.filter((x) => x === st).length;
+        return n >= MIN_TEAMS_PER_STRATEGY && n <= MAX_TEAMS_PER_STRATEGY;
+      });
+    let drawn = draw();
+    for (let guard = 0; guard < 200 && !fits(drawn); guard++) drawn = draw();
+    order = drawn;
+    strategyCache.set(seed, order);
+  }
+  return order[(draftSlot - 1) % order.length];
 }
 
 /**
@@ -493,7 +511,7 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
   const ruleset: AiDraftRuleset = {
     rosterSize: ROSTER_SIZE,
     capLimit: CAP_LIMIT,
-    strategy: strategyForDraftSlot(team.draftSlot),
+    strategy: strategyForDraftSlot(state.seed, team.draftSlot),
     profile: aiProfileForSlot(state.seed, team.draftSlot),
     profileStrength: aiProfileStrengthForSlot(state.seed, team.draftSlot),
   };
