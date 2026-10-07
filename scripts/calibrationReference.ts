@@ -26,7 +26,7 @@ export const REFERENCE_ROSTERS: Record<string, string[]> = {
   Nash: ['Steve Nash@2006-08', 'Kobe Bryant@2007-09', 'Scottie Pippen@1990-92', 'Karl Malone@1991-93', 'Brook Lopez@2022-24', 'Derek Fisher@2006-08', 'James Posey@2003-05', 'Ben Wallace@2001-03'],
   Tulsa: ['Chauncey Billups@2004-06', 'Alex Caruso@2022-24', 'Jayson Tatum@2023-25', 'Giannis Antetokounmpo@2018-20', 'Kareem Abdul-Jabbar@1977-79', 'Thabo Sefolosha@2011-13', 'Gerald Wallace@2008-10', 'Mark Eaton@1984-86'],
   Charlotte: ['John Stockton@1989-91', 'Ray Allen@2000-02', 'Jalen Williams@2023-25', 'Kevin Garnett@2002-04', 'Marc Gasol@2011-13', 'Jeff Hornacek@1993-95', 'Robert Horry@1994-96', 'Andrew Bogut@2014-16'],
-  DesMoines: ['Jason Kidd@2004-06', 'Ron Harper@1988-90', 'Klay Thompson@2015-17', 'Kawhi Leonard@2015-17', 'Joel Embiid@2023-25', 'David Wesley@1997-99', 'Bo Outlaw@1998-00', 'Robert Williams@2020-22'],
+  DesMoines: ['Jason Kidd@2004-06', 'Ron Harper@1988-90', 'Klay Thompson@2015-17', 'Kawhi Leonard@2015-17', 'Joel Embiid@2021-23', 'David Wesley@1997-99', 'Bo Outlaw@1998-00', 'Robert Williams@2020-22'],
   SaltLake: ['Chris Paul@2012-14', 'Derrick White@2022-24', 'Grant Hill@1995-97', 'Larry Bird@1982-84', 'Bob McAdoo@1975-77', 'Nate McMillan@1992-94', 'Bruce Bowen@2000-02', 'Nenê@2009-11'],
   Dayton: ['Magic Johnson@1983-85', 'Anthony Edwards@2022-24', 'Clifford Robinson@1998-00', 'Evan Mobley@2024-26', 'Victor Wembanyama@2024-26', 'Danny Ainge@1986-88', 'Garrett Temple@2014-16', 'Nic Claxton@2021-23'],
   Vermont: ['LeBron James@2010-12', 'Luka Doncic@2020-22', 'Chris Mullin@1995-97', 'Kristaps Porziņģis@2022-24', 'Bill Walton@1976-78', 'Brent Barry@1999-01', 'Bryon Russell@1996-98', 'Tiago Splitter@2012-14'],
