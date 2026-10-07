@@ -1156,6 +1156,13 @@ export default function DraftBoard({
     setFgaMin('0');
     setFgaMax(affordableOnly ? String(affordableMax) : '30');
   }, [affordableOnly, affordableMax, showJudgeMetrics]);
+  /** The stretch a player's card drafts: his best, or his best affordable one when the best isn't
+   * (see the card grid below). */
+  function cardSpanFor(group: { bestTalentSpan: PlayerSpan; spansByTal: PlayerSpan[] }): PlayerSpan {
+    const best = group.bestTalentSpan;
+    if (canPick && isPickLegal(state, best.id)) return best;
+    return group.spansByTal.find((s) => canPick && isPickLegal(state, s.id)) ?? best;
+  }
   function showAffordable() {
     setSearch('');
     setSelectedPosition('ALL');
@@ -1227,6 +1234,7 @@ export default function DraftBoard({
         return (
           <PlayerPeekModal
             group={group}
+            cardSpanId={cardSpanFor(group).id}
             state={state}
             canPick={canPick}
             currentTeam={currentTeam}
@@ -1646,7 +1654,7 @@ export default function DraftBoard({
                     // that mismatch was never actually reachable here — `spansByTal` (always real
                     // value order, computed alongside `spansByAiValue`) is the correct source
                     // either way and removes the landmine if that gating ever changes.
-                    const target = bestLegal ? best : group.spansByTal.find((s) => canPick && isPickLegal(state, s.id)) ?? best;
+                    const target = bestLegal ? best : cardSpanFor(group);
                     const ghost = ghosts.get(normalizePlayerName(group.playerName));
                     const legal = !ghost && canPick && isPickLegal(state, target.id);
                     const card = (

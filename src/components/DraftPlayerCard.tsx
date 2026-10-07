@@ -1,11 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import type { OverallTier } from '../engine/grades';
-import { displayTalentForSpan, formatTal } from '../engine/grades';
-import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { naturalPosition } from '../engine/naturalPosition';
 import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
 import { EraYears } from './EraYears';
+import { cardRoles } from './cardRoles';
 import { TeamBand, spanTeamColor } from './TeamBand';
 
 /** Card frame colour per tier (the All-Time Draft's "wariant A" tier frame), shared by every draft
@@ -51,8 +50,9 @@ interface DraftPlayerCardProps {
 /**
  * The player card of the All-Time Draft grid, shared with Quick 5 (2026-09-26, the user: "quick 5
  * może bardziej przypominać normalny draft"). 2026-10-07, the UI simplification (approved mockup):
- * team band, face, name, position · years, a big TAL, the cost, one box line and a single Draft
- * button; the tier is a small dot and a tap on the card opens Scouting. Draw Five deals its own
+ * team band, face, name, position · years, the tier and the cost, one or two style labels (see
+ * cardRoles), one box line and a single Draft button; a tap on the card opens Scouting. Every row
+ * has a fixed height so the cards line up across the grid. Draw Five deals its own
  * blind layout (`blind`: no tier, TAL, position or buttons — the whole card is the pick).
  */
 export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, onScouting, scoutingTitle, blind, className, title, style, children }: DraftPlayerCardProps) {
@@ -91,19 +91,21 @@ export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, o
               {naturalPosition(span.playerName)} · {span.spanLabel}
             </span>
           </span>
-          <span className="at-pc-tier" title={`${tier} tier`} aria-hidden />
-          <span className="at-sr-only">{tier} tier</span>
         </div>
         <div className="at-pc-numbers">
-          <span className="at-pc-tal" title="Talent rating of the years this card drafts">
-            {formatTal(displayTalentForSpan(tierContextFor(span)))}
-            <small>TAL</small>
+          <span className="at-pc-tier" title="Tier of the years this card drafts">
+            {tier}
           </span>
           <span className="at-pc-cost" title={`Costs ${Math.round(span.fga)} caps`}>
             <CapIcon size={11} />
             {Math.round(span.fga)}
           </span>
         </div>
+        <span className="at-pc-roles">
+          {cardRoles(span).map((role) => (
+            <span key={role}>{role}</span>
+          ))}
+        </span>
         <span className="at-pc-line" title="Points · rebounds · assists a game">
           {span.box.ppg.toFixed(1)} · {span.box.rpg.toFixed(1)} · {span.box.apg.toFixed(1)}
         </span>

@@ -406,6 +406,10 @@ const GRADE_ORDER: Grade[] = ['F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 
 function gradeRank(g: Grade): number {
   return GRADE_ORDER.indexOf(g);
 }
+/** The midpoint of two grades, rounded down (the scouting window's "Fits anywhere": O-POR with D-POR). */
+export function averageGrade(a: Grade, b: Grade): Grade {
+  return GRADE_ORDER[Math.floor((gradeRank(a) + gradeRank(b)) / 2)];
+}
 function gradeAtLeast(g: Grade, min: Grade): boolean {
   return gradeRank(g) >= gradeRank(min);
 }

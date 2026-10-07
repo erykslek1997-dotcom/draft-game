@@ -193,7 +193,7 @@ export function DraftHelpDialog({
         {tiers.length > 0 && (
           <>
             <h3 className="at-calm-help-h">Tiers</h3>
-            <p className="at-calm-help-item at-calm-faint">The dot on a card is the tier of the years it drafts.</p>
+            <p className="at-calm-help-item at-calm-faint">The label on a card is the tier of the years it drafts.</p>
             <div className="at-calm-help-tiers">
               {tiers.map((tier) => (
                 <span key={tier}>
