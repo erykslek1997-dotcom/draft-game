@@ -14,6 +14,7 @@ import { estimatedMinutesPerGame } from './minutesPerGame';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { computeOffensiveTalent } from './talent';
 import { rimPressureTeam } from './rimPressure';
+import { teamSpacingValue } from './midrangeGravity';
 import { fiveSwitchability } from './fit';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { assignMatchups, defenderProfile, fiveDefense, REFERENCE, type DefenderProfile, type FiveDefense } from './liveDefense';
@@ -170,8 +171,9 @@ const MAX_CONTEXT_GAIN = 0.02;
 const contextGain = (delta: number) => Math.min(MAX_CONTEXT_GAIN, delta);
 /** 2026-10-02, the user (Jordan beside four shooters and beside four non-shooters came out within a
  * point of each other): the cap above was meant for the stacking of usage and passing, and it was
- * swallowing the room a five gives. Room has its own, wider bounds, both ways. */
-const MAX_SPACING_GAIN = 0.04;
+ * swallowing the room a five gives. Room has its own, wider bounds, both ways. 2026-10-07: 4 -> 6
+ * points (the user), with the engine's spacing behind it (`contextStats.ts`). */
+const MAX_SPACING_GAIN = 0.06;
 const spacingGain = (delta: number) => Math.max(-MAX_SPACING_GAIN, Math.min(MAX_SPACING_GAIN, delta));
 /** A tired player makes fewer shots (`fatigue.ts`, the same curve the minute solver prices). */
 const fatigue = (minutes: number) => 1 - fatigueShare(minutes);
@@ -629,6 +631,10 @@ function overTierShare(span: PlayerSpan, minutes: number): number {
   const y = Math.max(0, minutes - minuteProfileForSpan(span).ceiling - MINUTES_CAP_TOLERANCE);
   return ROTATION_TUNING.overStep * y * (y + 1);
 }
+/** A man who can't shoot is left open (`contextStats.ts`, `SPACING_TUNING`): the few threes he does
+ * take are open looks (step 7.5). How much of a non-shooter he is, 0-1, from the engine's spacing. */
+const SAGGED_OPEN_THREE = 0.03;
+const nonShooter = (span: PlayerSpan) => Math.max(0, Math.min(1, (35 - teamSpacingValue(span)) / 35));
 /** The five's own turnover rate against an average five's (1 = average). */
 function ballSecurity(off: CourtPlayer[]): number {
   const own = off.reduce((s, c) => s + c.turnoverShare, 0) / REF_FIVE_TURNOVERS;
@@ -787,7 +793,7 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
       twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) + edges[i].two * (setups[i].two - habits[i].two))),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three))),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three))),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,

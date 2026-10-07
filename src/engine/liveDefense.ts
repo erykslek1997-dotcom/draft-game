@@ -6,6 +6,8 @@ import { computeOffensiveTalent } from './talent';
 import { positionFitMultiplier, STARTER_SLOTS } from './positions';
 import { modernBox } from './modernBox';
 import { estimatedMinutesPerGame } from './minutesPerGame';
+import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
+import { rimPressureForFit } from './rimPressure';
 
 /**
  * 2026-10-07, stage 2b step 3 (the user: "obrona jako mechanika", budget 60/28/8/4 from the NBA's
@@ -104,7 +106,10 @@ const PERMUTATIONS: number[][] = (() => {
  * Returns, for each attacker (by index), the index of his defender.
  */
 export function assignMatchups(attackers: PlayerSpan[], usage: number[], defenders: PlayerSpan[]): number[] {
-  const danger = attackers.map((a, i) => usage[i] * computeOffensiveTalent(a));
+  // 2026-10-07, stage 2b step 7.5 (the user): the weakest defender hides on the man who can't make
+  // anything of him — Bruce Bowen, Shane Battier: guarded close, but their shots come from others —
+  // not on a non-shooter who beats him another way (Simmons off the dribble, Rodman on the glass).
+  const danger = attackers.map((a, i) => usage[i] * computeOffensiveTalent(a) * (0.6 + 0.4 * exploitsMismatch(a, usage[i])));
   const quality = defenders.map((d) => attackers.map((a, i) => (50 + 10 * defenderProfile(d).dtal) * guardFit(d, STARTER_SLOTS[i] ?? a.primaryPosition)));
   let best = PERMUTATIONS[0];
   let bestScore = -Infinity;
@@ -118,6 +123,21 @@ export function assignMatchups(attackers: PlayerSpan[], usage: number[], defende
     }
   }
   return attackers.map((_, i) => (defenders.length === attackers.length ? best[i] : Math.min(i, defenders.length - 1)));
+}
+
+const UNASSISTED_FG = buildSelfCreationYearMap('unassistedFg');
+const exploitCache = new WeakMap<PlayerSpan, number>();
+/** How well an attacker punishes a weak defender, 0-1: the best of making his own shot (share of
+ * unassisted makes, play-by-play since 1996-97, else from his usage), attacking the rim, and
+ * crashing the offensive glass. */
+export function exploitsMismatch(span: PlayerSpan, usage: number): number {
+  let e = exploitCache.get(span);
+  if (e === undefined) {
+    const own = measuredSelfCreationForSpan(span, UNASSISTED_FG) ?? Math.max(0, Math.min(1, 0.3 + 1.2 * (usage - 0.2)));
+    e = Math.max(0, Math.min(1, Math.max((own - 0.15) / 0.45, rimPressureForFit(span) / 80, defenderProfile(span).oreb36 / 4)));
+    exploitCache.set(span, e);
+  }
+  return e;
 }
 
 /** A five's defense at once. */
