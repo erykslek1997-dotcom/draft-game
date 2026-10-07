@@ -11,6 +11,7 @@ import { modernBox } from './modernBox';
 import { fatigueShare } from './fatigue';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { playmakingScoreForPlayer } from './playmakingLookup';
+import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { assignMatchups, defenderProfile, fiveDefense, REFERENCE, type DefenderProfile, type FiveDefense } from './liveDefense';
 
 /**
@@ -126,24 +127,10 @@ function foulChance(freeThrowRate: number): number {
 }
 const AND_ONE = 0.05;
 const OFF_REBOUND = 0.26;
-/**
- * 2026-10-02, the user (Kawhi at half his real assists beside Jokic: "grał w dzielących się piłką
- * Spurs"): a five of good passers makes MORE assists, not the same number split thinner. The chance
- * a make was assisted follows the four teammates' combined assist rate (per 36) against a typical
- * four's, and the passer is then picked in plain proportion to his own rate.
- */
-const ASSISTED = 0.55;
-const TYPICAL_MATES_ASSISTS_PER_36 = 14;
-const ASSISTED_RATE_POWER = 0.6;
-/** 2026-10-02: a five of Kidd, Simmons, Draymond and Jokic assisted 85% of its makes; the best real
- * passing teams reach ~70%. */
-const MAX_ASSISTED = 0.75;
-function assistedChance(mates: CourtPlayer[]): number {
-  const passing = mates.reduce((sum, c) => sum + rates(c.player.span).ast, 0);
-  return Math.max(0.4, Math.min(MAX_ASSISTED, ASSISTED * (passing / TYPICAL_MATES_ASSISTS_PER_36) ** ASSISTED_RATE_POWER));
-}
-/** Assists go to the real passers: weight by assists per game to this power (2026-10-02 — linear
- * weights spread them so evenly that Jokic averaged 5 and the league leader 9). */
+/** Assists go to the real passers: weight by assists per 36 to this power (2026-10-02 — linear
+ * weights spread them so evenly that Jokic averaged 5 and the league leader 9). How many makes are
+ * assisted at all follows from the set-up shots (`SETUP_TUNING`). */
+const PASSER_POWER = 1.3;
 /** Rebounds concentrate on the real rebounders a little more than their rates alone. */
 const REBOUND_WEIGHT_POWER = 1.1;
 /** Offensive share of rebounds off a missed last free throw. */
@@ -154,7 +141,7 @@ const FT_OFF_REBOUND = 0.14;
  * 3.6 boards in 14 minutes), and a starter's per-game totals over-weighed him against a bench
  * player. One named exception for assists: "żaden inny C w historii aż tak nie rozgrywał" — Jokic.
  */
-const PASSING_HUBS: Record<string, number> = { 'Nikola Jokic': 2 };
+const PASSING_HUBS: Record<string, number> = { 'Nikola Jokic': 1.7 };
 const rateCache = new WeakMap<PlayerSpan, { reb: number; ast: number; stl: number; blk: number }>();
 function rates(span: PlayerSpan) {
   let r = rateCache.get(span);
@@ -268,6 +255,12 @@ interface CourtPlayer {
   threeRate: number;
   /** His share of the five's plays (who the defense guards first). */
   usage: number;
+  /** Share of his twos and threes set up by a pass in this five (`setupHere`), and how much better
+   * those go in than his own (`setupEdge`). */
+  setup2: number;
+  setup3: number;
+  edge2: number;
+  edge3: number;
 }
 
 interface GameRoster {
@@ -424,7 +417,7 @@ export const DEFENSE_TUNING = {
   refRim: 1.26,
   /** A player's real percentages already hold his breaks and putbacks; the half court gives back
    * what the game now adds there, so his season lands on his own numbers. */
-  halfCourt: 0.97,
+  halfCourt: 0.975,
   turnover: 0.133,
   /** A player's real free-throw rate already holds his trips in the bonus, which the game now
    * plays as their own fouls; shooting fouls give that back, so the league's free throws stay
@@ -443,6 +436,60 @@ export const OFFENSE_TUNING = {
   handler: 0.09,
 };
 const REF_FIVE_TURNOVERS = 0.1267;
+/**
+ * Step 2 (the user: passing -> shot quality). Before a shot the game decides whether a pass set it
+ * up or he made it himself; a set-up shot goes in more often (`setupEdge`) and only a set-up make
+ * is an assist.
+ * How many of his shots are set up is his own (the user: "kto bardziej rzuca po asystach"): the
+ * share of his makes that were assisted, twos and threes apart, from play-by-play since 1996-97
+ * (Korver 89% / 97%, Klay 64% / 92%, Curry 35% / 57%, Harden 12% / 16%); before that, a fit of
+ * those numbers on usage, position and assists (R² 0.54 / 0.59). The four beside him move it by
+ * how much better or worse they pass than his real teammates, and his real percentages already
+ * hold his real share, so he gains or loses only the difference.
+ */
+export const SETUP_TUNING = {
+  twoBase: 0.02,
+  twoSlope: 0.08,
+  threeBase: 0.01,
+  threeSlope: 0.05,
+  matesPower: 0.6,
+};
+/**
+ * How much better his set-up shots are than his own, by type (the user, 2026-10-07: "uzależnij od
+ * typu gracza"): the less he creates for himself, the worse the shots he does create — Korver's or
+ * Klay's pull-up three is far below his catch-and-shoot one (~5-6 points), Curry's a couple, Harden's
+ * about the same. Across the pool it averages ~4 points for threes and ~4 for twos.
+ */
+function setupEdge(habit: { two: number; three: number }): { two: number; three: number } {
+  return {
+    two: SETUP_TUNING.twoBase + SETUP_TUNING.twoSlope * habit.two ** 2,
+    three: SETUP_TUNING.threeBase + SETUP_TUNING.threeSlope * habit.three ** 3,
+  };
+}
+const UNASSISTED_TWOS = buildSelfCreationYearMap('unassisted2Pt');
+const UNASSISTED_THREES = buildSelfCreationYearMap('unassisted3Pt');
+const habitCache = new WeakMap<PlayerSpan, { two: number; three: number }>();
+function setupHabit(span: PlayerSpan, originalUsage: number): { two: number; three: number } {
+  let h = habitCache.get(span);
+  if (!h) {
+    const big = span.primaryPosition === 'C' || span.primaryPosition === 'PF' ? 1 : 0;
+    const two = measuredSelfCreationForSpan(span, UNASSISTED_TWOS);
+    const three = measuredSelfCreationForSpan(span, UNASSISTED_THREES);
+    const clamp = (v: number) => Math.max(0.05, Math.min(0.97, v));
+    h = {
+      two: clamp(two != null ? 1 - two : 0.726 - 0.519 * originalUsage + 0.092 * big - 0.046 * span.box.apg),
+      three: clamp(three != null ? 1 - three : 1.108 - 0.785 * originalUsage + 0.071 * big - 0.037 * span.box.apg),
+    };
+    habitCache.set(span, h);
+  }
+  return h;
+}
+/** His set-up share here: his own, moved by his four teammates' passing against his real ones'. */
+function setupHere(habit: number, line: { matesAssists: number; originalMatesAssists: number }): number {
+  const passing = Math.max(0.6, Math.min(1.4, (Math.max(0.5, line.matesAssists) / Math.max(0.5, line.originalMatesAssists)) ** SETUP_TUNING.matesPower));
+  return Math.max(0.05, Math.min(0.97, habit * passing));
+}
+
 const REF_HANDLER = { mean: 92.8, sd: 5.2 };
 const handlerCache = new WeakMap<PlayerSpan, number>();
 function handlerScore(span: PlayerSpan): number {
@@ -578,18 +625,25 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
   let court = cache.get(key);
   if (!court) {
     const lines = contextLines(five.map((p) => p.span));
+    const habits = five.map((p, i) => setupHabit(p.span, lines[i].originalUsage));
+    const setups = habits.map((h, i) => ({ two: setupHere(h.two, lines[i]), three: setupHere(h.three, lines[i]) }));
+    const edges = habits.map(setupEdge);
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight),
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta + lines[i].playmakingDelta))),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta + lines[i].playmakingDelta) * THREE_PCT_PER_TS)),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta) + edges[i].two * (setups[i].two - habits[i].two))),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three))),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
       threeRate: Math.min(0.9, player.span.box.threePA / Math.max(1, player.span.fga)),
       usage: lines[i].usage,
+      setup2: setups[i].two,
+      setup3: setups[i].three,
+      edge2: edges[i].two,
+      edge3: edges[i].three,
     }));
     for (const c of court) {
       c.twoPct *= DEFENSE_TUNING.halfCourt;
@@ -842,7 +896,11 @@ function playRosters(
         : atRim
           ? Math.min(0.85, shot.rimPct + (fresh ? BREAK_RIM_BONUS : next === 'putback' ? PUTBACK_BONUS : 0)) * defended(mods.rim)
           : shot.midPct * defended(mods.mid);
-      const p = base * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
+      // Set up by a pass or his own; his percentages above are the average of the two.
+      const setupShare = three ? shot.setup3 : shot.setup2;
+      const setup = next !== 'putback' && rng() < setupShare * (next === 'reset' ? RESET_ASSISTED : 1);
+      const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare);
+      const p = (base + edge) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
@@ -870,9 +928,8 @@ function playRosters(
         }
         let joker = shooter.joker;
         const mates = off.filter((x) => x.player !== shooter);
-        const assisted = next === 'putback' ? 0 : assistedChance(mates) * (next === 'reset' ? RESET_ASSISTED : 1);
-        if (rng() < assisted) {
-          const passer = pickWeighted(rng, mates, (x) => rates(x.player.span).ast + 0.3).player;
+        if (setup) {
+          const passer = pickWeighted(rng, mates, (x) => rates(x.player.span).ast ** PASSER_POWER + 0.2).player;
           box[o][passer.label].ast++;
           text += ` (${passer.label} assist)`;
           joker = joker || passer.joker;

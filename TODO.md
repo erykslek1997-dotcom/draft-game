@@ -274,6 +274,10 @@ Decyzje (2026-09-30):
     SD TOV% 0.86 (mecz dziś ~0.4).
     1. Prowadzenie piłki → straty (realne straty graczy piątki + jakość rozgrywającego).
     2. Podanie → jakość rzutu (rzut po asyście +3–4 pp za 3; asysty elitarnych podających).
+       Zrobione 2026-10-07: udział rzutów po asyście gracza z play-by-play (od 1996-97, wcześniej
+       model), przewaga zależna od typu (Korver/Klay duża, Harden ~0). Liga 25.5 ast (58% trafień,
+       NBA 59.7%), rozrzut AST% 5.0 pp jak NBA. Efekt drużynowy mały (playmaking 0.32 pkt/SD w
+       meczu vs ~0.85 w silniku) — decyzja C: waga playmakingu w silniku do kroku 7.
     3. Self-creation → akcje na końcu zegara (bez kreacji ok. −4 pp, kreator ~0).
     3b. Kanał gwiazdy (decyzja 2026-10-07): najlepszy gracz dostaje więcej piłek w ważnych akcjach
         i utrzymuje skuteczność — żeby championship structure działało jak w silniku.

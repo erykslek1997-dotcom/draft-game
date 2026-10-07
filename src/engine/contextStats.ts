@@ -30,13 +30,6 @@ const USAGE_OTAL_POWER = 1;
 const USAGE_MIN_SHARE = 0.75;
 const USAGE_MAX_GROWTH = 1.05;
 const USAGE_MAX = 0.45;
-/**
- * Better passers beside him mean better shots (2026-10-02, the user, on KG): his shooting moves by
- * `PLAYMAKING_PER_ASSIST` per assist per 36 the average teammate here gives beyond his real
- * teammates' — an estimate (a five of elite passers ~+2 points of FG%), capped.
- */
-const PLAYMAKING_PER_ASSIST = 0.006;
-const MAX_PLAYMAKING_DELTA = 0.03;
 const assistsPer36 = (span: PlayerSpan) => (span.box.apg * 36) / (estimatedMinutesPerGame(span) ?? 32);
 const DEFAULT_CONTEXT: [number, number, number, number, number, number] = [200, 200, 500, 880, 280, 3500];
 
@@ -56,8 +49,10 @@ export interface ContextLine {
   shotWeight: number;
   /** His real free-throw attempts per field-goal attempt. */
   freeThrowRate: number;
-  /** Change to his shooting from how well the four teammates here pass, against his real ones. */
-  playmakingDelta: number;
+  /** Assists per 36 of the average teammate here, and of his real teammates — how much better or
+   * worse his shots are set up here is the live game's (`liveGame.ts`, `SETUP_TUNING`). */
+  matesAssists: number;
+  originalMatesAssists: number;
   /** Share of his two-point attempts taken at the rim. */
   rimShare: number;
 }
@@ -123,7 +118,8 @@ export function contextLines(five: PlayerSpan[]): ContextLine[] {
       usageDelta: -TS_PER_USAGE * (usage[i] - originalUsage),
       shotWeight: usage[i] * shotShare,
       freeThrowRate,
-      playmakingDelta: Math.max(-MAX_PLAYMAKING_DELTA, Math.min(MAX_PLAYMAKING_DELTA, PLAYMAKING_PER_ASSIST * (matesAssists - originalMatesAssists))),
+      matesAssists,
+      originalMatesAssists,
     };
   });
 }
