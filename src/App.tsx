@@ -7,7 +7,7 @@ import { stepDone } from './components/pathProgress';
 // this file's own docstrings already care about (see DISPLAY_ROSTER_SIZE's comment below).
 import { randomTeamNames } from './engine/teamNames';
 import { initialTeamsForSeed } from './engine/draftSetup';
-import { ROSTER_SIZE } from './engine/positions';
+import { ROSTER_SIZE } from './engine/rosterConstants';
 import { randomSeed } from './engine/rng';
 import type { Team } from './engine/types';
 import DraftLottery from './components/DraftLottery';
