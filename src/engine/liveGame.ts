@@ -10,6 +10,7 @@ import { contextLines } from './contextStats';
 import { modernBox } from './modernBox';
 import { fatigueShare } from './fatigue';
 import { estimatedMinutesPerGame } from './minutesPerGame';
+import { assignMatchups, defenderProfile, fiveDefense, REFERENCE, type DefenderProfile, type FiveDefense } from './liveDefense';
 
 /**
  * 2026-09-28, the user (Daily Slot Machine 2.0: "możemy zrobić symulacje live? Z statystami"):
@@ -43,6 +44,8 @@ export interface BoxLineStats {
   ftm: number;
   fta: number;
   tov: number;
+  /** Personal fouls (2026-10-07: fouls are the defender's, and six send him to the bench). */
+  pf: number;
   /** Minutes played (2026-10-02: full teams play their rotation). */
   min: number;
 }
@@ -112,7 +115,6 @@ export function headToHeadMargin(yours: Lineup, theirs: Lineup): number {
 
 const POSSESSIONS = 200;
 const GAME_SECONDS = 48 * 60;
-const TURNOVER = 0.12;
 /**
  * 2026-10-02: each shooter draws fouls at his own real rate. A trip is ~2.1 free throws and an
  * and-one adds ~0.02 per shot, so a free-throw rate r (FTA per FGA) comes from a foul on a share
@@ -163,13 +165,6 @@ function rates(span: PlayerSpan) {
   }
   return r;
 }
-// 2026-10-02: 0.07 gave a whole team ~1.8 blocks a game (an all-time season's leader 1.0); real
-// teams block ~5, on roughly a sixth of their opponents' missed twos.
-const BLOCKED = 0.17;
-/** Make-probability tilt per point of expected margin (calibrated in scripts/testLiveGame.ts). */
-/** Scoring chances a team gets in a game (possessions after turnovers, plus offensive rebounds) —
- * turns the engine's margin into a per-shot gap. */
-const SHOTS_PER_TEAM = 98;
 /** Largest share by which a team's shooting is nudged toward the engine's margin. */
 const MAX_NUDGE = 0.3;
 /** A usage-driven change in true shooting moves three-point accuracy about two-thirds as much. */
@@ -263,6 +258,15 @@ interface CourtPlayer {
   turnoverShare: number;
   twoPct: number;
   threePct: number;
+  /** His two-pointers split by where they come from: share at the rim, and the make rate there and
+   * from mid-range (the two average back to `twoPct`). */
+  rimShare: number;
+  rimPct: number;
+  midPct: number;
+  /** His three-point attempts per shot. */
+  threeRate: number;
+  /** His share of the five's plays (who the defense guards first). */
+  usage: number;
 }
 
 interface GameRoster {
@@ -394,6 +398,147 @@ class Bench {
   }
 }
 
+/**
+ * 2026-10-07, stage 2b step 3 — defense as a mechanic (the user; budget from the NBA's four factors,
+ * 2019-26: shooting 60%, turnovers 28%, rebounding 8%, fouls 4%). Each knob is per z-score of the
+ * defense in `liveDefense.ts` (0 = the bench leagues' average), sized so the best tenth of defenses
+ * land where the NBA's do: opponents' eFG -1.8 points, turnovers forced +1.3, defensive rebounds
+ * +1.9, free throws per shot -2.3 points.
+ */
+/** Rim and mid-range make rates differ by this much (today: ~66% at the rim, ~42% from mid-range). */
+const RIM_MID_GAP = 0.22;
+const STEAL_SHARE = 0.55;
+const STEAL_K = 0.08;
+/** The defense knobs, in one place so the calibration scripts can sweep them. */
+export const DEFENSE_TUNING = {
+  rim: 0.055,
+  direct: 0.035,
+  mid: 0.045,
+  help: 0.015,
+  three: 0.04,
+  threeRate: 0.08,
+  tov: 0.26,
+  reb: 0.1,
+  foul: 0.85,
+  refRim: 1.26,
+  /** A player's real percentages already hold his breaks and putbacks; the half court gives back
+   * what the game now adds there, so his season lands on his own numbers. */
+  halfCourt: 0.97,
+  turnover: 0.133,
+};
+/** Five-level reference: the best rim protector plus a share of the second, and both ends'
+ * rebounding per 36 summed over a five (bench leagues, minutes-weighted). */
+const REF_FIVE_OREB = 5 * REFERENCE.oreb36.mean;
+const SD_FIVE_OREB = REFERENCE.oreb36.sd * Math.sqrt(5);
+const REF_FIVE_DREB = 5 * REFERENCE.dreb36.mean;
+const SD_FIVE_DREB = REFERENCE.dreb36.sd * Math.sqrt(5);
+const MOD_FLOOR = 0.75;
+const MOD_CEIL = 1.25;
+const clampMod = (v: number) => Math.max(MOD_FLOOR, Math.min(MOD_CEIL, v));
+/** Hunting the weakest defender: chance per z he trails his four teammates, and what he gives up. */
+const HUNT_PER_Z = 0.07;
+const MAX_HUNT = 0.25;
+const HUNT_PER_DTAL = 0.03;
+/** Fouls away from the shot per trip, the bonus from the fifth team foul, six to foul out. */
+const NON_SHOOTING_FOUL = 0.065;
+const BONUS_FOULS = 4;
+const FOUL_OUT = 6;
+const TROUBLE_SOFTEN = 0.6;
+/** Fast breaks: after a steal most trips run, after a defensive rebound some (the user: 15% until
+ * there is data on tempo). A break is a shot at the rim with a head start, rarely a trailing three. */
+const BREAK_AFTER_STEAL = 0.62;
+const BREAK_AFTER_REBOUND = 0.15;
+const BREAK_RIM_BONUS = 0.12;
+const BREAK_THREE_RATE = 0.12;
+const BREAK_FOUL = 1.3;
+/** After an offensive rebound: a putback at the rim, or the ball back out on a 14-second clock —
+ * scrambled defense, more and better threes, fewer turnovers and assists. */
+const PUTBACK_SHARE = 0.37;
+const PUTBACK_BONUS = 0.06;
+const RESET_THREE_RATE = 1.3;
+const RESET_THREE_PCT = 0.015;
+const RESET_TURNOVER = 0.6;
+const RESET_ASSISTED = 0.85;
+/** Blocks: a sixth of missed twos overall, mostly at the rim and more with a rim protector. */
+const BLOCKED_AT_RIM = 0.24;
+const BLOCKED_MID = 0.06;
+const BLOCK_PER_RIM = 0.25;
+
+interface ShotMods {
+  rim: number;
+  mid: number;
+  three: number;
+  threeRate: number;
+  foul: number;
+}
+interface Clash {
+  def: FiveDefense;
+  /** For each attacker, the index of his defender. */
+  guard: number[];
+  mods: ShotMods[];
+  tovMul: number;
+  stealShare: number;
+  oreb: number;
+  foulRate: number;
+  huntP: number;
+}
+
+function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
+  const defSpans = defCourt.map((c) => c.player.span);
+  const fd = fiveDefense(defSpans);
+  const guard = assignMatchups(off.map((c) => c.player.span), off.map((c) => c.usage), defSpans);
+  const offOreb = off.reduce((s, c) => s + defenderProfile(c.player.span).oreb36, 0);
+  const mods = off.map((_, i) => {
+    const d = fd.profiles[guard[i]];
+    return {
+      rim: clampMod(1 - DEFENSE_TUNING.rim * (fd.rim - DEFENSE_TUNING.refRim) - DEFENSE_TUNING.direct * d.dtal),
+      mid: clampMod(1 - DEFENSE_TUNING.mid * d.dtal - DEFENSE_TUNING.help * fd.perimeter),
+      three: clampMod(1 - DEFENSE_TUNING.three * d.perimeter),
+      threeRate: clampMod(1 - DEFENSE_TUNING.threeRate * fd.perimeter),
+      foul: d.foulIndex ** DEFENSE_TUNING.foul,
+    };
+  });
+  return {
+    def: fd,
+    guard,
+    mods,
+    tovMul: clampMod(1 + DEFENSE_TUNING.tov * (0.5 * fd.perimeter + 0.5 * fd.stl)),
+    stealShare: Math.max(0.35, Math.min(0.75, STEAL_SHARE * (1 + STEAL_K * fd.stl))),
+    oreb: OFF_REBOUND * Math.exp(DEFENSE_TUNING.reb * ((offOreb - REF_FIVE_OREB) / SD_FIVE_OREB - (fd.dreb36 - REF_FIVE_DREB) / SD_FIVE_DREB)),
+    foulRate: fd.profiles.reduce((s, p) => s + p.foulIndex ** DEFENSE_TUNING.foul, 0) / fd.profiles.length,
+    huntP: Math.min(MAX_HUNT, HUNT_PER_Z * fd.weakGap),
+  };
+}
+
+/** What the weakest defender gives up when he is hunted, on top of his own matchup. */
+function huntMod(d: DefenderProfile): number {
+  return clampMod(1 - HUNT_PER_DTAL * d.dtal);
+}
+
+/** Expected points of one trip for `off` against this defense at shooting `scale` — the measure the
+ * nudge evens out (turnovers, second chances and free throws included). */
+function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, number>, scale: number): number {
+  const shots = off.reduce((s, c) => s + c.shotShare, 0) || 1;
+  let value = 0;
+  let miss = 0;
+  off.forEach((c, i) => {
+    const w = c.shotShare / shots;
+    const m = cl.mods[i];
+    const t = (tired.get(c.player.label) ?? 1) * scale;
+    const r3 = Math.min(0.9, c.threeRate * m.threeRate);
+    const foulP = c.foul * m.foul;
+    const p3 = c.threePct * m.three * t;
+    const p2 = (c.rimShare * c.rimPct * m.rim + (1 - c.rimShare) * c.midPct * m.mid) * t;
+    const ft = c.player.span.box.ftPct;
+    const field = r3 * 3 * p3 + (1 - r3) * 2 * p2 * (1 + (AND_ONE * ft) / 2);
+    const line = (r3 * 3 + (1 - r3) * 2) * ft;
+    value += w * ((1 - foulP) * field + foulP * line);
+    miss += w * (1 - foulP) * (r3 * (1 - p3) + (1 - r3) * (1 - p2));
+  });
+  const tov = DEFENSE_TUNING.turnover * cl.tovMul;
+  return ((1 - tov) * value) / (1 - (1 - tov) * miss * cl.oreb);
+}
+
 function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlayer[] {
   const key = five.map((p) => p.span.id).join('|');
   let court = cache.get(key);
@@ -406,7 +551,18 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       foul: foulChance(lines[i].freeThrowRate),
       twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta + lines[i].playmakingDelta))),
       threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + contextGain(lines[i].usageDelta + lines[i].playmakingDelta) * THREE_PCT_PER_TS)),
+      rimShare: lines[i].rimShare,
+      rimPct: 0,
+      midPct: 0,
+      threeRate: Math.min(0.9, player.span.box.threePA / Math.max(1, player.span.fga)),
+      usage: lines[i].usage,
     }));
+    for (const c of court) {
+      c.twoPct *= DEFENSE_TUNING.halfCourt;
+      c.threePct *= DEFENSE_TUNING.halfCourt;
+      c.rimPct = Math.min(0.85, c.twoPct + (1 - c.rimShare) * RIM_MID_GAP);
+      c.midPct = Math.max(0.2, c.twoPct - c.rimShare * RIM_MID_GAP);
+    }
     cache.set(key, court);
   }
   return court;
@@ -443,7 +599,7 @@ export function teamWeakLink(team: Team): string | null {
   return scoreLineup(rosterFromTeam(team).starters).weakLink;
 }
 
-const emptyLine = (): BoxLineStats => ({ pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0, min: 0 });
+const emptyLine = (): BoxLineStats => ({ pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0, pf: 0, min: 0 });
 
 function playRosters(
   rosters: [GameRoster, GameRoster],
@@ -468,51 +624,98 @@ function playRosters(
     for (const court of schedule[side]) for (const c of court) minutes.set(c.player.label, (minutes.get(c.player.label) ?? 0) + possessionMinutes);
     return new Map([...minutes].map(([label, m]) => [label, tiring ? fatigue(m) : 1]));
   });
-  const perShot = (team: CourtPlayer[], side: GameSide) => {
-    const shots = team.reduce((sum, c) => sum + c.shotShare, 0) || 1;
-    let field = 0;
-    let line = 0;
-    for (const c of team) {
-      const b = c.player.span.box;
-      const r3 = Math.min(0.9, b.threePA / Math.max(1, c.player.span.fga));
-      field += (c.shotShare / shots) * (tired[side].get(c.player.label) ?? 1) * (1 - c.foul) * (r3 * 3 * c.threePct + (1 - r3) * 2 * c.twoPct * (1 + (AND_ONE * b.ftPct) / 2));
-      line += (c.shotShare / shots) * c.foul * (r3 * 3 + (1 - r3) * 2) * b.ftPct;
+  // 2026-10-07, stage 2b step 3 (the user: defense as a mechanic, budget 60/28/8/4): who guards
+  // whom and what the defense on the floor does to every shot, turnover, rebound and foul
+  // (`liveDefense.ts`). The engine's margin still decides the average game, but it is now met on the
+  // whole possession — shots, turnovers and second chances — so the nudge only covers what the
+  // mechanics leave.
+  const clashCache = new Map<string, Clash>();
+  const keyOf = (court: CourtPlayer[]) => court.map((c) => c.player.span.id).join('|');
+  const clashFor = (off: CourtPlayer[], def: CourtPlayer[]): Clash => {
+    const key = `${keyOf(off)}>${keyOf(def)}`;
+    let c = clashCache.get(key);
+    if (!c) {
+      c = buildClash(off, def);
+      clashCache.set(key, c);
     }
-    return { field, line };
+    return c;
   };
-  // 2026-10-02, the user's season export (good defenses finishing far above the engine's projection,
-  // Korver at 56% from three): the old version levelled both teams to one shooting level off the
-  // starting fives and tilted from there, which bent every player's percentages and left the bench
-  // out. Now each team keeps its own shooting — every five of the whole game, bench included — and
-  // only the GAP is nudged to the engine's margin: the smallest change that makes the average game
-  // land where the model says.
-  const natural = ([0, 1] as GameSide[]).map((side) => {
-    let field = 0;
-    let line = 0;
+  const meanPossession = (side: GameSide, scale: number) => {
+    let sum = 0;
     let n = 0;
-    schedule[side].forEach((court, k) => {
-      if (k % 2 !== side) return;
-      const e = perShot(court, side);
-      field += e.field;
-      line += e.line;
+    for (let k = side; k < POSSESSIONS; k += 2) {
+      sum += expectedPossession(schedule[side][k], clashFor(schedule[side][k], schedule[1 - side][k]), tired[side], scale);
       n++;
-    });
-    return { field: field / Math.max(1, n), line: line / Math.max(1, n) };
-  });
-  const gap = natural[0].field + natural[0].line - natural[1].field - natural[1].line;
-  const nudge = Math.max(-MAX_NUDGE, Math.min(MAX_NUDGE, (margin / SHOTS_PER_TEAM - gap) / (natural[0].field + natural[1].field)));
+    }
+    return sum / Math.max(1, n);
+  };
+  const perTeam = POSSESSIONS / 2;
+  const gapAt = (n: number) => perTeam * (meanPossession(0, 1 + n) - meanPossession(1, 1 - n));
+  let nudge: number;
+  if (gapAt(MAX_NUDGE) <= margin) nudge = MAX_NUDGE;
+  else if (gapAt(-MAX_NUDGE) >= margin) nudge = -MAX_NUDGE;
+  else {
+    let lo = -MAX_NUDGE;
+    let hi = MAX_NUDGE;
+    for (let i = 0; i < 18; i++) {
+      const mid = (lo + hi) / 2;
+      if (gapAt(mid) < margin) lo = mid;
+      else hi = mid;
+    }
+    nudge = (lo + hi) / 2;
+  }
   const makeScale: [number, number] = [1 + nudge, 1 - nudge];
   const box: [Record<string, BoxLineStats>, Record<string, BoxLineStats>] = [{}, {}];
   for (const side of [0, 1] as GameSide[]) for (const p of rosters[side].players) box[side][p.label] = emptyLine();
   const hunted = weakLinks ? [weakLinks[1], weakLinks[0]] : [scoreLineup(rosters[1].starters).weakLink, scoreLineup(rosters[0].starters).weakLink];
   const score: [number, number] = [0, 0];
   const quarters: [number[], number[]] = [[0, 0, 0, 0], [0, 0, 0, 0]];
+  const teamFouls: [number[], number[]] = [[0, 0, 0, 0], [0, 0, 0, 0]];
+  const fouledOut = [new Set<Player>(), new Set<Player>()];
+  // A break the other way: set by a steal or a defensive rebound, used by that team's next trip.
+  const breakNext: [number, number] = [0, 0];
   const moments: GameMoment[] = [];
   const snapshot = (): [BoxLineStats[], BoxLineStats[]] => [
     rosters[0].players.map((p) => ({ ...box[0][p.label] })),
     rosters[1].players.map((p) => ({ ...box[1][p.label] })),
   ];
   let lastCourt: [CourtPlayer[], CourtPlayer[]] = [starting[0], starting[1]];
+  // A defender in foul trouble (2 in the first quarter, 3 by half, 4 in the third, 5) plays softer.
+  const inTrouble = (side: GameSide, p: Player, quarter: number) => box[side][p.label].pf >= [2, 3, 4, 5][quarter];
+  const foul = (side: GameSide, p: Player, k: number, quarter: number) => {
+    const line = box[side][p.label];
+    line.pf++;
+    teamFouls[side][quarter]++;
+    if (line.pf >= FOUL_OUT && !fouledOut[side].has(p)) {
+      fouledOut[side].add(p);
+      // His remaining minutes go to the bench: whoever is listed at his slot, else anyone free.
+      for (let j = k + 1; j < POSSESSIONS; j++) {
+        const court = schedule[side][j];
+        const at = court.findIndex((c) => c.player === p);
+        if (at < 0) continue;
+        const five = court.map((c) => c.player);
+        const slot = STARTER_SLOTS[at];
+        const free = (q: Player) => !five.includes(q) && !fouledOut[side].has(q);
+        const sub = rosters[side].slotMinutes[slot].map((e) => e.player).find(free) ?? rosters[side].players.find(free);
+        if (!sub) break;
+        five[at] = sub;
+        schedule[side][j] = courtFor(courts[side], five);
+      }
+    }
+  };
+  const freeThrows = (o: GameSide, shooter: Player, attempts: number) => {
+    const line = box[o][shooter.label];
+    let made = 0;
+    let lastMissed = false;
+    for (let f = 0; f < attempts; f++) {
+      lastMissed = rng() >= shooter.span.box.ftPct;
+      if (!lastMissed) made++;
+    }
+    line.fta += attempts;
+    line.ftm += made;
+    line.pts += made;
+    return { made, lastMissed };
+  };
 
   for (let k = 0; k < POSSESSIONS; k++) {
     const both: [CourtPlayer[], CourtPlayer[]] = [schedule[0][k], schedule[1][k]];
@@ -521,48 +724,75 @@ function playRosters(
     const o = (k % 2) as GameSide;
     const d = (1 - o) as GameSide;
     const off = both[o];
-    const def = both[d].map((c) => c.player);
+    const defCourt = both[d];
+    const def = defCourt.map((c) => c.player);
+    const clash = clashFor(off, defCourt);
     const quarter = Math.min(3, Math.floor((k * 4) / POSSESSIONS));
     let play: GamePlay | null = null;
     let pts = 0;
+    const onBreak = breakNext[o];
+    breakNext[o] = 0;
+    // Away from the ball: a foul that is not on a shot (side out, or two shots in the bonus).
+    if (!onBreak && rng() < NON_SHOOTING_FOUL * clash.foulRate) {
+      const fouler = pickWeighted(rng, def, (p) => defenderProfile(p.span).foulIndex);
+      const inBonus = teamFouls[d][quarter] >= BONUS_FOULS;
+      foul(d, fouler, k, quarter);
+      if (inBonus) {
+        const fouled = pickWeighted(rng, off, (c) => c.shotShare).player;
+        const ft = freeThrows(o, fouled, 2);
+        pts += ft.made;
+        play = { side: o, text: `${fouled.label} ${ft.made}/2 in the bonus`, joker: fouled.joker, quiet: ft.made === 0 };
+        score[o] += pts;
+        quarters[o][quarter] += pts;
+        if (record) moments.push({ left: Math.max(0, GAME_SECONDS - ((k + 1) * GAME_SECONDS) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
+        continue;
+      }
+    }
+    let next: 'open' | 'putback' | 'reset' = 'open';
+    let putbackBy: CourtPlayer | null = null;
     for (let guard = 0; guard < 4; guard++) {
-      if (rng() < TURNOVER) {
-        // 2026-10-02 (Jordan 5.9 turnovers per 48 at 41% usage, Kidd 2.0): the ball is lost by whoever
-        // really lost it — his own turnover share of the five, not his share of the shots.
-        if (rng() < 0.55) {
+      const tovChance = DEFENSE_TUNING.turnover * clash.tovMul * (next === 'reset' ? RESET_TURNOVER : 1) * (onBreak && guard === 0 ? 0.5 : 1);
+      if (next !== 'putback' && rng() < tovChance) {
+        if (rng() < clash.stealShare) {
           const thief = pickWeighted(rng, def, (p) => rates(p.span).stl + 0.2);
           const lost = pickWeighted(rng, off, (c) => c.turnoverShare).player;
           box[d][thief.label].stl++;
           box[o][lost.label].tov++;
+          if (rng() < BREAK_AFTER_STEAL) breakNext[d] = 1;
           play = { side: d, text: `${thief.label} steals it from ${lost.label}`, joker: thief.joker, quiet: false };
         } else {
           box[o][pickWeighted(rng, off, (c) => c.turnoverShare).player.label].tov++;
         }
         break;
       }
-      const shot = pickWeighted(rng, off, (c) => c.shotShare);
+      const shooterIdx = next === 'putback' && putbackBy ? off.indexOf(putbackBy) : off.indexOf(pickWeighted(rng, off, (c) => c.shotShare));
+      const shot = off[shooterIdx];
       const shooter = shot.player;
       const line = box[o][shooter.label];
-      const b = shooter.span.box;
-      const three = rng() < Math.min(0.9, b.threePA / Math.max(1, shooter.span.fga));
-      if (rng() < shot.foul) {
-        const attempts = three ? 3 : 2;
-        let made = 0;
-        let lastMissed = false;
-        for (let f = 0; f < attempts; f++) {
-          lastMissed = rng() >= b.ftPct;
-          if (!lastMissed) made++;
-        }
-        line.fta += attempts;
-        line.ftm += made;
-        line.pts += made;
-        pts += made;
-        play = { side: o, text: `${shooter.label} ${made}/${attempts} at the line`, joker: shooter.joker, quiet: made === 0 };
+      let defIdx = clash.guard[shooterIdx];
+      let hunting = false;
+      if (next === 'open' && !onBreak && clash.def.weakest !== defIdx && rng() < clash.huntP) {
+        defIdx = clash.def.weakest;
+        hunting = true;
+      }
+      const defender = def[defIdx];
+      const soft = inTrouble(d, defender, quarter) ? TROUBLE_SOFTEN : 1;
+      const mods = clash.mods[shooterIdx];
+      const fresh = onBreak && guard === 0;
+      const three = next !== 'putback' && rng() < (fresh ? BREAK_THREE_RATE : Math.min(0.9, shot.threeRate * (hunting ? 1 : mods.threeRate) * (next === 'reset' ? RESET_THREE_RATE : 1)));
+      const atRim = !three && (next === 'putback' || fresh || rng() < shot.rimShare);
+      const foulChance = shot.foul * (hunting ? defenderProfile(defender.span).foulIndex ** DEFENSE_TUNING.foul : mods.foul) * (fresh || next === 'putback' ? BREAK_FOUL : 1);
+      if (rng() < foulChance) {
+        foul(d, defender, k, quarter);
+        const ft = freeThrows(o, shooter, three ? 3 : 2);
+        pts += ft.made;
+        play = { side: o, text: `${shooter.label} ${ft.made}/${three ? 3 : 2} at the line`, joker: shooter.joker, quiet: ft.made === 0 };
         // A missed last free throw is a live ball (2026-10-02: every rebound in the league came off
         // a missed field goal, ~3-4 a team short of a real game).
-        if (lastMissed) {
+        if (ft.lastMissed) {
           if (rng() < FT_OFF_REBOUND) {
             box[o][pickWeighted(rng, off, (x) => rates(x.player.span).reb ** REBOUND_WEIGHT_POWER).player.label].reb++;
+            next = 'reset';
             continue;
           }
           box[d][pickWeighted(rng, def, (x) => rates(x.span).reb ** REBOUND_WEIGHT_POWER).label].reb++;
@@ -571,7 +801,14 @@ function playRosters(
       }
       line.fga++;
       if (three) line.tpa++;
-      const p = (three ? shot.threePct : shot.twoPct) * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
+      const defended = (m: number) => 1 - (1 - m) * soft * (fresh ? 0.5 : 1);
+      const hunt = hunting ? huntMod(defenderProfile(defender.span)) : 1;
+      const base = three
+        ? (shot.threePct + (next === 'reset' ? RESET_THREE_PCT : 0)) * defended(mods.three)
+        : atRim
+          ? Math.min(0.85, shot.rimPct + (fresh ? BREAK_RIM_BONUS : next === 'putback' ? PUTBACK_BONUS : 0)) * defended(mods.rim)
+          : shot.midPct * defended(mods.mid);
+      const p = base * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
@@ -579,16 +816,18 @@ function playRosters(
         line.pts += value;
         pts += value;
         const moves = movesFor(shooter.slot);
-        let text = three ? `${shooter.label} ${rng() < 0.3 ? 'corner three' : 'three'}` : `${shooter.label} ${moves[Math.floor(rng() * moves.length)]}`;
-        // The engine's weakest defender on the other side gets hunted — shown, not just scored.
-        const target = hunted[o];
-        if (!three && target && rng() < 0.25) {
-          const victim = def.find((x) => x.span.playerName === target);
-          if (victim && victim.label !== shooter.label) text = `${shooter.label} attacks ${victim.label} — ${moves[Math.floor(rng() * moves.length)]}`;
-        }
-        if (!three && rng() < AND_ONE) {
+        let text = three
+          ? `${shooter.label} ${rng() < 0.3 ? 'corner three' : 'three'}`
+          : fresh
+            ? `${shooter.label} on the break — ${rng() < 0.5 ? 'dunk' : 'layup'}`
+            : next === 'putback'
+              ? `${shooter.label} putback`
+              : `${shooter.label} ${moves[Math.floor(rng() * moves.length)]}`;
+        if (hunting) text = `${shooter.label} attacks ${defender.label} — ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
+        if (!three && rng() < AND_ONE * (fresh || next === 'putback' ? BREAK_FOUL : 1)) {
+          foul(d, defender, k, quarter);
           line.fta++;
-          if (rng() < b.ftPct) {
+          if (rng() < shooter.span.box.ftPct) {
             line.ftm++;
             line.pts++;
             pts++;
@@ -597,7 +836,8 @@ function playRosters(
         }
         let joker = shooter.joker;
         const mates = off.filter((x) => x.player !== shooter);
-        if (rng() < assistedChance(mates)) {
+        const assisted = next === 'putback' ? 0 : assistedChance(mates) * (next === 'reset' ? RESET_ASSISTED : 1);
+        if (rng() < assisted) {
           const passer = pickWeighted(rng, mates, (x) => rates(x.player.span).ast + 0.3).player;
           box[o][passer.label].ast++;
           text += ` (${passer.label} assist)`;
@@ -606,16 +846,23 @@ function playRosters(
         play = { side: o, text, joker, quiet: false };
         break;
       }
-      if (!three && rng() < BLOCKED) {
+      if (!three && rng() < (atRim ? BLOCKED_AT_RIM * Math.max(0.4, 1 + BLOCK_PER_RIM * clash.def.rim) : BLOCKED_MID)) {
         const blocker = pickWeighted(rng, def, (x) => rates(x.span).blk + 0.05);
         box[d][blocker.label].blk++;
         play = { side: d, text: `${blocker.label} blocks ${shooter.label}`, joker: blocker.joker, quiet: false };
       }
-      if (rng() < OFF_REBOUND) {
-        box[o][pickWeighted(rng, off, (x) => rates(x.player.span).reb ** REBOUND_WEIGHT_POWER).player.label].reb++;
+      if (rng() < clash.oreb) {
+        const rebounder = pickWeighted(rng, off, (x) => defenderProfile(x.player.span).oreb36 ** REBOUND_WEIGHT_POWER + 0.05);
+        box[o][rebounder.player.label].reb++;
+        // A tip-back at the rim, or the ball back out and a fresh 14 seconds.
+        if (rng() < PUTBACK_SHARE) {
+          next = 'putback';
+          putbackBy = rebounder;
+        } else next = 'reset';
         continue;
       }
-      box[d][pickWeighted(rng, def, (x) => rates(x.span).reb ** REBOUND_WEIGHT_POWER).label].reb++;
+      box[d][pickWeighted(rng, def, (x) => defenderProfile(x.span).dreb36 ** REBOUND_WEIGHT_POWER + 0.05).label].reb++;
+      if (rng() < BREAK_AFTER_REBOUND) breakNext[d] = 2;
       break;
     }
     score[o] += pts;

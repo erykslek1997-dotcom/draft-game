@@ -243,7 +243,7 @@ export default function LiveGame({
 }
 
 function zero(): BoxLineStats {
-  return { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0, min: 0 };
+  return { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0, pf: 0, min: 0 };
 }
 
 function QuarterRow({ name, q, total, upto }: { name: string; q: number[]; total: number; upto: number }) {
