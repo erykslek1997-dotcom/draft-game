@@ -294,7 +294,11 @@ Decyzje (2026-09-30):
        gra poza pozycją: więcej strat (najbardziej na rozegraniu) i gorsze kończenie pod koszem;
        minuty ponad limit poziomu: dodatkowe zmęczenie (2 min za darmo). Rotacja 0% → 28% silnika,
        minuty ponad limit 0.009 → 0.052 na pkt (silnik 0.108).
-    7. Kalibracja całości. 8. Testy dwustronne w `npm test`.
+    7. Kalibracja całości. 8. Testy dwustronne w `npm test` — zrobione 2026-10-07:
+       `scripts/testTwoWay.ts` (tylko pełne `npm test`, ~45 s): mecz bez nudge'a oddaje ≥55% marginesu
+       silnika na pkt overall i R² ≥ 0.35 (32 drużyny: 88%, 0.39), kontrasty mechanik (obrona,
+       gwiazda, kreacja, rozegranie, spacing, chowanie słabego obrońcy, zbiórka w silniku), widełki
+       średnich ligowych. `mechanicsMargin` / `mechanicsPer100` w `liveGame.ts`.
     7.5. Spacing w meczu (decyzja 2026-10-07: wszystkie trzy części, limit ±6 pp): miejsce z oceny
        spacingu silnika (`teamSpacingValue`) zamiast udziału trójek, odpuszczanie niestrzelców (poniżej
        35), chowanie słabego obrońcy na graczu, który nie wykorzysta mismatchu (Bowen, Battier — nie Simmons czy Rodman; decyzja użytkownika). Spacing ataku 0.08 → 0.27 pkt/SD, spacing
