@@ -12,6 +12,7 @@ import { fatigueShare } from './fatigue';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { computeOffensiveTalent } from './talent';
+import { rimPressureTeam } from './rimPressure';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { assignMatchups, defenderProfile, fiveDefense, REFERENCE, type DefenderProfile, type FiveDefense } from './liveDefense';
 
@@ -573,6 +574,21 @@ function usageCostScale(ownShare: number): number {
   const creator = Math.min(1, ownShare / STAR_TUNING.creatorShare);
   return (STAR_TUNING.usageCostMax - (STAR_TUNING.usageCostMax - STAR_TUNING.usageCostMin) * creator) / 0.25;
 }
+/**
+ * Step 4 (the user: rim pressure as a team). Each player's own trips to the rim are already his
+ * (`rimShare`, his free-throw rate); what a five that keeps attacking the basket adds is the help it
+ * draws: the defense collapses, and the threes kicked back out are better looks (`collapse` per
+ * spread of the five's rim pressure, set-up threes only), and its rim protectors pick up fouls on
+ * those drives (`foul`, and a third of the fouls at the rim go to the best rim protector on the floor
+ * rather than the man guarding the shooter). The five's rim pressure is the engine's
+ * (`rimPressure.ts`), against the drafted rotation fives' 71 (spread 20.5).
+ */
+export const RIM_TUNING = {
+  collapse: 0.008,
+  foul: 0.08,
+  helpFoulShare: 0.35,
+};
+const REF_RIM_PRESSURE = { mean: 71.3, sd: 20.5 };
 /** The five's own turnover rate against an average five's (1 = average). */
 function ballSecurity(off: CourtPlayer[]): number {
   const own = off.reduce((s, c) => s + c.turnoverShare, 0) / REF_FIVE_TURNOVERS;
@@ -636,6 +652,9 @@ interface Clash {
   huntP: number;
   /** Chance an open trip breaks down to the end of the clock. */
   lateP: number;
+  /** The attacking five's rim pressure as a z-score, and the defense's best rim protector. */
+  rimZ: number;
+  rimAnchor: number;
 }
 
 function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
@@ -664,6 +683,8 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
     oreb: OFF_REBOUND * Math.exp(DEFENSE_TUNING.reb * ((offOreb - REF_FIVE_OREB) / SD_FIVE_OREB - (fd.dreb36 - REF_FIVE_DREB) / SD_FIVE_DREB)),
     foulRate: fd.profiles.reduce((s, p) => s + p.foulIndex ** DEFENSE_TUNING.foul, 0) / fd.profiles.length,
     huntP: Math.min(MAX_HUNT, HUNT_PER_Z * fd.weakGap),
+    rimZ: Math.max(-2.5, Math.min(2.5, (rimPressureTeam(off.map((c) => c.player.span)) - REF_RIM_PRESSURE.mean) / REF_RIM_PRESSURE.sd)),
+    rimAnchor: fd.profiles.reduce((best, p, i) => (p.rim > fd.profiles[best].rim ? i : best), 0),
     lateP: Math.min(0.3, LATE_TUNING.share * Math.exp(LATE_TUNING.defense * fd.perimeter - LATE_TUNING.handler * handlerZ(off))),
   };
 }
@@ -685,13 +706,13 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
     const m = cl.mods[i];
     const t = (tired.get(c.player.label) ?? 1) * scale;
     const r3 = Math.min(0.9, c.threeRate * m.threeRate);
-    const foulP = c.foul * m.foul * DEFENSE_TUNING.shootingFoul;
+    const foulP = c.foul * m.foul * DEFENSE_TUNING.shootingFoul * Math.max(0.5, 1 + RIM_TUNING.foul * cl.rimZ * (1 - r3) * c.rimShare);
     const ft = c.player.span.box.ftPct;
     const line = (r3 * 3 + (1 - r3) * 2) * ft;
     const two = c.rimShare * c.rimPct * m.rim + (1 - c.rimShare) * c.midPct * m.mid;
     // Normal trips at his average; late ones his own shot, minus the clock.
     for (const [w, p3, p2] of [
-      [((1 - cl.lateP) * c.shotShare) / shots, c.threePct * m.three * t, two * t],
+      [((1 - cl.lateP) * c.shotShare) / shots, (c.threePct * m.three + RIM_TUNING.collapse * cl.rimZ * Math.min(0.97, c.setup3 / (1 - LATE_TUNING.share))) * t, two * t],
       [(cl.lateP * lateWeights[i]) / lateTotal, Math.max(0.05, c.threePct * m.three - c.edge3 * Math.min(0.97, c.setup3 / (1 - LATE_TUNING.share)) - LATE_TUNING.penalty) * t, Math.max(0.05, two - c.edge2 * Math.min(0.97, c.setup2 / (1 - LATE_TUNING.share)) - LATE_TUNING.penalty) * t],
     ]) {
       const field = r3 * 3 * p3 + (1 - r3) * 2 * p2 * (1 + (AND_ONE * ft) / 2);
@@ -964,9 +985,10 @@ function playRosters(
       const fresh = onBreak && guard === 0;
       const three = next !== 'putback' && rng() < (fresh ? BREAK_THREE_RATE : Math.min(0.9, shot.threeRate * (hunting ? 1 : mods.threeRate) * (next === 'reset' ? RESET_THREE_RATE : 1)));
       const atRim = !three && (next === 'putback' || fresh || rng() < shot.rimShare);
-      const foulChance = DEFENSE_TUNING.shootingFoul * shot.foul * (hunting ? defenderProfile(defender.span).foulIndex ** DEFENSE_TUNING.foul : mods.foul) * (fresh || next === 'putback' ? BREAK_FOUL : 1);
+      const drawn = atRim ? Math.max(0.5, 1 + RIM_TUNING.foul * clash.rimZ) : 1;
+      const foulChance = DEFENSE_TUNING.shootingFoul * shot.foul * drawn * (hunting ? defenderProfile(defender.span).foulIndex ** DEFENSE_TUNING.foul : mods.foul) * (fresh || next === 'putback' ? BREAK_FOUL : 1);
       if (rng() < foulChance) {
-        foul(d, defender, k, quarter);
+        foul(d, atRim && !hunting && rng() < RIM_TUNING.helpFoulShare ? def[clash.rimAnchor] : defender, k, quarter);
         const ft = freeThrows(o, shooter, three ? 3 : 2);
         pts += ft.made;
         play = { side: o, text: `${shooter.label} ${ft.made}/${three ? 3 : 2} at the line`, joker: shooter.joker, quiet: ft.made === 0 };
@@ -995,7 +1017,7 @@ function playRosters(
       // His real share holds his late-clock shots too, which are never set up: the others make up for it.
       const setupShare = Math.min(0.97, (three ? shot.setup3 : shot.setup2) / (1 - LATE_TUNING.share));
       const setup = next !== 'putback' && !late && rng() < setupShare * (next === 'reset' ? RESET_ASSISTED : 1);
-      const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare) - (late ? LATE_TUNING.penalty : 0);
+      const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare) - (late ? LATE_TUNING.penalty : 0) + (three && setup ? RIM_TUNING.collapse * clash.rimZ : 0);
       const pressure = clutch ? CLUTCH_TUNING.penalty * (1 - CLUTCH_TUNING.starKeep * starness(shooter.span)) : 0;
       const p = Math.max(0.05, base + edge - pressure) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
       if (rng() < p) {
