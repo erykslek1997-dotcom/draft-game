@@ -1,6 +1,6 @@
 import { computeFinishing } from '../engine/finishing';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DraftPlayerCard, TIER_FRAME_COLOR } from './DraftPlayerCard';
+import { DraftPlayerCard } from './DraftPlayerCard';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
@@ -43,7 +43,7 @@ import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
-import { AiSpeedControl, BoardToggleButton, DraftStatusBar, LeaveDraftDialog, TurnBudgetText } from './DraftChrome';
+import { BoardToggleButton, DraftHelpDialog, DraftStrip, LeaveDraftDialog } from './DraftChrome';
 import { DraftDesk } from './DraftDesk';
 import { buildDraftDesk, type DraftDeskResult } from '../engine/draftDesk';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
@@ -89,10 +89,8 @@ interface Props {
    * drafted, and never busts the real cap) — so every other read of the human's roster
    * (`isPickLegal`'s lookahead included) sees the same, single, real number from that point on. */
   onSwapHumanSpan: (playerName: string, newSpanId: string) => void;
-  /** 2026-09-24: CPU pick pacing control (owned by GameShell, which runs the AI-turn timer). */
-  aiSpeedLabels: readonly string[];
-  aiSpeedIndex: number;
-  onAiSpeedChange: (index: number) => void;
+  /** The mode's rules, shown in the "?" dialog next to the tier key. */
+  howToPlay?: ReadonlyArray<{ title: string; body: string }>;
   /** 2026-09-24: back to the main menu (after a confirm — the draft is autosaved, see draftSave.ts). */
   onExit: () => void;
   /** 2026-09-25: the Draft Desk is open — GameShell holds CPU picks until it closes. */
@@ -500,9 +498,7 @@ export default function DraftBoard({
   onPickReasoningChange,
   onSubmitTeam,
   onSwapHumanSpan,
-  aiSpeedLabels,
-  aiSpeedIndex,
-  onAiSpeedChange,
+  howToPlay = [],
   onExit,
   onDeskOpenChange,
 }: Props) {
@@ -604,6 +600,8 @@ export default function DraftBoard({
   const isWideLayout = useMediaQuery(WIDE_LAYOUT_QUERY);
   const [showLegend, setShowLegend] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const closeHelp = useCallback(() => setHelpOpen(false), []);
   // 2026-09-27: the board is a panel over the list now, so it always starts closed (it used to
   // remember being open, which would cover the list on the next visit).
   const [boardOpen, setBoardOpen] = useState(false);
@@ -1149,11 +1147,19 @@ export default function DraftBoard({
       groups.slice(0, visibleCount).some((g) => g.spans.some((s) => isPickLegal(state, s.id))),
     [canPick, groups, visibleCount, state],
   );
+  // The human's own budget (the strip and the "Only what I can afford" switch read it on CPU turns too).
+  const humanBudget = useMemo(() => pickBudget(state, humanTeam), [state, humanTeam]);
+  const [affordableOnly, setAffordableOnly] = useState(false);
+  const affordableMax = Math.floor(humanBudget.maxThisPick * 10) / 10;
+  useEffect(() => {
+    if (showJudgeMetrics) return;
+    setFgaMin('0');
+    setFgaMax(affordableOnly ? String(affordableMax) : '30');
+  }, [affordableOnly, affordableMax, showJudgeMetrics]);
   function showAffordable() {
     setSearch('');
     setSelectedPosition('ALL');
-    setFgaMin('0');
-    setFgaMax(String(Math.floor(currentBudget.maxThisPick * 10) / 10));
+    setAffordableOnly(true);
   }
 
   const TABS: ReadonlyArray<{ id: AtTab; label: string }> = [
@@ -1162,12 +1168,36 @@ export default function DraftBoard({
   ];
 
   return (
-    <div className="at-shell">
-      {/* 2026-08-16, user's own ask: sits above the whole board on its own row, not squeezed into
-          the topbar next to the tabs/status chip. */}
-      <button type="button" className="at-menu-btn at-cond" onClick={() => setConfirmExit(true)}>
-        ← Menu
-      </button>
+    <div className="at-shell at-calm">
+      {/* 2026-10-07, the UI simplification (approved mockup): one header row — Menu, the title, the
+          Draft/Team switch where the two don't sit side by side, "?" for the rules, the tier key and
+          scouting, and the draft board. */}
+      <div className="at-calm-header" ref={topbarRef}>
+        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={() => setConfirmExit(true)}>
+          ← Menu
+        </button>
+        <h1 className="at-calm-title">All-Time Draft</h1>
+        {!isWideLayout && (
+          <div className="at-calm-seg at-calm-tabs" role="tablist">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={activeTab === tab.id ? 'is-on' : ''}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <button type="button" className="at-calm-icon" aria-label="How the draft works" onClick={() => setHelpOpen(true)}>
+          ?
+        </button>
+        {(isWideLayout || activeTab === 'draft') && <BoardToggleButton open={boardOpen} onToggle={toggleBoard} />}
+      </div>
       {confirmExit && (
         <LeaveDraftDialog
           text={
@@ -1179,23 +1209,38 @@ export default function DraftBoard({
           onLeave={onExit}
         />
       )}
+      {helpOpen && (
+        <DraftHelpDialog
+          howToPlay={howToPlay}
+          tiers={showJudgeMetrics ? [] : TIER_KEY_ORDER}
+          scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
+          onClose={closeHelp}
+        />
+      )}
       {desk && <DraftDesk roster={humanTeam.roster} desk={desk} onClose={closeDesk} />}
-      <div className="at-board-brand at-cond">All-Time Draft</div>
-      <div className="at-topbar" ref={topbarRef}>
-        <div className="at-tabs" role="tablist">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              className={`at-tab-btn at-cond ${activeTab === tab.id ? 'at-active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        {!state.complete && <AiSpeedControl labels={aiSpeedLabels} index={aiSpeedIndex} onChange={onAiSpeedChange} />}
-        {(isWideLayout || activeTab === 'draft') && <BoardToggleButton open={boardOpen} onToggle={toggleBoard} />}
-      </div>
+      {/* Rendered at the shell, not inside the card grid: the staged entrance animation gives the
+          Draft card's children their own stacking layers, which put the sticky status strip over
+          the modal. */}
+      {peekPlayer && (() => {
+        const group = groups.find((g) => g.playerName === peekPlayer);
+        if (!group) return null;
+        return (
+          <PlayerPeekModal
+            group={group}
+            state={state}
+            canPick={canPick}
+            currentTeam={currentTeam}
+            onClose={() => setPeekPlayer(null)}
+            onPick={(id) => {
+              onPick(id);
+              setPeekPlayer(null);
+            }}
+            scouted={scoutedPlayers.has(group.playerName)}
+            scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
+            onScout={() => scoutPlayer(group.playerName)}
+          />
+        );
+      })()}
       {!topbarVisible && !state.complete && (isWideLayout || activeTab === 'draft') && (
         <button
           type="button"
@@ -1353,42 +1398,23 @@ export default function DraftBoard({
               actual Draft buttons below are `disabled` via `canPick`, not hidden, so browsing/
               searching/expanding a row to look at a player works identically either way. */}
           <div className="at-turn-sticky">
-            <DraftStatusBar
+            <DraftStrip
               youOnClock={canPick && currentTeam.isHuman}
               complete={state.complete}
               onClockLabel={teamLabel(currentTeam)}
               picksAway={humanPicksAway}
-              latestPick={recentPicks[0] ?? null}
-              progress={{ picksMade: state.history.length, totalPicks: TEAM_COUNT * ROUNDS, round: Math.min(state.round + 1, ROUNDS), rounds: ROUNDS }}
+              recentPicks={recentPicks.slice(0, 2)}
+              round={Math.min(state.round + 1, ROUNDS)}
+              rounds={ROUNDS}
+              progress={state.history.length / (TEAM_COUNT * ROUNDS)}
+              capLeft={humanBudget.capLeft}
+              slotsLeft={humanBudget.slotsLeft}
+              maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
             />
-            {!canPick ? null : (
-              // 2026-09-24: the only "your turn" signal used to be the CPU banner above silently
-              // disappearing (plus the "on the clock" cell in the board, usually scrolled out of
-              // view) — and nothing on screen said how much of the cap this pick could actually use.
-              <div className="at-your-turn-banner" role="status">
-                <TurnBudgetText
-                  round={state.round + 1}
-                  rounds={ROUNDS}
-                  capLeft={currentBudget.capLeft}
-                  slotsLeft={currentBudget.slotsLeft}
-                  maxThisPick={currentBudget.maxThisPick}
-                  priciestAvailable={priciestAvailable}
-                  capTotal={CAP_LIMIT}
-                />
-                {/* 2026-09-25, playtester feedback: the "only players that fit" filter used to be
-                    reachable only once every visible card was out of reach (e.g. not after resuming
-                    a saved draft). It's offered whenever the per-pick ceiling rules someone out. */}
-                {currentBudget.maxThisPick < priciestAvailable && Number(fgaMax) !== Math.floor(currentBudget.maxThisPick * 10) / 10 && (
-                  <button type="button" className="at-budget-notice-btn at-cond at-banner-fit-btn" onClick={showAffordable}>
-                    Show only players that fit
-                  </button>
-                )}
-              </div>
-            )}
             {canPick && !anyVisibleLegal && (
               <div className="at-budget-notice">
                 <span>None of the players shown fit this pick — it can cost up to <CapIcon /> {currentBudget.maxThisPick} caps.</span>
-                <button type="button" className="at-budget-notice-btn at-cond" onClick={showAffordable}>
+                <button type="button" className="at-calm-btn" onClick={showAffordable}>
                   Show players that fit
                 </button>
               </div>
@@ -1402,49 +1428,43 @@ export default function DraftBoard({
               full rotation-minute editing — still on the Team tab). */}
           <div className="at-draft-workspace">
           <div className="at-draft-main">
-              <div className="at-controls-row">
+              {/* 2026-10-07, the UI simplification: one filter row. Players get an "Only what I can
+                  afford" switch instead of the min/max caps boxes (developer mode keeps the boxes);
+                  the tier key moved into the "?" dialog. */}
+              <div className="at-calm-filters">
                 <input
-                  className="at-search-input"
+                  className="at-calm-search"
                   placeholder="Search players…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-                <div className="at-fga-filter">
-                  <label><CapIcon /> Caps</label>
-                  <input className="at-fga-input" value={fgaMin} onChange={(e) => setFgaMin(e.target.value)} />
-                  <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
-                </div>
-              </div>
-              <div className="at-controls-row at-position-filters">
-                <button
-                  className={`at-filter-pill at-cond ${selectedPosition === 'ALL' ? 'at-active' : ''}`}
-                  onClick={() => setSelectedPosition('ALL')}
-                >
-                  All
-                </button>
-                {ALL_POSITIONS.map((pos) => (
-                  <button
-                    key={pos}
-                    className={`at-filter-pill at-cond ${selectedPosition === pos ? 'at-active' : ''}`}
-                    onClick={() => setSelectedPosition(pos)}
-                  >
-                    {pos}
-                  </button>
-                ))}
-              </div>
-              {/* 2026-09-24: the card frames' tier colours had no key anywhere on the Draft tab —
-                  only a per-card hover title. Compact, always-visible strip, best tier first. */}
-              {!showJudgeMetrics && (
-                <div className="at-tier-key" aria-label="Card frame colours by tier">
-                  <span className="at-tier-key-label at-cond">Tiers</span>
-                  {TIER_KEY_ORDER.map((tier) => (
-                    <span key={tier} className="at-tier-key-item">
-                      <span className="at-tier-key-swatch" style={{ background: TIER_FRAME_COLOR[tier] }} aria-hidden />
-                      {tier}
-                    </span>
+                <div className="at-calm-seg" role="group" aria-label="Position">
+                  {(['ALL', ...ALL_POSITIONS] as const).map((pos) => (
+                    <button
+                      key={pos}
+                      type="button"
+                      aria-pressed={selectedPosition === pos}
+                      className={selectedPosition === pos ? 'is-on' : ''}
+                      onClick={() => setSelectedPosition(pos)}
+                    >
+                      {pos === 'ALL' ? 'All' : pos}
+                    </button>
                   ))}
                 </div>
-              )}
+                {showJudgeMetrics ? (
+                  <div className="at-fga-filter">
+                    <label><CapIcon /> Caps</label>
+                    <input className="at-fga-input" value={fgaMin} onChange={(e) => setFgaMin(e.target.value)} />
+                    <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
+                  </div>
+                ) : (
+                  <label className={`at-calm-toggle${affordableOnly ? ' is-on' : ''}`}>
+                    <input type="checkbox" checked={affordableOnly} onChange={(e) => setAffordableOnly(e.target.checked)} />
+                    <span className="at-calm-switch" aria-hidden />
+                    Only what I can afford
+                  </label>
+                )}
+              </div>
 
               {/* 2026-09-01: the Draft-tab player list is the same expandable-list shape as the
                   Cap Sheet (`.player-group` accordion + `.span-table`), condensed to match it —
@@ -1600,12 +1620,6 @@ export default function DraftBoard({
                   stats, without the grid's row heights jumping around per-card. An arrow still
                   drafts the best season immediately, no modal needed for the common case. Player
                   mode only — developer/tester mode keeps the dense table above unchanged. */}
-              {!showJudgeMetrics && scoutedPlayers.size < SCOUT_REPORTS_PER_DRAFT && (
-                <p className="at-scout-hint">
-                  🔍 <b>{SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size} scouting report{SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size === 1 ? '' : 's'} left</b> — open a
-                  player’s Scouting and tap “Scout him” to see his tier and offense, defense and fit grades.
-                </p>
-              )}
               {!showJudgeMetrics && (
                 <div className="at-player-cards">
                   {groups.slice(0, visibleCount).map((group) => {
@@ -1658,26 +1672,6 @@ export default function DraftBoard({
                   })}
                 </div>
               )}
-              {peekPlayer && (() => {
-                const group = groups.find((g) => g.playerName === peekPlayer);
-                if (!group) return null;
-                return (
-                  <PlayerPeekModal
-                    group={group}
-                    state={state}
-                    canPick={canPick}
-                    currentTeam={currentTeam}
-                    onClose={() => setPeekPlayer(null)}
-                    onPick={(id) => {
-                      onPick(id);
-                      setPeekPlayer(null);
-                    }}
-                    scouted={scoutedPlayers.has(group.playerName)}
-                    scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
-                    onScout={() => scoutPlayer(group.playerName)}
-                  />
-                );
-              })()}
 
               {/* 2026-09-14, user-reported live: the primary fix for "too many names at once" —
                   `groups` itself can already hold up to `DRAFT_LIST_LIMIT` (140, a render-
@@ -1701,11 +1695,10 @@ export default function DraftBoard({
                   position to see the rest.
                 </p>
               )}
+              {showJudgeMetrics && (
               <div className="at-legend-row">
                 <p className="at-caption" style={{ marginTop: 0 }}>
-                  {showJudgeMetrics
-                    ? "Peak caps = cost of this player's highest-Talent season. Lowest caps = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one."
-                    : 'Draft takes the years shown on the card — his best stretch. Open Scouting to compare his other years; you can still switch later in the Team tab.'}
+                  Peak caps = cost of this player's highest-Talent season. Lowest caps = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one.
                 </p>
                 {showJudgeMetrics && (
                   <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
@@ -1713,6 +1706,7 @@ export default function DraftBoard({
                   </button>
                 )}
               </div>
+              )}
               {showJudgeMetrics && showLegend && (
                 <div className="at-tag-legend">
                   {TAG_LEGEND.map((l) => (
@@ -1756,8 +1750,8 @@ export default function DraftBoard({
               >
                 <h2 className="at-cond">Your Team</h2>
                 <span className="at-draft-sidebar-count">
-                  {humanTeam.roster.length}/{ROSTER_SIZE} · <CapIcon /> {capRemaining(currentFgas)} caps left
-                  {currentBudget.slotsLeft > 1 && ` · ~${(currentBudget.capLeft / currentBudget.slotsLeft).toFixed(1)}/pick`} {sidebarOpen ? '▾' : '▴'}
+                  {humanTeam.roster.length}/{ROSTER_SIZE} · <CapIcon /> {capRemaining(currentFgas)} caps left{' '}
+                  {sidebarOpen ? '▾' : '▴'}
                 </span>
               </button>
             ) : null}
@@ -1802,11 +1796,6 @@ export default function DraftBoard({
               <p className="at-draft-sidebar-cap-label">
                 <CapIcon size={16} /> Caps left: <b>{capRemaining(currentFgas)}</b>
               </p>
-              {canPick && currentBudget.slotsLeft > 1 && (
-                <p className="at-draft-sidebar-cap-label">
-                  About <b>{(currentBudget.capLeft / currentBudget.slotsLeft).toFixed(1)}</b> per remaining pick
-                </p>
-              )}
             </div>
             <div className="at-draft-sidebar-slots">
               {STARTER_SLOTS.map((slot) => {

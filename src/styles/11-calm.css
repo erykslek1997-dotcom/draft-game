@@ -1,0 +1,188 @@
+/* 2026-10-07, the UI simplification (the user: "UI bym przebudował generalnie, bo trochę za dużo się
+   dzieje"; approved mockup). Screens move onto this look one at a time by adding `.at-calm` next to
+   `.at-shell`: a plain sans for text, mono only for numbers, no shouting uppercase, one header row,
+   one status strip, one filter row and a quieter card. */
+.at-shell.at-calm {
+  --calm-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --calm-num: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --calm-raised: #0b111b;
+  --calm-raised-2: #101826;
+  --calm-line: #182433;
+  font-family: var(--calm-sans);
+  font-size: 14px;
+  background-image: none;
+}
+.at-calm .at-cond { text-transform: none; letter-spacing: 0; }
+.at-calm .at-calm-num,
+.at-pc-tal,
+.at-pc-cost,
+.at-pc-line { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.at-calm .at-calm-soft { color: var(--at-ink-soft); }
+.at-calm .at-calm-faint { color: var(--at-ink-faint); }
+
+/* ---- Header: Menu · title · Draft/Team · ? · Draft board ---- */
+.at-calm-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 2px 0 14px; margin-bottom: 0;
+}
+.at-calm-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; letter-spacing: 0.01em; margin: 0; }
+.at-calm-btn,
+.at-calm .at-board-toggle {
+  font: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  border-radius: 999px; padding: 8px 15px; cursor: pointer;
+  background: var(--calm-raised-2); border: 1px solid var(--calm-line); color: var(--at-ink);
+}
+.at-calm-btn:hover,
+.at-calm .at-board-toggle:hover { border-color: var(--at-accent); background: var(--calm-raised-2); color: var(--at-ink); }
+.at-calm-btn--ghost { background: transparent; }
+.at-calm-icon {
+  flex: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--calm-line); background: var(--calm-raised); color: var(--at-ink-soft);
+  font: inherit; font-weight: 700; font-size: 15px;
+}
+.at-calm-icon:hover { color: var(--at-ink); border-color: var(--at-accent); }
+.at-calm-seg {
+  display: inline-flex; flex-wrap: nowrap; padding: 3px; gap: 2px;
+  background: var(--calm-raised); border: 1px solid var(--calm-line); border-radius: 999px;
+}
+.at-calm-seg > button {
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--at-ink-soft);
+  background: none; border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+.at-calm-seg > button:hover { color: var(--at-ink); }
+.at-calm-seg > button.is-on { background: var(--at-ink); color: var(--at-paper); }
+.at-calm-seg > button:focus-visible,
+.at-calm-btn:focus-visible,
+.at-calm-icon:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+
+/* The Draft panel loses its title and heavy frame: the header already says where you are. */
+.at-calm .at-merge-draft > .at-panel-title { display: none; }
+.at-calm .at-card { background: transparent; border-color: transparent; box-shadow: none; padding: 0; }
+.at-calm .at-turn-sticky {
+  margin: 0 0 16px; padding: 0; border-bottom: 0; box-shadow: none;
+  background: var(--at-paper);
+}
+
+/* ---- Status strip ---- */
+.at-calm-strip {
+  position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px;
+  padding: 11px 16px; border-radius: 12px;
+  background: var(--calm-raised); border: 1px solid var(--calm-line); overflow: hidden;
+}
+.at-calm-strip.is-yours { border-color: color-mix(in srgb, var(--at-brand-red) 55%, var(--calm-line)); }
+.at-calm-strip-turn { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; }
+.at-calm-pill {
+  background: #e0435c; color: #fff; font-weight: 700; font-size: 12px;
+  border-radius: 999px; padding: 3px 10px;
+}
+.at-calm-strip-caps { padding-left: 18px; border-left: 1px solid var(--calm-line); }
+.at-calm-strip-last { margin-left: auto; color: var(--at-ink-faint); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.at-calm-strip-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: transparent; }
+.at-calm-strip-progress > span { display: block; height: 100%; background: color-mix(in srgb, var(--at-accent) 70%, transparent); }
+.at-calm .at-budget-notice { margin-top: 10px; }
+
+/* ---- Filters ---- */
+.at-calm-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.at-calm-search {
+  flex: 0 1 240px; min-width: 0; font: inherit; font-size: 14px; color: var(--at-ink);
+  background: var(--calm-raised); border: 1px solid var(--calm-line); border-radius: 999px; padding: 9px 14px;
+}
+.at-calm-search::placeholder { color: var(--at-ink-faint); }
+.at-calm-search:focus { outline: none; border-color: var(--at-accent); }
+.at-calm-toggle {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 13px; color: var(--at-ink-soft); user-select: none;
+}
+.at-calm-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.at-calm-switch {
+  position: relative; width: 32px; height: 18px; border-radius: 999px; flex: none;
+  background: var(--calm-raised-2); border: 1px solid var(--calm-line); transition: background 0.15s;
+}
+.at-calm-switch::after {
+  content: ''; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--at-ink-soft); transition: transform 0.15s;
+}
+.at-calm-toggle.is-on { color: var(--at-ink); }
+.at-calm-toggle.is-on .at-calm-switch { background: var(--at-accent); border-color: transparent; }
+.at-calm-toggle.is-on .at-calm-switch::after { transform: translateX(14px); background: #fff; }
+.at-calm-toggle input:focus-visible + .at-calm-switch { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+
+/* ---- Player card ---- */
+.at-calm .at-player-cards { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 12px; }
+/* The card carries the calm fonts itself: Quick 5 shows it before its own screen moves to `.at-calm`. */
+.at-player-card.at-pc {
+  font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  gap: 8px; padding: 0 12px 12px;
+  border: 1px solid var(--calm-line, #182433); border-radius: 12px;
+  background: var(--calm-raised, #0b111b);
+  transition: border-color 0.15s;
+}
+.at-player-card.at-pc.is-clickable { cursor: pointer; }
+.at-player-card.at-pc:hover { border-color: color-mix(in srgb, var(--at-accent) 70%, transparent); }
+.at-pc .at-team-band { height: 4px; margin: 0 -12px 4px; font-size: 0; }
+.at-pc .at-team-band-seg { border-bottom: 0; }
+.at-pc-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.at-pc-head .bf-face { flex: none; box-shadow: 0 0 0 2px var(--calm-raised, #0b111b), 0 0 0 3.5px var(--ring, var(--at-line)); }
+.at-pc-id { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.at-pc-name {
+  font: inherit; font-weight: 700; font-size: 14px; line-height: 1.2; color: var(--at-ink); text-align: left;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  word-break: normal; overflow-wrap: normal; hyphens: none;
+}
+span.at-pc-name { cursor: default; }
+.at-pc-name:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; border-radius: 4px; }
+.at-pc-meta { font-size: 12px; color: var(--at-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.at-pc-tier {
+  align-self: flex-start; flex: none; width: 9px; height: 9px; margin-top: 4px; border-radius: 50%;
+  background: var(--tier-frame, var(--at-line));
+}
+.at-pc-numbers { display: flex; align-items: baseline; justify-content: space-between; }
+.at-pc-tal { font-size: 22px; font-weight: 700; line-height: 1; color: var(--at-ink); }
+.at-pc-tal small { font-family: 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 600; color: var(--at-ink-faint); margin-left: 4px; }
+.at-pc-cost { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: 13px; }
+.at-pc-line { font-size: 12px; color: var(--at-ink-soft); }
+.at-player-card .at-pc-draft {
+  margin-top: auto; width: 100%; height: auto; padding: 8px; border-radius: 8px;
+  font: inherit; font-weight: 700; font-size: 13px; letter-spacing: 0; text-transform: none;
+  background: var(--calm-raised-2, #101826); border: 1px solid var(--calm-line, #182433); color: var(--at-ink);
+  cursor: pointer;
+}
+.at-player-card.at-pc:hover .at-pc-draft:not(:disabled),
+.at-player-card .at-pc-draft:focus-visible:not(:disabled) { background: var(--at-accent); color: var(--at-accent-ink); border-color: transparent; }
+.at-player-card .at-pc-draft:disabled { opacity: 0.45; cursor: not-allowed; }
+.at-ghost-card > .at-player-card.at-pc .at-pc-draft { visibility: hidden; }
+
+/* ---- Sidebar / dock ---- */
+.at-calm .at-draft-sidebar {
+  background: var(--calm-raised); border: 1px solid var(--calm-line); border-radius: 12px;
+}
+.at-calm .at-draft-sidebar h2 { text-transform: none; letter-spacing: 0; font-size: 14px; }
+
+/* ---- "?" dialog ---- */
+.at-calm-help { max-width: 520px; max-height: calc(100vh - 48px); overflow-y: auto; font-family: 'Inter', system-ui, sans-serif; }
+.at-calm-help .mode-help-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.at-calm-help .mode-help-modal-title { font-size: 16px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.at-calm-help-item { font-size: 13.5px; line-height: 1.5; margin: 0 0 10px; color: var(--at-ink-soft, #93a7c0); }
+.at-calm-help-item b { color: var(--at-ink, #eef4fb); }
+.at-calm-help-h { font-size: 13px; font-weight: 700; margin: 16px 0 4px; }
+.at-calm-help-tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 12px; font-size: 13px; }
+.at-calm-help-tiers > span { display: inline-flex; align-items: center; gap: 8px; }
+.at-calm-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+@media (max-width: 640px) {
+  .at-calm-header { flex-wrap: wrap; gap: 8px; }
+  .at-calm-title { font-size: 16px; }
+  .at-calm-tabs { order: 5; flex: 1 1 100%; justify-content: center; }
+  .at-calm-tabs > button { flex: 1; }
+  .at-calm-strip { padding: 9px 12px; gap: 6px 12px; font-size: 13px; }
+  .at-calm-strip-caps { padding-left: 0; border-left: 0; }
+  .at-calm-strip-last { display: none; }
+  .at-calm-search { flex: 1 1 100%; }
+  .at-calm-filters .at-calm-seg { max-width: 100%; overflow-x: auto; }
+  .at-calm .at-player-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .at-player-card.at-pc { padding: 0 10px 10px; gap: 6px; }
+  .at-pc .at-team-band { margin: 0 -10px 3px; }
+  .at-pc-tal { font-size: 19px; }
+  .at-pc-head { gap: 8px; }
+}

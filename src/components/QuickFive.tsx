@@ -38,8 +38,9 @@ import { ChallengeNote, ScoreBoard } from './ScoreBoard';
 import ShareResultModal from './ShareResultModal';
 import { copyLink } from './shareSave';
 import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
-import { AI_SPEED_LABELS, cpuPickDelay, useAiSpeed } from './aiSpeed';
-import { AiSpeedControl, BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPressureNote, TurnBudgetText, type TickerPick } from './DraftChrome';
+import { cpuPickDelay } from './aiSpeed';
+import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
+import { BoardToggleButton, DraftTicker, LeaveDraftDialog, RimPressureNote, TurnBudgetText, type TickerPick } from './DraftChrome';
 
 interface Props {
   humanTeamName?: string;
@@ -87,9 +88,8 @@ const RUSH_PICK_MS = 90;
 export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge }: Props) {
   const [state, setState] = useState<QuickDraftState>(() => createQuickDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined));
   const [phase, setPhase] = useState<Phase>('lottery');
-  // 2026-09-24: same CPU-speed choice as the All-Time Draft (aiSpeed.ts), a "← Menu" with a
-  // confirm instead of a bare Exit at the very bottom, and every phase opening at the top.
-  const aiSpeed = useAiSpeed();
+  // 2026-09-24: a "← Menu" with a confirm instead of a bare Exit at the very bottom, and every
+  // phase opening at the top.
   const [boardOpen, setBoardOpen] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const closeExitDialog = useCallback(() => setConfirmExit(false), []);
@@ -129,9 +129,9 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
     const timer = setTimeout(() => {
       const next = resolveQuickAiPickIfNeeded(state);
       if (next) setState(next);
-    }, rushToMe ? RUSH_PICK_MS : cpuPickDelay(aiSpeed.delayMs, state.history.length, TEAM_COUNT));
+    }, rushToMe ? RUSH_PICK_MS : cpuPickDelay(state.history.length, TEAM_COUNT));
     return () => clearTimeout(timer);
-  }, [state, phase, autoFinishing, aiSpeed.delayMs, rushToMe]);
+  }, [state, phase, autoFinishing, rushToMe]);
 
   // Once the draft ends, move straight to results — no rotation-building step at all (user's own
   // spec: "bez etapu budowania rotacji/minut — od razu wynik").
@@ -169,7 +169,6 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
       {phase !== 'lottery' && <div className="at-board-brand at-cond">Mini Draft</div>}
       {phase === 'draft' && !state.complete && (
         <div className="at-topbar">
-          <AiSpeedControl labels={AI_SPEED_LABELS} index={aiSpeed.index} onChange={aiSpeed.setIndex} />
           <BoardToggleButton open={boardOpen} onToggle={() => setBoardOpen((o) => !o)} />
         </div>
       )}
@@ -514,9 +513,11 @@ function QuickDraftBoard({
           <span className="qf-fits-switch" aria-hidden />
           Only players I can afford
         </label>
-        <button className="secondary-btn qf-autofinish" disabled={autoFinishing} onClick={onAutoFinish}>
-          {autoFinishing ? 'Finishing…' : 'Auto-finish'}
-        </button>
+        {AUTO_FINISH_FOR_TESTING && (
+          <button className="secondary-btn qf-autofinish" disabled={autoFinishing} onClick={onAutoFinish}>
+            {autoFinishing ? 'Finishing…' : 'Auto-finish'}
+          </button>
+        )}
       </div>
       <div className="at-controls-row at-position-filters">
         <button className={`at-filter-pill at-cond ${selectedPosition === 'ALL' ? 'at-active' : ''}`} onClick={() => setSelectedPosition('ALL')}>

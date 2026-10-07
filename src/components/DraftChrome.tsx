@@ -2,49 +2,13 @@ import { useEffect } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import { rimPressureTeam } from '../engine/rimPressure';
 import { CapIcon } from './ShotChip';
+import { TIER_FRAME_COLOR } from './DraftPlayerCard';
 
 /**
  * 2026-09-24: small pieces of draft-screen chrome shared by the All-Time Draft (DraftBoard) and
- * Quick 5, so both modes behave the same: the CPU-speed control, the collapsed-board ticker and
- * the "leave this draft?" confirm.
+ * Quick 5, so both modes behave the same: the collapsed-board ticker and the "leave this draft?"
+ * confirm.
  */
-
-export function AiSpeedControl({
-  labels,
-  index,
-  onChange,
-}: {
-  labels: readonly string[];
-  index: number;
-  onChange: (index: number) => void;
-}) {
-  return (
-    <div className="at-speed" role="group" aria-label="CPU pick speed">
-      <span className="at-speed-label at-cond">CPU speed</span>
-      {labels.map((label, i) => (
-        <button
-          key={label}
-          type="button"
-          className={`at-speed-btn at-cond ${i === index ? 'at-active' : ''}`}
-          aria-pressed={i === index}
-          onClick={() => onChange(i)}
-        >
-          {label}
-        </button>
-      ))}
-      {/* 2026-09-27 UI audit: on a phone the four speed pills took a row of their own; there
-          it is one button that steps to the next speed (CSS picks which one shows). */}
-      <button
-        type="button"
-        className="at-speed-cycle at-cond"
-        onClick={() => onChange((index + 1) % labels.length)}
-        aria-label={`CPU speed: ${labels[index]}. Tap for the next speed.`}
-      >
-        CPU: {labels[index]} ⟳
-      </button>
-    </div>
-  );
-}
 
 export interface TickerPick {
   pickNumber: number;
@@ -110,53 +74,137 @@ export function DraftTicker({
 }
 
 /**
- * 2026-09-27, the user ("po zakończeniu 1st round nadal chaos"; the "Druga runda bez chaosu"
- * mockup): one thin line replaces the ticker's chip row and the "X is picking…" banner. Pick and
- * round on the left, the latest pick in the middle, and on the right how far away the player's
- * own pick is; it turns red when he is on the clock. A 2px progress line runs along the bottom.
+ * 2026-10-07, the UI simplification (approved mockup): one strip under the header replaces the
+ * status line and the "Your pick" budget banner. Whose pick and the round on the left, your caps
+ * next to it, the last two picks on the right; a 2px progress line runs along the bottom.
  */
-export function DraftStatusBar({
+export function DraftStrip({
   youOnClock,
   complete,
   onClockLabel,
   picksAway,
-  latestPick,
+  recentPicks,
+  round,
+  rounds,
   progress,
+  capLeft,
+  slotsLeft,
+  maxThisPick,
 }: {
   youOnClock: boolean;
   complete: boolean;
   onClockLabel: string;
   picksAway: number | null;
-  latestPick: TickerPick | null;
-  progress: { picksMade: number; totalPicks: number; round: number; rounds: number };
+  recentPicks: TickerPick[];
+  round: number;
+  rounds: number;
+  /** Share of all picks made, 0–1. */
+  progress: number;
+  capLeft: number;
+  slotsLeft: number;
+  /** This pick's hard ceiling, only when it rules someone out. */
+  maxThisPick: number | null;
 }) {
-  const pickNo = Math.min(progress.picksMade + 1, progress.totalPicks);
+  const perPick = slotsLeft > 0 ? capLeft / slotsLeft : capLeft;
   return (
-    <div className={`at-status-bar${youOnClock ? ' is-yours' : ''}`} role="status" aria-live="polite">
-      <span className="at-status-pick">
-        #{pickNo} · R{progress.round}/{progress.rounds}
-      </span>
-      <span className="at-status-last">
+    <div className={`at-calm-strip${youOnClock ? ' is-yours' : ''}`} role="status" aria-live="polite">
+      <span className="at-calm-strip-turn">
         {complete ? (
           <b>Draft complete</b>
-        ) : latestPick ? (
-          <>
-            <b>{latestPick.isHuman ? 'You' : latestPick.teamCode}</b> took <b>{latestPick.shortName}</b>
-          </>
+        ) : youOnClock ? (
+          <span className="at-calm-pill">Your pick</span>
         ) : (
-          <>
-            <b>{onClockLabel}</b> is on the clock
-          </>
+          <span className="at-calm-strip-clock">
+            <b>{onClockLabel}</b> picking
+            {picksAway !== null && <span className="at-calm-faint"> · you {picksAway === 1 ? 'next' : `in ${picksAway}`}</span>}
+          </span>
+        )}
+        {!complete && (
+          <span>
+            Round <b className="at-calm-num">{round}</b> of {rounds}
+          </span>
         )}
       </span>
-      {!complete && (
-        <span className="at-status-until at-cond">
-          {youOnClock ? 'Your pick' : picksAway === null ? '' : picksAway === 1 ? 'You next' : `You in ${picksAway}`}
+      {slotsLeft > 0 && (
+        <span className="at-calm-strip-caps">
+          <CapIcon /> <b className="at-calm-num">{capLeft.toFixed(1)}</b>{' '}
+          <span className="at-calm-soft">
+            caps left{slotsLeft > 1 && <> · ~{perPick.toFixed(1)} a pick</>}
+            {maxThisPick !== null && <> · max {maxThisPick.toFixed(1)} this pick</>}
+          </span>
         </span>
       )}
-      <span className="at-status-progress" aria-hidden>
-        <span style={{ width: `${(progress.picksMade / progress.totalPicks) * 100}%` }} />
+      {recentPicks.length > 0 && (
+        <span className="at-calm-strip-last">
+          {recentPicks.map((p, i) => (
+            <span key={p.pickNumber}>
+              {i > 0 && ' · '}
+              {p.isHuman ? 'You' : p.teamCode} took {p.shortName}
+            </span>
+          ))}
+        </span>
+      )}
+      <span className="at-calm-strip-progress" aria-hidden>
+        <span style={{ width: `${progress * 100}%` }} />
       </span>
+    </div>
+  );
+}
+
+/** The "?" of the draft header: the rules, the card colours by tier and what scouting does. */
+export function DraftHelpDialog({
+  howToPlay,
+  tiers,
+  scoutsLeft,
+  onClose,
+}: {
+  howToPlay: ReadonlyArray<{ title: string; body: string }>;
+  tiers: ReadonlyArray<keyof typeof TIER_FRAME_COLOR>;
+  scoutsLeft: number;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="mode-help-backdrop" onClick={onClose}>
+      <div className="mode-help-modal at-calm-help" role="dialog" aria-modal="true" aria-label="How the draft works" onClick={(e) => e.stopPropagation()}>
+        <div className="mode-help-modal-head">
+          <span className="mode-help-modal-title">How the draft works</span>
+          <button type="button" className="at-calm-icon" aria-label="Close" onClick={onClose} autoFocus>
+            ×
+          </button>
+        </div>
+        {howToPlay.map((item) => (
+          <p key={item.title} className="at-calm-help-item">
+            <b>{item.title}.</b> {item.body}
+          </p>
+        ))}
+        <p className="at-calm-help-item">
+          <b>Cards.</b> Draft takes the years shown on the card — his best stretch. Tap a card to open
+          his scouting page and compare his other years.
+        </p>
+        <p className="at-calm-help-item">
+          <b>Scouting.</b> {scoutsLeft > 0 ? `${scoutsLeft} scouting report${scoutsLeft === 1 ? '' : 's'} left` : 'No scouting reports left'} this
+          draft. “Scout him” on a player’s page shows his tier and his offense, defense and fit grades.
+        </p>
+        {tiers.length > 0 && (
+          <>
+            <h3 className="at-calm-help-h">Tiers</h3>
+            <p className="at-calm-help-item at-calm-faint">The dot on a card is the tier of the years it drafts.</p>
+            <div className="at-calm-help-tiers">
+              {tiers.map((tier) => (
+                <span key={tier}>
+                  <span className="at-calm-dot" style={{ background: TIER_FRAME_COLOR[tier] }} aria-hidden />
+                  {tier}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -170,9 +218,9 @@ export function DraftStatusBar({
 export function BoardToggleButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
     <button type="button" className="at-board-toggle at-cond" aria-expanded={open} onClick={onToggle}>
-      <span className="at-board-toggle-long">{open ? 'Hide draft board ▴' : 'Show draft board ▾'}</span>
+      <span className="at-board-toggle-long">{open ? 'Hide board' : 'Draft board'}</span>
       <span className="at-board-toggle-short" aria-hidden>
-        📋 Board
+        Board
       </span>
     </button>
   );
