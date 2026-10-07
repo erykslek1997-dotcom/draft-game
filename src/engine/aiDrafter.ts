@@ -1672,8 +1672,8 @@ export interface AiDraftRuleset {
  * deviation) and `BOARD_NOISE_TEAM_POINTS` team-overall points in the lookahead. Stars sit far
  * apart and barely move; role players a few points apart reshuffle.
  */
-const BOARD_NOISE_POINTS = 5;
-const BOARD_NOISE_TEAM_POINTS = 0.4;
+const BOARD_NOISE_POINTS = 8;
+const BOARD_NOISE_TEAM_POINTS = 0.7;
 const boardNoiseCache = new Map<string, number>();
 function boardNoise(boardSeed: number | undefined, p: PlayerSpan): number {
   if (boardSeed === undefined) return 0;
