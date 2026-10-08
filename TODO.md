@@ -239,8 +239,10 @@ Etap 0 (diagnoza, 2026-10-08) — mecz drużynowy ('season', 1,3 pkt na punkt oc
       i bloki ważą mniej. 960 drużyn: mecz oddaje 82% (było 66%), R² 0.63 (0.50), podbicie 2,3 pkt
       (2,9); obrona 92%, atak 68%, talent 69%. Liga bez zmian (121,9 pkt, TS 62,4). Era sprzed 1980:
       87,5% poprawki (było 75%; 100% dawało tylko +0,16 pkt).
-- [ ] **Etap 3: rotacja** — łagodniejsza krzywa zmęczenia w meczu (decyzja: łagodna), mocniejsza
-      kara za grę poza pozycją.
+- [ ] **Etap 3: rotacja** (2026-10-08, czeka na akcept) — zmęczenie w meczu 30% wspólnej krzywej
+      (42 min −3% zamiast −10,5%; solver minut bez zmian), kara za grę poza pozycją w ataku ×1,7 i
+      nowa w obronie (rywal trafia łatwiej). Testy podmiany: zamiana pozycji 100% (było 48%), +6 min
+      starterom 116% (397%); 320 drużyn: mecz oddaje 86%, R² 0.64, podbicie 2,25 pkt.
 - [ ] **Rzuty wolne w ocenie silnika (pomysł, do zrobienia później)** — mecz nagradza skuteczność z
       linii (+0,9 pkt/mecz na 1 SD, realistycznie), silnik jej nie liczy. Pomysł: w Offense dodać
       „punkty z linii ponad średnią” = ważone minutami (rzuty wolne na rzut z gry × (FT% − średnia
