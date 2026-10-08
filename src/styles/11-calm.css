@@ -37,7 +37,7 @@
 .at-calm-icon {
   flex: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
   border: 1px solid var(--calm-line); background: var(--calm-raised); color: var(--at-ink-soft);
-  font: inherit; font-weight: 700; font-size: 16px;
+  font: inherit; font-weight: 700; font-size: 16px; line-height: 1; padding: 0;
 }
 .at-calm-icon:hover { color: var(--at-ink); border-color: var(--at-accent); }
 .at-calm-seg {
@@ -121,7 +121,7 @@
 .at-pc-statrow { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 24px; }
 .at-pc-statrow .at-pc-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .at-pc-scout {
-  flex: none; display: grid; place-items: center; width: 24px; height: 24px;
+  flex: none; display: grid; place-items: center; width: 24px; height: 24px; padding: 0;
   border-radius: 50%; border: 1px solid var(--calm-line, #182433); background: transparent; color: var(--at-ink-faint); cursor: pointer;
 }
 .at-player-card.at-pc:hover .at-pc-scout, .at-pc-scout:focus-visible { color: var(--at-ink); border-color: var(--at-accent); }
@@ -665,7 +665,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .ss-sheet { position: relative; width: min(1080px, 100%); background: var(--at-paper, #05080d); border: 1px solid var(--calm-line); border-radius: 16px; padding: 22px; color: var(--at-ink); --rr-disp: 'Barlow Condensed', 'Inter', system-ui, sans-serif; --rr-serif: 'Bitter', Georgia, serif; --gold: #f2c14e; }
 .ss-sheet.is-playoffs { background: radial-gradient(120% 70% at 50% -10%, #2a2108 0%, #07090d 55%); border-color: #2c2614; }
 .ss-sheet.is-playoffs::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; border-radius: 16px 16px 0 0; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
-.ss-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--calm-line); background: var(--calm-raised); color: var(--at-ink-soft); font-size: 16px; cursor: pointer; z-index: 1; }
+.ss-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--calm-line); background: var(--calm-raised); color: var(--at-ink-soft); font-size: 16px; line-height: 1; padding: 0; cursor: pointer; z-index: 1; }
 .ss-close:hover { color: var(--at-ink); border-color: var(--at-accent); }
 .ss-kicker { font: 700 13px var(--rr-disp); letter-spacing: 0.14em; text-transform: uppercase; color: var(--at-ink-faint); margin: 0 0 10px; }
 .ss-kicker--small { font-size: 12px; margin: 14px 0 6px; }
@@ -801,9 +801,9 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .pl-odds-l { display: flex; justify-content: space-between; font: 600 12px var(--calm-num); color: var(--at-ink-soft); margin-top: 4px; }
 .pl-keys { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 10px; }
 .pl-keys > div { min-width: 0; }
-.pl-key { display: flex; justify-content: space-between; gap: 6px; padding: 4px 0; border-bottom: 1px solid #1d222b; font-size: 13px; }
-.pl-key b { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-.pl-key span { font: 600 12px var(--calm-num); color: var(--at-ink-soft); white-space: nowrap; }
+.pl-key { display: flex; flex-direction: column; gap: 2px; padding: 5px 0; border-bottom: 1px solid #1d222b; font-size: 13px; }
+.pl-key b { min-width: 0; white-space: nowrap; overflow: hidden; font-weight: 600; }
+.pl-key > span { font: 600 12px var(--calm-num); color: var(--at-ink-soft); white-space: nowrap; }
 .pl-tracker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
 .pl-tracker > * { width: 32px; height: 30px; border-radius: 8px; display: grid; place-items: center; font: 700 11px var(--calm-num); border: 1px solid #2c313b; color: var(--at-ink-faint); background: transparent; padding: 0; }
 .pl-tracker button { cursor: pointer; }

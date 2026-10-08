@@ -50,6 +50,7 @@ import {
   type ProfileRow,
   type ReportExtra,
 } from './ResultsReport';
+import { FitName } from './FitName';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, the live season) — real work deferred until the
@@ -575,7 +576,7 @@ function HeroResult({
                         <div className="challenge-compare-rotation-col">
                           {mineEntries.length > 0 ? mineEntries.map((a) => (
                             <div className="challenge-compare-rotation-entry" key={a.player.id}>
-                              <span className="challenge-compare-rotation-name" title={a.player.playerName}>{shortenName(a.player.playerName, 14)}</span>
+                              <FitName className="challenge-compare-rotation-name" name={a.player.playerName} />
                               <span className="challenge-compare-rotation-min">{Math.round(a.minutes)}m</span>
                             </div>
                           )) : <span className="challenge-compare-rotation-empty">—</span>}
@@ -584,7 +585,7 @@ function HeroResult({
                           {theirEntries.length > 0 ? theirEntries.map((e, i) => (
                             <div className="challenge-compare-rotation-entry" key={`${e.name}-${i}`}>
                               <span className="challenge-compare-rotation-min">{e.minutes}m</span>
-                              <span className="challenge-compare-rotation-name" title={e.name}>{shortenName(e.name, 14)}</span>
+                              <FitName className="challenge-compare-rotation-name" name={e.name} />
                             </div>
                           )) : <span className="challenge-compare-rotation-empty">—</span>}
                         </div>
@@ -602,8 +603,8 @@ function HeroResult({
                   return (
                     <div className="challenge-compare-roster-row" key={slot}>
                       <span className="challenge-compare-roster-slot">{slot}</span>
-                      <span className="challenge-compare-roster-name" title={mine}>{mine}</span>
-                      <span className="challenge-compare-roster-name" title={theirs}>{theirs}</span>
+                      <FitName className="challenge-compare-roster-name" name={mine} />
+                      <FitName className="challenge-compare-roster-name" name={theirs} />
                     </div>
                   );
                 })}

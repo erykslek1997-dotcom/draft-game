@@ -3,6 +3,7 @@ import type { PlayerSpan } from '../data/schema';
 import { DESK_EXPERT_TITLE, deskName, type DeskExpert, type DraftDeskResult } from '../engine/draftDesk';
 import { Face } from './ShotChip';
 import './DraftDesk.css';
+import { FitName } from './FitName';
 
 /**
  * 2026-09-25, user's ask ("wypowiedzi ekspertów … po 3 pickach, jednorazowe"; mockup C, "debate
@@ -105,7 +106,7 @@ export function DraftDesk({ roster, desk, onClose }: { roster: PlayerSpan[]; des
             {roster.map((p) => (
               <li className="desk-roster-row" key={p.id}>
                 <Face name={p.playerName} />
-                <span className="desk-roster-name">{p.playerName}</span>
+                <FitName className="desk-roster-name" name={p.playerName} faceNextToIt />
                 <span className="desk-roster-pos">{p.primaryPosition}</span>
               </li>
             ))}

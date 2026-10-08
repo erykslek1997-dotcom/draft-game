@@ -6,6 +6,7 @@ import type { Team } from '../engine/types';
 import { compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
 import { Face } from './ShotChip';
 import { TeamTile } from './TeamBadge';
+import { FitName } from './FitName';
 
 /**
  * 2026-10-08, results look C (approved mockup, "rywale 1 do 1 co dla nas"): the pieces one team's
@@ -81,7 +82,7 @@ export function RosterGrid({ team }: { team: Team }) {
                 <div className={`rr-cell${i > 0 ? ' is-backup' : ''}`} key={e.id} title={`${e.name} (${e.years})`}>
                   <Face name={e.name} size="sm" />
                   <span className="rr-cell-text">
-                    <b>{e.name}</b>
+                    <FitName as="b" name={e.name} faceNextToIt />
                     <span>
                       {e.years} · <b className="rr-min">{e.minutes}m</b>
                     </span>

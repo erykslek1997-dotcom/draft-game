@@ -14,6 +14,7 @@ import { gameWinProbability, seriesWinProbability } from '../engine/matchup';
 import LiveGame, { type LiveMatchup } from './LiveGame';
 import { TeamMark } from './ResultsReport';
 import './BestFive.css';
+import { FitName } from './FitName';
 
 /**
  * 2026-10-08, the user (season simulation): the season after a draft. First the regular season —
@@ -423,7 +424,7 @@ function Leaders({ title, lines, value, youId, mark, count = 10, fmt = f1 }: { t
         <div key={`${l.teamId}${l.span.id}`} className={`ss-leader${l.teamId === youId ? ' is-you' : ''}`}>
           <span className="ss-leader-i">{i + 1}</span>
           {mark(l.teamId)}
-          <span className="ss-leader-n">{l.span.playerName}</span>
+          <FitName className="ss-leader-n" name={l.span.playerName} />
           <span className="ss-leader-v">{fmt(value(l))}</span>
         </div>
       ))}
@@ -622,7 +623,7 @@ function Five({ label, five, youId, codes }: { label: string; five: SeasonPlayer
         {five.map((l) => (
           <div key={`${l.teamId}${l.span.id}`} className={l.teamId === youId ? 'is-you' : ''}>
             <small>{l.span.primaryPosition}</small>
-            <b>{l.span.playerName}</b>
+            <FitName as="b" name={l.span.playerName} />
             <small>
               {codes.get(l.teamId)} · {f1(per(l, 'pts'))}/{f1(per(l, 'reb'))}/{f1(per(l, 'ast'))}
             </small>
@@ -965,7 +966,7 @@ function SeriesPanel({
           <div key={id}>
             {top(id).map((l) => (
               <div key={l.span.id} className="pl-key">
-                <b>{l.span.playerName}</b>
+                <FitName as="b" name={l.span.playerName} />
                 <span>
                   {f1(per(l, 'pts'))}/{f1(per(l, 'reb'))}/{f1(per(l, 'ast'))}
                 </span>
