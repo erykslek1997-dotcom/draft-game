@@ -1,9 +1,10 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode, RefObject } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import type { OverallTier } from '../engine/grades';
 import { naturalPosition } from '../engine/naturalPosition';
 import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
 import { EraYears } from './EraYears';
+import { useFitName } from './FitName';
 import { cardRoles } from './cardRoles';
 import { MagnifierIcon } from './MagnifierIcon';
 import { TeamBand, spanTeamColor } from './TeamBand';
@@ -58,6 +59,7 @@ interface DraftPlayerCardProps {
  */
 export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, onScouting, scoutingTitle, blind, className, title, style, children }: DraftPlayerCardProps) {
   const ring = spanTeamColor(span);
+  const name = useFitName<HTMLElement>(span.playerName, true);
   const vars = { ...(blind ? {} : { '--tier-frame': TIER_FRAME_COLOR[tier] }), ...(ring ? { '--ring': ring } : {}), ...style } as CSSProperties;
   const cls = `at-player-card${blind ? ' at-player-card--blind' : ''}${className ? ` ${className}` : ''}`;
   if (!blind) {
@@ -78,15 +80,18 @@ export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, o
                 type="button"
                 className="at-pc-name at-player-card-name"
                 title={scoutingTitle}
+                ref={name.ref as RefObject<HTMLButtonElement | null>}
                 onClick={(e) => {
                   e.stopPropagation();
                   onScouting();
                 }}
               >
-                {span.playerName}
+                {name.content}
               </button>
             ) : (
-              <span className="at-pc-name at-player-card-name">{span.playerName}</span>
+              <span className="at-pc-name at-player-card-name" ref={name.ref as RefObject<HTMLSpanElement | null>} title={span.playerName}>
+                {name.content}
+              </span>
             )}
             <span className="at-pc-meta">
               {naturalPosition(span.playerName)} · {span.spanLabel}

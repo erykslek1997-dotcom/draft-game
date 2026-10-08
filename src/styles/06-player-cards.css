@@ -26,7 +26,7 @@
 .at-player-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 @media (min-width: 1600px) {
   .at-player-cards { grid-template-columns: repeat(auto-fit, minmax(150px, 190px)); }
@@ -34,10 +34,10 @@
 .at-player-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
+  gap: 8px;
+  padding: 8px;
   border: 2px solid var(--tier-frame, var(--at-line));
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--at-paper);
   position: relative;
   overflow: hidden;
@@ -91,11 +91,11 @@
 
 .at-player-card-draft {
   height: 22px;
-  padding: 0 10px;
+  padding: 0 8px;
   flex: none;
   border-radius: 999px;
   border: 1px solid var(--at-line);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -142,7 +142,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
   z-index: 1000;
 }
 .player-peek-card {
@@ -152,8 +152,8 @@
   overflow-y: auto;
   background: var(--at-paper-raised);
   border: 1px solid var(--at-line);
-  border-radius: 14px;
-  padding: 22px 22px 18px;
+  border-radius: 12px;
+  padding: 24px 24px 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
 }
 .player-peek-close {
@@ -175,10 +175,10 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
-  padding-right: 30px;
+  padding-right: 32px;
 }
 .player-peek-name {
-  font-size: 18px;
+  font-size: 20px;
   margin: 0;
   color: var(--at-ink);
 }
@@ -189,7 +189,7 @@
 .at-controls-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 
 .at-search-input {
-  font: inherit; font-size: 13px; padding: 9px 14px; border-radius: 999px;
+  font: inherit; font-size: 13px; padding: 8px 12px; border-radius: 999px;
   border: 1px solid var(--at-line); background: var(--at-paper); color: var(--at-ink);
   min-width: 200px;
 }
@@ -211,13 +211,13 @@
 .at-fga-input {
   width: 38px; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; text-align: center;
   border-radius: 999px; border: 1px solid var(--at-line); background: var(--at-pill); color: var(--at-pill-ink);
-  padding: 5px 2px; font-weight: 700;
+  padding: 4px 2px; font-weight: 700;
 }
 
 .at-filter-pill {
   font: inherit; cursor: pointer; border: none;
   background: var(--at-pill); color: var(--at-pill-ink); border-radius: 999px;
-  font-size: 12.5px; font-weight: 700; padding: 8px 18px;
+  font-size: 13px; font-weight: 700; padding: 8px 16px;
   opacity: 0.55; transition: opacity .15s, box-shadow .15s;
 }
 .at-filter-pill.at-active { opacity: 1; box-shadow: 0 0 0 2px var(--at-accent) inset; }
@@ -239,8 +239,8 @@
 .at-dot-wrap::after {
   content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%;
   transform: translate(-50%, 4px); background: var(--at-pill); color: var(--at-pill-ink);
-  font-size: 11px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
-  padding: 6px 10px; border-radius: 7px; box-shadow: var(--at-shadow);
+  font-size: 11px; font-weight: 600; letter-spacing: 0; white-space: nowrap;
+  padding: 8px 8px; border-radius: 8px; box-shadow: var(--at-shadow);
   opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
 }
 .at-dot-wrap::before {
@@ -274,8 +274,8 @@
 .at-name-tip::after {
   content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 0;
   transform: translate(0, 4px); background: var(--at-pill); color: var(--at-pill-ink);
-  font-size: 11px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
-  padding: 6px 10px; border-radius: 7px; box-shadow: var(--at-shadow);
+  font-size: 11px; font-weight: 600; letter-spacing: 0; white-space: nowrap;
+  padding: 8px 8px; border-radius: 8px; box-shadow: var(--at-shadow);
   opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
 }
 .at-name-tip::before {
@@ -294,7 +294,7 @@
    at a glance, without inventing tier names that don't exist yet. */
 .at-grade-badge {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 26px; height: 20px; padding: 0 6px; border-radius: 999px;
+  min-width: 26px; height: 20px; padding: 0 8px; border-radius: 999px;
   font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 /* 2026-09-11: grade coloring moved to an inline red→green scale computed in `AtGrade` itself
@@ -308,8 +308,8 @@
    sized for a whole tier NAME ("Greatest peak") instead of a single letter or a bare 12px dot. */
 .at-tag-badge {
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 3px 10px; border-radius: 999px; white-space: nowrap;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
+  padding: 4px 8px; border-radius: 999px; white-space: nowrap;
+  font-size: 11px; font-weight: 700; letter-spacing: 0;
 }
 .at-tag-badge.at-t1 { background: var(--at-t1); color: var(--at-t1-ink); }
 .at-tag-badge.at-t2 { background: var(--at-t2); color: var(--at-t2-ink); }
@@ -323,7 +323,7 @@
    colour. The tier corner drops below the band. */
 .at-team-band {
   display: flex; flex: none; height: 18px; margin: -10px -10px 0; overflow: hidden;
-  font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; line-height: 1;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.12em; line-height: 1;
 }
 .at-team-band.is-empty { background: var(--at-line); }
 .at-team-band-seg {
@@ -335,7 +335,7 @@
 .at-team-band-seg + .at-team-band-seg { box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.35); }
 
 .at-player-card .at-player-card-top .bf-face { box-shadow: 0 0 0 2px var(--at-paper), 0 0 0 4px var(--ring, var(--at-line)); }
-.at-player-card .at-player-card-top { padding: 3px 3px 0; }
+.at-player-card .at-player-card-top { padding: 4px 4px 0; }
 
 /* Draw Five's blind card: the same card as a button, a neutral gold frame instead of the tier. */
 .at-player-card--blind {

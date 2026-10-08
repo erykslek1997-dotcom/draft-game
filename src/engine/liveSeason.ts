@@ -25,6 +25,9 @@ export interface SeasonPlayerLine {
   /** Season totals. */
   totals: BoxLineStats;
   starter: boolean;
+  /** Games with 10+ in two (three) of points, rebounds, assists, steals and blocks. */
+  doubleDoubles: number;
+  tripleDoubles: number;
 }
 
 export interface LiveStandingsRow {
@@ -146,8 +149,11 @@ function addGame(lines: Map<string, SeasonPlayerLine>, teams: [Team, Team], game
       const box = game.box[side][game.labels[side][k]];
       if (box.min <= 0) return;
       const key = `${team.id}|${span.id}`;
-      const line = lines.get(key) ?? { span, teamId: team.id, games: 0, totals: zero(), starter: starterIds.has(key) };
+      const line = lines.get(key) ?? { span, teamId: team.id, games: 0, totals: zero(), starter: starterIds.has(key), doubleDoubles: 0, tripleDoubles: 0 };
       line.games++;
+      const tens = [box.pts, box.reb, box.ast, box.stl, box.blk].filter((v) => v >= 10).length;
+      if (tens >= 2) line.doubleDoubles++;
+      if (tens >= 3) line.tripleDoubles++;
       for (const stat of Object.keys(line.totals) as (keyof BoxLineStats)[]) line.totals[stat] += box[stat];
       lines.set(key, line);
     });

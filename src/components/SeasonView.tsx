@@ -10,36 +10,44 @@ import {
   type SeasonPlayerLine,
   type SimProgress,
 } from '../engine/liveSeason';
+import { gameWinProbability, seriesWinProbability } from '../engine/matchup';
 import LiveGame, { type LiveMatchup } from './LiveGame';
 import { TeamMark } from './ResultsReport';
 import './BestFive.css';
+import { FitName, FitTeam } from './FitName';
 
 /**
- * 2026-10-08, the user (season simulation, mockup B: "Bo"): the season after a draft — one recap
- * top to bottom (record, the playoffs, standings and leaders, awards, your players), with the full
- * stats and the bracket a click away. Every game was played on the live engine; your playoff games
- * can be watched play by play ("tylko gracz" — only yours), and the playoffs stay hidden until you
- * watch them or ask for the results, so watching is not spoiled.
+ * 2026-10-08, the user (season simulation): the season after a draft. First the regular season —
+ * a hub with Overview, Standings, Stats and Awards ("UI mało ciekawe, mało intuicyjne"; "po season
+ * stats przejście do play-offs powinno otwierać nową część zabawy"), then the playoffs as a chapter
+ * of their own (mockup A, "drabinka wygląda całkiem based"): the bracket on stage, your series
+ * beside it, your games played one by one ("tylko gracz"), a screen between rounds, and the end of
+ * your run or the title. The playoffs stay hidden until you play them, so nothing is spoiled.
  */
 
 export type SeasonState =
   | { status: 'running'; progress: SimProgress | null }
   | { status: 'done'; season: LiveSeasonResult; playoffs: LivePlayoffResult | null };
 
-type Reveal = { mode: 'hidden' } | { mode: 'live'; round: number; game: number } | { mode: 'all' };
-type View = { kind: 'recap' } | { kind: 'stats' } | { kind: 'bracket' } | { kind: 'watch'; round: number; series: number; game: number };
+/** How much of the playoffs is out: rounds before `round` in full, `game` games of that round. */
+type Reveal = { kind: 'none' } | { kind: 'live'; round: number; game: number } | { kind: 'all' };
+type Tab = 'overview' | 'standings' | 'stats' | 'awards';
+type Watching = { round: number; series: number; game: number };
+type Mark = (id: string, size?: 'sm' | 'md') => ReactElement;
+type EngineViews = ReturnType<typeof engineTeamViews>;
 
-const ROUND_SHORT = ['QF', 'SF', 'Finals'];
 const AWARD_MIN_GAMES = 58;
 const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 const per = (l: SeasonPlayerLine, k: keyof SeasonPlayerLine['totals']) => l.totals[k] / Math.max(1, l.games);
 const f1 = (x: number) => x.toFixed(1);
-const pct = (made: number, att: number) => (att > 0 ? ((100 * made) / att).toFixed(1) : '—');
+const pct = (made: number, att: number) => (att > 0 ? (100 * made) / att : 0);
 const mascot = (team: Team | undefined) => team?.name.split(' ').slice(-1)[0] ?? '';
+const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? '' : 's'}`;
 
 export default function SeasonView({ teams, codes, state, onClose }: { teams: Team[]; codes: Map<string, string>; state: SeasonState; onClose: () => void }) {
-  const [view, setView] = useState<View>({ kind: 'recap' });
-  const [reveal, setReveal] = useState<Reveal>({ mode: 'hidden' });
+  const [chapter, setChapter] = useState<'season' | 'playoffs'>('season');
+  const [tab, setTab] = useState<Tab>('overview');
+  const [reveal, setReveal] = useState<Reveal>({ kind: 'none' });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -48,14 +56,25 @@ export default function SeasonView({ teams, codes, state, onClose }: { teams: Te
 
   return (
     <div className="ss-backdrop" onClick={onClose}>
-      <div className="ss-sheet at-calm" role="dialog" aria-modal="true" aria-label="Your season" onClick={(e) => e.stopPropagation()}>
+      <div className={`ss-sheet at-calm${chapter === 'playoffs' ? ' is-playoffs' : ''}`} role="dialog" aria-modal="true" aria-label="Your season" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="ss-close" aria-label="Close" onClick={onClose}>
           ✕
         </button>
         {state.status === 'running' ? (
           <Playing progress={state.progress} />
         ) : (
-          <Season teams={teams} codes={codes} season={state.season} playoffs={state.playoffs} view={view} setView={setView} reveal={reveal} setReveal={setReveal} />
+          <SeasonBody
+            teams={teams}
+            codes={codes}
+            season={state.season}
+            playoffs={state.playoffs}
+            chapter={chapter}
+            setChapter={setChapter}
+            tab={tab}
+            setTab={setTab}
+            reveal={reveal}
+            setReveal={setReveal}
+          />
         )}
       </div>
     </div>
@@ -77,13 +96,15 @@ function Playing({ progress }: { progress: SimProgress | null }) {
   );
 }
 
-function Season({
+function SeasonBody({
   teams,
   codes,
   season,
   playoffs,
-  view,
-  setView,
+  chapter,
+  setChapter,
+  tab,
+  setTab,
   reveal,
   setReveal,
 }: {
@@ -91,292 +112,216 @@ function Season({
   codes: Map<string, string>;
   season: LiveSeasonResult;
   playoffs: LivePlayoffResult | null;
-  view: View;
-  setView: (v: View) => void;
+  chapter: 'season' | 'playoffs';
+  setChapter: (c: 'season' | 'playoffs') => void;
+  tab: Tab;
+  setTab: (t: Tab) => void;
   reveal: Reveal;
   setReveal: (r: Reveal) => void;
 }) {
   const byId = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const you = teams.find((t) => t.isHuman) ?? teams[0];
   const views = useMemo(() => engineTeamViews(teams), [teams]);
+  const mark: Mark = (id, size = 'sm') => <TeamMark code={codes.get(id) ?? ''} name={byId.get(id)?.name ?? ''} size={size} />;
   const rank = season.standings.findIndex((r) => r.teamId === you.id) + 1;
   const record = season.standings[rank - 1];
-  const mark = (id: string, size: 'sm' | 'md' = 'sm') => <TeamMark code={codes.get(id) ?? ''} name={byId.get(id)?.name ?? ''} size={size} />;
-
-  // How much of the playoffs is on the page: nothing yet, up to a game of a round, or all of it.
-  const visibleGames = (round: number, series: LivePlayoffSeries) => {
-    if (reveal.mode === 'all') return series.games.length;
-    if (reveal.mode === 'hidden') return 0;
-    if (round < reveal.round) return series.games.length;
-    if (round > reveal.round) return 0;
-    return Math.min(series.games.length, reveal.game);
-  };
-  const isYours = (s: LivePlayoffSeries) => s.teamAId === you.id || s.teamBId === you.id;
-  const yourRuns = playoffs ? playoffs.rounds.map((r, round) => ({ round, index: r.findIndex(isYours) })).filter((x) => x.index >= 0) : [];
-  const madePlayoffs = yourRuns.length > 0;
-  const finalsSeries = playoffs ? playoffs.rounds[playoffs.rounds.length - 1][0] : null;
-  // Everything is out once the Finals are on the page (asked for, or watched to the end).
-  const complete = reveal.mode === 'all' || (playoffs !== null && finalsSeries !== null && visibleGames(playoffs.rounds.length - 1, finalsSeries) >= finalsSeries.games.length);
-  const lastRun = yourRuns[yourRuns.length - 1];
-  const lastSeries = playoffs && lastRun ? playoffs.rounds[lastRun.round][lastRun.index] : null;
-
-  // Your next game to watch (live mode): the first one not yet on the page in the current round.
-  const nextGame = (() => {
-    if (!playoffs || reveal.mode !== 'live') return null;
-    const run = yourRuns.find((r) => r.round === reveal.round);
-    if (!run) return null;
-    const s = playoffs.rounds[run.round][run.index];
-    return reveal.game < s.games.length ? { round: run.round, series: run.index, game: reveal.game } : null;
-  })();
-  const yourSeriesDone = (() => {
-    if (!playoffs || reveal.mode !== 'live') return null;
-    const run = yourRuns.find((r) => r.round === reveal.round);
-    if (!run) return null;
-    const s = playoffs.rounds[run.round][run.index];
-    return reveal.game >= s.games.length ? s : null;
-  })();
-  const markWatched = (round: number, game: number) => {
-    if (reveal.mode === 'live' && reveal.round === round && reveal.game <= game) setReveal({ mode: 'live', round, game: game + 1 });
+  const finalsDone = playoffs !== null && (reveal.kind === 'all' || (reveal.kind === 'live' && reveal.round >= playoffs.rounds.length));
+  const startPlayoffs = () => {
+    if (reveal.kind === 'none') setReveal({ kind: 'live', round: 0, game: 0 });
+    setChapter('playoffs');
   };
 
-  if (view.kind === 'watch' && playoffs) {
-    const series = playoffs.rounds[view.round][view.series];
+  if (chapter === 'playoffs' && playoffs) {
     return (
-      <Watch
-        key={`${view.round}-${view.series}-${view.game}`}
+      <PlayoffsChapter
         teams={teams}
-        codes={codes}
-        series={series}
-        gameIndex={view.game}
-        youId={you.id}
         byId={byId}
-        onFinish={() => markWatched(view.round, view.game)}
-        onNext={view.game + 1 < series.games.length ? () => setView({ ...view, game: view.game + 1 }) : null}
-        onBack={() => setView({ kind: 'recap' })}
+        codes={codes}
+        mark={mark}
+        season={season}
+        playoffs={playoffs}
+        youId={you.id}
+        reveal={reveal}
+        setReveal={setReveal}
+        onBack={() => setChapter('season')}
       />
     );
   }
-  if (view.kind === 'stats') {
-    return <AllStats teams={teams} season={season} playoffs={complete ? playoffs : null} youId={you.id} mark={mark} onBack={() => setView({ kind: 'recap' })} />;
-  }
-  if (view.kind === 'bracket' && playoffs) {
-    return (
-      <div>
-        <BackBar onBack={() => setView({ kind: 'recap' })} title="Playoffs" />
-        <div className="ss-bracket">
-          {playoffs.rounds.map((round, r) => (
-            <div key={r} className="ss-bracket-col">
-              <div className="ss-kicker">{round[0].roundLabel}</div>
-              <div className="ss-bracket-games">
-                {round.map((s, i) => (
-                  <SeriesCard key={i} s={s} shown={visibleGames(r, s)} youId={you.id} byId={byId} mark={mark} onWatch={isYours(s) ? (g) => setView({ kind: 'watch', round: r, series: i, game: g }) : null} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
-  const yourLines = season.players.filter((l) => l.teamId === you.id).sort((a, b) => b.totals.min - a.totals.min);
-  const best = [...yourLines].filter((l) => l.games >= AWARD_MIN_GAMES / 2).sort((a, b) => gameScorePerGame(b) - gameScorePerGame(a))[0];
+  return (
+    <div className="ss-hub">
+      <header className="ss-hub-head">
+        {mark(you.id, 'md')}
+        <span className="ss-hub-rec">
+          {record.wins}-{record.losses}
+        </span>
+        <span className="ss-hub-name">
+          {you.name} · {ord(rank)}
+        </span>
+        {playoffs && (
+          <button type="button" className="pl-cta ss-hub-cta" onClick={startPlayoffs}>
+            {reveal.kind === 'none' ? (rank <= 8 ? 'Start the playoffs →' : 'See the playoffs →') : finalsDone ? 'The playoffs →' : 'Back to the playoffs →'}
+          </button>
+        )}
+      </header>
+      <nav className="ss-tabs" aria-label="Season">
+        {(['overview', 'standings', 'stats', 'awards'] as Tab[]).map((t) => (
+          <button key={t} type="button" className={t === tab ? 'is-on' : ''} onClick={() => setTab(t)}>
+            {t[0].toUpperCase() + t.slice(1)}
+          </button>
+        ))}
+      </nav>
+      {tab === 'overview' && <Overview season={season} playoffs={playoffs} you={you} rank={rank} byId={byId} views={views} mark={mark} reveal={reveal} onPlayoffs={startPlayoffs} />}
+      {tab === 'standings' && <FullStandings season={season} byId={byId} youId={you.id} views={views} mark={mark} />}
+      {tab === 'stats' && <Stats teams={teams} season={season} playoffs={finalsDone ? playoffs : null} youId={you.id} mark={mark} />}
+      {tab === 'awards' && <Awards season={season} playoffs={finalsDone ? playoffs : null} byId={byId} youId={you.id} codes={codes} />}
+    </div>
+  );
+}
+
+function Overview({
+  season,
+  playoffs,
+  you,
+  rank,
+  byId,
+  views,
+  mark,
+  reveal,
+  onPlayoffs,
+}: {
+  season: LiveSeasonResult;
+  playoffs: LivePlayoffResult | null;
+  you: Team;
+  rank: number;
+  byId: Map<string, Team>;
+  views: EngineViews;
+  mark: Mark;
+  reveal: Reveal;
+  onPlayoffs: () => void;
+}) {
+  const record = season.standings[rank - 1];
+  const eighth = season.standings[7];
+  const ninth = season.standings[8];
+  const games = Math.max(1, record.wins + record.losses);
+  const name = mascot(you);
+  const regulars = season.players.filter((l) => l.games >= AWARD_MIN_GAMES);
+  const yours = season.players.filter((l) => l.teamId === you.id && l.games >= AWARD_MIN_GAMES / 2);
+  const best = [...yours].sort((a, b) => gameScorePerGame(b) - gameScorePerGame(a))[0];
   const projected = views.get(you.id)?.expectedWins ?? record.wins;
   const vs = Math.round(record.wins - projected);
+  const diff = (record.pointsFor - record.pointsAgainst) / games;
+  const made = rank <= 8;
 
-  // The sentence and the playoff tile: what the page may already tell.
-  let story: string;
-  let tile: string;
-  if (!playoffs || !madePlayoffs) {
-    const eighth = season.standings[7];
-    story = `Missed the playoffs — ${ord(rank)}, ${eighth.wins - record.wins} game${eighth.wins - record.wins === 1 ? '' : 's'} behind 8th.`;
-    tile = '—';
-  } else if (reveal.mode === 'hidden') {
-    story = `Into the playoffs as the ${ord(rank)} seed.`;
-    tile = `#${rank}`;
-  } else if (lastSeries && visibleGames(lastRun.round, lastSeries) >= lastSeries.games.length) {
-    const won = lastSeries.winnerId === you.id;
-    const opp = byId.get(lastSeries.teamAId === you.id ? lastSeries.teamBId : lastSeries.teamAId);
-    const [w, l] = lastSeries.teamAId === you.id ? [lastSeries.gamesWonA, lastSeries.gamesWonB] : [lastSeries.gamesWonB, lastSeries.gamesWonA];
-    story = won ? `Champions — beat the ${mascot(opp)} ${w}-${l} in the Finals.` : `Out in the ${lastSeries.roundLabel}, ${w}-${l} to the ${mascot(opp)}.`;
-    tile = won ? 'Champs' : ROUND_SHORT[lastRun.round];
-  } else {
-    story = 'The playoffs are under way.';
-    tile = '…';
-  }
-  const champion = playoffs && complete ? byId.get(playoffs.championId) : undefined;
-  const finals = finalsSeries;
-  const champSeed = finals ? (finals.winnerId === finals.teamAId ? finals.teamASeed : finals.teamBSeed) : 0;
-  const finalsLoser = finals ? byId.get(finals.winnerId === finals.teamAId ? finals.teamBId : finals.teamAId) : undefined;
+  const headline =
+    rank === 1
+      ? `The ${name} own the regular season`
+      : rank <= 4
+        ? `The ${name} finish ${ord(rank)} and head into the playoffs as a top-four seed`
+        : rank <= 7
+          ? `The ${name} are in as the ${ord(rank)} seed`
+          : rank === 8
+            ? `In by a whisker: the ${name} take the last playoff spot`
+            : eighth.wins - record.wins <= 2
+              ? `So close: the ${name} miss the playoffs by ${plural(Math.max(1, eighth.wins - record.wins), 'game')}`
+              : `A long year for the ${name}`;
+  // Where your other players rank in the league: the highest board one of them reaches.
+  const boards: { label: string; value: (l: SeasonPlayerLine) => number }[] = [
+    { label: 'scoring', value: (l) => per(l, 'pts') },
+    { label: 'rebounding', value: (l) => per(l, 'reb') },
+    { label: 'assists', value: (l) => per(l, 'ast') },
+    { label: 'steals', value: (l) => per(l, 'stl') },
+    { label: 'blocks', value: (l) => per(l, 'blk') },
+  ];
+  const standout = boards
+    .map((b) => {
+      const sorted = [...regulars].sort((x, y) => b.value(y) - b.value(x));
+      const i = sorted.findIndex((l) => l.teamId === you.id && l !== best);
+      return { ...b, line: sorted[i], place: i + 1 };
+    })
+    .filter((b) => b.line)
+    .sort((a, b) => a.place - b.place)[0];
+  const gap = made ? record.wins - ninth.wins : eighth.wins - record.wins;
+  const sentence = [
+    `${record.wins}-${record.losses}, ${made ? (gap > 0 ? `${plural(gap, 'game')} clear of 9th` : 'level with 9th, in on the tiebreak') : gap > 0 ? `${plural(gap, 'game')} behind 8th` : 'level with 8th, out on the tiebreak'}.`,
+    best && `${best.span.playerName} carried the offense with ${f1(per(best, 'pts'))} a night.`,
+    standout && standout.place <= 10 && `${standout.line.span.playerName} was ${ord(standout.place)} in the league in ${standout.label}.`,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const firstRound = playoffs?.rounds[0].find((s) => s.teamAId === you.id || s.teamBId === you.id);
+  const opp = firstRound ? (firstRound.teamAId === you.id ? firstRound.teamBId : firstRound.teamAId) : null;
+  const oppRow = opp ? season.standings.find((r) => r.teamId === opp) : null;
+  const oppSeed = opp ? season.standings.findIndex((r) => r.teamId === opp) + 1 : 0;
 
-  const regulars = season.players.filter((l) => l.games >= AWARD_MIN_GAMES);
-  const a = season.awards;
   return (
     <div className="ss-recap">
-      <section className="ss-hero">
-        <div className="ss-kicker">Your season</div>
-        <div className="ss-hero-grid">
-          <div>
-            <div className="ss-record">
-              {record.wins}-{record.losses}
+      <section>
+        <div className="ss-kicker ss-kicker--gold">The season</div>
+        <h2 className="ss-headline">{headline}</h2>
+        <p className="ss-lede">{sentence}</p>
+        <div className="ss-beats">
+          {best && (
+            <div className="ss-beat">
+              <span>Best player</span>
+              <b>{best.span.playerName}</b>
+              <small>
+                {f1(per(best, 'pts'))} pts · {f1(per(best, 'reb'))} reb · {f1(per(best, 'ast'))} ast
+              </small>
             </div>
-            <div className="ss-team">
-              {mark(you.id, 'md')}
-              <span>
-                {you.name} · {ord(rank)}
-              </span>
-            </div>
-            <p className="ss-story">
-              {story}
-              {best && ` ${best.span.playerName} led the way — ${f1(per(best, 'pts'))} points a night.`}
-            </p>
+          )}
+          <div className="ss-beat">
+            <span>vs projection</span>
+            <b className={vs > 0 ? 'is-good' : vs < 0 ? 'is-bad' : ''}>
+              {vs > 0 ? '+' : ''}
+              {plural(vs, 'win')}
+            </b>
+            <small>Projected {Math.round(projected)} from the draft grade</small>
           </div>
-          <div className="ss-kpis">
-            <Kpi value={String(Math.round(projected))} label="Projected W" />
-            <Kpi value={`${vs >= 0 ? '+' : ''}${vs}`} label="vs projection" tone={vs > 0 ? 'good' : vs < 0 ? 'bad' : undefined} />
-            <Kpi value={tile} label="Playoffs" />
+          <div className="ss-beat">
+            <span>Point differential</span>
+            <b>
+              {diff >= 0 ? '+' : ''}
+              {f1(diff)}
+            </b>
+            <small>
+              {f1(record.pointsFor / games)} scored · {f1(record.pointsAgainst / games)} allowed
+            </small>
           </div>
         </div>
-        {champion && finals && (
-          <p className="ss-champ">
-            🏆 <b>Champion: {champion.name}</b>
-            <span>
-              {ord(champSeed)} seed · beat the {mascot(finalsLoser)} {Math.max(finals.gamesWonA, finals.gamesWonB)}-{Math.min(finals.gamesWonA, finals.gamesWonB)} in the Finals
-              {playoffs?.finalsMvp && ` · Finals MVP ${playoffs.finalsMvp.span.playerName}`}
-            </span>
-          </p>
-        )}
       </section>
 
       {playoffs && (
-        <section className="ss-card">
-          <div className="ss-card-head">
-            <h3 className="ss-kicker">Playoffs</h3>
-            <button type="button" className="ss-link" onClick={() => setView({ kind: 'bracket' })}>
-              Full bracket
-            </button>
-          </div>
-          {reveal.mode === 'hidden' ? (
-            <div className="ss-actions">
-              {madePlayoffs && (
-                <button type="button" className="rs-primary" onClick={() => { setReveal({ mode: 'live', round: 0, game: 0 }); setView({ kind: 'watch', round: yourRuns[0].round, series: yourRuns[0].index, game: 0 }); }}>
-                  ▶ Watch your playoffs
-                </button>
-              )}
-              <button type="button" className="at-calm-btn" onClick={() => setReveal({ mode: 'all' })}>
-                Show the results
-              </button>
-              <span className="ss-note">{madePlayoffs ? 'Your games play out live, one at a time; the rest of the bracket fills in between them.' : 'The top 8 played on without you.'}</span>
+        <section className="ss-po-card">
+          <div>
+            <div className="ss-kicker ss-kicker--gold">Playoffs</div>
+            <div className="ss-po-title">{made ? `You're in as the ${ord(rank)} seed` : 'You missed the playoffs'}</div>
+            <div className="ss-note">
+              {made && oppRow ? `First round: #${oppSeed} ${byId.get(opp ?? '')?.name} (${oppRow.wins}-${oppRow.losses})` : 'The top 8 play on — watch the bracket unfold.'}
             </div>
-          ) : (
-            <>
-              <div className="ss-series-row">
-                {yourRuns
-                  .filter((run) => playoffs && visibleGames(run.round, playoffs.rounds[run.round][run.index]) > 0)
-                  .map((run) => {
-                    const s = playoffs.rounds[run.round][run.index];
-                    return (
-                      <div key={run.round}>
-                        <div className="ss-kicker ss-kicker--small">{s.roundLabel}</div>
-                        <SeriesCard s={s} shown={visibleGames(run.round, s)} youId={you.id} byId={byId} mark={mark} onWatch={(g) => setView({ kind: 'watch', round: run.round, series: run.index, game: g })} />
-                      </div>
-                    );
-                  })}
-              </div>
-              {reveal.mode === 'live' && (
-                <div className="ss-actions">
-                  {nextGame && (
-                    <button type="button" className="rs-primary" onClick={() => setView({ kind: 'watch', ...nextGame })}>
-                      ▶ Watch game {nextGame.game + 1}
-                    </button>
-                  )}
-                  {yourSeriesDone && yourSeriesDone.winnerId === you.id && reveal.round + 1 < playoffs.rounds.length && (
-                    <button type="button" className="rs-primary" onClick={() => setReveal({ mode: 'live', round: reveal.round + 1, game: 0 })}>
-                      On to the {playoffs.rounds[reveal.round + 1][0].roundLabel}
-                    </button>
-                  )}
-                  {!complete && (
-                    <button type="button" className="at-calm-btn" onClick={() => setReveal({ mode: 'all' })}>
-                      {yourSeriesDone && yourSeriesDone.winnerId !== you.id ? 'Show the rest of the playoffs' : 'Show all results'}
-                    </button>
-                  )}
-                </div>
-              )}
-            </>
-          )}
+          </div>
+          <button type="button" className="pl-cta" onClick={onPlayoffs}>
+            {reveal.kind === 'none' ? (made ? 'Start the playoffs →' : 'See the playoffs →') : 'Back to the playoffs →'}
+          </button>
         </section>
       )}
 
       <div className="ss-two">
         <section className="ss-card">
           <h3 className="ss-kicker">Standings</h3>
-          <Standings season={season} byId={byId} youId={you.id} mark={mark} />
+          <CompactStandings season={season} byId={byId} youId={you.id} mark={mark} />
         </section>
         <div className="ss-stack">
           <Leaders title="Points" lines={regulars} value={(l) => per(l, 'pts')} youId={you.id} mark={mark} count={3} />
           <Leaders title="Rebounds" lines={regulars} value={(l) => per(l, 'reb')} youId={you.id} mark={mark} count={3} />
           <Leaders title="Assists" lines={regulars} value={(l) => per(l, 'ast')} youId={you.id} mark={mark} count={3} />
-          <button type="button" className="at-calm-btn ss-self-start" onClick={() => setView({ kind: 'stats' })}>
-            All stats
-          </button>
         </div>
       </div>
-
-      <section className="ss-card">
-        <h3 className="ss-kicker">Awards</h3>
-        <div className="ss-awards">
-          {a.mvp && <Award title="Most Valuable Player" line={a.mvp} byId={byId} icon="🏆" />}
-          {complete && playoffs?.finalsMvp && <Award title="Finals MVP" line={playoffs.finalsMvp} byId={byId} icon="🏅" />}
-          {a.dpoy && <Award title="Defensive Player of the Year" line={a.dpoy} byId={byId} icon="🛡️" sub={`${f1(per(a.dpoy, 'stl'))} stl · ${f1(per(a.dpoy, 'blk'))} blk · ${f1(per(a.dpoy, 'reb'))} reb`} />}
-          {a.sixthMan && <Award title="Sixth Man of the Year" line={a.sixthMan} byId={byId} icon="⚡" />}
-        </div>
-        <h4 className="ss-kicker ss-kicker--small">All-NBA</h4>
-        {a.allNba.map((five, i) => (
-          <Five key={i} label={['First team', 'Second team', 'Third team'][i]} five={five} youId={you.id} codes={codes} />
-        ))}
-        <h4 className="ss-kicker ss-kicker--small">All-Defensive</h4>
-        {a.allDefense.map((five, i) => (
-          <Five key={i} label={['First team', 'Second team'][i]} five={five} youId={you.id} codes={codes} />
-        ))}
-        <h4 className="ss-kicker ss-kicker--small">All-Stars · {a.allStars.length}</h4>
-        <div className="ss-chips">
-          {a.allStars.map((l) => (
-            <span key={`${l.teamId}${l.span.id}`} className={`ss-chip${l.teamId === you.id ? ' is-you' : ''}`}>
-              {l.span.playerName} <small>{codes.get(l.teamId)}</small>
-            </span>
-          ))}
-        </div>
-      </section>
-
-      <section className="ss-card">
-        <h3 className="ss-kicker">{you.name} · season stats</h3>
-        <PlayerTable lines={yourLines} />
-      </section>
     </div>
   );
 }
 
-function Kpi({ value, label, tone }: { value: string; label: string; tone?: 'good' | 'bad' }) {
-  return (
-    <div className={`ss-kpi${tone ? ` is-${tone}` : ''}`}>
-      <b>{value}</b>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function BackBar({ onBack, title }: { onBack: () => void; title: string }) {
-  return (
-    <div className="ss-backbar">
-      <button type="button" className="at-calm-btn" onClick={onBack}>
-        ← Season
-      </button>
-      <h2 className="ss-h">{title}</h2>
-    </div>
-  );
-}
-
-function Standings({ season, byId, youId, mark }: { season: LiveSeasonResult; byId: Map<string, Team>; youId: string; mark: (id: string) => ReactElement }) {
+function CompactStandings({ season, byId, youId, mark }: { season: LiveSeasonResult; byId: Map<string, Team>; youId: string; mark: Mark }) {
   return (
     <table className="ss-table">
       <thead>
@@ -396,7 +341,7 @@ function Standings({ season, byId, youId, mark }: { season: LiveSeasonResult; by
               <td className="l">
                 <span className="ss-teamcell">
                   {mark(r.teamId)}
-                  {byId.get(r.teamId)?.name}
+                  {mascot(byId.get(r.teamId))}
                 </span>
               </td>
               <td className="n">
@@ -414,7 +359,63 @@ function Standings({ season, byId, youId, mark }: { season: LiveSeasonResult; by
   );
 }
 
-function Leaders({ title, lines, value, youId, mark, count = 5, fmt = f1 }: { title: string; lines: SeasonPlayerLine[]; value: (l: SeasonPlayerLine) => number; youId: string; mark: (id: string) => ReactElement; count?: number; fmt?: (x: number) => string }) {
+function FullStandings({ season, byId, youId, views, mark }: { season: LiveSeasonResult; byId: Map<string, Team>; youId: string; views: EngineViews; mark: Mark }) {
+  return (
+    <section className="ss-card ss-table-wrap">
+      <table className="ss-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th className="l">Team</th>
+            <th>W-L</th>
+            <th>PTS</th>
+            <th>OPP</th>
+            <th>Diff</th>
+            <th title="Wins the draft grade expected">Proj W</th>
+            <th title="How the season went against the projection">vs proj</th>
+          </tr>
+        </thead>
+        <tbody>
+          {season.standings.map((r, i) => {
+            const g = Math.max(1, r.wins + r.losses);
+            const diff = (r.pointsFor - r.pointsAgainst) / g;
+            const proj = views.get(r.teamId)?.expectedWins ?? r.wins;
+            const vs = Math.round(r.wins - proj);
+            return (
+              <tr key={r.teamId} className={`${r.teamId === youId ? 'is-you' : ''}${i === 7 ? ' is-cut' : ''}${i > 7 ? ' is-out' : ''}`}>
+                <td>{i + 1}</td>
+                <td className="l">
+                  <span className="ss-teamcell">
+                    {mark(r.teamId)}
+                    {byId.get(r.teamId)?.name}
+                    {r.teamId === youId && <span className="ss-you">You</span>}
+                  </span>
+                </td>
+                <td className="n">
+                  {r.wins}-{r.losses}
+                </td>
+                <td className="n">{f1(r.pointsFor / g)}</td>
+                <td className="n">{f1(r.pointsAgainst / g)}</td>
+                <td className={`n ${diff >= 0 ? 'is-good' : 'is-bad'}`}>
+                  {diff >= 0 ? '+' : ''}
+                  {f1(diff)}
+                </td>
+                <td className="n">{Math.round(proj)}</td>
+                <td className={`n ${vs > 0 ? 'is-good' : vs < 0 ? 'is-bad' : ''}`}>
+                  {vs > 0 ? '+' : ''}
+                  {vs}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="ss-note">Top 8 make the playoffs. Proj W: the wins the draft grade expected.</p>
+    </section>
+  );
+}
+
+function Leaders({ title, lines, value, youId, mark, count = 10, fmt = f1 }: { title: string; lines: SeasonPlayerLine[]; value: (l: SeasonPlayerLine) => number; youId: string; mark: Mark; count?: number; fmt?: (x: number) => string }) {
   const top = [...lines].sort((x, y) => value(y) - value(x)).slice(0, count);
   return (
     <div className="ss-card ss-leaders">
@@ -423,11 +424,177 @@ function Leaders({ title, lines, value, youId, mark, count = 5, fmt = f1 }: { ti
         <div key={`${l.teamId}${l.span.id}`} className={`ss-leader${l.teamId === youId ? ' is-you' : ''}`}>
           <span className="ss-leader-i">{i + 1}</span>
           {mark(l.teamId)}
-          <span className="ss-leader-n">{l.span.playerName}</span>
+          <FitName className="ss-leader-n" name={l.span.playerName} />
           <span className="ss-leader-v">{fmt(value(l))}</span>
         </div>
       ))}
     </div>
+  );
+}
+
+type SortKey = 'g' | 'min' | 'pts' | 'reb' | 'ast' | 'stl' | 'blk' | 'fg' | 'tp' | 'ft' | 'tov' | 'dd' | 'td' | 'gs';
+const COLUMNS: { key: SortKey; label: string; title?: string; value: (l: SeasonPlayerLine) => number; fmt: (l: SeasonPlayerLine) => string }[] = [
+  { key: 'g', label: 'G', value: (l) => l.games, fmt: (l) => String(l.games) },
+  { key: 'min', label: 'MIN', value: (l) => per(l, 'min'), fmt: (l) => f1(per(l, 'min')) },
+  { key: 'pts', label: 'PTS', value: (l) => per(l, 'pts'), fmt: (l) => f1(per(l, 'pts')) },
+  { key: 'reb', label: 'REB', value: (l) => per(l, 'reb'), fmt: (l) => f1(per(l, 'reb')) },
+  { key: 'ast', label: 'AST', value: (l) => per(l, 'ast'), fmt: (l) => f1(per(l, 'ast')) },
+  { key: 'stl', label: 'STL', value: (l) => per(l, 'stl'), fmt: (l) => f1(per(l, 'stl')) },
+  { key: 'blk', label: 'BLK', value: (l) => per(l, 'blk'), fmt: (l) => f1(per(l, 'blk')) },
+  { key: 'fg', label: 'FG%', value: (l) => pct(l.totals.fgm, l.totals.fga), fmt: (l) => f1(pct(l.totals.fgm, l.totals.fga)) },
+  { key: 'tp', label: '3P%', value: (l) => pct(l.totals.tpm, l.totals.tpa), fmt: (l) => (l.totals.tpa ? f1(pct(l.totals.tpm, l.totals.tpa)) : '—') },
+  { key: 'ft', label: 'FT%', value: (l) => pct(l.totals.ftm, l.totals.fta), fmt: (l) => (l.totals.fta ? f1(pct(l.totals.ftm, l.totals.fta)) : '—') },
+  { key: 'tov', label: 'TOV', value: (l) => per(l, 'tov'), fmt: (l) => f1(per(l, 'tov')) },
+  { key: 'dd', label: 'DD', title: 'Double-doubles', value: (l) => l.doubleDoubles, fmt: (l) => String(l.doubleDoubles) },
+  { key: 'td', label: 'TD', title: 'Triple-doubles', value: (l) => l.tripleDoubles, fmt: (l) => String(l.tripleDoubles) },
+  { key: 'gs', label: 'GS', title: 'Game score: points, makes, rebounds, assists, steals and blocks against misses and turnovers, per game', value: gameScorePerGame, fmt: (l) => f1(gameScorePerGame(l)) },
+];
+const ROWS_SHOWN = 40;
+
+function Stats({ teams, season, playoffs, youId, mark }: { teams: Team[]; season: LiveSeasonResult; playoffs: LivePlayoffResult | null; youId: string; mark: Mark }) {
+  const [phase, setPhase] = useState<'season' | 'playoffs'>('season');
+  const [teamId, setTeamId] = useState<string>('all');
+  const [pos, setPos] = useState<'all' | 'G' | 'F' | 'C'>('all');
+  const [minGames, setMinGames] = useState(0);
+  const [sort, setSort] = useState<SortKey>('pts');
+  const [showAll, setShowAll] = useState(false);
+  const playoffPhase = phase === 'playoffs' && playoffs !== null;
+  const pool = playoffPhase && playoffs ? playoffs.players : season.players;
+  const scale = playoffPhase ? 0.1 : 1;
+  const posOf = (l: SeasonPlayerLine) => (l.span.primaryPosition === 'PG' || l.span.primaryPosition === 'SG' ? 'G' : l.span.primaryPosition === 'C' ? 'C' : 'F');
+  const col = COLUMNS.find((c) => c.key === sort) ?? COLUMNS[2];
+  const rows = pool
+    .filter((l) => (teamId === 'all' || l.teamId === teamId) && (pos === 'all' || posOf(l) === pos) && (playoffPhase || l.games >= minGames))
+    .sort((a, b) => col.value(b) - col.value(a));
+  const shown = showAll ? rows : rows.slice(0, ROWS_SHOWN);
+  // Leader boards: regulars only, and a percentage needs real volume behind it.
+  const regulars = pool.filter((l) => l.games >= (playoffPhase ? 4 : AWARD_MIN_GAMES));
+  const ordered = [...teams].sort((a, b) => (a.id === youId ? -1 : b.id === youId ? 1 : a.name.localeCompare(b.name)));
+  return (
+    <div>
+      <div className="ss-filters">
+        <select className="ss-select" value={teamId} onChange={(e) => setTeamId(e.target.value)} aria-label="Team">
+          <option value="all">All teams</option>
+          {ordered.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+              {t.id === youId ? ' (you)' : ''}
+            </option>
+          ))}
+        </select>
+        <div className="at-calm-seg" role="group" aria-label="Position">
+          {(['all', 'G', 'F', 'C'] as const).map((p) => (
+            <button key={p} type="button" className={pos === p ? 'is-on' : ''} onClick={() => setPos(p)}>
+              {p === 'all' ? 'All' : p}
+            </button>
+          ))}
+        </div>
+        {!playoffPhase && (
+          <select className="ss-select" value={minGames} onChange={(e) => setMinGames(Number(e.target.value))} aria-label="Minimum games">
+            <option value={0}>Any games</option>
+            <option value={41}>41+ games</option>
+            <option value={58}>58+ games</option>
+          </select>
+        )}
+        <div className="at-calm-seg" role="group" aria-label="Season or playoffs">
+          <button type="button" className={phase === 'season' ? 'is-on' : ''} onClick={() => setPhase('season')}>
+            Regular season
+          </button>
+          {playoffs && (
+            <button type="button" className={phase === 'playoffs' ? 'is-on' : ''} onClick={() => setPhase('playoffs')}>
+              Playoffs
+            </button>
+          )}
+        </div>
+      </div>
+      <section className="ss-card ss-table-wrap">
+        <table className="ss-table ss-table--stats">
+          <thead>
+            <tr>
+              <th className="l">Player</th>
+              <th className="l">Team</th>
+              {COLUMNS.map((c) => (
+                <th key={c.key} title={c.title}>
+                  <button type="button" className={`ss-sort${c.key === sort ? ' is-on' : ''}`} onClick={() => setSort(c.key)}>
+                    {c.label}
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((l) => (
+              <tr key={`${l.teamId}${l.span.id}`} className={l.teamId === youId ? 'is-you' : ''}>
+                <td className="l">
+                  <b>{l.span.playerName}</b> <small>{l.span.primaryPosition}</small>
+                </td>
+                <td className="l">
+                  <span title={teams.find((t) => t.id === l.teamId)?.name}>{mark(l.teamId)}</span>
+                </td>
+                {COLUMNS.map((c) => (
+                  <td key={c.key} className={`n${c.key === sort ? ' is-sorted' : ''}`}>
+                    {c.fmt(l)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="ss-note">
+          {rows.length > ROWS_SHOWN && (
+            <button type="button" className="ss-link" onClick={() => setShowAll(!showAll)}>
+              {showAll ? 'Show fewer' : `Show all ${rows.length}`}
+            </button>
+          )}{' '}
+          Click a column to sort.
+        </p>
+      </section>
+      <h3 className="ss-kicker ss-kicker--gap">League leaders · top 10{playoffPhase ? ' · playoffs' : ''}</h3>
+      <div className="ss-grid3">
+        <Leaders title="Points" lines={regulars} value={(l) => per(l, 'pts')} youId={youId} mark={mark} />
+        <Leaders title="Rebounds" lines={regulars} value={(l) => per(l, 'reb')} youId={youId} mark={mark} />
+        <Leaders title="Assists" lines={regulars} value={(l) => per(l, 'ast')} youId={youId} mark={mark} />
+        <Leaders title="Steals" lines={regulars} value={(l) => per(l, 'stl')} youId={youId} mark={mark} />
+        <Leaders title="Blocks" lines={regulars} value={(l) => per(l, 'blk')} youId={youId} mark={mark} />
+        <Leaders title="Threes made" lines={regulars} value={(l) => per(l, 'tpm')} youId={youId} mark={mark} />
+        <Leaders title={`FG% · min. ${Math.round(400 * scale)} FGA`} lines={regulars.filter((l) => l.totals.fga >= 400 * scale)} value={(l) => pct(l.totals.fgm, l.totals.fga)} youId={youId} mark={mark} />
+        <Leaders title={`3P% · min. ${Math.round(150 * scale)} 3PA`} lines={regulars.filter((l) => l.totals.tpa >= 150 * scale)} value={(l) => pct(l.totals.tpm, l.totals.tpa)} youId={youId} mark={mark} />
+        <Leaders title={`FT% · min. ${Math.round(150 * scale)} FTA`} lines={regulars.filter((l) => l.totals.fta >= 150 * scale)} value={(l) => pct(l.totals.ftm, l.totals.fta)} youId={youId} mark={mark} />
+        <Leaders title="Minutes" lines={regulars} value={(l) => per(l, 'min')} youId={youId} mark={mark} />
+        <Leaders title="Double-doubles" lines={regulars} value={(l) => l.doubleDoubles} youId={youId} mark={mark} fmt={(x) => String(x)} />
+        <Leaders title="Game score" lines={regulars} value={gameScorePerGame} youId={youId} mark={mark} />
+      </div>
+    </div>
+  );
+}
+
+function Awards({ season, playoffs, byId, youId, codes }: { season: LiveSeasonResult; playoffs: LivePlayoffResult | null; byId: Map<string, Team>; youId: string; codes: Map<string, string> }) {
+  const a = season.awards;
+  return (
+    <section className="ss-card">
+      <div className="ss-awards">
+        {a.mvp && <Award title="Most Valuable Player" line={a.mvp} byId={byId} icon="🏆" />}
+        {playoffs?.finalsMvp && <Award title="Finals MVP" line={playoffs.finalsMvp} byId={byId} icon="🏅" />}
+        {a.dpoy && <Award title="Defensive Player of the Year" line={a.dpoy} byId={byId} icon="🛡️" sub={`${f1(per(a.dpoy, 'stl'))} stl · ${f1(per(a.dpoy, 'blk'))} blk · ${f1(per(a.dpoy, 'reb'))} reb`} />}
+        {a.sixthMan && <Award title="Sixth Man of the Year" line={a.sixthMan} byId={byId} icon="⚡" />}
+      </div>
+      <h4 className="ss-kicker ss-kicker--small">All-NBA</h4>
+      {a.allNba.map((five, i) => (
+        <Five key={i} label={['First team', 'Second team', 'Third team'][i]} five={five} youId={youId} codes={codes} />
+      ))}
+      <h4 className="ss-kicker ss-kicker--small">All-Defensive</h4>
+      {a.allDefense.map((five, i) => (
+        <Five key={i} label={['First team', 'Second team'][i]} five={five} youId={youId} codes={codes} />
+      ))}
+      <h4 className="ss-kicker ss-kicker--small">All-Stars · {a.allStars.length}</h4>
+      <div className="ss-chips">
+        {a.allStars.map((l) => (
+          <span key={`${l.teamId}${l.span.id}`} className={`ss-chip${l.teamId === youId ? ' is-you' : ''}`}>
+            {l.span.playerName} <small>{codes.get(l.teamId)}</small>
+          </span>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -456,7 +623,7 @@ function Five({ label, five, youId, codes }: { label: string; five: SeasonPlayer
         {five.map((l) => (
           <div key={`${l.teamId}${l.span.id}`} className={l.teamId === youId ? 'is-you' : ''}>
             <small>{l.span.primaryPosition}</small>
-            <b>{l.span.playerName}</b>
+            <FitName as="b" name={l.span.playerName} />
             <small>
               {codes.get(l.teamId)} · {f1(per(l, 'pts'))}/{f1(per(l, 'reb'))}/{f1(per(l, 'ast'))}
             </small>
@@ -467,152 +634,456 @@ function Five({ label, five, youId, codes }: { label: string; five: SeasonPlayer
   );
 }
 
-function PlayerTable({ lines }: { lines: SeasonPlayerLine[] }) {
-  return (
-    <div className="ss-table-wrap">
-      <table className="ss-table ss-table--stats">
-        <thead>
-          <tr>
-            <th className="l">Player</th>
-            <th>G</th>
-            <th>MIN</th>
-            <th>PTS</th>
-            <th>REB</th>
-            <th>AST</th>
-            <th>STL</th>
-            <th>BLK</th>
-            <th>FG%</th>
-            <th>3P%</th>
-            <th>FT%</th>
-            <th>TOV</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lines.map((l) => (
-            <tr key={l.span.id}>
-              <td className="l">
-                <b>{l.span.playerName}</b> <small>{l.span.primaryPosition}{l.starter ? '' : ' · bench'}</small>
-              </td>
-              <td className="n">{l.games}</td>
-              <td className="n">{f1(per(l, 'min'))}</td>
-              <td className="n">
-                <b>{f1(per(l, 'pts'))}</b>
-              </td>
-              <td className="n">{f1(per(l, 'reb'))}</td>
-              <td className="n">{f1(per(l, 'ast'))}</td>
-              <td className="n">{f1(per(l, 'stl'))}</td>
-              <td className="n">{f1(per(l, 'blk'))}</td>
-              <td className="n">{pct(l.totals.fgm, l.totals.fga)}</td>
-              <td className="n">{pct(l.totals.tpm, l.totals.tpa)}</td>
-              <td className="n">{pct(l.totals.ftm, l.totals.fta)}</td>
-              <td className="n">{f1(per(l, 'tov'))}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+/* ── The playoffs chapter ─────────────────────────────────────────────────────────────────── */
 
-function AllStats({ teams, season, playoffs, youId, mark, onBack }: { teams: Team[]; season: LiveSeasonResult; playoffs: LivePlayoffResult | null; youId: string; mark: (id: string) => ReactElement; onBack: () => void }) {
-  const [teamId, setTeamId] = useState(youId);
-  const [phase, setPhase] = useState<'season' | 'playoffs'>('season');
-  const pool = phase === 'playoffs' && playoffs ? playoffs.players : season.players;
-  const lines = pool.filter((l) => l.teamId === teamId).sort((a, b) => b.totals.min - a.totals.min);
-  const regulars = phase === 'playoffs' ? pool.filter((l) => l.games >= 4) : pool.filter((l) => l.games >= AWARD_MIN_GAMES);
-  const ordered = [...teams].sort((a, b) => (a.id === youId ? -1 : b.id === youId ? 1 : a.name.localeCompare(b.name)));
-  return (
-    <div>
-      <BackBar onBack={onBack} title="Stats" />
-      <div className="ss-filters">
-        <select className="ss-select" value={teamId} onChange={(e) => setTeamId(e.target.value)} aria-label="Team">
-          {ordered.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-              {t.id === youId ? ' (you)' : ''}
-            </option>
-          ))}
-        </select>
-        <div className="at-calm-seg" role="group" aria-label="Season or playoffs">
-          <button type="button" className={phase === 'season' ? 'is-on' : ''} onClick={() => setPhase('season')}>
-            Regular season
+function PlayoffsChapter({
+  teams,
+  byId,
+  codes,
+  mark,
+  season,
+  playoffs,
+  youId,
+  reveal,
+  setReveal,
+  onBack,
+}: {
+  teams: Team[];
+  byId: Map<string, Team>;
+  codes: Map<string, string>;
+  mark: Mark;
+  season: LiveSeasonResult;
+  playoffs: LivePlayoffResult;
+  youId: string;
+  reveal: Reveal;
+  setReveal: (r: Reveal) => void;
+  onBack: () => void;
+}) {
+  const [watching, setWatching] = useState<Watching | null>(null);
+  const rounds = playoffs.rounds;
+  const last = rounds.length - 1;
+  const isYours = (s: LivePlayoffSeries) => s.teamAId === youId || s.teamBId === youId;
+  const yourRuns = rounds.map((r, round) => ({ round, index: r.findIndex(isYours) })).filter((x) => x.index >= 0);
+  const live = reveal.kind === 'live' && reveal.round <= last ? reveal : null;
+  const all = reveal.kind === 'all' || (reveal.kind === 'live' && reveal.round > last);
+  const shown = (round: number, s: LivePlayoffSeries) => (all ? s.games.length : !live ? 0 : round < live.round ? s.games.length : round > live.round ? 0 : Math.min(s.games.length, live.game));
+  const run = live ? yourRuns.find((r) => r.round === live.round) : undefined;
+  const yourSeries = run ? rounds[run.round][run.index] : null;
+  const seriesOver = yourSeries !== null && live !== null && live.game >= yourSeries.games.length;
+  const seedOf = (id: string) => season.standings.findIndex((r) => r.teamId === id) + 1;
+  const oppOf = (s: LivePlayoffSeries) => (s.teamAId === youId ? s.teamBId : s.teamAId);
+  const tally = (s: LivePlayoffSeries, upto: number) => {
+    const g = s.games.slice(0, upto);
+    const a = g.filter((x) => x.final[0] > x.final[1]).length;
+    return [a, g.length - a] as const;
+  };
+
+  if (watching) {
+    const s = rounds[watching.round][watching.series];
+    const isNextUnplayed = live !== null && watching.round === live.round && watching.game === live.game;
+    return (
+      <div className="pl-stage">
+        <Watch
+          key={`${watching.round}-${watching.series}-${watching.game}`}
+          teams={teams}
+          codes={codes}
+          series={s}
+          gameIndex={watching.game}
+          youId={youId}
+          byId={byId}
+          onFinish={() => {
+            if (isNextUnplayed) setReveal({ kind: 'live', round: watching.round, game: watching.game + 1 });
+          }}
+          onNext={watching.game + 1 < s.games.length ? () => setWatching({ ...watching, game: watching.game + 1 }) : null}
+          onBack={() => setWatching(null)}
+        />
+      </div>
+    );
+  }
+
+  // What the screen is about right now.
+  let title: string;
+  let kicker = 'Playoffs';
+  let between: ReactElement | null = null;
+  let panel: ReactElement | null = null;
+  // The bracket as this moment shows it: between rounds, the next round's matchups are already set.
+  let bracketShown: (round: number, s: LivePlayoffSeries) => number = shown;
+
+  if (all) {
+    const youWon = playoffs.championId === youId;
+    title = youWon ? byId.get(youId)?.name ?? 'Champions' : `The ${mascot(byId.get(playoffs.championId))} win it all`;
+    kicker = youWon ? 'Champions' : 'Playoffs';
+  } else if (live && yourSeries && !seriesOver) {
+    const [wa, wb] = tally(yourSeries, live.game);
+    const [yw, ow] = yourSeries.teamAId === youId ? [wa, wb] : [wb, wa];
+    const opening = live.game === 0 && live.round === 0;
+    title = opening ? 'The bracket is set' : yourSeries.roundLabel;
+    panel = (
+      <SeriesPanel
+        s={yourSeries}
+        played={live.game}
+        youId={youId}
+        season={season}
+        byId={byId}
+        mark={mark}
+        status={live.game === 0 ? `${yourSeries.roundLabel} · your series` : yw === ow ? `Series tied ${yw}-${ow}` : yw > ow ? `You lead ${yw}-${ow}` : `You trail ${yw}-${ow}`}
+        onPlay={(g) => setWatching({ round: live.round, series: run!.index, game: g })}
+        onSim={() => setReveal({ kind: 'live', round: live.round, game: yourSeries.games.length })}
+      />
+    );
+  } else if (live && yourSeries && seriesOver) {
+    const won = yourSeries.winnerId === youId;
+    const opp = oppOf(yourSeries);
+    const [wa, wb] = tally(yourSeries, yourSeries.games.length);
+    const score = `${Math.max(wa, wb)}-${Math.min(wa, wb)}`;
+    bracketShown = (round, s) => (round <= live.round ? s.games.length : 0);
+    if (won && live.round < last) {
+      const next = rounds[live.round + 1].find(isYours)!;
+      const upset = seedOf(youId) - seedOf(opp) >= 3;
+      title = upset ? `#${seedOf(youId)} knocks out #${seedOf(opp)}` : `Into the ${next.roundLabel}`;
+      kicker = upset ? 'Upset' : yourSeries.roundLabel;
+      between = (
+        <div className="pl-between">
+          <p className="pl-sub">
+            The {byId.get(youId)?.name} beat the {byId.get(opp)?.name} {score}.
+          </p>
+          <button type="button" className="pl-cta" onClick={() => setReveal({ kind: 'live', round: live.round + 1, game: 0 })}>
+            On to the {next.roundLabel}: vs the {mascot(byId.get(oppOf(next)))} →
           </button>
-          {playoffs && (
-            <button type="button" className={phase === 'playoffs' ? 'is-on' : ''} onClick={() => setPhase('playoffs')}>
-              Playoffs
-            </button>
-          )}
+        </div>
+      );
+    } else if (won) {
+      title = 'Champions';
+      kicker = 'The Finals';
+      between = (
+        <div className="pl-between">
+          <p className="pl-sub">
+            The {byId.get(youId)?.name} beat the {byId.get(opp)?.name} {score}.
+          </p>
+          <button type="button" className="pl-cta" onClick={() => setReveal({ kind: 'all' })}>
+            Lift the trophy →
+          </button>
+        </div>
+      );
+    } else {
+      title = 'Your run ends here';
+      kicker = yourSeries.roundLabel;
+      between = (
+        <div className="pl-between">
+          <p className="pl-sub">
+            The {byId.get(opp)?.name} beat you {score}.
+          </p>
+          <button type="button" className="pl-cta" onClick={() => setReveal({ kind: 'all' })}>
+            Watch the rest of the playoffs →
+          </button>
+        </div>
+      );
+    }
+  } else if (live) {
+    // Not (or no longer) in it: the bracket plays round by round.
+    const round = rounds[live.round];
+    title = live.round === 0 ? 'The bracket is set' : round[0].roundLabel;
+    panel = (
+      <div className="pl-card">
+        <div className="pl-label">{yourRuns.length === 0 ? 'You missed the playoffs' : 'The rest of the bracket'}</div>
+        <p className="pl-sub">The top 8 play on. Sim the bracket a round at a time.</p>
+        <div className="pl-actions">
+          <button type="button" className="pl-cta" onClick={() => setReveal(live.round >= last ? { kind: 'all' } : { kind: 'live', round: live.round + 1, game: 0 })}>
+            Sim the {round[0].roundLabel} →
+          </button>
+          <button type="button" className="pl-ghost" onClick={() => setReveal({ kind: 'all' })}>
+            Sim to the end
+          </button>
         </div>
       </div>
-      <section className="ss-card">
-        {lines.length ? <PlayerTable lines={lines} /> : <p className="ss-note">No playoff games for this team.</p>}
-      </section>
-      <h3 className="ss-kicker ss-kicker--gap">League leaders{phase === 'playoffs' ? ' · playoffs' : ''}</h3>
-      <div className="ss-grid3">
-        <Leaders title="Points" lines={regulars} value={(l) => per(l, 'pts')} youId={youId} mark={mark} />
-        <Leaders title="Rebounds" lines={regulars} value={(l) => per(l, 'reb')} youId={youId} mark={mark} />
-        <Leaders title="Assists" lines={regulars} value={(l) => per(l, 'ast')} youId={youId} mark={mark} />
-        <Leaders title="Steals" lines={regulars} value={(l) => per(l, 'stl')} youId={youId} mark={mark} />
-        <Leaders title="Blocks" lines={regulars} value={(l) => per(l, 'blk')} youId={youId} mark={mark} />
-        <Leaders title="Threes made" lines={regulars} value={(l) => per(l, 'tpm')} youId={youId} mark={mark} />
+    );
+  } else {
+    title = 'Playoffs';
+  }
+
+  return (
+    <div className="pl-stage">
+      <div className="pl-top">
+        <button type="button" className="pl-ghost" onClick={onBack}>
+          ← Season
+        </button>
+      </div>
+      <div className={`pl-head${between || all ? ' is-splash' : ''}`}>
+        {all && <div className="pl-trophy" aria-hidden>🏆</div>}
+        <div className="pl-word">{kicker}</div>
+        <h2 className="pl-title">{title}</h2>
+        {live && live.round === 0 && live.game === 0 && yourSeries && <p className="pl-sub">8 teams, best of seven. Your games are yours to play; the rest of the bracket plays alongside.</p>}
+      </div>
+      {between}
+      {all && <Finale playoffs={playoffs} youId={youId} byId={byId} mark={mark} yourRuns={yourRuns.map((r) => rounds[r.round][r.index])} seedOf={seedOf} />}
+      <div className={panel ? 'pl-split' : ''}>
+        <Bracket rounds={rounds} shown={bracketShown} youId={youId} byId={byId} codes={codes} mark={mark} onWatch={(r, i, g) => setWatching({ round: r, series: i, game: g })} />
+        {panel}
       </div>
     </div>
   );
 }
 
-function SeriesCard({
-  s,
+function Bracket({
+  rounds,
   shown,
   youId,
   byId,
+  codes,
   mark,
   onWatch,
 }: {
-  s: LivePlayoffSeries;
-  shown: number;
+  rounds: LivePlayoffSeries[][];
+  shown: (round: number, s: LivePlayoffSeries) => number;
   youId: string;
   byId: Map<string, Team>;
-  mark: (id: string) => ReactElement;
-  onWatch: ((game: number) => void) | null;
+  codes: Map<string, string>;
+  mark: Mark;
+  onWatch: (round: number, series: number, game: number) => void;
 }) {
+  // A round shows its matchups once the round before it is complete on the page.
+  const known = (round: number) => round === 0 || rounds[round - 1].every((s) => shown(round - 1, s) >= s.games.length);
+  return (
+    <div className="pl-bracket">
+      {rounds.map((round, r) => (
+        <div key={r} className="pl-col">
+          <div className="pl-label">{round[0].roundLabel}</div>
+          <div className="pl-col-in">
+            {round.map((s, i) =>
+              known(r) ? (
+                <BracketSeries key={i} s={s} shown={Math.min(s.games.length, shown(r, s))} youId={youId} byId={byId} codes={codes} mark={mark} onWatch={s.teamAId === youId || s.teamBId === youId ? (g) => onWatch(r, i, g) : null} />
+              ) : (
+                <div key={i} className="pl-tbd">
+                  TBD
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BracketSeries({ s, shown, youId, byId, codes, mark, onWatch }: { s: LivePlayoffSeries; shown: number; youId: string; byId: Map<string, Team>; codes: Map<string, string>; mark: Mark; onWatch: ((game: number) => void) | null }) {
   const games = s.games.slice(0, shown);
   const wa = games.filter((g) => g.final[0] > g.final[1]).length;
   const wb = games.length - wa;
-  const decided = shown >= s.games.length;
-  const yours = s.teamAId === youId || s.teamBId === youId;
-  const row = (id: string, seed: number, w: number, lost: boolean) => (
-    <div className={`ss-srow${lost ? ' is-lost' : ''}`}>
-      <span className="ss-seed">{seed}</span>
+  const done = shown >= s.games.length;
+  const row = (id: string, seed: number, w: number, out: boolean) => (
+    <div className={`pl-row${out ? ' is-out' : ''}`}>
+      <span className="pl-seed">{seed}</span>
       {mark(id)}
-      <span className="ss-sname">
-        {mascot(byId.get(id))}
-        {id === youId && <span className="ss-you">You</span>}
-      </span>
-      <b className="ss-wins">{w}</b>
+      <FitTeam className="pl-name" name={byId.get(id)?.name ?? ''} code={codes.get(id)} mascotFirst after={id === youId && <span className="ss-you">You</span>} />
+      <b className="pl-w">{w}</b>
     </div>
   );
   return (
-    <div className={`ss-series${yours ? ' is-you' : ''}`}>
-      {row(s.teamAId, s.teamASeed, wa, decided && s.winnerId !== s.teamAId)}
-      {row(s.teamBId, s.teamBSeed, wb, decided && s.winnerId !== s.teamBId)}
-      {games.length > 0 && (
-        <div className="ss-games">
-          {games.map((g, i) => {
-            const youA = s.teamAId === youId;
-            const yourWin = yours ? (youA ? g.final[0] > g.final[1] : g.final[1] > g.final[0]) : null;
-            const label = `G${i + 1} ${g.final[0]}-${g.final[1]}`;
-            return onWatch ? (
-              <button key={i} type="button" className={`ss-game is-play${yourWin === null ? '' : yourWin ? ' is-win' : ' is-loss'}`} onClick={() => onWatch(i)} title="Watch this game">
-                ▶ {label}
+    <div className={`pl-series${s.teamAId === youId || s.teamBId === youId ? ' is-you' : ''}`}>
+      {row(s.teamAId, s.teamASeed, wa, done && s.winnerId !== s.teamAId)}
+      {row(s.teamBId, s.teamBSeed, wb, done && s.winnerId !== s.teamBId)}
+      {onWatch && games.length > 0 && (
+        <div className="pl-replays">
+          {games.map((g, i) => (
+            <button key={i} type="button" className="pl-replay" onClick={() => onWatch(i)} title={`Watch game ${i + 1} again`}>
+              ▶ G{i + 1} {g.final[0]}-{g.final[1]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SeriesPanel({
+  s,
+  played,
+  youId,
+  season,
+  byId,
+  mark,
+  status,
+  onPlay,
+  onSim,
+}: {
+  s: LivePlayoffSeries;
+  played: number;
+  youId: string;
+  season: LiveSeasonResult;
+  byId: Map<string, Team>;
+  mark: Mark;
+  status: string;
+  onPlay: (game: number) => void;
+  onSim: () => void;
+}) {
+  const yourSide = s.teamAId === youId ? 0 : 1;
+  const opp = yourSide === 0 ? s.teamBId : s.teamAId;
+  const row = (id: string) => season.standings.find((r) => r.teamId === id)!;
+  const seed = (id: string) => season.standings.findIndex((r) => r.teamId === id) + 1;
+  const pg = (id: string) => row(id).pointsFor / Math.max(1, row(id).wins + row(id).losses);
+  const og = (id: string) => row(id).pointsAgainst / Math.max(1, row(id).wins + row(id).losses);
+  const p = seriesWinProbability(gameWinProbability(yourSide === 0 ? s.margin : -s.margin));
+  const top = (id: string) => season.players.filter((l) => l.teamId === id).sort((a, b) => gameScorePerGame(b) - gameScorePerGame(a)).slice(0, 3);
+  const tape = (label: string, a: number, b: number, higher: boolean) => (
+    <>
+      <span className={`pl-t-l${(higher ? a > b : a < b) ? ' is-better' : ''}`}>{f1(a)}</span>
+      <span className="pl-t-c">{label}</span>
+      <span className={`pl-t-r${(higher ? b > a : b < a) ? ' is-better' : ''}`}>{f1(b)}</span>
+    </>
+  );
+  const side = (id: string, right: boolean) => (
+    <div className={`pl-vs-side${right ? ' is-right' : ''}`}>
+      {mark(id, 'md')}
+      <span className="pl-vs-seed">
+        #{seed(id)} · {row(id).wins}-{row(id).losses}
+      </span>
+      <span className="pl-vs-name">{byId.get(id)?.name}</span>
+    </div>
+  );
+  return (
+    <div className="pl-card is-gold">
+      <div className="pl-label is-gold">{status}</div>
+      <div className="pl-vs">
+        {side(youId, false)}
+        <span className="pl-vs-mid">vs</span>
+        {side(opp, true)}
+      </div>
+      <div className="pl-tape">
+        {tape('Points', pg(youId), pg(opp), true)}
+        {tape('Allowed', og(youId), og(opp), false)}
+        {tape('Diff', pg(youId) - og(youId), pg(opp) - og(opp), true)}
+      </div>
+      <div className="pl-odds" aria-label={`${Math.round(p * 100)}% to win the series`}>
+        <i style={{ width: `${Math.round(p * 100)}%` }} />
+      </div>
+      <div className="pl-odds-l">
+        <span>{Math.round(p * 100)}% to win the series</span>
+        <span>{100 - Math.round(p * 100)}%</span>
+      </div>
+      <div className="pl-keys">
+        {[youId, opp].map((id) => (
+          <div key={id}>
+            {top(id).map((l) => (
+              <div key={l.span.id} className="pl-key">
+                <FitName as="b" name={l.span.playerName} />
+                <span>
+                  {f1(per(l, 'pts'))}/{f1(per(l, 'reb'))}/{f1(per(l, 'ast'))}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="pl-tracker" aria-label="Series games">
+        {Array.from({ length: 7 }, (_, i) => {
+          if (i < played) {
+            const g = s.games[i];
+            const won = yourSide === 0 ? g.final[0] > g.final[1] : g.final[1] > g.final[0];
+            return (
+              <button key={i} type="button" className={won ? 'is-w' : 'is-l'} onClick={() => onPlay(i)} title={`Game ${i + 1}: ${g.final[0]}-${g.final[1]} — watch again`}>
+                G{i + 1}
               </button>
-            ) : (
-              <span key={i} className="ss-game">
-                {label}
-              </span>
+            );
+          }
+          return (
+            <span key={i} className={i === played ? 'is-next' : ''}>
+              G{i + 1}
+            </span>
+          );
+        })}
+      </div>
+      <div className="pl-actions">
+        <button type="button" className="pl-cta" onClick={() => onPlay(played)}>
+          ▶ Play game {played + 1}
+        </button>
+        <button type="button" className="pl-ghost" onClick={onSim}>
+          {played === 0 ? 'Sim the series' : 'Sim the rest'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Finale({
+  playoffs,
+  youId,
+  byId,
+  mark,
+  yourRuns,
+  seedOf,
+}: {
+  playoffs: LivePlayoffResult;
+  youId: string;
+  byId: Map<string, Team>;
+  mark: Mark;
+  yourRuns: LivePlayoffSeries[];
+  seedOf: (id: string) => number;
+}) {
+  const champ = playoffs.championId;
+  const fmvp = playoffs.finalsMvp;
+  const finals = playoffs.rounds[playoffs.rounds.length - 1][0];
+  const loser = finals.winnerId === finals.teamAId ? finals.teamBId : finals.teamAId;
+  const fscore = `${Math.max(finals.gamesWonA, finals.gamesWonB)}-${Math.min(finals.gamesWonA, finals.gamesWonB)}`;
+  const focus = yourRuns.length ? youId : champ;
+  const runLines = playoffs.players.filter((l) => l.teamId === focus).sort((a, b) => b.totals.pts - a.totals.pts).slice(0, 6);
+  return (
+    <div className="pl-finale">
+      <p className="pl-sub">
+        {byId.get(champ)?.name} ({ord(seedOf(champ))} seed) beat the {byId.get(loser)?.name} {fscore} in the Finals
+        {fmvp && ` · Finals MVP ${fmvp.span.playerName}`}
+      </p>
+      {yourRuns.length > 0 && (
+        <div className="pl-path">
+          {yourRuns.map((s) => {
+            const opp = s.teamAId === youId ? s.teamBId : s.teamAId;
+            const [w, l] = s.teamAId === youId ? [s.gamesWonA, s.gamesWonB] : [s.gamesWonB, s.gamesWonA];
+            return (
+              <div key={s.round} className={`pl-card${s.winnerId === youId ? '' : ' is-lost'}`}>
+                <div className="pl-label is-gold">{s.roundLabel}</div>
+                <div className="pl-path-opp">
+                  {mark(opp)} {byId.get(opp)?.name}
+                </div>
+                <b className="pl-path-score">
+                  {w}-{l}
+                </b>
+              </div>
             );
           })}
         </div>
       )}
+      <div className="pl-card">
+        <div className="pl-label">{yourRuns.length ? 'Your playoff run' : `${byId.get(champ)?.name} in the playoffs`}</div>
+        <div className="ss-table-wrap">
+          <table className="ss-table">
+            <thead>
+              <tr>
+                <th className="l">Player</th>
+                <th>G</th>
+                <th>PTS</th>
+                <th>REB</th>
+                <th>AST</th>
+                <th>FG%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runLines.map((l) => (
+                <tr key={l.span.id}>
+                  <td className="l">
+                    <b>{l.span.playerName}</b>
+                  </td>
+                  <td className="n">{l.games}</td>
+                  <td className="n">
+                    <b>{f1(per(l, 'pts'))}</b>
+                  </td>
+                  <td className="n">{f1(per(l, 'reb'))}</td>
+                  <td className="n">{f1(per(l, 'ast'))}</td>
+                  <td className="n">{f1(pct(l.totals.fgm, l.totals.fga))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
@@ -657,24 +1128,29 @@ function Watch({
   };
   return (
     <div>
-      <BackBar onBack={onBack} title="Playoffs" />
+      <div className="pl-top">
+        <button type="button" className="pl-ghost" onClick={onBack}>
+          ← Bracket
+        </button>
+      </div>
       <LiveGame
         game={game}
         matchup={matchup}
         autoStart
+        autoPlay
         onFinish={() => {
           setOver(true);
           onFinish();
         }}
       />
-      <div className="ss-actions">
+      <div className="pl-actions">
         {over && onNext && (
-          <button type="button" className="rs-primary" onClick={onNext}>
-            Next: Game {gameIndex + 2}
+          <button type="button" className="pl-cta" onClick={onNext}>
+            ▶ Game {gameIndex + 2}
           </button>
         )}
-        <button type="button" className="at-calm-btn" onClick={onBack}>
-          Back to the season
+        <button type="button" className="pl-ghost" onClick={onBack}>
+          Back to the bracket
         </button>
       </div>
     </div>

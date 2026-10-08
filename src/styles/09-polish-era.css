@@ -24,11 +24,11 @@
 .at-shell .results-hero-copy {
   border-radius: 999px;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 8px 18px;
+  padding: 8px 16px;
 }
 /* Cards share one corner radius. The intro's mode cards stay square on purpose: their terminal
    corner brackets are drawn for sharp corners. */
@@ -54,7 +54,7 @@
 .share-modal-scores {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
 }
 /* One row of seven wherever the block is wide enough. (These were container queries; inline-size
    containment made Chrome size the stacked hero block as if it were zero-wide — ~1260px tall
@@ -77,14 +77,14 @@
   justify-content: center;
   gap: 1px;
   min-width: 0;
-  padding: 5px 4px 6px;
+  padding: 4px 4px 8px;
   text-align: center;
 }
 .results-hero-scores-row .score-chip-label,
 .team-result-body .subscores .score-chip-label,
 .share-modal-scores .score-chip-label {
-  font-size: 10px;
-  letter-spacing: 0.02em;
+  font-size: 11px;
+  letter-spacing: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -93,8 +93,8 @@
 .results-hero-scores-row .score-chip-value,
 .team-result-body .subscores .score-chip-value,
 .share-modal-scores .score-chip-value {
-  font-size: 17px;
-  line-height: 1.1;
+  font-size: 16px;
+  line-height: 1;
 }
 .team-result-body .subscores .fga-spent {
   grid-column: 1 / -1;
@@ -111,13 +111,13 @@
   display: inline-block;
   font-family: 'Bitter', Georgia, serif;
   font-weight: 700;
-  font-size: 10.5px;
-  letter-spacing: 0.02em;
+  font-size: 11px;
+  letter-spacing: 0;
   color: #3d2b1f;
   background: #ece0c3;
   border: 1px solid #a97c37;
   border-radius: 2px;
-  padding: 0 5px;
+  padding: 0 4px;
   transform: rotate(-2deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
@@ -127,14 +127,14 @@
 }
 .at-shell .bf-pool-season.at-vintage-years {
   font-size: 14px;
-  padding: 1px 7px;
+  padding: 1px 8px;
   margin: 2px 0;
 }
 .at-lottery-archive {
   max-width: 560px;
   margin: 14px auto 20px;
-  font-size: 12.5px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--at-ink-soft);
 }
 .at-lottery-archive .at-vintage-years {
@@ -156,9 +156,9 @@
   --era-tilt: 0deg;
   display: inline-block;
   position: relative;
-  font-size: 10.5px;
-  line-height: 1.55;
-  padding: 1px 7px;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 1px 8px;
   border-radius: 4px;
   font-variant-numeric: tabular-nums;
   cursor: help;
@@ -182,7 +182,7 @@
   font-weight: 700;
   color: #3d2b1f;
   background: radial-gradient(ellipse at 30% 20%, #f6ecd2, #e3d3ad);
-  border-radius: 3px;
+  border-radius: 4px;
   box-shadow:
     inset 0 0 0 1.5px #e3d3ad,
     inset 0 0 0 2.5px #a97c37,
@@ -193,16 +193,16 @@
   --era-tilt: -1.5deg;
   font-weight: 800;
   font-style: italic;
-  color: #1d3f8f;
+  color: #1e3a8a;
   padding-bottom: 4px;
   background: linear-gradient(
     to bottom,
     #fdf6e1 0 72%,
-    #c8102e 72% 82%,
+    var(--at-brand-red, #c8102e) 72% 82%,
     #fdf6e1 82% 88%,
-    #1d428a 88% 100%
+    var(--at-brand-blue, #1d428a) 88% 100%
   );
-  border-radius: 5px;
+  border-radius: 4px;
 }
 /* Jordan era (1991-1998): 90s expansion-team graphics — teal-to-purple with a glossy slash. */
 .at-shell .era-stamp--jordan {
@@ -213,15 +213,15 @@
   background:
     linear-gradient(115deg, transparent 0 38%, rgba(255, 255, 255, 0.28) 38% 46%, transparent 46%),
     linear-gradient(100deg, #00a3ad, #5b2a86);
-  border-radius: 6px 2px 6px 2px;
+  border-radius: 8px 2px 8px 2px;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
 }
 /* Deadball era (1999-2010): early-2000s broadcast chrome — brushed metal, bevelled, dark ink. */
 .at-shell .era-stamp--deadball {
   --era-tilt: 1.5deg;
   font-weight: 800;
-  letter-spacing: 0.03em;
-  color: #1b2330;
+  letter-spacing: 0.06em;
+  color: var(--calm-line, #182433);
   background: linear-gradient(180deg, #f4f7fa 0%, #c3cbd5 45%, #8f9aa8 55%, #d9dfe6 100%);
   border-radius: 4px;
   box-shadow:
@@ -233,7 +233,7 @@
 }
 .at-shell .bf-pool-season.era-stamp {
   font-size: 14px;
-  padding: 1px 7px;
+  padding: 1px 8px;
   margin: 2px 0;
 }
 /* "averages" rides inside the era stamp on player cards — one tag instead of stamp + loose word. */
@@ -255,7 +255,7 @@
 .at-shell .at-draft-main {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 .at-shell .at-draft-main > * {
   margin-top: 0;
@@ -299,7 +299,7 @@
   .at-shell .at-position-filters {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 6px;
+    gap: 8px;
   }
   .at-shell .at-position-filters .at-filter-pill {
     padding-left: 0;
@@ -312,10 +312,10 @@
 .at-shell .era-stamp--modern {
   --era-tilt: 1deg;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   color: #e3f5ff;
   background: linear-gradient(135deg, rgba(94, 200, 255, 0.22), rgba(29, 66, 138, 0.55));
-  border-radius: 5px;
+  border-radius: 4px;
   box-shadow:
     inset 0 0 0 1px rgba(94, 200, 255, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.25),
@@ -330,7 +330,7 @@
 .at-shell .player-peek-scouted {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-good, #7fd68a);
 }
@@ -359,7 +359,7 @@
   .at-shell .player-peek-card .at-draft-span-table tr {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px 6px;
+    gap: 8px 8px;
     padding: 12px 0;
     border-bottom: 1px solid var(--at-line);
   }
@@ -373,12 +373,12 @@
     position: static;
     background: none;
     text-align: left;
-    font-size: 12.5px;
+    font-size: 13px;
   }
   .at-shell .player-peek-card .at-draft-span-table td[data-label]::before {
     content: attr(data-label);
-    font-size: 9.5px;
-    letter-spacing: 0.05em;
+    font-size: 11px;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--at-ink-faint);
   }
@@ -416,7 +416,7 @@
   }
 }
 .at-shell .bench-unused {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--at-ink-soft);
 }
 
@@ -426,8 +426,8 @@
   align-items: center;
   gap: 8px;
   font: inherit;
-  font-size: 12.5px;
-  padding: 5px 10px;
+  font-size: 13px;
+  padding: 4px 8px;
   border-radius: 8px;
   border: 1px solid var(--at-line);
   background: var(--at-pill);
@@ -436,11 +436,11 @@
   white-space: nowrap;
 }
 .at-shell .years-picker-btn:hover { border-color: var(--at-accent); }
-.at-shell .years-picker-caret { color: var(--at-ink-faint); font-size: 10px; }
+.at-shell .years-picker-caret { color: var(--at-ink-faint); font-size: 11px; }
 .at-shell .years-picker-cost {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   font-variant-numeric: tabular-nums;
   color: var(--at-ink-soft);
 }
@@ -451,7 +451,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .at-shell .years-picker-option {
   width: 100%;
@@ -462,8 +462,8 @@
   font: inherit;
   font-size: 13px;
   text-align: left;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: 1px solid var(--at-line);
   background: var(--at-paper);
   color: var(--at-ink);
@@ -493,13 +493,13 @@
 .caps-info-card {
   position: relative;
   width: min(420px, 100%);
-  padding: 22px 22px 18px;
-  border-radius: 14px;
+  padding: 24px 24px 16px;
+  border-radius: 12px;
   border: 1px solid var(--at-line);
   background: var(--at-paper-raised);
   color: var(--at-ink-soft);
-  font-size: 13.5px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.5;
   text-align: left;
   box-shadow: var(--at-shadow);
 }
@@ -518,9 +518,9 @@
   font: inherit;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 10px 16px;
+  padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid var(--at-accent);
   background: color-mix(in srgb, var(--at-paper-raised) 88%, var(--at-accent));
@@ -543,7 +543,7 @@
   }
 }
 
-.at-shell .expand-all-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+.at-shell .expand-all-controls { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* 2026-09-25, user's follow-up ("zamiast naklejek zrobić to w podobnym stylu ale mniej chaotyczne",
    screenshots: the top bar — Draft/Team, CPU speed, Show draft board — and the position filters):
@@ -561,7 +561,7 @@
      clearly above the page background, with near-white lettering. */
   border: 1.5px solid #8fb0da;
   background: linear-gradient(180deg, #22344f, #1a2840);
-  color: #eef4fb;
+  color: var(--at-ink, #eef4fb);
   box-shadow:
     inset 0 0 0 2px rgba(5, 7, 12, 0.9),
     inset 0 0 0 3px rgba(255, 255, 255, 0.05),
@@ -572,8 +572,8 @@
 .at-shell .at-board-toggle:hover,
 .at-shell .at-filter-pill:hover,
 .at-shell .retro-btn:hover {
-  border-color: #c4d8f2;
-  background: linear-gradient(180deg, #2a4062, #20304b);
+  border-color: #c3dbf5;
+  background: linear-gradient(180deg, #2a4062, #1a3049);
   color: #ffffff;
 }
 .at-shell .at-tab-btn.at-active,
@@ -582,7 +582,7 @@
   border-color: #d9cba6;
   color: #13295a;
   background:
-    linear-gradient(to top, #1d428a 0 2px, #f6eedb 2px 3px, #c8102e 3px 5px, transparent 5px),
+    linear-gradient(to top, var(--at-brand-blue, #1d428a) 0 2px, #f6eedb 2px 3px, var(--at-brand-red, #c8102e) 3px 5px, transparent 5px),
     linear-gradient(180deg, #fbf5e6, #ece0c3);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
@@ -600,7 +600,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--at-ink-soft);
   cursor: pointer;
 }
@@ -612,7 +612,7 @@
 .at-shell .at-fga-input {
   border: 1.5px solid #5f7ea6;
   background: #0f1827;
-  color: #eef4fb;
+  color: var(--at-ink, #eef4fb);
 }
 /* Playtester, third pass ("góra okej, ale pozycje dalej ciemno"): the position filters kept an old
    base rule that dims every idle pill to 55% opacity, so they stayed dark whatever their colours
@@ -629,22 +629,22 @@
 .at-shell .secondary-btn {
   border: 1.5px solid #8fb0da;
   background: linear-gradient(180deg, #22344f, #1a2840);
-  color: #eef4fb;
+  color: var(--at-ink, #eef4fb);
   box-shadow:
     inset 0 0 0 2px rgba(5, 7, 12, 0.9),
     inset 0 0 0 3px rgba(255, 255, 255, 0.05),
     0 1px 2px rgba(0, 0, 0, 0.5);
 }
 .at-shell .secondary-btn:hover:not(:disabled) {
-  border-color: #c4d8f2;
-  background: linear-gradient(180deg, #2a4062, #20304b);
+  border-color: #c3dbf5;
+  background: linear-gradient(180deg, #2a4062, #1a3049);
   color: #ffffff;
 }
 .at-shell .primary-btn {
   border: 1.5px solid #d9cba6;
   color: #13295a;
   background:
-    linear-gradient(to top, #1d428a 0 2px, #f6eedb 2px 3px, #c8102e 3px 5px, transparent 5px),
+    linear-gradient(to top, var(--at-brand-blue, #1d428a) 0 2px, #f6eedb 2px 3px, var(--at-brand-red, #c8102e) 3px 5px, transparent 5px),
     linear-gradient(180deg, #fbf5e6, #ece0c3);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
@@ -653,8 +653,8 @@
 .at-shell .primary-btn:hover:not(:disabled) {
   border-color: #f0e3c0;
   background:
-    linear-gradient(to top, #1d428a 0 2px, #f6eedb 2px 3px, #c8102e 3px 5px, transparent 5px),
-    linear-gradient(180deg, #fffaf0, #f3e8cf);
+    linear-gradient(to top, var(--at-brand-blue, #1d428a) 0 2px, #f6eedb 2px 3px, var(--at-brand-red, #c8102e) 3px 5px, transparent 5px),
+    linear-gradient(180deg, #fffaf0, #f6ecd2);
 }
 .at-shell .primary-btn:disabled,
 .at-shell .secondary-btn:disabled {
@@ -682,7 +682,7 @@
     width: 340px;
     max-height: none;
     height: 100%;
-    border-radius: 0 14px 14px 0;
+    border-radius: 0 12px 12px 0;
     border-left: 0;
     box-shadow: 8px 0 28px rgba(0, 0, 0, 0.55);
   }
@@ -720,15 +720,15 @@
 .share-modal-face-caps::before { content: '·'; margin-right: 4px; }
 @media (max-width: 560px) {
   .share-modal-face-row { gap: 4px; }
-  .share-modal-face-group { padding: 6px 3px; }
+  .share-modal-face-group { padding: 8px 4px; }
   .share-modal-face-card {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 3px;
+    gap: 4px;
   }
   .share-modal-face-info { align-items: center; width: 100%; }
-  .share-modal-face-name { font-size: 10px; }
+  .share-modal-face-name { font-size: 11px; }
   .share-modal-face-meta { flex-direction: column; gap: 0; align-items: center; }
   .share-modal-face-caps::before { content: none; }
 }
@@ -749,7 +749,7 @@
 .share-modal-save-preview {
   width: 100%;
   max-width: 420px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
 }
 
@@ -759,7 +759,7 @@
 .at-shell .years-picker-inline {
   position: relative;
   margin: 0 0 16px;
-  padding: 16px 18px;
+  padding: 16px 16px;
   background: var(--at-paper-raised);
   border: 1px solid var(--at-accent);
   border-radius: 12px;
@@ -775,20 +775,20 @@
 
 /* 2026-09-25: spot-minute backups on one quiet line under a rotation column (ResultsScreen). */
 .rotation-spot-line {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 6px; padding-top: 6px;
-  border-top: 1px dashed var(--at-line, #16222f);
-  font-size: 11px; color: var(--at-ink-faint, #48586d); line-height: 1.4;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; padding-top: 8px;
+  border-top: 1px dashed var(--at-line, #182433);
+  font-size: 11px; color: var(--at-ink-faint, #48586d); line-height: 1.5;
 }
 /* 2026-09-26, user ("małe twarze tam gdzie jest Magic i Carter?", then "może bez nazwisk tylko
    twarze?"): each spot-minute backup is a 16px face + minutes; the name is in the tooltip. */
-.rotation-spot-entry { display: inline-flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; }
+.rotation-spot-entry { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
 .rotation-spot-entry .bf-face { flex-shrink: 0; }
 
 /* 2026-09-25, user ("rotacja się rozjeżdża"): the share modal is ~566px wide on every screen, so
    each of the five slot columns is ~100px — never enough for face + name + "36m · 12.0 caps" on
    one row. Every width now uses the stacked card: face on top, the name (initial + surname,
    wrapping on word boundaries) under it, minutes and caps on their own lines. */
-.share-modal-face-card { flex-direction: column; align-items: center; text-align: center; gap: 3px; }
+.share-modal-face-card { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
 .share-modal-face-info { align-items: center; width: 100%; }
 .share-modal-face-name { white-space: normal; overflow: visible; overflow-wrap: break-word; text-align: center; }
 .share-modal-face-meta { flex-direction: column; gap: 0; align-items: center; }
@@ -801,11 +801,11 @@
   background: var(--at-paper-raised);
   border: 1px solid var(--at-line);
   border-radius: 12px;
-  padding: 16px 18px;
+  padding: 16px 16px;
 }
 .at-shell .results-screen .results-section-title,
 .at-shell .results-screen .expand-all-controls {
-  padding-inline: 18px;
+  padding-inline: 16px;
 }
 
 /* 2026-09-25, user ("rozróżnienie kolorem offense i defense"): warm for offense, cool for defense —
@@ -822,17 +822,17 @@
 .metric-bar-info {
   display: inline-flex; align-items: center; justify-content: center;
   width: 12px; height: 12px; margin-left: 5px; border-radius: 50%;
-  font-size: 8.5px; font-weight: 800; font-style: italic; line-height: 1;
+  font-size: 8px; font-weight: 800; font-style: italic; line-height: 1;
   color: var(--at-ink-faint); border: 1px solid currentColor; vertical-align: 1px;
 }
 .metric-bar-tip {
   display: none;
   /* Spans its own bar instead of a fixed width, so on a phone it never runs off the right edge. */
   position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30;
-  max-width: 340px; padding: 8px 10px; border-radius: 8px;
-  background: var(--at-paper, #05070c); border: 1px solid var(--at-line, #16222f);
+  max-width: 340px; padding: 8px 8px; border-radius: 8px;
+  background: var(--at-paper, #05070c); border: 1px solid var(--at-line, #182433);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
-  font-size: 12px; line-height: 1.45; color: var(--at-ink); white-space: normal; font-weight: 500;
+  font-size: 12px; line-height: 1.5; color: var(--at-ink); white-space: normal; font-weight: 500;
 }
 .metric-bar.has-tip:hover .metric-bar-tip,
 .metric-bar.has-tip:focus .metric-bar-tip { display: block; }
@@ -849,16 +849,16 @@
   .at-lottery, .at-lottery .at-drum { animation: none; }
 }
 /* 2026-09-25: names the rotation's weakest defenders under the hero's Defense details. */
-.results-hero-weak { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: var(--at-ink-soft); }
+.results-hero-weak { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--at-ink-soft); }
 .results-hero-weak b { color: var(--at-ink); font-weight: 700; }
 /* 2026-09-25: "Plays like the 2004 Detroit Pistons" — its own line under the team style. */
 .results-hero-comp { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
 .results-hero-comp small { margin-left: 6px; font-size: 11px; color: var(--at-ink-faint); }
 
 /* "All metrics & inputs" (group C mockup 19, AllMetrics.tsx). */
-.all-metrics { display: grid; gap: 16px; margin-top: 10px; padding-right: 6px; font-size: 12px; line-height: 1.45; }
-.all-metrics-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 16px; font-size: 11px; color: var(--at-ink-faint); }
-.all-metrics-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.all-metrics { display: grid; gap: 16px; margin-top: 10px; padding-right: 8px; font-size: 12px; line-height: 1.5; }
+.all-metrics-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px 16px; font-size: 11px; color: var(--at-ink-faint); }
+.all-metrics-legend > span { display: inline-flex; align-items: center; gap: 8px; }
 .all-metrics-legend-tick { display: inline-block; width: 2px; height: 12px; background: var(--at-ink); }
 .all-metrics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 32px; }
 .all-metrics-grid.is-three {
@@ -867,8 +867,8 @@
   border-top: 1px solid color-mix(in srgb, var(--at-line, var(--border)) 70%, transparent);
   padding-top: 16px;
 }
-.all-metrics-col { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
-.all-metrics-kicker { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-soft); }
+.all-metrics-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.all-metrics-kicker { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-soft); }
 .all-metrics-kicker.is-offense { color: var(--at-offense, #f0a45c); }
 .all-metrics-kicker.is-defense { color: var(--at-defense, #5ec8ff); }
 .all-metrics-row {
@@ -876,7 +876,7 @@
   grid-template-columns: minmax(0, 140px) minmax(0, 1fr) 30px 40px;
   align-items: center;
   gap: 8px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   padding-left: 8px;
 }
@@ -892,27 +892,27 @@
 .all-metrics-rank.is-top { color: var(--at-good, #7fd68a); }
 .all-metrics-rank.is-bottom { color: var(--at-warn, #f0a868); }
 .all-metrics-guards { display: grid; gap: 8px; }
-.all-metrics-guards > div { display: grid; grid-template-columns: 64px minmax(0, 1fr) 30px; gap: 10px; align-items: center; }
+.all-metrics-guards > div { display: grid; grid-template-columns: 64px minmax(0, 1fr) 30px; gap: 8px; align-items: center; }
 .all-metrics-guards b { text-align: right; font-variant-numeric: tabular-nums; }
 .all-metrics-estimated {
   margin-left: 6px;
-  padding: 1px 6px;
+  padding: 1px 8px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 11px;
   background: color-mix(in srgb, var(--at-warn, #f0a868) 16%, transparent);
   color: var(--at-warn, #f0a868);
 }
 .all-metrics-note {
   margin: 0;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-radius: 8px;
   border: 1px solid var(--at-line, var(--border));
   background: var(--at-paper, var(--bg));
 }
 .all-metrics-caption { font-size: 11px; color: var(--at-ink-faint); }
-.all-metrics-styles { display: flex; flex-wrap: wrap; gap: 6px; }
+.all-metrics-styles { display: flex; flex-wrap: wrap; gap: 8px; }
 .all-metrics-styles span {
-  padding: 3px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
   font-size: 11px;
   background: var(--at-pill, var(--bg));
@@ -927,7 +927,7 @@
   .all-metrics-grid,
   .all-metrics-grid.is-three { grid-template-columns: minmax(0, 1fr); }
   .all-metrics-legend { justify-content: flex-start; }
-  .all-metrics-row { grid-template-columns: minmax(0, 112px) minmax(0, 1fr) 26px 36px; gap: 6px; }
+  .all-metrics-row { grid-template-columns: minmax(0, 112px) minmax(0, 1fr) 26px 36px; gap: 8px; }
 }
 
 /* Rotation builder: drag / tap placement and the minute-split bar (group C mockup 21). */
@@ -939,7 +939,7 @@
   display: flex;
   height: 22px;
   margin: 6px 0 4px;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   background: color-mix(in srgb, var(--at-ink, #eef4fb) 9%, transparent);
   touch-action: none;
@@ -955,10 +955,10 @@
 .rotation-split-seg.is-1 { background: color-mix(in srgb, var(--at-brand-blue, #2f74b8) 62%, var(--at-paper, var(--bg))); }
 .rotation-split-seg.is-2 { background: color-mix(in srgb, var(--at-brand-blue, #2f74b8) 40%, var(--at-paper, var(--bg))); }
 .rotation-split-label {
-  padding-left: 6px;
-  font-size: 10.5px;
+  padding-left: 8px;
+  font-size: 11px;
   line-height: 22px;
-  color: #eef4fb;
+  color: var(--at-ink, #eef4fb);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -982,13 +982,13 @@
   left: 6px;
   width: 2px;
   border-radius: 1px;
-  background: #eef4fb;
+  background: var(--at-ink, #eef4fb);
 }
 .rotation-split-handle:focus-visible { outline: 2px solid var(--at-accent, var(--accent)); outline-offset: -2px; }
 .rotation-drag-handle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: grab;
   color: var(--at-ink-faint, var(--text));
 }
@@ -1002,7 +1002,7 @@
   background: var(--at-pill, var(--bg));
   color: var(--at-ink, var(--text));
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
@@ -1011,7 +1011,7 @@
   display: block;
   width: 100%;
   margin-top: 6px;
-  padding: 7px 8px;
+  padding: 8px 8px;
   border-radius: 8px;
   border: 1px dashed var(--at-line, var(--border));
   background: transparent;
@@ -1030,19 +1030,19 @@
   flex-direction: column;
   gap: 8px;
   margin: 0 0 14px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: 1px solid var(--at-line, var(--border));
   background: var(--at-paper, var(--bg));
 }
-.rotation-bench-title { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-soft, var(--text)); }
+.rotation-bench-title { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-soft, var(--text)); }
 .rotation-bench-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .rotation-bench-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   min-height: 40px;
-  padding: 4px 10px 4px 4px;
+  padding: 4px 8px 4px 4px;
   border-radius: 8px;
   border: 1px solid var(--at-line, var(--border));
   background: var(--at-pill, var(--bg));
@@ -1062,9 +1062,9 @@
   z-index: 5;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin: 0 0 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 12px;
   border: 1px solid var(--at-defense, #5ec8ff);
   background: color-mix(in srgb, var(--at-brand-blue, #2f74b8) 30%, var(--at-paper, var(--bg)));
@@ -1080,7 +1080,7 @@
   border: 1px solid var(--at-brand-blue, #2f74b8);
   background: transparent;
   color: var(--at-ink, var(--text));
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
 }
 @media (max-width: 480px) {
@@ -1102,14 +1102,14 @@
   flex: none;
   width: 44px;
   height: 44px;
-  border-radius: 9px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   font-weight: 800;
   line-height: 1;
 }
-.team-tile-code { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; letter-spacing: 0.02em; }
-.team-tile-season { height: 13px; font-size: 9px; line-height: 13px; text-align: center; }
+.team-tile-code { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; letter-spacing: 0; }
+.team-tile-season { height: 13px; font-size: 11px; line-height: 13px; text-align: center; }
 .team-chip {
   display: inline-flex;
   align-items: stretch;
@@ -1119,16 +1119,16 @@
   border: 1px solid var(--at-line, var(--border));
   background: var(--at-pill, var(--bg));
   color: var(--at-ink, var(--text));
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   line-height: 1;
   text-transform: none;
 }
 .team-chip-bar { width: 6px; }
 .team-chip-bar.is-thin { width: 3px; }
-.team-chip-text { padding: 3px 6px 3px 5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.all-metrics-comp { display: flex; align-items: center; gap: 10px; }
+.team-chip-text { padding: 4px 8px 4px 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.all-metrics-comp { display: flex; align-items: center; gap: 8px; }
 
 /* Draft card: position next to the name, team chips on the meta line (2026-09-26). */
 
@@ -1147,17 +1147,17 @@
 /* Compact rotation builder (2026-09-26, "rotacja zbyt duża"). */
 .rotation-intro { font-size: 12px; margin: 4px 0 0; color: var(--at-ink-soft, var(--text)); }
 .rotation-cards { gap: 8px; margin: 10px 0 14px; }
-.rotation-card { padding: 8px 10px 8px; }
-.rotation-card-row { padding: 5px 0; gap: 8px; }
-.add-row-btn { margin-top: 4px; padding: 3px 8px; font-size: 11px; }
+.rotation-card { padding: 8px 8px 8px; }
+.rotation-card-row { padding: 4px 0; gap: 8px; }
+.add-row-btn { margin-top: 4px; padding: 4px 8px; font-size: 11px; }
 /* Draft progress in the sticky header ticker (2026-09-26). */
 
 /* Learning path (2026-09-26): step labels on the menu cards and a "next step" block on results. */
 .mode-card-step {
   display: block;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-accent, #6cc3ff);
   margin-bottom: 2px;
@@ -1167,13 +1167,13 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px 16px;
+  gap: 8px 16px;
   margin: 16px 0 6px;
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 12px 12px;
+  border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--at-accent, #6cc3ff) 45%, var(--at-line, var(--border)));
   background: color-mix(in srgb, var(--at-accent, #6cc3ff) 8%, var(--at-paper, var(--bg)));
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--at-ink-soft, var(--text));
 }
@@ -1193,26 +1193,26 @@
 .at-turn-sticky {
   background: var(--at-paper-raised);
   margin: 0 -26px 18px;
-  padding: 10px 26px 2px;
+  padding: 8px 24px 2px;
   border-bottom: 1px solid var(--at-line);
   box-shadow: 0 12px 18px -16px rgba(0, 0, 0, 0.9);
 }
 
 /* Breathing room: more padding inside the panels and cards, and more space between sections. */
-.at-card { padding: 26px 26px 24px; }
-.at-player-cards { gap: 14px; }
+.at-card { padding: 24px 24px 24px; }
+.at-player-cards { gap: 12px; }
 .at-player-card { padding: 12px 12px 12px; gap: 8px; }
 
-.qf-team-panel { gap: 10px; margin: 4px 0 20px; }
-.qf-team-card { padding: 7px 14px 7px 7px; }
-.qf-team-empty { padding: 7px 14px 7px 7px; }
-.at-controls-row { gap: 10px; }
+.qf-team-panel { gap: 8px; margin: 4px 0 20px; }
+.qf-team-card { padding: 8px 12px 8px 8px; }
+.qf-team-empty { padding: 8px 12px 8px 8px; }
+.at-controls-row { gap: 8px; }
 
-.mode-grid { gap: 14px; }
-.path-next { padding: 16px 18px; gap: 12px 16px; }
+.mode-grid { gap: 12px; }
+.path-next { padding: 16px 16px; gap: 12px 16px; }
 
 @media (max-width: 640px) {
-  .at-card { padding: 18px 16px 18px; }
+  .at-card { padding: 16px 16px 16px; }
   .at-turn-sticky { margin: 0 -16px 14px; padding: 8px 16px 0; }
 
   .at-player-cards { gap: 12px; }

@@ -1,5 +1,5 @@
 /* ---- Draft Lottery (DraftLottery.tsx) ---- */
-.at-lottery { padding: 28px 24px 32px; text-align: center; }
+.at-lottery { padding: 24px 24px 32px; text-align: center; }
 .at-lottery .at-board-brand { border-bottom: none; padding: 0 0 4px; margin-bottom: 0; }
 .at-lottery-sub { color: var(--at-ink-soft); font-size: 13px; margin: 0 0 22px; }
 
@@ -7,8 +7,8 @@
    team" pops against the otherwise all-blue team chips. */
 .at-lottery-you-tag {
   flex: none; background: var(--at-accent-2); color: var(--at-accent-2-ink);
-  font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em;
-  border-radius: 999px; padding: 2px 7px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+  border-radius: 999px; padding: 2px 8px;
 }
 @keyframes at-lottery-pop {
   from { opacity: 0; transform: scale(0.85); }
@@ -24,7 +24,7 @@
 
 .at-lottery-continue { margin-top: 4px; }
 .at-lottery-skip {
-  margin-top: 4px; font-size: 11.5px; padding: 6px 14px; opacity: 0.75;
+  margin-top: 4px; font-size: 12px; padding: 8px 12px; opacity: 0.75;
 }
 
 /* 2026-09-28: the lottery drum (lotteryDrum.ts) replaced the slot-machine reel and its lever. The
@@ -36,16 +36,16 @@
 .at-lottery-sub.is-hot .at-lottery-sub-dot { display: block; animation: at-lottery-blink 1s ease-in-out infinite; }
 @keyframes at-lottery-blink { 50% { opacity: 0.25; } }
 .at-drum { display: block; width: 100%; max-width: 400px; height: auto; margin: 0 auto 8px; }
-.at-lottery-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.at-lottery-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .at-lottery-actions > .primary-btn { margin: 0; }
-.at-lottery-secondary { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.at-lottery-secondary { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .at-lottery-secondary > button { margin: 0; }
 .at-lottery-result { animation: at-lottery-pop .3s ease-out; margin-bottom: 18px; }
-.at-lottery-team-line { font-size: 15px; color: var(--at-ink); margin: 0 0 10px; }
+.at-lottery-team-line { font-size: 16px; color: var(--at-ink); margin: 0 0 10px; }
 .at-lottery-picks-label { font-size: 12px; color: var(--at-ink-soft); margin: 0 0 8px; }
 .at-lottery-picks {
   display: grid; grid-template-columns: repeat(var(--pick-cols, 9), auto);
-  justify-content: center; gap: 6px; margin: 0 auto;
+  justify-content: center; gap: 8px; margin: 0 auto;
 }
 @media (max-width: 900px) {
   /* Narrow: equal-width tiles, round label stacked over the pick number so up to 5 fit across. */
@@ -53,12 +53,12 @@
     grid-template-columns: repeat(var(--pick-cols-narrow, 3), minmax(0, 1fr));
     max-width: calc(var(--pick-cols-narrow, 3) * 66px);
   }
-  .at-lottery-picks .at-lottery-pick { display: flex; flex-direction: column; align-items: center; padding: 5px 4px; border-radius: 10px; }
-  .at-lottery-picks .at-lottery-pick-round { margin-right: 0; font-size: 10px; }
+  .at-lottery-picks .at-lottery-pick { display: flex; flex-direction: column; align-items: center; padding: 4px 4px; border-radius: 8px; }
+  .at-lottery-picks .at-lottery-pick-round { margin-right: 0; font-size: 11px; }
 }
 .at-lottery-pick { text-align: center; white-space: nowrap; }
 .at-lottery-pick {
-  font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+  font-size: 13px; font-weight: 700; padding: 4px 8px; border-radius: 999px;
   background: var(--at-pill); color: var(--at-ink); font-variant-numeric: tabular-nums;
 }
 .at-lottery-pick-round { color: var(--at-ink-faint); font-weight: 600; margin-right: 2px; }
@@ -69,8 +69,8 @@
 /* 2026-09-24: RotationBuilder's "this is only a suggestion" note and its visible reason for a
    disabled Submit (previously a hover-only tooltip, or nothing at all). */
 .rotation-suggestion-note {
-  font-size: 12.5px; line-height: 1.5; color: var(--at-ink, var(--text));
-  border: 1px dashed var(--at-accent, var(--border)); border-radius: 10px;
+  font-size: 13px; line-height: 1.5; color: var(--at-ink, var(--text));
+  border: 1px dashed var(--at-accent, var(--border)); border-radius: 8px;
   padding: 8px 12px; margin: 4px 0 12px;
 }
 .rotation-submit-hint { font-size: 12px; color: var(--at-ink-soft, var(--text)); margin: 8px 0 0; }
@@ -82,11 +82,11 @@
    the wrapping grid is now used at every width whenever it's just your own row. */
 .matchup-matrix-scroll.has-compact { display: none; }
 .matchup-matrix-compact {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 8px 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; margin: 8px 0;
 }
 .matchup-matrix-compact-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .matchup-matrix-compact-cell.is-open { outline-color: rgba(255, 255, 255, 0.8); }
-.matchup-matrix-compact-code { font-size: 10px; font-weight: 600; opacity: 0.85; letter-spacing: 0.03em; }
+.matchup-matrix-compact-code { font-size: 11px; font-weight: 600; opacity: 0.85; letter-spacing: 0.06em; }
 @media (min-width: 900px) {
   .matchup-matrix-compact { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 }
@@ -95,33 +95,33 @@
 .at-menu-btn {
   position: absolute; top: 14px; left: 14px; z-index: 6;
   font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
-  border: 1px solid var(--at-line); border-radius: 999px; padding: 6px 12px;
+  border: 1px solid var(--at-line); border-radius: 999px; padding: 8px 12px;
   background: var(--at-paper-raised); color: var(--at-ink-soft);
 }
 .at-menu-btn:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
 .at-menu-btn:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
-.at-exit-modal-text { font-size: 13.5px; line-height: 1.5; margin: 4px 0 16px; }
-.at-exit-modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.at-exit-modal-text { font-size: 14px; line-height: 1.5; margin: 4px 0 16px; }
+.at-exit-modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .at-shell:has(> .at-menu-btn) { position: relative; }
 @media (max-width: 640px) {
-  .at-menu-btn { top: 8px; left: 8px; padding: 5px 10px; }
+  .at-menu-btn { top: 8px; left: 8px; padding: 4px 8px; }
   .at-shell:has(> .at-menu-btn) > .at-board-brand { padding-top: 52px; }
 }
 
 /* 2026-09-24: "Why you finished here" — insights + one tip + the replay actions, right under the
    hero (ResultsScreen.tsx `ResultsVerdict`). */
 .results-verdict {
-  border: 1px solid var(--at-line); border-radius: 14px; background: var(--at-paper-raised);
-  padding: 16px 18px; margin: 0 0 16px;
+  border: 1px solid var(--at-line); border-radius: 12px; background: var(--at-paper-raised);
+  padding: 16px 16px; margin: 0 0 16px;
 }
-.results-verdict-title { font-size: 18px; margin: 0 0 12px; color: var(--at-ink); }
-.results-verdict-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 20px; }
+.results-verdict-title { font-size: 20px; margin: 0 0 12px; color: var(--at-ink); }
+.results-verdict-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 16px; }
 .results-verdict-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .results-verdict-col--good .results-verdict-label { color: var(--at-good, #7fd68a); }
 .results-verdict-col--bad .results-verdict-label { color: var(--at-warn, #f0a868); }
-.results-verdict-col ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
+.results-verdict-col ul { margin: 6px 0 0; padding-left: 16px; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
 .results-verdict-tip {
-  margin: 14px 0 0; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; line-height: 1.5;
+  margin: 14px 0 0; padding: 8px 12px; border-radius: 8px; font-size: 14px; line-height: 1.5;
   color: var(--at-ink); background: color-mix(in srgb, var(--at-accent) 12%, var(--at-paper));
   border: 1px solid color-mix(in srgb, var(--at-accent) 45%, transparent);
 }
@@ -129,16 +129,16 @@
 /* 2026-09-24: intro "Continue draft" banner + the confirm shown before a new draft replaces it. */
 .saved-draft-banner {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px;
-  margin: 0 auto 18px; padding: 10px 14px; max-width: 420px;
-  border: 1px solid #4a9eda; border-radius: 10px; font-size: 13px; color: #cfe3f7;
+  margin: 0 auto 18px; padding: 8px 12px; max-width: 420px;
+  border: 1px solid #4a9eda; border-radius: 8px; font-size: 13px; color: var(--at-t3-ink, #cfe3f7);
   background: rgba(74, 158, 218, 0.12);
 }
 .saved-draft-continue {
-  font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; border: none;
-  border-radius: 999px; padding: 7px 16px; background: #4a9eda; color: #06070c;
+  font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; border: none;
+  border-radius: 999px; padding: 8px 16px; background: #4a9eda; color: var(--at-accent-ink, #06070c);
 }
-.saved-draft-confirm-text { font-size: 13.5px; line-height: 1.5; margin: 4px 0 16px; }
-.saved-draft-confirm-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: stretch; flex-wrap: wrap; }
+.saved-draft-confirm-text { font-size: 14px; line-height: 1.5; margin: 4px 0 16px; }
+.saved-draft-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: stretch; flex-wrap: wrap; }
 /* 2026-09-26, user-reported ("lewy górny róg się rozjeżdża, przyciski nierówne"): the two buttons
    kept their legacy standalone margins (primary 16px on top, secondary 8px/16px), so they sat at
    different heights, and the extra bottom margin overflowed the modal — its scrollbars pushed the
@@ -152,8 +152,8 @@
 /* 2026-09-24: show/hide-board button, in the top bar next to CPU speed (DraftChrome's
    BoardToggleButton) — accent-coloured so it doesn't read as one of the passive picks chips. */
 .at-board-toggle {
-  font: inherit; font-size: 11.5px; font-weight: 800; cursor: pointer;
-  border: 1px solid var(--at-accent); border-radius: 999px; padding: 6px 14px;
+  font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+  border: 1px solid var(--at-accent); border-radius: 999px; padding: 8px 12px;
   background: color-mix(in srgb, var(--at-accent) 16%, var(--at-paper)); color: var(--at-accent);
 }
 .at-board-toggle:hover { background: var(--at-accent); color: var(--at-accent-ink); }
@@ -177,17 +177,17 @@
    side by side across the full width (Draft as the larger, easier target). */
 .at-player-card-season {
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
-  font-size: 10px; letter-spacing: 0.04em; color: var(--at-ink-faint);
-  padding-top: 5px; border-top: 1px solid var(--at-line);
+  font-size: 11px; letter-spacing: 0.06em; color: var(--at-ink-faint);
+  padding-top: 4px; border-top: 1px solid var(--at-line);
 }
 .at-player-card-stats {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; text-align: center;
-  font-size: 9.5px; letter-spacing: 0.05em; color: var(--at-ink-faint); font-variant-numeric: tabular-nums;
+  font-size: 11px; letter-spacing: 0.06em; color: var(--at-ink-faint); font-variant-numeric: tabular-nums;
 }
-.at-player-card-stats > span { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.at-player-card-stats > span { display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
 .at-player-card-stats b { color: var(--at-ink); font-size: 13px; font-weight: 700; letter-spacing: 0; }
 
-.results-hero-bars-note { font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); margin: 6px 0 12px; }
+.results-hero-bars-note { font-size: 12px; line-height: 1.5; color: var(--at-ink-faint); margin: 6px 0 12px; }
 .results-verdict--won { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 55%, var(--at-line)); }
 .results-verdict--won .results-verdict-title { color: var(--at-gold, #ffd479); }
 
@@ -195,8 +195,8 @@
    Rotation section of the ranking: a TAL badge per player and a total when minutes are split. */
 .rotation-columns--detailed .results-hero-rotation-entry { position: relative; }
 .rotation-entry-tal {
-  margin-left: auto; flex: none; font-size: 10.5px; font-weight: 800; color: #fff;
-  padding: 1px 6px; border-radius: 999px; font-variant-numeric: tabular-nums;
+  margin-left: auto; flex: none; font-size: 11px; font-weight: 800; color: #fff;
+  padding: 1px 8px; border-radius: 999px; font-variant-numeric: tabular-nums;
 }
 .rotation-entry-total { color: var(--at-ink-faint); font-weight: 500; }
 .rotation-columns--detailed .rotation-natural-pos { margin-left: 3px; }
@@ -214,8 +214,8 @@
     color: #fac775;
 }
 .at-shell .tier-avg {
-    background: #2e2e2c;
-    color: #b4b2a9;
+    background: #2c2b28;
+    color: #b3b0a8;
 }
 .at-shell .tier-good {
     background: #0d302a;
@@ -239,11 +239,11 @@
 }
 .at-shell .rating-glue {
     background: #16283d;
-    color: #82b5ea;
+    color: #85b7eb;
 }
 .at-shell .rating-bench {
     background: #3a2412;
-    color: #f0a868;
+    color: var(--at-warn, #f0a868);
 }
 .at-shell .rating-role {
     background: #322c08;
@@ -251,7 +251,7 @@
 }
 .at-shell .rating-starter {
     background: #12281a;
-    color: #7fd68a;
+    color: var(--at-good, #7fd68a);
 }
 .at-shell .rating-allstar {
     background: #072c30;
@@ -312,7 +312,7 @@
     color: #b3b0a8;
 }
 .at-shell .dur-walking-glass {
-    background: #16283f;
+    background: #16283d;
     color: #8fb8ea;
 }
 .at-shell .dur-street-clothes {
@@ -329,7 +329,7 @@
 }
 .at-shell .dur-unbreakable {
     background: #29537a;
-    color: #d6e6f8;
+    color: var(--at-t3-ink, #cfe3f7);
 }
 .at-shell .dur-ironman {
     background: linear-gradient(96deg, #3b5bc9, #7c3aed);

@@ -16,7 +16,7 @@
 .team-panel {
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-size: 13px;
 }
 
@@ -70,7 +70,7 @@
 
 .player-table th,
 .player-table td {
-  padding: 6px 8px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   white-space: nowrap;
