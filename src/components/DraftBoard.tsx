@@ -1,6 +1,7 @@
 import { computeFinishing } from '../engine/finishing';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DraftPlayerCard } from './DraftPlayerCard';
+import { ROLE_FILTERS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
@@ -505,6 +506,8 @@ export default function DraftBoard({
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
   const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL'>('ALL');
+  const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [boardSort, setBoardSort] = useState<'best' | 'value' | 'cheapest'>('best');
   // 2026-09-14, user-reported live ("rzucamy ponad 100 nazwisk na raz, za dużo informacji dla
   // użytkownika na raz" — throwing 100+ names at once is too much information at once): the
   // DRAFT_LIST_LIMIT=140 cap a few lines down exists for RENDER PERFORMANCE (see its own
@@ -519,7 +522,7 @@ export default function DraftBoard({
   const [visibleCount, setVisibleCount] = useState(DRAFT_VISIBLE_DEFAULT);
   useEffect(() => {
     setVisibleCount(DRAFT_VISIBLE_DEFAULT);
-  }, [search, selectedPosition]);
+  }, [search, selectedPosition, roleFilter, boardSort]);
   const [fgaMin, setFgaMin] = useState('0');
   const [fgaMax, setFgaMax] = useState('30');
   // 2026-09-11, user-reported live ("zacina się jak filtrujemy fga") — every keystroke here used
@@ -1054,7 +1057,15 @@ export default function DraftBoard({
       .filter((g) => !state.draftedIds.has(g.spans[0].id) || ghosts.has(normalizePlayerName(g.playerName)))
       .filter((g) => (selectedPosition !== 'ALL' ? careerPosition(g) === selectedPosition : true))
       .filter((g) => g.playerName.toLowerCase().includes(q))
+      .filter((g) => matchesRoleFilter(g.bestTalentSpan, roleFilter))
       .sort((a, b) => {
+        // 2026-10-08: the board's own sort (player mode) — cheapest first, or the most TAL for
+        // the caps (TAL minus two points a cap, so a 99 costing 21 ranks with an 80 costing 10).
+        if (mode === 'player' && boardSort !== 'best') {
+          const key = (g: typeof a) => (boardSort === 'cheapest' ? -g.bestTalentSpan.fga : g.bestDisplayTal - 2 * g.bestTalentSpan.fga);
+          const diff = key(b) - key(a);
+          if (diff !== 0) return diff;
+        }
         if (needBiasActive) {
           const needDiff = Number(openStarterPositions.has(careerPosition(b))) - Number(openStarterPositions.has(careerPosition(a)));
           if (needDiff !== 0) return needDiff;
@@ -1085,7 +1096,7 @@ export default function DraftBoard({
       });
     return { groups: matched.slice(0, DRAFT_LIST_LIMIT), totalMatched: matched.length };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enrichedGroups, state.draftedIds, ghosts, selectedPosition, search, mode, needBiasActive, openStarterPositions]);
+  }, [enrichedGroups, state.draftedIds, ghosts, selectedPosition, search, mode, needBiasActive, openStarterPositions, roleFilter, boardSort]);
   const priciestAvailable = useMemo(
     () => state.pool.reduce((max, p) => (!state.draftedIds.has(p.id) && p.fga > max ? p.fga : max), 0),
     [state.pool, state.draftedIds],
@@ -1477,6 +1488,33 @@ export default function DraftBoard({
                   >
                     <CapIcon size={12} /> Affordable
                   </button>
+                )}
+                {!showJudgeMetrics && (
+                  <>
+                    <select
+                      className={`at-calm-select${roleFilter ? ' is-on' : ''}`}
+                      aria-label="Role"
+                      value={roleFilter ?? ''}
+                      onChange={(e) => setRoleFilter(e.target.value || null)}
+                    >
+                      <option value="">Any role</option>
+                      {Object.keys(ROLE_FILTERS).map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      className="at-calm-select"
+                      aria-label="Sort"
+                      value={boardSort}
+                      onChange={(e) => setBoardSort(e.target.value as 'best' | 'value' | 'cheapest')}
+                    >
+                      <option value="best">Best first</option>
+                      <option value="value">Most for the caps</option>
+                      <option value="cheapest">Cheapest first</option>
+                    </select>
+                  </>
                 )}
               </div>
 

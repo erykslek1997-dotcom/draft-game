@@ -5,7 +5,7 @@
  * lottery right away while the data finishes loading behind it; `createDraft` (draft.ts) then
  * builds the draft from the same seed and teams.
  */
-import { TEAM_COUNT } from './positions';
+import { TEAM_COUNT } from './rosterConstants';
 import { randomTeamNames } from './teamNames';
 import { mixSeed, mulberry32 } from './rng';
 import type { Team } from './types';

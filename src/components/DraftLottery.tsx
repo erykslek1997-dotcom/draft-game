@@ -117,13 +117,18 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
   const picks = useMemo(() => snakePickNumbers(slot, teamCount, rounds), [slot, teamCount, rounds]);
 
   return (
-    <div className={`at-shell at-lottery${started ? ' is-started' : ''}`}>
-      {onExit && (
-        <button type="button" className="at-menu-btn at-cond" onClick={onExit}>
-          ← Menu
-        </button>
-      )}
-      <div className="at-board-brand at-cond">Draft Lottery</div>
+    <div className={`at-shell at-calm at-lottery${started ? ' is-started' : ''}`}>
+      <div className="at-calm-header">
+        {onExit ? (
+          <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onExit}>
+            ← Menu
+          </button>
+        ) : (
+          <span className="rs-header-spacer" aria-hidden />
+        )}
+        <h1 className="at-calm-title">Draft Lottery</h1>
+        <span className="rs-header-spacer" aria-hidden />
+      </div>
       <p className={`at-lottery-sub${status.hot ? ' is-hot' : ''}`} aria-live="polite">
         <span className="at-lottery-sub-dot" aria-hidden />
         {status.text}

@@ -290,15 +290,29 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   }
 
   return (
-    <div className={`at-shell best-five ${rewardClasses}`}>
+    <div className={`at-shell at-calm best-five ${rewardClasses}`}>
       {/* 2026-09-27 UI audit: the same "← Menu" in the top corner as the drafts (was "← Back" on
           the right next to "How to play?", with a "Board #n" nobody needed). */}
-      {onBack && (
-        <button type="button" className="at-menu-btn at-cond" onClick={onBack}>
-          ← Menu
+      {/* 2026-10-08, the UI simplification: the drafts' one-row header; "?" opens how to play. */}
+      <div className="at-calm-header">
+        {onBack ? (
+          <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onBack}>
+            ← Menu
+          </button>
+        ) : (
+          <span className="rs-header-spacer" aria-hidden />
+        )}
+        <h1 className="at-calm-title">{daily ? 'Daily Draw Five' : 'Draw Five'}</h1>
+        <button
+          type="button"
+          className="at-calm-icon"
+          aria-label={showHowToPlay ? 'Hide how to play' : 'How to play'}
+          aria-expanded={showHowToPlay}
+          onClick={() => setShowHowToPlay((v) => !v)}
+        >
+          ?
         </button>
-      )}
-      <div className="at-board-brand at-cond">{daily ? 'Daily Draw Five' : 'Draw Five'}</div>
+      </div>
       {daily && (
         <p className="bf-daily-sub">
           {formatDay(daily)} · one board for everyone, one try
@@ -315,13 +329,6 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
         </p>
       )}
       {daily && meta && !result && <DailyIntro opponent={meta.opponent} order={order} />}
-      <div className="bf-subhead">
-        <span className="bf-subhead-actions">
-          <button className="at-legend-toggle at-cond" onClick={() => setShowHowToPlay((v) => !v)}>
-            {showHowToPlay ? 'Hide how to play' : 'How to play?'}
-          </button>
-        </span>
-      </div>
 
       {showHowToPlay && (
         <ol className="how-to-play-panel">

@@ -438,8 +438,19 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
     plotka bez nazwisk o tym, na co polują drużyny przed Twoim następnym pickiem („Three teams
     are said to be hunting centers”).
   - Odrzucone: 50/50 („nuda”), Insider („za mocne”). (M)
-- [ ] **Szukanie na boardzie po kilku rundach** (zgłoszone 2026-10-07): filtry ról na bazie etykiet
-      z kart (Shooter, Rim protector, Playmaker…) i sortowanie (TAL, koszt, TAL na caps). (S)
+- [ ] **Free agents po drafcie — propozycja do akceptu (2026-10-08)**: po 9. rundzie ekran „Free
+      agency”: każda drużyna (AI też, w odwrotnej kolejności tabeli draftu) podpisuje do 3 graczy
+      spośród niewybranych, łącznie do 6 caps, ponad limit 100.9. Dochodzą jako ławka 10–12, mogą
+      wejść do rotacji. Pytania: (1) 6 caps osobny budżet czy z niewydanych caps? (2) czy ławka 10–12
+      liczy się do Bench score? (3) AI też podpisuje? (M)
+- [ ] **Tempo — propozycja do akceptu (2026-10-08)**: dziś każdy mecz to 200 posiadań. W NBA tempo
+      drużyn różni się o SD ~2.4 posiadania (team_advanced 2015-25). Propozycja: tempo drużyny z jej
+      stylu — udział kontr (przechwyty, zbiórki w obronie), wiek/atletyzm, kreatorzy późnego zegara
+      (zwalniają) — mecz ma 2 × średnią z obu drużyn; tempo nie zmienia przewidywanej przewagi, tylko
+      liczbę akcji (wolniejsze tempo pomaga słabszemu). Pytania: (1) czy tempo ma być widoczne
+      w wynikach? (2) czy era gracza ma wpływ (lata 60. grały ~125 posiadań)? (M)
+- [x] **Szukanie na boardzie** (2026-10-08): filtr ról i sortowanie (najlepsi / najwięcej za caps /
+      najtańsi).
 
 ### 3.4 Wspólne dla wszystkich trybów (po trzech trybach)
 
