@@ -678,6 +678,25 @@ const BONUS_FOULS = 4;
  * its second foul in the final two minutes of a quarter. */
 const LATE_PERIOD_SHARE = 2 / 12;
 const FOUL_OUT = 6;
+
+/**
+ * 2026-10-08, the user (season simulation: games too random, SD 16.2 around the engine's margin
+ * against ~13.8 in the NBA): garbage time. In the fourth quarter a big lead (`lead` by minutes left,
+ * after Cleaning the Glass's cut-offs) sends both benches in — each team's deepest players, by slot —
+ * and the leader coasts: `coast` off its make rate, onto the trailer's. The starters come back if
+ * the lead falls `back` points under the cut-off. Blowouts stop running away. Over 1,920 games of AI
+ * teams: the spread around the engine's margin 16.6 -> ~14 points, 30-point blowouts 8.5% -> ~5%,
+ * and with `aim` the game still meets the engine's margin (slope ~1.0).
+ */
+export const GARBAGE_TUNING = {
+  /** Lead that starts garbage time: [minutes left at least, lead at least]. */
+  lead: [[9, 25], [6, 20], [0, 15]] as [number, number][],
+  back: 8,
+  coast: 0.12,
+  /** Garbage time gives back part of a favourite's lead, so the nudge aims this much higher to
+   * still meet the engine's margin on average. */
+  aim: 1.2,
+};
 const TROUBLE_SOFTEN = 0.6;
 /** Fast breaks: after a steal most trips run, after a defensive rebound many. NBA play types
  * 2015-16 to 2024-25: transition is 15.7% of trips at 1.11 points, ~1.15 times a half-court trip;
@@ -1065,15 +1084,16 @@ interface PreparedGame {
 function prepareRosters(rosters: [GameRoster, GameRoster], margin: number, tiring: boolean): PreparedGame {
   const setup = gameSetup(rosters, tiring);
   const { gapAt } = setup;
+  const target = margin * GARBAGE_TUNING.aim;
   let nudge: number;
-  if (gapAt(MAX_NUDGE) <= margin) nudge = MAX_NUDGE;
-  else if (gapAt(-MAX_NUDGE) >= margin) nudge = -MAX_NUDGE;
+  if (gapAt(MAX_NUDGE) <= target) nudge = MAX_NUDGE;
+  else if (gapAt(-MAX_NUDGE) >= target) nudge = -MAX_NUDGE;
   else {
     let lo = -MAX_NUDGE;
     let hi = MAX_NUDGE;
     for (let i = 0; i < 18; i++) {
       const mid = (lo + hi) / 2;
-      if (gapAt(mid) < margin) lo = mid;
+      if (gapAt(mid) < target) lo = mid;
       else hi = mid;
     }
     nudge = (lo + hi) / 2;
@@ -1155,8 +1175,34 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     return { made, lastMissed };
   };
 
+  // Garbage time: each team's deepest five (by slot, least planned minutes first).
+  const plannedMinutes = (side: GameSide, p: Player) => STARTER_SLOTS.reduce((m, slot) => m + (rosters[side].slotMinutes[slot].find((e) => e.player === p)?.minutes ?? 0), 0);
+  const garbageFive = (side: GameSide): CourtPlayer[] | null => {
+    const free = rosters[side].players.filter((p) => !fouledOut[side].has(p)).sort((x, y) => plannedMinutes(side, x) - plannedMinutes(side, y));
+    if (free.length < 10) return null;
+    const five: Player[] = [];
+    for (const slot of STARTER_SLOTS) {
+      const pick = free.find((p) => !five.includes(p) && p.span.primaryPosition === slot) ?? free.find((p) => !five.includes(p));
+      if (!pick) return null;
+      five.push(pick);
+    }
+    return courtFor(courts[side], five);
+  };
+  let garbage = false;
+  const garbageCut = (k: number) => {
+    const minutesLeft = 48 - ((k + 1) * 48) / POSSESSIONS;
+    return GARBAGE_TUNING.lead.find(([m]) => minutesLeft >= m)?.[1] ?? Infinity;
+  };
+
   for (let k = 0; k < POSSESSIONS; k++) {
-    const both: [CourtPlayer[], CourtPlayer[]] = [schedule[0][k], schedule[1][k]];
+    if (k >= (POSSESSIONS * 3) / 4) {
+      const lead = Math.abs(score[0] - score[1]);
+      const cut = garbageCut(k);
+      if (!garbage && lead >= cut) garbage = true;
+      else if (garbage && lead < cut - GARBAGE_TUNING.back) garbage = false;
+    }
+    const benches = garbage ? [garbageFive(0), garbageFive(1)] : null;
+    const both: [CourtPlayer[], CourtPlayer[]] = [benches?.[0] ?? schedule[0][k], benches?.[1] ?? schedule[1][k]];
     lastCourt = both;
     for (const side of [0, 1] as GameSide[]) for (const c of both[side]) box[side][c.player.label].min += possessionMinutes;
     const o = (k % 2) as GameSide;
@@ -1259,7 +1305,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
       const setup = next !== 'putback' && !late && rng() < setupShare * (next === 'reset' ? RESET_ASSISTED : 1);
       const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare) - (late ? LATE_TUNING.penalty : 0) + (three && setup ? RIM_TUNING.collapse * clash.rimZ : 0);
       const pressure = clutch ? CLUTCH_TUNING.penalty * (1 - CLUTCH_TUNING.starKeep * starness(shooter.span)) : 0;
-      const p = Math.max(0.05, base + edge - pressure) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1);
+      const p = Math.max(0.05, base + edge - pressure) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1) * (garbage ? (score[o] > score[d] ? 1 - GARBAGE_TUNING.coast : 1 + GARBAGE_TUNING.coast) : 1);
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;

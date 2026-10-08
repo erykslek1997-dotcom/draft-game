@@ -236,7 +236,9 @@ export function simulateLiveSeason(teams: Team[], seed: string = seasonSeed(team
     computeDefensiveTalent(l.span) +
     (2 * (l.totals.stl + l.totals.blk)) / l.games -
     DPOY_POINTS_PER_ALLOWED * ((pointsAllowed.get(l.teamId) ?? fewestAllowed) - fewestAllowed);
-  // All-Stars lean on the numbers more than the record: a star on a losing team still goes.
+  // All-NBA (the user: "troszkę mocniejszy ale bez przesady"): the record counts less than for the
+  // MVP. All-Stars lean on the numbers more still: a star on a losing team goes.
+  const allNbaValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * (winPct.get(l.teamId) ?? 0) ** 0.3;
   const allStarValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * (0.8 + 0.4 * (winPct.get(l.teamId) ?? 0));
   return {
     standings,
@@ -245,7 +247,7 @@ export function simulateLiveSeason(teams: Team[], seed: string = seasonSeed(team
       mvp: best(eligible, mvpValue),
       dpoy: best(eligible, defenseValue),
       sixthMan: best(eligible.filter((l) => !l.starter), gameScorePerGame),
-      allNba: positionalTeams(eligible, mvpValue, 3),
+      allNba: positionalTeams(eligible, allNbaValue, 3),
       allDefense: positionalTeams(eligible, defenseValue, 2),
       allStars: allStarsFrom(eligible, allStarValue),
     },

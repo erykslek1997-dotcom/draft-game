@@ -432,6 +432,18 @@ Decyzje (2026-09-30):
       bazy. `boxRates.json` też się nie nadaje (suma daje TS 64% w 1962 — niepełne rzuty). Źródło:
       tabela „NBA League Averages” z Basketball-Reference albo statystyki drużyn z Kaggle — do
       dostarczenia przez Ciebie. Wpływa też na obecny silnik (era, TS względem ligi). (S)
+- [ ] **Symulacja sezonu na silniku** (plan 2026-10-08). Decyzje: jeden sezon na draft (ten sam
+      draft = ten sam sezon i playoffy, bez „zagraj jeszcze raz”); bez kalendarza na razie; All-Star
+      jako ciekawostka po sezonie (lista 24, bez meczu); All-NBA trochę mocniej ze statystyk niż MVP.
+  - Etap 1 (silnik): sezon 20 s → ~4 s (para drużyn przygotowana raz na wszystkie mecze; fit.ts
+    szybszy ~6×), playoffy na silniku (każdy mecz z ziarnem — da się obejrzeć akcja po akcji, wynik
+    ten sam), nagrody: MVP, DPOY, 6MOY, All-NBA 1–3, All-Defense 1–2, All-Stars 24, Finals MVP.
+    Garbage time w meczu (4. kwarta, duże prowadzenie: ławki, prowadzący zwalnia) — rozrzut meczu
+    wokół marginesu silnika 16,6 → 14,2 pkt (NBA ~13,8), margines bez zmian (nachylenie 0,99).
+    45 sezonów (9 lig AI): najlepszy bilans 57,9 W, najsłabszy 22,6 W, wygrane vs silnik RMSE 4,7;
+    faworyt serii 1–2 pkt 57%, 2–4 pkt 68%, 4+ pkt 86%; tytuł dla #1 oceny 36%.
+  - Etap 2: makiety UI (Standings / Stats / Awards / Playoffs + mecz na żywo). Etap 3: UI.
+  - Później: kalendarz (kolejki, All-Star w połowie sezonu, przebieg sezonu).
 - [ ] **Mecz na żywo na koniec Mini?** — do decyzji: w Mini jest 16 drużyn i wynik to miejsce
       w lidze. (M–L)
 - [ ] **Balans po symulacjach** — jak często AI wygrywa, Joker (częstość legendy i leszcza, cena),
