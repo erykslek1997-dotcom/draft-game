@@ -38,12 +38,25 @@ function useFit<T extends HTMLElement>(variants: ReactNode[], key: string): { re
     if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) setFit({ key: fullKey, level: level + 1 });
   });
 
+  // A wider box starts again from the full form. The element's own box can also shrink while its
+  // row stays put (a neighbour fills in later), and a late web font changes the text's width:
+  // both just re-check, which only ever steps down.
+  const [, setTick] = useState(0);
   useLayoutEffect(() => {
-    const box = ref.current?.parentElement;
-    if (!box || typeof ResizeObserver === 'undefined') return;
+    const el = ref.current;
+    const box = el?.parentElement;
+    if (!el || !box || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => setWidth(Math.round(box.clientWidth)));
     ro.observe(box);
-    return () => ro.disconnect();
+    const own = new ResizeObserver(() => setTick((t) => t + 1));
+    own.observe(el);
+    let live = true;
+    document.fonts?.ready.then(() => live && setTick((t) => t + 1));
+    return () => {
+      live = false;
+      ro.disconnect();
+      own.disconnect();
+    };
   }, []);
 
   return { ref, content: variants[level] };

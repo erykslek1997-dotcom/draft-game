@@ -118,7 +118,7 @@
 .at-pc .at-team-band-seg { border-bottom: 0; }
 .at-pc-head { display: flex; align-items: center; gap: 8px; min-width: 0; height: 52px; }
 .at-pc-head .bf-face { flex: none; box-shadow: 0 0 0 2px var(--calm-raised, #0b111b), 0 0 0 3.5px var(--ring, var(--at-line)); }
-.at-pc-statrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
+.at-pc-statrow { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 24px; }
 .at-pc-statrow .at-pc-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .at-pc-scout {
   flex: none; display: grid; place-items: center; width: 24px; height: 24px; padding: 0;
