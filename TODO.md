@@ -174,6 +174,9 @@ Otwarte tematy silnika — na później (bierzemy, gdy wyjdą w grze albo w symu
 
 ### Znane, zaakceptowane ograniczenia (nie odgrzewać bez nowych dowodów)
 
+- **Więcej gry pod koszem niż w NBA** (2026-10-08): punkty z pomalowanego 55.9 / 100 posiadań vs
+  NBA 47.7 — w składach all-time to normalne (decyzja użytkownika).
+
 - LeBron 2008-10 w Cleveland czytany jako szczyt kariery, ponad Miami — dziura architektoniczna
   (sygnał czysto defensywny); nazwany wyjątek odrzucony.
 - Systemowe niedoszacowanie PG/C sprzed 1997 (Russell, Cousy…) — realne, wymaga osobnej sesji.
@@ -201,6 +204,17 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
       (opisy, highlighty, % z gry w strefach tam, gdzie da się odtworzyć), spójność z danymi po
       1997 (KG, Webber, Malone 1996-98), przegląd razem z Tobą. Rozważyć też to samo dla
       rzutu za 3 przed 1979-80 (brak linii — West, Oscar, Havlicek). (M)
+
+## Kolejność prac (decyzja 2026-10-08)
+
+1. Decyzje (zrobione: PR #192, druga połowa wag, free agents do osobnej sesji, tempo).
+2. Domknięcie wyglądu: Draft Desk, konstruktor rotacji, wyniki Mini, ton wyniku według miejsca.
+3. Mecz bliżej silnika (mecz oddaje ~56% talentu, ~50% ataku/obrony, ~30% rotacji).
+4. Silnik podpięty pod symulację sezonu zasadniczego i opcjonalne mecze na żywo w play-offach;
+   statystyki graczy, nagrody indywidualne (MVP, DPOY, 6MOY…), All-Star, All-NBA, All-Defensive.
+5. Nowe mechaniki: koła ratunkowe + free agents (osobna sesja), tempo.
+6. Treść na później (daily dla Mini/All-Time, stół i poziomy AI w Draw Five, typy zagrań i krycia).
+7. Gotowość do wypuszczenia (playtesty, dane per tryb, flagi testowe).
 
 ## Etap 2. Symulacje — TERAZ
 
@@ -343,7 +357,7 @@ Decyzje (2026-09-30):
     Druga strona: co mecz pokaże inaczej niż silnik (np. faule zabierające minuty, kontry) — raport
     i decyzja, czy poprawiamy silnik czy mecz.
   - **Etap 4: testy obu kierunków w `npm test`** — korelacje składników + wielkość wyrównania.
-- [ ] **Paczka „mecz na żywo 2” (= etap 1 i część etapu 2 wyżej) — zaakceptowana 2026-10-02** (M–L). Raport
+- [x] **Paczka „mecz na żywo 2” (= etap 1 i część etapu 2 wyżej) — zrobione w etapie 1** (M–L). Raport
       przed/po przed merge'em. Na branchu (bez merge'a) czekają już: limit +2 pkt z kontekstu,
       udział w akcjach ponad realny tylko w słabym otoczeniu, liniowe zmęczenie od 36 min (1%/min).
   1. **Rosnąca krzywa zmęczenia, wspólna dla meczu i rotacji** — „im więcej minut, tym większa
@@ -367,7 +381,7 @@ Decyzje (2026-09-30):
   5. **Straty według składu** — dziś stałe 12% na akcję (13–14.5 na mecz w każdej piątce). Szansa
      ma wynikać ze strat tej piątki, przeliczonych na dziś względem ligi ich epoki.
   6. **Sufit asyst** — udział trafień z asystą max 85% → ~75% (najlepsze realne drużyny ~70%).
-- [ ] **Poprawić średnie ligowe sprzed 1980** — `awards/seasonBaselines.json` nie ma wielu sezonów
+- [x] **Poprawić średnie ligowe sprzed 1980** (zrobione, #177) — `awards/seasonBaselines.json` nie ma wielu sezonów
       (np. 1966-67, 1975-76) i ma błędne wartości (1965-66 TS 54.3%, powinno być ~49%); silnik
       bierze najbliższy znany sezon, więc Wilt/West 1965-68 i Kareem 1970-72 są liczeni od zawyżonej
       bazy. `boxRates.json` też się nie nadaje (suma daje TS 64% w 1962 — niepełne rzuty). Źródło:
@@ -427,6 +441,10 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 - [ ] **Wyłączyć narzędzia kalibracji przed wypuszczeniem** — `AUTO_FINISH_FOR_TESTING` i
       `TEAM_EXPORT_FOR_TESTING` = false w `src/components/testingFlags.ts`. (S)
 - [ ] **Playtest całego trybu + lista poprawek** (S)
+- [ ] **Free agents po drafcie — osobna sesja, razem z kołami ratunkowymi** (2026-10-08): po 9.
+      rundzie ekran „Free agency”: do 3 graczy spośród niewybranych, łącznie do 6 caps; ławka 10–12.
+      Pytania na tę sesję: (1) 6 caps osobny budżet czy z niewydanych caps? (2) czy ławka 10–12
+      liczy się do Bench score? (3) AI też podpisuje? (M)
 - [ ] **Koła ratunkowe — osobna sesja** (ustalone 2026-10-07, makieta zaakceptowana:
       `mock-cards2-*`). Każde raz na draft, przyciski w rzędzie filtrów w stylu „Affordable”:
   - **War Room** — przez jeden pick board pokazuje tylko ~10–12 graczy, których wybiera Twój
@@ -438,23 +456,18 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
     plotka bez nazwisk o tym, na co polują drużyny przed Twoim następnym pickiem („Three teams
     are said to be hunting centers”).
   - Odrzucone: 50/50 („nuda”), Insider („za mocne”). (M)
-- [ ] **Free agents po drafcie — propozycja do akceptu (2026-10-08)**: po 9. rundzie ekran „Free
-      agency”: każda drużyna (AI też, w odwrotnej kolejności tabeli draftu) podpisuje do 3 graczy
-      spośród niewybranych, łącznie do 6 caps, ponad limit 100.9. Dochodzą jako ławka 10–12, mogą
-      wejść do rotacji. Pytania: (1) 6 caps osobny budżet czy z niewydanych caps? (2) czy ławka 10–12
-      liczy się do Bench score? (3) AI też podpisuje? (M)
-- [ ] **Tempo — propozycja do akceptu (2026-10-08)**: dziś każdy mecz to 200 posiadań. W NBA tempo
-      drużyn różni się o SD ~2.4 posiadania (team_advanced 2015-25). Propozycja: tempo drużyny z jej
-      stylu — udział kontr (przechwyty, zbiórki w obronie), wiek/atletyzm, kreatorzy późnego zegara
-      (zwalniają) — mecz ma 2 × średnią z obu drużyn; tempo nie zmienia przewidywanej przewagi, tylko
-      liczbę akcji (wolniejsze tempo pomaga słabszemu). Pytania: (1) czy tempo ma być widoczne
-      w wynikach? (2) czy era gracza ma wpływ (lata 60. grały ~125 posiadań)? (M)
+- [ ] **Tempo meczu** (decyzja 2026-10-08: niewidoczne w wynikach, era ma wpływ). Dziś każdy mecz
+      to 200 posiadań; w NBA tempo drużyn różni się o SD ~2.4 posiadania (team_advanced 2015-25).
+      Tempo drużyny ze stylu (kontry: przechwyty, zbiórki w obronie, atletyzm; kreatorzy późnego zegara
+      zwalniają) i z ery graczy (np. lata 60. ~125 posiadań, przeliczone na dziś łagodnie); mecz ma
+      2 × średnią obu drużyn; przewaga oczekiwana bez zmian, zmienia się liczba akcji. (M)
 - [x] **Szukanie na boardzie** (2026-10-08): filtr ról i sortowanie (najlepsi / najwięcej za caps /
       najtańsi).
 
 ### 3.4 Wspólne dla wszystkich trybów (po trzech trybach)
 
-- [ ] **Mniejsza paczka danych** — dziś otwarcie trybu trwa ok. 5 s, na telefonie najdłużej. Jeden
+- [ ] **Mniejsza paczka danych** — menu już lekkie (2026-10-08: 3.8 MB → 238 kB, stałe składu
+      w `rosterConstants.ts`). Zostaje otwarcie trybu: dziś ok. 5 s, na telefonie najdłużej. Jeden
       plik JS: 16,4 MB (3,7 MB po kompresji) po kroku 1 (`compactJson.ts`, 2026-09-27). Dalej:
       rozdzielić dane — Draw Five i Mini Draft potrzebują tylko okien „peak” i gotowych ocen
       (precomputed), pełne okna i surowe dane dopiero All-Time Draft (dynamiczny `import()`); zmierzyć

@@ -487,11 +487,13 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // ~0, O-TAL and rim pressure about right. Spacing stays (the user: the game's spacing is too weak,
 // step 7.5); the others rescaled to keep the sum. Was: O-TAL .46, rim .10, playmaking .10,
 // self-creation .07, mismatch .09.
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.4;
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.432;
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.18;
 const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.09;
 const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.18;
-const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0.032;
+// 2026-10-08, the second half: the live game still gives self-creation nothing on top of O-TAL
+// (0.001 a point on 960 teams), so its share moves to O-TAL. Was .032 (O-TAL .40).
+const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0;
 /** 2026-09-05, user's explicit follow-up to `huntingPotential` (matchup.ts): playmaking and
  * self-creation already price individual SKILL into `offenseScore` on their own terms above.
  * "podpięte pod offense" turned out to mean something genuinely different, not a restatement of
