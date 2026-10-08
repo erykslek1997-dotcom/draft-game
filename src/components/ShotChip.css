@@ -10,7 +10,7 @@
 .bf-shots-meter {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin: 0 0 14px;
   padding: 8px 12px;
   border-radius: 8px;
@@ -63,10 +63,10 @@
 .bf-shot-chip {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   font-size: 11px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 1px 8px;
   border-radius: 999px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -84,18 +84,18 @@
 .bf-bars {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
   margin-bottom: 16px;
 }
 .bf-bar-row {
   display: grid;
   grid-template-columns: 64px 1fr 34px;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .bf-bar-label {
   font-size: 11px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
 }
@@ -140,7 +140,7 @@
   background: color-mix(in srgb, var(--at-accent) 22%, var(--at-paper));
   color: var(--at-ink);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
 }
 .bf-face img {
   width: 100%;
@@ -177,7 +177,7 @@
 .caps-amount {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }

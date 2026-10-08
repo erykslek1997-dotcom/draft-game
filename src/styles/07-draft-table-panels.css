@@ -2,16 +2,16 @@
 .at-table-scroll { overflow-x: auto; }
 table.at-draft-table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 10px; }
 table.at-draft-table th {
-  text-align: left; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--at-ink-faint); padding: 0 10px 8px; border-bottom: 1px solid var(--at-line); white-space: nowrap;
+  text-align: left; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--at-ink-faint); padding: 0 8px 8px; border-bottom: 1px solid var(--at-line); white-space: nowrap;
   position: sticky; top: 0; background: var(--at-paper-raised);
 }
 table.at-draft-table td {
-  padding: 8px 6px; border-bottom: 1px solid var(--at-line); vertical-align: middle;
+  padding: 8px 8px; border-bottom: 1px solid var(--at-line); vertical-align: middle;
   white-space: nowrap; text-align: center;
 }
-table.at-draft-table td.at-player-cell, table.at-draft-table td.at-fga-num { text-align: left; padding: 8px 10px; }
-table.at-draft-table td:first-child { text-align: left; padding: 8px 6px 8px 10px; }
+table.at-draft-table td.at-player-cell, table.at-draft-table td.at-fga-num { text-align: left; padding: 8px 8px; }
+table.at-draft-table td:first-child { text-align: left; padding: 8px 8px 8px 8px; }
 table.at-draft-table tbody tr:hover { background: color-mix(in srgb, var(--at-accent) 6%, transparent); }
 /* Player-mode only: fixed column widths (set via <colgroup> in DraftBoard.tsx) so PTS/AST/REB/
    STL/BLK/FG%/3PT%/FGA land in the exact same horizontal position on this summary row and on
@@ -25,11 +25,11 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
 .at-player-cell .at-span { display: block; font-weight: 400; color: var(--at-ink-faint); font-size: 11px; }
 .at-fga-num { font-variant-numeric: tabular-nums; color: var(--at-ink-soft); }
 .at-fga-num b { color: var(--at-ink); }
-.at-caption { font-size: 11px; color: var(--at-ink-faint); margin-top: 12px; line-height: 1.6; }
+.at-caption { font-size: 11px; color: var(--at-ink-faint); margin-top: 12px; line-height: 1.5; }
 
 .at-draft-btn {
   font: inherit; cursor: pointer; border: none; background: var(--at-accent); color: var(--at-accent-ink);
-  border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700;
+  border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 700;
 }
 .at-draft-btn:hover { filter: brightness(1.08); }
 /* 2026-08-16: the player list stays visible/browsable during a CPU turn now (see the JSX comment
@@ -52,17 +52,17 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
   font-size: 13px; color: var(--at-ink);
   background: color-mix(in srgb, var(--at-accent-2) 14%, var(--at-paper));
-  border: 1px solid var(--at-accent-2); border-radius: 10px;
-  padding: 9px 14px; margin-bottom: 12px;
+  border: 1px solid var(--at-accent-2); border-radius: 8px;
+  padding: 8px 12px; margin-bottom: 12px;
 }
 .at-budget-notice-btn {
   font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
-  border: none; border-radius: 999px; padding: 6px 14px;
+  border: none; border-radius: 999px; padding: 8px 12px;
   background: var(--at-accent-2); color: var(--at-accent-2-ink);
 }
 .at-why-btn {
   font: inherit; cursor: pointer; border: 1px solid var(--at-line); background: none; color: var(--at-ink-soft);
-  border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 700;
+  border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700;
 }
 .at-why-btn:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
 
@@ -88,10 +88,10 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
    the collapsed row it belongs to. */
 table.at-span-subtable { border-collapse: collapse; width: 100%; font-size: 12px; margin: 4px 0 10px 26px; }
 table.at-span-subtable th {
-  text-align: left; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
-  color: var(--at-ink-faint); padding: 0 8px 6px; border-bottom: 1px solid var(--at-line);
+  text-align: left; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--at-ink-faint); padding: 0 8px 8px; border-bottom: 1px solid var(--at-line);
 }
-table.at-span-subtable td { padding: 6px 8px; border-bottom: 1px solid var(--at-line); text-align: center; }
+table.at-span-subtable td { padding: 8px 8px; border-bottom: 1px solid var(--at-line); text-align: center; }
 table.at-span-subtable td:first-child, table.at-span-subtable td.at-player-cell { text-align: left; }
 /* 2026-08-16, user-reported: the main table's own PTS-FGA/TAL cells (`table.at-draft-table
    td.at-fga-num`, above) are LEFT-aligned, but that override is scoped to `.at-draft-table`
@@ -128,8 +128,8 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
      there clipped the right edge. */
   box-sizing: border-box;
   cursor: pointer;
-  gap: 4px 10px;
-  padding: 9px 6px;
+  gap: 4px 8px;
+  padding: 8px 8px;
   min-height: 30px;
   flex-wrap: wrap;
   /* no `overflow` / `transition` here: the content is minimal now (fits, or wraps), and ~140
@@ -149,12 +149,12 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
 /* position → thin outlined chip, like the Cap Sheet */
 .at-shell .at-draft-groups .pg-natural-position {
   flex-shrink: 0;
-  padding: 0 5px;
+  padding: 0 4px;
   border: 1px solid var(--at-line);
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   color: var(--at-ink-faint);
   opacity: 1;
 }
@@ -165,7 +165,7 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
   font-family: var(--mono);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   color: var(--at-ink-soft);
   white-space: nowrap;
 }
@@ -175,8 +175,8 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
   background: none;
   border: 1px solid var(--at-line);
   color: var(--at-ink-soft);
-  border-radius: 5px;
-  padding: 3px 11px;
+  border-radius: 4px;
+  padding: 4px 12px;
   font-size: 11px;
   font-weight: 600;
   filter: none;
@@ -196,7 +196,7 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
 .at-shell .at-draft-groups .span-table { font-size: 12px; }
 .at-shell .at-draft-groups .span-table th,
 .at-shell .at-draft-groups .span-table td {
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-top: 1px solid color-mix(in srgb, var(--at-line) 55%, transparent);
 }
 .at-shell .at-draft-groups .span-table td.tier-cell {
@@ -210,11 +210,11 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
   background: none;
   border: 1px solid var(--at-line);
   color: var(--at-ink-soft);
-  padding: 2px 9px;
+  padding: 2px 8px;
   font-size: 11px;
   font-weight: 600;
   border-radius: 4px;
-  line-height: 1.3;
+  line-height: 1.25;
   filter: none;
 }
 .at-shell .at-draft-groups .span-table .at-draft-btn:hover:not(:disabled),
@@ -225,7 +225,7 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
 .at-shell .at-draft-groups .span-table .at-draft-btn:disabled { opacity: 0.3; }
 .at-shell .at-draft-groups .span-table thead th {
   font-size: 11px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
   border-top: 0;
@@ -239,10 +239,10 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
   background: color-mix(in srgb, var(--at-accent) 6%, transparent);
 }
 
-.at-legend-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.at-legend-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .at-legend-toggle {
-  font: inherit; cursor: pointer; border: 1px solid var(--at-line); background: none; color: var(--at-ink-soft);
-  border-radius: 999px; padding: 6px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+  font: inherit; cursor: pointer; border: 1px solid var(--at-edge); background: none; color: var(--at-ink-soft);
+  border-radius: 999px; padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0;
   white-space: nowrap; margin-top: 12px; transition: color .15s, border-color .15s;
 }
 .at-legend-toggle:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
@@ -258,21 +258,21 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
    than 5 cards each internally wrapping its own heading like this did. No column count hardcoded
    against the array length, same as before. */
 .at-tag-legend {
-  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--at-line);
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--at-line);
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px;
 }
 /* Swatches moved off to the side of a wrapping heading (the old layout) and onto their own row
    above it — a small horizontal key strip that reads as "here's the color scale," followed by the
    heading and body getting the card's FULL width to themselves, so the heading only ever needs to
    wrap for being genuinely long, never for sharing space with the dots. */
 .at-tag-legend-item {
-  display: flex; flex-direction: column; gap: 6px; min-width: 0;
-  background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 10px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  background: var(--at-paper); border: 1px solid var(--at-line); border-radius: 8px; padding: 12px 12px;
 }
 .at-tag-legend-item .at-swatches { display: flex; flex-direction: row; gap: 4px; }
-.at-tag-legend-item .at-dot { width: 16px; height: 6px; border-radius: 3px; }
+.at-tag-legend-item .at-dot { width: 16px; height: 6px; border-radius: 4px; }
 .at-tag-legend-item h5 {
-  margin: 0; font-size: 12px; letter-spacing: 0.03em; font-weight: 700; color: var(--at-ink);
+  margin: 0; font-size: 12px; letter-spacing: 0.06em; font-weight: 700; color: var(--at-ink);
 }
 .at-tag-legend-item p { margin: 0; font-size: 12px; color: var(--at-ink-soft); line-height: 1.5; }
 
@@ -282,12 +282,12 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
    that; the old 480px max-height forced an inner vertical scrollbar to see the last several
    teams even though the row count can't grow. Horizontal scroll stays (9 round columns at
    108px min-width each is wider than most viewports). */
-.at-grid-scroll { overflow-x: auto; overflow-y: visible; border: 1px solid var(--at-line); border-radius: 10px; }
+.at-grid-scroll { overflow-x: auto; overflow-y: visible; border: 1px solid var(--at-line); border-radius: 8px; }
 table.at-ov-grid { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
 table.at-ov-grid thead th {
   position: sticky; top: 0; background: var(--at-pill); color: var(--at-pill-ink);
-  z-index: 2; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
-  padding: 9px 10px; text-align: left; white-space: nowrap;
+  z-index: 2; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 8px 8px; text-align: left; white-space: nowrap;
 }
 table.at-ov-grid thead th.at-rnd { text-align: center; min-width: 108px; }
 /* 2026-08-19, widened 168->236px alongside the full-name change below — the chip alone fit 168,
@@ -296,7 +296,7 @@ table.at-ov-grid thead th.at-rnd { text-align: center; min-width: 108px; }
 table.at-ov-grid thead th.at-teamcol { position: sticky; left: 0; z-index: 3; min-width: 236px; }
 table.at-ov-grid tbody td.at-teamcol {
   position: sticky; left: 0; background: var(--at-paper-raised); z-index: 1;
-  border-right: 1px solid var(--at-line); font-weight: 700; white-space: nowrap; padding: 8px 10px;
+  border-right: 1px solid var(--at-line); font-weight: 700; white-space: nowrap; padding: 8px 8px;
   /* 2026-08-16, user's own report (screenshot at a narrow width): this cell's content read as
      centred — it was never given its own `text-align`, so it fell through to the generic
      `tbody td` rule below (`text-align: center`), the one property that rule didn't already
@@ -311,7 +311,7 @@ table.at-ov-grid tbody tr.at-you td.at-teamcol { background: color-mix(in srgb, 
    flat neutral highlight this replaced didn't distinguish "the moment that's actually happening
    right now" from any other pick-in-progress state. */
 table.at-ov-grid tbody tr.at-clock td.at-teamcol { background: color-mix(in srgb, var(--at-accent-2) 16%, var(--at-paper-raised)); }
-table.at-ov-grid tbody td { padding: 8px 10px; border-top: 1px solid var(--at-line); white-space: nowrap; text-align: center; }
+table.at-ov-grid tbody td { padding: 8px 8px; border-top: 1px solid var(--at-line); white-space: nowrap; text-align: center; }
 table.at-ov-grid tbody td.at-pickcell { color: var(--at-ink); text-align: left; }
 table.at-ov-grid tbody td.at-empty { color: var(--at-ink-faint); font-style: italic; }
 table.at-ov-grid tbody td.at-onclock { color: var(--at-accent-2); font-weight: 700; font-style: italic; }
@@ -333,7 +333,7 @@ table.at-ov-grid tbody td.at-onclock::before {
    only inside the mobile media query below. */
 .at-grid-scroll-nav { display: none; }
 .at-grid-scroll-btn {
-  flex: none; width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--at-line);
+  flex: none; width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--at-edge);
   background: var(--at-pill); color: var(--at-pill-ink); font-size: 16px; line-height: 1;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
@@ -350,10 +350,10 @@ table.at-ov-grid tbody td.at-onclock::before {
    for a narrow column, independent of which scroll strategy the round columns use. */
 @media (max-width: 640px) {
   .at-grid-scroll-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  table.at-ov-grid thead th.at-rnd { min-width: 132px; padding: 7px 8px; font-size: 11px; }
-  table.at-ov-grid thead th.at-teamcol { width: 54px; min-width: 54px; padding: 7px 6px; }
-  table.at-ov-grid tbody td.at-teamcol { width: 54px; padding: 6px; white-space: normal; font-size: 12px; }
-  table.at-ov-grid tbody td.at-pickcell { padding: 5px 8px; font-size: 11px; }
+  table.at-ov-grid thead th.at-rnd { min-width: 132px; padding: 8px 8px; font-size: 11px; }
+  table.at-ov-grid thead th.at-teamcol { width: 54px; min-width: 54px; padding: 8px 8px; }
+  table.at-ov-grid tbody td.at-teamcol { width: 54px; padding: 8px; white-space: normal; font-size: 12px; }
+  table.at-ov-grid tbody td.at-pickcell { padding: 4px 8px; font-size: 11px; }
   .at-name-full { display: none; }
   .at-name-short { display: inline; }
   .at-team-chip { min-width: 0; height: 17px; padding: 0 4px; font-size: 11px; margin: 0 0 3px; display: inline-flex; }
@@ -365,7 +365,7 @@ table.at-ov-grid tbody td.at-onclock::before {
 }
 
 /* ---- Team panel (own roster during the draft) ---- */
-.at-cap-meter { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.at-cap-meter { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .at-cap-track { flex: 1; min-width: 160px; height: 9px; border-radius: 999px; background: var(--at-line); overflow: hidden; }
 .at-cap-fill { height: 100%; background: var(--at-accent); border-radius: 999px; }
 .at-cap-label {
@@ -382,10 +382,10 @@ table.at-ov-grid tbody td.at-onclock::before {
    vertical rhythm matters even more now than it did at the old 4-column width. */
 table.at-roster-table { border-collapse: collapse; width: 100%; font-size: 13px; }
 table.at-roster-table th {
-  text-align: left; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--at-ink-faint); padding: 0 8px 6px; border-bottom: 1px solid var(--at-line);
+  text-align: left; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--at-ink-faint); padding: 0 8px 8px; border-bottom: 1px solid var(--at-line);
 }
-table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-line); vertical-align: middle; }
+table.at-roster-table td { padding: 8px 8px; border-bottom: 1px solid var(--at-line); vertical-align: middle; }
 
 /* 2026-09-14, user-reported live: the Player cell's new face-card avatar (DraftBoard.tsx) — same
    `.bf-face` small headshot the Draft tab's cards/sidebar/Rotation rows already use, just inline
@@ -393,7 +393,7 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
 .at-roster-player-cell { display: flex; align-items: center; gap: 8px; }
 
 .at-empty-slot { color: var(--at-ink-faint); font-style: italic; }
-.at-placeholder { color: var(--at-ink-soft); font-size: 13px; padding: 30px 10px; text-align: center; }
+.at-placeholder { color: var(--at-ink-soft); font-size: 13px; padding: 32px 8px; text-align: center; }
 
 /* ---- Team tab's inline span dropdown — 2026-08-16, user's own two-step ask: span selection
    first moved off its own dedicated screen into the Team tab, then (same-day follow-up, "span na
@@ -405,6 +405,6 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
    D-POR/SPC/DUR) — capped so it no longer crowds them out, and its own padding trimmed to match
    the table's own tightened row rhythm from the same pass. */
 .at-span-picker-select {
-  max-width: 260px; font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 999px;
+  max-width: 260px; font: inherit; font-size: 13px; padding: 4px 8px; border-radius: 999px;
   border: 1px solid var(--at-line); background: var(--at-pill); color: var(--at-pill-ink);
 }

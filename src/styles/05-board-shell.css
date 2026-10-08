@@ -50,7 +50,7 @@
   --at-ink-faint: #6b7f98; /* 2026-10-08 text audit: 4.6:1 on cards (was #48586d, 2.6:1) */
   --at-pill: #0d151f;
   --at-pill-ink: #6cc3ff;
-  --at-line: #16222f;
+  --at-line: #182433;
   --at-brand-blue: #1D428A;
   --at-brand-red: #C8102E;
   --at-accent: color-mix(in srgb, var(--at-brand-blue) 40%, #5ec8ff 60%);
@@ -62,7 +62,7 @@
      older flat navy. Green/red remain reserved for semantic outcomes such as a favorable or
      unfavorable matchup, instead of competing with scores. */
   --at-t1: #0c1a2c; --at-t1-ink: #7f96b3;
-  --at-t2: #102846; --at-t2-ink: #a9c7e8;
+  --at-t2: #0a2947; --at-t2-ink: #a9c7e8;
   --at-t3: #14395f; --at-t3-ink: #cfe3f7;
   --at-t4: #184c7c; --at-t4-ink: #eef4fb;
   --at-t5: #2f74b8; --at-t5-ink: #ffffff;
@@ -124,8 +124,8 @@
    layout next to each other. */
 .at-pick-badge {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 22px; height: 20px; padding: 0 5px; margin-right: 8px;
-  border-radius: 5px; background: var(--at-pill); color: var(--at-ink-soft);
+  min-width: 22px; height: 20px; padding: 0 4px; margin-right: 8px;
+  border-radius: 4px; background: var(--at-pill); color: var(--at-ink-soft);
   font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 /* 2026-09-11, user-reported live ("takie dwa kwadraty wyglądają bardzo archaicznie" — Szybka 5's
@@ -137,11 +137,11 @@
    DraftLottery.tsx, so the uplift applies everywhere this chip appears, not just Szybka 5. */
 .at-team-chip {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 34px; height: 22px; padding: 0 7px; margin-right: 8px;
+  min-width: 34px; height: 22px; padding: 0 8px; margin-right: 8px;
   border-radius: 999px;
   background: linear-gradient(155deg, color-mix(in srgb, white 16%, var(--at-accent)), var(--at-accent) 70%);
   color: var(--at-accent-ink);
-  font-size: 11px; font-weight: 800; letter-spacing: 0.03em;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 0, 0, 0.22);
 }
 
@@ -157,7 +157,7 @@
 .at-cond {
   font-family: inherit;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -174,8 +174,8 @@
 .at-board-brand {
   text-align: center;
   font-size: 32px;
-  letter-spacing: 0.01em;
-  padding: 24px 0 22px;
+  letter-spacing: 0;
+  padding: 24px 0 24px;
   margin-bottom: 12px;
   border-bottom: 1px solid var(--at-line);
   position: relative;
@@ -197,7 +197,7 @@
   font: inherit; cursor: pointer; border: 1px solid var(--at-line);
   background: var(--at-paper-raised); color: var(--at-ink-soft);
   border-radius: 999px; padding: 8px 16px;
-  font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
+  font-size: 13px; font-weight: 700; letter-spacing: 0;
   transition: background .15s, color .15s, border-color .15s;
 }
 .at-tab-btn.at-active { background: var(--at-brand-blue); color: #ffffff; border-color: var(--at-brand-blue); }
@@ -205,7 +205,7 @@
 
 .at-card {
   background: var(--at-paper-raised); border: 1px solid var(--at-line);
-  border-radius: 16px; padding: 20px 22px 18px; box-shadow: var(--at-shadow);
+  border-radius: 16px; padding: 16px 24px 16px; box-shadow: var(--at-shadow);
 }
 .at-panel-title { font-size: 32px; margin: -4px 0 14px; }
 
@@ -229,7 +229,7 @@
    threshold matches that same JS breakpoint exactly — `.rotation-builder`'s own 820px max-width
    and the Team table's 11 columns both want real room, more than a three-way split would leave. */
 @media (min-width: 1600px) {
-  .at-merge-row { display: flex; align-items: flex-start; gap: 20px; }
+  .at-merge-row { display: flex; align-items: flex-start; gap: 16px; }
   .at-merge-draft { flex: 1 1 0; min-width: 0; margin-bottom: 0; }
   .at-merge-team-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
   /* Both panels are always showing side by side at this width, so switching between them no
@@ -243,7 +243,7 @@
 .at-draft-workspace {
   display: flex;
   align-items: flex-start;
-  gap: 18px;
+  gap: 16px;
 }
 .at-draft-main {
   flex: 1;
@@ -255,12 +255,12 @@
   position: sticky;
   top: 12px;
   border: 1px solid var(--at-line);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 12px;
   background: var(--at-paper-raised);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .at-draft-sidebar-head {
   display: flex;
@@ -298,13 +298,13 @@
 .at-draft-sidebar-slots {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .at-sidebar-slot {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 8px 8px;
   border: 1px dashed var(--at-line);
   border-radius: 8px;
   min-height: 38px;
@@ -339,14 +339,14 @@
 .at-draft-sidebar-bench {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--at-line);
 }
 .at-draft-sidebar-bench-label {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
 }
@@ -365,4 +365,10 @@
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
+}
+
+:root {
+  /* 2026-10-08 graphics audit: the edge of anything you can press or type in, 2.9:1 on the dark
+     surfaces (lines and cards keep --at-line). On :root so portalled sheets and modals get it too. */
+  --at-edge: #45607d;
 }

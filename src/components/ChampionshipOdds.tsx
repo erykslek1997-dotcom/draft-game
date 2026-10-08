@@ -2,6 +2,7 @@ import type { TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import type { FitScoreResult } from '../engine/fit';
 import type { Team } from '../engine/types';
 import { teamLabel } from '../engine/teamNames';
+import { FitTeam } from './FitName';
 
 /** Same red→green judgment scale as ResultsScreen's metric bars. */
 function qualityColor(v: number): string {
@@ -135,7 +136,7 @@ export default function ChampionshipOdds({
             return (
               <div key={r.teamId} className={`title-odds-field${isOwn ? ' is-own' : ''}`}>
                 <span className="title-odds-rank">{byOdds.indexOf(r) + 1}</span>
-                <span className="title-odds-name">{t ? teamLabel(t) : r.teamId}</span>
+                <FitTeam className="title-odds-name" name={t ? teamLabel(t) : r.teamId} />
                 <span className="title-odds-track"><span style={{ width: `${Math.max(1, (r.championshipProbability / topOdds) * 100)}%` }} /></span>
                 <b>{pct(r.championshipProbability)}</b>
               </div>

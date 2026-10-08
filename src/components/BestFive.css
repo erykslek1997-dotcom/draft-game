@@ -16,7 +16,7 @@
 }
 .bf-subhead-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: baseline;
 }
 
@@ -31,8 +31,8 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.03em;
-  padding: 1px 7px;
+  letter-spacing: 0.06em;
+  padding: 1px 8px;
   border-radius: 4px;
   background: color-mix(in srgb, var(--at-accent) 24%, transparent);
   color: var(--at-ink);
@@ -42,7 +42,7 @@
 .bf-season--sm {
   font-size: 11px;
   font-weight: 700;
-  padding: 0 5px;
+  padding: 0 4px;
 }
 
 /* ---- slot row ---- */
@@ -56,12 +56,12 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   align-items: center;
-  padding: 10px 6px 9px;
+  padding: 8px 8px 8px;
   min-height: 104px;
   border: 1px solid var(--at-line);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--at-paper);
   color: var(--at-ink-soft);
   cursor: pointer;
@@ -81,7 +81,7 @@
 .bf-slot-pos {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--at-ink-faint);
 }
 .bf-slot--filled .bf-slot-pos {
@@ -90,7 +90,7 @@
 .bf-slot-name {
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--at-ink);
 }
 .bf-slot--filled .bf-slot-name {
@@ -104,7 +104,7 @@
   font-size: 11px;
   color: var(--at-ink-faint);
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 .bf-slot-clear {
   position: absolute;
@@ -113,7 +113,7 @@
   font-size: 11px;
   line-height: 1;
   color: var(--at-ink-faint);
-  padding: 3px;
+  padding: 4px;
 }
 .bf-slot-clear:hover {
   color: var(--at-brand-red);
@@ -126,7 +126,7 @@
 .bf-picker-head {
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   color: var(--at-ink-faint);
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -135,8 +135,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 11px 8px 10px;
+  gap: 4px;
+  padding: 12px 8px 8px;
   border: 1px solid var(--at-line);
   border-radius: 8px;
   background: var(--at-paper);
@@ -156,7 +156,7 @@
 .bf-pool-name {
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--at-ink);
 }
 .bf-pool-meta {
@@ -171,7 +171,7 @@
   font-weight: 700;
   color: var(--at-ink);
   font-variant-numeric: tabular-nums;
-  line-height: 1.15;
+  line-height: 1.25;
 }
 .bf-pool-box {
   font-size: 11px;
@@ -198,7 +198,7 @@
   margin-right: auto;
 }
 .bf-submit {
-  padding: 8px 20px;
+  padding: 8px 16px;
   font-size: 13px;
 }
 
@@ -216,7 +216,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-radius: 12px;
   margin-bottom: 16px;
   border: 1px solid var(--at-line);
@@ -224,7 +224,7 @@
 .bf-grade-label {
   font-size: 24px;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
 }
 .bf-grade-blurb {
   font-size: 13px;
@@ -275,7 +275,7 @@
 .bf-glossary-toggle {
   border: none;
   background: none;
-  padding: 0 0 0 6px;
+  padding: 0 0 0 8px;
   font: inherit;
   font-size: 11px;
   color: var(--at-accent);
@@ -287,15 +287,15 @@
   margin: 8px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 8px 12px;
   border: 1px solid var(--at-line);
   border-radius: 8px;
 }
 .bf-glossary dt {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
 }
@@ -309,15 +309,15 @@
 /* ---- why this score ---- */
 .bf-why {
   margin: 0 0 18px;
-  padding: 12px 14px;
+  padding: 12px 12px;
   border: 1px solid var(--at-line);
-  border-radius: 10px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--at-ink) 3%, transparent);
 }
 .bf-why-head {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
   margin-bottom: 8px;
@@ -325,7 +325,7 @@
 .bf-why-line {
   margin: 0 0 7px;
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--at-ink-soft);
 }
 .bf-why-line:last-child {
@@ -356,7 +356,7 @@
   align-items: baseline;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
   margin-bottom: 8px;
@@ -370,16 +370,16 @@
 .bf-cmp {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr);
-  gap: 4px 6px;
+  gap: 4px 8px;
   align-items: stretch;
 }
 .bf-cmp-head {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
-  padding: 0 10px 2px;
+  padding: 0 8px 2px;
 }
 .bf-cmp-pos {
   display: flex;
@@ -388,7 +388,7 @@
   font-weight: 700;
   font-size: 12px;
   color: var(--at-ink-faint);
-  border-radius: 6px;
+  border-radius: 8px;
 }
 .bf-cmp-pos--hit {
   color: var(--at-t6);
@@ -399,7 +399,7 @@
   justify-content: center;
   gap: 1px;
   min-width: 0;
-  padding: 7px 10px;
+  padding: 8px 8px;
   border-radius: 8px;
   border: 1px solid var(--at-line);
 }
@@ -413,13 +413,13 @@
 .bf-cmp-name {
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
   color: var(--at-ink);
   overflow-wrap: anywhere;
 }
 @media (max-width: 460px) {
   .bf-cmp { grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr); }
-  .bf-cmp-cell { padding: 6px 8px; }
+  .bf-cmp-cell { padding: 8px 8px; }
   .bf-cmp-name { font-size: 12px; }
 }
 .bf-cmp-season {
@@ -430,20 +430,20 @@
 .bf-cmp-same {
   display: flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 8px;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-t6);
 }
 
 /* 2026-09-26: step 1 of the learning path — the cap explained where it is spent, a submit button
    that says why it can't be pressed yet, and the team chips the draft cards carry. */
-.bf-caps-note { display: flex; align-items: flex-start; line-height: 1.5; gap: 6px; margin: 6px 0 12px; font-size: 12px; color: var(--at-ink-faint); }
+.bf-caps-note { display: flex; align-items: flex-start; line-height: 1.5; gap: 8px; margin: 6px 0 12px; font-size: 12px; color: var(--at-ink-faint); }
 .bf-submit-hint { font-size: 12px; color: var(--at-ink-faint); }
 .bf-submit-hint.is-ready { color: var(--at-good, #7fd68a); }
-.bf-submit-row { flex-wrap: wrap; align-items: center; gap: 8px 14px; }
-.bf-pool-teams { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+.bf-submit-row { flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.bf-pool-teams { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 
 /* ---- the deal (2026-09-26, the user: "brakuje tego dopaminowego hitu niczym z kasyna") ----
    A position's five turn over one after another the first time it comes up; a slot not dealt yet
@@ -457,7 +457,7 @@
 
 /* ---- the slot machine (2026-09-26: "jak w kasynie na maszynie") ---- */
 .bf-machine { cursor: pointer; outline: none; }
-.bf-machine:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 4px; border-radius: 10px; }
+.bf-machine:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 4px; border-radius: 8px; }
 .bf-reel {
   --reel-h: 150px;
   position: relative;
@@ -506,13 +506,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0 6px;
+  gap: 8px;
+  padding: 0 8px;
   text-align: center;
 }
 /* 2026-09-28 playtest: two lines instead of an ellipsis ("S. Gilgeous-Ale…") — the card has the room. */
 .bf-reel-name {
-  font-size: 13px; font-weight: 700; color: var(--at-ink); max-width: 100%; text-align: center; line-height: 1.2;
+  font-size: 13px; font-weight: 700; color: var(--at-ink); max-width: 100%; text-align: center; line-height: 1.25;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere;
 }
 .bf-reel-season { font-size: 11px; color: var(--at-ink-soft); }
@@ -528,7 +528,7 @@
 .bf-slot--hidden { cursor: default; opacity: 0.75; border-style: dashed; }
 .bf-slot--hidden .bf-slot-name { color: var(--at-ink-faint); }
 .bf-face--card {
-  border-radius: 6px;
+  border-radius: 8px;
   background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 18%, var(--at-paper)) 0 5px, var(--at-paper) 5px 10px);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -538,7 +538,7 @@
 .bf-slot { min-width: 0; }
 .bf-slot-name { overflow-wrap: break-word; }
 @media (max-width: 460px) {
-  .bf-slot { padding-left: 3px; padding-right: 3px; }
+  .bf-slot { padding-left: 4px; padding-right: 4px; }
   .bf-slot-name { font-size: 11px; letter-spacing: -0.02em; max-width: 100%; overflow: hidden; overflow-wrap: normal; text-overflow: ellipsis; }
 }
 @media (max-width: 460px) {
@@ -570,8 +570,8 @@
 /* 2026-09-27, the user: "4 sloty, obok dźwignia. Efekt kasynowego automatu": the four reels sit
    in one row inside a cabinet, the lever stands on its right. */
 .bf-cabinet {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 10px 12px 12px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 8px 12px 12px;
   border: 1px solid color-mix(in srgb, var(--at-accent) 35%, var(--at-line));
   border-radius: 16px;
   background:
@@ -582,20 +582,20 @@
 .bf-reels {
   flex: 1; min-width: 0;
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
-  padding: 8px; border-radius: 10px;
+  padding: 8px; border-radius: 8px;
   background: var(--at-paper);
   box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
 }
 .bf-cabinet .bf-reel { --reel-h: 136px; }
 .bf-cabinet .spin-lever { padding: 4px 2px 2px; }
 @media (max-width: 460px) {
-  .bf-cabinet { gap: 6px; padding: 10px 6px 10px 8px; }
-  .bf-reels { gap: 5px; padding: 6px; }
+  .bf-cabinet { gap: 8px; padding: 8px 8px 8px 8px; }
+  .bf-reels { gap: 4px; padding: 8px; }
   .bf-cabinet .bf-reel { --reel-h: 112px; }
   /* 2026-09-27 UI audit: "I. Tho…" — the name wraps onto a second line instead of being cut. */
-  .bf-cabinet .bf-reel-name { font-size: 11px; letter-spacing: -0.03em; white-space: normal; overflow-wrap: break-word; line-height: 1.15; text-align: center; }
+  .bf-cabinet .bf-reel-name { font-size: 11px; letter-spacing: -0.02em; white-space: normal; overflow-wrap: break-word; line-height: 1.25; text-align: center; }
   .bf-cabinet .bf-reel-season { font-size: 11px; }
-  .bf-cabinet .bf-reel-item { padding: 0 3px; }
+  .bf-cabinet .bf-reel-item { padding: 0 4px; }
 }
 
 /* 2026-09-27: picks are final, so a card that would leave the open positions unfillable under the
@@ -603,7 +603,7 @@
 .bf-pool-card--blocked { opacity: 0.42; filter: grayscale(0.7); cursor: not-allowed; position: relative; }
 .bf-pool-over {
   position: absolute; top: 8px; left: 8px; right: 8px; z-index: 1;
-  font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--at-accent-2, #ff8a9a); text-align: center;
 }
 .bf-slot--filled:disabled { opacity: 1; cursor: default; }
@@ -631,7 +631,7 @@
 @media (prefers-reduced-motion: reduce) { .bf-reel-card { animation: none; } }
 .bf-axis-best { margin-top: 4px; }
 .bf-axis-best > span { text-align: center; font-size: 11px; color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
-.bf-axis-best::before { content: 'Best five on the board'; grid-column: 1 / -1; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); text-align: center; }
+.bf-axis-best::before { content: 'Best five on the board'; grid-column: 1 / -1; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-faint); text-align: center; }
 
 /* 2026-09-28: the one hint left in the Slot Machine — what the five is missing (dealHint). */
 .bf-deal-hint { margin: 2px 0 10px; font-size: 13px; color: var(--at-accent); }
@@ -643,12 +643,12 @@
    --------------------------------------------------------------------------- */
 .bf-daily-intro { display: grid; gap: 8px; margin: 12px 0; }
 @media (min-width: 720px) { .bf-daily-intro { grid-template-columns: 1fr 1fr; } }
-.bf-daily-banner { display: flex; flex-direction: column; gap: 3px; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--at-line); background: var(--at-paper-raised, var(--at-paper)); }
+.bf-daily-banner { display: flex; flex-direction: column; gap: 4px; padding: 12px 12px; border-radius: 8px; border: 1px solid var(--at-line); background: var(--at-paper-raised, var(--at-paper)); }
 .bf-daily-banner-k { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
 .bf-daily-banner-v { font-size: 16px; font-weight: 800; color: var(--at-ink); }
-.bf-daily-banner-d { font-size: 12px; color: var(--at-ink-soft); line-height: 1.45; }
+.bf-daily-banner-d { font-size: 12px; color: var(--at-ink-soft); line-height: 1.5; }
 .bf-daily-banner-d b { color: var(--at-ink); }
-.bf-daily-banner-chip { font-size: 11px; font-weight: 700; border: 1px solid currentColor; border-radius: 5px; padding: 0 5px; margin-left: 4px; color: var(--at-gold, #ffd479); vertical-align: 2px; }
+.bf-daily-banner-chip { font-size: 11px; font-weight: 700; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 4px; color: var(--at-gold, #ffd479); vertical-align: 2px; }
 .bf-daily-banner--joker { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 55%, var(--at-line)); background: linear-gradient(135deg, color-mix(in srgb, var(--at-gold, #ffd479) 16%, var(--at-paper)), var(--at-paper) 70%); }
 .bf-daily-banner--joker .bf-daily-banner-k { color: var(--at-gold, #ffd479); }
 .bf-daily-banner--opp .bf-daily-banner-k { color: var(--at-accent-2, #d94a60); }
@@ -656,7 +656,7 @@
 .bf-slot-joker { margin-left: 3px; font-size: 11px; }
 
 .bf-joker-card {
-  flex-direction: row; align-items: center; gap: 12px; width: 100%; margin-top: 8px; padding: 10px 12px; text-align: left; position: relative;
+  flex-direction: row; align-items: center; gap: 12px; width: 100%; margin-top: 8px; padding: 8px 12px; text-align: left; position: relative;
   border: 1.5px solid var(--at-gold, #ffd479);
   background: linear-gradient(135deg, color-mix(in srgb, var(--at-gold, #ffd479) 22%, var(--at-paper)), var(--at-paper) 70%);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--at-gold, #ffd479) 12%, transparent), 0 6px 18px color-mix(in srgb, var(--at-gold, #ffd479) 14%, transparent);
@@ -664,22 +664,22 @@
 .bf-joker-card:hover { border-color: var(--at-gold, #ffd479); }
 .bf-joker-card .bf-joker-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .bf-joker-card .bf-pool-name { color: var(--at-ink); }
-.bf-joker-tag { position: absolute; top: 6px; right: 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; color: var(--at-gold, #ffd479); }
+.bf-joker-tag { position: absolute; top: 6px; right: 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; color: var(--at-gold, #ffd479); }
 .bf-joker-card .bf-pool-meta { align-self: flex-end; }
 .bf-joker-card.is-locked { filter: grayscale(1); opacity: 0.6; box-shadow: none; border-style: dashed; cursor: not-allowed; }
 .bf-joker-why { font-size: 12px; font-weight: 700; color: var(--at-bad, #d94a60); }
-.bf-joker-line { margin: 10px 0 0; padding: 7px 11px; border-left: 3px solid var(--at-gold, #ffd479); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--at-ink-soft); background: color-mix(in srgb, var(--at-gold, #ffd479) 8%, var(--at-paper)); }
+.bf-joker-line { margin: 10px 0 0; padding: 8px 12px; border-left: 3px solid var(--at-gold, #ffd479); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--at-ink-soft); background: color-mix(in srgb, var(--at-gold, #ffd479) 8%, var(--at-paper)); }
 .bf-joker-line.is-took { color: var(--at-ink); }
 
 .bf-live { border: 1px solid var(--at-line); border-radius: 12px; padding: 12px; margin-bottom: 14px; background: var(--at-paper); }
 .bf-live-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.bf-live-title { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-accent-2, #d94a60); }
+.bf-live-title { font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent-2, #d94a60); }
 .bf-live-sub { font-size: 12px; color: var(--at-ink-soft); }
-.bf-live-board { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--at-ink) 5%, var(--at-paper)); }
+.bf-live-board { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-top: 10px; padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--at-ink) 5%, var(--at-paper)); }
 .bf-live-board > div:first-child, .bf-live-right { display: flex; flex-direction: column; }
 .bf-live-right { text-align: right; }
-.bf-live-team { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-ink-faint); }
-.bf-live-pts { font-size: 32px; font-weight: 800; line-height: 1.1; color: var(--at-ink); font-variant-numeric: tabular-nums; }
+.bf-live-team { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); }
+.bf-live-pts { font-size: 32px; font-weight: 800; line-height: 1; color: var(--at-ink); font-variant-numeric: tabular-nums; }
 .bf-live-clock { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--at-ink-faint); }
 .bf-live-clock b { font-size: 13px; color: var(--at-ink); }
 .bf-live-wp { margin-top: 8px; }
@@ -689,29 +689,29 @@
 .bf-live-qs { display: grid; grid-template-columns: 48px repeat(4, 1fr) 44px; gap: 2px; margin-top: 8px; font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
 .bf-live-qs > span { padding: 2px 0; border-radius: 4px; background: color-mix(in srgb, var(--at-ink) 5%, var(--at-paper)); color: var(--at-ink-soft); }
 .bf-live-qs > span:first-child, .bf-live-qs .is-head { background: none; color: var(--at-ink-faint); font-weight: 700; }
-.bf-live-qs .is-name { text-align: left; padding-left: 6px; font-weight: 800; color: var(--at-ink); }
+.bf-live-qs .is-name { text-align: left; padding-left: 8px; font-weight: 800; color: var(--at-ink); }
 .bf-live-qs .is-total { font-weight: 800; color: var(--at-ink); }
-.bf-live-feed { display: flex; flex-direction: column; gap: 3px; height: 190px; overflow: hidden; margin-top: 10px; -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
-.bf-live-feed > div { display: grid; grid-template-columns: 40px 1fr auto; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 12px; color: var(--at-ink-soft); background: color-mix(in srgb, var(--at-ink) 4%, var(--at-paper)); animation: bf-live-pop 0.25s ease-out; }
+.bf-live-feed { display: flex; flex-direction: column; gap: 4px; height: 190px; overflow: hidden; margin-top: 10px; -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
+.bf-live-feed > div { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; padding: 4px 8px; border-radius: 8px; font-size: 12px; color: var(--at-ink-soft); background: color-mix(in srgb, var(--at-ink) 4%, var(--at-paper)); animation: bf-live-pop 0.25s ease-out; }
 .bf-live-feed > .is-you { border-left: 2px solid var(--at-accent); }
 .bf-live-feed > .is-them { border-left: 2px solid var(--at-accent-2, #d94a60); }
 .bf-live-feed > .is-joker { border-left: 2px solid var(--at-gold, #ffd479); background: linear-gradient(90deg, color-mix(in srgb, var(--at-gold, #ffd479) 16%, var(--at-paper)), var(--at-paper)); color: var(--at-ink); }
 .bf-live-feed > .is-quarter { display: block; text-align: center; background: none; font-weight: 800; color: var(--at-gold, #ffd479); }
 .bf-live-t, .bf-live-s { color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
 @keyframes bf-live-pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-.bf-live-final { margin: 10px 0 0; padding: 10px; border-radius: 10px; text-align: center; font-weight: 800; color: var(--at-ink); background: color-mix(in srgb, var(--at-good, #58c28a) 14%, var(--at-paper)); border: 1px solid color-mix(in srgb, var(--at-good, #58c28a) 45%, var(--at-line)); }
+.bf-live-final { margin: 10px 0 0; padding: 8px; border-radius: 8px; text-align: center; font-weight: 800; color: var(--at-ink); background: color-mix(in srgb, var(--at-good, #58c28a) 14%, var(--at-paper)); border: 1px solid color-mix(in srgb, var(--at-good, #58c28a) 45%, var(--at-line)); }
 .bf-live-final.is-loss { background: color-mix(in srgb, var(--at-bad, #d94a60) 12%, var(--at-paper)); border-color: color-mix(in srgb, var(--at-bad, #d94a60) 40%, var(--at-line)); }
 .bf-live-final small { display: block; margin-top: 3px; font-weight: 600; color: var(--at-ink-soft); }
 .bf-live-ctl { display: flex; gap: 8px; margin-top: 10px; }
 .bf-live-ctl > button { flex: 1; }
 .bf-live-box { margin-top: 10px; }
-.bf-live-box summary { cursor: pointer; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-ink-faint); }
+.bf-live-box summary { cursor: pointer; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); }
 .bf-live-table-wrap { overflow-x: auto; }
 .bf-live-table tfoot th, .bf-live-table tfoot td { font-weight: 800; color: var(--at-ink); border-bottom: none; }
 .bf-live-table .bf-live-pct td { font-weight: 600; color: var(--at-ink-faint); }
 .bf-live-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .bf-live-table caption { text-align: left; font-size: 11px; font-weight: 800; color: var(--at-ink-faint); padding-bottom: 2px; }
-.bf-live-table th, .bf-live-table td { padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--at-line); color: var(--at-ink-soft); }
+.bf-live-table th, .bf-live-table td { padding: 4px 4px; text-align: right; border-bottom: 1px solid var(--at-line); color: var(--at-ink-soft); }
 .bf-live-table thead th { font-weight: 700; color: var(--at-ink-faint); }
 .bf-live-table tbody th { text-align: left; font-weight: 700; color: var(--at-ink); }
 .bf-live-table thead th:first-child { text-align: left; }
@@ -721,7 +721,7 @@
 /* Streak rewards — cosmetic, by best streak. */
 .bf-streak-track { margin-top: 12px; }
 .bf-streak-tiers { display: grid; grid-template-columns: repeat(5, 1fr); }
-.bf-streak-tier { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding-top: 22px; font-size: 11px; color: var(--at-ink-faint); }
+.bf-streak-tier { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding-top: 24px; font-size: 11px; color: var(--at-ink-faint); }
 .bf-streak-tier::before { content: ''; position: absolute; top: 8px; left: 0; right: 0; height: 3px; background: var(--at-line); }
 .bf-streak-tier.is-got::before { background: var(--at-gold, #ffd479); }
 .bf-streak-dot { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); width: 15px; height: 15px; border-radius: 50%; background: var(--at-paper); border: 2px solid var(--at-line); }
@@ -730,14 +730,14 @@
 .bf-streak-tier b { font-size: 12px; color: var(--at-ink); }
 .bf-streak-next { display: block; margin-top: 8px; font-size: 12px; }
 /* 7 days: gold lever. */
-.bf-streak-7 .spin-lever-knob { background: radial-gradient(circle at 35% 35%, #fff3cf, #ffd479 55%, #8e6b12) !important; box-shadow: 0 0 10px rgba(255, 212, 121, 0.55); }
-.bf-streak-7 .spin-lever-arm { background: linear-gradient(90deg, #a6801e, #ffd479, #a6801e) !important; }
+.bf-streak-7 .spin-lever-knob { background: radial-gradient(circle at 35% 35%, #fff3cf, var(--at-gold, #ffd479) 55%, #8e6b12) !important; box-shadow: 0 0 10px rgba(255, 212, 121, 0.55); }
+.bf-streak-7 .spin-lever-arm { background: linear-gradient(90deg, #a6801e, var(--at-gold, #ffd479), #a6801e) !important; }
 /* 14 days: gold reel frames. */
 .bf-streak-14 .bf-reel { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--at-gold, #ffd479) 70%, transparent); }
 /* 30 days: retro card backs on the face-down positions. */
 .bf-streak-30 .bf-face--card { background: repeating-linear-gradient(45deg, #1a2644 0 5px, #122038 5px 10px) !important; box-shadow: inset 0 0 0 2px var(--at-gold, #ffd479); }
 /* 100 days: the Hall of Fame plaque. */
-.bf-hof-plaque { display: inline-block; margin-left: 8px; padding: 0 7px; border-radius: 4px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #1b1404; background: linear-gradient(135deg, #fff3cf, #ffd479 60%, #b98a1c); }
+.bf-hof-plaque { display: inline-block; margin-left: 8px; padding: 0 8px; border-radius: 4px; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #1b1404; background: linear-gradient(135deg, #fff3cf, var(--at-gold, #ffd479) 60%, #b98a1c); }
 
 .bf-daily-replay { display: block; margin: 12px auto 0; }
 .bf-daily-test { text-align: center; font-size: 12px; color: var(--at-ink-faint); margin: 6px 0 0; }
@@ -747,7 +747,7 @@
    off the deck; the AI's five; the daily Joker on the table.
    --------------------------------------------------------------------------- */
 .bf-deck-table {
-  padding: 10px; border-radius: 14px;
+  padding: 8px; border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--at-good, #58c28a) 30%, var(--at-line));
   background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--at-good, #58c28a) 12%, var(--at-paper)), var(--at-paper) 75%);
   box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.35);
@@ -755,7 +755,7 @@
 .bf-hand { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .bf-hand-card { height: 226px; min-width: 0; perspective: 800px; }
 .bf-hand-back {
-  height: 100%; border-radius: 10px;
+  height: 100%; border-radius: 8px;
   border: 2px solid color-mix(in srgb, var(--at-accent) 40%, var(--at-line));
   background:
     radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--at-accent) 28%, transparent) 0 12%, transparent 13%),
@@ -764,16 +764,16 @@
 .bf-hand-face { position: relative; display: flex; height: 100%; transform-origin: center; }
 /* The card's back, shown while it flies off the deck (deal animation A, BestFive.tsx DealtCard). */
 .bf-fly-back {
-  position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; border-radius: 10px;
+  position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; border-radius: 8px;
   border: 2px solid color-mix(in srgb, var(--at-accent) 40%, var(--at-line));
   background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)) 0 7px, var(--at-paper) 7px 14px);
 }
 .bf-streak-30 .bf-fly-back { background: repeating-linear-gradient(45deg, #1a2644 0 6px, #122038 6px 12px); border-color: var(--at-gold, #ffd479); }
 .bf-hand-face > .bf-pool-card { flex: 1; min-width: 0; height: 100%; overflow: hidden; justify-content: center; }
-.bf-deck-foot { margin-top: 12px; text-align: center; font-size: 13px; color: var(--at-ink-soft); min-height: 38px; display: flex; align-items: center; justify-content: center; gap: 14px; }
+.bf-deck-foot { margin-top: 12px; text-align: center; font-size: 13px; color: var(--at-ink-soft); min-height: 38px; display: flex; align-items: center; justify-content: center; gap: 12px; }
 .bf-pile { position: relative; width: 34px; height: 46px; flex: none; }
 .bf-pile span {
-  position: absolute; inset: 0; border-radius: 5px;
+  position: absolute; inset: 0; border-radius: 4px;
   border: 1.5px solid color-mix(in srgb, var(--at-accent) 40%, var(--at-line));
   background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--at-accent) 14%, var(--at-paper)) 0 4px, var(--at-paper) 4px 8px);
 }
@@ -785,22 +785,22 @@
   /* Five across a phone: compact cards — name, years, price, the stat line. */
   .bf-hand.is-5 { gap: 4px; }
   .bf-hand.is-5 > .bf-hand-card { height: 176px; }
-  .bf-hand.is-5 .bf-pool-card { padding: 6px 3px; gap: 3px; }
+  .bf-hand.is-5 .bf-pool-card { padding: 8px 4px; gap: 4px; }
   .bf-hand.is-5 .bf-pool-teams, .bf-hand.is-5 .bf-pool-box--sub { display: none; }
   .bf-hand.is-5 .bf-face { width: 30px; height: 30px; font-size: 11px; }
-  .bf-hand.is-5 .bf-pool-name { font-size: 11px; line-height: 1.15; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .bf-hand.is-5 .bf-pool-name { font-size: 11px; line-height: 1.25; letter-spacing: -0.02em; overflow-wrap: anywhere; }
   .bf-hand.is-5 .bf-pool-season { font-size: 11px; }
-  .bf-hand.is-5 .bf-pool-box { font-size: 11px; letter-spacing: -0.03em; }
+  .bf-hand.is-5 .bf-pool-box { font-size: 11px; letter-spacing: -0.02em; }
   .bf-hand.is-5 .bf-pool-over { font-size: 8px; left: 2px; right: 2px; }
   .bf-hand.is-5 .bf-joker-q { font-size: 32px; }
 }
 /* The face-down Joker in a hand. */
 .bf-hand .bf-joker-card {
-  flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: auto; margin: 0; text-align: center;
+  flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: auto; margin: 0; text-align: center;
 }
 .bf-hand .bf-joker-card .bf-joker-tag { position: static; }
 .bf-joker-q { font-size: 44px; font-weight: 800; line-height: 1; color: var(--at-gold, #ffd479); text-shadow: 0 0 18px color-mix(in srgb, var(--at-gold, #ffd479) 50%, transparent); }
-.bf-joker-reveal { margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; font-size: 13px; color: var(--at-ink); border: 1px solid var(--at-line); animation: bf-land 0.4s both; }
+.bf-joker-reveal { margin: 0 0 10px; padding: 8px 12px; border-radius: 8px; font-size: 13px; color: var(--at-ink); border: 1px solid var(--at-line); animation: bf-land 0.4s both; }
 .bf-joker-reveal.is-legend { border-color: var(--at-gold, #ffd479); background: color-mix(in srgb, var(--at-gold, #ffd479) 12%, var(--at-paper)); }
 .bf-joker-reveal.is-scrub { border-color: color-mix(in srgb, var(--at-bad, #d94a60) 45%, var(--at-line)); background: color-mix(in srgb, var(--at-bad, #d94a60) 8%, var(--at-paper)); }
 .bf-joker-line p { margin: 2px 0; }
@@ -813,17 +813,17 @@
   .bf-hand-face .bf-pool-box--sub { display: none; }
 }
 
-.bf-ai { margin: 4px 0 12px; padding: 8px 10px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--at-accent-2, #d94a60) 35%, var(--at-line)); background: color-mix(in srgb, var(--at-accent-2, #d94a60) 5%, var(--at-paper)); }
+.bf-ai { margin: 4px 0 12px; padding: 8px 8px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--at-accent-2, #d94a60) 35%, var(--at-line)); background: color-mix(in srgb, var(--at-accent-2, #d94a60) 5%, var(--at-paper)); }
 .bf-ai-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--at-ink-soft); }
-.bf-ai-head .at-cond { font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-accent-2, #d94a60); }
+.bf-ai-head .at-cond { font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent-2, #d94a60); }
 .bf-ai-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
-.bf-ai-slot { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; border-radius: 6px; border: 1px dashed var(--at-line); font-size: 11px; color: var(--at-ink-faint); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bf-ai-slot { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; border-radius: 8px; border: 1px dashed var(--at-line); font-size: 11px; color: var(--at-ink-faint); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bf-ai-slot b { font-size: 11px; }
 .bf-ai-slot.is-filled { border-style: solid; color: var(--at-ink); }
 .bf-ai-log { margin: 6px 0 0; font-size: 12px; color: var(--at-ink-soft); }
 
 .bf-joker-table {
-  display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; position: relative;
+  display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 8px 12px; border-radius: 12px; position: relative;
   border: 1.5px solid var(--at-gold, #ffd479);
   background: linear-gradient(135deg, color-mix(in srgb, var(--at-gold, #ffd479) 22%, var(--at-paper)), var(--at-paper) 70%);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--at-gold, #ffd479) 12%, transparent);
@@ -831,14 +831,14 @@
 .bf-joker-table .bf-joker-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .bf-joker-table .bf-joker-tag { position: static; }
 .bf-joker-table .bf-pool-name { color: var(--at-ink); font-weight: 800; }
-.bf-joker-price { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 12px; color: var(--at-ink-faint); }
+.bf-joker-price { display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: 12px; color: var(--at-ink-faint); }
 .bf-joker-odds { font-size: 12px; color: var(--at-ink-soft); }
 .bf-joker-odds b { color: var(--at-accent-2, #d94a60); }
 .bf-joker-state { font-size: 12px; font-weight: 700; color: var(--at-ink-soft); }
 .bf-joker-state.is-yours { color: var(--at-good, #58c28a); }
 .bf-joker-buy {
   flex: none; font: inherit; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 9px 12px; border-radius: 8px; border: 0; cursor: pointer; background: var(--at-gold, #ffd479); color: #1b1404;
+  padding: 8px 12px; border-radius: 8px; border: 0; cursor: pointer; background: var(--at-gold, #ffd479); color: #1b1404;
 }
 .bf-joker-buy:disabled { opacity: 0.45; cursor: not-allowed; }
 .bf-joker-table.is-gone { filter: grayscale(1); opacity: 0.55; border-style: dashed; box-shadow: none; }
@@ -848,7 +848,7 @@
   .bf-joker-buy { width: 100%; }
 }
 /* Streak rewards restyled for the deck: 7 days a gold draw button, 14 gold card frames, 30 retro backs. */
-.bf-streak-7 .bf-draw-btn { background: linear-gradient(135deg, #fff3cf, #ffd479 60%, #b98a1c); color: #1b1404; }
+.bf-streak-7 .bf-draw-btn { background: linear-gradient(135deg, #fff3cf, var(--at-gold, #ffd479) 60%, #b98a1c); color: #1b1404; }
 .bf-streak-14 .bf-hand-face > .bf-pool-card, .bf-streak-14 .bf-hand-face > .bf-deal-card { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 70%, var(--at-line)); }
 .bf-streak-30 .bf-hand-back { background: repeating-linear-gradient(45deg, #1a2644 0 6px, #122038 6px 12px); border-color: var(--at-gold, #ffd479); }
 .bf-live-odds { margin: 6px 0 0; font-size: 12px; color: var(--at-ink-soft); }
@@ -861,18 +861,18 @@
    colours, a glowing Joker, and the reveal's jackpot / thud.
    --------------------------------------------------------------------------- */
 .bf-deck-table {
-  position: relative; padding: 18px 22px 30px; border: 0;
+  position: relative; padding: 16px 24px 32px; border: 0;
   background:
     radial-gradient(90% 75% at 50% 12%, color-mix(in srgb, var(--at-accent) 22%, #0d1a33) 0%, #0b1428 50%, #070d1c 85%, #050912 100%);
   box-shadow: inset 0 0 0 2px #0a1224, inset 0 0 0 4px #b48a3a, inset 0 0 0 6px #070b14, inset 0 12px 40px rgba(0, 0, 0, 0.55);
-  border-radius: 18px;
+  border-radius: 16px;
 }
 .bf-deck-table::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
   background: repeating-radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 4px);
 }
 /* The fan: each card turned a little and set on an arc; the card under the pointer comes up. */
-.bf-hand { align-items: start; padding-top: 6px; }
+.bf-hand { align-items: start; padding-top: 8px; }
 .bf-hand-card { transform: translateY(var(--y, 0px)) rotate(var(--r, 0deg)); transition: transform 0.22s ease; transform-origin: 50% 100%; position: relative; }
 .bf-deck.is-open .bf-hand-card:hover { transform: translateY(calc(var(--y, 0px) - 12px)) rotate(0deg) scale(1.04); z-index: 3; }
 .bf-hand-back {
@@ -887,7 +887,7 @@
 
 /* The Draw button: gold and breathing until pressed. */
 .bf-draw-btn {
-  border-radius: 999px; background: linear-gradient(135deg, #fff3cf, #ffd479 55%, #c3922a); color: #1b1404;
+  border-radius: 999px; background: linear-gradient(135deg, #fff3cf, var(--at-gold, #ffd479) 55%, #c9952e); color: #1b1404;
   animation: bf-draw-pulse 1.6s ease-in-out infinite;
 }
 @keyframes bf-draw-pulse {
@@ -916,7 +916,7 @@
   content: ''; position: absolute; inset: -20%; pointer-events: none;
   background:
     radial-gradient(2px 2px at 20% 30%, #fff3cf, transparent), radial-gradient(2px 2px at 70% 20%, #fff3cf, transparent),
-    radial-gradient(1.5px 1.5px at 40% 80%, #ffd479, transparent), radial-gradient(2px 2px at 85% 65%, #fff3cf, transparent);
+    radial-gradient(1.5px 1.5px at 40% 80%, var(--at-gold, #ffd479), transparent), radial-gradient(2px 2px at 85% 65%, #fff3cf, transparent);
   animation: bf-sparks 2.4s linear infinite;
 }
 @keyframes bf-sparks { from { transform: translateY(8%); opacity: 0.2; } 50% { opacity: 1; } to { transform: translateY(-8%); opacity: 0.2; } }
@@ -938,28 +938,28 @@
 }
 @media (max-width: 560px) {
   /* A gentler fan on a phone, so the outer cards stay on screen. */
-  .bf-deck-table { padding: 14px 10px 22px; }
+  .bf-deck-table { padding: 12px 8px 24px; }
   .bf-hand-card { transform: translateY(calc(var(--y, 0px) * 0.5)) rotate(calc(var(--r, 0deg) * 0.5)); }
 }
 
 /* 2026-09-30, the user ("animacja losowania i wyboru kart również obecna dla AI"): the AI's hand
    comes off the deck and turns over, then the card it took lifts out; its newest pick lands in its
    five once that has played. Paced like your own deal. */
-.bf-ai-hand { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
+.bf-ai-hand { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 8px; }
 .bf-ai-card { height: 46px; animation: bf-ai-deal 0.6s calc(var(--i) * 0.45s) both cubic-bezier(0.2, 0.8, 0.25, 1); }
 /* The turn is a squeeze and swap (no 3D), so fading the cards it didn't take can't show the backs. */
 .bf-ai-card-in { position: relative; display: block; height: 100%; animation: bf-ai-turn 0.5s calc(var(--i) * 0.45s + 0.5s) both; }
-.bf-ai-card-back, .bf-ai-card-face { position: absolute; inset: 0; border-radius: 6px; }
+.bf-ai-card-back, .bf-ai-card-face { position: absolute; inset: 0; border-radius: 8px; }
 .bf-ai-card-back { background: repeating-linear-gradient(45deg, #3a1624 0 5px, #2a101a 5px 10px); border: 1.5px solid #8a3a4e; animation: bf-ai-hide 0.5s calc(var(--i) * 0.45s + 0.5s) both; }
 .bf-ai-card-face {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; line-height: 1.15; text-align: center; padding: 2px;
+  font-size: 11px; font-weight: 700; line-height: 1.25; text-align: center; padding: 2px;
   background: var(--at-paper); border: 1px solid var(--at-line); color: var(--at-ink-soft); overflow: hidden;
   animation: bf-ai-show 0.5s calc(var(--i) * 0.45s + 0.5s) both;
 }
 .bf-ai-card-face small { font-size: 11px; color: var(--at-ink-faint); }
 .bf-ai-card.is-took .bf-ai-card-face { border-color: var(--at-accent-2, #d94a60); color: var(--at-ink); }
-.bf-ai-card.is-took { animation: bf-ai-deal 0.6s calc(var(--i) * 0.45s) both cubic-bezier(0.2, 0.8, 0.25, 1), bf-ai-take 0.5s 2.6s both; border-radius: 6px; }
+.bf-ai-card.is-took { animation: bf-ai-deal 0.6s calc(var(--i) * 0.45s) both cubic-bezier(0.2, 0.8, 0.25, 1), bf-ai-take 0.5s 2.6s both; border-radius: 8px; }
 .bf-ai-card:not(.is-took) { animation: bf-ai-deal 0.6s calc(var(--i) * 0.45s) both cubic-bezier(0.2, 0.8, 0.25, 1), bf-ai-fade 0.4s 2.6s forwards; }
 @keyframes bf-ai-deal { from { transform: translate(-40px, -24px) scale(0.6) rotate(-10deg); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes bf-ai-turn { 0% { transform: scaleX(1); } 50% { transform: scaleX(0.02); } 100% { transform: scaleX(1); } }
@@ -976,14 +976,14 @@
 
 /* 2026-09-30, the user ("karty żeby wyglądały tak samo jak w każdym trybie"): the hand deals the
    draft card of every mode (DraftPlayerCard, blind) — fitted to the hand's fixed card height. */
-.bf-hand-face > .bf-deal-card { flex: 1; min-width: 0; height: 100%; gap: 5px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45); }
+.bf-hand-face > .bf-deal-card { flex: 1; min-width: 0; height: 100%; gap: 4px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45); }
 .bf-hand-face > .bf-deal-card .at-player-card-season { margin-top: auto; }
 .bf-hand .bf-deal-card.bf-pool-card--chosen { box-shadow: 0 0 0 3px var(--at-gold, #ffd479), 0 6px 16px rgba(0, 0, 0, 0.45); }
 .bf-hand .bf-deal-card .bf-pool-over { top: 24px; }
 @media (max-width: 560px) {
-  .bf-hand.is-5 .bf-deal-card { padding: 8px 5px; gap: 3px; }
-  .bf-hand.is-5 .bf-deal-card .at-team-band { margin: -8px -5px 0; height: 14px; font-size: 8px; letter-spacing: 0.02em; }
-  .bf-hand.is-5 .bf-deal-card .at-player-card-top { flex-direction: column; gap: 3px; align-items: center; }
+  .bf-hand.is-5 .bf-deal-card { padding: 8px 4px; gap: 4px; }
+  .bf-hand.is-5 .bf-deal-card .at-team-band { margin: -8px -5px 0; height: 14px; font-size: 8px; letter-spacing: 0; }
+  .bf-hand.is-5 .bf-deal-card .at-player-card-top { flex-direction: column; gap: 4px; align-items: center; }
   .bf-hand.is-5 .bf-deal-card .at-player-card-name { font-size: 11px; text-align: center; }
   .bf-hand.is-5 .bf-deal-card .at-player-card-season { font-size: 8px; justify-content: center; }
   .bf-hand.is-5 .bf-deal-card .at-player-card-stats b { font-size: 11px; }
@@ -1076,7 +1076,7 @@
 }
 .bench-table th,
 .bench-table td {
-  padding: 6px 8px;
+  padding: 8px 8px;
   text-align: right;
   border-bottom: 1px solid var(--at-line);
   white-space: nowrap;

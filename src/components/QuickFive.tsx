@@ -41,6 +41,7 @@ import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import { cpuPickDelay } from './aiSpeed';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
 import { BoardToggleButton, DraftStrip, LeaveDraftDialog, RimPressureNote, type TickerPick } from './DraftChrome';
+import { FitName, FitTeam } from './FitName';
 
 interface Props {
   humanTeamName?: string;
@@ -453,7 +454,7 @@ function QuickDraftBoard({
             <div className="qf-team-card" key={slot}>
               <span className="qf-team-card-slot at-cond">{slot}</span>
               <Face name={p.playerName} />
-              <span className="qf-team-card-name">{p.playerName}</span>
+              <FitName className="qf-team-card-name" name={p.playerName} faceNextToIt />
               <span className="qf-team-card-tal">
                 <span>TAL <b>{formatTal(displayTalentForSpan(tierContextFor(p)))}</b></span>
                 <ShotChip fga={p.fga} cap={QUICK_CAP_LIMIT} />
@@ -477,7 +478,7 @@ function QuickDraftBoard({
               <div className="qf-team-card" key={p.id}>
                 <span className="qf-team-card-slot at-cond">EXTRA</span>
                 <Face name={p.playerName} />
-                <span className="qf-team-card-name">{p.playerName}</span>
+                <FitName className="qf-team-card-name" name={p.playerName} faceNextToIt />
                 <ShotChip fga={p.fga} cap={QUICK_CAP_LIMIT} />
               </div>
             ))}
@@ -794,10 +795,7 @@ function QuickResults({
             <>
               <span className="rr-rk">{i + 1}</span>
               <TeamMark code={teamCodeByTeamId.get(r.team.id) ?? ''} name={r.team.name} />
-              <span className="rr-nm">
-                {teamLabel(r.team)}
-                {r.team.isHuman && <em> · you</em>}
-              </span>
+              <FitTeam className="rr-nm" name={teamLabel(r.team)} code={teamCodeByTeamId.get(r.team.id)} after={r.team.isHuman && <em> · you</em>} />
               <span className="rr-od" />
               <span className="rr-ser" />
               <span className="rr-sc">{r.score.composite}</span>

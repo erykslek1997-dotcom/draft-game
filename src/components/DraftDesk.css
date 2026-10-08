@@ -12,21 +12,21 @@
   background: var(--at-paper-raised);
   color: var(--at-ink);
   border: 1px solid var(--at-accent);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   text-align: left;
 }
 
-.desk-talk { padding: 26px 28px; display: flex; flex-direction: column; gap: 14px; border-right: 1px solid var(--at-line); min-width: 0; }
-.desk-kicker { display: flex; align-items: center; gap: 10px; }
+.desk-talk { padding: 24px 24px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid var(--at-line); min-width: 0; }
+.desk-kicker { display: flex; align-items: center; gap: 8px; }
 .desk-live {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 8px; border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 8px; border-radius: 8px;
   background: var(--at-brand-red); color: #fff;
   font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
 }
 .desk-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: desk-pulse 1.4s ease-in-out infinite; }
-.desk-kicker-text { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; color: var(--at-pill-ink); text-transform: uppercase; }
+.desk-kicker-text { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; color: var(--at-pill-ink); text-transform: uppercase; }
 /* 2026-09-28 playtest: the shell's own mono face (was Bitter, the only serif copy in the game). */
 .at-shell .desk-title { margin: 0; font-family: inherit; font-size: 24px; font-weight: 800; line-height: 1.25; color: var(--at-ink); }
 
@@ -38,39 +38,39 @@
   background: var(--at-t2); border: 1px solid var(--at-t5); color: var(--at-t2-ink);
 }
 .desk-line-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.desk-speaker { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-t2-ink); }
+.desk-speaker { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-t2-ink); }
 .desk-bubble {
-  margin: 0; padding: 10px 14px;
+  margin: 0; padding: 8px 12px;
   border-radius: 4px 12px 12px 12px;
   background: var(--at-pill); border: 1px solid var(--at-line);
   font-family: inherit; font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--at-ink);
 }
-.desk-typing { display: inline-flex; gap: 5px; align-items: center; width: fit-content; }
+.desk-typing { display: inline-flex; gap: 4px; align-items: center; width: fit-content; }
 .desk-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--at-ink-soft); animation: desk-dot 1s ease-in-out infinite; }
 .desk-typing i:nth-child(2) { animation-delay: 0.15s; }
 .desk-typing i:nth-child(3) { animation-delay: 0.3s; }
 
 .desk-side {
-  padding: 26px 22px; display: flex; flex-direction: column; gap: 14px;
-  background: var(--at-paper); border-radius: 0 14px 14px 0;
+  padding: 24px 24px; display: flex; flex-direction: column; gap: 12px;
+  background: var(--at-paper); border-radius: 0 12px 12px 0;
 }
-.desk-side-label, .desk-consensus-label { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--at-ink-soft); }
+.desk-side-label, .desk-consensus-label { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-soft); }
 .desk-roster { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .desk-roster-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 5px 12px 5px 5px; border-radius: 999px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px 4px 4px; border-radius: 999px;
   background: var(--at-pill); border: 1px solid var(--at-line);
 }
 .desk-roster-name { flex-grow: 1; font-size: 13px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .desk-roster-pos { font-size: 11px; color: var(--at-ink-soft); }
 .desk-consensus {
-  margin-top: auto; padding: 14px; border-radius: 12px;
-  display: flex; flex-direction: column; gap: 6px;
+  margin-top: auto; padding: 12px; border-radius: 12px;
+  display: flex; flex-direction: column; gap: 8px;
   background: color-mix(in srgb, var(--at-accent) 14%, var(--at-paper-raised));
   border: 1px solid var(--at-t5);
 }
 .desk-consensus-label { color: var(--at-pill-ink); }
-.desk-consensus-text { font-size: 14px; font-weight: 600; line-height: 1.45; }
+.desk-consensus-text { font-size: 14px; font-weight: 600; line-height: 1.5; }
 .desk-consensus--pending .desk-consensus-text { color: var(--at-ink-soft); }
 .desk-close { margin-top: 0; min-height: 48px; width: 100%; } /* the board's own primary-button look */
 
@@ -87,7 +87,7 @@
 @media (max-width: 760px) {
   .mode-help-backdrop.desk-backdrop { padding: 0; align-items: stretch; }
   .desk-modal { grid-template-columns: minmax(0, 1fr); max-height: 100vh; height: 100%; border-radius: 0; border: 0; }
-  .desk-talk { padding: 20px 16px 8px; border-right: 0; }
+  .desk-talk { padding: 16px 16px 8px; border-right: 0; }
   .at-shell .desk-title { font-size: 20px; }
   .desk-bubble { font-size: 14px; }
   .desk-avatar { width: 34px; height: 34px; }

@@ -24,7 +24,7 @@
 .rotation-builder h2 {
   font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink, var(--text-h));
   margin: 0 0 8px;
@@ -38,7 +38,7 @@
 .rotation-builder h3 {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint, var(--text));
   margin: 0 0 8px;
@@ -78,7 +78,7 @@
 
 .span-selection-totals {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   font-weight: 600;
   margin: 16px 0;
 }
@@ -94,13 +94,13 @@
 .rotation-cards {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin: 14px 0 20px;
 }
 .rotation-card {
   border: 1px solid var(--at-line, var(--border));
-  border-radius: 10px;
-  padding: 10px 12px 12px;
+  border-radius: 8px;
+  padding: 8px 12px 12px;
   background: var(--at-paper, var(--bg));
 }
 .rotation-card--short {
@@ -109,13 +109,13 @@
 .rotation-card-head {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 4px;
 }
 .rotation-card-pos {
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: var(--at-accent, var(--accent));
   min-width: 26px;
 }
@@ -136,8 +136,8 @@
 .rotation-card-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 0;
+  gap: 8px;
+  padding: 8px 0;
   border-top: 1px dashed color-mix(in srgb, var(--at-line, var(--border)) 70%, transparent);
 }
 .rotation-card-row:first-of-type { border-top: none; }
@@ -152,7 +152,7 @@
   width: 100%;
   font: inherit;
   font-size: 13px;
-  padding: 6px 10px;
+  padding: 8px 8px;
   border-radius: 8px;
   border: 1px solid var(--at-line, var(--border));
   background: var(--at-pill, var(--bg));
@@ -163,7 +163,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 .rotation-minutes-input {
   width: 48px;
@@ -171,7 +171,7 @@
   font: inherit;
   font-size: 13px;
   text-align: center;
-  padding: 6px 4px;
+  padding: 8px 4px;
   border-radius: 8px;
   border: 1px solid var(--at-line, var(--border));
   background: var(--at-pill, var(--bg));
@@ -259,14 +259,14 @@
 
 .remove-row-btn {
   padding: 0 8px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--danger);
 }
 
 .add-row-btn {
   margin-top: 6px;
   font-size: 12px;
-  padding: 3px 8px;
+  padding: 4px 8px;
 }
 
 .validation-warning {
@@ -286,7 +286,7 @@
 .draft-history {
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   margin-bottom: 16px;
   max-height: 220px;
   overflow-y: auto;
@@ -312,8 +312,8 @@
 .history-list li {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 3px 0;
+  gap: 8px;
+  padding: 4px 0;
   border-bottom: 1px dashed var(--border);
   flex-wrap: wrap;
 }
@@ -338,12 +338,12 @@
 .player-groups {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .player-group {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -351,7 +351,7 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 8px 12px;
   border: none;
   border-radius: 0;
@@ -412,7 +412,7 @@
   color: #a32d2d;
 }
 .tier-bad {
-  background: #faeeda;
+  background: #f6eedb;
   color: #854f0b;
 }
 .tier-avg {
@@ -428,7 +428,7 @@
   color: #534ab7;
 }
 .tier-gravity {
-  background: #e6f1fb;
+  background: #e6eef8;
   color: #185fa5;
 }
 
@@ -451,8 +451,8 @@
     color: #fac775;
   }
   .tier-avg {
-    background: #2e2e2c;
-    color: #b4b2a9;
+    background: #2c2b28;
+    color: #b3b0a8;
   }
   .tier-good {
     background: #0d302a;
@@ -483,7 +483,7 @@
   color: #6e6b64;
 }
 .rating-glue {
-  background: #e4edf8;
+  background: #e6eef8;
   color: #315f91;
 }
 .rating-bench {
@@ -506,7 +506,7 @@
   color: #3a7a3f;
 }
 .rating-allstar {
-  background: #ddf3f5;
+  background: #d7f4f7;
   color: #0e7a8a;
 }
 .rating-allnba {
@@ -518,7 +518,7 @@
   color: #a3227a;
 }
 .rating-peak {
-  background: linear-gradient(96deg, #ffe9b0, #ffd479);
+  background: linear-gradient(96deg, #ffe9b0, var(--at-gold, #ffd479));
   color: #7a4b00;
   font-weight: 700;
 }
@@ -528,8 +528,8 @@
    .tier-anomaly/.playoff-*-gold already use for their own rarest tier. */
 .rating-goat {
   background: linear-gradient(96deg, #1a1a1a, #2e2e2e);
-  color: #ffd479;
-  border: 1px solid #ffd479;
+  color: var(--at-gold, #ffd479);
+  border: 1px solid var(--at-gold, #ffd479);
   font-weight: 700;
 }
 
@@ -540,11 +540,11 @@
   }
   .rating-glue {
     background: #16283d;
-    color: #82b5ea;
+    color: #85b7eb;
   }
   .rating-bench {
     background: #3a2412;
-    color: #f0a868;
+    color: var(--at-warn, #f0a868);
   }
   .rating-role {
     background: #322c08;
@@ -552,7 +552,7 @@
   }
   .rating-starter {
     background: #12281a;
-    color: #7fd68a;
+    color: var(--at-good, #7fd68a);
   }
   .rating-allstar {
     background: #072c30;
@@ -602,7 +602,7 @@
   font-weight: 700;
 }
 .playoff-bronze-rise {
-  background: #e1f3e2;
+  background: #e6f2e2;
   color: #2c7a34;
 }
 .playoff-silver-rise {
@@ -671,11 +671,11 @@
   color: #2f5580;
 }
 .dur-load-management {
-  background: #c3dbf2;
+  background: #c3dbf5;
   color: #24507d;
 }
 .dur-reliable {
-  background: #a8cdf0;
+  background: #b0cef1;
   color: #1a4270;
 }
 .dur-unbreakable {
@@ -694,7 +694,7 @@
     color: #b3b0a8;
   }
   .dur-walking-glass {
-    background: #16283f;
+    background: #16283d;
     color: #8fb8ea;
   }
   .dur-street-clothes {
@@ -711,7 +711,7 @@
   }
   .dur-unbreakable {
     background: #29537a;
-    color: #d6e6f8;
+    color: var(--at-t3-ink, #cfe3f7);
   }
   .dur-ironman {
     background: linear-gradient(96deg, #3b5bc9, #7c3aed);
@@ -746,7 +746,7 @@
   margin-top: 8px;
   padding: 12px 16px;
   background: #faf9f6;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .evidence-panel-label {
@@ -781,13 +781,13 @@
   margin: 0 0 6px;
   font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: #78756d;
 }
 
 .evidence-column ul {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 16px;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -810,7 +810,7 @@
 
 .span-table th,
 .span-table td {
-  padding: 6px 8px;
+  padding: 8px 8px;
   border-top: 1px solid var(--border);
   text-align: left;
   white-space: nowrap;
@@ -821,10 +821,10 @@
   align-items: center;
   border: 1px solid currentColor;
   border-radius: 999px;
-  padding: 2px 6px;
+  padding: 2px 8px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 
 .data-measured {

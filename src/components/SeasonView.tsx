@@ -14,7 +14,7 @@ import { gameWinProbability, seriesWinProbability } from '../engine/matchup';
 import LiveGame, { type LiveMatchup } from './LiveGame';
 import { TeamMark } from './ResultsReport';
 import './BestFive.css';
-import { FitName } from './FitName';
+import { FitName, FitTeam } from './FitName';
 
 /**
  * 2026-10-08, the user (season simulation): the season after a draft. First the regular season —
@@ -817,7 +817,7 @@ function PlayoffsChapter({
       {between}
       {all && <Finale playoffs={playoffs} youId={youId} byId={byId} mark={mark} yourRuns={yourRuns.map((r) => rounds[r.round][r.index])} seedOf={seedOf} />}
       <div className={panel ? 'pl-split' : ''}>
-        <Bracket rounds={rounds} shown={bracketShown} youId={youId} byId={byId} mark={mark} onWatch={(r, i, g) => setWatching({ round: r, series: i, game: g })} />
+        <Bracket rounds={rounds} shown={bracketShown} youId={youId} byId={byId} codes={codes} mark={mark} onWatch={(r, i, g) => setWatching({ round: r, series: i, game: g })} />
         {panel}
       </div>
     </div>
@@ -829,6 +829,7 @@ function Bracket({
   shown,
   youId,
   byId,
+  codes,
   mark,
   onWatch,
 }: {
@@ -836,6 +837,7 @@ function Bracket({
   shown: (round: number, s: LivePlayoffSeries) => number;
   youId: string;
   byId: Map<string, Team>;
+  codes: Map<string, string>;
   mark: Mark;
   onWatch: (round: number, series: number, game: number) => void;
 }) {
@@ -849,7 +851,7 @@ function Bracket({
           <div className="pl-col-in">
             {round.map((s, i) =>
               known(r) ? (
-                <BracketSeries key={i} s={s} shown={Math.min(s.games.length, shown(r, s))} youId={youId} byId={byId} mark={mark} onWatch={s.teamAId === youId || s.teamBId === youId ? (g) => onWatch(r, i, g) : null} />
+                <BracketSeries key={i} s={s} shown={Math.min(s.games.length, shown(r, s))} youId={youId} byId={byId} codes={codes} mark={mark} onWatch={s.teamAId === youId || s.teamBId === youId ? (g) => onWatch(r, i, g) : null} />
               ) : (
                 <div key={i} className="pl-tbd">
                   TBD
@@ -863,7 +865,7 @@ function Bracket({
   );
 }
 
-function BracketSeries({ s, shown, youId, byId, mark, onWatch }: { s: LivePlayoffSeries; shown: number; youId: string; byId: Map<string, Team>; mark: Mark; onWatch: ((game: number) => void) | null }) {
+function BracketSeries({ s, shown, youId, byId, codes, mark, onWatch }: { s: LivePlayoffSeries; shown: number; youId: string; byId: Map<string, Team>; codes: Map<string, string>; mark: Mark; onWatch: ((game: number) => void) | null }) {
   const games = s.games.slice(0, shown);
   const wa = games.filter((g) => g.final[0] > g.final[1]).length;
   const wb = games.length - wa;
@@ -872,10 +874,7 @@ function BracketSeries({ s, shown, youId, byId, mark, onWatch }: { s: LivePlayof
     <div className={`pl-row${out ? ' is-out' : ''}`}>
       <span className="pl-seed">{seed}</span>
       {mark(id)}
-      <span className="pl-name">
-        {mascot(byId.get(id))}
-        {id === youId && <span className="ss-you">You</span>}
-      </span>
+      <FitTeam className="pl-name" name={byId.get(id)?.name ?? ''} code={codes.get(id)} mascotFirst after={id === youId && <span className="ss-you">You</span>} />
       <b className="pl-w">{w}</b>
     </div>
   );

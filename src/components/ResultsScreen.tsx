@@ -50,7 +50,7 @@ import {
   type ProfileRow,
   type ReportExtra,
 } from './ResultsReport';
-import { FitName } from './FitName';
+import { FitName, FitTeam } from './FitName';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, the live season) — real work deferred until the
@@ -510,14 +510,14 @@ function HeroResult({
             <div className="challenge-compare-row">
               <div className={`challenge-compare-side ${youWon ? 'challenge-compare-side--winner' : ''}`}>
                 <span className="challenge-compare-label">You</span>
-                <span className="challenge-compare-team">{teamName}</span>
+                <FitTeam className="challenge-compare-team" name={teamName} />
                 <span className="challenge-compare-overall">{overall}</span>
                 <span className="challenge-compare-rank">{ordinal(rank)} / {fieldSize}</span>
               </div>
               <span className="challenge-compare-vs">vs</span>
               <div className={`challenge-compare-side ${youWon === false ? 'challenge-compare-side--winner' : ''}`}>
                 <span className="challenge-compare-label">Your friend</span>
-                <span className="challenge-compare-team">{challenger.name}</span>
+                <FitTeam className="challenge-compare-team" name={challenger.name} />
                 <span className="challenge-compare-overall">{challenger.overall}</span>
                 <span className="challenge-compare-rank">{ordinal(challenger.rank)} / {challenger.fieldSize}</span>
               </div>
@@ -1384,10 +1384,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           <>
             <span className="rr-rk">{rank}</span>
             <TeamMark code={codeByTeamId.get(team.id) ?? ''} name={team.name} />
-            <span className="rr-nm">
-              {teamLabel(team)}
-              {team.isHuman && <em> · you</em>}
-            </span>
+            <FitTeam className="rr-nm" name={teamLabel(team)} code={codeByTeamId.get(team.id)} after={team.isHuman && <em> · you</em>} />
             <span className="rr-od" title="Title odds: how often this team won a 16-team bracket of best-of-7 series, simulated 20,000 times.">
               {odds !== null ? `🏆 ${odds > 0 && odds < 0.01 ? '<1' : Math.round(odds * 100)}%` : ''}
             </span>

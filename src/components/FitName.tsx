@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } fro
 import { Face } from './ShotChip';
 
 /** "LeBron James" → "L. James"; a one-word name stays as it is. */
-export function shortPlayerName(name: string): string {
+function shortPlayerName(name: string): string {
   const parts = name.split(' ');
   if (parts.length < 2) return name;
   return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
@@ -21,22 +21,21 @@ function initials(name: string): string {
 }
 
 /**
- * A player's name never shows clipped (no "Tracy Mc…"): the full name, else "T. McGrady", else
- * "Tracy M.", else the face (initials when there is no photo; plain initials when a face already sits next to the
- * name). The element the ref lands on must be the one that clips (overflow hidden, a set width or
- * a line clamp); the full name stays in its title and in the accessibility tree.
+ * The first of `variants` that fits its box, or the last one. The element the ref lands on must
+ * be the one that clips (overflow hidden, a set width or a line clamp). Re-measured whenever the
+ * key or the box's width changes.
  */
-export function useFitName<T extends HTMLElement>(name: string, faceNextToIt = false): { ref: RefObject<T | null>; content: ReactNode } {
+function useFit<T extends HTMLElement>(variants: ReactNode[], key: string): { ref: RefObject<T | null>; content: ReactNode } {
   const ref = useRef<T>(null);
   const [width, setWidth] = useState(0);
   const [fit, setFit] = useState({ key: '', level: 0 });
-  const key = `${name}|${width}`;
-  const level = fit.key === key ? fit.level : 0;
+  const fullKey = `${key}|${width}`;
+  const level = fit.key === fullKey ? fit.level : 0;
 
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || level >= 3) return;
-    if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) setFit({ key, level: level + 1 });
+    if (!el || level >= variants.length - 1) return;
+    if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) setFit({ key: fullKey, level: level + 1 });
   });
 
   useLayoutEffect(() => {
@@ -47,21 +46,34 @@ export function useFitName<T extends HTMLElement>(name: string, faceNextToIt = f
     return () => ro.disconnect();
   }, []);
 
-  const content =
-    level === 0 ? (
-      name
-    ) : level < 3 ? (
+  return { ref, content: variants[level] };
+}
+
+/**
+ * A player's name never shows clipped (no "Tracy Mc…"): the full name, else "T. McGrady", else
+ * "Tracy M.", else the face (initials when there is no photo; plain initials when a face already
+ * sits next to the name). The full name stays in the title and in the accessibility tree.
+ */
+export function useFitName<T extends HTMLElement>(name: string, faceNextToIt = false): { ref: RefObject<T | null>; content: ReactNode } {
+  const sr = <span className="at-sr-only">{name}</span>;
+  return useFit<T>(
+    [
+      name,
       <>
-        {level === 1 ? shortPlayerName(name) : firstNameShort(name)}
-        <span className="at-sr-only">{name}</span>
-      </>
-    ) : (
+        {shortPlayerName(name)}
+        {sr}
+      </>,
+      <>
+        {firstNameShort(name)}
+        {sr}
+      </>,
       <>
         {faceNextToIt ? initials(name) : <Face name={name} size="xs" />}
-        <span className="at-sr-only">{name}</span>
-      </>
-    );
-  return { ref, content };
+        {sr}
+      </>,
+    ],
+    name,
+  );
 }
 
 export function FitName({ name, className, as: Tag = 'span', faceNextToIt }: { name: string; className?: string; as?: 'span' | 'b' | 'div'; faceNextToIt?: boolean }) {
@@ -70,5 +82,25 @@ export function FitName({ name, className, as: Tag = 'span', faceNextToIt }: { n
     <Tag ref={ref as RefObject<never>} className={className} title={name}>
       {content}
     </Tag>
+  );
+}
+
+/**
+ * A team's name, same rule as a player's: "Long Beach Boilermakers", else "Boilermakers", else
+ * the code (when there is one). `mascotFirst` starts at the mascot (the bracket). `after` (a "you" tag) rides along.
+ */
+export function FitTeam({ name, code, className, after, mascotFirst }: { name: string; code?: string; className?: string; after?: ReactNode; mascotFirst?: boolean }) {
+  const sr = <span className="at-sr-only">{name}</span>;
+  const mascot = name.split(' ').slice(-1)[0];
+  const variants: ReactNode[] = [
+    ...(mascotFirst ? [] : [<>{name}{after}</>]),
+    <>{mascot}{sr}{after}</>,
+    ...(code ? [<>{code}{sr}{after}</>] : []),
+  ];
+  const { ref, content } = useFit<HTMLSpanElement>(variants, `${name}|${mascotFirst}`);
+  return (
+    <span ref={ref} className={className} title={name}>
+      {content}
+    </span>
   );
 }
