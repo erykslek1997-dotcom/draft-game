@@ -33,89 +33,104 @@ export function TeamMark({ code, name, size = 'sm' }: { code: string; name: stri
   );
 }
 
-interface RosterRow {
-  slot: Position;
+/** Below this many minutes at a position, a backup is listed on the column's quiet spot line
+ * (2026-09-25, the user: "trzeba coś z tymi graczami po 2 minuty zrobić, psują wizualnie"). */
+const SPOT_MINUTES = 6;
+
+interface SlotEntry {
   id: string;
   name: string;
   years: string;
   minutes: number;
 }
 
-/** Starters are each slot's designated starter; everyone else is the bench, by minutes, with the
- * slot he plays most (his own listed position when he doesn't play). */
-export function rosterRows(team: Team): { starters: RosterRow[]; bench: RosterRow[] } {
-  const minutes = new Map<string, { total: number; bySlot: Map<Position, number> }>();
-  for (const a of allAssignments(team)) {
-    const row = minutes.get(a.player.id) ?? { total: 0, bySlot: new Map<Position, number>() };
-    row.total += a.minutes;
-    row.bySlot.set(a.slot, (row.bySlot.get(a.slot) ?? 0) + a.minutes);
-    minutes.set(a.player.id, row);
-  }
-  const starters = primaryStarters(team).map((s) => ({
-    slot: s.slot,
-    id: s.player.id,
-    name: s.player.playerName,
-    years: s.player.spanLabel,
-    minutes: Math.round(minutes.get(s.player.id)?.total ?? s.minutes),
-  }));
-  const starterIds = new Set(starters.map((s) => s.id));
-  const bench = team.roster
-    .filter((p) => !starterIds.has(p.id))
-    .map((p) => {
-      const m = minutes.get(p.id);
-      const slot = m && m.total > 0 ? [...m.bySlot.entries()].sort((a, b) => b[1] - a[1])[0][0] : p.primaryPosition;
-      return { slot, id: p.id, name: p.playerName, years: p.spanLabel, minutes: Math.round(m?.total ?? 0) };
-    })
-    .sort((a, b) => b.minutes - a.minutes);
-  return { starters, bench };
-}
-
-function RosterCell({ row }: { row: RosterRow }) {
-  return (
-    <div className={`rr-cell${row.minutes > 0 ? '' : ' is-dnp'}`} title={`${row.name} (${row.years})`}>
-      <Face name={row.name} size="sm" />
-      <span className="rr-cell-text">
-        <b>{row.name}</b>
-        <span>
-          <em>{row.slot}</em> · {row.years} · {row.minutes > 0 ? `${row.minutes}m` : 'DNP'}
-        </span>
-      </span>
-    </div>
-  );
+/**
+ * 2026-10-08, the user ("może rozdzielimy bench na każdą pozycję?"): the roster by position — each
+ * column the starter, then the backups with their minutes AT THAT POSITION (a combo backup shows
+ * under both slots he covers), short stints on one quiet line, and whoever didn't play below.
+ */
+export function rosterBySlot(team: Team): { slots: { slot: Position; main: SlotEntry[]; spot: SlotEntry[] }[]; dnp: SlotEntry[] } {
+  const starterKeys = new Set(primaryStarters(team).map((s) => `${s.slot}|${s.player.id}`));
+  const assignments = allAssignments(team);
+  const slots = STARTER_SLOTS.map((slot) => {
+    const entries = assignments
+      .filter((a) => a.slot === slot && a.minutes > 0)
+      .map((a) => ({ starter: starterKeys.has(`${slot}|${a.player.id}`), id: a.player.id, name: a.player.playerName, years: a.player.spanLabel, minutes: Math.round(a.minutes) }))
+      .sort((x, y) => (x.starter !== y.starter ? (x.starter ? -1 : 1) : y.minutes - x.minutes));
+    return {
+      slot,
+      main: entries.filter((e) => e.starter || e.minutes >= SPOT_MINUTES),
+      spot: entries.filter((e) => !e.starter && e.minutes < SPOT_MINUTES),
+    };
+  });
+  const played = new Set(assignments.filter((a) => a.minutes > 0).map((a) => a.player.id));
+  const dnp = team.roster.filter((p) => !played.has(p.id)).map((p) => ({ id: p.id, name: p.playerName, years: p.spanLabel, minutes: 0 }));
+  return { slots, dnp };
 }
 
 export function RosterGrid({ team }: { team: Team }) {
-  const { starters, bench } = rosterRows(team);
-  const order = new Map(STARTER_SLOTS.map((slot, i) => [slot, i]));
-  const sortedStarters = [...starters].sort((a, b) => (order.get(a.slot) ?? 0) - (order.get(b.slot) ?? 0));
+  const { slots, dnp } = rosterBySlot(team);
   return (
     <div className="rr-roster">
-      <div className="rr-roster-group">
-        <span className="rr-roster-label">Starters</span>
-        <div className="rr-roster-cells">{sortedStarters.map((row) => <RosterCell key={row.id} row={row} />)}</div>
+      <div className="rr-roster-cols">
+        {slots.map(({ slot, main, spot }) => (
+          <div className="rr-roster-col" key={slot}>
+            <span className="rr-roster-pos">{slot}</span>
+            <div className="rr-roster-entries">
+              {main.map((e, i) => (
+                <div className={`rr-cell${i > 0 ? ' is-backup' : ''}`} key={e.id} title={`${e.name} (${e.years})`}>
+                  <Face name={e.name} size="sm" />
+                  <span className="rr-cell-text">
+                    <b>{e.name}</b>
+                    <span>
+                      {e.years} · <b className="rr-min">{e.minutes}m</b>
+                    </span>
+                  </span>
+                </div>
+              ))}
+              {spot.length > 0 && (
+                <span className="rr-spot">
+                  {spot.map((e) => (
+                    <span key={e.id}>
+                      + {e.name} <b className="rr-min">{e.minutes}m</b>
+                    </span>
+                  ))}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
-      {bench.length > 0 && (
-        <div className="rr-roster-group rr-roster-group--bench">
-          <span className="rr-roster-label">Bench</span>
-          <div className="rr-roster-cells">{bench.map((row) => <RosterCell key={row.id} row={row} />)}</div>
-        </div>
+      {dnp.length > 0 && (
+        <p className="rr-dnp">
+          <span className="rr-roster-label">Did not play</span>
+          {dnp.map((e, i) => (
+            <span key={e.id}>
+              {i > 0 && ' · '}
+              <b>{e.name}</b> {e.years}
+            </span>
+          ))}
+        </p>
       )}
     </div>
   );
 }
 
-/** A team score's letter, against the rest of this draft's field (S = best in the field). */
+/** A team score's letter: against the rest of this draft's field (S = best in the field; a tie
+ * with the best counts as the best — 2026-10-08, the user: "Rotation 100 ma C?" when most of the
+ * field also hit 100), and never below what the number itself says (97+ is at least an A, 93+ a B,
+ * 88+ a C), so a near-perfect score on a crowded scale doesn't read as a weakness. */
+const GRADE_ORDER = ['S', 'A', 'B', 'C', 'D', 'F'];
 export function fieldGrade(value: number, field: number[]): string {
   const others = field.length - 1;
-  if (others <= 0) return 'B';
-  const beaten = field.filter((v) => v < value).length;
-  const pct = beaten / others;
-  if (pct >= 0.95) return 'S';
-  if (pct >= 0.75) return 'A';
-  if (pct >= 0.5) return 'B';
-  if (pct >= 0.25) return 'C';
-  if (pct >= 0.1) return 'D';
-  return 'F';
+  let relative = 'B';
+  if (others > 0) {
+    const beaten = Math.max(0, field.filter((v) => v <= value).length - 1);
+    const pct = Math.min(1, beaten / others);
+    relative = pct >= 0.95 ? 'S' : pct >= 0.75 ? 'A' : pct >= 0.5 ? 'B' : pct >= 0.25 ? 'C' : pct >= 0.1 ? 'D' : 'F';
+  }
+  const absolute = value >= 97 ? 'A' : value >= 93 ? 'B' : value >= 88 ? 'C' : 'F';
+  return GRADE_ORDER[Math.min(GRADE_ORDER.indexOf(relative), GRADE_ORDER.indexOf(absolute))];
 }
 
 export interface ProfileRow {
