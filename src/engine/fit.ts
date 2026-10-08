@@ -407,10 +407,21 @@ function offensiveRoleScore(profile: ShadowRoleProfile, roles: OffensiveArchetyp
  * job (his tag, box evidence), not how well — that is his D-TAL. The layer score blends the two,
  * D-TAL carrying the larger share.
  */
+/** The player behind a role profile — a lookup map instead of a scan of the whole pool (this runs
+ * several times per player in every `fitScore`). First span wins, as `Array.find` did. */
+let playersById: Map<string, PlayerSpan> | null = null;
+function playerById(id: string): PlayerSpan | undefined {
+  if (!playersById) {
+    playersById = new Map();
+    for (const p of players) if (!playersById.has(p.id)) playersById.set(p.id, p);
+  }
+  return playersById.get(id);
+}
+
 const ROLE_EVIDENCE_SHARE = 0.4;
 function groundedInDefensiveTalent(profile: ShadowRoleProfile, roleScore: number): number {
   if (roleScore <= 0) return roleScore;
-  const player = players.find((candidate) => candidate.id === profile.playerId);
+  const player = playerById(profile.playerId);
   if (!player) return roleScore;
   return roleScore * ROLE_EVIDENCE_SHARE + computeDefensiveTalent(player) * (1 - ROLE_EVIDENCE_SHARE);
 }
@@ -436,7 +447,7 @@ function defensiveRoleEvidence(profile: ShadowRoleProfile, roles: DefensiveRole[
     // role is a rim/wing job AND the player carries a whole-career era override
     // (`hasEraOverrideDefenseFloor`), raise the floor to 92: still short of the box-verified
     // elite scores, but no longer capping a confirmed all-time anchor at "credible".
-    const player = players.find((candidate) => candidate.id === profile.playerId);
+    const player = playerById(profile.playerId);
     const eraFloor =
       player &&
       hasEraOverrideDefenseFloor(player.playerName) &&
@@ -453,7 +464,7 @@ function defensiveRoleEvidence(profile: ShadowRoleProfile, roles: DefensiveRole[
   // explanation. Low Activity players may still be evaluated in their incumbent role, but never
   // create a second coverage layer from box inference alone.
   if (profile.incumbentDefensiveRole === 'Low Activity') return 0;
-  const player = players.find((candidate) => candidate.id === profile.playerId);
+  const player = playerById(profile.playerId);
   const curatedSecondary = player
     ? Math.max(...roles.map((role) => secondaryDefensiveRoleStrength(player, role) * 80))
     : 0;
@@ -700,7 +711,18 @@ function starterOnBallDemand(profile: ShadowRoleProfile, span: PlayerSpan): numb
 
 /** A starter's body against the others at his slot: percentiles of rebounding, height, weight and
  * athleticism, and the functional-size blend of them. */
-function physicalProfile(player: PlayerSpan, slot: Position) {
+type PhysicalProfile = ReturnType<typeof computePhysicalProfile>;
+const physicalCache = new Map<string, PhysicalProfile>();
+function physicalProfile(player: PlayerSpan, slot: Position): PhysicalProfile {
+  const key = `${player.id}|${slot}`;
+  let profile = physicalCache.get(key);
+  if (!profile) {
+    profile = computePhysicalProfile(player, slot);
+    physicalCache.set(key, profile);
+  }
+  return profile;
+}
+function computePhysicalProfile(player: PlayerSpan, slot: Position) {
   const rebound = percentile(rpgBySlot[slot], player.box.rpg);
   const height = getHeightInches(player.playerName);
   const weight = getBodyWeightLbs(player.playerName);
