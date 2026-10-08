@@ -239,15 +239,27 @@ Etap 0 (diagnoza, 2026-10-08) — mecz drużynowy ('season', 1,3 pkt na punkt oc
       i bloki ważą mniej. 960 drużyn: mecz oddaje 82% (było 66%), R² 0.63 (0.50), podbicie 2,3 pkt
       (2,9); obrona 92%, atak 68%, talent 69%. Liga bez zmian (121,9 pkt, TS 62,4). Era sprzed 1980:
       87,5% poprawki (było 75%; 100% dawało tylko +0,16 pkt).
-- [ ] **Etap 3: rotacja** (2026-10-08, czeka na akcept) — zmęczenie w meczu 30% wspólnej krzywej
+- [x] **Etap 3: rotacja** (2026-10-08, zmergowany #197) — zmęczenie w meczu 30% wspólnej krzywej
       (42 min −3% zamiast −10,5%; solver minut bez zmian), kara za grę poza pozycją w ataku ×1,7 i
       nowa w obronie (rywal trafia łatwiej). Testy podmiany: zamiana pozycji 100% (było 48%), +6 min
       starterom 116% (397%); 320 drużyn: mecz oddaje 86%, R² 0.64, podbicie 2,25 pkt.
+- [x] **Etap 4a: fit w meczu + dostrojenie kotwicy** (2026-10-08) — fit piątki na boisku (część
+      ataku i obrony, jak w silniku) działa w meczu: słaby fit w ataku = mniej podań do rzutu
+      (asysty), więcej akcji rozsypanych na koniec zegara, więcej strat; słaby fit w obronie =
+      zgubione rotacje (rywal trafia łatwiej, mniej wymuszonych strat, łatwiej polować na najsłabszego).
+      Kotwica słabsza dla O-TAL, zbiórek, rzutów za 3 i skuteczności za 2. 960 drużyn: mecz oddaje 91%
+      (było 83%), R² 0.69 (0.65), podbicie 2,2 pkt; różnica do silnika nie zależy już od fitu (0.22 →
+      0.01). Na 1 SD fitu ataku: +1,9 asysty, −0,75 straty na mecz. Liga bez zmian (121,8 pkt, TS 62,4).
+      Chamberlain (−2,3 pkt względem silnika) i Shaq (do −3): to rzuty wolne — z FT 77% Chamberlain
+      wraca prawie do silnika (−0,2); wysocy sprzed 1980 jako grupa nie są przesunięci (+0,2).
+- [ ] **Etap 4b (może później)** — co jeszcze się rozjeżdża: ocena ataku w meczu ~66% (obrona ~100%),
+      rotacja ~34%, zderzenie stylów ~0,5 pkt. Mały zysk za dużo pomiarów — najpierw symulacje.
 - [ ] **Rzuty wolne w ocenie silnika (pomysł, do zrobienia później)** — mecz nagradza skuteczność z
       linii (+0,9 pkt/mecz na 1 SD, realistycznie), silnik jej nie liczy. Pomysł: w Offense dodać
       „punkty z linii ponad średnią” = ważone minutami (rzuty wolne na rzut z gry × (FT% − średnia
       ligi)) — gracz, który często staje na linii i trafia, podnosi atak; ten sam składnik osłabia
       zespoły z kiepskimi strzelcami z linii w końcówkach (celowe faule na nich, jak w meczu).
+      Przykład (etap 4a): Chamberlain i Shaq tracą w meczu 2–3 pkt względem silnika głównie przez FT%.
 
 ## Etap 2. Symulacje — TERAZ
 

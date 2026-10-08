@@ -15,7 +15,7 @@ import { playmakingScoreForPlayer } from './playmakingLookup';
 import { computeDefensiveTalent, computeOffensiveTalent } from './talent';
 import { rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
-import { fiveSwitchability } from './fit';
+import { fiveSwitchability, fitScore, FIT_WEIGHTS } from './fit';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { assignMatchups, defenderProfile, fiveDefense, REFERENCE, type DefenderProfile, type FiveDefense } from './liveDefense';
 
@@ -735,7 +735,9 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
   // The anchor on defense: the five's mean, as a share of a typical make (~0.5).
   // A defender out of his position gives up easier shots (`ROTATION_TUNING.defAway`).
   const defAway = defSpans.reduce((sum, s, j) => sum + Math.max(0, 1 - positionFitMultiplier(s, STARTER_SLOTS[j])), 0) / Math.max(1, defSpans.length);
-  const defAnchor = Math.max(0.7, Math.min(1.3, 1 - 2 * (defSpans.reduce((sum, s) => sum + anchorOf(s).def, 0) / Math.max(1, defSpans.length)))) * (1 + ROTATION_TUNING.defAway * defAway);
+  const offFit = fiveFit(off.map((c) => c.player.span)).off;
+  const defFit = fiveFit(defSpans).def;
+  const defAnchor = (1 - FIT_TUNING.def.shot * defFit) * Math.max(0.7, Math.min(1.3, 1 - 2 * (defSpans.reduce((sum, s) => sum + anchorOf(s).def, 0) / Math.max(1, defSpans.length)))) * (1 + ROTATION_TUNING.defAway * defAway);
   const mods = off.map((c, i) => {
     const d = fd.profiles[guard[i]];
     const resist = defenseResist(c.player.span);
@@ -753,14 +755,14 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
     def: fd,
     guard,
     mods,
-    tovMul: clampMod(1 + DEFENSE_TUNING.tov * (0.5 * fd.perimeter + 0.5 * fd.stl)) * ballSecurity(off),
+    tovMul: clampMod(1 + DEFENSE_TUNING.tov * (0.5 * fd.perimeter + 0.5 * fd.stl)) * ballSecurity(off) * (1 - FIT_TUNING.off.tov * offFit) * (1 + FIT_TUNING.def.tov * defFit),
     stealShare: Math.max(0.35, Math.min(0.75, STEAL_SHARE * (1 + STEAL_K * fd.stl))),
     oreb: OFF_REBOUND * Math.exp(DEFENSE_TUNING.reb * ((offOreb - REF_FIVE_OREB) / SD_FIVE_OREB - (fd.dreb36 - REF_FIVE_DREB) / SD_FIVE_DREB)),
     foulRate: fd.profiles.reduce((s, p) => s + p.foulIndex ** DEFENSE_TUNING.foul, 0) / fd.profiles.length,
-    huntP: Math.min(MAX_HUNT, HUNT_PER_Z * fd.weakGap) * Math.max(0.2, 1 - SWITCH_TUNING.hunt * switchZ),
+    huntP: Math.min(MAX_HUNT, HUNT_PER_Z * fd.weakGap) * Math.max(0.2, 1 - SWITCH_TUNING.hunt * switchZ) * Math.exp(-FIT_TUNING.def.hunt * defFit),
     rimZ: Math.max(-2.5, Math.min(2.5, (rimPressureTeam(off.map((c) => c.player.span)) - REF_RIM_PRESSURE.mean) / REF_RIM_PRESSURE.sd)),
     rimAnchor: fd.profiles.reduce((best, p, i) => (p.rim > fd.profiles[best].rim ? i : best), 0),
-    lateP: Math.min(0.3, LATE_TUNING.share * Math.exp(LATE_TUNING.defense * fd.perimeter - LATE_TUNING.handler * handlerZ(off) + SWITCH_TUNING.iso * switchZ)),
+    lateP: Math.min(0.3, LATE_TUNING.share * Math.exp(LATE_TUNING.defense * fd.perimeter - LATE_TUNING.handler * handlerZ(off) + SWITCH_TUNING.iso * switchZ - FIT_TUNING.off.late * offFit)),
   };
 }
 
@@ -812,19 +814,21 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
  * spread of a team, minus what the game already gave them (a regression over 320 AI-drafted teams),
  * at 2.25x: over 960 teams the game alone now delivers 82% of the engine's margin per Overall point
  * (66% before), follows it at R² 0.63 (0.50), and leaves 2.3 points a game to the nudge (2.9).
+ * Stage 4a eased O-TAL, rebounds, three-point rate and the two-point term, which had overshot the
+ * engine once the rotation (stage 3) and fit (`FIT_TUNING`) carried their own share.
  */
 export const ANCHOR_TUNING = {
   /** FG points per point of O-TAL above the drafted average. */
-  otal: 0.00225,
+  otal: 0.0016,
   /** FG points per point of two-point % above his position's drafted average (negative: the box
    * score's efficiency counts for less). */
-  two: -0.0038,
+  two: -0.0025,
   /** FG points per point scored per 36 above the drafted average. */
   pts36: -0.0031,
   /** FG points per rebound per 36 above the drafted average. */
-  reb36: 0.0058,
+  reb36: 0.0034,
   /** FG points per unit of three-point attempt rate above the drafted average. */
-  tpaRate: 0.055,
+  tpaRate: 0.02,
   /** Opponent FG points taken away per point of D-TAL above the drafted average. */
   dtal: 0.0018,
 };
@@ -853,13 +857,52 @@ function anchorOf(span: PlayerSpan): { off: number; def: number } {
   return a;
 }
 
+/** Stage 4a, the fit channel (the user: a bad fit on offense means players out of sync, fighting
+ * over the shot, no talking; on defense, no talking and lost rotations). The engine's `fitScore` on
+ * the five on the floor, split into its offensive part (pairing, spacing, title structure, rim
+ * pressure) and its defensive part (role coverage, switching), each as a z-score against the
+ * drafted starters. Per z of offensive fit: `setup` more of its shots set up by a pass (assists and
+ * better looks), `late` fewer trips that break down to a late-clock shot, `tov` fewer turnovers.
+ * Per z of defensive fit: `shot` lower opponent make rates, `tov` more turnovers forced, `hunt` its
+ * weakest defender hunted less often. Over 960 AI-drafted teams the game now delivers 91% of the
+ * engine's margin per Overall point (83% before) at R² 0.69 (0.65), its gap to the engine no longer
+ * follows fit (corr 0.22 -> 0.01), and per 1 SD of a team's offensive fit it plays 1.9 more assists
+ * and 0.75 fewer turnovers a game (1.1 and 0.5 before). */
+export const FIT_TUNING = {
+  off: { setup: 0.05, late: 0.08, tov: 0.035 },
+  def: { shot: 0.0015, tov: 0.01, hunt: 0.1 },
+  ref: { off: 62.8, offSd: 15.7, def: 77.2, defSd: 6.3 },
+};
+const FIT_DEF_WEIGHT = FIT_WEIGHTS.defensiveRoleCoverage + FIT_WEIGHTS.switchability;
+const fiveFitCache = new Map<string, { off: number; def: number }>();
+function fiveFit(spans: PlayerSpan[]): { off: number; def: number } {
+  const key = spans.map((s) => s.id).join('|');
+  let f = fiveFitCache.get(key);
+  if (!f) {
+    f = { off: 0, def: 0 };
+    if (spans.length === 5) {
+      const lineup: Lineup = {};
+      spans.forEach((s, i) => { lineup[STARTER_SLOTS[i]] = s; });
+      const r = fitScore(lineupTeam(lineup));
+      const def = (FIT_WEIGHTS.defensiveRoleCoverage * r.components.defensiveRoleCoverage + FIT_WEIGHTS.switchability * r.components.switchability) / FIT_DEF_WEIGHT;
+      const off = (r.score - FIT_DEF_WEIGHT * def) / (1 - FIT_DEF_WEIGHT);
+      const z = (v: number) => Math.max(-2.5, Math.min(2.5, v));
+      f = { off: z((off - FIT_TUNING.ref.off) / FIT_TUNING.ref.offSd), def: z((def - FIT_TUNING.ref.def) / FIT_TUNING.ref.defSd) };
+    }
+    if (fiveFitCache.size > 20000) fiveFitCache.clear();
+    fiveFitCache.set(key, f);
+  }
+  return f;
+}
+
 function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlayer[] {
   const key = five.map((p) => p.span.id).join('|');
   let court = cache.get(key);
   if (!court) {
     const lines = contextLines(five.map((p) => p.span));
     const habits = five.map((p, i) => setupHabit(p.span, lines[i].originalUsage));
-    const setups = habits.map((h, i) => ({ two: setupHere(h.two, lines[i]), three: setupHere(h.three, lines[i]) }));
+    const sync = Math.max(0.6, 1 + FIT_TUNING.off.setup * fiveFit(five.map((p) => p.span)).off);
+    const setups = habits.map((h, i) => ({ two: setupHere(h.two * sync, lines[i]), three: setupHere(h.three * sync, lines[i]) }));
     const edges = habits.map(setupEdge);
     const owns = five.map((p, i) => {
       const r3 = Math.min(0.9, p.span.box.threePA / Math.max(1, p.span.fga));
