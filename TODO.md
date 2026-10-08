@@ -216,6 +216,24 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 6. Treść na później (daily dla Mini/All-Time, stół i poziomy AI w Draw Five, typy zagrań i krycia).
 7. Gotowość do wypuszczenia (playtesty, dane per tryb, flagi testowe).
 
+## Punkt 3 — mecz bliżej silnika (decyzje 2026-10-08)
+
+Cel ~85–90% różnicy z silnika (talent ≥80%, atak/obrona ≥75%, rotacja ≥60%); podbicie celności
+zostaje, ale małe; gwiazdy mogą przebić realne linijki o maks. ~10%. Każdy etap: raport → akcept →
+PR. Bezpieczniki: statystyki drużyn jak w NBA, realne linijki gwiazd, testy dwustronne.
+
+Etap 0 (diagnoza, 2026-10-08) — mecz drużynowy ('season', 1,3 pkt na punkt oceny), 960 drużyn:
+- Całość 66% (R² 0.50), talent 63%, atak 48%, obrona 57%, rotacja 32%, ławka 110%, składniki fitu
+  ≥100%. Podbicie pokrywa średnio 2,9 pkt na mecz.
+- Testy podmiany (120 drużyn): wymiana startera 41% (zmiennika 85%), na punkt O-TAL 39%, D-TAL 51%,
+  „talent” (premia za gwiazdy) ~21%; gra poza pozycją 47%; +6 min starterom: silnik −1,5, mecz −7,8.
+- Limity (kontekst, rozstawienie, modyfikatory, koszt usage, odporność gwiazd, pasma usage) NIE są
+  przyczyną — ich wyłączenie nic nie zmienia.
+- Przyczyny: mecz wycenia gracza z box score (skuteczność × wolumen), silnik z wpływu. Mecz przecenia
+  skuteczność (+10 pkt % za 2 → +1,2 pkt/mecz ponad silnik), nie docenia rozgrywania (−0,45 na asystę),
+  graczy sprzed 1980 (−1,0), PG (−2,1), gwiazd O-TAL 90+ (−1,0); brak premii za gwiazdę; efekt obrońcy
+  o połowę słabszy; słaba kara za pozycję; zmęczenie w meczu ~5× mocniejsze niż w ocenie.
+
 ## Etap 2. Symulacje — TERAZ
 
 Decyzje (2026-09-30):
