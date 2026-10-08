@@ -13,7 +13,7 @@
  * - Shooting: twos move by half the league's two-point change since his era (the other half is the
  *   room the engine gives in `contextStats.ts`), threes by the league's three-point change, free
  *   throws not at all — so shooters who already took modern shots (Curry, Korver, Miller) gain
- *   little. Before 1980 only 75% of it (the user: "grali z bandą słabiaków").
+ *   little. Before 1980 only 87.5% of it (the user: "grali z bandą słabiaków"; 75% until 2026-10-08).
  * - Stars' shots: field-goal attempts x pace; above today's leader only a quarter of the excess
  *   (the user: today's role players are better, so stars shoot less). The shots given up go to
  *   efficiency (the usage factor lowers his claim on the ball in `contextStats.ts`, which pays
@@ -34,7 +34,9 @@ const MODERN_SEASONS = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
 const MODERN_PACE = [102.7, 101.42, 100.58, 101.56, 98.5, 100.6, 101.8].reduce((a, b) => a + b, 0) / 7;
 const MODERN_FROM = 2019;
 const OLD_ERA_BEFORE = 1980;
-const OLD_ERA_SHARE = 0.75;
+/** 2026-10-08, the user: 0.75 -> 0.875 (stage 3 of the game-to-engine work measured the old
+ * players a point short in the live game; the full 1.0 moved them only 0.16 points more). */
+const OLD_ERA_SHARE = 0.875;
 const TWO_POINT_SHARE = 0.5;
 const LEADER_SQUEEZE = 0.5;
 const SHOT_SQUEEZE = 0.25;

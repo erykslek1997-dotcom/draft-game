@@ -12,7 +12,7 @@ import { fatigueShare } from './fatigue';
 import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { playmakingScoreForPlayer } from './playmakingLookup';
-import { computeOffensiveTalent } from './talent';
+import { computeDefensiveTalent, computeOffensiveTalent } from './talent';
 import { rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
 import { fiveSwitchability } from './fit';
@@ -413,13 +413,16 @@ const STEAL_SHARE = 0.55;
 const STEAL_K = 0.08;
 /** The defense knobs, in one place so the calibration scripts can sweep them. */
 export const DEFENSE_TUNING = {
-  rim: 0.062,
+  /** 2026-10-08 (game closer to the engine): 0.062 -> 0.03 and `tov` 0.28 -> 0.05. Blocks and steals
+   * moved a team's margin 2.5x and 8x what the engine gives them (and steals fed too many fast
+   * breaks); D-TAL now carries the defense through the anchor (`ANCHOR_TUNING`). */
+  rim: 0.03,
   direct: 0.04,
   mid: 0.05,
   help: 0.015,
   three: 0.045,
   threeRate: 0.08,
-  tov: 0.28,
+  tov: 0.05,
   reb: 0.1,
   foul: 0.65,
   refRim: 1.26,
@@ -717,14 +720,16 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
   const guard = assignMatchups(off.map((c) => c.player.span), off.map((c) => c.usage), defSpans);
   const offOreb = off.reduce((s, c) => s + defenderProfile(c.player.span).oreb36, 0);
   const switchZ = Math.max(-2.5, Math.min(2.5, (fiveSwitchability(defSpans, STARTER_SLOTS) - REF_SWITCH.mean) / REF_SWITCH.sd));
+  // The anchor on defense: the five's mean, as a share of a typical make (~0.5).
+  const defAnchor = Math.max(0.7, Math.min(1.3, 1 - 2 * (defSpans.reduce((sum, s) => sum + anchorOf(s).def, 0) / Math.max(1, defSpans.length))));
   const mods = off.map((c, i) => {
     const d = fd.profiles[guard[i]];
     const resist = defenseResist(c.player.span);
     const cut = (m: number) => (m < 1 ? 1 - (1 - m) * resist : m);
     return {
-      rim: cut(clampMod(1 - DEFENSE_TUNING.rim * (fd.rim - DEFENSE_TUNING.refRim) - DEFENSE_TUNING.direct * d.dtal)),
-      mid: cut(clampMod(1 - DEFENSE_TUNING.mid * d.dtal - DEFENSE_TUNING.help * fd.perimeter)),
-      three: cut(clampMod(1 - DEFENSE_TUNING.three * d.perimeter)),
+      rim: cut(clampMod(1 - DEFENSE_TUNING.rim * (fd.rim - DEFENSE_TUNING.refRim) - DEFENSE_TUNING.direct * d.dtal)) * defAnchor,
+      mid: cut(clampMod(1 - DEFENSE_TUNING.mid * d.dtal - DEFENSE_TUNING.help * fd.perimeter)) * defAnchor,
+      three: cut(clampMod(1 - DEFENSE_TUNING.three * d.perimeter)) * defAnchor,
       threeRate: cut(clampMod(1 - DEFENSE_TUNING.threeRate * fd.perimeter)),
       foul: d.foulIndex ** DEFENSE_TUNING.foul,
     };
@@ -781,6 +786,58 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
   return ((1 - tov) * value) / (1 - (1 - tov) * miss * cl.oreb);
 }
 
+/**
+ * Stage 3 (game closer to the engine), the anchor. The game reads a player from his box score; the
+ * engine from its talent ratings. Where the two weigh a player differently, the five he plays in is
+ * moved toward the engine's reading: on offense its shooting (`offense`), on defense the shooting
+ * it allows (`defense`). Each player adds his share while he is on the floor (the five's mean),
+ * centred on the drafted rotations' averages so the league's shooting stays where it was.
+ *
+ * 2026-10-08, the user ("kotwica": ok). The weights are what the engine gives each of these per
+ * spread of a team, minus what the game already gave them (a regression over 320 AI-drafted teams),
+ * at 2.25x: over 960 teams the game alone now delivers 82% of the engine's margin per Overall point
+ * (66% before), follows it at R² 0.63 (0.50), and leaves 2.3 points a game to the nudge (2.9).
+ */
+export const ANCHOR_TUNING = {
+  /** FG points per point of O-TAL above the drafted average. */
+  otal: 0.00225,
+  /** FG points per point of two-point % above his position's drafted average (negative: the box
+   * score's efficiency counts for less). */
+  two: -0.0038,
+  /** FG points per point scored per 36 above the drafted average. */
+  pts36: -0.0031,
+  /** FG points per rebound per 36 above the drafted average. */
+  reb36: 0.0058,
+  /** FG points per unit of three-point attempt rate above the drafted average. */
+  tpaRate: 0.055,
+  /** Opponent FG points taken away per point of D-TAL above the drafted average. */
+  dtal: 0.0018,
+};
+/** The drafted rotations' minute-weighted averages (60 AI drafts), so the anchor moves a five
+ * against the others and leaves the league's shooting where it was. */
+const ANCHOR_REF = { otal: 73.93, dtal: 73.31, pts36: 20.31, reb36: 7.645, tpaRate: 0.251 };
+const TWO_PCT_BY_POSITION: Record<Position, number> = { PG: 0.529, SG: 0.532, SF: 0.545, PF: 0.562, C: 0.588 };
+const anchorCache = new WeakMap<PlayerSpan, { off: number; def: number }>();
+function anchorOf(span: PlayerSpan): { off: number; def: number } {
+  let a = anchorCache.get(span);
+  if (!a) {
+    const m = modernBox(span);
+    const k = 36 / (estimatedMinutesPerGame(span) ?? 36);
+    const t = ANCHOR_TUNING;
+    a = {
+      off:
+        t.otal * (computeOffensiveTalent(span) - ANCHOR_REF.otal) +
+        t.two * 100 * (twoPointPct(span) - TWO_PCT_BY_POSITION[span.primaryPosition]) +
+        t.pts36 * (m.ppg * k - ANCHOR_REF.pts36) +
+        t.reb36 * (m.rpg * k - ANCHOR_REF.reb36) +
+        t.tpaRate * (span.box.threePA / Math.max(1, span.fga) - ANCHOR_REF.tpaRate),
+      def: t.dtal * (computeDefensiveTalent(span) - ANCHOR_REF.dtal),
+    };
+    anchorCache.set(span, a);
+  }
+  return a;
+}
+
 function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlayer[] {
   const key = five.map((p) => p.span.id).join('|');
   let court = cache.get(key);
@@ -795,13 +852,14 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     });
     const usageCost = owns.map(usageCostScale);
     const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
+    const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length);
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) + edges[i].two * (setups[i].two - habits[i].two))),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three))),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) + edges[i].two * (setups[i].two - habits[i].two) + anchor)),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
