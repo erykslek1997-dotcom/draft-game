@@ -542,19 +542,23 @@ span.at-pc-name { cursor: default; }
 .rr-section::after { content: ''; flex: 1; height: 1px; background: var(--calm-line); order: 1; }
 .rr-section small { order: 2; font-family: var(--calm-sans); font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--at-ink-faint); white-space: nowrap; }
 
-/* roster: starters + bench */
+/* roster: by position — starter, then the backups at that position */
 .rr-roster { border-radius: 14px; background: var(--calm-raised); border: 1px solid var(--calm-line); overflow: hidden; }
-.rr-roster-group + .rr-roster-group { border-top: 1px solid var(--calm-line); }
-.rr-roster-label { display: block; padding: 10px 14px 0; font: 700 12px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); }
-.rr-roster-cells { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.rr-cell { display: grid; grid-template-columns: auto 1fr; gap: 9px; align-items: center; padding: 8px 14px 12px; min-width: 0; }
+.rr-roster-cols { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.rr-roster-col { padding: 12px 12px 14px; min-width: 0; }
+.rr-roster-col + .rr-roster-col { border-left: 1px solid var(--calm-line); }
+.rr-roster-pos { display: block; margin-bottom: 4px; font: 700 13px var(--rr-disp); letter-spacing: 0.12em; color: var(--at-ink-faint); }
+.rr-roster-entries { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.rr-roster-label { font: 700 12px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); margin-right: 10px; }
+.rr-cell { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; min-width: 0; }
 .rr-cell .bf-face { box-shadow: 0 0 0 1.5px hsl(calc(var(--team-hue, 215) + 40) 70% 55% / 0.55); }
+.rr-cell.is-backup { opacity: 0.82; }
 .rr-cell-text { display: flex; flex-direction: column; min-width: 0; }
 .rr-cell-text b { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rr-cell-text span { font-size: 12px; color: var(--at-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rr-cell-text em { font: 700 12px var(--rr-disp); letter-spacing: 0.08em; font-style: normal; color: var(--at-ink-soft); }
-.rr-roster-group--bench .rr-cell { opacity: 0.8; padding-top: 6px; padding-bottom: 10px; }
-.rr-cell.is-dnp b { color: var(--at-ink-faint); }
+.rr-spot { display: flex; flex-direction: column; font-size: 12px; color: var(--at-ink-faint); }
+.rr-dnp { margin: 0; padding: 9px 14px; border-top: 1px solid var(--calm-line); font-size: 12.5px; color: var(--at-ink-faint); }
+.rr-dnp b { color: var(--at-ink-soft); font-weight: 600; }
 
 /* report: profile + desk voices */
 .rr-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
@@ -641,10 +645,12 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
   .rr-headline { font-size: 18px; }
   .rr-quote { flex-direction: column; gap: 2px; }
   .rr-section small { display: none; }
-  .rr-roster-cells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .rr-cell { align-items: start; padding: 8px 10px 10px; gap: 8px; }
-  .rr-cell-text b, .rr-cell-text span { white-space: normal; overflow: visible; }
-  .rr-open .rr-roster-cells { grid-template-columns: minmax(0, 1fr); }
+  .rr-roster-cols { grid-template-columns: 1fr; }
+  .rr-roster-col { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px 12px; }
+  .rr-roster-col + .rr-roster-col { border-left: 0; border-top: 1px solid var(--calm-line); }
+  .rr-roster-pos { margin: 0; }
+  .rr-roster-entries { gap: 6px; }
+  .rr-spot { grid-column: 1 / -1; }
   .rr-cols { grid-template-columns: 1fr; }
   .rr-rung { grid-template-columns: 22px 24px minmax(0, 1fr) 44px 30px 12px; gap: 8px; }
   .rr-od { display: none; }
