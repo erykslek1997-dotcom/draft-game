@@ -211,7 +211,51 @@ function allStarsFrom(pool: SeasonPlayerLine[], value: (l: SeasonPlayerLine) => 
   return ranked.filter((l) => picked.has(l));
 }
 
-export function simulateLiveSeason(teams: Team[], seed: string = seasonSeed(teams), onProgress?: (played: number, total: number) => void): LiveSeasonResult {
+/** Progress of a season or a playoff run being played: games played of the total. */
+export interface SimProgress {
+  played: number;
+  total: number;
+}
+
+/** Plays a step-wise simulation to the end in one go. */
+function runSteps<T>(steps: Generator<SimProgress, T>, onProgress?: (p: SimProgress) => void): T {
+  for (;;) {
+    const next = steps.next();
+    if (next.done) return next.value;
+    onProgress?.(next.value);
+  }
+}
+
+/**
+ * The same, a slice at a time, handing the main thread back between slices so a page stays
+ * responsive while a season plays (~4 s of work in ~30 ms slices). Rejects with an `AbortError` if
+ * `signal` aborts.
+ */
+async function runStepsAsync<T>(steps: Generator<SimProgress, T>, onProgress?: (p: SimProgress) => void, signal?: AbortSignal): Promise<T> {
+  const SLICE_MS = 30;
+  let sliceStart = Date.now();
+  for (;;) {
+    if (signal?.aborted) throw new DOMException('Season simulation aborted', 'AbortError');
+    const next = steps.next();
+    if (next.done) return next.value;
+    if (Date.now() - sliceStart >= SLICE_MS) {
+      onProgress?.(next.value);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      sliceStart = Date.now();
+    }
+  }
+}
+
+export function simulateLiveSeason(teams: Team[], seed: string = seasonSeed(teams), onProgress?: (p: SimProgress) => void): LiveSeasonResult {
+  return runSteps(seasonSteps(teams, seed), onProgress);
+}
+
+/** `simulateLiveSeason` without blocking the page — the same season for the same seed. */
+export function simulateLiveSeasonAsync(teams: Team[], seed: string = seasonSeed(teams), onProgress?: (p: SimProgress) => void, signal?: AbortSignal): Promise<LiveSeasonResult> {
+  return runStepsAsync(seasonSteps(teams, seed), onProgress, signal);
+}
+
+function* seasonSteps(teams: Team[], seed: string): Generator<SimProgress, LiveSeasonResult> {
   const cache = buildMatchupCache(teams);
   const weak = new Map(teams.map((t) => [t.id, teamWeakLink(t)]));
   const record = new Map(teams.map((t) => [t.id, { teamId: t.id, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 }]));
@@ -247,7 +291,7 @@ export function simulateLiveSeason(teams: Team[], seed: string = seasonSeed(team
         addGame(lines, [a, b], game, starterIds);
         played++;
       }
-      onProgress?.(played, total);
+      yield { played, total };
     }
   }
 
@@ -334,7 +378,20 @@ const PLAYOFF_ROUNDS = ['Quarterfinals', 'Semifinals', 'Finals'];
  * (`playLivePlayoffGame`).
  */
 export function simulateLivePlayoffs(teams: Team[], standings: LiveStandingsRow[], seed: string = seasonSeed(teams)): LivePlayoffResult | null {
+  return runSteps(playoffSteps(teams, standings, seed));
+}
+
+/** `simulateLivePlayoffs` without blocking the page. */
+export function simulateLivePlayoffsAsync(teams: Team[], standings: LiveStandingsRow[], seed: string = seasonSeed(teams), signal?: AbortSignal): Promise<LivePlayoffResult | null> {
+  return runStepsAsync(playoffSteps(teams, standings, seed), undefined, signal);
+}
+
+/** At most 7 games in each of 7 series. */
+const PLAYOFF_MAX_GAMES = 49;
+
+function* playoffSteps(teams: Team[], standings: LiveStandingsRow[], seed: string): Generator<SimProgress, LivePlayoffResult | null> {
   if (teams.length !== TEAM_COUNT || standings.length !== TEAM_COUNT) return null;
+  let playedGames = 0;
   const teamById = new Map(teams.map((t) => [t.id, t]));
   const cache = buildMatchupCache(teams);
   const starterIds = new Set(teams.flatMap((t) => primaryStarters(t).map((e) => `${t.id}|${e.player.id}`)));
@@ -364,6 +421,7 @@ export function simulateLivePlayoffs(teams: Team[], standings: LiveStandingsRow[
         else wb++;
         addGame(lines, [a, b], game, starterIds);
         if (roundLines) addGame(roundLines, [a, b], game, starterIds);
+        yield { played: ++playedGames, total: PLAYOFF_MAX_GAMES };
       }
       const winner = wa === 4 ? ea : eb;
       series.push({ round: round + 1, roundLabel: PLAYOFF_ROUNDS[round], teamAId: a.id, teamASeed: ea.seed, teamBId: b.id, teamBSeed: eb.seed, winnerId: winner.id, gamesWonA: wa, gamesWonB: wb, margin, games });

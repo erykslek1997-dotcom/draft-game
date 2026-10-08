@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
-import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
-import { PLAYOFF_TEAM_COUNT, simulatePlayoffs, type PlayoffResult } from '../engine/playoffSimulation';
+import { seasonSeed, simulateLivePlayoffsAsync, simulateLiveSeasonAsync, type SimProgress } from '../engine/liveSeason';
 import { STARTER_SLOTS } from '../engine/positions';
 import type { Position } from '../data/schema';
 import { allAssignments, primaryStarters, type ResolvedSlotAssignment } from '../engine/rotation';
@@ -37,7 +36,7 @@ import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 import { shortenName } from './ShotChip';
 import { ShareModal } from './ResultsShareModal';
-import { PlayoffBracketTree } from './PlayoffBracketTree';
+import SeasonView, { type SeasonState } from './SeasonView';
 import { styleClashBreakdown, styleProfile, type StyleClashKey } from '../engine/matchup';
 import {
   RosterGrid,
@@ -53,7 +52,7 @@ import {
 } from './ResultsReport';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
-// features below (Title Odds precision upgrade, season-sim pool) — real work deferred until the
+// features below (Title Odds precision upgrade, the live season) — real work deferred until the
 // browser is actually idle, so neither one competes with the results screen's own first paint.
 // `requestIdleCallback` isn't in Safari; a short `setTimeout` is a reasonable stand-in (still
 // yields to the current paint/interaction, just without the "only when truly idle" guarantee).
@@ -73,30 +72,6 @@ const FAST_TITLE_ODDS_SIMULATIONS = 500;
 /** The engine's own real calibration default (`DEFAULT_SIMULATIONS`, leagueSimulation.ts) — what
  * Title Odds always meant to show, now affordable in the background instead of blocking paint. */
 const PRECISE_TITLE_ODDS_SIMULATIONS = 20000;
-/** How many independent season rolls the background pool builds before "Simulate an 82-game
- * season" has a real distribution to pick a representative entry from. */
-const SEASON_SIM_POOL_SIZE = 60;
-
-/** The pool entry whose win total for `humanTeamId` sits closest to the pool's own median — see
- * this screen's own docstring on the season-sim pool for why "closest to median" instead of an
- * arbitrary or purely-random pick. Ties broken by whichever entry comes first. Falls back to the
- * pool's own first entry if `humanTeamId` never appears in it (defensive; not an expected path). */
-function pickRepresentativeSeason(pool: SeasonStandingsRow[][], humanTeamId: string): SeasonStandingsRow[] {
-  const winsByIndex = pool.map((standings) => standings.find((row) => row.teamId === humanTeamId)?.wins ?? 0);
-  const sorted = [...winsByIndex].sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)];
-  let bestIndex = 0;
-  let bestDiff = Infinity;
-  winsByIndex.forEach((wins, index) => {
-    const diff = Math.abs(wins - median);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestIndex = index;
-    }
-  });
-  return pool[bestIndex] ?? pool[0];
-}
-
 /**
  * 2026-09-14, user-reported live ("a gdyby zrobić animację cyfr?" — what if we animated the
  * digits?): tweens a displayed number toward `target` over `durationMs` using an ease-out curve,
@@ -1073,26 +1048,13 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   // for the perf reason). The `displayTeam` / `scoredTeams` plumbing stays so re-wiring a
   // corrector later is a one-line change, and the feedback-export schema is unchanged.
   const correctedRotations = EMPTY_CORRECTED_ROTATIONS;
-  // 2026-08-19, user's own idea ("PR works as it works, but user can simulate 82 game season"):
-  // one randomly-rolled 82-game season standings table, completely separate from the Final Power
-  // Ranking above (`ranked`, still what `overall`/rank is judged by — untouched by this). `null`
-  // until the button below is clicked; re-clicking re-rolls a fresh season rather than averaging.
-  const [seasonStandings, setSeasonStandings] = useState<SeasonStandingsRow[] | null>(null);
-  // 2026-08-19, same-day follow-up ("can we add playoffs?"): seeded by `seasonStandings` above,
-  // not the Final Power Ranking — confirmed via AskUserQuestion before building. Cleared whenever
-  // a new season is rolled (a bracket seeded by a now-replaced season's standings is stale), but
-  // NOT cleared by re-simulating the playoffs alone from the same season — that's a real, expected
-  // "same season, roll the playoffs again" use case.
-  const [playoffResult, setPlayoffResult] = useState<PlayoffResult | null>(null);
-  // 2026-09-18, user-reported live ("może zamiast rozwijanej listy, niech to będzie popup, po
-  // symulacji można zamknąć i zamiast 'simulate season' w tym samym miejscu będzie 'see season
-  // results'" — a popup instead of an inline-growing list; closeable, with the trigger button
-  // relabeling itself once a result exists): the standings table + playoff bracket used to render
-  // inline and grow the whole panel tall the moment a season existed. Opens on the FIRST simulate
-  // click (so the payoff is immediate) and again on any later "See season results" click; closing
-  // it never discards `seasonStandings`/`playoffResult` — same "no re-roll once a result exists"
-  // rule as before, just now reachable without permanently occupying page space.
-  const [seasonModalOpen, setSeasonModalOpen] = useState(false);
+  // 2026-10-08, the season on the live engine (the user: one season per draft, recap B, watch your
+  // own playoff games): played in the background as soon as this screen opens — a few seconds,
+  // in slices, so the page stays usable — and opened from the hero's "Your season".
+  const [seasonState, setSeasonState] = useState<SeasonState>({ status: 'running', progress: null });
+  const [seasonOpen, setSeasonOpen] = useState(false);
+  const seasonOpenRef = useRef(false);
+  seasonOpenRef.current = seasonOpen;
   // 2026-08-14, results-screen redesign: 16 full team cards on one page was the single biggest
   // usability complaint (scrolling past 15 opponents to see your own team) — every card starts
   // collapsed to a one-line summary. 2026-09-09: the human's card starts collapsed too now that
@@ -1115,15 +1077,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   // (During local calibration a scoring.ts HMR edit won't refresh this without a hard reload —
   // acceptable; the sim below already had the same property.)
   const ranked = useMemo(() => rankTeams(scoredTeams), [scoredTeams]);
-  // 2026-09-14, user-reported live (asking for more background simulation so results feel more
-  // real): one shared per-team cache (overall/netRating/huntingPotential/huntability — see
-  // `buildMatchupCache`'s own docstring, seasonSimulation.ts) built ONCE per completed draft.
-  // Replaces the narrower `overallByTeamId` this screen used to build just for the season/playoff
-  // sim buttons — profiling found `fitScore` (read here for `huntingPotential`), not `overall`, was
-  // the real dominant cost of every matchup projection, and this same cache is what makes both
-  // background features below (the Title Odds precision upgrade and the season-sim pool) actually
-  // affordable instead of blocking the main thread for seconds.
-  const matchupCache = useMemo(() => buildMatchupCache(scoredTeams), [scoredTeams]);
 
   // 2026-09-14, user-reported live: Title Odds used to be a single 500-trial Monte Carlo estimate,
   // chosen specifically because the engine's real 20,000-trial default used to take ~1s and would
@@ -1144,27 +1097,33 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   const leagueEval = preciseLeagueEval ?? fastLeagueEval;
   const leagueEvalByTeamId = useMemo(() => new Map(leagueEval.map((entry) => [entry.teamId, entry])), [leagueEval]);
 
-  // 2026-09-14, user-reported live ("chodzi mi o większą liczbę symulacji w tle żeby wynik był
-  // bardziej realny" — more background simulations so the result feels more real): a background
-  // pool of real, independent `simulateSeason` rolls (same unchanged primitive — see its own
-  // docstring, seasonSimulation.ts) computed once idle. "Simulate an 82-game season" below no
-  // longer rolls one arbitrary season on click; it reveals whichever pool entry landed closest to
-  // the pool's own median win total for the human's team — still one genuine, concrete season with
-  // real standings, just a REPRESENTATIVE one instead of an arbitrary one. Falls back to a single
-  // direct roll if the pool isn't ready yet (a very fast click, or `requestIdleCallback` never
-  // firing) so the button always works. A deliberate, CONFIRMED reversal of this screen's own
-  // earlier "simulate once, don't average many seasons" choice (AskUserQuestion, this session) —
-  // not a silent regression of it.
-  const [seasonPool, setSeasonPool] = useState<SeasonStandingsRow[][] | null>(null);
   useEffect(() => {
-    setSeasonPool(null);
+    const abort = new AbortController();
+    setSeasonState({ status: 'running', progress: null });
+    let lastShown = 0;
+    // Progress re-renders this whole screen, so only while the season sheet is open, 4x a second.
+    const onProgress = (progress: SimProgress) => {
+      const now = Date.now();
+      if (!seasonOpenRef.current || now - lastShown < 250) return;
+      lastShown = now;
+      setSeasonState({ status: 'running', progress });
+    };
+    const seed = seasonSeed(scoredTeams);
     const handle = scheduleIdle(() => {
-      const pool: SeasonStandingsRow[][] = [];
-      for (let i = 0; i < SEASON_SIM_POOL_SIZE; i++) pool.push(simulateSeason(scoredTeams, matchupCache));
-      setSeasonPool(pool);
+      simulateLiveSeasonAsync(scoredTeams, seed, onProgress, abort.signal)
+        .then(async (season) => {
+          const playoffs = await simulateLivePlayoffsAsync(scoredTeams, season.standings, seed, abort.signal);
+          setSeasonState({ status: 'done', season, playoffs });
+        })
+        .catch((error: unknown) => {
+          if ((error as { name?: string })?.name !== 'AbortError') throw error;
+        });
     });
-    return () => cancelIdle(handle);
-  }, [scoredTeams, matchupCache]);
+    return () => {
+      cancelIdle(handle);
+      abort.abort();
+    };
+  }, [scoredTeams]);
 
   // The one roster this screen exists to show off — the player's own, or (a defensive fallback for
   // a no-human commissioner draft) the Final Power Ranking's #1. Drives the hero header below.
@@ -1297,105 +1256,22 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   // the same size whether or not a result exists — only the modal's own presence varies — which is
   // what lets it live inside the hero's Rotation column without ever pushing that column's height
   // around.
+  const codeByTeamId = useMemo(() => teamCodes(teams), [teams]);
   const seasonSimSlot = (
     <>
       <button
         type="button"
         className="rs-primary season-sim-btn"
-        title={`Rolls a full 82-game regular season, game by game, from each pairing's projected win probability — the roll shown is whichever of ${SEASON_SIM_POOL_SIZE} background simulations landed closest to the typical outcome for your team. Separate from the final ranking.`}
-        onClick={() => {
-          if (!seasonStandings) {
-            // 2026-09-14: prefers the background pool's representative pick; falls back to one
-            // direct roll on the rare chance the pool hasn't finished yet (a very fast click, or
-            // `requestIdleCallback` never firing) so the button always works either way.
-            const humanTeamId = scoredTeams.find((team) => team.isHuman)?.id;
-            const picked = seasonPool && humanTeamId
-              ? pickRepresentativeSeason(seasonPool, humanTeamId)
-              : simulateSeason(scoredTeams, matchupCache);
-            setSeasonStandings(picked);
-            setPlayoffResult(null);
-          }
-          setSeasonModalOpen(true);
-        }}
+        title="An 82-game season and the playoffs, every game played on the game engine. The same draft always plays the same season."
+        onClick={() => setSeasonOpen(true)}
       >
-        {seasonStandings ? 'See season results' : 'Simulate a season'}
+        Your season
       </button>
-      {seasonModalOpen && seasonStandings && (
-        <div className="season-sim-backdrop" onClick={() => setSeasonModalOpen(false)}>
-          <div
-            className={`season-sim-modal ${playoffResult ? 'season-sim-modal--wide' : ''}`}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Season results"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button type="button" className="season-sim-close" aria-label="Close" onClick={() => setSeasonModalOpen(false)}>
-              ✕
-            </button>
-            <h3>Season results</h3>
-            <table className="at-roster-table season-standings-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Team</th>
-                  <th>W</th>
-                  <th>L</th>
-                  <th>Win%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {seasonStandings.map((row) => {
-                  const rowTeam = teamById(row.teamId);
-                  if (!rowTeam) return null;
-                  return (
-                    <tr
-                      key={row.teamId}
-                      className={`${rowTeam.isHuman ? 'season-standings-you' : ''} ${row.rank === PLAYOFF_TEAM_COUNT ? 'season-standings-cutoff' : ''} ${row.rank > PLAYOFF_TEAM_COUNT ? 'season-standings-out' : ''}`}
-                    >
-                      <td>{row.rank}</td>
-                      <td>
-                        {teamLabel(rowTeam)}
-                        {rowTeam.isHuman && <span className="bracket-you-tag">YOU</span>}
-                      </td>
-                      <td>{row.wins}</td>
-                      <td>{row.losses}</td>
-                      <td>{(row.winPct * 100).toFixed(1)}%</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {/* 2026-08-19, same-day follow-up: seeded by the standings above, not the Final Power
-                Ranking — every series is genuinely played out game by game (real BO7 tallies like
-                "4-2"), not a single probability draw. Re-clicking re-rolls the playoffs alone,
-                keeping the same season standings as the seed. */}
-            {!playoffResult && (
-              <button
-                className="primary-btn playoff-sim-btn"
-                onClick={() => setPlayoffResult(simulatePlayoffs(scoredTeams, seasonStandings, matchupCache))}
-              >
-                🏆 Simulate the playoffs
-              </button>
-            )}
-            {/* 2026-09-24: only the season's top 8 make these playoffs (playoffSimulation.ts). */}
-            <p className="season-playoff-note">
-              {(() => {
-                const humanRow = seasonStandings.find((row) => teamById(row.teamId)?.isHuman);
-                if (!humanRow) return `Top ${PLAYOFF_TEAM_COUNT} make the playoffs.`;
-                return humanRow.rank <= PLAYOFF_TEAM_COUNT
-                  ? `Top ${PLAYOFF_TEAM_COUNT} make the playoffs — you're in as the #${humanRow.rank} seed.`
-                  : `Top ${PLAYOFF_TEAM_COUNT} make the playoffs — you finished ${humanRow.rank}th and missed out.`;
-              })()}
-            </p>
-            {playoffResult && <PlayoffBracketTree result={playoffResult} teamById={teamById} />}
-          </div>
-        </div>
-      )}
+      {seasonOpen && <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} />}
     </>
   );
 
   // 2026-10-08, results look C: every team's report is built from the same pieces.
-  const codeByTeamId = useMemo(() => teamCodes(teams), [teams]);
   const fieldScores = useMemo(() => {
     const b = ranked.map((r) => r.breakdown);
     return {
