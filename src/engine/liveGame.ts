@@ -428,7 +428,9 @@ export const DEFENSE_TUNING = {
   refRim: 1.26,
   /** A player's real percentages already hold his breaks and putbacks; the half court gives back
    * what the game now adds there, so his season lands on his own numbers. */
-  halfCourt: 0.99,
+  /* 2026-10-08: 0.99 -> 0.983 — the milder fatigue (stage 3) left more shots going in; the league
+   * back to ~122 points and TS ~62.4 a team game. */
+  halfCourt: 0.983,
   turnover: 0.133,
   /** A player's real free-throw rate already holds his trips in the bonus, which the game now
    * plays as their own fouls; shooting fouls give that back, so the league's free throws stay
@@ -739,9 +741,10 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
     const resist = defenseResist(c.player.span);
     const cut = (m: number) => (m < 1 ? 1 - (1 - m) * resist : m);
     return {
-      rim: cut(clampMod(1 - DEFENSE_TUNING.rim * (fd.rim - DEFENSE_TUNING.refRim) - DEFENSE_TUNING.direct * d.dtal)) * defAnchor,
-      mid: cut(clampMod(1 - DEFENSE_TUNING.mid * d.dtal - DEFENSE_TUNING.help * fd.perimeter)) * defAnchor,
-      three: cut(clampMod(1 - DEFENSE_TUNING.three * d.perimeter)) * defAnchor,
+      // The anchor's share goes through the same star cut: a great scorer beats it too.
+      rim: cut(clampMod(1 - DEFENSE_TUNING.rim * (fd.rim - DEFENSE_TUNING.refRim) - DEFENSE_TUNING.direct * d.dtal) * defAnchor),
+      mid: cut(clampMod(1 - DEFENSE_TUNING.mid * d.dtal - DEFENSE_TUNING.help * fd.perimeter) * defAnchor),
+      three: cut(clampMod(1 - DEFENSE_TUNING.three * d.perimeter) * defAnchor),
       threeRate: cut(clampMod(1 - DEFENSE_TUNING.threeRate * fd.perimeter)),
       foul: d.foulIndex ** DEFENSE_TUNING.foul,
     };

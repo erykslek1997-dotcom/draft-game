@@ -92,9 +92,13 @@ check(vsSieves - vsStoppers >= 4, `defense: the same offense scores ${(vsSieves 
 
 const star = five(['Chris Paul|2014-16', 'Michael Jordan|1990-92', 'Paul Pierce|2007-09', 'Dirk Nowitzki|2009-11', 'Tim Duncan|2002-04'], 'star');
 const role = five(['Chris Paul|2014-16', 'Kyle Korver|2014-16', 'Paul Pierce|2007-09', 'Dirk Nowitzki|2009-11', 'Tim Duncan|2002-04'], 'role');
-const starDrop = mechanicsPer100(star, sieveD)[0] - mechanicsPer100(star, stopperD)[0];
-const roleDrop = mechanicsPer100(role, sieveD)[0] - mechanicsPer100(role, stopperD)[0];
-check(starDrop < roleDrop, `star channel: a five with Jordan loses less to good defense (${starDrop.toFixed(1)}) than one with Korver in his place (${roleDrop.toFixed(1)})`);
+// 2026-10-08: as a share of what each five scores against the sieves — the five with Jordan scores
+// more, so the same points lost are a smaller cut (the absolute drop compared the two levels too).
+const starVsSieves = mechanicsPer100(star, sieveD)[0];
+const roleVsSieves = mechanicsPer100(role, sieveD)[0];
+const starDrop = (100 * (starVsSieves - mechanicsPer100(star, stopperD)[0])) / starVsSieves;
+const roleDrop = (100 * (roleVsSieves - mechanicsPer100(role, stopperD)[0])) / roleVsSieves;
+check(starDrop < roleDrop, `star channel: a five with Jordan loses less of its scoring to good defense (${starDrop.toFixed(1)}%) than one with Korver in his place (${roleDrop.toFixed(1)}%)`);
 
 const creators = five(['Chris Paul|2014-16', 'Michael Jordan|1990-92', 'Kawhi Leonard|2015-17', 'Dirk Nowitzki|2009-11', 'Ben Wallace|2002-04'], 'creators');
 const shooters = five(['Chris Paul|2014-16', 'Kyle Korver|2014-16', 'Shane Battier|2005-07', 'Dirk Nowitzki|2009-11', 'Ben Wallace|2002-04'], 'shooters');
