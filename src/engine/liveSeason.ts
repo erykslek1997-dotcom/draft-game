@@ -80,7 +80,7 @@ const AWARD_MIN_MINUTES = 20;
  * before), 2.8 of the ten best regular defenders left out per season (5.4). Then (the user: "za
  * dużo all-d z jednej drużyny") at most `perTeam` from one team over both teams. Knobs: `perAllowed`,
  * `fullMinutes`, `perTeam`, `layout` ('positions': 2 G / 2 F / C, 'frontcourt': 2 G / 3 F-C, 'none'). */
-export const DEFENSE_AWARDS = { perAllowed: 1, fullMinutes: 32, perTeam: 3, layout: 'frontcourt' as 'positions' | 'frontcourt' | 'none' };
+export const DEFENSE_AWARDS = { perAllowed: 1, fullMinutes: 32, perTeam: 3, wingHandicap: 4, layout: 'frontcourt' as 'positions' | 'frontcourt' | 'none' };
 
 /** The engine's own view of each team, to compare with how its season went: the score breakdown,
  * the rank by overall, and the wins the season projection expects over this schedule. */
@@ -318,7 +318,12 @@ function* seasonSteps(teams: Team[], seed: string): Generator<SimProgress, LiveS
   const allNbaValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * (winPct.get(l.teamId) ?? 0) ** 0.3;
   const allStarValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * (0.8 + 0.4 * (winPct.get(l.teamId) ?? 0));
   const mvp = best(eligible, mvpValue);
-  const dpoy = best(eligible, defenseValue);
+  // DPOY (2026-10-08, the user: "ograniczenie na SF/PF/C, głównie PF/C" — in an all-time league the
+  // bigs own defense): forwards and centers only, a small forward `wingHandicap` behind.
+  const dpoy = best(
+    eligible.filter((l) => !guard(l)),
+    (l) => defenseValue(l) - (l.span.primaryPosition === 'SF' ? DEFENSE_AWARDS.wingHandicap : 0),
+  );
   // The MVP always makes the All-NBA first team, the DPOY the All-Defense first team.
   const first = (winner: SeasonPlayerLine | null, value: (l: SeasonPlayerLine) => number) => (l: SeasonPlayerLine) => (l === winner ? Infinity : value(l));
   const allNba = positionalTeams(eligible, first(mvp, allNbaValue), 3);
