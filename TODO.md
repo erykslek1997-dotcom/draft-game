@@ -442,6 +442,10 @@ Decyzje (2026-09-30):
     wokół marginesu silnika 16,6 → 14,2 pkt (NBA ~13,8), margines bez zmian (nachylenie 0,99).
     45 sezonów (9 lig AI): najlepszy bilans 57,9 W, najsłabszy 22,6 W, wygrane vs silnik RMSE 4,7;
     faworyt serii 1–2 pkt 57%, 2–4 pkt 68%, 4+ pkt 86%; tytuł dla #1 oceny 36%.
+    Audyt nagród (18 sezonów): MVP, All-NBA, All-Stars, 6MOY, Finals MVP ok. Obronne poprawione —
+    drużyna −1 zamiast −3 za punkt straconej obrony, pełna wartość od 32 min, All-Defense 2 obrońców
+    + 3 wysokich, max 3 z jednej drużyny: nikt poniżej 28 min (było 15/180), z 10 najlepszych
+    obrońców wypada 2,8 na sezon (5,4).
   - Etap 2: makiety UI (Standings / Stats / Awards / Playoffs + mecz na żywo). Etap 3: UI.
   - Później: kalendarz (kolejki, All-Star w połowie sezonu, przebieg sezonu).
 - [ ] **Mecz na żywo na koniec Mini?** — do decyzji: w Mini jest 16 drużyn i wynik to miejsce

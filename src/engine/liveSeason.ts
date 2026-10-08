@@ -77,9 +77,10 @@ const AWARD_MIN_MINUTES = 20;
  * (was 3 — the team swamped the player), a defender counts in full from 32 minutes a game (less
  * below), and All-Defense takes two guards and three frontcourt players (one center left Duncan,
  * Wallace and Wembanyama out behind two others). 18 seasons: nobody under 28 minutes (15 of 180
- * before), 2.8 of the ten best regular defenders left out per season (5.4). Knobs: `perAllowed`,
- * `fullMinutes`, `layout` ('positions': 2 G / 2 F / C, 'frontcourt': 2 G / 3 F-C, 'none'). */
-export const DEFENSE_AWARDS = { perAllowed: 1, fullMinutes: 32, layout: 'frontcourt' as 'positions' | 'frontcourt' | 'none' };
+ * before), 2.8 of the ten best regular defenders left out per season (5.4). Then (the user: "za
+ * dużo all-d z jednej drużyny") at most `perTeam` from one team over both teams. Knobs: `perAllowed`,
+ * `fullMinutes`, `perTeam`, `layout` ('positions': 2 G / 2 F / C, 'frontcourt': 2 G / 3 F-C, 'none'). */
+export const DEFENSE_AWARDS = { perAllowed: 1, fullMinutes: 32, perTeam: 3, layout: 'frontcourt' as 'positions' | 'frontcourt' | 'none' };
 
 /** The engine's own view of each team, to compare with how its season went: the score breakdown,
  * the rank by overall, and the wins the season projection expects over this schedule. */
@@ -170,15 +171,24 @@ function positionalTeams(pool: SeasonPlayerLine[], value: (l: SeasonPlayerLine) 
 }
 
 function defenseTeams(pool: SeasonPlayerLine[], value: (l: SeasonPlayerLine) => number): SeasonPlayerLine[][] {
-  if (DEFENSE_AWARDS.layout === 'positions') return positionalTeams(pool, value, 2);
   const ranked = [...pool].sort((x, y) => value(y) - value(x));
-  if (DEFENSE_AWARDS.layout === 'none') return [ranked.slice(0, 5), ranked.slice(5, 10)];
   const taken = new Set<SeasonPlayerLine>();
+  const perTeam = new Map<string, number>();
+  // At most `perTeam` from one team over both teams (the user: "za dużo all-d z jednej drużyny").
   const take = (is: (l: SeasonPlayerLine) => boolean, n: number) => {
-    const picked = ranked.filter((l) => is(l) && !taken.has(l)).slice(0, n);
-    picked.forEach((l) => taken.add(l));
+    const picked: SeasonPlayerLine[] = [];
+    for (const l of ranked) {
+      if (picked.length >= n) break;
+      if (!is(l) || taken.has(l) || (perTeam.get(l.teamId) ?? 0) >= DEFENSE_AWARDS.perTeam) continue;
+      picked.push(l);
+      taken.add(l);
+      perTeam.set(l.teamId, (perTeam.get(l.teamId) ?? 0) + 1);
+    }
     return picked;
   };
+  const any = () => true;
+  if (DEFENSE_AWARDS.layout === 'none') return [take(any, 5), take(any, 5)];
+  if (DEFENSE_AWARDS.layout === 'positions') return [0, 1].map(() => [...take(guard, 2), ...take(forward, 2), ...take(center, 1)]);
   return [0, 1].map(() => [...take(guard, 2), ...take((l) => !guard(l), 3)]);
 }
 
