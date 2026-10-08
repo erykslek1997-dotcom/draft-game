@@ -176,7 +176,7 @@ const contextGain = (delta: number) => Math.min(MAX_CONTEXT_GAIN, delta);
 const MAX_SPACING_GAIN = 0.06;
 const spacingGain = (delta: number) => Math.max(-MAX_SPACING_GAIN, Math.min(MAX_SPACING_GAIN, delta));
 /** A tired player makes fewer shots (`fatigue.ts`, the same curve the minute solver prices). */
-const fatigue = (minutes: number) => 1 - fatigueShare(minutes);
+const fatigue = (minutes: number) => 1 - ROTATION_TUNING.fatigueScale * fatigueShare(minutes);
 
 const BIG_MOVES = ['layup', 'dunk', 'hook shot', 'putback'];
 const WING_MOVES = ['pull-up jumper', 'driving layup', 'floater', 'mid-range jumper'];
@@ -428,7 +428,9 @@ export const DEFENSE_TUNING = {
   refRim: 1.26,
   /** A player's real percentages already hold his breaks and putbacks; the half court gives back
    * what the game now adds there, so his season lands on his own numbers. */
-  halfCourt: 0.99,
+  /* 2026-10-08: 0.99 -> 0.983 — the milder fatigue (stage 3) left more shots going in; the league
+   * back to ~122 points and TS ~62.4 a team game. */
+  halfCourt: 0.983,
   turnover: 0.133,
   /** A player's real free-throw rate already holds his trips in the bonus, which the game now
    * plays as their own fouls; shooting fouls give that back, so the league's free throws stay
@@ -618,13 +620,23 @@ const REF_SWITCH = { mean: 64.6, sd: 15.6 };
  * own ceiling) tires on top of the usual fatigue: the first `MINUTES_CAP_TOLERANCE` minutes over are
  * free, then each costs more than the one before (+4 over -0.8%, +8 over -5%).
  */
+/*
+ * 2026-10-08, stage 3 of the game-to-engine work (the user: "łagodna"): the offense costs x1.7, a
+ * defense out of its positions now gives the other side easier shots (`defAway`, per point of the
+ * five's mean position gap), and a tired player loses `fatigueScale` of the shared fatigue curve
+ * (42 minutes -3% instead of -10.5%; the minute solver still prices the full curve). Two starters
+ * swapped out of position now cost what the engine says (100%, was 48%), six more minutes for every
+ * starter 116% (was 397%).
+ */
 export const ROTATION_TUNING = {
-  tovAtPoint: 1.2,
-  tovAtGuard: 0.6,
-  tovElsewhere: 0.4,
-  twoInside: 0.06,
-  twoElsewhere: 0.03,
+  tovAtPoint: 2.04,
+  tovAtGuard: 1.02,
+  tovElsewhere: 0.68,
+  twoInside: 0.102,
+  twoElsewhere: 0.051,
   overStep: 0.0025,
+  defAway: 0.28,
+  fatigueScale: 0.3,
 };
 function outOfPosition(span: PlayerSpan, slot: Position): { tov: number; two: number } {
   const gap = Math.max(0, 1 - positionFitMultiplier(span, slot));
@@ -721,15 +733,18 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
   const offOreb = off.reduce((s, c) => s + defenderProfile(c.player.span).oreb36, 0);
   const switchZ = Math.max(-2.5, Math.min(2.5, (fiveSwitchability(defSpans, STARTER_SLOTS) - REF_SWITCH.mean) / REF_SWITCH.sd));
   // The anchor on defense: the five's mean, as a share of a typical make (~0.5).
-  const defAnchor = Math.max(0.7, Math.min(1.3, 1 - 2 * (defSpans.reduce((sum, s) => sum + anchorOf(s).def, 0) / Math.max(1, defSpans.length))));
+  // A defender out of his position gives up easier shots (`ROTATION_TUNING.defAway`).
+  const defAway = defSpans.reduce((sum, s, j) => sum + Math.max(0, 1 - positionFitMultiplier(s, STARTER_SLOTS[j])), 0) / Math.max(1, defSpans.length);
+  const defAnchor = Math.max(0.7, Math.min(1.3, 1 - 2 * (defSpans.reduce((sum, s) => sum + anchorOf(s).def, 0) / Math.max(1, defSpans.length)))) * (1 + ROTATION_TUNING.defAway * defAway);
   const mods = off.map((c, i) => {
     const d = fd.profiles[guard[i]];
     const resist = defenseResist(c.player.span);
     const cut = (m: number) => (m < 1 ? 1 - (1 - m) * resist : m);
     return {
-      rim: cut(clampMod(1 - DEFENSE_TUNING.rim * (fd.rim - DEFENSE_TUNING.refRim) - DEFENSE_TUNING.direct * d.dtal)) * defAnchor,
-      mid: cut(clampMod(1 - DEFENSE_TUNING.mid * d.dtal - DEFENSE_TUNING.help * fd.perimeter)) * defAnchor,
-      three: cut(clampMod(1 - DEFENSE_TUNING.three * d.perimeter)) * defAnchor,
+      // The anchor's share goes through the same star cut: a great scorer beats it too.
+      rim: cut(clampMod(1 - DEFENSE_TUNING.rim * (fd.rim - DEFENSE_TUNING.refRim) - DEFENSE_TUNING.direct * d.dtal) * defAnchor),
+      mid: cut(clampMod(1 - DEFENSE_TUNING.mid * d.dtal - DEFENSE_TUNING.help * fd.perimeter) * defAnchor),
+      three: cut(clampMod(1 - DEFENSE_TUNING.three * d.perimeter) * defAnchor),
       threeRate: cut(clampMod(1 - DEFENSE_TUNING.threeRate * fd.perimeter)),
       foul: d.foulIndex ** DEFENSE_TUNING.foul,
     };
