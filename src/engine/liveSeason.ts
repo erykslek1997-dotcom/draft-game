@@ -72,8 +72,14 @@ export function gameScorePerGame(line: SeasonPlayerLine): number {
 /** Minimum share of the season a player must play to win an award. */
 const AWARD_MIN_GAMES = 58;
 const AWARD_MIN_MINUTES = 20;
-/** D-TAL points one point of team points allowed per game is worth in the DPOY vote. */
-const DPOY_POINTS_PER_ALLOWED = 3;
+/** Defensive awards (audit 2026-10-08, the user: McMillan at 22 minutes on All-Defense, six of ten
+ * from the best defensive team): the team's points allowed weigh 1 per point above the best defense
+ * (was 3 — the team swamped the player), a defender counts in full from 32 minutes a game (less
+ * below), and All-Defense takes two guards and three frontcourt players (one center left Duncan,
+ * Wallace and Wembanyama out behind two others). 18 seasons: nobody under 28 minutes (15 of 180
+ * before), 2.8 of the ten best regular defenders left out per season (5.4). Knobs: `perAllowed`,
+ * `fullMinutes`, `layout` ('positions': 2 G / 2 F / C, 'frontcourt': 2 G / 3 F-C, 'none'). */
+export const DEFENSE_AWARDS = { perAllowed: 1, fullMinutes: 32, layout: 'frontcourt' as 'positions' | 'frontcourt' | 'none' };
 
 /** The engine's own view of each team, to compare with how its season went: the score breakdown,
  * the rank by overall, and the wins the season projection expects over this schedule. */
@@ -163,6 +169,19 @@ function positionalTeams(pool: SeasonPlayerLine[], value: (l: SeasonPlayerLine) 
   return Array.from({ length: count }, () => [...take(guard, 2), ...take(forward, 2), ...take(center, 1)]);
 }
 
+function defenseTeams(pool: SeasonPlayerLine[], value: (l: SeasonPlayerLine) => number): SeasonPlayerLine[][] {
+  if (DEFENSE_AWARDS.layout === 'positions') return positionalTeams(pool, value, 2);
+  const ranked = [...pool].sort((x, y) => value(y) - value(x));
+  if (DEFENSE_AWARDS.layout === 'none') return [ranked.slice(0, 5), ranked.slice(5, 10)];
+  const taken = new Set<SeasonPlayerLine>();
+  const take = (is: (l: SeasonPlayerLine) => boolean, n: number) => {
+    const picked = ranked.filter((l) => is(l) && !taken.has(l)).slice(0, n);
+    picked.forEach((l) => taken.add(l));
+    return picked;
+  };
+  return [0, 1].map(() => [...take(guard, 2), ...take((l) => !guard(l), 3)]);
+}
+
 /** The 24 All-Stars: the best lines with at least eight guards and eight frontcourt players. */
 const ALL_STARS = 24;
 const ALL_STAR_MIN_PER_COURT = 8;
@@ -231,11 +250,12 @@ export function simulateLiveSeason(teams: Team[], seed: string = seasonSeed(team
   const fewestAllowed = Math.min(...pointsAllowed.values());
   const mvpValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * Math.sqrt(winPct.get(l.teamId) ?? 0);
   // DPOY (2026-10-02, the user: "powinno oba"): his own defense AND his team's — D-TAL plus
-  // stocks, then the team's rank in points allowed weighs as much as a big D-TAL gap.
-  const defenseValue = (l: SeasonPlayerLine) =>
-    computeDefensiveTalent(l.span) +
-    (2 * (l.totals.stl + l.totals.blk)) / l.games -
-    DPOY_POINTS_PER_ALLOWED * ((pointsAllowed.get(l.teamId) ?? fewestAllowed) - fewestAllowed);
+  // stocks by his minutes, then the team's points allowed (`DEFENSE_AWARDS`).
+  const defenseValue = (l: SeasonPlayerLine) => {
+    const own = computeDefensiveTalent(l.span) + (2 * (l.totals.stl + l.totals.blk)) / l.games;
+    const share = DEFENSE_AWARDS.fullMinutes > 0 ? Math.min(1, l.totals.min / l.games / DEFENSE_AWARDS.fullMinutes) : 1;
+    return own * share - DEFENSE_AWARDS.perAllowed * ((pointsAllowed.get(l.teamId) ?? fewestAllowed) - fewestAllowed);
+  };
   // All-NBA (the user: "troszkę mocniejszy ale bez przesady"): the record counts less than for the
   // MVP. All-Stars lean on the numbers more still: a star on a losing team goes.
   const allNbaValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * (winPct.get(l.teamId) ?? 0) ** 0.3;
@@ -248,7 +268,7 @@ export function simulateLiveSeason(teams: Team[], seed: string = seasonSeed(team
       dpoy: best(eligible, defenseValue),
       sixthMan: best(eligible.filter((l) => !l.starter), gameScorePerGame),
       allNba: positionalTeams(eligible, allNbaValue, 3),
-      allDefense: positionalTeams(eligible, defenseValue, 2),
+      allDefense: defenseTeams(eligible, defenseValue),
       allStars: allStarsFrom(eligible, allStarValue),
     },
   };
