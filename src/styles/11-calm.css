@@ -551,7 +551,7 @@ span.at-pc-name { cursor: default; }
 .rr-roster-entries { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .rr-roster-label { font: 700 12px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); margin-right: 10px; }
 .rr-cell { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; min-width: 0; }
-.rr-cell-text span .rr-min, .rr-spot .rr-min { font-size: inherit; font-weight: 700; color: var(--at-ink-soft); }
+.rr-cell-text span .rr-min, .rr-spot .rr-min { font-size: inherit; font-weight: 800; color: inherit; }
 .rr-cell .bf-face { box-shadow: 0 0 0 1.5px hsl(calc(var(--team-hue, 215) + 40) 70% 55% / 0.55); }
 .rr-cell.is-backup { opacity: 0.82; }
 .rr-cell-text { display: flex; flex-direction: column; min-width: 0; }
