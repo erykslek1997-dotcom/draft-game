@@ -449,6 +449,12 @@ Decyzje (2026-09-30):
     wysocy”): 18 sezonów — 15× C, 3× PF.
   - Etap 3 (UI): „Your season” — podsumowanie B, pełne statystyki, drabinka, oglądanie tylko swoich
     meczów playoffów (bez spoilerów), sezon liczony w tle w kawałkach (~4 s).
+  - Etap 3b (UI, „mało ciekawe, mało intuicyjne”; „playoffy = nowa część zabawy”): hub sezonu z
+    zakładkami (Overview z nagłówkiem i momentami sezonu, Standings, Stats — cała liga z sortowaniem
+    i filtrami, liderzy top 10 w 12 kategoriach z minimum prób, double/triple-double, Awards) i
+    przycisk „Start the playoffs”; playoffy jako osobny rozdział (makieta A): drabinka na scenie,
+    panel serii z porównaniem drużyn i szansą na serię, „Play game N” od razu startuje mecz,
+    ekran między rundami („#5 knocks out #4”), koniec drogi albo puchar.
   - Etap 2: makiety UI (Standings / Stats / Awards / Playoffs + mecz na żywo). Etap 3: UI.
   - Później: kalendarz (kolejki, All-Star w połowie sezonu, przebieg sezonu).
 - [ ] **Mecz na żywo na koniec Mini?** — do decyzji: w Mini jest 16 drużyn i wynik to miejsce

@@ -61,6 +61,7 @@ export default function LiveGame({
   opponent,
   matchup,
   autoStart,
+  autoPlay = false,
   onFinish,
 }: {
   game: LiveGameResult;
@@ -68,6 +69,8 @@ export default function LiveGame({
   opponent?: LegendFive;
   matchup?: LiveMatchup;
   autoStart: boolean;
+  /** Start playing at once, without the tip-off button (the playoffs' "Play game N"). */
+  autoPlay?: boolean;
   /** Called once the final is on the board (played out or skipped). */
   onFinish?: () => void;
 }) {
@@ -76,8 +79,8 @@ export default function LiveGame({
   const yourSide = matchup ? matchup.yourSide : 0;
   const total = game.moments.length;
   // -1: before tip-off. `total`: final.
-  const [shown, setShown] = useState(autoStart && !prefersReducedMotion() ? -1 : total);
-  const [running, setRunning] = useState(false);
+  const [shown, setShown] = useState(autoStart && !prefersReducedMotion() ? (autoPlay ? 0 : -1) : total);
+  const [running, setRunning] = useState(autoStart && autoPlay && !prefersReducedMotion());
   const [speed, setSpeed] = useState(1);
   const timer = useRef<number | null>(null);
 
