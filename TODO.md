@@ -234,6 +234,12 @@ Etap 0 (diagnoza, 2026-10-08) — mecz drużynowy ('season', 1,3 pkt na punkt oc
   graczy sprzed 1980 (−1,0), PG (−2,1), gwiazd O-TAL 90+ (−1,0); brak premii za gwiazdę; efekt obrońcy
   o połowę słabszy; słaba kara za pozycję; zmęczenie w meczu ~5× mocniejsze niż w ocenie.
 
+- [ ] **Rzuty wolne w ocenie silnika (pomysł, do zrobienia później)** — mecz nagradza skuteczność z
+      linii (+0,9 pkt/mecz na 1 SD, realistycznie), silnik jej nie liczy. Pomysł: w Offense dodać
+      „punkty z linii ponad średnią” = ważone minutami (rzuty wolne na rzut z gry × (FT% − średnia
+      ligi)) — gracz, który często staje na linii i trafia, podnosi atak; ten sam składnik osłabia
+      zespoły z kiepskimi strzelcami z linii w końcówkach (celowe faule na nich, jak w meczu).
+
 ## Etap 2. Symulacje — TERAZ
 
 Decyzje (2026-09-30):
