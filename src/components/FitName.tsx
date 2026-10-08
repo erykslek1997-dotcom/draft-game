@@ -8,6 +8,13 @@ export function shortPlayerName(name: string): string {
   return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
 }
 
+/** "Giannis Antetokounmpo" → "Giannis A." — for a surname too long for even the short form. */
+function firstNameShort(name: string): string {
+  const parts = name.split(' ');
+  if (parts.length < 2) return name;
+  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+}
+
 function initials(name: string): string {
   const p = name.split(/\s+/).filter(Boolean);
   return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
@@ -15,7 +22,7 @@ function initials(name: string): string {
 
 /**
  * A player's name never shows clipped (no "Tracy Mc…"): the full name, else "T. McGrady", else
- * the face (initials when there is no photo; plain initials when a face already sits next to the
+ * "Tracy M.", else the face (initials when there is no photo; plain initials when a face already sits next to the
  * name). The element the ref lands on must be the one that clips (overflow hidden, a set width or
  * a line clamp); the full name stays in its title and in the accessibility tree.
  */
@@ -28,7 +35,7 @@ export function useFitName<T extends HTMLElement>(name: string, faceNextToIt = f
 
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || level >= 2) return;
+    if (!el || level >= 3) return;
     if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) setFit({ key, level: level + 1 });
   });
 
@@ -43,9 +50,9 @@ export function useFitName<T extends HTMLElement>(name: string, faceNextToIt = f
   const content =
     level === 0 ? (
       name
-    ) : level === 1 ? (
+    ) : level < 3 ? (
       <>
-        {shortPlayerName(name)}
+        {level === 1 ? shortPlayerName(name) : firstNameShort(name)}
         <span className="at-sr-only">{name}</span>
       </>
     ) : (
