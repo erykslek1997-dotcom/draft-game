@@ -23,15 +23,15 @@ import { allStarCount } from '../engine/allStarLookup';
 import { overallTierForSpan, displayTalentForSpan, formatTal } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { teamCodes, teamLabel } from '../engine/teamNames';
-import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
+import { CapIcon, Face, ShotChip, ShotsMeter } from './ShotChip';
 import { DraftPlayerCard } from './DraftPlayerCard';
-import { TeamTile } from './TeamBadge';
 import { markStepDone } from './pathProgress';
 import { rankTeams } from '../engine/scoring';
 import { fitScore } from '../engine/fit';
-import { bestHistoricalComp, compBadge } from '../engine/historicalComps';
+import { bestHistoricalComp } from '../engine/historicalComps';
 import DraftLottery from './DraftLottery';
-import { RankRowSummary, nextDraftTip, qualityColor } from './ResultsScreen';
+import { nextDraftTip } from './ResultsScreen';
+import { RosterGrid, TeamMark, TeamReport, fieldGrade, teamHue, type DeskVoice, type ProfileRow } from './ResultsReport';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
 import { ChallengeNote } from './ScoreBoard';
@@ -659,6 +659,31 @@ function QuickResults({
     [weakest, human, humanRank],
   );
 
+  const [openTeamId, setOpenTeamId] = useState<string | null>(null);
+  const breakdowns = useMemo(() => new Map(rankTeams(ranked.map((r) => r.team)).map((r) => [r.team.id, r.breakdown])), [ranked]);
+  const compFor = (team: Team) => {
+    const breakdown = breakdowns.get(team.id);
+    return breakdown ? bestHistoricalComp(team, breakdown, fitScore(team)) : null;
+  };
+  const profileRows = (score: LineupScore): ProfileRow[] =>
+    barKeys.map((key) => {
+      const value = Math.round(score[key] as number);
+      return { label: key[0].toUpperCase() + key.slice(1), value, grade: fieldGrade(value, ranked.map((r) => Math.round(r.score[key] as number))) };
+    });
+  // The same Draft Desk voices as the All-Time results: the weakest axis (the podium hears it only
+  // as what a rival could attack), the softest defender, and one thing to try next draft.
+  const voices: DeskVoice[] = [
+    {
+      who: 'The Coach',
+      what: humanRank <= 3 ? 'where a rival could still hurt you' : 'what held you back',
+      text: `${humanRank <= 3 ? 'The one thing a rival could attack' : 'Your weakest area'} is ${weakest.label} (${Math.round(human.score[weakest.key])}). ${WEAK_AXIS_REASON[weakest.key](human.score)}`,
+      tone: 'warn' as const,
+    },
+    ...(human.score.weakLink
+      ? [{ who: 'The Analyst' as const, what: 'on defense', text: `${human.score.weakLink} is the softest spot — an opponent will attack him every possession.`, tone: 'warn' as const }]
+      : []),
+    ...(nextTip && humanRank > 3 ? [{ who: 'The Scout' as const, what: humanRank === 4 ? 'to get over the top' : 'next draft', text: nextTip, tone: 'warn' as const }] : []),
+  ];
   const starters = STARTER_SLOTS.map((slot) => {
     const id = human.team.rotation?.slots[slot]?.[0]?.playerId;
     return { slot, player: id ? human.team.roster.find((p) => p.id === id) : undefined };
@@ -680,132 +705,69 @@ function QuickResults({
   // drafcie, po prostu mniej szczegółowy". The All-Time Draft's results hero (finish, rating,
   // style, team profile chips, a few bars, the lineup by position), cut down to a five.
   return (
-    <div className="bf-result qf-result">
-      {/* 2026-10-08: the All-Time Draft's calm results hero (approved mockup), cut down to a five. */}
-      <header className="rs-hero">
-        <div className="rs-hero-main">
-          <span className="rs-eyebrow">You finished</span>
-          <span className="rs-place">
-            {ordinal(humanRank)}
-            <small>of {TEAM_COUNT}</small>
-          </span>
-          <span className="rs-team">
-            {teamLabel(human.team)} <span className={`rs-tag rs-tag--t${tier.tone}`}>{tier.label}</span>
-          </span>
-          {challenge?.vs != null && (
-            <p className="rs-why">
-              <ChallengeNote yours={human.score.composite} theirs={challenge.vs} who={challenge.vsName} />
-            </p>
-          )}
-        </div>
-        <div className="rs-kpis">
-          <div className="rs-kpi rs-kpi--you">
-            <b style={{ color: qualityColor(human.score.composite) }}>{human.score.composite}</b>
-            <span>Your team</span>
+    <div className="bf-result qf-result" style={{ ['--team-hue' as string]: teamHue(human.team.name) }}>
+      {/* 2026-10-08, results look C: the All-Time Draft's results, cut down to a five. */}
+      <header className={`rs-hero rr-hero${humanRank === 1 ? ' is-champ' : ''}`}>
+        <div className="rr-hero-grid">
+          <div className="rr-hero-main">
+            <span className="rr-label">Final standings</span>
+            <span className="rr-place">
+              <b>
+                {humanRank}
+                <sup>{ordinal(humanRank).slice(String(humanRank).length)}</sup>
+              </b>
+              <span>of {TEAM_COUNT}</span>
+            </span>
+            <span className="rr-team">
+              <TeamMark code={teamCodeByTeamId.get(human.team.id) ?? ''} name={human.team.name} size="md" />
+              <h2>{teamLabel(human.team)}</h2>
+              <span className={`rr-tag rr-tag--t${tier.tone}`}>{tier.label}</span>
+            </span>
+            {challenge?.vs != null && (
+              <p className="rr-risk">
+                <ChallengeNote yours={human.score.composite} theirs={challenge.vs} who={challenge.vsName} />
+              </p>
+            )}
           </div>
-          <div className="rs-kpi">
-            <b>{top}</b>
-            <span>Best</span>
+          <div className="rs-kpis">
+            <div className="rs-kpi rs-kpi--you">
+              <b>{human.score.composite}</b>
+              <span>Your team</span>
+            </div>
+            <div className="rs-kpi">
+              <b>{top}</b>
+              <span>Best</span>
+            </div>
+            <div className="rs-kpi">
+              <b>{top > human.score.composite ? top - human.score.composite : '—'}</b>
+              <span>Behind the best</span>
+            </div>
           </div>
-          <div className="rs-kpi">
-            <b>{top > human.score.composite ? top - human.score.composite : '—'}</b>
-            <span>Behind the best</span>
-          </div>
-        </div>
-        <div className="rs-actions">
-          <button type="button" className="rs-primary" onClick={onNewDraft}>
-            New draft
-          </button>
-          <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
-            Share
-          </button>
-          <button
-            type="button"
-            className="at-calm-btn"
-            onClick={challengeFriend}
-            title="Copies a link that gives a friend the exact same 16-team board, with your score to beat."
-          >
-            {linkCopied ? '✓ Link copied' : 'Challenge a friend'}
-          </button>
-          <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRematch} title="Same 16 teams, same draft order — try a different plan.">
-            Rematch this board
-          </button>
         </div>
       </header>
-      <div className="rs-cols qf-rs-cols">
-        <section className="rs-panel">
-          <h3 className="rs-panel-title">Team profile</h3>
-          {barKeys.map((key) => {
-            const value = Math.round(human.score[key] as number);
-            return (
-              <div className="rs-score" key={key}>
-                <span>{key[0].toUpperCase() + key.slice(1)}</span>
-                <span className="rs-score-bar">
-                  <i style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: qualityColor(value) }} />
-                </span>
-                <b style={{ color: qualityColor(Math.max(55, value)) }}>{value}</b>
-              </div>
-            );
-          })}
-          <div className="qf-why">
-            {/* 2026-10-08 (TODO "ton wyniku według miejsca"): the podium gets no lecture — its
-                weak spot only as what a rival could attack. */}
-            <p>
-              {humanRank <= 3 ? (
-                <>
-                  The one thing a rival could attack: <b>{weakest.label} ({Math.round(human.score[weakest.key])})</b>.
-                </>
-              ) : (
-                <>
-                  Your weakest axis is <b>{weakest.label} ({Math.round(human.score[weakest.key])})</b>.
-                </>
-              )}{' '}
-              {WEAK_AXIS_REASON[weakest.key](human.score)}
-            </p>
-            {human.score.weakLink && (
-              <p>
-                Defensively, <b>{human.score.weakLink}</b> is the softest spot — an opponent will attack him every possession.
-              </p>
-            )}
-            {nextTip && humanRank > 3 && (
-              <p className="results-verdict-tip">
-                <b>{humanRank === 4 ? 'To get over the top:' : 'Next draft:'}</b> {nextTip}
-              </p>
-            )}
-          </div>
-        </section>
-        <section className="rs-panel">
-          <h3 className="rs-panel-title">Starting five</h3>
-          <div className="results-hero-rotation-columns">
-            {starters.map(({ slot, player }) => {
-              const tal = player ? displayTalentForSpan(tierContextFor(player)) : 0;
-              return (
-                <div className="results-hero-rotation-col" key={slot}>
-                  <span className="results-hero-rotation-col-label">{slot}</span>
-                  {player && (
-                    <div className="results-hero-rotation-entry" title={`${player.playerName} (${player.spanLabel})`}>
-                      <Face name={player.playerName} size="sm" />
-                      <span className="results-hero-rotation-entry-info">
-                        <span className="results-hero-rotation-entry-name">{shortenName(player.playerName, 12)}</span>
-                        <span className="results-hero-rotation-entry-min">{player.spanLabel}</span>
-                      </span>
-                      <span className="rotation-entry-tal" style={{ background: qualityColor(tal) }}>{formatTal(tal)}</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {comp && (
-            <p className="rs-comp">
-              {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
-              <span>
-                <b>Plays like</b> the {comp.comp.team} <small>{comp.match}% match</small>
-              </span>
-            </p>
-          )}
-        </section>
+      <div className="rs-actions rr-actions">
+        <button type="button" className="rs-primary" onClick={onNewDraft}>
+          New draft
+        </button>
+        <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
+          Share
+        </button>
+        <button
+          type="button"
+          className="at-calm-btn"
+          onClick={challengeFriend}
+          title="Copies a link that gives a friend the exact same 16-team board, with your score to beat."
+        >
+          {linkCopied ? '✓ Link copied' : 'Challenge a friend'}
+        </button>
+        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRematch} title="Same 16 teams, same draft order — try a different plan.">
+          Rematch this board
+        </button>
       </div>
+      <h3 className="rr-section">Your five</h3>
+      <RosterGrid team={human.team} />
+      <h3 className="rr-section">{humanRank === 1 ? 'Why you won' : 'Why you finished here'}</h3>
+      <TeamReport profile={profileRows(human.score)} comp={comp} voices={voices} extras={[]} />
         {shareOpen && (
           <ShareResultModal
             onClose={() => setShareOpen(false)}
@@ -824,13 +786,42 @@ function QuickResults({
           />
         )}
 
-      <h2 className="results-section-title">Final team ranking</h2>
-      <div className="rank-list">
-        {ranked.map((r, i) => (
-          <div key={r.team.id} className={`rank-row ${r.team.isHuman ? 'is-you' : ''}`} title={teamCodeByTeamId.get(r.team.id)}>
-            <RankRowSummary rank={i + 1} label={teamLabel(r.team)} isHuman={r.team.isHuman} rating={r.score.composite} />
-          </div>
-        ))}
+      <h3 className="rr-section">Final standings</h3>
+      <div className="rr-standings">
+        {ranked.map((r, i) => {
+          const isOpen = !r.team.isHuman && openTeamId === r.team.id;
+          const row = (
+            <>
+              <span className="rr-rk">{i + 1}</span>
+              <TeamMark code={teamCodeByTeamId.get(r.team.id) ?? ''} name={r.team.name} />
+              <span className="rr-nm">
+                {teamLabel(r.team)}
+                {r.team.isHuman && <em> · you</em>}
+              </span>
+              <span className="rr-od" />
+              <span className="rr-ser" />
+              <span className="rr-sc">{r.score.composite}</span>
+              <span className="rr-car" aria-hidden>{r.team.isHuman ? '' : isOpen ? '▾' : '▸'}</span>
+            </>
+          );
+          return (
+            <div key={r.team.id} className={`rr-rung-wrap${r.team.isHuman ? ' is-you' : ''}${isOpen ? ' is-open' : ''}`}>
+              {r.team.isHuman ? (
+                <div className="rr-rung">{row}</div>
+              ) : (
+                <button type="button" className="rr-rung" aria-expanded={isOpen} onClick={() => setOpenTeamId((cur) => (cur === r.team.id ? null : r.team.id))}>
+                  {row}
+                </button>
+              )}
+              {isOpen && (
+                <div className="rr-open" style={{ ['--team-hue' as string]: teamHue(r.team.name) }}>
+                  <RosterGrid team={r.team} />
+                  <TeamReport profile={profileRows(r.score)} comp={compFor(r.team)} voices={[]} extras={[]} />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {onNextStep && (

@@ -90,6 +90,18 @@ export function styleClashEdge(a: StyleProfile, b: StyleProfile): number {
   }, 0);
 }
 
+/** The same clashes one by one, for the results screen's "Vs you": per clash, the points each side
+ * gains attacking the other (A attacking B, B attacking A). Their sums are the two `styleClashEdge`s. */
+export type StyleClashKey = 'rim' | 'spacing' | 'star' | 'glass';
+export function styleClashBreakdown(a: StyleProfile, b: StyleProfile): { key: StyleClashKey; a: number; b: number }[] {
+  const keys: StyleClashKey[] = ['rim', 'spacing', 'star', 'glass'];
+  const one = (x: StyleProfile, y: StyleProfile, [attack, defense]: [keyof StyleProfile, keyof StyleProfile]) => {
+    const gap = styleZ(attack, x[attack]) - styleZ(defense, y[defense]) - STYLE_CLASH_THRESHOLD_Z;
+    return STYLE_CLASH_POINTS_PER_Z * Math.max(0, Math.min(STYLE_CLASH_MAX_Z - STYLE_CLASH_THRESHOLD_Z, gap));
+  };
+  return STYLE_CLASHES.map((pair, i) => ({ key: keys[i], a: one(a, b, pair), b: one(b, a, pair) }));
+}
+
 /**
  * Where the matchup is played. `single` (the live game: Draw Five, daily) keeps the original
  * one-point-per-overall-point margin and no style layer. League play spreads the margin wider

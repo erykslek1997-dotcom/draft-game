@@ -1,29 +1,23 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, type OffenseScoreBreakdown, type ScoreBreakdown } from '../engine/scoring';
+import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { simulateSeason, buildMatchupCache, type SeasonStandingsRow } from '../engine/seasonSimulation';
 import { PLAYOFF_TEAM_COUNT, simulatePlayoffs, type PlayoffResult } from '../engine/playoffSimulation';
-import { STARTER_SLOTS, CAP_LIMIT, positionFitMultiplier } from '../engine/positions';
+import { STARTER_SLOTS } from '../engine/positions';
 import type { Position } from '../data/schema';
 import { allAssignments, primaryStarters, type ResolvedSlotAssignment } from '../engine/rotation';
 import { draftPool } from '../data/draftPool';
 import type { DraftHistoryEntry, Rotation, Team } from '../engine/types';
-import { teamLabel } from '../engine/teamNames';
+import { teamCodes, teamLabel } from '../engine/teamNames';
 import { computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
-// `effectiveTalent` for every plain TAL read; `displayTalentForSpan` stays separately imported
-// for the two call sites below that use the Sixth-Man-aware `tierContextWithSixthMan` context
-// instead of the plain one `effectiveTalent` builds internally.
-import { displayTalentForSpan, formatTal } from '../engine/grades';
-import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { fitScore, type FitScoreResult } from '../engine/fit';
 import { defensiveHuntability } from '../engine/defensiveHuntability';
 import { generateRosterInsights, insightContextFor } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
-import { archetypeDisplayName, defenseFirstBacked, teamStyleFor } from '../engine/championshipArchetype';
-import { bestHistoricalComp, compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
-import { TeamTile } from './TeamBadge';
+import { teamStyleFor } from '../engine/championshipArchetype';
+import { bestHistoricalComp } from '../engine/historicalComps';
 import { type FeedbackEntry } from './FeedbackToggle';
 // 2026-08-16, user's own ask ("dodasz to też na ostatni ekran ocen?"): reuses the exact same
 // hover-stats popover the Overview grid's own drafted-pick cells already have (DraftBoard.tsx) —
@@ -34,7 +28,6 @@ import { type FeedbackEntry } from './FeedbackToggle';
 // (not deleted), just no longer imported/rendered here. The user's own explicit plan for
 // Historical Challenges is to reuse it as the base of a real separate game mode later, not to
 // throw the work away — see [[player_skeleton_and_new_modes]].
-import MatchupMatrix from './MatchupMatrix';
 import ChampionshipOdds from './ChampionshipOdds';
 import { markStepDone } from './pathProgress';
 import { TEAM_EXPORT_FOR_TESTING } from './testingFlags';
@@ -42,9 +35,22 @@ import { exportLeagueText } from '../engine/teamExport';
 import AllMetrics from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
-import { CapIcon, Face, shortenName } from './ShotChip';
+import { shortenName } from './ShotChip';
 import { ShareModal } from './ResultsShareModal';
 import { PlayoffBracketTree } from './PlayoffBracketTree';
+import { styleClashBreakdown, styleProfile, type StyleClashKey } from '../engine/matchup';
+import {
+  RosterGrid,
+  TeamMark,
+  TeamReport,
+  VsYou,
+  fieldGrade,
+  teamHue,
+  voicesFor,
+  type DeskVoice,
+  type ProfileRow,
+  type ReportExtra,
+} from './ResultsReport';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, season-sim pool) — real work deferred until the
@@ -315,8 +321,6 @@ function HeroResult({
   spacingScore,
   fitScore,
   rotationScore,
-  fitDetail,
-  offenseDetail,
   assignments,
   starterKeys,
   topOverall,
@@ -324,15 +328,15 @@ function HeroResult({
   draftSeed,
   identity,
   failureMode,
-  weakDefenders,
-  defenseTalent,
-  comp,
   starters,
   roster,
   challenger,
   seasonSimSlot,
-  verdict,
-  rivals,
+  teamCode,
+  rosterTeam,
+  quote,
+  report,
+  standings,
   onNewDraft,
 }: {
   teamName: string;
@@ -347,8 +351,6 @@ function HeroResult({
   spacingScore: number;
   fitScore: number;
   rotationScore: number;
-  fitDetail: FitScoreResult | null;
-  offenseDetail: OffenseScoreBreakdown | null;
   challenger?: ChallengeChallenger;
   assignments: ResolvedSlotAssignment[];
   starterKeys: Set<string>;
@@ -357,9 +359,6 @@ function HeroResult({
   draftSeed: number;
   identity: string | null;
   failureMode: string | null;
-  weakDefenders: { name: string; slot: Position; dtal: number; minutes: number }[];
-  defenseTalent: number | null;
-  comp: HistoricalCompMatch | null;
   starters: ShareCardStarter[];
   roster: ShareRosterRow[];
   /** 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest empty
@@ -368,15 +367,16 @@ function HeroResult({
    * state) rather than threading every individual piece of that state down as its own prop — the
    * simplest way for a child this deep to render a parent-owned slot without duplicating state. */
   seasonSimSlot?: ReactNode;
-  /** 2026-10-07, the UI simplification: "What won it / what held you back", on the Your team tab. */
-  verdict?: ReactNode;
-  /** The matchup matrix and the full ranking, on the Rivals tab. */
-  rivals?: ReactNode;
+  /** 2026-10-08, results look C: the hero's team mark and roster, the Draft Desk line under the
+   * hero, the team report (profile + desk voices) and the standings with every rival's report. */
+  teamCode: string;
+  rosterTeam: Team;
+  quote: DeskVoice | null;
+  report: ReactNode;
+  standings: ReactNode;
   onNewDraft?: () => void;
 }) {
   const [challengeCopied, setChallengeCopied] = useState(false);
-  const [tab, setTab] = useState<'team' | 'rivals'>('team');
-  const [showDetails, setShowDetails] = useState(false);
   // 2026-09-17, user-reported live ("więcej sosu, coś jak share po zakończonym drafcie" — more
   // sauce, like the share after a finished draft): the popup's own share action only ever copied a
   // link; this gives it real visual payoff — a downloadable head-to-head card
@@ -523,7 +523,7 @@ function HeroResult({
 
   return (
     <>
-    <header className="rs-hero">
+    <header className={`rs-hero rr-hero${rank === 1 ? ' is-champ' : ''}`}>
       {challenger && compareOpen && (
         <div className="challenge-compare-backdrop" onClick={() => setCompareOpen(false)}>
           <div className="challenge-compare-modal" role="dialog" aria-modal="true" aria-label="Challenge comparison" onClick={(e) => e.stopPropagation()}>
@@ -651,160 +651,85 @@ function HeroResult({
           </div>
         </div>
       )}
-      <div className="rs-hero-main">
-        <span className="rs-eyebrow">{isHuman ? 'You finished' : 'Top of the field'}</span>
-        <span className="rs-place">
-          {ordinal(rank)}
-          <small>of {fieldSize}</small>
-        </span>
-        <span className="rs-team">
-          {teamName} <span className={`rs-tag rs-tag--t${tier.tone}`}>{tier.label}</span>
-        </span>
-        {(identity || failureMode) && (
-          // 2026-09-24 copy pass: labelled as a STYLE and a risk, so it doesn't read as a verdict.
-          <p className="rs-why">
-            {identity && (
-              <>
-                Team style: <b>{identity}</b>
-              </>
-            )}
-            {identity && failureMode && ' — '}
-            {failureMode && <span>main risk: {failureMode}</span>}
-          </p>
-        )}
-      </div>
-      <div className="rs-kpis">
-        <div className="rs-kpi rs-kpi--you" title="The Final Power Ranking overall every team is judged by">
-          <b style={{ color: qualityColor(overall) }}>{overall}</b>
-          <span>{isHuman ? 'Your team' : 'Team rating'}</span>
-        </div>
-        <div className="rs-kpi">
-          <b>{topOverall ?? overall}</b>
-          <span>Best</span>
-        </div>
-        {titleOdds !== null ? (
-          <div className="rs-kpi" title="Chance to win a 16-team playoff seeded by the final ranking, over thousands of simulations. The season simulation plays its own top-8 playoffs.">
+      <div className="rr-hero-grid">
+        <div className="rr-hero-main">
+          <span className="rr-label">{isHuman ? 'Final standings' : 'Top of the field'}</span>
+          <span className="rr-place">
             <b>
-              <AnimatedPercent value={titleOdds} />
+              {rank}
+              <sup>{ordinal(rank).slice(String(rank).length)}</sup>
             </b>
-            <span>Title odds</span>
-          </div>
-        ) : (
-          <div className="rs-kpi">
-            <b>{gap !== null && gap > 0 ? gap : '—'}</b>
-            <span>Behind the best</span>
-          </div>
-        )}
-      </div>
-      <div className="rs-actions">
-        {seasonSimSlot}
-        <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
-          Share
-        </button>
-        <button
-          type="button"
-          className="at-calm-btn"
-          onClick={copyChallengeLink}
-          title="Copies a link that gives a friend the exact same 16-team draft board to react to."
-        >
-          {challengeCopied ? '✓ Link copied' : 'Challenge a friend'}
-        </button>
-        {onNewDraft && (
-          <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onNewDraft}>
-            New draft
-          </button>
-        )}
-      </div>
-    </header>
-    <nav className="rs-tabs" role="tablist">
-      {([['team', 'Your team'], ['rivals', 'Rivals']] as const).map(([id, label]) => (
-        <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>
-          {label}
-        </button>
-      ))}
-    </nav>
-    {tab === 'rivals' ? (
-      <div className="rs-rivals">{rivals}</div>
-    ) : (
-      <>
-        {verdict}
-        <div className="rs-cols">
-          <section className="rs-panel">
-            <h3 className="rs-panel-title">Team profile</h3>
-            {([
-              ['Talent', talentScore],
-              ['Offense', offenseScore],
-              ['Defense', defenseScore],
-              ['Spacing', spacingScore],
-              ['Fit', fitScore],
-              ['Bench', benchDepthScore],
-              ['Rotation', rotationScore],
-            ] as const).map(([label, value]) => (
-              <div className="rs-score" key={label}>
-                <span>{label}</span>
-                <span className="rs-score-bar">
-                  <i style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: qualityColor(value) }} />
-                </span>
-                <b style={{ color: qualityColor(Math.max(55, value)) }}>{Math.round(value)}</b>
-              </div>
-            ))}
-            {fitDetail && (
-              <button type="button" className="pk-link rs-more" aria-expanded={showDetails} onClick={() => setShowDetails((v) => !v)}>
-                {showDetails ? "Hide what's behind each score ▴" : "Show what's behind each score ▾"}
-              </button>
-            )}
-            {fitDetail && showDetails && (
-              <>
-                <div className="analysis-bars-split rs-details">
-                  <div className="analysis-bars-col analysis-bars-col--offense">
-                    <span className="analysis-bars-col-label">Offense details</span>
-                    {offenseDetail && <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />}
-                    <MetricBar label="Creation" value={offenseScale(fitDetail.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
-                    <MetricBar label="Rim pressure" value={offenseScale(fitDetail.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
-                    {offenseDetail && <MetricBar label="Playmaking" value={offenseScale(offenseDetail.playmaking)} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />}
-                  </div>
-                  <div className="analysis-bars-col analysis-bars-col--defense">
-                    <span className="analysis-bars-col-label">Defense details</span>
-                    {defenseTalent !== null && <MetricBar label="D-TAL" value={defenseTalent} hint="Team defensive talent — the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure." />}
-                    <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
-                    <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
-                    <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
-                    <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
-                    {weakDefenders.length > 0 && (
-                      <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down. Weak means below the median rotation player at that position.">
-                        Weakest links:{' '}
-                        {weakDefenders.map((row, i) => (
-                          <span key={row.name}>
-                            {i > 0 && ' · '}
-                            <b>{shortenName(row.name)}</b> D-TAL {row.dtal} at {row.slot} ({row.minutes} min)
-                          </span>
-                        ))}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <p className="results-hero-bars-note">
-                  These are the ingredients behind the scores above, measured separately — e.g. Role coverage is whether each
-                  defensive job is filled at all, the Defense score is how well it's done.
-                </p>
-              </>
-            )}
-          </section>
-          <section className="rs-panel">
-            <h3 className="rs-panel-title">Rotation</h3>
-            <RotationColumns assignments={assignments} starterKeys={starterKeys} />
-            {comp && (
-              <p className="rs-comp" title={`Closest historical profile: ${comp.comp.blurb}. Match compares this roster's scores, as percentiles of drafted rosters, with what defined that team.`}>
-                {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
-                <span>
-                  <b>Plays like</b> the {comp.comp.team} <small>{comp.match}% match</small>
-                </span>
-              </p>
-            )}
-          </section>
+            <span>of {fieldSize}</span>
+          </span>
+          <span className="rr-team">
+            <TeamMark code={teamCode} name={teamName} size="md" />
+            <h2>{teamName}</h2>
+            <span className={`rr-tag rr-tag--t${tier.tone}`}>{tier.label}</span>
+          </span>
+          {/* 2026-09-24 copy pass: labelled as a STYLE and a risk, so it doesn't read as a verdict. */}
+          {identity && <p className="rr-headline">{identity}.</p>}
+          {failureMode && <p className="rr-risk">Main risk: {failureMode}</p>}
         </div>
-      </>
-    )}
+        <div className="rs-kpis">
+          <div className="rs-kpi rs-kpi--you" title="The Final Power Ranking overall every team is judged by">
+            <b>{overall}</b>
+            <span>{isHuman ? 'Your team' : 'Team rating'}</span>
+          </div>
+          <div className="rs-kpi">
+            <b>{topOverall ?? overall}</b>
+            <span>Best</span>
+            {gap !== null && <small className="rr-kpi-gap">{gap > 0 ? `−${gap}` : rank === 1 ? 'that’s you' : 'tied'}</small>}
+          </div>
+          {titleOdds !== null ? (
+            <div className="rs-kpi" title="Chance to win a 16-team playoff seeded by the final ranking, over thousands of simulations. The season simulation plays its own top-8 playoffs.">
+              <b>
+                <AnimatedPercent value={titleOdds} />
+              </b>
+              <span>Title odds</span>
+            </div>
+          ) : (
+            <div className="rs-kpi">
+              <b>{gap !== null && gap > 0 ? gap : '—'}</b>
+              <span>Behind the best</span>
+            </div>
+          )}
+        </div>
+      </div>
+      {quote && (
+        <p className="rr-quote">
+          <span>{quote.who}</span>
+          <q>{quote.text}</q>
+        </p>
+      )}
+    </header>
+    <div className="rs-actions rr-actions">
+      {seasonSimSlot}
+      <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
+        Share
+      </button>
+      <button
+        type="button"
+        className="at-calm-btn"
+        onClick={copyChallengeLink}
+        title="Copies a link that gives a friend the exact same 16-team draft board to react to."
+      >
+        {challengeCopied ? '✓ Link copied' : 'Challenge a friend'}
+      </button>
+      {onNewDraft && (
+        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onNewDraft}>
+          New draft
+        </button>
+      )}
+    </div>
+    <h3 className="rr-section">{isHuman ? 'Your roster' : 'Roster'}</h3>
+    <RosterGrid team={rosterTeam} />
+    <h3 className="rr-section">{rank === 1 ? (isHuman ? 'Why you won' : 'Why they won') : isHuman ? 'Why you finished here' : 'Why they finished here'}</h3>
+    {report}
+    <h3 className="rr-section">
+      Final standings
+      <small>Series = your chance to beat them in a best-of-7</small>
+    </h3>
+    {standings}
       {shareOpen && (
         <ShareModal
           onClose={() => setShareOpen(false)}
@@ -975,89 +900,6 @@ export function nextDraftTip(label: string, team: Team): string | undefined {
 }
 
 /**
- * One tile per position with every contributor's face, name and minutes — the hero's Rotation
- * panel, and (since 2026-09-24) every team's own Rotation section in the ranking below. `detailed`
- * adds each player's TAL, a total when a player is split across positions, and the natural
- * position of anyone playing a real mismatch (same `< 0.9` fit bar `rotationScore` uses).
- */
-function RotationColumns({
-  assignments,
-  starterKeys,
-  totalMinutesByPlayerId,
-  detailed = false,
-}: {
-  assignments: ResolvedSlotAssignment[];
-  starterKeys: Set<string>;
-  totalMinutesByPlayerId?: Map<string, number>;
-  detailed?: boolean;
-}) {
-  return (
-    <div className={`results-hero-rotation-columns ${detailed ? 'rotation-columns--detailed' : ''}`}>
-      {STARTER_SLOTS.map((slot) => {
-        const entries = assignments
-          .filter((a) => a.slot === slot)
-          .sort((a, b) => {
-            const aIsStarter = starterKeys.has(`${a.slot}|${a.player.id}`);
-            const bIsStarter = starterKeys.has(`${b.slot}|${b.player.id}`);
-            if (aIsStarter !== bIsStarter) return aIsStarter ? -1 : 1;
-            return b.minutes - a.minutes;
-          });
-        // 2026-09-25, user ("trzeba coś z tymi graczami po 2 minuty zrobić, psują wizualnie"): a
-        // backup with a few spot minutes at a slot no longer gets a full row — they're listed on
-        // one quiet line under the column; zero-minute rows are dropped.
-        const isSpot = (e: ResolvedSlotAssignment) =>
-          e.minutes < SPOT_MINUTES && !starterKeys.has(`${e.slot}|${e.player.id}`);
-        const spot = entries.filter((e) => e.minutes > 0 && isSpot(e));
-        return (
-          <div className="results-hero-rotation-col" key={slot}>
-            <span className="results-hero-rotation-col-label">{slot}</span>
-            {entries.filter((e) => e.minutes > 0 && !isSpot(e)).map((e) => {
-              const total = totalMinutesByPlayerId?.get(e.player.id) ?? e.minutes;
-              const offPosition = positionFitMultiplier(e.player, slot) < 0.9;
-              return (
-                <div className="results-hero-rotation-entry" key={e.player.id} title={`${e.player.playerName} (${e.player.spanLabel})`}>
-                  <Face name={e.player.playerName} size="sm" />
-                  <span className="results-hero-rotation-entry-info">
-                    <span className="results-hero-rotation-entry-name">
-                      {shortenName(e.player.playerName, 12)}
-                      {detailed && offPosition && (
-                        <sup className="rotation-natural-pos" title={`Natural position: ${e.player.primaryPosition}`}>
-                          {e.player.primaryPosition}
-                        </sup>
-                      )}
-                    </span>
-                    <span className="results-hero-rotation-entry-min">
-                      {Math.round(e.minutes)}m
-                      {detailed && total !== e.minutes && <span className="rotation-entry-total"> · {Math.round(total)} total</span>}
-                    </span>
-                  </span>
-                  {detailed && (
-                    <span className="rotation-entry-tal" style={{ background: qualityColor(displayTalentForSpan(tierContextFor(e.player))) }}>
-                      {formatTal(displayTalentForSpan(tierContextFor(e.player)))}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-            {spot.length > 0 && (
-              <span className="rotation-spot-line" aria-label="Spot minutes at this position">
-                {spot.map((e) => (
-                  <span className="rotation-spot-entry" key={e.player.id} title={`${e.player.playerName} (${e.player.spanLabel}) · ${Math.round(e.minutes)} min`}>
-                    <Face name={e.player.playerName} size="xs" />
-                    {/* 2026-09-30, the user read a face with only "4m" next to it as a missing name. */}
-                    {shortenName(e.player.playerName, 12)} {Math.round(e.minutes)}m
-                  </span>
-                ))}
-              </span>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
  * Rotation players below their slot's value are named under the hero's Defense details.
  * 2026-09-26, the user ("50 dla słabego obrońcy zbyt ogólne, zależy od pozycji"; then, of a bottom-
  * third cut, "zbyt mało surowe"): the MEDIAN D-TAL of rotation-calibre spans (TAL 55+) at each
@@ -1067,71 +909,145 @@ const WEAK_DEFENDER_DTAL: Record<Position, number> = { PG: 49, SG: 43, SF: 47, P
 /** Below this many minutes at a slot, a non-starter is shown on the column's spot line. */
 export const SPOT_MINUTES = 6;
 
-function ResultsVerdict({
+/** Your report's Draft Desk voices. The tone follows the final place (2026-09-24, user-reported
+ * live: "wygrałem, czy jest sens żeby mnie pouczało?" — a champion got a "what held you back" list
+ * and a "Next draft:" lecture). 1st: why you won + the one thing a rival could exploit, no advice.
+ * 2026-10-08 (TODO "ton wyniku według miejsca"): the whole podium reads that way — 2nd and 3rd get
+ * no lecture either, their weak spot only as what could threaten them. 4th: "to get over the top".
+ * Everyone else: what worked, what held you back, and one thing to try next draft. */
+function yourVoices({
   team,
   rank,
   fieldSize,
   breakdown,
-  scores,
   fieldMedians,
 }: {
   team: Team;
+  rank: number;
   fieldSize: number;
   breakdown: ScoreBreakdown;
-  /** Final ranking place — the card's tone follows it (2026-09-24, user-reported live: "wygrałem,
-   * czy jest sens żeby mnie pouczało?" — a champion got a "what held you back" list and a
-   * "Next draft:" lecture). 1st: why you won + the one thing a rival could exploit, no advice.
-   * 2026-10-08 (TODO "ton wyniku według miejsca"): the whole podium reads that way — 2nd and 3rd
-   * get no lecture either, their weak spot only as what could threaten them. 4th: "to get over the
-   * top". Everyone else: as before. */
-  rank: number;
-  scores: Record<string, number>;
   fieldMedians: Record<string, number>;
-}) {
-  const insights = useMemo(
-    () => generateRosterInsights(buildTeamFeatureSnapshot(team), undefined, insightContextFor(breakdown, rank, fieldSize)),
-    [team, breakdown, rank, fieldSize],
-  );
+}): DeskVoice[] {
+  const insights = generateRosterInsights(buildTeamFeatureSnapshot(team), undefined, insightContextFor(breakdown, rank, fieldSize));
   const won = rank === 1;
   const podium = rank <= 3;
   const contender = rank === 4;
-  const strengths = insights.strengths.slice(0, podium ? 3 : 2);
-  const concerns = insights.concerns.slice(0, podium ? 1 : 2);
+  const scores: Record<string, number> = {
+    Talent: breakdown.talentScore,
+    'Bench Depth': breakdown.benchDepthScore,
+    Offense: breakdown.offenseScore,
+    Defense: breakdown.defenseScore,
+    Spacing: breakdown.spacingScore,
+    Fit: breakdown.fitScore,
+    Rotation: breakdown.rotationScore,
+  };
   const [weakestLabel] =
     Object.entries(scores).sort((a, b) => a[1] - (fieldMedians[a[0]] ?? 0) - (b[1] - (fieldMedians[b[0]] ?? 0)))[0] ?? [];
-  const tip = !podium && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined;
-  const title = won ? 'Why you won' : 'Why you finished here';
+  return voicesFor({
+    strengths: insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.message),
+    concerns: insights.concerns.slice(0, podium ? 1 : 2).map((i) => i.message),
+    tip: !podium && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined,
+    strengthLabel: won ? 'what won it' : podium ? 'what put you on the podium' : 'what worked',
+    concernLabel: podium ? 'where a rival could still hurt you' : 'what held you back',
+    tipLabel: contender ? 'to get over the top' : 'next draft',
+  });
+}
+
+/** A rival's voices — the same insight engine, about them: what works, and what can sink them. */
+function theirVoices(team: Team, breakdown: ScoreBreakdown, rank: number, fieldSize: number): DeskVoice[] {
+  const insights = generateRosterInsights(buildTeamFeatureSnapshot(team), undefined, insightContextFor(breakdown, rank, fieldSize));
+  const podium = rank <= 3;
+  return voicesFor({
+    strengths: insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.message),
+    concerns: insights.concerns.slice(0, 2).map((i) => i.message),
+    strengthLabel: rank === 1 ? 'what won it' : 'what works',
+    concernLabel: 'what can sink them',
+    third: true,
+  });
+}
+
+/** Rotation players below their slot's value — named under Defense details. See
+ * `WEAK_DEFENDER_DTAL`. */
+function weakDefendersFor(team: Team): { name: string; slot: Position; dtal: number; minutes: number }[] {
+  const minutes = new Map<string, { player: ResolvedSlotAssignment['player']; minutes: number; bySlot: Map<Position, number> }>();
+  for (const entry of allAssignments(team)) {
+    const row = minutes.get(entry.player.id) ?? { player: entry.player, minutes: 0, bySlot: new Map<Position, number>() };
+    row.minutes += entry.minutes;
+    row.bySlot.set(entry.slot, (row.bySlot.get(entry.slot) ?? 0) + entry.minutes);
+    minutes.set(entry.player.id, row);
+  }
+  return [...minutes.values()]
+    .filter((row) => row.minutes >= 15)
+    .map((row) => {
+      const slot = [...row.bySlot.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      const dtal = Math.round(computeDefensiveTalent(row.player));
+      return { name: row.player.playerName, slot, dtal, minutes: Math.round(row.minutes), gap: WEAK_DEFENDER_DTAL[slot] - dtal };
+    })
+    .filter((row) => row.gap > 0)
+    .sort((a, b) => b.gap - a.gap)
+    .slice(0, 2);
+}
+
+/** "Show what's behind each score": the ingredient bars, the season profile and every metric. */
+function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: ScoreBreakdown; fit: FitScoreResult; field: () => TeamMetricValues[] }) {
+  const offenseDetail = offenseScoreBreakdown(team);
+  const defenseTalent = Math.round(teamDefensiveTalentScore(team));
+  const weakDefenders = weakDefendersFor(team);
+  const profile = seasonProfile(breakdown, fit);
   return (
-    <section className={`results-verdict ${won ? 'results-verdict--won' : ''}`} aria-label={title}>
-      <h2 className="results-verdict-title at-cond">{title}</h2>
-      <div className="results-verdict-cols">
-        {strengths.length > 0 && (
-          <div className="results-verdict-col results-verdict-col--good">
-            <span className="results-verdict-label">{won ? 'What won it' : podium ? 'What put you on the podium' : 'What worked'}</span>
-            <ul>
-              {strengths.map((i) => (
-                <li key={i.id}>{i.message}</li>
+    <>
+      <div className="analysis-bars-split rs-details">
+        <div className="analysis-bars-col analysis-bars-col--offense">
+          <span className="analysis-bars-col-label">Offense details</span>
+          <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />
+          <MetricBar label="Creation" value={offenseScale(fit.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
+          <MetricBar label="Rim pressure" value={offenseScale(fit.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
+          <MetricBar label="Playmaking" value={offenseScale(offenseDetail.playmaking)} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />
+        </div>
+        <div className="analysis-bars-col analysis-bars-col--defense">
+          <span className="analysis-bars-col-label">Defense details</span>
+          <MetricBar label="D-TAL" value={defenseTalent} hint="Team defensive talent — the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure." />
+          <MetricBar label="Role coverage" value={fit.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
+          <MetricBar label="Switchability" value={fit.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
+          <MetricBar label="Hunt resistance" value={fit.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
+          <MetricBar label="Rebounding" value={fit.components.reboundingBalance} hint="Two-way rebounding balance." />
+          <MetricBar label="Size" value={fit.components.sizeCoverage} hint="Functional positional size across the lineup." />
+          {weakDefenders.length > 0 && (
+            <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down. Weak means below the median rotation player at that position.">
+              Weakest links:{' '}
+              {weakDefenders.map((row, i) => (
+                <span key={row.name}>
+                  {i > 0 && ' · '}
+                  <b>{shortenName(row.name)}</b> D-TAL {row.dtal} at {row.slot} ({row.minutes} min)
+                </span>
               ))}
-            </ul>
-          </div>
-        )}
-        {concerns.length > 0 && (
-          <div className="results-verdict-col results-verdict-col--bad">
-            <span className="results-verdict-label">{podium ? 'Where a rival could still hurt you' : 'What held you back'}</span>
-            <ul>
-              {concerns.map((i) => (
-                <li key={i.id}>{i.message}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+            </p>
+          )}
+        </div>
       </div>
-      {tip && (
-        <p className="results-verdict-tip">
-          <b>{contender ? 'To get over the top:' : 'Next draft:'}</b> {tip}
-        </p>
-      )}
-    </section>
+      <div className="analysis-bars-full">
+        <MetricBar label="Title structure" value={fit.components.championshipStructure} hint="How closely the roster's shape matches real championship rosters." />
+      </div>
+      <p className="analysis-identity-line">
+        <b>Season profile:</b> {profile.label} (regular season {profile.regularSeason} · playoffs {profile.playoffs}). {profile.explanation}
+      </p>
+      <p className="results-hero-bars-note">
+        These are the ingredients behind the scores above, measured separately — e.g. Role coverage is whether each defensive job is
+        filled at all, the Defense score is how well it's done.
+      </p>
+      <details className="analysis-raw">
+        <summary>All metrics &amp; inputs</summary>
+        <AllMetrics
+          values={teamMetricValues(team, fit)}
+          field={field()}
+          offenseScore={breakdown.offenseScore}
+          defenseScore={breakdown.defenseScore}
+          fit={fit}
+          huntability={defensiveHuntability(team)}
+          comp={bestHistoricalComp(team, breakdown, fit)}
+        />
+      </details>
+    </>
   );
 }
 
@@ -1258,16 +1174,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked?.team.id, scoredTeams],
   );
-  // 2026-09-14, user-reported live ("można dodać ławkę, offensive and defensive breakdown... to ma
-  // być dashboard jako podsumowanie całego draftu") — same O-TAL/Creation/Spacing/Rim-pressure
-  // split the per-team "Team analysis" accordion already computes for `offenseDetail` below, just
-  // hoisted up here so the hero dashboard can show it unconditionally instead of only after
-  // expanding the human's own card further down the page.
-  const heroOffenseDetail = useMemo(
-    () => (heroRanked ? offenseScoreBreakdown(displayTeam(heroRanked.team)) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [heroRanked?.team.id, scoredTeams],
-  );
   // 2026-09-26: the "Next draft" tip names the area furthest BELOW THE FIELD, not the lowest raw
   // number — the chips sit on different scales (Rotation reads ~95 for most teams, Offense and
   // Defense average ~74), so the raw minimum was nearly always Offense after its recalibration.
@@ -1288,12 +1194,14 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     } as Record<string, number>;
   }, [ranked]);
   // Group C mockup 19: every metric for every team, for the field median and rank shown next to
-  // each bar in "All metrics & inputs". Computed only once some team's card is open.
-  const anyExpanded = expandedTeamIds.size > 0;
-  const fieldMetricValues = useMemo<Map<string, TeamMetricValues>>(
-    () => (anyExpanded ? new Map(scoredTeams.map((team) => [team.id, teamMetricValues(team)])) : new Map()),
-    [anyExpanded, scoredTeams],
-  );
+  // each bar in "All metrics & inputs". Computed the first time any team's details are opened.
+  const fieldMetricsRef = useRef<{ teams: Team[]; values: TeamMetricValues[] } | null>(null);
+  const fieldMetrics = () => {
+    if (fieldMetricsRef.current?.teams !== scoredTeams) {
+      fieldMetricsRef.current = { teams: scoredTeams, values: scoredTeams.map((team) => teamMetricValues(team)) };
+    }
+    return fieldMetricsRef.current.values;
+  };
   const heroStyle = teamStyleFor(
     heroFit?.inputs.primaryArchetype,
     heroFit?.inputs.secondaryArchetype,
@@ -1301,31 +1209,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     heroRanked?.breakdown.defenseScore ?? 0,
     heroRanked?.breakdown.offenseScore,
   );
-  // 2026-09-25, user-reported live ("super skład, dlaczego dostał tak po dupie w defense?"): the
-  // Defense score is a minutes-weighted D-TAL average, so one or two weak defenders playing big
-  // minutes drag it down — and nothing on screen said who. Rotation players (15+ min) under
-  // `WEAK_DEFENDER_DTAL` for the slot they play most, furthest below it first, at most two.
-  const heroWeakDefenders = useMemo(() => {
-    if (!heroRanked) return [];
-    const minutes = new Map<string, { player: ResolvedSlotAssignment['player']; minutes: number; bySlot: Map<Position, number> }>();
-    for (const entry of allAssignments(displayTeam(heroRanked.team))) {
-      const row = minutes.get(entry.player.id) ?? { player: entry.player, minutes: 0, bySlot: new Map<Position, number>() };
-      row.minutes += entry.minutes;
-      row.bySlot.set(entry.slot, (row.bySlot.get(entry.slot) ?? 0) + entry.minutes);
-      minutes.set(entry.player.id, row);
-    }
-    return [...minutes.values()]
-      .filter((row) => row.minutes >= 15)
-      .map((row) => {
-        const slot = [...row.bySlot.entries()].sort((a, b) => b[1] - a[1])[0][0];
-        const dtal = Math.round(computeDefensiveTalent(row.player));
-        return { name: row.player.playerName, slot, dtal, minutes: Math.round(row.minutes), gap: WEAK_DEFENDER_DTAL[slot] - dtal };
-      })
-      .filter((row) => row.gap > 0)
-      .sort((a, b) => b.gap - a.gap)
-      .slice(0, 2);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [heroRanked?.team.id, scoredTeams]);
   // 2026-09-16, user-reported live ("zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn
   // z pozycjami i minutami"): the hero's own "Starting five"/"Bench" split named a player's
   // CARD position (their primary position for bench rows — see `heroRoster` above), not which
@@ -1511,11 +1394,188 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     </>
   );
 
+  // 2026-10-08, results look C: every team's report is built from the same pieces.
+  const codeByTeamId = useMemo(() => teamCodes(teams), [teams]);
+  const fieldScores = useMemo(() => {
+    const b = ranked.map((r) => r.breakdown);
+    return {
+      talent: b.map((x) => x.talentScore),
+      offense: b.map((x) => x.offenseScore),
+      defense: b.map((x) => x.defenseScore),
+      spacing: b.map((x) => x.spacingScore),
+      fit: b.map((x) => x.fitScore),
+      bench: b.map((x) => x.benchDepthScore),
+      rotation: b.map((x) => x.rotationScore),
+    };
+  }, [ranked]);
+  const profileRows = (b: ScoreBreakdown): ProfileRow[] => [
+    { label: 'Talent', value: b.talentScore, grade: fieldGrade(b.talentScore, fieldScores.talent) },
+    { label: 'Offense', value: b.offenseScore, grade: fieldGrade(b.offenseScore, fieldScores.offense) },
+    { label: 'Defense', value: b.defenseScore, grade: fieldGrade(b.defenseScore, fieldScores.defense) },
+    { label: 'Spacing', value: b.spacingScore, grade: fieldGrade(b.spacingScore, fieldScores.spacing) },
+    { label: 'Fit', value: b.fitScore, grade: fieldGrade(b.fitScore, fieldScores.fit) },
+    { label: 'Bench', value: b.benchDepthScore, grade: fieldGrade(b.benchDepthScore, fieldScores.bench) },
+    { label: 'Rotation', value: b.rotationScore, grade: fieldGrade(b.rotationScore, fieldScores.rotation) },
+  ];
+  const humanTeam = scoredTeams.find((team) => team.isHuman);
+  const humanEval = humanTeam ? leagueEvalByTeamId.get(humanTeam.id) : undefined;
+  const humanStyle = useMemo(() => (humanTeam ? styleProfile(humanTeam) : null), [humanTeam]);
+  const heroVoices = useMemo(
+    () =>
+      heroRanked?.team.isHuman
+        ? yourVoices({ team: displayTeam(heroRanked.team), rank: heroRanked.rank, fieldSize: ranked.length, breakdown: heroRanked.breakdown, fieldMedians })
+        : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [heroRanked, ranked.length, fieldMedians],
+  );
+  /** The extras under a team's profile: the score ingredients, the title path, the draft order. */
+  const reportExtras = (team: Team, breakdown: ScoreBreakdown, fit: FitScoreResult): ReportExtra[] => {
+    const evalRow = leagueEvalByTeamId.get(team.id);
+    const teamHistory = history.filter((h) => h.teamId === team.id).sort((a, b) => a.pickNumber - b.pickNumber);
+    const extras: ReportExtra[] = [
+      { id: 'details', label: "What's behind each score", content: () => <ScoreDetails team={team} breakdown={breakdown} fit={fit} field={fieldMetrics} /> },
+    ];
+    if (evalRow) {
+      extras.push({
+        id: 'title',
+        label: 'Title path',
+        content: () => {
+          const best = teamById(evalRow.bestMatchup.opponentId);
+          const worst = teamById(evalRow.worstMatchup.opponentId);
+          const bestFit = best ? fitScore(displayTeam(best)) : null;
+          const worstFit = worst ? fitScore(displayTeam(worst)) : null;
+          return (
+            <ChampionshipOdds
+              row={evalRow}
+              allRows={leagueEval}
+              teamById={teamById}
+              ownFit={fit}
+              bestOpponentFit={bestFit}
+              worstOpponentFit={worstFit}
+              bestExplanation={bestFit ? explainMatchup({ own: fit, opponent: bestFit, seriesWinProb: evalRow.bestMatchup.seriesWinProb })[0] : null}
+              worstExplanation={worstFit ? explainMatchup({ own: fit, opponent: worstFit, seriesWinProb: evalRow.worstMatchup.seriesWinProb })[0] : null}
+            />
+          );
+        },
+      });
+    }
+    extras.push({
+      id: 'order',
+      label: 'Draft order',
+      content: () => (
+        <ol className="rr-draft-order">
+          {teamHistory.map((entry) => {
+            const p = playerById(entry.playerId);
+            return (
+              <li key={entry.pickNumber}>
+                <span className="history-pick">#{entry.pickNumber}</span> {p ? `${p.playerName} (${p.spanLabel})` : entry.playerId}
+              </li>
+            );
+          })}
+        </ol>
+      ),
+    });
+    return extras;
+  };
+  const CLASH_LABELS: Record<StyleClashKey, string> = {
+    rim: 'Attacking the rim vs rim protection',
+    spacing: 'Shooting vs perimeter defense',
+    star: 'Best scorer vs best stopper',
+    glass: 'Rebounding',
+  };
+
+  const heroReport =
+    heroRanked && heroFit ? (
+      <TeamReport
+        profile={profileRows(heroRanked.breakdown)}
+        comp={bestHistoricalComp(displayTeam(heroRanked.team), heroRanked.breakdown, heroFit)}
+        voices={heroVoices.slice(1)}
+        extras={reportExtras(displayTeam(heroRanked.team), heroRanked.breakdown, heroFit)}
+      />
+    ) : null;
+
+  const standings = (
+    <div className="rr-standings">
+      {ranked.map(({ team, breakdown, rank }) => {
+        const shownTeam = displayTeam(team);
+        const evalRow = leagueEvalByTeamId.get(team.id);
+        const vs = humanEval?.matchups.find((m) => m.opponentId === team.id);
+        const seriesPct = vs ? Math.round(vs.seriesWinProb * 100) : null;
+        const isExpanded = !team.isHuman && expandedTeamIds.has(team.id);
+        const odds = evalRow?.championshipProbability ?? null;
+        const row = (
+          <>
+            <span className="rr-rk">{rank}</span>
+            <TeamMark code={codeByTeamId.get(team.id) ?? ''} name={team.name} />
+            <span className="rr-nm">
+              {teamLabel(team)}
+              {team.isHuman && <em> · you</em>}
+            </span>
+            <span className="rr-od" title="Title odds: how often this team won a 16-team bracket of best-of-7 series, simulated 20,000 times.">
+              {odds !== null ? `🏆 ${odds > 0 && odds < 0.01 ? '<1' : Math.round(odds * 100)}%` : ''}
+            </span>
+            <span className={`rr-ser${seriesPct === null ? '' : seriesPct >= 60 ? ' is-good' : seriesPct <= 40 ? ' is-bad' : ' is-even'}`}>
+              {seriesPct === null ? '—' : `${seriesPct}%`}
+            </span>
+            <span className="rr-sc">{breakdown.overall}</span>
+            <span className="rr-car" aria-hidden>{team.isHuman ? '' : isExpanded ? '▾' : '▸'}</span>
+          </>
+        );
+        let body: ReactNode = null;
+        if (isExpanded) {
+          const fit = fitScore(shownTeam);
+          const style = teamStyleFor(fit.inputs.primaryArchetype, fit.inputs.secondaryArchetype, fit.inputs.archetypeReport?.failureMode ?? null, breakdown.defenseScore, breakdown.offenseScore);
+          const tier = resultTierLabel(rank, ranked.length);
+          const theirStyle = humanStyle ? styleProfile(shownTeam) : null;
+          const humanFit = humanTeam ? fitScore(humanTeam) : null;
+          body = (
+            <div className="rr-open" style={{ ['--team-hue' as string]: teamHue(team.name) }}>
+              <div className="rr-open-head">
+                <span className={`rr-tag rr-tag--t${tier.tone}`}>{tier.label}</span>
+                <span className="rr-stat">Rating<b>{breakdown.overall}</b></span>
+                {odds !== null && <span className="rr-stat">Title odds<b>{odds > 0 && odds < 0.01 ? '<1' : Math.round(odds * 100)}%</b></span>}
+                {style.label && <span className="rr-stat">Style<b className="rr-stat-text">{style.label}</b></span>}
+                {style.failureMode && <span className="rr-stat">Main risk<b className="rr-stat-text">{style.failureMode}</b></span>}
+              </div>
+              <RosterGrid team={shownTeam} />
+              {vs && humanStyle && theirStyle && humanFit && (
+                <VsYou
+                  seriesPct={seriesPct ?? 50}
+                  margin={vs.marginA}
+                  explanation={explainMatchup({ own: humanFit, opponent: fit, seriesWinProb: vs.seriesWinProb })[0] ?? null}
+                  clashes={styleClashBreakdown(humanStyle, theirStyle).map((c) => ({ label: CLASH_LABELS[c.key], net: c.a - c.b }))}
+                />
+              )}
+              <TeamReport
+                profile={profileRows(breakdown)}
+                comp={bestHistoricalComp(shownTeam, breakdown, fit)}
+                voices={theirVoices(shownTeam, breakdown, rank, ranked.length)}
+                extras={reportExtras(shownTeam, breakdown, fit)}
+              />
+            </div>
+          );
+        }
+        return (
+          <div key={team.id} className={`rr-rung-wrap${team.isHuman ? ' is-you' : ''}${isExpanded ? ' is-open' : ''}`}>
+            {team.isHuman ? (
+              <div className="rr-rung">{row}</div>
+            ) : (
+              <button type="button" className="rr-rung" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
+                {row}
+              </button>
+            )}
+            {body}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     // 2026-08-16, user's own ask: same fixed-dark broadcast board as the Draft screen — see the
     // `.at-shell` token-aliasing comment in App.css for how the rest of this file's existing
     // classes (never touched here) pick up the dark palette just by being nested inside this.
-    <div className="results-screen at-shell at-calm">
+    <div className="results-screen at-shell at-calm" style={heroRanked ? { ['--team-hue' as string]: teamHue(heroRanked.team.name) } : undefined}>
       {/* 2026-10-07, the UI simplification (approved mockup): the draft screen's one-row header. */}
       <div className="at-calm-header">
         <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRestart}>
@@ -1538,8 +1598,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           spacingScore={heroRanked.breakdown.spacingScore}
           fitScore={heroRanked.breakdown.fitScore}
           rotationScore={heroRanked.breakdown.rotationScore}
-          fitDetail={heroFit}
-          offenseDetail={heroOffenseDetail}
           assignments={heroAssignments}
           starterKeys={heroStarterKeys}
           topOverall={ranked[0]?.breakdown.overall ?? null}
@@ -1549,269 +1607,13 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           seasonSimSlot={seasonSimSlot}
           identity={heroStyle.label}
           failureMode={heroStyle.failureMode}
-          weakDefenders={heroWeakDefenders}
-          comp={heroRanked && heroFit ? bestHistoricalComp(displayTeam(heroRanked.team), heroRanked.breakdown, heroFit) : null}
-          defenseTalent={heroRanked ? Math.round(teamDefensiveTalentScore(displayTeam(heroRanked.team))) : null}
           starters={heroStarters}
           roster={heroRoster}
-          verdict={heroRanked?.team.isHuman && (
-        <ResultsVerdict
-          team={displayTeam(heroRanked.team)}
-          rank={heroRanked.rank}
-          fieldSize={ranked.length}
-          breakdown={heroRanked.breakdown}
-          scores={{
-            Talent: heroRanked.breakdown.talentScore,
-            'Bench Depth': heroRanked.breakdown.benchDepthScore,
-            Offense: heroRanked.breakdown.offenseScore,
-            Defense: heroRanked.breakdown.defenseScore,
-            Spacing: heroRanked.breakdown.spacingScore,
-            Fit: heroRanked.breakdown.fitScore,
-            Rotation: heroRanked.breakdown.rotationScore,
-          }}
-          fieldMedians={fieldMedians}
-        />
-      )}
-          rivals={
-            <>
-      <MatchupMatrix teams={scoredTeams} evaluations={leagueEval} focusTeamId={scoredTeams.find((team) => team.isHuman)?.id} />
-      <h2 className="results-section-title">Final team ranking</h2>
-      <div className="expand-all-controls">
-        <button className="secondary-btn retro-btn" onClick={() => setExpandedTeamIds(new Set(teams.map((t) => t.id)))}>
-          Expand all
-        </button>
-        <button
-          className="secondary-btn retro-btn"
-          onClick={() => setExpandedTeamIds(new Set<string>())}
-        >
-          Collapse all
-        </button>
-      </div>
-      {ranked.map(({ team, breakdown, rank }) => {
-        const shownTeam = displayTeam(team);
-        const assignments = allAssignments(shownTeam);
-        // A thin-bench player is genuinely split across two or three slots by `autoAssignRotation`;
-        // the per-slot rows below then read as several different players. Their total minutes,
-        // shown alongside each partial, make it clear it's one body covering multiple spots.
-        const totalMinutesByPlayerId = new Map<string, number>();
-        for (const a of assignments) {
-          totalMinutesByPlayerId.set(a.player.id, (totalMinutesByPlayerId.get(a.player.id) ?? 0) + a.minutes);
-        }
-        const starterKeys = new Set(primaryStarters(shownTeam).map((entry) => `${entry.slot}|${entry.player.id}`));
-        const leagueEvalRow = leagueEvalByTeamId.get(team.id);
-        const teamHistory = history.filter((h) => h.teamId === team.id).sort((a, b) => a.pickNumber - b.pickNumber);
-        const isExpanded = expandedTeamIds.has(team.id);
-        const fitDetail = isExpanded ? fitScore(shownTeam) : null;
-        const offenseDetail = isExpanded ? offenseScoreBreakdown(shownTeam) : null;
-        const rsPoProfile = fitDetail ? seasonProfile(breakdown, fitDetail) : null;
-        const bestOpponent = leagueEvalRow ? teamById(leagueEvalRow.bestMatchup.opponentId) : undefined;
-        const worstOpponent = leagueEvalRow ? teamById(leagueEvalRow.worstMatchup.opponentId) : undefined;
-        const bestOpponentFit = fitDetail && bestOpponent ? fitScore(displayTeam(bestOpponent)) : null;
-        const worstOpponentFit = fitDetail && worstOpponent ? fitScore(displayTeam(worstOpponent)) : null;
-        const bestMatchupExplanation = fitDetail && bestOpponentFit && leagueEvalRow
-          ? explainMatchup({ own: fitDetail, opponent: bestOpponentFit, seriesWinProb: leagueEvalRow.bestMatchup.seriesWinProb })[0]
-          : null;
-        const worstMatchupExplanation = fitDetail && worstOpponentFit && leagueEvalRow
-          ? explainMatchup({ own: fitDetail, opponent: worstOpponentFit, seriesWinProb: leagueEvalRow.worstMatchup.seriesWinProb })[0]
-          : null;
-        const huntability = isExpanded ? defensiveHuntability(shownTeam) : null;
-        const totalFga = team.roster.reduce((sum, p) => sum + p.fga, 0);
-        // 2026-08-15: Strengths/Concerns text now comes from the deterministic insight engine
-        // (insights.ts + insightMapper.ts) instead of the old `breakdown.notes` split +
-        // `syntheticLowScoreConcerns` catch-all — see insights.ts's own docstring for why. The
-        // actual SCORE (`breakdown`/`overall`/etc.) is untouched; this only replaces the prose.
-        // Only computed for expanded teams (the notes panel is the one thing that reads it) —
-        // `buildTeamFeatureSnapshot` does real per-starter pool scans, not free enough to run
-        // unconditionally for all `ranked.length` teams on every render.
-        const insights = isExpanded
-          ? generateRosterInsights(buildTeamFeatureSnapshot(shownTeam), undefined, insightContextFor(breakdown, rank, ranked.length))
-          : null;
-        return (
-          <div key={team.id} className={`team-result rank-${rank} ${team.isHuman ? 'is-human-team' : ''} ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}>
-            <button className="team-result-header rank-row" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
-              <span className="team-result-toggle">{isExpanded ? '▾' : '▸'}</span>
-              <RankRowSummary
-                rank={rank}
-                label={teamLabel(team)}
-                isHuman={team.isHuman}
-                rating={breakdown.overall}
-                titleOdds={leagueEvalRow?.championshipProbability ?? null}
-              />
-            </button>
-            {isExpanded && (
-              <div className="team-result-body">
-                <div className="subscores">
-                  <ScoreChip label="Talent" value={breakdown.talentScore} />
-                  <ScoreChip label="Bench" value={breakdown.benchDepthScore} />
-                  <ScoreChip label="Offense" value={breakdown.offenseScore} />
-                  <ScoreChip label="Defense" value={breakdown.defenseScore} />
-                  <ScoreChip label="Spacing" value={breakdown.spacingScore} />
-                  <ScoreChip label="Fit" value={breakdown.fitScore} />
-                  <ScoreChip label="Rotation" value={breakdown.rotationScore} />
-                  <span className="fga-spent"><CapIcon /> Caps spent: {totalFga.toFixed(1)} / {CAP_LIMIT}</span>
-                </div>
-                {/* 2026-09-11, Scouting Report finding: Era Ball surfaces its named archetype tags
-                    right on the player list; ours was only visible after opening "Team analysis".
-                    Same data (`fitDetail.inputs.primaryArchetype`), already computed for this card
-                    the moment it's expanded — just promoted up here instead of a second lookup.
-                    2026-09-11 follow-up, user-reported live: "1 tag to też mało, trzeba więcej" +
-                    "a ten opisek można dać tam gdzie jest drugi screen" — the engine already scores
-                    up to 3 archetype matches (`championshipArchetype.ts`'s own `archetypes`,
-                    `.slice(0, 3)`), this row was just reading the two singular
-                    primary/secondaryArchetype fields instead of the full list, silently dropping
-                    a real 3rd match when one existed. Maps the full array now, and the risk line
-                    that used to live down in "Team analysis" as a separate "Identity:" paragraph
-                    moved up here next to the tags it's actually describing. */}
-                {fitDetail && fitDetail.inputs.championshipArchetypes.length > 0 && (
-                  <div className="identity-chip-row">
-                    {fitDetail.inputs.championshipArchetypes
-                      .filter((entry) => entry.archetype !== 'Defensive superteam' || defenseFirstBacked(breakdown.defenseScore, breakdown.offenseScore))
-                      .map((entry, i) => (
-                        <span key={entry.archetype} className={`identity-chip ${i > 0 ? 'identity-chip-secondary' : ''}`}>
-                          {archetypeDisplayName(entry.archetype)}
-                        </span>
-                      ))}
-                    {(() => {
-                      const risk = teamStyleFor(
-                        fitDetail.inputs.primaryArchetype,
-                        fitDetail.inputs.secondaryArchetype,
-                        fitDetail.inputs.archetypeReport?.failureMode ?? null,
-                        breakdown.defenseScore,
-                        breakdown.offenseScore,
-                      ).failureMode;
-                      return risk && <span className="identity-risk">main risk: {risk}</span>;
-                    })()}
-                  </div>
-                )}
-                {fitDetail && (
-                  <details className="result-accordion-section team-analysis-section">
-                    <summary>Team analysis</summary>
-                    {insights && (
-                      <div className="notes notes-split analysis-insights analysis-insights-lead">
-                        <div className="notes-column notes-strengths">
-                          <strong>Strengths</strong>
-                          <ul>
-                            {insights.strengths.map((insight) => (
-                              <li key={insight.id}>{insight.message}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        {insights.concerns.length > 0 && (
-                          <div className="notes-column notes-concerns">
-                            <strong>Concerns</strong>
-                            <ul>
-                              {insights.concerns.map((insight) => (
-                                <li key={insight.id}>{insight.message}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {/* 2026-09-11, user-reported live ("a ten opisek można dać tam gdzie jest
-                        drugi screen") — the "Identity:" line moved up to the header's own
-                        `identity-chip-row`, right next to the tags it describes, instead of
-                        repeating the same primary/secondary archetype text a second time down
-                        here. Season profile is a different read (RS-vs-playoffs shape) and stays. */}
-                    {rsPoProfile && (
-                      <div className="analysis-identity">
-                        <p className="analysis-identity-line">
-                          <b>Season profile:</b> {rsPoProfile.label} (regular season {rsPoProfile.regularSeason} · playoffs {rsPoProfile.playoffs}). {rsPoProfile.explanation}
-                        </p>
-                      </div>
-                    )}
-                    {/* 2026-09-11, user-reported live ("można te ofensywne statystyki dać po
-                        lewej stronie a po prawej defensywne"): the old single 2-col grid filled
-                        row-major, so reading straight down the left column mixed offense and
-                        defense metrics (O-TAL, Spacing, Defense, Hunt resistance, Size all landed
-                        together purely by row-fill accident). Two explicit columns instead of one
-                        auto-flowing grid — offense metrics stay grouped left, defense right,
-                        regardless of how many of each side there are. Title structure is a
-                        whole-roster read (neither purely offense nor defense), so it gets its own
-                        full-width row below both columns rather than an arbitrary side. */}
-                    <div className="analysis-bars-split">
-                      <div className="analysis-bars-col analysis-bars-col--offense">
-                        <span className="analysis-bars-col-label">Offense details</span>
-                        {offenseDetail && <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />}
-                        <MetricBar label="Creation" value={offenseScale(fitDetail.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
-                        <MetricBar label="Rim pressure" value={offenseScale(fitDetail.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
-                      </div>
-                      <div className="analysis-bars-col analysis-bars-col--defense">
-                        <span className="analysis-bars-col-label">Defense details</span>
-                        <MetricBar label="Role coverage" value={fitDetail.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
-                        <MetricBar label="Switchability" value={fitDetail.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
-                        <MetricBar label="Hunt resistance" value={fitDetail.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
-                        <MetricBar label="Rebounding" value={fitDetail.components.reboundingBalance} hint="Two-way rebounding balance." />
-                        <MetricBar label="Size" value={fitDetail.components.sizeCoverage} hint="Functional positional size across the lineup." />
-                      </div>
-                    </div>
-                    <div className="analysis-bars-full">
-                      <MetricBar label="Title structure" value={fitDetail.components.championshipStructure} hint="How closely the roster's shape matches real championship rosters." />
-                    </div>
-                    <details className="analysis-raw">
-                      <summary>All metrics &amp; inputs</summary>
-                      <AllMetrics
-                        values={teamMetricValues(shownTeam, fitDetail)}
-                        field={[...fieldMetricValues.values()]}
-                        offenseScore={breakdown.offenseScore}
-                        defenseScore={breakdown.defenseScore}
-                        fit={fitDetail}
-                        huntability={huntability}
-                        comp={bestHistoricalComp(shownTeam, breakdown, fitDetail)}
-                      />
-                    </details>
-                  </details>
-                )}
-                <details className="result-accordion-section championship-section">
-                  <summary>Championship odds</summary>
-                  {leagueEvalRow && (
-                    <ChampionshipOdds
-                      row={leagueEvalRow}
-                      allRows={leagueEval}
-                      teamById={teamById}
-                      ownFit={fitDetail}
-                      bestOpponentFit={bestOpponentFit}
-                      worstOpponentFit={worstOpponentFit}
-                      bestExplanation={bestMatchupExplanation}
-                      worstExplanation={worstMatchupExplanation}
-                    />
-                  )}
-                  {/* 2026-09-24 copy pass: the "Raw net-rating estimate" footnote is gone from the player
-                      view — a separate regression that routinely disagreed with the ranking and odds
-                      right above it (e.g. +8.2 net for a 16th-place, 0%-odds team). */}
-                </details>
-                <details className="result-accordion-section rotation-panel">
-                  <summary>Rotation</summary>
-                  {/* 2026-09-24, user's own ask ("a gdyby to dla wszystkich takimi kafelkami
-                      zastąpić?"): every team's rotation now uses the same per-position tiles as the
-                      hero's own Rotation panel, instead of a long one-row-per-stint list. */}
-                  <RotationColumns
-                    assignments={assignments}
-                    starterKeys={starterKeys}
-                    totalMinutesByPlayerId={totalMinutesByPlayerId}
-                    detailed
-                  />
-                </details>
-                <details className="result-accordion-section draft-order">
-                  <summary>Draft order</summary>
-                  <ol>
-                    {teamHistory.map((entry) => {
-                      const p = playerById(entry.playerId);
-                      return (
-                        <li key={entry.pickNumber}>
-                          <span className="history-pick">#{entry.pickNumber}</span> {p ? `${p.playerName} (${p.spanLabel})` : entry.playerId}
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </details>
-              </div>
-            )}
-          </div>
-        );
-      })}
-            </>
-          }
+          teamCode={codeByTeamId.get(heroRanked.team.id) ?? ''}
+          rosterTeam={displayTeam(heroRanked.team)}
+          quote={heroVoices[0] ?? null}
+          report={heroReport}
+          standings={standings}
           onNewDraft={onRematch ? () => onRematch() : undefined}
         />
       )}
