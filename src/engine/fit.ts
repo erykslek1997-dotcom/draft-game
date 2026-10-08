@@ -145,18 +145,26 @@ const LAYER_TIE_BREAK = 0.01;
  * not the engine too strongly — step 7.5); the others are rescaled so the table still sums to 1.
  * Was: creation .18, pairing .15, role coverage .12, switch .15, rim .08, size .05, title .16.
  */
+/*
+ * 2026-10-08, the second half (measured again on 960 AI-drafted teams after steps 7.5-8 and the
+ * NBA.com calibration): role coverage 1.71x and pairing 1.83x what the engine gives them, title
+ * structure 1.46x, switchability 0.95x, rim pressure 0.81x; creation structure and size coverage
+ * read below zero (n.s.) and drop out. Spacing compatibility stays; the rest rescaled to sum to 1.
+ * Was (step 7): creation .087, pairing .207, role coverage .25, switch .135, rim .058, size .038,
+ * title .115.
+ */
 export const FIT_WEIGHTS = {
-  creationStructure: 0.087,
-  pairingStructure: 0.207,
+  creationStructure: 0,
+  pairingStructure: 0.293,
   spacingCompatibility: 0.11,
-  defensiveRoleCoverage: 0.25,
-  switchability: 0.135,
+  defensiveRoleCoverage: 0.331,
+  switchability: 0.099,
   huntResistance: 0,
   defensiveCohesion: 0,
-  rimPressureTeam: 0.058,
+  rimPressureTeam: 0.037,
   reboundingBalance: 0,
-  sizeCoverage: 0.038,
-  championshipStructure: 0.115,
+  sizeCoverage: 0,
+  championshipStructure: 0.13,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
