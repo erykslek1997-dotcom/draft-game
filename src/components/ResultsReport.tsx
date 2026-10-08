@@ -82,9 +82,10 @@ export function RosterGrid({ team }: { team: Team }) {
                   <Face name={e.name} size="sm" />
                   <span className="rr-cell-text">
                     <b>{e.name}</b>
-                    <span>{e.years}</span>
+                    <span>
+                      {e.years} · <b className="rr-min">{e.minutes}m</b>
+                    </span>
                   </span>
-                  <b className="rr-min">{e.minutes}m</b>
                 </div>
               ))}
               {spot.length > 0 && (
