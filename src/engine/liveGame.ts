@@ -966,6 +966,22 @@ export function playTeamGame(
   return playRosters([rosterFromTeam(a), rosterFromTeam(b)], margin, seed, options.record ?? true, options.weakLinks, true);
 }
 
+/** A pairing set up once for several games (a season's 5-6 meetings, a playoff series): the same
+ * fives, fatigue and nudge every game, only the dice differ. */
+export interface TeamPairing {
+  prepared: PreparedGame;
+  weakLinks: [string | null, string | null];
+}
+
+export function prepareTeamPairing(a: Team, b: Team, margin: number, weakLinks?: [string | null, string | null]): TeamPairing {
+  return { prepared: prepareRosters([rosterFromTeam(a), rosterFromTeam(b)], margin, true), weakLinks: weakLinks ?? [teamWeakLink(a), teamWeakLink(b)] };
+}
+
+/** One game of a prepared pairing — the same game `playTeamGame` plays for this seed. */
+export function playPairingGame(pairing: TeamPairing, seed: string, record = true): LiveGameResult {
+  return playPrepared(pairing.prepared, seed, record, pairing.weakLinks);
+}
+
 /** The starting five's weakest defender, the man the other side hunts. */
 export function teamWeakLink(team: Team): string | null {
   return scoreLineup(rosterFromTeam(team).starters).weakLink;
@@ -1035,17 +1051,20 @@ export function mechanicsPer100(a: Team, b: Team): [number, number] {
   return [100 * setup.meanPossession(0, 1), 100 * setup.meanPossession(1, 1)];
 }
 
-function playRosters(
-  rosters: [GameRoster, GameRoster],
-  margin: number,
-  seed: string,
-  record: boolean,
-  weakLinks?: [string | null, string | null],
-  /** Only a full rotation tires: a five alone (Daily, Draw Five) plays the whole game by design. */
-  tiring = false,
-): LiveGameResult {
-  const rng = mulberry32(hashSeed(`${seed}:game`));
-  const { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt } = gameSetup(rosters, tiring);
+type GameSetup = ReturnType<typeof gameSetup>;
+
+/** Everything about a pairing that does not depend on the dice: the fives, who tires, and the
+ * shooting nudge that meets the engine's margin. A season reuses it for every game of a pairing. */
+interface PreparedGame {
+  rosters: [GameRoster, GameRoster];
+  setup: GameSetup;
+  nudge: number;
+  margin: number;
+}
+
+function prepareRosters(rosters: [GameRoster, GameRoster], margin: number, tiring: boolean): PreparedGame {
+  const setup = gameSetup(rosters, tiring);
+  const { gapAt } = setup;
   let nudge: number;
   if (gapAt(MAX_NUDGE) <= margin) nudge = MAX_NUDGE;
   else if (gapAt(-MAX_NUDGE) >= margin) nudge = -MAX_NUDGE;
@@ -1059,6 +1078,27 @@ function playRosters(
     }
     nudge = (lo + hi) / 2;
   }
+  return { rosters, setup, nudge, margin };
+}
+
+function playRosters(
+  rosters: [GameRoster, GameRoster],
+  margin: number,
+  seed: string,
+  record: boolean,
+  weakLinks?: [string | null, string | null],
+  /** Only a full rotation tires: a five alone (Daily, Draw Five) plays the whole game by design. */
+  tiring = false,
+): LiveGameResult {
+  return playPrepared(prepareRosters(rosters, margin, tiring), seed, record, weakLinks);
+}
+
+function playPrepared(prepared: PreparedGame, seed: string, record: boolean, weakLinks?: [string | null, string | null]): LiveGameResult {
+  const { rosters, nudge, margin } = prepared;
+  const rng = mulberry32(hashSeed(`${seed}:game`));
+  const { courts, starting, possessionMinutes, tired, clashFor } = prepared.setup;
+  // A foul-out rewrites this game's fives from that trip on, so each game gets its own copy.
+  const schedule: GameSetup['schedule'] = [[...prepared.setup.schedule[0]], [...prepared.setup.schedule[1]]];
   const makeScale: [number, number] = [1 + nudge, 1 - nudge];
   const box: [Record<string, BoxLineStats>, Record<string, BoxLineStats>] = [{}, {}];
   for (const side of [0, 1] as GameSide[]) for (const p of rosters[side].players) box[side][p.label] = emptyLine();
