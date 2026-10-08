@@ -192,19 +192,22 @@ function defenseTeams(pool: SeasonPlayerLine[], value: (l: SeasonPlayerLine) => 
   return [0, 1].map(() => [...take(guard, 2), ...take((l) => !guard(l), 3)]);
 }
 
-/** The 24 All-Stars: the best lines with at least eight guards and eight frontcourt players. */
+/** The 24 All-Stars: every All-NBA player, then the best lines, with at least eight guards and eight
+ * frontcourt players. */
 const ALL_STARS = 24;
 const ALL_STAR_MIN_PER_COURT = 8;
-function allStarsFrom(pool: SeasonPlayerLine[], value: (l: SeasonPlayerLine) => number): SeasonPlayerLine[] {
+function allStarsFrom(pool: SeasonPlayerLine[], value: (l: SeasonPlayerLine) => number, sure: SeasonPlayerLine[]): SeasonPlayerLine[] {
   const ranked = [...pool].sort((x, y) => value(y) - value(x));
-  const picked = new Set<SeasonPlayerLine>([
-    ...ranked.filter(guard).slice(0, ALL_STAR_MIN_PER_COURT),
-    ...ranked.filter((l) => !guard(l)).slice(0, ALL_STAR_MIN_PER_COURT),
-  ]);
-  for (const l of ranked) {
-    if (picked.size >= ALL_STARS) break;
-    picked.add(l);
-  }
+  const picked = new Set<SeasonPlayerLine>(sure);
+  const fill = (is: (l: SeasonPlayerLine) => boolean, atLeast: number) => {
+    for (const l of ranked) {
+      if ([...picked].filter(is).length >= atLeast || picked.size >= ALL_STARS) break;
+      if (is(l)) picked.add(l);
+    }
+  };
+  fill(guard, ALL_STAR_MIN_PER_COURT);
+  fill((l) => !guard(l), ALL_STAR_MIN_PER_COURT);
+  fill(() => true, ALL_STARS);
   return ranked.filter((l) => picked.has(l));
 }
 
@@ -270,16 +273,21 @@ export function simulateLiveSeason(teams: Team[], seed: string = seasonSeed(team
   // MVP. All-Stars lean on the numbers more still: a star on a losing team goes.
   const allNbaValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * (winPct.get(l.teamId) ?? 0) ** 0.3;
   const allStarValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * (0.8 + 0.4 * (winPct.get(l.teamId) ?? 0));
+  const mvp = best(eligible, mvpValue);
+  const dpoy = best(eligible, defenseValue);
+  // The MVP always makes the All-NBA first team, the DPOY the All-Defense first team.
+  const first = (winner: SeasonPlayerLine | null, value: (l: SeasonPlayerLine) => number) => (l: SeasonPlayerLine) => (l === winner ? Infinity : value(l));
+  const allNba = positionalTeams(eligible, first(mvp, allNbaValue), 3);
   return {
     standings,
     players,
     awards: {
-      mvp: best(eligible, mvpValue),
-      dpoy: best(eligible, defenseValue),
+      mvp,
+      dpoy,
       sixthMan: best(eligible.filter((l) => !l.starter), gameScorePerGame),
-      allNba: positionalTeams(eligible, allNbaValue, 3),
-      allDefense: defenseTeams(eligible, defenseValue),
-      allStars: allStarsFrom(eligible, allStarValue),
+      allNba,
+      allDefense: defenseTeams(eligible, first(dpoy, defenseValue)),
+      allStars: allStarsFrom(eligible, allStarValue, allNba.flat()),
     },
   };
 }
