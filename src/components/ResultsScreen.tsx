@@ -30,7 +30,6 @@ import { type FeedbackEntry } from './FeedbackToggle';
 import ChampionshipOdds from './ChampionshipOdds';
 import { markStepDone } from './pathProgress';
 import { TEAM_EXPORT_FOR_TESTING } from './testingFlags';
-import { exportLeagueText } from '../engine/teamExport';
 import AllMetrics from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
@@ -51,6 +50,7 @@ import {
   type ReportExtra,
 } from './ResultsReport';
 import { FitName, FitTeam } from './FitName';
+import { exportFullDraft } from '../engine/draftExport';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, the live season) — real work deferred until the
@@ -1558,7 +1558,30 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           <button type="button" className="at-calm-btn" onClick={() => onRematch(draftSeed)}>Rematch this board</button>
         )}
         <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRestart}>Main menu</button>
-        {TEAM_EXPORT_FOR_TESTING && <TeamExportButton teams={scoredTeams} seed={draftSeed} leagueEval={leagueEval} />}
+        {TEAM_EXPORT_FOR_TESTING && (
+          <FullExportButton
+            build={() =>
+              exportFullDraft({
+                seed: draftSeed,
+                teams: scoredTeams,
+                history,
+                codes: codeByTeamId,
+                titleOdds: new Map(leagueEval.map((e) => [e.teamId, e.championshipProbability])),
+                voices: (team) => {
+                  const r = ranked.find((x) => x.team.id === team.id);
+                  if (!r) return [];
+                  return team.isHuman
+                    ? yourVoices({ team: displayTeam(team), rank: r.rank, fieldSize: ranked.length, breakdown: r.breakdown, fieldMedians })
+                    : theirVoices(displayTeam(team), r.breakdown, r.rank, ranked.length);
+                },
+                season: seasonState.status === 'done' ? seasonState.season : null,
+                playoffs: seasonState.status === 'done' ? seasonState.playoffs : null,
+              })
+            }
+            seed={draftSeed}
+            seasonReady={seasonState.status === 'done'}
+          />
+        )}
       </div>
     </div>
   );
@@ -1566,26 +1589,29 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
 
 /** Engine calibration (testing): copies every team as text to paste into a calibration session;
  * falls back to downloading a .txt where the clipboard is unavailable. */
-function TeamExportButton({ teams, seed, leagueEval }: { teams: Team[]; seed: number; leagueEval: TeamLeagueEvaluation[] }) {
-  const [state, setState] = useState<'idle' | 'copied' | 'saved'>('idle');
+/** 2026-10-08, the user: one button that exports the whole draft — picks, scores, reports, the
+ * season and the playoffs (`exportFullDraft`). It waits for the season so the file is complete,
+ * saves a .txt and copies the same text. */
+function FullExportButton({ build, seed, seasonReady }: { build: () => string; seed: number; seasonReady: boolean }) {
+  const [state, setState] = useState<'idle' | 'done'>('idle');
   async function handle() {
-    const text = exportLeagueText(teams, { seed, titleOdds: new Map(leagueEval.map((e) => [e.teamId, e.championshipProbability])) });
+    const text = build();
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `draftverse-${seed}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
     try {
       await navigator.clipboard.writeText(text);
-      setState('copied');
     } catch {
-      const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `draft-export-${seed}.txt`;
-      link.click();
-      URL.revokeObjectURL(url);
-      setState('saved');
+      // The file is the export; the copy is a convenience.
     }
+    setState('done');
   }
   return (
-    <button className="secondary-btn team-export-btn" onClick={handle} title="Copies every team's scores, players and minutes as text">
-      {state === 'copied' ? '✓ Copied — paste it in the chat' : state === 'saved' ? '✓ Saved as .txt' : 'Export all teams (testing)'}
+    <button className="secondary-btn team-export-btn" onClick={handle} disabled={!seasonReady} title="Every pick, every team's scores and report, the season and the playoffs, as one text file">
+      {!seasonReady ? 'Export the draft (season still simulating…)' : state === 'done' ? `✓ Saved draftverse-${seed}.txt (also copied)` : 'Export the whole draft (testing)'}
     </button>
   );
 }
