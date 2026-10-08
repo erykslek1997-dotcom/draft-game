@@ -188,7 +188,6 @@
 .at-player-card-stats b { color: var(--at-ink); font-size: 13px; font-weight: 700; letter-spacing: 0; }
 
 .results-hero-bars-note { font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); margin: 6px 0 12px; }
-.bracket-scroll > div:first-child { overflow: hidden; margin: 0 auto; }
 .results-verdict--won { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 55%, var(--at-line)); }
 .results-verdict--won .results-verdict-title { color: var(--at-gold, #ffd479); }
 
@@ -201,12 +200,6 @@
 }
 .rotation-entry-total { color: var(--at-ink-faint); font-weight: 500; }
 .rotation-columns--detailed .rotation-natural-pos { margin-left: 3px; }
-/* Season standings: the playoff line after the 8th seed, non-playoff teams dimmed. */
-.season-standings-cutoff td { border-bottom: 2px dashed color-mix(in srgb, var(--at-accent) 60%, transparent); }
-.season-standings-out td { opacity: 0.6; }
-.season-standings-out.season-standings-you td { opacity: 1; }
-.season-playoff-note { font-size: 12.5px; color: var(--at-ink-soft); margin: 10px 0 0; }
-
 /* 2026-09-25, visual consistency pass: the game shell is dark no matter what the OS theme is (see
    `.at-shell`), but these badge palettes only switched to their dark variants under
    `prefers-color-scheme: dark` — on a light-mode OS the same tier pills came out as pastel light

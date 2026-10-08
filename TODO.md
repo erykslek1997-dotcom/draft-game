@@ -445,7 +445,10 @@ Decyzje (2026-09-30):
     Audyt nagród (18 sezonów): MVP, All-NBA, All-Stars, 6MOY, Finals MVP ok. Obronne poprawione —
     drużyna −1 zamiast −3 za punkt straconej obrony, pełna wartość od 32 min, All-Defense 2 obrońców
     + 3 wysokich, max 3 z jednej drużyny: nikt poniżej 28 min (było 15/180), z 10 najlepszych
-    obrońców wypada 2,8 na sezon (5,4).
+    obrońców wypada 2,8 na sezon (5,4). DPOY tylko SF/PF/C, SF z handicapem 4 („w all-time dominują
+    wysocy”): 18 sezonów — 15× C, 3× PF.
+  - Etap 3 (UI): „Your season” — podsumowanie B, pełne statystyki, drabinka, oglądanie tylko swoich
+    meczów playoffów (bez spoilerów), sezon liczony w tle w kawałkach (~4 s).
   - Etap 2: makiety UI (Standings / Stats / Awards / Playoffs + mecz na żywo). Etap 3: UI.
   - Później: kalendarz (kolejki, All-Star w połowie sezonu, przebieg sezonu).
 - [ ] **Mecz na żywo na koniec Mini?** — do decyzji: w Mini jest 16 drużyn i wynik to miejsce

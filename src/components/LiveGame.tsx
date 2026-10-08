@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LegendFive } from '../engine/dailyMeta';
 import { pregameOdds, type BoxLineStats, type GameMoment, type LiveGameResult } from '../engine/liveGame';
+import { gameWinProbability } from '../engine/matchup';
 
 /**
  * 2026-09-28, the user ("symulacja super"): the daily five's game against the opponent of the day,
@@ -43,18 +44,36 @@ function prefersReducedMotion(): boolean {
   }
 }
 
+/** A game between two teams (the season's playoffs): both sides by name, one of them yours. */
+export interface LiveMatchup {
+  title: string;
+  subtitle: string;
+  /** Full names and short labels, side 0 first. */
+  names: [string, string];
+  short: [string, string];
+  /** Three-letter codes, for the narrow quarter table. */
+  codes: [string, string];
+  yourSide: 0 | 1;
+}
+
 export default function LiveGame({
   game,
   opponent,
+  matchup,
   autoStart,
   onFinish,
 }: {
   game: LiveGameResult;
-  opponent: LegendFive;
+  /** The daily's opponent (side 1; you are side 0). Unused when `matchup` is given. */
+  opponent?: LegendFive;
+  matchup?: LiveMatchup;
   autoStart: boolean;
   /** Called once the final is on the board (played out or skipped). */
   onFinish?: () => void;
 }) {
+  // Side labels: "You" against the daily's opponent, or two named teams.
+  const short: [string, string] = matchup ? matchup.short : ['You', opponent?.short ?? 'Them'];
+  const yourSide = matchup ? matchup.yourSide : 0;
   const total = game.moments.length;
   // -1: before tip-off. `total`: final.
   const [shown, setShown] = useState(autoStart && !prefersReducedMotion() ? -1 : total);
@@ -100,24 +119,24 @@ export default function LiveGame({
       if (m.play && !m.play.quiet) {
         rows.push({
           key: `p${i}`,
-          cls: m.play.joker ? 'is-joker' : m.play.side === 0 ? 'is-you' : 'is-them',
+          cls: m.play.joker ? 'is-joker' : m.play.side === yourSide ? 'is-you' : 'is-them',
           time: clock(m).slice(3),
           text: m.play.text,
           score: `${m.score[0]}–${m.score[1]}`,
         });
       }
       const next = game.moments[i + 1];
-      if (next && next.quarter !== m.quarter) rows.push({ key: `q${i}`, cls: 'is-quarter', text: `End of Q${m.quarter + 1} · You ${m.score[0]}–${m.score[1]}` });
+      if (next && next.quarter !== m.quarter) rows.push({ key: `q${i}`, cls: 'is-quarter', text: `End of Q${m.quarter + 1} · ${short[0]} ${m.score[0]}–${m.score[1]}` });
     }
-    if (done) rows.push({ key: 'final', cls: 'is-quarter', text: `Final · You ${game.final[0]}–${game.final[1]}` });
+    if (done) rows.push({ key: 'final', cls: 'is-quarter', text: `Final · ${short[0]} ${game.final[0]}–${game.final[1]}` });
     return rows.slice(-12).reverse();
-  }, [game.moments, shown, total, done, game.final]);
+  }, [game.moments, shown, total, done, game.final, short, yourSide]);
 
   const p = Math.round(winProbability(now, game.expectedMargin) * 100);
   const won = game.final[0] > game.final[1];
   // 2026-09-30, the user chose A + B: a clear favourite always wins; a close game shows its odds up
-  // front and calls an upset an upset.
-  const odds = pregameOdds(game.expectedMargin);
+  // front and calls an upset an upset. Team games have no clear favourite: anyone can lose.
+  const odds = matchup ? { you: gameWinProbability(game.expectedMargin), clear: false } : pregameOdds(game.expectedMargin);
   const favourite = game.expectedMargin >= 0;
   const upset = !odds.clear && won !== favourite;
   const youPct = Math.round(odds.you * 100);
@@ -130,24 +149,27 @@ export default function LiveGame({
   }
 
   return (
-    <section className="bf-live" aria-label={`Game of the day: you against the ${opponent.name}`}>
+    <section className="bf-live" aria-label={matchup ? `${matchup.names[0]} against ${matchup.names[1]}` : `Game of the day: you against the ${opponent?.name}`}>
       <div className="bf-live-head">
-        <span className="bf-live-title at-cond">Game of the day</span>
-        <span className="bf-live-sub">You vs {opponent.name}</span>
+        <span className="bf-live-title at-cond">{matchup ? matchup.title : 'Game of the day'}</span>
+        <span className="bf-live-sub">{matchup ? matchup.subtitle : `You vs ${opponent?.name}`}</span>
       </div>
       <p className="bf-live-odds">
         Pre-game:{' '}
         {odds.clear ? (
-          <b>{favourite ? 'you are the clear favourite' : `the ${opponent.short} ${opponent.id === 'ai' ? 'is' : 'are'} the clear favourite`}</b>
+          <b>{favourite ? 'you are the clear favourite' : `the ${short[1]} ${opponent?.id === 'ai' ? 'is' : 'are'} the clear favourite`}</b>
         ) : (
           <>
-            <b>You {youPct}%</b> · {opponent.short} {100 - youPct}% — a close one
+            <b>
+              {short[0]} {youPct}%
+            </b>{' '}
+            · {short[1]} {100 - youPct}%{Math.abs(youPct - 50) < 15 ? ' — a close one' : ''}
           </>
         )}
       </p>
       <div className="bf-live-board">
         <div>
-          <span className="bf-live-team at-cond">You</span>
+          <span className="bf-live-team at-cond">{short[0]}</span>
           <span className="bf-live-pts">{score[0]}</span>
         </div>
         <div className="bf-live-clock">
@@ -155,16 +177,18 @@ export default function LiveGame({
           <span>{done ? '' : shown < 0 ? 'waiting' : 'live'}</span>
         </div>
         <div className="bf-live-right">
-          <span className="bf-live-team at-cond">{opponent.short}</span>
+          <span className="bf-live-team at-cond">{short[1]}</span>
           <span className="bf-live-pts">{score[1]}</span>
         </div>
       </div>
-      <div className="bf-live-wp" aria-label={`Win probability: you ${p}%`}>
+      <div className="bf-live-wp" aria-label={`Win probability: ${short[0]} ${p}%`}>
         <div className="bf-live-wp-bar">
           <i style={{ width: `${p}%` }} />
         </div>
         <div className="bf-live-wp-lbl">
-          <span>You {p}%</span>
+          <span>
+            {short[0]} {p}%
+          </span>
           <span>win probability</span>
           <span>{100 - p}%</span>
         </div>
@@ -174,8 +198,8 @@ export default function LiveGame({
         {['Q1', 'Q2', 'Q3', 'Q4', 'T'].map((h) => (
           <span key={h} className="is-head">{h}</span>
         ))}
-        {(['You', opponent.short] as const).map((name, side) => (
-          <QuarterRow key={name} name={side === 0 ? 'You' : 'Them'} q={quarters[side]} total={score[side]} upto={now?.quarter ?? (done ? 3 : -1)} />
+        {short.map((name, side) => (
+          <QuarterRow key={`${side}${name}`} name={matchup ? matchup.codes[side] : side === 0 ? 'You' : 'Them'} q={quarters[side]} total={score[side]} upto={now?.quarter ?? (done ? 3 : -1)} />
         ))}
       </div>
       <div className="bf-live-feed" aria-live="off">
@@ -196,13 +220,14 @@ export default function LiveGame({
         )}
       </div>
       {done && (
-        <p className={`bf-live-final${won ? '' : ' is-loss'}`} role="status">
+        <p className={`bf-live-final${won === (yourSide === 0) ? '' : ' is-loss'}`} role="status">
           {upset && <span className="bf-live-upset">Upset! </span>}
-          {won ? `You beat the ${opponent.short} ` : `The ${opponent.short} beat you `}
+          {matchup ? `The ${won ? short[0] : short[1]} beat the ${won ? short[1] : short[0]} ` : won ? `You beat the ${short[1]} ` : `The ${short[1]} beat you `}
           {Math.max(...game.final)}–{Math.min(...game.final)}
           <small>
             ★ {game.star.name}: {game.star.line.pts} pts · {game.star.line.reb} reb · {game.star.line.ast} ast. {game.recap}
-            {upset && (won ? ` You had a ${youPct}% chance.` : ` You were ${youPct}% favourites — it happens in close games.`)}
+            {upset && !matchup && (won ? ` You had a ${youPct}% chance.` : ` You were ${youPct}% favourites — it happens in close games.`)}
+            {upset && matchup && ` The ${won ? short[0] : short[1]} had a ${won ? youPct : 100 - youPct}% chance.`}
           </small>
         </p>
       )}
@@ -235,8 +260,8 @@ export default function LiveGame({
       </div>
       <details className="bf-live-box" open>
         <summary className="at-cond">Box score</summary>
-        <BoxTable title="You" labels={game.labels[0]} lines={lines[0]} joker={game.jokerLabel} star={done ? game.star.name : null} />
-        <BoxTable title={opponent.short} labels={game.labels[1]} lines={lines[1]} joker={null} star={null} />
+        <BoxTable title={short[0]} labels={game.labels[0]} lines={lines[0]} joker={game.jokerLabel} star={done && !matchup ? game.star.name : null} />
+        <BoxTable title={short[1]} labels={game.labels[1]} lines={lines[1]} joker={null} star={null} />
       </details>
     </section>
   );
