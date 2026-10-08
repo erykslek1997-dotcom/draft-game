@@ -82,17 +82,16 @@ export function RosterGrid({ team }: { team: Team }) {
                   <Face name={e.name} size="sm" />
                   <span className="rr-cell-text">
                     <b>{e.name}</b>
-                    <span>
-                      {e.years} · {e.minutes}m
-                    </span>
+                    <span>{e.years}</span>
                   </span>
+                  <b className="rr-min">{e.minutes}m</b>
                 </div>
               ))}
               {spot.length > 0 && (
                 <span className="rr-spot">
                   {spot.map((e) => (
                     <span key={e.id}>
-                      + {e.name} {e.minutes}m
+                      + {e.name} <b className="rr-min">{e.minutes}m</b>
                     </span>
                   ))}
                 </span>
@@ -116,18 +115,21 @@ export function RosterGrid({ team }: { team: Team }) {
   );
 }
 
-/** A team score's letter, against the rest of this draft's field (S = best in the field). */
+/** A team score's letter: against the rest of this draft's field (S = best in the field; a tie
+ * with the best counts as the best — 2026-10-08, the user: "Rotation 100 ma C?" when most of the
+ * field also hit 100), and never below what the number itself says (97+ is at least an A, 93+ a B,
+ * 88+ a C), so a near-perfect score on a crowded scale doesn't read as a weakness. */
+const GRADE_ORDER = ['S', 'A', 'B', 'C', 'D', 'F'];
 export function fieldGrade(value: number, field: number[]): string {
   const others = field.length - 1;
-  if (others <= 0) return 'B';
-  const beaten = field.filter((v) => v < value).length;
-  const pct = beaten / others;
-  if (pct >= 0.95) return 'S';
-  if (pct >= 0.75) return 'A';
-  if (pct >= 0.5) return 'B';
-  if (pct >= 0.25) return 'C';
-  if (pct >= 0.1) return 'D';
-  return 'F';
+  let relative = 'B';
+  if (others > 0) {
+    const beaten = Math.max(0, field.filter((v) => v <= value).length - 1);
+    const pct = Math.min(1, beaten / others);
+    relative = pct >= 0.95 ? 'S' : pct >= 0.75 ? 'A' : pct >= 0.5 ? 'B' : pct >= 0.25 ? 'C' : pct >= 0.1 ? 'D' : 'F';
+  }
+  const absolute = value >= 97 ? 'A' : value >= 93 ? 'B' : value >= 88 ? 'C' : 'F';
+  return GRADE_ORDER[Math.min(GRADE_ORDER.indexOf(relative), GRADE_ORDER.indexOf(absolute))];
 }
 
 export interface ProfileRow {
