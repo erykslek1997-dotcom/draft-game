@@ -15,6 +15,7 @@ import LiveGame, { type LiveMatchup } from './LiveGame';
 import { TeamMark } from './ResultsReport';
 import './BestFive.css';
 import { FitName, FitTeam } from './FitName';
+import { PlayerRow, RowsLabel } from './PlayerRow';
 
 /**
  * 2026-10-08, the user (season simulation): the season after a draft. First the regular season —
@@ -639,16 +640,34 @@ function Awards({ season, playoffs, byId, youId, codes }: { season: LiveSeasonRe
       {a.allDefense.map((five, i) => (
         <Five key={i} label={['First team', 'Second team'][i]} five={five} youId={youId} codes={codes} />
       ))}
-      <h4 className="ss-kicker ss-kicker--small">All-Stars · {a.allStars.length}</h4>
-      <div className="ss-chips">
-        {a.allStars.map((l) => (
-          <span key={`${l.teamId}${l.span.id}`} className={`ss-chip${l.teamId === youId ? ' is-you' : ''}`}>
-            {l.span.playerName} <small>{codes.get(l.teamId)}</small>
-          </span>
+      <h4 className="ss-kicker ss-kicker--small">All-Star Game</h4>
+      <div className="ss-allstars">
+        {allStarTeams(a.allStars).map((team) => (
+          <div key={team.captain.span.id} className="ss-card ss-allstar-team">
+            <h5 className="ss-allstar-head">Team {team.captain.span.playerName.split(' ').slice(-1)[0]}</h5>
+            <RowsLabel>Starters</RowsLabel>
+            {team.starters.map((l) => (
+              <PlayerRow key={`${l.teamId}${l.span.id}`} size="lead" name={l.span.playerName} meta={`${codes.get(l.teamId) ?? ''} · ${l.span.primaryPosition}${l === team.captain ? ' · captain' : ''}`} value={f1(per(l, 'pts'))} unit="ppg" isYou={l.teamId === youId} />
+            ))}
+            <RowsLabel>Reserves</RowsLabel>
+            {team.reserves.map((l) => (
+              <PlayerRow key={`${l.teamId}${l.span.id}`} size="support" name={l.span.playerName} meta={`${codes.get(l.teamId) ?? ''} · ${l.span.primaryPosition}`} value={f1(per(l, 'pts'))} isYou={l.teamId === youId} />
+            ))}
+          </div>
         ))}
       </div>
     </section>
   );
+}
+
+/** 2026-10-08, the user ("All stars kapitanowie"): the two best All-Stars captain a team each and
+ * pick in turns, snake order (A, B, B, A, …), best available first. A captain and his first four
+ * picks start; the next seven come off the bench. */
+function allStarTeams(stars: SeasonPlayerLine[]): { captain: SeasonPlayerLine; starters: SeasonPlayerLine[]; reserves: SeasonPlayerLine[] }[] {
+  if (stars.length < 2) return [];
+  const sides: SeasonPlayerLine[][] = [[stars[0]], [stars[1]]];
+  stars.slice(2).forEach((l, i) => sides[[0, 1, 1, 0][i % 4]].push(l));
+  return sides.map((side) => ({ captain: side[0], starters: side.slice(0, 5), reserves: side.slice(5) }));
 }
 
 function Award({ title, line, byId, icon, sub }: { title: string; line: SeasonPlayerLine; byId: Map<string, Team>; icon: string; sub?: string }) {
@@ -1017,12 +1036,7 @@ function SeriesPanel({
         {[youId, opp].map((id) => (
           <div key={id}>
             {top(id).map((l) => (
-              <div key={l.span.id} className="pl-key">
-                <FitName as="b" name={l.span.playerName} />
-                <span>
-                  {f1(per(l, 'pts'))}/{f1(per(l, 'reb'))}/{f1(per(l, 'ast'))}
-                </span>
-              </div>
+              <PlayerRow key={l.span.id} size="support" name={l.span.playerName} meta={`${l.span.primaryPosition} · ${f1(per(l, 'pts'))} / ${f1(per(l, 'reb'))} / ${f1(per(l, 'ast'))}`} />
             ))}
           </div>
         ))}

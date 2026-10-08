@@ -305,11 +305,11 @@ function HeroResult({
   identity,
   failureMode,
   starters,
-  roster,
   challenger,
   seasonSimSlot,
   teamCode,
   rosterTeam,
+  profile,
   quote,
   report,
   standings,
@@ -336,7 +336,6 @@ function HeroResult({
   identity: string | null;
   failureMode: string | null;
   starters: ShareCardStarter[];
-  roster: ShareRosterRow[];
   /** 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest empty
    * space" — the season-sim panel can go above, next to the Rotation cards, where there's empty
    * space): a pre-built JSX subtree from `ResultsScreen` itself (which owns all the season-sim
@@ -347,6 +346,8 @@ function HeroResult({
    * hero, the team report (profile + desk voices) and the standings with every rival's report. */
   teamCode: string;
   rosterTeam: Team;
+  /** The profile bars the report shows — the share card shows the same ones. */
+  profile: ProfileRow[];
   quote: DeskVoice | null;
   report: ReactNode;
   standings: ReactNode;
@@ -710,6 +711,7 @@ function HeroResult({
         <ShareModal
           onClose={() => setShareOpen(false)}
           teamName={teamName}
+          teamCode={teamCode}
           rank={rank}
           fieldSize={fieldSize}
           tier={tier}
@@ -718,17 +720,8 @@ function HeroResult({
           gap={gap}
           titleOdds={titleOdds}
           identity={identity}
-          failureMode={failureMode}
-          roster={roster}
-          scores={{
-            talent: Math.round(talentScore),
-            benchDepth: Math.round(benchDepthScore),
-            offense: Math.round(offenseScore),
-            defense: Math.round(defenseScore),
-            spacing: Math.round(spacingScore),
-            fit: Math.round(fitScore),
-            rotation: Math.round(rotationScore),
-          }}
+          profile={profile}
+          team={rosterTeam}
         />
       )}
   </>
@@ -1482,9 +1475,9 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           identity={heroStyle.label}
           failureMode={heroStyle.failureMode}
           starters={heroStarters}
-          roster={heroRoster}
           teamCode={codeByTeamId.get(heroRanked.team.id) ?? ''}
           rosterTeam={displayTeam(heroRanked.team)}
+          profile={profileRows(heroRanked.breakdown)}
           quote={heroVoices[0] ?? null}
           report={heroReport}
           standings={standings}

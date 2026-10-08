@@ -1,19 +1,19 @@
 import { useEffect, useRef } from 'react';
-import { STARTER_SLOTS } from '../engine/positions';
-import type { ShareRosterRow } from './shareCardImage';
-import { Face, shortenName } from './ShotChip';
-import { ScoreBoard } from './ScoreBoard';
+import type { Team } from '../engine/types';
 import { shareFilename, useSaveCardImage } from './shareSave';
-import { ScoreChip, SPOT_MINUTES, ordinal } from './ResultsScreen';
+import { ordinal } from './ResultsScreen';
+import { ProfileBars, TeamMark, rosterLineup, type ProfileRow } from './ResultsReport';
+import { PlayerRow, RowsLabel } from './PlayerRow';
 
 /** 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
- * ekran z naszymi wynikami?") — a real card to look at before/instead of a blind clipboard copy.
- * Reuses the hero's own tier-tone language (`results-hero-tier-t{N}`) so it reads as the same
- * result, not a second visual system invented for one modal. Still no backend/share-sheet — the
- * "Copy as text" button inside is the exact same `copyResult` clipboard write the old button did. */
+ * ekran z naszymi wynikami?") — a real card to look at before saving it as an image.
+ * 2026-10-08, the user (the card "nie wydaje się do końca spójne" with the game): it is now a small
+ * copy of the results page — the same place and tag, the same three tiles, the same profile bars
+ * and the same player rows as the roster, the bench on one line. Nothing drawn its own way. */
 export function ShareModal({
   onClose,
   teamName,
+  teamCode,
   rank,
   fieldSize,
   tier,
@@ -22,12 +22,12 @@ export function ShareModal({
   gap,
   titleOdds,
   identity,
-  failureMode,
-  roster,
-  scores,
+  profile,
+  team,
 }: {
   onClose: () => void;
   teamName: string;
+  teamCode: string;
   rank: number;
   fieldSize: number;
   tier: { label: string; tone: 1 | 2 | 3 | 4 | 5 | 6 };
@@ -36,12 +36,8 @@ export function ShareModal({
   gap: number | null;
   titleOdds: number | null;
   identity: string | null;
-  failureMode: string | null;
-  roster: ShareRosterRow[];
-  /** 2026-09-18, user-reported live ("można dodać tu podstawowe metryki" — the basic metrics
-   * could go here too): the same 7 `ScoreChip` values the hero's own "Team profile" row already
-   * shows for this team. */
-  scores: { talent: number; benchDepth: number; offense: number; defense: number; spacing: number; fit: number; rotation: number };
+  profile: ProfileRow[];
+  team: Team;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -50,108 +46,65 @@ export function ShareModal({
   }, [onClose]);
 
   // 2026-09-25, user-reported ("brak możliwości zapisu"): the card is saved as a PNG captured
-  // from this DOM — the logic now lives in shareSave.ts, shared with the other modes' share cards.
+  // from this DOM — the logic lives in shareSave.ts, shared with the other modes' share cards.
   const cardRef = useRef<HTMLDivElement>(null);
-  const { saveState, savedImageUrl, saveImage } = useSaveCardImage(
-    cardRef,
-    shareFilename(teamName, 'all-time-draft'),
-    `${teamName} — All-Time Draft`,
-  );
+  const { saveState, savedImageUrl, saveImage } = useSaveCardImage(cardRef, shareFilename(teamName, 'all-time-draft'), `${teamName} — All-Time Draft`);
+  const { starters, bench } = rosterLineup(team);
 
   return (
     <div className="share-modal-overlay" onClick={onClose}>
-      <div ref={cardRef} className="share-modal-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Share result">
+      <div ref={cardRef} className="share-modal-card sh-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Share result">
         <button type="button" className="share-modal-close" onClick={onClose} aria-label="Close" data-share-exclude>
           ✕
         </button>
-        <span className="share-modal-team">{teamName}</span>
-        <div className="share-modal-rank">
-          <b>{ordinal(rank)}</b>
-          <i>/ {fieldSize}</i>
-        </div>
-        <span className={`share-modal-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
-        <ScoreBoard
-          cells={[
-            { label: 'Your team', value: overall, you: overall },
-            { label: 'Best in field', value: topOverall ?? overall },
-            titleOdds !== null
-              ? { label: 'Title odds', value: `${(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%` }
-              : { label: 'Behind the best', value: gap !== null && gap > 0 ? gap : '—' },
-          ]}
-        />
-        {(identity || failureMode) && (
-          <p className="share-modal-identity">
-            {identity && <b>{identity}</b>}
-            {identity && failureMode && ' — '}
-            {failureMode}
-          </p>
-        )}
-        <div className="share-modal-scores">
-          <ScoreChip label="Talent" value={scores.talent} />
-          <ScoreChip label="Bench" value={scores.benchDepth} />
-          <ScoreChip label="Offense" value={scores.offense} />
-          <ScoreChip label="Defense" value={scores.defense} />
-          <ScoreChip label="Spacing" value={scores.spacing} />
-          <ScoreChip label="Fit" value={scores.fit} />
-          <ScoreChip label="Rotation" value={scores.rotation} />
-        </div>
-        {roster.length > 0 && (() => {
-          // 2026-09-12, user-reported live (screenshot of this exact modal): the roster section
-          // was a plain two-column text grid with no faces at all — the PNG `shareCardImage.ts`
-          // builds already has a real starting-five headshot row, but this in-modal preview (what
-          // the user actually looks at before downloading) never matched it. Face cards added.
-          // 2026-09-18, user-reported live (screenshot: Jerry West "18m" with no visible link to
-          // who covers his other 30 — "brak dokładnej rotacji", "rotacja jako jedna statystyka w
-          // oddzielnej linii źle wygląda"): the original "Starting five" row / "Bench" row split
-          // read as two disconnected lists — you had to match position labels across two separate
-          // groups by eye to see who actually backs up whom. Grouped by SLOT instead, one card per
-          // position with every real contributor stacked inside (starter first, then by minutes) —
-          // same shape as the hero's own "Rotation" panel above (`results-hero-rotation-columns`),
-          // so a slot's full picture (e.g. West 18m / White 30m, both SG) reads at a glance instead
-          // of needing to be reassembled from two separate rows.
-          const bySlot = STARTER_SLOTS.map((slot) => ({
-            slot,
-            rows: roster
-              .filter((row) => row.position === slot)
-              .sort((a, b) => (a.isStarter === b.isStarter ? b.minutes - a.minutes : a.isStarter ? -1 : 1)),
-          })).filter((group) => group.rows.length > 0);
-          return (
-            <div className="share-modal-roster">
-              <span className="share-modal-roster-label">Roster &amp; rotation</span>
-              <div className="share-modal-face-row">
-                {bySlot.map(({ slot, rows }) => (
-                  <div className="share-modal-face-group" key={slot}>
-                    <span className="share-modal-face-group-label">{slot}</span>
-                    {rows.filter((row) => row.minutes > 0 && (row.isStarter || row.minutes >= SPOT_MINUTES)).map((row) => (
-                      <div className="share-modal-face-card" key={`${row.position}-${row.name}`}>
-                        <Face name={row.name} size="sm" />
-                        <span className="share-modal-face-info">
-                          <span className="share-modal-face-name">{shortenName(row.name, 11)}</span>
-                          <span className="share-modal-face-meta">
-                            <span>{Math.round(row.minutes)}m</span>
-                            <span className="share-modal-face-caps">{row.fga.toFixed(1)} caps</span>
-                          </span>
-                        </span>
-                      </div>
-                    ))}
-                    {rows.some((row) => row.minutes > 0 && !row.isStarter && row.minutes < SPOT_MINUTES) && (
-                      <span className="rotation-spot-line">
-                        {rows
-                          .filter((row) => row.minutes > 0 && !row.isStarter && row.minutes < SPOT_MINUTES)
-                          .map((row) => (
-                            <span className="rotation-spot-entry" key={row.name} title={`${row.name} · ${Math.round(row.minutes)} min`}>
-                              <Face name={row.name} size="xs" />
-                              {Math.round(row.minutes)}m
-                            </span>
-                          ))}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
+        <div className="sh-pad">
+          <span className="rr-team">
+            <TeamMark code={teamCode} name={teamName} size="md" />
+            <h2>{teamName}</h2>
+          </span>
+          <span className="rr-place">
+            <b>
+              {rank}
+              <sup>{ordinal(rank).slice(String(rank).length)}</sup>
+            </b>
+            <span>of {fieldSize}</span>
+          </span>
+          <span className={`rr-tag rr-tag--t${tier.tone}`}>{tier.label}</span>
+          <div className="rs-kpis sh-kpis">
+            <div className="rs-kpi rs-kpi--you">
+              <b>{overall}</b>
+              <span>Your team</span>
             </div>
-          );
-        })()}
+            <div className="rs-kpi">
+              <b>{topOverall ?? overall}</b>
+              <span>Best</span>
+            </div>
+            {titleOdds !== null ? (
+              <div className="rs-kpi">
+                <b>{`${(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%`}</b>
+                <span>Title odds</span>
+              </div>
+            ) : (
+              <div className="rs-kpi">
+                <b>{gap !== null && gap > 0 ? gap : '—'}</b>
+                <span>Behind the best</span>
+              </div>
+            )}
+          </div>
+          {identity && <p className="rr-headline">{identity}.</p>}
+          <ProfileBars rows={profile} />
+        </div>
+        <div className="sh-roster">
+          <RowsLabel>Starting five</RowsLabel>
+          {starters.map((e) => (
+            <PlayerRow key={e.id} size="lead" tag={e.slot} name={e.name} meta={e.years} value={e.minutes} unit="min" />
+          ))}
+          {bench.length > 0 && <p className="sh-bench">Bench: {bench.map((e) => `${e.name} ${e.minutes}m`).join(' · ')}</p>}
+        </div>
+        <div className="sh-foot">
+          <span>Draftverse</span>
+          <span>All-Time Draft</span>
+        </div>
         <div className="share-modal-save" data-share-exclude>
           <button type="button" className="primary-btn" onClick={saveImage} disabled={saveState === 'building'}>
             {saveState === 'building' ? 'Preparing image…' : '💾 Save image'}

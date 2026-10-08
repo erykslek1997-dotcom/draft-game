@@ -543,21 +543,29 @@ span.at-pc-name { cursor: default; }
 
 /* roster: by position — starter, then the backups at that position */
 .rr-roster { border-radius: 12px; background: var(--calm-raised); border: 1px solid var(--calm-line); overflow: hidden; }
-.rr-roster-cols { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.rr-roster-col { padding: 12px 12px 12px; min-width: 0; }
-.rr-roster-col + .rr-roster-col { border-left: 1px solid var(--calm-line); }
-.rr-roster-pos { display: block; margin-bottom: 4px; font: 700 13px var(--rr-disp); letter-spacing: 0.12em; color: var(--at-ink-faint); }
-.rr-roster-entries { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .rr-roster-label { font: 700 12px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); margin-right: 10px; }
-.rr-cell { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; min-width: 0; }
-.rr-cell-text span .rr-min, .rr-spot .rr-min { font-size: inherit; font-weight: 800; color: inherit; }
-.rr-cell .bf-face { box-shadow: 0 0 0 1.5px hsl(calc(var(--team-hue, 215) + 40) 70% 55% / 0.55); }
-.rr-cell.is-backup { opacity: 0.82; }
-.rr-cell-text { display: flex; flex-direction: column; min-width: 0; }
-.rr-cell-text b { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rr-cell-text span { font-size: 12px; color: var(--at-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rr-spot { display: flex; flex-direction: column; font-size: 12px; color: var(--at-ink-faint); }
-.rr-dnp { margin: 0; padding: 8px 12px; border-top: 1px solid var(--calm-line); font-size: 13px; color: var(--at-ink-faint); }
+.rr-dnp { margin: 0; padding: 12px 16px; border-top: 1px solid var(--calm-line); font-size: 13px; color: var(--at-ink-faint); }
+
+/* ---- One player row (2026-10-08, the user: "gubi mi się spójność") ----
+   lead: a starting five, an All-Star starter; support: the bench, reserves, key players. */
+.pr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 16px; }
+.pr.has-tag { grid-template-columns: 24px auto minmax(0, 1fr) auto; }
+.pr + .pr { border-top: 1px solid color-mix(in srgb, var(--calm-line) 70%, transparent); }
+.pr .bf-face { box-shadow: 0 0 0 2px var(--calm-raised), 0 0 0 3.5px hsl(calc(var(--team-hue, 215) + 40) 70% 55% / 0.55); }
+.pr-tag { font: 700 13px var(--rr-disp); letter-spacing: 0.12em; color: var(--at-accent); }
+.pr-txt { display: flex; flex-direction: column; min-width: 0; }
+.pr-txt b { white-space: nowrap; overflow: hidden; }
+.pr-txt small { font-size: 12px; color: var(--at-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr--lead { padding: 12px 16px; }
+.pr--lead .pr-txt b { font-size: 16px; font-weight: 700; color: var(--at-ink); }
+.pr--support .pr-txt b { font-size: 14px; font-weight: 600; color: var(--at-ink-soft); }
+.pr-val { font: 700 16px var(--calm-num); text-align: right; white-space: nowrap; }
+.pr-val small { display: block; font: 600 11px var(--calm-sans); color: var(--at-ink-faint); }
+.pr--support .pr-val { font-size: 13px; color: var(--at-ink-soft); }
+.pr.is-you { background: color-mix(in srgb, var(--at-accent) 8%, transparent); }
+.pr.is-you .pr-txt b { color: var(--at-accent); }
+.pr-label { padding: 12px 16px 4px; font: 700 12px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); }
+.pr + .pr-label { border-top: 1px solid var(--calm-line); }
 .rr-dnp b { color: var(--at-ink-soft); font-weight: 600; }
 
 /* report: profile + desk voices */
@@ -652,12 +660,6 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
   .rr-headline { font-size: 20px; }
   .rr-quote { flex-direction: column; gap: 2px; }
   .rr-section small { display: none; }
-  .rr-roster-cols { grid-template-columns: 1fr; }
-  .rr-roster-col { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 8px; padding: 8px 12px; }
-  .rr-roster-col + .rr-roster-col { border-left: 0; border-top: 1px solid var(--calm-line); }
-  .rr-roster-pos { margin: 0; }
-  .rr-roster-entries { gap: 8px; }
-  .rr-spot { grid-column: 1 / -1; }
   .rr-cols { grid-template-columns: 1fr; }
   .rr-rung { grid-template-columns: 22px 24px minmax(0, 1fr) 44px 30px 12px; gap: 8px; }
   .rr-od { display: none; }
@@ -751,10 +753,6 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .ss-five > div.is-you { border-color: color-mix(in srgb, var(--at-accent) 55%, var(--calm-line)); }
 .ss-five b { font: 700 14px/1.25 var(--rr-disp); text-transform: uppercase; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ss-five small { font-size: 12px; color: var(--at-ink-soft); }
-.ss-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.ss-chip { font-size: 13px; padding: 4px 8px; border-radius: 999px; background: var(--calm-raised-2); border: 1px solid var(--calm-line); }
-.ss-chip small { color: var(--at-ink-faint); }
-.ss-chip.is-you { border-color: color-mix(in srgb, var(--at-accent) 55%, var(--calm-line)); color: var(--at-accent); }
 /* the playoffs chapter */
 .pl-cta { font: 800 16px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; background: var(--gold, #f2c14e); color: #1a1405; border: 0; border-radius: 999px; padding: 12px 16px; cursor: pointer; white-space: nowrap; }
 .pl-cta:hover { filter: brightness(1.08); }
@@ -807,9 +805,6 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .pl-odds-l { display: flex; justify-content: space-between; font: 600 12px var(--calm-num); color: var(--at-ink-soft); margin-top: 4px; }
 .pl-keys { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 10px; }
 .pl-keys > div { min-width: 0; }
-.pl-key { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-bottom: 1px solid #1d222b; font-size: 13px; }
-.pl-key b { min-width: 0; white-space: nowrap; overflow: hidden; font-weight: 600; }
-.pl-key > span { font: 600 12px var(--calm-num); color: var(--at-ink-soft); white-space: nowrap; }
 .pl-tracker { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .pl-tracker > * { width: 32px; height: 30px; border-radius: 8px; display: grid; place-items: center; font: 700 11px var(--calm-num); border: 1px solid #2c313b; color: var(--at-ink-faint); background: transparent; padding: 0; }
 .pl-tracker button { cursor: pointer; }
@@ -907,4 +902,24 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 @media (max-width: 760px) {
   .ss-hub-next { flex-direction: column-reverse; align-items: stretch; }
   .ss-hub-next .pl-cta { margin-left: 0; }
+}
+
+/* ---- The share card: a small copy of the results page (2026-10-08) ---- */
+.share-modal-card.sh-card { padding: 0; gap: 0; align-items: stretch; text-align: left; background: var(--calm-raised); border-color: var(--calm-line); border-radius: 16px; overflow: hidden; width: min(440px, 100%); }
+.sh-pad { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 24px 16px 16px; }
+.sh-pad .rr-place { margin: 4px 0 0; }
+.sh-pad .rr-team h2 { margin: 0; }
+.sh-kpis { width: 100%; margin: 8px 0 4px; }
+.sh-pad .rr-bars { width: 100%; }
+.sh-roster { border-top: 1px solid var(--calm-line); }
+.sh-bench { margin: 0; padding: 8px 16px 12px; font-size: 12px; color: var(--at-ink-faint); }
+.sh-foot { display: flex; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--calm-line); font: 700 12px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); }
+.sh-card .share-modal-save { padding: 16px; }
+
+.pl-keys .pr { padding: 8px 0; }
+.ss-allstars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ss-allstar-team { padding: 0; overflow: hidden; }
+.ss-allstar-head { margin: 0; padding: 16px 16px 4px; font: 700 20px var(--rr-disp); letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink); }
+@media (max-width: 760px) {
+  .ss-allstars { grid-template-columns: 1fr; }
 }
