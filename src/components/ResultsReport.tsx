@@ -254,22 +254,12 @@ export function TeamReport({
   extras: ReportExtra[];
 }) {
   const [open, setOpen] = useState<string | null>(null);
-  const shown = extras.find((e) => e.id === open);
   return (
     <div className="rr-report">
       <div className={`rr-cols${voices.length > 0 ? '' : ' rr-cols--single'}`}>
         <section className="rr-panel">
           <ProfileBars rows={profile} />
           {comp && <PlaysLike comp={comp} />}
-          {extras.length > 0 && (
-            <div className="rr-extras">
-              {extras.map((e) => (
-                <button key={e.id} type="button" className={`rr-extra-btn${open === e.id ? ' is-on' : ''}`} aria-expanded={open === e.id} onClick={() => setOpen((cur) => (cur === e.id ? null : e.id))}>
-                  {e.label} {open === e.id ? '▴' : '▾'}
-                </button>
-              ))}
-            </div>
-          )}
         </section>
         {voices.length > 0 && (
           <section className="rr-panel">
@@ -277,7 +267,32 @@ export function TeamReport({
           </section>
         )}
       </div>
-      {shown && <div className="rr-extra">{shown.content()}</div>}
+      {/* 2026-10-08, the user (the old accordion read better): each extra opens right under its own
+          row, not below the whole report where a phone never shows it. */}
+      {extras.length > 0 && (
+        <div className="rr-extras">
+          {extras.map((e) => (
+            <div key={e.id} className={`rr-extra-row${open === e.id ? ' is-open' : ''}`}>
+              <button
+                type="button"
+                className="rr-extra-btn"
+                aria-expanded={open === e.id}
+                onClick={(ev) => {
+                  setOpen((cur) => (cur === e.id ? null : e.id));
+                  // A tap or click leaves no focus ring behind; a keyboard press keeps it.
+                  if (ev.detail > 0) ev.currentTarget.blur();
+                }}
+              >
+                <span>{e.label}</span>
+                <span className="rr-extra-chev" aria-hidden>
+                  ▾
+                </span>
+              </button>
+              {open === e.id && <div className="rr-extra">{e.content()}</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

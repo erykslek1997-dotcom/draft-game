@@ -131,6 +131,15 @@ function SeasonBody({
     setChapter('playoffs');
   };
 
+  const playoffsLabel = reveal.kind === 'none' ? (rank <= 8 ? 'Start the playoffs →' : 'See the playoffs →') : finalsDone ? 'The playoffs →' : 'Back to the playoffs →';
+  // The end of every tab says where to go next (2026-10-08, the user: scrolled to the bottom, no
+  // hint what's next): your first-round series, or the bracket you watch from outside.
+  const firstSeries = playoffs?.rounds[0].find((x) => x.teamAId === you.id || x.teamBId === you.id);
+  const firstOpp = firstSeries ? byId.get(firstSeries.teamAId === you.id ? firstSeries.teamBId : firstSeries.teamAId) : undefined;
+  const nextLabel = reveal.kind === 'none' ? (firstOpp ? `Your series vs the ${mascot(firstOpp)} →` : 'See how the playoffs play out →') : playoffsLabel;
+  const TABS: Tab[] = ['overview', 'standings', 'stats', 'awards'];
+  const nextTab = TABS[TABS.indexOf(tab) + 1];
+
   if (chapter === 'playoffs' && playoffs) {
     return (
       <PlayoffsChapter
@@ -160,12 +169,12 @@ function SeasonBody({
         </span>
         {playoffs && (
           <button type="button" className="pl-cta ss-hub-cta" onClick={startPlayoffs}>
-            {reveal.kind === 'none' ? (rank <= 8 ? 'Start the playoffs →' : 'See the playoffs →') : finalsDone ? 'The playoffs →' : 'Back to the playoffs →'}
+            {playoffsLabel}
           </button>
         )}
       </header>
       <nav className="ss-tabs" aria-label="Season">
-        {(['overview', 'standings', 'stats', 'awards'] as Tab[]).map((t) => (
+        {TABS.map((t) => (
           <button key={t} type="button" className={t === tab ? 'is-on' : ''} onClick={() => setTab(t)}>
             {t[0].toUpperCase() + t.slice(1)}
           </button>
@@ -175,6 +184,25 @@ function SeasonBody({
       {tab === 'standings' && <FullStandings season={season} byId={byId} youId={you.id} views={views} mark={mark} />}
       {tab === 'stats' && <Stats teams={teams} season={season} playoffs={finalsDone ? playoffs : null} youId={you.id} mark={mark} />}
       {tab === 'awards' && <Awards season={season} playoffs={finalsDone ? playoffs : null} byId={byId} youId={you.id} codes={codes} />}
+      <footer className="ss-hub-next">
+        {nextTab && (
+          <button
+            type="button"
+            className="at-calm-btn"
+            onClick={() => {
+              setTab(nextTab);
+              document.querySelector('.ss-backdrop')?.scrollTo({ top: 0 });
+            }}
+          >
+            Next: {nextTab[0].toUpperCase() + nextTab.slice(1)} →
+          </button>
+        )}
+        {playoffs && (
+          <button type="button" className="pl-cta" onClick={startPlayoffs}>
+            {nextLabel}
+          </button>
+        )}
+      </footer>
     </div>
   );
 }
@@ -433,23 +461,24 @@ function Leaders({ title, lines, value, youId, mark, count = 10, fmt = f1 }: { t
 }
 
 type SortKey = 'g' | 'min' | 'pts' | 'reb' | 'ast' | 'stl' | 'blk' | 'fg' | 'tp' | 'ft' | 'tov' | 'dd' | 'td' | 'gs';
-const COLUMNS: { key: SortKey; label: string; title?: string; value: (l: SeasonPlayerLine) => number; fmt: (l: SeasonPlayerLine) => string }[] = [
+// `basic`: the five the table opens with (the user: points, rebounds, assists, FG%, 3P%); "More stats" adds the rest.
+const COLUMNS: { key: SortKey; label: string; title?: string; basic?: true; value: (l: SeasonPlayerLine) => number; fmt: (l: SeasonPlayerLine) => string }[] = [
   { key: 'g', label: 'G', value: (l) => l.games, fmt: (l) => String(l.games) },
   { key: 'min', label: 'MIN', value: (l) => per(l, 'min'), fmt: (l) => f1(per(l, 'min')) },
-  { key: 'pts', label: 'PTS', value: (l) => per(l, 'pts'), fmt: (l) => f1(per(l, 'pts')) },
-  { key: 'reb', label: 'REB', value: (l) => per(l, 'reb'), fmt: (l) => f1(per(l, 'reb')) },
-  { key: 'ast', label: 'AST', value: (l) => per(l, 'ast'), fmt: (l) => f1(per(l, 'ast')) },
+  { key: 'pts', label: 'PTS', basic: true, value: (l) => per(l, 'pts'), fmt: (l) => f1(per(l, 'pts')) },
+  { key: 'reb', label: 'REB', basic: true, value: (l) => per(l, 'reb'), fmt: (l) => f1(per(l, 'reb')) },
+  { key: 'ast', label: 'AST', basic: true, value: (l) => per(l, 'ast'), fmt: (l) => f1(per(l, 'ast')) },
   { key: 'stl', label: 'STL', value: (l) => per(l, 'stl'), fmt: (l) => f1(per(l, 'stl')) },
   { key: 'blk', label: 'BLK', value: (l) => per(l, 'blk'), fmt: (l) => f1(per(l, 'blk')) },
-  { key: 'fg', label: 'FG%', value: (l) => pct(l.totals.fgm, l.totals.fga), fmt: (l) => f1(pct(l.totals.fgm, l.totals.fga)) },
-  { key: 'tp', label: '3P%', value: (l) => pct(l.totals.tpm, l.totals.tpa), fmt: (l) => (l.totals.tpa ? f1(pct(l.totals.tpm, l.totals.tpa)) : '—') },
+  { key: 'fg', label: 'FG%', basic: true, value: (l) => pct(l.totals.fgm, l.totals.fga), fmt: (l) => f1(pct(l.totals.fgm, l.totals.fga)) },
+  { key: 'tp', label: '3P%', basic: true, value: (l) => pct(l.totals.tpm, l.totals.tpa), fmt: (l) => (l.totals.tpa ? f1(pct(l.totals.tpm, l.totals.tpa)) : '—') },
   { key: 'ft', label: 'FT%', value: (l) => pct(l.totals.ftm, l.totals.fta), fmt: (l) => (l.totals.fta ? f1(pct(l.totals.ftm, l.totals.fta)) : '—') },
   { key: 'tov', label: 'TOV', value: (l) => per(l, 'tov'), fmt: (l) => f1(per(l, 'tov')) },
   { key: 'dd', label: 'DD', title: 'Double-doubles', value: (l) => l.doubleDoubles, fmt: (l) => String(l.doubleDoubles) },
   { key: 'td', label: 'TD', title: 'Triple-doubles', value: (l) => l.tripleDoubles, fmt: (l) => String(l.tripleDoubles) },
   { key: 'gs', label: 'GS', title: 'Game score: points, makes, rebounds, assists, steals and blocks against misses and turnovers, per game', value: gameScorePerGame, fmt: (l) => f1(gameScorePerGame(l)) },
 ];
-const ROWS_SHOWN = 40;
+const ROWS_SHOWN = 20;
 
 function Stats({ teams, season, playoffs, youId, mark }: { teams: Team[]; season: LiveSeasonResult; playoffs: LivePlayoffResult | null; youId: string; mark: Mark }) {
   const [phase, setPhase] = useState<'season' | 'playoffs'>('season');
@@ -458,6 +487,8 @@ function Stats({ teams, season, playoffs, youId, mark }: { teams: Team[]; season
   const [minGames, setMinGames] = useState(0);
   const [sort, setSort] = useState<SortKey>('pts');
   const [showAll, setShowAll] = useState(false);
+  const [moreStats, setMoreStats] = useState(false);
+  const [allLeaders, setAllLeaders] = useState(false);
   const playoffPhase = phase === 'playoffs' && playoffs !== null;
   const pool = playoffPhase && playoffs ? playoffs.players : season.players;
   const scale = playoffPhase ? 0.1 : 1;
@@ -467,6 +498,7 @@ function Stats({ teams, season, playoffs, youId, mark }: { teams: Team[]; season
     .filter((l) => (teamId === 'all' || l.teamId === teamId) && (pos === 'all' || posOf(l) === pos) && (playoffPhase || l.games >= minGames))
     .sort((a, b) => col.value(b) - col.value(a));
   const shown = showAll ? rows : rows.slice(0, ROWS_SHOWN);
+  const columns = moreStats ? COLUMNS : COLUMNS.filter((c) => c.basic);
   // Leader boards: regulars only, and a percentage needs real volume behind it.
   const regulars = pool.filter((l) => l.games >= (playoffPhase ? 4 : AWARD_MIN_GAMES));
   const ordered = [...teams].sort((a, b) => (a.id === youId ? -1 : b.id === youId ? 1 : a.name.localeCompare(b.name)));
@@ -513,7 +545,7 @@ function Stats({ teams, season, playoffs, youId, mark }: { teams: Team[]; season
             <tr>
               <th className="l">Player</th>
               <th className="l">Team</th>
-              {COLUMNS.map((c) => (
+              {columns.map((c) => (
                 <th key={c.key} title={c.title}>
                   <button type="button" className={`ss-sort${c.key === sort ? ' is-on' : ''}`} onClick={() => setSort(c.key)}>
                     {c.label}
@@ -531,7 +563,7 @@ function Stats({ teams, season, playoffs, youId, mark }: { teams: Team[]; season
                 <td className="l">
                   <span title={teams.find((t) => t.id === l.teamId)?.name}>{mark(l.teamId)}</span>
                 </td>
-                {COLUMNS.map((c) => (
+                {columns.map((c) => (
                   <td key={c.key} className={`n${c.key === sort ? ' is-sorted' : ''}`}>
                     {c.fmt(l)}
                   </td>
@@ -540,29 +572,50 @@ function Stats({ teams, season, playoffs, youId, mark }: { teams: Team[]; season
             ))}
           </tbody>
         </table>
-        <p className="ss-note">
+        <div className="ss-more">
+          <button
+            type="button"
+            className="at-legend-toggle"
+            aria-expanded={moreStats}
+            onClick={() => {
+              // Back to the five: a sort on a column that goes away falls back to points.
+              if (moreStats && !COLUMNS.find((c) => c.key === sort)?.basic) setSort('pts');
+              setMoreStats(!moreStats);
+            }}
+          >
+            {moreStats ? 'Fewer stats ▴' : `More stats (${COLUMNS.length - COLUMNS.filter((c) => c.basic).length}) ▾`}
+          </button>
           {rows.length > ROWS_SHOWN && (
-            <button type="button" className="ss-link" onClick={() => setShowAll(!showAll)}>
-              {showAll ? 'Show fewer' : `Show all ${rows.length}`}
+            <button type="button" className="at-legend-toggle" onClick={() => setShowAll(!showAll)}>
+              {showAll ? 'Fewer players ▴' : `All ${rows.length} players ▾`}
             </button>
-          )}{' '}
-          Click a column to sort.
-        </p>
+          )}
+          <span className="ss-note">Tap a column to sort.</span>
+        </div>
       </section>
       <h3 className="ss-kicker ss-kicker--gap">League leaders · top 10{playoffPhase ? ' · playoffs' : ''}</h3>
       <div className="ss-grid3">
         <Leaders title="Points" lines={regulars} value={(l) => per(l, 'pts')} youId={youId} mark={mark} />
         <Leaders title="Rebounds" lines={regulars} value={(l) => per(l, 'reb')} youId={youId} mark={mark} />
         <Leaders title="Assists" lines={regulars} value={(l) => per(l, 'ast')} youId={youId} mark={mark} />
-        <Leaders title="Steals" lines={regulars} value={(l) => per(l, 'stl')} youId={youId} mark={mark} />
-        <Leaders title="Blocks" lines={regulars} value={(l) => per(l, 'blk')} youId={youId} mark={mark} />
-        <Leaders title="Threes made" lines={regulars} value={(l) => per(l, 'tpm')} youId={youId} mark={mark} />
         <Leaders title={`FG% · min. ${Math.round(400 * scale)} FGA`} lines={regulars.filter((l) => l.totals.fga >= 400 * scale)} value={(l) => pct(l.totals.fgm, l.totals.fga)} youId={youId} mark={mark} />
         <Leaders title={`3P% · min. ${Math.round(150 * scale)} 3PA`} lines={regulars.filter((l) => l.totals.tpa >= 150 * scale)} value={(l) => pct(l.totals.tpm, l.totals.tpa)} youId={youId} mark={mark} />
-        <Leaders title={`FT% · min. ${Math.round(150 * scale)} FTA`} lines={regulars.filter((l) => l.totals.fta >= 150 * scale)} value={(l) => pct(l.totals.ftm, l.totals.fta)} youId={youId} mark={mark} />
-        <Leaders title="Minutes" lines={regulars} value={(l) => per(l, 'min')} youId={youId} mark={mark} />
-        <Leaders title="Double-doubles" lines={regulars} value={(l) => l.doubleDoubles} youId={youId} mark={mark} fmt={(x) => String(x)} />
-        <Leaders title="Game score" lines={regulars} value={gameScorePerGame} youId={youId} mark={mark} />
+        {allLeaders && (
+          <>
+            <Leaders title="Steals" lines={regulars} value={(l) => per(l, 'stl')} youId={youId} mark={mark} />
+            <Leaders title="Blocks" lines={regulars} value={(l) => per(l, 'blk')} youId={youId} mark={mark} />
+            <Leaders title="Threes made" lines={regulars} value={(l) => per(l, 'tpm')} youId={youId} mark={mark} />
+            <Leaders title={`FT% · min. ${Math.round(150 * scale)} FTA`} lines={regulars.filter((l) => l.totals.fta >= 150 * scale)} value={(l) => pct(l.totals.ftm, l.totals.fta)} youId={youId} mark={mark} />
+            <Leaders title="Minutes" lines={regulars} value={(l) => per(l, 'min')} youId={youId} mark={mark} />
+            <Leaders title="Double-doubles" lines={regulars} value={(l) => l.doubleDoubles} youId={youId} mark={mark} fmt={(x) => String(x)} />
+            <Leaders title="Game score" lines={regulars} value={gameScorePerGame} youId={youId} mark={mark} />
+          </>
+        )}
+      </div>
+      <div className="ss-more">
+        <button type="button" className="at-legend-toggle" aria-expanded={allLeaders} onClick={() => setAllLeaders(!allLeaders)}>
+          {allLeaders ? 'Fewer leaders ▴' : 'All leaders (12) ▾'}
+        </button>
       </div>
     </div>
   );

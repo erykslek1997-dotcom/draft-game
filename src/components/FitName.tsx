@@ -117,3 +117,24 @@ export function FitTeam({ name, code, className, after, mascotFirst }: { name: s
     </span>
   );
 }
+
+/** Just the surname where a slot only has room for one word ("Pierce"); if even that doesn't fit, the face. */
+export function FitSurname({ name, className }: { name: string; className?: string }) {
+  const sr = <span className="at-sr-only">{name}</span>;
+  const surname = name.split(' ').slice(-1)[0];
+  const { ref, content } = useFit<HTMLSpanElement>(
+    [
+      surname,
+      <>
+        <Face name={name} size="xs" />
+        {sr}
+      </>,
+    ],
+    name,
+  );
+  return (
+    <span ref={ref} className={className} title={name}>
+      {content}
+    </span>
+  );
+}

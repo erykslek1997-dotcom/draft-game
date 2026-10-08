@@ -50,6 +50,7 @@ import { buildDraftDesk, type DraftDeskResult } from '../engine/draftDesk';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
 import { YearsPicker } from './YearsPicker';
 import { PlayerPeekModal } from './PlayerPeekModal';
+import { FitSurname } from './FitName';
 
 /** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
  * players; anyone past it is reachable via search or a position filter (both land well under the
@@ -1817,7 +1818,7 @@ export default function DraftBoard({
                   return (
                     <span key={slot} className={`at-team-dock-slot${p ? ' is-filled' : ''}`} title={p?.playerName}>
                       <b className="at-cond">{slot}</b>
-                      <span>{p ? shortenName(p.playerName).split(' ').slice(-1)[0] : 'open'}</span>
+                      {p ? <FitSurname name={p.playerName} /> : <span>open</span>}
                     </span>
                   );
                 })}
