@@ -31,10 +31,10 @@ import { rankTeams } from '../engine/scoring';
 import { fitScore } from '../engine/fit';
 import { bestHistoricalComp, compBadge } from '../engine/historicalComps';
 import DraftLottery from './DraftLottery';
-import { MetricBar, RankRowSummary, ScoreChip, nextDraftTip, qualityColor } from './ResultsScreen';
+import { RankRowSummary, nextDraftTip, qualityColor } from './ResultsScreen';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
-import { ChallengeNote, ScoreBoard } from './ScoreBoard';
+import { ChallengeNote } from './ScoreBoard';
 import ShareResultModal from './ShareResultModal';
 import { copyLink } from './shareSave';
 import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
@@ -659,7 +659,6 @@ function QuickResults({
     [weakest, human, humanRank],
   );
 
-  const fit = useMemo(() => fitScore(human.team), [human]);
   const starters = STARTER_SLOTS.map((slot) => {
     const id = human.team.rotation?.slots[slot]?.[0]?.playerId;
     return { slot, player: id ? human.team.roster.find((p) => p.id === id) : undefined };
@@ -681,102 +680,132 @@ function QuickResults({
   // drafcie, po prostu mniej szczegółowy". The All-Time Draft's results hero (finish, rating,
   // style, team profile chips, a few bars, the lineup by position), cut down to a five.
   return (
-    <div className="at-card bf-result qf-result">
-      <header className="results-hero">
-        <div className="results-hero-finish">
-          <span className="results-hero-eyebrow">You finished</span>
-          <span className="results-hero-rank">
-            <b>{ordinal(humanRank)}</b>
-            <i>/ {TEAM_COUNT}</i>
+    <div className="bf-result qf-result">
+      {/* 2026-10-08: the All-Time Draft's calm results hero (approved mockup), cut down to a five. */}
+      <header className="rs-hero">
+        <div className="rs-hero-main">
+          <span className="rs-eyebrow">You finished</span>
+          <span className="rs-place">
+            {ordinal(humanRank)}
+            <small>of {TEAM_COUNT}</small>
           </span>
-          <span className={`results-hero-tier results-hero-tier-t${tier.tone}`}>{tier.label}</span>
-          <span className="results-hero-team">{teamLabel(human.team)}</span>
+          <span className="rs-team">
+            {teamLabel(human.team)} <span className={`rs-tag rs-tag--t${tier.tone}`}>{tier.label}</span>
+          </span>
+          {challenge?.vs != null && (
+            <p className="rs-why">
+              <ChallengeNote yours={human.score.composite} theirs={challenge.vs} who={challenge.vsName} />
+            </p>
+          )}
         </div>
-        <ScoreBoard
-          cells={boardCells}
-          note={challenge?.vs != null && <ChallengeNote yours={human.score.composite} theirs={challenge.vs} who={challenge.vsName} />}
-        />
-        {comp && (
-          <p className="results-hero-identity">
-            <span className="results-hero-comp">
-              {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
-              <span>Plays like the <b>{comp.comp.team}</b> <small>{comp.match}% match</small></span>
-            </span>
-          </p>
-        )}
-        <div className="results-hero-dashboard">
-          <div className="results-hero-scores">
-            <span className="share-modal-face-group-label">Team profile</span>
-            <div className="results-hero-scores-row results-hero-scores-row--5">
-              {barKeys.map((key) => (
-                <ScoreChip key={key} label={key[0].toUpperCase() + key.slice(1)} value={Math.round(human.score[key] as number)} />
-              ))}
-            </div>
-            <div className="analysis-bars-split results-hero-bars">
-              <div className="analysis-bars-col analysis-bars-col--offense">
-                <span className="analysis-bars-col-label">Offense</span>
-                <MetricBar label="Creation" value={fit.components.creationStructure} hint="Half-court shot creation the five can generate on its own." />
-                <MetricBar label="Rim pressure" value={fit.components.rimPressureTeam} hint="How much the five collectively bends a defense at the rim." />
+        <div className="rs-kpis">
+          <div className="rs-kpi rs-kpi--you">
+            <b style={{ color: qualityColor(human.score.composite) }}>{human.score.composite}</b>
+            <span>Your team</span>
+          </div>
+          <div className="rs-kpi">
+            <b>{top}</b>
+            <span>Best</span>
+          </div>
+          <div className="rs-kpi">
+            <b>{top > human.score.composite ? top - human.score.composite : '—'}</b>
+            <span>Behind the best</span>
+          </div>
+        </div>
+        <div className="rs-actions">
+          <button type="button" className="rs-primary" onClick={onNewDraft}>
+            New draft
+          </button>
+          <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
+            Share
+          </button>
+          <button
+            type="button"
+            className="at-calm-btn"
+            onClick={challengeFriend}
+            title="Copies a link that gives a friend the exact same 16-team board, with your score to beat."
+          >
+            {linkCopied ? '✓ Link copied' : 'Challenge a friend'}
+          </button>
+          <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRematch} title="Same 16 teams, same draft order — try a different plan.">
+            Rematch this board
+          </button>
+        </div>
+      </header>
+      <div className="rs-cols qf-rs-cols">
+        <section className="rs-panel">
+          <h3 className="rs-panel-title">Team profile</h3>
+          {barKeys.map((key) => {
+            const value = Math.round(human.score[key] as number);
+            return (
+              <div className="rs-score" key={key}>
+                <span>{key[0].toUpperCase() + key.slice(1)}</span>
+                <span className="rs-score-bar">
+                  <i style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: qualityColor(value) }} />
+                </span>
+                <b style={{ color: qualityColor(Math.max(55, value)) }}>{value}</b>
               </div>
-              <div className="analysis-bars-col analysis-bars-col--defense">
-                <span className="analysis-bars-col-label">Defense</span>
-                <MetricBar label="Role coverage" value={fit.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim." />
-                <MetricBar label="Hunt resistance" value={fit.components.huntResistance} hint="How well the five hides its weakest defender in a playoff series." />
-              </div>
-            </div>
-            <div className="qf-why">
+            );
+          })}
+          <div className="qf-why">
+            {/* 2026-10-08 (TODO "ton wyniku według miejsca"): the podium gets no lecture — its
+                weak spot only as what a rival could attack. */}
+            <p>
+              {humanRank <= 3 ? (
+                <>
+                  The one thing a rival could attack: <b>{weakest.label} ({Math.round(human.score[weakest.key])})</b>.
+                </>
+              ) : (
+                <>
+                  Your weakest axis is <b>{weakest.label} ({Math.round(human.score[weakest.key])})</b>.
+                </>
+              )}{' '}
+              {WEAK_AXIS_REASON[weakest.key](human.score)}
+            </p>
+            {human.score.weakLink && (
               <p>
-                Your weakest axis is <b>{weakest.label} ({Math.round(human.score[weakest.key])})</b>. {WEAK_AXIS_REASON[weakest.key](human.score)}
+                Defensively, <b>{human.score.weakLink}</b> is the softest spot — an opponent will attack him every possession.
               </p>
-              {human.score.weakLink && (
-                <p>
-                  Defensively, <b>{human.score.weakLink}</b> is the softest spot — an opponent will attack him every possession.
-                </p>
-              )}
-              {nextTip && (
-                <p className="results-verdict-tip">
-                  <b>{humanRank <= 4 ? 'To get over the top:' : 'Next draft:'}</b> {nextTip}
-                </p>
-              )}
-            </div>
-            <div className="results-hero-actions">
-              <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
-                📤 Share the result
-              </button>
-              <button
-                type="button"
-                className="results-hero-copy results-hero-challenge"
-                onClick={challengeFriend}
-                title="Copies a link that gives a friend the exact same 16-team board, with your score to beat."
-              >
-                {linkCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
-              </button>
-            </div>
+            )}
+            {nextTip && humanRank > 3 && (
+              <p className="results-verdict-tip">
+                <b>{humanRank === 4 ? 'To get over the top:' : 'Next draft:'}</b> {nextTip}
+              </p>
+            )}
           </div>
-          <div className="results-hero-rotation">
-            <span className="share-modal-face-group-label">Starting five</span>
-            <div className="results-hero-rotation-columns">
-              {starters.map(({ slot, player }) => {
-                const tal = player ? displayTalentForSpan(tierContextFor(player)) : 0;
-                return (
-                  <div className="results-hero-rotation-col" key={slot}>
-                    <span className="results-hero-rotation-col-label">{slot}</span>
-                    {player && (
-                      <div className="results-hero-rotation-entry" title={`${player.playerName} (${player.spanLabel})`}>
-                        <Face name={player.playerName} size="sm" />
-                        <span className="results-hero-rotation-entry-info">
-                          <span className="results-hero-rotation-entry-name">{shortenName(player.playerName, 12)}</span>
-                          <span className="results-hero-rotation-entry-min">{player.spanLabel}</span>
-                        </span>
-                        <span className="rotation-entry-tal" style={{ background: qualityColor(tal) }}>{formatTal(tal)}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+        </section>
+        <section className="rs-panel">
+          <h3 className="rs-panel-title">Starting five</h3>
+          <div className="results-hero-rotation-columns">
+            {starters.map(({ slot, player }) => {
+              const tal = player ? displayTalentForSpan(tierContextFor(player)) : 0;
+              return (
+                <div className="results-hero-rotation-col" key={slot}>
+                  <span className="results-hero-rotation-col-label">{slot}</span>
+                  {player && (
+                    <div className="results-hero-rotation-entry" title={`${player.playerName} (${player.spanLabel})`}>
+                      <Face name={player.playerName} size="sm" />
+                      <span className="results-hero-rotation-entry-info">
+                        <span className="results-hero-rotation-entry-name">{shortenName(player.playerName, 12)}</span>
+                        <span className="results-hero-rotation-entry-min">{player.spanLabel}</span>
+                      </span>
+                      <span className="rotation-entry-tal" style={{ background: qualityColor(tal) }}>{formatTal(tal)}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
+          {comp && (
+            <p className="rs-comp">
+              {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
+              <span>
+                <b>Plays like</b> the {comp.comp.team} <small>{comp.match}% match</small>
+              </span>
+            </p>
+          )}
+        </section>
+      </div>
         {shareOpen && (
           <ShareResultModal
             onClose={() => setShareOpen(false)}
@@ -794,7 +823,6 @@ function QuickResults({
             five={starters.flatMap(({ slot, player }) => (player ? [{ slot, name: player.playerName, years: player.spanLabel }] : []))}
           />
         )}
-      </header>
 
       <h2 className="results-section-title">Final team ranking</h2>
       <div className="rank-list">
@@ -817,13 +845,7 @@ function QuickResults({
         </div>
       )}
       <div className="bf-submit-row bf-result-actions end-actions">
-        <button className="primary-btn" onClick={onNewDraft}>
-          New draft
-        </button>
-        <button className="secondary-btn" onClick={onRematch} title="Same 16 teams, same draft order — try a different plan.">
-          Rematch this board
-        </button>
-        <button className="secondary-btn" onClick={onExit}>
+        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onExit}>
           Main menu
         </button>
       </div>

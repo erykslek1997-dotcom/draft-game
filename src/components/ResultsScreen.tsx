@@ -1081,7 +1081,9 @@ function ResultsVerdict({
   /** Final ranking place — the card's tone follows it (2026-09-24, user-reported live: "wygrałem,
    * czy jest sens żeby mnie pouczało?" — a champion got a "what held you back" list and a
    * "Next draft:" lecture). 1st: why you won + the one thing a rival could exploit, no advice.
-   * 2nd-4th: the tip becomes "to get over the top". Everyone else: as before. */
+   * 2026-10-08 (TODO "ton wyniku według miejsca"): the whole podium reads that way — 2nd and 3rd
+   * get no lecture either, their weak spot only as what could threaten them. 4th: "to get over the
+   * top". Everyone else: as before. */
   rank: number;
   scores: Record<string, number>;
   fieldMedians: Record<string, number>;
@@ -1091,12 +1093,13 @@ function ResultsVerdict({
     [team, breakdown, rank, fieldSize],
   );
   const won = rank === 1;
-  const contender = rank > 1 && rank <= 4;
-  const strengths = insights.strengths.slice(0, won ? 3 : 2);
-  const concerns = insights.concerns.slice(0, won ? 1 : 2);
+  const podium = rank <= 3;
+  const contender = rank === 4;
+  const strengths = insights.strengths.slice(0, podium ? 3 : 2);
+  const concerns = insights.concerns.slice(0, podium ? 1 : 2);
   const [weakestLabel] =
     Object.entries(scores).sort((a, b) => a[1] - (fieldMedians[a[0]] ?? 0) - (b[1] - (fieldMedians[b[0]] ?? 0)))[0] ?? [];
-  const tip = !won && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined;
+  const tip = !podium && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined;
   const title = won ? 'Why you won' : 'Why you finished here';
   return (
     <section className={`results-verdict ${won ? 'results-verdict--won' : ''}`} aria-label={title}>
@@ -1104,7 +1107,7 @@ function ResultsVerdict({
       <div className="results-verdict-cols">
         {strengths.length > 0 && (
           <div className="results-verdict-col results-verdict-col--good">
-            <span className="results-verdict-label">{won ? 'What won it' : 'What worked'}</span>
+            <span className="results-verdict-label">{won ? 'What won it' : podium ? 'What put you on the podium' : 'What worked'}</span>
             <ul>
               {strengths.map((i) => (
                 <li key={i.id}>{i.message}</li>
@@ -1114,7 +1117,7 @@ function ResultsVerdict({
         )}
         {concerns.length > 0 && (
           <div className="results-verdict-col results-verdict-col--bad">
-            <span className="results-verdict-label">{won ? 'Where a rival could still hurt you' : 'What held you back'}</span>
+            <span className="results-verdict-label">{podium ? 'Where a rival could still hurt you' : 'What held you back'}</span>
             <ul>
               {concerns.map((i) => (
                 <li key={i.id}>{i.message}</li>

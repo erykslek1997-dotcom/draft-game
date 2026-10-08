@@ -726,7 +726,7 @@ export const WEAK_AXIS_REASON: Record<WeightedAxis, (s: LineupScore) => string> 
       : 'Short on rim protection and point-of-attack defense.',
   fit: (s) =>
     s.notes[0]
-      ? 'The pieces don’t complement each other: ' + s.notes[0].charAt(0).toLowerCase() + s.notes[0].slice(1)
+      ? 'The pieces don’t complement each other. ' + s.notes[0] // a note can open with a name ("Pau Gasol and…"), so no lowercasing
       : 'The pieces don’t complement each other — overlapping roles, or no floor spacing, drags the five even when the names are big.',
 };
 

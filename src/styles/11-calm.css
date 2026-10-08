@@ -420,3 +420,71 @@ span.at-pc-name { cursor: default; }
 }
 .at-calm-select.is-on { color: var(--at-paper); background: var(--at-ink); border-color: var(--at-ink); }
 .at-calm-select:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+
+/* ---- Mini Draft results on the calm hero ---- */
+.at-calm .qf-result { display: flex; flex-direction: column; gap: 0; }
+.at-calm .qf-rs-cols { margin-top: 20px; }
+.at-calm .qf-result .qf-why { margin-top: 14px; font-size: 13.5px; color: var(--at-ink-soft); }
+.at-calm .qf-result .results-section-title { margin: 26px 0 10px; font-size: 13px; font-weight: 600; color: var(--at-ink-faint); text-transform: uppercase; letter-spacing: 0.07em; }
+
+/* ---- Rotation builder on the calm Team tab ----
+   Same layout and controls; the five position cards sit in a grid as wide as the Team table
+   above (it used to be a narrow 820px column under a full-width table), with the calm surfaces,
+   sentence-case headings and quieter minute bars the rest of the draft uses. */
+.at-calm .rotation-builder { max-width: none; gap: 14px; }
+.at-calm .rotation-builder > h2 { display: none; } /* the "Rotation" panel title already names it */
+.at-calm .rotation-intro { font-size: 13.5px; line-height: 1.5; color: var(--at-ink-soft); margin: 0; max-width: 72ch; }
+.at-calm .rotation-suggestion-note {
+  margin: 0; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--calm-line);
+  background: var(--calm-raised); color: var(--at-ink-soft); font-size: 13px; line-height: 1.5;
+}
+.at-calm .rotation-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 12px; margin: 0; align-items: start; }
+.at-calm .rotation-card { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--calm-line); background: var(--calm-raised); }
+.at-calm .rotation-card--short { border-color: color-mix(in srgb, var(--danger) 45%, var(--calm-line)); }
+.at-calm .rotation-card--fits { border-color: var(--at-accent); background: color-mix(in srgb, var(--at-accent) 6%, var(--calm-raised)); }
+.at-calm .rotation-card-pos { font-size: 14px; font-weight: 700; color: var(--at-ink); letter-spacing: 0; }
+.at-calm .rotation-card-minutes-track { height: 3px; background: var(--calm-line); }
+.at-calm .rotation-card-minutes-fill { background: color-mix(in srgb, var(--at-accent) 70%, transparent); }
+.at-calm .rotation-card-head .minutes-ok,
+.at-calm .rotation-card-head .minutes-bad { font-family: var(--calm-num); font-size: 12px; }
+.at-calm .rotation-card-head .minutes-ok { color: var(--at-ink-faint); }
+.at-calm .rotation-split { height: 20px; margin: 8px 0 6px; border-radius: 6px; background: var(--calm-raised-2); }
+.at-calm .rotation-split-seg { background: color-mix(in srgb, var(--at-accent) 42%, var(--calm-raised-2)); box-shadow: inset -2px 0 0 var(--calm-raised); }
+.at-calm .rotation-split-seg.is-1 { background: color-mix(in srgb, var(--at-accent) 24%, var(--calm-raised-2)); }
+.at-calm .rotation-split-seg.is-2 { background: color-mix(in srgb, var(--at-accent) 14%, var(--calm-raised-2)); }
+.at-calm .rotation-split-label { font-size: 11px; line-height: 20px; color: var(--at-ink); }
+.at-calm .rotation-card-row { border-top: 1px solid var(--calm-line); padding: 8px 0; }
+.at-calm .rotation-card-row:first-of-type { border-top: none; }
+.at-calm .rotation-select {
+  font-size: 13px; font-weight: 500; padding: 7px 12px; border-radius: 999px;
+  border: 1px solid var(--calm-line); background: var(--calm-raised-2); color: var(--at-ink);
+}
+.at-calm .rotation-select:hover { border-color: color-mix(in srgb, var(--at-accent) 60%, var(--calm-line)); }
+.at-calm .rotation-card-row-meta { font-size: 12px; color: var(--at-ink-faint); }
+.at-calm .rotation-step-btn { border-radius: 999px; border-color: var(--calm-line); background: var(--calm-raised-2); color: var(--at-ink-soft); }
+.at-calm .rotation-step-btn:hover:not(:disabled) { color: var(--at-ink); border-color: var(--at-accent); }
+.at-calm .rotation-minutes-input {
+  font-family: var(--calm-num); font-size: 13px; border-radius: 8px;
+  border-color: var(--calm-line); background: var(--calm-raised-2); color: var(--at-ink);
+}
+.at-calm .add-row-btn {
+  font: inherit; font-size: 12px; font-weight: 600; color: var(--at-ink-soft); cursor: pointer;
+  background: transparent; border: 1px dashed var(--calm-line); border-radius: 999px; padding: 4px 12px; margin-top: 6px;
+}
+.at-calm .add-row-btn:hover { color: var(--at-ink); border-color: var(--at-accent); }
+.at-calm .rotation-drop-zone { border-color: var(--calm-line); border-radius: 999px; }
+.at-calm .validation-warning,
+.at-calm .validation-error { margin: 0; font-size: 13px; line-height: 1.5; }
+.at-calm .rotation-bench { margin: 0; padding: 12px 14px; border-radius: 12px; border-color: var(--calm-line); background: var(--calm-raised); }
+.at-calm .rotation-bench-title { font-size: 13px; font-weight: 600; letter-spacing: 0.07em; color: var(--at-ink-faint); }
+.at-calm .rotation-bench-chip { border-radius: 999px; border-color: var(--calm-line); background: var(--calm-raised-2); font-size: 13px; }
+.at-calm .rotation-builder > .primary-btn {
+  align-self: flex-start; font: inherit; font-size: 14px; font-weight: 700; padding: 11px 32px;
+  border-radius: 999px; border: 0; background: var(--at-accent); color: var(--at-accent-ink);
+}
+.at-calm .rotation-builder > .primary-btn:disabled { opacity: 0.45; }
+.at-calm .rotation-submit-hint { margin: -6px 0 0; font-size: 12.5px; color: var(--at-ink-faint); }
+@media (max-width: 480px) {
+  .at-calm .rotation-cards { grid-template-columns: 1fr; }
+  .at-calm .rotation-builder > .primary-btn { align-self: stretch; }
+}
