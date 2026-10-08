@@ -205,10 +205,10 @@
 .at-team-dock-slot {
   display: grid; justify-items: center; gap: 1px; padding: 6px 2px; min-width: 0;
   border: 1px dashed var(--at-line); border-radius: 8px;
-  font-size: 10.5px; color: var(--at-ink-faint);
+  font-size: 11px; color: var(--at-ink-faint);
 }
 .at-team-dock-slot > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.at-team-dock-slot b { font-size: 10.5px; color: var(--at-ink-soft); }
+.at-team-dock-slot b { font-size: 11px; color: var(--at-ink-soft); }
 .at-team-dock-slot.is-filled { border-style: solid; border-color: color-mix(in srgb, var(--at-accent) 55%, var(--at-line)); color: var(--at-ink); background: color-mix(in srgb, var(--at-accent) 10%, transparent); }
 .at-team-dock-slot.is-filled b { color: var(--at-accent); }
 /* 2026-09-27: the draft workspace fades in without a transform — a transform animation (even one
@@ -231,15 +231,15 @@
   color: var(--at-ink-soft);
 }
 .score-board-cell > span {
-  font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--at-ink-faint);
+  font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--at-ink-faint);
 }
 .score-board-cell--you { border-color: transparent; }
-.score-board-cell--you b { font-size: 30px; color: #fff; }
+.score-board-cell--you b { font-size: 32px; color: #fff; }
 .score-board-cell--you > span { color: color-mix(in srgb, #fff 80%, transparent); }
-.score-board-note { font-size: 11.5px; color: var(--at-ink-faint); }
+.score-board-note { font-size: 12px; color: var(--at-ink-faint); }
 .score-board-note b { color: var(--at-ink); }
 /* Mini Draft / Roulette share card (ShareResultModal.tsx): the mode above the team, the scoreboard centred. */
-.share-modal-mode { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); }
+.share-modal-mode { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); }
 .share-modal-card .score-board-wrap { align-items: center; width: 100%; }
 .share-modal-card .score-board { width: 100%; }
 /* "⚔️ Your friend scored 74 on this board — you won the challenge." (ChallengeNote, ScoreBoard.tsx) */
@@ -261,7 +261,7 @@
   .at-board-toggle-short { display: inline; }
 }
 /* Team tab mid-draft: what to do with picks not placed yet (RotationBuilder). */
-.rotation-bench-hint { display: block; margin: 2px 0 8px; font-size: 11.5px; line-height: 1.45; color: var(--at-ink-faint); }
+.rotation-bench-hint { display: block; margin: 2px 0 8px; font-size: 12px; line-height: 1.45; color: var(--at-ink-faint); }
 
 /* 2026-09-28 playtest: New draft / Rematch / Main menu at the end of a result wrapped 2 + 1 on a
    phone, "Main menu" alone on its own line. One centred row when it fits, an even column when not. */
@@ -296,13 +296,13 @@
 .mode-card-daily.is-played .mode-card-daily-state { color: #7fd68a; }
 .mode-card-daily-streak { font-size: 13px; font-weight: 800; white-space: nowrap; }
 .mode-card-daily { flex-wrap: wrap; row-gap: 3px; }
-.mode-card-daily-meta { flex-basis: 100%; font-size: 11.5px; color: #8fa3bb; }
+.mode-card-daily-meta { flex-basis: 100%; font-size: 12px; color: #8fa3bb; }
 .mode-card-daily-meta b { color: #eef4fb; }
 /* Streak reward, 3 days: the strip's flame glows. */
 .mode-card-daily.is-hot .mode-card-daily-streak { text-shadow: 0 0 10px rgba(255, 150, 60, 0.9); }
-.bf-daily-sub { text-align: center; font-size: 12.5px; color: var(--at-ink-soft); margin: 8px 0 0; }
+.bf-daily-sub { text-align: center; font-size: 13px; color: var(--at-ink-soft); margin: 8px 0 0; }
 .bf-daily-done {
-  margin-top: 16px; padding: 12px 14px; border-radius: 12px; text-align: center; font-size: 13.5px; line-height: 1.5;
+  margin-top: 16px; padding: 12px 14px; border-radius: 12px; text-align: center; font-size: 14px; line-height: 1.5;
   border: 1px solid color-mix(in srgb, var(--at-gold, #ffd479) 45%, var(--at-line)); color: var(--at-ink-soft);
 }
 .bf-daily-done b { color: var(--at-ink); }

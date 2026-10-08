@@ -36,7 +36,7 @@
   margin: 0 0 16px;
 }
 .rotation-builder h3 {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -151,7 +151,7 @@
 .rotation-select {
   width: 100%;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid var(--at-line, var(--border));
@@ -822,7 +822,7 @@
   border: 1px solid currentColor;
   border-radius: 999px;
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }

@@ -47,7 +47,7 @@
   --at-paper-raised: #0a0f18;
   --at-ink: #eef4fb;
   --at-ink-soft: #7f96b3;
-  --at-ink-faint: #48586d;
+  --at-ink-faint: #6b7f98; /* 2026-10-08 text audit: 4.6:1 on cards (was #48586d, 2.6:1) */
   --at-pill: #0d151f;
   --at-pill-ink: #6cc3ff;
   --at-line: #16222f;
@@ -126,7 +126,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 22px; height: 20px; padding: 0 5px; margin-right: 8px;
   border-radius: 5px; background: var(--at-pill); color: var(--at-ink-soft);
-  font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 /* 2026-09-11, user-reported live ("takie dwa kwadraty wyglądają bardzo archaicznie" — Szybka 5's
    overview grid, where this chip sits right next to the equally-badge-shaped `.at-lottery-you-tag`
@@ -141,7 +141,7 @@
   border-radius: 999px;
   background: linear-gradient(155deg, color-mix(in srgb, white 16%, var(--at-accent)), var(--at-accent) 70%);
   color: var(--at-accent-ink);
-  font-size: 10.5px; font-weight: 800; letter-spacing: 0.03em;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.03em;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 0, 0, 0.22);
 }
 
@@ -173,7 +173,7 @@
 
 .at-board-brand {
   text-align: center;
-  font-size: 30px;
+  font-size: 32px;
   letter-spacing: 0.01em;
   padding: 24px 0 22px;
   margin-bottom: 12px;
@@ -197,7 +197,7 @@
   font: inherit; cursor: pointer; border: 1px solid var(--at-line);
   background: var(--at-paper-raised); color: var(--at-ink-soft);
   border-radius: 999px; padding: 8px 16px;
-  font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
   transition: background .15s, color .15s, border-color .15s;
 }
 .at-tab-btn.at-active { background: var(--at-brand-blue); color: #ffffff; border-color: var(--at-brand-blue); }
@@ -207,7 +207,7 @@
   background: var(--at-paper-raised); border: 1px solid var(--at-line);
   border-radius: 16px; padding: 20px 22px 18px; box-shadow: var(--at-shadow);
 }
-.at-panel-title { font-size: 30px; margin: -4px 0 14px; }
+.at-panel-title { font-size: 32px; margin: -4px 0 14px; }
 
 /* 2026-09-11: the own-team pip strip this used to be (`.at-own-team-strip`/`.at-own-team-pip`,
    "można dodać mała informację o graczach jakich posiadamy") was a same-session stepping stone —
@@ -288,7 +288,7 @@
 }
 .at-draft-sidebar-cap-label {
   margin: 0;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--at-ink-faint);
 }
 .at-draft-sidebar-cap-label b {
@@ -333,7 +333,7 @@
   overflow-wrap: anywhere;
 }
 .at-sidebar-slot-empty {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--at-ink-faint);
 }
 .at-draft-sidebar-bench {
@@ -344,7 +344,7 @@
   border-top: 1px dashed var(--at-line);
 }
 .at-draft-sidebar-bench-label {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;

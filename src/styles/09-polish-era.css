@@ -24,7 +24,7 @@
 .at-shell .results-hero-copy {
   border-radius: 999px;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -83,7 +83,7 @@
 .results-hero-scores-row .score-chip-label,
 .team-result-body .subscores .score-chip-label,
 .share-modal-scores .score-chip-label {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
@@ -93,7 +93,7 @@
 .results-hero-scores-row .score-chip-value,
 .team-result-body .subscores .score-chip-value,
 .share-modal-scores .score-chip-value {
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.1;
 }
 .team-result-body .subscores .fga-spent {
@@ -111,7 +111,7 @@
   display: inline-block;
   font-family: 'Bitter', Georgia, serif;
   font-weight: 700;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.02em;
   color: #3d2b1f;
   background: #ece0c3;
@@ -133,7 +133,7 @@
 .at-lottery-archive {
   max-width: 560px;
   margin: 14px auto 20px;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.55;
   color: var(--at-ink-soft);
 }
@@ -156,7 +156,7 @@
   --era-tilt: 0deg;
   display: inline-block;
   position: relative;
-  font-size: 10.5px;
+  font-size: 11px;
   line-height: 1.55;
   padding: 1px 7px;
   border-radius: 4px;
@@ -373,11 +373,11 @@
     position: static;
     background: none;
     text-align: left;
-    font-size: 12.5px;
+    font-size: 13px;
   }
   .at-shell .player-peek-card .at-draft-span-table td[data-label]::before {
     content: attr(data-label);
-    font-size: 9.5px;
+    font-size: 11px;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--at-ink-faint);
@@ -416,7 +416,7 @@
   }
 }
 .at-shell .bench-unused {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--at-ink-soft);
 }
 
@@ -426,7 +426,7 @@
   align-items: center;
   gap: 8px;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   padding: 5px 10px;
   border-radius: 8px;
   border: 1px solid var(--at-line);
@@ -436,7 +436,7 @@
   white-space: nowrap;
 }
 .at-shell .years-picker-btn:hover { border-color: var(--at-accent); }
-.at-shell .years-picker-caret { color: var(--at-ink-faint); font-size: 10px; }
+.at-shell .years-picker-caret { color: var(--at-ink-faint); font-size: 11px; }
 .at-shell .years-picker-cost {
   display: inline-flex;
   align-items: center;
@@ -498,7 +498,7 @@
   border: 1px solid var(--at-line);
   background: var(--at-paper-raised);
   color: var(--at-ink-soft);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
   text-align: left;
   box-shadow: var(--at-shadow);
@@ -600,7 +600,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--at-ink-soft);
   cursor: pointer;
 }
@@ -728,7 +728,7 @@
     gap: 3px;
   }
   .share-modal-face-info { align-items: center; width: 100%; }
-  .share-modal-face-name { font-size: 10px; }
+  .share-modal-face-name { font-size: 11px; }
   .share-modal-face-meta { flex-direction: column; gap: 0; align-items: center; }
   .share-modal-face-caps::before { content: none; }
 }
@@ -822,7 +822,7 @@
 .metric-bar-info {
   display: inline-flex; align-items: center; justify-content: center;
   width: 12px; height: 12px; margin-left: 5px; border-radius: 50%;
-  font-size: 8.5px; font-weight: 800; font-style: italic; line-height: 1;
+  font-size: 8px; font-weight: 800; font-style: italic; line-height: 1;
   color: var(--at-ink-faint); border: 1px solid currentColor; vertical-align: 1px;
 }
 .metric-bar-tip {
@@ -876,7 +876,7 @@
   grid-template-columns: minmax(0, 140px) minmax(0, 1fr) 30px 40px;
   align-items: center;
   gap: 8px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   padding-left: 8px;
 }
@@ -898,7 +898,7 @@
   margin-left: 6px;
   padding: 1px 6px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 11px;
   background: color-mix(in srgb, var(--at-warn, #f0a868) 16%, transparent);
   color: var(--at-warn, #f0a868);
 }
@@ -956,7 +956,7 @@
 .rotation-split-seg.is-2 { background: color-mix(in srgb, var(--at-brand-blue, #2f74b8) 40%, var(--at-paper, var(--bg))); }
 .rotation-split-label {
   padding-left: 6px;
-  font-size: 10.5px;
+  font-size: 11px;
   line-height: 22px;
   color: #eef4fb;
   white-space: nowrap;
@@ -1002,7 +1002,7 @@
   background: var(--at-pill, var(--bg));
   color: var(--at-ink, var(--text));
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
@@ -1080,7 +1080,7 @@
   border: 1px solid var(--at-brand-blue, #2f74b8);
   background: transparent;
   color: var(--at-ink, var(--text));
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
 }
 @media (max-width: 480px) {
@@ -1109,7 +1109,7 @@
   line-height: 1;
 }
 .team-tile-code { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; letter-spacing: 0.02em; }
-.team-tile-season { height: 13px; font-size: 9px; line-height: 13px; text-align: center; }
+.team-tile-season { height: 13px; font-size: 11px; line-height: 13px; text-align: center; }
 .team-chip {
   display: inline-flex;
   align-items: stretch;
@@ -1119,7 +1119,7 @@
   border: 1px solid var(--at-line, var(--border));
   background: var(--at-pill, var(--bg));
   color: var(--at-ink, var(--text));
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1;
@@ -1155,7 +1155,7 @@
 /* Learning path (2026-09-26): step labels on the menu cards and a "next step" block on results. */
 .mode-card-step {
   display: block;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1173,7 +1173,7 @@
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--at-accent, #6cc3ff) 45%, var(--at-line, var(--border)));
   background: color-mix(in srgb, var(--at-accent, #6cc3ff) 8%, var(--at-paper, var(--bg)));
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--at-ink-soft, var(--text));
 }

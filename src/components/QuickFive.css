@@ -30,7 +30,7 @@
    "faint label, lights up once filled" treatment from Best Five's slot row. */
 .qf-team-card-slot {
   flex: none;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--at-accent);
@@ -84,13 +84,13 @@
   cursor: not-allowed;
 }
 .qf-pool-name {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.25;
   color: var(--at-ink);
 }
 .qf-pool-pos {
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--at-ink-faint);
 }
 
@@ -106,7 +106,7 @@
 }
 .qf-hero-rank {
   font-family: var(--at-cond-font, inherit);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -163,12 +163,12 @@
 .qf-team-empty .bf-face { grid-area: face; }
 .qf-team-card-name { grid-area: name; max-width: none; }
 .qf-team-empty-text { grid-area: name; font-size: 12px; }
-.qf-team-card-tal { grid-area: meta; font-size: 10.5px; color: var(--at-ink-soft); display: inline-flex; align-items: center; gap: 8px; }
+.qf-team-card-tal { grid-area: meta; font-size: 11px; color: var(--at-ink-soft); display: inline-flex; align-items: center; gap: 8px; }
 .qf-team-card-tal b { color: var(--at-ink); }
 @media (max-width: 760px) {
   .qf-team-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.qf-hero-comp { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 12.5px; color: var(--at-ink-soft); }
+.qf-hero-comp { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 13px; color: var(--at-ink-soft); }
 .qf-hero-comp small { margin-left: 6px; color: var(--at-ink-faint); }
 .qf-hero { display: flex; flex-direction: column; }
 

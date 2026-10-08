@@ -74,10 +74,10 @@
   gap: 5px;
   color: var(--at-ink);
 }
-.results-hero-rank b { font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; }
-.results-hero-rank i { font-style: normal; font-size: 15px; color: var(--at-ink-soft); }
+.results-hero-rank b { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; }
+.results-hero-rank i { font-style: normal; font-size: 16px; color: var(--at-ink-soft); }
 .results-hero-team {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--at-ink);
 }
@@ -130,7 +130,7 @@
 }
 .challenge-compare-title {
   margin: 0 0 18px;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-h);
 }
@@ -169,13 +169,13 @@
   white-space: nowrap;
 }
 .challenge-compare-overall {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
   color: var(--text-h);
   line-height: 1;
 }
 .challenge-compare-rank {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--at-ink-faint, var(--text));
 }
 .challenge-compare-vs {
@@ -242,7 +242,7 @@
   color: var(--at-ink-faint, var(--text));
 }
 .challenge-compare-roster-name {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-h);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -286,7 +286,7 @@
   flex-direction: row-reverse;
 }
 .challenge-compare-rotation-name {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-h);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -339,7 +339,7 @@
   margin: 2px 0 0;
   padding-top: 10px;
   border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.45;
   color: var(--at-ink-soft);
 }
@@ -375,7 +375,7 @@
   border-radius: 8px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.22);
 }
-.results-hero-dashboard .score-chip-value { font-size: 15px; font-variant-numeric: tabular-nums; }
+.results-hero-dashboard .score-chip-value { font-size: 16px; font-variant-numeric: tabular-nums; }
 .results-hero-bars { margin-top: 2px; }
 .results-hero-rotation { display: flex; flex-direction: column; gap: 8px; flex: 1 1 360px; min-width: 0; }
 /* 2026-09-16, user-reported live ("zamiast starting 5 i bench, zróbmy tylko rotation i 5 kolumn z
@@ -400,7 +400,7 @@
   min-width: 0;
 }
 .results-hero-rotation-col-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -417,7 +417,7 @@
 .results-hero-rotation-col > .results-hero-rotation-entry:first-of-type { padding-top: 0; border-top: none; }
 .results-hero-rotation-entry-info { display: flex; flex-direction: column; gap: 0; min-width: 0; line-height: 1.25; }
 .results-hero-rotation-entry-name {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text);
   overflow: hidden;
@@ -425,7 +425,7 @@
   white-space: nowrap;
 }
 .results-hero-rotation-entry-min {
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -457,7 +457,7 @@
   background: color-mix(in srgb, var(--at-accent) 12%, transparent);
   color: var(--at-accent);
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: background-color .12s ease;
@@ -516,7 +516,7 @@
   color: var(--muted);
 }
 .share-modal-rank {
-  font-size: 40px;
+  font-size: 44px;
   font-weight: 800;
   color: var(--text);
   line-height: 1;
@@ -535,7 +535,7 @@
   font-weight: 700;
 }
 .share-modal-identity {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
   margin: 0;
 }
@@ -568,7 +568,7 @@
 }
 .share-modal-roster-label {
   display: block;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--muted);
@@ -600,7 +600,7 @@
   background: rgba(255, 255, 255, 0.03);
 }
 .share-modal-face-group-label {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -623,7 +623,7 @@
 .share-modal-face-info { display: flex; flex-direction: column; gap: 0; min-width: 0; line-height: 1.25; }
 .share-modal-face-name {
   max-width: 100%;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text);
   overflow: hidden;
@@ -631,7 +631,7 @@
   white-space: nowrap;
 }
 .share-modal-face-meta {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -749,7 +749,7 @@
   flex: none;
   padding: 1px 6px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   vertical-align: 1px;
@@ -758,7 +758,7 @@
 }
 .rank-row-odds {
   flex: none;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--at-ink-soft, var(--text));
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -770,7 +770,7 @@
   border-radius: 999px;
   color: #fff;
   font-weight: 800;
-  font-size: 12.5px;
+  font-size: 13px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -884,7 +884,7 @@
   content: '›';
   width: 12px;
   color: var(--accent);
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1;
   transform: rotate(0deg);
   transition: transform .14s ease;
@@ -963,7 +963,7 @@
   gap: 5px;
 }
 .analysis-bars-col-label {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -981,7 +981,7 @@
   grid-template-columns: 118px 1fr 26px;
   align-items: center;
   gap: 8px;
-  font-size: 11.5px;
+  font-size: 12px;
 }
 .metric-bar-label { color: var(--at-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .metric-bar-track {
@@ -1060,17 +1060,17 @@
 }
 .title-odds-headline span { display: flex; flex-direction: column; gap: 2px; }
 .title-odds-headline b {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--at-ink);
 }
-.title-odds-headline b.is-lead { font-size: 26px; color: var(--at-gold, #ffd479); }
+.title-odds-headline b.is-lead { font-size: 24px; color: var(--at-gold, #ffd479); }
 .title-odds-headline i,
 .title-odds-kicker {
   font-style: normal;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
@@ -1092,7 +1092,7 @@
   display: grid;
   align-items: center;
   gap: 8px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 .title-odds-round {
@@ -1120,7 +1120,7 @@
 .title-odds-matchup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .title-odds-matchup p { margin: 0; color: var(--at-ink); }
 .title-odds-matchup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-.title-odds-matchup-head b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.title-odds-matchup-head b { font-size: 20px; font-variant-numeric: tabular-nums; }
 .title-odds-matchup.is-best .title-odds-kicker,
 .title-odds-matchup.is-best .title-odds-matchup-head b { color: var(--at-good, #7fd68a); }
 .title-odds-matchup.is-worst .title-odds-kicker,
@@ -1131,7 +1131,7 @@
 .title-odds-chips .is-minus { background: color-mix(in srgb, var(--at-warn, #f0a868) 16%, transparent); color: var(--at-warn, #f0a868); }
 @media (max-width: 700px) {
   .title-odds-grid { grid-template-columns: minmax(0, 1fr); }
-  .title-odds-headline b.is-lead { font-size: 22px; }
+  .title-odds-headline b.is-lead { font-size: 20px; }
 }
 .net-rating-footnote {
   margin: 9px 0 0;
@@ -1180,7 +1180,7 @@
   border: 1px solid color-mix(in srgb, var(--at-accent) 45%, transparent);
   background: color-mix(in srgb, var(--at-accent) 13%, transparent);
   color: var(--at-accent);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
 }
 .identity-chip-secondary {
@@ -1192,7 +1192,7 @@
    analysis" — moved next to the chips it actually describes (see the chip-row's own JSX comment). */
 .identity-risk {
   align-self: center;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--at-ink-faint);
 }
 
@@ -1284,13 +1284,13 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   font-style: italic;
   color: var(--text);
   opacity: 0.85;
-  font-size: 0.9rem;
+  font-size: 14px;
   line-height: 1.35;
   margin: 0.55rem 0;
 }
 
 .matchup-explanation {
-  font-size: 0.82rem;
+  font-size: 13px;
   line-height: 1.35;
 }
 .lineup {
@@ -1310,7 +1310,7 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
   margin-left: 7px;
   padding: 1px 7px;
   border-radius: 999px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -1323,7 +1323,7 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 .rotation-natural-pos {
   margin-left: 3px;
   color: var(--at-accent-2);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -1377,7 +1377,7 @@ details.fit-v2-shadow-panel[open] > .fit-v2-shadow-detail b { color: var(--text)
 }
 .player-row-total-min {
   color: var(--at-ink-faint);
-  font-size: 10px;
+  font-size: 11px;
   margin-left: 3px;
 }
 @media (max-width: 620px) {

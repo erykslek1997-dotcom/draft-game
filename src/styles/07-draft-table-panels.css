@@ -1,8 +1,8 @@
 /* ---- Draft table ---- */
 .at-table-scroll { overflow-x: auto; }
-table.at-draft-table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 10px; }
+table.at-draft-table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 10px; }
 table.at-draft-table th {
-  text-align: left; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  text-align: left; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
   color: var(--at-ink-faint); padding: 0 10px 8px; border-bottom: 1px solid var(--at-line); white-space: nowrap;
   position: sticky; top: 0; background: var(--at-paper-raised);
 }
@@ -29,7 +29,7 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
 
 .at-draft-btn {
   font: inherit; cursor: pointer; border: none; background: var(--at-accent); color: var(--at-accent-ink);
-  border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 700;
+  border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700;
 }
 .at-draft-btn:hover { filter: brightness(1.08); }
 /* 2026-08-16: the player list stays visible/browsable during a CPU turn now (see the JSX comment
@@ -50,7 +50,7 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
 .at-your-turn-need { flex-basis: 100%; font-weight: 600; color: var(--at-accent-2); }
 .at-budget-notice {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
-  font-size: 12.5px; color: var(--at-ink);
+  font-size: 13px; color: var(--at-ink);
   background: color-mix(in srgb, var(--at-accent-2) 14%, var(--at-paper));
   border: 1px solid var(--at-accent-2); border-radius: 10px;
   padding: 9px 14px; margin-bottom: 12px;
@@ -88,7 +88,7 @@ table.at-draft-table--player td.at-player-cell { white-space: normal; }
    the collapsed row it belongs to. */
 table.at-span-subtable { border-collapse: collapse; width: 100%; font-size: 12px; margin: 4px 0 10px 26px; }
 table.at-span-subtable th {
-  text-align: left; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  text-align: left; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--at-ink-faint); padding: 0 8px 6px; border-bottom: 1px solid var(--at-line);
 }
 table.at-span-subtable td { padding: 6px 8px; border-bottom: 1px solid var(--at-line); text-align: center; }
@@ -135,7 +135,7 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
   /* no `overflow` / `transition` here: the content is minimal now (fits, or wraps), and ~140
      clip contexts + transitionable elements were a real render cost. */
   overflow: visible;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 .at-shell .at-draft-groups .player-group-header:hover {
   background: color-mix(in srgb, var(--at-accent) 6%, transparent);
@@ -152,7 +152,7 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
   padding: 0 5px;
   border: 1px solid var(--at-line);
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.03em;
   color: var(--at-ink-faint);
@@ -211,7 +211,7 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
   border: 1px solid var(--at-line);
   color: var(--at-ink-soft);
   padding: 2px 9px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   border-radius: 4px;
   line-height: 1.3;
@@ -224,7 +224,7 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
 }
 .at-shell .at-draft-groups .span-table .at-draft-btn:disabled { opacity: 0.3; }
 .at-shell .at-draft-groups .span-table thead th {
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
@@ -286,7 +286,7 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
 table.at-ov-grid { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
 table.at-ov-grid thead th {
   position: sticky; top: 0; background: var(--at-pill); color: var(--at-pill-ink);
-  z-index: 2; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  z-index: 2; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
   padding: 9px 10px; text-align: left; white-space: nowrap;
 }
 table.at-ov-grid thead th.at-rnd { text-align: center; min-width: 108px; }
@@ -337,7 +337,7 @@ table.at-ov-grid tbody td.at-onclock::before {
   background: var(--at-pill); color: var(--at-pill-ink); font-size: 16px; line-height: 1;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.at-grid-scroll-hint { font-size: 10.5px; color: var(--at-ink-faint); text-align: center; flex: 1; }
+.at-grid-scroll-hint { font-size: 11px; color: var(--at-ink-faint); text-align: center; flex: 1; }
 
 /* 2026-08-16, user's own ask at the time ("damy radę zmieścić wszystkie 8 picków na jednym
    boardzie"): squeezed all round columns to fit the viewport with `table-layout: fixed`, wrapping
@@ -350,14 +350,14 @@ table.at-ov-grid tbody td.at-onclock::before {
    for a narrow column, independent of which scroll strategy the round columns use. */
 @media (max-width: 640px) {
   .at-grid-scroll-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  table.at-ov-grid thead th.at-rnd { min-width: 132px; padding: 7px 8px; font-size: 9px; }
+  table.at-ov-grid thead th.at-rnd { min-width: 132px; padding: 7px 8px; font-size: 11px; }
   table.at-ov-grid thead th.at-teamcol { width: 54px; min-width: 54px; padding: 7px 6px; }
   table.at-ov-grid tbody td.at-teamcol { width: 54px; padding: 6px; white-space: normal; font-size: 12px; }
-  table.at-ov-grid tbody td.at-pickcell { padding: 5px 8px; font-size: 10.5px; }
+  table.at-ov-grid tbody td.at-pickcell { padding: 5px 8px; font-size: 11px; }
   .at-name-full { display: none; }
   .at-name-short { display: inline; }
-  .at-team-chip { min-width: 0; height: 17px; padding: 0 4px; font-size: 9px; margin: 0 0 3px; display: inline-flex; }
-  .at-pick-badge { min-width: 0; height: 15px; padding: 0 4px; font-size: 8.5px; margin: 0 0 2px; display: inline-flex; }
+  .at-team-chip { min-width: 0; height: 17px; padding: 0 4px; font-size: 11px; margin: 0 0 3px; display: inline-flex; }
+  .at-pick-badge { min-width: 0; height: 15px; padding: 0 4px; font-size: 8px; margin: 0 0 2px; display: inline-flex; }
   /* 2026-08-19: the full-name addition above is a wide-viewport convenience (real spare room in
      that column) — at this width the column is back to a 54px chip-only budget, same reasoning
      the chip-narrowing comment right above already gives, so the name goes back to hover-only. */
@@ -382,7 +382,7 @@ table.at-ov-grid tbody td.at-onclock::before {
    vertical rhythm matters even more now than it did at the old 4-column width. */
 table.at-roster-table { border-collapse: collapse; width: 100%; font-size: 13px; }
 table.at-roster-table th {
-  text-align: left; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  text-align: left; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
   color: var(--at-ink-faint); padding: 0 8px 6px; border-bottom: 1px solid var(--at-line);
 }
 table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-line); vertical-align: middle; }
@@ -405,6 +405,6 @@ table.at-roster-table td { padding: 6px 8px; border-bottom: 1px solid var(--at-l
    D-POR/SPC/DUR) — capped so it no longer crowds them out, and its own padding trimmed to match
    the table's own tightened row rhythm from the same pass. */
 .at-span-picker-select {
-  max-width: 260px; font: inherit; font-size: 12.5px; padding: 5px 8px; border-radius: 999px;
+  max-width: 260px; font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 999px;
   border: 1px solid var(--at-line); background: var(--at-pill); color: var(--at-pill-ink);
 }

@@ -29,7 +29,7 @@
 /* ---- season badge (which span of a player you're getting — load-bearing info) ---- */
 .bf-season {
   display: inline-block;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.03em;
   padding: 1px 7px;
@@ -40,7 +40,7 @@
   white-space: nowrap;
 }
 .bf-season--sm {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   padding: 0 5px;
 }
@@ -88,7 +88,7 @@
   color: var(--at-accent);
 }
 .bf-slot-name {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   color: var(--at-ink);
@@ -101,7 +101,7 @@
   font-weight: 400;
 }
 .bf-slot-box {
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--at-ink-faint);
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
@@ -160,27 +160,27 @@
   color: var(--at-ink);
 }
 .bf-pool-meta {
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--at-ink-faint);
 }
 /* 2026-09-11, user-reported live ("sezon zwykły font i najbardziej widoczny, później
    statystyki") — plain (un-badged) and the biggest text on the card, so the season reads as the
    pick's headline instead of `.bf-season`'s boxed-tag treatment elsewhere in the app. */
 .bf-pool-season {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--at-ink);
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
 }
 .bf-pool-box {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--at-ink-soft);
   font-variant-numeric: tabular-nums;
   line-height: 1.25;
 }
 .bf-pool-box--sub {
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--at-ink-faint);
 }
 
@@ -199,7 +199,7 @@
 }
 .bf-submit {
   padding: 8px 20px;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
 /* ---- result ---- */
@@ -227,7 +227,7 @@
   letter-spacing: 0.02em;
 }
 .bf-grade-blurb {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--at-ink-soft);
   line-height: 1.5;
 }
@@ -324,7 +324,7 @@
 }
 .bf-why-line {
   margin: 0 0 7px;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.55;
   color: var(--at-ink-soft);
 }
@@ -337,7 +337,7 @@
 .bf-why-lead {
   font-weight: 600;
   color: var(--at-ink);
-  font-size: 13.5px;
+  font-size: 14px;
 }
 
 .bf-result-actions {
@@ -374,7 +374,7 @@
   align-items: stretch;
 }
 .bf-cmp-head {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -423,7 +423,7 @@
   .bf-cmp-name { font-size: 12px; }
 }
 .bf-cmp-season {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--at-ink-faint);
   font-variant-numeric: tabular-nums;
 }
@@ -439,7 +439,7 @@
 
 /* 2026-09-26: step 1 of the learning path — the cap explained where it is spent, a submit button
    that says why it can't be pressed yet, and the team chips the draft cards carry. */
-.bf-caps-note { display: flex; align-items: flex-start; line-height: 1.5; gap: 6px; margin: 6px 0 12px; font-size: 11.5px; color: var(--at-ink-faint); }
+.bf-caps-note { display: flex; align-items: flex-start; line-height: 1.5; gap: 6px; margin: 6px 0 12px; font-size: 12px; color: var(--at-ink-faint); }
 .bf-submit-hint { font-size: 12px; color: var(--at-ink-faint); }
 .bf-submit-hint.is-ready { color: var(--at-good, #7fd68a); }
 .bf-submit-row { flex-wrap: wrap; align-items: center; gap: 8px 14px; }
@@ -539,7 +539,7 @@
 .bf-slot-name { overflow-wrap: break-word; }
 @media (max-width: 460px) {
   .bf-slot { padding-left: 3px; padding-right: 3px; }
-  .bf-slot-name { font-size: 9.5px; letter-spacing: -0.02em; max-width: 100%; overflow: hidden; overflow-wrap: normal; text-overflow: ellipsis; }
+  .bf-slot-name { font-size: 11px; letter-spacing: -0.02em; max-width: 100%; overflow: hidden; overflow-wrap: normal; text-overflow: ellipsis; }
 }
 @media (max-width: 460px) {
   .bf-reel { --reel-h: 120px; }
@@ -593,8 +593,8 @@
   .bf-reels { gap: 5px; padding: 6px; }
   .bf-cabinet .bf-reel { --reel-h: 112px; }
   /* 2026-09-27 UI audit: "I. Tho…" — the name wraps onto a second line instead of being cut. */
-  .bf-cabinet .bf-reel-name { font-size: 9.5px; letter-spacing: -0.03em; white-space: normal; overflow-wrap: break-word; line-height: 1.15; text-align: center; }
-  .bf-cabinet .bf-reel-season { font-size: 9.5px; }
+  .bf-cabinet .bf-reel-name { font-size: 11px; letter-spacing: -0.03em; white-space: normal; overflow-wrap: break-word; line-height: 1.15; text-align: center; }
+  .bf-cabinet .bf-reel-season { font-size: 11px; }
   .bf-cabinet .bf-reel-item { padding: 0 3px; }
 }
 
@@ -603,7 +603,7 @@
 .bf-pool-card--blocked { opacity: 0.42; filter: grayscale(0.7); cursor: not-allowed; position: relative; }
 .bf-pool-over {
   position: absolute; top: 8px; left: 8px; right: 8px; z-index: 1;
-  font-size: 10px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
   color: var(--at-accent-2, #ff8a9a); text-align: center;
 }
 .bf-slot--filled:disabled { opacity: 1; cursor: default; }
@@ -630,11 +630,11 @@
 }
 @media (prefers-reduced-motion: reduce) { .bf-reel-card { animation: none; } }
 .bf-axis-best { margin-top: 4px; }
-.bf-axis-best > span { text-align: center; font-size: 10.5px; color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
-.bf-axis-best::before { content: 'Best five on the board'; grid-column: 1 / -1; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); text-align: center; }
+.bf-axis-best > span { text-align: center; font-size: 11px; color: var(--at-ink-faint); font-variant-numeric: tabular-nums; }
+.bf-axis-best::before { content: 'Best five on the board'; grid-column: 1 / -1; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); text-align: center; }
 
 /* 2026-09-28: the one hint left in the Slot Machine — what the five is missing (dealHint). */
-.bf-deal-hint { margin: 2px 0 10px; font-size: 12.5px; color: var(--at-accent); }
+.bf-deal-hint { margin: 2px 0 10px; font-size: 13px; color: var(--at-accent); }
 .bf-deal-hint::before { content: '💡 '; }
 
 /* ---------------------------------------------------------------------------
@@ -645,7 +645,7 @@
 @media (min-width: 720px) { .bf-daily-intro { grid-template-columns: 1fr 1fr; } }
 .bf-daily-banner { display: flex; flex-direction: column; gap: 3px; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--at-line); background: var(--at-paper-raised, var(--at-paper)); }
 .bf-daily-banner-k { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
-.bf-daily-banner-v { font-size: 15px; font-weight: 800; color: var(--at-ink); }
+.bf-daily-banner-v { font-size: 16px; font-weight: 800; color: var(--at-ink); }
 .bf-daily-banner-d { font-size: 12px; color: var(--at-ink-soft); line-height: 1.45; }
 .bf-daily-banner-d b { color: var(--at-ink); }
 .bf-daily-banner-chip { font-size: 11px; font-weight: 700; border: 1px solid currentColor; border-radius: 5px; padding: 0 5px; margin-left: 4px; color: var(--at-gold, #ffd479); vertical-align: 2px; }
@@ -664,10 +664,10 @@
 .bf-joker-card:hover { border-color: var(--at-gold, #ffd479); }
 .bf-joker-card .bf-joker-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .bf-joker-card .bf-pool-name { color: var(--at-ink); }
-.bf-joker-tag { position: absolute; top: 6px; right: 10px; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; color: var(--at-gold, #ffd479); }
+.bf-joker-tag { position: absolute; top: 6px; right: 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; color: var(--at-gold, #ffd479); }
 .bf-joker-card .bf-pool-meta { align-self: flex-end; }
 .bf-joker-card.is-locked { filter: grayscale(1); opacity: 0.6; box-shadow: none; border-style: dashed; cursor: not-allowed; }
-.bf-joker-why { font-size: 11.5px; font-weight: 700; color: var(--at-bad, #d94a60); }
+.bf-joker-why { font-size: 12px; font-weight: 700; color: var(--at-bad, #d94a60); }
 .bf-joker-line { margin: 10px 0 0; padding: 7px 11px; border-left: 3px solid var(--at-gold, #ffd479); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--at-ink-soft); background: color-mix(in srgb, var(--at-gold, #ffd479) 8%, var(--at-paper)); }
 .bf-joker-line.is-took { color: var(--at-ink); }
 
@@ -679,14 +679,14 @@
 .bf-live-board > div:first-child, .bf-live-right { display: flex; flex-direction: column; }
 .bf-live-right { text-align: right; }
 .bf-live-team { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-ink-faint); }
-.bf-live-pts { font-size: 30px; font-weight: 800; line-height: 1.1; color: var(--at-ink); font-variant-numeric: tabular-nums; }
+.bf-live-pts { font-size: 32px; font-weight: 800; line-height: 1.1; color: var(--at-ink); font-variant-numeric: tabular-nums; }
 .bf-live-clock { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--at-ink-faint); }
 .bf-live-clock b { font-size: 13px; color: var(--at-ink); }
 .bf-live-wp { margin-top: 8px; }
 .bf-live-wp-bar { height: 6px; border-radius: 4px; overflow: hidden; background: var(--at-accent-2, #d94a60); }
 .bf-live-wp-bar i { display: block; height: 100%; background: var(--at-accent); transition: width 0.25s; }
-.bf-live-wp-lbl { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--at-ink-faint); margin-top: 3px; }
-.bf-live-qs { display: grid; grid-template-columns: 48px repeat(4, 1fr) 44px; gap: 2px; margin-top: 8px; font-size: 11.5px; text-align: center; font-variant-numeric: tabular-nums; }
+.bf-live-wp-lbl { display: flex; justify-content: space-between; font-size: 11px; color: var(--at-ink-faint); margin-top: 3px; }
+.bf-live-qs { display: grid; grid-template-columns: 48px repeat(4, 1fr) 44px; gap: 2px; margin-top: 8px; font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
 .bf-live-qs > span { padding: 2px 0; border-radius: 4px; background: color-mix(in srgb, var(--at-ink) 5%, var(--at-paper)); color: var(--at-ink-soft); }
 .bf-live-qs > span:first-child, .bf-live-qs .is-head { background: none; color: var(--at-ink-faint); font-weight: 700; }
 .bf-live-qs .is-name { text-align: left; padding-left: 6px; font-weight: 800; color: var(--at-ink); }
@@ -709,7 +709,7 @@
 .bf-live-table-wrap { overflow-x: auto; }
 .bf-live-table tfoot th, .bf-live-table tfoot td { font-weight: 800; color: var(--at-ink); border-bottom: none; }
 .bf-live-table .bf-live-pct td { font-weight: 600; color: var(--at-ink-faint); }
-.bf-live-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.bf-live-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .bf-live-table caption { text-align: left; font-size: 11px; font-weight: 800; color: var(--at-ink-faint); padding-bottom: 2px; }
 .bf-live-table th, .bf-live-table td { padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--at-line); color: var(--at-ink-soft); }
 .bf-live-table thead th { font-weight: 700; color: var(--at-ink-faint); }
@@ -721,7 +721,7 @@
 /* Streak rewards — cosmetic, by best streak. */
 .bf-streak-track { margin-top: 12px; }
 .bf-streak-tiers { display: grid; grid-template-columns: repeat(5, 1fr); }
-.bf-streak-tier { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding-top: 22px; font-size: 10.5px; color: var(--at-ink-faint); }
+.bf-streak-tier { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding-top: 22px; font-size: 11px; color: var(--at-ink-faint); }
 .bf-streak-tier::before { content: ''; position: absolute; top: 8px; left: 0; right: 0; height: 3px; background: var(--at-line); }
 .bf-streak-tier.is-got::before { background: var(--at-gold, #ffd479); }
 .bf-streak-dot { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); width: 15px; height: 15px; border-radius: 50%; background: var(--at-paper); border: 2px solid var(--at-line); }
@@ -787,12 +787,12 @@
   .bf-hand.is-5 > .bf-hand-card { height: 176px; }
   .bf-hand.is-5 .bf-pool-card { padding: 6px 3px; gap: 3px; }
   .bf-hand.is-5 .bf-pool-teams, .bf-hand.is-5 .bf-pool-box--sub { display: none; }
-  .bf-hand.is-5 .bf-face { width: 30px; height: 30px; font-size: 10px; }
-  .bf-hand.is-5 .bf-pool-name { font-size: 10px; line-height: 1.15; letter-spacing: -0.02em; overflow-wrap: anywhere; }
-  .bf-hand.is-5 .bf-pool-season { font-size: 10px; }
-  .bf-hand.is-5 .bf-pool-box { font-size: 9px; letter-spacing: -0.03em; }
+  .bf-hand.is-5 .bf-face { width: 30px; height: 30px; font-size: 11px; }
+  .bf-hand.is-5 .bf-pool-name { font-size: 11px; line-height: 1.15; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .bf-hand.is-5 .bf-pool-season { font-size: 11px; }
+  .bf-hand.is-5 .bf-pool-box { font-size: 11px; letter-spacing: -0.03em; }
   .bf-hand.is-5 .bf-pool-over { font-size: 8px; left: 2px; right: 2px; }
-  .bf-hand.is-5 .bf-joker-q { font-size: 30px; }
+  .bf-hand.is-5 .bf-joker-q { font-size: 32px; }
 }
 /* The face-down Joker in a hand. */
 .bf-hand .bf-joker-card {
@@ -814,13 +814,13 @@
 }
 
 .bf-ai { margin: 4px 0 12px; padding: 8px 10px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--at-accent-2, #d94a60) 35%, var(--at-line)); background: color-mix(in srgb, var(--at-accent-2, #d94a60) 5%, var(--at-paper)); }
-.bf-ai-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--at-ink-soft); }
+.bf-ai-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--at-ink-soft); }
 .bf-ai-head .at-cond { font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-accent-2, #d94a60); }
 .bf-ai-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
-.bf-ai-slot { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; border-radius: 6px; border: 1px dashed var(--at-line); font-size: 10.5px; color: var(--at-ink-faint); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bf-ai-slot b { font-size: 10px; }
+.bf-ai-slot { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; border-radius: 6px; border: 1px dashed var(--at-line); font-size: 11px; color: var(--at-ink-faint); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bf-ai-slot b { font-size: 11px; }
 .bf-ai-slot.is-filled { border-style: solid; color: var(--at-ink); }
-.bf-ai-log { margin: 6px 0 0; font-size: 11.5px; color: var(--at-ink-soft); }
+.bf-ai-log { margin: 6px 0 0; font-size: 12px; color: var(--at-ink-soft); }
 
 .bf-joker-table {
   display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; position: relative;
@@ -832,7 +832,7 @@
 .bf-joker-table .bf-joker-tag { position: static; }
 .bf-joker-table .bf-pool-name { color: var(--at-ink); font-weight: 800; }
 .bf-joker-price { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 12px; color: var(--at-ink-faint); }
-.bf-joker-odds { font-size: 11.5px; color: var(--at-ink-soft); }
+.bf-joker-odds { font-size: 12px; color: var(--at-ink-soft); }
 .bf-joker-odds b { color: var(--at-accent-2, #d94a60); }
 .bf-joker-state { font-size: 12px; font-weight: 700; color: var(--at-ink-soft); }
 .bf-joker-state.is-yours { color: var(--at-good, #58c28a); }
@@ -953,11 +953,11 @@
 .bf-ai-card-back { background: repeating-linear-gradient(45deg, #3a1624 0 5px, #2a101a 5px 10px); border: 1.5px solid #8a3a4e; animation: bf-ai-hide 0.5s calc(var(--i) * 0.45s + 0.5s) both; }
 .bf-ai-card-face {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-size: 10.5px; font-weight: 700; line-height: 1.15; text-align: center; padding: 2px;
+  font-size: 11px; font-weight: 700; line-height: 1.15; text-align: center; padding: 2px;
   background: var(--at-paper); border: 1px solid var(--at-line); color: var(--at-ink-soft); overflow: hidden;
   animation: bf-ai-show 0.5s calc(var(--i) * 0.45s + 0.5s) both;
 }
-.bf-ai-card-face small { font-size: 9.5px; color: var(--at-ink-faint); }
+.bf-ai-card-face small { font-size: 11px; color: var(--at-ink-faint); }
 .bf-ai-card.is-took .bf-ai-card-face { border-color: var(--at-accent-2, #d94a60); color: var(--at-ink); }
 .bf-ai-card.is-took { animation: bf-ai-deal 0.6s calc(var(--i) * 0.45s) both cubic-bezier(0.2, 0.8, 0.25, 1), bf-ai-take 0.5s 2.6s both; border-radius: 6px; }
 .bf-ai-card:not(.is-took) { animation: bf-ai-deal 0.6s calc(var(--i) * 0.45s) both cubic-bezier(0.2, 0.8, 0.25, 1), bf-ai-fade 0.4s 2.6s forwards; }
@@ -982,12 +982,12 @@
 .bf-hand .bf-deal-card .bf-pool-over { top: 24px; }
 @media (max-width: 560px) {
   .bf-hand.is-5 .bf-deal-card { padding: 8px 5px; gap: 3px; }
-  .bf-hand.is-5 .bf-deal-card .at-team-band { margin: -8px -5px 0; height: 14px; font-size: 7.5px; letter-spacing: 0.02em; }
+  .bf-hand.is-5 .bf-deal-card .at-team-band { margin: -8px -5px 0; height: 14px; font-size: 8px; letter-spacing: 0.02em; }
   .bf-hand.is-5 .bf-deal-card .at-player-card-top { flex-direction: column; gap: 3px; align-items: center; }
-  .bf-hand.is-5 .bf-deal-card .at-player-card-name { font-size: 10px; text-align: center; }
-  .bf-hand.is-5 .bf-deal-card .at-player-card-season { font-size: 8.5px; justify-content: center; }
-  .bf-hand.is-5 .bf-deal-card .at-player-card-stats b { font-size: 10px; }
-  .bf-hand.is-5 .bf-deal-card .at-player-card-stats { font-size: 7.5px; gap: 1px; }
+  .bf-hand.is-5 .bf-deal-card .at-player-card-name { font-size: 11px; text-align: center; }
+  .bf-hand.is-5 .bf-deal-card .at-player-card-season { font-size: 8px; justify-content: center; }
+  .bf-hand.is-5 .bf-deal-card .at-player-card-stats b { font-size: 11px; }
+  .bf-hand.is-5 .bf-deal-card .at-player-card-stats { font-size: 8px; gap: 1px; }
 }
 
 /* Live game test bench (LiveTestBench.tsx, testing only). */
@@ -1001,14 +1001,14 @@
   list-style: none;
   margin: 6px 0 0;
   padding: 0;
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 .bench-team li b {
   display: inline-block;
   width: 2.2em;
 }
 .bench-expect {
-  font-size: 0.9rem;
+  font-size: 14px;
   margin: 8px 0 12px;
 }
 .bench-team .bench-sub {
@@ -1045,7 +1045,7 @@
   list-style: none;
   padding: 0;
   margin: 6px 0;
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 .bench-awards b {
   display: inline-block;
@@ -1130,7 +1130,7 @@
 }
 .bench-awards li {
   margin: 6px 0;
-  font-size: 15px;
+  font-size: 16px;
 }
 .bench-table .bench-engine {
   color: var(--at-ink-soft);
