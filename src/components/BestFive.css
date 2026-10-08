@@ -1146,3 +1146,9 @@
   display: flex;
   flex-direction: column-reverse;
 }
+/* 2026-10-08, tension: a run or a late lead change gets its own line; the last two minutes of a
+   close game light the clock up. */
+.bf-live-feed > .is-run { display: block; text-align: center; background: none; font-weight: 700; color: var(--at-accent); }
+.bf-live-clock.is-clutch span { color: #e8707a; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; animation: bf-clutch 1.2s ease-in-out infinite; }
+@keyframes bf-clutch { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .bf-live-clock.is-clutch span { animation: none; } }

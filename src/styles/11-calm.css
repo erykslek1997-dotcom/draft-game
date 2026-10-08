@@ -933,3 +933,4 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .rr-edge-row > b { font: 700 16px var(--calm-num); }
 .rr-edge-row > b.is-bad { color: #e8707a; }
 .rr-edge-row > b.is-good { color: var(--at-good); }
+.pl-actions button:disabled { opacity: 0.55; cursor: default; filter: none; }

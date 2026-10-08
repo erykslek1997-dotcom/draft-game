@@ -732,6 +732,9 @@ function PlayoffsChapter({
   onBack: () => void;
 }) {
   const [watching, setWatching] = useState<Watching | null>(null);
+  // "Sim the series" (2026-10-08, the user: no tension): the games land one after another, a
+  // second apart, and a Game 7 gets a beat of its own before it's decided.
+  const [simming, setSimming] = useState(false);
   const rounds = playoffs.rounds;
   const last = rounds.length - 1;
   const isYours = (s: LivePlayoffSeries) => s.teamAId === youId || s.teamBId === youId;
@@ -743,6 +746,15 @@ function PlayoffsChapter({
   const yourSeries = run ? rounds[run.round][run.index] : null;
   const seriesOver = yourSeries !== null && live !== null && live.game >= yourSeries.games.length;
   const seedOf = (id: string) => season.standings.findIndex((r) => r.teamId === id) + 1;
+  const simStep = simming && live && yourSeries && !seriesOver ? live.game : null;
+  useEffect(() => {
+    if (simStep === null || !live) {
+      if (simming && (seriesOver || !live)) setSimming(false);
+      return;
+    }
+    const t = window.setTimeout(() => setReveal({ kind: 'live', round: live.round, game: simStep + 1 }), simStep === 6 ? 1800 : 1000);
+    return () => window.clearTimeout(t);
+  }, [simStep, simming, seriesOver, live, setReveal]);
   const oppOf = (s: LivePlayoffSeries) => (s.teamAId === youId ? s.teamBId : s.teamAId);
   const tally = (s: LivePlayoffSeries, upto: number) => {
     const g = s.games.slice(0, upto);
@@ -798,9 +810,20 @@ function PlayoffsChapter({
         season={season}
         byId={byId}
         mark={mark}
-        status={live.game === 0 ? `${yourSeries.roundLabel} · your series` : yw === ow ? `Series tied ${yw}-${ow}` : yw > ow ? `You lead ${yw}-${ow}` : `You trail ${yw}-${ow}`}
+        status={
+          simming && live.game === 6
+            ? `Game 7 · ${yw}-${ow} · winner takes it`
+            : live.game === 0
+              ? `${yourSeries.roundLabel} · your series`
+              : yw === ow
+                ? `Series tied ${yw}-${ow}`
+                : yw > ow
+                  ? `You lead ${yw}-${ow}`
+                  : `You trail ${yw}-${ow}`
+        }
+        simming={simming}
         onPlay={(g) => setWatching({ round: live.round, series: run!.index, game: g })}
-        onSim={() => setReveal({ kind: 'live', round: live.round, game: yourSeries.games.length })}
+        onSim={() => setSimming(true)}
       />
     );
   } else if (live && yourSeries && seriesOver) {
@@ -977,6 +1000,7 @@ function SeriesPanel({
   status,
   onPlay,
   onSim,
+  simming = false,
 }: {
   s: LivePlayoffSeries;
   played: number;
@@ -987,6 +1011,8 @@ function SeriesPanel({
   status: string;
   onPlay: (game: number) => void;
   onSim: () => void;
+  /** Games are landing one by one: the buttons wait. */
+  simming?: boolean;
 }) {
   const yourSide = s.teamAId === youId ? 0 : 1;
   const opp = yourSide === 0 ? s.teamBId : s.teamAId;
@@ -1060,11 +1086,11 @@ function SeriesPanel({
         })}
       </div>
       <div className="pl-actions">
-        <button type="button" className="pl-cta" onClick={() => onPlay(played)}>
+        <button type="button" className="pl-cta" onClick={() => onPlay(played)} disabled={simming}>
           ▶ Play game {played + 1}
         </button>
-        <button type="button" className="pl-ghost" onClick={onSim}>
-          {played === 0 ? 'Sim the series' : 'Sim the rest'}
+        <button type="button" className="pl-ghost" onClick={onSim} disabled={simming}>
+          {simming ? `Game ${played + 1}…` : played === 0 ? 'Sim the series' : 'Sim the rest'}
         </button>
       </div>
     </div>

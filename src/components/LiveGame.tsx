@@ -10,7 +10,26 @@ import { gameWinProbability } from '../engine/matchup';
  * plays it back. A daily reopened later shows the final straight away, with "Watch again".
  */
 
-const TICK_MS = 175;
+/** 2026-10-08, the user ("symulacja strasznie zapiernicza, nie ma napięcia"): the pace follows
+ * the game — the first three quarters move, the fourth slows, the last two minutes of a close game
+ * go trip by trip, and every quarter ends with a pause. A blowout's last minutes still move. */
+const PACE = { early: 175, fourth: 260, clutchPlay: 900, clutchQuiet: 350, quarterBreak: 2000 };
+/** The last two minutes with the margin at most this many points. */
+const CLUTCH = { seconds: 120, margin: 8 };
+
+function isClutch(m: GameMoment | undefined): boolean {
+  return !!m && m.quarter >= 3 && m.left <= CLUTCH.seconds && Math.abs(m.score[0] - m.score[1]) <= CLUTCH.margin;
+}
+
+/** How long to hold before showing moment `i`. */
+function delayBefore(moments: GameMoment[], i: number): number {
+  const m = moments[i];
+  const prev = moments[i - 1];
+  if (!m) return PACE.early;
+  if (prev && prev.quarter !== m.quarter) return PACE.quarterBreak;
+  if (isClutch(prev ?? m)) return m.play && !m.play.quiet ? PACE.clutchPlay : PACE.clutchQuiet;
+  return m.quarter >= 3 ? PACE.fourth : PACE.early;
+}
 
 function erf(x: number): number {
   const sign = x < 0 ? -1 : 1;
@@ -92,11 +111,11 @@ export default function LiveGame({
         if (next >= total) setRunning(false);
         return next;
       });
-    }, TICK_MS / speed);
+    }, delayBefore(game.moments, Math.max(0, shown)) / speed);
     return () => {
       if (timer.current) window.clearTimeout(timer.current);
     };
-  }, [running, shown, speed, total]);
+  }, [running, shown, speed, total, game.moments]);
 
   const done = shown >= total;
   useEffect(() => {
@@ -117,8 +136,36 @@ export default function LiveGame({
   const feed = useMemo(() => {
     const rows: { key: string; cls: string; time?: string; text: string; score?: string }[] = [];
     const upto = Math.max(0, Math.min(shown, total));
+    // A run: one side's points since the other last scored more than two; called at 8, then every 4.
+    let runSide = -1;
+    let runPts = 0;
+    let runOpp = 0;
+    let called = 0;
+    let leader = 0;
     for (let i = 0; i < upto; i++) {
       const m = game.moments[i];
+      const before = i > 0 ? game.moments[i - 1].score : [0, 0];
+      for (const side of [0, 1] as const) {
+        const pts = m.score[side] - before[side];
+        if (pts <= 0) continue;
+        if (side === runSide) runPts += pts;
+        else {
+          runOpp += pts;
+          if (runOpp > 2) {
+            runSide = side;
+            runPts = runOpp;
+            runOpp = 0;
+            called = 0;
+          }
+        }
+      }
+      if (runSide >= 0 && runPts >= 8 && runPts >= called + 4) {
+        called = runPts;
+        rows.push({ key: `r${i}`, cls: 'is-run', text: `${short[runSide]} on a ${runPts}–${runOpp} run` });
+      }
+      const lead = Math.sign(m.score[0] - m.score[1]);
+      if (lead !== 0 && leader !== 0 && lead !== leader && m.quarter >= 3) rows.push({ key: `l${i}`, cls: 'is-run', text: `Lead change · ${short[lead > 0 ? 0 : 1]} in front` });
+      if (lead !== 0) leader = lead;
       if (m.play && !m.play.quiet) {
         rows.push({
           key: `p${i}`,
@@ -136,6 +183,8 @@ export default function LiveGame({
   }, [game.moments, shown, total, done, game.final, short, yourSide]);
 
   const p = Math.round(winProbability(now, game.expectedMargin) * 100);
+  const clutch = !done && shown > 0 && isClutch(now);
+  const atBreak = !done && shown > 0 && !!now && !!game.moments[shown] && game.moments[shown].quarter !== now.quarter;
   const won = game.final[0] > game.final[1];
   // 2026-09-30, the user chose A + B: a clear favourite always wins; a close game shows its odds up
   // front and calls an upset an upset. Team games have no clear favourite: anyone can lose.
@@ -175,9 +224,9 @@ export default function LiveGame({
           <span className="bf-live-team at-cond">{short[0]}</span>
           <span className="bf-live-pts">{score[0]}</span>
         </div>
-        <div className="bf-live-clock">
-          <b>{done ? 'Final' : shown < 0 ? 'Tip-off' : clock(now)}</b>
-          <span>{done ? '' : shown < 0 ? 'waiting' : 'live'}</span>
+        <div className={`bf-live-clock${clutch ? ' is-clutch' : ''}`}>
+          <b>{done ? 'Final' : shown < 0 ? 'Tip-off' : atBreak ? `End of Q${now!.quarter + 1}` : clock(now)}</b>
+          <span>{done ? '' : shown < 0 ? 'waiting' : clutch ? 'clutch' : atBreak ? 'break' : 'live'}</span>
         </div>
         <div className="bf-live-right">
           <span className="bf-live-team at-cond">{short[1]}</span>
@@ -210,8 +259,8 @@ export default function LiveGame({
           <div className="is-quarter">Starting fives are on the floor.</div>
         ) : (
           feed.map((r) =>
-            r.cls === 'is-quarter' ? (
-              <div key={r.key} className="is-quarter">{r.text}</div>
+            r.cls === 'is-quarter' || r.cls === 'is-run' ? (
+              <div key={r.key} className={r.cls}>{r.text}</div>
             ) : (
               <div key={r.key} className={r.cls}>
                 <span className="bf-live-t">{r.time}</span>
