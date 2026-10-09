@@ -76,6 +76,10 @@ export interface PlayerTeamFeature {
   movementShooting?: number;   // 0..1, only incumbent or explicitly validated role evidence
   movementShootingConfidence?: number; // 0..1
   movementShootingEvidence?: string;
+  /** 2026-10-09: share of his plays off screens and hand-offs (shooters) and from cuts (perimeter
+   * players), from `offBallProfile.ts` — what the style lines read. */
+  movementShare?: number;
+  cutShare?: number;
   // 2026-09-25 (descriptions part 2): real box-score lines so descriptions can name what a player
   // actually did (assists, steals, blocks, free throws) and when he played.
   ppg?: number;

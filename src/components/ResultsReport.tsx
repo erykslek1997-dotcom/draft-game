@@ -240,11 +240,14 @@ export function theirVoice(text: string): string {
     .replace(/\byou\b/g, 'they');
 }
 
-/** Voices for a team's report: the strengths alternate between the Coach and the Analyst, the
- * concerns go to the Analyst, the next-draft advice (yours only) to the Scout. */
+/** Voices for a team's report. 2026-10-09 (descriptions plan, "Akcept"): each voice has its own
+ * job instead of taking turns — the Coach says what works, the Analyst what goes wrong and why (the
+ * concerns carry the numbers), the Scout how the team plays (`styleLines.ts`) and, in your report,
+ * what to do next draft. */
 export function voicesFor({
   strengths,
   concerns,
+  style,
   tip,
   strengthLabel,
   concernLabel,
@@ -253,6 +256,7 @@ export function voicesFor({
 }: {
   strengths: string[];
   concerns: string[];
+  style?: string;
   tip?: string;
   strengthLabel: string;
   concernLabel: string;
@@ -260,8 +264,9 @@ export function voicesFor({
   third?: boolean;
 }): DeskVoice[] {
   const say = (text: string) => (third ? theirVoice(text) : text);
-  const voices: DeskVoice[] = strengths.map((text, i) => ({ who: i % 2 === 0 ? 'The Coach' : 'The Analyst', what: strengthLabel, text: say(text) }));
-  concerns.forEach((text, i) => voices.push({ who: i === 0 && !tip ? 'The Scout' : 'The Analyst', what: concernLabel, text: say(text), tone: 'warn' }));
+  const voices: DeskVoice[] = strengths.map((text) => ({ who: 'The Coach', what: strengthLabel, text: say(text) }));
+  concerns.forEach((text) => voices.push({ who: 'The Analyst', what: concernLabel, text: say(text), tone: 'warn' }));
+  if (style) voices.push({ who: 'The Scout', what: 'how they play', text: style });
   if (tip) voices.push({ who: 'The Scout', what: tipLabel ?? 'next draft', text: tip, tone: 'warn' });
   return voices;
 }

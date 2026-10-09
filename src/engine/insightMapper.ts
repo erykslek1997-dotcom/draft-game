@@ -19,6 +19,7 @@ import { defensiveHuntability } from './defensiveHuntability';
 import { fitScore, shadowRoleProfileForDiagnostics } from './fit';
 import { buildTeamModelExtension } from './teamModel';
 import { buildClosingLineups } from './closingLineups';
+import { movementShare, cutShare } from './offBallProfile';
 
 /**
  * 2026-08-15, the Team → `TeamFeatureSnapshot` translation `insights.ts`'s own docstring points
@@ -131,6 +132,8 @@ function toPlayerFeature(
     starterSlot,
     spacingImpact: normalize(computeSpacing(p), SPACING_LO, SPACING_HI),
     movementShooting: movement.score,
+    movementShare: movementShare(p) ?? undefined,
+    cutShare: cutShare(p) ?? undefined,
     movementShootingConfidence: movement.confidence,
     movementShootingEvidence: movement.evidence || undefined,
     ppg: p.box.ppg,

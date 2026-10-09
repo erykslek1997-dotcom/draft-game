@@ -15,6 +15,7 @@ import { generateRosterInsights, insightContextFor } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
+import { scoutStyleLine } from '../engine/styleLines';
 import { teamStyleFor } from '../engine/championshipArchetype';
 import { bestHistoricalComp } from '../engine/historicalComps';
 import { type FeedbackEntry } from './FeedbackToggle';
@@ -897,7 +898,8 @@ function yourVoices({
   breakdown: ScoreBreakdown;
   fieldMedians: Record<string, number>;
 }): DeskVoice[] {
-  const insights = generateRosterInsights(buildTeamFeatureSnapshot(team), undefined, insightContextFor(breakdown, rank, fieldSize));
+  const snapshot = buildTeamFeatureSnapshot(team);
+  const insights = generateRosterInsights(snapshot, undefined, insightContextFor(breakdown, rank, fieldSize));
   const won = rank === 1;
   const podium = rank <= 3;
   const contender = rank === 4;
@@ -915,6 +917,7 @@ function yourVoices({
   return voicesFor({
     strengths: insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.message),
     concerns: insights.concerns.slice(0, podium ? 1 : 2).map((i) => i.message),
+    style: scoutStyleLine(snapshot)?.text,
     tip: !podium && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined,
     strengthLabel: won ? 'what won it' : podium ? 'what put you on the podium' : 'what worked',
     concernLabel: podium ? 'where a rival could still hurt you' : 'what held you back',
@@ -924,11 +927,13 @@ function yourVoices({
 
 /** A rival's voices — the same insight engine, about them: what works, and what can sink them. */
 function theirVoices(team: Team, breakdown: ScoreBreakdown, rank: number, fieldSize: number): DeskVoice[] {
-  const insights = generateRosterInsights(buildTeamFeatureSnapshot(team), undefined, insightContextFor(breakdown, rank, fieldSize));
+  const snapshot = buildTeamFeatureSnapshot(team);
+  const insights = generateRosterInsights(snapshot, undefined, insightContextFor(breakdown, rank, fieldSize));
   const podium = rank <= 3;
   return voicesFor({
     strengths: insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.message),
     concerns: insights.concerns.slice(0, 2).map((i) => i.message),
+    style: scoutStyleLine(snapshot)?.text,
     strengthLabel: rank === 1 ? 'what won it' : 'what works',
     concernLabel: 'what can sink them',
     third: true,
