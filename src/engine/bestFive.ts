@@ -921,7 +921,7 @@ export function dealHint(pool: DailyPool, slot: Position, lineup: Lineup, cap: n
  * 2026-09-30, the user ("mam caps na Griffina, nie powinno mnie blokować"; "reaktywne do wyborów,
  * plansza powinna być przygotowana na każdy wybór"): a pick is never blocked because the board's
  * own cards for later positions would no longer fit. What a later position must cost at least is
- * the cheapest player in the whole game at it (`slotFloor`), and when a deal comes up with too few
+ * the second-cheapest player in the whole game at it (`slotFloor`), and when a deal comes up with too few
  * cards the caps left can pay for, it tops up with the best cheap players from the whole game
  * (`dealFor`) — the board is ready for any path.
  */
@@ -929,7 +929,10 @@ const floorCache = new Map<Position, number>();
 export function slotFloor(slot: Position): number {
   let floor = floorCache.get(slot);
   if (floor === undefined) {
-    floor = Math.min(...[...bestSpanByPlayer().values()].filter((s) => s.primaryPosition === slot).map((s) => s.fga));
+    // 2026-10-09: the second-cheapest, not the cheapest — a deal promises two cards the caps left can
+    // pay for, and with only the cheapest held back a late position could be left with one (C on
+    // 2026-10-13: 1.2 shots of room, Michael Ruffin at 1.1 the only center in the game that cheap).
+    floor = [...bestSpanByPlayer().values()].filter((s) => s.primaryPosition === slot).map((s) => s.fga).sort((a, b) => a - b)[1];
     floorCache.set(slot, floor);
   }
   return floor;

@@ -1,3 +1,4 @@
+import { hasMovementEvidence } from '../src/engine/offBallProfile';
 import fs from 'fs';
 import path from 'path';
 import { HISTORICAL_MOVEMENT_SHOOTER_EVIDENCE } from '../src/data/historicalMovementShooters';
@@ -106,8 +107,11 @@ for (const name of ['James Harden', 'Luka Doncic', 'Jayson Tatum'] as const) {
 
 // 2026-10-02: the role audit also credits a neighbouring window's primary label, so a player whose
 // own curated label reads Movement Shooter in some window (Klay Thompson) counts as evidenced too.
+// 2026-10-09: measured movement (NBA.com play types, or the player's own measured career —
+// `offBallProfile.ts`) is explicit evidence too.
 const validatedMovementNames = new Set([
   ...HISTORICAL_MOVEMENT_SHOOTER_EVIDENCE.map((entry) => normalizePlayerName(entry.playerName)),
+  ...players.filter((span) => hasMovementEvidence(span)).map((span) => normalizePlayerName(span.playerName)),
   ...players.filter((span) => span.offensiveArchetype === 'Movement Shooter').map((span) => normalizePlayerName(span.playerName)),
 ]);
 const inferredMovementNames = new Set(
