@@ -429,8 +429,9 @@ export const DEFENSE_TUNING = {
   /** A player's real percentages already hold his breaks and putbacks; the half court gives back
    * what the game now adds there, so his season lands on his own numbers. */
   /* 2026-10-08: 0.99 -> 0.983 — the milder fatigue (stage 3) left more shots going in; the league
-   * back to ~122 points and TS ~62.4 a team game. */
-  halfCourt: 0.983,
+   * back to ~122 points and TS ~62.4 a team game. 2026-10-09: 0.983 -> 0.994 — giving the ball up no
+   * longer lifts everyone's shooting (`SCALE_TUNING`); the league back where it was. */
+  halfCourt: 0.994,
   turnover: 0.133,
   /** A player's real free-throw rate already holds his trips in the bonus, which the game now
    * plays as their own fouls; shooting fouls give that back, so the league's free throws stay
@@ -566,6 +567,15 @@ export const SCALE_TUNING = {
   shooter: 0.06,
   creator: 0.08,
 };
+/**
+ * The five as a whole: more players who need the ball than one ball. Real teams whose top five
+ * brought more usage than 100% between them played a little under their talent (~1.7-2 points a
+ * game per 1.0 of usage over, 739 team-seasons, each player read from his previous span); the game
+ * had it the other way round (+6-7). Every shot of the five on the floor loses `perOverload` FG
+ * points per 1.0 of its players' real usage added up, against the drafted fives' `ref`, so the
+ * league's shooting stays where it was and only the differences between fives move.
+ */
+export const OVERLOAD_TUNING = { perOverload: 0.05, ref: 1.14 };
 function usageGiveUpScale(span: PlayerSpan, ownShare: number): number {
   const shooter = Math.max(0, Math.min(1, (teamSpacingValue(span) - 35) / 25));
   const creator = Math.min(1, ownShare / STAR_TUNING.creatorShare);
@@ -953,7 +963,8 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const giveUp = five.map((p, i) => usageGiveUpScale(p.span, owns[i]));
     const usageGain = lines.map((l, i) => contextGain(l.usageDelta * (l.usageDelta < 0 ? usageCost[i] : giveUp[i])));
     const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
-    const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length);
+    const overload = -OVERLOAD_TUNING.perOverload * (lines.reduce((sum, l) => sum + l.originalUsage, 0) - OVERLOAD_TUNING.ref);
+    const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload;
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
