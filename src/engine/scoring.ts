@@ -1722,11 +1722,12 @@ export function teamFitCompositeScore(fit: number, offense: number, defense: num
  * 1952-2025, each player read from his span before that season; weak, t ~-1.3, but the same way as
  * one 24%+ usage player more costing ~0.3, t ~-2). The engine had it the other way: such teams
  * did ~6-7 points better per 1.0 than their O-TAL and D-TAL said. `perUsage` overall points per
- * 1.0 above `ref` (the drafted teams' typical top five) bring the season onto the real slope (7.2
- * overshot it: -6.8 against a target of ~-3.7 on 480 AI-drafted teams); a team below it gains at
- * most `maxBonus`.
+ * 1.0 above `ref` (the drafted teams' typical top five) turn the reward into a cost. On 480
+ * AI-drafted teams 7.2 gave -6.8 and 5.4 gave -7.8 against a real slope of ~-3.7 — each run is
+ * +-2.6, so the size can't be pinned down; 4 is the cautious middle (the user). A team below `ref`
+ * gains at most `maxBonus`.
  */
-export const BALL_LOAD_TUNING = { perUsage: 5.4, ref: 1.25, maxBonus: 1 };
+export const BALL_LOAD_TUNING = { perUsage: 4, ref: 1.25, maxBonus: 1 };
 const SPAN_CONTEXT = spanContext as unknown as Record<string, number[]>;
 /** Real usages of the five players with the most minutes, added up (1.0 = one ball). */
 export function topFiveUsageLoad(team: Team): number {
