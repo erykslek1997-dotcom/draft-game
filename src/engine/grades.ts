@@ -306,6 +306,23 @@ function rawSpacingGrade(span: PlayerSpan): Grade {
  * regardless of which tier that is. `span` is optional so any caller without one (there are none
  * today) still gets the plain era-scaled grade.
  */
+/**
+ * 2026-10-09, the user ("Stojakovic na tylko B?"): the cap above read the player's real volume as
+ * well as his aim, so a real shooter of a low-volume era sat letters below where the engine itself
+ * values him (Peja 2002-04: 100th percentile, B+; Reggie Miller 1993-95: C+; Nash: B-; across the
+ * pool 3,797 spans at D-). Era scaling may credit volume, never accuracy: past the three-point line
+ * the cap is the player's real 3P% (with real volume only for the top two letters).
+ */
+function accuracySpacingCap(threePct: number, threePA: number): Grade {
+  if (threePct >= 0.4 && threePA >= 5) return 'S';
+  if (threePct >= 0.4 && threePA >= 3.5) return 'A+';
+  if (threePct >= 0.38) return 'A-';
+  if (threePct >= 0.36) return 'B+';
+  if (threePct >= 0.34) return 'B-';
+  if (threePct >= 0.32) return 'C+';
+  return 'C-';
+}
+
 export function spacingGrade(value: number, span?: PlayerSpan): Grade {
   if (spacingGradeSortedValues === null) {
     spacingGradeSortedValues = draftPool.map((p) => computeSpacing(p)).sort((a, b) => a - b);
@@ -317,9 +334,12 @@ export function spacingGrade(value: number, span?: PlayerSpan): Grade {
   const rank = percentileRank(value, spacingGradeSortedValues);
   const eraScaledGrade = gradeForValue(rank, spacingGradeSThreshold);
   if (!span) return eraScaledGrade;
-  const rawGrade = rawSpacingGrade(span);
-  const cappedRank = Math.min(gradeRank(eraScaledGrade), gradeRank(rawGrade) + 1);
-  return GRADE_ORDER[cappedRank];
+  // Before the line (or with no threes at all) there is no aim to read: the old cap stays.
+  const cap =
+    Number(span.spanLabel.slice(0, 4)) >= 1979 && span.box.threePA > 0
+      ? gradeRank(accuracySpacingCap(span.box.threePct ?? 0, span.box.threePA))
+      : gradeRank(rawSpacingGrade(span)) + 1;
+  return GRADE_ORDER[Math.min(gradeRank(eraScaledGrade), cap)];
 }
 
 let finishingGradeSortedValues: number[] | null = null; // sorted ascending, cached once
