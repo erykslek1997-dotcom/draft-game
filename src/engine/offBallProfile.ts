@@ -43,3 +43,12 @@ export function cutShare(span: PlayerSpan): number | null {
   const row = CUTTING[span.id];
   return row ? row[0] / 1000 : null;
 }
+
+/** True when the share was measured (NBA.com play types), not estimated or listed — only a measured
+ * share is quoted as a number in a description. */
+export function movementMeasured(span: PlayerSpan): boolean {
+  return PROFILE[span.id]?.[1] === 'nba';
+}
+export function cutMeasured(span: PlayerSpan): boolean {
+  return CUTTING[span.id]?.[1] === 'nba';
+}

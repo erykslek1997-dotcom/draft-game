@@ -6,7 +6,8 @@ import type { TeamFeatureSnapshot } from './insights';
  * and who throws them the ball. These describe a style; they never say it wins. On real 2016-25
  * teams the share of plays from movement, cuts or isolations showed no effect on margin beyond
  * talent, so a style line is a fact about the roster, not a strength or a concern (the Scout says
- * it, and `scripts/validateDescriptions.ts` doesn't judge it on wins).
+ * it, and `scripts/validateDescriptions.ts` doesn't judge it on wins). A share is quoted as a number
+ * only when it was measured (NBA.com, 2015+); a modelled or listed one says the same without it.
  */
 export interface StyleLine {
   id: 'MOVERS' | 'MOVER_AND_CORNERS' | 'ALL_CORNERS' | 'CUTTERS_WITH_PASSER' | 'CUTTERS_NO_PASSER';
@@ -53,21 +54,32 @@ export function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
     out.push({
       id: 'MOVERS',
       players: [a.playerName, b.playerName],
-      text: pick(team, [
-        `${a.playerName} and ${b.playerName} get their shots coming off screens and hand-offs (${pct(a.movementShare)} and ${pct(b.movementShare)} of their plays), not standing in the corner.`,
-        `${surname(a.playerName)} and ${surname(b.playerName)} both work off screens: ${pct(a.movementShare)} and ${pct(b.movementShare)} of their plays.`,
-      ], 'off-screen'),
+      text: a.movementMeasured && b.movementMeasured
+        ? pick(team, [
+          `${a.playerName} and ${b.playerName} get their shots coming off screens and hand-offs (${pct(a.movementShare)} and ${pct(b.movementShare)} of their plays), not standing in the corner.`,
+          `${surname(a.playerName)} and ${surname(b.playerName)} both work off screens: ${pct(a.movementShare)} and ${pct(b.movementShare)} of their plays.`,
+        ], 'off-screen')
+        : pick(team, [
+          `${a.playerName} and ${b.playerName} get their shots coming off screens and hand-offs, not standing in the corner.`,
+          `${surname(a.playerName)} and ${surname(b.playerName)} both work off screens rather than waiting for a kick-out.`,
+        ], 'off-screen'),
     });
   } else if (runners.length >= 2) {
     const [a, b] = runners;
     out.push({
       id: 'MOVERS',
       players: [a.playerName, b.playerName],
-      text: pick(team, [
-        `${a.playerName} and ${b.playerName} never stop moving: ${pct(a.movementShare)} and ${pct(b.movementShare)} of their plays came off screens and hand-offs. Somebody has to chase them all night.`,
-        `Two shooters on the run. ${surname(a.playerName)} (${pct(a.movementShare)} of his plays off screens) and ${surname(b.playerName)} (${pct(b.movementShare)}) make a defense work every trip.`,
-        `${a.playerName} and ${b.playerName} come off pin-downs and hand-offs, not out of the corner: ${pct(a.movementShare)} and ${pct(b.movementShare)} of their plays.`,
-      ], 'movers'),
+      text: a.movementMeasured && b.movementMeasured
+        ? pick(team, [
+          `${a.playerName} and ${b.playerName} never stop moving: ${pct(a.movementShare)} and ${pct(b.movementShare)} of their plays came off screens and hand-offs. Somebody has to chase them all night.`,
+          `Two shooters on the run. ${surname(a.playerName)} (${pct(a.movementShare)} of his plays off screens) and ${surname(b.playerName)} (${pct(b.movementShare)}) make a defense work every trip.`,
+          `${a.playerName} and ${b.playerName} come off pin-downs and hand-offs, not out of the corner: ${pct(a.movementShare)} and ${pct(b.movementShare)} of their plays.`,
+        ], 'movers')
+        : pick(team, [
+          `${a.playerName} and ${b.playerName} never stop moving. Somebody has to chase them through screens all night.`,
+          `Two shooters on the run: ${surname(a.playerName)} and ${surname(b.playerName)} make a defense work every trip.`,
+          `${a.playerName} and ${b.playerName} come off pin-downs and hand-offs, not out of the corner.`,
+        ], 'movers'),
     });
   } else if (movers.length === 1 && corners.length >= 2) {
     const [m] = movers;
@@ -76,7 +88,7 @@ export function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
       id: 'MOVER_AND_CORNERS',
       players: [m.playerName, c1.playerName, c2.playerName],
       text: pick(team, [
-        `${m.playerName} runs off screens (${pct(m.movementShare)} of his plays) while ${c1.playerName} and ${c2.playerName} wait in the corners.`,
+        `${m.playerName} runs off screens${m.movementMeasured ? ` (${pct(m.movementShare)} of his plays)` : ''} while ${c1.playerName} and ${c2.playerName} wait in the corners.`,
         `One shooter on the move, two waiting: ${surname(m.playerName)} chases screens, ${surname(c1.playerName)} and ${surname(c2.playerName)} spot up.`,
       ], 'mover-corners'),
     });
@@ -100,7 +112,7 @@ export function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
       id: 'CUTTERS_WITH_PASSER',
       players: [...names, passer.playerName],
       text: pick(team, [
-        `${listNames(names)} ${one ? 'lives' : 'live'} on cuts (${shown.map((p) => pct(p.cutShare)).join(' and ')} of ${one ? 'his' : 'their'} plays), and ${passer.playerName} (${(passer.apg ?? 0).toFixed(1)} assists) will find ${one ? 'him' : 'them'}.`,
+        `${listNames(names)} ${one ? 'lives' : 'live'} on cuts${shown.every((p) => p.cutMeasured) ? ` (${shown.map((p) => pct(p.cutShare)).join(' and ')} of ${one ? 'his' : 'their'} plays)` : ''}, and ${passer.playerName} (${(passer.apg ?? 0).toFixed(1)} assists) will find ${one ? 'him' : 'them'}.`,
         `${surname(passer.playerName)} has someone to throw to: ${listNames(names.map(surname))} ${one ? 'cuts' : 'cut'} backdoor all night.`,
       ], 'cutters-passer'),
     });

@@ -19,7 +19,7 @@ import { defensiveHuntability } from './defensiveHuntability';
 import { fitScore, shadowRoleProfileForDiagnostics } from './fit';
 import { buildTeamModelExtension } from './teamModel';
 import { buildClosingLineups } from './closingLineups';
-import { movementShare, cutShare } from './offBallProfile';
+import { movementShare, cutShare, movementMeasured, cutMeasured } from './offBallProfile';
 
 /**
  * 2026-08-15, the Team → `TeamFeatureSnapshot` translation `insights.ts`'s own docstring points
@@ -135,6 +135,8 @@ function toPlayerFeature(
     usagePct: 100 * realUsageShare(p),
     movementShare: movementShare(p) ?? undefined,
     cutShare: cutShare(p) ?? undefined,
+    movementMeasured: movementMeasured(p),
+    cutMeasured: cutMeasured(p),
     movementShootingConfidence: movement.confidence,
     movementShootingEvidence: movement.evidence || undefined,
     ppg: p.box.ppg,

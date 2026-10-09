@@ -79,6 +79,9 @@ export interface PlayerTeamFeature {
    * players), from `offBallProfile.ts` — what the style lines read. */
   movementShare?: number;
   cutShare?: number;
+  /** Measured on NBA.com (2015+), so the share can be quoted; otherwise estimated or listed. */
+  movementMeasured?: boolean;
+  cutMeasured?: boolean;
   // 2026-09-25 (descriptions part 2): real box-score lines so descriptions can name what a player
   // actually did (assists, steals, blocks, free throws) and when he played.
   ppg?: number;
