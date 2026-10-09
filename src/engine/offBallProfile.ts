@@ -21,7 +21,16 @@ export function movementShare(span: PlayerSpan): number | null {
 export function offBallShooterLabel(span: PlayerSpan): OffensiveArchetype | null {
   const share = movementShare(span);
   if (share === null || (span.box.threePA ?? 0) < OFF_BALL_SHOOTER_BANDS.minThreePA) return null;
-  if (share >= OFF_BALL_SHOOTER_BANDS.movement) return 'Movement Shooter';
+  // A box score alone can't tell a shot off a screen from a spot-up (Raja Bell's six threes a game
+  // read as movement): Movement Shooter needs measured play types, the player's own measured career
+  // or the user-validated list (`historicalMovementShooters.ts`); the model alone stops at Off Screen.
+  if (share >= OFF_BALL_SHOOTER_BANDS.movement) return PROFILE[span.id][1] === 'model' ? 'Off Screen Shooter' : 'Movement Shooter';
   if (share >= OFF_BALL_SHOOTER_BANDS.offScreen) return 'Off Screen Shooter';
   return 'Stationary Shooter';
+}
+
+/** Measured (or user-validated) movement this span can stand on, not the box-score model's guess. */
+export function hasMovementEvidence(span: PlayerSpan): boolean {
+  const row = PROFILE[span.id];
+  return !!row && row[1] !== 'model' && row[0] / 1000 >= OFF_BALL_SHOOTER_BANDS.movement;
 }

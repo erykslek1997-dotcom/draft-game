@@ -36,6 +36,18 @@ export const HISTORICAL_MOVEMENT_SHOOTER_EVIDENCE: HistoricalMovementShooterEvid
     note: 'User-validated movement shooter with separate on-ball value in applicable spans.',
   },
   {
+    playerName: 'Peja Stojaković',
+    note: '2026-10-09 movement relabel: Kings off-screen and hand-off shooter (the user raised his spacing letter).',
+  },
+  {
+    playerName: 'Allan Houston',
+    note: '2026-10-09 movement relabel: Knicks pin-downs and curls.',
+  },
+  {
+    playerName: 'Glen Rice',
+    note: '2026-10-09 movement relabel: Hornets and Lakers off-screen scorer.',
+  },
+  {
     playerName: 'Kyle Korver',
     note: 'User-validated movement-shooting role player; role evidence does not add self-creation.',
   },
