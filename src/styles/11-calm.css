@@ -543,8 +543,21 @@ span.at-pc-name { cursor: default; }
 
 /* roster: by position — starter, then the backups at that position */
 .rr-roster { border-radius: 12px; background: var(--calm-raised); border: 1px solid var(--calm-line); overflow: hidden; }
+.rr-roster-cols { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.rr-roster-col { padding: 12px 12px 12px; min-width: 0; }
+.rr-roster-col + .rr-roster-col { border-left: 1px solid var(--calm-line); }
+.rr-roster-pos { display: block; margin-bottom: 4px; font: 700 13px var(--rr-disp); letter-spacing: 0.12em; color: var(--at-ink-faint); }
+.rr-roster-entries { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .rr-roster-label { font: 700 12px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); margin-right: 10px; }
-.rr-dnp { margin: 0; padding: 12px 16px; border-top: 1px solid var(--calm-line); font-size: 13px; color: var(--at-ink-faint); }
+.rr-cell { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; min-width: 0; }
+.rr-cell-text span .rr-min, .rr-spot .rr-min { font-size: inherit; font-weight: 800; color: inherit; }
+.rr-cell .bf-face { box-shadow: 0 0 0 1.5px hsl(calc(var(--team-hue, 215) + 40) 70% 55% / 0.55); }
+.rr-cell.is-backup { opacity: 0.82; }
+.rr-cell-text { display: flex; flex-direction: column; min-width: 0; }
+.rr-cell-text b { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rr-cell-text span { font-size: 12px; color: var(--at-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rr-spot { display: flex; flex-direction: column; font-size: 12px; color: var(--at-ink-faint); }
+.rr-dnp { margin: 0; padding: 8px 12px; border-top: 1px solid var(--calm-line); font-size: 13px; color: var(--at-ink-faint); }
 
 /* ---- One player row (2026-10-08, the user: "gubi mi się spójność") ----
    lead: a starting five, an All-Star starter; support: the bench, reserves, key players. */
@@ -935,3 +948,11 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .rr-edge-nums small { font-size: 12px; color: var(--at-ink-faint); }
 .rr-edge-row > b { font: 700 14px var(--calm-num); color: #e8707a; text-align: right; }
 .pl-actions button:disabled { opacity: 0.55; cursor: default; filter: none; }
+@media (max-width: 760px) {
+  .rr-roster-cols { grid-template-columns: 1fr; }
+  .rr-roster-col { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 8px; padding: 8px 12px; }
+  .rr-roster-col + .rr-roster-col { border-left: 0; border-top: 1px solid var(--calm-line); }
+  .rr-roster-pos { margin: 0; }
+  .rr-roster-entries { gap: 8px; }
+  .rr-spot { grid-column: 1 / -1; }
+}

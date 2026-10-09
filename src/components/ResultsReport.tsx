@@ -5,7 +5,8 @@ import type { Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import { compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
 import { TeamTile } from './TeamBadge';
-import { PlayerRow, RowsLabel } from './PlayerRow';
+import { Face } from './ShotChip';
+import { FitName } from './FitName';
 
 /**
  * 2026-10-08, results look C (approved mockup, "rywale 1 do 1 co dla nas"): the pieces one team's
@@ -31,6 +32,17 @@ export function TeamMark({ code, name, size = 'sm' }: { code: string; name: stri
       {code}
     </span>
   );
+}
+
+/** Below this many minutes at a position, a backup is listed on the column's quiet spot line
+ * (2026-09-25, the user: "trzeba coś z tymi graczami po 2 minuty zrobić, psują wizualnie"). */
+const SPOT_MINUTES = 6;
+
+interface SlotEntry {
+  id: string;
+  name: string;
+  years: string;
+  minutes: number;
 }
 
 export interface LineupEntry {
@@ -79,22 +91,63 @@ export function rosterLineup(team: Team): { starters: (LineupEntry & { slot: Pos
   return { starters, bench, dnp };
 }
 
+/**
+ * 2026-10-08, the user ("może rozdzielimy bench na każdą pozycję?"): the roster by position — each
+ * column the starter, then the backups with their minutes AT THAT POSITION (a combo backup shows
+ * under both slots he covers), short stints on one quiet line, and whoever didn't play below.
+ */
+export function rosterBySlot(team: Team): { slots: { slot: Position; main: SlotEntry[]; spot: SlotEntry[] }[]; dnp: SlotEntry[] } {
+  const starterKeys = new Set(primaryStarters(team).map((s) => `${s.slot}|${s.player.id}`));
+  const assignments = allAssignments(team);
+  const slots = STARTER_SLOTS.map((slot) => {
+    const entries = assignments
+      .filter((a) => a.slot === slot && a.minutes > 0)
+      .map((a) => ({ starter: starterKeys.has(`${slot}|${a.player.id}`), id: a.player.id, name: a.player.playerName, years: a.player.spanLabel, minutes: Math.round(a.minutes) }))
+      .sort((x, y) => (x.starter !== y.starter ? (x.starter ? -1 : 1) : y.minutes - x.minutes));
+    return {
+      slot,
+      main: entries.filter((e) => e.starter || e.minutes >= SPOT_MINUTES),
+      spot: entries.filter((e) => !e.starter && e.minutes < SPOT_MINUTES),
+    };
+  });
+  const played = new Set(assignments.filter((a) => a.minutes > 0).map((a) => a.player.id));
+  const dnp = team.roster.filter((p) => !played.has(p.id)).map((p) => ({ id: p.id, name: p.playerName, years: p.spanLabel, minutes: 0 }));
+  return { slots, dnp };
+}
+
 export function RosterGrid({ team }: { team: Team }) {
-  const { starters, bench, dnp } = rosterLineup(team);
+  const { slots, dnp } = rosterBySlot(team);
   return (
     <div className="rr-roster">
-      <RowsLabel>Starting five</RowsLabel>
-      {starters.map((e) => (
-        <PlayerRow key={e.id} size="lead" tag={e.slot} name={e.name} meta={e.where ? `${e.years} · also ${e.where}` : e.years} value={e.minutes} unit="min" />
-      ))}
-      {bench.length > 0 && (
-        <>
-          <RowsLabel>Bench</RowsLabel>
-          {bench.map((e) => (
-            <PlayerRow key={e.id} size="support" name={e.name} meta={`${e.years} · ${e.where}`} value={`${e.minutes}m`} />
-          ))}
-        </>
-      )}
+      <div className="rr-roster-cols">
+        {slots.map(({ slot, main, spot }) => (
+          <div className="rr-roster-col" key={slot}>
+            <span className="rr-roster-pos">{slot}</span>
+            <div className="rr-roster-entries">
+              {main.map((e, i) => (
+                <div className={`rr-cell${i > 0 ? ' is-backup' : ''}`} key={e.id} title={`${e.name} (${e.years})`}>
+                  <Face name={e.name} size="sm" />
+                  <span className="rr-cell-text">
+                    <FitName as="b" name={e.name} faceNextToIt />
+                    <span>
+                      {e.years} · <b className="rr-min">{e.minutes}m</b>
+                    </span>
+                  </span>
+                </div>
+              ))}
+              {spot.length > 0 && (
+                <span className="rr-spot">
+                  {spot.map((e) => (
+                    <span key={e.id}>
+                      + {e.name} <b className="rr-min">{e.minutes}m</b>
+                    </span>
+                  ))}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
       {dnp.length > 0 && (
         <p className="rr-dnp">
           <span className="rr-roster-label">Did not play</span>
