@@ -543,12 +543,34 @@ export const LATE_TUNING = {
  * or spot-up shooter made to create loses most (~0.4) — so a five with no one to take the shots
  * pays for it, and a star beside specialists does not. By his share of unassisted makes. A smaller
  * share of the ball (a star among stars) keeps the plain 0.25 gain for everyone.
+ * 2026-10-09: real seasons put both ends lower (`SCALE_TUNING`): ~0.15 for a role player made to
+ * create, ~0 for a creator, and no general gain for giving the ball up.
  */
 export const STAR_TUNING = {
-  usageCostMax: 0.4,
-  usageCostMin: 0.1,
+  usageCostMax: 0.15,
+  usageCostMin: 0,
   creatorShare: 0.6,
 };
+/**
+ * 2026-10-09, scalability (the user: "jak ktoś z pierwszej opcji skaluje się na 2 albo 3, a 3 opcja
+ * na 4-5"). Measured on the same player in consecutive seasons (8,217 pairs since 1980, age and
+ * regression to the mean held fixed): a smaller share of the ball does not make a player more
+ * efficient. Spot-up shooters gain a little (~0.05 TS points per usage point given up), creators and
+ * passers lose a little (~0.1: their good shots came from having the ball), everyone else ~0. The
+ * game used to give everyone +0.25, which made a five of stars free (each gave up the ball and
+ * shot better). A bigger share costs role players ~0.15 per point and real creators ~0
+ * (`STAR_TUNING`, which had 0.4 and 0.1). By the player's spacing (`shooter`) and his share of
+ * unassisted makes (`creator`, as in `STAR_TUNING`).
+ */
+export const SCALE_TUNING = {
+  shooter: 0.06,
+  creator: 0.08,
+};
+function usageGiveUpScale(span: PlayerSpan, ownShare: number): number {
+  const shooter = Math.max(0, Math.min(1, (teamSpacingValue(span) - 35) / 25));
+  const creator = Math.min(1, ownShare / STAR_TUNING.creatorShare);
+  return (SCALE_TUNING.shooter * shooter - SCALE_TUNING.creator * creator) / 0.25;
+}
 /**
  * Step 3b-B: a star beats good defense more often than anyone else — what makes him worth more
  * against a good team. The cut a defense takes from his shots (contests, help, closeouts, fewer
@@ -928,6 +950,8 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       return Math.max(0.02, 1 - ((1 - r3) * habits[i].two + r3 * habits[i].three));
     });
     const usageCost = owns.map(usageCostScale);
+    const giveUp = five.map((p, i) => usageGiveUpScale(p.span, owns[i]));
+    const usageGain = lines.map((l, i) => contextGain(l.usageDelta * (l.usageDelta < 0 ? usageCost[i] : giveUp[i])));
     const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
     const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length);
     court = five.map((player, i) => ({
@@ -935,8 +959,8 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) + edges[i].two * (setups[i].two - habits[i].two) + anchor)),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS)),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor)),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
