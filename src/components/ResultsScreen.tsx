@@ -313,7 +313,6 @@ function HeroResult({
   quote,
   report,
   standings,
-  aiEdge,
   onNewDraft,
 }: {
   teamName: string;
@@ -352,8 +351,6 @@ function HeroResult({
   quote: DeskVoice | null;
   report: ReactNode;
   standings: ReactNode;
-  /** "Where the AI beat you" (yours only). */
-  aiEdge?: ReactNode;
   onNewDraft?: () => void;
 }) {
   const [challengeCopied, setChallengeCopied] = useState(false);
@@ -701,18 +698,15 @@ function HeroResult({
         </button>
       )}
     </div>
-    {/* 2026-10-08, the user: first where the AI was better, then how the field finished; the
-        roster and the why after that (the playoff-odds talk sits last, in the report's extras). */}
-    {aiEdge}
+    <h3 className="rr-section">{isHuman ? 'Your roster' : 'Roster'}</h3>
+    <RosterGrid team={rosterTeam} />
+    <h3 className="rr-section">{rank === 1 ? (isHuman ? 'Why you won' : 'Why they won') : isHuman ? 'Why you finished here' : 'Why they finished here'}</h3>
+    {report}
     <h3 className="rr-section">
       Final standings
       <small>Series = your chance to beat them in a best-of-7</small>
     </h3>
     {standings}
-    <h3 className="rr-section">{isHuman ? 'Your roster' : 'Roster'}</h3>
-    <RosterGrid team={rosterTeam} />
-    <h3 className="rr-section">{rank === 1 ? (isHuman ? 'Why you won' : 'Why they won') : isHuman ? 'Why you finished here' : 'Why they finished here'}</h3>
-    {report}
       {shareOpen && (
         <ShareModal
           onClose={() => setShareOpen(false)}
@@ -1370,46 +1364,37 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       />
     ) : null;
 
-  // 2026-10-08, the user ("gracza bardziej interesuje na początku gdzie AI było lepsze"): right
-  // under the result, the three scores where an AI team beat yours by the most, and which team.
-  // Won it all: where the field came closest instead.
-  const aiEdge = (() => {
-    if (!heroRanked?.team.isHuman) return null;
-    const mine = profileRows(heroRanked.breakdown);
-    const rivals = ranked.filter((r) => r.team.id !== heroRanked.team.id);
-    const rows = mine
-      .map((row, k) => {
-        const best = rivals.reduce((top, r) => (profileRows(r.breakdown)[k].value > profileRows(top.breakdown)[k].value ? r : top), rivals[0]);
-        const theirs = profileRows(best.breakdown)[k].value;
-        return { label: row.label, mine: Math.round(row.value), theirs: Math.round(theirs), team: best.team, gap: Math.round(theirs) - Math.round(row.value) };
-      })
-      .sort((x, y) => y.gap - x.gap)
-      .slice(0, 3);
-    const beaten = rows.some((r) => r.gap > 0);
+  // 2026-10-08, the user ("gracza bardziej interesuje na początku gdzie AI było lepsze niż dlaczego
+  // w PO mamy mniejsze szanse"): an opened rival starts with the scores where they beat you, by how
+  // much; then your series odds against them, their roster and their report.
+  const humanRanked = ranked.find((r) => r.team.isHuman);
+  const whereTheyBeatYou = (theirs: ScoreBreakdown) => {
+    if (!humanRanked) return null;
+    const mine = profileRows(humanRanked.breakdown);
+    const rows = profileRows(theirs)
+      .map((row, k) => ({ label: row.label, theirs: Math.round(row.value), mine: Math.round(mine[k].value) }))
+      .map((r) => ({ ...r, gap: r.theirs - r.mine }))
+      .filter((r) => r.gap > 0)
+      .sort((x, y) => y.gap - x.gap);
     return (
-      <>
-        <h3 className="rr-section">{beaten ? 'Where the AI beat you' : 'Where the AI came closest'}</h3>
-        <div className="rr-edge">
-          {rows.map((r) => {
-            const t = displayTeam(r.team);
-            return (
-              <div className="rr-edge-row" key={r.label}>
-                <span className="rr-edge-label">{r.label}</span>
-                <TeamMark code={codeByTeamId.get(r.team.id) ?? ''} name={t.name} />
-                <span className="rr-edge-team">
-                  <FitTeam name={teamLabel(t)} code={codeByTeamId.get(r.team.id)} />
-                  <small>
-                    {r.theirs} vs your {r.mine}
-                  </small>
-                </span>
-                <b className={r.gap > 0 ? 'is-bad' : 'is-good'}>{r.gap > 0 ? `+${r.gap}` : r.gap === 0 ? '=' : r.gap}</b>
-              </div>
-            );
-          })}
-        </div>
-      </>
+      <div className="rr-edge">
+        <span className="rr-edge-title">{rows.length > 0 ? 'Where they beat you' : 'They beat you nowhere'}</span>
+        {rows.map((r) => (
+          <div className="rr-edge-row" key={r.label}>
+            <span className="rr-edge-label">{r.label}</span>
+            <span className="rr-edge-bars" aria-label={`${r.theirs} against your ${r.mine}`}>
+              <i className="is-them" style={{ width: `${Math.max(0, Math.min(100, r.theirs))}%` }} />
+              <i className="is-you" style={{ width: `${Math.max(0, Math.min(100, r.mine))}%` }} />
+            </span>
+            <span className="rr-edge-nums">
+              {r.theirs} <small>vs {r.mine}</small>
+            </span>
+            <b>+{r.gap}</b>
+          </div>
+        ))}
+      </div>
     );
-  })();
+  };
 
   const standings = (
     <div className="rr-standings">
@@ -1451,7 +1436,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 {style.label && <span className="rr-stat">Style<b className="rr-stat-text">{style.label}</b></span>}
                 {style.failureMode && <span className="rr-stat">Main risk<b className="rr-stat-text">{style.failureMode}</b></span>}
               </div>
-              <RosterGrid team={shownTeam} />
+              {whereTheyBeatYou(breakdown)}
               {vs && humanStyle && theirStyle && humanFit && (
                 <VsYou
                   seriesPct={seriesPct ?? 50}
@@ -1460,6 +1445,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   clashes={styleClashBreakdown(humanStyle, theirStyle).map((c) => ({ label: CLASH_LABELS[c.key], net: c.a - c.b }))}
                 />
               )}
+              <RosterGrid team={shownTeam} />
               <TeamReport
                 profile={profileRows(breakdown)}
                 comp={bestHistoricalComp(shownTeam, breakdown, fit)}
@@ -1528,7 +1514,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           quote={heroVoices[0] ?? null}
           report={heroReport}
           standings={standings}
-          aiEdge={aiEdge}
           onNewDraft={onRematch ? () => onRematch() : undefined}
         />
       )}
