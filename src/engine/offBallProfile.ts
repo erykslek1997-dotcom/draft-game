@@ -1,5 +1,6 @@
 import type { OffensiveArchetype, PlayerSpan } from '../data/schema';
 import profile from '../data/offBallProfile.json';
+import cutting from '../data/cuttingProfile.json';
 
 /**
  * How a perimeter shooter gets his shots off the ball (`scripts/buildOffBallProfile.ts`): the share
@@ -33,4 +34,21 @@ export function offBallShooterLabel(span: PlayerSpan): OffensiveArchetype | null
 export function hasMovementEvidence(span: PlayerSpan): boolean {
   const row = PROFILE[span.id];
   return !!row && row[1] !== 'model' && row[0] / 1000 >= OFF_BALL_SHOOTER_BANDS.movement;
+}
+
+const CUTTING = cutting as unknown as Record<string, [number, string]>;
+/** Share of a perimeter player's plays that were cuts (NBA.com 2015+, else the listed historical
+ * cutters — `historicalCutters.ts`), or null when nothing is known. Descriptions only. */
+export function cutShare(span: PlayerSpan): number | null {
+  const row = CUTTING[span.id];
+  return row ? row[0] / 1000 : null;
+}
+
+/** True when the share was measured (NBA.com play types), not estimated or listed — only a measured
+ * share is quoted as a number in a description. */
+export function movementMeasured(span: PlayerSpan): boolean {
+  return PROFILE[span.id]?.[1] === 'nba';
+}
+export function cutMeasured(span: PlayerSpan): boolean {
+  return CUTTING[span.id]?.[1] === 'nba';
 }

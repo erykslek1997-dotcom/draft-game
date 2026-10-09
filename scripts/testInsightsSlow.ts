@@ -65,9 +65,7 @@ const contradictoryPairs = [
   ['POA_DEFENDER_PRESENT', 'NO_POA_DEFENDER'],
   ['WING_STOPPER_PRESENT', 'NO_WING_STOPPER'],
   ['ELITE_RIM_PROTECTION', 'NO_RIM_PROTECTOR'],
-  ['NO_MAJOR_STRUCTURAL_HOLE', 'MULTIPLE_STRUCTURAL_HOLES'],
   ['NO_MAJOR_STRUCTURAL_HOLE', 'MULTIPLE_NON_SPACERS'],
-  ['STAR_POWER_WITHOUT_USAGE_COLLISION', 'STAR_POWER_WITH_USAGE_COLLISION'],
   // 2026-09-17, real playtester feedback ("generally writes contradictory things") triggered a
   // full audit of every strength/concern pair — these 9 were confirmed live (synthetic snapshots
   // that satisfied both sides simultaneously, run through the real `generateRosterInsights`)
@@ -75,23 +73,16 @@ const contradictoryPairs = [
   // silently reopen any of them without this test catching it.
   ['NO_MAJOR_STRUCTURAL_HOLE', 'WEAK_STARTING_REBOUNDING'],
   ['SPACING_DISTRIBUTED', 'MULTIPLE_NON_SPACERS'],
-  ['MULTIPLE_CREATION_SOURCES', 'ELITE_SPACING_WEAK_CREATION'],
   ['DEAD_NINTH_SLOT_ACCEPTABLE', 'STRONG_CORE_FRAGILE_ROTATION'],
   ['ELITE_PERIMETER_DEFENSE', 'NO_WING_STOPPER'],
   ['ELITE_RIM_PROTECTION', 'SINGLE_RIM_PROTECTOR_DEPENDENCY'],
-  ['BALANCED_DEFENSIVE_COVERAGE', 'DEFENSIVE_WEAK_LINK'],
-  ['OFFENSIVE_ROLES_COMPLEMENTARY', 'TOO_MANY_FINISHERS'],
-  ['SECONDARY_CREATION_PRESENT', 'CREATION_SHORTAGE'],
   // 2026-09-25, found in a 192-team sweep of the displayed lists (see insights.ts selectForDisplay).
   ['DEFENSIVE_COVERAGE_CAPACITY_ELITE', 'MULTIPLE_DEFENSIVE_WEAK_LINKS'],
   ['ELITE_DEFENSE_LOW_FGA_COST', 'MULTIPLE_DEFENSIVE_WEAK_LINKS'],
-  ['SPACING_DISTRIBUTED', 'GOOD_SPACING_BUT_ONE_NONSHOOTER_BOTTLENECK'],
   ['ELITE_PRIMARY_CREATOR', 'ELITE_SPACING_WEAK_CREATION'],
-  ['LOW_USAGE_COMPLEMENTS', 'STAR_POWER_WITH_USAGE_COLLISION'],
-  ['LOW_USAGE_COMPLEMENTS', 'MULTIPLE_HIGH_USAGE_PLAYERS'],
-  ['STAR_POWER_WITHOUT_USAGE_COLLISION', 'MULTIPLE_HIGH_USAGE_PLAYERS'],
   ['CLOSING_FIVE_STABLE', 'NON_SPACER_OVERLOAD'],
 ] as const;
+// 2026-10-09: pairs with detectors removed after scripts/validateDescriptions.ts dropped.
 let respectsCap = true;
 let strengthsUnique = true;
 let concernsUnique = true;

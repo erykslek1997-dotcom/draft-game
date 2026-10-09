@@ -24,8 +24,13 @@ import { draftPool } from '../src/data/draftPool';
 import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
 import { getHeightInches } from '../src/data/heightLookup';
 import { historicalMovementShooterEvidenceForSpan } from '../src/data/historicalMovementShooters';
+import { historicalCutterForSpan } from '../src/data/historicalCutters';
 
 const OUTPUT = resolve(import.meta.dirname, '../src/data/offBallProfile.json');
+const CUT_OUTPUT = resolve(import.meta.dirname, '../src/data/cuttingProfile.json');
+/** A listed pre-2015 cutter's share of plays from cuts, by tier — where the 2015+ perimeter cutters
+ * sit (Bruce Brown 0.25, Tony Allen 0.21, Mikal Bridges 0.11, Klay 0.09). */
+const LIST_CUT_SHARE = { primary: 0.16, parttime: 0.09 };
 const PLAY_TYPES = resolve(import.meta.dirname, '../src/data/raw/nbaStats/playtypes_player_offense.csv');
 /** Fewer play-type possessions than this over the span and the model reads him instead. */
 const MIN_POSSESSIONS = 400;
@@ -44,6 +49,7 @@ function endYear(s: PlayerSpan): number {
 
 // 1. Real shares: player -> season start year -> [moving, all] possessions.
 const real = new Map<string, Map<number, [number, number]>>();
+const realCut = new Map<string, Map<number, number>>();
 const lines = readFileSync(PLAY_TYPES, 'utf8').trim().split(/\r?\n/);
 const head = lines[0].split(',');
 const col = (k: string) => head.indexOf(k);
@@ -58,6 +64,11 @@ for (const line of lines.slice(1)) {
   if (c[col('PLAY_TYPE')] === 'OffScreen' || c[col('PLAY_TYPE')] === 'Handoff') cell[0] += poss;
   byYear.set(year, cell);
   real.set(name, byYear);
+  if (c[col('PLAY_TYPE')] === 'Cut') {
+    const cuts = realCut.get(name) ?? new Map<number, number>();
+    cuts.set(year, (cuts.get(year) ?? 0) + poss);
+    realCut.set(name, cuts);
+  }
 }
 /** The player's whole measured career, when it is long enough to say anything. */
 function careerShare(s: PlayerSpan): number | null {
@@ -143,3 +154,29 @@ for (const { s, share } of measured) {
 }
 writeFileSync(OUTPUT, `${JSON.stringify(out).replace(/\],"/g, '],\n"')}\n`);
 console.log(`offBallProfile.json: ${Object.keys(out).length} perimeter shooter spans (nba ${counts.nba}, blend ${counts.blend}, model ${counts.model}, list ${counts.list})`);
+
+// Cutting, perimeter players only (a big's cuts are rolls and dunker-spot dives, his label already
+// says so): the NBA.com Cut share, else the listed historical cutters. Nothing for anyone else — the
+// box score can't see a wing's cuts (checked on 2015+: rank agreement 0.66 for wings, 0.84 for bigs).
+const cutOut: Record<string, [number, 'nba' | 'list']> = {};
+const cutCounts = { nba: 0, list: 0 };
+for (const s of draftPool) {
+  if (!isPerimeter(s)) continue;
+  const byYear = real.get(normalizePlayerName(s.playerName));
+  const cuts = realCut.get(normalizePlayerName(s.playerName));
+  let all = 0;
+  let cut = 0;
+  for (let y = startYear(s); y < endYear(s); y++) { all += byYear?.get(y)?.[1] ?? 0; cut += cuts?.get(y) ?? 0; }
+  if (all >= MIN_POSSESSIONS) {
+    cutOut[s.id] = [Math.round((1000 * cut) / all), 'nba'];
+    cutCounts.nba++;
+    continue;
+  }
+  const listed = historicalCutterForSpan(s);
+  if (listed) {
+    cutOut[s.id] = [Math.round(1000 * LIST_CUT_SHARE[listed.tier]), 'list'];
+    cutCounts.list++;
+  }
+}
+writeFileSync(CUT_OUTPUT, `${JSON.stringify(cutOut).replace(/\],"/g, '],\n"')}\n`);
+console.log(`cuttingProfile.json: ${Object.keys(cutOut).length} perimeter spans (nba ${cutCounts.nba}, list ${cutCounts.list})`);

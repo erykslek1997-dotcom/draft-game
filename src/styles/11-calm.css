@@ -710,6 +710,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .ss-recap { display: flex; flex-direction: column; gap: 16px; }
 .ss-headline { font: 800 32px/1 var(--rr-serif); margin: 2px 0 8px; max-width: 820px; }
 .ss-lede { color: var(--at-ink-soft); margin: 0; max-width: 680px; font-size: 14px; line-height: 1.5; }
+.ss-story { margin-top: 8px; }
 .ss-beats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
 .ss-beat { background: var(--calm-raised-2); border: 1px solid var(--calm-line); border-radius: 12px; padding: 12px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ss-beat > span { font: 700 12px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); }
@@ -956,3 +957,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
   .rr-roster-entries { gap: 8px; }
   .rr-spot { grid-column: 1 / -1; }
 }
+
+/* 2026-10-09: the series preview (two sentences on styles) and, once over, how it went. */
+.pl-preview { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
+.rr-season-line { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--at-ink); }
