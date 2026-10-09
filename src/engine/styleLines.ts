@@ -118,8 +118,10 @@ export function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
   return out;
 }
 
-/** The style line the Scout reads, if any: the first one, the shooters before the cutters. */
-export function scoutStyleLine(team: TeamFeatureSnapshot): StyleLine | null {
-  return styleLines(team)[0] ?? null;
+/** The style line the Scout reads, if any: the first one, the shooters before the cutters. Shooter
+ * lines give way when the report already credits the same movement (`MOVEMENT_SHOOTING_GRAVITY`). */
+export function scoutStyleLine(team: TeamFeatureSnapshot, shownIds: readonly string[] = []): StyleLine | null {
+  const lines = styleLines(team).filter((l) => !(shownIds.includes('MOVEMENT_SHOOTING_GRAVITY') && l.id === 'MOVERS'));
+  return lines[0] ?? null;
 }
 

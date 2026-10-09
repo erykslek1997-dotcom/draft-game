@@ -13,7 +13,7 @@ import { playableMinutesCap, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes
 import { allAssignments, primaryStarters, benchWithMinutes, totalMinutesForPlayer, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
 import { projectedNetRating } from './netRatingProjection';
 import { predatesThreePointLine, stealsBlocksFullyRecorded } from './era';
-import { benchDepthScore, talentScore } from './scoring';
+import { benchDepthScore, talentScore, realUsageShare } from './scoring';
 import { draftPool as allPoolPlayers } from '../data/draftPool';
 import { defensiveHuntability } from './defensiveHuntability';
 import { fitScore, shadowRoleProfileForDiagnostics } from './fit';
@@ -132,6 +132,7 @@ function toPlayerFeature(
     starterSlot,
     spacingImpact: normalize(computeSpacing(p), SPACING_LO, SPACING_HI),
     movementShooting: movement.score,
+    usagePct: 100 * realUsageShare(p),
     movementShare: movementShare(p) ?? undefined,
     cutShare: cutShare(p) ?? undefined,
     movementShootingConfidence: movement.confidence,

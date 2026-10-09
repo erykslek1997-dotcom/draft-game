@@ -313,6 +313,7 @@ function HeroResult({
   profile,
   quote,
   report,
+  seasonLine,
   standings,
   onNewDraft,
 }: {
@@ -343,6 +344,8 @@ function HeroResult({
    * state) rather than threading every individual piece of that state down as its own prop — the
    * simplest way for a child this deep to render a parent-owned slot without duplicating state. */
   seasonSimSlot?: ReactNode;
+  /** 2026-10-09, descriptions plan: once the season is played, whether it agreed with this grade. */
+  seasonLine?: string | null;
   /** 2026-10-08, results look C: the hero's team mark and roster, the Draft Desk line under the
    * hero, the team report (profile + desk voices) and the standings with every rival's report. */
   teamCode: string;
@@ -702,6 +705,7 @@ function HeroResult({
     <h3 className="rr-section">{isHuman ? 'Your roster' : 'Roster'}</h3>
     <RosterGrid team={rosterTeam} />
     <h3 className="rr-section">{rank === 1 ? (isHuman ? 'Why you won' : 'Why they won') : isHuman ? 'Why you finished here' : 'Why they finished here'}</h3>
+    {seasonLine && <p className="rr-season-line">{seasonLine}</p>}
     {report}
     <h3 className="rr-section">
       Final standings
@@ -917,7 +921,7 @@ function yourVoices({
   return voicesFor({
     strengths: insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.message),
     concerns: insights.concerns.slice(0, podium ? 1 : 2).map((i) => i.message),
-    style: scoutStyleLine(snapshot)?.text,
+    style: scoutStyleLine(snapshot, insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.id))?.text,
     tip: !podium && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined,
     strengthLabel: won ? 'what won it' : podium ? 'what put you on the podium' : 'what worked',
     concernLabel: podium ? 'where a rival could still hurt you' : 'what held you back',
@@ -933,7 +937,7 @@ function theirVoices(team: Team, breakdown: ScoreBreakdown, rank: number, fieldS
   return voicesFor({
     strengths: insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.message),
     concerns: insights.concerns.slice(0, 2).map((i) => i.message),
-    style: scoutStyleLine(snapshot)?.text,
+    style: scoutStyleLine(snapshot, insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.id))?.text,
     strengthLabel: rank === 1 ? 'what won it' : 'what works',
     concernLabel: 'what can sink them',
     third: true,
@@ -1359,6 +1363,19 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     glass: 'Rebounding',
   };
 
+  // 2026-10-09, descriptions plan: once the season has been played, one line on whether it agreed
+  // with the grade — within two places of the draft rank, or not.
+  const seasonVerdictLine = (() => {
+    if (!heroRanked?.team.isHuman || seasonState.status !== 'done') return null;
+    const place = seasonState.season.standings.findIndex((r) => r.teamId === heroRanked.team.id) + 1;
+    if (place < 1) return null;
+    const row = seasonState.season.standings[place - 1];
+    const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+    return Math.abs(place - heroRanked.rank) <= 2
+      ? `The season agreed: ${row.wins}-${row.losses}, ${ord(place)}.`
+      : `The season disagreed: ${row.wins}-${row.losses}, ${ord(place)} (the draft grade had you ${ord(heroRanked.rank)}).`;
+  })();
+
   const heroReport =
     heroRanked && heroFit ? (
       <TeamReport
@@ -1518,6 +1535,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           profile={profileRows(heroRanked.breakdown)}
           quote={heroVoices[0] ?? null}
           report={heroReport}
+          seasonLine={seasonVerdictLine}
           standings={standings}
           onNewDraft={onRematch ? () => onRematch() : undefined}
         />

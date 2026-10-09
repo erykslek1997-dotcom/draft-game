@@ -957,3 +957,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
   .rr-roster-entries { gap: 8px; }
   .rr-spot { grid-column: 1 / -1; }
 }
+
+/* 2026-10-09: the series preview (two sentences on styles) and, once over, how it went. */
+.pl-preview { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
+.rr-season-line { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--at-ink); }

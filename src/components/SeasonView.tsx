@@ -11,7 +11,7 @@ import {
   type SimProgress,
 } from '../engine/liveSeason';
 import { gameWinProbability, seriesWinProbability } from '../engine/matchup';
-import { seasonStory } from '../engine/seasonStory';
+import { seasonStory, seriesPreview, seriesVerdict } from '../engine/seasonStory';
 import { generateRosterInsights, insightContextFor, type RosterInsight } from '../engine/insights';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
 import { rankTeams } from '../engine/scoring';
@@ -1054,9 +1054,13 @@ function SeriesPanel({
       <span className="pl-vs-name">{byId.get(id)?.name}</span>
     </div>
   );
+  const preview = seriesPreview(season, youId, opp);
+  const finished = played >= s.games.length && s.games.length > 0;
+  const verdict = finished ? seriesVerdict(s.games.map((g) => (yourSide === 0 ? g.final : [g.final[1], g.final[0]]) as [number, number]), s.winnerId === youId) : null;
   return (
     <div className="pl-card is-gold">
       <div className="pl-label is-gold">{status}</div>
+      {(verdict || preview.length > 0) && <p className="pl-preview">{verdict ?? preview.join(' ')}</p>}
       <div className="pl-vs">
         {side(youId, false)}
         <span className="pl-vs-mid">vs</span>

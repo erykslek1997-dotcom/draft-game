@@ -1729,6 +1729,11 @@ export function teamFitCompositeScore(fit: number, offense: number, defense: num
  */
 export const BALL_LOAD_TUNING = { perUsage: 4, ref: 1.25, maxBonus: 1 };
 const SPAN_CONTEXT = spanContext as unknown as Record<string, number[]>;
+/** A player's real share of his team's possessions (`spanContext.json`), 0.16 when unknown. */
+export function realUsageShare(span: PlayerSpan): number {
+  return (SPAN_CONTEXT[span.id]?.[1] ?? 160) / 1000;
+}
+
 /** Real usages of the five players with the most minutes, added up (1.0 = one ball). */
 export function topFiveUsageLoad(team: Team): number {
   if (!team.rotation) return BALL_LOAD_TUNING.ref;
@@ -1739,7 +1744,7 @@ export function topFiveUsageLoad(team: Team): number {
     .sort((a, b) => b.min - a.min)
     .slice(0, 5);
   if (top.length < 5) return BALL_LOAD_TUNING.ref;
-  return top.reduce((sum, { p }) => sum + (SPAN_CONTEXT[p.id]?.[1] ?? 160) / 1000, 0);
+  return top.reduce((sum, { p }) => sum + realUsageShare(p), 0);
 }
 export function ballLoadAdjustment(team: Team): number {
   return Math.min(BALL_LOAD_TUNING.maxBonus, -BALL_LOAD_TUNING.perUsage * (topFiveUsageLoad(team) - BALL_LOAD_TUNING.ref));

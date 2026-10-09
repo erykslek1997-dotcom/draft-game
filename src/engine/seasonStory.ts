@@ -129,3 +129,49 @@ export function seasonStory(season: LiveSeasonResult, teamId: string, report: Ro
   if (worst && out.length < 4) out.push(`The weak spot: ${worst.text}, ${ord(worst.place)} of ${worst.of}.`);
   return out.slice(0, 4);
 }
+
+/** What your side's strength meets on theirs: offense against their defense and back, boards against boards. */
+const OPPOSITE: Partial<Record<StoryStat['key'], StoryStat['key']>> = { offense: 'defense', defense: 'offense', threes: 'defense', boards: 'boards' };
+
+/**
+ * Two sentences before a series: the opponent's best weapon against what you have for it, and
+ * yours against theirs. Places only, so the numbers can be checked in the standings.
+ */
+export function seriesPreview(season: LiveSeasonResult, youId: string, oppId: string): string[] {
+  const mine = new Map(storyStats(season, youId).map((s) => [s.key, s]));
+  const theirs = new Map(storyStats(season, oppId).map((s) => [s.key, s]));
+  const best = (stats: Map<StoryStat['key'], StoryStat>) =>
+    [...stats.values()].filter((s) => s.key in OPPOSITE).sort((a, b) => a.place - b.place)[0];
+  const out: string[] = [];
+  const theirBest = best(theirs);
+  if (theirBest) {
+    const counter = mine.get(OPPOSITE[theirBest.key]!);
+    out.push(
+      `Their weapon: ${theirBest.text}, ${ord(theirBest.place)} in the league${counter ? `. Against it, your ${SUBJECT_NAME[counter.key].replace('the ', '')}: ${counter.text}, ${ord(counter.place)}` : ''}.`,
+    );
+  }
+  const yourBest = best(mine);
+  if (yourBest && yourBest.key !== theirBest?.key) {
+    const counter = theirs.get(OPPOSITE[yourBest.key]!);
+    out.push(`Yours: ${yourBest.text}, ${ord(yourBest.place)}${counter ? `, against their ${SUBJECT_NAME[counter.key].replace('the ', '')} (${ord(counter.place)})` : ''}.`);
+  }
+  return out;
+}
+
+/** One sentence once a series is over: how it was won or lost. Margins from your side. */
+export function seriesVerdict(finals: [number, number][], youWon: boolean): string {
+  const margins = finals.map(([a, b]) => a - b);
+  const wins = margins.filter((m) => m > 0).length;
+  const losses = margins.length - wins;
+  const avg = margins.reduce((s, m) => s + m, 0) / Math.max(1, margins.length);
+  const close = margins.filter((m) => Math.abs(m) <= 5).length;
+  const record = youWon ? `${wins}-${losses}` : `${losses}-${wins}`;
+  if (youWon) {
+    return close >= 2
+      ? `Won ${record}, the hard way: ${close} of the ${margins.length} games were decided by five or fewer.`
+      : `Won ${record}, by ${f1(Math.abs(avg))} points a game.`;
+  }
+  return close >= 2
+    ? `Lost ${record}. ${close} of the ${margins.length} games came down to five points or fewer.`
+    : `Lost ${record}, outscored by ${f1(Math.abs(avg))} a game.`;
+}
