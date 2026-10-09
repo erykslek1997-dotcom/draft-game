@@ -37,6 +37,7 @@ import { defensiveCohesion } from './defensiveCohesion';
 import { teamGlass } from './teamGlass';
 import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD } from './fit';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
+import spanContext from '../data/spanContext.json';
 export type { FitScoreResult, FitScoreComponents } from './fit';
 
 /** Minimum defensive-impact score (box-score activity + rebounding + role weight) required,
@@ -1714,6 +1715,34 @@ export function teamFitCompositeScore(fit: number, offense: number, defense: num
   return fit * FIT_COHERENCE_WEIGHT + offense * FIT_OFFENSE_WEIGHT + defense * FIT_DEFENSE_WEIGHT;
 }
 
+/**
+ * 2026-10-09, scalability (the user: superteams that didn't work outnumber the ones that did). Real
+ * teams whose five biggest-minute players brought more usage than one ball holds played a little
+ * under their talent: ~1.7 points a game per 1.0 of their real usages added up (739 team-seasons
+ * 1952-2025, each player read from his span before that season; weak, t ~-1.3, but the same way as
+ * one 24%+ usage player more costing ~0.3, t ~-2). The engine had it the other way: such teams
+ * did ~6.7 points better per 1.0 than their O-TAL and D-TAL said. `perUsage` overall points per
+ * 1.0 above `ref` (the drafted teams' typical top five) bring the season onto the real slope; a
+ * team below it gains at most `maxBonus`.
+ */
+export const BALL_LOAD_TUNING = { perUsage: 7.2, ref: 1.25, maxBonus: 1 };
+const SPAN_CONTEXT = spanContext as unknown as Record<string, number[]>;
+/** Real usages of the five players with the most minutes, added up (1.0 = one ball). */
+export function topFiveUsageLoad(team: Team): number {
+  if (!team.rotation) return BALL_LOAD_TUNING.ref;
+  const rotation = team.rotation;
+  const top = team.roster
+    .map((p) => ({ p, min: totalMinutesForPlayer(rotation, p.id) }))
+    .filter((x) => x.min > 0)
+    .sort((a, b) => b.min - a.min)
+    .slice(0, 5);
+  if (top.length < 5) return BALL_LOAD_TUNING.ref;
+  return top.reduce((sum, { p }) => sum + (SPAN_CONTEXT[p.id]?.[1] ?? 160) / 1000, 0);
+}
+export function ballLoadAdjustment(team: Team): number {
+  return Math.min(BALL_LOAD_TUNING.maxBonus, -BALL_LOAD_TUNING.perUsage * (topFiveUsageLoad(team) - BALL_LOAD_TUNING.ref));
+}
+
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
   const benchDepth = benchDepthScore(team);
@@ -1724,7 +1753,8 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const rotation = rotationScore(team);
   const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +
-    teamFitCompositeScore(fit.score, offense, defense) * (1 - QUALITY_FIT_SPLIT);
+    teamFitCompositeScore(fit.score, offense, defense) * (1 - QUALITY_FIT_SPLIT) +
+    ballLoadAdjustment(team);
   const overall = Math.round(overallExact);
   return {
     talentScore: talent,
