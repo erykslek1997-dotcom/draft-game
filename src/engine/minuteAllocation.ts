@@ -37,7 +37,10 @@ const USEFUL_BENCH_TALENT_FLOOR = 55;
 const USEFUL_BENCH_BONUS = 25;
 const PAST_OPTIMAL_TALENT_SHARE = 0.5;
 const PAST_OPTIMAL_FLAT_COST = 12;
-const PAST_CEILING_COST = 150;
+/** 2026-10-09: 150 -> 200. A role player 5+ minutes past his limit (Horry 36 of 24, TAL 55) came out
+ * cheaper than a star's tired 39th-40th minute off his position (Tatum, ~185): the floor is what
+ * keeps the over-limit minute the dearer of the two for a low-TAL player, as `OVERRUN_HEAVY_*` says. */
+const PAST_CEILING_COST = 200;
 const OVERRUN_FREE_TALENT_SHARE = 0.95;
 const OVERRUN_NOTICEABLE_TALENT_SHARE = 1.3;
 /** 2026-10-02: raised from 1.8 with the fatigue curve — a star's tired 39th-40th minute now costs
