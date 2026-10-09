@@ -20,7 +20,8 @@ import { teamSpacingValue } from './midrangeGravity';
  *   "powinno zależeć od tego jak silnik ocenia skład"): each player's claim is his own usage
  *   weighted by his O-TAL against the five's best scorer, each held between 0.75x and 1.05x his own
  *   usage (never above 45%), what a capped player cannot take flowing to the others. A shot given up
- *   is a slightly better shot taken: +0.25 TS points per usage point.
+ *   is a slightly better shot taken: +0.25 TS points per usage point. (2026-10-09: the live game
+ *   rescales this per player from real seasons, `SCALE_TUNING` in `liveGame.ts`.)
  */
 const CONTEXT = contextData as unknown as Record<string, [number, number, number, number, number, number]>;
 

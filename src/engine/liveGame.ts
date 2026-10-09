@@ -429,8 +429,9 @@ export const DEFENSE_TUNING = {
   /** A player's real percentages already hold his breaks and putbacks; the half court gives back
    * what the game now adds there, so his season lands on his own numbers. */
   /* 2026-10-08: 0.99 -> 0.983 — the milder fatigue (stage 3) left more shots going in; the league
-   * back to ~122 points and TS ~62.4 a team game. */
-  halfCourt: 0.983,
+   * back to ~122 points and TS ~62.4 a team game. 2026-10-09: 0.983 -> 0.994 — giving the ball up no
+   * longer lifts everyone's shooting (`SCALE_TUNING`); the league back where it was. */
+  halfCourt: 0.994,
   turnover: 0.133,
   /** A player's real free-throw rate already holds his trips in the bonus, which the game now
    * plays as their own fouls; shooting fouls give that back, so the league's free throws stay
@@ -543,12 +544,43 @@ export const LATE_TUNING = {
  * or spot-up shooter made to create loses most (~0.4) — so a five with no one to take the shots
  * pays for it, and a star beside specialists does not. By his share of unassisted makes. A smaller
  * share of the ball (a star among stars) keeps the plain 0.25 gain for everyone.
+ * 2026-10-09: real seasons put both ends lower (`SCALE_TUNING`): ~0.15 for a role player made to
+ * create, ~0 for a creator, and no general gain for giving the ball up.
  */
 export const STAR_TUNING = {
-  usageCostMax: 0.4,
-  usageCostMin: 0.1,
+  usageCostMax: 0.15,
+  usageCostMin: 0,
   creatorShare: 0.6,
 };
+/**
+ * 2026-10-09, scalability (the user: "jak ktoś z pierwszej opcji skaluje się na 2 albo 3, a 3 opcja
+ * na 4-5"). Measured on the same player in consecutive seasons (8,217 pairs since 1980, age and
+ * regression to the mean held fixed): a smaller share of the ball does not make a player more
+ * efficient. Spot-up shooters gain a little (~0.05 TS points per usage point given up), creators and
+ * passers lose a little (~0.1: their good shots came from having the ball), everyone else ~0. The
+ * game used to give everyone +0.25, which made a five of stars free (each gave up the ball and
+ * shot better). A bigger share costs role players ~0.15 per point and real creators ~0
+ * (`STAR_TUNING`, which had 0.4 and 0.1). By the player's spacing (`shooter`) and his share of
+ * unassisted makes (`creator`, as in `STAR_TUNING`).
+ */
+export const SCALE_TUNING = {
+  shooter: 0.06,
+  creator: 0.08,
+};
+/**
+ * The five as a whole: more players who need the ball than one ball. Real teams whose top five
+ * brought more usage than 100% between them played a little under their talent (~1.7-2 points a
+ * game per 1.0 of usage over, 739 team-seasons, each player read from his previous span); the game
+ * had it the other way round (+6-7). Every shot of the five on the floor loses `perOverload` FG
+ * points per 1.0 of its players' real usage added up, against the drafted fives' `ref`, so the
+ * league's shooting stays where it was and only the differences between fives move.
+ */
+export const OVERLOAD_TUNING = { perOverload: 0.05, ref: 1.14 };
+function usageGiveUpScale(span: PlayerSpan, ownShare: number): number {
+  const shooter = Math.max(0, Math.min(1, (teamSpacingValue(span) - 35) / 25));
+  const creator = Math.min(1, ownShare / STAR_TUNING.creatorShare);
+  return (SCALE_TUNING.shooter * shooter - SCALE_TUNING.creator * creator) / 0.25;
+}
 /**
  * Step 3b-B: a star beats good defense more often than anyone else — what makes him worth more
  * against a good team. The cut a defense takes from his shots (contests, help, closeouts, fewer
@@ -928,15 +960,18 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       return Math.max(0.02, 1 - ((1 - r3) * habits[i].two + r3 * habits[i].three));
     });
     const usageCost = owns.map(usageCostScale);
+    const giveUp = five.map((p, i) => usageGiveUpScale(p.span, owns[i]));
+    const usageGain = lines.map((l, i) => contextGain(l.usageDelta * (l.usageDelta < 0 ? usageCost[i] : giveUp[i])));
     const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
-    const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length);
+    const overload = -OVERLOAD_TUNING.perOverload * (lines.reduce((sum, l) => sum + l.originalUsage, 0) - OVERLOAD_TUNING.ref);
+    const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload;
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) + edges[i].two * (setups[i].two - habits[i].two) + anchor)),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + contextGain(lines[i].usageDelta * (lines[i].usageDelta < 0 ? usageCost[i] : 1)) * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS)),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor)),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
