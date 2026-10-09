@@ -304,7 +304,10 @@ check(
   quotedDefense.every((i) => !['Oscar Robertson', 'Jerry West', 'Elgin Baylor', 'Bill Russell', 'Wilt Chamberlain'].some((name) => i.message.includes(name))),
   'steals/blocks descriptions never quote a pre-1973-74 player',
 );
-const nonShooterLines = oldSchoolInsights.allActiveInsights.filter((i) => i.message.includes("don't shoot from outside") && i.message.includes('Wilt Chamberlain'));
+// 2026-10-09: the non-shooter lines have several wordings now (insights.ts `vary`), so they are found
+// by detector, not by a phrase.
+const NON_SHOOTER_LINES = new Set(['NON_SPACER_OVERLOAD', 'NO_FRONTCOURT_SPACING', 'MULTIPLE_NON_SPACERS', 'LOW_STARTING_SPACING']);
+const nonShooterLines = oldSchoolInsights.allActiveInsights.filter((i) => NON_SHOOTER_LINES.has(i.id) && i.message.includes('Wilt Chamberlain'));
 check(
   nonShooterLines.length > 0 && nonShooterLines.every((i) => i.message.includes('3-point line')),
   'a pre-1980 non-shooter is described as playing before the 3-point line',
