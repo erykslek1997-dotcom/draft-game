@@ -11,6 +11,10 @@ import {
   type SimProgress,
 } from '../engine/liveSeason';
 import { gameWinProbability, seriesWinProbability } from '../engine/matchup';
+import { seasonStory } from '../engine/seasonStory';
+import { generateRosterInsights, insightContextFor, type RosterInsight } from '../engine/insights';
+import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
+import { rankTeams } from '../engine/scoring';
 import LiveGame, { type LiveMatchup } from './LiveGame';
 import { TeamMark } from './ResultsReport';
 import './BestFive.css';
@@ -123,6 +127,14 @@ function SeasonBody({
   const byId = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const you = teams.find((t) => t.isHuman) ?? teams[0];
   const views = useMemo(() => engineTeamViews(teams), [teams]);
+  // What your draft report said (the results screen's cut), for the season story to check.
+  const report = useMemo((): RosterInsight[] => {
+    const me = rankTeams(teams).find((r) => r.team.isHuman);
+    if (!me) return [];
+    const ins = generateRosterInsights(buildTeamFeatureSnapshot(me.team), undefined, insightContextFor(me.breakdown, me.rank, teams.length));
+    const podium = me.rank <= 3;
+    return [...ins.concerns.slice(0, podium ? 1 : 2), ...ins.strengths.slice(0, podium ? 3 : 2)];
+  }, [teams]);
   const mark: Mark = (id, size = 'sm') => <TeamMark code={codes.get(id) ?? ''} name={byId.get(id)?.name ?? ''} size={size} />;
   const rank = season.standings.findIndex((r) => r.teamId === you.id) + 1;
   const record = season.standings[rank - 1];
@@ -181,7 +193,7 @@ function SeasonBody({
           </button>
         ))}
       </nav>
-      {tab === 'overview' && <Overview season={season} playoffs={playoffs} you={you} rank={rank} byId={byId} views={views} mark={mark} reveal={reveal} onPlayoffs={startPlayoffs} />}
+      {tab === 'overview' && <Overview season={season} playoffs={playoffs} you={you} rank={rank} byId={byId} views={views} mark={mark} reveal={reveal} onPlayoffs={startPlayoffs} report={report} />}
       {tab === 'standings' && <FullStandings season={season} byId={byId} youId={you.id} views={views} mark={mark} />}
       {tab === 'stats' && <Stats teams={teams} season={season} playoffs={finalsDone ? playoffs : null} youId={you.id} mark={mark} />}
       {tab === 'awards' && <Awards season={season} playoffs={finalsDone ? playoffs : null} byId={byId} youId={you.id} codes={codes} />}
@@ -218,6 +230,7 @@ function Overview({
   mark,
   reveal,
   onPlayoffs,
+  report,
 }: {
   season: LiveSeasonResult;
   playoffs: LivePlayoffResult | null;
@@ -228,7 +241,9 @@ function Overview({
   mark: Mark;
   reveal: Reveal;
   onPlayoffs: () => void;
+  report: RosterInsight[];
 }) {
+  const story = seasonStory(season, you.id, report);
   const record = season.standings[rank - 1];
   const eighth = season.standings[7];
   const ninth = season.standings[8];
@@ -289,6 +304,7 @@ function Overview({
         <div className="ss-kicker ss-kicker--gold">The season</div>
         <h2 className="ss-headline">{headline}</h2>
         <p className="ss-lede">{sentence}</p>
+        {story.length > 0 && <p className="ss-lede ss-story">{story.join(' ')}</p>}
         <div className="ss-beats">
           {best && (
             <div className="ss-beat">
