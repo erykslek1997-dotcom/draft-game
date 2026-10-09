@@ -624,6 +624,12 @@ export const DEFENSIVE_ROLE_OVERRIDES: { name: string; spanLabel: string; role: 
  */
 export const OFFENSIVE_ARCHETYPE_OVERRIDES: { name: string; spanLabel: string; archetype: OffensiveArchetype }[] = [
   { name: 'Jalen Williams', spanLabel: '2023-25', archetype: 'Secondary Ball Handler' },
+  // 2026-10-09, the user on the movement relabel ("Raja Bell movement mi nie pasuje"): a corner
+  // spot-up shooter whose box score (6 threes a game at 41-43%, few assists) fooled the model.
+  { name: 'Raja Bell', spanLabel: '2004-06', archetype: 'Stationary Shooter' },
+  { name: 'Raja Bell', spanLabel: '2005-07', archetype: 'Stationary Shooter' },
+  { name: 'Raja Bell', spanLabel: '2006-08', archetype: 'Stationary Shooter' },
+  { name: 'Raja Bell', spanLabel: '2007-09', archetype: 'Stationary Shooter' },
 ];
 
 function applyOffensiveArchetypeOverrides(spans: PlayerSpan[]): PlayerSpan[] {
