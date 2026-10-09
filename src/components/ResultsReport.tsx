@@ -4,8 +4,8 @@ import { allAssignments, primaryStarters } from '../engine/rotation';
 import type { Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import { compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
-import { Face } from './ShotChip';
 import { TeamTile } from './TeamBadge';
+import { Face } from './ShotChip';
 import { FitName } from './FitName';
 
 /**
@@ -43,6 +43,52 @@ interface SlotEntry {
   name: string;
   years: string;
   minutes: number;
+}
+
+export interface LineupEntry {
+  id: string;
+  name: string;
+  years: string;
+  /** Minutes a game, all positions together. */
+  minutes: number;
+  /** Where the minutes went ("PG 9 · SG 11 · SF 11"); for a starter only the extra positions. */
+  where: string;
+}
+
+/**
+ * 2026-10-08, the user (the roster looked flat; "coś pomiędzy A i B"): the starting five, PG to C,
+ * each with all his minutes; then one bench list, most minutes first, each backup once with where
+ * his minutes went (a combo backup used to show up under every position he covered); then whoever
+ * didn't play.
+ */
+export function rosterLineup(team: Team): { starters: (LineupEntry & { slot: Position })[]; bench: LineupEntry[]; dnp: LineupEntry[] } {
+  const firsts = primaryStarters(team);
+  const starterIds = new Set(firsts.map((s) => s.player.id));
+  const bySlot = new Map<string, { slot: Position; minutes: number }[]>();
+  for (const a of allAssignments(team)) {
+    if (a.minutes <= 0) continue;
+    bySlot.set(a.player.id, [...(bySlot.get(a.player.id) ?? []), { slot: a.slot, minutes: Math.round(a.minutes) }]);
+  }
+  const order = (slot: Position) => STARTER_SLOTS.indexOf(slot);
+  const where = (stints: { slot: Position; minutes: number }[]) =>
+    [...stints].sort((x, y) => order(x.slot) - order(y.slot)).map((x) => `${x.slot} ${x.minutes}`).join(' · ');
+  const entry = (p: Team['roster'][number]) => {
+    const stints = bySlot.get(p.id) ?? [];
+    return { id: p.id, name: p.playerName, years: p.spanLabel, minutes: stints.reduce((n, x) => n + x.minutes, 0), stints };
+  };
+  const starters = STARTER_SLOTS.flatMap((slot) => {
+    const first = firsts.find((s) => s.slot === slot);
+    if (!first) return [];
+    const e = entry(first.player);
+    return [{ ...e, slot, where: where(e.stints.filter((x) => x.slot !== slot)) }];
+  });
+  const rest = team.roster.filter((p) => !starterIds.has(p.id)).map(entry);
+  const bench = rest
+    .filter((e) => e.minutes > 0)
+    .sort((x, y) => y.minutes - x.minutes)
+    .map((e) => ({ ...e, where: e.stints.length === 1 ? e.stints[0].slot : where(e.stints) }));
+  const dnp = rest.filter((e) => e.minutes === 0).map((e) => ({ ...e, where: '' }));
+  return { starters, bench, dnp };
 }
 
 /**
@@ -254,22 +300,12 @@ export function TeamReport({
   extras: ReportExtra[];
 }) {
   const [open, setOpen] = useState<string | null>(null);
-  const shown = extras.find((e) => e.id === open);
   return (
     <div className="rr-report">
       <div className={`rr-cols${voices.length > 0 ? '' : ' rr-cols--single'}`}>
         <section className="rr-panel">
           <ProfileBars rows={profile} />
           {comp && <PlaysLike comp={comp} />}
-          {extras.length > 0 && (
-            <div className="rr-extras">
-              {extras.map((e) => (
-                <button key={e.id} type="button" className={`rr-extra-btn${open === e.id ? ' is-on' : ''}`} aria-expanded={open === e.id} onClick={() => setOpen((cur) => (cur === e.id ? null : e.id))}>
-                  {e.label} {open === e.id ? '▴' : '▾'}
-                </button>
-              ))}
-            </div>
-          )}
         </section>
         {voices.length > 0 && (
           <section className="rr-panel">
@@ -277,7 +313,32 @@ export function TeamReport({
           </section>
         )}
       </div>
-      {shown && <div className="rr-extra">{shown.content()}</div>}
+      {/* 2026-10-08, the user (the old accordion read better): each extra opens right under its own
+          row, not below the whole report where a phone never shows it. */}
+      {extras.length > 0 && (
+        <div className="rr-extras">
+          {extras.map((e) => (
+            <div key={e.id} className={`rr-extra-row${open === e.id ? ' is-open' : ''}`}>
+              <button
+                type="button"
+                className="rr-extra-btn"
+                aria-expanded={open === e.id}
+                onClick={(ev) => {
+                  setOpen((cur) => (cur === e.id ? null : e.id));
+                  // A tap or click leaves no focus ring behind; a keyboard press keeps it.
+                  if (ev.detail > 0) ev.currentTarget.blur();
+                }}
+              >
+                <span>{e.label}</span>
+                <span className="rr-extra-chev" aria-hidden>
+                  ▾
+                </span>
+              </button>
+              {open === e.id && <div className="rr-extra">{e.content()}</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

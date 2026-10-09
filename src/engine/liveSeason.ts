@@ -50,10 +50,33 @@ export interface SeasonAwards {
   allStars: SeasonPlayerLine[];
 }
 
+/** A team's season in sums (2026-10-08, for descriptions grounded in what happened): its own box
+ * totals, its opponents' against it, and its record in games decided by five points or fewer. */
+export interface LiveTeamSeason {
+  teamId: string;
+  games: number;
+  for: BoxLineStats;
+  against: BoxLineStats;
+  closeWins: number;
+  closeLosses: number;
+}
+
 export interface LiveSeasonResult {
   standings: LiveStandingsRow[];
   players: SeasonPlayerLine[];
   awards: SeasonAwards;
+  teamSeasons: LiveTeamSeason[];
+}
+
+/** Sum of one side's box score. */
+export function sideTotals(box: Record<string, BoxLineStats>): BoxLineStats {
+  const sum = zero();
+  for (const line of Object.values(box)) for (const stat of Object.keys(sum) as (keyof BoxLineStats)[]) sum[stat] += line[stat];
+  return sum;
+}
+
+function addTo(into: BoxLineStats, add: BoxLineStats): void {
+  for (const stat of Object.keys(into) as (keyof BoxLineStats)[]) into[stat] += add[stat];
 }
 
 const EXTRA_GAME_OFFSETS = new Set([1, 2, 3, 8]);
@@ -265,6 +288,7 @@ function* seasonSteps(teams: Team[], seed: string): Generator<SimProgress, LiveS
   const cache = buildMatchupCache(teams);
   const weak = new Map(teams.map((t) => [t.id, teamWeakLink(t)]));
   const record = new Map(teams.map((t) => [t.id, { teamId: t.id, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 }]));
+  const teamSeasons = new Map<string, LiveTeamSeason>(teams.map((t) => [t.id, { teamId: t.id, games: 0, for: zero(), against: zero(), closeWins: 0, closeLosses: 0 }]));
   const lines = new Map<string, SeasonPlayerLine>();
   const starterIds = new Set(teams.flatMap((t) => primaryStarters(t).map((e) => `${t.id}|${e.player.id}`)));
 
@@ -295,6 +319,25 @@ function* seasonSteps(teams: Team[], seed: string): Generator<SimProgress, LiveS
           ra.losses++;
         }
         addGame(lines, [a, b], game, starterIds);
+        const ta = teamSeasons.get(a.id)!;
+        const tb = teamSeasons.get(b.id)!;
+        const boxA = sideTotals(game.box[0]);
+        const boxB = sideTotals(game.box[1]);
+        ta.games++;
+        tb.games++;
+        addTo(ta.for, boxA);
+        addTo(ta.against, boxB);
+        addTo(tb.for, boxB);
+        addTo(tb.against, boxA);
+        if (Math.abs(sa - sb) <= 5) {
+          if (sa > sb) {
+            ta.closeWins++;
+            tb.closeLosses++;
+          } else {
+            tb.closeWins++;
+            ta.closeLosses++;
+          }
+        }
         played++;
       }
       yield { played, total };
@@ -344,6 +387,7 @@ function* seasonSteps(teams: Team[], seed: string): Generator<SimProgress, LiveS
       allDefense: defenseTeams(eligible, first(dpoy, defenseValue)),
       allStars: allStarsFrom(eligible, allStarValue, allNba.flat()),
     },
+    teamSeasons: [...teamSeasons.values()],
   };
 }
 

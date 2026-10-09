@@ -30,7 +30,6 @@ import { type FeedbackEntry } from './FeedbackToggle';
 import ChampionshipOdds from './ChampionshipOdds';
 import { markStepDone } from './pathProgress';
 import { TEAM_EXPORT_FOR_TESTING } from './testingFlags';
-import { exportLeagueText } from '../engine/teamExport';
 import AllMetrics from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
@@ -51,6 +50,7 @@ import {
   type ReportExtra,
 } from './ResultsReport';
 import { FitName, FitTeam } from './FitName';
+import { exportFullDraft } from '../engine/draftExport';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, the live season) — real work deferred until the
@@ -305,11 +305,11 @@ function HeroResult({
   identity,
   failureMode,
   starters,
-  roster,
   challenger,
   seasonSimSlot,
   teamCode,
   rosterTeam,
+  profile,
   quote,
   report,
   standings,
@@ -336,7 +336,6 @@ function HeroResult({
   identity: string | null;
   failureMode: string | null;
   starters: ShareCardStarter[];
-  roster: ShareRosterRow[];
   /** 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest empty
    * space" — the season-sim panel can go above, next to the Rotation cards, where there's empty
    * space): a pre-built JSX subtree from `ResultsScreen` itself (which owns all the season-sim
@@ -347,6 +346,8 @@ function HeroResult({
    * hero, the team report (profile + desk voices) and the standings with every rival's report. */
   teamCode: string;
   rosterTeam: Team;
+  /** The profile bars the report shows — the share card shows the same ones. */
+  profile: ProfileRow[];
   quote: DeskVoice | null;
   report: ReactNode;
   standings: ReactNode;
@@ -710,6 +711,7 @@ function HeroResult({
         <ShareModal
           onClose={() => setShareOpen(false)}
           teamName={teamName}
+          teamCode={teamCode}
           rank={rank}
           fieldSize={fieldSize}
           tier={tier}
@@ -718,17 +720,8 @@ function HeroResult({
           gap={gap}
           titleOdds={titleOdds}
           identity={identity}
-          failureMode={failureMode}
-          roster={roster}
-          scores={{
-            talent: Math.round(talentScore),
-            benchDepth: Math.round(benchDepthScore),
-            offense: Math.round(offenseScore),
-            defense: Math.round(defenseScore),
-            spacing: Math.round(spacingScore),
-            fit: Math.round(fitScore),
-            rotation: Math.round(rotationScore),
-          }}
+          profile={profile}
+          team={rosterTeam}
         />
       )}
   </>
@@ -1371,6 +1364,38 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       />
     ) : null;
 
+  // 2026-10-08, the user ("gracza bardziej interesuje na początku gdzie AI było lepsze niż dlaczego
+  // w PO mamy mniejsze szanse"): an opened rival starts with the scores where they beat you, by how
+  // much; then your series odds against them, their roster and their report.
+  const humanRanked = ranked.find((r) => r.team.isHuman);
+  const whereTheyBeatYou = (theirs: ScoreBreakdown) => {
+    if (!humanRanked) return null;
+    const mine = profileRows(humanRanked.breakdown);
+    const rows = profileRows(theirs)
+      .map((row, k) => ({ label: row.label, theirs: Math.round(row.value), mine: Math.round(mine[k].value) }))
+      .map((r) => ({ ...r, gap: r.theirs - r.mine }))
+      .filter((r) => r.gap > 0)
+      .sort((x, y) => y.gap - x.gap);
+    return (
+      <div className="rr-edge">
+        <span className="rr-edge-title">{rows.length > 0 ? 'Where they beat you' : 'They beat you nowhere'}</span>
+        {rows.map((r) => (
+          <div className="rr-edge-row" key={r.label}>
+            <span className="rr-edge-label">{r.label}</span>
+            <span className="rr-edge-bars" aria-label={`${r.theirs} against your ${r.mine}`}>
+              <i className="is-them" style={{ width: `${Math.max(0, Math.min(100, r.theirs))}%` }} />
+              <i className="is-you" style={{ width: `${Math.max(0, Math.min(100, r.mine))}%` }} />
+            </span>
+            <span className="rr-edge-nums">
+              {r.theirs} <small>vs {r.mine}</small>
+            </span>
+            <b>+{r.gap}</b>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const standings = (
     <div className="rr-standings">
       {ranked.map(({ team, breakdown, rank }) => {
@@ -1411,7 +1436,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 {style.label && <span className="rr-stat">Style<b className="rr-stat-text">{style.label}</b></span>}
                 {style.failureMode && <span className="rr-stat">Main risk<b className="rr-stat-text">{style.failureMode}</b></span>}
               </div>
-              <RosterGrid team={shownTeam} />
+              {whereTheyBeatYou(breakdown)}
               {vs && humanStyle && theirStyle && humanFit && (
                 <VsYou
                   seriesPct={seriesPct ?? 50}
@@ -1420,6 +1445,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   clashes={styleClashBreakdown(humanStyle, theirStyle).map((c) => ({ label: CLASH_LABELS[c.key], net: c.a - c.b }))}
                 />
               )}
+              <RosterGrid team={shownTeam} />
               <TeamReport
                 profile={profileRows(breakdown)}
                 comp={bestHistoricalComp(shownTeam, breakdown, fit)}
@@ -1482,9 +1508,9 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           identity={heroStyle.label}
           failureMode={heroStyle.failureMode}
           starters={heroStarters}
-          roster={heroRoster}
           teamCode={codeByTeamId.get(heroRanked.team.id) ?? ''}
           rosterTeam={displayTeam(heroRanked.team)}
+          profile={profileRows(heroRanked.breakdown)}
           quote={heroVoices[0] ?? null}
           report={heroReport}
           standings={standings}
@@ -1517,7 +1543,30 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           <button type="button" className="at-calm-btn" onClick={() => onRematch(draftSeed)}>Rematch this board</button>
         )}
         <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRestart}>Main menu</button>
-        {TEAM_EXPORT_FOR_TESTING && <TeamExportButton teams={scoredTeams} seed={draftSeed} leagueEval={leagueEval} />}
+        {TEAM_EXPORT_FOR_TESTING && (
+          <FullExportButton
+            build={() =>
+              exportFullDraft({
+                seed: draftSeed,
+                teams: scoredTeams,
+                history,
+                codes: codeByTeamId,
+                titleOdds: new Map(leagueEval.map((e) => [e.teamId, e.championshipProbability])),
+                voices: (team) => {
+                  const r = ranked.find((x) => x.team.id === team.id);
+                  if (!r) return [];
+                  return team.isHuman
+                    ? yourVoices({ team: displayTeam(team), rank: r.rank, fieldSize: ranked.length, breakdown: r.breakdown, fieldMedians })
+                    : theirVoices(displayTeam(team), r.breakdown, r.rank, ranked.length);
+                },
+                season: seasonState.status === 'done' ? seasonState.season : null,
+                playoffs: seasonState.status === 'done' ? seasonState.playoffs : null,
+              })
+            }
+            seed={draftSeed}
+            seasonReady={seasonState.status === 'done'}
+          />
+        )}
       </div>
     </div>
   );
@@ -1525,26 +1574,29 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
 
 /** Engine calibration (testing): copies every team as text to paste into a calibration session;
  * falls back to downloading a .txt where the clipboard is unavailable. */
-function TeamExportButton({ teams, seed, leagueEval }: { teams: Team[]; seed: number; leagueEval: TeamLeagueEvaluation[] }) {
-  const [state, setState] = useState<'idle' | 'copied' | 'saved'>('idle');
+/** 2026-10-08, the user: one button that exports the whole draft — picks, scores, reports, the
+ * season and the playoffs (`exportFullDraft`). It waits for the season so the file is complete,
+ * saves a .txt and copies the same text. */
+function FullExportButton({ build, seed, seasonReady }: { build: () => string; seed: number; seasonReady: boolean }) {
+  const [state, setState] = useState<'idle' | 'done'>('idle');
   async function handle() {
-    const text = exportLeagueText(teams, { seed, titleOdds: new Map(leagueEval.map((e) => [e.teamId, e.championshipProbability])) });
+    const text = build();
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `draftverse-${seed}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
     try {
       await navigator.clipboard.writeText(text);
-      setState('copied');
     } catch {
-      const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `draft-export-${seed}.txt`;
-      link.click();
-      URL.revokeObjectURL(url);
-      setState('saved');
+      // The file is the export; the copy is a convenience.
     }
+    setState('done');
   }
   return (
-    <button className="secondary-btn team-export-btn" onClick={handle} title="Copies every team's scores, players and minutes as text">
-      {state === 'copied' ? '✓ Copied — paste it in the chat' : state === 'saved' ? '✓ Saved as .txt' : 'Export all teams (testing)'}
+    <button className="secondary-btn team-export-btn" onClick={handle} disabled={!seasonReady} title="Every pick, every team's scores and report, the season and the playoffs, as one text file">
+      {!seasonReady ? 'Export the draft (season still simulating…)' : state === 'done' ? `✓ Saved draftverse-${seed}.txt (also copied)` : 'Export the whole draft (testing)'}
     </button>
   );
 }
