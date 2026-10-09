@@ -140,20 +140,24 @@ const OPPOSITE: Partial<Record<StoryStat['key'], StoryStat['key']>> = { offense:
 export function seriesPreview(season: LiveSeasonResult, youId: string, oppId: string): string[] {
   const mine = new Map(storyStats(season, youId).map((s) => [s.key, s]));
   const theirs = new Map(storyStats(season, oppId).map((s) => [s.key, s]));
-  const best = (stats: Map<StoryStat['key'], StoryStat>) =>
-    [...stats.values()].filter((s) => s.key in OPPOSITE).sort((a, b) => a.place - b.place)[0];
+  const best = (stats: Map<StoryStat['key'], StoryStat>, skip: StoryStat['key'][]) =>
+    [...stats.values()].filter((s) => s.key in OPPOSITE && !skip.includes(s.key)).sort((a, b) => a.place - b.place)[0];
+  const name = (key: StoryStat['key']) => SUBJECT_NAME[key].replace('the ', '');
   const out: string[] = [];
-  const theirBest = best(theirs);
+  const theirBest = best(theirs, []);
+  const used: StoryStat['key'][] = [];
   if (theirBest) {
     const counter = mine.get(OPPOSITE[theirBest.key]!);
     out.push(
-      `Their weapon: ${theirBest.text}, ${ord(theirBest.place)} in the league${counter ? `. Against it, your ${SUBJECT_NAME[counter.key].replace('the ', '')}: ${counter.text}, ${ord(counter.place)}` : ''}.`,
+      `Their weapon is ${SUBJECT_NAME[theirBest.key]}: ${theirBest.text}, ${ord(theirBest.place)} in the league.${counter ? ` Against it, your ${name(counter.key)} (${ord(counter.place)}).` : ''}`,
     );
+    // That matchup is told; your own best weapon is a different one.
+    if (counter) used.push(counter.key);
   }
-  const yourBest = best(mine);
-  if (yourBest && yourBest.key !== theirBest?.key) {
+  const yourBest = best(mine, used);
+  if (yourBest) {
     const counter = theirs.get(OPPOSITE[yourBest.key]!);
-    out.push(`Yours: ${yourBest.text}, ${ord(yourBest.place)}${counter ? `, against their ${SUBJECT_NAME[counter.key].replace('the ', '')} (${ord(counter.place)})` : ''}.`);
+    out.push(`Yours is ${SUBJECT_NAME[yourBest.key]}: ${yourBest.text}, ${ord(yourBest.place)}${counter ? `, against their ${name(counter.key)} (${ord(counter.place)})` : ''}.`);
   }
   return out;
 }
