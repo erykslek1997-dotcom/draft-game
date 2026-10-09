@@ -261,7 +261,32 @@ Etap 0 (diagnoza, 2026-10-08) — mecz drużynowy ('season', 1,3 pkt na punkt oc
       zespoły z kiepskimi strzelcami z linii w końcówkach (celowe faule na nich, jak w meczu).
       Przykład (etap 4a): Chamberlain i Shaq tracą w meczu 2–3 pkt względem silnika głównie przez FT%.
 
-## Etap 2. Symulacje — TERAZ
+## Skalowanie, gra bez piłki, opisy (2026-10-09)
+
+- [x] **Scalability** (#203) — z realnych danych NBA (8217 par zmian usage): strzelec oddający piłkę
+      +0,05, kreator −0,1, gracz roli biorący więcej −0,15; tłok −0,3 za każdego kolejnego gracza
+      z usage ≥24%. W meczu `SCALE_TUNING` / `OVERLOAD_TUNING`, w ocenie `BALL_LOAD_TUNING` (sezon
+      dociąga do oceny, więc koszt musi być też w ocenie).
+- [x] **Litera spacingu z realnego 3P%** (#204) — od 1979 limit litery z celności, nie z wolumenu.
+- [x] **Etykiety strzelców z realnego ruchu** (#205) — Movement / Off Screen / Stationary z danych
+      NBA (OffScreen + Handoff), modelu i listy; Raja Bell → Stationary, Reaves zostaje Stationary.
+- [x] **Paczka opisów** (#206) — 24 detektory usunięte (92 → 68): linie sprzeczne z sezonem 8,9% → 0%,
+      sprzeczne albo bez efektu 15,5% → 0% (`scripts/validateDescriptions.ts`, 30 draftów / 480
+      drużyn). Linie stylu od Scouta (ruch, rogi, cutterzy; lista 55 cutterów), warianty tekstów
+      z liczbami, stałe role głosów, historia sezonu w hubie, zapowiedź i werdykt serii,
+      „The season agreed / disagreed” na wynikach.
+- [ ] **Wartość gry bez piłki (ruch, ścięcia) w ocenie** — WSTRZYMANE: w realnych drużynach
+      2016–25 styl nie daje nic ponad talent. Wracać tylko z nowymi danymi. (M)
+- [ ] **Strzelcy sprzed linii za 3 mają spacing F** — West, Maravich, Rick Barry: brak danych
+      o trójkach → 36. percentyl. Pomysł: spacing z celności z półdystansu / FT% przed 1979-80
+      albo neutralna litera. Do decyzji. (S–M)
+- [ ] **7 linii ze słabym efektem (walidacja #206)** — ELITE_PRIMARY_CREATOR (na ekranie 199/480,
+      najczęstszy), STAR_FGA_COST_HURTS_DEPTH, OFF_BALL_SUPPORT_STRONG, PERIMETER_DEFENSE_BENCH_DEPTH,
+      DEAD_NINTH_SLOT_ACCEPTABLE, ELITE_SPACING_WEAK_CREATION, MULTIPLE_HIGH_USAGE_PLAYERS. Przy
+      kolejnej rundzie opisów: wyższy próg, inne sformułowanie albo usunięcie; walidacja tym samym
+      skryptem. (S)
+
+## Etap 2. Symulacje
 
 Decyzje (2026-09-30):
 - Sezon zasadniczy szybki (bez odtwarzania meczów); dokładna symulacja dopiero w play-offach.
@@ -432,7 +457,7 @@ Decyzje (2026-09-30):
       bazy. `boxRates.json` też się nie nadaje (suma daje TS 64% w 1962 — niepełne rzuty). Źródło:
       tabela „NBA League Averages” z Basketball-Reference albo statystyki drużyn z Kaggle — do
       dostarczenia przez Ciebie. Wpływa też na obecny silnik (era, TS względem ligi). (S)
-- [ ] **Symulacja sezonu na silniku** (plan 2026-10-08). Decyzje: jeden sezon na draft (ten sam
+- [x] **Symulacja sezonu na silniku** (zmergowane #199–#202, 2026-10-08/09). Decyzje: jeden sezon na draft (ten sam
       draft = ten sam sezon i playoffy, bez „zagraj jeszcze raz”); bez kalendarza na razie; All-Star
       jako ciekawostka po sezonie (lista 24, bez meczu); All-NBA trochę mocniej ze statystyk niż MVP.
   - Etap 1 (silnik): sezon 20 s → ~4 s (para drużyn przygotowana raz na wszystkie mecze; fit.ts
@@ -456,7 +481,7 @@ Decyzje (2026-09-30):
     panel serii z porównaniem drużyn i szansą na serię, „Play game N” od razu startuje mecz,
     ekran między rundami („#5 knocks out #4”), koniec drogi albo puchar.
   - Etap 2: makiety UI (Standings / Stats / Awards / Playoffs + mecz na żywo). Etap 3: UI.
-  - Później: kalendarz (kolejki, All-Star w połowie sezonu, przebieg sezonu).
+  - [ ] Później: kalendarz (kolejki, All-Star w połowie sezonu, przebieg sezonu).
 - [ ] **Mecz na żywo na koniec Mini?** — do decyzji: w Mini jest 16 drużyn i wynik to miejsce
       w lidze. (M–L)
 - [ ] **Balans po symulacjach** — jak często AI wygrywa, Joker (częstość legendy i leszcza, cena),
