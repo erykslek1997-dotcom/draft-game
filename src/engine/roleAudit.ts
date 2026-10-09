@@ -1,4 +1,5 @@
 import type { DefensiveRole, OffensiveArchetype, PlayerSpan } from '../data/schema';
+import { offBallShooterLabel } from './offBallProfile';
 import { per36 } from './minutesPerGame';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { computeSpacing } from './spacing';
@@ -69,6 +70,8 @@ function defenseCandidates(s: PlayerSpan, x: RoleAuditStats, k: number): Defensi
   return out;
 }
 
+const SHOOTER_LABELS = new Set<OffensiveArchetype>(['Movement Shooter', 'Off Screen Shooter', 'Stationary Shooter']);
+
 function offenseCandidates(s: PlayerSpan, x: RoleAuditStats, k: number): OffensiveArchetype[] {
   const ast = x.ast + 0.75 * k, fga = x.fga + k, pts = x.pts + 1.5 * k, tpa = x.tpa + 0.5 * k, tp = x.tp + 0.02 * k;
   const out: OffensiveArchetype[] = [];
@@ -91,16 +94,24 @@ function offenseCandidates(s: PlayerSpan, x: RoleAuditStats, k: number): Offensi
     return out;
   }
   const curatedShooter = s.offensiveArchetype === 'Movement Shooter' || s.offensiveArchetype === 'Off Screen Shooter';
+  // 2026-10-09, the user: a shooter's label follows how he really got his shots (NBA.com play
+  // types, else the box-score model ranked within his era — `offBallProfile.ts`). Where there is a
+  // reading it replaces every other shooter label, so the old box-based one can't stick.
+  const measuredMovement = offBallShooterLabel(s);
+  const shooterLabel = (label: OffensiveArchetype): OffensiveArchetype => (measuredMovement && SHOOTER_LABELS.has(label) ? measuredMovement : label);
   if (ast >= 7 && fga >= 12) out.push('Primary Ball Handler');
   if (fga >= 17 && pts >= 22) out.push('Shot Creator');
   if (ast >= 4.5 && !out.includes('Primary Ball Handler')) out.push('Secondary Ball Handler');
-  if (curatedShooter && tpa >= 3) out.push(s.offensiveArchetype);
-  else if (x.measuredShooter && tpa >= 3) out.push(x.measuredShooter);
+  // A shooter the old route evidence called Off Screen / Movement but who mostly waited for the ball
+  // stays a shooter (Stationary), rather than falling through to a ball-handler or finisher label.
+  if (measuredMovement && (measuredMovement !== 'Stationary Shooter' || ((SHOOTER_LABELS.has(s.offensiveArchetype) || x.measuredShooter) && tpa >= 3))) out.push(measuredMovement);
+  else if (!measuredMovement && curatedShooter && tpa >= 3) out.push(s.offensiveArchetype);
+  else if (!measuredMovement && x.measuredShooter && tpa >= 3) out.push(x.measuredShooter);
   if (fga >= 13 && x.tpa < 3 + k) out.push('Slasher');
-  if (tpa >= 5 && tp >= 0.36 && x.ast < 4.5 + 0.5 * k) out.push('Stationary Shooter');
-  if (out.length === 0 || k > 0) out.push(x.spacing >= 60 - 5 * k ? 'Stationary Shooter' : 'Athletic Finisher');
+  if (tpa >= 5 && tp >= 0.36 && x.ast < 4.5 + 0.5 * k) out.push(shooterLabel('Stationary Shooter'));
+  if (out.length === 0 || k > 0) out.push(x.spacing >= 60 - 5 * k ? shooterLabel('Stationary Shooter') : 'Athletic Finisher');
   if (k > 0) out.push('Athletic Finisher');
-  return out;
+  return [...new Set(out)];
 }
 
 function keepOrReplace<Role extends string>(current: Role, strict: Role[], loose: Role[]): Role[] {
@@ -119,5 +130,8 @@ export function auditedDefensiveRoles(s: PlayerSpan, x: RoleAuditStats = roleAud
 
 /** Audited offensive archetypes, strongest first; the first entry is the primary label. */
 export function auditedOffensiveArchetypes(s: PlayerSpan, x: RoleAuditStats = roleAuditStats(s)): OffensiveArchetype[] {
-  return keepOrReplace(s.offensiveArchetype, offenseCandidates(s, x, 0), offenseCandidates(s, x, 1));
+  // A shooter's label moves within the shooter labels only: the measured one stands in for it.
+  const measured = offBallShooterLabel(s);
+  const current = measured && SHOOTER_LABELS.has(s.offensiveArchetype) ? measured : s.offensiveArchetype;
+  return keepOrReplace(current, offenseCandidates(s, x, 0), offenseCandidates(s, x, 1));
 }
