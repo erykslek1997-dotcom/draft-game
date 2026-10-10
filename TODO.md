@@ -316,6 +316,11 @@ skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 
       tym samym BPM): lepiej niż 86% zestawów. Względem prognozy silnika (O-TAL/D-TAL) +0,47
       (t ≈ 1,4) ≈ 10 pkt D-TAL dla takiego gracza. Pojedyncze wyniki szumią (Dort +5,0, Brooks
       +3,3, Smart +2,2 … Caruso −0,7, Tucker −1,7) → premia listowa (tiery), nie per gracz.
+      Krok 2 (2026-10-10, lista zaakceptowana, + Ausar Thompson, Suggs, Eason): `hustleDefenders.ts`
+      — 26 primary (+8 D-TAL) / 25 partial (+4), do sufitu 85 (wyżej nic), na końcu
+      `computeDefensiveTalent` (TAL i tier bez zmian). Brooks 2024-26 63 → 71, Smart 64 → 72,
+      McKey 67 → 75. Prognoza silnika na realnych drużynach: niedoszacowanie listy +0,47 → +0,36
+      pkt na mecz (premia celowo ostrożna, R² bez zmian).
 - [ ] **Rotacja Filipa: KG na trzech pozycjach** (u nas w lidze skład skończył ostatni, „może
       niesłusznie”). Silnik: rotacja z arkusza (KG 6 SF / 10 PF / 18 C, Cousins 30 na C, Malone
       34 na PF) kosztuje 2,5 pkt oceny względem auto (KG 36 PF, Malone 32 C) — obrona 54 vs 65;

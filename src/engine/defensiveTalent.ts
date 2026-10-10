@@ -11,6 +11,7 @@ import { bpm2CoverageForSpan, ddpmCoverageForSpan, matchupCoverageForSpan, rapto
 import { playoffImpactForSpan } from './playoffImpact';
 import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { blendWithNeighbours, neighbourWindowsFor, neighbourWindowsRegistered, onNeighbourWindowsRegistered } from './neighbourWindows';
+import { withHustleBonus } from '../data/hustleDefenders';
 
 /**
  * D-TAL — "how good is this player defensively," 0-100, per position.
@@ -882,7 +883,11 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   if (cached !== undefined) return cached;
   const own = ownWindowDefense(span);
   const neighbours = neighbourWindowsFor(span).map((n) => ownWindowDefense(ratingSpan(n)));
-  const result = Math.max(0, Math.min(100, Math.round(blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE))));
+  // 2026-10-10: the hustle defenders' bonus (`hustleDefenders.ts`) goes on last, after the floors
+  // and the neighbour blend that would otherwise swallow it, and only here — the D-TAL the team
+  // scores and the card read — so a player's TAL and tier stay put.
+  const blended = Math.max(0, Math.min(100, Math.round(blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE))));
+  const result = withHustleBonus(span, blended);
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
 }
