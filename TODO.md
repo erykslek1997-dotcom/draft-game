@@ -304,6 +304,11 @@ skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 
       hustle od 2016-17; matchup difficulty np. BBall Index). Przed 2016 brak danych → lista jak
       przy cutterach. Najpierw sprawdzić na realnych drużynach, czy to coś daje ponad talent (jak
       styl gry: tam nie dało). Kandydaci: Brooks, Smart, Tony Allen, Beverley, Dort, Bowen, R. Bell. (M)
+      Pierwszy ślad (2026-10-10): drużyny Brooksa grały ponad prognozę z box score (BPM) w każdym
+      sezonie: MEM 2021 +1,7, 2022 +5,2, 2023 +0,7, HOU 2024 +5,4, 2025 +2,5 (średnio +3,1 pkt na
+      mecz). Uwaga: młode, rosnące składy prognoza z zeszłego sezonu też zaniża — trzeba grupy
+      kontrolnej. Eryk: Rockety po zamianie Brooksa na KD niewiele zyskały, Suns z nim zamiast
+      tankować weszli do playoffów. Ręczne dopracowanie (lista/tier) dopuszczalne.
 - [ ] **Rotacja Filipa: KG na trzech pozycjach** (u nas w lidze skład skończył ostatni, „może
       niesłusznie”). Silnik: rotacja z arkusza (KG 6 SF / 10 PF / 18 C, Cousins 30 na C, Malone
       34 na PF) kosztuje 2,5 pkt oceny względem auto (KG 36 PF, Malone 32 C) — obrona 54 vs 65;
