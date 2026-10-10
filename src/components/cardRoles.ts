@@ -1,5 +1,6 @@
 import type { DefensiveRole, OffensiveArchetype, PlayerSpan } from '../data/schema';
 import { per36 } from '../engine/minutesPerGame';
+import { hustleDefenderForSpan } from '../data/hustleDefenders';
 
 /**
  * 2026-10-07, the UI simplification (the user: "dużo graczy ma podobny TAL"): the draft card shows
@@ -59,6 +60,18 @@ export function cardRoles(span: PlayerSpan): string[] {
  * trzeba długo szukać"): role filters for the draft board, built on the same style labels the cards
  * show — they find a kind of player, they don't judge fit.
  */
+/**
+ * 2026-10-10, the user ("Hustle git, łatwe do zrozumienia"): the stretches on the hustle list
+ * (`hustleDefenders.ts` — the same list and years that lift his defense) carry a "Hustle" mark on
+ * the card, next to the defensive style, so a defense that reads higher than his numbers explains
+ * itself. A mark, not a role: the engine's defensive role stays what the matchups read.
+ */
+export function isHustle(span: PlayerSpan): boolean {
+  return hustleDefenderForSpan(span) !== null;
+}
+
+export const HUSTLE_TITLE = 'Hustle: takes the toughest assignment and does the dirty work the box score misses. His defense rates higher than his numbers.';
+
 export const ROLE_FILTERS: Record<string, readonly string[]> = {
   Shooter: ['Spot-up shooter', 'Movement shooter', 'Off-screen shooter', 'Stretch big'],
   Creator: ['Shot creator', 'Slasher'],
@@ -66,10 +79,12 @@ export const ROLE_FILTERS: Record<string, readonly string[]> = {
   'Rim protector': ['Rim protector', 'Shot blocker'],
   'Perimeter D': ['On-ball defender', 'Wing stopper', 'Ball hawk'],
   'Big man': ['Post scorer', 'Roll man', 'Rebounder', 'Versatile big', 'Post defender', 'Mobile defender', 'Switchable big'],
+  Hustle: [],
 };
 
 export function matchesRoleFilter(span: PlayerSpan, filter: string | null): boolean {
   if (!filter) return true;
+  if (filter === 'Hustle') return isHustle(span);
   const wanted = ROLE_FILTERS[filter];
   return cardRoles(span).some((role) => wanted.includes(role));
 }

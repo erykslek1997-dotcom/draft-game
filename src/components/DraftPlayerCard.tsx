@@ -5,7 +5,7 @@ import { naturalPosition } from '../engine/naturalPosition';
 import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
 import { EraYears } from './EraYears';
 import { useFitName } from './FitName';
-import { cardRoles } from './cardRoles';
+import { HUSTLE_TITLE, cardRoles, isHustle } from './cardRoles';
 import { MagnifierIcon } from './MagnifierIcon';
 import { TeamBand, spanTeamColor } from './TeamBand';
 
@@ -73,7 +73,14 @@ export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, o
         <TeamBand span={span} />
         {children}
         <div className="at-pc-head">
-          <Face name={span.playerName} size="md" />
+          <span className="at-pc-facewrap">
+            <Face name={span.playerName} size="md" />
+            {isHustle(span) && (
+              <span className="at-pc-hustle" title={HUSTLE_TITLE}>
+                Hustle
+              </span>
+            )}
+          </span>
           <span className="at-pc-id">
             {onScouting ? (
               <button
@@ -102,6 +109,7 @@ export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, o
           <span className="at-pc-tier" title="Tier of the years this card drafts">
             {tier}
           </span>
+
           <span className="at-pc-cost" title={`Costs ${Math.round(span.fga)} caps`}>
             <CapIcon size={11} />
             {Math.round(span.fga)}
