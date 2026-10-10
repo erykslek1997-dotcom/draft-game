@@ -321,6 +321,19 @@ skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 
       `computeDefensiveTalent` (TAL i tier bez zmian). Brooks 2024-26 63 → 71, Smart 64 → 72,
       McKey 67 → 75. Prognoza silnika na realnych drużynach: niedoszacowanie listy +0,47 → +0,36
       pkt na mecz (premia celowo ostrożna, R² bez zmian).
+      Plakietka „Hustle” na zdjęciu gracza + filtr „Hustle” na boardzie (2026-10-10).
+- [ ] **Hustle — dopracowanie** (2026-10-10, Eryk) — (1) lista: przegląd nazwisk i tierów (np.
+      Rodman nisko przez TAL 44, X. McDaniel D-TAL 22 — sprawdzić dane obrony; Mahorna nie ma w
+      puli); (2) siła: premia zamyka ~25% zmierzonej luki (+0,47 → +0,36) — rozważyć +10/+5 albo
+      siłę per gracz tam, gdzie dane są pewne; (3) dane NBA.com hustle (deflections, contested
+      shots, charges, loose balls; od 2016-17) zamiast samej listy dla nowszych graczy; (4) w
+      opisach: linia Scouta o graczu Hustle („takes their best scorer every night”). (M)
+- [ ] **Odpowiednik Hustle w ataku** (2026-10-10, Eryk) — gracze, których wartość w ataku box
+      score pomija: stawiający zasłony (NBA.com screen assists od 2016-17), łącznicy / szybkie
+      podanie (0.5-second decisions), zbierający w ataku, ruch bez piłki, „gravity”. Ta sama
+      metoda: lista kandydatów → pomiar na realnych drużynach (czy grają ponad prognozę) →
+      placebo → premia listowa do O-TAL + plakietka. Uwaga: styl gry (ruch, ścięcia) na poziomie
+      drużyny nic nie dawał ponad talent — sprawdzać na graczach, nie na stylu. (M)
 - [ ] **Rotacja Filipa: KG na trzech pozycjach** (u nas w lidze skład skończył ostatni, „może
       niesłusznie”). Silnik: rotacja z arkusza (KG 6 SF / 10 PF / 18 C, Cousins 30 na C, Malone
       34 na PF) kosztuje 2,5 pkt oceny względem auto (KG 36 PF, Malone 32 C) — obrona 54 vs 65;
