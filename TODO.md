@@ -309,6 +309,13 @@ skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 
       mecz). Uwaga: młode, rosnące składy prognoza z zeszłego sezonu też zaniża — trzeba grupy
       kontrolnej. Eryk: Rockety po zamianie Brooksa na KD niewiele zyskały, Suns z nim zamiast
       tankować weszli do playoffów. Ręczne dopracowanie (lista/tier) dopuszczalne.
+      Krok 1 (pomiar, 2026-10-10): lista 33 „hustle” obrońców (m.in. Brooks, Smart, T. Allen,
+      Dort, Bowen, Rodman, Dumars, Laimbeer, Oakley, Mason, Cooper), 1051 drużyn 1981–2025.
+      Drużyna gra ponad prognozę z BPM o +0,52 pkt na mecz na pełnoetatowego takiego gracza
+      (t ≈ 2,0, z kontrolą wieku i udziału młodych); test placebo (losowe zestawy graczy roli o
+      tym samym BPM): lepiej niż 86% zestawów. Względem prognozy silnika (O-TAL/D-TAL) +0,47
+      (t ≈ 1,4) ≈ 10 pkt D-TAL dla takiego gracza. Pojedyncze wyniki szumią (Dort +5,0, Brooks
+      +3,3, Smart +2,2 … Caruso −0,7, Tucker −1,7) → premia listowa (tiery), nie per gracz.
 - [ ] **Rotacja Filipa: KG na trzech pozycjach** (u nas w lidze skład skończył ostatni, „może
       niesłusznie”). Silnik: rotacja z arkusza (KG 6 SF / 10 PF / 18 C, Cousins 30 na C, Malone
       34 na PF) kosztuje 2,5 pkt oceny względem auto (KG 36 PF, Malone 32 C) — obrona 54 vs 65;
