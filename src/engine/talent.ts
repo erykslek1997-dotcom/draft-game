@@ -11,6 +11,7 @@ import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
 import { computeSpacing } from './spacing';
 import { computeDefensiveTalent, computeDefensiveTalentBase, computeDefensiveTalentRegularSeason } from './defensiveTalent';
+import { withHustleBonus } from '../data/hustleDefenders';
 import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
 import { liftForReducedRole } from './reducedRole';
@@ -2004,9 +2005,55 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   // A smaller role next to a star with efficiency held reads toward the player's own earlier
   // level (`reducedRole.ts` — Bosh in Miami). The reference window never qualifies itself, so this
   // recursion is one level deep.
-  const result = Math.round(liftForReducedRole(span, capped, computeTalent));
+  const reduced = Math.round(liftForReducedRole(span, capped, computeTalent));
+  const result = Math.max(0, Math.min(100, Math.round(reduced + defenseCreditLift(span, reduced))));
   talentCache.set(span.id, result);
   return result;
+}
+
+/**
+ * 2026-10-10, the user ("Merge 1 i 2", after a sample of TAL tied to D-TAL): on 692 real teams
+ * 1981–2025 the team's D-TAL still predicts its margin once its TAL is known (R² 0.418 → 0.461,
+ * t 7.4) — TAL credits defense too little. How much depends on the player: measured by offensive
+ * level and position, TAL misses the most defense of low-offense players (0.42 TAL per D point,
+ * t 5.6; mid offense 0.26, high 0.33) and of two-way wings (0.74). The lift is that weight × his
+ * D-TAL above or below his position's average (`computeDefensiveTalentBase` with the hustle bonus —
+ * the registration-free D, so the cached TAL never depends on load order), with guard rails the
+ * user set: it fades out between TAL 70 and 90 (stars keep their number), a poor defender loses
+ * only half (none below TAL 40), the lift is at most +12, and a player whose offense is below 60 O-TAL is lifted at
+ * most to the top of Starter (69) — "Allen czy Caruso są zbyt słabi w ataku", "jak ktoś był w
+ * tierze starter to też nie powinien skakać do all star". Stacks on the rank bridge
+ * (`dtalBridgeCorrection`, ±5/6), which the measurement already included.
+ */
+const DEFENSE_CREDIT_POSITION_MEAN: Record<'G' | 'W' | 'B', number> = { G: 45.5, W: 47.1, B: 59.5 };
+/** TAL points per D-TAL point, by offensive level (O-TAL < 57 / 57–66 / 67+) and position group:
+ * half the cell estimate and half its offensive band's, to steady the thin cells. */
+const DEFENSE_CREDIT_WEIGHT: Record<'L' | 'M' | 'H', Record<'G' | 'W' | 'B', number>> = {
+  L: { G: 0.37, W: 0.425, B: 0.435 },
+  M: { G: 0.21, W: 0.365, B: 0.245 },
+  H: { G: 0.245, W: 0.535, B: 0.33 },
+};
+const DEFENSE_CREDIT_FADE_FROM = 70;
+const DEFENSE_CREDIT_FADE_TO = 90;
+const DEFENSE_CREDIT_MAX_LIFT = 12;
+const DEFENSE_CREDIT_WEAK_OFFENSE = 60;
+const DEFENSE_CREDIT_WEAK_OFFENSE_CEILING = 69;
+
+export function defenseCreditLift(span: PlayerSpan, tal: number): number {
+  const fade = clamp01((DEFENSE_CREDIT_FADE_TO - tal) / (DEFENSE_CREDIT_FADE_TO - DEFENSE_CREDIT_FADE_FROM));
+  if (fade <= 0) return 0;
+  const pos = span.primaryPosition;
+  const group = pos === 'PG' || pos === 'SG' ? 'G' : pos === 'SF' ? 'W' : 'B';
+  const otal = computeOffensiveTalentBase(span);
+  const band = otal < 57 ? 'L' : otal < 67 ? 'M' : 'H';
+  const dtal = withHustleBonus(span, computeDefensiveTalentBase(span));
+  let lift = DEFENSE_CREDIT_WEIGHT[band][group] * (dtal - DEFENSE_CREDIT_POSITION_MEAN[group]) * fade;
+  // A poor defender loses half — and only in the rotation band: below TAL 50 the cut fades out
+  // (zero at 40), so the replacement-level tail isn't pushed further down.
+  if (lift < 0) return (lift / 2) * clamp01((tal - 40) / 10);
+  lift = Math.min(lift, DEFENSE_CREDIT_MAX_LIFT);
+  if (otal < DEFENSE_CREDIT_WEAK_OFFENSE) lift = Math.min(lift, Math.max(0, DEFENSE_CREDIT_WEAK_OFFENSE_CEILING - tal));
+  return lift;
 }
 
 /**
