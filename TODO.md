@@ -286,6 +286,33 @@ Etap 0 (diagnoza, 2026-10-08) — mecz drużynowy ('season', 1,3 pkt na punkt oc
       kolejnej rundzie opisów: wyższy próg, inne sformułowanie albo usunięcie; walidacja tym samym
       skryptem. (S)
 
+## Wnioski z ligi D2S2 (Draft Kings, 2026-10-10)
+
+Power Rankings + sezon na 82 mecze dla 15 składów z arkusza (strona-artefakt „D2S2 Power Rankings”,
+skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 sezonów, jeden sezon).
+
+- [ ] **MVP: bilans do kwadratu** (decyzja 2026-10-10, do wprowadzenia) — dziś `mvpValue` w
+      `liveSeason.ts` = game score × √(procent zwycięstw), przez co MVP wygrywa ktoś ze słabej
+      drużyny (D2S2: Jokić z 9. miejsca, poza playoffami). Zmiana: × (procent zwycięstw)².
+      20 sezonów lig AI: średnie miejsce drużyny MVP 2,25 → 1,15, spoza top 8 1 → 0, z drużyny
+      nr 1–2 15 → 20 na 20; MVP ma średnio 2,3 game score mniej niż najlepsza linijka ligi (było
+      1,0). Wariant liniowy dla porównania: 1,55 / 0 / 18 na 20 / 1,6. Jedna linijka + pełne testy. (S)
+- [ ] **Gracze „od brudnej roboty” niedoceniani** (Eryk: Dillon Brooks — bierze najtrudniejsze
+      krycie, hustle, „wkurzający” dla rywala). Silnik: Brooks 2024-26 D-TAL 63 („Wing Stopper”),
+      bo D-TAL stoi głównie na przechwytach/blokach (0,9 / 0,2) i danych obrony NBA.com. Brakuje:
+      trudności krycia (kogo kryje), deflections, contested shots, szarż, loose balls (NBA.com
+      hustle od 2016-17; matchup difficulty np. BBall Index). Przed 2016 brak danych → lista jak
+      przy cutterach. Najpierw sprawdzić na realnych drużynach, czy to coś daje ponad talent (jak
+      styl gry: tam nie dało). Kandydaci: Brooks, Smart, Tony Allen, Beverley, Dort, Bowen, R. Bell. (M)
+- [ ] **Rotacja Filipa: KG na trzech pozycjach** (u nas w lidze skład skończył ostatni, „może
+      niesłusznie”). Silnik: rotacja z arkusza (KG 6 SF / 10 PF / 18 C, Cousins 30 na C, Malone
+      34 na PF) kosztuje 2,5 pkt oceny względem auto (KG 36 PF, Malone 32 C) — obrona 54 vs 65;
+      w PR 8. miejsce, w sezonie 5. Sprawdzić testami podmiany, czy silnik nie karze za słabo
+      rozbijania wysokiego na trzy pozycje i gry Cousinsa jako startera na C. (S–M)
+- [ ] **Narzędzie ligi do repo?** — import arkusza (składy + rotacje) → Power Rankings, sezon,
+      playoffy, nagrody, statystyki. Dziś w scratchpadzie; przenieść do `scripts/`, jeśli liga
+      będzie to robić co draft (15 drużyn: terminarz 6/5 meczów, własna drabinka top 8). (M)
+
 ## Etap 2. Symulacje
 
 Decyzje (2026-09-30):
