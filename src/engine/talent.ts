@@ -2005,10 +2005,21 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   // A smaller role next to a star with efficiency held reads toward the player's own earlier
   // level (`reducedRole.ts` — Bosh in Miami). The reference window never qualifies itself, so this
   // recursion is one level deep.
-  const reduced = Math.round(liftForReducedRole(span, capped, computeTalent));
+  // The reduced-role reference reads the other window BEFORE its defense credit, so the credit
+  // below is applied once, not compounded through the reference.
+  const reduced = Math.round(liftForReducedRole(span, capped, talentBeforeDefenseCredit));
+  preCreditCache.set(span.id, reduced);
   const result = Math.max(0, Math.min(100, Math.round(reduced + defenseCreditLift(span, reduced))));
   talentCache.set(span.id, result);
   return result;
+}
+
+const preCreditCache = new Map<string, number>();
+/** TAL without `defenseCreditLift` — what the reduced-role reference measures against. */
+function talentBeforeDefenseCredit(rawSpan: PlayerSpan): number {
+  const span = ratingSpan(rawSpan);
+  if (!preCreditCache.has(span.id)) computeTalent(span);
+  return preCreditCache.get(span.id)!;
 }
 
 /**
@@ -2038,6 +2049,8 @@ const DEFENSE_CREDIT_FADE_TO = 90;
 const DEFENSE_CREDIT_MAX_LIFT = 12;
 const DEFENSE_CREDIT_WEAK_OFFENSE = 60;
 const DEFENSE_CREDIT_WEAK_OFFENSE_CEILING = 69;
+/** First season (end year) with steals and blocks in the box score. */
+const DEFENSE_CREDIT_STOCKS_FROM = 1974;
 
 export function defenseCreditLift(span: PlayerSpan, tal: number): number {
   const fade = clamp01((DEFENSE_CREDIT_FADE_TO - tal) / (DEFENSE_CREDIT_FADE_TO - DEFENSE_CREDIT_FADE_FROM));
@@ -2050,7 +2063,12 @@ export function defenseCreditLift(span: PlayerSpan, tal: number): number {
   let lift = DEFENSE_CREDIT_WEIGHT[band][group] * (dtal - DEFENSE_CREDIT_POSITION_MEAN[group]) * fade;
   // A poor defender loses half — and only in the rotation band: below TAL 50 the cut fades out
   // (zero at 40), so the replacement-level tail isn't pushed further down.
-  if (lift < 0) return (lift / 2) * clamp01((tal - 40) / 10);
+  if (lift < 0) {
+    // Before 1973-74 there were no steals or blocks, so a low D-TAL there is a thin read, not a
+    // measured weakness: no cut for those windows.
+    if (spanEndYears(span.spanLabel)[0] < DEFENSE_CREDIT_STOCKS_FROM) return 0;
+    return (lift / 2) * clamp01((tal - 40) / 10);
+  }
   lift = Math.min(lift, DEFENSE_CREDIT_MAX_LIFT);
   if (otal < DEFENSE_CREDIT_WEAK_OFFENSE) lift = Math.min(lift, Math.max(0, DEFENSE_CREDIT_WEAK_OFFENSE_CEILING - tal));
   return lift;
