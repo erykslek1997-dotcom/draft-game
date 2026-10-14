@@ -239,6 +239,16 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
      barwy, poziom (siła AI) i styl GM-a (np. obrona, strzelcy, gwiazdy — podpięte pod istniejące
      profile AI z `aiProfileForSlot`). W drafcie losujemy 15 z puli. **Poziomu ani stylu nie
      pokazujemy graczowi** (decyzja użytkownika). Dziś: `randomTeamNames` w `src/engine/teamNames.ts`.
+     **Logo: wariant A (decyzja 2026-10-14)** — system składany zamiast ręcznych maskotek: kształt
+     herbu (8) + wzór tła (8) + symbol (31) + 4 barwy, wszystko jako SVG z kodu (cała pula < 25 KB).
+     Makieta 46 drużyn: https://claude.ai/artifact/WG8h8n743G2VNTScyaksV6. Plan: (1) akceptacja
+     nazw i barw, (2) PR: katalog + `<TeamLogo>` zamiast `TeamMark`/`.sc-mark`/hasha koloru,
+     losowanie 15 z puli z ziarna draftu (naprawia nazwy przy `?draftSeed=` i w pojedynkach),
+     opcjonalne `franchiseId` w `Team` (stare zapisy bez zmian), oba `createInitialTeams`
+     (All-Time i Mini); sprawdzenie każdej nazwy pod kątem prawdziwych drużyn (dziś losowanie może
+     dać np. Charlotte Hornets czy Memphis Grizzlies), (3) PR: styl GM-a przypięty do franczyzy,
+     (4) osobno: poziom siły AI (nowa dźwignia, wymaga pomiaru kalibracji). Otwarte: Twoja drużyna —
+     wybór z puli z ponownym losowaniem czy własna nazwa z logo z inicjałami.
    - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14)** — fikcyjne
      postacie (decyzja: fake names) o wyrazistych archetypach: głośny były gracz („w moich
      czasach…”), trener od obrony, analityk od liczb, stary skaut — każdy z imieniem, nazwiskiem i
