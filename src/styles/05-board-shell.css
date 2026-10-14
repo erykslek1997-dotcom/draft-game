@@ -217,28 +217,8 @@
 /* 2026-09-11, user's own inspiration screenshot: Draft + Team merged into one screen — player
    cards + a persistent "Your Five" sidebar, side by side. See DraftBoard.tsx's own JSX comments
    (`at-draft-workspace`) for the exact scoping of this pass. */
-/* 2026-09-14, user-reported live ("za dużo tego na desktopie... połączmy wszystko w jeden ekran"):
-   a genuinely wide monitor (now that `#root` spans the full viewport instead of a boxed ~1126px
-   card — see index.css's own comment) left a large blank column next to the Draft tab's "Your
-   Five" sidebar while the Team roster table + Rotation minutes editor sat a tab-click away, on an
-   otherwise-empty screen. `.at-merge-row` wraps the Draft workspace card and a new
-   `.at-merge-team-col` (Team roster + Rotation, see DraftBoard.tsx's own JSX comments on both) —
-   below `WIDE_LAYOUT_QUERY` this is just a plain block, so narrow/default screens stack exactly as
-   before this pass; at that width both panels are also kept mounted simultaneously (DraftBoard.tsx
-   `isWideLayout`), so this only has to place them, not reveal anything CSS-hidden. The 1600px
-   threshold matches that same JS breakpoint exactly — `.rotation-builder`'s own 820px max-width
-   and the Team table's 11 columns both want real room, more than a three-way split would leave. */
-@media (min-width: 1600px) {
-  .at-merge-row { display: flex; align-items: flex-start; gap: 16px; }
-  .at-merge-draft { flex: 1 1 0; min-width: 0; margin-bottom: 0; }
-  .at-merge-team-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-  /* Both panels are always showing side by side at this width, so switching between them no
-     longer does anything — the topbar's Draft/Team pill pair (and the sidebar's own "Team tab"
-     jump link, hidden via DraftBoard.tsx's own `isWideLayout` check) would just be dead chrome.
-     2026-09-24: only the tab pills are hidden now — the topbar also carries the CPU-speed
-     control, which hiding the whole bar made unreachable on wide screens. */
-
-}
+/* 2026-10-14: Draft and Team no longer sit side by side on wide screens — Team is a tab at every
+   width (the draft screen redesign); `.at-merge-row` is a plain wrapper now. */
 
 .at-draft-workspace {
   display: flex;
