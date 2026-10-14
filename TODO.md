@@ -217,7 +217,7 @@ rotacja zostaje, gracz przechodzi na nowe lata z tymi samymi minutami.
 Układ playoffów — zrobiony 2026-10-14 (makieta A „centrum serii”: pasek rund, duża karta serii z
 następnym meczem, zapowiedź + kluczowi gracze, mała drabinka; na telefonie przycisk meczu przyklejony
 do dołu i zakładki Matchup/Bracket).
-Zostaje: 11 (silnik).
+11 — przeniesione do punktu 3 (Silnik symulacji) niżej.
 
 **Draft**
 1. Brak „usuń / kosz” w drafcie (np. zdjęcie gracza z Big Boardu / z rotacji — do doprecyzowania).
@@ -257,10 +257,6 @@ Zostaje: 11 (silnik).
   relacji, „Fouled out” w box score, PF w statystykach sezonu.
 - Po skończonym drafcie przejście do zakładki Team (zrobione: samo się przełącza + baner na Draft).
 - „Caps nachodzą na Change years” (zrobione: koszt tylko w kolumnie Caps, na telefonie „Change”).
-
-**Silnik**
-11. Kirilenko obok Curry'ego ma mało asyst — silnik nie uwzględnia, że Curry grając bez piłki
-    (off-ball gravity) generuje asysty kolegom, którzy mają piłkę.
 
 
 1. **UI** — zakres do ustalenia na starcie (kandydaci: ton wyniku według miejsca w Mini/All-Time,
@@ -315,6 +311,11 @@ Zostaje: 11 (silnik).
      potem 2011-13, 2016-18, 2014-16, dopiero wtedy 2008-10. Dziś najwyższy jest 2007-09 (GOAT).
 3. **Silnik symulacji** — etap 4b (atak ~66%, rotacja ~34% w meczu), rzuty wolne w ocenie, mecz
    na żywo mocniej na silniku, etap 2b, tempo meczu, kalendarz, balans po symulacjach.
+   - **Asysty od gry bez piłki (playtest 2026-10-14, punkt 11)** — Kirilenko obok Curry'ego ma w
+     sezonie mało asyst: silnik nie uwzględnia, że strzelec grający bez piłki (off-ball gravity,
+     zasłony, ruch) wciąga obronę i otwiera podania kolegom, którzy mają piłkę. Do sprawdzenia, jak
+     mecz rozdziela asysty (`liveGame.ts`) i czy ruch bez piłki (`cutter×passer`, dane o ruchu
+     strzelców) może podnosić szansę na asystę u podającego.
 4. **Tryby** — Etap 3 niżej (Draw Five → Mini → All-Time → wspólne).
 
 ## Kolejność prac (decyzja 2026-10-08, zastąpiona)
