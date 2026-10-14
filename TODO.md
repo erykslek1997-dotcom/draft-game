@@ -217,7 +217,7 @@ rotacja zostaje, gracz przechodzi na nowe lata z tymi samymi minutami.
 Układ playoffów — zrobiony 2026-10-14 (makieta A „centrum serii”: pasek rund, duża karta serii z
 następnym meczem, zapowiedź + kluczowi gracze, mała drabinka; na telefonie przycisk meczu przyklejony
 do dołu i zakładki Matchup/Bracket).
-Zostaje: 11 (silnik).
+11 — przeniesione do punktu 3 (Silnik symulacji) niżej.
 
 **Draft**
 1. Brak „usuń / kosz” w drafcie (np. zdjęcie gracza z Big Boardu / z rotacji — do doprecyzowania).
@@ -258,10 +258,6 @@ Zostaje: 11 (silnik).
 - Po skończonym drafcie przejście do zakładki Team (zrobione: samo się przełącza + baner na Draft).
 - „Caps nachodzą na Change years” (zrobione: koszt tylko w kolumnie Caps, na telefonie „Change”).
 
-**Silnik**
-11. Kirilenko obok Curry'ego ma mało asyst — silnik nie uwzględnia, że Curry grając bez piłki
-    (off-ball gravity) generuje asysty kolegom, którzy mają piłkę.
-
 
 1. **UI** — zakres do ustalenia na starcie (kandydaci: ton wyniku według miejsca w Mini/All-Time,
    karta na ekranach wyników Draw Five, stół Draw Five, animacja lotu karty, linia Scouta dla
@@ -295,6 +291,29 @@ Zostaje: 11 (silnik).
      barwy, poziom (siła AI) i styl GM-a (np. obrona, strzelcy, gwiazdy — podpięte pod istniejące
      profile AI z `aiProfileForSlot`). W drafcie losujemy 15 z puli. **Poziomu ani stylu nie
      pokazujemy graczowi** (decyzja użytkownika). Dziś: `randomTeamNames` w `src/engine/teamNames.ts`.
+     **Logo: wariant A (decyzja 2026-10-14)** — system składany zamiast ręcznych maskotek: kształt
+     herbu (8) + wzór tła (8) + symbol + 4 barwy, wszystko jako SVG z kodu (cała pula ok. 30 KB, 11 KB po kompresji).
+     Symbol pokazuje nazwę (użytkownik: „jak jest Chickens czy Coyotes, to powinno wskazywać na
+     to”): 33 płaskie, geometryczne maskotki (kogut, kojot, łoś, sowa…) + 31 symboli ogólnych.
+     Makieta 46 drużyn: https://claude.ai/artifact/WG8h8n743G2VNTScyaksV6. Plan: (1) akceptacja
+     nazw i barw, (2) PR: katalog + `<TeamLogo>` zamiast `TeamMark`/`.sc-mark`/hasha koloru,
+     losowanie 15 z puli z ziarna draftu (naprawia nazwy przy `?draftSeed=` i w pojedynkach),
+     opcjonalne `franchiseId` w `Team` (stare zapisy bez zmian), oba `createInitialTeams`
+     (All-Time i Mini); sprawdzenie każdej nazwy pod kątem prawdziwych drużyn (dziś losowanie może
+     dać np. Charlotte Hornets czy Memphis Grizzlies), (3) PR: styl GM-a przypięty do franczyzy,
+     (4) osobno: poziom siły AI — zadanie „Kalibracja siły AI” w punkcie 2 kolejności prac. Twoja drużyna: wybór z
+     puli z ponownym losowaniem; nazwy zostają (decyzje użytkownika 2026-10-14).
+     **Krok 2 zrobiony (2026-10-14):** `src/data/franchises.ts` (46 drużyn), `teamLogoKit.ts` +
+     `TeamLogo.tsx`; logo w menu (karta z kostką zamiast pola tekstowego), loterii, tablicy draftu,
+     wynikach, tabeli i drabince sezonu, tablicy meczu (barwy drużyn, przy zderzeniu kolorów druga
+     drużyna bierze drugi kolor). Rywale z ziarna draftu; ta sama seed = te same drużyny na tych samych
+     miejscach (inna własna drużyna zmienia najwyżej 2 miejsca). Stare zapisy: dawne nazwy dostają
+     stary znaczek z kodem. Sprawdzenie nazw: Honolulu Sharks (baseball zimowy 1993–2008) i Portland
+     Lumberjacks (liga bowlingowa PBA) istniały — zmienione na Honolulu Tiger Sharks i Portland
+     Flannels (użytkownik: „zmień to Sharks i Lumberjacks”). Test: `scripts/testFranchises.ts`.
+     **Krok 3 zrobiony (2026-10-14):** styl GM-a przypięty do franczyzy (`draft.ts`
+     `aiProfileForTeam`), siła gustu dalej losowana per draft; dawne nazwy — losowanie z ziarna.
+     Przy okazji: drabinka playoffów rozjechana od #212 (wspólna klasa `pl-row` z listą graczy).
    - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14)** — fikcyjne
      postacie (decyzja: fake names) o wyrazistych archetypach: głośny były gracz („w moich
      czasach…”), trener od obrony, analityk od liczb, stary skaut — każdy z imieniem, nazwiskiem i
@@ -313,8 +332,27 @@ Zostaje: 11 (silnik).
    (KG na trzech pozycjach).
    - **LeBron — ręczna kolejność stretchy (2026-10-14)**: domyślny span i najwyższy TAL to 2012-14,
      potem 2011-13, 2016-18, 2014-16, dopiero wtedy 2008-10. Dziś najwyższy jest 2007-09 (GOAT).
+   - [ ] **Kalibracja siły AI — ukryty poziom franczyzy (2026-10-14, użytkownik: „kalibracja siły
+     AI do todo”)** — ostatni krok stałych drużyn. Dziś wszystkie drużyny AI draftują tym samym
+     algorytmem i różnią się tylko stylem (przypięty do franczyzy, `draft.ts` `aiProfileForTeam`)
+     i losową siłą gustu. Do zrobienia: (1) pole `level` w `src/data/franchises.ts` (np. 3–4
+     poziomy, ukryte jak styl); (2) wybór dźwigni — kandydaci: szum tablicy (`aiDrafter.ts`
+     `BOARD_NOISE_POINTS` 8, `BOARD_NOISE_TEAM_POINTS`), wyłączony lub krótszy lookahead u słabszych,
+     rzadsze sięganie po „steal”; najpierw pomiar, która dźwignia daje rozrzut bez dziwnych składów;
+     (3) pomiar przed/po na tych samych ligach: `npx tsx scripts/calibrationReport.ts` (8+ seedów;
+     punkt odniesienia 2026-10-14: średnia drużyna AI 80,4, sd 2,8, min 73, max 87), szanse na
+     tytuł najlepszej drużyny (cel z TODO: ~25–35%), miejsce gracza w Mini/All-Time przy
+     typowym drafcie; (4) losowanie 15 z puli pilnuje, żeby nie trafiło samych silnych lub samych
+     słabych; (5) testy z progami na próbce draftów AI (`testInsightsSlow`, `testDefenseDistribution`,
+     `calibrationReference`) przeliczyć i opisać zmiany jak przy 2026-10-14. Poziomu nie
+     pokazujemy graczowi (decyzja użytkownika). (M)
 3. **Silnik symulacji** — etap 4b (atak ~66%, rotacja ~34% w meczu), rzuty wolne w ocenie, mecz
    na żywo mocniej na silniku, etap 2b, tempo meczu, kalendarz, balans po symulacjach.
+   - **Asysty od gry bez piłki (playtest 2026-10-14, punkt 11)** — Kirilenko obok Curry'ego ma w
+     sezonie mało asyst: silnik nie uwzględnia, że strzelec grający bez piłki (off-ball gravity,
+     zasłony, ruch) wciąga obronę i otwiera podania kolegom, którzy mają piłkę. Do sprawdzenia, jak
+     mecz rozdziela asysty (`liveGame.ts`) i czy ruch bez piłki (`cutter×passer`, dane o ruchu
+     strzelców) może podnosić szansę na asystę u podającego.
 4. **Tryby** — Etap 3 niżej (Draw Five → Mini → All-Time → wspólne).
 
 ## Kolejność prac (decyzja 2026-10-08, zastąpiona)

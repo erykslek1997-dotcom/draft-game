@@ -7,6 +7,8 @@ import { compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
 import { TeamTile } from './TeamBadge';
 import { Face } from './ShotChip';
 import { FitName } from './FitName';
+import { TeamLogo } from './TeamLogo';
+import { hasTeamLogo, teamHue } from './teamLogoKit';
 
 /**
  * 2026-10-08, results look C (approved mockup, "rywale 1 do 1 co dla nas"): the pieces one team's
@@ -14,14 +16,10 @@ import { FitName } from './FitName';
  * row — so both read exactly the same way.
  */
 
-/** Our fictional franchises have no real colours; a stable hue from the name gives each its own. */
-export function teamHue(name: string): number {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
-  return h;
-}
-
+/** The team's crest: its franchise logo, or for names from before the pool (old saves) the old
+ * code on a gradient in the team's hue. */
 export function TeamMark({ code, name, size = 'sm' }: { code: string; name: string; size?: 'sm' | 'md' }) {
+  if (hasTeamLogo(name)) return <TeamLogo name={name} size={size === 'md' ? 34 : 24} />;
   const hue = teamHue(name);
   return (
     <span

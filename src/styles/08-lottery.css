@@ -41,6 +41,7 @@
 .at-lottery-secondary { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .at-lottery-secondary > button { margin: 0; }
 .at-lottery-result { animation: at-lottery-pop .3s ease-out; margin-bottom: 18px; }
+.at-lottery-team-line .team-logo { display: inline-block; vertical-align: middle; margin: -4px 8px 0 0; }
 .at-lottery-team-line { font-size: 16px; color: var(--at-ink); margin: 0 0 10px; }
 .at-lottery-picks-label { font-size: 12px; color: var(--at-ink-soft); margin: 0 0 8px; }
 .at-lottery-picks {

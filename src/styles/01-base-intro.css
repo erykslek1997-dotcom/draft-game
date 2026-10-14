@@ -268,10 +268,19 @@
   font-size: 14px;
   color: var(--text-h);
 }
-.team-name-input {
-  flex: 0 1 260px;
-  min-width: 0;
+.team-pick {
+  box-sizing: border-box;
+  width: 240px;
+  max-width: calc(100vw - 128px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 8px;
+  text-align: left;
 }
+.team-pick-name { display: grid; min-width: 0; line-height: 1.15; }
+.team-pick-name small { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+.team-pick-name b { font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .team-name-randomize {
   margin: 0;
   padding: 8px 8px;
@@ -756,17 +765,11 @@ button.active,
 }
 .at-intro-terminal .team-name-label::before { content: '[ '; }
 .at-intro-terminal .team-name-label::after { content: ' ]'; }
-.at-intro-terminal .team-name-input {
+.at-intro-terminal .team-pick {
   background: var(--term-panel);
   border: 1px solid var(--term-line);
   color: var(--term-ink);
-  font-family: inherit;
   border-radius: 2px;
-}
-.at-intro-terminal .team-name-input:focus-visible {
-  outline: none;
-  border-color: var(--term-cyan);
-  box-shadow: 0 0 0 1px var(--term-cyan);
 }
 .at-intro-terminal .team-name-randomize {
   background: var(--term-panel);

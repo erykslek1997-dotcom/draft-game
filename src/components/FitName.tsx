@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Face } from './ShotChip';
+import { teamNickname } from '../engine/teamNames';
 
 /** "LeBron James" → "L. James"; a one-word name stays as it is. */
 function shortPlayerName(name: string): string {
@@ -99,12 +100,12 @@ export function FitName({ name, className, as: Tag = 'span', faceNextToIt }: { n
 }
 
 /**
- * A team's name, same rule as a player's: "Long Beach Boilermakers", else "Boilermakers", else
+ * A team's name, same rule as a player's: "Long Beach Sea Lions", else "Sea Lions", else
  * the code (when there is one). `mascotFirst` starts at the mascot (the bracket). `after` (a "you" tag) rides along.
  */
 export function FitTeam({ name, code, className, after, mascotFirst }: { name: string; code?: string; className?: string; after?: ReactNode; mascotFirst?: boolean }) {
   const sr = <span className="at-sr-only">{name}</span>;
-  const mascot = name.split(' ').slice(-1)[0];
+  const mascot = teamNickname(name);
   const variants: ReactNode[] = [
     ...(mascotFirst ? [] : [<>{name}{after}</>]),
     <>{mascot}{sr}{after}</>,

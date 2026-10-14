@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactElement } from 'react';
 import type { Team } from '../engine/types';
 import {
   engineTeamViews,
@@ -18,6 +18,8 @@ import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
 import { rankTeams } from '../engine/scoring';
 import LiveGame, { type LiveMatchup } from './LiveGame';
 import { TeamMark } from './ResultsReport';
+import { teamNickname } from '../engine/teamNames';
+import { matchupHues } from './teamLogoKit';
 import './BestFive.css';
 import { FitName, FitTeam } from './FitName';
 import { PlayerRow, RowsLabel } from './PlayerRow';
@@ -49,7 +51,7 @@ const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th',
 const per = (l: SeasonPlayerLine, k: keyof SeasonPlayerLine['totals']) => l.totals[k] / Math.max(1, l.games);
 const f1 = (x: number) => x.toFixed(1);
 const pct = (made: number, att: number) => (att > 0 ? (100 * made) / att : 0);
-const mascot = (team: Team | undefined) => team?.name.split(' ').slice(-1)[0] ?? '';
+const mascot = (team: Team | undefined) => (team ? teamNickname(team.name) : '');
 const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? '' : 's'}`;
 
 /**
@@ -1272,6 +1274,9 @@ function SeriesHub({
   const [mine, theirs] = [top(youId), top(opp)];
   const preview = seriesPreview(season, youId, opp);
   const code = (id: string) => codes.get(id) ?? '';
+  // The card glows in both teams' colours (your side left), as the live game's scoreboard does.
+  const [hueYou, hueOpp] = matchupHues(byId.get(youId)?.name ?? '', byId.get(opp)?.name ?? '');
+  const heroColors = { '--ph-a': `hsl(${hueYou} 62% 45% / 0.2)`, '--ph-b': `hsl(${hueOpp} 62% 45% / 0.2)` } as CSSProperties;
   const status = simming && played === 6 ? 'Game 7 — winner takes it' : yw === ow ? (played === 0 ? 'Best of seven' : 'Series tied') : yw > ow ? 'You lead the series' : 'You trail the series';
   const side = (id: string, right: boolean, you: boolean) => (
     <div className={`ph-team${right ? ' is-right' : ''}`}>
@@ -1319,7 +1324,7 @@ function SeriesHub({
         </button>
       </div>
 
-      <section className="ph-hero" aria-label="Your series">
+      <section className="ph-hero" aria-label="Your series" style={heroColors}>
         <div className="ph-score-row">
           {side(youId, false, true)}
           <div className="ph-score">

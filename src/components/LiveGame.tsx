@@ -3,6 +3,8 @@ import type { LegendFive } from '../engine/dailyMeta';
 import { pregameOdds, type BoxLineStats, type GameMoment, type LiveGameResult } from '../engine/liveGame';
 import { gameWinProbability } from '../engine/matchup';
 import { Face } from './ShotChip';
+import { TeamLogo } from './TeamLogo';
+import { hasTeamLogo, matchupHues } from './teamLogoKit';
 import './LiveGame.css';
 
 /**
@@ -79,13 +81,6 @@ function prefersReducedMotion(): boolean {
   }
 }
 
-/** The same name-to-hue hash the results screen's team marks use. */
-function hueOf(name: string): number {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
-  return h;
-}
-
 /** A game between two teams (the season's playoffs): both sides by name, one of them yours. */
 export interface LiveMatchup {
   title: string;
@@ -145,7 +140,8 @@ export default function LiveGame({
   const names: [string, string] = matchup ? matchup.names : ['Your five', opponent?.name ?? 'Them'];
   const codes: [string, string] = matchup ? matchup.codes : ['YOU', (opponent?.short ?? 'OPP').replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || 'OPP'];
   const yourSide = matchup ? matchup.yourSide : 0;
-  const hues: [number, number] = [hueOf(names[0]), hueOf(names[1])];
+  // Team colours: each franchise's own, the second side switching to its next colour on a clash.
+  const hues = matchupHues(names[0], names[1]);
   const total = game.moments.length;
   // -1: before tip-off. `total`: final.
   const [shown, setShown] = useState(autoStart && !prefersReducedMotion() ? (autoPlay ? 0 : -1) : total);
@@ -329,11 +325,14 @@ export default function LiveGame({
   const vars = { '--sc-a': `hsl(${hues[0]} 62% 52%)`, '--sc-b': `hsl(${hues[1]} 62% 52%)`, '--sc-a-deep': `hsl(${hues[0]} 55% 30%)`, '--sc-b-deep': `hsl(${hues[1]} 55% 30%)` } as CSSProperties;
   const sideColor = (side: 0 | 1) => (side === 0 ? 'var(--sc-a)' : 'var(--sc-b)');
 
-  const mark = (side: 0 | 1, big = true) => (
-    <span className={`sc-mark${big ? '' : ' sc-mark--sm'}`} style={{ background: `linear-gradient(160deg, hsl(${hues[side]} 55% 32%) 0 60%, hsl(${(hues[side] + 40) % 360} 72% 55%) 60%)` }} aria-hidden>
-      {codes[side]}
-    </span>
-  );
+  const mark = (side: 0 | 1, big = true) =>
+    hasTeamLogo(names[side]) ? (
+      <TeamLogo name={names[side]} size={big ? 52 : 28} className="sc-logo" />
+    ) : (
+      <span className={`sc-mark${big ? '' : ' sc-mark--sm'}`} style={{ background: `linear-gradient(160deg, hsl(${hues[side]} 55% 32%) 0 60%, hsl(${(hues[side] + 40) % 360} 72% 55%) 60%)` }} aria-hidden>
+        {codes[side]}
+      </span>
+    );
 
   return (
     <section className="sc" style={vars} aria-label={matchup ? `${matchup.names[0]} against ${matchup.names[1]}` : `Game of the day: you against the ${opponent?.name}`}>

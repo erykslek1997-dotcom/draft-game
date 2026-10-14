@@ -1,5 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
+import { franchiseByName } from '../data/franchises';
 import { draftPool } from '../data/draftPool';
 import { DRAFT_EXPERIMENT } from './draftExperiment';
 import { peakDraftPool } from './peakDraftPool';
@@ -487,6 +488,17 @@ export function aiProfileForSlot(seed: number, draftSlot: number): AiGmProfile {
   const gms = aiGmsForSeed(seed);
   return gms[(draftSlot - 1) % gms.length].profile;
 }
+/**
+ * 2026-10-14: a franchise's GM keeps one style in every draft (data/franchises.ts `style`, hidden
+ * from the player by the user's decision), so the Scranton Moles always lean on defense. The seeded
+ * per-slot draw above remains for team names outside the pool (saves from before it). How hard the
+ * GM leans on his taste is still drawn per draft. With the pool's mix (13 balanced, 10 paint
+ * beasts, 9 defense first, 8 pace and space, 6 old school of 46) fifteen rivals essentially never
+ * put more than `MAX_TEAMS_PER_GM_PROFILE` on one style, so no cap is enforced here.
+ */
+export function aiProfileForTeam(seed: number, team: Team): AiGmProfile {
+  return franchiseByName(team.name)?.style ?? aiProfileForSlot(seed, team.draftSlot);
+}
 function aiProfileStrengthForSlot(seed: number, draftSlot: number): number {
   const gms = aiGmsForSeed(seed);
   return gms[(draftSlot - 1) % gms.length].strength;
@@ -512,7 +524,7 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
     rosterSize: ROSTER_SIZE,
     capLimit: CAP_LIMIT,
     strategy: strategyForDraftSlot(state.seed, team.draftSlot),
-    profile: aiProfileForSlot(state.seed, team.draftSlot),
+    profile: aiProfileForTeam(state.seed, team),
     profileStrength: aiProfileStrengthForSlot(state.seed, team.draftSlot),
     boardSeed: mixSeed(state.seed, 0x7b00 + team.draftSlot),
   };
