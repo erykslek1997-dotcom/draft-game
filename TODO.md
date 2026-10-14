@@ -332,7 +332,10 @@ do dołu i zakładki Matchup/Bracket).
      kłótnie, zamyka werdyktem — zastępuje anonimowe „Desk consensus”), **Natalie Novacka** (kapolog:
      cap gracza wobec oceny, okazje i przepłaty), **Jeremy May** (lata 90. i Jordan, rywal
      Prabuckova), **Lex Superteam** (tylko gwiazdy, rywal Rotation i Novackiej), **Zoran Eurostep**
-     (gracze spoza USA, rywal Sosiniego). Pesymista od kontuzji (DUR) — na razie nie. Nazwiska Jake'a i Igora zmienione, bo wskazywały prawdziwe osoby (Ben
+     (gracze spoza USA, rywal Sosiniego). Pesymista od kontuzji (DUR) — na razie nie.
+     Głosy (tiki, sposób argumentowania) inspirowane archiwum ligowego Discorda za zgodą graczy;
+     archiwum nie trafia do repozytorium, w kodzie i makiecie są tylko fikcyjne postacie. Na antenie
+     3–5 ekspertów + prowadzący; kolejność: wyniki → Draft Desk → wtrącenia (decyzja 2026-10-14). Nazwiska Jake'a i Igora zmienione, bo wskazywały prawdziwe osoby (Ben
      Taylor, Bill Simmons). Makieta: https://claude.ai/artifact/NJFXtxXxKQgtybQPJBbXrc.
      **Pomysł:** zmienny panel jak w studiu — każdy ekspert ma „obiektyw” (ocena składu od −1 do +1
      z jego punktu widzenia + nazwiska jako dowód), na antenę wchodzą 3–5 najsilniejszych opinii (co
