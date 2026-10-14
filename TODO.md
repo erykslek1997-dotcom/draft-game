@@ -222,6 +222,14 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
      zakładki Box score / Porównanie drużyn / Match-upy — ale z **relacją na żywo** (play-by-play)
      jako głównym elementem. Dziś mecz na żywo to `src/components/LiveGame.tsx` (tablica, szansa
      wygranej, kwarty, play-by-play, box score) — przebudowa wyglądu, nie nowy silnik.
+     Makiety (2026-10-14, prawdziwy mecz z silnika): sekcja „Simcast” na
+     https://claude.ai/artifact/1gRcJSpbdTv2oqzmnyUjQW — użytkownik: „wygląda spoko, tylko ważne
+     żeby wyważyć czas trwania”. **Tempo** (dziś ~45 s/mecz przy ×1, ~200 akcji, ~0,2 s na akcję —
+     relacji nie da się czytać): Q1–Q3 ~12 s na kwartę, w relacji tylko punkty i ważne akcje (reszta
+     w zakładce); przerwa po kwarcie 2–3 s z jednym zdaniem; Q4 ~18 s; końcówka na styku (≤2 min,
+     ≤8 pkt) ~1 s na akcję, pełna relacja; przy wysokim prowadzeniu samo przyspiesza. Cel: ~55–60 s
+     mecz jednostronny, ~80–90 s wyrównany; ×2/×4 proporcjonalnie. W playoffach przy każdym meczu
+     „Watch” (całość) i „Key moments” (od połowy Q4, ~20–25 s). Liczby do dostrojenia po graniu.
    - **Stałe drużyny zamiast losowych (2026-10-14)** — jak największa pula drużyn stworzonych z góry
      (użytkownik: „więcej drużyn, o ile to możliwe”; cel ~40+): nazwa, miasto, własne logo (SVG),
      barwy, poziom (siła AI) i styl GM-a (np. obrona, strzelcy, gwiazdy — podpięte pod istniejące

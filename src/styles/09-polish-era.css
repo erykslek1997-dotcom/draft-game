@@ -1200,7 +1200,7 @@
 
 /* Breathing room: more padding inside the panels and cards, and more space between sections. */
 .at-card { padding: 24px 24px 24px; }
-.at-player-cards { gap: 12px; }
+
 .at-player-card { padding: 12px 12px 12px; gap: 8px; }
 
 .qf-team-panel { gap: 8px; margin: 4px 0 20px; }
@@ -1215,5 +1215,4 @@
   .at-card { padding: 16px 16px 16px; }
   .at-turn-sticky { margin: 0 -16px 14px; padding: 8px 16px 0; }
 
-  .at-player-cards { gap: 12px; }
 }
