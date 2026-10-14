@@ -84,11 +84,9 @@ export function YearsPicker({
         title={`Change ${playerName}'s years — ${options.length} stretches of his career to choose from`}
       >
         <EraYears span={selected} />
-        <span className="years-picker-cost">
-          <CapIcon size={12} /> {selected.fga.toFixed(1)}
-        </span>
+        {/* The cost sits in the row's own Caps column (playtest: the caps ran into this label). */}
         <span className="years-picker-change">
-          <span aria-hidden>✎</span> Change years
+          <span aria-hidden>✎</span> Change<span className="years-picker-long"> years</span>
         </span>
       </button>
       {open && inlineSlot && createPortal(
