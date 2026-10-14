@@ -322,7 +322,8 @@ do dołu i zakładki Matchup/Bracket).
      **Obsada (użytkownik, 2026-10-14), 12 ekspertów:** Mattia Sosini (nowoczesna koszykówka, nie
      lubi starszej daty), Matt Shyman (obrona), Davyd Solinhakov (twarda koszykówka lat 2000), Jacob
      Binash (lata 80.), Mattheus Jertcheck (wszystko sprzed 2000), Mark Rotation (krótkie ławki),
-     Micheal Rightwing (niscy w obronie typu Nash), Filippo Batterista (składy two-way), Mikhail
+     Micheal Rightwing (rywal Moonbata: wchodzi razem z nim i prostuje go zdrowym rozsądkiem, bez
+     liczb; decyzja użytkownika — bez wątku niskich obrońców), Filippo Batterista (składy two-way), Mikhail
      Prabuckov (fan Kobe), Jake Onoffsky (statystyk; było Jake Bentaylor), Bart Moonbat (głupie,
      pewne siebie opinie — dżoker, nigdy sam, zawsze ktoś go poprawia), Igor Bannerman (fan Celtics;
      było Igor Simmons). Nazwiska Jake'a i Igora zmienione, bo wskazywały prawdziwe osoby (Ben
@@ -330,12 +331,12 @@ do dołu i zakładki Matchup/Bracket).
      **Pomysł:** zmienny panel jak w studiu — każdy ekspert ma „obiektyw” (ocena składu od −1 do +1
      z jego punktu widzenia + nazwiska jako dowód), na antenę wchodzą 3–5 najsilniejszych opinii (co
      najmniej jedna na plus i jedna na minus), rywale wchodzą parą i sobie odpowiadają (Sosini ↔
-     Jertcheck/Binash, Bannerman ↔ Prabuckov, Onoffsky ↔ Moonbat, Rightwing ↔ Moonbat — o niskich
-     obrońcach, decyzja użytkownika). Moonbat co ok. 4. raz. Panel z
+     Jertcheck/Binash, Bannerman ↔ Prabuckov, Moonbat ↔ Rightwing (zawsze razem) i Onoffsky
+     (liczby). Moonbat co ok. 4. raz. Panel z
      ziarna draftu. Kolejność: (1) ekran wyników Mini/All-Time zamiast Coach/Analyst/Scout
      (`voicesFor`, `QuickFive.tsx`), (2) Draft Desk (`engine/draftDesk.ts`), (3) wtrącenia w pasku w
      trakcie draftu przy wyrazistych momentach (Kobe u kogokolwiek, gracz sprzed 1980, Celtic, niski
-     rozgrywający w piątce). Liczby Onoffsky'ego zawsze z danych gracza. Otwarte: liczba ekspertów na
+     rozgrywający w piątce — komentuje Shyman). Liczby Onoffsky'ego zawsze z danych gracza. Otwarte: liczba ekspertów na
      antenie, częstotliwość Moonbata, kolejność kroków.
    - **Oceny bez kontekstu (2026-10-14)** — Wilt i Oscar mają F w spacingu, bo grali przed linią za 3;
      sama litera tego nie mówi. Pokazać „—” z podpowiedzią „No 3-point line in his era” zamiast F
