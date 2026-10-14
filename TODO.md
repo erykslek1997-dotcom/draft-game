@@ -257,7 +257,10 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
      drużyna bierze drugi kolor). Rywale z ziarna draftu; ta sama seed = te same drużyny na tych samych
      miejscach (inna własna drużyna zmienia najwyżej 2 miejsca). Stare zapisy: dawne nazwy dostają
      stary znaczek z kodem. Sprawdzenie nazw: Honolulu Sharks (baseball zimowy 1993–2008) i Portland
-     Lumberjacks (liga bowlingowa PBA) istniały — zostają. Test: `scripts/testFranchises.ts`.
+     Lumberjacks (liga bowlingowa PBA) istniały — zmienione na Honolulu Tiger Sharks i Portland
+     Flannels (użytkownik: „zmień to Sharks i Lumberjacks”). Test: `scripts/testFranchises.ts`.
+     **Krok 3 zrobiony (2026-10-14):** styl GM-a przypięty do franczyzy (`draft.ts`
+     `aiProfileForTeam`), siła gustu dalej losowana per draft; dawne nazwy — losowanie z ziarna.
      Przy okazji: drabinka playoffów rozjechana od #212 (wspólna klasa `pl-row` z listą graczy).
    - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14)** — fikcyjne
      postacie (decyzja: fake names) o wyrazistych archetypach: głośny były gracz („w moich

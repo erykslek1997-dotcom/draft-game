@@ -2,6 +2,7 @@ import { FRANCHISES, franchiseByName, franchiseName } from '../src/data/franchis
 import { LOGO_SYMBOLS, logoMarkup, matchupHues, teamHue } from '../src/components/teamLogoKit';
 import { createInitialTeams, initialTeamsForSeed } from '../src/engine/draftSetup';
 import { createQuickDraft } from '../src/engine/quickDraft';
+import { aiProfileForSlot, aiProfileForTeam } from '../src/engine/draft';
 import { TEAM_COUNT } from '../src/engine/rosterConstants';
 import { draftTeamNames, randomFranchiseName, teamCodes, teamNickname, teamPlace } from '../src/engine/teamNames';
 import { mulberry32 } from '../src/engine/rng';
@@ -82,6 +83,16 @@ check(
 );
 check(teamNickname('Long Beach Sea Lions') === 'Sea Lions' && teamNickname('Kentucky Chickenz') === 'Chickenz', 'nicknames keep two-word names whole');
 check(teamPlace({ id: 't', name: 'Long Beach Sea Lions', draftSlot: 1, isHuman: false, roster: [], rotation: null }) === 'Long Beach', 'a two-word nickname keeps the whole city');
+
+// GM style: a franchise keeps its own in every draft; names outside the pool use the seeded draw.
+let styleMismatches = 0;
+for (const seed of [5, 50, 500]) {
+  for (const t of initialTeamsForSeed(seed, 'Boise Mooses')) if (aiProfileForTeam(seed, t) !== franchiseByName(t.name)!.style) styleMismatches++;
+}
+check(styleMismatches === 0, 'every franchise drafts with its own GM style', `${styleMismatches}`);
+const oldTeam: Team = { id: 't0', name: 'Kentucky Chickenz', draftSlot: 3, isHuman: false, roster: [], rotation: null };
+check(aiProfileForTeam(9, oldTeam) === aiProfileForSlot(9, 3), 'a name outside the pool keeps the seeded style');
+check(!names.includes('Honolulu Sharks') && !names.includes('Portland Lumberjacks'), 'the two names that matched real teams are gone');
 
 // Saves from before the pool: an old-generator name still gets a seat and a derived code.
 const legacy = createInitialTeams('Kentucky Chickenz', mulberry32(3));

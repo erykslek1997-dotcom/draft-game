@@ -11,13 +11,13 @@ import type { AiGmProfile } from '../engine/aiDrafter';
  * Chickens czy Coyotes, to może bardziej powinno wskazywać na to"): Chickens get a rooster, Snowplows
  * a plough.
  *
- * Names were checked against real teams on 2026-10-14. Two old minor-league names overlap and were
- * kept on purpose: Honolulu Sharks (Hawaii Winter Baseball, 1993-2008) and Portland Lumberjacks (a
- * PBA League bowling team). Codes are unique and fixed, so a team reads the same in every draft.
+ * Names were checked against real teams on 2026-10-14. Two overlapped old minor-league names and
+ * were renamed the same day (user: "zmień to Sharks i Lumberjacks"): Honolulu Sharks (Hawaii Winter
+ * Baseball, 1993-2008) became the Tiger Sharks, Portland Lumberjacks (a PBA League bowling team) the
+ * Flannels. Codes are unique and fixed, so a team reads the same in every draft.
  *
- * `style` is the GM's taste (aiDrafter.ts `AiGmProfile`), hidden from the player by the user's
- * decision. Not wired yet: the draft still deals styles per slot from the seed (draft.ts
- * `aiProfileForSlot`); tying them to the franchise is the next step in TODO.md.
+ * `style` is the GM's taste (aiDrafter.ts `AiGmProfile`), the same in every draft (draft.ts
+ * `aiProfileForTeam`) and hidden from the player by the user's decision.
  */
 export interface FranchiseLogo {
   shape: 'shield' | 'circle' | 'hexagon' | 'diamond' | 'octagon' | 'badge' | 'square' | 'crest';
@@ -62,7 +62,7 @@ export const FRANCHISES: readonly Franchise[] = [
   f('REN', 'Reno', 'Jackrabbits', 'diamond', 'split', 'jackrabbit', '#1c1c22', '#ff5a36', '#c9ced6', 'pace-and-space'),
   f('DET', 'Detroit', 'Gearheads', 'square', 'quarters', 'gear', '#39424e', '#f08a24', '#d9dde2', 'balanced'),
   f('SCR', 'Scranton', 'Moles', 'crest', 'base', 'mole', '#5a3d2b', '#e8c07a', '#e8c07a', 'defense-first'),
-  f('HON', 'Honolulu', 'Sharks', 'circle', 'base', 'fin', '#0f7c84', '#f4f1e4', '#f28b66', 'pace-and-space'),
+  f('HON', 'Honolulu', 'Tiger Sharks', 'circle', 'base', 'fin', '#0f7c84', '#f4f1e4', '#f28b66', 'pace-and-space'),
   f('TPA', 'Tampa', 'Manatees', 'hexagon', 'solid', 'manatee', '#4a9a8f', '#ffffff', '#234a6b', 'paint-beasts'),
   f('LUB', 'Lubbock', 'Armadillos', 'badge', 'solid', 'armadillo', '#d8a868', '#3a2a1c', '#3a2a1c', 'defense-first'),
   f('BIS', 'Bismarck', 'Narwhals', 'octagon', 'chevron', 'narwhal', '#1b2f5e', '#a7e3e0', '#e8eef6', 'balanced'),
@@ -71,7 +71,7 @@ export const FRANCHISES: readonly Franchise[] = [
   f('FRE', 'Fresno', 'Raisins', 'circle', 'ring', 'grapes', '#5e2750', '#f6b93b', '#f6e7d0', 'balanced'),
   f('PIT', 'Pittsburgh', 'Anvils', 'square', 'band', 'anvil', '#2b2b2b', '#f2c230', '#f2c230', 'paint-beasts'),
   f('BTR', 'Baton Rouge', 'Crawdads', 'badge', 'base', 'crawdad', '#9d1f2f', '#f8d16c', '#f5efe6', 'paint-beasts'),
-  f('POR', 'Portland', 'Lumberjacks', 'shield', 'quarters', 'axes', '#a62b2b', '#f6efe2', '#1d2b1f', 'old-school'),
+  f('POR', 'Portland', 'Flannels', 'shield', 'quarters', 'axes', '#a62b2b', '#f6efe2', '#1d2b1f', 'old-school'),
   f('SPO', 'Spokane', 'Sasquatch', 'hexagon', 'chevron', 'footprint', '#4d5b2a', '#e2d2ad', '#e2d2ad', 'paint-beasts'),
   f('LVN', 'Las Vegas', 'Neons', 'diamond', 'ring', 'star', '#c2185b', '#ffe14d', '#ffe14d', 'pace-and-space'),
   f('ORL', 'Orlando', 'Flamingos', 'circle', 'chevron', 'flamingo', '#f06b9a', '#ffffff', '#1f6f78', 'pace-and-space'),
