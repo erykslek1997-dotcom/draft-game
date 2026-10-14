@@ -1016,3 +1016,99 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .dg-more:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 .at-calm .at-board-inline { margin: 0 0 16px; }
 .at-calm .at-board-drawer .dg { padding: 10px; }
+
+/* 2026-10-14, the draft screen redesign (DraftWarRoom.tsx, approved mockups "v2 Desktop"/"v2 Phone"):
+   the status bar, the "Before you pick again" lane and your five. */
+.at-calm .wr-status {
+  background: var(--calm-raised); border: 1px solid var(--calm-line); border-radius: 14px;
+  padding: 12px 16px; margin: 0 0 16px; display: flex; flex-direction: column; gap: 12px;
+}
+@media (min-width: 861px) { .at-calm .wr-status { position: sticky; top: 0; z-index: 6; } }
+.at-calm .wr-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.at-calm .wr-pill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+  background: #142133; color: #cfe3f7; font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.at-calm .wr-pill.is-yours { background: #3ab0f0; color: #06070c; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; }
+.at-calm .wr-pill.is-done { background: #7fd68a; color: #06070c; font-weight: 800; }
+.at-calm .wr-pill-dot { width: 8px; height: 8px; border-radius: 4px; background: #6cc3ff; }
+.at-calm .wr-status-round { font-size: 13px; color: var(--at-ink-soft); }
+.at-calm .wr-status-gap { flex: 1; }
+.at-calm .wr-scouts {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; cursor: pointer;
+  border: 1px solid var(--calm-line); background: var(--calm-raised-2); color: #a9c7e8; font: 600 12px var(--calm-sans);
+}
+.at-calm .wr-scouts:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+.at-calm .wr-caps { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--at-ink); white-space: nowrap; }
+.at-calm .wr-caps-track { width: 140px; height: 8px; border-radius: 4px; background: #142133; overflow: hidden; margin-right: 4px; }
+.at-calm .wr-caps-track > span { display: block; height: 100%; background: #ffd479; }
+
+.at-calm .wr-lane { margin: 0 0 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.at-calm .wr-lane-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 12px; }
+.at-calm .wr-lane-title { font-size: 15px; font-weight: 700; color: var(--at-ink); }
+.at-calm .wr-lane-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.at-calm .wr-rival {
+  flex: none; width: 180px; box-sizing: border-box; padding: 12px 14px; border-radius: 12px;
+  background: var(--calm-raised); border: 1px solid var(--calm-line); display: flex; flex-direction: column; gap: 4px;
+}
+.at-calm .wr-rival.is-first { border-color: #2a4566; }
+.at-calm .wr-rival-pick { font-family: var(--calm-num); font-size: 11px; color: var(--at-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.at-calm .wr-rival-open { font-size: 13px; font-weight: 800; color: var(--at-ink); white-space: nowrap; }
+.at-calm .wr-rival-has { font-size: 11px; color: var(--at-ink-soft); }
+.at-calm .wr-views { display: flex; margin: 0 0 12px; }
+.at-calm .wr-views > button { flex: 1; }
+
+.at-calm .at-draft-sidebar.wr-sidebar { width: 300px; padding: 0; border: none; background: none; top: 88px; }
+.at-calm .wr-five {
+  background: var(--calm-raised); border: 1px solid var(--calm-line); border-radius: 14px;
+  padding: 18px; display: flex; flex-direction: column; gap: 12px;
+}
+.at-calm .wr-five-head { display: flex; align-items: baseline; justify-content: space-between; font-size: 12px; }
+.at-calm .wr-five-title { font-size: 15px; font-weight: 700; color: var(--at-ink); }
+.at-calm .wr-court { position: relative; height: 196px; border-radius: 10px; background: #0d1a2a; border: 1px solid #1d3048; overflow: hidden; }
+.at-calm .wr-court-key { position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%); width: 96px; height: 92px; border: 1px solid #2a4566; border-bottom: none; }
+.at-calm .wr-court-arc { position: absolute; left: 50%; bottom: -150px; transform: translateX(-50%); width: 270px; height: 300px; border-radius: 50%; border: 1px solid #2a4566; }
+.at-calm .wr-court-rim { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: 18px; height: 18px; border-radius: 9px; border: 2px solid #f0a45c; box-sizing: border-box; }
+.at-calm .wr-spot { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.at-calm .wr-spot .bf-face { width: 38px; height: 38px; font-size: 12px; box-shadow: 0 0 0 2px #7fd68a; }
+.at-calm .wr-spot-open {
+  width: 38px; height: 38px; border-radius: 19px; box-sizing: border-box; border: 1.5px dashed rgba(240, 164, 92, 0.75);
+  color: #f0a45c; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+}
+.at-calm .wr-spot-name { font-size: 10px; font-weight: 700; color: #cfe3f7; white-space: nowrap; }
+.at-calm .wr-spot:not(.is-filled) .wr-spot-name { color: #f0a45c; }
+.at-calm .wr-bench { display: flex; flex-wrap: wrap; gap: 6px; }
+.at-calm .wr-bench-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 3px; border-radius: 999px;
+  background: var(--calm-raised-2); font-size: 11px; font-weight: 600; color: var(--at-ink);
+}
+.at-calm .wr-five-link { align-self: flex-start; padding: 0; border: none; background: none; color: #9ad6ff; font: 600 12px var(--calm-sans); cursor: pointer; }
+.at-calm .wr-five-link:hover { text-decoration: underline; }
+
+.at-calm .wr-dots { display: flex; align-items: flex-start; gap: 6px; width: 100%; padding: 0; border: none; background: none; color: inherit; cursor: pointer; }
+.at-calm .wr-dot { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.at-calm .wr-dot .bf-face { width: 34px; height: 34px; box-shadow: 0 0 0 2px #7fd68a; }
+.at-calm .wr-dot-open {
+  width: 34px; height: 34px; border-radius: 17px; box-sizing: border-box; border: 1.5px dashed rgba(240, 164, 92, 0.7);
+  color: #f0a45c; font-size: 14px; display: flex; align-items: center; justify-content: center;
+}
+.at-calm .wr-dot b { font-size: 10px; font-weight: 700; color: #f0a45c; }
+.at-calm .wr-dot.is-filled b { color: #7fd68a; }
+.at-calm .wr-dot-bench {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding-left: 8px;
+  border-left: 1px solid var(--calm-line); font-size: 10px; color: var(--at-ink-faint);
+}
+.at-calm .wr-dot-bench b { font-size: 13px; color: var(--at-ink-soft); line-height: 34px; }
+@media (max-width: 860px) {
+  .at-calm .wr-status { padding: 12px; gap: 10px; }
+  .at-calm .wr-status-row { gap: 8px 10px; }
+  .at-calm .wr-scouts { order: 1; margin-left: auto; }
+  .at-calm .wr-scouts-label { display: none; }
+  .at-calm .wr-status-round { order: 2; flex-basis: 100%; }
+  .at-calm .wr-status-gap { display: none; }
+  .at-calm .wr-caps { order: 3; flex-basis: 100%; }
+  .at-calm .wr-caps-track { flex: 1; width: auto; }
+}
+/* 2026-10-14: Team is a full-width tab now (no side-by-side layout); until its redesign lands, keep
+   the roster table and the rotation cards at a readable width instead of stretched across 1920px. */
+.at-calm .at-merge-team-col { max-width: 1100px; }

@@ -252,11 +252,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // Auto-resolve AI turns during the draft — never in Commissioner Mode, where every team's pick
   // comes from the human via `handlePick` instead (see the effect's own early-return below).
   // `cpuPickDelay` (aiSpeed.ts) paces this effect.
-  // 2026-09-25: held while the Draft Desk is open, so the board doesn't race on under it.
-  const [deskOpen, setDeskOpen] = useState(false);
   const [autoFinishing, setAutoFinishing] = useState(false);
   useEffect(() => {
-    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || deskOpen || autoFinishing) return;
+    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || autoFinishing) return;
     const teamIdx = currentTeamIndex(draftState);
     if (draftState.teams[teamIdx].isHuman) return;
     const timer = setTimeout(() => {
@@ -264,7 +262,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       if (next) setDraftState(next);
     }, cpuPickDelay(draftState.history.length, draftState.teams.length));
     return () => clearTimeout(timer);
-  }, [draftState, phase, deskOpen, autoFinishing]);
+  }, [draftState, phase, autoFinishing]);
 
   // AUTO-FINISH (testing): resolves the draft in small chunks so the page keeps painting the
   // progress, then submits your team as drafted with an auto-built rotation.
@@ -436,7 +434,6 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           onSwapHumanSpan={handleSwapHumanSpan}
           howToPlay={DRAFT_HOW_TO_PLAY}
           onExit={handleReset}
-          onDeskOpenChange={setDeskOpen}
         />
       )}
       {phase === 'results' && finalTeams && (

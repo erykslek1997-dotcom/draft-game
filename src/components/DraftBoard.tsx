@@ -6,7 +6,7 @@ import { ROLE_FILTERS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
-import { CAP_LIMIT, ROSTER_SIZE, capRemaining, totalFga, STARTER_SLOTS } from '../engine/positions';
+import { CAP_LIMIT, ROSTER_SIZE, totalFga, STARTER_SLOTS } from '../engine/positions';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { effectiveTalent, displayTalentForSpan } from '../engine/grades';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
@@ -16,7 +16,7 @@ import { allStarCount } from '../engine/allStarLookup';
 import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
 import type { Rotation, Team } from '../engine/types';
-import { CapIcon, Face, ShotChip, shortenName } from './ShotChip';
+import { CapIcon, Face } from './ShotChip';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import {
   offensiveGrade,
@@ -45,13 +45,11 @@ import { naturalPosition } from '../engine/naturalPosition';
 import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
-import { BoardToggleButton, DraftHelpDialog, DraftStrip, LeaveDraftDialog } from './DraftChrome';
-import { DraftDesk } from './DraftDesk';
-import { buildDraftDesk, type DraftDeskResult } from '../engine/draftDesk';
+import { BoardToggleButton, DraftHelpDialog, LeaveDraftDialog } from './DraftChrome';
+import { DraftStatus, FiveDots, RivalsLane, YourFiveCourt, upcomingPicks } from './DraftWarRoom';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
 import { YearsPicker } from './YearsPicker';
 import { PlayerPeekModal } from './PlayerPeekModal';
-import { FitSurname } from './FitName';
 
 /** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
  * players; anyone past it is reachable via search or a position filter (both land well under the
@@ -97,7 +95,6 @@ interface Props {
   /** 2026-09-24: back to the main menu (after a confirm — the draft is autosaved, see draftSave.ts). */
   onExit: () => void;
   /** 2026-09-25: the Draft Desk is open — GameShell holds CPU picks until it closes. */
-  onDeskOpenChange?: (open: boolean) => void;
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -375,18 +372,6 @@ export function groupByPlayer(list: PlayerSpan[]): PlayerGroup[] {
 // asked for, just fewer top-level tabs.
 type AtTab = 'draft' | 'team';
 
-/** "Michael Jordan" -> "M. Jordan" — same first-initial-plus-surname convention the real board
- * photo itself uses ("C. FLAGG", "D. HARPER"). Rendered alongside the full name (CSS picks one
- * per viewport width, see `.at-name-full`/`.at-name-short`) rather than swapped in via JS/resize
- * listener — a full name a real board would also show on a big-enough screen has no reason to be
- * throttled down on a wide viewport. Falls back to the given string as-is for the rare single-
- * token name (mononyms, or the odd malformed row) rather than mangling it. */
-function shortPlayerName(name: string): string {
-  const parts = name.split(' ');
-  if (parts.length < 2) return name;
-  return `${parts[0][0]}. ${parts[parts.length - 1]}`;
-}
-
 /** 2026-08-16, user's own ask: a hover tooltip on the Overview grid's own pick cells, once a
  * player is actually drafted — same `.at-name-tip`/`data-tip` popover mechanics as team names
  * above, just built from this specific drafted SPAN's own real box line (`pick.box`) rather than
@@ -467,16 +452,10 @@ function useMediaQuery(query: string): boolean {
   }, [query]);
   return matches;
 }
-// Threshold picked wide enough that a normal 1280-1440px laptop still gets the familiar single-
-// panel tabbed view (Team's roster table + Rotation's own `.rotation-builder` card both want real
-// room — see their own CSS max-widths — a half-share of anything narrower would cramp both), while
-// an actual wide desktop monitor gets the merged two-column layout the user asked for.
-const WIDE_LAYOUT_QUERY = '(min-width: 1600px)';
 /** Must match the `max-width: 860px` rule in App.css that stacks `.at-draft-workspace`. */
 const STACKED_LAYOUT_QUERY = '(max-width: 860px)';
 /** How long the taken cards take to fold away when the player's own turn comes. */
 const GHOST_SWEEP_MS = 1300;
-const RECENT_PICKS_SHOWN = 4;
 
 export default function DraftBoard({
   state,
@@ -490,7 +469,6 @@ export default function DraftBoard({
   onSwapHumanSpan,
   howToPlay = [],
   onExit,
-  onDeskOpenChange,
 }: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
@@ -579,33 +557,19 @@ export default function DraftBoard({
     return () => io.disconnect();
   }, []);
   const [activeTab, setActiveTab] = useState<AtTab>('draft');
-  const isWideLayout = useMediaQuery(WIDE_LAYOUT_QUERY);
   const [showLegend, setShowLegend] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
-  // 2026-09-27: the board is a panel over the list now, so it always starts closed (it used to
-  // remember being open, which would cover the list on the next visit).
-  const [boardOpen, setBoardOpen] = useState(false);
   // 2026-10-14, the board redesign: on a laptop/desktop the board sits above the list (the approved
-  // mockup) and the header button hides/shows it there; phones keep the panel from the right edge.
+  // mockup) and the header button hides/shows it there; a phone shows it as the "Picks" view.
   const [boardHidden, setBoardHidden] = useState(false);
   function toggleBoard() {
-    if (isStackedLayout) setBoardOpen((open) => !open);
-    else setBoardHidden((hidden) => !hidden);
+    setBoardHidden((hidden) => !hidden);
   }
-  useEffect(() => {
-    if (!boardOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setBoardOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [boardOpen]);
-  // 2026-09-24: below the stacked-layout breakpoint the "Your Team" card sits between the board and
-  // the player cards — collapsed there to a one-line summary so your own turn opens on players.
+  const [phoneView, setPhoneView] = useState<'players' | 'picks'>('players');
+  // Phones (the stacked layout): your five as dots in the status bar, the board as the Picks view.
   const isStackedLayout = useMediaQuery(STACKED_LAYOUT_QUERY);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeExitDialog = useCallback(() => setConfirmExit(false), []);
   // Defaults open in Commissioner Mode: every pick needs its reasoning box reachable right after
   // it's made, across up to 144 picks — an extra click to reveal it every single time would be a
@@ -779,41 +743,9 @@ export default function DraftBoard({
     [humanTeam.roster],
   );
 
-  // 2026-09-25, user's ask: the Draft Desk — three pundits on the human's first three picks, once
-  // per full draft (it replaces the in-banner rim-pressure hint here; Quick 5 keeps the hint).
-  // Keyed by the draft's seed so a resumed draft that already showed it doesn't show it again.
-  const DESK_TRIGGER_PICKS = 3;
-  const [desk, setDesk] = useState<DraftDeskResult | null>(null);
-  const [deskQueued, setDeskQueued] = useState(false);
-  const deskTimer = useRef<number | undefined>(undefined);
-  const DESK_OPEN_DELAY_MS = 1800;
-  const deskChecked = useRef(false);
-  useEffect(() => {
-    if (state.commissionerMode || deskChecked.current || humanTeam.roster.length !== DESK_TRIGGER_PICKS) return;
-    deskChecked.current = true;
-    const key = `draftverse.deskShown.${state.seed}`;
-    try {
-      if (localStorage.getItem(key)) return;
-      localStorage.setItem(key, '1');
-    } catch {
-      // storage blocked: still show it, just can't remember it across a reload
-    }
-    // 2026-09-25, user ("mam wrażenie że za szybko wyskakuje"): the third pick lands on the board
-    // first; the desk opens a beat later. CPU picks already wait during that beat.
-    setDeskQueued(true);
-    const roster = humanTeam.roster;
-    deskTimer.current = window.setTimeout(() => {
-      setDeskQueued(false);
-      setDesk(buildDraftDesk(roster, ROUNDS - DESK_TRIGGER_PICKS));
-    }, DESK_OPEN_DELAY_MS);
-  }, [humanTeam.roster, state.commissionerMode, state.seed]);
-  useEffect(() => () => window.clearTimeout(deskTimer.current), []);
-  useEffect(() => {
-    onDeskOpenChange?.(desk !== null || deskQueued);
-  }, [desk, deskQueued, onDeskOpenChange]);
-  // Leaving the draft with the desk open must not leave CPU picks held for the next one.
-  useEffect(() => () => onDeskOpenChange?.(false), [onDeskOpenChange]);
-  const closeDesk = useCallback(() => setDesk(null), []);
+  // 2026-10-14: the Draft Desk (three pundits after your third pick) and the rim-pressure note
+  // left the free flow with the screen redesign; they come back as lifelines (TODO.md).
+
 
   // True whenever the Team tab's roster table is actually showing the human's own roster — always
   // true outside Commissioner Mode (`teamForPanels` IS `humanTeam` then), only sometimes true
@@ -1103,24 +1035,6 @@ export default function DraftBoard({
     });
   }
 
-  // Ticker data (see the collapsed-board JSX): the latest few picks, and how many picks until the
-  // human is up again (snake order, so it varies round to round).
-  const recentPicks = useMemo(() => {
-    const spanById = new Map<string, PlayerSpan>();
-    for (const t of state.teams) for (const p of t.roster) spanById.set(p.id, p);
-    return state.history
-      .slice(-RECENT_PICKS_SHOWN)
-      .reverse()
-      .map((h) => {
-        const team = state.teams.find((t) => t.id === h.teamId);
-        return {
-          pickNumber: h.pickNumber,
-          teamCode: teamCodeByTeamId.get(h.teamId) ?? '',
-          isHuman: Boolean(team?.isHuman),
-          shortName: shortPlayerName(spanById.get(h.playerId)?.playerName ?? '—'),
-        };
-      });
-  }, [state.history, state.teams, teamCodeByTeamId]);
   const humanPicksAway = useMemo(() => {
     const start = state.round * TEAM_COUNT + state.pickInRound;
     for (let k = start; k < TEAM_COUNT * ROUNDS; k++) {
@@ -1131,6 +1045,18 @@ export default function DraftBoard({
     }
     return null;
   }, [state.round, state.pickInRound, state.teams]);
+  // 2026-10-14, the status bar and the "Before you pick again" lane: every pick still to come, yours
+  // among them, and the rival picks between now and your next one.
+  const upcoming = useMemo(
+    () => upcomingPicks(state.round * TEAM_COUNT + state.pickInRound, state.teams.length, ROUNDS),
+    [state.round, state.pickInRound, state.teams.length],
+  );
+  const humanIdx = state.teams.findIndex((t) => t.isHuman);
+  const humanUpcoming = upcoming.filter((u) => u.teamIdx === humanIdx);
+  const youOnClock = !state.complete && upcoming[0]?.teamIdx === humanIdx;
+  const laneEnd = youOnClock ? humanUpcoming[1] : humanUpcoming[0];
+  const lanePicks = laneEnd ? upcoming.slice(youOnClock ? 1 : 0, upcoming.indexOf(laneEnd)) : [];
+  const humanBench = humanTeam.roster.filter((p) => !Object.values(humanAssignment).some((a) => a?.id === p.id));
 
   // 2026-09-24: budget for whoever is on the clock (the human outside Commissioner Mode) — drives
   // the "Your pick" banner, the stuck-board notice below it and the sidebar's own budget line.
@@ -1171,15 +1097,15 @@ export default function DraftBoard({
   return (
     <div className="at-shell at-calm">
       {/* 2026-10-07, the UI simplification (approved mockup): one header row — Menu, the title, the
-          Draft/Team switch where the two don't sit side by side, "?" for the rules, the tier key and
-          scouting, and the draft board. */}
+          Draft/Team switch, "?" for the rules, the tier key and scouting, and the draft board
+          (2026-10-14: Team is a tab at every width; the board button only where the board sits
+          above the list). */}
       <div className="at-calm-header" ref={topbarRef}>
         <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={() => setConfirmExit(true)}>
           ← Menu
         </button>
         <h1 className="at-calm-title">All-Time Draft</h1>
-        {!isWideLayout && (
-          <div className="at-calm-seg at-calm-tabs" role="tablist">
+        <div className="at-calm-seg at-calm-tabs" role="tablist">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
@@ -1192,12 +1118,11 @@ export default function DraftBoard({
                 {tab.label}
               </button>
             ))}
-          </div>
-        )}
+        </div>
         <button type="button" className="at-calm-icon" aria-label="How the draft works" onClick={() => setHelpOpen(true)}>
           ?
         </button>
-        {(isWideLayout || activeTab === 'draft') && <BoardToggleButton open={isStackedLayout ? boardOpen : !boardHidden} onToggle={toggleBoard} />}
+        {!isStackedLayout && activeTab === 'draft' && <BoardToggleButton open={!boardHidden} onToggle={toggleBoard} />}
       </div>
       {confirmExit && (
         <LeaveDraftDialog
@@ -1218,7 +1143,6 @@ export default function DraftBoard({
           onClose={closeHelp}
         />
       )}
-      {desk && <DraftDesk roster={humanTeam.roster} desk={desk} onClose={closeDesk} />}
       {/* Rendered at the shell, not inside the card grid: the staged entrance animation gives the
           Draft card's children their own stacking layers, which put the sticky status strip over
           the modal. */}
@@ -1243,13 +1167,14 @@ export default function DraftBoard({
           />
         );
       })()}
-      {!topbarVisible && !state.complete && (isWideLayout || activeTab === 'draft') && (
+      {!topbarVisible && !state.complete && activeTab === 'draft' && (
         <button
           type="button"
           className="at-board-fab"
           onClick={() => {
             if (isStackedLayout) {
-              setBoardOpen(true);
+              setPhoneView('picks');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
               setBoardHidden(false);
               boardAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1277,20 +1202,40 @@ export default function DraftBoard({
         />
       )}
 
+      {/* 2026-10-14, the draft screen redesign (approved mockups "v2 Desktop"/"v2 Phone"): one status
+          bar under the header on both tabs — whose pick, the round, your caps (and your five as dots
+          on a phone) — then, on the Draft tab, the board, the teams picking before you, the list. */}
+      <DraftStatus
+        youOnClock={youOnClock}
+        complete={state.complete}
+        onClockTeam={currentTeam}
+        pickNumber={state.round * TEAM_COUNT + state.pickInRound + 1}
+        picksAway={humanPicksAway}
+        nextPick={(youOnClock ? humanUpcoming[1] : humanUpcoming[0])?.pick ?? null}
+        round={Math.min(state.round + 1, ROUNDS)}
+        rounds={ROUNDS}
+        capLeft={humanBudget.capLeft}
+        capLimit={CAP_LIMIT}
+        slotsLeft={humanBudget.slotsLeft}
+        maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
+        scoutsLeft={showJudgeMetrics ? null : SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
+        onScoutsInfo={() => setHelpOpen(true)}
+      >
+        {isStackedLayout && (
+          <FiveDots
+            assignment={humanAssignment}
+            benchCount={humanBench.length}
+            benchSlots={ROSTER_SIZE - STARTER_SLOTS.length}
+            onOpenTeam={() => setActiveTab('team')}
+          />
+        )}
+      </DraftStatus>
+
       {activeTab === 'draft' && (
-        // The ticker moved into the Draft card's sticky header (2026-09-26); with the board
-        // collapsed this wrapper holds only the scroll anchor, so it drops its card chrome.
         <div>
-          {/* 2026-08-16, user's own ask: the "Overview" title + explainer caption are gone in
-              developer mode too now — previously kept there (player mode dropped them first,
-              2026-08-13) but the grid itself (all 16 teams × round) still says everything it
-              needs to without the label. */}
           <div ref={boardAnchorRef} className="at-board-anchor" />
           {/* 2026-10-14, the board redesign (approved mockup): on a laptop/desktop the board sits above
-              the list — teams across, the rounds around the current one, the rest one click away.
-              Phones keep it as a panel from the right edge (2026-09-27, the user: "nie wiem czy
-              użytkowników będzie interesować co robi AI aż w tak dużym stopniu żeby zabierało tyle
-              ekranu"). */}
+              the list — teams across, the rounds around the current one, the rest one click away. */}
           {!isStackedLayout && !boardHidden && (
             <div className="at-board-inline">
               <DraftGrid
@@ -1304,34 +1249,43 @@ export default function DraftBoard({
               />
             </div>
           )}
-          {isStackedLayout && boardOpen && (
-            <div className="at-board-drawer-backdrop" onClick={toggleBoard}>
-              <div className="at-board-drawer" role="dialog" aria-label="Draft board" onClick={(e) => e.stopPropagation()}>
-                <div className="at-board-drawer-head">
-                  <span className="at-cond">Draft board · Round {Math.min(state.round + 1, ROUNDS)}/{ROUNDS}</span>
-                  <button type="button" className="at-board-drawer-close at-cond" onClick={toggleBoard}>Close</button>
-                </div>
-                <DraftGrid
-                  teams={state.teams}
-                  rounds={ROUNDS}
-                  round={state.round}
-                  onClockIdx={teamIdx}
-                  complete={state.complete}
-                  tierColor={(span) => TIER_FRAME_COLOR[displayedOverallTier(span)]}
-                  pickTip={pickStatTip}
-                />
-              </div>
+          {!state.complete && humanUpcoming.length > 0 && (
+            <RivalsLane
+              title={youOnClock ? 'Before you pick again' : 'Before your pick'}
+              picks={lanePicks}
+              teams={state.teams}
+              assignmentOf={(team) => bestPrimaryAssignment(team.roster).assignment}
+              yourPick={(youOnClock ? humanUpcoming[1] : humanUpcoming[0])?.pick ?? 0}
+            />
+          )}
+          {isStackedLayout && (
+            <div className="at-calm-seg wr-views" role="tablist" aria-label="Draft view">
+              <button type="button" role="tab" aria-selected={phoneView === 'players'} className={phoneView === 'players' ? 'is-on' : ''} onClick={() => setPhoneView('players')}>
+                Players
+              </button>
+              <button type="button" role="tab" aria-selected={phoneView === 'picks'} className={phoneView === 'picks' ? 'is-on' : ''} onClick={() => setPhoneView('picks')}>
+                Picks
+              </button>
             </div>
+          )}
+          {isStackedLayout && phoneView === 'picks' && (
+            <DraftGrid
+              teams={state.teams}
+              rounds={ROUNDS}
+              round={state.round}
+              onClockIdx={teamIdx}
+              complete={state.complete}
+              tierColor={(span) => TIER_FRAME_COLOR[displayedOverallTier(span)]}
+              pickTip={pickStatTip}
+            />
           )}
         </div>
       )}
 
-      {/* 2026-09-14, user-reported live: wraps the Draft workspace card together with the Team
-          column below so `.at-merge-row`'s own CSS (App.css) can lay them out side by side once
-          `isWideLayout` is true — narrow/default screens get `display: block` from that same rule,
-          so this wrapper is otherwise invisible to the existing single-column tabbed flow. */}
+      {/* `.at-merge-row`/`.at-merge-team-col` are plain wrappers since 2026-10-14 (Team is a tab at
+          every width). */}
       <div className="at-merge-row">
-      {(isWideLayout || activeTab === 'draft') && (
+      {activeTab === 'draft' && !(isStackedLayout && phoneView === 'picks') && (
         <div className="at-card at-merge-draft at-stage-in">
           <h1 className="at-panel-title at-cond">Draft</h1>
           {/* 2026-08-16, user's own ask: a CPU turn used to hide this whole panel behind a full
@@ -1339,22 +1293,6 @@ export default function DraftBoard({
               instead, with just this small notice (not a block) while it's not your turn. The
               actual Draft buttons below are `disabled` via `canPick`, not hidden, so browsing/
               searching/expanding a row to look at a player works identically either way. */}
-          <div className="at-turn-sticky">
-            <DraftStrip
-              youOnClock={canPick && currentTeam.isHuman}
-              complete={state.complete}
-              onClockLabel={teamLabel(currentTeam)}
-              picksAway={humanPicksAway}
-              recentPicks={recentPicks.slice(0, 2)}
-              round={Math.min(state.round + 1, ROUNDS)}
-              rounds={ROUNDS}
-              progress={state.history.length / (TEAM_COUNT * ROUNDS)}
-              capLeft={humanBudget.capLeft}
-              slotsLeft={humanBudget.slotsLeft}
-              maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
-              scoutsLeft={showJudgeMetrics ? null : SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
-              onScoutsInfo={() => setHelpOpen(true)}
-            />
             {canPick && !anyVisibleLegal && (
               <div className="at-budget-notice">
                 <span>None of the players shown fit this pick — it can cost up to <CapIcon /> {currentBudget.maxThisPick} caps.</span>
@@ -1363,7 +1301,6 @@ export default function DraftBoard({
                 </button>
               </div>
             )}
-          </div>
           {/* 2026-09-11, user's own inspiration screenshot: Draft + Team merged into one screen —
               player cards on the left, a persistent "Your Five" sidebar on the right (replaces
               the draft-order pip strip this had for one round of live-testing — that was a step
@@ -1701,133 +1638,17 @@ export default function DraftBoard({
               )}
           </div>
 
-          {/* 2026-09-11, user's own inspiration screenshot: a persistent "Your Five" sidebar next
-              to the player cards — position-organized (same `bestPrimaryAssignment` search the
-              Rotation cards use), read-only here on purpose. Span-swap and rotation-minute editing
-              stay on the Team tab this pass — see `humanAssignment`'s own comment for the full
-              scoping reasoning.
-              2026-09-14, user-reported live ("na desktopie można usunąć your five jeśli obok jest
-              zakładka team"): at `isWideLayout` the Team column already sits right beside this one
-              (`.at-merge-row`, App.css) with the same roster identity AND the same cap-remaining
-              meter (its own `.at-cap-meter`) — this whole card is a pure duplicate there, not a
-              second read of different information, so it's dropped entirely on wide screens rather
-              than just trimmed. Narrow/tab-mode keeps it exactly as before: the Team tab isn't
-              simultaneously visible there, so this is the only roster glance available while
-              browsing the player pool. */}
-          {!isWideLayout && (
-          <aside className={`at-draft-sidebar${isStackedLayout ? ' at-team-dock' : ''}${isStackedLayout && sidebarOpen ? ' is-open' : ''}`}>
-            {isStackedLayout ? (
-              <button
-                type="button"
-                className="at-draft-sidebar-head at-draft-sidebar-head--toggle"
-                aria-expanded={sidebarOpen}
-                onClick={() => setSidebarOpen((o) => !o)}
-              >
-                <h2 className="at-cond">Your Team</h2>
-                <span className="at-draft-sidebar-count">
-                  {humanTeam.roster.length}/{ROSTER_SIZE} · <CapIcon /> {capRemaining(currentFgas)} caps left{' '}
-                  {sidebarOpen ? '▾' : '▴'}
-                </span>
-              </button>
-            ) : null}
-            {/* 2026-09-27, the user ("żeby nie trzeba było klikać TEAM żeby widzieć co mamy"): on a
-                phone the team is docked to the bottom of the screen; the five starter spots stay
-                in view while browsing, and a tap on the header opens the full card. */}
-            {isStackedLayout && !sidebarOpen && (
-              <div className="at-team-dock-slots" onClick={() => setSidebarOpen(true)}>
-                {STARTER_SLOTS.map((slot) => {
-                  const p = humanAssignment[slot];
-                  return (
-                    <span key={slot} className={`at-team-dock-slot${p ? ' is-filled' : ''}`} title={p?.playerName}>
-                      <b className="at-cond">{slot}</b>
-                      {p ? <FitSurname name={p.playerName} /> : <span>open</span>}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-            {!isStackedLayout && (
-              <div className="at-draft-sidebar-head">
-                <h2 className="at-cond">Your Team</h2>
-                <span className="at-draft-sidebar-count">{humanTeam.roster.length}/{ROSTER_SIZE}</span>
-              </div>
-            )}
-            {(!isStackedLayout || sidebarOpen) && (
-            <>
-            {/* 2026-09-12, user-reported live ("nie wypełnia się" + "można dać to w kolumnie
-                'your team'"): this used to live as a 90px sliver in the Draft tab's controls row,
-                squeezed between the search box and the position filters — real fill %, but too
-                thin and too far from "your team" to read as belonging to it. Moved into the Your
-                Five sidebar itself and given the sidebar's full width, so the same real number
-                (`currentFgas`, the enforced roster — never the Team tab's preview-only
-                `chosenHumanRoster`) is finally wide enough to actually look like it's filling. */}
-            <div className="at-draft-sidebar-cap-wrap">
-              <div className="at-cap-track at-draft-sidebar-cap">
-                <span
-                  className="at-cap-fill"
-                  style={{ width: `${Math.min(100, (totalFga(currentFgas) / CAP_LIMIT) * 100)}%` }}
-                />
-              </div>
-              <p className="at-draft-sidebar-cap-label">
-                <CapIcon size={16} /> Caps left: <b>{capRemaining(currentFgas)}</b>
-              </p>
-            </div>
-            <div className="at-draft-sidebar-slots">
-              {STARTER_SLOTS.map((slot) => {
-                const p = humanAssignment[slot];
-                return p ? (
-                  <div className="at-sidebar-slot at-sidebar-slot--filled" key={slot} title={p.playerName}>
-                    <span className="at-sidebar-slot-pos at-cond">{slot}</span>
-                    <Face name={p.playerName} />
-                    <span className="at-sidebar-slot-name">{shortenName(p.playerName)}</span>
-                    <ShotChip fga={p.fga} cap={CAP_LIMIT} />
-                  </div>
-                ) : (
-                  <div className="at-sidebar-slot" key={slot}>
-                    <span className="at-sidebar-slot-pos at-cond">{slot}</span>
-                    <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />
-                    <span className="at-sidebar-slot-empty">Open</span>
-                  </div>
-                );
-              })}
-            </div>
-            {(() => {
-              const seatedIds = new Set(
-                Object.values(humanAssignment)
-                  .filter((p): p is PlayerSpan => Boolean(p))
-                  .map((p) => p.id),
-              );
-              // 2026-09-12, code-review fix: matches `humanAssignment` above — real roster, not
-              // the span-swap preview, so this card's bench list can never disagree with its own
-              // cap-remaining number.
-              const overflow = humanTeam.roster.filter((p) => !seatedIds.has(p.id));
-              return overflow.length > 0 ? (
-                <div className="at-draft-sidebar-bench">
-                  <span className="at-draft-sidebar-bench-label">Bench</span>
-                  {overflow.map((p) => (
-                    <div className="at-sidebar-slot at-sidebar-slot--filled" key={p.id} title={p.playerName}>
-                      <Face name={p.playerName} />
-                      <span className="at-sidebar-slot-name">{shortenName(p.playerName)}</span>
-                      <ShotChip fga={p.fga} cap={CAP_LIMIT} />
-                    </div>
-                  ))}
-                </div>
-              ) : null;
-            })()}
-            {/* 2026-09-14: this whole aside only ever renders when `!isWideLayout` now (see its
-                own opening condition above), so the "Team tab" jump link below is always pointing
-                at a real, separate click target — no longer needs its own redundant `isWideLayout`
-                check now that the parent already gates it. */}
-            <p className="at-draft-sidebar-hint">
-              Change a player's years or set minutes in the{' '}
-              <button type="button" className="at-inline-link" onClick={() => setActiveTab('team')}>
-                Team tab
-              </button>
-              .
-            </p>
-            </>
-            )}
-          </aside>
+          {/* 2026-10-14, the screen redesign: your five on a half court next to the list (desktop);
+              phones show the same five as dots in the status bar. */}
+          {!isStackedLayout && (
+            <aside className="at-draft-sidebar wr-sidebar">
+              <YourFiveCourt
+                assignment={humanAssignment}
+                bench={humanBench}
+                benchSlots={ROSTER_SIZE - STARTER_SLOTS.length}
+                onOpenTeam={() => setActiveTab('team')}
+              />
+            </aside>
           )}
         </div>
         </div>
@@ -1839,7 +1660,7 @@ export default function DraftBoard({
           "Team + Rotation" as its two side-by-side items on a wide screen; on a narrow one this is
           just an unstyled div and everything still stacks exactly as it did before this pass. */}
       <div className="at-merge-team-col">
-      {(isWideLayout || activeTab === 'team') && (
+      {activeTab === 'team' && (
         <div className="at-card" style={{ marginBottom: 16 }}>
           <h1 className="at-panel-title at-cond">Team</h1>
           <div className={`at-cap-meter${isViewingHumanRoster && chosenRosterOverCap ? ' at-cap-meter--over' : ''}`}>
@@ -1856,10 +1677,7 @@ export default function DraftBoard({
           </div>
           {teamForPanels.roster.length === 0 ? (
             <div className="at-placeholder">
-              {/* 2026-09-14, user-reported live: at `isWideLayout` this panel sits right next to
-                  the Draft column with no separate tab to "head to" any more — see the top of this
-                  file's own `isWideLayout` docstring. */}
-              {isWideLayout ? 'No picks yet — draft your first player on the left.' : 'No picks yet — head to the Draft tab.'}
+              No picks yet — head to the Draft tab.
             </div>
           ) : (
             <div className="at-table-scroll">
@@ -2033,15 +1851,12 @@ export default function DraftBoard({
           fix above addresses a real, separate 9th-pick discontinuity) — you cannot even DRAFT the
           next player without leaving this tab, so every single "set some minutes, draft, come
           back" cycle hit it. Always rendered now; `display: none` hides it instead of unmounting
-          it, so `RotationBuilder`'s own `rows` state survives every tab switch untouched.
-          2026-09-14: `isWideLayout` added to this same condition — on a wide screen this card sits
-          permanently visible in the merged Team column (see `.at-merge-team-col` above), same
-          "mounted, just hidden" shape this already used for the tab case. */}
+          it, so `RotationBuilder`'s own `rows` state survives every tab switch untouched. */}
       {/* 2026-09-25, user ("jest zbyt bardzo na lewo, może uda się to zmieścić między draft board a
           rotację?"): on wide screens the Years picker opens here, inline between the Team table and
           the Rotation card, instead of docking over the left edge of the page. */}
-      <div id="years-sheet-slot" className="years-sheet-slot" style={(isWideLayout || activeTab === 'team') ? undefined : { display: 'none' }} />
-      <div className="at-card" style={(isWideLayout || activeTab === 'team') ? undefined : { display: 'none' }}>
+      <div id="years-sheet-slot" className="years-sheet-slot" style={activeTab === 'team' ? undefined : { display: 'none' }} />
+      <div className="at-card" style={activeTab === 'team' ? undefined : { display: 'none' }}>
           <h1 className="at-panel-title at-cond">Rotation</h1>
           {humanTeam.roster.length === 0 ? (
             <div className="at-placeholder">
