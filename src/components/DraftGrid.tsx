@@ -37,7 +37,9 @@ export function DraftGrid({ teams, rounds, round, onClockIdx, complete, tierColo
   const humanIdx = teams.findIndex((t) => t.isHuman);
   const humanNext = humanIdx >= 0 ? teams[humanIdx].roster.length : rounds;
   const shown = complete || allRounds ? rounds : Math.min(rounds, Math.max(MIN_ROUNDS_SHOWN, round + 2, humanNext + 1));
-  const columns: CSSProperties = { gridTemplateColumns: `28px repeat(${teams.length}, minmax(68px, 1fr))` };
+  // 2026-10-14 (playtest 3: "wygląda jakby pierwsza drużyna zawsze miała pierwszy pick"): a column
+  // on each side, the round's arrow on the side it starts from, and every open cell numbered.
+  const columns: CSSProperties = { gridTemplateColumns: `34px repeat(${teams.length}, minmax(68px, 1fr)) 24px` };
   // Where the board is wider than the screen (phones, small laptops), open it on your own column.
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -63,11 +65,13 @@ export function DraftGrid({ teams, rounds, round, onClockIdx, complete, tierColo
                 {team.isHuman ? 'You' : teamPlace(team)}
               </span>
             ))}
+            <span role="columnheader" className="dg-corner is-end" />
           </div>
           {Array.from({ length: shown }, (_, r) => (
             <div role="row" className="dg-row" key={r}>
-              <span role="rowheader" className="dg-round">
-                R{r + 1} {r % 2 === 0 ? '→' : '←'}
+              <span role="rowheader" className="dg-round" title={r % 2 === 0 ? 'Picks run left to right' : 'Picks run right to left'}>
+                R{r + 1}
+                {r % 2 === 0 && <span className="dg-dir"> →</span>}
               </span>
               {teams.map((team, i) => {
                 const pick = team.roster[r];
@@ -105,8 +109,15 @@ export function DraftGrid({ teams, rounds, round, onClockIdx, complete, tierColo
                     </span>
                   );
                 }
-                return <span role="cell" key={team.id} className={`dg-cell is-empty${mine}`} aria-label={`Pick ${n}`} />;
+                return (
+                  <span role="cell" key={team.id} className={`dg-cell is-empty${mine}`} aria-label={`Pick ${n}`}>
+                    <span className="dg-num is-faint">{n}</span>
+                  </span>
+                );
               })}
+              <span className="dg-round is-end" aria-hidden>
+                {r % 2 === 1 && <span className="dg-dir">←</span>}
+              </span>
             </div>
           ))}
         </div>

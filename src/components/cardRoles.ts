@@ -1,4 +1,4 @@
-import type { DefensiveRole, OffensiveArchetype, PlayerSpan } from '../data/schema';
+import type { DefensiveRole, OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { per36 } from '../engine/minutesPerGame';
 
 /**
@@ -66,6 +66,13 @@ export const ROLE_FILTERS: Record<string, readonly string[]> = {
   'Rim protector': ['Rim protector', 'Shot blocker'],
   'Perimeter D': ['On-ball defender', 'Wing stopper', 'Ball hawk'],
   'Big man': ['Post scorer', 'Roll man', 'Rebounder', 'Versatile big', 'Post defender', 'Mobile defender', 'Switchable big'],
+};
+
+/** The positions a role filter makes sense for; roles not listed fit every position. */
+export const ROLE_POSITIONS: Record<string, readonly Position[]> = {
+  'Rim protector': ['PF', 'C'],
+  'Perimeter D': ['PG', 'SG', 'SF'],
+  'Big man': ['PF', 'C'],
 };
 
 export function matchesRoleFilter(span: PlayerSpan, filter: string | null): boolean {

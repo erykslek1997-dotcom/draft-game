@@ -297,7 +297,8 @@ function QuickDraftBoard({
     const next = new Set(hiddenPositions);
     if (next.has(pos)) next.delete(pos);
     else next.add(pos);
-    setPositionOverride(next);
+    // Unticking the only position shown goes back to all of them (playtest 2026-10-14).
+    setPositionOverride(next.size >= ALL_POSITIONS.length ? new Set() : next);
   }
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
