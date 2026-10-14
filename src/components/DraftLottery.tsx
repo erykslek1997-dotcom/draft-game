@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createLotteryDrum, drumHeight, type LotteryDrum } from './lotteryDrum';
 import type { CSSProperties, ReactNode } from 'react';
 import type { Team } from '../engine/types';
+import { TeamLogo } from './TeamLogo';
 
 export interface HowToPlayItem {
   title: string;
@@ -145,6 +146,7 @@ export default function DraftLottery({ teams, rounds, onDone, howToPlay, onExit,
       {done && (
         <div className="at-lottery-result">
           <p className="at-lottery-team-line">
+            <TeamLogo name={human.name} size={28} />
             <b>{human.name}</b> picks <b>#{slot}</b> in round 1.
           </p>
           <p className="at-lottery-picks-label">Snake draft — your picks:</p>

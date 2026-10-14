@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { peakDraftPool } from './peakDraftPool';
-import { randomTeamNames } from './teamNames';
+import { draftTeamNames } from './teamNames';
 import {
   STARTER_SLOTS,
   TEAM_COUNT,
@@ -112,8 +112,8 @@ const noCapLegalCache = new WeakMap<QuickDraftState, boolean>();
  * ~15 lines). */
 function createInitialTeams(humanTeamName: string | undefined, rng: () => number): Team[] {
   const humanIndex = Math.floor(rng() * TEAM_COUNT);
-  const names = randomTeamNames(TEAM_COUNT);
   const trimmedHumanName = humanTeamName?.trim();
+  const names = draftTeamNames(TEAM_COUNT, rng, trimmedHumanName);
   if (trimmedHumanName) names[humanIndex] = trimmedHumanName;
   const teams: Team[] = [];
   for (let i = 0; i < TEAM_COUNT; i++) {

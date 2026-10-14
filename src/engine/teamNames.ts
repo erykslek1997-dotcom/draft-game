@@ -1,59 +1,31 @@
+import { FRANCHISES, franchiseByName, franchiseName } from '../data/franchises';
 import type { Team } from './types';
 
 /**
- * Random team-name generator: a US place plus a mascot noun ("Kentucky Chickens").
- *
- * Places are a mix of states, cities and regions — deliberately not the 30 real NBA markets
- * alone, since half the fun is drafting for the Boise Mooses. Mascots lean absurd on purpose;
- * this is flavour for a prototype, not a branding exercise.
+ * Team names come from the fixed franchise pool (data/franchises.ts, 2026-10-14), which replaced the
+ * old random "Place Mascot" generator. Names from that generator still turn up in saved drafts and
+ * old duel links, so everything below also handles a name outside the pool.
  */
-const PLACES = [
-  'Akron', 'Albany', 'Albuquerque', 'Anchorage', 'Asheville', 'Aspen', 'Atlanta', 'Augusta',
-  'Austin', 'Bakersfield', 'Baltimore', 'Baton Rouge', 'Birmingham', 'Boise', 'Boston',
-  'Buffalo', 'Charleston', 'Charlotte', 'Chattanooga', 'Chicago', 'Cincinnati', 'Cleveland',
-  'Columbus', 'Dallas', 'Dayton', 'Denver', 'Des Moines', 'Detroit', 'Duluth', 'El Paso',
-  'Flint', 'Fresno', 'Fort Worth', 'Green Bay', 'Hartford', 'Honolulu', 'Houston',
-  'Indianapolis', 'Jacksonville', 'Kansas City', 'Kentucky', 'Knoxville', 'Las Vegas',
-  'Lexington', 'Little Rock', 'Long Beach', 'Louisville', 'Lubbock', 'Madison', 'Memphis',
-  'Miami', 'Milwaukee', 'Minneapolis', 'Mobile', 'Montana', 'Nashville', 'New Orleans',
-  'Newark', 'Norfolk', 'Oakland', 'Oklahoma City', 'Omaha', 'Orlando', 'Philadelphia',
-  'Phoenix', 'Pittsburgh', 'Portland', 'Providence', 'Raleigh', 'Reno', 'Richmond',
-  'Roanoke', 'Rochester', 'Sacramento', 'Salt Lake City', 'San Antonio', 'San Diego',
-  'San Jose', 'Santa Fe', 'Savannah', 'Scranton', 'Seattle', 'Shreveport', 'Sioux Falls',
-  'Spokane', 'Springfield', 'St. Louis', 'St. Paul', 'Syracuse', 'Tacoma', 'Tallahassee',
-  'Tampa', 'Toledo', 'Topeka', 'Tucson', 'Tulsa', 'Vermont', 'Wichita', 'Wilmington',
-  'Winston-Salem', 'Wyoming', 'Yonkers',
-];
 
-const MASCOTS = [
-  'Alligators', 'Anteaters', 'Armadillos', 'Badgers', 'Bandits', 'Barons', 'Bears', 'Beavers',
-  'Bison', 'Blizzard', 'Bobcats', 'Boilermakers', 'Broncos', 'Buffaloes', 'Bulldogs',
-  'Cardinals', 'Catfish', 'Chickens', 'Cobras', 'Comets', 'Condors', 'Cougars', 'Cowboys',
-  'Coyotes', 'Crabs', 'Cranes', 'Crawdads', 'Crows', 'Cyclones', 'Diggers', 'Dragons',
-  'Drillers', 'Ducks', 'Eagles', 'Elks', 'Falcons', 'Ferrets', 'Flamingos', 'Foxes', 'Gators',
-  'Geese', 'Generals', 'Gophers', 'Grizzlies', 'Hammers', 'Hawks', 'Hornets', 'Huskies',
-  'Ibexes', 'Jackals', 'Jackrabbits', 'Kestrels', 'Lizards', 'Longhorns', 'Lumberjacks',
-  'Lynx', 'Mallards', 'Mammoths', 'Manatees', 'Marlins', 'Meerkats', 'Miners', 'Moles',
-  'Mooses', 'Mudcats', 'Mustangs', 'Narwhals', 'Otters', 'Owls', 'Oxen', 'Panthers',
-  'Pelicans', 'Penguins', 'Pilots', 'Pioneers', 'Porcupines', 'Prospectors', 'Pumas',
-  'Rattlers', 'Ravens', 'Raccoons', 'Rhinos', 'Roadrunners', 'Rockets', 'Salmon', 'Scorpions',
-  'Seagulls', 'Sharks', 'Shepherds', 'Skunks', 'Sloths', 'Smokers', 'Stallions', 'Steamers',
-  'Stingrays', 'Storm', 'Sturgeon', 'Thunder', 'Tigers', 'Timberwolves', 'Toads', 'Tornadoes',
-  'Trailblazers', 'Turtles', 'Vipers', 'Voles', 'Vultures', 'Walruses', 'Warthogs', 'Wasps',
-  'Weasels', 'Wolverines', 'Woodpeckers', 'Yaks', 'Yetis',
-];
+/** A random franchise for the menu's "Your team" pick; `except` keeps a re-roll from landing on the
+ * team already shown. */
+export function randomFranchiseName(except?: string, rng: () => number = Math.random): string {
+  const options = FRANCHISES.map(franchiseName).filter((n) => n !== except);
+  return options[Math.floor(rng() * options.length)];
+}
 
 /**
- * `count` distinct "Place Mascot" names. Both halves are drawn without replacement, so no
- * draft ends up with two Denver teams or two sets of Chickens — with ~100 places and ~115
- * mascots that's never a real constraint at 4-16 teams, but a duplicate would be confusing
- * enough on the draft board to be worth ruling out outright.
+ * `count` distinct franchise names for one draft, dealt from the draft's own seeded stream so the
+ * same seed (a `?draftSeed=` replay, a duel link) meets the same rivals in the same seats. The
+ * human's own franchise is never dealt to a rival: if the deal holds it, that one seat takes the
+ * next team in the deck instead, so two players with different teams on one seed differ in at most
+ * the seats their own two teams touch.
  */
-export function randomTeamNames(count: number): string[] {
-  const places = shuffled(PLACES);
-  const mascots = shuffled(MASCOTS);
-  const names: string[] = [];
-  for (let i = 0; i < count; i++) names.push(`${places[i % places.length]} ${mascots[i % mascots.length]}`);
+export function draftTeamNames(count: number, rng: () => number, humanTeamName?: string): string[] {
+  const deck = shuffled(FRANCHISES.map(franchiseName), rng);
+  const names = deck.slice(0, count);
+  const taken = humanTeamName ? names.indexOf(humanTeamName) : -1;
+  if (taken >= 0) names[taken] = deck[count];
   return names;
 }
 
@@ -68,15 +40,22 @@ export function teamLabel(team: Team): string {
   return team.name;
 }
 
-/** Just the place ("Sioux Falls" for "Sioux Falls Elks") — the draft board's column headers. */
+/** Just the nickname ("Sea Lions" for "Long Beach Sea Lions") — headlines and the playoff bracket.
+ * Franchise nicknames can be two words, so it comes from the pool, not from the last word. */
+export function teamNickname(name: string): string {
+  return franchiseByName(name)?.name ?? name.split(' ').slice(-1)[0];
+}
+
+/** Just the place ("Sioux Falls" for "Sioux Falls Bison") — the draft board's column headers. */
 export function teamPlace(team: Team): string {
+  const franchise = franchiseByName(team.name);
+  if (franchise) return franchise.city;
   const words = team.name.split(' ');
   return words.length > 1 ? words.slice(0, -1).join(' ') : team.name;
 }
 
-/** `team.name` is always "Place Mascot" with the mascot a single MASCOTS token (see above) and
- * the place 1-4 words (PLACES has entries like "Boise" and "Salt Lake City") — dropping the last
- * word reliably isolates the place regardless of how many words it has. */
+/** For names from the old generator, always "Place Mascot" with a one-word mascot and a place of
+ * 1-4 words ("Boise", "Salt Lake City") — dropping the last word isolates the place. */
 function placeWords(team: Team): string[] {
   return team.name.replace(/\./g, '').split(' ').slice(0, -1);
 }
@@ -93,8 +72,8 @@ function baseCode(team: Team): string {
 }
 
 /** 2026-08-16, backs the broadcast-style "NBA Draft board" look in the Overview grid: a short
- * letter code per team, the same flavour as real NBA city codes (LAL, GSW, NO), standing in for
- * a real team logo since these are procedurally-generated fictional franchises with no artwork.
+ * letter code per team, the same flavour as real NBA city codes (LAL, GSW, NO). Since 2026-10-14
+ * franchises have logos and their own fixed codes; the derivation below covers old-generator names.
  * Computed for the whole roster at once (not team-by-team) because `baseCode` alone collides for
  * real PLACES entries that share a prefix — caught live, 2026-08-16: Charleston and Charlotte
  * both produced "CHA". On a collision, later teams fall back to a longer prefix of the full place
@@ -104,7 +83,8 @@ export function teamCodes(teams: readonly Team[]): Map<string, string> {
   const used = new Set<string>();
   const codes = new Map<string, string>();
   for (const team of teams) {
-    const ideal = baseCode(team);
+    // Franchises carry their own fixed code; the derived code is for names from the old generator.
+    const ideal = franchiseByName(team.name)?.code ?? baseCode(team);
     let code = ideal;
     if (used.has(code)) {
       const fullPlace = placeWords(team).join('').toUpperCase();
@@ -118,10 +98,10 @@ export function teamCodes(teams: readonly Team[]): Map<string, string> {
   return codes;
 }
 
-function shuffled<T>(source: readonly T[]): T[] {
+function shuffled<T>(source: readonly T[], rng: () => number): T[] {
   const out = [...source];
   for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [out[i], out[j]] = [out[j], out[i]];
   }
   return out;

@@ -44,12 +44,12 @@ import {
   TeamReport,
   VsYou,
   fieldGrade,
-  teamHue,
   voicesFor,
   type DeskVoice,
   type ProfileRow,
   type ReportExtra,
 } from './ResultsReport';
+import { teamHue } from './teamLogoKit';
 import { FitName, FitTeam } from './FitName';
 import { exportFullDraft } from '../engine/draftExport';
 
