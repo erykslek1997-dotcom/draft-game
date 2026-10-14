@@ -68,6 +68,12 @@ export function teamLabel(team: Team): string {
   return team.name;
 }
 
+/** Just the place ("Sioux Falls" for "Sioux Falls Elks") — the draft board's column headers. */
+export function teamPlace(team: Team): string {
+  const words = team.name.split(' ');
+  return words.length > 1 ? words.slice(0, -1).join(' ') : team.name;
+}
+
 /** `team.name` is always "Place Mascot" with the mascot a single MASCOTS token (see above) and
  * the place 1-4 words (PLACES has entries like "Boise" and "Salt Lake City") — dropping the last
  * word reliably isolates the place regardless of how many words it has. */

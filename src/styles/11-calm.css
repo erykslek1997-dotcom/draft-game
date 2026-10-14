@@ -963,3 +963,56 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 /* 2026-10-09: the series preview (two sentences on styles) and, once over, how it went. */
 .pl-preview { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft); }
 .rr-season-line { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--at-ink); }
+
+/* 2026-10-14, the draft board redesign (DraftGrid.tsx, approved mockup "v2 Desktop"): teams across,
+   rounds down; a filled cell is the face ringed in the tier colour, the position, the short name. */
+.at-calm .dg {
+  background: var(--calm-raised); border: 1px solid var(--calm-line); border-radius: 14px;
+  padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+}
+.at-calm .dg-scroll { overflow-x: auto; scrollbar-width: thin; }
+.at-calm .dg-grid { display: grid; gap: 6px; }
+.at-calm .dg-row { display: contents; }
+.at-calm .dg-team {
+  display: block; min-width: 0; padding: 8px 4px; text-align: center; line-height: 16px;
+  border-radius: 8px; background: var(--calm-raised-2); color: #a9c7e8; font-size: 11px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.at-calm .dg-team.is-you { background: rgba(58, 176, 240, 0.16); color: #9ad6ff; box-shadow: inset 0 0 0 1px rgba(58, 176, 240, 0.55); }
+.at-calm .dg-round {
+  display: flex; align-items: center; justify-content: center; font-family: var(--calm-num);
+  font-size: 10px; color: var(--at-ink-faint); white-space: nowrap;
+  position: sticky; left: 0; z-index: 1; background: var(--calm-raised);
+}
+.at-calm .dg-corner { position: sticky; left: 0; z-index: 1; background: var(--calm-raised); }
+.at-calm .dg-cell {
+  height: 90px; box-sizing: border-box; border-radius: 10px; padding: 9px 6px 6px; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center;
+}
+.at-calm .dg-cell.is-filled {
+  background: color-mix(in srgb, var(--dg-tier) 13%, transparent);
+  box-shadow: inset 0 3px 0 var(--dg-tier);
+}
+.at-calm .dg-cell.is-filled.is-mine { box-shadow: inset 0 3px 0 var(--dg-tier), inset 0 0 0 1px rgba(58, 176, 240, 0.55); }
+.at-calm .dg-cell .bf-face { width: 32px; height: 32px; font-size: 11px; margin-bottom: 4px; box-shadow: 0 0 0 2px var(--dg-tier); }
+.at-calm .dg-pos { font-size: 10px; font-weight: 500; line-height: 13px; height: 13px; color: var(--at-ink-soft); }
+.at-calm .dg-name {
+  max-width: 100%; font-size: 12px; font-weight: 700; line-height: 16px; height: 16px; color: var(--at-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.at-calm .dg-cell.is-empty { border: 1px dashed var(--calm-line); }
+.at-calm .dg-cell.is-empty.is-mine { border-color: rgba(58, 176, 240, 0.45); }
+.at-calm .dg-cell.is-clock { background: var(--calm-raised-2); color: var(--at-ink); box-shadow: inset 0 0 0 1px #2a4566; }
+.at-calm .dg-cell.is-clock.is-you { background: #3ab0f0; color: #06070c; box-shadow: none; }
+.at-calm .dg-cell.is-next { border: 1px dashed rgba(58, 176, 240, 0.55); color: #6cc3ff; }
+.at-calm .dg-state { font-size: 9px; font-weight: 800; line-height: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.at-calm .dg-cell.is-clock .dg-num, .at-calm .dg-cell.is-next .dg-num { margin-top: 2px; }
+.at-calm .dg-num { font-family: var(--calm-num); font-size: 15px; font-weight: 800; }
+.at-calm .dg-more {
+  align-self: flex-end; height: 28px; padding: 0 12px; border-radius: 14px; cursor: pointer;
+  border: 1px solid var(--calm-line); background: var(--calm-raised-2); color: #a9c7e8; font: 600 12px var(--calm-sans);
+}
+.at-calm .dg-more:hover { border-color: var(--at-accent); color: var(--at-ink); }
+.at-calm .dg-more:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+.at-calm .at-board-inline { margin: 0 0 16px; }
+.at-calm .at-board-drawer .dg { padding: 10px; }
