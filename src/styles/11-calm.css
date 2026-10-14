@@ -904,7 +904,6 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .pl-path-opp { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: 600; }
 .pl-path-score { font: 800 24px var(--rr-disp); }
 .pl-finale .pl-card { text-align: left; }
-.ss-sheet.is-playoffs .bf-live { background: rgba(12, 14, 20, 0.88); border-color: #2c2b28; }
 @media (max-width: 760px) {
   .ss-backdrop { padding: 0; }
   .ss-sheet { border-radius: 0; border: 0; min-height: 100%; padding: 16px; }

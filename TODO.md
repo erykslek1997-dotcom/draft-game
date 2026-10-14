@@ -230,6 +230,10 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
      ≤8 pkt) ~1 s na akcję, pełna relacja; przy wysokim prowadzeniu samo przyspiesza. Cel: ~55–60 s
      mecz jednostronny, ~80–90 s wyrównany; ×2/×4 proporcjonalnie. W playoffach przy każdym meczu
      „Watch” (całość) i „Key moments” (od połowy Q4, ~20–25 s). Liczby do dostrojenia po graniu.
+     **Zrobione 2026-10-14** (`LiveGame.tsx` + `LiveGame.css`): tablica, relacja z twarzami, zakładki
+     Box score / Team stats / Match-ups, boisko z ostatnim rzutem, kwarty, „hunting”, liderzy;
+     ×1/×2/×4, „Key moments”, przerwy z jednym zdaniem. Zmierzone na 24 meczach: jednostronny
+     53–58 s, wyrównany 64–73 s (Q4 22–31 s) — dalsze strojenie po graniu.
    - **Stałe drużyny zamiast losowych (2026-10-14)** — jak największa pula drużyn stworzonych z góry
      (użytkownik: „więcej drużyn, o ile to możliwe”; cel ~40+): nazwa, miasto, własne logo (SVG),
      barwy, poziom (siła AI) i styl GM-a (np. obrona, strzelcy, gwiazdy — podpięte pod istniejące
