@@ -73,12 +73,23 @@ export function YearsPicker({
   }, [open]);
   return (
     <>
-      <button ref={triggerRef} type="button" className="years-picker-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
+      {/* 2026-10-14 (playtest 4: "słaby wyróżnik tego że można zmienić lata"): the button says
+          what it does, in the accent colour, with how many stretches there are to choose from. */}
+      <button
+        ref={triggerRef}
+        type="button"
+        className="years-picker-btn"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        title={`Change ${playerName}'s years — ${options.length} stretches of his career to choose from`}
+      >
         <EraYears span={selected} />
         <span className="years-picker-cost">
           <CapIcon size={12} /> {selected.fga.toFixed(1)}
         </span>
-        <span className="years-picker-caret" aria-hidden>▾</span>
+        <span className="years-picker-change">
+          <span aria-hidden>✎</span> Change years
+        </span>
       </button>
       {open && inlineSlot && createPortal(
         <div ref={inlineRef} className="years-picker-inline" role="region" aria-label={`${playerName} — choose years`}>

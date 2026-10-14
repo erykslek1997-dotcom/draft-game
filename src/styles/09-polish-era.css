@@ -436,7 +436,6 @@
   white-space: nowrap;
 }
 .at-shell .years-picker-btn:hover { border-color: var(--at-accent); }
-.at-shell .years-picker-caret { color: var(--at-ink-faint); font-size: 11px; }
 .at-shell .years-picker-cost {
   display: inline-flex;
   align-items: center;

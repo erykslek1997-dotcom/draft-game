@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes, suggestBasicRotation } from '../engine/rotation';
@@ -6,6 +6,7 @@ import { computeDurability } from '../engine/durability';
 import { playableMinutesCap } from '../engine/rotationRoleMinutes';
 import { OverallTierBadge } from './DraftBoard';
 import { Face } from './ShotChip';
+import { RotationPicker, TrashIcon } from './RotationPicker';
 import type { Rotation, SlotAssignment, Team } from '../engine/types';
 
 
@@ -203,6 +204,9 @@ function RotationBuilderComponent({
   const [dragging, setDragging] = useState<MoveSource | null>(null);
   const [dropSlot, setDropSlot] = useState<Position | null>(null);
   const splitBarRefs = useRef<Partial<Record<Position, HTMLSpanElement | null>>>({});
+  // The row whose player list is open (playtest 2026-10-14: our own list instead of the system one).
+  const [picker, setPicker] = useState<{ slot: Position; rowIdx: number } | null>(null);
+  const closePicker = useCallback(() => setPicker(null), []);
 
   function updateRow(slot: Position, rowIdx: number, patch: Partial<Row>) {
     setIsSuggestion(false);
@@ -221,6 +225,29 @@ function RotationBuilderComponent({
   function removeRow(slot: Position, rowIdx: number) {
     setIsSuggestion(false);
     setRows((prev) => ({ ...prev, [slot]: prev[slot].filter((_, i) => i !== rowIdx) }));
+  }
+
+  /** The bin (playtest 2026-10-14, "brakuje czegoś jak usuń/kosz"): a backup row goes, a starter
+   * row stays and is emptied — the position keeps its minutes for whoever comes in. */
+  function clearRow(slot: Position, rowIdx: number) {
+    if (rowIdx > 0) removeRow(slot, rowIdx);
+    else updateRow(slot, 0, { playerId: '' });
+    setMinutesDraft({});
+  }
+
+  /** A click on a position's bar (playtest 2026-10-14: "powinno wystarczyć że wcisnę pasek"): a
+   * player's part opens his row's list; the open part opens the first empty row, or a new one. */
+  function openFromBar(slot: Position, rowIdx?: number) {
+    if (rowIdx !== undefined) {
+      setPicker({ slot, rowIdx });
+      return;
+    }
+    const empty = rows[slot].findIndex((r) => !r.playerId);
+    if (empty >= 0) setPicker({ slot, rowIdx: empty });
+    else if (rows[slot].length < MAX_ROWS_PER_SLOT) {
+      addRow(slot);
+      setPicker({ slot, rowIdx: rows[slot].length });
+    }
   }
 
   /**
@@ -462,7 +489,8 @@ function RotationBuilderComponent({
                         key={idx}
                         className={`rotation-split-seg is-${Math.min(k, 2)}`}
                         style={{ width: `${(row.minutes / GAME_MINUTES) * 100}%` }}
-                        title={`${player?.playerName ?? ''} ${row.minutes} min`}
+                        title={`${player?.playerName ?? ''} ${row.minutes} min — click to change`}
+                        onClick={() => openFromBar(slot, idx)}
                       >
                         <span className="rotation-split-label">
                           {player ? player.playerName.split(' ').slice(-1)[0] : ''} {row.minutes}
@@ -478,15 +506,21 @@ function RotationBuilderComponent({
                             aria-valuenow={row.minutes}
                             onPointerDown={(e) => startSplitDrag(e, slot, idx)}
                             onKeyDown={(e) => splitHandleKey(e, slot, idx)}
+                            onClick={(e) => e.stopPropagation()}
                           />
                         )}
                       </span>
                     );
                   })}
                   {total < GAME_MINUTES && (
-                    <span className="rotation-split-open" style={{ width: `${((GAME_MINUTES - total) / GAME_MINUTES) * 100}%` }}>
+                    <button
+                      type="button"
+                      className="rotation-split-open"
+                      style={{ width: `${((GAME_MINUTES - total) / GAME_MINUTES) * 100}%` }}
+                      onClick={() => openFromBar(slot)}
+                    >
                       {GAME_MINUTES - total} open
-                    </span>
+                    </button>
                   )}
                 </span>
                 <span className={full ? 'minutes-ok' : 'minutes-bad'}>
@@ -535,26 +569,32 @@ function RotationBuilderComponent({
                       <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />
                     )}
                     <div className="rotation-card-row-main">
-                      <select
-                        className="rotation-select"
-                        value={row.playerId}
-                        onChange={(e) => updateRow(slot, rowIdx, { playerId: e.target.value })}
+                      {/* 2026-10-14 (playtest 6 and 5): the game's own list instead of the system's
+                          <select>, opened by the whole row, not just its arrow. */}
+                      <button
+                        type="button"
+                        className={`rb-pick${selectedPlayer ? '' : ' is-empty'}`}
+                        aria-haspopup="listbox"
+                        aria-expanded={picker?.slot === slot && picker.rowIdx === rowIdx}
+                        onClick={() => setPicker(picker?.slot === slot && picker.rowIdx === rowIdx ? null : { slot, rowIdx })}
                       >
-                        <option value="">{rowIdx === 0 ? '-- starter --' : '-- backup (optional) --'}</option>
-                        {/* Every rostered player is listed, not just the position-eligible ones:
-                            a thin roster can force somebody to cover out of position (auto-fill
-                            does exactly that to keep each slot at 48 minutes), and the dropdown
-                            has to be able to show and preserve that assignment. Out-of-position
-                            choices are marked rather than hidden — they're allowed but penalized,
-                            contributing no talent at that slot. */}
-                        {optionsFor(slot).map(({ player, eligible }) => (
-                          <option key={player.id} value={player.id}>
-                            {eligible ? '' : '⚠ '}
-                            {player.playerName} · {player.primaryPosition}
-                            {eligible ? '' : ' (out of position)'}
-                          </option>
-                        ))}
-                      </select>
+                        <span className="rb-pick-name">{selectedPlayer ? selectedPlayer.playerName : rowIdx === 0 ? 'Choose a starter' : 'Choose a backup'}</span>
+                        {selectedPlayer && !isPositionEligible(selectedPlayer, slot) && <span className="rb-pick-flag">⚠ out of position</span>}
+                        <span className="rb-pick-caret" aria-hidden>
+                          ▾
+                        </span>
+                      </button>
+                      {picker?.slot === slot && picker.rowIdx === rowIdx && (
+                        <RotationPicker
+                          slot={slot}
+                          starter={rowIdx === 0}
+                          options={optionsFor(slot).map(({ player, eligible }) => ({ player, eligible, minutes: playerTotalMinutes(rows, player.id) }))}
+                          selectedId={row.playerId}
+                          onPick={(id) => updateRow(slot, rowIdx, { playerId: id })}
+                          onRemove={row.playerId || rowIdx > 0 ? () => clearRow(slot, rowIdx) : null}
+                          onClose={closePicker}
+                        />
+                      )}
                       {selectedPlayer && (
                         <span className="rotation-card-row-meta">
                           <span
@@ -622,9 +662,15 @@ function RotationBuilderComponent({
                         +
                       </button>
                     </span>}
-                    {rowIdx > 0 && (
-                      <button className="remove-row-btn" title="Remove this contributor" onClick={() => removeRow(slot, rowIdx)}>
-                        ×
+                    {(row.playerId || rowIdx > 0) && (
+                      <button
+                        type="button"
+                        className="remove-row-btn"
+                        title={selectedPlayer ? `Take ${selectedPlayer.playerName} out of the rotation` : 'Remove this row'}
+                        aria-label={selectedPlayer ? `Take ${selectedPlayer.playerName} out of the rotation` : 'Remove this row'}
+                        onClick={() => clearRow(slot, rowIdx)}
+                      >
+                        <TrashIcon />
                       </button>
                     )}
                   </div>

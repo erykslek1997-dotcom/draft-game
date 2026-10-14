@@ -4,7 +4,7 @@ import { TIER_FRAME_COLOR } from './DraftPlayerCard';
 import { DraftGrid } from './DraftGrid';
 import { DraftPlayerList, PositionToggles } from './DraftPlayerList';
 import { NO_THREE_LINE_TIP, gradeTip, spacingUngraded, type GradeKey } from './gradeHelp';
-import { ROLE_FILTERS, matchesRoleFilter } from './cardRoles';
+import { ROLE_FILTERS, ROLE_POSITIONS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
@@ -47,7 +47,7 @@ import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
 import { BoardToggleButton, DraftHelpDialog, LeaveDraftDialog } from './DraftChrome';
-import { BigBoardPanel, DraftStatus, FiveDots, RivalsLane, YourFiveCourt, upcomingPicks } from './DraftWarRoom';
+import { BigBoardPanel, DraftCapsStrip, DraftStatus, FiveDots, RivalsLane, YourFiveCourt, upcomingPicks } from './DraftWarRoom';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
 import { YearsPicker } from './YearsPicker';
 import { PlayerPeekModal } from './PlayerPeekModal';
@@ -609,6 +609,17 @@ export default function DraftBoard({
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  // Whether the status card is still on screen (a sentinel right under it, so the card itself keeps
+  // its sticky place on a desktop): a phone pins a slim caps strip once it scrolls away.
+  const statusRef = useRef<HTMLDivElement>(null);
+  const [statusVisible, setStatusVisible] = useState(true);
+  useEffect(() => {
+    const el = statusRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([entry]) => setStatusVisible(entry.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const [activeTab, setActiveTab] = useState<AtTab>('draft');
   const [showLegend, setShowLegend] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
@@ -992,9 +1003,21 @@ export default function DraftBoard({
       const next = new Set(hiddenPositions);
       if (next.has(pos)) next.delete(pos);
       else next.add(pos);
+      // 2026-10-14 (playtest 9): unticking the only position shown goes back to all of them, not to
+      // an empty list.
+      if (next.size >= ALL_POSITIONS.length) return new Set();
       return next;
     });
   }
+  // 2026-10-14 (playtest 2: "Perimeter D" kept after switching SG to C): a role no shown position
+  // plays is dropped, and the role list offers only the roles of the positions shown.
+  const shownPositions = ALL_POSITIONS.filter((pos) => !hiddenPositions.has(pos));
+  const roleFits = (role: string) => ROLE_POSITIONS[role]?.some((pos) => shownPositions.includes(pos)) ?? true;
+  const roleFitsKey = shownPositions.join(',');
+  useEffect(() => {
+    if (roleFilter && !roleFits(roleFilter)) setRoleFilter(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleFitsKey, roleFilter]);
   const needBiasActive = hiddenPositions.size === 0 && !search && humanTeam.roster.length >= 3 && openStarterPositions.size > 0;
 
   // 2026-09-27, the user (after the "Druga runda bez chaosu" mockup): while the AI picks, the list
@@ -1304,6 +1327,18 @@ export default function DraftBoard({
           />
         )}
       </DraftStatus>
+      {/* Marks the bottom of the status card: once it's above the screen, the card is gone. */}
+      <div ref={statusRef} aria-hidden />
+      {isStackedLayout && !statusVisible && !state.complete && activeTab === 'draft' && humanBudget.slotsLeft > 0 && (
+        <DraftCapsStrip
+          youOnClock={youOnClock}
+          onClockTeam={currentTeam}
+          pickNumber={state.round * TEAM_COUNT + state.pickInRound + 1}
+          picksAway={humanPicksAway}
+          capLeft={humanBudget.capLeft}
+          maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
+        />
+      )}
 
       {activeTab === 'draft' && (
         <div>
@@ -1432,7 +1467,7 @@ export default function DraftBoard({
                       onChange={(e) => setRoleFilter(e.target.value || null)}
                     >
                       <option value="">Any role</option>
-                      {Object.keys(ROLE_FILTERS).map((role) => (
+                      {Object.keys(ROLE_FILTERS).filter(roleFits).map((role) => (
                         <option key={role} value={role}>
                           {role}
                         </option>

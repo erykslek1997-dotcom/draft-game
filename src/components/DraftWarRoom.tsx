@@ -125,6 +125,39 @@ export function DraftStatus({
   );
 }
 
+/**
+ * 2026-10-14 (playtest 7: "podgląd ile mam caps powinien być widoczny cały czas podczas przeglądania
+ * graczy"): on a phone the status card scrolls away with the list, so once it's gone a slim strip
+ * stays pinned to the top — whose pick, and your caps left (and this pick's ceiling).
+ */
+export function DraftCapsStrip({
+  youOnClock,
+  onClockTeam,
+  pickNumber,
+  picksAway,
+  capLeft,
+  maxThisPick,
+}: {
+  youOnClock: boolean;
+  onClockTeam: Team;
+  pickNumber: number;
+  picksAway: number | null;
+  capLeft: number;
+  maxThisPick: number | null;
+}) {
+  return (
+    <div className={`wr-strip${youOnClock ? ' is-yours' : ''}`} aria-hidden>
+      <span className="wr-strip-who">
+        {youOnClock ? `Your pick · #${pickNumber}` : picksAway !== null ? `#${pickNumber} ${teamPlace(onClockTeam)} · you in ${picksAway}` : `#${pickNumber} ${teamPlace(onClockTeam)}`}
+      </span>
+      <span className="wr-strip-caps">
+        <CapIcon /> <b className="at-calm-num">{capLeft.toFixed(1)}</b> left
+        {maxThisPick !== null && <span className="at-calm-soft"> · max {maxThisPick.toFixed(1)}</span>}
+      </span>
+    </div>
+  );
+}
+
 /** Starter slots a roster has filled, by the same best assignment the rest of the screen uses. */
 export type FiveAssignment = Partial<Record<Position, PlayerSpan>>;
 
