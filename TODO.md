@@ -222,11 +222,25 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
      zakładki Box score / Porównanie drużyn / Match-upy — ale z **relacją na żywo** (play-by-play)
      jako głównym elementem. Dziś mecz na żywo to `src/components/LiveGame.tsx` (tablica, szansa
      wygranej, kwarty, play-by-play, box score) — przebudowa wyglądu, nie nowy silnik.
+   - **Stałe drużyny zamiast losowych (2026-10-14)** — pula ~24 drużyn stworzonych z góry: nazwa,
+     miasto, własne logo (SVG), barwy, poziom (siła AI) i styl GM-a (np. obrona, strzelcy, gwiazdy —
+     podpięte pod istniejące profile AI z `aiProfileForSlot`). W drafcie losujemy 15 z puli, żeby
+     ligi się różniły. Dziś: `randomTeamNames` (miejsce + maskotka) w `src/engine/teamNames.ts`.
+   - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14)** — do
+     ustalenia: lekko zmienione nazwiska ludzi z mediów NBA z ich poglądami czy fikcyjne postacie
+     o wyrazistych archetypach (decyzja niżej w notatkach z rozmowy). Dotyczy Draft Desk (wraca jako
+     lifeline) i linii trenera na wynikach.
+   - **Oceny bez kontekstu (2026-10-14)** — Wilt i Oscar mają F w spacingu, bo grali przed linią za 3;
+     sama litera tego nie mówi. Pokazać „—” z podpowiedzią „No 3-point line in his era” zamiast F
+     dla stretchy sprzed 1979-80 (i podpowiedzi przy każdej ocenie: co mierzy). Docelowo spacing
+     ery przed linią za 3 w kalibracji V2 (punkt 2).
 2. **Kalibracja silnika V2 — „dziady” i Hustle**: gracze dawnych er (spacing F u strzelców sprzed
    linii za 3 — West, Maravich, Barry; D-TAL sprzed 1973-74 bez przechwytów i bloków; X. McDaniel
    D-TAL 22; półdystans i rim pressure sprzed 1997; przegląd starych resztek kalibracji z Etapu 1),
    dopracowanie Hustle, odpowiednik Hustle w ataku, MVP z bilansem do kwadratu, rotacja Filipa
    (KG na trzech pozycjach).
+   - **LeBron — ręczna kolejność stretchy (2026-10-14)**: domyślny span i najwyższy TAL to 2012-14,
+     potem 2011-13, 2016-18, 2014-16, dopiero wtedy 2008-10. Dziś najwyższy jest 2007-09 (GOAT).
 3. **Silnik symulacji** — etap 4b (atak ~66%, rotacja ~34% w meczu), rzuty wolne w ocenie, mecz
    na żywo mocniej na silniku, etap 2b, tempo meczu, kalendarz, balans po symulacjach.
 4. **Tryby** — Etap 3 niżej (Draw Five → Mini → All-Time → wspólne).
