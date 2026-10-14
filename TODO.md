@@ -212,7 +212,9 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 Numeracja użytkownika. **Paczka 1 (draft + rotacja) — zrobiona 2026-10-14 (PR #216):** 1–7, 9.
 **Paczka 2 (sezon) — zrobiona 2026-10-14:** 8, 12, 13, zapowiedź serii, Watch again ↔ Next game,
 podsumowanie po sezonie, faule (PF w statystykach, „fouls out” w relacji), Team po drafcie.
-Zostaje: 10 (dopytać), ogólny układ playoffów (makiety), 11 (silnik).
+10 — zrobione 2026-10-14: przyczyną była zmiana lat gracza (cała rotacja budowana od nowa); teraz
+rotacja zostaje, gracz przechodzi na nowe lata z tymi samymi minutami.
+Zostaje: ogólny układ playoffów (makiety), 11 (silnik).
 
 **Draft**
 1. Brak „usuń / kosz” w drafcie (np. zdjęcie gracza z Big Boardu / z rotacji — do doprecyzowania).

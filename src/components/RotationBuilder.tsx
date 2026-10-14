@@ -172,6 +172,31 @@ function RotationBuilderComponent({
       // Not persisted — edits still work for this session.
     }
   }, [persistKey, roster, rows]);
+  // 2026-10-14 (playtest 10: "była rotacja, wybrałem gracza i zniknęła rotacja"): changing a
+  // player's years swaps his span id, and the Team tab used to remount this whole editor for it,
+  // wiping every row. Now a row keeps its place and minutes and follows the player to his new years;
+  // only a player who left the roster entirely empties his rows.
+  const prevRosterRef = useRef(roster);
+  useEffect(() => {
+    const prev = prevRosterRef.current;
+    prevRosterRef.current = roster;
+    if (prev === roster) return;
+    const ids = new Set(roster.map((p) => p.id));
+    const idByName = new Map(roster.map((p) => [p.playerName, p.id]));
+    const nameById = new Map(prev.map((p) => [p.id, p.playerName]));
+    setRows((cur) => {
+      let changed = false;
+      const next = { ...cur } as RowsBySlot;
+      for (const slot of STARTER_SLOTS) {
+        next[slot] = cur[slot].map((r) => {
+          if (!r.playerId || ids.has(r.playerId)) return r;
+          changed = true;
+          return { ...r, playerId: idByName.get(nameById.get(r.playerId) ?? '') ?? '' };
+        });
+      }
+      return changed ? next : cur;
+    });
+  }, [roster]);
   // Whether the rows currently on screen came from the automatic seed and haven't been touched —
   // drives the "suggested, not optimized" note below.
   const [isSuggestion, setIsSuggestion] = useState(() => !restoredRows && rosterComplete && !initialRotation && seedStrategy === 'basic');
