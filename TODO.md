@@ -207,6 +207,49 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ## Kolejność prac (decyzja 2026-10-10) — obowiązuje
 
+### Playtest 2026-10-14 (spisane, do zrobienia — użytkownik: „spisuj, nic nie rób”)
+
+Numeracja użytkownika. W lokalnym stashu (`WIP playtest: FGA sort, series panel first, next-game/
+watch-again swap`, tylko w tej sesji) leżą gotowe kawałki: kolumny FGA/3PA/FTA, zapowiedź serii
+przed drabinką, zamiana „Watch again” ↔ „Next game” — przy zmianie kontenera trzeba je zrobić od nowa.
+
+**Draft**
+1. Brak „usuń / kosz” w drafcie (np. zdjęcie gracza z Big Boardu / z rotacji — do doprecyzowania).
+2. Filtr roli zostaje po zmianie pozycji: rola wybrana przy SG (np. Perimeter D) zostaje po
+   przełączeniu na C, gdzie nie ma sensu. Przy dodaniu PG i SF działa dobrze. Pomysł: przy zmianie
+   pozycji czyścić role, których nowa pozycja nie ma.
+3. Strzałki kierunku draftu (wąż): są tylko po lewej stronie — wygląda, jakby pierwsza drużyna
+   zawsze miała pierwszy wybór w rundzie. Pokazać kierunek każdej rundy (← / →).
+4. Słabo widać, że można zmienić lata (span) — mocniejszy wyróżnik.
+5. Rotacja: kliknięcie w pasek gracza powinno wystarczyć (bez celowania w strzałkę).
+6. Wybór gracza w rotacji pokazuje natywną listę systemu (`<select>` w `RotationBuilder.tsx`,
+   „-- starter --”, „⚠ … (out of position)”) — zrobić własny wybór w stylu gry (twarz, pozycja,
+   oznaczenie poza pozycją).
+7. Podgląd capów (ile zostało) widoczny cały czas podczas przeglądania graczy.
+9. Po odznaczeniu jedynej zaznaczonej pozycji — wracać do „wszystkich”.
+10. „Wycofało mi rotację po wyborze gracza” — nie udało się odtworzyć (desktop i telefon,
+    rotacja ustawiona po 2 wyborach przetrwała kolejne 4). Dopytać: czy chodzi o wybór w drafcie,
+    czy o wybór gracza w liście rotacji; który tryb (All-Time / Mini); który wybór (np. 9.).
+
+**Sezon / playoffy**
+8. Sortowanie po FGA w statystykach sezonu (zrobione w stashu: FGA w podstawowych kolumnach,
+   3PA i FTA w „More stats”).
+12. Klik w nazwisko w sezonie → karta gracza: kim jest, span, kiedy wybrany w drafcie, statystyki
+    sezonu (i playoffów).
+13. Dało się wyjść z sezonu i trzeba było robić wszystko od nowa — albo zapis, albo brak wyjścia.
+    Do tego: automatycznie przewijać na górę (przy przejściach w sezonie).
+- Najpierw zapowiedź serii, potem drabinka (zrobione w stashu).
+- „Watch again” zamienić miejscem z „Next game” (zrobione w stashu: następny mecz w górnym pasku
+  Simcastu, „Watch again” pod spodem).
+- Ogólnie: rozmieszczenie elementów w playoffach mało intuicyjne — do przemyślenia (makiety?).
+- Po sezonie brakuje podsumowania: skład + wynik (bilans, rozstawienie, wynik w playoffach,
+  skład ze statystykami).
+
+**Silnik**
+11. Kirilenko obok Curry'ego ma mało asyst — silnik nie uwzględnia, że Curry grając bez piłki
+    (off-ball gravity) generuje asysty kolegom, którzy mają piłkę.
+
+
 1. **UI** — zakres do ustalenia na starcie (kandydaci: ton wyniku według miejsca w Mini/All-Time,
    karta na ekranach wyników Draw Five, stół Draw Five, animacja lotu karty, linia Scouta dla
    graczy Hustle, porządki po playteście).
