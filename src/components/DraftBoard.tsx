@@ -687,14 +687,6 @@ export default function DraftBoard({
   // Keyed by normalized player name (one entry per drafted PICK, not per real-world player who
   // could have several spans in the pool) — same shape the old SpanSelectionScreen used.
   const [humanSpanSelection, setHumanSpanSelection] = useState<Record<string, string>>({});
-  // Bumped on every span change and used as `RotationBuilder`'s `key` below — forces a clean
-  // remount (fresh `autoAssignRotation` seed) instead of trying to reconcile old minutes
-  // assignments against a roster whose player IDENTITY just changed (each span is its own
-  // `PlayerSpan.id`; swapping a player's span is not the same player anymore as far as the
-  // rotation editor's row state is concerned). Span edits are expected to happen before
-  // fine-tuning minutes, not interleaved with it, so losing in-progress rotation edits on a span
-  // change is an acceptable, rare trade-off, not a routine one.
-  const [spanVersion, setSpanVersion] = useState(0);
 
   // 2026-09-12, user-reported live ("nadal brak korelacji") + user's own explicit direction
   // ("zamiana w dół = realna, od razu"): the FGA a pick was actually drafted at is the one number
@@ -735,12 +727,10 @@ export default function DraftBoard({
           delete next[key];
           return next;
         });
-        setSpanVersion((v) => v + 1);
         return;
       }
     }
     setHumanSpanSelection((prev) => ({ ...prev, [key]: spanId }));
-    setSpanVersion((v) => v + 1);
   }
 
   // One entry per drafted pick, options sorted best-TAL-first (same convention the old
@@ -1903,7 +1893,7 @@ export default function DraftBoard({
           to wszystko się usuwa"): this whole card used to be gated the same `{activeTab === 'team'
           && (...)}` way every other tab section here is — which UNMOUNTS `RotationBuilder`
           entirely the moment you leave the Team tab, and remounts it fresh (empty rows again) the
-          moment you come back. That's not a `key`/remount-timing bug (the actual `key={spanVersion}`
+          moment you come back. That's not a `key`/remount-timing bug (the old `key={spanVersion}`
           fix above addresses a real, separate 9th-pick discontinuity) — you cannot even DRAFT the
           next player without leaving this tab, so every single "set some minutes, draft, come
           back" cycle hit it. Always rendered now; `display: none` hides it instead of unmounting
@@ -1931,7 +1921,6 @@ export default function DraftBoard({
                 // `rosterComplete` still matters here, though: `buildInitialRows` (that file's own
                 // helper) reads it to keep the INITIAL seed empty until the roster is actually
                 // full, rather than auto-assigning a still-growing roster sensibly-but-wrongly.
-                key={spanVersion}
                 roster={chosenHumanRoster}
                 rosterComplete={draftComplete}
                 seedStrategy="basic"
