@@ -167,11 +167,6 @@
   text-align: left;
 }
 
-@media (max-width: 640px) {
-  /* One scrollable line of tier swatches on phones instead of three wrapped rows. */
-
-}
-
 /* 2026-09-24, user-reported live ("dużo wolnego miejsca"): the card's lower half was mostly empty
    — two small buttons stacked in the bottom-right corner. Now a box-score line plus the two actions
    side by side across the full width (Draft as the larger, easier target). */

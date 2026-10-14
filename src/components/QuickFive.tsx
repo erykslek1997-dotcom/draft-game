@@ -26,7 +26,8 @@ import { teamCodes, teamLabel } from '../engine/teamNames';
 import { CapIcon, Face, ShotChip, ShotsMeter } from './ShotChip';
 import { TIER_FRAME_COLOR } from './DraftPlayerCard';
 import { DraftPlayerList, PositionToggles } from './DraftPlayerList';
-import { gradeColor } from './DraftBoard';
+import { gradeColor, pickStatTip } from './DraftBoard';
+import { DraftGrid } from './DraftGrid';
 import { markStepDone } from './pathProgress';
 import { rankTeams } from '../engine/scoring';
 import { fitScore } from '../engine/fit';
@@ -357,58 +358,17 @@ function QuickDraftBoard({
   return (
     <div className="at-card at-stage-in">
       {boardOpen && (
-      <div className="at-grid-scroll" style={{ marginBottom: 16 }}>
-        <table className="at-ov-grid">
-          <thead>
-            <tr>
-              <th className="at-teamcol">Team</th>
-              {Array.from({ length: QUICK_ROUNDS }, (_, r) => (
-                <th key={r} className="at-rnd">
-                  {r + 1}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {state.teams.map((team, i) => (
-              <tr key={team.id} className={`${team.isHuman ? 'at-you' : ''} ${i === teamIdx ? 'at-clock' : ''}`}>
-                <td className="at-teamcol">
-                  <span className="at-team-chip" tabIndex={0}>
-                    {teamCodeByTeamId.get(team.id)}
-                  </span>
-                  <span className="at-team-name-full">
-                    {teamLabel(team)}
-                    {team.isHuman && <span className="at-lottery-you-tag">YOU</span>}
-                  </span>
-                </td>
-                {Array.from({ length: QUICK_ROUNDS }, (_, r) => {
-                  const pick = team.roster[r];
-                  if (pick) {
-                    return (
-                      <td key={r} className="at-pickcell">
-                        <span className="at-name-tip" tabIndex={0}>
-                          {pick.playerName}
-                        </span>
-                      </td>
-                    );
-                  }
-                  if (i === teamIdx && r === team.roster.length) {
-                    return (
-                      <td key={r} className="at-onclock">
-                        on the clock…
-                      </td>
-                    );
-                  }
-                  return (
-                    <td key={r} className="at-empty">
-                      —
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div style={{ marginBottom: 16 }}>
+        {/* 2026-10-14: the same board as the All-Time Draft (DraftGrid). */}
+        <DraftGrid
+          teams={state.teams}
+          rounds={QUICK_ROUNDS}
+          round={state.round}
+          onClockIdx={teamIdx}
+          complete={state.complete}
+          tierColor={(span) => TIER_FRAME_COLOR[span.fga < 2 ? 'Salary Glue' : overallTierForSpan(tierContextFor(span))]}
+          pickTip={pickStatTip}
+        />
       </div>
 
       )}

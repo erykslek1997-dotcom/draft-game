@@ -15,6 +15,7 @@ import { offensiveGrade, defensiveGrade, portabilityGrade, spacingGrade, durabil
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { computeDurability } from '../engine/durability';
 import { naturalPosition } from '../engine/naturalPosition';
+import { spacingUngraded, type GradeKey } from './gradeHelp';
 import { AtGrade, draftButtonTitle } from './DraftBoard';
 
 /** Every career window the database has for a player, including the ones this draft's lean pool
@@ -59,23 +60,23 @@ function distinctStretches(rows: PlayerSpan[], cardSpan: PlayerSpan): PlayerSpan
 const pct = (v: number) => (v * 100).toFixed(1);
 
 function Grades({ span, all }: { span: PlayerSpan; all: boolean }) {
-  const items: Array<[string, Grade, string]> = [
-    ['Offense', offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span)), 'How good his offense is'],
-    ['Defense', defensiveGrade(computeDefensiveTalent(span)), 'How good his defense is'],
-    ['Spacing', spacingGrade(computeSpacing(span), span), 'How much room his shooting gives teammates'],
-    ['Portability', portabilityGrade(span), 'How well his game travels next to other stars, on both ends'],
+  const items: Array<[string, Grade, GradeKey]> = [
+    ['Offense', offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span)), 'OFF'],
+    ['Defense', defensiveGrade(computeDefensiveTalent(span)), 'DEF'],
+    ['Spacing', spacingGrade(computeSpacing(span), span), '3PT'],
+    ['Portability', portabilityGrade(span), 'POR'],
     ...(all
       ? ([
-          ['Finishing', finishingGrade(computeFinishing(span), span), 'Scoring at the rim'],
-          ['Durability', durabilityGrade(computeDurability(span)), 'Games played'],
-        ] as Array<[string, Grade, string]>)
+          ['Finishing', finishingGrade(computeFinishing(span), span), 'FIN'],
+          ['Durability', durabilityGrade(computeDurability(span)), 'DUR'],
+        ] as Array<[string, Grade, GradeKey]>)
       : []),
   ];
   return (
     <span className="pk-grades">
-      {items.map(([label, grade, title]) => (
-        <span key={label} className="pk-grade" title={title}>
-          <AtGrade grade={grade} />
+      {items.map(([label, grade, key]) => (
+        <span key={label} className="pk-grade">
+          <AtGrade grade={grade} label={key} ungraded={key === '3PT' && spacingUngraded(span)} />
           {label}
         </span>
       ))}

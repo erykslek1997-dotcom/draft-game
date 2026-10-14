@@ -103,7 +103,7 @@
 .at-calm-chip:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 
 /* ---- Player card ---- */
-.at-calm .at-player-cards { grid-template-columns: repeat(auto-fill, minmax(186px, 1fr)); gap: 12px; }
+
 /* The card carries the calm fonts itself: Quick 5 shows it before its own screen moves to `.at-calm`. */
 .at-player-card.at-pc {
   font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -157,7 +157,6 @@ span.at-pc-name { cursor: default; }
 .at-player-card.at-pc:hover .at-pc-draft:not(:disabled),
 .at-player-card .at-pc-draft:focus-visible:not(:disabled) { background: var(--at-accent); color: var(--at-accent-ink); border-color: transparent; }
 .at-player-card .at-pc-draft:disabled { opacity: 0.45; cursor: not-allowed; }
-.at-ghost-card > .at-player-card.at-pc .at-pc-draft { visibility: hidden; }
 
 /* ---- Sidebar / dock ---- */
 .at-calm .at-draft-sidebar {
@@ -191,7 +190,7 @@ span.at-pc-name { cursor: default; }
 .at-calm-strip-last { display: none; }
   .at-calm-search { flex: 1 1 100%; }
   .at-calm-filters .at-calm-seg { max-width: 100%; overflow-x: auto; }
-  .at-calm .at-player-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
   .at-player-card.at-pc { padding: 0 8px 8px; gap: 8px; }
   .at-pc .at-team-band { margin: 0 -10px 3px; }
   .at-pc-head { gap: 8px; height: 48px; }
@@ -412,7 +411,7 @@ span.at-pc-name { cursor: default; }
 }
 .at-calm .at-merge-draft > .at-panel-title { display: none; }
 .at-calm .at-roster-table th { font-family: inherit; letter-spacing: 0.06em; }
-.at-calm .at-cap-meter { font-family: inherit; }
+
 .at-calm-select {
   font: inherit; font-size: 13px; font-weight: 600; color: var(--at-ink-soft); cursor: pointer;
   background: var(--calm-raised); border: 1px solid var(--at-edge); border-radius: 999px; padding: 8px 12px;
@@ -933,7 +932,6 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-player-card .at-pc-draft,
 .at-calm-chip,
 .at-legend-toggle,
-.at-board-drawer-close,
 .pl-ghost { line-height: 20px; padding-top: 9px; padding-bottom: 9px; border-radius: 999px; }
 .at-calm .primary-btn,
 .rs-primary { line-height: 20px; padding-top: 10px; padding-bottom: 10px; border-radius: 999px; }
@@ -951,21 +949,20 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm-icon,
 .ss-close,
 .share-modal-close,
-.at-grid-scroll-btn,
 .at-pc-scout { box-sizing: border-box; width: 32px; height: 32px; }
 .pl-tracker > * { box-sizing: border-box; width: 32px; height: 32px; border-radius: 999px; }
 .at-pc-statrow { min-height: 32px; }
 
 /* Small things still take a 40px tap: an invisible ring around them. */
-.at-pc-scout, .at-calm-icon, .at-grid-scroll-btn, .pl-tracker > button,
+.at-pc-scout, .at-calm-icon, .pl-tracker > button,
 .ss-sort, .ss-link, .at-inline-link, .at-calm-strip-scouts { position: relative; }
-.at-pc-scout::before, .at-calm-icon::before, .ss-close::before, .share-modal-close::before, .at-grid-scroll-btn::before,
+.at-pc-scout::before, .at-calm-icon::before, .ss-close::before, .share-modal-close::before,
 .pl-tracker > button::before, .mode-card-help::before { content: ''; position: absolute; inset: -5px; border-radius: 999px; }
 .mode-card-help::before { inset: -9px; }
 .ss-sort::before, .ss-link::before, .at-inline-link::before, .at-calm-strip-scouts::before { content: ''; position: absolute; inset: -12px -4px; }
 .ss-tabs button { line-height: 20px; padding-top: 9px; padding-bottom: 9px; }
 .at-intro-terminal .mode-help-modal-close { box-sizing: border-box; width: 32px; height: 32px; padding: 0; }
-.at-team-dock .at-draft-sidebar-head--toggle { min-height: 40px; }
+
 .at-calm-seg > button, .at-intro-terminal .mode-help-modal-close { position: relative; }
 .at-calm-seg > button::before { content: ''; position: absolute; inset: -4px 0; }
 .at-intro-terminal .mode-help-modal-close::before { content: ''; position: absolute; inset: -5px; }
@@ -1087,7 +1084,6 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .dg-more:hover { border-color: var(--at-accent); color: var(--at-ink); }
 .at-calm .dg-more:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 .at-calm .at-board-inline { margin: 0 0 16px; }
-.at-calm .at-board-drawer .dg { padding: 10px; }
 
 /* 2026-10-14, the draft screen redesign (DraftWarRoom.tsx, approved mockups "v2 Desktop"/"v2 Phone"):
    the status bar, the "Before you pick again" lane and your five. */
@@ -1315,3 +1311,13 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .wr-board-draft:disabled { background: #142133; color: var(--at-ink-faint); cursor: not-allowed; }
 @media (max-width: 860px) { .at-calm .wr-board { margin-top: 0; } }
 @media (max-width: 860px) { .at-calm .wr-views > button { white-space: nowrap; font-size: 13px; padding: 0 6px; } }
+
+/* 2026-10-14: grade tips (gradeHelp.ts) — what the grade measures and what the letter means, on
+   hover or tap; "—" for spacing before the 3-point line. */
+.at-calm .at-grade-tip { cursor: help; }
+.at-calm .at-grade-tip::after { white-space: normal; width: 230px; line-height: 1.4; font-weight: 500; text-transform: none; letter-spacing: 0; text-align: left; }
+.at-calm .at-grade-tip:focus::after, .at-calm .at-grade-tip:focus::before { opacity: 1; transform: translate(0, 0); }
+.at-calm .at-grade-tip:focus { outline: none; }
+.at-calm .at-grade-badge--none { background: #142133; color: var(--at-ink-soft); }
+.at-calm .tm-grades .at-grade-tip::after, .at-calm .pl-grades .at-grade-tip::after { left: auto; right: 0; }
+.at-calm .tm-grades .at-grade-tip::before, .at-calm .pl-grades .at-grade-tip::before { left: auto; right: 10px; }

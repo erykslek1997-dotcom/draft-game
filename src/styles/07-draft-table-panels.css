@@ -282,43 +282,16 @@ table.at-span-subtable td.at-fga-num, table.at-span-subtable td.at-tag-cell { te
    that; the old 480px max-height forced an inner vertical scrollbar to see the last several
    teams even though the row count can't grow. Horizontal scroll stays (9 round columns at
    108px min-width each is wider than most viewports). */
-.at-grid-scroll { overflow-x: auto; overflow-y: visible; border: 1px solid var(--at-line); border-radius: 8px; }
-table.at-ov-grid { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
-table.at-ov-grid thead th {
-  position: sticky; top: 0; background: var(--at-pill); color: var(--at-pill-ink);
-  z-index: 2; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 8px 8px; text-align: left; white-space: nowrap;
-}
-table.at-ov-grid thead th.at-rnd { text-align: center; min-width: 108px; }
+
 /* 2026-08-19, widened 168->236px alongside the full-name change below — the chip alone fit 168,
    chip + a real team name needs more room. Narrow-viewport override further down still shrinks
    this back to a chip-only 54px, unaffected by this change. */
-table.at-ov-grid thead th.at-teamcol { position: sticky; left: 0; z-index: 3; min-width: 236px; }
-table.at-ov-grid tbody td.at-teamcol {
-  position: sticky; left: 0; background: var(--at-paper-raised); z-index: 1;
-  border-right: 1px solid var(--at-line); font-weight: 700; white-space: nowrap; padding: 8px 8px;
-  /* 2026-08-16, user's own report (screenshot at a narrow width): this cell's content read as
-     centred — it was never given its own `text-align`, so it fell through to the generic
-     `tbody td` rule below (`text-align: center`), the one property that rule didn't already
-     override. Pinned explicitly rather than relying on cascade order not to regress again. */
-  text-align: left;
-}
-table.at-ov-grid tbody tr.at-you td.at-teamcol { background: color-mix(in srgb, var(--at-ink) 6%, var(--at-paper-raised)); }
-.at-team-name-full { margin-left: 8px; font-weight: 600; color: var(--at-ink); }
-.at-team-name-full .at-lottery-you-tag { margin-left: 6px; }
+
 /* 2026-08-19: on-the-clock row now reads in the NBA-red accent with a small pulsing dot, same
    "live" broadcast-graphics language real sports scoreboards use for whoever's up next — the
    flat neutral highlight this replaced didn't distinguish "the moment that's actually happening
    right now" from any other pick-in-progress state. */
-table.at-ov-grid tbody tr.at-clock td.at-teamcol { background: color-mix(in srgb, var(--at-accent-2) 16%, var(--at-paper-raised)); }
-table.at-ov-grid tbody td { padding: 8px 8px; border-top: 1px solid var(--at-line); white-space: nowrap; text-align: center; }
-table.at-ov-grid tbody td.at-pickcell { color: var(--at-ink); text-align: left; }
-table.at-ov-grid tbody td.at-empty { color: var(--at-ink-faint); font-style: italic; }
-table.at-ov-grid tbody td.at-onclock { color: var(--at-accent-2); font-weight: 700; font-style: italic; }
-table.at-ov-grid tbody td.at-onclock::before {
-  content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px;
-  border-radius: 999px; background: var(--at-accent-2); animation: at-live-pulse 1.4s ease-in-out infinite;
-}
+
 @keyframes at-live-pulse {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--at-accent-2) 55%, transparent); }
   50% { opacity: 0.55; box-shadow: 0 0 0 4px color-mix(in srgb, var(--at-accent-2) 0%, transparent); }
@@ -331,13 +304,6 @@ table.at-ov-grid tbody td.at-onclock::before {
 /* Scroll-nav affordance for the round grid below — two tappable arrows + a one-time hint text,
    hidden by default (desktop already scrolls fine with a trackpad/wheel, or just fits) and shown
    only inside the mobile media query below. */
-.at-grid-scroll-nav { display: none; }
-.at-grid-scroll-btn {
-  flex: none; width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--at-edge);
-  background: var(--at-pill); color: var(--at-pill-ink); font-size: 16px; line-height: 1;
-  display: flex; align-items: center; justify-content: center; cursor: pointer;
-}
-.at-grid-scroll-hint { font-size: 11px; color: var(--at-ink-faint); text-align: center; flex: 1; }
 
 /* 2026-08-16, user's own ask at the time ("damy radę zmieścić wszystkie 8 picków na jednym
    boardzie"): squeezed all round columns to fit the viewport with `table-layout: fixed`, wrapping
@@ -349,23 +315,18 @@ table.at-ov-grid tbody td.at-onclock::before {
    the "F. Last" short-name format stay from the original pass — both are still the right call
    for a narrow column, independent of which scroll strategy the round columns use. */
 @media (max-width: 640px) {
-  .at-grid-scroll-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  table.at-ov-grid thead th.at-rnd { min-width: 132px; padding: 8px 8px; font-size: 11px; }
-  table.at-ov-grid thead th.at-teamcol { width: 54px; min-width: 54px; padding: 8px 8px; }
-  table.at-ov-grid tbody td.at-teamcol { width: 54px; padding: 8px; white-space: normal; font-size: 12px; }
-  table.at-ov-grid tbody td.at-pickcell { padding: 4px 8px; font-size: 11px; }
+
   .at-name-full { display: none; }
   .at-name-short { display: inline; }
-  .at-team-chip { min-width: 0; height: 17px; padding: 0 4px; font-size: 11px; margin: 0 0 3px; display: inline-flex; }
-  .at-pick-badge { min-width: 0; height: 15px; padding: 0 4px; font-size: 8px; margin: 0 0 2px; display: inline-flex; }
+
   /* 2026-08-19: the full-name addition above is a wide-viewport convenience (real spare room in
      that column) — at this width the column is back to a 54px chip-only budget, same reasoning
      the chip-narrowing comment right above already gives, so the name goes back to hover-only. */
-  .at-team-name-full { display: none; }
+
 }
 
 /* ---- Team panel (own roster during the draft) ---- */
-.at-cap-meter { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+
 .at-cap-track { flex: 1; min-width: 160px; height: 9px; border-radius: 999px; background: var(--at-line); overflow: hidden; }
 .at-cap-fill { height: 100%; background: var(--at-accent); border-radius: 999px; }
 .at-cap-label {

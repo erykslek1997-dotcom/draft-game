@@ -8,6 +8,7 @@ import { CapIcon, Face } from './ShotChip';
 import { cardRoles } from './cardRoles';
 import { spanTeamColor } from './TeamBand';
 import { hadThreePointLine, NOT_YET } from './eraNotes';
+import { NO_THREE_LINE_TIP, gradeTip, spacingUngraded, type GradeKey } from './gradeHelp';
 
 /**
  * 2026-10-14, the draft list redesign (approved mockups "v2 Desktop"/"v2 Phone", the user: "taki
@@ -31,10 +32,10 @@ export interface PlayerListRow {
   starred?: boolean;
 }
 
-function GradeCell({ label, grade, color }: { label: string; grade: Grade; color: (g: Grade) => string }) {
+function GradeCell({ label, grade, color, ungraded }: { label: GradeKey; grade: Grade; color: (g: Grade) => string; ungraded?: boolean }) {
   return (
-    <span className="pl-grade">
-      {label} <b style={{ color: color(grade) }}>{grade}</b>
+    <span className="pl-grade at-name-tip at-grade-tip" tabIndex={0} data-tip={ungraded ? NO_THREE_LINE_TIP : gradeTip(label, grade)}>
+      {label} <b style={{ color: ungraded ? undefined : color(grade) }}>{ungraded ? '—' : grade}</b>
     </span>
   );
 }
@@ -121,7 +122,7 @@ export function DraftPlayerList({
                 <span className="pl-grades">
                   <GradeCell label="OFF" grade={offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))} color={gradeColor} />
                   <GradeCell label="DEF" grade={defensiveGrade(computeDefensiveTalent(span))} color={gradeColor} />
-                  <GradeCell label="3PT" grade={spacingGrade(computeSpacing(span), span)} color={gradeColor} />
+                  <GradeCell label="3PT" grade={spacingGrade(computeSpacing(span), span)} color={gradeColor} ungraded={spacingUngraded(span)} />
                 </span>
               ) : (
                 <button type="button" className="pl-scout-btn" onClick={() => onOpen?.(span.playerName)} disabled={scoutsLeft <= 0}>

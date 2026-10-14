@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TIER_FRAME_COLOR } from './DraftPlayerCard';
 import { DraftGrid } from './DraftGrid';
 import { DraftPlayerList, PositionToggles } from './DraftPlayerList';
+import { NO_THREE_LINE_TIP, gradeTip, spacingUngraded, type GradeKey } from './gradeHelp';
 import { ROLE_FILTERS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
@@ -402,9 +403,24 @@ export function gradeColor(grade: Grade): string {
 // Exported (2026-08-19) for RotationBuilder's own reuse — see that file's own docstring on why
 // the Team/Rotation screen now shows the same Offense/Defense letter grades this badge already
 // renders on the Draft tab, instead of building a second, slightly-different badge from scratch.
-export function AtGrade({ grade }: { grade: Grade }) {
+export function AtGrade({ grade, label, ungraded }: { grade: Grade; label?: GradeKey; ungraded?: boolean }) {
+  // 2026-10-14: with a label the badge explains itself on hover/tap (gradeHelp.ts).
+  if (ungraded) {
+    return (
+      <span className="at-grade-badge at-grade-badge--none at-name-tip at-grade-tip" tabIndex={0} data-tip={NO_THREE_LINE_TIP}>
+        —
+      </span>
+    );
+  }
+  if (!label) {
+    return (
+      <span className="at-grade-badge" style={{ background: gradeColor(grade), color: '#fff' }}>
+        {grade}
+      </span>
+    );
+  }
   return (
-    <span className="at-grade-badge" style={{ background: gradeColor(grade), color: '#fff' }}>
+    <span className="at-grade-badge at-name-tip at-grade-tip" tabIndex={0} data-tip={gradeTip(label, grade)} style={{ background: gradeColor(grade), color: '#fff' }}>
       {grade}
     </span>
   );
@@ -1764,10 +1780,10 @@ export default function DraftBoard({
                     <OverallTierBadge span={effective} />
                   </span>
                   <span className="tm-grades">
-                    <AtGrade grade={offensiveGrade(computeOffensiveTalent(effective), computeUncappedOffensiveTalent(effective))} />
-                    <AtGrade grade={defensiveGrade(computeDefensiveTalent(effective))} />
-                    <AtGrade grade={spacingGrade(computeSpacing(effective), effective)} />
-                    <AtGrade grade={durabilityGrade(computeDurability(effective))} />
+                    <AtGrade label="OFF" grade={offensiveGrade(computeOffensiveTalent(effective), computeUncappedOffensiveTalent(effective))} />
+                    <AtGrade label="DEF" grade={defensiveGrade(computeDefensiveTalent(effective))} />
+                    <AtGrade label="3PT" grade={spacingGrade(computeSpacing(effective), effective)} ungraded={spacingUngraded(effective)} />
+                    <AtGrade label="DUR" grade={durabilityGrade(computeDurability(effective))} />
                   </span>
                   <span className="tm-num tm-caps">
                     <CapIcon /> {effective.fga.toFixed(1)}

@@ -23,14 +23,7 @@
    comfortably-sized columns instead of nothing. `auto-fit` (not `auto-fill`) so an under-full last
    row's unused tracks collapse instead of reserving dead width. Left-aligned (no `margin: auto`) so
    it stays flush under the search bar above it rather than centering into its own separate island. */
-.at-player-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px;
-}
-@media (min-width: 1600px) {
-  .at-player-cards { grid-template-columns: repeat(auto-fit, minmax(150px, 190px)); }
-}
+
 .at-player-card {
   display: flex;
   flex-direction: column;
