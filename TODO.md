@@ -325,7 +325,9 @@ do dołu i zakładki Matchup/Bracket).
      Micheal Rightwing (rywal Moonbata: wchodzi razem z nim i prostuje go zdrowym rozsądkiem, bez
      liczb; decyzja użytkownika — bez wątku niskich obrońców), Filippo Batterista (składy two-way), Mikhail
      Prabuckov (fan Kobe), Jake Onoffsky (statystyk; było Jake Bentaylor), Bart Moonbat (głupie,
-     pewne siebie opinie — dżoker, nigdy sam, zawsze ktoś go poprawia), Igor Bannerman (fan Celtics;
+     pewne siebie opinie — dżoker, nigdy sam; ok. 70% bredzi i ktoś go prostuje, ok. 30% przypadkiem
+     ma rację, z głupiego powodu, i ktoś się wtrąca i go broni — decyzja użytkownika „30/70”; racja
+     tylko wtedy, gdy silnik naprawdę ocenia ten ruch dobrze, żeby nie wprowadzał w błąd), Igor Bannerman (fan Celtics;
      było Igor Simmons). Nazwiska Jake'a i Igora zmienione, bo wskazywały prawdziwe osoby (Ben
      Taylor, Bill Simmons). Makieta: https://claude.ai/artifact/NJFXtxXxKQgtybQPJBbXrc.
      **Pomysł:** zmienny panel jak w studiu — każdy ekspert ma „obiektyw” (ocena składu od −1 do +1
