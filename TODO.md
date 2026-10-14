@@ -249,7 +249,7 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
      opcjonalne `franchiseId` w `Team` (stare zapisy bez zmian), oba `createInitialTeams`
      (All-Time i Mini); sprawdzenie każdej nazwy pod kątem prawdziwych drużyn (dziś losowanie może
      dać np. Charlotte Hornets czy Memphis Grizzlies), (3) PR: styl GM-a przypięty do franczyzy,
-     (4) osobno: poziom siły AI (nowa dźwignia, wymaga pomiaru kalibracji). Twoja drużyna: wybór z
+     (4) osobno: poziom siły AI — zadanie „Kalibracja siły AI” w punkcie 2 kolejności prac. Twoja drużyna: wybór z
      puli z ponownym losowaniem; nazwy zostają (decyzje użytkownika 2026-10-14).
      **Krok 2 zrobiony (2026-10-14):** `src/data/franchises.ts` (46 drużyn), `teamLogoKit.ts` +
      `TeamLogo.tsx`; logo w menu (karta z kostką zamiast pola tekstowego), loterii, tablicy draftu,
@@ -280,6 +280,20 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
    (KG na trzech pozycjach).
    - **LeBron — ręczna kolejność stretchy (2026-10-14)**: domyślny span i najwyższy TAL to 2012-14,
      potem 2011-13, 2016-18, 2014-16, dopiero wtedy 2008-10. Dziś najwyższy jest 2007-09 (GOAT).
+   - [ ] **Kalibracja siły AI — ukryty poziom franczyzy (2026-10-14, użytkownik: „kalibracja siły
+     AI do todo”)** — ostatni krok stałych drużyn. Dziś wszystkie drużyny AI draftują tym samym
+     algorytmem i różnią się tylko stylem (przypięty do franczyzy, `draft.ts` `aiProfileForTeam`)
+     i losową siłą gustu. Do zrobienia: (1) pole `level` w `src/data/franchises.ts` (np. 3–4
+     poziomy, ukryte jak styl); (2) wybór dźwigni — kandydaci: szum tablicy (`aiDrafter.ts`
+     `BOARD_NOISE_POINTS` 8, `BOARD_NOISE_TEAM_POINTS`), wyłączony lub krótszy lookahead u słabszych,
+     rzadsze sięganie po „steal”; najpierw pomiar, która dźwignia daje rozrzut bez dziwnych składów;
+     (3) pomiar przed/po na tych samych ligach: `npx tsx scripts/calibrationReport.ts` (8+ seedów;
+     punkt odniesienia 2026-10-14: średnia drużyna AI 80,4, sd 2,8, min 73, max 87), szanse na
+     tytuł najlepszej drużyny (cel z TODO: ~25–35%), miejsce gracza w Mini/All-Time przy
+     typowym drafcie; (4) losowanie 15 z puli pilnuje, żeby nie trafiło samych silnych lub samych
+     słabych; (5) testy z progami na próbce draftów AI (`testInsightsSlow`, `testDefenseDistribution`,
+     `calibrationReference`) przeliczyć i opisać zmiany jak przy 2026-10-14. Poziomu nie
+     pokazujemy graczowi (decyzja użytkownika). (M)
 3. **Silnik symulacji** — etap 4b (atak ~66%, rotacja ~34% w meczu), rzuty wolne w ocenie, mecz
    na żywo mocniej na silniku, etap 2b, tempo meczu, kalendarz, balans po symulacjach.
 4. **Tryby** — Etap 3 niżej (Draw Five → Mini → All-Time → wspólne).
