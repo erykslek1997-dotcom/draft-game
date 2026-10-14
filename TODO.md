@@ -240,7 +240,7 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
      profile AI z `aiProfileForSlot`). W drafcie losujemy 15 z puli. **Poziomu ani stylu nie
      pokazujemy graczowi** (decyzja użytkownika). Dziś: `randomTeamNames` w `src/engine/teamNames.ts`.
      **Logo: wariant A (decyzja 2026-10-14)** — system składany zamiast ręcznych maskotek: kształt
-     herbu (8) + wzór tła (8) + symbol + 4 barwy, wszystko jako SVG z kodu (cała pula ok. 40 KB).
+     herbu (8) + wzór tła (8) + symbol + 4 barwy, wszystko jako SVG z kodu (cała pula ok. 30 KB, 11 KB po kompresji).
      Symbol pokazuje nazwę (użytkownik: „jak jest Chickens czy Coyotes, to powinno wskazywać na
      to”): 33 płaskie, geometryczne maskotki (kogut, kojot, łoś, sowa…) + 31 symboli ogólnych.
      Makieta 46 drużyn: https://claude.ai/artifact/WG8h8n743G2VNTScyaksV6. Plan: (1) akceptacja
