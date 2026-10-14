@@ -209,9 +209,10 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ### Playtest 2026-10-14 (spisane, do zrobienia — użytkownik: „spisuj, nic nie rób”)
 
-Numeracja użytkownika. W lokalnym stashu (`WIP playtest: FGA sort, series panel first, next-game/
-watch-again swap`, tylko w tej sesji) leżą gotowe kawałki: kolumny FGA/3PA/FTA, zapowiedź serii
-przed drabinką, zamiana „Watch again” ↔ „Next game” — przy zmianie kontenera trzeba je zrobić od nowa.
+Numeracja użytkownika. **Paczka 1 (draft + rotacja) — zrobiona 2026-10-14 (PR #216):** 1–7, 9.
+**Paczka 2 (sezon) — zrobiona 2026-10-14:** 8, 12, 13, zapowiedź serii, Watch again ↔ Next game,
+podsumowanie po sezonie, faule (PF w statystykach, „fouls out” w relacji), Team po drafcie.
+Zostaje: 10 (dopytać), ogólny układ playoffów (makiety), 11 (silnik).
 
 **Draft**
 1. Brak „usuń / kosz” w drafcie (np. zdjęcie gracza z Big Boardu / z rotacji — do doprecyzowania).
@@ -244,6 +245,13 @@ przed drabinką, zamiana „Watch again” ↔ „Next game” — przy zmianie 
 - Ogólnie: rozmieszczenie elementów w playoffach mało intuicyjne — do przemyślenia (makiety?).
 - Po sezonie brakuje podsumowania: skład + wynik (bilans, rozstawienie, wynik w playoffach,
   skład ze statystykami).
+
+**Dopisane później tego dnia**
+- „Dlaczego Nash zagrał 29 minut przy ustawionych 39?” — zmierzone: każda różnica ≥ 8 min w 48
+  meczach to 6 fauli (wylot); relacja tego nie mówiła. Zrobione: linie „5th foul” / „fouls out” w
+  relacji, „Fouled out” w box score, PF w statystykach sezonu.
+- Po skończonym drafcie przejście do zakładki Team (zrobione: samo się przełącza + baner na Draft).
+- „Caps nachodzą na Change years” (zrobione: koszt tylko w kolumnie Caps, na telefonie „Change”).
 
 **Silnik**
 11. Kirilenko obok Curry'ego ma mało asyst — silnik nie uwzględnia, że Curry grając bez piłki

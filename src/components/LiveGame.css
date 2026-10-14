@@ -162,6 +162,7 @@
 .sc-table tr.is-top td:nth-child(3) { color: var(--sc-gold); font-weight: 700; }
 .sc-table tr.is-joker th, .sc-table tr.is-joker td { color: var(--sc-gold); }
 .sc-table td.is-out { color: #e8707a; }
+.sc-out { margin-left: 6px; padding: 1px 6px; border-radius: 8px; background: rgba(232, 112, 122, 0.14); color: #e8707a; font-size: 10px; font-weight: 700; }
 .sc-table .sc-total th, .sc-table .sc-total td { font-weight: 700; color: var(--sc-ink); }
 .sc-table .sc-pct td { border-top: none; color: var(--sc-faint); }
 

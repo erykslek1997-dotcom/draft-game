@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { Team } from '../engine/types';
 import {
   engineTeamViews,
+  seasonSeed,
   playLivePlayoffGame,
   gameScorePerGame,
   type LivePlayoffResult,
@@ -20,6 +21,8 @@ import { TeamMark } from './ResultsReport';
 import './BestFive.css';
 import { FitName, FitTeam } from './FitName';
 import { PlayerRow, RowsLabel } from './PlayerRow';
+import { Face } from './ShotChip';
+import { OverallTierBadge } from './DraftBoard';
 
 /**
  * 2026-10-08, the user (season simulation): the season after a draft. First the regular season —
@@ -49,10 +52,189 @@ const pct = (made: number, att: number) => (att > 0 ? (100 * made) / att : 0);
 const mascot = (team: Team | undefined) => team?.name.split(' ').slice(-1)[0] ?? '';
 const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? '' : 's'}`;
 
+/**
+ * 2026-10-14 (playtest 12: "w sezonie klikam w nazwisko i widzę dokładne dane kim jest, jaki span,
+ * kiedy wybrany w drafcie, statystyki sezonu"): any player name in the season opens his card — who
+ * he is and which years of his career, where he went in the draft, his season next to the real
+ * years' numbers, and his playoffs once they're out.
+ */
+const PlayerCardContext = createContext<((line: SeasonPlayerLine) => void) | null>(null);
+
+/** A player's name that opens his card (plain text where no card is wired). */
+function PlayerName({ line, className, fit = false }: { line: SeasonPlayerLine; className?: string; fit?: boolean }) {
+  const open = useContext(PlayerCardContext);
+  const name = fit ? <FitName className={className} name={line.span.playerName} /> : <span className={className}>{line.span.playerName}</span>;
+  if (!open) return name;
+  return (
+    <button type="button" className="ss-pname" onClick={() => open(line)} title={`${line.span.playerName} — his card`}>
+      {name}
+    </button>
+  );
+}
+
+function SeasonPlayerCard({
+  line,
+  teams,
+  byId,
+  mark,
+  season,
+  playoffs,
+  onClose,
+}: {
+  line: SeasonPlayerLine;
+  teams: Team[];
+  byId: Map<string, Team>;
+  mark: Mark;
+  season: LiveSeasonResult;
+  playoffs: LivePlayoffResult | null;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
+  const span = line.span;
+  const team = byId.get(line.teamId);
+  // Where he went: the draft runs in draft-slot order, snaking every round.
+  const order = [...teams].sort((a, b) => a.draftSlot - b.draftSlot);
+  const teamIdx = order.findIndex((t) => t.id === line.teamId);
+  const round = team ? team.roster.findIndex((p) => p.id === span.id) : -1;
+  const pick = teamIdx >= 0 && round >= 0 ? round * order.length + (round % 2 === 0 ? teamIdx : order.length - 1 - teamIdx) + 1 : null;
+  const po = playoffs?.players.find((l) => l.teamId === line.teamId && l.span.id === span.id) ?? null;
+  const rank = season.players
+    .filter((l) => l.games >= AWARD_MIN_GAMES)
+    .sort((a, b) => per(b, 'pts') - per(a, 'pts'))
+    .findIndex((l) => l === line);
+  const statRow = (l: SeasonPlayerLine) => [
+    String(l.games),
+    f1(per(l, 'min')),
+    f1(per(l, 'pts')),
+    f1(per(l, 'reb')),
+    f1(per(l, 'ast')),
+    f1(per(l, 'stl')),
+    f1(per(l, 'blk')),
+    f1(pct(l.totals.fgm, l.totals.fga)),
+    l.totals.tpa ? f1(pct(l.totals.tpm, l.totals.tpa)) : '—',
+    l.totals.fta ? f1(pct(l.totals.ftm, l.totals.fta)) : '—',
+    f1(per(l, 'tov')),
+    f1(per(l, 'pf')),
+  ];
+  const heads = ['G', 'MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG%', '3P%', 'FT%', 'TOV', 'PF'];
+  return (
+    <div className="ss-pcard-back" onClick={onClose}>
+      <div className="ss-pcard" role="dialog" aria-modal="true" aria-label={span.playerName} onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="ss-close" aria-label="Close" onClick={onClose}>
+          ✕
+        </button>
+        <div className="ss-pcard-head">
+          <Face name={span.playerName} size="md" />
+          <div className="ss-pcard-id">
+            <h3 className="ss-pcard-name">{span.playerName}</h3>
+            <span className="ss-pcard-sub">
+              {span.primaryPosition} · {span.spanLabel} <OverallTierBadge span={span} />
+            </span>
+          </div>
+        </div>
+        <div className="ss-pcard-facts">
+          <span>
+            {mark(line.teamId)} {team?.name}
+            {team?.isHuman && <span className="ss-you"> You</span>}
+          </span>
+          {pick !== null && (
+            <span>
+              Drafted #{pick} · round {round + 1}
+            </span>
+          )}
+          <span>
+            {line.starter ? 'Starter' : 'Bench'}
+            {rank >= 0 && rank < 30 && ` · ${ord(rank + 1)} in the league in points`}
+          </span>
+        </div>
+        <div className="ss-table-wrap">
+          <table className="ss-table ss-pcard-table">
+            <thead>
+              <tr>
+                <th className="l" />
+                {heads.map((h) => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th className="l">Season</th>
+                {statRow(line).map((v, i) => (
+                  <td key={i} className="n">
+                    {v}
+                  </td>
+                ))}
+              </tr>
+              {po && po.games > 0 && (
+                <tr>
+                  <th className="l">Playoffs</th>
+                  {statRow(po).map((v, i) => (
+                    <td key={i} className="n">
+                      {v}
+                    </td>
+                  ))}
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <p className="ss-note">
+          His real {span.spanLabel}: {span.box.ppg.toFixed(1)} pts · {span.box.rpg.toFixed(1)} reb · {span.box.apg.toFixed(1)} ast a game.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** 2026-10-14 (playtest 13: "byłem w stanie wyjść z sezonu i musiałem zrobić wszystko od nowa —
+ * albo się zapisuje, albo nie można wyjść"): where you are in the season — the chapter, the tab and
+ * how far the playoffs have gone — is kept per season (the same draft always plays the same one),
+ * so closing the sheet or reloading the page comes back to the same place. */
+interface SeasonProgress {
+  chapter: 'season' | 'playoffs';
+  tab: Tab;
+  reveal: Reveal;
+}
+const SEASON_PROGRESS_KEY = 'draftverse.seasonProgress.v1';
+
+function readSeasonProgress(seed: string): SeasonProgress | null {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(SEASON_PROGRESS_KEY) ?? 'null') as (SeasonProgress & { seed: string }) | null;
+    return saved && saved.seed === seed ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function SeasonView({ teams, codes, state, onClose }: { teams: Team[]; codes: Map<string, string>; state: SeasonState; onClose: () => void }) {
-  const [chapter, setChapter] = useState<'season' | 'playoffs'>('season');
-  const [tab, setTab] = useState<Tab>('overview');
-  const [reveal, setReveal] = useState<Reveal>({ kind: 'none' });
+  const seed = useMemo(() => seasonSeed(teams), [teams]);
+  const [saved] = useState(() => readSeasonProgress(seed));
+  const [chapter, setChapter] = useState<'season' | 'playoffs'>(saved?.chapter ?? 'season');
+  const [tab, setTab] = useState<Tab>(saved?.tab ?? 'overview');
+  const [reveal, setReveal] = useState<Reveal>(saved?.reveal ?? { kind: 'none' });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SEASON_PROGRESS_KEY, JSON.stringify({ seed, chapter, tab, reveal }));
+    } catch {
+      // Not kept — the season still plays, it just starts over next time.
+    }
+  }, [seed, chapter, tab, reveal]);
+  // A new chapter, tab or playoff step starts at the top of the sheet (playtest 13: "z automatu
+  // przesuwać na górę").
+  const revealRound = reveal.kind === 'live' ? reveal.round : -1;
+  useEffect(() => {
+    document.querySelector('.ss-backdrop')?.scrollTo({ top: 0 });
+  }, [chapter, tab, reveal.kind, revealRound]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -152,9 +334,15 @@ function SeasonBody({
   const nextLabel = reveal.kind === 'none' ? (firstOpp ? `Your series vs the ${mascot(firstOpp)} →` : 'See how the playoffs play out →') : playoffsLabel;
   const TABS: Tab[] = ['overview', 'standings', 'stats', 'awards'];
   const nextTab = TABS[TABS.indexOf(tab) + 1];
+  const [card, setCard] = useState<SeasonPlayerLine | null>(null);
+  const cardView = card && (
+    <SeasonPlayerCard line={card} teams={teams} byId={byId} mark={mark} season={season} playoffs={finalsDone ? playoffs : null} onClose={() => setCard(null)} />
+  );
 
   if (chapter === 'playoffs' && playoffs) {
     return (
+      <PlayerCardContext.Provider value={setCard}>
+      {cardView}
       <PlayoffsChapter
         teams={teams}
         byId={byId}
@@ -167,10 +355,13 @@ function SeasonBody({
         setReveal={setReveal}
         onBack={() => setChapter('season')}
       />
+      </PlayerCardContext.Provider>
     );
   }
 
   return (
+    <PlayerCardContext.Provider value={setCard}>
+    {cardView}
     <div className="ss-hub">
       <header className="ss-hub-head">
         {mark(you.id, 'md')}
@@ -217,6 +408,7 @@ function SeasonBody({
         )}
       </footer>
     </div>
+    </PlayerCardContext.Provider>
   );
 }
 
@@ -469,7 +661,7 @@ function Leaders({ title, lines, value, youId, mark, count = 10, fmt = f1 }: { t
         <div key={`${l.teamId}${l.span.id}`} className={`ss-leader${l.teamId === youId ? ' is-you' : ''}`}>
           <span className="ss-leader-i">{i + 1}</span>
           {mark(l.teamId)}
-          <FitName className="ss-leader-n" name={l.span.playerName} />
+          <PlayerName line={l} className="ss-leader-n" fit />
           <span className="ss-leader-v">{fmt(value(l))}</span>
         </div>
       ))}
@@ -477,8 +669,8 @@ function Leaders({ title, lines, value, youId, mark, count = 10, fmt = f1 }: { t
   );
 }
 
-type SortKey = 'g' | 'min' | 'pts' | 'reb' | 'ast' | 'stl' | 'blk' | 'fg' | 'tp' | 'ft' | 'tov' | 'dd' | 'td' | 'gs';
-// `basic`: the five the table opens with (the user: points, rebounds, assists, FG%, 3P%); "More stats" adds the rest.
+type SortKey = 'g' | 'min' | 'pts' | 'reb' | 'ast' | 'stl' | 'blk' | 'fga' | 'fg' | 'tpa' | 'tp' | 'fta' | 'ft' | 'tov' | 'pf' | 'dd' | 'td' | 'gs';
+// `basic`: the columns the table opens with (the user: points, rebounds, assists, FG%, 3P%; then FGA); "More stats" adds the rest.
 const COLUMNS: { key: SortKey; label: string; title?: string; basic?: true; value: (l: SeasonPlayerLine) => number; fmt: (l: SeasonPlayerLine) => string }[] = [
   { key: 'g', label: 'G', value: (l) => l.games, fmt: (l) => String(l.games) },
   { key: 'min', label: 'MIN', value: (l) => per(l, 'min'), fmt: (l) => f1(per(l, 'min')) },
@@ -487,10 +679,16 @@ const COLUMNS: { key: SortKey; label: string; title?: string; basic?: true; valu
   { key: 'ast', label: 'AST', basic: true, value: (l) => per(l, 'ast'), fmt: (l) => f1(per(l, 'ast')) },
   { key: 'stl', label: 'STL', value: (l) => per(l, 'stl'), fmt: (l) => f1(per(l, 'stl')) },
   { key: 'blk', label: 'BLK', value: (l) => per(l, 'blk'), fmt: (l) => f1(per(l, 'blk')) },
+  // 2026-10-14, the user: "brakuje mi możliwości sortowania przez FGA" — attempts per game beside each percentage.
+  { key: 'fga', label: 'FGA', title: 'Field goal attempts per game', basic: true, value: (l) => per(l, 'fga'), fmt: (l) => f1(per(l, 'fga')) },
   { key: 'fg', label: 'FG%', basic: true, value: (l) => pct(l.totals.fgm, l.totals.fga), fmt: (l) => f1(pct(l.totals.fgm, l.totals.fga)) },
+  { key: 'tpa', label: '3PA', title: 'Three-point attempts per game', value: (l) => per(l, 'tpa'), fmt: (l) => f1(per(l, 'tpa')) },
   { key: 'tp', label: '3P%', basic: true, value: (l) => pct(l.totals.tpm, l.totals.tpa), fmt: (l) => (l.totals.tpa ? f1(pct(l.totals.tpm, l.totals.tpa)) : '—') },
+  { key: 'fta', label: 'FTA', title: 'Free throw attempts per game', value: (l) => per(l, 'fta'), fmt: (l) => f1(per(l, 'fta')) },
   { key: 'ft', label: 'FT%', value: (l) => pct(l.totals.ftm, l.totals.fta), fmt: (l) => (l.totals.fta ? f1(pct(l.totals.ftm, l.totals.fta)) : '—') },
   { key: 'tov', label: 'TOV', value: (l) => per(l, 'tov'), fmt: (l) => f1(per(l, 'tov')) },
+  // 2026-10-14, the user: "pokaż faule w statystykach".
+  { key: 'pf', label: 'PF', title: 'Personal fouls per game', basic: true, value: (l) => per(l, 'pf'), fmt: (l) => f1(per(l, 'pf')) },
   { key: 'dd', label: 'DD', title: 'Double-doubles', value: (l) => l.doubleDoubles, fmt: (l) => String(l.doubleDoubles) },
   { key: 'td', label: 'TD', title: 'Triple-doubles', value: (l) => l.tripleDoubles, fmt: (l) => String(l.tripleDoubles) },
   { key: 'gs', label: 'GS', title: 'Game score: points, makes, rebounds, assists, steals and blocks against misses and turnovers, per game', value: gameScorePerGame, fmt: (l) => f1(gameScorePerGame(l)) },
@@ -575,7 +773,10 @@ function Stats({ teams, season, playoffs, youId, mark }: { teams: Team[]; season
             {shown.map((l) => (
               <tr key={`${l.teamId}${l.span.id}`} className={l.teamId === youId ? 'is-you' : ''}>
                 <td className="l">
-                  <b>{l.span.playerName}</b> <small>{l.span.primaryPosition}</small>
+                  <b>
+                    <PlayerName line={l} />
+                  </b>{' '}
+                  <small>{l.span.primaryPosition}</small>
                 </td>
                 <td className="l">
                   <span title={teams.find((t) => t.id === l.teamId)?.name}>{mark(l.teamId)}</span>
@@ -694,7 +895,9 @@ function Award({ title, line, byId, icon, sub }: { title: string; line: SeasonPl
       </span>
       <div>
         <div className="ss-award-t">{title}</div>
-        <div className="ss-award-p">{line.span.playerName}</div>
+        <div className="ss-award-p">
+          <PlayerName line={line} />
+        </div>
         <div className="ss-award-s">
           {byId.get(line.teamId)?.name} · {sub ?? `${f1(per(line, 'pts'))} pts · ${f1(per(line, 'reb'))} reb · ${f1(per(line, 'ast'))} ast`}
         </div>
@@ -711,7 +914,9 @@ function Five({ label, five, youId, codes }: { label: string; five: SeasonPlayer
         {five.map((l) => (
           <div key={`${l.teamId}${l.span.id}`} className={l.teamId === youId ? 'is-you' : ''}>
             <small>{l.span.primaryPosition}</small>
-            <FitName as="b" name={l.span.playerName} />
+            <b>
+              <PlayerName line={l} fit />
+            </b>
             <small>
               {codes.get(l.teamId)} · {f1(per(l, 'pts'))}/{f1(per(l, 'reb'))}/{f1(per(l, 'ast'))}
             </small>
@@ -748,6 +953,10 @@ function PlayoffsChapter({
   onBack: () => void;
 }) {
   const [watching, setWatching] = useState<Watching | null>(null);
+  const watchKey = watching ? `${watching.round}-${watching.series}-${watching.game}` : '';
+  useEffect(() => {
+    document.querySelector('.ss-backdrop')?.scrollTo({ top: 0 });
+  }, [watchKey]);
   // "Sim the series" (2026-10-08, the user: no tension): the games land one after another, a
   // second apart, and a Game 7 gets a beat of its own before it's decided.
   const [simming, setSimming] = useState(false);
@@ -926,10 +1135,12 @@ function PlayoffsChapter({
         {live && live.round === 0 && live.game === 0 && yourSeries && <p className="pl-sub">8 teams, best of seven. Your games are yours to play; the rest of the bracket plays alongside.</p>}
       </div>
       {between}
-      {all && <Finale playoffs={playoffs} youId={youId} byId={byId} mark={mark} yourRuns={yourRuns.map((r) => rounds[r.round][r.index])} seedOf={seedOf} />}
+      {all && <Finale season={season} playoffs={playoffs} youId={youId} byId={byId} mark={mark} yourRuns={yourRuns.map((r) => rounds[r.round][r.index])} seedOf={seedOf} />}
+      {/* 2026-10-14, the user: "najpierw powinna być zapowiedź serii, później drabinka" — your
+          series first (left on desktop, on top on a phone), the bracket after it. */}
       <div className={panel ? 'pl-split' : ''}>
-        <Bracket rounds={rounds} shown={bracketShown} youId={youId} byId={byId} codes={codes} mark={mark} onWatch={(r, i, g) => setWatching({ round: r, series: i, game: g })} />
         {panel}
+        <Bracket rounds={rounds} shown={bracketShown} youId={youId} byId={byId} codes={codes} mark={mark} onWatch={(r, i, g) => setWatching({ round: r, series: i, game: g })} />
       </div>
     </div>
   );
@@ -1118,6 +1329,7 @@ function SeriesPanel({
 }
 
 function Finale({
+  season,
   playoffs,
   youId,
   byId,
@@ -1125,6 +1337,7 @@ function Finale({
   yourRuns,
   seedOf,
 }: {
+  season: LiveSeasonResult;
   playoffs: LivePlayoffResult;
   youId: string;
   byId: Map<string, Team>;
@@ -1139,8 +1352,81 @@ function Finale({
   const fscore = `${Math.max(finals.gamesWonA, finals.gamesWonB)}-${Math.min(finals.gamesWonA, finals.gamesWonB)}`;
   const focus = yourRuns.length ? youId : champ;
   const runLines = playoffs.players.filter((l) => l.teamId === focus).sort((a, b) => b.totals.pts - a.totals.pts).slice(0, 6);
+  // 2026-10-14 (playtest: "po sezonie brakuje kolejnego podsumowania, skład + wynik"): your season
+  // in one card — the record, the seed, how far you went, and the roster with its season lines.
+  const you = byId.get(youId);
+  const record = season.standings.find((r) => r.teamId === youId);
+  const lastRun = yourRuns[yourRuns.length - 1];
+  const result =
+    champ === youId
+      ? 'Champions'
+      : lastRun
+        ? (() => {
+            const opp = lastRun.teamAId === youId ? lastRun.teamBId : lastRun.teamAId;
+            const [w, l] = lastRun.teamAId === youId ? [lastRun.gamesWonA, lastRun.gamesWonB] : [lastRun.gamesWonB, lastRun.gamesWonA];
+            return `Out in the ${lastRun.roundLabel}, ${w}-${l} to the ${mascot(byId.get(opp))}`;
+          })()
+        : 'Missed the playoffs';
+  const roster = you
+    ? you.roster
+        .map((p) => season.players.find((l) => l.teamId === youId && l.span.id === p.id))
+        .filter((l): l is SeasonPlayerLine => Boolean(l))
+        .sort((a, b) => per(b, 'min') - per(a, 'min'))
+    : [];
   return (
     <div className="pl-finale">
+      {you && record && (
+        <div className="pl-card ss-summary">
+          <div className="pl-label is-gold">Your season</div>
+          <div className="ss-summary-head">
+            {mark(youId, 'md')}
+            <span className="ss-summary-team">{you.name}</span>
+            <span className="ss-summary-rec">
+              {record.wins}-{record.losses} · {ord(seedOf(youId))} seed
+            </span>
+            <span className={`ss-summary-result${champ === youId ? ' is-gold' : ''}`}>{result}</span>
+          </div>
+          <div className="ss-table-wrap">
+            <table className="ss-table">
+              <thead>
+                <tr>
+                  <th className="l">Player</th>
+                  <th>G</th>
+                  <th>MIN</th>
+                  <th>PTS</th>
+                  <th>REB</th>
+                  <th>AST</th>
+                  <th>FG%</th>
+                  <th>PF</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roster.map((l) => (
+                  <tr key={l.span.id}>
+                    <td className="l">
+                      <b>
+                        <PlayerName line={l} />
+                      </b>{' '}
+                      <small>
+                        {l.span.primaryPosition} · {l.span.spanLabel}
+                      </small>
+                    </td>
+                    <td className="n">{l.games}</td>
+                    <td className="n">{f1(per(l, 'min'))}</td>
+                    <td className="n">
+                      <b>{f1(per(l, 'pts'))}</b>
+                    </td>
+                    <td className="n">{f1(per(l, 'reb'))}</td>
+                    <td className="n">{f1(per(l, 'ast'))}</td>
+                    <td className="n">{f1(pct(l.totals.fgm, l.totals.fga))}</td>
+                    <td className="n">{f1(per(l, 'pf'))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       <p className="pl-sub">
         {byId.get(champ)?.name} ({ord(seedOf(champ))} seed) beat the {byId.get(loser)?.name} {fscore} in the Finals
         {fmvp && ` · Finals MVP ${fmvp.span.playerName}`}
@@ -1182,7 +1468,9 @@ function Finale({
               {runLines.map((l) => (
                 <tr key={l.span.id}>
                   <td className="l">
-                    <b>{l.span.playerName}</b>
+                    <b>
+                      <PlayerName line={l} />
+                    </b>
                   </td>
                   <td className="n">{l.games}</td>
                   <td className="n">
@@ -1224,6 +1512,7 @@ function Watch({
 }) {
   const game = useMemo(() => playLivePlayoffGame(teams, series, gameIndex), [teams, series, gameIndex]);
   const [over, setOver] = useState(false);
+  const [take, setTake] = useState(0);
   if (!game) return null;
   const before = series.games.slice(0, gameIndex);
   const wa = before.filter((g) => g.final[0] > g.final[1]).length;
@@ -1246,20 +1535,42 @@ function Watch({
           ← Bracket
         </button>
       </div>
+      {/* 2026-10-14, the user: "Watch again zamienić miejscem z next game" — once the final is in,
+          the next game (or the way back) takes the top bar's main button; watching it again moves
+          down here. */}
       <LiveGame
+        key={take}
         game={game}
         matchup={matchup}
         autoStart
         autoPlay
+        doneAction={
+          onNext ? (
+            <button type="button" className="sc-btn sc-btn--go" onClick={onNext}>
+              ▶ Game {gameIndex + 2}
+            </button>
+          ) : (
+            <button type="button" className="sc-btn sc-btn--go" onClick={onBack}>
+              Back to the bracket →
+            </button>
+          )
+        }
         onFinish={() => {
           setOver(true);
           onFinish();
         }}
       />
       <div className="pl-actions">
-        {over && onNext && (
-          <button type="button" className="pl-cta" onClick={onNext}>
-            ▶ Game {gameIndex + 2}
+        {over && (
+          <button
+            type="button"
+            className="pl-ghost"
+            onClick={() => {
+              setOver(false);
+              setTake((t) => t + 1);
+            }}
+          >
+            Watch again
           </button>
         )}
         <button type="button" className="pl-ghost" onClick={onBack}>

@@ -450,6 +450,7 @@ span.at-pc-name { cursor: default; }
 .at-calm .tm-years { font-family: var(--calm-num); font-size: 12px; color: var(--at-ink-soft); }
 .at-calm .tm-player .years-picker-btn { padding: 2px 4px 2px 8px; min-height: 0; font-size: 11px; border-color: rgba(58, 176, 240, 0.45); background: rgba(58, 176, 240, 0.06); }
 .at-calm .tm-player .years-picker-btn:hover { border-color: var(--at-accent); background: rgba(58, 176, 240, 0.14); }
+.at-calm .tm-player .years-picker-btn { max-width: 100%; overflow: hidden; }
 .at-calm .years-picker-change { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; background: rgba(58, 176, 240, 0.16); color: #6cc3ff; font-weight: 700; }
 .at-calm .tm-grades { display: flex; gap: 6px; }
 .at-calm .tm-grades .at-grade-badge { box-sizing: border-box; width: 32px; min-width: 0; padding: 3px 0; text-align: center; font-size: 11px; }
@@ -473,6 +474,7 @@ span.at-pc-name { cursor: default; }
   .at-calm .tm-grades { grid-area: grades; padding-left: 50px; }
   .at-calm .tm-tier { grid-area: tier; justify-self: end; }
   .at-calm .tm-foot { flex-direction: column; align-items: flex-start; padding: 12px; }
+  .at-calm .years-picker-long { display: none; }
 }
 
 .at-calm .tm-rotation { min-width: 0; }
@@ -907,7 +909,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .pl-sub { color: var(--at-ink-soft); font-size: 14px; margin: 4px 0 0; }
 .pl-trophy { font-size: 60px; line-height: 1; margin-bottom: 8px; filter: drop-shadow(0 6px 24px rgba(242, 193, 78, 0.45)); }
 .pl-between { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
-.pl-split { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; align-items: start; }
+.pl-split { display: grid; grid-template-columns: 1fr 1.5fr; gap: 16px; align-items: start; }
 .pl-bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 .pl-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .pl-col-in { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 12px; }
@@ -1162,6 +1164,12 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 }
 .at-calm .wr-pill.is-yours { background: #3ab0f0; color: #06070c; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; }
 .at-calm .wr-pill.is-done { background: #7fd68a; color: #06070c; font-weight: 800; }
+.at-calm .wr-done {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 12px 0;
+  padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(127, 214, 138, 0.45); background: rgba(127, 214, 138, 0.08);
+  font-size: 13px; color: var(--at-ink-soft);
+}
+.at-calm .wr-done b { color: var(--at-ink); }
 .at-calm .wr-pill-dot { width: 8px; height: 8px; border-radius: 4px; background: #6cc3ff; }
 .at-calm .wr-status-round { font-size: 13px; color: var(--at-ink-soft); }
 .at-calm .wr-status-gap { flex: 1; }
@@ -1258,22 +1266,22 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .pl-toggle:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 
 .at-calm .pl-table { background: var(--calm-raised); border: 1px solid var(--calm-line); border-radius: 14px; overflow: hidden; }
-.at-calm .pl-row {
+.at-calm .pl-table .pl-row {
   display: grid; grid-template-columns: minmax(0, 2.6fr) 118px 136px 52px 60px minmax(0, 1.4fr) 40px;
   gap: 16px; align-items: center; min-height: 64px; padding: 6px 20px; box-sizing: border-box; border-bottom: 1px solid #111b28;
   transition: opacity 0.4s ease;
 }
-.at-calm .pl-row:last-child { border-bottom: none; }
-.at-calm .pl-row--head { min-height: 40px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--at-ink-faint); border-bottom-color: var(--calm-line); }
-.at-calm .pl-row.is-taken { opacity: 0.45; }
-.at-calm .pl-row.is-leaving { opacity: 0; }
+.at-calm .pl-table .pl-row:last-child { border-bottom: none; }
+.at-calm .pl-table .pl-row--head { min-height: 40px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--at-ink-faint); border-bottom-color: var(--calm-line); }
+.at-calm .pl-table .pl-row.is-taken { opacity: 0.45; }
+.at-calm .pl-table .pl-row.is-leaving { opacity: 0; }
 .at-calm .pl-player {
   display: flex; align-items: center; gap: 12px; min-width: 0; padding: 0; border: none; background: none;
   color: inherit; text-align: left; cursor: pointer; font: inherit;
 }
 .at-calm .pl-player .bf-face { width: 38px; height: 38px; box-shadow: 0 0 0 2px var(--calm-raised), 0 0 0 3.5px var(--ring, #45607d); }
 .at-calm .pl-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.at-calm .pl-name { font-size: 14px; font-weight: 700; color: var(--at-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.at-calm .pl-table .pl-name { font-size: 14px; font-weight: 700; color: var(--at-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .at-calm .pl-player:hover .pl-name { text-decoration: underline; text-underline-offset: 3px; }
 .at-calm .pl-meta { font-weight: 500; color: var(--at-ink-soft); }
 .at-calm .pl-roles { font-size: 11px; color: var(--at-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1300,20 +1308,20 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .pl-draft:disabled { background: #142133; color: var(--at-ink-faint); cursor: not-allowed; }
 .at-calm .pl-draft:focus-visible, .at-calm .pl-player:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 @media (max-width: 1100px) {
-  .at-calm .pl-row { grid-template-columns: minmax(0, 2.4fr) 110px 128px 60px minmax(0, 1.2fr) 40px; }
+  .at-calm .pl-table .pl-row { grid-template-columns: minmax(0, 2.4fr) 110px 128px 60px minmax(0, 1.2fr) 40px; }
   .at-calm .pl-3pa { display: none; }
-  .at-calm .pl-row--head > :nth-child(4) { display: none; }
+  .at-calm .pl-table .pl-row--head > :nth-child(4) { display: none; }
 }
 @media (max-width: 860px) {
-  .at-calm .pl-row--head { display: none; }
-  .at-calm .pl-row {
+  .at-calm .pl-table .pl-row--head { display: none; }
+  .at-calm .pl-table .pl-row {
     grid-template-columns: minmax(0, 1fr) auto 34px; gap: 4px 10px; padding: 10px 12px;
     grid-template-areas: 'player tier act' 'box caps act' 'scout scout act';
   }
   .at-calm .pl-player { grid-area: player; }
   .at-calm .pl-player .bf-face { width: 36px; height: 36px; }
   .at-calm .pl-roles { display: none; }
-  .at-calm .pl-name { font-size: 13px; }
+  .at-calm .pl-table .pl-name { font-size: 13px; }
   .at-calm .pl-meta { display: block; font-size: 11px; }
   .at-calm .pl-tier { grid-area: tier; justify-self: end; }
   .at-calm .pl-tier-pill { font-size: 10px; padding: 2px 6px; }
@@ -1328,13 +1336,13 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
   .at-calm .pl-toggle { height: 30px; padding: 0 8px 0 5px; gap: 4px; font-size: 12px; }
   .at-calm .pl-toggle-box { width: 14px; height: 14px; font-size: 10px; }
 }
-.at-calm .pl-table--noscout .pl-row { grid-template-columns: minmax(0, 2.6fr) 118px 136px 52px 60px 40px; }
+.at-calm .pl-table.pl-table--noscout .pl-row { grid-template-columns: minmax(0, 2.6fr) 118px 136px 52px 60px 40px; }
 .at-calm .pl-player:disabled { cursor: default; opacity: 1; }
-@media (max-width: 1100px) { .at-calm .pl-table--noscout .pl-row { grid-template-columns: minmax(0, 2.4fr) 110px 128px 60px 40px; } }
-@media (max-width: 860px) { .at-calm .pl-table--noscout .pl-row { grid-template-columns: minmax(0, 1fr) auto 34px; } }
+@media (max-width: 1100px) { .at-calm .pl-table.pl-table--noscout .pl-row { grid-template-columns: minmax(0, 2.4fr) 110px 128px 60px 40px; } }
+@media (max-width: 860px) { .at-calm .pl-table.pl-table--noscout .pl-row { grid-template-columns: minmax(0, 1fr) auto 34px; } }
 
 /* 2026-10-14, the Big Board (DraftWarRoom.tsx BigBoardPanel; ☆ in DraftPlayerList). */
-.at-calm .pl-row { grid-template-columns: minmax(0, 2.6fr) 118px 136px 52px 60px minmax(0, 1.4fr) 84px; }
+.at-calm .pl-table .pl-row { grid-template-columns: minmax(0, 2.6fr) 118px 136px 52px 60px minmax(0, 1.4fr) 84px; }
 .at-calm .pl-act { gap: 8px; }
 .at-calm .pl-star {
   width: 36px; height: 36px; border-radius: 18px; cursor: pointer; font-size: 16px; line-height: 1;
@@ -1343,9 +1351,9 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 }
 .at-calm .pl-star.is-on { border-color: rgba(255, 212, 121, 0.5); background: rgba(255, 212, 121, 0.12); color: #ffd479; }
 .at-calm .pl-star:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
-@media (max-width: 1100px) { .at-calm .pl-row { grid-template-columns: minmax(0, 2.4fr) 110px 128px 60px minmax(0, 1.2fr) 84px; } }
+@media (max-width: 1100px) { .at-calm .pl-table .pl-row { grid-template-columns: minmax(0, 2.4fr) 110px 128px 60px minmax(0, 1.2fr) 84px; } }
 @media (max-width: 860px) {
-  .at-calm .pl-row { grid-template-columns: minmax(0, 1fr) auto 72px; }
+  .at-calm .pl-table .pl-row { grid-template-columns: minmax(0, 1fr) auto 72px; }
   .at-calm .pl-star { width: 30px; height: 30px; font-size: 14px; }
   .at-calm .pl-act { gap: 6px; align-self: center; }
 }
@@ -1384,3 +1392,36 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .at-grade-badge--none { background: #142133; color: var(--at-ink-soft); }
 .at-calm .tm-grades .at-grade-tip::after, .at-calm .pl-grades .at-grade-tip::after { left: auto; right: 0; }
 .at-calm .tm-grades .at-grade-tip::before, .at-calm .pl-grades .at-grade-tip::before { left: auto; right: 10px; }
+
+/* 2026-10-14, playtest 12: a player's name in the season opens his card. */
+.ss-pname { display: inline; padding: 0; border: none; background: none; font: inherit; color: inherit; text-align: inherit; cursor: pointer; max-width: 100%; }
+.ss-pname:hover, .ss-pname:focus-visible { text-decoration: underline; text-decoration-color: var(--at-accent); text-underline-offset: 3px; outline: none; }
+.ss-pcard-back { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(2, 4, 8, 0.7); }
+.ss-pcard {
+  position: relative; width: min(760px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 16px; border: 1px solid var(--calm-line);
+  background: var(--calm-raised); color: var(--at-ink); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+.ss-pcard-head { display: flex; align-items: center; gap: 14px; padding-right: 40px; }
+.ss-pcard-head .bf-face { width: 56px; height: 56px; }
+.ss-pcard-id { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ss-pcard-name { margin: 0; font: 700 24px var(--rr-disp, 'Barlow Condensed', sans-serif); letter-spacing: 0.04em; text-transform: uppercase; }
+.ss-pcard-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--at-ink-soft); }
+.ss-pcard-facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.ss-pcard-facts > span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 10px; background: var(--calm-raised-2); font-size: 12px; color: var(--at-ink-soft); }
+.ss-pcard-table th.l { color: var(--at-ink-soft); font-weight: 600; }
+.ss-pcard .ss-note { margin: 0; }
+
+/* 2026-10-14 (playtest): the season summary after the playoffs — record, seed, result, roster. */
+.ss-summary { gap: 12px; }
+.ss-summary-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ss-summary-team { font: 700 22px var(--rr-disp, 'Barlow Condensed', sans-serif); letter-spacing: 0.04em; text-transform: uppercase; }
+.ss-summary-rec { font-family: var(--calm-num); font-size: 13px; color: var(--at-ink-soft); }
+.ss-summary-result { margin-left: auto; padding: 4px 10px; border-radius: 10px; background: var(--calm-raised-2); font-size: 13px; font-weight: 700; }
+.ss-summary-result.is-gold { background: rgba(242, 193, 78, 0.16); color: #f2c14e; }
+@media (max-width: 600px) {
+  .ss-pcard { padding: 16px; }
+  .ss-pcard-name { font-size: 20px; }
+  .ss-summary .ss-table td small { display: none; }
+  .ss-summary-result { margin-left: 0; }
+}

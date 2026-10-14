@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { LegendFive } from '../engine/dailyMeta';
 import { pregameOdds, type BoxLineStats, type GameMoment, type LiveGameResult } from '../engine/liveGame';
 import { gameWinProbability } from '../engine/matchup';
@@ -126,6 +126,7 @@ export default function LiveGame({
   matchup,
   autoStart,
   autoPlay = false,
+  doneAction,
   onFinish,
 }: {
   game: LiveGameResult;
@@ -137,6 +138,8 @@ export default function LiveGame({
   autoPlay?: boolean;
   /** Called once the final is on the board (played out or skipped). */
   onFinish?: () => void;
+  /** Replaces "Watch again" in the top bar once the final is in (the playoffs' next game). */
+  doneAction?: ReactNode;
 }) {
   const short: [string, string] = matchup ? matchup.short : ['You', opponent?.short ?? 'Them'];
   const names: [string, string] = matchup ? matchup.names : ['Your five', opponent?.name ?? 'Them'];
@@ -214,6 +217,16 @@ export default function LiveGame({
       if (runSide >= 0 && runPts >= 8 && runPts >= called + 4) {
         called = runPts;
         rows.push({ key: `r${i}`, kind: 'note', text: `${short[runSide]} on a ${runPts}–${runOpp} run` });
+      }
+      // 2026-10-14 (playtest: "dlaczego Nash zagrał tylko 29 minut, kiedy ma ustawione 39" — he had
+      // fouled out, and nothing said so): a fifth foul and a sixth get their own line.
+      const prevLines = i > 0 ? game.moments[i - 1].lines : null;
+      for (const side of [0, 1] as const) {
+        m.lines[side].forEach((l, k) => {
+          const before = prevLines ? prevLines[side][k].pf : 0;
+          if (l.pf >= 6 && before < 6) rows.push({ key: `f${i}-${side}-${k}`, kind: 'note', text: `${game.labels[side][k]} fouls out — his minutes go to the bench` });
+          else if (l.pf === 5 && before < 5) rows.push({ key: `f${i}-${side}-${k}`, kind: 'note', text: `${game.labels[side][k]} picks up his 5th foul` });
+        });
       }
       const lead = Math.sign(m.score[0] - m.score[1]);
       if (lead !== 0 && leader !== 0 && lead !== leader && m.quarter >= 3) rows.push({ key: `l${i}`, kind: 'note', text: `Lead change · ${short[lead > 0 ? 0 : 1]} in front` });
@@ -370,9 +383,11 @@ export default function LiveGame({
               </button>
             </>
           ) : (
-            <button type="button" className="sc-btn" onClick={() => start(0)}>
-              Watch again
-            </button>
+            (doneAction ?? (
+              <button type="button" className="sc-btn" onClick={() => start(0)}>
+                Watch again
+              </button>
+            ))
           )}
         </span>
       </div>
@@ -718,6 +733,7 @@ function BoxTable({ title, color, labels, lines, joker, star }: { title: string;
                   {name === joker && '🃏 '}
                   {name}
                   {name === star && ' ★'}
+                  {l.pf >= 6 && <span className="sc-out">Fouled out</span>}
                 </th>
                 {row({ ...l })}
               </tr>

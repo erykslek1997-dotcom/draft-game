@@ -621,6 +621,13 @@ export default function DraftBoard({
     return () => io.disconnect();
   }, []);
   const [activeTab, setActiveTab] = useState<AtTab>('draft');
+  // 2026-10-14 (playtest: "po skończonym drafcie mogłoby przenosić automatycznie do zakładki Team"):
+  // the last pick in, the Team tab opens — your years and rotation are what's left to do.
+  useEffect(() => {
+    if (!state.complete) return;
+    setActiveTab('team');
+    window.scrollTo({ top: 0 });
+  }, [state.complete]);
   const [showLegend, setShowLegend] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -1327,6 +1334,16 @@ export default function DraftBoard({
           />
         )}
       </DraftStatus>
+      {state.complete && activeTab === 'draft' && (
+        <div className="wr-done">
+          <span>
+            <b>Draft complete.</b> Set your years and rotation, then submit your team.
+          </span>
+          <button type="button" className="at-calm-btn" onClick={() => setActiveTab('team')}>
+            Go to Team →
+          </button>
+        </div>
+      )}
       {/* Marks the bottom of the status card: once it's above the screen, the card is gone. */}
       <div ref={statusRef} aria-hidden />
       {isStackedLayout && !statusVisible && !state.complete && activeTab === 'draft' && humanBudget.slotsLeft > 0 && (
