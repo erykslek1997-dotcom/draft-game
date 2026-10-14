@@ -330,7 +330,8 @@ do dołu i zakładki Matchup/Bracket).
      **Pomysł:** zmienny panel jak w studiu — każdy ekspert ma „obiektyw” (ocena składu od −1 do +1
      z jego punktu widzenia + nazwiska jako dowód), na antenę wchodzą 3–5 najsilniejszych opinii (co
      najmniej jedna na plus i jedna na minus), rywale wchodzą parą i sobie odpowiadają (Sosini ↔
-     Jertcheck/Binash, Bannerman ↔ Prabuckov, Onoffsky ↔ Moonbat). Moonbat co ok. 4. raz. Panel z
+     Jertcheck/Binash, Bannerman ↔ Prabuckov, Onoffsky ↔ Moonbat, Rightwing ↔ Moonbat — o niskich
+     obrońcach, decyzja użytkownika). Moonbat co ok. 4. raz. Panel z
      ziarna draftu. Kolejność: (1) ekran wyników Mini/All-Time zamiast Coach/Analyst/Scout
      (`voicesFor`, `QuickFive.tsx`), (2) Draft Desk (`engine/draftDesk.ts`), (3) wtrącenia w pasku w
      trakcie draftu przy wyrazistych momentach (Kobe u kogokolwiek, gracz sprzed 1980, Celtic, niski
