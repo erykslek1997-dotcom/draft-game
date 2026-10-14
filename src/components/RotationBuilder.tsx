@@ -84,8 +84,9 @@ interface Row {
 type RowsBySlot = Record<Position, Row[]>;
 
 const MAX_ROWS_PER_SLOT = 4;
-/** Minutes a −/+ tap moves (group C mockup 21B). */
-const MINUTE_STEP = 2;
+/** Minutes a −/+ tap moves (group C mockup 21B; one since the 2026-10-14 playtest: "dodawanie minut
+ * po 2 minuty imo dziwne"). */
+const MINUTE_STEP = 1;
 
 /** Where a dragged or tap-selected player comes from: the bench, or a row of another position. */
 interface MoveSource {

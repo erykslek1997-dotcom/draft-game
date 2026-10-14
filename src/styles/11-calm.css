@@ -1102,7 +1102,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 }
 .at-calm .dg-team.is-you { background: rgba(58, 176, 240, 0.16); color: #9ad6ff; box-shadow: inset 0 0 0 1px rgba(58, 176, 240, 0.55); }
 .at-calm .dg-round {
-  display: flex; align-items: center; justify-content: center; font-family: var(--calm-num);
+  display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; font-family: var(--calm-num);
   font-size: 10px; color: var(--at-ink-faint); white-space: nowrap;
   position: sticky; left: 0; z-index: 1; background: var(--calm-raised);
 }

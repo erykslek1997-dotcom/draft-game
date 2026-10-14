@@ -71,7 +71,7 @@ export function DraftGrid({ teams, rounds, round, onClockIdx, complete, tierColo
             <div role="row" className="dg-row" key={r}>
               <span role="rowheader" className="dg-round" title={r % 2 === 0 ? 'Picks run left to right' : 'Picks run right to left'}>
                 R{r + 1}
-                {r % 2 === 0 && <span className="dg-dir"> →</span>}
+                {r % 2 === 0 && <span className="dg-dir">→</span>}
               </span>
               {teams.map((team, i) => {
                 const pick = team.roster[r];
