@@ -214,7 +214,10 @@ Numeracja użytkownika. **Paczka 1 (draft + rotacja) — zrobiona 2026-10-14 (PR
 podsumowanie po sezonie, faule (PF w statystykach, „fouls out” w relacji), Team po drafcie.
 10 — zrobione 2026-10-14: przyczyną była zmiana lat gracza (cała rotacja budowana od nowa); teraz
 rotacja zostaje, gracz przechodzi na nowe lata z tymi samymi minutami.
-Zostaje: ogólny układ playoffów (makiety), 11 (silnik).
+Układ playoffów — zrobiony 2026-10-14 (makieta A „centrum serii”: pasek rund, duża karta serii z
+następnym meczem, zapowiedź + kluczowi gracze, mała drabinka; na telefonie przycisk meczu przyklejony
+do dołu i zakładki Matchup/Bracket).
+Zostaje: 11 (silnik).
 
 **Draft**
 1. Brak „usuń / kosz” w drafcie (np. zdjęcie gracza z Big Boardu / z rotacji — do doprecyzowania).
