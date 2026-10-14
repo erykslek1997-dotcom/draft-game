@@ -1,7 +1,8 @@
 import { computeFinishing } from '../engine/finishing';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DraftPlayerCard, TIER_FRAME_COLOR } from './DraftPlayerCard';
+import { TIER_FRAME_COLOR } from './DraftPlayerCard';
 import { DraftGrid } from './DraftGrid';
+import { DraftPlayerList, PositionToggles } from './DraftPlayerList';
 import { ROLE_FILTERS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
@@ -390,7 +391,7 @@ export function pickStatTip(pick: PlayerSpan): string {
 const GRADE_RANK: Record<Grade, number> = {
   S: 13, 'A+': 12, A: 11, 'A-': 10, 'B+': 9, B: 8, 'B-': 7, 'C+': 6, C: 5, 'C-': 4, 'D+': 3, D: 2, 'D-': 1, F: 0,
 };
-function gradeColor(grade: Grade): string {
+export function gradeColor(grade: Grade): string {
   const t = GRADE_RANK[grade] / 13; // 0 (F, worst) .. 1 (S, best)
   const hue = 2 + t * 146; // 2 = red, 148 = green, same endpoints MatchupMatrix's own diverging scale uses
   const saturation = 42 + Math.abs(t - 0.5) * 34; // most saturated at both extremes, muted mid-pack
@@ -471,7 +472,10 @@ export default function DraftBoard({
 }: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
-  const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL'>('ALL');
+  // 2026-10-14, the list redesign (the user: "gracz może sobie odznaczyć pokazywanie PG, SG itd"):
+  // tick the positions the list shows. Until the player touches them, the starter slots already
+  // filled are unticked (all shown again once the five is set); a touch makes the choice his.
+  const [positionOverride, setPositionOverride] = useState<Set<Position> | null>(null);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [boardSort, setBoardSort] = useState<'best' | 'value' | 'cheapest'>('best');
   // 2026-09-14, user-reported live ("rzucamy ponad 100 nazwisk na raz, za dużo informacji dla
@@ -488,7 +492,7 @@ export default function DraftBoard({
   const [visibleCount, setVisibleCount] = useState(DRAFT_VISIBLE_DEFAULT);
   useEffect(() => {
     setVisibleCount(DRAFT_VISIBLE_DEFAULT);
-  }, [search, selectedPosition, roleFilter, boardSort]);
+  }, [search, positionOverride, roleFilter, boardSort]);
   const [fgaMin, setFgaMin] = useState('0');
   const [fgaMax, setFgaMax] = useState('30');
   // 2026-09-11, user-reported live ("zacina się jak filtrujemy fga") — every keystroke here used
@@ -928,7 +932,20 @@ export default function DraftBoard({
     () => new Set(STARTER_SLOTS.filter((slot) => !humanAssignment[slot])),
     [humanAssignment],
   );
-  const needBiasActive = selectedPosition === 'ALL' && !search && humanTeam.roster.length >= 3 && openStarterPositions.size > 0;
+  const hiddenPositions = useMemo<Set<Position>>(() => {
+    if (positionOverride) return positionOverride;
+    if (openStarterPositions.size === 0) return new Set();
+    return new Set(STARTER_SLOTS.filter((slot) => !openStarterPositions.has(slot)));
+  }, [positionOverride, openStarterPositions]);
+  function togglePosition(pos: Position) {
+    setPositionOverride(() => {
+      const next = new Set(hiddenPositions);
+      if (next.has(pos)) next.delete(pos);
+      else next.add(pos);
+      return next;
+    });
+  }
+  const needBiasActive = hiddenPositions.size === 0 && !search && humanTeam.roster.length >= 3 && openStarterPositions.size > 0;
 
   // 2026-09-27, the user (after the "Druga runda bez chaosu" mockup): while the AI picks, the list
   // no longer reflows under the player's finger. A player the AI takes stays in his place, dimmed
@@ -970,7 +987,7 @@ export default function DraftBoard({
     const q = search.toLowerCase();
     const matched = enrichedGroups
       .filter((g) => !state.draftedIds.has(g.spans[0].id) || ghosts.has(normalizePlayerName(g.playerName)))
-      .filter((g) => (selectedPosition !== 'ALL' ? careerPosition(g) === selectedPosition : true))
+      .filter((g) => !hiddenPositions.has(careerPosition(g)))
       .filter((g) => g.playerName.toLowerCase().includes(q))
       .filter((g) => matchesRoleFilter(g.bestTalentSpan, roleFilter))
       .sort((a, b) => {
@@ -1011,7 +1028,7 @@ export default function DraftBoard({
       });
     return { groups: matched.slice(0, DRAFT_LIST_LIMIT), totalMatched: matched.length };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enrichedGroups, state.draftedIds, ghosts, selectedPosition, search, mode, needBiasActive, openStarterPositions, roleFilter, boardSort]);
+  }, [enrichedGroups, state.draftedIds, ghosts, hiddenPositions, search, mode, needBiasActive, openStarterPositions, roleFilter, boardSort]);
   const priciestAvailable = useMemo(
     () => state.pool.reduce((max, p) => (!state.draftedIds.has(p.id) && p.fga > max ? p.fga : max), 0),
     [state.pool, state.draftedIds],
@@ -1085,7 +1102,7 @@ export default function DraftBoard({
   }
   function showAffordable() {
     setSearch('');
-    setSelectedPosition('ALL');
+    setPositionOverride(new Set());
     setAffordableOnly(true);
   }
 
@@ -1319,19 +1336,7 @@ export default function DraftBoard({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-                <div className="at-calm-seg" role="group" aria-label="Position">
-                  {(['ALL', ...ALL_POSITIONS] as const).map((pos) => (
-                    <button
-                      key={pos}
-                      type="button"
-                      aria-pressed={selectedPosition === pos}
-                      className={selectedPosition === pos ? 'is-on' : ''}
-                      onClick={() => setSelectedPosition(pos)}
-                    >
-                      {pos === 'ALL' ? 'All' : pos}
-                    </button>
-                  ))}
-                </div>
+                <PositionToggles positions={ALL_POSITIONS} hidden={hiddenPositions} onToggle={togglePosition} />
                 {showJudgeMetrics ? (
                   <div className="at-fga-filter">
                     <label><CapIcon /> Caps</label>
@@ -1533,56 +1538,31 @@ export default function DraftBoard({
                   drafts the best season immediately, no modal needed for the common case. Player
                   mode only — developer/tester mode keeps the dense table above unchanged. */}
               {!showJudgeMetrics && (
-                <div className="at-player-cards">
-                  {groups.slice(0, visibleCount).map((group) => {
+                <DraftPlayerList
+                  rows={groups.slice(0, visibleCount).map((group) => {
+                    // The row drafts the player's best stretch, or his best affordable one when the
+                    // best is over the cap (see `cardSpanFor`).
                     const best = group.bestTalentSpan;
-                    const bestLegal = canPick && isPickLegal(state, best.id);
-                    // 2026-09-12, user-reported live (Andris Biedriņš, a real 0.9-shot span on the
-                    // board with only ~1.7 shots of cap left — "nie mogę wybrać... mimo że ma span
-                    // 0.9 fga"): this card's own headline span is always `bestTalentSpan` — the
-                    // player's single highest-TAL season — with no fallback, so a role player whose
-                    // BEST season happens to cost more than the remaining cap showed a permanently
-                    // disabled arrow even when one of his OTHER seasons (a cheaper seasons list
-                    // every role player like this keeps, per `leanDraftPool.ts`) was perfectly
-                    // affordable. The 🔍 modal always had a per-season Draft button that already
-                    // worked around this — but the card's own "arrow drafts the best season
-                    // immediately, no modal needed" promise silently broke exactly when it mattered
-                    // most (a tight cap). Falls back to the best-TAL-among-actually-affordable
-                    // season only when the headline one isn't legal, so ordinary drafting is
-                    // completely unchanged.
-                    // 2026-09-12, code-review fix: was `group.spansByAiValue.find(...)` — that
-                    // list is only TAL-sorted in player mode; in developer mode it's deliberately
-                    // chronological instead (see `spansByAiValue`'s own docstring), which would
-                    // have picked the first affordable season by date rather than by value. This
-                    // whole card grid only ever renders when `!showJudgeMetrics` (player mode), so
-                    // that mismatch was never actually reachable here — `spansByTal` (always real
-                    // value order, computed alongside `spansByAiValue`) is the correct source
-                    // either way and removes the landmine if that gating ever changes.
-                    const target = bestLegal ? best : cardSpanFor(group);
+                    const target = canPick && isPickLegal(state, best.id) ? best : cardSpanFor(group);
                     const ghost = ghosts.get(normalizePlayerName(group.playerName));
-                    const legal = !ghost && canPick && isPickLegal(state, target.id);
-                    const card = (
-                      <DraftPlayerCard
-                        key={group.playerName}
-                        span={target}
-                        cap={CAP_LIMIT}
-                        tier={displayedOverallTier(target)}
-                        legal={legal}
-                        draftTitle={draftButtonTitle(state, target.id, canPick, currentTeam, `Draft ${group.playerName}`)}
-                        onDraft={() => onPick(target.id)}
-                        scoutingTitle={`${group.spans.length} season${group.spans.length > 1 ? 's' : ''} available`}
-                        onScouting={() => setPeekPlayer(group.playerName)}
-                      />
-                    );
-                    if (!ghost) return card;
-                    return (
-                      <div key={group.playerName} className={`at-ghost-card${sweeping ? ' is-leaving' : ''}`} aria-label={`${group.playerName}, taken with pick ${ghost.pickNumber}`}>
-                        {card}
-                        <span className="at-ghost-stamp at-cond">Taken #{ghost.pickNumber} · {ghost.teamCode}</span>
-                      </div>
-                    );
+                    const tier = displayedOverallTier(target);
+                    return {
+                      key: group.playerName,
+                      span: target,
+                      tier,
+                      tierColor: TIER_FRAME_COLOR[tier],
+                      legal: !ghost && canPick && isPickLegal(state, target.id),
+                      draftTitle: draftButtonTitle(state, target.id, canPick, currentTeam, `Draft ${group.playerName}`),
+                      scouted: scoutedPlayers.has(group.playerName),
+                      taken: ghost ? `Taken #${ghost.pickNumber} · ${ghost.teamCode}` : undefined,
+                    };
                   })}
-                </div>
+                  scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
+                  leaving={sweeping}
+                  gradeColor={gradeColor}
+                  onDraft={(span) => onPick(span.id)}
+                  onOpen={(name) => setPeekPlayer(name)}
+                />
               )}
 
               {/* 2026-09-14, user-reported live: the primary fix for "too many names at once" —
