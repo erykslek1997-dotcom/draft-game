@@ -1,6 +1,7 @@
 import { computeFinishing } from '../engine/finishing';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DraftPlayerCard } from './DraftPlayerCard';
+import { DraftPlayerCard, TIER_FRAME_COLOR } from './DraftPlayerCard';
+import { DraftGrid } from './DraftGrid';
 import { ROLE_FILTERS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
@@ -374,19 +375,6 @@ export function groupByPlayer(list: PlayerSpan[]): PlayerGroup[] {
 // asked for, just fewer top-level tabs.
 type AtTab = 'draft' | 'team';
 
-/** Global 1-(TEAM_COUNT*ROSTER_SIZE) pick number for `state.teams[teamIdx]`'s round-`round` pick
- * (both 0-indexed) —
- * the inverse of `currentTeamIndex`/`snakeOrderIndex` in draft.ts, needed here because the
- * Overview grid is laid out team-row x round-column (so it can double as "your team's picks
- * across every round"), while the broadcast-board badge wants the true chronological pick
- * number, same as `makePick`'s own `state.round * TEAM_COUNT + state.pickInRound + 1` formula.
- * Snake order reverses direction every other round, so a team's `pickInRound` alternates between
- * its array index and its mirror from the far end. */
-function overviewPickNumber(teamIdx: number, round: number): number {
-  const pickInRound = round % 2 === 0 ? teamIdx : TEAM_COUNT - 1 - teamIdx;
-  return round * TEAM_COUNT + pickInRound + 1;
-}
-
 /** "Michael Jordan" -> "M. Jordan" — same first-initial-plus-surname convention the real board
  * photo itself uses ("C. FLAGG", "D. HARPER"). Rendered alongside the full name (CSS picks one
  * per viewport width, see `.at-name-full`/`.at-name-short`) rather than swapped in via JS/resize
@@ -577,13 +565,6 @@ export default function DraftBoard({
     });
   }
   const [evidenceOpen, setEvidenceOpen] = useState<Set<string>>(new Set());
-  // 2026-09-12, user-reported live (mobile screenshot: all 9 round columns squeezed to fit,
-  // wrapping names onto 2-4 lines each) — real horizontal scroll (restored below, mobile-only)
-  // replaces that squeeze, but scroll on a table isn't always obvious as a possibility on a
-  // touch device with no visible scrollbar. These two buttons are a plainly-tappable affordance
-  // for it (mobile-only, see `.at-grid-scroll-nav`'s own CSS) — `scrollBy` already clamps at
-  // both ends, so no separate "can I still scroll further" state is needed.
-  const gridScrollRef = useRef<HTMLDivElement>(null);
   // 2026-09-25, playtester feedback ("jak przewinąłem niżej… nie mogę podejrzeć całego draft
   // boarda"): once the top bar scrolls away, a small floating button opens the board and jumps
   // back up to it.
@@ -597,9 +578,6 @@ export default function DraftBoard({
     io.observe(el);
     return () => io.disconnect();
   }, []);
-  function scrollGrid(direction: 1 | -1) {
-    gridScrollRef.current?.scrollBy({ left: direction * 280, behavior: 'smooth' });
-  }
   const [activeTab, setActiveTab] = useState<AtTab>('draft');
   const isWideLayout = useMediaQuery(WIDE_LAYOUT_QUERY);
   const [showLegend, setShowLegend] = useState(false);
@@ -609,8 +587,12 @@ export default function DraftBoard({
   // 2026-09-27: the board is a panel over the list now, so it always starts closed (it used to
   // remember being open, which would cover the list on the next visit).
   const [boardOpen, setBoardOpen] = useState(false);
+  // 2026-10-14, the board redesign: on a laptop/desktop the board sits above the list (the approved
+  // mockup) and the header button hides/shows it there; phones keep the panel from the right edge.
+  const [boardHidden, setBoardHidden] = useState(false);
   function toggleBoard() {
-    setBoardOpen((open) => !open);
+    if (isStackedLayout) setBoardOpen((open) => !open);
+    else setBoardHidden((hidden) => !hidden);
   }
   useEffect(() => {
     if (!boardOpen) return;
@@ -1215,7 +1197,7 @@ export default function DraftBoard({
         <button type="button" className="at-calm-icon" aria-label="How the draft works" onClick={() => setHelpOpen(true)}>
           ?
         </button>
-        {(isWideLayout || activeTab === 'draft') && <BoardToggleButton open={boardOpen} onToggle={toggleBoard} />}
+        {(isWideLayout || activeTab === 'draft') && <BoardToggleButton open={isStackedLayout ? boardOpen : !boardHidden} onToggle={toggleBoard} />}
       </div>
       {confirmExit && (
         <LeaveDraftDialog
@@ -1266,7 +1248,12 @@ export default function DraftBoard({
           type="button"
           className="at-board-fab"
           onClick={() => {
-            setBoardOpen(true);
+            if (isStackedLayout) {
+              setBoardOpen(true);
+            } else {
+              setBoardHidden(false);
+              boardAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           }}
         >
           📋 Draft board
@@ -1298,107 +1285,42 @@ export default function DraftBoard({
               developer mode too now — previously kept there (player mode dropped them first,
               2026-08-13) but the grid itself (all 16 teams × round) still says everything it
               needs to without the label. */}
-          {/* 2026-09-24: the full 16-team × 9-round board used to open the Draft tab — a whole
-              laptop screen (and several phone screens) before the first player card. It now
-              starts collapsed to a one-line ticker (who's on the clock, the latest picks, when
-              you pick next); the full board is one click away and the choice is remembered. */}
           <div ref={boardAnchorRef} className="at-board-anchor" />
-          {/* 2026-09-27: the full board opens as a panel from the right edge over the list (the
-              user: "nie wiem czy użytkowników będzie interesować co robi AI aż w tak dużym
-              stopniu żeby zabierało tyle ekranu"); the list and the status line stay underneath. */}
-          {boardOpen && (
-            <div className="at-board-drawer-backdrop" onClick={toggleBoard}>
-            <div className="at-board-drawer" role="dialog" aria-label="Draft board" onClick={(e) => e.stopPropagation()}>
-          <div className="at-board-drawer-head">
-            <span className="at-cond">Draft board · Round {Math.min(state.round + 1, ROUNDS)}/{ROUNDS}</span>
-            <button type="button" className="at-board-drawer-close at-cond" onClick={toggleBoard}>Close</button>
-          </div>
-          <div className="at-grid-scroll-nav">
-            <button type="button" className="at-grid-scroll-btn" onClick={() => scrollGrid(-1)} aria-label="Scroll rounds left">
-              ‹
-            </button>
-            <span className="at-grid-scroll-hint">Swipe or tap to see more rounds</span>
-            <button type="button" className="at-grid-scroll-btn" onClick={() => scrollGrid(1)} aria-label="Scroll rounds right">
-              ›
-            </button>
-          </div>
-          <div className="at-grid-scroll" ref={gridScrollRef}>
-            <table className="at-ov-grid">
-              <thead>
-                <tr>
-                  <th className="at-teamcol">Team</th>
-                  {Array.from({ length: ROUNDS }, (_, r) => (
-                    <th key={r} className="at-rnd">
-                      {r + 1}
-                      {r === 0 ? 'st' : r === 1 ? 'nd' : r === 2 ? 'rd' : 'th'}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {state.teams.map((team, i) => (
-                  <tr key={team.id} className={`${team.isHuman ? 'at-you' : ''} ${i === teamIdx ? 'at-clock' : ''}`}>
-                    <td className="at-teamcol">
-                      {/* 2026-08-16, user's own ask: full team names used to sit in this cell
-                          unconditionally, eating real width in an already-cramped 16-team x
-                          8-round grid — the chip alone already IDs the team uniquely (`teamCodes`
-                          resolves collisions across the whole roster), so the full name only
-                          shows now as an on-hover/focus tooltip (`.at-name-tip`, same mechanics
-                          as the tier dots' own `data-tip` popover above). "(You)" is folded into
-                          that same tooltip text rather than sitting beside it — the row's own
-                          `.at-you` highlight already marks it visually either way. */}
-                      {/* 2026-08-19, user's explicit ask ("with this much space we can just put
-                          names in for web") — the code-chip-plus-hover-tooltip design above was
-                          built for a cramped desktop layout; on a wider view this column has real
-                          room to spare, so the full name is shown directly again, chip retained
-                          for quick color-coded scanning. */}
-                      <span className="at-team-chip" tabIndex={0}>
-                        {teamCodeByTeamId.get(team.id)}
-                      </span>
-                      <span className="at-team-name-full">
-                        {teamLabel(team)}
-                        {team.isHuman && <span className="at-lottery-you-tag">YOU</span>}
-                      </span>
-                    </td>
-                    {Array.from({ length: ROUNDS }, (_, r) => {
-                      const pick = team.roster[r];
-                      if (pick) {
-                        return (
-                          <td key={r} className="at-pickcell">
-                            {/* 2026-08-16, user's own ask: the drafted span's year range dropped from this
-                                cell entirely — not needed on the board itself (it's still visible in the
-                                Draft/Team tabs' own tables), and cutting it is part of fitting all 8 round
-                                columns on a narrow screen without horizontal scrolling. Below 640px the full
-                                name is swapped for "F. Last" (`.at-name-full`/`.at-name-short`, picked by
-                                CSS media query) — a real column is only ~35px wide there, too narrow for
-                                most full names not to fragment mid-word even wrapped. */}
-                            <span className="at-pick-badge">{overviewPickNumber(i, r)}</span>
-                            <span className="at-name-tip" tabIndex={0} data-tip={pickStatTip(pick)}>
-                              <span className="at-name-full">{pick.playerName}</span>
-                              <span className="at-name-short">{shortPlayerName(pick.playerName)}</span>
-                            </span>
-                          </td>
-                        );
-                      }
-                      if (i === teamIdx && r === team.roster.length) {
-                        return (
-                          <td key={r} className="at-onclock">
-                            on the clock…
-                          </td>
-                        );
-                      }
-                      return (
-                        <td key={r} className="at-empty">
-                          —
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* 2026-10-14, the board redesign (approved mockup): on a laptop/desktop the board sits above
+              the list — teams across, the rounds around the current one, the rest one click away.
+              Phones keep it as a panel from the right edge (2026-09-27, the user: "nie wiem czy
+              użytkowników będzie interesować co robi AI aż w tak dużym stopniu żeby zabierało tyle
+              ekranu"). */}
+          {!isStackedLayout && !boardHidden && (
+            <div className="at-board-inline">
+              <DraftGrid
+                teams={state.teams}
+                rounds={ROUNDS}
+                round={state.round}
+                onClockIdx={teamIdx}
+                complete={state.complete}
+                tierColor={(span) => TIER_FRAME_COLOR[displayedOverallTier(span)]}
+                pickTip={pickStatTip}
+              />
             </div>
+          )}
+          {isStackedLayout && boardOpen && (
+            <div className="at-board-drawer-backdrop" onClick={toggleBoard}>
+              <div className="at-board-drawer" role="dialog" aria-label="Draft board" onClick={(e) => e.stopPropagation()}>
+                <div className="at-board-drawer-head">
+                  <span className="at-cond">Draft board · Round {Math.min(state.round + 1, ROUNDS)}/{ROUNDS}</span>
+                  <button type="button" className="at-board-drawer-close at-cond" onClick={toggleBoard}>Close</button>
+                </div>
+                <DraftGrid
+                  teams={state.teams}
+                  rounds={ROUNDS}
+                  round={state.round}
+                  onClockIdx={teamIdx}
+                  complete={state.complete}
+                  tierColor={(span) => TIER_FRAME_COLOR[displayedOverallTier(span)]}
+                  pickTip={pickStatTip}
+                />
+              </div>
             </div>
           )}
         </div>
