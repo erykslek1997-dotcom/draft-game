@@ -24,7 +24,9 @@ import { overallTierForSpan, displayTalentForSpan, formatTal } from '../engine/g
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { teamCodes, teamLabel } from '../engine/teamNames';
 import { CapIcon, Face, ShotChip, ShotsMeter } from './ShotChip';
-import { DraftPlayerCard } from './DraftPlayerCard';
+import { TIER_FRAME_COLOR } from './DraftPlayerCard';
+import { DraftPlayerList, PositionToggles } from './DraftPlayerList';
+import { gradeColor } from './DraftBoard';
 import { markStepDone } from './pathProgress';
 import { rankTeams } from '../engine/scoring';
 import { fitScore } from '../engine/fit';
@@ -102,12 +104,14 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
     const humanName = state.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
     setState(createQuickDraft(humanName, seed));
     setSearch('');
-    setSelectedPosition('ALL');
+    setPositionOverride(null);
     setPhase('lottery');
   }
   const [autoFinishing, setAutoFinishing] = useState(false);
   const [search, setSearch] = useState('');
-  const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL'>('ALL');
+  // 2026-10-14, the list redesign: "Show" toggles per position, the positions you already have
+  // unticked until you touch them (see DraftBoard's own `positionOverride`).
+  const [positionOverride, setPositionOverride] = useState<Set<Position> | null>(null);
 
   const teamIdx = currentTeamIndex(state);
   const currentTeam = state.teams[teamIdx];
@@ -188,8 +192,8 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
           teamCodeByTeamId={teamCodeByTeamId}
           search={search}
           setSearch={setSearch}
-          selectedPosition={selectedPosition}
-          setSelectedPosition={setSelectedPosition}
+          positionOverride={positionOverride}
+          setPositionOverride={setPositionOverride}
           onPick={handlePick}
           onAutoFinish={handleAutoFinish}
           autoFinishing={autoFinishing}
@@ -245,8 +249,8 @@ function QuickDraftBoard({
   teamCodeByTeamId,
   search,
   setSearch,
-  selectedPosition,
-  setSelectedPosition,
+  positionOverride,
+  setPositionOverride,
   onPick,
   onAutoFinish,
   autoFinishing,
@@ -262,8 +266,8 @@ function QuickDraftBoard({
   teamCodeByTeamId: Map<string, string>;
   search: string;
   setSearch: (v: string) => void;
-  selectedPosition: Position | 'ALL';
-  setSelectedPosition: (v: Position | 'ALL') => void;
+  positionOverride: Set<Position> | null;
+  setPositionOverride: (v: Set<Position> | null) => void;
   onPick: (id: string) => void;
   onAutoFinish: () => void;
   autoFinishing: boolean;
@@ -283,16 +287,27 @@ function QuickDraftBoard({
     () => allEnrichedOnce.reduce((max, e) => (!state.draftedIds.has(e.span.id) && e.span.fga > max ? e.span.fga : max), 0),
     [state.draftedIds],
   );
+  const hiddenPositions = useMemo<Set<Position>>(() => {
+    if (positionOverride) return positionOverride;
+    const have = new Set(humanTeam.roster.map((p) => p.primaryPosition));
+    return have.size >= ALL_POSITIONS.length ? new Set() : have;
+  }, [positionOverride, humanTeam.roster]);
+  function togglePosition(pos: Position) {
+    const next = new Set(hiddenPositions);
+    if (next.has(pos)) next.delete(pos);
+    else next.add(pos);
+    setPositionOverride(next);
+  }
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return allEnrichedOnce
       .filter((e) => !state.draftedIds.has(e.span.id))
       .filter((e) => (onlyFits && canPick ? isQuickPickLegal(state, e.span.id) : true))
-      .filter((e) => (selectedPosition !== 'ALL' ? e.span.primaryPosition === selectedPosition : true))
+      .filter((e) => !hiddenPositions.has(e.span.primaryPosition))
       .filter((e) => e.span.playerName.toLowerCase().includes(q))
       .sort((a, b) => b.tal - a.tal || allStarCount(b.span.playerName) - allStarCount(a.span.playerName))
       .slice(0, 80);
-  }, [state, search, selectedPosition, onlyFits, canPick]);
+  }, [state, search, hiddenPositions, onlyFits, canPick]);
   const [visibleCount, setVisibleCount] = useState(QUICK_VISIBLE_STEP);
   const anyLegal = !canPick || filtered.slice(0, visibleCount).some((e) => isQuickPickLegal(state, e.span.id));
   const recentPicks: TickerPick[] = useMemo(() => {
@@ -426,7 +441,7 @@ function QuickDraftBoard({
               className="at-calm-btn"
               onClick={() => {
                 setSearch('');
-                setSelectedPosition('ALL');
+                setPositionOverride(new Set());
                 setOnlyFits(true);
               }}
             >
@@ -495,19 +510,7 @@ function QuickDraftBoard({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <div className="at-calm-seg" role="group" aria-label="Position">
-          {(['ALL', ...ALL_POSITIONS] as const).map((pos) => (
-            <button
-              key={pos}
-              type="button"
-              aria-pressed={selectedPosition === pos}
-              className={selectedPosition === pos ? 'is-on' : ''}
-              onClick={() => setSelectedPosition(pos)}
-            >
-              {pos === 'ALL' ? 'All' : pos}
-            </button>
-          ))}
-        </div>
+        <PositionToggles positions={ALL_POSITIONS} hidden={hiddenPositions} onToggle={togglePosition} />
         <button
           type="button"
           className={`at-calm-chip${onlyFits ? ' is-on' : ''}`}
@@ -527,30 +530,29 @@ function QuickDraftBoard({
       {/* 2026-09-26 (the user: "quick 5 może bardziej przypominać normalny draft"): the same
           player cards as the All-Time Draft — tier frame, TAL, team chips, the season's box line —
           without the Scouting button, since every player comes at his single best season here. */}
-      <div className="at-player-cards">
-        {filtered.slice(0, visibleCount).map(({ span, tier }) => {
+      <DraftPlayerList
+        rows={filtered.slice(0, visibleCount).map(({ span, tier }) => {
           const legal = canPick && isQuickPickLegal(state, span.id);
-          return (
-            <DraftPlayerCard
-              key={span.id}
-              span={span}
-              cap={QUICK_CAP_LIMIT}
-              tier={span.fga < 2 ? 'Salary Glue' : tier}
-              legal={legal}
-              draftTitle={
-                !canPick
-                  ? `${teamLabel(currentTeam)} is picking…`
-                  : legal
-                    ? `Draft ${span.playerName}`
-                    : quickPickBlockReason(state, span.id) === 'reserve'
-                      ? `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${budget.maxThisPick} caps.`
-                      : `Over the ${QUICK_CAP_LIMIT}-cap limit — pick a cheaper player.`
-              }
-              onDraft={() => onPick(span.id)}
-            />
-          );
+          const shown = span.fga < 2 ? 'Salary Glue' : tier;
+          return {
+            key: span.id,
+            span,
+            tier: shown,
+            tierColor: TIER_FRAME_COLOR[shown],
+            legal,
+            scouted: false,
+            draftTitle: !canPick
+              ? `${teamLabel(currentTeam)} is picking…`
+              : legal
+                ? `Draft ${span.playerName}`
+                : quickPickBlockReason(state, span.id) === 'reserve'
+                  ? `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${budget.maxThisPick} caps.`
+                  : `Over the ${QUICK_CAP_LIMIT}-cap limit — pick a cheaper player.`,
+          };
         })}
-      </div>
+        gradeColor={gradeColor}
+        onDraft={(span) => onPick(span.id)}
+      />
       {visibleCount < filtered.length && (
         <button
           type="button"
