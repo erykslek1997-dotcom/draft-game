@@ -25,7 +25,6 @@ import {
   defensivePortabilityGrade,
   spacingGrade,
   durabilityGrade,
-  finishingGrade,
   overallTierForSpan,
   displayNumberForSpan,
   tierRank,
@@ -568,6 +567,7 @@ export default function DraftBoard({
     setBoardHidden((hidden) => !hidden);
   }
   const [phoneView, setPhoneView] = useState<'players' | 'picks'>('players');
+  const [teamView, setTeamView] = useState<'rotation' | 'roster'>('rotation');
   // Phones (the stacked layout): your five as dots in the status bar, the board as the Picks view.
   const isStackedLayout = useMediaQuery(STACKED_LAYOUT_QUERY);
   const closeExitDialog = useCallback(() => setConfirmExit(false), []);
@@ -1659,161 +1659,106 @@ export default function DraftBoard({
           move inside this one wrapper so `.at-merge-row`'s flex layout (App.css) treats "Draft" and
           "Team + Rotation" as its two side-by-side items on a wide screen; on a narrow one this is
           just an unstyled div and everything still stacks exactly as it did before this pass. */}
-      <div className="at-merge-team-col">
-      {activeTab === 'team' && (
-        <div className="at-card" style={{ marginBottom: 16 }}>
-          <h1 className="at-panel-title at-cond">Team</h1>
-          <div className={`at-cap-meter${isViewingHumanRoster && chosenRosterOverCap ? ' at-cap-meter--over' : ''}`}>
-            <span className="at-cap-label">
-              <CapIcon size={16} /> <b>{totalFga(displayFgas).toFixed(1)}</b> / {CAP_LIMIT} caps
-              {isViewingHumanRoster && chosenRosterOverCap && ' — over cap'}
-            </span>
-            <div className="at-cap-track">
-              <div className="at-cap-fill" style={{ width: `${Math.min(100, (totalFga(displayFgas) / CAP_LIMIT) * 100)}%` }} />
-            </div>
-            <span className="at-cap-label">
-              {teamForPanels.roster.length} / {ROSTER_SIZE} picked
+      {/* 2026-10-14, the Team tab redesign (approved mockup "Team · roster + rotation"): your roster
+          on the left — the years for each player, his tier, four grades and his cost, then the picks
+          still to come — and the rotation on the right. Phones switch between the two. The wrapper
+          stays mounted (hidden off the tab) so the rotation keeps its rows across tab switches. */}
+      <div className="at-merge-team-col tm-layout" style={activeTab === 'team' ? undefined : { display: 'none' }}>
+      {isStackedLayout && (
+        <div className="at-calm-seg wr-views tm-views" role="tablist" aria-label="Team view">
+          <button type="button" role="tab" aria-selected={teamView === 'rotation'} className={teamView === 'rotation' ? 'is-on' : ''} onClick={() => setTeamView('rotation')}>
+            Rotation
+          </button>
+          <button type="button" role="tab" aria-selected={teamView === 'roster'} className={teamView === 'roster' ? 'is-on' : ''} onClick={() => setTeamView('roster')}>
+            Roster · {teamForPanels.roster.length}/{ROSTER_SIZE}
+          </button>
+        </div>
+      )}
+      {activeTab === 'team' && !(isStackedLayout && teamView !== 'roster') && (
+        <section className="tm-roster" aria-label="Roster">
+          <div className="tm-head">
+            <span className="tm-title">Roster</span>
+            <span className="at-calm-soft">
+              {teamForPanels.roster.length} of {ROSTER_SIZE} drafted
+              {teamForPanels.roster.length < ROSTER_SIZE && ` · ${ROSTER_SIZE - teamForPanels.roster.length} to go`}
             </span>
           </div>
-          {teamForPanels.roster.length === 0 ? (
-            <div className="at-placeholder">
-              No picks yet — head to the Draft tab.
+          <div className="tm-card">
+            <div className="tm-row tm-row--head" aria-hidden>
+              <span>Rnd</span>
+              <span>Player · years</span>
+              <span>Tier</span>
+              <span>Off · Def · 3pt · Dur</span>
+              <span className="tm-num">Caps</span>
             </div>
-          ) : (
-            <div className="at-table-scroll">
-            <table className="at-roster-table">
-              <thead>
-                <tr>
-                  {/* 2026-08-19, user's explicit ask: "Round" used to pack position + round into
-                      one cell ("SG R1") as a single string — split into two real columns so each
-                      is independently scannable/sortable-by-eye instead of a merged label. Round
-                      before Position (follow-up ask) — draft order is the more natural first read
-                      of this table (it's a Round-by-round pick list), position is secondary. */}
-                  <th className="at-roster-rnd">Rnd</th>
-                  <th>Pos</th>
-                  <th className="at-roster-sticky">Player</th>
-                  <th>Years</th>
-                  {/* 2026-08-19, user's explicit ask ("show offense, defense, portability etc
-                      with S-F value"): the same judge letter-grades the Draft tab already shows
-                      per candidate, now visible for your own already-locked-in roster too.
-                      Deliberately NOT gated to Tester Mode, unlike the Draft tab's own equivalent
-                      columns — user's own direct follow-up clarification: player mode's "blind
-                      scouting" is specifically about the DRAFT decision, not about hiding what
-                      you already own ("you kind of drafting blindly but you can see what did you
-                      draft"). Once a player is actually on the roster, this is the whole point of
-                      the Team tab, not a spoiler.
-                      2026-08-19 follow-up, same ask extended to Spacing/Durability.
-                      2026-09-14, user-reported live ("niech wszystko będzie w skali S-F"): SPC/DUR
-                      switched from the named-text `SpacingTierBadge`/`DurabilityTierBadge` pills to
-                      the same `AtGrade` S-F letter every other column here already uses — see
-                      `spacingGrade`/`durabilityGrade` in grades.ts for the two different
-                      calibration stories behind that. `SpacingTierBadge`/`DurabilityTierBadge`
-                      themselves are untouched exports, not deleted (`DraftPoolBrowser.tsx` on the
-                      `catch-up-2026-08-14` branch still uses them), but this was their last call
-                      site on `player-skeleton` — the TAG_LEGEND entries below were updated to match
-                      what's actually on screen here now instead of describing a named-tier scale
-                      nothing on this branch still shows. */}
-                  <th style={{ textAlign: 'center' }}>Off</th>
-                  <th style={{ textAlign: 'center' }}>Def</th>
-                  <th style={{ textAlign: 'center' }}>O-POR</th>
-                  <th style={{ textAlign: 'center' }}>D-POR</th>
-                  <th style={{ textAlign: 'center' }}>SPC</th>
-                  <th style={{ textAlign: 'center' }}>FIN</th>
-                  <th style={{ textAlign: 'center' }}>DUR</th>
-                  <th>Caps</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teamForPanels.roster.map((p, i) => {
-                  // 2026-08-16, user's own follow-up ask ("span na spokojnie można zmieścić w
-                  // zakładce Team"): the span dropdown used to live in its own separate list
-                  // further down this same tab, right next to (and repeating) this exact table —
-                  // there's real horizontal room in this row for the dropdown itself, so it's
-                  // folded directly into the Span cell instead of existing twice. Only swapped in
-                  // when this table is actually showing the human's OWN roster (`isViewingHumanRoster`)
-                  // — during Commissioner Mode looking at a different team's turn, this stays
-                  // plain text, same "span editing only ever touches the one isHuman team" scoping
-                  // as everywhere else in this file.
-                  const spanOpt = isViewingHumanRoster ? humanSpanOptionsByKey.get(normalizePlayerName(p.playerName)) : undefined;
-                  const effective = spanOpt
-                    ? (spanOpt.options.find((o) => o.id === (humanSpanSelection[spanOpt.key] ?? spanOpt.draftedSpan.id)) ?? p)
-                    : p;
-                  return (
-                    <tr key={normalizePlayerName(p.playerName)}>
-                      <td className="at-roster-rnd">R{i + 1}</td>
-                      <td>
-                        <span className="pos-pill">{p.primaryPosition}</span>
-                      </td>
-                      <td className="at-roster-sticky">
-                        {/* 2026-09-14, user-reported live ("niech wszystko będzie w skali S-F i
-                            wtedy zrobimy miejsce na facecardy"): SPC/DUR moving off wide named-text
-                            badges onto the same compact `AtGrade` pill every other column already
-                            uses (below) freed real width in this row — spent here, on the same
-                            `Face` avatar the Draft tab's own cards/sidebar/Rotation rows already
-                            use, so a roster of names isn't the only unillustrated table in the app. */}
-                        <span className="at-roster-player-cell">
-                          <Face name={p.playerName} />
-                          {p.playerName}
-                        </span>
-                      </td>
-                      <td>
-                        {spanOpt ? (
-                          <YearsPicker
-                            playerName={spanOpt.playerName}
-                            options={spanOpt.options}
-                            selectedId={effective.id}
-                            showTal={showJudgeMetrics}
-                            onSelect={(id) => setHumanSpan(spanOpt.key, id, spanOpt.playerName, spanOpt.options)}
-                          />
-                        ) : (
-                          p.spanLabel
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <AtGrade grade={offensiveGrade(computeOffensiveTalent(effective), computeUncappedOffensiveTalent(effective))} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <AtGrade grade={defensiveGrade(computeDefensiveTalent(effective))} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <AtGrade grade={offensivePortabilityGrade(computeOffensivePortability(effective))} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <AtGrade grade={defensivePortabilityGrade(computeDefensivePortability(effective))} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <AtGrade grade={spacingGrade(computeSpacing(effective), effective)} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <AtGrade grade={finishingGrade(computeFinishing(effective), effective)} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <AtGrade grade={durabilityGrade(computeDurability(effective))} />
-                      </td>
-                      <td className="at-fga-num">{effective.fga.toFixed(1)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            {teamForPanels.roster.map((p, i) => {
+              const spanOpt = isViewingHumanRoster ? humanSpanOptionsByKey.get(normalizePlayerName(p.playerName)) : undefined;
+              const effective = spanOpt
+                ? (spanOpt.options.find((o) => o.id === (humanSpanSelection[spanOpt.key] ?? spanOpt.draftedSpan.id)) ?? p)
+                : p;
+              return (
+                <div className="tm-row" key={normalizePlayerName(p.playerName)}>
+                  <span className="tm-rnd">R{i + 1}</span>
+                  <span className="tm-player">
+                    <Face name={p.playerName} size="md" />
+                    <span className="tm-player-text">
+                      <span className="tm-name">
+                        {p.playerName} <span className="tm-pos">{p.primaryPosition}</span>
+                      </span>
+                      {spanOpt ? (
+                        <YearsPicker
+                          playerName={spanOpt.playerName}
+                          options={spanOpt.options}
+                          selectedId={effective.id}
+                          showTal={showJudgeMetrics}
+                          onSelect={(id) => setHumanSpan(spanOpt.key, id, spanOpt.playerName, spanOpt.options)}
+                        />
+                      ) : (
+                        <span className="tm-years">{p.spanLabel}</span>
+                      )}
+                    </span>
+                  </span>
+                  <span className="tm-tier">
+                    <OverallTierBadge span={effective} />
+                  </span>
+                  <span className="tm-grades">
+                    <AtGrade grade={offensiveGrade(computeOffensiveTalent(effective), computeUncappedOffensiveTalent(effective))} />
+                    <AtGrade grade={defensiveGrade(computeDefensiveTalent(effective))} />
+                    <AtGrade grade={spacingGrade(computeSpacing(effective), effective)} />
+                    <AtGrade grade={durabilityGrade(computeDurability(effective))} />
+                  </span>
+                  <span className="tm-num tm-caps">
+                    <CapIcon /> {effective.fga.toFixed(1)}
+                  </span>
+                </div>
+              );
+            })}
+            {isViewingHumanRoster &&
+              humanUpcoming.slice(0, ROSTER_SIZE - teamForPanels.roster.length).map((u, k) => (
+                <div className="tm-row tm-row--open" key={u.pick}>
+                  <span className="tm-rnd">R{teamForPanels.roster.length + k + 1}</span>
+                  <span className="tm-player">
+                    <span className="tm-open-face" aria-hidden />
+                    <span className="at-calm-soft">Pick #{u.pick}</span>
+                  </span>
+                </div>
+              ))}
+            <div className={`tm-foot${isViewingHumanRoster && chosenRosterOverCap ? ' is-over' : ''}`}>
+              <span>
+                {isViewingHumanRoster
+                  ? 'Click the years to use a different stretch of a player\'s career — cheaper years free caps.'
+                  : 'Rotation minutes are set in this same tab.'}
+              </span>
+              <span className="tm-num">
+                <CapIcon /> {totalFga(displayFgas).toFixed(1)} / {CAP_LIMIT}
+                {isViewingHumanRoster && chosenRosterOverCap && ' — over cap'}
+              </span>
             </div>
-          )}
-          <p className="at-caption">
-            {isViewingHumanRoster
-              ? `Each player's Years menu picks which stretch of his career you use. Cheaper years free up caps for the rest of the draft; pricier ones are fine as long as the whole roster stays under ${CAP_LIMIT} caps when you submit. Minutes are set in Rotation below.`
-              : 'Rotation minutes are set below, in this same tab.'}
-          </p>
-          {/* 2026-08-19, user's explicit ask ("you can add glossary under TEAM"): the roster table
-              above packs in six grade/tier columns (Off/Def/O-POR/D-POR/SPC/DUR) plus the Span
-              dropdown's own Tier name — same `TAG_LEGEND` glossary the Draft tab already offers,
-              reused rather than duplicated, but NOT gated to Tester Mode here (unlike the Draft
-              tab's copy): this table shows the same badges to both modes now (see the Off/Def/
-              O-POR/D-POR columns' own comment above), so Player Mode needs the explanation just
-              as much, arguably more. */}
+          </div>
           {teamForPanels.roster.length > 0 && (
             <>
               <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
-                {showLegend ? 'Hide' : 'Show'} tag legend
+                {showLegend ? 'Hide' : 'Show'} what the grades mean
               </button>
               {showLegend && (
                 <div className="at-tag-legend">
@@ -1834,7 +1779,8 @@ export default function DraftBoard({
               )}
             </>
           )}
-        </div>
+          <div id="years-sheet-slot" className="years-sheet-slot" />
+        </section>
       )}
 
       {/* 2026-08-16, user's own ask: the old "Choose Each Player's Span" screen and the rotation-
@@ -1852,16 +1798,11 @@ export default function DraftBoard({
           next player without leaving this tab, so every single "set some minutes, draft, come
           back" cycle hit it. Always rendered now; `display: none` hides it instead of unmounting
           it, so `RotationBuilder`'s own `rows` state survives every tab switch untouched. */}
-      {/* 2026-09-25, user ("jest zbyt bardzo na lewo, może uda się to zmieścić między draft board a
-          rotację?"): on wide screens the Years picker opens here, inline between the Team table and
-          the Rotation card, instead of docking over the left edge of the page. */}
-      <div id="years-sheet-slot" className="years-sheet-slot" style={activeTab === 'team' ? undefined : { display: 'none' }} />
-      <div className="at-card" style={activeTab === 'team' ? undefined : { display: 'none' }}>
-          <h1 className="at-panel-title at-cond">Rotation</h1>
+      <section className="tm-rotation" aria-label="Rotation" style={isStackedLayout && teamView !== 'rotation' ? { display: 'none' } : undefined}>
           {humanTeam.roster.length === 0 ? (
             <div className="at-placeholder">
-              Opens as soon as you make your first pick — set spans (in the Team table above) and
-              minutes here as you go, no need to wait for the draft to end.
+              Opens as soon as you make your first pick — set minutes as you go, no need to wait for
+              the draft to end.
             </div>
           ) : (
             <>
@@ -1897,13 +1838,13 @@ export default function DraftBoard({
                   !state.complete
                     ? `Finish drafting all ${ROSTER_SIZE} picks before you can submit.`
                     : chosenRosterOverCap
-                      ? `Your chosen years cost ${chosenRosterFga.toFixed(1)} caps — over the ${CAP_LIMIT} cap. Pick cheaper years in the Team table above.`
+                      ? `Your chosen years cost ${chosenRosterFga.toFixed(1)} caps — over the ${CAP_LIMIT} cap. Pick cheaper years in the roster.`
                       : undefined
                 }
               />
             </>
           )}
-      </div>
+      </section>
       </div>
       </div>
     </div>

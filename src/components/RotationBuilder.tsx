@@ -4,9 +4,7 @@ import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes, suggestBasicRotation } from '../engine/rotation';
 import { computeDurability } from '../engine/durability';
 import { playableMinutesCap } from '../engine/rotationRoleMinutes';
-import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
-import { offensiveGrade, defensiveGrade } from '../engine/grades';
-import { AtGrade, OverallTierBadge } from './DraftBoard';
+import { OverallTierBadge } from './DraftBoard';
 import { Face } from './ShotChip';
 import type { Rotation, SlotAssignment, Team } from '../engine/types';
 
@@ -385,6 +383,8 @@ function RotationBuilderComponent({
         ? `Nobody can play more than ${GAME_MINUTES} minutes: ${overworkedPlayers.map((p) => p.playerName).join(', ')}.`
         : undefined;
 
+  const openMinutes = STARTER_SLOTS.reduce((sum, slot) => sum + Math.max(0, GAME_MINUTES - slotTotal(rows, slot)), 0);
+
   function handleConfirm() {
     if (!allValid) return;
     onConfirm({ slots: rowsToSlots(rows) });
@@ -392,10 +392,16 @@ function RotationBuilderComponent({
 
   return (
     <div className="rotation-builder">
-      <h2>Set Your Rotation</h2>
+      {/* 2026-10-14, the Team tab redesign (approved mockup): one line on top — how many minutes are
+          still open across the five positions — then each position as a lane. */}
+      <div className="rb-head">
+        <span className="rb-title">Rotation</span>
+        <span className={openMinutes > 0 ? 'rb-status is-open' : 'rb-status'}>
+          {openMinutes > 0 ? `${openMinutes} minutes still open` : `All ${GAME_MINUTES * STARTER_SLOTS.length} minutes set`}
+        </span>
+      </div>
       <p className="rotation-intro">
-        Every position needs {GAME_MINUTES} minutes: a starter plus backups. Drag players (or tap on a phone) and drag
-        the divider in a position's bar to split its minutes.
+        {GAME_MINUTES} minutes per position. Drag players (or tap on a phone); drag a divider in a bar to split its minutes.
       </p>
 
       {/* 2026-09-11, user-reported live ("głębsza przebudowa", "brzydko to wygląda") — the table
@@ -448,17 +454,6 @@ function RotationBuilderComponent({
             >
               <div className="rotation-card-head">
                 <span className="rotation-card-pos at-cond">{slot}</span>
-                <span className="rotation-card-minutes-track">
-                  <span
-                    className="rotation-card-minutes-fill"
-                    style={{ width: `${Math.min(100, (total / GAME_MINUTES) * 100)}%` }}
-                  />
-                </span>
-                <span className={full ? 'minutes-ok' : 'minutes-bad'}>
-                  {total}/{GAME_MINUTES}
-                </span>
-              </div>
-              {filled.length > 0 && (
                 <span className="rotation-split" ref={(el) => { splitBarRefs.current[slot] = el; }}>
                   {filled.map(({ row, idx }, k) => {
                     const player = roster.find((p) => p.id === row.playerId);
@@ -488,8 +483,16 @@ function RotationBuilderComponent({
                       </span>
                     );
                   })}
+                  {total < GAME_MINUTES && (
+                    <span className="rotation-split-open" style={{ width: `${((GAME_MINUTES - total) / GAME_MINUTES) * 100}%` }}>
+                      {GAME_MINUTES - total} open
+                    </span>
+                  )}
                 </span>
-              )}
+                <span className={full ? 'minutes-ok' : 'minutes-bad'}>
+                  {total}/{GAME_MINUTES}
+                </span>
+              </div>
               {rows[slot].map((row, rowIdx) => {
                 const selectedPlayer = row.playerId ? roster.find((p) => p.id === row.playerId) : undefined;
                 return (
@@ -547,7 +550,7 @@ function RotationBuilderComponent({
                         {optionsFor(slot).map(({ player, eligible }) => (
                           <option key={player.id} value={player.id}>
                             {eligible ? '' : '⚠ '}
-                            {player.playerName} ({player.spanLabel}) — {player.primaryPosition}
+                            {player.playerName} · {player.primaryPosition}
                             {eligible ? '' : ' (out of position)'}
                           </option>
                         ))}
@@ -558,11 +561,8 @@ function RotationBuilderComponent({
                             className="durability-cap"
                             title={`Most minutes he can handle without wearing down (durability ${computeDurability(selectedPlayer)})`}
                           >
-                            cap {playableMinutesCap(selectedPlayer, MAX_MINUTES_PER_PLAYER)}m
+                            max {playableMinutesCap(selectedPlayer, MAX_MINUTES_PER_PLAYER)}
                           </span>
-                          <OverallTierBadge span={selectedPlayer} />
-                          <AtGrade grade={offensiveGrade(computeOffensiveTalent(selectedPlayer), computeUncappedOffensiveTalent(selectedPlayer))} />
-                          <AtGrade grade={defensiveGrade(computeDefensiveTalent(selectedPlayer))} />
                         </span>
                       )}
                     </div>
@@ -645,8 +645,9 @@ function RotationBuilderComponent({
                 </span>
               ) : null}
               {canAddMore && rows[slot][0]?.playerId && (
-                <button className="add-row-btn" onClick={() => addRow(slot)}>
-                  + add contributor
+                <button className={`add-row-btn${full ? '' : ' is-open'}`} onClick={() => addRow(slot)}>
+                  <span className="add-row-dot" aria-hidden>+</span>
+                  {full ? 'Add player' : `${GAME_MINUTES - total} min open — add player`}
                 </button>
               )}
             </div>
@@ -654,7 +655,9 @@ function RotationBuilderComponent({
         })}
       </div>
 
-      {wrongSlotTotals.length > 0 && (
+      {/* Mid-draft the header's "N minutes still open" already says this; the full sentence is for
+          a finished roster that still can't be submitted. */}
+      {rosterComplete && wrongSlotTotals.length > 0 && (
         <p className="validation-error">
           Each position needs exactly {GAME_MINUTES} minutes: {wrongSlotTotals.map((slot) => `${slot} ${slotTotal(rows, slot)}/${GAME_MINUTES}`).join(', ')}
         </p>
