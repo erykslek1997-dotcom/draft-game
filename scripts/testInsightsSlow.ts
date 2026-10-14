@@ -112,7 +112,13 @@ check(avgStrengths >= 2.5, 'real drafted rosters average at least two and a half
 // (real shot blockers and near-bar defenders like Marc Gasol / Mitchell Robinson are no longer
 // "targetable") removes false MULTIPLE_DEFENSIVE_WEAK_LINKS / HUNTABLE_STARTER_EXPOSED concerns —
 // over these six seeds 21->15 and 11->8, average 1.69 -> 1.49.
-check(avgConcerns >= 1.4, 'real drafted rosters average at least 1.4 concerns');
+// 2026-10-10: 1.4 -> 1.1. The TAL defense credit (talent.ts `defenseCreditLift`) lifts defensive
+// role players into the playable band, so far fewer benches read as dead or strained: over these
+// six seeds DEAD_SLOT_HURTS_ROTATION 33 -> 9, STAR_FGA_COST_HURTS_DEPTH 13 -> 3,
+// SINGLE_RIM_PROTECTOR_DEPENDENCY 8 -> 0, DEFENSE_DEPENDS_ON_STARTERS 12 -> 6 (spacing and
+// playmaking concerns rose: SPACING_CONCENTRATED 10 -> 18, NO_TRUE_PLAYMAKER 0 -> 4); average
+// 1.51 -> 1.15. The floor still catches a detector suite that goes silent.
+check(avgConcerns >= 1.1, 'real drafted rosters average at least 1.1 concerns');
 // 2026-09-25: the lists follow the finish — a bottom team reads mostly what held it back, a top
 // team mostly what worked (before, both averaged 7 strengths).
 const top = samples.filter((sample) => sample.standing >= 0.75);

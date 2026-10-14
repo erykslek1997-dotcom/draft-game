@@ -205,7 +205,21 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
       1997 (KG, Webber, Malone 1996-98), przegląd razem z Tobą. Rozważyć też to samo dla
       rzutu za 3 przed 1979-80 (brak linii — West, Oscar, Havlicek). (M)
 
-## Kolejność prac (decyzja 2026-10-08)
+## Kolejność prac (decyzja 2026-10-10) — obowiązuje
+
+1. **UI** — zakres do ustalenia na starcie (kandydaci: ton wyniku według miejsca w Mini/All-Time,
+   karta na ekranach wyników Draw Five, stół Draw Five, animacja lotu karty, linia Scouta dla
+   graczy Hustle, porządki po playteście).
+2. **Kalibracja silnika V2 — „dziady” i Hustle**: gracze dawnych er (spacing F u strzelców sprzed
+   linii za 3 — West, Maravich, Barry; D-TAL sprzed 1973-74 bez przechwytów i bloków; X. McDaniel
+   D-TAL 22; półdystans i rim pressure sprzed 1997; przegląd starych resztek kalibracji z Etapu 1),
+   dopracowanie Hustle, odpowiednik Hustle w ataku, MVP z bilansem do kwadratu, rotacja Filipa
+   (KG na trzech pozycjach).
+3. **Silnik symulacji** — etap 4b (atak ~66%, rotacja ~34% w meczu), rzuty wolne w ocenie, mecz
+   na żywo mocniej na silniku, etap 2b, tempo meczu, kalendarz, balans po symulacjach.
+4. **Tryby** — Etap 3 niżej (Draw Five → Mini → All-Time → wspólne).
+
+## Kolejność prac (decyzja 2026-10-08, zastąpiona)
 
 1. Decyzje (zrobione: PR #192, druga połowa wag, free agents do osobnej sesji, tempo).
 2. Domknięcie wyglądu: Draft Desk, konstruktor rotacji, wyniki Mini, ton wyniku według miejsca.

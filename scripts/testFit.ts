@@ -107,6 +107,19 @@ const threeSpacersTwoBigs = team('fit-v2-three-spacers-two-bigs', [
   pick('Alonzo Mourning', '1997-99'),
   pick('Tyson Chandler', '2011-13'),
 ]);
+// 2026-10-10: the TAL defense credit lifts Danny Green 2016-18 (43 -> 55), so the auto rotation now
+// starts him over Korver. This check is about the spacing read with Korver starting, not the
+// solver's choice, so the rotation it was written against is pinned.
+const byName = (n: string) => threeSpacersTwoBigs.roster.find((p) => p.playerName === n)!.id;
+threeSpacersTwoBigs.rotation = {
+  slots: {
+    PG: [{ playerId: byName('Chris Paul'), minutes: 36 }, { playerId: byName('José Calderón'), minutes: 12 }],
+    SG: [{ playerId: byName('Kyle Korver'), minutes: 34 }, { playerId: byName('José Calderón'), minutes: 14 }],
+    SF: [{ playerId: byName('Tracy McGrady'), minutes: 38 }, { playerId: byName('Danny Green'), minutes: 10 }],
+    PF: [{ playerId: byName('Kevin Garnett'), minutes: 39 }, { playerId: byName('Tyson Chandler'), minutes: 9 }],
+    C: [{ playerId: byName('Alonzo Mourning'), minutes: 35 }, { playerId: byName('Tyson Chandler'), minutes: 13 }],
+  },
+};
 check(
   scoreTeam(threeSpacersTwoBigs).spacingScore >= 63 && scoreTeam(threeSpacersTwoBigs).spacingScore <= 75,
   'one genuine walking-gravity spacer carries a two-non-shooting-big lineup to a strong, not maxed, read',
