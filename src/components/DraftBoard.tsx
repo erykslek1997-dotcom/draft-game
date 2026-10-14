@@ -46,7 +46,7 @@ import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
 import { BoardToggleButton, DraftHelpDialog, LeaveDraftDialog } from './DraftChrome';
-import { DraftStatus, FiveDots, RivalsLane, YourFiveCourt, upcomingPicks } from './DraftWarRoom';
+import { BigBoardPanel, DraftStatus, FiveDots, RivalsLane, YourFiveCourt, upcomingPicks } from './DraftWarRoom';
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
 import { YearsPicker } from './YearsPicker';
 import { PlayerPeekModal } from './PlayerPeekModal';
@@ -533,6 +533,40 @@ export default function DraftBoard({
       return new Set();
     }
   });
+  // 2026-10-14, the Big Board: your own ranking of who you want next, kept per draft like the
+  // scouting reports (and dropped with an earlier draft's).
+  const bigBoardKey = `draftverse.bigboard.v1.${state.seed}`;
+  const [bigBoard, setBigBoard] = useState<string[]>(() => {
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('draftverse.bigboard.v1.') && key !== bigBoardKey) localStorage.removeItem(key);
+      }
+      const raw = localStorage.getItem(bigBoardKey);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  function saveBigBoard(next: string[]) {
+    setBigBoard(next);
+    try {
+      localStorage.setItem(bigBoardKey, JSON.stringify(next));
+    } catch {
+      // storage unavailable — the board still works for this session
+    }
+  }
+  function toggleBigBoard(name: string) {
+    saveBigBoard(bigBoard.includes(name) ? bigBoard.filter((n) => n !== name) : [...bigBoard, name]);
+  }
+  function moveOnBigBoard(name: string, dir: -1 | 1) {
+    const live = bigBoardEntries.map((e) => e.name);
+    const i = live.indexOf(name);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= live.length) return;
+    [live[i], live[j]] = [live[j], live[i]];
+    saveBigBoard(live);
+  }
   function scoutPlayer(name: string) {
     setScoutedPlayers((prev) => {
       if (prev.has(name) || prev.size >= SCOUT_REPORTS_PER_DRAFT) return prev;
@@ -570,7 +604,7 @@ export default function DraftBoard({
   function toggleBoard() {
     setBoardHidden((hidden) => !hidden);
   }
-  const [phoneView, setPhoneView] = useState<'players' | 'picks'>('players');
+  const [phoneView, setPhoneView] = useState<'players' | 'picks' | 'board'>('players');
   const [teamView, setTeamView] = useState<'rotation' | 'roster'>('rotation');
   // Phones (the stacked layout): your five as dots in the status bar, the board as the Picks view.
   const isStackedLayout = useMediaQuery(STACKED_LAYOUT_QUERY);
@@ -1100,6 +1134,13 @@ export default function DraftBoard({
     if (canPick && isPickLegal(state, best.id)) return best;
     return group.spansByTal.find((s) => canPick && isPickLegal(state, s.id)) ?? best;
   }
+  const bigBoardEntries = bigBoard.flatMap((name) => {
+    const group = enrichedGroups.find((g) => g.playerName === name);
+    if (!group || state.draftedIds.has(group.spans[0].id)) return [];
+    const best = group.bestTalentSpan;
+    const span = canPick && isPickLegal(state, best.id) ? best : cardSpanFor(group);
+    return [{ name, span, legal: canPick && isPickLegal(state, span.id) }];
+  });
   function showAffordable() {
     setSearch('');
     setPositionOverride(new Set());
@@ -1283,7 +1324,19 @@ export default function DraftBoard({
               <button type="button" role="tab" aria-selected={phoneView === 'picks'} className={phoneView === 'picks' ? 'is-on' : ''} onClick={() => setPhoneView('picks')}>
                 Picks
               </button>
+              <button type="button" role="tab" aria-selected={phoneView === 'board'} className={phoneView === 'board' ? 'is-on' : ''} onClick={() => setPhoneView('board')}>
+                Big Board{bigBoardEntries.length > 0 && ` · ${bigBoardEntries.length}`}
+              </button>
             </div>
+          )}
+          {isStackedLayout && phoneView === 'board' && (
+            <BigBoardPanel
+              entries={bigBoardEntries}
+              canPick={canPick && youOnClock}
+              onDraft={(span) => onPick(span.id)}
+              onMove={moveOnBigBoard}
+              onRemove={(name) => saveBigBoard(bigBoard.filter((n) => n !== name))}
+            />
           )}
           {isStackedLayout && phoneView === 'picks' && (
             <DraftGrid
@@ -1302,7 +1355,7 @@ export default function DraftBoard({
       {/* `.at-merge-row`/`.at-merge-team-col` are plain wrappers since 2026-10-14 (Team is a tab at
           every width). */}
       <div className="at-merge-row">
-      {activeTab === 'draft' && !(isStackedLayout && phoneView === 'picks') && (
+      {activeTab === 'draft' && !(isStackedLayout && phoneView !== 'players') && (
         <div className="at-card at-merge-draft at-stage-in">
           <h1 className="at-panel-title at-cond">Draft</h1>
           {/* 2026-08-16, user's own ask: a CPU turn used to hide this whole panel behind a full
@@ -1555,6 +1608,7 @@ export default function DraftBoard({
                       draftTitle: draftButtonTitle(state, target.id, canPick, currentTeam, `Draft ${group.playerName}`),
                       scouted: scoutedPlayers.has(group.playerName),
                       taken: ghost ? `Taken #${ghost.pickNumber} · ${ghost.teamCode}` : undefined,
+                      starred: bigBoard.includes(group.playerName),
                     };
                   })}
                   scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
@@ -1562,6 +1616,7 @@ export default function DraftBoard({
                   gradeColor={gradeColor}
                   onDraft={(span) => onPick(span.id)}
                   onOpen={(name) => setPeekPlayer(name)}
+                  onStar={toggleBigBoard}
                 />
               )}
 
@@ -1627,6 +1682,13 @@ export default function DraftBoard({
                 bench={humanBench}
                 benchSlots={ROSTER_SIZE - STARTER_SLOTS.length}
                 onOpenTeam={() => setActiveTab('team')}
+              />
+              <BigBoardPanel
+                entries={bigBoardEntries}
+                canPick={canPick && youOnClock}
+                onDraft={(span) => onPick(span.id)}
+                onMove={moveOnBigBoard}
+                onRemove={(name) => saveBigBoard(bigBoard.filter((n) => n !== name))}
               />
             </aside>
           )}

@@ -27,6 +27,8 @@ export interface PlayerListRow {
   scouted: boolean;
   /** "Taken #18 · BAL" while a just-taken player still holds his place. */
   taken?: string;
+  /** On your Big Board (undefined: the mode has no Big Board). */
+  starred?: boolean;
 }
 
 function GradeCell({ label, grade, color }: { label: string; grade: Grade; color: (g: Grade) => string }) {
@@ -44,6 +46,7 @@ export function DraftPlayerList({
   gradeColor,
   onDraft,
   onOpen,
+  onStar,
 }: {
   rows: PlayerListRow[];
   scoutsLeft?: number;
@@ -54,6 +57,8 @@ export function DraftPlayerList({
   /** Opens the player's scouting window; without it (Mini Draft: one season per player) there is
    * no scouting column. */
   onOpen?: (playerName: string) => void;
+  /** Adds/removes the player on your Big Board. */
+  onStar?: (playerName: string) => void;
 }) {
   const scouting = onOpen !== undefined;
   return (
@@ -67,7 +72,7 @@ export function DraftPlayerList({
         {scouting && <span role="columnheader">Scouting report</span>}
         <span role="columnheader" aria-label="Draft" />
       </div>
-      {rows.map(({ key, span, tier, tierColor, legal, draftTitle, scouted, taken }) => {
+      {rows.map(({ key, span, tier, tierColor, legal, draftTitle, scouted, taken, starred }) => {
         const ring = spanTeamColor(span);
         const box = span.box;
         return (
@@ -126,6 +131,18 @@ export function DraftPlayerList({
             </span>
             )}
             <span role="cell" className="pl-act">
+              {onStar && !taken && (
+                <button
+                  type="button"
+                  className={`pl-star${starred ? ' is-on' : ''}`}
+                  aria-pressed={!!starred}
+                  aria-label={starred ? `Remove ${span.playerName} from your Big Board` : `Add ${span.playerName} to your Big Board`}
+                  title={starred ? 'On your Big Board' : 'Add to your Big Board'}
+                  onClick={() => onStar(span.playerName)}
+                >
+                  {starred ? '★' : '☆'}
+                </button>
+              )}
               <button
                 type="button"
                 className="pl-draft"

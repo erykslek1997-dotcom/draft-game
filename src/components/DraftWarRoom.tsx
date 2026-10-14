@@ -268,3 +268,73 @@ export function FiveDots({
     </button>
   );
 }
+
+export interface BigBoardEntry {
+  name: string;
+  span: PlayerSpan;
+  /** Can be drafted with this pick. */
+  legal: boolean;
+}
+
+/**
+ * 2026-10-14, the Big Board (the user: "queue … nazwę bardziej pod naszą grę"): your own ranking of
+ * who you want next, the way a front office keeps one. Star a player in the list to add him; players
+ * other teams take drop off by themselves. "Draft top of board" takes the highest one you can afford.
+ */
+export function BigBoardPanel({
+  entries,
+  canPick,
+  onDraft,
+  onMove,
+  onRemove,
+}: {
+  entries: BigBoardEntry[];
+  canPick: boolean;
+  onDraft: (span: PlayerSpan) => void;
+  onMove: (name: string, dir: -1 | 1) => void;
+  onRemove: (name: string) => void;
+}) {
+  const top = entries.find((e) => e.legal);
+  return (
+    <section className="wr-board" aria-label="Your Big Board">
+      <div className="wr-board-head">
+        <span className="wr-five-title">Your Big Board</span>
+        <span className="at-calm-soft">Your own ranking — star players in the list to add them</span>
+      </div>
+      {entries.length === 0 ? (
+        <p className="wr-board-empty">No one yet. Tap ☆ next to a player.</p>
+      ) : (
+        <ol className="wr-board-list">
+          {entries.map((e, i) => (
+            <li key={e.name} className={`wr-board-item${e.legal || !canPick ? '' : ' is-out'}`}>
+              <span className="wr-board-rank">{i + 1}</span>
+              <Face name={e.name} size="sm" />
+              <span className="wr-board-name" title={e.name}>
+                {boardName(e.name)}
+              </span>
+              <span className="wr-board-caps">
+                <CapIcon size={11} /> {Math.round(e.span.fga)}
+              </span>
+              <span className="wr-board-moves">
+                <button type="button" aria-label={`Move ${e.name} up`} disabled={i === 0} onClick={() => onMove(e.name, -1)}>
+                  ↑
+                </button>
+                <button type="button" aria-label={`Move ${e.name} down`} disabled={i === entries.length - 1} onClick={() => onMove(e.name, 1)}>
+                  ↓
+                </button>
+                <button type="button" aria-label={`Remove ${e.name} from your Big Board`} onClick={() => onRemove(e.name)}>
+                  ×
+                </button>
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {entries.length > 0 && (
+        <button type="button" className="wr-board-draft" disabled={!canPick || !top} onClick={() => top && onDraft(top.span)}>
+          {top ? `Draft top of board · ${boardName(top.name)}` : 'Nobody on your board fits this pick'}
+        </button>
+      )}
+    </section>
+  );
+}
