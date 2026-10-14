@@ -249,8 +249,16 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
      opcjonalne `franchiseId` w `Team` (stare zapisy bez zmian), oba `createInitialTeams`
      (All-Time i Mini); sprawdzenie każdej nazwy pod kątem prawdziwych drużyn (dziś losowanie może
      dać np. Charlotte Hornets czy Memphis Grizzlies), (3) PR: styl GM-a przypięty do franczyzy,
-     (4) osobno: poziom siły AI (nowa dźwignia, wymaga pomiaru kalibracji). Otwarte: Twoja drużyna —
-     wybór z puli z ponownym losowaniem czy własna nazwa z logo z inicjałami.
+     (4) osobno: poziom siły AI (nowa dźwignia, wymaga pomiaru kalibracji). Twoja drużyna: wybór z
+     puli z ponownym losowaniem; nazwy zostają (decyzje użytkownika 2026-10-14).
+     **Krok 2 zrobiony (2026-10-14):** `src/data/franchises.ts` (46 drużyn), `teamLogoKit.ts` +
+     `TeamLogo.tsx`; logo w menu (karta z kostką zamiast pola tekstowego), loterii, tablicy draftu,
+     wynikach, tabeli i drabince sezonu, tablicy meczu (barwy drużyn, przy zderzeniu kolorów druga
+     drużyna bierze drugi kolor). Rywale z ziarna draftu; ta sama seed = te same drużyny na tych samych
+     miejscach (inna własna drużyna zmienia najwyżej 2 miejsca). Stare zapisy: dawne nazwy dostają
+     stary znaczek z kodem. Sprawdzenie nazw: Honolulu Sharks (baseball zimowy 1993–2008) i Portland
+     Lumberjacks (liga bowlingowa PBA) istniały — zostają. Test: `scripts/testFranchises.ts`.
+     Przy okazji: drabinka playoffów rozjechana od #212 (wspólna klasa `pl-row` z listą graczy).
    - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14)** — fikcyjne
      postacie (decyzja: fake names) o wyrazistych archetypach: głośny były gracz („w moich
      czasach…”), trener od obrony, analityk od liczb, stary skaut — każdy z imieniem, nazwiskiem i

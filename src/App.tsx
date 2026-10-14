@@ -1,11 +1,13 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { stepDone } from './components/pathProgress';
-// Plain, data-free module (place/mascot string arrays + a shuffle helper, no engine/dataset
-// imports of its own — verified directly, not assumed) — safe to pull into the intro screen's
-// eager bundle without regressing the "zero engine dependency until Start Draft" load-time split
-// this file's own docstrings already care about (see DISPLAY_ROSTER_SIZE's comment below).
-import { randomTeamNames } from './engine/teamNames';
+// Small modules with no player data: the franchise pool (names, codes, logo parts; its one engine
+// import is type-only) and the logo kit — safe to pull into the intro screen's eager bundle
+// without regressing the "zero engine dependency until Start Draft" load-time split this file's
+// own docstrings already care about (see DISPLAY_ROSTER_SIZE's comment below).
+import { randomFranchiseName } from './engine/teamNames';
+import { franchiseByName } from './data/franchises';
+import { TeamLogo } from './components/TeamLogo';
 import { initialTeamsForSeed } from './engine/draftSetup';
 import { ROSTER_SIZE } from './engine/rosterConstants';
 import { randomSeed } from './engine/rng';
@@ -261,14 +263,13 @@ function App() {
     setView('game');
   }
   // 2026-08-16, user's own ask ("żeby wiedział jaką drużynę ma" — so they can actually recognize
-  // their own team): the human's own team used to always get one of the same random "Place
-  // Mascot" names as the 15 CPU teams, indistinguishable from them anywhere it's listed (Overview
-  // grid, the Draft Lottery screen). Pre-filled with a real random suggestion (not a blank field)
-  // so a player who doesn't care can just leave it — the 🎲 button next to the input re-rolls a
-  // new one without retyping. Threaded through GameShell -> createDraft -> createInitialTeams
-  // (draft.ts), which overrides the random draw for whichever slot ends up human with this exact
-  // string.
-  const [teamName, setTeamName] = useState(() => randomTeamNames(1)[0]);
+  // their own team): the human gets a team of their own, shown on the menu before the draft.
+  // 2026-10-14: picked from the franchise pool (data/franchises.ts) with a re-roll instead of typed
+  // (user: "wybór z puli z ponownym losowaniem"), so it has a logo like every rival. Threaded through
+  // GameShell -> createDraft -> createInitialTeams (draftSetup.ts), which seats it in the human's slot
+  // and deals the 15 rivals from the rest of the pool.
+  const [teamName, setTeamName] = useState(() => randomFranchiseName());
+  const yourFranchise = franchiseByName(teamName);
   // 2026-09-17, user's own ask: a "?" on each mode card itself, so the rules are a glance away
   // right on the menu instead of only reachable after already committing to a mode.
   const [expandedHelp, setExpandedHelp] = useState<'draft' | 'bestfive' | 'quickfive' | null>(null);
@@ -348,23 +349,23 @@ function App() {
                 </div>
               )}
               <div className="team-name-row">
-                <label htmlFor="intro-team-name" className="team-name-label">
+                <span id="intro-team-label" className="team-name-label">
                   Your team
-                </label>
+                </span>
                 <div className="team-name-input-row">
-                  <input
-                    id="intro-team-name"
-                    type="text"
-                    className="team-name-input"
-                    value={teamName}
-                    maxLength={40}
-                    onChange={(e) => setTeamName(e.target.value)}
-                  />
+                  <div className="team-pick" role="group" aria-labelledby="intro-team-label">
+                    <TeamLogo name={teamName} size={40} />
+                    <span className="team-pick-name">
+                      <small>{yourFranchise?.city}</small>
+                      <b>{yourFranchise?.name ?? teamName}</b>
+                    </span>
+                  </div>
                   <button
                     type="button"
                     className="secondary-btn team-name-randomize"
-                    title="Randomize a new suggestion"
-                    onClick={() => setTeamName(randomTeamNames(1)[0])}
+                    title="Pick another team"
+                    aria-label="Pick another team"
+                    onClick={() => setTeamName(randomFranchiseName(teamName))}
                   >
                     🎲
                   </button>

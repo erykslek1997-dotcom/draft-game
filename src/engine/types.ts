@@ -12,8 +12,9 @@ export interface Rotation {
 
 export interface Team {
   id: string;
-  /** Randomly generated "Place Mascot" label (see engine/teamNames.ts) — flavour only, never
-   * an identity: everything keyed to a team uses `id`. */
+  /** "City Name" of a franchise from the fixed pool (data/franchises.ts; older saves may hold a
+   * name from the old random generator) — flavour only, never an identity: everything keyed to a
+   * team uses `id`. The logo and colours are looked up by this name. */
   name: string;
   /** 1-based position in the round-1 draft order, shown next to the name as "#4". */
   draftSlot: number;

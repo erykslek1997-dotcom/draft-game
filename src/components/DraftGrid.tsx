@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import type { Team } from '../engine/types';
 import { teamLabel, teamPlace } from '../engine/teamNames';
+import { TeamLogo } from './TeamLogo';
 import { Face } from './ShotChip';
 import { boardName } from './boardNames';
 
@@ -60,7 +61,8 @@ export function DraftGrid({ teams, rounds, round, onClockIdx, complete, tierColo
                 className={`dg-team${team.isHuman ? ' is-you' : ''}`}
                 title={teamLabel(team)}
               >
-                {team.isHuman ? 'You' : teamPlace(team)}
+                <TeamLogo name={team.name} size={26} />
+                <span className="dg-team-name">{team.isHuman ? 'You' : teamPlace(team)}</span>
               </span>
             ))}
           </div>

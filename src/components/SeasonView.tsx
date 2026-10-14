@@ -17,6 +17,7 @@ import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
 import { rankTeams } from '../engine/scoring';
 import LiveGame, { type LiveMatchup } from './LiveGame';
 import { TeamMark } from './ResultsReport';
+import { teamNickname } from '../engine/teamNames';
 import './BestFive.css';
 import { FitName, FitTeam } from './FitName';
 import { PlayerRow, RowsLabel } from './PlayerRow';
@@ -46,7 +47,7 @@ const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th',
 const per = (l: SeasonPlayerLine, k: keyof SeasonPlayerLine['totals']) => l.totals[k] / Math.max(1, l.games);
 const f1 = (x: number) => x.toFixed(1);
 const pct = (made: number, att: number) => (att > 0 ? (100 * made) / att : 0);
-const mascot = (team: Team | undefined) => team?.name.split(' ').slice(-1)[0] ?? '';
+const mascot = (team: Team | undefined) => (team ? teamNickname(team.name) : '');
 const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? '' : 's'}`;
 
 export default function SeasonView({ teams, codes, state, onClose }: { teams: Team[]; codes: Map<string, string>; state: SeasonState; onClose: () => void }) {

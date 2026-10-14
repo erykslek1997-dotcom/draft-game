@@ -6,14 +6,14 @@
  * builds the draft from the same seed and teams.
  */
 import { TEAM_COUNT } from './rosterConstants';
-import { randomTeamNames } from './teamNames';
+import { draftTeamNames } from './teamNames';
 import { mixSeed, mulberry32 } from './rng';
 import type { Team } from './types';
 
 export function createInitialTeams(humanTeamName?: string, rng: () => number = Math.random): Team[] {
   const humanIndex = Math.floor(rng() * TEAM_COUNT);
-  const names = randomTeamNames(TEAM_COUNT);
   const trimmedHumanName = humanTeamName?.trim();
+  const names = draftTeamNames(TEAM_COUNT, rng, trimmedHumanName);
   if (trimmedHumanName) names[humanIndex] = trimmedHumanName;
   const teams: Team[] = [];
   for (let i = 0; i < TEAM_COUNT; i++) {

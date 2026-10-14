@@ -403,7 +403,6 @@ span.at-pc-name { cursor: default; }
 .at-calm.at-intro-terminal .mode-card-name { font-size: 20px; letter-spacing: 0; }
 .at-calm.at-intro-terminal .mode-card-step { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
 .at-calm.at-intro-terminal .mode-card-desc { font-size: 14px; }
-.at-calm.at-intro-terminal .team-name-input { font-family: inherit; }
 
 /* ---- Team tab (All-Time Draft) ---- */
 .at-calm .at-panel-title {
@@ -602,6 +601,7 @@ span.at-pc-name { cursor: default; }
   font: 800 11px var(--rr-disp); letter-spacing: 0; color: #fff; border: 1px solid rgba(255, 255, 255, 0.18); overflow: hidden;
 }
 .rr-mark--md { width: 34px; height: 34px; border-radius: 8px; font-size: 13px; }
+.team-logo { display: block; flex: none; }
 /* champion: the same layout in gold */
 .rs-hero.rr-hero.is-champ { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 35%, var(--calm-line)); background: radial-gradient(90% 120% at 0% 0%, rgba(255, 212, 121, 0.16) 0%, transparent 60%), var(--calm-raised); }
 .rs-hero.rr-hero.is-champ::before { background: linear-gradient(90deg, #c9952e, var(--at-gold, #ffd479), transparent 75%); }
@@ -939,9 +939,9 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm-search,
 .at-calm-select,
 .ss-select,
-.at-intro-terminal .team-name-input { box-sizing: border-box; height: 40px; padding-top: 0; padding-bottom: 0; }
-.at-intro-terminal .team-name-randomize { box-sizing: border-box; width: 40px; height: 40px; padding: 0; }
-.at-intro-terminal .team-name-input,
+.at-intro-terminal .team-pick { box-sizing: border-box; height: 56px; }
+.at-intro-terminal .team-name-randomize { box-sizing: border-box; width: 56px; min-width: 56px; height: 56px; padding: 0; font-size: 20px; border-radius: 2px; }
+.at-intro-terminal .team-pick,
 .at-intro-terminal .team-name-randomize { border-color: var(--term-cyan-dim); }
 .at-calm-seg { padding: 3px; }
 .at-calm-seg > button { line-height: 20px; padding-top: 6px; padding-bottom: 6px; }
@@ -1042,10 +1042,10 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .dg-grid { display: grid; gap: 6px; }
 .at-calm .dg-row { display: contents; }
 .at-calm .dg-team {
-  display: block; min-width: 0; padding: 8px 4px; text-align: center; line-height: 16px;
+  display: grid; justify-items: center; gap: 4px; min-width: 0; padding: 8px 4px; text-align: center; line-height: 16px;
   border-radius: 8px; background: var(--calm-raised-2); color: #a9c7e8; font-size: 11px; font-weight: 700;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.at-calm .dg-team-name { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .at-calm .dg-team.is-you { background: rgba(58, 176, 240, 0.16); color: #9ad6ff; box-shadow: inset 0 0 0 1px rgba(58, 176, 240, 0.55); }
 .at-calm .dg-round {
   display: flex; align-items: center; justify-content: center; font-family: var(--calm-num);
@@ -1320,3 +1320,8 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .at-grade-badge--none { background: #142133; color: var(--at-ink-soft); }
 .at-calm .tm-grades .at-grade-tip::after, .at-calm .pl-grades .at-grade-tip::after { left: auto; right: 0; }
 .at-calm .tm-grades .at-grade-tip::before, .at-calm .pl-grades .at-grade-tip::before { left: auto; right: 10px; }
+
+/* 2026-10-14: the playoff bracket's rows share the `pl-row` class with the draft's player list,
+   whose `.at-calm .pl-row` grid (#212) pushed bracket names and series wins out of their cards.
+   Bracket rows keep their own flex layout. */
+.at-calm .pl-series .pl-row { display: flex; gap: 8px; min-height: 0; padding: 4px 0; border-bottom: none; }
