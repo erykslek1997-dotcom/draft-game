@@ -1015,6 +1015,7 @@ function PlayoffsChapter({
   let kicker = 'Playoffs';
   let between: ReactElement | null = null;
   let panel: ReactElement | null = null;
+  let hub: ReactElement | null = null;
   // The bracket as this moment shows it: between rounds, the next round's matchups are already set.
   let bracketShown: (round: number, s: LivePlayoffSeries) => number = shown;
 
@@ -1023,32 +1024,27 @@ function PlayoffsChapter({
     title = youWon ? byId.get(youId)?.name ?? 'Champions' : `The ${mascot(byId.get(playoffs.championId))} win it all`;
     kicker = youWon ? 'Champions' : 'Playoffs';
   } else if (live && yourSeries && !seriesOver) {
-    const [wa, wb] = tally(yourSeries, live.game);
-    const [yw, ow] = yourSeries.teamAId === youId ? [wa, wb] : [wb, wa];
-    const opening = live.game === 0 && live.round === 0;
-    title = opening ? 'The bracket is set' : yourSeries.roundLabel;
-    panel = (
-      <SeriesPanel
+    // 2026-10-14, the playoffs redesign (mockup A, "series hub"; the user: "umiejscowienie elementów
+    // w symulacji playoffs jest mało intuicyjne"): the rounds as steps on top, your series as the
+    // big card with the next game as the one main button, then the matchup and a small bracket.
+    title = yourSeries.roundLabel;
+    hub = (
+      <SeriesHub
         s={yourSeries}
+        round={live.round}
         played={live.game}
         youId={youId}
         season={season}
+        rounds={rounds}
+        bracket={<Bracket rounds={rounds} shown={bracketShown} youId={youId} byId={byId} codes={codes} mark={mark} onWatch={(r, i, g) => setWatching({ round: r, series: i, game: g })} />}
         byId={byId}
+        codes={codes}
         mark={mark}
-        status={
-          simming && live.game === 6
-            ? `Game 7 · ${yw}-${ow} · winner takes it`
-            : live.game === 0
-              ? `${yourSeries.roundLabel} · your series`
-              : yw === ow
-                ? `Series tied ${yw}-${ow}`
-                : yw > ow
-                  ? `You lead ${yw}-${ow}`
-                  : `You trail ${yw}-${ow}`
-        }
         simming={simming}
         onPlay={(g) => setWatching({ round: live.round, series: run!.index, game: g })}
         onSim={() => setSimming(true)}
+        onSimAll={() => setReveal({ kind: 'all' })}
+        onBack={onBack}
       />
     );
   } else if (live && yourSeries && seriesOver) {
@@ -1057,6 +1053,11 @@ function PlayoffsChapter({
     const [wa, wb] = tally(yourSeries, yourSeries.games.length);
     const score = `${Math.max(wa, wb)}-${Math.min(wa, wb)}`;
     bracketShown = (round, s) => (round <= live.round ? s.games.length : 0);
+    // One line on how the series went (the old series panel's verdict, now on the screen after it).
+    const verdict = seriesVerdict(
+      yourSeries.games.map((g) => (yourSeries.teamAId === youId ? g.final : ([g.final[1], g.final[0]] as [number, number]))),
+      won,
+    );
     if (won && live.round < last) {
       const next = rounds[live.round + 1].find(isYours)!;
       const upset = seedOf(youId) - seedOf(opp) >= 3;
@@ -1067,6 +1068,7 @@ function PlayoffsChapter({
           <p className="pl-sub">
             The {byId.get(youId)?.name} beat the {byId.get(opp)?.name} {score}.
           </p>
+          {verdict && <p className="pl-sub">{verdict}</p>}
           <button type="button" className="pl-cta" onClick={() => setReveal({ kind: 'live', round: live.round + 1, game: 0 })}>
             On to the {next.roundLabel}: vs the {mascot(byId.get(oppOf(next)))} →
           </button>
@@ -1080,6 +1082,7 @@ function PlayoffsChapter({
           <p className="pl-sub">
             The {byId.get(youId)?.name} beat the {byId.get(opp)?.name} {score}.
           </p>
+          {verdict && <p className="pl-sub">{verdict}</p>}
           <button type="button" className="pl-cta" onClick={() => setReveal({ kind: 'all' })}>
             Lift the trophy →
           </button>
@@ -1093,6 +1096,7 @@ function PlayoffsChapter({
           <p className="pl-sub">
             The {byId.get(opp)?.name} beat you {score}.
           </p>
+          {verdict && <p className="pl-sub">{verdict}</p>}
           <button type="button" className="pl-cta" onClick={() => setReveal({ kind: 'all' })}>
             Watch the rest of the playoffs →
           </button>
@@ -1120,6 +1124,8 @@ function PlayoffsChapter({
   } else {
     title = 'Playoffs';
   }
+
+  if (hub) return <div className="pl-stage">{hub}</div>;
 
   return (
     <div className="pl-stage">
@@ -1217,114 +1223,245 @@ function BracketSeries({ s, shown, youId, byId, codes, mark, onWatch }: { s: Liv
   );
 }
 
-function SeriesPanel({
+function SeriesHub({
   s,
+  round: liveRound,
   played,
   youId,
   season,
+  rounds,
+  bracket,
   byId,
+  codes,
   mark,
-  status,
+  simming,
   onPlay,
   onSim,
-  simming = false,
+  onSimAll,
+  onBack,
 }: {
   s: LivePlayoffSeries;
+  /** The round being played (index into `rounds`); earlier rounds are over, so their results show. */
+  round: number;
   played: number;
   youId: string;
   season: LiveSeasonResult;
+  rounds: LivePlayoffSeries[][];
+  bracket: ReactElement;
   byId: Map<string, Team>;
+  codes: Map<string, string>;
   mark: Mark;
-  status: string;
+  /** Games are landing one by one: the buttons wait. */
+  simming: boolean;
   onPlay: (game: number) => void;
   onSim: () => void;
-  /** Games are landing one by one: the buttons wait. */
-  simming?: boolean;
+  onSimAll: () => void;
+  onBack: () => void;
 }) {
+  const [phoneTab, setPhoneTab] = useState<'matchup' | 'bracket'>('matchup');
   const yourSide = s.teamAId === youId ? 0 : 1;
   const opp = yourSide === 0 ? s.teamBId : s.teamAId;
   const row = (id: string) => season.standings.find((r) => r.teamId === id)!;
   const seed = (id: string) => season.standings.findIndex((r) => r.teamId === id) + 1;
-  const pg = (id: string) => row(id).pointsFor / Math.max(1, row(id).wins + row(id).losses);
-  const og = (id: string) => row(id).pointsAgainst / Math.max(1, row(id).wins + row(id).losses);
+  const youWon = (g: { final: [number, number] }) => (yourSide === 0 ? g.final[0] > g.final[1] : g.final[1] > g.final[0]);
+  const games = s.games.slice(0, played);
+  const yw = games.filter(youWon).length;
+  const ow = games.length - yw;
   const p = seriesWinProbability(gameWinProbability(yourSide === 0 ? s.margin : -s.margin));
   const top = (id: string) => season.players.filter((l) => l.teamId === id).sort((a, b) => gameScorePerGame(b) - gameScorePerGame(a)).slice(0, 3);
-  const tape = (label: string, a: number, b: number, higher: boolean) => (
-    <>
-      <span className={`pl-t-l${(higher ? a > b : a < b) ? ' is-better' : ''}`}>{f1(a)}</span>
-      <span className="pl-t-c">{label}</span>
-      <span className={`pl-t-r${(higher ? b > a : b < a) ? ' is-better' : ''}`}>{f1(b)}</span>
-    </>
-  );
-  const side = (id: string, right: boolean) => (
-    <div className={`pl-vs-side${right ? ' is-right' : ''}`}>
-      {mark(id, 'md')}
-      <span className="pl-vs-seed">
-        #{seed(id)} · {row(id).wins}-{row(id).losses}
-      </span>
-      <span className="pl-vs-name">{byId.get(id)?.name}</span>
-    </div>
-  );
+  const [mine, theirs] = [top(youId), top(opp)];
   const preview = seriesPreview(season, youId, opp);
-  const finished = played >= s.games.length && s.games.length > 0;
-  const verdict = finished ? seriesVerdict(s.games.map((g) => (yourSide === 0 ? g.final : [g.final[1], g.final[0]]) as [number, number]), s.winnerId === youId) : null;
-  return (
-    <div className="pl-card is-gold">
-      <div className="pl-label is-gold">{status}</div>
-      {(verdict || preview.length > 0) && <p className="pl-preview">{verdict ?? preview.join(' ')}</p>}
-      <div className="pl-vs">
-        {side(youId, false)}
-        <span className="pl-vs-mid">vs</span>
-        {side(opp, true)}
-      </div>
-      <div className="pl-tape">
-        {tape('Points', pg(youId), pg(opp), true)}
-        {tape('Allowed', og(youId), og(opp), false)}
-        {tape('Diff', pg(youId) - og(youId), pg(opp) - og(opp), true)}
-      </div>
-      <div className="pl-odds" aria-label={`${Math.round(p * 100)}% to win the series`}>
-        <i style={{ width: `${Math.round(p * 100)}%` }} />
-      </div>
-      <div className="pl-odds-l">
-        <span>{Math.round(p * 100)}% to win the series</span>
-        <span>{100 - Math.round(p * 100)}%</span>
-      </div>
-      <div className="pl-keys">
-        {[youId, opp].map((id) => (
-          <div key={id}>
-            {top(id).map((l) => (
-              <PlayerRow key={l.span.id} size="support" name={l.span.playerName} meta={`${l.span.primaryPosition} · ${f1(per(l, 'pts'))} / ${f1(per(l, 'reb'))} / ${f1(per(l, 'ast'))}`} />
-            ))}
-          </div>
-        ))}
-      </div>
-      <div className="pl-tracker" aria-label="Series games">
-        {Array.from({ length: 7 }, (_, i) => {
-          if (i < played) {
-            const g = s.games[i];
-            const won = yourSide === 0 ? g.final[0] > g.final[1] : g.final[1] > g.final[0];
-            return (
-              <button key={i} type="button" className={won ? 'is-w' : 'is-l'} onClick={() => onPlay(i)} title={`Game ${i + 1}: ${g.final[0]}-${g.final[1]} — watch again`}>
-                G{i + 1}
-              </button>
-            );
-          }
-          return (
-            <span key={i} className={i === played ? 'is-next' : ''}>
-              G{i + 1}
-            </span>
-          );
-        })}
-      </div>
-      <div className="pl-actions">
-        <button type="button" className="pl-cta" onClick={() => onPlay(played)} disabled={simming}>
-          ▶ Play game {played + 1}
-        </button>
-        <button type="button" className="pl-ghost" onClick={onSim} disabled={simming}>
-          {simming ? `Game ${played + 1}…` : played === 0 ? 'Sim the series' : 'Sim the rest'}
-        </button>
-      </div>
+  const code = (id: string) => codes.get(id) ?? '';
+  const status = simming && played === 6 ? 'Game 7 — winner takes it' : yw === ow ? (played === 0 ? 'Best of seven' : 'Series tied') : yw > ow ? 'You lead the series' : 'You trail the series';
+  const side = (id: string, right: boolean, you: boolean) => (
+    <div className={`ph-team${right ? ' is-right' : ''}`}>
+      {mark(id, 'md')}
+      <span className="ph-team-id">
+        <span className={`ph-team-tag${you ? ' is-you' : ''}`}>{you ? 'You' : seed(id) === 1 ? 'Top seed' : 'Opponent'}</span>
+        <span className="ph-team-name">{byId.get(id)?.name}</span>
+        <span className="ph-team-rec">
+          #{seed(id)} · {row(id).wins}-{row(id).losses}
+        </span>
+      </span>
     </div>
+  );
+  return (
+    <>
+      <div className="ph-top">
+        <button type="button" className="pl-ghost" onClick={onBack}>
+          ← Season
+        </button>
+        <nav className="ph-steps" aria-label="Playoff rounds">
+          {rounds.map((round, r) => {
+            const yours = round.find((x) => x.teamAId === youId || x.teamBId === youId);
+            const label = round[0].roundLabel;
+            if (r < liveRound && yours) {
+              const o = yours.teamAId === youId ? yours.teamBId : yours.teamAId;
+              const [w, l] = yours.teamAId === youId ? [yours.gamesWonA, yours.gamesWonB] : [yours.gamesWonB, yours.gamesWonA];
+              return (
+                <span key={r} className="ph-step is-done">
+                  <span className="ph-step-mark" aria-hidden>
+                    ✓
+                  </span>{' '}
+                  {label} · beat {code(o)} {w}-{l}
+                </span>
+              );
+            }
+            return (
+              <span key={r} className={`ph-step${r === liveRound ? ' is-now' : ''}`}>
+                {r === liveRound ? `● ${label} · now` : label}
+              </span>
+            );
+          })}
+        </nav>
+        <button type="button" className="ph-link" onClick={onSimAll}>
+          Sim to the end
+        </button>
+      </div>
+
+      <section className="ph-hero" aria-label="Your series">
+        <div className="ph-score-row">
+          {side(youId, false, true)}
+          <div className="ph-score">
+            <span className="ph-round">{s.roundLabel} · best of 7</span>
+            <span className="ph-big">
+              {yw} <span className="ph-dash">–</span> {ow}
+            </span>
+            <span className="ph-status">{status}</span>
+          </div>
+          {side(opp, true, false)}
+        </div>
+        <div className="ph-games" role="list" aria-label="Series games">
+          {Array.from({ length: 7 }, (_, i) => {
+            if (i < played) {
+              const g = s.games[i];
+              const w = youWon(g);
+              const [us, them] = yourSide === 0 ? g.final : [g.final[1], g.final[0]];
+              return (
+                <button key={i} type="button" role="listitem" className={`ph-game ${w ? 'is-w' : 'is-l'}`} onClick={() => onPlay(i)} title={`Watch game ${i + 1} again`}>
+                  <span className="ph-game-n">
+                    <span className="ph-long">Game {i + 1} · ▶</span>
+                    <span className="ph-short">G{i + 1}</span>
+                  </span>
+                  <span className="ph-game-s">
+                    <b>{w ? 'W' : 'L'}</b>
+                    <span className="ph-long">
+                      {' '}
+                      {us}–{them}
+                    </span>
+                  </span>
+                </button>
+              );
+            }
+            if (i === played) {
+              return (
+                <div key={i} role="listitem" className="ph-game is-next">
+                  <span className="ph-game-n">
+                    <span className="ph-long">Game {i + 1}</span>
+                    <span className="ph-short">G{i + 1}</span>
+                  </span>
+                  <span className="ph-game-s">{simming ? 'playing…' : 'next'}</span>
+                </div>
+              );
+            }
+            return (
+              <div key={i} role="listitem" className="ph-game is-later">
+                <span className="ph-game-n">
+                  <span className="ph-long">Game {i + 1}</span>
+                  <span className="ph-short">G{i + 1}</span>
+                </span>
+                <span className="ph-game-s">{i >= 4 ? 'if needed' : ''}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="ph-cta-row">
+          <button type="button" className="pl-cta ph-cta" onClick={() => onPlay(played)} disabled={simming}>
+            ▶ Play game {played + 1}
+          </button>
+          <button type="button" className="pl-ghost ph-sim" onClick={onSim} disabled={simming}>
+            {simming ? `Game ${played + 1}…` : played === 0 ? 'Sim the series' : 'Sim the rest'}
+          </button>
+          <span className="ph-hint">A game takes about a minute to watch</span>
+        </div>
+      </section>
+
+      <div className="ph-tabs" role="tablist" aria-label="Series details">
+        <button type="button" role="tab" aria-selected={phoneTab === 'matchup'} className={phoneTab === 'matchup' ? 'is-on' : ''} onClick={() => setPhoneTab('matchup')}>
+          Matchup
+        </button>
+        <button type="button" role="tab" aria-selected={phoneTab === 'bracket'} className={phoneTab === 'bracket' ? 'is-on' : ''} onClick={() => setPhoneTab('bracket')}>
+          Bracket
+        </button>
+      </div>
+      <div className="ph-below">
+        <section className={`ph-card${phoneTab === 'matchup' ? '' : ' is-off-phone'}`} aria-label="The matchup">
+          <h3 className="ph-h">The matchup</h3>
+          {preview.length > 0 && (
+            <div className="ph-edges">
+              {preview.map((line, i) => (
+                <p key={i} className={`ph-edge ${line.startsWith('Their') ? 'is-them' : 'is-you'}`}>
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
+          <div className="ph-odds">
+            <span>Series odds</span>
+            <span className="ph-odds-bar" aria-label={`${Math.round(p * 100)}% to win the series`}>
+              <i style={{ width: `${Math.round(p * 100)}%` }} />
+            </span>
+            <b>{Math.round(p * 100)}%</b>
+          </div>
+          <div className="ph-duels">
+            <div className="ph-duel is-head">
+              <span>{byId.get(youId)?.name}</span>
+              <span />
+              <span>{byId.get(opp)?.name}</span>
+            </div>
+            {mine.map((l, i) => {
+              const o = theirs[i];
+              return (
+                <div key={l.span.id} className="ph-duel">
+                  <span className="ph-pl">
+                    <Face name={l.span.playerName} size="sm" />
+                    <span className="ph-pl-t">
+                      <b>
+                        <PlayerName line={l} /> <small>{l.span.primaryPosition}</small>
+                      </b>
+                      <span>
+                        {f1(per(l, 'pts'))} · {f1(per(l, 'reb'))} · {f1(per(l, 'ast'))}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="ph-vs">vs</span>
+                  {o ? (
+                    <span className="ph-pl is-right">
+                      <span className="ph-pl-t">
+                        <b>
+                          <PlayerName line={o} /> <small>{o.span.primaryPosition}</small>
+                        </b>
+                        <span>
+                          {f1(per(o, 'pts'))} · {f1(per(o, 'reb'))} · {f1(per(o, 'ast'))}
+                        </span>
+                      </span>
+                      <Face name={o.span.playerName} size="sm" />
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                </div>
+              );
+            })}
+            <span className="ph-foot">Season averages · pts · reb · ast</span>
+          </div>
+        </section>
+        <section className={`ph-card ph-bracket${phoneTab === 'bracket' ? '' : ' is-off-phone'}`} aria-label="Bracket">
+          <h3 className="ph-h">Bracket</h3>
+          {bracket}
+        </section>
+      </div>
+    </>
   );
 }
 
