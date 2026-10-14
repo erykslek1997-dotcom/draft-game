@@ -210,6 +210,18 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 1. **UI** — zakres do ustalenia na starcie (kandydaci: ton wyniku według miejsca w Mini/All-Time,
    karta na ekranach wyników Draw Five, stół Draw Five, animacja lotu karty, linia Scouta dla
    graczy Hustle, porządki po playteście).
+   - **Nowy widok draftu (makiety zaakceptowane 2026-10-14)** — board z komórkami twarz/pozycja/
+     nazwisko, pas „Before you pick again”, przełączniki pozycji, Big Board zamiast kolejki, bez
+     Hustle w widoku; zakładka Team (skład z latami + rotacja paskami minut), wybór lat jako sheet.
+     Makiety: https://claude.ai/artifact/1gRcJSpbdTv2oqzmnyUjQW. Plan: 6 PR-ów (board → szkielet →
+     lista graczy → Big Board → Team → dopasowanie reszty).
+   - **Koła ratunkowe (lifelines)** — Draft Desk i ostrzeżenie o rim pressure przestają być darmowe
+     i wracają jako lifelines, razem z War Room / Chalk Talk / League Sources (osobny etap).
+   - **Widok symulacji meczu w stylu „MyLEAGUE Simcast” (NBA 2K)** — pomysł użytkownika
+     2026-10-14: wynik z logami drużyn, kwarta i zegar, boisko w barwach drużyn, wynik po kwartach,
+     zakładki Box score / Porównanie drużyn / Match-upy — ale z **relacją na żywo** (play-by-play)
+     jako głównym elementem. Dziś mecz na żywo to `src/components/LiveGame.tsx` (tablica, szansa
+     wygranej, kwarty, play-by-play, box score) — przebudowa wyglądu, nie nowy silnik.
 2. **Kalibracja silnika V2 — „dziady” i Hustle**: gracze dawnych er (spacing F u strzelców sprzed
    linii za 3 — West, Maravich, Barry; D-TAL sprzed 1973-74 bez przechwytów i bloków; X. McDaniel
    D-TAL 22; półdystans i rim pressure sprzed 1997; przegląd starych resztek kalibracji z Etapu 1),
