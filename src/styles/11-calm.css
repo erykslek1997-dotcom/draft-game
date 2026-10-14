@@ -1109,3 +1109,6 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
   .at-calm .wr-caps { order: 3; flex-basis: 100%; }
   .at-calm .wr-caps-track { flex: 1; width: auto; }
 }
+/* 2026-10-14: Team is a full-width tab now (no side-by-side layout); until its redesign lands, keep
+   the roster table and the rotation cards at a readable width instead of stretched across 1920px. */
+.at-calm .at-merge-team-col { max-width: 1100px; }
