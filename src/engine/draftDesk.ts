@@ -5,6 +5,7 @@ import { computeDefensiveTalent } from './defensiveTalent';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { rimPressureForFit, rimPressureTeam } from './rimPressure';
 import { effectiveTalent } from './grades';
+import { surname } from './desk';
 
 /**
  * 2026-09-25, user's ask (in place of the in-draft rim-pressure hint: "wypowiedzi ekspertów którzy
@@ -55,12 +56,10 @@ interface Take {
 const RIM_SOFT_DTAL = 62;
 const RIM_SOFT_BLOCKS = 1.3;
 const ON_BALL_ARCHETYPES = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'];
-const NAME_SUFFIXES = new Set(['Jr.', 'Sr.', 'II', 'III', 'IV']);
 
 /** Last name the way a TV desk says it ("Curry", "Griffey Jr." → "Griffey"). */
 export function deskName(span: PlayerSpan): string {
-  const parts = span.playerName.split(' ').filter((p) => !NAME_SUFFIXES.has(p));
-  return parts[parts.length - 1] ?? span.playerName;
+  return surname(span);
 }
 
 function list(names: string[]): string {

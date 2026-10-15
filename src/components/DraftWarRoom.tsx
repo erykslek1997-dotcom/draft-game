@@ -47,6 +47,7 @@ export function DraftStatus({
   maxThisPick,
   scoutsLeft,
   onScoutsInfo,
+  phone,
   children,
 }: {
   youOnClock: boolean;
@@ -67,6 +68,8 @@ export function DraftStatus({
   maxThisPick: number | null;
   scoutsLeft: number | null;
   onScoutsInfo: () => void;
+  /** Phone the Desk's chip (PhoneDesk.tsx), next to the scouting reports. */
+  phone?: ReactNode;
   /** Extra row (the phone's five dots). */
   children?: ReactNode;
 }) {
@@ -110,6 +113,7 @@ export function DraftStatus({
             <span className="wr-scouts-label"> scouting report{scoutsLeft === 1 ? '' : 's'} left</span>
           </button>
         )}
+        {phone}
         {slotsLeft > 0 && (
           <span className="wr-caps">
             <span className="wr-caps-track" aria-hidden>

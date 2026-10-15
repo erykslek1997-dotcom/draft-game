@@ -1720,7 +1720,7 @@ const LOOKAHEAD_TASTE_COMPLETION_SHARE = 0.5;
  * Completes a roster with the best affordable players still on the board, covering each position
  * at least twice first — the team a candidate leaves room for.
  */
-function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[], capLeft: number, slots: number): PlayerSpan[] {
+export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[], capLeft: number, slots: number): PlayerSpan[] {
   const out = [...roster];
   const names = new Set(out.map((p) => normalizePlayerName(p.playerName)));
   let cap = capLeft;

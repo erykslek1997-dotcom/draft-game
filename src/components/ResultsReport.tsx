@@ -9,6 +9,10 @@ import { Face } from './ShotChip';
 import { FitName } from './FitName';
 import { TeamLogo } from './TeamLogo';
 import { hasTeamLogo, teamHue } from './teamLogoKit';
+import type { DeskLine } from '../engine/desk';
+import { DeskVoices } from './DeskVoices';
+
+export { DeskVoices };
 
 /**
  * 2026-10-08, results look C (approved mockup, "rywale 1 do 1 co dla nas"): the pieces one team's
@@ -201,73 +205,6 @@ export function ProfileBars({ rows }: { rows: ProfileRow[] }) {
   );
 }
 
-export interface DeskVoice {
-  who: 'The Coach' | 'The Analyst' | 'The Scout';
-  what: string;
-  text: string;
-  tone?: 'warn';
-}
-
-export function DeskVoices({ voices }: { voices: DeskVoice[] }) {
-  return (
-    <div className="rr-voices">
-      {voices.map((v, i) => (
-        <div className={`rr-voice${v.tone ? ` rr-voice--${v.tone}` : ''}`} key={i}>
-          <small>
-            {v.who} · {v.what}
-          </small>
-          <p>{v.text}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** The insight sentences talk to the player ("your rim protection…"); inside a rival's report they
- * talk about that team instead. */
-export function theirVoice(text: string): string {
-  return text
-    .replace(/\b(make|makes|give|gives|giving|leaves|lets|cost|costs|hurt|hurts|for) you\b/g, '$1 them')
-    .replace(/\bYou'll\b/g, "They'll")
-    .replace(/\byou'll\b/g, "they'll")
-    .replace(/\bYou're\b/g, "They're")
-    .replace(/\byou're\b/g, "they're")
-    .replace(/\bYour\b/g, 'Their')
-    .replace(/\byour\b/g, 'their')
-    .replace(/\bYou\b/g, 'They')
-    .replace(/\byou\b/g, 'they');
-}
-
-/** Voices for a team's report. 2026-10-09 (descriptions plan, "Akcept"): each voice has its own
- * job instead of taking turns — the Coach says what works, the Analyst what goes wrong and why (the
- * concerns carry the numbers), the Scout how the team plays (`styleLines.ts`) and, in your report,
- * what to do next draft. */
-export function voicesFor({
-  strengths,
-  concerns,
-  style,
-  tip,
-  strengthLabel,
-  concernLabel,
-  tipLabel,
-  third = false,
-}: {
-  strengths: string[];
-  concerns: string[];
-  style?: string;
-  tip?: string;
-  strengthLabel: string;
-  concernLabel: string;
-  tipLabel?: string;
-  third?: boolean;
-}): DeskVoice[] {
-  const say = (text: string) => (third ? theirVoice(text) : text);
-  const voices: DeskVoice[] = strengths.map((text) => ({ who: 'The Coach', what: strengthLabel, text: say(text) }));
-  concerns.forEach((text) => voices.push({ who: 'The Analyst', what: concernLabel, text: say(text), tone: 'warn' }));
-  if (style) voices.push({ who: 'The Scout', what: 'how they play', text: style });
-  if (tip) voices.push({ who: 'The Scout', what: tipLabel ?? 'next draft', text: tip, tone: 'warn' });
-  return voices;
-}
 
 export function PlaysLike({ comp }: { comp: HistoricalCompMatch }) {
   const badge = compBadge(comp.comp);
@@ -299,7 +236,7 @@ export function TeamReport({
 }: {
   profile: ProfileRow[];
   comp: HistoricalCompMatch | null;
-  voices: DeskVoice[];
+  voices: DeskLine[];
   extras: ReportExtra[];
 }) {
   const [open, setOpen] = useState<string | null>(null);

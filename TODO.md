@@ -385,6 +385,39 @@ do dołu i zakładki Matchup/Bracket).
      czasach…”), trener od obrony, analityk od liczb, stary skaut — każdy z imieniem, nazwiskiem i
      stałym sposobem mówienia. Bez kopiowania prawdziwych osób. Dotyczy Draft Desk (wraca jako
      lifeline) i linii trenera na wynikach.
+     **Obsada (użytkownik, 2026-10-14), 12 ekspertów:** Mattia Sosini (nowoczesna koszykówka, nie
+     lubi starszej daty), Matt Shyman (obrona), Davyd Solinhakov (twarda koszykówka lat 2000), Jacob
+     Binash (lata 80.), Mattheus Jertcheck (wszystko sprzed 2000), Mark Rotation (krótkie ławki),
+     Micheal Rightwing (rywal Moonbata: wchodzi razem z nim i prostuje go zdrowym rozsądkiem, bez
+     liczb; decyzja użytkownika — bez wątku niskich obrońców), Filippo Batterista (składy two-way), Mikhail
+     Prabuckov (fan Kobe), Jake Onoffsky (statystyk; było Jake Bentaylor), Bart Moonbat (głupie,
+     pewne siebie opinie — dżoker, nigdy sam; ok. 70% bredzi i ktoś go prostuje, ok. 30% przypadkiem
+     ma rację, z głupiego powodu, i ktoś się wtrąca i go broni — decyzja użytkownika „30/70”; racja
+     tylko wtedy, gdy silnik naprawdę ocenia ten ruch dobrze, żeby nie wprowadzał w błąd), Igor Bannerman (fan Celtics;
+     było Igor Simmons). Dołączyli (2026-10-14): prowadzący **Eric B. Slim** (otwiera, ucisza
+     kłótnie, zamyka werdyktem — zastępuje anonimowe „Desk consensus”), **Natalie Novacka** (kapolog:
+     cap gracza wobec oceny, okazje i przepłaty), **Jeremy May** (lata 90. i Jordan, rywal
+     Prabuckova), **Lex Superteam** (tylko gwiazdy, rywal Rotation i Novackiej), **Zoran Eurostep**
+     (gracze spoza USA, rywal Sosiniego). Pesymista od kontuzji (DUR) — na razie nie.
+     **Gusta ekspertów (2026-10-15, lista użytkownika):** ulubieni i znienawidzeni gracze każdego eksperta
+     oraz drużyny (Rotation: Utah/Lakers, Binash: Lakers, Natalie i Rightwing: Houston) są w
+     `src/engine/deskTastes.ts`; zachwyt albo „trash talk” odpowiada ktoś, kto czuje odwrotnie. Davyd: oko
+     i finezja z półdystansu; Shyman: krótkie zdania, chłopski rozum; Jertcheck: przekorny, „Look it up”;
+     Onoffsky ufa tylko erze play-by-play. Bez wyzwisk homofobicznych.
+     Głosy (tiki, sposób argumentowania) inspirowane archiwum ligowego Discorda za zgodą graczy;
+     archiwum nie trafia do repozytorium, w kodzie i makiecie są tylko fikcyjne postacie. Na antenie
+     3–5 ekspertów + prowadzący; kolejność: wyniki → Draft Desk → wtrącenia (decyzja 2026-10-14). Nazwiska Jake'a i Igora zmienione, bo wskazywały prawdziwe osoby (Ben
+     Taylor, Bill Simmons). Makieta: https://claude.ai/artifact/NJFXtxXxKQgtybQPJBbXrc.
+     **Pomysł:** zmienny panel jak w studiu — każdy ekspert ma „obiektyw” (ocena składu od −1 do +1
+     z jego punktu widzenia + nazwiska jako dowód), na antenę wchodzą 3–5 najsilniejszych opinii (co
+     najmniej jedna na plus i jedna na minus), rywale wchodzą parą i sobie odpowiadają (Sosini ↔
+     Jertcheck/Binash, Bannerman ↔ Prabuckov, Moonbat ↔ Rightwing (zawsze razem) i Onoffsky
+     (liczby). Moonbat co ok. 4. raz. Panel z
+     ziarna draftu. Kolejność: (1) ekran wyników Mini/All-Time zamiast Coach/Analyst/Scout
+     (`voicesFor`, `QuickFive.tsx`), (2) Draft Desk (`engine/draftDesk.ts`), (3) wtrącenia w pasku w
+     trakcie draftu przy wyrazistych momentach (Kobe u kogokolwiek, gracz sprzed 1980, Celtic, niski
+     rozgrywający w piątce — komentuje Shyman). Liczby Onoffsky'ego zawsze z danych gracza. Otwarte: liczba ekspertów na
+     antenie, częstotliwość Moonbata, kolejność kroków.
    - **Oceny bez kontekstu (2026-10-14)** — Wilt i Oscar mają F w spacingu, bo grali przed linią za 3;
      sama litera tego nie mówi. Pokazać „—” z podpowiedzią „No 3-point line in his era” zamiast F
      dla stretchy sprzed 1979-80. Do tego **podpowiedź przy każdej literce** (użytkownik: „żeby była
@@ -845,7 +878,10 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       rundzie ekran „Free agency”: do 3 graczy spośród niewybranych, łącznie do 6 caps; ławka 10–12.
       Pytania na tę sesję: (1) 6 caps osobny budżet czy z niewydanych caps? (2) czy ławka 10–12
       liczy się do Bench score? (3) AI też podpisuje? (M)
-- [ ] **Koła ratunkowe — osobna sesja** (ustalone 2026-10-07, makieta zaakceptowana:
+- [x] **Koła ratunkowe → „Phone the Desk” (zrobione 2026-10-15,** makieta https://claude.ai/artifact/5ZSUn6nxWsoiybnPvmtGDm):
+      3 telefony na draft do 6 dyżurnych ekspertów (z ziarna), zawsze 3 nazwiska wg gustu eksperta, War Room
+      Onoffsky'ego (12 bez kolejności), plotka Erica (rundy 3–4), Chalk Talk (cały panel), Moonbat za darmo;
+      `src/engine/deskCalls.ts`, `src/components/PhoneDesk.tsx`. Pierwotny plan poniżej. (ustalone 2026-10-07, makieta zaakceptowana:
       `mock-cards2-*`). Każde raz na draft, przyciski w rzędzie filtrów w stylu „Affordable”:
   - **War Room** — przez jeden pick board pokazuje tylko ~10–12 graczy, których wybiera Twój
     front office (ranking po tym, ile dany gracz dodaje do oceny składu); pasek „your front office

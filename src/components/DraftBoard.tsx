@@ -51,6 +51,8 @@ import { BigBoardPanel, DraftCapsStrip, DraftStatus, FiveDots, RivalsLane, YourF
 import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
 import { YearsPicker } from './YearsPicker';
 import { PlayerPeekModal } from './PlayerPeekModal';
+import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
+import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
 
 /** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
  * players; anyone past it is reachable via search or a position filter (both land well under the
@@ -564,6 +566,49 @@ export default function DraftBoard({
       return [];
     }
   });
+  // 2026-10-15, Phone the Desk (PhoneDesk.tsx, engine/deskCalls.ts): the calls used this draft,
+  // kept per draft seed like the scouting reports and the Big Board.
+  const callsKey = `draftverse.calls.v1.${state.seed}`;
+  const [callLog, setCallLog] = useState<CallLog>(() => {
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('draftverse.calls.v1.') && key !== callsKey) localStorage.removeItem(key);
+      }
+      const raw = localStorage.getItem(callsKey);
+      return raw ? { ...EMPTY_CALL_LOG, ...(JSON.parse(raw) as CallLog) } : EMPTY_CALL_LOG;
+    } catch {
+      return EMPTY_CALL_LOG;
+    }
+  });
+  function saveCallLog(next: CallLog) {
+    setCallLog(next);
+    try {
+      localStorage.setItem(callsKey, JSON.stringify(next));
+    } catch {
+      // storage unavailable — the calls still count for this session
+    }
+  }
+  const [callSheetOpen, setCallSheetOpen] = useState(false);
+  const [activeCall, setActiveCall] = useState<{ result: CallResult | null; number: number | null } | null>(null);
+  const [warRoomShowAll, setWarRoomShowAll] = useState(false);
+  const callPickNo = state.round * TEAM_COUNT + state.pickInRound;
+  const warRoomSet = useMemo(
+    () => (callLog.warRoomPick === callPickNo && callLog.warRoom && !warRoomShowAll ? new Set(callLog.warRoom) : null),
+    [callLog.warRoomPick, callLog.warRoom, callPickNo, warRoomShowAll],
+  );
+  useEffect(() => setWarRoomShowAll(false), [callPickNo]);
+  function placeDeskCall(id: CallId) {
+    setCallSheetOpen(false);
+    setActiveCall({ result: null, number: null });
+    // A beat for the "dialling" frame: the War Room scores up to forty rosters.
+    window.setTimeout(() => {
+      const result = placeCall(id, state, state.seed);
+      const next = logCall(callLog, result, state);
+      saveCallLog(next);
+      setActiveCall({ result, number: id === 'moonbat' ? null : next.used.length });
+    }, 30);
+  }
   function saveBigBoard(next: string[]) {
     setBigBoard(next);
     try {
@@ -1060,7 +1105,14 @@ export default function DraftBoard({
       .filter((g) => !hiddenPositions.has(careerPosition(g)))
       .filter((g) => g.playerName.toLowerCase().includes(q))
       .filter((g) => matchesRoleFilter(g.bestTalentSpan, roleFilter))
+      .filter((g) => !warRoomSet || warRoomSet.has(normalizePlayerName(g.playerName)))
       .sort((a, b) => {
+        // Onoffsky's War Room: no order, no numbers — just grouped by position.
+        if (warRoomSet) {
+          const pos = ALL_POSITIONS.indexOf(careerPosition(a)) - ALL_POSITIONS.indexOf(careerPosition(b));
+          if (pos !== 0) return pos;
+          return a.playerName.localeCompare(b.playerName);
+        }
         // 2026-10-08: the board's own sort (player mode) — cheapest first, or the most TAL for
         // the caps (TAL minus two points a cap, so a 99 costing 21 ranks with an 80 costing 10).
         if (mode === 'player' && boardSort !== 'best') {
@@ -1099,7 +1151,7 @@ export default function DraftBoard({
       });
     return { groups: matched.slice(0, DRAFT_LIST_LIMIT), totalMatched: matched.length };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enrichedGroups, state.draftedIds, ghosts, hiddenPositions, search, mode, needBiasActive, openStarterPositions, roleFilter, boardSort]);
+  }, [enrichedGroups, state.draftedIds, ghosts, hiddenPositions, search, mode, needBiasActive, openStarterPositions, roleFilter, boardSort, warRoomSet]);
   const priciestAvailable = useMemo(
     () => state.pool.reduce((max, p) => (!state.draftedIds.has(p.id) && p.fga > max ? p.fga : max), 0),
     [state.pool, state.draftedIds],
@@ -1239,6 +1291,25 @@ export default function DraftBoard({
           onLeave={onExit}
         />
       )}
+      {callSheetOpen && youOnClock && (
+        <CallSheet
+          options={callOptions(state, state.seed, callLog)}
+          left={CALLS_PER_DRAFT - callLog.used.length}
+          pickLabel={`Pick #${callPickNo + 1} · ${humanTeam.roster.length ? humanTeam.roster.map((p) => p.playerName.split(' ').slice(-1)[0]).slice(0, 4).join(', ') : 'empty roster'}`}
+          onCall={placeDeskCall}
+          onClose={() => setCallSheetOpen(false)}
+        />
+      )}
+      {activeCall && (
+        <CallWindow
+          result={activeCall.result}
+          callNumber={activeCall.number}
+          starred={(name) => bigBoard.includes(name)}
+          onToggleStar={toggleBigBoard}
+          onStarAll={(players) => saveBigBoard([...bigBoard, ...players.map((p) => p.playerName).filter((n) => !bigBoard.includes(n))])}
+          onClose={() => setActiveCall(null)}
+        />
+      )}
       {helpOpen && (
         <DraftHelpDialog
           howToPlay={howToPlay}
@@ -1324,6 +1395,11 @@ export default function DraftBoard({
         maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
         scoutsLeft={showJudgeMetrics ? null : SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
         onScoutsInfo={() => setHelpOpen(true)}
+        phone={
+          showJudgeMetrics || state.commissionerMode ? null : (
+            <PhoneChip left={CALLS_PER_DRAFT - callLog.used.length} live={youOnClock} onOpen={() => setCallSheetOpen(true)} />
+          )
+        }
       >
         {isStackedLayout && (
           <FiveDots
@@ -1681,6 +1757,9 @@ export default function DraftBoard({
                   stats, without the grid's row heights jumping around per-card. An arrow still
                   drafts the best season immediately, no modal needed for the common case. Player
                   mode only — developer/tester mode keeps the dense table above unchanged. */}
+              {!showJudgeMetrics && callLog.warRoomPick === callPickNo && callLog.warRoom && youOnClock && (
+                <WarRoomBanner count={callLog.warRoom.length} showAll={warRoomShowAll} onToggle={() => setWarRoomShowAll((v) => !v)} />
+              )}
               {!showJudgeMetrics && (
                 <DraftPlayerList
                   rows={groups.slice(0, visibleCount).map((group) => {

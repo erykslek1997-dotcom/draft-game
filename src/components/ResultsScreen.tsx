@@ -44,12 +44,11 @@ import {
   TeamReport,
   VsYou,
   fieldGrade,
-  voicesFor,
-  type DeskVoice,
   type ProfileRow,
   type ReportExtra,
 } from './ResultsReport';
 import { teamHue } from './teamLogoKit';
+import { DESK_CAST, buildDesk, buildRivalDesk, theirVoice, type DeskLine } from '../engine/desk';
 import { FitName, FitTeam } from './FitName';
 import { exportFullDraft } from '../engine/draftExport';
 
@@ -352,7 +351,7 @@ function HeroResult({
   rosterTeam: Team;
   /** The profile bars the report shows — the share card shows the same ones. */
   profile: ProfileRow[];
-  quote: DeskVoice | null;
+  quote: DeskLine | null;
   report: ReactNode;
   standings: ReactNode;
   onNewDraft?: () => void;
@@ -678,8 +677,8 @@ function HeroResult({
       </div>
       {quote && (
         <p className="rr-quote">
-          <span>{quote.who}</span>
-          <q>{quote.text}</q>
+          <span>{DESK_CAST[quote.who].name}</span>
+          <q>{quote.text.replace(/\s*\*.+?\*\s*/g, ' ').trim()}</q>
         </p>
       )}
     </header>
@@ -895,18 +894,18 @@ function yourVoices({
   fieldSize,
   breakdown,
   fieldMedians,
+  seed,
 }: {
   team: Team;
   rank: number;
   fieldSize: number;
   breakdown: ScoreBreakdown;
   fieldMedians: Record<string, number>;
-}): DeskVoice[] {
+  seed: number;
+}): DeskLine[] {
   const snapshot = buildTeamFeatureSnapshot(team);
   const insights = generateRosterInsights(snapshot, undefined, insightContextFor(breakdown, rank, fieldSize));
-  const won = rank === 1;
   const podium = rank <= 3;
-  const contender = rank === 4;
   const scores: Record<string, number> = {
     Talent: breakdown.talentScore,
     'Bench Depth': breakdown.benchDepthScore,
@@ -918,29 +917,31 @@ function yourVoices({
   };
   const [weakestLabel] =
     Object.entries(scores).sort((a, b) => a[1] - (fieldMedians[a[0]] ?? 0) - (b[1] - (fieldMedians[b[0]] ?? 0)))[0] ?? [];
-  return voicesFor({
-    strengths: insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.message),
-    concerns: insights.concerns.slice(0, podium ? 1 : 2).map((i) => i.message),
+  // 2026-10-14: "The Desk" (engine/desk.ts) — the same findings, voiced by the panel; the host
+  // closes with next draft's tip, which the podium never hears.
+  return buildDesk({
+    team,
+    strengths: insights.strengths,
+    concerns: insights.concerns,
+    rank,
+    fieldSize,
     style: scoutStyleLine(snapshot, insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.id))?.text,
     tip: !podium && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined,
-    strengthLabel: won ? 'what won it' : podium ? 'what put you on the podium' : 'what worked',
-    concernLabel: podium ? 'where a rival could still hurt you' : 'what held you back',
-    tipLabel: contender ? 'to get over the top' : 'next draft',
+    seed,
   });
 }
 
-/** A rival's voices — the same insight engine, about them: what works, and what can sink them. */
-function theirVoices(team: Team, breakdown: ScoreBreakdown, rank: number, fieldSize: number): DeskVoice[] {
+/** A rival's panel — the same insight engine, about them: what works, and what can sink them. */
+function theirVoices(team: Team, breakdown: ScoreBreakdown, rank: number, fieldSize: number, seed: number): DeskLine[] {
   const snapshot = buildTeamFeatureSnapshot(team);
   const insights = generateRosterInsights(snapshot, undefined, insightContextFor(breakdown, rank, fieldSize));
-  const podium = rank <= 3;
-  return voicesFor({
-    strengths: insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.message),
-    concerns: insights.concerns.slice(0, 2).map((i) => i.message),
-    style: scoutStyleLine(snapshot, insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.id))?.text,
-    strengthLabel: rank === 1 ? 'what won it' : 'what works',
-    concernLabel: 'what can sink them',
-    third: true,
+  return buildRivalDesk({
+    strengths: insights.strengths,
+    concerns: insights.concerns,
+    style: scoutStyleLine(snapshot, insights.strengths.slice(0, rank <= 3 ? 3 : 2).map((i) => i.id))?.text,
+    rank,
+    seed: seed + team.draftSlot,
+    third: theirVoice,
   });
 }
 
@@ -1302,10 +1303,10 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   const heroVoices = useMemo(
     () =>
       heroRanked?.team.isHuman
-        ? yourVoices({ team: displayTeam(heroRanked.team), rank: heroRanked.rank, fieldSize: ranked.length, breakdown: heroRanked.breakdown, fieldMedians })
+        ? yourVoices({ team: displayTeam(heroRanked.team), rank: heroRanked.rank, fieldSize: ranked.length, breakdown: heroRanked.breakdown, fieldMedians, seed: draftSeed })
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [heroRanked, ranked.length, fieldMedians],
+    [heroRanked, ranked.length, fieldMedians, draftSeed],
   );
   /** The extras under a team's profile: the score ingredients, the title path, the draft order. */
   const reportExtras = (team: Team, breakdown: ScoreBreakdown, fit: FitScoreResult): ReportExtra[] => {
@@ -1381,7 +1382,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       <TeamReport
         profile={profileRows(heroRanked.breakdown)}
         comp={bestHistoricalComp(displayTeam(heroRanked.team), heroRanked.breakdown, heroFit)}
-        voices={heroVoices.slice(1)}
+        voices={heroVoices}
         extras={reportExtras(displayTeam(heroRanked.team), heroRanked.breakdown, heroFit)}
       />
     ) : null;
@@ -1471,7 +1472,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
               <TeamReport
                 profile={profileRows(breakdown)}
                 comp={bestHistoricalComp(shownTeam, breakdown, fit)}
-                voices={theirVoices(shownTeam, breakdown, rank, ranked.length)}
+                voices={theirVoices(shownTeam, breakdown, rank, ranked.length, draftSeed)}
                 extras={reportExtras(shownTeam, breakdown, fit)}
               />
             </div>
@@ -1533,7 +1534,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           teamCode={codeByTeamId.get(heroRanked.team.id) ?? ''}
           rosterTeam={displayTeam(heroRanked.team)}
           profile={profileRows(heroRanked.breakdown)}
-          quote={heroVoices[0] ?? null}
+          quote={heroVoices.find((l) => l.kind === 'praise' || l.kind === 'concern') ?? null}
           report={heroReport}
           seasonLine={seasonVerdictLine}
           standings={standings}
@@ -1578,9 +1579,10 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 voices: (team) => {
                   const r = ranked.find((x) => x.team.id === team.id);
                   if (!r) return [];
-                  return team.isHuman
-                    ? yourVoices({ team: displayTeam(team), rank: r.rank, fieldSize: ranked.length, breakdown: r.breakdown, fieldMedians })
-                    : theirVoices(displayTeam(team), r.breakdown, r.rank, ranked.length);
+                  const lines = team.isHuman
+                    ? yourVoices({ team: displayTeam(team), rank: r.rank, fieldSize: ranked.length, breakdown: r.breakdown, fieldMedians, seed: draftSeed })
+                    : theirVoices(displayTeam(team), r.breakdown, r.rank, ranked.length, draftSeed);
+                  return lines.map((l) => ({ who: DESK_CAST[l.who].name, what: l.kind, text: l.text }));
                 },
                 season: seasonState.status === 'done' ? seasonState.season : null,
                 playoffs: seasonState.status === 'done' ? seasonState.playoffs : null,
