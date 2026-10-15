@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import type { Team } from '../engine/types';
 import { shareFilename, useSaveCardImage } from './shareSave';
 import { ordinal } from './ResultsScreen';
-import { ProfileBars, TeamMark, rosterLineup, type ProfileRow } from './ResultsReport';
-import { PlayerRow, RowsLabel } from './PlayerRow';
+import { rosterLineup, type ProfileRow } from './ResultsReport';
+import { PosterFive, PosterGrades, SharePoster } from './SharePoster';
 
 /** 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
  * ekran z naszymi wynikami?") — a real card to look at before saving it as an image.
@@ -53,58 +53,45 @@ export function ShareModal({
 
   return (
     <div className="share-modal-overlay" onClick={onClose}>
-      <div ref={cardRef} className="share-modal-card sh-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Share result">
+      <div ref={cardRef} className="share-modal-card sh-card sp-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Share result">
         <button type="button" className="share-modal-close" onClick={onClose} aria-label="Close" data-share-exclude>
           ✕
         </button>
-        <div className="sh-pad">
-          <span className="rr-team">
-            <TeamMark code={teamCode} name={teamName} size="md" />
-            <h2>{teamName}</h2>
-          </span>
-          <span className="rr-place">
-            <b>
+        <SharePoster teamName={teamName} teamCode={teamCode} kicker="All-Time Draft" footRight={`${rank}${ordinal(rank).slice(String(rank).length)} of ${fieldSize}`}>
+          <div className="sp-hero">
+            <span className="sp-place">
               {rank}
               <sup>{ordinal(rank).slice(String(rank).length)}</sup>
-            </b>
-            <span>of {fieldSize}</span>
-          </span>
-          <span className={`rr-tag rr-tag--t${tier.tone}`}>{tier.label}</span>
-          <div className="rs-kpis sh-kpis">
-            <div className="rs-kpi rs-kpi--you">
-              <b>{overall}</b>
-              <span>Your team</span>
-            </div>
-            <div className="rs-kpi">
-              <b>{topOverall ?? overall}</b>
-              <span>Best</span>
-            </div>
-            {titleOdds !== null ? (
-              <div className="rs-kpi">
-                <b>{`${(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%`}</b>
-                <span>Title odds</span>
-              </div>
-            ) : (
-              <div className="rs-kpi">
-                <b>{gap !== null && gap > 0 ? gap : '—'}</b>
-                <span>Behind the best</span>
-              </div>
-            )}
+            </span>
+            <span className="sp-hero-t">
+              <span className="sp-of">of {fieldSize}</span>
+              <span className={`rr-tag rr-tag--t${tier.tone}`}>{tier.label}</span>
+            </span>
+            <span className="sp-kpis">
+              <span>
+                <b>{overall}</b> team
+              </span>
+              <span>
+                <b>{topOverall ?? overall}</b> best
+              </span>
+              {titleOdds !== null ? (
+                <span>
+                  <b>{`${(titleOdds * 100).toFixed(titleOdds >= 0.1 ? 0 : 1)}%`}</b> title odds
+                </span>
+              ) : (
+                gap !== null && gap > 0 && (
+                  <span>
+                    <b>{gap}</b> behind
+                  </span>
+                )
+              )}
+            </span>
           </div>
-          {identity && <p className="rr-headline">{identity}.</p>}
-          <ProfileBars rows={profile} />
-        </div>
-        <div className="sh-roster">
-          <RowsLabel>Starting five</RowsLabel>
-          {starters.map((e) => (
-            <PlayerRow key={e.id} size="lead" tag={e.slot} name={e.name} meta={e.years} value={e.minutes} unit="min" />
-          ))}
-          {bench.length > 0 && <p className="sh-bench">Bench: {bench.map((e) => `${e.name} ${e.minutes}m`).join(' · ')}</p>}
-        </div>
-        <div className="sh-foot">
-          <span>Draftverse</span>
-          <span>All-Time Draft</span>
-        </div>
+          {identity && <p className="sp-title">{identity}.</p>}
+          <PosterFive players={starters.map((e) => ({ name: e.name, line: `${e.slot} · ${e.years}` }))} />
+          <PosterGrades rows={profile} />
+          {bench.length > 0 && <p className="sp-bench">Bench: {bench.map((e) => e.name.split(' ').slice(-1)[0]).join(' · ')}</p>}
+        </SharePoster>
         <div className="share-modal-save" data-share-exclude>
           <button type="button" className="primary-btn" onClick={saveImage} disabled={saveState === 'building'}>
             {saveState === 'building' ? 'Preparing image…' : '💾 Save image'}
