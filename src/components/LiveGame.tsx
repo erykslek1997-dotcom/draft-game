@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import type { LegendFive } from '../engine/dailyMeta';
 import type { PlayerSpan } from '../data/schema';
 import { pregameOdds, type BoxLineStats, type GameMoment, type LiveGameResult } from '../engine/liveGame';
+import { gameCalls, sayPlay, type GameCall } from '../engine/gameCalls';
 import { gameWinProbability } from '../engine/matchup';
 import { Face } from './ShotChip';
 import { TeamLogo } from './TeamLogo';
@@ -100,7 +101,7 @@ type Tab = 'feed' | 'box' | 'teams';
 
 interface FeedRow {
   key: string;
-  kind: 'play' | 'note' | 'break';
+  kind: 'play' | 'note' | 'break' | 'call';
   side?: 0 | 1;
   time?: string;
   text: string;
@@ -215,6 +216,13 @@ export default function LiveGame({
     return q;
   }, [game.moments, upto]);
 
+  const callsAt = useMemo(() => {
+    const at = new Map<number, GameCall[]>();
+    for (const c of gameCalls(game, short)) at.set(c.at, [...(at.get(c.at) ?? []), c]);
+    return at;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game, short[0], short[1]]);
+
   const feed = useMemo(() => {
     const rows: FeedRow[] = [];
     // A run: one side's points since the other last scored more than two; called at 8, then every 4.
@@ -267,7 +275,7 @@ export default function LiveGame({
           kind: 'play',
           side,
           time: quarterClock(m),
-          text: m.play.text,
+          text: actorLabel ? sayPlay(m.play.text, actorLabel, i) : m.play.text,
           score: `${m.score[0]}–${m.score[1]}`,
           actor: actorLabel ? fullName(side, actorLabel) : undefined,
           scored: m.score[side] > before[side],
@@ -275,6 +283,7 @@ export default function LiveGame({
           minor: m.play.minor,
         });
       }
+      for (const c of callsAt.get(i) ?? []) rows.push({ key: `c${i}-${c.text}`, kind: 'call', side: c.side, text: c.text });
       const next = game.moments[i + 1];
       if (!next || next.quarter !== m.quarter) {
         // One line on the quarter: who won it and its top scorer.
@@ -295,7 +304,7 @@ export default function LiveGame({
     if (done) rows.push({ key: 'final', kind: 'break', text: `Final · ${short[0]} ${game.final[0]}–${game.final[1]} ${short[1]}` });
     return rows.reverse();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game, upto, done, short[0], short[1]]);
+  }, [game, upto, done, short[0], short[1], callsAt]);
 
   // Who gets hunted on defense: "X attacks Nash — …" plays so far, by defender.
   const hunted = useMemo(() => {
@@ -529,6 +538,10 @@ export default function LiveGame({
                     </div>
                   ) : r.kind === 'note' ? (
                     <div key={r.key} className="sc-note">{r.text}</div>
+                  ) : r.kind === 'call' ? (
+                    <div key={r.key} className="sc-call" style={r.side === undefined ? undefined : ({ '--sc-call': sideColor(r.side) } as CSSProperties)}>
+                      {r.text}
+                    </div>
                   ) : (
                     <div key={r.key} className="sc-break">{r.text}</div>
                   ),

@@ -269,3 +269,9 @@
 /* Misses and turnovers: on the feed, a step quieter than the plays that change the score. */
 .sc-play.is-minor .sc-play-text { color: var(--sc-faint); font-weight: 500; }
 .sc-play.is-minor .sc-play-face { opacity: 0.7; }
+
+/* The commentator (2026-10-15, playtest: "bardziej komentowany mecz"): a quiet italic line in the
+   feed, marked with the side it is about. */
+.sc-call { position: relative; padding: 8px 14px 8px 26px; border-bottom: 1px solid var(--sc-row-line); font-size: 13px; font-weight: 500; font-style: italic; line-height: 1.4; color: var(--sc-ink); opacity: 0.88; animation: sc-pop 0.25s ease-out; }
+.sc-call::before { content: ''; position: absolute; left: 14px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--sc-call, var(--sc-gold)); opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) { .sc-call { animation: none; } }
