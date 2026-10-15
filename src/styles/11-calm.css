@@ -1596,3 +1596,5 @@ button.ph-game { cursor: pointer; }
   .sp-title { font-size: 22px; }
 }
 .ss-share-btn { margin-left: 8px; padding: 8px 16px; font-size: 14px; }
+/* 2026-10-15: a three-point % on fewer threes than games played reads as noise, not a number. */
+.at-calm .ss-table td.is-few { color: var(--at-ink-faint); opacity: 0.6; }
