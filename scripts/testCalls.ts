@@ -24,6 +24,7 @@ let moonbatRight = 0;
 let slowest = 0;
 const roundGate: string[] = [];
 const leaks: string[] = [];
+const rosterBlind: string[] = [];
 
 for (const seed of [7101, 7102, 7103]) {
   const tonight = onCallTonight(seed);
@@ -57,6 +58,8 @@ for (const seed of [7101, 7102, 7103]) {
         // Three names, unless the board itself is down to fewer legal players (the last picks).
         const want = Math.min(3, callCandidates(state).length);
         if (r.picks.length < want || r.picks.length > 3 || new Set(r.picks.map((p) => p.playerName)).size !== r.picks.length) structure.push(`${where}: ${r.picks.length} names (want ${want})`);
+        // The expert talks about this roster, not in a vacuum.
+        if (team.roster.length > 0 && o.id !== 'natalie' && !team.roster.some((p) => r.lines[0].text.includes(surname(p)))) rosterBlind.push(`${where}: ${r.lines[0].text}`);
         const hated = r.picks.filter((p) => hates(o.id as ExpertId, p));
         if (hated.length) structure.push(`${where}: names a player he hates (${hated[0].playerName})`);
       }
@@ -95,6 +98,7 @@ for (let s = 0; s < 300; s++) {
 }
 console.log({ calls, moonbatCalls, moonbatRight, slowestMs: slowest });
 check(structure.length === 0, 'every call has lines, three distinct legal names (none he hates), a War Room of at most 12, and replays the same', structure.slice(0, 4).join(' | '));
+check(rosterBlind.length === 0, 'an expert who names players mentions the roster he is looking at', rosterBlind.slice(0, 2).join(' | '));
 check(bad.length === 0, 'no placeholder, undefined or empty text in a call', bad.slice(0, 3).join(' | '));
 check(roundGate.length === 0, 'League Sources opens only in rounds 3–4', roundGate.slice(0, 3).join(' | '));
 check(leaks.length === 0, 'League Sources never names a player', leaks.slice(0, 3).join(' | '));
