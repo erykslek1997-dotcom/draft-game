@@ -19,7 +19,8 @@ import type { InsightCategory } from './insights';
 /** Which flavour take a beef can hang off (desk.ts `flavourTakes`). */
 export type Lens =
   | 'kobe' | 'jordan' | 'lakers' | 'lakersConcern' | 'celtics' | 'old' | 'modern' | 'eighties' | 'nineties' | 'aughts'
-  | 'preTwoK' | 'noPreTwoK' | 'stars' | 'noStars' | 'oneStar' | 'international' | 'steal' | 'overpay' | 'notMichael' | 'fav';
+  | 'preTwoK' | 'noPreTwoK' | 'stars' | 'noStars' | 'oneStar' | 'international' | 'steal' | 'overpay' | 'notMichael' | 'fav'
+  | 'prePbp' | 'fullPbp' | 'ninetiesHate' | 'turnstile';
 
 export interface BeefCtx {
   read: RosterRead;
@@ -135,17 +136,17 @@ const CORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['sosini', '@Jertcheck kids today would run this team off the floor by halftime. 🥱'],
-          ['jert', 'Kids today can’t spell “box out”.'],
+          ['jert', 'Kids today can’t spell “box out”. Russell averaged 22.5 rebounds for his CAREER.'],
           ['onoffsky', '*adjusts glasses* Technically, rebounding percentage in that era was—', 'cuts'],
           ['jert', 'NOBODY asked, Jake.'],
         ],
       }),
       () => ({
         lines: [
-          ['onoffsky', '*adjusts glasses* Note: blocks and steals weren’t even tracked before 1973. We are guessing.', 'cuts'],
-          ['jert', 'I don’t need a stat sheet. I have EYES.'],
-          ['onoffsky', 'Eyes have a margin of error, Mattheus.'],
-          ['jert', '*slams the desk*'],
+          ['onoffsky', '*adjusts glasses* Note: blocks and steals weren’t even tracked before 1973. No play-by-play until 1996. We are guessing.', 'cuts'],
+          ['jert', 'Rebounds were tracked from 1951, Jake. Russell grabbed 21,620 of them. Look it up.'],
+          ['onoffsky', 'Rebounds without play-by-play. Cute. Who was he guarding?'],
+          ['jert', 'EVERYONE. *slams an almanac on the desk*'],
         ],
       }),
     ],
@@ -692,8 +693,8 @@ export const HANDLE: Record<ExpertId, string> = {
 
 /** Who goes after whom when an expert gushes over a favourite. */
 const FAN_RIVAL: Partial<Record<ExpertId, ExpertId>> = {
-  sosini: 'jert', shyman: 'sosini', solin: 'onoffsky', binash: 'sosini', jert: 'sosini', rotation: 'lex', batt: 'lex',
-  onoffsky: 'solin', bannerman: 'prab', natalie: 'lex', lex: 'rotation', zoran: 'sosini', prab: 'jeremy', jeremy: 'prab',
+  sosini: 'jert', shyman: 'sosini', solin: 'onoffsky', binash: 'jeremy', jert: 'onoffsky', rotation: 'lex', batt: 'lex',
+  onoffsky: 'jert', bannerman: 'prab', natalie: 'lex', lex: 'rotation', zoran: 'sosini', prab: 'jeremy', jeremy: 'prab',
 };
 
 /**
@@ -720,11 +721,11 @@ export const FAV_LINES: Partial<Record<ExpertId, string[]>> = {
   sosini: ['{fav}! Respectfully, his shot chart is my phone background.', '{fav}. *puts hand on heart* That is the future, and the future is now.'],
   shyman: ['{fav}! STOPS! I have a poster of him above my bed. A big one.', '{fav}. *rubs his arms* Somebody hold me. Actual chills.'],
   solin: ['{fav}. Grown man. Fouls hard, apologises never. My kind of guy.', '{fav}! Finally somebody on this roster who’d fight a parking meter.'],
-  binash: ['{fav}! Somebody pass me the short shorts. This is a holy day.', '{fav}. *dims the studio lights* Let me just enjoy this for a second.'],
-  jert: ['{fav}! *stands up* Kids today will never understand what he was.', '{fav}. They don’t make them like that anymore. They CAN’T.'],
+  binash: ['{fav}! Somebody pass me the short shorts. This is a holy day.', '{fav}! Totally tubular, dudes. *finger guns at the camera*', '{fav}. *dims the studio lights, puts on a synth track* Let me just enjoy this.'],
+  jert: ['{fav}! *stands up* Pace-adjusted, he’d still lead this league. I have the almanacs.', '{fav}. They don’t make them like that anymore. The numbers say they CAN’T.'],
   rotation: ['{fav}! The best off-the-bench energy in history. I might cry.', '{fav}. *exhales* Finally somebody I trust in February.'],
   batt: ['{fav}! Two ends! Bellissimo! *kisses his fingers*', '{fav}. Offense, defense, everything. Perfetto.'],
-  onoffsky: ['{fav}. *adjusts glasses* Statistically, my favourite human being.', '{fav}. I made a spreadsheet about him. It has a spreadsheet of its own.'],
+  onoffsky: ['{fav}. *adjusts glasses* Full play-by-play, elite on/off. Statistically, my favourite human being.', '{fav}. I made a spreadsheet about him. It has a spreadsheet of its own.'],
   bannerman: ['{fav}! A Celtic legend! *already crying*', '{fav}. *points at the ceiling* Banner energy.'],
   natalie: ['{fav}! Value AND talent. I need a moment.'],
   lex: ['{fav}! THAT is a star. THAT is how a dynasty starts.', '{fav}! Build the statue now. Save time.'],
@@ -745,6 +746,97 @@ const russellThree = (c: BeefCtx): BeefThread | null => !c.has('Bill Russell') ?
 });
 
 const MORE_BEEFS: Beef[] = [
+  {
+    id: 'folklore',
+    on: { lens: 'prePbp' },
+    variants: [
+      () => ({
+        lines: [
+          ['jert', '@Onoffsky folklore? Wilt averaged 50.4 points and 25.7 boards in 1962. That’s in the box score, nerd.'],
+          ['onoffsky', 'A box score without play-by-play is a rumour with decimals.'],
+          ['jert', 'Oscar averaged a triple-double for a whole season that same year. Rumour THAT.'],
+          ['onoffsky', 'Show me his on/off. Oh right. You can’t. 🤓'],
+          ['jert', '*slams an almanac on the desk*'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['jert', '@Onoffsky Russell’s teams won 11 titles in 13 years. That’s the only plus-minus I need.'],
+          ['onoffsky', 'That’s a team stat, Mattheus. You of all people should know better.'],
+          ['jert', 'I DO know better. I also know Russell.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['jert', '@Onoffsky pace-adjust it. Per 100 possessions the old guys still hold up. I did the maths in 2003.'],
+          ['onoffsky', 'In a notebook?'],
+          ['jert', 'In a LEATHER notebook, Jake.'],
+          ['sosini', 'Two nerds fighting about which decade of spreadsheets is real. Riveting. 🥱', 'cuts'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'full-data',
+    on: { lens: 'fullPbp' },
+    variants: [
+      () => ({
+        lines: [
+          ['jert', '@Onoffsky full data and zero legends. Congratulations on your spreadsheet.'],
+          ['onoffsky', 'Legends are just players nobody tracked properly.'],
+          ['jert', '*takes off his glasses* Say that about Oscar Robertson one more time.'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'nineties-hate',
+    on: { lens: 'ninetiesHate' },
+    variants: [
+      () => ({
+        lines: [
+          ['jeremy', '@Binash what did the ’90s ever do to you?'],
+          ['binash', 'Grunge. Baggy shorts. And Bird’s back gave out in ’92. I hold the whole decade responsible.'],
+          ['jeremy', 'You mean Michael ended your decade.'],
+          ['binash', '*puts on sunglasses* Nobody ends the ’80s. The ’80s are a state of mind. 😎'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['jeremy', '@Binash six rings, Jacob. Six.'],
+          ['binash', 'Six rings in a league full of expansion teams wearing teal. 🙄'],
+          ['jeremy', 'Leave teal out of this.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['sosini', 'For once I’m with Jacob. The ’90s were 80-point slogs with elbows. 🥱', 'cuts'],
+          ['binash', 'Mattia! My brother in hate!'],
+          ['jeremy', 'Unbelievable. The two worst takes at this desk, holding hands.', 'cuts'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'turnstile',
+    on: { lens: 'turnstile' },
+    variants: [
+      () => ({
+        lines: [
+          ['lex', '@Shyman he drops 30 a night. Who cares.'],
+          ['shyman', 'He GIVES UP 32, Lex. Net minus two. Bum maths from a bum take.'],
+          ['lex', 'Blocked, clown.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['sosini', '@Shyman he spaces the floor. Defense is optional in November.'],
+          ['shyman', 'Then he’s optional in May. Turnstiles don’t get playoff minutes, Mattia.'],
+          ['rotation', '*quietly* And guess who has to find those minutes.', 'cuts'],
+        ],
+      }),
+    ],
+  },
   { id: 'russell-three', on: { category: ['spacing', 'shooting'], side: 'concern' }, priority: true, variants: [russellThree] },
   { id: 'russell-three', on: { lens: 'old' }, priority: true, variants: [russellThree] },
   {
@@ -847,9 +939,9 @@ const MORE_BEEFS: Beef[] = [
         if (!rival || !c.anchor.fav) return null;
         return {
           lines: [
-            [rival, `@${HANDLE[c.anchor.who]} overrated. There, I said it.`],
+            [rival, `@${HANDLE[c.anchor.who]} overrated. Fraud. There, I said it.`],
             [c.anchor.who, `*stands up* Say ${c.sur(c.anchor.fav)}’s name again. I dare you.`],
-            [rival, 'Over. Rated.'],
+            [rival, 'Fraud.'],
             ['host', 'Okay. OKAY. Sit down. Nobody says anybody’s name again.', 'host'],
           ],
         };

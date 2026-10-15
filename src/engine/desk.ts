@@ -1,6 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { spanEndYears } from './era';
+import { computeDefensiveTalent } from './defensiveTalent';
 import { effectiveTalent } from './grades';
 import type { InsightCategory, RosterInsight } from './insights';
 import { mixSeed, mulberry32 } from './rng';
@@ -145,12 +146,18 @@ export interface RosterRead {
   stars: PlayerSpan[];
   /** Everyone outside the starting five, best first. */
   bench: PlayerSpan[];
+  /** Players whose stretch is mostly before play-by-play data (1996-97) — Onoffsky's blind spot. */
+  prePbp: PlayerSpan[];
+  /** The starter opponents would hunt on defense, if one really can't guard anyone. */
+  turnstile: PlayerSpan | undefined;
   /** The best value per cap: real talent at a small price. */
   steal: PlayerSpan | undefined;
   /** The worst: a big price for what he gives. */
   overpay: PlayerSpan | undefined;
 }
 
+/** Below this defensive talent a starter is a target (draftDesk.ts uses the same line). */
+const TURNSTILE_DTAL = 35;
 /** Talent at or above this is a star (the top of the effective-talent scale). */
 const STAR_TALENT = 90;
 
@@ -177,6 +184,8 @@ export function readRoster(team: Team): RosterRead {
     international: all.filter((p) => INTERNATIONAL.has(normalizePlayerName(p.playerName))),
     stars: starters.filter((p) => effectiveTalent(p) >= STAR_TALENT),
     bench: all.filter((p) => !starterIds.has(p.id)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)),
+    prePbp: by((y) => y < 1997),
+    turnstile: starters.map((p) => ({ p, d: computeDefensiveTalent(p) })).filter((x) => x.d < TURNSTILE_DTAL).sort((a, b) => a.d - b.d)[0]?.p,
     steal: steals[0],
     overpay: overpays[0],
   };
@@ -295,17 +304,28 @@ function flavourTakes(read: RosterRead): Take[] {
   else if (read.nineties.length >= 3) add('jeremy', 0.55, 'praise', `${names(read.nineties)}. That’s ’90s basketball. Elbows, hand-checks, mid-range. Go watch the tape.`, 'nineties');
   else if (read.kobe) add('jeremy', -0.4, 'concern', 'Kobe’s great. He’s not Michael. Go watch the ’98 tape, then we talk.', 'notMichael');
   if (read.eighties.length >= 2) add('binash', 0.35 + 0.1 * read.eighties.length, 'praise', `${names(read.eighties)} from the ’80s! Oh, I’m home. Somebody find me a tape deck and a pair of short shorts.`, 'eighties');
-  if (read.preTwoK.length >= 6) add('jert', 0.7, 'praise', `${read.preTwoK.length} guys from before 2000. Kids today couldn’t handle this team. Couldn’t.`, 'preTwoK');
+  if (read.preTwoK.length >= 6) add('jert', 0.7, 'praise', `${read.preTwoK.length} guys from before 2000. Pace-adjusted, they’d still run today’s soft load-management merchants off the floor. I have the almanacs.`, 'preTwoK');
   else if (read.preTwoK.length === 0) add('jert', -0.6, 'concern', 'Not one player from before 2000? Kids today. Moses Malone is rolling his eyes somewhere.', 'noPreTwoK');
   if (read.old.length >= 2) add('sosini', -0.4 - 0.1 * read.old.length, 'concern', `${names(read.old)}. 🥱 Respectfully, does this team come with a time machine, or do we rent one?`, 'old');
   else if (read.modern.length >= 6) add('sosini', 0.6, 'praise', 'Everybody on this roster could play tonight. Respectfully, that’s the whole point.', 'modern');
   if (read.aughts.length >= 3) add('solin', 0.55, 'praise', `${names(read.aughts)}. That’s 2004 in a jar. Somebody’s getting fouled hard and nobody’s apologising.`, 'aughts');
   if (read.stars.length >= 3) add('lex', 0.75, 'praise', `${names(read.stars)}! STARS WIN! Benches are for people who couldn’t draft stars!`, 'stars');
   else if (read.stars.length === 1) add('lex', -0.5, 'concern', `${surname(read.stars[0])} and… who? One star? ONE? Where’s the dynasty?`, 'oneStar');
-  else if (read.stars.length === 0) add('lex', -0.5, 'concern', 'No stars. Zero. You built a very nice team of role players. Congratulations. 👏', 'noStars');
+  else if (read.stars.length === 0) add('lex', -0.5, 'concern', 'No stars. Zero. A roster of scrubs and good vibes. Congratulations. 👏', 'noStars');
   if (read.international.length >= 2) add('zoran', 0.3 + 0.15 * read.international.length, 'praise', `${names(read.international)}! *hand on heart* Finally, a roster that has seen a passport.`, 'international');
   if (read.steal) add('natalie', 0.6, 'praise', `${surname(read.steal)} for ${caps(read.steal)} caps? Somebody call the police. That’s theft.`, 'steal');
-  else if (read.overpay) add('natalie', -0.6, 'concern', `Rules are rules: 100.9 caps. ${surname(read.overpay)} ate ${caps(read.overpay)} of them. *closes the laptop very slowly*`, 'overpay');
+  else if (read.overpay) add('natalie', -0.6, 'concern', `Rules are rules: 100.9 caps. ${surname(read.overpay)} ate ${caps(read.overpay)} of them. Fraud contract. *closes the laptop very slowly*`, 'overpay');
+  const variant = (lines: string[]) => lines[read.all.reduce((n, p) => n + p.playerName.length, 0) % lines.length];
+  if (read.prePbp.length >= 3) add('onoffsky', -0.45, 'concern', `${names(read.prePbp)}. *adjusts glasses* No play-by-play before 1996. For all I know they’re folklore with a box score.`, 'prePbp');
+  else if (read.prePbp.length === 0) add('onoffsky', 0.4, 'praise', 'Every player here has full play-by-play. On/off, lineups, tracking. I am at peace. 🤓', 'fullPbp');
+  if (read.nineties.length >= 2 && !read.jordan) add('binash', -0.35, 'concern', variant([
+    `${names(read.nineties)}. Ugh. The ’90s. Hand-checks, 79–76 final scores and Space Jam. Hard pass.`,
+    `${names(read.nineties)}? The ’90s were a ten-year timeout. Wake me up when it’s 1986 again.`,
+  ]), 'ninetiesHate');
+  if (read.turnstile) add('shyman', -0.5, 'concern', variant([
+    `${surname(read.turnstile)}? Turnstile. A traffic cone with a headband. I’ve seen parking meters close out harder.`,
+    `${surname(read.turnstile)} on defense is a crime scene. Bum defense. BUM.`,
+  ]), 'turnstile');
   // A favourite on the roster: the expert gushes (the best of them if there are several).
   for (const [who, favs] of Object.entries(FAVOURITES) as [ExpertId, string[]][]) {
     const keys = new Set(favs.map(normalizePlayerName));
@@ -377,7 +397,7 @@ function moonbatBit(read: RosterRead, rng: () => number, place: number, onAir: R
     '*stares at the ceiling* Wrong reason. Right player. I’m deleting this app.',
     '*long exhale* I need everyone to know I’m logging off for a week.',
   ]));
-  const signOff = () => mb(pick(rng, ['*already printing the T-shirt* too late. peace ✌️', 'see u tomorrow', 'rightwing in shambles 😂', 'told u. do ur research']));
+  const signOff = () => mb(pick(rng, ['*already printing the T-shirt* too late. peace ✌️', 'see u tomorrow', 'rightwing in shambles 😂', 'told u. do ur research', 'rightwing is a bum lol']));
   if (right && !steal && topStrength && strengthLine) {
     const expert = CATEGORY_EXPERT[topStrength.category];
     const defender: ExpertId = expert === 'moonbat' || expert === 'rightwing' ? 'onoffsky' : expert;
@@ -435,17 +455,17 @@ function moonbatBit(read: RosterRead, rng: () => number, place: number, onAir: R
 const SLANG: Partial<Record<ExpertId, { tail: string[]; head: string[] }>> = {
   sosini: { tail: ['🥱', 'lol', 'ratio', 'it’s not that deep', 'cope', '💀'], head: ['Bro.', 'Lol.'] },
   shyman: { tail: ['😤', 'smh', 'fr', 'I’m not okay', '🧱'], head: ['Bro.', 'Listen.'] },
-  solin: { tail: ['💪', 'lol', 'say less', '🧱'], head: ['Bro.', 'Please.'] },
-  binash: { tail: ['📼', 'lmao', 'kids these days', '🕺'], head: ['Lol.', 'Oh, please.'] },
-  jert: { tail: ['👴', 'smh', 'unreal', 'ugh'], head: ['Please.', 'Ugh.'] },
+  solin: { tail: ['💪', 'lol', 'say less', 'soft', '🧱'], head: ['Bro.', 'Please.'] },
+  binash: { tail: ['📼', 'totally tubular', 'rad 🤙', 'gnarly', 'cowabunga, dudes', '🕺'], head: ['Dude.', 'Oh, please.'] },
+  jert: { tail: ['👴', '📚', 'pace-adjusted, btw', 'look it up', 'smh'], head: ['Actually.', 'Please.'] },
   rotation: { tail: ['🙏', '❤️', 'love u guys', '😭'], head: ['Guys.', 'Okay.'] },
   batt: { tail: ['🤌', 'mamma mia', 'basta', '🇮🇹'], head: ['Madonna.', 'Ragazzi.'] },
   prab: { tail: ['🐍', '🐐', 'lol', 'mamba out'], head: ['Bro.', 'Please.'] },
-  onoffsky: { tail: ['🤓', '📊', 'source: me', 'it’d be funny if it wasn’t true', 'ngl'], head: ['Footnote.', 'Correction.'] },
+  onoffsky: { tail: ['🤓', '📊', 'source: me', 'it’d be funny if it wasn’t true', 'ngl', 'no play-by-play, no opinion'], head: ['Footnote.', 'Correction.'] },
   bannerman: { tail: ['🍀', '☘️', 'lmao', 'banner szn'], head: ['Lol.', 'Imagine.'] },
   natalie: { tail: ['💸', '📉', 'not me crying', 'sigh', '🧾'], head: ['Okay.', 'Darling.'] },
   jeremy: { tail: ['🐐', '📼', 'smh', '6–0 btw'], head: ['Please.', 'Lol.'] },
-  lex: { tail: ['👑', '💅', 'lol', 'it’s giving lottery', '🏆'], head: ['Lol.', 'Imagine.'] },
+  lex: { tail: ['👑', '💅', 'lol', 'it’s giving lottery', 'scrubs', '🏆'], head: ['Lol.', 'Imagine.'] },
   zoran: { tail: ['🙏', 'my brother', '🇪🇺', 'beautiful 🥲'], head: ['Listen.', 'My friend.'] },
   rightwing: { tail: ['🙄', 'smh', 'unreal'], head: ['Bart.'] },
   host: { tail: ['😅', '🫠', 'we’re live, people'], head: [] },
@@ -557,14 +577,20 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
     onAir.push(t);
     used.add(t.who);
   }
-  if (!onAir.some((t) => t.score < 0)) {
-    const neg = [...insightTakes, ...flavour].find((t) => t.score < 0 && !used.has(t.who));
-    if (neg) { onAir.push(neg); used.add(neg.who); }
-  }
-  if (!onAir.some((t) => t.score > 0)) {
-    const pos = [...insightTakes, ...flavour].find((t) => t.score > 0 && !used.has(t.who));
-    if (pos) { onAir.push(pos); used.add(pos.who); }
-  }
+  // Both sides get a voice; a full panel makes room by dropping its last flavour take.
+  const addSide = (t: Take | undefined) => {
+    if (!t) return;
+    if (onAir.length >= 5) {
+      const drop = onAir.map((o, i) => ({ o, i })).reverse().find(({ o }) => o.lens !== undefined && Math.sign(o.score) !== Math.sign(t.score));
+      if (!drop) return;
+      onAir.splice(drop.i, 1);
+      used.delete(drop.o.who);
+    }
+    onAir.push(t);
+    used.add(t.who);
+  };
+  if (!onAir.some((t) => t.score < 0)) addSide([...insightTakes, ...flavour].find((t) => t.score < 0 && !used.has(t.who)));
+  if (!onAir.some((t) => t.score > 0)) addSide([...insightTakes, ...flavour].find((t) => t.score > 0 && !used.has(t.who)));
 
   onAir.sort((a, b) => Math.sign(b.score) - Math.sign(a.score));
   // Arguments come from their own stream, so starting one never reshuffles who else is on air.
