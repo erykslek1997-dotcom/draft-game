@@ -389,11 +389,38 @@ do dołu i zakładki Matchup/Bracket).
      pokazujemy graczowi (decyzja użytkownika). (M)
 3. **Silnik symulacji** — etap 4b (atak ~66%, rotacja ~34% w meczu), rzuty wolne w ocenie, mecz
    na żywo mocniej na silniku, etap 2b, tempo meczu, kalendarz, balans po symulacjach.
-   - **Asysty od gry bez piłki (playtest 2026-10-14, punkt 11)** — Kirilenko obok Curry'ego ma w
-     sezonie mało asyst: silnik nie uwzględnia, że strzelec grający bez piłki (off-ball gravity,
-     zasłony, ruch) wciąga obronę i otwiera podania kolegom, którzy mają piłkę. Do sprawdzenia, jak
-     mecz rozdziela asysty (`liveGame.ts`) i czy ruch bez piłki (`cutter×passer`, dane o ruchu
-     strzelców) może podnosić szansę na asystę u podającego.
+   - **Punkt 11 z playtestu 2026-10-14 (Kirilenko obok Curry'ego) — zamknięty 2026-10-15, to nie
+     błąd.** Play-by-play Warriors 2014–25 (shufinskiy/nba_data, piątki odtworzone ze zmian):
+     Draymond podaje tyle samo z Currym i bez (11,8 vs 10,8 asysty /100 posiadań, ten sam udział w
+     trafieniach kolegów i te same straty; bez Curry'ego w 2019-20 też 8,0 asysty /36). Curry
+     zmienia jakość, nie liczbę: 39% asyst Draymonda idzie do Curry'ego, 89% jego asyst to rzut
+     spod kosza lub za 3 (bez Curry'ego 78%, z samym Klayem 68%, z samym KD 58%). Draymond to
+     własny „passing unicorn” (tylko on rozgrywa jak LeBron/Jokic bez rzucania). W grze Kirilenko
+     obok Curry'ego ma najwięcej asyst ze wszystkich rozgrywających (3,1 vs 2,3–3,0) — to zgadza
+     się z realnym +~10% u podającego. Skrypty i wyniki w scratchpadzie sesji (`irl/`, `pbp/`).
+   - **„Podnosi kolegów” — skuteczność czwórki obok gracza (2026-10-15, do zrobienia).** Realnie
+     (porównanie „z nim / bez niego” sezonów kolegów od 1985, względem ligi, oczyszczone z
+     kontuzji, innych takich graczy, wieku i zmiany roli; ±0,5–0,7): Magic +2,4 TS, Nash +1,9,
+     Jokic +1,8, Stockton +1,7, Curry +1,5, Shaq +1,2, Kidd +1,1, LeBron +0,6, Iverson +0,6,
+     Paul 0,0, Conley −0,2, Jordan −1,0 (liga 0 ± 0,9). Gra dziś (ta sama czwórka, zmieniany
+     rozgrywający): Nash +0,9, Conley 0, LeBron −0,2, Iverson −0,4, **Curry −1,1** vs Conley.
+     Przyczyny w silniku: brak przyciągania obrony (spacing działa tylko na rzuty za 2), jakość
+     podań to średnia asyst czterech kolegów (`matesAssists`, rozwodnione), kara za zbyt wiele
+     posiadań (`OVERLOAD_TUNING`) i korekta zawodnika (`anchor`) rozkładane po równo na piątkę.
+     Plan: ocena „podnosi kolegów” per gracz z tych danych (dla małych prób przewidywana z
+     podań/rzutu/kreowania i ściągana do 0), działająca na skuteczność czwórki na boisku; overload
+     i anchor według udziału w rzutach. Kontrola: ta sama czwórka, rozgrywający Nash/Curry/LeBron/
+     Paul/Conley → blisko liczb realnych. Asysty bez zmian (Curry nie zabiera rozegrania
+     skrzydłowym: +0,15 /36, LeBron −0,58, Harden −0,40, Paul −0,44 — gra już to oddaje).
+   - **Era a rozegranie — percentyle w pozycji (2026-10-15, do zrobienia).** Dziś `modernBox`
+     daje asystom każdemu ~+8% (tempo + usage). Realnie (asysty /36 przy tempie 100, 1000+ min,
+     1995–2004 → 2021–26, ten sam percentyl w pozycji): skrzydłowi p10–p50 +0,2, p75 +0,6, p90
+     +0,9, p97 +1,6; centrzy p10 +0,7, p50 +0,9, p90 +1,7, p97 +2,6; obwodowi −0,6 do −0,8 (dla
+     1985–94 i 2005–14 ten sam kształt). Użytkownik: „na percentylach, żeby rośli ci, którzy
+     dobrze podawali, a nie każde drewno”. Plan: mapowanie percentyla (pozycja + okno sezonów) na
+     ten sam percentyl dzisiejszej ligi zamiast mnożnika. Przykład: Kirilenko 2004-06 4,2 → ~5,0,
+     2002-04 2,6 → ~2,8; najwięcej zyskają dawni podający centrzy (Divac, Sabonis, Webber).
+
 4. **Tryby** — Etap 3 niżej (Draw Five → Mini → All-Time → wspólne).
 
 ## Kolejność prac (decyzja 2026-10-08, zastąpiona)
