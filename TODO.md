@@ -936,6 +936,23 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 Otwarte: ile ograniczeń naraz (1 czy 2), czy Mini i All-Time mają ten sam dzień zasad, czy zasady
 widać przed startem (tak — ekran dnia przed loterią), czy dzień może być „bez ograniczeń”.
 
+**Propozycja ustaleń (Claude 2026-10-15, do akceptacji):**
+- *Zasady na start:* limit capów dnia, blok franczyzy, blok ery, pułap gwiazd (max 1 MVP+),
+  narzucony gracz, styl (Splash day / Twin towers); w All-Time też the bomb. Na później: odwrócony
+  limit, top N zbanowanych, mistrzowie / bez pierścienia, miejsce w drafcie dnia, wymóg
+  franczyzy, zasady rotacji All-Time.
+- *Ile naraz:* limit capów + **jedna** zasada; dwie dopiero później (np. weekendowy „trudny dzień”).
+- *Mini i All-Time:* **różne** zasady tego samego dnia.
+- *Dzień bez ograniczeń:* raz w tygodniu (np. niedziela) — sam draft z ziarnem dnia.
+- *The bomb:* koszt w capach i runda **widoczne od startu**; nazwisko odsłonięte **na wynikach**
+  (opis → twarz → nazwisko); w rotacji **min. 10 min**; **perełka ~raz na 5 dni**; jedna bomba,
+  nigdy w rundach 1–4.
+- *Kolejność budowy:* (1) wspólny silnik zasad dnia (ziarno, limit dla wszystkich, blokada picku z
+  powodem, ekran dnia przed loterią) + Mini daily; (2) All-Time daily; (3) the bomb osobno.
+- *Makiety:* `docs/mockups/daily-drafts.html` (2026-10-15) — przycisk Daily na karcie trybu, ekran dnia przed loterią, zablokowany
+  pick z powodem + pasek zasad w drafcie, the bomb w drafcie i odsłonięcie na wynikach, wynik dnia
+  + share bez spoilerów.
+
 **The bomb (All-Time) — jak działa (pomysł użytkownika 2026-09-29, do potwierdzenia):**
 - W rundzie dnia (ziarno; propozycja 5–8) **zamiast Twojego wyboru dostajesz ukrytego gracza**.
 - Nie wiesz, kto to: widzisz tylko **krótki opis** — pozycja, era, styl (np. „Rezerwowy center z lat
