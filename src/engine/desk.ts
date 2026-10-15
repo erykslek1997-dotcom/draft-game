@@ -113,7 +113,16 @@ const INTERNATIONAL = new Set(
 const NAME_SUFFIXES = new Set(['Jr.', 'Sr.', 'II', 'III', 'IV']);
 /** Last name the way a TV desk says it. */
 const NAME_PARTICLES = new Set(['van', 'von', 'de', 'del', 'della', 'di', 'da', 'la', 'le', 'st.', 'world']);
-function surname(p: PlayerSpan): string {
+/** The few players a TV desk calls by first name or nickname. */
+const DESK_NICKNAMES = new Map(
+  Object.entries({
+    'LeBron James': 'LeBron', 'Kobe Bryant': 'Kobe', "Shaquille O'Neal": 'Shaq', 'Magic Johnson': 'Magic', 'Giannis Antetokounmpo': 'Giannis',
+    'Dirk Nowitzki': 'Dirk', 'Manu Ginobili': 'Manu', 'Julius Erving': 'Dr. J', 'Anfernee Hardaway': 'Penny',
+  }).map(([n, nick]) => [normalizePlayerName(n), nick]),
+);
+export function surname(p: PlayerSpan): string {
+  const nick = DESK_NICKNAMES.get(normalizePlayerName(p.playerName));
+  if (nick) return nick;
   const parts = p.playerName.split(' ').filter((w) => !NAME_SUFFIXES.has(w));
   if (parts.length >= 3 && NAME_PARTICLES.has(parts[parts.length - 2].toLowerCase())) return parts.slice(-2).join(' ');
   return parts[parts.length - 1] ?? p.playerName;

@@ -204,6 +204,10 @@ const codes = (p: PlayerSpan) => teamsForSpan(p).map((t) => t.code);
 export function loves(who: ExpertId, p: PlayerSpan): boolean {
   return FAV_KEYS[who]?.has(key(p.playerName)) === true || (TEAM_LOVE[who]?.some((c) => codes(p).includes(c)) ?? false);
 }
+/** A named nemesis (not just a player from a team he hates). */
+export function hatesByName(who: ExpertId, p: PlayerSpan): boolean {
+  return NEMESIS_KEYS[who]?.has(key(p.playerName)) === true;
+}
 export function hates(who: ExpertId, p: PlayerSpan): boolean {
   return NEMESIS_KEYS[who]?.has(key(p.playerName)) === true || (TEAM_HATE[who]?.some((c) => codes(p).includes(c)) ?? false);
 }
