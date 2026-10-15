@@ -83,25 +83,30 @@ export function onCallTonight(seed: number): ExpertId[] {
   return ['host', ...out];
 }
 
+/** What the sheet says about each call. Experts who name three players only tease in their own
+ * voice — their lens stays for the player to work out (user, 2026-10-15: "te podpowiedzi kto jest
+ * kim … zbyt sugerujące"); calls that work differently say what they do. */
 const BLURB: Partial<Record<CallId, [string, string]>> = {
   onoffsky: ['Cuts your board to the 12 who actually move your number. Everyone else is noise. One pick.', 'WAR ROOM'],
   natalie: ['Three bargains that fill your holes. Caps first, feelings never.', '3 BARGAINS'],
-  shyman: ['Three stoppers. Whether you can afford them is your problem.', 'HIS GUYS'],
-  sosini: ['Three shooters. Space the floor, respectfully.', 'HIS GUYS'],
-  solin: ['Three guys who pass the eye test. No spreadsheets.', 'HIS GUYS'],
-  prab: ['Three closers. Clutch genes only, my friend.', 'HIS GUYS'],
-  jert: ['Three guys nobody talks about. Don’t ask him why. Look it up.', 'HIS GUYS'],
-  binash: ['Three guys with ’80s energy. Totally tubular.', 'HIS GUYS'],
-  jeremy: ['Three guys straight off a ’90s tape.', 'HIS GUYS'],
-  lex: ['Three stars. Nothing else matters to him.', 'HIS GUYS'],
-  zoran: ['Three guys who move the ball. Listen to him.', 'HIS GUYS'],
-  batt: ['Three guys who play both ends. Bellissimo.', 'HIS GUYS'],
-  bannerman: ['Three guys with banner energy. Green preferred.', 'HIS GUYS'],
+  shyman: ['“Three names. Simple.”', '3 NAMES'],
+  sosini: ['“Respectfully, I have thoughts.”', '3 NAMES'],
+  solin: ['“Trust your eyes. Then trust me.”', '3 NAMES'],
+  prab: ['“My friend, I have three names for you.”', '3 NAMES'],
+  jert: ['“I don’t have to explain myself.”', '3 NAMES'],
+  binash: ['“Dude. Rad picks incoming.”', '3 NAMES'],
+  jeremy: ['“Go watch the tape first. Then call me.”', '3 NAMES'],
+  lex: ['“You want my list? You can’t handle my list.”', '3 NAMES'],
+  zoran: ['“Listen to me. I know exactly who.”', '3 NAMES'],
+  batt: ['“Ragazzi, I have something for you.”', '3 NAMES'],
+  bannerman: ['“I know a guy. Three guys, actually.”', '3 NAMES'],
   rotation: ['Finds the hole in your rotation before February does.', 'THE BENCH'],
   host: ['What the teams before your next pick are hunting. No names.', 'ROUNDS 3–4'],
   desk: ['The whole panel fights about your biggest hole. Eric referees.', 'CHALK TALK'],
   moonbat: ['Always picks up. You’ll regret it. Probably. Doesn’t use a call.', 'FREE · ONCE A ROUND'],
 };
+/** Calls whose tag line would give the expert's lens away. */
+const SECRET_LENS: CallId[] = ['shyman', 'sosini', 'solin', 'prab', 'jert', 'binash', 'jeremy', 'lex', 'zoran', 'batt', 'bannerman'];
 
 /** The list on the call sheet: tonight's experts, the desk and Moonbat, with what's open now. */
 export function callOptions(state: DraftState, seed: number, log: CallLog): CallOption[] {
@@ -110,7 +115,7 @@ export function callOptions(state: DraftState, seed: number, log: CallLog): Call
   const left = CALLS_PER_DRAFT - log.used.length;
   const ids: CallId[] = [...onCallTonight(seed), 'desk', 'moonbat'];
   return ids.map((id) => {
-    const cast = id === 'desk' ? { name: 'Call the desk', tag: 'The whole panel' } : { name: DESK_CAST[id].name, tag: id === 'host' ? 'League sources' : DESK_CAST[id].tag };
+    const cast = id === 'desk' ? { name: 'Call the desk', tag: 'The whole panel' } : { name: DESK_CAST[id].name, tag: id === 'host' ? 'League sources' : SECRET_LENS.includes(id) ? 'On call tonight' : DESK_CAST[id].tag };
     const [blurb, badge] = BLURB[id] ?? ['', ''];
     let unavailable: string | undefined;
     if (id === 'moonbat') unavailable = log.moonbatRounds.includes(round) ? 'Already called this round' : undefined;
@@ -285,7 +290,7 @@ export function placeCall(id: CallId, state: DraftState, seed: number): CallResu
       id,
       picks: [],
       warRoom: board.map((p) => normalizePlayerName(p.playerName)),
-      lines: [voice('onoffsky', 'take', `*adjusts glasses* ${board.length} players. The other ${Math.max(0, candidates.length - board.length)}+ don’t move your number. Which of these? Your call. I don’t do hand-holding. Ends after your pick. 🤓`)],
+      lines: [voice('onoffsky', 'call', `*adjusts glasses* ${board.length} players. The other ${Math.max(0, candidates.length - board.length)}+ don’t move your number. Which of these? Your call. I don’t do hand-holding. Ends after your pick. 🤓`)],
     };
   }
 
@@ -313,7 +318,7 @@ export function placeCall(id: CallId, state: DraftState, seed: number): CallResu
     const INTRO: Partial<Record<ExpertId, string>> = {
       natalie: `Rules are rules: ${budget.capLeft.toFixed(1)} caps, ${budget.slotsLeft} spots. ${list(picks)}. All three give you more than they cost. Write them down. 💸`,
       shyman: `${list(picks)}. They guard. Can you pay them? Not my problem.`,
-      sosini: `${list(picks)}. They shoot. Space the floor and the rest takes care of itself. 🥱`,
+      sosini: `${list(picks)}. Talent, range, taste. Space the floor and the rest takes care of itself. 🥱`,
       solin: `${list(picks)}. Watch them for five minutes. Eye test says yes.`,
       prab: `${list(picks)}. Closers, my friend. Kobe would sign off on all three. 🐍`,
       binash: `${list(picks)}! Totally tubular, dudes. Showtime would approve. 🤙`,
@@ -325,7 +330,7 @@ export function placeCall(id: CallId, state: DraftState, seed: number): CallResu
     };
     intro = INTRO[expert] ?? list(picks);
   }
-  const lines: DeskLine[] = [voice(expert, 'take', intro)];
+  const lines: DeskLine[] = [voice(expert, 'call', intro)];
   // Somebody at the desk can't stand one of the names: he cuts in.
   const target = picks.find((p) => hatersOf(p, expert).some((w) => w !== 'moonbat'));
   if (target) {

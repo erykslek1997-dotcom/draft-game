@@ -46,7 +46,7 @@ export const DESK_CAST: Record<ExpertId, Expert> = {
   shyman: { id: 'shyman', name: 'Matt Shyman', mono: 'SH', hue: 145, tag: 'Defense' },
   solin: { id: 'solin', name: 'Davyd Solinhakov', mono: 'SK', hue: 20, tag: 'Eye test & mid-range' },
   binash: { id: 'binash', name: 'Jacob Binash', mono: 'BI', hue: 330, tag: "The '80s" },
-  jert: { id: 'jert', name: 'Mattheus Jertcheck', mono: 'JE', hue: 40, tag: 'Before 2000' },
+  jert: { id: 'jert', name: 'Mattheus Jertcheck', mono: 'JE', hue: 40, tag: 'The contrarian' },
   rotation: { id: 'rotation', name: 'Mark Rotation', mono: 'RO', hue: 260, tag: 'Bench depth' },
   rightwing: { id: 'rightwing', name: 'Micheal Rightwing', mono: 'RW', hue: 0, tag: "Moonbat's rival" },
   batt: { id: 'batt', name: 'Filippo Batterista', mono: 'BT', hue: 175, tag: 'Two-way' },
@@ -60,7 +60,7 @@ export const DESK_CAST: Record<ExpertId, Expert> = {
   zoran: { id: 'zoran', name: 'Zoran Eurostep', mono: 'EU', hue: 225, tag: 'International' },
 };
 
-export type DeskKind = 'host' | 'praise' | 'concern' | 'take' | 'right' | 'fact' | 'reply' | 'cuts' | 'defends' | 'burst';
+export type DeskKind = 'host' | 'praise' | 'concern' | 'take' | 'right' | 'fact' | 'reply' | 'cuts' | 'defends' | 'burst' | 'call';
 
 export interface DeskLine {
   who: ExpertId;

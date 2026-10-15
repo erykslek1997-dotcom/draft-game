@@ -820,7 +820,10 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       rundzie ekran „Free agency”: do 3 graczy spośród niewybranych, łącznie do 6 caps; ławka 10–12.
       Pytania na tę sesję: (1) 6 caps osobny budżet czy z niewydanych caps? (2) czy ławka 10–12
       liczy się do Bench score? (3) AI też podpisuje? (M)
-- [ ] **Koła ratunkowe — osobna sesja** (ustalone 2026-10-07, makieta zaakceptowana:
+- [x] **Koła ratunkowe → „Phone the Desk” (zrobione 2026-10-15,** makieta https://claude.ai/artifact/5ZSUn6nxWsoiybnPvmtGDm):
+      3 telefony na draft do 6 dyżurnych ekspertów (z ziarna), zawsze 3 nazwiska wg gustu eksperta, War Room
+      Onoffsky'ego (12 bez kolejności), plotka Erica (rundy 3–4), Chalk Talk (cały panel), Moonbat za darmo;
+      `src/engine/deskCalls.ts`, `src/components/PhoneDesk.tsx`. Pierwotny plan poniżej. (ustalone 2026-10-07, makieta zaakceptowana:
       `mock-cards2-*`). Każde raz na draft, przyciski w rzędzie filtrów w stylu „Affordable”:
   - **War Room** — przez jeden pick board pokazuje tylko ~10–12 graczy, których wybiera Twój
     front office (ranking po tym, ile dany gracz dodaje do oceny składu); pasek „your front office
