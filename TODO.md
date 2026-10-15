@@ -862,8 +862,7 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       najlepszej możliwej drużyny (CPU zabiera graczy), więc ton według miejsca: 1. miejsce już dziś
       same pochwały; rozszerzyć na top 3, gdzie słabości tylko jako „co mogłoby zagrozić”. Wspólne
       z All-Time. (M)
-- [ ] **Daily dla Mini** — każdego dnia inny limit FGA, zbanowani gracze, tematy. Podstawa gotowa:
-      dzienne ziarno i `dailyProgress.ts`. (M)
+- [ ] **Daily dla Mini** — zasady w „Daily w draftach — specyfikacja” niżej (3.4). (M)
 - [ ] **Playtest całego trybu + lista poprawek** (S)
 
 ### 3.3 All-Time Draft
@@ -871,7 +870,7 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 - [ ] **Playtest pod kątem spójności z resztą** (S)
 - [ ] **Ton wyniku według miejsca** — ten sam co w Mini.
 - [ ] **Tempo draftu AI (AI-4)** — naprawione tylko zawieszanie w połowie draftu. (S)
-- [ ] **Daily dla All-Time** — limit FGA, bany, „the bomb”. (M)
+- [ ] **Daily dla All-Time** — zasady i „the bomb” w „Daily w draftach — specyfikacja” niżej (3.4). (M)
 - [ ] **Wyłączyć narzędzia kalibracji przed wypuszczeniem** — `AUTO_FINISH_FOR_TESTING` i
       `TEAM_EXPORT_FOR_TESTING` = false w `src/components/testingFlags.ts`. (S)
 - [ ] **Playtest całego trybu + lista poprawek** (S)
@@ -902,6 +901,48 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       najtańsi).
 
 ### 3.4 Wspólne dla wszystkich trybów (po trzech trybach)
+
+#### Daily w draftach (Mini, All-Time) — specyfikacja (2026-10-15, w trakcie ustaleń)
+
+**Ustalone (użytkownik 2026-10-15):**
+- Wynik porównywalny: **ten sam draft dla wszystkich** — jedno ziarno na dzień (to samo miejsce w
+  drafcie, ci sami rywale, to samo AI), jedna próba dziennie, wynik = miejsce na 16 + Overall,
+  share bez spoilerów, streak osobno dla każdego trybu (jak Draw Five, `dailyProgress.ts`).
+- W menu: przycisk **Daily przy każdym trybie** (nie wspólny panel).
+- Zasady dnia: **różne** — nie jeden stały schemat; katalog niżej do przejrzenia i wyboru.
+- „The bomb”: najpierw spisać dokładnie, jak działa (niżej); wdrożenie po ustaleniu reszty zasad.
+
+**Katalog ograniczeń dnia (propozycje, do wyboru — dzień losuje z wybranych):**
+1. *Limit capów dnia* — inny niż zwykle (Mini 55–80 zamiast 70, All-Time 90–110 zamiast 100,9).
+2. *Odwrócony limit* — minimum capów (np. piątka ≥ 65): wymusza strzelców z dużą liczbą rzutów.
+3. *Blok franczyzy* — nikt, kto kiedykolwiek grał w X (dane: `cardCareerMetadata.json`, 209 z 215
+   graczy TAL ≥ 70; np. Lakers wycina 30 z nich).
+4. *Wymóg franczyzy* — co najmniej 2 graczy, którzy grali w X.
+5. *Blok ery* — bez danej dekady / tylko gracze sprzed 1990 / tylko po 2000 (lata okna gracza).
+6. *Top N zbanowanych* — 10 (Mini) / 20 (All-Time) najlepszych graczy dnia nie do wzięcia.
+7. *Bez gwiazd na pozycji* — np. żadnego centra TAL 85+.
+8. *Pułap gwiazd* — najwyżej 1 gracz z tierem MVP+ w składzie.
+9. *Mistrzowie / bez pierścienia* — tylko gracze z tytułem albo tylko bez tytułu (`championships`).
+10. *Narzucony gracz* — zaczynasz z konkretnym graczem dnia w składzie (jego capy już zajęte).
+11. *Styl* — np. „Splash day”: min. 3 strzelców B+ w spacingu; „Twin towers”: 2 obrońców obręczy.
+12. *Miejsce w drafcie dnia* — zawsze ostatni (#16) albo pierwszy (#1) z mniejszym limitem.
+13. (All-Time) *Ławka* — rezerwowi muszą grać łącznie ≥ 60 min; albo najwyżej 2 graczy sprzed 1980.
+14. (All-Time) *The bomb* — niżej.
+
+Otwarte: ile ograniczeń naraz (1 czy 2), czy Mini i All-Time mają ten sam dzień zasad, czy zasady
+widać przed startem (tak — ekran dnia przed loterią), czy dzień może być „bez ograniczeń”.
+
+**The bomb (All-Time) — jak działa (pomysł użytkownika 2026-09-29, do potwierdzenia):**
+- W rundzie dnia (ziarno; propozycja 5–8) **zamiast Twojego wyboru dostajesz ukrytego gracza**.
+- Nie wiesz, kto to: widzisz tylko **krótki opis** — pozycja, era, styl (np. „Rezerwowy center z lat
+  90., zbiórki i twarde zasłony, rzadko rzuca”), napisany z tych samych cech co opisy kart.
+- **Raczej nie będzie to dobry gracz** — pula: role / ławka (propozycja TAL 50–65); otwarte: czy
+  raz na kilka dni może trafić się perełka.
+- Ten sam dla wszystkich danego dnia (ziarno), AI nie dostaje bomb.
+- Otwarte: (1) czy jego koszt w capach widać od początku draftu (żeby dało się planować limit) —
+  propozycja: tak, opis + koszt widoczne od startu; (2) kiedy odsłonić nazwisko — propozycja: na
+  wynikach; (3) czy w rotacji musi grać (np. min. 10 min) czy można go posadzić na 0 min;
+  (4) czy runda jest znana od startu (propozycja: tak, „Round 6: The Bomb”).
 
 - [ ] **Mniejsza paczka danych** — menu już lekkie (2026-10-08: 3.8 MB → 238 kB, stałe składu
       w `rosterConstants.ts`). Zostaje otwarcie trybu: dziś ok. 5 s, na telefonie najdłużej. Jeden
