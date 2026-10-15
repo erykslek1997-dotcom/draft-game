@@ -760,6 +760,8 @@ span.at-pc-name { cursor: default; }
 .dk-ln--praise .dk-head small, .dk-ln--defends .dk-head small { color: #6fcf97; }
 .dk-ln--concern .dk-head small { color: var(--at-warn); }
 .dk-ln--take .dk-head small { color: #e58cff; }
+.dk-ln--cuts .dk-head small { color: #e58cff; }
+.dk-body p .dk-at { font-weight: 600; color: var(--at-accent); }
 .dk-ln--right .dk-head small, .dk-ln--host .dk-head small { color: var(--gold, #ffd166); }
 .dk-ln--right .dk-body { border-color: color-mix(in srgb, var(--gold, #ffd166) 45%, var(--calm-line)); }
 .dk-ln--host .dk-body { background: color-mix(in srgb, var(--gold, #ffd166) 7%, var(--calm-raised-2, #111c2a)); border-color: color-mix(in srgb, var(--gold, #ffd166) 30%, var(--calm-line)); }

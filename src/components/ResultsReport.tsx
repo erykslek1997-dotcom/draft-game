@@ -202,6 +202,13 @@ export function ProfileBars({ rows }: { rows: ProfileRow[] }) {
   );
 }
 
+/** "@Sosini" in a reply shows as a mention. */
+function withMentions(text: string, key: number) {
+  const bits = text.split(/(@[A-Z][A-Za-z]+)/g);
+  if (bits.length === 1) return text;
+  return <span key={key}>{bits.map((b, k) => (k % 2 ? <b key={k} className="dk-at">{b}</b> : b))}</span>;
+}
+
 /** "The Desk" (engine/desk.ts): the panel's lines, each with its expert's badge. Stage cues
  * written as *text* show small and grey. */
 export function DeskVoices({ voices }: { voices: DeskLine[] }) {
@@ -209,7 +216,7 @@ export function DeskVoices({ voices }: { voices: DeskLine[] }) {
     <ul className="dk">
       {voices.map((v, i) => {
         const x = DESK_CAST[v.who];
-        const parts = v.text.split(/\*(.+?)\*/g).map((part, j) => (j % 2 ? <em key={j} className="dk-cue">{part}</em> : part));
+        const parts = v.text.split(/\*(.+?)\*/g).map((part, j) => (j % 2 ? <em key={j} className="dk-cue">{part}</em> : withMentions(part, j)));
         if (v.kind === 'burst') {
           return (
             <li className={`dk-ln dk-ln--burst${v.reply ? ' dk-ln--reply' : ''}`} key={i}>
@@ -245,6 +252,7 @@ const DESK_KIND_LABEL: Record<DeskLine['kind'], string> = {
   right: 'hot take · right this time',
   fact: 'the numbers',
   reply: 'replies',
+  cuts: 'cuts in',
   defends: 'defends him',
   burst: '',
 };

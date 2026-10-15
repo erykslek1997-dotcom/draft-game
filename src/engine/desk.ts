@@ -4,6 +4,7 @@ import { spanEndYears } from './era';
 import { effectiveTalent } from './grades';
 import type { InsightCategory, RosterInsight } from './insights';
 import { mixSeed, mulberry32 } from './rng';
+import { BEEFS, type BeefCtx, type BeefLine, type Lens } from './deskBeefs';
 import { teamsForSpan } from './spanTeams';
 import type { Team } from './types';
 
@@ -57,7 +58,7 @@ export const DESK_CAST: Record<ExpertId, Expert> = {
   zoran: { id: 'zoran', name: 'Zoran Eurostep', mono: 'EU', hue: 225, tag: 'International' },
 };
 
-export type DeskKind = 'host' | 'praise' | 'concern' | 'take' | 'right' | 'fact' | 'reply' | 'defends' | 'burst';
+export type DeskKind = 'host' | 'praise' | 'concern' | 'take' | 'right' | 'fact' | 'reply' | 'cuts' | 'defends' | 'burst';
 
 export interface DeskLine {
   who: ExpertId;
@@ -66,6 +67,8 @@ export interface DeskLine {
   text: string;
   /** Indented under the line before it. */
   reply?: boolean;
+  /** The argument (deskBeefs.ts) this line belongs to, opener included. */
+  beef?: string;
 }
 
 /** Whose field each insight category is. */
@@ -127,6 +130,7 @@ const caps = (p: PlayerSpan) => Math.round(p.fga);
 
 /** What the flavour lenses see in a roster. */
 export interface RosterRead {
+  all: PlayerSpan[];
   modern: PlayerSpan[];
   old: PlayerSpan[];
   eighties: PlayerSpan[];
@@ -139,6 +143,8 @@ export interface RosterRead {
   jordan: PlayerSpan | undefined;
   international: PlayerSpan[];
   stars: PlayerSpan[];
+  /** Everyone outside the starting five, best first. */
+  bench: PlayerSpan[];
   /** The best value per cap: real talent at a small price. */
   steal: PlayerSpan | undefined;
   /** The worst: a big price for what he gives. */
@@ -157,6 +163,7 @@ export function readRoster(team: Team): RosterRead {
   const steals = all.filter((p) => effectiveTalent(p) >= 66 && p.fga <= 8 && valueOf(p) >= 55).sort((a, b) => valueOf(b) - valueOf(a));
   const overpays = all.filter((p) => p.fga >= 17 && effectiveTalent(p) < 86).sort((a, b) => valueOf(a) - valueOf(b));
   return {
+    all,
     modern: by((y) => y >= 2011),
     old: by((y) => y <= 1979),
     eighties: by((y) => y >= 1980 && y <= 1990),
@@ -169,6 +176,7 @@ export function readRoster(team: Team): RosterRead {
     jordan: all.find((p) => p.playerName === 'Michael Jordan'),
     international: all.filter((p) => INTERNATIONAL.has(normalizePlayerName(p.playerName))),
     stars: starters.filter((p) => effectiveTalent(p) >= STAR_TALENT),
+    bench: all.filter((p) => !starterIds.has(p.id)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)),
     steal: steals[0],
     overpay: overpays[0],
   };
@@ -179,8 +187,10 @@ interface Take {
   /** -1..1: how strongly, and which way. */
   score: number;
   line: DeskLine;
-  /** Which flavour lens produced it; rival replies answer only these, never an engine finding. */
-  lens?: 'kobe' | 'lakers' | 'old' | 'modern' | 'celtics' | 'eighties' | 'preTwoK' | 'stars';
+  /** Which flavour lens produced it (a beef can hang off it). */
+  lens?: Lens;
+  /** The engine finding it voices (a beef can hang off its category). */
+  insight?: RosterInsight;
 }
 
 const pick = <T,>(rng: () => number, items: readonly T[]): T => items[Math.floor(rng() * items.length)];
@@ -188,16 +198,46 @@ const names = (ps: PlayerSpan[], n = 3) => list(ps.slice(0, n).map(surname));
 
 /** Each expert's voice around an engine finding. `{m}` is the finding's own sentence. */
 const VOICE: Partial<Record<ExpertId, { praise: string[]; concern: string[] }>> = {
-  sosini: { praise: ['Respectfully? {m} Finally, somebody gets it.', '{m} *nods* That is basketball in this century.'], concern: ['Respectfully. {m} 🥱', '{m} I mean… respectfully, no.'] },
-  shyman: { praise: ['STOPS! {m}', '{m} *rubs his arms* I have actual chills.'], concern: ['Can we talk defense? {m} I’m getting a headache.', '{m} Stops? There won’t be any. None.'] },
-  solin: { praise: ['{m} That’s grown-man basketball.', '{m} Back in ’04 that’s a toll booth.'], concern: ['{m} Soft. Way too soft.', '{m} Nobody’s scared of this team.'] },
-  rotation: { praise: ['{m} *exhales* Finally, a bench I can trust.', '{m} Love you guys. Good game.'], concern: ['{m} Somebody call a doctor. Call two.', '{m} I love you guys, but no.'] },
-  natalie: { praise: ['{m} That’s how you spend money.', '{m} Under budget AND good? Marry me.'], concern: ['{m} *closes the laptop very slowly*', 'Rules are rules. {m}'] },
-  prab: { praise: ['{m} Kobe would sign off on that, my friend.', '{m} That’s a closer. That’s a CLOSER.'], concern: ['{m} Who takes the last shot? Exactly.', '{m} Kobe would never.'] },
-  jeremy: { praise: ['{m} Go watch the tape. Textbook.', '{m} Pure ’90s off-ball work.'], concern: ['{m} Go watch the tape, then we talk.', '{m} Michael would have run them off three screens.'] },
-  zoran: { praise: ['{m} *hand on heart* The ball moves. Beautiful.', '{m} Listen to me: that is European basketball.'], concern: ['{m} Listen to me: one ball, five guys. In Europe we call that a problem.', '{m} *hand on heart* The ball is crying.'] },
-  batt: { praise: ['Do they play both ends? Yes. {m}', '{m} Two ends. Two! Bellissimo.'], concern: ['Do they guard anybody? No. {m}', '{m} Half a team, then.'] },
-  onoffsky: { praise: ['{m} The numbers agree, for once.', '*adjusts glasses* {m}'], concern: ['*adjusts glasses* {m}', 'Verily, one must contemplate the evidence. {m}'] },
+  sosini: {
+    praise: ['Respectfully? {m} Finally, somebody gets it.', '{m} *nods* That is basketball in THIS century.', '{m} Pin it. Frame it. Send it to every GM still drafting centers who can’t shoot.'],
+    concern: ['Respectfully. {m} 🥱', '{m} Respectfully, this is a crime and I’m calling it in.', '{m} It’s 2026. Who approved this?'],
+  },
+  shyman: {
+    praise: ['STOPS! {m}', '{m} *rubs his arms* I have actual chills.', '{m} DEFENSE. Somebody screenshot this for Mattia.'],
+    concern: ['Can we talk defense? {m} I’m getting a headache.', '{m} Stops? There won’t be any. None. Zero.', '{m} I’m going to have nightmares about this roster.'],
+  },
+  solin: {
+    praise: ['{m} That’s grown-man basketball.', '{m} Back in ’04 that’s a toll booth. Pay up.'],
+    concern: ['{m} Soft. Way too soft.', '{m} Nobody’s scared of this team. NOBODY.', '{m} My grandma boxes out harder.'],
+  },
+  rotation: {
+    praise: ['{m} *exhales* Finally, a bench I can trust.', '{m} Love you guys. Good draft.'],
+    concern: ['{m} Somebody call a doctor. Call two.', '{m} I love you guys, but February is coming.', '{m} This bench is a rumour.'],
+  },
+  natalie: {
+    praise: ['{m} That’s how you spend money.', '{m} Under budget AND good? I need to sit down.'],
+    concern: ['{m} *closes the laptop very slowly*', 'Rules are rules. {m}', '{m} I’m not mad. I’m disappointed. And a little mad.'],
+  },
+  prab: {
+    praise: ['{m} Kobe would sign off on that, my friend.', '{m} That’s a closer. That’s a CLOSER.'],
+    concern: ['{m} Who takes the last shot? Exactly. Nobody.', '{m} Kobe would never. NEVER.'],
+  },
+  jeremy: {
+    praise: ['{m} Go watch the tape. Textbook.', '{m} Pure ’90s off-ball work. Michael would approve.'],
+    concern: ['{m} Go watch the tape, then we talk.', '{m} Michael would have run them off three screens. Three.'],
+  },
+  zoran: {
+    praise: ['{m} *hand on heart* The ball moves. Beautiful.', 'Listen to me. {m} That is European basketball.'],
+    concern: ['Listen to me. {m} One ball, five guys. In Europe we call that a problem.', '{m} *hand on heart* The ball is crying.'],
+  },
+  batt: {
+    praise: ['Do they play both ends? Yes. {m}', '{m} Two ends. Two! Bellissimo.'],
+    concern: ['Do they guard anybody? No. {m}', '{m} Half a team. Mezza squadra. Mamma mia.'],
+  },
+  onoffsky: {
+    praise: ['{m} The numbers agree, for once.', '*adjusts glasses* {m} Statistically? Beautiful.'],
+    concern: ['*adjusts glasses* {m}', 'Verily, one must contemplate the evidence. {m}', 'Actually. {m} I have the spreadsheet open if anyone wants to fight.'],
+  },
 };
 
 function voiced(rng: () => number, who: ExpertId, kind: 'praise' | 'concern', message: string): string {
@@ -210,60 +250,51 @@ function voiced(rng: () => number, who: ExpertId, kind: 'praise' | 'concern', me
 /** The flavour takes a roster gives each lens. */
 function flavourTakes(read: RosterRead): Take[] {
   const out: Take[] = [];
-  const add = (who: ExpertId, score: number, kind: DeskKind, text: string, lens?: Take['lens']) => out.push({ who, score, line: { who, kind, text }, lens });
+  const add = (who: ExpertId, score: number, kind: DeskKind, text: string, lens?: Lens) => out.push({ who, score, line: { who, kind, text }, lens });
   if (read.celtics.length >= 2) add('bannerman', 0.4 + 0.15 * read.celtics.length, 'praise', `*stands up* ${read.celtics.slice(0, 4).map(surname).join('! ')}! That’s Celtic DNA. I might actually cry.`, 'celtics');
   else if (read.celtics.length === 1 && read.celtics[0].playerName === 'Bill Russell') add('bannerman', 0.5, 'praise', 'Bill Russell. Eleven rings. ELEVEN. *points at the ceiling* I rest my case.', 'celtics');
-  else if (read.celtics.length === 1) add('bannerman', 0.35, 'praise', `${surname(read.celtics[0])}. One Celtic. It’s a start. Count the banners, then we’ll talk.`);
-  else if (read.lakers.length >= 2) add('bannerman', -0.45, 'concern', `${names(read.lakers)} in purple and gold. *shudders* The Celtics underground is already on its way.`);
-  if (read.kobe) add('prab', 0.9, 'praise', `Kobe! KOBE! ${read.kobe.spanLabel} Kobe! The rest of this roster is a supporting cast, my friend.`, 'kobe');
+  else if (read.celtics.length === 1) add('bannerman', 0.35, 'praise', `${surname(read.celtics[0])}. One Celtic. It’s a start. Count the banners, then we’ll talk.`, 'celtics');
+  else if (read.lakers.length >= 2) add('bannerman', -0.45, 'concern', `${names(read.lakers)} in purple and gold. *shudders* The Celtics underground is already on its way.`, 'lakersConcern');
+  if (read.kobe) add('prab', 0.9, 'praise', `KOBE! ${read.kobe.spanLabel} Kobe! Eighty-one points, my friend. EIGHTY-ONE. The rest of this roster just has to stay out of his way.`, 'kobe');
   else if (read.lakers.length >= 2) add('prab', 0.4, 'praise', `${names(read.lakers)}. Lakers. I respect it. Not Kobe, but I respect it.`, 'lakers');
-  if (read.jordan) add('jeremy', 0.9, 'praise', 'Michael Jordan. Six Finals. Six rings. Zero Game 7s. Next question.');
-  else if (read.nineties.length >= 3) add('jeremy', 0.55, 'praise', `${names(read.nineties)} — that’s ’90s basketball. Go watch the tape.`);
+  if (read.jordan) add('jeremy', 0.9, 'praise', 'Michael Jordan. Six Finals. Six rings. Zero Game 7s. Next question.', 'jordan');
+  else if (read.nineties.length >= 3) add('jeremy', 0.55, 'praise', `${names(read.nineties)}. That’s ’90s basketball. Elbows, hand-checks, mid-range. Go watch the tape.`, 'nineties');
   else if (read.kobe) add('jeremy', -0.4, 'concern', 'Kobe’s great. He’s not Michael. Go watch the ’98 tape, then we talk.');
   if (read.eighties.length >= 2) add('binash', 0.35 + 0.1 * read.eighties.length, 'praise', `${names(read.eighties)} from the ’80s! Oh, I’m home. Somebody find me a tape deck and a pair of short shorts.`, 'eighties');
   if (read.preTwoK.length >= 6) add('jert', 0.7, 'praise', `${read.preTwoK.length} guys from before 2000. Kids today couldn’t handle this team. Couldn’t.`, 'preTwoK');
-  else if (read.preTwoK.length === 0) add('jert', -0.6, 'concern', 'Not one player from before 2000? Kids today. Moses Malone is rolling his eyes somewhere.');
-  if (read.old.length >= 2) add('sosini', -0.4 - 0.1 * read.old.length, 'concern', `${names(read.old)}. 🥱 Respectfully — does this team come with a time machine, or do we rent one?`, 'old');
+  else if (read.preTwoK.length === 0) add('jert', -0.6, 'concern', 'Not one player from before 2000? Kids today. Moses Malone is rolling his eyes somewhere.', 'noPreTwoK');
+  if (read.old.length >= 2) add('sosini', -0.4 - 0.1 * read.old.length, 'concern', `${names(read.old)}. 🥱 Respectfully, does this team come with a time machine, or do we rent one?`, 'old');
   else if (read.modern.length >= 6) add('sosini', 0.6, 'praise', 'Everybody on this roster could play tonight. Respectfully, that’s the whole point.', 'modern');
-  if (read.aughts.length >= 3) add('solin', 0.55, 'praise', `${names(read.aughts)} — that’s 2004 in a jar. Somebody’s getting fouled hard and nobody’s apologising.`);
+  if (read.aughts.length >= 3) add('solin', 0.55, 'praise', `${names(read.aughts)}. That’s 2004 in a jar. Somebody’s getting fouled hard and nobody’s apologising.`, 'aughts');
   if (read.stars.length >= 3) add('lex', 0.75, 'praise', `${names(read.stars)}! STARS WIN! Benches are for people who couldn’t draft stars!`, 'stars');
-  else if (read.stars.length <= 1) add('lex', -0.5, 'concern', read.stars.length === 1 ? `${surname(read.stars[0])} and… who? One star? ONE? Where’s the dynasty?` : 'No stars. Zero. You built a very nice team of role players. Congratulations.');
-  if (read.international.length >= 2) add('zoran', 0.3 + 0.15 * read.international.length, 'praise', `${names(read.international)}! *hand on heart* Finally, a roster that has seen a passport.`);
-  if (read.steal) add('natalie', 0.6, 'praise', `${surname(read.steal)} for ${caps(read.steal)} caps? Somebody call the police. That’s theft.`);
-  else if (read.overpay) add('natalie', -0.6, 'concern', `Rules are rules: 100.9 caps. ${surname(read.overpay)} ate ${caps(read.overpay)} of them. *closes the laptop very slowly*`);
+  else if (read.stars.length === 1) add('lex', -0.5, 'concern', `${surname(read.stars[0])} and… who? One star? ONE? Where’s the dynasty?`, 'oneStar');
+  else if (read.stars.length === 0) add('lex', -0.5, 'concern', 'No stars. Zero. You built a very nice team of role players. Congratulations. 👏', 'noStars');
+  if (read.international.length >= 2) add('zoran', 0.3 + 0.15 * read.international.length, 'praise', `${names(read.international)}! *hand on heart* Finally, a roster that has seen a passport.`, 'international');
+  if (read.steal) add('natalie', 0.6, 'praise', `${surname(read.steal)} for ${caps(read.steal)} caps? Somebody call the police. That’s theft.`, 'steal');
+  else if (read.overpay) add('natalie', -0.6, 'concern', `Rules are rules: 100.9 caps. ${surname(read.overpay)} ate ${caps(read.overpay)} of them. *closes the laptop very slowly*`, 'overpay');
   return out;
 }
 
-/** Rivals answer each other when both are on air (or the rival walks in for it). */
-function rivalReply(a: Take, read: RosterRead): DeskLine[] {
-  switch (a.who) {
-    case 'bannerman':
-      if (read.kobe && a.lens === 'celtics') return [
-        { who: 'prab', kind: 'reply', text: 'Celtic DNA?! The best player in that building is Kobe, my friend. KOBE!', reply: true },
-        { who: 'bannerman', kind: 'reply', text: '*grinning* Love that for him. Ask him how the 2008 Finals went.', reply: true },
-        { who: 'prab', kind: 'reply', text: '*long pause* …We don’t talk about 2008.', reply: true },
-      ];
-      return [];
-    case 'prab':
-      if (!read.jordan && a.lens === 'kobe') return [
-        { who: 'jeremy', kind: 'reply', text: 'Relax. It’s not like it’s Jordan.', reply: true },
-        { who: 'prab', kind: 'reply', text: '*stands up* Say that to my face, Jeremy.', reply: true },
-      ];
-      return [];
-    case 'sosini':
-      if (a.lens === 'old') return [{ who: 'jert', kind: 'reply', text: `Time machine? ${surname(read.old[0])} would eat your favourite player for breakfast, kid. And lunch.`, reply: true }];
-      if (a.lens === 'modern') return [{ who: 'jert', kind: 'reply', text: 'Kids today. Let’s see this “whole point” against a 1986 frontcourt.', reply: true }];
-      return [];
-    case 'jert':
-    case 'binash':
-      if (a.lens === 'eighties' || a.lens === 'preTwoK') return [{ who: 'sosini', kind: 'reply', text: '🥱 Respectfully, can we score it already?', reply: true }];
-      return [];
-    case 'lex':
-      if (a.lens === 'stars') return [{ who: 'rotation', kind: 'reply', text: 'Stars win until February, Lex. Then the bench plays. *softens* Love you, man.', reply: true }];
-      return [];
-    default:
-      return [];
-  }
+/** The argument a take on air starts, if any (deskBeefs.ts): the take's own line (or the beef's
+ * set-up in its place) followed by the thread. */
+function beefFor(t: Take, read: RosterRead, rng: () => number, used: Set<string>): DeskLine[] | null {
+  const ctx: BeefCtx = {
+    read,
+    sur: surname,
+    names,
+    has: (name) => read.all.find((p) => p.playerName === name),
+    caps,
+  };
+  const options = BEEFS.filter((b) => !used.has(b.id) && (b.chance === undefined || rng() < b.chance) && ('lens' in b.on
+    ? b.on.lens === t.lens
+    : t.insight !== undefined && b.on.category.includes(t.insight.category) && (b.on.side === 'praise') === (t.score > 0) && CATEGORY_EXPERT[t.insight.category] === t.who))
+    .flatMap((b) => b.variants.map((v) => ({ id: b.id, thread: v(ctx) })).filter((x) => x.thread !== null));
+  if (!options.length) return null;
+  const { id, thread } = pick(rng, options);
+  used.add(id);
+  const toLine = ([who, text, kind]: BeefLine): DeskLine =>
+    who === 'host' ? { who, kind: 'host', text, beef: id } : { who, kind: kind ?? 'reply', text, reply: true, beef: id };
+  return [{ ...t.line, text: thread!.open ?? t.line.text, beef: id }, ...thread!.lines.map(toLine)];
 }
 
 /** Moonbat's bit: a hot take (right about 3 in 10, and only when it really is a bargain), then
@@ -291,45 +322,63 @@ const MOONBAT_RIGHT_BY_CATEGORY: Partial<Record<InsightCategory, string>> = {
 
 function moonbatBit(read: RosterRead, rng: () => number, place: number, onAir: ReadonlySet<ExpertId> = new Set(), topStrength?: RosterInsight): DeskLine[] {
   const steal = read.steal;
+  // The first draw decides right or wrong, so the 3-in-10 rate never depends on the lines picked.
   const right = rng() < 0.3;
   const strengthLine = topStrength ? MOONBAT_RIGHT_BY_CATEGORY[topStrength.category] : undefined;
+  const rw = (text: string): DeskLine => ({ who: 'rightwing', kind: 'reply', text, reply: true });
+  const mb = (text: string, kind: DeskKind = 'reply'): DeskLine => ({ who: 'moonbat', kind, text, reply: kind === 'reply' });
+  const concede = () => rw(pick(rng, [
+    '*through gritted teeth* Fine. Once. Don’t you dare get used to it.',
+    '*stares at the ceiling* Wrong reason. Right player. I’m deleting this app.',
+    '*long exhale* I need everyone to know I’m logging off for a week.',
+  ]));
+  const signOff = () => mb(pick(rng, ['*already printing the T-shirt* too late. peace ✌️', 'see u tomorrow', 'rightwing in shambles 😂', 'told u. do ur research']));
   if (right && !steal && topStrength && strengthLine) {
     const expert = CATEGORY_EXPERT[topStrength.category];
     const defender: ExpertId = expert === 'moonbat' || expert === 'rightwing' ? 'onoffsky' : expert;
     return [
-      { who: 'moonbat', kind: 'right', text: strengthLine },
-      { who: 'rightwing', kind: 'reply', text: 'Bart. *sighs* That is not how any of this works.', reply: true },
+      mb(strengthLine, 'right'),
+      rw(pick(rng, ['@Moonbat Bart. *sighs* That is not how any of this works.', '@Moonbat you can’t smell a basketball team, Bart.'])),
       { who: defender, kind: 'defends', text: '…He’s right, though. *the whole desk turns* That IS this team’s best thing. Wrong reason. Right answer.', reply: true },
-      { who: 'rightwing', kind: 'reply', text: '*through gritted teeth* Fine. Once. Don’t you dare get used to it.', reply: true },
-      { who: 'moonbat', kind: 'reply', text: '*already printing the T-shirt* too late. peace ✌️', reply: true },
+      concede(),
+      signOff(),
     ];
   }
   if (steal && right) {
     const defender: ExpertId = onAir.has('natalie') ? 'onoffsky' : 'natalie';
     return [
-      { who: 'moonbat', kind: 'right', text: `${surname(steal).toLowerCase()} for ${caps(steal)}.` },
-      { who: 'moonbat', kind: 'burst', text: `steal of the draft. ${pick(rng, ['cheap guys try harder.', 'his name sounds fast.', 'rebounds are basically points you get twice.'])}` },
-      { who: 'rightwing', kind: 'reply', text: 'Bart. *sighs* That is not how any of this works.', reply: true },
+      mb(`${surname(steal).toLowerCase()} for ${caps(steal)}.`, 'right'),
+      mb(`steal of the draft. ${pick(rng, ['cheap guys try harder.', 'his name sounds fast.', 'rebounds are basically points you get twice.', 'trust me. do ur research.'])}`, 'burst'),
+      rw(pick(rng, ['@Moonbat Bart. *sighs* That is not how any of this works.', '@Moonbat here we go. Bart, you picked a player because his name sounds FAST—'])),
       defender === 'natalie'
-        ? { who: 'natalie', kind: 'defends', text: `…He’s right. ${caps(steal)} caps for that? Theft. Bart, I could kiss you.`, reply: true }
-        : { who: 'onoffsky', kind: 'defends', text: `…He’s right. *the whole desk turns* That much player for ${caps(steal)} caps. Wrong reason. Right pick.`, reply: true },
-      { who: 'rightwing', kind: 'reply', text: '*through gritted teeth* Fine. Once. Don’t you dare get used to it.', reply: true },
-      { who: 'moonbat', kind: 'reply', text: '*already printing the T-shirt* too late. peace ✌️', reply: true },
+        ? { who: 'natalie', kind: 'defends', text: `Hold on. HOLD ON. He’s… right? ${caps(steal)} caps for that? Theft. I need to sit down.`, reply: true }
+        : { who: 'onoffsky', kind: 'defends', text: `Actually. *adjusts glasses* That much player for ${caps(steal)} caps. He’s right. Statistically, painfully right.`, reply: true },
+      concede(),
+      signOff(),
     ];
   }
   const target = read.overpay;
   if (target) {
-    return [
-      { who: 'moonbat', kind: 'take', text: `${surname(target).toLowerCase()}.` },
-      { who: 'moonbat', kind: 'burst', text: 'best pick of the draft. didn’t read the numbers. don’t need to.' },
-      { who: 'rightwing', kind: 'reply', text: `*rubs temples* Bart. He ate ${caps(target)} caps and you finished ${ordinal(place)}.`, reply: true },
-      { who: 'moonbat', kind: 'reply', text: 'agree to disagree. peace ✌️ *high-fives nobody*', reply: true },
+    const lines: DeskLine[] = [
+      mb(`${surname(target).toLowerCase()} for ${caps(target)} caps is the steal of the draft.`, 'take'),
+      mb(pick(rng, ['buckets are buckets. do ur research', 'didn’t read the numbers. don’t need to.', 'trust me. i have a feeling.']), 'burst'),
+      rw(pick(rng, [
+        `@Moonbat he ate ${caps(target)} caps and the team finished ${ordinal(place)}. That’s not a steal, that’s a robbery, and you’re the victim.`,
+        `@Moonbat *rubs temples* Bart. ${caps(target)} caps. ${ordinal(place)} place. Read a number. Any number.`,
+      ])),
+      mb(pick(rng, ['rightwing has never scored a bucket in his life', 'agree to disagree ✌️ *high-fives nobody*', 'rightwing still mad about the fridge thing in 2019 lol'])),
     ];
+    if (!onAir.has('onoffsky') && rng() < 0.5) lines.push({ who: 'onoffsky', kind: 'cuts', text: '*adjusts glasses* For the record: worst value on this roster. By a lot.', reply: true }, mb('nerd alert 🤓'));
+    return lines;
   }
   return [
-    { who: 'moonbat', kind: 'take', text: 'didn’t watch it.' },
-    { who: 'moonbat', kind: 'burst', text: `${ordinal(place)} is a typo. freestyle.` },
-    { who: 'rightwing', kind: 'reply', text: `*slowly* It’s not a typo, Bart. It’s a standings table. They come in order.`, reply: true },
+    mb(pick(rng, ['didn’t watch it.', 'skipped this one. vibes were off.', 'i was in the bathroom for this whole draft.']), 'take'),
+    mb(pick(rng, [`${ordinal(place)} is a typo. freestyle.`, `${ordinal(place)}? robbed. the refs did this.`]), 'burst'),
+    rw(pick(rng, [
+      '@Moonbat *slowly* It’s not a typo, Bart. It’s a standings table. They come in order.',
+      '@Moonbat there are no refs in a draft, Bart. Log off.',
+    ])),
+    mb(pick(rng, ['rightwing still mad about the fridge thing in 2019 lol', 'u wish u had my confidence', 'see u tomorrow'])),
   ];
 }
 
@@ -345,11 +394,23 @@ export function ordinal(n: number): string {
 }
 
 const HOST_OPEN: Record<'won' | 'podium' | 'middle' | 'bottom', string[]> = {
-  won: ['CHAMPIONS! The {team} take it all! Okay, okay — panel, go.', 'Title for the {team}! Somebody stop Igor from crying. Panel?'],
-  podium: ['{place} for the {team}. Podium! Panel — be nice. Or don’t.', '{place} place, {team}. So close you can smell it. Go.'],
-  middle: ['{place} for the {team}. Not great, not terrible. Who wants it?', 'The {team} land {place}. Panel, I can see you vibrating. Go.'],
-  bottom: ['{place}. {place}, for the {team}. Somebody explain this to me.', 'The {team}, {place}. Deep breaths, everybody. Go.'],
+  won: ['CHAMPIONS! The {team} take it all! Okay, okay — panel, go.', 'Title for the {team}! Somebody stop Igor from crying. Panel?', 'CHAMPIONS! The {team}! My producer is crying. Igor is crying. Panel, go.'],
+  podium: ['{place} for the {team}. Podium! Panel — be nice. Or don’t.', '{place} place, {team}. So close you can smell it. Go.', '{place}, {team}. Close. Not close enough for Lex. Go.'],
+  middle: ['{place} for the {team}. Not great, not terrible. Who wants it?', 'The {team} land {place}. Panel, I can see you vibrating. Go.', '{place} for the {team}. The mushy middle. Somebody say something spicy.'],
+  bottom: ['{place}. {place}, for the {team}. Somebody explain this to me.', 'The {team}, {place}. Deep breaths, everybody. Go.', '{place}. The {team}. I have been told to remain professional. Panel?'],
 };
+const HOST_CLOSE_TIP = [
+  'Okay. OKAY. Everybody breathe. Note for next time? {tip} We’ll be right back.',
+  'Phones down, everybody. Lesson for next time? {tip} We’ll be right back before somebody gets blocked.',
+];
+const HOST_CLOSE_WON = [
+  'That’s the show. Champions. Somebody get Igor a tissue. We’ll be right back.',
+  'That’s the show. Champions. Lex wants a dynasty, Mark wants a bench, I want a nap. We’ll be right back.',
+];
+const HOST_CLOSE_PODIUM = ['Podium it is. Not bad at all. We’ll be right back.', 'Podium. Nobody got blocked. That’s a win for me too. We’ll be right back.'];
+/** Arguments per show at most, and the chance that a take able to start one does. */
+const MAX_BEEFS = 2;
+const BEEF_CHANCE = 0.65;
 
 export interface DeskInput {
   team: Team;
@@ -379,11 +440,11 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
   const insightTakes: Take[] = [
     ...strengths.slice(0, rank <= 3 ? 3 : 2).map((i) => {
       const who = CATEGORY_EXPERT[i.category];
-      return { who, score: 0.5 + 0.5 * Math.min(1, i.score), line: { who, kind: 'praise' as const, text: voiced(rng, who, 'praise', i.message) } };
+      return { who, score: 0.5 + 0.5 * Math.min(1, i.score), insight: i, line: { who, kind: 'praise' as const, text: voiced(rng, who, 'praise', i.message) } };
     }),
     ...concerns.slice(0, rank <= 3 ? 1 : 2).map((i) => {
       const who = CATEGORY_EXPERT[i.category];
-      return { who, score: -(0.5 + 0.5 * Math.min(1, i.score)), line: { who, kind: 'concern' as const, text: voiced(rng, who, 'concern', i.message) } };
+      return { who, score: -(0.5 + 0.5 * Math.min(1, i.score)), insight: i, line: { who, kind: 'concern' as const, text: voiced(rng, who, 'concern', i.message) } };
     }),
   ];
   if (style) insightTakes.push({ who: 'jeremy', score: 0.45, line: { who: 'jeremy', kind: 'praise', text: `${style} Go watch the tape.` } });
@@ -417,13 +478,12 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
   }
 
   onAir.sort((a, b) => Math.sign(b.score) - Math.sign(a.score));
-  let replies = 0;
+  // Arguments come from their own stream, so starting one never reshuffles who else is on air.
+  const beefRng = mulberry32(mixSeed(seed, 0xbeef));
+  const beefsUsed = new Set<string>();
   for (const t of onAir) {
-    lines.push(t.line);
-    if (replies < 1) {
-      const r = rivalReply(t, read);
-      if (r.length && r.every((l) => l.who === t.who || !used.has(l.who))) { lines.push(...r); replies++; }
-    }
+    const thread = beefsUsed.size < MAX_BEEFS && beefRng() < BEEF_CHANCE ? beefFor(t, read, beefRng, beefsUsed) : null;
+    lines.push(...(thread ?? [t.line]));
   }
   if (moonbatOnAir(seed)) lines.push(...moonbatBit(read, mulberry32(mixSeed(seed, 0x30bb)), rank, used, strengths[0]));
 
@@ -431,10 +491,8 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
     who: 'host',
     kind: 'host',
     text: tip
-      ? `Okay. OKAY. Everybody breathe. Note for next time? ${tip} We’ll be right back.`
-      : rank === 1
-        ? 'That’s the show. Champions. Somebody get Igor a tissue. We’ll be right back.'
-        : 'Podium it is. Not bad at all. We’ll be right back.',
+      ? pick(rng, HOST_CLOSE_TIP).replace('{tip}', tip)
+      : pick(rng, rank === 1 ? HOST_CLOSE_WON : HOST_CLOSE_PODIUM),
   });
   return lines;
 }
@@ -486,7 +544,7 @@ export function buildMiniDesk({ team, rank, fieldSize, weakest, weakReason, weak
   const flavour = flavourTakes(read).sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
   const used = new Set<ExpertId>();
   const pos = flavour.find((t) => t.score > 0);
-  if (pos) { lines.push(pos.line); used.add(pos.who); const r = rivalReply(pos, read); lines.push(...r.slice(0, 2)); }
+  if (pos) { lines.push(...(beefFor(pos, read, mulberry32(mixSeed(seed, 0xbeef)), new Set()) ?? [pos.line])); used.add(pos.who); }
   const axisWho = AXIS_EXPERT[weakest.label] ?? 'onoffsky';
   const axisMsg = `${rank <= 3 ? 'The one thing a rival could attack' : 'Your weakest area'} is ${weakest.label} (${Math.round(weakest.value)}). ${weakReason}`;
   lines.push({ who: axisWho, kind: 'concern', text: voiced(rng, axisWho, 'concern', axisMsg) });

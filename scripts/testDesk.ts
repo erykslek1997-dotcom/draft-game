@@ -1,5 +1,6 @@
 import { autoFinishDraft, createDraft } from '../src/engine/draft';
 import { buildDesk, buildMiniDesk, buildRivalDesk, readRoster, theirVoice, type DeskLine } from '../src/engine/desk';
+import { BEEFS } from '../src/engine/deskBeefs';
 import { buildTeamFeatureSnapshot } from '../src/engine/insightMapper';
 import { generateRosterInsights, insightContextFor } from '../src/engine/insights';
 import { CAP_LIMIT } from '../src/engine/positions';
@@ -45,23 +46,23 @@ let rivalTooLong = 0;
 let miniStructure = 0;
 let offTopicReplies: string[] = [];
 let clumsy: string[] = [];
+const beefIds = new Set<string>();
+const beefShows = new Set<string>();
 
-/** A rival's comeback has to answer the take it follows, not just any line by that expert. */
-const REPLY_NEEDS: [RegExp, RegExp][] = [
-  [/^Time machine\?/, /time machine/],
-  [/whole point/, /whole point/],
-  [/not like it’s Jordan/, /Kobe/],
-  [/Ask him how the 2008 Finals went|best player in that building is Kobe/, /Celtic/],
-  [/can we score it already/, /’80s|before 2000/],
-  [/Stars win until February/, /STARS WIN/],
-];
 function checkLines(lines: DeskLine[], where: string): void {
-  let lastOpen = '';
-  for (const l of lines) {
-    if (!l.reply) { lastOpen = l.text; }
-    else {
-      for (const [reply, needs] of REPLY_NEEDS) if (reply.test(l.text) && !needs.test(lastOpen) && !lines.some((o) => o.reply && o !== l && needs.test(o.text))) offTopicReplies.push(`${where}: “${l.text}” after “${lastOpen}”`);
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    // A beef's thread starts with its anchor take (never a reply) and stays together.
+    if (l.beef && (i === 0 || lines[i - 1].beef !== l.beef)) {
+      if (l.reply) offTopicReplies.push(`${where}: thread ${l.beef} opens with a reply`);
+      const beef = BEEFS.find((b) => b.id === l.beef);
+      if (!beef) offTopicReplies.push(`${where}: unknown beef ${l.beef}`);
+      beefIds.add(l.beef);
+      beefShows.add(where);
+      const seenBefore = lines.slice(0, i).some((o) => o.beef === l.beef);
+      if (seenBefore) offTopicReplies.push(`${where}: beef ${l.beef} split in two`);
     }
+    if (l.reply && !l.beef && !lines.slice(0, i).some((o) => o.who === 'moonbat')) offTopicReplies.push(`${where}: stray reply “${l.text}”`);
     if (/\bOnly 0\b|(?:—|:) [A-Z][a-z]+ \d+ real\b|(?<![Vv]an )\b(?:Lier|Exel|Horn|Gundy)\b/.test(l.text)) clumsy.push(`${where}: ${l.text}`);
   }
 }
@@ -125,7 +126,10 @@ check(rightWithoutSteal === 0, 'Moonbat is only ever right about a real bargain 
 check(rivalTooLong === 0, 'a rival’s panel stays short (four lines at most)');
 check(rivalYou === 0, 'a rival’s panel talks about them, not you');
 check(miniStructure === 0, 'the Mini panel opens and closes with the host');
-check(offTopicReplies.length === 0, 'a rival’s comeback only follows the take it answers', offTopicReplies.slice(0, 3).join(' | '));
+check(offTopicReplies.length === 0, 'every reply belongs to an argument (or Moonbat’s bit), and each argument starts from its take', offTopicReplies.slice(0, 3).join(' | '));
+console.log({ beefShows: beefShows.size, beefKinds: beefIds.size, of: BEEFS.length });
+check(beefShows.size / shows > 0.4, 'the panel argues in a good share of shows', `${beefShows.size}/${shows}`);
+check(beefIds.size >= 12, 'many different arguments show up across two leagues', `${beefIds.size}`);
 check(clumsy.length === 0, 'no “Only 0”, no capital mid-sentence before a finding, surnames keep their Van', clumsy.slice(0, 3).join(' | '));
 
 if (failures > 0) {
