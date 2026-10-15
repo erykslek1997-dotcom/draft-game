@@ -19,15 +19,24 @@
  *   efficiency (the usage factor lowers his claim on the ball in `contextStats.ts`, which pays
  *   +0.25 TS per usage point) and to assists, at his own assists per shot.
  *
+ * - Assists (2026-10-15, the user: "na percentylach, żeby rośli ci, którzy dobrze podawali, a nie
+ *   każde drewno"): playmaking moved from the guards to the bigs. Real seasons (1000+ minutes,
+ *   assists per 36 at a pace of 100) put each span at his percentile among his position's players
+ *   in the seasons around his (guards, forwards, centers apart), and he gets that percentile of
+ *   today's (2019-20 on) — 1995-2004 to today: forwards +0.2 at the median and +0.9 at the 90th,
+ *   centers +0.9 and +1.7, guards -0.7. Where the seasons around him are too thin (before minutes
+ *   were kept), pace only, as before.
+ *
  * Run: npx tsx scripts/buildModernBox.ts
  */
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { draftPool } from '../src/data/draftPool';
 import type { PlayerSpan } from '../src/data/schema';
 import { eraBaseline, reboundAvailabilityFactor, spanEndYears } from '../src/engine/era';
 import boxRates from '../src/data/awards/boxRates.json';
 import context from '../src/data/spanContext.json';
+import { estimatedMinutesPerGame } from '../src/engine/minutesPerGame';
 
 const MODERN_SEASONS = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
 /** League pace 2019-20 to 2025-26 (2023-24 estimated; the box data under-reads it). */
@@ -86,11 +95,129 @@ const LEADERS = {
 };
 const squeeze = (v: number, top: number, share: number) => (v > top ? top + (v - top) * share : v);
 
+// Assists by percentile within position (see the header).
+const ASSIST_POOL_MINUTES = 1000;
+const ASSIST_WINDOW = 4;
+const ASSIST_POOL_MIN_SIZE = 40;
+/** A gain counts from his position's median up, in full from the 85th percentile: an average
+ * passer of an era when nobody at his position passed is not a passer today. A loss (the guards)
+ * counts in full. */
+const ASSIST_GAIN_FROM = 0.5;
+const ASSIST_GAIN_FULL = 0.85;
+/** 2026-10-15, the user ("czy Jokic nie zawyża zbyt bardzo centrów?" — "tylko Jokic jest takim
+ * unicornem"): he is left out of today's scale, so the best passing center of an older era lands on
+ * today's best centers without him (centers' 99th percentile 9.3 with him, 6.8 without). Measured on
+ * each passer's best three seasons against his era: Jokic 1.9x its 95th percentile and 1.5x its
+ * 99th, no other center close; Divac, Webber and Domantas Sabonis 1.4-1.5x and ~1.1x; LeBron and
+ * Draymond 1.6-1.7x like Bird and Grant Hill — they stay. Above the 97th percentile a span is scaled
+ * by his ratio to it instead of read off the thin top. */
+const TODAY_UNICORNS = new Set(['nikola jokic']);
+const TOP_PCT = 0.97;
+type Group = 'G' | 'F' | 'C';
+const norm = (s: string) => s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"' && line[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ',') {
+      out.push(cell);
+      cell = '';
+    } else cell += ch;
+  }
+  out.push(cell);
+  return out;
+}
+function readCsv(file: string): Record<string, string>[] {
+  const lines = readFileSync(resolve(import.meta.dirname, '../src/data/raw', file), 'utf8').split(/\r?\n/).filter(Boolean);
+  const header = parseCsvLine(lines[0]);
+  return lines.slice(1).map((line) => {
+    const c = parseCsvLine(line);
+    return Object.fromEntries(header.map((h, i) => [h, c[i] ?? '']));
+  });
+}
+const seasonPace = (end: number) => eraBaseline(`${end - 1}-${String(end).slice(2)}`).pace;
+/** Every season's real assists per 36 at a pace of 100, by position group (from the player's bio:
+ * a center, a forward who is not a guard, a guard who is not a forward; swingmen sit out). */
+const assistSeasons: { group: Group; end: number; value: number; unicorn: boolean }[] = [];
+{
+  const bio = new Map(readCsv('players_bio.csv').map((r) => [r.personId, r]));
+  for (const r of readCsv('playerSeasonStats.csv')) {
+    const minutes = Number(r.numMinutes) || 0;
+    const end = Number(r.seasonEnd);
+    const b = bio.get(r.personId);
+    if (minutes < ASSIST_POOL_MINUTES || !b || end > 2026) continue;
+    const group: Group | null = b.center === '1' ? 'C' : b.forward === '1' && b.guard !== '1' ? 'F' : b.guard === '1' && b.forward !== '1' ? 'G' : null;
+    if (!group) continue;
+    assistSeasons.push({ group, end, unicorn: TODAY_UNICORNS.has(norm(r.name)), value: ((Number(r.assists) || 0) * 36 / minutes) * (100 / seasonPace(end)) });
+  }
+}
+const quantile = (sorted: number[], f: number) => {
+  const at = f * (sorted.length - 1);
+  const lo = Math.floor(at);
+  const hi = Math.min(sorted.length - 1, lo + 1);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (at - lo);
+};
+const poolCache = new Map<string, number[]>();
+function assistPool(group: Group, from: number, to: number, withoutUnicorns = false): number[] {
+  const key = `${group}|${from}|${to}|${withoutUnicorns}`;
+  let pool = poolCache.get(key);
+  if (!pool) {
+    pool = assistSeasons
+      .filter((s) => s.group === group && s.end >= from && s.end <= to && !(withoutUnicorns && s.unicorn))
+      .map((s) => s.value)
+      .sort((a, b) => a - b);
+    poolCache.set(key, pool);
+  }
+  return pool;
+}
+const groupOf = (span: PlayerSpan): Group => (span.primaryPosition === 'C' ? 'C' : span.primaryPosition === 'PG' || span.primaryPosition === 'SG' ? 'G' : 'F');
+/** His assists per 36 at a pace of 100, moved to the same percentile of today's players at his
+ * position; null when the seasons around his are too few to place him. */
+function assistsAtModernPercentile(span: PlayerSpan): { value: number; pct: number } | null {
+  const ends = spanEndYears(span.spanLabel);
+  const mpg = estimatedMinutesPerGame(span);
+  if (!ends.length || !mpg) return null;
+  const old = assistPool(groupOf(span), Math.min(...ends) - ASSIST_WINDOW, Math.max(...ends) + ASSIST_WINDOW);
+  const today = assistPool(groupOf(span), MODERN_FROM + 1, 2026, true);
+  if (old.length < ASSIST_POOL_MIN_SIZE || today.length < ASSIST_POOL_MIN_SIZE) return null;
+  const mine = (span.box.apg * 36 / mpg) * (100 / eraBaseline(span.spanLabel).pace);
+  // Mid-rank percentile, then the same point of today's sorted values.
+  const below = old.filter((v) => v < mine).length;
+  const equal = old.filter((v) => v === mine).length;
+  const pct = (below + equal / 2) / old.length;
+  const oldTop = quantile(old, TOP_PCT);
+  if (mine > oldTop) return { value: quantile(today, TOP_PCT) * (mine / oldTop), pct };
+  return { value: quantile(today, pct), pct };
+}
+
 function twoPointPct(span: PlayerSpan): number {
   const threeA = Math.min(span.box.threePA, span.fga * 0.9);
   const twoA = span.fga - threeA;
   if (twoA <= 0.5) return 0.45;
   return (span.fga * span.box.fgPct - threeA * span.box.threePct) / twoA;
+}
+
+/** His assists a game today: his percentile's per 36 at his minutes and today's pace, or by pace alone. */
+function modernAssists(span: PlayerSpan, pace: number): number {
+  const byPace = span.box.apg * pace;
+  const at = assistsAtModernPercentile(span);
+  const mpg = estimatedMinutesPerGame(span);
+  if (!at || !mpg) return byPace;
+  const mapped = ((at.value * mpg) / 36) * (MODERN_PACE / 100);
+  // Only the guards really lost playmaking; a forward or center below his pace-only number is the
+  // scale's cut top, not the era.
+  if (mapped <= byPace) return groupOf(span) === 'G' ? mapped : byPace;
+  const weight = Math.max(0, Math.min(1, (at.pct - ASSIST_GAIN_FROM) / (ASSIST_GAIN_FULL - ASSIST_GAIN_FROM)));
+  return byPace + (mapped - byPace) * weight;
 }
 
 function translate(span: PlayerSpan): number[] {
@@ -118,7 +245,7 @@ function translate(span: PlayerSpan): number[] {
     threePct,
     points,
     squeeze(b.rpg * pace * reboundAvailabilityFactor(span.spanLabel), LEADERS.reb, LEADER_SQUEEZE),
-    squeeze(b.apg * pace + given * (b.apg / Math.max(1, span.fga)), LEADERS.ast, LEADER_SQUEEZE),
+    squeeze(modernAssists(span, pace) + given * (b.apg / Math.max(1, span.fga)), LEADERS.ast, LEADER_SQUEEZE),
     squeeze(b.spg * pace, LEADERS.stl, LEADER_SQUEEZE),
     squeeze(b.bpg * pace, LEADERS.blk, LEADER_SQUEEZE),
     rawShots > 0 ? shots / rawShots : 1,
