@@ -393,8 +393,11 @@ do dołu i zakładki Matchup/Bracket).
    D-TAL 22; półdystans i rim pressure sprzed 1997; przegląd starych resztek kalibracji z Etapu 1),
    dopracowanie Hustle, odpowiednik Hustle w ataku, MVP z bilansem do kwadratu, rotacja Filipa
    (KG na trzech pozycjach).
-   - **LeBron — ręczna kolejność stretchy (2026-10-14)**: domyślny span i najwyższy TAL to 2012-14,
-     potem 2011-13, 2016-18, 2014-16, dopiero wtedy 2008-10. Dziś najwyższy jest 2007-09 (GOAT).
+   - **LeBron — ręczna kolejność stretchy (2026-10-14) — zrobione 2026-10-15**: domyślny span i
+     najwyższy TAL to 2012-14 (105), potem 2011-13 (104), 2016-18 (103), 2014-16 (102), 2008-10 (101);
+     reszta jego okien zostaje przy swoich liczbach, ale najwyżej 100 (2007-09, 2009-11, 2010-12:
+     102 → 100). Mechanizm ogólny: `USER_WINDOW_ORDER` w `src/data/userTierCalibration.ts`, test
+     `scripts/testWindowOrder.ts`. Baseline picków AI przeliczony (pick #1 ten sam gracz, inny span).
    - [ ] **Kalibracja siły AI — ukryty poziom franczyzy (2026-10-14, użytkownik: „kalibracja siły
      AI do todo”)** — ostatni krok stałych drużyn. Dziś wszystkie drużyny AI draftują tym samym
      algorytmem i różnią się tylko stylem (przypięty do franczyzy, `draft.ts` `aiProfileForTeam`)

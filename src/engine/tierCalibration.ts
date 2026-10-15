@@ -1,5 +1,5 @@
 import { normalizePlayerName } from '../data/schema';
-import { USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_WINDOW_TIERS } from '../data/userTierCalibration';
+import { USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
 import type { OverallTier } from './grades';
 
 /**
@@ -71,6 +71,8 @@ function placeInBand(tier: OverallTier, raw: number, keepInBand = true): number 
   return Math.round(lo + share * (hi - lo));
 }
 
+const windowOrders = new Map<string, readonly string[]>(Object.entries(USER_WINDOW_ORDER).map(([name, order]) => [normalizePlayerName(name), order]));
+
 /** The table entry for a player, if the user tiered him. */
 export function tierCalibrationFor(playerName: string): CalibrationEntry | undefined {
   return entries.get(normalizePlayerName(playerName));
@@ -89,6 +91,22 @@ export function calibratedDisplayTalent(
 ): number | undefined {
   const entry = tierCalibrationFor(playerName);
   if (!entry) return undefined;
+  const value = calibratedUnordered(entry, playerName, spanLabel, rawTal, measure, reviewedWindow);
+  const order = windowOrders.get(normalizePlayerName(playerName));
+  if (!order) return value;
+  const top = TIER_BANDS[entry.tier]![1];
+  const place = spanLabel === undefined ? -1 : order.indexOf(spanLabel);
+  return place >= 0 ? top - place : Math.min(value, top - order.length);
+}
+
+function calibratedUnordered(
+  entry: CalibrationEntry,
+  playerName: string,
+  spanLabel: string | undefined,
+  rawTal: number,
+  measure: number,
+  reviewedWindow: () => { measure: number; rawTal: number } | undefined,
+): number {
   if (spanLabel === entry.spanLabel) return reviewedTalent(playerName, entry.tier, rawTal);
   const anchor = reviewedWindow();
   if (anchor === undefined) return Math.min(TIER_BANDS[entry.tier]![1], Math.round(measure));
