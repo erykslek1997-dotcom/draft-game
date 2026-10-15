@@ -354,7 +354,10 @@ function* seasonSteps(teams: Team[], seed: string): Generator<SimProgress, LiveS
   // good defensive team (fewest points allowed). Sixth Man: the best game score off the bench.
   const pointsAllowed = new Map(standings.map((r) => [r.teamId, r.pointsAgainst / Math.max(1, r.wins + r.losses)]));
   const fewestAllowed = Math.min(...pointsAllowed.values());
-  const mvpValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * Math.sqrt(winPct.get(l.teamId) ?? 0);
+  // 2026-10-10 (the user, after league D2S2 crowned Jokic from 9th place): the record squared, not
+  // its square root — over 20 AI-league seasons the MVP's team ranks 1.15 on average (was 2.25),
+  // never outside the top 8, and he gives up ~2.3 game score to the league's best line.
+  const mvpValue = (l: SeasonPlayerLine) => gameScorePerGame(l) * (winPct.get(l.teamId) ?? 0) ** 2;
   // DPOY (2026-10-02, the user: "powinno oba"): his own defense AND his team's — D-TAL plus
   // stocks by his minutes, then the team's points allowed (`DEFENSE_AWARDS`).
   const defenseValue = (l: SeasonPlayerLine) => {

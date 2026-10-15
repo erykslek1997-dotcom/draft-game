@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import type { Team } from '../engine/types';
-import { teamLabel, teamPlace } from '../engine/teamNames';
+import { teamCodes, teamLabel, teamPlace } from '../engine/teamNames';
+import { FitText } from './FitName';
 import { TeamLogo } from './TeamLogo';
 import { Face } from './ShotChip';
 import { boardName } from './boardNames';
@@ -40,6 +41,7 @@ export function DraftGrid({ teams, rounds, round, onClockIdx, complete, tierColo
   const shown = complete || allRounds ? rounds : Math.min(rounds, Math.max(MIN_ROUNDS_SHOWN, round + 2, humanNext + 1));
   // 2026-10-14 (playtest 3: "wygląda jakby pierwsza drużyna zawsze miała pierwszy pick"): a column
   // on each side, the round's arrow on the side it starts from, and every open cell numbered.
+  const codes = teamCodes(teams);
   const columns: CSSProperties = { gridTemplateColumns: `34px repeat(${teams.length}, minmax(68px, 1fr)) 24px` };
   // Where the board is wider than the screen (phones, small laptops), open it on your own column.
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -64,7 +66,8 @@ export function DraftGrid({ teams, rounds, round, onClockIdx, complete, tierColo
                 title={teamLabel(team)}
               >
                 <TeamLogo name={team.name} size={26} />
-                <span className="dg-team-name">{team.isHuman ? 'You' : teamPlace(team)}</span>
+                {/* 2026-10-15 (UI audit): "Cincinn…" → the team's code when the city does not fit. */}
+                <FitText className="dg-team-name" title={teamLabel(team)} variants={team.isHuman ? ['You'] : [teamPlace(team), codes.get(team.id) ?? teamPlace(team)]} />
               </span>
             ))}
             <span role="columnheader" className="dg-corner is-end" />

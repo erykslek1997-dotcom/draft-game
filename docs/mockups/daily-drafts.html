@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Drafts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: a review sheet — each section is one screen of the game (always its own dark shell)
+   beside the notes that explain it; the sheet itself follows the viewer's theme. */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --text:#151b26; --muted:#5a6678; --line:#d5dce6;
+  --note:#fff6dc; --note-line:#e8d38e; --pin:#2f7fc0;
+  --sans:'Inter',system-ui,'Segoe UI',Roboto,sans-serif;
+  --num:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  /* the game's own palette (calm look) — fixed, the frames are the game */
+  --g-paper:#05070c; --g-raised:#0b111b; --g-raised-2:#101826; --g-line:#182433; --g-edge:#24344a;
+  --g-ink:#eef4fb; --g-soft:#9aa8bc; --g-faint:#66758b; --g-accent:#3ea8e8; --g-red:#e0465c;
+  --g-gold:#f2b84b; --g-green:#58c28a; --g-bomb:#ff8a3d;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0d1117; --surface:#151b24; --text:#e6ebf2; --muted:#93a0b2; --line:#283244; --note:#2a2412; --note-line:#5d4c1d; --pin:#6fb4e8; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#0d1117; --surface:#151b24; --text:#e6ebf2; --muted:#93a0b2; --line:#283244; --note:#2a2412; --note-line:#5d4c1d; --pin:#6fb4e8; color-scheme:dark; }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:15px/1.55 var(--sans)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font:800 26px/1.2 var(--sans);margin:0 0 6px;letter-spacing:-.3px;text-wrap:balance}
+.lede{color:var(--muted);margin:0 0 30px;max-width:760px}
+.decided{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 34px}
+.decided span{font-size:13px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px}
+.decided b{color:var(--pin)}
+section{margin:0 0 52px}
+h2{font:700 18px/1.3 var(--sans);margin:0 0 4px;display:flex;gap:10px;align-items:baseline;text-wrap:balance}
+h2 .n{font-family:var(--num);color:var(--pin);font-size:15px}
+.sub{color:var(--muted);margin:0 0 18px;max-width:820px}
+.row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cap{font:600 11.5px/1.3 var(--num);color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.note{background:var(--note);border:1px solid var(--note-line);border-radius:10px;padding:11px 14px;font-size:13.5px;max-width:360px;min-width:0}
+.note p{margin:0 0 6px}.note p:last-child{margin:0}
+.note ul{margin:4px 0 0;padding-left:18px}
+.note .q{color:var(--pin);font-weight:600}
+
+/* ---------- the game's shell ---------- */
+.g{background:var(--g-paper);color:var(--g-ink);border-radius:18px;border:1px solid #1a2433;padding:16px;font:14px/1.45 var(--sans);width:560px;max-width:100%;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.g.phone{width:370px}
+.g .num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.g .soft{color:var(--g-soft)} .g .faint{color:var(--g-faint)} .g .gold{color:var(--g-gold)} .g .red{color:var(--g-red)} .g .green{color:var(--g-green)} .g .bomb{color:var(--g-bomb)}
+.g-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.g-head .t{flex:1;text-align:center;font-weight:700;font-size:15px}
+.pill{font:600 12.5px var(--sans);border-radius:999px;padding:7px 14px;background:var(--g-raised-2);border:1px solid var(--g-edge);color:var(--g-ink);white-space:nowrap}
+.cta{display:block;width:100%;text-align:center;font:700 15px var(--sans);padding:12px;border-radius:999px;border:0;background:var(--g-accent);color:#04121d;margin-top:14px}
+.cta.ghost{background:transparent;border:1px solid var(--g-edge);color:var(--g-ink);font-weight:600;font-size:13.5px;margin-top:8px;padding:10px}
+.coin{display:inline-block;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffd98a,#c98a1c);vertical-align:-1px;margin-right:4px}
+
+/* menu cards (the game's mode card) */
+.mode{border:1px solid var(--g-line);background:#080c14;padding:14px 16px;position:relative}
+.mode+.mode{margin-top:12px}
+.mode .step{font:700 11px var(--num);letter-spacing:.1em;color:#4a9fe0;text-transform:uppercase}
+.mode h3{margin:3px 0 2px;font-size:18px}
+.mode p{margin:0;color:var(--g-soft);font-size:13px}
+.dstrip{margin:12px -16px -14px;padding:10px 16px 12px;border-top:1px solid #2a2a22;background:#13140f;display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:center}
+.dstrip .lbl{font-weight:700;color:var(--g-gold);font-size:13px}
+.dstrip .lbl small{color:var(--g-soft);font-weight:500;margin-left:6px}
+.dstrip .go{font:700 12px var(--sans);background:var(--g-gold);color:#1a1405;border-radius:999px;padding:5px 12px}
+.dstrip .rules{grid-column:1/-1;color:#c9ced6;font-size:12.5px}
+.dstrip .rules b{color:var(--g-ink)}
+.dstrip.done{background:#0e1310;border-top-color:#1f2d24}
+.dstrip.done .lbl{color:var(--g-green)}
+.streak{font:700 12.5px var(--num);color:var(--g-gold)}
+
+/* day screen */
+.day-date{font:600 12px var(--num);color:var(--g-soft);text-align:center;letter-spacing:.06em;text-transform:uppercase}
+.day-title{font-size:22px;font-weight:800;text-align:center;margin:2px 0 14px;text-wrap:balance}
+.rule{display:grid;grid-template-columns:40px 1fr;gap:4px 12px;align-items:start;padding:12px;border:1px solid var(--g-line);border-radius:12px;background:var(--g-raised)}
+.rule+.rule{margin-top:8px}
+.rule .ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font:800 14px var(--num);background:var(--g-raised-2);border:1px solid var(--g-edge)}
+.rule .who{font:700 10.5px var(--num);letter-spacing:.1em;text-transform:uppercase;color:var(--g-faint)}
+.rule .what{font-weight:700;font-size:15px}
+.rule .why{color:var(--g-soft);font-size:12.5px;grid-column:2}
+.rule.today{border-color:#5a4520;background:#15110a}
+.rule.today .ic{color:var(--g-gold);border-color:#5a4520}
+.rule.bombr{border-color:#5c3418;background:#170e08}
+.rule.bombr .ic{color:var(--g-bomb);border-color:#5c3418}
+
+/* draft */
+.status{display:flex;flex-wrap:wrap;align-items:center;gap:10px;border:1px solid #3a1c24;border-radius:12px;padding:9px 12px;background:var(--g-raised)}
+.status .yp{background:var(--g-red);color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:5px 11px}
+.dchip{margin-left:auto;font:600 11.5px var(--sans);color:var(--g-gold);border:1px solid #5a4520;background:#15110a;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.tog{font:600 12px var(--sans);border-radius:999px;padding:5px 11px;border:1px solid var(--g-edge);background:var(--g-raised-2);color:var(--g-soft)}
+.tog.on{background:var(--g-ink);color:var(--g-paper);border-color:var(--g-ink)}
+.list{border:1px solid var(--g-line);border-radius:12px;overflow:hidden}
+.pr{display:grid;grid-template-columns:34px 1fr auto auto;gap:10px;align-items:center;padding:9px 12px;border-top:1px solid var(--g-line)}
+.pr:first-child{border-top:0}
+.face{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 50% 38%,#c9a07a 0 30%,#1e2a3b 31%);border:2px solid #2b3a52}
+.pr .nm{font-weight:700;font-size:14px;min-width:0}
+.pr .nm small{display:block;color:var(--g-soft);font-weight:500;font-size:12px}
+.pr .cost{font:700 13px var(--num);color:var(--g-gold)}
+.add{width:30px;height:30px;border-radius:50%;background:var(--g-accent);color:#04121d;display:grid;place-items:center;font-weight:800}
+.pr.ban{opacity:.55}
+.pr.ban .nm{text-decoration:none}
+.lock{font:600 11px var(--sans);color:var(--g-gold);border:1px solid #5a4520;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.tip{margin-top:10px;font-size:12.5px;color:var(--g-soft);border-left:2px solid var(--g-gold);padding:4px 0 4px 10px}
+
+/* slots / bomb */
+.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.slot{border:1px dashed var(--g-edge);border-radius:10px;padding:8px;font-size:12px;min-height:56px}
+.slot b{display:block;font-size:12.5px}
+.slot.taken{border-style:solid;background:var(--g-raised)}
+.slot.bombs{border:1px solid #5c3418;background:#170e08;color:#ffd2b0}
+.slot .r{font:700 10.5px var(--num);color:var(--g-faint);letter-spacing:.08em}
+.bombcard{border:1px solid #5c3418;background:linear-gradient(180deg,#1c1008,#0e0805);border-radius:16px;padding:18px;text-align:center}
+.bombcard .k{font:700 11px var(--num);letter-spacing:.14em;color:var(--g-bomb);text-transform:uppercase}
+.bombcard h4{margin:6px 0 12px;font-size:22px}
+.sil{width:84px;height:84px;margin:0 auto 12px;border-radius:50%;background:radial-gradient(circle at 50% 36%,#2b1a10 0 32%,#120b06 33%);border:2px solid #5c3418;display:grid;place-items:center;font:800 30px var(--num);color:var(--g-bomb)}
+.bombcard .desc{font-size:15px;line-height:1.5;max-width:34ch;margin:0 auto}
+.bombcard .meta{margin-top:10px;font-size:12.5px;color:var(--g-soft)}
+
+/* results */
+.reveal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.rv{border:1px solid var(--g-line);border-radius:12px;padding:10px;background:var(--g-raised);text-align:center;font-size:12px;min-width:0}
+.rv .sil{width:52px;height:52px;font-size:18px;margin-bottom:8px}
+.rv .face{width:52px;height:52px;margin:0 auto 8px}
+.rv .st{font:700 10px var(--num);color:var(--g-faint);letter-spacing:.1em;display:block;margin-bottom:6px}
+.result{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center;border:1px solid var(--g-line);border-radius:14px;padding:14px;background:var(--g-raised)}
+.result .place{font:800 34px/1 var(--num);grid-row:span 2}
+.result .place sup{font-size:14px}
+.share{font:500 13px/1.55 var(--num);white-space:pre;background:#0a0f17;border:1px solid var(--g-line);border-radius:12px;padding:12px 14px;margin-top:10px;overflow-x:auto}
+.rot{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--g-line);font-size:13px}
+.rot:first-child{border-top:0}
+.bar{width:120px;height:6px;border-radius:3px;background:#1a2433;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:3px;background:var(--g-accent)}
+.bar em{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--g-bomb);left:20.8%}
+
+@media (max-width:640px){
+  .g,.g.phone{width:100%}
+  .reveal{grid-template-columns:1fr 1fr 1fr}
+  .note{max-width:none}
+  .pr{grid-template-columns:34px 1fr auto}
+  .pr .cost{display:none}
+}
+@media (prefers-reduced-motion:no-preference){ .bombcard .sil{animation:pulse 2.4s ease-in-out infinite} @keyframes pulse{50%{box-shadow:0 0 0 8px rgba(255,138,61,.08)}} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Daily w draftach — makiety</h1>
+  <p class="lede">Daily dla Mini Draft i All-Time Draft, na wzór Daily board z Draw Five. Pięć ekranów: wejście z menu, ekran dnia, draft z zasadą, The Bomb (tylko All-Time) i wynik dnia. Tekst w grze po angielsku, notatki po polsku.</p>
+
+  <div class="decided">
+    <span><b>Ustalone:</b> ten sam draft dla wszystkich, jedna próba</span>
+    <span><b>Ustalone:</b> limit capów dla wszystkich (AI też)</span>
+    <span><b>Ustalone:</b> bany i zasady tylko dla gracza</span>
+    <span><b>Ustalone:</b> Daily przy każdym trybie</span>
+    <span>Propozycja: limit + jedna zasada, raz w tygodniu dzień otwarty</span>
+  </div>
+
+  <!-- 1. Menu -->
+  <section>
+    <h2><span class="n">1</span> Menu — Daily przy karcie trybu</h2>
+    <p class="sub">Ten sam pasek co „Daily board” pod Draw Five: zasady dnia w jednej linijce, stan (zagrane / nie) i streak.</p>
+    <div class="row">
+      <div class="col">
+        <span class="cap">Przed zagraniem · po zagraniu</span>
+        <div class="g">
+          <div class="mode">
+            <div class="step">Step 2 · Your first draft</div>
+            <h3>Mini Draft</h3>
+            <p>5 rounds, 70 caps to spend — a real draft in a few minutes.</p>
+            <div class="dstrip">
+              <span class="lbl">Daily draft <small>Thu, Oct 16 · one try</small></span>
+              <span class="go">Play</span>
+              <span class="rules"><b><span class="coin"></span>65 caps</b> · No one who played for the Lakers</span>
+            </div>
+          </div>
+          <div class="mode">
+            <div class="step">Step 3 · The full game</div>
+            <h3>All-Time Draft</h3>
+            <p>16 teams, 9 rounds — real AI reacting to every pick you make.</p>
+            <div class="dstrip done">
+              <span class="lbl">Daily draft <small>played</small></span>
+              <span class="streak">🔥 3</span>
+              <span class="rules"><b>4th of 16 · Overall 81</b> · 104 caps · Max one MVP · The Bomb in round 6</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="note">
+        <p><b>Mini i All-Time mają różne zasady</b> tego samego dnia — kto gra oba, dostaje dwa wyzwania.</p>
+        <p>Po zagraniu pasek pokazuje wynik dnia zamiast przycisku; streak liczony osobno dla trybu.</p>
+        <p class="q">Do decyzji: czy pokazywać zasady na karcie, czy dopiero po kliknięciu (niespodzianka)?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Day screen -->
+  <section>
+    <h2><span class="n">2</span> Ekran dnia — przed loterią</h2>
+    <p class="sub">Zasady w trzech wierszach, każdy mówi wprost, kogo dotyczy. Potem zwykła loteria — ale miejsce w drafcie jest już znane, bo dla wszystkich takie samo.</p>
+    <div class="row">
+      <div class="col">
+        <span class="cap">Mini · dzień z zasadą</span>
+        <div class="g phone">
+          <div class="g-head"><span class="pill">← Menu</span><span class="t">Daily Mini Draft</span><span class="pill" style="visibility:hidden">← Menu</span></div>
+          <div class="day-date">Thursday · Oct 16</div>
+          <div class="day-title">No Lakers today</div>
+          <div class="rule">
+            <span class="ic gold num">65</span>
+            <span class="who">Every team</span>
+            <span class="what">65 caps for your five</span>
+            <span class="why">The CPU teams draft under the same cap.</span>
+          </div>
+          <div class="rule today">
+            <span class="ic">⊘</span>
+            <span class="who">Only you</span>
+            <span class="what">No one who ever played for the Lakers</span>
+            <span class="why">The CPU can still take them. 30 of the top players are out for you.</span>
+          </div>
+          <div class="rule">
+            <span class="ic num">#9</span>
+            <span class="who">Everyone today</span>
+            <span class="what">You pick 9th</span>
+            <span class="why">Same league, same 15 rivals for every player today. One try.</span>
+          </div>
+          <span class="cta">Start today's draft</span>
+          <span class="cta ghost">How the daily works</span>
+        </div>
+      </div>
+      <div class="col">
+        <span class="cap">All-Time · z The Bomb</span>
+        <div class="g phone">
+          <div class="g-head"><span class="pill">← Menu</span><span class="t">Daily All-Time Draft</span><span class="pill" style="visibility:hidden">← Menu</span></div>
+          <div class="day-date">Thursday · Oct 16</div>
+          <div class="day-title">One superstar, one surprise</div>
+          <div class="rule">
+            <span class="ic gold num">104</span>
+            <span class="who">Every team</span>
+            <span class="what">104 caps for nine players</span>
+            <span class="why">Usually 100.9.</span>
+          </div>
+          <div class="rule today">
+            <span class="ic">1★</span>
+            <span class="who">Only you</span>
+            <span class="what">At most one MVP-tier player</span>
+            <span class="why">MVP, Greatest peak and GOAT count.</span>
+          </div>
+          <div class="rule bombr">
+            <span class="ic">?</span>
+            <span class="who">Round 6 · only you</span>
+            <span class="what">The Bomb — <span class="num">9.4</span> caps</span>
+            <span class="why">A backup center from the 90s: rebounds, hard screens, rarely shoots. You find out who on the results.</span>
+          </div>
+          <span class="cta">Start today's draft</span>
+        </div>
+      </div>
+      <div class="note">
+        <p><b>Tytuł dnia</b> („No Lakers today”) robi z zasady temat — krótko, do share'a.</p>
+        <p><b>Bomba:</b> runda i koszt widoczne od startu, żeby dało się zaplanować capy.</p>
+        <p>Dzień otwarty (np. niedziela): tylko wiersz limitu + „Open day — just the draft”.</p>
+        <p class="q">Do decyzji: pokazać od razu, ile topowych graczy zasada wycina („30 of the top players”)?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Draft -->
+  <section>
+    <h2><span class="n">3</span> Draft z zasadą dnia</h2>
+    <p class="sub">Ekran draftu bez zmian — dochodzi chip zasady w pasku statusu, a zbanowani gracze są przygaszeni z powodem zamiast przycisku „+”.</p>
+    <div class="row">
+      <div class="col">
+        <span class="cap">Mini · runda 2</span>
+        <div class="g">
+          <div class="status">
+            <span class="yp">Your pick</span>
+            <span>Round <b class="num">2</b> of 5</span>
+            <span class="soft"><span class="coin"></span><b class="num" style="color:var(--g-ink)">49.0</b> caps left · ~12.3 a pick</span>
+            <span class="dchip">Daily · No Lakers</span>
+          </div>
+          <div class="filters">
+            <span class="tog on">PG</span><span class="tog on">SG</span><span class="tog on">SF</span><span class="tog on">PF</span><span class="tog on">C</span>
+            <span class="tog">Affordable</span><span class="tog">Hide unavailable</span>
+          </div>
+          <div class="list">
+            <div class="pr"><span class="face"></span><span class="nm">Tim Duncan <small>PF · 2001-03 · Greatest peak</small></span><span class="cost"><span class="coin"></span>17</span><span class="add">+</span></div>
+            <div class="pr ban"><span class="face"></span><span class="nm">Kobe Bryant <small>SG · 2007-09 · Greatest peak</small></span><span class="cost"><span class="coin"></span>21</span><span class="lock">Lakers · not today</span></div>
+            <div class="pr"><span class="face"></span><span class="nm">Kevin Garnett <small>PF · 2002-04 · Greatest peak</small></span><span class="cost"><span class="coin"></span>18</span><span class="add">+</span></div>
+            <div class="pr ban"><span class="face"></span><span class="nm">Magic Johnson <small>PG · 1989-91 · Greatest peak</small></span><span class="cost"><span class="coin"></span>14</span><span class="lock">Lakers · not today</span></div>
+            <div class="pr"><span class="face"></span><span class="nm">Chris Paul <small>PG · 2007-09 · MVP</small></span><span class="cost"><span class="coin"></span>14</span><span class="add">+</span></div>
+          </div>
+          <div class="tip">CPU took Kobe Bryant at #7 — he was never yours today.</div>
+        </div>
+      </div>
+      <div class="note">
+        <p>Zbanowany gracz <b>zostaje na liście</b> (widać, kogo zabiera zasada i kogo bierze AI), ale z blokadą i powodem. Filtr „Hide unavailable” chowa go razem z niemieszczącymi się w capach.</p>
+        <p>Linia w tickerze, gdy AI weźmie zbanowanego — mała „sól” dnia.</p>
+        <p>Pułap gwiazd: po pierwszym MVP+ reszta MVP+ dostaje „1 MVP already”.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. The Bomb -->
+  <section>
+    <h2><span class="n">4</span> The Bomb — tylko All-Time</h2>
+    <p class="sub">Od startu zarezerwowany slot w rundzie 6. Gdy runda nadchodzi, zamiast wyboru — karta bomby. W rotacji gra minimum 10 minut.</p>
+    <div class="row">
+      <div class="col">
+        <span class="cap">Skład w trakcie draftu</span>
+        <div class="g phone">
+          <div class="slots">
+            <div class="slot taken"><span class="r">R1</span><b>T. Duncan</b><span class="soft num">17.0</span></div>
+            <div class="slot taken"><span class="r">R2</span><b>C. Paul</b><span class="soft num">14.0</span></div>
+            <div class="slot taken"><span class="r">R3</span><b>R. Allen</b><span class="soft num">16.2</span></div>
+            <div class="slot taken"><span class="r">R4</span><b>S. Battier</b><span class="soft num">7.1</span></div>
+            <div class="slot"><span class="r">R5</span><b class="faint">Open</b></div>
+            <div class="slot bombs"><span class="r" style="color:#ffb27a">R6</span><b>The Bomb</b><span class="num">9.4</span></div>
+            <div class="slot"><span class="r">R7</span><b class="faint">Open</b></div>
+            <div class="slot"><span class="r">R8</span><b class="faint">Open</b></div>
+            <div class="slot"><span class="r">R9</span><b class="faint">Open</b></div>
+          </div>
+          <div class="tip" style="border-color:var(--g-bomb)">9.4 caps are already set aside for the Bomb.</div>
+        </div>
+      </div>
+      <div class="col">
+        <span class="cap">Runda 6 — bomba ląduje</span>
+        <div class="g phone">
+          <div class="bombcard">
+            <div class="k">Round 6 · The Bomb</div>
+            <h4>Someone joins your team</h4>
+            <div class="sil">?</div>
+            <p class="desc">A backup center from the 90s. Rebounds, sets hard screens, rarely shoots.</p>
+            <p class="meta">C · <span class="num">9.4</span> caps · plays at least 10 minutes</p>
+          </div>
+          <span class="cta">Continue the draft</span>
+        </div>
+      </div>
+      <div class="col">
+        <span class="cap">Rotacja</span>
+        <div class="g phone">
+          <div class="list">
+            <div class="rot"><span><b>Duncan</b> <span class="soft">PF</span></span><span class="bar"><i style="width:75%"></i></span><span class="num">36</span></div>
+            <div class="rot"><span><b>The Bomb</b> <span class="bomb">C</span></span><span class="bar"><i style="width:29%;background:var(--g-bomb)"></i><em></em></span><span class="num">14</span></div>
+            <div class="rot"><span><b>Battier</b> <span class="soft">SF</span></span><span class="bar"><i style="width:50%"></i></span><span class="num">24</span></div>
+          </div>
+          <div class="tip" style="border-color:var(--g-bomb)">The Bomb plays at least 10 minutes.</div>
+        </div>
+      </div>
+      <div class="note">
+        <p>Opis z tych samych cech co opisy kart (pozycja, era, rola) — bez nazwiska, TAL i liczb.</p>
+        <p>Zwykle TAL 50–65; perełka ~raz na 5 dni. Nigdy w rundach 1–4.</p>
+        <p class="q">Do decyzji: czy bomba może być „na złej pozycji” (drugi center, gdy masz już dwóch)?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Results -->
+  <section>
+    <h2><span class="n">5</span> Wynik dnia</h2>
+    <p class="sub">Najpierw odsłonięcie bomby w trzech krokach, potem wynik i share bez spoilerów (bez nazwisk, tylko zasady i miejsce).</p>
+    <div class="row">
+      <div class="col">
+        <span class="cap">Odsłonięcie bomby</span>
+        <div class="g">
+          <div class="reveal">
+            <div class="rv"><span class="st">1 · Description</span><div class="sil">?</div><span class="soft">Backup C · 90s · screens, boards</span></div>
+            <div class="rv"><span class="st">2 · Face</span><div class="face"></div><span class="soft">…</span></div>
+            <div class="rv"><span class="st">3 · Name</span><div class="face"></div><b>Greg Ostertag</b><br><span class="soft num">1996-98 · TAL 52</span></div>
+          </div>
+        </div>
+        <span class="cap" style="margin-top:8px">Wynik + share</span>
+        <div class="g">
+          <div class="result">
+            <span class="place">4<sup>th</sup></span>
+            <b>of 16 · Overall <span class="num">81</span></b>
+            <span class="soft">Same draft as everyone today · 🔥 3 days</span>
+          </div>
+          <div class="share">Draftverse Daily · All-Time · Oct 16
+104 caps · Max one MVP · Bomb R6
+4th / 16 · Overall 81
+🔥 3</div>
+          <span class="cta">Copy result</span>
+          <span class="cta ghost">Play the season with this team</span>
+        </div>
+      </div>
+      <div class="note">
+        <p>Bez serwera porównanie jest między ludźmi przez share (ten sam draft dla wszystkich). Globalny ranking — później, z serwerem.</p>
+        <p>Zespół z daily można dalej grać w sezonie (jak zwykły draft), ale wynik dnia to miejsce po drafcie.</p>
+        <p class="q">Do decyzji: czy wynikiem dnia ma być miejsce po drafcie, czy po sezonie (dłużej, więcej losowości)?</p>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -103,6 +103,16 @@ export function FitName({ name, className, as: Tag = 'span', faceNextToIt }: { n
  * A team's name, same rule as a player's: "Long Beach Sea Lions", else "Sea Lions", else
  * the code (when there is one). `mascotFirst` starts at the mascot (the bracket). `after` (a "you" tag) rides along.
  */
+/** Any label that must not show clipped: the first of `variants` that fits, else the last. */
+export function FitText({ variants, title, className }: { variants: ReactNode[]; title: string; className?: string }) {
+  const { ref, content } = useFit<HTMLSpanElement>(variants, title);
+  return (
+    <span ref={ref} className={className} title={title}>
+      {content}
+    </span>
+  );
+}
+
 export function FitTeam({ name, code, className, after, mascotFirst }: { name: string; code?: string; className?: string; after?: ReactNode; mascotFirst?: boolean }) {
   const sr = <span className="at-sr-only">{name}</span>;
   const mascot = teamNickname(name);
