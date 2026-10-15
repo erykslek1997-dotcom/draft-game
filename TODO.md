@@ -207,6 +207,28 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ## Kolejność prac (decyzja 2026-10-10) — obowiązuje
 
+### Playtest meczu na żywo 2026-10-15 (wieczór) — ZROBIONE (PR #230, #231)
+
+1. „Game 2” mało widoczne — duży przycisk następnego meczu pod wynikiem końcowym i na dole arkusza;
+   na telefonie środek tablicy w osobnym rzędzie.
+2. Intro przed meczem — wynik poprzedniego meczu i stan serii (w meczu 1 runda i rozstawienie),
+   obie piątki PG–C, przycisk „Tip-off”.
+3. Same pozytywy w relacji — pudła (kto zebrał) i straty, cichszym wierszem (`GamePlay.minor`;
+   bez nowych losowań, wyniki meczów bez zmian).
+4. Klik poza oknem zamykał symulację — już nie; Esc wychodzi z meczu do drabinki.
+5. 3P% dobrych strzelców za niskie — rzuty pod koniec zegara liczone podwójnie (PR #230);
+   strzelcy z draftu −1,45 → ~−0,5 pkt proc. względem własnych; 3PA w podstawowych kolumnach,
+   3P% przy < 1 próbie na mecz przygaszone.
+6. „Bardziej komentowany mecz” — komentator (`src/engine/gameCalls.ts`): 30/40/50 pkt (20 tylko w
+   1. połowie), double/triple-double, serie trafień i pudeł, „ostatnie 9 pkt drużyny”, susze,
+   największe prowadzenie, odrobione 10+, ostatnie 2 minuty, skuteczność do przerwy; ~1 linia na
+   9 zagrań, max 2 po jednym zagraniu. Zagrania w kilku wersjach słownych. Test
+   `scripts/testGameCalls.ts`.
+7. Klik w zawodnika w box score — otwiera jego kartę ze statystykami sezonu.
+
+Pomysły na dalej (niezamówione): linie po kwartach bogatsze niż „kto wygrał kwartę + najlepszy
+strzelec”; komentarz do Daily (dziś te same linie, strona „You”).
+
 ### Playtest 2026-10-15 (spisane — zrobione poza intro)
 
 Numeracja użytkownika (11 nie było). **Zrobione 2026-10-15:** Simcast 7, 8, 10 (PR #222); draft 2, 3, 4
