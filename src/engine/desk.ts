@@ -4,7 +4,7 @@ import { spanEndYears } from './era';
 import { effectiveTalent } from './grades';
 import type { InsightCategory, RosterInsight } from './insights';
 import { mixSeed, mulberry32 } from './rng';
-import { BEEFS, type BeefCtx, type BeefLine, type Lens } from './deskBeefs';
+import { BEEFS, FAV_LINES, FAVOURITES, type BeefCtx, type BeefLine, type Lens } from './deskBeefs';
 import { teamsForSpan } from './spanTeams';
 import type { Team } from './types';
 
@@ -191,6 +191,8 @@ interface Take {
   lens?: Lens;
   /** The engine finding it voices (a beef can hang off its category). */
   insight?: RosterInsight;
+  /** For a favourite-player take: the player. */
+  fav?: PlayerSpan;
 }
 
 const pick = <T,>(rng: () => number, items: readonly T[]): T => items[Math.floor(rng() * items.length)];
@@ -259,7 +261,7 @@ function flavourTakes(read: RosterRead): Take[] {
   else if (read.lakers.length >= 2) add('prab', 0.4, 'praise', `${names(read.lakers)}. Lakers. I respect it. Not Kobe, but I respect it.`, 'lakers');
   if (read.jordan) add('jeremy', 0.9, 'praise', 'Michael Jordan. Six Finals. Six rings. Zero Game 7s. Next question.', 'jordan');
   else if (read.nineties.length >= 3) add('jeremy', 0.55, 'praise', `${names(read.nineties)}. That’s ’90s basketball. Elbows, hand-checks, mid-range. Go watch the tape.`, 'nineties');
-  else if (read.kobe) add('jeremy', -0.4, 'concern', 'Kobe’s great. He’s not Michael. Go watch the ’98 tape, then we talk.');
+  else if (read.kobe) add('jeremy', -0.4, 'concern', 'Kobe’s great. He’s not Michael. Go watch the ’98 tape, then we talk.', 'notMichael');
   if (read.eighties.length >= 2) add('binash', 0.35 + 0.1 * read.eighties.length, 'praise', `${names(read.eighties)} from the ’80s! Oh, I’m home. Somebody find me a tape deck and a pair of short shorts.`, 'eighties');
   if (read.preTwoK.length >= 6) add('jert', 0.7, 'praise', `${read.preTwoK.length} guys from before 2000. Kids today couldn’t handle this team. Couldn’t.`, 'preTwoK');
   else if (read.preTwoK.length === 0) add('jert', -0.6, 'concern', 'Not one player from before 2000? Kids today. Moses Malone is rolling his eyes somewhere.', 'noPreTwoK');
@@ -272,6 +274,15 @@ function flavourTakes(read: RosterRead): Take[] {
   if (read.international.length >= 2) add('zoran', 0.3 + 0.15 * read.international.length, 'praise', `${names(read.international)}! *hand on heart* Finally, a roster that has seen a passport.`, 'international');
   if (read.steal) add('natalie', 0.6, 'praise', `${surname(read.steal)} for ${caps(read.steal)} caps? Somebody call the police. That’s theft.`, 'steal');
   else if (read.overpay) add('natalie', -0.6, 'concern', `Rules are rules: 100.9 caps. ${surname(read.overpay)} ate ${caps(read.overpay)} of them. *closes the laptop very slowly*`, 'overpay');
+  // A favourite on the roster: the expert gushes (the best of them if there are several).
+  for (const [who, favs] of Object.entries(FAVOURITES) as [ExpertId, string[]][]) {
+    const keys = new Set(favs.map(normalizePlayerName));
+    const fav = read.all.filter((p) => keys.has(normalizePlayerName(p.playerName))).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
+    const templates = FAV_LINES[who];
+    if (!fav || !templates) continue;
+    const text = templates[(fav.id.length + fav.playerName.length) % templates.length].replace('{fav}', surname(fav));
+    out.push({ who, score: 0.65, line: { who, kind: 'praise', text }, lens: 'fav', fav });
+  }
   return out;
 }
 
@@ -282,8 +293,9 @@ function beefFor(t: Take, read: RosterRead, rng: () => number, used: Set<string>
     read,
     sur: surname,
     names,
-    has: (name) => read.all.find((p) => p.playerName === name),
+    has: (name) => read.all.find((p) => normalizePlayerName(p.playerName) === normalizePlayerName(name)),
     caps,
+    anchor: { who: t.who, fav: t.fav },
   };
   const options = BEEFS.filter((b) => !used.has(b.id) && (b.chance === undefined || rng() < b.chance) && ('lens' in b.on
     ? b.on.lens === t.lens

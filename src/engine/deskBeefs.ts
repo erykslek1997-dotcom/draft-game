@@ -19,7 +19,7 @@ import type { InsightCategory } from './insights';
 /** Which flavour take a beef can hang off (desk.ts `flavourTakes`). */
 export type Lens =
   | 'kobe' | 'jordan' | 'lakers' | 'lakersConcern' | 'celtics' | 'old' | 'modern' | 'eighties' | 'nineties' | 'aughts'
-  | 'preTwoK' | 'noPreTwoK' | 'stars' | 'noStars' | 'oneStar' | 'international' | 'steal' | 'overpay';
+  | 'preTwoK' | 'noPreTwoK' | 'stars' | 'noStars' | 'oneStar' | 'international' | 'steal' | 'overpay' | 'notMichael' | 'fav';
 
 export interface BeefCtx {
   read: RosterRead;
@@ -30,6 +30,8 @@ export interface BeefCtx {
   /** A rostered player by full name. */
   has: (name: string) => PlayerSpan | undefined;
   caps: (p: PlayerSpan) => number;
+  /** Whose take the argument hangs off, and (for a 'fav' take) the favourite it is about. */
+  anchor: { who: ExpertId; fav?: PlayerSpan };
 }
 
 /** A line of a thread: who, what, and (default 'reply') how it's labelled. */
@@ -57,7 +59,7 @@ export interface Beef {
 
 const DEFENSE: readonly InsightCategory[] = ['perimeter_defense', 'rim_protection', 'defensive_structure'];
 
-export const BEEFS: readonly Beef[] = [
+const CORE_BEEFS: Beef[] = [
   // ── Sosini vs the old guard ────────────────────────────────────────────────
   {
     id: 'time-machine',
@@ -675,4 +677,452 @@ export const BEEFS: readonly Beef[] = [
       }),
     ],
   },
+];
+
+type Variant = Beef['variants'][number];
+
+/** How each expert is @-mentioned. */
+export const HANDLE: Record<ExpertId, string> = {
+  host: 'Slim', sosini: 'Sosini', shyman: 'Shyman', solin: 'Solinhakov', binash: 'Binash', jert: 'Jertcheck',
+  rotation: 'Rotation', rightwing: 'Rightwing', batt: 'Batterista', prab: 'Prabuckov', onoffsky: 'Onoffsky',
+  moonbat: 'Moonbat', bannerman: 'Bannerman', natalie: 'Natalie', jeremy: 'May', lex: 'Lex', zoran: 'Eurostep',
+};
+
+/** Who goes after whom when an expert gushes over a favourite. */
+const FAN_RIVAL: Partial<Record<ExpertId, ExpertId>> = {
+  sosini: 'jert', shyman: 'sosini', solin: 'onoffsky', binash: 'sosini', jert: 'sosini', rotation: 'lex', batt: 'lex',
+  onoffsky: 'solin', bannerman: 'prab', natalie: 'lex', lex: 'rotation', zoran: 'sosini', prab: 'jeremy', jeremy: 'prab',
+};
+
+/**
+ * Each expert's favourite players: on the roster, the expert gushes (a 'fav' take) and a rival makes
+ * fun of the crush. 2026-10-15: a first guess per lens — the user is sending each specialist's real
+ * favourites, which replace these. Full names as in the data; accents don't matter.
+ */
+export const FAVOURITES: Partial<Record<ExpertId, string[]>> = {
+  sosini: ['Stephen Curry', 'Damian Lillard'],
+  shyman: ['Ben Wallace', 'Gary Payton', 'Dennis Rodman'],
+  solin: ['Ron Artest', 'Rasheed Wallace'],
+  binash: ['Larry Bird', 'Magic Johnson', 'Kevin McHale'],
+  jert: ['Wilt Chamberlain', 'Bill Russell', 'Moses Malone'],
+  rotation: ['Manu Ginobili', 'Robert Horry', 'Lou Williams'],
+  batt: ['Kawhi Leonard', 'Scottie Pippen'],
+  onoffsky: ['Nikola Jokic', 'Chris Paul'],
+  bannerman: ['Larry Bird', 'Paul Pierce', 'Kevin Garnett'],
+  lex: ['LeBron James', 'Kevin Durant'],
+  zoran: ['Dirk Nowitzki', 'Manu Ginobili', 'Arvydas Sabonis'],
+};
+
+/** How each expert gushes; `{fav}` is the player's surname. */
+export const FAV_LINES: Partial<Record<ExpertId, string[]>> = {
+  sosini: ['{fav}! Respectfully, his shot chart is my phone background.', '{fav}. *puts hand on heart* That is the future, and the future is now.'],
+  shyman: ['{fav}! STOPS! I have a poster of him above my bed. A big one.', '{fav}. *rubs his arms* Somebody hold me. Actual chills.'],
+  solin: ['{fav}. Grown man. Fouls hard, apologises never. My kind of guy.', '{fav}! Finally somebody on this roster who’d fight a parking meter.'],
+  binash: ['{fav}! Somebody pass me the short shorts. This is a holy day.', '{fav}. *dims the studio lights* Let me just enjoy this for a second.'],
+  jert: ['{fav}! *stands up* Kids today will never understand what he was.', '{fav}. They don’t make them like that anymore. They CAN’T.'],
+  rotation: ['{fav}! The best off-the-bench energy in history. I might cry.', '{fav}. *exhales* Finally somebody I trust in February.'],
+  batt: ['{fav}! Two ends! Bellissimo! *kisses his fingers*', '{fav}. Offense, defense, everything. Perfetto.'],
+  onoffsky: ['{fav}. *adjusts glasses* Statistically, my favourite human being.', '{fav}. I made a spreadsheet about him. It has a spreadsheet of its own.'],
+  bannerman: ['{fav}! A Celtic legend! *already crying*', '{fav}. *points at the ceiling* Banner energy.'],
+  natalie: ['{fav}! Value AND talent. I need a moment.'],
+  lex: ['{fav}! THAT is a star. THAT is how a dynasty starts.', '{fav}! Build the statue now. Save time.'],
+  zoran: ['{fav}! *hand on heart* The way he passes. The way he THINKS.', '{fav}. Listen to me. This is basketball as art.'],
+};
+
+const MORE_BEEFS: Beef[] = [
+  {
+    id: 'fan-crush',
+    chance: 0.6,
+    on: { lens: 'fav' },
+    variants: [
+      (c) => {
+        const rival = FAN_RIVAL[c.anchor.who];
+        if (!rival || !c.anchor.fav) return null;
+        return {
+          lines: [
+            [rival, `@${HANDLE[c.anchor.who]} calm down, it’s a draft, not a wedding.`],
+            [c.anchor.who, `I’d marry ${c.sur(c.anchor.fav)}’s ${c.anchor.fav.spanLabel} and I’m not ashamed.`],
+            ['host', 'Nobody is marrying anybody on my show.', 'host'],
+          ],
+        };
+      },
+      (c) => {
+        const rival = FAN_RIVAL[c.anchor.who];
+        if (!rival || !c.anchor.fav) return null;
+        return {
+          lines: [
+            [rival, `@${HANDLE[c.anchor.who]} every time ${c.sur(c.anchor.fav)} gets drafted, you do this.`],
+            [c.anchor.who, 'Every time. Proudly.'],
+            [rival, '*to the camera* Every. Single. Time.'],
+          ],
+        };
+      },
+      (c) => {
+        const rival = FAN_RIVAL[c.anchor.who];
+        if (!rival || !c.anchor.fav) return null;
+        return {
+          lines: [
+            [rival, `@${HANDLE[c.anchor.who]} overrated. There, I said it.`],
+            [c.anchor.who, `*stands up* Say ${c.sur(c.anchor.fav)}’s name again. I dare you.`],
+            [rival, 'Over. Rated.'],
+            ['host', 'Okay. OKAY. Sit down. Nobody says anybody’s name again.', 'host'],
+          ],
+        };
+      },
+    ],
+  },
+  {
+    id: 'kobe-defense',
+    on: { lens: 'kobe' },
+    variants: [
+      () => ({
+        lines: [
+          ['shyman', '@Prabuckov twelve All-Defensive teams? Half of them on reputation.'],
+          ['prab', '*stands up* Say that again, Matt. Slowly.'],
+          ['shyman', 'Re. Pu. Ta. Tion.'],
+          ['prab', 'Blocked. Unblocked so you can watch his highlights. Blocked again.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['batt', '@Prabuckov two ends, and Kobe played both. Finally someone at this desk I agree with.', 'cuts'],
+          ['prab', 'Filippo, my brother. You can stay.'],
+          ['jeremy', '*rolls his eyes* Get a room, you two.', 'cuts'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'not-michael',
+    on: { lens: 'notMichael' },
+    variants: [
+      () => ({
+        lines: [
+          ['prab', '@May he’s not Michael. He’s BETTER at being Kobe.'],
+          ['jeremy', 'That sentence means nothing.'],
+          ['prab', 'It means everything, my friend.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['prab', '@May Kobe practised at 4 a.m. When did Michael practise?'],
+          ['jeremy', 'In between rings, Mikhail.'],
+          ['prab', '*long pause* …Next question.'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'lakers-respect',
+    on: { lens: 'lakers' },
+    variants: [
+      () => ({
+        lines: [
+          ['bannerman', '@Prabuckov purple and gold. Somebody count the banners again, he’s getting excited.'],
+          ['prab', 'Seventeen, Igor. One behind. Start sweating.'],
+          ['bannerman', '*fans himself* Sweating with joy, maybe. 🍀'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'defense-loves',
+    on: { category: DEFENSE, side: 'praise' },
+    chance: 0.35,
+    variants: [
+      () => ({
+        lines: [
+          ['sosini', '@Shyman great, they defend. Who scores? 🥱'],
+          ['shyman', 'Stops ARE offense, Mattia. Every stop is a possession.'],
+          ['sosini', 'Every possession is a long two with your guys.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['lex', '@Shyman nobody buys a ticket to watch a charge.'],
+          ['shyman', 'I do. I bought season tickets to watch charges.'],
+          ['lex', 'That explains a lot, Matt.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['batt', '@Shyman fratello! Defense! Now tell me they score too and I’ll cry with you.', 'cuts'],
+          ['shyman', 'One thing at a time, Filippo. Let me have this.'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'boards-love',
+    on: { category: ['rebounding'], side: 'praise' },
+    variants: [
+      () => ({
+        lines: [
+          ['sosini', '@Solinhakov rebounds are for teams that miss. 🥱'],
+          ['solin', 'Everybody misses, Mattia. Even your podcast.'],
+          ['sosini', 'My podcast has never missed an episode.'],
+          ['solin', 'It has missed every listener.'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'bench-love',
+    on: { category: ['rotation', 'depth'], side: 'praise' },
+    variants: [
+      () => ({
+        lines: [
+          ['lex', '@Rotation nice bench. Where are the stars?'],
+          ['rotation', 'Some of them are ON the bench, Lex, resting. That’s the point.'],
+          ['lex', 'Stars don’t rest.'],
+          ['rotation', '*softly* Everybody rests, Lex.'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'two-ends',
+    chance: 0.6,
+    on: { category: ['two_way'], side: 'praise' },
+    variants: [
+      () => ({
+        lines: [
+          ['shyman', '@Batterista finally, someone at this desk talks sense.', 'cuts'],
+          ['batt', 'Matteo! Fratello! TWO ENDS!'],
+          ['sosini', '🥱 The defense club has a new member. Thrilling.', 'cuts'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'off-ball',
+    on: { category: ['off_ball'], side: 'praise' },
+    variants: [
+      () => ({
+        lines: [
+          ['sosini', '@May off-ball movement? You mean standing in the corner for a three. It’s called modern basketball.'],
+          ['jeremy', 'I mean running off three screens like Reggie. Look it up.'],
+          ['sosini', 'Reggie shot threes, Jeremy. He was one of us.'],
+          ['jeremy', '*long pause* …Leave Reggie out of this.'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'one-ball',
+    on: { category: ['usage'], side: 'concern' },
+    variants: [
+      () => ({
+        lines: [
+          ['lex', '@Eurostep one ball? Give it to the star and move on.'],
+          ['zoran', 'Listen to me. Then four guys watch. In Europe, watching is for the fans.'],
+          ['lex', 'In America, watching is for the role players.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['prab', '@Eurostep give it to the closer. Problem solved.'],
+          ['zoran', '*hand on heart* Your answer to everything is one man, Mikhail.'],
+          ['prab', 'And it works, my friend.'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'eye-test',
+    on: { category: ['fit', 'redundancy', 'position', 'cross'], side: 'concern' },
+    chance: 0.6,
+    variants: [
+      () => ({
+        lines: [
+          ['solin', '@Onoffsky the spreadsheet says they don’t fit. My eyes say they’d fight anyone.'],
+          ['onoffsky', 'Your eyes are not peer-reviewed, Davyd.'],
+          ['solin', 'Neither is my elbow.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['jert', '@Onoffsky in my day nobody “fit”. You played. *slams the desk*'],
+          ['onoffsky', '*adjusts glasses* In your day nobody even counted turnovers, Mattheus.'],
+          ['jert', 'Because we didn’t TURN IT OVER.'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'money-love',
+    on: { category: ['fga'], side: 'praise' },
+    variants: [
+      () => ({
+        lines: [
+          ['lex', '@Natalie under budget means you left a star on the table.'],
+          ['natalie', 'It means I left you a bench, Lex. You’re welcome.'],
+          ['rotation', '*mouths “thank you” at Natalie*', 'cuts'],
+        ],
+      }),
+    ],
+  },
+];
+
+/** More ways each core argument can go, so the same roster type doesn't replay the same fight. */
+const MORE_VARIANTS: Record<string, Variant[]> = {
+  closer: [
+    () => ({
+      lines: [
+        ['jert', '@Prabuckov closers. In my day we called that “the guy who shoots”. *slams the desk*'],
+        ['prab', 'In your day the shot clock was a sundial, my friend.'],
+        ['jert', 'It was NOT a sundial.'],
+      ],
+    }),
+  ],
+  'shooters-are-soft': [
+    () => ({
+      lines: [
+        ['binash', '@Sosini Bird didn’t need four shooters around him. He WAS four shooters.'],
+        ['sosini', 'Bird took two threes a game, Jacob. We’ve been over this.'],
+        ['binash', 'And I’ll keep bringing it up until you cry.'],
+      ],
+    }),
+  ],
+  'spacing-loves': [
+    () => ({
+      lines: [
+        ['jert', '@Sosini threes, threes, threes. Basketball used to have a middle, kid.'],
+        ['sosini', 'The middle is where possessions go to die. 🥱'],
+        ['jert', '*slams the desk* The middle is where CHAMPIONS live.'],
+      ],
+    }),
+    () => ({
+      lines: [
+        ['solin', '@Sosini nice. Now who sets the screens for all these artists?'],
+        ['sosini', 'The screens set themselves, Davyd. It’s called spacing.'],
+        ['solin', 'That sentence made my knees hurt.'],
+      ],
+    }),
+  ],
+  'stars-win': [
+    () => ({
+      lines: [
+        ['rotation', '@Lex love you, man. Who plays the backup minutes?'],
+        ['lex', 'Stars play forty-eight.'],
+        ['rotation', '*whispers* Nobody plays forty-eight, Lex.'],
+        ['jert', 'Wilt played forty-eight. Kids today.', 'cuts'],
+        ['lex', 'See? Wilt gets it.'],
+      ],
+    }),
+  ],
+  'defense-is-a-hobby': [
+    () => ({
+      lines: [
+        ['jert', '@Shyman in my day you’d foul a guy like that into next week.', 'cuts'],
+        ['shyman', 'Mattheus, that’s assault.'],
+        ['jert', 'That’s DEFENSE.'],
+      ],
+    }),
+  ],
+  'grown-men': [
+    () => ({
+      lines: [
+        ['binash', '@Solinhakov 2004 grit? The Bad Boys would eat your 2004 for breakfast.'],
+        ['solin', 'The Bad Boys were cosplay. We were the real thing.'],
+        ['binash', '*stands up* Take that back.'],
+        ['host', 'Sit down. Both of you. This is a basketball show, not a parking lot.', 'host'],
+      ],
+    }),
+  ],
+  'one-star': [
+    (c) => ({
+      lines: [
+        ['prab', `@Lex one star is all you need if he’s a closer, my friend. Ask Kobe.`],
+        ['lex', `Kobe had Shaq. ${c.sur(c.read.stars[0])} has a group chat.`],
+        ['prab', '*long pause* …Next question.'],
+      ],
+    }),
+  ],
+  'six-rings': [
+    () => ({
+      lines: [
+        ['lex', '@May six rings? LeBron made ten Finals. TEN.'],
+        ['jeremy', 'And lost six of them, Lex. Michael never lost one.'],
+        ['lex', 'Getting there is a skill.'],
+        ['jeremy', '*takes off his glasses* So is winning.'],
+      ],
+    }),
+  ],
+  banners: [
+    (c) => c.read.celtics.length !== 1 || c.read.celtics[0].playerName !== 'Bill Russell' ? null : ({
+      lines: [
+        ['jert', '@Bannerman finally, a Celtic I approve of.', 'cuts'],
+        ['bannerman', 'Mattheus, my brother.'],
+        ['sosini', '🥱 Two grandpas agreeing. Historic.', 'cuts'],
+      ],
+    }),
+    (c) => c.read.celtics.length !== 1 || c.read.celtics[0].playerName === 'Bill Russell' ? null : ({
+      lines: [
+        ['prab', '@Bannerman one Celtic and you’re already crying?'],
+        ['bannerman', 'One is all it takes. It’s in the DNA.'],
+        ['prab', 'So is losing Game 7 to Kobe in 2010.'],
+        ['bannerman', '*long pause* …We don’t talk about 2010.'],
+      ],
+    }),
+  ],
+  february: [
+    () => ({
+      lines: [
+        ['jeremy', '@Rotation Michael never asked for a bench.'],
+        ['rotation', 'Michael had Toni Kukoč coming off his bench, Jeremy.'],
+        ['jeremy', '…That’s fair.'],
+      ],
+    }),
+  ],
+  'short-shorts': [
+    () => ({
+      lines: [
+        ['onoffsky', '*adjusts glasses* Fun fact: teams in the ’80s played around a hundred possessions a game. Everyone ran.', 'cuts'],
+        ['binash', 'SEE? We RAN, Mattia.'],
+        ['sosini', 'Running to long twos. 🥱'],
+      ],
+    }),
+  ],
+  'mid-range': [
+    () => ({
+      lines: [
+        ['binash', '@May the ’90s slowed the game to a crawl. Who enjoyed that?'],
+        ['jeremy', 'Anyone who enjoys defense, Jacob.'],
+        ['shyman', 'I enjoyed it. I enjoyed it a LOT.', 'cuts'],
+      ],
+    }),
+  ],
+  'whole-point': [
+    () => ({
+      lines: [
+        ['zoran', '@Sosini modern? Listen to me. Europe played this way in 1995.'],
+        ['sosini', 'Nobody was watching in 1995, Zoran.'],
+        ['zoran', '*hand on heart* We were watching.'],
+      ],
+    }),
+  ],
+  moses: [
+    () => ({
+      lines: [
+        ['binash', '@Jertcheck kids today wouldn’t survive one Pistons possession.', 'cuts'],
+        ['sosini', 'Kids today would be in the bonus by the first timeout. 🥱', 'cuts'],
+        ['jert', 'That’s called DEFENSE, Mattia.'],
+      ],
+    }),
+  ],
+  overpay: [
+    () => ({
+      lines: [
+        ['rotation', '@Natalie that cap money was my bench. My whole bench.', 'cuts'],
+        ['natalie', 'I know, Mark. I know. *hands him a tissue*'],
+        ['rotation', 'Love you guys. I’m not okay.'],
+      ],
+    }),
+  ],
+};
+
+export const BEEFS: readonly Beef[] = [
+  ...CORE_BEEFS.map((b) => (MORE_VARIANTS[b.id] ? { ...b, variants: [...b.variants, ...MORE_VARIANTS[b.id]] } : b)),
+  ...MORE_BEEFS,
 ];
