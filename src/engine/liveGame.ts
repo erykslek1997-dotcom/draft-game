@@ -823,8 +823,15 @@ function huntMod(d: DefenderProfile): number {
 }
 
 /** Expected points of one trip for `off` against this defense at shooting `scale` — the measure the
- * nudge evens out (turnovers, second chances and free throws included). */
-function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, number>, scale: number): number {
+ * nudge evens out (turnovers, second chances, free throws and fast breaks included): a half-court
+ * trip, a fast break, and how the trip ends (what the other side's next trip starts from). */
+interface TripOdds {
+  value: number;
+  breakValue: number;
+  steal: number;
+  defRebound: number;
+}
+function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, number>, scale: number): TripOdds {
   const shots = off.reduce((s, c) => s + c.shotShare, 0) || 1;
   const lateWeights = off.map((c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower);
   const lateTotal = lateWeights.reduce((s, v) => s + v, 0) || 1;
@@ -851,7 +858,37 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
     }
   });
   const tov = DEFENSE_TUNING.turnover * cl.tovMul;
-  return ((1 - tov) * value) / (1 - (1 - tov) * miss * cl.oreb);
+  const halfCourt = ((1 - tov) * value) / (1 - (1 - tov) * miss * cl.oreb);
+  // 2026-10-15 (the Daily's even games went to the legends by ~4): the fast break was the game's
+  // and not this measure's, so a five that steals and rebounds more (a real team) beat the nudge.
+  // A break's first shot: at the rim unless a rare three, the defense at half strength, more fouls,
+  // half the turnovers; a miss it gets back plays on as a half-court trip.
+  let breakValue = 0;
+  let breakMiss = 0;
+  off.forEach((c, i) => {
+    const m = cl.mods[i];
+    const t = (tired.get(c.player.label) ?? 1) * scale;
+    const w = c.shotShare / shots;
+    const half = (mod: number) => 1 - (1 - mod) * 0.5;
+    const ft = c.player.span.box.ftPct;
+    const r3 = BREAK_THREE_RATE;
+    const foul = c.foul * m.foul * DEFENSE_TUNING.shootingFoul * BREAK_FOUL;
+    const foulP = r3 * foul + (1 - r3) * foul * Math.max(0.5, 1 + RIM_TUNING.foul * cl.rimZ);
+    const p3 = c.threePct * half(m.three) * t;
+    const p2 = Math.min(0.85, c.rimPct + BREAK_RIM_BONUS) * half(m.rim) * t;
+    const field = r3 * 3 * p3 + (1 - r3) * 2 * p2 * (1 + (AND_ONE * BREAK_FOUL * ft) / 2);
+    breakValue += w * ((1 - foulP) * field + foulP * (r3 * 3 + (1 - r3) * 2) * ft);
+    breakMiss += w * (1 - foulP) * (r3 * (1 - p3) + (1 - r3) * (1 - p2));
+  });
+  const breakTov = tov * 0.5;
+  // How the trip ends, for the other side's next one: a steal, or a missed shot it rebounds.
+  const again = 1 - (1 - tov) * miss * cl.oreb;
+  return {
+    value: halfCourt,
+    breakValue: (1 - breakTov) * (breakValue + breakMiss * cl.oreb * halfCourt),
+    steal: (tov * cl.stealShare) / again,
+    defRebound: ((1 - tov) * miss * (1 - cl.oreb)) / again,
+  };
 }
 
 /**
@@ -1076,17 +1113,24 @@ function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
     }
     return c;
   };
-  const meanPossession = (side: GameSide, scale: number) => {
+  const trip = (side: GameSide, k: number, scale: number) =>
+    expectedPossession(schedule[side][k], clashFor(schedule[side][k], schedule[1 - side][k]), tired[side], scale);
+  /** A side's mean trip, each one a fast break as often as the other side's trip before it ends in
+   * a steal or a missed shot this side rebounds (`BREAK_AFTER_STEAL`, `BREAK_AFTER_REBOUND`). */
+  const meanPossession = (side: GameSide, scale: number, otherScale = 1) => {
     let sum = 0;
     let n = 0;
     for (let k = side; k < POSSESSIONS; k += 2) {
-      sum += expectedPossession(schedule[side][k], clashFor(schedule[side][k], schedule[1 - side][k]), tired[side], scale);
+      const own = trip(side, k, scale);
+      const before = k > 0 ? trip((1 - side) as GameSide, k - 1, otherScale) : null;
+      const breakP = before ? before.steal * BREAK_AFTER_STEAL + before.defRebound * BREAK_AFTER_REBOUND : 0;
+      sum += (1 - breakP) * own.value + breakP * own.breakValue;
       n++;
     }
     return sum / Math.max(1, n);
   };
   const perTeam = POSSESSIONS / 2;
-  const gapAt = (n: number) => perTeam * (meanPossession(0, 1 + n) - meanPossession(1, 1 - n));
+  const gapAt = (n: number) => perTeam * (meanPossession(0, 1 + n, 1 - n) - meanPossession(1, 1 - n, 1 + n));
   return { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt, meanPossession };
 }
 
