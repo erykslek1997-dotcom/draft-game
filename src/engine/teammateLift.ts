@@ -74,5 +74,14 @@ export function teamLiftShift(team: Team): number {
   return shift;
 }
 
-/** The same in points a game, what the engine's margin adds. */
+/** The same in points a game. */
 export const teamLiftPoints = (team: Team) => teamLiftShift(team) * LIFT_TUNING.pointsPerTs;
+
+/**
+ * Points of single-game margin one point of team overall is worth (matchup.ts: the overall weight
+ * 0.85 times 1 point per unit). 2026-10-15: the lift goes into the team's overall (scoring.ts
+ * `scoreTeam`) at this rate, so the results ranking, the AI's bench picks and the season seeds see
+ * it, and one game's margin still gets exactly `teamLiftPoints`.
+ */
+export const LIFT_POINTS_PER_OVERALL = 0.85;
+export const liftAdjustment = (team: Team) => teamLiftPoints(team) / LIFT_POINTS_PER_OVERALL;

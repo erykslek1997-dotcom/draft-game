@@ -5,7 +5,6 @@ import { scoreTeam } from './scoring';
 import { defensiveHuntability, HUNTABILITY_DRTG_POINTS_PER_PENALTY, type DefensiveHuntabilityResult } from './defensiveHuntability';
 import { primaryStarters } from './rotation';
 import { computeOffensiveTalent } from './talent';
-import { teamLiftPoints } from './teammateLift';
 
 /**
  * 2026-09-14, user-reported live (asking for more background season simulations "so the result is
@@ -27,8 +26,6 @@ export interface MatchupTeamCache {
   huntingPotential?: number;
   huntability?: DefensiveHuntabilityResult;
   style?: StyleProfile;
-  /** `teamLiftPoints` (teammateLift.ts). */
-  lift?: number;
 }
 
 /**
@@ -304,16 +301,15 @@ export function projectMatchup(
   // shared margin (see `mismatchAdjustment`'s own docstring).
   const mismatchForA = mismatchAdjustment(teamA, teamB, cacheA, cacheB);
   const mismatchForB = mismatchAdjustment(teamB, teamA, cacheB, cacheA);
-  // 2026-10-15 (the user): how much the players lift their teammates' shooting, from real seasons
-  // (`teammateLift.ts`) — the live game plays it, so the engine counts it too.
-  const liftMargin = (cacheA?.lift ?? teamLiftPoints(teamA)) - (cacheB?.lift ?? teamLiftPoints(teamB));
+  // How much the players lift their teammates' shooting (teammateLift.ts) is in `overall` since
+  // 2026-10-15, at `LIFT_POINTS_PER_OVERALL` — keep that equal to OVERALL_MARGIN_WEIGHT *
+  // OVERALL_POINTS_PER_UNIT.
   const marginA =
     OVERALL_MARGIN_WEIGHT * overallMargin +
     (1 - OVERALL_MARGIN_WEIGHT) * netMargin +
     mismatchForA -
     mismatchForB +
-    styleMargin +
-    liftMargin;
+    styleMargin;
   const gameWinProbA = gameWinProbability(marginA);
   const seriesWinProbA = seriesWinProbability(gameWinProbA);
   return { marginA, gameWinProbA, seriesWinProbA };

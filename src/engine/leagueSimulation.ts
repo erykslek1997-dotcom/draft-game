@@ -1,4 +1,3 @@
-import { teamLiftPoints } from './teammateLift';
 import type { Team } from './types';
 import { rankTeams } from './scoring';
 import { projectMatchup, seriesWinProbability, gameWinProbability, styleProfile, type MatchupProjection, type MatchupTeamCache } from './matchup';
@@ -111,7 +110,6 @@ export function evaluateLeague(teams: Team[], simulations: number = DEFAULT_SIMU
         huntingPotential: fitScore(team).inputs.huntingPotential,
         huntability: defensiveHuntability(team),
         style: styleProfile(team),
-        lift: teamLiftPoints(team),
       },
     ]),
   );
