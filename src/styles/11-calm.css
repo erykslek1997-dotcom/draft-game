@@ -1034,15 +1034,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 }
 
 /* ---- The share card: a small copy of the results page (2026-10-08) ---- */
-.share-modal-card.sh-card { padding: 0; gap: 0; align-items: stretch; text-align: left; background: var(--calm-raised); border-color: var(--calm-line); border-radius: 16px; overflow: hidden; width: min(440px, 100%); }
-.sh-pad { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 24px 16px 16px; }
-.sh-pad .rr-place { margin: 4px 0 0; }
-.sh-pad .rr-team h2 { margin: 0; }
-.sh-kpis { width: 100%; margin: 8px 0 4px; }
-.sh-pad .rr-bars { width: 100%; }
-.sh-roster { border-top: 1px solid var(--calm-line); }
-.sh-bench { margin: 0; padding: 8px 16px 12px; font-size: 12px; color: var(--at-ink-faint); }
-.sh-foot { display: flex; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--calm-line); font: 700 12px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); }
+.share-modal-card.sh-card { padding: 0; gap: 0; align-items: stretch; text-align: left; background: var(--calm-raised); border-color: var(--calm-line); border-radius: 16px; overflow: hidden; width: min(460px, 100%); --rr-disp: 'Barlow Condensed', 'Inter', system-ui, sans-serif; --rr-serif: 'Bitter', Georgia, serif; }
 .sh-card .share-modal-save { padding: 16px; }
 
 .ss-allstars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -1551,3 +1543,56 @@ button.ph-game { cursor: pointer; }
 .at-calm-maxcaps input:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 1px; }
 .at-calm-maxcaps button { width: 22px; height: 22px; padding: 0; border: none; border-radius: 11px; background: none; color: var(--at-ink-faint); cursor: pointer; font-size: 11px; }
 .at-calm-maxcaps button:hover { color: var(--at-ink); }
+
+/* 2026-10-15 (playtest 9 and 13): the share cards as posters — the team's colours and logo on a
+   band, the result big, the style line as the title, the five as faces, the grades as chips. */
+.sp { display: flex; flex-direction: column; background: #070a10; color: var(--at-ink); font-family: 'Inter', system-ui, sans-serif; }
+.sp-band {
+  display: flex; align-items: center; gap: 14px; padding: 22px 52px 18px 20px;
+  background: linear-gradient(135deg, hsl(var(--sp-hue) 60% 30%) 0%, hsl(var(--sp-hue) 55% 16%) 55%, #070a10 100%);
+  border-bottom: 3px solid hsl(var(--sp-hue) 70% 55%);
+}
+.sp-band .rr-mark { width: 64px; height: 64px; font-size: 20px; border-radius: 14px; }
+.sp-logo { flex: none; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5)); }
+.sp-band-t { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sp-kicker { font: 700 12px var(--rr-disp); letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255, 255, 255, 0.72); }
+.sp-name { font: 800 34px/0.95 var(--rr-disp); letter-spacing: 0.02em; text-transform: uppercase; color: #fff; overflow-wrap: anywhere; }
+.sp-body { display: flex; flex-direction: column; gap: 16px; padding: 18px 20px 20px; }
+.sp-hero { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.sp-place { font: 800 84px/0.8 var(--rr-disp); color: #fff; }
+.sp-place sup { font-size: 0.42em; vertical-align: top; margin-left: 2px; }
+.sp-hero-t { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.sp-of { font: 700 18px var(--rr-disp); letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-soft); }
+.sp-kpis { flex: 1 1 100%; display: flex; gap: 18px; font-size: 12px; color: var(--at-ink-faint); }
+.sp-kpis b { font: 700 16px var(--calm-num); color: var(--at-ink); }
+.sp-title { margin: 0; font: 800 26px/1.15 var(--rr-serif); color: #fff; }
+.sp-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.sp-five-p { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; text-align: center; }
+.sp-five-p .bf-face { width: 64px; height: 64px; box-shadow: 0 0 0 2px #070a10, 0 0 0 4px hsl(var(--sp-hue) 65% 55%); }
+.sp-five-p b { font: 800 12px/1 var(--rr-disp); letter-spacing: 0; text-transform: uppercase; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-five-p small { font: 600 10px var(--calm-num); color: var(--at-ink-faint); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.sp-grades { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.sp-grade { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; border-radius: 10px; background: #0d1320; font-size: 11px; color: var(--at-ink-soft); }
+.sp-grade .rr-grade { min-width: 24px; }
+.sp-bench, .sp-awards { margin: 0; font-size: 12px; color: var(--at-ink-faint); }
+.sp-awards { color: #f2c14e; font-weight: 600; }
+.sp-foot { display: flex; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #141c28; font: 700 12px var(--rr-disp); letter-spacing: 0.16em; text-transform: uppercase; color: var(--at-ink-faint); }
+.sp-result { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.sp-result.is-champ { color: #f2c14e; }
+.sp-result-t { font: 800 30px/1 var(--rr-disp); text-transform: uppercase; letter-spacing: 0.01em; color: #fff; }
+.sp-result.is-champ .sp-result-t { color: #f2c14e; }
+.sp-result-s { font: 600 14px var(--calm-num); color: var(--at-ink-soft); }
+.sp-path { display: flex; gap: 6px; }
+.sp-path-r { flex: 0 1 132px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 10px; background: #0d1320; border: 1px solid #1a2433; text-align: center; }
+.sp-path-r small { font-size: 10px; color: var(--at-ink-faint); white-space: nowrap; }
+.sp-path-r b { font: 700 15px var(--calm-num); }
+.sp-path-r.is-won b { color: #7fd68a; }
+.sp-path-r.is-lost b { color: #e8707a; }
+.sp-overlay { z-index: 130; }
+@media (max-width: 480px) {
+  .sp-five-p .bf-face { width: 50px; height: 50px; }
+  .sp-five-p small { font-size: 9px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .sp-name { font-size: 28px; }
+  .sp-title { font-size: 22px; }
+}
+.ss-share-btn { margin-left: 8px; padding: 8px 16px; font-size: 14px; }

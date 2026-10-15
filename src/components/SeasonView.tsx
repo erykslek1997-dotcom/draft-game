@@ -20,6 +20,7 @@ import LiveGame, { type LiveMatchup } from './LiveGame';
 import { TeamMark } from './ResultsReport';
 import { teamNickname } from '../engine/teamNames';
 import { matchupHues } from './teamLogoKit';
+import { SeasonShareModal } from './SeasonShareModal';
 import './BestFive.css';
 import { FitName, FitTeam } from './FitName';
 import { PlayerRow, RowsLabel } from './PlayerRow';
@@ -1143,7 +1144,7 @@ function PlayoffsChapter({
         {live && live.round === 0 && live.game === 0 && yourSeries && <p className="pl-sub">8 teams, best of seven. Your games are yours to play; the rest of the bracket plays alongside.</p>}
       </div>
       {between}
-      {all && <Finale season={season} playoffs={playoffs} youId={youId} byId={byId} mark={mark} yourRuns={yourRuns.map((r) => rounds[r.round][r.index])} seedOf={seedOf} />}
+      {all && <Finale season={season} playoffs={playoffs} youId={youId} byId={byId} codes={codes} mark={mark} yourRuns={yourRuns.map((r) => rounds[r.round][r.index])} seedOf={seedOf} />}
       {/* 2026-10-14, the user: "najpierw powinna być zapowiedź serii, później drabinka" — your
           series first (left on desktop, on top on a phone), the bracket after it. */}
       <div className={panel ? 'pl-split' : ''}>
@@ -1475,11 +1476,13 @@ function Finale({
   playoffs,
   youId,
   byId,
+  codes,
   mark,
   yourRuns,
   seedOf,
 }: {
   season: LiveSeasonResult;
+  codes: Map<string, string>;
   playoffs: LivePlayoffResult;
   youId: string;
   byId: Map<string, Team>;
@@ -1515,8 +1518,44 @@ function Finale({
         .filter((l): l is SeasonPlayerLine => Boolean(l))
         .sort((a, b) => per(b, 'min') - per(a, 'min'))
     : [];
+  const [sharing, setSharing] = useState(false);
+  const awards = (() => {
+    const mine = (l: SeasonPlayerLine | null) => (l && l.teamId === youId ? l.span.playerName : null);
+    const out: string[] = [];
+    const mvp = mine(season.awards.mvp);
+    if (mvp) out.push(`MVP ${mvp}`);
+    if (fmvp && fmvp.teamId === youId) out.push(`Finals MVP ${fmvp.span.playerName}`);
+    const dpoy = mine(season.awards.dpoy);
+    if (dpoy) out.push(`DPOY ${dpoy}`);
+    const sixth = mine(season.awards.sixthMan);
+    if (sixth) out.push(`Sixth Man ${sixth}`);
+    season.awards.allNba.forEach((team, i) => {
+      team.filter((l) => l.teamId === youId).forEach((l) => out.push(`All-NBA ${ord(i + 1)} ${l.span.playerName.split(' ').slice(-1)[0]}`));
+    });
+    return out;
+  })();
+  const shareModal =
+    sharing && you && record ? (
+      <SeasonShareModal
+        onClose={() => setSharing(false)}
+        teamName={you.name}
+        teamCode={codes.get(youId) ?? ''}
+        result={result}
+        champion={champ === youId}
+        record={`${record.wins}-${record.losses}`}
+        seed={`${ord(seedOf(youId))} seed`}
+        path={yourRuns.map((r) => {
+          const opp = r.teamAId === youId ? r.teamBId : r.teamAId;
+          const [w, l] = r.teamAId === youId ? [r.gamesWonA, r.gamesWonB] : [r.gamesWonB, r.gamesWonA];
+          return { round: r.roundLabel, opp: codes.get(opp) ?? '', score: `${w}-${l}`, won: r.winnerId === youId };
+        })}
+        five={roster.slice(0, 5).map((l) => ({ name: l.span.playerName, line: `${f1(per(l, 'pts'))} ppg` }))}
+        awards={awards}
+      />
+    ) : null;
   return (
     <div className="pl-finale">
+      {shareModal}
       {you && record && (
         <div className="pl-card ss-summary">
           <div className="pl-label is-gold">Your season</div>
@@ -1527,6 +1566,9 @@ function Finale({
               {record.wins}-{record.losses} · {ord(seedOf(youId))} seed
             </span>
             <span className={`ss-summary-result${champ === youId ? ' is-gold' : ''}`}>{result}</span>
+            <button type="button" className="pl-cta ss-share-btn" onClick={() => setSharing(true)}>
+              Share your season
+            </button>
           </div>
           <div className="ss-table-wrap">
             <table className="ss-table">
