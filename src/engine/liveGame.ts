@@ -8,7 +8,7 @@ import type { LegendFive } from './dailyMeta';
 import type { Team } from './types';
 import { contextLines } from './contextStats';
 import { modernBox } from './modernBox';
-import { fiveLiftShifts } from './teammateLift';
+import { fiveLiftShifts, LIFT_TUNING } from './teammateLift';
 import { fatigueShare } from './fatigue';
 import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import { estimatedMinutesPerGame } from './minutesPerGame';
@@ -431,8 +431,11 @@ export const DEFENSE_TUNING = {
    * what the game now adds there, so his season lands on his own numbers. */
   /* 2026-10-08: 0.99 -> 0.983 — the milder fatigue (stage 3) left more shots going in; the league
    * back to ~122 points and TS ~62.4 a team game. 2026-10-09: 0.983 -> 0.994 — giving the ball up no
-   * longer lifts everyone's shooting (`SCALE_TUNING`); the league back where it was. */
-  halfCourt: 0.994,
+   * longer lifts everyone's shooting (`SCALE_TUNING`); the league back where it was. 2026-10-15:
+   * 0.994 -> 0.988 — late-clock shots no longer cost a player below his own average
+   * (`LATE_TUNING.giveBack`), which this had partly been soaking up; the bench leagues back inside
+   * their band (TS 63.3 -> 62.9), drafted shooters' threes within ~0.5 of their own. */
+  halfCourt: 0.988,
   turnover: 0.133,
   /** A player's real free-throw rate already holds his trips in the bonus, which the game now
    * plays as their own fouls; shooting fouls give that back, so the league's free throws stay
@@ -532,6 +535,9 @@ function handlerZ(off: CourtPlayer[]): number {
  */
 export const LATE_TUNING = {
   share: 0.09,
+  /** How much of what a player's late shots lose comes back on all of his shots (`courtFor`): his
+   * real percentages already hold them. 1 = all of it. */
+  giveBack: 1,
   reset: 1.8,
   defense: 0.15,
   handler: 0.15,
@@ -1011,7 +1017,7 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
       twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor + lifted[i])),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + (anchor + lifted[i]) * THREE_PCT_PER_TS)),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS + lifted[i] * LIFT_TUNING.threes)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
@@ -1023,6 +1029,21 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       edge3: edges[i].three,
       ownShare: owns[i],
     }));
+    // 2026-10-15 (the user: good shooters at a poor shooter's 3P%): a player's real percentages
+    // already hold his late-clock shots, and the game took them off again on top. At a typical
+    // five's share of late trips (`LATE_TUNING.share`), what his late shots lose comes back on all
+    // of his shots, so his average is his own; a five that breaks down more often still pays.
+    const shotTotal = court.reduce((s, c) => s + c.shotShare, 0) || 1;
+    const lateWeights = court.map((c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower);
+    const lateTotal = lateWeights.reduce((s, v) => s + v, 0) || 1;
+    court.forEach((c, i) => {
+      const normal = ((1 - LATE_TUNING.share) * c.shotShare) / shotTotal;
+      const late = (LATE_TUNING.share * lateWeights[i]) / lateTotal;
+      const lateShare = late / Math.max(1e-9, normal + late);
+      const own = (edge: number, setup: number) => edge * Math.min(0.97, setup / (1 - LATE_TUNING.share)) + LATE_TUNING.penalty;
+      c.twoPct += LATE_TUNING.giveBack * lateShare * own(c.edge2, c.setup2);
+      c.threePct += LATE_TUNING.giveBack * lateShare * own(c.edge3, c.setup3);
+    });
     for (const c of court) {
       c.twoPct *= DEFENSE_TUNING.halfCourt;
       c.threePct *= DEFENSE_TUNING.halfCourt;
