@@ -742,10 +742,29 @@ span.at-pc-name { cursor: default; }
 .rr-extra { padding: 0 16px 16px; }
 .rr-draft-order { margin: 0; padding-left: 0; list-style: none; columns: 2; font-size: 14px; }
 .rr-draft-order li { padding: 4px 0; }
-.rr-voices { display: flex; flex-direction: column; gap: 12px; }
-.rr-voice small { font: 700 13px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent); }
-.rr-voice p { margin: 3px 0 0; font-size: 14px; line-height: 1.5; color: var(--at-ink); }
-.rr-voice--warn small { color: var(--at-warn); }
+/* The Desk (engine/desk.ts): the panel's lines as a studio chat — badge, name, what kind of line. */
+.dk { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.dk-ln { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: start; }
+.dk-ln--reply { margin-left: 26px; }
+.dk-av {
+  --h: 210; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+  font: 700 11px var(--calm-num); color: hsl(var(--h) 80% 88%);
+  background: linear-gradient(150deg, hsl(var(--h) 45% 30%), hsl(var(--h) 55% 18%)); box-shadow: inset 0 0 0 1.5px hsl(var(--h) 60% 55% / 0.7);
+}
+.dk-body { min-width: 0; margin: 0; padding: 7px 11px; border-radius: 4px 12px 12px 12px; background: var(--calm-raised-2, #111c2a); border: 1px solid var(--calm-line); }
+.dk-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.dk-head b { font-size: 13px; color: var(--at-ink); }
+.dk-head small { font: 600 10px var(--calm-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-faint); }
+.dk-body p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; color: var(--at-ink); overflow-wrap: anywhere; }
+.dk-cue { font-style: italic; font-size: 12.5px; color: var(--at-ink-faint); }
+.dk-ln--praise .dk-head small, .dk-ln--defends .dk-head small { color: #6fcf97; }
+.dk-ln--concern .dk-head small { color: var(--at-warn); }
+.dk-ln--take .dk-head small { color: #e58cff; }
+.dk-ln--right .dk-head small, .dk-ln--host .dk-head small { color: var(--gold, #ffd166); }
+.dk-ln--right .dk-body { border-color: color-mix(in srgb, var(--gold, #ffd166) 45%, var(--calm-line)); }
+.dk-ln--host .dk-body { background: color-mix(in srgb, var(--gold, #ffd166) 7%, var(--calm-raised-2, #111c2a)); border-color: color-mix(in srgb, var(--gold, #ffd166) 30%, var(--calm-line)); }
+.dk-ln--burst { margin-top: -4px; }
+.dk-ln--burst .dk-body { border-radius: 12px; padding: 5px 11px; font-size: 14px; color: var(--at-ink); }
 
 /* standings + every rival's report */
 .rr-standings { display: flex; flex-direction: column; gap: 4px; }

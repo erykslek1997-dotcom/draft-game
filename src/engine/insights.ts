@@ -683,7 +683,7 @@ export const DETECTORS: RosterInsightDetector[] = [
       const n = t.starterPlusShooterCount ?? t.starterSpacingCount ?? 5;
       const nonShooters = t.starters.filter(p => !p.isSpacingArchetype);
       if (s > 0.45 && n >= 2) return inactive;
-      return hit(Math.max(1 - s, (3 - n) / 3), 0.95, teamConfidence(t), `Only ${n} real outside shooter${n === 1 ? '' : 's'} in the starting five — defenders can leave ${displayNames(nonShooters)} and crowd the paint.`, { players: nonShooters.map(p => p.playerName), values: { starterSpacingStrength: s, starterPlusShooterCount: n } });
+      return hit(Math.max(1 - s, (3 - n) / 3), 0.95, teamConfidence(t), `${n === 0 ? 'No real outside shooters' : `Only ${n} real outside shooter${n === 1 ? '' : 's'}`} in the starting five — defenders can leave ${displayNames(nonShooters)} and crowd the paint.`, { players: nonShooters.map(p => p.playerName), values: { starterSpacingStrength: s, starterPlusShooterCount: n } });
     }
   },
   {

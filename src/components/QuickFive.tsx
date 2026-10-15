@@ -34,7 +34,8 @@ import { fitScore } from '../engine/fit';
 import { bestHistoricalComp } from '../engine/historicalComps';
 import DraftLottery from './DraftLottery';
 import { nextDraftTip } from './ResultsScreen';
-import { RosterGrid, TeamMark, TeamReport, fieldGrade, type DeskVoice, type ProfileRow } from './ResultsReport';
+import { RosterGrid, TeamMark, TeamReport, fieldGrade, type ProfileRow } from './ResultsReport';
+import { buildMiniDesk } from '../engine/desk';
 import { teamHue } from './teamLogoKit';
 import { ALL_POSITIONS } from './DraftBoard';
 import './QuickFive.css';
@@ -635,20 +636,18 @@ function QuickResults({
       const value = Math.round(score[key] as number);
       return { label: key[0].toUpperCase() + key.slice(1), value, grade: fieldGrade(value, ranked.map((r) => Math.round(r.score[key] as number))) };
     });
-  // The same Draft Desk voices as the All-Time results: the weakest axis (the podium hears it only
-  // as what a rival could attack), the softest defender, and one thing to try next draft.
-  const voices: DeskVoice[] = [
-    {
-      who: 'The Coach',
-      what: humanRank <= 3 ? 'where a rival could still hurt you' : 'what held you back',
-      text: `${humanRank <= 3 ? 'The one thing a rival could attack' : 'Your weakest area'} is ${weakest.label} (${Math.round(human.score[weakest.key])}). ${WEAK_AXIS_REASON[weakest.key](human.score)}`,
-      tone: 'warn' as const,
-    },
-    ...(human.score.weakLink
-      ? [{ who: 'The Analyst' as const, what: 'on defense', text: `${human.score.weakLink} is the softest spot — an opponent will attack him every possession.`, tone: 'warn' as const }]
-      : []),
-    ...(nextTip && humanRank > 3 ? [{ who: 'The Scout' as const, what: humanRank === 4 ? 'to get over the top' : 'next draft', text: nextTip, tone: 'warn' as const }] : []),
-  ];
+  // The same desk as the All-Time results (engine/desk.ts): the weakest axis to its expert (the
+  // podium hears it only as what a rival could attack), the softest defender, the host's tip.
+  const voices = buildMiniDesk({
+    team: human.team,
+    rank: humanRank,
+    fieldSize: ranked.length,
+    weakest: { label: weakest.label, value: human.score[weakest.key] as number },
+    weakReason: WEAK_AXIS_REASON[weakest.key](human.score),
+    weakLink: human.score.weakLink,
+    tip: humanRank > 3 ? nextTip : undefined,
+    seed: state.seed,
+  });
   const starters = STARTER_SLOTS.map((slot) => {
     const id = human.team.rotation?.slots[slot]?.[0]?.playerId;
     return { slot, player: id ? human.team.roster.find((p) => p.id === id) : undefined };
