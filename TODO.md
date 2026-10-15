@@ -539,7 +539,8 @@ Etap 0 (diagnoza, 2026-10-08) — mecz drużynowy ('season', 1,3 pkt na punkt oc
 Power Rankings + sezon na 82 mecze dla 15 składów z arkusza (strona-artefakt „D2S2 Power Rankings”,
 skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 sezonów, jeden sezon).
 
-- [ ] **MVP: bilans do kwadratu** (decyzja 2026-10-10, do wprowadzenia) — dziś `mvpValue` w
+- [x] **MVP: bilans do kwadratu** (decyzja 2026-10-10; zrobione 2026-10-15 — 8 lig: miejsce drużyny MVP
+      1,75 → 1,13, game score pod najlepszą linijką 1,4 → 2,9) — dawniej `mvpValue` w
       `liveSeason.ts` = game score × √(procent zwycięstw), przez co MVP wygrywa ktoś ze słabej
       drużyny (D2S2: Jokić z 9. miejsca, poza playoffami). Zmiana: × (procent zwycięstw)².
       20 sezonów lig AI: średnie miejsce drużyny MVP 2,25 → 1,15, spoza top 8 1 → 0, z drużyny
