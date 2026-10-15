@@ -48,7 +48,7 @@
 .sc-btn--go { border-color: transparent; background: #3ab0f0; color: #06070c; font-weight: 700; }
 .sc-btn--go:hover { color: #06070c; background: #5cc0f4; border-color: transparent; }
 .sc-speeds { display: inline-flex; gap: 2px; padding: 3px; border-radius: 17px; border: 1px solid var(--sc-line); background: var(--sc-panel); }
-.sc-speeds > button { height: 26px; padding: 0 10px; border: none; border-radius: 13px; background: none; color: var(--sc-soft); font: 600 12px 'Inter', sans-serif; cursor: pointer; }
+.sc-speeds > button { height: 26px; min-width: 30px; padding: 0 8px; border: none; border-radius: 13px; background: none; color: var(--sc-soft); font: 600 12px 'Inter', sans-serif; cursor: pointer; }
 .sc-speeds > button.is-on { background: var(--sc-ink); color: #06070c; font-weight: 700; }
 
 /* Scoreboard. */
@@ -132,16 +132,14 @@
 .sc-play-face--none { box-shadow: none; background: none; }
 .sc-play-text { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; font-weight: 500; color: var(--sc-soft); }
 .sc-play.is-score .sc-play-text { font-weight: 600; color: var(--sc-ink); }
+.sc-play-stat { font-weight: 500; color: var(--sc-faint); white-space: nowrap; }
+.sc-play.is-score .sc-play-stat { font-weight: 500; color: var(--sc-faint); }
 .sc-play-s { flex: none; font: 700 11px var(--sc-num); color: var(--sc-soft); font-variant-numeric: tabular-nums; }
 .sc-note { padding: 8px 14px; border-bottom: 1px solid var(--sc-row-line); font: 700 13px var(--sc-disp); letter-spacing: 0.08em; text-transform: uppercase; color: var(--sc-hot); text-align: center; animation: sc-pop 0.25s ease-out; }
 .sc-break { padding: 10px 14px; border-bottom: 1px solid var(--sc-row-line); background: rgba(255, 212, 121, 0.05); font-size: 12px; font-weight: 600; line-height: 1.4; color: var(--sc-gold); text-align: center; }
 @keyframes sc-pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
 .sc-panel { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--sc-line); border-radius: 14px; background: var(--sc-panel); }
-.sc-empty { margin: 0; font-size: 13px; color: var(--sc-faint); }
-.sc-mu { display: flex; align-items: baseline; gap: 10px; font-size: 13px; color: var(--sc-soft); }
-.sc-mu b { color: var(--sc-ink); }
-.sc-mu-n { flex: none; width: 32px; font: 700 13px var(--sc-num); }
 
 .sc-compare-head { display: flex; justify-content: space-between; font: 700 13px var(--sc-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--sc-faint); }
 .sc-cmp { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 10px; }
@@ -207,6 +205,10 @@
   .sc-top { gap: 8px; }
   .sc-ctl { flex: 1 1 100%; gap: 6px; }
   .sc-ctl > .sc-btn--go:last-child { flex: 1; }
+  .sc-ctl { flex-wrap: wrap; }
+  .sc-ctl > .sc-btn { white-space: nowrap; }
+  .sc-speeds { order: 5; flex: 1 1 100%; justify-content: space-between; }
+  .sc-speeds > button { flex: 1; }
   .sc-btn { padding: 0 12px; }
   .sc-board { grid-template-columns: 1fr auto 1fr; gap: 6px; padding: 12px; }
   .sc-team { gap: 8px; }

@@ -207,6 +207,46 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ## Kolejność prac (decyzja 2026-10-10) — obowiązuje
 
+### Playtest 2026-10-15 (spisane — do zrobienia)
+
+Numeracja użytkownika (11 nie było).
+
+**All-Time Draft**
+1. Za dużo się dzieje na starcie — krótkie intro „co gdzie i jak” przy pierwszym wejściu: tablica,
+   lista graczy, Big Board, zakładka Team, capy (np. 4–5 kroków z podświetleniem, do pominięcia,
+   tylko raz; do ponownego otwarcia z „?”).
+2. Filtr FGA (capów) w liście graczy — pole „Max caps”, w które można wpisać np. 10, i lista pokazuje
+   tylko graczy za tyle lub mniej (dziś tylko „Affordable” i „Cheapest first”; zakres min–max jest
+   tylko w trybie deweloperskim). Do tego sortowanie po capach w obie strony.
+3. Przełącznik Draft / Team prawie niewidoczny (mały, w rogu obok „?” i „Hide board”) — większe
+   zakładki pod tytułem, przy Team licznik np. „Team · 5/9”.
+4. Zakładka Team na szerokim ekranie: dużo martwego pola — szeroka dziura między nazwiskiem a „Tier”
+   w tabeli składu, pusto pod składem (rotacja po prawej dużo dłuższa). Zwęzić kolumnę gracza,
+   oddać miejsce rotacji / układ pół na pół / pod składem coś użytecznego (ławka, oceny drużyny).
+
+**Wyniki, sezon, playoffy**
+5. Draft jest na całą szerokość, a podsumowanie po drafcie i okno sezonu nie (sezon max ~1080 px,
+   wyniki jeszcze węższe) — te same szerokości co draft.
+6. Sezon/playoffy to okno nałożone na wyniki — w tle prześwitują paski ocen, analityk, „What's behind
+   each score”. Sezon jako osobny, pełny ekran z nieprzezroczystym tłem.
+9. Brak „Share” po sezonie — karta z bilansem, rozstawieniem, wynikiem w playoffach i składem
+   (dziś da się udostępnić tylko wynik draftu).
+13. Karta „Share” po drafcie dalej „bez jajca” — wygląda jak tabelka z raportu. Propozycja: duże logo
+    i nazwa w barwach drużyny, hasło stylu jako tytuł, twarze piątki w rzędzie, miejsce jak trofeum,
+    mniej pasków. Projektować razem z punktem 9 (najpierw makieta).
+
+**Mecz na żywo (Simcast)**
+7. Wolniejsze tempa: ×½, ×¼, ×⅛ obok ×1, ×2, ×4 (żeby spokojnie czytać relację).
+8. W relacji statystyki gracza w meczu w nawiasie, np. „Bryant mid-range jumper (12 pts, 5/12 FG)”;
+   przy asyście np. „(Billups 4 ast)”.
+10. Zakładka „Match-ups” („X attacked by Y ×2”) nic nie wnosi — usunąć (to, co ważne, czyli
+    „They're hunting X” przy 3+ atakach, i tak jest w relacji).
+
+**Pytanie z playtestu (odpowiedziane)**
+12. Czy drużyny mają drugi kolor, gdy barwy są podobne? — Tak: `matchupHues` (`teamLogoKit.ts`);
+    przy różnicy odcienia < 40° druga drużyna bierze kolejny kolor z logo, a gdy żaden nie pasuje —
+    barwę przeciwną.
+
 ### Playtest 2026-10-14 (spisane, do zrobienia — użytkownik: „spisuj, nic nie rób”)
 
 Numeracja użytkownika. **Paczka 1 (draft + rotacja) — zrobiona 2026-10-14 (PR #216):** 1–7, 9.
