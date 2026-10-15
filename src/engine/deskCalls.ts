@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { PERIMETER_DEFENDER_ROLES, RIM_PROTECTOR_ROLES } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { completeRosterGreedy } from './aiDrafter';
 import { computeDefensiveTalent } from './defensiveTalent';
@@ -6,7 +7,7 @@ import { DESK_CAST, surname, type DeskLine, type ExpertId } from './desk';
 import { HANDLE } from './deskBeefs';
 import { hates, hatersOf, hatesByName, loves, MOONBAT_TAKES } from './deskTastes';
 import { availablePlayers, currentTeamIndex, isPickLegal, pickBudget, ROUNDS, type DraftState } from './draft';
-import { buildDraftDesk } from './draftDesk';
+import { buildDraftDesk, takesFor, type Take as DeskTake, type Topic } from './draftDesk';
 import { spanEndYears } from './era';
 import { effectiveTalent } from './grades';
 import { playmakingScoreForPlayer } from './playmakingLookup';
@@ -186,11 +187,15 @@ const LENS: Partial<Record<ExpertId, (p: PlayerSpan) => number>> = {
   jert: (p) => (eraYear(p) < 2000 ? 30 : 0) - effectiveTalent(p) / 2,
 };
 
-function threeFor(who: ExpertId, shortlist: Candidate[], extra?: (p: PlayerSpan) => boolean): PlayerSpan[] {
+function threeFor(who: ExpertId, shortlist: Candidate[], extra?: (p: PlayerSpan) => boolean, roster: PlayerSpan[] = []): PlayerSpan[] {
   const lens = LENS[who] ?? ((p: PlayerSpan) => effectiveTalent(p));
+  const counts = new Map<Position, number>();
+  for (const p of roster) counts.set(p.primaryPosition, (counts.get(p.primaryPosition) ?? 0) + 1);
+  // A third player at a spot the roster already has twice is no help while another spot is empty.
+  const stacked = (p: PlayerSpan) => (counts.get(p.primaryPosition) ?? 0) >= 2 && STARTER_SLOTS.some((s) => !counts.has(s));
   const pool = shortlist.map((c) => c.p).filter((p) => !hates(who, p) && (!extra || extra(p)));
   const ranked = pool
-    .map((p) => ({ p, s: (loves(who, p) ? 1000 : 0) + lens(p) }))
+    .map((p) => ({ p, s: (loves(who, p) ? 1000 : 0) + (stacked(p) ? -500 : 0) + lens(p) }))
     .sort((a, b) => b.s - a.s)
     .map((x) => x.p);
   // A narrow ask (Rotation's open spot) late in a draft can leave fewer than three: fill from the
@@ -222,7 +227,183 @@ function teamsBeforeNextPick(state: DraftState): number[] {
   return out;
 }
 
+/**
+ * 2026-10-15, the user ("eksperci mimo specjalizacji powinni reagować na skład gracza"): every call
+ * starts from the roster on the board. The expert names the hole in his own field if there is one,
+ * otherwise the roster's biggest hole ("not my department, but…"), and his three are players who
+ * fill it, in his order of taste. Holes come from the same detectors as Chalk Talk (draftDesk.ts).
+ */
+const ON_BALL = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'];
+const INSIDE = ['Slasher', 'Roll & Cut Big', 'Post Scorer', 'Versatile Big'];
+const FIXES: Record<Topic, (p: PlayerSpan) => boolean> = {
+  rimProtection: (p) => RIM_PROTECTOR_ROLES.includes(p.defensiveRole) && computeDefensiveTalent(p) >= 70,
+  perimeterD: (p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole) && computeDefensiveTalent(p) >= 70,
+  weakLink: (p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole) && computeDefensiveTalent(p) >= 70,
+  rebounding: (p) => p.box.rpg >= 9,
+  spacing: (p) => computeSpacing(p) >= 65,
+  rimPressure: (p) => INSIDE.includes(p.offensiveArchetype),
+  ballShare: (p) => !ON_BALL.includes(p.offensiveArchetype),
+  creation: (p) => ON_BALL.includes(p.offensiveArchetype) || (playmakingScoreForPlayer(p) ?? 0) >= 85,
+  secondCreator: (p) => ON_BALL.includes(p.offensiveArchetype) || (playmakingScoreForPlayer(p) ?? 0) >= 85,
+  starPower: (p) => effectiveTalent(p) >= 90,
+};
+const HOLE_SAY: Record<Topic, string> = {
+  rimProtection: 'nobody protects the rim',
+  perimeterD: 'nobody stops a scorer on the perimeter',
+  weakLink: 'teams will hunt one of your guys on defense',
+  rebounding: 'nobody grabs a rebound',
+  spacing: 'nobody spaces the floor',
+  rimPressure: 'nobody gets to the rim',
+  ballShare: 'everybody wants the ball',
+  creation: 'nobody creates his own shot',
+  secondCreator: 'there’s no second creator',
+  starPower: 'there’s no star',
+};
+/** The worries each expert owns. */
+const FIELD: Partial<Record<ExpertId, Topic[]>> = {
+  shyman: ['rimProtection', 'perimeterD', 'weakLink'],
+  batt: ['perimeterD', 'weakLink', 'rimProtection'],
+  solin: ['rebounding', 'rimPressure'],
+  sosini: ['spacing'],
+  prab: ['creation', 'secondCreator'],
+  zoran: ['ballShare', 'secondCreator'],
+  jeremy: ['ballShare', 'spacing'],
+  lex: ['starPower'],
+  // The capologist fixes whatever is broken — cheaply.
+  natalie: ['rimProtection', 'perimeterD', 'weakLink', 'rebounding', 'spacing', 'rimPressure', 'ballShare', 'creation', 'secondCreator'],
+};
+interface Hole { topic: Topic; own: boolean }
+function holeFor(who: ExpertId, roster: PlayerSpan[], shortlist: Candidate[]): Hole | null {
+  if (roster.length === 0) return null;
+  const worries: DeskTake[] = takesFor(roster).filter((t) => t.kind === 'concern').sort((a, b) => b.weight - a.weight);
+  const topics = worries.map((t) => t.topic);
+  if (!roster.some((p) => effectiveTalent(p) >= 90)) topics.push('starPower');
+  const fixable = (t: Topic) => shortlist.filter((c) => FIXES[t](c.p) && !hates(who, c.p)).length >= 1;
+  const own = (FIELD[who] ?? []).find((t) => topics.includes(t) && fixable(t));
+  if (own) return { topic: own, own: true };
+  const any = topics.find((t) => t !== 'starPower' && fixable(t));
+  return any ? { topic: any, own: false } : null;
+}
+const rosterNames = (roster: PlayerSpan[]) => {
+  const top = [...roster].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).map(surname);
+  return top.length <= 2 ? top.join(' and ') : `${top[0]}, ${top[1]} and friends`;
+};
+
 const voice = (who: ExpertId, kind: DeskLine['kind'], text: string, reply = false): DeskLine => (who === 'host' ? { who, kind: 'host', text } : { who, kind, text, reply });
+
+
+interface CallVoiceCtx {
+  /** The roster's best players ("LeBron and McAdoo"), empty before the first pick. */
+  team: string;
+  /** The hole he's talking about (lower case), or null when nothing's broken. */
+  say: string | null;
+  /** The hole is in his own field. */
+  own: boolean;
+  topic: Topic | null;
+  names: string;
+  picks: PlayerSpan[];
+  caps: number;
+  slots: number;
+  famous: string | null;
+  rng: () => number;
+}
+const cap1 = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+/** What Kobe would have asked about each hole (Prabuckov's version of a diagnosis). */
+const KOBE_ASKS: Record<Topic, string> = {
+  rimProtection: 'who protects the rim', perimeterD: 'who guards their best scorer', weakLink: 'who are they going to hunt',
+  rebounding: 'who gets the rebound', spacing: 'who makes them guard the arc', rimPressure: 'who attacks the basket',
+  ballShare: 'who moves without the ball', creation: 'who takes the last shot', secondCreator: 'who runs it when the star sits',
+  starPower: 'who is the star',
+};
+/**
+ * 2026-10-15, the user ("każda z postaci potrzebuje też różnych cech charakteru, żeby nie miały
+ * takiej samej formułki przy wyborze"): each expert answers a call in his own way — Shyman in five
+ * words, Sosini as a lecture, Natalie with a price tag on every name, Lex as if the question were
+ * beneath him — with a couple of variants each, all built on the same roster read.
+ */
+function callVoice(who: ExpertId, c: CallVoiceCtx): string {
+  const v = (options: string[]) => pick(c.rng, options);
+  const team = c.team || 'An empty roster';
+  const capsOf = c.picks.map((p) => `${surname(p)} (${p.fga.toFixed(1)})`).join(', ');
+  const last = c.picks.length ? surname(c.picks[c.picks.length - 1]) : '';
+  const mine = list(c.picks.slice(0, -1));
+  // The hole isn't his field: he says so, hands over one name for it, and keeps two for his taste.
+  if (c.say && !c.own && c.picks.length >= 2 && who !== 'natalie' && who !== 'jert') {
+    const ASIDE: Partial<Record<ExpertId, string[]>> = {
+      shyman: [`${team}. ${cap1(c.say)}. Not my thing. ${last} fixes it. ${mine} guard. Simple.`],
+      sosini: [`${team}. Yes, yes, ${c.say}. ${last}, fine. But respectfully, the real upgrade is ${mine}. 🥱`],
+      solin: [`${team}. Somebody will tell you ${c.say}. Sure, ${last}. My eyes want ${mine}, though.`],
+      prab: [`${team}. ${cap1(c.say)}, my friend, so take ${last}. But closers win: ${mine}. 🐍`],
+      zoran: [`Listen to me. ${team}, and ${c.say}. ${last} for that. For the soul of the team: ${mine}.`],
+      jeremy: [`${team}. The tape says ${c.say}, so ${last}. The tape ALSO says ${mine}.`],
+      batt: [`${team}. ${cap1(c.say)}? Va bene, ${last}. But my heart says ${mine}. 🤌`],
+      lex: [`${team}. ${cap1(c.say)}? ${last}, whatever. STARS: ${mine}. 👑`],
+      binash: [`Dude. ${team}. ${cap1(c.say)}, bummer, so ${last}. Totally tubular bonus: ${mine}. 🤙`],
+      bannerman: [`${team}. ${cap1(c.say)}. ${last} handles it. Red would add ${mine}. 🍀`],
+    };
+    const lines = ASIDE[who];
+    if (lines) return v(lines);
+  }
+  switch (who) {
+    case 'shyman':
+      return c.say
+        ? v([`${team}. ${cap1(c.say)}. ${c.names}. Pick one. Simple.`, `Look. ${team}? ${cap1(c.say)}. Fix it. ${c.names}. Done.`])
+        : v([`${team}. Looks fine. Want stops? ${c.names}. Simple.`, `${team}. No problem I can see. ${c.names}. They guard. That’s it.`]);
+    case 'sosini':
+      return c.say
+        ? v([
+          `Respectfully, let me explain basketball to you. ${team}, and ${c.say}. In 2026. The fix is obvious: ${c.names}. You’re welcome. 🥱`,
+          `${team}. Cute. But ${c.say}, and every coach with a laptop knows it. ${c.names}. Take notes.`,
+        ])
+        : v([`${team}. Fine, I guess. If you want to be modern: ${c.names}. 🥱`, `Respectfully, ${team} is a start. ${c.names}. Talent, range, taste.`]);
+    case 'solin':
+      return c.say
+        ? v([`I looked at ${team} for five seconds. ${cap1(c.say)}. I can see it from here. ${c.names}. Grown men.`, `${team}. No spreadsheet needed: ${c.say}. ${c.names}. Watch them once, you’ll get it.`])
+        : v([`${team}. Eye test says okay. ${c.names} would make it mean. 💪`, `${team}. Looks right to me. ${c.names}. Trust your eyes.`]);
+    case 'prab':
+      return c.topic
+        ? v([
+          `My friend. Kobe would look at ${team} and ask one question: ${KOBE_ASKS[c.topic]}? Nobody. ${c.names}. Answer the question. 🐍`,
+          `${team}. In 2009 Kobe didn’t wait for help, he demanded it. You need to know ${KOBE_ASKS[c.topic]}. ${c.names}. Demand them.`,
+        ])
+        : v([`${team}. Good. Now add killers, my friend. ${c.names}. Mamba mentality.`, `${team}. Kobe would nod. Slowly. ${c.names} would make him smile.`]);
+    case 'zoran':
+      return c.say
+        ? v([`Listen to me. Basketball is a conversation. ${team}, and ${c.say}, so the conversation stops. ${c.names}. They talk with the ball. *hand on heart*`, `${team}. In Europe we would call this unfinished: ${c.say}. ${c.names}. Now it is a team.`])
+        : v([`Listen to me. ${team} already passes the ball a little. ${c.names}. Then it sings.`, `${team}. Beautiful start. ${c.names}. Five guys, one ball, no ego.`]);
+    case 'jeremy':
+      return c.say
+        ? v([`Rewind the tape on ${team}. Pause. See it? ${cap1(c.say)}. Phil fixes that in one phone call. ${c.names}.`, `${team}. I watched the tape twice: ${c.say}. In ’96 that gets you swept. ${c.names}. Go watch them.`])
+        : v([`${team}. Tape looks clean. ${c.names}, and it looks like ’96.`, `${team}. Good tape. ${c.names}. Textbook.`]);
+    case 'batt':
+      return c.say
+        ? v([`Madonna! ${team}… and ${c.say}! I cannot watch. ${c.names}. Ecco. Now I can breathe. 🤌`, `Ragazzi. ${team}. Beautiful. And then: ${c.say}. Tragedy. ${c.names}. Two ends. Basta.`])
+        : v([`${team}! Bellissimo! Add ${c.names} and I cry. Happy tears. 🤌`, `${team}. Perfetto, almost. ${c.names}. Two ends. Mamma mia.`]);
+    case 'lex':
+      return c.say
+        ? v([`You called ME because ${c.say}? Cute. Draft a star and the problem disappears. ${c.names}. 👑`, `${team}. Problems are for teams without stars. ${c.names}. Next question.`])
+        : v([`${team}. Fine. Now get a real star. ${c.names}. Everything else is noise. 👑`, `${team}? Role players with a dream. ${c.names}. You’re welcome.`]);
+    case 'natalie':
+      return c.say
+        ? v([`Rules are rules. ${c.caps.toFixed(1)} caps, ${c.slots} spots, and ${c.say}. Best fix per cap: ${capsOf}. Write it down. 💸`, `${team}. Budget: ${c.caps.toFixed(1)}. Problem: ${c.say}. Answer: ${capsOf}. I’m not repeating myself.`])
+        : v([`Rules are rules. ${c.caps.toFixed(1)} caps, ${c.slots} spots. ${capsOf}. All three give you more than they cost. 💸`, `${team}. Nothing broken, money left. Spend it here: ${capsOf}.`]);
+    case 'jert':
+      return v([
+        `${team}. ${c.say ? `Everybody will tell you ${c.say}. Fine. ` : ''}Everybody wants ${c.famous ?? 'the obvious guy'}. Wrong. ${c.names}. Don’t ask me why. 📚`,
+        `${team}. ${c.famous ?? 'The famous guy'}? Fraud tax. ${c.say ? `You need help, sure: ${c.say}. ` : ''}${c.names}. I don’t have to explain myself.`,
+      ]);
+    case 'binash':
+      return c.say
+        ? v([`Dude! ${team}! Radical! But ${c.say}, and that’s totally bogus. ${c.names}. Tubular fix, my dudes. 🤙`, `${team}. Gnarly start. Bummer: ${c.say}. ${c.names}! Cue the synth solo. 🕺`])
+        : v([`${team}! Totally tubular! ${c.names} and it’s 1986 again. 🤙`, `Dude. ${team}. Rad. ${c.names}. Showtime would approve.`]);
+    case 'bannerman':
+      return c.say
+        ? v([`${team}. ${cap1(c.say)}. Red Auerbach would’ve lit a cigar and fixed it before dinner. ${c.names}. 🍀`, `${team}. Banner teams don’t leave holes like this: ${c.say}. ${c.names}. Trust me.`])
+        : v([`${team}. Banner energy, almost. ${c.names}. 🍀`, `${team}. Red would approve. Mostly. ${c.names}. Trust me.`]);
+    default:
+      return `${team}. ${c.names}.`;
+  }
+}
 
 /** Places a call. Pure: the same draft state and seed always give the same answer. */
 export function placeCall(id: CallId, state: DraftState, seed: number): CallResult {
@@ -308,32 +489,42 @@ export function placeCall(id: CallId, state: DraftState, seed: number): CallResu
     const thin = STARTER_SLOTS.filter((s) => (counts.get(s) ?? 0) < 2);
     const hole = thin[0];
     picks = threeFor('rotation', shortlist, hole ? (p) => thin.includes(p.primaryPosition) : undefined);
+    const holder = hole ? human.roster.find((p) => p.primaryPosition === hole) : undefined;
     intro = hole
-      ? `Nobody behind your ${POSITION_NAME[hole][0]}. February is coming. ${list(picks)}. Love you guys. 🙏`
-      : `Your rotation is actually fine. *wipes a tear* ${list(picks)} for depth anyway. Love you guys.`;
-  } else if (expert === 'jert') {
-    const famous = shortlist[0]?.p;
-    picks = threeFor('jert', shortlist.slice(3));
-    intro = famous
-      ? `Everybody wants ${surname(famous)}. Fraud tax. Take ${list(picks)}. I don’t have to explain myself. 📚`
-      : `${list(picks)}. I don’t have to explain myself.`;
+      ? holder
+        ? `Nobody behind ${surname(holder)} at ${POSITION_NAME[hole][0]}. What happens when he sits? February is coming. ${list(picks)}. Love you guys. 🙏`
+        : `${rosterNames(human.roster)}, and not one ${POSITION_NAME[hole][0]}. Not one! ${list(picks)}. Love you guys. 🙏`
+      : `${rosterNames(human.roster)}. Your rotation is actually fine. *wipes a tear* ${list(picks)} for depth anyway. Love you guys.`;
   } else {
-    picks = threeFor(expert, shortlist);
+    const roster = human.roster;
+    const hole = holeFor(expert, roster, shortlist);
+    const fix = hole ? FIXES[hole.topic] : undefined;
+    // The contrarian skips the obvious names at the top of the board.
+    const famous = expert === 'jert' ? shortlist[0]?.p : undefined;
+    const pool = expert === 'jert' ? shortlist.slice(3) : shortlist;
+    if (hole && !hole.own) {
+      // Not his field: one name for the hole, the other two his own taste.
+      const fixer = threeFor(expert, pool, fix, roster)[0];
+      const rest = threeFor(expert, pool.filter((c) => c.p !== fixer), undefined, roster).slice(0, fixer ? 2 : 3);
+      picks = fixer ? [...rest, fixer] : rest;
+    } else {
+      picks = threeFor(expert, pool, fix, roster);
+    }
+    const names = list(picks);
+    const team = roster.length ? rosterNames(roster) : '';
     const budget = pickBudget(state, human);
-    const INTRO: Partial<Record<ExpertId, string>> = {
-      natalie: `Rules are rules: ${budget.capLeft.toFixed(1)} caps, ${budget.slotsLeft} spots. ${list(picks)}. All three give you more than they cost. Write them down. 💸`,
-      shyman: `${list(picks)}. They guard. Can you pay them? Not my problem.`,
-      sosini: `${list(picks)}. Talent, range, taste. Space the floor and the rest takes care of itself. 🥱`,
-      solin: `${list(picks)}. Watch them for five minutes. Eye test says yes.`,
-      prab: `${list(picks)}. Closers, my friend. Kobe would sign off on all three. 🐍`,
-      binash: `${list(picks)}! Totally tubular, dudes. Showtime would approve. 🤙`,
-      jeremy: `${list(picks)}. That’s ’90s basketball. Go watch the tape.`,
-      lex: `${list(picks)}. Stars. STARS. Everything else is noise. 👑`,
-      zoran: `${list(picks)}. *hand on heart* They move the ball. Listen to me.`,
-      batt: `${list(picks)}. Two ends. Bellissimo. 🤌`,
-      bannerman: `${list(picks)}. ${picks.some((p) => codes(p).includes('BOS')) ? 'Celtic DNA. ' : ''}Trust me. 🍀`,
-    };
-    intro = INTRO[expert] ?? list(picks);
+    intro = callVoice(expert, {
+      team,
+      say: hole ? HOLE_SAY[hole.topic] : null,
+      own: hole?.own ?? false,
+      topic: hole?.topic ?? null,
+      names,
+      picks,
+      caps: budget.capLeft,
+      slots: budget.slotsLeft,
+      famous: famous ? surname(famous) : null,
+      rng,
+    });
   }
   const lines: DeskLine[] = [voice(expert, 'call', intro)];
   // Somebody at the desk can't stand one of the names: he cuts in.

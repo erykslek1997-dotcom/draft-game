@@ -40,9 +40,9 @@ export interface DraftDeskResult {
   consensus: string;
 }
 
-type Topic = 'spacing' | 'rimPressure' | 'ballShare' | 'rimProtection' | 'perimeterD' | 'weakLink' | 'rebounding' | 'creation' | 'secondCreator' | 'starPower';
+export type Topic = 'spacing' | 'rimPressure' | 'ballShare' | 'rimProtection' | 'perimeterD' | 'weakLink' | 'rebounding' | 'creation' | 'secondCreator' | 'starPower';
 
-interface Take {
+export interface Take {
   topic: Topic;
   expert: DeskExpert;
   kind: 'strength' | 'concern';
@@ -71,7 +71,8 @@ function best<T>(items: T[], score: (item: T) => number): T | undefined {
   return items.reduce<T | undefined>((top, item) => (top === undefined || score(item) > score(top) ? item : top), undefined);
 }
 
-function takesFor(roster: PlayerSpan[]): Take[] {
+/** Every strength and worry the desk sees in a partial roster (also what a phone call reacts to). */
+export function takesFor(roster: PlayerSpan[]): Take[] {
   const takes: Take[] = [];
   const dtal = new Map(roster.map((p) => [p.id, computeDefensiveTalent(p)]));
   const d = (p: PlayerSpan) => dtal.get(p.id) ?? 0;
