@@ -189,11 +189,16 @@ const LENS: Partial<Record<ExpertId, (p: PlayerSpan) => number>> = {
 function threeFor(who: ExpertId, shortlist: Candidate[], extra?: (p: PlayerSpan) => boolean): PlayerSpan[] {
   const lens = LENS[who] ?? ((p: PlayerSpan) => effectiveTalent(p));
   const pool = shortlist.map((c) => c.p).filter((p) => !hates(who, p) && (!extra || extra(p)));
-  return pool
+  const ranked = pool
     .map((p) => ({ p, s: (loves(who, p) ? 1000 : 0) + lens(p) }))
     .sort((a, b) => b.s - a.s)
-    .slice(0, 3)
     .map((x) => x.p);
+  // A narrow ask (Rotation's open spot) late in a draft can leave fewer than three: fill from the
+  // rest of the shortlist, and if even that runs dry, name whoever is left.
+  if (ranked.length < 3 && extra) {
+    for (const c of shortlist) if (ranked.length < 3 && !ranked.includes(c.p) && !hates(who, c.p)) ranked.push(c.p);
+  }
+  return ranked.slice(0, 3);
 }
 
 const POSITION_NAME: Record<Position, [string, string]> = {

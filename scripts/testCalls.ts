@@ -54,7 +54,9 @@ for (const seed of [7101, 7102, 7103]) {
       if (JSON.stringify(placeCall(o.id as CallId, state, seed)) !== JSON.stringify(r)) structure.push(`${where}: not deterministic`);
       for (const p of r.picks) if (!isPickLegal(state, p.id) && o.id !== 'moonbat') structure.push(`${where}: ${p.playerName} isn't a legal pick`);
       if (!['host', 'desk', 'moonbat', 'onoffsky'].includes(o.id)) {
-        if (r.picks.length !== 3 || new Set(r.picks.map((p) => p.playerName)).size !== 3) structure.push(`${where}: ${r.picks.length} names`);
+        // Three names, unless the board itself is down to fewer legal players (the last picks).
+        const want = Math.min(3, callCandidates(state).length);
+        if (r.picks.length < want || r.picks.length > 3 || new Set(r.picks.map((p) => p.playerName)).size !== r.picks.length) structure.push(`${where}: ${r.picks.length} names (want ${want})`);
         const hated = r.picks.filter((p) => hates(o.id as ExpertId, p));
         if (hated.length) structure.push(`${where}: names a player he hates (${hated[0].playerName})`);
       }
