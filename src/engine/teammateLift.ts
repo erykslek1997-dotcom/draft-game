@@ -35,8 +35,14 @@ export function teammateLift(span: PlayerSpan): TeammateLift {
  * The engine (`matchup.ts`) counts the same lift for a whole team, so the game's margin nudge meets
  * it instead of spreading a five's edge over every shooter alike: `pointsPerTs` turns a team's mean
  * shooting shift into points a game (a team takes ~98 true shot attempts a game: 2 x 98).
+ *
+ * `threes`: how much of it reaches his three-point % (the rest is his twos). The same real seasons
+ * move teammates' threes far less than their true shooting (Nash +0.4 points of 3P% for +2.1 TS,
+ * Curry +1.1 for +1.5, LeBron -0.5 for +0.6); at 0.67 (the game's usual share) Klay beside Curry and
+ * Nash beside the Suns lost three points of 3P% away from them (2026-10-15, the user: good shooters
+ * at a poor shooter's 3P%).
  */
-export const LIFT_TUNING = { scale: 1, ref: 0.0034, pointsPerTs: 196 };
+export const LIFT_TUNING = { scale: 1, ref: 0.0034, pointsPerTs: 196, threes: 0.3 };
 
 /** Each player's shooting shift (TS as a fraction) from the four beside him, in the five's order. */
 export function fiveLiftShifts(five: PlayerSpan[]): number[] {
