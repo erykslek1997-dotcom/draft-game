@@ -207,9 +207,10 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ## Kolejność prac (decyzja 2026-10-10) — obowiązuje
 
-### Playtest 2026-10-15 (spisane — do zrobienia)
+### Playtest 2026-10-15 (spisane — zrobione poza intro)
 
-Numeracja użytkownika (11 nie było).
+Numeracja użytkownika (11 nie było). **Zrobione 2026-10-15:** Simcast 7, 8, 10 (PR #222); draft 2, 3, 4
+(PR #223); wyniki i sezon 5, 6, 9, 13 (PR #224). **Otwarte: 1 (intro).**
 
 **All-Time Draft**
 1. Za dużo się dzieje na starcie — krótkie intro „co gdzie i jak” przy pierwszym wejściu: tablica,
