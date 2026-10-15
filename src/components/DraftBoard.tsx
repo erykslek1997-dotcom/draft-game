@@ -493,7 +493,7 @@ export default function DraftBoard({
   // filled are unticked (all shown again once the five is set); a touch makes the choice his.
   const [positionOverride, setPositionOverride] = useState<Set<Position> | null>(null);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
-  const [boardSort, setBoardSort] = useState<'best' | 'value' | 'cheapest'>('best');
+  const [boardSort, setBoardSort] = useState<'best' | 'value' | 'cheapest' | 'priciest'>('best');
   // 2026-09-14, user-reported live ("rzucamy ponad 100 nazwisk na raz, za dużo informacji dla
   // użytkownika na raz" — throwing 100+ names at once is too much information at once): the
   // DRAFT_LIST_LIMIT=140 cap a few lines down exists for RENDER PERFORMANCE (see its own
@@ -1064,7 +1064,8 @@ export default function DraftBoard({
         // 2026-10-08: the board's own sort (player mode) — cheapest first, or the most TAL for
         // the caps (TAL minus two points a cap, so a 99 costing 21 ranks with an 80 costing 10).
         if (mode === 'player' && boardSort !== 'best') {
-          const key = (g: typeof a) => (boardSort === 'cheapest' ? -g.bestTalentSpan.fga : g.bestDisplayTal - 2 * g.bestTalentSpan.fga);
+          const key = (g: typeof a) =>
+            boardSort === 'cheapest' ? -g.bestTalentSpan.fga : boardSort === 'priciest' ? g.bestTalentSpan.fga : g.bestDisplayTal - 2 * g.bestTalentSpan.fga;
           const diff = key(b) - key(a);
           if (diff !== 0) return diff;
         }
@@ -1158,11 +1159,18 @@ export default function DraftBoard({
   const humanBudget = useMemo(() => pickBudget(state, humanTeam), [state, humanTeam]);
   const [affordableOnly, setAffordableOnly] = useState(false);
   const affordableMax = Math.floor(humanBudget.maxThisPick * 10) / 10;
+  // 2026-10-15 (playtest 2: "potrzebuję kogoś do 10 FGA i żebym mógł wpisać"): a typed cap
+  // ceiling, on top of (or instead of) Affordable — the list shows only years at or under it.
+  const [maxCapsText, setMaxCapsText] = useState('');
+  const maxCaps = Number(maxCapsText.replace(',', '.'));
+  const maxCapsActive = maxCapsText.trim() !== '' && Number.isFinite(maxCaps) && maxCaps > 0;
   useEffect(() => {
     if (showJudgeMetrics) return;
+    let limit = affordableOnly ? affordableMax : 30;
+    if (maxCapsActive) limit = Math.min(limit, maxCaps);
     setFgaMin('0');
-    setFgaMax(affordableOnly ? String(affordableMax) : '30');
-  }, [affordableOnly, affordableMax, showJudgeMetrics]);
+    setFgaMax(String(limit));
+  }, [affordableOnly, affordableMax, showJudgeMetrics, maxCapsActive, maxCaps]);
   /** The stretch a player's card drafts: his best, or his best affordable one when the best isn't
    * (see the card grid below). */
   function cardSpanFor(group: { bestTalentSpan: PlayerSpan; spansByTal: PlayerSpan[] }): PlayerSpan {
@@ -1198,8 +1206,10 @@ export default function DraftBoard({
         <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={() => setConfirmExit(true)}>
           ← Menu
         </button>
-        <h1 className="at-calm-title">All-Time Draft</h1>
-        <div className="at-calm-seg at-calm-tabs" role="tablist">
+        <h1 className="at-calm-title at-calm-title--left">All-Time Draft</h1>
+        {/* 2026-10-15 (playtest 3: "widok między draft a team jest tak mało widoczny że ciężko
+            znaleźć"): the two views as big tabs in the middle of the header, Team with its count. */}
+        <div className="at-calm-seg at-calm-tabs at-calm-tabs--big" role="tablist">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
@@ -1209,7 +1219,7 @@ export default function DraftBoard({
                 className={activeTab === tab.id ? 'is-on' : ''}
                 onClick={() => setActiveTab(tab.id)}
               >
-                {tab.label}
+                {tab.id === 'team' ? `Team · ${humanTeam.roster.length}/${ROSTER_SIZE}` : tab.label}
               </button>
             ))}
         </div>
@@ -1466,6 +1476,28 @@ export default function DraftBoard({
                   </button>
                 )}
                 {!showJudgeMetrics && (
+                  <label className={`at-calm-maxcaps${maxCapsActive ? ' is-on' : ''}`} title="Only players whose years cost this many caps or fewer">
+                    <CapIcon size={12} />
+                    <span>Max</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={1}
+                      max={30}
+                      step={0.5}
+                      placeholder="any"
+                      aria-label="Most caps a player may cost"
+                      value={maxCapsText}
+                      onChange={(e) => setMaxCapsText(e.target.value)}
+                    />
+                    {maxCapsActive && (
+                      <button type="button" aria-label="Clear the caps limit" onClick={() => setMaxCapsText('')}>
+                        ✕
+                      </button>
+                    )}
+                  </label>
+                )}
+                {!showJudgeMetrics && (
                   <>
                     <select
                       className={`at-calm-select${roleFilter ? ' is-on' : ''}`}
@@ -1484,11 +1516,12 @@ export default function DraftBoard({
                       className="at-calm-select"
                       aria-label="Sort"
                       value={boardSort}
-                      onChange={(e) => setBoardSort(e.target.value as 'best' | 'value' | 'cheapest')}
+                      onChange={(e) => setBoardSort(e.target.value as 'best' | 'value' | 'cheapest' | 'priciest')}
                     >
                       <option value="best">Best first</option>
                       <option value="value">Most for the caps</option>
                       <option value="cheapest">Cheapest first</option>
+                      <option value="priciest">Most caps first</option>
                     </select>
                   </>
                 )}
