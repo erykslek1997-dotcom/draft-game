@@ -438,12 +438,15 @@ do dołu i zakładki Matchup/Bracket).
      ocenę dla całej drużyny (minuty z rotacji, 1 pkt TS = ~1,96 pkt na mecz), więc dociąganie w
      meczu już jej nie zabiera. Ta sama czwórka: drużyna Nasha vs Conleya +0,3 → +1,4, Jordana
      +4,3 → +3,6; kształt skuteczności kolegów vs realnie (bez wspólnego przesunięcia) błąd 5,0 →
-     2,1. TAL/O-TAL bez zmian (korelacja O-TAL z oceną 0,27, asyst 0,09 — to osobna cecha). Do
-     sprawdzenia później: AI draftu i wycena drużyny w wynikach draftu (`scoreTeam`) jeszcze jej nie
-     znają.
-   - **Daily: „równy” mecz (do dokończenia).** Kontry w prognozie meczu (PR #228) zabrały większość
-     (−3,7 → −1,7 średnio na 10 dni); reszta to głównie kłopoty z faulami w piątkach bez ławki
-     (~0,6, `TROUBLE_SOFTEN` poza prognozą).
+     2,1. TAL/O-TAL bez zmian (korelacja O-TAL z oceną 0,27, asyst 0,09 — to osobna cecha). Od PR #235 (2026-10-15)
+     ocena jest w Overall drużyny (`scoreTeam`, 1/0,85 na punkt), więc znają ją wyniki draftu, AI
+     (picki z ławki) i rozstawienie sezonu; AI bierze więcej „podnoszących” (+0,38 → +0,75).
+   - **Daily: „równy” mecz — zrobione 2026-10-15.** Kontry w prognozie meczu (PR #228): −3,7 → −1,5
+     średnio na 10 dni. Potem faule w prognozie: oczekiwane faule każdego obrońcy trip po tripie
+     (na swoim, przy polowaniu na najsłabszym, część pod koszem na obrońcy obręczy, and-one), z nich
+     szansa na kłopoty z faulami (`TROUBLE_SOFTEN`) i na bonus drużyny (rzuty wolne po faulu z dala
+     od piłki): −1,5 → −0,7, średnio |dzień| 2,1 → 1,6. Reszta (~0,4) to inne mechaniki — granica
+     zmierzona z wyłączonymi obiema.
    - **Era a rozegranie — zrobione 2026-10-15 (PR #227).** Asysty przeliczane percentylem w pozycji
      (tylko powyżej mediany, spadki tylko u obwodowych, Jokic poza dzisiejszą skalą — jedyny
      unicorn). Kirilenko 2004-06 4,2 → 5,4, Divac 3,6 → 4,8, Sabonis 2,8 → 4,0, Webber 5,0 → 6,0.

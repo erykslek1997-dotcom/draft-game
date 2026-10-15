@@ -740,6 +740,19 @@ export const GARBAGE_TUNING = {
   aim: 1.2,
 };
 const TROUBLE_SOFTEN = 0.6;
+/** Fouls that put a defender in trouble, by quarter. */
+const TROUBLE_FOULS = [2, 3, 4, 5];
+/** Chance a Poisson count with mean `mean` reaches `n`. */
+function poissonAtLeast(mean: number, n: number): number {
+  if (mean <= 0) return 0;
+  let term = Math.exp(-mean);
+  let below = 0;
+  for (let i = 0; i < n; i++) {
+    below += term;
+    term *= mean / (i + 1);
+  }
+  return Math.max(0, 1 - below);
+}
 /** Fast breaks: after a steal most trips run, after a defensive rebound many. NBA play types
  * 2015-16 to 2024-25: transition is 15.7% of trips at 1.11 points, ~1.15 times a half-court trip;
  * here 15.5% at 1.37 against 1.17 (the drafted leagues score more), from 9% at 1.52 before the
@@ -842,8 +855,17 @@ interface TripOdds {
   breakValue: number;
   steal: number;
   defRebound: number;
+  /** Shooting fouls (and-ones too) each attacker draws a trip, and the share of them at the rim. */
+  fouls: number[];
+  rimFouls: number[];
 }
-function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, number>, scale: number): TripOdds {
+/** What a defender in foul trouble gives back, and the chance a trip ends in two free throws in the
+ * bonus (`gameSetup` works both out from the fouls expected so far). */
+interface TripFouls {
+  soft: number[];
+  bonus: number;
+}
+function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, number>, scale: number, trouble?: TripFouls): TripOdds {
   const shots = off.reduce((s, c) => s + c.shotShare, 0) || 1;
   const lateWeights = off.map((c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower);
   const lateTotal = lateWeights.reduce((s, v) => s + v, 0) || 1;
@@ -851,14 +873,24 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
   const hunted = 1 + cl.huntP * (huntMod(cl.def.profiles[cl.def.weakest]) - 1);
   let value = 0;
   let miss = 0;
+  const fouls: number[] = [];
+  const rimFouls: number[] = [];
+  // 2026-10-15 (the Daily's even games still went to the legends by ~1.5): a defender in foul
+  // trouble plays softer (`TROUBLE_SOFTEN`), as the game does.
+  const softer = (i: number, mod: number) => 1 - (1 - mod) * (trouble?.soft[i] ?? 1);
   off.forEach((c, i) => {
-    const m = cl.mods[i];
+    const m = { ...cl.mods[i], rim: softer(i, cl.mods[i].rim), mid: softer(i, cl.mods[i].mid), three: softer(i, cl.mods[i].three) };
     const t = (tired.get(c.player.label) ?? 1) * scale;
     const r3 = Math.min(0.9, c.threeRate * m.threeRate);
     const foulP = c.foul * m.foul * DEFENSE_TUNING.shootingFoul * Math.max(0.5, 1 + RIM_TUNING.foul * cl.rimZ * (1 - r3) * c.rimShare);
     const ft = c.player.span.box.ftPct;
     const line = (r3 * 3 + (1 - r3) * 2) * ft;
     const two = c.rimShare * c.rimPct * m.rim + (1 - c.rimShare) * c.midPct * m.mid;
+    const drawn = Math.max(0.5, 1 + RIM_TUNING.foul * cl.rimZ);
+    const rimPart = ((1 - r3) * c.rimShare * drawn) / (r3 + (1 - r3) * (c.rimShare * drawn + 1 - c.rimShare));
+    const andOnes = (1 - foulP) * (1 - r3) * two * AND_ONE;
+    fouls.push(((1 - cl.lateP) * c.shotShare / shots + (cl.lateP * lateWeights[i]) / lateTotal) * (foulP + andOnes));
+    rimFouls.push(foulP / (foulP + andOnes) * rimPart);
     // Normal trips at his average; late ones his own shot, minus the clock.
     for (const [w, p3, p2] of [
       [((1 - cl.lateP) * c.shotShare) / shots, (c.threePct * m.three + RIM_TUNING.collapse * cl.rimZ * Math.min(0.97, c.setup3 / (1 - LATE_TUNING.share))) * t * hunted, two * t * hunted],
@@ -870,7 +902,11 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
     }
   });
   const tov = DEFENSE_TUNING.turnover * cl.tovMul;
-  const halfCourt = ((1 - tov) * value) / (1 - (1 - tov) * miss * cl.oreb);
+  const shotsPerTrip = (1 - tov) / (1 - (1 - tov) * miss * cl.oreb);
+  // A foul away from the ball in the bonus: two free throws and the trip is over.
+  const bonus = trouble?.bonus ?? 0;
+  const lineFt = off.reduce((s, c) => s + c.shotShare * c.player.span.box.ftPct, 0) / shots;
+  const halfCourt = bonus * 2 * lineFt + ((1 - bonus) * (1 - tov) * value) / (1 - (1 - tov) * miss * cl.oreb);
   // 2026-10-15 (the Daily's even games went to the legends by ~4): the fast break was the game's
   // and not this measure's, so a five that steals and rebounds more (a real team) beat the nudge.
   // A break's first shot: at the rim unless a rare three, the defense at half strength, more fouls,
@@ -881,7 +917,7 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
     const m = cl.mods[i];
     const t = (tired.get(c.player.label) ?? 1) * scale;
     const w = c.shotShare / shots;
-    const half = (mod: number) => 1 - (1 - mod) * 0.5;
+    const half = (mod: number) => 1 - (1 - mod) * 0.5 * (trouble?.soft[i] ?? 1);
     const ft = c.player.span.box.ftPct;
     const r3 = BREAK_THREE_RATE;
     const foul = c.foul * m.foul * DEFENSE_TUNING.shootingFoul * BREAK_FOUL;
@@ -898,8 +934,10 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
   return {
     value: halfCourt,
     breakValue: (1 - breakTov) * (breakValue + breakMiss * cl.oreb * halfCourt),
-    steal: (tov * cl.stealShare) / again,
-    defRebound: ((1 - tov) * miss * (1 - cl.oreb)) / again,
+    steal: ((1 - bonus) * tov * cl.stealShare) / again,
+    defRebound: ((1 - bonus) * (1 - tov) * miss * (1 - cl.oreb)) / again,
+    fouls: fouls.map((f) => f * shotsPerTrip),
+    rimFouls,
   };
 }
 
@@ -1142,8 +1180,51 @@ function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
     }
     return c;
   };
+  // Fouls, trip by trip, in expectation: each defender's own (a shooting foul on the man he guards,
+  // his share of the fouls away from the ball), and from them the chance he is in foul trouble and
+  // the chance his team is in the bonus — what the game plays with the dice.
+  const fouling: TripFouls[] = [];
+  {
+    const personal = [new Map<string, number>(), new Map<string, number>()];    const team = [0, 0];
+    const late = [0, 0];
+    for (let k = 0; k < POSSESSIONS; k++) {
+      const o = (k % 2) as GameSide;
+      const d = (1 - o) as GameSide;
+      const quarter = Math.min(3, Math.floor((k * 4) / POSSESSIONS));
+      if (k > 0 && Math.min(3, Math.floor(((k - 1) * 4) / POSSESSIONS)) !== quarter) team[0] = team[1] = late[0] = late[1] = 0;
+      const lateNow = ((k * 4) / POSSESSIONS) % 1 >= 1 - LATE_PERIOD_SHARE;
+      const off = schedule[o][k];
+      const defCourt = schedule[d][k];
+      const cl = clashFor(off, defCourt);
+      const inTrouble = (label: string) => poissonAtLeast(personal[d].get(label) ?? 0, TROUBLE_FOULS[quarter]);
+      const soft = off.map((_, i) => 1 - inTrouble(defCourt[cl.guard[i]].player.label) * (1 - TROUBLE_SOFTEN));
+      const inBonus = 1 - (1 - poissonAtLeast(team[d], BONUS_FOULS)) * (1 - (lateNow ? poissonAtLeast(late[d], 1) : 0));
+      const away = NON_SHOOTING_FOUL * cl.foulRate;
+      fouling.push({ soft, bonus: away * inBonus });
+      const odds = expectedPossession(off, cl, tired[o], 1, fouling[k]);
+      const weights = defCourt.map((c) => defenderProfile(c.player.span).foulIndex ** DEFENSE_TUNING.foul);
+      const weightSum = weights.reduce((sum, w) => sum + w, 0) || 1;
+      // Whose they are: the man's own defender; a hunted trip's on the weakest (at his own foul
+      // rate); a share of the rim fouls on the rim protector, who helps.
+      const own = weights.map((w) => away * (w / weightSum));
+      odds.fouls.forEach((f, i) => {
+        const g = cl.guard[i];
+        const hunted = g !== cl.def.weakest ? cl.huntP * (1 - cl.lateP) : 0;
+        own[cl.def.weakest] += f * hunted * (weights[cl.def.weakest] / Math.max(1e-6, weights[g]));
+        const kept = f * (1 - hunted);
+        const help = kept * odds.rimFouls[i] * RIM_TUNING.helpFoulShare;
+        own[cl.rimAnchor] += help;
+        own[g] += kept - help;
+      });
+      defCourt.forEach((c, j) => {
+        personal[d].set(c.player.label, (personal[d].get(c.player.label) ?? 0) + own[j]);
+        team[d] += own[j];
+        if (lateNow) late[d] += own[j];
+      });
+    }
+  }
   const trip = (side: GameSide, k: number, scale: number) =>
-    expectedPossession(schedule[side][k], clashFor(schedule[side][k], schedule[1 - side][k]), tired[side], scale);
+    expectedPossession(schedule[side][k], clashFor(schedule[side][k], schedule[1 - side][k]), tired[side], scale, fouling[k]);
   /** A side's mean trip, each one a fast break as often as the other side's trip before it ends in
    * a steal or a missed shot this side rebounds (`BREAK_AFTER_STEAL`, `BREAK_AFTER_REBOUND`). */
   const meanPossession = (side: GameSide, scale: number, otherScale = 1) => {
@@ -1246,7 +1327,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
   ];
   let lastCourt: [CourtPlayer[], CourtPlayer[]] = [starting[0], starting[1]];
   // A defender in foul trouble (2 in the first quarter, 3 by half, 4 in the third, 5) plays softer.
-  const inTrouble = (side: GameSide, p: Player, quarter: number) => box[side][p.label].pf >= [2, 3, 4, 5][quarter];
+  const inTrouble = (side: GameSide, p: Player, quarter: number) => box[side][p.label].pf >= TROUBLE_FOULS[quarter];
   const foul = (side: GameSide, p: Player, k: number, quarter: number) => {
     const line = box[side][p.label];
     line.pf++;
