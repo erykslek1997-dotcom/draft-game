@@ -65,6 +65,9 @@ export interface GamePlay {
   joker: boolean;
   /** A dead ball worth nothing on the feed (0/2 at the line). */
   quiet: boolean;
+  /** 2026-10-15 (playtest: "brakuje missed shots, turnovers — tylko same pozytywy"): a miss or a
+   * turnover, shown on the feed in a quieter line. */
+  minor?: boolean;
 }
 
 export interface GameMoment {
@@ -756,6 +759,8 @@ const RESET_THREE_PCT = 0.015;
 const RESET_TURNOVER = 0.6;
 const RESET_ASSISTED = 0.85;
 /** Blocks: a sixth of missed twos overall, mostly at the rim and more with a rim protector. */
+/** How a turnover without a steal is called (by the trip, so no dice are spent on the words). */
+const TURNOVER_KINDS = ['bad pass', 'lost ball', 'travel', 'offensive foul', 'out of bounds', 'shot-clock violation'];
 const BLOCKED_AT_RIM = 0.24;
 const BLOCKED_MID = 0.06;
 const BLOCK_PER_RIM = 0.25;
@@ -1349,7 +1354,10 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
           if (rng() < BREAK_AFTER_STEAL) breakNext[d] = 1;
           play = { side: d, text: `${thief.label} steals it from ${lost.label}`, joker: thief.joker, quiet: false };
         } else {
-          box[o][pickWeighted(rng, off, (c) => c.turnoverShare).player.label].tov++;
+          const lost = pickWeighted(rng, off, (c) => c.turnoverShare).player;
+          box[o][lost.label].tov++;
+          // The kind is read off the trip, not drawn: the dice (and so every game) stay as they were.
+          play = { side: o, text: `${lost.label} turnover — ${TURNOVER_KINDS[(k + guard) % TURNOVER_KINDS.length]}`, joker: lost.joker, quiet: false, minor: true };
         }
         break;
       }
@@ -1446,14 +1454,18 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         play = { side: o, text, joker, quiet: false };
         break;
       }
+      let blocked = false;
       if (!three && rng() < (atRim ? BLOCKED_AT_RIM * Math.max(0.4, 1 + BLOCK_PER_RIM * clash.def.rim) : BLOCKED_MID)) {
         const blocker = pickWeighted(rng, def, (x) => rates(x.span).blk + 0.05);
         box[d][blocker.label].blk++;
         play = { side: d, text: `${blocker.label} blocks ${shooter.label}`, joker: blocker.joker, quiet: false };
+        blocked = true;
       }
+      const missed = `${shooter.label} misses ${three ? 'a three' : atRim ? 'at the rim' : late ? 'a late-clock jumper' : 'a jumper'}`;
       if (rng() < clash.oreb) {
         const rebounder = pickWeighted(rng, off, (x) => defenderProfile(x.player.span).oreb36 ** REBOUND_WEIGHT_POWER + 0.05);
         box[o][rebounder.player.label].reb++;
+        if (!blocked) play = { side: o, text: `${missed} — ${rebounder.player.label} offensive rebound`, joker: shooter.joker, quiet: false, minor: true };
         // A tip-back at the rim, or the ball back out and a fresh 14 seconds.
         if (rng() < PUTBACK_SHARE) {
           next = 'putback';
@@ -1461,7 +1473,9 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         } else next = 'reset';
         continue;
       }
-      box[d][pickWeighted(rng, def, (x) => defenderProfile(x.span).dreb36 ** REBOUND_WEIGHT_POWER + 0.05).label].reb++;
+      const boards = pickWeighted(rng, def, (x) => defenderProfile(x.span).dreb36 ** REBOUND_WEIGHT_POWER + 0.05);
+      box[d][boards.label].reb++;
+      if (!blocked) play = { side: o, text: `${missed} — ${boards.label} rebound`, joker: shooter.joker, quiet: false, minor: true };
       if (rng() < BREAK_AFTER_REBOUND) breakNext[d] = 2;
       break;
     }

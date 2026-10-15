@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { LegendFive } from '../engine/dailyMeta';
+import type { PlayerSpan } from '../data/schema';
 import { pregameOdds, type BoxLineStats, type GameMoment, type LiveGameResult } from '../engine/liveGame';
 import { gameWinProbability } from '../engine/matchup';
 import { Face } from './ShotChip';
@@ -109,6 +110,8 @@ interface FeedRow {
   scored?: boolean;
   /** His line in this game so far (playtest 8: "Kobe mid-range (12 pts, 5/12 FG)"). */
   stat?: string;
+  /** A miss or a turnover: a quieter line. */
+  minor?: boolean;
 }
 
 /** The player's game so far, after this play, in the words a broadcast uses: points and shooting for
@@ -116,7 +119,10 @@ interface FeedRow {
 function playStat(text: string, line: BoxLineStats | undefined, labels: string[], lines: BoxLineStats[]): string | undefined {
   if (!line) return undefined;
   const parts: string[] = [];
-  if (/\bblocks\b/.test(text)) parts.push(`${line.blk} blk`);
+  if (/\bturnover\b/.test(text)) parts.push(`${line.tov} TO`);
+  else if (/\bmisses a three\b/.test(text)) parts.push(`${line.tpm}/${line.tpa} 3P`);
+  else if (/\bmisses\b/.test(text)) parts.push(`${line.fgm}/${line.fga} FG`);
+  else if (/\bblocks\b/.test(text)) parts.push(`${line.blk} blk`);
   else if (/\bsteals\b/.test(text)) parts.push(`${line.stl} stl`);
   else if (/at the line|in the bonus/.test(text)) parts.push(`${line.pts} pts`, `${line.ftm}/${line.fta} FT`);
   else parts.push(`${line.pts} pts`, `${line.fgm}/${line.fga} FG`);
@@ -141,6 +147,8 @@ export default function LiveGame({
   autoStart,
   autoPlay = false,
   doneAction,
+  intro,
+  onPlayer,
   onFinish,
 }: {
   game: LiveGameResult;
@@ -152,8 +160,12 @@ export default function LiveGame({
   autoPlay?: boolean;
   /** Called once the final is on the board (played out or skipped). */
   onFinish?: () => void;
-  /** Replaces "Watch again" in the top bar once the final is in (the playoffs' next game). */
+  /** Replaces "Watch again" once the final is in (the playoffs' next game), shown big under the score. */
   doneAction?: ReactNode;
+  /** One line before tip-off on what came before (the series' last game). */
+  intro?: string;
+  /** A name in the box score opens that player's card (the season's). */
+  onPlayer?: (side: 0 | 1, span: PlayerSpan) => void;
 }) {
   const short: [string, string] = matchup ? matchup.short : ['You', opponent?.short ?? 'Them'];
   const names: [string, string] = matchup ? matchup.names : ['Your five', opponent?.name ?? 'Them'];
@@ -260,6 +272,7 @@ export default function LiveGame({
           actor: actorLabel ? fullName(side, actorLabel) : undefined,
           scored: m.score[side] > before[side],
           stat,
+          minor: m.play.minor,
         });
       }
       const next = game.moments[i + 1];
@@ -338,6 +351,12 @@ export default function LiveGame({
   const youPct = Math.round(odds.you * 100);
   const keyMomentIdx = game.moments.findIndex((m) => m.quarter >= 3 && m.left <= KEY_MOMENTS_LEFT);
 
+  // The fives on the floor at tip-off, PG to C (the first trip's lines: who has minutes).
+  const starters = ([0, 1] as const).map((side) => {
+    const first = game.moments[0]?.lines[side];
+    return game.labels[side].map((label) => ({ label, name: fullName(side, label) })).filter((_, k) => !first || first[k].min > 0).slice(0, 5);
+  }) as [{ label: string; name: string }[], { label: string; name: string }[]];
+
   function start(from = 0) {
     setShown(from);
     setSpeed(1);
@@ -402,12 +421,10 @@ export default function LiveGame({
                 Skip<span className="sc-long"> to final</span>
               </button>
             </>
-          ) : (
-            (doneAction ?? (
-              <button type="button" className="sc-btn" onClick={() => start(0)}>
-                Watch again
-              </button>
-            ))
+          ) : doneAction ? null : (
+            <button type="button" className="sc-btn" onClick={() => start(0)}>
+              Watch again
+            </button>
           )}
         </span>
       </div>
@@ -431,7 +448,11 @@ export default function LiveGame({
               {odds.clear ? (favourite ? 'You are the clear favourite' : `The ${short[1]} are the clear favourite`) : `Pre-game: ${short[0]} ${youPct}% · ${short[1]} ${100 - youPct}%`}
             </span>
           ) : done ? (
-            <span className="sc-odds">{won ? short[0] : short[1]} by {Math.abs(game.final[0] - game.final[1])}</span>
+            <>
+              <span className="sc-odds">{won ? short[0] : short[1]} by {Math.abs(game.final[0] - game.final[1])}</span>
+              {/* 2026-10-15 (playtest: "Game 2 mało widoczne" in the corner): the next step sits under the final. */}
+              {doneAction && <span className="sc-next">{doneAction}</span>}
+            </>
           ) : (
             <span className="sc-wp" aria-label={`Win probability: ${short[yourSide]} ${yourP}%`}>
               <span className="sc-wp-lbl">
@@ -480,11 +501,17 @@ export default function LiveGame({
           {tab === 'feed' && (
             <div className="sc-feed" aria-live="off">
               {shown < 0 ? (
-                <div className="sc-break">Starting fives are on the floor.</div>
+                <PreGame
+                  intro={intro}
+                  short={short}
+                  starters={starters}
+                  sideColor={sideColor}
+                  onTip={() => start(0)}
+                />
               ) : (
                 feed.map((r, idx) =>
                   r.kind === 'play' ? (
-                    <div key={r.key} className={`sc-play${idx === 0 && !done ? ' is-latest' : ''}${r.scored ? ' is-score' : ''}`}>
+                    <div key={r.key} className={`sc-play${idx === 0 && !done ? ' is-latest' : ''}${r.scored ? ' is-score' : ''}${r.minor ? ' is-minor' : ''}`}>
                       <span className="sc-play-t">{r.time}</span>
                       <span className="sc-play-stripe" style={{ background: sideColor(r.side!) }} />
                       {r.actor ? (
@@ -512,7 +539,16 @@ export default function LiveGame({
           {tab === 'box' && (
             <div className="sc-boxes">
               {([0, 1] as const).map((side) => (
-                <BoxTable key={side} title={names[side]} color={sideColor(side)} labels={game.labels[side]} lines={lines[side]} joker={side === 0 ? game.jokerLabel : null} star={done && !matchup && side === 0 ? game.star.name : null} />
+                <BoxTable
+                  key={side}
+                  title={names[side]}
+                  color={sideColor(side)}
+                  labels={game.labels[side]}
+                  lines={lines[side]}
+                  joker={side === 0 ? game.jokerLabel : null}
+                  star={done && !matchup && side === 0 ? game.star.name : null}
+                  onPlayer={onPlayer ? (k) => onPlayer(side, game.players[side][k]) : undefined}
+                />
               ))}
             </div>
           )}
@@ -596,6 +632,70 @@ export default function LiveGame({
         </aside>
       </div>
     </section>
+  );
+}
+
+/**
+ * 2026-10-15 (playtest: "brakuje jakiegoś intro przed spotkaniem, tylko od razu się odpala"): before
+ * tip-off, what came before (the series' last game) and the two starting fives face to face, PG to C.
+ */
+function PreGame({
+  intro,
+  short,
+  starters,
+  sideColor,
+  onTip,
+}: {
+  intro?: string;
+  short: [string, string];
+  starters: [{ label: string; name: string }[], { label: string; name: string }[]];
+  sideColor: (side: 0 | 1) => string;
+  onTip: () => void;
+}) {
+  const slots = ['PG', 'SG', 'SF', 'PF', 'C'];
+  return (
+    <div className="sc-pre">
+      {intro && <p className="sc-pre-line">{intro}</p>}
+      <div className="sc-pre-head">
+        <span style={{ color: sideColor(0) }}>{short[0]}</span>
+        <span>Starting fives</span>
+        <span style={{ color: sideColor(1) }}>{short[1]}</span>
+      </div>
+      <div className="sc-pre-fives">
+        {slots.map((slot, i) => {
+          const a = starters[0][i];
+          const b = starters[1][i];
+          return (
+            <div key={slot} className="sc-pre-row">
+              <span className="sc-pre-p">
+                {a && (
+                  <>
+                    <span className="sc-play-face" style={{ boxShadow: `0 0 0 2px ${sideColor(0)}` }}>
+                      <Face name={a.name} size="sm" />
+                    </span>
+                    <span className="sc-pre-name">{a.name}</span>
+                  </>
+                )}
+              </span>
+              <span className="sc-pre-slot">{slot}</span>
+              <span className="sc-pre-p is-b">
+                {b && (
+                  <>
+                    <span className="sc-pre-name">{b.name}</span>
+                    <span className="sc-play-face" style={{ boxShadow: `0 0 0 2px ${sideColor(1)}` }}>
+                      <Face name={b.name} size="sm" />
+                    </span>
+                  </>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <button type="button" className="sc-btn sc-btn--go sc-pre-go" onClick={onTip}>
+        ▶ Tip-off
+      </button>
+    </div>
   );
 }
 
@@ -683,7 +783,24 @@ function TeamComparison({ lines, short }: { lines: [BoxLineStats[], BoxLineStats
   );
 }
 
-function BoxTable({ title, color, labels, lines, joker, star }: { title: string; color: string; labels: string[]; lines: BoxLineStats[]; joker: string | null; star: string | null }) {
+function BoxTable({
+  title,
+  color,
+  labels,
+  lines,
+  joker,
+  star,
+  onPlayer,
+}: {
+  title: string;
+  color: string;
+  labels: string[];
+  lines: BoxLineStats[];
+  joker: string | null;
+  star: string | null;
+  /** 2026-10-15 (playtest: "nie mogę kliknąć na zawodnika i zobaczyć, kto to"): his card. */
+  onPlayer?: (index: number) => void;
+}) {
   const total = sum(lines);
   const top = Math.max(0, ...lines.map((l) => l.pts));
   const pct = (made: number, att: number) => (att > 0 ? `${Math.round((100 * made) / att)}%` : '—');
@@ -735,7 +852,13 @@ function BoxTable({ title, color, labels, lines, joker, star }: { title: string;
               <tr key={name} className={[name === joker ? 'is-joker' : '', top > 0 && l.pts === top ? 'is-top' : ''].filter(Boolean).join(' ') || undefined}>
                 <th scope="row">
                   {name === joker && '🃏 '}
-                  {name}
+                  {onPlayer ? (
+                    <button type="button" className="sc-pname" onClick={() => onPlayer(i)} title={`${name} — his card`}>
+                      {name}
+                    </button>
+                  ) : (
+                    name
+                  )}
                   {name === star && ' ★'}
                   {l.pf >= 6 && <span className="sc-out">Fouled out</span>}
                 </th>

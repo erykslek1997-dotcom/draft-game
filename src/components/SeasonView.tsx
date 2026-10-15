@@ -238,15 +238,12 @@ export default function SeasonView({ teams, codes, state, onClose }: { teams: Te
   useEffect(() => {
     document.querySelector('.ss-backdrop')?.scrollTo({ top: 0 });
   }, [chapter, tab, reveal.kind, revealRound]);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  // 2026-10-15 (playtest: "jak kliknę poza obszar, to mi zamyka symulację"): the season is a screen
+  // of its own now — only its ✕ closes it; Esc steps back inside it (a game to its series).
 
   return (
-    <div className="ss-backdrop" onClick={onClose}>
-      <div className={`ss-sheet at-calm${chapter === 'playoffs' ? ' is-playoffs' : ''}`} role="dialog" aria-modal="true" aria-label="Your season" onClick={(e) => e.stopPropagation()}>
+    <div className="ss-backdrop">
+      <div className={`ss-sheet at-calm${chapter === 'playoffs' ? ' is-playoffs' : ''}`} role="dialog" aria-modal="true" aria-label="Your season">
         <button type="button" className="ss-close" aria-label="Close" onClick={onClose}>
           ✕
         </button>
@@ -685,7 +682,8 @@ const COLUMNS: { key: SortKey; label: string; title?: string; basic?: true; valu
   // 2026-10-14, the user: "brakuje mi możliwości sortowania przez FGA" — attempts per game beside each percentage.
   { key: 'fga', label: 'FGA', title: 'Field goal attempts per game', basic: true, value: (l) => per(l, 'fga'), fmt: (l) => f1(per(l, 'fga')) },
   { key: 'fg', label: 'FG%', basic: true, value: (l) => pct(l.totals.fgm, l.totals.fga), fmt: (l) => f1(pct(l.totals.fgm, l.totals.fga)) },
-  { key: 'tpa', label: '3PA', title: 'Three-point attempts per game', value: (l) => per(l, 'tpa'), fmt: (l) => f1(per(l, 'tpa')) },
+  // 2026-10-15 (playtest: Gobert's 30.0 3P% read like a real number): the attempts beside the percentage.
+  { key: 'tpa', label: '3PA', title: 'Three-point attempts per game', basic: true, value: (l) => per(l, 'tpa'), fmt: (l) => f1(per(l, 'tpa')) },
   { key: 'tp', label: '3P%', basic: true, value: (l) => pct(l.totals.tpm, l.totals.tpa), fmt: (l) => (l.totals.tpa ? f1(pct(l.totals.tpm, l.totals.tpa)) : '—') },
   { key: 'fta', label: 'FTA', title: 'Free throw attempts per game', value: (l) => per(l, 'fta'), fmt: (l) => f1(per(l, 'fta')) },
   { key: 'ft', label: 'FT%', value: (l) => pct(l.totals.ftm, l.totals.fta), fmt: (l) => (l.totals.fta ? f1(pct(l.totals.ftm, l.totals.fta)) : '—') },
@@ -785,7 +783,7 @@ function Stats({ teams, season, playoffs, youId, mark }: { teams: Team[]; season
                   <span title={teams.find((t) => t.id === l.teamId)?.name}>{mark(l.teamId)}</span>
                 </td>
                 {columns.map((c) => (
-                  <td key={c.key} className={`n${c.key === sort ? ' is-sorted' : ''}`}>
+                  <td key={c.key} className={`n${c.key === sort ? ' is-sorted' : ''}${c.key === 'tp' && l.totals.tpa < l.games ? ' is-few' : ''}`} title={c.key === 'tp' && l.totals.tpa < l.games ? `Only ${l.totals.tpa} threes all season` : undefined}>
                     {c.fmt(l)}
                   </td>
                 ))}
@@ -997,6 +995,7 @@ function PlayoffsChapter({
       <div className="pl-stage">
         <Watch
           key={`${watching.round}-${watching.series}-${watching.game}`}
+          season={season}
           teams={teams}
           codes={codes}
           series={s}
@@ -1674,6 +1673,7 @@ function Finale({
 }
 
 function Watch({
+  season,
   teams,
   codes,
   series,
@@ -1684,6 +1684,7 @@ function Watch({
   onNext,
   onBack,
 }: {
+  season: LiveSeasonResult;
   teams: Team[];
   codes: Map<string, string>;
   series: LivePlayoffSeries;
@@ -1695,8 +1696,17 @@ function Watch({
   onBack: () => void;
 }) {
   const game = useMemo(() => playLivePlayoffGame(teams, series, gameIndex), [teams, series, gameIndex]);
+  const previous = useMemo(() => (gameIndex > 0 ? playLivePlayoffGame(teams, series, gameIndex - 1) : null), [teams, series, gameIndex]);
   const [over, setOver] = useState(false);
   const [take, setTake] = useState(0);
+  const openCard = useContext(PlayerCardContext);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onBack();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onBack]);
   if (!game) return null;
   const before = series.games.slice(0, gameIndex);
   const wa = before.filter((g) => g.final[0] > g.final[1]).length;
@@ -1712,6 +1722,19 @@ function Watch({
     codes: [codes.get(series.teamAId) ?? '', codes.get(series.teamBId) ?? ''],
     yourSide: series.teamBId === youId ? 1 : 0,
   };
+  // Before tip-off (playtest: "brakuje intro przed spotkaniem"): how the last game went.
+  const intro = previous
+    ? `Game ${gameIndex}: ${mascot(previous.final[0] > previous.final[1] ? a : b)} won ${Math.max(...previous.final)}–${Math.min(...previous.final)} · ${previous.star.name} ${previous.star.line.pts} pts, ${previous.star.line.reb} reb, ${previous.star.line.ast} ast · ${status}`
+    : `${series.roundLabel} · ${a?.name} (#${series.teamASeed}) vs ${b?.name} (#${series.teamBSeed})`;
+  const nextButton = onNext ? (
+    <button type="button" className="sc-btn sc-btn--go" onClick={onNext}>
+      ▶ Game {gameIndex + 2}
+    </button>
+  ) : (
+    <button type="button" className="sc-btn sc-btn--go" onClick={onBack}>
+      Back to the bracket →
+    </button>
+  );
   return (
     <div>
       <div className="pl-top">
@@ -1727,24 +1750,28 @@ function Watch({
         game={game}
         matchup={matchup}
         autoStart
-        autoPlay
-        doneAction={
-          onNext ? (
-            <button type="button" className="sc-btn sc-btn--go" onClick={onNext}>
-              ▶ Game {gameIndex + 2}
-            </button>
-          ) : (
-            <button type="button" className="sc-btn sc-btn--go" onClick={onBack}>
-              Back to the bracket →
-            </button>
-          )
+        intro={intro}
+        onPlayer={
+          openCard
+            ? (side, span) => {
+                const teamId = side === 0 ? series.teamAId : series.teamBId;
+                const line = season.players.find((l) => l.teamId === teamId && l.span.id === span.id);
+                if (line) openCard(line);
+              }
+            : undefined
         }
+        doneAction={nextButton}
         onFinish={() => {
           setOver(true);
           onFinish();
         }}
       />
       <div className="pl-actions">
+        {over && (
+          <button type="button" className="pl-cta" onClick={onNext ?? onBack}>
+            {onNext ? `▶ Game ${gameIndex + 2}` : 'Back to the bracket →'}
+          </button>
+        )}
         {over && (
           <button
             type="button"
@@ -1757,9 +1784,11 @@ function Watch({
             Watch again
           </button>
         )}
-        <button type="button" className="pl-ghost" onClick={onBack}>
-          Back to the bracket
-        </button>
+        {(onNext || !over) && (
+          <button type="button" className="pl-ghost" onClick={onBack}>
+            Back to the bracket
+          </button>
+        )}
       </div>
     </div>
   );

@@ -239,3 +239,33 @@
   .sc-q.is-clutch { animation: none; }
   .sc-wp-bar i, .sc-cmp-bar i { transition: none; }
 }
+
+/* 2026-10-15 (playtest): the next game under the final, big; names in the box score open a card;
+   the pre-game panel with both starting fives. */
+.sc-next { display: block; margin-top: 10px; }
+.sc-next .sc-btn { padding: 10px 22px; font-size: 15px; font-weight: 800; letter-spacing: 0.02em; }
+.sc-pname { background: none; border: 0; padding: 0; margin: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.sc-pname:hover, .sc-pname:focus-visible { text-decoration: underline; text-underline-offset: 3px; color: var(--sc-ink); }
+.sc-pre { display: flex; flex-direction: column; gap: 14px; padding: 18px 16px 20px; }
+.sc-pre-line { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--sc-panel); border: 1px solid var(--sc-line); color: var(--sc-soft); font-size: 14px; }
+.sc-pre-head { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; font: 700 13px var(--sc-disp); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sc-faint); }
+.sc-pre-head > span:last-child { text-align: right; }
+.sc-pre-fives { display: flex; flex-direction: column; border: 1px solid var(--sc-line); border-radius: 12px; overflow: hidden; }
+.sc-pre-row { display: grid; grid-template-columns: 1fr 44px 1fr; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--sc-row-line); }
+.sc-pre-row:first-child { border-top: 0; }
+.sc-pre-p { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sc-pre-p.is-b { justify-content: flex-end; text-align: right; }
+.sc-pre-name { font-weight: 600; font-size: 14px; color: var(--sc-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-pre-slot { text-align: center; font: 700 12px var(--sc-disp); letter-spacing: 0.12em; color: var(--sc-dim); }
+.sc-pre-go { align-self: center; padding: 12px 34px; font-size: 16px; font-weight: 800; }
+@media (max-width: 560px) {
+  /* On a phone the middle of the board (odds, the final margin, the next game) gets its own row under the scores. */
+  .sc-board { grid-template-columns: 1fr 1fr; row-gap: 10px; }
+  .sc-center { grid-column: 1 / -1; order: 3; }
+  .sc-next { margin-top: 4px; }
+  .sc-pre-name { font-size: 13px; }
+  .sc-pre-row { grid-template-columns: 1fr 34px 1fr; padding: 8px; }
+}
+/* Misses and turnovers: on the feed, a step quieter than the plays that change the score. */
+.sc-play.is-minor .sc-play-text { color: var(--sc-faint); font-weight: 500; }
+.sc-play.is-minor .sc-play-face { opacity: 0.7; }
