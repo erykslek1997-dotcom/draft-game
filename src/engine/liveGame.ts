@@ -8,6 +8,7 @@ import type { LegendFive } from './dailyMeta';
 import type { Team } from './types';
 import { contextLines } from './contextStats';
 import { modernBox } from './modernBox';
+import { teammateLift } from './teammateLift';
 import { fatigueShare } from './fatigue';
 import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import { estimatedMinutesPerGame } from './minutesPerGame';
@@ -576,6 +577,20 @@ export const SCALE_TUNING = {
  * league's shooting stays where it was and only the differences between fives move.
  */
 export const OVERLOAD_TUNING = { perOverload: 0.05, ref: 1.14 };
+/**
+ * 2026-10-15, the user ("Curry, Nash, LeBron — jak wpływają na efficiency zawodników obok"): the
+ * teammates on the floor lift a player's shooting by what they really lifted their teammates
+ * (`teammateLift.ts`: Nash +1.4 TS, Jokic +1.3, Curry +0.8, LeBron +0.3, Paul 0, Jordan -0.7),
+ * less what his own real teammates gave him. `ref` is the drafted fives' mean of it (160 AI-drafted
+ * teams, starters and second units: +0.34), so the league's shooting does not move. Checked on the
+ * same four (Korver, Kirilenko, Marion, Stoudemire) beside each point guard, against Conley: Nash's
+ * teammates +0.9 -> +2.4, Stockton's +0.1 -> +1.5, Iverson's -0.7 -> +0.2, Jordan's +0.6 -> +0.5
+ * (real +1.6, +1.3, +0.6, -0.5). What is left over (Jordan, Paul and LeBron still too high) is the
+ * margin nudge spreading a strong five's edge over every shooter alike, not this.
+ * Tried and dropped the same day: each player carrying his own anchor and the overload by his
+ * share of the shots (the user's idea for Curry) — it took Nash's teammates from +0.9 to +0.4.
+ */
+export const LIFT_TUNING = { scale: 1, ref: 0.0034 };
 function usageGiveUpScale(span: PlayerSpan, ownShare: number): number {
   const shooter = Math.max(0, Math.min(1, (teamSpacingValue(span) - 35) / 25));
   const creator = Math.min(1, ownShare / STAR_TUNING.creatorShare);
@@ -1002,13 +1017,17 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
     const overload = -OVERLOAD_TUNING.perOverload * (lines.reduce((sum, l) => sum + l.originalUsage, 0) - OVERLOAD_TUNING.ref);
     const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload;
+    // What the four beside him give him, less what his real teammates gave him (`teammateLift.ts`).
+    const lifts = five.map((p) => teammateLift(p.span));
+    const liftSum = lifts.reduce((sum, l) => sum + l.lift, 0);
+    const lifted = lifts.map((l) => LIFT_TUNING.scale * (liftSum - l.lift - l.realMates - LIFT_TUNING.ref));
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor)),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS)),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor + lifted[i])),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + (anchor + lifted[i]) * THREE_PCT_PER_TS)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
