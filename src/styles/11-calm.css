@@ -50,6 +50,14 @@
 }
 .at-calm-seg > button:hover { color: var(--at-ink); }
 .at-calm-seg > button.is-on { background: var(--at-ink); color: var(--at-paper); }
+/* 2026-10-15 (playtest 3): All-Time's Draft / Team switch as big tabs in the middle of the header. */
+.at-calm-title--left { flex: none; text-align: left; }
+.at-calm-tabs--big { margin: 0 auto; padding: 5px; border-color: #24344a; }
+.at-calm-tabs--big > button { min-width: 150px; padding: 10px 28px; font-size: 15px; font-weight: 700; }
+@media (max-width: 640px) {
+  .at-calm-title--left { flex: 1; }
+  .at-calm-tabs--big > button { min-width: 0; padding: 10px 12px; }
+}
 .at-calm-seg > button:focus-visible,
 .at-calm-btn:focus-visible,
 .at-calm-icon:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
@@ -296,7 +304,9 @@ span.at-pc-name { cursor: default; }
 }
 
 /* ---- Results screen (All-Time Draft) ---- */
-.results-screen.at-calm { max-width: 1080px; padding: 16px 24px 32px; }
+/* 2026-10-15 (playtest 5: "draft jest na cały ekran, podsumowanie i symulacja nie"): the results
+   use the screen's width like the draft does, up to a readable 1600 px. */
+.results-screen.at-calm { max-width: 1600px; padding: 16px 24px 32px; }
 .results-screen.at-calm > * { order: 0; }
 .rs-header-spacer { width: 88px; }
 .rs-hero {
@@ -427,7 +437,10 @@ span.at-pc-name { cursor: default; }
 /* ---- Team tab (2026-10-14, the redesign; approved mockup "Team · roster + rotation"): the roster
    on the left, the rotation as five lanes on the right — each position one bar of 48 minutes split
    between its players, open minutes dashed. Phones switch between the two. ---- */
-.at-calm .tm-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 600px); gap: 28px 32px; align-items: start; }
+.at-calm .tm-layout { display: grid; grid-template-columns: minmax(0, 780px) minmax(0, 1fr); gap: 28px 32px; align-items: start; }
+/* 2026-10-15 (playtest 4: "dużo martwego pola"): the roster keeps a sensible width and stays in
+   view while the longer rotation scrolls beside it. */
+@media (min-width: 1101px) { .at-calm .tm-roster { position: sticky; top: 16px; } }
 .at-calm .tm-views { grid-column: 1 / -1; margin: 0; }
 @media (max-width: 1100px) { .at-calm .tm-layout { grid-template-columns: minmax(0, 1fr); } }
 .at-calm .tm-roster { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -808,11 +821,13 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 }
 
 /* ── 2026-10-08 · the season sheet (SeasonView.tsx): the regular-season hub, then the playoffs chapter ── */
-.ss-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(2, 5, 9, 0.78); display: flex; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 24px 16px; }
+/* 2026-10-15 (playtest 5 and 6: the season was a narrow window over the results, which showed
+   through behind it): the season is its own full screen, opaque, as wide as the draft. */
+.ss-backdrop { position: fixed; inset: 0; z-index: 60; background: var(--at-paper, #05070c); display: flex; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 0; }
 .ss-sheet, .ss-sheet * { box-sizing: border-box; }
-.ss-sheet { position: relative; width: min(1080px, 100%); background: var(--at-paper, #05080d); border: 1px solid var(--calm-line); border-radius: 16px; padding: 24px; color: var(--at-ink); --rr-disp: 'Barlow Condensed', 'Inter', system-ui, sans-serif; --rr-serif: 'Bitter', Georgia, serif; --gold: #f2c14e; }
+.ss-sheet { position: relative; width: 100%; max-width: 1600px; min-height: 100%; background: var(--at-paper, #05080d); border: 0; border-radius: 0; padding: 24px 32px 40px; color: var(--at-ink); --rr-disp: 'Barlow Condensed', 'Inter', system-ui, sans-serif; --rr-serif: 'Bitter', Georgia, serif; --gold: #f2c14e; }
 .ss-sheet.is-playoffs { background: radial-gradient(120% 70% at 50% -10%, #2a2108 0%, #07090d 55%); border-color: #2c2614; }
-.ss-sheet.is-playoffs::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; border-radius: 16px 16px 0 0; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+.ss-sheet.is-playoffs::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 .ss-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--at-edge); background: var(--calm-raised); color: var(--at-ink-soft); font-size: 16px; line-height: 1; padding: 0; cursor: pointer; z-index: 1; }
 .ss-close:hover { color: var(--at-ink); border-color: var(--at-accent); }
 .ss-kicker { font: 700 13px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-ink-faint); margin: 0 0 10px; }
@@ -1520,3 +1535,19 @@ button.ph-game { cursor: pointer; }
    whose `.at-calm .pl-row` grid (#212) pushed bracket names and series wins out of their cards.
    Bracket rows keep their own flex layout. */
 .at-calm .pl-series .pl-row { display: flex; gap: 8px; min-height: 0; padding: 4px 0; border-bottom: none; }
+
+/* 2026-10-15 (playtest 2): a typed caps ceiling beside Affordable. */
+.at-calm-maxcaps {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; box-sizing: border-box; padding: 0 6px 0 12px;
+  border-radius: 999px; border: 1px solid var(--at-edge); background: var(--calm-raised); color: var(--at-ink-soft);
+  font-size: 13px; font-weight: 600;
+}
+.at-calm-maxcaps.is-on { border-color: #ffd479; color: var(--at-ink); }
+.at-calm-maxcaps input {
+  width: 48px; height: 24px; box-sizing: border-box; padding: 0 6px; border-radius: 8px; border: 1px solid var(--calm-line);
+  background: var(--calm-raised-2); color: var(--at-ink); font: 600 13px var(--calm-num); -moz-appearance: textfield;
+}
+.at-calm-maxcaps input::-webkit-outer-spin-button, .at-calm-maxcaps input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.at-calm-maxcaps input:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 1px; }
+.at-calm-maxcaps button { width: 22px; height: 22px; padding: 0; border: none; border-radius: 11px; background: none; color: var(--at-ink-faint); cursor: pointer; font-size: 11px; }
+.at-calm-maxcaps button:hover { color: var(--at-ink); }
