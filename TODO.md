@@ -406,10 +406,16 @@ do dołu i zakładki Matchup/Bracket).
      obok rozgrywającego vs Conley: Nash +0,9 → +2,4, Stockton +0,1 → +1,5, Iverson −0,7 → +0,2
      (realnie +1,6, +1,3, +0,6). Rozkład kary za posiadania i korekty gwiazdy według rzutów —
      sprawdzony i odrzucony (Nash +0,9 → +0,4).
-   - **Dociąganie do wyniku silnika rozkłada przewagę piątki na wszystkich po równo (do zrobienia).**
-     Silna piątka z gwiazdą, która sama zdobywa punkty (Jordan, Paul, LeBron), podnosi w meczu
-     rzuty całej czwórki: koledzy Jordana +0,5 vs Conley, realnie −0,5. Do sprawdzenia: przewaga z
-     dociągania według tego, kto ją tworzy (udział w rzutach / ocena „podnosi kolegów”).
+   - **„Podnosi kolegów” w prognozie silnika — zrobione 2026-10-15.** `matchup.ts` dodaje tę samą
+     ocenę dla całej drużyny (minuty z rotacji, 1 pkt TS = ~1,96 pkt na mecz), więc dociąganie w
+     meczu już jej nie zabiera. Ta sama czwórka: drużyna Nasha vs Conleya +0,3 → +1,4, Jordana
+     +4,3 → +3,6; kształt skuteczności kolegów vs realnie (bez wspólnego przesunięcia) błąd 5,0 →
+     2,1. TAL/O-TAL bez zmian (korelacja O-TAL z oceną 0,27, asyst 0,09 — to osobna cecha). Do
+     sprawdzenia później: AI draftu i wycena drużyny w wynikach draftu (`scoreTeam`) jeszcze jej nie
+     znają.
+   - **Daily: „równy” mecz (do dokończenia).** Kontry w prognozie meczu (PR #228) zabrały większość
+     (−3,7 → −1,7 średnio na 10 dni); reszta to głównie kłopoty z faulami w piątkach bez ławki
+     (~0,6, `TROUBLE_SOFTEN` poza prognozą).
    - **Era a rozegranie — zrobione 2026-10-15 (PR #227).** Asysty przeliczane percentylem w pozycji
      (tylko powyżej mediany, spadki tylko u obwodowych, Jokic poza dzisiejszą skalą — jedyny
      unicorn). Kirilenko 2004-06 4,2 → 5,4, Divac 3,6 → 4,8, Sabonis 2,8 → 4,0, Webber 5,0 → 6,0.

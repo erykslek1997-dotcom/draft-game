@@ -1,3 +1,4 @@
+import { teamLiftPoints } from './teammateLift';
 import type { Team } from './types';
 import { TEAM_COUNT } from './positions';
 import { projectMatchup, styleProfile, type MatchupTeamCache } from './matchup';
@@ -25,6 +26,7 @@ export function buildMatchupCache(teams: Team[]): Map<string, MatchupTeamCache> 
         huntingPotential: fitScore(t).inputs.huntingPotential,
         huntability: defensiveHuntability(t),
         style: styleProfile(t),
+        lift: teamLiftPoints(t),
       },
     ]),
   );
