@@ -373,6 +373,11 @@ do dołu i zakładki Matchup/Bracket).
      cap gracza wobec oceny, okazje i przepłaty), **Jeremy May** (lata 90. i Jordan, rywal
      Prabuckova), **Lex Superteam** (tylko gwiazdy, rywal Rotation i Novackiej), **Zoran Eurostep**
      (gracze spoza USA, rywal Sosiniego). Pesymista od kontuzji (DUR) — na razie nie.
+     **Gusta ekspertów (2026-10-15, lista użytkownika):** ulubieni i znienawidzeni gracze każdego eksperta
+     oraz drużyny (Rotation: Utah/Lakers, Binash: Lakers, Natalie i Rightwing: Houston) są w
+     `src/engine/deskTastes.ts`; zachwyt albo „trash talk” odpowiada ktoś, kto czuje odwrotnie. Davyd: oko
+     i finezja z półdystansu; Shyman: krótkie zdania, chłopski rozum; Jertcheck: przekorny, „Look it up”;
+     Onoffsky ufa tylko erze play-by-play. Bez wyzwisk homofobicznych.
      Głosy (tiki, sposób argumentowania) inspirowane archiwum ligowego Discorda za zgodą graczy;
      archiwum nie trafia do repozytorium, w kodzie i makiecie są tylko fikcyjne postacie. Na antenie
      3–5 ekspertów + prowadzący; kolejność: wyniki → Draft Desk → wtrącenia (decyzja 2026-10-14). Nazwiska Jake'a i Igora zmienione, bo wskazywały prawdziwe osoby (Ben

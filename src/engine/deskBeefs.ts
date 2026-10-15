@@ -1,6 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import type { DeskKind, ExpertId, RosterRead } from './desk';
 import type { InsightCategory } from './insights';
+import { fansOf, hatersOf } from './deskTastes';
 
 /**
  * 2026-10-15, the user ("więcej sosu … jak kłótnia na Twitterze", then "trzeba pogłębiać to co mamy.
@@ -20,7 +21,7 @@ import type { InsightCategory } from './insights';
 export type Lens =
   | 'kobe' | 'jordan' | 'lakers' | 'lakersConcern' | 'celtics' | 'old' | 'modern' | 'eighties' | 'nineties' | 'aughts'
   | 'preTwoK' | 'noPreTwoK' | 'stars' | 'noStars' | 'oneStar' | 'international' | 'steal' | 'overpay' | 'notMichael' | 'fav'
-  | 'prePbp' | 'fullPbp' | 'ninetiesHate' | 'turnstile';
+  | 'prePbp' | 'fullPbp' | 'ninetiesHate' | 'turnstile' | 'nemesis' | 'smallGuard';
 
 export interface BeefCtx {
   read: RosterRead;
@@ -84,10 +85,10 @@ const CORE_BEEFS: Beef[] = [
           open: `${c.names(c.read.old)}. 🥱 Respectfully, this roster’s scouting report is in black and white.`,
           lines: wilt
             ? [
-              ['jert', '@Sosini Wilt averaged FIFTY a game. Fifty. Your favourite player averages fifty tweets.'],
-              ['sosini', 'Fifty against centers who delivered mail in the summer. Cope.'],
-              ['binash', '@Sosini *leans into the mic* He scored a hundred in one night. A HUNDRED. You’ve never scored a hundred of anything.', 'cuts'],
-              ['host', 'Okay. OKAY. Nobody gets blocked live on air. Again.', 'host'],
+              ['jert', '@Sosini for once you’re right. Wilt? Bum. Fifty a game and two rings. Russell is the one.'],
+              ['sosini', 'I… agree with Mattheus? I need to lie down.'],
+              ['binash', 'He scored a HUNDRED in one night, guys!', 'cuts'],
+              ['jert', 'Against the Knicks. Look it up.'],
             ]
             : [
               ['jert', '@Sosini Russell has eleven rings. ELEVEN. How many do you have?'],
@@ -157,10 +158,10 @@ const CORE_BEEFS: Beef[] = [
     variants: [
       () => ({
         lines: [
-          ['sosini', '@Jertcheck Moses Malone isn’t on Twitter. Nobody’s rolling their eyes.'],
-          ['jert', 'Fo, fo, fo, Mattia. Look it up.'],
-          ['sosini', 'Looked it up. Fo, five, fo. They lost a game. 🥱'],
-          ['jert', '*long silence* …I hate that you know that.'],
+          ['sosini', '@Jertcheck Reggie is alive and doing TV, Mattheus. He’s fine.'],
+          ['jert', 'He’s rolling his eyes ON AIR. Look it up.'],
+          ['sosini', 'Your GOAT is a commentator. 🥱'],
+          ['jert', 'My GOAT is a commentator with a statue. Where’s yours?'],
         ],
       }),
     ],
@@ -526,7 +527,7 @@ const CORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['lex', '@Shyman who cares, they’ll score 140.'],
-          ['shyman', 'And give up 145. The refs already call a foul if you breathe on a guard, Lex. You don’t get to ALSO not try.'],
+          ['shyman', 'And give up 145. You can’t win like that, Lex. Nobody ever has.'],
           ['batt', 'Half a team. Mezza squadra. Mamma mia.', 'cuts'],
           ['lex', 'Nightmares is what the other team has when my guys get hot.'],
         ],
@@ -583,7 +584,7 @@ const CORE_BEEFS: Beef[] = [
         lines: [
           ['shyman', '@Sosini great. They shoot. Who guards anybody?'],
           ['sosini', 'The scoreboard does. 🥱'],
-          ['shyman', '“The scoreboard does.” *buries face in hands* I’m going home.'],
+          ['shyman', '“The scoreboard does.” Okay. I’m going home.'],
         ],
       }),
     ],
@@ -697,42 +698,6 @@ const FAN_RIVAL: Partial<Record<ExpertId, ExpertId>> = {
   onoffsky: 'jert', bannerman: 'prab', natalie: 'lex', lex: 'rotation', zoran: 'sosini', prab: 'jeremy', jeremy: 'prab',
 };
 
-/**
- * Each expert's favourite players: on the roster, the expert gushes (a 'fav' take) and a rival makes
- * fun of the crush. 2026-10-15: a first guess per lens — the user is sending each specialist's real
- * favourites, which replace these. Full names as in the data; accents don't matter.
- */
-export const FAVOURITES: Partial<Record<ExpertId, string[]>> = {
-  sosini: ['Stephen Curry', 'Damian Lillard'],
-  shyman: ['Ben Wallace', 'Gary Payton', 'Dennis Rodman'],
-  solin: ['Ron Artest', 'Rasheed Wallace'],
-  binash: ['Larry Bird', 'Magic Johnson', 'Kevin McHale'],
-  jert: ['Wilt Chamberlain', 'Bill Russell', 'Moses Malone'],
-  rotation: ['Manu Ginobili', 'Robert Horry', 'Lou Williams'],
-  batt: ['Kawhi Leonard', 'Scottie Pippen'],
-  onoffsky: ['Nikola Jokic', 'Chris Paul'],
-  bannerman: ['Larry Bird', 'Paul Pierce', 'Kevin Garnett'],
-  lex: ['LeBron James', 'Kevin Durant'],
-  zoran: ['Dirk Nowitzki', 'Manu Ginobili', 'Arvydas Sabonis'],
-};
-
-/** How each expert gushes; `{fav}` is the player's surname. */
-export const FAV_LINES: Partial<Record<ExpertId, string[]>> = {
-  sosini: ['{fav}! Respectfully, his shot chart is my phone background.', '{fav}. *puts hand on heart* That is the future, and the future is now.'],
-  shyman: ['{fav}! STOPS! I have a poster of him above my bed. A big one.', '{fav}. *rubs his arms* Somebody hold me. Actual chills.'],
-  solin: ['{fav}. Grown man. Fouls hard, apologises never. My kind of guy.', '{fav}! Finally somebody on this roster who’d fight a parking meter.'],
-  binash: ['{fav}! Somebody pass me the short shorts. This is a holy day.', '{fav}! Totally tubular, dudes. *finger guns at the camera*', '{fav}. *dims the studio lights, puts on a synth track* Let me just enjoy this.'],
-  jert: ['{fav}! *stands up* Pace-adjusted, he’d still lead this league. I have the almanacs.', '{fav}. They don’t make them like that anymore. The numbers say they CAN’T.'],
-  rotation: ['{fav}! The best off-the-bench energy in history. I might cry.', '{fav}. *exhales* Finally somebody I trust in February.'],
-  batt: ['{fav}! Two ends! Bellissimo! *kisses his fingers*', '{fav}. Offense, defense, everything. Perfetto.'],
-  onoffsky: ['{fav}. *adjusts glasses* Full play-by-play, elite on/off. Statistically, my favourite human being.', '{fav}. I made a spreadsheet about him. It has a spreadsheet of its own.'],
-  bannerman: ['{fav}! A Celtic legend! *already crying*', '{fav}. *points at the ceiling* Banner energy.'],
-  natalie: ['{fav}! Value AND talent. I need a moment.'],
-  lex: ['{fav}! THAT is a star. THAT is how a dynasty starts.', '{fav}! Build the statue now. Save time.'],
-  zoran: ['{fav}! *hand on heart* The way he passes. The way he THINKS.', '{fav}. Listen to me. This is basketball as art.'],
-};
-
-
 /** 2026-10-15, the user's own line for Binash (and Bannerman's standing offer): the three-point line
  * arrived in 1979, ten years after Russell retired — which, to Binash, proves nothing. */
 const russellThree = (c: BeefCtx): BeefThread | null => !c.has('Bill Russell') ? null : ({
@@ -750,11 +715,18 @@ const MORE_BEEFS: Beef[] = [
     id: 'folklore',
     on: { lens: 'prePbp' },
     variants: [
+      (c) => !c.has('Larry Bird') && !c.has('Hakeem Olajuwon') ? null : ({
+        lines: [
+          ['jert', `@Onoffsky funny. ${c.has('Larry Bird') ? 'Bird' : 'Hakeem'} is fine, but everyone else before ’97 is folklore? Hypocrite.`],
+          ['onoffsky', `${c.has('Larry Bird') ? 'Bird' : 'Hakeem'} is… an exception.`],
+          ['jert', 'Look it up, Jake. Look. It. Up.'],
+        ],
+      }),
       () => ({
         lines: [
-          ['jert', '@Onoffsky folklore? Wilt averaged 50.4 points and 25.7 boards in 1962. That’s in the box score, nerd.'],
+          ['jert', '@Onoffsky folklore? Russell averaged 22.5 rebounds for his career. That’s in the box score, nerd.'],
           ['onoffsky', 'A box score without play-by-play is a rumour with decimals.'],
-          ['jert', 'Oscar averaged a triple-double for a whole season that same year. Rumour THAT.'],
+          ['jert', 'Jerry West averaged 40.6 in the 1965 playoffs. Rumour THAT.'],
           ['onoffsky', 'Show me his on/off. Oh right. You can’t. 🤓'],
           ['jert', '*slams an almanac on the desk*'],
         ],
@@ -824,14 +796,14 @@ const MORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['lex', '@Shyman he drops 30 a night. Who cares.'],
-          ['shyman', 'He GIVES UP 32, Lex. Net minus two. Bum maths from a bum take.'],
+          ['shyman', 'He scores 30. He gives up 32. That’s minus two, Lex. Bum maths.'],
           ['lex', 'Blocked, clown.'],
         ],
       }),
       () => ({
         lines: [
           ['sosini', '@Shyman he spaces the floor. Defense is optional in November.'],
-          ['shyman', 'Then he’s optional in May. Turnstiles don’t get playoff minutes, Mattia.'],
+          ['shyman', 'Then he sits in May. Can’t guard, can’t play. Simple.'],
           ['rotation', '*quietly* And guess who has to find those minutes.', 'cuts'],
         ],
       }),
@@ -847,7 +819,7 @@ const MORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['sosini', '@Shyman relax. It’s the regular season. Outscore them.'],
-          ['shyman', 'There’s no regular season in a series, Mattia. Game 1 they find the weak guy. Game 3 he’s in every action. Game 5 he’s on the bench and the rotation is on fire.'],
+          ['shyman', 'Playoffs, Mattia. They find the weak guy. They go at him. Every trip. Then he sits.'],
           ['rotation', '*quietly* And then I’m the one crying. Thanks, Matt.', 'cuts'],
           ['shyman', 'Any time, Mark.'],
         ],
@@ -855,7 +827,7 @@ const MORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['onoffsky', '*adjusts glasses* Opponents score more per trip when they can pick on one defender. It compounds.', 'cuts'],
-          ['shyman', 'Thank you. THANK you. Numbers and me, same side. Write the date down.'],
+          ['shyman', 'See? Even the nerd agrees. Write the date down.'],
           ['sosini', 'Two grumpy men and a spreadsheet. My favourite podcast. 🥱', 'cuts'],
         ],
       }),
@@ -891,7 +863,7 @@ const MORE_BEEFS: Beef[] = [
     variants: [
       () => ({
         lines: [
-          ['shyman', '@Sosini I hate saying this on air. He’s right. They’ll sag off two guys and the best defense in the world can’t guard what isn’t a threat.', 'cuts'],
+          ['shyman', '@Sosini I hate this. He’s right. Nobody guards a guy who can’t shoot.', 'cuts'],
           ['sosini', 'Can I get that in writing, Matt?'],
           ['shyman', 'No.'],
           ['host', 'Shyman agrees with Sosini. Somebody check on the producer.', 'host'],
@@ -909,9 +881,50 @@ const MORE_BEEFS: Beef[] = [
   },
   {
     id: 'fan-crush',
-    chance: 0.6,
+    chance: 0.55,
     on: { lens: 'fav' },
     variants: [
+      // Someone at the desk can't stand him: a real fight.
+      (c) => {
+        const fav = c.anchor.fav;
+        const hater = fav && hatersOf(fav, c.anchor.who)[0];
+        if (!fav || !hater) return null;
+        return {
+          lines: [
+            [hater, `@${HANDLE[c.anchor.who]} ${c.sur(fav)}? Overrated. Fraud. There, I said it.`],
+            [c.anchor.who, `*stands up* Say his name again. I dare you.`],
+            [hater, `${c.sur(fav)}. Fraud.`],
+            ['host', 'Okay. OKAY. Sit down, both of you. Nobody says anybody’s name again.', 'host'],
+          ],
+        };
+      },
+      (c) => {
+        const fav = c.anchor.fav;
+        const hater = fav && hatersOf(fav, c.anchor.who)[0];
+        if (!fav || !hater) return null;
+        return {
+          lines: [
+            [hater, `@${HANDLE[c.anchor.who]} imagine drafting ${c.sur(fav)} on purpose. Couldn’t be me.`],
+            [c.anchor.who, `Couldn’t be you because you’ve never been right, ${HANDLE[hater]}.`],
+            [hater, 'Blocked.'],
+            [c.anchor.who, 'You can’t block me, we’re sitting next to each other.'],
+          ],
+        };
+      },
+      // Someone else loves him too: an unlikely alliance.
+      (c) => {
+        const fav = c.anchor.fav;
+        const ally = fav && fansOf(fav, c.anchor.who).find((w) => w !== 'moonbat');
+        if (!fav || !ally) return null;
+        return {
+          lines: [
+            [ally, `@${HANDLE[c.anchor.who]} wait. You like ${c.sur(fav)} too?`, 'cuts'],
+            [c.anchor.who, 'Always have.'],
+            [ally, '*long pause* I don’t know how to feel about this.'],
+            ['host', 'Two experts agreeing. Somebody check on the producer.', 'host'],
+          ],
+        };
+      },
       (c) => {
         const rival = FAN_RIVAL[c.anchor.who];
         if (!rival || !c.anchor.fav) return null;
@@ -934,18 +947,86 @@ const MORE_BEEFS: Beef[] = [
           ],
         };
       },
+      // Shyman says he's the defense guy, and keeps falling for scorers.
+      (c) => c.anchor.who !== 'shyman' || !c.anchor.fav || c.anchor.fav.box.threePA < 3 ? null : ({
+        lines: [
+          ['sosini', `@Shyman you’re the defense guy. You love ${c.sur(c.anchor.fav!)}?`],
+          ['shyman', 'He shoots threes. I like threes. Sue me.'],
+          ['sosini', 'Welcome to 2026, Matt. 🥱'],
+        ],
+      }),
+      // Davyd's eye test and the shot Houston deleted.
+      (c) => c.anchor.who !== 'solin' || !c.anchor.fav || !['DeMar DeRozan', 'Kobe Bryant', 'Dirk Nowitzki', 'Kawhi Leonard', 'Richard Hamilton'].includes(c.anchor.fav.playerName) ? null : ({
+        lines: [
+          ['natalie', '@Solinhakov Houston deleted that shot from the playbook. On purpose.'],
+          ['solin', 'And then lost to a team with Kevin Durant shooting it. Eye test.'],
+          ['natalie', '*closes the laptop very slowly*'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'nemesis',
+    chance: 0.75,
+    on: { lens: 'nemesis' },
+    variants: [
+      // A fan at the desk defends him.
       (c) => {
-        const rival = FAN_RIVAL[c.anchor.who];
-        if (!rival || !c.anchor.fav) return null;
+        const p = c.anchor.fav;
+        const fan = p && fansOf(p, c.anchor.who).find((w) => w !== 'moonbat');
+        if (!p || !fan) return null;
         return {
           lines: [
-            [rival, `@${HANDLE[c.anchor.who]} overrated. Fraud. There, I said it.`],
-            [c.anchor.who, `*stands up* Say ${c.sur(c.anchor.fav)}’s name again. I dare you.`],
-            [rival, 'Fraud.'],
-            ['host', 'Okay. OKAY. Sit down. Nobody says anybody’s name again.', 'host'],
+            [fan, `@${HANDLE[c.anchor.who]} take that back. ${c.sur(p)} is a LEGEND.`],
+            [c.anchor.who, 'Bum. Look it up.'],
+            [fan, 'I did. He’s great. You’re wrong. As usual.'],
           ],
         };
       },
+      (c) => {
+        const p = c.anchor.fav;
+        const fan = p && fansOf(p, c.anchor.who).find((w) => w !== 'moonbat');
+        if (!p || !fan) return null;
+        return {
+          lines: [
+            [fan, `@${HANDLE[c.anchor.who]} say one more thing about ${c.sur(p)}. One more.`],
+            [c.anchor.who, `${c.sur(p)}.`],
+            [fan, '*stands up*'],
+            ['host', 'SIT. DOWN. We are live, people.', 'host'],
+          ],
+        };
+      },
+      // Somebody else can't stand him either: a pile-on.
+      (c) => {
+        const p = c.anchor.fav;
+        const other = p && hatersOf(p, c.anchor.who)[0];
+        if (!p || !other) return null;
+        return {
+          lines: [
+            [other, `@${HANDLE[c.anchor.who]} finally. Somebody said it. ${c.sur(p)}, total fraud.`, 'cuts'],
+            [c.anchor.who, 'We agree on something. I feel sick.'],
+          ],
+        };
+      },
+    ],
+  },
+  {
+    id: 'small-guard',
+    on: { lens: 'smallGuard' },
+    variants: [
+      () => ({
+        lines: [
+          ['lex', '@Rightwing he scores 25. Who cares.', 'cuts'],
+          ['rightwing', 'Everyone he guards cares, Lex. They score 30.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['sosini', '@Rightwing he spaces the floor. That’s the job.', 'cuts'],
+          ['rightwing', 'The job is also guarding someone, Mattia. Anyone. Ever.'],
+          ['shyman', 'He’s right.', 'cuts'],
+        ],
+      }),
     ],
   },
   {
@@ -1010,15 +1091,15 @@ const MORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['sosini', '@Shyman great, they get stops. Then they walk it up and take a contested long two. A stop is only worth what you do with it. 🥱'],
-          ['shyman', 'A stop is a miss you FORCED, Mattia. Your guys give up 1.2 a trip and call it “pace”.'],
+          ['shyman', 'A stop is a stop, Mattia. Your guys give up buckets and call it pace.'],
           ['sosini', 'My guys SCORE 1.2 a trip. Yours score when the other team forgets to show up.'],
-          ['shyman', '*leans in* Seven-game series. Game 1 they find your worst defender. Game 3 he’s in every pick-and-roll. Game 5 he’s on the bench. Then we talk.'],
+          ['shyman', '*leans in* Seven games. They find your worst defender. Then we talk.'],
         ],
       }),
       () => ({
         lines: [
           ['lex', '@Shyman nobody buys a ticket to watch a charge.'],
-          ['shyman', 'I do. I bought season tickets to watch charges.'],
+          ['shyman', 'I do. Best part of the game.'],
           ['lex', 'That explains a lot, Matt.'],
         ],
       }),

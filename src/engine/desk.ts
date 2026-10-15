@@ -5,7 +5,8 @@ import { computeDefensiveTalent } from './defensiveTalent';
 import { effectiveTalent } from './grades';
 import type { InsightCategory, RosterInsight } from './insights';
 import { mixSeed, mulberry32 } from './rng';
-import { BEEFS, FAV_LINES, FAVOURITES, type BeefCtx, type BeefLine, type Lens } from './deskBeefs';
+import { BEEFS, type BeefCtx, type BeefLine, type Lens } from './deskBeefs';
+import { FAV_LINES, HATE_LINES, MOONBAT_ANSWERS, hates, loves, moonbatPicks, specialLine } from './deskTastes';
 import { teamsForSpan } from './spanTeams';
 import type { Team } from './types';
 
@@ -43,7 +44,7 @@ export const DESK_CAST: Record<ExpertId, Expert> = {
   host: { id: 'host', name: 'Eric B. Slim', mono: 'ES', hue: 45, tag: 'Host' },
   sosini: { id: 'sosini', name: 'Mattia Sosini', mono: 'SO', hue: 200, tag: 'Modern game' },
   shyman: { id: 'shyman', name: 'Matt Shyman', mono: 'SH', hue: 145, tag: 'Defense' },
-  solin: { id: 'solin', name: 'Davyd Solinhakov', mono: 'SK', hue: 20, tag: 'Gritty 2000s' },
+  solin: { id: 'solin', name: 'Davyd Solinhakov', mono: 'SK', hue: 20, tag: 'Eye test & mid-range' },
   binash: { id: 'binash', name: 'Jacob Binash', mono: 'BI', hue: 330, tag: "The '80s" },
   jert: { id: 'jert', name: 'Mattheus Jertcheck', mono: 'JE', hue: 40, tag: 'Before 2000' },
   rotation: { id: 'rotation', name: 'Mark Rotation', mono: 'RO', hue: 260, tag: 'Bench depth' },
@@ -232,21 +233,19 @@ const VOICE: Partial<Record<ExpertId, { praise: string[]; concern: string[] }>> 
   shyman: {
     praise: [
       'STOPS! {m}',
-      '{m} *rubs his arms* I have actual chills.',
-      '{m} That travels in May. Jump shots go cold. This doesn’t.',
-      '{m} Switch one through four and nobody gets hunted. Do you know how rare that is?',
-      'Point of attack, help side, rim. {m} That’s a playoff defense.',
-      '{m} Somebody screenshot this for Mattia.',
-      'Write this down. {m} That’s how you win a series when nobody can buy a three.',
+      '{m} Good. That wins games.',
+      '{m} That works in May too. Shots go cold. Defense doesn’t.',
+      '{m} Nobody to pick on. Love it.',
+      '{m} Simple. Smart. Good team.',
+      '{m} Somebody show this to Mattia.',
     ],
     concern: [
-      'Can we talk defense? {m} I’m getting a headache.',
-      '{m} In a seven-game series they’ll put that guy in every pick-and-roll until somebody cries.',
-      '{m} Who’s the low man when the big steps up? Nobody. Great.',
-      '{m} You can hide one guy. One. Not this.',
-      '{m} Drop coverage with this group? Pull-up threes all night. Enjoy.',
-      '{m} Regular season, fine. Playoffs? They will find him. They ALWAYS find him.',
-      '{m} Stops? There won’t be any. None. Zero.',
+      'Can we talk defense? {m} Not good.',
+      '{m} In the playoffs they find that guy. Every time.',
+      '{m} Who helps at the rim? Nobody. Problem.',
+      '{m} You can hide one guy. Not two.',
+      '{m} Regular season, fine. Playoffs? No.',
+      '{m} No stops, no wins. Simple.',
     ],
   },
   solin: {
@@ -305,7 +304,7 @@ function flavourTakes(read: RosterRead): Take[] {
   else if (read.kobe) add('jeremy', -0.4, 'concern', 'Kobe’s great. He’s not Michael. Go watch the ’98 tape, then we talk.', 'notMichael');
   if (read.eighties.length >= 2) add('binash', 0.35 + 0.1 * read.eighties.length, 'praise', `${names(read.eighties)} from the ’80s! Oh, I’m home. Somebody find me a tape deck and a pair of short shorts.`, 'eighties');
   if (read.preTwoK.length >= 6) add('jert', 0.7, 'praise', `${read.preTwoK.length} guys from before 2000. Pace-adjusted, they’d still run today’s soft load-management merchants off the floor. I have the almanacs.`, 'preTwoK');
-  else if (read.preTwoK.length === 0) add('jert', -0.6, 'concern', 'Not one player from before 2000? Kids today. Moses Malone is rolling his eyes somewhere.', 'noPreTwoK');
+  else if (read.preTwoK.length === 0) add('jert', -0.6, 'concern', 'Not one player from before 2000? Kids today. Reggie Miller is rolling his eyes somewhere.', 'noPreTwoK');
   if (read.old.length >= 2) add('sosini', -0.4 - 0.1 * read.old.length, 'concern', `${names(read.old)}. 🥱 Respectfully, does this team come with a time machine, or do we rent one?`, 'old');
   else if (read.modern.length >= 6) add('sosini', 0.6, 'praise', 'Everybody on this roster could play tonight. Respectfully, that’s the whole point.', 'modern');
   if (read.aughts.length >= 3) add('solin', 0.55, 'praise', `${names(read.aughts)}. That’s 2004 in a jar. Somebody’s getting fouled hard and nobody’s apologising.`, 'aughts');
@@ -322,18 +321,28 @@ function flavourTakes(read: RosterRead): Take[] {
     `${names(read.nineties)}. Ugh. The ’90s. Hand-checks, 79–76 final scores and Space Jam. Hard pass.`,
     `${names(read.nineties)}? The ’90s were a ten-year timeout. Wake me up when it’s 1986 again.`,
   ]), 'ninetiesHate');
-  if (read.turnstile) add('shyman', -0.5, 'concern', variant([
-    `${surname(read.turnstile)}? Turnstile. A traffic cone with a headband. I’ve seen parking meters close out harder.`,
-    `${surname(read.turnstile)} on defense is a crime scene. Bum defense. BUM.`,
-  ]), 'turnstile');
-  // A favourite on the roster: the expert gushes (the best of them if there are several).
-  for (const [who, favs] of Object.entries(FAVOURITES) as [ExpertId, string[]][]) {
-    const keys = new Set(favs.map(normalizePlayerName));
-    const fav = read.all.filter((p) => keys.has(normalizePlayerName(p.playerName))).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
-    const templates = FAV_LINES[who];
-    if (!fav || !templates) continue;
-    const text = templates[(fav.id.length + fav.playerName.length) % templates.length].replace('{fav}', surname(fav));
-    out.push({ who, score: 0.65, line: { who, kind: 'praise', text }, lens: 'fav', fav });
+  // A starter who can't guard: a small guard is Rightwing's pet hate, anyone else Shyman's.
+  const t = read.turnstile;
+  if (t && (t.primaryPosition === 'PG' || t.primaryPosition === 'SG')) {
+    out.push({ who: 'rightwing', score: -0.5, line: { who: 'rightwing', kind: 'concern', text: variant([
+      `${surname(t)}? Small, slow, can’t guard a chair. Opponents will live on him.`,
+      `${surname(t)}. A turnstile in sneakers. Every team in the league will go at him.`,
+    ]) }, lens: 'smallGuard', fav: t });
+  } else if (t) {
+    add('shyman', -0.5, 'concern', variant([`${surname(t)}? Turnstile. Can’t guard anyone.`, `${surname(t)} on defense? Bum. Simple as that.`]), 'turnstile');
+  }
+  // Favourites and nemeses (deskTastes.ts): the expert gushes over the best player he loves, or
+  // trash-talks the best one he can't stand.
+  const experts = Object.keys(DESK_CAST).filter((w) => w !== 'host' && w !== 'moonbat') as ExpertId[];
+  const best = (ps: PlayerSpan[]) => [...ps].sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
+  const line = (lines: string[] | undefined, p: PlayerSpan) => lines?.[(p.id.length + p.playerName.length) % lines.length].replace('{p}', surname(p));
+  for (const who of experts) {
+    const fav = best(read.all.filter((p) => loves(who, p)));
+    const favText = fav && (specialLine(who, fav) ?? line(FAV_LINES[who], fav));
+    if (fav && favText) out.push({ who, score: 0.65, line: { who, kind: 'praise', text: favText }, lens: 'fav', fav });
+    const foe = best(read.all.filter((p) => hates(who, p)));
+    const foeText = foe && (specialLine(who, foe) ?? line(HATE_LINES[who], foe));
+    if (foe && foeText) out.push({ who, score: -0.55, line: { who, kind: 'concern', text: foeText }, lens: 'nemesis', fav: foe });
   }
   return out;
 }
@@ -422,6 +431,18 @@ function moonbatBit(read: RosterRead, rng: () => number, place: number, onAir: R
       signOff(),
     ];
   }
+  const picks = moonbatPicks(read.all);
+  if (picks.length && rng() < 0.7) {
+    const pickOne = pick(rng, picks);
+    const answers = MOONBAT_ANSWERS[pickOne.name];
+    return [
+      mb(pickOne.line, 'take'),
+      ...(answers
+        ? answers.map(([who, text]): DeskLine => (who === 'host' ? { who, kind: 'host', text } : who === 'moonbat' ? mb(text) : { who, kind: 'reply', text, reply: true }))
+        : [rw(pick(rng, ['@Moonbat that is not a basketball reason, Bart.', '@Moonbat *slowly* Bart. That’s not how scouting works.'])), mb(pick(rng, ['do ur research', 'it is now', 'agree to disagree ✌️']))]),
+      ...(answers && !answers.some(([w]) => w === 'rightwing') ? [rw('@Moonbat log off, Bart.')] : []),
+    ];
+  }
   const target = read.overpay;
   if (target) {
     const lines: DeskLine[] = [
@@ -454,10 +475,10 @@ function moonbatBit(read: RosterRead, rng: () => number, place: number, onAir: R
  */
 const SLANG: Partial<Record<ExpertId, { tail: string[]; head: string[] }>> = {
   sosini: { tail: ['🥱', 'lol', 'ratio', 'it’s not that deep', 'cope', '💀'], head: ['Bro.', 'Lol.'] },
-  shyman: { tail: ['😤', 'smh', 'fr', 'I’m not okay', '🧱'], head: ['Bro.', 'Listen.'] },
-  solin: { tail: ['💪', 'lol', 'say less', 'soft', '🧱'], head: ['Bro.', 'Please.'] },
+  shyman: { tail: ['😤', 'smh', 'fr', 'simple', '🧱'], head: ['Bro.', 'Look.'] },
+  solin: { tail: ['💪', 'lol', 'say less', 'eye test', 'soft', '🧱'], head: ['Bro.', 'Please.'] },
   binash: { tail: ['📼', 'totally tubular', 'rad 🤙', 'gnarly', 'cowabunga, dudes', '🕺'], head: ['Dude.', 'Oh, please.'] },
-  jert: { tail: ['👴', '📚', 'pace-adjusted, btw', 'look it up', 'smh'], head: ['Actually.', 'Please.'] },
+  jert: { tail: ['👴', '📚', 'pace-adjusted, btw', 'look it up', 'I don’t have to explain myself', 'smh'], head: ['Actually.', 'Please.'] },
   rotation: { tail: ['🙏', '❤️', 'love u guys', '😭'], head: ['Guys.', 'Okay.'] },
   batt: { tail: ['🤌', 'mamma mia', 'basta', '🇮🇹'], head: ['Madonna.', 'Ragazzi.'] },
   prab: { tail: ['🐍', '🐐', 'lol', 'mamba out'], head: ['Bro.', 'Please.'] },

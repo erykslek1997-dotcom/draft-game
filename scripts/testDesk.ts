@@ -1,6 +1,9 @@
 import { autoFinishDraft, createDraft } from '../src/engine/draft';
 import { buildDesk, buildMiniDesk, buildRivalDesk, readRoster, theirVoice, type DeskLine } from '../src/engine/desk';
 import { BEEFS } from '../src/engine/deskBeefs';
+import { allTasteNames } from '../src/engine/deskTastes';
+import { draftPool } from '../src/data/draftPool';
+import { normalizePlayerName } from '../src/data/schema';
 import { buildTeamFeatureSnapshot } from '../src/engine/insightMapper';
 import { generateRosterInsights, insightContextFor } from '../src/engine/insights';
 import { CAP_LIMIT } from '../src/engine/positions';
@@ -131,6 +134,13 @@ console.log({ beefShows: beefShows.size, beefKinds: beefIds.size, of: BEEFS.leng
 check(beefShows.size / shows > 0.4, 'the panel argues in a good share of shows', `${beefShows.size}/${shows}`);
 check(beefIds.size >= 12, 'many different arguments show up across two leagues', `${beefIds.size}`);
 check(clumsy.length === 0, 'no “Only 0”, no capital mid-sentence before a finding, surnames keep their Van', clumsy.slice(0, 3).join(' | '));
+
+// The experts' favourites and nemeses (deskTastes.ts) should mostly be players the game has.
+const known = new Set(draftPool.map((p) => normalizePlayerName(p.playerName)));
+const tasteNames = [...new Set(allTasteNames())];
+const missing = tasteNames.filter((n) => !known.has(normalizePlayerName(n)));
+console.log({ tasteNames: tasteNames.length, notInData: missing.join(', ') });
+check(missing.length <= tasteNames.length * 0.15, 'most of the experts’ favourites and nemeses are in the player data', `${missing.length} missing`);
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed.`);
