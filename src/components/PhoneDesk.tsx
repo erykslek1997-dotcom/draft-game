@@ -4,6 +4,7 @@ import { DESK_CAST } from '../engine/desk';
 import { CALLS_PER_DRAFT, type CallId, type CallOption, type CallResult } from '../engine/deskCalls';
 import { DeskVoices } from './DeskVoices';
 import { Face } from './ShotChip';
+import { FitName } from './FitName';
 import './PhoneDesk.css';
 
 /**
@@ -131,7 +132,7 @@ export function CallWindow({
                 <li key={p.id} className="pd-pick">
                   <Face name={p.playerName} />
                   <span className="pd-pick-name">
-                    <b>{p.playerName}</b>
+                    <FitName as="b" name={p.playerName} faceNextToIt />
                     <small>{p.primaryPosition} · {p.spanLabel}</small>
                   </span>
                   <span className="pd-pick-cost at-calm-num">{p.fga.toFixed(1)}</span>
