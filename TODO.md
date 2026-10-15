@@ -910,6 +910,10 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
   share bez spoilerów, streak osobno dla każdego trybu (jak Draw Five, `dailyProgress.ts`).
 - W menu: przycisk **Daily przy każdym trybie** (nie wspólny panel).
 - Zasady dnia: **różne** — nie jeden stały schemat; katalog niżej do przejrzenia i wyboru.
+- **Kogo dotyczą (użytkownik 2026-10-15):** limit capów dnia — **równy dla wszystkich** (AI też;
+  drafter AI już przyjmuje własny limit, `AiDraftRuleset.capLimit`). **Bany i pozostałe
+  ograniczenia — tylko dla użytkownika** (AI draftuje z pełnej puli; zbanowany gracz jest dla
+  Ciebie zablokowany z podanym powodem, tak jak dziś pick ponad limit).
 - „The bomb”: najpierw spisać dokładnie, jak działa (niżej); wdrożenie po ustaleniu reszty zasad.
 
 **Katalog ograniczeń dnia (propozycje, do wyboru — dzień losuje z wybranych):**
