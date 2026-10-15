@@ -207,6 +207,9 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ## Kolejność prac (decyzja 2026-10-10) — obowiązuje
 
+**Decyzja 2026-10-15 (wieczór):** intro All-Time Draft i kalibracja siły AI — na sam koniec;
+eksperci z imionami — robi to osobny czat (tu nie ruszać).
+
 ### Playtest meczu na żywo 2026-10-15 (wieczór) — ZROBIONE (PR #230, #231)
 
 1. „Game 2” mało widoczne — duży przycisk następnego meczu pod wynikiem końcowym i na dole arkusza;
@@ -377,7 +380,7 @@ do dołu i zakładki Matchup/Bracket).
      **Krok 3 zrobiony (2026-10-14):** styl GM-a przypięty do franczyzy (`draft.ts`
      `aiProfileForTeam`), siła gustu dalej losowana per draft; dawne nazwy — losowanie z ziarna.
      Przy okazji: drabinka playoffów rozjechana od #212 (wspólna klasa `pl-row` z listą graczy).
-   - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14)** — fikcyjne
+   - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14; robi osobny czat)** — fikcyjne
      postacie (decyzja: fake names) o wyrazistych archetypach: głośny były gracz („w moich
      czasach…”), trener od obrony, analityk od liczb, stary skaut — każdy z imieniem, nazwiskiem i
      stałym sposobem mówienia. Bez kopiowania prawdziwych osób. Dotyczy Draft Desk (wraca jako
@@ -398,7 +401,7 @@ do dołu i zakładki Matchup/Bracket).
      reszta jego okien zostaje przy swoich liczbach, ale najwyżej 100 (2007-09, 2009-11, 2010-12:
      102 → 100). Mechanizm ogólny: `USER_WINDOW_ORDER` w `src/data/userTierCalibration.ts`, test
      `scripts/testWindowOrder.ts`. Baseline picków AI przeliczony (pick #1 ten sam gracz, inny span).
-   - [ ] **Kalibracja siły AI — ukryty poziom franczyzy (2026-10-14, użytkownik: „kalibracja siły
+   - [ ] **Kalibracja siły AI — ukryty poziom franczyzy (na koniec; 2026-10-14, użytkownik: „kalibracja siły
      AI do todo”)** — ostatni krok stałych drużyn. Dziś wszystkie drużyny AI draftują tym samym
      algorytmem i różnią się tylko stylem (przypięty do franczyzy, `draft.ts` `aiProfileForTeam`)
      i losową siłą gustu. Do zrobienia: (1) pole `level` w `src/data/franchises.ts` (np. 3–4
