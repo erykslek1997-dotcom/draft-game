@@ -39,7 +39,8 @@ export function PhoneChip({ left, live, onOpen }: { left: number; live: boolean;
       aria-label={`Phone the desk, ${left} call${left === 1 ? '' : 's'} left`}
     >
       <PhoneIcon />
-      <span className="pd-chip-label">Phone the desk ·</span> <b>{left}</b>
+      <span className="pd-chip-label">Phone the desk ·</span>
+      <span className="pd-chip-short">Call ·</span> <b>{left}</b>
     </button>
   );
 }

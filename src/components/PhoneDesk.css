@@ -8,7 +8,8 @@
 .pd-chip.is-live { color: var(--gold, #ffd166); border-color: color-mix(in srgb, var(--gold, #ffd166) 60%, var(--at-edge, #24344a)); background: color-mix(in srgb, var(--gold, #ffd166) 10%, transparent); }
 .pd-chip:disabled { cursor: default; opacity: 0.6; }
 .pd-chip:focus-visible { outline: 2px solid var(--at-accent, #4fb3ff); outline-offset: 2px; }
-@media (max-width: 640px) { .pd-chip-label { display: none; } }
+.pd-chip-short { display: none; }
+@media (max-width: 640px) { .pd-chip-label { display: none; } .pd-chip-short { display: inline; } }
 
 .pd-backdrop { z-index: 60; }
 .pd-sheet, .pd-call {
