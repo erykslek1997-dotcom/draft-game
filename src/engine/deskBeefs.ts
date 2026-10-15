@@ -53,6 +53,8 @@ export interface Beef {
   /** For the commonest anchors: the share of shows where it may start at all (default 1), so the
    * same fight doesn't run every other show. */
   chance?: number;
+  /** A running gag: when it fits, it wins over every other argument the same take could start. */
+  priority?: boolean;
   /** Each variant returns null when this roster doesn't fit it. */
   variants: ((c: BeefCtx) => BeefThread | null)[];
 }
@@ -523,7 +525,7 @@ const CORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['lex', '@Shyman who cares, they’ll score 140.'],
-          ['shyman', 'And give up 145. STOPS, Lex. Remember stops? I have nightmares about this roster.'],
+          ['shyman', 'And give up 145. The refs already call a foul if you breathe on a guard, Lex. You don’t get to ALSO not try.'],
           ['batt', 'Half a team. Mezza squadra. Mamma mia.', 'cuts'],
           ['lex', 'Nightmares is what the other team has when my guys get hot.'],
         ],
@@ -729,7 +731,90 @@ export const FAV_LINES: Partial<Record<ExpertId, string[]>> = {
   zoran: ['{fav}! *hand on heart* The way he passes. The way he THINKS.', '{fav}. Listen to me. This is basketball as art.'],
 };
 
+
+/** 2026-10-15, the user's own line for Binash (and Bannerman's standing offer): the three-point line
+ * arrived in 1979, ten years after Russell retired — which, to Binash, proves nothing. */
+const russellThree = (c: BeefCtx): BeefThread | null => !c.has('Bill Russell') ? null : ({
+  lines: [
+    ['binash', 'There is no proof. I repeat: there is NO proof that Bill Russell knew about the three-point line.', 'cuts'],
+    ['bannerman', 'And my offer stands. A Celtics season ticket to anyone who proves he knew. 🍀', 'cuts'],
+    ['binash', 'Nobody has claimed it. NOBODY.'],
+    ['sosini', 'Because the line came in 1979 and he retired in 1969, Jacob.'],
+    ['binash', '…Which is exactly what they want you to think.'],
+  ],
+});
+
 const MORE_BEEFS: Beef[] = [
+  { id: 'russell-three', on: { category: ['spacing', 'shooting'], side: 'concern' }, priority: true, variants: [russellThree] },
+  { id: 'russell-three', on: { lens: 'old' }, priority: true, variants: [russellThree] },
+  {
+    id: 'playoff-hunt',
+    on: { category: DEFENSE, side: 'concern' },
+    chance: 0.7,
+    variants: [
+      () => ({
+        lines: [
+          ['sosini', '@Shyman relax. It’s the regular season. Outscore them.'],
+          ['shyman', 'There’s no regular season in a series, Mattia. Game 1 they find the weak guy. Game 3 he’s in every action. Game 5 he’s on the bench and the rotation is on fire.'],
+          ['rotation', '*quietly* And then I’m the one crying. Thanks, Matt.', 'cuts'],
+          ['shyman', 'Any time, Mark.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['onoffsky', '*adjusts glasses* Opponents score more per trip when they can pick on one defender. It compounds.', 'cuts'],
+          ['shyman', 'Thank you. THANK you. Numbers and me, same side. Write the date down.'],
+          ['sosini', 'Two grumpy men and a spreadsheet. My favourite podcast. 🥱', 'cuts'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'gravity',
+    on: { category: ['spacing', 'shooting'], side: 'praise' },
+    chance: 0.7,
+    variants: [
+      () => ({
+        lines: [
+          ['jert', '@Sosini gravity? It’s basketball, kid, not astronomy.'],
+          ['sosini', 'One shooter drags two defenders 30 feet from the rim and everybody else gets a layup. You’d love it if you watched a game after 1989.'],
+          ['jert', 'I watched one. It was all threes. I turned it off.'],
+          ['sosini', 'That was the Finals, Mattheus.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['solin', '@Sosini all these shooters and not one guy who’d set a real screen.'],
+          ['sosini', 'Davyd, three is more than two. That’s not an opinion. That’s arithmetic.'],
+          ['solin', 'Arithmetic never won a fight in the paint.'],
+          ['sosini', 'Nobody fights in the paint anymore. They shoot over it.'],
+        ],
+      }),
+    ],
+  },
+  {
+    id: 'sag-off',
+    on: { category: ['spacing', 'shooting'], side: 'concern' },
+    chance: 0.6,
+    variants: [
+      () => ({
+        lines: [
+          ['shyman', '@Sosini I hate saying this on air. He’s right. They’ll sag off two guys and the best defense in the world can’t guard what isn’t a threat.', 'cuts'],
+          ['sosini', 'Can I get that in writing, Matt?'],
+          ['shyman', 'No.'],
+          ['host', 'Shyman agrees with Sosini. Somebody check on the producer.', 'host'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['lex', '@Sosini stars can score through a packed paint. That’s why they’re stars.', 'cuts'],
+          ['sosini', 'For one quarter, Lex. Then they’re taking 30-footers with three guys in their face and you call it “clutch”.'],
+          ['lex', 'It IS clutch.'],
+          ['sosini', 'It’s a 30% shot with a nickname.'],
+        ],
+      }),
+    ],
+  },
   {
     id: 'fan-crush',
     chance: 0.6,
@@ -832,9 +917,10 @@ const MORE_BEEFS: Beef[] = [
     variants: [
       () => ({
         lines: [
-          ['sosini', '@Shyman great, they defend. Who scores? 🥱'],
-          ['shyman', 'Stops ARE offense, Mattia. Every stop is a possession.'],
-          ['sosini', 'Every possession is a long two with your guys.'],
+          ['sosini', '@Shyman great, they get stops. Then they walk it up and take a contested long two. A stop is only worth what you do with it. 🥱'],
+          ['shyman', 'A stop is a miss you FORCED, Mattia. Your guys give up 1.2 a trip and call it “pace”.'],
+          ['sosini', 'My guys SCORE 1.2 a trip. Yours score when the other team forgets to show up.'],
+          ['shyman', '*leans in* Seven-game series. Game 1 they find your worst defender. Game 3 he’s in every pick-and-roll. Game 5 he’s on the bench. Then we talk.'],
         ],
       }),
       () => ({
@@ -862,6 +948,13 @@ const MORE_BEEFS: Beef[] = [
           ['solin', 'Everybody misses, Mattia. Even your podcast.'],
           ['sosini', 'My podcast has never missed an episode.'],
           ['solin', 'It has missed every listener.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['onoffsky', '*adjusts glasses* Second chances are worth more than people think. Davyd is right.', 'cuts'],
+          ['solin', 'Davyd is ALWAYS right.'],
+          ['sosini', 'Davyd is right once a season, and this is it. Enjoy it, big man. 🥱', 'cuts'],
         ],
       }),
     ],

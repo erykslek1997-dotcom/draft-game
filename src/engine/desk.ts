@@ -201,12 +201,44 @@ const names = (ps: PlayerSpan[], n = 3) => list(ps.slice(0, n).map(surname));
 /** Each expert's voice around an engine finding. `{m}` is the finding's own sentence. */
 const VOICE: Partial<Record<ExpertId, { praise: string[]; concern: string[] }>> = {
   sosini: {
-    praise: ['Respectfully? {m} Finally, somebody gets it.', '{m} *nods* That is basketball in THIS century.', '{m} Pin it. Frame it. Send it to every GM still drafting centers who can’t shoot.'],
-    concern: ['Respectfully. {m} 🥱', '{m} Respectfully, this is a crime and I’m calling it in.', '{m} It’s 2026. Who approved this?'],
+    praise: [
+      'Respectfully? {m} Finally, somebody gets it.',
+      '{m} That’s gravity. Defenders leave the paint just thinking about it.',
+      '{m} Corner threes, open lanes, nobody parked in the dunker spot for no reason. Chef’s kiss.',
+      '{m} Five out, pace, space. This is the sport now. Keep up.',
+      '{m} Pin it. Frame it. Send it to every GM still drafting centers who can’t shoot.',
+      '{m} The maths is simple: three is more than two. Somebody tell Davyd.',
+      '{m} *nods* That is basketball in THIS century.',
+    ],
+    concern: [
+      'Respectfully. {m} 🥱',
+      '{m} Two non-shooters on the floor and the paint turns into a parking lot.',
+      '{m} Their best look is going to be a long two with a hand in the face. In 2026.',
+      '{m} Any coach with a laptop sags off and dares them to shoot. They lose that dare.',
+      '{m} It’s 2026. Who approved this?',
+      '{m} Respectfully, this is a crime and I’m calling it in.',
+      '{m} You built a team that needs the other side to miss. Bold.',
+    ],
   },
   shyman: {
-    praise: ['STOPS! {m}', '{m} *rubs his arms* I have actual chills.', '{m} DEFENSE. Somebody screenshot this for Mattia.'],
-    concern: ['Can we talk defense? {m} I’m getting a headache.', '{m} Stops? There won’t be any. None. Zero.', '{m} I’m going to have nightmares about this roster.'],
+    praise: [
+      'STOPS! {m}',
+      '{m} *rubs his arms* I have actual chills.',
+      '{m} That travels in May. Jump shots go cold. This doesn’t.',
+      '{m} Switch one through four and nobody gets hunted. Do you know how rare that is?',
+      'Point of attack, help side, rim. {m} That’s a playoff defense.',
+      '{m} Somebody screenshot this for Mattia.',
+      'Write this down. {m} That’s how you win a series when nobody can buy a three.',
+    ],
+    concern: [
+      'Can we talk defense? {m} I’m getting a headache.',
+      '{m} In a seven-game series they’ll put that guy in every pick-and-roll until somebody cries.',
+      '{m} Who’s the low man when the big steps up? Nobody. Great.',
+      '{m} You can hide one guy. One. Not this.',
+      '{m} Drop coverage with this group? Pull-up threes all night. Enjoy.',
+      '{m} Regular season, fine. Playoffs? They will find him. They ALWAYS find him.',
+      '{m} Stops? There won’t be any. None. Zero.',
+    ],
   },
   solin: {
     praise: ['{m} That’s grown-man basketball.', '{m} Back in ’04 that’s a toll booth. Pay up.'],
@@ -302,7 +334,8 @@ function beefFor(t: Take, read: RosterRead, rng: () => number, used: Set<string>
     : t.insight !== undefined && b.on.category.includes(t.insight.category) && (b.on.side === 'praise') === (t.score > 0) && CATEGORY_EXPERT[t.insight.category] === t.who))
     .flatMap((b) => b.variants.map((v) => ({ id: b.id, thread: v(ctx) })).filter((x) => x.thread !== null));
   if (!options.length) return null;
-  const { id, thread } = pick(rng, options);
+  const gags = options.filter((o) => BEEFS.some((b) => b.id === o.id && b.priority));
+  const { id, thread } = pick(rng, gags.length ? gags : options);
   used.add(id);
   const toLine = ([who, text, kind]: BeefLine): DeskLine =>
     who === 'host' ? { who, kind: 'host', text, beef: id } : { who, kind: kind ?? 'reply', text, reply: true, beef: id };
@@ -392,6 +425,50 @@ function moonbatBit(read: RosterRead, rng: () => number, place: number, onAir: R
     ])),
     mb(pick(rng, ['rightwing still mad about the fridge thing in 2019 lol', 'u wish u had my confidence', 'see u tomorrow'])),
   ];
+}
+
+/**
+ * 2026-10-15, the user ("sztywno czasem się kończą te wypowiedzi. Emotki, słowa typu lol, it'd"):
+ * how each expert signs off or barges in, added to some lines after the show is built — from its
+ * own random stream, so the panel itself (who speaks, what, Moonbat's odds) never changes.
+ */
+const SLANG: Partial<Record<ExpertId, { tail: string[]; head: string[] }>> = {
+  sosini: { tail: ['🥱', 'lol', 'ratio', 'it’s not that deep', 'cope', '💀'], head: ['Bro.', 'Lol.'] },
+  shyman: { tail: ['😤', 'smh', 'fr', 'I’m not okay', '🧱'], head: ['Bro.', 'Listen.'] },
+  solin: { tail: ['💪', 'lol', 'say less', '🧱'], head: ['Bro.', 'Please.'] },
+  binash: { tail: ['📼', 'lmao', 'kids these days', '🕺'], head: ['Lol.', 'Oh, please.'] },
+  jert: { tail: ['👴', 'smh', 'unreal', 'ugh'], head: ['Please.', 'Ugh.'] },
+  rotation: { tail: ['🙏', '❤️', 'love u guys', '😭'], head: ['Guys.', 'Okay.'] },
+  batt: { tail: ['🤌', 'mamma mia', 'basta', '🇮🇹'], head: ['Madonna.', 'Ragazzi.'] },
+  prab: { tail: ['🐍', '🐐', 'lol', 'mamba out'], head: ['Bro.', 'Please.'] },
+  onoffsky: { tail: ['🤓', '📊', 'source: me', 'it’d be funny if it wasn’t true', 'ngl'], head: ['Footnote.', 'Correction.'] },
+  bannerman: { tail: ['🍀', '☘️', 'lmao', 'banner szn'], head: ['Lol.', 'Imagine.'] },
+  natalie: { tail: ['💸', '📉', 'not me crying', 'sigh', '🧾'], head: ['Okay.', 'Darling.'] },
+  jeremy: { tail: ['🐐', '📼', 'smh', '6–0 btw'], head: ['Please.', 'Lol.'] },
+  lex: { tail: ['👑', '💅', 'lol', 'it’s giving lottery', '🏆'], head: ['Lol.', 'Imagine.'] },
+  zoran: { tail: ['🙏', 'my brother', '🇪🇺', 'beautiful 🥲'], head: ['Listen.', 'My friend.'] },
+  rightwing: { tail: ['🙄', 'smh', 'unreal'], head: ['Bart.'] },
+  host: { tail: ['😅', '🫠', 'we’re live, people'], head: [] },
+};
+const INTERJECTIONS = new Set(['lol', 'smh', 'fr', 'lmao', 'ngl', 'ugh', 'sigh']);
+const ENDS_LOOSE = /(\p{Extended_Pictographic}\uFE0F?|\*|—)\s*$/u;
+function loosen(lines: DeskLine[], seed: number): DeskLine[] {
+  const rng = mulberry32(mixSeed(seed, 0x51a6));
+  return lines.map((l) => {
+    const slang = SLANG[l.who];
+    const r = rng();
+    if (!slang || l.kind === 'burst' || ENDS_LOOSE.test(l.text)) return l;
+    if (r < (l.who === 'host' ? 0.15 : 0.4)) {
+      const tag = pick(rng, slang.tail);
+      if (l.text.toLowerCase().includes(tag.toLowerCase())) return l;
+      // "lol" sits on the sentence ("That’s theft lol"); a phrase starts a lowercase one of its own
+      // ("Maths is a social construct. it’s giving lottery").
+      const text = INTERJECTIONS.has(tag) ? `${l.text.replace(/[.!]$/, '')} ${tag}` : `${l.text}${/[.!?…]$/.test(l.text) ? '' : '.'} ${tag}`;
+      return { ...l, text };
+    }
+    if (r < 0.5 && l.reply && slang.head.length && !/^[@*…]/.test(l.text)) return { ...l, text: `${pick(rng, slang.head)} ${l.text}` };
+    return l;
+  });
 }
 
 /** About one show in four — its own stream, so it doesn't depend on how many lines came before. */
@@ -506,7 +583,7 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
       ? pick(rng, HOST_CLOSE_TIP).replace('{tip}', tip)
       : pick(rng, rank === 1 ? HOST_CLOSE_WON : HOST_CLOSE_PODIUM),
   });
-  return lines;
+  return loosen(lines, seed);
 }
 
 /** The insight sentences talk to the player ("your rim protection…"); inside a rival's report they
@@ -542,7 +619,7 @@ export function buildRivalDesk({ strengths, concerns, style, rank, seed, third }
     out.push({ who, kind: 'concern', text: voiced(rng, who, 'concern', third(i.message)) });
   }
   if (style && !used.has('jeremy') && out.length < 4) out.push({ who: 'jeremy', kind: 'praise', text: `${style} Go watch the tape.` });
-  return out.slice(0, 4);
+  return loosen(out.slice(0, 4), seed);
 }
 
 /** Mini's panel: the five-man score has no insight list, so the weakest axis and the softest
@@ -570,5 +647,5 @@ export function buildMiniDesk({ team, rank, fieldSize, weakest, weakReason, weak
     kind: 'host',
     text: tip ? `Note for next time? ${tip} We’ll be right back.` : rank === 1 ? 'Champions of the mini. Take a bow. We’ll be right back.' : 'Podium. Not bad. We’ll be right back.',
   });
-  return lines;
+  return loosen(lines, seed);
 }
