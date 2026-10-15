@@ -30,7 +30,9 @@ const CLUTCH = { seconds: 120, margin: 8 };
 const BLOWOUT_MARGIN = 20;
 /** "Key moments" starts here: the second half of the fourth quarter. */
 const KEY_MOMENTS_LEFT = 360;
-const SPEEDS = [1, 2, 4] as const;
+// 2026-10-15 (playtest 7: "brakuje szybkości 1/8, 1/4, 1/2"): slower speeds to read the feed.
+const SPEEDS = [0.125, 0.25, 0.5, 1, 2, 4] as const;
+const SPEED_LABEL: Record<(typeof SPEEDS)[number], string> = { 0.125: '⅛', 0.25: '¼', 0.5: '½', 1: '1', 2: '2', 4: '4' };
 
 function isClutch(m: GameMoment | undefined): boolean {
   return !!m && m.quarter >= 3 && m.left <= CLUTCH.seconds && Math.abs(m.score[0] - m.score[1]) <= CLUTCH.margin;
@@ -93,7 +95,7 @@ export interface LiveMatchup {
   yourSide: 0 | 1;
 }
 
-type Tab = 'feed' | 'box' | 'teams' | 'matchups';
+type Tab = 'feed' | 'box' | 'teams';
 
 interface FeedRow {
   key: string;
@@ -105,6 +107,23 @@ interface FeedRow {
   /** The player who made the play (full name, for his face). */
   actor?: string;
   scored?: boolean;
+  /** His line in this game so far (playtest 8: "Kobe mid-range (12 pts, 5/12 FG)"). */
+  stat?: string;
+}
+
+/** The player's game so far, after this play, in the words a broadcast uses: points and shooting for
+ * a basket or free throws, steals or blocks for those, and the passer's assists when there was one. */
+function playStat(text: string, line: BoxLineStats | undefined, labels: string[], lines: BoxLineStats[]): string | undefined {
+  if (!line) return undefined;
+  const parts: string[] = [];
+  if (/\bblocks\b/.test(text)) parts.push(`${line.blk} blk`);
+  else if (/\bsteals\b/.test(text)) parts.push(`${line.stl} stl`);
+  else if (/at the line|in the bonus/.test(text)) parts.push(`${line.pts} pts`, `${line.ftm}/${line.fta} FT`);
+  else parts.push(`${line.pts} pts`, `${line.fgm}/${line.fga} FG`);
+  const passer = /\(([^()]+) assist\)/.exec(text)?.[1];
+  const k = passer ? labels.indexOf(passer) : -1;
+  if (k >= 0 && lines[k]) parts.push(`${passer} ${lines[k].ast} ast`);
+  return parts.join(', ');
 }
 
 /** Where on the floor a play happened, from its words: at the rim, mid-range or from three. */
@@ -230,6 +249,7 @@ export default function LiveGame({
       if (m.play && !m.play.quiet) {
         const side = m.play.side;
         const actorLabel = game.labels[side].find((l) => m.play!.text.startsWith(l));
+        const stat = actorLabel ? playStat(m.play.text, m.lines[side][game.labels[side].indexOf(actorLabel)], game.labels[side], m.lines[side]) : undefined;
         rows.push({
           key: `p${i}`,
           kind: 'play',
@@ -239,6 +259,7 @@ export default function LiveGame({
           score: `${m.score[0]}–${m.score[1]}`,
           actor: actorLabel ? fullName(side, actorLabel) : undefined,
           scored: m.score[side] > before[side],
+          stat,
         });
       }
       const next = game.moments[i + 1];
@@ -361,7 +382,7 @@ export default function LiveGame({
               <span className="sc-speeds" role="group" aria-label="Speed">
                 {SPEEDS.map((s) => (
                   <button key={s} type="button" className={speed === s ? 'is-on' : ''} aria-pressed={speed === s} onClick={() => setSpeed(s)}>
-                    ×{s}
+                    ×{SPEED_LABEL[s]}
                   </button>
                 ))}
               </span>
@@ -443,7 +464,6 @@ export default function LiveGame({
                 ['feed', 'Play-by-play'],
                 ['box', 'Box score'],
                 ['teams', 'Team stats'],
-                ['matchups', 'Match-ups'],
               ] as const
             ).map(([id, label]) => (
               <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>
@@ -474,7 +494,10 @@ export default function LiveGame({
                       ) : (
                         <span className="sc-play-face sc-play-face--none" />
                       )}
-                      <span className="sc-play-text">{r.text}</span>
+                      <span className="sc-play-text">
+                        {r.text}
+                        {r.stat && <span className="sc-play-stat"> ({r.stat})</span>}
+                      </span>
                       <span className="sc-play-s">{r.score}</span>
                     </div>
                   ) : r.kind === 'note' ? (
@@ -494,24 +517,6 @@ export default function LiveGame({
             </div>
           )}
           {tab === 'teams' && <TeamComparison lines={lines} short={short} />}
-          {tab === 'matchups' && (
-            <div className="sc-panel">
-              {hunted.length === 0 ? (
-                <p className="sc-empty">No one has been singled out on defense yet.</p>
-              ) : (
-                hunted.map((h) => (
-                  <div key={`${h.side}${h.label}`} className="sc-mu">
-                    <span className="sc-mu-n" style={{ color: sideColor(h.side === 0 ? 1 : 0) }}>
-                      ×{h.n}
-                    </span>
-                    <span>
-                      <b>{h.label}</b> ({short[h.side]}) attacked by {[...h.by].join(', ')}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
           {done && (
             <p className={`sc-final${won === (yourSide === 0) ? '' : ' is-loss'}`}>
               {upset && <span className="sc-upset">Upset! </span>}
