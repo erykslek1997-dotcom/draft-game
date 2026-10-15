@@ -4,7 +4,6 @@ import { spanById } from '../src/engine/bestFive';
 import { contextLines } from '../src/engine/contextStats';
 import { assignMatchups, exploitsMismatch } from '../src/engine/liveDefense';
 import { mechanicsMargin, mechanicsPer100 } from '../src/engine/liveGame';
-import { teamLiftPoints } from '../src/engine/teammateLift';
 import { simulateLiveSeason } from '../src/engine/liveSeason';
 import { STARTER_SLOTS } from '../src/engine/positions';
 import { autoAssignRotation } from '../src/engine/rotation';
@@ -19,10 +18,9 @@ import type { PlayerSpan } from '../src/data/schema';
  * 1. Engine -> game: what the game's mechanics alone give (no nudge, no dice — `mechanicsMargin`)
  *    must follow the engine's Overall: at least 55% of the engine's 1.3 points a game per Overall
  *    point and R² 0.35 over the bench leagues' teams (measured 66% and 0.46 on 1120 teams).
- *    2026-10-15: the engine's margin also counts how much the players lift their teammates
- *    (`teammateLift.ts`), which the game plays and Overall does not hold, so the game is read
- *    against Overall x 1.3 plus that, in points (with it: 93% and R² 0.48; against Overall alone
- *    the lift reads as noise, R² 0.33; before the lift 85% and 0.44).
+ *    2026-10-15: how much the players lift their teammates (`teammateLift.ts`) is part of Overall
+ *    (it was a separate margin term earlier the same day; against an Overall without it the
+ *    lift read as noise, R² 0.33).
  * 2. One contrast per mechanic, in the direction the engine reads it.
  * 3. The league's averages stay in the bands they were calibrated to.
  */
@@ -64,7 +62,7 @@ for (const [L, lg] of leagues.slice(0, 2).entries()) {
   const rows = lg.teams.map((t, i) => {
     const team = teamOf(t.ids, `t${L}-${i}`);
     const net = opponents.reduce((sum, o) => sum + (mechanicsMargin(team, o) - mechanicsMargin(o, team)) / 2, 0) / opponents.length;
-    return { engine: ENGINE_MARGIN_PER_OVERALL * scoreTeam(team).overallExact + teamLiftPoints(team), net };
+    return { engine: ENGINE_MARGIN_PER_OVERALL * scoreTeam(team).overallExact, net };
   });
   const me = rows.reduce((s, r) => s + r.engine, 0) / rows.length;
   const mn = rows.reduce((s, r) => s + r.net, 0) / rows.length;
