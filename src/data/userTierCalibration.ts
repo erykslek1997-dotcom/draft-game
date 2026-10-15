@@ -235,6 +235,16 @@ export const USER_WINDOW_TIERS: ReadonlyArray<readonly [name: string, spanLabel:
 ];
 
 /**
+ * A player's best windows in the user's own order, best first (2026-10-14, the user: LeBron's
+ * default window and highest TAL is 2012-14, then 2011-13, 2016-18, 2014-16, and only then
+ * 2008-10). The listed windows take the top of the player's tier one point apart; every other
+ * window of his keeps its own number but reads below the last listed one.
+ */
+export const USER_WINDOW_ORDER: Readonly<Record<string, readonly string[]>> = {
+  'LeBron James': ['2012-14', '2011-13', '2016-18', '2014-16', '2008-10'],
+};
+
+/**
  * Small TAL nudges inside the player's own tier, from the second review page (2026-09-27): the
  * user marked these "a little higher" or "a little lower" without asking for a tier change. The
  * nudge moves every window of the player; the reviewed window stays inside its tier's band.

@@ -35,6 +35,7 @@ import {
 import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
 import { teamGlass } from './teamGlass';
+import { liftAdjustment } from './teammateLift';
 import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD } from './fit';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import spanContext from '../data/spanContext.json';
@@ -1761,7 +1762,10 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +
     teamFitCompositeScore(fit.score, offense, defense) * (1 - QUALITY_FIT_SPLIT) +
-    ballLoadAdjustment(team);
+    ballLoadAdjustment(team) +
+    // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts) — the live
+    // game plays it, so the team's number carries it too.
+    liftAdjustment(team);
   const overall = Math.round(overallExact);
   return {
     talentScore: talent,

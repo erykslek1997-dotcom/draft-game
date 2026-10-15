@@ -8,6 +8,7 @@ import type { LegendFive } from './dailyMeta';
 import type { Team } from './types';
 import { contextLines } from './contextStats';
 import { modernBox } from './modernBox';
+import { fiveLiftShifts, LIFT_TUNING } from './teammateLift';
 import { fatigueShare } from './fatigue';
 import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import { estimatedMinutesPerGame } from './minutesPerGame';
@@ -64,6 +65,9 @@ export interface GamePlay {
   joker: boolean;
   /** A dead ball worth nothing on the feed (0/2 at the line). */
   quiet: boolean;
+  /** 2026-10-15 (playtest: "brakuje missed shots, turnovers — tylko same pozytywy"): a miss or a
+   * turnover, shown on the feed in a quieter line. */
+  minor?: boolean;
 }
 
 export interface GameMoment {
@@ -430,8 +434,11 @@ export const DEFENSE_TUNING = {
    * what the game now adds there, so his season lands on his own numbers. */
   /* 2026-10-08: 0.99 -> 0.983 — the milder fatigue (stage 3) left more shots going in; the league
    * back to ~122 points and TS ~62.4 a team game. 2026-10-09: 0.983 -> 0.994 — giving the ball up no
-   * longer lifts everyone's shooting (`SCALE_TUNING`); the league back where it was. */
-  halfCourt: 0.994,
+   * longer lifts everyone's shooting (`SCALE_TUNING`); the league back where it was. 2026-10-15:
+   * 0.994 -> 0.988 — late-clock shots no longer cost a player below his own average
+   * (`LATE_TUNING.giveBack`), which this had partly been soaking up; the bench leagues back inside
+   * their band (TS 63.3 -> 62.9), drafted shooters' threes within ~0.5 of their own. */
+  halfCourt: 0.988,
   turnover: 0.133,
   /** A player's real free-throw rate already holds his trips in the bonus, which the game now
    * plays as their own fouls; shooting fouls give that back, so the league's free throws stay
@@ -531,6 +538,9 @@ function handlerZ(off: CourtPlayer[]): number {
  */
 export const LATE_TUNING = {
   share: 0.09,
+  /** How much of what a player's late shots lose comes back on all of his shots (`courtFor`): his
+   * real percentages already hold them. 1 = all of it. */
+  giveBack: 1,
   reset: 1.8,
   defense: 0.15,
   handler: 0.15,
@@ -749,6 +759,8 @@ const RESET_THREE_PCT = 0.015;
 const RESET_TURNOVER = 0.6;
 const RESET_ASSISTED = 0.85;
 /** Blocks: a sixth of missed twos overall, mostly at the rim and more with a rim protector. */
+/** How a turnover without a steal is called (by the trip, so no dice are spent on the words). */
+const TURNOVER_KINDS = ['bad pass', 'lost ball', 'travel', 'offensive foul', 'out of bounds', 'shot-clock violation'];
 const BLOCKED_AT_RIM = 0.24;
 const BLOCKED_MID = 0.06;
 const BLOCK_PER_RIM = 0.25;
@@ -823,8 +835,15 @@ function huntMod(d: DefenderProfile): number {
 }
 
 /** Expected points of one trip for `off` against this defense at shooting `scale` — the measure the
- * nudge evens out (turnovers, second chances and free throws included). */
-function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, number>, scale: number): number {
+ * nudge evens out (turnovers, second chances, free throws and fast breaks included): a half-court
+ * trip, a fast break, and how the trip ends (what the other side's next trip starts from). */
+interface TripOdds {
+  value: number;
+  breakValue: number;
+  steal: number;
+  defRebound: number;
+}
+function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, number>, scale: number): TripOdds {
   const shots = off.reduce((s, c) => s + c.shotShare, 0) || 1;
   const lateWeights = off.map((c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower);
   const lateTotal = lateWeights.reduce((s, v) => s + v, 0) || 1;
@@ -851,7 +870,37 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
     }
   });
   const tov = DEFENSE_TUNING.turnover * cl.tovMul;
-  return ((1 - tov) * value) / (1 - (1 - tov) * miss * cl.oreb);
+  const halfCourt = ((1 - tov) * value) / (1 - (1 - tov) * miss * cl.oreb);
+  // 2026-10-15 (the Daily's even games went to the legends by ~4): the fast break was the game's
+  // and not this measure's, so a five that steals and rebounds more (a real team) beat the nudge.
+  // A break's first shot: at the rim unless a rare three, the defense at half strength, more fouls,
+  // half the turnovers; a miss it gets back plays on as a half-court trip.
+  let breakValue = 0;
+  let breakMiss = 0;
+  off.forEach((c, i) => {
+    const m = cl.mods[i];
+    const t = (tired.get(c.player.label) ?? 1) * scale;
+    const w = c.shotShare / shots;
+    const half = (mod: number) => 1 - (1 - mod) * 0.5;
+    const ft = c.player.span.box.ftPct;
+    const r3 = BREAK_THREE_RATE;
+    const foul = c.foul * m.foul * DEFENSE_TUNING.shootingFoul * BREAK_FOUL;
+    const foulP = r3 * foul + (1 - r3) * foul * Math.max(0.5, 1 + RIM_TUNING.foul * cl.rimZ);
+    const p3 = c.threePct * half(m.three) * t;
+    const p2 = Math.min(0.85, c.rimPct + BREAK_RIM_BONUS) * half(m.rim) * t;
+    const field = r3 * 3 * p3 + (1 - r3) * 2 * p2 * (1 + (AND_ONE * BREAK_FOUL * ft) / 2);
+    breakValue += w * ((1 - foulP) * field + foulP * (r3 * 3 + (1 - r3) * 2) * ft);
+    breakMiss += w * (1 - foulP) * (r3 * (1 - p3) + (1 - r3) * (1 - p2));
+  });
+  const breakTov = tov * 0.5;
+  // How the trip ends, for the other side's next one: a steal, or a missed shot it rebounds.
+  const again = 1 - (1 - tov) * miss * cl.oreb;
+  return {
+    value: halfCourt,
+    breakValue: (1 - breakTov) * (breakValue + breakMiss * cl.oreb * halfCourt),
+    steal: (tov * cl.stealShare) / again,
+    defRebound: ((1 - tov) * miss * (1 - cl.oreb)) / again,
+  };
 }
 
 /**
@@ -965,13 +1014,15 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
     const overload = -OVERLOAD_TUNING.perOverload * (lines.reduce((sum, l) => sum + l.originalUsage, 0) - OVERLOAD_TUNING.ref);
     const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload;
+    // What the four beside him give him, less what his real teammates gave him (`teammateLift.ts`).
+    const lifted = fiveLiftShifts(five.map((p) => p.span));
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor)),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS)),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor + lifted[i])),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS + lifted[i] * LIFT_TUNING.threes)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
@@ -983,6 +1034,21 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       edge3: edges[i].three,
       ownShare: owns[i],
     }));
+    // 2026-10-15 (the user: good shooters at a poor shooter's 3P%): a player's real percentages
+    // already hold his late-clock shots, and the game took them off again on top. At a typical
+    // five's share of late trips (`LATE_TUNING.share`), what his late shots lose comes back on all
+    // of his shots, so his average is his own; a five that breaks down more often still pays.
+    const shotTotal = court.reduce((s, c) => s + c.shotShare, 0) || 1;
+    const lateWeights = court.map((c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower);
+    const lateTotal = lateWeights.reduce((s, v) => s + v, 0) || 1;
+    court.forEach((c, i) => {
+      const normal = ((1 - LATE_TUNING.share) * c.shotShare) / shotTotal;
+      const late = (LATE_TUNING.share * lateWeights[i]) / lateTotal;
+      const lateShare = late / Math.max(1e-9, normal + late);
+      const own = (edge: number, setup: number) => edge * Math.min(0.97, setup / (1 - LATE_TUNING.share)) + LATE_TUNING.penalty;
+      c.twoPct += LATE_TUNING.giveBack * lateShare * own(c.edge2, c.setup2);
+      c.threePct += LATE_TUNING.giveBack * lateShare * own(c.edge3, c.setup3);
+    });
     for (const c of court) {
       c.twoPct *= DEFENSE_TUNING.halfCourt;
       c.threePct *= DEFENSE_TUNING.halfCourt;
@@ -1076,17 +1142,24 @@ function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
     }
     return c;
   };
-  const meanPossession = (side: GameSide, scale: number) => {
+  const trip = (side: GameSide, k: number, scale: number) =>
+    expectedPossession(schedule[side][k], clashFor(schedule[side][k], schedule[1 - side][k]), tired[side], scale);
+  /** A side's mean trip, each one a fast break as often as the other side's trip before it ends in
+   * a steal or a missed shot this side rebounds (`BREAK_AFTER_STEAL`, `BREAK_AFTER_REBOUND`). */
+  const meanPossession = (side: GameSide, scale: number, otherScale = 1) => {
     let sum = 0;
     let n = 0;
     for (let k = side; k < POSSESSIONS; k += 2) {
-      sum += expectedPossession(schedule[side][k], clashFor(schedule[side][k], schedule[1 - side][k]), tired[side], scale);
+      const own = trip(side, k, scale);
+      const before = k > 0 ? trip((1 - side) as GameSide, k - 1, otherScale) : null;
+      const breakP = before ? before.steal * BREAK_AFTER_STEAL + before.defRebound * BREAK_AFTER_REBOUND : 0;
+      sum += (1 - breakP) * own.value + breakP * own.breakValue;
       n++;
     }
     return sum / Math.max(1, n);
   };
   const perTeam = POSSESSIONS / 2;
-  const gapAt = (n: number) => perTeam * (meanPossession(0, 1 + n) - meanPossession(1, 1 - n));
+  const gapAt = (n: number) => perTeam * (meanPossession(0, 1 + n, 1 - n) - meanPossession(1, 1 - n, 1 + n));
   return { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt, meanPossession };
 }
 
@@ -1281,7 +1354,10 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
           if (rng() < BREAK_AFTER_STEAL) breakNext[d] = 1;
           play = { side: d, text: `${thief.label} steals it from ${lost.label}`, joker: thief.joker, quiet: false };
         } else {
-          box[o][pickWeighted(rng, off, (c) => c.turnoverShare).player.label].tov++;
+          const lost = pickWeighted(rng, off, (c) => c.turnoverShare).player;
+          box[o][lost.label].tov++;
+          // The kind is read off the trip, not drawn: the dice (and so every game) stay as they were.
+          play = { side: o, text: `${lost.label} turnover — ${TURNOVER_KINDS[(k + guard) % TURNOVER_KINDS.length]}`, joker: lost.joker, quiet: false, minor: true };
         }
         break;
       }
@@ -1378,14 +1454,18 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         play = { side: o, text, joker, quiet: false };
         break;
       }
+      let blocked = false;
       if (!three && rng() < (atRim ? BLOCKED_AT_RIM * Math.max(0.4, 1 + BLOCK_PER_RIM * clash.def.rim) : BLOCKED_MID)) {
         const blocker = pickWeighted(rng, def, (x) => rates(x.span).blk + 0.05);
         box[d][blocker.label].blk++;
         play = { side: d, text: `${blocker.label} blocks ${shooter.label}`, joker: blocker.joker, quiet: false };
+        blocked = true;
       }
+      const missed = `${shooter.label} misses ${three ? 'a three' : atRim ? 'at the rim' : late ? 'a late-clock jumper' : 'a jumper'}`;
       if (rng() < clash.oreb) {
         const rebounder = pickWeighted(rng, off, (x) => defenderProfile(x.player.span).oreb36 ** REBOUND_WEIGHT_POWER + 0.05);
         box[o][rebounder.player.label].reb++;
+        if (!blocked) play = { side: o, text: `${missed} — ${rebounder.player.label} offensive rebound`, joker: shooter.joker, quiet: false, minor: true };
         // A tip-back at the rim, or the ball back out and a fresh 14 seconds.
         if (rng() < PUTBACK_SHARE) {
           next = 'putback';
@@ -1393,7 +1473,9 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         } else next = 'reset';
         continue;
       }
-      box[d][pickWeighted(rng, def, (x) => defenderProfile(x.span).dreb36 ** REBOUND_WEIGHT_POWER + 0.05).label].reb++;
+      const boards = pickWeighted(rng, def, (x) => defenderProfile(x.span).dreb36 ** REBOUND_WEIGHT_POWER + 0.05);
+      box[d][boards.label].reb++;
+      if (!blocked) play = { side: o, text: `${missed} — ${boards.label} rebound`, joker: shooter.joker, quiet: false, minor: true };
       if (rng() < BREAK_AFTER_REBOUND) breakNext[d] = 2;
       break;
     }

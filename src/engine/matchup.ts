@@ -301,6 +301,9 @@ export function projectMatchup(
   // shared margin (see `mismatchAdjustment`'s own docstring).
   const mismatchForA = mismatchAdjustment(teamA, teamB, cacheA, cacheB);
   const mismatchForB = mismatchAdjustment(teamB, teamA, cacheB, cacheA);
+  // How much the players lift their teammates' shooting (teammateLift.ts) is in `overall` since
+  // 2026-10-15, at `LIFT_POINTS_PER_OVERALL` — keep that equal to OVERALL_MARGIN_WEIGHT *
+  // OVERALL_POINTS_PER_UNIT.
   const marginA =
     OVERALL_MARGIN_WEIGHT * overallMargin +
     (1 - OVERALL_MARGIN_WEIGHT) * netMargin +

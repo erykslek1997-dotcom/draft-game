@@ -207,9 +207,35 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 
 ## Kolejność prac (decyzja 2026-10-10) — obowiązuje
 
-### Playtest 2026-10-15 (spisane — do zrobienia)
+**Decyzja 2026-10-15 (wieczór):** intro All-Time Draft i kalibracja siły AI — na sam koniec;
+eksperci z imionami — robi to osobny czat (tu nie ruszać).
 
-Numeracja użytkownika (11 nie było).
+### Playtest meczu na żywo 2026-10-15 (wieczór) — ZROBIONE (PR #230, #231)
+
+1. „Game 2” mało widoczne — duży przycisk następnego meczu pod wynikiem końcowym i na dole arkusza;
+   na telefonie środek tablicy w osobnym rzędzie.
+2. Intro przed meczem — wynik poprzedniego meczu i stan serii (w meczu 1 runda i rozstawienie),
+   obie piątki PG–C, przycisk „Tip-off”.
+3. Same pozytywy w relacji — pudła (kto zebrał) i straty, cichszym wierszem (`GamePlay.minor`;
+   bez nowych losowań, wyniki meczów bez zmian).
+4. Klik poza oknem zamykał symulację — już nie; Esc wychodzi z meczu do drabinki.
+5. 3P% dobrych strzelców za niskie — rzuty pod koniec zegara liczone podwójnie (PR #230);
+   strzelcy z draftu −1,45 → ~−0,5 pkt proc. względem własnych; 3PA w podstawowych kolumnach,
+   3P% przy < 1 próbie na mecz przygaszone.
+6. „Bardziej komentowany mecz” — komentator (`src/engine/gameCalls.ts`): 30/40/50 pkt (20 tylko w
+   1. połowie), double/triple-double, serie trafień i pudeł, „ostatnie 9 pkt drużyny”, susze,
+   największe prowadzenie, odrobione 10+, ostatnie 2 minuty, skuteczność do przerwy; ~1 linia na
+   9 zagrań, max 2 po jednym zagraniu. Zagrania w kilku wersjach słownych. Test
+   `scripts/testGameCalls.ts`.
+7. Klik w zawodnika w box score — otwiera jego kartę ze statystykami sezonu.
+
+Pomysły na dalej (niezamówione): linie po kwartach bogatsze niż „kto wygrał kwartę + najlepszy
+strzelec”; komentarz do Daily (dziś te same linie, strona „You”).
+
+### Playtest 2026-10-15 (spisane — zrobione poza intro)
+
+Numeracja użytkownika (11 nie było). **Zrobione 2026-10-15:** Simcast 7, 8, 10 (PR #222); draft 2, 3, 4
+(PR #223); wyniki i sezon 5, 6, 9, 13 (PR #224). **Otwarte: 1 (intro).**
 
 **All-Time Draft**
 1. Za dużo się dzieje na starcie — krótkie intro „co gdzie i jak” przy pierwszym wejściu: tablica,
@@ -354,7 +380,7 @@ do dołu i zakładki Matchup/Bracket).
      **Krok 3 zrobiony (2026-10-14):** styl GM-a przypięty do franczyzy (`draft.ts`
      `aiProfileForTeam`), siła gustu dalej losowana per draft; dawne nazwy — losowanie z ziarna.
      Przy okazji: drabinka playoffów rozjechana od #212 (wspólna klasa `pl-row` z listą graczy).
-   - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14)** — fikcyjne
+   - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14; robi osobny czat)** — fikcyjne
      postacie (decyzja: fake names) o wyrazistych archetypach: głośny były gracz („w moich
      czasach…”), trener od obrony, analityk od liczb, stary skaut — każdy z imieniem, nazwiskiem i
      stałym sposobem mówienia. Bez kopiowania prawdziwych osób. Dotyczy Draft Desk (wraca jako
@@ -403,9 +429,12 @@ do dołu i zakładki Matchup/Bracket).
    D-TAL 22; półdystans i rim pressure sprzed 1997; przegląd starych resztek kalibracji z Etapu 1),
    dopracowanie Hustle, odpowiednik Hustle w ataku, MVP z bilansem do kwadratu, rotacja Filipa
    (KG na trzech pozycjach).
-   - **LeBron — ręczna kolejność stretchy (2026-10-14)**: domyślny span i najwyższy TAL to 2012-14,
-     potem 2011-13, 2016-18, 2014-16, dopiero wtedy 2008-10. Dziś najwyższy jest 2007-09 (GOAT).
-   - [ ] **Kalibracja siły AI — ukryty poziom franczyzy (2026-10-14, użytkownik: „kalibracja siły
+   - **LeBron — ręczna kolejność stretchy (2026-10-14) — zrobione 2026-10-15**: domyślny span i
+     najwyższy TAL to 2012-14 (105), potem 2011-13 (104), 2016-18 (103), 2014-16 (102), 2008-10 (101);
+     reszta jego okien zostaje przy swoich liczbach, ale najwyżej 100 (2007-09, 2009-11, 2010-12:
+     102 → 100). Mechanizm ogólny: `USER_WINDOW_ORDER` w `src/data/userTierCalibration.ts`, test
+     `scripts/testWindowOrder.ts`. Baseline picków AI przeliczony (pick #1 ten sam gracz, inny span).
+   - [ ] **Kalibracja siły AI — ukryty poziom franczyzy (na koniec; 2026-10-14, użytkownik: „kalibracja siły
      AI do todo”)** — ostatni krok stałych drużyn. Dziś wszystkie drużyny AI draftują tym samym
      algorytmem i różnią się tylko stylem (przypięty do franczyzy, `draft.ts` `aiProfileForTeam`)
      i losową siłą gustu. Do zrobienia: (1) pole `level` w `src/data/franchises.ts` (np. 3–4
@@ -421,11 +450,37 @@ do dołu i zakładki Matchup/Bracket).
      pokazujemy graczowi (decyzja użytkownika). (M)
 3. **Silnik symulacji** — etap 4b (atak ~66%, rotacja ~34% w meczu), rzuty wolne w ocenie, mecz
    na żywo mocniej na silniku, etap 2b, tempo meczu, kalendarz, balans po symulacjach.
-   - **Asysty od gry bez piłki (playtest 2026-10-14, punkt 11)** — Kirilenko obok Curry'ego ma w
-     sezonie mało asyst: silnik nie uwzględnia, że strzelec grający bez piłki (off-ball gravity,
-     zasłony, ruch) wciąga obronę i otwiera podania kolegom, którzy mają piłkę. Do sprawdzenia, jak
-     mecz rozdziela asysty (`liveGame.ts`) i czy ruch bez piłki (`cutter×passer`, dane o ruchu
-     strzelców) może podnosić szansę na asystę u podającego.
+   - **Punkt 11 z playtestu 2026-10-14 (Kirilenko obok Curry'ego) — zamknięty 2026-10-15, to nie
+     błąd.** Play-by-play Warriors 2014–25 (shufinskiy/nba_data, piątki odtworzone ze zmian):
+     Draymond podaje tyle samo z Currym i bez (11,8 vs 10,8 asysty /100 posiadań, ten sam udział w
+     trafieniach kolegów i te same straty; bez Curry'ego w 2019-20 też 8,0 asysty /36). Curry
+     zmienia jakość, nie liczbę: 39% asyst Draymonda idzie do Curry'ego, 89% jego asyst to rzut
+     spod kosza lub za 3 (bez Curry'ego 78%, z samym Klayem 68%, z samym KD 58%). Draymond to
+     własny „passing unicorn” (tylko on rozgrywa jak LeBron/Jokic bez rzucania). W grze Kirilenko
+     obok Curry'ego ma najwięcej asyst ze wszystkich rozgrywających (3,1 vs 2,3–3,0) — to zgadza
+     się z realnym +~10% u podającego. Skrypty i wyniki w scratchpadzie sesji (`irl/`, `pbp/`).
+   - **„Podnosi kolegów” — zrobione 2026-10-15.** Ocena per gracz z realnych sezonów od 1985
+     (`scripts/buildTeammateLift.ts`, pośrodku między zmierzonym a ściągniętym do średniej —
+     decyzja użytkownika): Nash +1,4 TS, Jokic +1,3, Magic +1,3, Stockton +1,1, Curry +0,8, LeBron
+     +0,3, Paul 0, Conley −0,2, Jordan −0,7. W meczu czwórka na boisku podnosi gracza o swoje oceny
+     minus to, co dali mu jego prawdziwi koledzy (`LIFT_TUNING`, liga bez zmian). Ta sama czwórka
+     obok rozgrywającego vs Conley: Nash +0,9 → +2,4, Stockton +0,1 → +1,5, Iverson −0,7 → +0,2
+     (realnie +1,6, +1,3, +0,6). Rozkład kary za posiadania i korekty gwiazdy według rzutów —
+     sprawdzony i odrzucony (Nash +0,9 → +0,4).
+   - **„Podnosi kolegów” w prognozie silnika — zrobione 2026-10-15.** `matchup.ts` dodaje tę samą
+     ocenę dla całej drużyny (minuty z rotacji, 1 pkt TS = ~1,96 pkt na mecz), więc dociąganie w
+     meczu już jej nie zabiera. Ta sama czwórka: drużyna Nasha vs Conleya +0,3 → +1,4, Jordana
+     +4,3 → +3,6; kształt skuteczności kolegów vs realnie (bez wspólnego przesunięcia) błąd 5,0 →
+     2,1. TAL/O-TAL bez zmian (korelacja O-TAL z oceną 0,27, asyst 0,09 — to osobna cecha). Do
+     sprawdzenia później: AI draftu i wycena drużyny w wynikach draftu (`scoreTeam`) jeszcze jej nie
+     znają.
+   - **Daily: „równy” mecz (do dokończenia).** Kontry w prognozie meczu (PR #228) zabrały większość
+     (−3,7 → −1,7 średnio na 10 dni); reszta to głównie kłopoty z faulami w piątkach bez ławki
+     (~0,6, `TROUBLE_SOFTEN` poza prognozą).
+   - **Era a rozegranie — zrobione 2026-10-15 (PR #227).** Asysty przeliczane percentylem w pozycji
+     (tylko powyżej mediany, spadki tylko u obwodowych, Jokic poza dzisiejszą skalą — jedyny
+     unicorn). Kirilenko 2004-06 4,2 → 5,4, Divac 3,6 → 4,8, Sabonis 2,8 → 4,0, Webber 5,0 → 6,0.
+
 4. **Tryby** — Etap 3 niżej (Draw Five → Mini → All-Time → wspólne).
 
 ## Kolejność prac (decyzja 2026-10-08, zastąpiona)

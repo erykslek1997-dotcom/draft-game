@@ -18,6 +18,9 @@ import type { PlayerSpan } from '../src/data/schema';
  * 1. Engine -> game: what the game's mechanics alone give (no nudge, no dice — `mechanicsMargin`)
  *    must follow the engine's Overall: at least 55% of the engine's 1.3 points a game per Overall
  *    point and R² 0.35 over the bench leagues' teams (measured 66% and 0.46 on 1120 teams).
+ *    2026-10-15: how much the players lift their teammates (`teammateLift.ts`) is part of Overall
+ *    (it was a separate margin term earlier the same day; against an Overall without it the
+ *    lift read as noise, R² 0.33).
  * 2. One contrast per mechanic, in the direction the engine reads it.
  * 3. The league's averages stay in the bands they were calibrated to.
  */
@@ -59,12 +62,12 @@ for (const [L, lg] of leagues.slice(0, 2).entries()) {
   const rows = lg.teams.map((t, i) => {
     const team = teamOf(t.ids, `t${L}-${i}`);
     const net = opponents.reduce((sum, o) => sum + (mechanicsMargin(team, o) - mechanicsMargin(o, team)) / 2, 0) / opponents.length;
-    return { overall: scoreTeam(team).overallExact, net };
+    return { engine: ENGINE_MARGIN_PER_OVERALL * scoreTeam(team).overallExact, net };
   });
-  const mo = rows.reduce((s, r) => s + r.overall, 0) / rows.length;
+  const me = rows.reduce((s, r) => s + r.engine, 0) / rows.length;
   const mn = rows.reduce((s, r) => s + r.net, 0) / rows.length;
   for (const r of rows) {
-    xs.push(r.overall - mo);
+    xs.push(r.engine - me);
     ys.push(r.net - mn);
   }
 }
@@ -78,9 +81,9 @@ xs.forEach((x, i) => {
 });
 const slope = sxy / sxx;
 const r2 = (sxy * sxy) / (sxx * syy);
-console.log(`engine -> game: ${slope.toFixed(2)} points a game per Overall point (${((100 * slope) / ENGINE_MARGIN_PER_OVERALL).toFixed(0)}% of the engine's), R² ${r2.toFixed(2)}, ${xs.length} teams`);
-check(slope >= MIN_DELIVERED * ENGINE_MARGIN_PER_OVERALL, `the game alone delivers at least ${Math.round(100 * MIN_DELIVERED)}% of the engine's margin per Overall point`);
-check(r2 >= MIN_R2, `the game's margins follow Overall (R² >= ${MIN_R2})`);
+console.log(`engine -> game: ${slope.toFixed(2)} game points per engine point (${(100 * slope).toFixed(0)}% of the engine's), R² ${r2.toFixed(2)}, ${xs.length} teams`);
+check(slope >= MIN_DELIVERED, `the game alone delivers at least ${Math.round(100 * MIN_DELIVERED)}% of the engine's margin`);
+check(r2 >= MIN_R2, `the game's margins follow the engine's (R² >= ${MIN_R2})`);
 
 // 2. One contrast per mechanic.
 const offense = five(['Chris Paul|2014-16', 'Klay Thompson|2014-16', 'Paul Pierce|2007-09', 'Dirk Nowitzki|2009-11', 'Tim Duncan|2002-04'], 'off');
