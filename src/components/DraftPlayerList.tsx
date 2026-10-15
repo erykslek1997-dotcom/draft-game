@@ -5,6 +5,7 @@ import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiv
 import { computeSpacing } from '../engine/spacing';
 import { naturalPosition } from '../engine/naturalPosition';
 import { CapIcon, Face } from './ShotChip';
+import { FitName } from './FitName';
 import { cardRoles } from './cardRoles';
 import { spanTeamColor } from './TeamBand';
 import { hadThreePointLine, NOT_YET } from './eraNotes';
@@ -93,13 +94,15 @@ export function DraftPlayerList({
             >
               <Face name={span.playerName} size="md" />
               <span className="pl-id">
-                <span className="pl-name">
-                  {span.playerName}{' '}
+                {/* 2026-10-15 (UI audit): the name alone on its line, shortened rather than clipped;
+                    position and years open the second line. */}
+                <FitName className="pl-name" name={span.playerName} faceNextToIt />
+                <span className="pl-roles">
                   <span className="pl-meta">
                     {naturalPosition(span.playerName)} · {span.spanLabel}
                   </span>
+                  {cardRoles(span).length > 0 && <span className="pl-role-list"> · {cardRoles(span).join(' · ')}</span>}
                 </span>
-                <span className="pl-roles">{cardRoles(span).join(' · ')}</span>
               </span>
             </button>
             <span role="cell" className="pl-tier">

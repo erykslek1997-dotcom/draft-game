@@ -929,7 +929,8 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .ss-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .ss-five > div { background: var(--calm-raised-2); border: 1px solid var(--calm-line); border-radius: 8px; padding: 8px 8px; display: flex; flex-direction: column; min-width: 0; }
 .ss-five > div.is-you { border-color: color-mix(in srgb, var(--at-accent) 55%, var(--calm-line)); }
-.ss-five b { font: 700 14px/1.25 var(--rr-disp); text-transform: uppercase; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ss-five b { font: 700 14px/1.25 var(--rr-disp); text-transform: uppercase; letter-spacing: 0; min-width: 0; }
+.ss-five b > span { display: block; white-space: nowrap; overflow: hidden; }
 .ss-five small { font-size: 12px; color: var(--at-ink-soft); }
 /* the playoffs chapter */
 .pl-cta { font: 800 16px var(--rr-disp); letter-spacing: 0.12em; text-transform: uppercase; background: var(--gold, #f2c14e); color: #1a1405; border: 0; border-radius: 999px; padding: 12px 16px; cursor: pointer; white-space: nowrap; }
@@ -1004,11 +1005,14 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .rs-primary { line-height: 20px; padding-top: 10px; padding-bottom: 10px; border-radius: 999px; }
 .pl-cta { line-height: 20px; padding-top: 14px; padding-bottom: 14px; }
 .at-calm-btn--ghost, .at-calm-chip { background: var(--calm-raised-2); }
+/* 2026-10-15 (UI audit, "brak równości elementów"): the search and the dropdowns sit in rows of
+   40px chips and pills — they had picked up the team picker's 56px from this rule. */
 .at-calm-search,
 .at-calm-select,
-.ss-select,
+.ss-select { box-sizing: border-box; height: 40px; }
 .at-intro-terminal .team-pick { box-sizing: border-box; height: 56px; }
-.at-intro-terminal .team-name-randomize { box-sizing: border-box; width: 56px; min-width: 56px; height: 56px; padding: 0; font-size: 20px; border-radius: 2px; }
+/* The secondary button's stacked-layout margin (8px over, 16px under) lifted the dice 4px. */
+.at-intro-terminal .team-name-randomize { box-sizing: border-box; width: 56px; min-width: 56px; height: 56px; padding: 0; margin: 0; font-size: 20px; border-radius: 2px; }
 .at-intro-terminal .team-pick,
 .at-intro-terminal .team-name-randomize { border-color: var(--term-cyan-dim); }
 .at-calm-seg { padding: 3px; }
@@ -1018,6 +1022,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .share-modal-close,
 .at-pc-scout { box-sizing: border-box; width: 32px; height: 32px; }
 .at-pc-statrow { min-height: 32px; }
+.at-calm-header .at-calm-icon { width: 40px; height: 40px; }
 
 /* Small things still take a 40px tap: an invisible ring around them. */
 .at-pc-scout, .at-calm-icon,
@@ -1050,6 +1055,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 }
 .ss-hub-next { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--calm-line); }
 .ss-hub-next .pl-cta { margin-left: auto; }
+.ss-hub-next > button { box-sizing: border-box; min-height: 48px; }
 @media (max-width: 760px) {
   .ss-hub-next { flex-direction: column-reverse; align-items: stretch; }
   .ss-hub-next .pl-cta { margin-left: 0; }
@@ -1102,7 +1108,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
   display: grid; justify-items: center; gap: 4px; min-width: 0; padding: 8px 4px; text-align: center; line-height: 16px;
   border-radius: 8px; background: var(--calm-raised-2); color: #a9c7e8; font-size: 11px; font-weight: 700;
 }
-.at-calm .dg-team-name { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.at-calm .dg-team-name { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; }
 .at-calm .dg-team.is-you { background: rgba(58, 176, 240, 0.16); color: #9ad6ff; box-shadow: inset 0 0 0 1px rgba(58, 176, 240, 0.55); }
 .at-calm .dg-round {
   display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; font-family: var(--calm-num);
@@ -1177,10 +1183,11 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .wr-status-round { font-size: 13px; color: var(--at-ink-soft); }
 .at-calm .wr-status-gap { flex: 1; }
 .at-calm .wr-scouts {
-  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; box-sizing: border-box; padding: 0 12px; border-radius: 17px; cursor: pointer; white-space: nowrap;
   border: 1px solid var(--calm-line); background: var(--calm-raised-2); color: #a9c7e8; font: 600 12px var(--calm-sans);
 }
 .at-calm .wr-scouts:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+.at-calm .wr-status-row .pd-chip { height: 34px; box-sizing: border-box; padding-block: 0; white-space: nowrap; }
 .at-calm .wr-caps { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--at-ink); white-space: nowrap; }
 .at-calm .wr-caps-track { width: 140px; height: 8px; border-radius: 4px; background: #142133; overflow: hidden; margin-right: 4px; }
 .at-calm .wr-caps-track > span { display: block; height: 100%; background: #ffd479; }
@@ -1257,7 +1264,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .pl-toggles { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .at-calm .pl-toggles-label { font-size: 12px; color: var(--at-ink-soft); margin-right: 2px; }
 .at-calm .pl-toggle {
-  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 8px; border-radius: 17px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; height: 40px; box-sizing: border-box; padding: 0 12px 0 10px; border-radius: 20px; cursor: pointer;
   font: 700 13px var(--calm-sans); background: transparent; color: var(--at-ink-faint); border: 1px dashed #2a3a4f;
 }
 .at-calm .pl-toggle.is-on { background: var(--at-ink); color: #06070c; border: 1px solid var(--at-ink); }
@@ -1286,7 +1293,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .pl-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .at-calm .pl-table .pl-name { font-size: 14px; font-weight: 700; color: var(--at-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .at-calm .pl-player:hover .pl-name { text-decoration: underline; text-underline-offset: 3px; }
-.at-calm .pl-meta { font-weight: 500; color: var(--at-ink-soft); }
+.at-calm .pl-meta { font-weight: 600; color: var(--at-ink-soft); }
 .at-calm .pl-roles { font-size: 11px; color: var(--at-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .at-calm .pl-tier-pill {
   display: inline-block; font-size: 11px; font-weight: 700; line-height: 16px; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
@@ -1323,9 +1330,8 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
   }
   .at-calm .pl-player { grid-area: player; }
   .at-calm .pl-player .bf-face { width: 36px; height: 36px; }
-  .at-calm .pl-roles { display: none; }
+  .at-calm .pl-role-list { display: none; }
   .at-calm .pl-table .pl-name { font-size: 13px; }
-  .at-calm .pl-meta { display: block; font-size: 11px; }
   .at-calm .pl-tier { grid-area: tier; justify-self: end; }
   .at-calm .pl-tier-pill { font-size: 10px; padding: 2px 6px; }
   .at-calm .pl-box { grid-area: box; padding-left: 48px; font-size: 10px; color: #a9c7e8; }
@@ -1345,7 +1351,7 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 @media (max-width: 860px) { .at-calm .pl-table.pl-table--noscout .pl-row { grid-template-columns: minmax(0, 1fr) auto 34px; } }
 
 /* 2026-10-14, the Big Board (DraftWarRoom.tsx BigBoardPanel; ☆ in DraftPlayerList). */
-.at-calm .pl-table .pl-row { grid-template-columns: minmax(0, 2.6fr) 118px 136px 52px 60px minmax(0, 1.4fr) 84px; }
+.at-calm .pl-table .pl-row { grid-template-columns: minmax(0, 1fr) 118px 136px 52px 60px 150px 84px; }
 .at-calm .pl-act { gap: 8px; }
 .at-calm .pl-star {
   width: 36px; height: 36px; border-radius: 18px; cursor: pointer; font-size: 16px; line-height: 1;
@@ -1354,10 +1360,11 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 }
 .at-calm .pl-star.is-on { border-color: rgba(255, 212, 121, 0.5); background: rgba(255, 212, 121, 0.12); color: #ffd479; }
 .at-calm .pl-star:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
-@media (max-width: 1100px) { .at-calm .pl-table .pl-row { grid-template-columns: minmax(0, 2.4fr) 110px 128px 60px minmax(0, 1.2fr) 84px; } }
+@media (max-width: 1100px) { .at-calm .pl-table .pl-row { grid-template-columns: minmax(0, 1fr) 110px 128px 60px 140px 84px; } }
 @media (max-width: 860px) {
   .at-calm .pl-table .pl-row { grid-template-columns: minmax(0, 1fr) auto 72px; }
-  .at-calm .pl-star { width: 30px; height: 30px; font-size: 14px; }
+  .at-calm .pl-star { width: 32px; height: 32px; font-size: 14px; }
+  .at-calm .pl-roles { font-size: 10.5px; }
   .at-calm .pl-act { gap: 6px; align-self: center; }
 }
 .at-calm .wr-board {
@@ -1479,6 +1486,7 @@ button.ph-game { cursor: pointer; }
 .ph-game.is-next .ph-game-s { font: 700 12px var(--calm-sans); text-transform: uppercase; letter-spacing: 0.08em; }
 .ph-game.is-later .ph-game-s { font: 500 11px var(--calm-sans); }
 .ph-cta-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.ph-cta-row > button { box-sizing: border-box; min-height: 52px; }
 .ph-cta { padding: 16px 32px; font-size: 18px; }
 .ph-hint { font-size: 12px; color: var(--at-ink-faint); }
 .ph-tabs { display: none; }
@@ -1552,7 +1560,7 @@ button.ph-game { cursor: pointer; }
 
 /* 2026-10-15 (playtest 2): a typed caps ceiling beside Affordable. */
 .at-calm-maxcaps {
-  display: inline-flex; align-items: center; gap: 6px; height: 34px; box-sizing: border-box; padding: 0 6px 0 12px;
+  display: inline-flex; align-items: center; gap: 6px; height: 40px; box-sizing: border-box; padding: 0 8px 0 12px;
   border-radius: 999px; border: 1px solid var(--at-edge); background: var(--calm-raised); color: var(--at-ink-soft);
   font-size: 13px; font-weight: 600;
 }
