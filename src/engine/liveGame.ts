@@ -8,6 +8,7 @@ import type { LegendFive } from './dailyMeta';
 import type { Team } from './types';
 import { contextLines } from './contextStats';
 import { modernBox } from './modernBox';
+import { fiveLiftShifts } from './teammateLift';
 import { fatigueShare } from './fatigue';
 import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import { estimatedMinutesPerGame } from './minutesPerGame';
@@ -1002,13 +1003,15 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
     const overload = -OVERLOAD_TUNING.perOverload * (lines.reduce((sum, l) => sum + l.originalUsage, 0) - OVERLOAD_TUNING.ref);
     const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload;
+    // What the four beside him give him, less what his real teammates gave him (`teammateLift.ts`).
+    const lifted = fiveLiftShifts(five.map((p) => p.span));
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor)),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS)),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor + lifted[i])),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + (anchor + lifted[i]) * THREE_PCT_PER_TS)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,

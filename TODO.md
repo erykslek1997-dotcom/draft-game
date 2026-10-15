@@ -398,28 +398,27 @@ do dołu i zakładki Matchup/Bracket).
      własny „passing unicorn” (tylko on rozgrywa jak LeBron/Jokic bez rzucania). W grze Kirilenko
      obok Curry'ego ma najwięcej asyst ze wszystkich rozgrywających (3,1 vs 2,3–3,0) — to zgadza
      się z realnym +~10% u podającego. Skrypty i wyniki w scratchpadzie sesji (`irl/`, `pbp/`).
-   - **„Podnosi kolegów” — skuteczność czwórki obok gracza (2026-10-15, do zrobienia).** Realnie
-     (porównanie „z nim / bez niego” sezonów kolegów od 1985, względem ligi, oczyszczone z
-     kontuzji, innych takich graczy, wieku i zmiany roli; ±0,5–0,7): Magic +2,4 TS, Nash +1,9,
-     Jokic +1,8, Stockton +1,7, Curry +1,5, Shaq +1,2, Kidd +1,1, LeBron +0,6, Iverson +0,6,
-     Paul 0,0, Conley −0,2, Jordan −1,0 (liga 0 ± 0,9). Gra dziś (ta sama czwórka, zmieniany
-     rozgrywający): Nash +0,9, Conley 0, LeBron −0,2, Iverson −0,4, **Curry −1,1** vs Conley.
-     Przyczyny w silniku: brak przyciągania obrony (spacing działa tylko na rzuty za 2), jakość
-     podań to średnia asyst czterech kolegów (`matesAssists`, rozwodnione), kara za zbyt wiele
-     posiadań (`OVERLOAD_TUNING`) i korekta zawodnika (`anchor`) rozkładane po równo na piątkę.
-     Plan: ocena „podnosi kolegów” per gracz z tych danych (dla małych prób przewidywana z
-     podań/rzutu/kreowania i ściągana do 0), działająca na skuteczność czwórki na boisku; overload
-     i anchor według udziału w rzutach. Kontrola: ta sama czwórka, rozgrywający Nash/Curry/LeBron/
-     Paul/Conley → blisko liczb realnych. Asysty bez zmian (Curry nie zabiera rozegrania
-     skrzydłowym: +0,15 /36, LeBron −0,58, Harden −0,40, Paul −0,44 — gra już to oddaje).
-   - **Era a rozegranie — percentyle w pozycji (2026-10-15, do zrobienia).** Dziś `modernBox`
-     daje asystom każdemu ~+8% (tempo + usage). Realnie (asysty /36 przy tempie 100, 1000+ min,
-     1995–2004 → 2021–26, ten sam percentyl w pozycji): skrzydłowi p10–p50 +0,2, p75 +0,6, p90
-     +0,9, p97 +1,6; centrzy p10 +0,7, p50 +0,9, p90 +1,7, p97 +2,6; obwodowi −0,6 do −0,8 (dla
-     1985–94 i 2005–14 ten sam kształt). Użytkownik: „na percentylach, żeby rośli ci, którzy
-     dobrze podawali, a nie każde drewno”. Plan: mapowanie percentyla (pozycja + okno sezonów) na
-     ten sam percentyl dzisiejszej ligi zamiast mnożnika. Przykład: Kirilenko 2004-06 4,2 → ~5,0,
-     2002-04 2,6 → ~2,8; najwięcej zyskają dawni podający centrzy (Divac, Sabonis, Webber).
+   - **„Podnosi kolegów” — zrobione 2026-10-15.** Ocena per gracz z realnych sezonów od 1985
+     (`scripts/buildTeammateLift.ts`, pośrodku między zmierzonym a ściągniętym do średniej —
+     decyzja użytkownika): Nash +1,4 TS, Jokic +1,3, Magic +1,3, Stockton +1,1, Curry +0,8, LeBron
+     +0,3, Paul 0, Conley −0,2, Jordan −0,7. W meczu czwórka na boisku podnosi gracza o swoje oceny
+     minus to, co dali mu jego prawdziwi koledzy (`LIFT_TUNING`, liga bez zmian). Ta sama czwórka
+     obok rozgrywającego vs Conley: Nash +0,9 → +2,4, Stockton +0,1 → +1,5, Iverson −0,7 → +0,2
+     (realnie +1,6, +1,3, +0,6). Rozkład kary za posiadania i korekty gwiazdy według rzutów —
+     sprawdzony i odrzucony (Nash +0,9 → +0,4).
+   - **„Podnosi kolegów” w prognozie silnika — zrobione 2026-10-15.** `matchup.ts` dodaje tę samą
+     ocenę dla całej drużyny (minuty z rotacji, 1 pkt TS = ~1,96 pkt na mecz), więc dociąganie w
+     meczu już jej nie zabiera. Ta sama czwórka: drużyna Nasha vs Conleya +0,3 → +1,4, Jordana
+     +4,3 → +3,6; kształt skuteczności kolegów vs realnie (bez wspólnego przesunięcia) błąd 5,0 →
+     2,1. TAL/O-TAL bez zmian (korelacja O-TAL z oceną 0,27, asyst 0,09 — to osobna cecha). Do
+     sprawdzenia później: AI draftu i wycena drużyny w wynikach draftu (`scoreTeam`) jeszcze jej nie
+     znają.
+   - **Daily: „równy” mecz (do dokończenia).** Kontry w prognozie meczu (PR #228) zabrały większość
+     (−3,7 → −1,7 średnio na 10 dni); reszta to głównie kłopoty z faulami w piątkach bez ławki
+     (~0,6, `TROUBLE_SOFTEN` poza prognozą).
+   - **Era a rozegranie — zrobione 2026-10-15 (PR #227).** Asysty przeliczane percentylem w pozycji
+     (tylko powyżej mediany, spadki tylko u obwodowych, Jokic poza dzisiejszą skalą — jedyny
+     unicorn). Kirilenko 2004-06 4,2 → 5,4, Divac 3,6 → 4,8, Sabonis 2,8 → 4,0, Webber 5,0 → 6,0.
 
 4. **Tryby** — Etap 3 niżej (Draw Five → Mini → All-Time → wspólne).
 
