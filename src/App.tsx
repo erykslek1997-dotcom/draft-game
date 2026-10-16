@@ -125,6 +125,9 @@ function DailyDraftStrip({ mode, onPlay }: { mode: DailyDraftMode; onPlay: (day:
   const today = localDayKey();
   const day = dailyDraftDay(mode, today);
   const played = dailyDraftResult(mode, today);
+  // The All-Time daily keeps its own save: left halfway, the strip takes you back to it.
+  const saved = mode === 'alltime' && !played ? readDraftSaveSummary('daily') : null;
+  const inProgress = saved?.day === today ? saved : null;
   const streak = dailyDraftStreak(mode, today);
   const open = !played || DAILY_REPLAY_FOR_TESTING;
   return (
@@ -136,7 +139,11 @@ function DailyDraftStrip({ mode, onPlay }: { mode: DailyDraftMode; onPlay: (day:
     >
       <span className="mode-card-daily-label at-cond">📅 Daily draft</span>
       <span className="mode-card-daily-state">
-        {played ? `✓ ${ordinal(played.place)} of ${played.field} · ${played.overall}` : 'one try today'}
+        {played
+          ? `✓ ${ordinal(played.place)} of ${played.field} · ${played.overall}${played.season ? ` · ${played.season.wins}-${played.season.losses}` : ''}`
+          : inProgress
+            ? `continue · ${inProgress.humanPicks}/${inProgress.rosterSize} picks`
+            : 'one try today'}
         {DAILY_REPLAY_FOR_TESTING && ' · testing: replay on'}
       </span>
       {streak > 0 && <span className="mode-card-daily-streak">🔥 {streak}</span>}
@@ -261,6 +268,8 @@ function App() {
   );
   // Today's Mini daily when it was opened from its strip; null for a regular Mini Draft.
   const [miniDaily, setMiniDaily] = useState<DailyDraftDay | null>(null);
+  // Today's All-Time daily when it was opened from its strip; null for a regular draft.
+  const [allTimeDaily, setAllTimeDaily] = useState<DailyDraftDay | null>(null);
   // Re-read whenever the intro is shown: GameShell strips a shared link's params from the URL once
   // it has used them (2026-09-24), so the "Duel loaded" banner must not outlive that.
   const sharedDraftSeed = useMemo(() => (view === 'intro' ? sharedDraftSeedFromUrl() : null), [view]);
@@ -286,6 +295,7 @@ function App() {
     clearDraftSave();
     setConfirmNewDraft(false);
     setResumeDraft(false);
+    setAllTimeDaily(null);
     const seed = sharedDraftSeedFromUrl() ?? randomSeed();
     setEarlyDraft({ seed, teams: initialTeamsForSeed(seed, teamName) });
     setEarlyLotteryDone(false);
@@ -293,6 +303,7 @@ function App() {
     setView('game');
   }
   function continueDraft() {
+    setAllTimeDaily(null);
     setResumeDraft(true);
     setEarlyDraft(null);
     setView('game');
@@ -500,6 +511,17 @@ function App() {
                 >
                   ?
                 </button>
+                <DailyDraftStrip
+                  mode="alltime"
+                  onPlay={(day) => {
+                    setAllTimeDaily(day);
+                    setResumeDraft(false);
+                    setEarlyDraft(null);
+                    setConfirmNewDraft(false);
+                    void prefetchGameData();
+                    setView('game');
+                  }}
+                />
               </div>
               {LIVE_TEST_BENCH_FOR_TESTING && (
                 <div className="mode-card-wrap">
@@ -584,11 +606,13 @@ function App() {
       {view === 'game' && (resumeDraft || !earlyDraft || earlyLotteryDone) && (
         <Suspense fallback={<LoadingPanel />}>
           <GameShell
+            key={allTimeDaily ? `daily-${allTimeDaily.day}` : 'draft'}
             mode="player"
             commissionerMode={false}
             humanTeamName={teamName}
             resume={resumeDraft}
-            preset={resumeDraft ? undefined : earlyDraft ?? undefined}
+            preset={resumeDraft || allTimeDaily ? undefined : earlyDraft ?? undefined}
+            daily={allTimeDaily ?? undefined}
             onExit={() => setView('intro')}
           />
         </Suspense>

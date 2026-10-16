@@ -877,7 +877,16 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 - [ ] **Playtest pod kątem spójności z resztą** (S)
 - [ ] **Ton wyniku według miejsca** — ten sam co w Mini.
 - [ ] **Tempo draftu AI (AI-4)** — naprawione tylko zawieszanie w połowie draftu. (S)
-- [ ] **Daily dla All-Time** — zasady i „the bomb” w „Daily w draftach — specyfikacja” niżej (3.4). (M)
+- [x] **Daily dla All-Time — zrobione 2026-10-16.** Pasek „Daily draft” pod kartą All-Time, ekran
+      dnia przed loterią, chip zasady w pasku statusu, na tablicy najlepsze lata, które zasada
+      dopuszcza (blok franczyzy: wiersz przygaszony z „Bucks · not today”). Limit 90–110 dla
+      wszystkich (`DraftState.capLimit`, `draftCapLimit`), zasada tylko dla ciebie
+      (`DraftState.dailyRule`) — także przy zmianie lat w Team tab (wybór lat czyta lata wybrane
+      reszcie składu, więc max 1 MVP+ trzyma się do końca). Daily ma własny zapis
+      (`draftSaveSummary.ts`, slot 'daily'): wyjście w trakcie wraca do tego samego draftu, zwykły
+      draft go nie nadpisuje. Wynik dnia: miejsce i Overall po drafcie, potem sezon (bilans, miejsce,
+      play-offy) — surowe dane pod punkty do leaderboardu. Share tekstem bez nazwisk.
+- [ ] **The bomb** (All-Time daily, 1–2 razy w tygodniu) — spec w 3.4 niżej. (M)
 - [ ] **Wyłączyć narzędzia kalibracji przed wypuszczeniem** — `AUTO_FINISH_FOR_TESTING` i
       `TEAM_EXPORT_FOR_TESTING` = false w `src/components/testingFlags.ts`. (S)
 - [ ] **Playtest całego trybu + lista poprawek** (S)
@@ -978,7 +987,8 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
   (opis → twarz → nazwisko); w rotacji **min. 10 min**; **perełka ~raz na 5 dni**; jedna bomba,
   nigdy w rundach 1–4.
 - *Kolejność budowy:* (1) wspólny silnik zasad dnia (ziarno, limit dla wszystkich, blokada picku z
-  powodem, ekran dnia przed loterią) + Mini daily; (2) All-Time daily; (3) the bomb osobno.
+  powodem, ekran dnia przed loterią) + Mini daily — zrobione; (2) All-Time daily — zrobione
+  2026-10-16; (3) the bomb osobno.
 - *Makiety:* `docs/mockups/daily-drafts.html` (2026-10-15) — przycisk Daily na karcie trybu, ekran dnia przed loterią, zablokowany
   pick z powodem + pasek zasad w drafcie, the bomb w drafcie i odsłonięcie na wynikach, wynik dnia
   + share bez spoilerów.

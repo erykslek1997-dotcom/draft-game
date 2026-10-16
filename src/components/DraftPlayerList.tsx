@@ -101,7 +101,8 @@ export function DraftPlayerList({
                 <FitName className="pl-name" name={span.playerName} faceNextToIt />
                 <span className="pl-roles">
                   <span className="pl-meta">
-                    {naturalPosition(span.playerName)} · {span.spanLabel}
+                    {naturalPosition(span.playerName)}
+                    <span className="pl-years"> · {span.spanLabel}</span>
                   </span>
                   {ruleNote ? (
                     <span className="pl-rule"> · {ruleNote}</span>

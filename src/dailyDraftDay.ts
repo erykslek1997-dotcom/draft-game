@@ -94,10 +94,10 @@ export function dailyDraftDay(mode: DailyDraftMode, day: string): DailyDraftDay 
   else if (roll < 0.5) rule = { kind: 'team', ...BLOCK_TEAMS[Math.floor(rng() * BLOCK_TEAMS.length)] };
   else if (roll < 0.75) rule = { kind: 'era', decade: BLOCK_DECADES[Math.floor(rng() * BLOCK_DECADES.length)] };
   else rule = { kind: 'stars', max: 1 };
-  return { mode, day, seed, cap, rule, ...ruleWords(rule) };
+  return { mode, day, seed, cap, rule, ...dailyRuleWords(rule) };
 }
 
-function ruleWords(rule: DailyRule): Pick<DailyDraftDay, 'title' | 'ruleLine' | 'ruleTag'> {
+export function dailyRuleWords(rule: DailyRule): Pick<DailyDraftDay, 'title' | 'ruleLine' | 'ruleTag'> {
   switch (rule.kind) {
     case 'team':
       return { title: `No ${rule.name} today`, ruleLine: `No one who ever played for the ${rule.name}`, ruleTag: `${rule.name} · not today` };

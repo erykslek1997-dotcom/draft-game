@@ -6,6 +6,8 @@ import { peakDraftPool } from '../src/engine/peakDraftPool';
 import { autoFinishQuickDraft, createQuickDraft, finalizeQuickRotation, isQuickPickLegal, quickDailyAlternative, quickPickBlockReason } from '../src/engine/quickDraft';
 import { bestPrimaryAssignment } from '../src/engine/rotation';
 import { totalFga } from '../src/engine/positions';
+import { autoFinishDraft, createDraft, dailyAlternative, draftCapLimit, isPickLegal, pickBlockReason } from '../src/engine/draft';
+import { optimizeSpans } from '../src/engine/spanOptimizer';
 
 /**
  * The daily drafts (2026-10-16, dailyDraftDay.ts / engine/dailyDraft.ts): a day reads the same for
@@ -86,3 +88,29 @@ for (let i = 0; i < 14; i++) {
 }
 console.log(`fives that cannot cover all five positions: ${holes} of ${teams}`);
 check(holes / teams <= 0.06, 'at most a few fives leave a position open (the CPU at caps 65+)');
+
+// The All-Time daily: the same engine rules on the nine-man draft.
+const allTimeYear = Array.from({ length: 364 }, (_, i) => dailyDraftDay('alltime', dayKey(i)));
+check(allTimeYear.every((d) => d.cap >= 90 && d.cap <= 110), 'All-Time caps stay within 90–110');
+const atLakers = createDraft(false, undefined, undefined, 4242, undefined, { day: '2026-10-03', cap: 110, rule: { kind: 'team', code: 'LAL', name: 'Lakers' } });
+check(draftCapLimit(atLakers) === 110 && draftCapLimit(createDraft(false, undefined, undefined, 4242)) === 100.9, "the All-Time draft takes the day's cap; a regular one keeps 100.9");
+const humanFirst = { ...atLakers, teams: atLakers.teams.map((t, i) => ({ ...t, isHuman: i === 0 })) };
+check(!isPickLegal(humanFirst, kobePeak.id) && pickBlockReason(humanFirst, kobePeak.id) === 'rule', 'All-Time: on your pick, Kobe is blocked on a Lakers day');
+check(isPickLegal({ ...humanFirst, teams: humanFirst.teams.map((t) => ({ ...t, isHuman: false })) }, kobePeak.id), '... and a CPU team may still take him');
+check(dailyAlternative(humanFirst, kobePeak.id) === null, '... in no other years either');
+const atNo90s = createDraft(false, undefined, undefined, 4242, undefined, { day: '2026-10-05', cap: 90, rule: { kind: 'era', decade: 1990 } });
+const hakeemAt = dailyAlternative({ ...atNo90s, teams: atNo90s.teams.map((t, i) => ({ ...t, isHuman: i === 0 })) }, hakeemPeak.id);
+check(hakeemAt !== null && windowEnd(hakeemAt.spanLabel) < 1990, `All-Time: on a no-90s day, Olajuwon is there in his 80s years (${hakeemAt?.spanLabel})`);
+
+// Whole All-Time days, one of each rule: complete, every team under the cap (the CPU's spans
+// re-fitted as the game does after the draft), your nine clean of the rule.
+for (const key of ['2026-10-02', '2026-10-05', '2026-10-08', '2026-10-11']) {
+  const day = dailyDraftDay('alltime', key);
+  const started = Date.now();
+  const done = autoFinishDraft(createDraft(false, undefined, undefined, day.seed, undefined, day));
+  check(done.complete, `${day.day} (${day.cap} caps, ${day.title}): the All-Time draft finishes (${((Date.now() - started) / 1000).toFixed(0)}s)`);
+  const over = done.teams.filter((t) => totalFga((t.isHuman ? t.roster : optimizeSpans(t.roster, day.cap)).map((p) => p.fga)) > day.cap + 1e-9);
+  check(over.length === 0, `${day.day}: every team fits under ${day.cap} caps`);
+  const you = done.teams.find((t) => t.isHuman)!;
+  check(you.roster.length === 9 && you.roster.every((p, k) => !dailyRuleBlocks(day.rule, p, you.roster.slice(0, k))), `${day.day}: your nine keep to the rule`);
+}

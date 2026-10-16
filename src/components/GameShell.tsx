@@ -6,6 +6,7 @@ import {
   resolveAiPickIfNeeded,
   isHumanRosterImpossible,
   autoFinishDraft,
+  draftCapLimit,
   TEAM_COUNT,
   ROUNDS,
   type DraftState,
@@ -23,16 +24,20 @@ import DraftLottery from './DraftLottery';
 import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { ShareCardStarter } from './shareCardImage';
 import type { FeedbackEntry } from './FeedbackToggle';
-import { clearDraftSave, loadDraft, saveDraft } from './draftSave';
+import { clearDraftSave, loadDraft, saveDraft, saveSlotFor } from './draftSave';
+import type { DailyDraftDay } from '../dailyDraftDay';
+import { DailyDraftDayScreen } from './DailyDraftDay';
+import { clearDailyDraftResult } from './dailyDraftProgress';
 import { cpuPickDelay } from './aiSpeed';
 
 // 2026-09-17, user's own ask: a real "how to play?" affordance on the lottery screen, now that
 // the intro's own always-visible rules list is gone (see App.tsx). This is the same five-item
 // copy that used to live there — real engine constants now that we're safely inside the already
 // lazy-loaded GameShell, unlike App.tsx's own hand-kept `DISPLAY_*` copies.
-const DRAFT_HOW_TO_PLAY = [
+// A daily passes its own cap (2026-10-16).
+const draftHowToPlay = (cap: number = CAP_LIMIT) => [
   { title: 'Draft', body: `${TEAM_COUNT} teams take turns, ${ROSTER_SIZE} rounds — one player each round. You control one team; the rest are CPU.` },
-  { title: 'Caps', body: `Every pick costs caps — a player's price is how many shots a game he took in those years. Your whole roster has to fit under ${CAP_LIMIT} caps, so the best player isn't always the pick that fits.` },
+  { title: 'Caps', body: `Every pick costs caps — a player's price is how many shots a game he took in those years. Your whole roster has to fit under ${cap} caps, so the best player isn't always the pick that fits.` },
   { title: 'Years', body: "Every player comes with several stretches of his career (e.g. 1996-98 vs 2003-05). The draft takes his best one; in the Team tab you can switch to other years — a cheaper, less-peak stretch can be what fits your cap." },
   { title: 'Rotation', body: `Set minutes for your 5 starters and ${BENCH_SLOT_COUNT} bench players — the Team tab opens for it as soon as you have your first pick, no need to wait for the draft to finish.` },
   { title: 'Grading', body: 'The judge scores every team — talent, offense, defense, spacing, fit, rotation — and ranks the whole field, yours included.' },
@@ -44,7 +49,8 @@ const DRAFT_HOW_TO_PLAY = [
 // (see that file's own docstring on the merged span+rotation section), reachable from the very
 // first pick rather than gated until the draft ends, ending in one "Submit Team" action
 // (`handleSubmitTeam` below) instead of two separate confirm screens.
-type Phase = 'lottery' | 'draft' | 'results';
+// 'day': a daily's rules, before its lottery (2026-10-16).
+type Phase = 'day' | 'lottery' | 'draft' | 'results';
 
 interface Props {
   /** 2026-09-25: seed + teams of a draft whose lottery the intro already showed while the player
@@ -72,6 +78,9 @@ interface Props {
    * a new one — the intro's "Continue draft" button. Falls back to a fresh draft if the save is
    * missing or unreadable. */
   resume?: boolean;
+  /** Today's daily draft (2026-10-16): its seed, cap (every team) and rule (you only). It keeps
+   * its own save, so leaving brings you back to the same draft — one try a day. */
+  daily?: DailyDraftDay;
 }
 
 /**
@@ -191,13 +200,27 @@ function stripSharedLinkParams() {
   if (changed) window.history.replaceState(window.history.state, '', url.toString());
 }
 
-export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false, preset }: Props) {
-  const [resumed] = useState(() => (resume && !commissionerMode ? loadDraft() : null));
+const newDailyDraft = (daily: DailyDraftDay, humanTeamName?: string) =>
+  createDraft(false, undefined, humanTeamName, daily.seed, undefined, { day: daily.day, cap: daily.cap, rule: daily.rule });
+
+/** Today's daily from its own save, when that save is today's; an older day's save is dropped. */
+function loadDailyDraft(daily: DailyDraftDay) {
+  const saved = loadDraft('daily');
+  if (saved && saved.state.dailyDay === daily.day) return saved;
+  if (saved) clearDraftSave('daily');
+  return null;
+}
+
+export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false, preset, daily }: Props) {
+  const [resumed] = useState(() => (daily ? loadDailyDraft(daily) : resume && !commissionerMode ? loadDraft() : null));
   const [draftState, setDraftState] = useState<DraftState>(
     () =>
       resumed?.state ??
-      createDraft(commissionerMode, undefined, humanTeamName, preset?.seed ?? seedFromUrl(), preset?.teams),
+      (daily
+        ? newDailyDraft(daily, humanTeamName)
+        : createDraft(commissionerMode, undefined, humanTeamName, preset?.seed ?? seedFromUrl(), preset?.teams)),
   );
+  const howToPlay = draftHowToPlay(draftCapLimit(draftState));
   const [challenger, setChallenger] = useState<ChallengeChallenger | undefined>(() =>
     resumed ? resumed.challenger : challengerFromUrl(),
   );
@@ -219,7 +242,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // assignment (see DraftLottery.tsx's own docstring — the randomization itself isn't new, only
   // this reveal step is) runs once, right after Start Draft, before the real board appears.
   // A draft whose lottery already ran on the intro (App.tsx's early lottery) starts on the board.
-  const [phase, setPhase] = useState<Phase>(resumed || preset ? 'draft' : 'lottery');
+  const [phase, setPhase] = useState<Phase>(resumed || preset ? 'draft' : daily ? 'day' : 'lottery');
   const [finalTeams, setFinalTeams] = useState<Team[] | null>(null);
   // Owned here (not inside DraftBoard) so live in-draft reactions survive the phase transition
   // into ResultsScreen's export — see FeedbackToggle's own docstring for why this replaced the
@@ -300,7 +323,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
         ...s,
         teams: s.teams.map((t) => {
           if (t.isHuman) return t;
-          const roster = optimizeSpans(t.roster, CAP_LIMIT);
+          const roster = optimizeSpans(t.roster, draftCapLimit(s));
           return { ...t, roster, rotation: autoAssignRotation(roster) };
         }),
       }));
@@ -318,7 +341,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // a submitted team is finished, so its save is dropped.
   useEffect(() => {
     if (commissionerMode) return;
-    if (phase === 'results') clearDraftSave();
+    if (phase === 'results') clearDraftSave(saveSlotFor(draftState));
     else if (phase === 'draft' && draftState.history.length > 0) saveDraft(draftState, challenger);
   }, [draftState, phase, challenger, commissionerMode]);
 
@@ -362,7 +385,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       // missing a rotation here too — `optimizeSpans` + `autoAssignRotation` are deterministic and
       // stable on an already-finalized roster, so this is a no-op once the effect has run.
       if (t.rotation) return t;
-      const optimized = optimizeSpans(t.roster, CAP_LIMIT);
+      const optimized = optimizeSpans(t.roster, draftCapLimit(draftState));
       return { ...t, roster: optimized, rotation: autoAssignRotation(optimized) };
     });
     setFinalTeams(teams);
@@ -380,14 +403,16 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
    * accidental replay through a URL param that never went away; without, a fresh random draft. */
   function handleRematch(seed?: number) {
     const humanName = draftState.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
-    clearDraftSave();
-    setDraftState(createDraft(commissionerMode, undefined, humanName, seed));
+    clearDraftSave(saveSlotFor(draftState));
+    // A daily replays only in testing, and only today's draft.
+    if (daily) clearDailyDraftResult('alltime', daily.day);
+    setDraftState(daily ? newDailyDraft(daily, humanName) : createDraft(commissionerMode, undefined, humanName, seed));
     setChallenger(undefined);
     setFinalTeams(null);
     setAiTeamsFinalized(false);
     setPickReactions({});
     setPickReasoning({});
-    setPhase('lottery');
+    setPhase(daily ? 'day' : 'lottery');
   }
 
   // Only meaningful mid-draft: once the pool physically runs dry (fewer real players left than
@@ -405,12 +430,23 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           </button>
         </div>
       )}
+      {phase === 'day' && daily && (
+        <div className="at-shell at-calm">
+          <DailyDraftDayScreen
+            day={daily}
+            slot={draftState.teams.find((t) => t.isHuman)?.draftSlot ?? 1}
+            rosterSize={ROSTER_SIZE}
+            onStart={() => setPhase('lottery')}
+            onBack={handleReset}
+          />
+        </div>
+      )}
       {phase === 'lottery' && (
         <DraftLottery
           teams={draftState.teams}
           rounds={ROUNDS}
           onDone={() => setPhase('draft')}
-          howToPlay={DRAFT_HOW_TO_PLAY}
+          howToPlay={howToPlay}
           onExit={handleReset}
         />
       )}
@@ -432,7 +468,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           onPickReasoningChange={handlePickReasoningChange}
           onSubmitTeam={handleSubmitTeam}
           onSwapHumanSpan={handleSwapHumanSpan}
-          howToPlay={DRAFT_HOW_TO_PLAY}
+          howToPlay={howToPlay}
           onExit={handleReset}
         />
       )}
@@ -447,6 +483,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           pickReasoning={pickReasoning}
           draftSeed={draftState.seed}
           challenger={challenger}
+          daily={daily}
         />
       )}
     </>

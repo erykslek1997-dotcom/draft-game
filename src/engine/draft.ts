@@ -25,6 +25,9 @@ import { pickForAi, setAiTeamScorer, AI_GM_PROFILES, type AiDraftRuleset, type A
 import { scoreTeam } from './scoring';
 import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
+import { dailyRuleBlocks } from './dailyDraft';
+import { effectiveTalent } from './grades';
+import type { DailyRule } from '../dailyDraftDay';
 
 // The AI's bench picks read the real team score (aiDrafter.ts `setAiTeamScorer`).
 setAiTeamScorer(
@@ -75,7 +78,17 @@ export interface DraftState {
    * (see `createDraft`). The value pipeline that ranks candidates is fully deterministic; only the
    * final tie-break lottery consumes this. */
   seed: number;
+  /** Every team's cap — the real `CAP_LIMIT` unless a daily sets the day's own (2026-10-16).
+   * Optional so drafts saved before the dailies load as they were. */
+  capLimit?: number;
+  /** The day's rule in a daily — the human team's only; the CPU drafts from the whole pool. */
+  dailyRule?: DailyRule;
+  /** The daily's date (YYYY-MM-DD) — set only in a daily; its save and result go by it. */
+  dailyDay?: string;
 }
+
+/** This draft's cap: the day's in a daily, else the real one. */
+export const draftCapLimit = (state: Pick<DraftState, 'capLimit'>): number => state.capLimit ?? CAP_LIMIT;
 
 // --- One-time-per-dataset lookups, built once at module load rather than re-scanning the
 // full player list (thousands of entries) on every single candidate check. ---
@@ -133,6 +146,8 @@ export function createDraft(
   seed: number = randomSeed(),
   /** Teams already drawn for this seed (the intro's early lottery, see draftSetup.ts). */
   presetTeams?: Team[],
+  /** A daily's cap (every team) and rule (the human only) — 2026-10-16. */
+  daily?: { day: string; cap: number; rule: DailyRule },
 ): DraftState {
   // Optional-chained: `import.meta.env` is undefined when an engine test script runs this under
   // tsx (no Vite), and `.DEV` on undefined would throw.
@@ -150,7 +165,36 @@ export function createDraft(
     commissionerMode,
     pool,
     seed,
+    ...(daily ? { capLimit: daily.cap, dailyRule: daily.rule.kind !== 'open' ? daily.rule : undefined, dailyDay: daily.day } : {}),
   };
+}
+
+/** Whether today's rule keeps `player` from the team on the clock (the human team only). */
+function ruleBlocks(state: DraftState, player: PlayerSpan): boolean {
+  if (!state.dailyRule) return false;
+  const team = state.teams[currentTeamIndex(state)];
+  return team.isHuman && dailyRuleBlocks(state.dailyRule, player, team.roster);
+}
+
+/** Today's rule keeps this player from you, given your roster (a daily). `exceptId` leaves one
+ * of your own players out of the count — the one whose years you are changing. */
+export function isDailyRuleBlocked(state: DraftState, span: PlayerSpan, exceptName?: string): boolean {
+  if (!state.dailyRule) return false;
+  const roster = state.teams.find((t) => t.isHuman)?.roster ?? [];
+  const others = exceptName ? roster.filter((p) => normalizePlayerName(p.playerName) !== normalizePlayerName(exceptName)) : roster;
+  return dailyRuleBlocks(state.dailyRule, span, others);
+}
+
+/**
+ * The years you may take a player in today when the rule rules out the ones on the board (a
+ * decade, a second MVP-tier player): his best other window the rule allows — `null` when none
+ * does (a franchise block covers his whole career) or the rule doesn't touch him.
+ */
+export function dailyAlternative(state: DraftState, playerId: string): PlayerSpan | null {
+  const player = playersById.get(playerId);
+  if (!player || !state.dailyRule || !isDailyRuleBlocked(state, player)) return null;
+  const others = (spansByNormalizedName.get(normalizePlayerName(player.playerName)) ?? []).filter((s) => !isDailyRuleBlocked(state, s));
+  return others.length ? others.reduce((best, s) => (effectiveTalent(s) > effectiveTalent(best) ? s : best)) : null;
 }
 
 export function snakeOrderIndex(round: number, pickInRound: number): number {
@@ -230,7 +274,8 @@ function strictPickLegal(state: DraftState, playerId: string): boolean {
 
   const team = state.teams[currentTeamIndex(state)];
   const currentFgas = team.roster.map((p) => p.fga);
-  if (!isPickCapLegal(currentFgas, player.fga)) return false;
+  if (ruleBlocks(state, player)) return false;
+  if (!isPickCapLegal(currentFgas, player.fga, draftCapLimit(state))) return false;
   // 2026-09-24: the human used to skip the lookahead below (`if (team.isHuman) return true`),
   // which let a normal-looking run of star picks spend ~99 of 100.9 shots with 4 slots still
   // open — every card on the board then went grey with no explanation and the draft sat waiting
@@ -241,7 +286,7 @@ function strictPickLegal(state: DraftState, playerId: string): boolean {
   const slotsLeftAfterPick = ROSTER_SIZE - team.roster.length - 1;
   if (slotsLeftAfterPick === 0) return true;
 
-  const capRemainingAfterPick = CAP_LIMIT - totalFga([...currentFgas, player.fga]);
+  const capRemainingAfterPick = draftCapLimit(state) - totalFga([...currentFgas, player.fga]);
   const lookup = getCheapestLookup(state);
   return canFillFromLookup(lookup, slotsLeftAfterPick, capRemainingAfterPick, normalizePlayerName(player.playerName));
 }
@@ -268,7 +313,7 @@ function noCapLegalPickExists(state: DraftState): boolean {
   if (cached === undefined) {
     const team = state.teams[currentTeamIndex(state)];
     const currentFgas = team.roster.map((p) => p.fga);
-    cached = availablePlayers(state).every((p) => !isPickCapLegal(currentFgas, p.fga));
+    cached = availablePlayers(state).every((p) => ruleBlocks(state, p) || !isPickCapLegal(currentFgas, p.fga, draftCapLimit(state)));
     noCapLegalCache.set(state, cached);
   }
   return cached;
@@ -304,7 +349,7 @@ export interface PickBudget {
 }
 
 export function pickBudget(state: DraftState, team: Team = state.teams[currentTeamIndex(state)]): PickBudget {
-  const capLeft = CAP_LIMIT - totalFga(team.roster.map((p) => p.fga));
+  const capLeft = draftCapLimit(state) - totalFga(team.roster.map((p) => p.fga));
   const slotsLeft = Math.max(0, ROSTER_SIZE - team.roster.length);
   const slotsAfter = Math.max(0, slotsLeft - 1);
   let reserved = 0;
@@ -323,18 +368,20 @@ export function pickBudget(state: DraftState, team: Team = state.teams[currentTe
 }
 
 /** Why `playerId` can't be drafted right now, for button tooltips — `null` when it can. */
-export function pickBlockReason(state: DraftState, playerId: string): 'cap' | 'reserve' | null {
+export function pickBlockReason(state: DraftState, playerId: string): 'cap' | 'reserve' | 'rule' | null {
   if (isPickLegal(state, playerId)) return null;
   const player = playersById.get(playerId);
   if (!player) return 'cap';
+  if (ruleBlocks(state, player)) return 'rule';
   const team = state.teams[currentTeamIndex(state)];
-  return isPickCapLegal(team.roster.map((p) => p.fga), player.fga) ? 'reserve' : 'cap';
+  return isPickCapLegal(team.roster.map((p) => p.fga), player.fga, draftCapLimit(state)) ? 'reserve' : 'cap';
 }
 
 export function isPickLegal(state: DraftState, playerId: string): boolean {
   if (state.complete) return false;
   const player = playersById.get(playerId);
   if (!player || state.draftedIds.has(playerId)) return false;
+  if (ruleBlocks(state, player)) return false;
 
   // Every team follows the same cap rule. The intro, cap meter and final ranking all present the
   // rosters as comparable under one 100.9-FGA constraint, so silently exempting the human would
@@ -345,10 +392,10 @@ export function isPickLegal(state: DraftState, playerId: string): boolean {
   if (strictPickLegal(state, playerId)) return true;
 
   const currentFgas = team.roster.map((p) => p.fga);
-  if (isPickCapLegal(currentFgas, player.fga)) return strictCheckIsDeadEnd(state);
+  if (isPickCapLegal(currentFgas, player.fga, draftCapLimit(state))) return strictCheckIsDeadEnd(state);
 
   if (!noCapLegalPickExists(state)) return false;
-  const cheapestAvailable = [...availablePlayers(state)].sort((a, b) => a.fga - b.fga)[0];
+  const cheapestAvailable = [...availablePlayers(state)].filter((p) => !ruleBlocks(state, p)).sort((a, b) => a.fga - b.fga)[0];
   return cheapestAvailable?.id === playerId;
 }
 
@@ -507,7 +554,8 @@ function aiProfileStrengthForSlot(seed: number, draftSlot: number): number {
 function resolveAutomatedPick(state: DraftState): DraftState | null {
   const teamIdx = currentTeamIndex(state);
   const team = state.teams[teamIdx];
-  const available = availablePlayers(state);
+  // Auto-finish (testing) drafts the human team too: it keeps to today's rule like the player must.
+  const available = team.isHuman && state.dailyRule ? availablePlayers(state).filter((p) => !ruleBlocks(state, p)) : availablePlayers(state);
   if (available.length === 0) return null;
 
   const currentFgas = team.roster.map((p) => p.fga);
@@ -522,7 +570,7 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
   const rng = mulberry32(mixSeed(state.seed, pickNumber));
   const ruleset: AiDraftRuleset = {
     rosterSize: ROSTER_SIZE,
-    capLimit: CAP_LIMIT,
+    capLimit: draftCapLimit(state),
     strategy: strategyForDraftSlot(state.seed, team.draftSlot),
     profile: aiProfileForTeam(state.seed, team),
     profileStrength: aiProfileStrengthForSlot(state.seed, team.draftSlot),
