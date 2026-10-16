@@ -51,6 +51,10 @@ import { teamHue } from './teamLogoKit';
 import { DESK_CAST, buildDesk, buildRivalDesk, theirVoice, type DeskLine } from '../engine/desk';
 import { FitName, FitTeam } from './FitName';
 import { exportFullDraft } from '../engine/draftExport';
+import type { DailyDraftDay } from '../dailyDraftDay';
+import { saveDailyDraftResult, saveDailyDraftSeason } from './dailyDraftProgress';
+import { DAILY_REPLAY_FOR_TESTING } from './dailyProgress';
+import { copyLink } from './shareSave';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, the live season) — real work deferred until the
@@ -171,6 +175,9 @@ interface Props {
    * their draft finishes — still no server, the URL IS the message. `undefined` for a normal
    * (non-challenge-link) draft. */
   challenger?: ChallengeChallenger;
+  /** Today's daily draft (2026-10-16): the result is saved for the day (place, Overall, then the
+   * season) and shared as text; `onRematch` replays it only while testing. */
+  daily?: DailyDraftDay;
 }
 
 /** See the `challenger` prop's own docstring on `Props` above for the full "no backend" story.
@@ -315,6 +322,7 @@ function HeroResult({
   seasonLine,
   standings,
   onNewDraft,
+  dailyAction,
 }: {
   teamName: string;
   isHuman: boolean;
@@ -355,6 +363,8 @@ function HeroResult({
   report: ReactNode;
   standings: ReactNode;
   onNewDraft?: () => void;
+  /** A daily's "Copy today's result" — in place of the duel link (everyone has today's board). */
+  dailyAction?: ReactNode;
 }) {
   const [challengeCopied, setChallengeCopied] = useState(false);
   // 2026-09-17, user-reported live ("więcej sosu, coś jak share po zakończonym drafcie" — more
@@ -684,17 +694,20 @@ function HeroResult({
     </header>
     <div className="rs-actions rr-actions">
       {seasonSimSlot}
+      {dailyAction}
       <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
         Share
       </button>
-      <button
-        type="button"
-        className="at-calm-btn"
-        onClick={copyChallengeLink}
-        title="Copies a link that gives a friend the exact same 16-team draft board to react to."
-      >
-        {challengeCopied ? '✓ Link copied' : 'Challenge a friend'}
-      </button>
+      {!dailyAction && (
+        <button
+          type="button"
+          className="at-calm-btn"
+          onClick={copyChallengeLink}
+          title="Copies a link that gives a friend the exact same 16-team draft board to react to."
+        >
+          {challengeCopied ? '✓ Link copied' : 'Challenge a friend'}
+        </button>
+      )}
       {onNewDraft && (
         <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onNewDraft}>
           New draft
@@ -1038,7 +1051,7 @@ function offenseScale(value: number): number {
   return Math.round(calibrateOffenseToDefenseScale(value));
 }
 
-export default function ResultsScreen({ teams, history, onRestart, onRematch, draftSeed, challenger }: Props) {
+export default function ResultsScreen({ teams, history, onRestart, onRematch, draftSeed, challenger, daily }: Props) {
   // Step 3 of the menu's learning path is done once a full draft reaches its results.
   useEffect(() => markStepDone('draft'), []);
   // Lookups used inside render loops (matchup opponents, draft-order rows, the bracket tree) —
@@ -1391,6 +1404,41 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   // w PO mamy mniejsze szanse"): an opened rival starts with the scores where they beat you, by how
   // much; then your series odds against them, their roster and their report.
   const humanRanked = ranked.find((r) => r.team.isHuman);
+
+  // 2026-10-16, the daily drafts: the day keeps its first result — the place and Overall now, the
+  // season once it has been played (the user: points for both, to a leaderboard later).
+  const dailySeason = useMemo(() => {
+    if (!daily || !humanRanked || seasonState.status !== 'done') return null;
+    const id = humanRanked.team.id;
+    const place = seasonState.season.standings.findIndex((r) => r.teamId === id) + 1;
+    const row = seasonState.season.standings[place - 1];
+    if (!row) return null;
+    const series = (seasonState.playoffs?.rounds ?? []).flat().filter((s) => s.teamAId === id || s.teamBId === id);
+    const last = series[series.length - 1];
+    const playoffs = seasonState.playoffs?.championId === id ? 'Champions' : last ? `Out in the ${last.roundLabel}` : 'Missed the playoffs';
+    return { wins: row.wins, losses: row.losses, place, playoffs };
+  }, [daily, humanRanked, seasonState]);
+  useEffect(() => {
+    if (daily && humanRanked) saveDailyDraftResult('alltime', daily.day, { place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall });
+  }, [daily, humanRanked, ranked.length]);
+  useEffect(() => {
+    if (daily && dailySeason) saveDailyDraftSeason('alltime', daily.day, dailySeason);
+  }, [daily, dailySeason]);
+  const [dailyCopied, setDailyCopied] = useState(false);
+  async function copyDailyResult() {
+    if (!daily || !humanRanked) return;
+    // No names: the same draft is everyone's today.
+    const lines = [
+      `Draftverse Daily · All-Time · ${daily.day}`,
+      `${daily.cap} caps · ${daily.title}`,
+      `Draft: ${ordinal(humanRanked.rank)} / ${ranked.length} · ${humanRanked.breakdown.overall}`,
+    ];
+    if (dailySeason) lines.push(`Season: ${dailySeason.wins}-${dailySeason.losses} · ${dailySeason.playoffs}`);
+    if (await copyLink(lines.join('\n'))) {
+      setDailyCopied(true);
+      setTimeout(() => setDailyCopied(false), 2000);
+    }
+  }
   const whereTheyBeatYou = (theirs: ScoreBreakdown) => {
     if (!humanRanked) return null;
     const mine = profileRows(humanRanked.breakdown);
@@ -1504,9 +1552,10 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRestart}>
           ← Menu
         </button>
-        <h1 className="at-calm-title">All-Time Draft</h1>
+        <h1 className="at-calm-title">{daily ? 'Daily All-Time Draft' : 'All-Time Draft'}</h1>
         <span className="rs-header-spacer" aria-hidden />
       </div>
+      {daily && <p className="dd-results-tag at-calm-strip-daily">Daily · {daily.title}</p>}
       {heroRanked && (
         <HeroResult
           teamName={heroRanked.team.name}
@@ -1538,7 +1587,14 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           report={heroReport}
           seasonLine={seasonVerdictLine}
           standings={standings}
-          onNewDraft={onRematch ? () => onRematch() : undefined}
+          onNewDraft={onRematch && !daily ? () => onRematch() : undefined}
+          dailyAction={
+            daily ? (
+              <button type="button" className="at-calm-btn" onClick={copyDailyResult}>
+                {dailyCopied ? '✓ Result copied' : 'Copy today’s result'}
+              </button>
+            ) : undefined
+          }
         />
       )}
       {/* 2026-09-14, user-reported live ("ogromnie dużo miejsca na dużym ekranie, można zrobić
@@ -1563,8 +1619,18 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           small, fixed-size popup trigger instead of an inline-growing table — the matrix no longer
           has anything to share this row with, so it renders alone at full width. */}
       <div className="results-actions end-actions">
-        {onRematch && (
-          <button type="button" className="at-calm-btn" onClick={() => onRematch(draftSeed)}>Rematch this board</button>
+        {daily ? (
+          <>
+            {DAILY_REPLAY_FOR_TESTING && onRematch && (
+              <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={() => onRematch()}>
+                Replay (testing)
+              </button>
+            )}
+          </>
+        ) : (
+          onRematch && (
+            <button type="button" className="at-calm-btn" onClick={() => onRematch(draftSeed)}>Rematch this board</button>
+          )
         )}
         <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRestart}>Main menu</button>
         {TEAM_EXPORT_FOR_TESTING && (

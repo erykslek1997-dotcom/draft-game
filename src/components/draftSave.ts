@@ -2,7 +2,7 @@ import { activeDraftPool, type DraftState } from '../engine/draft';
 import { draftPool } from '../data/draftPool';
 import { ROSTER_SIZE } from '../engine/positions';
 import type { ChallengeChallenger } from './ResultsScreen';
-import { DRAFT_SAVE_KEY, DRAFT_SAVE_SUMMARY_KEY, clearDraftSave, type DraftSaveSummary } from '../draftSaveSummary';
+import { clearDraftSave, draftSaveKeys, type DraftSaveSlot, type DraftSaveSummary } from '../draftSaveSummary';
 
 /**
  * 2026-09-24: the in-progress All-Time Draft is written to localStorage after every pick, so a
@@ -10,7 +10,10 @@ import { DRAFT_SAVE_KEY, DRAFT_SAVE_SUMMARY_KEY, clearDraftSave, type DraftSaveS
  * screen offers "Continue draft" instead. Only the draft itself is saved (rosters, order, pick
  * history, seed, a duel link's challenger); the Team tab's unsaved rotation edits and pricier-
  * span previews are not, and come back as the suggested rotation on resume.
+ * A daily (`state.dailyDay`) goes to its own slot (draftSaveSummary.ts).
  */
+export const saveSlotFor = (state: Pick<DraftState, 'dailyDay'>): DraftSaveSlot => (state.dailyDay ? 'daily' : 'draft');
+
 interface SavedDraft {
   version: 1;
   state: Omit<DraftState, 'draftedIds' | 'pool'> & { draftedIds: string[] };
@@ -28,18 +31,20 @@ export function saveDraft(state: DraftState, challenger: ChallengeChallenger | u
     humanPicks: human?.roster.length ?? 0,
     rosterSize: ROSTER_SIZE,
     savedAt: Date.now(),
+    ...(state.dailyDay ? { day: state.dailyDay } : {}),
   };
+  const keys = draftSaveKeys(saveSlotFor(state));
   try {
-    window.localStorage.setItem(DRAFT_SAVE_KEY, JSON.stringify(saved));
-    window.localStorage.setItem(DRAFT_SAVE_SUMMARY_KEY, JSON.stringify(summary));
+    window.localStorage.setItem(keys.state, JSON.stringify(saved));
+    window.localStorage.setItem(keys.summary, JSON.stringify(summary));
   } catch {
     // Quota/blocked storage — the draft simply isn't resumable, same as before this existed.
   }
 }
 
-export function loadDraft(): { state: DraftState; challenger?: ChallengeChallenger } | null {
+export function loadDraft(slot: DraftSaveSlot = 'draft'): { state: DraftState; challenger?: ChallengeChallenger } | null {
   try {
-    const raw = window.localStorage.getItem(DRAFT_SAVE_KEY);
+    const raw = window.localStorage.getItem(draftSaveKeys(slot).state);
     if (!raw) return null;
     const saved = JSON.parse(raw) as SavedDraft;
     if (saved?.version !== 1 || !Array.isArray(saved.state?.teams)) return null;
@@ -54,12 +59,12 @@ export function loadDraft(): { state: DraftState; challenger?: ChallengeChalleng
     // drafting a player retires every one of his windows (see draft.ts).
     const poolIds = new Set([...activeDraftPool, ...draftPool].map((p) => p.id));
     if (!saved.state.draftedIds.every((id) => poolIds.has(id))) {
-      clearDraftSave();
+      clearDraftSave(slot);
       return null;
     }
     return { state, challenger: saved.challenger };
   } catch {
-    clearDraftSave();
+    clearDraftSave(slot);
     return null;
   }
 }

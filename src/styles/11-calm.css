@@ -1331,6 +1331,8 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
   .at-calm .pl-player { grid-area: player; }
   .at-calm .pl-player .bf-face { width: 36px; height: 36px; }
   .at-calm .pl-role-list { display: none; }
+  /* A daily's franchise block covers all his years: on a phone the rule takes their place. */
+  .at-calm .pl-row.is-ruled .pl-years { display: none; }
   .at-calm .pl-table .pl-name { font-size: 13px; }
   .at-calm .pl-tier { grid-area: tier; justify-self: end; }
   .at-calm .pl-tier-pill { font-size: 10px; padding: 2px 6px; }
@@ -1656,5 +1658,6 @@ button.ph-game { cursor: pointer; }
   border: 1px solid rgba(255, 212, 121, 0.35); background: rgba(255, 212, 121, 0.08); border-radius: 999px; padding: 3px 10px;
 }
 .at-calm .pl-rule { color: #ffd479; font-weight: 700; }
+.dd-results-tag { align-self: flex-start; margin: 0; }
 .at-calm .pl-table .pl-row.is-ruled .pl-player { opacity: 0.55; }
 .mode-card-daily:disabled { cursor: default; }

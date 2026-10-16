@@ -3,16 +3,27 @@ import type { DailyDraftMode } from '../dailyDraftDay';
 /**
  * 2026-10-16, the daily drafts: the day's result and a streak per mode, in this browser's
  * localStorage (no backend yet) — the same shape as the Draw Five daily (`dailyProgress.ts`).
- * The result is the place after the draft and the team's Overall; the season's part comes with
- * the All-Time daily (the user: points for the draft and for the season, to a leaderboard once
- * there is a server).
+ * The result is the place after the draft and the team's Overall, and in the All-Time daily the
+ * season too (the user: points for the draft and for the season, to a leaderboard once there is a
+ * server — kept raw here, so the points can be settled then).
  */
 const STORAGE_KEY = 'draftverse.dailyDraft.v1';
+
+export interface DailyDraftSeason {
+  wins: number;
+  losses: number;
+  /** Place in the regular-season standings. */
+  place: number;
+  /** "Champions", "Out in the Finals", "Missed the playoffs". */
+  playoffs: string;
+}
 
 export interface DailyDraftResult {
   place: number;
   field: number;
   overall: number;
+  /** All-Time only, once the season has been played. */
+  season?: DailyDraftSeason;
 }
 
 interface ModeProgress {
@@ -68,6 +79,15 @@ export function saveDailyDraftResult(mode: DailyDraftMode, day: string, result: 
   const current = streak.lastDay === previousDay(day) ? streak.current + 1 : streak.lastDay === day ? streak.current : 1;
   own.streak = { current, best: Math.max(streak.best, current), lastDay: day };
   write({ ...progress, [mode]: own });
+}
+
+/** Adds the season to the day's result (the first one only). */
+export function saveDailyDraftSeason(mode: DailyDraftMode, day: string, season: DailyDraftSeason): void {
+  const progress = read();
+  const result = progress[mode]?.days[day];
+  if (!result || result.season) return;
+  progress[mode]!.days = { ...progress[mode]!.days, [day]: { ...result, season } };
+  write(progress);
 }
 
 /** Forgets the day's result (testing replays only). */

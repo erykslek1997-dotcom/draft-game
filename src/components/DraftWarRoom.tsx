@@ -48,6 +48,7 @@ export function DraftStatus({
   scoutsLeft,
   onScoutsInfo,
   phone,
+  dailyTag,
   children,
 }: {
   youOnClock: boolean;
@@ -70,6 +71,8 @@ export function DraftStatus({
   onScoutsInfo: () => void;
   /** Phone the Desk's chip (PhoneDesk.tsx), next to the scouting reports. */
   phone?: ReactNode;
+  /** "Daily · No Lakers today" — a daily draft only (2026-10-16). */
+  dailyTag?: string;
   /** Extra row (the phone's five dots). */
   children?: ReactNode;
 }) {
@@ -100,6 +103,7 @@ export function DraftStatus({
                 )}
           </span>
         )}
+        {dailyTag && <span className="at-calm-strip-daily">{dailyTag}</span>}
         <span className="wr-status-gap" />
         {scoutsLeft !== null && (
           <button

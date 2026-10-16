@@ -7,8 +7,10 @@ import { NO_THREE_LINE_TIP, gradeTip, spacingUngraded, type GradeKey } from './g
 import { ROLE_FILTERS, ROLE_POSITIONS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
-import { TEAM_COUNT, ROUNDS, currentTeamIndex, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
-import { CAP_LIMIT, ROSTER_SIZE, totalFga, STARTER_SLOTS } from '../engine/positions';
+import { TEAM_COUNT, ROUNDS, currentTeamIndex, dailyAlternative, draftCapLimit, isDailyRuleBlocked, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
+import { dailyRuleWords } from '../dailyDraftDay';
+import { dailyRuleBlocks } from '../engine/dailyDraft';
+import { ROSTER_SIZE, totalFga, STARTER_SLOTS } from '../engine/positions';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { effectiveTalent, displayTalentForSpan } from '../engine/grades';
 import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
@@ -214,6 +216,7 @@ export function OverallTierBadge({ span }: { span: PlayerSpan }) {
 export function draftButtonTitle(state: DraftState, spanId: string, canPick: boolean, currentTeam: Team, label?: string): string | undefined {
   if (!canPick) return `${teamLabel(currentTeam)} is picking…`;
   const reason = pickBlockReason(state, spanId);
+  if (reason === 'rule' && state.dailyRule) return `Not today — ${dailyRuleWords(state.dailyRule).ruleLine.toLowerCase()}.`;
   if (reason === 'cap') return 'Over the cap — pick a cheaper player, or cheaper years for this one.';
   if (reason === 'reserve') {
     const budget = pickBudget(state);
@@ -723,6 +726,8 @@ export default function DraftBoard({
   // on the clock, not one fixed team, so `teamForPanels` only swaps behavior in normal play.
   const humanTeam = state.teams.find((t) => t.isHuman)!;
   const teamForPanels = state.commissionerMode ? currentTeam : humanTeam;
+  // Every team's cap: the real 100.9, or the day's in a daily (2026-10-16).
+  const capLimit = draftCapLimit(state);
 
   // 2026-08-16, user's own ask: span selection + rotation-building moved off their own dedicated
   // post-draft screens and into the Team tab below, reachable from the human's very first pick —
@@ -761,7 +766,7 @@ export default function DraftBoard({
       // earlier real downward swap was already spent on a different pick) must still fall back to
       // preview-only, same as any ordinary above-peak swap.
       const wouldBeRoster = humanTeam.roster.map((p) => (normalizePlayerName(p.playerName) === key ? chosen : p));
-      if (totalFga(wouldBeRoster.map((p) => p.fga)) <= CAP_LIMIT) {
+      if (totalFga(wouldBeRoster.map((p) => p.fga)) <= capLimit) {
         onSwapHumanSpan(playerName, spanId);
         // The real roster (read via `draftedSpan` below) now already reflects this choice — no
         // local override left to fall back from, so a later render doesn't have two conflicting
@@ -818,6 +823,15 @@ export default function DraftBoard({
   // function every render regardless of any memoization upstream, which alone would defeat
   // `RotationBuilder`'s own `React.memo`. Refs hold the latest values so this callback's identity
   // never changes at all, independent of whether `onSubmitTeam` itself is stable in its parent.
+  /** A daily's rule holds for your years too (2026-10-16): the years picker offers no decade and
+   * no second MVP-tier stretch the rule keeps from you, read against the years you have chosen
+   * for everyone else — so the five you submit always keeps to it. */
+  function yearsAllowedToday(spanOpt: { key: string; options: PlayerSpan[] }, selectedId: string): PlayerSpan[] {
+    const rule = state.dailyRule;
+    if (!rule || state.commissionerMode) return spanOpt.options;
+    const others = chosenHumanRoster.filter((p) => normalizePlayerName(p.playerName) !== spanOpt.key);
+    return spanOpt.options.filter((o) => o.id === selectedId || !dailyRuleBlocks(rule, o, others));
+  }
   const chosenHumanRosterRef = useRef(chosenHumanRoster);
   chosenHumanRosterRef.current = chosenHumanRoster;
   const onSubmitTeamRef = useRef(onSubmitTeam);
@@ -875,7 +889,7 @@ export default function DraftBoard({
   // The human's chosen-span roster measured against the cap — the span dropdown can pick a
   // pricier span than was drafted, and nothing downstream clamps it (see the Submit button).
   const chosenRosterFga = totalFga(chosenHumanRoster.map((p) => p.fga));
-  const chosenRosterOverCap = chosenRosterFga > CAP_LIMIT;
+  const chosenRosterOverCap = chosenRosterFga > capLimit;
 
   // 2026-09-02: group the FULL, immutable pool once — not `availablePlayers(state)`, which
   // returns a new array every pick, forcing the expensive per-player enrichment below to re-run
@@ -1223,17 +1237,24 @@ export default function DraftBoard({
     setFgaMin('0');
     setFgaMax(String(limit));
   }, [affordableOnly, affordableMax, showJudgeMetrics, maxCapsActive, maxCaps]);
+  /** The best years the board shows for a player: his best, or — when a daily's rule keeps those
+   * from you (a decade, a second MVP-tier player) — his best years the rule allows (the user,
+   * 2026-10-16: show the best span you can take, no extra words). */
+  function shownBest(group: { bestTalentSpan: PlayerSpan }): PlayerSpan {
+    if (!state.dailyRule || state.commissionerMode) return group.bestTalentSpan;
+    return dailyAlternative(state, group.bestTalentSpan.id) ?? group.bestTalentSpan;
+  }
   /** The stretch a player's card drafts: his best, or his best affordable one when the best isn't
    * (see the card grid below). */
   function cardSpanFor(group: { bestTalentSpan: PlayerSpan; spansByTal: PlayerSpan[] }): PlayerSpan {
-    const best = group.bestTalentSpan;
+    const best = shownBest(group);
     if (canPick && isPickLegal(state, best.id)) return best;
     return group.spansByTal.find((s) => canPick && isPickLegal(state, s.id)) ?? best;
   }
   const bigBoardEntries = bigBoard.flatMap((name) => {
     const group = enrichedGroups.find((g) => g.playerName === name);
     if (!group || state.draftedIds.has(group.spans[0].id)) return [];
-    const best = group.bestTalentSpan;
+    const best = shownBest(group);
     const span = canPick && isPickLegal(state, best.id) ? best : cardSpanFor(group);
     return [{ name, span, legal: canPick && isPickLegal(state, span.id) }];
   });
@@ -1285,7 +1306,9 @@ export default function DraftBoard({
           text={
             state.commissionerMode
               ? 'This draft is not saved — leaving ends it.'
-              : 'Your draft is saved. You can pick it up again from the main menu with “Continue draft”.'
+              : state.dailyDay
+                ? 'Today’s draft is saved. Pick it up again from the daily strip on the menu — it’s still your one try.'
+                : 'Your draft is saved. You can pick it up again from the main menu with “Continue draft”.'
           }
           onStay={closeExitDialog}
           onLeave={onExit}
@@ -1390,7 +1413,8 @@ export default function DraftBoard({
         round={Math.min(state.round + 1, ROUNDS)}
         rounds={ROUNDS}
         capLeft={humanBudget.capLeft}
-        capLimit={CAP_LIMIT}
+        capLimit={capLimit}
+        dailyTag={state.dailyRule || state.dailyDay ? `Daily · ${state.dailyRule ? dailyRuleWords(state.dailyRule).title : 'Open day'}` : undefined}
         slotsLeft={humanBudget.slotsLeft}
         maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
         scoutsLeft={showJudgeMetrics ? null : SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
@@ -1765,9 +1789,11 @@ export default function DraftBoard({
                   rows={groups.slice(0, visibleCount).map((group) => {
                     // The row drafts the player's best stretch, or his best affordable one when the
                     // best is over the cap (see `cardSpanFor`).
-                    const best = group.bestTalentSpan;
+                    const best = shownBest(group);
                     const target = canPick && isPickLegal(state, best.id) ? best : cardSpanFor(group);
                     const ghost = ghosts.get(normalizePlayerName(group.playerName));
+                    // A daily's rule that covers all his years (a franchise block): say so on the row.
+                    const ruled = !ghost && !!state.dailyRule && !state.commissionerMode && isDailyRuleBlocked(state, target);
                     const tier = displayedOverallTier(target);
                     return {
                       key: group.playerName,
@@ -1779,6 +1805,7 @@ export default function DraftBoard({
                       scouted: scoutedPlayers.has(group.playerName),
                       taken: ghost ? `Taken #${ghost.pickNumber} · ${ghost.teamCode}` : undefined,
                       starred: bigBoard.includes(group.playerName),
+                      ruleNote: ruled && state.dailyRule ? dailyRuleWords(state.dailyRule).ruleTag : undefined,
                     };
                   })}
                   scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
@@ -1920,7 +1947,7 @@ export default function DraftBoard({
                       {spanOpt ? (
                         <YearsPicker
                           playerName={spanOpt.playerName}
-                          options={spanOpt.options}
+                          options={yearsAllowedToday(spanOpt, effective.id)}
                           selectedId={effective.id}
                           showTal={showJudgeMetrics}
                           onSelect={(id) => setHumanSpan(spanOpt.key, id, spanOpt.playerName, spanOpt.options)}
@@ -1962,7 +1989,7 @@ export default function DraftBoard({
                   : 'Rotation minutes are set in this same tab.'}
               </span>
               <span className="tm-num">
-                <CapIcon /> {totalFga(displayFgas).toFixed(1)} / {CAP_LIMIT}
+                <CapIcon /> {totalFga(displayFgas).toFixed(1)} / {capLimit}
                 {isViewingHumanRoster && chosenRosterOverCap && ' — over cap'}
               </span>
             </div>
@@ -2049,7 +2076,7 @@ export default function DraftBoard({
                   !state.complete
                     ? `Finish drafting all ${ROSTER_SIZE} picks before you can submit.`
                     : chosenRosterOverCap
-                      ? `Your chosen years cost ${chosenRosterFga.toFixed(1)} caps — over the ${CAP_LIMIT} cap. Pick cheaper years in the roster.`
+                      ? `Your chosen years cost ${chosenRosterFga.toFixed(1)} caps — over the ${capLimit} cap. Pick cheaper years in the roster.`
                       : undefined
                 }
               />
