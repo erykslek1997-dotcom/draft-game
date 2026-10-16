@@ -104,6 +104,18 @@ export function DraftStatus({
                 )}
           </span>
         )}
+        {/* 2026-10-16 (playtest: "na dużym ekranie trudniej zauważyć cap"): your caps sit next to
+            whose pick it is, big, instead of small in the far corner. */}
+        {slotsLeft > 0 && (
+          <span className="wr-caps" title={`${capLeft.toFixed(1)} of ${capLimit} caps left`}>
+            <CapIcon /> <b className="wr-caps-num at-calm-num">{capLeft.toFixed(1)}</b>
+            <span className="wr-caps-of">caps left</span>
+            <span className="wr-caps-track" aria-hidden>
+              <span style={{ width: `${used * 100}%` }} />
+            </span>
+            {maxThisPick !== null && <span className="wr-caps-max">max {maxThisPick.toFixed(1)} this pick</span>}
+          </span>
+        )}
         {dailyTag && <span className="at-calm-strip-daily">{dailyTag}</span>}
         <span className="wr-status-gap" />
         {scoutsLeft !== null && (
@@ -119,15 +131,6 @@ export function DraftStatus({
           </button>
         )}
         {phone}
-        {slotsLeft > 0 && (
-          <span className="wr-caps">
-            <span className="wr-caps-track" aria-hidden>
-              <span style={{ width: `${used * 100}%` }} />
-            </span>
-            <CapIcon /> <b className="at-calm-num">{capLeft.toFixed(1)}</b> left
-            {maxThisPick !== null && <span className="at-calm-soft"> · max {maxThisPick.toFixed(1)} this pick</span>}
-          </span>
-        )}
       </div>
       {children}
     </div>

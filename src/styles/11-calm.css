@@ -83,6 +83,10 @@
   border-radius: 999px; padding: 4px 8px;
 }
 .at-calm-strip-caps { padding-left: 16px; border-left: 1px solid var(--calm-line); }
+/* Big screens: the Mini Draft's caps left in large gold type, like the All-Time status bar. */
+@media (min-width: 861px) {
+  .at-calm-strip-caps-num { font-size: 20px; font-weight: 800; color: #ffd479; vertical-align: -2px; }
+}
 .at-calm-strip-scouts {
   display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none; cursor: pointer;
   font: inherit; font-size: 13px; color: var(--at-ink-soft);
@@ -1189,7 +1193,19 @@ button.rr-rung:focus-visible { outline: 2px solid var(--at-accent); outline-offs
 .at-calm .wr-scouts:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
 .at-calm .wr-status-row .pd-chip { height: 34px; box-sizing: border-box; padding-block: 0; white-space: nowrap; }
 .at-calm .wr-caps { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--at-ink); white-space: nowrap; }
-.at-calm .wr-caps-track { width: 140px; height: 8px; border-radius: 4px; background: #142133; overflow: hidden; margin-right: 4px; }
+.at-calm .wr-caps-num { font-weight: 700; }
+.at-calm .wr-caps-of, .at-calm .wr-caps-max { color: var(--at-ink-soft); }
+.at-calm .wr-caps-track { width: 140px; height: 8px; border-radius: 4px; background: #142133; overflow: hidden; margin: 0 2px; }
+/* 2026-10-16 (playtest: on a big screen the caps were easy to miss): wider screens get them as a
+   gold pill next to whose pick it is; phones keep their own full-width row. */
+@media (min-width: 861px) {
+  .at-calm .wr-caps {
+    gap: 8px; min-height: 40px; box-sizing: border-box; padding: 4px 14px;
+    border: 1px solid rgba(255, 212, 121, 0.4); border-radius: 999px; background: rgba(255, 212, 121, 0.07);
+  }
+  .at-calm .wr-caps-num { font-size: 20px; font-weight: 800; color: #ffd479; line-height: 1; }
+  .at-calm .wr-caps-max { font-weight: 700; color: #ffd479; }
+}
 .at-calm .wr-caps-track > span { display: block; height: 100%; background: #ffd479; }
 
 .at-calm .wr-lane { margin: 0 0 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
@@ -1729,3 +1745,21 @@ button.ph-game { cursor: pointer; }
 .settings-seg > button { min-height: 40px; padding: 8px 16px; }
 .settings-hint { margin: 0; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft, #a9bdd4); }
 .intro-settings { position: absolute; top: 16px; right: 16px; z-index: 5; }
+
+/* 2026-10-16 (playtest: "bardziej responsywne UI"): on a big monitor the draft screens stretched
+   edge to edge — a name at one end of a row, his caps at the other. They stop at a readable width,
+   centred, and the type steps up a little. */
+@media (min-width: 1800px) {
+  .at-shell.at-calm:not(.results-screen) { max-width: 1760px; margin-inline: auto; font-size: 15px; }
+  /* The Mini Draft is one column (no sidebar): narrower still, so his caps sit near his name. */
+  .at-shell.at-calm.qf-shell, .at-shell.at-calm.best-five { max-width: 1400px; }
+}
+@media (min-width: 2400px) {
+  .at-shell.at-calm:not(.results-screen) { max-width: 2000px; font-size: 16px; }
+  .at-shell.at-calm.qf-shell, .at-shell.at-calm.best-five { max-width: 1520px; }
+}
+/* Big screens: the caps meter (Mini Draft, Draw Five) reads as large as the All-Time one. */
+@media (min-width: 861px) {
+  .at-calm .bf-shots-label { font-size: 15px; }
+  .at-calm .bf-shots-label b { font-size: 20px; font-weight: 800; color: #ffd479; }
+}
