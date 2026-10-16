@@ -1720,3 +1720,12 @@ button.ph-game { cursor: pointer; }
 }
 .bomb-card .bomb-go:hover { filter: brightness(1.08); }
 .tm-bomb-note { display: block; font-size: 12px; color: var(--at-ink-soft, #a9bdd4); }
+
+/* 2026-10-16: the settings window. */
+.settings-modal { max-width: 420px; }
+.settings-row { display: grid; gap: 10px; padding: 4px 2px 6px; }
+.settings-label { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-soft, #a9bdd4); }
+.settings-seg { justify-self: start; }
+.settings-seg > button { min-height: 40px; padding: 8px 16px; }
+.settings-hint { margin: 0; font-size: 13px; line-height: 1.5; color: var(--at-ink-soft, #a9bdd4); }
+.intro-settings { position: absolute; top: 16px; right: 16px; z-index: 5; }

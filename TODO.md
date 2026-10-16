@@ -876,6 +876,10 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 
 ### 3.3 All-Time Draft
 
+- [x] **Okienko ustawień — zrobione 2026-10-16.** ⚙ w menu i w nagłówku draftu (All-Time, Mini):
+      szybkość draftowania CPU Calm / Fast / Instant (`src/settings.ts`, `aiSpeed.ts`), zapamiętana
+      w przeglądarce. Miejsce na kolejne ustawienia (np. dźwięk loterii).
+
 - [ ] **Playtest pod kątem spójności z resztą** (S)
 - [ ] **Ton wyniku według miejsca** — ten sam co w Mini.
 - [ ] **Tempo draftu AI (AI-4)** — naprawione tylko zawieszanie w połowie draftu. (S)

@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { SettingsButton, SettingsModal } from './components/SettingsModal';
 import './App.css';
 import { stepDone } from './components/pathProgress';
 // Small modules with no player data: the franchise pool (names, codes, logo parts; its one engine
@@ -311,6 +312,7 @@ function App() {
   const savedDraft = useMemo<DraftSaveSummary | null>(() => (view === 'intro' ? readDraftSaveSummary() : null), [view]);
   const [resumeDraft, setResumeDraft] = useState(false);
   const [confirmNewDraft, setConfirmNewDraft] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // 2026-09-25, user's ask ("zamiast długiego paska ładowania skracamy go czasowo, ładowanie
   // nadal w tle"): a new draft opens straight on its lottery — seed and teams need no player
   // data (engine/draftSetup.ts) — while the data keeps loading behind it. The draft module is
@@ -398,6 +400,10 @@ function App() {
               centred) on the left and the mode list as its own column on the right, once there's
               real width to spend (see the `min-width` breakpoint below); narrower viewports keep
               the original single stacked column, just flowing top to bottom. */}
+          <div className="intro-settings">
+            <SettingsButton onClick={() => setSettingsOpen(true)} />
+          </div>
+          {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
           <div className="intro-columns">
             <div className="intro-hero">
               <header className="app-header">
