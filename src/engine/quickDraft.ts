@@ -1,6 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { peakDraftPool } from './peakDraftPool';
+import { draftPool } from '../data/draftPool';
 import { draftTeamNames } from './teamNames';
 import {
   STARTER_SLOTS,
@@ -71,8 +72,13 @@ const AI_POOL_PER_POSITION = 60;
 
 const players = peakDraftPool;
 const playersById = new Map<string, PlayerSpan>(players.map((p) => [p.id, p]));
+// 2026-10-16, the daily drafts: when the day's rule rules out a player's best years (a decade, a
+// second MVP-tier player), you may take him in other years — so every window can be picked, and
+// drafting one takes all of his.
+const allSpansById = new Map<string, PlayerSpan>(draftPool.map((p) => [p.id, p]));
+const spanFor = (id: string) => playersById.get(id) ?? allSpansById.get(id);
 const spansByNormalizedName = new Map<string, PlayerSpan[]>();
-for (const p of players) {
+for (const p of draftPool) {
   const key = normalizePlayerName(p.playerName);
   const arr = spansByNormalizedName.get(key);
   if (arr) arr.push(p);
@@ -157,9 +163,24 @@ function ruleBlocks(state: QuickDraftState, player: PlayerSpan): boolean {
   return team.isHuman && dailyRuleBlocks(state.dailyRule, player, team.roster);
 }
 
+/**
+ * The years you may take a player in today when the rule rules out his best ones (a decade, a
+ * second MVP-tier player): his best other window the rule allows — `null` when none does (a
+ * franchise block covers his whole career) or the rule doesn't touch him.
+ */
+export function quickDailyAlternative(state: QuickDraftState, playerId: string): PlayerSpan | null {
+  const player = spanFor(playerId);
+  const rule = state.dailyRule;
+  if (!player || !rule) return null;
+  const roster = state.teams.find((t) => t.isHuman)!.roster;
+  if (!dailyRuleBlocks(rule, player, roster)) return null;
+  const others = (spansByNormalizedName.get(normalizePlayerName(player.playerName)) ?? []).filter((s) => !dailyRuleBlocks(rule, s, roster));
+  return others.length ? others.reduce((best, s) => (effectiveTalent(s) > effectiveTalent(best) ? s : best)) : null;
+}
+
 /** Today's rule keeps this player from you (a daily, on your pick). */
 export function isQuickRuleBlocked(state: QuickDraftState, playerId: string): boolean {
-  const player = playersById.get(playerId);
+  const player = spanFor(playerId);
   return !!player && !!state.dailyRule && dailyRuleBlocks(state.dailyRule, player, state.teams.find((t) => t.isHuman)!.roster);
 }
 
@@ -210,7 +231,7 @@ function isCapLegal(currentFgas: number[], candidateFga: number, cap: number): b
  * draft.ts's `strictPickLegal`) — three ~20-shot stars left ~10 shots for two picks and a board
  * of greyed-out cards; `quickPickBudget` below is what the UI shows so the rule is visible. */
 function strictPickLegal(state: QuickDraftState, playerId: string): boolean {
-  const player = playersById.get(playerId);
+  const player = spanFor(playerId);
   if (!player || state.draftedIds.has(playerId)) return false;
   if (ruleBlocks(state, player)) return false;
 
@@ -248,7 +269,7 @@ function noCapLegalPickExists(state: QuickDraftState): boolean {
 
 export function isQuickPickLegal(state: QuickDraftState, playerId: string): boolean {
   if (state.complete) return false;
-  const player = playersById.get(playerId);
+  const player = spanFor(playerId);
   if (!player || state.draftedIds.has(playerId)) return false;
   if (ruleBlocks(state, player)) return false;
 
@@ -289,7 +310,7 @@ export function quickPickBudget(state: QuickDraftState): QuickPickBudget {
 /** Why `playerId` can't be drafted right now, for button tooltips — `null` when it can. */
 export function quickPickBlockReason(state: QuickDraftState, playerId: string): 'cap' | 'reserve' | 'rule' | null {
   if (isQuickPickLegal(state, playerId)) return null;
-  const player = playersById.get(playerId);
+  const player = spanFor(playerId);
   if (!player) return 'cap';
   if (ruleBlocks(state, player)) return 'rule';
   const team = state.teams[currentTeamIndex(state)];
@@ -301,7 +322,7 @@ export function makeQuickPick(state: QuickDraftState, playerId: string): QuickDr
 
   const teamIdx = currentTeamIndex(state);
   const team = state.teams[teamIdx];
-  const player = playersById.get(playerId)!;
+  const player = spanFor(playerId)!;
 
   const draftedIds = new Set(state.draftedIds);
   const siblings = spansByNormalizedName.get(normalizePlayerName(player.playerName)) ?? [player];

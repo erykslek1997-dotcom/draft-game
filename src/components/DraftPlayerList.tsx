@@ -33,6 +33,8 @@ export interface PlayerListRow {
   starred?: boolean;
   /** A daily draft's rule keeps him from you: "Lakers · not today" (2026-10-16). */
   ruleNote?: string;
+  /** A daily's rule rules out his best years and the row shows others: "instead of 2007-09 today". */
+  altNote?: string;
 }
 
 function GradeCell({ label, grade, color, ungraded }: { label: GradeKey; grade: Grade; color: (g: Grade) => string; ungraded?: boolean }) {
@@ -76,7 +78,7 @@ export function DraftPlayerList({
         {scouting && <span role="columnheader">Scouting report</span>}
         <span role="columnheader" aria-label="Draft" />
       </div>
-      {rows.map(({ key, span, tier, tierColor, legal, draftTitle, scouted, taken, starred, ruleNote }) => {
+      {rows.map(({ key, span, tier, tierColor, legal, draftTitle, scouted, taken, starred, ruleNote, altNote }) => {
         const ring = spanTeamColor(span);
         const box = span.box;
         return (
@@ -105,6 +107,8 @@ export function DraftPlayerList({
                   </span>
                   {ruleNote ? (
                     <span className="pl-rule"> · {ruleNote}</span>
+                  ) : altNote ? (
+                    <span className="pl-alt"> · {altNote}</span>
                   ) : (
                     cardRoles(span).length > 0 && <span className="pl-role-list"> · {cardRoles(span).join(' · ')}</span>
                   )}

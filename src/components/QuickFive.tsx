@@ -9,6 +9,7 @@ import {
   autoFinishQuickDraft,
   isQuickPickLegal,
   isQuickRuleBlocked,
+  quickDailyAlternative,
   quickPickBlockReason,
   quickPickBudget,
   finalizeQuickRotation,
@@ -512,13 +513,20 @@ function QuickDraftBoard({
           player cards as the All-Time Draft — tier frame, TAL, team chips, the season's box line —
           without the Scouting button, since every player comes at his single best season here. */}
       <DraftPlayerList
-        rows={filtered.slice(0, visibleCount).map(({ span, tier }) => {
+        rows={filtered.slice(0, visibleCount).map(({ span: peak, tier: peakTier }) => {
+          // 2026-10-16 (the user: "nie powinni być wygaszeni, po prostu informacja że inny span jest
+          // możliwy"): when today's rule rules out his best years, the row offers his best years it
+          // allows; only a player with none (a franchise block) is dimmed.
+          const alt = daily ? quickDailyAlternative(state, peak.id) : null;
+          const span = alt ?? peak;
+          const tier = alt ? overallTierForSpan(tierContextFor(alt)) : peakTier;
           const legal = canPick && isQuickPickLegal(state, span.id);
-          const ruled = daily && isQuickRuleBlocked(state, span.id) ? daily.ruleTag : undefined;
+          const ruled = daily && !alt && isQuickRuleBlocked(state, peak.id) ? daily.ruleTag : undefined;
           const shown = span.fga < 2 ? 'Salary Glue' : tier;
           return {
-            key: span.id,
+            key: peak.id,
             span,
+            altNote: alt ? `instead of ${peak.spanLabel} today` : undefined,
             tier: shown,
             tierColor: TIER_FRAME_COLOR[shown],
             legal,
@@ -526,6 +534,8 @@ function QuickDraftBoard({
             ruleNote: ruled,
             draftTitle: ruled
               ? `Today's rule: ${daily!.ruleLine.toLowerCase()}.`
+              : alt && legal
+                ? `Draft ${span.playerName} ${alt.spanLabel} — today's rule rules out his ${peak.spanLabel}.`
               : !canPick
               ? `${teamLabel(currentTeam)} is picking…`
               : legal

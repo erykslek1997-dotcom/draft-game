@@ -1,7 +1,9 @@
 import { dailyDraftDay, type DailyRule } from '../src/dailyDraftDay';
-import { dailyRuleBlocks, isMvpTier } from '../src/engine/dailyDraft';
+import { dailyRuleBlocks, isMvpTier, windowYears } from '../src/engine/dailyDraft';
+
+const windowEnd = (label: string) => windowYears(label)[1];
 import { peakDraftPool } from '../src/engine/peakDraftPool';
-import { autoFinishQuickDraft, createQuickDraft, finalizeQuickRotation, isQuickPickLegal, quickPickBlockReason } from '../src/engine/quickDraft';
+import { autoFinishQuickDraft, createQuickDraft, finalizeQuickRotation, isQuickPickLegal, quickDailyAlternative, quickPickBlockReason } from '../src/engine/quickDraft';
 import { bestPrimaryAssignment } from '../src/engine/rotation';
 import { totalFga } from '../src/engine/positions';
 
@@ -53,6 +55,19 @@ state = { ...state, teams: state.teams.map((t, i) => ({ ...t, isHuman: i === 0 }
 check(!isQuickPickLegal(state, kobePeak.id) && quickPickBlockReason(state, kobePeak.id) === 'rule', 'on your pick, Kobe is blocked by the rule');
 const cpuOnClock = { ...state, teams: state.teams.map((t) => ({ ...t, isHuman: false })) };
 check(isQuickPickLegal(cpuOnClock, kobePeak.id), 'a CPU team may still take him');
+check(quickDailyAlternative(state, kobePeak.id) === null, 'a franchise block covers his whole career: no other years');
+
+// A rule that rules out his best years leaves you his others (the user, 2026-10-16).
+const duncanPeak = peakDraftPool.find((s) => s.playerName === 'Tim Duncan')!;
+let stars = createQuickDraft(undefined, 4242, { cap: 80, rule: { kind: 'stars', max: 1 } });
+stars = { ...stars, teams: stars.teams.map((t, i) => ({ ...t, isHuman: i === 0, roster: i === 0 ? [duncanPeak] : t.roster })) };
+const kobeOther = quickDailyAlternative(stars, kobePeak.id);
+check(kobeOther !== null && !isMvpTier(kobeOther) && kobeOther.playerName === 'Kobe Bryant', `with Duncan on the team, Kobe is there in years below MVP tier (${kobeOther?.spanLabel})`);
+check(isQuickPickLegal(stars, kobeOther!.id), '... and you can draft him in them');
+const hakeemPeak = peakDraftPool.find((s) => s.playerName === 'Hakeem Olajuwon')!;
+const no90s = { ...createQuickDraft(undefined, 4242, { cap: 80, rule: { kind: 'era', decade: 1990 } }) };
+const hakeemOther = quickDailyAlternative({ ...no90s, teams: no90s.teams.map((t, i) => ({ ...t, isHuman: i === 0 })) }, hakeemPeak.id);
+check(hakeemOther !== null && windowEnd(hakeemOther.spanLabel) < 1990, `on a no-90s day, Olajuwon (${hakeemPeak.spanLabel}) is there in his 80s years (${hakeemOther?.spanLabel})`);
 
 // Whole days, every kind of rule: complete, under the cap, your five clean.
 let teams = 0;
