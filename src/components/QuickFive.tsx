@@ -174,7 +174,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   }
 
   return (
-    <div className="at-shell at-calm">
+    <div className="at-shell at-calm qf-shell">
       {/* 2026-10-07, the UI simplification: the All-Time Draft's one-row header. */}
       {phase === 'day' && daily && (
         <DailyDraftDayScreen day={daily} slot={humanTeam.draftSlot} rosterSize={QUICK_ROUNDS} onStart={() => setPhase('lottery')} onBack={onExit} />

@@ -80,7 +80,7 @@ export function DraftStrip({
       </span>
       {slotsLeft > 0 && (
         <span className="at-calm-strip-caps">
-          <CapIcon /> <b className="at-calm-num">{capLeft.toFixed(1)}</b>{' '}
+          <CapIcon /> <b className="at-calm-num at-calm-strip-caps-num">{capLeft.toFixed(1)}</b>{' '}
           <span className="at-calm-soft">
             caps left{slotsLeft > 1 && <> · ~{perPick.toFixed(1)} a pick</>}
             {maxThisPick !== null && <> · max {maxThisPick.toFixed(1)} this pick</>}
