@@ -1419,10 +1419,10 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     return { wins: row.wins, losses: row.losses, place, playoffs };
   }, [daily, humanRanked, seasonState]);
   useEffect(() => {
-    if (daily && humanRanked) saveDailyDraftResult('alltime', daily.day, { place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall });
+    if (daily && !daily.testing && humanRanked) saveDailyDraftResult('alltime', daily.day, { place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall });
   }, [daily, humanRanked, ranked.length]);
   useEffect(() => {
-    if (daily && dailySeason) saveDailyDraftSeason('alltime', daily.day, dailySeason);
+    if (daily && !daily.testing && dailySeason) saveDailyDraftSeason('alltime', daily.day, dailySeason);
   }, [daily, dailySeason]);
   const [dailyCopied, setDailyCopied] = useState(false);
   async function copyDailyResult() {

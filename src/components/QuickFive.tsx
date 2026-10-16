@@ -115,7 +115,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   function restart(seed?: number) {
     const humanName = state.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
     // A daily replays only in testing, and only today's draft.
-    if (daily) clearDailyDraftResult('mini', daily.day);
+    if (daily && !daily.testing) clearDailyDraftResult('mini', daily.day);
     setState(freshDraft(humanName, seed));
     setSearch('');
     setPositionOverride(null);
@@ -640,7 +640,7 @@ function QuickResults({
   const tier = resultTier(humanRank, TEAM_COUNT);
   // A daily keeps its first result for the day (the menu shows it, the streak moves on).
   useEffect(() => {
-    if (daily) saveDailyDraftResult('mini', daily.day, { place: humanRank, field: TEAM_COUNT, overall: human.score.composite });
+    if (daily && !daily.testing) saveDailyDraftResult('mini', daily.day, { place: humanRank, field: TEAM_COUNT, overall: human.score.composite });
   }, [daily, humanRank, human.score.composite]);
   const [dailyCopied, setDailyCopied] = useState(false);
   async function copyDailyResult() {

@@ -20,7 +20,7 @@ import { LIVE_TEST_BENCH_FOR_TESTING } from './components/testingFlags';
 import { DAILY_REPLAY_FOR_TESTING, currentStreak, dailyEntry, dailySeed, localDayKey, yesterdayJokers } from './components/dailyProgress';
 // Seed-only (rng + a list of names): safe for the menu, which must not pull the engine in.
 import { dailyMeta, JOKERS_MAX, JOKERS_MIN } from './engine/dailyMeta';
-import { dailyDraftDay, type DailyDraftDay, type DailyDraftMode } from './dailyDraftDay';
+import { dailyDayLabel, dailyDraftDay, type DailyDraftDay, type DailyDraftMode } from './dailyDraftDay';
 import { dailyDraftResult, dailyDraftStreak, ordinal } from './components/dailyDraftProgress';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
@@ -120,37 +120,68 @@ function DailyStrip({ onPlay }: { onPlay: () => void }) {
  * 2026-10-16, the daily drafts: the same strip under the Mini Draft card — the day's cap and rule
  * on the card (the user: "na karcie"), then the result and the streak once played. One try a day;
  * the testing replay switch (`DAILY_REPLAY_FOR_TESTING`) keeps it open.
+ * While testing, "Reroll" deals another day's draft (the user, 2026-10-16: "na czas testingu
+ * uruchom możliwość rerolla daily challenge") — played like today's, its result never kept.
  */
-function DailyDraftStrip({ mode, onPlay }: { mode: DailyDraftMode; onPlay: (day: DailyDraftDay) => void }) {
+function DailyDraftStrip({
+  mode,
+  onPlay,
+  offset = 0,
+  onReroll,
+}: {
+  mode: DailyDraftMode;
+  onPlay: (day: DailyDraftDay) => void;
+  /** Days from today of the rerolled testing day; 0 = today. */
+  offset?: number;
+  onReroll?: (offset: number) => void;
+}) {
   const today = localDayKey();
-  const day = dailyDraftDay(mode, today);
-  const played = dailyDraftResult(mode, today);
+  const testing = offset !== 0;
+  const dayKey = testing ? localDayKey(new Date(Date.now() + offset * 864e5)) : today;
+  const day: DailyDraftDay = { ...dailyDraftDay(mode, dayKey), ...(testing ? { testing: true } : {}) };
+  const played = testing ? null : dailyDraftResult(mode, today);
   // The All-Time daily keeps its own save: left halfway, the strip takes you back to it.
-  const saved = mode === 'alltime' && !played ? readDraftSaveSummary('daily') : null;
+  const saved = mode === 'alltime' && !played && !testing ? readDraftSaveSummary('daily') : null;
   const inProgress = saved?.day === today ? saved : null;
   const streak = dailyDraftStreak(mode, today);
   const open = !played || DAILY_REPLAY_FOR_TESTING;
   return (
-    <button
-      type="button"
-      className={`mode-card-daily${played ? ' is-played' : ''}${streak >= 3 ? ' is-hot' : ''}`}
-      onClick={() => open && onPlay(day)}
-      disabled={!open}
-    >
-      <span className="mode-card-daily-label at-cond">📅 Daily draft</span>
-      <span className="mode-card-daily-state">
-        {played
-          ? `✓ ${ordinal(played.place)} of ${played.field} · ${played.overall}${played.season ? ` · ${played.season.wins}-${played.season.losses}` : ''}`
-          : inProgress
-            ? `continue · ${inProgress.humanPicks}/${inProgress.rosterSize} picks`
-            : 'one try today'}
-        {DAILY_REPLAY_FOR_TESTING && ' · testing: replay on'}
-      </span>
-      {streak > 0 && <span className="mode-card-daily-streak">🔥 {streak}</span>}
-      <span className="mode-card-daily-meta">
-        <b>{day.cap} caps</b> · {day.rule.kind === 'open' ? 'Open day — no extra rule' : day.ruleLine}
-      </span>
-    </button>
+    <>
+      <button
+        type="button"
+        className={`mode-card-daily${played ? ' is-played' : ''}${streak >= 3 ? ' is-hot' : ''}`}
+        onClick={() => open && onPlay(day)}
+        disabled={!open}
+      >
+        <span className="mode-card-daily-label at-cond">📅 Daily draft</span>
+        <span className="mode-card-daily-state">
+          {played
+            ? `✓ ${ordinal(played.place)} of ${played.field} · ${played.overall}${played.season ? ` · ${played.season.wins}-${played.season.losses}` : ''}`
+            : inProgress
+              ? `continue · ${inProgress.humanPicks}/${inProgress.rosterSize} picks`
+              : testing
+                ? `testing: ${dailyDayLabel(day.day)}`
+                : 'one try today'}
+          {DAILY_REPLAY_FOR_TESTING && !testing && ' · testing: replay on'}
+        </span>
+        {streak > 0 && !testing && <span className="mode-card-daily-streak">🔥 {streak}</span>}
+        <span className="mode-card-daily-meta">
+          <b>{day.cap} caps</b> · {day.rule.kind === 'open' ? 'Open day — no extra rule' : day.ruleLine}
+        </span>
+      </button>
+      {DAILY_REPLAY_FOR_TESTING && onReroll && (
+        <span className="mode-card-daily-test">
+          <button type="button" onClick={() => onReroll(1 + Math.floor(Math.random() * 365))}>
+            🎲 Reroll the day (testing)
+          </button>
+          {testing && (
+            <button type="button" onClick={() => onReroll(0)}>
+              Back to today
+            </button>
+          )}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -270,6 +301,8 @@ function App() {
   const [miniDaily, setMiniDaily] = useState<DailyDraftDay | null>(null);
   // Today's All-Time daily when it was opened from its strip; null for a regular draft.
   const [allTimeDaily, setAllTimeDaily] = useState<DailyDraftDay | null>(null);
+  // Testing only: how many days from today each mode's daily strip is rerolled to.
+  const [dailyReroll, setDailyReroll] = useState<Record<DailyDraftMode, number>>({ mini: 0, alltime: 0 });
   // Re-read whenever the intro is shown: GameShell strips a shared link's params from the URL once
   // it has used them (2026-09-24), so the "Duel loaded" banner must not outlive that.
   const sharedDraftSeed = useMemo(() => (view === 'intro' ? sharedDraftSeedFromUrl() : null), [view]);
@@ -484,6 +517,8 @@ function App() {
                 </button>
                 <DailyDraftStrip
                   mode="mini"
+                  offset={dailyReroll.mini}
+                  onReroll={(n) => setDailyReroll((r) => ({ ...r, mini: n }))}
                   onPlay={(day) => {
                     setMiniDaily(day);
                     setView('quickfive');
@@ -513,6 +548,8 @@ function App() {
                 </button>
                 <DailyDraftStrip
                   mode="alltime"
+                  offset={dailyReroll.alltime}
+                  onReroll={(n) => setDailyReroll((r) => ({ ...r, alltime: n }))}
                   onPlay={(day) => {
                     setAllTimeDaily(day);
                     setResumeDraft(false);

@@ -205,6 +205,8 @@ const newDailyDraft = (daily: DailyDraftDay, humanTeamName?: string) =>
 
 /** Today's daily from its own save, when that save is today's; an older day's save is dropped. */
 function loadDailyDraft(daily: DailyDraftDay) {
+  // A rerolled testing day never touches the saved one.
+  if (daily.testing) return null;
   const saved = loadDraft('daily');
   if (saved && saved.state.dailyDay === daily.day) return saved;
   if (saved) clearDraftSave('daily');
@@ -340,10 +342,10 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // 2026-09-24: autosave after every pick (and the post-draft AI finalization) while drafting;
   // a submitted team is finished, so its save is dropped.
   useEffect(() => {
-    if (commissionerMode) return;
+    if (commissionerMode || daily?.testing) return;
     if (phase === 'results') clearDraftSave(saveSlotFor(draftState));
     else if (phase === 'draft' && draftState.history.length > 0) saveDraft(draftState, challenger);
-  }, [draftState, phase, challenger, commissionerMode]);
+  }, [draftState, phase, challenger, commissionerMode, daily]);
 
   function handlePick(playerId: string) {
     setDraftState((s) => makePick(s, playerId));
@@ -403,9 +405,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
    * accidental replay through a URL param that never went away; without, a fresh random draft. */
   function handleRematch(seed?: number) {
     const humanName = draftState.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
-    clearDraftSave(saveSlotFor(draftState));
+    if (!daily?.testing) clearDraftSave(saveSlotFor(draftState));
     // A daily replays only in testing, and only today's draft.
-    if (daily) clearDailyDraftResult('alltime', daily.day);
+    if (daily && !daily.testing) clearDailyDraftResult('alltime', daily.day);
     setDraftState(daily ? newDailyDraft(daily, humanName) : createDraft(commissionerMode, undefined, humanName, seed));
     setChallenger(undefined);
     setFinalTeams(null);
