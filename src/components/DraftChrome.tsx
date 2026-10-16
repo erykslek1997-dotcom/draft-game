@@ -37,6 +37,7 @@ export function DraftStrip({
   maxThisPick,
   scoutsLeft = null,
   onScoutsInfo,
+  dailyTag,
 }: {
   youOnClock: boolean;
   complete: boolean;
@@ -54,6 +55,8 @@ export function DraftStrip({
   /** Scouting reports left (null: not shown); the chip opens the "?" dialog that explains them. */
   scoutsLeft?: number | null;
   onScoutsInfo?: () => void;
+  /** A daily draft's rule, short ("Daily · No Lakers today"). */
+  dailyTag?: string;
 }) {
   const perPick = slotsLeft > 0 ? capLeft / slotsLeft : capLeft;
   return (
@@ -89,6 +92,7 @@ export function DraftStrip({
           <MagnifierIcon /> {scoutsLeft} scouting report{scoutsLeft === 1 ? '' : 's'} left
         </button>
       )}
+      {dailyTag && <span className="at-calm-strip-daily">{dailyTag}</span>}
       {recentPicks.length > 0 && (
         <span className="at-calm-strip-last">
           {recentPicks.map((p, i) => (

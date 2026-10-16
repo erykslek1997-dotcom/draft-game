@@ -8,10 +8,11 @@ import {
   resolveQuickAiPickIfNeeded,
   autoFinishQuickDraft,
   isQuickPickLegal,
+  isQuickRuleBlocked,
+  quickDailyAlternative,
   quickPickBlockReason,
   quickPickBudget,
   finalizeQuickRotation,
-  QUICK_CAP_LIMIT,
   QUICK_ROUNDS,
   type QuickDraftState,
 } from '../engine/quickDraft';
@@ -47,6 +48,10 @@ import { cpuPickDelay } from './aiSpeed';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
 import { BoardToggleButton, DraftStrip, LeaveDraftDialog, RimPressureNote, type TickerPick } from './DraftChrome';
 import { FitName, FitTeam } from './FitName';
+import type { DailyDraftDay } from '../dailyDraftDay';
+import { DailyDraftDayScreen } from './DailyDraftDay';
+import { clearDailyDraftResult, saveDailyDraftResult } from './dailyDraftProgress';
+import { DAILY_REPLAY_FOR_TESTING } from './dailyProgress';
 
 interface Props {
   humanTeamName?: string;
@@ -55,16 +60,18 @@ interface Props {
   onNextStep?: () => void;
   /** A friend's "Challenge a friend" link: their board and their score. */
   challenge?: ModeChallenge;
+  /** Today's daily draft (2026-10-16): its seed, cap and rule. */
+  daily?: DailyDraftDay;
 }
 
-type Phase = 'lottery' | 'draft' | 'results';
+type Phase = 'day' | 'lottery' | 'draft' | 'results';
 
 // 2026-09-17, user's own ask: a real "how to play?" on the lottery screen, same as the full draft
 // — but this mode's own rules, not a copy of the 9-round ones (no bench/rotation step, no span
 // choice, a different cap/round count).
-const QUICK_HOW_TO_PLAY = [
+const quickHowToPlay = (cap: number) => [
   { title: 'Draft', body: `${TEAM_COUNT} teams take turns, ${QUICK_ROUNDS} rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
-  { title: 'Caps', body: `Every pick costs caps — his shots per game in those years. Your five starters have to fit under ${QUICK_CAP_LIMIT} caps.` },
+  { title: 'Caps', body: `Every pick costs caps — his shots per game in those years. Your five starters have to fit under ${cap} caps.` },
   { title: 'Peak only', body: "No choosing years — every player is shown at his single best season, so each pick is quick." },
   { title: 'Grading', body: 'The judge scores your five the same way the full draft does — talent, offense, defense, spacing, fit — right after your last pick.' },
 ];
@@ -91,9 +98,11 @@ const QUICK_HOW_TO_PLAY = [
 /** CPU pick delay while "Skip to my pick" runs, ms. */
 const RUSH_PICK_MS = 90;
 
-export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge }: Props) {
-  const [state, setState] = useState<QuickDraftState>(() => createQuickDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined));
-  const [phase, setPhase] = useState<Phase>('lottery');
+export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge, daily }: Props) {
+  const freshDraft = (name?: string, seed?: number) =>
+    daily ? createQuickDraft(name, daily.seed, daily) : createQuickDraft(name, seed);
+  const [state, setState] = useState<QuickDraftState>(() => freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined));
+  const [phase, setPhase] = useState<Phase>(daily ? 'day' : 'lottery');
   // 2026-09-24: a "← Menu" with a confirm instead of a bare Exit at the very bottom, and every
   // phase opening at the top.
   const [boardOpen, setBoardOpen] = useState(false);
@@ -105,10 +114,12 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   /** New draft (no seed) or "Rematch this board" (same seed), straight from the results. */
   function restart(seed?: number) {
     const humanName = state.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
-    setState(createQuickDraft(humanName, seed));
+    // A daily replays only in testing, and only today's draft.
+    if (daily) clearDailyDraftResult('mini', daily.day);
+    setState(freshDraft(humanName, seed));
     setSearch('');
     setPositionOverride(null);
-    setPhase('lottery');
+    setPhase(daily ? 'day' : 'lottery');
   }
   const [autoFinishing, setAutoFinishing] = useState(false);
   const [search, setSearch] = useState('');
@@ -163,7 +174,10 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   return (
     <div className="at-shell at-calm">
       {/* 2026-10-07, the UI simplification: the All-Time Draft's one-row header. */}
-      {phase !== 'lottery' && (
+      {phase === 'day' && daily && (
+        <DailyDraftDayScreen day={daily} slot={humanTeam.draftSlot} rosterSize={QUICK_ROUNDS} onStart={() => setPhase('lottery')} onBack={onExit} />
+      )}
+      {phase !== 'lottery' && phase !== 'day' && (
         <div className="at-calm-header">
           <button
             type="button"
@@ -172,7 +186,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
           >
             ← Menu
           </button>
-          <h1 className="at-calm-title">Mini Draft</h1>
+          <h1 className="at-calm-title">{daily ? 'Daily Mini Draft' : 'Mini Draft'}</h1>
           {phase === 'draft' && !state.complete ? (
             <BoardToggleButton open={boardOpen} onToggle={() => setBoardOpen((o) => !o)} />
           ) : (
@@ -184,7 +198,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
         <LeaveDraftDialog text="Mini Drafts aren't saved — leaving ends this one." onStay={closeExitDialog} onLeave={onExit} />
       )}
       {phase === 'lottery' && (
-        <DraftLottery teams={state.teams} rounds={QUICK_ROUNDS} onDone={() => setPhase('draft')} howToPlay={QUICK_HOW_TO_PLAY} onExit={onExit} />
+        <DraftLottery teams={state.teams} rounds={QUICK_ROUNDS} onDone={() => setPhase('draft')} howToPlay={quickHowToPlay(state.capLimit)} onExit={onExit} />
       )}
       {phase === 'draft' && (
         <QuickDraftBoard
@@ -204,6 +218,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
           boardOpen={boardOpen}
           rushToMe={rushToMe}
           onRushToMe={() => setRushToMe(true)}
+          daily={daily}
         />
       )}
       {phase === 'results' && (
@@ -213,8 +228,9 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
           onExit={onExit}
           onNewDraft={() => restart()}
           onRematch={() => restart(state.seed)}
-          onNextStep={onNextStep}
+          onNextStep={daily ? undefined : onNextStep}
           challenge={challenge && Number(challenge.seed) === state.seed ? challenge : undefined}
+          daily={daily}
         />
       )}
     </div>
@@ -261,6 +277,7 @@ function QuickDraftBoard({
   boardOpen,
   rushToMe,
   onRushToMe,
+  daily,
 }: {
   state: QuickDraftState;
   canPick: boolean;
@@ -278,6 +295,7 @@ function QuickDraftBoard({
   onRushToMe: () => void;
   teamIdx: number;
   boardOpen: boolean;
+  daily?: DailyDraftDay;
 }) {
   // Cheap pass only: drop drafted players, position filter, search box, tier sort — no per-player
   // tier-lookup call here, that's all already done once in `allEnrichedOnce` above. Re-runs on
@@ -386,9 +404,10 @@ function QuickDraftBoard({
           round={Math.min(state.round + 1, QUICK_ROUNDS)}
           rounds={QUICK_ROUNDS}
           progress={state.history.length / (TEAM_COUNT * QUICK_ROUNDS)}
-          capLeft={QUICK_CAP_LIMIT - humanShotsUsed}
+          capLeft={state.capLimit - humanShotsUsed}
           slotsLeft={QUICK_ROUNDS - humanTeam.roster.length}
           maxThisPick={canPick && budget.maxThisPick < priciestAvailable ? budget.maxThisPick : null}
+          dailyTag={daily ? `Daily · ${daily.title}` : undefined}
         />
         {!canPick && picksAway != null && picksAway > 1 && !rushToMe && (
           <button type="button" className="at-calm-btn qf-skip" onClick={onRushToMe}>
@@ -414,7 +433,7 @@ function QuickDraftBoard({
         )}
       </div>
 
-      <ShotsMeter used={humanShotsUsed} cap={QUICK_CAP_LIMIT} label="Your caps" />
+      <ShotsMeter used={humanShotsUsed} cap={state.capLimit} label="Your caps" />
 
       {/* 2026-09-11, user-reported live: "ważne żebyśmy mogli zobaczyć własny zespoł bo nie wiem
           ile mam zabranych rzutów" — the cap number alone didn't show WHICH players it came from.
@@ -435,7 +454,7 @@ function QuickDraftBoard({
               <FitName className="qf-team-card-name" name={p.playerName} faceNextToIt />
               <span className="qf-team-card-tal">
                 <span>TAL <b>{formatTal(displayTalentForSpan(tierContextFor(p)))}</b></span>
-                <ShotChip fga={p.fga} cap={QUICK_CAP_LIMIT} />
+                <ShotChip fga={p.fga} cap={state.capLimit} />
               </span>
             </div>
           ) : (
@@ -457,7 +476,7 @@ function QuickDraftBoard({
                 <span className="qf-team-card-slot at-cond">EXTRA</span>
                 <Face name={p.playerName} />
                 <FitName className="qf-team-card-name" name={p.playerName} faceNextToIt />
-                <ShotChip fga={p.fga} cap={QUICK_CAP_LIMIT} />
+                <ShotChip fga={p.fga} cap={state.capLimit} />
               </div>
             ))}
           </div>
@@ -494,23 +513,35 @@ function QuickDraftBoard({
           player cards as the All-Time Draft — tier frame, TAL, team chips, the season's box line —
           without the Scouting button, since every player comes at his single best season here. */}
       <DraftPlayerList
-        rows={filtered.slice(0, visibleCount).map(({ span, tier }) => {
+        rows={filtered.slice(0, visibleCount).map(({ span: peak, tier: peakTier }) => {
+          // 2026-10-16 (the user: "nie powinni być wygaszeni" … "po prostu wyświetlaj najlepszy
+          // dostępny span"): when today's rule rules out his best years, the row simply shows his
+          // best years it allows; only a player with none (a franchise block) is dimmed.
+          const alt = daily ? quickDailyAlternative(state, peak.id) : null;
+          const span = alt ?? peak;
+          const tier = alt ? overallTierForSpan(tierContextFor(alt)) : peakTier;
           const legal = canPick && isQuickPickLegal(state, span.id);
+          const ruled = daily && !alt && isQuickRuleBlocked(state, peak.id) ? daily.ruleTag : undefined;
           const shown = span.fga < 2 ? 'Salary Glue' : tier;
           return {
-            key: span.id,
+            key: peak.id,
             span,
             tier: shown,
             tierColor: TIER_FRAME_COLOR[shown],
             legal,
             scouted: false,
-            draftTitle: !canPick
+            ruleNote: ruled,
+            draftTitle: ruled
+              ? `Today's rule: ${daily!.ruleLine.toLowerCase()}.`
+              : alt && legal
+                ? `Draft ${span.playerName} ${alt.spanLabel} — today's rule rules out his ${peak.spanLabel}.`
+              : !canPick
               ? `${teamLabel(currentTeam)} is picking…`
               : legal
                 ? `Draft ${span.playerName}`
                 : quickPickBlockReason(state, span.id) === 'reserve'
                   ? `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${budget.maxThisPick} caps.`
-                  : `Over the ${QUICK_CAP_LIMIT}-cap limit — pick a cheaper player.`,
+                  : `Over the ${state.capLimit}-cap limit — pick a cheaper player.`,
           };
         })}
         gradeColor={gradeColor}
@@ -564,6 +595,7 @@ function QuickResults({
   onRematch,
   onNextStep,
   challenge,
+  daily,
 }: {
   state: QuickDraftState;
   teamCodeByTeamId: Map<string, string>;
@@ -572,6 +604,7 @@ function QuickResults({
   onRematch: () => void;
   onNextStep?: () => void;
   challenge?: ModeChallenge;
+  daily?: DailyDraftDay;
 }) {
   useEffect(() => markStepDone('quickfive'), []);
   const [shareOpen, setShareOpen] = useState(false);
@@ -605,6 +638,24 @@ function QuickResults({
     return breakdown ? bestHistoricalComp(human.team, breakdown, fitScore(human.team)) : null;
   }, [ranked, human]);
   const tier = resultTier(humanRank, TEAM_COUNT);
+  // A daily keeps its first result for the day (the menu shows it, the streak moves on).
+  useEffect(() => {
+    if (daily) saveDailyDraftResult('mini', daily.day, { place: humanRank, field: TEAM_COUNT, overall: human.score.composite });
+  }, [daily, humanRank, human.score.composite]);
+  const [dailyCopied, setDailyCopied] = useState(false);
+  async function copyDailyResult() {
+    if (!daily) return;
+    // No names: the same draft is everyone's today.
+    const text = [
+      `Draftverse Daily · Mini · ${daily.day}`,
+      `${daily.cap} caps · ${daily.title}`,
+      `${ordinal(humanRank)} / ${TEAM_COUNT} · ${human.score.composite}`,
+    ].join('\n');
+    if (await copyLink(text)) {
+      setDailyCopied(true);
+      setTimeout(() => setDailyCopied(false), 2000);
+    }
+  }
   const barKeys: (keyof LineupScore)[] = ['talent', 'offense', 'defense', 'spacing', 'fit'];
 
   // 2026-09-11, user-reported live: "brak insightu" — the field/bars alone never explained WHY.
@@ -674,7 +725,7 @@ function QuickResults({
       <header className={`rs-hero rr-hero${humanRank === 1 ? ' is-champ' : ''}`}>
         <div className="rr-hero-grid">
           <div className="rr-hero-main">
-            <span className="rr-label">Final standings</span>
+            <span className="rr-label">{daily ? `Daily · ${daily.title}` : 'Final standings'}</span>
             <span className="rr-place">
               <b>
                 {humanRank}
@@ -709,6 +760,21 @@ function QuickResults({
           </div>
         </div>
       </header>
+      {daily ? (
+        <div className="rs-actions rr-actions">
+          <button type="button" className="rs-primary" onClick={copyDailyResult}>
+            {dailyCopied ? '✓ Result copied' : 'Copy today’s result'}
+          </button>
+          <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
+            Share
+          </button>
+          {DAILY_REPLAY_FOR_TESTING && (
+            <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRematch}>
+              Replay (testing)
+            </button>
+          )}
+        </div>
+      ) : (
       <div className="rs-actions rr-actions">
         <button type="button" className="rs-primary" onClick={onNewDraft}>
           New draft
@@ -728,6 +794,7 @@ function QuickResults({
           Rematch this board
         </button>
       </div>
+      )}
       <h3 className="rr-section">Your five</h3>
       <RosterGrid team={human.team} />
       <h3 className="rr-section">{humanRank === 1 ? 'Why you won' : 'Why you finished here'}</h3>

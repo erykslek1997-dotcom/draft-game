@@ -1628,3 +1628,33 @@ button.ph-game { cursor: pointer; }
 .ss-share-btn { margin-left: 8px; padding: 8px 16px; font-size: 14px; }
 /* 2026-10-15: a three-point % on fewer threes than games played reads as noise, not a number. */
 .at-calm .ss-table td.is-few { color: var(--at-ink-faint); opacity: 0.6; }
+
+/* 2026-10-16, the daily drafts (mockup docs/mockups/daily-drafts.html): the day's rules before the
+   lottery, the rule chip on the draft strip, and a player the rule keeps from you. */
+.dd-day { max-width: 640px; margin: 0 auto; }
+.dd-date { margin: 8px 0 2px; text-align: center; font: 600 12px var(--calm-num); letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-ink-soft); }
+.dd-title { margin: 0 0 18px; text-align: center; font-size: 26px; font-weight: 800; text-wrap: balance; }
+.dd-rules { display: flex; flex-direction: column; gap: 10px; }
+.dd-rule {
+  display: grid; grid-template-columns: 48px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; align-items: start;
+  padding: 14px; border-radius: 14px; border: 1px solid var(--calm-line); background: var(--calm-raised);
+}
+.dd-ic {
+  grid-column: 1; grid-row: 1 / span 3; width: 48px; height: 48px; box-sizing: border-box; border-radius: 12px;
+  display: grid; place-items: center; font: 800 15px var(--calm-num); border: 1px solid var(--at-edge); background: var(--calm-raised-2);
+}
+.dd-ic--cap { color: #ffd479; }
+.dd-who, .dd-what, .dd-why { grid-column: 2; min-width: 0; }
+.dd-who { font: 700 11px var(--calm-num); letter-spacing: 0.1em; text-transform: uppercase; color: var(--at-ink-faint); }
+.dd-what { font-size: 16px; font-weight: 700; color: var(--at-ink); }
+.dd-why { font-size: 13px; color: var(--at-ink-soft); }
+.dd-rule.is-today { border-color: rgba(255, 212, 121, 0.35); background: rgba(255, 212, 121, 0.06); }
+.dd-rule.is-today .dd-ic { color: #ffd479; border-color: rgba(255, 212, 121, 0.35); }
+.dd-start { display: block; width: 100%; margin-top: 18px; min-height: 48px; font-size: 15px; }
+.at-calm-strip-daily {
+  font-size: 12px; font-weight: 700; color: #ffd479; white-space: nowrap;
+  border: 1px solid rgba(255, 212, 121, 0.35); background: rgba(255, 212, 121, 0.08); border-radius: 999px; padding: 3px 10px;
+}
+.at-calm .pl-rule { color: #ffd479; font-weight: 700; }
+.at-calm .pl-table .pl-row.is-ruled .pl-player { opacity: 0.55; }
+.mode-card-daily:disabled { cursor: default; }

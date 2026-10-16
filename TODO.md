@@ -862,7 +862,14 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       najlepszej możliwej drużyny (CPU zabiera graczy), więc ton według miejsca: 1. miejsce już dziś
       same pochwały; rozszerzyć na top 3, gdzie słabości tylko jako „co mogłoby zagrozić”. Wspólne
       z All-Time. (M)
-- [ ] **Daily dla Mini** — zasady w „Daily w draftach — specyfikacja” niżej (3.4). (M)
+- [x] **Daily dla Mini — zrobione 2026-10-16.** Pasek „Daily draft” pod kartą Mini (limit i zasada
+      dnia na karcie, wynik i streak po zagraniu), ekran dnia przed loterią, chip zasady w pasku
+      draftu, zablokowani gracze przygaszeni z powodem („Lakers · not today”), wynik dnia i „Copy
+      today's result” bez nazwisk. Dzień z daty (`src/dailyDraftDay.ts`, bez silnika): limit 65–80,
+      blok franczyzy (15 drużyn z największą liczbą topowych graczy) / blok dekady / max 1 MVP+,
+      niedziela otwarta. Zasada sprawdzana w `engine/dailyDraft.ts`, limit w stanie draftu
+      (`QuickDraftState.capLimit`). Test `scripts/testDailyDraft.ts`. Na później w Mini: narzucony
+      gracz, styl dnia.
 - [ ] **Playtest całego trybu + lista poprawek** (S)
 
 ### 3.3 All-Time Draft
@@ -935,6 +942,10 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 
 Otwarte: ile ograniczeń naraz (1 czy 2), czy Mini i All-Time mają ten sam dzień zasad, czy zasady
 widać przed startem (tak — ekran dnia przed loterią), czy dzień może być „bez ograniczeń”.
+
+**Ustalone 2026-10-16 (użytkownik: „brzmi dobrze”):** the bomb to jedna z zasad w rotacji All-Time
+(~1–2 razy w tygodniu), nie codziennie; numer w drafcie z ziarna dnia — ten sam dla wszystkich,
+co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
 
 **Ustalone 2026-10-16 (użytkownik, po makietach):**
 - Zasady dnia **widoczne na karcie trybu** w menu (nie niespodzianka).

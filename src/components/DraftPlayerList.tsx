@@ -31,6 +31,8 @@ export interface PlayerListRow {
   taken?: string;
   /** On your Big Board (undefined: the mode has no Big Board). */
   starred?: boolean;
+  /** A daily draft's rule keeps him from you: "Lakers · not today" (2026-10-16). */
+  ruleNote?: string;
 }
 
 function GradeCell({ label, grade, color, ungraded }: { label: GradeKey; grade: Grade; color: (g: Grade) => string; ungraded?: boolean }) {
@@ -74,14 +76,14 @@ export function DraftPlayerList({
         {scouting && <span role="columnheader">Scouting report</span>}
         <span role="columnheader" aria-label="Draft" />
       </div>
-      {rows.map(({ key, span, tier, tierColor, legal, draftTitle, scouted, taken, starred }) => {
+      {rows.map(({ key, span, tier, tierColor, legal, draftTitle, scouted, taken, starred, ruleNote }) => {
         const ring = spanTeamColor(span);
         const box = span.box;
         return (
           <div
             key={key}
             role="row"
-            className={`pl-row${taken ? ' is-taken' : ''}${taken && leaving ? ' is-leaving' : ''}`}
+            className={`pl-row${taken ? ' is-taken' : ''}${taken && leaving ? ' is-leaving' : ''}${ruleNote ? ' is-ruled' : ''}`}
             style={{ '--tier': tierColor, ...(ring ? { '--ring': ring } : {}) } as CSSProperties}
           >
             <button
@@ -101,7 +103,11 @@ export function DraftPlayerList({
                   <span className="pl-meta">
                     {naturalPosition(span.playerName)} · {span.spanLabel}
                   </span>
-                  {cardRoles(span).length > 0 && <span className="pl-role-list"> · {cardRoles(span).join(' · ')}</span>}
+                  {ruleNote ? (
+                    <span className="pl-rule"> · {ruleNote}</span>
+                  ) : (
+                    cardRoles(span).length > 0 && <span className="pl-role-list"> · {cardRoles(span).join(' · ')}</span>
+                  )}
                 </span>
               </span>
             </button>

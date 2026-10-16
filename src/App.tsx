@@ -20,6 +20,8 @@ import { LIVE_TEST_BENCH_FOR_TESTING } from './components/testingFlags';
 import { DAILY_REPLAY_FOR_TESTING, currentStreak, dailyEntry, dailySeed, localDayKey, yesterdayJokers } from './components/dailyProgress';
 // Seed-only (rng + a list of names): safe for the menu, which must not pull the engine in.
 import { dailyMeta, JOKERS_MAX, JOKERS_MIN } from './engine/dailyMeta';
+import { dailyDraftDay, type DailyDraftDay, type DailyDraftMode } from './dailyDraftDay';
+import { dailyDraftResult, dailyDraftStreak, ordinal } from './components/dailyDraftProgress';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
 /**
@@ -110,6 +112,37 @@ function DailyStrip({ onPlay }: { onPlay: () => void }) {
           ))}
         </span>
       )}
+    </button>
+  );
+}
+
+/**
+ * 2026-10-16, the daily drafts: the same strip under the Mini Draft card — the day's cap and rule
+ * on the card (the user: "na karcie"), then the result and the streak once played. One try a day;
+ * the testing replay switch (`DAILY_REPLAY_FOR_TESTING`) keeps it open.
+ */
+function DailyDraftStrip({ mode, onPlay }: { mode: DailyDraftMode; onPlay: (day: DailyDraftDay) => void }) {
+  const today = localDayKey();
+  const day = dailyDraftDay(mode, today);
+  const played = dailyDraftResult(mode, today);
+  const streak = dailyDraftStreak(mode, today);
+  const open = !played || DAILY_REPLAY_FOR_TESTING;
+  return (
+    <button
+      type="button"
+      className={`mode-card-daily${played ? ' is-played' : ''}${streak >= 3 ? ' is-hot' : ''}`}
+      onClick={() => open && onPlay(day)}
+      disabled={!open}
+    >
+      <span className="mode-card-daily-label at-cond">📅 Daily draft</span>
+      <span className="mode-card-daily-state">
+        {played ? `✓ ${ordinal(played.place)} of ${played.field} · ${played.overall}` : 'one try today'}
+        {DAILY_REPLAY_FOR_TESTING && ' · testing: replay on'}
+      </span>
+      {streak > 0 && <span className="mode-card-daily-streak">🔥 {streak}</span>}
+      <span className="mode-card-daily-meta">
+        <b>{day.cap} caps</b> · {day.rule.kind === 'open' ? 'Open day — no extra rule' : day.ruleLine}
+      </span>
     </button>
   );
 }
@@ -226,6 +259,8 @@ function App() {
   const [view, setView] = useState<View>(() =>
     modeChallenge?.mode === 'mini' ? 'quickfive' : modeChallenge?.mode === 'roulette' ? 'bestfive' : 'intro',
   );
+  // Today's Mini daily when it was opened from its strip; null for a regular Mini Draft.
+  const [miniDaily, setMiniDaily] = useState<DailyDraftDay | null>(null);
   // Re-read whenever the intro is shown: GameShell strips a shared link's params from the URL once
   // it has used them (2026-09-24), so the "Duel loaded" banner must not outlive that.
   const sharedDraftSeed = useMemo(() => (view === 'intro' ? sharedDraftSeedFromUrl() : null), [view]);
@@ -410,7 +445,13 @@ function App() {
                 <DailyStrip onPlay={() => setView('daily')} />
               </div>
               <div className="mode-card-wrap">
-                <button className="mode-card" onClick={() => setView('quickfive')}>
+                <button
+                  className="mode-card"
+                  onClick={() => {
+                    setMiniDaily(null);
+                    setView('quickfive');
+                  }}
+                >
                   <span className="mode-card-icon" aria-hidden>
                     ⚡
                   </span>
@@ -430,6 +471,13 @@ function App() {
                 >
                   ?
                 </button>
+                <DailyDraftStrip
+                  mode="mini"
+                  onPlay={(day) => {
+                    setMiniDaily(day);
+                    setView('quickfive');
+                  }}
+                />
               </div>
               <div className="mode-card-wrap">
                 <button className="mode-card mode-card--featured" onClick={startNewDraft}>
@@ -551,7 +599,10 @@ function App() {
           <BestFive
             mode="player"
             onBack={() => setView('intro')}
-            onNextStep={() => setView('quickfive')}
+            onNextStep={() => {
+              setMiniDaily(null);
+              setView('quickfive');
+            }}
             challenge={modeChallenge?.mode === 'roulette' ? modeChallenge : undefined}
           />
         </Suspense>
@@ -584,6 +635,8 @@ function App() {
       {view === 'quickfive' && (
         <Suspense fallback={<LoadingPanel />}>
           <QuickFive
+            key={miniDaily ? `daily-${miniDaily.day}` : 'mini'}
+            daily={miniDaily ?? undefined}
             humanTeamName={teamName}
             onExit={() => setView('intro')}
             onNextStep={() => (readDraftSaveSummary() ? setView('intro') : startNewDraft())}
