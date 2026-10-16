@@ -205,10 +205,23 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
       1997 (KG, Webber, Malone 1996-98), przegląd razem z Tobą. Rozważyć też to samo dla
       rzutu za 3 przed 1979-80 (brak linii — West, Oscar, Havlicek). (M)
 
-## Kolejność prac (decyzja 2026-10-10) — obowiązuje
+## Plan na 4 tygodnie (decyzja 2026-10-16) — obowiązuje
+
+- **Tydzień 1 — dokładne dokończenie UI.** Wszystkie tryby i ekrany do końca: playtesty spójności
+  (Draw Five, Mini, All-Time), ton wyniku według miejsca, reszta otwartych punktów UI z 3.1–3.4
+  (stół i karta na wynikach w Draw Five, animacja lotu karty, intro „co gdzie i jak”, duże ekrany).
+- **Tydzień 2 — dokończenie UI, jeśli zabraknie kredytów; potem kalibracja:** symulacji (mecz,
+  sezon, play-offy), wyborów AI w drafcie, TAL graczy i ocen drużyn.
+- **Tydzień 3 — kalibracja** (ciąg dalszy: symulacja / wybory AI / TAL / oceny) **+ dopracowanie
+  ekspertów.**
+- **Tydzień 4 — definitywne dopracowanie całości + domena i serwer** (wtedy też leaderboard
+  daily, globalny ranking; przed startem wyłączyć przełączniki testowe:
+  `DAILY_REPLAY_FOR_TESTING`, `AUTO_FINISH_FOR_TESTING`, `TEAM_EXPORT_FOR_TESTING`).
+
+## Kolejność prac (decyzja 2026-10-10, zastąpiona planem 4 tygodni)
 
 **Decyzja 2026-10-15 (wieczór):** intro All-Time Draft i kalibracja siły AI — na sam koniec;
-eksperci z imionami — robi to osobny czat (tu nie ruszać).
+eksperci z imionami — zrobione w osobnym czacie (stan 2026-10-16); dopracowanie w tygodniu 3.
 
 ### Playtest meczu na żywo 2026-10-15 (wieczór) — ZROBIONE (PR #230, #231)
 
@@ -380,7 +393,7 @@ do dołu i zakładki Matchup/Bracket).
      **Krok 3 zrobiony (2026-10-14):** styl GM-a przypięty do franczyzy (`draft.ts`
      `aiProfileForTeam`), siła gustu dalej losowana per draft; dawne nazwy — losowanie z ziarna.
      Przy okazji: drabinka playoffów rozjechana od #212 (wspólna klasa `pl-row` z listą graczy).
-   - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14; robi osobny czat)** — fikcyjne
+   - **Eksperci z imionami zamiast „The Coach / The Analyst / The Scout” (2026-10-14) — ZROBIONE w osobnym czacie (2026-10-16); dopracowanie w tygodniu 3** — fikcyjne
      postacie (decyzja: fake names) o wyrazistych archetypach: głośny były gracz („w moich
      czasach…”), trener od obrony, analityk od liczb, stary skaut — każdy z imieniem, nazwiskiem i
      stałym sposobem mówienia. Bez kopiowania prawdziwych osób. Dotyczy Draft Desk (wraca jako
