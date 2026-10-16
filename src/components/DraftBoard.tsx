@@ -1,4 +1,5 @@
 import { computeFinishing } from '../engine/finishing';
+import { SettingsButton, SettingsModal } from './SettingsModal';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TIER_FRAME_COLOR } from './DraftPlayerCard';
 import { DraftGrid } from './DraftGrid';
@@ -733,6 +734,7 @@ export default function DraftBoard({
   const teamForPanels = state.commissionerMode ? currentTeam : humanTeam;
   // Every team's cap: the real 100.9, or the day's in a daily (2026-10-16).
   const capLimit = draftCapLimit(state);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // The Bomb daily: the hidden player still to come sits in his round with his caps set aside.
   const bombSpan = draftBombSpan(state);
   const bombLanded = !!bombSpan && humanTeam.roster.some((p) => p.id === bombSpan.id);
@@ -1310,11 +1312,13 @@ export default function DraftBoard({
               </button>
             ))}
         </div>
+        <SettingsButton onClick={() => setSettingsOpen(true)} />
         <button type="button" className="at-calm-icon" aria-label="How the draft works" onClick={() => setHelpOpen(true)}>
           ?
         </button>
         {!isStackedLayout && activeTab === 'draft' && <BoardToggleButton open={!boardHidden} onToggle={toggleBoard} />}
       </div>
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {confirmExit && (
         <LeaveDraftDialog
           text={

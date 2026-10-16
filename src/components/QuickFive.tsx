@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SettingsButton, SettingsModal } from './SettingsModal';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
@@ -106,6 +107,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   // 2026-09-24: a "← Menu" with a confirm instead of a bare Exit at the very bottom, and every
   // phase opening at the top.
   const [boardOpen, setBoardOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const closeExitDialog = useCallback(() => setConfirmExit(false), []);
   useEffect(() => {
@@ -187,6 +189,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
             ← Menu
           </button>
           <h1 className="at-calm-title">{daily ? 'Daily Mini Draft' : 'Mini Draft'}</h1>
+          {phase === 'draft' && !state.complete && <SettingsButton onClick={() => setSettingsOpen(true)} />}
           {phase === 'draft' && !state.complete ? (
             <BoardToggleButton open={boardOpen} onToggle={() => setBoardOpen((o) => !o)} />
           ) : (
@@ -194,6 +197,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
           )}
         </div>
       )}
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {confirmExit && (
         <LeaveDraftDialog text="Mini Drafts aren't saved — leaving ends this one." onStay={closeExitDialog} onLeave={onExit} />
       )}
