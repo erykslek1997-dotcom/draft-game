@@ -936,6 +936,25 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 Otwarte: ile ograniczeń naraz (1 czy 2), czy Mini i All-Time mają ten sam dzień zasad, czy zasady
 widać przed startem (tak — ekran dnia przed loterią), czy dzień może być „bez ograniczeń”.
 
+**Ustalone 2026-10-16 (użytkownik, po makietach):**
+- Zasady dnia **widoczne na karcie trybu** w menu (nie niespodzianka).
+- Wynik dnia = **oba**: punkty za miejsce po drafcie **+** punkty za wynik sezonu; razem do
+  leaderboardu, kiedy będzie serwer. Do tego czasu oba pokazane lokalnie i w share.
+- **Testy AI pod daily (2026-10-16)** — „człowiek” = ten sam drafter co AI, z banem tylko dla
+  siebie; limit dla wszystkich. Mini 30 draftów na wariant, All-Time 10.
+  - *(b) AI przy mniejszym limicie.* **Mini: bezpiecznie 65–80.** Przy 60 AI się sypie: 13% drużyn
+    nie obsadza 5 pozycji (przy 70: 1%), najsłabsza drużyna 38 zamiast 57; przy 55: 23%. Niżej niż 65
+    tylko po poprawce AI. **All-Time: 90–110 bez problemu** (wszystkie składy pełne i pod limitem;
+    przy 90 najsłabsza drużyna 67 zamiast 73, rozrzut 3,7 zamiast 3,0).
+  - *(a) Czy da się wygrać z banem.* Drafter na poziomie AI kończy średnio na 8–10 miejscu z 16
+    z banem i bez niego. Mini, limit 70: bez bana śr. 8,9 (4/30 wygranych), blok Lakers 8,5 (2/30),
+    max 1 MVP 7,7 (0/30, 5/30 w top 3), blok lat 90. 9,8 (0/30, 1/30 w top 3). All-Time: bez bana
+    8,5, Lakers 6,5, lata 90. 9,5, max 1 MVP 9,9. Ban kosztuje 0–1,5 miejsca; najtrudniejszy blok
+    ery. Kto draftuje lepiej niż AI, wygra dzień także z banem.
+  - *Uwaga:* optymalizacja lat graczy (`optimizeSpans`) potrafi zamienić okno na takie, które łamie
+    zasadę (max 1 MVP: raz dało drugiego MVP+). W daily zasada musi obowiązywać też przy zmianie lat
+    i w rotacji, nie tylko przy picku.
+
 **Propozycja ustaleń (Claude 2026-10-15, do akceptacji):**
 - *Zasady na start:* limit capów dnia, blok franczyzy, blok ery, pułap gwiazd (max 1 MVP+),
   narzucony gracz, styl (Splash day / Twin towers); w All-Time też the bomb. Na później: odwrócony
