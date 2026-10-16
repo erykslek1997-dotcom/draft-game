@@ -247,6 +247,13 @@
 .mode-card-daily-meta b { color: var(--at-ink, #eef4fb); }
 /* Streak reward, 3 days: the strip's flame glows. */
 .mode-card-daily.is-hot .mode-card-daily-streak { text-shadow: 0 0 10px rgba(255, 150, 60, 0.9); }
+/* Testing only: reroll the daily draft's day. */
+.mode-card-daily-test { display: flex; gap: 12px; padding: 6px 2px 0; }
+.mode-card-daily-test button {
+  min-height: 32px; padding: 0 4px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 700; color: #8ea3bd; text-decoration: underline; text-underline-offset: 3px;
+}
+.mode-card-daily-test button:hover { color: var(--at-gold, #ffd479); }
 .bf-daily-sub { text-align: center; font-size: 13px; color: var(--at-ink-soft); margin: 8px 0 0; }
 .bf-daily-done {
   margin-top: 16px; padding: 12px 12px; border-radius: 12px; text-align: center; font-size: 14px; line-height: 1.5;

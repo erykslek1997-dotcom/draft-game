@@ -849,7 +849,9 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
 - [ ] **Animacja wyboru karty: lot do slotu** — wariant z makiety „Draw Five Card Motion”. (S)
 - [ ] **Playtest całego trybu + lista poprawek** (S)
 - [ ] **Wyłączyć tryb testowy daily przed wypuszczeniem** — `DAILY_REPLAY_FOR_TESTING = false`
-      w `src/components/dailyProgress.ts`. Na samym końcu. (S)
+      w `src/components/dailyProgress.ts`. Na samym końcu. Ten sam przełącznik chowa „Reroll the
+      day (testing)” pod paskami daily draftów (Mini, All-Time) — losuje inny dzień, grany jak
+      dzisiejszy, bez zapisu wyniku, streaku i draftu. (S)
 - Później:
   - [ ] Karty taktyki w meczu („Zone defense”, „Clutch timeout”…). (L)
   - [ ] Pojedynek przez link — seed + 5 wyborów w linku, bez serwera. (M)

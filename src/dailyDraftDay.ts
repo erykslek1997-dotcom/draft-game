@@ -33,6 +33,9 @@ export interface DailyDraftDay {
   ruleLine: string;
   /** "Lakers · not today" — on a player you can't take. */
   ruleTag: string;
+  /** Another day's draft rerolled from the menu while testing (`DAILY_REPLAY_FOR_TESTING`): played
+   * like the real one, but its result, streak and save are never kept. */
+  testing?: boolean;
 }
 
 /** The franchises with the most top players in the pool (TAL 75+, 12–24 each) — a block that bites. */
