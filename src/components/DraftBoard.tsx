@@ -7,7 +7,7 @@ import { NO_THREE_LINE_TIP, gradeTip, spacingUngraded, type GradeKey } from './g
 import { ROLE_FILTERS, ROLE_POSITIONS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
-import { TEAM_COUNT, ROUNDS, currentTeamIndex, dailyAlternative, draftCapLimit, isDailyRuleBlocked, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
+import { TEAM_COUNT, ROUNDS, currentTeamIndex, dailyAlternative, draftBombSpan, isBombTurn, draftCapLimit, isDailyRuleBlocked, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
 import { dailyRuleWords } from '../dailyDraftDay';
 import { dailyRuleBlocks } from '../engine/dailyDraft';
 import { ROSTER_SIZE, totalFga, STARTER_SLOTS } from '../engine/positions';
@@ -50,7 +50,10 @@ import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
 import { BoardToggleButton, DraftHelpDialog, LeaveDraftDialog } from './DraftChrome';
 import { BigBoardPanel, DraftCapsStrip, DraftStatus, FiveDots, RivalsLane, YourFiveCourt, upcomingPicks } from './DraftWarRoom';
-import { DRAFT_ROTATION_KEY } from '../draftSaveSummary';
+import { draftSaveKeys } from '../draftSaveSummary';
+import { saveSlotFor } from './draftSave';
+import { BOMB_NAME, isBombMasked, maskName } from './bombMask';
+import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { YearsPicker } from './YearsPicker';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
@@ -206,6 +209,8 @@ const TIER_KEY_ORDER: DisplayOverallTier[] = [
 export { tierContextFor };
 
 export function OverallTierBadge({ span }: { span: PlayerSpan }) {
+  // The Bomb daily: his tier would give him away until the results.
+  if (isBombMasked(span.playerName)) return <span className="tier-badge tier-badge--bomb">?</span>;
   const tier = displayedOverallTier(span);
   return <span className={`tier-badge ${OVERALL_TIER_CLASS[tier]}`}>{tier}</span>;
 }
@@ -728,6 +733,13 @@ export default function DraftBoard({
   const teamForPanels = state.commissionerMode ? currentTeam : humanTeam;
   // Every team's cap: the real 100.9, or the day's in a daily (2026-10-16).
   const capLimit = draftCapLimit(state);
+  // The Bomb daily: the hidden player still to come sits in his round with his caps set aside.
+  const bombSpan = draftBombSpan(state);
+  const bombLanded = !!bombSpan && humanTeam.roster.some((p) => p.id === bombSpan.id);
+  const bombMinimum = useMemo(
+    () => (bombSpan ? { playerId: bombSpan.id, minutes: BOMB_MIN_MINUTES, label: BOMB_NAME } : undefined),
+    [bombSpan],
+  );
 
   // 2026-08-16, user's own ask: span selection + rotation-building moved off their own dedicated
   // post-draft screens and into the Team tab below, reachable from the human's very first pick —
@@ -885,7 +897,9 @@ export default function DraftBoard({
   // than originally drafted), which `chosenHumanRoster` reflects but `state` deliberately never
   // does until Submit (`chosenRosterOverCap` below is that gate). Both numbers agree automatically
   // for every other case, which is the actual fix for the repeated "brak korelacji" reports.
-  const displayFgas = isViewingHumanRoster ? chosenHumanRoster.map((p) => p.fga) : currentFgas;
+  const displayFgas = isViewingHumanRoster
+    ? [...chosenHumanRoster.map((p) => p.fga), ...(bombSpan && !bombLanded ? [bombSpan.fga] : [])]
+    : currentFgas;
   // The human's chosen-span roster measured against the cap — the span dropdown can pick a
   // pricier span than was drafted, and nothing downstream clamps it (see the Submit button).
   const chosenRosterFga = totalFga(chosenHumanRoster.map((p) => p.fga));
@@ -1318,7 +1332,7 @@ export default function DraftBoard({
         <CallSheet
           options={callOptions(state, state.seed, callLog)}
           left={CALLS_PER_DRAFT - callLog.used.length}
-          pickLabel={`Pick #${callPickNo + 1} · ${humanTeam.roster.length ? humanTeam.roster.map((p) => p.playerName.split(' ').slice(-1)[0]).slice(0, 4).join(', ') : 'empty roster'}`}
+          pickLabel={`Pick #${callPickNo + 1} · ${humanTeam.roster.length ? humanTeam.roster.map((p) => maskName(p.playerName).split(' ').slice(-1)[0]).slice(0, 4).join(', ') : 'empty roster'}`}
           onCall={placeDeskCall}
           onClose={() => setCallSheetOpen(false)}
         />
@@ -1365,7 +1379,7 @@ export default function DraftBoard({
           />
         );
       })()}
-      {!topbarVisible && !state.complete && activeTab === 'draft' && (
+      {!topbarVisible && !state.complete && activeTab === 'draft' && !isBombTurn(state) && (
         <button
           type="button"
           className="at-board-fab"
@@ -1414,7 +1428,13 @@ export default function DraftBoard({
         rounds={ROUNDS}
         capLeft={humanBudget.capLeft}
         capLimit={capLimit}
-        dailyTag={state.dailyRule || state.dailyDay ? `Daily · ${state.dailyRule ? dailyRuleWords(state.dailyRule).title : 'Open day'}` : undefined}
+        dailyTag={
+          state.bomb
+            ? `Daily · The Bomb · round ${state.bomb.round}`
+            : state.dailyRule || state.dailyDay
+              ? `Daily · ${state.dailyRule ? dailyRuleWords(state.dailyRule).title : 'Open day'}`
+              : undefined
+        }
         slotsLeft={humanBudget.slotsLeft}
         maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
         scoutsLeft={showJudgeMetrics ? null : SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
@@ -1935,6 +1955,30 @@ export default function DraftBoard({
               const effective = spanOpt
                 ? (spanOpt.options.find((o) => o.id === (humanSpanSelection[spanOpt.key] ?? spanOpt.draftedSpan.id)) ?? p)
                 : p;
+              // The Bomb: who he is, his years and his grades wait for the results.
+              if (isBombMasked(p.playerName)) {
+                return (
+                  <div className="tm-row tm-row--bomb" key={normalizePlayerName(p.playerName)}>
+                    <span className="tm-rnd">R{i + 1}</span>
+                    <span className="tm-player">
+                      <Face name={p.playerName} size="md" />
+                      <span className="tm-player-text">
+                        <span className="tm-name">
+                          {BOMB_NAME} <span className="tm-pos">{p.primaryPosition}</span>
+                        </span>
+                        <span className="tm-bomb-note">Revealed on the results · plays {BOMB_MIN_MINUTES}+ min</span>
+                      </span>
+                    </span>
+                    <span className="tm-tier">
+                      <span className="tier-badge tier-badge--bomb">?</span>
+                    </span>
+                    <span className="tm-grades" />
+                    <span className="tm-num tm-caps">
+                      <CapIcon /> {p.fga.toFixed(1)}
+                    </span>
+                  </div>
+                );
+              }
               return (
                 <div className="tm-row" key={normalizePlayerName(p.playerName)}>
                   <span className="tm-rnd">R{i + 1}</span>
@@ -1973,15 +2017,38 @@ export default function DraftBoard({
               );
             })}
             {isViewingHumanRoster &&
-              humanUpcoming.slice(0, ROSTER_SIZE - teamForPanels.roster.length).map((u, k) => (
-                <div className="tm-row tm-row--open" key={u.pick}>
-                  <span className="tm-rnd">R{teamForPanels.roster.length + k + 1}</span>
-                  <span className="tm-player">
-                    <span className="tm-open-face" aria-hidden />
-                    <span className="at-calm-soft">Pick #{u.pick}</span>
-                  </span>
-                </div>
-              ))}
+              humanUpcoming.slice(0, ROSTER_SIZE - teamForPanels.roster.length).map((u, k) => {
+                const round = teamForPanels.roster.length + k + 1;
+                if (bombSpan && !bombLanded && state.bomb?.round === round) {
+                  return (
+                    <div className="tm-row tm-row--open tm-row--bomb" key={u.pick}>
+                      <span className="tm-rnd">R{round}</span>
+                      <span className="tm-player">
+                        <span className="tm-open-face is-bomb" aria-hidden>
+                          ?
+                        </span>
+                        <span>
+                          <b>{BOMB_NAME}</b> <span className="at-calm-soft">· pick #{u.pick} · his caps are set aside</span>
+                        </span>
+                      </span>
+                      <span className="tm-tier" />
+                      <span className="tm-grades" />
+                      <span className="tm-num tm-caps">
+                        <CapIcon /> {bombSpan.fga.toFixed(1)}
+                      </span>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="tm-row tm-row--open" key={u.pick}>
+                    <span className="tm-rnd">R{round}</span>
+                    <span className="tm-player">
+                      <span className="tm-open-face" aria-hidden />
+                      <span className="at-calm-soft">Pick #{u.pick}</span>
+                    </span>
+                  </div>
+                );
+              })}
             <div className={`tm-foot${isViewingHumanRoster && chosenRosterOverCap ? ' is-over' : ''}`}>
               <span>
                 {isViewingHumanRoster
@@ -2063,7 +2130,8 @@ export default function DraftBoard({
                 roster={chosenHumanRoster}
                 rosterComplete={draftComplete}
                 seedStrategy="basic"
-                persistKey={state.commissionerMode ? undefined : DRAFT_ROTATION_KEY}
+                persistKey={state.commissionerMode ? undefined : draftSaveKeys(saveSlotFor(state)).rotation}
+                minMinutes={bombMinimum}
                 onConfirm={handleRotationConfirm}
                 confirmLabel="Submit Team"
                 // The span dropdown deliberately lists every span (comparing them by cost is the

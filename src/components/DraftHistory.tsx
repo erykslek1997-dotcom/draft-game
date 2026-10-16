@@ -1,4 +1,5 @@
 import { draftPool as players } from '../data/draftPool';
+import { maskName, maskYears } from './bombMask';
 import type { DraftHistoryEntry, Team } from '../engine/types';
 import { teamLabel } from '../engine/teamNames';
 import FeedbackToggle, { type FeedbackEntry } from './FeedbackToggle';
@@ -40,7 +41,7 @@ export default function DraftHistory({ history, teams, reactions, onReactionChan
               <li key={entry.pickNumber}>
                 <span className="history-pick">#{entry.pickNumber}</span>
                 <span className="history-team">{teamName(entry.teamId)}</span>
-                <span className="history-player">{p ? `${p.playerName} (${p.spanLabel})` : entry.playerId}</span>
+                <span className="history-player">{p ? `${maskName(p.playerName)} (${maskYears(p.playerName, p.spanLabel)})` : entry.playerId}</span>
                 {commissionerMode ? (
                   <input
                     type="text"

@@ -8,7 +8,16 @@
  * other rules are the player's only; rules show on the card; the same draft for everyone, one try.
  * Mini caps 65–80 (below 65 the CPU starts leaving positions empty — the daily AI tests in TODO).
  */
-export type DailyDraftMode = 'mini' | 'alltime';
+/** 'bomb': the All-Time Draft's second daily (2026-10-16, the user: "osobne daily") — the day's
+ * cap and the Bomb, a hidden player who joins you in a known round, no other rule. */
+export type DailyDraftMode = 'mini' | 'alltime' | 'bomb';
+
+/** The Bomb's round (1-based) and whether today he is a gem rather than a role player. The player
+ * himself is drawn by the engine (`engine/dailyBomb.ts`) from the day's seed. */
+export interface DailyBomb {
+  round: number;
+  gem: boolean;
+}
 
 export type DailyRule =
   | { kind: 'open' }
@@ -33,6 +42,8 @@ export interface DailyDraftDay {
   ruleLine: string;
   /** "Lakers · not today" — on a player you can't take. */
   ruleTag: string;
+  /** The Bomb daily only. */
+  bomb?: DailyBomb;
   /** Another day's draft rerolled from the menu while testing (`DAILY_REPLAY_FOR_TESTING`): played
    * like the real one, but its result, streak and save are never kept. */
   testing?: boolean;
@@ -57,7 +68,11 @@ const BLOCK_TEAMS: { code: string; name: string }[] = [
   { code: 'SAS', name: 'Spurs' },
 ];
 const BLOCK_DECADES = [1980, 1990, 2000, 2010, 2020];
-const CAPS: Record<DailyDraftMode, number[]> = { mini: [65, 70, 75, 80], alltime: [90, 95, 100.9, 105, 110] };
+const CAPS: Record<DailyDraftMode, number[]> = { mini: [65, 70, 75, 80], alltime: [90, 95, 100.9, 105, 110], bomb: [90, 95, 100.9, 105, 110] };
+/** Never in rounds 1-4 (TODO 3.4): rounds 5-8 of nine. */
+const BOMB_ROUNDS = [5, 6, 7, 8];
+/** A gem about once in five days. */
+const BOMB_GEM_CHANCE = 0.18;
 
 function hash(text: string): number {
   let h = 2166136261;
@@ -90,6 +105,20 @@ export function dailyDraftDay(mode: DailyDraftMode, day: string): DailyDraftDay 
   const seed = hash(`daily-draft-seed:${mode}:${day}`);
   const caps = CAPS[mode];
   const cap = caps[Math.floor(rng() * caps.length)];
+  if (mode === 'bomb') {
+    const bomb = { round: BOMB_ROUNDS[Math.floor(rng() * BOMB_ROUNDS.length)], gem: rng() < BOMB_GEM_CHANCE };
+    return {
+      mode,
+      day,
+      seed,
+      cap,
+      rule: { kind: 'open' },
+      bomb,
+      title: 'The Bomb',
+      ruleLine: `A hidden player joins you in round ${bomb.round}`,
+      ruleTag: '',
+    };
+  }
   const roll = rng();
   let rule: DailyRule;
   // Sunday is an open day: just the draft and the day's cap.

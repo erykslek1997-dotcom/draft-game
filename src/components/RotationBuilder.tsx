@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { maskName, maskYears } from './bombMask';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, benchWithMinutes, suggestBasicRotation } from '../engine/rotation';
@@ -34,6 +35,9 @@ interface Props {
   /** Shown as the disabled button's `title` tooltip when `confirmDisabled` is the reason (not
    * `!allValid`) — e.g. "Finish drafting before you can submit." */
   confirmDisabledHint?: string;
+  /** A player who must get at least this many minutes before the team can be submitted — the Bomb
+   * daily's hidden player (2026-10-16, TODO 3.4: "w rotacji min. 10 min"). */
+  minMinutes?: { playerId: string; minutes: number; label: string };
   /** 2026-09-12, user-reported live (screenshot: PG 2/48 + PF 38/48, both LeBron, right after his
    * very first pick) — the Team tab opens this editor from pick 1 on, and until this flag existed
    * the initial auto-seed ran `autoAssignRotation` against whatever partial roster existed at the
@@ -155,6 +159,7 @@ function RotationBuilderComponent({
   confirmLabel,
   confirmDisabled,
   confirmDisabledHint,
+  minMinutes,
   rosterComplete = true,
   seedStrategy = 'optimal',
   persistKey,
@@ -406,7 +411,11 @@ function RotationBuilderComponent({
   const slotErrors = STARTER_SLOTS.filter((slot) => !rows[slot][0]?.playerId || slotTotal(rows, slot) !== GAME_MINUTES);
   const wrongSlotTotals = STARTER_SLOTS.filter((slot) => rows[slot][0]?.playerId && slotTotal(rows, slot) !== GAME_MINUTES);
   const overworkedPlayers = roster.filter((p) => playerTotalMinutes(rows, p.id) > GAME_MINUTES);
-  const allValid = slotErrors.length === 0 && overworkedPlayers.length === 0;
+  const underMinimum =
+    minMinutes && roster.some((p) => p.id === minMinutes.playerId) && playerTotalMinutes(rows, minMinutes.playerId) < minMinutes.minutes
+      ? minMinutes
+      : null;
+  const allValid = slotErrors.length === 0 && overworkedPlayers.length === 0 && !underMinimum;
 
   // Not a validation error — allowed, same as the human's uncapped FGA at draft time, but it
   // costs rotationScore (see scoring.ts's DURABILITY_OVERWORK_PENALTY_*). Surfaced here so the
@@ -433,8 +442,10 @@ function RotationBuilderComponent({
     : slotErrors.length > 0
       ? `Every position needs a starter and exactly ${GAME_MINUTES} minutes — still open: ${slotErrors.join(', ')}.`
       : overworkedPlayers.length > 0
-        ? `Nobody can play more than ${GAME_MINUTES} minutes: ${overworkedPlayers.map((p) => p.playerName).join(', ')}.`
-        : undefined;
+        ? `Nobody can play more than ${GAME_MINUTES} minutes: ${overworkedPlayers.map((p) => maskName(p.playerName)).join(', ')}.`
+        : underMinimum
+          ? `${underMinimum.label} plays at least ${underMinimum.minutes} minutes.`
+          : undefined;
 
   const openMinutes = STARTER_SLOTS.reduce((sum, slot) => sum + Math.max(0, GAME_MINUTES - slotTotal(rows, slot)), 0);
 
@@ -515,18 +526,18 @@ function RotationBuilderComponent({
                         key={idx}
                         className={`rotation-split-seg is-${Math.min(k, 2)}`}
                         style={{ width: `${(row.minutes / GAME_MINUTES) * 100}%` }}
-                        title={`${player?.playerName ?? ''} ${row.minutes} min — click to change`}
+                        title={`${maskName(player?.playerName) ?? ''} ${row.minutes} min — click to change`}
                         onClick={() => openFromBar(slot, idx)}
                       >
                         <span className="rotation-split-label">
-                          {player ? player.playerName.split(' ').slice(-1)[0] : ''} {row.minutes}
+                          {player ? maskName(player.playerName).split(' ').slice(-1)[0] : ''} {row.minutes}
                         </span>
                         {k < filled.length - 1 && (
                           <span
                             className="rotation-split-handle"
                             role="slider"
                             tabIndex={0}
-                            aria-label={`Minutes split between ${player?.playerName ?? 'this player'} and the next player at ${slot}`}
+                            aria-label={`Minutes split between ${maskName(player?.playerName) ?? 'this player'} and the next player at ${slot}`}
                             aria-valuemin={0}
                             aria-valuemax={row.minutes + filled[k + 1].row.minutes}
                             aria-valuenow={row.minutes}
@@ -574,7 +585,7 @@ function RotationBuilderComponent({
                       <span
                         className="rotation-drag-handle"
                         draggable
-                        title={`Drag ${selectedPlayer.playerName} to another position`}
+                        title={`Drag ${maskName(selectedPlayer.playerName)} to another position`}
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = 'move';
                           e.dataTransfer.setData('text/plain', selectedPlayer.id);
@@ -604,7 +615,7 @@ function RotationBuilderComponent({
                         aria-expanded={picker?.slot === slot && picker.rowIdx === rowIdx}
                         onClick={() => setPicker(picker?.slot === slot && picker.rowIdx === rowIdx ? null : { slot, rowIdx })}
                       >
-                        <span className="rb-pick-name">{selectedPlayer ? selectedPlayer.playerName : rowIdx === 0 ? 'Choose a starter' : 'Choose a backup'}</span>
+                        <span className="rb-pick-name">{selectedPlayer ? maskName(selectedPlayer.playerName) : rowIdx === 0 ? 'Choose a starter' : 'Choose a backup'}</span>
                         {selectedPlayer && !isPositionEligible(selectedPlayer, slot) && <span className="rb-pick-flag">⚠ out of position</span>}
                         <span className="rb-pick-caret" aria-hidden>
                           ▾
@@ -692,8 +703,8 @@ function RotationBuilderComponent({
                       <button
                         type="button"
                         className="remove-row-btn"
-                        title={selectedPlayer ? `Take ${selectedPlayer.playerName} out of the rotation` : 'Remove this row'}
-                        aria-label={selectedPlayer ? `Take ${selectedPlayer.playerName} out of the rotation` : 'Remove this row'}
+                        title={selectedPlayer ? `Take ${maskName(selectedPlayer.playerName)} out of the rotation` : 'Remove this row'}
+                        aria-label={selectedPlayer ? `Take ${maskName(selectedPlayer.playerName)} out of the rotation` : 'Remove this row'}
                         onClick={() => clearRow(slot, rowIdx)}
                       >
                         <TrashIcon />
@@ -709,7 +720,7 @@ function RotationBuilderComponent({
                   disabled={!canAddMore && !!rows[slot][0]?.playerId}
                   onClick={() => placePlayer(selected, slot)}
                 >
-                  Add {activePlayer.playerName.split(' ').slice(-1)[0]} here{fits ? '' : ' (out of position)'}
+                  Add {maskName(activePlayer.playerName).split(' ').slice(-1)[0]} here{fits ? '' : ' (out of position)'}
                 </button>
               ) : dragging ? (
                 <span className={`rotation-drop-zone${dropSlot === slot ? ' is-over' : ''}`} aria-hidden>
@@ -737,14 +748,14 @@ function RotationBuilderComponent({
 
       {overworkedPlayers.length > 0 && (
         <p className="validation-error">
-          Playing more than 48 minutes a game (not possible): {overworkedPlayers.map((p) => p.playerName).join(', ')}
+          Playing more than 48 minutes a game (not possible): {overworkedPlayers.map((p) => maskName(p.playerName)).join(', ')}
         </p>
       )}
 
       {durabilityOverworked.length > 0 && (
         <p className="validation-warning">
           Playing more minutes than they can handle (allowed, but it lowers your Rotation score):{' '}
-          {durabilityOverworked.map(({ player, minutes, cap }) => `${player.playerName} (${minutes} min, can handle ${cap})`).join(', ')}
+          {durabilityOverworked.map(({ player, minutes, cap }) => `${maskName(player.playerName)} (${minutes} min, can handle ${cap})`).join(', ')}
         </p>
       )}
 
@@ -783,7 +794,7 @@ function RotationBuilderComponent({
                     onClick={() => setSelected(isSelected ? null : { playerId: player.id })}
                   >
                     <Face name={player.playerName} />
-                    <span className="rotation-bench-name">{player.playerName} ({player.spanLabel})</span>
+                    <span className="rotation-bench-name">{maskName(player.playerName)} ({maskYears(player.playerName, player.spanLabel)})</span>
                     <OverallTierBadge span={player} />
                   </button>
                 );
@@ -798,7 +809,7 @@ function RotationBuilderComponent({
           <div className="rotation-selected-bar" role="status">
             <Face name={player.playerName} />
             <span className="rotation-selected-text">
-              <b>{player.playerName} selected</b>
+              <b>{maskName(player.playerName)} selected</b>
               <span>Tap a position to add him</span>
             </span>
             <button type="button" className="rotation-selected-cancel" aria-label="Cancel selection" onClick={() => setSelected(null)}>

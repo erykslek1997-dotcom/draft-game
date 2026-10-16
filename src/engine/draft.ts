@@ -27,7 +27,8 @@ import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
 import { dailyRuleBlocks } from './dailyDraft';
 import { effectiveTalent } from './grades';
-import type { DailyRule } from '../dailyDraftDay';
+import type { DailyBomb, DailyRule } from '../dailyDraftDay';
+import { dailyBombSpan } from './dailyBomb';
 
 // The AI's bench picks read the real team score (aiDrafter.ts `setAiTeamScorer`).
 setAiTeamScorer(
@@ -85,6 +86,9 @@ export interface DraftState {
   dailyRule?: DailyRule;
   /** The daily's date (YYYY-MM-DD) — set only in a daily; its save and result go by it. */
   dailyDay?: string;
+  /** The Bomb daily: the hidden player who joins the human team in `round` (1-based). His caps
+   * and his roster slot are set aside from the first pick; nobody else can draft him. */
+  bomb?: { spanId: string; round: number };
 }
 
 /** This draft's cap: the day's in a daily, else the real one. */
@@ -147,7 +151,7 @@ export function createDraft(
   /** Teams already drawn for this seed (the intro's early lottery, see draftSetup.ts). */
   presetTeams?: Team[],
   /** A daily's cap (every team) and rule (the human only) — 2026-10-16. */
-  daily?: { day: string; cap: number; rule: DailyRule },
+  daily?: { day: string; cap: number; rule: DailyRule; bomb?: DailyBomb },
 ): DraftState {
   // Optional-chained: `import.meta.env` is undefined when an engine test script runs this under
   // tsx (no Vite), and `.DEV` on undefined would throw.
@@ -155,9 +159,12 @@ export function createDraft(
     // eslint-disable-next-line no-console
     console.info(`[draft] seed ${seed} — pass ?draftSeed=${seed} to replay this draft`);
   }
+  const bombSpan = daily?.bomb ? dailyBombSpan(seed, daily.bomb.gem) : null;
+  // The Bomb is off the board from the start, in every one of his windows.
+  const draftedIds = new Set<string>(bombSpan ? (spansByNormalizedName.get(normalizePlayerName(bombSpan.playerName)) ?? [bombSpan]).map((p) => p.id) : []);
   return {
     teams: presetTeams ?? createInitialTeams(humanTeamName, mulberry32(mixSeed(seed, 0))),
-    draftedIds: new Set(),
+    draftedIds,
     round: 0,
     pickInRound: 0,
     complete: false,
@@ -166,7 +173,51 @@ export function createDraft(
     pool,
     seed,
     ...(daily ? { capLimit: daily.cap, dailyRule: daily.rule.kind !== 'open' ? daily.rule : undefined, dailyDay: daily.day } : {}),
+    ...(bombSpan && daily?.bomb ? { bomb: { spanId: bombSpan.id, round: daily.bomb.round } } : {}),
   };
+}
+
+/** The Bomb's span — `null` outside the Bomb daily. */
+export function draftBombSpan(state: Pick<DraftState, 'bomb'>): PlayerSpan | null {
+  return state.bomb ? (playersById.get(state.bomb.spanId) ?? null) : null;
+}
+
+/** The Bomb while he is still to come: his caps and his slot are set aside for `team` (the human). */
+function reservedBomb(state: DraftState, team: Team): PlayerSpan | null {
+  if (!state.bomb || !team.isHuman) return null;
+  const span = draftBombSpan(state);
+  return span && !team.roster.some((p) => p.id === span.id) ? span : null;
+}
+
+/** What `team` has spent, the Bomb's caps included while he is still to come. */
+function committedFgas(state: DraftState, team: Team): number[] {
+  const bomb = reservedBomb(state, team);
+  const fgas = team.roster.map((p) => p.fga);
+  return bomb ? [...fgas, bomb.fga] : fgas;
+}
+
+/** Roster slots `team` still fills by its own picks (the Bomb's slot is not one of them). */
+function ownSlotsLeft(state: DraftState, team: Team): number {
+  return ROSTER_SIZE - team.roster.length - (reservedBomb(state, team) ? 1 : 0);
+}
+
+/** The human is on the clock in the Bomb's round: this pick is the Bomb, nothing else. */
+export function isBombTurn(state: DraftState): boolean {
+  if (!state.bomb || state.complete) return false;
+  const team = state.teams[currentTeamIndex(state)];
+  return team.isHuman && state.round + 1 === state.bomb.round && !!reservedBomb(state, team);
+}
+
+/** The Bomb joins the human team — the pick in his round. */
+export function makeBombPick(state: DraftState): DraftState {
+  if (!isBombTurn(state)) return state;
+  const teamIdx = currentTeamIndex(state);
+  const team = state.teams[teamIdx];
+  const bomb = draftBombSpan(state)!;
+  const teams = state.teams.map((t, i) => (i === teamIdx ? { ...t, roster: [...t.roster, bomb] } : t));
+  const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
+  const history = [...state.history, { pickNumber, teamId: team.id, playerId: bomb.id }];
+  return advance({ ...state, teams, history });
 }
 
 /** Whether today's rule keeps `player` from the team on the clock (the human team only). */
@@ -227,7 +278,7 @@ export function availablePlayers(state: DraftState): PlayerSpan[] {
 export function isHumanRosterImpossible(state: DraftState): boolean {
   const humanTeam = state.teams.find((t) => t.isHuman);
   if (!humanTeam) return false;
-  const slotsStillNeeded = ROSTER_SIZE - humanTeam.roster.length;
+  const slotsStillNeeded = ownSlotsLeft(state, humanTeam);
   if (slotsStillNeeded <= 0) return false;
   const uniqueRemaining = new Set(availablePlayers(state).map((p) => normalizePlayerName(p.playerName))).size;
   return uniqueRemaining < slotsStillNeeded;
@@ -273,7 +324,7 @@ function strictPickLegal(state: DraftState, playerId: string): boolean {
   if (!player || state.draftedIds.has(playerId)) return false;
 
   const team = state.teams[currentTeamIndex(state)];
-  const currentFgas = team.roster.map((p) => p.fga);
+  const currentFgas = committedFgas(state, team);
   if (ruleBlocks(state, player)) return false;
   if (!isPickCapLegal(currentFgas, player.fga, draftCapLimit(state))) return false;
   // 2026-09-24: the human used to skip the lookahead below (`if (team.isHuman) return true`),
@@ -283,8 +334,8 @@ function strictPickLegal(state: DraftState, playerId: string): boolean {
   // `isPickLegal`). The human now gets the exact same "can you still fill the roster?" check the
   // CPU teams always had; `pickBudget` below is what the UI shows so this never feels arbitrary.
 
-  const slotsLeftAfterPick = ROSTER_SIZE - team.roster.length - 1;
-  if (slotsLeftAfterPick === 0) return true;
+  const slotsLeftAfterPick = ownSlotsLeft(state, team) - 1;
+  if (slotsLeftAfterPick <= 0) return true;
 
   const capRemainingAfterPick = draftCapLimit(state) - totalFga([...currentFgas, player.fga]);
   const lookup = getCheapestLookup(state);
@@ -312,7 +363,7 @@ function noCapLegalPickExists(state: DraftState): boolean {
   let cached = noCapLegalCache.get(state);
   if (cached === undefined) {
     const team = state.teams[currentTeamIndex(state)];
-    const currentFgas = team.roster.map((p) => p.fga);
+    const currentFgas = committedFgas(state, team);
     cached = availablePlayers(state).every((p) => ruleBlocks(state, p) || !isPickCapLegal(currentFgas, p.fga, draftCapLimit(state)));
     noCapLegalCache.set(state, cached);
   }
@@ -349,8 +400,8 @@ export interface PickBudget {
 }
 
 export function pickBudget(state: DraftState, team: Team = state.teams[currentTeamIndex(state)]): PickBudget {
-  const capLeft = draftCapLimit(state) - totalFga(team.roster.map((p) => p.fga));
-  const slotsLeft = Math.max(0, ROSTER_SIZE - team.roster.length);
+  const capLeft = draftCapLimit(state) - totalFga(committedFgas(state, team));
+  const slotsLeft = Math.max(0, ownSlotsLeft(state, team));
   const slotsAfter = Math.max(0, slotsLeft - 1);
   let reserved = 0;
   if (slotsAfter > 0) {
@@ -374,7 +425,7 @@ export function pickBlockReason(state: DraftState, playerId: string): 'cap' | 'r
   if (!player) return 'cap';
   if (ruleBlocks(state, player)) return 'rule';
   const team = state.teams[currentTeamIndex(state)];
-  return isPickCapLegal(team.roster.map((p) => p.fga), player.fga, draftCapLimit(state)) ? 'reserve' : 'cap';
+  return isPickCapLegal(committedFgas(state, team), player.fga, draftCapLimit(state)) ? 'reserve' : 'cap';
 }
 
 export function isPickLegal(state: DraftState, playerId: string): boolean {
@@ -382,6 +433,8 @@ export function isPickLegal(state: DraftState, playerId: string): boolean {
   const player = playersById.get(playerId);
   if (!player || state.draftedIds.has(playerId)) return false;
   if (ruleBlocks(state, player)) return false;
+  // The Bomb's round: the pick is his (`makeBombPick`).
+  if (isBombTurn(state)) return false;
 
   // Every team follows the same cap rule. The intro, cap meter and final ranking all present the
   // rosters as comparable under one 100.9-FGA constraint, so silently exempting the human would
@@ -391,7 +444,7 @@ export function isPickLegal(state: DraftState, playerId: string): boolean {
 
   if (strictPickLegal(state, playerId)) return true;
 
-  const currentFgas = team.roster.map((p) => p.fga);
+  const currentFgas = committedFgas(state, team);
   if (isPickCapLegal(currentFgas, player.fga, draftCapLimit(state))) return strictCheckIsDeadEnd(state);
 
   if (!noCapLegalPickExists(state)) return false;
@@ -552,6 +605,7 @@ function aiProfileStrengthForSlot(seed: number, draftSlot: number): number {
 }
 
 function resolveAutomatedPick(state: DraftState): DraftState | null {
+  if (isBombTurn(state)) return makeBombPick(state);
   const teamIdx = currentTeamIndex(state);
   const team = state.teams[teamIdx];
   // Auto-finish (testing) drafts the human team too: it keeps to today's rule like the player must.
@@ -559,6 +613,7 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
   if (available.length === 0) return null;
 
   const currentFgas = team.roster.map((p) => p.fga);
+  const bombAhead = reservedBomb(state, team);
   // Same `pickNumber` formula `makePick` itself uses when recording a history entry (see that
   // function, just below) — computed from the CURRENT (pre-pick) state, since that's the pick
   // about to be made. Feeds `pickForAi`'s "steal" safety net only; see that function's own docstring.
@@ -569,8 +624,9 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
   // same stream — still fully determined by the seed.
   const rng = mulberry32(mixSeed(state.seed, pickNumber));
   const ruleset: AiDraftRuleset = {
-    rosterSize: ROSTER_SIZE,
-    capLimit: draftCapLimit(state),
+    // Auto-finish for a human with the Bomb still to come: his slot and caps are already spoken for.
+    rosterSize: ROSTER_SIZE - (bombAhead ? 1 : 0),
+    capLimit: draftCapLimit(state) - (bombAhead?.fga ?? 0),
     strategy: strategyForDraftSlot(state.seed, team.draftSlot),
     profile: aiProfileForTeam(state.seed, team),
     profileStrength: aiProfileStrengthForSlot(state.seed, team.draftSlot),

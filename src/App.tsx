@@ -141,7 +141,7 @@ function DailyDraftStrip({
   const day: DailyDraftDay = { ...dailyDraftDay(mode, dayKey), ...(testing ? { testing: true } : {}) };
   const played = testing ? null : dailyDraftResult(mode, today);
   // The All-Time daily keeps its own save: left halfway, the strip takes you back to it.
-  const saved = mode === 'alltime' && !played && !testing ? readDraftSaveSummary('daily') : null;
+  const saved = mode !== 'mini' && !played && !testing ? readDraftSaveSummary(mode === 'bomb' ? 'bomb' : 'daily') : null;
   const inProgress = saved?.day === today ? saved : null;
   const streak = dailyDraftStreak(mode, today);
   const open = !played || DAILY_REPLAY_FOR_TESTING;
@@ -153,7 +153,7 @@ function DailyDraftStrip({
         onClick={() => open && onPlay(day)}
         disabled={!open}
       >
-        <span className="mode-card-daily-label at-cond">📅 Daily draft</span>
+        <span className="mode-card-daily-label at-cond">{mode === 'bomb' ? '💣 Daily bomb' : '📅 Daily draft'}</span>
         <span className="mode-card-daily-state">
           {played
             ? `✓ ${ordinal(played.place)} of ${played.field} · ${played.overall}${played.season ? ` · ${played.season.wins}-${played.season.losses}` : ''}`
@@ -166,7 +166,7 @@ function DailyDraftStrip({
         </span>
         {streak > 0 && !testing && <span className="mode-card-daily-streak">🔥 {streak}</span>}
         <span className="mode-card-daily-meta">
-          <b>{day.cap} caps</b> · {day.rule.kind === 'open' ? 'Open day — no extra rule' : day.ruleLine}
+          <b>{day.cap} caps</b> · {day.bomb ? `💣 ${day.ruleLine}` : day.rule.kind === 'open' ? 'Open day — no extra rule' : day.ruleLine}
         </span>
       </button>
       {DAILY_REPLAY_FOR_TESTING && onReroll && (
@@ -302,7 +302,7 @@ function App() {
   // Today's All-Time daily when it was opened from its strip; null for a regular draft.
   const [allTimeDaily, setAllTimeDaily] = useState<DailyDraftDay | null>(null);
   // Testing only: how many days from today each mode's daily strip is rerolled to.
-  const [dailyReroll, setDailyReroll] = useState<Record<DailyDraftMode, number>>({ mini: 0, alltime: 0 });
+  const [dailyReroll, setDailyReroll] = useState<Record<DailyDraftMode, number>>({ mini: 0, alltime: 0, bomb: 0 });
   // Re-read whenever the intro is shown: GameShell strips a shared link's params from the URL once
   // it has used them (2026-09-24), so the "Duel loaded" banner must not outlive that.
   const sharedDraftSeed = useMemo(() => (view === 'intro' ? sharedDraftSeedFromUrl() : null), [view]);
@@ -546,19 +546,22 @@ function App() {
                 >
                   ?
                 </button>
-                <DailyDraftStrip
-                  mode="alltime"
-                  offset={dailyReroll.alltime}
-                  onReroll={(n) => setDailyReroll((r) => ({ ...r, alltime: n }))}
-                  onPlay={(day) => {
-                    setAllTimeDaily(day);
-                    setResumeDraft(false);
-                    setEarlyDraft(null);
-                    setConfirmNewDraft(false);
-                    void prefetchGameData();
-                    setView('game');
-                  }}
-                />
+                {(['alltime', 'bomb'] as const).map((m) => (
+                  <DailyDraftStrip
+                    key={m}
+                    mode={m}
+                    offset={dailyReroll[m]}
+                    onReroll={(n) => setDailyReroll((r) => ({ ...r, [m]: n }))}
+                    onPlay={(day) => {
+                      setAllTimeDaily(day);
+                      setResumeDraft(false);
+                      setEarlyDraft(null);
+                      setConfirmNewDraft(false);
+                      void prefetchGameData();
+                      setView('game');
+                    }}
+                  />
+                ))}
               </div>
               {LIVE_TEST_BENCH_FOR_TESTING && (
                 <div className="mode-card-wrap">
@@ -643,7 +646,7 @@ function App() {
       {view === 'game' && (resumeDraft || !earlyDraft || earlyLotteryDone) && (
         <Suspense fallback={<LoadingPanel />}>
           <GameShell
-            key={allTimeDaily ? `daily-${allTimeDaily.day}` : 'draft'}
+            key={allTimeDaily ? `daily-${allTimeDaily.mode}-${allTimeDaily.day}${allTimeDaily.testing ? '-test' : ''}` : 'draft'}
             mode="player"
             commissionerMode={false}
             humanTeamName={teamName}

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { maskName, maskYears } from './bombMask';
 import { STARTER_SLOTS } from '../engine/positions';
 import { allAssignments, primaryStarters } from '../engine/rotation';
 import type { Position } from '../data/schema';
@@ -127,12 +128,12 @@ export function RosterGrid({ team }: { team: Team }) {
             <span className="rr-roster-pos">{slot}</span>
             <div className="rr-roster-entries">
               {main.map((e, i) => (
-                <div className={`rr-cell${i > 0 ? ' is-backup' : ''}`} key={e.id} title={`${e.name} (${e.years})`}>
+                <div className={`rr-cell${i > 0 ? ' is-backup' : ''}`} key={e.id} title={`${maskName(e.name)} (${maskYears(e.name, e.years)})`}>
                   <Face name={e.name} size="sm" />
                   <span className="rr-cell-text">
                     <FitName as="b" name={e.name} faceNextToIt />
                     <span>
-                      {e.years} · <b className="rr-min">{e.minutes}m</b>
+                      {maskYears(e.name, e.years)} · <b className="rr-min">{e.minutes}m</b>
                     </span>
                   </span>
                 </div>
@@ -141,7 +142,7 @@ export function RosterGrid({ team }: { team: Team }) {
                 <span className="rr-spot">
                   {spot.map((e) => (
                     <span key={e.id}>
-                      + {e.name} <b className="rr-min">{e.minutes}m</b>
+                      + {maskName(e.name)} <b className="rr-min">{e.minutes}m</b>
                     </span>
                   ))}
                 </span>
@@ -156,7 +157,7 @@ export function RosterGrid({ team }: { team: Team }) {
           {dnp.map((e, i) => (
             <span key={e.id}>
               {i > 0 && ' · '}
-              <b>{e.name}</b> {e.years}
+              <b>{maskName(e.name)}</b> {maskYears(e.name, e.years)}
             </span>
           ))}
         </p>

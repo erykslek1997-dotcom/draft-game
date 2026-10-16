@@ -888,7 +888,16 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       (`draftSaveSummary.ts`, slot 'daily'): wyjście w trakcie wraca do tego samego draftu, zwykły
       draft go nie nadpisuje. Wynik dnia: miejsce i Overall po drafcie, potem sezon (bilans, miejsce,
       play-offy) — surowe dane pod punkty do leaderboardu. Share tekstem bez nazwisk.
-- [ ] **The bomb** (All-Time daily, 1–2 razy w tygodniu) — spec w 3.4 niżej. (M)
+- [x] **The Bomb jako osobne daily — zrobione 2026-10-16** (użytkownik: „osobne daily”, zamiast
+      zasady w rotacji). Drugi pasek „💣 Daily bomb” pod kartą All-Time, własne ziarno, limit 90–110,
+      bez innej zasady. Bomba (`engine/dailyBomb.ts`): najlepszy okres gracza z TAL 50–65 i ≤14 capów,
+      perełka (TAL 78–88) w ~18% dni; runda 5–8. Od pierwszego picku jego capy i slot są zarezerwowane
+      (`committedFgas`/`ownSlotsLeft` w draft.ts), poza tablicą dla wszystkich; w jego rundzie karta
+      bomby zamiast wyboru (`makeBombPick`). Opis: pozycja, era, styl z etykiet kart
+      (`bombDescription.ts`). Nazwisko, lata, tier i oceny ukryte do wyników (`bombMask.ts`: Face,
+      FitName, shortenName, boardName, linie Desk, podpowiedzi). Na wynikach odsłonięcie: opis → twarz →
+      nazwisko. Submit zablokowany, póki gra < 10 min. Osobny zapis (slot 'bomb'), wynik i streak.
+      Na później: sezon w trakcie odsłaniania nie jest ukryty (otwarty przed 3. krokiem pokaże nazwisko).
 - [ ] **Wyłączyć narzędzia kalibracji przed wypuszczeniem** — `AUTO_FINISH_FOR_TESTING` i
       `TEAM_EXPORT_FOR_TESTING` = false w `src/components/testingFlags.ts`. (S)
 - [ ] **Playtest całego trybu + lista poprawek** (S)
@@ -985,7 +994,7 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
 - *Ile naraz:* limit capów + **jedna** zasada; dwie dopiero później (np. weekendowy „trudny dzień”).
 - *Mini i All-Time:* **różne** zasady tego samego dnia.
 - *Dzień bez ograniczeń:* raz w tygodniu (np. niedziela) — sam draft z ziarnem dnia.
-- *The bomb:* koszt w capach i runda **widoczne od startu**; nazwisko odsłonięte **na wynikach**
+- *The bomb (2026-10-16: osobne daily, nie zasada w rotacji):* koszt w capach i runda **widoczne od startu**; nazwisko odsłonięte **na wynikach**
   (opis → twarz → nazwisko); w rotacji **min. 10 min**; **perełka ~raz na 5 dni**; jedna bomba,
   nigdy w rundach 1–4.
 - *Kolejność budowy:* (1) wspólny silnik zasad dnia (ziarno, limit dla wszystkich, blokada picku z

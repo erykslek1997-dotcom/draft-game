@@ -1661,3 +1661,62 @@ button.ph-game { cursor: pointer; }
 .dd-results-tag { align-self: flex-start; margin: 0; }
 .at-calm .pl-table .pl-row.is-ruled .pl-player { opacity: 0.55; }
 .mode-card-daily:disabled { cursor: default; }
+
+/* 2026-10-16, the Bomb daily (mockup docs/mockups/daily-drafts.html, screens 4-5). */
+.at-calm, .bomb-backdrop { --bomb: #ff8a3d; --bomb-line: #5c3418; }
+.bomb-card {
+  width: min(420px, calc(100vw - 32px)); box-sizing: border-box; padding: 22px 20px; text-align: center;
+  border: 1px solid var(--bomb-line); border-radius: 16px; background: linear-gradient(180deg, #1c1008, #0e0805); color: var(--at-ink, #eef4fb);
+}
+.bomb-k { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bomb); }
+.bomb-h { margin: 6px 0 14px; font-size: 22px; }
+.bomb-sil {
+  width: 84px; height: 84px; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 36%, #2b1a10 0 32%, #120b06 33%); border: 2px solid var(--bomb-line);
+  font-size: 30px; font-weight: 800; color: var(--bomb);
+}
+.bomb-sil--sm { width: 52px; height: 52px; font-size: 18px; margin-bottom: 8px; }
+@media (prefers-reduced-motion: no-preference) {
+  .bomb-card .bomb-sil { animation: bomb-pulse 2.4s ease-in-out infinite; }
+  @keyframes bomb-pulse { 50% { box-shadow: 0 0 0 8px rgba(255, 138, 61, 0.08); } }
+}
+.bomb-desc { font-size: 15px; line-height: 1.5; max-width: 34ch; margin: 0 auto; }
+.bomb-meta { margin: 10px 0 0; font-size: 13px; color: var(--at-ink-soft, #a9bdd4); }
+.bomb-go { display: block; width: 100%; min-height: 48px; margin-top: 18px; }
+.bf-face.is-bomb, .tm-open-face.is-bomb {
+  display: inline-grid; place-items: center; font-weight: 800; color: var(--bomb, #ff8a3d);
+  background: #170e08; border: 1px solid var(--bomb-line, #5c3418);
+}
+.tier-badge--bomb { color: var(--bomb); border: 1px solid var(--bomb-line); background: #170e08; }
+.at-calm .tm-row--bomb { background: rgba(255, 138, 61, 0.05); }
+.bomb-reveal { border: 1px solid var(--bomb-line); border-radius: 14px; padding: 14px; background: #120b06; }
+.bomb-reveal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.bomb-reveal-next { min-height: 40px; }
+.bomb-reveal-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.bomb-rv {
+  min-width: 0; text-align: center; font-size: 13px; padding: 10px; border-radius: 12px;
+  border: 1px solid var(--calm-line, #182433); background: var(--at-paper-raised, #0a0f18);
+}
+.bomb-rv.is-hidden { opacity: 0.45; }
+.bomb-rv.is-named { border-color: var(--bomb); }
+.bomb-rv-st { display: block; margin-bottom: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--at-ink-soft, #a9bdd4); }
+.bomb-rv-face { display: block; width: 52px; height: 52px; margin: 0 auto 8px; border-radius: 50%; object-fit: cover; background: #0e1520; }
+.bomb-rv-txt { display: block; color: var(--at-ink-soft, #a9bdd4); overflow-wrap: anywhere; }
+.bomb-rv-txt b { color: var(--at-ink, #eef4fb); }
+@media (max-width: 640px) {
+  .bomb-reveal-steps { grid-template-columns: 1fr; }
+  .bomb-rv { display: grid; grid-template-columns: 52px 1fr; grid-template-areas: 'face st' 'face txt'; gap: 2px 12px; align-items: center; text-align: left; }
+  .bomb-rv .bomb-rv-st { grid-area: st; margin: 0; }
+  .bomb-rv .bomb-sil, .bomb-rv .bomb-rv-face { grid-area: face; margin: 0; }
+  .bomb-rv .bomb-rv-txt { grid-area: txt; }
+}
+.bomb-backdrop { z-index: 60; }
+.dd-rule.is-bomb { border-color: var(--bomb-line, #5c3418); background: #170e08; }
+.dd-rule.is-bomb .dd-ic { color: var(--bomb, #ff8a3d); border-color: var(--bomb-line, #5c3418); }
+.bomb-card .bomb-h { color: var(--at-ink, #eef4fb); }
+.bomb-card .bomb-go {
+  border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: 15px; font-weight: 800;
+  background: var(--bomb, #ff8a3d); color: #1b0d04;
+}
+.bomb-card .bomb-go:hover { filter: brightness(1.08); }
+.tm-bomb-note { display: block; font-size: 12px; color: var(--at-ink-soft, #a9bdd4); }

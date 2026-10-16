@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { maskName, maskYears } from './bombMask';
 import type { PlayerSpan, Position } from '../data/schema';
 import { Face } from './ShotChip';
 
@@ -91,9 +92,9 @@ export function RotationPicker({
               >
                 <Face name={player.playerName} />
                 <span className="rb-opt-main">
-                  <span className="rb-opt-name">{player.playerName}</span>
+                  <span className="rb-opt-name">{maskName(player.playerName)}</span>
                   <span className="rb-opt-sub">
-                    {player.primaryPosition} · {player.spanLabel}
+                    {player.primaryPosition} · {maskYears(player.playerName, player.spanLabel)}
                     {minutes > 0 && ` · ${minutes} min in the rotation`}
                   </span>
                 </span>
