@@ -514,9 +514,9 @@ function QuickDraftBoard({
           without the Scouting button, since every player comes at his single best season here. */}
       <DraftPlayerList
         rows={filtered.slice(0, visibleCount).map(({ span: peak, tier: peakTier }) => {
-          // 2026-10-16 (the user: "nie powinni być wygaszeni, po prostu informacja że inny span jest
-          // możliwy"): when today's rule rules out his best years, the row offers his best years it
-          // allows; only a player with none (a franchise block) is dimmed.
+          // 2026-10-16 (the user: "nie powinni być wygaszeni" … "po prostu wyświetlaj najlepszy
+          // dostępny span"): when today's rule rules out his best years, the row simply shows his
+          // best years it allows; only a player with none (a franchise block) is dimmed.
           const alt = daily ? quickDailyAlternative(state, peak.id) : null;
           const span = alt ?? peak;
           const tier = alt ? overallTierForSpan(tierContextFor(alt)) : peakTier;
@@ -526,7 +526,6 @@ function QuickDraftBoard({
           return {
             key: peak.id,
             span,
-            altNote: alt ? `instead of ${peak.spanLabel} today` : undefined,
             tier: shown,
             tierColor: TIER_FRAME_COLOR[shown],
             legal,
