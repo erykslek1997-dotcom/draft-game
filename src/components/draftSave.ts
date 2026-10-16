@@ -12,7 +12,7 @@ import { clearDraftSave, draftSaveKeys, type DraftSaveSlot, type DraftSaveSummar
  * span previews are not, and come back as the suggested rotation on resume.
  * A daily (`state.dailyDay`) goes to its own slot (draftSaveSummary.ts).
  */
-export const saveSlotFor = (state: Pick<DraftState, 'dailyDay'>): DraftSaveSlot => (state.dailyDay ? 'daily' : 'draft');
+export const saveSlotFor = (state: Pick<DraftState, 'dailyDay' | 'bomb'>): DraftSaveSlot => (state.bomb ? 'bomb' : state.dailyDay ? 'daily' : 'draft');
 
 interface SavedDraft {
   version: 1;

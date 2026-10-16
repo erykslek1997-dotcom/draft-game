@@ -4,6 +4,8 @@ import { peakDraftPool } from '../engine/peakDraftPool';
 import { effectiveTalent } from '../engine/grades';
 import { dailyRuleBlocks } from '../engine/dailyDraft';
 import { ordinal } from './dailyDraftProgress';
+import type { PlayerSpan } from '../data/schema';
+import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 
 /** Players this good count as "top" when the screen says how many the rule takes away. */
 const TOP_TAL = 80;
@@ -17,6 +19,7 @@ export function DailyDraftDayScreen({
   day,
   slot,
   rosterSize,
+  bomb,
   onStart,
   onBack,
 }: {
@@ -25,6 +28,8 @@ export function DailyDraftDayScreen({
   slot: number;
   /** "for your five" / "for nine players". */
   rosterSize: number;
+  /** The Bomb daily: his caps and round are known from the start, nothing else. */
+  bomb?: PlayerSpan;
   onStart: () => void;
   onBack: () => void;
 }) {
@@ -40,7 +45,7 @@ export function DailyDraftDayScreen({
         <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onBack}>
           ← Menu
         </button>
-        <h1 className="at-calm-title">Daily {day.mode === 'mini' ? 'Mini' : 'All-Time'} Draft</h1>
+        <h1 className="at-calm-title">{day.mode === 'bomb' ? 'Daily Bomb' : `Daily ${day.mode === 'mini' ? 'Mini' : 'All-Time'} Draft`}</h1>
         <span className="rs-header-spacer" aria-hidden />
       </div>
       <p className="dd-date">{dailyDayLabel(day.day)}</p>
@@ -54,6 +59,17 @@ export function DailyDraftDayScreen({
           </span>
           <span className="dd-why">The CPU teams draft under the same cap.</span>
         </div>
+        {bomb && day.bomb && (
+          <div className="dd-rule is-today is-bomb">
+            <span className="dd-ic">💣</span>
+            <span className="dd-who">Only you</span>
+            <span className="dd-what">A hidden player joins you in round {day.bomb.round}</span>
+            <span className="dd-why">
+              His {bomb.fga.toFixed(1)} caps are set aside from your first pick. Who he is waits for the results; he plays at least{' '}
+              {BOMB_MIN_MINUTES} minutes.
+            </span>
+          </div>
+        )}
         {day.rule.kind !== 'open' && (
           <div className="dd-rule is-today">
             <span className="dd-ic">{day.rule.kind === 'stars' ? '1★' : '⊘'}</span>

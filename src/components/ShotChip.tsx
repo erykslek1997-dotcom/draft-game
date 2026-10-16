@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isBombMasked, maskName } from './bombMask';
 import { CapIcon } from './CapIcon';
 import { headshotUrl } from '../data/headshots';
 import './ShotChip.css';
@@ -23,6 +24,7 @@ function initials(name: string): string {
  * still identifiable, fits one line. Short names (or single-word ones, e.g. a mononym) pass
  * through untouched. Card buttons still carry the untruncated name in their `title` for hover. */
 export function shortenName(name: string, maxLen = 15): string {
+  name = maskName(name);
   if (name.length <= maxLen) return name;
   const parts = name.split(' ');
   if (parts.length < 2) return name;
@@ -40,6 +42,14 @@ export function Face({ name, size = 'sm' }: { name: string; size?: 'xs' | 'sm' |
   // failed state and the monogram doesn't stick.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const failed = failedSrc !== null && failedSrc === src;
+  // The Bomb daily: no face until the results reveal him.
+  if (isBombMasked(name)) {
+    return (
+      <span className={`bf-face bf-face--${size} is-bomb`} aria-hidden>
+        ?
+      </span>
+    );
+  }
   return (
     <span className={`bf-face bf-face--${size}`} aria-hidden>
       {src && !failed ? (

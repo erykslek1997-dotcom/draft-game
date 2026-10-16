@@ -55,6 +55,9 @@ import type { DailyDraftDay } from '../dailyDraftDay';
 import { saveDailyDraftResult, saveDailyDraftSeason } from './dailyDraftProgress';
 import { DAILY_REPLAY_FOR_TESTING } from './dailyProgress';
 import { copyLink } from './shareSave';
+import { BombReveal } from './BombCards';
+import { maskText } from './bombMask';
+import type { PlayerSpan } from '../data/schema';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, the live season) — real work deferred until the
@@ -178,6 +181,8 @@ interface Props {
   /** Today's daily draft (2026-10-16): the result is saved for the day (place, Overall, then the
    * season) and shared as text; `onRematch` replays it only while testing. */
   daily?: DailyDraftDay;
+  /** The Bomb daily: his reveal tops the results; `onNamed` lifts his mask everywhere. */
+  bomb?: { span: PlayerSpan; gem: boolean; named: boolean; onNamed: () => void };
 }
 
 /** See the `challenger` prop's own docstring on `Props` above for the full "no backend" story.
@@ -688,7 +693,7 @@ function HeroResult({
       {quote && (
         <p className="rr-quote">
           <span>{DESK_CAST[quote.who].name}</span>
-          <q>{quote.text.replace(/\s*\*.+?\*\s*/g, ' ').trim()}</q>
+          <q>{maskText(quote.text).replace(/\s*\*.+?\*\s*/g, ' ').trim()}</q>
         </p>
       )}
     </header>
@@ -1051,7 +1056,7 @@ function offenseScale(value: number): number {
   return Math.round(calibrateOffenseToDefenseScale(value));
 }
 
-export default function ResultsScreen({ teams, history, onRestart, onRematch, draftSeed, challenger, daily }: Props) {
+export default function ResultsScreen({ teams, history, onRestart, onRematch, draftSeed, challenger, daily, bomb }: Props) {
   // Step 3 of the menu's learning path is done once a full draft reaches its results.
   useEffect(() => markStepDone('draft'), []);
   // Lookups used inside render loops (matchup opponents, draft-order rows, the bracket tree) —
@@ -1419,18 +1424,18 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     return { wins: row.wins, losses: row.losses, place, playoffs };
   }, [daily, humanRanked, seasonState]);
   useEffect(() => {
-    if (daily && !daily.testing && humanRanked) saveDailyDraftResult('alltime', daily.day, { place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall });
+    if (daily && !daily.testing && humanRanked) saveDailyDraftResult(daily.mode, daily.day, { place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall });
   }, [daily, humanRanked, ranked.length]);
   useEffect(() => {
-    if (daily && !daily.testing && dailySeason) saveDailyDraftSeason('alltime', daily.day, dailySeason);
+    if (daily && !daily.testing && dailySeason) saveDailyDraftSeason(daily.mode, daily.day, dailySeason);
   }, [daily, dailySeason]);
   const [dailyCopied, setDailyCopied] = useState(false);
   async function copyDailyResult() {
     if (!daily || !humanRanked) return;
     // No names: the same draft is everyone's today.
     const lines = [
-      `Draftverse Daily · All-Time · ${daily.day}`,
-      `${daily.cap} caps · ${daily.title}`,
+      `Draftverse Daily · ${daily.mode === 'bomb' ? 'The Bomb' : 'All-Time'} · ${daily.day}`,
+      daily.bomb ? `${daily.cap} caps · 💣 round ${daily.bomb.round}${bomb?.named ? (daily.bomb.gem ? ' · a gem' : ' · a role player') : ''}` : `${daily.cap} caps · ${daily.title}`,
       `Draft: ${ordinal(humanRanked.rank)} / ${ranked.length} · ${humanRanked.breakdown.overall}`,
     ];
     if (dailySeason) lines.push(`Season: ${dailySeason.wins}-${dailySeason.losses} · ${dailySeason.playoffs}`);
@@ -1556,6 +1561,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         <span className="rs-header-spacer" aria-hidden />
       </div>
       {daily && <p className="dd-results-tag at-calm-strip-daily">Daily · {daily.title}</p>}
+      {bomb && <BombReveal span={bomb.span} gem={bomb.gem} onNamed={bomb.onNamed} />}
       {heroRanked && (
         <HeroResult
           teamName={heroRanked.team.name}

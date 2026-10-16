@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { DESK_EXPERT_TITLE, deskName, type DeskExpert, type DraftDeskResult } from '../engine/draftDesk';
 import { Face } from './ShotChip';
@@ -85,7 +86,7 @@ export function DraftDesk({ roster, desk, onClose }: { roster: PlayerSpan[]; des
                 <span className="desk-avatar"><ExpertIcon expert={turn.expert} /></span>
                 <div className="desk-line-body">
                   <span className="desk-speaker at-cond">{DESK_EXPERT_TITLE[turn.expert]}</span>
-                  <p className="desk-bubble">{turn.text}</p>
+                  <p className="desk-bubble">{maskText(turn.text)}</p>
                 </div>
               </li>
             ))}

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { maskName } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { DESK_CAST } from '../engine/desk';
 import { CALLS_PER_DRAFT, type CallId, type CallOption, type CallResult } from '../engine/deskCalls';
@@ -141,7 +142,7 @@ export function CallWindow({
                     className={`pd-star${starred(p.playerName) ? ' is-on' : ''}`}
                     onClick={() => onToggleStar(p.playerName)}
                     aria-pressed={starred(p.playerName)}
-                    aria-label={`${starred(p.playerName) ? 'Remove' : 'Add'} ${p.playerName} ${starred(p.playerName) ? 'from' : 'to'} your Big Board`}
+                    aria-label={`${starred(p.playerName) ? 'Remove' : 'Add'} ${maskName(p.playerName)} ${starred(p.playerName) ? 'from' : 'to'} your Big Board`}
                   >
                     ★
                   </button>

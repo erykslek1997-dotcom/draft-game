@@ -6,7 +6,7 @@ import { peakDraftPool } from '../src/engine/peakDraftPool';
 import { autoFinishQuickDraft, createQuickDraft, finalizeQuickRotation, isQuickPickLegal, quickDailyAlternative, quickPickBlockReason } from '../src/engine/quickDraft';
 import { bestPrimaryAssignment } from '../src/engine/rotation';
 import { totalFga } from '../src/engine/positions';
-import { autoFinishDraft, createDraft, dailyAlternative, draftCapLimit, isPickLegal, pickBlockReason } from '../src/engine/draft';
+import { autoFinishDraft, availablePlayers, createDraft, dailyAlternative, draftBombSpan, draftCapLimit, isBombTurn, isPickLegal, makeBombPick, pickBlockReason, pickBudget } from '../src/engine/draft';
 import { optimizeSpans } from '../src/engine/spanOptimizer';
 
 /**
@@ -113,4 +113,35 @@ for (const key of ['2026-10-02', '2026-10-05', '2026-10-08', '2026-10-11']) {
   check(over.length === 0, `${day.day}: every team fits under ${day.cap} caps`);
   const you = done.teams.find((t) => t.isHuman)!;
   check(you.roster.length === 9 && you.roster.every((p, k) => !dailyRuleBlocks(day.rule, p, you.roster.slice(0, k))), `${day.day}: your nine keep to the rule`);
+}
+
+// The Bomb daily (2026-10-16, the user: "osobne daily"): a hidden player joins you in rounds 5-8,
+// his caps and slot set aside from the first pick; the CPU never gets him.
+const bombYear = Array.from({ length: 364 }, (_, i) => dailyDraftDay('bomb', dayKey(i)));
+check(bombYear.every((d) => d.bomb && d.bomb.round >= 5 && d.bomb.round <= 8 && d.cap >= 90 && d.cap <= 110), 'Bomb days: rounds 5-8, All-Time caps');
+const gemShare = bombYear.filter((d) => d.bomb!.gem).length / bombYear.length;
+check(gemShare > 0.1 && gemShare < 0.3, `a gem about one day in five (${(gemShare * 100).toFixed(0)}%)`);
+check(dailyDraftDay('bomb', '2026-10-16').seed !== dailyDraftDay('alltime', '2026-10-16').seed, 'the Bomb daily is its own draft');
+for (const key of ['2026-10-16', '2026-10-17']) {
+  const day = dailyDraftDay('bomb', key);
+  const start = createDraft(false, undefined, undefined, day.seed, undefined, day);
+  const bomb = draftBombSpan(start)!;
+  check(!availablePlayers(start).some((p) => p.playerName === bomb.playerName), `${key}: the Bomb (${day.bomb!.gem ? 'gem' : 'role player'}) is off the board from the start`);
+  const human = start.teams.find((t) => t.isHuman)!;
+  const budget = pickBudget(start, human);
+  check(Math.abs(budget.capLeft - (day.cap - bomb.fga)) < 0.06 && budget.slotsLeft === 8, `${key}: his ${bomb.fga} caps and his slot are set aside (${budget.capLeft} left, 8 picks)`);
+  const done = autoFinishDraft(start);
+  const you = done.teams.find((t) => t.isHuman)!;
+  check(done.complete && you.roster.length === 9 && you.roster[day.bomb!.round - 1]?.id === bomb.id, `${key}: he joins you in round ${day.bomb!.round}`);
+  check(done.teams.filter((t) => !t.isHuman).every((t) => !t.roster.some((p) => p.playerName === bomb.playerName)), `${key}: no CPU team has him`);
+  check(totalFga(you.roster.map((p) => p.fga)) <= day.cap + 1e-9, `${key}: your nine, the Bomb included, fit under ${day.cap} caps`);
+}
+// On your Bomb turn the pick is his, nothing else.
+{
+  const day = dailyDraftDay('bomb', '2026-10-16');
+  let s = createDraft(false, undefined, undefined, day.seed, undefined, day);
+  while (!isBombTurn(s)) s = autoFinishDraft(s, 1);
+  check(availablePlayers(s).every((p) => !isPickLegal(s, p.id)), 'on the Bomb turn no one else can be drafted');
+  const after = makeBombPick(s);
+  check(after.teams.find((t) => t.isHuman)!.roster.some((p) => p.id === draftBombSpan(s)!.id) && !isBombTurn(after), '... and makeBombPick puts him on your team');
 }

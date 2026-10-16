@@ -1,3 +1,5 @@
+import { BOMB_NAME, isBombMasked } from './bombMask';
+
 /**
  * 2026-10-14, the draft board redesign (approved mockup): a board cell is ~70px wide, so it shows
  * one short name per player. Most players are their surname; the legends whose surname is too long
@@ -38,6 +40,7 @@ const SUFFIXES = new Set(['Jr.', 'Jr', 'Sr.', 'Sr', 'II', 'III', 'IV']);
 
 /** The one short name a board cell shows for a player. */
 export function boardName(name: string): string {
+  if (isBombMasked(name)) return BOMB_NAME;
   const known = BOARD_NAMES[name];
   if (known) return known;
   const parts = name.split(' ').filter(Boolean);

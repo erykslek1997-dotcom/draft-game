@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { isBombMasked } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import type { Team } from '../engine/types';
 import { teamCodes, teamLabel, teamPlace } from '../engine/teamNames';
@@ -83,14 +84,16 @@ export function DraftGrid({ teams, rounds, round, onClockIdx, complete, tierColo
                 const n = boardPickNumber(i, r, teams.length);
                 const mine = team.isHuman ? ' is-mine' : '';
                 if (pick) {
-                  const color = tierColor(pick);
+                  // The Bomb daily: no tier colour or tooltip that would give him away.
+                  const bomb = isBombMasked(pick.playerName);
+                  const color = bomb ? 'var(--at-gold, #ffd479)' : tierColor(pick);
                   return (
                     <span
                       role="cell"
                       key={team.id}
                       className={`dg-cell is-filled${mine}`}
                       style={{ '--dg-tier': color } as CSSProperties}
-                      title={`#${n} ${pick.playerName} (${pick.spanLabel}) — ${pickTip(pick)}`}
+                      title={bomb ? `#${n} The Bomb` : `#${n} ${pick.playerName} (${pick.spanLabel}) — ${pickTip(pick)}`}
                     >
                       <Face name={pick.playerName} size="md" />
                       <span className="dg-pos">{pick.primaryPosition}</span>

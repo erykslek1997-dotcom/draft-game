@@ -1,4 +1,5 @@
 import { DESK_CAST, type DeskLine } from '../engine/desk';
+import { maskText } from './bombMask';
 
 /** "@Sosini" in a reply shows as a mention. */
 function withMentions(text: string, key: number) {
@@ -14,7 +15,8 @@ export function DeskVoices({ voices }: { voices: DeskLine[] }) {
     <ul className="dk">
       {voices.map((v, i) => {
         const x = DESK_CAST[v.who];
-        const parts = v.text.split(/\*(.+?)\*/g).map((part, j) => (j % 2 ? <em key={j} className="dk-cue">{part}</em> : withMentions(part, j)));
+        // The Bomb daily: his name stays out of the desk's lines until the results (bombMask.ts).
+        const parts = maskText(v.text).split(/\*(.+?)\*/g).map((part, j) => (j % 2 ? <em key={j} className="dk-cue">{part}</em> : withMentions(part, j)));
         if (v.kind === 'burst') {
           return (
             <li className={`dk-ln dk-ln--burst${v.reply ? ' dk-ln--reply' : ''}`} key={i}>

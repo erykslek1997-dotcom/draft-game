@@ -7,6 +7,9 @@ import {
   isHumanRosterImpossible,
   autoFinishDraft,
   draftCapLimit,
+  draftBombSpan,
+  isBombTurn,
+  makeBombPick,
   TEAM_COUNT,
   ROUNDS,
   type DraftState,
@@ -28,6 +31,8 @@ import { clearDraftSave, loadDraft, saveDraft, saveSlotFor } from './draftSave';
 import type { DailyDraftDay } from '../dailyDraftDay';
 import { DailyDraftDayScreen } from './DailyDraftDay';
 import { clearDailyDraftResult } from './dailyDraftProgress';
+import { setBombMask } from './bombMask';
+import { BombLanding } from './BombCards';
 import { cpuPickDelay } from './aiSpeed';
 
 // 2026-09-17, user's own ask: a real "how to play?" affordance on the lottery screen, now that
@@ -201,27 +206,43 @@ function stripSharedLinkParams() {
 }
 
 const newDailyDraft = (daily: DailyDraftDay, humanTeamName?: string) =>
-  createDraft(false, undefined, humanTeamName, daily.seed, undefined, { day: daily.day, cap: daily.cap, rule: daily.rule });
+  createDraft(false, undefined, humanTeamName, daily.seed, undefined, { day: daily.day, cap: daily.cap, rule: daily.rule, bomb: daily.bomb });
+
+/** The Bomb daily hides his name from the whole draft; the results lift it (bombMask.ts). */
+function maskBombOf(state: DraftState): DraftState {
+  setBombMask(draftBombSpan(state)?.playerName ?? null);
+  return state;
+}
 
 /** Today's daily from its own save, when that save is today's; an older day's save is dropped. */
 function loadDailyDraft(daily: DailyDraftDay) {
   // A rerolled testing day never touches the saved one.
   if (daily.testing) return null;
-  const saved = loadDraft('daily');
+  const slot = daily.mode === 'bomb' ? 'bomb' : 'daily';
+  const saved = loadDraft(slot);
   if (saved && saved.state.dailyDay === daily.day) return saved;
-  if (saved) clearDraftSave('daily');
+  if (saved) clearDraftSave(slot);
   return null;
 }
 
 export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false, preset, daily }: Props) {
   const [resumed] = useState(() => (daily ? loadDailyDraft(daily) : resume && !commissionerMode ? loadDraft() : null));
-  const [draftState, setDraftState] = useState<DraftState>(
-    () =>
+  const [draftState, setDraftState] = useState<DraftState>(() =>
+    maskBombOf(
       resumed?.state ??
-      (daily
-        ? newDailyDraft(daily, humanTeamName)
-        : createDraft(commissionerMode, undefined, humanTeamName, preset?.seed ?? seedFromUrl(), preset?.teams)),
+        (daily
+          ? newDailyDraft(daily, humanTeamName)
+          : createDraft(commissionerMode, undefined, humanTeamName, preset?.seed ?? seedFromUrl(), preset?.teams)),
+    ),
   );
+  // Held while the draft is on (the initializer above sets it for the first paint); leaving the game
+  // lifts it, so nothing else in the app hides a name. The results lift it themselves on the reveal.
+  const bombName = draftBombSpan(draftState)?.playerName ?? null;
+  const [bombNamed, setBombNamed] = useState(false);
+  useEffect(() => {
+    setBombMask(bombNamed ? null : bombName);
+    return () => setBombMask(null);
+  }, [bombName, bombNamed]);
   const howToPlay = draftHowToPlay(draftCapLimit(draftState));
   const [challenger, setChallenger] = useState<ChallengeChallenger | undefined>(() =>
     resumed ? resumed.challenger : challengerFromUrl(),
@@ -407,8 +428,9 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     const humanName = draftState.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
     if (!daily?.testing) clearDraftSave(saveSlotFor(draftState));
     // A daily replays only in testing, and only today's draft.
-    if (daily && !daily.testing) clearDailyDraftResult('alltime', daily.day);
-    setDraftState(daily ? newDailyDraft(daily, humanName) : createDraft(commissionerMode, undefined, humanName, seed));
+    if (daily && !daily.testing) clearDailyDraftResult(daily.mode, daily.day);
+    setBombNamed(false);
+    setDraftState(maskBombOf(daily ? newDailyDraft(daily, humanName) : createDraft(commissionerMode, undefined, humanName, seed)));
     setChallenger(undefined);
     setFinalTeams(null);
     setAiTeamsFinalized(false);
@@ -438,6 +460,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
             day={daily}
             slot={draftState.teams.find((t) => t.isHuman)?.draftSlot ?? 1}
             rosterSize={ROSTER_SIZE}
+            bomb={draftBombSpan(draftState) ?? undefined}
             onStart={() => setPhase('lottery')}
             onBack={handleReset}
           />
@@ -458,6 +481,13 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
             {autoFinishing ? `Finishing… ${draftState.history.length} / ${TOTAL_PICKS}` : 'Auto-finish (testing)'}
           </button>
         </div>
+      )}
+      {phase === 'draft' && !autoFinishing && isBombTurn(draftState) && (
+        <BombLanding
+          span={draftBombSpan(draftState)!}
+          round={draftState.bomb!.round}
+          onContinue={() => setDraftState((s) => makeBombPick(s))}
+        />
       )}
       {phase === 'draft' && (
         <DraftBoard
@@ -486,6 +516,11 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           draftSeed={draftState.seed}
           challenger={challenger}
           daily={daily}
+          bomb={daily?.bomb && draftBombSpan(draftState) ? { span: draftBombSpan(draftState)!, gem: daily.bomb.gem, named: bombNamed, onNamed: () => {
+                  // Lifted before the re-render, so this very render shows his name everywhere.
+                  setBombMask(null);
+                  setBombNamed(true);
+                } } : undefined}
         />
       )}
     </>

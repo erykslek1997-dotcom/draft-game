@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { maskName } from './bombMask';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import { STARTER_SLOTS } from '../engine/positions';
@@ -253,7 +254,7 @@ export function YourFiveCourt({
           const p = assignment[slot];
           const spot = COURT_SPOT[slot];
           return (
-            <span key={slot} className={`wr-spot${p ? ' is-filled' : ''}`} style={{ left: `${spot.left}%`, top: spot.top }} title={p?.playerName}>
+            <span key={slot} className={`wr-spot${p ? ' is-filled' : ''}`} style={{ left: `${spot.left}%`, top: spot.top }} title={maskName(p?.playerName)}>
               {p ? <Face name={p.playerName} size="md" /> : <span className="wr-spot-open">{slot}</span>}
               <span className="wr-spot-name">{p ? boardName(p.playerName) : 'open'}</span>
             </span>
@@ -263,7 +264,7 @@ export function YourFiveCourt({
       {bench.length > 0 && (
         <div className="wr-bench">
           {bench.map((p) => (
-            <span key={p.id} className="wr-bench-chip" title={p.playerName}>
+            <span key={p.id} className="wr-bench-chip" title={maskName(p.playerName)}>
               <Face name={p.playerName} size="xs" />
               {boardName(p.playerName)}
             </span>

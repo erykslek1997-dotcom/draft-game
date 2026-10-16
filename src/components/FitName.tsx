@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { maskName } from './bombMask';
 import { Face } from './ShotChip';
 import { teamNickname } from '../engine/teamNames';
 
@@ -68,7 +69,9 @@ function useFit<T extends HTMLElement>(variants: ReactNode[], key: string): { re
  * "Tracy M.", else the face (initials when there is no photo; plain initials when a face already
  * sits next to the name). The full name stays in the title and in the accessibility tree.
  */
-export function useFitName<T extends HTMLElement>(name: string, faceNextToIt = false): { ref: RefObject<T | null>; content: ReactNode } {
+export function useFitName<T extends HTMLElement>(realName: string, faceNextToIt = false): { ref: RefObject<T | null>; content: ReactNode } {
+  // The Bomb daily keeps his name hidden until the results (bombMask.ts).
+  const name = maskName(realName);
   const sr = <span className="at-sr-only">{name}</span>;
   return useFit<T>(
     [
@@ -93,7 +96,7 @@ export function useFitName<T extends HTMLElement>(name: string, faceNextToIt = f
 export function FitName({ name, className, as: Tag = 'span', faceNextToIt }: { name: string; className?: string; as?: 'span' | 'b' | 'div'; faceNextToIt?: boolean }) {
   const { ref, content } = useFitName<HTMLElement>(name, faceNextToIt);
   return (
-    <Tag ref={ref as RefObject<never>} className={className} title={name}>
+    <Tag ref={ref as RefObject<never>} className={className} title={maskName(name)}>
       {content}
     </Tag>
   );
