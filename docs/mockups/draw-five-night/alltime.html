@@ -836,6 +836,40 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .tabs2 span { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 6px; border-bottom: 2px solid transparent; margin-bottom: -1.5px; }
 .tabs2 span.on { color: var(--ink); border-bottom-color: var(--ink); }
 @media (max-width: 600px) { .live-split > .stack { order: -1; } .court { max-width: 240px; } .live-aside .stackb { grid-template-columns: 1fr 1fr; } }
+
+/* live box score by quarter */
+.seg { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin: 2px 0 10px; }
+.seg > span { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 3px; border-bottom: 2px solid transparent; }
+.seg > span.on { color: var(--ink); border-bottom-color: var(--ink); }
+.seg > span small { font: italic 500 12px Inter, sans-serif; text-transform: none; letter-spacing: 0; color: var(--red); margin-left: 4px; }
+.seg .gap { flex: 1; }
+.lbx { width: 100%; border-collapse: collapse; }
+.lbx th { padding: 0 6px 6px; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; color: var(--ink3); text-align: right; border-bottom: 1px solid var(--rule); }
+.lbx th:first-child { text-align: left; padding-left: 0; }
+.lbx td { padding: 8px 6px; border-bottom: 1px solid var(--rule); text-align: right; font: 500 14px var(--num); color: var(--ink2); }
+.lbx td:first-child { text-align: left; padding-left: 0; font: 700 16px var(--cond); color: var(--ink); white-space: nowrap; }
+.lbx td:first-child i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); margin-right: 8px; vertical-align: 2px; }
+.lbx td:first-child i.off { background: transparent; box-shadow: inset 0 0 0 1px var(--ink4); }
+.lbx tr.bn td:first-child { color: var(--ink2); }
+.lbx td, .lbx th { white-space: nowrap; }
+.lbx td.k { color: var(--ink); font-weight: 600; }
+.lbx td.pos { color: var(--green); } .lbx td.neg { color: var(--red); }
+.lbx td.dnp { font-style: italic; font-family: Inter, sans-serif; font-size: 13px; color: var(--ink4); text-align: left; }
+.lbx tr.tot td { border-top: 1.5px solid var(--rule2); color: var(--ink); font-weight: 600; }
+.mq { width: 100%; border-collapse: collapse; }
+.mq th { padding: 0 4px 6px; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; color: var(--ink3); text-align: center; border-bottom: 1px solid var(--rule); }
+.mq th:first-child { text-align: left; padding-left: 0; }
+.mq td { padding: 6px 4px; border-bottom: 1px solid var(--rule); }
+.mq td:first-child { padding-left: 0; font: 700 15px var(--cond); color: var(--ink); white-space: nowrap; }
+.mq td.c { width: 17%; }
+.mq .cell { position: relative; height: 22px; background: var(--surf2); }
+.mq .cell i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink4); }
+.mq .cell b { position: relative; display: block; text-align: center; font: 600 12px/22px var(--num); color: var(--ink); }
+.mq .cell.now i { background: var(--ink3); }
+.mq .cell.zero b { color: var(--ink4); }
+.mq td.t { text-align: right; font: 600 14px var(--num); color: var(--ink); width: 40px; }
+.mq-note { margin: 8px 0 0; font-size: 13px; font-style: italic; color: var(--ink3); }
+@media (max-width: 600px) { .lbx .c-hide { display: none; } .lbx td, .lbx th { padding-left: 4px; padding-right: 4px; } .lbx td:first-child { font-size: 15px; } .lbx .fn { display: none; } .mq .fn { display: none; } }
 </style>
 </head>
 <body>
@@ -1220,6 +1254,20 @@ S.liveGame = () => [
   `<div class="split live-split"><section><div class="tabs2"><span class="on">Play-by-play</span><span>Box score</span><span>Team stats</span></div><div class="feed">${FEED7.map(([t, w, x, sc, hot]) => t === 'call' ? `<div class="call ${w}">${x}</div>` : `<div class="ln ${w} ${hot ? 'hot' : ''}"><span class="t">${t}</span><span class="w">${w === 'y' ? 'TUL' : 'KEN'}</span><span>${x}</span><span class="sc">${sc}</span></div>`).join('')}<div class="q">End of Q3: Tulsa 76, Kentucky 74. Durant 26, Jordan 29.</div></div></section>
   <div class="stack"><section><h3>Last basket<span>Jordan · 2:13</span></h3>${court}<p class="court-l"><b>Jordan</b> pull-up from the elbow · +2 · 15 of 27 tonight</p></section>
   <section><h3>Score by quarter</h3><table class="box"><tr><th>Team</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>T</th></tr><tr><td>Tulsa</td><td>27</td><td>24</td><td>25</td><td>20</td><td>96</td></tr><tr><td>Kentucky</td><td>22</td><td>28</td><td>24</td><td>24</td><td class="hi">98</td></tr></table></section></div></div>`];
+const nm2 = (n) => { const i = n.indexOf(' '); return `<span class="fn">${n.slice(0, i)} </span>${n.slice(i + 1)}`; };
+// Q3 only, Tulsa: [name, on court now, MIN, PTS, REB, AST, FG, 3PT, PF, +/-]
+const BOXQ3 = [['Gary Payton', 1, 10, 4, 1, 3, '2-4', '0-1', 1, '+3'], ['Klay Thompson', 0, 9, 6, 1, 0, '2-5', '2-4', 0, '+1'], ['Kevin Durant', 1, 12, 9, 2, 1, '3-6', '1-2', 0, '+4'], ['Kevin Garnett', 1, 9, 4, 4, 1, '2-3', '0-0', 2, '+2'], ['Ben Wallace', 0, 7, 0, 3, 0, '0-1', '0-0', 1, '−2'], ['Andre Iguodala', 1, 5, 2, 1, 1, '1-2', '0-1', 0, '+1'], ['Kyle Korver', 0, 3, 0, 0, 0, '0-1', '0-1', 0, '−4'], ['Dennis Rodman', 1, 5, 0, 3, 0, '0-0', '0-0', 1, '+1'], ['Robert Horry', 0, 0]];
+const MINQ = [['Gary Payton', 1, [10, 8, 10, 8]], ['Klay Thompson', 0, [9, 8, 9, 6]], ['Kevin Durant', 1, [10, 9, 12, 9]], ['Kevin Garnett', 1, [10, 8, 9, 7]], ['Ben Wallace', 0, [8, 7, 7, 5]], ['Andre Iguodala', 1, [3, 4, 5, 4]], ['Kyle Korver', 0, [2, 4, 3, 3]], ['Dennis Rodman', 1, [4, 4, 5, 4]], ['Robert Horry', 0, [0, 4, 0, 0]]];
+S.liveBox = () => { const [l] = S.liveGame(); return [l,
+  prompt('Live · Q4 · 2:13', 'Jordan answers', 'A pull-up from the elbow puts Kentucky back in front. Tulsa has the ball, down two.') +
+  `<div class="split"><section><div class="tabs2"><span>Play-by-play</span><span class="on">Box score</span><span>Team stats</span></div>
+   <div class="seg"><span>Game</span><span>Q1</span><span>Q2</span><span class="on">Q3</span><span>Q4<small>now</small></span><span class="gap"></span><span class="on">Tulsa</span><span>Kentucky</span></div>
+   <table class="lbx"><tr><th>Q3 · Tulsa 25, Kentucky 24</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th class="c-hide">FG</th><th class="c-hide">3PT</th><th class="c-hide">PF</th><th>+/−</th></tr>
+   ${BOXQ3.map(([n, on, mn, pts, reb, ast, fg, tp, pf, pm], i) => mn === 0 ? `<tr class="bn"><td><i class="off"></i>${nm2(n)}</td><td colspan="8" class="dnp">Did not play in Q3</td></tr>` : `<tr class="${i > 4 ? 'bn' : ''}"><td><i class="${on ? '' : 'off'}"></i>${nm2(n)}</td><td>${mn}</td><td class="${pts >= 9 ? 'k' : ''}">${pts}</td><td>${reb}</td><td>${ast}</td><td class="c-hide">${fg}</td><td class="c-hide">${tp}</td><td class="c-hide">${pf}</td><td class="${pm[0] === '+' ? 'pos' : 'neg'}">${pm}</td></tr>`).join('')}
+   <tr class="tot"><td>Tulsa</td><td>60</td><td>25</td><td>15</td><td>6</td><td class="c-hide">10-22</td><td class="c-hide">3-10</td><td class="c-hide">5</td><td class="pos">+1</td></tr></table>
+   <p class="mq-note">● on the floor now · ○ on the bench</p></section>
+  <div class="stack"><section><h3>Minutes by quarter<span>Tulsa · Q4 so far</span></h3><table class="mq"><tr><th></th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th></th></tr>${MINQ.map(([n, on, q]) => `<tr><td>${nm2(n)}</td>${q.map((m, i) => `<td class="c"><div class="cell ${i === 3 && on ? 'now' : ''} ${m === 0 ? 'zero' : ''}"><i style="width:${(m / 12) * 100}%"></i><b>${m || '—'}</b></div></td>`).join('')}<td class="t">${q.reduce((a, b) => a + b, 0)}</td></tr>`).join('')}</table>
+   <p class="mq-note">Bars fill to 12 minutes, a full quarter. Durant played all of Q3.</p></section></div></div>`]; };
 S.menu2 = () => ['', `<div class="m2">
   <div class="m2-mast"><b>Draftverse</b><span>Every era. One game.</span></div>
   <div class="m2-team">${tm('TUL')}<span>Tulsa Twisters</span><a href="#">change</a></div>

@@ -280,6 +280,11 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
     wyścig o MVP w trakcie sezonu (top 3 liczone funkcją nagród na statystykach z części sezonu);
     wibracja na telefonie przy twoim wyborze, „on the clock” i końcu meczu (`navigator.vibrate`,
     tylko gdzie działa; wyłączana w ustawieniach razem z dźwiękiem/animacjami).
+  - **Mecz na żywo: statystyki i minuty w kwartach** (2026-10-21, user; makieta `alltime.html#liveBox`):
+    w zakładce Box score przełącznik Game / Q1–Q4 (bieżąca „now”) i Tulsa / rywal; kolumny MIN,
+    PTS, REB, AST, FG, 3PT, PF, +/−; kto jest na boisku (●/○), „Did not play in Q3”. Obok tabela
+    „Minutes by quarter” (paski do 12 minut, suma). Silnik już to ma: `moments[].lines` to pełny
+    box po każdym posiadaniu, a piątki są znane z góry — kwarty i +/− to różnice migawek.
   - **Faza końcowa:** rekordy i półka z trofeami (localStorage: najlepszy wynik w każdym trybie,
     tytuły, najdłuższa seria; „Nowy rekord” na wynikach); wczorajsza odpowiedź w daily Draw Five
     (najlepsza piątka z ziarna dnia + twój wynik); skróty klawiszowe w drafcie na komputerze
