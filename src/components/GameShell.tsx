@@ -25,7 +25,7 @@ import DraftBoard from './DraftBoard';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
 import { NightLottery } from '../night/league';
 import { teamCodes } from '../engine/teamNames';
-import { Btn } from '../night/frame';
+import { Btn, buzz } from '../night/frame';
 import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { ShareCardStarter } from './shareCardImage';
 import type { FeedbackEntry } from './FeedbackToggle';
@@ -371,6 +371,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   }, [draftState, phase, challenger, commissionerMode, daily]);
 
   function handlePick(playerId: string) {
+    buzz();
     setDraftState((s) => makePick(s, playerId));
   }
 

@@ -45,7 +45,7 @@ import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
-import { Actions, Btn, CapBar, EmptyNote, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, Tally, fmtCaps, lastName } from '../night/ui';
+import { Actions, Btn, CapBar, EmptyNote, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, Tally, buzz, fmtCaps, lastName } from '../night/ui';
 import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
@@ -1114,6 +1114,10 @@ export default function DraftBoard({
     setFgaMax(String(Math.max(1, Math.floor(humanBudget.maxThisPick))));
   }
 
+  // A short buzz when you come on the clock (settings: Vibration).
+  useEffect(() => {
+    if (youOnClock) buzz([15, 40, 15]);
+  }, [youOnClock]);
   /* ---------------- the night screen (mockup alltime.html #draft, #board, #years, #team) ---------------- */
   const codeOf = (t: Team) => teamCodeByTeamId.get(t.id) ?? '';
   const totalPicks = state.teams.length * ROUNDS;
