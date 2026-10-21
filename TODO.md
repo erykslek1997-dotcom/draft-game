@@ -271,8 +271,8 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
     - **Play-in tournament** po sezonie regularnym przed play-offami: miejsca 7–10 (7–8: zwycięzca
       = 7. seed; 9–10: przegrany odpada; przegrany 7–8 z wygranym 9–10 o 8. seed). Mecze pojedyncze,
       do obejrzenia na żywo jak play-offy. Seedy 1–6 bez zmian.
-    - Makieta `alltime.html#inSeason` to punkt wyjścia; ekrany przerwy miesięcznej, ASG i play-in
-      do zrobienia w tej fazie.
+    - Makiety: `alltime.html#simDay` (dzień po dniu: kalendarz miesiąca, 8 meczów dnia, tabela z
+      ruchem, MVP ladder), `#monthBreak`, `#asgBreak`, `#playIn`.
   - **Razem z nowym wyglądem:** mecz sezonu i rekordy kariery (najlepszy występ, najwyższe
     zwycięstwo — zapamiętane w trakcie symulacji sezonu; na ekran sezonu i plakat Story);
     wyścig o MVP w trakcie sezonu (top 3 liczone funkcją nagród na statystykach z części sezonu);
