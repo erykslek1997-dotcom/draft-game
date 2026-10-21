@@ -545,6 +545,59 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .champ-p .po-head h2 { color: #8A6A1E; }
 .champ-p { box-shadow: inset 0 0 0 3px #D9A93C; }
 @media (max-width: 600px) { .sg .fn { display: none; } .pop-r { padding: 6px 0; } .swap { margin: 8px 0 0; } .r3 { grid-template-columns: 34px minmax(0, 1fr) 26px; gap: 8px; } .r3p { font-size: 18px; } .sg { padding: 0 6px; } .sg b { font-size: 13px; } .sg i { font-size: 12px; } .r3b { height: 44px; } .share-grid { grid-template-columns: 1fr; } .pop { right: 0; width: auto; left: 0; } .pop-r { grid-template-columns: minmax(0, 1fr) 30px; } .pop-r .fit, .pop-r .now { grid-column: 1 / -1; text-align: left; } .who3 td.c { display: none; } }
+
+.po-p em { display: block; margin-top: 2px; font: 700 13px var(--num); font-style: normal; color: var(--cink); }
+.po-prof { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--cline); }
+.pp span { display: block; font: 700 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
+.pp b { font: 800 20px/1.1 var(--cond); }
+.pp i { display: block; height: 4px; background: var(--cline); margin-top: 2px; }
+.pp i u { display: block; height: 100%; background: var(--cink); }
+.pp.hi b { color: #8A6A1E; } .pp.hi i u { background: #D9A93C; }
+.pp.lo b { color: #A3282F; } .pp.lo i u { background: #A3282F; }
+.po-bench b small { font: 600 9px var(--num); }
+/* story 9:16 */
+.story-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 300px); justify-content: center; gap: 22px; padding: 10px 0 30px; }
+.story { width: 300px; height: 533px; overflow: hidden; background: var(--card); color: var(--cink); padding: 10px 14px; border-radius: 4px; display: flex; flex-direction: column; }
+.story .po-head { padding: 6px 0 0; }
+.story .po-head h2 { font-size: 28px; }
+.story .po-head p { font-size: 10px; margin-top: 2px; }
+.st-sec { margin-top: 7px; font: 700 9px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cink2); border-bottom: 1px solid var(--cink); padding-bottom: 2px; }
+.st-r { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 2px 0; border-bottom: 1px solid var(--cline); }
+.st-f { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; background: var(--team, #2A2824); display: grid; place-items: end center; }
+.st-f img { width: 24px; height: 24px; object-fit: cover; }
+.st-f.pback { background: repeating-linear-gradient(45deg, #1E1C18 0 4px, #2A2824 4px 8px); place-items: center; }
+.st-f.pback span { font: 800 16px var(--cond); color: #E5C06A; }
+.st-n b { display: block; font: 800 13px/1 var(--cond); text-transform: uppercase; }
+.st-n small { display: block; margin-top: 2px; font: 500 8px/1.1 var(--num); color: var(--cink2); }
+.st-r em { font: 700 13px var(--num); font-style: normal; }
+.st-r em small { font-size: 8px; color: var(--cink2); }
+.st-bench { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 3px; }
+.st-bench b { display: block; font: 800 12px/1 var(--cond); text-transform: uppercase; }
+.st-bench small { display: block; font: 600 8px/1.2 var(--num); color: var(--cink2); }
+.story .po-prof { gap: 6px; margin-top: 4px; padding-top: 2px; border-top: 0; }
+.story .pp b { font-size: 15px; }
+.story .pp span { font-size: 7px; }
+.story .po-strip { margin-top: auto; padding: 4px 0; }
+.story .po-strip b { font-size: 17px; }
+.story .po-strip span { font-size: 7px; }
+.story .po-foot { font-size: 8px; padding-top: 4px; }
+.story .po-foot .mark { width: 20px; height: 20px; font-size: 13px; }
+.story .po-mast { font-size: 8px; padding: 3px 0 2px; }
+.story .po-kick { font-size: 9px; }
+.story .po-head h2 { margin: 2px 0 3px; }
+.story .po-strip div { padding: 4px 0; }
+.story .po-strip b { line-height: 1.1; }
+.story .po-mast b { font-size: 10px; }
+.st-extra { font-size: 10px; color: var(--cink2); }
+.ex-path { display: flex; gap: 8px; margin-top: 4px; }
+.ex-path span { display: flex; align-items: center; gap: 4px; }
+.ex-path small { font: 700 8px var(--cond); text-transform: uppercase; }
+.ex-path .tm { width: 24px; height: 16px; font-size: 8px; }
+.ex-path b { font: 700 11px var(--num); color: var(--cink); }
+.ex-aw { margin-top: 4px; font-style: italic; }
+.ex-aw b { font-style: normal; color: var(--cink); }
+.story .champ-p, .story.champ-p { box-shadow: inset 0 0 0 3px #D9A93C; }
+@media (max-width: 600px) { .story-grid { grid-template-columns: 300px; } }
 </style>
 </head>
 <body>
@@ -854,21 +907,47 @@ S.minutes3 = () => { const [l] = S.team();
   <section><h3>Who plays how much<span>total · what his legs can take</span></h3><table class="who3">${[['Kevin Durant', 38, 38], ['Gary Payton', 34, 38], ['Klay Thompson', 34, 36], ['Kevin Garnett', 30, 38], ['Ben Wallace', 30, 34], ['Dennis Rodman', 26, 24, 'over'], ['Andre Iguodala', 24, 34], ['Kyle Korver', 14, 28], ['Robert Horry', 10, 26]].map(([n, m, cap, w]) => `<tr class="${w || ''}"><td class="n">${n}</td><td class="m">${m}</td><td><div class="cb"><i style="width:${m / 48 * 100}%"></i><u style="left:${cap / 48 * 100}%"></u></div></td><td class="c">${w ? `over by ${m - cap} · costs Rotation` : `can take ${cap}`}</td></tr>`).join('')}</table>
   <p class="empty-note" style="margin-top:10px">Allowed, but Rodman at 26 lowers your Rotation score. <a href="#" style="color:var(--ink2)">Suggest a rotation</a> · <a href="#" style="color:var(--ink2)">Reset</a></p></section>`]; };
 
-// ---- share posters for every mode ----
-function poster({ mode, kick, head, line, five, bench, strip, foot, champ, hidden }) {
+// ---- share posters for every mode (v2: a number per player, the team profile, Post + Story) ----
+const PROF = (vals, weak, best) => [['Talent', vals[0]], ['Offense', vals[1]], ['Defense', vals[2]], ['Spacing', vals[3]], ['Fit', vals[4]]].map(([l, v]) => ({ l, v, cls: l === weak ? 'lo' : l === best ? 'hi' : '' }));
+const profileRow = (prof) => `<div class="po-prof">${prof.map(({ l, v, cls }) => `<div class="pp ${cls}"><span>${l}</span><b>${v}</b><i><u style="width:${v}%"></u></i></div>`).join('')}</div>`;
+const PLAYERS = (five, nums) => five.map((k, i) => ({ x: p(k), n: nums[i] }));
+function fiveCells(list, unit, hidden) {
+  if (hidden) return ['PG', 'SG', 'SF', 'PF', 'C'].map((ps) => `<div class="po-p"><div class="po-ph pback"><span>?</span></div><b>${ps}</b><small>shown tomorrow</small></div>`).join('');
+  return list.map(({ x, n }) => `<div class="po-p" style="--team:${x.c}"><div class="po-ph">${face(x)}</div><b>${x.n.split(' ').slice(-1)[0]}</b><small>${x.pos} · ${x.y}</small><em>${unit === 'caps' ? '<i class="capi"></i>' : ''}${n}${unit === 'ppg' ? ' ppg' : ''}</em></div>`).join('');
+}
+function poster(d) {
+  const { mode, kick, head, line, five, nums, unit, bench, benchNums, strip, foot, champ, hidden, prof } = d;
   return `<div class="poster ${champ ? 'champ-p' : ''}"><div class="po-mast"><span>Draftverse Daily</span><b>Tuesday, October 21</b><span>${mode}</span></div>
   <div class="po-head"><span class="po-kick">${kick}</span><h2>${head}</h2><p>${line}</p></div>
-  ${hidden ? `<div class="po-five">${['PG', 'SG', 'SF', 'PF', 'C'].map((ps) => `<div class="po-p"><div class="po-ph pback"><span>?</span></div><b>${ps}</b><small>shown tomorrow</small></div>`).join('')}</div>` : `<div class="po-five">${five.map((k) => { const x = p(k); return `<div class="po-p" style="--team:${x.c}"><div class="po-ph">${face(x)}</div><b>${x.n.split(' ').slice(-1)[0]}</b><small>${x.pos} · ${x.y}</small></div>`; }).join('')}</div>`}
-  ${bench ? `<div class="po-bench"><span>Bench</span>${bench.map((k) => { const x = p(k); return `<b>${x.n.split(' ').slice(-1)[0]}<small>${x.pos}</small></b>`; }).join('')}</div>` : ''}
+  <div class="po-five">${fiveCells(PLAYERS(five, nums || []), unit, hidden)}</div>
+  ${bench ? `<div class="po-bench"><span>Bench</span>${bench.map((k, i) => { const x = p(k); return `<b>${x.n.split(' ').slice(-1)[0]}<small>${unit === 'caps' ? '<i class="capi"></i>' + benchNums[i] : benchNums[i] + ' ppg'}</small></b>`; }).join('')}</div>` : ''}
+  ${profileRow(prof)}
   <div class="po-strip">${strip.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>
   <div class="po-foot"><span class="mark">D</span><span>${foot}</span></div></div>`;
 }
-S.shareAll = () => ['', `<div class="share-grid">
-  ${poster({ mode: 'All-Time Draft', kick: 'Final standings · 3rd of 16', head: 'Tulsa builds a wall', line: 'Payton, Garnett and Wallace give the Twisters the best defense in the league. 18% to win it all.', five: ['payton', 'klay', 'durant', 'garnett', 'bwallace'], bench: ['rodman', 'korver', 'iggy', 'horry'], strip: [['Place', '3rd'], ['Rating', '87'], ['Defense', 'A+'], ['Title odds', '18%']], foot: 'Beat my 87 on the same board · challenge 7Q4K' })}
-  ${poster({ mode: 'All-Time · season', kick: 'The Finals · game 7 · 104–99', head: 'Champions', line: 'Tulsa wins it from the 3 seed. Durant: 38 in game 7, Finals MVP.', five: ['payton', 'klay', 'durant', 'garnett', 'bwallace'], bench: ['rodman', 'korver', 'iggy', 'horry'], strip: [['Season', '52–30'], ['Seed', '3rd'], ['Playoffs', '16–6'], ['Finals MVP', 'Durant']], foot: 'QF 4–1 HON · SF 4–2 SFE · F 4–3 KEN', champ: true })}
-  ${poster({ mode: 'Mini Draft', kick: 'Final standings · 4th of 16', head: 'Gobert locks the paint', line: 'The best rim protection in the field. Spacing kept Tulsa out of the top three.', five: ['payton', 'klay', 'durant', 'garnett', 'bwallace'].map((k, i) => ['payton', 'rallen', 'iggy', 'garnett', 'gobert'][i]), strip: [['Place', '4th'], ['Score', '84'], ['Best', '89'], ['Caps', '69.6']], foot: 'Same 16 teams, your turn · challenge M2X9' })}
-  ${poster({ mode: 'Draw Five · daily', kick: 'Game of the day · beat the ’92 Bulls 108–101', head: 'Playoff lock', line: 'Same number as the five biggest names. Durant 31, Jordan 34.', five: ['conley', 'korver', 'durant', 'garnett', 'gobert'], strip: [['Your five', '84'], ['Fan vote', '84'], ['Best', '88'], ['Streak', '🔥 6']], foot: 'One board for everyone today · your five stays hidden till tomorrow', hidden: true })}
-  </div>`];
+function story(d) {
+  const { mode, kick, head, line, five, nums, unit, bench, benchNums, strip, champ, hidden, prof, extra } = d, foot = d.storyFoot || d.foot;
+  const rows = hidden ? ['PG', 'SG', 'SF', 'PF', 'C'].map((ps) => `<div class="st-r"><div class="st-f pback"><span>?</span></div><div class="st-n"><b>${ps}</b><small>shown tomorrow</small></div><em>—</em></div>`).join('')
+    : PLAYERS(five, nums).map(({ x, n }) => `<div class="st-r" style="--team:${x.c}"><div class="st-f">${face(x)}</div><div class="st-n"><b>${x.n}</b><small>${x.pos} · ${x.y}</small></div><em>${unit === 'caps' ? '<i class="capi"></i>' : ''}${n}${unit === 'ppg' ? '<small> ppg</small>' : ''}</em></div>`).join('');
+  return `<div class="story ${champ ? 'champ-p' : ''}"><div class="po-mast"><span>Draftverse Daily</span><b>Oct 21</b><span>${mode}</span></div>
+  <div class="po-head"><span class="po-kick">${kick}</span><h2>${head}</h2><p>${line}</p></div>
+  <div class="st-sec">Starting five</div><div class="st-rows">${rows}</div>
+  ${bench ? `<div class="st-sec">Bench</div><div class="st-bench">${bench.map((k, i) => { const x = p(k); return `<div><b>${x.n.split(' ').slice(-1)[0]}</b><small>${unit === 'caps' ? '<i class="capi"></i>' + benchNums[i] : benchNums[i] + ' ppg'}</small></div>`; }).join('')}</div>` : ''}
+  <div class="st-sec">Team profile</div>${profileRow(prof)}
+  ${extra ? `<div class="st-sec">${extra[0]}</div><div class="st-extra">${extra[1]}</div>` : ''}
+  <div class="po-strip">${strip.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>
+  <div class="po-foot"><span class="mark">D</span><span>${foot}</span></div></div>`;
+}
+const FIVE_AT = ['payton', 'klay', 'durant', 'garnett', 'bwallace'], BENCH_AT = ['rodman', 'korver', 'iggy', 'horry'];
+const SHARES = [
+  { mode: 'All-Time Draft', kick: 'Final standings · 3rd of 16', head: 'Tulsa builds a wall', line: 'Payton, Garnett and Wallace give the Twisters the best defense in the league.', five: FIVE_AT, nums: [15, 16.8, 19, 19.4, 6], unit: 'caps', bench: BENCH_AT, benchNums: [6.9, 8.3, 12.4, 7.8], prof: PROF([86, 84, 93, 71, 88], 'Spacing', 'Defense'), strip: [['Place', '3rd'], ['Rating', '87'], ['Best', '90'], ['Title odds', '18%']], foot: 'Beat my 87 on the same board · challenge 7Q4K' },
+  { mode: 'All-Time · season', kick: 'The Finals · game 7 · 104–99', head: 'Champions', line: 'Tulsa wins it from the 3 seed. Durant drops 38 in game 7.', five: FIVE_AT, nums: [19.8, 20.4, 29.4, 21.2, 7.4], unit: 'ppg', bench: BENCH_AT, benchNums: [5.1, 7.9, 8.8, 4.6], prof: PROF([86, 84, 93, 71, 88], 'Spacing', 'Defense'), strip: [['Season', '52–30'], ['Seed', '3rd'], ['Playoffs', '16–6'], ['Finals MVP', 'Durant']], foot: 'QF 4–1 HON · SF 4–2 SFE · F 4–3 KEN', storyFoot: 'Run it back on the same board · challenge 7Q4K', champ: true,
+    extra: ['Playoff run & awards', `<div class="ex-path">${[['QF', 'HON', '4–1'], ['SF', 'SFE', '4–2'], ['Finals', 'KEN', '4–3']].map(([r, c, sc]) => `<span><small>${r}</small>${tm(c)}<b>${sc}</b></span>`).join('')}</div><div class="ex-aw">Finals MVP <b>Durant</b> · DPOY <b>Wallace</b> · All-NBA 1st <b>Durant</b></div>`] },
+  { mode: 'Mini Draft', kick: 'Final standings · 4th of 16', head: 'Gobert locks the paint', line: 'The best rim protection in the field. Spacing kept Tulsa out of the top three.', five: ['payton', 'rallen', 'iggy', 'garnett', 'gobert'], nums: [15, 17, 12.4, 19.4, 9.1], unit: 'caps', prof: PROF([85, 86, 83, 72, 85], 'Spacing', 'Offense'), strip: [['Place', '4th'], ['Score', '84'], ['Best', '89'], ['Caps', '69.6']], foot: 'Same 16 teams, your turn · challenge M2X9' },
+  { mode: 'Draw Five · daily', kick: 'Game of the day · beat the ’92 Bulls 108–101', head: 'Playoff lock', line: 'Same number as the five biggest names. Durant 31, Jordan 34.', five: [], hidden: true, prof: PROF([82, 85, 86, 71, 84], 'Spacing', 'Defense'), strip: [['Your five', '84'], ['Fan vote', '84'], ['Best', '88'], ['Streak', '🔥 6']], foot: 'One board for everyone today · your five stays hidden till tomorrow' },
+];
+S.shareAll = () => ['', `<div class="share-grid">${SHARES.map(poster).join('')}</div>`];
+S.shareStory = () => ['', `<div class="story-grid">${SHARES.map(story).join('')}</div>`];
 const key = (location.hash || '#draft').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = a ? `<aside>${a}</aside><main>${m}</main>` : m;
