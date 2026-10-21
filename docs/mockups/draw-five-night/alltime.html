@@ -555,7 +555,44 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .series .tr.you { background: var(--you-bg); color: var(--you-ink); padding: 4px 6px; margin: 0 -6px; border-radius: 3px; }
 .series .tr.you .sd, .series .tr.you .w { color: var(--you-ink); }
 .leaders tr.you td { background: var(--you-tint); }
-.leaders tr.you td.k { color: var(--ink); padding-left: 6px; }
+.leaders tr.you td.k { color: var(--ink); }
+.leaders td.k { padding-left: 8px; } .leaders td.v { padding-right: 8px; }
+
+/* All-Star Game: the captains' draft (two best All-Stars captain a side and pick in turns) */
+.asg { display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); align-items: start; }
+.asg-vs { margin-top: 26px; text-align: center; font: 800 20px var(--cond); color: var(--ink3); }
+.asg-cap { display: flex; gap: 14px; align-items: center; padding-bottom: 12px; border-bottom: 1.5px solid var(--rule2); }
+.asg-cap img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.asg-cap b { display: block; font: 800 28px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.asg-cap small { display: block; margin-top: 4px; font-size: 13px; font-style: italic; color: var(--ink3); }
+.asg-h { display: block; margin: 14px 0 2px; font: 700 11px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+.asg-r { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.asg-r .pk { font: 500 12px var(--num); color: var(--ink3); }
+.asg-r .nm { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.asg-r .nm span { font: 700 16px var(--cond); color: var(--ink); }
+.asg-r .nm small { margin-left: 6px; font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.asg-r .v { font: 600 14px var(--num); color: var(--ink2); }
+.asg-r.res .nm span { font-size: 16px; color: var(--ink2); }
+.asg-r.you .nm { justify-self: start; max-width: calc(100% + 6px); background: var(--you-bg); padding: 2px 6px; margin-left: -6px; border-radius: 3px; }
+.asg-r.you .nm span { color: var(--you-ink); } .asg-r.you .nm small { color: var(--you-ink2); }
+.asg-note { margin: 10px 0 0; font-size: 13px; font-style: italic; color: var(--ink3); }
+@media (max-width: 600px) {
+  .asg { grid-template-columns: minmax(0, 1fr); }
+  .asg-vs { margin: 18px 0 10px; text-align: left; }
+  .asg-sec h3 span { display: none; }
+  .asg-res { display: flex; flex-wrap: wrap; gap: 6px 14px; padding-top: 4px; }
+  .asg-res .asg-r { display: block; padding: 0; border: 0; }
+  .asg-res .asg-r .pk, .asg-res .asg-r .v { display: none; }
+  .asg-res .asg-r.you .nm { margin-left: 0; }
+  .aw-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .aw.big { flex-direction: row; align-items: center; gap: 14px; border-top: 0; border-bottom: 1px solid var(--rule); padding: 12px 0; }
+  .aw.big .aw-f img { width: 52px; height: 52px; }
+  .aw.big b { font-size: 20px; }
+  .allnba { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .allnba .an-l { flex-basis: 100%; margin-bottom: -2px; }
+  .an-p { max-width: 100%; }
+  .an-p.you { margin-left: 0; }
+}
 </style>
 </head>
 <body>
@@ -772,7 +809,10 @@ S.awards = () => [leftAfter('Your season', 'Awards · regular season + Finals'),
   `<section><h3>The big four</h3><div class="aw-grid">${AW('Most Valuable Player', 'durant', '29.4 pts · 7.1 reb · 4.8 ast', 'TUL')}${AW('Finals MVP', 'durant', '31.6 pts in the Finals', 'TUL')}${AW('Defensive Player of the Year', 'bwallace', '13.9 reb · 2.6 blk · 1.4 stl', 'TUL')}${AW('Sixth Man of the Year', 'korver', '7.9 pts · 46.5% from three', 'TUL')}</div></section>
   <section><h3>All-NBA</h3>${five5('First team', [['Stephen Curry', 'BIS'], ['Michael Jordan', 'KEN'], ['Kevin Durant', 'TUL', 1], ['LeBron James', 'DUL'], ['Hakeem Olajuwon', 'DUL']])}${five5('Second team', [['Magic Johnson', 'SFE'], ['Kobe Bryant', 'REN'], ['Larry Bird', 'SFE'], ['Kevin Garnett', 'TUL', 1], ["Shaquille O'Neal", 'HON']])}${five5('Third team', [['Gary Payton', 'TUL', 1], ['Dwyane Wade', 'DET'], ['Kawhi Leonard', 'ELP'], ['Tim Duncan', 'ANC'], ['Nikola Jokic', 'TPA']])}</section>
   <section><h3>All-Defensive</h3>${five5('First team', [['Gary Payton', 'TUL', 1], ['Michael Jordan', 'KEN'], ['Kawhi Leonard', 'ELP'], ['Kevin Garnett', 'TUL', 1], ['Ben Wallace', 'TUL', 1]])}${five5('Second team', [['John Stockton', 'ANC'], ['Klay Thompson', 'TUL', 1], ['Scottie Pippen', 'DUL'], ['Tim Duncan', 'ANC'], ['Hakeem Olajuwon', 'DUL']])}</section>
-  <section><h3>All-Star Game<span>Team Durant 162, Team Jordan 158</span></h3>${five5('Team Durant', [['Kevin Durant', 'TUL', 1], ['Stephen Curry', 'BIS'], ['Magic Johnson', 'SFE'], ['Kevin Garnett', 'TUL', 1], ["Shaquille O'Neal", 'HON']])}${five5('Team Jordan', [['Michael Jordan', 'KEN'], ['Kobe Bryant', 'REN'], ['LeBron James', 'DUL'], ['Larry Bird', 'SFE'], ['Hakeem Olajuwon', 'DUL']])}</section>`];
+  <section class="asg-sec"><h3>All-Star Game<span>24 All-Stars · the two best captain a side and pick in turns</span></h3>${asg()}</section>`];
+const asgSide = (img, cap, code, ppg, st, res) => { const row = (cls) => ([n, c, v, k]) => `<div class="asg-r ${cls} ${c === 'TUL' ? 'you' : ''}"><span class="pk">${k === 'c' ? 'C' : '#' + k}</span><span class="nm"><span>${n}</span><small>${c}</small></span><span class="v">${v.toFixed(1)}</span></div>`;
+  return `<div><div class="asg-cap"><img src="heads/${img}.png" alt=""><div><b>Team ${cap}</b><small>Captain · ${code} · ${ppg} ppg</small></div></div><span class="asg-h">Starters</span>${st.map(row('')).join('')}<span class="asg-h">Reserves</span><div class="asg-res">${res.map(row('res')).join('')}</div></div>`; };
+const asg = () => `<div class="asg">${asgSide('kevin-durant', 'Durant', 'TUL', 29.4, [['Kevin Durant', 'TUL', 29.4, 'c'], ['LeBron James', 'DUL', 28.1, 1], ['Magic Johnson', 'SFE', 19.2, 4], ["Shaquille O'Neal", 'HON', 26.0, 5], ['Kevin Garnett', 'TUL', 21.2, 8]], [['Kawhi Leonard', 'ELP', 24.3, 9], ['Dwyane Wade', 'DET', 25.1, 12], ['Nikola Jokic', 'TPA', 24.8, 13], ['David Robinson', 'HON', 23.0, 16], ['Karl Malone', 'REN', 25.6, 17], ['Allen Iverson', 'SFE', 27.4, 20], ['Dikembe Mutombo', 'HON', 11.8, 21]])}<span class="asg-vs">vs</span>${asgSide('michael-jordan', 'Jordan', 'KEN', 31.8, [['Michael Jordan', 'KEN', 31.8, 'c'], ['Stephen Curry', 'BIS', 26.9, 2], ['Hakeem Olajuwon', 'DUL', 26.2, 3], ['Kobe Bryant', 'REN', 27.6, 6], ['Larry Bird', 'SFE', 25.4, 7]], [['Gary Payton', 'TUL', 19.8, 10], ['Tim Duncan', 'ANC', 22.5, 11], ['John Stockton', 'ANC', 14.2, 14], ['Scottie Pippen', 'DUL', 20.1, 15], ['Ben Wallace', 'TUL', 7.4, 18], ['Klay Thompson', 'TUL', 20.4, 19], ['Jason Kidd', 'ANC', 14.6, 22]])}</div><p class="asg-note">C captain · #pick in the captains' draft · season points per game. Five Twisters made it.</p>`;
 S.stats = () => [leftAfter('Your season', 'Stats · regular season'),
   prompt('League stats', 'Who ran the league', 'Per game, regular season. Tap a player for his season card.') +
   `<div class="ptabs"><a class="pt on" href="#"><b>Leaders</b></a><a class="pt" href="#"><b>Players</b></a><a class="pt" href="#"><b>Teams</b></a><span class="pt-more"><span>Season</span><u>Regular</u><span>or</span><u style="border-color:transparent;color:var(--ink3)">Playoffs</u></span></div>
