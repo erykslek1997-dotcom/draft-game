@@ -875,3 +875,19 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .howto-tabs { margin: 12px 0 4px; }
 }
 @media (max-width: 600px) { .nt .m2-row { grid-template-columns: 26px minmax(0, 1fr) auto; } .nt .m2-row em { display: none; } }
+/* React glue for the rotation editor */
+.nt {
+  .nt-rot { display: flex; flex-direction: column; gap: 24px; }
+  .nt-rot .sg { height: 100%; text-align: left; font: inherit; }
+  .nt-rot .sg.open { background: transparent; color: var(--ink3); box-shadow: inset 0 0 0 1.5px var(--rule3); }
+  .nt-rot .sg.oop i::after { content: ' !'; color: var(--red); }
+  .nt-rot .sg.st.oop i::after { color: var(--cred); }
+  .nt-rot .r3b u { outline-offset: 0; touch-action: none; }
+  .nt-rot .r3x { font: 700 16px var(--num); }
+  .nt-rot .r3x:disabled { opacity: 0.35; }
+  .nt-rot .pop-r { width: 100%; text-align: left; }
+  .nt-rot .pop-r:hover b { text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
+  .nt-rot .pop-out b { font-size: 15px; color: var(--ink2); }
+  .nt-rot .empty-note.warn { color: var(--red); font-style: normal; }
+  .nt-rot .btn { margin-top: 16px; max-width: 360px; }
+}
