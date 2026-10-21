@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { seasonSeed, simulateLivePlayoffsAsync, simulateLiveSeasonAsync, type SimProgress } from '../engine/liveSeason';
@@ -35,21 +35,13 @@ import AllMetrics from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 import { shortenName } from './ShotChip';
-import { ShareModal } from './ResultsShareModal';
 import SeasonView, { type SeasonState } from './SeasonView';
-import { styleClashBreakdown, styleProfile, type StyleClashKey } from '../engine/matchup';
 import {
-  RosterGrid,
-  TeamMark,
-  TeamReport,
-  VsYou,
   fieldGrade,
   type ProfileRow,
   type ReportExtra,
 } from './ResultsReport';
-import { teamHue } from './teamLogoKit';
 import { DESK_CAST, buildDesk, buildRivalDesk, theirVoice, type DeskLine } from '../engine/desk';
-import { FitName, FitTeam } from './FitName';
 import { exportFullDraft } from '../engine/draftExport';
 import type { DailyDraftDay } from '../dailyDraftDay';
 import { saveDailyDraftResult, saveDailyDraftSeason } from './dailyDraftProgress';
@@ -58,6 +50,12 @@ import { copyLink } from './shareSave';
 import { BombReveal } from './BombCards';
 import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
+import { CAP_LIMIT } from '../engine/positions';
+import { Actions, Btn, CapI, Dialog, H3, Kv, Mast, NFace, NightGame, NightVoices, SubNote, Tally, bandStyle, fmtCaps, spanBand } from '../night/ui';
+import { LeagueMark } from '../night/league';
+import { NightConfirm } from '../night/Dialogs';
+import { ShareNight, type PosterData } from '../night/Share';
+import { maskYears } from './bombMask';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, the live season) — real work deferred until the
@@ -80,53 +78,6 @@ const FAST_TITLE_ODDS_SIMULATIONS = 500;
 /** The engine's own real calibration default (`DEFAULT_SIMULATIONS`, leagueSimulation.ts) — what
  * Title Odds always meant to show, now affordable in the background instead of blocking paint. */
 const PRECISE_TITLE_ODDS_SIMULATIONS = 20000;
-/**
- * 2026-09-14, user-reported live ("a gdyby zrobić animację cyfr?" — what if we animated the
- * digits?): tweens a displayed number toward `target` over `durationMs` using an ease-out curve,
- * instead of a silent jump — makes the Title Odds precision upgrade (500 → 20,000 trials, once the
- * browser is idle) a visible "the odds are settling in" moment rather than an invisible swap.
- * Respects `prefers-reduced-motion` (jumps straight to `target`, no animation frames at all).
- * Starts each tween from whatever's CURRENTLY displayed (not the previous target), so a second
- * update arriving mid-tween blends smoothly instead of snapping back to a stale starting point.
- */
-function useAnimatedNumber(target: number, durationMs = 700): number {
-  const [display, setDisplay] = useState(target);
-  const displayRef = useRef(target);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setDisplay(target);
-      displayRef.current = target;
-      return;
-    }
-    const from = displayRef.current;
-    if (from === target) return;
-    let start: number | null = null;
-    function tick(now: number) {
-      if (start === null) start = now;
-      const t = Math.min(1, (now - start) / durationMs);
-      const eased = 1 - (1 - t) ** 3;
-      const value = from + (target - from) * eased;
-      displayRef.current = value;
-      setDisplay(value);
-      if (t < 1) rafRef.current = requestAnimationFrame(tick);
-    }
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [target, durationMs]);
-
-  return display;
-}
-
-/** Small wrapper so the two live Title Odds displays (hero header, per-team "Championship odds"
- * section) share one tween + formatting rule instead of hand-rolling `useAnimatedNumber` twice. */
-function AnimatedPercent({ value, className }: { value: number; className?: string }) {
-  const animated = useAnimatedNumber(value * 100);
-  return <span className={className}>{animated.toFixed(animated >= 10 ? 0 : 1)}%</span>;
-}
 
 /**
  * 2026-08-15, user-reported: the Rotation/Bench bracket tag next to a player's row used to read
@@ -276,483 +227,128 @@ function resultTierLabel(rank: number, fieldSize: number): { label: string; tone
   return { label: 'Wooden Spoon', tone: 1 };
 }
 
-/**
- * 2026-09-09, user-reported ("końcowy screen wygląda średnio"): the results screen opened straight
- * into a plain `<h2>Final team ranking</h2>` and 16 identical accordion cards, so the one thing a
- * player actually came back to see — how their own roster did — had no more visual weight than the
- * CPU teams. This is the payoff line: finish position out of 16, the Final Power Ranking Overall
- * (the single number every team is judged by, kept dominant here), the simulated title odds (now
- * consistent with that ranking after the 2026-09-09 matchup fix), and the roster's own one-line
- * identity + honest failure mode straight from `fitScore`'s archetype report.
- *
- * 2026-09-11, "Scouting Report" competitor audit (HoopsMatic/82-0/Era Ball all end their results
- * screen the same way): three additions, none touching the engine —
- *  - a named tier badge (`resultTierLabel`) next to the raw rank, the same "name the outcome, not
- *    just the number" move all three rivals make;
- *  - a "gap to #1" caption so the Overall number has a benchmark instead of floating alone;
- *  - a "Copy result" button. This is the one the audit called the actual finding that matters for
- *    a friends-group launch — every rival treats "share this" as part of the payoff, and this
- *    screen had no path from "I just saw my result" to "I sent it to the group chat" at all.
- *    Clipboard-only, no backend, no share-sheet dependency — exactly the "closed friend group who
- *    already coordinate outside the app" case the audit scoped it to.
- */
-function HeroResult({
-  teamName,
-  isHuman,
-  rank,
-  fieldSize,
-  overall,
-  talentScore,
-  benchDepthScore,
-  offenseScore,
-  defenseScore,
-  spacingScore,
-  fitScore,
-  rotationScore,
-  assignments,
-  starterKeys,
-  topOverall,
-  titleOdds,
-  draftSeed,
-  identity,
-  failureMode,
-  starters,
-  challenger,
-  seasonSimSlot,
-  teamCode,
-  rosterTeam,
-  profile,
-  quote,
-  report,
-  seasonLine,
-  standings,
-  onNewDraft,
-  dailyAction,
-}: {
+/** The link that gives a friend this exact board (`?draftSeed=`) with this result to beat: the
+ * name, Overall, place, field, starting five, the seven scores and the rotation travel in the link
+ * as positional tuples (`GameShell.tsx`'s `challengerFromUrl` decodes them), so their results screen
+ * compares without a backend. */
+function challengeUrl(o: {
+  draftSeed: number;
   teamName: string;
-  isHuman: boolean;
+  overall: number;
   rank: number;
   fieldSize: number;
-  overall: number;
-  talentScore: number;
-  benchDepthScore: number;
-  offenseScore: number;
-  defenseScore: number;
-  spacingScore: number;
-  fitScore: number;
-  rotationScore: number;
-  challenger?: ChallengeChallenger;
-  assignments: ResolvedSlotAssignment[];
-  starterKeys: Set<string>;
-  topOverall: number | null;
-  titleOdds: number | null;
-  draftSeed: number;
-  identity: string | null;
-  failureMode: string | null;
   starters: ShareCardStarter[];
-  /** 2026-09-18, user-reported live ("simulate season można dać nad rotacją gdzie jest empty
-   * space" — the season-sim panel can go above, next to the Rotation cards, where there's empty
-   * space): a pre-built JSX subtree from `ResultsScreen` itself (which owns all the season-sim
-   * state) rather than threading every individual piece of that state down as its own prop — the
-   * simplest way for a child this deep to render a parent-owned slot without duplicating state. */
-  seasonSimSlot?: ReactNode;
-  /** 2026-10-09, descriptions plan: once the season is played, whether it agreed with this grade. */
-  seasonLine?: string | null;
-  /** 2026-10-08, results look C: the hero's team mark and roster, the Draft Desk line under the
-   * hero, the team report (profile + desk voices) and the standings with every rival's report. */
-  teamCode: string;
-  rosterTeam: Team;
-  /** The profile bars the report shows — the share card shows the same ones. */
-  profile: ProfileRow[];
-  quote: DeskLine | null;
-  report: ReactNode;
-  standings: ReactNode;
-  onNewDraft?: () => void;
-  /** A daily's "Copy today's result" — in place of the duel link (everyone has today's board). */
-  dailyAction?: ReactNode;
+  scores: number[];
+  assignments: ResolvedSlotAssignment[];
+}): string {
+  const url = new URL(window.location.href);
+  const params = new URLSearchParams();
+  params.set('draftSeed', String(o.draftSeed));
+  params.set('cn', o.teamName);
+  params.set('co', String(o.overall));
+  params.set('cr', String(o.rank));
+  params.set('cf', String(o.fieldSize));
+  params.set('cs', JSON.stringify(o.starters.map((st) => [st.position, st.name])));
+  params.set('cv', JSON.stringify(o.scores.map((v) => Math.round(v))));
+  params.set('cx', JSON.stringify(o.assignments.map((x) => [x.slot, x.player.playerName, Math.round(x.minutes)])));
+  url.search = `?${params.toString()}`;
+  return url.toString();
+}
+
+/** A friend's challenge link opened this board: the two results side by side, the seven scores,
+ * and the duel card to save. */
+function ChallengeDuel({
+  you,
+  friend,
+  scores,
+  rotation,
+  onClose,
+}: {
+  you: { name: string; overall: number; rank: number; fieldSize: number };
+  friend: ChallengeChallenger;
+  scores: number[];
+  rotation: ResolvedSlotAssignment[];
+  onClose: () => void;
 }) {
-  const [challengeCopied, setChallengeCopied] = useState(false);
-  // 2026-09-17, user-reported live ("więcej sosu, coś jak share po zakończonym drafcie" — more
-  // sauce, like the share after a finished draft): the popup's own share action only ever copied a
-  // link; this gives it real visual payoff — a downloadable head-to-head card
-  // (`shareCardImage.ts`'s `buildDuelCardBlob`). 'idle' | 'building' | 'done' | 'error' rather than
-  // a bare boolean so a slow headshot load (or a canvas failure) has a visible state instead of the
-  // button looking unresponsive.
-  const [duelPngState, setDuelPngState] = useState<'idle' | 'building' | 'done' | 'error'>('idle');
-  // 2026-09-11, user-reported live ("zamiast copy result to może 'share the result' i wyskakuje
-  // ekran z naszymi wynikami?") — plain clipboard copy gave no preview of what you were actually
-  // sending; a real card to look at matches what every rival this screen was already benchmarked
-  // against does. No backend/share-sheet added — same "closed friend group" scope the original
-  // Copy-result feature was built for.
-  // 2026-09-12, "Copy as text" itself removed (user's own ask, "usuń copy as text") — the PNG
-  // download below is now the one share action, and covers strictly more (roster + rotation, not
-  // just the headline stats a text blob had room for).
-  const [shareOpen, setShareOpen] = useState(false);
-  const tier = resultTierLabel(rank, fieldSize);
-  const gap = topOverall !== null ? topOverall - overall : null;
-  // 2026-09-17, follow-up to "Duel na seedzie" (user: "nie ma na koniec porównania obu draftów" —
-  // there's no comparison of both drafts at the end): auto-opens once, the moment a challenge-link
-  // draft's Results screen mounts, so the second player can't miss it. Dismissible, and only ever
-  // shown when `challenger` is actually present (a normal draft never sees this).
-  const [compareOpen, setCompareOpen] = useState(() => challenger !== undefined);
-  // 2026-09-17, user-reported live (screenshot: a tie's "Your friend" card rendered with the green
-  // "winner" tint) — this used to be `overall > challenger.overall`, which is `false` for BOTH a
-  // loss AND a tie; the JSX below checks `youWon === false` for "friend won" specifically, so a
-  // tie was misread as a friend win. Explicit 3-way `true`/`false`/`null`, matching
-  // `shareCardImage.ts`'s `buildDuelCardBlob` (which already had this right).
-  const youWon = challenger ? (overall > challenger.overall ? true : overall < challenger.overall ? false : null) : null;
-
-  /** 2026-09-11, "Duel na seedzie" — user's own spec: "Ty i znajomy dostajecie DOKŁADNIE tę samą
-   * kolejność picków AI... Zero nowej logiki draftu, tylko UI do 'wygeneruj link z tym seedem,
-   * wyślij znajomemu'." The seed/replay mechanism (`?draftSeed=`, `GameShell.tsx`'s own
-   * `seedFromUrl`) already existed — this just copies a link carrying THIS draft's own seed, so a
-   * friend who opens it and clicks Start Draft gets the identical 16-team AI sequence to react to.
-   *
-   * 2026-09-17, user's own follow-up ask ("nie ma na koniec porównania obu draftów" / "popup z
-   * porównaniem dla drugiego gracza do wysłania znajomemu"): the original spec deliberately left
-   * the actual comparison manual — "no backend, no automatic comparison." Closing that gap without
-   * adding a backend means the comparison has to travel IN the link itself: this now also encodes
-   * THIS result's own name/overall/rank/fieldSize as query params, so whoever opens the link and
-   * finishes their own draft lands on a Results screen that already knows what it's being compared
-   * against (`GameShell.tsx`'s `challengerFromUrl` decodes these same params). That second player's
-   * own "Challenge a friend" click then naturally encodes THEIR result the same way — sending it
-   * back (or onward) closes the loop with zero new UI needed for the reply direction.
-   *
-   * 2026-09-17, same-day follow-up ("krótkie porównanie składów + share" — a short roster
-   * comparison too): `cs` carries the same 5-entry starting five the PNG share card already
-   * builds (`starters`, `ShareCardStarter[]`), small enough for a URL without needing the full
-   * 9-man roster/minutes this popup deliberately keeps out of scope (that's what the PNG share
-   * card is for).
-   *
-   * 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy" — make it more detailed): `cv`
-   * carries the same 7 numbers the hero's own "Team profile" `ScoreChip` row already shows for
-   * this team (already rounded integers, same as the chips display), so the popup's per-metric
-   * table can never disagree with what this exact screen shows for the person who generated the
-   * link.
-   *
-   * 2026-09-17, same-day follow-up ("dałoby radę zrobić tam rotacje tak jak na koniec draftu"):
-   * `cx` carries every rotation contributor (not just the 5 starters) + their minutes.
-   *
-   * 2026-09-17, user-reported live ("link do challange jest ABSURDALNIE długi" — the link is
-   * absurdly long): `cs`/`cv`/`cx` used to be JSON objects with named keys (`{"slot":"PG",
-   * "name":"Jason Kidd","minutes":34}`), and every key name gets repeated per entry — `cx` alone
-   * can carry 9+ rotation entries, so those repeated key names (further bloated by percent-
-   * encoding: `"`→`%22`, `:`→`%3A`) were the dominant cost. All three now encode as plain
-   * positional tuples instead (`["PG","Jason Kidd",34]`) — same JSON.parse/Array.isArray decode
-   * shape on the other end (`GameShell.tsx`'s `challengerFromUrl`), just no key names to repeat.
-   * No legacy-format decode kept: this whole feature shipped within the same session, before any
-   * real link was ever shared outside it. */
-  async function copyChallengeLink() {
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams();
-    params.set('draftSeed', String(draftSeed));
-    params.set('cn', teamName);
-    params.set('co', String(overall));
-    params.set('cr', String(rank));
-    params.set('cf', String(fieldSize));
-    params.set('cs', JSON.stringify(starters.map((s) => [s.position, s.name])));
-    params.set('cv', JSON.stringify([
-      Math.round(talentScore),
-      Math.round(benchDepthScore),
-      Math.round(offenseScore),
-      Math.round(defenseScore),
-      Math.round(spacingScore),
-      Math.round(fitScore),
-      Math.round(rotationScore),
-    ]));
-    params.set('cx', JSON.stringify(
-      assignments.map((a) => [a.slot, a.player.playerName, Math.round(a.minutes)]),
-    ));
-    url.search = `?${params.toString()}`;
+  const [png, setPng] = useState<'idle' | 'building' | 'done' | 'error'>('idle');
+  const won = you.overall > friend.overall ? true : you.overall < friend.overall ? false : null;
+  const labels = ['Talent', 'Bench', 'Offense', 'Defense', 'Spacing', 'Fit', 'Rotation'];
+  const theirs = friend.scores ? [friend.scores.talent, friend.scores.benchDepth, friend.scores.offense, friend.scores.defense, friend.scores.spacing, friend.scores.fit, friend.scores.rotation] : null;
+  async function save() {
+    setPng('building');
     try {
-      await navigator.clipboard.writeText(url.toString());
-      setChallengeCopied(true);
-      setTimeout(() => setChallengeCopied(false), 2000);
-    } catch {
-      // Same silent-fail shape as copyResult below — clipboard permission denied/unavailable.
-    }
-  }
-
-  /** Guarded `await` so an unexpected exception inside `buildDuelCardBlob` (canvas unsupported, a
-   * tainted-canvas/security error, etc.) can't leave `duelPngState` stuck at 'building' forever —
-   * the button permanently disabled with no way to retry. */
-  async function handleDownloadDuelCard() {
-    if (!challenger) return;
-    setDuelPngState('building');
-    try {
+      const keys = ['talent', 'benchDepth', 'offense', 'defense', 'spacing', 'fit', 'rotation'] as const;
       const ok = await downloadDuelCard(
         {
           you: {
-            name: teamName,
-            overall,
-            rank,
-            fieldSize,
-            rotation: assignments.map((a) => ({ slot: a.slot, name: a.player.playerName, minutes: Math.round(a.minutes) })),
-            scores: {
-              talent: Math.round(talentScore),
-              benchDepth: Math.round(benchDepthScore),
-              offense: Math.round(offenseScore),
-              defense: Math.round(defenseScore),
-              spacing: Math.round(spacingScore),
-              fit: Math.round(fitScore),
-              rotation: Math.round(rotationScore),
-            },
+            ...you,
+            rotation: rotation.map((x) => ({ slot: x.slot, name: x.player.playerName, minutes: Math.round(x.minutes) })),
+            scores: Object.fromEntries(keys.map((k, i) => [k, Math.round(scores[i])])) as Record<(typeof keys)[number], number>,
           },
-          friend: {
-            name: challenger.name,
-            overall: challenger.overall,
-            rank: challenger.rank,
-            fieldSize: challenger.fieldSize,
-            rotation: challenger.rotation ?? [],
-            scores: challenger.scores,
-          },
+          friend: { name: friend.name, overall: friend.overall, rank: friend.rank, fieldSize: friend.fieldSize, rotation: friend.rotation ?? [], scores: friend.scores },
         },
-        `all-time-draft-duel-${teamName.replace(/\s+/g, '-').toLowerCase()}.png`,
+        `all-time-draft-duel-${you.name.replace(/\s+/g, '-').toLowerCase()}.png`,
       );
-      setDuelPngState(ok ? 'done' : 'error');
+      setPng(ok ? 'done' : 'error');
     } catch {
-      setDuelPngState('error');
+      setPng('error');
     }
-    setTimeout(() => setDuelPngState('idle'), 2000);
+    setTimeout(() => setPng('idle'), 2000);
   }
-
   return (
-    <>
-    <header className={`rs-hero rr-hero${rank === 1 ? ' is-champ' : ''}`}>
-      {challenger && compareOpen && (
-        <div className="challenge-compare-backdrop" onClick={() => setCompareOpen(false)}>
-          <div className="challenge-compare-modal" role="dialog" aria-modal="true" aria-label="Challenge comparison" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="challenge-compare-close" aria-label="Close" onClick={() => setCompareOpen(false)}>✕</button>
-            <p className="challenge-compare-title">
-              {youWon ? '🏆 You win the duel' : overall === challenger.overall ? '🤝 It’s a tie' : 'This one goes to your friend'}
-            </p>
-            <div className="challenge-compare-row">
-              <div className={`challenge-compare-side ${youWon ? 'challenge-compare-side--winner' : ''}`}>
-                <span className="challenge-compare-label">You</span>
-                <FitTeam className="challenge-compare-team" name={teamName} />
-                <span className="challenge-compare-overall">{overall}</span>
-                <span className="challenge-compare-rank">{ordinal(rank)} / {fieldSize}</span>
-              </div>
-              <span className="challenge-compare-vs">vs</span>
-              <div className={`challenge-compare-side ${youWon === false ? 'challenge-compare-side--winner' : ''}`}>
-                <span className="challenge-compare-label">Your friend</span>
-                <FitTeam className="challenge-compare-team" name={challenger.name} />
-                <span className="challenge-compare-overall">{challenger.overall}</span>
-                <span className="challenge-compare-rank">{ordinal(challenger.rank)} / {challenger.fieldSize}</span>
-              </div>
-            </div>
-            {/* 2026-09-17, same-day follow-up ("dawaj bardziej szczegółowy" — make it more
-                detailed): the same 7 numbers the hero's own "Team profile" chips show for this
-                team, laid out as your-value / label / their-value so both sides read at a glance;
-                the higher value per row gets the same green "winner" treatment the headline score
-                cards use. Degrades quietly if `challenger.scores` is missing (an older-format
-                link) — just skips straight to the roster comparison below. */}
-            {challenger.scores && (
-              <div className="challenge-compare-metrics">
-                {([
-                  ['Talent', Math.round(talentScore), challenger.scores.talent],
-                  ['Bench Depth', Math.round(benchDepthScore), challenger.scores.benchDepth],
-                  ['Offense', Math.round(offenseScore), challenger.scores.offense],
-                  ['Defense', Math.round(defenseScore), challenger.scores.defense],
-                  ['Spacing', Math.round(spacingScore), challenger.scores.spacing],
-                  ['Fit', Math.round(fitScore), challenger.scores.fit],
-                  ['Rotation', Math.round(rotationScore), challenger.scores.rotation],
-                ] as [string, number, number][]).map(([label, mine, theirs]) => (
-                  <div className="challenge-compare-metric-row" key={label}>
-                    <span className={`challenge-compare-metric-value ${mine > theirs ? 'challenge-compare-metric-value--winner' : ''}`}>{mine}</span>
-                    <span className="challenge-compare-metric-label">{label}</span>
-                    <span className={`challenge-compare-metric-value ${theirs > mine ? 'challenge-compare-metric-value--winner' : ''}`}>{theirs}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* 2026-09-17, same-day follow-up (user: "dałoby radę zrobić tam rotacje tak jak na
-                koniec draftu" — do the rotation the same way the single-player Results screen
-                does): per slot, EVERY contributor (not just the starter) with their minutes, same
-                grouping `results-hero-rotation` above already uses for `assignments` — a combo
-                guard backing up two slots shows up in both. Falls back to the older starters-only
-                row (just a name per slot, no minutes) when `challenger.rotation` is missing (a
-                link generated before this follow-up shipped). */}
-            {challenger.rotation && challenger.rotation.length > 0 ? (
-              <div className="challenge-compare-roster">
-                <span className="challenge-compare-roster-label">Rotation</span>
-                {STARTER_SLOTS.map((slot) => {
-                  const mineEntries = assignments
-                    .filter((a) => a.slot === slot)
-                    .sort((a, b) => {
-                      const aIsStarter = starterKeys.has(`${a.slot}|${a.player.id}`);
-                      const bIsStarter = starterKeys.has(`${b.slot}|${b.player.id}`);
-                      if (aIsStarter !== bIsStarter) return aIsStarter ? -1 : 1;
-                      return b.minutes - a.minutes;
-                    });
-                  const theirEntries = challenger.rotation!
-                    .filter((e) => e.slot === slot)
-                    .sort((a, b) => b.minutes - a.minutes);
-                  return (
-                    <div className="challenge-compare-rotation-slot" key={slot}>
-                      <span className="challenge-compare-roster-slot">{slot}</span>
-                      <div className="challenge-compare-rotation-cols">
-                        <div className="challenge-compare-rotation-col">
-                          {mineEntries.length > 0 ? mineEntries.map((a) => (
-                            <div className="challenge-compare-rotation-entry" key={a.player.id}>
-                              <FitName className="challenge-compare-rotation-name" name={a.player.playerName} />
-                              <span className="challenge-compare-rotation-min">{Math.round(a.minutes)}m</span>
-                            </div>
-                          )) : <span className="challenge-compare-rotation-empty">—</span>}
-                        </div>
-                        <div className="challenge-compare-rotation-col challenge-compare-rotation-col--right">
-                          {theirEntries.length > 0 ? theirEntries.map((e, i) => (
-                            <div className="challenge-compare-rotation-entry" key={`${e.name}-${i}`}>
-                              <span className="challenge-compare-rotation-min">{e.minutes}m</span>
-                              <FitName className="challenge-compare-rotation-name" name={e.name} />
-                            </div>
-                          )) : <span className="challenge-compare-rotation-empty">—</span>}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : challenger.starters.length > 0 && (
-              <div className="challenge-compare-roster">
-                <span className="challenge-compare-roster-label">Starting five</span>
-                {STARTER_SLOTS.map((slot) => {
-                  const mine = starters.find((s) => s.position === slot)?.name ?? '—';
-                  const theirs = challenger.starters.find((s) => s.position === slot)?.name ?? '—';
-                  return (
-                    <div className="challenge-compare-roster-row" key={slot}>
-                      <span className="challenge-compare-roster-slot">{slot}</span>
-                      <FitName className="challenge-compare-roster-name" name={mine} />
-                      <FitName className="challenge-compare-roster-name" name={theirs} />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <div className="challenge-compare-actions">
-              <button
-                type="button"
-                className="challenge-compare-download"
-                onClick={handleDownloadDuelCard}
-                disabled={duelPngState === 'building'}
-              >
-                {duelPngState === 'building' ? 'Building…' : duelPngState === 'done' ? '✓ Saved' : duelPngState === 'error' ? '✕ Failed' : '🖼️ Download image'}
-              </button>
-              <button type="button" className="challenge-compare-share" onClick={copyChallengeLink}>
-                {challengeCopied ? '✓ Link copied' : '🔗 Share link'}
-              </button>
-            </div>
-            <p className="challenge-compare-hint">Same 16-team board, same AI, two different drafts.</p>
-          </div>
-        </div>
-      )}
-      <div className="rr-hero-grid">
-        <div className="rr-hero-main">
-          <span className="rr-label">{isHuman ? 'Final standings' : 'Top of the field'}</span>
-          <span className="rr-place">
-            <b>
-              {rank}
-              <sup>{ordinal(rank).slice(String(rank).length)}</sup>
-            </b>
-            <span>of {fieldSize}</span>
-          </span>
-          <span className="rr-team">
-            <TeamMark code={teamCode} name={teamName} size="md" />
-            <h2>{teamName}</h2>
-            <span className={`rr-tag rr-tag--t${tier.tone}`}>{tier.label}</span>
-          </span>
-          {/* 2026-09-24 copy pass: labelled as a STYLE and a risk, so it doesn't read as a verdict. */}
-          {identity && <p className="rr-headline">{identity}.</p>}
-          {failureMode && <p className="rr-risk">Main risk: {failureMode}</p>}
-        </div>
-        <div className="rs-kpis">
-          <div className="rs-kpi rs-kpi--you" title="The Final Power Ranking overall every team is judged by">
-            <b>{overall}</b>
-            <span>{isHuman ? 'Your team' : 'Team rating'}</span>
-          </div>
-          <div className="rs-kpi">
-            <b>{topOverall ?? overall}</b>
-            <span>Best</span>
-            {gap !== null && <small className="rr-kpi-gap">{gap > 0 ? `−${gap}` : rank === 1 ? 'that’s you' : 'tied'}</small>}
-          </div>
-          {titleOdds !== null ? (
-            <div className="rs-kpi" title="Chance to win a 16-team playoff seeded by the final ranking, over thousands of simulations. The season simulation plays its own top-8 playoffs.">
-              <b>
-                <AnimatedPercent value={titleOdds} />
-              </b>
-              <span>Title odds</span>
-            </div>
-          ) : (
-            <div className="rs-kpi">
-              <b>{gap !== null && gap > 0 ? gap : '—'}</b>
-              <span>Behind the best</span>
-            </div>
-          )}
-        </div>
+    <Dialog title={won ? 'You win the duel' : won === false ? 'Your friend wins this one' : 'A tie'} onClose={onClose}>
+      <p className="lead">Same 16-team board, same AI, two different drafts.</p>
+      <table className="stand2 duel-t">
+        <thead>
+          <tr>
+            <th />
+            <th>You</th>
+            <th>{friend.name}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="you">
+            <td className="nm">Rating</td>
+            <td>{you.overall}</td>
+            <td>{friend.overall}</td>
+          </tr>
+          <tr>
+            <td className="nm">Place</td>
+            <td>
+              {ordinal(you.rank)} / {you.fieldSize}
+            </td>
+            <td>
+              {ordinal(friend.rank)} / {friend.fieldSize}
+            </td>
+          </tr>
+          {theirs &&
+            labels.map((l, i) => (
+              <tr key={l}>
+                <td className="nm">{l}</td>
+                <td>
+                  {Math.round(scores[i])}
+                  {Math.round(scores[i]) > theirs[i] && <span className="up"> ▲</span>}
+                </td>
+                <td>
+                  {theirs[i]}
+                  {theirs[i] > Math.round(scores[i]) && <span className="up"> ▲</span>}
+                </td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+      <div className="btn2" style={{ marginTop: 16 }}>
+        <Btn onClick={save} disabled={png === 'building'}>
+          {png === 'building' ? 'Building…' : png === 'done' ? '✓ Saved' : png === 'error' ? 'Failed, try again' : 'Save the duel card'}
+        </Btn>
+        <Btn kind="line" onClick={onClose}>
+          Back to the results
+        </Btn>
       </div>
-      {quote && (
-        <p className="rr-quote">
-          <span>{DESK_CAST[quote.who].name}</span>
-          <q>{maskText(quote.text).replace(/\s*\*.+?\*\s*/g, ' ').trim()}</q>
-        </p>
-      )}
-    </header>
-    <div className="rs-actions rr-actions">
-      {seasonSimSlot}
-      {dailyAction}
-      <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
-        Share
-      </button>
-      {!dailyAction && (
-        <button
-          type="button"
-          className="at-calm-btn"
-          onClick={copyChallengeLink}
-          title="Copies a link that gives a friend the exact same 16-team draft board to react to."
-        >
-          {challengeCopied ? '✓ Link copied' : 'Challenge a friend'}
-        </button>
-      )}
-      {onNewDraft && (
-        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onNewDraft}>
-          New draft
-        </button>
-      )}
-    </div>
-    <h3 className="rr-section">{isHuman ? 'Your roster' : 'Roster'}</h3>
-    <RosterGrid team={rosterTeam} />
-    <h3 className="rr-section">{rank === 1 ? (isHuman ? 'Why you won' : 'Why they won') : isHuman ? 'Why you finished here' : 'Why they finished here'}</h3>
-    {seasonLine && <p className="rr-season-line">{seasonLine}</p>}
-    {report}
-    <h3 className="rr-section">
-      Final standings
-      <small>Series = your chance to beat them in a best-of-7</small>
-    </h3>
-    {standings}
-      {shareOpen && (
-        <ShareModal
-          onClose={() => setShareOpen(false)}
-          teamName={teamName}
-          teamCode={teamCode}
-          rank={rank}
-          fieldSize={fieldSize}
-          tier={tier}
-          overall={overall}
-          topOverall={topOverall}
-          gap={gap}
-          titleOdds={titleOdds}
-          identity={identity}
-          profile={profile}
-          team={rosterTeam}
-        />
-      )}
-  </>
+    </Dialog>
   );
 }
 
-/** 2026-09-27 results audit (pack B): one ranking row for both drafts — place, team, title odds
- * when the mode has them, and the rating in the same color scale as every other score. The
- * All-Time Draft puts it inside its expandable header; the Mini Draft shows it as a plain row. */
 export function RankRowSummary({ rank, label, isHuman, rating, titleOdds }: { rank: number; label: string; isHuman: boolean; rating: number; titleOdds?: number | null }) {
   return (
     <>
@@ -1077,12 +673,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   const [seasonOpen, setSeasonOpen] = useState(false);
   const seasonOpenRef = useRef(false);
   seasonOpenRef.current = seasonOpen;
-  // 2026-08-14, results-screen redesign: 16 full team cards on one page was the single biggest
-  // usability complaint (scrolling past 15 opponents to see your own team) — every card starts
-  // collapsed to a one-line summary. 2026-09-09: the human's card starts collapsed too now that
-  // the hero header above carries the finish/Overall/identity payoff — the card is just the
-  // drill-down (rotation, analysis, matchups) and doesn't need to be open before the player asks.
-  const [expandedTeamIds, setExpandedTeamIds] = useState<Set<string>>(() => new Set<string>());
   // Scores, ranking and matchup simulation must all read the same corrected rotations as the
   // visible card. Previously only the minutes list and DRTG used a manual correction while the
   // chips/rank/odds silently kept the original auto-rotation, producing impossible combinations
@@ -1254,14 +844,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     () => heroRoster.filter((row) => row.isStarter).map((row) => ({ position: row.position, name: row.name })),
     [heroRoster],
   );
-  function toggleExpanded(teamId: string) {
-    setExpandedTeamIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(teamId)) next.delete(teamId);
-      else next.add(teamId);
-      return next;
-    });
-  }
 
   /** The rotation actually shown on this screen for a team — its correction if one was made,
    * otherwise the original auto-assigned one. Every display/render site below should read
@@ -1272,27 +854,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     return correction ? { ...team, rotation: correction } : team;
   }
 
-  // 2026-09-18, user-reported live (see `seasonModalOpen`'s own docstring above for the full
-  // "popup instead of inline" story, and `seasonSimSlot`'s docstring on `HeroResult` for why this
-  // whole thing is built here and handed down as one prop): the compact trigger always renders at
-  // the same size whether or not a result exists — only the modal's own presence varies — which is
-  // what lets it live inside the hero's Rotation column without ever pushing that column's height
-  // around.
   const codeByTeamId = useMemo(() => teamCodes(teams), [teams]);
-  const seasonSimSlot = (
-    <>
-      <button
-        type="button"
-        className="rs-primary season-sim-btn"
-        title="An 82-game season and the playoffs, every game played on the game engine. The same draft always plays the same season."
-        onClick={() => setSeasonOpen(true)}
-      >
-        Your season
-      </button>
-      {seasonOpen && <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} />}
-    </>
-  );
-
   // 2026-10-08, results look C: every team's report is built from the same pieces.
   const fieldScores = useMemo(() => {
     const b = ranked.map((r) => r.breakdown);
@@ -1317,7 +879,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   ];
   const humanTeam = scoredTeams.find((team) => team.isHuman);
   const humanEval = humanTeam ? leagueEvalByTeamId.get(humanTeam.id) : undefined;
-  const humanStyle = useMemo(() => (humanTeam ? styleProfile(humanTeam) : null), [humanTeam]);
   const heroVoices = useMemo(
     () =>
       heroRanked?.team.isHuman
@@ -1375,12 +936,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     });
     return extras;
   };
-  const CLASH_LABELS: Record<StyleClashKey, string> = {
-    rim: 'Attacking the rim vs rim protection',
-    spacing: 'Shooting vs perimeter defense',
-    star: 'Best scorer vs best stopper',
-    glass: 'Rebounding',
-  };
 
   // 2026-10-09, descriptions plan: once the season has been played, one line on whether it agreed
   // with the grade — within two places of the draft rank, or not.
@@ -1395,15 +950,6 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       : `The season disagreed: ${row.wins}-${row.losses}, ${ord(place)} (the draft grade had you ${ord(heroRanked.rank)}).`;
   })();
 
-  const heroReport =
-    heroRanked && heroFit ? (
-      <TeamReport
-        profile={profileRows(heroRanked.breakdown)}
-        comp={bestHistoricalComp(displayTeam(heroRanked.team), heroRanked.breakdown, heroFit)}
-        voices={heroVoices}
-        extras={reportExtras(displayTeam(heroRanked.team), heroRanked.breakdown, heroFit)}
-      />
-    ) : null;
 
   // 2026-10-08, the user ("gracza bardziej interesuje na początku gdzie AI było lepsze niż dlaczego
   // w PO mamy mniejsze szanse"): an opened rival starts with the scores where they beat you, by how
@@ -1444,201 +990,135 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       setTimeout(() => setDailyCopied(false), 2000);
     }
   }
-  const whereTheyBeatYou = (theirs: ScoreBreakdown) => {
-    if (!humanRanked) return null;
-    const mine = profileRows(humanRanked.breakdown);
-    const rows = profileRows(theirs)
-      .map((row, k) => ({ label: row.label, theirs: Math.round(row.value), mine: Math.round(mine[k].value) }))
-      .map((r) => ({ ...r, gap: r.theirs - r.mine }))
-      .filter((r) => r.gap > 0)
-      .sort((x, y) => y.gap - x.gap);
-    return (
-      <div className="rr-edge">
-        <span className="rr-edge-title">{rows.length > 0 ? 'Where they beat you' : 'They beat you nowhere'}</span>
-        {rows.map((r) => (
-          <div className="rr-edge-row" key={r.label}>
-            <span className="rr-edge-label">{r.label}</span>
-            <span className="rr-edge-bars" aria-label={`${r.theirs} against your ${r.mine}`}>
-              <i className="is-them" style={{ width: `${Math.max(0, Math.min(100, r.theirs))}%` }} />
-              <i className="is-you" style={{ width: `${Math.max(0, Math.min(100, r.mine))}%` }} />
-            </span>
-            <span className="rr-edge-nums">
-              {r.theirs} <small>vs {r.mine}</small>
-            </span>
-            <b>+{r.gap}</b>
-          </div>
-        ))}
-      </div>
-    );
+  const [openTeam, setOpenTeam] = useState<string | null>(null);
+  const [openExtra, setOpenExtra] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [duelOpen, setDuelOpen] = useState(() => challenger !== undefined);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [exitOpen, setExitOpen] = useState(false);
+
+  if (!heroRanked) return null;
+  const hero = heroRanked;
+  const heroTeam = displayTeam(hero.team);
+  const fieldSize = ranked.length;
+  const tier = resultTierLabel(hero.rank, fieldSize);
+  const best = ranked[0]?.breakdown.overall ?? hero.breakdown.overall;
+  const titleOdds = leagueEvalByTeamId.get(hero.team.id)?.championshipProbability ?? null;
+  const pct = (v: number | null) => (v === null ? '—' : v > 0 && v < 0.01 ? '<1%' : `${Math.round(v * 100)}%`);
+  const capsUsed = heroTeam.roster.reduce((sum, sp) => sum + sp.fga, 0);
+  const capLimit = daily?.cap ?? CAP_LIMIT;
+  const heroScores = [hero.breakdown.talentScore, hero.breakdown.benchDepthScore, hero.breakdown.offenseScore, hero.breakdown.defenseScore, hero.breakdown.spacingScore, hero.breakdown.fitScore, hero.breakdown.rotationScore];
+  const link = challengeUrl({ draftSeed, teamName: hero.team.name, overall: hero.breakdown.overall, rank: hero.rank, fieldSize, starters: heroStarters, scores: heroScores, assignments: heroAssignments });
+  async function challengeFriend() {
+    if (await copyLink(link)) {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  }
+  const myPicks = history.filter((h) => h.teamId === hero.team.id).sort((x, y) => x.pickNumber - y.pickNumber);
+  const prof = profileRows(hero.breakdown);
+  const weakest = [...prof].sort((x, y) => x.value - (fieldMedians[x.label === 'Bench' ? 'Bench Depth' : x.label] ?? 0) - (y.value - (fieldMedians[y.label === 'Bench' ? 'Bench Depth' : y.label] ?? 0)))[0];
+  const strongest = [...prof].sort((x, y) => y.value - (fieldMedians[y.label === 'Bench' ? 'Bench Depth' : y.label] ?? 0) - (x.value - (fieldMedians[x.label === 'Bench' ? 'Bench Depth' : x.label] ?? 0)))[0];
+  const quote = heroVoices.find((l) => l.kind === 'praise' || l.kind === 'concern') ?? null;
+
+  // Your roster by slot: the starter on the card, who comes in for him underneath.
+  const bySlot = STARTER_SLOTS.map((slot) => {
+    const rows = heroAssignments.filter((x) => x.slot === slot);
+    const starter = rows.find((x) => heroStarterKeys.has(`${x.slot}|${x.player.id}`)) ?? rows[0];
+    const others = rows.filter((x) => x !== starter).sort((x, y) => y.minutes - x.minutes);
+    return { slot, starter, others };
+  });
+  const playing = new Set(heroAssignments.map((x) => x.player.id));
+  const dnp = heroTeam.roster.filter((sp) => !playing.has(sp.id));
+
+  const poster: PosterData = {
+    mode: daily ? (daily.mode === 'bomb' ? 'The Bomb · daily' : 'All-Time Draft · daily') : 'All-Time Draft',
+    date: daily ? new Date(`${daily.day}T12:00:00`) : new Date(),
+    kick: `${tier.label} · ${ordinal(hero.rank)} of ${fieldSize}`,
+    head: teamLabel(hero.team),
+    line: `Rating ${hero.breakdown.overall} · best ${best} · title odds ${pct(titleOdds)}`,
+    five: bySlot.flatMap((x) => (x.starter ? [{ span: x.starter.player, num: Math.round(x.starter.player.fga * 10) / 10 }] : [])),
+    bench: heroTeam.roster.filter((sp) => !bySlot.some((x) => x.starter?.player.id === sp.id)).map((sp) => ({ span: sp, num: Math.round(sp.fga * 10) / 10 })),
+    unit: 'caps',
+    prof: prof.slice(0, 5).map((r) => ({ label: r.label, value: Math.round(r.value), tone: r === weakest ? 'lo' : r === strongest ? 'hi' : undefined })),
+    strip: [
+      ['Place', ordinal(hero.rank)],
+      ['Rating', hero.breakdown.overall],
+      ['Best', best],
+      ['Title', pct(titleOdds)],
+    ],
+    foot: daily ? 'One board for everyone today' : 'Same 16 teams, your turn · challenge link',
   };
 
-  const standings = (
-    <div className="rr-standings">
-      {ranked.map(({ team, breakdown, rank }) => {
-        const shownTeam = displayTeam(team);
-        const evalRow = leagueEvalByTeamId.get(team.id);
-        const vs = humanEval?.matchups.find((m) => m.opponentId === team.id);
-        const seriesPct = vs ? Math.round(vs.seriesWinProb * 100) : null;
-        const isExpanded = !team.isHuman && expandedTeamIds.has(team.id);
-        const odds = evalRow?.championshipProbability ?? null;
-        const row = (
-          <>
-            <span className="rr-rk">{rank}</span>
-            <TeamMark code={codeByTeamId.get(team.id) ?? ''} name={team.name} />
-            <FitTeam className="rr-nm" name={teamLabel(team)} code={codeByTeamId.get(team.id)} after={team.isHuman && <em> · you</em>} />
-            <span className="rr-od" title="Title odds: how often this team won a 16-team bracket of best-of-7 series, simulated 20,000 times.">
-              {odds !== null ? `🏆 ${odds > 0 && odds < 0.01 ? '<1' : Math.round(odds * 100)}%` : ''}
-            </span>
-            <span className={`rr-ser${seriesPct === null ? '' : seriesPct >= 60 ? ' is-good' : seriesPct <= 40 ? ' is-bad' : ' is-even'}`}>
-              {seriesPct === null ? '—' : `${seriesPct}%`}
-            </span>
-            <span className="rr-sc">{breakdown.overall}</span>
-            <span className="rr-car" aria-hidden>{team.isHuman ? '' : isExpanded ? '▾' : '▸'}</span>
-          </>
-        );
-        let body: ReactNode = null;
-        if (isExpanded) {
-          const fit = fitScore(shownTeam);
-          const style = teamStyleFor(fit.inputs.primaryArchetype, fit.inputs.secondaryArchetype, fit.inputs.archetypeReport?.failureMode ?? null, breakdown.defenseScore, breakdown.offenseScore);
-          const tier = resultTierLabel(rank, ranked.length);
-          const theirStyle = humanStyle ? styleProfile(shownTeam) : null;
-          const humanFit = humanTeam ? fitScore(humanTeam) : null;
-          body = (
-            <div className="rr-open" style={{ ['--team-hue' as string]: teamHue(team.name) }}>
-              <div className="rr-open-head">
-                <span className={`rr-tag rr-tag--t${tier.tone}`}>{tier.label}</span>
-                <span className="rr-stat">Rating<b>{breakdown.overall}</b></span>
-                {odds !== null && <span className="rr-stat">Title odds<b>{odds > 0 && odds < 0.01 ? '<1' : Math.round(odds * 100)}%</b></span>}
-                {style.label && <span className="rr-stat">Style<b className="rr-stat-text">{style.label}</b></span>}
-                {style.failureMode && <span className="rr-stat">Main risk<b className="rr-stat-text">{style.failureMode}</b></span>}
-              </div>
-              {whereTheyBeatYou(breakdown)}
-              {vs && humanStyle && theirStyle && humanFit && (
-                <VsYou
-                  seriesPct={seriesPct ?? 50}
-                  margin={vs.marginA}
-                  explanation={explainMatchup({ own: humanFit, opponent: fit, seriesWinProb: vs.seriesWinProb })[0] ?? null}
-                  clashes={styleClashBreakdown(humanStyle, theirStyle).map((c) => ({ label: CLASH_LABELS[c.key], net: c.a - c.b }))}
-                />
-              )}
-              <RosterGrid team={shownTeam} />
-              <TeamReport
-                profile={profileRows(breakdown)}
-                comp={bestHistoricalComp(shownTeam, breakdown, fit)}
-                voices={theirVoices(shownTeam, breakdown, rank, ranked.length, draftSeed)}
-                extras={reportExtras(shownTeam, breakdown, fit)}
-              />
-            </div>
-          );
-        }
-        return (
-          <div key={team.id} className={`rr-rung-wrap${team.isHuman ? ' is-you' : ''}${isExpanded ? ' is-open' : ''}`}>
-            {team.isHuman ? (
-              <div className="rr-rung">{row}</div>
-            ) : (
-              <button type="button" className="rr-rung" onClick={() => toggleExpanded(team.id)} aria-expanded={isExpanded}>
-                {row}
-              </button>
-            )}
-            {body}
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  return (
-    // 2026-08-16, user's own ask: same fixed-dark broadcast board as the Draft screen — see the
-    // `.at-shell` token-aliasing comment in App.css for how the rest of this file's existing
-    // classes (never touched here) pick up the dark palette just by being nested inside this.
-    <div className="results-screen at-shell at-calm" style={heroRanked ? { ['--team-hue' as string]: teamHue(heroRanked.team.name) } : undefined}>
-      {/* 2026-10-07, the UI simplification (approved mockup): the draft screen's one-row header. */}
-      <div className="at-calm-header">
-        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRestart}>
-          ← Menu
-        </button>
-        <h1 className="at-calm-title">{daily ? 'Daily All-Time Draft' : 'All-Time Draft'}</h1>
-        <span className="rs-header-spacer" aria-hidden />
-      </div>
-      {daily && <p className="dd-results-tag at-calm-strip-daily">Daily · {daily.title}</p>}
-      {bomb && <BombReveal span={bomb.span} gem={bomb.gem} onNamed={bomb.onNamed} />}
-      {heroRanked && (
-        <HeroResult
-          teamName={heroRanked.team.name}
-          isHuman={heroRanked.team.isHuman}
-          rank={heroRanked.rank}
-          fieldSize={ranked.length}
-          overall={heroRanked.breakdown.overall}
-          talentScore={heroRanked.breakdown.talentScore}
-          benchDepthScore={heroRanked.breakdown.benchDepthScore}
-          offenseScore={heroRanked.breakdown.offenseScore}
-          defenseScore={heroRanked.breakdown.defenseScore}
-          spacingScore={heroRanked.breakdown.spacingScore}
-          fitScore={heroRanked.breakdown.fitScore}
-          rotationScore={heroRanked.breakdown.rotationScore}
-          assignments={heroAssignments}
-          starterKeys={heroStarterKeys}
-          topOverall={ranked[0]?.breakdown.overall ?? null}
-          titleOdds={leagueEvalByTeamId.get(heroRanked.team.id)?.championshipProbability ?? null}
-          draftSeed={draftSeed}
-          challenger={challenger}
-          seasonSimSlot={seasonSimSlot}
-          identity={heroStyle.label}
-          failureMode={heroStyle.failureMode}
-          starters={heroStarters}
-          teamCode={codeByTeamId.get(heroRanked.team.id) ?? ''}
-          rosterTeam={displayTeam(heroRanked.team)}
-          profile={profileRows(heroRanked.breakdown)}
-          quote={heroVoices.find((l) => l.kind === 'praise' || l.kind === 'concern') ?? null}
-          report={heroReport}
-          seasonLine={seasonVerdictLine}
-          standings={standings}
-          onNewDraft={onRematch && !daily ? () => onRematch() : undefined}
-          dailyAction={
-            daily ? (
-              <button type="button" className="at-calm-btn" onClick={copyDailyResult}>
-                {dailyCopied ? '✓ Result copied' : 'Copy today’s result'}
-              </button>
-            ) : undefined
-          }
-        />
+  const links = { onMenu: () => setExitOpen(true) };
+  const aside = (
+    <>
+      <Mast title={daily ? (daily.mode === 'bomb' ? 'Daily Bomb' : 'Daily All-Time Draft') : 'All-Time Draft'} daily={!!daily} sub={daily ? `${daily.title} · final` : `Final · ${fieldSize} teams · 9 rounds`} />
+      <Tally you={ordinal(hero.rank)} mid={hero.breakdown.overall} ai={pct(titleOdds)} youK="Place" midK="Rating" aiK="Title" plain />
+      <SubNote>
+        <b>{fmtCaps(capsUsed)}</b> of {fmtCaps(capLimit)} caps used
+      </SubNote>
+      <section>
+        <H3 note={`${myPicks.length} picks`}>Your draft</H3>
+        <table className="log">
+          <tbody>
+            {myPicks.map((h) => {
+              const sp = playerById(h.playerId) ?? heroTeam.roster.find((r) => r.id === h.playerId);
+              return (
+                <tr key={h.pickNumber} className="y">
+                  <td className="n">{h.pickNumber}</td>
+                  <td className="w">{sp?.primaryPosition ?? ''}</td>
+                  <td className="p">{sp ? maskText(sp.playerName) : h.playerId}</td>
+                  <td className="c">{sp ? fmtCaps(sp.fga) : ''}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+      {challenger && (
+        <section>
+          <H3>The duel</H3>
+          <Kv k={challenger.name} v={challenger.overall} />
+          <Kv k="You" v={hero.breakdown.overall} />
+        </section>
       )}
-      {/* 2026-09-14, user-reported live ("ogromnie dużo miejsca na dużym ekranie, można zrobić
-          cały dashboard"): FIRST version of this fix put the matchup matrix + season sim in a
-          persistent sidebar next to the (much longer) team-card list. User-reported live again,
-          against a real screenshot: the matrix still got cut off inside that narrower column (it
-          wants real width — `.matchup-matrix-table`'s own 760px floor), and a sidebar that runs out
-          of content halfway down a 16-card list reads as an awkward, unbalanced split rather than a
-          real dashboard — "jesteśmy w stanie zmieścić wszystkie informacje na samej górze, nie
-          widzę sensu w rozbijaniu tego" (we can fit it all at the top, no point splitting this).
-          Reworked into `.results-top-panels`: the matrix + season sim sit side by side in one
-          full-width band right under the hero, each finally getting real width instead of sharing a
-          cramped column — the team-card list below goes back to full width too, since there's no
-          longer a second column competing with it for space. Below the dashboard breakpoint
-          `.results-top-panels` is `display: contents` (pure CSS, no JS) — its children become
-          direct flex items of `.results-screen` again, same `order`-based placement (this file's
-          own CSS, unchanged) as before any of this dashboard work existed. */}
-      {/* 2026-09-18, user-reported live ("simulate season można dać nad rotacją... dzięki temu
-          można zmieścić matchups bez potrzeby suwaka" — freeing full width removes the need for
-          the matrix's own horizontal scroll slider): the season-sim panel that used to share this
-          row moved into the hero's Rotation column (see `seasonSimSlot` above) once it became a
-          small, fixed-size popup trigger instead of an inline-growing table — the matrix no longer
-          has anything to share this row with, so it renders alone at full width. */}
-      <div className="results-actions end-actions">
-        {daily ? (
-          <>
-            {DAILY_REPLAY_FOR_TESTING && onRematch && (
-              <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={() => onRematch()}>
-                Replay (testing)
-              </button>
-            )}
-          </>
-        ) : (
-          onRematch && (
-            <button type="button" className="at-calm-btn" onClick={() => onRematch(draftSeed)}>Rematch this board</button>
-          )
+      <Actions links={links}>
+        <Btn onClick={() => setSeasonOpen(true)}>Play the season →</Btn>
+        <div className="btn2">
+          <Btn kind="line" onClick={() => setShareOpen(true)}>
+            Share
+          </Btn>
+          {daily ? (
+            <Btn kind="line" onClick={copyDailyResult}>
+              {dailyCopied ? '✓ Copied' : 'Copy result'}
+            </Btn>
+          ) : (
+            <Btn kind="line" onClick={challengeFriend}>
+              {linkCopied ? '✓ Copied' : 'Challenge'}
+            </Btn>
+          )}
+        </div>
+        {challenger && (
+          <Btn kind="line" onClick={() => setDuelOpen(true)}>
+            Compare with your friend
+          </Btn>
         )}
-        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRestart}>Main menu</button>
+        {!daily && onRematch && (
+          <>
+            <Btn kind="line" onClick={() => onRematch()}>
+              New draft
+            </Btn>
+            <Btn kind="line" onClick={() => onRematch(draftSeed)}>
+              Rematch this board
+            </Btn>
+          </>
+        )}
+        {daily && DAILY_REPLAY_FOR_TESTING && onRematch && (
+          <Btn kind="line" onClick={() => onRematch()}>
+            Replay (testing)
+          </Btn>
+        )}
         {TEAM_EXPORT_FOR_TESTING && (
           <FullExportButton
             build={() =>
@@ -1664,8 +1144,239 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
             seasonReady={seasonState.status === 'done'}
           />
         )}
+      </Actions>
+    </>
+  );
+
+  const extras = reportExtras(heroTeam, hero.breakdown, heroFit ?? fitScore(heroTeam));
+  const overlay = (
+    <>
+      {shareOpen && <ShareNight d={poster} link={daily ? undefined : link} fileName={teamLabel(hero.team)} onClose={() => setShareOpen(false)} />}
+      {duelOpen && challenger && (
+        <ChallengeDuel
+          you={{ name: hero.team.name, overall: hero.breakdown.overall, rank: hero.rank, fieldSize }}
+          friend={challenger}
+          scores={heroScores}
+          rotation={heroAssignments}
+          onClose={() => setDuelOpen(false)}
+        />
+      )}
+      {exitOpen && (
+        <NightConfirm title="Back to the menu?" lead="Your draft is graded and kept in this result only until you leave." yes="Stay" no="Back to menu" onYes={() => setExitOpen(false)} onNo={onRestart} />
+      )}
+    </>
+  );
+
+  if (seasonOpen) {
+    return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} />;
+  }
+
+  return (
+    <NightGame aside={aside} overlay={overlay}>
+      {bomb && <BombReveal span={bomb.span} gem={bomb.gem} onNamed={bomb.onNamed} />}
+      <div className="headline">
+        <span className="eb">{daily ? `Daily · ${daily.title}` : 'Final standings'}</span>
+        <b>{teamLabel(hero.team)}</b>
+        <i>{seasonVerdictLine ?? `9 rounds · ${history.length} picks · season not played yet`}</i>
       </div>
-    </div>
+      <div className="verdict vmini">
+        <div className="place">
+          <b>
+            {hero.rank}
+            <sup>{ordinal(hero.rank).slice(String(hero.rank).length)}</sup>
+          </b>
+          <span>of {fieldSize}</span>
+        </div>
+        <div className="tier">
+          <span className="eb">The verdict</span>
+          <h2>{tier.label}</h2>
+          <p>
+            {heroStyle.label ? `${heroStyle.label}.` : ''}
+            {heroStyle.failureMode && (
+              <>
+                {' '}
+                Main risk: <b style={{ color: 'var(--red)', fontStyle: 'normal' }}>{heroStyle.failureMode}</b>.
+              </>
+            )}
+          </p>
+        </div>
+        <div className="nums">
+          <div className="you">
+            <span>Your team</span>
+            <b>{hero.breakdown.overall}</b>
+          </div>
+          <div>
+            <span>Best</span>
+            <b>{best}</b>
+          </div>
+          <div>
+            <span>Title odds</span>
+            <b>{pct(titleOdds)}</b>
+          </div>
+        </div>
+      </div>
+      {quote && (
+        <p className="host">
+          <b>{DESK_CAST[quote.who].name}:</b> “{maskText(quote.text).replace(/\s*\*.+?\*\s*/g, ' ').trim()}”
+        </p>
+      )}
+      <section>
+        <H3 note="starter · bench minutes">Your roster</H3>
+        <div className="five-row">
+          {bySlot.map(({ slot, starter, others }) =>
+            starter ? (
+              <div key={slot} className="card" style={bandStyle(starter.player)}>
+                <div className="top">
+                  <span>{spanBand(starter.player).code}</span>
+                  <span>{slot}</span>
+                </div>
+                <div className="pic">
+                  <NFace name={starter.player.playerName} />
+                </div>
+                <div className="nm">{maskText(starter.player.playerName)}</div>
+                <div className="sb">
+                  {maskYears(starter.player.playerName, starter.player.spanLabel)} · <CapI />
+                  {fmtCaps(starter.player.fga)} · <b>{Math.round(starter.minutes)}m</b>
+                </div>
+                <div className="roles" style={{ paddingBottom: 10 }}>
+                  {others.length ? others.map((o) => `+ ${maskText(o.player.playerName)} · ${Math.round(o.minutes)}m`).join(' ') : 'no one else here'}
+                </div>
+              </div>
+            ) : (
+              <div key={slot} className="slot empty">
+                {slot}
+              </div>
+            ),
+          )}
+        </div>
+        <p className="empty-note" style={{ marginTop: 8 }}>
+          Did not play: {dnp.length ? dnp.map((sp) => maskText(sp.playerName)).join(', ') : 'none'}.
+        </p>
+      </section>
+      <div className="split">
+        <section>
+          <H3 note="yours · grade vs the field">{hero.rank === 1 ? 'Why you won' : 'Why you finished here'}</H3>
+          <table className="profile">
+            <tbody>
+              {prof.map((r) => (
+                <tr key={r.label} className={r === weakest ? 'weak' : r === strongest ? 'good' : undefined}>
+                  <td className="l">{r.label}</td>
+                  <td className="v">
+                    {Math.round(r.value)}
+                    {r === weakest && <span className="visually-hidden"> weak</span>}
+                  </td>
+                  <td className="b">{r.grade}</td>
+                  <td>
+                    <div className="bar">
+                      <i style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        {heroVoices.length > 0 && (
+          <section className="voices">
+            <H3>The room</H3>
+            <NightVoices voices={heroVoices} cast={DESK_CAST} />
+          </section>
+        )}
+      </div>
+      <section className="acc">
+        <H3 note="tap to open">More</H3>
+        {extras.map((e) => (
+          <div key={e.id}>
+            <button type="button" className="acc-row" aria-expanded={openExtra === e.id} onClick={() => setOpenExtra((cur) => (cur === e.id ? null : e.id))}>
+              {e.label} <i>{openExtra === e.id ? '▾' : '▸'}</i>
+            </button>
+            {openExtra === e.id && <div className="acc-body">{e.content()}</div>}
+          </div>
+        ))}
+      </section>
+      <section>
+        <H3 note="series = your chance to beat them in a best-of-7">Final standings</H3>
+        <table className="stand2 st-at">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th />
+              <th>Team</th>
+              <th>Title</th>
+              <th>Series</th>
+              <th>Rating</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {ranked.map(({ team, breakdown, rank }) => {
+              const odds = leagueEvalByTeamId.get(team.id)?.championshipProbability ?? null;
+              const vs = humanEval?.matchups.find((m) => m.opponentId === team.id);
+              const open = openTeam === team.id;
+              const mine = humanRanked ? profileRows(humanRanked.breakdown) : [];
+              const beat = profileRows(breakdown)
+                .map((r, k) => ({ label: r.label, theirs: Math.round(r.value), mine: Math.round(mine[k]?.value ?? 0) }))
+                .filter((r) => r.theirs > r.mine)
+                .sort((x, y) => y.theirs - y.mine - (x.theirs - x.mine));
+              const nick = teamLabel(team).split(' ').slice(-1)[0];
+              return (
+                <Fragment key={team.id}>
+                  <tr className={team.isHuman ? 'you' : 'tap'} onClick={team.isHuman ? undefined : () => setOpenTeam(open ? null : team.id)}>
+                    <td className="rk">{rank}</td>
+                    <td className="tmc">
+                      <LeagueMark name={team.name} code={codeByTeamId.get(team.id) ?? ''} />
+                    </td>
+                    <td className="nm">{teamLabel(team)}</td>
+                    <td>{pct(odds)}</td>
+                    <td>{vs ? `${Math.round(vs.seriesWinProb * 100)}%` : '—'}</td>
+                    <td>{breakdown.overall}</td>
+                    <td className="car">{team.isHuman ? '' : open ? '▾' : '▸'}</td>
+                  </tr>
+                  {open && (
+                    <tr className="open">
+                      <td />
+                      <td colSpan={6}>
+                        <div className="edge">
+                          <b>
+                            {beat.length ? `Where ${teamLabel(team).split(' ').slice(0, -1).join(' ') || nick} beat you` : `${nick} beat you nowhere`}{' '}
+                            <span className="edge-key">
+                              <i style={{ background: 'var(--ink3)' }} />
+                              {nick}
+                              <i style={{ background: 'var(--you)' }} />
+                              you
+                            </span>
+                          </b>
+                          {beat.map((r) => (
+                            <div key={r.label} className="eg">
+                              <span>{r.label}</span>
+                              <div className="egb">
+                                <i style={{ width: `${Math.max(0, Math.min(100, r.theirs))}%` }} />
+                                <u style={{ width: `${Math.max(0, Math.min(100, r.mine))}%` }} />
+                              </div>
+                              <span className="mono">
+                                {r.theirs} vs {r.mine}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="st-five">
+                          {primaryStarters(displayTeam(team))
+                            .map((x) => `${x.slot} ${maskText(x.player.playerName)}`)
+                            .join(' · ')}
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+      <Btn className="phone-only" onClick={() => setSeasonOpen(true)}>
+        Play the season →
+      </Btn>
+    </NightGame>
   );
 }
 

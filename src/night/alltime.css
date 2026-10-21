@@ -935,3 +935,16 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .rotation-builder.nt-rot { max-width: none; width: auto; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
   .plist .grades { white-space: nowrap; font: 600 13px var(--num); color: var(--ink2); }
 }
+/* React glue for the All-Time results */
+.nt {
+  .acc-row { width: 100%; text-align: left; }
+  .acc-row:hover { color: var(--ink); }
+  .acc-body { padding: 12px 0 18px; border-bottom: 1px solid var(--rule); }
+  .st-at tr.tap { cursor: pointer; }
+  .st-at tr.tap:hover td.nm { text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
+  .st-five { margin: 4px 0 10px; font-size: 13px; color: var(--ink3); }
+  .duel-t td, .duel-t th { text-align: right; }
+  .duel-t td.nm, .duel-t th:first-child { text-align: left; }
+  .duel-t .up { color: var(--green); font-size: 11px; }
+  .five-row .card .sb b { color: var(--cink); }
+}
