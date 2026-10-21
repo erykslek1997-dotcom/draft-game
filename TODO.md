@@ -260,7 +260,9 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
   - **Symulacja sezonu z kalendarzem (na sam koniec prac nad UI, decyzje 2026-10-21):** dziś
     `liveSeason.ts` gra 656 meczów parami (najpierw wszystkie mecze BIS–DUL, potem BIS–KEN…) w tle
     i pokazuje tylko wynik końcowy. Docelowo (user):
-    - **Rozpisany kalendarz na cały sezon,** listopad–kwiecień: dni meczowe, każdy mecz liczony
+    - **Rozpisany kalendarz na cały sezon,** od ~22 października do połowy kwietnia (~175 dni):
+      drużyna gra 3–4 razy w tygodniu, nie codziennie (jednego wieczoru ~4–6 meczów); licznik to
+      „mecz 23 z 82” i data, nie „dzień”. Każdy mecz liczony
       osobno dzień po dniu (wyniki jak dziś — każdy mecz ma własne ziarno, kolejność ich nie zmienia).
       Tabela, liderzy i twój bilans rosną z dnia na dzień; prędkość i pauza jak w meczu na żywo.
     - **Przerwa co miesiąc:** ekran „miesiąc w skrócie” — tabela z ruchem w górę/dół, twój bilans
