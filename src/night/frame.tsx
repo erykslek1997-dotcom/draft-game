@@ -56,6 +56,7 @@ export function Tally({
   clock,
   name,
   plain,
+  small,
 }: {
   you: ReactNode;
   mid: ReactNode;
@@ -69,10 +70,12 @@ export function Tally({
   name?: boolean;
   /** The middle number is not the cap (no gold). */
   plain?: boolean;
+  /** Smaller numbers, for records like 52–30 (`.tsm`). */
+  small?: boolean;
 }) {
   const midCls = clock ? 'clock' : plain || midK !== 'Cap' ? 'plain' : undefined;
   return (
-    <div className="tally keep">
+    <div className={small ? 'tally keep tsm' : 'tally keep'}>
       <div className="t">
         <span className="k">{youK}</span>
         <b>{you}</b>

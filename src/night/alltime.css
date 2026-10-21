@@ -582,20 +582,20 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 
 /* All-League fives: each team is a line of five faces, your players printed in reverse */
 .nba { display: grid; grid-template-columns: 110px repeat(5, minmax(0, 1fr)); gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
-.nt { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 3px; min-width: 0; }
-.nt img { flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
-.nt div { min-width: 0; }
-.nt b { display: block; font: 700 16px/1.1 var(--cond); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nt small { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); white-space: nowrap; }
-.nt.you { background: var(--you-bg); }
-.nt.you b { color: var(--you-ink); } .nt.you small { color: var(--you-ink2); }
+.np { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 3px; min-width: 0; }
+.np img { flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.np div { min-width: 0; }
+.np b { display: block; font: 700 16px/1.1 var(--cond); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np small { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); white-space: nowrap; }
+.np.you { background: var(--you-bg); }
+.np.you b { color: var(--you-ink); } .np.you small { color: var(--you-ink2); }
 @media (max-width: 600px) {
   .nba { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
   .nba .an-l { grid-column: 1 / -1; }
-  .nt { flex-direction: column; gap: 4px; padding: 6px 2px; margin: 0; text-align: center; }
-  .nt img { width: 40px; height: 40px; }
-  .nt b { font-size: 14px; } .nt .fn { display: none; }
-  .nt small .st { display: none; }
+  .np { flex-direction: column; gap: 4px; padding: 6px 2px; margin: 0; text-align: center; }
+  .np img { width: 40px; height: 40px; }
+  .np b { font-size: 14px; } .np .fn { display: none; }
+  .np small .st { display: none; }
   /* All-Star: the two sides stand next to each other, surnames only */
   .asg { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 14px; }
   .asg-vs { display: none; }
@@ -767,7 +767,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .g8 .tmr.w { color: var(--ink); }
 .g8 .sc { font: 600 15px var(--num); color: var(--ink3); text-align: right; }
 .g8 .sc.w { color: var(--ink); }
-.g8 .nt { grid-column: 1 / -1; font-size: 12px; font-style: italic; color: var(--ink3); }
+.g8 .np { grid-column: 1 / -1; font-size: 12px; font-style: italic; color: var(--ink3); }
 .cal { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 3px; }
 .cal span { display: grid; place-items: center; align-content: center; height: 40px; font: 700 14px var(--cond); color: var(--ink4); border-bottom: 2px solid var(--rule); }
 .cal span small { font: 500 11px var(--num); color: var(--ink3); }
@@ -947,4 +947,32 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .duel-t td.nm, .duel-t th:first-child { text-align: left; }
   .duel-t .up { color: var(--green); font-size: 11px; }
   .five-row .card .sb b { color: var(--cink); }
+}
+/* React glue for the season */
+.nt {
+  .kv.nav { width: 100%; text-align: left; cursor: pointer; }
+  .kv.nav:disabled { cursor: default; opacity: 0.5; }
+  .kv.nav:not(:disabled):hover span, .kv.nav.on span { color: var(--ink); }
+  .kv.nav.on { box-shadow: inset 3px 0 0 var(--ink); padding-left: 10px; }
+  .kv b.up { color: var(--green); } .kv b.dn { color: var(--red); }
+  .pn { padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+  .pn:hover { text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
+  button.sh-g { text-align: left; cursor: pointer; }
+  button.sh-g:hover span { color: var(--ink2); }
+  .series.tbd { min-height: 64px; display: flex; align-items: center; }
+  h3 .sw button { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding: 0 0 6px; margin-bottom: -8px; border-bottom: 2px solid transparent; }
+  h3 .sw button.on { color: var(--ink); border-bottom-color: var(--ink); }
+  .sbox-wrap { overflow-x: auto; }
+  .sbox .srt { padding: 0; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+  .sbox .srt.on { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+  .sbox td.hi { color: var(--ink); }
+  .sbox td.tc { font: 600 13px var(--num); color: var(--ink3); }
+  .sbox tr.you td { background: var(--you-tint); }
+  .sbox .sb-f .ini { width: 26px; height: 26px; }
+  .dlg.pcard { width: min(720px, calc(100% - 32px)); }
+  .dlg.pcard .dlg-head { position: absolute; right: 24px; top: 18px; border: 0; padding: 0; margin: 0; }
+  .pc-head .ini { width: 64px; height: 64px; border-radius: 50%; background: var(--surf2); display: grid; place-items: center; font: 800 22px var(--cond); color: var(--ink2); }
+  .aw-f .ini, .duel .pl .ini, .asg-cap .ini, .np .ini { width: 40px; height: 40px; border-radius: 50%; background: var(--surf2); display: grid; place-items: center; font: 700 13px var(--cond); color: var(--ink3); flex: none; }
+  .aw.big .aw-f .ini { width: 72px; height: 72px; font-size: 22px; }
+  .stand2.full td.nm { white-space: nowrap; }
 }

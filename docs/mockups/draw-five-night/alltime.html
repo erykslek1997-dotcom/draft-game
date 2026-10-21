@@ -590,20 +590,20 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 
 /* All-League fives: each team is a line of five faces, your players printed in reverse */
 .nba { display: grid; grid-template-columns: 110px repeat(5, minmax(0, 1fr)); gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
-.nt { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 3px; min-width: 0; }
-.nt img { flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
-.nt div { min-width: 0; }
-.nt b { display: block; font: 700 16px/1.1 var(--cond); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nt small { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); white-space: nowrap; }
-.nt.you { background: var(--you-bg); }
-.nt.you b { color: var(--you-ink); } .nt.you small { color: var(--you-ink2); }
+.np { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 3px; min-width: 0; }
+.np img { flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.np div { min-width: 0; }
+.np b { display: block; font: 700 16px/1.1 var(--cond); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np small { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); white-space: nowrap; }
+.np.you { background: var(--you-bg); }
+.np.you b { color: var(--you-ink); } .np.you small { color: var(--you-ink2); }
 @media (max-width: 600px) {
   .nba { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
   .nba .an-l { grid-column: 1 / -1; }
-  .nt { flex-direction: column; gap: 4px; padding: 6px 2px; margin: 0; text-align: center; }
-  .nt img { width: 40px; height: 40px; }
-  .nt b { font-size: 14px; } .nt .fn { display: none; }
-  .nt small .st { display: none; }
+  .np { flex-direction: column; gap: 4px; padding: 6px 2px; margin: 0; text-align: center; }
+  .np img { width: 40px; height: 40px; }
+  .np b { font-size: 14px; } .np .fn { display: none; }
+  .np small .st { display: none; }
   /* All-Star: the two sides stand next to each other, surnames only */
   .asg { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 14px; }
   .asg-vs { display: none; }
@@ -775,7 +775,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .g8 .tmr.w { color: var(--ink); }
 .g8 .sc { font: 600 15px var(--num); color: var(--ink3); text-align: right; }
 .g8 .sc.w { color: var(--ink); }
-.g8 .nt { grid-column: 1 / -1; font-size: 12px; font-style: italic; color: var(--ink3); }
+.g8 .np { grid-column: 1 / -1; font-size: 12px; font-style: italic; color: var(--ink3); }
 .cal { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 3px; }
 .cal span { display: grid; place-items: center; align-content: center; height: 40px; font: 700 14px var(--cond); color: var(--ink4); border-bottom: 2px solid var(--rule); }
 .cal span small { font: 500 11px var(--num); color: var(--ink3); }
@@ -1087,7 +1087,7 @@ S.finaleOut = () => [leftAfter('Your season', 'Regular season + playoffs · fina
 const AW = (t, k, line, team) => { const x = p(k); return `<div class="aw big"><span class="aw-f">${face(x)}</span><div><span class="aw-t">${t}</span><b>${x.n}</b><small>${team} · ${line}</small></div></div>`; };
 const five5 = (label, names) => `<div class="allnba"><span class="an-l">${label}</span>${names.map(([n, c, you]) => `<span class="an-p ${you ? 'you' : ''}">${n}<small>${c}</small></span>`).join('')}</div>`;
 const slug = (n) => n.toLowerCase().replace(/[^a-z ]/g, '').trim().replace(/ +/g, '-');
-const nbaFive = (label, list) => `<div class="nba"><span class="an-l">${label}</span>${list.map(([n, c, st, you]) => { const i = n.indexOf(' '); return `<div class="nt ${you ? 'you' : ''}"><img src="heads/${slug(n)}.png" alt=""><div><b><span class="fn">${n.slice(0, i)} </span>${n.slice(i + 1)}</b><small>${c}<span class="st"> · ${st}</span></small></div></div>`; }).join('')}</div>`;
+const nbaFive = (label, list) => `<div class="nba"><span class="an-l">${label}</span>${list.map(([n, c, st, you]) => { const i = n.indexOf(' '); return `<div class="np ${you ? 'you' : ''}"><img src="heads/${slug(n)}.png" alt=""><div><b><span class="fn">${n.slice(0, i)} </span>${n.slice(i + 1)}</b><small>${c}<span class="st"> · ${st}</span></small></div></div>`; }).join('')}</div>`;
 S.awards = () => [leftAfter('Your season', 'Awards · regular season + Finals'),
   prompt('Season awards', 'A Tulsa sweep', 'MVP, Finals MVP, DPOY and Sixth Man all went to Tulsa, plus seven All-League spots.', 'gold') +
   `<section><h3>The big four</h3><div class="aw-grid">${AW('Most Valuable Player', 'durant', '29.4 pts · 7.1 reb · 4.8 ast', 'TUL')}${AW('Finals MVP', 'durant', '31.6 pts in the Finals', 'TUL')}${AW('Defensive Player of the Year', 'bwallace', '13.9 reb · 2.6 blk · 1.4 stl', 'TUL')}${AW('Sixth Man of the Year', 'korver', '7.9 pts · 46.5% from three', 'TUL')}</div></section>
@@ -1199,7 +1199,7 @@ S.series = () => { const [l] = S.playoffs(); return [l,
    <section><h3>Top three<span>season · pts · reb · ast</span></h3>${[['kevin-durant', 'Kevin Durant', 'SF', '29.4 · 7.1 · 4.8', 'michael-jordan', 'Michael Jordan', 'SG', '31.8 · 6.1 · 5.3'], ['kevin-garnett', 'Kevin Garnett', 'PF', '21.2 · 12.8 · 3.9', 'charles-barkley', 'Charles Barkley', 'PF', '24.6 · 11.4 · 4.1'], ['gary-payton', 'Gary Payton', 'PG', '19.8 · 4.4 · 7.9', 'patrick-ewing', 'Patrick Ewing', 'C', '22.8 · 10.6 · 2.0']].map(([ia, na, pa, la, ib, nb, pb, lb]) => { const nm = (n) => { const i = n.indexOf(' '); return `<span class="fn">${n.slice(0, i)} </span>${n.slice(i + 1)}`; }; return `<div class="duel"><div class="pl"><img src="heads/${ia}.png" alt=""><div><b>${nm(na)}<small>${pa}</small></b><span class="ln">${la}</span></div></div><span class="vs">vs</span><div class="pl r"><img src="heads/${ib}.png" alt=""><div><b><small>${pb}</small>${nm(nb)}</b><span class="ln">${lb}</span></div></div></div>`; }).join('')}</section></div>`]; };
 const simAside = (sub, w, l, seed, pct, btns, brk) => mast('Your Season', sub) + tally(String(w), seed, String(l), { youK: 'Won', midK: 'Seed', aiK: 'Lost' }) + `<div class="sprog keep"><i style="width:${pct}%"></i></div>` +
   (brk ? `<section class="keep"><div class="stackb">${btns}</div></section>` : `<section class="keep"><h3>Speed<span>a day every second at 1×</span></h3><div class="speeds"><span>½</span><u>1×</u><span>2×</span><span>4×</span><span>8×</span></div><div class="stackb" style="margin-top:14px">${btns}</div></section>`);
-const g8 = ([a, sa, b, sb, note], i) => { const aw = sa > sb; return `<div class="g8 ${a === YOU || b === YOU ? 'you' : ''} ${i >= 3 ? 'g8x' : ''}"><span class="tmr ${aw ? 'w' : ''}">${tm(a)}${T[a][1]}</span><span class="sc ${aw ? 'w' : ''}">${sa}</span><span class="tmr ${aw ? '' : 'w'}">${tm(b)}${T[b][1]}</span><span class="sc ${aw ? '' : 'w'}">${sb}</span>${note ? `<span class="nt">${note}</span>` : ''}</div>`; };
+const g8 = ([a, sa, b, sb, note], i) => { const aw = sa > sb; return `<div class="g8 ${a === YOU || b === YOU ? 'you' : ''} ${i >= 3 ? 'g8x' : ''}"><span class="tmr ${aw ? 'w' : ''}">${tm(a)}${T[a][1]}</span><span class="sc ${aw ? 'w' : ''}">${sa}</span><span class="tmr ${aw ? '' : 'w'}">${tm(b)}${T[b][1]}</span><span class="sc ${aw ? '' : 'w'}">${sb}</span>${note ? `<span class="np">${note}</span>` : ''}</div>`; };
 const STAND_D = [['KEN', 17, 6, '='], ['TUL', 16, 7, '+1'], ['SFE', 15, 8, '−1'], ['DUL', 14, 9, '='], ['BIS', 13, 10, '+2'], ['HON', 12, 11, '='], ['REN', 12, 11, '−2'], ['ANC', 11, 12, '+1'], ['ELP', 11, 12, '−1'], ['DET', 10, 13, '=']];
 const mvTag = (m) => `<span class="mv ${m[0] === '+' ? 'up' : m[0] === '−' ? 'dn' : 'eq'}">${m[0] === '+' ? '▲ ' + m.slice(1) : m[0] === '−' ? '▼ ' + m.slice(1) : '—'}</span>`;
 const standMv = (rows, head = 'Standings', note = '') => `<section><h3>${head}<span>${note}</span></h3><table class="stand2 mvt"><tr><th>#</th><th></th><th>Team</th><th>W</th><th>L</th><th></th></tr>${rows.map(([c, w, l, m], i) => `<tr class="${c === YOU ? 'you' : ''} ${i === 7 ? 'cut' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}</td><td>${w}</td><td>${l}</td><td>${mvTag(m)}</td></tr>`).join('')}</table></section>`;
