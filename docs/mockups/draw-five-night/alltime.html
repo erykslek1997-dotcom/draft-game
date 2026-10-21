@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All-Time Draft night</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="night.css">
+<link rel="stylesheet" href="mini.css">
+<style>
+/* your nine: five starters + a bench row */
+.bench { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.bench .b { display: flex; align-items: center; gap: 10px; padding: 6px 10px; min-height: 48px; border-radius: 3px; }
+.bench .b.filled { background: var(--card); color: var(--cink); box-shadow: inset 4px 0 0 var(--team); }
+.bench .b.filled img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #E2DBCB; }
+.bench .b.filled b { font: 700 16px/1.05 var(--cond); }
+.bench .b.filled span { display: block; font: 500 11px var(--num); color: var(--cink2); }
+.bench .b.empty { border: 1.5px dashed #38383A; color: #45433F; font: 700 14px var(--cond); letter-spacing: 0.04em; justify-content: center; }
+.bench-label { margin-top: 12px; font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+
+/* draft list extras */
+.plist td.yrs { white-space: nowrap; }
+.plist .yrs-btn { border: 0; border-bottom: 1px dashed var(--ink3); background: transparent; color: var(--ink2); font: 500 13px var(--num); padding: 0; cursor: pointer; }
+.plist .yrs-btn small { color: var(--ink3); font: italic 500 12px Inter, sans-serif; margin-left: 4px; }
+.plist .scout { font: italic 500 13px Inter, sans-serif; color: var(--ink2); text-decoration: underline; text-decoration-color: #4A4844; text-underline-offset: 3px; }
+.plist .star { color: var(--ink3); font-size: 16px; padding: 0 6px; }
+.plist .star.on { color: var(--gold); }
+.minirow { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--ink2); }
+.minirow b { color: var(--ink); }
+.minirow a { color: var(--ink2); font-style: italic; }
+.bboard { margin: 0; padding: 0; list-style: none; counter-reset: bb; }
+.bboard li { counter-increment: bb; display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.bboard li::before { content: counter(bb); font: 600 12px var(--num); color: var(--ink3); }
+.bboard li span { color: var(--ink3); font: 600 12px var(--num); }
+.bboard li.gone { color: var(--ink3); text-decoration: line-through; }
+
+/* years */
+.spans tr.peak td.tier { color: var(--ink); }
+.spans tr.pick td { background: #121317; }
+.spans tr.pick td:first-child { box-shadow: inset 3px 0 0 var(--red); padding-left: 10px; }
+.spans td.y { font: 700 20px var(--cond); white-space: nowrap; }
+.spans td.y small { display: block; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.who-head { display: flex; align-items: center; gap: 16px; }
+.who-head img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: #1D1E21; border: 1.5px solid var(--ink); }
+
+/* team + rotation */
+.roster td.rd { width: 34px; font: 600 12px var(--num); color: var(--ink3); }
+.roster td.sl { width: 46px; font: 700 14px var(--cond); color: var(--ink2); }
+.roster td.sl.bn { color: var(--ink3); font-style: italic; font-family: Inter; font-weight: 500; font-size: 12px; }
+.rot { width: 100%; border-collapse: collapse; }
+.rot td { padding: 9px 10px 9px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); vertical-align: middle; }
+.rot td.pos { width: 40px; font: 800 18px var(--cond); color: var(--ink); }
+.rot td.who { width: 270px; }
+.rot td.who b { color: var(--ink); font: 700 17px var(--cond); }
+.rot td.who em { font-size: 13px; color: var(--ink3); }
+.rot .mins { display: flex; height: 22px; border: 1px solid #38383A; }
+.rot .mins i { display: flex; align-items: center; justify-content: center; font: 600 11px var(--num); font-style: normal; color: var(--cink); background: var(--card); border-right: 1px solid var(--bg); }
+.rot .mins i.b2 { background: #A9A395; }
+.rot .mins i.b3 { background: #77736A; color: var(--ink); }
+.rot td.tot { width: 50px; text-align: right; font: 600 14px var(--num); color: var(--ink); }
+
+/* desk */
+.desk { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+.desk article { padding: 4px 22px 10px; border-left: 1px solid var(--rule); }
+.desk article:first-child { border-left: 0; padding-left: 0; }
+.desk .by { display: flex; align-items: center; gap: 10px; }
+.desk .by .mono { width: 34px; flex: none; font-style: normal; margin: 0; height: 34px; border-radius: 50%; border: 1.5px solid var(--ink2); display: grid; place-items: center; font: 700 13px var(--cond); color: var(--ink); }
+.desk .by b { display: block; font: 700 18px/1.1 var(--cond); }
+.desk .by div span { display: block; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.desk .take { margin-top: 14px; font: 800 26px/1 var(--cond); text-transform: uppercase; }
+.desk .take.yes { color: var(--ink); }
+.desk .take.no { color: var(--red); }
+.desk p { margin: 8px 0 0; font-size: 15px; line-height: 1.5; color: var(--ink2); }
+.desk p b { color: var(--ink); font-weight: 600; }
+.host { padding: 10px 0 12px; border-bottom: 1px solid var(--rule); font-size: 16px; font-style: italic; color: var(--ink2); }
+.host b { font-style: normal; color: var(--ink); }
+
+/* season */
+.stand2 { width: 100%; border-collapse: collapse; }
+.stand2 th { text-align: right; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; color: var(--ink3); padding: 0 8px 6px 0; }
+.stand2 th:nth-child(-n+3) { text-align: left; }
+.stand2 td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--rule); text-align: right; font: 500 14px var(--num); color: var(--ink2); }
+.stand2 td.rk { text-align: left; width: 30px; color: var(--ink3); }
+.stand2 td.tmc { text-align: left; width: 40px; }
+.stand2 td.nm { text-align: left; font: 700 17px var(--cond); color: var(--ink); }
+.stand2 td.nm i { font: italic 500 12px Inter, sans-serif; color: var(--red); margin-left: 6px; }
+.stand2 tr.you td { background: #121317; color: var(--ink); }
+.stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; color: var(--red); }
+.stand2 tr.cut td { border-bottom: 1.5px dashed var(--red); }
+.cutnote { font: italic 500 12px Inter, sans-serif; color: var(--red); padding: 6px 0 0; }
+.leaders { width: 100%; border-collapse: collapse; }
+.leaders td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.leaders td.k { font: 700 13px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); width: 90px; }
+.leaders td b { color: var(--ink); font-weight: 600; }
+.leaders td.v { text-align: right; font: 600 15px var(--num); color: var(--ink); }
+
+/* playoffs bracket */
+.bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; align-items: center; }
+.round h4 { margin: 0 0 10px; font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+.series { border-top: 1.5px solid var(--rule2); padding: 6px 0 4px; margin-bottom: 18px; }
+.series .tr { display: grid; grid-template-columns: 22px 34px minmax(0, 1fr) 24px; gap: 8px; align-items: center; padding: 4px 0; font: 700 16px var(--cond); color: var(--ink3); }
+.series .tr .sd { font: 500 12px var(--num); color: var(--ink3); }
+.series .tr .w { font: 600 16px var(--num); text-align: right; }
+.series .tr.win { color: var(--ink); }
+.series .tr.win .w { color: var(--ink); }
+.series .tr.you { color: var(--ink); }
+.series .note { font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.series.you-path { border-top-color: var(--red); }
+.series.live .note { color: var(--red); }
+.round.final .series { border-top: 5px double var(--rule2); }
+.round.final .series.live { border-top-color: var(--red); }
+
+@media (max-width: 600px) {
+  .bench { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .plist td.yrs, .plist th:nth-child(3), .plist td.sc2, .plist th:nth-child(7) { display: none; }
+  .plist .mt i { display: none; }
+  .bracket { grid-template-columns: 1fr; gap: 6px; }
+  .desk { grid-template-columns: 1fr; }
+  .desk article { border-left: 0; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .rot td.who { width: auto; }
+  .rot .mins { display: none; }
+  .stand2 td:nth-child(n+6), .stand2 th:nth-child(n+6) { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="game" id="app"></div>
+<script>
+const T = {
+  BOI: ['Boise', 'Mooses', '#1f4d3a', '#e9c46a'], KEN: ['Kentucky', 'Chickens', '#b8322a', '#fff4dc'], ANC: ['Anchorage', 'Walruses', '#2b5d7d', '#f3f7fa'],
+  SFE: ['Santa Fe', 'Coyotes', '#a14a2c', '#f7d9a8'], DUL: ['Duluth', 'Yetis', '#3d4f66', '#e6f2ff'], TUL: ['Tulsa', 'Twisters', '#4b2a6b', '#d8c1f0'],
+  REN: ['Reno', 'Jackrabbits', '#1c1c22', '#ff5a36'], DET: ['Detroit', 'Gearheads', '#39424e', '#f08a24'], SCR: ['Scranton', 'Moles', '#5a3d2b', '#e8c07a'],
+  HON: ['Honolulu', 'Tiger Sharks', '#0f7c84', '#f4f1e4'], TPA: ['Tampa', 'Manatees', '#4a9a8f', '#ffffff'], LUB: ['Lubbock', 'Armadillos', '#d8a868', '#3a2a1c'],
+  BIS: ['Bismarck', 'Narwhals', '#1b2f5e', '#a7e3e0'], ASP: ['Aspen', 'Ibexes', '#e9eef2', '#2a3f5a'], ELP: ['El Paso', 'Scorpions', '#d9661f', '#1d1d1d'],
+  FRE: ['Fresno', 'Raisins', '#5e2750', '#f6b93b'],
+};
+const YOU = 'TUL';
+const tm = (c) => `<span class="tm" style="background:${T[c][2]};color:${T[c][3]}">${c}</span>`;
+const tname = (c) => `${T[c][0]} ${T[c][1]}`;
+const P = {
+  durant: ['Kevin Durant', 'SF', '2012–14', 19, 'Greatest peak', [30.1, 7.6, 5.1], 5.1, 'Shot creator · Ball hawk', 'durant', 'OKC', '#007AC1', 92, 78, 'A', 'B+'],
+  payton: ['Gary Payton', 'PG', '1996–98', 15, 'All-NBA', [20.4, 4.6, 8.1], 3.0, 'Floor general · On-ball defender', 'gary-payton', 'SEA', '#00653A', 81, 90, 'B', 'A'],
+  garnett: ['Kevin Garnett', 'PF', '2002–04', 19.4, 'Greatest peak', [23.6, 13.7, 5.5], 0.7, 'Playmaking big · Mobile defender', 'kevin-garnett', 'MIN', '#0C2340', 86, 91, 'C', 'A'],
+  dirk: ['Dirk Nowitzki', 'PF', '2004–06', 18, 'MVP', [25.9, 9.3, 2.7], 4.1, 'Stretch big', 'dirk-nowitzki', 'DAL', '#00538C'],
+  ewing: ['Patrick Ewing', 'C', '1989–91', 22, 'All-NBA', [27.1, 10.9, 2.9], 0.1, 'Post scorer · Rim protector', 'patrick-ewing', 'NYK', '#006BB6'],
+  rodman: ['Dennis Rodman', 'PF', '1991–93', 6.9, 'All-Star', [9.8, 18.3, 2.1], 0.6, 'Roll man · Rebounder', 'dennis-rodman', 'DET', '#C8102E', 58, 92, 'D', 'A'],
+  klay: ['Klay Thompson', 'SG', '2015–17', 16.8, 'All-NBA', [22.2, 3.8, 2.2], 7.5, 'Movement shooter · Wing stopper', 'klay-thompson', 'GSW', '#1D428A', 84, 80, 'A+', 'A'],
+  dray: ['Draymond Green', 'PF', '2015–17', 9.8, 'All-Star', [12.3, 8.9, 7.1], 3.4, 'Playmaking big · Switchable big', 'draymond-green', 'GSW', '#1D428A'],
+  rallen: ['Ray Allen', 'SG', '2005–07', 17, 'All-NBA', [26.4, 4.5, 4.0], 7.8, 'Off-screen shooter', 'ray-allen', 'SEA', '#00653A'],
+  bwallace: ['Ben Wallace', 'C', '2002–04', 6.0, 'All-Star', [7.1, 15.4, 1.8], 0.1, 'Roll man · Rim protector', 'ben-wallace', 'DET', '#C8102E', 50, 96, 'D', 'A'],
+  gobert: ['Rudy Gobert', 'C', '2018–20', 9.1, 'All-Star', [15.4, 13.1, 1.8], 0, 'Roll man · Rim protector', 'rudy-gobert', 'UTA', '#002B5C'],
+  korver: ['Kyle Korver', 'SG', '2014–16', 8.3, 'All-Star', [11.1, 3.6, 2.4], 5.6, 'Off-screen shooter', 'kyle-korver', 'ATL', '#C8102E', 74, 62, 'A+', 'B'],
+  iggy: ['Andre Iguodala', 'SF', '2008–10', 12.4, 'All-Star', [17.4, 6.0, 5.5], 3.6, 'Playmaker · Wing stopper', 'andre-iguodala', 'PHI', '#006BB6', 72, 85, 'B', 'A'],
+  horry: ['Robert Horry', 'PF', '1996–98', 7.8, 'Starter', [9.2, 5.9, 2.6], 3.8, 'Stretch big', 'robert-horry', 'LAL', '#552583', 64, 74, 'B', 'B'],
+  conley: ['Mike Conley', 'PG', '2015–17', 13.8, 'All-Star', [17.9, 3.1, 5.9], 5.2, 'Floor general · On-ball defender', 'mike-conley', 'MEM', '#5D76A9'],
+};
+const p = (k) => { const a = P[k]; return { k, n: a[0], pos: a[1], y: a[2], f: a[3], tier: a[4], st: a[5], tpa: a[6], r: a[7], img: a[8], t: a[9], c: a[10], off: a[11], def: a[12], t3: a[13], dur: a[14] }; };
+const ini = (n) => n.split(' ').map((w) => w[0]).join('').slice(0, 2);
+const face = (x) => x.img ? `<img src="heads/${x.img}.png" alt="">` : `<span class="ini">${ini(x.n)}</span>`;
+const short = (n) => { const w = n.split(' '); return `${w[0][0]}. ${w.slice(1).join(' ')}`; };
+const SL = ['PG', 'SG', 'SF', 'PF', 'C'];
+const mast = (title, sub) => `<div class="mast keep"><b>${title}</b><small>${sub}</small></div>`;
+const tally = (you, mid, ai, { youK = 'Caps left', midK = 'Cap', aiK = 'Round' } = {}) => `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b>${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b>${ai}</b></div></div>`;
+const capbar = (pct) => `<div class="capbar keep"><i style="width:${pct}%"></i></div>`;
+const links = `<div class="links"><a href="#">← Menu</a><a href="#">How to play</a><a href="#">Settings</a></div>`;
+const actions = (btn) => `<div class="actions">${btn}${links}</div>`;
+const prompt = (eb, h, line, ebCls = '') => `<div class="prompt"><span class="eb ${ebCls}">${eb}</span><h2>${h}</h2><p>${line}</p></div>`;
+function nine(st, bench, { open = [] } = {}) {
+  const slots = SL.map((s, i) => { const k = st[i]; if (k) { const x = p(k); return `<div class="slot filled" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div>${face(x)}<div class="nm">${short(x.n)}</div><div class="sb">${x.y} · ${x.f}</div></div>`; } return `<div class="slot empty">${s}<small>open</small></div>`; }).join('');
+  const b = [0, 1, 2, 3].map((i) => { const k = bench[i]; if (k) { const x = p(k); return `<div class="b filled" style="--team:${x.c}">${face(x)}<div><b>${short(x.n)}</b><span>${x.pos} · ${x.y} · ${x.f}</span></div></div>`; } return `<div class="b empty">Bench ${i + 1}</div>`; }).join('');
+  return `<section><h3>Your nine<span>${st.filter(Boolean).length + bench.filter(Boolean).length} of 9 · ${tname(YOU)}</span></h3><div class="slots compact">${slots}</div><div class="bench">${b}</div></section>`;
+}
+const leftDraft = () => mast('All-Time Draft', 'Round 3 of 9 · pick 40 of 144') + tally('66.9', '100.9', '3/9') + capbar(34) + `<p class="sub-note keep"><b>66.9 caps</b> for seven spots · about 9.6 a pick</p>` +
+  `<section><h3>Before your pick<span>3 picks</span></h3><table class="log"><tr class="a"><td class="n">37</td><td class="w">HON</td><td class="p">needs a C</td><td class="c"></td></tr><tr class="a"><td class="n">38</td><td class="w">SFE</td><td class="p">needs a PG</td><td class="c"></td></tr><tr class="a latest"><td class="n">39</td><td class="w">ANC</td><td class="p">needs a PF</td><td class="c"></td></tr></table></section>` +
+  `<section><h3>Your Big Board<span>starred</span></h3><ol class="bboard"><li class="gone">Tim Duncan<span>taken #33</span></li><li>Kevin Garnett<span>19.4</span></li><li>Dennis Rodman<span>6.9</span></li><li>Rudy Gobert<span>9.1</span></li></ol></section>` +
+  actions('<button class="btn line">Phone the desk · 3 left</button>');
+
+const S = {};
+S.draft = () => [leftDraft(),
+  nine(['payton', '', 'durant', '', ''], []) +
+  prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
+  `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen', 'dray', 'gobert', 'rodman', 'bwallace', 'iggy'], { hot: 'garnett', no: ['ewing'] })}<div class="more">Showing 10 of 1,522 player stretches · <a href="#">See more</a> · 3 scouting reports left</div></section>`];
+function filters(hidden = []) { return `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span><span class="grp"><span>Role</span><u>Any</u></span><span class="grp"><span>Sort</span><u>Best first</u></span><span class="fit">Affordable only</span></div>`; }
+function plist2(keys, { hot, no = [] } = {}) {
+  return `<table class="plist"><tr><th></th><th>Player</th><th>Years</th><th>Tier</th><th class="r">Pts · Reb · Ast</th><th class="r">Caps</th><th>Scout</th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos}</b> <i>· ${x.r}</i><span class="mst">${x.y} · ${x.st.join(' / ')}</span></div></td><td class="yrs"><button class="yrs-btn">${x.y}<small>▾ other years</small></button></td><td class="tier ${x.tier === 'Greatest peak' || x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td><td class="n r">${x.st.join(' · ')}</td><td class="cap r">${x.f}</td><td class="sc2"><span class="scout">Scout</span><span class="star ${['garnett', 'rodman', 'gobert'].includes(k) ? 'on' : ''}">★</span></td><td class="act r"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
+}
+
+S.years = () => [leftDraft(),
+  `<div class="prompt"><span class="eb">On the clock · Round 3 · Pick 40</span><div class="who-head"><img src="heads/kevin-garnett.png" alt=""><div><h2>Kevin Garnett</h2><p>Which years? The same player costs less in his cheaper stretches.</p></div></div></div>` +
+  `<section><h3>His stretches<span>three seasons each</span></h3><table class="plist spans"><tr><th>Years</th><th>Team</th><th>Tier</th><th class="r">Pts · Reb · Ast</th><th class="r">Off · Def</th><th class="r">Caps</th><th></th></tr>${[
+    ['1996–98', 'MIN', 'All-Star', '18.4 · 9.6 · 4.2', '74 · 84', 15.8, ''],
+    ['1999–01', 'MIN', 'All-NBA', '21.6 · 11.6 · 5.0', '81 · 88', 18.6, ''],
+    ['2002–04', 'MIN', 'Greatest peak', '23.6 · 13.7 · 5.5', '86 · 91', 19.4, 'peak pick'],
+    ['2005–07', 'MIN', 'All-NBA', '22.2 · 12.7 · 4.3', '82 · 89', 17.1, ''],
+    ['2008–10', 'BOS', 'All-Star', '16.4 · 8.0 · 2.8', '72 · 92', 13.5, ''],
+  ].map(([y, t, tier, st, od, f, cls]) => `<tr class="${cls}"><td class="y">${y}${cls.includes('peak') ? '<small>his best years</small>' : ''}</td><td class="n">${t}</td><td class="tier ${tier === 'Greatest peak' ? 'top' : ''}">${tier}</td><td class="n r">${st}</td><td class="n r">${od}</td><td class="cap r">${f}</td><td class="act r"><button class="draft">Draft</button></td></tr>`).join('')}</table>
+  <p class="empty-note" style="margin-top:12px">The 2008–10 Garnett saves <b style="color:var(--gold);font-style:normal">5.9 caps</b> and is the best defender of the five.</p></section>`];
+
+S.team = () => [
+  mast('All-Time Draft', 'Draft done · set your rotation') + tally('0.6', '100.9', '9/9') + capbar(99) + `<p class="sub-note keep"><b>100.3 caps</b> used of 100.9</p>` +
+  `<section><h3>Before the season</h3><div class="kv"><span>Rotation</span><b>240 / 240 min</b></div><div class="kv"><span>Starters</span><b>Set</b></div><div class="kv"><span>Years</span><b>Click to change</b></div></section>` +
+  actions('<button class="btn go">Play the season</button>'),
+  prompt('Your team', 'Tulsa Twisters', 'Nine players, 240 minutes. Change anyone\'s years in the table; cheaper years free caps.', 'gold') +
+  `<section><h3>Roster<span>off · def · 3pt · durability</span></h3><table class="plist roster"><tr><th>Rd</th><th>Slot</th><th></th><th>Player · years</th><th>Tier</th><th class="r">Off</th><th class="r">Def</th><th class="r">3PT</th><th class="r">Dur</th><th class="r">Caps</th></tr>${[
+    [1, 'SF', 'durant'], [2, 'PG', 'payton'], [3, 'PF', 'garnett'], [5, 'SG', 'klay'], [7, 'C', 'bwallace'], [4, 'bench', 'rodman'], [6, 'bench', 'korver'], [8, 'bench', 'iggy'], [9, 'bench', 'horry'],
+  ].map(([r, sl, k]) => { const x = p(k); return `<tr><td class="rd">R${r}</td><td class="sl ${sl === 'bench' ? 'bn' : ''}">${sl}</td><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><button class="yrs-btn">${x.y}<small>▾ change</small></button></div></td><td class="tier">${x.tier}</td><td class="n r">${x.off}</td><td class="n r">${x.def}</td><td class="n r">${x.t3}</td><td class="n r">${x.dur}</td><td class="cap r">${x.f}</td></tr>`; }).join('')}</table></section>` +
+  `<section><h3>Rotation<span>48 minutes a spot</span></h3><table class="rot">${[
+    ['PG', 'Gary Payton', 'Andre Iguodala', [36, 12]], ['SG', 'Klay Thompson', 'Kyle Korver', [34, 14]], ['SF', 'Kevin Durant', 'Andre Iguodala', [38, 10]],
+    ['PF', 'Kevin Garnett', 'Robert Horry', [36, 12]], ['C', 'Ben Wallace', 'Dennis Rodman', [30, 18]],
+  ].map(([pos, a, b, m]) => `<tr><td class="pos">${pos}</td><td class="who"><b>${a}</b> <em>· ${b}</em></td><td><div class="mins"><i style="width:${m[0] / 48 * 100}%">${m[0]}</i><i class="b2" style="width:${m[1] / 48 * 100}%">${m[1]}</i></div></td><td class="tot">48</td></tr>`).join('')}</table></section>`];
+
+S.desk = () => [leftDraft(),
+  prompt('The Draft Desk · after your pick 40', 'Garnett at 40?', 'Three voices from the desk. They argue; you decide what to do with pick 57.') +
+  `<p class="host"><b>Eric B. Slim:</b> “Tulsa takes Kevin Garnett, 2002–04, for 19.4 caps. That's Durant, Payton and now KG. Gentlemen?”</p>` +
+  `<div class="desk">
+    <article><div class="by"><span class="mono">SH</span><div><b>Matt Shyman</b><span>Defense</span></div></div><div class="take yes">Love it</div><p>Payton and Garnett on the same floor is a <b>top-three defense</b> before you even pick a center. Nobody scores at the rim on this team.</p></article>
+    <article><div class="by"><span class="mono">SO</span><div><b>Mattia Sosini</b><span>Modern game</span></div></div><div class="take no">Spacing?</div><p>Payton shot <b>3.0 threes</b> a game, Garnett <b>0.7</b>. Durant can't be the only one stretching it. Pick 57 has to be a shooter.</p></article>
+    <article><div class="by"><span class="mono">RO</span><div><b>Mark Rotation</b><span>Bench depth</span></div></div><div class="take yes">Fine, but…</div><p><b>66.9 caps</b> left for seven spots was fine. Now it's <b>47.5 for six</b>. The bench will be cheap. Rodman at 6.9 is the obvious value.</p></article>
+  </div>`];
+
+const STAND = [['KEN', 61, 21], ['SFE', 57, 25], ['TUL', 52, 30], ['DUL', 50, 32], ['BIS', 48, 34], ['HON', 46, 36], ['REN', 45, 37], ['ANC', 43, 39], ['ELP', 41, 41], ['DET', 39, 43], ['FRE', 37, 45], ['BOI', 35, 47], ['SCR', 33, 49], ['TPA', 30, 52], ['LUB', 27, 55], ['ASP', 22, 60]];
+S.season = () => [
+  mast('Your Season', '82 games · 16 teams · top 8 to the playoffs') + tally('52', '3rd', '30', { youK: 'Won', midK: 'Seed', aiK: 'Lost' }) +
+  `<section><h3>Your leaders</h3><div class="kv"><span>Points</span><b>Durant 29.4</b></div><div class="kv"><span>Rebounds</span><b>Garnett 12.8</b></div><div class="kv"><span>Assists</span><b>Payton 7.9</b></div><div class="kv"><span>Blocks</span><b>Wallace 2.6</b></div></section>` +
+  `<section><h3>Awards</h3><div class="kv"><span>MVP</span><b>Durant · 2nd</b></div><div class="kv"><span>DPOY</span><b class="g">B. Wallace</b></div></section>` +
+  actions('<button class="btn go">Playoffs →</button><button class="btn line">Watch a game</button>'),
+  prompt('Regular season · final', '52–30, third', 'The best defense in the league, 9th in threes. Kentucky ran away with the one seed.', 'gold') +
+  `<div class="split"><section><h3>Standings<span>Overview · Standings · Stats · Awards</span></h3><table class="stand2"><tr><th>#</th><th></th><th>Team</th><th>W</th><th>L</th><th>Pct</th><th>GB</th></tr>${STAND.map(([c, w, l], i) => `<tr class="${c === YOU ? 'you' : ''} ${i === 7 ? 'cut' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}${c === YOU ? '<i>you</i>' : ''}</td><td>${w}</td><td>${l}</td><td>.${String(Math.round(w / 82 * 1000)).padStart(3, '0')}</td><td>${i === 0 ? '—' : (61 - w)}</td></tr>`).join('')}</table><div class="cutnote">Playoff line: top eight</div></section>
+  <section><h3>League leaders</h3><table class="leaders"><tr><td class="k">Points</td><td><b>Michael Jordan</b> · KEN</td><td class="v">31.8</td></tr><tr><td class="k">Rebounds</td><td><b>Dennis Rodman</b> · TUL</td><td class="v">15.1</td></tr><tr><td class="k">Assists</td><td><b>Magic Johnson</b> · SFE</td><td class="v">11.9</td></tr><tr><td class="k">Steals</td><td><b>Gary Payton</b> · TUL</td><td class="v">2.3</td></tr><tr><td class="k">Blocks</td><td><b>Hakeem Olajuwon</b> · DUL</td><td class="v">3.4</td></tr><tr><td class="k">3PM</td><td><b>Stephen Curry</b> · BIS</td><td class="v">4.6</td></tr></table></section></div>`];
+
+const ser = (a, b, wa, wb, { you, live, note } = {}) => `<div class="series ${you ? 'you-path' : ''} ${live ? 'live' : ''}">${[[a, wa], [b, wb]].map(([[seed, c], w]) => `<div class="tr ${w === 4 ? 'win' : ''} ${c === YOU ? 'you' : ''}"><span class="sd">${seed}</span>${tm(c)}<span>${T[c][1]}${c === YOU ? ' <i style="font:italic 500 12px Inter;color:var(--red)">you</i>' : ''}</span><span class="w">${w}</span></div>`).join('')}${note ? `<div class="note">${note}</div>` : ''}</div>`;
+S.playoffs = () => [
+  mast('Playoffs', 'Top eight · best of seven') + tally('3', 'G7', '3', { youK: 'Tulsa', midK: 'Finals', aiK: 'Kentucky' }) +
+  `<section><h3>Your path</h3><div class="kv"><span>Quarterfinal</span><b>4–1 Honolulu</b></div><div class="kv"><span>Semifinal</span><b>4–2 Santa Fe</b></div><div class="kv"><span>Finals</span><b class="g">3–3 Kentucky</b></div></section>` +
+  actions('<button class="btn go">Watch game 7</button><button class="btn line">Sim game 7</button>'),
+  prompt('The Finals · Game 7 tonight', 'Tulsa vs Kentucky', 'Series tied 3–3. Kentucky has home court; Jordan scored 41 in game 6.') +
+  `<div class="bracket">
+    <div class="round"><h4>Quarterfinals</h4>${ser([1, 'KEN'], [8, 'ANC'], 4, 0, { note: 'Sweep' })}${ser([4, 'DUL'], [5, 'BIS'], 3, 4)}${ser([3, 'TUL'], [6, 'HON'], 4, 1, { you: true })}${ser([2, 'SFE'], [7, 'REN'], 4, 3, { note: 'Game 7, by 2' })}</div>
+    <div class="round"><h4>Semifinals</h4>${ser([1, 'KEN'], [5, 'BIS'], 4, 1)}${ser([3, 'TUL'], [2, 'SFE'], 4, 2, { you: true, note: 'Upset of the two seed' })}</div>
+    <div class="round final"><h4>Finals</h4>${ser([1, 'KEN'], [3, 'TUL'], 3, 3, { you: true, live: true, note: 'Game 7 tonight · Kentucky at home' })}</div>
+  </div>`];
+
+const key = (location.hash || '#draft').slice(1);
+const [a, m] = S[key]();
+document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
+</script>
+</body>
+</html>
