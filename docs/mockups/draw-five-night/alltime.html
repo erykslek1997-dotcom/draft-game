@@ -712,7 +712,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .pd-pick .cst { font: 600 16px var(--num); color: var(--gold); white-space: nowrap; }
 .pd-pick .star { font-size: 20px; color: var(--ink4); text-align: center; }
 .pd-pick .star.on { color: var(--ink); }
-@media (max-width: 600px) { .dday { padding: 0 0 24px; } .dday h2 { font-size: 44px; } .drule { grid-template-columns: 70px minmax(0, 1fr); gap: 12px; } .drule .ic { font-size: 22px; height: 22px; margin-top: 16px; } .drule .ic.cap { font-size: 15px; } .drule b { font-size: 19px; } .pd-line { grid-template-columns: 36px minmax(0, 1fr); } .pd-line .bdg { grid-column: 2; padding: 0; } .pd-av { width: 36px; height: 36px; } }
+@media (max-width: 600px) { .dday { padding: 0 0 24px; } .dday h2 { font-size: 44px; } .drule { grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 12px 0; } .drule .ic { justify-content: center; font-size: 16px; height: 14px; margin-top: 0; } .drule .ic.cap .capn { display: none; } .drule p { margin-top: 2px; } .drule b { font-size: 19px; } .pd-line { grid-template-columns: 36px minmax(0, 1fr); } .pd-line .bdg { grid-column: 2; padding: 0; } .pd-av { width: 36px; height: 36px; } }
 </style>
 </head>
 <body>
@@ -1021,7 +1021,7 @@ S.leave = () => dlg(S.ribbon, `<div class="dlg sm"><div class="dlg-head"><h2>Lea
 S.loading = () => ['', `<div class="load"><div class="mast"><b>Draftverse</b><small>All-Time Draft · getting the players ready</small></div><div class="load-l"><span>Downloading player data</span><em>62%</em></div><div class="load-bar"><i style="width:62%"></i></div><p>80 years of real NBA seasons. This only downloads once.</p></div>`];
 S.dailyDay = () => ['', `<div class="dday"><div class="mast"><b>Daily All-Time Draft</b><small>Tuesday, October 21 · one try, the same league for everyone</small></div>
   <h2>No Lakers today</h2><p class="lead">Every rule of today's draft, before the lottery.</p>
-  <div class="drule"><span class="ic cap"><i class="capi"></i>100.9</span><div><span class="who">Every team</span><b>100.9 caps for your nine players</b><p>The CPU teams draft under the same cap.</p></div></div>
+  <div class="drule"><span class="ic cap"><i class="capi"></i><span class="capn">100.9</span></span><div><span class="who">Every team</span><b>100.9 caps for your nine players</b><p>The CPU teams draft under the same cap.</p></div></div>
   <div class="drule only"><span class="ic">⊘</span><div><span class="who">Only you</span><b>No one who ever played for the Lakers</b><p>The CPU can still take them. 14 of the top players are out for you, Magic, Kobe and Shaq among them.</p></div></div>
   <div class="drule"><span class="ic">#7</span><div><span class="who">Everyone today</span><b>You pick 7th</b><p>The same league and the same rivals for every player today. One try.</p></div></div>
   <button class="btn go">Start today's draft</button>${links}</div>`];
