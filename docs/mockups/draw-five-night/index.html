@@ -6,6 +6,35 @@
 <title>Draw Five night</title>
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="night.css">
+<style>
+/* pre-game: odds and the two fives face to face */
+.odds { display: flex; height: 8px; margin: 4px 0 6px; }
+.odds i { background: var(--ink); } .odds u { background: var(--ink4); }
+.odds-l { display: flex; justify-content: space-between; font: 600 14px var(--num); color: var(--ink2); }
+.odds-l b { color: var(--ink); font-weight: 600; }
+.vs5 { width: 100%; border-collapse: collapse; }
+.vs5 td { padding: 10px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.vs5 td.ps { width: 56px; text-align: center; font: 800 18px var(--cond); color: var(--ink3); }
+.vs5 .pl { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.vs5 td.r .pl { flex-direction: row-reverse; text-align: right; }
+.vs5 img, .vs5 .ini { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--surf2); flex: none; display: grid; place-items: center; font: 700 14px var(--cond); color: var(--ink3); }
+.vs5 b { display: block; font: 700 18px/1.1 var(--cond); color: var(--ink); }
+.vs5 small { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); }
+.vs5 td.r b { color: var(--ink2); }
+.vs5-h { display: flex; justify-content: space-between; font: 800 20px var(--cond); text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 2px; }
+.vs5-h span:last-child { color: var(--ink2); }
+/* Joker reveal: the card turns over in the middle of the table */
+.jr { position: fixed; z-index: 6; left: 50%; top: 50px; transform: translateX(-50%); width: min(380px, calc(100% - 32px)); text-align: center; }
+.jr .card { width: 220px; margin: 0 auto; box-shadow: 0 0 0 3px var(--gold), 0 24px 60px rgba(0, 0, 0, .6); }
+.jr.scrub .card { box-shadow: 0 0 0 3px var(--red), 0 24px 60px rgba(0, 0, 0, .6); }
+.card .top.jk { background: var(--gold); color: var(--cink); }
+.jr h2 { margin: 22px 0 4px; font: 800 64px/0.9 var(--cond); text-transform: uppercase; color: var(--gold); }
+.jr.scrub h2 { color: var(--red); }
+.jr p { margin: 0 0 18px; font-size: 16px; line-height: 1.5; font-style: italic; color: var(--ink2); }
+.jr p b { font-style: normal; color: var(--ink); }
+.dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.9); z-index: 5; }
+@media (max-width: 600px) { .vs5 b { font-size: 15px; } .vs5 img, .vs5 .ini { width: 36px; height: 36px; } .vs5 .pl { gap: 8px; } .vs5 td.ps { width: 36px; } .vs5 .fn { display: none; } .vs5 .yy { display: none; } .vs5 .pp { white-space: nowrap; } .jr h2 { font-size: 52px; } .jr { top: 30px; } }
+</style>
 </head>
 <body>
 <div class="game" id="app"></div>
@@ -30,6 +59,7 @@ const P = {
   garnett: ['Kevin Garnett', 'K. Garnett', 'BOS', '#007A33', '2008–10', 'PF', 13.5, [17.6, 8.6, 3.0], 'Versatile big · Switchable big', 'kevin-garnett'],
   battier: ['Shane Battier', 'S. Battier', 'HOU', '#CE1141', '2007–09', 'PF', 7.0, [9.4, 5.1, 2.1], 'Spot-up shooter · Wing stopper', 'shane-battier'],
   kidd: ['Jason Kidd', 'J. Kidd', 'NJN', '#1F4FA0', '2002–04', 'PG', 14.0, [16.5, 6.6, 8.9], 'Floor general · Ball hawk', 'jason-kidd'],
+  przybilla: ['Joel Przybilla', 'J. Przybilla', 'POR', '#E03A3E', '2005–07', 'C', 9.9, [5.5, 7.4, 0.6], 'Rim protector', null],
   korver: ['Kyle Korver', 'K. Korver', 'ATL', '#C8102E', '2014–16', 'SG', 8.3, [11.1, 3.6, 2.4], 'Off-screen shooter', 'kyle-korver'],
 };
 const p = (k) => { const a = P[k]; return { n: a[0], s: a[1], t: a[2], c: a[3], y: a[4], pos: a[5], f: a[6], st: a[7], r: a[8], img: a[9] }; };
@@ -153,6 +183,26 @@ function resultsMain(daily) {
   `<section class="film"><h3>Film room</h3><p><i class="up">+</i><span>You saw past the obvious five. <b>Durant</b> and <b>Camby</b> are exactly who the best five starts.</span></p><p><i style="color:var(--red)">−</i><span>Costliest pick: <b>Udonis Haslem</b> at PF. <b>Kevin Garnett</b> there is worth about <b>3 points</b>, most of it on fit.</span></p><p><i style="color:var(--ink3)">!</i><span>Your weak spot is <b>spacing (71)</b>. Simmons and Haslem don't stretch the floor; the best five has 83 there.</span></p></section>` +
   `<section><h3>Starting five<span>2 of 5 match the best</span></h3><div class="cmp"><span class="rl">You</span>${SL.map((s, i) => { const x = p(YOU5[i]); return `<div class="mini ${hit.includes(i) ? 'hit' : ''}" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div><div class="bd">${face(x)}<div style="min-width:0"><b>${x.s}</b><span class="s">${x.y} · <i class="capi"></i>${x.f}</span></div>${hit.includes(i) ? '<span class="ck">✓</span>' : ''}</div></div>`; }).join('')}<span class="rl">Best</span>${SL.map((s, i) => { const x = p(BEST5[i]); return `<div class="mini ${hit.includes(i) ? 'hit' : ''}" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div><div class="bd">${face(x)}<div style="min-width:0"><b>${x.s}</b><span class="s">${x.y} · <i class="capi"></i>${x.f}</span></div>${hit.includes(i) ? '<span class="ck">✓</span>' : ''}</div></div>`; }).join('')}</div></section>`;
 }
+const pname = (x) => { const i = x.n.indexOf(' '); return `<span class="fn">${x.n.slice(0, i)} </span>${x.n.slice(i + 1)}`; };
+const vs5 = (left, right, [ln, rn]) => `<div class="vs5-h"><span>${ln}</span><span>${rn}</span></div><table class="vs5">${SL.map((s, i) => { const a = typeof left[i] === 'string' ? p(left[i]) : left[i]; const b = typeof right[i] === 'string' ? p(right[i]) : right[i];
+  const side = (x) => `<div class="pl">${face(x)}<div><b>${pname(x)}</b><small>${x.st ? `<span class="yy">${x.y} · </span><span class="pp">${x.st[0]} ppg</span>` : x.y}</small></div></div>`;
+  return `<tr><td>${side(a)}</td><td class="ps">${s}</td><td class="r">${side(b)}</td></tr>`; }).join('')}</table>`;
+const odds = (you, them, [ln, rn]) => `<section><h3>Pre-game<span>the engine's odds</span></h3><div class="odds"><i style="width:${you}%"></i><u style="width:${them}%"></u></div><div class="odds-l"><span><b>${ln} ${you}%</b></span><span>${rn} ${them}%</span></div></section>`;
+S.preGame = () => [
+  mast('Draw Five', 'Tip-off · you vs the AI (Pro)') + tally('84', 'Tip-off', '81', { midK: 'Q1' }) +
+  `<section><h3>Your number</h3><div class="kv"><span>Your five</span><b>84</b></div><div class="kv"><span>AI five</span><b>81</b></div><div class="kv"><span>Caps used</span><b>54.3 / 62</b></div></section>` +
+  actions('<button class="btn go">Tip-off</button>'),
+  prompt('Before tip-off', 'Starting fives', 'The engine has you by three. Durant against Prince is the one to watch.') +
+  odds(58, 42, ['You', 'AI']) + `<section>${vs5(YOU5, AI5, ['You', 'AI · Pro'])}</section>` + `<button class="btn go phone-only">Tip-off</button>`];
+S.dailyPreGame = () => [
+  mast('Daily Draw Five', 'Tuesday, Oct 21 · game of the day', true) + tally('84', 'Tip-off', "'92<br>Bulls", { midK: 'Q1', aiK: 'Tonight', name: true }) +
+  `<section><h3>Today</h3><div class="kv"><span>Streak</span><b class="g">5 days</b></div><div class="kv"><span>Your five</span><b>84</b></div><div class="kv"><span>Jokers taken</span><b>1 of 2</b></div></section>` +
+  actions('<button class="btn go">Tip-off</button>'),
+  prompt('Game of the day · tonight', "The '92 Bulls", '67–15 and a second straight title. Beat the five biggest names on the board and you usually beat them too.') +
+  odds(46, 54, ['You', 'Bulls']) + `<section>${vs5(YOU5, BULLS, ['You', "'92 Bulls"])}</section>` + `<button class="btn go phone-only">Tip-off</button>`];
+const jokerCard = (k, price) => { const x = p(k); return `<div class="card" style="--team:${x.c}"><div class="top jk"><span>JOKER · ${x.t}</span><span class="cost">${price}</span></div><div class="pic">${face(x)}</div><div class="nm">${x.n}</div><div class="sb">${x.pos} · ${x.y}</div><div class="roles">${x.r}</div><div class="st">${['PTS', 'REB', 'AST'].map((t, i) => `<div><b>${x.st[i]}</b><span>${t}</span></div>`).join('')}</div></div>`; };
+S.jokerTook = () => { const [l, m] = S.dailyJoker(); return [l, m + `<div class="dim"></div><div class="jr">${jokerCard('olajuwon', 9.9)}<h2>Jackpot</h2><p>The C Joker was <b>Hakeem Olajuwon</b> 1993–95, a legend, for <b>9.9 caps</b>. He would cost 21.8 face up.</p><button class="btn go">Next pick · PG</button></div>`]; };
+S.jokerScrub = () => { const [l, m] = S.dailyJoker(); return [l, m + `<div class="dim"></div><div class="jr scrub">${jokerCard('przybilla', 9.9)}<h2>Ouch</h2><p>The C Joker was <b>Joel Przybilla</b> 2005–07, a scrub, for <b>9.9 caps</b>. The other four will have to carry him.</p><button class="btn go">Next pick · PG</button></div>`]; };
 S.results = () => [
   mast('Draw Five', 'Final · against the AI (Pro)') + tally('104', 'Final', '98', { midK: 'Q4 0:00' }) + `<p class="sub-note keep"><b>You win</b> by 6</p>` +
   `<section><h3>Your number</h3><div class="kv"><span>Your five</span><b>84</b></div><div class="kv"><span>Caps used</span><b>54.3 / 62</b></div><div class="kv"><span>Matches the best</span><b>2 of 5</b></div></section>` +
