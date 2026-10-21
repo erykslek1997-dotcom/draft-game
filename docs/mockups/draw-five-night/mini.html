@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini Draft night</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="night.css">
+<style>
+/* team mark: the franchise colours as a printed swatch */
+.tm { display: inline-grid; place-items: center; width: 30px; height: 22px; border-radius: 3px; font: 700 11px Inter, sans-serif; letter-spacing: 0.04em; flex: none; }
+.tm.lg { width: 44px; height: 30px; font-size: 13px; }
+
+/* lottery */
+.lot { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 36px; align-items: start; }
+.ball { width: 220px; height: 220px; border-radius: 50%; background: var(--card); color: var(--cink); display: grid; place-items: center; text-align: center; border: 2px solid var(--red); }
+.ball b { display: block; font: 800 110px/0.9 var(--cond); }
+.ball span { display: block; font: 700 12px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cink2); }
+.lot-note { margin: 18px 0 0; font-size: 14px; font-style: italic; color: var(--ink2); line-height: 1.5; }
+.lot-note b { font-style: normal; color: var(--ink); font-family: var(--num); font-weight: 600; }
+.order16 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; margin: 0; padding: 0; list-style: none; }
+.order16 li { display: grid; grid-template-columns: 30px 30px minmax(0, 1fr); gap: 12px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: 15px; color: var(--ink2); }
+.order16 li .n { font: 600 13px var(--num); color: var(--ink3); }
+.order16 li b { font: 700 18px var(--cond); color: var(--ink2); font-weight: 700; }
+.order16 li.you { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; }
+.order16 li.you b { color: var(--ink); }
+.order16 li.you .n { color: var(--red); }
+.order16 li em { font-size: 13px; color: var(--red); }
+
+/* daily rule */
+.rule { border-top: 5px double var(--gold); border-bottom: 1.5px solid var(--gold); padding: 14px 0 12px; }
+.rule .eb { font: 700 12px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.rule h2 { margin: 4px 0 6px; font: 800 58px/0.95 var(--cond); text-transform: uppercase; }
+.rule p { margin: 0; font-size: 15px; font-style: italic; color: var(--ink2); }
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.facts div { padding: 4px 16px; border-left: 1px solid var(--rule); }
+.facts div:first-child { border-left: 0; padding-left: 0; }
+.facts span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+.facts b { display: block; margin-top: 6px; font: 600 30px/1 var(--num); }
+.facts b.g { color: var(--gold); }
+.facts small { display: block; margin-top: 4px; font-size: 13px; font-style: italic; color: var(--ink3); }
+.go-row { display: flex; align-items: center; gap: 18px; }
+.go-row .btn { width: auto; padding: 13px 30px; }
+.go-row i { color: var(--ink3); font-size: 14px; }
+
+/* your five, compact (Mini) */
+.slots.compact .slot { height: 120px; }
+.slots.compact .slot img, .slots.compact .slot .ini { width: 42px; height: 42px; }
+.slots.compact .slot .nm { font-size: 17px; }
+
+/* the clock while CPUs pick */
+.clockline { display: flex; align-items: center; gap: 18px; }
+.clockline .btn { width: auto; padding: 10px 18px; font-size: 16px; }
+.ticker { margin: 0; padding: 0; list-style: none; }
+.ticker li { display: grid; grid-template-columns: 34px 30px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 15px; color: var(--ink2); }
+.ticker li .n { font: 600 13px var(--num); color: var(--ink3); }
+.ticker li b { color: var(--ink); font-weight: 600; }
+.ticker li .ps { font: 700 13px var(--cond); color: var(--ink3); letter-spacing: 0.04em; }
+.ticker li .c { font: 600 13px var(--num); color: var(--ink3); }
+.ticker li.now { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; color: var(--ink); }
+.ticker li.now i { color: var(--red); }
+.ticker li.you b { color: var(--gold); }
+
+/* player list */
+.filters { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1.5px solid var(--rule2); }
+.filters .search { flex: 1 1 200px; max-width: 300px; border: 0; border-bottom: 1px solid #45433F; background: transparent; color: var(--ink); padding: 6px 0; font: 15px Inter, sans-serif; }
+.filters .search::placeholder { color: var(--ink3); font-style: italic; }
+.filters .grp { display: flex; gap: 12px; align-items: baseline; font: 700 16px var(--cond); letter-spacing: 0.04em; color: #4A4844; }
+.filters .grp > span:first-child { font: italic 500 13px Inter, sans-serif; color: var(--ink3); letter-spacing: 0; }
+.filters .grp u { text-decoration: none; color: var(--ink); border-bottom: 2px solid var(--ink); }
+.filters .grp s { text-decoration: line-through; }
+.filters .fit { font-size: 14px; color: var(--ink2); }
+.filters .fit b { color: var(--gold); font: 600 14px var(--num); }
+.plist { width: 100%; border-collapse: collapse; }
+.plist th { text-align: left; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); padding: 10px 8px 6px 0; }
+.plist th.r, .plist td.r { text-align: right; }
+.plist td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.plist td.f { width: 46px; }
+.plist td.f img, .plist td.f .ini { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #1D1E21; display: grid; place-items: center; font: 700 13px var(--cond); color: var(--ink3); }
+.plist .nm { font: 700 20px/1.05 var(--cond); }
+.plist .mt { margin-top: 2px; font-size: 13px; color: var(--ink3); }
+.plist .mt b { font: 600 12px var(--num); color: var(--ink2); }
+.plist .mt i { color: var(--ink3); }
+.plist td.tier { font: 700 13px var(--cond); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink2); white-space: nowrap; }
+.plist td.tier.top { color: var(--ink); }
+.plist td.n { font: 500 14px var(--num); color: var(--ink2); white-space: nowrap; }
+.plist td.cap { font: 600 16px var(--num); color: var(--gold); }
+.plist td.act { width: 92px; }
+.plist .draft { border: 1.5px solid var(--ink2); border-radius: 3px; background: transparent; padding: 6px 12px; font: 800 14px var(--cond); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); cursor: pointer; }
+.plist tr.hot td { background: #121317; }
+.plist tr.hot td.f { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; }
+.plist tr.hot .draft { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.plist tr.no td { opacity: 0.35; }
+.plist tr.no .draft { visibility: hidden; }
+.plist .mst { display: none; }
+.more { padding: 12px 0; font-size: 14px; font-style: italic; color: var(--ink3); }
+.more a { color: var(--ink2); }
+
+/* draft board */
+.dboard { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.dboard th { text-align: left; font: 700 12px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); padding: 0 8px 6px 0; border-bottom: 1.5px solid var(--rule2); }
+.dboard th:first-child { width: 190px; }
+.dboard td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dboard td.tn { display: flex; align-items: center; gap: 10px; color: var(--ink); font: 700 16px var(--cond); }
+.dboard td small { font: 700 11px Inter, sans-serif; color: var(--ink3); margin-left: 4px; }
+.dboard td.e { color: #3A3A3C; }
+.dboard tr.you td { color: var(--ink); }
+.dboard tr.you td.tn { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; }
+.dboard td.clk { color: var(--red); font-style: italic; }
+
+/* results */
+.place { display: flex; align-items: baseline; gap: 10px; }
+.place b { font: 800 120px/0.85 var(--cond); }
+.place b sup { font-size: 48px; vertical-align: 52px; }
+.place span { font: italic 500 18px Inter, sans-serif; color: var(--ink2); }
+.team-line { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.team-line b { font: 800 30px/1 var(--cond); text-transform: uppercase; }
+.verdict.vmini { grid-template-columns: auto minmax(0, 1fr) auto; gap: 36px; }
+.verdict.vmini .tier { border-left: 1px solid var(--rule); padding-left: 30px; }
+.five-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.five-row .card { min-height: 0; }
+.five-row .card img, .five-row .card .ini { width: 64px; height: 64px; }
+.five-row .card .nm { font-size: 22px; }
+.stand { width: 100%; border-collapse: collapse; }
+.stand td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); font-size: 15px; color: var(--ink2); }
+.stand td.rk { width: 34px; font: 600 14px var(--num); color: var(--ink3); }
+.stand td.tmc { width: 44px; }
+.stand td.nm b { font: 700 18px var(--cond); color: var(--ink); font-weight: 700; }
+.stand td.nm i { font-size: 13px; color: var(--red); margin-left: 6px; }
+.stand td.who { font-size: 13px; font-style: italic; color: var(--ink3); }
+.stand td.sc { text-align: right; font: 600 16px var(--num); color: var(--ink); width: 60px; }
+.stand td.car { width: 24px; text-align: right; color: var(--ink3); }
+.stand tr.you td { background: #121317; }
+.stand tr.you td.rk { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; color: var(--red); }
+.stand tr.you td.sc { color: var(--gold); }
+.voices p { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 15px; line-height: 1.45; color: var(--ink2); }
+.voices p b { color: var(--ink); font-weight: 600; }
+.voices p em { display: block; margin-top: 2px; font-size: 13px; color: var(--ink3); }
+
+@media (max-width: 600px) {
+  .lot { grid-template-columns: 1fr; gap: 20px; }
+  .ball { width: 150px; height: 150px; }
+  .ball b { font-size: 76px; }
+  .order16 { grid-template-columns: 1fr; }
+  .facts { grid-template-columns: 1fr 1fr; row-gap: 14px; }
+  .facts div:nth-child(3) { border-left: 0; padding-left: 0; }
+  .rule h2 { font-size: 42px; }
+  .plist th:nth-child(3), .plist td.tier, .plist th:nth-child(5), .plist td.n3 { display: none; }
+  .plist td.n, .plist th:nth-child(4) { display: none; }
+  .plist .mst { display: block; white-space: nowrap; font: 500 11px var(--num); color: var(--ink3); }
+  .plist .mt b { white-space: nowrap; font-size: 11px; }
+  .plist td.f { width: 40px; }
+  .plist td.f img, .plist td.f .ini { width: 32px; height: 32px; }
+  .plist .nm { font-size: 17px; }
+  .plist .mt i { display: none; }
+  .plist td.act { width: 64px; }
+  .plist .draft { padding: 5px 8px; font-size: 12px; }
+  .filters { gap: 12px; }
+  .filters .search { max-width: none; flex-basis: 100%; }
+  .verdict.vmini { grid-template-columns: 1fr; gap: 14px; }
+  .verdict.vmini .tier { border-left: 0; padding-left: 0; }
+  .place b { font-size: 88px; }
+  .five-row { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+  .five-row .card .pic { padding-top: 6px; }
+  .five-row .card img, .five-row .card .ini { width: 34px !important; height: 34px !important; font-size: 14px; }
+  .five-row .card .nm { font-size: 13px !important; padding: 4px 2px 6px; }
+  .five-row .card .sb, .five-row .card .roles, .five-row .card .st { display: none; }
+  .five-row .card .top { padding: 3px 5px; font-size: 10px; }
+  .five-row .card .cost { font-size: 10px; padding: 0 5px; }
+  .stand td.who { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="game" id="app"></div>
+<script>
+const T = {
+  BOI: ['Boise', 'Mooses', '#1f4d3a', '#e9c46a'], KEN: ['Kentucky', 'Chickens', '#b8322a', '#fff4dc'], ANC: ['Anchorage', 'Walruses', '#2b5d7d', '#f3f7fa'],
+  SFE: ['Santa Fe', 'Coyotes', '#a14a2c', '#f7d9a8'], DUL: ['Duluth', 'Yetis', '#3d4f66', '#e6f2ff'], TUL: ['Tulsa', 'Twisters', '#4b2a6b', '#d8c1f0'],
+  REN: ['Reno', 'Jackrabbits', '#1c1c22', '#ff5a36'], DET: ['Detroit', 'Gearheads', '#39424e', '#f08a24'], SCR: ['Scranton', 'Moles', '#5a3d2b', '#e8c07a'],
+  HON: ['Honolulu', 'Tiger Sharks', '#0f7c84', '#f4f1e4'], TPA: ['Tampa', 'Manatees', '#4a9a8f', '#ffffff'], LUB: ['Lubbock', 'Armadillos', '#d8a868', '#3a2a1c'],
+  BIS: ['Bismarck', 'Narwhals', '#1b2f5e', '#a7e3e0'], ASP: ['Aspen', 'Ibexes', '#e9eef2', '#2a3f5a'], ELP: ['El Paso', 'Scorpions', '#d9661f', '#1d1d1d'],
+  FRE: ['Fresno', 'Raisins', '#5e2750', '#f6b93b'],
+};
+const ORDER = ['BIS', 'DUL', 'KEN', 'REN', 'HON', 'SFE', 'TUL', 'ANC', 'ELP', 'DET', 'FRE', 'BOI', 'SCR', 'TPA', 'LUB', 'ASP'];
+const YOU = 'TUL';
+const tm = (c, lg) => `<span class="tm ${lg ? 'lg' : ''}" style="background:${T[c][2]};color:${T[c][3]}">${c}</span>`;
+const tname = (c) => `${T[c][0]} ${T[c][1]}`;
+const P = {
+  pippen: ['Scottie Pippen', 'SF', '1990–92', 15, 'MVP', [19.4, 7.5, 6.6], 0.9, 'Playmaker · Wing stopper', 'scottie-pippen', 'CHI', '#CE1141'],
+  nash: ['Steve Nash', 'PG', '2005–07', 13, 'MVP', [18.7, 3.9, 11.0], 4.4, 'Floor general', 'steve-nash', 'PHX', '#1D1160'],
+  cp3: ['Chris Paul', 'PG', '2013–15', 14, 'MVP', [19.1, 4.5, 10.4], 3.9, 'Floor general · On-ball defender', 'chris-paul', 'LAC', '#C8102E'],
+  malone: ['Karl Malone', 'PF', '1996–98', 19, 'MVP', [27.2, 10.1, 4.2], 0.1, 'Versatile big · Post defender', 'karl-malone', 'UTA', '#002B5C'],
+  dirk: ['Dirk Nowitzki', 'PF', '2002–04', 18, 'MVP', [23.5, 9.3, 2.8], 4.3, 'Stretch big · Mobile defender', 'dirk-nowitzki', 'DAL', '#00538C'],
+  barkley: ['Charles Barkley', 'PF', '1989–91', 16, 'MVP', [26.3, 10.9, 4.0], 1.7, 'Slasher', 'charles-barkley', 'PHI', '#006BB6'],
+  wilt: ['Wilt Chamberlain', 'C', '1966–68', 16, 'MVP', [24.2, 24.0, 8.2], null, 'Playmaking big · Rim protector', 'wilt-chamberlain', 'PHI', '#006BB6'],
+  russell: ['Bill Russell', 'C', '1958–60', 15, 'All-NBA', [17.5, 23.5, 3.5], null, 'Post scorer · Rim protector', 'bill-russell', 'BOS', '#007A33'],
+  isiah: ['Isiah Thomas', 'PG', '1986–88', 17, 'All-NBA', [20.0, 3.7, 9.2], 1.2, 'Floor general · On-ball defender', 'isiah-thomas', 'DET', '#C8102E'],
+  drexler: ['Clyde Drexler', 'SG', '1990–92', 18, 'All-NBA', [23.2, 6.6, 6.4], 3.3, 'Slasher · Wing stopper', 'clyde-drexler', 'POR', '#E03A3E'],
+  kidd: ['Jason Kidd', 'PG', '2001–03', 15, 'All-NBA', [16.7, 6.8, 9.4], 4.5, 'Floor general · On-ball defender', 'jason-kidd', 'NJN', '#1F4FA0'],
+  ewing: ['Patrick Ewing', 'C', '1989–91', 22, 'All-NBA', [27.1, 10.9, 2.9], 0.1, 'Post scorer · Rim protector', 'patrick-ewing', 'NYK', '#006BB6'],
+  reggie: ['Reggie Miller', 'SG', '1996–98', 13, 'All-NBA', [20.6, 3.5, 3.1], 5.1, 'Off-screen shooter', 'reggie-miller', 'IND', '#002D62'],
+  rallen: ['Ray Allen', 'SG', '2005–07', 17, 'All-NBA', [26.4, 4.5, 4.0], 7.8, 'Off-screen shooter', 'ray-allen', 'SEA', '#00653A'],
+  camby: ['Marcus Camby', 'C', '2006–08', 9.6, 'All-Star', [11.2, 12.9, 3.4], 0.1, 'Roll man · Rim protector', 'marcus-camby', 'DEN', '#0E2240'],
+  bwallace: ['Ben Wallace', 'C', '2002–04', 6.0, 'All-Star', [7.1, 15.4, 1.8], 0.1, 'Roll man · Rim protector', 'ben-wallace', 'DET', '#C8102E'],
+};
+const p = (k) => { const a = P[k]; return { k, n: a[0], pos: a[1], y: a[2], f: a[3], tier: a[4], st: a[5], tpa: a[6], r: a[7], img: a[8], t: a[9], c: a[10] }; };
+const ini = (n) => n.split(' ').map((w) => w[0]).join('').slice(0, 2);
+const face = (x) => x.img ? `<img src="heads/${x.img}.png" alt="">` : `<span class="ini">${ini(x.n)}</span>`;
+const short = (n) => { const w = n.split(' '); return `${w[0][0]}. ${w.slice(1).join(' ')}`; };
+const SL = ['PG', 'SG', 'SF', 'PF', 'C'];
+const mast = (title, sub, daily) => `<div class="mast keep"><b class="${daily ? 'daily' : ''}">${title}</b><small>${sub}</small></div>`;
+const tally = (you, mid, ai, { youK = 'Caps', midK = 'Cap', aiK = 'Round' } = {}) => `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b>${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b>${ai}</b></div></div>`;
+const capbar = (pct) => `<div class="capbar keep"><i style="width:${pct}%"></i></div>`;
+const links = `<div class="links"><a href="#">← Menu</a><a href="#">How to play</a><a href="#">Settings</a></div>`;
+const actions = (btn) => `<div class="actions">${btn}${links}</div>`;
+function five(keys, { active, title = 'Your five', compact = true } = {}) {
+  return `<section><h3>${title}<span>${keys.filter(Boolean).length} of 5 · ${tname(YOU)}</span></h3><div class="slots ${compact ? 'compact' : ''}">${SL.map((s, i) => {
+    const k = keys[i];
+    if (k) { const x = p(k); return `<div class="slot filled" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div>${face(x)}<div class="nm">${short(x.n)}</div><div class="sb">${x.y} · ${x.f}</div></div>`; }
+        return `<div class="slot empty">${s}<small>open</small></div>`;
+  }).join('')}</div></section>`;
+}
+const prompt = (eb, h, line, ebCls = '') => `<div class="prompt"><span class="eb ${ebCls}">${eb}</span><h2>${h}</h2><p>${line}</p></div>`;
+const LEAGUE = [
+  [17, 'ASP', 'Moses Malone', 'C', 20], [18, 'LUB', 'Magic Johnson', 'PG', 18], [19, 'TPA', 'Larry Bird', 'SF', 21], [20, 'SCR', 'David Robinson', 'C', 19],
+  [21, 'BOI', 'Kevin Garnett', 'PF', 18], [22, 'FRE', 'Anthony Davis', 'PF', 19], [23, 'DET', 'Hakeem Olajuwon', 'C', 21], [24, 'ELP', 'Stephen Curry', 'PG', 20],
+];
+function ticker(rows, { now } = {}) {
+  return `<ul class="ticker">${rows.map(([n, c, name, pos, f]) => `<li class="${c === YOU ? 'you' : ''}"><span class="n">${n}</span>${tm(c)}<span><b>${name}</b></span><span class="ps">${pos}</span><span class="c">${f}</span></li>`).join('')}${now ? `<li class="now"><span class="n">${now[0]}</span>${tm(now[1])}<span><i>on the clock…</i></span><span></span><span></span></li>` : ''}</ul>`;
+}
+function plist(keys, { hot, no = [] } = {}) {
+  return `<table class="plist"><tr><th></th><th>Player</th><th>Tier</th><th class="r">Pts · Reb · Ast</th><th class="r">3PA</th><th class="r">Caps</th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos} · ${x.y}</b> <i>· ${x.r}</i><span class="mst">${x.st.join(' / ')}</span></div></td><td class="tier ${x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td><td class="n r">${x.st.join(' · ')}</td><td class="n r n3">${x.tpa ?? '—'}</td><td class="cap r">${x.f}</td><td class="act r"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
+}
+const filters = (hidden = []) => `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span><span class="fit">Fits this pick: up to <b>24.5</b></span></div>`;
+
+const S = {};
+S.lottery = () => [
+  mast('Mini Draft', '16 teams · 5 rounds · starters only') + tally('70', '16', '5', { youK: 'Cap', midK: 'Teams', aiK: 'Rounds' }) +
+  `<section><h3>How it works</h3><div class="kv"><span>Each round</span><b>1 starter</b></div><div class="kv"><span>Order</span><b>Snake</b></div><div class="kv"><span>Players</span><b>Peak years</b></div><div class="kv"><span>Rivals</span><b>15 CPU GMs</b></div><div class="kv"><span>Graded</span><b>After pick 80</b></div></section>` +
+  actions('<button class="btn go">Start the draft</button>'),
+  prompt('Draft lottery', 'You pick 7th', `${tname(YOU)}. In a snake draft that's picks <b class="w">7 · 26 · 39 · 58 · 71</b>.`) +
+  `<div class="lot"><div><div class="ball"><div><b>7</b><span>your pick</span></div></div><p class="lot-note">Between your picks: <b>19</b>, <b>13</b>, <b>19</b> and <b>13</b> picks by the CPU teams.</p></div>
+   <section><h3>Draft order<span>round 1 · reverses each round</span></h3><ol class="order16">${ORDER.map((c, i) => `<li class="${c === YOU ? 'you' : ''}"><span class="n">${i + 1}</span>${tm(c)}<b>${tname(c)}${c === YOU ? ' <em>you</em>' : ''}</b></li>`).join('')}</ol></section></div>`];
+
+S.day = () => [
+  mast('Daily Mini Draft', 'Tuesday, Oct 21 · one board for everyone', true) + tally('70', '7th', '5', { youK: 'Cap', midK: 'Your slot', aiK: 'Rounds' }) +
+  `<section><h3>Today</h3><div class="kv"><span>Streak</span><b class="g">5 days</b></div><div class="kv"><span>Teams</span><b>16</b></div><div class="kv"><span>Tries</span><b>One</b></div><div class="kv"><span>New board in</span><b>7h 12m</b></div></section>` +
+  actions(''),
+  `<div class="rule"><span class="eb">Rule of the day</span><h2>No Bucks today</h2><p>No one who ever played for the Bucks. Kareem, Giannis and Ray Allen sit this one out.</p></div>` +
+  `<div class="facts"><div><span>Cap</span><b class="g">70</b><small>caps for five</small></div><div><span>Your slot</span><b>7th</b><small>picks 7 · 26 · 39 · 58 · 71</small></div><div><span>Teams</span><b>16</b><small>15 CPU GMs, same board</small></div><div><span>Streak</span><b>5</b><small>days in a row</small></div></div>` +
+  five([], { compact: true }) +
+  `<div class="go-row"><button class="btn go">Start today's draft</button><i>Same players, same order for everyone. Compare tonight.</i></div>`];
+
+S.wait = () => [
+  mast('Mini Draft', 'Round 2 of 5 · pick 25 of 80') + tally('15', '70', '2/5') + capbar(21) + `<p class="sub-note keep"><b>55 caps</b> left for four spots</p>` +
+  `<section><h3>Your picks</h3><div class="kv"><span>Next</span><b>Pick 26</b></div><div class="kv"><span>Then</span><b>39 · 58 · 71</b></div></section>` +
+  actions('<button class="btn off">Waiting for pick 26</button>'),
+  prompt(`On the clock · Pick 25`, `${T.ANC[0]} ${T.ANC[1]}`, 'Your pick is next. Eighteen picks since your first.', '') +
+  `<div class="clockline"><button class="btn line">Skip to my pick</button><i class="it" style="color:var(--ink3);font-size:14px">Runs the CPU picks fast.</i></div>` +
+  five(['', '', 'pippen', '', '']) +
+  `<section><h3>The draft so far<span>newest last</span></h3>${ticker(LEAGUE, { now: [25, 'ANC'] })}</section>`];
+
+S.pick = () => [
+  mast('Mini Draft', 'Round 2 of 5 · pick 26 of 80') + tally('15', '70', '2/5') + capbar(21) + `<p class="sub-note keep"><b>55 caps</b> left for four spots</p>` +
+  `<section><h3>The draft so far</h3><table class="log">${LEAGUE.slice(3).concat([[25, 'ANC', 'John Stockton', 'PG', 12]]).map(([n, c, name, pos, f], i, a) => `<tr class="${c === YOU ? 'y' : 'a'} ${i === a.length - 1 ? 'latest' : ''}"><td class="n">${n}</td><td class="w">${c}</td><td class="p">${name}, ${pos}</td><td class="c">${f}</td></tr>`).join('')}</table></section>` +
+  actions('<button class="btn line">Draft board</button>'),
+  five(['', '', 'pippen', '', ''], { active: ['PG', 'SG', 'PF', 'C'] }) +
+  prompt('On the clock · Round 2 · Pick 26', 'Your pick', 'Up to <b>24.5 caps</b> on this one and still fill the five. Your SF is set.') +
+  `<section>${filters(['SF'])}${plist(['nash', 'cp3', 'malone', 'dirk', 'barkley', 'wilt', 'russell', 'isiah', 'drexler', 'kidd', 'ewing'], { hot: 'nash', no: ['ewing'] })}<div class="more">Showing 11 of 54 left · <a href="#">See more</a></div></section>`];
+
+const BOARD = {
+  BIS: ['M. Jordan', '', '', '', ''], DUL: ['L. James', '', '', '', ''], KEN: ['K. Abdul-Jabbar', '', '', '', ''], REN: ['K. Bryant', '', '', '', ''],
+  HON: ["S. O'Neal", '', '', '', ''], SFE: ['K. Durant', '', '', '', ''], TUL: ['S. Pippen', '', '', '', ''], ANC: ['T. Duncan', 'J. Stockton', '', '', ''],
+  ELP: ['K. Leonard', 'S. Curry', '', '', ''], DET: ['D. Wade', 'H. Olajuwon', '', '', ''], FRE: ['J. Harden', 'A. Davis', '', '', ''], BOI: ['O. Robertson', 'K. Garnett', '', '', ''],
+  SCR: ['G. Antetokounmpo', 'D. Robinson', '', '', ''], TPA: ['N. Jokic', 'L. Bird', '', '', ''], LUB: ['L. Doncic', 'M. Johnson', '', '', ''], ASP: ['J. Embiid', 'M. Malone', '', '', ''],
+};
+const POS = { 'M. Jordan': 'SG', 'S. Curry': 'PG', 'B. Wallace': 'C', 'L. James': 'SF', 'H. Olajuwon': 'C', 'K. Abdul-Jabbar': 'C', 'T. Duncan': 'PF', 'K. Bryant': 'SG', 'K. Garnett': 'PF', "S. O'Neal": 'C', 'D. Robinson': 'C', 'K. Durant': 'SF', 'L. Bird': 'SF', 'S. Pippen': 'SF', 'J. Stockton': 'PG', 'M. Johnson': 'PG', 'K. Leonard': 'SF', 'D. Wade': 'SG', 'J. Harden': 'SG', 'O. Robertson': 'PG', 'G. Antetokounmpo': 'PF', 'N. Jokic': 'C', 'L. Doncic': 'PG', 'J. Embiid': 'C', 'M. Malone': 'C', 'A. Davis': 'PF' };
+S.board = () => [
+  mast('Mini Draft', 'Round 2 of 5 · pick 26 of 80') + tally('15', '70', '2/5') + capbar(21) + `<p class="sub-note keep"><b>55 caps</b> left for four spots</p>` +
+  actions('<button class="btn go">Back to your pick</button>'),
+  prompt('Draft board', 'Who took whom', 'Sixteen teams, five rounds. You are on the clock at pick 26.') +
+  `<table class="dboard"><tr><th>Team</th><th>Round 1</th><th>Round 2</th><th>Round 3</th><th>Round 4</th><th>Round 5</th></tr>${ORDER.map((c) => `<tr class="${c === YOU ? 'you' : ''}"><td class="tn">${tm(c)}${T[c][1]}</td>${BOARD[c].map((v, r) => v ? `<td>${v}<small>${POS[v]}</small></td>` : (c === YOU && r === 1 ? '<td class="clk">on the clock</td>' : '<td class="e">—</td>')).join('')}</tr>`).join('')}</table>`];
+
+const STAND = [['SFE', 89, 'Durant · Bird · Nash'], ['KEN', 88, 'Kareem · Duncan · Paul'], ['DUL', 86, 'LeBron · Hakeem · Kidd'], ['TUL', 84, 'Pippen · Nash · Malone'], ['BIS', 83, 'Jordan · Curry · Wallace'], ['REN', 82, 'Kobe · Garnett · Miller'], ['HON', 81, "Shaq · Robinson · Isiah"], ['ANC', 80, 'Stockton · Magic · Russell'], ['ELP', 79, 'Kawhi · Barkley'], ['DET', 78, 'Wade · Dirk'], ['FRE', 77, 'Harden · Ewing'], ['BOI', 76, 'Oscar · Wilt'], ['SCR', 75, 'Giannis · Drexler'], ['TPA', 74, 'Jokic · Allen'], ['LUB', 72, 'Luka · Camby'], ['ASP', 70, 'Embiid · Malone']];
+const YOUR5 = ['nash', 'reggie', 'pippen', 'malone', 'camby'];
+function resultsMain(daily) {
+  return `<div class="headline"><span class="eb">${daily ? 'Daily · No Bucks today' : 'Final standings'}</span><b>${tname(YOU)}</b><i>5 rounds · 80 picks</i></div>
+  <div class="verdict vmini"><div class="place"><b>4<sup>th</sup></b><span>of 16</span></div><div class="tier"><span class="eb">The verdict</span><h2>Playoff lock</h2><p>A real team, not the best one. Spacing kept you out of the top three.</p></div><div class="nums"><div class="you"><span>Your team</span><b>84</b></div><div><span>Best</span><b>89</b></div><div><span>Behind</span><b>5</b></div></div></div>
+  <section><h3>Your five<span>${YOUR5.reduce((a, k) => a + p(k).f, 0).toFixed(1)} / 70 caps</span></h3><div class="five-row">${YOUR5.map((k) => { const x = p(k); return `<div class="card" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span class="cost">${x.f}</span></div><div class="pic">${face(x)}</div><div class="nm">${x.n}</div><div class="sb">${x.pos} · ${x.y}</div><div class="roles">${x.r}</div><div class="st"><div><b>${x.st[0]}</b><span>PTS</span></div><div><b>${x.st[1]}</b><span>REB</span></div><div><b>${x.st[2]}</b><span>AST</span></div></div></div>`; }).join('')}</div></section>
+  <div class="split"><section><h3>Why you finished here<span>yours · the best team</span></h3><table class="profile">${[['Talent', 85, 88], ['Offense', 86, 89], ['Defense', 83, 85], ['Spacing', 72, 84, 1], ['Fit', 85, 90]].map(([l, v, b, w]) => `<tr class="${w ? 'weak' : ''}"><td class="l">${l}</td><td class="v">${v}</td><td class="b">best ${b}</td><td><div class="bar"><i style="width:${v}%"></i><u style="left:${b}%"></u></div></td></tr>`).join('')}</table></section>
+  <section class="voices"><h3>The room</h3><p><b>Nash and Reggie</b> make it run: the best ball-movement backcourt in the field.<em>Strength</em></p><p>Only <b>Reggie</b> really stretches the floor. Camby and Malone crowd the paint.<em>Weak spot · spacing 72</em></p><p>Next time: a stretch big at PF would have been worth about <b>3 points</b>.<em>Tip</em></p></section></div>
+  <section><h3>Final standings<span>tap a team to see its five</span></h3><table class="stand">${STAND.map(([c, sc, who], i) => `<tr class="${c === YOU ? 'you' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm"><b>${tname(c)}</b>${c === YOU ? '<i>you</i>' : ''}</td><td class="who">${who}</td><td class="sc">${sc}</td><td class="car">${c === YOU ? '' : '▸'}</td></tr>`).join('')}</table></section>`;
+}
+S.results = () => [
+  mast('Mini Draft', 'Final · 16 teams') + tally('4th', '84', '89', { youK: 'Place', midK: 'Score', aiK: 'Best' }) +
+  `<section><h3>Your draft</h3><div class="kv"><span>Picks</span><b>7 · 26 · 39 · 58 · 71</b></div><div class="kv"><span>Caps used</span><b>69.6 / 70</b></div><div class="kv"><span>Behind the best</span><b>5</b></div></section>` +
+  actions('<button class="btn go">New draft</button><div class="btn2"><button class="btn line">Share</button><button class="btn line">Challenge</button></div><button class="btn line">Rematch this board</button>'),
+  resultsMain(false) + `<button class="btn go phone-only">New draft</button>`];
+S.dailyResults = () => [
+  mast('Daily Mini Draft', 'Tuesday, Oct 21 · final', true) + tally('4th', '84', '89', { youK: 'Place', midK: 'Score', aiK: 'Best' }) +
+  `<section><h3>Streak<span>6 days</span></h3><div class="streak"><div class="got"><b>3</b><span>Flame</span></div><div class="next"><b>7</b><span>Gold draw</span></div><div><b>14</b><span>Gold frames</span></div><div><b>30</b><span>Retro backs</span></div><div><b>100</b><span>Hall of Fame</span></div></div><p class="empty-note" style="margin-top:8px">One more day: the gold draw button.</p></section>` +
+  `<section><h3>Next board</h3><div class="kv"><span>New draft in</span><b>7h 12m</b></div></section>` +
+  actions('<div class="btn2"><button class="btn line">Copy result</button><button class="btn line">Share</button></div>'),
+  resultsMain(true) + `<button class="btn line phone-only">Copy result</button>`];
+
+const key = (location.hash || '#pick').slice(1);
+const [a, m] = S[key]();
+document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
+</script>
+</body>
+</html>
