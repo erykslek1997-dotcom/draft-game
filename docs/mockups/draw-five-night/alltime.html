@@ -100,6 +100,27 @@
 .dboard9 td.e .pk { color: #3A3A3C; }
 .dboard9 td.tn { font-size: 15px; }
 @media (max-width: 600px) { .dboard9 { width: 1000px; } .dboard9 th:first-child { width: 52px; } .dboard9 .nk { display: none; } }
+.bgrid h3 a { color: var(--ink2); }
+.bg-row { display: grid; grid-template-columns: 34px repeat(16, minmax(0, 1fr)); gap: 4px; margin-bottom: 4px; }
+.bg-head { margin-bottom: 6px; }
+.bg-rl { font: 600 11px var(--num); color: var(--ink3); display: flex; flex-direction: column; justify-content: center; }
+.bg-rl i { font-style: normal; color: var(--ink3); }
+.bg-team { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding-bottom: 4px; }
+.bg-team b { font: 700 12px var(--cond); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.bg-team.you { box-shadow: inset 0 -2px 0 var(--red); }
+.bg-team.you b { color: var(--ink); }
+.bg-cell { height: 66px; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; overflow: hidden; }
+.bg-cell.filled { background: var(--card); color: var(--cink); }
+.bg-cell.filled img, .bg-cell.filled .ini { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #E2DBCB; display: grid; place-items: center; font: 700 11px var(--cond); font-style: normal; color: var(--cink2); }
+.bg-cell.filled small { font: 700 9px Inter, sans-serif; color: var(--cink2); letter-spacing: 0.04em; }
+.bg-cell.filled b { font: 700 13px/1 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 2px; }
+.bg-cell.filled.you { box-shadow: 0 0 0 2px var(--gold); }
+.bg-cell.empty { border: 1px dashed #2E2F33; font: 500 11px var(--num); color: #45433F; }
+.bg-cell.empty.you { border-color: var(--ink3); color: var(--ink2); }
+.bg-cell.clock { border: 2px solid var(--red); }
+.bg-cell.clock small { font: 700 9px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); text-align: center; }
+.bg-cell.clock b { font: 800 16px var(--cond); color: var(--ink); }
+@media (max-width: 600px) { .bgrid { overflow-x: auto; } .bg-row { width: 900px; } }
 /* playoffs bracket */
 .bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; align-items: center; }
 .round h4 { margin: 0 0 10px; font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
@@ -179,7 +200,7 @@ function nine(st, bench, { open = [] } = {}) {
 const leftDraft = () => mast('All-Time Draft', 'Round 3 of 9 · pick 40 of 144') + tally('66.9', '100.9', '3/9') + capbar(34) + `<p class="sub-note keep"><b>66.9 caps</b> for seven spots · about 9.6 a pick</p>` +
   `<section><h3>Your Big Board<span>starred</span></h3><ol class="bboard"><li class="gone">Tim Duncan<span>taken #33</span></li><li>Kevin Garnett<span>19.4</span></li><li>Dennis Rodman<span>6.9</span></li><li>Rudy Gobert<span>9.1</span></li></ol></section>` +
   `<section class="latest-picks"><h3>Latest picks<span>around the league</span></h3><table class="log">${[[39, 'ANC', 'Jason Kidd, PG', 15], [38, 'SFE', 'Allen Iverson, PG', 22], [37, 'HON', 'Dikembe Mutombo, C', 8.1], [36, 'REN', 'Moses Malone, C', 20], [35, 'KEN', 'Isiah Thomas, PG', 17], [34, 'DUL', 'Scottie Pippen, SF', 15]].map(([n, c, w, f], i) => `<tr class="a ${i === 0 ? 'latest' : ''}"><td class="n">${n}</td><td class="w">${c}</td><td class="p">${w}</td><td class="c">${f}</td></tr>`).join('')}</table></section>` +
-  actions('<button class="btn line">Draft board</button><button class="btn line">Phone the desk · 3 left</button>');
+  actions('<button class="btn line">Show draft board</button><button class="btn line">Phone the desk · 3 left</button>');
 
 const S = {};
 S.draft = () => [leftDraft(),
@@ -250,16 +271,25 @@ const ORDER = ['BIS', 'DUL', 'KEN', 'REN', 'HON', 'SFE', 'ANC', 'TUL', 'ELP', 'D
 const PICKS = ['M. Jordan SG', 'L. James SF', 'K. Abdul-Jabbar C', 'K. Bryant SG', "S. O'Neal C", 'S. Curry PG', 'M. Johnson PG', 'K. Durant SF', 'L. Bird SF', 'W. Chamberlain C', 'N. Jokic C', 'G. Antetokounmpo PF', 'K. Leonard SF', 'D. Wade SG', 'J. Harden SG', 'O. Robertson PG',
   'L. Doncic PG', 'J. Embiid C', 'D. Robinson C', 'C. Paul PG', 'J. Stockton PG', 'K. Malone PF', 'C. Barkley PF', 'D. Nowitzki PF', 'G. Payton PG', 'S. Nash PG', 'B. Russell C', 'J. West SG', 'A. Davis PF', 'T. McGrady SF', 'H. Olajuwon C', 'P. Pierce SF',
   'T. Duncan PF', 'S. Pippen SF', 'I. Thomas PG', 'M. Malone C', 'D. Mutombo C', 'A. Iverson PG', 'J. Kidd PG'];
-S.board = () => {
+const FULL = { 'M. Jordan': 'michael-jordan', 'L. James': 'lebron-james', 'K. Abdul-Jabbar': 'kareem-abdul-jabbar', 'K. Bryant': 'kobe-bryant', "S. O'Neal": 'shaquille-oneal', 'S. Curry': 'stephen-curry', 'M. Johnson': 'magic-johnson', 'K. Durant': 'durant', 'L. Bird': 'larry-bird', 'W. Chamberlain': 'wilt-chamberlain', 'N. Jokic': 'nikola-jokic', 'G. Antetokounmpo': 'giannis-antetokounmpo', 'K. Leonard': 'kawhi-leonard', 'D. Wade': 'dwyane-wade', 'J. Harden': 'james-harden', 'O. Robertson': 'oscar-robertson', 'L. Doncic': 'luka-doncic', 'J. Embiid': 'joel-embiid', 'D. Robinson': 'david-robinson', 'C. Paul': 'chris-paul', 'J. Stockton': 'john-stockton', 'K. Malone': 'karl-malone', 'C. Barkley': 'charles-barkley', 'D. Nowitzki': 'dirk-nowitzki', 'G. Payton': 'gary-payton', 'S. Nash': 'steve-nash', 'B. Russell': 'bill-russell', 'J. West': 'jerry-west', 'A. Davis': 'anthony-davis', 'T. McGrady': 'tracy-mcgrady', 'H. Olajuwon': 'hakeem-olajuwon', 'P. Pierce': 'paul-pierce', 'T. Duncan': 'tim-duncan', 'S. Pippen': 'scottie-pippen', 'I. Thomas': 'isiah-thomas', 'M. Malone': 'moses-malone', 'D. Mutombo': 'dikembe-mutombo', 'A. Iverson': 'allen-iverson', 'J. Kidd': 'jason-kidd' };
+function boardGrid() {
   const cell = {};
   let n = 0;
   for (let r = 0; r < 9; r++) for (let i = 0; i < 16; i++) { const t = ORDER[r % 2 ? 15 - i : i]; n++; (cell[t] ??= [])[r] = n; }
-  const byPick = (k) => PICKS[k - 1];
-  return [leftDraft(),
-  prompt('Draft board · Round 3 · Pick 40', 'Who took whom', 'Sixteen teams, nine rounds, snake order. You are on the clock at 40.') +
-  `<div class="phone-only" style="font-size:14px;color:var(--ink3);font-style:italic">Swipe the table sideways for later rounds.</div>
-  <div style="overflow-x:auto"><table class="dboard dboard9"><tr><th>Team</th>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((r) => `<th>R${r}</th>`).join('')}</tr>${ORDER.map((c) => `<tr class="${c === YOU ? 'you' : ''}"><td class="tn">${tm(c)}<span class="nk">${T[c][1]}</span></td>${cell[c].map((k) => { const v = byPick(k); if (v) { const i = v.lastIndexOf(' '); return `<td title="Pick ${k}"><span class="pk">${k}</span>${v.slice(0, i)}<small>${v.slice(i + 1)}</small></td>`; } if (k === 40) return `<td class="clk"><span class="pk">${k}</span>on the clock</td>`; return `<td class="e"><span class="pk">${k}</span></td>`; }).join('')}</tr>`).join('')}</table></div>`];
-};
+  const youCol = ORDER.indexOf(YOU);
+  const head = `<div class="bg-row bg-head"><span class="bg-rl"></span>${ORDER.map((c) => `<span class="bg-team ${c === YOU ? 'you' : ''}">${tm(c)}<b>${c === YOU ? 'You' : T[c][0]}</b></span>`).join('')}</div>`;
+  const rows = [0, 1, 2, 3].map((r) => `<div class="bg-row"><span class="bg-rl">R${r + 1}<i>${r % 2 ? '←' : '→'}</i></span>${ORDER.map((c) => {
+    const k = cell[c][r]; const v = PICKS[k - 1];
+    if (v) { const i = v.lastIndexOf(' '); const nm = v.slice(0, i); const pos = v.slice(i + 1); const img = FULL[nm]; return `<span class="bg-cell filled ${c === YOU ? 'you' : ''}">${img ? `<img src="heads/${img}.png" alt="">` : `<em class="ini">${ini(nm)}</em>`}<small>${pos}</small><b>${nm.split(' ').slice(1).join(' ')}</b></span>`; }
+    if (k === 40) return `<span class="bg-cell clock"><small>On the clock</small><b>#40</b></span>`;
+    return `<span class="bg-cell empty ${c === YOU ? 'you' : ''}">${k}</span>`;
+  }).join('')}</div>`).join('');
+  return `<section class="bgrid"><h3>Draft board<span>rounds 1–4 · <a href="#">rounds 5–9 ▾</a> · <a href="#">hide board</a></span></h3>${head}${rows}</section>`;
+}
+S.board = () => [leftDraft().replace('Show draft board', 'Hide draft board'),
+  boardGrid() + nine(['payton', '', 'durant', '', ''], []) +
+  prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
+  `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}<div class="more">Showing 5 of 1,522 player stretches · <a href="#">See more</a></div></section>`];
 const key = (location.hash || '#draft').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
