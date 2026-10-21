@@ -640,6 +640,14 @@ skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 
 
 ## Etap 2. Symulacje
 
+- [ ] **Mecz samych piątek: za dużo punktów (sprawdzić w kalibracji, tydzień 2–3)** — test
+      2026-10-16 (Penny 1994-96, Klay 2015-17, Kawhi 2015-17, Kirilenko 2003-05, AD 2017-19, bez
+      zmęczenia): przeciw losowym piątkom z całej puli 133–108 na 48 min (100–81 przy 4×9 min,
+      wygrane 94,6%), przeciw losowym mocnym piątkom (TAL 80+) 94–90 przy 4×9 min, wygrane 64%.
+      Ok. 133 pkt na 48 min to dużo jak na mecz bez ławki — tempo albo skuteczność w trybie piątek
+      (Draw Five, daily) mogą być zawyżone. Porównać z ligą (`seasonBaselines`) i ze średnią w
+      sezonie pełnych drużyn.
+
 Decyzje (2026-09-30):
 - Sezon zasadniczy szybki (bez odtwarzania meczów); dokładna symulacja dopiero w play-offach.
 - Zderzenie stylów drużyn (rim pressure vs ochrona obręczy, spacing vs obwód/switch, gwiazda 1-na-1
