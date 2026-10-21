@@ -9,8 +9,8 @@
 <link rel="stylesheet" href="draft.css">
 <style>
 /* warnings during the pick: a printed notice, red mark for a problem, one action */
-.notice { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 10px 0 10px 12px; border-left: 3px solid var(--red); margin: 4px 0; }
-.notice > i { font: 800 20px/1 var(--cond); font-style: normal; color: var(--red); }
+.notice { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0 8px 14px; border-left: 3px solid var(--red); margin: 0 0 14px; }
+.notice > i { font: 800 18px/1 var(--cond); font-style: normal; color: var(--red); text-align: center; }
 .notice p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink2); }
 .notice p b { color: var(--ink); font-weight: 600; }
 .notice a { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; }
@@ -82,7 +82,7 @@ function ticker(rows, { now } = {}) {
 }
 function plist(keys, { hot, no = [] } = {}) {
   return `<table class="plist"><colgroup><col style="width:52px"><col><col class="c-hide" style="width:118px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col style="width:84px"><col style="width:96px"></colgroup>
-  <tr><th></th><th>Player</th><th class="c-hide">Tier</th><th class="num c-hide">Pts</th><th class="num c-hide">Reb</th><th class="num c-hide">Ast</th><th class="num c-hide">3PA</th><th class="num">Caps</th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos} · ${x.y}</b> <i>· ${x.r}</i><span class="mst">${x.st.join(' / ')}</span></div></td><td class="tier c-hide ${x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td>${x.st.map((v) => `<td class="num c-hide">${v}</td>`).join('')}<td class="num c-hide">${x.tpa ?? '—'}</td><td class="cap num">${x.f}</td><td class="act"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
+  <tr><th></th><th>Player</th><th class="c-hide">Tier</th><th class="num c-hide">Pts</th><th class="num c-hide">Reb</th><th class="num c-hide">Ast</th><th class="num c-hide">3PA</th><th class="num">Caps</th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos} · ${x.y}</b> <i>· ${x.r}</i><span class="mst">${x.st.join(' / ')}</span></div></td><td class="tier c-hide ${x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td>${x.st.map((v) => `<td class="num c-hide">${Number(v).toFixed(1)}</td>`).join('')}<td class="num c-hide">${x.tpa != null ? Number(x.tpa).toFixed(1) : '—'}</td><td class="cap num">${x.f}</td><td class="act"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
 }
 const filters = (hidden = []) => `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span></div>`;
 

@@ -235,3 +235,4 @@
 .stand tr.you td.rk { box-shadow: none; padding-left: 8px; color: var(--you-ink); }
 .stand tr.you td.nm b, .stand tr.you td.sc { color: var(--you-ink); }
 .stand tr.you td.nm i, .stand tr.you td.who, .stand tr.you td.car { color: var(--you-ink2); }
+.ptabs .pt:first-child { padding-left: 0; }
