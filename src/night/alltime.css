@@ -860,3 +860,18 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 
 /* keyframes cannot nest inside .nt */
 @keyframes load-indet { from { margin-left: 0; } to { margin-left: 70%; } }
+/* React glue for the menu */
+.nt {
+  .m2-modes li { display: block; padding: 0; }
+  .m2-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; padding: 16px 0; width: 100%; text-align: left; }
+  .m2-row:hover b, .m2-row:hover .m2-go { text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 4px; }
+  .m2-row > div span { font-size: 14px; color: var(--ink2); }
+  .m2-resume button { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .m2-d { text-align: left; width: 100%; }
+  .m2-d:disabled { cursor: default; }
+  .m2-foot button { color: var(--ink3); text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
+  .m2-note { margin: 12px 0 0; font-size: 13px; font-style: italic; color: var(--ink3); text-align: center; }
+  .m2-note b { font-style: normal; color: var(--ink2); font-weight: 600; }
+  .howto-tabs { margin: 12px 0 4px; }
+}
+@media (max-width: 600px) { .nt .m2-row { grid-template-columns: 26px minmax(0, 1fr) auto; } .nt .m2-row em { display: none; } }

@@ -1,30 +1,26 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { SettingsButton, SettingsModal } from './components/SettingsModal';
 import './App.css';
 import './night/index.css';
 import { BRAND } from './brand';
+import { NightMenu } from './night/Menu';
+import { NightConfirm } from './night/Dialogs';
 import { stepDone } from './components/pathProgress';
 // Small modules with no player data: the franchise pool (names, codes, logo parts; its one engine
 // import is type-only) and the logo kit — safe to pull into the intro screen's eager bundle
 // without regressing the "zero engine dependency until Start Draft" load-time split this file's
 // own docstrings already care about (see DISPLAY_ROSTER_SIZE's comment below).
-import { randomFranchiseName } from './engine/teamNames';
-import { franchiseByName } from './data/franchises';
-import { TeamLogo } from './components/TeamLogo';
+import { randomFranchiseName, teamCodes } from './engine/teamNames';
 import { initialTeamsForSeed } from './engine/draftSetup';
 import { ROSTER_SIZE } from './engine/rosterConstants';
 import { randomSeed } from './engine/rng';
 import type { Team } from './engine/types';
-import DraftLottery from './components/DraftLottery';
+import { NightLottery } from './night/league';
 import { CapsInfoHost } from './components/CapIcon';
 import { clearDraftSave, readDraftSaveSummary, type DraftSaveSummary } from './draftSaveSummary';
 import { takeModeChallengeFromUrl, type ModeChallenge } from './modeChallenge';
 import { LIVE_TEST_BENCH_FOR_TESTING } from './components/testingFlags';
-import { DAILY_REPLAY_FOR_TESTING, currentStreak, dailyEntry, dailySeed, localDayKey, yesterdayJokers } from './components/dailyProgress';
-// Seed-only (rng + a list of names): safe for the menu, which must not pull the engine in.
-import { dailyMeta, JOKERS_MAX, JOKERS_MIN } from './engine/dailyMeta';
-import { dailyDayLabel, dailyDraftDay, type DailyDraftDay, type DailyDraftMode } from './dailyDraftDay';
-import { dailyDraftResult, dailyDraftStreak, ordinal } from './components/dailyDraftProgress';
+import { DAILY_REPLAY_FOR_TESTING, localDayKey } from './components/dailyProgress';
+import type { DailyDraftDay, DailyDraftMode } from './dailyDraftDay';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 
 /**
@@ -71,123 +67,6 @@ function useLoadStatus(): LoadStatus {
   return loadStatus;
 }
 
-/**
- * 2026-09-28, the user: "okej, teraz daily … na ten moment tylko slot machine", then "zamiast
- * oddzielnego paska to po prostu w menu przy panelu slot machine". The daily board is a strip
- * under the Slot Machine card: today's date, the streak, and the day's score once played.
- */
-function DailyStrip({ onPlay }: { onPlay: () => void }) {
-  const today = localDayKey();
-  const played = dailyEntry(today);
-  const streak = currentStreak(today);
-  // 2026-09-28, Daily Slot Machine 2.0: the opponent and where the Joker shows up are known from the
-  // seed alone (`dailyMeta` is rng-only, no engine), but never the Joker's name — that's on the board.
-  const meta = dailyMeta(dailySeed(today));
-  const yesterday = yesterdayJokers(today);
-  const game = played?.game;
-  return (
-    <button type="button" className={`mode-card-daily${played ? ' is-played' : ''}${streak.best >= 3 ? ' is-hot' : ''}`} onClick={onPlay}>
-      <span className="mode-card-daily-label at-cond">📅 Daily board</span>
-      <span className="mode-card-daily-state">
-        {played ? `✓ played · ${played.composite}` : 'one try today'}
-        {DAILY_REPLAY_FOR_TESTING && ' · testing: replay on'}
-      </span>
-      {streak.current > 0 && <span className="mode-card-daily-streak">🔥 {streak.current}</span>}
-      <span className="mode-card-daily-meta">
-        {game ? (
-          <>
-            {game.you > game.them ? 'Beat' : 'Lost to'} the {game.opponent} <b>{game.you}–{game.them}</b>
-          </>
-        ) : (
-          <>
-            Tonight: <b>vs {meta.opponent.short}</b> · 🃏 {JOKERS_MIN}–{JOKERS_MAX} Jokers in the deck
-          </>
-        )}
-      </span>
-      {yesterday.length > 0 && (
-        <span className="mode-card-daily-meta">
-          Yesterday’s {yesterday.length > 1 ? 'Jokers' : 'Joker'}:{' '}
-          {yesterday.map((j, i) => (
-            <span key={j.slot}>
-              {i > 0 && ' · '}
-              <b>{j.name}</b> ({j.legend ? 'legend' : 'scrub'})
-            </span>
-          ))}
-        </span>
-      )}
-    </button>
-  );
-}
-
-/**
- * 2026-10-16, the daily drafts: the same strip under the Mini Draft card — the day's cap and rule
- * on the card (the user: "na karcie"), then the result and the streak once played. One try a day;
- * the testing replay switch (`DAILY_REPLAY_FOR_TESTING`) keeps it open.
- * While testing, "Reroll" deals another day's draft (the user, 2026-10-16: "na czas testingu
- * uruchom możliwość rerolla daily challenge") — played like today's, its result never kept.
- */
-function DailyDraftStrip({
-  mode,
-  onPlay,
-  offset = 0,
-  onReroll,
-}: {
-  mode: DailyDraftMode;
-  onPlay: (day: DailyDraftDay) => void;
-  /** Days from today of the rerolled testing day; 0 = today. */
-  offset?: number;
-  onReroll?: (offset: number) => void;
-}) {
-  const today = localDayKey();
-  const testing = offset !== 0;
-  const dayKey = testing ? localDayKey(new Date(Date.now() + offset * 864e5)) : today;
-  const day: DailyDraftDay = { ...dailyDraftDay(mode, dayKey), ...(testing ? { testing: true } : {}) };
-  const played = testing ? null : dailyDraftResult(mode, today);
-  // The All-Time daily keeps its own save: left halfway, the strip takes you back to it.
-  const saved = mode !== 'mini' && !played && !testing ? readDraftSaveSummary(mode === 'bomb' ? 'bomb' : 'daily') : null;
-  const inProgress = saved?.day === today ? saved : null;
-  const streak = dailyDraftStreak(mode, today);
-  const open = !played || DAILY_REPLAY_FOR_TESTING;
-  return (
-    <>
-      <button
-        type="button"
-        className={`mode-card-daily${played ? ' is-played' : ''}${streak >= 3 ? ' is-hot' : ''}`}
-        onClick={() => open && onPlay(day)}
-        disabled={!open}
-      >
-        <span className="mode-card-daily-label at-cond">{mode === 'bomb' ? '💣 Daily bomb' : '📅 Daily draft'}</span>
-        <span className="mode-card-daily-state">
-          {played
-            ? `✓ ${ordinal(played.place)} of ${played.field} · ${played.overall}${played.season ? ` · ${played.season.wins}-${played.season.losses}` : ''}`
-            : inProgress
-              ? `continue · ${inProgress.humanPicks}/${inProgress.rosterSize} picks`
-              : testing
-                ? `testing: ${dailyDayLabel(day.day)}`
-                : 'one try today'}
-          {DAILY_REPLAY_FOR_TESTING && !testing && ' · testing: replay on'}
-        </span>
-        {streak > 0 && !testing && <span className="mode-card-daily-streak">🔥 {streak}</span>}
-        <span className="mode-card-daily-meta">
-          <b>{day.cap} caps</b> · {day.bomb ? `💣 ${day.ruleLine}` : day.rule.kind === 'open' ? 'Open day — no extra rule' : day.ruleLine}
-        </span>
-      </button>
-      {DAILY_REPLAY_FOR_TESTING && onReroll && (
-        <span className="mode-card-daily-test">
-          <button type="button" onClick={() => onReroll(1 + Math.floor(Math.random() * 365))}>
-            🎲 Reroll the day (testing)
-          </button>
-          {testing && (
-            <button type="button" onClick={() => onReroll(0)}>
-              Back to today
-            </button>
-          )}
-        </span>
-      )}
-    </>
-  );
-}
-
 type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily' | 'livetest';
 
 /** Roster-size figure shown in the Draft mode card's own one-line description, kept in sync with
@@ -213,12 +92,6 @@ const DISPLAY_BENCH_SLOT_COUNT = 4;
  * imported, same reasoning as the `DISPLAY_*` constants above: App.tsx must stay free of any
  * engine import until a mode is actually chosen. Keep these three in sync with their real-mode
  * counterparts if the rules ever change. */
-const MODE_HOW_TO_PLAY_TITLE: Record<'draft' | 'bestfive' | 'quickfive', string> = {
-  draft: 'All-Time Draft',
-  bestfive: 'Draw Five',
-  quickfive: 'Mini Draft',
-};
-
 const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: string; body: string }[]> = {
   draft: [
     { title: 'Draft', body: `16 teams take turns, ${DISPLAY_ROSTER_SIZE} rounds — one player each round. You control one team; the rest are CPU.` },
@@ -279,7 +152,7 @@ function IntroDataStatus() {
   if (stage === 'idle' || progress === null) return null;
   const ready = stage !== 'download';
   return (
-    <p className={`intro-data-status ${ready ? 'is-ready' : ''}`} role="status">
+    <p className="m2-note" role="status">
       {ready ? '✓ Player data ready' : `Loading player data… ${progress !== null ? Math.round(progress * 100) : 0}%`}
     </p>
   );
@@ -317,7 +190,6 @@ function App() {
   const savedDraft = useMemo<DraftSaveSummary | null>(() => (view === 'intro' ? readDraftSaveSummary() : null), [view]);
   const [resumeDraft, setResumeDraft] = useState(false);
   const [confirmNewDraft, setConfirmNewDraft] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   // 2026-09-25, user's ask ("zamiast długiego paska ładowania skracamy go czasowo, ładowanie
   // nadal w tle"): a new draft opens straight on its lottery — seed and teams need no player
   // data (engine/draftSetup.ts) — while the data keeps loading behind it. The draft module is
@@ -355,13 +227,6 @@ function App() {
   // GameShell -> createDraft -> createInitialTeams (draftSetup.ts), which seats it in the human's slot
   // and deals the 15 rivals from the rest of the pool.
   const [teamName, setTeamName] = useState(() => randomFranchiseName());
-  const yourFranchise = franchiseByName(teamName);
-  // 2026-09-17, user's own ask: a "?" on each mode card itself, so the rules are a glance away
-  // right on the menu instead of only reachable after already committing to a mode.
-  const [expandedHelp, setExpandedHelp] = useState<'draft' | 'bestfive' | 'quickfive' | null>(null);
-  function toggleHelp(mode: 'draft' | 'bestfive' | 'quickfive') {
-    setExpandedHelp((current) => (current === mode ? null : mode));
-  }
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [view]);
@@ -372,16 +237,11 @@ function App() {
     return () => clearTimeout(t);
   }, []);
   useEffect(() => {
-    if (!expandedHelp && !confirmNewDraft) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setExpandedHelp(null);
-        setConfirmNewDraft(false);
-      }
-    }
+    if (!confirmNewDraft) return;
+    const onKeyDown = (e: KeyboardEvent) => e.key === 'Escape' && setConfirmNewDraft(false);
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [expandedHelp, confirmNewDraft]);
+  }, [confirmNewDraft]);
 
   return (
     <div className="app-shell">
@@ -398,260 +258,72 @@ function App() {
           instead of sitting on the plain app-wide light/dark tokens as a visibly different-looking
           "old UI" leftover — the first screen every session sees now matches the rest of the app. */}
       {view === 'intro' && (
-        <div className="at-shell at-intro at-intro-terminal at-calm">
-          {/* 2026-09-17, user's own ask on a genuinely wide monitor: the whole screen used to be
-              one narrow centred column pinned near the top, leaving most of a large display
-              empty — `.intro-columns` splits it into a hero (wordmark + team name, vertically
-              centred) on the left and the mode list as its own column on the right, once there's
-              real width to spend (see the `min-width` breakpoint below); narrower viewports keep
-              the original single stacked column, just flowing top to bottom. */}
-          <div className="intro-settings">
-            <SettingsButton onClick={() => setSettingsOpen(true)} />
-          </div>
-          {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
-          <div className="intro-columns">
-            <div className="intro-hero">
-              <header className="app-header">
-                {/* 2026-09-17, user's own ask ("czy jest możliwość połączenie modern designu z
-                    starszym?"): a genuinely old-basketball touch on an otherwise modern/terminal
-                    screen, kept to one small stamp rather than reskinning anything — full concept
-                    (era-aware player cards) prototyped separately and parked, see
-                    [[heritage_board_era_cards_concept]]. 1946 is the real first season this game's
-                    own data covers, not a decorative number. */}
-                <span className="heritage-badge" aria-hidden>
-                  Est. 1946
-                </span>
-                <h1>Draftverse</h1>
-              </header>
-              {sharedDraftSeed !== null && (
-                <p className="shared-seed-banner">
-                  🔗 Duel loaded — Start Draft gives you the exact same 16-team board a friend already played.
-                </p>
-              )}
-              {savedDraft && (
-                <div className="saved-draft-banner">
-                  <span>
-                    Draft in progress — <b>{savedDraft.teamName}</b>, {savedDraft.humanPicks}/{savedDraft.rosterSize} picks made.
-                  </span>
-                  <button type="button" className="saved-draft-continue at-cond" onClick={continueDraft}>
-                    Continue draft
-                  </button>
-                </div>
-              )}
-              <div className="team-name-row">
-                <span id="intro-team-label" className="team-name-label">
-                  Your team
-                </span>
-                <div className="team-name-input-row">
-                  <div className="team-pick" role="group" aria-labelledby="intro-team-label">
-                    <TeamLogo name={teamName} size={40} />
-                    <span className="team-pick-name">
-                      <small>{yourFranchise?.city}</small>
-                      <b>{yourFranchise?.name ?? teamName}</b>
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="secondary-btn team-name-randomize"
-                    title="Pick another team"
-                    aria-label="Pick another team"
-                    onClick={() => setTeamName(randomFranchiseName(teamName))}
-                  >
-                    🎲
-                  </button>
-                </div>
-              </div>
-            </div>
-            {/* 2026-09-11, mode-card grid — the intro used to stack every mode as same-weight
-                buttons in a column; three real modes now (Draft/Best 5/Quick 5) makes that
-                column read as a growing pile instead of a set of real choices. User's own steer
-                (shown a competitor's icon-grid mode picker): "tak, dobry kierunek... nie kopiuję
-                1:1 wyglądu... naszej już ustalonej ciemnej tablicy NBA-touch, żeby siatka
-                wyglądała jak część tej samej gry" — structure only (icon + name + one line +
-                a NEW badge for a genuinely new mode), our own dark board tokens throughout, not
-                the reference's own colors/branding. Draft keeps the visual weight it earns from
-                every other piece of this screen (hero, tagline, How to Play) already being about
-                it — the other two are real, equal-footing choices, not afterthoughts. */}
-            <div className="mode-grid mode-grid--path">
-              {/* 2026-09-26, the user's learning path: Best 5 (caps, positions, how a five is
-                  judged) -> Quick 5 (a short live draft) -> the All-Time Draft. The cards read as
-                  those three steps, each with a tick once it's been played through. */}
-              <div className="mode-card-wrap">
-                <button className="mode-card" onClick={() => setView('bestfive')}>
-                  <span className="mode-card-icon" aria-hidden>
-                    🃏
-                  </span>
-                  <span className="mode-card-step at-cond">Step 1 · learn the caps{stepDone('bestfive') ? ' ✓' : ''}</span>
-                  <span className="mode-card-name at-cond">Draw Five</span>
-                  <span className="mode-card-desc">Draw four cards per position, build a five under the cap — then beat the AI’s five.</span>
-                </button>
-                <button
-                  type="button"
-                  className="mode-card-help"
-                  aria-label="How to play: Draw Five"
-                  aria-haspopup="dialog"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleHelp('bestfive');
-                  }}
-                >
-                  ?
-                </button>
-                <DailyStrip onPlay={() => setView('daily')} />
-              </div>
-              <div className="mode-card-wrap">
-                <button
-                  className="mode-card"
-                  onClick={() => {
-                    setMiniDaily(null);
-                    setView('quickfive');
-                  }}
-                >
-                  <span className="mode-card-icon" aria-hidden>
-                    ⚡
-                  </span>
-                  <span className="mode-card-step at-cond">Step 2 · your first draft{stepDone('quickfive') ? ' ✓' : ''}</span>
-                  <span className="mode-card-name at-cond">Mini Draft</span>
-                  <span className="mode-card-desc">5 rounds, {DISPLAY_QUICK_CAP_LIMIT} caps to spend — a real draft in a few minutes.</span>
-                </button>
-                <button
-                  type="button"
-                  className="mode-card-help"
-                  aria-label="How to play: Mini Draft"
-                  aria-haspopup="dialog"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleHelp('quickfive');
-                  }}
-                >
-                  ?
-                </button>
-                <DailyDraftStrip
-                  mode="mini"
-                  offset={dailyReroll.mini}
-                  onReroll={(n) => setDailyReroll((r) => ({ ...r, mini: n }))}
-                  onPlay={(day) => {
-                    setMiniDaily(day);
-                    setView('quickfive');
-                  }}
-                />
-              </div>
-              <div className="mode-card-wrap">
-                <button className="mode-card mode-card--featured" onClick={startNewDraft}>
-                  <span className="mode-card-icon" aria-hidden>
-                    🏀
-                  </span>
-                  <span className="mode-card-step at-cond">Step 3 · the full game{stepDone('draft') ? ' ✓' : ''}</span>
-                  <span className="mode-card-name at-cond">All-Time Draft</span>
-                  <span className="mode-card-desc">16 teams, {DISPLAY_ROSTER_SIZE} rounds — real AI reacting to every pick you make.</span>
-                </button>
-                <button
-                  type="button"
-                  className="mode-card-help"
-                  aria-label="How to play: All-Time Draft"
-                  aria-haspopup="dialog"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleHelp('draft');
-                  }}
-                >
-                  ?
-                </button>
-                {(['alltime', 'bomb'] as const).map((m) => (
-                  <DailyDraftStrip
-                    key={m}
-                    mode={m}
-                    offset={dailyReroll[m]}
-                    onReroll={(n) => setDailyReroll((r) => ({ ...r, [m]: n }))}
-                    onPlay={(day) => {
-                      setAllTimeDaily(day);
-                      setResumeDraft(false);
-                      setEarlyDraft(null);
-                      setConfirmNewDraft(false);
-                      void prefetchGameData();
-                      setView('game');
-                    }}
-                  />
-                ))}
-              </div>
-              {LIVE_TEST_BENCH_FOR_TESTING && (
-                <div className="mode-card-wrap">
-                  <button className="mode-card" onClick={() => setView('livetest')}>
-                    <span className="mode-card-icon" aria-hidden>
-                      🧪
-                    </span>
-                    <span className="mode-card-step at-cond">Testing</span>
-                    <span className="mode-card-name at-cond">Live game bench</span>
-                    <span className="mode-card-desc">Two random fives play a live game — check it against the engine.</span>
-                  </button>
-                </div>
-              )}
-              <IntroDataStatus />
-            </div>
-          </div>
-          {confirmNewDraft && savedDraft && (
-            <div className="mode-help-backdrop" onClick={() => setConfirmNewDraft(false)}>
-              <div
-                className="mode-help-modal saved-draft-confirm-modal"
-                role="alertdialog"
-                aria-modal="true"
-                aria-label="Start a new draft?"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="mode-help-modal-head">
-                  <span className="mode-help-modal-title at-cond">Start a new draft?</span>
-                </div>
-                <p className="saved-draft-confirm-text">
-                  Your draft in progress ({savedDraft.teamName}, {savedDraft.humanPicks}/{savedDraft.rosterSize} picks) will be
-                  discarded.
-                </p>
-                <div className="saved-draft-confirm-actions">
-                  <button type="button" className="secondary-btn" onClick={continueDraft} autoFocus>
-                    Continue that draft
-                  </button>
-                  <button type="button" className="primary-btn" onClick={startNewDraft}>
-                    Start new draft
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {expandedHelp && (
-            <div className="mode-help-backdrop" onClick={() => setExpandedHelp(null)}>
-              <div
-                className="mode-help-modal"
-                role="dialog"
-                aria-modal="true"
-                aria-label={`How to play: ${MODE_HOW_TO_PLAY_TITLE[expandedHelp]}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="mode-help-modal-head">
-                  <span className="mode-help-modal-title at-cond">{MODE_HOW_TO_PLAY_TITLE[expandedHelp]}</span>
-                  <button type="button" className="mode-help-modal-close" aria-label="Close" onClick={() => setExpandedHelp(null)}>
-                    ✕
-                  </button>
-                </div>
-                <ol className="how-to-play-panel mode-help-modal-panel">
-                  {MODE_HOW_TO_PLAY[expandedHelp].map((item) => (
-                    <li key={item.title}>
-                      <b>{item.title}.</b> {item.body}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-          )}
-        </div>
+        <NightMenu
+          teamName={teamName}
+          onTeamReroll={() => setTeamName(randomFranchiseName(teamName))}
+          savedDraft={savedDraft}
+          sharedSeed={sharedDraftSeed}
+          onContinue={continueDraft}
+          onMode={(m) => {
+            if (m === 'draft') startNewDraft();
+            else if (m === 'quickfive') {
+              setMiniDaily(null);
+              setView('quickfive');
+            } else setView('bestfive');
+          }}
+          onDailyDrawFive={() => setView('daily')}
+          onDailyDraft={(day) => {
+            if (day.mode === 'mini') {
+              setMiniDaily(day);
+              setView('quickfive');
+              return;
+            }
+            setAllTimeDaily(day);
+            setResumeDraft(false);
+            setEarlyDraft(null);
+            setConfirmNewDraft(false);
+            void prefetchGameData();
+            setView('game');
+          }}
+          dailyOffset={dailyReroll}
+          onReroll={(m, n) => setDailyReroll((r) => ({ ...r, [m]: n }))}
+          howTo={MODE_HOW_TO_PLAY}
+          dataStatus={<IntroDataStatus />}
+          stepDone={(m) => stepDone(m)}
+          onLiveTest={LIVE_TEST_BENCH_FOR_TESTING ? () => setView('livetest') : undefined}
+          confirm={
+            confirmNewDraft && savedDraft ? (
+              <NightConfirm
+                title="Start a new draft?"
+                lead={`Your draft in progress (${savedDraft.teamName}, ${savedDraft.humanPicks} of ${savedDraft.rosterSize} picks) will be discarded.`}
+                yes="Start new draft"
+                no="Continue that draft"
+                onYes={startNewDraft}
+                onNo={continueDraft}
+              />
+            ) : undefined
+          }
+        />
       )}
 
       {view === 'game' && earlyDraft && !resumeDraft && !earlyLotteryDone && (
-        <DraftLottery
+        <NightLottery
           teams={earlyDraft.teams}
           rounds={ROSTER_SIZE}
+          title="All-Time Draft"
+          sub={`16 teams · ${DISPLAY_ROSTER_SIZE} rounds · a season after`}
+          codeOf={(t) => teamCodes(earlyDraft.teams).get(t.id) ?? ''}
+          capLimit={DISPLAY_CAP_LIMIT}
+          howItWorks={[
+            ['Each round', '1 player'],
+            ['Order', 'Snake'],
+            ['Roster', `5 + ${DISPLAY_BENCH_SLOT_COUNT} bench`],
+            ['Rivals', '15 CPU GMs'],
+            ['Then', 'Season + playoffs'],
+          ]}
           onDone={() => setEarlyLotteryDone(true)}
           onRevealed={prepareDraft}
-          howToPlay={MODE_HOW_TO_PLAY.draft}
-          onExit={() => setView('intro')}
+          links={{ onMenu: () => setView('intro') }}
         />
       )}
       {view === 'game' && (resumeDraft || !earlyDraft || earlyLotteryDone) && (
