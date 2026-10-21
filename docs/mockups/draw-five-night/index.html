@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draw Five night</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root {
+  --bg: #0B0D11; --ink: #ECE6D7; --ink2: #A9A395; --ink3: #77736A; --rule: #26272A; --rule2: #ECE6D7;
+  --red: #E0525A; --gold: #E5C06A; --card: #F4EFE3; --cink: #1E1C18; --cink2: #5B564C; --cline: #D6CDB8;
+  --cond: 'Barlow Condensed', Inter, sans-serif; --num: 'JetBrains Mono', monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, system-ui, sans-serif; }
+button { font: inherit; color: inherit; }
+.game { max-width: 1360px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 36px; min-height: 100vh; }
+aside { display: flex; flex-direction: column; gap: 26px; }
+main { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+i.note, .it { font-style: italic; }
+
+/* masthead + tally */
+.mast { border-top: 5px double var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 10px 0 8px; }
+.mast b { display: block; font: 800 34px/1 var(--cond); letter-spacing: 0.02em; text-transform: uppercase; }
+.mast b.daily { color: var(--gold); }
+.mast small { display: block; margin-top: 6px; font: italic 500 14px Inter, sans-serif; color: var(--ink2); }
+.tally { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; margin-top: -12px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.t .k { display: block; font: 700 12px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; white-space: nowrap; }
+.t b { display: block; font: 600 38px/1 var(--num); letter-spacing: -0.02em; }
+.t.ai { text-align: right; }
+.t.ai b { color: var(--ink2); }
+.t.ai b.name { font: 800 26px/0.95 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; color: var(--ink2); }
+.t.mid { text-align: center; padding: 0 6px; }
+.t.mid b { font-size: 20px; color: var(--gold); padding-bottom: 6px; }
+.t.mid b:not(.clock):not(:only-child) { }
+.t.mid b.clock { color: var(--ink); border: 1.5px solid var(--red); border-radius: 3px; padding: 4px 8px; font-size: 22px; }
+.capbar { height: 4px; background: var(--rule); margin-top: -12px; }
+.capbar i { display: block; height: 100%; background: var(--gold); }
+.sub-note { margin: -16px 0 0; font-size: 14px; font-style: italic; color: var(--ink2); }
+.sub-note b { font-style: normal; color: var(--ink); }
+.sub-note b.g { color: var(--gold); }
+
+/* section heads */
+h3 { margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1.5px solid var(--rule2); padding-bottom: 6px; }
+h3 span { font: italic 500 13px Inter, sans-serif; text-transform: none; letter-spacing: 0; color: var(--ink3); }
+h3.red { color: var(--red); border-color: var(--red); }
+h3.gold { color: var(--gold); border-color: var(--gold); }
+
+/* the draft log + kv */
+.log { width: 100%; border-collapse: collapse; }
+.log td { padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.log td.n { width: 26px; color: var(--ink3); font-family: var(--num); font-size: 12px; }
+.log td.w { width: 36px; font-size: 12px; font-weight: 700; color: var(--ink3); }
+.log tr.a td.p { color: var(--ink2); }
+.log td.c { text-align: right; font: 600 13px var(--num); color: var(--ink2); }
+.log tr.latest td { color: var(--ink); }
+.log tr.latest td.n { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; }
+.kv { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.kv b { font: 600 14px var(--num); color: var(--ink); }
+.kv b.g { color: var(--gold); }
+.empty-note { margin: 0; font-size: 14px; font-style: italic; color: var(--ink2); line-height: 1.5; }
+.order { font: 700 14px var(--cond); letter-spacing: 0.04em; color: var(--ink3); }
+.order u { text-decoration: none; color: var(--red); }
+
+/* buttons */
+.actions { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+.btn { display: block; width: 100%; border-radius: 3px; padding: 13px; font: 800 18px var(--cond); letter-spacing: 0.06em; text-transform: uppercase; text-align: center; cursor: pointer; }
+.btn.off { border: 1.5px solid #38383A; background: transparent; color: var(--ink3); }
+.btn.go { border: 0; background: var(--ink); color: var(--bg); }
+.btn.line { border: 1.5px solid var(--ink2); background: transparent; color: var(--ink); }
+.btn2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.links { display: flex; gap: 18px; }
+.links a { color: var(--ink2); font-size: 14px; text-decoration: underline; text-decoration-color: #4A4844; text-underline-offset: 3px; }
+
+/* opponent row */
+.opp { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+.opp li { padding: 6px 12px; min-width: 0; border-left: 1px solid var(--rule); display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
+.opp li:first-child { border-left: 0; padding-left: 0; }
+.opp img, .opp .ini { grid-row: span 3; width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #1D1E21; display: grid; place-items: center; font: 700 13px var(--cond); color: var(--ink3); }
+.opp .pos { font: 700 12px Inter, sans-serif; color: var(--ink3); }
+.opp .who { font: 700 18px/1.1 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opp .c { font: 500 12px var(--num); color: var(--ink3); white-space: nowrap; }
+.opp li.e { display: block; }
+.opp li.e span { display: block; }
+.opp li.e .who { color: var(--ink3); font: italic 500 15px Inter, sans-serif; }
+.opp li.new .who { color: var(--red); }
+
+/* your five */
+.slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.slot { height: 158px; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+.slot.filled { background: var(--card); color: var(--cink); justify-content: flex-start; }
+.slot.filled .top { align-self: stretch; display: flex; justify-content: space-between; padding: 5px 9px; margin-bottom: 8px; background: var(--team); color: #fff; font: 700 12px Inter, sans-serif; letter-spacing: 0.06em; }
+.slot img, .slot .ini { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; background: #E2DBCB; display: grid; place-items: center; font: 700 18px var(--cond); color: var(--cink2); }
+.slot .nm { margin-top: 6px; font: 700 19px/1.05 var(--cond); }
+.slot .sb { margin-top: 2px; font: 500 11px var(--num); color: var(--cink2); }
+.slot.empty { border: 1.5px dashed #38383A; color: #45433F; font: 800 34px var(--cond); }
+.slot.empty small, .slot.active small { font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+.slot.active { border: 2px solid var(--red); color: var(--red); font: 800 34px var(--cond); }
+.slot.active small { color: var(--red); }
+.slot.land { box-shadow: 0 0 0 2px var(--gold); }
+
+/* prompt */
+.prompt { border-top: 1.5px solid var(--rule2); padding-top: 12px; }
+.prompt .eb { display: block; font: 700 12px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); }
+.prompt .eb.gold { color: var(--gold); }
+.prompt h2 { margin: 2px 0 4px; font: 800 46px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.01em; }
+.prompt p { margin: 0; font-size: 15px; font-style: italic; color: var(--ink2); }
+.prompt p b { font-style: normal; color: var(--gold); }
+.prompt p b.w { color: var(--ink); }
+.reveal { margin: 0; padding: 8px 0 8px 14px; border-left: 3px solid var(--gold); font-size: 15px; font-style: italic; color: var(--ink2); }
+.reveal b { font-style: normal; color: var(--gold); }
+
+/* cards */
+.hand { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.card { background: var(--card); color: var(--cink); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.card .top { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px 7px 12px; background: var(--team); color: #fff; font: 700 13px Inter, sans-serif; letter-spacing: 0.08em; }
+.card .cost { font: 700 14px var(--num); background: var(--card); color: var(--cink); border-radius: 99px; padding: 1px 9px; letter-spacing: 0; }
+.card .pic { display: flex; justify-content: center; padding-top: 12px; }
+.card img, .card .ini { width: 86px; height: 86px; border-radius: 50%; object-fit: cover; background: #E2DBCB; border: 1.5px solid var(--cink); display: grid; place-items: center; font: 800 28px var(--cond); color: var(--cink2); }
+.card .nm { text-align: center; padding: 10px 8px 0; font: 700 26px/1 var(--cond); }
+.card .sb { text-align: center; margin-top: 4px; font: 500 12px var(--num); color: var(--cink2); }
+.card .roles { text-align: center; padding: 10px 10px 14px; font-size: 13px; font-style: italic; color: var(--cink2); }
+.card .st { margin-top: auto; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1.5px solid var(--cink); }
+.card .st div { text-align: center; padding: 9px 0; }
+.card .st div + div { border-left: 1px solid var(--cline); }
+.card .st b { display: block; font: 600 19px var(--num); }
+.card .st span { font: 700 10px Inter, sans-serif; letter-spacing: 0.1em; color: var(--cink2); }
+.card.sel { box-shadow: 0 0 0 2px var(--red); transform: translateY(-6px); }
+.card.dim { opacity: 0.35; }
+.card .over { margin-top: auto; text-align: center; padding: 10px; border-top: 1.5px solid var(--cink); font: italic 600 13px Inter, sans-serif; color: #A3282F; }
+.card .took { position: absolute; right: 8px; top: 40px; font: italic 700 13px Inter, sans-serif; color: #fff; background: var(--red); padding: 2px 8px; border-radius: 3px; }
+.card.joker { background: var(--gold); }
+.card.joker .top { background: var(--cink); color: var(--gold); }
+.card.joker .q { margin: 14px auto 0; width: 86px; height: 86px; border-radius: 50%; border: 1.5px solid var(--cink); display: grid; place-items: center; font: 800 56px/1 var(--cond); }
+.card.joker .nm { font-size: 24px; }
+.card.joker .sb { color: #5E4614; }
+.card.joker .st { grid-template-columns: 1fr 1fr; }
+.card.joker .st div + div { border-left-color: rgba(30, 28, 24, 0.25); }
+.card.joker .st span { color: #5E4614; }
+.hand[style*="--n:5"] .card .nm { font-size: 23px; }
+.hand[style*="--n:5"] .card .st b { font-size: 16px; }
+.hand[style*="--n:5"] .card img, .hand[style*="--n:5"] .card .q { width: 76px; height: 76px; }
+
+/* start stage */
+.stage { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)) 220px; gap: 16px; }
+.ph { min-height: 300px; border: 1.5px dashed #38383A; border-radius: 4px; display: grid; place-items: center; font: 800 40px var(--cond); color: #38383A; }
+.deal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; border-top: 1.5px solid var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 16px 0; }
+.deal p { margin: 0; font-size: 13px; font-style: italic; color: var(--ink2); line-height: 1.45; }
+.deal p b { font-style: normal; color: var(--gold); }
+.back { width: 96px; height: 134px; border-radius: 4px; border: 1.5px solid var(--ink); background: repeating-linear-gradient(45deg, #121418 0 6px, #17191E 6px 12px); display: grid; place-items: center; box-shadow: 4px 4px 0 #1B1C20, 8px 8px 0 #141518; }
+.mark { position: relative; width: 40px; height: 40px; border-radius: 8px; border: 1.5px solid var(--ink); background: var(--bg); display: grid; place-items: center; font: 800 28px/1 var(--cond); }
+.mark::after { content: ''; position: absolute; right: 5px; bottom: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+/* tale of the tape */
+.tape { width: 100%; border-collapse: collapse; }
+.tape td { padding: 9px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.tape td.pos { width: 70px; text-align: center; font: 800 20px var(--cond); color: var(--ink3); }
+.tape .pl { display: flex; align-items: center; gap: 12px; }
+.tape td.r .pl { flex-direction: row-reverse; text-align: right; }
+.tape img, .tape .ini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #1D1E21; display: grid; place-items: center; font: 700 14px var(--cond); color: var(--ink3); flex: none; }
+.tape b { display: block; font: 700 20px/1.1 var(--cond); }
+.tape td.r b { color: var(--ink2); }
+.tape small { font: 500 12px var(--num); color: var(--ink3); }
+
+/* live game */
+.speeds { display: flex; gap: 14px; font: 600 15px var(--num); color: var(--ink3); }
+.speeds u { text-decoration: none; color: var(--ink); border-bottom: 2px solid var(--red); }
+.ts { width: 100%; border-collapse: collapse; }
+.ts td { padding: 7px 0; border-bottom: 1px solid var(--rule); font: 600 14px var(--num); }
+.ts td.m { text-align: center; font: 700 12px Inter, sans-serif; letter-spacing: 0.08em; color: var(--ink3); }
+.ts td.r { text-align: right; color: var(--ink2); }
+.split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; }
+.feed .ln { display: grid; grid-template-columns: 46px 30px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 15px; color: var(--ink2); }
+.feed .ln b { color: var(--ink); font-weight: 600; }
+.feed .t { font: 500 12px var(--num); color: var(--ink3); }
+.feed .w { font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.feed .ln.y .w { color: var(--ink); }
+.feed .sc { font: 600 13px var(--num); color: var(--ink3); }
+.feed .ln.hot { box-shadow: inset 3px 0 0 var(--red); padding-left: 10px; color: var(--ink); }
+.feed .q { padding: 10px 0; font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+.box { width: 100%; border-collapse: collapse; }
+.box th { font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; color: var(--ink3); text-align: right; padding: 0 0 6px; }
+.box th:first-child { text-align: left; }
+.box td { padding: 7px 0; border-bottom: 1px solid var(--rule); text-align: right; font: 600 14px var(--num); color: var(--ink2); }
+.box td:first-child { text-align: left; font: 700 17px var(--cond); color: var(--ink); }
+.box td.hi { color: var(--gold); }
+.tabs { display: flex; gap: 18px; margin-bottom: 8px; font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
+.tabs u { text-decoration: none; color: var(--ink); border-bottom: 2px solid var(--ink); }
+
+/* results */
+.headline { border-top: 5px double var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 12px 0 10px; display: flex; align-items: baseline; gap: 16px; }
+.headline .eb { font: 700 12px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
+.headline b { font: 800 34px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.01em; }
+.headline i { margin-left: auto; font-size: 14px; color: var(--ink2); }
+.verdict { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 30px; align-items: end; }
+.verdict .eb { font: 700 12px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
+.verdict h2 { margin: 2px 0 6px; font: 800 64px/0.9 var(--cond); text-transform: uppercase; }
+.verdict p { margin: 0; font-size: 15px; font-style: italic; color: var(--ink2); max-width: 54ch; }
+.nums { display: grid; grid-template-columns: repeat(3, 110px); }
+.nums div { padding: 0 14px; border-left: 1px solid var(--rule); text-align: right; }
+.nums span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); white-space: nowrap; }
+.nums b { display: block; margin-top: 6px; font: 600 40px/1 var(--num); color: var(--ink2); }
+.nums .you b { color: var(--gold); }
+.profile { width: 100%; border-collapse: collapse; }
+.profile td { padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.profile td.l { width: 120px; font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink); }
+.profile td.v { width: 60px; font: 600 16px var(--num); color: var(--ink); }
+.profile td.b { width: 80px; font: 500 13px var(--num); color: var(--ink3); white-space: nowrap; padding-right: 10px; }
+.profile .bar { position: relative; height: 4px; background: var(--rule); }
+.profile .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink2); }
+.profile .bar u { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--gold); }
+.profile tr.weak td.l, .profile tr.weak td.v { color: var(--red); }
+.profile tr.weak .bar i { background: var(--red); }
+.film p { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; font-size: 15px; line-height: 1.45; color: var(--ink2); }
+.film p i { font: 800 20px/1.1 var(--cond); font-style: normal; }
+.film p b { color: var(--ink); font-weight: 600; }
+.cmp { display: grid; grid-template-columns: 60px repeat(5, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+.cmp .rl { font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); display: flex; align-items: center; }
+.mini { background: var(--card); color: var(--cink); border-radius: 3px; overflow: hidden; }
+.mini .top { display: flex; justify-content: space-between; padding: 3px 7px; background: var(--team); color: #fff; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; }
+.mini .bd { display: flex; align-items: center; gap: 8px; padding: 6px 8px; }
+.mini img, .mini .ini { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #E2DBCB; flex: none; display: grid; place-items: center; font: 700 12px var(--cond); color: var(--cink2); }
+.mini b { display: block; font: 700 16px/1.05 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini span.s { font: 500 10px var(--num); color: var(--cink2); }
+.mini.hit { box-shadow: 0 0 0 2px var(--gold); }
+.mini .ck { margin-left: auto; font: 800 16px var(--cond); color: #8A6A1E; }
+.streak { display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 4px; }
+.streak div { text-align: center; padding: 6px 0; border-left: 1px solid var(--rule); }
+.streak div:first-child { border-left: 0; }
+.streak b { display: block; font: 600 16px var(--num); color: var(--ink3); }
+.streak span { display: block; font-size: 10px; line-height: 1.2; color: var(--ink3); margin-top: 2px; }
+.streak .got b { color: var(--gold); }
+.streak .next b { color: var(--ink); text-decoration: underline; text-decoration-color: var(--red); text-underline-offset: 4px; }
+.recap p { margin: 0; padding: 8px 0; border-bottom: 1px solid var(--rule); display: flex; gap: 12px; align-items: baseline; font-size: 15px; font-style: italic; color: var(--ink2); }
+.recap p b { font-style: normal; color: var(--ink); }
+.recap p .res { margin-left: auto; font: 700 12px Inter, sans-serif; font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+.recap p .res.g { color: var(--gold); }
+.recap p .jk { font: 800 18px var(--cond); font-style: normal; color: var(--gold); }
+
+/* phone */
+.phone-only { display: none !important; }
+@media (max-width: 600px) {
+  .game { grid-template-columns: 1fr; padding: 14px 16px 22px; gap: 22px; }
+  aside { gap: 18px; }
+  aside > :not(.keep) { display: none; }
+  .phone-only { display: block !important; }
+  .t b { font-size: 30px; }
+  .opp { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .opp li { display: block; padding: 4px 4px; text-align: center; }
+  .opp img, .opp .ini { margin: 0 auto 4px; width: 30px; height: 30px; }
+  .opp li span { display: block; }
+  .opp .who { font-size: 13px; white-space: normal; line-height: 1.05; }
+  .opp .c, .opp .pos { display: none !important; }
+  .opp li.e .pos { display: block !important; font: 700 16px var(--cond); }
+  .slots { gap: 6px; }
+  .slot { height: 116px; }
+  .slot img, .slot .ini { width: 32px; height: 32px; font-size: 12px; }
+  .slot .nm { font-size: 14px; }
+  .slot .sb { display: none; }
+  .slot.filled .top { font-size: 10px; padding: 3px 5px; }
+  .slot.empty, .slot.active { font-size: 26px; }
+  .slot small { font-size: 11px !important; }
+  .prompt h2 { font-size: 34px; }
+  .hand { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+  .hand > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .card .nm { font-size: 21px !important; }
+  .card img, .card .ini, .card.joker .q { width: 56px !important; height: 56px !important; font-size: 30px; }
+  .card .roles { padding: 8px 6px 10px; font-size: 12px; }
+  .card .st b { font-size: 15px !important; }
+  .split { grid-template-columns: 1fr; gap: 22px; }
+  .verdict { grid-template-columns: 1fr; gap: 14px; }
+  .verdict h2 { font-size: 48px; }
+  .nums { grid-template-columns: repeat(3, 1fr); }
+  .nums div:first-child { border-left: 0; padding-left: 0; text-align: left; }
+  .nums b { font-size: 30px; }
+  .headline { flex-wrap: wrap; gap: 4px 12px; }
+  .headline b { font-size: 26px; }
+  .headline i { margin-left: 0; flex-basis: 100%; }
+  .profile td.l { width: 84px; font-size: 14px; }
+  .profile td.b { width: 70px; font-size: 12px; }
+  .cmp { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+  .cmp .rl { grid-column: 1 / -1; }
+  .mini .bd { flex-direction: column; gap: 3px; padding: 5px 3px; text-align: center; }
+  .mini b { font-size: 12px; }
+  .mini span.s { display: none; }
+  .mini .ck { margin: 0; }
+  .feed .ln { grid-template-columns: 38px 26px minmax(0, 1fr) auto; font-size: 14px; }
+  .recap p { flex-wrap: wrap; font-size: 14px; }
+}
+</style>
+</head>
+<body>
+<div class="game" id="app"></div>
+<script>
+const P = {
+  simmons: ['Ben Simmons', 'B. Simmons', 'PHI', '#006BB6', '2017–19', 'PG', 12, [16.3, 8.5, 8.0], 'Playmaker · Ball hawk', 'simmons'],
+  dgreen: ['Danny Green', 'D. Green', 'SAS', '#6E7378', '2013–15', 'SG', 7.5, [10.5, 4.0, 1.8], 'Spot-up shooter · Wing stopper', 'green'],
+  durant: ['Kevin Durant', 'K. Durant', 'GSW', '#1D428A', '2017–19', 'SF', 18, [26.8, 6.8, 5.6], 'Shot creator · Shot blocker', 'durant'],
+  haslem: ['Udonis Haslem', 'U. Haslem', 'MIA', '#98002E', '2006–08', 'PF', 7.2, [9.4, 7.9, 1.1], 'Roll man · Rebounder', 'haslem'],
+  camby: ['Marcus Camby', 'M. Camby', 'DEN', '#0E2240', '2006–08', 'C', 9.6, [11.2, 12.9, 3.4], 'Roll man · Rim protector', 'marcus-camby'],
+  strickland: ['Rod Strickland', 'R. Strickland', 'POR', '#E03A3E', '1995–97', 'PG', 14, [17.9, 4.6, 9.3], 'Floor general', 'strickland'],
+  kittles: ['Kerry Kittles', 'K. Kittles', 'NJN', '#1F4FA0', '2001–03', 'SG', 11, [13.8, 4.4, 2.5], 'Movement shooter', 'kittles'],
+  prince: ['Tayshaun Prince', 'T. Prince', 'DET', '#C8102E', '2004–06', 'SF', 11, [14.1, 5.0, 2.7], 'Spot-up shooter · Wing stopper', null],
+  kemp: ['Shawn Kemp', 'S. Kemp', 'SEA', '#00653A', '1994–96', 'PF', 13.9, [19.4, 11.2, 2.4], 'Finisher · Shot blocker', 'kemp'],
+  wallace: ['Rasheed Wallace', 'R. Wallace', 'POR', '#E03A3E', '1999–01', 'PF', 13.8, [16.9, 7.2, 1.9], 'Post scorer · Post defender', 'wallace'],
+  webber: ['Chris Webber', 'C. Webber', 'SAC', '#5A2D81', '2000–02', 'PF', 22.4, [26.1, 11.1, 4.5], 'Playmaking big · Rebounder', 'webber'],
+  noah: ['Joakim Noah', 'J. Noah', 'CHI', '#CE1141', '2012–14', 'C', 9.8, [12.6, 11.3, 5.4], 'Playmaking big · Rim protector', 'joakim-noah'],
+  mutombo: ['Dikembe Mutombo', 'D. Mutombo', 'ATL', '#C8102E', '1996–98', 'C', 8.1, [12.3, 11.6, 1.2], 'Roll man · Rim protector', 'dikembe-mutombo'],
+  lopez: ['Brook Lopez', 'B. Lopez', 'MIL', '#00471B', '2019–21', 'C', 10.4, [12.0, 4.9, 1.0], 'Stretch big · Rim protector', 'brook-lopez'],
+  bwallace: ['Ben Wallace', 'B. Wallace', 'DET', '#C8102E', '2002–04', 'C', 6.0, [7.1, 15.4, 1.8], 'Roll man · Rim protector', 'ben-wallace'],
+  olajuwon: ['Hakeem Olajuwon', 'H. Olajuwon', 'HOU', '#CE1141', '1993–95', 'C', 21.8, [27.5, 11.4, 3.5], 'Post scorer · Rim protector', 'hakeem-olajuwon'],
+  garnett: ['Kevin Garnett', 'K. Garnett', 'BOS', '#007A33', '2008–10', 'PF', 13.5, [17.6, 8.6, 3.0], 'Versatile big · Switchable big', 'kevin-garnett'],
+  battier: ['Shane Battier', 'S. Battier', 'HOU', '#CE1141', '2007–09', 'PF', 7.0, [9.4, 5.1, 2.1], 'Spot-up shooter · Wing stopper', 'shane-battier'],
+  kidd: ['Jason Kidd', 'J. Kidd', 'NJN', '#1F4FA0', '2002–04', 'PG', 14.0, [16.5, 6.6, 8.9], 'Floor general · Ball hawk', 'jason-kidd'],
+  korver: ['Kyle Korver', 'K. Korver', 'ATL', '#C8102E', '2014–16', 'SG', 8.3, [11.1, 3.6, 2.4], 'Off-screen shooter', 'kyle-korver'],
+};
+const p = (k) => { const a = P[k]; return { n: a[0], s: a[1], t: a[2], c: a[3], y: a[4], pos: a[5], f: a[6], st: a[7], r: a[8], img: a[9] }; };
+const ini = (n) => n.split(' ').map((w) => w[0]).join('').slice(0, 2);
+const face = (x) => x.img ? `<img src="heads/${x.img}.png" alt="">` : `<span class="ini">${ini(x.n)}</span>`;
+const SL = ['PG', 'SG', 'SF', 'PF', 'C'];
+
+const mast = (title, sub, daily) => `<div class="mast keep"><b class="${daily ? 'daily' : ''}">${title}</b><small>${sub}</small></div>`;
+const tally = (you, mid, ai, { youK = 'You', midK = 'Cap', aiK = 'AI', clock = false, name = false } = {}) =>
+  `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b class="${clock ? 'clock' : ''}">${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b class="${name ? 'name' : ''}">${ai}</b></div></div>`;
+const capbar = (pct) => `<div class="capbar keep"><i style="width:${pct}%"></i></div>`;
+const log = (rows, latest = true) => `<section><h3>The draft so far</h3><table class="log">${rows.map(([n, w, k], i) => { const x = p(k); return `<tr class="${w === 'AI' ? 'a' : 'y'} ${latest && i === rows.length - 1 ? 'latest' : ''}"><td class="n">${n}</td><td class="w">${w}</td><td class="p">${x.n}, ${x.pos}</td><td class="c">${x.f}</td></tr>`; }).join('')}</table></section>`;
+const links = `<div class="links"><a href="#">← Menu</a><a href="#">How to play</a><a href="#">Settings</a></div>`;
+const actions = (btn) => `<div class="actions">${btn}${links}</div>`;
+function oppRow(keys, { title = 'AI · Pro', note, newK, nextPos } = {}) {
+  const filled = keys.filter(Boolean).length;
+  return `<section><h3>${title}<span>${note ?? `${filled} of 5`}</span></h3><ul class="opp">${SL.map((s, i) => {
+    const k = keys[i];
+    if (!k) return `<li class="e"><span class="pos">${s}</span><span class="who">${s === nextPos ? 'picks next' : '—'}</span></li>`;
+    const x = typeof k === 'string' ? p(k) : k;
+    return `<li class="${newK === k ? 'new' : ''}">${face(x)}<span class="pos">${s}</span><span class="who">${x.n}</span><span class="c">${x.y}${x.f ? ' · ' + x.f : ''}</span></li>`;
+  }).join('')}</ul></section>`;
+}
+function five(keys, { active, land, next = [] } = {}) {
+  return `<section><h3>Your five<span>${keys.filter(Boolean).length} of 5</span></h3><div class="slots">${SL.map((s, i) => {
+    const k = keys[i];
+    if (k) { const x = p(k); return `<div class="slot filled ${land === k ? 'land' : ''}" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div>${face(x)}<div class="nm">${x.s}</div><div class="sb">${x.y} · ${x.f}</div></div>`; }
+    if (s === active) return `<div class="slot active">${s}<small>your pick</small></div>`;
+    const n = next.indexOf(s);
+    return `<div class="slot empty">${s}${n >= 0 ? `<small>${['next', '3rd', '4th', '5th'][n]}</small>` : ''}</div>`;
+  }).join('')}</div></section>`;
+}
+const prompt = (eb, h, line, ebCls = '') => `<div class="prompt"><span class="eb ${ebCls}">${eb}</span><h2>${h}</h2><p>${line}</p></div>`;
+function card(k, cls = '') {
+  const x = p(k);
+  return `<div class="card ${cls}" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span class="cost">${x.f}</span></div><div class="pic">${face(x)}</div><div class="nm">${x.n}</div><div class="sb">${x.pos} · ${x.y}</div><div class="roles">${x.r}</div>${cls.includes('over') ? '<div class="over">Over the cap by 0.9</div>' : `<div class="st"><div><b>${x.st[0]}</b><span>PTS</span></div><div><b>${x.st[1]}</b><span>REB</span></div><div><b>${x.st[2]}</b><span>AST</span></div></div>`}${cls.includes('took') ? '<span class="took">AI takes</span>' : ''}</div>`;
+}
+const joker = (price, pos) => `<div class="card joker"><div class="top"><span>JOKER</span><span class="cost">${price}</span></div><div class="q">?</div><div class="nm">Legend or scrub?</div><div class="sb">${pos} · face down</div><div class="roles" style="color:#5E4614">You find out when you pick him.</div><div class="st"><div><b>50%</b><span>LEGEND</span></div><div><b>50%</b><span>SCRUB</span></div></div></div>`;
+const back = `<div class="back"><span class="mark">D</span></div>`;
+const BULLS = [{ n: 'John Paxson', y: '1991–92' }, { n: 'Michael Jordan', y: '1991–92', img: 'michael-jordan' }, { n: 'Scottie Pippen', y: '1991–92', img: 'scottie-pippen' }, { n: 'Horace Grant', y: '1991–92' }, { n: 'Bill Cartwright', y: '1991–92', img: 'bill-cartwright' }];
+const YOU5 = ['simmons', 'dgreen', 'durant', 'haslem', 'camby'];
+const AI5 = ['strickland', 'kittles', 'prince', 'kemp', 'noah'];
+const BEST5 = ['kidd', 'korver', 'durant', 'garnett', 'camby'];
+const S = {};
+
+S.start = () => [
+  mast('Draw Five', 'Pick 1 of 5 · against the AI (Pro)') + tally('0.0', '62', '0.0') + capbar(0) + `<p class="sub-note keep"><b class="g">62 caps</b> for five spots</p>` +
+  `<section><h3>The draft so far</h3><p class="empty-note">No picks yet. You draw first, then the AI drafts from its own deal: same deck, same cap.</p></section>` +
+  `<section><h3>How it works</h3><div class="kv"><span>Positions</span><b>PG → C</b></div><div class="kv"><span>Cards a spot</span><b>4</b></div><div class="kv"><span>Picks</span><b>Final</b></div><div class="kv"><span>Then</span><b>Live game</b></div></section>` +
+  actions('<button class="btn off">Submit lineup — 5 to go</button>'),
+  oppRow([], { nextPos: null }) + five([], { active: 'PG', next: ['SG', 'SF', 'PF', 'C'] }) +
+  prompt('On the clock · Pick 1', 'Point guard', 'Four cards off the deck. <b>62 caps</b> for five spots.') +
+  `<div class="stage"><div class="ph">?</div><div class="ph">?</div><div class="ph">?</div><div class="ph">?</div><div class="deal">${back}<button class="btn go">Draw 4 point guards</button><p>Every player costs his shots a game in caps.</p></div></div>` +
+  `<button class="btn off phone-only">Submit lineup — 5 to go</button>`];
+
+S.pick = () => [
+  mast('Draw Five', 'Pick 4 of 5 · against the AI (Pro)') + tally('37.5', '62', '36.0') + capbar(60) + `<p class="sub-note keep"><b>24.5 caps</b> left for PF and C</p>` +
+  log([[1, 'You', 'simmons'], [1, 'AI', 'strickland'], [2, 'You', 'dgreen'], [2, 'AI', 'kittles'], [3, 'You', 'durant'], [3, 'AI', 'prince']]) +
+  actions('<button class="btn off">Submit lineup — 2 to go</button>'),
+  oppRow(['strickland', 'kittles', 'prince'], { nextPos: 'PF' }) + five(['simmons', 'dgreen', 'durant'], { active: 'PF', next: ['C'] }) +
+  prompt('On the clock · Pick 4', 'Power forward', '<b>24.5 caps</b> for two spots. Webber won\'t fit.') +
+  `<div class="hand">${card('wallace', 'sel')}${card('kemp')}${card('haslem')}${card('webber', 'dim over')}</div>` +
+  `<button class="btn off phone-only">Submit lineup — 2 to go</button>`];
+
+S.ai = () => [
+  mast('Draw Five', 'Pick 4 of 5 · against the AI (Pro)') + tally('44.7', '62', '36.0') + capbar(72) + `<p class="sub-note keep"><b>17.3 caps</b> left for C</p>` +
+  log([[2, 'You', 'dgreen'], [2, 'AI', 'kittles'], [3, 'You', 'durant'], [3, 'AI', 'prince'], [4, 'You', 'haslem']]) +
+  actions('<button class="btn off">Submit lineup — 1 to go</button>'),
+  oppRow(['strickland', 'kittles', 'prince'], { nextPos: 'PF' }) + five(['simmons', 'dgreen', 'durant', 'haslem'], { land: 'haslem', next: ['C'] }) +
+  prompt('AI on the clock · Pick 4', 'Power forward', 'The AI drew four. It takes <b class="w">Shawn Kemp</b>.') +
+  `<div class="hand">${card('kemp', 'sel took')}${card('garnett', 'dim')}${card('wallace', 'dim')}${card('battier', 'dim')}</div>`];
+
+S.ready = () => [
+  mast('Draw Five', 'Five set · against the AI (Pro)') + tally('54.3', '62', '59.5') + capbar(88) + `<p class="sub-note keep"><b>7.7 caps</b> under the cap</p>` +
+  log([[3, 'You', 'durant'], [3, 'AI', 'prince'], [4, 'You', 'haslem'], [4, 'AI', 'kemp'], [5, 'You', 'camby'], [5, 'AI', 'noah']]) +
+  actions('<button class="btn go">Submit lineup</button>'),
+  oppRow(AI5, { newK: 'noah' }) + five(YOU5, { land: 'camby' }) +
+  prompt('Five set', 'Lock it in', 'Picks are final. Your five plays the AI live.', 'gold') +
+  `<section><h3>Tale of the tape<span>you · AI</span></h3><table class="tape">${SL.map((s, i) => { const a = p(YOU5[i]), b = p(AI5[i]); return `<tr><td><div class="pl">${face(a)}<div><b>${a.n}</b><small>${a.y} · ${a.f} caps</small></div></div></td><td class="pos">${s}</td><td class="r"><div class="pl">${face(b)}<div><b>${b.n}</b><small>${b.y} · ${b.f} caps</small></div></div></td></tr>`; }).join('')}</table></section>` +
+  `<button class="btn go phone-only">Submit lineup</button>`];
+
+S.dailyStart = () => [
+  mast('Daily Draw Five', 'Tuesday, Oct 21 · one board for everyone', true) + tally('0.0', '64', "'92<br>Bulls", { aiK: 'Tonight', name: true }) + capbar(0) + `<p class="sub-note keep"><b class="g">64 caps</b> for five spots</p>` +
+  `<section><h3>Today</h3><div class="kv"><span>Streak</span><b class="g">5 days</b></div><div class="kv"><span>Order</span><span class="order"><u>PF</u> → C → PG → SG → SF</span></div><div class="kv"><span>Cards a spot</span><b>5</b></div><div class="kv"><span>Jokers</span><b>1–2 face down</b></div><div class="kv"><span>Tries</span><b>One</b></div></section>` +
+  actions('<button class="btn off">Submit lineup — 5 to go</button>'),
+  oppRow(BULLS, { title: 'Game of the day · 1991–92 Chicago Bulls', note: 'they play your five after the last pick' }) + five([], { active: 'PF', next: ['C', 'PG', 'SG', 'SF'] }) +
+  prompt('On the clock · Pick 1', 'Power forward', 'Today starts at PF. <b>64 caps</b>, one try.') +
+  `<div class="stage" style="--n:5"><div class="ph">?</div><div class="ph">?</div><div class="ph">?</div><div class="ph">?</div><div class="ph">?</div><div class="deal">${back}<button class="btn go">Draw 5 power forwards</button><p>A gold Joker may hide in today's hands: <b>50% legend, 50% scrub</b>.</p></div></div>` +
+  `<button class="btn off phone-only">Submit lineup — 5 to go</button>`];
+
+S.dailyJoker = () => [
+  mast('Daily Draw Five', 'Tuesday, Oct 21 · pick 2 of 5', true) + tally('7.2', '64', "'92<br>Bulls", { aiK: 'Tonight', name: true }) + capbar(11) + `<p class="sub-note keep"><b>56.8 caps</b> left for four spots</p>` +
+  `<section><h3>Today</h3><div class="kv"><span>Streak</span><b class="g">5 days</b></div><div class="kv"><span>Order</span><span class="order">PF → <u>C</u> → PG → SG → SF</span></div><div class="kv"><span>Jokers left</span><b>1 of 2</b></div></section>` +
+  log([[1, 'You', 'haslem']]) + actions('<button class="btn off">Submit lineup — 4 to go</button>'),
+  oppRow(BULLS, { title: "Game of the day · '92 Bulls", note: 'after the last pick' }) + five([null, null, null, 'haslem', null], { active: 'C', next: ['PG', 'SG', 'SF'] }) +
+  `<p class="reveal">The PF Joker was <b>Larry Bird</b> 1985–87, a legend. He got away.</p>` +
+  prompt('On the clock · Pick 2', 'Center', 'Five cards. One of them is a <b>Joker</b>.') +
+  `<div class="hand" style="--n:5">${card('mutombo')}${card('lopez')}${joker(9.9, 'C')}${card('bwallace')}${card('olajuwon')}</div>` +
+  `<button class="btn off phone-only">Submit lineup — 4 to go</button>`];
+
+const FEED = [['2:13', 'y', '<b>Durant</b> pull-up three. Good. 27 points.', '88–84', 1], ['2:38', 'a', '<b>Kemp</b> lob from Strickland. Dunk.', '85–84'], ['2:55', 'y', '<b>Camby</b> blocks Noah at the rim.', '85–82'], ['3:20', 'y', '<b>Simmons</b> to <b>Haslem</b>, 16-footer. Good.', '85–82'], ['3:41', 'a', '<b>Kittles</b> corner three. Miss.', '83–82'], ['4:02', 'a', '<b>Strickland</b> floater. Good.', '83–82'], ['4:30', 'y', '<b>D. Green</b> steal, run-out layup.', '83–80'], ['4:52', 'a', '<b>Noah</b> offensive board, putback.', '81–80'], ['5:15', 'y', '<b>Durant</b> fadeaway over Prince. Good.', '81–78'], ['5:40', 'a', '<b>Prince</b> three from the wing. Good.', '79–78']];
+const speeds = `<div class="speeds"><span>½</span><u>1×</u><span>2×</span><span>4×</span><span>8×</span></div>`;
+S.game = () => [
+  mast('Draw Five', 'Live · you vs the AI (Pro)') + tally('88', '2:13', '84', { midK: 'Q4', clock: true }) +
+  `<section><h3>Broadcast</h3>${speeds}<div class="btn2" style="margin-top:14px"><button class="btn line">Pause</button><button class="btn line">Skip to final</button></div></section>` +
+  `<section><h3>Team stats<span>you · AI</span></h3><table class="ts">${[['48%', 'FG', '45%'], ['9/24', '3PT', '6/19'], ['41', 'REB', '38'], ['22', 'AST', '19'], ['11', 'TO', '14']].map(([a, m, b]) => `<tr><td>${a}</td><td class="m">${m}</td><td class="r">${b}</td></tr>`).join('')}</table></section>` +
+  actions(''),
+  prompt('Live · Q4 · 2:13', 'Durant answers', 'Your five on a 6–0 run. <b>+4</b> with two minutes left.') +
+  `<section class="phone-only"><h3>Broadcast</h3>${speeds}<div class="btn2" style="margin-top:12px"><button class="btn line">Pause</button><button class="btn line">Skip to final</button></div></section>` +
+  `<div class="split"><section><h3>Play-by-play<span>Q4 · newest first</span></h3><div class="feed">${FEED.map(([t, w, x, sc, hot]) => `<div class="ln ${w} ${hot ? 'hot' : ''}"><span class="t">${t}</span><span class="w">${w === 'y' ? 'YOU' : 'AI'}</span><span>${x}</span><span class="sc">${sc}</span></div>`).join('')}<div class="q">End of Q3: you 71, AI 70. Durant 19 points.</div></div></section>
+  <div style="display:flex;flex-direction:column;gap:22px;min-width:0"><section><h3>Score by quarter</h3><table class="box"><tr><th>Team</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>T</th></tr><tr><td>You</td><td>24</td><td>22</td><td>25</td><td>17</td><td class="hi">88</td></tr><tr><td>AI · Pro</td><td>20</td><td>27</td><td>23</td><td>14</td><td>84</td></tr></table></section>
+  <section><div class="tabs"><u>Your five</u><span>AI · Pro</span></div><table class="box"><tr><th>Player</th><th>PTS</th><th>REB</th><th>AST</th><th>FG</th></tr>${[['simmons', 12, 9, 11, '5-9'], ['dgreen', 9, 3, 1, '3-7'], ['durant', 27, 6, 4, '10-19'], ['haslem', 14, 8, 1, '6-10'], ['camby', 10, 13, 2, '4-8']].map(([k, a, b, c, d]) => `<tr><td>${p(k).s}</td><td class="${k === 'durant' ? 'hi' : ''}">${a}</td><td>${b}</td><td>${c}</td><td>${d}</td></tr>`).join('')}</table></section></div></div>`];
+
+function resultsMain(daily) {
+  const hit = [2, 4];
+  return (daily ? `<section class="recap"><h3 class="gold">Today's Jokers</h3><p><span class="jk">?</span><span>PF Joker: <b>Larry Bird</b> 1985–87, a legend. You left him on the table.</span><span class="res">Missed</span></p><p><span class="jk">?</span><span>C Joker: <b>Mark Madsen</b> 2001–03, a scrub. You left him in the deck.</span><span class="res g">Dodged</span></p></section>` : '') +
+  `<div class="headline"><span class="eb">${daily ? 'Game of the day' : 'Final'}</span><b>${daily ? "You beat the '92 Bulls 108–101" : 'You beat the AI 104–98'}</b><i>${daily ? 'Durant 31 · Jordan 34' : 'Durant 31 · Kemp 24'}</i></div>` +
+  `<div class="verdict"><div><span class="eb">The verdict</span><h2>${daily ? 'Playoff lock' : 'Contender'}</h2><p>${daily ? 'Same number as starting the five biggest names. Solid, but no edge.' : 'You beat the fan-vote five. The biggest names weren’t the best team.'}</p></div><div class="nums"><div class="you"><span>Your five</span><b>84</b></div><div><span>Fan-vote</span><b>${daily ? 84 : 81}</b></div><div><span>Best</span><b>88</b></div></div></div>` +
+  `<section><h3>Team profile<span>yours · the best five</span></h3><table class="profile">${[['Talent', 82, 86], ['Offense', 85, 87], ['Defense', 86, 84], ['Spacing', 71, 83, 1], ['Fit', 84, 89]].map(([l, v, b, w]) => `<tr class="${w ? 'weak' : ''}"><td class="l">${l}</td><td class="v">${v}</td><td class="b">best ${b}</td><td><div class="bar"><i style="width:${v}%"></i><u style="left:${b}%"></u></div></td></tr>`).join('')}</table></section>` +
+  `<section class="film"><h3>Film room</h3><p><i>+</i><span>You saw past the obvious five. <b>Durant</b> and <b>Camby</b> are exactly who the best five starts.</span></p><p><i style="color:var(--red)">−</i><span>Costliest pick: <b>Udonis Haslem</b> at PF. <b>Kevin Garnett</b> there is worth about <b>3 points</b>, most of it on fit.</span></p><p><i style="color:var(--ink3)">!</i><span>Your weak spot is <b>spacing (71)</b>. Simmons and Haslem don't stretch the floor; the best five has 83 there.</span></p></section>` +
+  `<section><h3>Starting five<span>2 of 5 match the best</span></h3><div class="cmp"><span class="rl">You</span>${SL.map((s, i) => { const x = p(YOU5[i]); return `<div class="mini ${hit.includes(i) ? 'hit' : ''}" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div><div class="bd">${face(x)}<div style="min-width:0"><b>${x.s}</b><span class="s">${x.y} · ${x.f}</span></div>${hit.includes(i) ? '<span class="ck">✓</span>' : ''}</div></div>`; }).join('')}<span class="rl">Best</span>${SL.map((s, i) => { const x = p(BEST5[i]); return `<div class="mini ${hit.includes(i) ? 'hit' : ''}" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div><div class="bd">${face(x)}<div style="min-width:0"><b>${x.s}</b><span class="s">${x.y} · ${x.f}</span></div>${hit.includes(i) ? '<span class="ck">✓</span>' : ''}</div></div>`; }).join('')}</div></section>`;
+}
+S.results = () => [
+  mast('Draw Five', 'Final · against the AI (Pro)') + tally('104', 'Final', '98', { midK: 'Q4 0:00' }) + `<p class="sub-note keep"><b>You win</b> by 6</p>` +
+  `<section><h3>Your number</h3><div class="kv"><span>Your five</span><b class="g">84</b></div><div class="kv"><span>Caps used</span><b>54.3 / 62</b></div><div class="kv"><span>Matches the best</span><b>2 of 5</b></div></section>` +
+  actions('<button class="btn go">New board</button><div class="btn2"><button class="btn line">Share</button><button class="btn line">Challenge</button></div>'),
+  resultsMain(false) + `<button class="btn go phone-only">New board</button>`];
+S.dailyResults = () => [
+  mast('Daily Draw Five', 'Tuesday, Oct 21 · final', true) + tally('108', 'Final', '101', { midK: 'Q4 0:00', aiK: "'92 Bulls" }) + `<p class="sub-note keep"><b>You win</b> by 7</p>` +
+  `<section><h3>Streak<span>6 days</span></h3><div class="streak"><div class="got"><b>3</b><span>Flame</span></div><div class="next"><b>7</b><span>Gold draw</span></div><div><b>14</b><span>Gold frames</span></div><div><b>30</b><span>Retro backs</span></div><div><b>100</b><span>Hall of Fame</span></div></div><p class="empty-note" style="margin-top:8px">One more day: the gold draw button.</p></section>` +
+  `<section><h3>Next board</h3><div class="kv"><span>New deck in</span><b>7h 12m</b></div></section>` +
+  actions('<div class="btn2"><button class="btn line">Copy result</button><button class="btn line">Share</button></div>'),
+  resultsMain(true) + `<button class="btn line phone-only">Copy result</button>`];
+
+const key = (location.hash || '#pick').slice(1);
+const [a, m] = S[key]();
+document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
+</script>
+</body>
+</html>

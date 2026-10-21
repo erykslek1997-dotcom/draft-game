@@ -218,6 +218,31 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
   daily, globalny ranking; przed startem wyłączyć przełączniki testowe:
   `DAILY_REPLAY_FOR_TESTING`, `AUTO_FINISH_FOR_TESTING`, `TEAM_EXPORT_FOR_TESTING`).
 
+### Nowy wygląd trybów: „wydanie nocne” (decyzja 2026-10-21)
+
+Stół w perspektywie (PR #252) odrzucony — zamknięty bez merge'a. Zatwierdzony kierunek: ciemne tło
+gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw Five:
+`docs/mockups/draw-five-night/index.html` (ekran przez `#start`, `#pick`, `#ai`, `#ready`,
+`#dailyStart`, `#dailyJoker`, `#game`, `#results`, `#dailyResults`).
+
+- **Najpierw przejrzystość i funkcjonalność**, realizm dopiero potem. Nic na siebie nie nachodzi.
+- **Bez „AI looku”:** żadnych ramek-pudełek wokół wszystkiego, kolorowych pigułek, małych etykiet
+  monospace wersalikami. Sekcje dzielą linie; nagłówki sekcji wersalikami Barlow Condensed nad
+  kremową linią; dopiski kursywą (Inter).
+- **Trzy kolory, każdy jedno znaczenie:** złoty = capy (i Joker), czerwony = „teraz” (on the
+  clock, aktywny slot, ostatni wybór, wiodąca akcja), kolory drużyn tylko na kartach. Reszta to
+  kremowy tekst na ciemnym tle; ty i AI różnicie się jasnością, nie kolorem.
+- **Fonty jak w reszcie gry:** Barlow Condensed (nagłówki, nazwiska), Inter (tekst), JetBrains
+  Mono (liczby). Bez Bittera.
+- **Układ:** lewa kolumna = winieta z podwójną linią + tablica (ty · cap · AI) + dziennik draftu
+  + akcje; prawa = rząd rywala, twoja piątka, „On the clock” z dużym nagłówkiem, ręka kart.
+- **Karty jak wydrukowane:** kremowy papier, pełny pasek drużyny, ostre rogi, statystyki w tabelce
+  z liniami. Wybrana karta = sama czerwona obwódka (bez drugiej ramki/cienia).
+- **Nowe elementy:** Tale of the tape (pojedynki pozycja na pozycję przed Submit), tura AI z jej
+  kartami („AI takes”), wyniki jako gazetowy nagłówek + werdykt + profil drużyny w tabeli.
+- **Wdrożenie wszystkich trybów za jednym razem** (Draw Five, Mini, All-Time) — najpierw makiety
+  każdego trybu w tym stylu.
+
 ## Kolejność prac (decyzja 2026-10-10, zastąpiona planem 4 tygodni)
 
 **Decyzja 2026-10-15 (wieczór):** intro All-Time Draft i kalibracja siły AI — na sam koniec;
