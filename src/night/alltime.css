@@ -975,7 +975,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .aw.big .aw-f .ini { width: 72px; height: 72px; font-size: 22px; }
   .stand2.full td.nm { white-space: nowrap; }
 }
-.nt.nt-test { position: fixed; z-index: 4; right: 12px; bottom: 12px; padding: 6px 10px; background: var(--surf); border: 1px solid var(--rule2); border-radius: 3px; font-size: 13px; }
+.nt.nt-test { min-height: 0; width: auto; height: auto; position: fixed; z-index: 4; right: 12px; bottom: 12px; padding: 6px 10px; background: var(--surf); border: 1px solid var(--rule2); border-radius: 3px; font-size: 13px; }
 @media (max-width: 600px) {
   .nt aside section.snav { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 4px; }
   .nt aside section.snav h3 { display: none; }
@@ -983,4 +983,17 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .nt aside section.snav .kv.nav b { display: none; }
   .nt aside section.snav .kv.nav.on { box-shadow: none; background: var(--ink); }
   .nt aside section.snav .kv.nav.on span { color: var(--bg); }
+}
+/* React glue for the season calendar */
+.nt {
+  .gos .ini { width: 56px; height: 56px; border-radius: 50%; background: var(--surf2); display: grid; place-items: center; font: 700 16px var(--cond); color: var(--ink3); }
+  .potm .ini { width: 88px; height: 88px; border-radius: 50%; background: var(--surf2); display: grid; place-items: center; font: 800 26px var(--cond); color: var(--ink3); }
+  .mvp-r .ini { width: 44px; height: 44px; border-radius: 50%; background: var(--surf2); display: grid; place-items: center; font: 700 14px var(--cond); color: var(--ink3); }
+  .pi-g .tr { display: grid; grid-template-columns: 22px 34px minmax(0, 1fr) 40px; gap: 8px; align-items: center; padding: 4px 0; font: 700 16px var(--cond); color: var(--ink2); }
+  .pi-g .tr.win { color: var(--ink); }
+  .pi-g .tr .sd { font: 500 12px var(--num); color: var(--ink3); }
+  .pi-g .tr .w { font: 600 16px var(--num); text-align: right; }
+  .pi-g .tr.you { background: var(--you-bg); color: var(--you-ink); padding: 4px 6px; margin: 0 -6px; border-radius: 3px; }
+  .pi-g .tr.you .sd, .pi-g .tr.you .w { color: var(--you-ink); }
+  .cal span[title] { cursor: default; }
 }

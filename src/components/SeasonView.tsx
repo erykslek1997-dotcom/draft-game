@@ -4,9 +4,14 @@ import type { PlayerSpan } from '../data/schema';
 import {
   engineTeamViews,
   seasonSeed,
+  playLiveAllStarGame,
+  playLivePlayInGame,
   playLivePlayoffGame,
+  playLiveSeasonGame,
   gameScorePerGame,
+  type LivePlayInGame,
   type LivePlayoffResult,
+  type LiveSeasonGame,
   type LivePlayoffSeries,
   type LiveSeasonResult,
   type SeasonPlayerLine,
@@ -24,6 +29,7 @@ import LiveGameNight from '../night/LiveGameNight';
 import { LeagueMark } from '../night/league';
 import { Actions, Btn, Dialog, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, cx } from '../night/ui';
 import { ShareNight, type PosterData } from '../night/Share';
+import { AllStarBreak, AllStarDraft, CalendarDay, MonthBreak, SeasonExtras, dateLabel, standingsAt, teamGames } from './SeasonCalendar';
 
 /**
  * 2026-10-08, the user (season simulation): the season after a draft. First the regular season —
@@ -41,6 +47,7 @@ export type SeasonState =
 /** How much of the playoffs is out: rounds before `round` in full, `game` games of that round. */
 type Reveal = { kind: 'none' } | { kind: 'live'; round: number; game: number } | { kind: 'all' };
 type Tab = 'overview' | 'standings' | 'stats' | 'awards';
+type Chapter = 'calendar' | 'season' | 'playoffs';
 type Watching = { round: number; series: number; game: number };
 
 const AWARD_MIN_GAMES = 58;
@@ -205,9 +212,14 @@ function SeasonPlayerCard({
  * playoffs have gone — is kept per season (the same draft always plays the same one), so leaving
  * or reloading comes back to the same place. */
 interface SeasonProgress {
-  chapter: 'season' | 'playoffs';
+  chapter: Chapter;
   tab: Tab;
   reveal: Reveal;
+  /** The calendar: nights played, the breaks already seen, breaks off. */
+  day?: number;
+  seen?: string[];
+  noBreaks?: boolean;
+  playInDone?: boolean;
 }
 const SEASON_PROGRESS_KEY = 'draftverse.seasonProgress.v1';
 
@@ -223,16 +235,20 @@ function readSeasonProgress(seed: string): SeasonProgress | null {
 export default function SeasonView({ teams, codes, state, onClose }: { teams: Team[]; codes: Map<string, string>; state: SeasonState; onClose: () => void }) {
   const seed = useMemo(() => seasonSeed(teams), [teams]);
   const [saved] = useState(() => readSeasonProgress(seed));
-  const [chapter, setChapter] = useState<'season' | 'playoffs'>(saved?.chapter ?? 'season');
+  const [chapter, setChapter] = useState<Chapter>(saved?.chapter ?? 'calendar');
   const [tab, setTab] = useState<Tab>(saved?.tab ?? 'overview');
   const [reveal, setReveal] = useState<Reveal>(saved?.reveal ?? { kind: 'none' });
+  const [day, setDay] = useState(saved?.day ?? 0);
+  const [seen, setSeen] = useState<string[]>(saved?.seen ?? []);
+  const [noBreaks, setNoBreaks] = useState(saved?.noBreaks ?? false);
+  const [playInDone, setPlayInDone] = useState(saved?.playInDone ?? false);
   useEffect(() => {
     try {
-      window.localStorage.setItem(SEASON_PROGRESS_KEY, JSON.stringify({ seed, chapter, tab, reveal }));
+      window.localStorage.setItem(SEASON_PROGRESS_KEY, JSON.stringify({ seed, chapter, tab, reveal, day, seen, noBreaks, playInDone }));
     } catch {
       // Not kept — the season still plays, it just starts over next time.
     }
-  }, [seed, chapter, tab, reveal]);
+  }, [seed, chapter, tab, reveal, day, seen, noBreaks, playInDone]);
   // A new chapter, tab or playoff step starts at the top (playtest 13: "z automatu przesuwać na górę").
   const revealRound = reveal.kind === 'live' ? reveal.round : -1;
   useEffect(() => {
@@ -253,8 +269,20 @@ export default function SeasonView({ teams, codes, state, onClose }: { teams: Te
       reveal={reveal}
       setReveal={setReveal}
       onClose={onClose}
+      calendar={{ day, setDay, seen, setSeen, noBreaks, setNoBreaks, playInDone, setPlayInDone }}
     />
   );
+}
+
+interface CalendarState {
+  day: number;
+  setDay: (d: number | ((d: number) => number)) => void;
+  seen: string[];
+  setSeen: (s: string[]) => void;
+  noBreaks: boolean;
+  setNoBreaks: (v: boolean) => void;
+  playInDone: boolean;
+  setPlayInDone: (v: boolean) => void;
 }
 
 function Playing({ progress, onClose }: { progress: SimProgress | null; onClose: () => void }) {
@@ -295,20 +323,23 @@ function SeasonBody({
   reveal,
   setReveal,
   onClose,
+  calendar,
 }: {
   teams: Team[];
   codes: Map<string, string>;
   season: LiveSeasonResult;
   playoffs: LivePlayoffResult | null;
-  chapter: 'season' | 'playoffs';
-  setChapter: (c: 'season' | 'playoffs') => void;
+  chapter: Chapter;
+  setChapter: (c: Chapter) => void;
   tab: Tab;
   setTab: (t: Tab) => void;
   reveal: Reveal;
   setReveal: (r: Reveal) => void;
   onClose: () => void;
+  calendar: CalendarState;
 }) {
   const byId = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+  const spans = useMemo(() => new Map(teams.flatMap((t) => t.roster.map((p) => [p.id, p] as const))), [teams]);
   const you = teams.find((t) => t.isHuman) ?? teams[0];
   const views = useMemo(() => engineTeamViews(teams), [teams]);
   // What your draft report said (the results screen's cut), for the season story to check.
@@ -371,7 +402,7 @@ function SeasonBody({
   const playoffsLabel = reveal.kind === 'none' ? (rank <= 8 ? 'Playoffs →' : 'See the playoffs →') : finalsDone ? 'The playoffs →' : 'Back to the playoffs →';
   const aside = (extra?: ReactNode, buttons?: ReactNode) => (
     <>
-      <Mast title="Your Season" sub={finalsDone ? 'Regular season + playoffs · final' : `82 games · ${teams.length} teams · top 8 to the playoffs`} />
+      <Mast title="Your Season" sub={finalsDone ? 'Regular season + playoffs · final' : `82 games · ${teams.length} teams · a play-in for 7 to 10`} />
       {finalsDone ? (
         <>
           <Tally you={`${record.wins}–${record.losses}`} mid={champ === you.id ? '🏆' : lastRun ? lastRun.roundLabel.replace('Quarterfinals', 'QF').replace('Semifinals', 'Semis') : '—'} ai={yourRuns.length ? `${poW}–${poL}` : '—'} youK="Season" midK="Result" aiK="Playoffs" plain small />
@@ -467,6 +498,28 @@ function SeasonBody({
     </>
   );
 
+  if (chapter === 'calendar') {
+    return (
+      <PlayerCardContext.Provider value={setCard}>
+        <CalendarChapter
+          teams={teams}
+          codes={codes}
+          season={season}
+          you={you}
+          byId={byId}
+          spans={spans}
+          cal={calendar}
+          overlay={overlay}
+          onEnd={() => {
+            setChapter('season');
+            setTab('overview');
+          }}
+          onClose={onClose}
+        />
+      </PlayerCardContext.Provider>
+    );
+  }
+
   if (chapter === 'playoffs' && playoffs) {
     return (
       <PlayerCardContext.Provider value={setCard}>
@@ -485,6 +538,8 @@ function SeasonBody({
           seedOf={seedOf}
           roster={roster}
           onClose={onClose}
+          playInDone={calendar.playInDone}
+          setPlayInDone={calendar.setPlayInDone}
         />
       </PlayerCardContext.Provider>
     );
@@ -494,7 +549,7 @@ function SeasonBody({
     <Btn onClick={startPlayoffs}>{playoffsLabel}</Btn>
   ) : null;
   let main: ReactNode;
-  if (tab === 'overview') main = <Overview season={season} playoffs={playoffs} you={you} rank={rank} byId={byId} views={views} mark={mark} report={report} />;
+  if (tab === 'overview') main = <Overview season={season} playoffs={playoffs} you={you} rank={rank} byId={byId} views={views} mark={mark} report={report} spans={spans} />;
   else if (tab === 'standings') main = <FullStandings season={season} byId={byId} youId={you.id} views={views} mark={mark} />;
   else if (tab === 'stats') main = <Stats teams={teams} season={season} playoffs={finalsDone ? playoffs : null} youId={you.id} codes={codes} />;
   else main = <Awards season={season} playoffs={finalsDone ? playoffs : null} byId={byId} youId={you.id} codes={codes} />;
@@ -521,6 +576,7 @@ function Overview({
   views,
   mark,
   report,
+  spans,
 }: {
   season: LiveSeasonResult;
   playoffs: LivePlayoffResult | null;
@@ -530,6 +586,7 @@ function Overview({
   views: ReturnType<typeof engineTeamViews>;
   mark: (id: string) => ReactNode;
   report: RosterInsight[];
+  spans: Map<string, PlayerSpan>;
 }) {
   const story = seasonStory(season, you.id, report);
   const record = season.standings[rank - 1];
@@ -543,14 +600,15 @@ function Overview({
   const projected = views.get(you.id)?.expectedWins ?? record.wins;
   const vs = Math.round(record.wins - projected);
   const diff = (record.pointsFor - record.pointsAgainst) / games;
-  const made = rank <= 8;
+  const entrants = playoffs ? new Set(playoffs.rounds[0].flatMap((x) => [x.teamAId, x.teamBId])) : null;
+  const made = entrants ? entrants.has(you.id) : rank <= 8;
   const top = season.standings[0];
   const gap = made ? record.wins - (ninth?.wins ?? 0) : (eighth?.wins ?? 0) - record.wins;
   const sentence = [
     rank === 1
       ? `The ${name} own the regular season.`
-      : `${mascot(byId.get(top.teamId))} took the one seed at ${top.wins}–${top.losses}.`,
-    made ? (gap > 0 ? `${plural(gap, 'game')} clear of 9th.` : 'In on the tiebreak.') : gap > 0 ? `${plural(gap, 'game')} out of the playoffs.` : 'Out on the tiebreak.',
+      : `The ${mascot(byId.get(top.teamId))} took the one seed at ${top.wins}–${top.losses}.`,
+    rank <= 6 ? 'Straight into the playoffs.' : rank <= 10 ? `Into the play-in as the ${ord(rank)} seed${made ? ', and through it.' : ', and out there.'}` : gap > 0 ? `${plural(gap, 'game')} out of the play-in.` : 'Out on the tiebreak.',
     best && `${best.span.playerName} led the way with ${f1(per(best, 'pts'))} a night.`,
   ]
     .filter(Boolean)
@@ -574,9 +632,9 @@ function Overview({
       </Prompt>
       <div className="split">
         <section>
-          <H3 note="top eight to the playoffs">Standings</H3>
+          <H3 note="top six in · 7 to 10 play in">Standings</H3>
           <StandTable season={season} byId={byId} youId={you.id} mark={mark} />
-          <div className="cutnote">Playoff line: top eight</div>
+          <div className="cutnote">Top six straight in · seeds 7 to 10 play in</div>
         </section>
         <div className="stack">
           <section>
@@ -602,6 +660,7 @@ function Overview({
               </tbody>
             </table>
           </section>
+          <SeasonExtras season={season} you={you} byId={byId} spans={spans} />
           <section>
             <H3 note="your season in three numbers">The {name}</H3>
             {best && (
@@ -617,8 +676,7 @@ function Overview({
             <div className="kv">
               <span>vs the draft grade</span>
               <b className={vs > 0 ? 'up' : vs < 0 ? 'dn' : undefined}>
-                {vs > 0 ? '▲ ' : vs < 0 ? '▼ ' : ''}
-                {plural(Math.abs(vs), 'win')} {vs >= 0 ? 'over' : 'under'} {Math.round(projected)}
+                {vs === 0 ? `right on ${Math.round(projected)}` : `${vs > 0 ? '▲ ' : '▼ '}${plural(Math.abs(vs), 'win')} ${vs > 0 ? 'over' : 'under'} ${Math.round(projected)}`}
               </b>
             </div>
             <div className="kv">
@@ -660,7 +718,7 @@ function StandTable({ season, byId, youId, mark }: { season: LiveSeasonResult; b
           const g = Math.max(1, r.wins + r.losses);
           const gb = (top.wins - r.wins + (r.losses - top.losses)) / 2;
           return (
-            <tr key={r.teamId} className={cx(r.teamId === youId && 'you', i === 7 && 'cut')}>
+            <tr key={r.teamId} className={cx(r.teamId === youId && 'you', (i === 5 || i === 9) && 'cut')}>
               <td className="rk">{i + 1}</td>
               <td className="tmc">{mark(r.teamId)}</td>
               <td className="nm">{byId.get(r.teamId)?.name}</td>
@@ -704,7 +762,7 @@ function FullStandings({ season, byId, youId, views, mark }: { season: LiveSeaso
               const proj = views.get(r.teamId)?.expectedWins ?? r.wins;
               const vs = Math.round(r.wins - proj);
               return (
-                <tr key={r.teamId} className={cx(r.teamId === youId && 'you', i === 7 && 'cut')}>
+                <tr key={r.teamId} className={cx(r.teamId === youId && 'you', (i === 5 || i === 9) && 'cut')}>
                   <td className="rk">{i + 1}</td>
                   <td className="tmc">{mark(r.teamId)}</td>
                   <td className="nm">{byId.get(r.teamId)?.name}</td>
@@ -723,7 +781,7 @@ function FullStandings({ season, byId, youId, views, mark }: { season: LiveSeaso
             })}
           </tbody>
         </table>
-        <div className="cutnote">Playoff line: top eight</div>
+        <div className="cutnote">Top six straight in · seeds 7 to 10 play in</div>
       </section>
     </>
   );
@@ -1016,7 +1074,9 @@ function Awards({ season, playoffs, byId, youId, codes }: { season: LiveSeasonRe
         <H3 note="steals or blocks per game">All-Defensive</H3>
         {a.allDefense.map((list, i) => five(['First team', 'Second team'][i], list, dstat))}
       </section>
-      {stars.length === 2 && (
+      {season.allStarGame && you ? (
+        <AllStarDraft season={season} you={you} codes={codes} title />
+      ) : stars.length === 2 && (
         <section className="asg-sec">
           <H3 note={`${a.allStars.length} All-Stars · the two best captain a side and pick in turns`}>All-Star Game</H3>
           <div className="asg">
@@ -1095,6 +1155,8 @@ function PlayoffsChapter({
   seedOf,
   roster,
   onClose,
+  playInDone,
+  setPlayInDone,
 }: {
   teams: Team[];
   byId: Map<string, Team>;
@@ -1102,6 +1164,8 @@ function PlayoffsChapter({
   mark: (id: string) => ReactNode;
   season: LiveSeasonResult;
   playoffs: LivePlayoffResult;
+  playInDone: boolean;
+  setPlayInDone: (v: boolean) => void;
   you: Team;
   reveal: Reveal;
   setReveal: (r: Reveal) => void;
@@ -1146,6 +1210,10 @@ function PlayoffsChapter({
     const b = g.length - a;
     return s.teamAId === youId ? [a, b] : [b, a];
   };
+
+  if (!playInDone && playoffs.playIn?.length && !all) {
+    return <PlayInScreen playIn={playoffs.playIn} teams={teams} byId={byId} codes={codes} mark={mark} you={you} seedOf={seedOf} aside={aside} overlay={overlay} onDone={() => setPlayInDone(true)} onClose={onClose} />;
+  }
 
   if (watching) {
     const s = rounds[watching.round][watching.series];
@@ -1778,5 +1846,414 @@ function Watch({
       />
       <div className="nt">{overlay}</div>
     </>
+  );
+}
+
+/* ── The calendar: the season a night at a time ───────────────────────────────────────────── */
+
+const CAL_SPEEDS = [0.5, 1, 2, 4, 8] as const;
+const CAL_SPEED_LABEL: Record<(typeof CAL_SPEEDS)[number], string> = { 0.5: '½', 1: '1×', 2: '2×', 4: '4×', 8: '8×' };
+const breakKey = (s: { afterRound: number; kind: string }) => `${s.kind}:${s.afterRound}`;
+
+/** The season unfolding (mockups `#simDay`, `#monthBreak`, `#asgBreak`): a night every second at
+ * 1×, a stop at each month's end and at the All-Star break, your games to watch on the way. */
+function CalendarChapter({
+  teams,
+  codes,
+  season,
+  you,
+  byId,
+  spans,
+  cal,
+  overlay,
+  onEnd,
+  onClose,
+}: {
+  teams: Team[];
+  codes: Map<string, string>;
+  season: LiveSeasonResult;
+  you: Team;
+  byId: Map<string, Team>;
+  spans: Map<string, PlayerSpan>;
+  cal: CalendarState;
+  overlay: ReactNode;
+  onEnd: () => void;
+  onClose: () => void;
+}) {
+  const { day, setDay, seen, setSeen, noBreaks, setNoBreaks } = cal;
+  const total = season.dates.length;
+  const [running, setRunning] = useState(true);
+  const [speed, setSpeed] = useState<(typeof CAL_SPEEDS)[number]>(1);
+  const [watching, setWatching] = useState<{ kind: 'game'; game: LiveSeasonGame } | { kind: 'asg' } | null>(null);
+  const pending = season.snapshots.find((s) => s.afterRound === day - 1 && !seen.includes(breakKey(s)) && (!noBreaks || s.kind === 'asg'));
+  useEffect(() => {
+    if (!running || pending || watching || day >= total) return;
+    const t = window.setTimeout(() => setDay((d) => Math.min(total, d + 1)), 1000 / speed);
+    return () => window.clearTimeout(t);
+  }, [running, pending, watching, day, total, speed, setDay]);
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [pending, watching]);
+
+  const mine = teamGames(season, you.id);
+  const played = mine.filter((x) => x.game.round < day);
+  const stand = standingsAt(season, day);
+  const pos = stand.findIndex((r) => r.teamId === you.id) + 1;
+  const me = stand[pos - 1];
+  const next = mine.filter((x) => x.game.round >= day).slice(0, 2);
+  const nextBreak = season.snapshots.find((s) => s.afterRound >= day && (!noBreaks || s.kind === 'asg') && !seen.includes(breakKey(s)));
+  const iso = season.dates[Math.max(0, day - 1)];
+
+  if (watching) {
+    const back = () => setWatching(null);
+    if (watching.kind === 'asg' && season.allStarGame) {
+      const asg = season.allStarGame;
+      const cap = (k: 0 | 1) => `Team ${asg.sides[k][0].span.playerName.split(' ').slice(-1)[0]}`;
+      return (
+        <GameWatch
+          build={() => playLiveAllStarGame(asg)}
+          sides={{ names: [cap(0), cap(1)], short: [cap(0).slice(5), cap(1).slice(5)], codes: ['ASG', 'ASG'], you: 0 }}
+          title="All-Star Game"
+          status="the captains' draft"
+          overlay={overlay}
+          onDone={back}
+          doneLabel="Back to the break"
+          onClose={onClose}
+        />
+      );
+    }
+    if (watching.kind === 'game') {
+      const g = watching.game;
+      const [a, b] = [byId.get(g.aId), byId.get(g.bId)];
+      return (
+        <GameWatch
+          build={() => playLiveSeasonGame(teams, g)}
+          sides={{ names: [a?.name ?? '', b?.name ?? ''], short: [mascot(a), mascot(b)], codes: [codes.get(g.aId) ?? '', codes.get(g.bId) ?? ''], you: g.bId === you.id ? 1 : 0 }}
+          title={`${dateLabel(season.dates[g.round])} · game ${mine.findIndex((x) => x.game === g) + 1}`}
+          status={`${me.wins}–${me.losses} before tonight`}
+          overlay={overlay}
+          onFinish={() => setDay((d) => Math.max(d, g.round + 1))}
+          onDone={back}
+          doneLabel="Back to the season"
+          onClose={onClose}
+        />
+      );
+    }
+  }
+
+  const goOn = () => {
+    if (pending) setSeen([...seen, breakKey(pending)]);
+    setRunning(true);
+  };
+  const nextMonth = pending && pending.kind === 'month' ? season.dates[Math.min(total - 1, pending.afterRound + 1)] : null;
+  const breakButtons = pending ? (
+    pending.kind === 'asg' ? (
+      <>
+        <Btn onClick={goOn}>Back to the season</Btn>
+        {season.allStarGame && (
+          <Btn kind="line" onClick={() => setWatching({ kind: 'asg' })}>
+            Watch the All-Star Game
+          </Btn>
+        )}
+      </>
+    ) : (
+      <>
+        <Btn onClick={goOn}>Play {nextMonth ? new Date(`${nextMonth}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' }) : 'on'}</Btn>
+        <Btn
+          kind="line"
+          onClick={() => {
+            setNoBreaks(true);
+            goOn();
+          }}
+        >
+          No more month breaks
+        </Btn>
+      </>
+    )
+  ) : null;
+  const ended = day >= total && !pending;
+  const aside = (
+    <>
+      <Mast title="Your Season" sub={pending ? (pending.kind === 'asg' ? `All-Star break · game ${played.length} of ${mine.length}` : `${pending.label} in review · game ${played.length} of ${mine.length}`) : day === 0 ? 'Opening night' : `${dateLabel(iso)} · game ${played.length} of ${mine.length}`} />
+      <Tally you={me.wins} mid={ord(pos)} ai={me.losses} youK="Won" midK="Seed" aiK="Lost" plain />
+      <div className="sprog keep">
+        <i style={{ width: `${Math.round((day / total) * 100)}%` }} />
+      </div>
+      {pending ? (
+        <section className="keep">
+          <div className="stackb">{breakButtons}</div>
+        </section>
+      ) : ended ? (
+        <section className="keep">
+          <div className="stackb">
+            <Btn onClick={onEnd}>The final standings →</Btn>
+          </div>
+        </section>
+      ) : (
+        <section className="keep">
+          <H3 note="a night every second at 1×">Speed</H3>
+          <div className="speeds" role="group" aria-label="Speed">
+            {CAL_SPEEDS.map((sp) => (
+              <button key={sp} type="button" className={speed === sp ? 'on' : undefined} aria-pressed={speed === sp} onClick={() => setSpeed(sp)}>
+                {CAL_SPEED_LABEL[sp]}
+              </button>
+            ))}
+          </div>
+          <div className="stackb" style={{ marginTop: 14 }}>
+            <Btn kind="line" onClick={() => setRunning((r) => !r)}>
+              {running ? 'Pause' : 'Play'}
+            </Btn>
+            <Btn kind="line" onClick={() => setDay(nextBreak ? nextBreak.afterRound + 1 : total)}>
+              {nextBreak ? (nextBreak.kind === 'asg' ? 'Skip to the All-Star break' : 'Skip to the month break') : 'Skip to the end'}
+            </Btn>
+          </div>
+        </section>
+      )}
+      {!pending && next.length > 0 && (
+        <section>
+          <H3>Next for the {mascot(you)}</H3>
+          {next.map((x) => (
+            <div key={x.game.round} className="kv">
+              <span>{dateLabel(season.dates[x.game.round])}</span>
+              <b>vs {mascot(byId.get(x.opp))}</b>
+            </div>
+          ))}
+        </section>
+      )}
+      <Actions links={{ onMenu: onClose }}>
+        {!pending && next[0] && (
+          <Btn kind="line" onClick={() => setWatching({ kind: 'game', game: next[0].game })}>
+            Watch the next game
+          </Btn>
+        )}
+        {!pending && !ended && (
+          <Btn
+            kind="line"
+            onClick={() => {
+              setDay(total);
+              setNoBreaks(true);
+            }}
+          >
+            Skip to the end of the season
+          </Btn>
+        )}
+      </Actions>
+    </>
+  );
+  let main: ReactNode;
+  if (pending?.kind === 'asg') main = <AllStarBreak season={season} you={you} codes={codes} />;
+  else if (pending) main = <MonthBreak season={season} snap={pending} you={you} byId={byId} codes={codes} spans={spans} />;
+  else if (day === 0)
+    main = (
+      <Prompt eb={`Opening night · ${dateLabel(season.dates[0])}`} title="The season starts" now>
+        82 games for every team, a night at a time. A stop at the end of each month and at the All-Star break; watch any of your games on the way.
+      </Prompt>
+    );
+  else main = <CalendarDay season={season} day={day} you={you} byId={byId} codes={codes} spans={spans} />;
+  return (
+    <NightGame aside={aside} overlay={overlay}>
+      {main}
+      <div className="btn2 phone-only">
+        {pending ? breakButtons : ended ? <Btn onClick={onEnd}>The final standings →</Btn> : (
+          <>
+            <Btn kind="line" onClick={() => setRunning((r) => !r)}>
+              {running ? 'Pause' : 'Play'}
+            </Btn>
+            <Btn kind="line" onClick={() => setDay(nextBreak ? nextBreak.afterRound + 1 : total)}>
+              {nextBreak ? 'Skip to the break' : 'Skip to the end'}
+            </Btn>
+          </>
+        )}
+      </div>
+    </NightGame>
+  );
+}
+
+/** Any game played again on the night live game: a season night, the All-Star Game, a play-in. */
+function GameWatch({
+  build,
+  sides,
+  title,
+  status,
+  overlay,
+  onFinish,
+  onDone,
+  doneLabel,
+  onClose,
+}: {
+  build: () => ReturnType<typeof playLiveSeasonGame>;
+  sides: { names: [string, string]; short: [string, string]; codes: [string, string]; you: 0 | 1 };
+  title: string;
+  status: string;
+  overlay: ReactNode;
+  onFinish?: () => void;
+  onDone: () => void;
+  doneLabel: string;
+  onClose: () => void;
+}) {
+  const game = useMemo(build, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [take, setTake] = useState(0);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onDone();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onDone]);
+  if (!game) return null;
+  return (
+    <>
+      <LiveGameNight
+        key={take}
+        game={game}
+        variant="full"
+        sides={sides}
+        mast={{ title, sub: `Final · ${status}`, liveSub: `Live · ${status}`, preSub: `Tip-off · ${status}` }}
+        autoStart
+        pregame={{ eb: `${title} · tonight`, now: true, title: `${sides.short[0]} vs ${sides.short[1]}`, line: status }}
+        links={{ onMenu: onClose }}
+        done={
+          <>
+            <Btn onClick={onDone}>{doneLabel}</Btn>
+            <Btn kind="line" onClick={() => setTake((t) => t + 1)}>
+              Watch again
+            </Btn>
+          </>
+        }
+        onFinish={onFinish}
+      />
+      <div className="nt">{overlay}</div>
+    </>
+  );
+}
+
+/** The play-in (mockup `#playIn`): 7 v 8 for the 7 seed, 9 v 10 to stay alive, then the last game
+ * for the 8 seed. */
+function PlayInScreen({
+  playIn,
+  teams,
+  byId,
+  codes,
+  mark,
+  you,
+  seedOf,
+  aside,
+  overlay,
+  onDone,
+  onClose,
+}: {
+  playIn: LivePlayInGame[];
+  teams: Team[];
+  byId: Map<string, Team>;
+  codes: Map<string, string>;
+  mark: (id: string) => ReactNode;
+  you: Team;
+  seedOf: (id: string) => number;
+  aside: (extra?: ReactNode, buttons?: ReactNode) => ReactNode;
+  overlay: ReactNode;
+  onDone: () => void;
+  onClose: () => void;
+}) {
+  const yourSeed = seedOf(you.id);
+  const inIt = yourSeed >= 7 && yourSeed <= 10;
+  // Your own game waits for you; the rest of the night is already played.
+  const [shown, setShown] = useState(inIt ? 0 : 2);
+  const [watching, setWatching] = useState<LivePlayInGame | null>(null);
+  const yourGames = playIn.filter((g) => g.teamAId === you.id || g.teamBId === you.id);
+  const yourNext = yourGames.find((g) => playIn.indexOf(g) >= shown);
+  const yourLast = [...yourGames].reverse().find((g) => playIn.indexOf(g) < shown);
+  if (watching) {
+    const [a, b] = [byId.get(watching.teamAId), byId.get(watching.teamBId)];
+    return (
+      <GameWatch
+        build={() => playLivePlayInGame(teams, watching)}
+        sides={{ names: [a?.name ?? '', b?.name ?? ''], short: [mascot(a), mascot(b)], codes: [codes.get(watching.teamAId) ?? '', codes.get(watching.teamBId) ?? ''], you: watching.teamBId === you.id ? 1 : 0 }}
+        title={`Play-in · ${watching.kind === '7v8' ? '7 v 8' : watching.kind === '9v10' ? '9 v 10' : 'for the 8 seed'}`}
+        status={`#${watching.teamASeed} vs #${watching.teamBSeed}`}
+        overlay={overlay}
+        onFinish={() => setShown((n) => Math.max(n, playIn.indexOf(watching) + 1))}
+        onDone={() => setWatching(null)}
+        doneLabel="Back to the play-in"
+        onClose={onClose}
+      />
+    );
+  }
+  const label: Record<LivePlayInGame['kind'], string> = { '7v8': '7 vs 8 · winner is the 7 seed', '9v10': '9 vs 10 · loser is out', last: 'For the 8 seed · winner is in' };
+  const block = (g: LivePlayInGame, i: number) => {
+    const done = i < shown;
+    const note =
+      g.kind === '7v8'
+        ? `The ${mascot(byId.get(g.winnerId))} are the 7 seed.`
+        : g.kind === '9v10'
+          ? `The ${mascot(byId.get(g.winnerId === g.teamAId ? g.teamBId : g.teamAId))}' season is over.`
+          : `The ${mascot(byId.get(g.winnerId))} take the 8 seed.`;
+    return (
+      <div key={g.kind} className={cx('pi-g', !done && 'live')}>
+        <span>{done ? label[g.kind] : `Tonight · ${label[g.kind].toLowerCase()}`}</span>
+        {([0, 1] as const).map((k) => {
+          const id = k === 0 ? g.teamAId : g.teamBId;
+          return (
+            <div key={id} className={cx('tr', done && g.winnerId === id && 'win', id === you.id && 'you')}>
+              <span className="sd">{k === 0 ? g.teamASeed : g.teamBSeed}</span>
+              {mark(id)}
+              <span>{mascot(byId.get(id))}</span>
+              <span className="w">{done ? g.final[k] : '—'}</span>
+            </div>
+          );
+        })}
+        <p>
+          {done ? note : 'Single game, playoff rules.'}{' '}
+          <button type="button" className="lk-inline" onClick={() => setWatching(g)}>
+            {done ? 'watch it' : 'watch it live'}
+          </button>
+        </p>
+      </div>
+    );
+  };
+  const finished = shown >= playIn.length;
+  const buttons = finished ? (
+    <Btn onClick={onDone}>On to the playoffs →</Btn>
+  ) : (
+    <>
+      {yourNext ? (
+        <Btn onClick={() => setWatching(yourNext)}>Watch your game</Btn>
+      ) : (
+        <Btn onClick={() => setWatching(playIn[Math.max(2, shown)])}>Watch the 8-seed game</Btn>
+      )}
+      <Btn kind="line" onClick={() => setShown(shown < 2 ? 2 : playIn.length)}>
+        {shown < 2 ? 'Sim your game' : 'Sim to the playoffs'}
+      </Btn>
+    </>
+  );
+  const status = !inIt
+    ? 'Seeds 7 to 10 play for the last two places.'
+    : yourLast && yourLast.winnerId !== you.id && (yourLast.kind !== '7v8')
+      ? `Your season ends here: the ${mascot(byId.get(yourLast.winnerId))} won ${Math.max(...yourLast.final)}–${Math.min(...yourLast.final)}.`
+      : yourLast && yourLast.winnerId === you.id && yourLast.kind !== '9v10'
+        ? `You are in as the ${yourLast.kind === '7v8' ? '7' : '8'} seed.`
+        : yourNext
+          ? `You are the ${ord(yourSeed)} seed and play ${yourNext.kind === 'last' ? 'for the 8 seed' : yourNext.kind === '7v8' ? 'for the 7 seed' : 'to stay alive'} tonight.`
+          : `You are the ${ord(yourSeed)} seed.`;
+  const extra = (
+    <section>
+      <H3>Your playoffs</H3>
+      <div className="kv">
+        <span>Seed</span>
+        <b>
+          {ord(yourSeed)}
+          {yourSeed <= 6 ? ' · in' : inIt ? ' · play-in' : ' · out'}
+        </b>
+      </div>
+    </section>
+  );
+  return (
+    <NightGame aside={aside(extra, buttons)} overlay={overlay}>
+      <Prompt eb={finished ? 'Play-in · final' : 'Play-in · tonight'} title={finished ? 'The bracket is set' : 'Two games for the last two seeds'} now={!finished}>
+        Seeds 1 to 6 are in. {status}
+      </Prompt>
+      <div className="pi">
+        <div>{playIn.slice(0, 2).map(block)}</div>
+        <div>{playIn.slice(2).map((g, i) => block(g, i + 2))}</div>
+      </div>
+      <div className="btn2 phone-only">{buttons}</div>
+    </NightGame>
   );
 }
