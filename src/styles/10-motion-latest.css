@@ -18,10 +18,6 @@
 }
 
 /* Menu: the three steps of the path, one after another. */
-.mode-grid--path > .mode-card-wrap { animation: stage-up 0.5s both ease-out; }
-.mode-grid--path > .mode-card-wrap:nth-child(1) { animation-delay: 0.15s; }
-.mode-grid--path > .mode-card-wrap:nth-child(2) { animation-delay: 0.4s; }
-.mode-grid--path > .mode-card-wrap:nth-child(3) { animation-delay: 0.65s; }
 
 /* Results hero (All-Time Draft and Mini Draft). 2026-09-27 results audit: the whole hero lands
    at once, like Roulette's scoreboard ("wynik nie pokazuje od razu") — one quick rise, the chips
@@ -31,17 +27,9 @@
 .results-hero-rank { animation: stage-pop 0.4s both; display: inline-block; }
 .results-hero-scores-row > * { animation: stage-pop 0.3s 0.1s both; }
 .results-hero-dashboard .metric-bar-fill { transform-origin: left center; animation: stage-fill 0.6s 0.15s both cubic-bezier(0.2, 0.7, 0.2, 1); }
-.results-screen > .results-hero ~ *,
-.qf-result > .results-hero ~ * { animation: stage-up 0.35s 0.15s both ease-out; }
+.results-screen > .results-hero ~ *{ animation: stage-up 0.35s 0.15s both ease-out; }
 
 /* Draft boards: the turn bar first, then your team, then the players. */
-.at-stage-in > * { animation: stage-up 0.5s both ease-out; }
-.at-stage-in > :nth-child(1) { animation-delay: 0.1s; }
-.at-stage-in > :nth-child(2) { animation-delay: 0.3s; }
-.at-stage-in > :nth-child(3) { animation-delay: 0.5s; }
-.at-stage-in > :nth-child(4) { animation-delay: 0.7s; }
-.at-stage-in > :nth-child(5) { animation-delay: 0.85s; }
-.at-stage-in > :nth-child(n + 6) { animation-delay: 1s; }
 
 /* A new pick slides into the ticker instead of just appearing. */
 
@@ -51,65 +39,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mode-grid--path > .mode-card-wrap,
   .results-hero-finish, .results-hero-rank, .results-hero-tier,
   .results-hero-identity, .results-hero-dashboard, .results-hero-scores-row > *,
   .results-hero-dashboard .metric-bar-fill, .results-hero-rotation-col,
-  .results-screen > .results-hero ~ *, .qf-result > .results-hero ~ *,
-  .at-stage-in > * { animation: none !important; }
+  .results-screen > .results-hero ~ *{ animation: none !important; }
 }
 
 /* ---- Spin lever (SpinLever.tsx): a one-armed-bandit arm that starts a draw ---- */
-.spin-lever {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 8px 4px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--at-ink);
-  font: inherit;
-}
-.spin-lever:disabled { cursor: default; opacity: 0.5; }
-.spin-lever:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 4px; border-radius: 12px; }
-.spin-lever-track { position: relative; width: 44px; height: 132px; }
-.spin-lever-base {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  top: 76px;
-  height: 18px;
-  border-radius: 8px;
-  background: linear-gradient(#2a3a4f, #111a26);
-  border: 1px solid var(--at-line);
-}
-.spin-lever-arm {
-  position: absolute;
-  left: 19px;
-  width: 6px;
-  top: 16px;
-  height: 69px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #8ea3bd, #e6eef8 45%, var(--at-ink-faint, #6b7f98));
-  transform-origin: 50% 100%;
-}
-.spin-lever-knob {
-  position: absolute;
-  left: 8px;
-  top: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ff9a8f, var(--at-brand-red, #c8102e) 55%, #6d0818);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 16px color-mix(in srgb, var(--at-brand-red, #c8102e) 45%, transparent);
-}
-.spin-lever:not(:disabled):not(.is-pulled) .spin-lever-knob { animation: lever-beckon 1.6s ease-in-out infinite; }
-.spin-lever:hover:not(:disabled):not(.is-pulled) .spin-lever-knob { animation-duration: 0.8s; }
-.spin-lever.is-pulled .spin-lever-arm { animation: lever-arm 0.9s cubic-bezier(0.5, 0, 0.3, 1) both; }
-.spin-lever.is-pulled .spin-lever-knob { animation: lever-knob 0.9s cubic-bezier(0.5, 0, 0.3, 1) both; }
-.spin-lever-label { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent); }
+
 @keyframes lever-beckon {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(5px); }
@@ -125,9 +62,6 @@
   42% { transform: translateY(107px); }
   60% { transform: translateY(107px); }
   100% { transform: translateY(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .spin-lever-knob, .spin-lever-arm { animation: none !important; }
 }
 
 /* 2026-09-27: a player the AI took stays in the list, dimmed and stamped, until the human's turn
@@ -152,111 +86,44 @@
 
 /* 2026-09-27: phone team dock (DraftBoard.tsx .at-team-dock) — the team stays at the bottom of the
    screen while browsing; the header opens the full card as a sheet. */
-@media (max-width: 860px) {
-
-  .at-draft-workspace { padding-bottom: 150px; }
-  .at-shell .at-board-fab { bottom: calc(118px + env(safe-area-inset-bottom, 0px)); }
-}
 
 /* 2026-09-27: the draft workspace fades in without a transform — a transform animation (even one
    that ends at `none`) makes it the containing block of the fixed phone team dock inside it. */
-.at-stage-in > .at-draft-workspace { animation-name: at-stage-fade; }
+
 @keyframes at-stage-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---- Scoreboard (ScoreBoard.tsx), 2026-09-27 results audit pack C: the same three numbers on
    every result screen, your own first and in the score colour scale. ---- */
-.score-board-wrap { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
-.score-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 520px; }
-.score-board-cell {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  padding: 8px 4px; border-radius: 8px; text-align: center;
-  background: color-mix(in srgb, var(--at-ink) 5%, transparent);
-  border: 1px solid var(--at-line);
-}
-.score-board-cell b {
-  font-size: 24px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
-  color: var(--at-ink-soft);
-}
-.score-board-cell > span {
-  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-faint);
-}
-.score-board-cell--you { border-color: transparent; }
-.score-board-cell--you b { font-size: 32px; color: #fff; }
-.score-board-cell--you > span { color: color-mix(in srgb, #fff 80%, transparent); }
-.score-board-note { font-size: 12px; color: var(--at-ink-faint); }
-.score-board-note b { color: var(--at-ink); }
+
 /* Mini Draft / Roulette share card (ShareResultModal.tsx): the mode above the team, the scoreboard centred. */
-.share-modal-mode { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-faint); }
-.share-modal-card .score-board-wrap { align-items: center; width: 100%; }
-.share-modal-card .score-board { width: 100%; }
+
 /* "⚔️ Your friend scored 74 on this board — you won the challenge." (ChallengeNote, ScoreBoard.tsx) */
-.challenge-note { display: inline-block; margin-top: 2px; font-size: 12px; color: var(--at-ink-soft); }
-.challenge-note--won { color: var(--at-t6); }
-.challenge-note--lost { color: var(--at-brand-red, #e05a5a); }
 
 /* ---- 2026-09-27 UI audit: the draft board's top on a phone. The players started ~800px down
    under ten rows of chrome; now tabs, CPU speed and the board button share one row, and the
    "Draft" heading (the tab already says it) is dropped below the side-by-side width. ---- */
 .at-board-toggle-short { display: none; }
 
-@media (max-width: 899px) {
-  .at-merge-draft > .at-panel-title { display: none; }
-}
 @media (max-width: 640px) {
   .at-board-toggle { padding: 8px 8px; white-space: nowrap; }
   .at-board-toggle-long { display: none; }
   .at-board-toggle-short { display: inline; }
 }
 /* Team tab mid-draft: what to do with picks not placed yet (RotationBuilder). */
-.rotation-bench-hint { display: block; margin: 2px 0 8px; font-size: 12px; line-height: 1.5; color: var(--at-ink-faint); }
 
 /* 2026-09-28 playtest: New draft / Rematch / Main menu at the end of a result wrapped 2 + 1 on a
    phone, "Main menu" alone on its own line. One centred row when it fits, an even column when not. */
-.at-shell .end-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 8px; }
-.at-shell .end-actions > button { margin: 0; }
-@media (max-width: 560px) {
-  .at-shell .end-actions { flex-direction: column; align-items: stretch; max-width: 300px; margin-left: auto; margin-right: auto; }
-}
 
 /* 2026-09-28 playtest: on a phone the Team tab's roster table runs well past the screen (eleven
    columns of grades) and read as cut off. The round column goes (the rows are in pick order
    anyway) and the player's name stays pinned while the grades scroll under it. */
-@media (max-width: 640px) {
-  .at-roster-table .at-roster-rnd { display: none; }
-  .at-roster-table .at-roster-sticky { position: sticky; left: 0; z-index: 1; background: var(--at-paper-raised); }
-}
 
 /* 2026-09-28 playtest: "Skip to my pick" in the Mini Draft's CPU-turn banner. */
 
 /* 2026-09-28: the Daily Slot Machine — a strip under the Slot Machine card in the menu, and the
    daily board's own lines. */
-.mode-card-daily {
-  display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;
-  margin-top: -1px; padding: 8px 12px; cursor: pointer; font: inherit; text-align: left;
-  border: 1px solid color-mix(in srgb, var(--at-gold, #ffd479) 55%, var(--calm-line, #182433)); border-radius: 0 0 8px 8px;
-  background: color-mix(in srgb, var(--at-gold, #ffd479) 9%, var(--at-paper-raised, #0a0f18)); color: var(--at-ink, #eef4fb);
-}
-.mode-card-daily:hover { border-color: var(--at-gold, #ffd479); }
-.mode-card-daily:focus-visible { outline: 2px solid var(--at-gold, #ffd479); outline-offset: 2px; }
-.mode-card-daily-label { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-gold, #ffd479); }
-.mode-card-daily-state { flex: 1; font-size: 12px; color: #a9bdd4; }
-.mode-card-daily.is-played .mode-card-daily-state { color: var(--at-good, #7fd68a); }
-.mode-card-daily-streak { font-size: 13px; font-weight: 800; white-space: nowrap; }
-.mode-card-daily { flex-wrap: wrap; row-gap: 4px; }
-.mode-card-daily-meta { flex-basis: 100%; font-size: 12px; color: #8ea3bd; }
-.mode-card-daily-meta b { color: var(--at-ink, #eef4fb); }
+
 /* Streak reward, 3 days: the strip's flame glows. */
-.mode-card-daily.is-hot .mode-card-daily-streak { text-shadow: 0 0 10px rgba(255, 150, 60, 0.9); }
+
 /* Testing only: reroll the daily draft's day. */
-.mode-card-daily-test { display: flex; gap: 12px; padding: 6px 2px 0; }
-.mode-card-daily-test button {
-  min-height: 32px; padding: 0 4px; border: 0; background: none; cursor: pointer;
-  font: inherit; font-size: 12px; font-weight: 700; color: #8ea3bd; text-decoration: underline; text-underline-offset: 3px;
-}
-.mode-card-daily-test button:hover { color: var(--at-gold, #ffd479); }
-.bf-daily-sub { text-align: center; font-size: 13px; color: var(--at-ink-soft); margin: 8px 0 0; }
-.bf-daily-done {
-  margin-top: 16px; padding: 12px 12px; border-radius: 12px; text-align: center; font-size: 14px; line-height: 1.5;
-  border: 1px solid color-mix(in srgb, var(--at-gold, #ffd479) 45%, var(--at-line)); color: var(--at-ink-soft);
-}
-.bf-daily-done b { color: var(--at-ink); }
+

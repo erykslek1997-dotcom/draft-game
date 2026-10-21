@@ -44,45 +44,6 @@
   margin: 0 0 8px;
 }
 
-.span-selection-screen {
-  max-width: 640px;
-  margin: 0 auto;
-}
-
-.span-selection-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 16px 0;
-}
-
-.span-selection-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px;
-}
-
-.span-selection-name {
-  width: 160px;
-  flex-shrink: 0;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.span-selection-row select {
-  flex: 1;
-}
-
-.span-selection-totals {
-  display: flex;
-  gap: 16px;
-  font-weight: 600;
-  margin: 16px 0;
-}
-
 /* 2026-09-11, user-reported live ("głębsza przebudowa", "brzydko to wygląda") — replaces the
    2026-08-19 table rebuild (which itself replaced an earlier card-per-position grid). That table
    matched the Team roster table's row shape, but its `<select>`/`<input type=number>` were bare,
@@ -91,98 +52,11 @@
    again, but built from that same shared language this time (see RotationBuilder.tsx's own JSX
    comment for the full reasoning), with the native controls heavily reskinned rather than
    replaced — same real `<select>`/`<input>` underneath, unchanged keyboard/a11y behavior. */
-.rotation-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 14px 0 20px;
-}
-.rotation-card {
-  border: 1px solid var(--at-line, var(--border));
-  border-radius: 8px;
-  padding: 8px 12px 12px;
-  background: var(--at-paper, var(--bg));
-}
-.rotation-card--short {
-  border-color: color-mix(in srgb, var(--danger) 45%, var(--at-line, var(--border)));
-}
-.rotation-card-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.rotation-card-pos {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--at-accent, var(--accent));
-  min-width: 26px;
-}
-.rotation-card-minutes-track {
-  flex: 1;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--at-line, var(--border));
-  overflow: hidden;
-}
-.rotation-card-minutes-fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--at-accent, var(--accent));
-}
-.rotation-card--short .rotation-card-minutes-fill { background: var(--danger); }
-.rotation-card-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-top: 1px dashed color-mix(in srgb, var(--at-line, var(--border)) 70%, transparent);
-}
-.rotation-card-row:first-of-type { border-top: none; }
-.rotation-card-row-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.rotation-card-row-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.rotation-minutes-input {
-  width: 48px;
-  flex: none;
-  font: inherit;
-  font-size: 13px;
-  text-align: center;
-  padding: 8px 4px;
-  border-radius: 8px;
-  border: 1px solid var(--at-line, var(--border));
-  background: var(--at-pill, var(--bg));
-  color: var(--text);
-}
-.rotation-minutes-input:disabled { opacity: 0.4; }
-.rotation-minutes-input.minutes-warning { border-color: var(--at-warn, #f0a868); outline-color: var(--at-warn, #f0a868); }
-@media (max-width: 480px) {
-  .rotation-card-row { flex-wrap: wrap; }
-  .rotation-card-row-main { flex-basis: 100%; order: -1; }
-}
 
 /* 2026-08-19, user's explicit ask: real per-player value context right where a rotation decision
    is actually made, not just a name in a dropdown. Same `.tier-badge`/`.at-grade-badge` pill
    shapes the rest of the app already uses for this exact data — no new visual language invented.
    Still used by the Bench reference list below (plain player rows, not a table). */
-.rotation-value-badges {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
 
 .bench-list {
   list-style: none;
@@ -224,88 +98,7 @@
   margin-left: auto;
 }
 
-.minutes-ok {
-  color: var(--text);
-  font-size: 13px;
-}
-
-.minutes-bad {
-  color: var(--danger);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.durability-cap {
-  color: var(--text);
-  opacity: 0.6;
-  font-size: 11px;
-}
-
-.slot-row input[type='number'].minutes-warning {
-  border-color: var(--at-warn, #f0a868);
-  outline-color: var(--at-warn, #f0a868);
-}
-
-.remove-row-btn {
-  padding: 0 8px;
-  line-height: 1.5;
-  color: var(--danger);
-}
-
-.add-row-btn {
-  margin-top: 6px;
-  font-size: 12px;
-  padding: 4px 8px;
-}
-
-.validation-warning {
-  color: var(--at-warn, #f0a868);
-  font-size: 13px;
-  margin: 8px 0;
-}
-
-.validation-error {
-  color: var(--danger);
-  font-size: 13px;
-  margin: 8px 0;
-}
-
 /* Draft history */
-
-.draft-history {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 16px;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.draft-history h4 {
-  margin: 0 0 8px;
-}
-
-.history-empty {
-  color: var(--text);
-  font-size: 13px;
-  margin: 0;
-}
-
-.history-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  font-size: 13px;
-}
-
-.history-list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-  border-bottom: 1px dashed var(--border);
-  flex-wrap: wrap;
-}
 
 .history-pick {
   color: var(--accent);
@@ -313,75 +106,11 @@
   width: 34px;
 }
 
-.history-team {
-  width: 110px;
-  color: var(--text);
-}
-
-.history-player {
-  flex: 1;
-}
-
 /* Player pool grouped by player */
-
-.player-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.player-group {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.player-group-header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 0;
-  background: var(--bg);
-  text-align: left;
-  /* On a narrow screen the name + every stat span can't all fit — previously this just
-     clipped silently (the parent .player-group sets overflow: hidden), so TAL/O-TAL/D-TAL/
-     POR/IMP were invisible with no way to reach them. Scrolls horizontally instead, same
-     pattern as .table-scroll below for the expanded span table. */
-  overflow-x: auto;
-}
-
-.pg-caret {
-  width: 12px;
-  flex-shrink: 0;
-  color: var(--accent);
-}
-
-.pg-name {
-  flex-shrink: 0;
-  font-weight: 600;
-  white-space: nowrap;
-}
 
 /* Stable whole-career position label (e.g. "PG/SG") shown right next to the name — a quick
    identity cue for a player the user doesn't recognize, deliberately muted so it doesn't compete
    with the name itself. */
-.pg-natural-position {
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text);
-  opacity: 0.6;
-  white-space: nowrap;
-}
-
-.pg-meta {
-  font-size: 13px;
-  color: var(--text);
-  white-space: nowrap;
-}
 
 /* SPACING tier pills. Each tier gets a fill from its own colour family with text from the
    dark end of that same family — never plain grey — so the label stays legible against the
@@ -731,28 +460,6 @@
 /* Rendered as a sibling of `.table-scroll`, not a row inside it — a colSpan row that lives inside
    a horizontally-scrolling table only shows whatever slice of itself the table happens to be
    scrolled to, which cut off the evidence text on first ship. Full page width, no scroll. */
-.evidence-panel-wrap {
-  margin-top: 8px;
-  padding: 12px 16px;
-  background: #faf9f6;
-  border-radius: 8px;
-}
-
-.evidence-panel-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #78756d;
-  margin-bottom: 8px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .evidence-panel-wrap {
-    background: #232220;
-  }
-  .evidence-panel-label {
-    color: #a8a49a;
-  }
-}
 
 .evidence-report {
   display: flex;
@@ -791,64 +498,8 @@
   }
 }
 
-.span-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.span-table th,
-.span-table td {
-  padding: 8px 8px;
-  border-top: 1px solid var(--border);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.data-provenance-badge {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-}
-
-.data-measured {
-  color: #70d6a4;
-  background: rgb(25 105 72 / 20%);
-}
-
-.data-mixed {
-  color: #f4c86a;
-  background: rgb(131 91 24 / 22%);
-}
-
-.data-manual {
-  color: #ff8f8f;
-  background: rgb(139 43 43 / 22%);
-}
-
 /* The stat columns are wide enough to need horizontal scrolling on a narrow screen, but the
    Draft button must never scroll out of reach — pin it to the left edge (2026-08-13, user
    feedback: had to scroll right past every stat column just to click Draft). ".Why?" stays
    pinned to the right edge for the same reason, on the opposite side. */
-.span-table th:first-child,
-.span-table td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--bg);
-  border-right: 1px solid var(--border);
-}
 
-.span-table th:last-child,
-.span-table td:last-child {
-  position: sticky;
-  right: 0;
-  background: var(--bg);
-  border-left: 1px solid var(--border);
-  text-align: right;
-}

@@ -1,15 +1,8 @@
 /* ---- Draft Lottery (DraftLottery.tsx) ---- */
-.at-lottery { padding: 24px 24px 32px; text-align: center; }
-.at-lottery .at-board-brand { border-bottom: none; padding: 0 0 4px; margin-bottom: 0; }
-.at-lottery-sub { color: var(--at-ink-soft); font-size: 13px; margin: 0 0 22px; }
 
 /* The red "YOU" tag, used next to the human team on the draft boards. NBA-red accent-2 so "your
    team" pops against the otherwise all-blue team chips. */
-.at-lottery-you-tag {
-  flex: none; background: var(--at-accent-2); color: var(--at-accent-2-ink);
-  font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
-  border-radius: 999px; padding: 2px 8px;
-}
+
 @keyframes at-lottery-pop {
   from { opacity: 0; transform: scale(0.85); }
   to { opacity: 1; transform: scale(1); }
@@ -19,95 +12,25 @@
    (this component's own root class) already aliases to its dark board values — see that alias
    block's own comment in App.css. No extra dark-mode styling needed here as a result; this block
    only needs its own spacing/alignment. */
-.at-lottery-howtoplay { max-width: 640px; margin: 22px auto 0; text-align: left; }
-.at-lottery-howtoplay .how-to-play-btn { display: block; margin: 0 auto 14px; }
-
-.at-lottery-continue { margin-top: 4px; }
-.at-lottery-skip {
-  margin-top: 4px; font-size: 12px; padding: 8px 12px; opacity: 0.75;
-}
 
 /* 2026-09-28: the lottery drum (lotteryDrum.ts) replaced the slot-machine reel and its lever. The
    line under the title narrates the draw; a red dot blinks while the player's ball comes out. */
-.at-lottery .at-board-brand + .at-lottery-sub { margin-top: 18px; }
-.at-lottery-sub { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 1.5em; }
-.at-lottery-sub-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--at-accent-2); display: none; }
-.at-lottery-sub.is-hot { color: var(--at-ink); }
-.at-lottery-sub.is-hot .at-lottery-sub-dot { display: block; animation: at-lottery-blink 1s ease-in-out infinite; }
+
 @keyframes at-lottery-blink { 50% { opacity: 0.25; } }
-.at-drum { display: block; width: 100%; max-width: 400px; height: auto; margin: 0 auto 8px; }
-.at-lottery-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.at-lottery-actions > .primary-btn { margin: 0; }
-.at-lottery-secondary { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-.at-lottery-secondary > button { margin: 0; }
-.at-lottery-result { animation: at-lottery-pop .3s ease-out; margin-bottom: 18px; }
-.at-lottery-team-line .team-logo { display: inline-block; vertical-align: middle; margin: -4px 8px 0 0; }
-.at-lottery-team-line { font-size: 16px; color: var(--at-ink); margin: 0 0 10px; }
-.at-lottery-picks-label { font-size: 12px; color: var(--at-ink-soft); margin: 0 0 8px; }
-.at-lottery-picks {
-  display: grid; grid-template-columns: repeat(var(--pick-cols, 9), auto);
-  justify-content: center; gap: 8px; margin: 0 auto;
-}
-@media (max-width: 900px) {
-  /* Narrow: equal-width tiles, round label stacked over the pick number so up to 5 fit across. */
-  .at-lottery-picks {
-    grid-template-columns: repeat(var(--pick-cols-narrow, 3), minmax(0, 1fr));
-    max-width: calc(var(--pick-cols-narrow, 3) * 66px);
-  }
-  .at-lottery-picks .at-lottery-pick { display: flex; flex-direction: column; align-items: center; padding: 4px 4px; border-radius: 8px; }
-  .at-lottery-picks .at-lottery-pick-round { margin-right: 0; font-size: 11px; }
-}
-.at-lottery-pick { text-align: center; white-space: nowrap; }
-.at-lottery-pick {
-  font-size: 13px; font-weight: 700; padding: 4px 8px; border-radius: 999px;
-  background: var(--at-pill); color: var(--at-ink); font-variant-numeric: tabular-nums;
-}
-.at-lottery-pick-round { color: var(--at-ink-faint); font-weight: 600; margin-right: 2px; }
-@media (prefers-reduced-motion: reduce) {
-  .at-lottery-result, .at-lottery-sub.is-hot .at-lottery-sub-dot { animation: none; }
-}
 
 /* 2026-09-24: RotationBuilder's "this is only a suggestion" note and its visible reason for a
    disabled Submit (previously a hover-only tooltip, or nothing at all). */
-.rotation-suggestion-note {
-  font-size: 13px; line-height: 1.5; color: var(--at-ink, var(--text));
-  border: 1px dashed var(--at-accent, var(--border)); border-radius: 8px;
-  padding: 8px 12px; margin: 4px 0 12px;
-}
-.rotation-submit-hint { font-size: 12px; color: var(--at-ink-soft, var(--text)); margin: 8px 0 0; }
 
 /* 2026-09-24: phone layout for the results screen — ranking rows wrap their score chips onto a
    second line instead of squeezing the team name into a 4-line column and clipping the chips off
    the right edge, and the one-row matchup table becomes a wrapping grid (MatchupMatrix.tsx). */
 /* 2026-09-28 playtest: the one-row, 15-column table scrolled sideways even on a 1280px screen, so
    the wrapping grid is now used at every width whenever it's just your own row. */
-.matchup-matrix-scroll.has-compact { display: none; }
-.matchup-matrix-compact {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; margin: 8px 0;
-}
-.matchup-matrix-compact-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.matchup-matrix-compact-cell.is-open { outline-color: rgba(255, 255, 255, 0.8); }
-.matchup-matrix-compact-code { font-size: 11px; font-weight: 600; opacity: 0.85; letter-spacing: 0.06em; }
-@media (min-width: 900px) {
-  .matchup-matrix-compact { grid-template-columns: repeat(8, minmax(0, 1fr)); }
-}
 
 /* 2026-09-24: "← Menu" on the lottery and draft screens, plus the leave-draft confirm. */
-.at-menu-btn {
-  position: absolute; top: 14px; left: 14px; z-index: 6;
-  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
-  border: 1px solid var(--at-line); border-radius: 999px; padding: 8px 12px;
-  background: var(--at-paper-raised); color: var(--at-ink-soft);
-}
-.at-menu-btn:hover { color: var(--at-ink); border-color: var(--at-ink-soft); }
-.at-menu-btn:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 2px; }
+
 .at-exit-modal-text { font-size: 14px; line-height: 1.5; margin: 4px 0 16px; }
 .at-exit-modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-.at-shell:has(> .at-menu-btn) { position: relative; }
-@media (max-width: 640px) {
-  .at-menu-btn { top: 8px; left: 8px; padding: 4px 8px; }
-  .at-shell:has(> .at-menu-btn) > .at-board-brand { padding-top: 52px; }
-}
 
 /* 2026-09-24: "Why you finished here" — insights + one tip + the replay actions, right under the
    hero (ResultsScreen.tsx `ResultsVerdict`). */
@@ -128,25 +51,12 @@
 }
 
 /* 2026-09-24: intro "Continue draft" banner + the confirm shown before a new draft replaces it. */
-.saved-draft-banner {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px;
-  margin: 0 auto 18px; padding: 8px 12px; max-width: 420px;
-  border: 1px solid #4a9eda; border-radius: 8px; font-size: 13px; color: var(--at-t3-ink, #cfe3f7);
-  background: rgba(74, 158, 218, 0.12);
-}
-.saved-draft-continue {
-  font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; border: none;
-  border-radius: 999px; padding: 8px 16px; background: #4a9eda; color: var(--at-accent-ink, #06070c);
-}
-.saved-draft-confirm-text { font-size: 14px; line-height: 1.5; margin: 4px 0 16px; }
-.saved-draft-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: stretch; flex-wrap: wrap; }
+
 /* 2026-09-26, user-reported ("lewy górny róg się rozjeżdża, przyciski nierówne"): the two buttons
    kept their legacy standalone margins (primary 16px on top, secondary 8px/16px), so they sat at
    different heights, and the extra bottom margin overflowed the modal — its scrollbars pushed the
    terminal corner brackets out of place. Same one-baseline fix as the verdict/results rows, and a
    confirm this short never needs to scroll. */
-.saved-draft-confirm-actions > button { margin: 0; min-height: 44px; }
-.saved-draft-confirm-modal { overflow: visible; }
 
 /* 2026-09-24: collapsed draft board ticker (DraftBoard.tsx) + the phone "Your Team" toggle. */
 
@@ -162,11 +72,6 @@
 /* 2026-09-25, user ("brak odległości, elementy wchodzą na siebie"): the old `.at-ticker + …` rule
    missed whenever the scroll nav between them was hidden (desktop), so the open board sat flush
    against the ticker. The ticker carries its own gap instead. */
-
-.at-draft-sidebar-head--toggle {
-  width: 100%; font: inherit; cursor: pointer; background: none; border: none; padding: 0; color: inherit;
-  text-align: left;
-}
 
 /* 2026-09-24, user-reported live ("dużo wolnego miejsca"): the card's lower half was mostly empty
    — two small buttons stacked in the bottom-right corner. Now a box-score line plus the two actions
@@ -189,13 +94,7 @@
 
 /* 2026-09-24: detailed variant of the rotation tiles (RotationColumns), used in every team's
    Rotation section of the ranking: a TAL badge per player and a total when minutes are split. */
-.rotation-columns--detailed .results-hero-rotation-entry { position: relative; }
-.rotation-entry-tal {
-  margin-left: auto; flex: none; font-size: 11px; font-weight: 800; color: #fff;
-  padding: 1px 8px; border-radius: 999px; font-variant-numeric: tabular-nums;
-}
-.rotation-entry-total { color: var(--at-ink-faint); font-weight: 500; }
-.rotation-columns--detailed .rotation-natural-pos { margin-left: 3px; }
+
 /* 2026-09-25, visual consistency pass: the game shell is dark no matter what the OS theme is (see
    `.at-shell`), but these badge palettes only switched to their dark variants under
    `prefers-color-scheme: dark` — on a light-mode OS the same tier pills came out as pastel light
@@ -335,18 +234,8 @@
     border-color: #d9ac5c;
     color: #d9ac5c;
 }
-.at-shell .evidence-panel-wrap {
-    background: #232220;
-}
-.at-shell .evidence-panel-label {
-    color: #a8a49a;
-}
+
 .at-shell .evidence-column h4 {
     color: #a8a49a;
 }
-.at-shell .notes-strengths strong {
-    color: var(--at-good, #7fd68a);
-}
-.at-shell .notes-concerns strong {
-    color: var(--at-warn, #f0a868);
-}
+

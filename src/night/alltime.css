@@ -893,7 +893,6 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 }
 /* React glue for the All-Time draft */
 .nt {
-  .nt-test { position: fixed; z-index: 4; right: 12px; bottom: 12px; padding: 6px 10px; background: var(--surf); border: 1px solid var(--rule2); border-radius: 3px; font-size: 13px; }
   .pt-more select { appearance: none; -webkit-appearance: none; background: transparent; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; margin-right: 10px; padding: 0 2px 1px; font: 700 16px var(--cond); color: var(--ink); cursor: pointer; }
   .pt-more select option { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   .bboard .bb-n { padding: 0; text-align: left; font: inherit; color: inherit; text-decoration: inherit; }
@@ -975,4 +974,13 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .aw-f .ini, .duel .pl .ini, .asg-cap .ini, .np .ini { width: 40px; height: 40px; border-radius: 50%; background: var(--surf2); display: grid; place-items: center; font: 700 13px var(--cond); color: var(--ink3); flex: none; }
   .aw.big .aw-f .ini { width: 72px; height: 72px; font-size: 22px; }
   .stand2.full td.nm { white-space: nowrap; }
+}
+.nt.nt-test { position: fixed; z-index: 4; right: 12px; bottom: 12px; padding: 6px 10px; background: var(--surf); border: 1px solid var(--rule2); border-radius: 3px; font-size: 13px; }
+@media (max-width: 600px) {
+  .nt aside section.snav { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 4px; }
+  .nt aside section.snav h3 { display: none; }
+  .nt aside section.snav .kv.nav { flex: none; width: auto; padding: 6px 10px; border: 1px solid var(--rule3); border-radius: 3px; font-size: 13px; }
+  .nt aside section.snav .kv.nav b { display: none; }
+  .nt aside section.snav .kv.nav.on { box-shadow: none; background: var(--ink); }
+  .nt aside section.snav .kv.nav.on span { color: var(--bg); }
 }

@@ -382,7 +382,7 @@ function SeasonBody({
       ) : (
         <Tally you={record.wins} mid={ord(rank)} ai={record.losses} youK="Won" midK="Seed" aiK="Lost" plain />
       )}
-      <section>
+      <section className="snav keep">
         <H3>Season</H3>
         {nav.map((n) => {
           const on = n.id === 'playoffs' ? chapter === 'playoffs' : chapter === 'season' && tab === n.id;

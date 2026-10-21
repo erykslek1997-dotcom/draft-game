@@ -18,11 +18,10 @@ import {
   type LiveSeasonResult,
   type SeasonPlayerLine,
 } from "../engine/liveSeason";
-import type { LegendFive } from "../engine/dailyMeta";
 import type { PlayerSpan } from "../data/schema";
 import type { Team } from "../engine/types";
 import benchLeagues from "../data/benchTeams.json";
-import LiveGame from "./LiveGame";
+import LiveGameNight from "../night/LiveGameNight";
 
 /**
  * 2026-10-02, stage 2 (simulations), the user: "będzie potrzebny oddzielny tryb do testów, dwie
@@ -61,16 +60,6 @@ function randomPair(): [[number, number], [number, number]] {
   let b = pick();
   while (b[0] === a[0] && b[1] === a[1]) b = pick();
   return [a, b];
-}
-
-function teamLabel(name: string): LegendFive {
-  return {
-    id: "ai",
-    name,
-    short: name,
-    endYear: 0,
-    players: ["", "", "", "", ""],
-  };
 }
 
 export default function LiveTestBench({ onBack }: { onBack: () => void }) {
@@ -225,11 +214,13 @@ function GameBench() {
         )}
       </p>
 
-      <LiveGame
+      <LiveGameNight
         key={`${matchup}-${take}`}
         game={game}
-        opponent={teamLabel(teams[1].name)}
-        autoStart={false}
+        variant="full"
+        sides={{ names: [teams[0].name, teams[1].name], short: [teams[0].name.split(" ").slice(-1)[0], teams[1].name.split(" ").slice(-1)[0]], codes: ["A", "B"], you: 0 }}
+        mast={{ title: "Live game bench", sub: "Testing · final", liveSub: "Testing · live", preSub: "Testing · tip-off" }}
+        autoStart
       />
     </>
   );

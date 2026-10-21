@@ -1462,9 +1462,16 @@ export default function DraftBoard({
         {main}
         {rotation}
         {!teamYears && (
-          <Btn className="phone-only" disabled={!canSubmit} onClick={() => submitRef.current?.()}>
-            Play the season
-          </Btn>
+          <div className="btn2 phone-only">
+            <Btn disabled={!canSubmit} onClick={() => submitRef.current?.()}>
+              Play the season
+            </Btn>
+            {!state.complete && (
+              <Btn kind="line" onClick={() => setActiveTab('draft')}>
+                Back to the draft
+              </Btn>
+            )}
+          </div>
         )}
       </NightGame>
     );
@@ -1718,6 +1725,11 @@ export default function DraftBoard({
           <Btn kind="line" onClick={() => setActiveTab('team')}>
             Team · {humanTeam.roster.length}/{ROSTER_SIZE}
           </Btn>
+          {youOnClock && callsLeft > 0 && (
+            <Btn kind="line" onClick={() => setCallSheetOpen(true)}>
+              Phone the desk · {callsLeft}
+            </Btn>
+          )}
         </div>
       )}
     </NightGame>
