@@ -211,6 +211,23 @@
 .cb-reset { font: italic 500 13px Inter, sans-serif; color: var(--ink2); }
 .filters { border-bottom: 0; }
 @media (max-width: 600px) { .capsbar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; } .cb-reset { display: none; } .cb-max em { display: none; } }
+
+/* position tabs */
+.ptabs { display: flex; align-items: flex-end; gap: 0; border-bottom: 1.5px solid var(--rule2); }
+.ptabs .pt { display: flex; align-items: baseline; gap: 6px; padding: 8px 16px 10px; text-decoration: none; color: var(--ink3); border-bottom: 3px solid transparent; margin-bottom: -1.5px; }
+.ptabs .pt b { font: 800 20px var(--cond); letter-spacing: 0.03em; }
+.ptabs .pt span { font: 500 12px var(--num); }
+.ptabs .pt.need b { color: var(--ink); }
+.ptabs .pt.have { opacity: 0.5; }
+.ptabs .pt.have span { font: italic 500 12px Inter, sans-serif; }
+.ptabs .pt.on { border-bottom-color: var(--red); }
+.ptabs .pt.on b { color: var(--red); }
+.ptabs .pt.on span { color: var(--ink2); }
+.ptabs .search { border: 0; border-bottom: 1px solid #45433F; background: transparent; color: var(--ink); padding: 6px 0; font: 15px Inter, sans-serif; margin-left: auto; margin-bottom: 8px; flex: 0 1 260px; }
+.slot.empty.sel { border: 2px solid var(--red); color: var(--red); background: rgba(224, 82, 90, 0.05); }
+.slot.empty.sel small { color: var(--red); font-style: normal; font-weight: 600; }
+@media (max-width: 600px) { .ptabs { flex-wrap: wrap; } .ptabs .pt { padding: 8px 10px 10px; } .ptabs .pt b { font-size: 17px; } .ptabs .search { flex-basis: 100%; order: -1; margin: 0 0 6px; } }
+.ptabs .search::placeholder { color: var(--ink3); font-style: italic; }
 </style>
 </head>
 <body>
@@ -279,7 +296,7 @@ const filters = (hidden = []) => `<div class="filters"><input class="search" pla
 
 
 // 2026-10-21, the user: a caps filter as its own bar, not typed into the search box.
-const capsBar = (lo, hi, maxPick, top = 30) => { const pct = (v) => (v / top) * 100; return `<div class="capsbar"><span class="cb-k">Caps</span><div class="cb-track"><i class="cb-range" style="left:${pct(lo)}%;width:${pct(hi - lo)}%"></i><b class="cb-h" style="left:${pct(lo)}%"></b><b class="cb-h" style="left:${pct(hi)}%"></b><u class="cb-max" style="left:${pct(maxPick)}%"><em>your max ${maxPick}</em></u>${[0, 5, 10, 15, 20, 25, 30].filter((t) => t <= top).map((t) => `<s style="left:${pct(t)}%">${t}</s>`).join('')}</div><span class="cb-v"><i class="capi"></i>${lo === 0 && hi === top ? "any" : `${lo}–${hi}`}</span><a class="cb-reset" href="#">any</a></div>`; };
+const capsBar = (lo, hi, maxPick, top = 30) => { const pct = (v) => (v / top) * 100; return `<div class="capsbar"><span class="cb-k">Caps</span><div class="cb-track"><i class="cb-range" style="left:${pct(lo)}%;width:${pct(hi - lo)}%"></i><b class="cb-h" style="left:${pct(lo)}%"></b><b class="cb-h" style="left:${pct(hi)}%"></b><u class="cb-max" style="left:${pct(maxPick)}%"><em>your max ${maxPick}</em></u>${[0, 5, 10, 15, 20, 25, 30].filter((t) => t <= top).map((t) => `<s style="left:${pct(t)}%">${t}</s>`).join('')}</div><span class="cb-v"><i class="capi"></i>${lo === 0 && hi === top ? "any" : `${lo}–${hi}`}</span><a class="cb-reset" href="#">reset</a></div>`; };
 const S = {};
 S.lottery = () => [
   mast('Mini Draft', '16 teams · 5 rounds · starters only') + tally('70', '16', '5', { youK: 'Cap', midK: 'Teams', aiK: 'Rounds' }) +
@@ -351,6 +368,21 @@ S.dailyResults = () => [
   resultsMain(true) + `<button class="btn line phone-only">Copy result</button>`];
 
 S.pickCaps = () => { const [l, m] = S.pick(); return [l, m.replace(/\$\{?capsBar\(0, 30, 24\.5\)\}?/, '').replace(/<div class="capsbar">[\s\S]*?<\/div><span class="cb-v">[\s\S]*?<\/a><\/div>/, capsBar(10, 14, 24.5)).replace(/<table class="plist">[\s\S]*<\/table>/, plist(['nash', 'cp3', 'reggie'], { hot: 'nash' })).replace(/Showing 11 of 54 left/, 'Showing 3 players at 10–14 caps')]; };
+
+// 2026-10-21: position filter v2 — tabs with counts, tied to your five (an open slot filters the list).
+const COUNTS = { PG: 14, SG: 11, SF: 9, PF: 12, C: 8 };
+function posTabs(sel, have = ['SF']) {
+  const all = Object.values(COUNTS).reduce((a, b) => a + b, 0);
+  return `<div class="ptabs"><a class="pt ${sel === 'ALL' ? 'on' : ''}" href="#"><b>All</b><span>${all}</span></a>${SL.map((s) => `<a class="pt ${sel === s ? 'on' : ''} ${have.includes(s) ? 'have' : 'need'}" href="#"><b>${s}</b><span>${have.includes(s) ? 'set' : COUNTS[s]}</span></a>`).join('')}<input class="search" placeholder="Search players…"></div>`;
+}
+function fiveSel(keys, sel) {
+  return five(keys).replace(new RegExp(`<div class="slot empty">${sel}<small>open</small></div>`), `<div class="slot empty sel">${sel}<small>showing ${COUNTS[sel]} ▾</small></div>`).replace(/<div class="slot empty">(\w+)<small>open<\/small><\/div>/g, '<div class="slot empty">$1<small>tap to show</small></div>');
+}
+S.posTabs = () => { const [l, m] = S.pick();
+  let mm = m.replace(/<section><h3>Your five[\s\S]*?<\/div><\/section>/, fiveSel(['', '', 'pippen', '', ''], 'PF'));
+  mm = mm.replace(/<div class="filters">[\s\S]*?<\/div>/, posTabs('PF'));
+  mm = mm.replace(/<table class="plist">[\s\S]*<\/table>/, plist(['malone', 'dirk', 'barkley'], { hot: 'malone' })).replace(/Showing 11 of 54 left/, 'Showing PF · 3 of 12');
+  return [l, mm]; };
 const key = (location.hash || '#pick').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;

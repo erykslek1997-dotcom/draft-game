@@ -265,7 +265,7 @@ const leftDraft = () => mast('All-Time Draft', 'Round 3 of 9 · pick 40 of 144')
 
 
 // 2026-10-21, the user: a caps filter as its own bar, not typed into the search box.
-const capsBar = (lo, hi, maxPick, top = 30) => { const pct = (v) => (v / top) * 100; return `<div class="capsbar"><span class="cb-k">Caps</span><div class="cb-track"><i class="cb-range" style="left:${pct(lo)}%;width:${pct(hi - lo)}%"></i><b class="cb-h" style="left:${pct(lo)}%"></b><b class="cb-h" style="left:${pct(hi)}%"></b><u class="cb-max" style="left:${pct(maxPick)}%"><em>your max ${maxPick}</em></u>${[0, 5, 10, 15, 20, 25, 30].filter((t) => t <= top).map((t) => `<s style="left:${pct(t)}%">${t}</s>`).join('')}</div><span class="cb-v"><i class="capi"></i>${lo === 0 && hi === top ? "any" : `${lo}–${hi}`}</span><a class="cb-reset" href="#">any</a></div>`; };
+const capsBar = (lo, hi, maxPick, top = 30) => { const pct = (v) => (v / top) * 100; return `<div class="capsbar"><span class="cb-k">Caps</span><div class="cb-track"><i class="cb-range" style="left:${pct(lo)}%;width:${pct(hi - lo)}%"></i><b class="cb-h" style="left:${pct(lo)}%"></b><b class="cb-h" style="left:${pct(hi)}%"></b><u class="cb-max" style="left:${pct(maxPick)}%"><em>your max ${maxPick}</em></u>${[0, 5, 10, 15, 20, 25, 30].filter((t) => t <= top).map((t) => `<s style="left:${pct(t)}%">${t}</s>`).join('')}</div><span class="cb-v"><i class="capi"></i>${lo === 0 && hi === top ? "any" : `${lo}–${hi}`}</span><a class="cb-reset" href="#">reset</a></div>`; };
 const S = {};
 S.draft = () => [leftDraft(),
   nine(['payton', '', 'durant', '', ''], []) +
