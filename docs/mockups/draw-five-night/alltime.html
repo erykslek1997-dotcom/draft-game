@@ -713,6 +713,59 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .pd-pick .star { font-size: 20px; color: var(--ink4); text-align: center; }
 .pd-pick .star.on { color: var(--ink); }
 @media (max-width: 600px) { .dday { padding: 0 0 24px; } .dday h2 { font-size: 44px; } .drule { grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 12px 0; } .drule .ic { font-size: 16px; height: 14px; } .drule p { margin-top: 2px; } .drule b { font-size: 19px; } .pd-line { grid-template-columns: 36px minmax(0, 1fr); } .pd-line .bdg { grid-column: 2; padding: 0; } .pd-av { width: 36px; height: 36px; } }
+
+/* season player card */
+.pc-head { display: flex; gap: 16px; align-items: center; padding-bottom: 12px; border-bottom: 1.5px solid var(--rule2); }
+.pc-head img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.pc-head h2 { margin: 0; font: 800 34px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.pc-head small { display: block; margin-top: 4px; font: 500 13px var(--num); color: var(--ink3); }
+.pc-head .x { margin-left: auto; align-self: flex-start; color: var(--ink2); text-decoration: none; font-size: 18px; }
+.pc-facts { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.pc-facts b { color: var(--ink); font-weight: 600; }
+.pc-wrap { overflow-x: auto; margin: 6px 0 10px; }
+.pc-t { width: 100%; border-collapse: collapse; min-width: 560px; }
+.pc-t th { padding: 8px 6px 6px; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; color: var(--ink3); text-align: right; border-bottom: 1px solid var(--rule); }
+.pc-t th:first-child, .pc-t td:first-child { text-align: left; padding-left: 0; }
+.pc-t td { padding: 9px 6px; font: 500 14px var(--num); color: var(--ink2); text-align: right; border-bottom: 1px solid var(--rule); }
+.pc-t td:first-child { font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); }
+.pc-t td.k { color: var(--ink); font-weight: 600; }
+.pc-real { margin: 0; font-size: 14px; font-style: italic; color: var(--ink3); }
+.pc-real b { font-style: normal; color: var(--ink2); }
+/* your series */
+.steps { display: flex; flex-wrap: wrap; gap: 4px 22px; font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+.steps .ok { color: var(--ink2); } .steps .ok i { font-style: normal; color: var(--green); margin-right: 4px; }
+.steps .now { color: var(--red); }
+.sh-score { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; padding: 14px 0; }
+.sh-t { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sh-t.r { flex-direction: row-reverse; text-align: right; }
+.sh-t b { display: block; font: 800 26px/1 var(--cond); text-transform: uppercase; }
+.sh-t small { display: block; margin-top: 3px; font: 500 13px var(--num); color: var(--ink3); }
+.sh-big { text-align: center; }
+.sh-big b { display: block; font: 600 64px/1 var(--num); letter-spacing: -0.02em; }
+.sh-big span { font: italic 500 14px Inter, sans-serif; color: var(--ink3); }
+.sh-games { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1.5px solid var(--rule2); border-bottom: 1px solid var(--rule); }
+.sh-g { padding: 10px 8px; border-left: 1px solid var(--rule); }
+.sh-g:first-child { border-left: 0; padding-left: 0; }
+.sh-g span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
+.sh-g b { display: block; margin-top: 4px; font: 600 16px var(--num); }
+.sh-g b.w { color: var(--green); } .sh-g b.l { color: var(--red); }
+.sh-g small { font: 500 12px var(--num); color: var(--ink2); }
+.sh-g.next b { color: var(--red); font-family: var(--cond); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.sh-g.later b { color: var(--ink4); }
+.sh-edge { margin: 0; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 15px; color: var(--ink2); }
+.sh-edge i { font-style: normal; font: 800 16px var(--cond); margin-right: 8px; }
+.sh-edge i.up { color: var(--green); } .sh-edge i.dn { color: var(--red); }
+.sh-edge b { color: var(--ink); font-weight: 600; }
+.duel { display: grid; grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.duel .pl { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.duel .pl.r { flex-direction: row-reverse; text-align: right; }
+.duel img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.duel b { display: block; font: 700 17px/1.1 var(--cond); }
+.duel b small { margin-left: 6px; font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.duel .pl.r b small { margin: 0 6px 0 0; }
+.duel span.ln { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); }
+.duel .vs { text-align: center; font: 700 13px var(--cond); color: var(--ink3); text-transform: uppercase; }
+@media (max-width: 600px) { .sh-t b { font-size: 18px; } .sh-t img, .sh-t .tm { display: none; } .sh-big b { font-size: 44px; } .sh-games { grid-template-columns: repeat(7, minmax(0, 1fr)); } .sh-g { padding: 8px 3px; } .sh-g small { display: none; } .sh-g b { font-size: 14px; } .duel b { font-size: 15px; } .duel .fn { display: none; } .duel img { display: none; } .duel span.ln { white-space: nowrap; } .btn2.phone-only { display: grid !important; grid-template-columns: 1fr 1fr; margin: 4px 0 6px; } .pc-head h2 { font-size: 28px; } .pc-head img { width: 56px; height: 56px; } }
 </style>
 </head>
 <body>
@@ -954,7 +1007,7 @@ const asg = () => `<div class="asg">${asgSide('kevin-durant', 'Durant', 'TUL', 2
 S.stats = () => [leftAfter('Your season', 'Stats · regular season'),
   prompt('League stats', 'Who ran the league', 'Per game, regular season. Tap a player for his season card.') +
   `<div class="ptabs"><a class="pt on" href="#"><b>Leaders</b></a><a class="pt" href="#"><b>Players</b></a><a class="pt" href="#"><b>Teams</b></a><span class="pt-more"><span>Season</span><u>Regular</u><span>or</span><u style="border-color:transparent;color:var(--ink3)">Playoffs</u></span></div>
-  <div class="ldr-grid">${[['Points', [['Michael Jordan', 'KEN', 31.8], ['Kevin Durant', 'TUL', 29.4, 1], ['LeBron James', 'DUL', 28.1], ['Kobe Bryant', 'REN', 27.6], ['Stephen Curry', 'BIS', 26.9]]], ['Rebounds', [['Dennis Rodman', 'TUL', 15.1, 1], ['Ben Wallace', 'TUL', 13.9, 1], ['Hakeem Olajuwon', 'DUL', 12.9], ['Kevin Garnett', 'TUL', 12.8, 1], ['Tim Duncan', 'ANC', 12.1]]], ['Assists', [['Magic Johnson', 'SFE', 11.9], ['John Stockton', 'ANC', 10.8], ['Stephen Curry', 'BIS', 8.4], ['Gary Payton', 'TUL', 7.9, 1], ['LeBron James', 'DUL', 7.6]]], ['Steals', [['Gary Payton', 'TUL', 2.3, 1], ['Michael Jordan', 'KEN', 2.2], ['John Stockton', 'ANC', 2.1], ['Kawhi Leonard', 'ELP', 1.9], ['Scottie Pippen', 'DUL', 1.9]]], ['Blocks', [['Hakeem Olajuwon', 'DUL', 3.4], ['Ben Wallace', 'TUL', 2.6, 1], ["Shaquille O'Neal", 'HON', 2.4], ['David Robinson', 'HON', 2.3], ['Tim Duncan', 'ANC', 2.2]]], ['3PM', [['Stephen Curry', 'BIS', 4.6], ['Klay Thompson', 'TUL', 3.5, 1], ['Ray Allen', 'TPA', 3.1], ['Kevin Durant', 'TUL', 2.4, 1], ['Larry Bird', 'SFE', 2.0]]]].map(([t, rows]) => `<section class="ldr"><h3>${t}</h3><table class="leaders">${rows.map(([n, c, v, you], i) => `<tr class="${you ? 'you' : ''}"><td class="k">${i + 1}</td><td><b>${n}</b> · ${c}</td><td class="v">${v}</td></tr>`).join('')}</table></section>`).join('')}</div>`];
+  <div class="ldr-grid">${[['Points', [['Michael Jordan', 'KEN', 31.8], ['Kevin Durant', 'TUL', 29.4, 1], ['LeBron James', 'DUL', 28.1], ['Kobe Bryant', 'REN', 27.6], ['Stephen Curry', 'BIS', 26.9]]], ['Rebounds', [['Dennis Rodman', 'TUL', 15.1, 1], ['Ben Wallace', 'TUL', 13.9, 1], ['Hakeem Olajuwon', 'DUL', 12.9], ['Kevin Garnett', 'TUL', 12.8, 1], ['Tim Duncan', 'ANC', 12.1]]], ['Assists', [['Magic Johnson', 'SFE', 11.9], ['John Stockton', 'ANC', 10.8], ['Stephen Curry', 'BIS', 8.4], ['Gary Payton', 'TUL', 7.9, 1], ['LeBron James', 'DUL', 7.6]]], ['Steals', [['Gary Payton', 'TUL', 2.3, 1], ['Michael Jordan', 'KEN', 2.2], ['John Stockton', 'ANC', 2.1], ['Kawhi Leonard', 'ELP', 1.9], ['Scottie Pippen', 'DUL', 1.9]]], ['Blocks', [['Hakeem Olajuwon', 'DUL', 3.4], ['Ben Wallace', 'TUL', 2.6, 1], ["Shaquille O'Neal", 'HON', 2.4], ['David Robinson', 'HON', 2.3], ['Tim Duncan', 'ANC', 2.2]]], ['3PM', [['Stephen Curry', 'BIS', 4.6], ['Klay Thompson', 'TUL', 3.5, 1], ['Ray Allen', 'TPA', 3.1], ['Kevin Durant', 'TUL', 2.4, 1], ['Larry Bird', 'SFE', 2.0]]]].map(([t, rows]) => `<section class="ldr"><h3>${t}</h3><table class="leaders">${rows.map(([n, c, v, you], i) => `<tr class="${you ? 'you' : ''}"><td class="k">${i + 1}</td><td><b>${n}</b> · ${c}</td><td class="v">${v.toFixed(1)}</td></tr>`).join('')}</table></section>`).join('')}</div>`];
 S.share = () => [leftAfter('Your season', 'Share your season'),
   prompt('Share your season', 'One card, your whole year', 'Saves as an image. Nothing about other teams' + "'" + ' rosters.') +
   `<div class="share-card"><div class="sc-top"><span class="mark">D</span><b>DRAFTVERSE</b><span>All-Time Draft · season</span></div>
@@ -1035,6 +1088,22 @@ S.call = () => dlg(S.ribbon, `<div class="dlg"><div class="pd-top"><span class="
   ${[['kevin-garnett', 'Kevin Garnett', 'PF · 2002–04', '19.4', 1], ['rudy-gobert', 'Rudy Gobert', 'C · 2018–20', '9.1', 0], ['marcus-camby', 'Marcus Camby', 'C · 2006–08', '9.6', 0]].map(([img, n, ln, c, on]) => `<div class="pd-pick"><img src="heads/${img}.png" alt=""><div><b>${n}</b><small>${ln}</small></div><span class="cst"><i class="capi"></i>${c}</span><span class="star ${on ? 'on' : ''}">★</span></div>`).join('')}
   <p class="empty-note" style="margin:10px 0 16px">Stars go to your Big Board. The pick stays yours.</p>
   <div class="btn2"><button class="btn go">Back to board</button><button class="btn line">Star all 3</button></div></div>`);
+S.pcard = () => dlg(S.stats, `<div class="dlg" style="width:min(720px, calc(100% - 32px))"><div class="pc-head"><img src="heads/kevin-durant.png" alt=""><div><h2>Kevin Durant</h2><small>SF · 2012–14 · Greatest peak</small></div><a class="x" href="#">✕</a></div>
+  <div class="pc-facts"><span>${tm('TUL')} <b>Tulsa Twisters</b></span><span>Drafted <b>#7</b> · round 1</span><span>Starter · <b>2nd</b> in the league in points</span></div>
+  <div class="pc-wrap"><table class="pc-t"><tr><th></th>${['G', 'MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG%', '3P%', 'FT%', 'TOV', 'PF'].map((h) => `<th>${h}</th>`).join('')}</tr>
+  <tr><td>Season</td>${['78', '37.2', '29.4', '7.1', '4.8', '1.2', '1.0', '51.0', '38.6', '88.4', '3.1', '1.9'].map((v, i) => `<td class="${i === 2 ? 'k' : ''}">${v}</td>`).join('')}</tr>
+  <tr><td>Playoffs</td>${['22', '39.8', '31.2', '7.6', '5.1', '1.3', '1.1', '49.4', '37.1', '89.0', '3.4', '2.2'].map((v, i) => `<td class="${i === 2 ? 'k' : ''}">${v}</td>`).join('')}</tr></table></div>
+  <p class="pc-real">His real 2012–14: <b>29.7 pts · 7.6 reb · 5.0 ast</b> a game.</p></div>`);
+S.series = () => { const [l] = S.playoffs(); return [l,
+  `<div class="steps"><span class="ok"><i>✓</i>Quarterfinal · beat HON 4–1</span><span class="ok"><i>✓</i>Semifinal · beat SFE 4–2</span><span class="now">● Finals · now</span></div>
+  <div class="sh-score"><div class="sh-t">${tm('TUL')}<div><b>Tulsa Twisters</b><small>#3 · 52–30</small></div></div><div class="sh-big"><b>3–3</b><span>Game 7, winner takes it</span></div><div class="sh-t r">${tm('KEN')}<div><b>Kentucky Chickens</b><small>#1 · 61–21</small></div></div></div>
+  <div class="sh-games">${[['W', '112–101'], ['L', '99–104'], ['W', '108–97'], ['L', '95–110'], ['W', '104–96'], ['L', '101–106']].map(([r, sc], i) => `<div class="sh-g"><span>G${i + 1}</span><b class="${r === 'W' ? 'w' : 'l'}">${r} <small>${sc}</small></b></div>`).join('')}<div class="sh-g next"><span>G7</span><b>Tonight</b></div></div>
+  <div class="btn2 phone-only"><button class="btn go">▶ Play game 7</button><button class="btn line">Sim game 7</button></div>
+  <div class="split"><section><h3>The matchup<span>series odds 48%</span></h3>
+   <p class="sh-edge"><i class="up">+</i><b>Your defense.</b> Kentucky scored 101 a game in the series, 9 under its season.</p>
+   <p class="sh-edge"><i class="up">+</i><b>Garnett on the glass:</b> 13.8 rebounds a game, the most on the floor.</p>
+   <p class="sh-edge"><i class="dn">−</i><b>Jordan.</b> 34.6 a game in the series and 41 in game 6.</p></section>
+   <section><h3>Top three<span>season · pts · reb · ast</span></h3>${[['kevin-durant', 'Kevin Durant', 'SF', '29.4 · 7.1 · 4.8', 'michael-jordan', 'Michael Jordan', 'SG', '31.8 · 6.1 · 5.3'], ['kevin-garnett', 'Kevin Garnett', 'PF', '21.2 · 12.8 · 3.9', 'charles-barkley', 'Charles Barkley', 'PF', '24.6 · 11.4 · 4.1'], ['gary-payton', 'Gary Payton', 'PG', '19.8 · 4.4 · 7.9', 'patrick-ewing', 'Patrick Ewing', 'C', '22.8 · 10.6 · 2.0']].map(([ia, na, pa, la, ib, nb, pb, lb]) => { const nm = (n) => { const i = n.indexOf(' '); return `<span class="fn">${n.slice(0, i)} </span>${n.slice(i + 1)}`; }; return `<div class="duel"><div class="pl"><img src="heads/${ia}.png" alt=""><div><b>${nm(na)}<small>${pa}</small></b><span class="ln">${la}</span></div></div><span class="vs">vs</span><div class="pl r"><img src="heads/${ib}.png" alt=""><div><b><small>${pb}</small>${nm(nb)}</b><span class="ln">${lb}</span></div></div></div>`; }).join('')}</section></div>`]; };
 S.menu2 = () => ['', `<div class="m2">
   <div class="m2-mast"><b>Draftverse</b><span>Every era. One game.</span></div>
   <div class="m2-team">${tm('TUL')}<span>Tulsa Twisters</span><a href="#">change</a></div>
