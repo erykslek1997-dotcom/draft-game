@@ -195,6 +195,20 @@
   .rot .mins { display: none; }
   .stand2 td:nth-child(n+6), .stand2 th:nth-child(n+6) { display: none; }
 }
+
+/* caps range bar */
+.capsbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 18px; padding: 14px 0 22px; border-bottom: 1.5px solid var(--rule2); }
+.capsbar .cb-k { font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+.cb-track { position: relative; height: 4px; background: var(--rule); border-radius: 2px; margin: 0 8px; }
+.cb-range { position: absolute; top: 0; bottom: 0; background: var(--gold); border-radius: 2px; }
+.cb-h { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--bg); }
+.cb-max { position: absolute; top: -8px; bottom: -8px; width: 2px; margin-left: -1px; background: var(--red); text-decoration: none; }
+.cb-max em { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: italic 500 11px Inter, sans-serif; color: var(--red); }
+.cb-track s { position: absolute; top: 10px; transform: translateX(-50%); text-decoration: none; font: 500 10px var(--num); color: var(--ink3); }
+.cb-v { font: 600 16px var(--num); color: var(--gold); white-space: nowrap; }
+.cb-reset { font: italic 500 13px Inter, sans-serif; color: var(--ink2); }
+.filters { border-bottom: 0; }
+@media (max-width: 600px) { .capsbar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; } .cb-reset { display: none; } .cb-max em { display: none; } }
 </style>
 </head>
 <body>
@@ -249,12 +263,15 @@ const leftDraft = () => mast('All-Time Draft', 'Round 3 of 9 · pick 40 of 144')
   `<section class="latest-picks"><h3>Latest picks<span>around the league</span></h3><table class="log">${[[39, 'ANC', 'Jason Kidd, PG', 15], [38, 'SFE', 'Allen Iverson, PG', 22], [37, 'HON', 'Dikembe Mutombo, C', 8.1], [36, 'REN', 'Moses Malone, C', 20], [35, 'KEN', 'Isiah Thomas, PG', 17], [34, 'DUL', 'Scottie Pippen, SF', 15]].map(([n, c, w, f], i) => `<tr class="a ${i === 0 ? 'latest' : ''}"><td class="n">${n}</td><td class="w">${c}</td><td class="p">${w}</td><td class="c">${f}</td></tr>`).join('')}</table></section>` +
   actions('<button class="btn line">Show draft board</button><button class="btn line">Phone the desk · 3 left</button>');
 
+
+// 2026-10-21, the user: a caps filter as its own bar, not typed into the search box.
+const capsBar = (lo, hi, maxPick, top = 30) => { const pct = (v) => (v / top) * 100; return `<div class="capsbar"><span class="cb-k">Caps</span><div class="cb-track"><i class="cb-range" style="left:${pct(lo)}%;width:${pct(hi - lo)}%"></i><b class="cb-h" style="left:${pct(lo)}%"></b><b class="cb-h" style="left:${pct(hi)}%"></b><u class="cb-max" style="left:${pct(maxPick)}%"><em>your max ${maxPick}</em></u>${[0, 5, 10, 15, 20, 25, 30].filter((t) => t <= top).map((t) => `<s style="left:${pct(t)}%">${t}</s>`).join('')}</div><span class="cb-v"><i class="capi"></i>${lo === 0 && hi === top ? "any" : `${lo}–${hi}`}</span><a class="cb-reset" href="#">any</a></div>`; };
 const S = {};
 S.draft = () => [leftDraft(),
   nine(['payton', '', 'durant', '', ''], []) +
   prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
-  `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen', 'dray', 'gobert', 'rodman', 'bwallace', 'iggy'], { hot: 'garnett', no: ['ewing'] })}<div class="more">Showing 10 of 1,522 player stretches · <a href="#">See more</a> · 3 scouting reports left</div></section>`];
-function filters(hidden = []) { return `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span><span class="grp"><span>Role</span><u>Any</u></span><span class="grp"><span>Sort</span><u>Best first</u></span><span class="fit">Affordable only</span></div>`; }
+  `<section>${filters(['PG', 'SF'])}${capsBar(0, 30, 24.5)}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen', 'dray', 'gobert', 'rodman', 'bwallace', 'iggy'], { hot: 'garnett', no: ['ewing'] })}<div class="more">Showing 10 of 1,522 player stretches · <a href="#">See more</a> · 3 scouting reports left</div></section>`];
+function filters(hidden = []) { return `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span><span class="grp"><span>Role</span><u>Any</u></span><span class="grp"><span>Sort</span><u>Best first</u></span></div>`; }
 function plist2(keys, { hot, no = [] } = {}) {
   return `<table class="plist"><colgroup><col style="width:52px"><col><col class="c-hide" style="width:96px"><col class="c-hide" style="width:118px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col style="width:84px"><col class="c-hide" style="width:64px"><col class="c-hide" style="width:34px"><col style="width:96px"></colgroup>
   <tr><th></th><th>Player</th><th class="c-hide">Years</th><th class="c-hide">Tier</th><th class="num c-hide">Pts</th><th class="num c-hide">Reb</th><th class="num c-hide">Ast</th><th class="num">Caps</th><th class="c-hide" style="text-align:center">Report</th><th class="c-hide"></th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos}</b> <i>· ${x.r}</i><span class="mst">${x.y}<br>${x.st.join(' / ')}</span></div></td><td class="yrs c-hide"><button class="yrs-btn">${x.y}<small>▾</small></button></td><td class="tier c-hide ${x.tier === 'Greatest peak' || x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td>${x.st.map((v) => `<td class="num c-hide">${v}</td>`).join('')}<td class="cap num">${x.f}</td><td class="c c-hide"><span class="scout">Scout</span></td><td class="c c-hide"><span class="star ${['garnett', 'rodman', 'gobert'].includes(k) ? 'on' : ''}">★</span></td><td class="act"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
@@ -337,7 +354,7 @@ function boardGrid() {
 S.board = () => [leftDraft().replace('Show draft board', 'Hide draft board'),
   boardGrid() + nine(['payton', '', 'durant', '', ''], []) +
   prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
-  `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}<div class="more">Showing 5 of 1,522 player stretches · <a href="#">See more</a></div></section>`];
+  `<section>${filters(['PG', 'SF'])}${capsBar(0, 30, 24.5)}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}<div class="more">Showing 5 of 1,522 player stretches · <a href="#">See more</a></div></section>`];
 function ribbon() {
   const order = (k) => { const r = Math.floor((k - 1) / 16), i = (k - 1) % 16; return ORDER[r % 2 ? 15 - i : i]; };
   const cells = [];
@@ -352,11 +369,11 @@ function ribbon() {
 S.ribbon = () => [leftDraft().replace('<button class="btn line">Show draft board</button>', ''),
   ribbon() + nine(['payton', '', 'durant', '', ''], []) +
   prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
-  `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}</section>`];
+  `<section>${filters(['PG', 'SF'])}${capsBar(0, 30, 24.5)}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}</section>`];
 S.drawer = () => [leftDraft().replace('Show draft board', 'Draft board  ·  B'),
   nine(['payton', '', 'durant', '', ''], []) +
   prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
-  `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}</section>` +
+  `<section>${filters(['PG', 'SF'])}${capsBar(0, 30, 24.5)}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}</section>` +
   `<div class="drawer-dim"></div><div class="drawer">${boardGrid().replace('rounds 1–4 · <a href="#">rounds 5–9 ▾</a> · <a href="#">hide board</a>', 'rounds 1–4 · <a href="#">rounds 5–9 ▾</a> · <a href="#">✕ close</a>')}</div>`];
 const key = (location.hash || '#draft').slice(1);
 const [a, m] = S[key]();

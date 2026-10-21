@@ -243,6 +243,10 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 - **Wdrożenie wszystkich trybów za jednym razem** (Draw Five, Mini, All-Time) — najpierw makiety
   każdego trybu w tym stylu. Makiety: `docs/mockups/draw-five-night/` (`index.html` Draw Five,
   `mini.html` Mini, `alltime.html` All-Time).
+- **Pasek capów** (2026-10-21, user: „oddzielny pasek w nowym UI, nie wpisanie w pole”): pod
+  filtrami w Mini i All-Time suwak zakresu 0–30 z dwoma uchwytami, czerwona kreska „your max”
+  (ile możesz wydać na ten wybór), wartość „10–14” albo „any” i reset. Zastępuje tekst „Affordable
+  only / Fits this pick” w makiecie; pole „Max caps” z All-Time przechodzi w ten suwak.
 - **Pomysł na później: reakcje na żywo** (2026-10-21, user). Lewa kolumna draftu All-Time ma pod
   Big Boardem wolne miejsce — docelowo panel, który reaguje na to, co się dzieje w drafcie (kto
   kogo wziął, twój wybór). Dziś nie ma mechaniki generującej reakcje na żywo (desk.ts buduje głosy

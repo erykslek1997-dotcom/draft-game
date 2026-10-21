@@ -197,6 +197,20 @@
   .plist td.cap { font-size: 15px; }
   .plist .draft { font-size: 12px; }
 }
+
+/* caps range bar */
+.capsbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 18px; padding: 14px 0 22px; border-bottom: 1.5px solid var(--rule2); }
+.capsbar .cb-k { font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+.cb-track { position: relative; height: 4px; background: var(--rule); border-radius: 2px; margin: 0 8px; }
+.cb-range { position: absolute; top: 0; bottom: 0; background: var(--gold); border-radius: 2px; }
+.cb-h { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--bg); }
+.cb-max { position: absolute; top: -8px; bottom: -8px; width: 2px; margin-left: -1px; background: var(--red); text-decoration: none; }
+.cb-max em { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: italic 500 11px Inter, sans-serif; color: var(--red); }
+.cb-track s { position: absolute; top: 10px; transform: translateX(-50%); text-decoration: none; font: 500 10px var(--num); color: var(--ink3); }
+.cb-v { font: 600 16px var(--num); color: var(--gold); white-space: nowrap; }
+.cb-reset { font: italic 500 13px Inter, sans-serif; color: var(--ink2); }
+.filters { border-bottom: 0; }
+@media (max-width: 600px) { .capsbar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; } .cb-reset { display: none; } .cb-max em { display: none; } }
 </style>
 </head>
 <body>
@@ -261,8 +275,11 @@ function plist(keys, { hot, no = [] } = {}) {
   return `<table class="plist"><colgroup><col style="width:52px"><col><col class="c-hide" style="width:118px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col style="width:84px"><col style="width:96px"></colgroup>
   <tr><th></th><th>Player</th><th class="c-hide">Tier</th><th class="num c-hide">Pts</th><th class="num c-hide">Reb</th><th class="num c-hide">Ast</th><th class="num c-hide">3PA</th><th class="num">Caps</th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos} · ${x.y}</b> <i>· ${x.r}</i><span class="mst">${x.st.join(' / ')}</span></div></td><td class="tier c-hide ${x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td>${x.st.map((v) => `<td class="num c-hide">${v}</td>`).join('')}<td class="num c-hide">${x.tpa ?? '—'}</td><td class="cap num">${x.f}</td><td class="act"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
 }
-const filters = (hidden = []) => `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span><span class="fit">Fits this pick: up to <b>24.5</b></span></div>`;
+const filters = (hidden = []) => `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span></div>`;
 
+
+// 2026-10-21, the user: a caps filter as its own bar, not typed into the search box.
+const capsBar = (lo, hi, maxPick, top = 30) => { const pct = (v) => (v / top) * 100; return `<div class="capsbar"><span class="cb-k">Caps</span><div class="cb-track"><i class="cb-range" style="left:${pct(lo)}%;width:${pct(hi - lo)}%"></i><b class="cb-h" style="left:${pct(lo)}%"></b><b class="cb-h" style="left:${pct(hi)}%"></b><u class="cb-max" style="left:${pct(maxPick)}%"><em>your max ${maxPick}</em></u>${[0, 5, 10, 15, 20, 25, 30].filter((t) => t <= top).map((t) => `<s style="left:${pct(t)}%">${t}</s>`).join('')}</div><span class="cb-v"><i class="capi"></i>${lo === 0 && hi === top ? "any" : `${lo}–${hi}`}</span><a class="cb-reset" href="#">any</a></div>`; };
 const S = {};
 S.lottery = () => [
   mast('Mini Draft', '16 teams · 5 rounds · starters only') + tally('70', '16', '5', { youK: 'Cap', midK: 'Teams', aiK: 'Rounds' }) +
@@ -296,7 +313,7 @@ S.pick = () => [
   actions('<button class="btn line">Draft board</button>'),
   five(['', '', 'pippen', '', ''], { active: ['PG', 'SG', 'PF', 'C'] }) +
   prompt('On the clock · Round 2 · Pick 26', 'Your pick', 'Up to <b>24.5 caps</b> on this one and still fill the five. Your SF is set.') +
-  `<section>${filters(['SF'])}${plist(['nash', 'cp3', 'malone', 'dirk', 'barkley', 'wilt', 'russell', 'isiah', 'drexler', 'kidd', 'ewing'], { hot: 'nash', no: ['ewing'] })}<div class="more">Showing 11 of 54 left · <a href="#">See more</a></div></section>`];
+  `<section>${filters(['SF'])}${capsBar(0, 30, 24.5)}${plist(['nash', 'cp3', 'malone', 'dirk', 'barkley', 'wilt', 'russell', 'isiah', 'drexler', 'kidd', 'ewing'], { hot: 'nash', no: ['ewing'] })}<div class="more">Showing 11 of 54 left · <a href="#">See more</a></div></section>`];
 
 const BOARD = {
   BIS: ['M. Jordan', '', '', '', ''], DUL: ['L. James', '', '', '', ''], KEN: ['K. Abdul-Jabbar', '', '', '', ''], REN: ['K. Bryant', '', '', '', ''],
@@ -333,6 +350,7 @@ S.dailyResults = () => [
   actions('<div class="btn2"><button class="btn line">Copy result</button><button class="btn line">Share</button></div>'),
   resultsMain(true) + `<button class="btn line phone-only">Copy result</button>`];
 
+S.pickCaps = () => { const [l, m] = S.pick(); return [l, m.replace(/\$\{?capsBar\(0, 30, 24\.5\)\}?/, '').replace(/<div class="capsbar">[\s\S]*?<\/div><span class="cb-v">[\s\S]*?<\/a><\/div>/, capsBar(10, 14, 24.5)).replace(/<table class="plist">[\s\S]*<\/table>/, plist(['nash', 'cp3', 'reggie'], { hot: 'nash' })).replace(/Showing 11 of 54 left/, 'Showing 3 players at 10–14 caps')]; };
 const key = (location.hash || '#pick').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
