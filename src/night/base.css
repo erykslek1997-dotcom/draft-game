@@ -347,3 +347,8 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
   .prompt p b.dn { color: var(--red); }
   .more-btn { display: block; padding: 12px 0; font-size: 14px; font-style: italic; color: var(--ink2); text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
 }
+@media (max-width: 600px) {
+  /* the phone hides the aside below the tally; its quiet links stay, the buttons repeat on the stage */
+  .nt aside > .actions { display: flex !important; margin-top: 0; order: 9; }
+  .nt aside > .actions > :not(.links) { display: none !important; }
+}

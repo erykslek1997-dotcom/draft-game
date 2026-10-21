@@ -555,6 +555,9 @@ function QuickDraftBoard({
           )}
         </div>
       </section>
+      <Btn kind="line" className="phone-only" onClick={() => onBoard(true)}>
+        Draft board
+      </Btn>
     </NightGame>
   );
 }

@@ -199,9 +199,23 @@ export function NightLottery({
           </section>
         </div>
       )}
-      {done && (
+      {done ? (
         <Btn className="phone-only" onClick={onDone}>
           Start the draft
+        </Btn>
+      ) : !started ? (
+        <Btn
+          className="phone-only"
+          onClick={() => {
+            setStarted(true);
+            drumRef.current?.start();
+          }}
+        >
+          Draw the lottery
+        </Btn>
+      ) : (
+        <Btn kind="line" className="phone-only" onClick={() => drumRef.current?.finish()}>
+          Skip
         </Btn>
       )}
     </NightGame>

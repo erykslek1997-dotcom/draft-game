@@ -273,3 +273,4 @@
   .cb-in { border: 0; padding: 0; border-radius: 0; box-shadow: none; outline: 0; min-height: 0; }
   .ptabs .search, .filters .search { border-radius: 0; box-shadow: none; outline-offset: 2px; }
 }
+@media (max-width: 600px) { .nt .five-row .card .top { justify-content: center; } .nt .five-row .card .top > span:first-child { display: none; } }
