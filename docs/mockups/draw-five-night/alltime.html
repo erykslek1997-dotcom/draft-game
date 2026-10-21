@@ -314,11 +314,16 @@
   .sbox td:nth-child(n+7), .sbox th:nth-child(n+7) { display: none; }
 }
 .tsm .t b { font-size: 30px; white-space: nowrap; }
-.sbox td:first-child { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.sbox td:first-child { display: table-cell; white-space: nowrap; }
+.sbox .sb-f { display: inline-block; vertical-align: middle; margin-right: 10px; }
+.sbox th { text-transform: uppercase; }
 .aw-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0 18px; }
 .aw-row .aw { border-bottom: 0; }
 .sbox th:first-child { width: 230px; }
 @media (max-width: 600px) { .aw-row { grid-template-columns: 1fr 1fr; } }
+h3 .sw { display: flex; gap: 16px; font-style: normal; }
+h3 .sw a { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); text-decoration: none; padding-bottom: 6px; margin-bottom: -8px; border-bottom: 2px solid transparent; }
+h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 </style>
 </head>
 <body>
@@ -518,12 +523,12 @@ S.finale = () => [leftAfter('Your season', 'Regular season + playoffs · final')
   `<div class="champ"><span class="eb">The Finals · Game 7 · Tulsa 104, Kentucky 99</span><h2>Champions</h2><p>The <b>Tulsa Twisters</b> win the title from the 3 seed. Kevin Durant: 38 points in game 7, Finals MVP.</p></div>
   <section><h3>Your path<span>best of seven</span></h3>${pathRow('Quarterfinal', 'HON', 4, 1, 'Wallace held Robinson to 14 a game')}${pathRow('Semifinal', 'SFE', 4, 2, 'Upset of the 2 seed')}${pathRow('Finals', 'KEN', 4, 3, 'Down 3–2, won games 6 and 7')}</section>
   <section><h3>Awards for Tulsa<span>5</span></h3><div class="aw-row">${[['Finals MVP', 'Kevin Durant', '31.6 pts in the Finals', 'durant'], ['DPOY', 'Ben Wallace', '13.9 reb · 2.6 blk', 'bwallace'], ['All-NBA 1st', 'Kevin Durant', '29.4 · 7.1 · 4.8', 'durant'], ['All-Defensive 1st', 'Gary Payton', '2.3 stl, league best', 'payton'], ['All-Star', 'Kevin Garnett', '21.2 pts · 12.8 reb', 'garnett']].map(([t, n, l, k]) => `<div class="aw"><span class="aw-f">${face(p(k))}</span><div><span class="aw-t">${t}</span><b>${n}</b><small>${l}</small></div></div>`).join('')}</div></section>
-  <section><div class="ptabs"><a class="pt" href="#"><b>Regular season</b><span>82 g · 52–30</span></a><a class="pt on" href="#"><b>Playoffs</b><span>22 g · 16–6</span></a><span class="pt-more"><span>per game</span></span></div>${seasonTable(SEASON, { po: true })}</section>`];
+  <section><h3>Your team<span class="sw"><a href="#">Season</a><a class="on" href="#">Playoffs</a></span></h3>${seasonTable(SEASON, { po: true })}</section>`];
 S.finaleOut = () => [leftAfter('Your season', 'Regular season + playoffs · final').replace('🏆', 'Semis').replace('16–6', '6–5').replace('<b>Champions</b> · 3rd seed, beat the 1 seed in game 7', '<b>Out in the semifinals</b>, 2–4 to Santa Fe'),
   `<div class="champ out"><span class="eb">Semifinal · Game 6 · Santa Fe 111, Tulsa 102</span><h2>Your run ends here</h2><p>Santa Fe takes the series <b>4–2</b>. Bird scored 33 in the clincher; Tulsa shot 6 of 27 from three.</p></div>
   <section><h3>Your path<span>best of seven</span></h3>${pathRow('Quarterfinal', 'HON', 4, 1, 'Wallace held Robinson to 14 a game')}${pathRow('Semifinal', 'SFE', 2, 4, 'Spacing caught up: 29% from three', false)}</section>
   <p class="host"><b>Champions:</b> the Kentucky Chickens beat Santa Fe 4–1. Finals MVP: Michael Jordan.</p>
-  <section><div class="ptabs"><a class="pt on" href="#"><b>Regular season</b><span>82 g · 52–30</span></a><a class="pt" href="#"><b>Playoffs</b><span>11 g · 6–5</span></a><span class="pt-more"><span>per game</span></span></div>${seasonTable(SEASON)}</section>`];
+  <section><h3>Your team<span class="sw"><a class="on" href="#">Season</a><a href="#">Playoffs</a></span></h3>${seasonTable(SEASON)}</section>`];
 const AW = (t, k, line, team) => { const x = p(k); return `<div class="aw big"><span class="aw-f">${face(x)}</span><div><span class="aw-t">${t}</span><b>${x.n}</b><small>${team} · ${line}</small></div></div>`; };
 const five5 = (label, names) => `<div class="allnba"><span class="an-l">${label}</span>${names.map(([n, c, you]) => `<span class="an-p ${you ? 'you' : ''}">${n}<small>${c}</small></span>`).join('')}</div>`;
 S.awards = () => [leftAfter('Your season', 'Awards · regular season + Finals'),
