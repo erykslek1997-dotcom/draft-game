@@ -1,37 +1,26 @@
-import { computeFinishing } from '../engine/finishing';
-import { SettingsButton, SettingsModal } from './SettingsModal';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { TIER_FRAME_COLOR } from './DraftPlayerCard';
-import { DraftGrid } from './DraftGrid';
-import { DraftPlayerList, PositionToggles } from './DraftPlayerList';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NO_THREE_LINE_TIP, gradeTip, spacingUngraded, type GradeKey } from './gradeHelp';
 import { ROLE_FILTERS, ROLE_POSITIONS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
-import { TEAM_COUNT, ROUNDS, currentTeamIndex, dailyAlternative, draftBombSpan, isBombTurn, draftCapLimit, isDailyRuleBlocked, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
+import { TEAM_COUNT, ROUNDS, currentTeamIndex, dailyAlternative, draftBombSpan, draftCapLimit, isDailyRuleBlocked, isPickLegal, pickBlockReason, pickBudget, type DraftState } from '../engine/draft';
 import { dailyRuleWords } from '../dailyDraftDay';
 import { dailyRuleBlocks } from '../engine/dailyDraft';
 import { ROSTER_SIZE, totalFga, STARTER_SLOTS } from '../engine/positions';
 import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { effectiveTalent, displayTalentForSpan } from '../engine/grades';
-import { computeOffensivePortability, computeDefensivePortability } from '../engine/portability';
 import { computeSpacing, spacingTier, type SpacingTier } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
 import { allStarCount } from '../engine/allStarLookup';
 import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
 import type { Rotation, Team } from '../engine/types';
-import { CapIcon, Face } from './ShotChip';
-import { bestPrimaryAssignment } from '../engine/rotation';
 import {
   offensiveGrade,
   defensiveGrade,
-  offensivePortabilityGrade,
-  defensivePortabilityGrade,
   spacingGrade,
   durabilityGrade,
   overallTierForSpan,
-  displayNumberForSpan,
   tierRank,
   type OverallTier,
   type Grade,
@@ -45,20 +34,21 @@ import { playoffPerformanceTier, type PlayoffPerformanceTier } from '../engine/p
 import { computeDurability, durabilityTier, type DurabilityTier } from '../engine/durability';
 import { isSmallSampleSpan, sampleSizeGames } from '../engine/sampleSize';
 import { buildEvidenceReport } from '../engine/evidenceReport';
-import { naturalPosition } from '../engine/naturalPosition';
-import DraftHistory from './DraftHistory';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
-import { BoardToggleButton, DraftHelpDialog, LeaveDraftDialog } from './DraftChrome';
-import { BigBoardPanel, DraftCapsStrip, DraftStatus, FiveDots, RivalsLane, YourFiveCourt, upcomingPicks } from './DraftWarRoom';
+import { upcomingPicks } from './DraftWarRoom';
+import { bestPrimaryAssignment } from '../engine/rotation';
 import { draftSaveKeys } from '../draftSaveSummary';
 import { saveSlotFor } from './draftSave';
 import { BOMB_NAME, isBombMasked, maskName } from './bombMask';
 import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
-import { YearsPicker } from './YearsPicker';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
+import { Actions, Btn, CapBar, EmptyNote, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, Tally, fmtCaps, lastName } from '../night/ui';
+import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
+import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
+import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
 
 /** Max player rows the Draft tab renders at once. The list is tier-sorted, so this is the top-N
  * players; anyone past it is reachable via search or a position filter (both land well under the
@@ -69,6 +59,8 @@ const DRAFT_LIST_LIMIT = 140;
  * player with a wall of cards, independent of `DRAFT_LIST_LIMIT`'s own performance reasoning. */
 const DRAFT_VISIBLE_DEFAULT = 30;
 const DRAFT_VISIBLE_STEP = 30;
+/** The caps range's top: no stretch in the pool costs more. */
+const CAPS_TOP = 30;
 
 interface Props {
   state: DraftState;
@@ -185,20 +177,6 @@ function displayedOverallTier(span: PlayerSpan): DisplayOverallTier {
    cooler/bluer (indigo, not lavender) so it stays clearly on the blue side of MVP's pink — same
    "cyan -> indigo -> magenta -> gold" ladder this palette was always meant to read as. */
 
-/** Best-first order for the Draft tab's tier colour key. */
-const TIER_KEY_ORDER: DisplayOverallTier[] = [
-  'GOAT',
-  'Greatest peak',
-  'MVP',
-  'All-NBA',
-  'All-star',
-  'Starter',
-  'Sixth Man',
-  'Role Player',
-  'Bench Warmer',
-  'Cigarette Butt',
-  'Salary Glue',
-];
 
 /** Shared by `OverallTierBadge` and every "TAL {number}" display site — building this once and
  * reusing it for both the badge and the number next to it is what guarantees they can never
@@ -437,50 +415,7 @@ export function AtGrade({ grade, label, ungraded }: { grade: Grade; label?: Grad
   );
 }
 
-/* 2026-08-19, user's explicit follow-up ask ("can we explain in glossary that is talent ETC"):
-   these used to only describe the SCALE (which letter/tier means what) without ever saying what
-   the underlying metric actually measures — accurate to how each one is really computed
-   (talent.ts/portability.ts's own docstrings), not invented. Split Offense/Defense out from
-   Portability into two entries: they're commonly confused but answer genuinely different
-   questions (raw quality vs. how well that quality travels next to another star), not two
-   readings of the same idea. */
-const TAG_LEGEND: ReadonlyArray<{ name: string; tiers: string[]; text: string }> = [
-  { name: 'Talent (TAL)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How good the player was in those years, all in one number — scoring, efficiency, playmaking and defense. The named tiers (Cigarette Butt up to GOAT) come from it." },
-  { name: 'Offense (OFF) / Defense (DEF)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: 'Talent split into its offensive and defensive halves, as a letter grade from F to S. S is kept for the 3 best in the pool.' },
-  { name: 'Portability (O-POR / D-POR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How well his game fits next to other stars. A shooter who doesn't need the ball, or a defender who can guard anyone, fits almost anywhere; a star who needs the ball fits worse next to another one. Same F–S scale." },
-  { name: '3PT (SPC) / Finishing (FIN)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "SPC: how much his outside shooting forces defenses to guard him away from the basket, adjusted for his era. FIN: how much he finishes at the rim for his position — how many shots at the basket he takes, how often they go in, and fouls drawn. Same F–S scale." },
-  { name: 'Durability (DUR)', tiers: ['at-t1', 'at-t3', 'at-t6'], text: "How many of his team's games he actually played in those years. Same F–S scale." },
-  // 2026-08-19, user's explicit ask ("hide playoffs and make everything in one line"): the
-  // Playoffs entry used to sit alone on its own short second row (5 cards fit one row, the 6th
-  // wrapped) — dropped so the remaining 5 fit one line cleanly, per the same ask. The actual
-  // Playoffs badge/column elsewhere in this file (the ▲/▼ riser/dropper tag) is untouched — this
-  // only removes its glossary entry.
-];
 
-// 2026-09-14, user-reported live ("za dużo tego na desktopie... połączmy wszystko w jeden ekran"):
-// on a genuinely wide screen (now that `#root` itself spans the full viewport instead of a boxed
-// ~1126px card — see index.css's own comment on that removal), the Draft/Team split left a huge
-// blank column next to the "Your Five" sidebar while the actual Team roster + Rotation minutes
-// still needed a separate tab click. This hook is what lets DraftBoard's render below switch, at
-// runtime, into showing the Draft workspace and the Team column side by side instead of picking
-// one via `activeTab` — see the `at-merge-row` wrapper further down for how it's used. A real
-// `matchMedia` listener (not just a one-time check) so resizing the actual browser window flips
-// the layout live, matching how every other responsive rule in this file already behaves via CSS
-// alone; this one just also needs to gate which panels are MOUNTED, which CSS alone can't do for
-// JSX that isn't in the DOM at all when its tab isn't active.
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mql = window.matchMedia(query);
-    const handler = () => setMatches(mql.matches);
-    handler();
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, [query]);
-  return matches;
-}
-/** Must match the `max-width: 860px` rule in App.css that stacks `.at-draft-workspace`. */
-const STACKED_LAYOUT_QUERY = '(max-width: 860px)';
 /** How long the taken cards take to fold away when the player's own turn comes. */
 const GHOST_SWEEP_MS = 1300;
 
@@ -488,10 +423,6 @@ export default function DraftBoard({
   state,
   onPick,
   mode,
-  pickReactions,
-  onPickReactionChange,
-  pickReasoning,
-  onPickReasoningChange,
   onSubmitTeam,
   onSwapHumanSpan,
   howToPlay = [],
@@ -502,7 +433,7 @@ export default function DraftBoard({
   // 2026-10-14, the list redesign (the user: "gracz może sobie odznaczyć pokazywanie PG, SG itd"):
   // tick the positions the list shows. Until the player touches them, the starter slots already
   // filled are unticked (all shown again once the five is set); a touch makes the choice his.
-  const [positionOverride, setPositionOverride] = useState<Set<Position> | null>(null);
+  const [tab, setTab] = useState<Position | 'ALL' | null>(null);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [boardSort, setBoardSort] = useState<'best' | 'value' | 'cheapest' | 'priciest'>('best');
   // 2026-09-14, user-reported live ("rzucamy ponad 100 nazwisk na raz, za dużo informacji dla
@@ -519,7 +450,7 @@ export default function DraftBoard({
   const [visibleCount, setVisibleCount] = useState(DRAFT_VISIBLE_DEFAULT);
   useEffect(() => {
     setVisibleCount(DRAFT_VISIBLE_DEFAULT);
-  }, [search, positionOverride, roleFilter, boardSort]);
+  }, [search, tab, roleFilter, boardSort]);
   const [fgaMin, setFgaMin] = useState('0');
   const [fgaMax, setFgaMax] = useState('30');
   // 2026-09-11, user-reported live ("zacina się jak filtrujemy fga") — every keystroke here used
@@ -539,11 +470,7 @@ export default function DraftBoard({
     const t = setTimeout(() => setFgaMaxDebounced(fgaMax), 200);
     return () => clearTimeout(t);
   }, [fgaMax]);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  // 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
-  // glass on a player face-card now opens a modal instead of expanding the card in place. A
-  // single name (not a Set like `expanded`, which developer mode's own accordion still uses
-  // unchanged) — only one card can be peeked at a time.
+  // One player's scouting window at a time.
   const [peekPlayer, setPeekPlayer] = useState<string | null>(null);
   // Scouting reports used this draft — kept per draft seed so a resumed draft remembers them.
   const scoutKey = `draftverse.scouted.v1.${state.seed}`;
@@ -629,14 +556,6 @@ export default function DraftBoard({
   function toggleBigBoard(name: string) {
     saveBigBoard(bigBoard.includes(name) ? bigBoard.filter((n) => n !== name) : [...bigBoard, name]);
   }
-  function moveOnBigBoard(name: string, dir: -1 | 1) {
-    const live = bigBoardEntries.map((e) => e.name);
-    const i = live.indexOf(name);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= live.length) return;
-    [live[i], live[j]] = [live[j], live[i]];
-    saveBigBoard(live);
-  }
   function scoutPlayer(name: string) {
     setScoutedPlayers((prev) => {
       if (prev.has(name) || prev.size >= SCOUT_REPORTS_PER_DRAFT) return prev;
@@ -649,31 +568,6 @@ export default function DraftBoard({
       return next;
     });
   }
-  const [evidenceOpen, setEvidenceOpen] = useState<Set<string>>(new Set());
-  // 2026-09-25, playtester feedback ("jak przewinąłem niżej… nie mogę podejrzeć całego draft
-  // boarda"): once the top bar scrolls away, a small floating button opens the board and jumps
-  // back up to it.
-  const topbarRef = useRef<HTMLDivElement>(null);
-  const boardAnchorRef = useRef<HTMLDivElement>(null);
-  const [topbarVisible, setTopbarVisible] = useState(true);
-  useEffect(() => {
-    const el = topbarRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([entry]) => setTopbarVisible(entry.isIntersecting));
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  // Whether the status card is still on screen (a sentinel right under it, so the card itself keeps
-  // its sticky place on a desktop): a phone pins a slim caps strip once it scrolls away.
-  const statusRef = useRef<HTMLDivElement>(null);
-  const [statusVisible, setStatusVisible] = useState(true);
-  useEffect(() => {
-    const el = statusRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([entry]) => setStatusVisible(entry.isIntersecting));
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
   const [activeTab, setActiveTab] = useState<AtTab>('draft');
   // 2026-10-14 (playtest: "po skończonym drafcie mogłoby przenosić automatycznie do zakładki Team"):
   // the last pick in, the Team tab opens — your years and rotation are what's left to do.
@@ -682,29 +576,12 @@ export default function DraftBoard({
     setActiveTab('team');
     window.scrollTo({ top: 0 });
   }, [state.complete]);
-  const [showLegend, setShowLegend] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
-  // 2026-10-14, the board redesign: on a laptop/desktop the board sits above the list (the approved
-  // mockup) and the header button hides/shows it there; a phone shows it as the "Picks" view.
-  const [boardHidden, setBoardHidden] = useState(false);
-  function toggleBoard() {
-    setBoardHidden((hidden) => !hidden);
-  }
-  const [phoneView, setPhoneView] = useState<'players' | 'picks' | 'board'>('players');
-  const [teamView, setTeamView] = useState<'rotation' | 'roster'>('rotation');
-  // Phones (the stacked layout): your five as dots in the status bar, the board as the Picks view.
-  const isStackedLayout = useMediaQuery(STACKED_LAYOUT_QUERY);
+  // The draft board over the list, one button away (mockup `#board`).
+  const [boardShown, setBoardShown] = useState(false);
   const closeExitDialog = useCallback(() => setConfirmExit(false), []);
-  // Defaults open in Commissioner Mode: every pick needs its reasoning box reachable right after
-  // it's made, across up to 144 picks — an extra click to reveal it every single time would be a
-  // real friction cost at that volume.
-  // No setter destructured: this pre-dates this session's own changes ("no visible toggle button
-  // anymore" per the render comment below), but was still declared as if a setter existed
-  // (`tsc`'s `noUnusedLocals` catches the drift) — fixed in passing while touching this file for
-  // the unrelated Team-tab work above.
-  const [showHistory] = useState(state.commissionerMode);
   // Collision-safe team codes for the Overview grid's broadcast-style chips — must be computed
   // across the whole `state.teams` list at once, not per-team, since `teamCodes` resolves
   // collisions (e.g. Charleston vs Charlotte both wanting "CHA") relative to every other team's
@@ -1065,24 +942,11 @@ export default function DraftBoard({
     () => new Set(STARTER_SLOTS.filter((slot) => !humanAssignment[slot])),
     [humanAssignment],
   );
-  const hiddenPositions = useMemo<Set<Position>>(() => {
-    if (positionOverride) return positionOverride;
-    if (openStarterPositions.size === 0) return new Set();
-    return new Set(STARTER_SLOTS.filter((slot) => !openStarterPositions.has(slot)));
-  }, [positionOverride, openStarterPositions]);
-  function togglePosition(pos: Position) {
-    setPositionOverride(() => {
-      const next = new Set(hiddenPositions);
-      if (next.has(pos)) next.delete(pos);
-      else next.add(pos);
-      // 2026-10-14 (playtest 9): unticking the only position shown goes back to all of them, not to
-      // an empty list.
-      if (next.size >= ALL_POSITIONS.length) return new Set();
-      return next;
-    });
-  }
-  // 2026-10-14 (playtest 2: "Perimeter D" kept after switching SG to C): a role no shown position
-  // plays is dropped, and the role list offers only the roles of the positions shown.
+  useEffect(() => setTab(null), [humanTeam.roster.length]);
+  const have = useMemo(() => new Set(STARTER_SLOTS.filter((slot) => humanAssignment[slot])), [humanAssignment]);
+  const firstOpen = STARTER_SLOTS.find((slot) => !humanAssignment[slot]);
+  const on: Position | 'ALL' = tab ?? (have.size > 0 && firstOpen ? firstOpen : 'ALL');
+  const hiddenPositions = useMemo<Set<Position>>(() => (on === 'ALL' ? new Set() : new Set(ALL_POSITIONS.filter((pos) => pos !== on))), [on]);
   const shownPositions = ALL_POSITIONS.filter((pos) => !hiddenPositions.has(pos));
   const roleFits = (role: string) => ROLE_POSITIONS[role]?.some((pos) => shownPositions.includes(pos)) ?? true;
   const roleFitsKey = shownPositions.join(',');
@@ -1098,7 +962,6 @@ export default function DraftBoard({
   // own turn comes (`GHOST_SWEEP_MS`). The human's own picks leave at once.
   const spanById = useMemo(() => new Map(state.pool.map((s) => [s.id, s])), [state.pool]);
   const [settledAt, setSettledAt] = useState(state.history.length);
-  const [sweeping, setSweeping] = useState(false);
   const settledFrom = Math.min(settledAt, state.history.length);
   const ghosts = useMemo(() => {
     const taken = new Map<string, { pickNumber: number; teamCode: string }>();
@@ -1114,16 +977,13 @@ export default function DraftBoard({
   useEffect(() => {
     if (!canPick || state.complete || !hasGhosts) return;
     const target = state.history.length;
-    setSweeping(true);
     const timer = window.setTimeout(() => {
       setSettledAt(target);
-      setSweeping(false);
     }, GHOST_SWEEP_MS);
     // A pick made mid-sweep (or leaving the screen) settles at once instead of leaving the sweep on.
     return () => {
       window.clearTimeout(timer);
       setSettledAt((at) => Math.max(at, target));
-      setSweeping(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canPick, state.complete, hasGhosts]);
@@ -1182,29 +1042,18 @@ export default function DraftBoard({
     return { groups: matched.slice(0, DRAFT_LIST_LIMIT), totalMatched: matched.length };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enrichedGroups, state.draftedIds, ghosts, hiddenPositions, search, mode, needBiasActive, openStarterPositions, roleFilter, boardSort, warRoomSet]);
-  const priciestAvailable = useMemo(
-    () => state.pool.reduce((max, p) => (!state.draftedIds.has(p.id) && p.fga > max ? p.fga : max), 0),
-    [state.pool, state.draftedIds],
-  );
-
-  function toggleExpand(name: string) {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  }
-
-  function toggleEvidence(spanId: string) {
-    setEvidenceOpen((prev) => {
-      const next = new Set(prev);
-      if (next.has(spanId)) next.delete(spanId);
-      else next.add(spanId);
-      return next;
-    });
-  }
-
+  // Position tab counts: everyone still on the board for the search, role and caps shown.
+  const counts = useMemo(() => {
+    const c: Record<Position, number> = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 };
+    const q = search.toLowerCase();
+    for (const g of enrichedGroups) {
+      if (state.draftedIds.has(g.spans[0].id)) continue;
+      if (q && !g.playerName.toLowerCase().includes(q)) continue;
+      if (!matchesRoleFilter(g.bestTalentSpan, roleFilter)) continue;
+      c[careerPosition(g)] += 1;
+    }
+    return c;
+  }, [enrichedGroups, state.draftedIds, search, roleFilter]);
   const humanPicksAway = useMemo(() => {
     const start = state.round * TEAM_COUNT + state.pickInRound;
     for (let k = start; k < TEAM_COUNT * ROUNDS; k++) {
@@ -1224,8 +1073,6 @@ export default function DraftBoard({
   const humanIdx = state.teams.findIndex((t) => t.isHuman);
   const humanUpcoming = upcoming.filter((u) => u.teamIdx === humanIdx);
   const youOnClock = !state.complete && upcoming[0]?.teamIdx === humanIdx;
-  const laneEnd = youOnClock ? humanUpcoming[1] : humanUpcoming[0];
-  const lanePicks = laneEnd ? upcoming.slice(youOnClock ? 1 : 0, upcoming.indexOf(laneEnd)) : [];
   const humanBench = humanTeam.roster.filter((p) => !Object.values(humanAssignment).some((a) => a?.id === p.id));
 
   // 2026-09-24: budget for whoever is on the clock (the human outside Commissioner Mode) — drives
@@ -1239,20 +1086,6 @@ export default function DraftBoard({
   );
   // The human's own budget (the strip and the "Only what I can afford" switch read it on CPU turns too).
   const humanBudget = useMemo(() => pickBudget(state, humanTeam), [state, humanTeam]);
-  const [affordableOnly, setAffordableOnly] = useState(false);
-  const affordableMax = Math.floor(humanBudget.maxThisPick * 10) / 10;
-  // 2026-10-15 (playtest 2: "potrzebuję kogoś do 10 FGA i żebym mógł wpisać"): a typed cap
-  // ceiling, on top of (or instead of) Affordable — the list shows only years at or under it.
-  const [maxCapsText, setMaxCapsText] = useState('');
-  const maxCaps = Number(maxCapsText.replace(',', '.'));
-  const maxCapsActive = maxCapsText.trim() !== '' && Number.isFinite(maxCaps) && maxCaps > 0;
-  useEffect(() => {
-    if (showJudgeMetrics) return;
-    let limit = affordableOnly ? affordableMax : 30;
-    if (maxCapsActive) limit = Math.min(limit, maxCaps);
-    setFgaMin('0');
-    setFgaMax(String(limit));
-  }, [affordableOnly, affordableMax, showJudgeMetrics, maxCapsActive, maxCaps]);
   /** The best years the board shows for a player: his best, or — when a daily's rule keeps those
    * from you (a decade, a second MVP-tier player) — his best years the rule allows (the user,
    * 2026-10-16: show the best span you can take, no extra words). */
@@ -1276,67 +1109,101 @@ export default function DraftBoard({
   });
   function showAffordable() {
     setSearch('');
-    setPositionOverride(new Set());
-    setAffordableOnly(true);
+    setTab('ALL');
+    setFgaMin('0');
+    setFgaMax(String(Math.max(1, Math.floor(humanBudget.maxThisPick))));
   }
 
-  const TABS: ReadonlyArray<{ id: AtTab; label: string }> = [
-    { id: 'draft', label: 'Draft' },
-    { id: 'team', label: 'Team' },
-  ];
+  /* ---------------- the night screen (mockup alltime.html #draft, #board, #years, #team) ---------------- */
+  const codeOf = (t: Team) => teamCodeByTeamId.get(t.id) ?? '';
+  const totalPicks = state.teams.length * ROUNDS;
+  const overall = Math.min(state.round * TEAM_COUNT + state.pickInRound + 1, totalPicks);
+  const round = Math.min(state.round + 1, ROUNDS);
+  const dailyTitle = state.bomb ? `The Bomb · round ${state.bomb.round}` : state.dailyRule ? dailyRuleWords(state.dailyRule).title : state.dailyDay ? 'Open day' : null;
+  const title = state.dailyDay || state.bomb ? 'Daily All-Time Draft' : 'All-Time Draft';
+  const links = { onMenu: () => setConfirmExit(true), onHowTo: () => setHelpOpen(true), onSettings: () => setSettingsOpen(true) };
+  const pickSpans = useMemo(() => {
+    const m = new Map<number, PlayerSpan>();
+    for (const h of state.history) {
+      const sp = spanById.get(h.playerId);
+      if (sp) m.set(h.pickNumber, sp);
+    }
+    return m;
+  }, [state.history, spanById]);
+  const logRows = state.history.slice(-6).flatMap((h) => {
+    const team = state.teams.find((t) => t.id === h.teamId);
+    const span = pickSpans.get(h.pickNumber);
+    return team && span ? [{ n: h.pickNumber, team, code: codeOf(team), span }] : [];
+  });
+  const takenAt = (name: string) => {
+    const key = normalizePlayerName(name);
+    return state.history.find((h) => {
+      const sp = pickSpans.get(h.pickNumber);
+      return sp && normalizePlayerName(sp.playerName) === key;
+    })?.pickNumber;
+  };
+  const used = capLimit - humanBudget.capLeft;
+  const spotWord = (n: number) => (n === 1 ? 'one spot' : `${['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'][n] ?? n} spots`);
+  const lineup = humanAssignment as Partial<Record<Position, PlayerSpan>>;
+  const scoutsLeft = SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size;
+  const callsLeft = CALLS_PER_DRAFT - callLog.used.length;
+  const gradesOf = (sp: PlayerSpan) => ({
+    off: offensiveGrade(computeOffensiveTalent(sp), computeUncappedOffensiveTalent(sp)),
+    def: defensiveGrade(computeDefensiveTalent(sp)),
+    tp: spacingUngraded(sp) ? '—' : spacingGrade(computeSpacing(sp), sp),
+    dur: durabilityGrade(computeDurability(sp)),
+  });
 
-  return (
-    <div className="at-shell at-calm">
-      {/* 2026-10-07, the UI simplification (approved mockup): one header row — Menu, the title, the
-          Draft/Team switch, "?" for the rules, the tier key and scouting, and the draft board
-          (2026-10-14: Team is a tab at every width; the board button only where the board sits
-          above the list). */}
-      <div className="at-calm-header" ref={topbarRef}>
-        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={() => setConfirmExit(true)}>
-          ← Menu
-        </button>
-        <h1 className="at-calm-title at-calm-title--left">All-Time Draft</h1>
-        {/* 2026-10-15 (playtest 3: "widok między draft a team jest tak mało widoczny że ciężko
-            znaleźć"): the two views as big tabs in the middle of the header, Team with its count. */}
-        <div className="at-calm-seg at-calm-tabs at-calm-tabs--big" role="tablist">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                className={activeTab === tab.id ? 'is-on' : ''}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.id === 'team' ? `Team · ${humanTeam.roster.length}/${ROSTER_SIZE}` : tab.label}
-              </button>
-            ))}
-        </div>
-        <SettingsButton onClick={() => setSettingsOpen(true)} />
-        <button type="button" className="at-calm-icon" aria-label="How the draft works" onClick={() => setHelpOpen(true)}>
-          ?
-        </button>
-        {!isStackedLayout && activeTab === 'draft' && <BoardToggleButton open={!boardHidden} onToggle={toggleBoard} />}
-      </div>
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+  const asideTop = (
+    <>
+      <Mast title={title} daily={!!dailyTitle} sub={state.complete ? 'Draft done · set your rotation' : `${dailyTitle ? `${dailyTitle} · ` : ''}Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
+      <Tally you={fmtCaps(humanBudget.capLeft)} mid={fmtCaps(capLimit)} ai={`${Math.min(humanTeam.roster.length + (state.complete ? 0 : 1), ROSTER_SIZE)}/${ROSTER_SIZE}`} youK="Caps left" aiK="Round" />
+      <CapBar used={used} cap={capLimit} />
+    </>
+  );
+
+  // The years view (from the list or the team): one player's stretches.
+  const [yearsFor, setYearsFor] = useState<{ name: string; from: 'draft' | 'team' } | null>(null);
+  useEffect(() => setYearsFor((y) => (y?.from === 'draft' ? null : y)), [state.history.length]);
+  useEffect(() => {
+    if (yearsFor) window.scrollTo({ top: 0 });
+  }, [yearsFor]);
+  const [rotStatus, setRotStatus] = useState<{ valid: boolean; reason?: string }>({ valid: false });
+  const submitRef = useRef<(() => void) | null>(null);
+
+  const dialogs = (
+    <>
+      {settingsOpen && <NightSettings onClose={() => setSettingsOpen(false)} />}
       {confirmExit && (
-        <LeaveDraftDialog
-          text={
-            state.commissionerMode
-              ? 'This draft is not saved — leaving ends it.'
-              : state.dailyDay
-                ? 'Today’s draft is saved. Pick it up again from the daily strip on the menu — it’s still your one try.'
-                : 'Your draft is saved. You can pick it up again from the main menu with “Continue draft”.'
+        <NightConfirm
+          title="Leave the draft?"
+          lead={
+            state.dailyDay ? (
+              <>Today’s draft is saved. Pick it up again from the menu; it is still your one try.</>
+            ) : (
+              <>
+                Your draft is saved. Pick it up again from the menu with <b style={{ color: 'var(--ink)' }}>Continue</b>.
+              </>
+            )
           }
-          onStay={closeExitDialog}
-          onLeave={onExit}
+          yes="Keep drafting"
+          no="Back to menu"
+          onYes={closeExitDialog}
+          onNo={onExit}
+        />
+      )}
+      {helpOpen && (
+        <NightHowTo
+          lead={`All-Time Draft · ${state.teams.length} teams, ${ROUNDS} rounds, one player a round. ${scoutsLeft} of ${SCOUT_REPORTS_PER_DRAFT} scouting reports left.`}
+          rules={howToPlay.map((r) => [r.title, r.body] as [string, ReactNode])}
+          onClose={closeHelp}
         />
       )}
       {callSheetOpen && youOnClock && (
         <CallSheet
           options={callOptions(state, state.seed, callLog)}
-          left={CALLS_PER_DRAFT - callLog.used.length}
-          pickLabel={`Pick #${callPickNo + 1} · ${humanTeam.roster.length ? humanTeam.roster.map((p) => maskName(p.playerName).split(' ').slice(-1)[0]).slice(0, 4).join(', ') : 'empty roster'}`}
+          left={callsLeft}
+          pickLabel={`Round ${round} · pick ${callPickNo + 1}`}
           onCall={placeDeskCall}
           onClose={() => setCallSheetOpen(false)}
         />
@@ -1347,816 +1214,512 @@ export default function DraftBoard({
           callNumber={activeCall.number}
           starred={(name) => bigBoard.includes(name)}
           onToggleStar={toggleBigBoard}
-          onStarAll={(players) => saveBigBoard([...bigBoard, ...players.map((p) => p.playerName).filter((n) => !bigBoard.includes(n))])}
+          onStarAll={(players) => saveBigBoard([...bigBoard, ...players.map((pl) => pl.playerName).filter((n) => !bigBoard.includes(n))])}
           onClose={() => setActiveCall(null)}
         />
       )}
-      {helpOpen && (
-        <DraftHelpDialog
-          howToPlay={howToPlay}
-          tiers={showJudgeMetrics ? [] : TIER_KEY_ORDER}
-          scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
-          onClose={closeHelp}
+      {peekPlayer &&
+        (() => {
+          const group = groups.find((g) => g.playerName === peekPlayer) ?? enrichedGroups.find((g) => g.playerName === peekPlayer);
+          if (!group) return null;
+          return (
+            <PlayerPeekModal
+              group={group}
+              cardSpanId={cardSpanFor(group).id}
+              state={state}
+              canPick={canPick}
+              currentTeam={currentTeam}
+              onClose={() => setPeekPlayer(null)}
+              onPick={(id) => {
+                onPick(id);
+                setPeekPlayer(null);
+              }}
+              scouted={scoutedPlayers.has(group.playerName)}
+              scoutsLeft={scoutsLeft}
+              onScout={() => scoutPlayer(group.playerName)}
+            />
+          );
+        })()}
+    </>
+  );
+
+  /* ---------------- the Team view ---------------- */
+  const teamCapUsed = totalFga(displayFgas);
+  const startersSet = STARTER_SLOTS.filter((sl) => humanAssignment[sl]).length;
+  const canSubmit = state.complete && !chosenRosterOverCap && rotStatus.valid;
+  const slotOf = (p: PlayerSpan) => STARTER_SLOTS.find((sl) => humanAssignment[sl]?.id === p.id) ?? 'bench';
+  const teamYears = yearsFor?.from === 'team' ? humanSpanOptionsByKey.get(normalizePlayerName(yearsFor.name)) : undefined;
+  const rotation = (
+    <section className="tm-rot" style={activeTab === 'team' && !teamYears ? undefined : { display: 'none' }}>
+      {humanTeam.roster.length === 0 ? (
+        <EmptyNote>The rotation opens with your first pick. Set minutes as you go.</EmptyNote>
+      ) : (
+        <RotationBuilder
+          roster={chosenHumanRoster}
+          rosterComplete={draftComplete}
+          seedStrategy="basic"
+          persistKey={state.commissionerMode ? undefined : draftSaveKeys(saveSlotFor(state)).rotation}
+          minMinutes={bombMinimum}
+          onConfirm={handleRotationConfirm}
+          confirmLabel="Play the season"
+          confirmDisabled={!state.complete || chosenRosterOverCap}
+          confirmDisabledHint={
+            !state.complete
+              ? `Finish drafting all ${ROSTER_SIZE} picks first.`
+              : chosenRosterOverCap
+                ? `Your chosen years cost ${chosenRosterFga.toFixed(1)} caps, over the ${capLimit} cap. Pick cheaper years in the roster.`
+                : undefined
+          }
+          submitRef={submitRef}
+          onStatus={setRotStatus}
+          showSubmit={false}
         />
       )}
-      {/* Rendered at the shell, not inside the card grid: the staged entrance animation gives the
-          Draft card's children their own stacking layers, which put the sticky status strip over
-          the modal. */}
-      {peekPlayer && (() => {
-        const group = groups.find((g) => g.playerName === peekPlayer);
-        if (!group) return null;
-        return (
-          <PlayerPeekModal
-            group={group}
-            cardSpanId={cardSpanFor(group).id}
-            state={state}
-            canPick={canPick}
-            currentTeam={currentTeam}
-            onClose={() => setPeekPlayer(null)}
-            onPick={(id) => {
-              onPick(id);
-              setPeekPlayer(null);
-            }}
-            scouted={scoutedPlayers.has(group.playerName)}
-            scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
-            onScout={() => scoutPlayer(group.playerName)}
-          />
-        );
-      })()}
-      {!topbarVisible && !state.complete && activeTab === 'draft' && !isBombTurn(state) && (
-        <button
-          type="button"
-          className="at-board-fab"
-          onClick={() => {
-            if (isStackedLayout) {
-              setPhoneView('picks');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-              setBoardHidden(false);
-              boardAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }}
-        >
-          📋 Draft board
-        </button>
-      )}
+    </section>
+  );
 
-      {/* 2026-08-16, user's own ask: no visible toggle button anymore (first moved out of the
-          deleted status chip, then asked to drop entirely) — `showHistory` just keeps its
-          existing default (on for Commissioner Mode, since that's DraftHistory's only reachable
-          surface for its per-pick reasoning notes/FeedbackToggle; off otherwise) with no UI control
-          left to flip it. Same `showJudgeMetrics`-only scoping as before. */}
-      {showJudgeMetrics && showHistory && (
-        <DraftHistory
-          history={state.history}
-          teams={state.teams}
-          reactions={pickReactions}
-          onReactionChange={onPickReactionChange}
-          commissionerMode={state.commissionerMode}
-          reasoning={pickReasoning}
-          onReasoningChange={onPickReasoningChange}
-        />
-      )}
-
-      {/* 2026-10-14, the draft screen redesign (approved mockups "v2 Desktop"/"v2 Phone"): one status
-          bar under the header on both tabs — whose pick, the round, your caps (and your five as dots
-          on a phone) — then, on the Draft tab, the board, the teams picking before you, the list. */}
-      <DraftStatus
-        youOnClock={youOnClock}
-        complete={state.complete}
-        onClockTeam={currentTeam}
-        pickNumber={state.round * TEAM_COUNT + state.pickInRound + 1}
-        picksAway={humanPicksAway}
-        nextPick={(youOnClock ? humanUpcoming[1] : humanUpcoming[0])?.pick ?? null}
-        round={Math.min(state.round + 1, ROUNDS)}
-        rounds={ROUNDS}
-        capLeft={humanBudget.capLeft}
-        capLimit={capLimit}
-        dailyTag={
-          state.bomb
-            ? `Daily · The Bomb · round ${state.bomb.round}`
-            : state.dailyRule || state.dailyDay
-              ? `Daily · ${state.dailyRule ? dailyRuleWords(state.dailyRule).title : 'Open day'}`
-              : undefined
-        }
-        slotsLeft={humanBudget.slotsLeft}
-        maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
-        scoutsLeft={showJudgeMetrics ? null : SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
-        onScoutsInfo={() => setHelpOpen(true)}
-        phone={
-          showJudgeMetrics || state.commissionerMode ? null : (
-            <PhoneChip left={CALLS_PER_DRAFT - callLog.used.length} live={youOnClock} onOpen={() => setCallSheetOpen(true)} />
-          )
-        }
-      >
-        {isStackedLayout && (
-          <FiveDots
-            assignment={humanAssignment}
-            benchCount={humanBench.length}
-            benchSlots={ROSTER_SIZE - STARTER_SLOTS.length}
-            onOpenTeam={() => setActiveTab('team')}
-          />
-        )}
-      </DraftStatus>
-      {state.complete && activeTab === 'draft' && (
-        <div className="wr-done">
-          <span>
-            <b>Draft complete.</b> Set your years and rotation, then submit your team.
-          </span>
-          <button type="button" className="at-calm-btn" onClick={() => setActiveTab('team')}>
-            Go to Team →
-          </button>
-        </div>
-      )}
-      {/* Marks the bottom of the status card: once it's above the screen, the card is gone. */}
-      <div ref={statusRef} aria-hidden />
-      {isStackedLayout && !statusVisible && !state.complete && activeTab === 'draft' && humanBudget.slotsLeft > 0 && (
-        <DraftCapsStrip
-          youOnClock={youOnClock}
-          onClockTeam={currentTeam}
-          pickNumber={state.round * TEAM_COUNT + state.pickInRound + 1}
-          picksAway={humanPicksAway}
-          capLeft={humanBudget.capLeft}
-          maxThisPick={canPick && humanBudget.maxThisPick < priciestAvailable ? humanBudget.maxThisPick : null}
-        />
-      )}
-
-      {activeTab === 'draft' && (
-        <div>
-          <div ref={boardAnchorRef} className="at-board-anchor" />
-          {/* 2026-10-14, the board redesign (approved mockup): on a laptop/desktop the board sits above
-              the list — teams across, the rounds around the current one, the rest one click away. */}
-          {!isStackedLayout && !boardHidden && (
-            <div className="at-board-inline">
-              <DraftGrid
-                teams={state.teams}
-                rounds={ROUNDS}
-                round={state.round}
-                onClockIdx={teamIdx}
-                complete={state.complete}
-                tierColor={(span) => TIER_FRAME_COLOR[displayedOverallTier(span)]}
-                pickTip={pickStatTip}
-              />
-            </div>
+  if (activeTab === 'team') {
+    const aside = (
+      <>
+        <Mast title={title} daily={!!dailyTitle} sub={state.complete ? 'Draft done · set your rotation' : `Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
+        <Tally you={fmtCaps(capLimit - teamCapUsed)} mid={fmtCaps(capLimit)} ai={`${humanTeam.roster.length}/${ROSTER_SIZE}`} youK="Caps left" aiK="Picks" />
+        <CapBar used={teamCapUsed} cap={capLimit} />
+        <SubNote>
+          <b>{fmtCaps(teamCapUsed)} caps</b> used of {fmtCaps(capLimit)}
+          {chosenRosterOverCap && ' · over the cap'}
+        </SubNote>
+        <section>
+          <H3>Before the season</H3>
+          <Kv k="Rotation" v={rotStatus.valid ? 'Set' : 'Not set'} />
+          <Kv k="Starters" v={startersSet === STARTER_SLOTS.length ? 'Set' : `${startersSet} of 5`} />
+          <Kv k="Years" v="Click to change" />
+        </section>
+        <Actions links={links}>
+          <Btn disabled={!canSubmit} title={!state.complete ? `Finish drafting all ${ROSTER_SIZE} picks first.` : chosenRosterOverCap ? 'Over the cap: pick cheaper years.' : rotStatus.reason} onClick={() => submitRef.current?.()}>
+            Play the season
+          </Btn>
+          {!state.complete && (
+            <Btn kind="line" onClick={() => setActiveTab('draft')}>
+              Back to the draft
+            </Btn>
           )}
-          {!state.complete && humanUpcoming.length > 0 && (
-            <RivalsLane
-              title={youOnClock ? 'Before you pick again' : 'Before your pick'}
-              picks={lanePicks}
-              teams={state.teams}
-              assignmentOf={(team) => bestPrimaryAssignment(team.roster).assignment}
-              yourPick={(youOnClock ? humanUpcoming[1] : humanUpcoming[0])?.pick ?? 0}
-            />
-          )}
-          {isStackedLayout && (
-            <div className="at-calm-seg wr-views" role="tablist" aria-label="Draft view">
-              <button type="button" role="tab" aria-selected={phoneView === 'players'} className={phoneView === 'players' ? 'is-on' : ''} onClick={() => setPhoneView('players')}>
-                Players
-              </button>
-              <button type="button" role="tab" aria-selected={phoneView === 'picks'} className={phoneView === 'picks' ? 'is-on' : ''} onClick={() => setPhoneView('picks')}>
-                Picks
-              </button>
-              <button type="button" role="tab" aria-selected={phoneView === 'board'} className={phoneView === 'board' ? 'is-on' : ''} onClick={() => setPhoneView('board')}>
-                Big Board{bigBoardEntries.length > 0 && ` · ${bigBoardEntries.length}`}
-              </button>
-            </div>
-          )}
-          {isStackedLayout && phoneView === 'board' && (
-            <BigBoardPanel
-              entries={bigBoardEntries}
-              canPick={canPick && youOnClock}
-              onDraft={(span) => onPick(span.id)}
-              onMove={moveOnBigBoard}
-              onRemove={(name) => saveBigBoard(bigBoard.filter((n) => n !== name))}
-            />
-          )}
-          {isStackedLayout && phoneView === 'picks' && (
-            <DraftGrid
-              teams={state.teams}
-              rounds={ROUNDS}
-              round={state.round}
-              onClockIdx={teamIdx}
-              complete={state.complete}
-              tierColor={(span) => TIER_FRAME_COLOR[displayedOverallTier(span)]}
-              pickTip={pickStatTip}
-            />
-          )}
-        </div>
-      )}
-
-      {/* `.at-merge-row`/`.at-merge-team-col` are plain wrappers since 2026-10-14 (Team is a tab at
-          every width). */}
-      <div className="at-merge-row">
-      {activeTab === 'draft' && !(isStackedLayout && phoneView !== 'players') && (
-        <div className="at-card at-merge-draft at-stage-in">
-          <h1 className="at-panel-title at-cond">Draft</h1>
-          {/* 2026-08-16, user's own ask: a CPU turn used to hide this whole panel behind a full
-              "X is thinking…" placeholder — the player list is browsable at all times now
-              instead, with just this small notice (not a block) while it's not your turn. The
-              actual Draft buttons below are `disabled` via `canPick`, not hidden, so browsing/
-              searching/expanding a row to look at a player works identically either way. */}
-            {canPick && !anyVisibleLegal && (
-              <div className="at-budget-notice">
-                <span>None of the players shown fit this pick — it can cost up to <CapIcon /> {currentBudget.maxThisPick} caps.</span>
-                <button type="button" className="at-calm-btn" onClick={showAffordable}>
-                  Show players that fit
-                </button>
+        </Actions>
+      </>
+    );
+    let main: ReactNode;
+    if (teamYears) {
+      const current = chosenHumanRoster.find((pl) => normalizePlayerName(pl.playerName) === teamYears.key) ?? teamYears.draftedSpan;
+      const options = [...yearsAllowedToday(teamYears, current.id)].sort((x, y) => x.spanLabel.localeCompare(y.spanLabel));
+      const peakId = [...options].sort((x, y) => effectiveTalent(y) - effectiveTalent(x))[0]?.id;
+      const scouted = scoutedPlayers.has(teamYears.playerName);
+      main = (
+        <>
+          <div className="prompt">
+            <span className="eb">Your team · his years</span>
+            <div className="who-head">
+              <NFace name={teamYears.playerName} />
+              <div>
+                <h2>{maskName(teamYears.playerName)}</h2>
+                <p>Which years does he play for you? Cheaper years free caps for the rest.</p>
               </div>
+            </div>
+          </div>
+          <section>
+            <H3 note={`${options.length} stretches`}>His stretches</H3>
+            <StretchTable
+              rows={options.map((o) => {
+                const g = gradesOf(o);
+                return {
+                  span: o,
+                  tier: displayedOverallTier(o),
+                  grades: scouted ? `${g.off} · ${g.def}` : null,
+                  peak: o.id === peakId,
+                  current: o.id === current.id,
+                  action:
+                    o.id === current.id
+                      ? null
+                      : { label: 'Use', disabled: false, onClick: () => setHumanSpan(teamYears.key, o.id, teamYears.playerName, teamYears.options) },
+                };
+              })}
+            />
+            <div style={{ maxWidth: 320, marginTop: 16 }}>
+              <Btn onClick={() => setYearsFor(null)}>Done</Btn>
+            </div>
+          </section>
+        </>
+      );
+    } else {
+      main = (
+        <>
+          <Prompt eb="Your team" title={teamLabel(humanTeam)}>
+            {state.complete
+              ? `Nine players, 240 minutes. Change anyone’s years in the table; cheaper years free caps.`
+              : `${humanTeam.roster.length} of ${ROSTER_SIZE} drafted. Set minutes as you go; the season opens when all nine are in.`}
+          </Prompt>
+          {chosenRosterOverCap && (
+            <Notice>
+              <b>Over the cap.</b> Your years cost {fmtCaps(chosenRosterFga)} caps, the cap is {fmtCaps(capLimit)}. Pick cheaper years for someone.
+            </Notice>
+          )}
+          <section>
+            <H3 note="off · def · 3pt · durability">Roster</H3>
+            <table className="plist roster">
+              <colgroup>
+                <col style={{ width: 44 }} />
+                <col style={{ width: 64 }} />
+                <col style={{ width: 52 }} />
+                <col />
+                <col className="c-hide" style={{ width: 130 }} />
+                <col className="c-hide" style={{ width: 58 }} />
+                <col className="c-hide" style={{ width: 58 }} />
+                <col className="c-hide" style={{ width: 58 }} />
+                <col className="c-hide" style={{ width: 58 }} />
+                <col style={{ width: 84 }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Rd</th>
+                  <th>Slot</th>
+                  <th />
+                  <th>Player · years</th>
+                  <th className="c-hide">Tier</th>
+                  <th className="num c-hide">Off</th>
+                  <th className="num c-hide">Def</th>
+                  <th className="num c-hide">3PT</th>
+                  <th className="num c-hide">Dur</th>
+                  <th className="num">Caps</th>
+                </tr>
+              </thead>
+              <tbody>
+                {humanTeam.roster.map((pl, i) => {
+                  const spanOpt = humanSpanOptionsByKey.get(normalizePlayerName(pl.playerName));
+                  const eff = spanOpt ? (spanOpt.options.find((o) => o.id === (humanSpanSelection[spanOpt.key] ?? spanOpt.draftedSpan.id)) ?? pl) : pl;
+                  const sl = slotOf(pl);
+                  const masked = isBombMasked(pl.playerName);
+                  const g = gradesOf(eff);
+                  return (
+                    <tr key={normalizePlayerName(pl.playerName)}>
+                      <td className="rd">R{i + 1}</td>
+                      <td className={`sl${sl === 'bench' ? ' bn' : ''}`}>{sl}</td>
+                      <td className="f">
+                        <NFace name={pl.playerName} />
+                      </td>
+                      <td>
+                        <div className="nm">{masked ? BOMB_NAME : pl.playerName}</div>
+                        <div className="mt">
+                          {masked ? (
+                            <i>Revealed on the results · plays {BOMB_MIN_MINUTES}+ min</i>
+                          ) : spanOpt && spanOpt.options.length > 1 ? (
+                            <button type="button" className="yrs-btn" onClick={() => setYearsFor({ name: pl.playerName, from: 'team' })}>
+                              {eff.spanLabel}
+                              <small>▾ change</small>
+                            </button>
+                          ) : (
+                            <span className="yrs-plain">{eff.spanLabel}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="tier c-hide">{masked ? '?' : displayedOverallTier(eff)}</td>
+                      <td className="num c-hide">{masked ? '' : g.off}</td>
+                      <td className="num c-hide">{masked ? '' : g.def}</td>
+                      <td className="num c-hide">{masked ? '' : g.tp}</td>
+                      <td className="num c-hide">{masked ? '' : g.dur}</td>
+                      <td className="cap num">{fmtCaps(eff.fga)}</td>
+                    </tr>
+                  );
+                })}
+                {humanUpcoming.slice(0, ROSTER_SIZE - humanTeam.roster.length).map((u, k) => {
+                  const r = humanTeam.roster.length + k + 1;
+                  const bombHere = bombSpan && !bombLanded && state.bomb?.round === r;
+                  return (
+                    <tr key={u.pick} className="open">
+                      <td className="rd">R{r}</td>
+                      <td className="sl bn">—</td>
+                      <td className="f">{bombHere ? <span className="ini">?</span> : null}</td>
+                      <td>
+                        <div className="nm" style={{ color: 'var(--ink3)' }}>
+                          {bombHere ? BOMB_NAME : `Pick #${u.pick}`}
+                        </div>
+                        {bombHere && <div className="mt">his caps are set aside</div>}
+                      </td>
+                      <td className="c-hide" />
+                      <td className="c-hide" />
+                      <td className="c-hide" />
+                      <td className="c-hide" />
+                      <td className="c-hide" />
+                      {bombHere ? <td className="cap num">{fmtCaps(bombSpan.fga)}</td> : <td />}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        </>
+      );
+    }
+    return (
+      <NightGame aside={aside} overlay={dialogs}>
+        {main}
+        {rotation}
+        {!teamYears && (
+          <Btn className="phone-only" disabled={!canSubmit} onClick={() => submitRef.current?.()}>
+            Play the season
+          </Btn>
+        )}
+      </NightGame>
+    );
+  }
+
+  /* ---------------- the Draft view ---------------- */
+  const bbEntries = bigBoard.map((name) => {
+    const live = bigBoardEntries.find((e) => e.name === name);
+    return { name, live, taken: live ? undefined : takenAt(name) };
+  });
+  const aside = (
+    <>
+      {asideTop}
+      <SubNote>
+        {humanBudget.slotsLeft > 0 ? (
+          <>
+            <b>{fmtCaps(humanBudget.capLeft)} caps</b> for {spotWord(humanBudget.slotsLeft)} · about {fmtCaps(humanBudget.capLeft / humanBudget.slotsLeft)} a pick
+          </>
+        ) : (
+          <>
+            <b>{fmtCaps(used)} caps</b> used of {fmtCaps(capLimit)}
+          </>
+        )}
+      </SubNote>
+      <section>
+        <H3 note="starred">Your Big Board</H3>
+        {bbEntries.length === 0 ? (
+          <EmptyNote>Star players in the list to keep them here.</EmptyNote>
+        ) : (
+          <ol className="bboard">
+            {bbEntries.map((e) => (
+              <li key={e.name} className={e.live ? undefined : 'gone'}>
+                <button type="button" className="bb-n" onClick={() => setPeekPlayer(e.name)} disabled={!e.live}>
+                  {maskName(e.name)}
+                </button>
+                <span>{e.live ? fmtCaps(e.live.span.fga) : e.taken ? `taken #${e.taken}` : 'gone'}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+      {logRows.length > 0 && <PickLog rows={logRows} title="Latest picks" note="around the league" newestFirst />}
+      <Actions links={links}>
+        {state.complete ? (
+          <Btn onClick={() => setActiveTab('team')}>Go to your team</Btn>
+        ) : (
+          <>
+            <Btn kind="line" onClick={() => setBoardShown((v) => !v)}>
+              {boardShown ? 'Hide draft board' : 'Show draft board'}
+            </Btn>
+            <PhoneChip left={callsLeft} live={youOnClock && callsLeft >= 0} onOpen={() => setCallSheetOpen(true)} />
+            <Btn kind="line" onClick={() => setActiveTab('team')}>
+              Team · {humanTeam.roster.length}/{ROSTER_SIZE}
+            </Btn>
+          </>
+        )}
+      </Actions>
+    </>
+  );
+
+  const board = (
+    <BoardGrid teams={state.teams} rounds={ROUNDS} picks={pickSpans} onClock={state.complete ? null : overall} round={state.round} codeOf={codeOf} onHide={() => setBoardShown(false)} />
+  );
+  const yearsGroup = yearsFor?.from === 'draft' ? (groups.find((g) => g.playerName === yearsFor.name) ?? enrichedGroups.find((g) => g.playerName === yearsFor.name)) : undefined;
+
+  let main: ReactNode;
+  if (yearsGroup) {
+    const best = shownBest(yearsGroup);
+    const spans = [...yearsGroup.spans].sort((x, y) => x.spanLabel.localeCompare(y.spanLabel));
+    const scouted = scoutedPlayers.has(yearsGroup.playerName);
+    const cheapest = spans.filter((sp) => canPick && isPickLegal(state, sp.id)).sort((x, y) => x.fga - y.fga)[0];
+    main = (
+      <>
+        <div className="prompt">
+          <span className={`eb${youOnClock ? ' now' : ''}`}>{youOnClock ? `On the clock · Round ${round} · Pick ${overall}` : `Pick ${overall} · ${teamLabel(currentTeam)} on the clock`}</span>
+          <div className="who-head">
+            <NFace name={yearsGroup.playerName} />
+            <div>
+              <h2>{maskName(yearsGroup.playerName)}</h2>
+              <p>Which years? The same player costs less in his cheaper stretches.</p>
+            </div>
+          </div>
+        </div>
+        <section>
+          <H3 note={`${spans.length} in the pool`}>His stretches</H3>
+          <StretchTable
+            rows={spans.map((sp) => {
+              const g = gradesOf(sp);
+              const legal = canPick && isPickLegal(state, sp.id);
+              return {
+                span: sp,
+                tier: displayedOverallTier(sp),
+                grades: scouted ? `${g.off} · ${g.def}` : null,
+                peak: sp.id === best.id,
+                action: { label: 'Draft', disabled: !legal, title: draftButtonTitle(state, sp.id, canPick, currentTeam), onClick: () => onPick(sp.id) },
+              };
+            })}
+          />
+          {cheapest && cheapest.id !== best.id && best.fga - cheapest.fga >= 0.1 && (
+            <p className="empty-note" style={{ marginTop: 12 }}>
+              The {cheapest.spanLabel} {lastName(yearsGroup.playerName)} saves <b style={{ color: 'var(--gold)', fontStyle: 'normal' }}>{fmtCaps(best.fga - cheapest.fga)} caps</b> on his best years.
+            </p>
+          )}
+          <div style={{ maxWidth: 320, marginTop: 16 }}>
+            <Btn kind="line" onClick={() => setYearsFor(null)}>
+              ← Back to the list
+            </Btn>
+          </div>
+        </section>
+      </>
+    );
+  } else {
+    const shown = groups.slice(0, visibleCount);
+    const rows: NightRow[] = shown.map((group) => {
+      const best = shownBest(group);
+      const target = canPick && isPickLegal(state, best.id) ? best : cardSpanFor(group);
+      const ghost = ghosts.get(normalizePlayerName(group.playerName));
+      const ruled = !ghost && !!state.dailyRule && !state.commissionerMode && isDailyRuleBlocked(state, target);
+      const legal = !ghost && canPick && isPickLegal(state, target.id);
+      const g = scoutedPlayers.has(group.playerName) ? gradesOf(target) : null;
+      return {
+        key: group.playerName,
+        span: target,
+        tier: displayedOverallTier(target),
+        legal,
+        title: draftButtonTitle(state, target.id, canPick, currentTeam, `Draft ${maskName(group.playerName)}`),
+        ruleNote: ruled && state.dailyRule ? dailyRuleWords(state.dailyRule).ruleTag : undefined,
+        taken: ghost ? `taken #${ghost.pickNumber} · ${ghost.teamCode}` : undefined,
+        starred: bigBoard.includes(group.playerName),
+        grades: g ? { off: g.off, def: g.def, tp: g.tp } : undefined,
+        spans: group.spans.length,
+      };
+    });
+    const hot = rows.find((r) => r.legal);
+    if (hot) hot.hot = true;
+    const open = STARTER_SLOTS.filter((sl) => !humanAssignment[sl]);
+    const openWords = open.length > 1 ? `A ${open.slice(0, -1).join(', a ')} or a ${open[open.length - 1]}` : open.length ? `A ${open[0]}` : null;
+    const hotName = hot ? lastName(hot.span.playerName) : null;
+    main = (
+      <>
+        {boardShown && board}
+        <NineSlots
+          lineup={lineup}
+          bench={humanBench}
+          benchSlots={ROSTER_SIZE - STARTER_SLOTS.length}
+          note={`${humanTeam.roster.length} of ${ROSTER_SIZE} · ${teamLabel(humanTeam)}`}
+          sel={on === 'ALL' ? null : on}
+          onSlot={(pos) => setTab(pos)}
+          emptyLabel={(pos) => (pos === on ? `showing ${counts[pos]} ▾` : 'tap to show')}
+        />
+        {state.complete ? (
+          <Prompt eb="Draft done" title="Your nine are in">
+            Set the years and the rotation, then play the season.
+          </Prompt>
+        ) : youOnClock ? (
+          <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now>
+            {openWords ? `${openWords} fits best.` : 'Your five is set; this pick is for the bench.'}{' '}
+            {hotName && (
+              <>
+                <b className="w">{hotName}</b> is still on the board. Up to <b>{fmtCaps(humanBudget.maxThisPick)} caps</b> on this one.
+              </>
             )}
-          {/* 2026-09-11, user's own inspiration screenshot: Draft + Team merged into one screen —
-              player cards on the left, a persistent "Your Five" sidebar on the right (replaces
-              the draft-order pip strip this had for one round of live-testing — that was a step
-              toward this same request, now superseded by the real thing). See `humanAssignment`'s
-              own comment above for what's deliberately still out of scope this pass (span-swap,
-              full rotation-minute editing — still on the Team tab). */}
-          <div className="at-draft-workspace">
-          <div className="at-draft-main">
-              {/* 2026-10-07, the UI simplification: one filter row. Players get an "Affordable"
-                  pill (same shape as the position pills) instead of the min/max caps boxes
-                  (developer mode keeps the boxes); the tier key moved into the "?" dialog. */}
-              <div className="at-calm-filters">
-                <input
-                  className="at-calm-search"
-                  placeholder="Search players…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <PositionToggles positions={ALL_POSITIONS} hidden={hiddenPositions} onToggle={togglePosition} />
-                {showJudgeMetrics ? (
-                  <div className="at-fga-filter">
-                    <label><CapIcon /> Caps</label>
-                    <input className="at-fga-input" value={fgaMin} onChange={(e) => setFgaMin(e.target.value)} />
-                    <input className="at-fga-input" value={fgaMax} onChange={(e) => setFgaMax(e.target.value)} />
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className={`at-calm-chip${affordableOnly ? ' is-on' : ''}`}
-                    aria-pressed={affordableOnly}
-                    title="Only players whose cost fits your next pick"
-                    onClick={() => setAffordableOnly((on) => !on)}
-                  >
-                    <CapIcon size={12} /> Affordable
-                  </button>
-                )}
-                {!showJudgeMetrics && (
-                  <label className={`at-calm-maxcaps${maxCapsActive ? ' is-on' : ''}`} title="Only players whose years cost this many caps or fewer">
-                    <CapIcon size={12} />
-                    <span>Max</span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min={1}
-                      max={30}
-                      step={0.5}
-                      placeholder="any"
-                      aria-label="Most caps a player may cost"
-                      value={maxCapsText}
-                      onChange={(e) => setMaxCapsText(e.target.value)}
-                    />
-                    {maxCapsActive && (
-                      <button type="button" aria-label="Clear the caps limit" onClick={() => setMaxCapsText('')}>
-                        ✕
-                      </button>
-                    )}
-                  </label>
-                )}
-                {!showJudgeMetrics && (
-                  <>
-                    <select
-                      className={`at-calm-select${roleFilter ? ' is-on' : ''}`}
-                      aria-label="Role"
-                      value={roleFilter ?? ''}
-                      onChange={(e) => setRoleFilter(e.target.value || null)}
-                    >
-                      <option value="">Any role</option>
-                      {Object.keys(ROLE_FILTERS).filter(roleFits).map((role) => (
+          </Prompt>
+        ) : (
+          <Prompt eb={`On the clock · Pick ${overall}`} title={teamLabel(currentTeam)} now>
+            {humanPicksAway === 1 ? 'Your pick is next.' : humanPicksAway ? `Your pick in ${humanPicksAway} picks.` : 'Your nine are in.'} The list stays open while they think.
+          </Prompt>
+        )}
+        {state.complete && (
+          <div className="btn2" style={{ maxWidth: 360, marginBottom: 24 }}>
+            <Btn onClick={() => setActiveTab('team')}>Go to your team</Btn>
+          </div>
+        )}
+        {!state.complete && (
+          <section>
+            {callLog.warRoomPick === callPickNo && callLog.warRoom && youOnClock && (
+              <WarRoomBanner count={callLog.warRoom.length} showAll={warRoomShowAll} onToggle={() => setWarRoomShowAll((v) => !v)} />
+            )}
+            {canPick && !anyVisibleLegal && (
+              <Notice action="Show players that fit" onAction={showAffordable}>
+                <b>None of these fit this pick.</b> It can cost up to {fmtCaps(currentBudget.maxThisPick)} caps.
+              </Notice>
+            )}
+            <PosTabs
+              counts={counts}
+              have={have}
+              on={on}
+              onPick={setTab}
+              search={search}
+              onSearch={setSearch}
+              extra={
+                <span className="pt-more">
+                  <span>Role</span>
+                  <select aria-label="Role" value={roleFilter ?? ''} onChange={(e) => setRoleFilter(e.target.value || null)}>
+                    <option value="">Any</option>
+                    {Object.keys(ROLE_FILTERS)
+                      .filter(roleFits)
+                      .map((role) => (
                         <option key={role} value={role}>
                           {role}
                         </option>
                       ))}
-                    </select>
-                    <select
-                      className="at-calm-select"
-                      aria-label="Sort"
-                      value={boardSort}
-                      onChange={(e) => setBoardSort(e.target.value as 'best' | 'value' | 'cheapest' | 'priciest')}
-                    >
-                      <option value="best">Best first</option>
-                      <option value="value">Most for the caps</option>
-                      <option value="cheapest">Cheapest first</option>
-                      <option value="priciest">Most caps first</option>
-                    </select>
-                  </>
-                )}
-              </div>
-
-              {/* 2026-09-01: the Draft-tab player list is the same expandable-list shape as the
-                  Cap Sheet (`.player-group` accordion + `.span-table`), condensed to match it —
-                  minimal header (name · position · seasons · best tier · FGA/TAL on the right),
-                  plain-text stat cells, only the tier is a pill. FGA columns and the draft
-                  mechanic (`onPick`/`isPickLegal`/`canPick`, best-span pick in player mode,
-                  per-span pick + Why? in developer mode) are unchanged. `.player-group*` /
-                  `.span-table` read the plain `--bg`/`--border`/`--accent` names, which `.at-shell`
-                  aliases to its dark board values, so it renders on the board palette; the
-                  `.at-draft-groups` block in App.css only tightens spacing/typography. */}
-              {showJudgeMetrics && (
-              <div className="player-groups at-draft-groups">
-                {groups.map((group) => {
-                  const isOpen = expanded.has(group.playerName);
-                  const groupFgas = group.spans.map((s) => s.fga);
-                  const minFga = Math.min(...groupFgas);
-                  const maxFga = Math.max(...groupFgas);
-                  const fgaRange =
-                    minFga === maxFga ? minFga.toFixed(1) : `${minFga.toFixed(1)}–${maxFga.toFixed(1)}`;
-                  return (
-                    <div key={group.playerName} className="player-group">
-                      <div
-                        className="player-group-header"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => toggleExpand(group.playerName)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            toggleExpand(group.playerName);
-                          }
-                        }}
-                      >
-                        <span className="pg-caret">{isOpen ? '▾' : '▸'}</span>
-                        <span className="pg-name">{group.playerName}</span>
-                        <span className="pg-natural-position">{naturalPosition(group.playerName)}</span>
-                        <span className="pg-meta">
-                          {group.spans.length} season{group.spans.length > 1 ? 's' : ''}
-                        </span>
-
-                        {/* Right side, Cap-Sheet style: one calm monospace string, no pill.
-                            "best <tier> · TAL <n>" (dev) / "best <tier> · <fga> FGA" (player). */}
-                        <span className="pg-summary">
-                          <span className="lbl">best</span> {group.bestTier}
-                          {' · '}
-                          {showJudgeMetrics ? (
-                            <>
-                              <span className="lbl">TAL</span> {group.bestTalent}
-                            </>
-                          ) : (
-                            <>
-                              <CapIcon /> {fgaRange} <span className="lbl">caps</span>
-                            </>
-                          )}
-                        </span>
-
-                        {!showJudgeMetrics && (
-                          <button
-                            className="at-draft-btn pg-draft"
-                            disabled={!canPick || !isPickLegal(state, group.bestTalentSpan.id)}
-                            title={draftButtonTitle(state, group.bestTalentSpan.id, canPick, currentTeam)}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onPick(group.bestTalentSpan.id);
-                            }}
-                          >
-                            Draft
-                          </button>
-                        )}
-                      </div>
-
-                      {isOpen && showJudgeMetrics && (
-                        <div className="table-scroll">
-                          <table className="span-table at-draft-span-table">
-                            <thead>
-                              <tr>
-                                <th>Years</th>
-                                <th>Pos</th>
-                                <th className="num">Caps</th>
-                                <th className="num">TAL</th>
-                                <th>O</th>
-                                <th>D</th>
-                                <th>O-POR</th>
-                                <th>D-POR</th>
-                                <th className="num">SPC</th>
-                                <th className="num">FIN</th>
-                                <th className="num">DUR</th>
-                                <th>Tier</th>
-                                <th />
-                                <th />
-                                <th />
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {group.spans.map((span) => {
-                                const ctx = tierContextFor(span);
-                                return (
-                                  <tr key={span.id}>
-                                    <td>{span.spanLabel}</td>
-                                    <td>{span.primaryPosition}</td>
-                                    <td className="num">{span.fga.toFixed(1)}</td>
-                                    <td className="num">{displayNumberForSpan(span, ctx)}</td>
-                                    <td>{offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span))}</td>
-                                    <td>{defensiveGrade(computeDefensiveTalent(span))}</td>
-                                    <td>{offensivePortabilityGrade(computeOffensivePortability(span))}</td>
-                                    <td>{defensivePortabilityGrade(computeDefensivePortability(span))}</td>
-                                    <td className="num">{computeSpacing(span)}</td>
-                                    <td className="num">{computeFinishing(span)}</td>
-                                    <td className="num">{computeDurability(span)}</td>
-                                    <td className="tier-cell">{overallTierForSpan(ctx)}</td>
-                                    <td><SmallSampleBadge span={span} /></td>
-                                    <td>
-                                      <button
-                                        className="at-draft-btn"
-                                        disabled={!canPick || !isPickLegal(state, span.id)}
-                                        title={draftButtonTitle(state, span.id, canPick, currentTeam)}
-                                        onClick={() => onPick(span.id)}
-                                      >
-                                        Draft
-                                      </button>
-                                    </td>
-                                    <td>
-                                      <button className="at-why-btn" onClick={() => toggleEvidence(span.id)}>
-                                        {evidenceOpen.has(span.id) ? 'Hide' : 'Why?'}
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                          {group.spans
-                            .filter((span) => evidenceOpen.has(span.id))
-                            .map((span) => (
-                              <div key={span.id} className="evidence-panel-wrap">
-                                <div className="evidence-panel-label">{span.spanLabel} — why this rating</div>
-                                <EvidenceReportPanel span={span} />
-                              </div>
-                            ))}
-                        </div>
-                      )}
-
-                    </div>
-                  );
-                })}
-              </div>
-              )}
-
-              {/* 2026-09-11, user's own inspiration screenshot: face cards instead of an
-                  accordion list. Follow-up ask ("modal zamiast obecnego rozwijania karty"): the
-                  magnifying glass opens a modal (`PlayerPeekModal` below) instead of expanding the
-                  card in place — more room for the same `spansByAiValue` season list plus real box
-                  stats, without the grid's row heights jumping around per-card. An arrow still
-                  drafts the best season immediately, no modal needed for the common case. Player
-                  mode only — developer/tester mode keeps the dense table above unchanged. */}
-              {!showJudgeMetrics && callLog.warRoomPick === callPickNo && callLog.warRoom && youOnClock && (
-                <WarRoomBanner count={callLog.warRoom.length} showAll={warRoomShowAll} onToggle={() => setWarRoomShowAll((v) => !v)} />
-              )}
-              {!showJudgeMetrics && (
-                <DraftPlayerList
-                  rows={groups.slice(0, visibleCount).map((group) => {
-                    // The row drafts the player's best stretch, or his best affordable one when the
-                    // best is over the cap (see `cardSpanFor`).
-                    const best = shownBest(group);
-                    const target = canPick && isPickLegal(state, best.id) ? best : cardSpanFor(group);
-                    const ghost = ghosts.get(normalizePlayerName(group.playerName));
-                    // A daily's rule that covers all his years (a franchise block): say so on the row.
-                    const ruled = !ghost && !!state.dailyRule && !state.commissionerMode && isDailyRuleBlocked(state, target);
-                    const tier = displayedOverallTier(target);
-                    return {
-                      key: group.playerName,
-                      span: target,
-                      tier,
-                      tierColor: TIER_FRAME_COLOR[tier],
-                      legal: !ghost && canPick && isPickLegal(state, target.id),
-                      draftTitle: draftButtonTitle(state, target.id, canPick, currentTeam, `Draft ${group.playerName}`),
-                      scouted: scoutedPlayers.has(group.playerName),
-                      taken: ghost ? `Taken #${ghost.pickNumber} · ${ghost.teamCode}` : undefined,
-                      starred: bigBoard.includes(group.playerName),
-                      ruleNote: ruled && state.dailyRule ? dailyRuleWords(state.dailyRule).ruleTag : undefined,
-                    };
-                  })}
-                  scoutsLeft={SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size}
-                  leaving={sweeping}
-                  gradeColor={gradeColor}
-                  onDraft={(span) => onPick(span.id)}
-                  onOpen={(name) => setPeekPlayer(name)}
-                  onStar={toggleBigBoard}
-                />
-              )}
-
-              {/* 2026-09-14, user-reported live: the primary fix for "too many names at once" —
-                  `groups` itself can already hold up to `DRAFT_LIST_LIMIT` (140, a render-
-                  performance cap, see its own docstring), but only `visibleCount` of them are
-                  actually rendered above. Player mode only, same gate as the card grid itself
-                  (`visibleCount` isn't read by developer mode's own accordion list). */}
-              {!showJudgeMetrics && visibleCount < groups.length && (
-                <button
-                  type="button"
-                  className="at-legend-toggle"
-                  style={{ marginBottom: 4 }}
-                  onClick={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))}
-                >
-                  See {Math.min(DRAFT_VISIBLE_STEP, groups.length - visibleCount)} more (
-                  {groups.length - visibleCount} left)
-                </button>
-              )}
-              {totalMatched > groups.length && (
-                <p className="at-caption at-draft-more-note">
-                  Showing the top {groups.length} of {totalMatched} — search a name or pick a
-                  position to see the rest.
-                </p>
-              )}
-              {showJudgeMetrics && (
-              <div className="at-legend-row">
-                <p className="at-caption" style={{ marginTop: 0 }}>
-                  Peak caps = cost of this player's highest-Talent season. Lowest caps = his cheapest available season in the pool right now, independent of talent. Click a row to see every available season and draft one.
-                </p>
-                {showJudgeMetrics && (
-                  <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
-                    {showLegend ? 'Hide' : 'Show'} tag legend
-                  </button>
-                )}
-              </div>
-              )}
-              {showJudgeMetrics && showLegend && (
-                <div className="at-tag-legend">
-                  {TAG_LEGEND.map((l) => (
-                    <div className="at-tag-legend-item" key={l.name}>
-                      <span className="at-swatches">
-                        {l.tiers.map((t, i) => (
-                          <span key={i} className={`at-dot ${t}`} />
-                        ))}
-                      </span>
-                      <div>
-                        <h5>{l.name}</h5>
-                        <p>{l.text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-          </div>
-
-          {/* 2026-10-14, the screen redesign: your five on a half court next to the list (desktop);
-              phones show the same five as dots in the status bar. */}
-          {!isStackedLayout && (
-            <aside className="at-draft-sidebar wr-sidebar">
-              <YourFiveCourt
-                assignment={humanAssignment}
-                bench={humanBench}
-                benchSlots={ROSTER_SIZE - STARTER_SLOTS.length}
-                onOpenTeam={() => setActiveTab('team')}
-              />
-              <BigBoardPanel
-                entries={bigBoardEntries}
-                canPick={canPick && youOnClock}
-                onDraft={(span) => onPick(span.id)}
-                onMove={moveOnBigBoard}
-                onRemove={(name) => saveBigBoard(bigBoard.filter((n) => n !== name))}
-              />
-            </aside>
-          )}
-        </div>
-        </div>
-      )}
-
-      {/* 2026-09-14, user-reported live: closes the Draft-card `if`/opens the Team column that
-          sits beside it — the Team roster table and the always-mounted Rotation card below both
-          move inside this one wrapper so `.at-merge-row`'s flex layout (App.css) treats "Draft" and
-          "Team + Rotation" as its two side-by-side items on a wide screen; on a narrow one this is
-          just an unstyled div and everything still stacks exactly as it did before this pass. */}
-      {/* 2026-10-14, the Team tab redesign (approved mockup "Team · roster + rotation"): your roster
-          on the left — the years for each player, his tier, four grades and his cost, then the picks
-          still to come — and the rotation on the right. Phones switch between the two. The wrapper
-          stays mounted (hidden off the tab) so the rotation keeps its rows across tab switches. */}
-      <div className="at-merge-team-col tm-layout" style={activeTab === 'team' ? undefined : { display: 'none' }}>
-      {isStackedLayout && (
-        <div className="at-calm-seg wr-views tm-views" role="tablist" aria-label="Team view">
-          <button type="button" role="tab" aria-selected={teamView === 'rotation'} className={teamView === 'rotation' ? 'is-on' : ''} onClick={() => setTeamView('rotation')}>
-            Rotation
-          </button>
-          <button type="button" role="tab" aria-selected={teamView === 'roster'} className={teamView === 'roster' ? 'is-on' : ''} onClick={() => setTeamView('roster')}>
-            Roster · {teamForPanels.roster.length}/{ROSTER_SIZE}
-          </button>
-        </div>
-      )}
-      {activeTab === 'team' && !(isStackedLayout && teamView !== 'roster') && (
-        <section className="tm-roster" aria-label="Roster">
-          <div className="tm-head">
-            <span className="tm-title">Roster</span>
-            <span className="at-calm-soft">
-              {teamForPanels.roster.length} of {ROSTER_SIZE} drafted
-              {teamForPanels.roster.length < ROSTER_SIZE && ` · ${ROSTER_SIZE - teamForPanels.roster.length} to go`}
-            </span>
-          </div>
-          <div className="tm-card">
-            <div className="tm-row tm-row--head" aria-hidden>
-              <span>Rnd</span>
-              <span>Player · years</span>
-              <span>Tier</span>
-              <span>Off · Def · 3pt · Dur</span>
-              <span className="tm-num">Caps</span>
-            </div>
-            {teamForPanels.roster.map((p, i) => {
-              const spanOpt = isViewingHumanRoster ? humanSpanOptionsByKey.get(normalizePlayerName(p.playerName)) : undefined;
-              const effective = spanOpt
-                ? (spanOpt.options.find((o) => o.id === (humanSpanSelection[spanOpt.key] ?? spanOpt.draftedSpan.id)) ?? p)
-                : p;
-              // The Bomb: who he is, his years and his grades wait for the results.
-              if (isBombMasked(p.playerName)) {
-                return (
-                  <div className="tm-row tm-row--bomb" key={normalizePlayerName(p.playerName)}>
-                    <span className="tm-rnd">R{i + 1}</span>
-                    <span className="tm-player">
-                      <Face name={p.playerName} size="md" />
-                      <span className="tm-player-text">
-                        <span className="tm-name">
-                          {BOMB_NAME} <span className="tm-pos">{p.primaryPosition}</span>
-                        </span>
-                        <span className="tm-bomb-note">Revealed on the results · plays {BOMB_MIN_MINUTES}+ min</span>
-                      </span>
-                    </span>
-                    <span className="tm-tier">
-                      <span className="tier-badge tier-badge--bomb">?</span>
-                    </span>
-                    <span className="tm-grades" />
-                    <span className="tm-num tm-caps">
-                      <CapIcon /> {p.fga.toFixed(1)}
-                    </span>
-                  </div>
-                );
+                  </select>
+                  <span>Sort</span>
+                  <select aria-label="Sort" value={boardSort} onChange={(e) => setBoardSort(e.target.value as 'best' | 'value' | 'cheapest' | 'priciest')}>
+                    <option value="best">Best first</option>
+                    <option value="value">Most for the caps</option>
+                    <option value="cheapest">Cheapest first</option>
+                    <option value="priciest">Most caps first</option>
+                  </select>
+                </span>
               }
-              return (
-                <div className="tm-row" key={normalizePlayerName(p.playerName)}>
-                  <span className="tm-rnd">R{i + 1}</span>
-                  <span className="tm-player">
-                    <Face name={p.playerName} size="md" />
-                    <span className="tm-player-text">
-                      <span className="tm-name">
-                        {p.playerName} <span className="tm-pos">{p.primaryPosition}</span>
-                      </span>
-                      {spanOpt ? (
-                        <YearsPicker
-                          playerName={spanOpt.playerName}
-                          options={yearsAllowedToday(spanOpt, effective.id)}
-                          selectedId={effective.id}
-                          showTal={showJudgeMetrics}
-                          onSelect={(id) => setHumanSpan(spanOpt.key, id, spanOpt.playerName, spanOpt.options)}
-                        />
-                      ) : (
-                        <span className="tm-years">{p.spanLabel}</span>
-                      )}
-                    </span>
-                  </span>
-                  <span className="tm-tier">
-                    <OverallTierBadge span={effective} />
-                  </span>
-                  <span className="tm-grades">
-                    <AtGrade label="OFF" grade={offensiveGrade(computeOffensiveTalent(effective), computeUncappedOffensiveTalent(effective))} />
-                    <AtGrade label="DEF" grade={defensiveGrade(computeDefensiveTalent(effective))} />
-                    <AtGrade label="3PT" grade={spacingGrade(computeSpacing(effective), effective)} ungraded={spacingUngraded(effective)} />
-                    <AtGrade label="DUR" grade={durabilityGrade(computeDurability(effective))} />
-                  </span>
-                  <span className="tm-num tm-caps">
-                    <CapIcon /> {effective.fga.toFixed(1)}
-                  </span>
-                </div>
-              );
-            })}
-            {isViewingHumanRoster &&
-              humanUpcoming.slice(0, ROSTER_SIZE - teamForPanels.roster.length).map((u, k) => {
-                const round = teamForPanels.roster.length + k + 1;
-                if (bombSpan && !bombLanded && state.bomb?.round === round) {
-                  return (
-                    <div className="tm-row tm-row--open tm-row--bomb" key={u.pick}>
-                      <span className="tm-rnd">R{round}</span>
-                      <span className="tm-player">
-                        <span className="tm-open-face is-bomb" aria-hidden>
-                          ?
-                        </span>
-                        <span>
-                          <b>{BOMB_NAME}</b> <span className="at-calm-soft">· pick #{u.pick} · his caps are set aside</span>
-                        </span>
-                      </span>
-                      <span className="tm-tier" />
-                      <span className="tm-grades" />
-                      <span className="tm-num tm-caps">
-                        <CapIcon /> {bombSpan.fga.toFixed(1)}
-                      </span>
-                    </div>
-                  );
-                }
-                return (
-                  <div className="tm-row tm-row--open" key={u.pick}>
-                    <span className="tm-rnd">R{round}</span>
-                    <span className="tm-player">
-                      <span className="tm-open-face" aria-hidden />
-                      <span className="at-calm-soft">Pick #{u.pick}</span>
-                    </span>
-                  </div>
-                );
-              })}
-            <div className={`tm-foot${isViewingHumanRoster && chosenRosterOverCap ? ' is-over' : ''}`}>
-              <span>
-                {isViewingHumanRoster
-                  ? 'Click the years to use a different stretch of a player\'s career — cheaper years free caps.'
-                  : 'Rotation minutes are set in this same tab.'}
-              </span>
-              <span className="tm-num">
-                <CapIcon /> {totalFga(displayFgas).toFixed(1)} / {capLimit}
-                {isViewingHumanRoster && chosenRosterOverCap && ' — over cap'}
-              </span>
-            </div>
-          </div>
-          {teamForPanels.roster.length > 0 && (
-            <>
-              <button className="at-legend-toggle at-cond" onClick={() => setShowLegend((s) => !s)}>
-                {showLegend ? 'Hide' : 'Show'} what the grades mean
-              </button>
-              {showLegend && (
-                <div className="at-tag-legend">
-                  {TAG_LEGEND.map((l) => (
-                    <div className="at-tag-legend-item" key={l.name}>
-                      <span className="at-swatches">
-                        {l.tiers.map((t, i) => (
-                          <span key={i} className={`at-dot ${t}`} />
-                        ))}
-                      </span>
-                      <div>
-                        <h5>{l.name}</h5>
-                        <p>{l.text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            />
+            <CapsBar
+              lo={Number(fgaMin) || 0}
+              hi={Number(fgaMax) || CAPS_TOP}
+              top={CAPS_TOP}
+              maxPick={canPick ? humanBudget.maxThisPick : null}
+              onChange={(lo, hi) => {
+                setFgaMin(String(lo));
+                setFgaMax(String(hi));
+              }}
+            />
+            <PlayerTable rows={rows} variant="alltime" onDraft={(sp) => onPick(sp.id)} onOpen={(name) => setPeekPlayer(name)} onYears={(name) => setYearsFor({ name, from: 'draft' })} onStar={toggleBigBoard} scoutsLeft={scoutsLeft} />
+            <div className="more">
+              Showing {shown.length} of {totalMatched.toLocaleString('en-US')} players
+              {visibleCount < groups.length && (
+                <>
+                  {' · '}
+                  <button type="button" className="lk-inline" onClick={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))}>
+                    See more
+                  </button>
+                </>
               )}
-            </>
-          )}
-          <div id="years-sheet-slot" className="years-sheet-slot" />
-        </section>
-      )}
-
-      {/* 2026-08-16, user's own ask: the old "Choose Each Player's Span" screen and the rotation-
-          builder screen are gone as separate phases — both merged into this tab, open from the
-          human's very first pick (not gated until the draft ends, per that same ask), ending in
-          one Submit action instead of two separate confirm screens. Always built against
-          `humanTeam` (never `teamForPanels`) — see this file's own comment on that split above;
-          Commissioner Mode still only ever builds the one isHuman team's span/rotation here. */}
-      {/* 2026-09-12, user-reported live ("jak coś wrzucę w rotation i wydraftuje następnego gracza
-          to wszystko się usuwa"): this whole card used to be gated the same `{activeTab === 'team'
-          && (...)}` way every other tab section here is — which UNMOUNTS `RotationBuilder`
-          entirely the moment you leave the Team tab, and remounts it fresh (empty rows again) the
-          moment you come back. That's not a `key`/remount-timing bug (the old `key={spanVersion}`
-          fix above addresses a real, separate 9th-pick discontinuity) — you cannot even DRAFT the
-          next player without leaving this tab, so every single "set some minutes, draft, come
-          back" cycle hit it. Always rendered now; `display: none` hides it instead of unmounting
-          it, so `RotationBuilder`'s own `rows` state survives every tab switch untouched. */}
-      <section className="tm-rotation" aria-label="Rotation" style={isStackedLayout && teamView !== 'rotation' ? { display: 'none' } : undefined}>
-          {humanTeam.roster.length === 0 ? (
-            <div className="at-placeholder">
-              Opens as soon as you make your first pick — set minutes as you go, no need to wait for
-              the draft to end.
+              {totalMatched > groups.length && visibleCount >= groups.length && ' · search a name to see the rest'} · {scoutsLeft} scouting {scoutsLeft === 1 ? 'report' : 'reports'} left
             </div>
-          ) : (
-            <>
-              <RotationBuilder
-                // 2026-09-12, user-reported live ("jak coś wrzucę w rotation i wydraftuje
-                // następnego gracza to wszystko się usuwa"): this used to also remount on
-                // `draftComplete` flipping false->true, so the moment the human's 9th (final) pick
-                // landed, any minutes the user had already set by hand while the roster was still
-                // incomplete were silently thrown away for a fresh `autoAssignRotation` seed — the
-                // exact opposite of the "set minutes manually if you'd like ... as you go" promise
-                // this same screen makes below.
-                // 2026-09-16, user-reported live ("ciągnie gracza za rączkę i ustawia z automatu
-                // najlepszy line-up, brak myślenia po stronie gracza"): the "Auto-fill (best fit)"
-                // button this comment used to describe is gone entirely (RotationBuilder.tsx) —
-                // setting the rotation is meant to be a real decision, not a one-click optimum.
-                // `rosterComplete` still matters here, though: `buildInitialRows` (that file's own
-                // helper) reads it to keep the INITIAL seed empty until the roster is actually
-                // full, rather than auto-assigning a still-growing roster sensibly-but-wrongly.
-                roster={chosenHumanRoster}
-                rosterComplete={draftComplete}
-                seedStrategy="basic"
-                persistKey={state.commissionerMode ? undefined : draftSaveKeys(saveSlotFor(state)).rotation}
-                minMinutes={bombMinimum}
-                onConfirm={handleRotationConfirm}
-                confirmLabel="Submit Team"
-                // The span dropdown deliberately lists every span (comparing them by cost is the
-                // point), so a player can swap to a pricier span and push the chosen roster over
-                // the cap. `handleSubmitTeam` writes the human's spans through verbatim (no
-                // `optimizeSpans` clamp, unlike the AI path) — so block the submit here, or the
-                // human is scored over a cap all 15 AI teams are held to.
-                confirmDisabled={!state.complete || chosenRosterOverCap}
-                confirmDisabledHint={
-                  !state.complete
-                    ? `Finish drafting all ${ROSTER_SIZE} picks before you can submit.`
-                    : chosenRosterOverCap
-                      ? `Your chosen years cost ${chosenRosterFga.toFixed(1)} caps — over the ${capLimit} cap. Pick cheaper years in the roster.`
-                      : undefined
-                }
-              />
-            </>
-          )}
-      </section>
-      </div>
-      </div>
-    </div>
+          </section>
+        )}
+      </>
+    );
+  }
+  return (
+    <NightGame aside={aside} overlay={dialogs}>
+      {main}
+      {rotation}
+      {!state.complete && !yearsGroup && (
+        <div className="btn2 phone-only">
+          <Btn kind="line" onClick={() => setBoardShown((v) => !v)}>
+            {boardShown ? 'Hide board' : 'Draft board'}
+          </Btn>
+          <Btn kind="line" onClick={() => setActiveTab('team')}>
+            Team · {humanTeam.roster.length}/{ROSTER_SIZE}
+          </Btn>
+        </div>
+      )}
+    </NightGame>
   );
 }

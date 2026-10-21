@@ -1,12 +1,9 @@
-import { useEffect } from 'react';
-import { maskName } from './bombMask';
+import { Fragment, useEffect } from 'react';
+import { maskName, maskText, maskYears } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
-import { DESK_CAST } from '../engine/desk';
+import { DESK_CAST, type DeskLine } from '../engine/desk';
 import { CALLS_PER_DRAFT, type CallId, type CallOption, type CallResult } from '../engine/deskCalls';
-import { DeskVoices } from './DeskVoices';
-import { Face } from './ShotChip';
-import { FitName } from './FitName';
-import './PhoneDesk.css';
+import { Btn, CapI, Dialog, NFace, fmtCaps } from '../night/ui';
 
 /**
  * 2026-10-15, "Phone the Desk" (approved mockup https://claude.ai/artifact/5ZSUn6nxWsoiybnPvmtGDm):
@@ -15,81 +12,79 @@ import './PhoneDesk.css';
  * shows it. A call never drafts for you — names go to your Big Board, the pick stays yours.
  */
 
-export function PhoneIcon() {
+function Badge({ id }: { id: CallId }) {
+  if (id === 'desk') return <span className="pd-av tv" aria-hidden>TV</span>;
+  return <span className="pd-av" aria-hidden>{DESK_CAST[id].mono}</span>;
+}
+
+/** The voices of a call (mockup `alltime.html#call`): the one you rang speaks plain, anyone who
+ * barges in is set off with his name. Stage cues written as *text* show in italics. */
+function CallVoices({ voices, caller }: { voices: DeskLine[]; caller: CallId }) {
+  const first = voices[0]?.who;
+  const lead = caller === 'desk' ? first : caller;
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
-    </svg>
+    <>
+      {voices.map((v, i) => {
+        const parts = maskText(v.text)
+          .split(/\*(.+?)\*/g)
+          .map((part, j) => (j % 2 ? <i key={j}>{part}</i> : <Fragment key={j}>{part}</Fragment>));
+        const barge = v.kind === 'burst' || v.who !== lead;
+        return (
+          <p key={i} className={barge ? 'pd-say barge' : 'pd-say'}>
+            {barge && v.kind !== 'burst' && <em>{DESK_CAST[v.who].name.split(' ').slice(-1)[0]}</em>}
+            {parts}
+          </p>
+        );
+      })}
+    </>
   );
 }
 
-function Badge({ id }: { id: CallId }) {
-  if (id === 'desk') return <span className="pd-av pd-av--desk" aria-hidden>TV</span>;
-  const x = DESK_CAST[id];
-  return <span className="pd-av" style={{ ['--h' as string]: x.hue }} aria-hidden>{x.mono}</span>;
-}
-
-/** The chip next to the scouting reports: how many calls are left, lit only on your pick. */
+/** The aside button: how many calls are left, live only on your pick. */
 export function PhoneChip({ left, live, onOpen }: { left: number; live: boolean; onOpen: () => void }) {
   return (
     <button
       type="button"
-      className={`pd-chip${live ? ' is-live' : ''}`}
+      className={`btn ${live && left >= 0 ? 'line' : 'off'}`}
       onClick={onOpen}
       disabled={!live}
       title={live ? 'Call an expert from the studio' : 'Calls open on your pick'}
-      aria-label={`Phone the desk, ${left} call${left === 1 ? '' : 's'} left`}
     >
-      <PhoneIcon />
-      <span className="pd-chip-label">Phone the desk ·</span>
-      <span className="pd-chip-short">Call ·</span> <b>{left}</b>
+      Phone the desk · {left} left
     </button>
   );
 }
 
-function useEscape(onClose: () => void) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-}
-
-/** Tonight's on-call experts, the desk and Moonbat. */
+/** Tonight's on-call experts, the desk and Moonbat (mockup `alltime.html#callSheet`). */
 export function CallSheet({ options, left, pickLabel, onCall, onClose }: { options: CallOption[]; left: number; pickLabel: string; onCall: (id: CallId) => void; onClose: () => void }) {
-  useEscape(onClose);
   return (
-    <div className="mode-help-backdrop pd-backdrop" onClick={onClose}>
-      <div className="pd-sheet" role="dialog" aria-modal="true" aria-labelledby="pd-sheet-title" onClick={(e) => e.stopPropagation()}>
-        <div className="pd-sheet-head">
-          <h2 id="pd-sheet-title">Who are you calling?</h2>
-          <span className="pd-soft">{pickLabel}</span>
-          <span className="pd-left">{left} of {CALLS_PER_DRAFT} calls left</span>
-        </div>
-        <div className="pd-lines">
-          {options.map((o) => (
-            <button
-              key={o.id}
-              type="button"
-              className={`pd-line${o.unavailable ? ' is-off' : ''}${o.id === 'desk' ? ' pd-line--desk' : ''}${o.free ? ' pd-line--free' : ''}`}
-              disabled={!!o.unavailable}
-              onClick={() => onCall(o.id)}
-            >
-              <Badge id={o.id} />
-              <span className="pd-who">
-                <b>{o.name}</b>
-                <small>{o.tag}</small>
-                <span className="pd-blurb">{o.blurb}</span>
-                <span className={`pd-badge${o.free ? ' pd-badge--free' : ''}`}>{o.unavailable ?? o.badge}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-        <button type="button" className="at-calm-btn pd-close" onClick={onClose}>
-          Back to the board
+    <Dialog title="Who are you calling?" onClose={onClose}>
+      <p className="lead" style={{ margin: '6px 0 4px' }}>
+        {pickLabel} · <b style={{ color: 'var(--ink)' }}>{left} of {CALLS_PER_DRAFT} calls left</b>
+      </p>
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          className={`pd-line${o.unavailable ? ' off' : ''}${o.free ? ' free' : ''}`}
+          disabled={!!o.unavailable}
+          onClick={() => onCall(o.id)}
+        >
+          <Badge id={o.id} />
+          <div>
+            <b>
+              {o.name}
+              {o.tag && <small>{o.tag}</small>}
+            </b>
+            <p>{o.blurb}</p>
+          </div>
+          <span className="bdg">{o.unavailable ?? o.badge}</span>
         </button>
-      </div>
-    </div>
+      ))}
+      <Btn kind="line" className="pd-back" onClick={onClose}>
+        Back to the board
+      </Btn>
+    </Dialog>
   );
 }
 
@@ -109,74 +104,84 @@ export function CallWindow({
   onStarAll: (players: PlayerSpan[]) => void;
   onClose: () => void;
 }) {
-  useEscape(onClose);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
   const id = result?.id;
   const title = id === undefined ? 'Dialling…' : id === 'desk' ? 'The Desk' : DESK_CAST[id].name;
   // No lens in the subtitle either: the names give the taste away soon enough.
-  const sub = id === undefined ? '' : id === 'moonbat' ? 'Free call' : `${id === 'desk' ? 'Chalk talk · ' : id === 'host' ? 'League sources · ' : ''}call ${callNumber ?? '?'} of ${CALLS_PER_DRAFT}`;
+  const sub = id === undefined ? '' : id === 'moonbat' ? 'free call' : `${id === 'desk' ? 'chalk talk · ' : id === 'host' ? 'league sources · ' : ''}call ${callNumber ?? '?'} of ${CALLS_PER_DRAFT}`;
   return (
-    <div className="mode-help-backdrop pd-backdrop" onClick={onClose}>
-      <div className="pd-call" role="dialog" aria-modal="true" aria-labelledby="pd-call-title" onClick={(e) => e.stopPropagation()}>
-        <div className="pd-call-top">
+    <>
+      <div className="drawer-dim" onClick={onClose} aria-hidden />
+      <div className="dlg" role="dialog" aria-modal="true" aria-label={title}>
+        <div className="pd-top">
           {id !== undefined && <Badge id={id} />}
-          <span className="pd-who">
-            <b id="pd-call-title">{title}</b>
+          <div>
+            <b>{title}</b>
             <small>{sub}</small>
+          </div>
+          <span className="air">
+            <i aria-hidden />
+            {id === 'desk' ? 'LIVE' : 'ON THE LINE'}
           </span>
-          <span className="pd-onair"><i aria-hidden />{id === 'desk' ? 'LIVE' : 'ON THE LINE'}</span>
         </div>
-        <div className="pd-call-body" aria-live="polite">
-          {result ? <DeskVoices voices={result.lines} /> : <p className="pd-soft">Ringing the studio…</p>}
-          {result && result.picks.length > 0 && (
-            <ul className="pd-picks">
-              {result.picks.map((p) => (
-                <li key={p.id} className="pd-pick">
-                  <Face name={p.playerName} />
-                  <span className="pd-pick-name">
-                    <FitName as="b" name={p.playerName} faceNextToIt />
-                    <small>{p.primaryPosition} · {p.spanLabel}</small>
-                  </span>
-                  <span className="pd-pick-cost at-calm-num">{p.fga.toFixed(1)}</span>
-                  <button
-                    type="button"
-                    className={`pd-star${starred(p.playerName) ? ' is-on' : ''}`}
-                    onClick={() => onToggleStar(p.playerName)}
-                    aria-pressed={starred(p.playerName)}
-                    aria-label={`${starred(p.playerName) ? 'Remove' : 'Add'} ${maskName(p.playerName)} ${starred(p.playerName) ? 'from' : 'to'} your Big Board`}
-                  >
-                    ★
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div aria-live="polite">
+          {result ? <CallVoices voices={result.lines} caller={result.id} /> : <p className="pd-say">Ringing the studio…</p>}
+          {result?.picks.map((p) => (
+            <div key={p.id} className="pd-pick">
+              <NFace name={p.playerName} />
+              <div>
+                <b>{maskName(p.playerName)}</b>
+                <small>
+                  {p.primaryPosition} · {maskYears(p.playerName, p.spanLabel)}
+                </small>
+              </div>
+              <span className="cst">
+                <CapI />
+                {fmtCaps(p.fga)}
+              </span>
+              <button
+                type="button"
+                className={`star${starred(p.playerName) ? ' on' : ''}`}
+                onClick={() => onToggleStar(p.playerName)}
+                aria-pressed={starred(p.playerName)}
+                aria-label={`${starred(p.playerName) ? 'Remove' : 'Add'} ${maskName(p.playerName)} ${starred(p.playerName) ? 'from' : 'to'} your Big Board`}
+              >
+                ★
+              </button>
+            </div>
+          ))}
         </div>
-        <div className="pd-call-foot">
-          <button type="button" className="primary-btn" onClick={onClose} autoFocus>
-            Back to the board
-          </button>
+        {result && result.picks.length > 0 && (
+          <p className="empty-note" style={{ margin: '10px 0 16px' }}>
+            Stars go to your Big Board. The pick stays yours.
+          </p>
+        )}
+        <div className="btn2" style={{ marginTop: 16 }}>
+          <Btn onClick={onClose}>Back to the board</Btn>
           {result && result.picks.length > 1 && (
-            <button type="button" className="at-calm-btn" onClick={() => onStarAll(result.picks)}>
+            <Btn kind="line" onClick={() => onStarAll(result.picks)}>
               Star all {result.picks.length}
-            </button>
+            </Btn>
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
 /** Over the list while Onoffsky's War Room is on. */
 export function WarRoomBanner({ count, showAll, onToggle }: { count: number; showAll: boolean; onToggle: () => void }) {
-  const x = DESK_CAST.onoffsky;
   return (
-    <div className="pd-warroom" role="status">
-      <span className="pd-av" style={{ ['--h' as string]: x.hue }} aria-hidden>{x.mono}</span>
+    <div className="notice quiet">
+      <i>ON</i>
       <p>
-        <b>Jake Onoffsky cut your board to {count}.</b>{' '}
-        <span>{showAll ? 'Showing everyone for now.' : 'No order, no numbers — the rest won’t move your number. Ends after your pick.'}</span>
+        <b>Jake Onoffsky cut your board to {count}.</b> {showAll ? 'Showing everyone for now.' : 'No order, no numbers: the rest won’t move your number. Ends after your pick.'}
       </p>
-      <button type="button" className="at-calm-btn" onClick={onToggle}>
+      <button type="button" className="na" onClick={onToggle}>
         {showAll ? `Back to the ${count}` : 'Show everyone'}
       </button>
     </div>
