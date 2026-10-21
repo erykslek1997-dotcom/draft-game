@@ -1,0 +1,9 @@
+/* Night edition fonts, served with the game (2026-10-21): Barlow Condensed for headings and names,
+   Inter for text, JetBrains Mono for numbers. Each file covers its scripts by unicode-range, so a
+   page downloads only what it shows. */
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
+@import '@fontsource/barlow-condensed/800.css';
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/inter/wght-italic.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';

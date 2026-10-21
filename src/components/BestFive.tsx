@@ -1,20 +1,15 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type ReactNode } from 'react';
-import { deckSfx, deckSoundsMuted, setDeckSoundsMuted } from './deckSounds';
-import './BestFive.css';
-import { ChallengeNote, ScoreBoard } from './ScoreBoard';
-import { ScoreChip } from './ResultsScreen';
-import ShareResultModal from './ShareResultModal';
-import { clearDailyResult, DAILY_REPLAY_FOR_TESTING, currentStreak, dailySeed, recordDailyResult, savedDailyLineup, streakRewardClasses, untilTomorrow, localDayKey, STREAK_TIERS, type Streak } from './dailyProgress';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { deckSfx } from './deckSounds';
+import { clearDailyResult, DAILY_REPLAY_FOR_TESTING, currentStreak, dailySeed, recordDailyResult, savedDailyLineup, untilTomorrow, STREAK_TIERS, type Streak } from './dailyProgress';
 import { dailyMeta, DAILY_HAND_SIZE, JOKERS_MAX, JOKERS_MIN, type LegendFive } from '../engine/dailyMeta';
 import { expectedMargin, headToHeadMargin, legendLineup, simulateLiveGame, type LiveGameResult } from '../engine/liveGame';
-import LiveGame from './LiveGame';
 import { copyLink } from './shareSave';
-import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
+import { challengeVerdict, modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
-import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
-import { DraftPlayerCard } from './DraftPlayerCard';
 import { markStepDone } from './pathProgress';
+import { maskName } from './bombMask';
+import { reducedMotion } from '../settings';
 import {
   dailyBoard,
   lineupShots,
@@ -24,8 +19,6 @@ import {
   isChalkBoard,
   GRADE_LABEL,
   GRADE_BLURB,
-  WEIGHTED_AXES,
-  AXIS_GLOSSARY,
   dealFor,
   boardTargets,
   dealHint,
@@ -43,17 +36,43 @@ import {
   type ResultExplanation,
   type DealNeed,
 } from '../engine/bestFive';
+import {
+  Actions,
+  Btn,
+  CapBar,
+  CapI,
+  CardBack,
+  EmptyNote,
+  H3,
+  Kv,
+  Mast,
+  NCard,
+  NFace,
+  NightGame,
+  Prompt,
+  SLOT_NAME,
+  Slot,
+  SubNote,
+  Tally,
+  buzz,
+  dayLabel,
+  fmtCaps,
+  shortName,
+  spanBand,
+} from '../night/ui';
+import LiveGameNight from '../night/LiveGameNight';
+import { NightHowTo, NightSettings } from '../night/Dialogs';
+import { ShareNight, type PosterData } from '../night/Share';
 
 interface Props {
   mode: 'developer' | 'player';
-  /** Return to the host app's intro. Omitted in the standalone web export, where the "← Back"
-   * control is simply not rendered. */
+  /** Return to the host app's intro. Omitted in the standalone web export. */
   onBack?: () => void;
-  /** The next step of the learning path (Quick 5), offered on the result screen. */
+  /** The next step of the learning path (Mini Draft), offered on the result screen. */
   onNextStep?: () => void;
   /** A friend's "Challenge a friend" link: their deal and their score. */
   challenge?: ModeChallenge;
-  /** The Daily Slot Machine: today's local date. One board for everyone, one attempt, a streak. */
+  /** The daily Draw Five: today's local date. One board for everyone, one attempt, a streak. */
   daily?: string;
   /** Testing: a day other than today — played, never recorded. */
   testDay?: boolean;
@@ -63,47 +82,32 @@ interface Props {
 
 /** The deal hint, by what the five so far is missing (`dealHint`). Never names the card. */
 const DEAL_HINT: Record<DealNeed, (have: number) => string> = {
-  shooting: (have) => (have === 0 ? 'No shooters yet — one of these four can space the floor.' : 'One shooter so far — this deal has another.'),
-  defense: (have) => (have === 0 ? 'Nobody who can guard yet — one of these four can.' : 'One stopper so far — this deal has a second.'),
-  creation: () => 'Nobody creates his own shot yet — one of these four can.',
+  shooting: (have) => (have === 0 ? 'No shooters yet; one of these cards can space the floor.' : 'One shooter so far; this deal has another.'),
+  defense: (have) => (have === 0 ? 'Nobody who can guard yet; one of these cards can.' : 'One stopper so far; this deal has a second.'),
+  creation: () => 'Nobody creates his own shot yet; one of these cards can.',
 };
 
-/** "2026-09-28" → "Sep 28". */
-function formatDay(day: string): string {
-  const [y, m, d] = day.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-const SLOT_LABEL: Record<Position, string> = { PG: 'Point guard', SG: 'Shooting guard', SF: 'Small forward', PF: 'Power forward', C: 'Center' };
-
-const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 'spacing' | 'fit'>; label: string; context?: boolean }[] = [
+const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 'spacing' | 'fit'>; label: string }[] = [
   { key: 'talent', label: 'Talent' },
   { key: 'offense', label: 'Offense' },
   { key: 'defense', label: 'Defense' },
-  { key: 'spacing', label: 'Spacing', context: true },
+  { key: 'spacing', label: 'Spacing' },
   { key: 'fit', label: 'Fit' },
 ];
 
+const WORD = ['no', 'one', 'two', 'three', 'four', 'five'];
+const NTH = ['next', '3rd', '4th', '5th'];
+/** How long the AI's turn stays on the table before your next draw. */
+const AI_TURN_MS = 2600;
+
 /**
- * Roulette (was "Build the Best 5" / Daily Deal) — pick one player per position from a
- * random deal, blind-submit, then see a golf-style grade against the engine's own
- * best lineup from that pool. See `engine/bestFive.ts` for the pool generation, the 5-man
- * scoring (a synthetic `Team` scored on the engine's real axes) and the par bands.
- *
- * Deliberately a standalone screen off the intro (same footing as `CapSheet` / `DraftPoolBrowser`)
- * — it has no draft, no lottery, no AI, none of `GameShell`'s phase machine applies.
+ * Draw Five (night edition, mockups `docs/mockups/draw-five-night/index.html`): one player per
+ * position from a deal of four, under a cap, against the AI drafting from the same deck — or, in
+ * the daily, a five of the day with a face-down Joker against a legendary team. See
+ * `engine/bestFive.ts` for the pool, the deals, the 5-man scoring and the par bands.
  */
 export default function BestFive({ onBack, onNextStep, challenge, daily, testDay, onAnotherDay }: Props) {
-  // 2026-09-27, the user: "Usuńmy daily challenge. Dodamy go osobnym przyciskiem jak będziemy
-  // robić porządnie daily challenge". Every board is a fresh random deal; the old daily puzzle and
-  // streak (bestFiveProgress.ts) are in git history for when the daily challenge gets built.
   const [board, setBoard] = useState<{ seed: string; n: number }>(() => ({ seed: daily ? dailySeed(daily) : challenge?.seed ?? randomSeed(1), n: 1 }));
-  // 2026-09-11, user's own ask: "dodajemy koszt gracza w shots i oprócz codziennej puli graczy
-  // będzie losowa liczba między 60 a 90" — a seeded shots budget for the five starters.
-  // 2026-09-27: pool and cap come together from `dailyBoard`, which skips boards where the five
-  // biggest names are already about the best answer (see its docstring).
-  // 2026-09-28, Daily Slot Machine 2.0: the daily board has its own position order, a Joker and an
-  // opponent (`dailyMeta` / `dailyGame`); a random board keeps PG→C and no Joker.
   const meta = useMemo(() => (daily ? dailyMeta(board.seed) : null), [daily, board.seed]);
   const dealt = useMemo(
     () => (meta ? dailyGame(board.seed, meta) : { ...dailyBoard(board.seed), order: STARTER_SLOTS, jokers: [] as DailyJoker[] }),
@@ -114,15 +118,12 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   const order = dealt.order;
   const jokers = dealt.jokers;
   const jokerAt = (slot: Position) => jokers.find((j) => j.slot === slot);
-  const isJokerCard = (span: PlayerSpan) => jokers.some((j) => j.card.id === span.id && j.slot === span.primaryPosition);
-  // Streak rewards (cosmetic): the gold lever, gold reel frames and retro card backs, by best streak.
-  const rewardClasses = useMemo(() => streakRewardClasses(currentStreak(daily ?? localDayKey()).best), [daily]);
+  const legends = useMemo(() => (meta ? legendLineup(meta.opponent) : null), [meta]);
   /** The live game: the daily plays the opponent of the day, a regular board the AI's five. The
    * same fives on the same seed play the same game. */
   const matchFor = (l: Lineup, ai: Lineup): LiveGameResult | null => {
     const seedOf = `${board.seed}:${STARTER_SLOTS.map((s) => l[s]?.id).join(',')}`;
     if (meta) {
-      const legends = legendLineup(meta.opponent);
       if (!legends) return null;
       const tookJoker = jokers.find((j) => l[j.slot]?.id === j.card.id);
       return simulateLiveGame(l, legends, expectedMargin(l, fanVoteFive(pool, shotsCap), legends), seedOf, tookJoker?.span.id);
@@ -131,44 +132,44 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
     return simulateLiveGame(l, ai, headToHeadMargin(l, ai), seedOf);
   };
 
-  // 2026-09-28: each position shows DEAL_SIZE of its pool, dealt for the five so far. The grade is
-  // against `boardTargets` — the same fan-vote five and best five for every path through the seed.
   function resultFor(l: Lineup, p: DailyPool, cap: number) {
     const score = scoreLineup(l);
-    const board = boardTargets(p, cap);
-    // 2026-09-30, the user ("your five lepsze od the best on the board?"): a five can beat the
-    // engine's search — with a Joker, a card the deal topped up from outside the board, or one the
-    // search missed. Then that five is the best on the board.
-    const targets = score.composite > board.optimal ? { ...board, optimal: score.composite, optimalFive: l as Record<Position, PlayerSpan> } : board;
+    const target = boardTargets(p, cap);
+    // 2026-09-30, the user: a five can beat the engine's search (a Joker, a topped-up card); then
+    // that five is the best on the board.
+    const targets = score.composite > target.optimal ? { ...target, optimal: score.composite, optimalFive: l as Record<Position, PlayerSpan> } : target;
     return { score, targets, grade: gradeVsPar(score.composite, targets.par, targets.optimal) };
   }
-  // The daily board already played today opens straight on its result.
-  // While testing, a daily always opens on a fresh board.
+  // The daily board already played today opens straight on its result (not while testing).
   const savedDaily = useMemo(() => (daily && !DAILY_REPLAY_FOR_TESTING ? savedDailyLineup(daily, pool, spanById) : null), [daily, pool]);
   const [lineup, setLineup] = useState<Lineup>(() => savedDaily ?? {});
   const [activeSlot, setActiveSlot] = useState<Position | null>(savedDaily ? null : order[0]);
   const [streak, setStreak] = useState<Streak | null>(() => (daily ? currentStreak(daily) : null));
   const [match, setMatch] = useState<LiveGameResult | null>(() => (savedDaily ? matchFor(savedDaily, {}) : null));
-  // 2026-09-30, Draw Five vs the AI: the AI drafts its own five from the same deck — each round it
-  // gets the four cards of the position that didn't come to you.
+  // The AI drafts its own five from the same deck: each round the four cards that didn't come to you.
   const [aiLineup, setAiLineup] = useState<Lineup>({});
-  // The AI's last round: the hand it drew and the card it took (animated like yours).
-  const [aiLog, setAiLog] = useState<{ slot: Position; hand: PlayerSpan[]; took: string } | null>(null);
+  // The AI's turn on the table: the hand it drew and the card it took.
+  const [aiTurn, setAiTurn] = useState<{ slot: Position; hand: PlayerSpan[]; took: string } | null>(null);
   // The daily Joker of the round just played, turned over once a card was picked.
   const [jokerReveal, setJokerReveal] = useState<{ joker: DailyJoker; took: boolean } | null>(null);
-  // Submitted in this visit: the game plays live. A daily reopened later opens on its final.
-  const [justSubmitted, setJustSubmitted] = useState(false);
-  // 2026-09-26, the user: "ograniczmy wybór do 5 graczy. Niech po każdym wyborze gracz widzi jacy
-  // gracze się losują." Positions are dealt one at a time: a slot's five stay face down until the
-  // pick before it, then spin in on the slot machine (`freshSlot`, once per slot).
-  const [revealed, setRevealed] = useState<Set<Position>>(() => new Set(savedDaily ? STARTER_SLOTS : [order[0]]));
+  // Every pick, in order (yours and the AI's), for the aside's log.
+  const [log, setLog] = useState<{ n: number; who: 'You' | 'AI'; span: PlayerSpan }[]>([]);
+  // Your newest card lands with a gold ring.
+  const [landed, setLanded] = useState<string | null>(null);
+  // After Submit: the game (pre-game, live, final), then the result.
+  const [stage, setStage] = useState<'draft' | 'game' | 'result'>(savedDaily ? 'result' : 'draft');
+  // A slot's cards stay face down until "Draw" (once per slot).
   const [freshSlot, setFreshSlot] = useState<Position | null>(savedDaily ? null : order[0]);
   const [result, setResult] = useState<{ score: LineupScore; targets: DailyTargets; grade: GolfGrade } | null>(() =>
     savedDaily ? resultFor(savedDaily, pool, shotsCap) : null,
   );
-  // 2026-09-17, user's own ask: a real "how to play?" affordance on every mode, now that the
-  // intro screen's own always-visible rules list is gone.
-  const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [dialog, setDialog] = useState<'howto' | 'settings' | null>(null);
+
+  useEffect(() => {
+    if (!aiTurn) return;
+    const t = window.setTimeout(() => setAiTurn(null), reducedMotion() ? 1200 : AI_TURN_MS);
+    return () => window.clearTimeout(t);
+  }, [aiTurn]);
 
   /** The picks made before `slot` in the day's order. */
   const picksBefore = (slot: Position): Lineup => {
@@ -176,8 +177,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
     for (const s of order.slice(0, order.indexOf(slot))) if (lineup[s]) before[s] = lineup[s];
     return before;
   };
-  /** A position's deal: fixed by the picks before it (positions go in order, picks are final). The
-   * daily deals five, one of them a face-down Joker in his rounds. */
+  /** A position's deal: fixed by the picks before it. The daily deals five, one of them a
+   * face-down Joker in his rounds. */
   const dealOf = (slot: Position): PlayerSpan[] => {
     if (!daily) return dealFor(pool, slot, picksBefore(slot), shotsCap);
     const j = jokerAt(slot);
@@ -193,12 +194,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   const shotsUsed = lineupShots(lineup);
   const overCap = shotsUsed > shotsCap;
 
-  // 2026-09-27, the user ("kolejna rzecz, która doda sporo emocji. Nie można cofnąć picku"): a
-  // pick is final — no clearing, no re-opening a filled position. So a player who would leave the
-  // positions still open unfillable under the cap (even at their cheapest dealt option) can't be
-  // taken; his card says by how much he's over.
-  // 2026-09-30, the user ("nie powinno mnie blokować"): what the open positions must still cost is
-  // their cheapest player in the whole game — the later deals top up to fit (`dealFor`).
+  // A pick is final; a player who would leave the open positions unfillable under the cap (at their
+  // cheapest player in the whole game — later deals top up to fit) can't be taken.
   const cheapestLeft = (except: Position) => STARTER_SLOTS.filter((s) => s !== except && !lineup[s]).reduce((sum, s) => sum + slotFloor(s), 0);
   const overBy = (slot: Position, span: PlayerSpan) => shotsUsed + span.fga + cheapestLeft(slot) - shotsCap;
 
@@ -206,26 +203,22 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
     if (lineup[slot] || overBy(slot, span) > 1e-9) return;
     setLineup((prev) => ({ ...prev, [slot]: span }));
     deckSfx.pick();
-    if (!daily) aiTakes(slot);
+    buzz();
+    setLanded(span.id);
+    const n = order.indexOf(slot) + 1;
+    setLog((prev) => [...prev, { n, who: 'You', span }]);
+    if (!daily) aiTakes(slot, n);
     const j = jokerAt(slot);
     setJokerReveal(j ? { joker: j, took: span.id === j.card.id } : null);
-    // Advance to the next still-empty slot, in the board's order; the picker closes after the last
-    // one. A slot seen for the first time gets dealt.
     const nextEmpty = order.find((s) => s !== slot && !lineup[s]);
-    if (nextEmpty && !revealed.has(nextEmpty)) {
-      setRevealed((prev) => new Set(prev).add(nextEmpty));
-      setFreshSlot(nextEmpty);
-    } else {
-      setFreshSlot(null);
-    }
+    setFreshSlot(nextEmpty ?? null);
     setActiveSlot(nextEmpty ?? null);
   }
 
   /** The AI's pick at `slot`: from the position's cards that didn't come to you, the one that makes
-   * its five best while leaving room for the rest. It can't know which four of a later position will
-   * come to you, so it counts on the fifth cheapest of the eight — the dearest its cheapest card
-   * could be — and never goes over the cap. */
-  function aiTakes(slot: Position) {
+   * its five best while leaving room for the rest. It counts on the fifth cheapest of the eight for
+   * each later position and never goes over the cap. */
+  function aiTakes(slot: Position, n: number) {
     const yours = new Set(dealOf(slot).map((c) => c.id));
     const hand = pool.bySlot[slot].filter((c) => !yours.has(c.id));
     const ai = aiLineup;
@@ -241,21 +234,21 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
       ? fits.reduce((best, c) => (scoreLineup({ ...ai, [slot]: c }).composite > scoreLineup({ ...ai, [slot]: best }).composite ? c : best))
       : [...hand].sort((a, b) => a.fga - b.fga)[0];
     setAiLineup({ ...ai, [slot]: choice });
-    setAiLog({ slot, hand, took: choice.id });
+    setAiTurn({ slot, hand: hand.slice(0, DEAL_SIZE).some((c) => c.id === choice.id) ? hand.slice(0, DEAL_SIZE) : [choice, ...hand.filter((c) => c.id !== choice.id).slice(0, DEAL_SIZE - 1)], took: choice.id });
+    setLog((prev) => [...prev, { n, who: 'AI', span: choice }]);
   }
 
   function submit() {
     if (!complete || overCap) return;
     const next = resultFor(lineup, pool, shotsCap);
     setResult(next);
-    const match = matchFor(lineup, aiLineup);
-    setMatch(match);
-    setJustSubmitted(true);
-    if (daily) {
-      if (testDay) return;
+    const m = matchFor(lineup, aiLineup);
+    setMatch(m);
+    setStage(m ? 'game' : 'result');
+    if (daily && !testDay) {
       setStreak(
         recordDailyResult(daily, lineup, next.grade, next.score.composite, {
-          game: match && meta ? { you: match.final[0], them: match.final[1], opponent: meta.opponent.short } : undefined,
+          game: m && meta ? { you: m.final[0], them: m.final[1], opponent: meta.opponent.short } : undefined,
           jokers: jokers.map((j) => ({ name: j.span.playerName, legend: j.legend, slot: j.slot })),
         }),
       );
@@ -265,12 +258,13 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   function resetPicks() {
     setLineup({});
     setAiLineup({});
-    setAiLog(null);
+    setAiTurn(null);
     setJokerReveal(null);
+    setLog([]);
+    setLanded(null);
     setMatch(null);
-    setJustSubmitted(false);
+    setStage('draft');
     setActiveSlot(order[0]);
-    setRevealed(new Set([order[0]]));
     setFreshSlot(order[0]);
     setResult(null);
   }
@@ -279,257 +273,512 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   function replayDaily() {
     if (!daily) return;
     setStreak(clearDailyResult(daily));
-    setMatch(null);
     resetPicks();
   }
 
-  /** A fresh random deal. */
   function newBoard() {
     setBoard((b) => ({ seed: randomSeed(b.n + 1), n: b.n + 1 }));
     resetPicks();
   }
 
-  return (
-    <div className={`at-shell at-calm best-five ${rewardClasses}`}>
-      {/* 2026-09-27 UI audit: the same "← Menu" in the top corner as the drafts (was "← Back" on
-          the right next to "How to play?", with a "Board #n" nobody needed). */}
-      {/* 2026-10-08, the UI simplification: the drafts' one-row header; "?" opens how to play. */}
-      <div className="at-calm-header">
-        {onBack ? (
-          <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onBack}>
-            ← Menu
-          </button>
-        ) : (
-          <span className="rs-header-spacer" aria-hidden />
-        )}
-        <h1 className="at-calm-title">{daily ? 'Daily Draw Five' : 'Draw Five'}</h1>
-        <button
-          type="button"
-          className="at-calm-icon"
-          aria-label={showHowToPlay ? 'Hide how to play' : 'How to play'}
-          aria-expanded={showHowToPlay}
-          onClick={() => setShowHowToPlay((v) => !v)}
-        >
-          ?
-        </button>
-      </div>
-      {daily && (
-        <p className="bf-daily-sub">
-          {formatDay(daily)} · one board for everyone, one try
-          {streak && streak.current > 0 && <> · 🔥 {streak.current}-day streak</>}
-          {streak && streak.best >= 100 && <span className="bf-hof-plaque at-cond">Hall of Fame</span>}
-        </p>
-      )}
-      {onAnotherDay && (
-        <p className="bf-daily-test">
-          Testing{testDay ? ` · board for ${formatDay(daily ?? '')}, not recorded` : ''} ·{' '}
-          <button type="button" className="at-legend-toggle at-cond" onClick={onAnotherDay}>
-            Another day’s board →
-          </button>
-        </p>
-      )}
-      {daily && meta && !result && <DailyIntro opponent={meta.opponent} order={order} />}
+  const links = { onMenu: onBack, onHowTo: () => setDialog('howto'), onSettings: () => setDialog('settings') };
+  const dialogs = (
+    <>
+      {dialog === 'howto' && <NightHowTo lead={daily ? 'Daily Draw Five · one board for everyone, one try.' : 'Draw Five · five cards a position, one cap, against the AI.'} rules={howToRules(Boolean(daily))} onClose={() => setDialog(null)} />}
+      {dialog === 'settings' && <NightSettings onClose={() => setDialog(null)} />}
+    </>
+  );
 
-      {showHowToPlay && (
-        <ol className="how-to-play-panel">
-          <li><b>Draw five.</b> One player per position — PG/SG/SF/PF/C. The deck is shuffled as the game loads; each position you draw four cards off it, pick one, and the next position comes up. Picks are final: no going back. When the five you have is missing something, a hint says this hand can cover it.</li>
-          <li><b>Caps.</b> Every player costs caps — his shots per game in those years. Your five have to fit under the board’s cap, shown by the meter above it.</li>
-          <li><b>Submit once.</b> No re-picking after you see your score.</li>
-          <li><b>Grading.</b> You’re scored on talent, offense, defense, spacing, and fit, then compared against the fan-vote five (the five biggest names) and the best five on the board.</li>
-          {daily ? (
-            <>
-              <li><b>Today’s order.</b> The daily board deals the positions in its own order, a different one every day.</li>
-              <li><b>Jokers.</b> The daily deals five cards a position. In {JOKERS_MIN} to {JOKERS_MAX} of the rounds one of them is a face-down Joker at the position’s middle price: even odds a legend or a scrub. You only find out who he is when you pick him.</li>
-              <li><b>Game of the day.</b> Your five then plays a legendary team, live. The engine decides who’s better — beat the five biggest names on the board and you’ll usually beat them too.</li>
-            </>
-          ) : (
-            <>
-              <li><b>Against the AI.</b> The AI drafts its own five from the same deck under the same cap: each position it gets the four cards that didn’t come to you. Then the two fives play a live game.</li>
-              <li><b>New deck.</b> Every new board is a fresh shuffle.</li>
-            </>
-          )}
-        </ol>
-      )}
+  const title = daily ? 'Daily Draw Five' : 'Draw Five';
+  const oppShort = meta?.opponent.short ?? 'AI';
 
-      {!result && (
-        <div className="at-card">
-          <ShotsMeter used={shotsUsed} cap={shotsCap} />
-          {/* 2026-09-27 UI audit: one line instead of an intro paragraph plus a caps note that both
-              explained the board — the slot machine now sits higher on a phone. */}
-          <p className="bf-caps-note">
-            <CapIcon /> One player per position; each costs his shots per game in caps. The biggest names usually
-            aren’t the answer — spacing and rim protection matter.
-          </p>
+  /* ------------------------------ the game ------------------------------ */
+  if (stage === 'game' && match && result) {
+    const opp = meta?.opponent;
+    return (
+      <>
+        <LiveGameNight
+          game={match}
+          variant="d5"
+          sides={{ names: ['You', opp ? opp.short : 'AI · Pro'], short: ['You', opp ? opp.short.replace(/^’\d\d |^'\d\d /, '') : 'AI'], codes: ['YOU', opp ? (opp.short.split(' ').slice(-1)[0] ?? 'OPP').slice(0, 3).toUpperCase() : 'AI'], you: 0 }}
+          mast={{
+            title,
+            daily: Boolean(daily),
+            sub: daily ? `${dayLabel(daily)} · final` : 'Final · against the AI (Pro)',
+            liveSub: daily ? `${dayLabel(daily)} · game of the day` : 'Live · you vs the AI (Pro)',
+            preSub: daily ? `${dayLabel(daily)} · game of the day` : 'Tip-off · you vs the AI (Pro)',
+          }}
+          autoStart
+          links={links}
+          pregame={{
+            eb: daily ? 'Game of the day · tonight' : 'Before tip-off',
+            now: Boolean(daily),
+            title: daily && opp ? `The ${opp.short}` : 'Starting fives',
+            line: pregameLine(match, opp),
+            tally: [result.score.composite, daily ? '—' : scoreLineup(aiLineup).composite],
+            aside: (
+              <section>
+                <H3>{daily ? 'Today' : 'Your number'}</H3>
+                {daily && streak && <Kv k="Streak" v={`${streak.current} ${streak.current === 1 ? 'day' : 'days'}`} gold />}
+                <Kv k="Your five" v={result.score.composite} />
+                {!daily && <Kv k="AI five" v={scoreLineup(aiLineup).composite} />}
+                {daily ? <Kv k="Jokers taken" v={`${jokers.filter((j) => lineup[j.slot]?.id === j.card.id).length} of ${jokers.length}`} /> : <Kv k="Caps used" v={`${fmtCaps(shotsUsed)} / ${shotsCap}`} />}
+              </section>
+            ),
+          }}
+          done={
+            <Btn onClick={() => setStage('result')}>
+              See the result
+            </Btn>
+          }
+        />
+        {dialogs}
+      </>
+    );
+  }
 
-
-          {/* 2026-09-28, the user ("pozycje niech będą ustawione w zwykłej kolejności ale losowanie
-              nadal losowe"): the row stays PG→C; the daily board still deals them in its own order. */}
-          {!daily && <AiFive lineup={aiLineup} cap={shotsCap} log={aiLog} />}
-          <div className="bf-slot-row">
-            {STARTER_SLOTS.map((slot) => {
-              const s = lineup[slot];
-              const dealt = revealed.has(slot);
-              return (
-                <button
-                  key={slot}
-                  className={`bf-slot ${activeSlot === slot ? 'bf-slot--active' : ''} ${s ? 'bf-slot--filled' : ''} ${dealt ? '' : 'bf-slot--hidden'}`}
-                  disabled={!dealt || Boolean(s)}
-                  title={s ? `${s.playerName} — picks are final` : dealt ? undefined : 'Dealt after your previous pick'}
-                  onClick={() => {
-                    setFreshSlot(null);
-                    setActiveSlot(slot);
-                  }}
-                >
-                  <span className="bf-slot-pos at-cond">
-                    {slot}
-                    {s && isJokerCard(s) && <span className="bf-slot-joker" title="A Joker">🃏</span>}
-                  </span>
-                  {s ? <Face name={s.playerName} /> : <span className={`bf-face bf-face--sm bf-face--empty${dealt ? '' : ' bf-face--card'}`} aria-hidden />}
-                  <span className="bf-slot-name">{s ? shortenName(s.playerName, 0) : dealt ? 'Tap to pick' : 'Face down'}</span>
-                  {s && <span className="bf-season bf-season--sm">{s.spanLabel}</span>}
-                  {s && (
-                    <span className="bf-slot-box">
-                      <ShotChip fga={s.fga} cap={shotsCap} />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {activeSlot && (
-            <div className="bf-picker">
-              <div className="bf-picker-head at-cond">
-                Your draw · {SLOT_LABEL[activeSlot].toLowerCase()}
-                <span className="bf-picker-sub">
-                  {order.indexOf(activeSlot) < order.length - 1
-                    ? 'Four off the deck for this spot — picks are final, the next position comes up after you pick.'
-                    : 'Last spot — four off the deck. Picks are final.'}
-                </span>
-              </div>
-              {(() => {
-                // 2026-09-28: the one hint left — what the five is missing, when this deal can cover it.
-                const hint = dealHint(pool, activeSlot, picksBefore(activeSlot), shotsCap);
-                if (!hint) return null;
-                return <p className="bf-deal-hint">{DEAL_HINT[hint.need](hint.have)}</p>;
-              })()}
-              {jokerReveal && <JokerReveal {...jokerReveal} />}
-              <DeckHand
-                key={`${pool.key}-${activeSlot}`}
-                slot={activeSlot}
-                cards={dealOf(activeSlot)}
-                fresh={freshSlot === activeSlot}
-                onDone={() => setFreshSlot(null)}
-                renderCard={(span) => {
-                  const chosen = lineup[activeSlot]?.id === span.id;
-                  const over = overBy(activeSlot, span);
-                  const blocked = over > 1e-9;
-                  // 2026-09-30: a Joker lies face down — who he is shows only once he's picked.
-                  if (jokerAt(activeSlot)?.card.id === span.id) {
-                    return (
-                      <button
-                        className={`bf-pool-card bf-joker-card${blocked ? ' is-locked' : ''}`}
-                        title="A Joker: even odds a legend or a scrub"
-                        disabled={blocked}
-                        onClick={() => pick(activeSlot, span)}
-                      >
-                        <span className="bf-joker-tag at-cond">🃏 Joker</span>
-                        <span className="bf-joker-q" aria-hidden>?</span>
-                        <span className="bf-pool-name">Legend or scrub?</span>
-                        <span className="bf-pool-meta">
-                          <ShotChip fga={span.fga} cap={shotsCap} />
-                        </span>
-                        <span className="bf-pool-box">50 / 50</span>
-                      </button>
-                    );
-                  }
-                  // 2026-09-30, the user ("karty żeby wyglądały tak samo jak w każdym trybie"): the
-                  // draft card of every mode, dealt blind — the team band on top, no tier frame, no
-                  // TAL, no position (the picker names it); the whole card is the pick.
-                  return (
-                    <DraftPlayerCard
-                      blind
-                      span={span}
-                      cap={shotsCap}
-                      tier="Starter"
-                      legal={!blocked}
-                      onDraft={() => pick(activeSlot, span)}
-                      className={`bf-deal-card${chosen ? ' bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
-                      title={blocked ? `${span.playerName} would leave no room under the cap` : span.playerName}
-                    >
-                      <span className="bf-card-sheen" aria-hidden />
-                      <span className="bf-card-glare" aria-hidden />
-                      {blocked && <span className="bf-pool-over at-cond">Over the cap by {over.toFixed(1)}</span>}
-                    </DraftPlayerCard>
-                  );
-                }}
-              />
-            </div>
-          )}
-
-          <div className="bf-submit-row">
-            <button
-              className="at-draft-btn bf-submit"
-              disabled={!complete || overCap}
-              title={overCap ? `Over the ${shotsCap}-cap limit.` : undefined}
-              onClick={submit}
-            >
-              Submit lineup
-            </button>
-            <span className={`bf-submit-hint${complete && !overCap ? ' is-ready' : ''}`} role="status">
-              {overCap
-                ? `Over the cap by ${(shotsUsed - shotsCap).toFixed(1)}.`
-                : complete
-                  ? 'Ready to submit.'
-                  : `Pick ${5 - filledCount} more to submit.`}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {result && (
+  /* ------------------------------ the result ------------------------------ */
+  if (stage === 'result' && result) {
+    return (
+      <>
         <BestFiveResult
+          title={title}
           lineup={lineup}
           pool={pool}
           result={result}
           shotsCap={shotsCap}
           onNewBoard={newBoard}
           onReplayDaily={daily && DAILY_REPLAY_FOR_TESTING ? replayDaily : undefined}
+          onWatch={match ? () => setStage('game') : undefined}
           daily={daily}
           streak={streak}
           onNextStep={onNextStep}
           seed={board.seed}
           challenge={challenge && challenge.seed === board.seed ? challenge : undefined}
           jokers={jokers}
-          opponent={meta?.opponent ?? aiOpponent(aiLineup)}
+          opponent={meta?.opponent}
           match={match}
-          fresh={justSubmitted}
+          links={links}
         />
+        {dialogs}
+      </>
+    );
+  }
+
+  /* ------------------------------ the draft ------------------------------ */
+  const pickNo = Math.min(5, filledCount + 1);
+  const left = shotsCap - shotsUsed;
+  const spotsLeft = 5 - filledCount;
+  const openSlots = order.filter((s) => !lineup[s]);
+  const hand = activeSlot ? dealOf(activeSlot) : [];
+  const handBlocked = activeSlot ? hand.filter((c) => !(jokerAt(activeSlot)?.card.id === c.id) && overBy(activeSlot, c) > 1e-9) : [];
+  const hint = activeSlot && !aiTurn ? dealHint(pool, activeSlot, picksBefore(activeSlot), shotsCap) : null;
+  const jokerHere = activeSlot ? jokerAt(activeSlot) : undefined;
+  const nextLabels = new Map<Position, string>();
+  openSlots.filter((s) => s !== activeSlot).forEach((s, i) => nextLabels.set(s, NTH[i] ?? ''));
+  const submitLabel = complete ? 'Submit lineup' : `Submit lineup — ${spotsLeft} to go`;
+  const submitBtn = (cls?: string) => (
+    <Btn className={cls} disabled={!complete || overCap || Boolean(aiTurn)} onClick={submit}>
+      {submitLabel}
+    </Btn>
+  );
+  const aiUsed = lineupShots(aiLineup);
+
+  const aside = (
+    <>
+      <Mast title={title} daily={Boolean(daily)} sub={daily ? `${dayLabel(daily)} · ${filledCount === 0 ? 'one board for everyone' : complete ? 'five set' : `pick ${pickNo} of 5`}` : `${complete ? 'Five set' : `Pick ${pickNo} of 5`} · against the AI (Pro)`} />
+      {daily ? (
+        <Tally you={fmtCaps(shotsUsed)} mid={shotsCap} ai={<OppName short={oppShort} />} aiK="Tonight" name />
+      ) : (
+        <Tally you={shotsUsed.toFixed(1)} mid={shotsCap} ai={aiUsed.toFixed(1)} />
       )}
-    </div>
+      <CapBar used={shotsUsed} cap={shotsCap} />
+      <SubNote>
+        {filledCount === 0 ? (
+          <>
+            <b className="g">{shotsCap} caps</b> for five spots
+          </>
+        ) : complete ? (
+          <>
+            <b>{fmtCaps(left)} caps</b> under the cap
+          </>
+        ) : (
+          <>
+            <b>{fmtCaps(left)} caps</b> left for {spotsLeft === 1 ? openSlots[0] : spotsLeft <= 2 ? openSlots.join(' and ') : `${WORD[spotsLeft]} spots`}
+          </>
+        )}
+      </SubNote>
+      {daily && meta ? (
+        <section>
+          <H3>Today</H3>
+          {streak && <Kv k="Streak" v={`${streak.current} ${streak.current === 1 ? 'day' : 'days'}`} gold />}
+          <Kv k="Order">
+            <span className="order">
+              {order.map((s, i) => (
+                <span key={s}>
+                  {i > 0 && ' → '}
+                  {s === activeSlot ? <u>{s}</u> : s}
+                </span>
+              ))}
+            </span>
+          </Kv>
+          {filledCount === 0 ? (
+            <>
+              <Kv k="Cards a spot" v={DAILY_HAND_SIZE} />
+              <Kv k="Jokers" v={`${JOKERS_MIN}–${JOKERS_MAX} face down`} />
+              <Kv k="Tries" v="One" />
+            </>
+          ) : (
+            <Kv k="Jokers left" v={`${jokers.filter((j) => !lineup[j.slot]).length} of ${jokers.length}`} />
+          )}
+          {onAnotherDay && (
+            <Kv k={testDay ? 'Testing · not recorded' : 'Testing'}>
+              <button type="button" className="lk-inline" onClick={onAnotherDay}>
+                Another day →
+              </button>
+            </Kv>
+          )}
+        </section>
+      ) : log.length === 0 ? (
+        <>
+          <section>
+            <H3>The draft so far</H3>
+            <EmptyNote>No picks yet. You draw first, then the AI drafts from its own deal: same deck, same cap.</EmptyNote>
+          </section>
+          <section>
+            <H3>How it works</H3>
+            <Kv k="Positions" v="PG → C" />
+            <Kv k="Cards a spot" v={DEAL_SIZE} />
+            <Kv k="Picks" v="Final" />
+            <Kv k="Then" v="Live game" />
+          </section>
+        </>
+      ) : null}
+      {log.length > 0 && <DraftLog rows={log.slice(-6)} />}
+      <Actions links={links}>{submitBtn()}</Actions>
+    </>
+  );
+
+  // The stage under the prompt: the AI's turn, the face-down deal, or your hand.
+  let promptEl: ReactNode;
+  let table: ReactNode = null;
+  if (aiTurn) {
+    const took = aiTurn.hand.find((c) => c.id === aiTurn.took);
+    promptEl = (
+      <Prompt eb={`AI on the clock · Pick ${order.indexOf(aiTurn.slot) + 1}`} title={SLOT_NAME[aiTurn.slot]} now>
+        The AI drew {WORD[aiTurn.hand.length] ?? aiTurn.hand.length}. It takes <b className="w">{took ? maskName(took.playerName) : ''}</b>.
+      </Prompt>
+    );
+    table = (
+      <button type="button" className={`hand ai-hand${aiTurn.hand.length >= 5 ? ' n5' : ''}`} style={{ '--n': aiTurn.hand.length } as CSSProperties} onClick={() => setAiTurn(null)} aria-label="Next">
+        {aiTurn.hand.map((c, i) => (
+          <span key={c.id} style={{ '--i': i } as CSSProperties} className="ai-c">
+            <NCard span={c} cls={c.id === aiTurn.took ? 'sel ai-took' : 'dim'} took={c.id === aiTurn.took ? 'AI takes' : undefined} />
+          </span>
+        ))}
+      </button>
+    );
+  } else if (activeSlot) {
+    const n = order.indexOf(activeSlot) + 1;
+    const firstLine =
+      filledCount === 0 ? (
+        daily ? (
+          <>
+            Today starts at {activeSlot}. <b>{shotsCap} caps</b>, one try.
+          </>
+        ) : (
+          <>
+            {WORD[hand.length][0].toUpperCase() + WORD[hand.length].slice(1)} cards off the deck. <b>{shotsCap} caps</b> for five spots.
+          </>
+        )
+      ) : jokerHere ? (
+        <>
+          {WORD[hand.length][0].toUpperCase() + WORD[hand.length].slice(1)} cards. One of them is a <b>Joker</b>.
+        </>
+      ) : (
+        <>
+          <b>{fmtCaps(left)} caps</b> for {WORD[spotsLeft]} {spotsLeft === 1 ? 'spot' : 'spots'}.
+          {handBlocked.length > 0 && freshSlot !== activeSlot && <> {handBlocked.map((c) => maskName(c.playerName).split(' ').slice(-1)[0]).join(' and ')} won’t fit.</>}
+        </>
+      );
+    promptEl = (
+      <Prompt eb={`On the clock · Pick ${n}`} title={SLOT_NAME[activeSlot]} now>
+        {firstLine}
+        {hint && freshSlot !== activeSlot && <> {DEAL_HINT[hint.need](hint.have)}</>}
+      </Prompt>
+    );
+    table = (
+      <DeckHand
+        key={`${pool.key}-${activeSlot}`}
+        slot={activeSlot}
+        cards={hand}
+        fresh={freshSlot === activeSlot}
+        joker={Boolean(jokerHere)}
+        daily={Boolean(daily)}
+        onDone={() => setFreshSlot(null)}
+        renderCard={(span) => {
+          const over = overBy(activeSlot, span);
+          const blocked = over > 1e-9;
+          const j = jokerAt(activeSlot);
+          if (j?.card.id === span.id) return <JokerCard price={j.price} pos={activeSlot} blocked={blocked} onPick={() => pick(activeSlot, span)} />;
+          return (
+            <NCard
+              span={span}
+              cls={blocked ? 'dim over' : undefined}
+              over={blocked ? `Over the cap by ${over.toFixed(1)}` : undefined}
+              onClick={blocked ? undefined : () => pick(activeSlot, span)}
+              title={blocked ? `${maskName(span.playerName)} would leave no room under the cap` : `Draft ${maskName(span.playerName)}`}
+            />
+          );
+        }}
+      />
+    );
+  } else {
+    promptEl = (
+      <Prompt eb="Five set" title="Lock it in">
+        Picks are final. Your five plays {meta ? `the ${meta.opponent.short}` : 'the AI'} live.
+      </Prompt>
+    );
+    const them = meta ? legends : aiLineup;
+    table = them ? <TaleOfTheTape yours={lineup} theirs={them} theirLabel={meta ? meta.opponent.short : 'AI'} /> : null;
+  }
+
+  const newAi = aiTurn?.took ?? [...log].reverse().find((l) => l.who === 'AI')?.span.id;
+  const jokerModal = jokerReveal?.took ? (
+    <JokerModal
+      joker={jokerReveal.joker}
+      next={activeSlot}
+      onNext={() => setJokerReveal(null)}
+    />
+  ) : null;
+
+  return (
+    <>
+      <NightGame className="d5" aside={aside} overlay={jokerModal}>
+        {daily && meta ? (
+          <OppRow title={`Game of the day · ${meta.opponent.name}`} note={filledCount === 0 ? 'they play your five after the last pick' : 'after the last pick'} lineup={legends ?? {}} legends />
+        ) : (
+          <OppRow title="AI · Pro" lineup={aiLineup} nextPos={aiTurn ? null : activeSlot} newId={newAi} />
+        )}
+        <section>
+          <H3 note={`${filledCount} of 5`}>Your five</H3>
+          <div className="slots">
+            {STARTER_SLOTS.map((s) => (
+              <Slot
+                key={s}
+                pos={s}
+                span={lineup[s]}
+                land={!!lineup[s] && lineup[s]!.id === landed}
+                state={s === activeSlot && !aiTurn ? 'active' : 'empty'}
+                small={s === activeSlot && !aiTurn ? 'your pick' : nextLabels.get(s)}
+              />
+            ))}
+          </div>
+        </section>
+        {jokerReveal && !jokerReveal.took && !aiTurn && (
+          <p className="reveal">
+            The {jokerReveal.joker.slot} Joker was <b>{maskName(jokerReveal.joker.span.playerName)}</b> {jokerReveal.joker.span.spanLabel}, {jokerReveal.joker.legend ? 'a legend. He got away.' : 'a scrub. Good dodge.'}
+          </p>
+        )}
+        {promptEl}
+        {table}
+        {submitBtn('phone-only')}
+      </NightGame>
+      {dialogs}
+    </>
   );
 }
 
-/** Milliseconds between two cards leaving the deck, and one card's flight (land + turn over). */
-// 2026-09-30, the user ("ZA SZYBKO"): slowed from 170 / 640 ms.
+/** "'92 Bulls" set on two lines in the tally. */
+function OppName({ short }: { short: string }) {
+  const [a, ...b] = short.split(' ');
+  return b.length ? (
+    <>
+      {a}
+      <br />
+      {b.join(' ')}
+    </>
+  ) : (
+    <>{short}</>
+  );
+}
+
+function pregameLine(match: LiveGameResult, opp: LegendFive | undefined): string {
+  if (opp) return `${opp.name}. Beat the five biggest names on the board and you usually beat them too.`;
+  const m = match.expectedMargin;
+  const lead = Math.round(Math.abs(m));
+  if (lead < 1) return 'The engine has it even. Every matchup counts.';
+  return m > 0 ? `The engine has you by ${lead === 1 ? 'a point' : `${lead}`}.` : `The engine has the AI by ${lead === 1 ? 'a point' : `${lead}`}.`;
+}
+
+function howToRules(daily: boolean): [string, ReactNode][] {
+  const base: [string, ReactNode][] = [
+    ['Draw five', 'One player per position, PG to C. Each position you draw cards off the deck, pick one, and the next position comes up. Picks are final.'],
+    [
+      'Caps',
+      <>
+        Every player costs caps <CapI />, his shots a game in those years. Your five have to fit under the board’s cap.
+      </>,
+    ],
+    ['Grading', 'Your five is scored on talent, offense, defense, spacing and fit, then compared with the fan-vote five (the five biggest names) and the best five on the board.'],
+  ];
+  return daily
+    ? [
+        ...base,
+        ['Today’s order', 'The daily deals the positions in its own order, a different one every day.'],
+        ['Jokers', `Five cards a position. In ${JOKERS_MIN} to ${JOKERS_MAX} rounds one card is a face-down Joker at the position’s middle price: even odds a legend or a scrub. You find out when you pick him.`],
+        ['Game of the day', 'Your five then plays a legendary team, live.'],
+      ]
+    : [...base, ['Against the AI', 'The AI drafts its own five from the same deck under the same cap: each position it gets the cards that didn’t come to you. Then the two fives play a live game.']];
+}
+
+/** The aside's log of the draft so far. */
+function DraftLog({ rows }: { rows: { n: number; who: 'You' | 'AI'; span: PlayerSpan }[] }) {
+  return (
+    <section>
+      <H3>The draft so far</H3>
+      <table className="log">
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={`${r.n}-${r.who}`} className={`${r.who === 'AI' ? 'a' : 'y'}${i === rows.length - 1 ? ' latest' : ''}`}>
+              <td className="n">{r.n}</td>
+              <td className="w">{r.who}</td>
+              <td className="p">
+                {maskName(r.span.playerName)}, {r.span.primaryPosition}
+              </td>
+              <td className="c">{fmtCaps(r.span.fga)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+/** The rival's five across the top: the AI's picks so far, or the legends of the day. */
+function OppRow({ title, note, lineup, nextPos, newId, legends }: { title: string; note?: string; lineup: Lineup; nextPos?: Position | null; newId?: string; legends?: boolean }) {
+  const filled = STARTER_SLOTS.filter((s) => lineup[s]).length;
+  return (
+    <section>
+      <H3 note={note ?? `${filled} of 5`}>{title}</H3>
+      <ul className="opp">
+        {STARTER_SLOTS.map((s) => {
+          const p = lineup[s];
+          if (!p)
+            return (
+              <li key={s} className="e">
+                <span className="pos">{s}</span>
+                <span className="who">{s === nextPos ? 'picks next' : '—'}</span>
+              </li>
+            );
+          return (
+            <li key={s} className={p.id === newId ? 'new' : undefined}>
+              <NFace name={p.playerName} />
+              <span className="pos">{s}</span>
+              <span className="who">{maskName(p.playerName)}</span>
+              <span className="c">
+                {p.spanLabel}
+                {!legends && <> · {fmtCaps(p.fga)}</>}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** Tale of the tape: position by position before Submit. */
+function TaleOfTheTape({ yours, theirs, theirLabel }: { yours: Lineup; theirs: Lineup; theirLabel: string }) {
+  const side = (p: PlayerSpan | undefined) =>
+    p ? (
+      <div className="pl">
+        <NFace name={p.playerName} />
+        <div>
+          <b>{maskName(p.playerName)}</b>
+          <small>
+            {p.spanLabel} · {fmtCaps(p.fga)} caps
+          </small>
+        </div>
+      </div>
+    ) : null;
+  return (
+    <section>
+      <H3 note={`you · ${theirLabel}`}>Tale of the tape</H3>
+      <table className="tape">
+        <tbody>
+          {STARTER_SLOTS.map((s) => (
+            <tr key={s}>
+              <td>{side(yours[s])}</td>
+              <td className="pos">{s}</td>
+              <td className="r">{side(theirs[s])}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+/** The face-down Joker: gold card, "?" — legend or scrub. */
+function JokerCard({ price, pos, blocked, onPick }: { price: number; pos: Position; blocked: boolean; onPick: () => void }) {
+  return (
+    <button type="button" className={`card joker${blocked ? ' dim' : ''}`} disabled={blocked} onClick={onPick} title="A Joker: even odds a legend or a scrub">
+      <div className="top">
+        <span>JOKER</span>
+        <span className="cost">{fmtCaps(price)}</span>
+      </div>
+      <div className="q">?</div>
+      <div className="nm">Legend or scrub?</div>
+      <div className="sb">{pos} · face down</div>
+      <div className="roles" style={{ color: 'var(--cgold3)' }}>
+        You find out when you pick him.
+      </div>
+      <div className="st">
+        <div>
+          <b>50%</b>
+          <span>LEGEND</span>
+        </div>
+        <div>
+          <b>50%</b>
+          <span>SCRUB</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/** The Joker you took, turned over in the middle of the table (mockups `#jokerTook` / `#jokerScrub`). */
+function JokerModal({ joker, next, onNext }: { joker: DailyJoker; next: Position | null; onNext: () => void }) {
+  useEffect(() => {
+    if (joker.legend) deckSfx.jackpot();
+    else deckSfx.scrub();
+    buzz(joker.legend ? [20, 40, 20, 40, 60] : 60);
+  }, [joker]);
+  const name = maskName(joker.span.playerName);
+  return (
+    <>
+      <div className="dim" aria-hidden />
+      <div className={`jr${joker.legend ? '' : ' scrub'}`} role="dialog" aria-modal="true" aria-label={joker.legend ? 'Jackpot' : 'Ouch'}>
+        <NCard span={{ ...joker.span, fga: joker.price }} jokerBand costLabel={fmtCaps(joker.price)} />
+        <h2>{joker.legend ? 'Jackpot' : 'Ouch'}</h2>
+        <p>
+          The {joker.slot} Joker was <b>{name}</b> {joker.span.spanLabel}, {joker.legend ? 'a legend' : 'a scrub'}, for <b>{fmtCaps(joker.price)} caps</b>.{' '}
+          {joker.legend ? `He would cost ${fmtCaps(joker.span.fga)} face up.` : 'The other four will have to carry him.'}
+        </p>
+        <Btn onClick={onNext}>{next ? `Next pick · ${next}` : 'See your five'}</Btn>
+      </div>
+    </>
+  );
+}
+
 const DEAL_STEP_MS = 480;
 const DEAL_FLIGHT_MS = 950;
 
-function prefersReducedMotion(): boolean {
-  try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * One dealt card. 2026-09-30, the user chose deal animation A from the card-motion mockup: the card
- * leaves the deck face down, flies to its place and turns over as it lands.
- */
+/** One dealt card (deal animation A, 2026-09-30): it leaves the deck face down, flies to its place
+ * and turns over as it lands. */
 function DealtCard({ pile, fly, children }: { pile: RefObject<HTMLDivElement | null>; fly: boolean; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
-  const backRef = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
     const el = ref.current;
     const from = pile.current;
@@ -548,74 +797,48 @@ function DealtCard({ pile, fly, children }: { pile: RefObject<HTMLDivElement | n
       ],
       { duration: DEAL_FLIGHT_MS, easing: 'cubic-bezier(0.2, 0.8, 0.25, 1)' },
     );
-    backRef.current?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.69 }, { opacity: 0, offset: 0.7 }, { opacity: 0 }], { duration: DEAL_FLIGHT_MS, fill: 'none' });
+    el.querySelector<HTMLElement>('.fly-back')?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.69 }, { opacity: 0, offset: 0.7 }, { opacity: 0 }], { duration: DEAL_FLIGHT_MS, fill: 'none' });
     deckSfx.deal();
     const flip = window.setTimeout(() => deckSfx.flip(), DEAL_FLIGHT_MS * 0.62);
     return () => window.clearTimeout(flip);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div ref={ref} className={`bf-hand-face${fly ? ' is-dealt' : ''}`}>
+    <div ref={ref} className="dealt">
       {children}
-      <span ref={backRef} className="bf-fly-back" aria-hidden />
+      {fly && <span className="fly-back" aria-hidden />}
     </div>
   );
 }
 
-/** 2026-09-30, the user chose the fanned hand: each card turned a little and set on an arc. */
-function fanStyle(i: number, n: number): CSSProperties {
-  const mid = (n - 1) / 2;
-  return { '--r': `${(i - mid) * 3}deg`, '--y': `${Math.round((i - mid) * (i - mid) * 4)}px` } as CSSProperties;
-}
-
-/** The table's sound switch (remembered in this browser). */
-function SoundToggle() {
-  const [muted, setMuted] = useState(deckSoundsMuted);
-  return (
-    <button
-      type="button"
-      className="bf-sound-btn"
-      aria-pressed={muted}
-      title={muted ? 'Sound off' : 'Sound on'}
-      onClick={() => {
-        setDeckSoundsMuted(!muted);
-        setMuted(!muted);
-      }}
-    >
-      {muted ? '🔇' : '🔊'}
-    </button>
-  );
-}
-
 /**
- * 2026-09-30, the user (Draw Five: "zmieniamy slot machine na deck kart"): a position's cards come
- * off the deck — the hand waits face down until "Draw", then each card flies from the deck and turns
- * over (deal animation A). The mechanics are the slot machine's (a reactive deal per position, picks
- * final); only the table changed. A position you come back to shows its cards face up. Reduced
- * motion deals them face up at once.
+ * A position's cards (mockups `#start` / `#pick`): face down until "Draw", then each card flies from
+ * the deck and turns over, and the hand opens. A position seen before shows its cards face up.
+ * Reduced motion deals them face up at once.
  */
 function DeckHand({
   slot,
   cards,
   fresh,
+  joker,
+  daily,
   onDone,
   renderCard,
 }: {
   slot: Position;
-  /** The position's deal (`dealFor`; five cards in the daily). */
   cards: PlayerSpan[];
-  /** First visit to this position: the hand waits face down for "Draw". */
   fresh: boolean;
+  joker: boolean;
+  daily: boolean;
   onDone: () => void;
   renderCard: (span: PlayerSpan) => ReactNode;
 }) {
   const pile = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(fresh ? 0 : cards.length);
   const [drawing, setDrawing] = useState(false);
-  // Every card has landed and turned over (the last one flies a moment after it leaves the deck).
   const [settled, setSettled] = useState(!fresh);
   useEffect(() => {
-    if (fresh && prefersReducedMotion()) {
+    if (fresh && reducedMotion()) {
       setSettled(true);
       setShown(cards.length);
       onDone();
@@ -628,95 +851,90 @@ function DeckHand({
       const t = window.setTimeout(() => {
         setSettled(true);
         onDone();
+        buzz();
       }, DEAL_FLIGHT_MS);
       return () => window.clearTimeout(t);
     }
-    // The last card waits a beat longer — a little suspense.
     const t = window.setTimeout(() => setShown((n) => n + 1), shown === 0 ? 250 : shown === cards.length - 1 ? DEAL_STEP_MS + 350 : DEAL_STEP_MS);
     return () => window.clearTimeout(t);
   }, [drawing, shown, cards.length, onDone]);
-  const allUp = shown >= cards.length && settled;
-  return (
-    <div className={`bf-deck${allUp ? ' is-open' : ''}`}>
-      <div className="bf-deck-table">
-        <div className={`bf-hand${cards.length > 4 ? ' is-5' : ''}`}>
-          {cards.map((card, i) => (
-            <div
-              key={card.id}
-              className="bf-hand-card"
-              style={fanStyle(i, cards.length)}
-              onMouseMove={(e) => {
-                // Premium cards catch the light where the pointer is.
-                const r = e.currentTarget.getBoundingClientRect();
-                e.currentTarget.style.setProperty('--gx', `${((e.clientX - r.left) / r.width) * 100}%`);
-                e.currentTarget.style.setProperty('--gy', `${((e.clientY - r.top) / r.height) * 100}%`);
-              }}
-            >
-              {i < shown ? (
-                <DealtCard pile={pile} fly={drawing}>
-                  {renderCard(card)}
-                </DealtCard>
-              ) : (
-                <div className="bf-hand-back" aria-hidden />
-              )}
-            </div>
-          ))}
-        </div>
+  const n = cards.length;
+  if (settled) {
+    return (
+      <div className={`hand${n >= 5 ? ' n5' : ''}`} style={{ '--n': n } as CSSProperties}>
+        {cards.map((c) => (
+          <div key={c.id} className="hand-c">
+            {renderCard(c)}
+          </div>
+        ))}
       </div>
-      <div className="bf-deck-foot" aria-live="polite">
-        <div className="bf-pile" ref={pile} aria-hidden>
-          <span />
-          <span />
-          <span />
+    );
+  }
+  const plural = SLOT_NAME[slot].toLowerCase() + 's';
+  return (
+    <div className={`stage${n >= 5 ? ' n5' : ''}`} style={{ '--n': n } as CSSProperties}>
+      {cards.map((c, i) =>
+        i < shown ? (
+          <DealtCard key={c.id} pile={pile} fly={drawing}>
+            {renderCard(c)}
+          </DealtCard>
+        ) : (
+          <div key={c.id} className="ph" aria-hidden>
+            ?
+          </div>
+        ),
+      )}
+      <div className="deal" aria-live="polite">
+        <div ref={pile}>
+          <CardBack />
         </div>
-        {fresh && !drawing && !allUp ? (
-          <button
-            type="button"
-            className="primary-btn bf-draw-btn"
+        {!drawing ? (
+          <Btn
             onClick={() => {
               deckSfx.shuffle();
               setDrawing(true);
             }}
           >
-            Draw {cards.length} {SLOT_LABEL[slot].toLowerCase()}s
-          </button>
-        ) : !allUp ? (
-          <span>Dealing…</span>
+            Draw {n} {plural}
+          </Btn>
         ) : (
-          <span>Pick one — picks are final.</span>
+          <p>Dealing…</p>
         )}
-        <SoundToggle />
+        <p>
+          {daily && joker ? (
+            <>
+              A gold Joker hides in this hand: <b>50% legend, 50% scrub</b>.
+            </>
+          ) : daily ? (
+            <>
+              A gold Joker may hide in today’s hands: <b>50% legend, 50% scrub</b>.
+            </>
+          ) : (
+            'Every player costs his shots a game in caps.'
+          )}
+        </p>
       </div>
     </div>
   );
 }
 
-/** 2026-09-11, user-reported live: "why powinno być ciekawsze, nie że silnik ocenia tak i tak" —
- * the detail lines below were already real, plain-spoken sentences, not engine-speak; what was
- * missing was a single narrative lead tying the grade to the actual STORY of the board before the
- * bullet-by-bullet breakdown starts — the same job the grade banner's own blurb does for the
- * headline number. One line, keyed off the grade itself, not a repeat of any line below it. */
+/* ------------------------------ the result ------------------------------ */
+
 const RESULT_LEAD: Record<GolfGrade, string> = {
   eagle: 'You out-scouted everyone on a board that had a real trap to avoid.',
-  birdie: 'You saw past the obvious five — here’s where you won the matchup.',
-  par: 'A safe, sensible five. Here’s the upside you left on the bench.',
-  bogey: 'Something in this five is fighting itself — here’s what the tape shows.',
-  'double-bogey': 'This five doesn’t play as a team yet — here’s where it breaks down.',
+  birdie: 'You saw past the obvious five.',
+  par: 'A safe, sensible five.',
+  bogey: 'Something in this five is fighting itself.',
+  'double-bogey': 'This five doesn’t play as a team yet.',
 };
-
-/**
- * The film room's first line. 2026-09-28, the user ("opisy nic nie mówią bo są zbyt podobne"): it
- * used to be one fixed sentence per grade. It now follows how close the five is to the best five on
- * the board, names the gap, and rotates between a few wordings by the board's seed.
- */
 const LEAD_BEST = [
-  'Nobody builds a better five from this deal — this is the best team on the board.',
+  'Nobody builds a better five from this deal. This is the best team on the board.',
   'You found the best five the deal had. There’s nothing on the tape to fix.',
   'Best team on the board. Every card you passed on would have made it worse.',
   'That’s the five the film room would have drawn up. Hang the banner.',
 ];
 const LEAD_CLOSE = [
-  (gap: number) => `${gap} points off the best five on the board — one decision away from it.`,
+  (gap: number) => `${gap} points off the best five on the board: one decision away from it.`,
   (gap: number) => `Nearly the best team on the board: ${gap} points short, and it comes down to one spot.`,
   (gap: number) => `A good five, ${gap} points behind the best one the deal had.`,
 ];
@@ -727,30 +945,34 @@ function filmRoomLead(explain: ResultExplanation, grade: GolfGrade, seed: string
   return `${RESULT_LEAD[grade]} The best five on the board was ${explain.gapToBest} points better.`;
 }
 
-function CmpCell({ span, tone }: { span: PlayerSpan | null | undefined; tone: 'hit' | 'miss' | 'best' }) {
-  if (!span) return <span />;
-  return (
-    <span className={`bf-cmp-cell bf-cmp-cell--${tone}`}>
-      <span className="bf-cmp-name">{span.playerName}</span>
-      <span className="bf-cmp-season">{span.spanLabel}</span>
-    </span>
-  );
-}
-
 function randomSeed(n: number): string {
   return `roulette-${n}-${Math.floor(Math.random() * 1e9)}`;
 }
 
-/** The draft finish tiers' colour tone for each Slot Machine grade (same words, same colours). */
-const GRADE_TONE: Record<GolfGrade, 1 | 2 | 3 | 4 | 5 | 6> = { eagle: 6, birdie: 5, par: 4, bogey: 3, 'double-bogey': 2 };
+/** Top scorer of each side: "Durant 31 · Kemp 24". */
+function topScorers(match: LiveGameResult): string {
+  const last = match.moments[match.moments.length - 1];
+  if (!last) return '';
+  return ([0, 1] as const)
+    .map((side) => {
+      let best = 0;
+      last.lines[side].forEach((l, k) => {
+        if (l.pts > last.lines[side][best].pts) best = k;
+      });
+      return `${maskName(match.labels[side][best])} ${last.lines[side][best].pts}`;
+    })
+    .join(' · ');
+}
 
 function BestFiveResult({
+  title,
   lineup,
   pool,
   result,
   shotsCap,
   onNewBoard,
   onReplayDaily,
+  onWatch,
   daily,
   streak,
   onNextStep,
@@ -759,36 +981,47 @@ function BestFiveResult({
   jokers,
   opponent,
   match,
-  fresh,
+  links,
 }: {
+  title: string;
   lineup: Lineup;
   pool: DailyPool;
   result: { score: LineupScore; targets: DailyTargets; grade: GolfGrade };
   shotsCap: number;
   onNewBoard: () => void;
   onReplayDaily?: () => void;
+  onWatch?: () => void;
   daily?: string;
   streak?: Streak | null;
   onNextStep?: () => void;
   seed: string;
   challenge?: ModeChallenge;
-  jokers?: DailyJoker[];
+  jokers: DailyJoker[];
   opponent?: LegendFive;
-  match?: LiveGameResult | null;
-  /** Just submitted (the game plays live); a daily reopened later shows its final straight away. */
-  fresh?: boolean;
+  match: LiveGameResult | null;
+  links: { onMenu?: () => void; onHowTo: () => void; onSettings: () => void };
 }) {
   useEffect(() => markStepDone('bestfive'), []);
   const [copied, setCopied] = useState(false);
-  const [gameOver, setGameOver] = useState(!(fresh && match));
-  /** 2026-09-28, the user chose the minimal share: date, grade, streak and the game — nothing about
-   * the five or the Joker, so it spoils nothing for anyone who hasn't played today. */
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const { score, targets, grade } = result;
+  const explain = useMemo(() => explainResult(lineup, pool, targets, shotsCap), [lineup, pool, targets, shotsCap]);
+  const yourShots = useMemo(() => lineupShots(lineup), [lineup]);
+  const opp = opponent?.short ?? 'AI';
+  const won = match ? match.final[0] > match.final[1] : null;
+  const margin = match ? Math.abs(match.final[0] - match.final[1]) : 0;
+  const hits = STARTER_SLOTS.filter((s) => lineup[s]?.id === targets.optimalFive[s].id);
+  const scoreLine = match ? `${match.final[0]}–${match.final[1]}` : '';
+  const headline = match ? (won ? `You beat the ${opp} ${scoreLine}` : `The ${opp} beat you ${match.final[1]}–${match.final[0]}`) : 'Your five is in';
+
+  /** The minimal daily line: date, grade, streak and the game, nothing about the five or the Joker. */
   async function copyDailyResult() {
     if (!daily) return;
     const lines = [
-      `Daily Draw Five · ${formatDay(daily)}`,
-      `🏀 ${GRADE_LABEL[result.grade]}${streak && streak.current > 0 ? ` · 🔥 ${streak.current}` : ''}`,
-      ...(match && opponent ? [match.final[0] > match.final[1] ? `🏆 Beat the ${opponent.short} ${match.final[0]}–${match.final[1]}` : `❌ Lost to the ${opponent.short} ${match.final[0]}–${match.final[1]}`] : []),
+      `${title} · ${dayLabel(daily)}`,
+      `🏀 ${GRADE_LABEL[grade]}${streak && streak.current > 0 ? ` · 🔥 ${streak.current}` : ''}`,
+      ...(match && opponent ? [won ? `🏆 Beat the ${opponent.short} ${match.final[0]}–${match.final[1]}` : `❌ Lost to the ${opponent.short} ${match.final[0]}–${match.final[1]}`] : []),
       `${window.location.origin}${window.location.pathname}`,
     ];
     if (await copyLink(lines.join('\n'))) {
@@ -796,399 +1029,315 @@ function BestFiveResult({
       setTimeout(() => setCopied(false), 2000);
     }
   }
-  const [shareOpen, setShareOpen] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
   async function challengeFriend() {
-    if (await copyLink(modeChallengeLink('roulette', seed, result.score.composite))) {
+    if (await copyLink(modeChallengeLink('roulette', seed, score.composite))) {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
     }
   }
-  const { score, targets, grade } = result;
-  const explain = useMemo(
-    () => explainResult(lineup, pool, targets, shotsCap),
-    [lineup, pool, targets, shotsCap],
-  );
-  const [showGlossary, setShowGlossary] = useState(false);
-  const yourShots = useMemo(() => lineupShots(lineup), [lineup]);
 
-  const weightsLine = WEIGHTED_AXES.map((a) => `${a.pct}% ${a.label}`).join(' · ');
-  // Strongest axes against the field of this deal: the best five's own value is the yardstick.
-  const [strongest, secondStrongest] = [...WEIGHTED_AXES].sort((a, b) => score[b.key] - score[a.key]);
-  const chalkGap = targets.optimal - targets.par;
+  const strongest = [...AXES].filter((a) => a.key !== 'spacing').sort((a, b) => score[b.key] - score[a.key])[0];
+  const poster: PosterData = {
+    mode: daily ? 'Draw Five · daily' : 'Draw Five',
+    date: daily ? new Date(`${daily}T12:00:00`) : new Date(),
+    kick: match ? (daily ? `Game of the day · ${won ? 'beat' : 'lost to'} the ${opp} ${match.final[0]}–${match.final[1]}` : `Final · ${won ? 'beat' : 'lost to'} the AI ${match.final[0]}–${match.final[1]}`) : 'Final',
+    head: GRADE_LABEL[grade],
+    line: `${GRADE_BLURB[grade]}${match ? ` ${topScorers(match)}.` : ''}`,
+    five: STARTER_SLOTS.flatMap((s) => (lineup[s] ? [{ span: lineup[s]!, num: Math.round(lineup[s]!.fga * 10) / 10 }] : [])),
+    unit: 'caps',
+    hidden: Boolean(daily),
+    prof: AXES.map(({ key, label }) => ({ label, value: Math.round(score[key]), tone: key === explain.weakest.axis ? 'lo' : key === strongest.key ? 'hi' : undefined })),
+    strip: [
+      ['Your five', score.composite],
+      ['Fan vote', targets.par],
+      ['Best', targets.optimal],
+      daily ? ['Streak', `🔥 ${streak?.current ?? 1}`] : ['Caps', `${fmtCaps(yourShots)}`],
+    ],
+    foot: daily ? 'One board for everyone today · your five stays hidden till tomorrow' : `Beat my ${score.composite} on the same deck · challenge link`,
+  };
 
-  return (
-    <div className="at-card bf-result">
-      {match && opponent && <LiveGame game={match} opponent={opponent} autoStart={Boolean(fresh)} onFinish={() => setGameOver(true)} />}
-      {/* 2026-09-30, the user ("wynik widoczny po meczu"): the grade, the numbers and the film room
-          wait until the game has been played (or skipped). */}
-      {gameOver && (
+  const filmLines: { glyph: '+' | '−' | '!'; body: ReactNode }[] = [];
+  filmLines.push({ glyph: explain.standing === 'off' ? '−' : '+', body: filmRoomLead(explain, grade, seed) });
+  if (explain.standing === 'best') {
+    filmLines.push({
+      glyph: '+',
+      body: (
         <>
-      {daily && jokers && <JokerRecap jokers={jokers} lineup={lineup} />}
-      {/* 2026-09-27, the user: "wynik nie pokazuje od razu" — grade and the three numbers land
-          together in one scoreboard, no staged wait. */}
-      <div className={`bf-grade bf-grade--${grade}`}>
-        <div className="bf-grade-top">
-          <span className="bf-grade-label at-cond">{GRADE_LABEL[grade]}</span>
-          <span className="bf-grade-blurb">{GRADE_BLURB[grade]}</span>
-        </div>
-        <ScoreBoard
-          cells={[
-            { label: 'Your five', value: score.composite, you: score.composite },
-            { label: 'Fan-vote five', value: targets.par, title: 'The five biggest names in the deal' },
-            { label: 'Best on the board', value: targets.optimal },
-          ]}
-          note={
-            <>
-              <CapIcon /> {Math.round(yourShots)} / {shotsCap} caps · fan-vote five = the five biggest names
-              {challenge?.vs != null && (
-                <>
-                  <br />
-                  <ChallengeNote yours={score.composite} theirs={challenge.vs} />
-                </>
-              )}
-            </>
-          }
-        />
-        <div className="results-hero-actions">
-          <button type="button" className="results-hero-copy" onClick={() => setShareOpen(true)}>
-            📤 Share the result
-          </button>
-          {daily && (
-            <button type="button" className="results-hero-copy" onClick={copyDailyResult} title="Copies a spoiler-free line: date, grade, streak and the game">
-              {copied ? '✓ Copied' : '📋 Copy result'}
-            </button>
-          )}
-          <button
-            type="button"
-            className="results-hero-copy results-hero-challenge"
-            onClick={challengeFriend}
-            title="Copies a link that deals a friend the exact same Draw Five deck, with your score to beat."
-          >
-            {linkCopied ? '✓ Link copied' : '🔗 Challenge a friend'}
-          </button>
-        </div>
-      </div>
-      {shareOpen && (
-        <ShareResultModal
-          onClose={() => setShareOpen(false)}
-          mode="Draw Five"
-          title={daily ? `Daily Draw Five · ${formatDay(daily)}` : 'My Draw Five'}
-          tier={{ label: GRADE_LABEL[grade], tone: GRADE_TONE[grade] }}
-          cells={[
-            { label: 'Your five', value: score.composite, you: score.composite },
-            { label: 'Fan-vote five', value: targets.par },
-            { label: 'Best on the board', value: targets.optimal },
-          ]}
-          chips={AXES.map(({ key, label }) => ({ label, value: Math.round(score[key]) }))}
-          five={STARTER_SLOTS.flatMap((slot) => {
-            const p = lineup[slot];
-            return p ? [{ slot, name: p.playerName, years: p.spanLabel }] : [];
-          })}
-        />
+          It wins on <b>{strongest.label.toLowerCase()} ({Math.round(score[strongest.key])})</b>, and every one of the five is the right card at his spot.
+        </>
+      ),
+    });
+    filmLines.push({ glyph: '!', body: <>{explain.weakest.label} ({explain.weakest.value}) is the lowest number, but that’s the deal: no five on this board gets it higher without losing more elsewhere.</> });
+  } else {
+    if (isChalkBoard(targets))
+      filmLines.push({ glyph: '!', body: <>Chalk board: the fan-vote five ({targets.par}) {targets.optimal - targets.par <= 0 ? `already is the best five on the board (${targets.optimal})` : `was within ${targets.optimal - targets.par} of the best five (${targets.optimal})`}. Not much room to out-coach it.</> });
+    else if (explain.tookLazyPick) filmLines.push({ glyph: '!', body: <>You started the five biggest names: that’s the fan-vote five ({targets.par}). The deal hid a better-fitting lineup among the role players.</> });
+    const c = explain.pickCosts[0];
+    if (c)
+      filmLines.push({
+        glyph: '−',
+        body: (
+          <>
+            {explain.standing === 'close' ? 'The difference: ' : 'Costliest pick: '}
+            <b>{maskName(c.yours)}</b> at {c.slot}. <b>{maskName(c.best)}</b> there is worth about <b>{c.cost} points</b>
+            {c.axisDelta < 0 && <>, most of it on {c.axis}</>}.
+          </>
+        ),
+      });
+    filmLines.push({
+      glyph: '!',
+      body: explain.weakestIsBoardLimit ? (
+        <>
+          Your lowest number, <b>{explain.weakest.label.toLowerCase()} ({explain.weakest.value})</b>, is as high as this deal goes: the best five has {explain.bestAxes[explain.weakest.axis]} there too.
+        </>
+      ) : (
+        <>
+          Your weak spot is <b>{explain.weakest.label.toLowerCase()} ({explain.weakest.value})</b>. {explain.weakest.reason} The best five has {explain.bestAxes[explain.weakest.axis]} there.
+        </>
+      ),
+    });
+    if (explain.standing === 'off' && score.weakLink && explain.weakest.axis !== 'defense')
+      filmLines.push({ glyph: '!', body: <>On defense, <b>{maskName(score.weakLink)}</b> is the one they’ll hunt, every switch, every possession.</> });
+  }
+
+  const youWin = won === null ? null : won;
+  const aside = (
+    <>
+      <Mast title={title} daily={Boolean(daily)} sub={daily ? `${dayLabel(daily)} · final` : 'Final · against the AI (Pro)'} />
+      {match ? (
+        <Tally you={match.final[0]} mid="Final" ai={match.final[1]} midK="Q4 0:00" aiK={daily ? opp : 'AI'} plain />
+      ) : (
+        <Tally you={score.composite} mid={targets.par} ai={targets.optimal} youK="Your five" midK="Fan vote" aiK="Best" plain />
       )}
-
-      {/* 2026-09-28 playtest: the same "Team profile" tiles as the Mini and All-Time results
-          (they were bars here, tiles there, for the same five numbers). */}
-      <div className="bf-bars results-hero-scores">
-        <span className="share-modal-face-group-label">Team profile</span>
-        <div className="results-hero-scores-row results-hero-scores-row--5">
-          {AXES.map(({ key, label }) => (
-            <ScoreChip key={key} label={label} value={Math.round(score[key])} />
-          ))}
-        </div>
-        {/* 2026-09-28, the user: the numbers read against what this deal allowed — the best five's
-            own value under each of yours. */}
-        <div className="results-hero-scores-row results-hero-scores-row--5 bf-axis-best" aria-label="Best five on the board">
-          {AXES.map(({ key }) => (
-            <span key={key} title="The best five on the board">vs {explain.bestAxes[key as keyof typeof explain.bestAxes]}</span>
-          ))}
-        </div>
-        <p className="bf-weights at-cond">
-          Score = {weightsLine}. Spacing is diagnostic — it feeds Offense and Fit.
-          <button className="bf-glossary-toggle at-cond" onClick={() => setShowGlossary((v) => !v)}>
-            {showGlossary ? 'hide' : 'what do these mean?'}
-          </button>
-        </p>
-        {showGlossary && (
-          <dl className="bf-glossary">
-            {AXIS_GLOSSARY.map((g) => (
-              <div key={g.label}>
-                <dt>{g.label}</dt>
-                <dd>{g.text}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-      </div>
-
-      {/* 2026-09-28, the user: "im lepiej tym bardziej w stronę pochwał". The film room's tone
-          follows how close the five is to the best five on the board: matching it gets praise and
-          the deal's own ceiling instead of a weakness; close gets praise plus the one pick that
-          made the difference; further off keeps the breakdown, now naming what each pick cost. */}
-      <div className="bf-why">
-        <div className="bf-why-head at-cond">Film room</div>
-        <p className="bf-why-line bf-why-lead">{filmRoomLead(explain, grade, seed)}</p>
-        {explain.standing === 'best' ? (
-          <>
-            <p className="bf-why-line">
-              It wins on <b>{strongest.label} ({Math.round(score[strongest.key])})</b>
-              {secondStrongest && (
-                <>
-                  {' '}and <b>{secondStrongest.label} ({Math.round(score[secondStrongest.key])})</b>
-                </>
-              )}
-              , and every one of the five is the right card at his spot.
-            </p>
-            <p className="bf-why-line bf-muted">
-              {explain.weakest.label} ({explain.weakest.value}) is the lowest number, but that’s the deal, not you — no
-              five on this board gets it higher without losing more elsewhere.
-            </p>
-          </>
-        ) : (
-          <>
-            {isChalkBoard(targets) && (
-              <p className="bf-why-line">
-                Chalk board — the fan-vote five ({targets.par}){' '}
-                {chalkGap <= 0
-                  ? `already is the best five on the board (${targets.optimal})`
-                  : `was within ${chalkGap} of the best five on the board (${targets.optimal})`}
-                . Not much room to out-coach it on this deal.
-              </p>
-            )}
-            {explain.tookLazyPick && !isChalkBoard(targets) && (
-              <p className="bf-why-line">
-                You started the five biggest names — that’s the fan-vote five ({targets.par}). The deal hid a better-fitting
-                lineup among the role players.
-              </p>
-            )}
-            {explain.pickCosts[0] && (
-              <p className="bf-why-line">
-                {explain.standing === 'close' ? 'The difference is ' : 'Costliest pick: '}
-                <b>{explain.pickCosts[0].yours}</b> at {explain.pickCosts[0].slot} — <b>{explain.pickCosts[0].best}</b> there
-                is worth about <b>{explain.pickCosts[0].cost} points</b>
-                {explain.pickCosts[0].axisDelta < 0 && <>, most of it on {explain.pickCosts[0].axis} (−{Math.abs(explain.pickCosts[0].axisDelta)})</>}.
-                {explain.standing === 'off' && explain.pickCosts[1] && explain.pickCosts[1].cost > 0 && (
-                  <>
-                    {' '}Next: <b>{explain.pickCosts[1].yours}</b> at {explain.pickCosts[1].slot} instead of <b>{explain.pickCosts[1].best}</b> (
-                    {explain.pickCosts[1].cost}).
-                  </>
-                )}
-              </p>
-            )}
-            {explain.weakestIsBoardLimit ? (
-              <p className="bf-why-line">
-                Your lowest number, <b>{explain.weakest.label} ({explain.weakest.value})</b>, is as high as this deal goes — the
-                best five has {explain.bestAxes[explain.weakest.axis]} there too.
-              </p>
-            ) : (
-              <p className="bf-why-line">
-                Your weak spot is <b>{explain.weakest.label} ({explain.weakest.value})</b> — the best five has{' '}
-                {explain.bestAxes[explain.weakest.axis]}. {explain.weakest.reason}
-              </p>
-            )}
-            {explain.standing === 'off' && score.weakLink && explain.weakest.axis !== 'defense' && (
-              <p className="bf-why-line">
-                On defense, <b>{score.weakLink}</b> is the one they’ll hunt — every switch, every possession.
-              </p>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="bf-optimal">
-        <div className="bf-optimal-title at-cond">
-          Starting five <span>{STARTER_SLOTS.filter((slot) => lineup[slot]?.id === targets.optimalFive[slot].id).length}/5 match the best</span>
-        </div>
-        <div className="bf-cmp">
-          <span />
-          <span className="bf-cmp-head at-cond">You</span>
-          <span className="bf-cmp-head at-cond">Best</span>
-          {STARTER_SLOTS.map((slot) => {
-            const engine = targets.optimalFive[slot];
-            const yours = lineup[slot];
-            const hit = !!yours && yours.id === engine.id;
-            return (
-              <Fragment key={slot}>
-                <span className={`bf-cmp-pos at-cond ${hit ? 'bf-cmp-pos--hit' : ''}`}>{slot}</span>
-                <CmpCell span={yours} tone={hit ? 'hit' : 'miss'} />
-                {hit ? <span className="bf-cmp-same at-cond">✓ same</span> : <CmpCell span={engine} tone="best" />}
-              </Fragment>
-            );
-          })}
-        </div>
-      </div>
-
-      {onNextStep && (
-        <div className="path-next">
-          <span>
-            <b>Next step: Mini Draft.</b> The same five and the same judge — but drafted live against 15 CPU teams that take
-            your targets first.
-          </span>
-          <button className="at-draft-btn" onClick={onNextStep}>
-            Play Mini Draft
-          </button>
-        </div>
+      {youWin !== null && (
+        <SubNote>
+          <b>{youWin ? 'You win' : 'You lose'}</b> by {margin}
+        </SubNote>
+      )}
+      {daily && streak && (
+        <section>
+          <H3 note={`${streak.current} ${streak.current === 1 ? 'day' : 'days'}`}>Streak</H3>
+          <StreakTrack best={streak.best} current={streak.current} />
+        </section>
       )}
       {daily ? (
-        <div className="bf-daily-done">
-          <b>That’s today’s board.</b>{' '}
-          {streak && streak.current > 0 && <>🔥 {streak.current}-day streak{streak.best > streak.current ? ` (best ${streak.best})` : ''}. </>}
-          A new one in {untilTomorrow()}.
-          {streak && <StreakTrack best={streak.best} current={streak.current} />}
-          {onReplayDaily && (
-            <button type="button" className="secondary-btn bf-daily-replay" onClick={onReplayDaily}>
-              Play today again (testing)
-            </button>
-          )}
-        </div>
+        <section>
+          <H3>Next board</H3>
+          <Kv k="New deck in" v={untilTomorrow()} />
+        </section>
       ) : (
-        <div className="bf-submit-row bf-result-actions">
-          <button className="primary-btn" onClick={onNewBoard}>
-            New board
-          </button>
+        <section>
+          <H3>Your number</H3>
+          <Kv k="Your five" v={score.composite} />
+          <Kv k="Caps used" v={`${fmtCaps(yourShots)} / ${shotsCap}`} />
+          <Kv k="Matches the best" v={`${hits.length} of 5`} />
+          {challenge?.vs != null && <Kv k={`Friend’s five · ${challengeVerdict(score.composite, challenge.vs) === 'won' ? 'you win' : challengeVerdict(score.composite, challenge.vs) === 'lost' ? 'they win' : 'tied'}`} v={challenge.vs} />}
+        </section>
+      )}
+      <Actions links={links}>
+        {daily ? (
+          <div className="btn2">
+            <Btn kind="line" onClick={copyDailyResult}>
+              {copied ? '✓ Copied' : 'Copy result'}
+            </Btn>
+            <Btn kind="line" onClick={() => setShareOpen(true)}>
+              Share
+            </Btn>
+          </div>
+        ) : (
+          <>
+            <Btn onClick={onNewBoard}>New board</Btn>
+            <div className="btn2">
+              <Btn kind="line" onClick={() => setShareOpen(true)}>
+                Share
+              </Btn>
+              <Btn kind="line" onClick={challengeFriend}>
+                {linkCopied ? '✓ Copied' : 'Challenge'}
+              </Btn>
+            </div>
+          </>
+        )}
+        {onWatch && (
+          <Btn kind="line" onClick={onWatch}>
+            Watch the game again
+          </Btn>
+        )}
+        {onNextStep && (
+          <Btn kind="line" onClick={onNextStep}>
+            Next: Mini Draft →
+          </Btn>
+        )}
+        {onReplayDaily && (
+          <Btn kind="line" onClick={onReplayDaily}>
+            Play today again (testing)
+          </Btn>
+        )}
+      </Actions>
+    </>
+  );
+
+  return (
+    <NightGame className="d5" aside={aside} overlay={shareOpen ? <ShareNight d={poster} link={daily ? undefined : modeChallengeLink('roulette', seed, score.composite)} fileName={title} onClose={() => setShareOpen(false)} /> : undefined}>
+      {daily && jokers.length > 0 && <JokerRecap jokers={jokers} lineup={lineup} />}
+      <div className="headline">
+        <span className="eb">{daily ? 'Game of the day' : 'Final'}</span>
+        <b>{headline}</b>
+        {match && <i>{topScorers(match)}</i>}
+      </div>
+      <div className="verdict">
+        <div>
+          <span className="eb">The verdict</span>
+          <h2>{GRADE_LABEL[grade]}</h2>
+          <p>{GRADE_BLURB[grade]}</p>
         </div>
-      )}
-        </>
-      )}
-    </div>
+        <div className="nums">
+          <div className="you">
+            <span>Your five</span>
+            <b>{score.composite}</b>
+          </div>
+          <div>
+            <span>Fan-vote</span>
+            <b>{targets.par}</b>
+          </div>
+          <div>
+            <span>Best</span>
+            <b>{targets.optimal}</b>
+          </div>
+        </div>
+      </div>
+      <section>
+        <H3 note="yours · the best five">Team profile</H3>
+        <table className="profile">
+          <tbody>
+            {AXES.map(({ key, label }) => {
+              const v = Math.round(score[key]);
+              const b = explain.bestAxes[key as keyof typeof explain.bestAxes];
+              const weak = key === explain.weakest.axis || (key === 'spacing' && v < b - 6);
+              const good = !weak && v >= b;
+              return (
+                <tr key={key} className={weak ? 'weak' : good ? 'good' : undefined}>
+                  <td className="l">{label}</td>
+                  <td className="v">
+                    {v}
+                    {weak ? <span className="visually-hidden"> weak</span> : good ? <span className="visually-hidden"> strength</span> : null}
+                  </td>
+                  <td className="b">best {b}</td>
+                  <td>
+                    <div className="bar">
+                      <i style={{ width: `${Math.max(0, Math.min(100, v))}%` }} />
+                      <u style={{ left: `${Math.max(0, Math.min(100, b))}%` }} />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+      <section className="film">
+        <H3>Film room</H3>
+        {filmLines.map((l, i) => (
+          <p key={i}>
+            <i className={l.glyph === '+' ? 'up' : l.glyph === '−' ? 'dn' : 'nt-q'}>{l.glyph}</i>
+            <span>{l.body}</span>
+          </p>
+        ))}
+      </section>
+      <section>
+        <H3 note={`${hits.length} of 5 match the best`}>Starting five</H3>
+        <div className="cmp">
+          <span className="rl">You</span>
+          {STARTER_SLOTS.map((s) => (
+            <MiniCard key={s} pos={s} span={lineup[s]} hit={hits.includes(s)} />
+          ))}
+          <span className="rl">Best</span>
+          {STARTER_SLOTS.map((s) => (
+            <MiniCard key={s} pos={s} span={targets.optimalFive[s]} hit={hits.includes(s)} />
+          ))}
+        </div>
+      </section>
+      <div className="phone-only stackb">
+        {daily ? (
+          <Btn kind="line" onClick={copyDailyResult}>
+            {copied ? '✓ Copied' : 'Copy result'}
+          </Btn>
+        ) : (
+          <Btn onClick={onNewBoard}>New board</Btn>
+        )}
+        <Btn kind="line" onClick={() => setShareOpen(true)}>
+          Share
+        </Btn>
+      </div>
+    </NightGame>
   );
 }
 
-/** 2026-09-28, Daily Slot Machine 2.0: what the day is known by before the first pull — the Joker
- * (announced in full, so saving caps for him is a plan, not luck) and the opponent. */
-function DailyIntro({ opponent, order }: { opponent: LegendFive; order: Position[] }) {
+function MiniCard({ pos, span, hit }: { pos: Position; span?: PlayerSpan; hit: boolean }) {
+  if (!span) return <div />;
+  const band = spanBand(span);
   return (
-    <div className="bf-daily-intro">
-      <div className="bf-daily-banner bf-daily-banner--joker">
-        <span className="bf-daily-banner-k at-cond">🃏 Jokers in the deck</span>
-        <span className="bf-daily-banner-v">
-          {JOKERS_MIN}–{JOKERS_MAX} face-down cards today
-        </span>
-        <span className="bf-daily-banner-d">
-          Five cards a position. Somewhere in today’s hands, a gold card at the position’s middle price: <b>50% a legend</b>,{' '}
-          <b>50% a scrub</b>. You find out when you pick him.
-        </span>
+    <div className={`mini${hit ? ' hit' : ''}`} style={{ '--team': band.color, '--team-ink': band.ink } as CSSProperties}>
+      <div className="top">
+        <span>{band.code}</span>
+        <span>{pos}</span>
       </div>
-      <div className="bf-daily-banner bf-daily-banner--opp">
-        <span className="bf-daily-banner-k at-cond">Game of the day</span>
-        <span className="bf-daily-banner-v">{opponent.name}</span>
-        <span className="bf-daily-banner-d">
-          {opponent.players.join(' · ')} — your five plays them live after the last pick. Order today: {order.join(' → ')}.
-        </span>
+      <div className="bd">
+        <NFace name={span.playerName} />
+        <div style={{ minWidth: 0 }}>
+          <b>{shortName(span.playerName)}</b>
+          <span className="s">
+            {span.spanLabel} · <CapI />
+            {fmtCaps(span.fga)}
+          </span>
+        </div>
+        {hit && <span className="ck">✓</span>}
       </div>
     </div>
   );
 }
 
-/** The day's Jokers turned over — only on your own result, never in the shared line. */
+/** The day's Jokers turned over: only on your own result, never in the shared line. */
 function JokerRecap({ jokers, lineup }: { jokers: DailyJoker[]; lineup: Lineup }) {
-  if (jokers.length === 0) return null;
   return (
-    <div className="bf-joker-line">
+    <section className="recap">
+      <H3 tone="gold">Today’s Jokers</H3>
       {jokers.map((j) => {
         const took = lineup[j.slot]?.id === j.card.id;
+        const res = took ? (j.legend ? 'Jackpot' : 'Ouch') : j.legend ? 'Missed' : 'Dodged';
         return (
-          <p key={j.slot} className={took ? 'is-took' : undefined}>
-            🃏 {j.slot} Joker: <b>{j.span.playerName}</b> {j.span.spanLabel} — {j.legend ? 'a legend' : 'a scrub'}.{' '}
-            {took ? (j.legend ? 'You hit the jackpot.' : 'You drew the short straw.') : j.legend ? 'You left him on the table.' : 'You dodged him.'}
+          <p key={j.slot}>
+            <span className="jk">?</span>
+            <span>
+              {j.slot} Joker: <b>{maskName(j.span.playerName)}</b> {j.span.spanLabel}, {j.legend ? 'a legend' : 'a scrub'}.{' '}
+              {took ? (j.legend ? 'You hit the jackpot.' : 'You drew the short straw.') : j.legend ? 'You left him on the table.' : 'You left him in the deck.'}
+            </span>
+            <span className={`res${res === 'Jackpot' || res === 'Dodged' ? ' g' : ''}`}>{res}</span>
           </p>
         );
       })}
-    </div>
+    </section>
   );
 }
 
 /** Streak rewards, by the best streak (cosmetic, kept once earned). */
 function StreakTrack({ best, current }: { best: number; current: number }) {
   const next = STREAK_TIERS.find((t) => best < t.days);
+  const short: Record<number, string> = { 3: 'Flame', 7: 'Gold draw', 14: 'Gold frames', 30: 'Retro backs', 100: 'Hall of Fame' };
   return (
-    <div className="bf-streak-track" aria-label="Streak rewards">
-      <div className="bf-streak-tiers">
+    <>
+      <div className="streak">
         {STREAK_TIERS.map((t) => (
-          <span key={t.days} className={`bf-streak-tier${best >= t.days ? ' is-got' : ''}${next === t ? ' is-next' : ''}`} title={t.reward}>
-            <span className="bf-streak-dot" aria-hidden />
+          <div key={t.days} className={best >= t.days ? 'got' : next === t ? 'next' : undefined} title={t.reward}>
             <b>{t.days}</b>
-            <span>{t.reward}</span>
-          </span>
+            <span>{short[t.days] ?? t.reward}</span>
+          </div>
         ))}
       </div>
       {next && (
-        <span className="bf-streak-next">
-          {next.days - current} more {next.days - current === 1 ? 'day' : 'days'} in a row: {next.reward.toLowerCase()}.
-        </span>
+        <EmptyNote style={{ marginTop: 8 }}>
+          {next.days - current === 1 ? 'One more day' : `${next.days - current} more days`}: the {next.reward.toLowerCase()}.
+        </EmptyNote>
       )}
-    </div>
-  );
-}
-
-/** 2026-09-30, Draw Five vs the AI: its five so far, its caps and what it drew last. */
-function AiFive({ lineup, cap, log }: { lineup: Lineup; cap: number; log: { slot: Position; hand: PlayerSpan[]; took: string } | null }) {
-  // 2026-09-30, the user ("animacja losowania i wyboru kart również obecna dla AI"): the AI's hand
-  // comes off the deck and turns over like yours, then the card it takes lifts out and lands in its
-  // five. Its newest pick shows once that has played.
-  const used = lineupShots(lineup);
-  return (
-    <div className="bf-ai">
-      <div className="bf-ai-head">
-        <span className="at-cond">AI · Pro</span>
-        <span>
-          <CapIcon /> {used.toFixed(1)} / {cap} caps
-        </span>
-      </div>
-      <div className="bf-ai-five">
-        {STARTER_SLOTS.map((slot) => {
-          const p = lineup[slot];
-          return (
-            <span key={slot} className={`bf-ai-slot${p ? ' is-filled' : ''}${p && log?.slot === slot ? ' is-new' : ''}`}>
-              <b>{slot}</b>
-              {p ? shortenName(p.playerName, 0) : '—'}
-            </span>
-          );
-        })}
-      </div>
-      {log && (
-        <div className="bf-ai-hand" key={`${log.slot}-${log.took}`} aria-label={`The AI drew ${log.hand.map((c) => c.playerName).join(', ')} and took ${log.hand.find((c) => c.id === log.took)?.playerName}`}>
-          {log.hand.map((c, i) => (
-            <span key={c.id} className={`bf-ai-card${c.id === log.took ? ' is-took' : ''}`} style={{ '--i': i } as CSSProperties}>
-              <span className="bf-ai-card-in">
-                <span className="bf-ai-card-back" aria-hidden />
-                <span className="bf-ai-card-face">
-                  {shortenName(c.playerName, 0)}
-                  <small>{c.fga.toFixed(1)}</small>
-                </span>
-              </span>
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** The AI's five as the live game's opponent (it only plays once it's complete). */
-function aiOpponent(ai: Lineup): LegendFive | undefined {
-  if (!STARTER_SLOTS.every((s) => ai[s])) return undefined;
-  return {
-    id: 'ai',
-    name: 'the AI (Pro)',
-    short: 'AI',
-    endYear: 0,
-    players: STARTER_SLOTS.map((s) => ai[s]!.playerName) as LegendFive['players'],
-  };
-}
-
-/** 2026-09-30: the Joker of the round just played, turned over once a card was picked. */
-function JokerReveal({ joker, took }: { joker: DailyJoker; took: boolean }) {
-  useEffect(() => {
-    if (!took) return;
-    if (joker.legend) deckSfx.jackpot();
-    else deckSfx.scrub();
-  }, [joker, took]);
-  return (
-    <p className={`bf-joker-reveal${joker.legend ? ' is-legend' : ' is-scrub'}${took ? ' is-took' : ''}`} role="status">
-      🃏 The {joker.slot} Joker was <b>{joker.span.playerName}</b> {joker.span.spanLabel} — {joker.legend ? 'a legend' : 'a scrub'}.{' '}
-      {took ? (joker.legend ? 'Jackpot.' : 'Ouch.') : joker.legend ? 'He got away.' : 'Good dodge.'}
-    </p>
+    </>
   );
 }

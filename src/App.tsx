@@ -1,6 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { SettingsButton, SettingsModal } from './components/SettingsModal';
 import './App.css';
+import './night/index.css';
+import { BRAND } from './brand';
 import { stepDone } from './components/pathProgress';
 // Small modules with no player data: the franchise pool (names, codes, logo parts; its one engine
 // import is type-only) and the logo kit — safe to pull into the intro screen's eager bundle
@@ -240,28 +242,31 @@ const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: stri
   ],
 };
 
-function LoadingPanel() {
+function LoadingPanel({ mode = 'Getting the players ready' }: { mode?: string }) {
   const { stage, progress } = useLoadStatus();
   const downloading = stage === 'idle' || stage === 'download';
   const pct = downloading && progress !== null ? Math.round(progress * 100) : null;
+  // Night edition (mockup `alltime.html#loading`): the masthead, one line, one bar.
   return (
-    <div className="loading-panel" role="status" aria-live="polite">
-      <p className="loading-panel-label">
-        {downloading ? 'Downloading player data' : 'Preparing players'}
-        {pct !== null ? ` — ${pct}%` : '…'}
-      </p>
-      <div className="loading-bar" aria-hidden>
-        {pct !== null ? (
-          <span className="loading-bar-fill" style={{ width: `${pct}%` }} />
-        ) : (
-          <span className="loading-bar-indeterminate" />
-        )}
+    <div className="nt">
+      <div className="game solo">
+        <main>
+          <div className="load" role="status" aria-live="polite">
+            <div className="mast">
+              <b>{BRAND}</b>
+              <small>{mode}</small>
+            </div>
+            <div className="load-l">
+              <span>{downloading ? 'Downloading player data' : 'Preparing players'}</span>
+              <em>{pct !== null ? `${pct}%` : '…'}</em>
+            </div>
+            <div className="load-bar" aria-hidden>
+              <i className={pct === null ? 'indet' : undefined} style={pct !== null ? { width: `${pct}%` } : undefined} />
+            </div>
+            <p>{downloading ? '80 years of real NBA seasons. This only downloads once.' : 'Rating every season in the pool. A few more seconds.'}</p>
+          </div>
+        </main>
       </div>
-      <p className="loading-panel-hint">
-        {downloading
-          ? '80 years of real NBA seasons — this only downloads once.'
-          : 'Rating every season in the pool — a few more seconds.'}
-      </p>
     </div>
   );
 }
