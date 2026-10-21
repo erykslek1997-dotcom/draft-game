@@ -257,11 +257,22 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
   wybory ligi — zatwierdzone jako wypełniacz, „Latest picks”, tylko na komputerze; na telefonie
   nie pokazujemy), a forma docelowa jest do ustalenia („będzie to coś innego”).
 - **Dodatki małym nakładem** (2026-10-21, decyzje usera):
-  - **Kalendarz sezonu (na sam koniec prac nad UI, decyzja 2026-10-21):** dziś `liveSeason.ts`
-    gra 656 meczów parami (najpierw wszystkie mecze BIS–DUL, potem BIS–KEN…) w tle i pokazuje
-    tylko wynik końcowy. Żeby był ekran „w trakcie sezonu” (makieta `alltime.html#inSeason`):
-    ułożyć mecze w dni meczowe (wyniki bez zmian — każdy mecz ma własne ziarno), migawki tabeli,
-    liderów i wyścigu o MVP co kilka dni, prędkość/pauza jako odtwarzanie migawek.
+  - **Symulacja sezonu z kalendarzem (na sam koniec prac nad UI, decyzje 2026-10-21):** dziś
+    `liveSeason.ts` gra 656 meczów parami (najpierw wszystkie mecze BIS–DUL, potem BIS–KEN…) w tle
+    i pokazuje tylko wynik końcowy. Docelowo (user):
+    - **Rozpisany kalendarz na cały sezon,** listopad–kwiecień: dni meczowe, każdy mecz liczony
+      osobno dzień po dniu (wyniki jak dziś — każdy mecz ma własne ziarno, kolejność ich nie zmienia).
+      Tabela, liderzy i twój bilans rosną z dnia na dzień; prędkość i pauza jak w meczu na żywo.
+    - **Przerwa co miesiąc:** ekran „miesiąc w skrócie” — tabela z ruchem w górę/dół, twój bilans
+      w miesiącu, **MVP ladder** (top 5 z ruchem), **Player of the Month**, najlepszy mecz miesiąca.
+      Dalej przyciskiem; w ustawieniach można wyłączyć przystanki.
+    - **Głosowanie do All-Star Game:** wyniki głosowania co miesiąc przed ASG (prowadzący na
+      pozycjach), w lutym przerwa All-Star: wybór 24 (głosy + wartość gry), draft kapitanów, mecz.
+    - **Play-in tournament** po sezonie regularnym przed play-offami: miejsca 7–10 (7–8: zwycięzca
+      = 7. seed; 9–10: przegrany odpada; przegrany 7–8 z wygranym 9–10 o 8. seed). Mecze pojedyncze,
+      do obejrzenia na żywo jak play-offy. Seedy 1–6 bez zmian.
+    - Makieta `alltime.html#inSeason` to punkt wyjścia; ekrany przerwy miesięcznej, ASG i play-in
+      do zrobienia w tej fazie.
   - **Razem z nowym wyglądem:** mecz sezonu i rekordy kariery (najlepszy występ, najwyższe
     zwycięstwo — zapamiętane w trakcie symulacji sezonu; na ekran sezonu i plakat Story);
     wyścig o MVP w trakcie sezonu (top 3 liczone funkcją nagród na statystykach z części sezonu);
