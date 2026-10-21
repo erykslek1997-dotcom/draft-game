@@ -123,20 +123,18 @@
 @media (max-width: 600px) { .bgrid { overflow-x: auto; } .bg-row { width: 900px; } }
 .ribbon h3 a { color: var(--ink2); }
 .rb-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
-.rb-cell { height: 72px; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; overflow: hidden; }
-.rb-cell .rb-n { font: 500 10px var(--num); color: var(--ink3); }
-.rb-cell.filled { background: #131418; color: var(--ink2); }
-.ribbon { opacity: 0.8; }
-.ribbon h3 { border-bottom-color: #3A3A3C; color: var(--ink2); }
-.rb-cell.filled img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: #1D1E21; filter: grayscale(0.7); opacity: 0.75; }
-.rb-cell.filled b { font: 700 13px/1 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.rb-cell.filled small { font: 700 9px Inter, sans-serif; color: var(--ink3); }
+.rb-cell { height: 84px; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; overflow: hidden; }
+.rb-cell .rb-n { font: 500 10px var(--num); color: var(--cink2); }
+.rb-cell.filled { background: var(--card); color: var(--cink); }
+.rb-cell.filled, .rb-cell.next { opacity: 0.75; }
+.rb-cell.filled img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #E2DBCB; }
+.rb-cell.filled b { font: 700 14px/1 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.rb-cell.filled small { font: 700 9px Inter, sans-serif; color: var(--cink2); }
 .rb-cell.clock { border: 2px solid var(--red); }
 .rb-cell.clock .rb-n { color: var(--ink3); }
 .rb-cell.clock b { font: 800 22px var(--cond); }
 .rb-cell.clock small { font: 700 9px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); }
-.rb-cell.next { border: 1px dashed #26272A; }
-.rb-cell.next .tm { opacity: 0.55; }
+.rb-cell.next { border: 1px dashed #2E2F33; }
 .rb-cell.next .rb-n { color: var(--ink3); }
 .rb-cell.next small { font: 700 11px var(--cond); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .drawer-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.72); z-index: 5; }
