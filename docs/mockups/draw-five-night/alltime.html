@@ -37,7 +37,7 @@
 /* years */
 .spans tr.peak td.tier { color: var(--ink); }
 .spans tr.pick td { background: var(--surf); }
-.spans tr.pick td:first-child { box-shadow: inset 3px 0 0 var(--red); padding-left: 10px; }
+.spans tr.pick td:first-child { box-shadow: inset 3px 0 0 var(--ink); padding-left: 10px; }
 .spans td.y { font: 700 20px var(--cond); white-space: nowrap; }
 .spans td.y small { display: block; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
 .who-head { display: flex; align-items: center; gap: 16px; }
@@ -69,7 +69,7 @@
 .desk .by b { display: block; font: 700 18px/1.1 var(--cond); }
 .desk .by div span { display: block; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
 .desk .take { margin-top: 14px; font: 800 24px/1 var(--cond); text-transform: uppercase; }
-.desk .take.yes { color: var(--ink); }
+.desk .take.yes { color: var(--green); }
 .desk .take.no { color: var(--red); }
 .desk p { margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: var(--ink2); }
 .desk p b { color: var(--ink); font-weight: 600; }
@@ -87,8 +87,8 @@
 .stand2 td.nm i { font: italic 500 12px Inter, sans-serif; color: var(--ink3); margin-left: 6px; }
 .stand2 tr.you td { background: var(--surf); color: var(--ink); }
 .stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; color: var(--you); }
-.stand2 tr.cut td { border-bottom: 1.5px dashed var(--red); }
-.cutnote { font: italic 500 12px Inter, sans-serif; color: var(--red); padding: 6px 0 0; }
+.stand2 tr.cut td { border-bottom: 1.5px dashed var(--ink3); }
+.cutnote { font: italic 500 12px Inter, sans-serif; color: var(--ink3); padding: 6px 0 0; }
 .leaders { width: 100%; border-collapse: collapse; }
 .leaders td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
 .leaders td.k { font: 700 13px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); width: 90px; }
@@ -206,7 +206,7 @@
 .pr-round { font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
 .pr-opp { font: 700 18px var(--cond); }
 .pr-score { font: 600 18px var(--num); }
-.path-r.won .pr-score { color: var(--gold); }
+.path-r.won .pr-score { color: var(--green); }
 .path-r.lost .pr-score { color: var(--red); }
 .pr-note { font: italic 500 14px Inter, sans-serif; color: var(--ink2); }
 .sbox td:first-child { gap: 10px; }
@@ -499,7 +499,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .pp b { font: 800 20px/1.1 var(--cond); }
 .pp i { display: block; height: 4px; background: var(--cline); margin-top: 2px; }
 .pp i u { display: block; height: 100%; background: var(--cink); }
-.pp.hi b { color: var(--cink); }
+.pp.hi b { color: var(--cgreen); } .pp.hi i u { background: var(--cgreen); }
 .pp.lo b { color: var(--cred); } .pp.lo i u { background: var(--cred); }
 .po-bench b small { font: 600 9px var(--num); }
 /* story 9:16 */
@@ -666,7 +666,8 @@ const tally = (you, mid, ai, { youK = 'Caps left', midK = 'Cap', aiK = 'Round' }
 const capbar = (pct) => `<div class="capbar keep"><i style="width:${pct}%"></i></div>`;
 const links = `<div class="links"><a href="#">← Menu</a><a href="#">How to play</a><a href="#">Settings</a></div>`;
 const actions = (btn) => `<div class="actions">${btn}${links}</div>`;
-const prompt = (eb, h, line, ebCls = '') => `<div class="prompt"><span class="eb ${ebCls}">${eb}</span><h2>${h}</h2><p>${line}</p></div>`;
+// red eyebrow only when something is happening now; every other eyebrow is quiet
+const prompt = (eb, h, line, ebCls = '') => `<div class="prompt"><span class="eb ${ebCls || (/^(On the clock|AI on the clock|Live)|tonight/.test(eb) ? 'now' : '')}">${eb}</span><h2>${h}</h2><p>${line}</p></div>`;
 function nine(st, bench, { open = [] } = {}) {
   const slots = SL.map((s, i) => { const k = st[i]; if (k) { const x = p(k); return `<div class="slot filled" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div>${face(x)}<div class="nm">${short(x.n)}</div><div class="sb">${x.y} · <i class="capi"></i>${x.f}</div></div>`; } return s === 'PF' ? `<div class="slot empty sel">${s}<small>showing 231 ▾</small></div>` : `<div class="slot empty">${s}<small>tap to show</small></div>`; }).join('');
   const b = [0, 1, 2, 3].map((i) => { const k = bench[i]; if (k) { const x = p(k); return `<div class="b filled" style="--team:${x.c}">${face(x)}<div><b>${short(x.n)}</b><span>${x.pos} · ${x.y} · <i class="capi"></i>${x.f}</span></div></div>`; } return `<div class="b empty">Bench ${i + 1}</div>`; }).join('');
@@ -692,7 +693,7 @@ function plist2(keys, { hot, no = [] } = {}) {
 }
 
 S.years = () => [leftDraft(),
-  `<div class="prompt"><span class="eb">On the clock · Round 3 · Pick 40</span><div class="who-head"><img src="heads/kevin-garnett.png" alt=""><div><h2>Kevin Garnett</h2><p>Which years? The same player costs less in his cheaper stretches.</p></div></div></div>` +
+  `<div class="prompt"><span class="eb now">On the clock · Round 3 · Pick 40</span><div class="who-head"><img src="heads/kevin-garnett.png" alt=""><div><h2>Kevin Garnett</h2><p>Which years? The same player costs less in his cheaper stretches.</p></div></div></div>` +
   `<section><h3>His stretches<span>three seasons each</span></h3><table class="plist spans"><tr><th>Years</th><th>Team</th><th>Tier</th><th class="r">Pts · Reb · Ast</th><th class="r">Off · Def</th><th class="r">Caps</th><th></th></tr>${[
     ['1996–98', 'MIN', 'All-Star', '18.4 · 9.6 · 4.2', '74 · 84', 15.8, ''],
     ['1999–01', 'MIN', 'All-NBA', '21.6 · 11.6 · 5.0', '81 · 88', 18.6, ''],
@@ -721,7 +722,7 @@ S.desk = () => [leftDraft(),
   `<div class="desk">
     <article><div class="by"><span class="mono">SH</span><div><b>Matt Shyman</b><span>Defense</span></div></div><div class="take yes">Love it</div><p>Payton and Garnett on the same floor is a <b>top-three defense</b> before you even pick a center. Nobody scores at the rim on this team.</p></article>
     <article><div class="by"><span class="mono">SO</span><div><b>Mattia Sosini</b><span>Modern game</span></div></div><div class="take no">Spacing?</div><p>Payton shot <b>3.0 threes</b> a game, Garnett <b>0.7</b>. Durant can't be the only one stretching it. Pick 57 has to be a shooter.</p></article>
-    <article><div class="by"><span class="mono">RO</span><div><b>Mark Rotation</b><span>Bench depth</span></div></div><div class="take yes">Fine, but…</div><p><b>66.9 caps</b> left for seven spots was fine. Now it's <b>47.5 for six</b>. The bench will be cheap. Rodman at 6.9 is the obvious value.</p></article>
+    <article><div class="by"><span class="mono">RO</span><div><b>Mark Rotation</b><span>Bench depth</span></div></div><div class="take">Fine, but…</div><p><b>66.9 caps</b> left for seven spots was fine. Now it's <b>47.5 for six</b>. The bench will be cheap. Rodman at 6.9 is the obvious value.</p></article>
   </div>`];
 
 const STAND = [['KEN', 61, 21], ['SFE', 57, 25], ['TUL', 52, 30], ['DUL', 50, 32], ['BIS', 48, 34], ['HON', 46, 36], ['REN', 45, 37], ['ANC', 43, 39], ['ELP', 41, 41], ['DET', 39, 43], ['FRE', 37, 45], ['BOI', 35, 47], ['SCR', 33, 49], ['TPA', 30, 52], ['LUB', 27, 55], ['ASP', 22, 60]];
@@ -800,7 +801,7 @@ S.results = () => [
   <div class="verdict vmini"><div class="place"><b>3<sup>rd</sup></b><span>of 16</span></div><div class="tier"><span class="eb">The verdict</span><h2>Contender</h2><p>A defense-first team with Durant to bail it out. Main risk: <b style="color:var(--red);font-style:normal">spacing</b>, only Klay and Korver stretch the floor.</p></div><div class="nums"><div class="you"><span>Your team</span><b>87</b></div><div><span>Best</span><b>90</b></div><div><span>Title odds</span><b>18%</b></div></div></div>
   <p class="host"><b>Matt Shyman:</b> “Payton, Garnett and Ben Wallace. Nobody in this league scores at the rim on you.”</p>
   <section><h3>Your roster<span>starter · bench minutes</span></h3><div class="five-row">${NINE.map(([pos, a, b, ma, mb]) => { const x = p(a), y = p(b); return `<div class="card" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${pos}</span></div><div class="pic">${face(x)}</div><div class="nm">${x.n}</div><div class="sb">${x.y} · <i class="capi"></i>${x.f} · <b>${ma}m</b></div><div class="roles" style="padding-bottom:10px">+ ${y.n} · ${mb}m</div></div>`; }).join('')}</div><p class="empty-note" style="margin-top:8px">Did not play: none. Robert Horry covers PF and C.</p></section>
-  <div class="split"><section><h3>Why you finished here<span>yours · grade vs the field</span></h3><table class="profile">${[['Talent', 86, 'B+'], ['Offense', 84, 'B'], ['Defense', 93, 'A+', 'best'], ['Spacing', 71, 'C', 'weak'], ['Fit', 88, 'A-'], ['Bench', 82, 'B'], ['Rotation', 90, 'A']].map(([l, v, g, t]) => `<tr class="${t === 'weak' ? 'weak' : ''}"><td class="l">${l}</td><td class="v">${v}</td><td class="b" style="${t === 'best' ? 'color:var(--gold)' : ''}">${g}</td><td><div class="bar"><i style="width:${v}%"></i></div></td></tr>`).join('')}</table></section>
+  <div class="split"><section><h3>Why you finished here<span>yours · grade vs the field</span></h3><table class="profile">${[['Talent', 86, 'B+'], ['Offense', 84, 'B'], ['Defense', 93, 'A+', 'best'], ['Spacing', 71, 'C', 'weak'], ['Fit', 88, 'A-'], ['Bench', 82, 'B'], ['Rotation', 90, 'A']].map(([l, v, g, t]) => `<tr class="${t === 'weak' ? 'weak' : t === 'best' ? 'good' : ''}"><td class="l">${l}</td><td class="v">${v}</td><td class="b">${g}</td><td><div class="bar"><i style="width:${v}%"></i></div></td></tr>`).join('')}</table></section>
   <section class="voices"><h3>The room</h3><p><b>The best defense in the field</b>, by a distance. Wallace and Garnett behind Payton is a wall.<em>Matt Shyman · Defense</em></p><p>Durant takes <b>a third of the shots</b>. When he sits, this offense stalls.<em>Mattia Sosini · Modern game</em></p><p>Korver at 8.3 caps was <b>the steal of round 6</b>.<em>Mark Rotation · Bench depth</em></p></section></div>
   <section class="acc"><h3>More<span>tap to open</span></h3><div class="acc-row">What's behind each score <i>▸</i></div><div class="acc-row">Title path · how you'd get through a bracket <i>▸</i></div><div class="acc-row">Draft order · all 144 picks <i>▸</i></div></section>
   <section><h3>Final standings<span>series = your chance to beat them in a best-of-7</span></h3><table class="stand2 st-at"><tr><th>#</th><th></th><th>Team</th><th>Title</th><th>Series</th><th>Rating</th><th></th></tr>${STAND_AT.map(([c, r, t, sv], i) => `<tr class="${c === YOU ? 'you' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}</td><td>${t ? (t < 1 ? '<1' : t) + '%' : '<1%'}</td><td>${sv === null ? '—' : sv + '%'}</td><td>${r}</td><td class="car">${c === YOU ? '' : c === 'KEN' ? '▾' : '▸'}</td></tr>${c === 'KEN' ? `<tr class="open"><td></td><td colspan="6"><div class="edge"><b>Where Kentucky beat you <span class="edge-key"><i style="background:var(--ink3)"></i>Kentucky<i style="background:var(--you)"></i>you</span></b>${[['Talent', 93, 86], ['Offense', 91, 84], ['Spacing', 82, 71]].map(([l, th, me]) => `<div class="eg"><span>${l}</span><div class="egb"><i style="width:${th}%"></i><u style="width:${me}%"></u></div><span class="mono">${th} vs ${me}</span></div>`).join('')}</div></td></tr>` : ''}`).join('')}</table></section>`];

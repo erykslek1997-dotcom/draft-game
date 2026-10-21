@@ -2,7 +2,7 @@
 :root {
   --bg: #0B0D11; --ink: #ECE6D7; --ink2: #A9A395; --ink3: #77736A; --rule: #26272A; --rule2: #ECE6D7;
   --red: #E0525A; --gold: #E5C06A; --card: #F4EFE3; --cink: #1E1C18; --cink2: #5B564C; --cline: #D6CDB8;
-  --you: #ECE6D7; --you-bg: #ECE6D7; --you-ink: #1E1C18; --you-ink2: #5B564C; --you-tint: rgba(236, 230, 215, 0.12); --surf: #121317; --surf2: #1A1B1F; --rule3: #38383A; --ink4: #5C5850;
+  --green: #6CBF8A; --cgreen: #2E7A4C; --you: #ECE6D7; --you-bg: #ECE6D7; --you-ink: #1E1C18; --you-ink2: #5B564C; --you-tint: rgba(236, 230, 215, 0.12); --surf: #121317; --surf2: #1A1B1F; --rule3: #38383A; --ink4: #5C5850;
   --cface: #E2DBCB; --cred: #A3282F; --cgold: #8A6A1E; --cgold2: #D9A93C; --cgold3: #5E4614;
   --cond: 'Barlow Condensed', Inter, sans-serif; --num: 'JetBrains Mono', monospace;
 }
@@ -97,12 +97,14 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 
 /* prompt */
 .prompt { border-top: 1.5px solid var(--rule2); padding-top: 12px; }
-.prompt .eb { display: block; font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); }
+.prompt .eb { display: block; font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+.prompt .eb.now { color: var(--red); }
 .prompt .eb.gold { color: var(--gold); }
 .prompt h2 { margin: 2px 0 4px; font: 800 48px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
 .prompt p { margin: 0; font-size: 16px; font-style: italic; color: var(--ink2); }
 .prompt p b { font-style: normal; color: var(--gold); }
 .prompt p b.w { color: var(--ink); }
+.prompt p b.up { color: var(--green); }
 .reveal { margin: 0; padding: 8px 0 8px 14px; border-left: 3px solid var(--gold); font-size: 16px; font-style: italic; color: var(--ink2); }
 .reveal b { font-style: normal; color: var(--gold); }
 
@@ -160,7 +162,7 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 
 /* live game */
 .speeds { display: flex; gap: 14px; font: 600 16px var(--num); color: var(--ink3); }
-.speeds u { text-decoration: none; color: var(--ink); border-bottom: 2px solid var(--red); }
+.speeds u { text-decoration: none; color: var(--ink); border-bottom: 2px solid var(--ink); }
 .ts { width: 100%; border-collapse: collapse; }
 .ts td { padding: 8px 0; border-bottom: 1px solid var(--rule); font: 600 14px var(--num); }
 .ts td.m { text-align: center; font: 700 12px Inter, sans-serif; letter-spacing: 0.06em; color: var(--ink3); }
@@ -207,8 +209,11 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .profile .bar u { position: absolute; top: -5px; bottom: -5px; width: 3px; background: var(--ink); box-shadow: 0 0 0 1px var(--bg); }
 .profile tr.weak td.l, .profile tr.weak td.v { color: var(--red); }
 .profile tr.weak .bar i { background: var(--red); }
+.profile tr.good td.l, .profile tr.good td.v { color: var(--green); }
+.profile tr.good .bar i { background: var(--green); }
 .film p { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; font-size: 16px; line-height: 1.45; color: var(--ink2); }
 .film p i { font: 800 20px/1.1 var(--cond); font-style: normal; }
+.film p i.up { color: var(--green); }
 .film p b { color: var(--ink); font-weight: 600; }
 .cmp { display: grid; grid-template-columns: 60px repeat(5, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
 .cmp .rl { font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); display: flex; align-items: center; }

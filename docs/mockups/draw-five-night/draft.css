@@ -213,8 +213,8 @@
 .ptabs .pt.need b { color: var(--ink); }
 .ptabs .pt.have { opacity: 0.5; }
 .ptabs .pt.have span { font: italic 500 12px Inter, sans-serif; }
-.ptabs .pt.on { border-bottom-color: var(--red); }
-.ptabs .pt.on b { color: var(--red); }
+.ptabs .pt.on { border-bottom-color: var(--ink); }
+.ptabs .pt.on b { color: var(--ink); }
 .ptabs .pt.on span { color: var(--ink2); }
 .ptabs .search { border: 0; border-bottom: 1px solid var(--ink4); background: transparent; color: var(--ink); padding: 6px 0; font: 16px Inter, sans-serif; margin-left: auto; margin-bottom: 8px; flex: 0 1 260px; }
 .slot.empty.sel { border: 2px solid var(--red); color: var(--red); background: rgba(224, 82, 90, 0.05); }

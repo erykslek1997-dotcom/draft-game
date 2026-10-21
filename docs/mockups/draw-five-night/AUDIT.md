@@ -36,6 +36,7 @@ checked for overflow, cut text, overlaps and contrast.
 | `--ink4` | #5C5850 | placeholders only (empty slot, dash) |
 | `--gold` | #E5C06A | caps, Joker |
 | `--red` | #E0525A | now, problem |
+| `--green` / `--cgreen` | #6CBF8A / #2E7A4C | good news: a strength, a win, a gain (on dark / on cream) |
 | `--card` `--cink` `--cink2` `--cline` `--cface` | cream card set | printed cards and posters |
 | `--cred` `--cgold` `--cgold2` `--cgold3` | red and gold on cream | weak / best on cards and posters |
 
@@ -77,6 +78,15 @@ There were 13 near-identical dark greys before this pass. There are 5 tokens now
 3. **Gold means caps, Joker and trophies.** Award titles and the rings on the
    big four stay gold. The "best five" tick on the team profile is cream, and
    posters no longer colour the best bar (only the weak one is red).
+
+4. **Green for good news, less red.** Green marks a strength (a profile line at
+   or above the best five, the best category on posters), a won series, a "+" in
+   the film room, a lead, and a "yes" from the desk. Red no longer marks quiet
+   section eyebrows, selected tabs, the selected speed or the playoff line. It is
+   kept for now (on the clock, live, tonight) and problems. Every red or green
+   also carries a sign or a word (+, −, weak, 4–1), so the screens still read
+   without colour vision. Red text went from 124 to 87 elements across the
+   desktop screens.
 
 ## Still open
 
