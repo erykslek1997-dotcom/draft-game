@@ -108,7 +108,7 @@ S.ready = () => [
   log([[3, 'You', 'durant'], [3, 'AI', 'prince'], [4, 'You', 'haslem'], [4, 'AI', 'kemp'], [5, 'You', 'camby'], [5, 'AI', 'noah']]) +
   actions('<button class="btn go">Submit lineup</button>'),
   oppRow(AI5, { newK: 'noah' }) + five(YOU5, { land: 'camby' }) +
-  prompt('Five set', 'Lock it in', 'Picks are final. Your five plays the AI live.', 'gold') +
+  prompt('Five set', 'Lock it in', 'Picks are final. Your five plays the AI live.') +
   `<section><h3>Tale of the tape<span>you · AI</span></h3><table class="tape">${SL.map((s, i) => { const a = p(YOU5[i]), b = p(AI5[i]); return `<tr><td><div class="pl">${face(a)}<div><b>${a.n}</b><small>${a.y} · ${a.f} caps</small></div></div></td><td class="pos">${s}</td><td class="r"><div class="pl">${face(b)}<div><b>${b.n}</b><small>${b.y} · ${b.f} caps</small></div></div></td></tr>`; }).join('')}</table></section>` +
   `<button class="btn go phone-only">Submit lineup</button>`];
 

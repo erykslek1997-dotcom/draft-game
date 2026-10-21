@@ -229,9 +229,12 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 - **Bez „AI looku”:** żadnych ramek-pudełek wokół wszystkiego, kolorowych pigułek, małych etykiet
   monospace wersalikami. Sekcje dzielą linie; nagłówki sekcji wersalikami Barlow Condensed nad
   kremową linią; dopiski kursywą (Inter).
-- **Trzy kolory, każdy jedno znaczenie:** złoty = capy (i Joker), czerwony = „teraz” (on the
-  clock, aktywny slot, ostatni wybór, wiodąca akcja), kolory drużyn tylko na kartach. Reszta to
-  kremowy tekst na ciemnym tle; ty i AI różnicie się jasnością, nie kolorem.
+- **Kolory, każdy jedno znaczenie** (po audycie 2026-10-21, szczegóły w
+  `docs/mockups/draw-five-night/AUDIT.md`): złoty = capy, Joker i trofea; czerwony = „teraz”
+  (on the clock, live, tonight) i problem; zielony = dobra wiadomość (atut, wygrana seria, „+”,
+  prowadzenie); kolory drużyn tylko na kartach i znaczkach. Twoja drużyna = wiersz w negatywie
+  (kremowe tło, ciemny tekst), bez napisu „you”; twoi gracze w statystykach = jasne podświetlenie
+  wiersza. Czerwony i zielony zawsze ze znakiem albo słowem (+, −, weak, 4–1).
 - **Fonty jak w reszcie gry:** Barlow Condensed (nagłówki, nazwiska), Inter (tekst), JetBrains
   Mono (liczby). Bez Bittera.
 - **Układ:** lewa kolumna = winieta z podwójną linią + tablica (ty · cap · AI) + dziennik draftu
@@ -253,6 +256,16 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
   tylko po drafcie i po 3. wyborze), więc na razie w tym miejscu idzie coś, co już mamy (np. ostatnie
   wybory ligi — zatwierdzone jako wypełniacz, „Latest picks”, tylko na komputerze; na telefonie
   nie pokazujemy), a forma docelowa jest do ustalenia („będzie to coś innego”).
+- **Dodatki małym nakładem** (2026-10-21, decyzje usera):
+  - **Razem z nowym wyglądem:** mecz sezonu i rekordy kariery (najlepszy występ, najwyższe
+    zwycięstwo — zapamiętane w trakcie symulacji sezonu; na ekran sezonu i plakat Story);
+    wyścig o MVP w trakcie sezonu (top 3 liczone funkcją nagród na statystykach z części sezonu);
+    wibracja na telefonie przy twoim wyborze, „on the clock” i końcu meczu (`navigator.vibrate`,
+    tylko gdzie działa; wyłączana w ustawieniach razem z dźwiękiem/animacjami).
+  - **Faza końcowa:** rekordy i półka z trofeami (localStorage: najlepszy wynik w każdym trybie,
+    tytuły, najdłuższa seria; „Nowy rekord” na wynikach); wczorajsza odpowiedź w daily Draw Five
+    (najlepsza piątka z ziarna dnia + twój wynik); skróty klawiszowe w drafcie na komputerze
+    (1–5 karta, D draft, / szukaj) jako pierdoła.
 
 ## Kolejność prac (decyzja 2026-10-10, zastąpiona planem 4 tygodni)
 

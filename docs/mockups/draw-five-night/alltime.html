@@ -619,6 +619,28 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .asg-res .asg-r .pk, .asg-res .asg-r .v { display: inline; }
   .asg-r.you .nm { margin-left: -6px; }
 }
+
+/* in-season: progress, MVP race, best game, team records */
+.sprog { height: 4px; background: var(--rule); margin-top: -12px; }
+.sprog i { display: block; height: 100%; background: var(--ink2); }
+.mvp-r { display: grid; grid-template-columns: 22px 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 8px; border-bottom: 1px solid var(--rule); }
+.mvp-r.you { background: var(--you-tint); }
+.mvp-r .rk { font: 600 14px var(--num); color: var(--ink3); }
+.mvp-r img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.mvp-r b { display: block; font: 700 18px/1.1 var(--cond); color: var(--ink); }
+.mvp-r b small { margin-left: 6px; font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.mvp-r .ln { display: block; margin-top: 3px; font: 500 12px var(--num); color: var(--ink3); }
+.mvp-r .trd { font: 600 13px var(--num); color: var(--ink3); white-space: nowrap; }
+.mvp-r .trd.up { color: var(--green); } .mvp-r .trd.down { color: var(--red); }
+.gos { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px 0 12px; border-bottom: 1px solid var(--rule); }
+.gos img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.gos b { display: block; font: 700 20px/1.1 var(--cond); color: var(--ink); }
+.gos b em { font: 600 20px var(--num); font-style: normal; color: var(--ink); margin-left: 6px; }
+.gos b em small { font: 500 12px Inter, sans-serif; color: var(--ink3); margin-left: 3px; }
+.gos .ln { display: block; margin-top: 4px; font: 500 12px var(--num); color: var(--ink2); }
+.gos .ctx { display: block; margin-top: 2px; font-size: 13px; font-style: italic; color: var(--ink3); }
+@media (max-width: 600px) { .mvp-r { grid-template-columns: 18px 40px minmax(0, 1fr) auto; gap: 10px; padding: 10px 4px; } .mvp-r img { width: 40px; height: 40px; } }
+.stack { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 </style>
 </head>
 <body>
@@ -707,7 +729,7 @@ S.team = () => [
   mast('All-Time Draft', 'Draft done · set your rotation') + tally('0.6', '100.9', '9/9') + capbar(99) + `<p class="sub-note keep"><b>100.3 caps</b> used of 100.9</p>` +
   `<section><h3>Before the season</h3><div class="kv"><span>Rotation</span><b>240 / 240 min</b></div><div class="kv"><span>Starters</span><b>Set</b></div><div class="kv"><span>Years</span><b>Click to change</b></div></section>` +
   actions('<button class="btn go">Play the season</button>'),
-  prompt('Your team', 'Tulsa Twisters', 'Nine players, 240 minutes. Change anyone\'s years in the table; cheaper years free caps.', 'gold') +
+  prompt('Your team', 'Tulsa Twisters', 'Nine players, 240 minutes. Change anyone\'s years in the table; cheaper years free caps.') +
   `<section><h3>Roster<span>off · def · 3pt · durability</span></h3><table class="plist roster"><colgroup><col style="width:44px"><col style="width:64px"><col style="width:52px"><col><col class="c-hide" style="width:130px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col style="width:84px"></colgroup><tr><th>Rd</th><th>Slot</th><th></th><th>Player · years</th><th class="c-hide">Tier</th><th class="num c-hide">Off</th><th class="num c-hide">Def</th><th class="num c-hide">3PT</th><th class="num c-hide">Dur</th><th class="num">Caps</th></tr>${[
     [1, 'SF', 'durant'], [2, 'PG', 'payton'], [3, 'PF', 'garnett'], [5, 'SG', 'klay'], [7, 'C', 'bwallace'], [4, 'bench', 'rodman'], [6, 'bench', 'korver'], [8, 'bench', 'iggy'], [9, 'bench', 'horry'],
   ].map(([r, sl, k]) => { const x = p(k); return `<tr><td class="rd">R${r}</td><td class="sl ${sl === 'bench' ? 'bn' : ''}">${sl}</td><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><button class="yrs-btn">${x.y}<small>▾ change</small></button></div></td><td class="tier c-hide">${x.tier}</td><td class="num c-hide">${x.off}</td><td class="num c-hide">${x.def}</td><td class="num c-hide">${x.t3}</td><td class="num c-hide">${x.dur}</td><td class="cap num">${x.f}</td></tr>`; }).join('')}</table></section>` +
@@ -731,11 +753,26 @@ S.season = () => [
   `<section><h3>Your leaders</h3><div class="kv"><span>Points</span><b>Durant 29.4</b></div><div class="kv"><span>Rebounds</span><b>Garnett 12.8</b></div><div class="kv"><span>Assists</span><b>Payton 7.9</b></div><div class="kv"><span>Blocks</span><b>Wallace 2.6</b></div></section>` +
   `<section><h3>Awards</h3><div class="kv"><span>MVP</span><b>Durant · 2nd</b></div><div class="kv"><span>DPOY</span><b>B. Wallace</b></div></section>` +
   actions('<button class="btn go">Playoffs →</button><button class="btn line">Watch a game</button>'),
-  prompt('Regular season · final', '52–30, third', 'The best defense in the league, 9th in threes. Kentucky ran away with the one seed.', 'gold') +
+  prompt('Regular season · final', '52–30, third', 'The best defense in the league, 9th in threes. Kentucky ran away with the one seed.') +
   `<div class="split"><section><h3>Standings<span>Overview · Standings · Stats · Awards</span></h3><table class="stand2"><tr><th>#</th><th></th><th>Team</th><th>W</th><th>L</th><th>Pct</th><th>GB</th></tr>${STAND.map(([c, w, l], i) => `<tr class="${c === YOU ? 'you' : ''} ${i === 7 ? 'cut' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}</td><td>${w}</td><td>${l}</td><td>.${String(Math.round(w / 82 * 1000)).padStart(3, '0')}</td><td>${i === 0 ? '—' : (61 - w)}</td></tr>`).join('')}</table><div class="cutnote">Playoff line: top eight</div></section>
-  <section><h3>League leaders</h3><table class="leaders"><tr><td class="k">Points</td><td><b>Michael Jordan</b> · KEN</td><td class="v">31.8</td></tr><tr class="you"><td class="k">Rebounds</td><td><b>Dennis Rodman</b> · TUL</td><td class="v">15.1</td></tr><tr><td class="k">Assists</td><td><b>Magic Johnson</b> · SFE</td><td class="v">11.9</td></tr><tr class="you"><td class="k">Steals</td><td><b>Gary Payton</b> · TUL</td><td class="v">2.3</td></tr><tr><td class="k">Blocks</td><td><b>Hakeem Olajuwon</b> · DUL</td><td class="v">3.4</td></tr><tr><td class="k">3PM</td><td><b>Stephen Curry</b> · BIS</td><td class="v">4.6</td></tr></table></section></div>`];
+  <div class="stack"><section><h3>League leaders</h3><table class="leaders"><tr><td class="k">Points</td><td><b>Michael Jordan</b> · KEN</td><td class="v">31.8</td></tr><tr class="you"><td class="k">Rebounds</td><td><b>Dennis Rodman</b> · TUL</td><td class="v">15.1</td></tr><tr><td class="k">Assists</td><td><b>Magic Johnson</b> · SFE</td><td class="v">11.9</td></tr><tr class="you"><td class="k">Steals</td><td><b>Gary Payton</b> · TUL</td><td class="v">2.3</td></tr><tr><td class="k">Blocks</td><td><b>Hakeem Olajuwon</b> · DUL</td><td class="v">3.4</td></tr><tr><td class="k">3PM</td><td><b>Stephen Curry</b> · BIS</td><td class="v">4.6</td></tr></table></section>
+  <section><h3>Game of the season<span>best line in Tulsa</span></h3>${gos('kevin-durant', 'Kevin Durant', 48, '17/26 FG · 6/9 3PT · 8/8 FT · 9 reb', 'Tulsa 121, Kentucky 117 · game 38')}</section>
+  <section><h3>Team records<span>this season</span></h3>${records([['Biggest win', '+31 vs Fresno'], ['Longest win streak', '11 games'], ['Most points', '138 vs Boise'], ['Best defense night', '79 allowed, Reno']])}</section></div></div>`];
 
 const ser = (a, b, wa, wb, { you, live, note } = {}) => `<div class="series ${you ? 'you-path' : ''} ${live ? 'live' : ''}">${[[a, wa], [b, wb]].map(([[seed, c], w]) => `<div class="tr ${w === 4 ? 'win' : ''} ${c === YOU ? 'you' : ''}"><span class="sd">${seed}</span>${tm(c)}<span>${T[c][1]}</span><span class="w">${w}</span></div>`).join('')}${note ? `<div class="note">${note}</div>` : ''}</div>`;
+const gos = (img, name, pts, line, ctx) => `<div class="gos"><img src="heads/${img}.png" alt=""><div><b>${name}<em>${pts}<small>pts</small></em></b><span class="ln">${line}</span><span class="ctx">${ctx}</span></div></div>`;
+const records = (rows) => rows.map(([k, v]) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`).join('');
+const mvpRow = ([rk, img, n, c, line, trd]) => `<div class="mvp-r ${c === 'TUL' ? 'you' : ''}"><span class="rk">${rk}</span><img src="heads/${img}.png" alt=""><div><b>${n}<small>${c}</small></b><span class="ln">${line}</span></div><span class="trd ${trd[0] === '+' ? 'up' : trd[0] === '−' ? 'down' : ''}">${trd[0] === '+' ? '▲ ' + trd.slice(1) : trd[0] === '−' ? '▼ ' + trd.slice(1) : '—'}</span></div>`;
+const STAND41 = [['KEN', 30], ['TUL', 27], ['SFE', 26], ['DUL', 25], ['BIS', 23], ['HON', 22], ['REN', 21], ['ANC', 21], ['ELP', 20], ['DET', 19]];
+S.inSeason = () => [
+  mast('Your Season', 'Game 41 of 82 · simulating') + tally('27', '2nd', '14', { youK: 'Won', midK: 'Seed', aiK: 'Lost' }) + `<div class="sprog keep"><i style="width:50%"></i></div>` +
+  `<section class="keep"><h3>Speed</h3><div class="speeds"><span>½</span><u>1×</u><span>2×</span><span>4×</span><span>8×</span></div><div class="btn2" style="margin-top:14px"><button class="btn line">Pause</button><button class="btn line">Skip ahead</button></div></section>` +
+  `<section><h3>Your leaders</h3><div class="kv"><span>Points</span><b>Durant 29.8</b></div><div class="kv"><span>Rebounds</span><b>Garnett 12.6</b></div><div class="kv"><span>Assists</span><b>Payton 8.1</b></div></section>` +
+  actions('<button class="btn line">Watch the next game</button>'),
+  prompt('Regular season · game 41 of 82', 'Halfway, second', 'Kentucky leads by three games. Durant moved up to second in the MVP race after 48 against them.') +
+  `<div class="split"><section><h3>Standings<span>after 41 games</span></h3><table class="stand2"><tr><th>#</th><th></th><th>Team</th><th>W</th><th>L</th><th>GB</th></tr>${STAND41.map(([c, w], i) => `<tr class="${c === YOU ? 'you' : ''} ${i === 7 ? 'cut' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}</td><td>${w}</td><td>${41 - w}</td><td>${i === 0 ? '—' : 30 - w}</td></tr>`).join('')}</table><div class="cutnote">Playoff line: top eight</div></section>
+  <div class="stack"><section><h3>MVP race<span>if the season ended today</span></h3>${[[1, 'michael-jordan', 'Michael Jordan', 'KEN', '32.4 pts · 6.1 reb · 5.3 ast', '='], [2, 'kevin-durant', 'Kevin Durant', 'TUL', '29.8 pts · 7.0 reb · 4.6 ast', '+2'], [3, 'lebron-james', 'LeBron James', 'DUL', '28.0 pts · 8.2 reb · 7.4 ast', '−1']].map(mvpRow).join('')}</section>
+  <section><h3>Best game so far</h3>${gos('kevin-durant', 'Kevin Durant', 48, '17/26 FG · 6/9 3PT · 8/8 FT · 9 reb', 'Tulsa 121, Kentucky 117 · game 38')}</section></div></div>`];
 S.playoffs = () => [
   mast('Playoffs', 'Top eight · best of seven') + tally('3', 'G7', '3', { youK: 'Tulsa', midK: 'Finals', aiK: 'Kentucky' }) +
   `<section><h3>Your path</h3><div class="kv"><span>Quarterfinal</span><b>4–1 Honolulu</b></div><div class="kv"><span>Semifinal</span><b>4–2 Santa Fe</b></div><div class="kv"><span>Finals</span><b>3–3 Kentucky</b></div></section>` +
@@ -886,7 +923,7 @@ S.bomb = () => { const [l, m] = S.ribbon(); return [l, m + `<div class="drawer-d
 S.bombReveal = () => { const [l, m] = S.results(); return [l, m.replace('<section><h3>Your roster', `<section class="breveal"><h3>The Bomb<span>tap to reveal</span></h3><div class="br-steps"><div class="br"><span class="eb">1 · Description</span><span class="sil sm">?</span><p>A 6-foot-7 wing from the late ’90s. Guards the best scorer, hits the corner three.</p></div><div class="br"><span class="eb">2 · Face</span><img src="heads/shane-battier.png" alt=""><p>A role player.</p></div><div class="br hidden"><span class="eb">3 · Name</span><span class="sil sm">?</span><button class="btn line">Show his name</button></div></div></section><section><h3>Your roster`)]; };
 
 const MIN = [['PG', [['Gary Payton', 34], ['Andre Iguodala', 14]]], ['SG', [['Klay Thompson', 34], ['Kyle Korver', 14]]], ['SF', [['Kevin Durant', 38], ['Andre Iguodala', 10]]], ['PF', [['Kevin Garnett', 36], ['Robert Horry', 12]]], ['C', [['Ben Wallace', 30], ['Dennis Rodman', 18]]]];
-S.minutes = () => { const [l] = S.team(); return [l, prompt('Your team · rotation', 'Set the minutes', 'Each spot plays 48 minutes. Starter first, then who comes in. Nobody can play more than 40.', 'gold') +
+S.minutes = () => { const [l] = S.team(); return [l, prompt('Your team · rotation', 'Set the minutes', 'Each spot plays 48 minutes. Starter first, then who comes in. Nobody can play more than 40.') +
   `<section><h3>Rotation<span>240 / 240 min · all spots full</span></h3><table class="mins2">${MIN.map(([pos, rows]) => `<tr class="mpos"><td class="pos" rowspan="${rows.length + 1}">${pos}</td>${rows.map(([n, m], i) => `${i ? '<tr>' : ''}<td class="mw"><span class="ml">${i ? 'Bench' : 'Starter'}</span><button class="pick">${n} ▾</button></td><td class="step"><button>−</button><b>${m}</b><button>+</button></td><td class="mbar"><i style="width:${m / 48 * 100}%"></i></td></tr>`).join('')}<tr><td colspan="3" class="addr"><a href="#">+ add a third player</a><span>48 / 48</span></td></tr>`).join('')}</table>
   <div class="btn2" style="max-width:520px;margin-top:16px"><button class="btn line">Suggest a rotation</button><button class="btn line">Reset</button></div></section>`]; };
 
@@ -908,7 +945,7 @@ S.menu2 = () => ['', `<div class="m2">
   <div class="m2-foot"><a href="#">How to play</a><a href="#">Settings</a></div></div>`];
 
 const MIN2 = [['PG', 'Gary Payton', 34, 'Andre Iguodala', 14], ['SG', 'Klay Thompson', 34, 'Kyle Korver', 14], ['SF', 'Kevin Durant', 38, 'Andre Iguodala', 10], ['PF', 'Kevin Garnett', 36, 'Robert Horry', 12], ['C', 'Ben Wallace', 30, 'Dennis Rodman', 18]];
-S.minutes2 = () => { const [l] = S.team(); return [l, prompt('Your team · rotation', 'Set the minutes', 'Drag the line between two players. Tap a name to swap him.', 'gold') +
+S.minutes2 = () => { const [l] = S.team(); return [l, prompt('Your team · rotation', 'Set the minutes', 'Drag the line between two players. Tap a name to swap him.') +
   `<section><h3>Rotation<span>48 minutes a spot · 240 / 240</span></h3><div class="rot2">${MIN2.map(([pos, a, ma, b, mb], i) => `<div class="r2 ${i === 3 ? 'drag' : ''}"><span class="r2-pos">${pos}</span><div class="r2-bar"><span class="r2-a" style="width:${ma / 48 * 100}%"><b>${a}</b><i>${ma}</i></span><span class="r2-h" style="left:${ma / 48 * 100}%"></span><span class="r2-b"><b>${b}</b><i>${mb}</i></span></div></div>`).join('')}</div>
   <p class="empty-note" style="margin-top:10px">Tired legs: nobody over 40. <a href="#" style="color:var(--ink2)">Suggest a rotation</a> · <a href="#" style="color:var(--ink2)">Add a third player</a></p></section>`]; };
 
@@ -927,7 +964,7 @@ const SEG = (n, m, cls = '') => { const w = n.split(' '); return `<span class="s
 S.minutes3 = () => { const [l] = S.team();
   const row = (pos, segs, btn, open) => `<div class="r3w"><div class="r3"><span class="r3p">${pos}</span><div class="r3b">${segs}</div><a class="r3x" href="#">${btn}</a></div>${open || ''}</div>`;
   const swap = `<div class="swap"><span class="pop-h">C · who comes in for Wallace?</span>${[['Dennis Rodman', 'PF', 'stretch · fine', '26 min · can take 24', 1], ['Robert Horry', 'PF', 'stretch · fine', '10 min · can take 26', 0], ['Kevin Garnett', 'PF', 'stretch · fine', '30 min · can take 38', 0], ['Andre Iguodala', 'SF', 'out of position −6', '24 min · can take 34', 0]].map(([n, ps, fit, now, on]) => `<div class="pop-r ${on ? 'on' : ''}"><b>${n}</b><small>${ps}</small><span class="fit ${fit.includes('out') ? 'bad' : ''}">${fit}</span><span class="now">${now}</span></div>`).join('')}</div>`;
-  return [l, prompt('Your team · rotation', 'Set the minutes', 'Drag a line to move minutes between two players. Tap a name to swap him. Each spot always adds up to 48.', 'gold') +
+  return [l, prompt('Your team · rotation', 'Set the minutes', 'Drag a line to move minutes between two players. Tap a name to swap him. Each spot always adds up to 48.') +
   `<section><h3>Rotation<span>240 / 240 · ready</span></h3><div class="rot3">
    ${row('PG', `${SEG('Gary Payton', 34, 'st')}<u></u>${SEG('Andre Iguodala', 14)}`, '+')}
    ${row('SG', `${SEG('Klay Thompson', 34, 'st')}<u></u>${SEG('Kyle Korver', 14)}`, '+')}
