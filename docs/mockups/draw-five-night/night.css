@@ -204,7 +204,7 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .profile td.b { width: 80px; font: 500 13px var(--num); color: var(--ink3); white-space: nowrap; padding-right: 10px; }
 .profile .bar { position: relative; height: 4px; background: var(--rule); }
 .profile .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink2); }
-.profile .bar u { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--gold); }
+.profile .bar u { position: absolute; top: -5px; bottom: -5px; width: 3px; background: var(--ink); box-shadow: 0 0 0 1px var(--bg); }
 .profile tr.weak td.l, .profile tr.weak td.v { color: var(--red); }
 .profile tr.weak .bar i { background: var(--red); }
 .film p { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; font-size: 16px; line-height: 1.45; color: var(--ink2); }

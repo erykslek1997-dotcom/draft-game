@@ -74,9 +74,11 @@ There were 13 near-identical dark greys before this pass. There are 5 tokens now
    In the implementation, apply the same rule to every team band (NBA colours
    on cards included), not just the marks.
 
+3. **Gold means caps, Joker and trophies.** Award titles and the rings on the
+   big four stay gold. The "best five" tick on the team profile is cream, and
+   posters no longer colour the best bar (only the weak one is red).
+
 ## Still open
 
 - **Ribbon future picks** show the team name at 11 px in `--ink3` on purpose
   (75% quiet). It is readable, but it is the quietest text on the screen.
-- **Gold ticks for "the best five"** on the Draw Five team profile, and the gold
-  "best" bar on posters, use gold as "best", not as caps.
