@@ -498,6 +498,54 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .r2-bar b { font-size: 14px; }
   .po-head h2 { font-size: 38px; }
 }
+
+/* rotation v3 */
+.rot3 { display: block; }
+.r3 { margin-bottom: 12px; }
+.r3.open { margin-bottom: 230px; }
+.r3 { position: relative; display: grid; grid-template-columns: 50px minmax(0, 1fr) 30px; gap: 14px; align-items: center; }
+.r3p { font: 800 24px var(--cond); }
+.r3b { display: flex; height: 48px; border-radius: 3px; overflow: hidden; background: #1A1B1F; }
+.sg { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 12px; min-width: 0; color: var(--ink2); background: #1A1B1F; }
+.sg.st { background: var(--card); color: var(--cink); }
+.sg.third { background: #26272B; }
+.sg.sel { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
+.sg b { font: 700 16px var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg i { font: 600 14px var(--num); font-style: normal; }
+.r3b u { flex: none; width: 4px; background: var(--bg); position: relative; cursor: ew-resize; }
+.r3b u.act { width: 6px; background: var(--red); }
+.r3b u.act em { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 11px var(--num); font-style: normal; color: var(--red); }
+.r3x { width: 30px; height: 30px; display: grid; place-items: center; border: 1.5px solid #3A3A3C; border-radius: 50%; color: var(--ink2); text-decoration: none; font: 700 16px var(--num); }
+.pop { position: absolute; z-index: 3; top: 54px; right: 44px; width: 470px; background: #141518; border: 1.5px solid var(--rule2); padding: 10px 14px; box-shadow: 0 16px 40px rgba(0,0,0,.6); }
+.pop-h { display: block; font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 4px; }
+.pop-r { display: grid; grid-template-columns: 150px 26px minmax(0, 1fr) 150px; gap: 8px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--rule); }
+.pop-r b { font: 700 17px var(--cond); }
+.pop-r small { font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.pop-r .fit { font: italic 500 12px Inter, sans-serif; color: var(--ink2); }
+.pop-r .fit.bad { color: var(--red); }
+.pop-r .now { font: 500 11px var(--num); color: var(--ink3); text-align: right; }
+.pop-r.on b { box-shadow: inset 0 -2px 0 var(--ink); }
+.who3 { width: 100%; border-collapse: collapse; }
+.who3 td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.who3 td.n { width: 180px; font: 700 16px var(--cond); color: var(--ink); }
+.who3 td.m { width: 40px; font: 600 15px var(--num); color: var(--ink); text-align: right; }
+.who3 td.c { width: 200px; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.who3 .cb { position: relative; height: 6px; background: var(--rule); }
+.who3 .cb i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink2); }
+.who3 .cb u { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.who3 tr.over td.n, .who3 tr.over td.m, .who3 tr.over td.c { color: var(--red); }
+.who3 tr.over .cb i { background: var(--red); }
+/* posters for all modes */
+.share-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 520px)); justify-content: center; gap: 28px; padding: 10px 0 30px; }
+.po-bench { display: flex; align-items: baseline; gap: 14px; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--cline); }
+.po-bench > span { font: 700 9px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cink2); }
+.po-bench b { font: 700 14px var(--cond); text-transform: uppercase; }
+.po-bench b small { font: 700 9px Inter, sans-serif; color: var(--cink2); margin-left: 3px; }
+.po-ph.pback { background: repeating-linear-gradient(45deg, #1E1C18 0 6px, #2A2824 6px 12px); place-items: center; }
+.po-ph.pback span { font: 800 40px var(--cond); color: #E5C06A; }
+.champ-p .po-head h2 { color: #8A6A1E; }
+.champ-p { box-shadow: inset 0 0 0 3px #D9A93C; }
+@media (max-width: 600px) { .share-grid { grid-template-columns: 1fr; } .pop { right: 0; width: auto; left: 0; } .pop-r { grid-template-columns: minmax(0, 1fr) 30px; } .pop-r .fit, .pop-r .now { grid-column: 1 / -1; text-align: left; } .who3 td.c { display: none; } }
 </style>
 </head>
 <body>
@@ -790,6 +838,36 @@ S.share2 = () => { const [l, m] = S.results(); return [l, m + `<div class="drawe
     <div class="po-foot"><span class="mark">D</span><span>Beat my 87 on the same board · challenge code 7Q4K</span></div>
   </div>
   <div class="btn2" style="margin-top:14px"><button class="btn go">Save image</button><button class="btn line">Copy link</button></div></div>`]; };
+
+// ---- rotation v3: how it works ----
+const SEG = (n, m, cls = '') => `<span class="sg ${cls}" style="flex:${m}"><b>${n}</b><i>${m}</i></span>`;
+S.minutes3 = () => { const [l] = S.team(); return [l, prompt('Your team · rotation', 'Set the minutes', 'Drag a line to move minutes between two players. Tap a name to swap him. Each spot always adds up to 48.', 'gold') +
+  `<section><h3>Rotation<span>240 / 240 · ready</span></h3><div class="rot3">
+   <div class="r3"><span class="r3p">PG</span><div class="r3b">${SEG('Gary Payton', 34, 'st')}<u></u>${SEG('Andre Iguodala', 14)}</div><a class="r3x" href="#">+</a></div>
+   <div class="r3"><span class="r3p">SG</span><div class="r3b">${SEG('Klay Thompson', 34, 'st')}<u></u>${SEG('Kyle Korver', 14)}</div><a class="r3x" href="#">+</a></div>
+     </div>
+   <div class="r3"><span class="r3p">SF</span><div class="r3b">${SEG('Kevin Durant', 38, 'st')}<u></u>${SEG('Andre Iguodala', 10)}</div><a class="r3x" href="#">+</a></div>
+   <div class="r3"><span class="r3p">PF</span><div class="r3b">${SEG('Kevin Garnett', 30, 'st')}<u class="act"><em>30 · 10</em></u>${SEG('Robert Horry', 10)}<u></u>${SEG('Dennis Rodman', 8, 'third')}</div><a class="r3x" href="#">−</a></div>
+   <div class="r3 open"><span class="r3p">C</span><div class="r3b">${SEG('Ben Wallace', 30, 'st')}<u></u>${SEG('Dennis Rodman ▾', 18, 'sel')}</div><a class="r3x" href="#">+</a><div class="pop"><span class="pop-h">C · who comes in?</span>${[['Dennis Rodman', 'PF', 'stretch · fine', '26 min · can take 24', 1], ['Robert Horry', 'PF', 'stretch · fine', '10 min · can take 26', 0], ['Kevin Garnett', 'PF', 'stretch · fine', '30 min · can take 38', 0], ['Andre Iguodala', 'SF', 'out of position −6', '24 min · can take 34', 0]].map(([n, pos, fit, now, on]) => `<div class="pop-r ${on ? 'on' : ''}"><b>${n}</b><small>${pos}</small><span class="fit ${fit.includes('out') ? 'bad' : ''}">${fit}</span><span class="now">${now}</span></div>`).join('')}</div></div>
+  </div></section>
+  <section><h3>Who plays how much<span>total · what his legs can take</span></h3><table class="who3">${[['Kevin Durant', 38, 38], ['Gary Payton', 34, 38], ['Klay Thompson', 34, 36], ['Kevin Garnett', 30, 38], ['Ben Wallace', 30, 34], ['Dennis Rodman', 26, 24, 'over'], ['Andre Iguodala', 24, 34], ['Kyle Korver', 14, 28], ['Robert Horry', 10, 26]].map(([n, m, cap, w]) => `<tr class="${w || ''}"><td class="n">${n}</td><td class="m">${m}</td><td><div class="cb"><i style="width:${m / 48 * 100}%"></i><u style="left:${cap / 48 * 100}%"></u></div></td><td class="c">${w ? `over by ${m - cap} · costs Rotation` : `can take ${cap}`}</td></tr>`).join('')}</table>
+  <p class="empty-note" style="margin-top:10px">Allowed, but Rodman at 26 lowers your Rotation score. <a href="#" style="color:var(--ink2)">Suggest a rotation</a> · <a href="#" style="color:var(--ink2)">Reset</a></p></section>`]; };
+
+// ---- share posters for every mode ----
+function poster({ mode, kick, head, line, five, bench, strip, foot, champ, hidden }) {
+  return `<div class="poster ${champ ? 'champ-p' : ''}"><div class="po-mast"><span>Draftverse Daily</span><b>Tuesday, October 21</b><span>${mode}</span></div>
+  <div class="po-head"><span class="po-kick">${kick}</span><h2>${head}</h2><p>${line}</p></div>
+  ${hidden ? `<div class="po-five">${['PG', 'SG', 'SF', 'PF', 'C'].map((ps) => `<div class="po-p"><div class="po-ph pback"><span>?</span></div><b>${ps}</b><small>shown tomorrow</small></div>`).join('')}</div>` : `<div class="po-five">${five.map((k) => { const x = p(k); return `<div class="po-p" style="--team:${x.c}"><div class="po-ph">${face(x)}</div><b>${x.n.split(' ').slice(-1)[0]}</b><small>${x.pos} · ${x.y}</small></div>`; }).join('')}</div>`}
+  ${bench ? `<div class="po-bench"><span>Bench</span>${bench.map((k) => { const x = p(k); return `<b>${x.n.split(' ').slice(-1)[0]}<small>${x.pos}</small></b>`; }).join('')}</div>` : ''}
+  <div class="po-strip">${strip.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>
+  <div class="po-foot"><span class="mark">D</span><span>${foot}</span></div></div>`;
+}
+S.shareAll = () => ['', `<div class="share-grid">
+  ${poster({ mode: 'All-Time Draft', kick: 'Final standings · 3rd of 16', head: 'Tulsa builds a wall', line: 'Payton, Garnett and Wallace give the Twisters the best defense in the league. 18% to win it all.', five: ['payton', 'klay', 'durant', 'garnett', 'bwallace'], bench: ['rodman', 'korver', 'iggy', 'horry'], strip: [['Place', '3rd'], ['Rating', '87'], ['Defense', 'A+'], ['Title odds', '18%']], foot: 'Beat my 87 on the same board · challenge 7Q4K' })}
+  ${poster({ mode: 'All-Time · season', kick: 'The Finals · game 7 · 104–99', head: 'Champions', line: 'Tulsa wins it from the 3 seed. Durant: 38 in game 7, Finals MVP.', five: ['payton', 'klay', 'durant', 'garnett', 'bwallace'], bench: ['rodman', 'korver', 'iggy', 'horry'], strip: [['Season', '52–30'], ['Seed', '3rd'], ['Playoffs', '16–6'], ['Finals MVP', 'Durant']], foot: 'QF 4–1 HON · SF 4–2 SFE · F 4–3 KEN', champ: true })}
+  ${poster({ mode: 'Mini Draft', kick: 'Final standings · 4th of 16', head: 'Gobert locks the paint', line: 'The best rim protection in the field. Spacing kept Tulsa out of the top three.', five: ['payton', 'klay', 'durant', 'garnett', 'bwallace'].map((k, i) => ['payton', 'rallen', 'iggy', 'garnett', 'gobert'][i]), strip: [['Place', '4th'], ['Score', '84'], ['Best', '89'], ['Caps', '69.6']], foot: 'Same 16 teams, your turn · challenge M2X9' })}
+  ${poster({ mode: 'Draw Five · daily', kick: 'Game of the day · beat the ’92 Bulls 108–101', head: 'Playoff lock', line: 'Same number as the five biggest names. Durant 31, Jordan 34.', five: ['conley', 'korver', 'durant', 'garnett', 'gobert'], strip: [['Your five', '84'], ['Fan vote', '84'], ['Best', '88'], ['Streak', '🔥 6']], foot: 'One board for everyone today · your five stays hidden till tomorrow', hidden: true })}
+  </div>`];
 const key = (location.hash || '#draft').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = a ? `<aside>${a}</aside><main>${m}</main>` : m;
