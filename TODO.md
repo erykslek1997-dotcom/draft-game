@@ -217,6 +217,84 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 - **Tydzień 4 — definitywne dopracowanie całości + domena i serwer** (wtedy też leaderboard
   daily, globalny ranking; przed startem wyłączyć przełączniki testowe:
   `DAILY_REPLAY_FOR_TESTING`, `AUTO_FINISH_FOR_TESTING`, `TEAM_EXPORT_FOR_TESTING`).
+  - **Nowa nazwa projektu** (razem z brand kitem; do tego czasu nazwa w jednym miejscu w kodzie).
+    Kierunek „-OAT” (*Of All Time*). Krótka lista: **DOAT** (*Draft Of All Time*), **FLOAT**
+    (*Five Legends Of All Time*, floater), **BOAT** (*Best Of All Time*), ewentualnie **HOAT**
+    (*Hoopers Of All Time*). Odpadły: GOAT (zajęte), KOAT (stacja TV), VOAT (zamknięty serwis),
+    GLOAT, COAT, MOAT. Do sprawdzenia: domeny, sklepy z aplikacjami, znaki towarowe.
+    Pomysł poboczny: tryb **WOAT** (*Worst Of All Time*), czyli draft najgorszej piątki.
+
+### Nowy wygląd trybów: „wydanie nocne” (decyzja 2026-10-21)
+
+Stół w perspektywie (PR #252) odrzucony — zamknięty bez merge'a. Zatwierdzony kierunek: ciemne tło
+gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw Five:
+`docs/mockups/draw-five-night/index.html` (ekran przez `#start`, `#pick`, `#ai`, `#ready`,
+`#dailyStart`, `#dailyJoker`, `#game`, `#results`, `#dailyResults`).
+
+- **Najpierw przejrzystość i funkcjonalność**, realizm dopiero potem. Nic na siebie nie nachodzi.
+- **Bez „AI looku”:** żadnych ramek-pudełek wokół wszystkiego, kolorowych pigułek, małych etykiet
+  monospace wersalikami. Sekcje dzielą linie; nagłówki sekcji wersalikami Barlow Condensed nad
+  kremową linią; dopiski kursywą (Inter).
+- **Kolory, każdy jedno znaczenie** (po audycie 2026-10-21, szczegóły w
+  `docs/mockups/draw-five-night/AUDIT.md`): złoty = capy, Joker i trofea; czerwony = „teraz”
+  (on the clock, live, tonight) i problem; zielony = dobra wiadomość (atut, wygrana seria, „+”,
+  prowadzenie); kolory drużyn tylko na kartach i znaczkach. Twoja drużyna = wiersz w negatywie
+  (kremowe tło, ciemny tekst), bez napisu „you”; twoi gracze w statystykach = jasne podświetlenie
+  wiersza. Czerwony i zielony zawsze ze znakiem albo słowem (+, −, weak, 4–1).
+- **Fonty jak w reszcie gry:** Barlow Condensed (nagłówki, nazwiska), Inter (tekst), JetBrains
+  Mono (liczby). Bez Bittera.
+- **Układ:** lewa kolumna = winieta z podwójną linią + tablica (ty · cap · AI) + dziennik draftu
+  + akcje; prawa = rząd rywala, twoja piątka, „On the clock” z dużym nagłówkiem, ręka kart.
+- **Karty jak wydrukowane:** kremowy papier, pełny pasek drużyny, ostre rogi, statystyki w tabelce
+  z liniami. Wybrana karta = sama czerwona obwódka (bez drugiej ramki/cienia).
+- **Nowe elementy:** Tale of the tape (pojedynki pozycja na pozycję przed Submit), tura AI z jej
+  kartami („AI takes”), wyniki jako gazetowy nagłówek + werdykt + profil drużyny w tabeli.
+- **Wdrożenie wszystkich trybów za jednym razem** (Draw Five, Mini, All-Time) — najpierw makiety
+  każdego trybu w tym stylu. Makiety: `docs/mockups/draw-five-night/` (`index.html` Draw Five,
+  `mini.html` Mini, `alltime.html` All-Time).
+- **Pasek capów** (2026-10-21, user: „oddzielny pasek w nowym UI, nie wpisanie w pole”): pod
+  filtrami w Mini i All-Time suwak zakresu 0–30 z dwoma uchwytami, czerwona kreska „your max”
+  (ile możesz wydać na ten wybór), wartość „10–14” albo „any” i reset. Zastępuje tekst „Affordable
+  only / Fits this pick” w makiecie; pole „Max caps” z All-Time przechodzi w ten suwak.
+- **Pomysł na później: reakcje na żywo** (2026-10-21, user). Lewa kolumna draftu All-Time ma pod
+  Big Boardem wolne miejsce — docelowo panel, który reaguje na to, co się dzieje w drafcie (kto
+  kogo wziął, twój wybór). Dziś nie ma mechaniki generującej reakcje na żywo (desk.ts buduje głosy
+  tylko po drafcie i po 3. wyborze), więc na razie w tym miejscu idzie coś, co już mamy (np. ostatnie
+  wybory ligi — zatwierdzone jako wypełniacz, „Latest picks”, tylko na komputerze; na telefonie
+  nie pokazujemy), a forma docelowa jest do ustalenia („będzie to coś innego”).
+- **Dodatki małym nakładem** (2026-10-21, decyzje usera):
+  - **Symulacja sezonu z kalendarzem (na sam koniec prac nad UI, decyzje 2026-10-21):** dziś
+    `liveSeason.ts` gra 656 meczów parami (najpierw wszystkie mecze BIS–DUL, potem BIS–KEN…) w tle
+    i pokazuje tylko wynik końcowy. Docelowo (user):
+    - **Rozpisany kalendarz na cały sezon,** od ~22 października do połowy kwietnia (~175 dni):
+      drużyna gra 3–4 razy w tygodniu, nie codziennie (jednego wieczoru ~4–6 meczów); licznik to
+      „mecz 23 z 82” i data, nie „dzień”. Każdy mecz liczony
+      osobno dzień po dniu (wyniki jak dziś — każdy mecz ma własne ziarno, kolejność ich nie zmienia).
+      Tabela, liderzy i twój bilans rosną z dnia na dzień; prędkość i pauza jak w meczu na żywo.
+    - **Przerwa co miesiąc:** ekran „miesiąc w skrócie” — tabela z ruchem w górę/dół, twój bilans
+      w miesiącu, **MVP ladder** (top 5 z ruchem), **Player of the Month**, najlepszy mecz miesiąca.
+      Dalej przyciskiem; w ustawieniach można wyłączyć przystanki.
+    - **Głosowanie do All-Star Game:** wyniki głosowania co miesiąc przed ASG (prowadzący na
+      pozycjach), w lutym przerwa All-Star: wybór 24 (głosy + wartość gry), draft kapitanów, mecz.
+    - **Play-in tournament** po sezonie regularnym przed play-offami: miejsca 7–10 (7–8: zwycięzca
+      = 7. seed; 9–10: przegrany odpada; przegrany 7–8 z wygranym 9–10 o 8. seed). Mecze pojedyncze,
+      do obejrzenia na żywo jak play-offy. Seedy 1–6 bez zmian.
+    - Makiety: `alltime.html#simDay` (dzień po dniu: kalendarz miesiąca, 8 meczów dnia, tabela z
+      ruchem, MVP ladder), `#monthBreak`, `#asgBreak`, `#playIn`.
+  - **Razem z nowym wyglądem:** mecz sezonu i rekordy kariery (najlepszy występ, najwyższe
+    zwycięstwo — zapamiętane w trakcie symulacji sezonu; na ekran sezonu i plakat Story);
+    wyścig o MVP w trakcie sezonu (top 3 liczone funkcją nagród na statystykach z części sezonu);
+    wibracja na telefonie przy twoim wyborze, „on the clock” i końcu meczu (`navigator.vibrate`,
+    tylko gdzie działa; wyłączana w ustawieniach razem z dźwiękiem/animacjami).
+  - **Mecz na żywo: statystyki i minuty w kwartach** (2026-10-21, user; makieta `alltime.html#liveBox`):
+    w zakładce Box score przełącznik Game / Q1–Q4 (bieżąca „now”) i Tulsa / rywal; kolumny MIN,
+    PTS, REB, AST, FG, 3PT, PF, +/−; kto jest na boisku (●/○), „Did not play in Q3”. Bez osobnej
+    tabeli minut w kwartach (user: niepotrzebna). Silnik już to ma: `moments[].lines` to pełny
+    box po każdym posiadaniu, a piątki są znane z góry — kwarty i +/− to różnice migawek.
+  - **Faza końcowa:** rekordy i półka z trofeami (localStorage: najlepszy wynik w każdym trybie,
+    tytuły, najdłuższa seria; „Nowy rekord” na wynikach); wczorajsza odpowiedź w daily Draw Five
+    (najlepsza piątka z ziarna dnia + twój wynik); skróty klawiszowe w drafcie na komputerze
+    (1–5 karta, D draft, / szukaj) jako pierdoła.
 
 ## Kolejność prac (decyzja 2026-10-10, zastąpiona planem 4 tygodni)
 

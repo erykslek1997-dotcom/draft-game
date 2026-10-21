@@ -1,0 +1,1343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All-Time Draft night</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="night.css">
+<link rel="stylesheet" href="draft.css">
+<style>
+/* your nine: five starters + a bench row */
+.bench { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.bench .b { display: flex; align-items: center; gap: 10px; padding: 6px 10px; min-height: 48px; border-radius: 3px; }
+.bench .b.filled { background: var(--card); color: var(--cink); box-shadow: inset 4px 0 0 var(--team); }
+.bench .b.filled img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--cface); }
+.bench .b.filled b { font: 700 16px/1.05 var(--cond); }
+.bench .b.filled span { display: block; font: 500 11px var(--num); color: var(--cink2); }
+.bench .b.empty { border: 1.5px dashed var(--rule3); color: var(--ink4); font: 700 14px var(--cond); letter-spacing: 0.06em; justify-content: center; }
+.bench-label { margin-top: 12px; font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+
+/* draft list extras */
+.plist td.yrs { white-space: nowrap; }
+.plist .yrs-btn { border: 0; border-bottom: 1px dashed var(--ink3); background: transparent; color: var(--ink2); font: 500 13px var(--num); padding: 0; cursor: pointer; }
+.plist .yrs-btn small { color: var(--ink3); font: italic 500 12px Inter, sans-serif; margin-left: 4px; }
+.plist .scout { font: italic 500 13px Inter, sans-serif; color: var(--ink2); text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
+.plist .star { color: var(--ink3); font-size: 16px; padding: 0 6px; }
+.plist .star.on { color: var(--gold); }
+.minirow { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--ink2); }
+.minirow b { color: var(--ink); }
+.minirow a { color: var(--ink2); font-style: italic; }
+.bboard { margin: 0; padding: 0; list-style: none; counter-reset: bb; }
+.bboard li { counter-increment: bb; display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.bboard li::before { content: counter(bb); font: 600 12px var(--num); color: var(--ink3); }
+.bboard li span { color: var(--ink3); font: 600 12px var(--num); }
+.bboard li.gone { color: var(--ink3); text-decoration: line-through; }
+
+/* years */
+.spans tr.peak td.tier { color: var(--ink); }
+.spans tr.pick td { background: var(--surf); }
+.spans tr.pick td:first-child { box-shadow: inset 3px 0 0 var(--ink); padding-left: 10px; }
+.spans td.y { font: 700 20px var(--cond); white-space: nowrap; }
+.spans td.y small { display: block; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.who-head { display: flex; align-items: center; gap: 16px; }
+.who-head img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--surf2); border: 1.5px solid var(--ink); }
+
+/* team + rotation */
+.roster td.rd { width: 34px; font: 600 12px var(--num); color: var(--ink3); }
+.roster td.sl { width: 46px; font: 700 14px var(--cond); color: var(--ink2); }
+.roster td.sl.bn { color: var(--ink3); font-style: italic; font-family: Inter; font-weight: 500; font-size: 12px; }
+.rot { width: 100%; border-collapse: collapse; }
+.rot td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); vertical-align: middle; }
+.rot td.pos { width: 40px; font: 800 18px var(--cond); color: var(--ink); }
+.rot td.who { width: 270px; }
+.rot td.who b { color: var(--ink); font: 700 18px var(--cond); }
+.rot td.who em { font-size: 13px; color: var(--ink3); }
+.rot .mins { display: flex; height: 22px; border: 1px solid var(--rule3); }
+.rot .mins i { display: flex; align-items: center; justify-content: center; font: 600 11px var(--num); font-style: normal; color: var(--cink); background: var(--card); border-right: 1px solid var(--bg); }
+.rot .mins i.b2 { background: #A9A395; }
+.rot .mins i.b3 { background: #77736A; color: var(--ink); }
+@media (max-width: 600px) { .plist.roster th:not(.c-hide) { display: table-cell; } }
+.rot td.tot { width: 50px; text-align: right; font: 600 14px var(--num); color: var(--ink); }
+
+/* desk */
+.desk { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+.desk article { padding: 4px 24px 10px; border-left: 1px solid var(--rule); }
+.desk article:first-child { border-left: 0; padding-left: 0; }
+.desk .by { display: flex; align-items: center; gap: 10px; }
+.desk .by .mono { width: 34px; flex: none; font-style: normal; margin: 0; height: 34px; border-radius: 50%; border: 1.5px solid var(--ink2); display: grid; place-items: center; font: 700 13px var(--cond); color: var(--ink); }
+.desk .by b { display: block; font: 700 18px/1.1 var(--cond); }
+.desk .by div span { display: block; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.desk .take { margin-top: 14px; font: 800 24px/1 var(--cond); text-transform: uppercase; }
+.desk .take.yes { color: var(--green); }
+.desk .take.no { color: var(--red); }
+.desk p { margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: var(--ink2); }
+.desk p b { color: var(--ink); font-weight: 600; }
+.host { padding: 10px 0 12px; border-bottom: 1px solid var(--rule); font-size: 16px; font-style: italic; color: var(--ink2); }
+.host b { font-style: normal; color: var(--ink); }
+
+/* season */
+.stand2 { width: 100%; border-collapse: collapse; }
+.stand2 th { text-align: right; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; color: var(--ink3); padding: 0 8px 6px 0; }
+.stand2 th:nth-child(-n+3) { text-align: left; }
+.stand2 td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); text-align: right; font: 500 14px var(--num); color: var(--ink2); }
+.stand2 td.rk { text-align: left; width: 30px; color: var(--ink3); }
+.stand2 td.tmc { text-align: left; width: 40px; }
+.stand2 td.nm { text-align: left; font: 700 18px var(--cond); color: var(--ink); }
+.stand2 td.nm i { font: italic 500 12px Inter, sans-serif; color: var(--ink3); margin-left: 6px; }
+.stand2 tr.you td { background: var(--surf); color: var(--ink); }
+.stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; color: var(--you); }
+.stand2 tr.cut td { border-bottom: 1.5px dashed var(--ink3); }
+.cutnote { font: italic 500 12px Inter, sans-serif; color: var(--ink3); padding: 6px 0 0; }
+.leaders { width: 100%; border-collapse: collapse; }
+.leaders td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.leaders td.k { font: 700 13px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); width: 90px; }
+.leaders td b { color: var(--ink); font-weight: 600; }
+.leaders td.v { text-align: right; font: 600 16px var(--num); color: var(--ink); }
+
+.dboard9 th:first-child { width: 150px; }
+.dboard9 td { font-size: 13px; padding-right: 6px; }
+.dboard9 td .pk { display: block; font: 500 11px var(--num); color: var(--ink3); }
+.dboard9 td.e .pk { color: var(--ink4); }
+.dboard9 td.tn { font-size: 16px; }
+@media (max-width: 600px) { .dboard9 { width: 1000px; } .dboard9 th:first-child { width: 52px; } .dboard9 .nk { display: none; } }
+.bgrid h3 a { color: var(--ink2); }
+.bg-row { display: grid; grid-template-columns: 34px repeat(16, minmax(0, 1fr)); gap: 4px; margin-bottom: 4px; }
+.bg-head { margin-bottom: 6px; }
+.bg-rl { font: 600 11px var(--num); color: var(--ink3); display: flex; flex-direction: column; justify-content: center; }
+.bg-rl i { font-style: normal; color: var(--ink3); }
+.bg-team { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding-bottom: 4px; }
+.bg-team b { font: 700 12px var(--cond); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.bg-team.you { box-shadow: inset 0 -2px 0 var(--you); }
+.bg-team.you b { color: var(--ink); }
+.bg-cell { height: 66px; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; overflow: hidden; }
+.bg-cell.filled { background: var(--card); color: var(--cink); }
+.bg-cell.filled img, .bg-cell.filled .ini { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--cface); display: grid; place-items: center; font: 700 11px var(--cond); font-style: normal; color: var(--cink2); }
+.bg-cell.filled small { font: 700 11px Inter, sans-serif; color: var(--cink2); letter-spacing: 0.06em; }
+.bg-cell.filled b { font: 700 13px/1 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 2px; }
+.bg-cell.filled.you { box-shadow: 0 0 0 2px var(--you); }
+.bg-cell.empty { border: 1px dashed var(--rule); font: 500 11px var(--num); color: var(--ink4); }
+.bg-cell.empty.you { border-color: var(--ink3); color: var(--ink2); }
+.bg-cell.clock { border: 2px solid var(--red); }
+.bg-cell.clock small { font: 700 13px var(--cond); letter-spacing: 0.06em; line-height: 1; text-transform: uppercase; color: var(--red); text-align: center; }
+.bg-cell.clock b { font: 800 16px var(--cond); color: var(--ink); }
+@media (max-width: 600px) { .bgrid { overflow-x: auto; } .bg-row { width: 900px; } }
+.ribbon h3 a { color: var(--ink2); }
+.rb-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+.rb-cell { height: 84px; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; overflow: hidden; }
+.rb-cell .rb-n { font: 500 11px var(--num); color: var(--cink2); }
+.rb-cell.filled { background: var(--card); color: var(--cink); }
+.rb-cell.filled, .rb-cell.next { opacity: 0.75; }
+.rb-cell.filled img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--cface); }
+.rb-cell.filled b { font: 700 14px/1 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.rb-cell.filled small { font: 700 11px Inter, sans-serif; color: var(--cink2); }
+.rb-cell.clock { border: 2px solid var(--red); }
+.rb-cell.clock .rb-n { color: var(--ink3); }
+.rb-cell.clock b { font: 800 24px var(--cond); }
+.rb-cell.clock small { font: 700 13px var(--cond); letter-spacing: 0.06em; line-height: 1; text-align: center; text-transform: uppercase; color: var(--red); }
+.rb-cell.next { border: 1px dashed var(--rule); }
+.rb-cell.next .rb-n { color: var(--ink3); }
+.rb-cell.next small { font: 700 11px var(--cond); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.drawer-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.72); z-index: 5; }
+.drawer { position: fixed; left: 50%; top: 0; transform: translateX(-50%); width: min(1320px, 100%); z-index: 6; background: var(--bg); border-bottom: 5px double var(--rule2); padding: 18px 24px 24px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); }
+@media (max-width: 600px) { .rb-row { grid-template-columns: repeat(12, 84px); overflow-x: auto; } .drawer { overflow-x: auto; padding: 14px 16px; } }
+
+/* playoffs bracket */
+.bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; align-items: center; }
+.round h4 { margin: 0 0 10px; font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+.series { border-top: 1.5px solid var(--rule2); padding: 6px 0 4px; margin-bottom: 18px; }
+.series .tr { display: grid; grid-template-columns: 22px 34px minmax(0, 1fr) 24px; gap: 8px; align-items: center; padding: 4px 0; font: 700 16px var(--cond); color: var(--ink3); }
+.series .tr .sd { font: 500 12px var(--num); color: var(--ink3); }
+.series .tr .w { font: 600 16px var(--num); text-align: right; }
+.series .tr.win { color: var(--ink); }
+.series .tr.win .w { color: var(--ink); }
+.series .tr.you { color: var(--ink); }
+.series .note { font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.series.you-path { border-top-color: var(--you); }
+.series.live .note { color: var(--red); }
+.round.final .series { border-top: 5px double var(--rule2); }
+.round.final .series.live { border-top-color: var(--red); }
+
+@media (max-width: 600px) {
+  .bench { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .plist td.yrs, .plist th:nth-child(3), .plist td.sc2, .plist th:nth-child(7) { display: none; }
+  .plist .mt i { display: none; }
+  .bracket { grid-template-columns: 1fr; gap: 6px; }
+  .desk { grid-template-columns: 1fr; }
+  .desk article { border-left: 0; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .rot td.who { width: 118px; } .rot td.who em { display: none; } .rot td.who b { font-size: 16px; }
+  .stand2 td:nth-child(n+6), .stand2 th:nth-child(n+6) { display: none; }
+}
+
+@media (max-width: 600px) { .capsbar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; } .cb-reset { display: none; } .cb-max em { display: none; } }
+@media (max-width: 600px) { .ptabs { flex-wrap: wrap; } .ptabs .pt { padding: 8px 10px 10px; } .ptabs .pt b { font-size: 18px; } .ptabs .search { flex-basis: 100%; order: -1; margin: 0 0 6px; } }
+.pt-more { display: flex; gap: 8px; align-items: baseline; margin: 0 0 10px 24px; font: 700 16px var(--cond); color: var(--ink); }
+.pt-more > span { font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+.pt-more u { text-decoration: none; border-bottom: 2px solid var(--ink); margin-right: 10px; }
+@media (max-width: 600px) { .pt-more { display: none; } }
+
+.acc-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--rule); font-size: 16px; color: var(--ink2); cursor: pointer; }
+.acc-row i { font-style: normal; color: var(--ink3); }
+.st-at td.car { text-align: right; color: var(--ink3); }
+.st-at tr.open td { background: var(--surf); border-bottom: 1px solid var(--rule); text-align: left; font: 400 14px Inter, sans-serif; }
+.edge { max-width: 620px; }
+.eg > span:first-child { font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink2); }
+.edge-key { font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.edge-key i { display: inline-block; width: 14px; height: 4px; vertical-align: 3px; margin: 0 4px 0 10px; }
+.edge { padding: 8px 0 10px; display: grid; gap: 6px; }
+.edge > b { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink2); }
+.eg { display: grid; grid-template-columns: 90px minmax(0, 1fr) 110px; gap: 12px; align-items: center; font-size: 13px; color: var(--ink2); }
+.egb { position: relative; height: 10px; }
+.egb i, .egb u { position: absolute; left: 0; height: 4px; }
+.egb i { top: 0; background: var(--ink3); }
+.egb u { top: 6px; background: var(--you); }
+.eg .mono { font: 500 12px var(--num); color: var(--ink3); text-align: right; }
+.five-row .card .sb b { color: var(--cink); }
+
+.champ { border-top: 5px double var(--gold); border-bottom: 1.5px solid var(--gold); padding: 14px 0 12px; }
+.champ .eb { font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.champ h2 { margin: 4px 0 6px; font: 800 88px/0.9 var(--cond); text-transform: uppercase; color: var(--gold); }
+.champ p { margin: 0; font-size: 16px; font-style: italic; color: var(--ink2); }
+.champ p b { font-style: normal; color: var(--ink); }
+.champ.out { border-color: var(--rule2); }
+.champ.out .eb { color: var(--red); }
+.champ.out h2 { color: var(--ink); font-size: 64px; }
+.path-r { display: grid; grid-template-columns: 110px 34px 220px 60px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.pr-round { font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
+.pr-opp { font: 700 18px var(--cond); }
+.pr-score { font: 600 18px var(--num); }
+.path-r.won .pr-score { color: var(--green); }
+.path-r.lost .pr-score { color: var(--red); }
+.pr-note { font: italic 500 14px Inter, sans-serif; color: var(--ink2); }
+.sbox td:first-child { gap: 10px; }
+.sbox td:first-child small { font: 700 11px Inter, sans-serif; color: var(--ink3); margin-left: 4px; }
+.sb-f img, .sb-f .ini { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: var(--surf2); display: grid; place-items: center; font-size: 11px; }
+.aw-list, .aw-grid { display: grid; gap: 0; }
+.aw-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.aw { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.aw-f img, .aw-f .ini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.aw-t { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
+.aw b { display: block; font: 700 18px/1.1 var(--cond); }
+.aw small { display: block; font-size: 12px; color: var(--ink3); margin-top: 2px; }
+.aw.big { flex-direction: column; align-items: flex-start; border-bottom: 0; border-top: 1.5px solid var(--rule2); padding-top: 12px; }
+.aw.big .aw-f img { width: 72px; height: 72px; border: 1.5px solid var(--gold); }
+.aw.big b { font-size: 24px; }
+.allnba { display: grid; grid-template-columns: 130px repeat(5, minmax(0, 1fr)); gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.an-l { font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
+.an-p { font: 700 16px var(--cond); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-p small { font: 700 11px Inter, sans-serif; color: var(--ink3); margin-left: 6px; }
+.an-p.you { color: var(--you-ink); background: var(--you-bg); box-shadow: none; padding: 2px 6px; margin-left: -6px; border-radius: 3px; justify-self: start; max-width: calc(100% + 6px); }
+.an-p.you small { color: var(--you-ink2); }
+.ldr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 32px; }
+.leaders tr.you td { color: var(--ink); }
+.leaders tr.you td.k { color: var(--you); }
+.share-card { max-width: 520px; background: var(--card); color: var(--cink); border-radius: 6px; overflow: hidden; }
+.sc-top { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--cink); color: var(--card); }
+.sc-top .mark { border-color: var(--gold); }
+.sc-top b { font: 800 20px var(--cond); letter-spacing: 0.06em; }
+.sc-top > span:last-child { margin-left: auto; font: italic 500 12px Inter, sans-serif; color: #A9A395; }
+.sc-main { display: flex; justify-content: space-between; align-items: center; padding: 18px 18px 8px; }
+.sc-main h2 { margin: 4px 0; font: 800 48px/0.95 var(--cond); text-transform: uppercase; }
+.sc-main p { margin: 0; font: 600 14px var(--num); color: var(--cink2); }
+.sc-trophy { font-size: 48px; }
+.sc-path { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1.5px solid var(--cink); border-bottom: 1px solid var(--cline); margin-top: 10px; }
+.sc-path div { display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
+.sc-path div + div { border-left: 1px solid var(--cline); }
+.sc-path span:first-child { font: 700 12px var(--cond); text-transform: uppercase; color: var(--cink2); }
+.sc-path b { margin-left: auto; font: 700 16px var(--num); }
+.sc-five { display: grid; grid-template-columns: repeat(5, 1fr); padding: 14px 10px 6px; text-align: center; }
+.sc-five img, .sc-five .ini { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; background: var(--cface); border: 1.5px solid var(--cink); }
+.sc-five b { display: block; font: 700 16px var(--cond); margin-top: 4px; }
+.sc-five small { font: 500 11px var(--num); color: var(--cink2); }
+.sc-aw { padding: 10px 16px 14px; font: italic 600 13px Inter, sans-serif; color: var(--cink2); text-align: center; border-top: 1px solid var(--cline); }
+@media (max-width: 600px) {
+  .champ h2 { font-size: 48px; }
+  .path-r { grid-template-columns: 90px 34px minmax(0, 1fr) 46px; }
+  .path-r .pr-note { grid-column: 1 / -1; }
+  .aw-grid { grid-template-columns: 1fr 1fr; }
+  .allnba { grid-template-columns: 1fr 1fr; }
+  .an-l { grid-column: 1 / -1; }
+  .ldr-grid { grid-template-columns: 1fr; }
+  .sbox td:nth-child(n+7), .sbox th:nth-child(n+7) { display: none; }
+}
+.tsm .t b { font-size: 28px; white-space: nowrap; }
+.sbox td:first-child { display: table-cell; white-space: nowrap; }
+.sbox .sb-f { display: inline-block; vertical-align: middle; margin-right: 10px; }
+.sbox th { text-transform: uppercase; }
+.aw-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0 18px; }
+.aw-row .aw { border-bottom: 0; }
+.sbox th:first-child { width: 230px; }
+@media (max-width: 600px) { .aw-row { grid-template-columns: 1fr 1fr; } }
+h3 .sw { display: flex; gap: 16px; font-style: normal; }
+h3 .sw a { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); text-decoration: none; padding-bottom: 6px; margin-bottom: -8px; border-bottom: 2px solid transparent; }
+h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* menu */
+.myteam { display: flex; align-items: center; gap: 12px; }
+.myteam span { display: block; font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+.myteam b { font: 800 28px/1 var(--cond); text-transform: uppercase; }
+.myteam .reroll { margin-left: auto; font: italic 500 13px Inter, sans-serif; color: var(--ink2); }
+.modes { display: flex; flex-direction: column; }
+.mode { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 32px; padding: 24px 0; border-top: 1.5px solid var(--rule2); }
+.mode:first-child { border-top: 5px double var(--rule2); }
+.mode .eb { font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+.mode h2 { margin: 4px 0 6px; font: 800 48px/0.95 var(--cond); text-transform: uppercase; }
+.mode p { margin: 0; font-size: 16px; font-style: italic; color: var(--ink2); max-width: 46ch; }
+.mode-act { display: flex; align-items: center; gap: 20px; margin-top: 16px; }
+.mode-act .btn { width: auto; padding: 12px 32px; }
+.mode-act a { color: var(--ink2); font-size: 14px; }
+.mode-act span { font: 500 13px var(--num); color: var(--ink3); }
+.mode-daily { display: flex; flex-direction: column; justify-content: center; gap: 0; border-left: 1px solid var(--rule); padding-left: 28px; }
+.dl { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.dl:last-child { border-bottom: 0; }
+.dl-t { display: block; font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold); }
+.dl-l { display: block; margin-top: 4px; font-size: 16px; color: var(--ink); }
+.dl-s { display: block; margin-top: 4px; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.dl.played .dl-t { color: var(--ink3); }
+.dl.played .dl-l { color: var(--ink2); }
+/* modals */
+.modal { position: fixed; z-index: 6; left: 50%; top: 40px; transform: translateX(-50%); width: min(620px, calc(100% - 32px)); max-height: calc(100vh - 80px); overflow: auto; background: var(--bg); border-top: 5px double var(--rule2); padding: 18px 24px 24px; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+.x { color: var(--ink2); text-decoration: none; font-size: 18px; margin-left: auto; }
+.pk2-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.pk2-head img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--surf2); border: 1.5px solid var(--ink); }
+.pk2-head h2 { margin: 0; font: 800 34px/1 var(--cond); text-transform: uppercase; }
+.pk2-head span { font-size: 13px; color: var(--ink3); }
+.pk2-card { background: var(--card); color: var(--cink); border-radius: 3px; padding: 14px 16px 16px; margin-bottom: 16px; }
+.pk2-top { display: flex; align-items: baseline; gap: 12px; }
+.pk2-top .eb { font: 700 11px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
+.pk2-top b { font: 800 24px var(--cond); }
+.coin2 { margin-left: auto; font: 700 18px var(--num); }
+.pk2-nums { display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 10px; border-top: 1.5px solid var(--cink); }
+.pk2-nums div { text-align: center; padding: 10px 0 4px; }
+.pk2-nums div + div { border-left: 1px solid var(--cline); }
+.pk2-nums b { display: block; font: 600 20px var(--num); }
+.pk2-nums span { font: 700 11px Inter, sans-serif; letter-spacing: 0.1em; color: var(--cink2); }
+.pk2-grades { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cline); }
+.pk2-tier { font: 800 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; padding-right: 8px; }
+.gr { font-size: 13px; color: var(--cink2); }
+.gr b { font: 700 16px var(--num); color: var(--cink); margin-right: 4px; }
+.gr b.hi { color: var(--cgold); }
+.gr b.lo { color: var(--cred); }
+.pk2-card .btn.go { background: var(--cink); color: var(--card); }
+.pk2-scout { display: flex; align-items: center; gap: 16px; padding: 10px 0 14px; font-size: 14px; font-style: italic; color: var(--ink2); }
+.pk2-scout .btn { width: auto; padding: 10px 16px; font-size: 16px; flex: none; }
+.pk2-rows { width: 100%; border-collapse: collapse; }
+.pk2-rows td { padding: 10px 8px 10px 0; border-bottom: 1px solid var(--rule); font: 500 14px var(--num); color: var(--ink2); }
+.pk2-rows td.y { font: 700 18px var(--cond); color: var(--ink); }
+.pk2-rows td.t { font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink2); }
+.pk2-rows td.cap { color: var(--gold); text-align: right; }
+.pk2-rows td.car { color: var(--ink3); width: 16px; }
+.pk2-all { display: inline-block; margin-top: 12px; color: var(--ink2); font-size: 14px; }
+/* bomb */
+.bombm { text-align: center; border-top-color: var(--gold); }
+.bombm .eb { font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.bombm h2 { margin: 6px 0 14px; font: 800 48px/1 var(--cond); text-transform: uppercase; }
+.sil { display: inline-grid; place-items: center; width: 120px; height: 120px; border-radius: 50%; border: 2px dashed var(--gold); font: 800 64px var(--cond); color: var(--gold); }
+.sil.sm { width: 72px; height: 72px; font-size: 40px; }
+.bdesc { margin: 16px auto 10px; max-width: 44ch; font-size: 18px; font-style: italic; color: var(--ink); line-height: 1.5; }
+.bmeta { display: flex; justify-content: center; gap: 18px; font: 600 14px var(--num); color: var(--ink2); margin-bottom: 8px; }
+.bombm .btn { max-width: 320px; margin: 16px auto 0; }
+.br-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+.br { padding: 12px 18px; border-left: 1px solid var(--rule); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.br:first-child { border-left: 0; padding-left: 0; }
+.br .eb { font: 700 11px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.br img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--surf2); border: 2px solid var(--gold); }
+.br p { margin: 0; font-size: 14px; font-style: italic; color: var(--ink2); }
+.br.hidden .sil { border-color: var(--ink4); color: var(--ink4); }
+.br .btn { width: auto; padding: 10px 16px; font-size: 16px; }
+/* minutes */
+.mins2 { width: 100%; border-collapse: collapse; }
+.mins2 td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.mins2 td.pos { width: 56px; font: 800 24px var(--cond); border-bottom: 1.5px solid var(--rule2); vertical-align: top; padding-top: 12px; }
+.mins2 .ml { display: block; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.mins2 .pick { border: 0; border-bottom: 1px dashed var(--ink3); background: transparent; padding: 2px 0; font: 700 20px var(--cond); color: var(--ink); cursor: pointer; }
+.mins2 td.mw { width: 260px; }
+.step { width: 140px; white-space: nowrap; }
+.step button { width: 30px; height: 30px; border: 1.5px solid var(--ink4); background: transparent; color: var(--ink); border-radius: 3px; font: 700 16px var(--num); }
+.step b { display: inline-block; width: 44px; text-align: center; font: 600 18px var(--num); }
+.mbar { position: relative; }
+.mbar i { display: block; height: 6px; background: var(--card); }
+.addr { font-size: 13px; color: var(--ink3); border-bottom: 1.5px solid var(--rule2) !important; }
+.addr a { color: var(--ink2); font-style: italic; }
+.addr span { float: right; font: 600 13px var(--num); color: var(--gold); }
+/* share */
+.sharem .sm-head { display: flex; align-items: center; margin-bottom: 12px; }
+.sc-rank { font: 800 64px/0.9 var(--cond); }
+.sc-rank sup { font-size: 28px; vertical-align: 32px; }
+@media (max-width: 600px) {
+  .mode { grid-template-columns: 1fr; gap: 14px; }
+  .mode h2 { font-size: 40px; }
+  .mode-daily { border-left: 0; padding-left: 0; border-top: 1px solid var(--rule); }
+  .br-steps { grid-template-columns: 1fr; }
+  .br { border-left: 0; padding-left: 0; border-top: 1px solid var(--rule); }
+  .mins2 .mbar { display: none; }
+  .mins2 td.mw { width: auto; }
+}
+
+/* menu v2 */
+.m2 { grid-column: 1 / -1; max-width: 640px; margin: 0 auto; padding: 40px 0 32px; width: 100%; }
+.m2-mast { text-align: center; border-top: 6px double var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 16px 0 12px; }
+.m2-mast b { display: block; font: 800 64px/0.9 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.m2-mast span { font: italic 500 16px Inter, sans-serif; color: var(--ink2); }
+.m2-team { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 18px 0 0; font: 700 18px var(--cond); }
+.m2-team a { font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+.m2-resume { display: flex; justify-content: space-between; margin-top: 24px; padding: 10px 14px; border-left: 3px solid var(--red); background: var(--surf); font-size: 14px; color: var(--ink2); }
+.m2-resume a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.m2-modes { list-style: none; margin: 24px 0 0; padding: 0; }
+.m2-modes li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
+.m2-modes li:first-child { border-top: 1px solid var(--rule); }
+.m2-n { font: 600 14px var(--num); color: var(--ink3); }
+.m2-modes b { display: block; font: 800 34px/1 var(--cond); text-transform: uppercase; }
+.m2-modes li > div span { font-size: 14px; color: var(--ink2); }
+.m2-modes em { font: 500 12px var(--num); font-style: normal; color: var(--ink3); }
+.m2-go { font: 800 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.m2-today { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 24px; }
+.m2-tl { grid-column: 1 / -1; font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold); }
+.m2-d { display: block; padding: 10px 12px; border: 1px solid var(--rule3); border-radius: 3px; text-decoration: none; color: var(--ink); }
+.m2-d b { display: block; font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.m2-d span { font-size: 12px; color: var(--ink3); }
+.m2-d.done { opacity: 0.5; }
+.m2-foot { display: flex; justify-content: center; gap: 24px; margin-top: 28px; font-size: 14px; }
+.m2-foot a { color: var(--ink3); }
+/* minutes v2 */
+.rot2 { display: flex; flex-direction: column; gap: 12px; }
+.r2 { display: grid; grid-template-columns: 50px minmax(0, 1fr); align-items: center; gap: 14px; }
+.r2-pos { font: 800 24px var(--cond); }
+.r2-bar { position: relative; display: flex; height: 48px; border-radius: 3px; overflow: hidden; background: var(--surf2); }
+.r2-a { display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: var(--card); color: var(--cink); }
+.r2-b { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; color: var(--ink2); }
+.r2-bar b { font: 700 18px var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r2-bar i { font: 600 16px var(--num); font-style: normal; }
+.r2-h { position: absolute; top: 0; bottom: 0; width: 4px; margin-left: -2px; background: var(--bg); }
+.r2.drag .r2-h { background: var(--red); width: 6px; margin-left: -4px; box-shadow: 0 0 0 2px var(--bg); }
+.r2.drag .r2-h::after { content: '36 · 12'; position: absolute; top: -22px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 11px var(--num); color: var(--red); }
+/* poster */
+.sharem2 { width: min(560px, calc(100% - 32px)); }
+.sharem2 .sm-head { display: flex; align-items: center; margin-bottom: 12px; }
+.sw2 { display: flex; gap: 16px; }
+.sw2 a { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); text-decoration: none; padding-bottom: 4px; border-bottom: 2px solid transparent; }
+.sw2 a.on { color: var(--ink); border-bottom-color: var(--ink); }
+.poster { background: var(--card); color: var(--cink); padding: 16px 18px 12px; border-radius: 3px; }
+.po-mast { display: flex; justify-content: space-between; align-items: baseline; border-top: 4px double var(--cink); border-bottom: 1.5px solid var(--cink); padding: 6px 0 5px; font: italic 500 11px Inter, sans-serif; color: var(--cink2); }
+.po-mast b { font: 800 14px var(--cond); font-style: normal; text-transform: uppercase; letter-spacing: 0.06em; color: var(--cink); }
+.po-head { padding: 12px 0 6px; }
+.po-kick { font: 700 11px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cred); }
+.po-head h2 { margin: 4px 0 6px; font: 800 48px/0.92 var(--cond); text-transform: uppercase; }
+.po-head p { margin: 0; font-size: 14px; font-style: italic; color: var(--cink2); line-height: 1.4; }
+.po-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
+.po-p { text-align: center; }
+.po-ph { height: 86px; background: var(--team); display: grid; place-items: end center; overflow: hidden; border-radius: 3px; }
+.po-ph img { width: min(82px, 100%); height: auto; aspect-ratio: 1; object-fit: cover; margin-bottom: -6px; }
+.po-p b { display: block; margin-top: 4px; font: 800 16px/1 var(--cond); text-transform: uppercase; }
+.po-p small { font: 500 9px var(--num); color: var(--cink2); }
+.po-strip { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 12px; border-top: 1.5px solid var(--cink); border-bottom: 1.5px solid var(--cink); }
+.po-strip div { text-align: center; padding: 7px 0; }
+.po-strip div + div { border-left: 1px solid var(--cline); }
+.po-strip span { display: block; font: 700 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
+.po-strip b { font: 800 24px var(--cond); }
+.po-foot { display: flex; align-items: center; gap: 10px; padding-top: 10px; font: 600 11px var(--num); color: var(--cink2); }
+.po-foot .mark { width: 26px; height: 26px; font-size: 18px; border-radius: 6px; color: var(--card); background: var(--cink); }
+@media (max-width: 600px) {
+  .m2-mast b { font-size: 48px; }
+  .m2-modes li { grid-template-columns: 26px minmax(0, 1fr) auto; }
+  .m2-modes em { display: none; }
+  .m2-today { grid-template-columns: 1fr 1fr; }
+  .r2-bar b { font-size: 14px; }
+  .po-head h2 { font-size: 40px; }
+}
+
+/* rotation v3 */
+.rot3 { display: flex; flex-direction: column; gap: 14px; }
+.swap { margin: 8px 48px 4px 64px; padding: 8px 14px; background: var(--surf); border-left: 3px solid var(--ink); }
+.r3 { position: relative; display: grid; grid-template-columns: 50px minmax(0, 1fr) 30px; gap: 14px; align-items: center; }
+.r3p { font: 800 24px var(--cond); }
+.r3b { display: flex; height: 48px; border-radius: 3px; overflow: hidden; background: var(--surf2); }
+.sg { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 12px; min-width: 0; color: var(--ink2); background: var(--surf2); }
+.sg.st { background: var(--card); color: var(--cink); }
+.sg.third { background: #26272B; }
+.sg.sel { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
+.sg b { font: 700 16px var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg i { font: 600 14px var(--num); font-style: normal; }
+.r3b u { flex: none; width: 4px; background: var(--bg); position: relative; cursor: ew-resize; }
+.r3b u.act { width: 6px; background: var(--red); }
+.r3b u.act em { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 11px var(--num); font-style: normal; color: var(--red); }
+.r3x { width: 30px; height: 30px; display: grid; place-items: center; border: 1.5px solid var(--rule3); border-radius: 50%; color: var(--ink2); text-decoration: none; font: 700 16px var(--num); }
+.pop { position: absolute; z-index: 3; top: 54px; right: 44px; width: 470px; background: var(--surf); border: 1.5px solid var(--rule2); padding: 10px 14px; box-shadow: 0 16px 40px rgba(0,0,0,.6); }
+.pop-h { display: block; font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 4px; }
+.pop-r { display: grid; grid-template-columns: 150px 26px minmax(0, 1fr) 150px; gap: 8px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--rule); }
+.pop-r b { font: 700 18px var(--cond); }
+.pop-r small { font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.pop-r .fit { font: italic 500 12px Inter, sans-serif; color: var(--ink2); }
+.pop-r .fit.bad { color: var(--red); }
+.pop-r .now { font: 500 11px var(--num); color: var(--ink3); text-align: right; }
+.pop-r.on b { box-shadow: inset 0 -2px 0 var(--ink); }
+.who3 { width: 100%; border-collapse: collapse; }
+.who3 td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.who3 td.n { width: 180px; font: 700 16px var(--cond); color: var(--ink); }
+.who3 td.m { width: 40px; font: 600 16px var(--num); color: var(--ink); text-align: right; }
+.who3 td.c { width: 200px; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+.who3 .cb { position: relative; height: 6px; background: var(--rule); }
+.who3 .cb i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink2); }
+.who3 .cb u { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.who3 tr.over td.n, .who3 tr.over td.m, .who3 tr.over td.c { color: var(--red); }
+.who3 tr.over .cb i { background: var(--red); }
+/* posters for all modes */
+.share-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 520px)); justify-content: center; gap: 28px; padding: 10px 0 30px; }
+.po-bench { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--cline); }
+.po-bench > span { font: 700 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
+.po-bench b { font: 700 14px var(--cond); text-transform: uppercase; }
+.po-bench b small { font: 700 9px Inter, sans-serif; color: var(--cink2); margin-left: 3px; }
+.po-ph.pback { background: repeating-linear-gradient(45deg, #1E1C18 0 6px, #2A2824 6px 12px); place-items: center; }
+.po-ph.pback span { font: 800 40px var(--cond); color: #E5C06A; }
+.champ-p .po-head h2 { color: var(--cgold); }
+.champ-p { box-shadow: inset 0 0 0 3px var(--cgold2); }
+@media (max-width: 600px) { .sg .fn { display: none; } .pop-r { padding: 6px 0; } .swap { margin: 8px 0 0; } .r3 { grid-template-columns: 34px minmax(0, 1fr) 26px; gap: 8px; } .r3p { font-size: 18px; } .sg { padding: 0 6px; } .sg b { font-size: 13px; } .sg i { font-size: 12px; } .r3b { height: 44px; } .share-grid { grid-template-columns: 1fr; } .pop { right: 0; width: auto; left: 0; } .pop-r { grid-template-columns: minmax(0, 1fr) 30px; } .pop-r .fit, .pop-r .now { grid-column: 1 / -1; text-align: left; } .who3 td.c { display: none; } }
+
+.po-p em { display: block; margin-top: 2px; font: 700 13px var(--num); font-style: normal; color: var(--cink); }
+.po-prof { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--cline); }
+.pp span { display: block; font: 700 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
+.pp b { font: 800 20px/1.1 var(--cond); }
+.pp i { display: block; height: 4px; background: var(--cline); margin-top: 2px; }
+.pp i u { display: block; height: 100%; background: var(--cink); }
+.pp.hi b { color: var(--cgreen); } .pp.hi i u { background: var(--cgreen); }
+.pp.lo b { color: var(--cred); } .pp.lo i u { background: var(--cred); }
+.po-bench b small { font: 600 9px var(--num); }
+/* story 9:16 */
+.story-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 300px); justify-content: center; gap: 22px; padding: 10px 0 30px; }
+.story { width: 300px; height: 533px; overflow: hidden; background: var(--card); color: var(--cink); padding: 10px 14px; border-radius: 3px; display: flex; flex-direction: column; }
+.story .po-head { padding: 6px 0 0; }
+.story .po-head h2 { font-size: 28px; }
+.story .po-head p { font-size: 10px; margin-top: 2px; }
+.st-sec { margin-top: 7px; font: 700 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); border-bottom: 1px solid var(--cink); padding-bottom: 2px; }
+.st-r { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 2px 0; border-bottom: 1px solid var(--cline); }
+.st-f { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; background: var(--team, #2A2824); display: grid; place-items: end center; }
+.st-f img { width: 24px; height: 24px; object-fit: cover; }
+.st-f.pback { background: repeating-linear-gradient(45deg, #1E1C18 0 4px, #2A2824 4px 8px); place-items: center; }
+.st-f.pback span { font: 800 16px var(--cond); color: #E5C06A; }
+.st-n b { display: block; font: 800 13px/1 var(--cond); text-transform: uppercase; }
+.st-n small { display: block; margin-top: 2px; font: 500 8px/1.1 var(--num); color: var(--cink2); }
+.st-r em { font: 700 13px var(--num); font-style: normal; }
+.st-r em small { font-size: 8px; color: var(--cink2); }
+.st-bench { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 3px; }
+.st-bench b { display: block; font: 800 12px/1 var(--cond); text-transform: uppercase; }
+.st-bench small { display: block; font: 600 8px/1.2 var(--num); color: var(--cink2); }
+.story .po-prof { gap: 6px; margin-top: 4px; padding-top: 2px; border-top: 0; }
+.story .pp b { font-size: 16px; }
+.story .pp span { font-size: 7px; }
+.story .po-strip { margin-top: auto; padding: 4px 0; }
+.story .po-strip b { font-size: 18px; }
+.story .po-strip span { font-size: 7px; }
+.story .po-foot { font-size: 8px; padding-top: 4px; }
+.story .po-foot .mark { width: 20px; height: 20px; font-size: 13px; }
+.story .po-mast { font-size: 8px; padding: 3px 0 2px; }
+.story .po-kick { font-size: 9px; }
+.story .po-head h2 { margin: 2px 0 3px; }
+.story .po-strip div { padding: 4px 0; }
+.story .po-strip b { line-height: 1.1; }
+.story .po-mast b { font-size: 10px; }
+.st-extra { font-size: 10px; color: var(--cink2); }
+.ex-path { display: flex; gap: 8px; margin-top: 4px; }
+.ex-path span { display: flex; align-items: center; gap: 4px; }
+.ex-path small { font: 700 8px var(--cond); text-transform: uppercase; }
+.ex-path .tm { width: 24px; height: 16px; font-size: 8px; }
+.ex-path b { font: 700 11px var(--num); color: var(--cink); }
+.ex-aw { margin-top: 4px; font-style: italic; }
+.ex-aw b { font-style: normal; color: var(--cink); }
+.story .champ-p, .story.champ-p { box-shadow: inset 0 0 0 3px var(--cgold2); }
+@media (max-width: 600px) { .story-grid { grid-template-columns: 300px; } .poster { padding: 12px; } .po-head h2 { font-size: 34px; } .po-head p { font-size: 13px; } .po-ph { height: 62px; } .po-p b { font-size: 13px; } .po-p small { display: none; } .po-p em { font-size: 11px; white-space: nowrap; } .po-prof { gap: 6px; } .pp span { letter-spacing: 0.06em; } .po-strip b { font-size: 20px; } .po-strip span { letter-spacing: 0.06em; } }
+/* your team, reversed rows (see draft.css) */
+.stand2 tr.you td { background: var(--you-bg); color: var(--you-ink); }
+.stand2 tr.you td.rk { box-shadow: none; padding-left: 8px; color: var(--you-ink); }
+.stand2 tr.you td * { color: var(--you-ink); }
+.stand2 tr.you td.nm i { color: var(--you-ink2); }
+.bg-team.you { background: var(--you-bg); box-shadow: none; border-radius: 3px; padding: 4px 0; }
+.bg-team.you b, .bg-team.you small { color: var(--you-ink); }
+.series .tr.you { background: var(--you-bg); color: var(--you-ink); padding: 4px 6px; margin: 0 -6px; border-radius: 3px; }
+.series .tr.you .sd, .series .tr.you .w { color: var(--you-ink); }
+.leaders tr.you td { background: var(--you-tint); }
+.leaders tr.you td.k { color: var(--ink); }
+.leaders td.k { padding-left: 8px; } .leaders td.v { padding-right: 8px; }
+
+/* All-Star Game: the captains' draft (two best All-Stars captain a side and pick in turns) */
+.asg { display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); align-items: start; }
+.asg-vs { margin-top: 26px; text-align: center; font: 800 20px var(--cond); color: var(--ink3); }
+.asg-cap { display: flex; gap: 14px; align-items: center; padding-bottom: 12px; border-bottom: 1.5px solid var(--rule2); }
+.asg-cap img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.asg-cap b { display: block; font: 800 28px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.asg-cap small { display: block; margin-top: 4px; font-size: 13px; font-style: italic; color: var(--ink3); }
+.asg-h { display: block; margin: 14px 0 2px; font: 700 11px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+.asg-r { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.asg-r .pk { font: 500 12px var(--num); color: var(--ink3); }
+.asg-r .nm { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.asg-r .nm span { font: 700 16px var(--cond); color: var(--ink); }
+.asg-r .nm small { margin-left: 6px; font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.asg-r .v { font: 600 14px var(--num); color: var(--ink2); }
+.asg-r.res .nm span { font-size: 16px; color: var(--ink2); }
+.asg-r.you .nm { justify-self: start; max-width: calc(100% + 6px); background: var(--you-bg); padding: 2px 6px; margin-left: -6px; border-radius: 3px; }
+.asg-r.you .nm span { color: var(--you-ink); } .asg-r.you .nm small { color: var(--you-ink2); }
+.asg-note { margin: 10px 0 0; font-size: 13px; font-style: italic; color: var(--ink3); }
+@media (max-width: 600px) {
+  .asg-sec h3 span { display: none; }
+  .aw-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .aw.big { flex-direction: row; align-items: center; gap: 14px; border-top: 0; border-bottom: 1px solid var(--rule); padding: 12px 0; }
+  .aw.big .aw-f img { width: 52px; height: 52px; }
+  .aw.big b { font-size: 20px; }
+  .allnba { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .allnba .an-l { flex-basis: 100%; margin-bottom: -2px; }
+  .an-p { max-width: 100%; }
+  .an-p.you { margin-left: 0; }
+}
+
+/* All-League fives: each team is a line of five faces, your players printed in reverse */
+.nba { display: grid; grid-template-columns: 110px repeat(5, minmax(0, 1fr)); gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.nt { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 3px; min-width: 0; }
+.nt img { flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.nt div { min-width: 0; }
+.nt b { display: block; font: 700 16px/1.1 var(--cond); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt small { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); white-space: nowrap; }
+.nt.you { background: var(--you-bg); }
+.nt.you b { color: var(--you-ink); } .nt.you small { color: var(--you-ink2); }
+@media (max-width: 600px) {
+  .nba { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .nba .an-l { grid-column: 1 / -1; }
+  .nt { flex-direction: column; gap: 4px; padding: 6px 2px; margin: 0; text-align: center; }
+  .nt img { width: 40px; height: 40px; }
+  .nt b { font-size: 14px; } .nt .fn { display: none; }
+  .nt small .st { display: none; }
+  /* All-Star: the two sides stand next to each other, surnames only */
+  .asg { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 14px; }
+  .asg-vs { display: none; }
+  .asg-cap { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .asg-cap img { width: 48px; height: 48px; }
+  .asg-cap b { font-size: 20px; }
+  .asg-cap small { font-size: 12px; }
+  .asg-r { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 4px; }
+  .asg-r .nm span { font-size: 15px; } .asg-r .nm small, .asg-r .fn { display: none; }
+  .asg-r .v { font-size: 13px; }
+  .asg-res { display: block; padding-top: 0; }
+  .asg-res .asg-r { display: grid; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+  .asg-res .asg-r .pk, .asg-res .asg-r .v { display: inline; }
+  .asg-r.you .nm { margin-left: -6px; }
+}
+
+/* in-season: progress, MVP race, best game, team records */
+.sprog { height: 4px; background: var(--rule); margin-top: -12px; }
+.sprog i { display: block; height: 100%; background: var(--ink2); }
+.mvp-r { display: grid; grid-template-columns: 22px 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 8px; border-bottom: 1px solid var(--rule); }
+.mvp-r.you { background: var(--you-tint); }
+.mvp-r .rk { font: 600 14px var(--num); color: var(--ink3); }
+.mvp-r img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.mvp-r b { display: block; font: 700 18px/1.1 var(--cond); color: var(--ink); }
+.mvp-r b small { margin-left: 6px; font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.mvp-r .ln { display: block; margin-top: 3px; font: 500 12px var(--num); color: var(--ink3); }
+.mvp-r .trd { font: 600 13px var(--num); color: var(--ink3); white-space: nowrap; }
+.mvp-r .trd.up { color: var(--green); } .mvp-r .trd.down { color: var(--red); }
+.gos { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px 0 12px; border-bottom: 1px solid var(--rule); }
+.gos img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.gos b { display: block; font: 700 20px/1.1 var(--cond); color: var(--ink); }
+.gos b em { font: 600 20px var(--num); font-style: normal; color: var(--ink); margin-left: 6px; }
+.gos b em small { font: 500 12px Inter, sans-serif; color: var(--ink3); margin-left: 3px; }
+.gos .ln { display: block; margin-top: 4px; font: 500 12px var(--num); color: var(--ink2); }
+.gos .ctx { display: block; margin-top: 2px; font-size: 13px; font-style: italic; color: var(--ink3); }
+@media (max-width: 600px) { .mvp-r { grid-template-columns: 18px 40px minmax(0, 1fr) auto; gap: 10px; padding: 10px 4px; } .mvp-r img { width: 40px; height: 40px; } }
+.stack { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+
+/* small windows: settings, how to play, leave; loading */
+.dlg { position: fixed; z-index: 6; left: 50%; top: 60px; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); max-height: calc(100vh - 100px); overflow: auto; background: var(--bg); border-top: 5px double var(--rule2); padding: 18px 24px 24px; box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }
+.dlg.sm { width: min(440px, calc(100% - 32px)); top: 140px; }
+.dlg-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1.5px solid var(--rule2); padding-bottom: 8px; margin-bottom: 6px; }
+.dlg-head h2 { margin: 0; font: 800 34px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.dlg-head a { color: var(--ink2); text-decoration: none; font-size: 18px; }
+.dlg p.lead { margin: 10px 0 18px; font-size: 16px; line-height: 1.5; color: var(--ink2); }
+.set-r { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.set-r > b { display: block; font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.set-opts { display: flex; gap: 22px; margin: 10px 0 8px; }
+.set-opts span { font: 700 20px var(--cond); color: var(--ink3); padding-bottom: 4px; border-bottom: 2px solid transparent; cursor: pointer; }
+.set-opts span.on { color: var(--ink); border-bottom-color: var(--ink); }
+.set-r p { margin: 0; font-size: 14px; font-style: italic; color: var(--ink3); line-height: 1.45; }
+.rules { margin: 6px 0 18px; padding: 0; list-style: none; }
+.rules li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.rules li > span { font: 800 34px/0.9 var(--cond); color: var(--ink3); }
+.rules b { display: block; font: 700 18px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.rules p { margin: 4px 0 0; font-size: 15px; line-height: 1.5; color: var(--ink2); }
+.rules p .capi { vertical-align: -2px; }
+.load { grid-column: 1 / -1; width: 100%; max-width: 520px; margin: 0 auto; padding: 18vh 16px 0; }
+.load .mast b { font-size: 48px; }
+.load-l { margin: 28px 0 10px; display: flex; justify-content: space-between; align-items: baseline; font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.load-l em { font: 600 16px var(--num); font-style: normal; color: var(--ink); }
+.load-bar { height: 4px; background: var(--rule); }
+.load-bar i { display: block; height: 100%; background: var(--ink2); }
+.load p { margin: 12px 0 0; font-size: 14px; font-style: italic; color: var(--ink3); }
+@media (max-width: 600px) { .dlg { top: 24px; padding: 16px; } .dlg.sm { top: 120px; } .dlg-head h2 { font-size: 28px; } .load { padding-top: 14vh; } }
+
+/* daily: today's rules before the lottery */
+.dday { grid-column: 1 / -1; width: 100%; max-width: 680px; margin: 0 auto; padding: 24px 0 40px; }
+.dday .mast b { color: var(--gold); }
+.dday h2 { margin: 18px 0 4px; font: 800 64px/0.95 var(--cond); text-transform: uppercase; }
+.dday .lead { margin: 0 0 18px; font-size: 16px; font-style: italic; color: var(--ink2); }
+.drule { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--rule); align-items: start; }
+.drule .ic { display: flex; align-items: center; justify-content: center; height: 15px; }
+.drule:first-of-type { border-top: 1.5px solid var(--rule2); }
+.drule .ic { font: 800 18px/1 var(--cond); color: var(--ink); }
+.drule .ic.cap .capn { display: none; }
+.drule .who { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+.drule b { display: block; margin-top: 2px; font: 700 22px/1.15 var(--cond); }
+.drule p { margin: 4px 0 0; font-size: 14px; font-style: italic; color: var(--ink3); line-height: 1.45; }
+.drule.only .who { color: var(--ink); }
+.dday .btn { margin-top: 22px; }
+.dday .links { margin-top: 14px; }
+/* phone the desk */
+.pd-line { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.pd-line.off { opacity: 0.4; }
+.pd-av { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--ink3); display: grid; place-items: center; font: 700 14px var(--cond); color: var(--ink); letter-spacing: 0.04em; }
+.pd-av.tv { border-radius: 3px; background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.pd-line b { font: 700 18px/1.1 var(--cond); }
+.pd-line b small { margin-left: 8px; font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+.pd-line p { margin: 3px 0 0; font-size: 14px; color: var(--ink2); line-height: 1.4; }
+.pd-line .bdg { font: 700 13px var(--cond); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); white-space: nowrap; padding-top: 3px; }
+.pd-line.free .bdg { color: var(--green); }
+.pd-top { display: flex; gap: 12px; align-items: center; border-bottom: 1.5px solid var(--rule2); padding-bottom: 10px; }
+.pd-top b { display: block; font: 800 28px/1 var(--cond); text-transform: uppercase; }
+.pd-top small { font-size: 13px; color: var(--ink3); font-style: italic; }
+.pd-top .air { margin-left: auto; font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; color: var(--red); white-space: nowrap; }
+.pd-top .air i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--red); margin-right: 6px; vertical-align: 1px; }
+.pd-say { margin: 14px 0 6px; font-size: 16px; line-height: 1.55; color: var(--ink2); }
+.pd-say b { color: var(--ink); font-weight: 600; }
+.pd-say.barge { padding-left: 12px; border-left: 3px solid var(--ink4); font-size: 15px; }
+.pd-say.barge em { font-style: normal; font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); margin-right: 6px; }
+.pd-pick { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 28px; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.pd-pick img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.pd-pick b { display: block; font: 700 18px/1.1 var(--cond); }
+.pd-pick small { font: 500 12px var(--num); color: var(--ink3); }
+.pd-pick .cst { font: 600 16px var(--num); color: var(--gold); white-space: nowrap; }
+.pd-pick .star { font-size: 20px; color: var(--ink4); text-align: center; }
+.pd-pick .star.on { color: var(--ink); }
+@media (max-width: 600px) { .dday { padding: 0 0 24px; } .dday h2 { font-size: 44px; } .drule { grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 12px 0; } .drule .ic { font-size: 16px; height: 14px; } .drule p { margin-top: 2px; } .drule b { font-size: 19px; } .pd-line { grid-template-columns: 36px minmax(0, 1fr); } .pd-line .bdg { grid-column: 2; padding: 0; } .pd-av { width: 36px; height: 36px; } }
+
+/* season player card */
+.pc-head { display: flex; gap: 16px; align-items: center; padding-bottom: 12px; border-bottom: 1.5px solid var(--rule2); }
+.pc-head img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.pc-head h2 { margin: 0; font: 800 34px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.pc-head small { display: block; margin-top: 4px; font: 500 13px var(--num); color: var(--ink3); }
+.pc-head .x { margin-left: auto; align-self: flex-start; color: var(--ink2); text-decoration: none; font-size: 18px; }
+.pc-facts { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.pc-facts b { color: var(--ink); font-weight: 600; }
+.pc-wrap { overflow-x: auto; margin: 6px 0 10px; }
+.pc-t { width: 100%; border-collapse: collapse; min-width: 560px; }
+.pc-t th { padding: 8px 6px 6px; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; color: var(--ink3); text-align: right; border-bottom: 1px solid var(--rule); }
+.pc-t th:first-child, .pc-t td:first-child { text-align: left; padding-left: 0; }
+.pc-t td { padding: 9px 6px; font: 500 14px var(--num); color: var(--ink2); text-align: right; border-bottom: 1px solid var(--rule); }
+.pc-t td:first-child { font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); }
+.pc-t td.k { color: var(--ink); font-weight: 600; }
+.pc-real { margin: 0; font-size: 14px; font-style: italic; color: var(--ink3); }
+.pc-real b { font-style: normal; color: var(--ink2); }
+/* your series */
+.steps { display: flex; flex-wrap: wrap; gap: 4px 22px; font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+.steps .ok { color: var(--ink2); } .steps .ok i { font-style: normal; color: var(--green); margin-right: 4px; }
+.steps .now { color: var(--red); }
+.sh-score { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; padding: 14px 0; }
+.sh-t { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sh-t.r { flex-direction: row-reverse; text-align: right; }
+.sh-t b { display: block; font: 800 26px/1 var(--cond); text-transform: uppercase; }
+.sh-t small { display: block; margin-top: 3px; font: 500 13px var(--num); color: var(--ink3); }
+.sh-big { text-align: center; }
+.sh-big b { display: block; font: 600 64px/1 var(--num); letter-spacing: -0.02em; }
+.sh-big span { font: italic 500 14px Inter, sans-serif; color: var(--ink3); }
+.sh-games { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1.5px solid var(--rule2); border-bottom: 1px solid var(--rule); }
+.sh-g { padding: 10px 8px; border-left: 1px solid var(--rule); }
+.sh-g:first-child { border-left: 0; padding-left: 0; }
+.sh-g span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
+.sh-g b { display: block; margin-top: 4px; font: 600 16px var(--num); }
+.sh-g b.w { color: var(--green); } .sh-g b.l { color: var(--red); }
+.sh-g small { font: 500 12px var(--num); color: var(--ink2); }
+.sh-g.next b { color: var(--red); font-family: var(--cond); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.sh-g.later b { color: var(--ink4); }
+.sh-edge { margin: 0; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 15px; color: var(--ink2); }
+.sh-edge i { font-style: normal; font: 800 16px var(--cond); margin-right: 8px; }
+.sh-edge i.up { color: var(--green); } .sh-edge i.dn { color: var(--red); }
+.sh-edge b { color: var(--ink); font-weight: 600; }
+.duel { display: grid; grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.duel .pl { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.duel .pl.r { flex-direction: row-reverse; text-align: right; }
+.duel img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.duel b { display: block; font: 700 17px/1.1 var(--cond); }
+.duel b small { margin-left: 6px; font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.duel .pl.r b small { margin: 0 6px 0 0; }
+.duel span.ln { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); }
+.duel .vs { text-align: center; font: 700 13px var(--cond); color: var(--ink3); text-transform: uppercase; }
+@media (max-width: 600px) { .sh-t b { font-size: 18px; } .sh-t img, .sh-t .tm { display: none; } .sh-big b { font-size: 44px; } .sh-games { grid-template-columns: repeat(7, minmax(0, 1fr)); } .sh-g { padding: 8px 3px; } .sh-g small { display: none; } .sh-g b { font-size: 14px; } .duel b { font-size: 15px; } .duel .fn { display: none; } .duel img { display: none; } .duel span.ln { white-space: nowrap; } .btn2.phone-only { display: grid !important; grid-template-columns: 1fr 1fr; margin: 4px 0 6px; } .pc-head h2 { font-size: 28px; } .pc-head img { width: 56px; height: 56px; } }
+
+/* season simulation: day by day, month break, All-Star break, play-in */
+.board8 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; align-items: start; }
+.g8 { display: grid; grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; padding: 8px 8px; border-bottom: 1px solid var(--rule); }
+.g8.you { background: var(--you-tint); }
+.g8 .tmr { display: flex; align-items: center; gap: 8px; font: 700 16px var(--cond); color: var(--ink3); }
+.g8 .tmr.w { color: var(--ink); }
+.g8 .sc { font: 600 15px var(--num); color: var(--ink3); text-align: right; }
+.g8 .sc.w { color: var(--ink); }
+.g8 .nt { grid-column: 1 / -1; font-size: 12px; font-style: italic; color: var(--ink3); }
+.cal { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 3px; }
+.cal span { display: grid; place-items: center; align-content: center; height: 40px; font: 700 14px var(--cond); color: var(--ink4); border-bottom: 2px solid var(--rule); }
+.cal span small { font: 500 11px var(--num); color: var(--ink3); }
+.cal span.today small { color: var(--ink); }
+.stackb { display: grid; gap: 10px; }
+.cal span.w { color: var(--green); border-color: var(--green); }
+.cal span.l { color: var(--red); border-color: var(--red); }
+.cal span.today { color: var(--green); border-color: var(--ink); background: var(--surf); }
+.cal-l { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; font-style: italic; color: var(--ink3); }
+.mv { font: 600 12px var(--num); white-space: nowrap; }
+.mv.up { color: var(--green); } .mv.dn { color: var(--red); } .mv.eq { color: var(--ink4); }
+.potm { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.potm img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.potm b { display: block; font: 800 28px/1 var(--cond); text-transform: uppercase; }
+.potm .ln { display: block; margin-top: 6px; font: 600 14px var(--num); color: var(--ink); }
+.potm p { margin: 6px 0 0; font-size: 14px; font-style: italic; color: var(--ink3); }
+.vote { display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.vote .pos { font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
+.vote b { font: 700 16px var(--cond); }
+.vote b small { margin-left: 6px; font: 700 11px Inter, sans-serif; color: var(--ink3); }
+.vote em { font: 500 12px var(--num); font-style: normal; color: var(--ink2); }
+.vote b { justify-self: start; }
+.vote.you b { background: var(--you-bg); color: var(--you-ink); padding: 1px 6px; margin-left: -6px; border-radius: 3px; }
+.vote.you b small { color: var(--you-ink2); }
+.pi { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.pi-g { border-top: 1.5px solid var(--rule2); padding-top: 8px; margin-bottom: 18px; }
+.pi-g > span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); margin-bottom: 4px; }
+.pi-g .tr { display: grid; grid-template-columns: 22px 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 0; font: 700 17px var(--cond); color: var(--ink3); }
+.pi-g .tr.win { color: var(--ink); }
+.pi-g .tr .sd { font: 500 12px var(--num); color: var(--ink3); }
+.pi-g .tr .w { font: 600 16px var(--num); }
+.pi-g p { margin: 4px 0 0; font-size: 13px; font-style: italic; color: var(--ink3); }
+.pi-g.live { border-top-color: var(--red); }
+.pi-g.live > span { color: var(--red); }
+@media (max-width: 600px) { .g8x { display: none; } .more8 { margin-top: 10px; font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); } .stand2.mvt td:nth-child(6), .stand2.mvt th:nth-child(6) { display: table-cell; } .board8 { grid-template-columns: minmax(0, 1fr); } .cal { grid-template-columns: repeat(8, minmax(0, 1fr)); } .pi { grid-template-columns: minmax(0, 1fr); gap: 0; } .potm { grid-template-columns: 64px minmax(0, 1fr); } .potm img { width: 64px; height: 64px; } .potm b { font-size: 22px; } }
+
+/* watching a game live */
+.wp { margin-top: 2px; }
+.wp .bar { display: flex; height: 6px; margin: 6px 0; }
+.wp .bar i { background: var(--ink); } .wp .bar u { background: var(--ink4); }
+.wp .lb { display: flex; justify-content: space-between; font: 600 13px var(--num); color: var(--ink2); }
+.wp .lb b { color: var(--ink); font-weight: 600; }
+.ldr2 { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.ldr2 .k { font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; color: var(--ink3); }
+.ldr2 b { color: var(--ink); font-weight: 600; }
+.ldr2 em { font: 600 14px var(--num); font-style: normal; color: var(--ink); }
+.hunt { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 0 8px 14px; border-left: 3px solid var(--red); }
+.hunt i { font: 800 18px/1 var(--cond); font-style: normal; color: var(--red); text-align: center; }
+.hunt p { margin: 0; font-size: 15px; color: var(--ink2); }
+.hunt b { color: var(--ink); font-weight: 600; }
+.court { display: block; width: 100%; max-width: 420px; }
+.court-l { margin: 6px 0 0; font-size: 14px; color: var(--ink2); }
+.court-l b { color: var(--ink); font-weight: 600; }
+.feed .call { padding: 10px 0 10px 12px; border-bottom: 1px solid var(--rule); border-left: 3px solid var(--ink4); font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink); }
+.feed .call.up { border-left-color: var(--green); } .feed .call.dn { border-left-color: var(--red); }
+.feed .ln.k .w { color: var(--ink3); }
+.tabs2 { display: flex; gap: 22px; border-bottom: 1.5px solid var(--rule2); margin-bottom: 8px; }
+.tabs2 span { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 6px; border-bottom: 2px solid transparent; margin-bottom: -1.5px; }
+.tabs2 span.on { color: var(--ink); border-bottom-color: var(--ink); }
+@media (max-width: 600px) { .live-split > .stack { order: -1; } .court { max-width: 240px; } .live-aside .stackb { grid-template-columns: 1fr 1fr; } }
+
+/* live box score by quarter */
+.seg { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin: 2px 0 10px; }
+.seg > span { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 3px; border-bottom: 2px solid transparent; }
+.seg > span.on { color: var(--ink); border-bottom-color: var(--ink); }
+.seg > span small { font: italic 500 12px Inter, sans-serif; text-transform: none; letter-spacing: 0; color: var(--red); margin-left: 4px; }
+.seg .gap { flex: 1; }
+.lbx { width: 100%; border-collapse: collapse; }
+.lbx th { padding: 0 6px 6px; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; color: var(--ink3); text-align: right; border-bottom: 1px solid var(--rule); }
+.lbx th:first-child { text-align: left; padding-left: 0; }
+.lbx td { padding: 8px 6px; border-bottom: 1px solid var(--rule); text-align: right; font: 500 14px var(--num); color: var(--ink2); }
+.lbx td:first-child { text-align: left; padding-left: 0; font: 700 16px var(--cond); color: var(--ink); white-space: nowrap; }
+.lbx td:first-child i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); margin-right: 8px; vertical-align: 2px; }
+.lbx td:first-child i.off { background: transparent; box-shadow: inset 0 0 0 1px var(--ink4); }
+.lbx tr.bn td:first-child { color: var(--ink2); }
+.lbx td, .lbx th { white-space: nowrap; }
+.lbx td.k { color: var(--ink); font-weight: 600; }
+.lbx td.pos { color: var(--green); } .lbx td.neg { color: var(--red); }
+.lbx td.dnp { font-style: italic; font-family: Inter, sans-serif; font-size: 13px; color: var(--ink4); text-align: left; }
+.lbx th:not(:first-child), .lbx td:not(:first-child) { width: 64px; }
+.lbx td.dnp { width: auto; }
+.lb-note { margin: 8px 0 0; font-size: 13px; font-style: italic; color: var(--ink3); }
+.lbx tr.tot td { border-top: 1.5px solid var(--rule2); color: var(--ink); font-weight: 600; }
+@media (max-width: 600px) { .lbx .c-hide { display: none; } .lbx td, .lbx th { padding-left: 4px; padding-right: 4px; } .lbx td:first-child { font-size: 15px; } .lbx .fn { display: none; } </style>
+</head>
+<body>
+<div class="game" id="app"></div>
+<script>
+const T = {
+  BOI: ['Boise', 'Mooses', '#1f4d3a', '#e9c46a'], KEN: ['Kentucky', 'Chickens', '#b8322a', '#fff4dc'], ANC: ['Anchorage', 'Walruses', '#2b5d7d', '#f3f7fa'],
+  SFE: ['Santa Fe', 'Coyotes', '#a14a2c', '#f7d9a8'], DUL: ['Duluth', 'Yetis', '#3d4f66', '#e6f2ff'], TUL: ['Tulsa', 'Twisters', '#4b2a6b', '#d8c1f0'],
+  REN: ['Reno', 'Jackrabbits', '#1c1c22', '#ff5a36'], DET: ['Detroit', 'Gearheads', '#39424e', '#f08a24'], SCR: ['Scranton', 'Moles', '#5a3d2b', '#e8c07a'],
+  HON: ['Honolulu', 'Tiger Sharks', '#0f7c84', '#f4f1e4'], TPA: ['Tampa', 'Manatees', '#4a9a8f', '#ffffff'], LUB: ['Lubbock', 'Armadillos', '#d8a868', '#3a2a1c'],
+  BIS: ['Bismarck', 'Narwhals', '#1b2f5e', '#a7e3e0'], ASP: ['Aspen', 'Ibexes', '#e9eef2', '#2a3f5a'], ELP: ['El Paso', 'Scorpions', '#d9661f', '#1d1d1d'],
+  FRE: ['Fresno', 'Raisins', '#5e2750', '#f6b93b'],
+};
+const YOU = 'TUL';
+const _lum = (h) => { const v = h.replace('#', ''); const x = (v.length === 3 ? v.split('').map((c) => c + c).join('') : v).match(/../g).map((c) => parseInt(c, 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)); return 0.2126 * x[0] + 0.7152 * x[1] + 0.0722 * x[2]; };
+const _cr = (a, b) => { const [x, y] = [_lum(a), _lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+// light franchise colour + light text → dark ink; dark backgrounds keep the franchise text colour
+const tmInk = (bg, fg) => (_cr(bg, fg) < 4.5 && _cr(bg, '#1E1C18') > _cr(bg, '#FFFFFF') ? '#1E1C18' : fg);
+const tm = (c) => `<span class="tm" style="background:${T[c][2]};color:${tmInk(T[c][2], T[c][3])}">${c}</span>`;
+const tname = (c) => `${T[c][0]} ${T[c][1]}`;
+const P = {
+  durant: ['Kevin Durant', 'SF', '2012–14', 19, 'Greatest peak', [30.1, 7.6, 5.1], 5.1, 'Shot creator · Ball hawk', 'durant', 'OKC', '#007AC1', 92, 78, 'A', 'B+'],
+  payton: ['Gary Payton', 'PG', '1996–98', 15, 'All-NBA', [20.4, 4.6, 8.1], 3.0, 'Floor general · On-ball defender', 'gary-payton', 'SEA', '#00653A', 81, 90, 'B', 'A'],
+  garnett: ['Kevin Garnett', 'PF', '2002–04', 19.4, 'Greatest peak', [23.6, 13.7, 5.5], 0.7, 'Playmaking big · Mobile defender', 'kevin-garnett', 'MIN', '#0C2340', 86, 91, 'C', 'A'],
+  dirk: ['Dirk Nowitzki', 'PF', '2004–06', 18, 'MVP', [25.9, 9.3, 2.7], 4.1, 'Stretch big', 'dirk-nowitzki', 'DAL', '#00538C'],
+  ewing: ['Patrick Ewing', 'C', '1989–91', 22, 'All-NBA', [27.1, 10.9, 2.9], 0.1, 'Post scorer · Rim protector', 'patrick-ewing', 'NYK', '#006BB6'],
+  rodman: ['Dennis Rodman', 'PF', '1991–93', 6.9, 'All-Star', [9.8, 18.3, 2.1], 0.6, 'Roll man · Rebounder', 'dennis-rodman', 'DET', '#C8102E', 58, 92, 'D', 'A'],
+  klay: ['Klay Thompson', 'SG', '2015–17', 16.8, 'All-NBA', [22.2, 3.8, 2.2], 7.5, 'Movement shooter · Wing stopper', 'klay-thompson', 'GSW', '#1D428A', 84, 80, 'A+', 'A'],
+  dray: ['Draymond Green', 'PF', '2015–17', 9.8, 'All-Star', [12.3, 8.9, 7.1], 3.4, 'Playmaking big · Switchable big', 'draymond-green', 'GSW', '#1D428A'],
+  rallen: ['Ray Allen', 'SG', '2005–07', 17, 'All-NBA', [26.4, 4.5, 4.0], 7.8, 'Off-screen shooter', 'ray-allen', 'SEA', '#00653A'],
+  bwallace: ['Ben Wallace', 'C', '2002–04', 6.0, 'All-Star', [7.1, 15.4, 1.8], 0.1, 'Roll man · Rim protector', 'ben-wallace', 'DET', '#C8102E', 50, 96, 'D', 'A'],
+  gobert: ['Rudy Gobert', 'C', '2018–20', 9.1, 'All-Star', [15.4, 13.1, 1.8], 0, 'Roll man · Rim protector', 'rudy-gobert', 'UTA', '#002B5C'],
+  korver: ['Kyle Korver', 'SG', '2014–16', 8.3, 'All-Star', [11.1, 3.6, 2.4], 5.6, 'Off-screen shooter', 'kyle-korver', 'ATL', '#C8102E', 74, 62, 'A+', 'B'],
+  iggy: ['Andre Iguodala', 'SF', '2008–10', 12.4, 'All-Star', [17.4, 6.0, 5.5], 3.6, 'Playmaker · Wing stopper', 'andre-iguodala', 'PHI', '#006BB6', 72, 85, 'B', 'A'],
+  horry: ['Robert Horry', 'PF', '1996–98', 7.8, 'Starter', [9.2, 5.9, 2.6], 3.8, 'Stretch big', 'robert-horry', 'LAL', '#552583', 64, 74, 'B', 'B'],
+  conley: ['Mike Conley', 'PG', '2015–17', 13.8, 'All-Star', [17.9, 3.1, 5.9], 5.2, 'Floor general · On-ball defender', 'mike-conley', 'MEM', '#5D76A9'],
+};
+const p = (k) => { const a = P[k]; return { k, n: a[0], pos: a[1], y: a[2], f: a[3], tier: a[4], st: a[5], tpa: a[6], r: a[7], img: a[8], t: a[9], c: a[10], off: a[11], def: a[12], t3: a[13], dur: a[14] }; };
+const ini = (n) => n.split(' ').map((w) => w[0]).join('').slice(0, 2);
+const face = (x) => x.img ? `<img src="heads/${x.img}.png" alt="">` : `<span class="ini">${ini(x.n)}</span>`;
+const short = (n) => { const w = n.split(' '); return `${w[0][0]}. ${w.slice(1).join(' ')}`; };
+const SL = ['PG', 'SG', 'SF', 'PF', 'C'];
+const mast = (title, sub) => `<div class="mast keep"><b>${title}</b><small>${sub}</small></div>`;
+const tally = (you, mid, ai, { youK = 'Caps left', midK = 'Cap', aiK = 'Round' } = {}) => `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b class="${midK === 'Cap' ? '' : 'plain'}">${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b>${ai}</b></div></div>`;
+const capbar = (pct) => `<div class="capbar keep"><i style="width:${pct}%"></i></div>`;
+const links = `<div class="links"><a href="#">← Menu</a><a href="#">How to play</a><a href="#">Settings</a></div>`;
+const actions = (btn) => `<div class="actions">${btn}${links}</div>`;
+// red eyebrow only when something is happening now; every other eyebrow is quiet
+const prompt = (eb, h, line, ebCls = '') => `<div class="prompt"><span class="eb ${ebCls || (/^(On the clock|AI on the clock|Live)|tonight/.test(eb) ? 'now' : '')}">${eb}</span><h2>${h}</h2><p>${line}</p></div>`;
+function nine(st, bench, { open = [] } = {}) {
+  const slots = SL.map((s, i) => { const k = st[i]; if (k) { const x = p(k); return `<div class="slot filled" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div>${face(x)}<div class="nm">${short(x.n)}</div><div class="sb">${x.y} · <i class="capi"></i>${x.f}</div></div>`; } return s === 'PF' ? `<div class="slot empty sel">${s}<small>showing 231 ▾</small></div>` : `<div class="slot empty">${s}<small>tap to show</small></div>`; }).join('');
+  const b = [0, 1, 2, 3].map((i) => { const k = bench[i]; if (k) { const x = p(k); return `<div class="b filled" style="--team:${x.c}">${face(x)}<div><b>${short(x.n)}</b><span>${x.pos} · ${x.y} · <i class="capi"></i>${x.f}</span></div></div>`; } return `<div class="b empty">Bench ${i + 1}</div>`; }).join('');
+  return `<section><h3>Your nine<span>${st.filter(Boolean).length + bench.filter(Boolean).length} of 9 · ${tname(YOU)}</span></h3><div class="slots compact">${slots}</div><div class="bench">${b}</div></section>`;
+}
+const leftDraft = () => mast('All-Time Draft', 'Round 3 of 9 · pick 40 of 144') + tally('66.9', '100.9', '3/9') + capbar(34) + `<p class="sub-note keep"><b>66.9 caps</b> for seven spots · about 9.6 a pick</p>` +
+  `<section><h3>Your Big Board<span>starred</span></h3><ol class="bboard"><li class="gone">Tim Duncan<span>taken #33</span></li><li>Kevin Garnett<span>19.4</span></li><li>Dennis Rodman<span>6.9</span></li><li>Rudy Gobert<span>9.1</span></li></ol></section>` +
+  `<section class="latest-picks"><h3>Latest picks<span>around the league</span></h3><table class="log">${[[39, 'ANC', 'Jason Kidd, PG', 15], [38, 'SFE', 'Allen Iverson, PG', 22], [37, 'HON', 'Dikembe Mutombo, C', 8.1], [36, 'REN', 'Moses Malone, C', 20], [35, 'KEN', 'Isiah Thomas, PG', 17], [34, 'DUL', 'Scottie Pippen, SF', 15]].map(([n, c, w, f], i) => `<tr class="a ${i === 0 ? 'latest' : ''}"><td class="n">${n}</td><td class="w">${c}</td><td class="p">${w}</td><td class="c">${f}</td></tr>`).join('')}</table></section>` +
+  actions('<button class="btn line">Show draft board</button><button class="btn line">Phone the desk · 3 left</button>');
+
+
+// 2026-10-21, the user: a caps filter as its own bar, not typed into the search box.
+const capsBar = (lo, hi, maxPick, top = 30) => { const pct = (v) => (v / top) * 100; return `<div class="capsbar"><span class="cb-k">Caps</span><div class="cb-track"><i class="cb-range" style="left:${pct(lo)}%;width:${pct(hi - lo)}%"></i><b class="cb-h" style="left:${pct(lo)}%"></b><b class="cb-h" style="left:${pct(hi)}%"></b><u class="cb-max" style="left:${pct(maxPick)}%"><em>your max ${maxPick}</em></u>${[0, 5, 10, 15, 20, 25, 30].filter((t) => t <= top).map((t) => `<s style="left:${pct(t)}%">${t}</s>`).join('')}</div><span class="cb-v"><i class="capi"></i>${lo === 0 && hi === top ? "any" : `${lo}–${hi}`}</span><a class="cb-reset" href="#">reset</a></div>`; };
+const S = {};
+S.draft = () => [leftDraft(),
+  nine(['payton', '', 'durant', '', ''], []) +
+  prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
+  `<section>${filters(['PG', 'SF'])}${capsBar(0, 30, 24.5)}${plist2(['garnett', 'dirk', 'dray', 'rodman', 'horry'], { hot: 'garnett' })}<div class="more">Showing 10 of 1,522 player stretches · <a href="#">See more</a> · 3 scouting reports left</div></section>`];
+function filters(hidden = []) { const C = { PG: 212, SG: 236, SF: 248, PF: 231, C: 189 }; const have = ['PG', 'SF']; return `<div class="ptabs"><a class="pt" href="#"><b>All</b><span>1,116</span></a>${SL.map((x) => `<a class="pt ${have.includes(x) ? 'have' : 'need'} ${x === 'PF' ? 'on' : ''}" href="#"><b>${x}</b><span>${C[x]}</span></a>`).join('')}<span class="pt-more"><span>Role</span><u>Any</u><span>Sort</span><u>Best first</u></span><input class="search" placeholder="Search players…"></div>`; }
+function plist2(keys, { hot, no = [] } = {}) {
+  return `<table class="plist"><colgroup><col style="width:52px"><col><col class="c-hide" style="width:96px"><col class="c-hide" style="width:118px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col style="width:84px"><col class="c-hide" style="width:64px"><col class="c-hide" style="width:34px"><col style="width:96px"></colgroup>
+  <tr><th></th><th>Player</th><th class="c-hide">Years</th><th class="c-hide">Tier</th><th class="num c-hide">Pts</th><th class="num c-hide">Reb</th><th class="num c-hide">Ast</th><th class="num">Caps</th><th class="c-hide" style="text-align:center">Report</th><th class="c-hide"></th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos}</b> <i>· ${x.r}</i><span class="mst">${x.y}<br>${x.st.join(' / ')}</span></div></td><td class="yrs c-hide"><button class="yrs-btn">${x.y}<small>▾</small></button></td><td class="tier c-hide ${x.tier === 'Greatest peak' || x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td>${x.st.map((v) => `<td class="num c-hide">${v}</td>`).join('')}<td class="cap num">${x.f}</td><td class="c c-hide"><span class="scout">Scout</span></td><td class="c c-hide"><span class="star ${['garnett', 'rodman', 'gobert'].includes(k) ? 'on' : ''}">★</span></td><td class="act"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
+}
+
+S.years = () => [leftDraft(),
+  `<div class="prompt"><span class="eb now">On the clock · Round 3 · Pick 40</span><div class="who-head"><img src="heads/kevin-garnett.png" alt=""><div><h2>Kevin Garnett</h2><p>Which years? The same player costs less in his cheaper stretches.</p></div></div></div>` +
+  `<section><h3>His stretches<span>three seasons each</span></h3><table class="plist spans"><tr><th>Years</th><th>Team</th><th>Tier</th><th class="r">Pts · Reb · Ast</th><th class="r">Off · Def</th><th class="r">Caps</th><th></th></tr>${[
+    ['1996–98', 'MIN', 'All-Star', '18.4 · 9.6 · 4.2', '74 · 84', 15.8, ''],
+    ['1999–01', 'MIN', 'All-NBA', '21.6 · 11.6 · 5.0', '81 · 88', 18.6, ''],
+    ['2002–04', 'MIN', 'Greatest peak', '23.6 · 13.7 · 5.5', '86 · 91', 19.4, 'peak pick'],
+    ['2005–07', 'MIN', 'All-NBA', '22.2 · 12.7 · 4.3', '82 · 89', 17.1, ''],
+    ['2008–10', 'BOS', 'All-Star', '16.4 · 8.0 · 2.8', '72 · 92', 13.5, ''],
+  ].map(([y, t, tier, st, od, f, cls]) => `<tr class="${cls}"><td class="y">${y}${cls.includes('peak') ? '<small>his best years</small>' : ''}</td><td class="n">${t}</td><td class="tier ${tier === 'Greatest peak' ? 'top' : ''}">${tier}</td><td class="n r">${st}</td><td class="n r">${od}</td><td class="cap r">${f}</td><td class="act r"><button class="draft">Draft</button></td></tr>`).join('')}</table>
+  <p class="empty-note" style="margin-top:12px">The 2008–10 Garnett saves <b style="color:var(--gold);font-style:normal">5.9 caps</b> and is the best defender of the five.</p></section>`];
+
+S.team = () => [
+  mast('All-Time Draft', 'Draft done · set your rotation') + tally('0.6', '100.9', '9/9') + capbar(99) + `<p class="sub-note keep"><b>100.3 caps</b> used of 100.9</p>` +
+  `<section><h3>Before the season</h3><div class="kv"><span>Rotation</span><b>240 / 240 min</b></div><div class="kv"><span>Starters</span><b>Set</b></div><div class="kv"><span>Years</span><b>Click to change</b></div></section>` +
+  actions('<button class="btn go">Play the season</button>'),
+  prompt('Your team', 'Tulsa Twisters', 'Nine players, 240 minutes. Change anyone\'s years in the table; cheaper years free caps.') +
+  `<section><h3>Roster<span>off · def · 3pt · durability</span></h3><table class="plist roster"><colgroup><col style="width:44px"><col style="width:64px"><col style="width:52px"><col><col class="c-hide" style="width:130px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col style="width:84px"></colgroup><tr><th>Rd</th><th>Slot</th><th></th><th>Player · years</th><th class="c-hide">Tier</th><th class="num c-hide">Off</th><th class="num c-hide">Def</th><th class="num c-hide">3PT</th><th class="num c-hide">Dur</th><th class="num">Caps</th></tr>${[
+    [1, 'SF', 'durant'], [2, 'PG', 'payton'], [3, 'PF', 'garnett'], [5, 'SG', 'klay'], [7, 'C', 'bwallace'], [4, 'bench', 'rodman'], [6, 'bench', 'korver'], [8, 'bench', 'iggy'], [9, 'bench', 'horry'],
+  ].map(([r, sl, k]) => { const x = p(k); return `<tr><td class="rd">R${r}</td><td class="sl ${sl === 'bench' ? 'bn' : ''}">${sl}</td><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><button class="yrs-btn">${x.y}<small>▾ change</small></button></div></td><td class="tier c-hide">${x.tier}</td><td class="num c-hide">${x.off}</td><td class="num c-hide">${x.def}</td><td class="num c-hide">${x.t3}</td><td class="num c-hide">${x.dur}</td><td class="cap num">${x.f}</td></tr>`; }).join('')}</table></section>` +
+  `<section><h3>Rotation<span>48 minutes a spot</span></h3><table class="rot">${[
+    ['PG', 'Gary Payton', 'Andre Iguodala', [36, 12]], ['SG', 'Klay Thompson', 'Kyle Korver', [34, 14]], ['SF', 'Kevin Durant', 'Andre Iguodala', [38, 10]],
+    ['PF', 'Kevin Garnett', 'Robert Horry', [36, 12]], ['C', 'Ben Wallace', 'Dennis Rodman', [30, 18]],
+  ].map(([pos, a, b, m]) => `<tr><td class="pos">${pos}</td><td class="who"><b>${a}</b> <em>· ${b}</em></td><td><div class="mins"><i style="width:${m[0] / 48 * 100}%">${m[0]}</i><i class="b2" style="width:${m[1] / 48 * 100}%">${m[1]}</i></div></td><td class="tot">48</td></tr>`).join('')}</table></section>`];
+
+S.desk = () => [leftDraft(),
+  prompt('The Draft Desk · after your pick 40', 'Garnett at 40?', 'Three voices from the desk. They argue; you decide what to do with pick 57.') +
+  `<p class="host"><b>Eric B. Slim:</b> “Tulsa takes Kevin Garnett, 2002–04, for 19.4 caps. That's Durant, Payton and now KG. Gentlemen?”</p>` +
+  `<div class="desk">
+    <article><div class="by"><span class="mono">SH</span><div><b>Matt Shyman</b><span>Defense</span></div></div><div class="take yes">Love it</div><p>Payton and Garnett on the same floor is a <b>top-three defense</b> before you even pick a center. Nobody scores at the rim on this team.</p></article>
+    <article><div class="by"><span class="mono">SO</span><div><b>Mattia Sosini</b><span>Modern game</span></div></div><div class="take no">Spacing?</div><p>Payton shot <b>3.0 threes</b> a game, Garnett <b>0.7</b>. Durant can't be the only one stretching it. Pick 57 has to be a shooter.</p></article>
+    <article><div class="by"><span class="mono">RO</span><div><b>Mark Rotation</b><span>Bench depth</span></div></div><div class="take">Fine, but…</div><p><b>66.9 caps</b> left for seven spots was fine. Now it's <b>47.5 for six</b>. The bench will be cheap. Rodman at 6.9 is the obvious value.</p></article>
+  </div>`];
+
+const STAND = [['KEN', 61, 21], ['SFE', 57, 25], ['TUL', 52, 30], ['DUL', 50, 32], ['BIS', 48, 34], ['HON', 46, 36], ['REN', 45, 37], ['ANC', 43, 39], ['ELP', 41, 41], ['DET', 39, 43], ['FRE', 37, 45], ['BOI', 35, 47], ['SCR', 33, 49], ['TPA', 30, 52], ['LUB', 27, 55], ['ASP', 22, 60]];
+S.season = () => [
+  mast('Your Season', '82 games · 16 teams · top 8 to the playoffs') + tally('52', '3rd', '30', { youK: 'Won', midK: 'Seed', aiK: 'Lost' }) +
+  `<section><h3>Your leaders</h3><div class="kv"><span>Points</span><b>Durant 29.4</b></div><div class="kv"><span>Rebounds</span><b>Garnett 12.8</b></div><div class="kv"><span>Assists</span><b>Payton 7.9</b></div><div class="kv"><span>Blocks</span><b>Wallace 2.6</b></div></section>` +
+  `<section><h3>Awards</h3><div class="kv"><span>MVP</span><b>Durant · 2nd</b></div><div class="kv"><span>DPOY</span><b>B. Wallace</b></div></section>` +
+  actions('<button class="btn go">Playoffs →</button><button class="btn line">Watch a game</button>'),
+  prompt('Regular season · final', '52–30, third', 'The best defense in the league, 9th in threes. Kentucky ran away with the one seed.') +
+  `<div class="split"><section><h3>Standings<span>Overview · Standings · Stats · Awards</span></h3><table class="stand2"><tr><th>#</th><th></th><th>Team</th><th>W</th><th>L</th><th>Pct</th><th>GB</th></tr>${STAND.map(([c, w, l], i) => `<tr class="${c === YOU ? 'you' : ''} ${i === 7 ? 'cut' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}</td><td>${w}</td><td>${l}</td><td>.${String(Math.round(w / 82 * 1000)).padStart(3, '0')}</td><td>${i === 0 ? '—' : (61 - w)}</td></tr>`).join('')}</table><div class="cutnote">Playoff line: top eight</div></section>
+  <div class="stack"><section><h3>League leaders</h3><table class="leaders"><tr><td class="k">Points</td><td><b>Michael Jordan</b> · KEN</td><td class="v">31.8</td></tr><tr class="you"><td class="k">Rebounds</td><td><b>Dennis Rodman</b> · TUL</td><td class="v">15.1</td></tr><tr><td class="k">Assists</td><td><b>Magic Johnson</b> · SFE</td><td class="v">11.9</td></tr><tr class="you"><td class="k">Steals</td><td><b>Gary Payton</b> · TUL</td><td class="v">2.3</td></tr><tr><td class="k">Blocks</td><td><b>Hakeem Olajuwon</b> · DUL</td><td class="v">3.4</td></tr><tr><td class="k">3PM</td><td><b>Stephen Curry</b> · BIS</td><td class="v">4.6</td></tr></table></section>
+  <section><h3>Game of the season<span>best line in Tulsa</span></h3>${gos('kevin-durant', 'Kevin Durant', 48, '17/26 FG · 6/9 3PT · 8/8 FT · 9 reb', 'Tulsa 121, Kentucky 117 · game 38')}</section>
+  <section><h3>Team records<span>this season</span></h3>${records([['Biggest win', '+31 vs Fresno'], ['Longest win streak', '11 games'], ['Most points', '138 vs Boise'], ['Best defense night', '79 allowed, Reno']])}</section></div></div>`];
+
+const ser = (a, b, wa, wb, { you, live, note } = {}) => `<div class="series ${you ? 'you-path' : ''} ${live ? 'live' : ''}">${[[a, wa], [b, wb]].map(([[seed, c], w]) => `<div class="tr ${w === 4 ? 'win' : ''} ${c === YOU ? 'you' : ''}"><span class="sd">${seed}</span>${tm(c)}<span>${T[c][1]}</span><span class="w">${w}</span></div>`).join('')}${note ? `<div class="note">${note}</div>` : ''}</div>`;
+const gos = (img, name, pts, line, ctx) => `<div class="gos"><img src="heads/${img}.png" alt=""><div><b>${name}<em>${pts}<small>pts</small></em></b><span class="ln">${line}</span><span class="ctx">${ctx}</span></div></div>`;
+const records = (rows) => rows.map(([k, v]) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`).join('');
+const mvpRow = ([rk, img, n, c, line, trd]) => `<div class="mvp-r ${c === 'TUL' ? 'you' : ''}"><span class="rk">${rk}</span><img src="heads/${img}.png" alt=""><div><b>${n}<small>${c}</small></b><span class="ln">${line}</span></div><span class="trd ${trd[0] === '+' ? 'up' : trd[0] === '−' ? 'down' : ''}">${trd[0] === '+' ? '▲ ' + trd.slice(1) : trd[0] === '−' ? '▼ ' + trd.slice(1) : '—'}</span></div>`;
+const STAND41 = [['KEN', 30], ['TUL', 27], ['SFE', 26], ['DUL', 25], ['BIS', 23], ['HON', 22], ['REN', 21], ['ANC', 21], ['ELP', 20], ['DET', 19]];
+S.inSeason = () => [
+  mast('Your Season', 'Game 41 of 82 · simulating') + tally('27', '2nd', '14', { youK: 'Won', midK: 'Seed', aiK: 'Lost' }) + `<div class="sprog keep"><i style="width:50%"></i></div>` +
+  `<section class="keep"><h3>Speed</h3><div class="speeds"><span>½</span><u>1×</u><span>2×</span><span>4×</span><span>8×</span></div><div class="btn2" style="margin-top:14px"><button class="btn line">Pause</button><button class="btn line">Skip ahead</button></div></section>` +
+  `<section><h3>Your leaders</h3><div class="kv"><span>Points</span><b>Durant 29.8</b></div><div class="kv"><span>Rebounds</span><b>Garnett 12.6</b></div><div class="kv"><span>Assists</span><b>Payton 8.1</b></div></section>` +
+  actions('<button class="btn line">Watch the next game</button>'),
+  prompt('Regular season · game 41 of 82', 'Halfway, second', 'Kentucky leads by three games. Durant moved up to second in the MVP race after 48 against them.') +
+  `<div class="split"><section><h3>Standings<span>after 41 games</span></h3><table class="stand2"><tr><th>#</th><th></th><th>Team</th><th>W</th><th>L</th><th>GB</th></tr>${STAND41.map(([c, w], i) => `<tr class="${c === YOU ? 'you' : ''} ${i === 7 ? 'cut' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}</td><td>${w}</td><td>${41 - w}</td><td>${i === 0 ? '—' : 30 - w}</td></tr>`).join('')}</table><div class="cutnote">Playoff line: top eight</div></section>
+  <div class="stack"><section><h3>MVP race<span>if the season ended today</span></h3>${[[1, 'michael-jordan', 'Michael Jordan', 'KEN', '32.4 pts · 6.1 reb · 5.3 ast', '='], [2, 'kevin-durant', 'Kevin Durant', 'TUL', '29.8 pts · 7.0 reb · 4.6 ast', '+2'], [3, 'lebron-james', 'LeBron James', 'DUL', '28.0 pts · 8.2 reb · 7.4 ast', '−1']].map(mvpRow).join('')}</section>
+  <section><h3>Best game so far</h3>${gos('kevin-durant', 'Kevin Durant', 48, '17/26 FG · 6/9 3PT · 8/8 FT · 9 reb', 'Tulsa 121, Kentucky 117 · game 38')}</section></div></div>`];
+S.playoffs = () => [
+  mast('Playoffs', 'Top eight · best of seven') + tally('3', 'G7', '3', { youK: 'Tulsa', midK: 'Finals', aiK: 'Kentucky' }) +
+  `<section><h3>Your path</h3><div class="kv"><span>Quarterfinal</span><b>4–1 Honolulu</b></div><div class="kv"><span>Semifinal</span><b>4–2 Santa Fe</b></div><div class="kv"><span>Finals</span><b>3–3 Kentucky</b></div></section>` +
+  actions('<button class="btn go">Watch game 7</button><button class="btn line">Sim game 7</button>'),
+  prompt('The Finals · Game 7 tonight', 'Tulsa vs Kentucky', 'Series tied 3–3. Kentucky has home court; Jordan scored 41 in game 6.') +
+  `<div class="bracket">
+    <div class="round"><h4>Quarterfinals</h4>${ser([1, 'KEN'], [8, 'ANC'], 4, 0, { note: 'Sweep' })}${ser([4, 'DUL'], [5, 'BIS'], 3, 4)}${ser([3, 'TUL'], [6, 'HON'], 4, 1, { you: true })}${ser([2, 'SFE'], [7, 'REN'], 4, 3, { note: 'Game 7, by 2' })}</div>
+    <div class="round"><h4>Semifinals</h4>${ser([1, 'KEN'], [5, 'BIS'], 4, 1)}${ser([3, 'TUL'], [2, 'SFE'], 4, 2, { you: true, note: 'Upset of the two seed' })}</div>
+    <div class="round final"><h4>Finals</h4>${ser([1, 'KEN'], [3, 'TUL'], 3, 3, { you: true, live: true, note: 'Game 7 tonight · Kentucky at home' })}</div>
+  </div>`];
+
+const ORDER = ['BIS', 'DUL', 'KEN', 'REN', 'HON', 'SFE', 'ANC', 'TUL', 'ELP', 'DET', 'FRE', 'BOI', 'SCR', 'TPA', 'LUB', 'ASP'];
+const PICKS = ['M. Jordan SG', 'L. James SF', 'K. Abdul-Jabbar C', 'K. Bryant SG', "S. O'Neal C", 'S. Curry PG', 'M. Johnson PG', 'K. Durant SF', 'L. Bird SF', 'W. Chamberlain C', 'N. Jokic C', 'G. Antetokounmpo PF', 'K. Leonard SF', 'D. Wade SG', 'J. Harden SG', 'O. Robertson PG',
+  'L. Doncic PG', 'J. Embiid C', 'D. Robinson C', 'C. Paul PG', 'J. Stockton PG', 'K. Malone PF', 'C. Barkley PF', 'D. Nowitzki PF', 'G. Payton PG', 'S. Nash PG', 'B. Russell C', 'J. West SG', 'A. Davis PF', 'T. McGrady SF', 'H. Olajuwon C', 'P. Pierce SF',
+  'T. Duncan PF', 'S. Pippen SF', 'I. Thomas PG', 'M. Malone C', 'D. Mutombo C', 'A. Iverson PG', 'J. Kidd PG'];
+const FULL = { 'M. Jordan': 'michael-jordan', 'L. James': 'lebron-james', 'K. Abdul-Jabbar': 'kareem-abdul-jabbar', 'K. Bryant': 'kobe-bryant', "S. O'Neal": 'shaquille-oneal', 'S. Curry': 'stephen-curry', 'M. Johnson': 'magic-johnson', 'K. Durant': 'durant', 'L. Bird': 'larry-bird', 'W. Chamberlain': 'wilt-chamberlain', 'N. Jokic': 'nikola-jokic', 'G. Antetokounmpo': 'giannis-antetokounmpo', 'K. Leonard': 'kawhi-leonard', 'D. Wade': 'dwyane-wade', 'J. Harden': 'james-harden', 'O. Robertson': 'oscar-robertson', 'L. Doncic': 'luka-doncic', 'J. Embiid': 'joel-embiid', 'D. Robinson': 'david-robinson', 'C. Paul': 'chris-paul', 'J. Stockton': 'john-stockton', 'K. Malone': 'karl-malone', 'C. Barkley': 'charles-barkley', 'D. Nowitzki': 'dirk-nowitzki', 'G. Payton': 'gary-payton', 'S. Nash': 'steve-nash', 'B. Russell': 'bill-russell', 'J. West': 'jerry-west', 'A. Davis': 'anthony-davis', 'T. McGrady': 'tracy-mcgrady', 'H. Olajuwon': 'hakeem-olajuwon', 'P. Pierce': 'paul-pierce', 'T. Duncan': 'tim-duncan', 'S. Pippen': 'scottie-pippen', 'I. Thomas': 'isiah-thomas', 'M. Malone': 'moses-malone', 'D. Mutombo': 'dikembe-mutombo', 'A. Iverson': 'allen-iverson', 'J. Kidd': 'jason-kidd' };
+function boardGrid() {
+  const cell = {};
+  let n = 0;
+  for (let r = 0; r < 9; r++) for (let i = 0; i < 16; i++) { const t = ORDER[r % 2 ? 15 - i : i]; n++; (cell[t] ??= [])[r] = n; }
+  const youCol = ORDER.indexOf(YOU);
+  const head = `<div class="bg-row bg-head"><span class="bg-rl"></span>${ORDER.map((c) => `<span class="bg-team ${c === YOU ? 'you' : ''}">${tm(c)}<b>${c === YOU ? 'You' : T[c][0]}</b></span>`).join('')}</div>`;
+  const rows = [0, 1, 2, 3].map((r) => `<div class="bg-row"><span class="bg-rl">R${r + 1}<i>${r % 2 ? '←' : '→'}</i></span>${ORDER.map((c) => {
+    const k = cell[c][r]; const v = PICKS[k - 1];
+    if (v) { const i = v.lastIndexOf(' '); const nm = v.slice(0, i); const pos = v.slice(i + 1); const img = FULL[nm]; return `<span class="bg-cell filled ${c === YOU ? 'you' : ''}">${img ? `<img src="heads/${img}.png" alt="">` : `<em class="ini">${ini(nm)}</em>`}<small>${pos}</small><b>${nm.split(' ').slice(1).join(' ')}</b></span>`; }
+    if (k === 40) return `<span class="bg-cell clock"><small>On the clock</small><b>#40</b></span>`;
+    return `<span class="bg-cell empty ${c === YOU ? 'you' : ''}">${k}</span>`;
+  }).join('')}</div>`).join('');
+  return `<section class="bgrid"><h3>Draft board<span>rounds 1–4 · <a href="#">rounds 5–9 ▾</a> · <a href="#">hide board</a></span></h3>${head}${rows}</section>`;
+}
+S.board = () => [leftDraft().replace('Show draft board', 'Hide draft board'),
+  boardGrid() + nine(['payton', '', 'durant', '', ''], []) +
+  prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
+  `<section>${filters(['PG', 'SF'])}${capsBar(0, 30, 24.5)}${plist2(['garnett', 'dirk', 'dray', 'rodman', 'horry'], { hot: 'garnett' })}<div class="more">Showing 5 of 1,522 player stretches · <a href="#">See more</a></div></section>`];
+function ribbon() {
+  const order = (k) => { const r = Math.floor((k - 1) / 16), i = (k - 1) % 16; return ORDER[r % 2 ? 15 - i : i]; };
+  const cells = [];
+  for (let k = 35; k <= 46; k++) {
+    const c = order(k); const v = PICKS[k - 1];
+    if (v) { const i = v.lastIndexOf(' '); const nm = v.slice(0, i); const img = FULL[nm]; cells.push(`<span class="rb-cell filled"><span class="rb-n">${k} · ${c}</span>${img ? `<img src="heads/${img}.png" alt="">` : ''}<b>${nm.split(' ').slice(1).join(' ')}</b><small>${v.slice(i + 1)}</small></span>`); }
+    else if (k === 40) cells.push(`<span class="rb-cell clock"><span class="rb-n">40 · ${c}</span><b>You</b><small>on the clock</small></span>`);
+    else cells.push(`<span class="rb-cell next"><span class="rb-n">${k}</span>${tm(c)}<small>${T[c][1]}</small></span>`);
+  }
+  return `<section class="ribbon"><h3>Draft board<span>picks 35–46 · your next after this: 57 · <a href="#">open full board ▾</a></span></h3><div class="rb-row">${cells.join('')}</div></section>`;
+}
+S.ribbon = () => [leftDraft().replace('<button class="btn line">Show draft board</button>', ''),
+  ribbon() + nine(['payton', '', 'durant', '', ''], []) +
+  prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
+  `<section>${filters(['PG', 'SF'])}${capsBar(0, 30, 24.5)}${plist2(['garnett', 'dirk', 'dray', 'rodman', 'horry'], { hot: 'garnett' })}</section>`];
+S.drawer = () => [leftDraft().replace('Show draft board', 'Draft board  ·  B'),
+  nine(['payton', '', 'durant', '', ''], []) +
+  prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
+  `<section>${filters(['PG', 'SF'])}${capsBar(0, 30, 24.5)}${plist2(['garnett', 'dirk', 'dray', 'rodman', 'horry'], { hot: 'garnett' })}</section>` +
+  `<div class="drawer-dim"></div><div class="drawer">${boardGrid().replace('rounds 1–4 · <a href="#">rounds 5–9 ▾</a> · <a href="#">hide board</a>', 'rounds 1–4 · <a href="#">rounds 5–9 ▾</a> · <a href="#">✕ close</a>')}</div>`];
+
+const STAND_AT = [['KEN', 90, 31, 41], ['SFE', 88, 22, 46], ['TUL', 87, 18, null], ['DUL', 85, 11, 55], ['BIS', 84, 7, 58], ['HON', 83, 4, 61], ['REN', 82, 3, 63], ['ANC', 81, 2, 66], ['ELP', 79, 1, 70], ['DET', 78, 1, 72], ['FRE', 77, 0, 74], ['BOI', 75, 0, 77], ['SCR', 74, 0, 79], ['TPA', 72, 0, 82], ['LUB', 70, 0, 85], ['ASP', 68, 0, 88]];
+const NINE = [['PG', 'payton', 'iggy', 34, 14], ['SG', 'klay', 'korver', 34, 14], ['SF', 'durant', 'iggy', 38, 10], ['PF', 'garnett', 'horry', 36, 12], ['C', 'bwallace', 'rodman', 30, 18]];
+S.results = () => [
+  mast('All-Time Draft', 'Final · 16 teams · 9 rounds') + tally('3rd', '87', '18%', { youK: 'Place', midK: 'Rating', aiK: 'Title' }) + `<p class="sub-note keep"><b>100.3</b> of 100.9 caps used</p>` +
+  `<section><h3>Your draft<span>9 picks</span></h3><table class="log">${[[8, 'durant'], [25, 'payton'], [40, 'garnett'], [57, 'rodman'], [72, 'klay'], [89, 'korver'], [104, 'bwallace'], [121, 'iggy'], [136, 'horry']].map(([n, k]) => { const x = p(k); return `<tr class="y"><td class="n">${n}</td><td class="w">${x.pos}</td><td class="p">${x.n}</td><td class="c">${x.f}</td></tr>`; }).join('')}</table></section>` +
+  actions('<button class="btn go">Play the season →</button><div class="btn2"><button class="btn line">Share</button><button class="btn line">Challenge</button></div><button class="btn line">New draft</button>'),
+  `<div class="headline"><span class="eb">Final standings</span><b>${tname(YOU)}</b><i>9 rounds · 144 picks · season not played yet</i></div>
+  <div class="verdict vmini"><div class="place"><b>3<sup>rd</sup></b><span>of 16</span></div><div class="tier"><span class="eb">The verdict</span><h2>Contender</h2><p>A defense-first team with Durant to bail it out. Main risk: <b style="color:var(--red);font-style:normal">spacing</b>, only Klay and Korver stretch the floor.</p></div><div class="nums"><div class="you"><span>Your team</span><b>87</b></div><div><span>Best</span><b>90</b></div><div><span>Title odds</span><b>18%</b></div></div></div>
+  <p class="host"><b>Matt Shyman:</b> “Payton, Garnett and Ben Wallace. Nobody in this league scores at the rim on you.”</p>
+  <section><h3>Your roster<span>starter · bench minutes</span></h3><div class="five-row">${NINE.map(([pos, a, b, ma, mb]) => { const x = p(a), y = p(b); return `<div class="card" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${pos}</span></div><div class="pic">${face(x)}</div><div class="nm">${x.n}</div><div class="sb">${x.y} · <i class="capi"></i>${x.f} · <b>${ma}m</b></div><div class="roles" style="padding-bottom:10px">+ ${y.n} · ${mb}m</div></div>`; }).join('')}</div><p class="empty-note" style="margin-top:8px">Did not play: none. Robert Horry covers PF and C.</p></section>
+  <div class="split"><section><h3>Why you finished here<span>yours · grade vs the field</span></h3><table class="profile">${[['Talent', 86, 'B+'], ['Offense', 84, 'B'], ['Defense', 93, 'A+', 'best'], ['Spacing', 71, 'C', 'weak'], ['Fit', 88, 'A-'], ['Bench', 82, 'B'], ['Rotation', 90, 'A']].map(([l, v, g, t]) => `<tr class="${t === 'weak' ? 'weak' : t === 'best' ? 'good' : ''}"><td class="l">${l}</td><td class="v">${v}</td><td class="b">${g}</td><td><div class="bar"><i style="width:${v}%"></i></div></td></tr>`).join('')}</table></section>
+  <section class="voices"><h3>The room</h3><p><b>The best defense in the field</b>, by a distance. Wallace and Garnett behind Payton is a wall.<em>Matt Shyman · Defense</em></p><p>Durant takes <b>a third of the shots</b>. When he sits, this offense stalls.<em>Mattia Sosini · Modern game</em></p><p>Korver at 8.3 caps was <b>the steal of round 6</b>.<em>Mark Rotation · Bench depth</em></p></section></div>
+  <section class="acc"><h3>More<span>tap to open</span></h3><div class="acc-row">What's behind each score <i>▸</i></div><div class="acc-row">Title path · how you'd get through a bracket <i>▸</i></div><div class="acc-row">Draft order · all 144 picks <i>▸</i></div></section>
+  <section><h3>Final standings<span>series = your chance to beat them in a best-of-7</span></h3><table class="stand2 st-at"><tr><th>#</th><th></th><th>Team</th><th>Title</th><th>Series</th><th>Rating</th><th></th></tr>${STAND_AT.map(([c, r, t, sv], i) => `<tr class="${c === YOU ? 'you' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}</td><td>${t ? (t < 1 ? '<1' : t) + '%' : '<1%'}</td><td>${sv === null ? '—' : sv + '%'}</td><td>${r}</td><td class="car">${c === YOU ? '' : c === 'KEN' ? '▾' : '▸'}</td></tr>${c === 'KEN' ? `<tr class="open"><td></td><td colspan="6"><div class="edge"><b>Where Kentucky beat you <span class="edge-key"><i style="background:var(--ink3)"></i>Kentucky<i style="background:var(--you)"></i>you</span></b>${[['Talent', 93, 86], ['Offense', 91, 84], ['Spacing', 82, 71]].map(([l, th, me]) => `<div class="eg"><span>${l}</span><div class="egb"><i style="width:${th}%"></i><u style="width:${me}%"></u></div><span class="mono">${th} vs ${me}</span></div>`).join('')}</div></td></tr>` : ''}`).join('')}</table></section>`];
+
+// ---- after the playoffs ----
+const SEASON = [ // key, g, min, pts, reb, ast, stl, blk, fg, 3p
+  ['durant', 80, 36.4, 29.4, 7.1, 4.8, 1.1, 1.0, 51.2, 39.8], ['payton', 82, 34.2, 19.8, 4.4, 7.9, 2.3, 0.3, 47.1, 33.0],
+  ['garnett', 78, 35.6, 21.2, 12.8, 4.6, 1.3, 1.6, 50.4, 22.0], ['klay', 81, 33.8, 20.4, 3.6, 2.1, 0.9, 0.5, 46.3, 42.1],
+  ['bwallace', 79, 30.1, 7.4, 13.9, 1.7, 1.4, 2.6, 49.0, 0], ['rodman', 77, 18.2, 5.1, 9.8, 1.0, 0.7, 0.6, 52.1, 0],
+  ['korver', 80, 14.6, 7.9, 2.2, 1.3, 0.5, 0.2, 45.2, 46.5], ['iggy', 74, 21.9, 8.8, 4.1, 3.7, 1.2, 0.4, 47.4, 35.6], ['horry', 62, 12.0, 4.6, 3.3, 1.1, 0.5, 0.7, 43.0, 36.1]];
+const leftAfter = (title, sub) => mast(title, sub) + tally('52–30', '🏆', '16–6', { youK: 'Season', midK: 'Result', aiK: 'Playoffs' }).replace('class="tally keep"', 'class="tally keep tsm"') + `<p class="sub-note keep"><b>Champions</b> · 3rd seed, beat the 1 seed in game 7</p>` +
+  `<section><h3>Season</h3><div class="kv"><span>Overview</span><b>›</b></div><div class="kv"><span>Standings</span><b>›</b></div><div class="kv"><span>Stats</span><b>›</b></div><div class="kv"><span>Awards</span><b>›</b></div><div class="kv"><span>The playoffs</span><b style="color:var(--red)">›</b></div></section>` +
+  actions('<button class="btn go">Share your season</button><button class="btn line">Back to the results</button><button class="btn line">New draft</button>');
+const pathRow = (round, c, w, l, note, won = true) => `<div class="path-r ${won ? 'won' : 'lost'}"><span class="pr-round">${round}</span>${tm(c)}<span class="pr-opp">${tname(c)}</span><b class="pr-score">${w}–${l}</b><span class="pr-note">${note}</span></div>`;
+function seasonTable(rows, { po = false } = {}) {
+  return `<table class="box sbox"><tr><th>Player</th><th>G</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>FG%</th><th>3P%</th></tr>${rows.map(([k, g, mi, pt, rb, as, st, bl, fg, tp]) => { const x = p(k); return `<tr><td><span class="sb-f">${face(x)}</span>${x.n}<small>${x.pos}</small></td><td>${po ? Math.min(g, 22) : g}</td><td>${mi}</td><td class="${k === 'durant' ? 'hi' : ''}">${po ? (pt * 1.06).toFixed(1) : pt}</td><td>${rb}</td><td>${as}</td><td>${st}</td><td>${bl}</td><td>${fg}</td><td>${tp ? tp : '—'}</td></tr>`; }).join('')}</table>`;
+}
+S.finale = () => [leftAfter('Your season', 'Regular season + playoffs · final'),
+  `<div class="champ"><span class="eb">The Finals · Game 7 · Tulsa 104, Kentucky 99</span><h2>Champions</h2><p>The <b>Tulsa Twisters</b> win the title from the 3 seed. Kevin Durant: 38 points in game 7, Finals MVP.</p></div>
+  <section><h3>Your path<span>best of seven</span></h3>${pathRow('Quarterfinal', 'HON', 4, 1, 'Wallace held Robinson to 14 a game')}${pathRow('Semifinal', 'SFE', 4, 2, 'Upset of the 2 seed')}${pathRow('Finals', 'KEN', 4, 3, 'Down 3–2, won games 6 and 7')}</section>
+  <section><h3>Awards for Tulsa<span>5</span></h3><div class="aw-row">${[['Finals MVP', 'Kevin Durant', '31.6 pts in the Finals', 'durant'], ['DPOY', 'Ben Wallace', '13.9 reb · 2.6 blk', 'bwallace'], ['All-NBA 1st', 'Kevin Durant', '29.4 · 7.1 · 4.8', 'durant'], ['All-Defensive 1st', 'Gary Payton', '2.3 stl, league best', 'payton'], ['All-Star', 'Kevin Garnett', '21.2 pts · 12.8 reb', 'garnett']].map(([t, n, l, k]) => `<div class="aw"><span class="aw-f">${face(p(k))}</span><div><span class="aw-t">${t}</span><b>${n}</b><small>${l}</small></div></div>`).join('')}</div></section>
+  <section><h3>Your team<span class="sw"><a href="#">Season</a><a class="on" href="#">Playoffs</a></span></h3>${seasonTable(SEASON, { po: true })}</section>`];
+S.finaleOut = () => [leftAfter('Your season', 'Regular season + playoffs · final').replace('🏆', 'Semis').replace('16–6', '6–5').replace('<b>Champions</b> · 3rd seed, beat the 1 seed in game 7', '<b>Out in the semifinals</b>, 2–4 to Santa Fe'),
+  `<div class="champ out"><span class="eb">Semifinal · Game 6 · Santa Fe 111, Tulsa 102</span><h2>Your run ends here</h2><p>Santa Fe takes the series <b>4–2</b>. Bird scored 33 in the clincher; Tulsa shot 6 of 27 from three.</p></div>
+  <section><h3>Your path<span>best of seven</span></h3>${pathRow('Quarterfinal', 'HON', 4, 1, 'Wallace held Robinson to 14 a game')}${pathRow('Semifinal', 'SFE', 2, 4, 'Spacing caught up: 29% from three', false)}</section>
+  <p class="host"><b>Champions:</b> the Kentucky Chickens beat Santa Fe 4–1. Finals MVP: Michael Jordan.</p>
+  <section><h3>Your team<span class="sw"><a class="on" href="#">Season</a><a href="#">Playoffs</a></span></h3>${seasonTable(SEASON)}</section>`];
+const AW = (t, k, line, team) => { const x = p(k); return `<div class="aw big"><span class="aw-f">${face(x)}</span><div><span class="aw-t">${t}</span><b>${x.n}</b><small>${team} · ${line}</small></div></div>`; };
+const five5 = (label, names) => `<div class="allnba"><span class="an-l">${label}</span>${names.map(([n, c, you]) => `<span class="an-p ${you ? 'you' : ''}">${n}<small>${c}</small></span>`).join('')}</div>`;
+const slug = (n) => n.toLowerCase().replace(/[^a-z ]/g, '').trim().replace(/ +/g, '-');
+const nbaFive = (label, list) => `<div class="nba"><span class="an-l">${label}</span>${list.map(([n, c, st, you]) => { const i = n.indexOf(' '); return `<div class="nt ${you ? 'you' : ''}"><img src="heads/${slug(n)}.png" alt=""><div><b><span class="fn">${n.slice(0, i)} </span>${n.slice(i + 1)}</b><small>${c}<span class="st"> · ${st}</span></small></div></div>`; }).join('')}</div>`;
+S.awards = () => [leftAfter('Your season', 'Awards · regular season + Finals'),
+  prompt('Season awards', 'A Tulsa sweep', 'MVP, Finals MVP, DPOY and Sixth Man all went to Tulsa, plus seven All-League spots.', 'gold') +
+  `<section><h3>The big four</h3><div class="aw-grid">${AW('Most Valuable Player', 'durant', '29.4 pts · 7.1 reb · 4.8 ast', 'TUL')}${AW('Finals MVP', 'durant', '31.6 pts in the Finals', 'TUL')}${AW('Defensive Player of the Year', 'bwallace', '13.9 reb · 2.6 blk · 1.4 stl', 'TUL')}${AW('Sixth Man of the Year', 'korver', '7.9 pts · 46.5% from three', 'TUL')}</div></section>
+  <section><h3>All-NBA<span>points per game</span></h3>${nbaFive('First team', [['Stephen Curry', 'BIS', '26.9'], ['Michael Jordan', 'KEN', '31.8'], ['Kevin Durant', 'TUL', '29.4', 1], ['LeBron James', 'DUL', '28.1'], ['Hakeem Olajuwon', 'DUL', '26.2']])}${nbaFive('Second team', [['Magic Johnson', 'SFE', '19.2'], ['Kobe Bryant', 'REN', '27.6'], ['Larry Bird', 'SFE', '25.4'], ['Kevin Garnett', 'TUL', '21.2', 1], ["Shaquille O'Neal", 'HON', '26.0']])}${nbaFive('Third team', [['Gary Payton', 'TUL', '19.8', 1], ['Dwyane Wade', 'DET', '25.1'], ['Kawhi Leonard', 'ELP', '24.3'], ['Tim Duncan', 'ANC', '22.5'], ['Nikola Jokic', 'TPA', '24.8']])}</section>
+  <section><h3>All-Defensive<span>steals or blocks per game</span></h3>${nbaFive('First team', [['Gary Payton', 'TUL', '2.3 stl', 1], ['Michael Jordan', 'KEN', '2.2 stl'], ['Kawhi Leonard', 'ELP', '1.9 stl'], ['Kevin Garnett', 'TUL', '1.6 blk', 1], ['Ben Wallace', 'TUL', '2.6 blk', 1]])}${nbaFive('Second team', [['John Stockton', 'ANC', '2.1 stl'], ['Klay Thompson', 'TUL', '1.1 stl', 1], ['Scottie Pippen', 'DUL', '1.9 stl'], ['Tim Duncan', 'ANC', '2.2 blk'], ['Hakeem Olajuwon', 'DUL', '3.4 blk']])}</section>
+  <section class="asg-sec"><h3>All-Star Game<span>24 All-Stars · the two best captain a side and pick in turns</span></h3>${asg()}</section>`];
+const asgSide = (img, cap, code, ppg, st, res) => { const row = (cls) => ([n, c, v, k]) => `<div class="asg-r ${cls} ${c === 'TUL' ? 'you' : ''}"><span class="pk">${k === 'c' ? 'C' : '#' + k}</span><span class="nm"><span>${n.includes(' ') ? `<span class="fn">${n.slice(0, n.indexOf(' '))} </span>${n.slice(n.indexOf(' ') + 1)}` : n}</span><small>${c}</small></span><span class="v">${v.toFixed(1)}</span></div>`;
+  return `<div><div class="asg-cap"><img src="heads/${img}.png" alt=""><div><b>Team ${cap}</b><small>Captain · ${code} · ${ppg} ppg</small></div></div><span class="asg-h">Starters</span>${st.map(row('')).join('')}<span class="asg-h">Reserves</span><div class="asg-res">${res.map(row('res')).join('')}</div></div>`; };
+const asg = () => `<div class="asg">${asgSide('kevin-durant', 'Durant', 'TUL', 29.4, [['Kevin Durant', 'TUL', 29.4, 'c'], ['LeBron James', 'DUL', 28.1, 1], ['Magic Johnson', 'SFE', 19.2, 4], ["Shaquille O'Neal", 'HON', 26.0, 5], ['Kevin Garnett', 'TUL', 21.2, 8]], [['Kawhi Leonard', 'ELP', 24.3, 9], ['Dwyane Wade', 'DET', 25.1, 12], ['Nikola Jokic', 'TPA', 24.8, 13], ['David Robinson', 'HON', 23.0, 16], ['Karl Malone', 'REN', 25.6, 17], ['Allen Iverson', 'SFE', 27.4, 20], ['Dikembe Mutombo', 'HON', 11.8, 21]])}<span class="asg-vs">vs</span>${asgSide('michael-jordan', 'Jordan', 'KEN', 31.8, [['Michael Jordan', 'KEN', 31.8, 'c'], ['Stephen Curry', 'BIS', 26.9, 2], ['Hakeem Olajuwon', 'DUL', 26.2, 3], ['Kobe Bryant', 'REN', 27.6, 6], ['Larry Bird', 'SFE', 25.4, 7]], [['Gary Payton', 'TUL', 19.8, 10], ['Tim Duncan', 'ANC', 22.5, 11], ['John Stockton', 'ANC', 14.2, 14], ['Scottie Pippen', 'DUL', 20.1, 15], ['Ben Wallace', 'TUL', 7.4, 18], ['Klay Thompson', 'TUL', 20.4, 19], ['Jason Kidd', 'ANC', 14.6, 22]])}</div><p class="asg-note">C captain · #pick in the captains' draft · season points per game. Five Twisters made it.</p>`;
+S.stats = () => [leftAfter('Your season', 'Stats · regular season'),
+  prompt('League stats', 'Who ran the league', 'Per game, regular season. Tap a player for his season card.') +
+  `<div class="ptabs"><a class="pt on" href="#"><b>Leaders</b></a><a class="pt" href="#"><b>Players</b></a><a class="pt" href="#"><b>Teams</b></a><span class="pt-more"><span>Season</span><u>Regular</u><span>or</span><u style="border-color:transparent;color:var(--ink3)">Playoffs</u></span></div>
+  <div class="ldr-grid">${[['Points', [['Michael Jordan', 'KEN', 31.8], ['Kevin Durant', 'TUL', 29.4, 1], ['LeBron James', 'DUL', 28.1], ['Kobe Bryant', 'REN', 27.6], ['Stephen Curry', 'BIS', 26.9]]], ['Rebounds', [['Dennis Rodman', 'TUL', 15.1, 1], ['Ben Wallace', 'TUL', 13.9, 1], ['Hakeem Olajuwon', 'DUL', 12.9], ['Kevin Garnett', 'TUL', 12.8, 1], ['Tim Duncan', 'ANC', 12.1]]], ['Assists', [['Magic Johnson', 'SFE', 11.9], ['John Stockton', 'ANC', 10.8], ['Stephen Curry', 'BIS', 8.4], ['Gary Payton', 'TUL', 7.9, 1], ['LeBron James', 'DUL', 7.6]]], ['Steals', [['Gary Payton', 'TUL', 2.3, 1], ['Michael Jordan', 'KEN', 2.2], ['John Stockton', 'ANC', 2.1], ['Kawhi Leonard', 'ELP', 1.9], ['Scottie Pippen', 'DUL', 1.9]]], ['Blocks', [['Hakeem Olajuwon', 'DUL', 3.4], ['Ben Wallace', 'TUL', 2.6, 1], ["Shaquille O'Neal", 'HON', 2.4], ['David Robinson', 'HON', 2.3], ['Tim Duncan', 'ANC', 2.2]]], ['3PM', [['Stephen Curry', 'BIS', 4.6], ['Klay Thompson', 'TUL', 3.5, 1], ['Ray Allen', 'TPA', 3.1], ['Kevin Durant', 'TUL', 2.4, 1], ['Larry Bird', 'SFE', 2.0]]]].map(([t, rows]) => `<section class="ldr"><h3>${t}</h3><table class="leaders">${rows.map(([n, c, v, you], i) => `<tr class="${you ? 'you' : ''}"><td class="k">${i + 1}</td><td><b>${n}</b> · ${c}</td><td class="v">${v.toFixed(1)}</td></tr>`).join('')}</table></section>`).join('')}</div>`];
+S.share = () => [leftAfter('Your season', 'Share your season'),
+  prompt('Share your season', 'One card, your whole year', 'Saves as an image. Nothing about other teams' + "'" + ' rosters.') +
+  `<div class="share-card"><div class="sc-top"><span class="mark">D</span><b>DRAFTVERSE</b><span>All-Time Draft · season</span></div>
+   <div class="sc-main"><div><span class="eb" style="font:700 12px Inter;letter-spacing:0.1em;color:var(--gold)">CHAMPIONS</span><h2>Tulsa Twisters</h2><p>52–30 · 3rd seed · 16–6 in the playoffs</p></div><span class="sc-trophy">🏆</span></div>
+   <div class="sc-path">${[['QF', 'HON', '4–1'], ['SF', 'SFE', '4–2'], ['Finals', 'KEN', '4–3']].map(([r, c, sc]) => `<div><span>${r}</span>${tm(c)}<b>${sc}</b></div>`).join('')}</div>
+   <div class="sc-five">${SEASON.slice(0, 5).map(([k, , , pt]) => { const x = p(k); return `<div>${face(x)}<b>${short(x.n)}</b><small>${pt} ppg</small></div>`; }).join('')}</div>
+   <div class="sc-aw">Finals MVP Durant · DPOY Wallace · All-NBA 1st Durant</div></div>
+   <div class="btn2" style="max-width:520px"><button class="btn go">Save image</button><button class="btn line">Copy text</button></div>`];
+
+// ---- shared pieces: menu, player card, the Bomb, minutes, share ----
+S.menu = () => [
+  `<div class="mast keep" style="border-top-width:6px"><b style="font-size:48px">Draftverse</b><small>Every era. One game. · est. 1946</small></div>
+   <section class="keep"><h3>Your team</h3><div class="myteam">${tm('TUL').replace('class="tm"', 'class="tm lg"')}<div><span>Tulsa</span><b>Twisters</b></div><a class="reroll" href="#">↻ new team</a></div></section>
+   <section><h3>Today<span>Tuesday, Oct 21</span></h3><div class="kv"><span>Streak</span><b class="g">5 days</b></div><div class="kv"><span>Dailies played</span><b>1 of 4</b></div><div class="kv"><span>New boards in</span><b>7h 12m</b></div></section>
+   <section class="resume"><h3>Draft in progress</h3><p class="empty-note">All-Time · round 3, pick 40 · Tulsa Twisters</p><button class="btn line" style="margin-top:10px">Continue the draft</button></section>` + `<div class="actions"><div class="links"><a href="#">How to play</a><a href="#">Settings</a></div></div>`,
+  `<div class="modes">${[
+    ['Step 1 · learn the caps', 'Draw Five', 'Four cards a position, five under the cap, then beat the AI’s five.', '~5 min', [['Daily board', 'Tonight vs the ’01 Lakers · 1–3 Jokers', 'played', '6-day streak']]],
+    ['Step 2 · your first draft', 'Mini Draft', '16 teams, 5 rounds, 70 caps. A real draft in a few minutes.', '~8 min', [['Daily draft', '75 caps · No Bucks today', 'open', '']]],
+    ['Step 3 · the full game', 'All-Time Draft', '16 teams, 9 rounds, real AI on every pick. Then a season and the playoffs.', '~30 min', [['Daily draft', '95 caps · One superstar, tops', 'open', ''], ['The Bomb', '90 caps · a hidden player joins you in round 6', 'open', '']]],
+  ].map(([step, name, desc, time, dailies]) => `<article class="mode"><div class="mode-main"><span class="eb">${step}</span><h2>${name}</h2><p>${desc}</p><div class="mode-act"><button class="btn go">Play</button><a href="#">How it works</a><span>${time}</span></div></div><div class="mode-daily">${dailies.map(([t, line, st, note]) => `<div class="dl ${st}"><span class="dl-t">${t}</span><span class="dl-l">${line}</span><span class="dl-s">${st === 'played' ? '✓ played · ' + note : 'one try · open'}</span></div>`).join('')}</div></article>`).join('')}</div>`];
+
+const peekBody = (scouted) => `
+  <div class="modal"><div class="pk2">
+    <div class="pk2-head"><img src="heads/kevin-garnett.png" alt=""><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · LAL · 1996–2010</span></div><a class="x" href="#">✕</a></div>
+    <section class="pk2-card"><div class="pk2-top"><span class="eb">On the card</span><b>2002–04</b><span class="coin2"><i class="capi"></i>19.4</span></div>
+      <div class="pk2-nums">${[['23.6', 'PTS'], ['13.7', 'REB'], ['5.5', 'AST'], ['49.9', 'FG%'], ['22.0', '3P%']].map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>
+      ${scouted ? `<div class="pk2-grades"><span class="pk2-tier">Greatest peak</span>${[['A', 'Offense'], ['A+', 'Defense'], ['C', 'Spacing'], ['A', 'Portability'], ['B+', 'Finishing'], ['A', 'Durability']].map(([g, l]) => `<span class="gr"><b class="${g.startsWith('A') ? 'hi' : g === 'C' ? 'lo' : ''}">${g}</b>${l}</span>`).join('')}</div>` : ''}
+      <button class="btn go" style="margin-top:14px">Draft 2002–04</button></section>
+    ${scouted ? '' : `<div class="pk2-scout"><span>A scouting report shows his tier and six grades for every stretch.</span><button class="btn line">Scout him · 3 left</button></div>`}
+    <h3>Other years<span>tap to compare</span></h3>
+    <table class="pk2-rows">${[['1996–98', '18.4 · 9.6 · 4.2', 'All-Star', 15.8], ['1999–01', '21.6 · 11.6 · 5.0', 'All-NBA', 18.6], ['2005–07', '22.2 · 12.7 · 4.3', 'All-NBA', 17.1], ['2008–10', '16.4 · 8.0 · 2.8', 'All-Star', 13.5]].map(([y, l, t, f]) => `<tr><td class="y">${y}</td><td>${l}</td><td class="t">${scouted ? t : '—'}</td><td class="cap"><i class="capi"></i>${f}</td><td class="car">▸</td></tr>`).join('')}</table>
+    <a class="pk2-all" href="#">Show every season ▾</a>
+  </div></div>`;
+S.peek = () => { const [l, m] = S.ribbon(); return [l, m + `<div class="drawer-dim"></div>` + peekBody(false)]; };
+S.peekScouted = () => { const [l, m] = S.ribbon(); return [l, m + `<div class="drawer-dim"></div>` + peekBody(true)]; };
+
+S.bomb = () => { const [l, m] = S.ribbon(); return [l, m + `<div class="drawer-dim"></div><div class="modal bombm"><span class="eb">Round 6 · The Bomb</span><h2>Someone joins your team</h2><span class="sil">?</span><p class="bdesc">“A 6-foot-7 wing from the late ’90s. Guards the other team’s best scorer and hits the corner three.”</p><div class="bmeta"><span>SF</span><span><i class="capi"></i>8.4 caps</span><span>plays 10+ min</span></div><p class="empty-note">Who he is waits for the results.</p><button class="btn go">Continue the draft</button></div>`]; };
+S.bombReveal = () => { const [l, m] = S.results(); return [l, m.replace('<section><h3>Your roster', `<section class="breveal"><h3>The Bomb<span>tap to reveal</span></h3><div class="br-steps"><div class="br"><span class="eb">1 · Description</span><span class="sil sm">?</span><p>A 6-foot-7 wing from the late ’90s. Guards the best scorer, hits the corner three.</p></div><div class="br"><span class="eb">2 · Face</span><img src="heads/shane-battier.png" alt=""><p>A role player.</p></div><div class="br hidden"><span class="eb">3 · Name</span><span class="sil sm">?</span><button class="btn line">Show his name</button></div></div></section><section><h3>Your roster`)]; };
+
+const MIN = [['PG', [['Gary Payton', 34], ['Andre Iguodala', 14]]], ['SG', [['Klay Thompson', 34], ['Kyle Korver', 14]]], ['SF', [['Kevin Durant', 38], ['Andre Iguodala', 10]]], ['PF', [['Kevin Garnett', 36], ['Robert Horry', 12]]], ['C', [['Ben Wallace', 30], ['Dennis Rodman', 18]]]];
+S.minutes = () => { const [l] = S.team(); return [l, prompt('Your team · rotation', 'Set the minutes', 'Each spot plays 48 minutes. Starter first, then who comes in. Nobody can play more than 40.') +
+  `<section><h3>Rotation<span>240 / 240 min · all spots full</span></h3><table class="mins2">${MIN.map(([pos, rows]) => `<tr class="mpos"><td class="pos" rowspan="${rows.length + 1}">${pos}</td>${rows.map(([n, m], i) => `${i ? '<tr>' : ''}<td class="mw"><span class="ml">${i ? 'Bench' : 'Starter'}</span><button class="pick">${n} ▾</button></td><td class="step"><button>−</button><b>${m}</b><button>+</button></td><td class="mbar"><i style="width:${m / 48 * 100}%"></i></td></tr>`).join('')}<tr><td colspan="3" class="addr"><a href="#">+ add a third player</a><span>48 / 48</span></td></tr>`).join('')}</table>
+  <div class="btn2" style="max-width:520px;margin-top:16px"><button class="btn line">Suggest a rotation</button><button class="btn line">Reset</button></div></section>`]; };
+
+S.shareDraft = () => { const [l, m] = S.results(); return [l, m + `<div class="drawer-dim"></div><div class="modal sharem"><div class="sm-head"><h3 style="border:0;margin:0">Share your draft</h3><a class="x" href="#">✕</a></div>
+  <div class="share-card"><div class="sc-top"><span class="mark">D</span><b>DRAFTVERSE</b><span>All-Time Draft</span></div>
+   <div class="sc-main"><div><span class="eb" style="font:700 12px Inter;letter-spacing:0.1em;color:var(--cgold)">CONTENDER · 3RD OF 16</span><h2>Tulsa Twisters</h2><p>Rating 87 · best 90 · title odds 18%</p></div><span class="sc-rank">3<sup>rd</sup></span></div>
+   <div class="sc-five">${['payton', 'klay', 'durant', 'garnett', 'bwallace'].map((k) => { const x = p(k); return `<div>${face(x)}<b>${short(x.n)}</b><small>${x.y}</small></div>`; }).join('')}</div>
+   <div class="sc-path">${[['Defense', 'A+'], ['Fit', 'A-'], ['Spacing', 'C']].map(([a, g]) => `<div><span>${a}</span><b>${g}</b></div>`).join('')}</div>
+   <div class="sc-aw">“Nobody in this league scores at the rim on you.” · Matt Shyman</div></div>
+  <div class="btn2" style="margin-top:14px"><button class="btn go">Save image</button><button class="btn line">Copy link</button></div><p class="empty-note" style="margin-top:8px">The link gives a friend the same 16-team board, with your 87 to beat.</p></div>`]; };
+
+// ---- v2: simpler menu, calmer minutes, a poster to share ----
+const dlg = (base, html) => { const [l, m] = base(); return [l, m + `<div class="drawer-dim"></div>${html}`]; };
+S.settings = () => dlg(S.ribbon, `<div class="dlg"><div class="dlg-head"><h2>Settings</h2><a href="#">✕</a></div>
+  <div class="set-r"><b>Draft speed</b><div class="set-opts"><span class="on">Calm</span><span>Fast</span><span>Instant</span></div><p>Every CPU pick has a moment to read, the first round slowest. All-Time and Mini, right away.</p></div>
+  <div class="set-r"><b>Vibration</b><div class="set-opts"><span class="on">On</span><span>Off</span></div><p>A short buzz when you are on the clock, when you pick and when a game ends. Phones that support it.</p></div>
+  <div class="set-r"><b>Motion</b><div class="set-opts"><span class="on">Full</span><span>Reduced</span></div><p>Reduced skips card flips and slides; numbers still count up.</p></div></div>`);
+S.howto = () => dlg(S.ribbon, `<div class="dlg"><div class="dlg-head"><h2>How to play</h2><a href="#">✕</a></div><p class="lead">All-Time Draft · 16 teams, 9 rounds, one player a round.</p>
+  <ol class="rules">${[['Draft', 'Sixteen teams take turns, nine rounds. You run one team; the other fifteen are CPU GMs.'], ['Caps', 'Every pick costs caps <i class="capi"></i>, his shots a game in those years. Your nine have to fit under 100.9, so the best player is not always the pick that fits.'], ['Years', 'Each player comes with stretches of his career. The draft takes his best one; in the Team tab you can switch to cheaper years.'], ['Rotation', 'Set minutes for five starters and four on the bench. The Team tab opens after your first pick.'], ['Grading', 'The judge scores every team on talent, offense, defense, spacing, fit and rotation, and ranks the field. Then the season is played.']].map(([t, b], i) => `<li><span>${i + 1}</span><div><b>${t}</b><p>${b}</p></div></li>`).join('')}</ol>
+  <button class="btn go">Got it</button></div>`);
+S.leave = () => dlg(S.ribbon, `<div class="dlg sm"><div class="dlg-head"><h2>Leave the draft?</h2></div><p class="lead">Your draft is saved. Pick it up again from the menu with <b style="color:var(--ink)">Continue draft</b>.</p>
+  <div class="btn2"><button class="btn go">Keep drafting</button><button class="btn line">Back to menu</button></div></div>`);
+S.loading = () => ['', `<div class="load"><div class="mast"><b>Draftverse</b><small>All-Time Draft · getting the players ready</small></div><div class="load-l"><span>Downloading player data</span><em>62%</em></div><div class="load-bar"><i style="width:62%"></i></div><p>80 years of real NBA seasons. This only downloads once.</p></div>`];
+S.dailyDay = () => ['', `<div class="dday"><div class="mast"><b>Daily All-Time Draft</b><small>Tuesday, October 21 · one try, the same league for everyone</small></div>
+  <h2>No Lakers today</h2><p class="lead">Every rule of today's draft, before the lottery.</p>
+  <div class="drule"><span class="ic cap"><i class="capi"></i><span class="capn">100.9</span></span><div><span class="who">Every team</span><b>100.9 caps for your nine players</b><p>The CPU teams draft under the same cap.</p></div></div>
+  <div class="drule only"><span class="ic">⊘</span><div><span class="who">Only you</span><b>No one who ever played for the Lakers</b><p>The CPU can still take them. 14 of the top players are out for you, Magic, Kobe and Shaq among them.</p></div></div>
+  <div class="drule"><span class="ic">#7</span><div><span class="who">Everyone today</span><b>You pick 7th</b><p>The same league and the same rivals for every player today. One try.</p></div></div>
+  <button class="btn go">Start today's draft</button>${links}</div>`];
+const pdLine = ([mono, name, tag, blurb, bdg, cls = '']) => `<div class="pd-line ${cls}"><span class="pd-av ${mono === 'TV' ? 'tv' : ''}">${mono}</span><div><b>${name}${tag ? `<small>${tag}</small>` : ''}</b><p>${blurb}</p></div><span class="bdg">${bdg}</span></div>`;
+S.callSheet = () => dlg(S.ribbon, `<div class="dlg"><div class="dlg-head"><h2>Who are you calling?</h2><a href="#">✕</a></div><p class="lead" style="margin:6px 0 4px">Round 3 · pick 40 · <b style="color:var(--ink)">2 of 3 calls left</b></p>
+  ${[['NN', 'Natalie Novacka', 'Capologist', 'Three bargains that fill your holes. Caps first, feelings never.', '3 bargains'], ['ON', 'Jake Onoffsky', 'Numbers', 'Cuts your board to the 12 who actually move your number. Everyone else is noise. One pick.', 'War room'], ['SH', 'Matt Shyman', '', '“Three names. Simple.”', '3 names'], ['RO', 'Mark Rotation', 'Bench depth', 'Finds the hole in your rotation before February does.', 'The bench', 'off'], ['TV', 'The Desk', '', 'The whole panel fights about your biggest hole. Eric referees.', 'Chalk talk'], ['MB', 'Bart Moonbat', 'Hot takes', 'Always picks up. You’ll regret it. Probably. Doesn’t use a call.', 'Free · once a round', 'free']].map(pdLine).join('')}
+  <button class="btn line" style="margin-top:16px">Back to the board</button></div>`);
+S.call = () => dlg(S.ribbon, `<div class="dlg"><div class="pd-top"><span class="pd-av">NN</span><div><b>Natalie Novacka</b><small>call 2 of 3</small></div><span class="air"><i></i>ON THE LINE</span></div>
+  <p class="pd-say">“You have <b>66.9 caps</b> for seven spots and no center. Here is the math: three bigs who start for you and still leave <b>40 caps</b> for the rest.”</p>
+  <p class="pd-say barge"><em>Moonbat</em>“Take Wilt and figure it out later!”</p>
+  ${[['kevin-garnett', 'Kevin Garnett', 'PF · 2002–04', '19.4', 1], ['rudy-gobert', 'Rudy Gobert', 'C · 2018–20', '9.1', 0], ['marcus-camby', 'Marcus Camby', 'C · 2006–08', '9.6', 0]].map(([img, n, ln, c, on]) => `<div class="pd-pick"><img src="heads/${img}.png" alt=""><div><b>${n}</b><small>${ln}</small></div><span class="cst"><i class="capi"></i>${c}</span><span class="star ${on ? 'on' : ''}">★</span></div>`).join('')}
+  <p class="empty-note" style="margin:10px 0 16px">Stars go to your Big Board. The pick stays yours.</p>
+  <div class="btn2"><button class="btn go">Back to board</button><button class="btn line">Star all 3</button></div></div>`);
+S.pcard = () => dlg(S.stats, `<div class="dlg" style="width:min(720px, calc(100% - 32px))"><div class="pc-head"><img src="heads/kevin-durant.png" alt=""><div><h2>Kevin Durant</h2><small>SF · 2012–14 · Greatest peak</small></div><a class="x" href="#">✕</a></div>
+  <div class="pc-facts"><span>${tm('TUL')} <b>Tulsa Twisters</b></span><span>Drafted <b>#7</b> · round 1</span><span>Starter · <b>2nd</b> in the league in points</span></div>
+  <div class="pc-wrap"><table class="pc-t"><tr><th></th>${['G', 'MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG%', '3P%', 'FT%', 'TOV', 'PF'].map((h) => `<th>${h}</th>`).join('')}</tr>
+  <tr><td>Season</td>${['78', '37.2', '29.4', '7.1', '4.8', '1.2', '1.0', '51.0', '38.6', '88.4', '3.1', '1.9'].map((v, i) => `<td class="${i === 2 ? 'k' : ''}">${v}</td>`).join('')}</tr>
+  <tr><td>Playoffs</td>${['22', '39.8', '31.2', '7.6', '5.1', '1.3', '1.1', '49.4', '37.1', '89.0', '3.4', '2.2'].map((v, i) => `<td class="${i === 2 ? 'k' : ''}">${v}</td>`).join('')}</tr></table></div>
+  <p class="pc-real">His real 2012–14: <b>29.7 pts · 7.6 reb · 5.0 ast</b> a game.</p></div>`);
+S.series = () => { const [l] = S.playoffs(); return [l,
+  `<div class="steps"><span class="ok"><i>✓</i>Quarterfinal · beat HON 4–1</span><span class="ok"><i>✓</i>Semifinal · beat SFE 4–2</span><span class="now">● Finals · now</span></div>
+  <div class="sh-score"><div class="sh-t">${tm('TUL')}<div><b>Tulsa Twisters</b><small>#3 · 52–30</small></div></div><div class="sh-big"><b>3–3</b><span>Game 7, winner takes it</span></div><div class="sh-t r">${tm('KEN')}<div><b>Kentucky Chickens</b><small>#1 · 61–21</small></div></div></div>
+  <div class="sh-games">${[['W', '112–101'], ['L', '99–104'], ['W', '108–97'], ['L', '95–110'], ['W', '104–96'], ['L', '101–106']].map(([r, sc], i) => `<div class="sh-g"><span>G${i + 1}</span><b class="${r === 'W' ? 'w' : 'l'}">${r} <small>${sc}</small></b></div>`).join('')}<div class="sh-g next"><span>G7</span><b>Tonight</b></div></div>
+  <div class="btn2 phone-only"><button class="btn go">▶ Play game 7</button><button class="btn line">Sim game 7</button></div>
+  <div class="split"><section><h3>The matchup<span>series odds 48%</span></h3>
+   <p class="sh-edge"><i class="up">+</i><b>Your defense.</b> Kentucky scored 101 a game in the series, 9 under its season.</p>
+   <p class="sh-edge"><i class="up">+</i><b>Garnett on the glass:</b> 13.8 rebounds a game, the most on the floor.</p>
+   <p class="sh-edge"><i class="dn">−</i><b>Jordan.</b> 34.6 a game in the series and 41 in game 6.</p></section>
+   <section><h3>Top three<span>season · pts · reb · ast</span></h3>${[['kevin-durant', 'Kevin Durant', 'SF', '29.4 · 7.1 · 4.8', 'michael-jordan', 'Michael Jordan', 'SG', '31.8 · 6.1 · 5.3'], ['kevin-garnett', 'Kevin Garnett', 'PF', '21.2 · 12.8 · 3.9', 'charles-barkley', 'Charles Barkley', 'PF', '24.6 · 11.4 · 4.1'], ['gary-payton', 'Gary Payton', 'PG', '19.8 · 4.4 · 7.9', 'patrick-ewing', 'Patrick Ewing', 'C', '22.8 · 10.6 · 2.0']].map(([ia, na, pa, la, ib, nb, pb, lb]) => { const nm = (n) => { const i = n.indexOf(' '); return `<span class="fn">${n.slice(0, i)} </span>${n.slice(i + 1)}`; }; return `<div class="duel"><div class="pl"><img src="heads/${ia}.png" alt=""><div><b>${nm(na)}<small>${pa}</small></b><span class="ln">${la}</span></div></div><span class="vs">vs</span><div class="pl r"><img src="heads/${ib}.png" alt=""><div><b><small>${pb}</small>${nm(nb)}</b><span class="ln">${lb}</span></div></div></div>`; }).join('')}</section></div>`]; };
+const simAside = (sub, w, l, seed, pct, btns, brk) => mast('Your Season', sub) + tally(String(w), seed, String(l), { youK: 'Won', midK: 'Seed', aiK: 'Lost' }) + `<div class="sprog keep"><i style="width:${pct}%"></i></div>` +
+  (brk ? `<section class="keep"><div class="stackb">${btns}</div></section>` : `<section class="keep"><h3>Speed<span>a day every second at 1×</span></h3><div class="speeds"><span>½</span><u>1×</u><span>2×</span><span>4×</span><span>8×</span></div><div class="stackb" style="margin-top:14px">${btns}</div></section>`);
+const g8 = ([a, sa, b, sb, note], i) => { const aw = sa > sb; return `<div class="g8 ${a === YOU || b === YOU ? 'you' : ''} ${i >= 3 ? 'g8x' : ''}"><span class="tmr ${aw ? 'w' : ''}">${tm(a)}${T[a][1]}</span><span class="sc ${aw ? 'w' : ''}">${sa}</span><span class="tmr ${aw ? '' : 'w'}">${tm(b)}${T[b][1]}</span><span class="sc ${aw ? '' : 'w'}">${sb}</span>${note ? `<span class="nt">${note}</span>` : ''}</div>`; };
+const STAND_D = [['KEN', 17, 6, '='], ['TUL', 16, 7, '+1'], ['SFE', 15, 8, '−1'], ['DUL', 14, 9, '='], ['BIS', 13, 10, '+2'], ['HON', 12, 11, '='], ['REN', 12, 11, '−2'], ['ANC', 11, 12, '+1'], ['ELP', 11, 12, '−1'], ['DET', 10, 13, '=']];
+const mvTag = (m) => `<span class="mv ${m[0] === '+' ? 'up' : m[0] === '−' ? 'dn' : 'eq'}">${m[0] === '+' ? '▲ ' + m.slice(1) : m[0] === '−' ? '▼ ' + m.slice(1) : '—'}</span>`;
+const standMv = (rows, head = 'Standings', note = '') => `<section><h3>${head}<span>${note}</span></h3><table class="stand2 mvt"><tr><th>#</th><th></th><th>Team</th><th>W</th><th>L</th><th></th></tr>${rows.map(([c, w, l, m], i) => `<tr class="${c === YOU ? 'you' : ''} ${i === 7 ? 'cut' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}</td><td>${w}</td><td>${l}</td><td>${mvTag(m)}</td></tr>`).join('')}</table></section>`;
+S.simDay = () => [
+  simAside('Tuesday, Dec 2 · game 23 of 82', 16, 7, '2nd', 28, '<button class="btn line">Pause</button><button class="btn line">Skip to the month break</button>') +
+  `<section><h3>Next for Tulsa</h3><div class="kv"><span>Wed, Dec 3</span><b>at Santa Fe</b></div><div class="kv"><span>Fri, Dec 5</span><b>vs Fresno</b></div></section>` + actions('<button class="btn line">Watch the next game</button>'),
+  prompt('Live · Tuesday, Dec 2 · game 23', 'A sixth straight win', 'Durant had 34 in Duluth. Tulsa is a game behind Kentucky; Reno lost a fourth in a row.') +
+  `<section><h3>December<span>your games · W and L</span></h3><div class="cal">${[['1', 'w'], ['2', 'today'], ['3', ''], ['5', ''], ['6', ''], ['8', ''], ['10', ''], ['13', ''], ['15', ''], ['17', ''], ['19', ''], ['20', ''], ['22', ''], ['26', ''], ['28', '']].map(([d, c]) => `<span class="${c}"><small>${d}</small>${c === 'w' ? 'W' : c === 'l' ? 'L' : c === 'today' ? 'W' : ''}</span>`).join('')}</div><div class="cal-l"><span>Nov: 11–4</span><span>Month break after Dec 31</span></div></section>` +
+  `<section><h3>Tonight<span>5 games · final</span></h3><div class="board8">${[['TUL', 118, 'DUL', 109, 'Durant 34 · Garnett 14 reb'], ['KEN', 121, 'BOI', 97], ['SFE', 104, 'REN', 99], ['BIS', 112, 'TPA', 108], ['ELP', 117, 'LUB', 102]].map(g8).join('')}</div><a class="phone-only more8" href="#">All 5 games ▾</a></section>` +
+  `<div class="split">${standMv(STAND_D, 'Standings', 'after 23 games · move this week')}<div class="stack"><section><h3>MVP ladder<span>this week</span></h3>${[[1, 'michael-jordan', 'Michael Jordan', 'KEN', '32.1 pts · 6.0 reb · 5.4 ast', '='], [2, 'kevin-durant', 'Kevin Durant', 'TUL', '29.6 pts · 7.2 reb · 4.7 ast', '+1'], [3, 'lebron-james', 'LeBron James', 'DUL', '28.3 pts · 8.0 reb · 7.6 ast', '−1']].map(mvpRow).join('')}</section></div></div>`];
+S.monthBreak = () => [
+  simAside('December in review · game 36 of 82', 26, 10, '1st', 44, '<button class="btn go">Play January</button><button class="btn line">No more breaks</button>', true) + actions(''),
+  prompt('Month break · December', 'Tulsa 12–3, first', 'The best month in the league. Kentucky went 9–6 and slipped to second; Bismarck climbed four places.') +
+  `<div class="split">${standMv([['TUL', 26, 10, '+1'], ['KEN', 25, 11, '−1'], ['SFE', 23, 13, '='], ['BIS', 22, 14, '+4'], ['DUL', 21, 15, '−1'], ['HON', 19, 17, '='], ['ANC', 18, 18, '+1'], ['REN', 17, 19, '−3'], ['ELP', 17, 19, '='], ['DET', 16, 20, '=']], 'Standings', 'after December · move this month')}
+  <div class="stack"><section><h3>Player of the Month<span>December</span></h3><div class="potm"><img src="heads/kevin-durant.png" alt=""><div><b>Kevin Durant</b><span class="ln">31.4 pts · 7.8 reb · 5.1 ast · 12–3</span><p>Two 40-point nights, both wins. Tulsa won the eight games he scored 30+.</p></div></div></section>
+  <section><h3>Game of the month</h3>${gos('stephen-curry', 'Stephen Curry', 51, '17/29 FG · 11/18 3PT · 6/6 FT', 'Bismarck 131, Honolulu 128 · Dec 19')}</section></div></div>` +
+  `<div class="split"><section><h3>MVP ladder<span>top five · move since November</span></h3>${[[1, 'kevin-durant', 'Kevin Durant', 'TUL', '29.9 pts · 7.3 reb · 4.8 ast', '+1'], [2, 'michael-jordan', 'Michael Jordan', 'KEN', '31.8 pts · 6.1 reb · 5.2 ast', '−1'], [3, 'lebron-james', 'LeBron James', 'DUL', '28.1 pts · 8.1 reb · 7.5 ast', '='], [4, 'stephen-curry', 'Stephen Curry', 'BIS', '27.4 pts · 4.6 reb · 6.4 ast', '+3'], [5, 'hakeem-olajuwon', 'Hakeem Olajuwon', 'DUL', '26.0 pts · 12.4 reb · 3.1 blk', '−1']].map(mvpRow).join('')}</section>
+  <section><h3>All-Star voting<span>second returns</span></h3>${[['Guard', 'Michael Jordan', 'KEN', '2.41M'], ['Guard', 'Stephen Curry', 'BIS', '2.02M'], ['Forward', 'Kevin Durant', 'TUL', '2.33M'], ['Forward', 'LeBron James', 'DUL', '2.27M'], ['Center', 'Hakeem Olajuwon', 'DUL', '1.64M'], ['Next up', 'Kevin Garnett', 'TUL', '1.21M · 7th forward']].map(([ps, n, c, v]) => `<div class="vote ${c === YOU ? 'you' : ''}"><span class="pos">${ps}</span><b>${n}<small>${c}</small></b><em>${v}</em></div>`).join('')}</section></div>`];
+S.asgBreak = () => [
+  simAside('All-Star break · Feb 16 · game 54 of 82', 38, 16, '2nd', 66, '<button class="btn go">Back to the season</button><button class="btn line">Watch the All-Star game</button>', true) + actions(''),
+  prompt('All-Star break · Sunday', 'Team Durant 162, Team Jordan 158', 'Durant captained the winners and took the game MVP with 38. Five Twisters made the 24.') +
+  `<section><h3>Game MVP</h3>${gos('kevin-durant', 'Kevin Durant', 38, '14/22 FG · 6/10 3PT · 8 reb · 6 ast', 'Team Durant 162, Team Jordan 158 · captain of the winners')}</section>` +
+  `<section class="asg-sec"><h3>The captains' draft<span>voting picked the 24 · captains picked the teams</span></h3>${asg()}</section>`];
+S.playIn = () => [
+  mast('Play-in', 'Seeds 7 to 10 · single games') + tally('52', '3rd', '30', { youK: 'Won', midK: 'Seed', aiK: 'Lost' }) +
+  `<section><h3>Your playoffs</h3><div class="kv"><span>Seed</span><b>3rd · in</b></div><div class="kv"><span>First round</span><b>vs 6 · Honolulu</b></div><div class="kv"><span>Kentucky plays</span><b>the 8 seed</b></div></section>` + actions('<button class="btn go">Watch the 8-seed game</button><button class="btn line">Sim to the playoffs</button>'),
+  prompt('Play-in · tonight', 'Two games for the last two seeds', 'Seeds 1 to 6 are in. Reno beat Anchorage for the 7 seed; Anchorage gets one more chance tonight.') +
+  `<div class="pi"><div><div class="pi-g"><span>7 vs 8 · winner is the 7 seed</span>${[['7', 'REN', 108, 1], ['8', 'ANC', 101, 0]].map(([sd, c, sc, w]) => `<div class="tr ${w ? 'win' : ''}"><span class="sd">${sd}</span>${tm(c)}<span>${T[c][1]}</span><span class="w">${sc}</span></div>`).join('')}<p>Reno is the 7 seed and plays Santa Fe.</p></div>
+   <div class="pi-g"><span>9 vs 10 · loser is out</span>${[['9', 'ELP', 97, 0], ['10', 'DET', 103, 1]].map(([sd, c, sc, w]) => `<div class="tr ${w ? 'win' : ''}"><span class="sd">${sd}</span>${tm(c)}<span>${T[c][1]}</span><span class="w">${sc}</span></div>`).join('')}<p>El Paso's season is over.</p></div></div>
+   <div><div class="pi-g live"><span>Tonight · for the 8 seed</span>${[['8', 'ANC', '—', 0], ['10', 'DET', '—', 0]].map(([sd, c, sc]) => `<div class="tr"><span class="sd">${sd}</span>${tm(c)}<span>${T[c][1]}</span><span class="w">${sc}</span></div>`).join('')}<p>The winner meets Kentucky in the first round. Anchorage 61% before tip-off.</p></div></div></div>` +
+  `<div class="phone-only"><div class="stackb"><button class="btn go">Watch the 8-seed game</button><button class="btn line">Sim to the playoffs</button></div></div>`];
+const court = `<svg class="court" viewBox="0 0 300 200" aria-hidden="true"><rect x="1" y="1" width="298" height="198" fill="none" stroke="#38383A" stroke-width="1.5"/><rect x="100" y="1" width="100" height="120" fill="none" stroke="#38383A" stroke-width="1.5"/><circle cx="150" cy="121" r="30" fill="none" stroke="#38383A" stroke-width="1.5"/><path d="M 20 1 L 20 60 A 132 132 0 0 0 280 60 L 280 1" fill="none" stroke="#38383A" stroke-width="1.5"/><circle cx="150" cy="22" r="7" fill="none" stroke="#A9A395" stroke-width="2"/><circle cx="196" cy="112" r="7" fill="#E0525A"/><text x="206" y="116" fill="#ECE6D7" font-family="JetBrains Mono" font-size="11">+2</text></svg>`;
+const FEED7 = [['2:13', 'k', '<b>Jordan</b> pull-up from the elbow. Good.', '96–98', 1], ['2:31', 'y', '<b>Garnett</b> misses the hook, <b>Barkley</b> rebounds.', '96–96'], ['2:54', 'y', '<b>Durant</b> fadeaway over Pippen. Good. 34 points.', '96–96'], ['call', 'dn', 'Kentucky 7–0 run'], ['3:20', 'k', '<b>Barkley</b> backs down Horry, and one.', '94–96'], ['3:48', 'k', '<b>Jordan</b> picks Korver at the top, layup.', '94–93'], ['4:05', 'y', '<b>Payton</b> turnover, Jordan steal.', '94–91'], ['call', 'up', 'Durant: 30 points'], ['4:40', 'y', '<b>Durant</b> corner three. Good.', '94–89']];
+S.liveGame = () => [
+  mast('Finals · Game 7', 'Live · Tulsa at Kentucky · series 3–3') + tally('96', '2:13', '98', { youK: 'Tulsa', midK: 'Q4', aiK: 'Kentucky', clock: true }) +
+  `<section class="keep"><h3>Win probability</h3><div class="wp"><div class="bar"><i style="width:41%"></i><u style="width:59%"></u></div><div class="lb"><b>Tulsa 41%</b><span>Kentucky 59%</span></div></div></section>` +
+  `<section class="keep live-aside"><h3>Speed</h3><div class="speeds"><span>½</span><u>1×</u><span>2×</span><span>4×</span><span>8×</span></div><div class="stackb" style="margin-top:14px"><button class="btn line">Pause</button><button class="btn line">Skip to final</button></div></section>` +
+  `<section><h3>Leaders so far<span>Tulsa · Kentucky</span></h3>${[['PTS', 'Durant', '34', 'Jordan', '38'], ['REB', 'Garnett', '14', 'Barkley', '12'], ['AST', 'Payton', '9', 'Jordan', '7']].map(([k, a, av, b, bv]) => `<div class="ldr2"><span class="k">${k}</span><span><b>${a}</b> ${av} · ${b} ${bv}</span><em></em></div>`).join('')}</section>` + actions(''),
+  prompt('Live · Q4 · 2:13', 'Jordan answers', 'A pull-up from the elbow puts Kentucky back in front. Tulsa has the ball, down two.') +
+  `<div class="hunt"><i>!</i><p><b>They're hunting Korver.</b> Jordan and Barkley have gone at him 6 times; 5 scored.</p></div>` +
+  `<div class="split live-split"><section><div class="tabs2"><span class="on">Play-by-play</span><span>Box score</span><span>Team stats</span></div><div class="feed">${FEED7.map(([t, w, x, sc, hot]) => t === 'call' ? `<div class="call ${w}">${x}</div>` : `<div class="ln ${w} ${hot ? 'hot' : ''}"><span class="t">${t}</span><span class="w">${w === 'y' ? 'TUL' : 'KEN'}</span><span>${x}</span><span class="sc">${sc}</span></div>`).join('')}<div class="q">End of Q3: Tulsa 76, Kentucky 74. Durant 26, Jordan 29.</div></div></section>
+  <div class="stack"><section><h3>Last basket<span>Jordan · 2:13</span></h3>${court}<p class="court-l"><b>Jordan</b> pull-up from the elbow · +2 · 15 of 27 tonight</p></section>
+  <section><h3>Score by quarter</h3><table class="box"><tr><th>Team</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>T</th></tr><tr><td>Tulsa</td><td>27</td><td>24</td><td>25</td><td>20</td><td>96</td></tr><tr><td>Kentucky</td><td>22</td><td>28</td><td>24</td><td>24</td><td class="hi">98</td></tr></table></section></div></div>`];
+const nm2 = (n) => { const i = n.indexOf(' '); return `<span class="fn">${n.slice(0, i)} </span>${n.slice(i + 1)}`; };
+// Q3 only, Tulsa: [name, on court now, MIN, PTS, REB, AST, FG, 3PT, PF, +/-]
+const BOXQ3 = [['Gary Payton', 1, 10, 4, 1, 3, '2-4', '0-1', 1, '+3'], ['Klay Thompson', 0, 9, 6, 1, 0, '2-5', '2-4', 0, '+1'], ['Kevin Durant', 1, 12, 9, 2, 1, '3-6', '1-2', 0, '+4'], ['Kevin Garnett', 1, 9, 4, 4, 1, '2-3', '0-0', 2, '+2'], ['Ben Wallace', 0, 7, 0, 3, 0, '0-1', '0-0', 1, '−2'], ['Andre Iguodala', 1, 5, 2, 1, 1, '1-2', '0-1', 0, '+1'], ['Kyle Korver', 0, 3, 0, 0, 0, '0-1', '0-1', 0, '−4'], ['Dennis Rodman', 1, 5, 0, 3, 0, '0-0', '0-0', 1, '+1'], ['Robert Horry', 0, 0]];
+S.liveBox = () => { const [l] = S.liveGame(); return [l,
+  prompt('Live · Q4 · 2:13', 'Jordan answers', 'A pull-up from the elbow puts Kentucky back in front. Tulsa has the ball, down two.') +
+  `<div><section><div class="tabs2"><span>Play-by-play</span><span class="on">Box score</span><span>Team stats</span></div>
+   <div class="seg"><span>Game</span><span>Q1</span><span>Q2</span><span class="on">Q3</span><span>Q4<small>now</small></span><span class="gap"></span><span class="on">Tulsa</span><span>Kentucky</span></div>
+   <table class="lbx"><tr><th>Q3 · Tulsa 25, Kentucky 24</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th class="c-hide">FG</th><th class="c-hide">3PT</th><th class="c-hide">PF</th><th>+/−</th></tr>
+   ${BOXQ3.map(([n, on, mn, pts, reb, ast, fg, tp, pf, pm], i) => mn === 0 ? `<tr class="bn"><td><i class="off"></i>${nm2(n)}</td><td colspan="8" class="dnp">Did not play in Q3</td></tr>` : `<tr class="${i > 4 ? 'bn' : ''}"><td><i class="${on ? '' : 'off'}"></i>${nm2(n)}</td><td>${mn}</td><td class="${pts >= 9 ? 'k' : ''}">${pts}</td><td>${reb}</td><td>${ast}</td><td class="c-hide">${fg}</td><td class="c-hide">${tp}</td><td class="c-hide">${pf}</td><td class="${pm[0] === '+' ? 'pos' : 'neg'}">${pm}</td></tr>`).join('')}
+   <tr class="tot"><td>Tulsa</td><td>60</td><td>25</td><td>15</td><td>6</td><td class="c-hide">10-22</td><td class="c-hide">3-10</td><td class="c-hide">5</td><td class="pos">+1</td></tr></table>
+   <p class="lb-note">● on the floor now · ○ on the bench</p></section>
+</div>`]; };
+S.menu2 = () => ['', `<div class="m2">
+  <div class="m2-mast"><b>Draftverse</b><span>Every era. One game.</span></div>
+  <div class="m2-team">${tm('TUL')}<span>Tulsa Twisters</span><a href="#">change</a></div>
+  <div class="m2-resume"><span>Draft in progress · All-Time, pick 40</span><a href="#">Continue →</a></div>
+  <ol class="m2-modes">${[['Draw Five', 'Five cards, one cap, beat the AI.', '5 min'], ['Mini Draft', 'A real 16-team draft, five rounds.', '8 min'], ['All-Time Draft', 'Nine rounds, then a season and the playoffs.', '30 min']].map(([n, d, t], i) => `<li><span class="m2-n">${i + 1}</span><div><b>${n}</b><span>${d}</span></div><em>${t}</em><span class="m2-go">Play →</span></li>`).join('')}</ol>
+  <div class="m2-today"><span class="m2-tl">Today’s dailies · 🔥 5</span>${[['Draw Five', 'vs ’01 Lakers', 1], ['Mini', 'No Bucks', 0], ['All-Time', 'One superstar', 0], ['The Bomb', 'round 6', 0]].map(([n, r, done]) => `<a class="m2-d ${done ? 'done' : ''}" href="#"><b>${n}</b><span>${done ? '✓ played' : r}</span></a>`).join('')}</div>
+  <div class="m2-foot"><a href="#">How to play</a><a href="#">Settings</a></div></div>`];
+
+const MIN2 = [['PG', 'Gary Payton', 34, 'Andre Iguodala', 14], ['SG', 'Klay Thompson', 34, 'Kyle Korver', 14], ['SF', 'Kevin Durant', 38, 'Andre Iguodala', 10], ['PF', 'Kevin Garnett', 36, 'Robert Horry', 12], ['C', 'Ben Wallace', 30, 'Dennis Rodman', 18]];
+S.minutes2 = () => { const [l] = S.team(); return [l, prompt('Your team · rotation', 'Set the minutes', 'Drag the line between two players. Tap a name to swap him.') +
+  `<section><h3>Rotation<span>48 minutes a spot · 240 / 240</span></h3><div class="rot2">${MIN2.map(([pos, a, ma, b, mb], i) => `<div class="r2 ${i === 3 ? 'drag' : ''}"><span class="r2-pos">${pos}</span><div class="r2-bar"><span class="r2-a" style="width:${ma / 48 * 100}%"><b>${a}</b><i>${ma}</i></span><span class="r2-h" style="left:${ma / 48 * 100}%"></span><span class="r2-b"><b>${b}</b><i>${mb}</i></span></div></div>`).join('')}</div>
+  <p class="empty-note" style="margin-top:10px">Tired legs: nobody over 40. <a href="#" style="color:var(--ink2)">Suggest a rotation</a> · <a href="#" style="color:var(--ink2)">Add a third player</a></p></section>`]; };
+
+S.share2 = () => { const [l, m] = S.results(); return [l, m + `<div class="drawer-dim"></div><div class="modal sharem2"><div class="sm-head"><span class="sw2"><a class="on" href="#">Post</a><a href="#">Story</a></span><a class="x" href="#">✕</a></div>
+  <div class="poster">
+    <div class="po-mast"><span>Draftverse Daily</span><b>Tuesday, October 21</b><span>All-Time Draft</span></div>
+    <div class="po-head"><span class="po-kick">Final standings · 3rd of 16</span><h2>Tulsa builds a wall</h2><p>Payton, Garnett and Wallace give the Twisters the best defense in the league. 18% to win it all.</p></div>
+    <div class="po-five">${['payton', 'klay', 'durant', 'garnett', 'bwallace'].map((k) => { const x = p(k); return `<div class="po-p" style="--team:${x.c}"><div class="po-ph">${face(x)}</div><b>${x.n.split(' ').slice(-1)[0]}</b><small>${x.pos} · ${x.y}</small></div>`; }).join('')}</div>
+    <div class="po-strip"><div><span>Place</span><b>3rd</b></div><div><span>Rating</span><b>87</b></div><div><span>Defense</span><b>A+</b></div><div><span>Title odds</span><b>18%</b></div></div>
+    <div class="po-foot"><span class="mark">D</span><span>Beat my 87 on the same board · challenge code 7Q4K</span></div>
+  </div>
+  <div class="btn2" style="margin-top:14px"><button class="btn go">Save image</button><button class="btn line">Copy link</button></div></div>`]; };
+
+// ---- rotation v3: how it works ----
+const SEG = (n, m, cls = '') => { const w = n.split(' '); return `<span class="sg ${cls}" style="flex:${m}"><b><span class="fn">${w[0]} </span>${w.slice(1).join(' ')}</b><i>${m}</i></span>`; };
+S.minutes3 = () => { const [l] = S.team();
+  const row = (pos, segs, btn, open) => `<div class="r3w"><div class="r3"><span class="r3p">${pos}</span><div class="r3b">${segs}</div><a class="r3x" href="#">${btn}</a></div>${open || ''}</div>`;
+  const swap = `<div class="swap"><span class="pop-h">C · who comes in for Wallace?</span>${[['Dennis Rodman', 'PF', 'stretch · fine', '26 min · can take 24', 1], ['Robert Horry', 'PF', 'stretch · fine', '10 min · can take 26', 0], ['Kevin Garnett', 'PF', 'stretch · fine', '30 min · can take 38', 0], ['Andre Iguodala', 'SF', 'out of position −6', '24 min · can take 34', 0]].map(([n, ps, fit, now, on]) => `<div class="pop-r ${on ? 'on' : ''}"><b>${n}</b><small>${ps}</small><span class="fit ${fit.includes('out') ? 'bad' : ''}">${fit}</span><span class="now">${now}</span></div>`).join('')}</div>`;
+  return [l, prompt('Your team · rotation', 'Set the minutes', 'Drag a line to move minutes between two players. Tap a name to swap him. Each spot always adds up to 48.') +
+  `<section><h3>Rotation<span>240 / 240 · ready</span></h3><div class="rot3">
+   ${row('PG', `${SEG('Gary Payton', 34, 'st')}<u></u>${SEG('Andre Iguodala', 14)}`, '+')}
+   ${row('SG', `${SEG('Klay Thompson', 34, 'st')}<u></u>${SEG('Kyle Korver', 14)}`, '+')}
+   ${row('SF', `${SEG('Kevin Durant', 38, 'st')}<u></u>${SEG('Andre Iguodala', 10)}`, '+')}
+   ${row('PF', `${SEG('Kevin Garnett', 30, 'st')}<u class="act"><em>30 · 10</em></u>${SEG('Robert Horry', 10)}<u></u>${SEG('Dennis Rodman', 8, 'third')}`, '−')}
+   ${row('C', `${SEG('Ben Wallace', 30, 'st')}<u></u>${SEG('Dennis Rodman ▾', 18, 'sel')}`, '+', swap)}
+  </div></section>
+  <section><h3>Who plays how much<span>total · what his legs can take</span></h3><table class="who3">${[['Kevin Durant', 38, 38], ['Gary Payton', 34, 38], ['Klay Thompson', 34, 36], ['Kevin Garnett', 30, 38], ['Ben Wallace', 30, 34], ['Dennis Rodman', 26, 24, 'over'], ['Andre Iguodala', 24, 34], ['Kyle Korver', 14, 28], ['Robert Horry', 10, 26]].map(([n, m, cap, w]) => `<tr class="${w || ''}"><td class="n">${n}</td><td class="m">${m}</td><td><div class="cb"><i style="width:${m / 48 * 100}%"></i><u style="left:${cap / 48 * 100}%"></u></div></td><td class="c">${w ? `over by ${m - cap} · costs Rotation` : `can take ${cap}`}</td></tr>`).join('')}</table>
+  <p class="empty-note" style="margin-top:10px">Allowed, but Rodman at 26 lowers your Rotation score. <a href="#" style="color:var(--ink2)">Suggest a rotation</a> · <a href="#" style="color:var(--ink2)">Reset</a></p></section>`]; };
+
+// ---- share posters for every mode (v2: a number per player, the team profile, Post + Story) ----
+const PROF = (vals, weak, best) => [['Talent', vals[0]], ['Offense', vals[1]], ['Defense', vals[2]], ['Spacing', vals[3]], ['Fit', vals[4]]].map(([l, v]) => ({ l, v, cls: l === weak ? 'lo' : l === best ? 'hi' : '' }));
+const profileRow = (prof) => `<div class="po-prof">${prof.map(({ l, v, cls }) => `<div class="pp ${cls}"><span>${l}</span><b>${v}</b><i><u style="width:${v}%"></u></i></div>`).join('')}</div>`;
+const PLAYERS = (five, nums) => five.map((k, i) => ({ x: p(k), n: nums[i] }));
+function fiveCells(list, unit, hidden) {
+  if (hidden) return ['PG', 'SG', 'SF', 'PF', 'C'].map((ps) => `<div class="po-p"><div class="po-ph pback"><span>?</span></div><b>${ps}</b><small>shown tomorrow</small></div>`).join('');
+  return list.map(({ x, n }) => `<div class="po-p" style="--team:${x.c}"><div class="po-ph">${face(x)}</div><b>${x.n.split(' ').slice(-1)[0]}</b><small>${x.pos} · ${x.y}</small><em>${unit === 'caps' ? '<i class="capi"></i>' : ''}${n}${unit === 'ppg' ? ' ppg' : ''}</em></div>`).join('');
+}
+function poster(d) {
+  const { mode, kick, head, line, five, nums, unit, bench, benchNums, strip, foot, champ, hidden, prof } = d;
+  return `<div class="poster ${champ ? 'champ-p' : ''}"><div class="po-mast"><span>Draftverse Daily</span><b>Tuesday, October 21</b><span>${mode}</span></div>
+  <div class="po-head"><span class="po-kick">${kick}</span><h2>${head}</h2><p>${line}</p></div>
+  <div class="po-five">${fiveCells(PLAYERS(five, nums || []), unit, hidden)}</div>
+  ${bench ? `<div class="po-bench"><span>Bench</span>${bench.map((k, i) => { const x = p(k); return `<b>${x.n.split(' ').slice(-1)[0]}<small>${unit === 'caps' ? '<i class="capi"></i>' + benchNums[i] : benchNums[i] + ' ppg'}</small></b>`; }).join('')}</div>` : ''}
+  ${profileRow(prof)}
+  <div class="po-strip">${strip.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>
+  <div class="po-foot"><span class="mark">D</span><span>${foot}</span></div></div>`;
+}
+function story(d) {
+  const { mode, kick, head, line, five, nums, unit, bench, benchNums, strip, champ, hidden, prof, extra } = d, foot = d.storyFoot || d.foot;
+  const rows = hidden ? ['PG', 'SG', 'SF', 'PF', 'C'].map((ps) => `<div class="st-r"><div class="st-f pback"><span>?</span></div><div class="st-n"><b>${ps}</b><small>shown tomorrow</small></div><em>—</em></div>`).join('')
+    : PLAYERS(five, nums).map(({ x, n }) => `<div class="st-r" style="--team:${x.c}"><div class="st-f">${face(x)}</div><div class="st-n"><b>${x.n}</b><small>${x.pos} · ${x.y}</small></div><em>${unit === 'caps' ? '<i class="capi"></i>' : ''}${n}${unit === 'ppg' ? '<small> ppg</small>' : ''}</em></div>`).join('');
+  return `<div class="story ${champ ? 'champ-p' : ''}"><div class="po-mast"><span>Draftverse Daily</span><b>Oct 21</b><span>${mode}</span></div>
+  <div class="po-head"><span class="po-kick">${kick}</span><h2>${head}</h2><p>${line}</p></div>
+  <div class="st-sec">Starting five</div><div class="st-rows">${rows}</div>
+  ${bench ? `<div class="st-sec">Bench</div><div class="st-bench">${bench.map((k, i) => { const x = p(k); return `<div><b>${x.n.split(' ').slice(-1)[0]}</b><small>${unit === 'caps' ? '<i class="capi"></i>' + benchNums[i] : benchNums[i] + ' ppg'}</small></div>`; }).join('')}</div>` : ''}
+  <div class="st-sec">Team profile</div>${profileRow(prof)}
+  ${extra ? `<div class="st-sec">${extra[0]}</div><div class="st-extra">${extra[1]}</div>` : ''}
+  <div class="po-strip">${strip.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>
+  <div class="po-foot"><span class="mark">D</span><span>${foot}</span></div></div>`;
+}
+const FIVE_AT = ['payton', 'klay', 'durant', 'garnett', 'bwallace'], BENCH_AT = ['rodman', 'korver', 'iggy', 'horry'];
+const SHARES = [
+  { mode: 'All-Time Draft', kick: 'Final standings · 3rd of 16', head: 'Tulsa builds a wall', line: 'Payton, Garnett and Wallace give the Twisters the best defense in the league.', five: FIVE_AT, nums: [15, 16.8, 19, 19.4, 6], unit: 'caps', bench: BENCH_AT, benchNums: [6.9, 8.3, 12.4, 7.8], prof: PROF([86, 84, 93, 71, 88], 'Spacing', 'Defense'), strip: [['Place', '3rd'], ['Rating', '87'], ['Best', '90'], ['Title odds', '18%']], foot: 'Beat my 87 on the same board · challenge 7Q4K' },
+  { mode: 'All-Time · season', kick: 'The Finals · game 7 · 104–99', head: 'Champions', line: 'Tulsa wins it from the 3 seed. Durant drops 38 in game 7.', five: FIVE_AT, nums: [19.8, 20.4, 29.4, 21.2, 7.4], unit: 'ppg', bench: BENCH_AT, benchNums: [5.1, 7.9, 8.8, 4.6], prof: PROF([86, 84, 93, 71, 88], 'Spacing', 'Defense'), strip: [['Season', '52–30'], ['Seed', '3rd'], ['Playoffs', '16–6'], ['Finals MVP', 'Durant']], foot: 'QF 4–1 HON · SF 4–2 SFE · F 4–3 KEN', storyFoot: 'Run it back on the same board · challenge 7Q4K', champ: true,
+    extra: ['Playoff run & awards', `<div class="ex-path">${[['QF', 'HON', '4–1'], ['SF', 'SFE', '4–2'], ['Finals', 'KEN', '4–3']].map(([r, c, sc]) => `<span><small>${r}</small>${tm(c)}<b>${sc}</b></span>`).join('')}</div><div class="ex-aw">Finals MVP <b>Durant</b> · DPOY <b>Wallace</b> · All-NBA 1st <b>Durant</b></div>`] },
+  { mode: 'Mini Draft', kick: 'Final standings · 4th of 16', head: 'Gobert locks the paint', line: 'The best rim protection in the field. Spacing kept Tulsa out of the top three.', five: ['payton', 'rallen', 'iggy', 'garnett', 'gobert'], nums: [15, 17, 12.4, 19.4, 9.1], unit: 'caps', prof: PROF([85, 86, 83, 72, 85], 'Spacing', 'Offense'), strip: [['Place', '4th'], ['Score', '84'], ['Best', '89'], ['Caps', '69.6']], foot: 'Same 16 teams, your turn · challenge M2X9' },
+  { mode: 'Draw Five · daily', kick: 'Game of the day · beat the ’92 Bulls 108–101', head: 'Playoff lock', line: 'Same number as the five biggest names. Durant 31, Jordan 34.', five: [], hidden: true, prof: PROF([82, 85, 86, 71, 84], 'Spacing', 'Defense'), strip: [['Your five', '84'], ['Fan vote', '84'], ['Best', '88'], ['Streak', '🔥 6']], foot: 'One board for everyone today · your five stays hidden till tomorrow' },
+];
+S.shareAll = () => ['', `<div class="share-grid">${SHARES.map(poster).join('')}</div>`];
+S.shareStory = () => ['', `<div class="story-grid">${SHARES.map(story).join('')}</div>`];
+const key = (location.hash || '#draft').slice(1);
+const [a, m] = S[key]();
+document.getElementById('app').innerHTML = a ? `<aside>${a}</aside><main>${m}</main>` : m;
+</script>
+</body>
+</html>

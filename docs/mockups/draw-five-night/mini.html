@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini Draft night</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="night.css">
+<link rel="stylesheet" href="draft.css">
+<style>
+/* warnings during the pick: a printed notice, red mark for a problem, one action */
+.notice { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0 8px 14px; border-left: 3px solid var(--red); margin: 0 0 14px; }
+.notice > i { font: 800 18px/1 var(--cond); font-style: normal; color: var(--red); text-align: center; }
+.notice p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink2); }
+.notice p b { color: var(--ink); font-weight: 600; }
+.notice a { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; }
+@media (max-width: 600px) { .notice { grid-template-columns: 18px minmax(0, 1fr); } .notice a { grid-column: 2; } }
+</style>
+</head>
+<body>
+<div class="game" id="app"></div>
+<script>
+const T = {
+  BOI: ['Boise', 'Mooses', '#1f4d3a', '#e9c46a'], KEN: ['Kentucky', 'Chickens', '#b8322a', '#fff4dc'], ANC: ['Anchorage', 'Walruses', '#2b5d7d', '#f3f7fa'],
+  SFE: ['Santa Fe', 'Coyotes', '#a14a2c', '#f7d9a8'], DUL: ['Duluth', 'Yetis', '#3d4f66', '#e6f2ff'], TUL: ['Tulsa', 'Twisters', '#4b2a6b', '#d8c1f0'],
+  REN: ['Reno', 'Jackrabbits', '#1c1c22', '#ff5a36'], DET: ['Detroit', 'Gearheads', '#39424e', '#f08a24'], SCR: ['Scranton', 'Moles', '#5a3d2b', '#e8c07a'],
+  HON: ['Honolulu', 'Tiger Sharks', '#0f7c84', '#f4f1e4'], TPA: ['Tampa', 'Manatees', '#4a9a8f', '#ffffff'], LUB: ['Lubbock', 'Armadillos', '#d8a868', '#3a2a1c'],
+  BIS: ['Bismarck', 'Narwhals', '#1b2f5e', '#a7e3e0'], ASP: ['Aspen', 'Ibexes', '#e9eef2', '#2a3f5a'], ELP: ['El Paso', 'Scorpions', '#d9661f', '#1d1d1d'],
+  FRE: ['Fresno', 'Raisins', '#5e2750', '#f6b93b'],
+};
+const ORDER = ['BIS', 'DUL', 'KEN', 'REN', 'HON', 'SFE', 'TUL', 'ANC', 'ELP', 'DET', 'FRE', 'BOI', 'SCR', 'TPA', 'LUB', 'ASP'];
+const YOU = 'TUL';
+const _lum = (h) => { const v = h.replace('#', ''); const x = (v.length === 3 ? v.split('').map((c) => c + c).join('') : v).match(/../g).map((c) => parseInt(c, 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)); return 0.2126 * x[0] + 0.7152 * x[1] + 0.0722 * x[2]; };
+const _cr = (a, b) => { const [x, y] = [_lum(a), _lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+// light franchise colour + light text → dark ink; dark backgrounds keep the franchise text colour
+const tmInk = (bg, fg) => (_cr(bg, fg) < 4.5 && _cr(bg, '#1E1C18') > _cr(bg, '#FFFFFF') ? '#1E1C18' : fg);
+const tm = (c, lg) => `<span class="tm ${lg ? 'lg' : ''}" style="background:${T[c][2]};color:${tmInk(T[c][2], T[c][3])}">${c}</span>`;
+const tname = (c) => `${T[c][0]} ${T[c][1]}`;
+const P = {
+  pippen: ['Scottie Pippen', 'SF', '1990–92', 15, 'MVP', [19.4, 7.5, 6.6], 0.9, 'Playmaker · Wing stopper', 'scottie-pippen', 'CHI', '#CE1141'],
+  nash: ['Steve Nash', 'PG', '2005–07', 13, 'MVP', [18.7, 3.9, 11.0], 4.4, 'Floor general', 'steve-nash', 'PHX', '#1D1160'],
+  cp3: ['Chris Paul', 'PG', '2013–15', 14, 'MVP', [19.1, 4.5, 10.4], 3.9, 'Floor general · On-ball defender', 'chris-paul', 'LAC', '#C8102E'],
+  malone: ['Karl Malone', 'PF', '1996–98', 19, 'MVP', [27.2, 10.1, 4.2], 0.1, 'Versatile big · Post defender', 'karl-malone', 'UTA', '#002B5C'],
+  dirk: ['Dirk Nowitzki', 'PF', '2002–04', 18, 'MVP', [23.5, 9.3, 2.8], 4.3, 'Stretch big · Mobile defender', 'dirk-nowitzki', 'DAL', '#00538C'],
+  barkley: ['Charles Barkley', 'PF', '1989–91', 16, 'MVP', [26.3, 10.9, 4.0], 1.7, 'Slasher', 'charles-barkley', 'PHI', '#006BB6'],
+  wilt: ['Wilt Chamberlain', 'C', '1966–68', 16, 'MVP', [24.2, 24.0, 8.2], null, 'Playmaking big · Rim protector', 'wilt-chamberlain', 'PHI', '#006BB6'],
+  russell: ['Bill Russell', 'C', '1958–60', 15, 'All-NBA', [17.5, 23.5, 3.5], null, 'Post scorer · Rim protector', 'bill-russell', 'BOS', '#007A33'],
+  isiah: ['Isiah Thomas', 'PG', '1986–88', 17, 'All-NBA', [20.0, 3.7, 9.2], 1.2, 'Floor general · On-ball defender', 'isiah-thomas', 'DET', '#C8102E'],
+  drexler: ['Clyde Drexler', 'SG', '1990–92', 18, 'All-NBA', [23.2, 6.6, 6.4], 3.3, 'Slasher · Wing stopper', 'clyde-drexler', 'POR', '#E03A3E'],
+  kidd: ['Jason Kidd', 'PG', '2001–03', 15, 'All-NBA', [16.7, 6.8, 9.4], 4.5, 'Floor general · On-ball defender', 'jason-kidd', 'NJN', '#1F4FA0'],
+  ewing: ['Patrick Ewing', 'C', '1989–91', 22, 'All-NBA', [27.1, 10.9, 2.9], 0.1, 'Post scorer · Rim protector', 'patrick-ewing', 'NYK', '#006BB6'],
+  reggie: ['Reggie Miller', 'SG', '1996–98', 13, 'All-NBA', [20.6, 3.5, 3.1], 5.1, 'Off-screen shooter', 'reggie-miller', 'IND', '#002D62'],
+  rallen: ['Ray Allen', 'SG', '2005–07', 17, 'All-NBA', [26.4, 4.5, 4.0], 7.8, 'Off-screen shooter', 'ray-allen', 'SEA', '#00653A'],
+  camby: ['Marcus Camby', 'C', '2006–08', 9.6, 'All-Star', [11.2, 12.9, 3.4], 0.1, 'Roll man · Rim protector', 'marcus-camby', 'DEN', '#0E2240'],
+  bwallace: ['Ben Wallace', 'C', '2002–04', 6.0, 'All-Star', [7.1, 15.4, 1.8], 0.1, 'Roll man · Rim protector', 'ben-wallace', 'DET', '#C8102E'],
+};
+const p = (k) => { const a = P[k]; return { k, n: a[0], pos: a[1], y: a[2], f: a[3], tier: a[4], st: a[5], tpa: a[6], r: a[7], img: a[8], t: a[9], c: a[10] }; };
+const ini = (n) => n.split(' ').map((w) => w[0]).join('').slice(0, 2);
+const face = (x) => x.img ? `<img src="heads/${x.img}.png" alt="">` : `<span class="ini">${ini(x.n)}</span>`;
+const short = (n) => { const w = n.split(' '); return `${w[0][0]}. ${w.slice(1).join(' ')}`; };
+const SL = ['PG', 'SG', 'SF', 'PF', 'C'];
+const mast = (title, sub, daily) => `<div class="mast keep"><b class="${daily ? 'daily' : ''}">${title}</b><small>${sub}</small></div>`;
+const tally = (you, mid, ai, { youK = 'Caps', midK = 'Cap', aiK = 'Round' } = {}) => `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b class="${midK === 'Cap' ? '' : 'plain'}">${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b>${ai}</b></div></div>`;
+const capbar = (pct) => `<div class="capbar keep"><i style="width:${pct}%"></i></div>`;
+const links = `<div class="links"><a href="#">← Menu</a><a href="#">How to play</a><a href="#">Settings</a></div>`;
+const actions = (btn) => `<div class="actions">${btn}${links}</div>`;
+function five(keys, { active, title = 'Your five', compact = true } = {}) {
+  return `<section><h3>${title}<span>${keys.filter(Boolean).length} of 5 · ${tname(YOU)}</span></h3><div class="slots ${compact ? 'compact' : ''}">${SL.map((s, i) => {
+    const k = keys[i];
+    if (k) { const x = p(k); return `<div class="slot filled" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span>${s}</span></div>${face(x)}<div class="nm">${short(x.n)}</div><div class="sb">${x.y} · <i class="capi"></i>${x.f}</div></div>`; }
+        return `<div class="slot empty">${s}<small>open</small></div>`;
+  }).join('')}</div></section>`;
+}
+// red eyebrow only when something is happening now; every other eyebrow is quiet
+const prompt = (eb, h, line, ebCls = '') => `<div class="prompt"><span class="eb ${ebCls || (/^(On the clock|AI on the clock|Live)|tonight/.test(eb) ? 'now' : '')}">${eb}</span><h2>${h}</h2><p>${line}</p></div>`;
+const LEAGUE = [
+  [17, 'ASP', 'Moses Malone', 'C', 20], [18, 'LUB', 'Magic Johnson', 'PG', 18], [19, 'TPA', 'Larry Bird', 'SF', 21], [20, 'SCR', 'David Robinson', 'C', 19],
+  [21, 'BOI', 'Kevin Garnett', 'PF', 18], [22, 'FRE', 'Anthony Davis', 'PF', 19], [23, 'DET', 'Hakeem Olajuwon', 'C', 21], [24, 'ELP', 'Stephen Curry', 'PG', 20],
+];
+function ticker(rows, { now } = {}) {
+  return `<ul class="ticker">${rows.map(([n, c, name, pos, f]) => `<li class="${c === YOU ? 'you' : ''}"><span class="n">${n}</span>${tm(c)}<span><b>${name}</b></span><span class="ps">${pos}</span><span class="c">${f}</span></li>`).join('')}${now ? `<li class="now"><span class="n">${now[0]}</span>${tm(now[1])}<span><i>on the clock…</i></span><span></span><span></span></li>` : ''}</ul>`;
+}
+function plist(keys, { hot, no = [] } = {}) {
+  return `<table class="plist"><colgroup><col style="width:52px"><col><col class="c-hide" style="width:118px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col style="width:84px"><col style="width:96px"></colgroup>
+  <tr><th></th><th>Player</th><th class="c-hide">Tier</th><th class="num c-hide">Pts</th><th class="num c-hide">Reb</th><th class="num c-hide">Ast</th><th class="num c-hide">3PA</th><th class="num">Caps</th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos} · ${x.y}</b> <i>· ${x.r}</i><span class="mst">${x.st.join(' / ')}</span></div></td><td class="tier c-hide ${x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td>${x.st.map((v) => `<td class="num c-hide">${Number(v).toFixed(1)}</td>`).join('')}<td class="num c-hide">${x.tpa != null ? Number(x.tpa).toFixed(1) : '—'}</td><td class="cap num">${x.f}</td><td class="act"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
+}
+const filters = (hidden = []) => `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span></div>`;
+
+
+// 2026-10-21, the user: a caps filter as its own bar, not typed into the search box.
+const capsBar = (lo, hi, maxPick, top = 30) => { const pct = (v) => (v / top) * 100; return `<div class="capsbar"><span class="cb-k">Caps</span><div class="cb-track"><i class="cb-range" style="left:${pct(lo)}%;width:${pct(hi - lo)}%"></i><b class="cb-h" style="left:${pct(lo)}%"></b><b class="cb-h" style="left:${pct(hi)}%"></b><u class="cb-max" style="left:${pct(maxPick)}%"><em>your max ${maxPick}</em></u>${[0, 5, 10, 15, 20, 25, 30].filter((t) => t <= top).map((t) => `<s style="left:${pct(t)}%">${t}</s>`).join('')}</div><span class="cb-v"><i class="capi"></i>${lo === 0 && hi === top ? "any" : `${lo}–${hi}`}</span><a class="cb-reset" href="#">reset</a></div>`; };
+const S = {};
+S.lottery = () => [
+  mast('Mini Draft', '16 teams · 5 rounds · starters only') + tally('70', '16', '5', { youK: 'Cap', midK: 'Teams', aiK: 'Rounds' }) +
+  `<section><h3>How it works</h3><div class="kv"><span>Each round</span><b>1 starter</b></div><div class="kv"><span>Order</span><b>Snake</b></div><div class="kv"><span>Players</span><b>Peak years</b></div><div class="kv"><span>Rivals</span><b>15 CPU GMs</b></div><div class="kv"><span>Graded</span><b>After pick 80</b></div></section>` +
+  actions('<button class="btn go">Start the draft</button>'),
+  prompt('Draft lottery', 'You pick 7th', `${tname(YOU)}. In a snake draft that's picks <b class="w">7 · 26 · 39 · 58 · 71</b>.`) +
+  `<div class="lot"><div><div class="ball"><div><b>7</b><span>your pick</span></div></div><p class="lot-note">Between your picks: <b>19</b>, <b>13</b>, <b>19</b> and <b>13</b> picks by the CPU teams.</p></div>
+   <section><h3>Draft order<span>round 1 · reverses each round</span></h3><ol class="order16">${ORDER.map((c, i) => `<li class="${c === YOU ? 'you' : ''}"><span class="n">${i + 1}</span>${tm(c)}<b>${tname(c)}</b></li>`).join('')}</ol></section></div>`];
+
+S.day = () => [
+  mast('Daily Mini Draft', 'Tuesday, Oct 21 · one board for everyone', true) + tally('70', '7th', '5', { youK: 'Cap', midK: 'Your slot', aiK: 'Rounds' }) +
+  `<section><h3>Today</h3><div class="kv"><span>Streak</span><b class="g">5 days</b></div><div class="kv"><span>Teams</span><b>16</b></div><div class="kv"><span>Tries</span><b>One</b></div><div class="kv"><span>New board in</span><b>7h 12m</b></div></section>` +
+  actions(''),
+  `<div class="rule"><span class="eb">Rule of the day</span><h2>No Bucks today</h2><p>No one who ever played for the Bucks. Kareem, Giannis and Ray Allen sit this one out.</p></div>` +
+  `<div class="facts"><div><span>Cap</span><b class="g">70</b><small>caps for five</small></div><div><span>Your slot</span><b>7th</b><small>picks 7 · 26 · 39 · 58 · 71</small></div><div><span>Teams</span><b>16</b><small>15 CPU GMs, same board</small></div><div><span>Streak</span><b>5</b><small>days in a row</small></div></div>` +
+  five([], { compact: true }) +
+  `<div class="go-row"><button class="btn go">Start today's draft</button><i>Same players, same order for everyone. Compare tonight.</i></div>`];
+
+S.wait = () => [
+  mast('Mini Draft', 'Round 2 of 5 · pick 25 of 80') + tally('15', '70', '2/5') + capbar(21) + `<p class="sub-note keep"><b>55 caps</b> left for four spots</p>` +
+  `<section><h3>Your picks</h3><div class="kv"><span>Next</span><b>Pick 26</b></div><div class="kv"><span>Then</span><b>39 · 58 · 71</b></div></section>` +
+  actions('<button class="btn off">Waiting for pick 26</button>'),
+  prompt(`On the clock · Pick 25`, `${T.ANC[0]} ${T.ANC[1]}`, 'Your pick is next. Eighteen picks since your first.', '') +
+  `<div class="clockline"><button class="btn line">Skip to my pick</button><i class="it" style="color:var(--ink3);font-size:14px">Runs the CPU picks fast.</i></div>` +
+  five(['', '', 'pippen', '', '']) +
+  `<section><h3>The draft so far<span>newest last</span></h3>${ticker(LEAGUE, { now: [25, 'ANC'] })}</section>`];
+
+S.pick = () => [
+  mast('Mini Draft', 'Round 2 of 5 · pick 26 of 80') + tally('15', '70', '2/5') + capbar(21) + `<p class="sub-note keep"><b>55 caps</b> left for four spots</p>` +
+  `<section><h3>The draft so far</h3><table class="log">${LEAGUE.slice(3).concat([[25, 'ANC', 'John Stockton', 'PG', 12]]).map(([n, c, name, pos, f], i, a) => `<tr class="${c === YOU ? 'y' : 'a'} ${i === a.length - 1 ? 'latest' : ''}"><td class="n">${n}</td><td class="w">${c}</td><td class="p">${name}, ${pos}</td><td class="c">${f}</td></tr>`).join('')}</table></section>` +
+  actions('<button class="btn line">Draft board</button>'),
+  five(['', '', 'pippen', '', ''], { active: ['PG', 'SG', 'PF', 'C'] }) +
+  prompt('On the clock · Round 2 · Pick 26', 'Your pick', 'Up to <b>24.5 caps</b> on this one and still fill the five. Your SF is set.') +
+  `<section>${filters(['SF'])}${capsBar(0, 30, 24.5)}${plist(['nash', 'cp3', 'malone', 'dirk', 'barkley', 'wilt', 'russell', 'isiah', 'drexler', 'kidd', 'ewing'], { hot: 'nash', no: ['ewing'] })}<div class="more">Showing 11 of 54 left · <a href="#">See more</a></div></section>`];
+
+const BOARD = {
+  BIS: ['M. Jordan', '', '', '', ''], DUL: ['L. James', '', '', '', ''], KEN: ['K. Abdul-Jabbar', '', '', '', ''], REN: ['K. Bryant', '', '', '', ''],
+  HON: ["S. O'Neal", '', '', '', ''], SFE: ['K. Durant', '', '', '', ''], TUL: ['S. Pippen', '', '', '', ''], ANC: ['T. Duncan', 'J. Stockton', '', '', ''],
+  ELP: ['K. Leonard', 'S. Curry', '', '', ''], DET: ['D. Wade', 'H. Olajuwon', '', '', ''], FRE: ['J. Harden', 'A. Davis', '', '', ''], BOI: ['O. Robertson', 'K. Garnett', '', '', ''],
+  SCR: ['G. Antetokounmpo', 'D. Robinson', '', '', ''], TPA: ['N. Jokic', 'L. Bird', '', '', ''], LUB: ['L. Doncic', 'M. Johnson', '', '', ''], ASP: ['J. Embiid', 'M. Malone', '', '', ''],
+};
+const POS = { 'M. Jordan': 'SG', 'S. Curry': 'PG', 'B. Wallace': 'C', 'L. James': 'SF', 'H. Olajuwon': 'C', 'K. Abdul-Jabbar': 'C', 'T. Duncan': 'PF', 'K. Bryant': 'SG', 'K. Garnett': 'PF', "S. O'Neal": 'C', 'D. Robinson': 'C', 'K. Durant': 'SF', 'L. Bird': 'SF', 'S. Pippen': 'SF', 'J. Stockton': 'PG', 'M. Johnson': 'PG', 'K. Leonard': 'SF', 'D. Wade': 'SG', 'J. Harden': 'SG', 'O. Robertson': 'PG', 'G. Antetokounmpo': 'PF', 'N. Jokic': 'C', 'L. Doncic': 'PG', 'J. Embiid': 'C', 'M. Malone': 'C', 'A. Davis': 'PF' };
+S.board = () => [
+  mast('Mini Draft', 'Round 2 of 5 · pick 26 of 80') + tally('15', '70', '2/5') + capbar(21) + `<p class="sub-note keep"><b>55 caps</b> left for four spots</p>` +
+  actions('<button class="btn go">Back to your pick</button>'),
+  prompt('Draft board', 'Who took whom', 'Sixteen teams, five rounds. You are on the clock at pick 26.') +
+  `<div class="dboard-wrap"><table class="dboard"><tr><th>Team</th><th>Round 1</th><th>Round 2</th><th>Round 3</th><th>Round 4</th><th>Round 5</th></tr>${ORDER.map((c) => `<tr class="${c === YOU ? 'you' : ''}"><td class="tn">${tm(c)}${T[c][1]}</td>${BOARD[c].map((v, r) => v ? `<td>${v}<small>${POS[v]}</small></td>` : (c === YOU && r === 1 ? '<td class="clk">on the clock</td>' : '<td class="e">—</td>')).join('')}</tr>`).join('')}</table></div>`];
+
+const STAND = [['SFE', 89, 'Durant · Bird · Nash'], ['KEN', 88, 'Kareem · Duncan · Paul'], ['DUL', 86, 'LeBron · Hakeem · Kidd'], ['TUL', 84, 'Pippen · Nash · Malone'], ['BIS', 83, 'Jordan · Curry · Wallace'], ['REN', 82, 'Kobe · Garnett · Miller'], ['HON', 81, "Shaq · Robinson · Isiah"], ['ANC', 80, 'Stockton · Magic · Russell'], ['ELP', 79, 'Kawhi · Barkley'], ['DET', 78, 'Wade · Dirk'], ['FRE', 77, 'Harden · Ewing'], ['BOI', 76, 'Oscar · Wilt'], ['SCR', 75, 'Giannis · Drexler'], ['TPA', 74, 'Jokic · Allen'], ['LUB', 72, 'Luka · Camby'], ['ASP', 70, 'Embiid · Malone']];
+const YOUR5 = ['nash', 'reggie', 'pippen', 'malone', 'camby'];
+function resultsMain(daily) {
+  return `<div class="headline"><span class="eb">${daily ? 'Daily · No Bucks today' : 'Final standings'}</span><b>${tname(YOU)}</b><i>5 rounds · 80 picks</i></div>
+  <div class="verdict vmini"><div class="place"><b>4<sup>th</sup></b><span>of 16</span></div><div class="tier"><span class="eb">The verdict</span><h2>Playoff lock</h2><p>A real team, not the best one. Spacing kept you out of the top three.</p></div><div class="nums"><div class="you"><span>Your team</span><b>84</b></div><div><span>Best</span><b>89</b></div><div><span>Behind</span><b>5</b></div></div></div>
+  <section><h3>Your five<span>${YOUR5.reduce((a, k) => a + p(k).f, 0).toFixed(1)} / 70 caps</span></h3><div class="five-row">${YOUR5.map((k) => { const x = p(k); return `<div class="card" style="--team:${x.c}"><div class="top"><span>${x.t}</span><span class="cost">${x.f}</span></div><div class="pic">${face(x)}</div><div class="nm">${x.n}</div><div class="sb">${x.pos} · ${x.y}</div><div class="roles">${x.r}</div><div class="st"><div><b>${x.st[0]}</b><span>PTS</span></div><div><b>${x.st[1]}</b><span>REB</span></div><div><b>${x.st[2]}</b><span>AST</span></div></div></div>`; }).join('')}</div></section>
+  <div class="split"><section><h3>Why you finished here<span>yours · the best team</span></h3><table class="profile">${[['Talent', 85, 88], ['Offense', 86, 89], ['Defense', 83, 85], ['Spacing', 72, 84, 1], ['Fit', 85, 90]].map(([l, v, b, w]) => `<tr class="${w ? 'weak' : v >= b ? 'good' : ''}"><td class="l">${l}</td><td class="v">${v}</td><td class="b">best ${b}</td><td><div class="bar"><i style="width:${v}%"></i><u style="left:${b}%"></u></div></td></tr>`).join('')}</table></section>
+  <section class="voices"><h3>The room</h3><p><b>Nash and Reggie</b> make it run: the best ball-movement backcourt in the field.<em>Strength</em></p><p>Only <b>Reggie</b> really stretches the floor. Camby and Malone crowd the paint.<em>Weak spot · spacing 72</em></p><p>Next time: a stretch big at PF would have been worth about <b>3 points</b>.<em>Tip</em></p></section></div>
+  <section><h3>Final standings<span>tap a team to see its five</span></h3><table class="stand">${STAND.map(([c, sc, who], i) => `<tr class="${c === YOU ? 'you' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm"><b>${tname(c)}</b></td><td class="who">${who}</td><td class="sc">${sc}</td><td class="car">${c === YOU ? '' : '▸'}</td></tr>`).join('')}</table></section>`;
+}
+S.results = () => [
+  mast('Mini Draft', 'Final · 16 teams') + tally('4th', '84', '89', { youK: 'Place', midK: 'Score', aiK: 'Best' }) +
+  `<section><h3>Your draft</h3><div class="kv"><span>Picks</span><b>7 · 26 · 39 · 58 · 71</b></div><div class="kv"><span>Caps used</span><b>69.6 / 70</b></div><div class="kv"><span>Behind the best</span><b>5</b></div></section>` +
+  actions('<button class="btn go">New draft</button><div class="btn2"><button class="btn line">Share</button><button class="btn line">Challenge</button></div><button class="btn line">Rematch this board</button>'),
+  resultsMain(false) + `<button class="btn go phone-only">New draft</button>`];
+S.dailyResults = () => [
+  mast('Daily Mini Draft', 'Tuesday, Oct 21 · final', true) + tally('4th', '84', '89', { youK: 'Place', midK: 'Score', aiK: 'Best' }) +
+  `<section><h3>Streak<span>6 days</span></h3><div class="streak"><div class="got"><b>3</b><span>Flame</span></div><div class="next"><b>7</b><span>Gold draw</span></div><div><b>14</b><span>Gold frames</span></div><div><b>30</b><span>Retro backs</span></div><div><b>100</b><span>Hall of Fame</span></div></div><p class="empty-note" style="margin-top:8px">One more day: the gold draw button.</p></section>` +
+  `<section><h3>Next board</h3><div class="kv"><span>New draft in</span><b>7h 12m</b></div></section>` +
+  actions('<div class="btn2"><button class="btn line">Copy result</button><button class="btn line">Share</button></div>'),
+  resultsMain(true) + `<button class="btn line phone-only">Copy result</button>`];
+
+S.pickCaps = () => { const [l, m] = S.pick(); return [l, m.replace(/\$\{?capsBar\(0, 30, 24\.5\)\}?/, '').replace(/<div class="capsbar">[\s\S]*?<\/div><span class="cb-v">[\s\S]*?<\/a><\/div>/, capsBar(10, 14, 24.5)).replace(/<table class="plist">[\s\S]*<\/table>/, plist(['nash', 'cp3', 'reggie'], { hot: 'nash' })).replace(/Showing 11 of 54 left/, 'Showing 3 players at 10–14 caps')]; };
+
+// 2026-10-21: position filter v2 — tabs with counts, tied to your five (an open slot filters the list).
+const COUNTS = { PG: 14, SG: 11, SF: 9, PF: 12, C: 8 };
+function posTabs(sel, have = ['SF']) {
+  const all = Object.values(COUNTS).reduce((a, b) => a + b, 0);
+  return `<div class="ptabs"><a class="pt ${sel === 'ALL' ? 'on' : ''}" href="#"><b>All</b><span>${all}</span></a>${SL.map((s) => `<a class="pt ${sel === s ? 'on' : ''} ${have.includes(s) ? 'have' : 'need'}" href="#"><b>${s}</b><span>${have.includes(s) ? 'set' : COUNTS[s]}</span></a>`).join('')}<input class="search" placeholder="Search players…"></div>`;
+}
+function fiveSel(keys, sel) {
+  return five(keys).replace(new RegExp(`<div class="slot empty">${sel}<small>open</small></div>`), `<div class="slot empty sel">${sel}<small>showing ${COUNTS[sel]} ▾</small></div>`).replace(/<div class="slot empty">(\w+)<small>open<\/small><\/div>/g, '<div class="slot empty">$1<small>tap to show</small></div>');
+}
+S.posTabs = () => { const [l, m] = S.pick();
+  let mm = m.replace(/<section><h3>Your five[\s\S]*?<\/div><\/section>/, fiveSel(['', '', 'pippen', '', ''], 'PF'));
+  mm = mm.replace(/<div class="filters">[\s\S]*?<\/div>/, posTabs('PF'));
+  mm = mm.replace(/<table class="plist">[\s\S]*<\/table>/, plist(['malone', 'dirk', 'barkley'], { hot: 'malone' })).replace(/Showing 11 of 54 left/, 'Showing PF · 3 of 12');
+  return [l, mm]; };
+const notice = (txt, act) => `<div class="notice"><i>!</i><p>${txt}</p>${act ? `<a href="#">${act}</a>` : ''}</div>`;
+S.warnRim = () => { const [l, m] = S.posTabs(); return [l, m.replace(/(<div class="ptabs")/, notice('<b>Low rim pressure.</b> Nobody in your five attacks the basket yet. Look for a slasher or a big who finishes inside.') + '$1')]; };
+S.warnFit = () => { const [l, m1] = S.posTabs(); const m0 = m1.split('24.5').join('14.5'); const m = m0.replace(/<div class="capsbar">[\s\S]*?<\/div><span class="cb-v">[\s\S]*?<\/a><\/div>/, capsBar(0, 30, 14.5)).replace(/<table class="plist">[\s\S]*<\/table>/, plist(['malone', 'dirk', 'barkley'], { no: ['malone', 'dirk', 'barkley'] })); return [l, m.replace(/<table class="plist">[\s\S]*<\/table>/, notice('<b>None of these three fit this pick.</b> It can cost up to <i class="capi"></i>14.5 caps; Malone, Nowitzki and Barkley cost more.', 'Show players that fit') + '$&')]; };
+const key = (location.hash || '#pick').slice(1);
+const [a, m] = S[key]();
+document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
+</script>
+</body>
+</html>
