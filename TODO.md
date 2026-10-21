@@ -217,6 +217,12 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 - **Tydzień 4 — definitywne dopracowanie całości + domena i serwer** (wtedy też leaderboard
   daily, globalny ranking; przed startem wyłączyć przełączniki testowe:
   `DAILY_REPLAY_FOR_TESTING`, `AUTO_FINISH_FOR_TESTING`, `TEAM_EXPORT_FOR_TESTING`).
+  - **Nowa nazwa projektu** (razem z brand kitem; do tego czasu nazwa w jednym miejscu w kodzie).
+    Kierunek „-OAT” (*Of All Time*). Krótka lista: **DOAT** (*Draft Of All Time*), **FLOAT**
+    (*Five Legends Of All Time*, floater), **BOAT** (*Best Of All Time*), ewentualnie **HOAT**
+    (*Hoopers Of All Time*). Odpadły: GOAT (zajęte), KOAT (stacja TV), VOAT (zamknięty serwis),
+    GLOAT, COAT, MOAT. Do sprawdzenia: domeny, sklepy z aplikacjami, znaki towarowe.
+    Pomysł poboczny: tryb **WOAT** (*Worst Of All Time*), czyli draft najgorszej piątki.
 
 ### Nowy wygląd trybów: „wydanie nocne” (decyzja 2026-10-21)
 
