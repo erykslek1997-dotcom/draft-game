@@ -426,6 +426,78 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .mins2 .mbar { display: none; }
   .mins2 td.mw { width: auto; }
 }
+
+/* menu v2 */
+.m2 { grid-column: 1 / -1; max-width: 640px; margin: 0 auto; padding: 40px 0 30px; width: 100%; }
+.m2-mast { text-align: center; border-top: 6px double var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 16px 0 12px; }
+.m2-mast b { display: block; font: 800 72px/0.9 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.m2-mast span { font: italic 500 15px Inter, sans-serif; color: var(--ink2); }
+.m2-team { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 18px 0 0; font: 700 18px var(--cond); }
+.m2-team a { font: italic 500 13px Inter, sans-serif; color: var(--ink3); }
+.m2-resume { display: flex; justify-content: space-between; margin-top: 22px; padding: 10px 14px; border-left: 3px solid var(--red); background: #121317; font-size: 14px; color: var(--ink2); }
+.m2-resume a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.m2-modes { list-style: none; margin: 22px 0 0; padding: 0; }
+.m2-modes li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
+.m2-modes li:first-child { border-top: 1px solid var(--rule); }
+.m2-n { font: 600 14px var(--num); color: var(--ink3); }
+.m2-modes b { display: block; font: 800 32px/1 var(--cond); text-transform: uppercase; }
+.m2-modes li > div span { font-size: 14px; color: var(--ink2); }
+.m2-modes em { font: 500 12px var(--num); font-style: normal; color: var(--ink3); }
+.m2-go { font: 800 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.m2-today { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 26px; }
+.m2-tl { grid-column: 1 / -1; font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); }
+.m2-d { display: block; padding: 10px 12px; border: 1px solid #3A3A3C; border-radius: 3px; text-decoration: none; color: var(--ink); }
+.m2-d b { display: block; font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.04em; }
+.m2-d span { font-size: 12px; color: var(--ink3); }
+.m2-d.done { opacity: 0.5; }
+.m2-foot { display: flex; justify-content: center; gap: 22px; margin-top: 28px; font-size: 14px; }
+.m2-foot a { color: var(--ink3); }
+/* minutes v2 */
+.rot2 { display: flex; flex-direction: column; gap: 12px; }
+.r2 { display: grid; grid-template-columns: 50px minmax(0, 1fr); align-items: center; gap: 14px; }
+.r2-pos { font: 800 24px var(--cond); }
+.r2-bar { position: relative; display: flex; height: 48px; border-radius: 3px; overflow: hidden; background: #1A1B1F; }
+.r2-a { display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: var(--card); color: var(--cink); }
+.r2-b { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; color: var(--ink2); }
+.r2-bar b { font: 700 17px var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r2-bar i { font: 600 15px var(--num); font-style: normal; }
+.r2-h { position: absolute; top: 0; bottom: 0; width: 4px; margin-left: -2px; background: var(--bg); }
+.r2.drag .r2-h { background: var(--red); width: 6px; margin-left: -3px; box-shadow: 0 0 0 2px var(--bg); }
+.r2.drag .r2-h::after { content: '36 · 12'; position: absolute; top: -22px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 11px var(--num); color: var(--red); }
+/* poster */
+.sharem2 { width: min(560px, calc(100% - 32px)); }
+.sharem2 .sm-head { display: flex; align-items: center; margin-bottom: 12px; }
+.sw2 { display: flex; gap: 16px; }
+.sw2 a { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); text-decoration: none; padding-bottom: 4px; border-bottom: 2px solid transparent; }
+.sw2 a.on { color: var(--ink); border-bottom-color: var(--ink); }
+.poster { background: var(--card); color: var(--cink); padding: 16px 18px 12px; border-radius: 3px; }
+.po-mast { display: flex; justify-content: space-between; align-items: baseline; border-top: 4px double var(--cink); border-bottom: 1.5px solid var(--cink); padding: 6px 0 5px; font: italic 500 11px Inter, sans-serif; color: var(--cink2); }
+.po-mast b { font: 800 14px var(--cond); font-style: normal; text-transform: uppercase; letter-spacing: 0.06em; color: var(--cink); }
+.po-head { padding: 12px 0 6px; }
+.po-kick { font: 700 11px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #A3282F; }
+.po-head h2 { margin: 4px 0 6px; font: 800 50px/0.92 var(--cond); text-transform: uppercase; }
+.po-head p { margin: 0; font-size: 14px; font-style: italic; color: var(--cink2); line-height: 1.4; }
+.po-five { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+.po-p { text-align: center; }
+.po-ph { height: 86px; background: var(--team); display: grid; place-items: end center; overflow: hidden; border-radius: 2px; }
+.po-ph img { width: 82px; height: 82px; object-fit: cover; margin-bottom: -6px; }
+.po-p b { display: block; margin-top: 4px; font: 800 16px/1 var(--cond); text-transform: uppercase; }
+.po-p small { font: 500 9px var(--num); color: var(--cink2); }
+.po-strip { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 12px; border-top: 1.5px solid var(--cink); border-bottom: 1.5px solid var(--cink); }
+.po-strip div { text-align: center; padding: 7px 0; }
+.po-strip div + div { border-left: 1px solid var(--cline); }
+.po-strip span { display: block; font: 700 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
+.po-strip b { font: 800 24px var(--cond); }
+.po-foot { display: flex; align-items: center; gap: 10px; padding-top: 10px; font: 600 11px var(--num); color: var(--cink2); }
+.po-foot .mark { width: 26px; height: 26px; font-size: 17px; border-radius: 6px; color: var(--card); background: var(--cink); }
+@media (max-width: 600px) {
+  .m2-mast b { font-size: 52px; }
+  .m2-modes li { grid-template-columns: 26px minmax(0, 1fr) auto; }
+  .m2-modes em { display: none; }
+  .m2-today { grid-template-columns: 1fr 1fr; }
+  .r2-bar b { font-size: 14px; }
+  .po-head h2 { font-size: 38px; }
+}
 </style>
 </head>
 <body>
@@ -694,9 +766,33 @@ S.shareDraft = () => { const [l, m] = S.results(); return [l, m + `<div class="d
    <div class="sc-path">${[['Defense', 'A+'], ['Fit', 'A-'], ['Spacing', 'C']].map(([a, g]) => `<div><span>${a}</span><b>${g}</b></div>`).join('')}</div>
    <div class="sc-aw">“Nobody in this league scores at the rim on you.” · Matt Shyman</div></div>
   <div class="btn2" style="margin-top:14px"><button class="btn go">Save image</button><button class="btn line">Copy link</button></div><p class="empty-note" style="margin-top:8px">The link gives a friend the same 16-team board, with your 87 to beat.</p></div>`]; };
+
+// ---- v2: simpler menu, calmer minutes, a poster to share ----
+S.menu2 = () => ['', `<div class="m2">
+  <div class="m2-mast"><b>Draftverse</b><span>Every era. One game.</span></div>
+  <div class="m2-team">${tm('TUL')}<span>Tulsa Twisters</span><a href="#">change</a></div>
+  <div class="m2-resume"><span>Draft in progress · All-Time, pick 40</span><a href="#">Continue →</a></div>
+  <ol class="m2-modes">${[['Draw Five', 'Five cards, one cap, beat the AI.', '5 min'], ['Mini Draft', 'A real 16-team draft, five rounds.', '8 min'], ['All-Time Draft', 'Nine rounds, then a season and the playoffs.', '30 min']].map(([n, d, t], i) => `<li><span class="m2-n">${i + 1}</span><div><b>${n}</b><span>${d}</span></div><em>${t}</em><span class="m2-go">Play →</span></li>`).join('')}</ol>
+  <div class="m2-today"><span class="m2-tl">Today’s dailies · 🔥 5</span>${[['Draw Five', 'vs ’01 Lakers', 1], ['Mini', 'No Bucks', 0], ['All-Time', 'One superstar', 0], ['The Bomb', 'round 6', 0]].map(([n, r, done]) => `<a class="m2-d ${done ? 'done' : ''}" href="#"><b>${n}</b><span>${done ? '✓ played' : r}</span></a>`).join('')}</div>
+  <div class="m2-foot"><a href="#">How to play</a><a href="#">Settings</a></div></div>`];
+
+const MIN2 = [['PG', 'Gary Payton', 34, 'Andre Iguodala', 14], ['SG', 'Klay Thompson', 34, 'Kyle Korver', 14], ['SF', 'Kevin Durant', 38, 'Andre Iguodala', 10], ['PF', 'Kevin Garnett', 36, 'Robert Horry', 12], ['C', 'Ben Wallace', 30, 'Dennis Rodman', 18]];
+S.minutes2 = () => { const [l] = S.team(); return [l, prompt('Your team · rotation', 'Set the minutes', 'Drag the line between two players. Tap a name to swap him.', 'gold') +
+  `<section><h3>Rotation<span>48 minutes a spot · 240 / 240</span></h3><div class="rot2">${MIN2.map(([pos, a, ma, b, mb], i) => `<div class="r2 ${i === 3 ? 'drag' : ''}"><span class="r2-pos">${pos}</span><div class="r2-bar"><span class="r2-a" style="width:${ma / 48 * 100}%"><b>${a}</b><i>${ma}</i></span><span class="r2-h" style="left:${ma / 48 * 100}%"></span><span class="r2-b"><b>${b}</b><i>${mb}</i></span></div></div>`).join('')}</div>
+  <p class="empty-note" style="margin-top:10px">Tired legs: nobody over 40. <a href="#" style="color:var(--ink2)">Suggest a rotation</a> · <a href="#" style="color:var(--ink2)">Add a third player</a></p></section>`]; };
+
+S.share2 = () => { const [l, m] = S.results(); return [l, m + `<div class="drawer-dim"></div><div class="modal sharem2"><div class="sm-head"><span class="sw2"><a class="on" href="#">Post</a><a href="#">Story</a></span><a class="x" href="#">✕</a></div>
+  <div class="poster">
+    <div class="po-mast"><span>Draftverse Daily</span><b>Tuesday, October 21</b><span>All-Time Draft</span></div>
+    <div class="po-head"><span class="po-kick">Final standings · 3rd of 16</span><h2>Tulsa builds a wall</h2><p>Payton, Garnett and Wallace give the Twisters the best defense in the league. 18% to win it all.</p></div>
+    <div class="po-five">${['payton', 'klay', 'durant', 'garnett', 'bwallace'].map((k) => { const x = p(k); return `<div class="po-p" style="--team:${x.c}"><div class="po-ph">${face(x)}</div><b>${x.n.split(' ').slice(-1)[0]}</b><small>${x.pos} · ${x.y}</small></div>`; }).join('')}</div>
+    <div class="po-strip"><div><span>Place</span><b>3rd</b></div><div><span>Rating</span><b>87</b></div><div><span>Defense</span><b>A+</b></div><div><span>Title odds</span><b>18%</b></div></div>
+    <div class="po-foot"><span class="mark">D</span><span>Beat my 87 on the same board · challenge code 7Q4K</span></div>
+  </div>
+  <div class="btn2" style="margin-top:14px"><button class="btn go">Save image</button><button class="btn line">Copy link</button></div></div>`]; };
 const key = (location.hash || '#draft').slice(1);
 const [a, m] = S[key]();
-document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
+document.getElementById('app').innerHTML = a ? `<aside>${a}</aside><main>${m}</main>` : m;
 </script>
 </body>
 </html>
