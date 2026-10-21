@@ -140,6 +140,33 @@
 .drawer-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.72); z-index: 5; }
 .drawer { position: fixed; left: 50%; top: 0; transform: translateX(-50%); width: min(1320px, 100%); z-index: 6; background: var(--bg); border-bottom: 5px double var(--rule2); padding: 18px 24px 22px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); }
 @media (max-width: 600px) { .rb-row { grid-template-columns: repeat(12, 84px); overflow-x: auto; } .drawer { overflow-x: auto; padding: 14px 16px; } }
+
+/* player list v2: fixed columns, one number per cell, more air */
+.plist { table-layout: fixed; }
+.plist th { padding: 10px 12px 8px 0; white-space: nowrap; }
+.plist td { padding: 12px 12px 12px 0; }
+.plist td.f { width: 52px; }
+.plist td.f img, .plist td.f .ini { width: 40px; height: 40px; }
+.plist .nm { font: 700 21px/1.05 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist .mt { margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist th.num, .plist td.num { text-align: right; }
+.plist td.num { font: 500 15px var(--num); color: var(--ink2); }
+.plist td.cap, .plist td.cap.num { font: 600 17px var(--num); color: var(--gold); }
+.plist td.c { text-align: center; }
+.plist td.yrs .yrs-btn { font-size: 14px; }
+.plist td.yrs .yrs-btn small { font-style: normal; margin-left: 6px; color: var(--ink3); }
+.plist td.tier { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist .draft { width: 100%; padding: 8px 0; }
+@media (max-width: 600px) {
+  .plist td { padding: 10px 8px 10px 0; }
+  .plist .c-hide { display: none; }
+  .plist .nm { font-size: 18px; }
+  .plist .mt { white-space: normal; }
+  .plist .mst { white-space: nowrap; }
+  .plist col:last-child { width: 74px !important; }
+  .plist col:nth-last-child(2), .plist col:nth-last-child(4) { width: 50px !important; }
+  .plist .draft { font-size: 12px; }
+}
 /* playoffs bracket */
 .bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; align-items: center; }
 .round h4 { margin: 0 0 10px; font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
@@ -228,7 +255,8 @@ S.draft = () => [leftDraft(),
   `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen', 'dray', 'gobert', 'rodman', 'bwallace', 'iggy'], { hot: 'garnett', no: ['ewing'] })}<div class="more">Showing 10 of 1,522 player stretches · <a href="#">See more</a> · 3 scouting reports left</div></section>`];
 function filters(hidden = []) { return `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span><span class="grp"><span>Role</span><u>Any</u></span><span class="grp"><span>Sort</span><u>Best first</u></span><span class="fit">Affordable only</span></div>`; }
 function plist2(keys, { hot, no = [] } = {}) {
-  return `<table class="plist"><tr><th></th><th>Player</th><th>Years</th><th>Tier</th><th class="r">Pts · Reb · Ast</th><th class="r">Caps</th><th>Scout</th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos}</b> <i>· ${x.r}</i><span class="mst">${x.y} · ${x.st.join(' / ')}</span></div></td><td class="yrs"><button class="yrs-btn">${x.y}<small>▾ other years</small></button></td><td class="tier ${x.tier === 'Greatest peak' || x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td><td class="n r">${x.st.join(' · ')}</td><td class="cap r">${x.f}</td><td class="sc2"><span class="scout">Scout</span><span class="star ${['garnett', 'rodman', 'gobert'].includes(k) ? 'on' : ''}">★</span></td><td class="act r"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
+  return `<table class="plist"><colgroup><col style="width:52px"><col><col class="c-hide" style="width:96px"><col class="c-hide" style="width:118px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col style="width:66px"><col class="c-hide" style="width:64px"><col class="c-hide" style="width:34px"><col style="width:96px"></colgroup>
+  <tr><th></th><th>Player</th><th class="c-hide">Years</th><th class="c-hide">Tier</th><th class="num c-hide">Pts</th><th class="num c-hide">Reb</th><th class="num c-hide">Ast</th><th class="num">Caps</th><th class="c-hide" style="text-align:center">Report</th><th class="c-hide"></th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos}</b> <i>· ${x.r}</i><span class="mst">${x.y}<br>${x.st.join(' / ')}</span></div></td><td class="yrs c-hide"><button class="yrs-btn">${x.y}<small>▾</small></button></td><td class="tier c-hide ${x.tier === 'Greatest peak' || x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td>${x.st.map((v) => `<td class="num c-hide">${v}</td>`).join('')}<td class="cap num">${x.f}</td><td class="c c-hide"><span class="scout">Scout</span></td><td class="c c-hide"><span class="star ${['garnett', 'rodman', 'gobert'].includes(k) ? 'on' : ''}">★</span></td><td class="act"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
 }
 
 S.years = () => [leftDraft(),

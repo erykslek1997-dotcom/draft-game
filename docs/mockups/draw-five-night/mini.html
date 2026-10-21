@@ -169,6 +169,33 @@
   .five-row .card .cost { font-size: 10px; padding: 0 5px; }
   .stand td.who { display: none; }
 }
+
+/* player list v2: fixed columns, one number per cell, more air */
+.plist { table-layout: fixed; }
+.plist th { padding: 10px 12px 8px 0; white-space: nowrap; }
+.plist td { padding: 12px 12px 12px 0; }
+.plist td.f { width: 52px; }
+.plist td.f img, .plist td.f .ini { width: 40px; height: 40px; }
+.plist .nm { font: 700 21px/1.05 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist .mt { margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist th.num, .plist td.num { text-align: right; }
+.plist td.num { font: 500 15px var(--num); color: var(--ink2); }
+.plist td.cap, .plist td.cap.num { font: 600 17px var(--num); color: var(--gold); }
+.plist td.c { text-align: center; }
+.plist td.yrs .yrs-btn { font-size: 14px; }
+.plist td.yrs .yrs-btn small { font-style: normal; margin-left: 6px; color: var(--ink3); }
+.plist td.tier { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist .draft { width: 100%; padding: 8px 0; }
+@media (max-width: 600px) {
+  .plist td { padding: 10px 8px 10px 0; }
+  .plist .c-hide { display: none; }
+  .plist .nm { font-size: 18px; }
+  .plist .mt { white-space: normal; }
+  .plist .mst { white-space: nowrap; }
+  .plist col:last-child { width: 74px !important; }
+  .plist col:nth-last-child(2), .plist col:nth-last-child(4) { width: 50px !important; }
+  .plist .draft { font-size: 12px; }
+}
 </style>
 </head>
 <body>
@@ -230,7 +257,8 @@ function ticker(rows, { now } = {}) {
   return `<ul class="ticker">${rows.map(([n, c, name, pos, f]) => `<li class="${c === YOU ? 'you' : ''}"><span class="n">${n}</span>${tm(c)}<span><b>${name}</b></span><span class="ps">${pos}</span><span class="c">${f}</span></li>`).join('')}${now ? `<li class="now"><span class="n">${now[0]}</span>${tm(now[1])}<span><i>on the clock…</i></span><span></span><span></span></li>` : ''}</ul>`;
 }
 function plist(keys, { hot, no = [] } = {}) {
-  return `<table class="plist"><tr><th></th><th>Player</th><th>Tier</th><th class="r">Pts · Reb · Ast</th><th class="r">3PA</th><th class="r">Caps</th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos} · ${x.y}</b> <i>· ${x.r}</i><span class="mst">${x.st.join(' / ')}</span></div></td><td class="tier ${x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td><td class="n r">${x.st.join(' · ')}</td><td class="n r n3">${x.tpa ?? '—'}</td><td class="cap r">${x.f}</td><td class="act r"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
+  return `<table class="plist"><colgroup><col style="width:52px"><col><col class="c-hide" style="width:118px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col class="c-hide" style="width:58px"><col style="width:66px"><col style="width:96px"></colgroup>
+  <tr><th></th><th>Player</th><th class="c-hide">Tier</th><th class="num c-hide">Pts</th><th class="num c-hide">Reb</th><th class="num c-hide">Ast</th><th class="num c-hide">3PA</th><th class="num">Caps</th><th></th></tr>${keys.map((k) => { const x = p(k); return `<tr class="${hot === k ? 'hot' : ''} ${no.includes(k) ? 'no' : ''}"><td class="f">${face(x)}</td><td><div class="nm">${x.n}</div><div class="mt"><b>${x.pos} · ${x.y}</b> <i>· ${x.r}</i><span class="mst">${x.st.join(' / ')}</span></div></td><td class="tier c-hide ${x.tier === 'MVP' ? 'top' : ''}">${x.tier}</td>${x.st.map((v) => `<td class="num c-hide">${v}</td>`).join('')}<td class="num c-hide">${x.tpa ?? '—'}</td><td class="cap num">${x.f}</td><td class="act"><button class="draft">Draft</button></td></tr>`; }).join('')}</table>`;
 }
 const filters = (hidden = []) => `<div class="filters"><input class="search" placeholder="Search players…"><span class="grp"><span>Show</span>${SL.map((s) => hidden.includes(s) ? `<s>${s}</s>` : `<u>${s}</u>`).join('')}</span><span class="fit">Fits this pick: up to <b>24.5</b></span></div>`;
 
