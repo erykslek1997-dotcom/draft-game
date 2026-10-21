@@ -25,7 +25,7 @@
 .jr.scrub h2 { color: var(--red); }
 .jr p { margin: 0 0 18px; font-size: 16px; line-height: 1.5; font-style: italic; color: var(--ink2); }
 .jr p b { font-style: normal; color: var(--ink); }
-.dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.9); z-index: 5; }
+.jr-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.9); z-index: 5; }
 @media (max-width: 600px) { .vs5 b { font-size: 15px; } .vs5 img, .vs5 .ini { width: 36px; height: 36px; } .vs5 .pl { gap: 8px; } .vs5 td.ps { width: 36px; } .vs5 .fn { display: none; } .vs5 .yy { display: none; } .vs5 .pp { white-space: nowrap; } .jr h2 { font-size: 52px; } .jr { top: 30px; } }
 }
 
@@ -34,7 +34,7 @@
   .hand-c { display: flex; min-width: 0; }
   .hand-c > .card { flex: 1; }
   .hand .card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  .hand button.card:not(:disabled):not(.dim):hover, .hand button.card:not(:disabled):not(.dim):focus-visible { box-shadow: 0 0 0 2px var(--red); transform: translateY(-6px); outline: 0; }
+  .hand-c:hover > button.card:not(:disabled):not(.dim), .hand button.card:not(:disabled):not(.dim):focus-visible { box-shadow: 0 0 0 2px var(--red); transform: translateY(-6px); outline: 0; }
   .card.joker:disabled { opacity: 0.35; }
   .dealt { position: relative; display: flex; min-width: 0; }
   .dealt > .card { flex: 1; }

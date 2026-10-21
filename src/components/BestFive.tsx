@@ -758,7 +758,7 @@ function JokerModal({ joker, next, onNext }: { joker: DailyJoker; next: Position
   const name = maskName(joker.span.playerName);
   return (
     <>
-      <div className="dim" aria-hidden />
+      <div className="jr-dim" aria-hidden />
       <div className={`jr${joker.legend ? '' : ' scrub'}`} role="dialog" aria-modal="true" aria-label={joker.legend ? 'Jackpot' : 'Ouch'}>
         <NCard span={{ ...joker.span, fga: joker.price }} jokerBand costLabel={fmtCaps(joker.price)} />
         <h2>{joker.legend ? 'Jackpot' : 'Ouch'}</h2>
