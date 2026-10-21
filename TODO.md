@@ -241,7 +241,13 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 - **Nowe elementy:** Tale of the tape (pojedynki pozycja na pozycję przed Submit), tura AI z jej
   kartami („AI takes”), wyniki jako gazetowy nagłówek + werdykt + profil drużyny w tabeli.
 - **Wdrożenie wszystkich trybów za jednym razem** (Draw Five, Mini, All-Time) — najpierw makiety
-  każdego trybu w tym stylu.
+  każdego trybu w tym stylu. Makiety: `docs/mockups/draw-five-night/` (`index.html` Draw Five,
+  `mini.html` Mini, `alltime.html` All-Time).
+- **Pomysł na później: reakcje na żywo** (2026-10-21, user). Lewa kolumna draftu All-Time ma pod
+  Big Boardem wolne miejsce — docelowo panel, który reaguje na to, co się dzieje w drafcie (kto
+  kogo wziął, twój wybór). Dziś nie ma mechaniki generującej reakcje na żywo (desk.ts buduje głosy
+  tylko po drafcie i po 3. wyborze), więc na razie w tym miejscu idzie coś, co już mamy (np. ostatnie
+  wybory ligi), a forma docelowa jest do ustalenia („będzie to coś innego”).
 
 ## Kolejność prac (decyzja 2026-10-10, zastąpiona planem 4 tygodni)
 
