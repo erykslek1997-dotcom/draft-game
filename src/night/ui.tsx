@@ -1,9 +1,9 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { headshotUrl } from '../data/headshots';
 import { teamColors } from '../data/teamColors';
 import { teamsForSpan } from '../engine/spanTeams';
-import { isBombMasked, maskName, maskYears } from '../components/bombMask';
+import { isBombMasked, maskName, maskText, maskYears } from '../components/bombMask';
 import { cardRoles } from '../components/cardRoles';
 import { BRAND_MARK } from '../brand';
 import { getSettings } from '../settings';
@@ -438,4 +438,25 @@ export function buzz(pattern: number | number[] = 18): void {
   } catch {
     /* no vibration */
   }
+}
+
+/** The desk's lines as printed voices (mockup `mini.html#results` "The room"). */
+export function NightVoices({ voices, cast }: { voices: { who: string; kind: string; text: string; reply?: boolean }[]; cast: Record<string, { name: string; tag: string }> }) {
+  return (
+    <>
+      {voices.map((v, i) => {
+        const x = cast[v.who];
+        const parts = maskText(v.text)
+          .split(/\*(.+?)\*/g)
+          .map((part, j) => (j % 2 ? <i key={j} className="cue">{part}</i> : <Fragment key={j}>{part}</Fragment>));
+        return (
+          <p key={i} className={v.reply ? 'reply' : undefined}>
+            {x && v.kind !== 'burst' && <b>{x.name}: </b>}
+            {parts}
+            {x && v.kind !== 'burst' && <em>{x.tag}</em>}
+          </p>
+        );
+      })}
+    </>
+  );
 }

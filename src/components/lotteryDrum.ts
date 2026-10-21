@@ -43,11 +43,11 @@ interface Spark { x: number; y: number; vx: number; vy: number; life: number; wh
 type Phase = 'idle' | 'drawing' | 'pull' | 'flight' | 'impact' | 'done';
 
 const W = 400;
-const MONO = "'JetBrains Mono', ui-monospace, Consolas, monospace";
-// `.at-shell` accent (electric blue) and accent-2 (the "YOU" red), as canvas rgb triplets.
-const ACC = '68,146,208';
-const ACC2 = '217,74,96';
-const INK = '#eef4fb';
+const MONO = "'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, Consolas, monospace";
+// Night edition: the warm grey rules and the "now" red, as canvas rgb triplets.
+const ACC = '169,163,149';
+const ACC2 = '224,82,90';
+const INK = '#ECE6D7';
 
 const C = { x: 200, y: 200 };
 const R = 132;
@@ -324,7 +324,7 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
     c.lineWidth = px(1.4);
     c.strokeText(`#${ghost.n}`, px(C.x), px(C.y + 50 * (1 - ge)));
     c.restore();
-    c.fillStyle = final ? `rgb(${ACC2})` : 'rgb(72,88,109)';
+    c.fillStyle = final ? `rgb(${ACC2})` : 'rgb(92,88,80)';
     c.font = `700 ${px(10)}px ${MONO}`; c.textAlign = 'center';
     c.fillText(final ? 'Y O U R   P I C K' : phase === 'idle' ? 'F I R S T   P I C K' : 'N O W   D R A W I N G', px(C.x), px(C.y - R - 12));
 
@@ -344,7 +344,7 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
     c.save();
     c.beginPath(); c.arc(px(C.x), px(C.y), px(R), 0, Math.PI * 2);
     const glass = c.createRadialGradient(px(C.x - 50), px(C.y - 60), px(10), px(C.x), px(C.y), px(R));
-    glass.addColorStop(0, 'rgba(120,180,230,.08)'); glass.addColorStop(0.75, 'rgba(29,66,138,.16)'); glass.addColorStop(1, `rgba(${ACC},.3)`);
+    glass.addColorStop(0, 'rgba(236,230,215,.04)'); glass.addColorStop(0.75, 'rgba(38,39,42,.3)'); glass.addColorStop(1, `rgba(${ACC},.3)`);
     c.fillStyle = glass; c.fill();
     c.clip();
     if (!mineBall.out) {
@@ -354,13 +354,13 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
       c.fillStyle = l; c.fillRect(px(C.x - R), px(C.y - R), px(2 * R), px(2 * R));
       c.globalCompositeOperation = 'source-over';
     }
-    c.fillStyle = 'rgba(200,225,250,.35)';
+    c.fillStyle = 'rgba(236,230,215,.35)';
     for (const b of bubbles) { c.beginPath(); c.arc(px(b.x), px(b.y), px(b.r), 0, Math.PI * 2); c.fill(); }
     const dimOthers = phase === 'pull' ? 0.45 : 1;
     for (const b of inSphere()) {
       if (b.mine) continue;
       b.trail.forEach((t, k) => {
-        c.fillStyle = `rgba(200,225,250,${0.05 * (k + 1) * dimOthers})`;
+        c.fillStyle = `rgba(236,230,215,${0.05 * (k + 1) * dimOthers})`;
         c.beginPath(); c.arc(px(t.x), px(t.y), px(BR * (0.45 + 0.08 * k)), 0, Math.PI * 2); c.fill();
       });
       ballAt(c, b.x, b.y, BR, false, dimOthers);
@@ -370,7 +370,7 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
     const rim = c.createRadialGradient(px(C.x), px(C.y), px(R * 0.82), px(C.x), px(C.y), px(R));
     rim.addColorStop(0, `rgba(${ACC},0)`); rim.addColorStop(1, `rgba(${ACC},.25)`);
     c.fillStyle = rim; c.beginPath(); c.arc(px(C.x), px(C.y), px(R), 0, Math.PI * 2); c.fill();
-    c.strokeStyle = 'rgba(160,200,235,.55)'; c.lineWidth = px(1.4);
+    c.strokeStyle = 'rgba(169,163,149,.55)'; c.lineWidth = px(1.4);
     c.beginPath(); c.arc(px(C.x), px(C.y), px(R), 0, Math.PI * 2); c.stroke();
     c.lineCap = 'round';
     c.strokeStyle = 'rgba(255,255,255,.28)'; c.lineWidth = px(6);
@@ -398,7 +398,7 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
       }
       c.textAlign = 'center'; c.textBaseline = 'middle';
       c.font = `700 ${px(12.5)}px ${MONO}`;
-      c.fillStyle = isMine ? `rgb(${ACC2})` : taken ? 'rgb(72,88,109)' : isNext ? INK : 'rgba(127,150,179,.8)';
+      c.fillStyle = isMine ? `rgb(${ACC2})` : taken ? 'rgb(92,88,80)' : isNext ? INK : 'rgba(127,150,179,.8)';
       c.fillText(`#${n}`, px(p.x), px(isMine ? p.y + 11 : taken ? p.y + 10 : p.y));
       if (taken) ballAt(c, p.x, p.y - 6, isMine ? 9 : 7.5, isMine, isMine ? 1 : 0.5);
     }

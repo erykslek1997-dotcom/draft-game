@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { SettingsButton, SettingsModal } from './SettingsModal';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
@@ -22,37 +21,43 @@ import { totalFga, TEAM_COUNT, STARTER_SLOTS } from '../engine/positions';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import { scoreLineup, WEIGHTED_AXES, WEAK_AXIS_REASON, type Lineup, type LineupScore } from '../engine/bestFive';
 import { allStarCount } from '../engine/allStarLookup';
-import { overallTierForSpan, displayTalentForSpan, formatTal } from '../engine/grades';
+import { overallTierForSpan, displayTalentForSpan } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { teamCodes, teamLabel } from '../engine/teamNames';
-import { CapIcon, Face, ShotChip, ShotsMeter } from './ShotChip';
-import { TIER_FRAME_COLOR } from './DraftPlayerCard';
-import { DraftPlayerList, PositionToggles } from './DraftPlayerList';
-import { gradeColor, pickStatTip } from './DraftBoard';
-import { DraftGrid } from './DraftGrid';
 import { markStepDone } from './pathProgress';
-import { rankTeams } from '../engine/scoring';
-import { fitScore } from '../engine/fit';
-import { bestHistoricalComp } from '../engine/historicalComps';
-import DraftLottery from './DraftLottery';
 import { nextDraftTip } from './ResultsScreen';
-import { RosterGrid, TeamMark, TeamReport, fieldGrade, type ProfileRow } from './ResultsReport';
-import { buildMiniDesk } from '../engine/desk';
-import { teamHue } from './teamLogoKit';
-import { ALL_POSITIONS } from './DraftBoard';
-import './QuickFive.css';
-import { ChallengeNote } from './ScoreBoard';
-import ShareResultModal from './ShareResultModal';
+import { DESK_CAST, buildMiniDesk } from '../engine/desk';
 import { copyLink } from './shareSave';
-import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
+import { challengeVerdict, modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import { cpuPickDelay } from './aiSpeed';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
-import { BoardToggleButton, DraftStrip, LeaveDraftDialog, RimPressureNote, type TickerPick } from './DraftChrome';
-import { FitName, FitTeam } from './FitName';
+import { lowRimPressure } from './DraftChrome';
 import type { DailyDraftDay } from '../dailyDraftDay';
-import { DailyDraftDayScreen } from './DailyDraftDay';
-import { clearDailyDraftResult, saveDailyDraftResult } from './dailyDraftProgress';
-import { DAILY_REPLAY_FOR_TESTING } from './dailyProgress';
+import { clearDailyDraftResult, dailyDraftStreak, ordinal, saveDailyDraftResult } from './dailyDraftProgress';
+import { DAILY_REPLAY_FOR_TESTING, STREAK_TIERS, untilTomorrow } from './dailyProgress';
+import { maskName } from './bombMask';
+import {
+  Actions,
+  Btn,
+  CapBar,
+  EmptyNote,
+  H3,
+  Kv,
+  Mast,
+  NCard,
+  NightGame,
+  NightVoices,
+  Prompt,
+  SLOTS,
+  SubNote,
+  Tally,
+  buzz,
+  dayLabel,
+  fmtCaps,
+} from '../night/ui';
+import { CapsBar, DraftBoardTable, FiveSlots, LeagueMark, NightLottery, Notice, PickLog, PlayerTable, PosTabs, Ticker, snakePicks, type NightRow, type TickerRow } from '../night/draft';
+import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
+import { ShareNight, type PosterData } from '../night/Share';
 
 interface Props {
   humanTeamName?: string;
@@ -67,83 +72,58 @@ interface Props {
 
 type Phase = 'day' | 'lottery' | 'draft' | 'results';
 
-// 2026-09-17, user's own ask: a real "how to play?" on the lottery screen, same as the full draft
-// — but this mode's own rules, not a copy of the 9-round ones (no bench/rotation step, no span
-// choice, a different cap/round count).
-const quickHowToPlay = (cap: number) => [
-  { title: 'Draft', body: `${TEAM_COUNT} teams take turns, ${QUICK_ROUNDS} rounds — one starter each round, no bench. You control one team; the rest are CPU.` },
-  { title: 'Caps', body: `Every pick costs caps — his shots per game in those years. Your five starters have to fit under ${cap} caps.` },
-  { title: 'Peak only', body: "No choosing years — every player is shown at his single best season, so each pick is quick." },
-  { title: 'Grading', body: 'The judge scores your five the same way the full draft does — talent, offense, defense, spacing, fit — right after your last pick.' },
+const howToRules = (cap: number): [string, string][] => [
+  ['Draft', `${TEAM_COUNT} teams take turns, ${QUICK_ROUNDS} rounds, one starter each round, no bench. You run one team; the rest are CPU GMs.`],
+  ['Caps', `Every pick costs caps, his shots a game in those years. Your five starters have to fit under ${cap} caps.`],
+  ['Peak only', 'No choosing years: every player comes at his best stretch, so each pick is quick.'],
+  ['Grading', 'The judge scores your five on talent, offense, defense, spacing and fit right after the last pick, and ranks the field.'],
 ];
 
-/**
- * "Szybka 5" — a real 16-team, pick-by-pick draft (same AI reacting live as the full 9-round
- * draft), just 5 rounds/starters-only and a 70-shot cap instead of 100.9. See `quickDraft.ts` for
- * the engine side and why this is a separate module rather than a parameterized `draft.ts`.
- *
- * Deliberately its own lean UI too — `DraftBoard.tsx`/`ResultsScreen.tsx` are both deeply
- * 9-man/100.9-cap shaped (judge-metric columns sized for 9 rounds, championship/matchup features
- * that don't translate to a bare five under a different cap) — reusing them directly would mean
- * either forking huge swaths of them or leaving dead 9-man UI chrome half-visible. This screen
- * reuses the small, genuinely generic pieces instead (`DraftLottery`, `Face`/`ShotChip`/
- * `ShotsMeter` — shared with Best Five, user's own ask: "podobne kafelki jak w build the best 5" —
- * `scoreLineup`/`WEAK_AXIS_REASON` from the bare-five scoring path Best Five already validated)
- * and builds its own compact Draft/Results.
- *
- * One card per PLAYER, not per span — user's own steer: "ograniczamy do najlepszego sezonu...
- * gracz nie wybiera sezonu, tylko gracza." Drafts straight from `peakDraftPool` (one real,
- * tier-capped-peak span per player), not `draft.ts`'s own multi-span `activeDraftPool` — there is
- * no span picker anywhere in this mode, by design, not just by omission.
- */
 /** CPU pick delay while "Skip to my pick" runs, ms. */
 const RUSH_PICK_MS = 90;
+/** Rows shown at first and per "See more". */
+const VISIBLE_STEP = 12;
+/** The caps bar's top: the priciest players sit above it and count as "any". */
+const CAPS_TOP = 30;
 
+/**
+ * The Mini Draft (night edition, mockups `docs/mockups/draw-five-night/mini.html`): a real 16-team,
+ * pick-by-pick draft — 5 rounds, starters only, one card per player at his peak — with the same AI
+ * as the All-Time Draft. See `quickDraft.ts` for the engine.
+ */
 export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge, daily }: Props) {
-  const freshDraft = (name?: string, seed?: number) =>
-    daily ? createQuickDraft(name, daily.seed, daily) : createQuickDraft(name, seed);
+  const freshDraft = (name?: string, seed?: number) => (daily ? createQuickDraft(name, daily.seed, daily) : createQuickDraft(name, seed));
   const [state, setState] = useState<QuickDraftState>(() => freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined));
   const [phase, setPhase] = useState<Phase>(daily ? 'day' : 'lottery');
-  // 2026-09-24: a "← Menu" with a confirm instead of a bare Exit at the very bottom, and every
-  // phase opening at the top.
   const [boardOpen, setBoardOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [confirmExit, setConfirmExit] = useState(false);
-  const closeExitDialog = useCallback(() => setConfirmExit(false), []);
+  const [dialog, setDialog] = useState<'settings' | 'howto' | 'leave' | null>(null);
+  const closeDialog = useCallback(() => setDialog(null), []);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [phase]);
-  /** New draft (no seed) or "Rematch this board" (same seed), straight from the results. */
   function restart(seed?: number) {
     const humanName = state.teams.find((t) => t.isHuman)?.name ?? humanTeamName;
-    // A daily replays only in testing, and only today's draft.
     if (daily && !daily.testing) clearDailyDraftResult('mini', daily.day);
     setState(freshDraft(humanName, seed));
-    setSearch('');
-    setPositionOverride(null);
     setPhase(daily ? 'day' : 'lottery');
   }
   const [autoFinishing, setAutoFinishing] = useState(false);
-  const [search, setSearch] = useState('');
-  // 2026-10-14, the list redesign: "Show" toggles per position, the positions you already have
-  // unticked until you touch them (see DraftBoard's own `positionOverride`).
-  const [positionOverride, setPositionOverride] = useState<Set<Position> | null>(null);
 
   const teamIdx = currentTeamIndex(state);
   const currentTeam = state.teams[teamIdx];
   const humanTeam = state.teams.find((t) => t.isHuman)!;
   const canPick = currentTeam.isHuman;
-  const teamCodeByTeamId = useMemo(() => teamCodes(state.teams), [state.teams]);
+  const codes = useMemo(() => teamCodes(state.teams), [state.teams]);
+  const codeOf = (t: Team) => codes.get(t.id) ?? '';
 
-  // 2026-09-28 playtest: with a late slot the player sat through nine calm first-round CPU picks
-  // before touching anything. "Skip to my pick" runs the CPU picks quickly up to the player's next
-  // turn, then the chosen pace is back.
   const [rushToMe, setRushToMe] = useState(false);
   useEffect(() => {
     if (canPick) setRushToMe(false);
   }, [canPick]);
+  useEffect(() => {
+    if (phase === 'draft' && canPick && !state.complete) buzz([15, 40, 15]);
+  }, [phase, canPick, state.complete]);
 
-  // Auto-resolve CPU turns, same pacing the main draft's default 'Normal' speed uses.
   useEffect(() => {
     if (phase !== 'draft' || state.complete || autoFinishing) return;
     if (state.teams[currentTeamIndex(state)].isHuman) return;
@@ -154,113 +134,162 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
     return () => clearTimeout(timer);
   }, [state, phase, autoFinishing, rushToMe]);
 
-  // Once the draft ends, move straight to results — no rotation-building step at all (user's own
-  // spec: "bez etapu budowania rotacji/minut — od razu wynik").
+  // The draft ends straight on the results: no rotation step in the Mini.
   useEffect(() => {
     if (state.complete && phase === 'draft') setPhase('results');
   }, [state.complete, phase]);
-
   useEffect(() => {
     if (autoFinishing && state.complete) setAutoFinishing(false);
   }, [autoFinishing, state.complete]);
 
-  function handleAutoFinish() {
-    setAutoFinishing(true);
-    setState((s) => autoFinishQuickDraft(s));
-  }
+  const title = daily ? 'Daily Mini Draft' : 'Mini Draft';
+  const links = {
+    onMenu: () => (phase === 'draft' && !state.complete ? setDialog('leave') : onExit()),
+    onHowTo: () => setDialog('howto'),
+    onSettings: () => setDialog('settings'),
+  };
+  const dialogs = (
+    <>
+      {dialog === 'settings' && <NightSettings onClose={closeDialog} />}
+      {dialog === 'howto' && <NightHowTo lead={`Mini Draft · ${TEAM_COUNT} teams, ${QUICK_ROUNDS} rounds, starters only.`} rules={howToRules(state.capLimit)} onClose={closeDialog} />}
+      {dialog === 'leave' && <NightConfirm title="Leave the draft?" lead="Mini Drafts aren’t saved: leaving ends this one." yes="Back to menu" no="Keep drafting" onYes={onExit} onNo={closeDialog} />}
+    </>
+  );
 
-  function handlePick(playerId: string) {
-    setState((s) => makeQuickPick(s, playerId));
+  let screen;
+  if (phase === 'day' && daily) {
+    screen = <MiniDay day={daily} team={humanTeam} title={title} onStart={() => setPhase('lottery')} links={links} />;
+  } else if (phase === 'lottery') {
+    screen = (
+      <NightLottery
+        teams={state.teams}
+        rounds={QUICK_ROUNDS}
+        title={title}
+        sub={`${TEAM_COUNT} teams · ${QUICK_ROUNDS} rounds · starters only`}
+        codeOf={codeOf}
+        capLimit={state.capLimit}
+        howItWorks={[
+          ['Each round', '1 starter'],
+          ['Order', 'Snake'],
+          ['Players', 'Peak years'],
+          ['Rivals', `${TEAM_COUNT - 1} CPU GMs`],
+          ['Graded', `After pick ${TEAM_COUNT * QUICK_ROUNDS}`],
+        ]}
+        onDone={() => setPhase('draft')}
+        links={links}
+      />
+    );
+  } else if (phase === 'draft') {
+    screen = (
+      <QuickDraftBoard
+        state={state}
+        canPick={canPick}
+        currentTeam={currentTeam}
+        humanTeam={humanTeam}
+        codeOf={codeOf}
+        onPick={(id) => {
+          buzz();
+          setState((s) => makeQuickPick(s, id));
+        }}
+        onAutoFinish={() => {
+          setAutoFinishing(true);
+          setState((s) => autoFinishQuickDraft(s));
+        }}
+        autoFinishing={autoFinishing}
+        boardOpen={boardOpen}
+        onBoard={setBoardOpen}
+        rushToMe={rushToMe}
+        onRushToMe={() => setRushToMe(true)}
+        daily={daily}
+        title={title}
+        links={links}
+      />
+    );
+  } else {
+    screen = (
+      <QuickResults
+        state={state}
+        codeOf={codeOf}
+        title={title}
+        onNewDraft={() => restart()}
+        onRematch={() => restart(state.seed)}
+        onNextStep={daily ? undefined : onNextStep}
+        challenge={challenge && Number(challenge.seed) === state.seed ? challenge : undefined}
+        daily={daily}
+        links={links}
+      />
+    );
   }
-
   return (
-    <div className="at-shell at-calm qf-shell">
-      {/* 2026-10-07, the UI simplification: the All-Time Draft's one-row header. */}
-      {phase === 'day' && daily && (
-        <DailyDraftDayScreen day={daily} slot={humanTeam.draftSlot} rosterSize={QUICK_ROUNDS} onStart={() => setPhase('lottery')} onBack={onExit} />
-      )}
-      {phase !== 'lottery' && phase !== 'day' && (
-        <div className="at-calm-header">
-          <button
-            type="button"
-            className="at-calm-btn at-calm-btn--ghost"
-            onClick={() => (phase === 'results' ? onExit() : setConfirmExit(true))}
-          >
-            ← Menu
-          </button>
-          <h1 className="at-calm-title">{daily ? 'Daily Mini Draft' : 'Mini Draft'}</h1>
-          {phase === 'draft' && !state.complete && <SettingsButton onClick={() => setSettingsOpen(true)} />}
-          {phase === 'draft' && !state.complete ? (
-            <BoardToggleButton open={boardOpen} onToggle={() => setBoardOpen((o) => !o)} />
-          ) : (
-            <span className="rs-header-spacer" aria-hidden />
-          )}
-        </div>
-      )}
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
-      {confirmExit && (
-        <LeaveDraftDialog text="Mini Drafts aren't saved — leaving ends this one." onStay={closeExitDialog} onLeave={onExit} />
-      )}
-      {phase === 'lottery' && (
-        <DraftLottery teams={state.teams} rounds={QUICK_ROUNDS} onDone={() => setPhase('draft')} howToPlay={quickHowToPlay(state.capLimit)} onExit={onExit} />
-      )}
-      {phase === 'draft' && (
-        <QuickDraftBoard
-          state={state}
-          canPick={canPick}
-          currentTeam={currentTeam}
-          humanTeam={humanTeam}
-          teamCodeByTeamId={teamCodeByTeamId}
-          search={search}
-          setSearch={setSearch}
-          positionOverride={positionOverride}
-          setPositionOverride={setPositionOverride}
-          onPick={handlePick}
-          onAutoFinish={handleAutoFinish}
-          autoFinishing={autoFinishing}
-          teamIdx={teamIdx}
-          boardOpen={boardOpen}
-          rushToMe={rushToMe}
-          onRushToMe={() => setRushToMe(true)}
-          daily={daily}
-        />
-      )}
-      {phase === 'results' && (
-        <QuickResults
-          state={state}
-          teamCodeByTeamId={teamCodeByTeamId}
-          onExit={onExit}
-          onNewDraft={() => restart()}
-          onRematch={() => restart(state.seed)}
-          onNextStep={daily ? undefined : onNextStep}
-          challenge={challenge && Number(challenge.seed) === state.seed ? challenge : undefined}
-          daily={daily}
-        />
-      )}
-    </div>
+    <>
+      {screen}
+      {dialogs}
+    </>
   );
 }
 
-/**
- * 2026-09-11, user-reported live ("długi czas ładowania po wciśnięciu play"): the whole candidate
- * pool's expensive per-player tier lookup (`overallTierForSpan`/`tierContextFor` chain through
- * several real-data corrections, not cheap — DraftBoard.tsx's own "bardzo wolno" perf bug,
- * 2026-09-02, was exactly this same trap) used to be recomputed on EVERY pick, because it lived in
- * a `useMemo` keyed on `state` (which changes every pick, correctly, but only the "which players
- * are still available" part actually needs to). Built once here, at module scope, over the whole
- * immutable `peakDraftPool` — same fix shape DraftBoard.tsx's own `enrichedGroups` memo already
- * uses — so a pick, a search keystroke, or a position-filter click only ever re-runs the CHEAP
- * filter/sort pass in `filtered` below, never this. One entry per player already (see this file's
- * own top docstring), so no per-player span-grouping/reduce is needed here at all, unlike
- * DraftBoard.tsx's own multi-span pool.
- */
-/** Cards shown at first and per "See more" — same paging as the All-Time Draft grid. */
-const QUICK_VISIBLE_STEP = 30;
+/** The daily's rule before the lottery (mockup `mini.html#day`). */
+function MiniDay({ day, team, title, onStart, links }: { day: DailyDraftDay; team: Team; title: string; onStart: () => void; links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void } }) {
+  const slot = team.draftSlot;
+  const streak = dailyDraftStreak('mini', day.day);
+  const picks = snakePicks(slot, TEAM_COUNT, QUICK_ROUNDS);
+  return (
+    <NightGame
+      aside={
+        <>
+          <Mast title={title} daily sub={`${dayLabel(day.day)} · one board for everyone`} />
+          <Tally you={fmtCaps(day.cap)} mid={ordinal(slot)} ai={QUICK_ROUNDS} youK="Cap" midK="Your slot" aiK="Rounds" plain />
+          <section>
+            <H3>Today</H3>
+            <Kv k="Streak" v={`${streak} ${streak === 1 ? 'day' : 'days'}`} gold />
+            <Kv k="Teams" v={TEAM_COUNT} />
+            <Kv k="Tries" v="One" />
+            <Kv k="New board in" v={untilTomorrow()} />
+          </section>
+          <Actions links={links} />
+        </>
+      }
+    >
+      <div className="rule">
+        <span className="eb">Rule of the day</span>
+        <h2>{day.title}</h2>
+        <p>{day.rule.kind === 'open' ? 'No rule today: the same board and the same cap for everyone.' : `${day.ruleLine}. The CPU teams can still take them.`}</p>
+      </div>
+      <div className="facts">
+        <div>
+          <span>Cap</span>
+          <b className="g">{fmtCaps(day.cap)}</b>
+          <small>caps for five</small>
+        </div>
+        <div>
+          <span>Your slot</span>
+          <b>{ordinal(slot)}</b>
+          <small>picks {picks.join(' · ')}</small>
+        </div>
+        <div>
+          <span>Teams</span>
+          <b>{TEAM_COUNT}</b>
+          <small>{TEAM_COUNT - 1} CPU GMs, same board</small>
+        </div>
+        <div>
+          <span>Streak</span>
+          <b>{streak}</b>
+          <small>days in a row</small>
+        </div>
+      </div>
+      <FiveSlots lineup={{}} note={`0 of 5 · ${teamLabel(team)}`} />
+      <div className="go-row">
+        <Btn onClick={onStart}>Start today’s draft</Btn>
+        <i>Same players, same order for everyone. Compare tonight.</i>
+      </div>
+    </NightGame>
+  );
+}
 
+/** Built once over the immutable peak pool: the tier lookup is expensive, the filters are cheap. */
 const allEnrichedOnce = peakDraftPool.map((span) => ({
   span,
   tier: overallTierForSpan(tierContextFor(span)),
-  // 2026-09-26, the user: "segregowanie według TAL" — the grid is sorted by the TAL on the card.
   tal: displayTalentForSpan(tierContextFor(span)),
 }));
 
@@ -269,430 +298,343 @@ function QuickDraftBoard({
   canPick,
   currentTeam,
   humanTeam,
-  teamCodeByTeamId,
-  search,
-  setSearch,
-  positionOverride,
-  setPositionOverride,
+  codeOf,
   onPick,
   onAutoFinish,
   autoFinishing,
-  teamIdx,
   boardOpen,
+  onBoard,
   rushToMe,
   onRushToMe,
   daily,
+  title,
+  links,
 }: {
   state: QuickDraftState;
   canPick: boolean;
   currentTeam: Team;
   humanTeam: Team;
-  teamCodeByTeamId: Map<string, string>;
-  search: string;
-  setSearch: (v: string) => void;
-  positionOverride: Set<Position> | null;
-  setPositionOverride: (v: Set<Position> | null) => void;
+  codeOf: (t: Team) => string;
   onPick: (id: string) => void;
   onAutoFinish: () => void;
   autoFinishing: boolean;
+  boardOpen: boolean;
+  onBoard: (open: boolean) => void;
   rushToMe: boolean;
   onRushToMe: () => void;
-  teamIdx: number;
-  boardOpen: boolean;
   daily?: DailyDraftDay;
+  title: string;
+  links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
 }) {
-  // Cheap pass only: drop drafted players, position filter, search box, tier sort — no per-player
-  // tier-lookup call here, that's all already done once in `allEnrichedOnce` above. Re-runs on
-  // every pick AND every keystroke, same as DraftBoard.tsx's own `groups` memo.
-  // 2026-09-24: this pick's shot budget (the same "can you still fill the five?" rule every team
-  // now plays under) and an "only players that fit" filter the stuck-board notice can switch on.
   const budget = useMemo(() => quickPickBudget(state), [state]);
-  const [onlyFits, setOnlyFits] = useState(false);
-  const priciestAvailable = useMemo(
-    () => allEnrichedOnce.reduce((max, e) => (!state.draftedIds.has(e.span.id) && e.span.fga > max ? e.span.fga : max), 0),
-    [state.draftedIds],
-  );
-  const hiddenPositions = useMemo<Set<Position>>(() => {
-    if (positionOverride) return positionOverride;
-    const have = new Set(humanTeam.roster.map((p) => p.primaryPosition));
-    return have.size >= ALL_POSITIONS.length ? new Set() : have;
-  }, [positionOverride, humanTeam.roster]);
-  function togglePosition(pos: Position) {
-    const next = new Set(hiddenPositions);
-    if (next.has(pos)) next.delete(pos);
-    else next.add(pos);
-    // Unticking the only position shown goes back to all of them (playtest 2026-10-14).
-    setPositionOverride(next.size >= ALL_POSITIONS.length ? new Set() : next);
-  }
+  const [search, setSearch] = useState('');
+  const [caps, setCaps] = useState<[number, number]>([0, CAPS_TOP]);
+  const humanAssignment = useMemo(() => bestPrimaryAssignment(humanTeam.roster).assignment, [humanTeam.roster]);
+  const humanStarters = useMemo(() => Object.values(humanAssignment).filter((p): p is PlayerSpan => Boolean(p)), [humanAssignment]);
+  const have = useMemo(() => new Set(SLOTS.filter((s) => humanAssignment[s])), [humanAssignment]);
+  // The tab: the first open position once you have a player (the list shows what you need), all
+  // of them before your first pick; tapping a tab or an open slot changes it.
+  const [tab, setTab] = useState<Position | 'ALL' | null>(null);
+  const firstOpen = SLOTS.find((s) => !have.has(s));
+  const on: Position | 'ALL' = tab ?? (have.size > 0 && firstOpen ? firstOpen : 'ALL');
+  useEffect(() => setTab(null), [humanTeam.roster.length]);
+  const [visible, setVisible] = useState(VISIBLE_STEP);
+  useEffect(() => setVisible(VISIBLE_STEP), [on, search, caps]);
+
+  const available = useMemo(() => allEnrichedOnce.filter((e) => !state.draftedIds.has(e.span.id)), [state.draftedIds]);
+  const counts = useMemo(() => {
+    const c = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 } as Record<Position, number>;
+    for (const e of available) c[e.span.primaryPosition] += 1;
+    return c;
+  }, [available]);
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return allEnrichedOnce
-      .filter((e) => !state.draftedIds.has(e.span.id))
-      .filter((e) => (onlyFits && canPick ? isQuickPickLegal(state, e.span.id) : true))
-      .filter((e) => !hiddenPositions.has(e.span.primaryPosition))
-      .filter((e) => e.span.playerName.toLowerCase().includes(q))
-      .sort((a, b) => b.tal - a.tal || allStarCount(b.span.playerName) - allStarCount(a.span.playerName))
-      .slice(0, 80);
-  }, [state, search, hiddenPositions, onlyFits, canPick]);
-  const [visibleCount, setVisibleCount] = useState(QUICK_VISIBLE_STEP);
-  const anyLegal = !canPick || filtered.slice(0, visibleCount).some((e) => isQuickPickLegal(state, e.span.id));
-  const recentPicks: TickerPick[] = useMemo(() => {
-    const spanById = new Map(state.teams.flatMap((t) => t.roster.map((p) => [p.id, p] as const)));
-    return state.history
-      .slice(-4)
-      .reverse()
-      .map((h) => {
-        const name = spanById.get(h.playerId)?.playerName ?? '—';
-        const parts = name.split(' ');
-        return {
-          pickNumber: h.pickNumber,
-          teamCode: teamCodeByTeamId.get(h.teamId) ?? '',
-          isHuman: Boolean(state.teams.find((t) => t.id === h.teamId)?.isHuman),
-          shortName: parts.length < 2 ? name : `${parts[0][0]}. ${parts[parts.length - 1]}`,
-        };
-      });
-  }, [state.history, state.teams, teamCodeByTeamId]);
-  const picksAway = useMemo(() => {
-    const start = state.round * TEAM_COUNT + state.pickInRound;
-    for (let k = start; k < TEAM_COUNT * QUICK_ROUNDS; k++) {
-      const round = Math.floor(k / TEAM_COUNT);
-      const pick = k % TEAM_COUNT;
-      if (state.teams[round % 2 === 0 ? pick : TEAM_COUNT - 1 - pick].isHuman) return k - start;
-    }
-    return null;
-  }, [state.round, state.pickInRound, state.teams]);
+    const [lo, hi] = caps;
+    return available
+      .filter((e) => on === 'ALL' || e.span.primaryPosition === on)
+      .filter((e) => !q || e.span.playerName.toLowerCase().includes(q))
+      .filter((e) => e.span.fga >= lo && (hi >= CAPS_TOP || e.span.fga <= hi))
+      .sort((a, b) => b.tal - a.tal || allStarCount(b.span.playerName) - allStarCount(a.span.playerName));
+  }, [available, on, search, caps]);
+  const shown = filtered.slice(0, visible);
+  const anyLegal = !canPick || shown.some((e) => isQuickPickLegal(state, e.span.id));
 
-  const humanFgas = humanTeam.roster.map((p) => p.fga);
-  // Not `capRemaining` from positions.ts — that hardcodes the real 9-man CAP_LIMIT (100.9), wrong
-  // for Szybka 5's own 70-shot cap.
-  const humanShotsUsed = totalFga(humanFgas);
-  // 2026-09-11, user-reported live ("nie wiem jakie pozycje mam obstawione" — the panel used to
-  // list picks in draft order with no position label, so you couldn't tell PG/SG/SF/PF/C coverage
-  // at a glance). Same optimal slot search `finalizeQuickRotation`/`QuickResults` already use to
-  // decide "who plays where" for scoring, reused here so the live panel matches what the result
-  // screen will actually grade instead of showing a second, different guess at the lineup.
-  const humanAssignment = useMemo(
-    () => bestPrimaryAssignment(humanTeam.roster).assignment,
-    [humanTeam.roster],
+  const spanById = useMemo(() => new Map(state.teams.flatMap((t) => t.roster.map((p) => [p.id, p] as const))), [state.teams]);
+  const teamById = useMemo(() => new Map(state.teams.map((t) => [t.id, t] as const)), [state.teams]);
+  const tickerRows: TickerRow[] = useMemo(
+    () =>
+      state.history.flatMap((h) => {
+        const span = spanById.get(h.playerId);
+        const team = teamById.get(h.teamId);
+        return span && team ? [{ n: h.pickNumber, team, code: codeOf(team), span }] : [];
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.history, spanById, teamById],
   );
-  const humanStarters = useMemo(
-    () => Object.values(humanAssignment).filter((p): p is PlayerSpan => Boolean(p)),
-    [humanAssignment],
+  const overall = state.round * TEAM_COUNT + state.pickInRound + 1;
+  const myPicks = snakePicks(humanTeam.draftSlot, TEAM_COUNT, QUICK_ROUNDS);
+  const nextMine = myPicks.find((n) => n >= overall) ?? null;
+  const used = totalFga(humanTeam.roster.map((p) => p.fga));
+  const left = state.capLimit - used;
+  const slotsLeft = QUICK_ROUNDS - humanTeam.roster.length;
+  const round = Math.min(state.round + 1, QUICK_ROUNDS);
+  const sub = `Round ${round} of ${QUICK_ROUNDS} · pick ${Math.min(overall, TEAM_COUNT * QUICK_ROUNDS)} of ${TEAM_COUNT * QUICK_ROUNDS}`;
+  const sinceMine = (() => {
+    const prev = [...myPicks].reverse().find((n) => n < overall);
+    return prev ? overall - prev - 1 : null;
+  })();
+  const picksAway = nextMine === null ? null : nextMine - overall;
+
+  const asideTop = (
+    <>
+      <Mast title={title} daily={Boolean(daily)} sub={sub} />
+      <Tally you={fmtCaps(used)} mid={fmtCaps(state.capLimit)} ai={`${round}/${QUICK_ROUNDS}`} youK="Caps" aiK="Round" />
+      <CapBar used={used} cap={state.capLimit} />
+      <SubNote>
+        <b>{fmtCaps(left)} caps</b> left for {slotsLeft === 1 ? 'one spot' : `${['no', 'one', 'two', 'three', 'four', 'five'][slotsLeft]} spots`}
+      </SubNote>
+    </>
   );
+  const lineup = humanAssignment as Partial<Record<Position, PlayerSpan>>;
 
-  return (
-    <div className="at-card at-stage-in">
-      {boardOpen && (
-      <div style={{ marginBottom: 16 }}>
-        {/* 2026-10-14: the same board as the All-Time Draft (DraftGrid). */}
-        <DraftGrid
-          teams={state.teams}
-          rounds={QUICK_ROUNDS}
-          round={state.round}
-          onClockIdx={teamIdx}
-          complete={state.complete}
-          tierColor={(span) => TIER_FRAME_COLOR[span.fga < 2 ? 'Salary Glue' : overallTierForSpan(tierContextFor(span))]}
-          pickTip={pickStatTip}
-        />
-      </div>
-
-      )}
-
-      <div className="at-turn-sticky">
-        <DraftStrip
-          youOnClock={canPick}
-          complete={state.complete}
-          onClockLabel={teamLabel(currentTeam)}
-          picksAway={picksAway}
-          recentPicks={recentPicks.slice(0, 2)}
-          round={Math.min(state.round + 1, QUICK_ROUNDS)}
-          rounds={QUICK_ROUNDS}
-          progress={state.history.length / (TEAM_COUNT * QUICK_ROUNDS)}
-          capLeft={state.capLimit - humanShotsUsed}
-          slotsLeft={QUICK_ROUNDS - humanTeam.roster.length}
-          maxThisPick={canPick && budget.maxThisPick < priciestAvailable ? budget.maxThisPick : null}
-          dailyTag={daily ? `Daily · ${daily.title}` : undefined}
-        />
-        {!canPick && picksAway != null && picksAway > 1 && !rushToMe && (
-          <button type="button" className="at-calm-btn qf-skip" onClick={onRushToMe}>
-            Skip to my pick →
-          </button>
-        )}
-        {canPick && <RimPressureNote starters={humanStarters} />}
-        {canPick && !anyLegal && (
-          <div className="at-budget-notice">
-            <span>None of the players shown fit this pick — it can cost up to <CapIcon /> {budget.maxThisPick} caps.</span>
-            <button
-              type="button"
-              className="at-calm-btn"
-              onClick={() => {
-                setSearch('');
-                setPositionOverride(new Set());
-                setOnlyFits(true);
-              }}
-            >
-              Show players that fit
-            </button>
-          </div>
-        )}
-      </div>
-
-      <ShotsMeter used={humanShotsUsed} cap={state.capLimit} label="Your caps" />
-
-      {/* 2026-09-11, user-reported live: "ważne żebyśmy mogli zobaczyć własny zespoł bo nie wiem
-          ile mam zabranych rzutów" — the cap number alone didn't show WHICH players it came from.
-          Same Face+ShotChip tile Best Five uses (user's own cross-mode ask), one per starter slot.
-          Keyed by STARTER_SLOTS (not draft order, per the follow-up "nie wiem jakie pozycje mam
-          obstawione" — draft order never told you WHICH position a pick actually covers) so the
-          panel reads as PG/SG/SF/PF/C coverage, matching `humanAssignment`'s own optimal seating —
-          a player picked 3rd can still show up under SF here if that's their best slot. Any drafted
-          player `bestPrimaryAssignment` couldn't seat (5th man beyond a clean 1-per-slot fit) still
-          shows below the grid so a real pick never silently vanishes from view. */}
-      <div className="qf-team-panel">
-        {STARTER_SLOTS.map((slot) => {
-          const p = humanAssignment[slot];
-          return p ? (
-            <div className="qf-team-card" key={slot}>
-              <span className="qf-team-card-slot at-cond">{slot}</span>
-              <Face name={p.playerName} />
-              <FitName className="qf-team-card-name" name={p.playerName} faceNextToIt />
-              <span className="qf-team-card-tal">
-                <span>TAL <b>{formatTal(displayTalentForSpan(tierContextFor(p)))}</b></span>
-                <ShotChip fga={p.fga} cap={state.capLimit} />
-              </span>
-            </div>
-          ) : (
-            <div className="qf-team-empty" key={slot}>
-              <span className="qf-team-card-slot at-cond">{slot}</span>
-              <span className="bf-face bf-face--sm bf-face--empty" aria-hidden />
-              <span className="qf-team-empty-text">Open</span>
-            </div>
-          );
-        })}
-      </div>
-      {(() => {
-        const seatedIds = new Set(Object.values(humanAssignment).filter((p): p is (typeof humanTeam.roster)[number] => Boolean(p)).map((p) => p.id));
-        const overflow = humanTeam.roster.filter((p) => !seatedIds.has(p.id));
-        return overflow.length > 0 ? (
-          <div className="qf-team-panel qf-team-panel--overflow">
-            {overflow.map((p) => (
-              <div className="qf-team-card" key={p.id}>
-                <span className="qf-team-card-slot at-cond">EXTRA</span>
-                <Face name={p.playerName} />
-                <FitName className="qf-team-card-name" name={p.playerName} faceNextToIt />
-                <ShotChip fga={p.fga} cap={state.capLimit} />
-              </div>
-            ))}
-          </div>
-        ) : null;
-      })()}
-
-      {/* 2026-09-26, the user: "fits my budget wygląda dziwnie" — it sat among the round position
-          pills and wrapped into a three-line blob on phones. Now a switch next to the search box. */}
-      <div className="at-calm-filters">
-        <input
-          className="at-calm-search"
-          placeholder="Search players…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <PositionToggles positions={ALL_POSITIONS} hidden={hiddenPositions} onToggle={togglePosition} />
-        <button
-          type="button"
-          className={`at-calm-chip${onlyFits ? ' is-on' : ''}`}
-          aria-pressed={onlyFits}
-          title="Only players whose cost fits your next pick"
-          onClick={() => setOnlyFits((on) => !on)}
-        >
-          <CapIcon size={12} /> Affordable
-        </button>
-        {AUTO_FINISH_FOR_TESTING && (
-          <button type="button" className="at-calm-btn qf-autofinish" disabled={autoFinishing} onClick={onAutoFinish}>
-            {autoFinishing ? 'Finishing…' : 'Auto-finish'}
-          </button>
-        )}
-      </div>
-
-      {/* 2026-09-26 (the user: "quick 5 może bardziej przypominać normalny draft"): the same
-          player cards as the All-Time Draft — tier frame, TAL, team chips, the season's box line —
-          without the Scouting button, since every player comes at his single best season here. */}
-      <DraftPlayerList
-        rows={filtered.slice(0, visibleCount).map(({ span: peak, tier: peakTier }) => {
-          // 2026-10-16 (the user: "nie powinni być wygaszeni" … "po prostu wyświetlaj najlepszy
-          // dostępny span"): when today's rule rules out his best years, the row simply shows his
-          // best years it allows; only a player with none (a franchise block) is dimmed.
-          const alt = daily ? quickDailyAlternative(state, peak.id) : null;
-          const span = alt ?? peak;
-          const tier = alt ? overallTierForSpan(tierContextFor(alt)) : peakTier;
-          const legal = canPick && isQuickPickLegal(state, span.id);
-          const ruled = daily && !alt && isQuickRuleBlocked(state, peak.id) ? daily.ruleTag : undefined;
-          const shown = span.fga < 2 ? 'Salary Glue' : tier;
-          return {
-            key: peak.id,
-            span,
-            tier: shown,
-            tierColor: TIER_FRAME_COLOR[shown],
-            legal,
-            scouted: false,
-            ruleNote: ruled,
-            draftTitle: ruled
-              ? `Today's rule: ${daily!.ruleLine.toLowerCase()}.`
-              : alt && legal
-                ? `Draft ${span.playerName} ${alt.spanLabel} — today's rule rules out his ${peak.spanLabel}.`
-              : !canPick
-              ? `${teamLabel(currentTeam)} is picking…`
-              : legal
-                ? `Draft ${span.playerName}`
-                : quickPickBlockReason(state, span.id) === 'reserve'
-                  ? `Too expensive right now — you need to keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${budget.maxThisPick} caps.`
-                  : `Over the ${state.capLimit}-cap limit — pick a cheaper player.`,
-          };
-        })}
-        gradeColor={gradeColor}
-        onDraft={(span) => onPick(span.id)}
-      />
-      {visibleCount < filtered.length && (
-        <button
-          type="button"
-          className="at-legend-toggle"
-          style={{ marginTop: 10 }}
-          onClick={() => setVisibleCount((c) => Math.min(filtered.length, c + QUICK_VISIBLE_STEP))}
-        >
-          See {Math.min(QUICK_VISIBLE_STEP, filtered.length - visibleCount)} more ({filtered.length - visibleCount} left)
-        </button>
-      )}
-    </div>
-  );
-}
-
-/** Same tier ramp ResultsScreen.tsx's own hero uses for the main draft (module-private there —
- * duplicated here rather than imported, same "small and self-contained, don't pull a large
- * lazy-loaded component's module graph into this lean screen" reasoning `quickDraft.ts` already
- * documents for not reusing `draft.ts` directly). */
-function resultTier(rank: number, fieldSize: number): { label: string; tone: 1 | 2 | 3 | 4 | 5 | 6 } {
-  const pct = rank / fieldSize;
-  if (rank === 1) return { label: 'Dynasty', tone: 6 };
-  if (pct <= 0.2) return { label: 'Contender', tone: 5 };
-  if (pct <= 0.4) return { label: 'Playoff Lock', tone: 4 };
-  if (pct <= 0.6) return { label: 'Play-In Fight', tone: 3 };
-  if (pct <= 0.85) return { label: 'Lottery Team', tone: 2 };
-  if (rank < fieldSize) return { label: 'Full Rebuild', tone: 1 };
-  return { label: 'Wooden Spoon', tone: 1 };
-}
-
-function ordinal(n: number): string {
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1: return `${n}st`;
-    case 2: return `${n}nd`;
-    case 3: return `${n}rd`;
-    default: return `${n}th`;
+  if (boardOpen) {
+    return (
+      <NightGame
+        aside={
+          <>
+            {asideTop}
+            <Actions links={links}>
+              <Btn onClick={() => onBoard(false)}>{canPick ? 'Back to your pick' : 'Back to the draft'}</Btn>
+            </Actions>
+          </>
+        }
+      >
+        <Prompt eb="Draft board" title="Who took whom">
+          Sixteen teams, five rounds. {canPick ? `You are on the clock at pick ${overall}.` : `${teamLabel(currentTeam)} on the clock at pick ${overall}.`}
+        </Prompt>
+        <DraftBoardTable teams={state.teams} rounds={QUICK_ROUNDS} picks={tickerRows.map((r) => ({ pickNumber: r.n, teamId: r.team.id, span: r.span }))} onClockTeamId={state.complete ? undefined : currentTeam.id} codeOf={codeOf} />
+        <Btn className="phone-only" onClick={() => onBoard(false)}>
+          {canPick ? 'Back to your pick' : 'Back to the draft'}
+        </Btn>
+      </NightGame>
+    );
   }
+
+  if (!canPick) {
+    return (
+      <NightGame
+        aside={
+          <>
+            {asideTop}
+            <section>
+              <H3>Your picks</H3>
+              <Kv k="Next" v={nextMine ? `Pick ${nextMine}` : '—'} />
+              <Kv k="Then" v={myPicks.filter((n) => nextMine && n > nextMine).join(' · ') || '—'} />
+            </section>
+            <Actions links={links}>
+              <Btn disabled>{nextMine ? `Waiting for pick ${nextMine}` : 'Waiting'}</Btn>
+              <Btn kind="line" onClick={() => onBoard(true)}>
+                Draft board
+              </Btn>
+            </Actions>
+          </>
+        }
+      >
+        <Prompt eb={`On the clock · Pick ${overall}`} title={teamLabel(currentTeam)} now>
+          {picksAway === 1 ? 'Your pick is next.' : picksAway ? `Your pick in ${picksAway} picks.` : 'Your five is in.'}
+          {sinceMine !== null && sinceMine > 0 && ` ${sinceMine} ${sinceMine === 1 ? 'pick' : 'picks'} since your last.`}
+        </Prompt>
+        {picksAway !== null && picksAway > 1 && !rushToMe && (
+          <div className="clockline">
+            <Btn kind="line" onClick={onRushToMe}>
+              Skip to my pick
+            </Btn>
+            <i className="it" style={{ color: 'var(--ink3)', fontSize: 14 }}>
+              Runs the CPU picks fast.
+            </i>
+          </div>
+        )}
+        <FiveSlots lineup={lineup} note={`${humanTeam.roster.length} of 5 · ${teamLabel(humanTeam)}`} />
+        <section>
+          <H3 note="newest last">The draft so far</H3>
+          <Ticker rows={tickerRows.slice(-8)} now={{ n: overall, team: currentTeam, code: codeOf(currentTeam) }} />
+        </section>
+        <Btn kind="line" className="phone-only" onClick={() => onBoard(true)}>
+          Draft board
+        </Btn>
+      </NightGame>
+    );
+  }
+
+  const maxPick = budget.maxThisPick;
+  const haveList = SLOTS.filter((s) => have.has(s));
+  const rows: NightRow[] = shown.map(({ span: peak, tier: peakTier }, i) => {
+    // A daily's rule can rule out a player's best years: the row then shows his best years it allows.
+    const alt = daily ? quickDailyAlternative(state, peak.id) : null;
+    const span = alt ?? peak;
+    const tier = alt ? overallTierForSpan(tierContextFor(alt)) : peakTier;
+    const legal = isQuickPickLegal(state, span.id);
+    const ruled = daily && !alt && isQuickRuleBlocked(state, peak.id) ? daily.ruleTag : undefined;
+    return {
+      key: peak.id,
+      span,
+      tier: span.fga < 2 ? 'Salary glue' : tier,
+      legal,
+      hot: i === shown.findIndex((e) => isQuickPickLegal(state, (daily ? quickDailyAlternative(state, e.span.id) : null)?.id ?? e.span.id)),
+      ruleNote: ruled,
+      title: ruled
+        ? `Today's rule: ${daily!.ruleLine.toLowerCase()}.`
+        : legal
+          ? `Draft ${maskName(span.playerName)}`
+          : quickPickBlockReason(state, span.id) === 'reserve'
+            ? `Too expensive right now: keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${maxPick}.`
+            : `Over the ${state.capLimit}-cap limit.`,
+    };
+  });
+  return (
+    <NightGame
+      aside={
+        <>
+          {asideTop}
+          <PickLog rows={tickerRows.slice(-6)} />
+          <Actions links={links}>
+            <Btn kind="line" onClick={() => onBoard(true)}>
+              Draft board
+            </Btn>
+            {AUTO_FINISH_FOR_TESTING && (
+              <Btn kind="line" disabled={autoFinishing} onClick={onAutoFinish}>
+                {autoFinishing ? 'Finishing…' : 'Auto-finish (testing)'}
+              </Btn>
+            )}
+          </Actions>
+        </>
+      }
+    >
+      <FiveSlots
+        lineup={lineup}
+        note={`${humanTeam.roster.length} of 5 · ${teamLabel(humanTeam)}`}
+        sel={on === 'ALL' ? null : on}
+        onSlot={(p) => setTab(p)}
+        emptyLabel={(p) => (p === on ? `showing ${counts[p]} ▾` : 'tap to show')}
+      />
+      <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now>
+        Up to <b>{fmtCaps(maxPick)} caps</b> on this one and still fill the five.
+        {haveList.length > 0 && ` Your ${haveList.join(' and ')} ${haveList.length === 1 ? 'is' : 'are'} set.`}
+      </Prompt>
+      <section>
+        {lowRimPressure(humanStarters) && (
+          <Notice>
+            <b>Low rim pressure.</b> Nobody in your five attacks the basket yet. Look for a slasher or a big who finishes inside.
+          </Notice>
+        )}
+        <PosTabs counts={counts} have={have} on={on} onPick={setTab} search={search} onSearch={setSearch} />
+        <CapsBar lo={caps[0]} hi={caps[1]} top={CAPS_TOP} maxPick={maxPick} onChange={(lo, hi) => setCaps([lo, hi])} />
+        {!anyLegal && (
+          <Notice
+            action="Show players that fit"
+            onAction={() => {
+              setSearch('');
+              setTab('ALL');
+              setCaps([0, Math.max(1, Math.floor(maxPick))]);
+            }}
+          >
+            <b>None of these fit this pick.</b> It can cost up to {fmtCaps(maxPick)} caps.
+          </Notice>
+        )}
+        <PlayerTable rows={rows} variant="mini" onDraft={(span) => onPick(span.id)} />
+        <div className="more">
+          Showing {shown.length} of {filtered.length}
+          {on !== 'ALL' && ` ${on}`}
+          {visible < filtered.length && (
+            <>
+              {' · '}
+              <button type="button" className="lk-inline" onClick={() => setVisible((v) => v + VISIBLE_STEP * 2)}>
+                See more
+              </button>
+            </>
+          )}
+        </div>
+      </section>
+    </NightGame>
+  );
 }
+
+/** Same finish tiers as the All-Time Draft's results. */
+function resultTier(rank: number, fieldSize: number): { label: string; line: string } {
+  const pct = rank / fieldSize;
+  if (rank === 1) return { label: 'Dynasty', line: 'The best team in the field.' };
+  if (pct <= 0.2) return { label: 'Contender', line: 'One of the teams to beat.' };
+  if (pct <= 0.4) return { label: 'Playoff lock', line: 'A real team, not the best one.' };
+  if (pct <= 0.6) return { label: 'Play-in fight', line: 'Middle of the field.' };
+  if (pct <= 0.85) return { label: 'Lottery team', line: 'Most of the field built better.' };
+  if (rank < fieldSize) return { label: 'Full rebuild', line: 'Near the bottom of the field.' };
+  return { label: 'Wooden spoon', line: 'Last in the field.' };
+}
+
+const AXIS_KEYS: (keyof LineupScore)[] = ['talent', 'offense', 'defense', 'spacing', 'fit'];
+const AXIS_LABEL: Record<string, string> = { talent: 'Talent', offense: 'Offense', defense: 'Defense', spacing: 'Spacing', fit: 'Fit' };
 
 function QuickResults({
   state,
-  teamCodeByTeamId,
-  onExit,
+  codeOf,
+  title,
   onNewDraft,
   onRematch,
   onNextStep,
   challenge,
   daily,
+  links,
 }: {
   state: QuickDraftState;
-  teamCodeByTeamId: Map<string, string>;
-  onExit: () => void;
+  codeOf: (t: Team) => string;
+  title: string;
   onNewDraft: () => void;
   onRematch: () => void;
   onNextStep?: () => void;
   challenge?: ModeChallenge;
   daily?: DailyDraftDay;
+  links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
 }) {
   useEffect(() => markStepDone('quickfive'), []);
   const [shareOpen, setShareOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const ranked = useMemo(() => {
-    return state.teams
-      .map((team) => {
-        const finalized = finalizeQuickRotation(team);
-        // Derived from the ALREADY-finalized rotation (not a second, separate
-        // `bestPrimaryAssignment` call) — guarantees the score shown here always matches the same
-        // 5-man assignment the team's own card displays, gap-filled the same way (see
-        // `finalizeQuickRotation`'s own docstring: a drafted 5th player never silently drops out
-        // of its team's score just because the optimal search alone couldn't seat him).
-        const lineup: Lineup = {};
-        for (const [slot, assignments] of Object.entries(finalized.rotation!.slots) as [Position, { playerId: string }[]][]) {
-          const playerId = assignments[0]?.playerId;
-          if (playerId) lineup[slot] = finalized.roster.find((p) => p.id === playerId);
-        }
-        const score = scoreLineup(lineup);
-        return { team: finalized, score };
-      })
-      .sort((a, b) => b.score.composite - a.score.composite);
-  }, [state.teams]);
-
+  const [openTeam, setOpenTeam] = useState<string | null>(null);
+  const ranked = useMemo(
+    () =>
+      state.teams
+        .map((team) => {
+          const finalized = finalizeQuickRotation(team);
+          const lineup: Lineup = {};
+          for (const [slot, assignments] of Object.entries(finalized.rotation!.slots) as [Position, { playerId: string }[]][]) {
+            const playerId = assignments[0]?.playerId;
+            if (playerId) lineup[slot] = finalized.roster.find((p) => p.id === playerId);
+          }
+          return { team: finalized, score: scoreLineup(lineup), lineup };
+        })
+        .sort((a, b) => b.score.composite - a.score.composite),
+    [state.teams],
+  );
   const humanRank = ranked.findIndex((r) => r.team.isHuman) + 1;
   const human = ranked[humanRank - 1];
-  // "Plays like" from the same comp engine as the All-Time Draft's results, read on the finalized
-  // fives (starters only, 48 minutes each).
-  const comp = useMemo(() => {
-    const breakdown = rankTeams(ranked.map((r) => r.team)).find((r) => r.team.id === human.team.id)?.breakdown;
-    return breakdown ? bestHistoricalComp(human.team, breakdown, fitScore(human.team)) : null;
-  }, [ranked, human]);
+  const best = ranked[0];
   const tier = resultTier(humanRank, TEAM_COUNT);
-  // A daily keeps its first result for the day (the menu shows it, the streak moves on).
   useEffect(() => {
     if (daily && !daily.testing) saveDailyDraftResult('mini', daily.day, { place: humanRank, field: TEAM_COUNT, overall: human.score.composite });
   }, [daily, humanRank, human.score.composite]);
   const [dailyCopied, setDailyCopied] = useState(false);
   async function copyDailyResult() {
     if (!daily) return;
-    // No names: the same draft is everyone's today.
-    const text = [
-      `Draftverse Daily · Mini · ${daily.day}`,
-      `${daily.cap} caps · ${daily.title}`,
-      `${ordinal(humanRank)} / ${TEAM_COUNT} · ${human.score.composite}`,
-    ].join('\n');
+    const text = [`Draftverse Daily · Mini · ${daily.day}`, `${daily.cap} caps · ${daily.title}`, `${ordinal(humanRank)} / ${TEAM_COUNT} · ${human.score.composite}`].join('\n');
     if (await copyLink(text)) {
       setDailyCopied(true);
       setTimeout(() => setDailyCopied(false), 2000);
     }
   }
-  const barKeys: (keyof LineupScore)[] = ['talent', 'offense', 'defense', 'spacing', 'fit'];
-
-  // 2026-09-11, user-reported live: "brak insightu" — the field/bars alone never explained WHY.
-  // Same weakest-axis reasoning Best Five's own result screen uses (`WEAK_AXIS_REASON`, exported
-  // from bestFive.ts for exactly this reuse), plus the same fit weak-link/notes `scoreLineup`
-  // already computes but nothing here was reading yet.
-  // 2026-09-28 playtest: the weakest axis is the one furthest below the field median, not the
-  // lowest raw number (the scales differ) — the same reading the All-Time "Next draft:" tip uses,
-  // and the tip added here names the same axis the sentence above it does. No tip for the winner.
   const weakest = useMemo(() => {
     const median = (values: number[]) => [...values].sort((x, y) => x - y)[Math.floor(values.length / 2)] ?? 0;
-    return [...WEIGHTED_AXES].sort(
-      (a, b) => human.score[a.key] - median(ranked.map((r) => r.score[a.key])) - (human.score[b.key] - median(ranked.map((r) => r.score[b.key]))),
-    )[0];
+    return [...WEIGHTED_AXES].sort((a, b) => human.score[a.key] - median(ranked.map((r) => r.score[a.key])) - (human.score[b.key] - median(ranked.map((r) => r.score[b.key]))))[0];
   }, [ranked, human]);
-  const nextTip = useMemo(
-    () => (humanRank === 1 ? undefined : nextDraftTip(weakest.label, human.team)),
-    [weakest, human, humanRank],
-  );
-
-  const [openTeamId, setOpenTeamId] = useState<string | null>(null);
-  const breakdowns = useMemo(() => new Map(rankTeams(ranked.map((r) => r.team)).map((r) => [r.team.id, r.breakdown])), [ranked]);
-  const compFor = (team: Team) => {
-    const breakdown = breakdowns.get(team.id);
-    return breakdown ? bestHistoricalComp(team, breakdown, fitScore(team)) : null;
-  };
-  const profileRows = (score: LineupScore): ProfileRow[] =>
-    barKeys.map((key) => {
-      const value = Math.round(score[key] as number);
-      return { label: key[0].toUpperCase() + key.slice(1), value, grade: fieldGrade(value, ranked.map((r) => Math.round(r.score[key] as number))) };
-    });
-  // The same desk as the All-Time results (engine/desk.ts): the weakest axis to its expert (the
-  // podium hears it only as what a rival could attack), the softest defender, the host's tip.
+  const nextTip = useMemo(() => (humanRank === 1 ? undefined : nextDraftTip(weakest.label, human.team)), [weakest, human, humanRank]);
   const voices = buildMiniDesk({
     team: human.team,
     rank: humanRank,
@@ -703,175 +645,289 @@ function QuickResults({
     tip: humanRank > 3 ? nextTip : undefined,
     seed: state.seed,
   });
-  const starters = STARTER_SLOTS.map((slot) => {
-    const id = human.team.rotation?.slots[slot]?.[0]?.playerId;
-    return { slot, player: id ? human.team.roster.find((p) => p.id === id) : undefined };
-  });
-  const top = ranked[0].score.composite;
-  const boardCells = [
-    { label: 'Your team', value: human.score.composite, you: human.score.composite },
-    { label: 'Best in field', value: top },
-    { label: 'Behind the best', value: top > human.score.composite ? top - human.score.composite : '—' },
-  ];
+  const five = STARTER_SLOTS.flatMap((slot) => (human.lineup[slot] ? [human.lineup[slot]!] : []));
+  const capsUsed = totalFga(five.map((p) => p.fga));
+  const behind = best.score.composite - human.score.composite;
+  const myPicks = snakePicks(human.team.draftSlot, TEAM_COUNT, QUICK_ROUNDS);
+  const streak = daily ? dailyDraftStreak('mini', daily.day) : 0;
+  const strongest = [...AXIS_KEYS].filter((k) => k !== 'spacing').sort((a, b) => (human.score[b] as number) - (human.score[a] as number))[0];
+
   async function challengeFriend() {
     if (await copyLink(modeChallengeLink('mini', state.seed, human.score.composite, teamLabel(human.team)))) {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
     }
   }
+  const poster: PosterData = {
+    mode: daily ? 'Mini Draft · daily' : 'Mini Draft',
+    date: daily ? new Date(`${daily.day}T12:00:00`) : new Date(),
+    kick: `Final standings · ${ordinal(humanRank)} of ${TEAM_COUNT}`,
+    head: tier.label,
+    line: `${teamLabel(human.team)}. ${tier.line}${humanRank > 1 ? ` ${weakest.label} kept them ${behind} behind the best.` : ''}`,
+    five: five.map((span) => ({ span, num: Math.round(span.fga * 10) / 10 })),
+    unit: 'caps',
+    prof: AXIS_KEYS.map((k) => ({ label: AXIS_LABEL[k], value: Math.round(human.score[k] as number), tone: k === weakest.key ? 'lo' : k === strongest ? 'hi' : undefined })),
+    strip: [
+      ['Place', ordinal(humanRank)],
+      ['Score', human.score.composite],
+      ['Best', best.score.composite],
+      ['Caps', fmtCaps(capsUsed)],
+    ],
+    foot: daily ? 'One board for everyone today' : `Same ${TEAM_COUNT} teams, your turn · challenge link`,
+  };
 
-  // 2026-09-26, the user: "ekran końcowy może być tak samo zaprojektowany jak ten w all-time
-  // drafcie, po prostu mniej szczegółowy". The All-Time Draft's results hero (finish, rating,
-  // style, team profile chips, a few bars, the lineup by position), cut down to a five.
-  return (
-    <div className="bf-result qf-result" style={{ ['--team-hue' as string]: teamHue(human.team.name) }}>
-      {/* 2026-10-08, results look C: the All-Time Draft's results, cut down to a five. */}
-      <header className={`rs-hero rr-hero${humanRank === 1 ? ' is-champ' : ''}`}>
-        <div className="rr-hero-grid">
-          <div className="rr-hero-main">
-            <span className="rr-label">{daily ? `Daily · ${daily.title}` : 'Final standings'}</span>
-            <span className="rr-place">
-              <b>
-                {humanRank}
-                <sup>{ordinal(humanRank).slice(String(humanRank).length)}</sup>
-              </b>
-              <span>of {TEAM_COUNT}</span>
-            </span>
-            <span className="rr-team">
-              <TeamMark code={teamCodeByTeamId.get(human.team.id) ?? ''} name={human.team.name} size="md" />
-              <h2>{teamLabel(human.team)}</h2>
-              <span className={`rr-tag rr-tag--t${tier.tone}`}>{tier.label}</span>
-            </span>
-            {challenge?.vs != null && (
-              <p className="rr-risk">
-                <ChallengeNote yours={human.score.composite} theirs={challenge.vs} who={challenge.vsName} />
-              </p>
-            )}
-          </div>
-          <div className="rs-kpis">
-            <div className="rs-kpi rs-kpi--you">
-              <b>{human.score.composite}</b>
-              <span>Your team</span>
-            </div>
-            <div className="rs-kpi">
-              <b>{top}</b>
-              <span>Best</span>
-            </div>
-            <div className="rs-kpi">
-              <b>{top > human.score.composite ? top - human.score.composite : '—'}</b>
-              <span>Behind the best</span>
-            </div>
-          </div>
-        </div>
-      </header>
-      {daily ? (
-        <div className="rs-actions rr-actions">
-          <button type="button" className="rs-primary" onClick={copyDailyResult}>
-            {dailyCopied ? '✓ Result copied' : 'Copy today’s result'}
-          </button>
-          <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
-            Share
-          </button>
-          {DAILY_REPLAY_FOR_TESTING && (
-            <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRematch}>
-              Replay (testing)
-            </button>
-          )}
-        </div>
-      ) : (
-      <div className="rs-actions rr-actions">
-        <button type="button" className="rs-primary" onClick={onNewDraft}>
-          New draft
-        </button>
-        <button type="button" className="at-calm-btn" onClick={() => setShareOpen(true)}>
-          Share
-        </button>
-        <button
-          type="button"
-          className="at-calm-btn"
-          onClick={challengeFriend}
-          title="Copies a link that gives a friend the exact same 16-team board, with your score to beat."
-        >
-          {linkCopied ? '✓ Link copied' : 'Challenge a friend'}
-        </button>
-        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onRematch} title="Same 16 teams, same draft order — try a different plan.">
-          Rematch this board
-        </button>
-      </div>
-      )}
-      <h3 className="rr-section">Your five</h3>
-      <RosterGrid team={human.team} />
-      <h3 className="rr-section">{humanRank === 1 ? 'Why you won' : 'Why you finished here'}</h3>
-      <TeamReport profile={profileRows(human.score)} comp={comp} voices={voices} extras={[]} />
-        {shareOpen && (
-          <ShareResultModal
-            onClose={() => setShareOpen(false)}
-            mode="Mini Draft"
-            title={teamLabel(human.team)}
-            headline={
-              <>
-                <b>{ordinal(humanRank)}</b>
-                <i>/ {TEAM_COUNT}</i>
-              </>
-            }
-            tier={tier}
-            cells={boardCells}
-            chips={barKeys.map((k) => ({ label: k.charAt(0).toUpperCase() + k.slice(1), value: Math.round(human.score[k] as number) }))}
-            five={starters.flatMap(({ slot, player }) => (player ? [{ slot, name: player.playerName, years: player.spanLabel }] : []))}
-          />
-        )}
+  const whoOf = (team: Team) =>
+    [...team.roster]
+      .sort((a, b) => displayTalentForSpan(tierContextFor(b)) - displayTalentForSpan(tierContextFor(a)))
+      .slice(0, 3)
+      .map((p) => maskName(p.playerName).split(' ').slice(-1)[0])
+      .join(' · ');
 
-      <h3 className="rr-section">Final standings</h3>
-      <div className="rr-standings">
-        {ranked.map((r, i) => {
-          const isOpen = !r.team.isHuman && openTeamId === r.team.id;
-          const row = (
-            <>
-              <span className="rr-rk">{i + 1}</span>
-              <TeamMark code={teamCodeByTeamId.get(r.team.id) ?? ''} name={r.team.name} />
-              <FitTeam className="rr-nm" name={teamLabel(r.team)} code={teamCodeByTeamId.get(r.team.id)} after={r.team.isHuman && <em> · you</em>} />
-              <span className="rr-od" />
-              <span className="rr-ser" />
-              <span className="rr-sc">{r.score.composite}</span>
-              <span className="rr-car" aria-hidden>{r.team.isHuman ? '' : isOpen ? '▾' : '▸'}</span>
-            </>
-          );
+  const profile = (r: (typeof ranked)[number], vsBest: boolean) => (
+    <table className="profile">
+      <tbody>
+        {AXIS_KEYS.map((k) => {
+          const v = Math.round(r.score[k] as number);
+          const b = Math.round(best.score[k] as number);
+          const weak = vsBest && k === weakest.key;
+          const good = vsBest && !weak && v >= b && r !== best;
           return (
-            <div key={r.team.id} className={`rr-rung-wrap${r.team.isHuman ? ' is-you' : ''}${isOpen ? ' is-open' : ''}`}>
-              {r.team.isHuman ? (
-                <div className="rr-rung">{row}</div>
-              ) : (
-                <button type="button" className="rr-rung" aria-expanded={isOpen} onClick={() => setOpenTeamId((cur) => (cur === r.team.id ? null : r.team.id))}>
-                  {row}
-                </button>
-              )}
-              {isOpen && (
-                <div className="rr-open" style={{ ['--team-hue' as string]: teamHue(r.team.name) }}>
-                  <RosterGrid team={r.team} />
-                  <TeamReport profile={profileRows(r.score)} comp={compFor(r.team)} voices={[]} extras={[]} />
+            <tr key={k} className={weak ? 'weak' : good ? 'good' : undefined}>
+              <td className="l">{AXIS_LABEL[k]}</td>
+              <td className="v">
+                {v}
+                {weak && <span className="visually-hidden"> weak</span>}
+              </td>
+              <td className="b">best {b}</td>
+              <td>
+                <div className="bar">
+                  <i style={{ width: `${Math.max(0, Math.min(100, v))}%` }} />
+                  <u style={{ left: `${Math.max(0, Math.min(100, b))}%` }} />
                 </div>
-              )}
-            </div>
+              </td>
+            </tr>
           );
         })}
-      </div>
+      </tbody>
+    </table>
+  );
 
-      {onNextStep && (
-        <div className="path-next">
-          <span>
-            <b>Next step: the All-Time Draft.</b> Sixteen teams, nine rounds, a bench and a rotation to set — the same
-            judge, a whole roster.
-          </span>
-          <button className="at-draft-btn" onClick={onNextStep}>
-            Start the All-Time Draft
-          </button>
-        </div>
+  const aside = (
+    <>
+      <Mast title={title} daily={Boolean(daily)} sub={daily ? `${dayLabel(daily.day)} · final` : `Final · ${TEAM_COUNT} teams`} />
+      <Tally you={ordinal(humanRank)} mid={human.score.composite} ai={best.score.composite} youK="Place" midK="Score" aiK="Best" plain />
+      {daily ? (
+        <>
+          <section>
+            <H3 note={`${streak} ${streak === 1 ? 'day' : 'days'}`}>Streak</H3>
+            <div className="streak">
+              {STREAK_TIERS.map((t) => (
+                <div key={t.days} className={streak >= t.days ? 'got' : STREAK_TIERS.find((x) => streak < x.days) === t ? 'next' : undefined}>
+                  <b>{t.days}</b>
+                  <span>{t.reward.split(' ').slice(0, 2).join(' ')}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section>
+            <H3>Next board</H3>
+            <Kv k="New draft in" v={untilTomorrow()} />
+          </section>
+        </>
+      ) : (
+        <section>
+          <H3>Your draft</H3>
+          <Kv k="Picks" v={myPicks.join(' · ')} />
+          <Kv k="Caps used" v={`${fmtCaps(capsUsed)} / ${fmtCaps(state.capLimit)}`} />
+          <Kv k="Behind the best" v={behind > 0 ? behind : '—'} />
+          {challenge?.vs != null && <Kv k={`${challenge.vsName ?? 'Friend'} · ${challengeVerdict(human.score.composite, challenge.vs) === 'won' ? 'you win' : challengeVerdict(human.score.composite, challenge.vs) === 'lost' ? 'they win' : 'tied'}`} v={challenge.vs} />}
+        </section>
       )}
-      <div className="bf-submit-row bf-result-actions end-actions">
-        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onExit}>
-          Main menu
-        </button>
+      <Actions links={links}>
+        {daily ? (
+          <>
+            <div className="btn2">
+              <Btn kind="line" onClick={copyDailyResult}>
+                {dailyCopied ? '✓ Copied' : 'Copy result'}
+              </Btn>
+              <Btn kind="line" onClick={() => setShareOpen(true)}>
+                Share
+              </Btn>
+            </div>
+            {DAILY_REPLAY_FOR_TESTING && (
+              <Btn kind="line" onClick={onRematch}>
+                Replay (testing)
+              </Btn>
+            )}
+          </>
+        ) : (
+          <>
+            <Btn onClick={onNewDraft}>New draft</Btn>
+            <div className="btn2">
+              <Btn kind="line" onClick={() => setShareOpen(true)}>
+                Share
+              </Btn>
+              <Btn kind="line" onClick={challengeFriend}>
+                {linkCopied ? '✓ Copied' : 'Challenge'}
+              </Btn>
+            </div>
+            <Btn kind="line" onClick={onRematch}>
+              Rematch this board
+            </Btn>
+          </>
+        )}
+        {onNextStep && (
+          <Btn kind="line" onClick={onNextStep}>
+            Next: All-Time Draft →
+          </Btn>
+        )}
+      </Actions>
+    </>
+  );
+
+  return (
+    <NightGame aside={aside} overlay={shareOpen ? <ShareNight d={poster} link={daily ? undefined : modeChallengeLink('mini', state.seed, human.score.composite, teamLabel(human.team))} fileName={teamLabel(human.team)} onClose={() => setShareOpen(false)} /> : undefined}>
+      <div className="headline">
+        <span className="eb">{daily ? `Daily · ${daily.title}` : 'Final standings'}</span>
+        <b>{teamLabel(human.team)}</b>
+        <i>
+          {QUICK_ROUNDS} rounds · {TEAM_COUNT * QUICK_ROUNDS} picks
+        </i>
       </div>
-    </div>
+      <div className="verdict vmini">
+        <div className="place">
+          <b>
+            {humanRank}
+            <sup>{ordinal(humanRank).slice(String(humanRank).length)}</sup>
+          </b>
+          <span>of {TEAM_COUNT}</span>
+        </div>
+        <div className="tier">
+          <span className="eb">The verdict</span>
+          <h2>{tier.label}</h2>
+          <p>
+            {tier.line}
+            {humanRank > 3 && ` ${weakest.label} kept you out of the top three.`}
+          </p>
+        </div>
+        <div className="nums">
+          <div className="you">
+            <span>Your team</span>
+            <b>{human.score.composite}</b>
+          </div>
+          <div>
+            <span>Best</span>
+            <b>{best.score.composite}</b>
+          </div>
+          <div>
+            <span>Behind</span>
+            <b>{behind > 0 ? behind : '—'}</b>
+          </div>
+        </div>
+      </div>
+      <section>
+        <H3 note={`${fmtCaps(capsUsed)} / ${fmtCaps(state.capLimit)} caps`}>Your five</H3>
+        <div className="five-row">
+          {STARTER_SLOTS.map((slot) => {
+            const p = human.lineup[slot];
+            return p ? <NCard key={slot} span={p} pos={slot} /> : <div key={slot} className="slot empty">{slot}</div>;
+          })}
+        </div>
+      </section>
+      <div className="split">
+        <section>
+          <H3 note="yours · the best team">{humanRank === 1 ? 'Why you won' : 'Why you finished here'}</H3>
+          {profile(human, true)}
+        </section>
+        <section className="voices">
+          <H3>The room</H3>
+          <NightVoices voices={voices} cast={DESK_CAST} />
+        </section>
+      </div>
+      <section>
+        <H3 note="tap a team to see its five">Final standings</H3>
+        <table className="stand">
+          <tbody>
+            {ranked.map((r, i) => {
+              const open = openTeam === r.team.id;
+              return (
+                <StandRow
+                  key={r.team.id}
+                  rank={i + 1}
+                  r={r}
+                  code={codeOf(r.team)}
+                  who={whoOf(r.team)}
+                  open={open}
+                  onToggle={r.team.isHuman ? undefined : () => setOpenTeam(open ? null : r.team.id)}
+                  detail={
+                    open ? (
+                      <>
+                        <div className="five-row">
+                          {STARTER_SLOTS.map((slot) => {
+                            const p = r.lineup[slot];
+                            return p ? <NCard key={slot} span={p} pos={slot} /> : <div key={slot} className="slot empty">{slot}</div>;
+                          })}
+                        </div>
+                        {profile(r, false)}
+                      </>
+                    ) : null
+                  }
+                />
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+      {daily ? (
+        <Btn kind="line" className="phone-only" onClick={copyDailyResult}>
+          {dailyCopied ? '✓ Copied' : 'Copy result'}
+        </Btn>
+      ) : (
+        <Btn className="phone-only" onClick={onNewDraft}>
+          New draft
+        </Btn>
+      )}
+      {daily && <EmptyNote>Same players, same order for everyone today.</EmptyNote>}
+    </NightGame>
+  );
+}
+
+function StandRow({
+  rank,
+  r,
+  code,
+  who,
+  open,
+  onToggle,
+  detail,
+}: {
+  rank: number;
+  r: { team: Team; score: LineupScore };
+  code: string;
+  who: string;
+  open: boolean;
+  onToggle?: () => void;
+  detail: ReactNode;
+}) {
+  return (
+    <>
+      <tr className={r.team.isHuman ? 'you' : onToggle ? 'tap' : undefined} onClick={onToggle} aria-expanded={onToggle ? open : undefined} style={onToggle ? ({ cursor: 'pointer' } as CSSProperties) : undefined}>
+        <td className="rk">{rank}</td>
+        <td className="tmc">
+          <LeagueMark name={r.team.name} code={code} />
+        </td>
+        <td className="nm">
+          <b>{teamLabel(r.team)}</b>
+        </td>
+        <td className="who">{who}</td>
+        <td className="sc">{r.score.composite}</td>
+        <td className="car">{r.team.isHuman ? '' : open ? '▾' : '▸'}</td>
+      </tr>
+      {open && detail && (
+        <tr className="open">
+          <td colSpan={6}>{detail}</td>
+        </tr>
+      )}
+    </>
   );
 }

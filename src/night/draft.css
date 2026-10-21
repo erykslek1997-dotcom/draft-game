@@ -239,3 +239,32 @@
 .stand tr.you td.nm i, .stand tr.you td.who, .stand tr.you td.car { color: var(--you-ink2); }
 .ptabs .pt:first-child { padding-left: 0; }
 }
+
+/* React glue for the draft pieces */
+.nt {
+  .drum { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; }
+  .drum.is-done { display: none; }
+  .order16-cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; }
+  .order16.one { grid-template-columns: 1fr; }
+  .cb-in { position: absolute; left: -8px; right: -8px; top: -10px; width: calc(100% + 16px); height: 24px; margin: 0; background: transparent; appearance: none; -webkit-appearance: none; pointer-events: none; }
+  .cb-in::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 22px; height: 22px; border-radius: 50%; background: transparent; cursor: grab; }
+  .cb-in::-moz-range-thumb { pointer-events: auto; width: 22px; height: 22px; border-radius: 50%; background: transparent; border: 0; cursor: grab; }
+  .cb-in::-webkit-slider-runnable-track { background: transparent; }
+  .cb-in::-moz-range-track { background: transparent; }
+  .cb-in:focus-visible + .cb-in, .cb-in:focus-visible { outline: 0; }
+  .cb-reset { text-decoration: underline; text-underline-offset: 3px; }
+  .cb-reset:disabled { color: var(--ink4); text-decoration: none; }
+  .notice .na { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; }
+  .nm-btn { display: block; max-width: 100%; text-align: left; }
+  .nm-btn:hover { text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
+  .plist .draft:disabled { cursor: default; }
+  .plist .rule-tag { color: var(--red); font-style: italic; }
+  .plist tr.taken td { opacity: 0.45; }
+  .yrs-plain { font: 500 14px var(--num); color: var(--ink2); }
+  button.slot.empty:disabled { cursor: default; }
+}
+@media (max-width: 600px) { .nt .order16-cols { grid-template-columns: 1fr; } .nt .notice .na { grid-column: 2; } }
+.nt {
+  .voices p.reply { padding-left: 18px; }
+  .voices p .cue { color: var(--ink3); font-size: 14px; }
+}
