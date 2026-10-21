@@ -247,7 +247,8 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
   Big Boardem wolne miejsce — docelowo panel, który reaguje na to, co się dzieje w drafcie (kto
   kogo wziął, twój wybór). Dziś nie ma mechaniki generującej reakcje na żywo (desk.ts buduje głosy
   tylko po drafcie i po 3. wyborze), więc na razie w tym miejscu idzie coś, co już mamy (np. ostatnie
-  wybory ligi), a forma docelowa jest do ustalenia („będzie to coś innego”).
+  wybory ligi — zatwierdzone jako wypełniacz, „Latest picks”, tylko na komputerze; na telefonie
+  nie pokazujemy), a forma docelowa jest do ustalenia („będzie to coś innego”).
 
 ## Kolejność prac (decyzja 2026-10-10, zastąpiona planem 4 tygodni)
 

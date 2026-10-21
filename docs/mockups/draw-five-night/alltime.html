@@ -173,6 +173,7 @@ function nine(st, bench, { open = [] } = {}) {
 const leftDraft = () => mast('All-Time Draft', 'Round 3 of 9 · pick 40 of 144') + tally('66.9', '100.9', '3/9') + capbar(34) + `<p class="sub-note keep"><b>66.9 caps</b> for seven spots · about 9.6 a pick</p>` +
   `<section><h3>Before your pick<span>3 picks</span></h3><table class="log"><tr class="a"><td class="n">37</td><td class="w">HON</td><td class="p">needs a C</td><td class="c"></td></tr><tr class="a"><td class="n">38</td><td class="w">SFE</td><td class="p">needs a PG</td><td class="c"></td></tr><tr class="a latest"><td class="n">39</td><td class="w">ANC</td><td class="p">needs a PF</td><td class="c"></td></tr></table></section>` +
   `<section><h3>Your Big Board<span>starred</span></h3><ol class="bboard"><li class="gone">Tim Duncan<span>taken #33</span></li><li>Kevin Garnett<span>19.4</span></li><li>Dennis Rodman<span>6.9</span></li><li>Rudy Gobert<span>9.1</span></li></ol></section>` +
+  `<section class="latest-picks"><h3>Latest picks<span>around the league</span></h3><table class="log">${[[36, 'TPA', 'Moses Malone, C', 20], [35, 'SCR', 'Isiah Thomas, PG', 17], [34, 'BOI', 'Scottie Pippen, SF', 15], [33, 'FRE', 'Tim Duncan, PF', 19], [32, 'DET', 'Paul Pierce, SF', 18], [31, 'ELP', 'Hakeem Olajuwon, C', 21]].map(([n, c, w, f], i) => `<tr class="a ${i === 0 ? 'latest' : ''}"><td class="n">${n}</td><td class="w">${c}</td><td class="p">${w}</td><td class="c">${f}</td></tr>`).join('')}</table></section>` +
   actions('<button class="btn line">Phone the desk · 3 left</button>');
 
 const S = {};
