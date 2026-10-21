@@ -1212,7 +1212,7 @@ function BestFiveResult({
             {AXES.map(({ key, label }) => {
               const v = Math.round(score[key]);
               const b = explain.bestAxes[key as keyof typeof explain.bestAxes];
-              const weak = key === explain.weakest.axis || (key === 'spacing' && v < b - 6);
+              const weak = key === explain.weakest.axis;
               const good = !weak && v >= b;
               return (
                 <tr key={key} className={weak ? 'weak' : good ? 'good' : undefined}>
