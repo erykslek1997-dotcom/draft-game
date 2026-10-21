@@ -577,13 +577,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .asg-r.you .nm span { color: var(--you-ink); } .asg-r.you .nm small { color: var(--you-ink2); }
 .asg-note { margin: 10px 0 0; font-size: 13px; font-style: italic; color: var(--ink3); }
 @media (max-width: 600px) {
-  .asg { grid-template-columns: minmax(0, 1fr); }
-  .asg-vs { margin: 18px 0 10px; text-align: left; }
   .asg-sec h3 span { display: none; }
-  .asg-res { display: flex; flex-wrap: wrap; gap: 6px 14px; padding-top: 4px; }
-  .asg-res .asg-r { display: block; padding: 0; border: 0; }
-  .asg-res .asg-r .pk, .asg-res .asg-r .v { display: none; }
-  .asg-res .asg-r.you .nm { margin-left: 0; }
   .aw-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .aw.big { flex-direction: row; align-items: center; gap: 14px; border-top: 0; border-bottom: 1px solid var(--rule); padding: 12px 0; }
   .aw.big .aw-f img { width: 52px; height: 52px; }
@@ -592,6 +586,38 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .allnba .an-l { flex-basis: 100%; margin-bottom: -2px; }
   .an-p { max-width: 100%; }
   .an-p.you { margin-left: 0; }
+}
+
+/* All-League fives: each team is a line of five faces, your players printed in reverse */
+.nba { display: grid; grid-template-columns: 110px repeat(5, minmax(0, 1fr)); gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.nt { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 3px; min-width: 0; }
+.nt img { flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
+.nt div { min-width: 0; }
+.nt b { display: block; font: 700 16px/1.1 var(--cond); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt small { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); white-space: nowrap; }
+.nt.you { background: var(--you-bg); }
+.nt.you b { color: var(--you-ink); } .nt.you small { color: var(--you-ink2); }
+@media (max-width: 600px) {
+  .nba { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .nba .an-l { grid-column: 1 / -1; }
+  .nt { flex-direction: column; gap: 4px; padding: 6px 2px; margin: 0; text-align: center; }
+  .nt img { width: 40px; height: 40px; }
+  .nt b { font-size: 14px; } .nt .fn { display: none; }
+  .nt small .st { display: none; }
+  /* All-Star: the two sides stand next to each other, surnames only */
+  .asg { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 14px; }
+  .asg-vs { display: none; }
+  .asg-cap { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .asg-cap img { width: 48px; height: 48px; }
+  .asg-cap b { font-size: 20px; }
+  .asg-cap small { font-size: 12px; }
+  .asg-r { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 4px; }
+  .asg-r .nm span { font-size: 15px; } .asg-r .nm small, .asg-r .fn { display: none; }
+  .asg-r .v { font-size: 13px; }
+  .asg-res { display: block; padding-top: 0; }
+  .asg-res .asg-r { display: grid; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+  .asg-res .asg-r .pk, .asg-res .asg-r .v { display: inline; }
+  .asg-r.you .nm { margin-left: -6px; }
 }
 </style>
 </head>
@@ -804,13 +830,15 @@ S.finaleOut = () => [leftAfter('Your season', 'Regular season + playoffs · fina
   <section><h3>Your team<span class="sw"><a class="on" href="#">Season</a><a href="#">Playoffs</a></span></h3>${seasonTable(SEASON)}</section>`];
 const AW = (t, k, line, team) => { const x = p(k); return `<div class="aw big"><span class="aw-f">${face(x)}</span><div><span class="aw-t">${t}</span><b>${x.n}</b><small>${team} · ${line}</small></div></div>`; };
 const five5 = (label, names) => `<div class="allnba"><span class="an-l">${label}</span>${names.map(([n, c, you]) => `<span class="an-p ${you ? 'you' : ''}">${n}<small>${c}</small></span>`).join('')}</div>`;
+const slug = (n) => n.toLowerCase().replace(/[^a-z ]/g, '').trim().replace(/ +/g, '-');
+const nbaFive = (label, list) => `<div class="nba"><span class="an-l">${label}</span>${list.map(([n, c, st, you]) => { const i = n.indexOf(' '); return `<div class="nt ${you ? 'you' : ''}"><img src="heads/${slug(n)}.png" alt=""><div><b><span class="fn">${n.slice(0, i)} </span>${n.slice(i + 1)}</b><small>${c}<span class="st"> · ${st}</span></small></div></div>`; }).join('')}</div>`;
 S.awards = () => [leftAfter('Your season', 'Awards · regular season + Finals'),
   prompt('Season awards', 'A Tulsa sweep', 'MVP, Finals MVP, DPOY and Sixth Man all went to Tulsa, plus seven All-League spots.', 'gold') +
   `<section><h3>The big four</h3><div class="aw-grid">${AW('Most Valuable Player', 'durant', '29.4 pts · 7.1 reb · 4.8 ast', 'TUL')}${AW('Finals MVP', 'durant', '31.6 pts in the Finals', 'TUL')}${AW('Defensive Player of the Year', 'bwallace', '13.9 reb · 2.6 blk · 1.4 stl', 'TUL')}${AW('Sixth Man of the Year', 'korver', '7.9 pts · 46.5% from three', 'TUL')}</div></section>
-  <section><h3>All-NBA</h3>${five5('First team', [['Stephen Curry', 'BIS'], ['Michael Jordan', 'KEN'], ['Kevin Durant', 'TUL', 1], ['LeBron James', 'DUL'], ['Hakeem Olajuwon', 'DUL']])}${five5('Second team', [['Magic Johnson', 'SFE'], ['Kobe Bryant', 'REN'], ['Larry Bird', 'SFE'], ['Kevin Garnett', 'TUL', 1], ["Shaquille O'Neal", 'HON']])}${five5('Third team', [['Gary Payton', 'TUL', 1], ['Dwyane Wade', 'DET'], ['Kawhi Leonard', 'ELP'], ['Tim Duncan', 'ANC'], ['Nikola Jokic', 'TPA']])}</section>
-  <section><h3>All-Defensive</h3>${five5('First team', [['Gary Payton', 'TUL', 1], ['Michael Jordan', 'KEN'], ['Kawhi Leonard', 'ELP'], ['Kevin Garnett', 'TUL', 1], ['Ben Wallace', 'TUL', 1]])}${five5('Second team', [['John Stockton', 'ANC'], ['Klay Thompson', 'TUL', 1], ['Scottie Pippen', 'DUL'], ['Tim Duncan', 'ANC'], ['Hakeem Olajuwon', 'DUL']])}</section>
+  <section><h3>All-NBA<span>points per game</span></h3>${nbaFive('First team', [['Stephen Curry', 'BIS', '26.9'], ['Michael Jordan', 'KEN', '31.8'], ['Kevin Durant', 'TUL', '29.4', 1], ['LeBron James', 'DUL', '28.1'], ['Hakeem Olajuwon', 'DUL', '26.2']])}${nbaFive('Second team', [['Magic Johnson', 'SFE', '19.2'], ['Kobe Bryant', 'REN', '27.6'], ['Larry Bird', 'SFE', '25.4'], ['Kevin Garnett', 'TUL', '21.2', 1], ["Shaquille O'Neal", 'HON', '26.0']])}${nbaFive('Third team', [['Gary Payton', 'TUL', '19.8', 1], ['Dwyane Wade', 'DET', '25.1'], ['Kawhi Leonard', 'ELP', '24.3'], ['Tim Duncan', 'ANC', '22.5'], ['Nikola Jokic', 'TPA', '24.8']])}</section>
+  <section><h3>All-Defensive<span>steals or blocks per game</span></h3>${nbaFive('First team', [['Gary Payton', 'TUL', '2.3 stl', 1], ['Michael Jordan', 'KEN', '2.2 stl'], ['Kawhi Leonard', 'ELP', '1.9 stl'], ['Kevin Garnett', 'TUL', '1.6 blk', 1], ['Ben Wallace', 'TUL', '2.6 blk', 1]])}${nbaFive('Second team', [['John Stockton', 'ANC', '2.1 stl'], ['Klay Thompson', 'TUL', '1.1 stl', 1], ['Scottie Pippen', 'DUL', '1.9 stl'], ['Tim Duncan', 'ANC', '2.2 blk'], ['Hakeem Olajuwon', 'DUL', '3.4 blk']])}</section>
   <section class="asg-sec"><h3>All-Star Game<span>24 All-Stars · the two best captain a side and pick in turns</span></h3>${asg()}</section>`];
-const asgSide = (img, cap, code, ppg, st, res) => { const row = (cls) => ([n, c, v, k]) => `<div class="asg-r ${cls} ${c === 'TUL' ? 'you' : ''}"><span class="pk">${k === 'c' ? 'C' : '#' + k}</span><span class="nm"><span>${n}</span><small>${c}</small></span><span class="v">${v.toFixed(1)}</span></div>`;
+const asgSide = (img, cap, code, ppg, st, res) => { const row = (cls) => ([n, c, v, k]) => `<div class="asg-r ${cls} ${c === 'TUL' ? 'you' : ''}"><span class="pk">${k === 'c' ? 'C' : '#' + k}</span><span class="nm"><span>${n.includes(' ') ? `<span class="fn">${n.slice(0, n.indexOf(' '))} </span>${n.slice(n.indexOf(' ') + 1)}` : n}</span><small>${c}</small></span><span class="v">${v.toFixed(1)}</span></div>`;
   return `<div><div class="asg-cap"><img src="heads/${img}.png" alt=""><div><b>Team ${cap}</b><small>Captain · ${code} · ${ppg} ppg</small></div></div><span class="asg-h">Starters</span>${st.map(row('')).join('')}<span class="asg-h">Reserves</span><div class="asg-res">${res.map(row('res')).join('')}</div></div>`; };
 const asg = () => `<div class="asg">${asgSide('kevin-durant', 'Durant', 'TUL', 29.4, [['Kevin Durant', 'TUL', 29.4, 'c'], ['LeBron James', 'DUL', 28.1, 1], ['Magic Johnson', 'SFE', 19.2, 4], ["Shaquille O'Neal", 'HON', 26.0, 5], ['Kevin Garnett', 'TUL', 21.2, 8]], [['Kawhi Leonard', 'ELP', 24.3, 9], ['Dwyane Wade', 'DET', 25.1, 12], ['Nikola Jokic', 'TPA', 24.8, 13], ['David Robinson', 'HON', 23.0, 16], ['Karl Malone', 'REN', 25.6, 17], ['Allen Iverson', 'SFE', 27.4, 20], ['Dikembe Mutombo', 'HON', 11.8, 21]])}<span class="asg-vs">vs</span>${asgSide('michael-jordan', 'Jordan', 'KEN', 31.8, [['Michael Jordan', 'KEN', 31.8, 'c'], ['Stephen Curry', 'BIS', 26.9, 2], ['Hakeem Olajuwon', 'DUL', 26.2, 3], ['Kobe Bryant', 'REN', 27.6, 6], ['Larry Bird', 'SFE', 25.4, 7]], [['Gary Payton', 'TUL', 19.8, 10], ['Tim Duncan', 'ANC', 22.5, 11], ['John Stockton', 'ANC', 14.2, 14], ['Scottie Pippen', 'DUL', 20.1, 15], ['Ben Wallace', 'TUL', 7.4, 18], ['Klay Thompson', 'TUL', 20.4, 19], ['Jason Kidd', 'ANC', 14.6, 22]])}</div><p class="asg-note">C captain · #pick in the captains' draft · season points per game. Five Twisters made it.</p>`;
 S.stats = () => [leftAfter('Your season', 'Stats · regular season'),
