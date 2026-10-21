@@ -84,9 +84,9 @@
 .stand2 td.rk { text-align: left; width: 30px; color: var(--ink3); }
 .stand2 td.tmc { text-align: left; width: 40px; }
 .stand2 td.nm { text-align: left; font: 700 18px var(--cond); color: var(--ink); }
-.stand2 td.nm i { font: italic 500 12px Inter, sans-serif; color: var(--red); margin-left: 6px; }
+.stand2 td.nm i { font: italic 500 12px Inter, sans-serif; color: var(--ink3); margin-left: 6px; }
 .stand2 tr.you td { background: var(--surf); color: var(--ink); }
-.stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; color: var(--red); }
+.stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; color: var(--you); }
 .stand2 tr.cut td { border-bottom: 1.5px dashed var(--red); }
 .cutnote { font: italic 500 12px Inter, sans-serif; color: var(--red); padding: 6px 0 0; }
 .leaders { width: 100%; border-collapse: collapse; }
@@ -108,14 +108,14 @@
 .bg-rl i { font-style: normal; color: var(--ink3); }
 .bg-team { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding-bottom: 4px; }
 .bg-team b { font: 700 12px var(--cond); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.bg-team.you { box-shadow: inset 0 -2px 0 var(--red); }
+.bg-team.you { box-shadow: inset 0 -2px 0 var(--you); }
 .bg-team.you b { color: var(--ink); }
 .bg-cell { height: 66px; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; overflow: hidden; }
 .bg-cell.filled { background: var(--card); color: var(--cink); }
 .bg-cell.filled img, .bg-cell.filled .ini { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--cface); display: grid; place-items: center; font: 700 11px var(--cond); font-style: normal; color: var(--cink2); }
 .bg-cell.filled small { font: 700 11px Inter, sans-serif; color: var(--cink2); letter-spacing: 0.06em; }
 .bg-cell.filled b { font: 700 13px/1 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 2px; }
-.bg-cell.filled.you { box-shadow: 0 0 0 2px var(--gold); }
+.bg-cell.filled.you { box-shadow: 0 0 0 2px var(--you); }
 .bg-cell.empty { border: 1px dashed var(--rule); font: 500 11px var(--num); color: var(--ink4); }
 .bg-cell.empty.you { border-color: var(--ink3); color: var(--ink2); }
 .bg-cell.clock { border: 2px solid var(--red); }
@@ -153,7 +153,7 @@
 .series .tr.win .w { color: var(--ink); }
 .series .tr.you { color: var(--ink); }
 .series .note { font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
-.series.you-path { border-top-color: var(--red); }
+.series.you-path { border-top-color: var(--you); }
 .series.live .note { color: var(--red); }
 .round.final .series { border-top: 5px double var(--rule2); }
 .round.final .series.live { border-top-color: var(--red); }
@@ -189,8 +189,8 @@
 .eg { display: grid; grid-template-columns: 90px minmax(0, 1fr) 110px; gap: 12px; align-items: center; font-size: 13px; color: var(--ink2); }
 .egb { position: relative; height: 10px; }
 .egb i, .egb u { position: absolute; left: 0; height: 4px; }
-.egb i { top: 0; background: var(--ink2); }
-.egb u { top: 6px; background: var(--red); }
+.egb i { top: 0; background: var(--ink3); }
+.egb u { top: 6px; background: var(--you); }
 .eg .mono { font: 500 12px var(--num); color: var(--ink3); text-align: right; }
 .five-row .card .sb b { color: var(--cink); }
 
@@ -226,10 +226,10 @@
 .an-l { font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
 .an-p { font: 700 16px var(--cond); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .an-p small { font: 700 11px Inter, sans-serif; color: var(--ink3); margin-left: 6px; }
-.an-p.you { color: var(--ink); box-shadow: inset 0 -2px 0 var(--red); }
+.an-p.you { color: var(--ink); box-shadow: inset 0 -2px 0 var(--you); }
 .ldr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 32px; }
 .leaders tr.you td { color: var(--ink); }
-.leaders tr.you td.k { color: var(--red); }
+.leaders tr.you td.k { color: var(--you); }
 .share-card { max-width: 520px; background: var(--card); color: var(--cink); border-radius: 6px; overflow: hidden; }
 .sc-top { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--cink); color: var(--card); }
 .sc-top .mark { border-color: var(--gold); }
@@ -558,7 +558,11 @@ const T = {
   FRE: ['Fresno', 'Raisins', '#5e2750', '#f6b93b'],
 };
 const YOU = 'TUL';
-const tm = (c) => `<span class="tm" style="background:${T[c][2]};color:${T[c][3]}">${c}</span>`;
+const _lum = (h) => { const v = h.replace('#', ''); const x = (v.length === 3 ? v.split('').map((c) => c + c).join('') : v).match(/../g).map((c) => parseInt(c, 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)); return 0.2126 * x[0] + 0.7152 * x[1] + 0.0722 * x[2]; };
+const _cr = (a, b) => { const [x, y] = [_lum(a), _lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+// light franchise colour + light text → dark ink; dark backgrounds keep the franchise text colour
+const tmInk = (bg, fg) => (_cr(bg, fg) < 4.5 && _cr(bg, '#1E1C18') > _cr(bg, '#FFFFFF') ? '#1E1C18' : fg);
+const tm = (c) => `<span class="tm" style="background:${T[c][2]};color:${tmInk(T[c][2], T[c][3])}">${c}</span>`;
 const tname = (c) => `${T[c][0]} ${T[c][1]}`;
 const P = {
   durant: ['Kevin Durant', 'SF', '2012–14', 19, 'Greatest peak', [30.1, 7.6, 5.1], 5.1, 'Shot creator · Ball hawk', 'durant', 'OKC', '#007AC1', 92, 78, 'A', 'B+'],
@@ -583,7 +587,7 @@ const face = (x) => x.img ? `<img src="heads/${x.img}.png" alt="">` : `<span cla
 const short = (n) => { const w = n.split(' '); return `${w[0][0]}. ${w.slice(1).join(' ')}`; };
 const SL = ['PG', 'SG', 'SF', 'PF', 'C'];
 const mast = (title, sub) => `<div class="mast keep"><b>${title}</b><small>${sub}</small></div>`;
-const tally = (you, mid, ai, { youK = 'Caps left', midK = 'Cap', aiK = 'Round' } = {}) => `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b>${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b>${ai}</b></div></div>`;
+const tally = (you, mid, ai, { youK = 'Caps left', midK = 'Cap', aiK = 'Round' } = {}) => `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b class="${midK === 'Cap' ? '' : 'plain'}">${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b>${ai}</b></div></div>`;
 const capbar = (pct) => `<div class="capbar keep"><i style="width:${pct}%"></i></div>`;
 const links = `<div class="links"><a href="#">← Menu</a><a href="#">How to play</a><a href="#">Settings</a></div>`;
 const actions = (btn) => `<div class="actions">${btn}${links}</div>`;
@@ -649,7 +653,7 @@ const STAND = [['KEN', 61, 21], ['SFE', 57, 25], ['TUL', 52, 30], ['DUL', 50, 32
 S.season = () => [
   mast('Your Season', '82 games · 16 teams · top 8 to the playoffs') + tally('52', '3rd', '30', { youK: 'Won', midK: 'Seed', aiK: 'Lost' }) +
   `<section><h3>Your leaders</h3><div class="kv"><span>Points</span><b>Durant 29.4</b></div><div class="kv"><span>Rebounds</span><b>Garnett 12.8</b></div><div class="kv"><span>Assists</span><b>Payton 7.9</b></div><div class="kv"><span>Blocks</span><b>Wallace 2.6</b></div></section>` +
-  `<section><h3>Awards</h3><div class="kv"><span>MVP</span><b>Durant · 2nd</b></div><div class="kv"><span>DPOY</span><b class="g">B. Wallace</b></div></section>` +
+  `<section><h3>Awards</h3><div class="kv"><span>MVP</span><b>Durant · 2nd</b></div><div class="kv"><span>DPOY</span><b>B. Wallace</b></div></section>` +
   actions('<button class="btn go">Playoffs →</button><button class="btn line">Watch a game</button>'),
   prompt('Regular season · final', '52–30, third', 'The best defense in the league, 9th in threes. Kentucky ran away with the one seed.', 'gold') +
   `<div class="split"><section><h3>Standings<span>Overview · Standings · Stats · Awards</span></h3><table class="stand2"><tr><th>#</th><th></th><th>Team</th><th>W</th><th>L</th><th>Pct</th><th>GB</th></tr>${STAND.map(([c, w, l], i) => `<tr class="${c === YOU ? 'you' : ''} ${i === 7 ? 'cut' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}${c === YOU ? '<i>you</i>' : ''}</td><td>${w}</td><td>${l}</td><td>.${String(Math.round(w / 82 * 1000)).padStart(3, '0')}</td><td>${i === 0 ? '—' : (61 - w)}</td></tr>`).join('')}</table><div class="cutnote">Playoff line: top eight</div></section>
@@ -658,7 +662,7 @@ S.season = () => [
 const ser = (a, b, wa, wb, { you, live, note } = {}) => `<div class="series ${you ? 'you-path' : ''} ${live ? 'live' : ''}">${[[a, wa], [b, wb]].map(([[seed, c], w]) => `<div class="tr ${w === 4 ? 'win' : ''} ${c === YOU ? 'you' : ''}"><span class="sd">${seed}</span>${tm(c)}<span>${T[c][1]}${c === YOU ? ' <i style="font:italic 500 12px Inter;color:var(--red)">you</i>' : ''}</span><span class="w">${w}</span></div>`).join('')}${note ? `<div class="note">${note}</div>` : ''}</div>`;
 S.playoffs = () => [
   mast('Playoffs', 'Top eight · best of seven') + tally('3', 'G7', '3', { youK: 'Tulsa', midK: 'Finals', aiK: 'Kentucky' }) +
-  `<section><h3>Your path</h3><div class="kv"><span>Quarterfinal</span><b>4–1 Honolulu</b></div><div class="kv"><span>Semifinal</span><b>4–2 Santa Fe</b></div><div class="kv"><span>Finals</span><b class="g">3–3 Kentucky</b></div></section>` +
+  `<section><h3>Your path</h3><div class="kv"><span>Quarterfinal</span><b>4–1 Honolulu</b></div><div class="kv"><span>Semifinal</span><b>4–2 Santa Fe</b></div><div class="kv"><span>Finals</span><b>3–3 Kentucky</b></div></section>` +
   actions('<button class="btn go">Watch game 7</button><button class="btn line">Sim game 7</button>'),
   prompt('The Finals · Game 7 tonight', 'Tulsa vs Kentucky', 'Series tied 3–3. Kentucky has home court; Jordan scored 41 in game 6.') +
   `<div class="bracket">
@@ -724,7 +728,7 @@ S.results = () => [
   <div class="split"><section><h3>Why you finished here<span>yours · grade vs the field</span></h3><table class="profile">${[['Talent', 86, 'B+'], ['Offense', 84, 'B'], ['Defense', 93, 'A+', 'best'], ['Spacing', 71, 'C', 'weak'], ['Fit', 88, 'A-'], ['Bench', 82, 'B'], ['Rotation', 90, 'A']].map(([l, v, g, t]) => `<tr class="${t === 'weak' ? 'weak' : ''}"><td class="l">${l}</td><td class="v">${v}</td><td class="b" style="${t === 'best' ? 'color:var(--gold)' : ''}">${g}</td><td><div class="bar"><i style="width:${v}%"></i></div></td></tr>`).join('')}</table></section>
   <section class="voices"><h3>The room</h3><p><b>The best defense in the field</b>, by a distance. Wallace and Garnett behind Payton is a wall.<em>Matt Shyman · Defense</em></p><p>Durant takes <b>a third of the shots</b>. When he sits, this offense stalls.<em>Mattia Sosini · Modern game</em></p><p>Korver at 8.3 caps was <b>the steal of round 6</b>.<em>Mark Rotation · Bench depth</em></p></section></div>
   <section class="acc"><h3>More<span>tap to open</span></h3><div class="acc-row">What's behind each score <i>▸</i></div><div class="acc-row">Title path · how you'd get through a bracket <i>▸</i></div><div class="acc-row">Draft order · all 144 picks <i>▸</i></div></section>
-  <section><h3>Final standings<span>series = your chance to beat them in a best-of-7</span></h3><table class="stand2 st-at"><tr><th>#</th><th></th><th>Team</th><th>Title</th><th>Series</th><th>Rating</th><th></th></tr>${STAND_AT.map(([c, r, t, sv], i) => `<tr class="${c === YOU ? 'you' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}${c === YOU ? '<i>you</i>' : ''}</td><td>${t ? (t < 1 ? '<1' : t) + '%' : '<1%'}</td><td>${sv === null ? '—' : sv + '%'}</td><td>${r}</td><td class="car">${c === YOU ? '' : c === 'KEN' ? '▾' : '▸'}</td></tr>${c === 'KEN' ? `<tr class="open"><td></td><td colspan="6"><div class="edge"><b>Where Kentucky beat you <span class="edge-key"><i style="background:var(--ink2)"></i>Kentucky<i style="background:var(--red)"></i>you</span></b>${[['Talent', 93, 86], ['Offense', 91, 84], ['Spacing', 82, 71]].map(([l, th, me]) => `<div class="eg"><span>${l}</span><div class="egb"><i style="width:${th}%"></i><u style="width:${me}%"></u></div><span class="mono">${th} vs ${me}</span></div>`).join('')}</div></td></tr>` : ''}`).join('')}</table></section>`];
+  <section><h3>Final standings<span>series = your chance to beat them in a best-of-7</span></h3><table class="stand2 st-at"><tr><th>#</th><th></th><th>Team</th><th>Title</th><th>Series</th><th>Rating</th><th></th></tr>${STAND_AT.map(([c, r, t, sv], i) => `<tr class="${c === YOU ? 'you' : ''}"><td class="rk">${i + 1}</td><td class="tmc">${tm(c)}</td><td class="nm">${tname(c)}${c === YOU ? '<i>you</i>' : ''}</td><td>${t ? (t < 1 ? '<1' : t) + '%' : '<1%'}</td><td>${sv === null ? '—' : sv + '%'}</td><td>${r}</td><td class="car">${c === YOU ? '' : c === 'KEN' ? '▾' : '▸'}</td></tr>${c === 'KEN' ? `<tr class="open"><td></td><td colspan="6"><div class="edge"><b>Where Kentucky beat you <span class="edge-key"><i style="background:var(--ink3)"></i>Kentucky<i style="background:var(--you)"></i>you</span></b>${[['Talent', 93, 86], ['Offense', 91, 84], ['Spacing', 82, 71]].map(([l, th, me]) => `<div class="eg"><span>${l}</span><div class="egb"><i style="width:${th}%"></i><u style="width:${me}%"></u></div><span class="mono">${th} vs ${me}</span></div>`).join('')}</div></td></tr>` : ''}`).join('')}</table></section>`];
 
 // ---- after the playoffs ----
 const SEASON = [ // key, g, min, pts, reb, ast, stl, blk, fg, 3p

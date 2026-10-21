@@ -2,7 +2,7 @@
 :root {
   --bg: #0B0D11; --ink: #ECE6D7; --ink2: #A9A395; --ink3: #77736A; --rule: #26272A; --rule2: #ECE6D7;
   --red: #E0525A; --gold: #E5C06A; --card: #F4EFE3; --cink: #1E1C18; --cink2: #5B564C; --cline: #D6CDB8;
-  --surf: #121317; --surf2: #1A1B1F; --rule3: #38383A; --ink4: #5C5850;
+  --you: #ECE6D7; --surf: #121317; --surf2: #1A1B1F; --rule3: #38383A; --ink4: #5C5850;
   --cface: #E2DBCB; --cred: #A3282F; --cgold: #8A6A1E; --cgold2: #D9A93C; --cgold3: #5E4614;
   --cond: 'Barlow Condensed', Inter, sans-serif; --num: 'JetBrains Mono', monospace;
 }
@@ -27,6 +27,7 @@ i.note, .it { font-style: italic; }
 .t.ai b.name { font: 800 24px/0.95 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; color: var(--ink2); }
 .t.mid { text-align: center; padding: 0 6px; }
 .t.mid b { font-size: 20px; color: var(--gold); padding-bottom: 6px; }
+.t.mid b.plain { color: var(--ink2); }
 .t.mid b:not(.clock):not(:only-child) { }
 .t.mid b.clock { color: var(--ink); border: 1.5px solid var(--red); border-radius: 3px; padding: 4px 8px; font-size: 24px; }
 .capbar { height: 4px; background: var(--rule); margin-top: -12px; }
@@ -195,7 +196,7 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nums div { padding: 0 14px; border-left: 1px solid var(--rule); text-align: right; }
 .nums span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); white-space: nowrap; }
 .nums b { display: block; margin-top: 6px; font: 600 40px/1 var(--num); color: var(--ink2); }
-.nums .you b { color: var(--gold); }
+.nums .you b { color: var(--you); }
 .profile { width: 100%; border-collapse: collapse; }
 .profile td { padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
 .profile td.l { width: 120px; font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); }

@@ -39,7 +39,7 @@ const SL = ['PG', 'SG', 'SF', 'PF', 'C'];
 
 const mast = (title, sub, daily) => `<div class="mast keep"><b class="${daily ? 'daily' : ''}">${title}</b><small>${sub}</small></div>`;
 const tally = (you, mid, ai, { youK = 'You', midK = 'Cap', aiK = 'AI', clock = false, name = false } = {}) =>
-  `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b class="${clock ? 'clock' : ''}">${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b class="${name ? 'name' : ''}">${ai}</b></div></div>`;
+  `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b class="${clock ? 'clock' : midK === 'Cap' ? '' : 'plain'}">${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b class="${name ? 'name' : ''}">${ai}</b></div></div>`;
 const capbar = (pct) => `<div class="capbar keep"><i style="width:${pct}%"></i></div>`;
 const log = (rows, latest = true) => `<section><h3>The draft so far</h3><table class="log">${rows.map(([n, w, k], i) => { const x = p(k); return `<tr class="${w === 'AI' ? 'a' : 'y'} ${latest && i === rows.length - 1 ? 'latest' : ''}"><td class="n">${n}</td><td class="w">${w}</td><td class="p">${x.n}, ${x.pos}</td><td class="c">${x.f}</td></tr>`; }).join('')}</table></section>`;
 const links = `<div class="links"><a href="#">← Menu</a><a href="#">How to play</a><a href="#">Settings</a></div>`;
@@ -154,7 +154,7 @@ function resultsMain(daily) {
 }
 S.results = () => [
   mast('Draw Five', 'Final · against the AI (Pro)') + tally('104', 'Final', '98', { midK: 'Q4 0:00' }) + `<p class="sub-note keep"><b>You win</b> by 6</p>` +
-  `<section><h3>Your number</h3><div class="kv"><span>Your five</span><b class="g">84</b></div><div class="kv"><span>Caps used</span><b>54.3 / 62</b></div><div class="kv"><span>Matches the best</span><b>2 of 5</b></div></section>` +
+  `<section><h3>Your number</h3><div class="kv"><span>Your five</span><b>84</b></div><div class="kv"><span>Caps used</span><b>54.3 / 62</b></div><div class="kv"><span>Matches the best</span><b>2 of 5</b></div></section>` +
   actions('<button class="btn go">New board</button><div class="btn2"><button class="btn line">Share</button><button class="btn line">Challenge</button></div>'),
   resultsMain(false) + `<button class="btn go phone-only">New board</button>`];
 S.dailyResults = () => [

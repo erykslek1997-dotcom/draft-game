@@ -5,7 +5,7 @@
 
 /* lottery */
 .lot { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 36px; align-items: start; }
-.ball { width: 220px; height: 220px; border-radius: 50%; background: var(--card); color: var(--cink); display: grid; place-items: center; text-align: center; border: 2px solid var(--red); }
+.ball { width: 220px; height: 220px; border-radius: 50%; background: var(--card); color: var(--cink); display: grid; place-items: center; text-align: center; box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--you); }
 .ball b { display: block; font: 800 120px/0.9 var(--cond); }
 .ball span { display: block; font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
 .lot-note { margin: 18px 0 0; font-size: 14px; font-style: italic; color: var(--ink2); line-height: 1.5; }
@@ -14,10 +14,10 @@
 .order16 li { display: grid; grid-template-columns: 30px 30px minmax(0, 1fr); gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 16px; color: var(--ink2); }
 .order16 li .n { font: 600 13px var(--num); color: var(--ink3); }
 .order16 li b { font: 700 18px var(--cond); color: var(--ink2); font-weight: 700; }
-.order16 li.you { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; }
+.order16 li.you { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; }
 .order16 li.you b { color: var(--ink); }
-.order16 li.you .n { color: var(--red); }
-.order16 li em { font-size: 13px; color: var(--red); }
+.order16 li.you .n { color: var(--you); }
+.order16 li em { font-size: 13px; color: var(--ink3); }
 
 /* daily rule */
 .rule { border-top: 5px double var(--gold); border-bottom: 1.5px solid var(--gold); padding: 14px 0 12px; }
@@ -51,7 +51,8 @@
 .ticker li .c { font: 600 13px var(--num); color: var(--ink3); }
 .ticker li.now { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; color: var(--ink); }
 .ticker li.now i { color: var(--red); }
-.ticker li.you b { color: var(--gold); }
+.ticker li.you { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; }
+.ticker li.you b { color: var(--ink); }
 
 /* player list */
 .filters { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1.5px solid var(--rule2); }
@@ -97,7 +98,7 @@
 .dboard td small { font: 700 11px Inter, sans-serif; color: var(--ink3); margin-left: 4px; }
 .dboard td.e { color: var(--ink4); }
 .dboard tr.you td { color: var(--ink); }
-.dboard tr.you td.tn { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; }
+.dboard tr.you td.tn { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; }
 .dboard td.clk { color: var(--red); font-style: italic; }
 
 /* results */
@@ -118,13 +119,13 @@
 .stand td.rk { width: 34px; font: 600 14px var(--num); color: var(--ink3); }
 .stand td.tmc { width: 44px; }
 .stand td.nm b { font: 700 18px var(--cond); color: var(--ink); font-weight: 700; }
-.stand td.nm i { font-size: 13px; color: var(--red); margin-left: 6px; }
+.stand td.nm i { font-size: 13px; color: var(--ink3); margin-left: 6px; }
 .stand td.who { font-size: 13px; font-style: italic; color: var(--ink3); }
 .stand td.sc { text-align: right; font: 600 16px var(--num); color: var(--ink); width: 60px; }
 .stand td.car { width: 24px; text-align: right; color: var(--ink3); }
 .stand tr.you td { background: var(--surf); }
-.stand tr.you td.rk { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; color: var(--red); }
-.stand tr.you td.sc { color: var(--gold); }
+.stand tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; color: var(--you); }
+.stand tr.you td.sc { color: var(--ink); }
 .voices p { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 16px; line-height: 1.45; color: var(--ink2); }
 .voices p b { color: var(--ink); font-weight: 600; }
 .voices p em { display: block; margin-top: 2px; font-size: 13px; color: var(--ink3); }

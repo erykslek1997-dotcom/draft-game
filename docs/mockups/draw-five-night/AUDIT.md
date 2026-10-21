@@ -59,14 +59,23 @@ There were 13 near-identical dark greys before this pass. There are 5 tokens now
 
 **Borders**: 1px hairline · 1.5px section rule · 2px selection · 3px "you/now" bar.
 
-## Open questions
+## Decided after the audit
 
-1. **Red is also "your team"** in 9 places: standings, draft board, order, All-NBA
-   underline, league leaders and playoff path. The rule says red = now.
-   Proposal: mark "you" with a cream bar (`--ink`) and keep red for now and
-   problem only.
-2. **Contrast**: white text on the lighter franchise colours (HON, TPA teal)
-   is 3.3:1. That is acceptable for bold 11 px marks, but the implementation
-   could switch to dark text above a lightness threshold.
-3. **Ribbon future picks** show the team name at 11 px in `--ink3` on purpose
-   (75% quiet). It is readable, but it is the quietest text on the screen.
+1. **"You" is cream, not red.** A cream (`--you`) bar, rank and underline mark
+   your team in standings, the draft board, the draft order, the ticker, All-NBA,
+   league leaders, the playoff path and the "beat you" chart. Red stays for now
+   and problem; gold stays for caps and Joker only. So your own numbers (your
+   five, your seed, your award) are no longer gold, and the middle number of the
+   tally is gold only when it is the cap.
+2. **Readable team marks.** When the franchise text colour reads below 4.5:1 and
+   dark ink reads better than white, the mark uses dark ink (`#1E1C18`). Dark
+   backgrounds keep their franchise text colour. Today this changes TPA only.
+   In the implementation, apply the same rule to every team band (NBA colours
+   on cards included), not just the marks.
+
+## Still open
+
+- **Ribbon future picks** show the team name at 11 px in `--ink3` on purpose
+  (75% quiet). It is readable, but it is the quietest text on the screen.
+- **Gold ticks for "the best five"** on the Draw Five team profile, and the gold
+  "best" bar on posters, use gold as "best", not as caps.

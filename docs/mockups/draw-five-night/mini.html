@@ -21,7 +21,11 @@ const T = {
 };
 const ORDER = ['BIS', 'DUL', 'KEN', 'REN', 'HON', 'SFE', 'TUL', 'ANC', 'ELP', 'DET', 'FRE', 'BOI', 'SCR', 'TPA', 'LUB', 'ASP'];
 const YOU = 'TUL';
-const tm = (c, lg) => `<span class="tm ${lg ? 'lg' : ''}" style="background:${T[c][2]};color:${T[c][3]}">${c}</span>`;
+const _lum = (h) => { const v = h.replace('#', ''); const x = (v.length === 3 ? v.split('').map((c) => c + c).join('') : v).match(/../g).map((c) => parseInt(c, 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)); return 0.2126 * x[0] + 0.7152 * x[1] + 0.0722 * x[2]; };
+const _cr = (a, b) => { const [x, y] = [_lum(a), _lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+// light franchise colour + light text → dark ink; dark backgrounds keep the franchise text colour
+const tmInk = (bg, fg) => (_cr(bg, fg) < 4.5 && _cr(bg, '#1E1C18') > _cr(bg, '#FFFFFF') ? '#1E1C18' : fg);
+const tm = (c, lg) => `<span class="tm ${lg ? 'lg' : ''}" style="background:${T[c][2]};color:${tmInk(T[c][2], T[c][3])}">${c}</span>`;
 const tname = (c) => `${T[c][0]} ${T[c][1]}`;
 const P = {
   pippen: ['Scottie Pippen', 'SF', '1990–92', 15, 'MVP', [19.4, 7.5, 6.6], 0.9, 'Playmaker · Wing stopper', 'scottie-pippen', 'CHI', '#CE1141'],
@@ -47,7 +51,7 @@ const face = (x) => x.img ? `<img src="heads/${x.img}.png" alt="">` : `<span cla
 const short = (n) => { const w = n.split(' '); return `${w[0][0]}. ${w.slice(1).join(' ')}`; };
 const SL = ['PG', 'SG', 'SF', 'PF', 'C'];
 const mast = (title, sub, daily) => `<div class="mast keep"><b class="${daily ? 'daily' : ''}">${title}</b><small>${sub}</small></div>`;
-const tally = (you, mid, ai, { youK = 'Caps', midK = 'Cap', aiK = 'Round' } = {}) => `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b>${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b>${ai}</b></div></div>`;
+const tally = (you, mid, ai, { youK = 'Caps', midK = 'Cap', aiK = 'Round' } = {}) => `<div class="tally keep"><div class="t"><span class="k">${youK}</span><b>${you}</b></div><div class="t mid"><span class="k">${midK}</span><b class="${midK === 'Cap' ? '' : 'plain'}">${mid}</b></div><div class="t ai"><span class="k">${aiK}</span><b>${ai}</b></div></div>`;
 const capbar = (pct) => `<div class="capbar keep"><i style="width:${pct}%"></i></div>`;
 const links = `<div class="links"><a href="#">← Menu</a><a href="#">How to play</a><a href="#">Settings</a></div>`;
 const actions = (btn) => `<div class="actions">${btn}${links}</div>`;
