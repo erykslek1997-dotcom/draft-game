@@ -257,6 +257,11 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
   wybory ligi — zatwierdzone jako wypełniacz, „Latest picks”, tylko na komputerze; na telefonie
   nie pokazujemy), a forma docelowa jest do ustalenia („będzie to coś innego”).
 - **Dodatki małym nakładem** (2026-10-21, decyzje usera):
+  - **Kalendarz sezonu (na sam koniec prac nad UI, decyzja 2026-10-21):** dziś `liveSeason.ts`
+    gra 656 meczów parami (najpierw wszystkie mecze BIS–DUL, potem BIS–KEN…) w tle i pokazuje
+    tylko wynik końcowy. Żeby był ekran „w trakcie sezonu” (makieta `alltime.html#inSeason`):
+    ułożyć mecze w dni meczowe (wyniki bez zmian — każdy mecz ma własne ziarno), migawki tabeli,
+    liderów i wyścigu o MVP co kilka dni, prędkość/pauza jako odtwarzanie migawek.
   - **Razem z nowym wyglądem:** mecz sezonu i rekordy kariery (najlepszy występ, najwyższe
     zwycięstwo — zapamiętane w trakcie symulacji sezonu; na ekran sezonu i plakat Story);
     wyścig o MVP w trakcie sezonu (top 3 liczone funkcją nagród na statystykach z części sezonu);

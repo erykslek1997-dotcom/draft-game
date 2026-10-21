@@ -641,6 +641,34 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .gos .ctx { display: block; margin-top: 2px; font-size: 13px; font-style: italic; color: var(--ink3); }
 @media (max-width: 600px) { .mvp-r { grid-template-columns: 18px 40px minmax(0, 1fr) auto; gap: 10px; padding: 10px 4px; } .mvp-r img { width: 40px; height: 40px; } }
 .stack { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+
+/* small windows: settings, how to play, leave; loading */
+.dlg { position: fixed; z-index: 6; left: 50%; top: 60px; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); max-height: calc(100vh - 100px); overflow: auto; background: var(--bg); border-top: 5px double var(--rule2); padding: 18px 24px 24px; box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }
+.dlg.sm { width: min(440px, calc(100% - 32px)); top: 140px; }
+.dlg-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1.5px solid var(--rule2); padding-bottom: 8px; margin-bottom: 6px; }
+.dlg-head h2 { margin: 0; font: 800 34px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.dlg-head a { color: var(--ink2); text-decoration: none; font-size: 18px; }
+.dlg p.lead { margin: 10px 0 18px; font-size: 16px; line-height: 1.5; color: var(--ink2); }
+.set-r { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.set-r > b { display: block; font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.set-opts { display: flex; gap: 22px; margin: 10px 0 8px; }
+.set-opts span { font: 700 20px var(--cond); color: var(--ink3); padding-bottom: 4px; border-bottom: 2px solid transparent; cursor: pointer; }
+.set-opts span.on { color: var(--ink); border-bottom-color: var(--ink); }
+.set-r p { margin: 0; font-size: 14px; font-style: italic; color: var(--ink3); line-height: 1.45; }
+.rules { margin: 6px 0 18px; padding: 0; list-style: none; }
+.rules li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.rules li > span { font: 800 34px/0.9 var(--cond); color: var(--ink3); }
+.rules b { display: block; font: 700 18px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.rules p { margin: 4px 0 0; font-size: 15px; line-height: 1.5; color: var(--ink2); }
+.rules p .capi { vertical-align: -2px; }
+.load { grid-column: 1 / -1; width: 100%; max-width: 520px; margin: 0 auto; padding: 18vh 16px 0; }
+.load .mast b { font-size: 48px; }
+.load-l { margin: 28px 0 10px; display: flex; justify-content: space-between; align-items: baseline; font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.load-l em { font: 600 16px var(--num); font-style: normal; color: var(--ink); }
+.load-bar { height: 4px; background: var(--rule); }
+.load-bar i { display: block; height: 100%; background: var(--ink2); }
+.load p { margin: 12px 0 0; font-size: 14px; font-style: italic; color: var(--ink3); }
+@media (max-width: 600px) { .dlg { top: 24px; padding: 16px; } .dlg.sm { top: 120px; } .dlg-head h2 { font-size: 28px; } .load { padding-top: 14vh; } }
 </style>
 </head>
 <body>
@@ -936,6 +964,17 @@ S.shareDraft = () => { const [l, m] = S.results(); return [l, m + `<div class="d
   <div class="btn2" style="margin-top:14px"><button class="btn go">Save image</button><button class="btn line">Copy link</button></div><p class="empty-note" style="margin-top:8px">The link gives a friend the same 16-team board, with your 87 to beat.</p></div>`]; };
 
 // ---- v2: simpler menu, calmer minutes, a poster to share ----
+const dlg = (base, html) => { const [l, m] = base(); return [l, m + `<div class="drawer-dim"></div>${html}`]; };
+S.settings = () => dlg(S.ribbon, `<div class="dlg"><div class="dlg-head"><h2>Settings</h2><a href="#">✕</a></div>
+  <div class="set-r"><b>Draft speed</b><div class="set-opts"><span class="on">Calm</span><span>Fast</span><span>Instant</span></div><p>Every CPU pick has a moment to read, the first round slowest. All-Time and Mini, right away.</p></div>
+  <div class="set-r"><b>Vibration</b><div class="set-opts"><span class="on">On</span><span>Off</span></div><p>A short buzz when you are on the clock, when you pick and when a game ends. Phones that support it.</p></div>
+  <div class="set-r"><b>Motion</b><div class="set-opts"><span class="on">Full</span><span>Reduced</span></div><p>Reduced skips card flips and slides; numbers still count up.</p></div></div>`);
+S.howto = () => dlg(S.ribbon, `<div class="dlg"><div class="dlg-head"><h2>How to play</h2><a href="#">✕</a></div><p class="lead">All-Time Draft · 16 teams, 9 rounds, one player a round.</p>
+  <ol class="rules">${[['Draft', 'Sixteen teams take turns, nine rounds. You run one team; the other fifteen are CPU GMs.'], ['Caps', 'Every pick costs caps <i class="capi"></i>, his shots a game in those years. Your nine have to fit under 100.9, so the best player is not always the pick that fits.'], ['Years', 'Each player comes with stretches of his career. The draft takes his best one; in the Team tab you can switch to cheaper years.'], ['Rotation', 'Set minutes for five starters and four on the bench. The Team tab opens after your first pick.'], ['Grading', 'The judge scores every team on talent, offense, defense, spacing, fit and rotation, and ranks the field. Then the season is played.']].map(([t, b], i) => `<li><span>${i + 1}</span><div><b>${t}</b><p>${b}</p></div></li>`).join('')}</ol>
+  <button class="btn go">Got it</button></div>`);
+S.leave = () => dlg(S.ribbon, `<div class="dlg sm"><div class="dlg-head"><h2>Leave the draft?</h2></div><p class="lead">Your draft is saved. Pick it up again from the menu with <b style="color:var(--ink)">Continue draft</b>.</p>
+  <div class="btn2"><button class="btn go">Keep drafting</button><button class="btn line">Back to menu</button></div></div>`);
+S.loading = () => ['', `<div class="load"><div class="mast"><b>Draftverse</b><small>All-Time Draft · getting the players ready</small></div><div class="load-l"><span>Downloading player data</span><em>62%</em></div><div class="load-bar"><i style="width:62%"></i></div><p>80 years of real NBA seasons. This only downloads once.</p></div>`];
 S.menu2 = () => ['', `<div class="m2">
   <div class="m2-mast"><b>Draftverse</b><span>Every era. One game.</span></div>
   <div class="m2-team">${tm('TUL')}<span>Tulsa Twisters</span><a href="#">change</a></div>
