@@ -121,6 +121,24 @@
 .bg-cell.clock small { font: 700 9px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); text-align: center; }
 .bg-cell.clock b { font: 800 16px var(--cond); color: var(--ink); }
 @media (max-width: 600px) { .bgrid { overflow-x: auto; } .bg-row { width: 900px; } }
+.ribbon h3 a { color: var(--ink2); }
+.rb-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+.rb-cell { height: 84px; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; overflow: hidden; }
+.rb-cell .rb-n { font: 500 10px var(--num); color: var(--cink2); }
+.rb-cell.filled { background: var(--card); color: var(--cink); }
+.rb-cell.filled img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #E2DBCB; }
+.rb-cell.filled b { font: 700 14px/1 var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.rb-cell.filled small { font: 700 9px Inter, sans-serif; color: var(--cink2); }
+.rb-cell.clock { border: 2px solid var(--red); }
+.rb-cell.clock .rb-n { color: var(--ink3); }
+.rb-cell.clock b { font: 800 22px var(--cond); }
+.rb-cell.clock small { font: 700 9px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); }
+.rb-cell.next { border: 1px dashed #2E2F33; }
+.rb-cell.next .rb-n { color: var(--ink3); }
+.rb-cell.next small { font: 700 11px var(--cond); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.drawer-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.72); z-index: 5; }
+.drawer { position: fixed; left: 50%; top: 0; transform: translateX(-50%); width: min(1320px, 100%); z-index: 6; background: var(--bg); border-bottom: 5px double var(--rule2); padding: 18px 24px 22px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); }
+@media (max-width: 600px) { .rb-row { grid-template-columns: repeat(12, 84px); overflow-x: auto; } .drawer { overflow-x: auto; padding: 14px 16px; } }
 /* playoffs bracket */
 .bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; align-items: center; }
 .round h4 { margin: 0 0 10px; font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
@@ -290,6 +308,26 @@ S.board = () => [leftDraft().replace('Show draft board', 'Hide draft board'),
   boardGrid() + nine(['payton', '', 'durant', '', ''], []) +
   prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
   `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}<div class="more">Showing 5 of 1,522 player stretches · <a href="#">See more</a></div></section>`];
+function ribbon() {
+  const order = (k) => { const r = Math.floor((k - 1) / 16), i = (k - 1) % 16; return ORDER[r % 2 ? 15 - i : i]; };
+  const cells = [];
+  for (let k = 35; k <= 46; k++) {
+    const c = order(k); const v = PICKS[k - 1];
+    if (v) { const i = v.lastIndexOf(' '); const nm = v.slice(0, i); const img = FULL[nm]; cells.push(`<span class="rb-cell filled"><span class="rb-n">${k} · ${c}</span>${img ? `<img src="heads/${img}.png" alt="">` : ''}<b>${nm.split(' ').slice(1).join(' ')}</b><small>${v.slice(i + 1)}</small></span>`); }
+    else if (k === 40) cells.push(`<span class="rb-cell clock"><span class="rb-n">40 · ${c}</span><b>You</b><small>on the clock</small></span>`);
+    else cells.push(`<span class="rb-cell next"><span class="rb-n">${k}</span>${tm(c)}<small>${T[c][1]}</small></span>`);
+  }
+  return `<section class="ribbon"><h3>Draft board<span>picks 35–46 · your next after this: 57 · <a href="#">open full board ▾</a></span></h3><div class="rb-row">${cells.join('')}</div></section>`;
+}
+S.ribbon = () => [leftDraft().replace('<button class="btn line">Show draft board</button>', ''),
+  ribbon() + nine(['payton', '', 'durant', '', ''], []) +
+  prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
+  `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}</section>`];
+S.drawer = () => [leftDraft().replace('Show draft board', 'Draft board  ·  B'),
+  nine(['payton', '', 'durant', '', ''], []) +
+  prompt('On the clock · Round 3 · Pick 40', 'Your pick', 'A PF or a C fits best. <b class="w">Garnett</b> is still on the board, and so is Ewing.') +
+  `<section>${filters(['PG', 'SF'])}${plist2(['garnett', 'dirk', 'ewing', 'klay', 'rallen'], { hot: 'garnett', no: ['ewing'] })}</section>` +
+  `<div class="drawer-dim"></div><div class="drawer">${boardGrid().replace('rounds 1–4 · <a href="#">rounds 5–9 ▾</a> · <a href="#">hide board</a>', 'rounds 1–4 · <a href="#">rounds 5–9 ▾</a> · <a href="#">✕ close</a>')}</div>`];
 const key = (location.hash || '#draft').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
