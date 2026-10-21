@@ -7,6 +7,15 @@
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="night.css">
 <link rel="stylesheet" href="draft.css">
+<style>
+/* warnings during the pick: a printed notice, red mark for a problem, one action */
+.notice { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 10px 0 10px 12px; border-left: 3px solid var(--red); margin: 4px 0; }
+.notice > i { font: 800 20px/1 var(--cond); font-style: normal; color: var(--red); }
+.notice p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink2); }
+.notice p b { color: var(--ink); font-weight: 600; }
+.notice a { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; }
+@media (max-width: 600px) { .notice { grid-template-columns: 18px minmax(0, 1fr); } .notice a { grid-column: 2; } }
+</style>
 </head>
 <body>
 <div class="game" id="app"></div>
@@ -166,6 +175,9 @@ S.posTabs = () => { const [l, m] = S.pick();
   mm = mm.replace(/<div class="filters">[\s\S]*?<\/div>/, posTabs('PF'));
   mm = mm.replace(/<table class="plist">[\s\S]*<\/table>/, plist(['malone', 'dirk', 'barkley'], { hot: 'malone' })).replace(/Showing 11 of 54 left/, 'Showing PF · 3 of 12');
   return [l, mm]; };
+const notice = (txt, act) => `<div class="notice"><i>!</i><p>${txt}</p>${act ? `<a href="#">${act}</a>` : ''}</div>`;
+S.warnRim = () => { const [l, m] = S.posTabs(); return [l, m.replace(/(<div class="ptabs")/, notice('<b>Low rim pressure.</b> Nobody in your five attacks the basket yet. Look for a slasher or a big who finishes inside.') + '$1')]; };
+S.warnFit = () => { const [l, m1] = S.posTabs(); const m0 = m1.split('24.5').join('14.5'); const m = m0.replace(/<div class="capsbar">[\s\S]*?<\/div><span class="cb-v">[\s\S]*?<\/a><\/div>/, capsBar(0, 30, 14.5)).replace(/<table class="plist">[\s\S]*<\/table>/, plist(['malone', 'dirk', 'barkley'], { no: ['malone', 'dirk', 'barkley'] })); return [l, m.replace(/<table class="plist">[\s\S]*<\/table>/, notice('<b>None of these three fit this pick.</b> It can cost up to <i class="capi"></i>14.5 caps; Malone, Nowitzki and Barkley cost more.', 'Show players that fit') + '$&')]; };
 const key = (location.hash || '#pick').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
