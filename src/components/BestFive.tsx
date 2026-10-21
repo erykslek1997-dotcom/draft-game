@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type ReactNode } from 'react';
 import { deckSfx, deckSoundsMuted, setDeckSoundsMuted } from './deckSounds';
 import './BestFive.css';
 import { ChallengeNote, ScoreBoard } from './ScoreBoard';
@@ -12,8 +12,8 @@ import { copyLink } from './shareSave';
 import { modeChallengeLink, type ModeChallenge } from '../modeChallenge';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS } from '../engine/positions';
-import { CapIcon, Face, ShotChip, ShotsMeter, shortenName } from './ShotChip';
-import { DraftPlayerCard } from './DraftPlayerCard';
+import { CapIcon, ShotChip, ShotsMeter, shortenName } from './ShotChip';
+import { DraftPlayerCard, MiniCard } from './DraftPlayerCard';
 import { markStepDone } from './pathProgress';
 import {
   dailyBoard,
@@ -202,8 +202,16 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   const cheapestLeft = (except: Position) => STARTER_SLOTS.filter((s) => s !== except && !lineup[s]).reduce((sum, s) => sum + slotFloor(s), 0);
   const overBy = (slot: Position, span: PlayerSpan) => shotsUsed + span.fga + cheapestLeft(slot) - shotsCap;
 
+  // The slot a picked card just landed in (a short pulse once its flight is over).
+  const [landed, setLanded] = useState<Position | null>(null);
+
   function pick(slot: Position, span: PlayerSpan) {
     if (lineup[slot] || overBy(slot, span) > 1e-9) return;
+    const flight = flyToSlot(span.id, slot);
+    window.setTimeout(() => {
+      setLanded(slot);
+      window.setTimeout(() => setLanded((l) => (l === slot ? null : l)), 500);
+    }, flight);
     setLineup((prev) => ({ ...prev, [slot]: span }));
     deckSfx.pick();
     if (!daily) aiTakes(slot);
@@ -364,108 +372,123 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
 
           {/* 2026-09-28, the user ("pozycje niech będą ustawione w zwykłej kolejności ale losowanie
               nadal losowe"): the row stays PG→C; the daily board still deals them in its own order. */}
-          {!daily && <AiFive lineup={aiLineup} cap={shotsCap} log={aiLog} />}
-          <div className="bf-slot-row">
-            {STARTER_SLOTS.map((slot) => {
-              const s = lineup[slot];
-              const dealt = revealed.has(slot);
-              return (
-                <button
-                  key={slot}
-                  className={`bf-slot ${activeSlot === slot ? 'bf-slot--active' : ''} ${s ? 'bf-slot--filled' : ''} ${dealt ? '' : 'bf-slot--hidden'}`}
-                  disabled={!dealt || Boolean(s)}
-                  title={s ? `${s.playerName} — picks are final` : dealt ? undefined : 'Dealt after your previous pick'}
-                  onClick={() => {
-                    setFreshSlot(null);
-                    setActiveSlot(slot);
-                  }}
-                >
-                  <span className="bf-slot-pos at-cond">
-                    {slot}
-                    {s && isJokerCard(s) && <span className="bf-slot-joker" title="A Joker">🃏</span>}
+          {/* 2026-10-21 (week 1, the table mockup "Draw Five Table Scene"): the table in perspective —
+              the AI (or the day's opponent) across it, the deal on the felt, your five and your seat
+              at the near edge. */}
+          <div className={`bf-table-scene${daily ? ' is-daily' : ''}`}>
+            <span className="bf-felt" aria-hidden />
+            {daily ? meta && <OpponentSeat name={meta.opponent.name} /> : <AiFive lineup={aiLineup} cap={shotsCap} log={aiLog} />}
+            {activeSlot && (
+              <div className="bf-picker">
+                <div className="bf-picker-head at-cond">
+                  Your draw · {SLOT_LABEL[activeSlot].toLowerCase()}
+                  <span className="bf-picker-sub">
+                    {order.indexOf(activeSlot) < order.length - 1
+                      ? 'Four off the deck for this spot — picks are final, the next position comes up after you pick.'
+                      : 'Last spot — four off the deck. Picks are final.'}
                   </span>
-                  {s ? <Face name={s.playerName} /> : <span className={`bf-face bf-face--sm bf-face--empty${dealt ? '' : ' bf-face--card'}`} aria-hidden />}
-                  <span className="bf-slot-name">{s ? shortenName(s.playerName, 0) : dealt ? 'Tap to pick' : 'Face down'}</span>
-                  {s && <span className="bf-season bf-season--sm">{s.spanLabel}</span>}
-                  {s && (
-                    <span className="bf-slot-box">
-                      <ShotChip fga={s.fga} cap={shotsCap} />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {activeSlot && (
-            <div className="bf-picker">
-              <div className="bf-picker-head at-cond">
-                Your draw · {SLOT_LABEL[activeSlot].toLowerCase()}
-                <span className="bf-picker-sub">
-                  {order.indexOf(activeSlot) < order.length - 1
-                    ? 'Four off the deck for this spot — picks are final, the next position comes up after you pick.'
-                    : 'Last spot — four off the deck. Picks are final.'}
-                </span>
-              </div>
-              {(() => {
-                // 2026-09-28: the one hint left — what the five is missing, when this deal can cover it.
-                const hint = dealHint(pool, activeSlot, picksBefore(activeSlot), shotsCap);
-                if (!hint) return null;
-                return <p className="bf-deal-hint">{DEAL_HINT[hint.need](hint.have)}</p>;
-              })()}
-              {jokerReveal && <JokerReveal {...jokerReveal} />}
-              <DeckHand
-                key={`${pool.key}-${activeSlot}`}
-                slot={activeSlot}
-                cards={dealOf(activeSlot)}
-                fresh={freshSlot === activeSlot}
-                onDone={() => setFreshSlot(null)}
-                renderCard={(span) => {
-                  const chosen = lineup[activeSlot]?.id === span.id;
-                  const over = overBy(activeSlot, span);
-                  const blocked = over > 1e-9;
-                  // 2026-09-30: a Joker lies face down — who he is shows only once he's picked.
-                  if (jokerAt(activeSlot)?.card.id === span.id) {
+                </div>
+                {(() => {
+                  // 2026-09-28: the one hint left — what the five is missing, when this deal can cover it.
+                  const hint = dealHint(pool, activeSlot, picksBefore(activeSlot), shotsCap);
+                  if (!hint) return null;
+                  return <p className="bf-deal-hint">{DEAL_HINT[hint.need](hint.have)}</p>;
+                })()}
+                {jokerReveal && <JokerReveal {...jokerReveal} />}
+                <DeckHand
+                  key={`${pool.key}-${activeSlot}`}
+                  slot={activeSlot}
+                  cards={dealOf(activeSlot)}
+                  fresh={freshSlot === activeSlot}
+                  onDone={() => setFreshSlot(null)}
+                  renderCard={(span) => {
+                    const chosen = lineup[activeSlot]?.id === span.id;
+                    const over = overBy(activeSlot, span);
+                    const blocked = over > 1e-9;
+                    // 2026-09-30: a Joker lies face down — who he is shows only once he's picked.
+                    if (jokerAt(activeSlot)?.card.id === span.id) {
+                      return (
+                        <button
+                          className={`bf-pool-card bf-joker-card${blocked ? ' is-locked' : ''}`}
+                          title="A Joker: even odds a legend or a scrub"
+                          disabled={blocked}
+                          onClick={() => pick(activeSlot, span)}
+                        >
+                          <span className="bf-joker-tag at-cond">🃏 Joker</span>
+                          <span className="bf-joker-q" aria-hidden>?</span>
+                          <span className="bf-pool-name">Legend or scrub?</span>
+                          <span className="bf-pool-meta">
+                            <ShotChip fga={span.fga} cap={shotsCap} />
+                          </span>
+                          <span className="bf-pool-box">50 / 50</span>
+                        </button>
+                      );
+                    }
+                    // 2026-09-30, the user ("karty żeby wyglądały tak samo jak w każdym trybie"): the
+                    // draft card of every mode, dealt blind — the team band on top, no tier frame, no
+                    // TAL, no position (the picker names it); the whole card is the pick.
                     return (
-                      <button
-                        className={`bf-pool-card bf-joker-card${blocked ? ' is-locked' : ''}`}
-                        title="A Joker: even odds a legend or a scrub"
-                        disabled={blocked}
-                        onClick={() => pick(activeSlot, span)}
+                      <DraftPlayerCard
+                        blind
+                        span={span}
+                        cap={shotsCap}
+                        tier="Starter"
+                        legal={!blocked}
+                        onDraft={() => pick(activeSlot, span)}
+                        className={`bf-deal-card${chosen ? ' bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
+                        title={blocked ? `${span.playerName} would leave no room under the cap` : span.playerName}
                       >
-                        <span className="bf-joker-tag at-cond">🃏 Joker</span>
-                        <span className="bf-joker-q" aria-hidden>?</span>
-                        <span className="bf-pool-name">Legend or scrub?</span>
-                        <span className="bf-pool-meta">
-                          <ShotChip fga={span.fga} cap={shotsCap} />
-                        </span>
-                        <span className="bf-pool-box">50 / 50</span>
-                      </button>
+                        <span className="bf-card-sheen" aria-hidden />
+                        <span className="bf-card-glare" aria-hidden />
+                        {blocked && <span className="bf-pool-over at-cond">Over the cap by {over.toFixed(1)}</span>}
+                      </DraftPlayerCard>
                     );
-                  }
-                  // 2026-09-30, the user ("karty żeby wyglądały tak samo jak w każdym trybie"): the
-                  // draft card of every mode, dealt blind — the team band on top, no tier frame, no
-                  // TAL, no position (the picker names it); the whole card is the pick.
-                  return (
-                    <DraftPlayerCard
-                      blind
-                      span={span}
-                      cap={shotsCap}
-                      tier="Starter"
-                      legal={!blocked}
-                      onDraft={() => pick(activeSlot, span)}
-                      className={`bf-deal-card${chosen ? ' bf-pool-card--chosen' : ''}${blocked ? ' bf-pool-card--blocked' : ''}`}
-                      title={blocked ? `${span.playerName} would leave no room under the cap` : span.playerName}
-                    >
-                      <span className="bf-card-sheen" aria-hidden />
-                      <span className="bf-card-glare" aria-hidden />
-                      {blocked && <span className="bf-pool-over at-cond">Over the cap by {over.toFixed(1)}</span>}
-                    </DraftPlayerCard>
-                  );
-                }}
-              />
+                  }}
+                />
+              </div>
+            )}
+            <div className="bf-slot-row">
+              {STARTER_SLOTS.map((slot) => {
+                const s = lineup[slot];
+                const dealt = revealed.has(slot);
+                return (
+                  <button
+                    key={slot}
+                    data-slot={slot}
+                    className={`bf-slot ${activeSlot === slot ? 'bf-slot--active' : ''} ${s ? 'bf-slot--filled' : ''} ${dealt ? '' : 'bf-slot--hidden'}${landed === slot ? ' bf-slot--land' : ''}`}
+                    disabled={!dealt || Boolean(s)}
+                    title={s ? `${s.playerName} — picks are final` : dealt ? undefined : 'Dealt after your previous pick'}
+                    onClick={() => {
+                      setFreshSlot(null);
+                      setActiveSlot(slot);
+                    }}
+                  >
+                    <span className="bf-slot-pos at-cond">
+                      {slot}
+                      {s && isJokerCard(s) && <span className="bf-slot-joker" title="A Joker">🃏</span>}
+                    </span>
+                    {s ? (
+                      <MiniCard span={s} cap={shotsCap} />
+                    ) : (
+                      <>
+                        <span className={`bf-face bf-face--sm bf-face--empty${dealt ? '' : ' bf-face--card'}`} aria-hidden />
+                        <span className="bf-slot-name">{dealt ? 'Tap to pick' : 'Face down'}</span>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          )}
+            <div className="bf-seat bf-seat--you">
+              <span className="bf-seat-avatar" aria-hidden>
+                YOU
+              </span>
+              <span className="bf-seat-who">Your five</span>
+              <span className="bf-seat-caps">
+                <CapIcon /> {shotsUsed.toFixed(1)} / {shotsCap} caps
+              </span>
+            </div>
+          </div>
 
           <div className="bf-submit-row">
             <button
@@ -508,6 +531,37 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
       )}
     </div>
   );
+}
+
+/** 2026-10-21 (week 1, the card-motion mockup's "Lot do slotu"): the picked card lifts off the
+ * felt and flies into its slot in your five. A copy of the card flies — the hand itself has already
+ * moved on to the next position. Returns how long the flight takes (0: no flight). */
+const PICK_FLIGHT_MS = 560;
+function flyToSlot(cardId: string, slot: Position): number {
+  if (prefersReducedMotion() || typeof document === 'undefined') return 0;
+  const from = document.querySelector<HTMLElement>(`.bf-hand-card[data-card-id="${CSS.escape(cardId)}"]`);
+  const to = document.querySelector<HTMLElement>(`.bf-slot[data-slot="${slot}"]`);
+  const host = from?.closest<HTMLElement>('.best-five');
+  if (!from || !to || !host || typeof from.animate !== 'function') return 0;
+  const a = from.getBoundingClientRect();
+  const b = to.getBoundingClientRect();
+  const ghost = from.cloneNode(true) as HTMLElement;
+  ghost.removeAttribute('data-card-id');
+  ghost.classList.add('bf-fly-ghost');
+  Object.assign(ghost.style, { position: 'fixed', left: `${a.left}px`, top: `${a.top}px`, width: `${a.width}px`, height: `${a.height}px`, margin: '0', zIndex: '60', pointerEvents: 'none' });
+  host.appendChild(ghost);
+  const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+  const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+  const scale = Math.min(b.width / a.width, b.height / a.height);
+  ghost.animate(
+    [
+      { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+      { transform: 'translate(0, -14px) scale(1.05)', opacity: 1, offset: 0.25 },
+      { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 0.35 },
+    ],
+    { duration: PICK_FLIGHT_MS, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  ).onfinish = () => ghost.remove();
+  return PICK_FLIGHT_MS;
 }
 
 /** Milliseconds between two cards leaving the deck, and one card's flight (land + turn over). */
@@ -643,6 +697,7 @@ function DeckHand({
           {cards.map((card, i) => (
             <div
               key={card.id}
+              data-card-id={card.id}
               className="bf-hand-card"
               style={fanStyle(i, cards.length)}
               onMouseMove={(e) => {
@@ -725,16 +780,6 @@ function filmRoomLead(explain: ResultExplanation, grade: GolfGrade, seed: string
   if (explain.standing === 'best') return pick(LEAD_BEST);
   if (explain.standing === 'close') return pick(LEAD_CLOSE)(explain.gapToBest);
   return `${RESULT_LEAD[grade]} The best five on the board was ${explain.gapToBest} points better.`;
-}
-
-function CmpCell({ span, tone }: { span: PlayerSpan | null | undefined; tone: 'hit' | 'miss' | 'best' }) {
-  if (!span) return <span />;
-  return (
-    <span className={`bf-cmp-cell bf-cmp-cell--${tone}`}>
-      <span className="bf-cmp-name">{span.playerName}</span>
-      <span className="bf-cmp-season">{span.spanLabel}</span>
-    </span>
-  );
 }
 
 function randomSeed(n: number): string {
@@ -1000,22 +1045,35 @@ function BestFiveResult({
         <div className="bf-optimal-title at-cond">
           Starting five <span>{STARTER_SLOTS.filter((slot) => lineup[slot]?.id === targets.optimalFive[slot].id).length}/5 match the best</span>
         </div>
-        <div className="bf-cmp">
-          <span />
+        {/* 2026-10-21: the two fives as the table's mini cards — yours, and the best on the board
+            with a tick where you matched it. */}
+        <div className="bf-cmp-rows">
           <span className="bf-cmp-head at-cond">You</span>
-          <span className="bf-cmp-head at-cond">Best</span>
-          {STARTER_SLOTS.map((slot) => {
-            const engine = targets.optimalFive[slot];
-            const yours = lineup[slot];
-            const hit = !!yours && yours.id === engine.id;
-            return (
-              <Fragment key={slot}>
-                <span className={`bf-cmp-pos at-cond ${hit ? 'bf-cmp-pos--hit' : ''}`}>{slot}</span>
-                <CmpCell span={yours} tone={hit ? 'hit' : 'miss'} />
-                {hit ? <span className="bf-cmp-same at-cond">✓ same</span> : <CmpCell span={engine} tone="best" />}
-              </Fragment>
-            );
-          })}
+          <div className="bf-cmp-row">
+            {STARTER_SLOTS.map((slot) => {
+              const yours = lineup[slot];
+              const hit = !!yours && yours.id === targets.optimalFive[slot].id;
+              return (
+                <span key={slot} className={`bf-cmp-slot${hit ? ' is-hit' : ''}`}>
+                  <b className="at-cond">{slot}</b>
+                  {yours ? <MiniCard span={yours} cap={shotsCap} /> : '—'}
+                </span>
+              );
+            })}
+          </div>
+          <span className="bf-cmp-head at-cond">Best on the board</span>
+          <div className="bf-cmp-row">
+            {STARTER_SLOTS.map((slot) => {
+              const engine = targets.optimalFive[slot];
+              const hit = lineup[slot]?.id === engine.id;
+              return (
+                <span key={slot} className={`bf-cmp-slot${hit ? ' is-hit' : ''}`}>
+                  <b className="at-cond">{hit ? `${slot} ✓` : slot}</b>
+                  <MiniCard span={engine} cap={shotsCap} className={hit ? 'is-best' : undefined} />
+                </span>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -1130,9 +1188,12 @@ function AiFive({ lineup, cap, log }: { lineup: Lineup; cap: number; log: { slot
   const used = lineupShots(lineup);
   return (
     <div className="bf-ai">
-      <div className="bf-ai-head">
-        <span className="at-cond">AI · Pro</span>
-        <span>
+      <div className="bf-seat bf-seat--ai">
+        <span className="bf-seat-avatar" aria-hidden>
+          AI
+        </span>
+        <span className="bf-seat-who">AI · Pro</span>
+        <span className="bf-seat-caps">
           <CapIcon /> {used.toFixed(1)} / {cap} caps
         </span>
       </div>
@@ -1142,7 +1203,7 @@ function AiFive({ lineup, cap, log }: { lineup: Lineup; cap: number; log: { slot
           return (
             <span key={slot} className={`bf-ai-slot${p ? ' is-filled' : ''}${p && log?.slot === slot ? ' is-new' : ''}`}>
               <b>{slot}</b>
-              {p ? shortenName(p.playerName, 0) : '—'}
+              {p ? <MiniCard span={p} cap={cap} className="is-ai" /> : '—'}
             </span>
           );
         })}
@@ -1162,6 +1223,20 @@ function AiFive({ lineup, cap, log }: { lineup: Lineup; cap: number; log: { slot
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/** The daily's seat across the table: the legendary five you play tonight. */
+function OpponentSeat({ name }: { name: string }) {
+  return (
+    <div className="bf-ai">
+      <div className="bf-seat bf-seat--ai">
+        <span className="bf-seat-avatar" aria-hidden>
+          VS
+        </span>
+        <span className="bf-seat-who">Tonight: {name}</span>
+      </div>
     </div>
   );
 }

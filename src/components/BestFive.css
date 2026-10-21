@@ -362,75 +362,19 @@
   font-weight: 600;
   color: var(--at-ink-soft);
 }
-.bf-cmp {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr);
-  gap: 4px 8px;
-  align-items: stretch;
-}
+.bf-cmp-rows { display: flex; flex-direction: column; gap: 6px; }
 .bf-cmp-head {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-ink-faint);
-  padding: 0 8px 2px;
+  margin-top: 4px;
 }
-.bf-cmp-pos {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 12px;
-  color: var(--at-ink-faint);
-  border-radius: 8px;
-}
-.bf-cmp-pos--hit {
-  color: var(--at-t6);
-}
-.bf-cmp-cell {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  min-width: 0;
-  padding: 8px 8px;
-  border-radius: 8px;
-  border: 1px solid var(--at-line);
-}
-.bf-cmp-cell--hit {
-  border-color: color-mix(in srgb, var(--at-t6) 45%, var(--at-line));
-  background: color-mix(in srgb, var(--at-t6) 10%, transparent);
-}
-.bf-cmp-cell--best {
-  border-style: dashed;
-}
-.bf-cmp-name {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--at-ink);
-  overflow-wrap: anywhere;
-}
-@media (max-width: 460px) {
-  .bf-cmp { grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr); }
-  .bf-cmp-cell { padding: 8px 8px; }
-  .bf-cmp-name { font-size: 12px; }
-}
-.bf-cmp-season {
-  font-size: 11px;
-  color: var(--at-ink-faint);
-  font-variant-numeric: tabular-nums;
-}
-.bf-cmp-same {
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--at-t6);
-}
+.bf-cmp-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.bf-cmp-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; font-size: 11px; color: var(--at-ink-faint); }
+.bf-cmp-slot > b { font-size: 11px; letter-spacing: 0.08em; }
+.bf-cmp-slot.is-hit > b { color: var(--at-good, #7fd68a); }
 
 /* 2026-09-26: step 1 of the learning path — the cap explained where it is spent, a submit button
    that says why it can't be pressed yet, and the team chips the draft cards carry. */
@@ -1090,4 +1034,71 @@
 .bench-season-grid {
   display: flex;
   flex-direction: column-reverse;
+}
+
+/* ---------------------------------------------------------------------------
+   2026-10-21 (week 1, mockup "Draw Five Table Scene"): the table in perspective — a navy oval felt
+   with a gold rail, the AI (or the day's opponent) seated across it, the deal on the felt, your five
+   and your seat at the near edge. Only the felt is tilted; the cards stay flat and readable.
+   --------------------------------------------------------------------------- */
+.bf-table-scene {
+  position: relative; isolation: isolate; display: flex; flex-direction: column; gap: 12px;
+  margin: 4px 0 16px; padding: 14px 14px 16px; border-radius: 22px; overflow: hidden;
+  background: radial-gradient(120% 70% at 50% 0%, #1a2440 0%, #0b1020 45%, #05070c 100%);
+  border: 1px solid #1b2436;
+}
+.bf-table-scene::before {
+  content: ''; position: absolute; left: 50%; top: -40px; width: 70%; height: 260px; transform: translateX(-50%); z-index: -1;
+  background: radial-gradient(closest-side, rgba(255, 236, 190, 0.12), transparent); pointer-events: none;
+}
+.bf-felt {
+  position: absolute; z-index: -1; left: 2%; right: 2%; top: 116px; bottom: 150px; border-radius: 50% / 42%;
+  transform: perspective(1100px) rotateX(30deg); transform-origin: 50% 60%; pointer-events: none;
+  background: radial-gradient(70% 60% at 50% 45%, #1d3a6e 0%, #132a52 45%, #0c1c3a 80%, #081328 100%);
+  box-shadow: 0 0 0 8px #0b0f1c, 0 0 0 11px #b48a3a, 0 0 0 14px #1c140a, 0 0 0 22px #2b1d0c, 0 30px 50px rgba(0, 0, 0, 0.6), inset 0 0 70px rgba(0, 0, 0, 0.55);
+}
+.bf-felt::after {
+  content: 'DRAW FIVE'; position: absolute; left: 0; right: 0; top: 46%; text-align: center;
+  font: 900 40px/1 Inter, system-ui, sans-serif; letter-spacing: 0.35em; color: rgba(255, 212, 121, 0.07);
+}
+.bf-table-scene.is-daily .bf-felt { top: 64px; }
+/* On the felt the deck needs no table of its own. */
+.bf-table-scene .bf-deck-table { background: none; box-shadow: none; padding: 8px 4px 20px; }
+.bf-table-scene .bf-deck-table::before { display: none; }
+.bf-table-scene .bf-picker { margin-bottom: 0; }
+.bf-table-scene .bf-slot-row { margin-bottom: 0; }
+.bf-table-scene .bf-ai { margin: 0; padding: 0; border: 0; background: none; }
+
+/* The two seats: avatar, who, caps. */
+.bf-seat { display: flex; align-items: center; gap: 10px; width: max-content; max-width: 100%; margin: 0 auto; padding: 6px 12px 6px 6px; border-radius: 999px; background: rgba(8, 12, 24, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); font-size: 13px; }
+.bf-seat-avatar { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 11px; letter-spacing: 0.04em; color: #fff; }
+.bf-seat--ai .bf-seat-avatar { background: radial-gradient(circle at 35% 30%, #ff8a9a, #8a1f33); box-shadow: 0 0 0 2px #2a0d15, 0 0 0 3px #d94a60; }
+.bf-seat--you .bf-seat-avatar { background: radial-gradient(circle at 35% 30%, #8fc6ff, #1f4f8a); box-shadow: 0 0 0 2px #0d1a2a, 0 0 0 3px #4492d0; }
+.bf-seat-who { font-weight: 800; color: var(--at-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bf-seat--ai .bf-seat-who { color: #ff9aa9; }
+.bf-seat-caps { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #ffd479; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Both fives as mini cards (DraftPlayerCard.tsx MiniCard). */
+.bf-ai-five { gap: 6px; margin-top: 10px; }
+.bf-ai-slot { gap: 4px; padding: 0; border: 0; overflow: visible; white-space: normal; }
+.bf-ai-slot:not(.is-filled) { min-height: 34px; justify-content: center; border: 1px dashed rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 4px 2px; }
+.bf-slot.bf-slot--filled { padding: 6px 4px 4px; gap: 4px; justify-content: flex-start; border-color: transparent; background: none; box-shadow: none; }
+.bf-slot--filled .at-mini-card { border-color: color-mix(in srgb, var(--at-gold, #ffd479) 55%, var(--at-line)); }
+.bf-slot--land .at-mini-card { animation: bf-land 0.45s both cubic-bezier(0.3, 1.5, 0.5, 1); box-shadow: 0 0 0 2px rgba(255, 212, 121, 0.5); }
+/* The copy of a picked card that flies to its slot (BestFive.tsx flyToSlot). */
+.bf-fly-ghost { transform-origin: 50% 50%; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.5)); }
+@media (max-width: 560px) {
+  .bf-table-scene { padding: 10px 8px 12px; gap: 10px; border-radius: 16px; }
+  .bf-felt { top: 108px; bottom: 140px; left: -6%; right: -6%; }
+  .bf-felt::after { font-size: 22px; }
+  .bf-seat { font-size: 12px; gap: 8px; padding: 4px 10px 4px 4px; }
+  .bf-seat-avatar { width: 28px; height: 28px; font-size: 10px; }
+  .bf-ai-five, .bf-cmp-row { gap: 4px; }
+  .at-mini-card { padding: 0 2px 4px; }
+  .at-mini-card .at-team-band { margin: 0 -2px 3px; font-size: 8px; letter-spacing: 0.04em; }
+  .at-mini-card-name { font-size: 11px; }
+  .at-mini-card-years { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bf-slot--land .at-mini-card { animation: none; }
 }

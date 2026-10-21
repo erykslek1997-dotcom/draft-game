@@ -338,3 +338,20 @@
 }
 .at-player-card--blind:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4); }
 .at-player-card--blind:disabled { cursor: not-allowed; }
+
+/* 2026-10-21: the mini card (DraftPlayerCard.tsx MiniCard) — the same card at slot size. */
+.at-mini-card {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; min-width: 0; box-sizing: border-box;
+  padding: 0 4px 6px; border-radius: 8px; overflow: hidden; text-align: center;
+  background: var(--at-paper-raised, #0a0f18);
+  border: 1px solid color-mix(in srgb, var(--at-gold, #ffd479) 45%, var(--at-line));
+}
+.at-mini-card .at-team-band { align-self: stretch; margin: 0 -4px 3px; height: 14px; font-size: 9px; letter-spacing: 0.08em; }
+.at-mini-card .bf-face { box-shadow: 0 0 0 2px var(--at-paper), 0 0 0 3px var(--ring, var(--at-line)); }
+.at-mini-card-name {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px; font-weight: 700; color: var(--at-ink);
+}
+.at-mini-card-years { font-size: 11px; color: var(--at-ink-soft); font-variant-numeric: tabular-nums; }
+.at-mini-card.is-ai { border-color: color-mix(in srgb, var(--at-accent-2, #d94a60) 55%, var(--at-line)); }
+.at-mini-card.is-best { border-color: color-mix(in srgb, var(--at-good, #7fd68a) 55%, var(--at-line)); }

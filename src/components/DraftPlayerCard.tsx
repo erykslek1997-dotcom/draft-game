@@ -169,3 +169,25 @@ export function DraftPlayerCard({ span, cap, tier, legal, draftTitle, onDraft, o
     </button>
   );
 }
+
+/**
+ * 2026-10-21 (week 1, Draw Five: "ta sama karta na ekranach wyników"): the player card shrunk to a
+ * slot — the team band, the face ringed in the team's colour, the name, the years and the cost.
+ * A five's slots (yours and the AI's at the Draw Five table) and its results use it.
+ */
+export function MiniCard({ span, cap, className }: { span: PlayerSpan; cap: number; className?: string }) {
+  const ring = spanTeamColor(span);
+  return (
+    <span
+      className={`at-mini-card${className ? ` ${className}` : ''}`}
+      style={ring ? ({ '--ring': ring } as CSSProperties) : undefined}
+      title={`${span.playerName} · ${span.spanLabel}`}
+    >
+      <TeamBand span={span} />
+      <Face name={span.playerName} size="sm" />
+      <span className="at-mini-card-name">{shortenName(span.playerName, 0)}</span>
+      <span className="at-mini-card-years">{span.spanLabel}</span>
+      <ShotChip fga={span.fga} cap={cap} />
+    </span>
+  );
+}
