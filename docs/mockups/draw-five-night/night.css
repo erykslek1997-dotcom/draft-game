@@ -181,7 +181,7 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .box th:first-child { text-align: left; }
 .box td { padding: 8px 0; border-bottom: 1px solid var(--rule); text-align: right; font: 600 14px var(--num); color: var(--ink2); }
 .box td:first-child { text-align: left; font: 700 18px var(--cond); color: var(--ink); }
-.box td.hi { color: var(--gold); }
+.box td.hi { color: var(--ink); font-weight: 700; }
 .tabs { display: flex; gap: 18px; margin-bottom: 8px; font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
 .tabs u { text-decoration: none; color: var(--ink); border-bottom: 2px solid var(--ink); }
 

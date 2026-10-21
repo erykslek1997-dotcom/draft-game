@@ -811,6 +811,31 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .pi-g.live { border-top-color: var(--red); }
 .pi-g.live > span { color: var(--red); }
 @media (max-width: 600px) { .g8x { display: none; } .more8 { margin-top: 10px; font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); } .stand2.mvt td:nth-child(6), .stand2.mvt th:nth-child(6) { display: table-cell; } .board8 { grid-template-columns: minmax(0, 1fr); } .cal { grid-template-columns: repeat(8, minmax(0, 1fr)); } .pi { grid-template-columns: minmax(0, 1fr); gap: 0; } .potm { grid-template-columns: 64px minmax(0, 1fr); } .potm img { width: 64px; height: 64px; } .potm b { font-size: 22px; } }
+
+/* watching a game live */
+.wp { margin-top: 2px; }
+.wp .bar { display: flex; height: 6px; margin: 6px 0; }
+.wp .bar i { background: var(--ink); } .wp .bar u { background: var(--ink4); }
+.wp .lb { display: flex; justify-content: space-between; font: 600 13px var(--num); color: var(--ink2); }
+.wp .lb b { color: var(--ink); font-weight: 600; }
+.ldr2 { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
+.ldr2 .k { font: 700 11px Inter, sans-serif; letter-spacing: 0.06em; color: var(--ink3); }
+.ldr2 b { color: var(--ink); font-weight: 600; }
+.ldr2 em { font: 600 14px var(--num); font-style: normal; color: var(--ink); }
+.hunt { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 0 8px 14px; border-left: 3px solid var(--red); }
+.hunt i { font: 800 18px/1 var(--cond); font-style: normal; color: var(--red); text-align: center; }
+.hunt p { margin: 0; font-size: 15px; color: var(--ink2); }
+.hunt b { color: var(--ink); font-weight: 600; }
+.court { display: block; width: 100%; max-width: 420px; }
+.court-l { margin: 6px 0 0; font-size: 14px; color: var(--ink2); }
+.court-l b { color: var(--ink); font-weight: 600; }
+.feed .call { padding: 10px 0 10px 12px; border-bottom: 1px solid var(--rule); border-left: 3px solid var(--ink4); font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink); }
+.feed .call.up { border-left-color: var(--green); } .feed .call.dn { border-left-color: var(--red); }
+.feed .ln.k .w { color: var(--ink3); }
+.tabs2 { display: flex; gap: 22px; border-bottom: 1.5px solid var(--rule2); margin-bottom: 8px; }
+.tabs2 span { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 6px; border-bottom: 2px solid transparent; margin-bottom: -1.5px; }
+.tabs2 span.on { color: var(--ink); border-bottom-color: var(--ink); }
+@media (max-width: 600px) { .live-split > .stack { order: -1; } .court { max-width: 240px; } .live-aside .stackb { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
@@ -1183,6 +1208,18 @@ S.playIn = () => [
    <div class="pi-g"><span>9 vs 10 · loser is out</span>${[['9', 'ELP', 97, 0], ['10', 'DET', 103, 1]].map(([sd, c, sc, w]) => `<div class="tr ${w ? 'win' : ''}"><span class="sd">${sd}</span>${tm(c)}<span>${T[c][1]}</span><span class="w">${sc}</span></div>`).join('')}<p>El Paso's season is over.</p></div></div>
    <div><div class="pi-g live"><span>Tonight · for the 8 seed</span>${[['8', 'ANC', '—', 0], ['10', 'DET', '—', 0]].map(([sd, c, sc]) => `<div class="tr"><span class="sd">${sd}</span>${tm(c)}<span>${T[c][1]}</span><span class="w">${sc}</span></div>`).join('')}<p>The winner meets Kentucky in the first round. Anchorage 61% before tip-off.</p></div></div></div>` +
   `<div class="phone-only"><div class="stackb"><button class="btn go">Watch the 8-seed game</button><button class="btn line">Sim to the playoffs</button></div></div>`];
+const court = `<svg class="court" viewBox="0 0 300 200" aria-hidden="true"><rect x="1" y="1" width="298" height="198" fill="none" stroke="#38383A" stroke-width="1.5"/><rect x="100" y="1" width="100" height="120" fill="none" stroke="#38383A" stroke-width="1.5"/><circle cx="150" cy="121" r="30" fill="none" stroke="#38383A" stroke-width="1.5"/><path d="M 20 1 L 20 60 A 132 132 0 0 0 280 60 L 280 1" fill="none" stroke="#38383A" stroke-width="1.5"/><circle cx="150" cy="22" r="7" fill="none" stroke="#A9A395" stroke-width="2"/><circle cx="196" cy="112" r="7" fill="#E0525A"/><text x="206" y="116" fill="#ECE6D7" font-family="JetBrains Mono" font-size="11">+2</text></svg>`;
+const FEED7 = [['2:13', 'k', '<b>Jordan</b> pull-up from the elbow. Good.', '96–98', 1], ['2:31', 'y', '<b>Garnett</b> misses the hook, <b>Barkley</b> rebounds.', '96–96'], ['2:54', 'y', '<b>Durant</b> fadeaway over Pippen. Good. 34 points.', '96–96'], ['call', 'dn', 'Kentucky 7–0 run'], ['3:20', 'k', '<b>Barkley</b> backs down Horry, and one.', '94–96'], ['3:48', 'k', '<b>Jordan</b> picks Korver at the top, layup.', '94–93'], ['4:05', 'y', '<b>Payton</b> turnover, Jordan steal.', '94–91'], ['call', 'up', 'Durant: 30 points'], ['4:40', 'y', '<b>Durant</b> corner three. Good.', '94–89']];
+S.liveGame = () => [
+  mast('Finals · Game 7', 'Live · Tulsa at Kentucky · series 3–3') + tally('96', '2:13', '98', { youK: 'Tulsa', midK: 'Q4', aiK: 'Kentucky', clock: true }) +
+  `<section class="keep"><h3>Win probability</h3><div class="wp"><div class="bar"><i style="width:41%"></i><u style="width:59%"></u></div><div class="lb"><b>Tulsa 41%</b><span>Kentucky 59%</span></div></div></section>` +
+  `<section class="keep live-aside"><h3>Speed</h3><div class="speeds"><span>½</span><u>1×</u><span>2×</span><span>4×</span><span>8×</span></div><div class="stackb" style="margin-top:14px"><button class="btn line">Pause</button><button class="btn line">Skip to final</button></div></section>` +
+  `<section><h3>Leaders so far<span>Tulsa · Kentucky</span></h3>${[['PTS', 'Durant', '34', 'Jordan', '38'], ['REB', 'Garnett', '14', 'Barkley', '12'], ['AST', 'Payton', '9', 'Jordan', '7']].map(([k, a, av, b, bv]) => `<div class="ldr2"><span class="k">${k}</span><span><b>${a}</b> ${av} · ${b} ${bv}</span><em></em></div>`).join('')}</section>` + actions(''),
+  prompt('Live · Q4 · 2:13', 'Jordan answers', 'A pull-up from the elbow puts Kentucky back in front. Tulsa has the ball, down two.') +
+  `<div class="hunt"><i>!</i><p><b>They're hunting Korver.</b> Jordan and Barkley have gone at him 6 times; 5 scored.</p></div>` +
+  `<div class="split live-split"><section><div class="tabs2"><span class="on">Play-by-play</span><span>Box score</span><span>Team stats</span></div><div class="feed">${FEED7.map(([t, w, x, sc, hot]) => t === 'call' ? `<div class="call ${w}">${x}</div>` : `<div class="ln ${w} ${hot ? 'hot' : ''}"><span class="t">${t}</span><span class="w">${w === 'y' ? 'TUL' : 'KEN'}</span><span>${x}</span><span class="sc">${sc}</span></div>`).join('')}<div class="q">End of Q3: Tulsa 76, Kentucky 74. Durant 26, Jordan 29.</div></div></section>
+  <div class="stack"><section><h3>Last basket<span>Jordan · 2:13</span></h3>${court}<p class="court-l"><b>Jordan</b> pull-up from the elbow · +2 · 15 of 27 tonight</p></section>
+  <section><h3>Score by quarter</h3><table class="box"><tr><th>Team</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>T</th></tr><tr><td>Tulsa</td><td>27</td><td>24</td><td>25</td><td>20</td><td>96</td></tr><tr><td>Kentucky</td><td>22</td><td>28</td><td>24</td><td>24</td><td class="hi">98</td></tr></table></section></div></div>`];
 S.menu2 = () => ['', `<div class="m2">
   <div class="m2-mast"><b>Draftverse</b><span>Every era. One game.</span></div>
   <div class="m2-team">${tm('TUL')}<span>Tulsa Twisters</span><a href="#">change</a></div>
