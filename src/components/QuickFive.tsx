@@ -519,7 +519,7 @@ function QuickDraftBoard({
       />
       <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now>
         Up to <b>{fmtCaps(maxPick)} caps</b> on this one and still fill the five.
-        {haveList.length > 0 && ` Your ${haveList.join(' and ')} ${haveList.length === 1 ? 'is' : 'are'} set.`}
+        {haveList.length > 0 && ` Your ${haveList.length > 1 ? `${haveList.slice(0, -1).join(', ')} and ${haveList[haveList.length - 1]}` : haveList[0]} ${haveList.length === 1 ? 'is' : 'are'} set.`}
       </Prompt>
       <section>
         {lowRimPressure(humanStarters) && (

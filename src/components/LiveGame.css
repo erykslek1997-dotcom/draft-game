@@ -2,7 +2,7 @@
    mockups: a broadcast scoreboard over the play-by-play, a side column with the court, the score by
    quarter, who is being hunted and the leaders. Laid out by the width it is given (a container
    query), since the daily and the season's playoffs host it in different columns. */
-.sc {
+section.sc {
   --sc-bg: #05070c;
   --sc-panel: #0a0f18;
   --sc-line: #182433;

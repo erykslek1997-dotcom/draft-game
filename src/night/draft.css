@@ -268,3 +268,8 @@
   .voices p.reply { padding-left: 18px; }
   .voices p .cue { color: var(--ink3); font-size: 14px; }
 }
+.nt {
+  .plist .draft { text-align: center; }
+  .cb-in { border: 0; padding: 0; border-radius: 0; box-shadow: none; outline: 0; min-height: 0; }
+  .ptabs .search, .filters .search { border-radius: 0; box-shadow: none; outline-offset: 2px; }
+}
