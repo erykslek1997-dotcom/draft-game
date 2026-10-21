@@ -61,12 +61,13 @@ There were 13 near-identical dark greys before this pass. There are 5 tokens now
 
 ## Decided after the audit
 
-1. **"You" is cream, not red.** A cream (`--you`) bar, rank and underline mark
-   your team in standings, the draft board, the draft order, the ticker, All-NBA,
-   league leaders, the playoff path and the "beat you" chart. Red stays for now
-   and problem; gold stays for caps and Joker only. So your own numbers (your
-   five, your seed, your award) are no longer gold, and the middle number of the
-   tally is gold only when it is the cap.
+1. **"You" is printed in reverse.** Your team's row (standings, draft order,
+   ticker, draft board, playoff bracket, board header) is a cream line with dark
+   ink (`--you-bg`, `--you-ink`). There is no "you" label. Your players in stat
+   tables get a light cream tint (`--you-tint`) instead. Red stays for now and
+   problem; gold stays for caps and Joker only. So your own numbers (your five,
+   your seed, your award) are no longer gold, and the middle number of the tally
+   is gold only when it is the cap.
 2. **Readable team marks.** When the franchise text colour reads below 4.5:1 and
    dark ink reads better than white, the mark uses dark ink (`#1E1C18`). Dark
    backgrounds keep their franchise text colour. Today this changes TPA only.

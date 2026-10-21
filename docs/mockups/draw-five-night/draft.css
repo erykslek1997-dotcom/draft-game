@@ -222,3 +222,16 @@
 @media (max-width: 600px) { .ptabs { flex-wrap: wrap; } .ptabs .pt { padding: 8px 10px 10px; } .ptabs .pt b { font-size: 18px; } .ptabs .search { flex-basis: 100%; order: -1; margin: 0 0 6px; } }
 .ptabs .search::placeholder { color: var(--ink3); font-style: italic; }
 @media (max-width: 600px) { .dboard-wrap { overflow-x: auto; margin-right: -16px; } .dboard { min-width: 720px; } .dboard th:first-child { width: 150px; } .dboard th:first-child, .dboard td.tn { position: sticky; left: 0; background: var(--bg); z-index: 1; } }
+
+/* your team: the row is printed in reverse (cream line, dark ink) so you find yourself at a glance */
+.order16 li.you, .ticker li.you { background: var(--you-bg); box-shadow: none; padding-left: 8px; color: var(--you-ink2); border-radius: 3px; border-bottom-color: transparent; }
+.order16 li.you b, .order16 li.you .n, .ticker li.you b, .ticker li.you .n { color: var(--you-ink); }
+.order16 li.you em, .ticker li.you .ps, .ticker li.you .c { color: var(--you-ink2); }
+.dboard tr.you td, .dboard tr.you td.tn { background: var(--you-bg); color: var(--you-ink); box-shadow: none; }
+.dboard tr.you td.tn { padding-left: 8px; }
+.dboard tr.you td small { color: var(--you-ink2); }
+.dboard tr.you td.clk { color: var(--cred); }
+.stand tr.you td { background: var(--you-bg); color: var(--you-ink2); }
+.stand tr.you td.rk { box-shadow: none; padding-left: 8px; color: var(--you-ink); }
+.stand tr.you td.nm b, .stand tr.you td.sc { color: var(--you-ink); }
+.stand tr.you td.nm i, .stand tr.you td.who, .stand tr.you td.car { color: var(--you-ink2); }

@@ -2,7 +2,7 @@
 :root {
   --bg: #0B0D11; --ink: #ECE6D7; --ink2: #A9A395; --ink3: #77736A; --rule: #26272A; --rule2: #ECE6D7;
   --red: #E0525A; --gold: #E5C06A; --card: #F4EFE3; --cink: #1E1C18; --cink2: #5B564C; --cline: #D6CDB8;
-  --you: #ECE6D7; --surf: #121317; --surf2: #1A1B1F; --rule3: #38383A; --ink4: #5C5850;
+  --you: #ECE6D7; --you-bg: #ECE6D7; --you-ink: #1E1C18; --you-ink2: #5B564C; --you-tint: rgba(236, 230, 215, 0.12); --surf: #121317; --surf2: #1A1B1F; --rule3: #38383A; --ink4: #5C5850;
   --cface: #E2DBCB; --cred: #A3282F; --cgold: #8A6A1E; --cgold2: #D9A93C; --cgold3: #5E4614;
   --cond: 'Barlow Condensed', Inter, sans-serif; --num: 'JetBrains Mono', monospace;
 }
