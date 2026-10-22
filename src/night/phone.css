@@ -315,7 +315,14 @@
 }
 @media (max-width: 600px) {
   /* not on the clock: no Draft buttons, so their column goes and the caps reach the right edge */
-  .nt .plist:not(:has(.draft)) col:last-child { width: 0 !important; }
-  .nt .plist:not(:has(.draft)) td.act, .nt .plist:not(:has(.draft)) th:last-child:empty { padding: 0; }
+  .nt .plist:not(:has(.draft:not(:disabled))) col:last-child { width: 0 !important; }
+  .nt .plist:not(:has(.draft:not(:disabled))) td.act, .nt .plist:not(:has(.draft:not(:disabled))) th:last-child:empty { padding: 0; }
   .nt .plist td.cap { padding-right: 0; }
+}
+@media (max-width: 600px) {
+  /* not on the clock: no Draft buttons, so their column goes and the caps reach the right edge
+     (playtest: "caps do prawej") */
+  .nt .plist:not(:has(.draft:not(:disabled))) col:last-child { width: 0 !important; }
+  .nt .plist:not(:has(.draft:not(:disabled))) td.act { padding: 0; }
+  .nt .plist:not(:has(.draft:not(:disabled))) td.cap { padding-right: 0; }
 }
