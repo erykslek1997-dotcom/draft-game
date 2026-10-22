@@ -18,6 +18,9 @@ export * from './frame';
 
 
 /** "1999–01" style label shortened like the mockups' card names: "R. Wallace". */
+/** An open slot's hint: "tap" on a touch screen, a plain word with a mouse (playtest 2026-10-22). */
+export const TAP_TO_SHOW = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches ? 'tap to show' : 'show list';
+
 export function shortName(name: string): string {
   const shown = maskName(name);
   const w = shown.split(' ');

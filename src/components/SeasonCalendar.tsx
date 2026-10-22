@@ -122,7 +122,7 @@ function MoveTag({ move }: { move: number }) {
 }
 
 /** Standings with each team's move since an earlier night (mockup `standMv`). */
-export function StandMoves({ rows, before, byId, codes, youId, head, note }: { rows: StandRow[]; before: StandRow[]; byId: Map<string, Team>; codes: Map<string, string>; youId: string; head: string; note: string }) {
+export function StandMoves({ rows, before, byId, codes, youId, head, note, moves = true }: { rows: StandRow[]; before: StandRow[]; byId: Map<string, Team>; codes: Map<string, string>; youId: string; head: string; note: string; /** False on the first break: nothing to move from, so no column of dashes. */ moves?: boolean }) {
   const was = new Map(before.map((r, i) => [r.teamId, i]));
   return (
     <section>
@@ -135,7 +135,7 @@ export function StandMoves({ rows, before, byId, codes, youId, head, note }: { r
             <th>Team</th>
             <th>W</th>
             <th>L</th>
-            <th />
+            {moves && <th />}
           </tr>
         </thead>
         <tbody>
@@ -148,9 +148,11 @@ export function StandMoves({ rows, before, byId, codes, youId, head, note }: { r
               <td className="nm">{byId.get(r.teamId)?.name}</td>
               <td>{r.wins}</td>
               <td>{r.losses}</td>
-              <td>
-                <MoveTag move={(was.get(r.teamId) ?? i) - i} />
-              </td>
+              {moves && (
+                <td>
+                  <MoveTag move={(was.get(r.teamId) ?? i) - i} />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -182,7 +184,7 @@ export function MvpLadder({ season, snap, prev, spans, codes, youId, count, head
                 {f1(per(l, 'pts'))} pts · {f1(per(l, 'reb'))} reb · {f1(per(l, 'ast'))} ast
               </span>
             </div>
-            <TrendTag move={was ? (k < 0 ? 16 - i : k - i) : null} />
+            {was ? <TrendTag move={k < 0 ? 16 - i : k - i} /> : <span />}
           </div>
         );
       })}
@@ -449,13 +451,17 @@ export function MonthBreak({ season, snap, you, byId, codes, spans }: { season: 
           {nick(you)} {mw}–{ml}, {ORD_WORDS[pos] ?? ord(pos)}
         </h2>
         <p>
-          {bestMonth.teamId === you.id ? 'The best month in the league.' : `The ${nick(byId.get(bestMonth.teamId))} had the best month, ${monthRec(bestMonth.teamId).join('–')}.`}{' '}
+          {bestMonth.teamId === you.id
+            ? 'The best month in the league.'
+            : monthRec(bestMonth.teamId)[0] === mw
+              ? `You and the ${nick(byId.get(bestMonth.teamId))} had the best month, ${mw}–${ml}.`
+              : `The ${nick(byId.get(bestMonth.teamId))} had the best month, ${monthRec(bestMonth.teamId).join('–')}.`}{' '}
           {wasPos && wasPos !== pos ? (pos < wasPos ? `Up ${wasPos - pos} from ${ord(wasPos)}.` : `Down ${pos - wasPos} from ${ord(wasPos)}.`) : from > 0 ? 'Same place as a month ago.' : ''}
           {climbed && climbed.move >= 3 && climbed.id !== you.id && ` The ${nick(byId.get(climbed.id))} climbed ${climbed.move} places.`}
         </p>
       </div>
       <div className="split">
-        <StandMoves rows={stand} before={before} byId={byId} codes={codes} youId={you.id} head="Standings" note={from > 0 ? `after ${label} · move this month` : `after ${label}`} />
+        <StandMoves rows={stand} before={before} byId={byId} codes={codes} youId={you.id} head="Standings" note={from > 0 ? `after ${label} · move this month` : `after ${label}`} moves={from > 0} />
         <div className="stack">
           {potm && potmSpan && (
             <section>

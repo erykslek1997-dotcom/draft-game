@@ -45,7 +45,7 @@ import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
-import { Actions, Btn, CapBar, EmptyNote, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, Tally, buzz, fmtCaps, lastName } from '../night/ui';
+import { Actions, Btn, CapBar, EmptyNote, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName } from '../night/ui';
 import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
@@ -1492,7 +1492,9 @@ export default function DraftBoard({
       <SubNote>
         {humanBudget.slotsLeft > 0 ? (
           <>
-            <b>{fmtCaps(humanBudget.capLeft)} caps</b> for {spotWord(humanBudget.slotsLeft)} · about {fmtCaps(humanBudget.capLeft / humanBudget.slotsLeft)} a pick
+            <b>{fmtCaps(humanBudget.capLeft)} caps</b> for {spotWord(humanBudget.slotsLeft)}{' '}
+            {/* one unit, so it wraps whole instead of leaving "pick" alone on a line */}
+            <span style={{ whiteSpace: 'nowrap' }}>· about {fmtCaps(humanBudget.capLeft / humanBudget.slotsLeft)} a pick</span>
           </>
         ) : (
           <>
@@ -1612,8 +1614,6 @@ export default function DraftBoard({
     const hot = rows.find((r) => r.legal);
     if (hot) hot.hot = true;
     const open = STARTER_SLOTS.filter((sl) => !humanAssignment[sl]);
-    const openWords = open.length > 1 ? `A ${open.slice(0, -1).join(', a ')} or a ${open[open.length - 1]}` : open.length ? `A ${open[0]}` : null;
-    const hotName = hot ? lastName(hot.span.playerName) : null;
     main = (
       <>
         {boardShown && board}
@@ -1624,7 +1624,7 @@ export default function DraftBoard({
           note={`${humanTeam.roster.length} of ${ROSTER_SIZE} · ${teamLabel(humanTeam)}`}
           sel={on === 'ALL' ? null : on}
           onSlot={(pos) => setTab(pos)}
-          emptyLabel={(pos) => (pos === on ? `showing ${counts[pos]} ▾` : 'tap to show')}
+          emptyLabel={(pos) => (pos === on ? `showing ${counts[pos]} ▾` : TAP_TO_SHOW)}
         />
         {state.complete ? (
           <Prompt eb="Draft done" title="Your nine are in">
@@ -1632,12 +1632,9 @@ export default function DraftBoard({
           </Prompt>
         ) : youOnClock ? (
           <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now>
-            {openWords ? `${openWords} fits best.` : 'Your five is set; this pick is for the bench.'}{' '}
-            {hotName && (
-              <>
-                <b className="w">{hotName}</b> is still on the board. Up to <b>{fmtCaps(humanBudget.maxThisPick)} caps</b> on this one.
-              </>
-            )}
+            {/* 2026-10-22, the playtest ("może jednak bez tej podpowiedzi"): no advice on who to take,
+                only the hard limit — what this pick may cost and still leave enough for the rest. */}
+            Up to <b>{fmtCaps(humanBudget.maxThisPick)} caps</b> on this pick.{!open.length && ' Your five is set; this one is for the bench.'}
           </Prompt>
         ) : (
           <Prompt eb={`On the clock · Pick ${overall}`} title={teamLabel(currentTeam)} now>

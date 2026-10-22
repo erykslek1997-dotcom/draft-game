@@ -974,6 +974,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   const dnp = heroTeam.roster.filter((sp) => !playing.has(sp.id));
 
   const poster: PosterData = {
+    daily: Boolean(daily),
     mode: daily ? (daily.mode === 'bomb' ? 'The Bomb · daily' : 'All-Time Draft · daily') : 'All-Time Draft',
     date: daily ? new Date(`${daily.day}T12:00:00`) : new Date(),
     kick: `${tier.label} · ${ordinal(hero.rank)} of ${fieldSize}`,
@@ -1025,7 +1026,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           <Kv k="You" v={hero.breakdown.overall} />
         </section>
       )}
-      <Actions links={links}>
+      <Actions>
         <Btn onClick={() => setSeasonOpen(true)}>Play the season →</Btn>
         <div className="btn2">
           <Btn kind="line" onClick={() => setShareOpen(true)}>
@@ -1086,6 +1087,10 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
             seasonReady={seasonState.status === 'done'}
           />
         )}
+        {/* a real button, not only the small "← Menu" link (playtest 2026-10-22) */}
+        <Btn kind="line" onClick={links.onMenu}>
+          Main menu
+        </Btn>
       </Actions>
     </>
   );
@@ -1110,7 +1115,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   );
 
   if (seasonOpen) {
-    return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} />;
+    return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} end={{ onMenu: onRestart, onNewDraft: !daily && onRematch ? () => onRematch() : undefined }} />;
   }
 
   return (

@@ -40,14 +40,14 @@ i.note, .it { font-style: italic; }
 /* 2026-10-22 (playtest): one size and one baseline for all three numbers — the cap/seed in the
    middle used to be smaller and float higher. */
 .t .k { display: block; font: 700 12px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; white-space: nowrap; }
-.t b { display: block; font: 600 36px/1 var(--num); letter-spacing: -0.02em; white-space: nowrap; }
+.t b { display: block; font: 600 30px/1 var(--num); letter-spacing: -0.03em; white-space: nowrap; }
 .t.ai { text-align: right; }
 .t.ai b { color: var(--ink2); }
-.t.ai b.name { font: 800 24px/1.5 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; }
+.t.ai b.name { font: 800 22px/1.36 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; }
 .t.mid { text-align: center; }
 .t.mid b { color: var(--gold); }
 .t.mid b.plain { color: var(--ink2); }
-.t.mid b.word { font: 800 26px/1.38 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.t.mid b.word { font: 800 24px/1.25 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
 .t.mid b.clock { display: inline-block; color: var(--ink); font-size: 24px; line-height: 1; border: 1.5px solid var(--red); border-radius: 3px; padding: 4px 8px; }
 .capbar { height: 4px; background: var(--rule); margin-top: -12px; }
 .capbar i { display: block; height: 100%; background: var(--gold); }
@@ -78,7 +78,8 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .order u { text-decoration: none; color: var(--red); }
 
 /* buttons */
-.actions { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+/* right under the aside's content, never pushed to the foot of a long page (playtest 2026-10-22) */
+.actions { display: flex; flex-direction: column; gap: 12px; }
 .btn { display: block; width: 100%; border-radius: 3px; padding: 14px; font: 800 18px var(--cond); letter-spacing: 0.06em; text-transform: uppercase; text-align: center; cursor: pointer; }
 .btn.off { border: 1.5px solid var(--rule3); background: transparent; color: var(--ink3); }
 .btn.go { border: 0; background: var(--ink); color: var(--bg); }
@@ -354,3 +355,6 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
   .nt aside > .actions { display: flex !important; margin-top: 0; order: 9; }
   .nt aside > .actions > :not(.links) { display: none !important; }
 }
+
+/* 2026-10-22 (playtest): the speeds sat glued to the Play button */
+.nt .speeds + .btn2, .nt .speeds + .stackb { margin-top: 18px; }

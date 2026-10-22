@@ -18,7 +18,8 @@ export const cx = (...parts: (string | false | null | undefined)[]) => parts.fil
 /** The cap coin in front of a price. */
 export const CapI = () => <i className="capi" aria-hidden />;
 
-export const fmtCaps = (v: number) => (Number.isInteger(Math.round(v * 10) / 10) ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1));
+// Caps always carry one decimal, so a column of them lines up ("19.0" next to "22.5"; playtest 2026-10-22).
+export const fmtCaps = (v: number) => (Math.round(v * 10) / 10).toFixed(1);
 export const fmt1 = (v: number) => v.toFixed(1);
 
 /* ---------------- page frame ---------------- */

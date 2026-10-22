@@ -32,6 +32,8 @@ export interface PosterData {
   foot: string;
   storyFoot?: string;
   champ?: boolean;
+  /** A daily's poster says "Daily" in the masthead; any other just the brand. */
+  daily?: boolean;
   /** The daily Draw Five hides your five until tomorrow. */
   hidden?: boolean;
   extra?: [string, ReactNode];
@@ -41,7 +43,7 @@ const longDate = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'long', m
 const shortDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 function numLabel(n: number, unit: 'caps' | 'ppg', small = false) {
-  const v = Number.isInteger(n) ? String(n) : n.toFixed(1);
+  const v = n.toFixed(1);
   return unit === 'caps' ? (
     <>
       <CapI />
@@ -62,6 +64,8 @@ function Profile({ prof }: { prof: PosterData['prof'] }) {
         <div key={p.label} className={`pp${p.tone ? ` ${p.tone}` : ''}`}>
           <span>{p.label}</span>
           <b>
+            {/* red and green always with a sign (the rule; playtest 2026-10-22) */}
+            {p.tone === 'lo' ? '▼ ' : p.tone === 'hi' ? '▲ ' : ''}
             {p.value}
             {p.tone === 'lo' ? <span className="visually-hidden"> weak</span> : p.tone === 'hi' ? <span className="visually-hidden"> best</span> : null}
           </b>
@@ -81,7 +85,7 @@ export function Poster({ d }: { d: PosterData }) {
   return (
     <div className={`poster${d.champ ? ' champ-p' : ''}`}>
       <div className="po-mast">
-        <span>{BRAND} Daily</span>
+        <span>{d.daily ? `${BRAND} Daily` : BRAND}</span>
         <b>{longDate(d.date)}</b>
         <span>{d.mode}</span>
       </div>
@@ -146,7 +150,7 @@ export function Story({ d }: { d: PosterData }) {
   return (
     <div className={`story${d.champ ? ' champ-p' : ''}`}>
       <div className="po-mast">
-        <span>{BRAND} Daily</span>
+        <span>{d.daily ? `${BRAND} Daily` : BRAND}</span>
         <b>{shortDate(d.date)}</b>
         <span>{d.mode}</span>
       </div>

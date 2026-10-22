@@ -78,7 +78,7 @@
 .stand2 td.nm { text-align: left; font: 700 18px var(--cond); color: var(--ink); }
 .stand2 td.nm i { font: italic 500 12px var(--sans); color: var(--ink3); margin-left: 6px; }
 .stand2 tr.you td { background: var(--surf); color: var(--ink); }
-.stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; color: var(--you); }
+.stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); color: var(--you); }
 .stand2 tr.cut td { border-bottom: 1.5px dashed var(--ink3); }
 .cutnote { font: italic 500 12px var(--sans); color: var(--ink3); padding: 6px 0 0; }
 .leaders { width: 100%; border-collapse: collapse; }
@@ -252,7 +252,7 @@
   .ldr-grid { grid-template-columns: 1fr; }
   .sbox td:nth-child(n+7), .sbox th:nth-child(n+7) { display: none; }
 }
-.tsm .t b { font-size: 28px; white-space: nowrap; }
+.tsm .t b { font-size: 24px; line-height: 1.25; white-space: nowrap; }
 .sbox td:first-child { display: table-cell; white-space: nowrap; }
 .sbox .sb-f { display: inline-block; vertical-align: middle; margin-right: 10px; }
 .sbox th { text-transform: uppercase; }
@@ -304,11 +304,13 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .pk2-nums div + div { border-left: 1px solid var(--cline); }
 .pk2-nums b { display: block; font: 600 20px var(--num); }
 .pk2-nums span { font: 700 11px var(--sans); letter-spacing: 0.1em; color: var(--cink2); }
-.pk2-grades { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cline); }
-.pk2-tier { font: 800 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; padding-right: 8px; }
+/* 2026-10-22 (playtest): the tier on its own line, the six grades in a fixed 3×2 grid — no grade left
+   alone on a wrapped line. An A is green (good, with its word), not gold (gold is caps and trophies). */
+.pk2-grades { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; align-items: baseline; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cline); }
+.pk2-tier { grid-column: 1 / -1; font: 800 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
 .gr { font-size: 13px; color: var(--cink2); }
 .gr b { font: 700 16px var(--num); color: var(--cink); margin-right: 4px; }
-.gr b.hi { color: var(--cgold); }
+.gr b.hi { color: var(--cgreen); }
 .gr b.lo { color: var(--cred); }
 .pk2-card .btn.go { background: var(--cink); color: var(--card); }
 .pk2-scout { display: flex; align-items: center; gap: 16px; padding: 10px 0 14px; font-size: 14px; font-style: italic; color: var(--ink2); }
@@ -418,7 +420,9 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .po-head p { margin: 0; font-size: 14px; font-style: italic; color: var(--cink2); line-height: 1.4; }
 .po-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
 .po-p { text-align: center; }
-.po-ph { height: 86px; background: var(--team); display: grid; place-items: end center; overflow: hidden; border-radius: 3px; }
+/* the team colour, muted into the card's face, with a full-colour line at the foot — the bare team
+   colours behind the photos were too loud on the cream (playtest 2026-10-22) */
+.po-ph { height: 86px; background: color-mix(in srgb, var(--team) 26%, var(--cface)); box-shadow: inset 0 -4px 0 var(--team); display: grid; place-items: end center; overflow: hidden; border-radius: 3px; }
 .po-ph img { width: min(82px, 100%); height: auto; aspect-ratio: 1; object-fit: cover; margin-bottom: -6px; }
 .po-p b { display: block; margin-top: 4px; font: 800 16px/1 var(--cond); text-transform: uppercase; }
 .po-p small { font: 500 9px var(--num); color: var(--cink2); }
@@ -539,7 +543,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 @media (max-width: 600px) { .story-grid { grid-template-columns: 300px; } .poster { padding: 12px; } .po-head h2 { font-size: 34px; } .po-head p { font-size: 13px; } .po-ph { height: 62px; } .po-p b { font-size: 13px; } .po-p small { display: none; } .po-p em { font-size: 11px; white-space: nowrap; } .po-prof { gap: 6px; } .pp span { letter-spacing: 0.06em; } .po-strip b { font-size: 20px; } .po-strip span { letter-spacing: 0.06em; } }
 /* your team, reversed rows (see draft.css) */
 .stand2 tr.you td { background: var(--you-bg); color: var(--you-ink); }
-.stand2 tr.you td.rk { box-shadow: none; padding-left: 8px; color: var(--you-ink); }
+.stand2 tr.you td.rk { box-shadow: none; color: var(--you-ink); }
 .stand2 tr.you td * { color: var(--you-ink); }
 .stand2 tr.you td.nm i { color: var(--you-ink2); }
 .bg-team.you { background: var(--you-bg); box-shadow: none; border-radius: 3px; padding: 4px 0; }
@@ -616,7 +620,8 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .sprog { height: 4px; background: var(--rule); margin-top: -12px; }
 .sprog i { display: block; height: 100%; background: var(--ink2); }
 .mvp-r { display: grid; grid-template-columns: 22px 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 8px; border-bottom: 1px solid var(--rule); }
-.mvp-r.you { background: var(--you-tint); }
+.mvp-r.you { background: var(--you-bg); border-radius: 3px; border-bottom-color: transparent; }
+.mvp-r.you b, .mvp-r.you .rk { color: var(--you-ink); } .mvp-r.you b small, .mvp-r.you .ln, .mvp-r.you .trd { color: var(--you-ink2); }
 .mvp-r .rk { font: 600 14px var(--num); color: var(--ink3); }
 .mvp-r img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
 .mvp-r b { display: block; font: 700 18px/1.1 var(--cond); color: var(--ink); }
@@ -624,6 +629,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .mvp-r .ln { display: block; margin-top: 3px; font: 500 12px var(--num); color: var(--ink3); }
 .mvp-r .trd { font: 600 13px var(--num); color: var(--ink3); white-space: nowrap; }
 .mvp-r .trd.up { color: var(--green); } .mvp-r .trd.down { color: var(--red); }
+.mvp-r.you .trd.up { color: var(--cgreen); } .mvp-r.you .trd.down { color: var(--cred); }
 .gos { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px 0 12px; border-bottom: 1px solid var(--rule); }
 .gos img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
 .gos b { display: block; font: 700 20px/1.1 var(--cond); color: var(--ink); }
@@ -914,7 +920,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .pk2-open .pk2-grades { margin: 0 0 10px; padding: 0; border: 0; }
   .pk2-open .gr { color: var(--ink3); }
   .pk2-open .gr b { color: var(--ink); }
-  .pk2-open .gr b.hi { color: var(--gold); }
+  .pk2-open .gr b.hi { color: var(--green); }
   .pk2-open .gr b.lo { color: var(--red); }
   .pk2-more { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 12px; font-size: 13px; color: var(--ink3); }
   .pk2-more b { font: 600 14px var(--num); color: var(--ink2); }

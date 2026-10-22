@@ -1038,6 +1038,7 @@ function BestFiveResult({
 
   const strongest = [...AXES].filter((a) => a.key !== 'spacing').sort((a, b) => score[b.key] - score[a.key])[0];
   const poster: PosterData = {
+    daily: Boolean(daily),
     mode: daily ? 'Draw Five · daily' : 'Draw Five',
     date: daily ? new Date(`${daily}T12:00:00`) : new Date(),
     kick: match ? (daily ? `Game of the day · ${won ? 'beat' : 'lost to'} the ${opp} ${match.final[0]}–${match.final[1]}` : `Final · ${won ? 'beat' : 'lost to'} the AI ${match.final[0]}–${match.final[1]}`) : 'Final',
@@ -1134,7 +1135,7 @@ function BestFiveResult({
           {challenge?.vs != null && <Kv k={`Friend’s five · ${challengeVerdict(score.composite, challenge.vs) === 'won' ? 'you win' : challengeVerdict(score.composite, challenge.vs) === 'lost' ? 'they win' : 'tied'}`} v={challenge.vs} />}
         </section>
       )}
-      <Actions links={links}>
+      <Actions links={{ ...links, onMenu: undefined }}>
         {daily ? (
           <div className="btn2">
             <Btn kind="line" onClick={copyDailyResult}>
@@ -1170,6 +1171,11 @@ function BestFiveResult({
         {onReplayDaily && (
           <Btn kind="line" onClick={onReplayDaily}>
             Play today again (testing)
+          </Btn>
+        )}
+        {links.onMenu && (
+          <Btn kind="line" onClick={links.onMenu}>
+            Main menu
           </Btn>
         )}
       </Actions>

@@ -234,9 +234,10 @@ export function PlayerTable({
               {at && (
                 <td className="yrs c-hide">
                   {onYears && (r.spans ?? 0) > 1 ? (
-                    <button type="button" className="yrs-btn" onClick={() => onYears(s.playerName)}>
+                    <button type="button" className="yrs-btn" onClick={() => onYears(s.playerName)} title="His other stretches">
                       {maskYears(s.playerName, s.spanLabel)}
-                      <small>▾</small>
+                      {/* how many other stretches he has (it was a lone ▾ that read as a stray dot) */}
+                      <small>+{(r.spans ?? 1) - 1}</small>
                     </button>
                   ) : (
                     <span className="yrs-plain">{maskYears(s.playerName, s.spanLabel)}</span>

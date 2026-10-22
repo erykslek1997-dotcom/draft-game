@@ -387,13 +387,14 @@ export default function LiveGameNight({
     if (done) {
       const margin = Math.abs(game.final[0] - game.final[1]);
       const title = won ? `${short[you]} win` : `${short[them]} win`;
-      // The engine's recap and star speak for side 0; when you play as side 1 (the lower seed in
-      // a series), say it from your side (playtest 2026-10-22: "They were the better team" under
-      // "Sasquatch win", and the star named twice).
-      if (you === 0) return { eb: 'Final', title, line: <>{game.recap} {maskName(game.star.name)}: {game.star.line.pts} points, {game.star.line.reb} rebounds, {game.star.line.ast} assists.</>, margin };
+      // Your side's best line, said once (playtest 2026-10-22: "Pippen did what he could. Pippen: 23
+      // points…", and "They were the better team" read wrong when you play as the second side).
       const lines = Object.entries(game.box[you]);
       const [starLabel, l] = lines.reduce((best, cur) => (cur[1].pts + cur[1].reb + cur[1].ast > best[1].pts + best[1].reb + best[1].ast ? cur : best), lines[0]);
       const stat = `${l.pts} points, ${l.reb} rebounds, ${l.ast} assists`;
+      // The engine's recap speaks for side 0; keep it when it says something the line below doesn't
+      // (who got hunted on defense), else say it plainly from your side.
+      if (you === 0 && !game.recap.includes(game.star.name)) return { eb: 'Final', title, line: <>{game.recap} {maskName(starLabel)}: {stat}.</>, margin };
       const line = won ? `${maskName(starLabel)} led the way: ${stat}.` : `The ${short[them]} were the better team. ${maskName(starLabel)} did what he could: ${stat}.`;
       return { eb: 'Final', title, line: <>{line}</>, margin };
     }
@@ -493,23 +494,25 @@ export default function LiveGameNight({
       ))}
     </div>
   );
+  // 2026-10-22, the playtest: Play is the main action (filled), Skip the shortcut (outline); once the
+  // game is over the controls go, and "Watch again" sits once under the next step (`endActions`).
   const controls = (cls: string) =>
-    done ? (
+    done ? null : (
       <div className={cls}>
-        <Btn kind="line" onClick={() => start(0)}>
-          Watch again
-        </Btn>
-      </div>
-    ) : (
-      <div className={cls}>
-        <Btn kind="line" onClick={() => setRunning((r) => !r)}>
-          {running ? 'Pause' : 'Play'}
-        </Btn>
+        <Btn onClick={() => setRunning((r) => !r)}>{running ? 'Pause' : 'Play'}</Btn>
         <Btn kind="line" onClick={skip}>
           Skip to final
         </Btn>
       </div>
     );
+  const endActions = (
+    <>
+      {doneSlot}
+      <Btn kind="line" onClick={() => start(0)}>
+        Watch again
+      </Btn>
+    </>
+  );
 
   const wpEl = (
     <div className="wp">
@@ -878,27 +881,31 @@ export default function LiveGameNight({
           <>
             <Mast title={mast.title} sub={done ? mast.sub : (mast.liveSub ?? mast.sub)} daily={mast.daily} />
             {tallyEl}
-            <section>
-              <H3>Broadcast</H3>
-              {!done && speedsEl}
-              {controls('btn2')}
-            </section>
+            {!done && (
+              <section>
+                <H3>Broadcast</H3>
+                {speedsEl}
+                {controls('btn2')}
+              </section>
+            )}
             <section>
               <H3 note={`${short[0].toLowerCase()} · ${short[1]}`}>Team stats</H3>
               {teamStats}
             </section>
             {asideExtra}
-            <Actions links={links}>{done && doneSlot}</Actions>
+            <Actions links={links}>{done && endActions}</Actions>
           </>
         }
       >
         {prompt}
-        <section className="phone-only">
-          <H3>Broadcast</H3>
-          {!done && speedsEl}
-          {controls('btn2')}
-        </section>
-        {done && doneSlot && <div className="phone-only stackb">{doneSlot}</div>}
+        {!done && (
+          <section className="phone-only">
+            <H3>Broadcast</H3>
+            {speedsEl}
+            {controls('btn2')}
+          </section>
+        )}
+        {done && <div className="phone-only stackb">{endActions}</div>}
         <div className="split">
           <section>
             <H3 note={done ? 'newest first' : `Q${liveQuarter + 1} · newest first`}>Play-by-play</H3>
@@ -959,17 +966,24 @@ export default function LiveGameNight({
         <>
           <Mast title={mast.title} sub={done ? mast.sub : (mast.liveSub ?? mast.sub)} daily={mast.daily} />
           {tallyEl}
+          {/* the quarters right under the score (playtest 2026-10-22), not at the foot of the court */}
+          <section className="keep">
+            <H3>Score by quarter</H3>
+            {quarterTable}
+          </section>
           {!done && (
             <section className="keep">
               <H3>Win probability</H3>
               {wpEl}
             </section>
           )}
-          <section className="keep live-aside">
-            <H3>{done ? 'Replay' : 'Speed'}</H3>
-            {!done && speedsEl}
-            {controls('stackb')}
-          </section>
+          {!done && (
+            <section className="keep live-aside">
+              <H3>Speed</H3>
+              {speedsEl}
+              {controls('stackb')}
+            </section>
+          )}
           <section>
             <H3 note={`${short[0]} · ${short[1]}`}>{done ? 'Leaders' : 'Leaders so far'}</H3>
             {l0.map(({ k, a, b }) => (
@@ -983,12 +997,12 @@ export default function LiveGameNight({
             ))}
           </section>
           {asideExtra}
-          <Actions links={links}>{done && doneSlot}</Actions>
+          <Actions links={links}>{done && endActions}</Actions>
         </>
       }
     >
       {prompt}
-      {done && doneSlot && <div className="phone-only stackb">{doneSlot}</div>}
+      {done && <div className="phone-only stackb">{endActions}</div>}
       {huntEl}
       <div className="split live-split">
         <section>
@@ -1019,10 +1033,6 @@ export default function LiveGameNight({
                 {lastShot.line ? ` · ${lastShot.line.fgm} of ${lastShot.line.fga} tonight` : ''}
               </p>
             )}
-          </section>
-          <section>
-            <H3>Score by quarter</H3>
-            {quarterTable}
           </section>
         </div>
       </div>

@@ -56,6 +56,10 @@ const ORD_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seve
 const per = (l: SeasonPlayerLine, k: keyof SeasonPlayerLine['totals']) => l.totals[k] / Math.max(1, l.games);
 const f1 = (x: number) => x.toFixed(1);
 const pct = (made: number, att: number) => (att > 0 ? (100 * made) / att : 0);
+/** A shooting percentage, or "—" on too few tries to mean anything (playtest 2026-10-22: Shaq's
+ * 50.0 3P% on two threes). */
+const MIN_TRIES = 10;
+const pctOr = (made: number, att: number) => (att >= MIN_TRIES ? f1(pct(made, att)) : '—');
 const mascot = (team: Team | undefined) => (team ? teamNickname(team.name) : '');
 const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? '' : 's'}`;
 const lastName = (n: string) => n.split(' ').slice(-1)[0];
@@ -129,8 +133,8 @@ function SeasonPlayerCard({
     f1(per(l, 'stl')),
     f1(per(l, 'blk')),
     f1(pct(l.totals.fgm, l.totals.fga)),
-    l.totals.tpa ? f1(pct(l.totals.tpm, l.totals.tpa)) : '—',
-    l.totals.fta ? f1(pct(l.totals.ftm, l.totals.fta)) : '—',
+    pctOr(l.totals.tpm, l.totals.tpa),
+    pctOr(l.totals.ftm, l.totals.fta),
     f1(per(l, 'tov')),
     f1(per(l, 'pf')),
   ];
@@ -232,7 +236,14 @@ function readSeasonProgress(seed: string): SeasonProgress | null {
   }
 }
 
-export default function SeasonView({ teams, codes, state, onClose }: { teams: Team[]; codes: Map<string, string>; state: SeasonState; onClose: () => void }) {
+/** What the end of the season offers besides sharing (playtest 2026-10-22: only a small "← Menu",
+ * which went back to the results). */
+export interface SeasonEnd {
+  onNewDraft?: () => void;
+  onMenu: () => void;
+}
+
+export default function SeasonView({ teams, codes, state, onClose, end }: { teams: Team[]; codes: Map<string, string>; state: SeasonState; onClose: () => void; end?: SeasonEnd }) {
   const seed = useMemo(() => seasonSeed(teams), [teams]);
   const [saved] = useState(() => readSeasonProgress(seed));
   const [chapter, setChapter] = useState<Chapter>(saved?.chapter ?? 'calendar');
@@ -269,6 +280,7 @@ export default function SeasonView({ teams, codes, state, onClose }: { teams: Te
       reveal={reveal}
       setReveal={setReveal}
       onClose={onClose}
+      end={end}
       calendar={{ day, setDay, seen, setSeen, noBreaks, setNoBreaks, playInDone, setPlayInDone }}
     />
   );
@@ -323,6 +335,7 @@ function SeasonBody({
   reveal,
   setReveal,
   onClose,
+  end,
   calendar,
 }: {
   teams: Team[];
@@ -336,6 +349,7 @@ function SeasonBody({
   reveal: Reveal;
   setReveal: (r: Reveal) => void;
   onClose: () => void;
+  end?: SeasonEnd;
   calendar: CalendarState;
 }) {
   const byId = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
@@ -443,12 +457,28 @@ function SeasonBody({
           })}
         </section>
       )}
-      <Actions links={{ onMenu: onClose }}>
+      <Actions links={finalsDone && end ? undefined : { onMenu: onClose }}>
         {buttons}
         {finalsDone && <Btn onClick={() => setSharing(true)}>Share your season</Btn>}
-        <Btn kind="line" onClick={onClose}>
-          Back to the results
-        </Btn>
+        {finalsDone && end ? (
+          <>
+            {end.onNewDraft && (
+              <Btn kind="line" onClick={end.onNewDraft}>
+                New draft
+              </Btn>
+            )}
+            <Btn kind="line" onClick={end.onMenu}>
+              Main menu
+            </Btn>
+            <button type="button" className="lk-inline back-res" onClick={onClose}>
+              ← Back to the results
+            </button>
+          </>
+        ) : (
+          <Btn kind="line" onClick={onClose}>
+            Back to the results
+          </Btn>
+        )}
       </Actions>
     </>
   );
@@ -802,9 +832,9 @@ const COLUMNS: { key: SortKey; label: string; title?: string; basic?: true; valu
   { key: 'fg', label: 'FG%', basic: true, value: (l) => pct(l.totals.fgm, l.totals.fga), fmt: (l) => f1(pct(l.totals.fgm, l.totals.fga)) },
   // 2026-10-15 (playtest: Gobert's 30.0 3P% read like a real number): the attempts beside the percentage.
   { key: 'tpa', label: '3PA', title: 'Three-point attempts per game', value: (l) => per(l, 'tpa'), fmt: (l) => f1(per(l, 'tpa')) },
-  { key: 'tp', label: '3P%', basic: true, value: (l) => pct(l.totals.tpm, l.totals.tpa), fmt: (l) => (l.totals.tpa ? f1(pct(l.totals.tpm, l.totals.tpa)) : '—') },
+  { key: 'tp', label: '3P%', basic: true, value: (l) => pct(l.totals.tpm, l.totals.tpa), fmt: (l) => pctOr(l.totals.tpm, l.totals.tpa) },
   { key: 'fta', label: 'FTA', title: 'Free throw attempts per game', value: (l) => per(l, 'fta'), fmt: (l) => f1(per(l, 'fta')) },
-  { key: 'ft', label: 'FT%', value: (l) => pct(l.totals.ftm, l.totals.fta), fmt: (l) => (l.totals.fta ? f1(pct(l.totals.ftm, l.totals.fta)) : '—') },
+  { key: 'ft', label: 'FT%', value: (l) => pct(l.totals.ftm, l.totals.fta), fmt: (l) => pctOr(l.totals.ftm, l.totals.fta) },
   { key: 'tov', label: 'TOV', value: (l) => per(l, 'tov'), fmt: (l) => f1(per(l, 'tov')) },
   // 2026-10-14, the user: "pokaż faule w statystykach".
   { key: 'pf', label: 'PF', title: 'Personal fouls per game', value: (l) => per(l, 'pf'), fmt: (l) => f1(per(l, 'pf')) },
@@ -1469,7 +1499,7 @@ function PlayoffsChapter({
     );
     line = (
       <>
-        The {byId.get(youId)?.name} {won ? 'beat' : 'lose to'} the {byId.get(opp)?.name} <b>{won ? `${w}–${l}` : `${l}–${w}`}</b>.{verdict && ` ${verdict}`}
+        The {byId.get(youId)?.name} {won ? 'beat' : 'lose to'} the {byId.get(opp)?.name} <b className="w">{won ? `${w}–${l}` : `${l}–${w}`}</b>, {verdict}
       </>
     );
     if (won && live.round < last) {
@@ -1628,7 +1658,7 @@ function Finale({
             </>
           ) : lastRun ? (
             <>
-              The {byId.get(lastRun.winnerId)?.name} take the series <b>{wlOf(lastRun)[1]}–{wlOf(lastRun)[0]}</b>.
+              The {byId.get(lastRun.winnerId)?.name} take the series <b className="w">{wlOf(lastRun)[1]}–{wlOf(lastRun)[0]}</b>.
             </>
           ) : (
             <>The top eight played on without the {mascot(you)}.</>
@@ -1739,7 +1769,7 @@ function SeasonTable({ lines }: { lines: SeasonPlayerLine[] }) {
               <td>{f1(per(l, 'stl'))}</td>
               <td>{f1(per(l, 'blk'))}</td>
               <td>{f1(pct(l.totals.fgm, l.totals.fga))}</td>
-              <td>{l.totals.tpa ? f1(pct(l.totals.tpm, l.totals.tpa)) : '—'}</td>
+              <td>{pctOr(l.totals.tpm, l.totals.tpa)}</td>
             </tr>
           ))}
         </tbody>
@@ -1778,7 +1808,6 @@ function Watch({
 }) {
   const game = useMemo(() => playLivePlayoffGame(teams, series, gameIndex), [teams, series, gameIndex]);
   const previous = useMemo(() => (gameIndex > 0 ? playLivePlayoffGame(teams, series, gameIndex - 1) : null), [teams, series, gameIndex]);
-  const [take, setTake] = useState(0);
   const openCard = useContext(PlayerCardContext);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1806,9 +1835,6 @@ function Watch({
   const done = (
     <>
       {onNext ? <Btn onClick={onNext}>▶ Game {gameIndex + 2}</Btn> : <Btn onClick={onBack}>Back to the series →</Btn>}
-      <Btn kind="line" onClick={() => setTake((t) => t + 1)}>
-        Watch again
-      </Btn>
       {onNext && (
         <Btn kind="line" onClick={onBack}>
           Back to the series
@@ -1819,7 +1845,6 @@ function Watch({
   return (
     <>
       <LiveGameNight
-        key={take}
         game={game}
         variant="full"
         sides={{ names: [a?.name ?? '', b?.name ?? ''], short: [mascot(a), mascot(b)], codes: [codes.get(series.teamAId) ?? '', codes.get(series.teamBId) ?? ''], you }}
@@ -2098,7 +2123,6 @@ function GameWatch({
   onClose: () => void;
 }) {
   const game = useMemo(build, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const [take, setTake] = useState(0);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onDone();
     window.addEventListener('keydown', onKey);
@@ -2108,7 +2132,6 @@ function GameWatch({
   return (
     <>
       <LiveGameNight
-        key={take}
         game={game}
         variant="full"
         sides={sides}
@@ -2119,9 +2142,6 @@ function GameWatch({
         done={
           <>
             <Btn onClick={onDone}>{doneLabel}</Btn>
-            <Btn kind="line" onClick={() => setTake((t) => t + 1)}>
-              Watch again
-            </Btn>
           </>
         }
         onFinish={onFinish}

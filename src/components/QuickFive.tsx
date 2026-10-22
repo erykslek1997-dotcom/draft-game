@@ -50,6 +50,7 @@ import {
   Prompt,
   SLOTS,
   SubNote,
+  TAP_TO_SHOW,
   Tally,
   buzz,
   dayLabel,
@@ -515,7 +516,7 @@ function QuickDraftBoard({
         note={`${humanTeam.roster.length} of 5 · ${teamLabel(humanTeam)}`}
         sel={on === 'ALL' ? null : on}
         onSlot={(p) => setTab(p)}
-        emptyLabel={(p) => (p === on ? `showing ${counts[p]} ▾` : 'tap to show')}
+        emptyLabel={(p) => (p === on ? `showing ${counts[p]} ▾` : TAP_TO_SHOW)}
       />
       <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now>
         Up to <b>{fmtCaps(maxPick)} caps</b> on this one and still fill the five.
@@ -662,6 +663,7 @@ function QuickResults({
     }
   }
   const poster: PosterData = {
+    daily: Boolean(daily),
     mode: daily ? 'Mini Draft · daily' : 'Mini Draft',
     date: daily ? new Date(`${daily.day}T12:00:00`) : new Date(),
     kick: `Final standings · ${ordinal(humanRank)} of ${TEAM_COUNT}`,
@@ -746,7 +748,7 @@ function QuickResults({
           {challenge?.vs != null && <Kv k={`${challenge.vsName ?? 'Friend'} · ${challengeVerdict(human.score.composite, challenge.vs) === 'won' ? 'you win' : challengeVerdict(human.score.composite, challenge.vs) === 'lost' ? 'they win' : 'tied'}`} v={challenge.vs} />}
         </section>
       )}
-      <Actions links={links}>
+      <Actions links={{ ...links, onMenu: undefined }}>
         {daily ? (
           <>
             <div className="btn2">
@@ -784,6 +786,9 @@ function QuickResults({
             Next: All-Time Draft →
           </Btn>
         )}
+        <Btn kind="line" onClick={links.onMenu}>
+          Main menu
+        </Btn>
       </Actions>
     </>
   );
