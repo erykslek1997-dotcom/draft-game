@@ -303,6 +303,77 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
     (najlepsza piątka z ziarna dnia + twój wynik); skróty klawiszowe w drafcie na komputerze
     (1–5 karta, D draft, / szukaj) jako pierdoła.
 
+### Playtest wydania nocnego 2026-10-22 — spisane, do zrobienia
+
+Zasady z playtestu: **Mini wygląda dokładnie jak All-Time, tylko krótszy** (różnice tylko z zasad
+trybu); kolumny obok siebie kończą się mniej więcej równo (długie treści zwijane); akcje zaraz pod
+treścią, nigdy dociśnięte do dołu i nigdy zdublowane; twoje = krem, nigdy nie przesuwa treści;
+złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub słowem.
+
+**A. Szybkie** (style, teksty, drobna logika — jeden PR)
+- [ ] Licznik w aside (Cap/Teams/Rounds, Caps left/Cap/Round, Won/Seed/Lost): trzy równe kolumny,
+      jedna wielkość i linia bazowa.
+- [ ] Jedna linia u góry w obu kolumnach (dziś podwójne po lewej i nad kartami „big four”/„Finals”).
+- [ ] Kremowy wiersz „twój” nie przesuwa treści (`.order16 li.you` padding — i wszystkie inne).
+- [ ] Loteria: okrągły błysk w obrębie bębna zamiast prostokąta na całym canvasie.
+- [ ] Capy zawsze z jednym miejscem po przecinku („19.0”, nie „19”) — `fmtCaps`.
+- [ ] Teksty: „about 11.2 a pick” bez sierotki; „tap to show” → „show list” na komputerze; kropka
+      przy latach w liście („2012-14 ·”) — wyjaśnić albo usunąć.
+- [ ] Twój pick: bez podpowiedzi „X fits best / Y is still on the board”, zostaje „Up to N caps
+      on this pick”.
+- [ ] Okno gracza: tier osobno, oceny w równej siatce (6 / 3×2); ocena A nie złota.
+- [ ] Plakat: „Daily” tylko po daily; przygaszone kolory drużyn za zdjęciami (też karty „Your roster”).
+- [ ] Nagrody: „big four” bez pustego miejsca przed finałami (3 karty albo przygaszone Finals MVP).
+- [ ] Mecz na żywo: odstęp prędkości → przyciski; Play pełny, Skip obrysem; po meczu jedno
+      „Watch again” pod „▶ Game N”, bez górnego.
+- [ ] **Błąd:** po meczu play-offów nagłówek nie liczy właśnie skończonego meczu („lead 2–0”
+      zamiast 2–1). Podtytuł bez powtórzeń („beat the Moles 4–1, by 7.2 a game”; „The Sasquatch
+      were the better team. Curry did what he could: …”). Score by quarter pod wynikiem w aside.
+- [ ] Procenty przy kilku próbach („—” zamiast 3P% 50.0 przy 2 próbach).
+- [ ] Koniec gry: wyraźne „New draft” i „Main menu” (dziś tylko mały link „← Menu”).
+- [ ] Przerwa miesięczna: bez kolumny ruchu przy pierwszej przerwie; twoi gracze w MVP ladder na
+      kremowo; remis „You and the Raccoons had the best month”.
+- [ ] **Daily Draw Five — błąd Jokera:** legenda droższa jako Joker niż face up (Magic 14.4 vs
+      14.3). Legenda = wysoki TAL (≈70+ / górne 10% pozycji, nie 6+ All-Star — Sharman ma TAL 56)
+      I prawdziwa cena wyraźnie wyższa niż Joker; scrub = dolne 25% TAL I tańszy. Test 1000 dni.
+      Okno „Jackpot” z pełnym tłem.
+
+**B. Więcej czasu** (logika / przebudowa na istniejących elementach)
+- [ ] Loteria: bęben zostaje 1,5–2 s z kulą, potem wynik wchodzi powoli; dalej „Start the draft”.
+- [ ] Duże ekrany: ramka szersza niż 1360 px i większa skala (1366 / 1920 / 2560).
+- [ ] Aside przyklejony (sticky) na wszystkich ekranach, akcje pod treścią.
+- [ ] Rotacja: widoczny uchwyt suwaka na styku (gałka ‖, pole ~24 px, minuty przy przeciąganiu).
+- [ ] Final standings → rywal: gdzie lepszy, gdzie ty lepszy, „All metrics ▾” (wszystkie wejścia,
+      różnica ze znakiem); blok na całą szerokość / atak | obrona.
+- [ ] Wyniki: The room zwijany (4–5 wypowiedzi + „Read the rest”), kolumny równe; „More”:
+      Title structure do krótszej kolumny, „Size vs. position” bez mikropasków.
+- [ ] Sezon „Tonight”: domyślnie tylko twój mecz, reszta zwinięta, przełącznik Your / All games.
+- [ ] Przerwa miesięczna: MVP ladder do prawej kolumny, „Your month” w aside.
+- [ ] Statystyki w trakcie symulacji sezonu (Standings / Stats / Leaders „through <data>”, pauza);
+      silnik: sumy po każdej nocy zamiast tylko na koniec miesiąca.
+- [ ] Statystyki play-offów w trakcie (Regular season / Playoffs „so far”, bez spoilerów).
+- [ ] Klikalne twarze i karty graczy wszędzie → okno gracza (w sezonie ze statystykami sezonu).
+- [ ] Mecz na żywo: przywrócić „Key moments” (ostatnie 6 min, przed meczem i w trakcie) i ⅛.
+- [ ] Box score: piątka, linia „Bench”, ławka po minutach, suma; jeden znacznik „na boisku”.
+- [ ] Draw Five: animacja rozdania / wyboru / tury AI w jednym języku; AI dostaje to samo
+      rozdanie i tempo co ty (dziś cała tura AI 2,6 s), pauza „myśli”, jedna stała tempa.
+- [ ] Mini = All-Time: wspólny ekran draftu (lista graczy zawsze otwarta, Big Board, Latest picks
+      w aside), ten sam board z twarzami (BoardGrid), te same wyniki i karty piątki; „Caps left”.
+
+**C. Nowe plansze** (makieta do akceptacji, potem kod)
+- [ ] Okno drużyny (klik w herb/nazwę wszędzie): bilans, ocena, piątka + ławka z minutami,
+      statystyki sezonu/PO, ostatnie mecze, „ty vs oni”.
+- [ ] Wyniki draftu po sezonie: blok „Your season” (bilans, PO, mistrz, nagrody, „Open the season”).
+- [ ] Koniec sezonu: wyraźny blok „Champions” (mistrz z 🏆, finał, Finals MVP z twarzą).
+- [ ] Plakat i podsumowanie sezonu: ocena draftu (Rating, miejsce, Talent/Off/Def/Spacing/Fit).
+- [ ] Sezon: duży „twój mecz” w Tonight; „Your month” na przerwie.
+- [ ] Wyniki daily Draw Five — hierarchia: jeden bohater (mecz + werdykt), twoja piątka vs
+      najlepsza, Film room, profil, Jokery na końcu; jeden nagłówek XXL (sprawdzić też Mini/All-Time).
+- [ ] Mini: turniej NCAA po drafcie (patrz 3.2 Mini Draft).
+
+**Silnik** (kalibracja, tydzień 2–3 — w Etapie 2): asysty po pozycji zamiast roli; gwiazda z
+rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
+
 ## Kolejność prac (decyzja 2026-10-10, zastąpiona planem 4 tygodni)
 
 **Decyzja 2026-10-15 (wieczór):** intro All-Time Draft i kalibracja siły AI — na sam koniec;
