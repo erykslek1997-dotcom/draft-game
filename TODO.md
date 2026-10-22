@@ -375,23 +375,23 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
 
 **Poprawki PC + telefon (po #255, spisywane 2026-10-22)**
-- [ ] **Telefon — gęstość (największa wada wersji mobilnej, priorytet 1).** Wszystko jest za duże,
+- [x] **Telefon — gęstość (największa wada wersji mobilnej, priorytet 1).** Wszystko jest za duże,
       więc trzeba przewijać; telefon jest blisko oczu, więc można mniejsze i gęściej. Osobna skala
       typografii i odstępów na ≤600 px: nagłówki ekranów (52→~32 px), winieta (34→~24), tally
       (30→~22), tekst 16→14–15, odstępy sekcji 24→12–14, wiersze tabel i list niższe, karty mniejsze.
       Granica czytelności: nic poniżej 11 px. Sprawdzić na 360/390/430 px, że każdy krok mieści się
       na ekranie razem z główną akcją (patrz zasada niżej).
-- [ ] **Telefon — błąd: strona ucieka w prawo** (sezon, Overview: standings, League leaders, Game of
+- [x] **Telefon — błąd: strona ucieka w prawo** (sezon, Overview: standings, League leaders, Game of
       the season, Team records dochodzą do prawej krawędzi bez marginesu — coś jest szersze niż ekran
       i cała strona przewija się w bok). Znaleźć element (prawdopodobnie tabela albo linia rzutów),
       ograniczyć go; zasada: nigdzie poziomego przewijania strony. Test automatyczny na 360/390 px:
       `scrollWidth <= innerWidth` na każdym ekranie trasy zrzutów.
-- [ ] **Telefon — Stats › Players:** tabela wychodzi poza ekran, imiona ucięte z lewej, dalszych
+- [x] **Telefon — Stats › Players:** tabela wychodzi poza ekran, imiona ucięte z lewej, dalszych
       kolumn nie da się przewinąć. Na telefonie: skrócone nazwiska (T. Porter), kolumny Player · Team ·
       G · PTS · REB · AST (reszta pod „More stats” jako przewijana w obrębie tabeli, nie całej strony),
       pierwsza kolumna przyklejona. Zakładki sezonu (Overview…The playoffs) też wychodzą poza ekran —
       zawijanie albo przewijany pasek z widocznym końcem.
-- [ ] **Telefon — zasada „jeden krok = jeden ekran” (dotyczy wszystkich trybów).** Dziś trzeba
+- [x] **Telefon — zasada „jeden krok = jeden ekran” (dotyczy wszystkich trybów).** Dziś trzeba
       przewijać, żeby zobaczyć to, co właśnie się dzieje. Propozycja:
   - każdy stan ekranu ma swój „punkt” (rozdanie → ręka, twój wybór → ręka, tura AI → stół AI,
     mecz → wynik + feed, przerwa → nagłówek); przy zmianie stanu ekran sam przewija się do niego
@@ -404,18 +404,18 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
     przewinąć. Na telefonie: mniejszy bęben, ciaśniejsza winieta i tally, przycisk przyklejony na dole.
   - Przykład: draft (All-Time/Mini) — „Draft board” i „Team · 1/9” są na samym dole, pod całą listą
     graczy. Na telefonie: nad listą (pod nagłówkiem „On the clock”) albo jako przyklejony pasek.
-- [ ] Menu (telefon): wszystko na jednym ekranie bez przewijania — ciaśniejsza winieta, rzędy trybów,
+- [x] Menu (telefon): wszystko na jednym ekranie bez przewijania — ciaśniejsza winieta, rzędy trybów,
       dailies i linki na dole.
-- [ ] Menu: pasek „Draft in progress” za ciasny — tekst łamie się na dwie linie, „Continue” wciśnięte
+- [x] Menu: pasek „Draft in progress” za ciasny — tekst łamie się na dwie linie, „Continue” wciśnięte
       obok; drużyna i postęp w jednej linii, „Continue →” z miejscem.
-- [ ] **Draw Five (telefon) — błąd:** przed „Draw” i w trakcie rozdania karty to cztery wąskie paski obok
+- [x] **Draw Five (telefon) — błąd:** przed „Draw” i w trakcie rozdania karty to cztery wąskie paski obok
       talii (siatka `.stage` = 4 kolumny + 220 px talii); po rozdaniu ręka jest 2×2. Na telefonie:
       talia z „Draw” na górze na całą szerokość, pod nią miejsca na karty 2×2 w tym samym rozmiarze co
       ręka, karty lecą w te miejsca. Przy okazji: „picks next” w rzędzie AI łamie się na trzy linie.
       Zasada: zero przeskoków — od „Draw” przez rozdanie, wybór i turę AI karty stoją w tych samych
       miejscach i rozmiarach. Na PC to samo: dziś talia (220 px) znika po rozdaniu i karty się
       rozszerzają, więc też skacze; sprawdzić nagraniem klatek na 1366 i 390.
-- [ ] **Wyjście do menu (wszędzie, telefon + PC):** dziś to mały link „← Menu” w różnych miejscach,
+- [x] **Wyjście do menu (wszędzie, telefon + PC):** dziś to mały link „← Menu” w różnych miejscach,
       a na telefonie po meczu w ogóle go nie widać (tylko How to play · Settings). Jedno stałe
       miejsce na każdym ekranie: lewy górny róg nad winietą („← Menu”) albo klikalna winieta trybu;
       w trakcie draftu/meczu pytanie „Wyjść? Postęp zostaje zapisany”.
@@ -427,14 +427,14 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       (wyniki Draw Five/Mini/All-Time, finał sezonu, play-in) pod kątem wyjścia na telefonie.
       Przy okazji „Your path”: notka („through”, „upset of the 2nd seed”) w osobnej linii pod rzędem
       i strzałka nad wynikiem — na telefonie jeden zwarty wiersz.
-- [ ] Draw Five, koniec meczu (telefon): „See the result” i „Watch again” sklejone — odstęp między
+- [x] Draw Five, koniec meczu (telefon): „See the result” i „Watch again” sklejone — odstęp między
       przyciskami (wspólna zasada dla wszystkich stosów przycisków).
-- [ ] Draw Five, wyniki (telefon): w mini-kartach piątki długie nazwisko się ucina
+- [x] Draw Five, wyniki (telefon): w mini-kartach piątki długie nazwisko się ucina
       („V. Wembanyama”) — mniejsza czcionka albo zawijanie do dwóch linii, nigdy ucięte.
 - [ ] Draw Five: tempo nadal do dopracowania (niski priorytet) — rozdanie, „myśli”, wybór AI.
 
 **Dopisane 2026-10-22 (po grupie B)**
-- [ ] **Loteria → dwa przyciski:** „Start the draft” i „Study the board” (nazwa robocza). Drugi
+- [x] **Loteria → dwa przyciski:** „Start the draft” i „Study the board” (nazwa robocza). Drugi
       otwiera listę graczy przed draftem: przeglądanie, filtry, gwiazdka na Big Board (wishlista),
       bez wybierania; powrót do „Start the draft”. Big Board z tego kroku przechodzi do draftu.
 - [ ] **Hunting — przebudowa mechaniki (silnik, tydzień 2–3).** Obecna nie działa tak, jak powinna.

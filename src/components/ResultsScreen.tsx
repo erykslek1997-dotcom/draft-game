@@ -1406,7 +1406,7 @@ function FullExportButton({ build, seed, seasonReady }: { build: () => string; s
     setState('done');
   }
   return (
-    <button className="secondary-btn team-export-btn" onClick={handle} disabled={!seasonReady} title="Every pick, every team's scores and report, the season and the playoffs, as one text file">
+    <button type="button" className="btn line team-export-btn" onClick={handle} disabled={!seasonReady} title="Every pick, every team's scores and report, the season and the playoffs, as one text file">
       {!seasonReady ? 'Export the draft (season still simulating…)' : state === 'done' ? `✓ Saved draftverse-${seed}.txt (also copied)` : 'Export the whole draft (testing)'}
     </button>
   );
