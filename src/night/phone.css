@@ -242,7 +242,12 @@
   .nt .plist .nm { font-size: 17px; }
   .nt .plist .mt { margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .nt .plist .mt i { display: none; }
-  .nt .plist .mst { display: inline; }
+  /* position · years · line in three even columns, the same place on every row */
+  .nt .plist .mt { display: grid; grid-template-columns: 46px 60px minmax(0, 1fr); align-items: baseline; }
+  .nt .plist .mt > b, .nt .plist .mst > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nt .plist .mt .mt-y { display: none; }
+  .nt .plist .mst { display: contents; }
+  .nt .plist .mst > span { font: 500 11px var(--num); color: var(--ink3); }
   .nt .plist td.f img, .nt .plist td.f .ini { width: 32px; height: 32px; }
   /* the position tabs in one row, the counts smaller */
   .nt .ptabs .pt { padding: 6px 8px 8px; gap: 3px; flex: none; }
