@@ -76,6 +76,12 @@ const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? '
 const lastName = (n: string) => n.split(' ').slice(-1)[0];
 const signed = (v: number, digits = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(digits)}`;
 
+/** "Terry Porter" → "T. Porter"; a one-word name stays as it is. */
+const shortName = (name: string) => {
+  const i = name.indexOf(' ');
+  return i < 0 ? name : `${name[0]}. ${name.slice(i + 1)}`;
+};
+
 /** A first name that hides on a phone (`.fn`), then the last name. */
 function TwoPart({ name }: { name: string }) {
   const i = name.indexOf(' ');
@@ -1997,7 +2003,11 @@ function SeasonTable({ lines, groups }: { lines?: SeasonPlayerLine[]; groups?: [
                 <span className="sb-f">
                   <NFace name={l.span.playerName} span={l.span} />
                 </span>
-                <PlayerName line={l} />
+                <PlayerName line={l}>
+                  {/* A phone shows "T. Porter" (playtest 2026-10-22: the numbers ran into each other). */}
+                  <span className="nm-l">{l.span.playerName}</span>
+                  <span className="nm-s">{shortName(l.span.playerName)}</span>
+                </PlayerName>
                 <small>{l.span.primaryPosition}</small>
               </td>
               <td>{l.games}</td>

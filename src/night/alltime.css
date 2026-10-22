@@ -1094,7 +1094,16 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
   .nt .tw-head b { font-size: 26px; }
 }
 .nt .sbox tr.grp td { padding: 10px 0 4px; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); text-align: left; background: none; }
+.nt .sbox .nm-s { display: none; }
 @media (max-width: 600px) {
-  .nt .twin .sbox-wrap { overflow-x: auto; }
-  .nt .twin .sbox { min-width: 560px; }
+  .nt .sbox .nm-l { display: none; }
+  .nt .sbox .nm-s { display: inline; }
+  .nt .sbox td:not(:first-child), .nt .sbox th:not(:first-child) { padding-left: 10px; }
+  .nt .sbox th:first-child { width: auto; }
+}
+@media (max-width: 600px) {
+  .nt .twin .sbox { width: 100%; }
+  .nt .twin .sbox .sb-f { display: none; }
+  .nt .twin .sbox td:first-child { white-space: normal; line-height: 1.15; }
+  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 8px; width: 1%; white-space: nowrap; }
 }
