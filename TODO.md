@@ -1003,6 +1003,14 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       (`QuickDraftState.capLimit`). Test `scripts/testDailyDraft.ts`. Na później w Mini: narzucony
       gracz, styl dnia.
 - [ ] **Playtest całego trybu + lista poprawek** (S)
+- [ ] **Turniej po drafcie, styl NCAA** (2026-10-22, user). Mini dostaje „sezon” jako turniej
+      pucharowy 16 drużyn: rozstawienie 1–16 według oceny draftu (Overall), drabinka 1–16, 8–9,
+      5–12, 4–13, 6–11, 3–14, 7–10, 2–15; **jeden mecz** w każdej rundzie, przegrany odpada;
+      4 rundy (1/8 → ćwierćfinały → Final Four → finał). Mecz na żywo jak w play-offach (ten sam
+      komponent, Key moments, Skip), pozostałe mecze rundy liczone i do obejrzenia. Wygląd jak
+      play-offy All-Time (ta sama drabinka, okno drużyny, statystyki turnieju, plakat), krótsza
+      wersja. Długość meczu taka jak dla piątek (patrz „Krótszy mecz piątek” w Etapie 2). Daily
+      Mini: turniej deterministyczny z ziarna dnia, wynik turnieju w „Copy today's result”. (M)
 
 ### 3.3 All-Time Draft
 
