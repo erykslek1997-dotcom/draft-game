@@ -732,6 +732,14 @@ skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 
       Ok. 133 pkt na 48 min to dużo jak na mecz bez ławki — tempo albo skuteczność w trybie piątek
       (Draw Five, daily) mogą być zawyżone. Porównać z ligą (`seasonBaselines`) i ze średnią w
       sezonie pełnych drużyn.
+- [ ] **Asysty w sezonie idą po pozycji, nie po roli (kalibracja, tydzień 2–3)** — playtest
+      2026-10-22, statystyki po sezonie vs karta gracza (prawdziwy okres): Jordan 1987-89 7.0 →
+      3.0, Drexler 1987-89 5.8 → 2.9, Durant 2012-14 5.1 → 2.8, Kobe 2007-09 5.1 → 3.9, McGrady
+      2001-03 5.4 → 4.1, Carter → 1.9; w drugą stronę Bird 1983-85 6.6 → 9.0. Kreatorzy na SG/SF
+      tracą asysty, część SF/PF zyskuje. Do zbadania: komu mecz daje asystę przy trafieniu
+      (liveGame), przeliczenie asyst ery według percentyla w pozycji (modernBox), rola Birda.
+      Pomiar: 30 sezonów, średnie |sezon − karta| asyst per pozycja (to samo dla pkt i zb.),
+      raport przed/po; bez zmian w silniku bez raportu.
 
 Decyzje (2026-09-30):
 - Sezon zasadniczy szybki (bez odtwarzania meczów); dokładna symulacja dopiero w play-offach.
