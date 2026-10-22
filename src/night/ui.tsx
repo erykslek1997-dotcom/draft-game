@@ -107,8 +107,10 @@ export function RosterCard({ span, slot, extra, foot }: { span: PlayerSpan; slot
       </div>
       <div className="nm">{maskText(span.playerName)}</div>
       <div className="sb">
-        {maskYears(span.playerName, span.spanLabel)} · <CapI />
-        {fmtCaps(span.fga)}
+        <span className="sb-yc">
+          {maskYears(span.playerName, span.spanLabel)} · <CapI />
+          {fmtCaps(span.fga)}
+        </span>
         {extra}
       </div>
       <div className="roles" style={{ paddingBottom: 10 }}>
@@ -240,7 +242,10 @@ export function Slot({
           <span>{pos}</span>
         </div>
         <NFace name={span.playerName} />
-        <div className="nm">{shortName(span.playerName)}</div>
+        <div className="nm">
+          <span className="sl-l">{shortName(span.playerName)}</span>
+          <span className="sl-s">{lastName(span.playerName)}</span>
+        </div>
         <div className="sb">
           {maskYears(span.playerName, span.spanLabel)} · <CapI />
           {fmtCaps(span.fga)}

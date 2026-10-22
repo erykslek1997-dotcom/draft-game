@@ -1243,8 +1243,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 slot={slot}
                 extra={
                   <>
-                    {' '}
-                    · <b>{Math.round(starter.minutes)}m</b>
+                    <span className="sb-yc"> · </span>
+                    <b>{Math.round(starter.minutes)}m</b>
                   </>
                 }
                 foot={others.length ? others.map((o) => `+ ${maskText(o.player.playerName)} · ${Math.round(o.minutes)}m`).join(' ') : 'no one else here'}
@@ -1340,12 +1340,33 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <tr className="open">
                       <td />
                       <td colSpan={6}>
+                        {/* their five first, as cards: who they are matters most (playtest 2026-10-22) */}
+                        <div className="five-row rival-five">
+                          {(() => {
+                            // the same card as your roster: the starter's minutes, who comes in for him (playtest: "brak minut i ławki")
+                            const shown = displayTeam(team);
+                            const rows = allAssignments(shown);
+                            return primaryStarters(shown).map((x) => {
+                              const own = rows.find((r) => r.slot === x.slot && r.player.id === x.player.id);
+                              const others = rows.filter((r) => r.slot === x.slot && r.player.id !== x.player.id).sort((a, b) => b.minutes - a.minutes);
+                              return (
+                                <RosterCard
+                                  key={x.slot}
+                                  span={x.player}
+                                  slot={x.slot}
+                                  extra={
+                                    <>
+                                      <span className="sb-yc"> · </span>
+                                      <b>{Math.round(own?.minutes ?? x.minutes)}m</b>
+                                    </>
+                                  }
+                                  foot={others.length ? others.map((o) => `+ ${maskText(o.player.playerName)} · ${Math.round(o.minutes)}m`).join(' ') : 'no one else here'}
+                                />
+                              );
+                            });
+                          })()}
+                        </div>
                         <RivalEdge nick={nick} scores={edgeRows} metrics={() => ({ theirs: teamMetricValues(team), mine: humanRanked ? teamMetricValues(humanRanked.team) : {} })} />
-                        <p className="st-five">
-                          {primaryStarters(displayTeam(team))
-                            .map((x) => `${x.slot} ${maskText(x.player.playerName)}`)
-                            .join(' · ')}
-                        </p>
                       </td>
                     </tr>
                   )}
@@ -1385,7 +1406,7 @@ function FullExportButton({ build, seed, seasonReady }: { build: () => string; s
     setState('done');
   }
   return (
-    <button className="secondary-btn team-export-btn" onClick={handle} disabled={!seasonReady} title="Every pick, every team's scores and report, the season and the playoffs, as one text file">
+    <button type="button" className="btn line team-export-btn" onClick={handle} disabled={!seasonReady} title="Every pick, every team's scores and report, the season and the playoffs, as one text file">
       {!seasonReady ? 'Export the draft (season still simulating…)' : state === 'done' ? `✓ Saved draftverse-${seed}.txt (also copied)` : 'Export the whole draft (testing)'}
     </button>
   );

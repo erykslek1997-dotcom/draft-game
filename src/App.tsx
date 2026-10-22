@@ -196,6 +196,8 @@ function App() {
   // prepared once the reel stops, and the board opens with exactly this seed and these teams.
   const [earlyDraft, setEarlyDraft] = useState<{ seed: number; teams: Team[] } | null>(null);
   const [earlyLotteryDone, setEarlyLotteryDone] = useState(false);
+  // "Study the board" off the lottery: the draft opens with the clock held.
+  const [studyBoard, setStudyBoard] = useState(false);
   const prepareDraft = useCallback(() => {
     void loadGameShell();
   }, []);
@@ -321,7 +323,14 @@ function App() {
             ['Rivals', '15 CPU GMs'],
             ['Then', 'Season + playoffs'],
           ]}
-          onDone={() => setEarlyLotteryDone(true)}
+          onDone={() => {
+            setStudyBoard(false);
+            setEarlyLotteryDone(true);
+          }}
+          onStudy={() => {
+            setStudyBoard(true);
+            setEarlyLotteryDone(true);
+          }}
           onRevealed={prepareDraft}
           links={{ onMenu: () => setView('intro') }}
         />
@@ -336,6 +345,7 @@ function App() {
             resume={resumeDraft}
             preset={resumeDraft || allTimeDaily ? undefined : earlyDraft ?? undefined}
             daily={allTimeDaily ?? undefined}
+            studyFirst={studyBoard && !resumeDraft && !allTimeDaily}
             onExit={() => setView('intro')}
           />
         </Suspense>

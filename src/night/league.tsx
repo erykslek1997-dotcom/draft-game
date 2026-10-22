@@ -75,6 +75,7 @@ export function NightLottery({
   capLimit,
   howItWorks,
   onDone,
+  onStudy,
   onRevealed,
   links,
 }: {
@@ -86,6 +87,9 @@ export function NightLottery({
   capLimit: number;
   howItWorks: [string, ReactNode][];
   onDone: () => void;
+  /** 2026-10-22, playtest ("brakuje tego żeby przejrzeć board"): into the draft with the clock held,
+   * to read the pool and star players before anyone picks. */
+  onStudy?: () => void;
   onRevealed?: () => void;
   links: NavLinks;
 }) {
@@ -142,7 +146,14 @@ export function NightLottery({
           </section>
           <Actions links={links}>
             {done ? (
-              <Btn onClick={onDone}>Start the draft</Btn>
+              <>
+                <Btn onClick={onDone}>Start the draft</Btn>
+                {onStudy && (
+                  <Btn kind="line" onClick={onStudy}>
+                    Study the board first
+                  </Btn>
+                )}
+              </>
             ) : !started ? (
               <Btn
                 onClick={() => {
@@ -218,9 +229,18 @@ export function NightLottery({
         </div>
       )}
       {done ? (
-        <Btn className="phone-only" onClick={onDone}>
-          Start the draft
-        </Btn>
+        onStudy ? (
+          <div className="btn2 phone-only">
+            <Btn kind="line" onClick={onStudy}>
+              Study the board
+            </Btn>
+            <Btn onClick={onDone}>Start the draft</Btn>
+          </div>
+        ) : (
+          <Btn className="phone-only" onClick={onDone}>
+            Start the draft
+          </Btn>
+        )
       ) : !started ? (
         <Btn
           className="phone-only"

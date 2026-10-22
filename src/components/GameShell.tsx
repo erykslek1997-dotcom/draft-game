@@ -63,6 +63,8 @@ interface Props {
   /** 2026-09-25: seed + teams of a draft whose lottery the intro already showed while the player
    * data was still loading (see draftSetup.ts) — the draft is built from exactly these. */
   preset?: { seed: number; teams: Team[] };
+  /** The intro's lottery asked to study the board first: the draft opens with the clock held. */
+  studyFirst?: boolean;
   mode: 'developer' | 'player';
   /** 2026-08-07, user explicit ask: manually pick for every one of the 16 teams (not just the
    * one randomly-assigned human slot), with an optional causal reasoning note per pick. Deliberately
@@ -227,7 +229,7 @@ function loadDailyDraft(daily: DailyDraftDay) {
   return null;
 }
 
-export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false, preset, daily }: Props) {
+export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false, preset, daily, studyFirst = false }: Props) {
   const [resumed] = useState(() => (daily ? loadDailyDraft(daily) : resume && !commissionerMode ? loadDraft() : null));
   const [draftState, setDraftState] = useState<DraftState>(() =>
     maskBombOf(
@@ -301,8 +303,10 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // comes from the human via `handlePick` instead (see the effect's own early-return below).
   // `cpuPickDelay` (aiSpeed.ts) paces this effect.
   const [autoFinishing, setAutoFinishing] = useState(false);
+  // "Study the board" off the lottery: the CPU teams wait until the player starts the clock.
+  const [studying, setStudying] = useState(studyFirst);
   useEffect(() => {
-    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || autoFinishing) return;
+    if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || autoFinishing || studying) return;
     const teamIdx = currentTeamIndex(draftState);
     if (draftState.teams[teamIdx].isHuman) return;
     const timer = setTimeout(() => {
@@ -310,7 +314,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       if (next) setDraftState(next);
     }, cpuPickDelay(draftState.history.length, draftState.teams.length));
     return () => clearTimeout(timer);
-  }, [draftState, phase, autoFinishing]);
+  }, [draftState, phase, autoFinishing, studying]);
 
   // AUTO-FINISH (testing): resolves the draft in small chunks so the page keeps painting the
   // progress, then submits your team as drafted with an auto-built rotation.
@@ -372,6 +376,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
 
   function handlePick(playerId: string) {
     buzz();
+    setStudying(false);
     setDraftState((s) => makePick(s, playerId));
   }
 
@@ -486,6 +491,14 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
             ['Then', 'Season + playoffs'],
           ]}
           onDone={() => setPhase('draft')}
+          onStudy={
+            draftState.history.length === 0
+              ? () => {
+                  setStudying(true);
+                  setPhase('draft');
+                }
+              : undefined
+          }
           links={{ onMenu: handleReset }}
         />
       )}
@@ -516,6 +529,8 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           onSwapHumanSpan={handleSwapHumanSpan}
           howToPlay={howToPlay}
           onExit={handleReset}
+          studying={studying}
+          onStartClock={() => setStudying(false)}
         />
       )}
       {phase === 'results' && finalTeams && (

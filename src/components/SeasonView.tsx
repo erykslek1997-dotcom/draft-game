@@ -673,7 +673,11 @@ function SeasonBody({
       )}
       <Actions links={finalsDone && end ? { onMenu: end.onMenu, menuPhoneOnly: true } : { onMenu: onClose }}>
         {buttons}
-        {finalsDone && <Btn onClick={() => setSharing(true)}>Share your season</Btn>}
+        {finalsDone && (
+          <Btn className="share-b" onClick={() => setSharing(true)}>
+            Share your season
+          </Btn>
+        )}
         {finalsDone && end ? (
           <>
             {end.onNewDraft && (

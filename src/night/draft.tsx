@@ -217,17 +217,16 @@ export function PlayerTable({
                 <div className="mt">
                   <b>
                     {naturalPosition(s.playerName)}
-                    {!at && ` · ${maskYears(s.playerName, s.spanLabel)}`}
+                    {!at && <span className="mt-y"> · {maskYears(s.playerName, s.spanLabel)}</span>}
                   </b>{' '}
                   {r.ruleNote ? <i className="rule-tag">· {r.ruleNote}</i> : r.taken ? <i className="rule-tag">· {r.taken}</i> : roles.length > 0 && <i>· {roles.join(' · ')}</i>}
+                  {/* the phone's one line under the name: position · years · pts / reb / ast */}
+                  {/* the phone's line under the name, in three even columns: position · years · his line */}
                   <span className="mst">
-                    {at && (
-                      <>
-                        {maskYears(s.playerName, s.spanLabel)}
-                        <br />
-                      </>
-                    )}
-                    {s.box.ppg.toFixed(1)} / {s.box.rpg.toFixed(1)} / {s.box.apg.toFixed(1)}
+                    <span className="ms-y">{maskYears(s.playerName, s.spanLabel)}</span>
+                    <span className="ms-s">
+                      {s.box.ppg.toFixed(1)} / {s.box.rpg.toFixed(1)} / {s.box.apg.toFixed(1)}
+                    </span>
                   </span>
                 </div>
               </td>
