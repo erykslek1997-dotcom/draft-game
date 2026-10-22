@@ -5,13 +5,17 @@
  * Loaded last; nothing here goes under 11px.
  */
 .nt .links .lk.po { display: none; }
+/* the night screens bring their own frame: the old shell's gutter and bottom padding only made every
+   page 40px taller than the screen */
+.app-shell:has(> .nt) { padding-bottom: 0; }
+@media (max-width: 600px) { .app-shell:has(> .nt) { padding: 0; } }
 
 @media (max-width: 600px) {
   .nt {
     font-size: 15px;
 
     /* the frame */
-    .game { padding: 8px 14px 18px; gap: 14px; align-content: start; }
+    .game { padding: 8px 16px 18px; gap: 14px; align-content: start; }
     main { gap: 16px; }
 
     /* the aside on a phone: the masthead with its links on the right, the tally under both */
@@ -65,7 +69,7 @@
        (a disabled one isn't worth the space) */
     main > .btn.phone-only:not(.off) { position: sticky; bottom: 10px; z-index: 4; box-shadow: 0 0 0 10px var(--bg), 0 -16px 18px var(--bg); }
     main > .btn2.phone-only, main > .stackb.phone-only, main > div.phone-only:has(> .btn:not(.off)) {
-      position: sticky; bottom: 0; z-index: 4; margin: 0 -14px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+      position: sticky; bottom: 0; z-index: 4; margin: 0 -16px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
       background: var(--bg); box-shadow: 0 -12px 16px var(--bg);
     }
 
@@ -111,7 +115,7 @@
   /* a wide row in the aside (the season's tabs) scrolls inside itself and never widens the page:
      it used to push the tally's right column off the screen (playtest: "ucieka do prawej") */
   .nt aside > * { min-width: 0; }
-  .nt aside section.snav { margin: 0 -14px 0 0; padding-right: 14px; scrollbar-width: none; }
+  .nt aside section.snav { margin: 0 -16px 0 0; padding-right: 16px; scrollbar-width: none; }
   /* the league's player table: short names, the name column held while the numbers scroll */
   .nt .sbox.stats td:first-child, .nt .sbox.stats th:first-child { position: sticky; left: 0; z-index: 1; background: var(--bg); }
   .nt .sbox.stats tr.you td:first-child { background: linear-gradient(var(--you-tint), var(--you-tint)), var(--bg); }
