@@ -15,6 +15,20 @@
 .notice p b { color: var(--ink); font-weight: 600; }
 .notice a { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; }
 @media (max-width: 600px) { .notice { grid-template-columns: 18px minmax(0, 1fr); } .notice a { grid-column: 2; } }
+
+/* ---- playtest 2026-10-22: the Mini tournament, NCAA style ---- */
+.ncaa { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; align-items: center; }
+.ncaa .rd > span { display: block; font: 700 12px var(--cond); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+.ncaa .g { border-top: 1.5px solid var(--rule2); padding: 4px 0 2px; margin-bottom: 14px; }
+.ncaa .g.now { border-top-color: var(--red); }
+.ncaa .g div { display: grid; grid-template-columns: 20px 32px minmax(0, 1fr) auto; gap: 6px; align-items: center; font: 700 14px var(--cond); padding: 3px 0; }
+.ncaa .g div small { font: 600 11px var(--num); color: var(--ink3); }
+.ncaa .g div b { font: 600 14px var(--num); }
+.ncaa .g div.lo { color: var(--ink3); }
+.ncaa .g div.you { background: var(--you-bg); color: var(--you-ink); border-radius: 3px; margin: 0 -6px; padding: 3px 6px; }
+.ncaa .g div.you small { color: var(--you-ink2); }
+.ncaa .g em { display: block; font: italic 500 12px Inter, sans-serif; color: var(--ink3); }
+@media (max-width: 600px) { .ncaa { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
@@ -178,6 +192,22 @@ S.posTabs = () => { const [l, m] = S.pick();
 const notice = (txt, act) => `<div class="notice"><i>!</i><p>${txt}</p>${act ? `<a href="#">${act}</a>` : ''}</div>`;
 S.warnRim = () => { const [l, m] = S.posTabs(); return [l, m.replace(/(<div class="ptabs")/, notice('<b>Low rim pressure.</b> Nobody in your five attacks the basket yet. Look for a slasher or a big who finishes inside.') + '$1')]; };
 S.warnFit = () => { const [l, m1] = S.posTabs(); const m0 = m1.split('24.5').join('14.5'); const m = m0.replace(/<div class="capsbar">[\s\S]*?<\/div><span class="cb-v">[\s\S]*?<\/a><\/div>/, capsBar(0, 30, 14.5)).replace(/<table class="plist">[\s\S]*<\/table>/, plist(['malone', 'dirk', 'barkley'], { no: ['malone', 'dirk', 'barkley'] })); return [l, m.replace(/<table class="plist">[\s\S]*<\/table>/, notice('<b>None of these three fit this pick.</b> It can cost up to <i class="capi"></i>14.5 caps; Malone, Nowitzki and Barkley cost more.', 'Show players that fit') + '$&')]; };
+
+// 2026-10-22, the user: the Mini gets a season of its own, NCAA style — seeded 1–16 by the draft, one
+// game a round, the loser goes home.
+const NC = Object.keys(T);
+S.ncaa = () => { const seeds = NC.slice(0, 16); const ix = seeds.indexOf(YOU); if (ix > 3) { seeds.splice(ix, 1); seeds.splice(3, 0, YOU); }
+  const ORDER = [[1, 16], [8, 9], [5, 12], [4, 13], [6, 11], [3, 14], [7, 10], [2, 15]];
+  const row = (sd, sc, lo) => { const c = seeds[sd - 1]; return `<div class="${c === YOU ? 'you' : ''} ${lo ? 'lo' : ''}"><small>${sd}</small>${tm(c)}<span>${T[c][1]}</span><b>${sc ?? ''}</b></div>`; };
+  const r1 = ORDER.map(([a, b], i) => { const [sa, sb] = [[88, 61], [79, 84], [90, 82], [86, 77], [81, 92], [75, 73], [70, 66], [94, 80]][i]; return `<div class="g">${row(a, sa, sa < sb)}${row(b, sb, sb < sa)}${a === 4 ? '<em>Nash 24 · 9 ast</em>' : ''}</div>`; }).join('');
+  const r2 = [[1, 9, 85, 79], [5, 4, 77, 83], [11, 3, 88, 86], [7, 2, null, null]].map(([a, b, sa, sb], i) => `<div class="g ${i === 3 ? 'now' : ''}">${row(a, sa, sa !== null && sa < sb)}${row(b, sb, sb !== null && sb < sa)}${i === 3 ? '<em>tonight · watch it live</em>' : ''}</div>`).join('');
+  const r3 = `<div class="g">${row(1)}${row(4)}</div><div class="g">${row(11)}<div class="lo"><small>—</small><span></span><span>Winner of 7–2</span><b></b></div></div>`;
+  const r4 = `<div class="g"><div class="lo"><small>—</small><span></span><span>Final · Sun</span><b></b></div></div>`;
+  return [mast('Mini Draft', 'The tournament · round of 8') + tally('4th', '2–0', '84', { youK: 'Seed', midK: 'Record', aiK: 'Rating' }) +
+    `<section><h3>Your path</h3><div class="kv"><span>Round of 16</span><b>W 86–77 · Narwhals</b></div><div class="kv"><span>Quarterfinal</span><b>W 83–77 · Coyotes</b></div><div class="kv"><span>Final Four</span><b>vs 1 Mooses · Sat</b></div></section>` +
+    actions('<button class="btn go">▶ Final Four</button><button class="btn line">Sim to the champion</button>'),
+    prompt('The tournament · quarterfinals', 'Into the Final Four', 'Seeded by the draft, 1 plays 16. One game each round; lose and you go home. 30 minutes a game.') +
+    `<section><h3>The bracket<span>one game · loser goes home</span></h3><div class="ncaa"><div class="rd"><span>Round of 16</span>${r1}</div><div class="rd"><span>Quarterfinals</span>${r2}</div><div class="rd"><span>Final Four</span>${r3}</div><div class="rd"><span>Final</span>${r4}</div></div></section>`]; };
 const key = (location.hash || '#pick').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;

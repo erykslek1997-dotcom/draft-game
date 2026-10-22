@@ -34,6 +34,19 @@
 .jr p b { font-style: normal; color: var(--ink); }
 .jr-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.9); z-index: 5; }
 @media (max-width: 600px) { .vs5 b { font-size: 15px; } .vs5 img, .vs5 .ini { width: 36px; height: 36px; } .vs5 .pl { gap: 8px; } .vs5 td.ps { width: 36px; } .vs5 .fn { display: none; } .vs5 .yy { display: none; } .vs5 .pp { white-space: nowrap; } .jr h2 { font-size: 52px; } .jr { top: 30px; } }
+
+/* ---- playtest 2026-10-22: the daily result, one hero and a clear order ---- */
+.hero2 { border-top: 5px double var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 14px 0 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; }
+.hero2 .eb { font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+.hero2 h2 { margin: 4px 0 2px; font: 800 52px/0.95 var(--cond); text-transform: uppercase; }
+.hero2 p { margin: 0; font-style: italic; color: var(--ink2); }
+.hero2 p b { font-style: normal; color: var(--ink); }
+.hero2 .hn { display: flex; gap: 20px; text-align: right; }
+.hero2 .hn span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+.hero2 .hn b { display: block; font: 600 30px var(--num); color: var(--ink2); }
+.hero2 .hn .you b { color: var(--ink); }
+.small-prof .profile td { padding-top: 6px; padding-bottom: 6px; }
+@media (max-width: 600px) { .hero2 { grid-template-columns: 1fr; } .hero2 h2 { font-size: 38px; } .hero2 .hn { text-align: left; } }
 </style>
 </head>
 <body>
@@ -215,6 +228,17 @@ S.dailyResults = () => [
   actions('<div class="btn2"><button class="btn line">Copy result</button><button class="btn line">Share</button></div>'),
   resultsMain(true) + `<button class="btn line phone-only">Copy result</button>`];
 
+
+// 2026-10-22, the playtest ("brak struktury"): one hero (the game and the verdict together), then your
+// five against the best, the why, the profile; the Jokers last.
+S.dailyResults2 = () => { const [l, m0] = S.dailyResults(); const m = resultsMain(true);
+  const cut = (a, b) => m.slice(m.indexOf(a), b ? m.indexOf(b) : undefined);
+  const recap = cut('<section class="recap"', '<div class="headline"');
+  const prof = cut('<section><h3>Team profile', '<section class="film"');
+  const film = cut('<section class="film"', '<section><h3>Starting five');
+  const five = cut('<section><h3>Starting five');
+  const hero = `<div class="hero2"><div><span class="eb">Game of the day · Tuesday, Oct 21</span><h2>You beat the '92 Bulls 108–101</h2><p><b>Playoff lock.</b> Same number as starting the five biggest names. Durant 31 · Jordan 34.</p></div><div class="hn"><div class="you"><span>Your five</span><b>84</b></div><div><span>Fan vote</span><b>84</b></div><div><span>Best</span><b>88</b></div></div></div>`;
+  return [l, hero + five + film + `<div class="small-prof">${prof}</div>` + recap.replace("<h3 class=\"gold\">Today's Jokers</h3>", "<h3>Today's Jokers<span>2 on the board</span></h3>")]; };
 const key = (location.hash || '#pick').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = `<aside>${a}</aside><main>${m}</main>`;
