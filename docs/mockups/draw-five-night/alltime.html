@@ -864,6 +864,11 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .box tr.grp td { padding: 10px 0 4px; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); text-align: left; }
 .tw-head .tm, .champ2 h2 .tm { width: auto; height: auto; line-height: 1; }
 .mygame a { color: var(--ink2); }
+.po-season { margin-top: 10px; border-top: 1px solid var(--cline); padding-top: 8px; }
+.ps-run { display: flex; gap: 18px; } .ps-run span { display: flex; align-items: center; gap: 6px; font: 600 13px var(--num); }
+.ps-run small { font: 700 10px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cink2); }
+.ps-aw { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--cink2); } .ps-aw b { color: var(--cink); } .ps-aw em { margin-left: auto; font-style: normal; }
+.share-grid.ab { align-items: start; grid-template-columns: repeat(2, 520px); } .ab-l { margin: 0 0 8px; font: italic 500 14px Inter, sans-serif; color: var(--ink2); }
 .dlg.wide { width: min(980px, calc(100% - 32px)); }
 .tw-head { display: flex; align-items: center; gap: 14px; }
 .tw-head .tm { font-size: 15px; padding: 6px 8px; }
@@ -897,7 +902,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .champ2 .fmvp b { display: block; font: 700 20px/1.1 var(--cond); }
 .champ2 .fmvp small { display: block; font: 500 12px var(--num); color: var(--ink3); }
 .po-draft { margin-top: 10px; border-top: 1px solid var(--cline); padding-top: 8px; }
-.po-draft .pd-k { display: flex; justify-content: space-between; font: 700 10px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cink2); margin-bottom: 4px; }
+.po-draft .pd-k, .po-season .pd-k { display: flex; justify-content: space-between; font: 700 10px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cink2); margin-bottom: 4px; }
 .mygame { border: 1.5px solid var(--rule2); border-radius: 4px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 18px; align-items: center; }
 .mygame .mg-t { display: flex; align-items: center; gap: 10px; font: 700 22px var(--cond); }
 .mygame .mg-t b { font: 600 30px var(--num); margin-left: auto; }
@@ -1420,6 +1425,14 @@ S.tonightMine = () => { const [l] = S.simDay(); return [l.replace('<div class="a
   prompt('Live · Thu, Nov 6 · Game 8', 'Beat the Gearheads 136–105', 'Durant had 43. Tied for first with the Coyotes.') +
   `<section><h3>Tonight<span class="seg"><span class="on">Your game</span><span>All games</span></span></h3><div class="mygame"><div class="mg-t">${tm('TUL')} Twisters <b>136</b></div><div></div><div class="mg-t lo">${tm('DET')} Gearheads <b>105</b></div><div></div><p class="mg-l">Durant 43 pts · 7 reb · 5 ast · 15/22 FG. Your 6th straight win at home. <a href="#">Watch it</a></p></div>
   <div class="collapsed"><span>Other games tonight <b>7</b> · Coyotes 131–122 Blizzard, …</span><span>▸</span></div></section>`]; };
+
+// MC5: the season poster with the run and the awards (A) or with nothing added (B), side by side.
+const seasonPosterBase = () => poster({ mode: 'All-Time · season', kick: 'Out in the semifinals · 2–4 to Santa Fe', head: 'Tulsa Twisters', line: '52–30 · 3rd seed · 6–5 in the playoffs', five: FIVE_AT, nums: [19.8, 20.4, 29.4, 21.2, 7.4], unit: 'ppg', bench: BENCH_AT, benchNums: [5.1, 7.9, 8.8, 4.6], prof: PROF([86, 84, 93, 71, 88], 'Spacing', 'Defense'), strip: [['Season', '52–30'], ['Seed', '3rd'], ['Playoffs', '6–5'], ['Result', 'Semis']], foot: 'The same draft always plays the same season' }).replace('<div class="po-prof', '<div class="po-draft"><div class="pd-k"><span>The draft · 3rd of 16</span><span>Rating 87 · best 90</span></div><div class="po-prof').replace(/(<div class="po-strip">)/, '</div>$1').replace('Draftverse Daily', 'Draftverse');
+const SEASON_EXTRA = `<div class="po-season"><div class="pd-k"><span>The playoffs</span><span>Champions: ${tm('KEN')} Kentucky</span></div>
+  <div class="ps-run"><span><small>Quarterfinal</small>${tm('HON')}<b>W 4–1</b></span><span><small>Semifinal</small>${tm('SFE')}<b>L 2–4</b></span></div>
+  <div class="pd-k" style="margin-top:10px"><span>Awards</span><span>Game of the season</span></div>
+  <div class="ps-aw"><span><b>Durant</b> All-NBA 1st</span><span><b>Wallace</b> DPOY</span><span><b>Payton</b> All-Defensive</span><em><b>Durant 51</b> vs Reno · Jan 14</em></div></div>`;
+S.seasonPosterAB = () => ['', `<div class="share-grid ab"><div><p class="ab-l">A · with the run and the awards</p>${seasonPosterBase().replace(/(<div class="po-strip">)/, SEASON_EXTRA + '$1')}</div><div><p class="ab-l">B · nothing added, the poster ends with the season</p>${seasonPosterBase()}</div></div>`];
 const key = (location.hash || '#draft').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = a ? `<aside>${a}</aside><main>${m}</main>` : m;
