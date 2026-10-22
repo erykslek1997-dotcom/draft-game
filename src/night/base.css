@@ -28,6 +28,9 @@
 
 .game { max-width: 1360px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 36px; min-height: 100vh; }
 aside { display: flex; flex-direction: column; gap: 24px; }
+/* the aside stays in view while a long page scrolls (playtest 2026-10-22: the left column ended a
+   fifth of the way down and the rest was empty); taller than the screen, it scrolls on its own */
+@media (min-width: 601px) { aside { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; padding-top: 0; scrollbar-width: thin; } }
 main { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 i.note, .it { font-style: italic; }
 

@@ -7,6 +7,11 @@
 
 /* lottery */
 .lot { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 36px; align-items: start; }
+/* the result comes in slowly: the ball first, then the order row by row (playtest 2026-10-22) */
+.lot .ball { animation: lot-ball 0.6s cubic-bezier(0.2, 0.8, 0.25, 1) both; }
+.lot .lot-note { animation: lot-in 0.4s 0.5s both; }
+.lot .order16 li { animation: lot-in 0.35s both; animation-delay: calc(700ms + var(--i, 0) * 45ms); }
+@media (prefers-reduced-motion: reduce) { .lot .ball, .lot .lot-note, .lot .order16 li { animation: none; } }
 .ball { width: 220px; height: 220px; border-radius: 50%; background: var(--card); color: var(--cink); display: grid; place-items: center; text-align: center; box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--you); }
 .ball b { display: block; font: 800 120px/0.9 var(--cond); }
 .ball span { display: block; font: 700 12px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
@@ -279,3 +284,6 @@
 /* every row keeps the same inset on its first cell, so a cream (your) row never shifts its text
    (playtest 2026-10-22) */
 .nt .stand td:first-child, .nt .stand th:first-child, .nt .stand2 td:first-child, .nt .stand2 th:first-child, .nt .dboard td:first-child, .nt .dboard th:first-child { padding-left: 8px; }
+
+@keyframes lot-ball { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }
+@keyframes lot-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

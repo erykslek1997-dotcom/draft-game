@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import { franchiseByName } from '../data/franchises';
 import { teamHue } from '../components/teamLogoKit';
@@ -6,6 +6,10 @@ import { teamLabel } from '../engine/teamNames';
 import { createLotteryDrum, drumHeight, type LotteryDrum } from '../components/lotteryDrum';
 import { ordinal } from '../components/dailyDraftProgress';
 import { bandInk } from './color';
+import { reducedMotion } from '../settings';
+
+/** How long the drum holds on your ball before the result comes in, ms. */
+const LANDED_HOLD_MS = 1600;
 import { Actions, Btn, H3, Kv, Mast, NightGame, Prompt, Tally, fmtCaps, type NavLinks } from './frame';
 
 /** League team marks and the lottery: light pieces (no player data), so the menu's early lottery
@@ -80,9 +84,11 @@ export function NightLottery({
       slot,
       teamCount,
       onStatus: (text) => setStatus(text),
+      // 2026-10-22 (playtest: "bardzo szybko przeskakuje"): the drum holds on your ball for a beat
+      // before the result comes in.
       onLanded: () => {
         setStarted(true);
-        setDone(true);
+        window.setTimeout(() => setDone(true), reducedMotion() ? 0 : LANDED_HOLD_MS);
       },
     });
     drumRef.current = drum;
@@ -179,7 +185,7 @@ export function NightLottery({
               {columns.map((col, c) => (
                 <ol key={c} className="order16 one">
                   {col.map((t) => (
-                    <li key={t.id} className={t.isHuman ? 'you' : undefined}>
+                    <li key={t.id} className={t.isHuman ? 'you' : undefined} style={{ '--i': t.draftSlot } as CSSProperties}>
                       <span className="n">{t.draftSlot}</span>
                       <LeagueMark name={t.name} code={codeOf(t)} />
                       <b>{teamLabel(t)}</b>
