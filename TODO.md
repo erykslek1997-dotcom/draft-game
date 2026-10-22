@@ -403,6 +403,8 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       a na telefonie po meczu w ogóle go nie widać (tylko How to play · Settings). Jedno stałe
       miejsce na każdym ekranie: lewy górny róg nad winietą („← Menu”) albo klikalna winieta trybu;
       w trakcie draftu/meczu pytanie „Wyjść? Postęp zostaje zapisany”.
+      Propozycja użytkownika (telefon): „← Menu · How to play · Settings” w pustym miejscu po prawej
+      od nazwy trybu (wiersz winiety), zamiast osobnej linii pod tally — oszczędza wysokość ekranu.
 - [ ] Draw Five, koniec meczu (telefon): „See the result” i „Watch again” sklejone — odstęp między
       przyciskami (wspólna zasada dla wszystkich stosów przycisków).
 - [ ] Draw Five, wyniki (telefon): w mini-kartach piątki długie nazwisko się ucina
