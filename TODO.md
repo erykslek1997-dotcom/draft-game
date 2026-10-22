@@ -357,7 +357,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 - [x] Box score: piątka, linia „Bench”, ławka po minutach, suma; jeden znacznik „na boisku”.
 - [x] Draw Five: animacja rozdania / wyboru / tury AI w jednym języku; AI dostaje to samo
       rozdanie i tempo co ty (dziś cała tura AI 2,6 s), pauza „myśli”, jedna stała tempa.
-- [ ] Mini = All-Time: wspólny ekran draftu (lista graczy zawsze otwarta, Big Board, Latest picks
+- [x] Mini = All-Time: wspólny ekran draftu (lista graczy zawsze otwarta, Big Board, Latest picks
       w aside), ten sam board z twarzami (BoardGrid), te same wyniki i karty piątki; „Caps left”.
 
 **C. Nowe plansze** (makieta do akceptacji, potem kod)

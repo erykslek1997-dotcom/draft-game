@@ -44,8 +44,8 @@ import {
   H3,
   Kv,
   Mast,
-  NCard,
   NightGame,
+  RosterCard,
   NightVoices,
   Prompt,
   SLOTS,
@@ -58,6 +58,7 @@ import {
 } from '../night/ui';
 import { CapsBar, FiveSlots, LeagueMark, NightLottery, Notice, PickLog, PlayerTable, PosTabs, snakePicks, type NightRow, type TickerRow } from '../night/draft';
 import { BoardGrid } from '../night/alltime';
+import { cardRoles } from './cardRoles';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
 
@@ -670,7 +671,9 @@ function QuickResults({
   const five = STARTER_SLOTS.flatMap((slot) => (human.lineup[slot] ? [human.lineup[slot]!] : []));
   const capsUsed = totalFga(five.map((p) => p.fga));
   const behind = best.score.composite - human.score.composite;
-  const myPicks = snakePicks(human.team.draftSlot, TEAM_COUNT, QUICK_ROUNDS);
+  const myLog = state.history
+    .filter((h) => h.teamId === human.team.id)
+    .map((h) => ({ ...h, span: human.team.roster.find((p) => p.id === h.playerId) }));
   const streak = daily ? dailyDraftStreak('mini', daily.day) : 0;
   const strongest = [...AXIS_KEYS].filter((k) => k !== 'spacing').sort((a, b) => (human.score[b] as number) - (human.score[a] as number))[0];
 
@@ -758,13 +761,28 @@ function QuickResults({
           </section>
         </>
       ) : (
-        <section>
-          <H3>Your draft</H3>
-          <Kv k="Picks" v={myPicks.join(' · ')} />
-          <Kv k="Caps used" v={`${fmtCaps(capsUsed)} / ${fmtCaps(state.capLimit)}`} />
-          <Kv k="Behind the best" v={behind > 0 ? behind : '—'} />
-          {challenge?.vs != null && <Kv k={`${challenge.vsName ?? 'Friend'} · ${challengeVerdict(human.score.composite, challenge.vs) === 'won' ? 'you win' : challengeVerdict(human.score.composite, challenge.vs) === 'lost' ? 'they win' : 'tied'}`} v={challenge.vs} />}
-        </section>
+        <>
+          <SubNote>
+            <b>{fmtCaps(capsUsed)}</b> of {fmtCaps(state.capLimit)} caps used
+          </SubNote>
+          <section>
+            <H3 note={`${myLog.length} picks`}>Your draft</H3>
+            {/* The same pick log as the All-Time results (playtest 2026-10-22: Mini = All-Time, shorter). */}
+            <table className="log">
+              <tbody>
+                {myLog.map((h) => (
+                  <tr key={h.pickNumber} className="y">
+                    <td className="n">{h.pickNumber}</td>
+                    <td className="w">{h.span?.primaryPosition ?? ''}</td>
+                    <td className="p">{h.span ? maskName(h.span.playerName) : h.playerId}</td>
+                    <td className="c">{h.span ? fmtCaps(h.span.fga) : ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {challenge?.vs != null && <Kv k={`${challenge.vsName ?? 'Friend'} · ${challengeVerdict(human.score.composite, challenge.vs) === 'won' ? 'you win' : challengeVerdict(human.score.composite, challenge.vs) === 'lost' ? 'they win' : 'tied'}`} v={challenge.vs} />}
+          </section>
+        </>
       )}
       <Actions links={{ ...links, onMenu: undefined }}>
         {daily ? (
@@ -856,7 +874,7 @@ function QuickResults({
         <div className="five-row">
           {STARTER_SLOTS.map((slot) => {
             const p = human.lineup[slot];
-            return p ? <NCard key={slot} span={p} pos={slot} /> : <div key={slot} className="slot empty">{slot}</div>;
+            return p ? <RosterCard key={slot} span={p} slot={slot} foot={cardRoles(p).join(' · ') || ' '} /> : <div key={slot} className="slot empty">{slot}</div>;
           })}
         </div>
       </section>
@@ -891,7 +909,7 @@ function QuickResults({
                         <div className="five-row">
                           {STARTER_SLOTS.map((slot) => {
                             const p = r.lineup[slot];
-                            return p ? <NCard key={slot} span={p} pos={slot} /> : <div key={slot} className="slot empty">{slot}</div>;
+                            return p ? <RosterCard key={slot} span={p} slot={slot} foot={cardRoles(p).join(' · ') || ' '} /> : <div key={slot} className="slot empty">{slot}</div>;
                           })}
                         </div>
                         {profile(r, false)}

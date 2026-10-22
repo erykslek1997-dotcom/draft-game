@@ -52,11 +52,10 @@ import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
-import { Actions, Btn, CapI, Dialog, H3, Kv, Mast, NFace, NightGame, NightVoices, SubNote, Tally, bandStyle, fmtCaps, spanBand } from '../night/ui';
+import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterCard, SubNote, Tally, fmtCaps } from '../night/ui';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
-import { maskYears } from './bombMask';
 
 // 2026-09-14, user-reported live: shared scheduling helpers for both background-simulation
 // features below (Title Odds precision upgrade, the live season) — real work deferred until the
@@ -1172,23 +1171,18 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         <div className="five-row">
           {bySlot.map(({ slot, starter, others }) =>
             starter ? (
-              <div key={slot} className="card" style={bandStyle(starter.player)}>
-                <div className="top">
-                  <span>{spanBand(starter.player).code}</span>
-                  <span>{slot}</span>
-                </div>
-                <div className="pic">
-                  <NFace name={starter.player.playerName} span={starter.player} />
-                </div>
-                <div className="nm">{maskText(starter.player.playerName)}</div>
-                <div className="sb">
-                  {maskYears(starter.player.playerName, starter.player.spanLabel)} · <CapI />
-                  {fmtCaps(starter.player.fga)} · <b>{Math.round(starter.minutes)}m</b>
-                </div>
-                <div className="roles" style={{ paddingBottom: 10 }}>
-                  {others.length ? others.map((o) => `+ ${maskText(o.player.playerName)} · ${Math.round(o.minutes)}m`).join(' ') : 'no one else here'}
-                </div>
-              </div>
+              <RosterCard
+                key={slot}
+                span={starter.player}
+                slot={slot}
+                extra={
+                  <>
+                    {' '}
+                    · <b>{Math.round(starter.minutes)}m</b>
+                  </>
+                }
+                foot={others.length ? others.map((o) => `+ ${maskText(o.player.playerName)} · ${Math.round(o.minutes)}m`).join(' ') : 'no one else here'}
+              />
             ) : (
               <div key={slot} className="slot empty">
                 {slot}

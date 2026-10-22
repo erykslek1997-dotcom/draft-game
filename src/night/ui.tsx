@@ -90,6 +90,34 @@ export function TeamMark({ code, bg, fg, lg }: { code: string; bg: string; fg: s
 
 /** The printed player card (`.card`): cream paper, the team band with the cost, face, name,
  * position · years, style, a three-cell stat table. */
+/**
+ * A results card for one starter (2026-10-22, playtest: "mini wygląda tak samo jak all-time, po
+ * prostu jest krótszy"): band with team and slot, face, name, years and caps; the line under it is
+ * the mode's (All-Time: who comes in for him; Mini: what he does).
+ */
+export function RosterCard({ span, slot, extra, foot }: { span: PlayerSpan; slot: string; extra?: ReactNode; foot: ReactNode }) {
+  return (
+    <div className="card" style={bandStyle(span)}>
+      <div className="top">
+        <span>{spanBand(span).code}</span>
+        <span>{slot}</span>
+      </div>
+      <div className="pic">
+        <NFace name={span.playerName} span={span} />
+      </div>
+      <div className="nm">{maskText(span.playerName)}</div>
+      <div className="sb">
+        {maskYears(span.playerName, span.spanLabel)} · <CapI />
+        {fmtCaps(span.fga)}
+        {extra}
+      </div>
+      <div className="roles" style={{ paddingBottom: 10 }}>
+        {foot}
+      </div>
+    </div>
+  );
+}
+
 export function NCard({
   span,
   cls,
