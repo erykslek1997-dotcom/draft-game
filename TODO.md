@@ -421,6 +421,12 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       w trakcie draftu/meczu pytanie „Wyjść? Postęp zostaje zapisany”.
       Propozycja użytkownika (telefon): „← Menu · How to play · Settings” w pustym miejscu po prawej
       od nazwy trybu (wiersz winiety), zamiast osobnej linii pod tally — oszczędza wysokość ekranu.
+      **Błąd (telefon):** koniec sezonu (The playoffs po finale) nie ma żadnego wyjścia — New draft,
+      Main menu i Back to the results są tylko w aside, który na telefonie jest ukryty. Na telefonie
+      te przyciski pod treścią (jak „Play the season” w wynikach). Sprawdzić każdy ekran końcowy
+      (wyniki Draw Five/Mini/All-Time, finał sezonu, play-in) pod kątem wyjścia na telefonie.
+      Przy okazji „Your path”: notka („through”, „upset of the 2nd seed”) w osobnej linii pod rzędem
+      i strzałka nad wynikiem — na telefonie jeden zwarty wiersz.
 - [ ] Draw Five, koniec meczu (telefon): „See the result” i „Watch again” sklejone — odstęp między
       przyciskami (wspólna zasada dla wszystkich stosów przycisków).
 - [ ] Draw Five, wyniki (telefon): w mini-kartach piątki długie nazwisko się ucina
