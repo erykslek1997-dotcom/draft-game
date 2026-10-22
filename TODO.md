@@ -386,6 +386,11 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       i cała strona przewija się w bok). Znaleźć element (prawdopodobnie tabela albo linia rzutów),
       ograniczyć go; zasada: nigdzie poziomego przewijania strony. Test automatyczny na 360/390 px:
       `scrollWidth <= innerWidth` na każdym ekranie trasy zrzutów.
+- [ ] **Telefon — Stats › Players:** tabela wychodzi poza ekran, imiona ucięte z lewej, dalszych
+      kolumn nie da się przewinąć. Na telefonie: skrócone nazwiska (T. Porter), kolumny Player · Team ·
+      G · PTS · REB · AST (reszta pod „More stats” jako przewijana w obrębie tabeli, nie całej strony),
+      pierwsza kolumna przyklejona. Zakładki sezonu (Overview…The playoffs) też wychodzą poza ekran —
+      zawijanie albo przewijany pasek z widocznym końcem.
 - [ ] **Telefon — zasada „jeden krok = jeden ekran” (dotyczy wszystkich trybów).** Dziś trzeba
       przewijać, żeby zobaczyć to, co właśnie się dzieje. Propozycja:
   - każdy stan ekranu ma swój „punkt” (rozdanie → ręka, twój wybór → ręka, tura AI → stół AI,
