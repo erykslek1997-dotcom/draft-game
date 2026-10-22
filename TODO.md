@@ -374,6 +374,12 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 **Silnik** (kalibracja, tydzień 2–3 — w Etapie 2): asysty po pozycji zamiast roli; gwiazda z
 rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
 
+**Poprawki PC + telefon (po #255, spisywane 2026-10-22)**
+- [ ] Menu (telefon): wszystko na jednym ekranie bez przewijania — ciaśniejsza winieta, rzędy trybów,
+      dailies i linki na dole.
+- [ ] Menu: pasek „Draft in progress” za ciasny — tekst łamie się na dwie linie, „Continue” wciśnięte
+      obok; drużyna i postęp w jednej linii, „Continue →” z miejscem.
+
 **Dopisane 2026-10-22 (po grupie B)**
 - [ ] **Loteria → dwa przyciski:** „Start the draft” i „Study the board” (nazwa robocza). Drugi
       otwiera listę graczy przed draftem: przeglądanie, filtry, gwiazdka na Big Board (wishlista),
