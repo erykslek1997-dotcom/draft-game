@@ -379,6 +379,10 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       dailies i linki na dole.
 - [ ] Menu: pasek „Draft in progress” za ciasny — tekst łamie się na dwie linie, „Continue” wciśnięte
       obok; drużyna i postęp w jednej linii, „Continue →” z miejscem.
+- [ ] **Draw Five (telefon) — błąd:** przed „Draw” i w trakcie rozdania karty to cztery wąskie paski obok
+      talii (siatka `.stage` = 4 kolumny + 220 px talii); po rozdaniu ręka jest 2×2. Na telefonie:
+      talia z „Draw” na górze na całą szerokość, pod nią miejsca na karty 2×2 w tym samym rozmiarze co
+      ręka, karty lecą w te miejsca. Przy okazji: „picks next” w rzędzie AI łamie się na trzy linie.
 
 **Dopisane 2026-10-22 (po grupie B)**
 - [ ] **Loteria → dwa przyciski:** „Start the draft” i „Study the board” (nazwa robocza). Drugi
