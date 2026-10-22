@@ -381,6 +381,11 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       (30→~22), tekst 16→14–15, odstępy sekcji 24→12–14, wiersze tabel i list niższe, karty mniejsze.
       Granica czytelności: nic poniżej 11 px. Sprawdzić na 360/390/430 px, że każdy krok mieści się
       na ekranie razem z główną akcją (patrz zasada niżej).
+- [ ] **Telefon — błąd: strona ucieka w prawo** (sezon, Overview: standings, League leaders, Game of
+      the season, Team records dochodzą do prawej krawędzi bez marginesu — coś jest szersze niż ekran
+      i cała strona przewija się w bok). Znaleźć element (prawdopodobnie tabela albo linia rzutów),
+      ograniczyć go; zasada: nigdzie poziomego przewijania strony. Test automatyczny na 360/390 px:
+      `scrollWidth <= innerWidth` na każdym ekranie trasy zrzutów.
 - [ ] **Telefon — zasada „jeden krok = jeden ekran” (dotyczy wszystkich trybów).** Dziś trzeba
       przewijać, żeby zobaczyć to, co właśnie się dzieje. Propozycja:
   - każdy stan ekranu ma swój „punkt” (rozdanie → ręka, twój wybór → ręka, tura AI → stół AI,
