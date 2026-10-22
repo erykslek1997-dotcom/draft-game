@@ -180,22 +180,48 @@ export interface NavLinks {
   menuPhoneOnly?: boolean;
 }
 
+// On a phone the links become the app bar's icons (‹ on the left, ? and ⚙ on the right); the words
+// stay for screen readers. A computer shows the words only.
+const LkIcon = ({ d }: { d: ReactNode }) => (
+  <svg className="lk-i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    {d}
+  </svg>
+);
+
 export function Links({ onMenu, onHowTo, onSettings, menuPhoneOnly }: NavLinks) {
   return (
     <div className="links">
       {onMenu && (
-        <button type="button" className={cx('lk', menuPhoneOnly && 'po')} onClick={onMenu}>
-          ← Menu
+        <button type="button" className={cx('lk', 'lk-menu', menuPhoneOnly && 'po')} onClick={onMenu} aria-label="Menu">
+          <LkIcon d={<path d="M15 6l-6 6 6 6" />} />
+          <span className="lk-t">← Menu</span>
         </button>
       )}
       {onHowTo && (
-        <button type="button" className="lk" onClick={onHowTo}>
-          How to play
+        <button type="button" className="lk lk-how" onClick={onHowTo} aria-label="How to play">
+          <LkIcon
+            d={
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14" />
+                <path d="M12 17.2h.01" />
+              </>
+            }
+          />
+          <span className="lk-t">How to play</span>
         </button>
       )}
       {onSettings && (
-        <button type="button" className="lk" onClick={onSettings}>
-          Settings
+        <button type="button" className="lk lk-set" onClick={onSettings} aria-label="Settings">
+          <LkIcon
+            d={
+              <>
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" />
+              </>
+            }
+          />
+          <span className="lk-t">Settings</span>
         </button>
       )}
     </div>

@@ -217,6 +217,8 @@ export default function LiveGameNight({
       .filter((k) => !starterIdx[side].includes(k))
       .sort((a, b) => rows[b].min - rows[a].min);
   const [period, setPeriod] = useState<'game' | 0 | 1 | 2 | 3>('game');
+  // a phone shows a finished game's key moments only, the rest one tap away (playtest 2026-10-22)
+  const [phoneFull, setPhoneFull] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const timer = useRef<number | null>(null);
   const { names, short, codes, you } = sides;
@@ -611,7 +613,7 @@ export default function LiveGameNight({
 
   const feedRows = showAll ? feed : feed.slice(0, FEED_ROWS);
   const feedEl = (
-    <div className="feed" aria-live="off">
+    <div className={`feed${done && !phoneFull ? ' moments' : ''}`} aria-live="off">
       {feedRows.map((r, idx) =>
         r.kind === 'play' ? (
           <div key={r.key} className={`ln ${r.side === you ? 'y' : 'k'}${idx === 0 && !done && r.scored ? ' hot' : ''}${r.minor ? ' minor' : ''}`}>
@@ -631,6 +633,11 @@ export default function LiveGameNight({
         ),
       )}
       {feed.length === 0 && <div className="q">Tip-off.</div>}
+      {done && !phoneFull && (
+        <button type="button" className="more-btn ph-full" onClick={() => setPhoneFull(true)}>
+          Full play-by-play ›
+        </button>
+      )}
       {feed.length > FEED_ROWS && (
         <button type="button" className="more-btn" onClick={() => setShowAll((v) => !v)}>
           {showAll ? 'Show the latest plays' : `Show all ${feed.length} lines`}

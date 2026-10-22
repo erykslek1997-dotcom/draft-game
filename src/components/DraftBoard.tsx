@@ -1637,7 +1637,7 @@ export default function DraftBoard({
             Set the years and the rotation, then play the season.
           </Prompt>
         ) : youOnClock ? (
-          <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now>
+          <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now className="ph-keep">
             {/* 2026-10-22, the playtest ("może jednak bez tej podpowiedzi"): no advice on who to take,
                 only the hard limit — what this pick may cost and still leave enough for the rest. */}
             Up to <b>{fmtCaps(humanBudget.maxThisPick)} caps</b> on this pick.{!open.length && ' Your five is set; this one is for the bench.'}

@@ -152,7 +152,7 @@ function IntroDataStatus() {
   if (stage === 'idle' || progress === null) return null;
   const ready = stage !== 'download';
   return (
-    <p className="m2-note" role="status">
+    <p className={ready ? 'm2-note' : 'm2-note loading'} role="status">
       {ready ? '✓ Player data ready' : `Loading player data… ${progress !== null ? Math.round(progress * 100) : 0}%`}
     </p>
   );
