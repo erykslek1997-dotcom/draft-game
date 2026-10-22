@@ -25,7 +25,7 @@
 .jr.scrub h2 { color: var(--red); }
 .jr p { margin: 0 0 18px; font-size: 16px; line-height: 1.5; font-style: italic; color: var(--ink2); }
 .jr p b { font-style: normal; color: var(--ink); }
-.jr-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.9); z-index: 5; }
+.jr-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.96); backdrop-filter: blur(6px); z-index: 5; }
 @media (max-width: 600px) { .vs5 b { font-size: 15px; } .vs5 img, .vs5 .ini { width: 36px; height: 36px; } .vs5 .pl { gap: 8px; } .vs5 td.ps { width: 36px; } .vs5 .fn { display: none; } .vs5 .yy { display: none; } .vs5 .pp { white-space: nowrap; } .jr h2 { font-size: 52px; } .jr { top: 30px; } }
 }
 

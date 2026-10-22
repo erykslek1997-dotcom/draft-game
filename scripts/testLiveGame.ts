@@ -1,5 +1,5 @@
 import { boardTargets, dailyGame, dealFor, fanVoteFive, lineupShots, slotFloor, type Lineup } from '../src/engine/bestFive';
-import { allStarCount } from '../src/engine/allStarLookup';
+import { effectiveTalent } from '../src/engine/grades';
 import { DAILY_HAND_SIZE, dailyMeta, JOKERS_MAX, JOKERS_MIN, LEGEND_FIVES } from '../src/engine/dailyMeta';
 import { CLEAR_FAVOURITE, expectedMargin, legendLineup, simulateLiveGame } from '../src/engine/liveGame';
 import { STARTER_SLOTS } from '../src/engine/positions';
@@ -33,7 +33,12 @@ for (let i = 0; i < DAYS; i++) {
     jokerCount++;
     if (j.legend) legendJokers++;
     check(j.span.primaryPosition === j.slot && meta.order[j.round] === j.slot, `${seed}: the ${j.slot} Joker plays his round's position`);
-    check(j.legend ? allStarCount(j.span.playerName) >= 6 : allStarCount(j.span.playerName) < 6, `${seed}: ${j.span.playerName} is ${j.legend ? 'a legend' : 'a scrub'}`);
+    // 2026-10-22: a legend is a top-tenth talent who costs at least 3 caps more face up than the
+    // Joker's price; a scrub is cheaper face up than the price (Magic at 14.4 vs 14.3 was no jackpot).
+    check(
+      j.legend ? effectiveTalent(j.span) >= 75 && j.span.fga >= j.price + 3 : j.span.fga < j.price,
+      `${seed}: ${j.span.playerName} (talent ${effectiveTalent(j.span)}, ${j.span.fga} face up vs ${j.price}) is ${j.legend ? 'a legend' : 'a scrub'}`,
+    );
     check(j.card.fga === j.price && j.card.id === j.span.id && j.place >= 0 && j.place < DAILY_HAND_SIZE, `${seed}: his card costs the flat ${j.price}`);
   }
   // Spend big: take the dearest card that still leaves the cheapest players in the game for the

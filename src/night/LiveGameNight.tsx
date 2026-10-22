@@ -386,7 +386,16 @@ export default function LiveGameNight({
   const headline = useMemo(() => {
     if (done) {
       const margin = Math.abs(game.final[0] - game.final[1]);
-      return { eb: 'Final', title: won ? `${short[you]} win` : `${short[them]} win`, line: <>{game.recap} {maskName(game.star.name)}: {game.star.line.pts} points, {game.star.line.reb} rebounds, {game.star.line.ast} assists.</>, margin };
+      const title = won ? `${short[you]} win` : `${short[them]} win`;
+      // The engine's recap and star speak for side 0; when you play as side 1 (the lower seed in
+      // a series), say it from your side (playtest 2026-10-22: "They were the better team" under
+      // "Sasquatch win", and the star named twice).
+      if (you === 0) return { eb: 'Final', title, line: <>{game.recap} {maskName(game.star.name)}: {game.star.line.pts} points, {game.star.line.reb} rebounds, {game.star.line.ast} assists.</>, margin };
+      const lines = Object.entries(game.box[you]);
+      const [starLabel, l] = lines.reduce((best, cur) => (cur[1].pts + cur[1].reb + cur[1].ast > best[1].pts + best[1].reb + best[1].ast ? cur : best), lines[0]);
+      const stat = `${l.pts} points, ${l.reb} rebounds, ${l.ast} assists`;
+      const line = won ? `${maskName(starLabel)} led the way: ${stat}.` : `The ${short[them]} were the better team. ${maskName(starLabel)} did what he could: ${stat}.`;
+      return { eb: 'Final', title, line: <>{line}</>, margin };
     }
     const at = `Live · Q${(now?.quarter ?? 0) + 1} · ${quarterClock(now)}`;
     for (let i = upto - 1; i >= Math.max(0, upto - 6); i--) {

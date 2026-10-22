@@ -1,4 +1,4 @@
-import { Fragment, createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import type { PlayerSpan } from '../data/schema';
 import {
@@ -1046,8 +1046,9 @@ function Awards({ season, playoffs, byId, youId, codes }: { season: LiveSeasonRe
             : `Nothing for the ${mascot(you)} this year.`}
       </Prompt>
       <section>
-        <H3>The big four</H3>
-        <div className="aw-grid">
+        {/* Finals MVP joins after the Finals; until then three awards, no empty fourth spot. */}
+        <H3>{big.length === 4 ? 'The big four' : 'Season awards'}</H3>
+        <div className="aw-grid" style={{ '--n': big.length } as CSSProperties}>
           {big.map((x) => (
             <div key={x.t} className="aw big">
               <span className="aw-f">
@@ -1792,7 +1793,12 @@ function Watch({
   const wb = before.length - wa;
   const a = byId.get(series.teamAId);
   const b = byId.get(series.teamBId);
-  const status = wa === wb ? `Series tied ${wa}–${wb}` : `${mascot(wa > wb ? a : b)} lead ${Math.max(wa, wb)}–${Math.min(wa, wb)}`;
+  const seriesLine = (x: number, y: number) => (x === y ? `Series tied ${x}–${y}` : `${mascot(x > y ? a : b)} lead ${Math.max(x, y)}–${Math.min(x, y)}`);
+  const status = seriesLine(wa, wb);
+  // The final line counts tonight's game too (playtest 2026-10-22: "lead 2–0" after the Sasquatch won game 3).
+  const won = game.final[0] > game.final[1];
+  const [fa, fb] = [wa + (won ? 1 : 0), wb + (won ? 0 : 1)];
+  const after = Math.max(fa, fb) === 4 ? `${mascot(fa > fb ? a : b)} win the series ${Math.max(fa, fb)}–${Math.min(fa, fb)}` : seriesLine(fa, fb);
   const you: 0 | 1 = series.teamBId === youId ? 1 : 0;
   const intro = previous
     ? `Game ${gameIndex}: ${mascot(previous.final[0] > previous.final[1] ? a : b)} won ${Math.max(...previous.final)}–${Math.min(...previous.final)} · ${previous.star.name} ${previous.star.line.pts} pts, ${previous.star.line.reb} reb, ${previous.star.line.ast} ast · ${status}`
@@ -1819,7 +1825,7 @@ function Watch({
         sides={{ names: [a?.name ?? '', b?.name ?? ''], short: [mascot(a), mascot(b)], codes: [codes.get(series.teamAId) ?? '', codes.get(series.teamBId) ?? ''], you }}
         mast={{
           title: `${series.roundLabel} · Game ${gameIndex + 1}`,
-          sub: `Final · ${status}`,
+          sub: `Final · ${after}`,
           liveSub: `Live · ${status}`,
           preSub: `Tip-off · ${status}`,
         }}

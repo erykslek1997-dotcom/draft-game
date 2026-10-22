@@ -1038,9 +1038,16 @@ export interface DailyGame extends DailyBoard {
   jokers: DailyJoker[];
 }
 
-/** A legend: this many All-Star picks or more. */
-const JOKER_LEGEND_AS = 6;
-/** A scrub: from the bottom of the position's players by talent, this share of them. */
+/** A legend: his best stretch at this talent or more. 2026-10-22, the playtest: legends were six
+ * All-Star picks or more, which crowned Bill Sharman (talent 56, the SG median is 47) and 21 others
+ * under 70 — mostly the 1950s and 60s, when the All-Star team was easy to make. 75 is about the top
+ * tenth at each position (22–41 players). */
+const JOKER_LEGEND_TAL = 75;
+/** A legend costs this many caps more face up than the Joker's flat price, so a jackpot is a real
+ * saving (the playtest: Magic Johnson 1987-89 under a 14.4 Joker would have cost 14.3 face up). */
+const JOKER_LEGEND_PREMIUM = 3;
+/** A scrub: from the bottom of the position's players by talent, this share of them — and cheaper
+ * face up than the Joker's price, so the flat price is caps thrown away. */
 const JOKER_SCRUB_SHARE = 0.25;
 
 const gameCache = new Map<string, DailyGame>();
@@ -1060,13 +1067,13 @@ export function dailyGame(seed: string, meta: { order: Position[] }): DailyGame 
     const atSlot = [...bestSpanByPlayer().values()].filter((s) => s.primaryPosition === slot && !onBoard.has(s.playerName));
     const legend = rng() < 0.5;
     const ranked = atSlot.sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
-    const field = legend
-      ? ranked.filter((s) => allStarCount(s.playerName) >= JOKER_LEGEND_AS)
-      : ranked.slice(Math.floor(ranked.length * (1 - JOKER_SCRUB_SHARE)));
-    const span = weightedShuffle(field, rng, (s) => (legend ? Math.sqrt(allStarCount(s.playerName)) : 1))[0];
-    if (!span) continue;
     const costs = pool.bySlot[slot].map((c) => c.fga).sort((a, b) => a - b);
     const price = Math.round(costs[Math.floor(costs.length / 2)] * 10) / 10;
+    const field = legend
+      ? ranked.filter((s) => effectiveTalent(s) >= JOKER_LEGEND_TAL && s.fga >= price + JOKER_LEGEND_PREMIUM)
+      : ranked.slice(Math.floor(ranked.length * (1 - JOKER_SCRUB_SHARE))).filter((s) => s.fga < price);
+    const span = weightedShuffle(field, rng, (s) => (legend ? Math.sqrt(1 + allStarCount(s.playerName)) : 1))[0];
+    if (!span) continue;
     onBoard.add(span.playerName);
     jokers.push({ span, slot, round, place: Math.floor(rng() * DAILY_HAND_SIZE), legend, price, card: { ...span, fga: price } });
   }

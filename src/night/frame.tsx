@@ -73,7 +73,9 @@ export function Tally({
   /** Smaller numbers, for records like 52–30 (`.tsm`). */
   small?: boolean;
 }) {
-  const midCls = clock ? 'clock' : plain || midK !== 'Cap' ? 'plain' : undefined;
+  // A word in the middle ("Final", "Tip-off", "Semis") sits on the same baseline, a size down.
+  const word = typeof mid === 'string' && /[a-z]{3}/i.test(mid) && mid.length > 3;
+  const midCls = cx(clock ? 'clock' : plain || midK !== 'Cap' ? 'plain' : undefined, word && !clock && 'word');
   return (
     <div className={small ? 'tally keep tsm' : 'tally keep'}>
       <div className="t">
