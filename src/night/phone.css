@@ -6,6 +6,7 @@
  */
 .nt .links .lk.po { display: none; }
 .nt .links .lk-i { display: none; }
+@media (min-width: 601px) { .nt .hand > .hand-deal { display: none; } }
 @media (max-width: 600px) { .nt aside .links .lk-i { display: block; } }
 /* the night screens bring their own frame: the old shell's gutter and bottom padding only made every
    page 40px taller than the screen */
@@ -86,14 +87,15 @@
 
     /* cards */
     main > .prompt:first-child { border-top: 0; padding-top: 0; }
-    .slot { height: 56px; }
+    .slot { height: 76px; }
     .slot.empty, .slot.active { font-size: 20px; line-height: 1; }
     .slot.empty small, .slot.active small { font-size: 11px; }
     .slot.filled .top { padding: 2px 5px; margin-bottom: 2px; font-size: 11px; }
-    .slot.filled img, .slot.filled .ini { display: none; }
-    .slot .nm { margin-top: 0; font-size: 14px; }
+    /* a small face between the team band and the name (playtest: "zmieścimy tu facecards?") */
+    .slot.filled img, .slot.filled .ini { width: 28px; height: 28px; font-size: 12px; margin: 1px 0 2px; }
+    .slot .nm { margin-top: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 3px; }
     .slot .sb { font-size: 11px; }
-    .slots.compact .slot { height: 56px; }
+    .slots.compact .slot { height: 76px; }
     .bench { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
     .bench .b { min-height: 36px; padding: 3px 6px; gap: 6px; }
     .bench .b.filled img, .bench .b.filled .ini { display: none; }
@@ -123,6 +125,13 @@
     .stage > .deal .back .mark { transform: scale(0.6); }
     .stage > .deal .btn { width: auto; flex: 1; }
     .stage > .deal p { display: none; }
+    .hand > .hand-deal { grid-column: 1 / -1; order: -1; display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+    .hand > .hand-deal .back { width: 46px; height: 64px; box-shadow: 3px 3px 0 var(--surf2), 6px 6px 0 var(--surf); }
+    .hand > .hand-deal .back .mark { transform: scale(0.6); }
+    /* the deck's row is the hand's first child: an odd card out is now the even last one */
+    .hand:has(> .hand-deal) > :last-child:nth-child(odd) { grid-column: auto; }
+    .hand:has(> .hand-deal) > :last-child:nth-child(even) { grid-column: 1 / -1; }
+    .hand > .hand-deal .hand-deal-t { display: block; font-size: 13px; font-style: italic; color: var(--ink2); }
     .stage .ph { min-height: 0; height: 176px; aspect-ratio: auto; font-size: 28px; }
     .stage.n5 > :nth-child(5) { grid-column: 1 / -1; justify-self: center; width: calc(50% - 5px); }
 

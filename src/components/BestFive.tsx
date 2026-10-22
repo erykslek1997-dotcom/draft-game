@@ -185,7 +185,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
 
   const aiPhase = aiTurn?.phase ?? null;
   // A phone brings each step to the top: your deal, the AI's turn, the lineup to lock in.
-  useStepScroll(stage === 'draft' ? `${activeSlot ?? 'set'}|${aiTurn ? aiTurn.slot : ''}|${freshSlot === activeSlot ? 'fresh' : 'open'}` : null);
+  // A new slot or the AI's turn brings the stage up; the deal itself doesn't (playtest: the page slid down after the deal).
+  useStepScroll(stage === 'draft' ? `${activeSlot ?? 'set'}|${aiTurn ? aiTurn.slot : ''}` : null);
   useEffect(() => {
     if (aiPhase === 'think') {
       const t = window.setTimeout(() => setAiTurn((a) => a && { ...a, phase: 'take' }), TEMPO.think);
@@ -947,6 +948,13 @@ function DeckHand({
   if (settled) {
     return (
       <div className={`hand${n >= 5 ? ' n5' : ''}`} style={{ '--n': n } as CSSProperties}>
+        {/* a phone keeps the deck's row over the dealt hand, so the cards don't jump up when it would go */}
+        <div className="deal hand-deal" aria-hidden>
+          <div>
+            <CardBack />
+          </div>
+          <p className="hand-deal-t">Tap a card to keep it</p>
+        </div>
         {cards.map((c) => (
           <div key={c.id} className="hand-c">
             {renderCard(c)}
