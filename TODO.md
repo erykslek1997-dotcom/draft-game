@@ -383,6 +383,9 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       talii (siatka `.stage` = 4 kolumny + 220 px talii); po rozdaniu ręka jest 2×2. Na telefonie:
       talia z „Draw” na górze na całą szerokość, pod nią miejsca na karty 2×2 w tym samym rozmiarze co
       ręka, karty lecą w te miejsca. Przy okazji: „picks next” w rzędzie AI łamie się na trzy linie.
+      Zasada: zero przeskoków — od „Draw” przez rozdanie, wybór i turę AI karty stoją w tych samych
+      miejscach i rozmiarach. Na PC to samo: dziś talia (220 px) znika po rozdaniu i karty się
+      rozszerzają, więc też skacze; sprawdzić nagraniem klatek na 1366 i 390.
 
 **Dopisane 2026-10-22 (po grupie B)**
 - [ ] **Loteria → dwa przyciski:** „Start the draft” i „Study the board” (nazwa robocza). Drugi
