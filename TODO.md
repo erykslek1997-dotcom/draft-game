@@ -740,6 +740,17 @@ skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 
       (liveGame), przeliczenie asyst ery według percentyla w pozycji (modernBox), rola Birda.
       Pomiar: 30 sezonów, średnie |sezon − karta| asyst per pozycja (to samo dla pkt i zb.),
       raport przed/po; bez zmian w silniku bez raportu.
+- [ ] **Draw Five: gwiazda z pierwszego rozdania jako pułapka (kalibracja, tydzień 2–3)** —
+      playtest 2026-10-22: w rozdaniu Doncic 2024-26 (21.8 capów) — „99% graczy weźmie go
+      pierwszym pickiem i jest skazanych na porażkę”; najlepsza piątka planszy bierze na PG
+      Blaylocka 1994-96 (14.4), a różnica capów idzie w Barkleya 1989-91 (16.1) zamiast Outlawa
+      (4.4). Gra karze oczywisty wybór, a nie zły. Do zbadania: (a) czy silnik nie zaniża
+      wartości drogich gwiazd względem capów (cena = rzuty na mecz — Doncic dużo rzuca, więc
+      drogi, a ocena za mało za niego daje); (b) jak liczona jest „najlepsza piątka” (pełne
+      przeszukanie vs heurystyka) i jak często najlepsza piątka zawiera najdroższą kartę rozdania;
+      (c) generator rozdań — czy nie daje gwiazdy, której nie da się „obudować”. Pomiar: 500
+      plansz, odsetek najlepszych piątek z najdroższą kartą, średnia strata piątki z najdroższą
+      kartą vs najlepsza; cel: gwiazda ma być dobrym wyborem, jeśli dobierzesz resztę z głową.
 
 Decyzje (2026-09-30):
 - Sezon zasadniczy szybki (bez odtwarzania meczów); dokładna symulacja dopiero w play-offach.
