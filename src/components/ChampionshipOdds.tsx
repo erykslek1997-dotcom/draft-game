@@ -2,13 +2,8 @@ import type { TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import type { FitScoreResult } from '../engine/fit';
 import type { Team } from '../engine/types';
 import { teamLabel } from '../engine/teamNames';
-import { FitTeam } from './FitName';
-
-/** Same red→green judgment scale as ResultsScreen's metric bars. */
-function qualityColor(v: number): string {
-  const t = Math.max(0, Math.min(100, v)) / 100;
-  return `hsl(${2 + t * 146} ${42 + Math.abs(t - 0.5) * 34}% ${30 + t * 12}%)`;
-}
+import { H3 } from '../night/ui';
+import { MetricTable } from './MetricTable';
 
 const pct = (p: number) => `${(p * 100).toFixed(p >= 0.1 || p === 0 ? 0 : 1)}%`;
 const ordinal = (n: number) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`;
@@ -45,24 +40,20 @@ interface MatchupCardProps {
 function MatchupCard({ kind, opponent, seed, seriesWinProb, explanation, chips }: MatchupCardProps) {
   if (!opponent) return null;
   return (
-    <div className={`title-odds-matchup is-${kind}`}>
-      <div className="title-odds-matchup-head">
-        <span className="title-odds-kicker">
-          {kind === 'best' ? 'Best matchup' : 'Toughest opponent'} · {teamLabel(opponent)}{seed ? ` · ${ordinal(seed)} in ranking` : ''}
-        </span>
+    <section>
+      <H3 note={`${teamLabel(opponent)}${seed ? ` · ${ordinal(seed)} in the ranking` : ''}`}>{kind === 'best' ? 'Best matchup' : 'Toughest opponent'}</H3>
+      <div className="kv">
+        <span>Series win chance</span>
         <b>{pct(seriesWinProb)}</b>
       </div>
-      {explanation && <p>{explanation}</p>}
-      {chips.length > 0 && (
-        <div className="title-odds-chips">
-          {chips.map((chip) => (
-            <span key={chip.label} className={chip.gap > 0 ? 'is-plus' : 'is-minus'}>
-              {chip.label} {chip.gap > 0 ? '+' : '−'}{Math.abs(chip.gap)}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
+      {explanation && <p className="empty-note">{explanation}</p>}
+      {chips.map((chip) => (
+        <p key={chip.label} className="sh-edge">
+          <i className={chip.gap > 0 ? 'up' : 'dn'}>{chip.gap > 0 ? '+' : '−'}</i>
+          <b>{chip.label}</b> {chip.gap > 0 ? `${chip.gap} better than theirs` : `${-chip.gap} worse than theirs`}
+        </p>
+      ))}
+    </section>
   );
 }
 
@@ -88,7 +79,6 @@ export default function ChampionshipOdds({
   const byOdds = [...allRows].sort((a, b) => b.championshipProbability - a.championshipProbability);
   const oddsRank = byOdds.findIndex((r) => r.teamId === row.teamId) + 1;
   const seedOf = (id: string) => allRows.find((r) => r.teamId === id)?.globalRank;
-  const topOdds = byOdds[0]?.championshipProbability || 1;
   const field = byOdds.slice(0, FIELD_SIZE);
   if (oddsRank > FIELD_SIZE) field.push(row);
   const path = row.likelyPath
@@ -104,48 +94,52 @@ export default function ChampionshipOdds({
   );
 
   return (
-    <div className="title-odds">
-      <div className="title-odds-headline">
-        <span><b className="is-lead">{pct(row.championshipProbability)}</b><i>to win it all</i></span>
-        <span><b>{pct(row.avgSeriesWinProb)}</b><i>avg chance to win a series</i></span>
-        <span><b>{ordinal(oddsRank)}</b><i>best odds in the field</i></span>
+    <div className="tpath">
+      <div className="odds-nums">
+        <div className="you">
+          <span>To win it all</span>
+          <b>{pct(row.championshipProbability)}</b>
+        </div>
+        <div>
+          <span>Avg series win</span>
+          <b>{pct(row.avgSeriesWinProb)}</b>
+        </div>
+        <div>
+          <span>Best odds in the field</span>
+          <b>{ordinal(oddsRank)}</b>
+        </div>
       </div>
-
-      <div className="title-odds-grid">
-        <div className="title-odds-block">
-          <span className="title-odds-kicker is-gold">Road to the title</span>
-          {rounds.map((p, i) => (
-            <div key={ROUND_LABELS[i]} className="title-odds-round">
-              <span>{ROUND_LABELS[i]}</span>
-              <span className="title-odds-track"><span style={{ width: `${Math.max(1, p * 100)}%`, background: qualityColor(p * 100) }} /></span>
-              <b>{pct(p)}</b>
-            </div>
-          ))}
+      <div className="split">
+        <section>
+          <H3 note="each round of the bracket">Road to the title</H3>
+          <MetricTable rows={rounds.map((p, i) => ({ label: ROUND_LABELS[i], value: p * 100, shown: pct(p) }))} />
           {path.length > 0 && (
-            <p className="title-odds-note">
-              Likely path: {path.map((t) => teamLabel(t)).join(' → ')}.
-              {rounds.length > 1 && ` The biggest drop is at "${ROUND_LABELS[biggestDrop.index].toLowerCase()}".`}
+            <p className="empty-note" style={{ marginTop: 8 }}>
+              Likely path: {path.map((t) => teamLabel(t)).join(' → ')}.{rounds.length > 1 && ` The biggest drop is at “${ROUND_LABELS[biggestDrop.index].toLowerCase()}”.`}
             </p>
           )}
-        </div>
-        <div className="title-odds-block">
-          <span className="title-odds-kicker">The field — title odds</span>
-          {field.map((r) => {
-            const t = teamById(r.teamId);
-            const isOwn = r.teamId === row.teamId;
-            return (
-              <div key={r.teamId} className={`title-odds-field${isOwn ? ' is-own' : ''}`}>
-                <span className="title-odds-rank">{byOdds.indexOf(r) + 1}</span>
-                <FitTeam className="title-odds-name" name={t ? teamLabel(t) : r.teamId} />
-                <span className="title-odds-track"><span style={{ width: `${Math.max(1, (r.championshipProbability / topOdds) * 100)}%` }} /></span>
-                <b>{pct(r.championshipProbability)}</b>
-              </div>
-            );
-          })}
-        </div>
+        </section>
+        <section>
+          <H3 note="title odds">The field</H3>
+          <table className="leaders">
+            <tbody>
+              {field.map((r) => {
+                const t = teamById(r.teamId);
+                return (
+                  <tr key={r.teamId} className={r.teamId === row.teamId ? 'you' : undefined}>
+                    <td className="k">{byOdds.indexOf(r) + 1}</td>
+                    <td>
+                      <b>{t ? teamLabel(t) : r.teamId}</b>
+                    </td>
+                    <td className="v">{pct(r.championshipProbability)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
       </div>
-
-      <div className="title-odds-grid has-rule">
+      <div className="split">
         <MatchupCard
           kind="best"
           opponent={teamById(row.bestMatchup.opponentId)}

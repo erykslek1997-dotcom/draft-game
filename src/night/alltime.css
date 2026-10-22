@@ -997,3 +997,26 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .pi-g .tr.you .sd, .pi-g .tr.you .w { color: var(--you-ink); }
   .cal span[title] { cursor: default; }
 }
+/* React glue for the results' More panels */
+.nt {
+  .mtab td.l { width: 150px; font-size: 14px; }
+  .mtab td.b { width: 64px; }
+  .mtab tr.good td.b { color: var(--green); }
+  .mtab tr.weak td.b { color: var(--red); }
+  .mtab tr[title] td.l { cursor: help; }
+  .acc-body .split { margin-bottom: 18px; }
+  .acc-body section { margin-bottom: 16px; }
+  .odds-nums { display: flex; gap: 32px; margin: 4px 0 18px; }
+  .odds-nums div { display: flex; flex-direction: column; gap: 2px; }
+  .odds-nums span { font: 700 11px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+  .odds-nums b { font: 600 28px var(--num); color: var(--ink); }
+  .odds-nums .you b { color: var(--gold); }
+  .allm-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+  .allm .kv i.est { font-size: 12px; color: var(--ink3); }
+}
+@media (max-width: 600px) {
+  .nt .allm-three { grid-template-columns: 1fr; gap: 0; }
+  .nt .odds-nums { gap: 18px; }
+  .nt .odds-nums b { font-size: 22px; }
+  .nt .mtab td.l { width: 110px; }
+}

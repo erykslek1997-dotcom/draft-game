@@ -276,6 +276,13 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
       Dalej przyciskiem; w ustawieniach można wyłączyć przystanki.
     - **Głosowanie do All-Star Game:** wyniki głosowania co miesiąc przed ASG (prowadzący na
       pozycjach), w lutym przerwa All-Star: wybór 24 (głosy + wartość gry), draft kapitanów, mecz.
+      - [ ] **ASG votes — do zrobienia** (2026-10-22, user). Przerwa All-Star, wybór 24, draft
+        kapitanów i mecz już są; **samego głosowania nie ma** — dziś 24 to czysta wartość gry.
+        Potrzebny model głosów liczony z silnika (nie wymyślone liczby): np. punkty i wygrane
+        drużyny z części sezonu + sława zawodnika (tier/era), z ziarnem sezonu. Wtedy: na
+        przerwach miesięcznych przed ASG tabela „voting returns” (prowadzący na pozycjach,
+        guard/frontcourt × konferencja-odpowiednik, z ruchem od poprzedniego miesiąca, twoi
+        gracze podświetleni), a w lutym starterzy z głosów + rezerwy z wartości gry.
     - **Play-in tournament** po sezonie regularnym przed play-offami: miejsca 7–10 (7–8: zwycięzca
       = 7. seed; 9–10: przegrany odpada; przegrany 7–8 z wygranym 9–10 o 8. seed). Mecze pojedyncze,
       do obejrzenia na żywo jak play-offy. Seedy 1–6 bez zmian.

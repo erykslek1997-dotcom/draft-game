@@ -51,6 +51,7 @@ import { BombReveal } from './BombCards';
 import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
+import { MetricTable } from './MetricTable';
 import { Actions, Btn, CapI, Dialog, H3, Kv, Mast, NFace, NightGame, NightVoices, SubNote, Tally, bandStyle, fmtCaps, spanBand } from '../night/ui';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
@@ -178,23 +179,6 @@ export interface ChallengeRotationEntry {
  * re-render (accordion toggle, season-sim click). */
 const EMPTY_CORRECTED_ROTATIONS: Record<string, Rotation> = {};
 
-
-/** 2026-09-11, user-reported live ("14) skala może być w czerwono-zielonym gradiencie" / "16)
- * kurde brzydkie to") — `ScoreChip`/`MetricBar` used to tint off `scoreBand`'s own 6 discrete
- * buckets, whose bottom 4 (0-67) span red→amber→green but whose TOP 2 buckets (67-100) are both
- * the same green — so a real, competitive roster (whose metrics mostly land 50-95) rendered as a
- * wall of near-identical green, reading as "no color" even though the mechanism technically has
- * some. A continuous interpolation instead of discrete bands means a 58 and a 95 — both "good" —
- * still read as visibly different shades, the actual "gradient" the ask was for. Same red/green
- * hue endpoints `MatchupMatrix.tsx`'s own diverging scale uses, for one consistent "how good is
- * this number" visual language across the app's judgment displays. */
-export function qualityColor(v: number): string {
-  const t = Math.max(0, Math.min(100, v)) / 100;
-  const hue = 2 + t * 146;
-  const saturation = 42 + Math.abs(t - 0.5) * 34;
-  const lightness = 30 + t * 12;
-  return `hsl(${hue} ${saturation}% ${lightness}%)`;
-}
 
 /** 1 -> "1st", 2 -> "2nd", 11 -> "11th" — plain English ordinal for the finish-position line. */
 export function ordinal(n: number): string {
@@ -348,63 +332,6 @@ function ChallengeDuel({
     </Dialog>
   );
 }
-
-export function RankRowSummary({ rank, label, isHuman, rating, titleOdds }: { rank: number; label: string; isHuman: boolean; rating: number; titleOdds?: number | null }) {
-  return (
-    <>
-      <span className="rank-row-pos">{rank}</span>
-      <span className="rank-row-name">{label}</span>
-      {isHuman && <span className="rank-row-you">You</span>}
-      {titleOdds != null && (
-        <span
-          className="rank-row-odds"
-          title="Title odds: how often this team won a 16-team bracket of best-of-7 series, simulated 20,000 times. Each series is decided by projected point differential and how the two teams match up — not by the Rating — so two teams with the same Rating can have very different odds."
-        >
-          🏆 {titleOdds > 0 && titleOdds < 0.01 ? '<1' : Math.round(titleOdds * 100)}%
-        </span>
-      )}
-      <span className="rank-row-rating" style={{ background: qualityColor(rating) }}>
-        {rating}
-      </span>
-    </>
-  );
-}
-
-export function ScoreChip({ label, value }: { label: string; value: number }) {
-  // `borderBottomColor` only actually shows once `.subscores .score-chip` gives the chip a
-  // visible bottom border (see App.css) — harmless to set unconditionally on the compact header
-  // mini-chips too, which just never render a border to show it on.
-  return (
-    <span className="score-chip" style={{ background: qualityColor(value), color: '#fff', borderBottomColor: qualityColor(value) }}>
-      <span className="score-chip-label">{label}</span>
-      <span className="score-chip-value">{value}</span>
-    </span>
-  );
-}
-
-/** A labelled 0-100 bar for the Team-analysis profile row — a fill proportional to the value,
- * tinted by the same band ladder the score chips use, so a weak axis is a short red bar and a
- * strong one a long green bar without the reader parsing 8 numbers. */
-/** 2026-09-25, user ("hover nad statystyką żeby użytkownik wiedział co jest czym"): the hint
- * used to live in a `title` attribute — invisible on phones, slow on desktop. It's a real tooltip
- * now: hover on desktop, tap/focus on touch (the row is focusable), with an "i" marker. */
-export function MetricBar({ label, value, hint }: { label: string; value: number; hint?: string }) {
-  const v = Math.max(0, Math.min(100, Math.round(value)));
-  return (
-    <div className={`metric-bar${hint ? ' has-tip' : ''}`} tabIndex={hint ? 0 : undefined} aria-label={hint ? `${label} ${v}. ${hint}` : undefined}>
-      <span className="metric-bar-label">
-        {label}
-        {hint && <span className="metric-bar-info" aria-hidden>i</span>}
-      </span>
-      <span className="metric-bar-track">
-        <span className="metric-bar-fill" style={{ width: `${v}%`, background: qualityColor(v) }} />
-      </span>
-      <span className="metric-bar-value">{v}</span>
-      {hint && <span className="metric-bar-tip" role="tooltip">{hint}</span>}
-    </div>
-  );
-}
-
 
 /** 2026-09-24: one concrete thing to try next draft, keyed to the human team's weakest score —
  * the results screen used to show the numbers (often a harsh 16th/16, 0% everywhere) without
@@ -583,30 +510,39 @@ function weakDefendersFor(team: Team): { name: string; slot: Position; dtal: num
 
 /** "Show what's behind each score": the ingredient bars, the season profile and every metric. */
 function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: ScoreBreakdown; fit: FitScoreResult; field: () => TeamMetricValues[] }) {
+  const [all, setAll] = useState(false);
   const offenseDetail = offenseScoreBreakdown(team);
   const defenseTalent = Math.round(teamDefensiveTalentScore(team));
   const weakDefenders = weakDefendersFor(team);
   const profile = seasonProfile(breakdown, fit);
   return (
     <>
-      <div className="analysis-bars-split rs-details">
-        <div className="analysis-bars-col analysis-bars-col--offense">
-          <span className="analysis-bars-col-label">Offense details</span>
-          <MetricBar label="O-TAL" value={offenseScale(offenseDetail.otal)} hint="Team offensive talent." />
-          <MetricBar label="Creation" value={offenseScale(fit.components.creationStructure)} hint="Half-court shot creation the roster can generate on its own." />
-          <MetricBar label="Rim pressure" value={offenseScale(fit.components.rimPressureTeam)} hint="How much the five collectively bends a defense at the rim." />
-          <MetricBar label="Playmaking" value={offenseScale(offenseDetail.playmaking)} hint="Passing and table-setting — how well the roster creates shots for others, not just for itself." />
-        </div>
-        <div className="analysis-bars-col analysis-bars-col--defense">
-          <span className="analysis-bars-col-label">Defense details</span>
-          <MetricBar label="D-TAL" value={defenseTalent} hint="Team defensive talent — the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure." />
-          <MetricBar label="Role coverage" value={fit.components.defensiveRoleCoverage} hint="Whether someone covers each defensive job — point of attack, wing, rim. A full set can still add up to a middling Defense score if the individual defenders are average." />
-          <MetricBar label="Switchability" value={fit.components.switchability} hint="How freely the roster can switch across a screen without a mismatch." />
-          <MetricBar label="Hunt resistance" value={fit.components.huntResistance} hint="How well the roster hides its weakest defender in a playoff series." />
-          <MetricBar label="Rebounding" value={fit.components.reboundingBalance} hint="Two-way rebounding balance." />
-          <MetricBar label="Size" value={fit.components.sizeCoverage} hint="Functional positional size across the lineup." />
+      <div className="split">
+        <section>
+          <H3 note={`score ${Math.round(breakdown.offenseScore)}`}>Offense details</H3>
+          <MetricTable
+            rows={[
+              { label: 'O-TAL', value: offenseScale(offenseDetail.otal), hint: 'Team offensive talent.' },
+              { label: 'Creation', value: offenseScale(fit.components.creationStructure), hint: 'Half-court shot creation the roster can generate on its own.' },
+              { label: 'Rim pressure', value: offenseScale(fit.components.rimPressureTeam), hint: 'How much the five collectively bends a defense at the rim.' },
+              { label: 'Playmaking', value: offenseScale(offenseDetail.playmaking), hint: 'Passing and table-setting: how well the roster creates shots for others, not just for itself.' },
+            ]}
+          />
+        </section>
+        <section>
+          <H3 note={`score ${Math.round(breakdown.defenseScore)}`}>Defense details</H3>
+          <MetricTable
+            rows={[
+              { label: 'D-TAL', value: defenseTalent, hint: 'Team defensive talent: the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure.' },
+              { label: 'Role coverage', value: fit.components.defensiveRoleCoverage, hint: 'Whether someone covers each defensive job: point of attack, wing, rim.' },
+              { label: 'Switchability', value: fit.components.switchability, hint: 'How freely the roster can switch across a screen without a mismatch.' },
+              { label: 'Hunt resistance', value: fit.components.huntResistance, hint: 'How well the roster hides its weakest defender in a playoff series.' },
+              { label: 'Rebounding', value: fit.components.reboundingBalance, hint: 'Two-way rebounding balance.' },
+              { label: 'Size', value: fit.components.sizeCoverage, hint: 'Functional positional size across the lineup.' },
+            ]}
+          />
           {weakDefenders.length > 0 && (
-            <p className="results-hero-weak" title="The Defense score is a minutes-weighted average of each player's D-TAL, so heavy minutes from a weak defender pull it down. Weak means below the median rotation player at that position.">
+            <p className="empty-note" style={{ marginTop: 8 }}>
               Weakest links:{' '}
               {weakDefenders.map((row, i) => (
                 <span key={row.name}>
@@ -616,20 +552,21 @@ function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: 
               ))}
             </p>
           )}
-        </div>
+        </section>
       </div>
-      <div className="analysis-bars-full">
-        <MetricBar label="Title structure" value={fit.components.championshipStructure} hint="How closely the roster's shape matches real championship rosters." />
-      </div>
-      <p className="analysis-identity-line">
-        <b>Season profile:</b> {profile.label} (regular season {profile.regularSeason} · playoffs {profile.playoffs}). {profile.explanation}
-      </p>
-      <p className="results-hero-bars-note">
-        These are the ingredients behind the scores above, measured separately — e.g. Role coverage is whether each defensive job is
-        filled at all, the Defense score is how well it's done.
-      </p>
-      <details className="analysis-raw">
-        <summary>All metrics &amp; inputs</summary>
+      <section>
+        <MetricTable rows={[{ label: 'Title structure', value: fit.components.championshipStructure, hint: "How closely the roster's shape matches real championship rosters." }]} />
+        <p className="host">
+          <b>Season profile:</b> {profile.label} (regular season {profile.regularSeason} · playoffs {profile.playoffs}). {profile.explanation}
+        </p>
+        <p className="empty-note">
+          These are the ingredients behind the scores, measured separately: Role coverage is whether each defensive job is filled at all, the Defense score is how well it’s done.
+        </p>
+        <button type="button" className="lk-inline" style={{ marginTop: 10 }} onClick={() => setAll((v) => !v)}>
+          {all ? 'Hide all metrics & inputs ▴' : 'All metrics & inputs ▾'}
+        </button>
+      </section>
+      {all && (
         <AllMetrics
           values={teamMetricValues(team, fit)}
           field={field()}
@@ -639,7 +576,7 @@ function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: 
           huntability={defensiveHuntability(team)}
           comp={bestHistoricalComp(team, breakdown, fit)}
         />
-      </details>
+      )}
     </>
   );
 }
@@ -922,16 +859,21 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       id: 'order',
       label: 'Draft order',
       content: () => (
-        <ol className="rr-draft-order">
-          {teamHistory.map((entry) => {
-            const p = playerById(entry.playerId);
-            return (
-              <li key={entry.pickNumber}>
-                <span className="history-pick">#{entry.pickNumber}</span> {p ? `${p.playerName} (${p.spanLabel})` : entry.playerId}
-              </li>
-            );
-          })}
-        </ol>
+        <table className="log">
+          <tbody>
+            {teamHistory.map((entry) => {
+              const p = playerById(entry.playerId);
+              return (
+                <tr key={entry.pickNumber} className={team.isHuman ? 'y' : 'a'}>
+                  <td className="n">{entry.pickNumber}</td>
+                  <td className="w">{p?.primaryPosition ?? ''}</td>
+                  <td className="p">{p ? `${maskText(p.playerName)}, ${p.spanLabel}` : entry.playerId}</td>
+                  <td className="c">{p ? fmtCaps(p.fga) : ''}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       ),
     });
     return extras;
