@@ -384,6 +384,8 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
     i rzędy kontekstu (np. rząd AI i „Your five” w Draw Five jako jeden pasek);
   - główna akcja przyklejona na dole ekranu (Draw / Submit / Play), żeby nie trzeba było jej szukać.
   - Najpierw Draw Five i menu, potem draft (Mini/All-Time), mecz na żywo i sezon.
+  - Przykład: loteria (All-Time/Mini) — „Draw the lottery” jest pod bębnem i 16 numerami, trzeba
+    przewinąć. Na telefonie: mniejszy bęben, ciaśniejsza winieta i tally, przycisk przyklejony na dole.
 - [ ] Menu (telefon): wszystko na jednym ekranie bez przewijania — ciaśniejsza winieta, rzędy trybów,
       dailies i linki na dole.
 - [ ] Menu: pasek „Draft in progress” za ciasny — tekst łamie się na dwie linie, „Continue” wciśnięte
