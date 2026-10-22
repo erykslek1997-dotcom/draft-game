@@ -115,7 +115,12 @@ export default function AllMetrics({ values, field, offenseScore, defenseScore, 
         </section>
         <section>
           <H3 note="percentile at his position">Size vs. position</H3>
-          <MetricTable rows={body.map(([label, value]) => ({ label, value }))} />
+          {body.map(([label, value]) => (
+            <div key={label} className="kv">
+              <span>{label}</span>
+              <b>{Math.round(value)}</b>
+            </div>
+          ))}
         </section>
         <section>
           <H3>Style</H3>

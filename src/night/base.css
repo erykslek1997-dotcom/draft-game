@@ -361,3 +361,4 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 
 /* 2026-10-22 (playtest): the speeds sat glued to the Play button */
 .nt .speeds + .btn2, .nt .speeds + .stackb { margin-top: 18px; }
+.nt .voices-more { display: inline-block; margin-top: 10px; }

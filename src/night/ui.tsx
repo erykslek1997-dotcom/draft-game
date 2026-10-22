@@ -214,10 +214,19 @@ export function Slot({
 }
 
 /** The desk's lines as printed voices (mockup `mini.html#results` "The room"). */
-export function NightVoices({ voices, cast }: { voices: { who: string; kind: string; text: string; reply?: boolean }[]; cast: Record<string, { name: string; tag: string }> }) {
+export function NightVoices({ voices, cast, fold }: { voices: { who: string; kind: string; text: string; reply?: boolean }[]; cast: Record<string, { name: string; tag: string }>; fold?: number }) {
+  // 2026-10-22 (playtest): a long room ran far past the column beside it; the first few voices show,
+  // the rest open on request (never cutting a reply off from what it answers).
+  const [open, setOpen] = useState(false);
+  let cut = voices.length;
+  if (fold && !open && voices.length > fold + 1) {
+    cut = fold;
+    while (cut < voices.length && voices[cut].reply) cut += 1;
+  }
+  const rest = voices.length - cut;
   return (
     <>
-      {voices.map((v, i) => {
+      {voices.slice(0, cut).map((v, i) => {
         const x = cast[v.who];
         const parts = maskText(v.text)
           .split(/\*(.+?)\*/g)
@@ -230,6 +239,11 @@ export function NightVoices({ voices, cast }: { voices: { who: string; kind: str
           </p>
         );
       })}
+      {rest > 0 && (
+        <button type="button" className="lk-inline voices-more" onClick={() => setOpen(true)}>
+          Read the rest · {rest} more ▾
+        </button>
+      )}
     </>
   );
 }

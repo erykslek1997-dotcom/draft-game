@@ -867,7 +867,7 @@ function QuickResults({
         </section>
         <section className="voices">
           <H3>The room</H3>
-          <NightVoices voices={voices} cast={DESK_CAST} />
+          <NightVoices voices={voices} cast={DESK_CAST} fold={5} />
         </section>
       </div>
       <section>

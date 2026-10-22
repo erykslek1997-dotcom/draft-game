@@ -526,6 +526,7 @@ function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: 
               { label: 'Creation', value: offenseScale(fit.components.creationStructure), hint: 'Half-court shot creation the roster can generate on its own.' },
               { label: 'Rim pressure', value: offenseScale(fit.components.rimPressureTeam), hint: 'How much the five collectively bends a defense at the rim.' },
               { label: 'Playmaking', value: offenseScale(offenseDetail.playmaking), hint: 'Passing and table-setting: how well the roster creates shots for others, not just for itself.' },
+              { label: 'Title structure', value: fit.components.championshipStructure, hint: "How closely the roster's shape matches real championship rosters." },
             ]}
           />
         </section>
@@ -555,7 +556,6 @@ function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: 
         </section>
       </div>
       <section>
-        <MetricTable rows={[{ label: 'Title structure', value: fit.components.championshipStructure, hint: "How closely the roster's shape matches real championship rosters." }]} />
         <p className="host">
           <b>Season profile:</b> {profile.label} (regular season {profile.regularSeason} · playoffs {profile.playoffs}). {profile.explanation}
         </p>
@@ -1226,7 +1226,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         {heroVoices.length > 0 && (
           <section className="voices">
             <H3>The room</H3>
-            <NightVoices voices={heroVoices} cast={DESK_CAST} />
+            <NightVoices voices={heroVoices} cast={DESK_CAST} fold={5} />
           </section>
         )}
       </div>
