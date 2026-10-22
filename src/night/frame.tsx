@@ -1,5 +1,5 @@
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
-import type { Position } from '../data/schema';
+import { Suspense, createContext, lazy, useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import type { PlayerSpan, Position } from '../data/schema';
 import { getSettings } from '../settings';
 import './index.css';
 
@@ -18,22 +18,41 @@ export const cx = (...parts: (string | false | null | undefined)[]) => parts.fil
 /** The cap coin in front of a price. */
 export const CapI = () => <i className="capi" aria-hidden />;
 
-export const fmtCaps = (v: number) => (Number.isInteger(Math.round(v * 10) / 10) ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1));
+// Caps always carry one decimal, so a column of them lines up ("19.0" next to "22.5"; playtest 2026-10-22).
+export const fmtCaps = (v: number) => (Math.round(v * 10) / 10).toFixed(1);
 export const fmt1 = (v: number) => v.toFixed(1);
 
 /* ---------------- page frame ---------------- */
 
 /** The two columns: the aside (masthead, tally, log, actions) and the main stage. An empty aside
  * gives the main stage the full width. */
+/**
+ * 2026-10-22, playtest ("fajnie jakbym mógł kliknąć"): a face given its span (`NFace span=`) opens
+ * that player's window. A screen with more to say provides its own (the draft: his scouting card
+ * with Draft; the season: his season card); every other night screen gets his card to read.
+ */
+export const FaceContext = createContext<((span: PlayerSpan) => void) | null>(null);
+// Lazy: the frame stays free of player data for the menu.
+const SpanCard = lazy(() => import('../components/PlayerPeekModal').then((m) => ({ default: m.SpanCard })));
+
 export function NightGame({ aside, children, className, overlay }: { aside?: ReactNode; children: ReactNode; className?: string; overlay?: ReactNode }) {
+  const outer = useContext(FaceContext);
+  const [card, setCard] = useState<PlayerSpan | null>(null);
   return (
-    <div className={cx('nt', className)}>
-      <div className={cx('game', !aside && 'solo')}>
-        {aside && <aside>{aside}</aside>}
-        <main>{children}</main>
+    <FaceContext.Provider value={outer ?? setCard}>
+      <div className={cx('nt', className)}>
+        <div className={cx('game', !aside && 'solo')}>
+          {aside && <aside>{aside}</aside>}
+          <main>{children}</main>
+        </div>
+        {overlay}
+        {card && (
+          <Suspense fallback={null}>
+            <SpanCard span={card} onClose={() => setCard(null)} />
+          </Suspense>
+        )}
       </div>
-      {overlay}
-    </div>
+    </FaceContext.Provider>
   );
 }
 
@@ -73,7 +92,9 @@ export function Tally({
   /** Smaller numbers, for records like 52–30 (`.tsm`). */
   small?: boolean;
 }) {
-  const midCls = clock ? 'clock' : plain || midK !== 'Cap' ? 'plain' : undefined;
+  // A word in the middle ("Final", "Tip-off", "Semis") sits on the same baseline, a size down.
+  const word = typeof mid === 'string' && /[a-z]{3}/i.test(mid) && mid.length > 3;
+  const midCls = cx(clock ? 'clock' : plain || midK !== 'Cap' ? 'plain' : undefined, word && !clock && 'word');
   return (
     <div className={small ? 'tally keep tsm' : 'tally keep'}>
       <div className="t">

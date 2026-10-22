@@ -162,20 +162,15 @@ export function seriesPreview(season: LiveSeasonResult, youId: string, oppId: st
   return out;
 }
 
-/** One sentence once a series is over: how it was won or lost. Margins from your side. */
+/** How a finished series was won or lost, as the tail of the line that already gives the result
+ * ("…beat the Moles 4–1, by 7.2 points a game."). Margins from your side. 2026-10-22, the playtest:
+ * it used to repeat the record ("4–1. Won 4-1, by 7.2…"). */
 export function seriesVerdict(finals: [number, number][], youWon: boolean): string {
   const margins = finals.map(([a, b]) => a - b);
-  const wins = margins.filter((m) => m > 0).length;
-  const losses = margins.length - wins;
   const avg = margins.reduce((s, m) => s + m, 0) / Math.max(1, margins.length);
   const close = margins.filter((m) => Math.abs(m) <= 5).length;
-  const record = youWon ? `${wins}-${losses}` : `${losses}-${wins}`;
   if (youWon) {
-    return close >= 2
-      ? `Won ${record}, the hard way: ${close} of the ${margins.length} games were decided by five or fewer.`
-      : `Won ${record}, by ${f1(Math.abs(avg))} points a game.`;
+    return close >= 2 ? `the hard way: ${close} of the ${margins.length} games were decided by five or fewer.` : `by ${f1(Math.abs(avg))} points a game.`;
   }
-  return close >= 2
-    ? `Lost ${record}. ${close} of the ${margins.length} games came down to five points or fewer.`
-    : `Lost ${record}, outscored by ${f1(Math.abs(avg))} a game.`;
+  return close >= 2 ? `and ${close} of the ${margins.length} games came down to five points or fewer.` : `outscored by ${f1(Math.abs(avg))} a game.`;
 }

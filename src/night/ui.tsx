@@ -1,4 +1,4 @@
-import { Fragment, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useContext, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { headshotUrl } from '../data/headshots';
 import { teamColors } from '../data/teamColors';
@@ -7,7 +7,7 @@ import { isBombMasked, maskName, maskText, maskYears } from '../components/bombM
 import { cardRoles } from '../components/cardRoles';
 import { BRAND_MARK } from '../brand';
 import { bandInk } from './color';
-import { CapI, fmtCaps, cx } from './frame';
+import { CapI, FaceContext, fmtCaps, cx } from './frame';
 export * from './frame';
 
 /**
@@ -18,6 +18,9 @@ export * from './frame';
 
 
 /** "1999–01" style label shortened like the mockups' card names: "R. Wallace". */
+/** An open slot's hint: "tap" on a touch screen, a plain word with a mouse (playtest 2026-10-22). */
+export const TAP_TO_SHOW = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches ? 'tap to show' : 'show list';
+
 export function shortName(name: string): string {
   const shown = maskName(name);
   const w = shown.split(' ');
@@ -36,12 +39,27 @@ function initials(name: string): string {
 }
 
 /** A headshot, or the player's initials on a plain disc. The Bomb shows a "?". */
-export function NFace({ name, className }: { name: string; className?: string }) {
+export function NFace({ name, className, span }: { name: string; className?: string; span?: PlayerSpan }) {
   const src = headshotUrl(name);
   const [failed, setFailed] = useState<string | null>(null);
+  const open = useContext(FaceContext);
   if (isBombMasked(name)) return <span className={cx('ini', className)}>?</span>;
-  if (src && failed !== src) return <img className={className} src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(src)} />;
-  return <span className={cx('ini', className)}>{initials(name)}</span>;
+  const face = src && failed !== src ? <img className={className} src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(src)} /> : <span className={cx('ini', className)}>{initials(name)}</span>;
+  if (!span || !open) return face;
+  return (
+    <button
+      type="button"
+      className="face-btn"
+      title={`${span.playerName}: open his card`}
+      aria-label={`${span.playerName}: open his card`}
+      onClick={(e) => {
+        e.stopPropagation();
+        open(span);
+      }}
+    >
+      {face}
+    </button>
+  );
 }
 
 
@@ -72,6 +90,34 @@ export function TeamMark({ code, bg, fg, lg }: { code: string; bg: string; fg: s
 
 /** The printed player card (`.card`): cream paper, the team band with the cost, face, name,
  * position · years, style, a three-cell stat table. */
+/**
+ * A results card for one starter (2026-10-22, playtest: "mini wygląda tak samo jak all-time, po
+ * prostu jest krótszy"): band with team and slot, face, name, years and caps; the line under it is
+ * the mode's (All-Time: who comes in for him; Mini: what he does).
+ */
+export function RosterCard({ span, slot, extra, foot }: { span: PlayerSpan; slot: string; extra?: ReactNode; foot: ReactNode }) {
+  return (
+    <div className="card" style={bandStyle(span)}>
+      <div className="top">
+        <span>{spanBand(span).code}</span>
+        <span>{slot}</span>
+      </div>
+      <div className="pic">
+        <NFace name={span.playerName} span={span} />
+      </div>
+      <div className="nm">{maskText(span.playerName)}</div>
+      <div className="sb">
+        {maskYears(span.playerName, span.spanLabel)} · <CapI />
+        {fmtCaps(span.fga)}
+        {extra}
+      </div>
+      <div className="roles" style={{ paddingBottom: 10 }}>
+        {foot}
+      </div>
+    </div>
+  );
+}
+
 export function NCard({
   span,
   cls,
@@ -211,10 +257,19 @@ export function Slot({
 }
 
 /** The desk's lines as printed voices (mockup `mini.html#results` "The room"). */
-export function NightVoices({ voices, cast }: { voices: { who: string; kind: string; text: string; reply?: boolean }[]; cast: Record<string, { name: string; tag: string }> }) {
+export function NightVoices({ voices, cast, fold }: { voices: { who: string; kind: string; text: string; reply?: boolean }[]; cast: Record<string, { name: string; tag: string }>; fold?: number }) {
+  // 2026-10-22 (playtest): a long room ran far past the column beside it; the first few voices show,
+  // the rest open on request (never cutting a reply off from what it answers).
+  const [open, setOpen] = useState(false);
+  let cut = voices.length;
+  if (fold && !open && voices.length > fold + 1) {
+    cut = fold;
+    while (cut < voices.length && voices[cut].reply) cut += 1;
+  }
+  const rest = voices.length - cut;
   return (
     <>
-      {voices.map((v, i) => {
+      {voices.slice(0, cut).map((v, i) => {
         const x = cast[v.who];
         const parts = maskText(v.text)
           .split(/\*(.+?)\*/g)
@@ -227,6 +282,11 @@ export function NightVoices({ voices, cast }: { voices: { who: string; kind: str
           </p>
         );
       })}
+      {rest > 0 && (
+        <button type="button" className="lk-inline voices-more" onClick={() => setOpen(true)}>
+          Read the rest · {rest} more ▾
+        </button>
+      )}
     </>
   );
 }

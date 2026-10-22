@@ -173,7 +173,7 @@ export function PlayerTable({
         {!at && <col className="c-hide" style={{ width: 58 }} />}
         <col style={{ width: 84 }} />
         {at && <col className="c-hide" style={{ width: 84 }} />}
-        {at && <col className="c-hide" style={{ width: 34 }} />}
+        {(at || onStar) && <col className="c-hide" style={{ width: 34 }} />}
         <col style={{ width: 96 }} />
       </colgroup>
       <thead>
@@ -192,7 +192,7 @@ export function PlayerTable({
               Report
             </th>
           )}
-          {at && <th className="c-hide" />}
+          {(at || onStar) && <th className="c-hide" />}
           <th />
         </tr>
       </thead>
@@ -204,7 +204,7 @@ export function PlayerTable({
           return (
             <tr key={r.key} className={[r.hot && r.legal ? 'hot' : '', !r.legal ? 'no' : '', r.taken ? 'taken' : ''].filter(Boolean).join(' ') || undefined} title={r.title}>
               <td className="f">
-                <NFace name={s.playerName} />
+                <NFace name={s.playerName} span={s} />
               </td>
               <td>
                 {onOpen ? (
@@ -234,9 +234,10 @@ export function PlayerTable({
               {at && (
                 <td className="yrs c-hide">
                   {onYears && (r.spans ?? 0) > 1 ? (
-                    <button type="button" className="yrs-btn" onClick={() => onYears(s.playerName)}>
+                    <button type="button" className="yrs-btn" onClick={() => onYears(s.playerName)} title="His other stretches">
                       {maskYears(s.playerName, s.spanLabel)}
-                      <small>▾</small>
+                      {/* how many other stretches he has (it was a lone ▾ that read as a stray dot) */}
+                      <small>+{(r.spans ?? 1) - 1}</small>
                     </button>
                   ) : (
                     <span className="yrs-plain">{maskYears(s.playerName, s.spanLabel)}</span>
@@ -262,7 +263,7 @@ export function PlayerTable({
                   ) : null}
                 </td>
               )}
-              {at && (
+              {(at || onStar) && (
                 <td className="c c-hide">
                   {onStar && !r.taken && (
                     <button

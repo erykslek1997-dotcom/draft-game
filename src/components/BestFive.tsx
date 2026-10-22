@@ -97,8 +97,23 @@ const AXES: { key: keyof Pick<LineupScore, 'talent' | 'offense' | 'defense' | 's
 
 const WORD = ['no', 'one', 'two', 'three', 'four', 'five'];
 const NTH = ['next', '3rd', '4th', '5th'];
-/** How long the AI's turn stays on the table before your next draw. */
-const AI_TURN_MS = 2600;
+/**
+ * One tempo for the table (2026-10-22, playtest: "AI bardzo szybko dostaje karty i pickuje, tempo
+ * jest rozjechane"). Your hand and the AI's are dealt the same way, card by card; the AI then
+ * thinks for a beat and lifts its card, the way yours lifts when you take it.
+ */
+const TEMPO = {
+  /** Between two cards leaving the deck. */
+  step: 480,
+  /** One card's flight and turn. */
+  flight: 950,
+  /** The AI looking at its hand. */
+  think: 1300,
+  /** A taken card held up before the table moves on (yours and the AI's). */
+  take: 1500,
+  /** Your card lifting before the next deal. */
+  pick: 650,
+};
 
 /**
  * Draw Five (night edition, mockups `docs/mockups/draw-five-night/index.html`): one player per
@@ -149,7 +164,9 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   // The AI drafts its own five from the same deck: each round the four cards that didn't come to you.
   const [aiLineup, setAiLineup] = useState<Lineup>({});
   // The AI's turn on the table: the hand it drew and the card it took.
-  const [aiTurn, setAiTurn] = useState<{ slot: Position; hand: PlayerSpan[]; took: string } | null>(null);
+  const [aiTurn, setAiTurn] = useState<{ slot: Position; hand: PlayerSpan[]; took: string; phase: 'deal' | 'think' | 'take' } | null>(null);
+  // Your card held up for a beat once picked, before the AI's turn or your next deal.
+  const [taking, setTaking] = useState<{ slot: Position; id: string } | null>(null);
   // The daily Joker of the round just played, turned over once a card was picked.
   const [jokerReveal, setJokerReveal] = useState<{ joker: DailyJoker; took: boolean } | null>(null);
   // Every pick, in order (yours and the AI's), for the aside's log.
@@ -165,11 +182,19 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   );
   const [dialog, setDialog] = useState<'howto' | 'settings' | null>(null);
 
+  const aiPhase = aiTurn?.phase ?? null;
   useEffect(() => {
-    if (!aiTurn) return;
-    const t = window.setTimeout(() => setAiTurn(null), reducedMotion() ? 1200 : AI_TURN_MS);
-    return () => window.clearTimeout(t);
-  }, [aiTurn]);
+    if (aiPhase === 'think') {
+      const t = window.setTimeout(() => setAiTurn((a) => a && { ...a, phase: 'take' }), TEMPO.think);
+      return () => window.clearTimeout(t);
+    }
+    if (aiPhase === 'take') {
+      const t = window.setTimeout(() => setAiTurn(null), reducedMotion() ? 1200 : TEMPO.take);
+      return () => window.clearTimeout(t);
+    }
+  }, [aiPhase]);
+  /** A tap on the AI's table moves it on a step. */
+  const nextAiPhase = () => setAiTurn((a) => (!a ? null : a.phase === 'take' ? null : { ...a, phase: 'take' }));
 
   /** The picks made before `slot` in the day's order. */
   const picksBefore = (slot: Position): Lineup => {
@@ -200,10 +225,22 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   const overBy = (slot: Position, span: PlayerSpan) => shotsUsed + span.fga + cheapestLeft(slot) - shotsCap;
 
   function pick(slot: Position, span: PlayerSpan) {
-    if (lineup[slot] || overBy(slot, span) > 1e-9) return;
-    setLineup((prev) => ({ ...prev, [slot]: span }));
+    if (taking || lineup[slot] || overBy(slot, span) > 1e-9) return;
     deckSfx.pick();
     buzz();
+    if (reducedMotion()) {
+      commitPick(slot, span);
+      return;
+    }
+    setTaking({ slot, id: span.id });
+    window.setTimeout(() => {
+      setTaking(null);
+      commitPick(slot, span);
+    }, TEMPO.pick);
+  }
+
+  function commitPick(slot: Position, span: PlayerSpan) {
+    setLineup((prev) => ({ ...prev, [slot]: span }));
     setLanded(span.id);
     const n = order.indexOf(slot) + 1;
     setLog((prev) => [...prev, { n, who: 'You', span }]);
@@ -234,7 +271,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
       ? fits.reduce((best, c) => (scoreLineup({ ...ai, [slot]: c }).composite > scoreLineup({ ...ai, [slot]: best }).composite ? c : best))
       : [...hand].sort((a, b) => a.fga - b.fga)[0];
     setAiLineup({ ...ai, [slot]: choice });
-    setAiTurn({ slot, hand: hand.slice(0, DEAL_SIZE).some((c) => c.id === choice.id) ? hand.slice(0, DEAL_SIZE) : [choice, ...hand.filter((c) => c.id !== choice.id).slice(0, DEAL_SIZE - 1)], took: choice.id });
+    setAiTurn({ slot, hand: hand.slice(0, DEAL_SIZE).some((c) => c.id === choice.id) ? hand.slice(0, DEAL_SIZE) : [choice, ...hand.filter((c) => c.id !== choice.id).slice(0, DEAL_SIZE - 1)], took: choice.id, phase: reducedMotion() ? 'take' : 'deal' });
     setLog((prev) => [...prev, { n, who: 'AI', span: choice }]);
   }
 
@@ -382,7 +419,12 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
       {submitLabel}
     </Btn>
   );
-  const aiUsed = lineupShots(aiLineup);
+  // The AI's card stays its secret until it turns its pick over (no spoiler in the row or the log).
+  const aiHidden = aiTurn && aiTurn.phase !== 'take' ? aiTurn.took : null;
+  const aiShown: Lineup = { ...aiLineup };
+  if (aiHidden && aiTurn) delete aiShown[aiTurn.slot];
+  const logShown = aiHidden ? log.filter((l) => !(l.who === 'AI' && l.span.id === aiHidden)) : log;
+  const aiUsed = lineupShots(aiShown);
 
   const aside = (
     <>
@@ -439,7 +481,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
             </Kv>
           )}
         </section>
-      ) : log.length === 0 ? (
+      ) : logShown.length === 0 ? (
         <>
           <section>
             <H3>The draft so far</H3>
@@ -454,7 +496,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
           </section>
         </>
       ) : null}
-      {log.length > 0 && <DraftLog rows={log.slice(-6)} />}
+      {logShown.length > 0 && <DraftLog rows={logShown.slice(-6)} />}
       <Actions links={links}>{submitBtn()}</Actions>
     </>
   );
@@ -464,20 +506,45 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   let table: ReactNode = null;
   if (aiTurn) {
     const took = aiTurn.hand.find((c) => c.id === aiTurn.took);
+    const drew = WORD[aiTurn.hand.length] ?? aiTurn.hand.length;
     promptEl = (
       <Prompt eb={`AI on the clock · Pick ${order.indexOf(aiTurn.slot) + 1}`} title={SLOT_NAME[aiTurn.slot]} now>
-        The AI drew {WORD[aiTurn.hand.length] ?? aiTurn.hand.length}. It takes <b className="w">{took ? maskName(took.playerName) : ''}</b>.
+        {aiTurn.phase === 'deal' ? (
+          <>The AI draws {drew}.</>
+        ) : aiTurn.phase === 'think' ? (
+          <>
+            The AI drew {drew}. <span className="ai-think">Thinking</span>
+          </>
+        ) : (
+          <>
+            The AI drew {drew}. It takes <b className="w">{took ? maskName(took.playerName) : ''}</b>.
+          </>
+        )}
       </Prompt>
     );
-    table = (
-      <button type="button" className={`hand ai-hand${aiTurn.hand.length >= 5 ? ' n5' : ''}`} style={{ '--n': aiTurn.hand.length } as CSSProperties} onClick={() => setAiTurn(null)} aria-label="Next">
-        {aiTurn.hand.map((c, i) => (
-          <span key={c.id} style={{ '--i': i } as CSSProperties} className="ai-c">
-            <NCard span={c} cls={c.id === aiTurn.took ? 'sel ai-took' : 'dim'} took={c.id === aiTurn.took ? 'AI takes' : undefined} />
-          </span>
-        ))}
-      </button>
-    );
+    table =
+      aiTurn.phase === 'deal' ? (
+        <DeckHand
+          key={`ai-${pool.key}-${aiTurn.slot}`}
+          slot={aiTurn.slot}
+          cards={aiTurn.hand}
+          fresh
+          auto
+          joker={false}
+          daily={false}
+          note="The AI draws from the same deck, under the same cap."
+          onDone={() => setAiTurn((a) => a && { ...a, phase: 'think' })}
+          renderCard={(c) => <NCard span={c} />}
+        />
+      ) : (
+        <button type="button" className={`hand ai-hand ${aiTurn.phase}${aiTurn.hand.length >= 5 ? ' n5' : ''}`} style={{ '--n': aiTurn.hand.length } as CSSProperties} onClick={nextAiPhase} aria-label="Next">
+          {aiTurn.hand.map((c, i) => (
+            <span key={c.id} style={{ '--i': i } as CSSProperties} className="ai-c">
+              <NCard span={c} cls={aiTurn.phase === 'take' ? (c.id === aiTurn.took ? 'sel ai-took' : 'dim') : undefined} took={aiTurn.phase === 'take' && c.id === aiTurn.took ? 'AI takes' : undefined} />
+            </span>
+          ))}
+        </button>
+      );
   } else if (activeSlot) {
     const n = order.indexOf(activeSlot) + 1;
     const firstLine =
@@ -524,7 +591,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
           return (
             <NCard
               span={span}
-              cls={blocked ? 'dim over' : undefined}
+              cls={taking ? (taking.id === span.id ? 'you-took' : 'dim') : blocked ? 'dim over' : undefined}
               over={blocked ? `Over the cap by ${over.toFixed(1)}` : undefined}
               onClick={blocked ? undefined : () => pick(activeSlot, span)}
               title={blocked ? `${maskName(span.playerName)} would leave no room under the cap` : `Draft ${maskName(span.playerName)}`}
@@ -558,7 +625,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
         {daily && meta ? (
           <OppRow title={`Game of the day · ${meta.opponent.name}`} note={filledCount === 0 ? 'they play your five after the last pick' : 'after the last pick'} lineup={legends ?? {}} legends />
         ) : (
-          <OppRow title="AI · Pro" lineup={aiLineup} nextPos={aiTurn ? null : activeSlot} newId={newAi} />
+          <OppRow title="AI · Pro" lineup={aiShown} nextPos={aiTurn ? null : activeSlot} newId={aiHidden ? undefined : newAi} />
         )}
         <section>
           <H3 note={`${filledCount} of 5`}>Your five</H3>
@@ -673,7 +740,7 @@ function OppRow({ title, note, lineup, nextPos, newId, legends }: { title: strin
             );
           return (
             <li key={s} className={p.id === newId ? 'new' : undefined}>
-              <NFace name={p.playerName} />
+              <NFace name={p.playerName} span={p} />
               <span className="pos">{s}</span>
               <span className="who">{maskName(p.playerName)}</span>
               <span className="c">
@@ -693,7 +760,7 @@ function TaleOfTheTape({ yours, theirs, theirLabel }: { yours: Lineup; theirs: L
   const side = (p: PlayerSpan | undefined) =>
     p ? (
       <div className="pl">
-        <NFace name={p.playerName} />
+        <NFace name={p.playerName} span={p} />
         <div>
           <b>{maskName(p.playerName)}</b>
           <small>
@@ -772,8 +839,8 @@ function JokerModal({ joker, next, onNext }: { joker: DailyJoker; next: Position
   );
 }
 
-const DEAL_STEP_MS = 480;
-const DEAL_FLIGHT_MS = 950;
+const DEAL_STEP_MS = TEMPO.step;
+const DEAL_FLIGHT_MS = TEMPO.flight;
 
 /** One dealt card (deal animation A, 2026-09-30): it leaves the deck face down, flies to its place
  * and turns over as it lands. */
@@ -788,18 +855,21 @@ function DealtCard({ pile, fly, children }: { pile: RefObject<HTMLDivElement | n
     const dx = a.left + a.width / 2 - (b.left + b.width / 2);
     const dy = a.top + a.height / 2 - (b.top + b.height / 2);
     const scale = Math.min(1, a.width / Math.max(1, b.width));
+    // It flies in face down with a slight turn, settles, then turns over on its own axis: half a
+    // turn to edge-on, the face swaps in, the other half (2026-10-22: the flat squash read cheap).
     el.animate(
       [
-        { transform: `translate(${dx}px, ${dy}px) scale(${scale}) rotate(-6deg)` },
-        { transform: 'translate(0, 0) scale(1) rotate(0deg)', offset: 0.55 },
-        { transform: 'scaleX(0.02)', offset: 0.7 },
-        { transform: 'none' },
+        { transform: `perspective(900px) translate(${dx}px, ${dy}px) scale(${scale}) rotate(-8deg)`, easing: 'cubic-bezier(0.2, 0.8, 0.25, 1)' },
+        { transform: 'perspective(900px) translate(0, -6px) scale(1.02) rotate(0deg)', offset: 0.5, easing: 'ease-out' },
+        { transform: 'perspective(900px) translate(0, 0) scale(1) rotate(0deg)', offset: 0.58, easing: 'ease-in' },
+        { transform: 'perspective(900px) rotateY(90deg)', offset: 0.74, easing: 'ease-out' },
+        { transform: 'perspective(900px) rotateY(0deg)' },
       ],
-      { duration: DEAL_FLIGHT_MS, easing: 'cubic-bezier(0.2, 0.8, 0.25, 1)' },
+      { duration: DEAL_FLIGHT_MS },
     );
-    el.querySelector<HTMLElement>('.fly-back')?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.69 }, { opacity: 0, offset: 0.7 }, { opacity: 0 }], { duration: DEAL_FLIGHT_MS, fill: 'none' });
+    el.querySelector<HTMLElement>('.fly-back')?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.739 }, { opacity: 0, offset: 0.74 }, { opacity: 0 }], { duration: DEAL_FLIGHT_MS, fill: 'none' });
     deckSfx.deal();
-    const flip = window.setTimeout(() => deckSfx.flip(), DEAL_FLIGHT_MS * 0.62);
+    const flip = window.setTimeout(() => deckSfx.flip(), DEAL_FLIGHT_MS * 0.66);
     return () => window.clearTimeout(flip);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -820,22 +890,34 @@ function DeckHand({
   slot,
   cards,
   fresh,
+  auto,
   joker,
   daily,
+  note,
   onDone,
   renderCard,
 }: {
   slot: Position;
   cards: PlayerSpan[];
   fresh: boolean;
+  /** The AI's hand: dealt at once, no Draw button. */
+  auto?: boolean;
   joker: boolean;
   daily: boolean;
+  /** The line under the deck in place of the caps note. */
+  note?: ReactNode;
   onDone: () => void;
   renderCard: (span: PlayerSpan) => ReactNode;
 }) {
   const pile = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(fresh ? 0 : cards.length);
   const [drawing, setDrawing] = useState(false);
+  useEffect(() => {
+    if (!auto || !fresh || reducedMotion()) return;
+    deckSfx.shuffle();
+    setDrawing(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [settled, setSettled] = useState(!fresh);
   useEffect(() => {
     if (fresh && reducedMotion()) {
@@ -851,13 +933,13 @@ function DeckHand({
       const t = window.setTimeout(() => {
         setSettled(true);
         onDone();
-        buzz();
+        if (!auto) buzz();
       }, DEAL_FLIGHT_MS);
       return () => window.clearTimeout(t);
     }
     const t = window.setTimeout(() => setShown((n) => n + 1), shown === 0 ? 250 : shown === cards.length - 1 ? DEAL_STEP_MS + 350 : DEAL_STEP_MS);
     return () => window.clearTimeout(t);
-  }, [drawing, shown, cards.length, onDone]);
+  }, [drawing, shown, cards.length, onDone, auto]);
   const n = cards.length;
   if (settled) {
     return (
@@ -901,7 +983,9 @@ function DeckHand({
           <p>Dealing…</p>
         )}
         <p>
-          {daily && joker ? (
+          {note ? (
+            note
+          ) : daily && joker ? (
             <>
               A gold Joker hides in this hand: <b>50% legend, 50% scrub</b>.
             </>
@@ -1038,6 +1122,7 @@ function BestFiveResult({
 
   const strongest = [...AXES].filter((a) => a.key !== 'spacing').sort((a, b) => score[b.key] - score[a.key])[0];
   const poster: PosterData = {
+    daily: Boolean(daily),
     mode: daily ? 'Draw Five · daily' : 'Draw Five',
     date: daily ? new Date(`${daily}T12:00:00`) : new Date(),
     kick: match ? (daily ? `Game of the day · ${won ? 'beat' : 'lost to'} the ${opp} ${match.final[0]}–${match.final[1]}` : `Final · ${won ? 'beat' : 'lost to'} the AI ${match.final[0]}–${match.final[1]}`) : 'Final',
@@ -1134,7 +1219,7 @@ function BestFiveResult({
           {challenge?.vs != null && <Kv k={`Friend’s five · ${challengeVerdict(score.composite, challenge.vs) === 'won' ? 'you win' : challengeVerdict(score.composite, challenge.vs) === 'lost' ? 'they win' : 'tied'}`} v={challenge.vs} />}
         </section>
       )}
-      <Actions links={links}>
+      <Actions links={{ ...links, onMenu: undefined }}>
         {daily ? (
           <div className="btn2">
             <Btn kind="line" onClick={copyDailyResult}>
@@ -1172,31 +1257,35 @@ function BestFiveResult({
             Play today again (testing)
           </Btn>
         )}
+        {links.onMenu && (
+          <Btn kind="line" onClick={links.onMenu}>
+            Main menu
+          </Btn>
+        )}
       </Actions>
     </>
   );
 
   return (
     <NightGame className="d5" aside={aside} overlay={shareOpen ? <ShareNight d={poster} link={daily ? undefined : modeChallengeLink('roulette', seed, score.composite)} fileName={title} onClose={() => setShareOpen(false)} /> : undefined}>
-      {daily && jokers.length > 0 && <JokerRecap jokers={jokers} lineup={lineup} />}
-      <div className="headline">
-        <span className="eb">{daily ? 'Game of the day' : 'Final'}</span>
-        <b>{headline}</b>
-        {match && <i>{topScorers(match)}</i>}
-      </div>
-      <div className="verdict">
+      {/* 2026-10-22, playtest ("brak struktury"; mockup index.html #dailyResults2): one hero, the game
+          and the verdict together; then your five against the best, the why, the profile; the Jokers last. */}
+      <div className="hero2">
         <div>
-          <span className="eb">The verdict</span>
-          <h2>{GRADE_LABEL[grade]}</h2>
-          <p>{GRADE_BLURB[grade]}</p>
+          <span className="eb">{daily ? `Game of the day · ${dayLabel(daily)}` : 'Final'}</span>
+          <h2>{headline}</h2>
+          <p>
+            <b>{GRADE_LABEL[grade]}.</b> {GRADE_BLURB[grade]}
+            {match && <> {topScorers(match)}.</>}
+          </p>
         </div>
-        <div className="nums">
+        <div className="hn">
           <div className="you">
             <span>Your five</span>
             <b>{score.composite}</b>
           </div>
           <div>
-            <span>Fan-vote</span>
+            <span>Fan vote</span>
             <b>{targets.par}</b>
           </div>
           <div>
@@ -1205,6 +1294,29 @@ function BestFiveResult({
           </div>
         </div>
       </div>
+      <section>
+        <H3 note={`${hits.length} of 5 match the best`}>Starting five</H3>
+        <div className="cmp">
+          <span className="rl">You</span>
+          {STARTER_SLOTS.map((s) => (
+            <MiniCard key={s} pos={s} span={lineup[s]} hit={hits.includes(s)} />
+          ))}
+          <span className="rl">Best</span>
+          {STARTER_SLOTS.map((s) => (
+            <MiniCard key={s} pos={s} span={targets.optimalFive[s]} hit={hits.includes(s)} />
+          ))}
+        </div>
+      </section>
+      <section className="film">
+        <H3>Film room</H3>
+        {filmLines.map((l, i) => (
+          <p key={i}>
+            <i className={l.glyph === '+' ? 'up' : l.glyph === '−' ? 'dn' : 'nt-q'}>{l.glyph}</i>
+            <span>{l.body}</span>
+          </p>
+        ))}
+      </section>
+      <div className="small-prof">
       <section>
         <H3 note="yours · the best five">Team profile</H3>
         <table className="profile">
@@ -1234,28 +1346,8 @@ function BestFiveResult({
           </tbody>
         </table>
       </section>
-      <section className="film">
-        <H3>Film room</H3>
-        {filmLines.map((l, i) => (
-          <p key={i}>
-            <i className={l.glyph === '+' ? 'up' : l.glyph === '−' ? 'dn' : 'nt-q'}>{l.glyph}</i>
-            <span>{l.body}</span>
-          </p>
-        ))}
-      </section>
-      <section>
-        <H3 note={`${hits.length} of 5 match the best`}>Starting five</H3>
-        <div className="cmp">
-          <span className="rl">You</span>
-          {STARTER_SLOTS.map((s) => (
-            <MiniCard key={s} pos={s} span={lineup[s]} hit={hits.includes(s)} />
-          ))}
-          <span className="rl">Best</span>
-          {STARTER_SLOTS.map((s) => (
-            <MiniCard key={s} pos={s} span={targets.optimalFive[s]} hit={hits.includes(s)} />
-          ))}
-        </div>
-      </section>
+      </div>
+      {daily && jokers.length > 0 && <JokerRecap jokers={jokers} lineup={lineup} />}
       <div className="phone-only stackb">
         {daily ? (
           <Btn kind="line" onClick={copyDailyResult}>
@@ -1282,7 +1374,7 @@ function MiniCard({ pos, span, hit }: { pos: Position; span?: PlayerSpan; hit: b
         <span>{pos}</span>
       </div>
       <div className="bd">
-        <NFace name={span.playerName} />
+        <NFace name={span.playerName} span={span} />
         <div style={{ minWidth: 0 }}>
           <b>{shortName(span.playerName)}</b>
           <span className="s">
@@ -1300,7 +1392,7 @@ function MiniCard({ pos, span, hit }: { pos: Position; span?: PlayerSpan; hit: b
 function JokerRecap({ jokers, lineup }: { jokers: DailyJoker[]; lineup: Lineup }) {
   return (
     <section className="recap">
-      <H3 tone="gold">Today’s Jokers</H3>
+      <H3 note={`${jokers.length} on the board`}>Today’s Jokers</H3>
       {jokers.map((j) => {
         const took = lineup[j.slot]?.id === j.card.id;
         const res = took ? (j.legend ? 'Jackpot' : 'Ouch') : j.legend ? 'Missed' : 'Dodged';

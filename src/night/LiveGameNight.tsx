@@ -21,11 +21,14 @@ const PACE = { early: 250, fourth: 420, blowout: 170, clutchPlay: 1500, clutchQu
 const CLUTCH = { seconds: 120, margin: 8 };
 const BLOWOUT_MARGIN = 20;
 // 2026-10-15 (playtest 7: "brakuje szybkości 1/8, 1/4, 1/2"): the slow speeds stay.
-const SPEEDS = [0.25, 0.5, 1, 2, 4, 8] as const;
+const SPEEDS = [0.125, 0.25, 0.5, 1, 2, 4, 8] as const;
 type Speed = (typeof SPEEDS)[number];
 /** The feed shows the newest lines; the rest open on request. */
 const FEED_ROWS = 12;
-const SPEED_LABEL: Record<Speed, string> = { 0.25: '¼', 0.5: '½', 1: '1×', 2: '2×', 4: '4×', 8: '8×' };
+const SPEED_LABEL: Record<Speed, string> = { 0.125: '⅛', 0.25: '¼', 0.5: '½', 1: '1×', 2: '2×', 4: '4×', 8: '8×' };
+/** "Key moments" starts here: the last six minutes of the game. 2026-10-22 (playtest): back from the
+ * pre-night live game, before tip-off and while the game runs. */
+const KEY_MOMENTS_LEFT = 360;
 
 function isClutch(m: GameMoment | undefined): boolean {
   return !!m && m.quarter >= 3 && m.left <= CLUTCH.seconds && Math.abs(m.score[0] - m.score[1]) <= CLUTCH.margin;
@@ -198,6 +201,21 @@ export default function LiveGameNight({
   const [speed, setSpeed] = useState<Speed>(1);
   const [tab, setTab] = useState<'feed' | 'box' | 'teams'>('feed');
   const [boxSide, setBoxSide] = useState<0 | 1>(sides.you);
+  // Who started: the five on the floor for the first trip of the game.
+  const starterIdx = useMemo(
+    () =>
+      ([0, 1] as const).map((side) => {
+        const on = onFloor(game.moments, 0, side).flatMap((x, k) => (x ? [k] : []));
+        // Fall back to the listed order if the first trip doesn't show exactly five.
+        return on.length === 5 ? on : game.labels[side].slice(0, 5).map((_l, k) => k);
+      }) as [number[], number[]],
+    [game],
+  );
+  const benchIdx = (side: 0 | 1, rows: { min: number }[]) =>
+    rows
+      .map((_l, k) => k)
+      .filter((k) => !starterIdx[side].includes(k))
+      .sort((a, b) => rows[b].min - rows[a].min);
   const [period, setPeriod] = useState<'game' | 0 | 1 | 2 | 3>('game');
   const [showAll, setShowAll] = useState(false);
   const timer = useRef<number | null>(null);
@@ -228,6 +246,7 @@ export default function LiveGameNight({
   }, [done, onFinish, autoStart]);
 
   const upto = Math.max(0, Math.min(shown, total));
+  const keyMomentIdx = game.moments.findIndex((m) => m.left <= KEY_MOMENTS_LEFT);
   const now = upto > 0 ? game.moments[upto - 1] : undefined;
   const score = now?.score ?? [0, 0];
   const lines = now?.lines ?? [game.labels[0].map(zeroLine), game.labels[1].map(zeroLine)];
@@ -386,7 +405,17 @@ export default function LiveGameNight({
   const headline = useMemo(() => {
     if (done) {
       const margin = Math.abs(game.final[0] - game.final[1]);
-      return { eb: 'Final', title: won ? `${short[you]} win` : `${short[them]} win`, line: <>{game.recap} {maskName(game.star.name)}: {game.star.line.pts} points, {game.star.line.reb} rebounds, {game.star.line.ast} assists.</>, margin };
+      const title = won ? `${short[you]} win` : `${short[them]} win`;
+      // Your side's best line, said once (playtest 2026-10-22: "Pippen did what he could. Pippen: 23
+      // points…", and "They were the better team" read wrong when you play as the second side).
+      const lines = Object.entries(game.box[you]);
+      const [starLabel, l] = lines.reduce((best, cur) => (cur[1].pts + cur[1].reb + cur[1].ast > best[1].pts + best[1].reb + best[1].ast ? cur : best), lines[0]);
+      const stat = `${l.pts} points, ${l.reb} rebounds, ${l.ast} assists`;
+      // The engine's recap speaks for side 0; keep it when it says something the line below doesn't
+      // (who got hunted on defense), else say it plainly from your side.
+      if (you === 0 && !game.recap.includes(game.star.name)) return { eb: 'Final', title, line: <>{game.recap} {maskName(starLabel)}: {stat}.</>, margin };
+      const line = won ? `${maskName(starLabel)} led the way: ${stat}.` : `The ${short[them]} were the better team. ${maskName(starLabel)} did what he could: ${stat}.`;
+      return { eb: 'Final', title, line: <>{line}</>, margin };
     }
     const at = `Live · Q${(now?.quarter ?? 0) + 1} · ${quarterClock(now)}`;
     for (let i = upto - 1; i >= Math.max(0, upto - 6); i--) {
@@ -484,23 +513,30 @@ export default function LiveGameNight({
       ))}
     </div>
   );
+  // 2026-10-22, the playtest: Play is the main action (filled), Skip the shortcut (outline); once the
+  // game is over the controls go, and "Watch again" sits once under the next step (`endActions`).
   const controls = (cls: string) =>
-    done ? (
+    done ? null : (
       <div className={cls}>
-        <Btn kind="line" onClick={() => start(0)}>
-          Watch again
-        </Btn>
-      </div>
-    ) : (
-      <div className={cls}>
-        <Btn kind="line" onClick={() => setRunning((r) => !r)}>
-          {running ? 'Pause' : 'Play'}
-        </Btn>
+        <Btn onClick={() => setRunning((r) => !r)}>{running ? 'Pause' : 'Play'}</Btn>
+        {keyMomentIdx > upto && (
+          <Btn kind="line" onClick={() => setShown(keyMomentIdx)}>
+            Key moments
+          </Btn>
+        )}
         <Btn kind="line" onClick={skip}>
           Skip to final
         </Btn>
       </div>
     );
+  const endActions = (
+    <>
+      {doneSlot}
+      <Btn kind="line" onClick={() => start(0)}>
+        Watch again
+      </Btn>
+    </>
+  );
 
   const wpEl = (
     <div className="wp">
@@ -682,13 +718,22 @@ export default function LiveGameNight({
                 <th className="c-hide">PF</th>
                 <th>+/−</th>
               </tr>
-              {rows.map((l, k) => {
+              {/* 2026-10-22 (playtest): the five who started first, then a "Bench" line and the bench by
+                  minutes — the rows used to come in position pairs, starters and backups mixed. */}
+              {(benchIdx(boxSide, rows).length ? [...starterIdx[boxSide], -1, ...benchIdx(boxSide, rows)] : starterIdx[boxSide]).map((k) => {
+                if (k < 0)
+                  return (
+                    <tr key="bench" className="grp">
+                      <td colSpan={9}>Bench</td>
+                    </tr>
+                  );
+                const l = rows[k];
                 const label = game.labels[boxSide][k];
                 const name = maskName(game.players[boxSide][k]?.playerName ?? label);
                 const sp = name.indexOf(' ');
                 const nameEl = (
                   <>
-                    <i className={periodBox.floor[boxSide]?.[k] && !done ? undefined : 'off'} />
+                    {!done && <i className={periodBox.floor[boxSide]?.[k] ? undefined : 'off'} />}
                     {sp > 0 ? (
                       <>
                         <span className="fn">{name.slice(0, sp)} </span>
@@ -717,7 +762,7 @@ export default function LiveGameNight({
                     </tr>
                   );
                 return (
-                  <tr key={label} className={k > 4 ? 'bn' : undefined}>
+                  <tr key={label}>
                     <td>{cellName}</td>
                     <td>{Math.round(l.min)}</td>
                     <td className={top > 0 && l.pts === top ? 'k' : undefined}>{l.pts}</td>
@@ -753,7 +798,7 @@ export default function LiveGameNight({
           </table>
         );
       })()}
-      <p className="lb-note">{done ? '○ the game is over' : '● on the floor now · ○ on the bench'}</p>
+      {!done && <p className="lb-note">● on the floor now · ○ on the bench</p>}
     </>
   );
 
@@ -778,6 +823,11 @@ export default function LiveGameNight({
             {pregame?.aside}
             <Actions links={links}>
               <Btn onClick={() => start(0)}>Tip-off</Btn>
+              {keyMomentIdx > 0 && (
+                <Btn kind="line" onClick={() => start(keyMomentIdx)}>
+                  Key moments
+                </Btn>
+              )}
             </Actions>
           </>
         }
@@ -814,7 +864,7 @@ export default function LiveGameNight({
                 const side = (sp: PlayerSpan | undefined) =>
                   sp ? (
                     <div className="pl">
-                      <NFace name={sp.playerName} />
+                      <NFace name={sp.playerName} span={sp} />
                       <div>
                         <b>
                           {(() => {
@@ -851,6 +901,11 @@ export default function LiveGameNight({
         <Btn className="phone-only" onClick={() => start(0)}>
           Tip-off
         </Btn>
+        {keyMomentIdx > 0 && (
+          <Btn kind="line" className="phone-only" onClick={() => start(keyMomentIdx)}>
+            Key moments
+          </Btn>
+        )}
       </NightGame>
     );
   }
@@ -869,27 +924,31 @@ export default function LiveGameNight({
           <>
             <Mast title={mast.title} sub={done ? mast.sub : (mast.liveSub ?? mast.sub)} daily={mast.daily} />
             {tallyEl}
-            <section>
-              <H3>Broadcast</H3>
-              {!done && speedsEl}
-              {controls('btn2')}
-            </section>
+            {!done && (
+              <section>
+                <H3>Broadcast</H3>
+                {speedsEl}
+                {controls('stackb')}
+              </section>
+            )}
             <section>
               <H3 note={`${short[0].toLowerCase()} · ${short[1]}`}>Team stats</H3>
               {teamStats}
             </section>
             {asideExtra}
-            <Actions links={links}>{done && doneSlot}</Actions>
+            <Actions links={links}>{done && endActions}</Actions>
           </>
         }
       >
         {prompt}
-        <section className="phone-only">
-          <H3>Broadcast</H3>
-          {!done && speedsEl}
-          {controls('btn2')}
-        </section>
-        {done && doneSlot && <div className="phone-only stackb">{doneSlot}</div>}
+        {!done && (
+          <section className="phone-only">
+            <H3>Broadcast</H3>
+            {speedsEl}
+            {controls('stackb')}
+          </section>
+        )}
+        {done && <div className="phone-only stackb">{endActions}</div>}
         <div className="split">
           <section>
             <H3 note={done ? 'newest first' : `Q${liveQuarter + 1} · newest first`}>Play-by-play</H3>
@@ -950,17 +1009,24 @@ export default function LiveGameNight({
         <>
           <Mast title={mast.title} sub={done ? mast.sub : (mast.liveSub ?? mast.sub)} daily={mast.daily} />
           {tallyEl}
+          {/* the quarters right under the score (playtest 2026-10-22), not at the foot of the court */}
+          <section className="keep">
+            <H3>Score by quarter</H3>
+            {quarterTable}
+          </section>
           {!done && (
             <section className="keep">
               <H3>Win probability</H3>
               {wpEl}
             </section>
           )}
-          <section className="keep live-aside">
-            <H3>{done ? 'Replay' : 'Speed'}</H3>
-            {!done && speedsEl}
-            {controls('stackb')}
-          </section>
+          {!done && (
+            <section className="keep live-aside">
+              <H3>Speed</H3>
+              {speedsEl}
+              {controls('stackb')}
+            </section>
+          )}
           <section>
             <H3 note={`${short[0]} · ${short[1]}`}>{done ? 'Leaders' : 'Leaders so far'}</H3>
             {l0.map(({ k, a, b }) => (
@@ -974,12 +1040,12 @@ export default function LiveGameNight({
             ))}
           </section>
           {asideExtra}
-          <Actions links={links}>{done && doneSlot}</Actions>
+          <Actions links={links}>{done && endActions}</Actions>
         </>
       }
     >
       {prompt}
-      {done && doneSlot && <div className="phone-only stackb">{doneSlot}</div>}
+      {done && <div className="phone-only stackb">{endActions}</div>}
       {huntEl}
       <div className="split live-split">
         <section>
@@ -1010,10 +1076,6 @@ export default function LiveGameNight({
                 {lastShot.line ? ` · ${lastShot.line.fgm} of ${lastShot.line.fga} tonight` : ''}
               </p>
             )}
-          </section>
-          <section>
-            <H3>Score by quarter</H3>
-            {quarterTable}
           </section>
         </div>
       </div>

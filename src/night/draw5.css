@@ -25,7 +25,7 @@
 .jr.scrub h2 { color: var(--red); }
 .jr p { margin: 0 0 18px; font-size: 16px; line-height: 1.5; font-style: italic; color: var(--ink2); }
 .jr p b { font-style: normal; color: var(--ink); }
-.jr-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.9); z-index: 5; }
+.jr-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.96); backdrop-filter: blur(6px); z-index: 5; }
 @media (max-width: 600px) { .vs5 b { font-size: 15px; } .vs5 img, .vs5 .ini { width: 36px; height: 36px; } .vs5 .pl { gap: 8px; } .vs5 td.ps { width: 36px; } .vs5 .fn { display: none; } .vs5 .yy { display: none; } .vs5 .pp { white-space: nowrap; } .jr h2 { font-size: 52px; } .jr { top: 30px; } }
 }
 
@@ -34,18 +34,23 @@
   .hand-c { display: flex; min-width: 0; }
   .hand-c > .card { flex: 1; }
   .hand .card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  .hand-c:hover > button.card:not(:disabled):not(.dim), .hand button.card:not(:disabled):not(.dim):focus-visible { box-shadow: 0 0 0 2px var(--red); transform: translateY(-6px); outline: 0; }
+  .hand-c:hover > button.card:not(:disabled):not(.dim):not(.you-took), .hand button.card:not(:disabled):not(.dim):focus-visible { box-shadow: 0 0 0 2px var(--red); transform: translateY(-6px); outline: 0; }
   .card.joker:disabled { opacity: 0.35; }
   .dealt { position: relative; display: flex; min-width: 0; }
   .dealt > .card { flex: 1; }
   .fly-back { position: absolute; inset: 0; border-radius: 3px; border: 1.5px solid var(--ink); background: repeating-linear-gradient(45deg, #121418 0 6px, #17191E 6px 12px); opacity: 0; pointer-events: none; }
   .deal > div { display: grid; place-items: center; }
   .ai-hand { width: 100%; text-align: inherit; cursor: pointer; }
-  .ai-c { display: flex; min-width: 0; animation: ai-in 0.4s both; animation-delay: calc(var(--i) * 140ms); }
+  /* the AI's turn after its deal (2026-10-22): think, then take — the same lift as your pick */
+  .ai-c { display: flex; min-width: 0; }
   .ai-c > .card { flex: 1; }
-  .ai-c .card.dim { animation: ai-dim 0.4s both; animation-delay: 1.1s; opacity: 1; }
-  .ai-c .card.ai-took { animation: ai-took 0.4s both; animation-delay: 1.1s; }
-  .ai-c .took { animation: ai-tag 0.3s both; animation-delay: 1.2s; }
+  .ai-hand.think .ai-c > .card { animation: ai-look 1.3s ease-in-out both; animation-delay: calc(var(--i) * 260ms); }
+  .ai-c .card.dim { animation: ai-dim 0.35s both; opacity: 1; }
+  .ai-c .card.ai-took { animation: ai-took 0.35s both; }
+  .ai-c .took { animation: ai-tag 0.3s both; animation-delay: 0.15s; }
+  .ai-think::after { content: '…'; display: inline-block; width: 1.2em; text-align: left; animation: ai-dots 1s steps(4) infinite; overflow: hidden; vertical-align: bottom; }
+  .hand .card.you-took, .hand-c:hover > .card.you-took { box-shadow: 0 0 0 2px var(--gold); transform: translateY(-8px); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+  .hand .card.dim:not(.over) { transition: opacity 0.25s ease; }
   
   
   
@@ -55,11 +60,27 @@
   .lk-inline { color: var(--ink2); font-size: 14px; text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
   .slot.filled .sb .capi { width: 0.95em; height: 0.95em; }
 }
-@media (prefers-reduced-motion: reduce) { .nt .ai-c, .nt .ai-c .card, .nt .ai-c .took { animation-duration: 1ms; animation-delay: 0ms; } }
+@media (prefers-reduced-motion: reduce) { .nt .ai-c, .nt .ai-c .card, .nt .ai-c .took, .nt .ai-think::after { animation-duration: 1ms; animation-delay: 0ms; } }
 
 /* keyframes cannot nest inside .nt */
 @keyframes ai-in { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
 @keyframes ai-dim { to { opacity: 0.35; } }
 @keyframes ai-took { from { box-shadow: none; transform: none; } to { box-shadow: 0 0 0 2px var(--red); transform: translateY(-6px); } }
 @keyframes ai-tag { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ai-look { 0%, 100% { transform: none; } 35% { transform: translateY(-4px); } }
+@keyframes ai-dots { from { width: 0; } to { width: 1.2em; } }
 .nt .mini span.s { white-space: nowrap; }
+/* One hero on the Draw Five results (playtest 2026-10-22, mockup index.html #dailyResults2) */
+.nt {
+  .hero2 { border-top: 5px double var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 14px 0 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; }
+  .hero2 .eb { font: 700 12px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+  .hero2 h2 { margin: 4px 0 2px; font: 800 52px/0.95 var(--cond); text-transform: uppercase; }
+  .hero2 p { margin: 0; font-style: italic; color: var(--ink2); }
+  .hero2 p b { font-style: normal; color: var(--ink); }
+  .hero2 .hn { display: flex; gap: 20px; text-align: right; }
+  .hero2 .hn span { display: block; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .hero2 .hn b { display: block; font: 600 30px var(--num); color: var(--ink2); }
+  .hero2 .hn .you b { color: var(--ink); }
+  .small-prof .profile td { padding-top: 6px; padding-bottom: 6px; }
+}
+@media (max-width: 600px) { .nt .hero2 { grid-template-columns: 1fr; } .nt .hero2 h2 { font-size: 38px; } .nt .hero2 .hn { text-align: left; } }

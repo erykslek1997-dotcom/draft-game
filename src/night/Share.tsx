@@ -32,16 +32,21 @@ export interface PosterData {
   foot: string;
   storyFoot?: string;
   champ?: boolean;
+  /** A daily's poster says "Daily" in the masthead; any other just the brand. */
+  daily?: boolean;
   /** The daily Draw Five hides your five until tomorrow. */
   hidden?: boolean;
   extra?: [string, ReactNode];
+  /** The season poster's draft grade over the profile (playtest 2026-10-22, mockup MC5 B):
+   * "The draft · 3rd of 16" and "Rating 87 · best 90". */
+  draft?: [string, string];
 }
 
 const longDate = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 const shortDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 function numLabel(n: number, unit: 'caps' | 'ppg', small = false) {
-  const v = Number.isInteger(n) ? String(n) : n.toFixed(1);
+  const v = n.toFixed(1);
   return unit === 'caps' ? (
     <>
       <CapI />
@@ -55,6 +60,19 @@ function numLabel(n: number, unit: 'caps' | 'ppg', small = false) {
   );
 }
 
+function DraftProfile({ d }: { d: PosterData }) {
+  if (!d.draft) return <Profile prof={d.prof} />;
+  return (
+    <div className="po-draft">
+      <div className="pd-k">
+        <span>{d.draft[0]}</span>
+        <span>{d.draft[1]}</span>
+      </div>
+      <Profile prof={d.prof} />
+    </div>
+  );
+}
+
 function Profile({ prof }: { prof: PosterData['prof'] }) {
   return (
     <div className="po-prof">
@@ -62,6 +80,8 @@ function Profile({ prof }: { prof: PosterData['prof'] }) {
         <div key={p.label} className={`pp${p.tone ? ` ${p.tone}` : ''}`}>
           <span>{p.label}</span>
           <b>
+            {/* red and green always with a sign (the rule; playtest 2026-10-22) */}
+            {p.tone === 'lo' ? '▼ ' : p.tone === 'hi' ? '▲ ' : ''}
             {p.value}
             {p.tone === 'lo' ? <span className="visually-hidden"> weak</span> : p.tone === 'hi' ? <span className="visually-hidden"> best</span> : null}
           </b>
@@ -81,7 +101,7 @@ export function Poster({ d }: { d: PosterData }) {
   return (
     <div className={`poster${d.champ ? ' champ-p' : ''}`}>
       <div className="po-mast">
-        <span>{BRAND} Daily</span>
+        <span>{d.daily ? `${BRAND} Daily` : BRAND}</span>
         <b>{longDate(d.date)}</b>
         <span>{d.mode}</span>
       </div>
@@ -125,7 +145,7 @@ export function Poster({ d }: { d: PosterData }) {
           ))}
         </div>
       )}
-      <Profile prof={d.prof} />
+      <DraftProfile d={d} />
       <div className="po-strip">
         {d.strip.map(([k, v]) => (
           <div key={k}>
@@ -146,7 +166,7 @@ export function Story({ d }: { d: PosterData }) {
   return (
     <div className={`story${d.champ ? ' champ-p' : ''}`}>
       <div className="po-mast">
-        <span>{BRAND} Daily</span>
+        <span>{d.daily ? `${BRAND} Daily` : BRAND}</span>
         <b>{shortDate(d.date)}</b>
         <span>{d.mode}</span>
       </div>
@@ -198,8 +218,8 @@ export function Story({ d }: { d: PosterData }) {
           </div>
         </>
       )}
-      <div className="st-sec">Team profile</div>
-      <Profile prof={d.prof} />
+      <div className="st-sec">{d.draft ? 'The draft' : 'Team profile'}</div>
+      <DraftProfile d={d} />
       {d.extra && (
         <>
           <div className="st-sec">{d.extra[0]}</div>

@@ -2,7 +2,8 @@ import type { FitScoreResult } from '../engine/fit';
 import type { TeamMetricValues } from '../engine/teamMetrics';
 import type { DefensiveHuntabilityResult } from '../engine/defensiveHuntability';
 import type { HistoricalCompMatch } from '../engine/historicalComps';
-import { H3 } from '../night/ui';
+import { useState } from 'react';
+import { H3, cx } from '../night/ui';
 import { MetricTable } from './MetricTable';
 import { archetypeDisplayName } from '../engine/championshipArchetype';
 
@@ -115,7 +116,12 @@ export default function AllMetrics({ values, field, offenseScore, defenseScore, 
         </section>
         <section>
           <H3 note="percentile at his position">Size vs. position</H3>
-          <MetricTable rows={body.map(([label, value]) => ({ label, value }))} />
+          {body.map(([label, value]) => (
+            <div key={label} className="kv">
+              <span>{label}</span>
+              <b>{Math.round(value)}</b>
+            </div>
+          ))}
         </section>
         <section>
           <H3>Style</H3>
@@ -141,6 +147,102 @@ export default function AllMetrics({ values, field, offenseScore, defenseScore, 
           {inputs.archetypeReport && inputs.archetypeReport.strengths.length > 0 && <p className="empty-note">Strengths: {inputs.archetypeReport.strengths.join(' · ')}.</p>}
         </section>
       </div>
+    </div>
+  );
+}
+
+interface EdgeRow {
+  label: string;
+  theirs: number;
+  mine: number;
+}
+
+function EdgeBars({ rows }: { rows: EdgeRow[] }) {
+  return (
+    <>
+      {rows.map((r) => (
+        <div key={r.label} className="eg">
+          <span>{r.label}</span>
+          <div className="egb">
+            <i style={{ width: `${Math.max(0, Math.min(100, r.theirs))}%` }} />
+            <u style={{ width: `${Math.max(0, Math.min(100, r.mine))}%` }} />
+          </div>
+          <span className="mono">
+            {r.theirs} vs {r.mine}
+          </span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/**
+ * 2026-10-22, playtest (the final standings, an opened rival): where they beat you and where you
+ * beat them side by side, then every input under "All metrics" with the gap signed (+ yours ahead,
+ * − theirs) — the colour never carries it alone.
+ */
+export function RivalEdge({ nick, scores, metrics }: { nick: string; scores: EdgeRow[]; metrics: () => { theirs: TeamMetricValues; mine: TeamMetricValues } }) {
+  const [all, setAll] = useState(false);
+  const theyWin = scores.filter((r) => r.theirs > r.mine).sort((x, y) => y.theirs - y.mine - (x.theirs - x.mine));
+  const youWin = scores.filter((r) => r.mine > r.theirs).sort((x, y) => y.mine - y.theirs - (x.mine - x.theirs));
+  // Divs, not a table: the panel opens inside the standings table and would take its cells' look.
+  const table = (defs: MetricDef[], v: { theirs: TeamMetricValues; mine: TeamMetricValues }) => (
+    <div className="mcmp">
+      <div className="mcmp-r mcmp-h">
+        <span />
+        <span>{nick}</span>
+        <span>You</span>
+        <span>Gap</span>
+      </div>
+      {defs.map((d) => {
+        const t = Math.round(v.theirs[d.key] ?? 0);
+        const m = Math.round(v.mine[d.key] ?? 0);
+        const gap = m - t;
+        return (
+          <div key={d.key} className={cx('mcmp-r', gap > 0 && 'good', gap < 0 && 'weak')} title={d.hint}>
+            <span>{d.label}</span>
+            <b>{t}</b>
+            <b>{m}</b>
+            <b className="g">{gap > 0 ? `+${gap}` : gap < 0 ? `−${-gap}` : '='}</b>
+          </div>
+        );
+      })}
+    </div>
+  );
+  const v = all ? metrics() : null;
+  return (
+    <div className="edge2">
+      <p className="edge-key">
+        <i style={{ background: 'var(--ink3)' }} />
+        {nick}
+        <i style={{ background: 'var(--you)' }} />
+        you
+      </p>
+      <div className="split">
+        <section className="edge">
+          <b>{theyWin.length ? `Where the ${nick} beat you` : `The ${nick} beat you nowhere`}</b>
+          <EdgeBars rows={theyWin} />
+        </section>
+        <section className="edge">
+          <b>{youWin.length ? 'Where you beat them' : 'You beat them nowhere'}</b>
+          <EdgeBars rows={youWin} />
+        </section>
+      </div>
+      <button type="button" className="lk-inline" onClick={() => setAll((o) => !o)}>
+        {all ? 'Hide all metrics ▴' : 'All metrics ▾'}
+      </button>
+      {v && (
+        <div className="split">
+          <section>
+            <H3>Offense</H3>
+            {table(OFFENSE_METRICS, v)}
+          </section>
+          <section>
+            <H3>Defense</H3>
+            {table(DEFENSE_METRICS, v)}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

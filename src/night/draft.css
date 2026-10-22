@@ -7,6 +7,11 @@
 
 /* lottery */
 .lot { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 36px; align-items: start; }
+/* the result comes in slowly: the ball first, then the order row by row (playtest 2026-10-22) */
+.lot .ball { animation: lot-ball 0.6s cubic-bezier(0.2, 0.8, 0.25, 1) both; }
+.lot .lot-note { animation: lot-in 0.4s 0.5s both; }
+.lot .order16 li { animation: lot-in 0.35s both; animation-delay: calc(700ms + var(--i, 0) * 45ms); }
+@media (prefers-reduced-motion: reduce) { .lot .ball, .lot .lot-note, .lot .order16 li { animation: none; } }
 .ball { width: 220px; height: 220px; border-radius: 50%; background: var(--card); color: var(--cink); display: grid; place-items: center; text-align: center; box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--you); }
 .ball b { display: block; font: 800 120px/0.9 var(--cond); }
 .ball span { display: block; font: 700 12px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
@@ -16,7 +21,7 @@
 .order16 li { display: grid; grid-template-columns: 30px 30px minmax(0, 1fr); gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 16px; color: var(--ink2); }
 .order16 li .n { font: 600 13px var(--num); color: var(--ink3); }
 .order16 li b { font: 700 18px var(--cond); color: var(--ink2); font-weight: 700; }
-.order16 li.you { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; }
+.order16 li.you { box-shadow: inset 3px 0 0 var(--you); padding-inline: 8px; margin-inline: -8px; }
 .order16 li.you b { color: var(--ink); }
 .order16 li.you .n { color: var(--you); }
 .order16 li em { font-size: 13px; color: var(--ink3); }
@@ -53,7 +58,7 @@
 .ticker li .c { font: 600 13px var(--num); color: var(--ink3); }
 .ticker li.now { box-shadow: inset 3px 0 0 var(--red); padding-left: 8px; color: var(--ink); }
 .ticker li.now i { color: var(--red); }
-.ticker li.you { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; }
+.ticker li.you { box-shadow: inset 3px 0 0 var(--you); padding-inline: 8px; margin-inline: -8px; }
 .ticker li.you b { color: var(--ink); }
 
 /* player list */
@@ -100,7 +105,7 @@
 .dboard td small { font: 700 11px var(--sans); color: var(--ink3); margin-left: 4px; }
 .dboard td.e { color: var(--ink4); }
 .dboard tr.you td { color: var(--ink); }
-.dboard tr.you td.tn { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; }
+.dboard tr.you td.tn { box-shadow: inset 3px 0 0 var(--you); }
 .dboard td.clk { color: var(--red); font-style: italic; }
 
 /* results */
@@ -126,7 +131,7 @@
 .stand td.sc { text-align: right; font: 600 16px var(--num); color: var(--ink); width: 60px; }
 .stand td.car { width: 24px; text-align: right; color: var(--ink3); }
 .stand tr.you td { background: var(--surf); }
-.stand tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; color: var(--you); }
+.stand tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); color: var(--you); }
 .stand tr.you td.sc { color: var(--ink); }
 .voices p { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 16px; line-height: 1.45; color: var(--ink2); }
 .voices p b { color: var(--ink); font-weight: 600; }
@@ -226,15 +231,16 @@
 @media (max-width: 600px) { .dboard-wrap { overflow-x: auto; margin-right: -16px; } .dboard { min-width: 720px; } .dboard th:first-child { width: 150px; } .dboard th:first-child, .dboard td.tn { position: sticky; left: 0; background: var(--bg); z-index: 1; } }
 
 /* your team: the row is printed in reverse (cream line, dark ink) so you find yourself at a glance */
-.order16 li.you, .ticker li.you { background: var(--you-bg); box-shadow: none; padding-left: 8px; color: var(--you-ink2); border-radius: 3px; border-bottom-color: transparent; }
+/* the cream reaches out past the column (negative margin), so the number, mark and name stay in line
+   with every other row (playtest 2026-10-22) */
+.order16 li.you, .ticker li.you { background: var(--you-bg); box-shadow: none; padding-inline: 8px; margin-inline: -8px; color: var(--you-ink2); border-radius: 3px; border-bottom-color: transparent; }
 .order16 li.you b, .order16 li.you .n, .ticker li.you b, .ticker li.you .n { color: var(--you-ink); }
 .order16 li.you em, .ticker li.you .ps, .ticker li.you .c { color: var(--you-ink2); }
 .dboard tr.you td, .dboard tr.you td.tn { background: var(--you-bg); color: var(--you-ink); box-shadow: none; }
-.dboard tr.you td.tn { padding-left: 8px; }
 .dboard tr.you td small { color: var(--you-ink2); }
 .dboard tr.you td.clk { color: var(--cred); }
 .stand tr.you td { background: var(--you-bg); color: var(--you-ink2); }
-.stand tr.you td.rk { box-shadow: none; padding-left: 8px; color: var(--you-ink); }
+.stand tr.you td.rk { box-shadow: none; color: var(--you-ink); }
 .stand tr.you td.nm b, .stand tr.you td.sc { color: var(--you-ink); }
 .stand tr.you td.nm i, .stand tr.you td.who, .stand tr.you td.car { color: var(--you-ink2); }
 .ptabs .pt:first-child { padding-left: 0; }
@@ -274,3 +280,10 @@
   .ptabs .search, .filters .search { border-radius: 0; box-shadow: none; outline-offset: 2px; }
 }
 @media (max-width: 600px) { .nt .five-row .card .top { justify-content: center; } .nt .five-row .card .top > span:first-child { display: none; } }
+
+/* every row keeps the same inset on its first cell, so a cream (your) row never shifts its text
+   (playtest 2026-10-22) */
+.nt .stand td:first-child, .nt .stand th:first-child, .nt .stand2 td:first-child, .nt .stand2 th:first-child, .nt .dboard td:first-child, .nt .dboard th:first-child { padding-left: 8px; }
+
+@keyframes lot-ball { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }
+@keyframes lot-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

@@ -78,7 +78,7 @@
 .stand2 td.nm { text-align: left; font: 700 18px var(--cond); color: var(--ink); }
 .stand2 td.nm i { font: italic 500 12px var(--sans); color: var(--ink3); margin-left: 6px; }
 .stand2 tr.you td { background: var(--surf); color: var(--ink); }
-.stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); padding-left: 8px; color: var(--you); }
+.stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); color: var(--you); }
 .stand2 tr.cut td { border-bottom: 1.5px dashed var(--ink3); }
 .cutnote { font: italic 500 12px var(--sans); color: var(--ink3); padding: 6px 0 0; }
 .leaders { width: 100%; border-collapse: collapse; }
@@ -147,7 +147,7 @@
 .series .note { font: italic 500 12px var(--sans); color: var(--ink3); }
 .series.you-path { border-top-color: var(--you); }
 .series.live .note { color: var(--red); }
-.round.final .series { border-top: 5px double var(--rule2); }
+.round.final .series { border-top-color: var(--gold); }
 .round.final .series.live { border-top-color: var(--red); }
 
 @media (max-width: 600px) {
@@ -205,13 +205,13 @@
 .sbox td:first-child small { font: 700 11px var(--sans); color: var(--ink3); margin-left: 4px; }
 .sb-f img, .sb-f .ini { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: var(--surf2); display: grid; place-items: center; font-size: 11px; }
 .aw-list, .aw-grid { display: grid; gap: 0; }
-.aw-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.aw-grid { grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 16px; }
 .aw { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
 .aw-f img, .aw-f .ini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
 .aw-t { display: block; font: 700 11px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
 .aw b { display: block; font: 700 18px/1.1 var(--cond); }
 .aw small { display: block; font-size: 12px; color: var(--ink3); margin-top: 2px; }
-.aw.big { flex-direction: column; align-items: flex-start; border-bottom: 0; border-top: 1.5px solid var(--rule2); padding-top: 12px; }
+.aw.big { flex-direction: column; align-items: flex-start; border-bottom: 0; padding-top: 4px; }
 .aw.big .aw-f img { width: 72px; height: 72px; border: 1.5px solid var(--gold); }
 .aw.big b { font-size: 24px; }
 .allnba { display: grid; grid-template-columns: 130px repeat(5, minmax(0, 1fr)); gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rule); }
@@ -252,7 +252,7 @@
   .ldr-grid { grid-template-columns: 1fr; }
   .sbox td:nth-child(n+7), .sbox th:nth-child(n+7) { display: none; }
 }
-.tsm .t b { font-size: 28px; white-space: nowrap; }
+.tsm .t b { font-size: 24px; line-height: 1.25; white-space: nowrap; }
 .sbox td:first-child { display: table-cell; white-space: nowrap; }
 .sbox .sb-f { display: inline-block; vertical-align: middle; margin-right: 10px; }
 .sbox th { text-transform: uppercase; }
@@ -304,11 +304,13 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .pk2-nums div + div { border-left: 1px solid var(--cline); }
 .pk2-nums b { display: block; font: 600 20px var(--num); }
 .pk2-nums span { font: 700 11px var(--sans); letter-spacing: 0.1em; color: var(--cink2); }
-.pk2-grades { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cline); }
-.pk2-tier { font: 800 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; padding-right: 8px; }
+/* 2026-10-22 (playtest): the tier on its own line, the six grades in a fixed 3×2 grid — no grade left
+   alone on a wrapped line. An A is green (good, with its word), not gold (gold is caps and trophies). */
+.pk2-grades { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; align-items: baseline; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cline); }
+.pk2-tier { grid-column: 1 / -1; font: 800 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
 .gr { font-size: 13px; color: var(--cink2); }
 .gr b { font: 700 16px var(--num); color: var(--cink); margin-right: 4px; }
-.gr b.hi { color: var(--cgold); }
+.gr b.hi { color: var(--cgreen); }
 .gr b.lo { color: var(--cred); }
 .pk2-card .btn.go { background: var(--cink); color: var(--card); }
 .pk2-scout { display: flex; align-items: center; gap: 16px; padding: 10px 0 14px; font-size: 14px; font-style: italic; color: var(--ink2); }
@@ -418,7 +420,9 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .po-head p { margin: 0; font-size: 14px; font-style: italic; color: var(--cink2); line-height: 1.4; }
 .po-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
 .po-p { text-align: center; }
-.po-ph { height: 86px; background: var(--team); display: grid; place-items: end center; overflow: hidden; border-radius: 3px; }
+/* the team colour, muted into the card's face, with a full-colour line at the foot — the bare team
+   colours behind the photos were too loud on the cream (playtest 2026-10-22) */
+.po-ph { height: 86px; background: color-mix(in srgb, var(--team) 26%, var(--cface)); box-shadow: inset 0 -4px 0 var(--team); display: grid; place-items: end center; overflow: hidden; border-radius: 3px; }
 .po-ph img { width: min(82px, 100%); height: auto; aspect-ratio: 1; object-fit: cover; margin-bottom: -6px; }
 .po-p b { display: block; margin-top: 4px; font: 800 16px/1 var(--cond); text-transform: uppercase; }
 .po-p small { font: 500 9px var(--num); color: var(--cink2); }
@@ -443,16 +447,23 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .swap { margin: 8px 48px 4px 64px; padding: 8px 14px; background: var(--surf); border-left: 3px solid var(--ink); }
 .r3 { position: relative; display: grid; grid-template-columns: 50px minmax(0, 1fr) 30px; gap: 14px; align-items: center; }
 .r3p { font: 800 24px var(--cond); }
-.r3b { display: flex; height: 48px; border-radius: 3px; overflow: hidden; background: var(--surf2); }
-.sg { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 12px; min-width: 0; color: var(--ink2); background: var(--surf2); }
+.r3b { display: flex; height: 48px; border-radius: 3px; background: var(--surf2); }
+.r3b > .sg:first-child { border-radius: 3px 0 0 3px; } .r3b > .sg:last-child { border-radius: 0 3px 3px 0; }
+.sg { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 12px; min-width: 0; overflow: hidden; color: var(--ink2); background: var(--surf2); }
 .sg.st { background: var(--card); color: var(--cink); }
 .sg.third { background: #26272B; }
 .sg.sel { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
 .sg b { font: 700 16px var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sg i { font: 600 14px var(--num); font-style: normal; }
-.r3b u { flex: none; width: 4px; background: var(--bg); position: relative; cursor: ew-resize; }
-.r3b u.act { width: 6px; background: var(--red); }
-.r3b u.act em { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 11px var(--num); font-style: normal; color: var(--red); }
+/* the handle between two players: a visible grip (‖) with a finger-sized hit area; the minutes
+   show above it while you drag (playtest 2026-10-22: a hidden 4px seam you had to find) */
+.r3b u { flex: none; width: 12px; background: var(--bg); position: relative; cursor: ew-resize; touch-action: none; z-index: 1; }
+.r3b u::before { content: ''; position: absolute; inset: -6px -10px; }
+.r3b u::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 20px; transform: translate(-50%, -50%); border-left: 2px solid var(--ink3); border-right: 2px solid var(--ink3); border-radius: 1px; }
+.r3b u:hover::after, .r3b u:focus-visible::after { border-color: var(--ink); }
+.r3b u.act { background: var(--red); }
+.r3b u.act::after { border-color: var(--ink); }
+.r3b u.act em { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 12px var(--num); font-style: normal; color: var(--red); background: var(--bg); padding: 0 4px; }
 .r3x { width: 30px; height: 30px; display: grid; place-items: center; border: 1.5px solid var(--rule3); border-radius: 50%; color: var(--ink2); text-decoration: none; font: 700 16px var(--num); }
 .pop { position: absolute; z-index: 3; top: 54px; right: 44px; width: 470px; background: var(--surf); border: 1.5px solid var(--rule2); padding: 10px 14px; box-shadow: 0 16px 40px rgba(0,0,0,.6); }
 .pop-h { display: block; font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 4px; }
@@ -539,7 +550,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 @media (max-width: 600px) { .story-grid { grid-template-columns: 300px; } .poster { padding: 12px; } .po-head h2 { font-size: 34px; } .po-head p { font-size: 13px; } .po-ph { height: 62px; } .po-p b { font-size: 13px; } .po-p small { display: none; } .po-p em { font-size: 11px; white-space: nowrap; } .po-prof { gap: 6px; } .pp span { letter-spacing: 0.06em; } .po-strip b { font-size: 20px; } .po-strip span { letter-spacing: 0.06em; } }
 /* your team, reversed rows (see draft.css) */
 .stand2 tr.you td { background: var(--you-bg); color: var(--you-ink); }
-.stand2 tr.you td.rk { box-shadow: none; padding-left: 8px; color: var(--you-ink); }
+.stand2 tr.you td.rk { box-shadow: none; color: var(--you-ink); }
 .stand2 tr.you td * { color: var(--you-ink); }
 .stand2 tr.you td.nm i { color: var(--you-ink2); }
 .bg-team.you { background: var(--you-bg); box-shadow: none; border-radius: 3px; padding: 4px 0; }
@@ -616,7 +627,8 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .sprog { height: 4px; background: var(--rule); margin-top: -12px; }
 .sprog i { display: block; height: 100%; background: var(--ink2); }
 .mvp-r { display: grid; grid-template-columns: 22px 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 8px; border-bottom: 1px solid var(--rule); }
-.mvp-r.you { background: var(--you-tint); }
+.mvp-r.you { background: var(--you-bg); border-radius: 3px; border-bottom-color: transparent; }
+.mvp-r.you b, .mvp-r.you .rk { color: var(--you-ink); } .mvp-r.you b small, .mvp-r.you .ln, .mvp-r.you .trd { color: var(--you-ink2); }
 .mvp-r .rk { font: 600 14px var(--num); color: var(--ink3); }
 .mvp-r img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
 .mvp-r b { display: block; font: 700 18px/1.1 var(--cond); color: var(--ink); }
@@ -624,6 +636,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .mvp-r .ln { display: block; margin-top: 3px; font: 500 12px var(--num); color: var(--ink3); }
 .mvp-r .trd { font: 600 13px var(--num); color: var(--ink3); white-space: nowrap; }
 .mvp-r .trd.up { color: var(--green); } .mvp-r .trd.down { color: var(--red); }
+.mvp-r.you .trd.up { color: var(--cgreen); } .mvp-r.you .trd.down { color: var(--cred); }
 .gos { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px 0 12px; border-bottom: 1px solid var(--rule); }
 .gos img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--surf2); }
 .gos b { display: block; font: 700 20px/1.1 var(--cond); color: var(--ink); }
@@ -768,6 +781,15 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .g8 .sc { font: 600 15px var(--num); color: var(--ink3); text-align: right; }
 .g8 .sc.w { color: var(--ink); }
 .g8 .np { grid-column: 1 / -1; font-size: 12px; font-style: italic; color: var(--ink3); }
+/* your game alone, bigger; the rest folded (playtest 2026-10-22) */
+.board8.one { grid-template-columns: minmax(0, 1fr); }
+.board8.one .g8 { padding: 14px 16px; border: 1.5px solid var(--rule2); border-radius: 4px; background: transparent; row-gap: 6px; }
+.board8.one .tmr { font-size: 22px; } .board8.one .sc { font-size: 28px; } .board8.one .np { font-size: 14px; margin-top: 4px; }
+.fold { display: flex; justify-content: space-between; width: 100%; margin-top: 12px; padding: 12px 0; border: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: transparent; color: var(--ink2); font: 500 14px var(--sans); cursor: pointer; text-align: left; }
+.fold b { color: var(--ink); }
+h3 .seg { display: inline-flex; border: 1px solid var(--rule3); border-radius: 3px; overflow: hidden; font-style: normal; }
+h3 .seg button { border: 0; background: transparent; padding: 3px 10px; font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); cursor: pointer; }
+h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .cal { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 3px; }
 .cal span { display: grid; place-items: center; align-content: center; height: 40px; font: 700 14px var(--cond); color: var(--ink4); border-bottom: 2px solid var(--rule); }
 .cal span small { font: 500 11px var(--num); color: var(--ink3); }
@@ -827,7 +849,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .tabs2 { display: flex; gap: 22px; border-bottom: 1.5px solid var(--rule2); margin-bottom: 8px; }
 .tabs2 > :is(span, button) { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 6px; border-bottom: 2px solid transparent; margin-bottom: -1.5px; }
 .tabs2 > :is(span, button).on { color: var(--ink); border-bottom-color: var(--ink); }
-@media (max-width: 600px) { .live-split > .stack { order: -1; } .court { max-width: 240px; } .live-aside .stackb { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .live-split > .stack { order: -1; } .court { max-width: 240px; } .live-aside .stackb { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); } }
 
 /* live box score by quarter */
 .seg { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin: 2px 0 10px; }
@@ -843,6 +865,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .lbx td:first-child i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); margin-right: 8px; vertical-align: 2px; }
 .lbx td:first-child i.off { background: transparent; box-shadow: inset 0 0 0 1px var(--ink4); }
 .lbx tr.bn td:first-child { color: var(--ink2); }
+.lbx tr.grp td { padding: 12px 0 4px; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); text-align: left; border-bottom: 1px solid var(--rule2); }
 .lbx td, .lbx th { white-space: nowrap; }
 .lbx td.k { color: var(--ink); font-weight: 600; }
 .lbx td.pos { color: var(--green); } .lbx td.neg { color: var(--red); }
@@ -914,7 +937,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .pk2-open .pk2-grades { margin: 0 0 10px; padding: 0; border: 0; }
   .pk2-open .gr { color: var(--ink3); }
   .pk2-open .gr b { color: var(--ink); }
-  .pk2-open .gr b.hi { color: var(--gold); }
+  .pk2-open .gr b.hi { color: var(--green); }
   .pk2-open .gr b.lo { color: var(--red); }
   .pk2-more { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 12px; font-size: 13px; color: var(--ink3); }
   .pk2-more b { font: 600 14px var(--num); color: var(--ink2); }
@@ -1020,3 +1043,108 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
   .nt .odds-nums b { font-size: 22px; }
   .nt .mtab td.l { width: 110px; }
 }
+/* The final standings' opened rival (playtest 2026-10-22): two columns, then every input signed. */
+.nt {
+  .edge2 { padding: 8px 0 12px; }
+  .edge2 > .edge-key { margin: 0 0 6px; }
+  .edge2 > .edge-key i:first-child { margin-left: 0; }
+  .edge2 .edge { max-width: none; padding: 0; }
+  .edge2 > .split { margin-bottom: 10px; }
+  .edge2 > .split + .lk-inline { margin-bottom: 12px; }
+  .mcmp-r { display: grid; grid-template-columns: minmax(0, 1fr) 72px 56px 52px; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--rule); font: 500 14px var(--sans); text-transform: none; letter-spacing: 0; color: var(--ink2); }
+  .mcmp-r[title] { cursor: help; }
+  .mcmp-r > span:first-child { font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mcmp-r b { font: 600 15px var(--num); text-align: right; color: var(--ink); }
+  .mcmp-r b.g { color: var(--ink3); }
+  .mcmp-r.good b.g { color: var(--green); }
+  .mcmp-r.weak b.g { color: var(--red); }
+  .mcmp-h { padding-top: 0; }
+  .mcmp-h span { font: 700 11px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (max-width: 600px) {
+  .nt .mcmp-r { grid-template-columns: minmax(0, 1fr) 58px 34px 36px; gap: 6px; }
+  .nt .mcmp-r > span:first-child { white-space: normal; line-height: 1.15; }
+  .nt .edge2 .eg { grid-template-columns: 76px minmax(0, 1fr) 70px; gap: 8px; }
+}
+/* The team window (playtest 2026-10-22, mockup alltime.html #teamWin) */
+.nt {
+  .dlg.wide { width: min(1000px, calc(100% - 32px)); }
+  .dlg.twin .dlg-head { align-items: center; }
+  .tw-head { display: flex; align-items: center; gap: 14px; }
+  .tw-head .tm { width: auto; height: auto; line-height: 1; font-size: 15px; padding: 6px 8px; }
+  .tw-head b { display: block; font: 800 36px/1 var(--cond); text-transform: uppercase; }
+  .tw-head small { display: block; margin-top: 4px; font: italic 500 14px var(--sans); color: var(--ink2); text-transform: none; letter-spacing: 0; }
+  .tw-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 10px 0 14px; border-bottom: 1px solid var(--rule); padding: 6px 0 12px; }
+  .tw-nums span { display: block; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .tw-nums b { display: block; font: 600 26px var(--num); margin-top: 4px; }
+  .tw-nums em { font-size: 13px; color: var(--ink3); }
+  .tw-split { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 28px; }
+  .tw-split .sbox-wrap + .sbox-wrap { margin-top: 0; }
+  .wl { display: flex; gap: 6px; margin-top: 4px; }
+  .wl i { font: 700 12px var(--num); font-style: normal; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 3px; background: var(--surf2); color: var(--ink2); }
+  .wl i.w { color: var(--green); }
+  .wl i.l { color: var(--red); }
+  .twin .edge2 > .split { grid-template-columns: 1fr; gap: 14px; }
+  .twin .edge2 .eg { grid-template-columns: 84px minmax(0, 1fr) 70px; gap: 8px; }
+  .twin .mcmp-r { grid-template-columns: minmax(0, 1fr) 56px 40px 44px; }
+}
+@media (max-width: 600px) {
+  .nt .tw-split { grid-template-columns: 1fr; }
+  .nt .tw-nums { grid-template-columns: 1fr 1fr; }
+  .nt .tw-head b { font-size: 26px; }
+}
+.nt .sbox tr.grp td { padding: 10px 0 4px; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); text-align: left; background: none; }
+.nt .sbox .nm-s { display: none; }
+@media (max-width: 600px) {
+  .nt .sbox .nm-l { display: none; }
+  .nt .sbox .nm-s { display: inline; }
+  .nt .sbox td:not(:first-child), .nt .sbox th:not(:first-child) { padding-left: 10px; }
+  .nt .sbox th:first-child { width: auto; }
+}
+@media (max-width: 600px) {
+  .nt .twin .sbox { width: 100%; }
+  .nt .twin .sbox .sb-f { display: none; }
+  .nt .twin .sbox td:first-child { white-space: normal; line-height: 1.15; }
+  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 8px; width: 1%; white-space: nowrap; }
+}
+/* "Your season" on the results once the season is played (playtest 2026-10-22, mockup #yourSeason) */
+.nt {
+  .ysea-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; padding: 4px 0 14px; border-bottom: 1px solid var(--rule); }
+  .ysea-strip span { display: block; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .ysea-strip b { display: flex; align-items: center; gap: 8px; margin-top: 6px; font: 600 24px var(--num); }
+  .ysea-strip b.w { font: 800 24px/1 var(--cond); text-transform: uppercase; }
+  .ysea-strip .tm { width: auto; height: auto; line-height: 1; font-size: 12px; padding: 4px 6px; }
+  .ysea-rows { margin-top: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+}
+@media (max-width: 600px) {
+  .nt .ysea-strip { grid-template-columns: 1fr 1fr; }
+  .nt .ysea-rows { grid-template-columns: 1fr; }
+}
+/* The champions at the season's end (playtest 2026-10-22, mockup #champions); gold is for trophies */
+.nt {
+  .champ2 { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: center; border-top: 5px double var(--gold); border-bottom: 1.5px solid var(--gold); padding: 16px 0; }
+  .champ2 .trophy { font-size: 44px; line-height: 1; }
+  .champ2 .eb { color: var(--gold); font: 700 12px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; }
+  .champ2 h2 { margin: 4px 0; font: 800 44px/1 var(--cond); text-transform: uppercase; color: var(--gold); display: flex; gap: 12px; align-items: center; }
+  .champ2 h2 .tm { width: auto; height: auto; line-height: 1; font-size: 16px; padding: 6px 8px; }
+  .champ2 p { margin: 0; font-style: italic; color: var(--ink2); }
+  .champ2 .fmvp { display: flex; gap: 10px; align-items: center; }
+  .champ2 .fmvp img, .champ2 .fmvp .ini { width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--gold); object-fit: cover; background: var(--surf2); }
+  .champ2 .fmvp span { display: block; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+  .champ2 .fmvp b { display: block; font: 700 20px/1.1 var(--cond); }
+  .champ2 .fmvp small { display: block; font: 500 12px var(--num); color: var(--ink3); }
+}
+@media (max-width: 600px) {
+  .nt .champ2 { grid-template-columns: 1fr; }
+  .nt .champ2 h2 { font-size: 32px; }
+}
+/* Your game tonight, big (playtest 2026-10-22, mockup #tonightMine) */
+.nt {
+  .mygame { border: 1.5px solid var(--rule2); border-radius: 4px; padding: 14px 16px; display: grid; gap: 8px; }
+  .mygame .mg-t { display: flex; align-items: center; gap: 10px; font: 700 22px var(--cond); text-transform: uppercase; }
+  .mygame .mg-t b { font: 600 30px var(--num); margin-left: auto; }
+  .mygame .mg-t.lo { color: var(--ink3); }
+  .mygame .mg-l { margin-top: 4px; font-style: italic; color: var(--ink2); font-size: 14px; }
+}
+.nt .po-draft { margin-top: 10px; border-top: 1px solid var(--cline); padding-top: 8px; }
+.nt .po-draft .pd-k { display: flex; justify-content: space-between; font: 700 10px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cink2); margin-bottom: 4px; }

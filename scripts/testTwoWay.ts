@@ -4,7 +4,7 @@ import { spanById } from '../src/engine/bestFive';
 import { contextLines } from '../src/engine/contextStats';
 import { assignMatchups, exploitsMismatch } from '../src/engine/liveDefense';
 import { mechanicsMargin, mechanicsPer100 } from '../src/engine/liveGame';
-import { simulateLiveSeason } from '../src/engine/liveSeason';
+import { playoffLinesShown, seasonLinesThrough, simulateLivePlayoffs, simulateLiveSeason } from '../src/engine/liveSeason';
 import { STARTER_SLOTS } from '../src/engine/positions';
 import { autoAssignRotation } from '../src/engine/rotation';
 import { scoreTeam } from '../src/engine/scoring';
@@ -129,6 +129,18 @@ check(glassy.defensePoints > small.defensePoints + 3 && glassy.offensePoints > s
 
 // 3. League averages (one league's season).
 const season = simulateLiveSeason(leagues[0].teams.map((t, i) => teamOf(t.ids, `s${i}`)), 'two-way');
+// The stats through any night (2026-10-22): the game lines add up to the season's totals.
+const key = (l: { teamId: string; span: { id: string } }) => `${l.teamId}|${l.span.id}`;
+const sameLines = (a: typeof season.players, b: typeof season.players) => {
+  const byKey = new Map(b.map((l) => [key(l), l]));
+  return a.length === b.length && a.every((l) => {
+    const o = byKey.get(key(l));
+    return o && o.games === l.games && o.doubleDoubles === l.doubleDoubles && (Object.keys(l.totals) as (keyof typeof l.totals)[]).every((k) => Math.abs(o.totals[k] - l.totals[k]) < 1e-6);
+  });
+};
+check(sameLines(seasonLinesThrough(season, season.dates.length), season.players), 'season: the lines of every game add up to the season totals');
+const playoffs = simulateLivePlayoffs(leagues[0].teams.map((t, i) => teamOf(t.ids, `s${i}`)), season.standings, 'two-way');
+check(playoffs !== null && sameLines(playoffLinesShown(playoffs, (_, s) => s.games.length), playoffs.players), 'playoffs: the lines of every game add up to the playoff totals');
 const teamGames = season.players.reduce((s, p) => s + p.totals.min, 0) / 240;
 const per = (k: 'pts' | 'tov' | 'fta' | 'pf' | 'ast') => season.players.reduce((s, p) => s + p.totals[k], 0) / teamGames;
 const fga = season.players.reduce((s, p) => s + p.totals.fga, 0);

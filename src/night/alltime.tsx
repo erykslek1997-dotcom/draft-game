@@ -29,9 +29,12 @@ export function BoardGrid({
   round,
   codeOf,
   onHide,
+  windows = WINDOWS,
 }: {
   teams: Team[];
   rounds: number;
+  /** Round windows the board pages between; one window (the Mini's five rounds) shows no toggle. */
+  windows?: Array<[number, number]>;
   /** pick number (1-based) → the span taken there. */
   picks: Map<number, PlayerSpan>;
   /** The pick on the clock, or null once the draft is done. */
@@ -41,21 +44,26 @@ export function BoardGrid({
   onHide?: () => void;
 }) {
   const order = [...teams].sort((a, b) => a.draftSlot - b.draftSlot);
-  const auto = WINDOWS.findIndex(([a, b]) => round >= a && round < b);
+  const auto = windows.findIndex(([a, b]) => round >= a && round < b);
   const [win, setWin] = useState<number | null>(null);
-  const w = win ?? Math.max(0, auto);
-  const [from, to] = WINDOWS[w];
-  const other = WINDOWS[1 - w];
+  const w = Math.min(win ?? Math.max(0, auto), windows.length - 1);
+  const [from, to] = windows[w];
+  const other = windows.length > 1 ? windows[1 - w] : null;
   const cols = { '--cols': order.length } as CSSProperties;
   return (
     <section className="bgrid">
       <h3>
         Draft board
         <span>
-          rounds {from + 1}–{Math.min(to, rounds)} ·{' '}
-          <button type="button" className="lk-inline" onClick={() => setWin(1 - w)}>
-            rounds {other[0] + 1}–{Math.min(other[1], rounds)} ▾
-          </button>
+          rounds {from + 1}–{Math.min(to, rounds)}
+          {other && (
+            <>
+              {' · '}
+              <button type="button" className="lk-inline" onClick={() => setWin(1 - w)}>
+                rounds {other[0] + 1}–{Math.min(other[1], rounds)} ▾
+              </button>
+            </>
+          )}
           {onHide && (
             <>
               {' · '}
@@ -88,7 +96,7 @@ export function BoardGrid({
               if (s)
                 return (
                   <span key={t.id} className={`bg-cell filled${t.isHuman ? ' you' : ''}`} title={`#${n} · ${maskName(s.playerName)} ${maskYears(s.playerName, s.spanLabel)}`}>
-                    <NFace name={s.playerName} />
+                    <NFace name={s.playerName} span={s} />
                     <small>{s.primaryPosition}</small>
                     <b>{shortName(s.playerName).split(' ').slice(1).join(' ') || shortName(s.playerName)}</b>
                   </span>
@@ -161,7 +169,7 @@ export function NineSlots({
           const band = spanBand(s);
           return (
             <div key={i} className="b filled" style={{ '--team': band.color } as CSSProperties} title={maskName(s.playerName)}>
-              <NFace name={s.playerName} />
+              <NFace name={s.playerName} span={s} />
               <div>
                 <b>{shortName(s.playerName)}</b>
                 <span>

@@ -426,7 +426,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .po-head p { margin: 0; font-size: 14px; font-style: italic; color: var(--cink2); line-height: 1.4; }
 .po-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
 .po-p { text-align: center; }
-.po-ph { height: 86px; background: var(--team); display: grid; place-items: end center; overflow: hidden; border-radius: 3px; }
+.po-ph { height: 86px; background: color-mix(in srgb, var(--team) 26%, var(--cface)); box-shadow: inset 0 -4px 0 var(--team); display: grid; place-items: end center; overflow: hidden; border-radius: 3px; }
 .po-ph img { width: min(82px, 100%); height: auto; aspect-ratio: 1; object-fit: cover; margin-bottom: -6px; }
 .po-p b { display: block; margin-top: 4px; font: 800 16px/1 var(--cond); text-transform: uppercase; }
 .po-p small { font: 500 9px var(--num); color: var(--cink2); }
@@ -859,7 +859,79 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .lbx td.dnp { width: auto; }
 .lb-note { margin: 8px 0 0; font-size: 13px; font-style: italic; color: var(--ink3); }
 .lbx tr.tot td { border-top: 1.5px solid var(--rule2); color: var(--ink); font-weight: 600; }
-@media (max-width: 600px) { .lbx .c-hide { display: none; } .lbx td, .lbx th { padding-left: 4px; padding-right: 4px; } .lbx td:first-child { font-size: 15px; } .lbx .fn { display: none; } </style>
+@media (max-width: 600px) { .lbx .c-hide { display: none; } .lbx td, .lbx th { padding-left: 4px; padding-right: 4px; } .lbx td:first-child { font-size: 15px; } .lbx .fn { display: none; } }
+/* ---- playtest 2026-10-22, group C (new boards) ---- */
+.box tr.grp td { padding: 10px 0 4px; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); text-align: left; }
+.tw-head .tm, .champ2 h2 .tm { width: auto; height: auto; line-height: 1; }
+.mygame a { color: var(--ink2); }
+.po-season { margin-top: 10px; border-top: 1px solid var(--cline); padding-top: 8px; }
+.ps-run { display: flex; gap: 18px; } .ps-run span { display: flex; align-items: center; gap: 6px; font: 600 13px var(--num); }
+.ps-run small { font: 700 10px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cink2); }
+.ps-aw { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--cink2); } .ps-aw b { color: var(--cink); } .ps-aw em { margin-left: auto; font-style: normal; }
+.share-grid.ab { align-items: start; grid-template-columns: repeat(2, 520px); } .ab-l { margin: 0 0 8px; font: italic 500 14px Inter, sans-serif; color: var(--ink2); }
+.dlg.wide { width: min(980px, calc(100% - 32px)); }
+.tw-head { display: flex; align-items: center; gap: 14px; }
+.tw-head .tm { font-size: 15px; padding: 6px 8px; }
+.tw-head h2 { margin: 0; font: 800 40px/1 var(--cond); text-transform: uppercase; }
+.tw-head small { display: block; margin-top: 4px; font: italic 500 14px Inter, sans-serif; color: var(--ink2); }
+.tw-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0 6px; border-top: 1.5px solid var(--rule2); border-bottom: 1px solid var(--rule); padding: 10px 0; }
+.tw-nums span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+.tw-nums b { display: block; font: 600 26px var(--num); margin-top: 4px; }
+.tw-split { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 28px; }
+.wl { display: flex; gap: 6px; } .wl i { font: 700 12px var(--num); font-style: normal; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 3px; background: var(--surf2); color: var(--ink2); }
+.wl i.w { color: var(--green); } .wl i.l { color: var(--red); }
+.edge2 .eg2 { display: grid; grid-template-columns: 96px minmax(0, 1fr) 76px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 13px; }
+.edge2 .eg2 span:first-child { font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.04em; }
+.edge2 .bars i, .edge2 .bars u { display: block; height: 4px; border-radius: 2px; } .edge2 .bars i { background: var(--ink3); margin-bottom: 3px; } .edge2 .bars u { background: var(--you); }
+.edge2 .d { font: 600 13px var(--num); text-align: right; } .edge2 .d.up { color: var(--green); } .edge2 .d.dn { color: var(--red); }
+.ysea { border-top: 1.5px solid var(--rule2); padding-top: 12px; }
+.ysea-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.ysea-strip span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+.ysea-strip b { display: block; margin-top: 4px; font: 600 24px var(--num); }
+.ysea-strip b.w { font: 800 24px/1 var(--cond); text-transform: uppercase; }
+.ysea-rows { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+.champ2 { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: center; border-top: 5px double var(--gold); border-bottom: 1.5px solid var(--gold); padding: 16px 0; }
+.champ2 .trophy { font-size: 44px; line-height: 1; }
+.champ2 .eb { color: var(--gold); font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; }
+.champ2 h2 { margin: 4px 0; font: 800 44px/1 var(--cond); text-transform: uppercase; color: var(--gold); display: flex; gap: 12px; align-items: center; }
+.champ2 h2 .tm { font-size: 16px; padding: 6px 8px; }
+.champ2 p { margin: 0; font-style: italic; color: var(--ink2); }
+.champ2 .fmvp { display: flex; gap: 10px; align-items: center; text-align: left; }
+.champ2 .fmvp img { width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--gold); object-fit: cover; background: var(--surf2); }
+.champ2 .fmvp span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+.champ2 .fmvp b { display: block; font: 700 20px/1.1 var(--cond); }
+.champ2 .fmvp small { display: block; font: 500 12px var(--num); color: var(--ink3); }
+.po-draft { margin-top: 10px; border-top: 1px solid var(--cline); padding-top: 8px; }
+.po-draft .pd-k, .po-season .pd-k { display: flex; justify-content: space-between; font: 700 10px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cink2); margin-bottom: 4px; }
+.mygame { border: 1.5px solid var(--rule2); border-radius: 4px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 18px; align-items: center; }
+.mygame .mg-t { display: flex; align-items: center; gap: 10px; font: 700 22px var(--cond); }
+.mygame .mg-t b { font: 600 30px var(--num); margin-left: auto; }
+.mygame .mg-t.lo { color: var(--ink3); }
+.mygame .mg-l { grid-column: 1 / -1; font-style: italic; color: var(--ink2); font-size: 14px; }
+.collapsed { margin-top: 12px; padding: 12px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; color: var(--ink2); font-size: 14px; }
+.collapsed b { color: var(--ink); }
+.seg { display: inline-flex; border: 1px solid var(--rule3); border-radius: 3px; overflow: hidden; font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; }
+.seg span { padding: 4px 10px; color: var(--ink3); } .seg span.on { background: var(--ink); color: var(--bg); }
+.hero2 { border-top: 5px double var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 14px 0 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; }
+.hero2 .eb { font: 700 12px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); }
+.hero2 h2 { margin: 4px 0 2px; font: 800 52px/0.95 var(--cond); text-transform: uppercase; }
+.hero2 p { margin: 0; font-style: italic; color: var(--ink2); }
+.hero2 .hn { display: flex; gap: 18px; text-align: right; }
+.hero2 .hn span { display: block; font: 700 11px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+.hero2 .hn b { display: block; font: 600 30px var(--num); }
+.hero2 .hn .you b { color: var(--ink); } .hero2 .hn div:not(.you) b { color: var(--ink2); }
+.ncaa { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; align-items: center; }
+.ncaa .rd > span { display: block; font: 700 12px var(--cond); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; border-bottom: 1.5px solid var(--rule2); padding-bottom: 4px; }
+.ncaa .g { border-top: 1.5px solid var(--rule2); padding: 4px 0 2px; margin-bottom: 12px; }
+.ncaa .g div { display: grid; grid-template-columns: 22px 34px minmax(0, 1fr) auto; gap: 6px; align-items: center; font: 700 14px var(--cond); padding: 2px 0; }
+.ncaa .g div small { font: 600 11px var(--num); color: var(--ink3); }
+.ncaa .g div b { font: 600 14px var(--num); }
+.ncaa .g div.lo { color: var(--ink3); }
+.ncaa .g div.you { background: var(--you-bg); color: var(--you-ink); border-radius: 3px; margin: 0 -6px; padding: 2px 6px; }
+.ncaa .g div.you small { color: var(--you-ink2); }
+.ncaa .g.now { border-top-color: var(--red); }
+@media (max-width: 600px) { .tw-split, .ysea-rows { grid-template-columns: 1fr; } .tw-nums, .ysea-strip { grid-template-columns: 1fr 1fr; } .champ2 { grid-template-columns: 1fr; } .hero2 { grid-template-columns: 1fr; } .hero2 h2 { font-size: 38px; } .ncaa { grid-template-columns: 1fr 1fr; } }
+</style>
 </head>
 <body>
 <div class="game" id="app"></div>
@@ -1335,6 +1407,32 @@ const SHARES = [
 ];
 S.shareAll = () => ['', `<div class="share-grid">${SHARES.map(poster).join('')}</div>`];
 S.shareStory = () => ['', `<div class="story-grid">${SHARES.map(story).join('')}</div>`];
+
+// ---- playtest 2026-10-22, group C: new boards for approval ----
+const EDGE = [['Defense', 91, 84], ['Spacing', 78, 71], ['Talent', 88, 86], ['Fit', 85, 88], ['Offense', 83, 84], ['Bench', 80, 82]];
+const edgeRows = (rows) => `<div class="edge2">${rows.map(([l, t, y]) => `<div class="eg2"><span>${l}</span><div class="bars"><i style="width:${t}%"></i><u style="width:${y}%"></u></div><span class="d ${y > t ? 'up' : y < t ? 'dn' : ''}">${t} vs ${y} ${y > t ? '▲' : y < t ? '▼' : ''}</span></div>`).join('')}</div>`;
+S.teamWin = () => dlg(S.finale, `<div class="dlg wide"><div class="dlg-head"><div class="tw-head">${tm('SFE')}<div><h2>Santa Fe Coyotes</h2><small>2nd seed · 55–27 · lost the Finals 1–4 to Kentucky</small></div></div><a href="#">✕</a></div>
+  <div class="tw-nums"><div><span>Overall</span><b>88</b></div><div><span>Offense</span><b>91</b></div><div><span>Defense</span><b>84</b></div><div><span>Last five</span><div class="wl"><i class="w">W</i><i class="w">W</i><i class="l">L</i><i class="w">W</i><i class="l">L</i></div></div></div>
+  <div class="tw-split"><section><h3>Roster<span class="sw"><a class="on" href="#">Season</a><a href="#">Playoffs</a></span></h3>${seasonTable(SEASON.slice(0, 5)).replace('<table class="box sbox">', '<table class="box sbox"><tr class="grp"><td colspan="10">Starting five</td></tr>')}${seasonTable(SEASON.slice(5)).replace('<table class="box sbox">', '<table class="box sbox"><tr class="grp"><td colspan="10">Bench</td></tr>')}</section>
+  <section><h3>You vs them<span>series 46% · best of 7</span></h3>${edgeRows(EDGE)}<p class="empty-note" style="margin-top:10px">Season series 2–2. They beat you on spacing; you win the glass.</p></section></div></div>`);
+S.yourSeason = () => { const [l, m] = S.results(); return [l.replace('Play the season →', 'Open the season →'), m.replace('<p class="host">', `<section class="ysea"><h3>Your season<span>played · Oct 22 – Jun 14</span></h3>
+  <div class="ysea-strip"><div><span>Season</span><b>52–30</b></div><div><span>Seed</span><b>3rd</b></div><div><span>Playoffs</span><b class="w">Out in the semis</b></div><div><span>Champions</span><b class="w">${tm('KEN')} Kentucky</b></div></div>
+  <div class="ysea-rows"><div class="kv"><span>Awards</span><b>Durant All-NBA 1st · Wallace DPOY</b></div><div class="kv"><span>Best scorer</span><b>Durant 29.4</b></div><div class="kv"><span>Game of the season</span><b>Durant 51 vs Reno</b></div><div class="kv"><span>The draft said</span><b>3rd · the season agreed</b></div></div></section><p class="host">`)]; };
+S.champions = () => { const [l, m] = S.finaleOut(); return [l, m.replace('<p class="host"><b>Champions:</b> the Kentucky Chickens beat Santa Fe 4–1. Finals MVP: Michael Jordan.</p>', '').replace('<section><h3>Your path', `<div class="champ2"><span class="trophy">🏆</span><div><span class="eb">The Finals · Kentucky 4, Santa Fe 1</span><h2>${tm('KEN')} Kentucky Chickens</h2><p>Champions from the 1 seed, 16–3 in the playoffs. Your run ended in the semifinals.</p></div><div class="fmvp"><img src="heads/michael-jordan.png" alt=""><div><span>Finals MVP</span><b>Michael Jordan</b><small>34.2 pts · 6.1 reb · 5.8 ast</small></div></div></div>
+  <section><h3>Your path`)]; };
+S.seasonPoster = () => ['', `<div class="share-grid">${poster({ mode: 'All-Time · season', kick: 'Out in the semifinals · 2–4 to Santa Fe', head: 'Tulsa Twisters', line: '52–30 · 3rd seed · 6–5 in the playoffs', five: FIVE_AT, nums: [19.8, 20.4, 29.4, 21.2, 7.4], unit: 'ppg', bench: BENCH_AT, benchNums: [5.1, 7.9, 8.8, 4.6], prof: PROF([86, 84, 93, 71, 88], 'Spacing', 'Defense'), strip: [['Season', '52–30'], ['Seed', '3rd'], ['Playoffs', '6–5'], ['Result', 'Semis']], foot: 'The same draft always plays the same season' }).replace('<div class="po-prof', '<div class="po-draft"><div class="pd-k"><span>The draft · 3rd of 16</span><span>Rating 87 · best 90</span></div><div class="po-prof').replace(/(<div class="po-strip">)/, '</div>$1').replace('Draftverse Daily', 'Draftverse')}</div>`];
+S.tonightMine = () => { const [l] = S.simDay(); return [l.replace('<div class="actions">', `<section><h3>Your month<span>November</span></h3><div class="kv"><span>Record</span><b>9–4</b></div><div class="kv"><span>Top scorer</span><b>Durant 30.2</b></div><div class="kv"><span>Next</span><b>Sat · vs Reno</b></div></section><div class="actions">`),
+  prompt('Live · Thu, Nov 6 · Game 8', 'Beat the Gearheads 136–105', 'Durant had 43. Tied for first with the Coyotes.') +
+  `<section><h3>Tonight<span class="seg"><span class="on">Your game</span><span>All games</span></span></h3><div class="mygame"><div class="mg-t">${tm('TUL')} Twisters <b>136</b></div><div></div><div class="mg-t lo">${tm('DET')} Gearheads <b>105</b></div><div></div><p class="mg-l">Durant 43 pts · 7 reb · 5 ast · 15/22 FG. Your 6th straight win at home. <a href="#">Watch it</a></p></div>
+  <div class="collapsed"><span>Other games tonight <b>7</b> · Coyotes 131–122 Blizzard, …</span><span>▸</span></div></section>`]; };
+
+// MC5: the season poster with the run and the awards (A) or with nothing added (B), side by side.
+const seasonPosterBase = () => poster({ mode: 'All-Time · season', kick: 'Out in the semifinals · 2–4 to Santa Fe', head: 'Tulsa Twisters', line: '52–30 · 3rd seed · 6–5 in the playoffs', five: FIVE_AT, nums: [19.8, 20.4, 29.4, 21.2, 7.4], unit: 'ppg', bench: BENCH_AT, benchNums: [5.1, 7.9, 8.8, 4.6], prof: PROF([86, 84, 93, 71, 88], 'Spacing', 'Defense'), strip: [['Season', '52–30'], ['Seed', '3rd'], ['Playoffs', '6–5'], ['Result', 'Semis']], foot: 'The same draft always plays the same season' }).replace('<div class="po-prof', '<div class="po-draft"><div class="pd-k"><span>The draft · 3rd of 16</span><span>Rating 87 · best 90</span></div><div class="po-prof').replace(/(<div class="po-strip">)/, '</div>$1').replace('Draftverse Daily', 'Draftverse');
+const SEASON_EXTRA = `<div class="po-season"><div class="pd-k"><span>The playoffs</span><span>Champions: ${tm('KEN')} Kentucky</span></div>
+  <div class="ps-run"><span><small>Quarterfinal</small>${tm('HON')}<b>W 4–1</b></span><span><small>Semifinal</small>${tm('SFE')}<b>L 2–4</b></span></div>
+  <div class="pd-k" style="margin-top:10px"><span>Awards</span><span>Game of the season</span></div>
+  <div class="ps-aw"><span><b>Durant</b> All-NBA 1st</span><span><b>Wallace</b> DPOY</span><span><b>Payton</b> All-Defensive</span><em><b>Durant 51</b> vs Reno · Jan 14</em></div></div>`;
+S.seasonPosterAB = () => ['', `<div class="share-grid ab"><div><p class="ab-l">A · with the run and the awards</p>${seasonPosterBase().replace(/(<div class="po-strip">)/, SEASON_EXTRA + '$1')}</div><div><p class="ab-l">B · nothing added, the poster ends with the season</p>${seasonPosterBase()}</div></div>`];
 const key = (location.hash || '#draft').slice(1);
 const [a, m] = S[key]();
 document.getElementById('app').innerHTML = a ? `<aside>${a}</aside><main>${m}</main>` : m;

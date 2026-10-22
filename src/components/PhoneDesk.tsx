@@ -132,7 +132,7 @@ export function CallWindow({
           {result ? <CallVoices voices={result.lines} caller={result.id} /> : <p className="pd-say">Ringing the studio…</p>}
           {result?.picks.map((p) => (
             <div key={p.id} className="pd-pick">
-              <NFace name={p.playerName} />
+              <NFace name={p.playerName} span={p} />
               <div>
                 <b>{maskName(p.playerName)}</b>
                 <small>

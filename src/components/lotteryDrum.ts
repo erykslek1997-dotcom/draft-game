@@ -477,8 +477,18 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
       const sx = (Math.random() - 0.5) * shake, sy = (Math.random() - 0.5) * shake;
       ctx.setTransform(zoom, 0, 0, zoom, px(W / 2 + sx) - px(focus.x) * zoom, px(H / 2 + sy) - px(focus.y) * zoom);
       drawScene(ctx, now);
+      // The flash: a round glow inside the drum, drawn with the scene's zoom — it used to fill the
+      // whole canvas, a square that read as a glitch (playtest 2026-10-22).
+      if (flash > 0) {
+        const g = ctx.createRadialGradient(px(C.x), px(C.y), 0, px(C.x), px(C.y), px(R));
+        g.addColorStop(0, `rgba(255,225,230,${0.55 * flash})`);
+        g.addColorStop(1, 'rgba(255,225,230,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(px(C.x), px(C.y), px(R), 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      if (flash > 0) { ctx.fillStyle = `rgba(255,225,230,${0.4 * flash})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
     }
     raf = requestAnimationFrame(frame);
   }

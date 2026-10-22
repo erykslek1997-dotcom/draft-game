@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import type { BoxLineStats } from '../engine/liveGame';
 import { mvpRaceValue, type LiveSeasonGame, type LiveSeasonResult, type SeasonSnapshot } from '../engine/liveSeason';
@@ -25,7 +25,7 @@ const COUNT_WORDS = ['', '', 'second', 'third', 'fourth', 'fifth', 'sixth', 'sev
 export function dateLabel(iso: string, long = false): string {
   return new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { weekday: long ? 'long' : 'short', month: long ? 'long' : 'short', day: 'numeric', timeZone: 'UTC' });
 }
-const monthOf = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' });
+export const monthOf = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' });
 
 export interface StandRow {
   teamId: string;
@@ -122,7 +122,7 @@ function MoveTag({ move }: { move: number }) {
 }
 
 /** Standings with each team's move since an earlier night (mockup `standMv`). */
-export function StandMoves({ rows, before, byId, codes, youId, head, note }: { rows: StandRow[]; before: StandRow[]; byId: Map<string, Team>; codes: Map<string, string>; youId: string; head: string; note: string }) {
+export function StandMoves({ rows, before, byId, codes, youId, head, note, moves = true }: { rows: StandRow[]; before: StandRow[]; byId: Map<string, Team>; codes: Map<string, string>; youId: string; head: string; note: string; /** False on the first break: nothing to move from, so no column of dashes. */ moves?: boolean }) {
   const was = new Map(before.map((r, i) => [r.teamId, i]));
   return (
     <section>
@@ -135,7 +135,7 @@ export function StandMoves({ rows, before, byId, codes, youId, head, note }: { r
             <th>Team</th>
             <th>W</th>
             <th>L</th>
-            <th />
+            {moves && <th />}
           </tr>
         </thead>
         <tbody>
@@ -143,14 +143,16 @@ export function StandMoves({ rows, before, byId, codes, youId, head, note }: { r
             <tr key={r.teamId} className={cx(r.teamId === youId && 'you', (i === 5 || i === 9) && 'cut')}>
               <td className="rk">{i + 1}</td>
               <td className="tmc">
-                <LeagueMark name={byId.get(r.teamId)?.name ?? ''} code={codes.get(r.teamId) ?? ''} />
+                <LeagueMark name={byId.get(r.teamId)?.name ?? ''} code={codes.get(r.teamId) ?? ''} id={r.teamId} />
               </td>
               <td className="nm">{byId.get(r.teamId)?.name}</td>
               <td>{r.wins}</td>
               <td>{r.losses}</td>
-              <td>
-                <MoveTag move={(was.get(r.teamId) ?? i) - i} />
-              </td>
+              {moves && (
+                <td>
+                  <MoveTag move={(was.get(r.teamId) ?? i) - i} />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -172,7 +174,7 @@ export function MvpLadder({ season, snap, prev, spans, codes, youId, count, head
         return (
           <div key={`${l.teamId}${l.spanId}`} className={cx('mvp-r', l.teamId === youId && 'you')}>
             <span className="rk">{i + 1}</span>
-            <NFace name={span?.playerName ?? ''} />
+            <NFace name={span?.playerName ?? ''} span={span} />
             <div>
               <b>
                 {span?.playerName}
@@ -182,7 +184,7 @@ export function MvpLadder({ season, snap, prev, spans, codes, youId, count, head
                 {f1(per(l, 'pts'))} pts · {f1(per(l, 'reb'))} reb · {f1(per(l, 'ast'))} ast
               </span>
             </div>
-            <TrendTag move={was ? (k < 0 ? 16 - i : k - i) : null} />
+            {was ? <TrendTag move={k < 0 ? 16 - i : k - i} /> : <span />}
           </div>
         );
       })}
@@ -194,7 +196,7 @@ export function MvpLadder({ season, snap, prev, spans, codes, youId, count, head
 export function GameLine({ span, line, ctx }: { span: PlayerSpan | undefined; line: BoxLineStats; ctx: ReactNode }) {
   return (
     <div className="gos">
-      <NFace name={span?.playerName ?? ''} />
+      <NFace name={span?.playerName ?? ''} span={span} />
       <div>
         <b>
           {span?.playerName}
@@ -298,7 +300,28 @@ export function SeasonExtras({ season, you, byId, spans }: { season: LiveSeasonR
 
 /** One night of the season (mockup `#simDay`): your last game, your month, tonight's games, the
  * standings and the MVP ladder as of the last break. `day` nights have been played (1..82). */
-export function CalendarDay({ season, day, you, byId, codes, spans }: { season: LiveSeasonResult; day: number; you: Team; byId: Map<string, Team>; codes: Map<string, string>; spans: Map<string, PlayerSpan> }) {
+/** "Your game" or "All games" on the night view, remembered (playtest 2026-10-22: eight games
+ * flashing every night was too much; your own game first by default). */
+const TONIGHT_ALL_KEY = 'draftverse.tonightAll';
+function readTonightAll(): boolean {
+  try {
+    return window.localStorage.getItem(TONIGHT_ALL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function CalendarDay({ season, day, you, byId, codes, spans, onWatch }: { season: LiveSeasonResult; day: number; you: Team; byId: Map<string, Team>; codes: Map<string, string>; spans: Map<string, PlayerSpan>; onWatch?: (g: LiveSeasonGame) => void }) {
+  const [allGames, setAllGames] = useState(readTonightAll);
+  const [openOthers, setOpenOthers] = useState(false);
+  const setAll = (v: boolean) => {
+    setAllGames(v);
+    try {
+      window.localStorage.setItem(TONIGHT_ALL_KEY, v ? '1' : '0');
+    } catch {
+      // Not remembered; the choice still holds for this visit.
+    }
+  };
   const round = Math.max(0, day - 1);
   const iso = season.dates[round];
   const mine = teamGames(season, you.id).filter((x) => x.game.round < day);
@@ -336,6 +359,68 @@ export function CalendarDay({ season, day, you, byId, codes, spans }: { season: 
   const tonight = season.games.filter((g) => g.round === round);
   const snap = [...season.snapshots].reverse().find((s) => s.afterRound < day && s.kind === 'month') ?? null;
   const prevSnap = snap ? [...season.snapshots].filter((s) => s.kind === 'month' && s.afterRound < snap.afterRound).pop() ?? null : null;
+  const mineTonight = tonight.find((g) => g.aId === you.id || g.bId === you.id) ?? null;
+  const others = tonight.filter((g) => g !== mineTonight);
+  const nextGame = teamGames(season, you.id).find((x) => x.game.round >= day) ?? null;
+  const gameCell = (g: LiveSeasonGame) => {
+    const yours = g.aId === you.id || g.bId === you.id;
+    const aw = g.final[0] > g.final[1];
+    const t = yours ? g.top[g.aId === you.id ? 0 : 1] : null;
+    return (
+      <div key={`${g.aId}${g.bId}`} className={cx('g8', yours && 'you')}>
+        <span className={cx('tmr', aw && 'w')}>
+          <LeagueMark name={byId.get(g.aId)?.name ?? ''} code={codes.get(g.aId) ?? ''} id={g.aId} />
+          {nick(byId.get(g.aId))}
+        </span>
+        <span className={cx('sc', aw && 'w')}>{g.final[0]}</span>
+        <span className={cx('tmr', !aw && 'w')}>
+          <LeagueMark name={byId.get(g.bId)?.name ?? ''} code={codes.get(g.bId) ?? ''} id={g.bId} />
+          {nick(byId.get(g.bId))}
+        </span>
+        <span className={cx('sc', !aw && 'w')}>{g.final[1]}</span>
+        {t && (
+          <span className="np">
+            {spans.get(t.spanId)?.playerName.split(' ').slice(-1)[0]} {t.line.pts} pts · {t.line.reb} reb · {t.line.ast} ast
+          </span>
+        )}
+      </div>
+    );
+  };
+  // Your game tonight, big (playtest 2026-10-22, mockup #tonightMine): both teams and the score,
+  // your best line, a link to watch it.
+  const MyGame = ({ g }: { g: LiveSeasonGame }) => {
+    const side = g.aId === you.id ? 0 : 1;
+    const oppId = side === 0 ? g.bId : g.aId;
+    const [us, them] = side === 0 ? g.final : [g.final[1], g.final[0]];
+    const t = g.top[side];
+    const tSpan = t ? spans.get(t.spanId) : undefined;
+    const row = (id: string, pts: number, lo: boolean) => (
+      <div className={cx('mg-t', lo && 'lo')}>
+        <LeagueMark name={byId.get(id)?.name ?? ''} code={codes.get(id) ?? ''} id={id} />
+        {nick(byId.get(id))}
+        <b>{pts}</b>
+      </div>
+    );
+    return (
+      <div className="mygame">
+        {row(you.id, us, us < them)}
+        {row(oppId, them, them < us)}
+        <p className="mg-l">
+          {t && tSpan && (
+            <>
+              {tSpan.playerName.split(' ').slice(-1)[0]} {t.line.pts} pts · {t.line.reb} reb · {t.line.ast} ast · {t.line.fgm}/{t.line.fga} FG.{' '}
+            </>
+          )}
+          {us > them ? 'A win' : 'A loss'} {g.aId === you.id ? 'at home' : 'on the road'}.{' '}
+          {onWatch && (
+            <button type="button" className="lk-inline" onClick={() => onWatch(g)}>
+              Watch it
+            </button>
+          )}
+        </p>
+      </div>
+    );
+  };
   return (
     <>
       <div className="prompt">
@@ -367,33 +452,42 @@ export function CalendarDay({ season, day, you, byId, codes, spans }: { season: 
         </div>
       </section>
       <section>
-        <H3 note={`${tonight.length} games · final`}>Tonight</H3>
-        <div className="board8">
-          {tonight.map((g) => {
-            const yours = g.aId === you.id || g.bId === you.id;
-            const aw = g.final[0] > g.final[1];
-            const t = yours ? g.top[g.aId === you.id ? 0 : 1] : null;
-            return (
-              <div key={`${g.aId}${g.bId}`} className={cx('g8', yours && 'you')}>
-                <span className={cx('tmr', aw && 'w')}>
-                  <LeagueMark name={byId.get(g.aId)?.name ?? ''} code={codes.get(g.aId) ?? ''} />
-                  {nick(byId.get(g.aId))}
+        <H3
+          note={
+            <span className="seg">
+              <button type="button" className={cx(!allGames && 'on')} onClick={() => setAll(false)}>
+                Your game
+              </button>
+              <button type="button" className={cx(allGames && 'on')} onClick={() => setAll(true)}>
+                All games
+              </button>
+            </span>
+          }
+        >
+          Tonight
+        </H3>
+        {allGames ? (
+          <div className="board8">{tonight.map(gameCell)}</div>
+        ) : (
+          <>
+            {mineTonight ? (
+              <MyGame g={mineTonight} />
+            ) : (
+              <p className="empty-note">
+                No game tonight.{nextGame && ` Next: ${dateLabel(season.dates[nextGame.game.round])}, the ${nick(byId.get(nextGame.opp))}.`}
+              </p>
+            )}
+            {others.length > 0 && (
+              <button type="button" className="fold" onClick={() => setOpenOthers(!openOthers)}>
+                <span>
+                  Other games tonight <b>{others.length}</b>
                 </span>
-                <span className={cx('sc', aw && 'w')}>{g.final[0]}</span>
-                <span className={cx('tmr', !aw && 'w')}>
-                  <LeagueMark name={byId.get(g.bId)?.name ?? ''} code={codes.get(g.bId) ?? ''} />
-                  {nick(byId.get(g.bId))}
-                </span>
-                <span className={cx('sc', !aw && 'w')}>{g.final[1]}</span>
-                {t && (
-                  <span className="np">
-                    {spans.get(t.spanId)?.playerName.split(' ').slice(-1)[0]} {t.line.pts} pts · {t.line.reb} reb · {t.line.ast} ast
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                <span>{openOthers ? '▾' : '▸'}</span>
+              </button>
+            )}
+            {openOthers && <div className="board8">{others.map(gameCell)}</div>}
+          </>
+        )}
       </section>
       <div className="split">
         <StandMoves rows={stand} before={before} byId={byId} codes={codes} youId={you.id} head="Standings" note={`after ${mine.length} games · move this week`} />
@@ -449,19 +543,23 @@ export function MonthBreak({ season, snap, you, byId, codes, spans }: { season: 
           {nick(you)} {mw}–{ml}, {ORD_WORDS[pos] ?? ord(pos)}
         </h2>
         <p>
-          {bestMonth.teamId === you.id ? 'The best month in the league.' : `The ${nick(byId.get(bestMonth.teamId))} had the best month, ${monthRec(bestMonth.teamId).join('–')}.`}{' '}
+          {bestMonth.teamId === you.id
+            ? 'The best month in the league.'
+            : monthRec(bestMonth.teamId)[0] === mw
+              ? `You and the ${nick(byId.get(bestMonth.teamId))} had the best month, ${mw}–${ml}.`
+              : `The ${nick(byId.get(bestMonth.teamId))} had the best month, ${monthRec(bestMonth.teamId).join('–')}.`}{' '}
           {wasPos && wasPos !== pos ? (pos < wasPos ? `Up ${wasPos - pos} from ${ord(wasPos)}.` : `Down ${pos - wasPos} from ${ord(wasPos)}.`) : from > 0 ? 'Same place as a month ago.' : ''}
           {climbed && climbed.move >= 3 && climbed.id !== you.id && ` The ${nick(byId.get(climbed.id))} climbed ${climbed.move} places.`}
         </p>
       </div>
       <div className="split">
-        <StandMoves rows={stand} before={before} byId={byId} codes={codes} youId={you.id} head="Standings" note={from > 0 ? `after ${label} · move this month` : `after ${label}`} />
+        <StandMoves rows={stand} before={before} byId={byId} codes={codes} youId={you.id} head="Standings" note={from > 0 ? `after ${label} · move this month` : `after ${label}`} moves={from > 0} />
         <div className="stack">
           {potm && potmSpan && (
             <section>
               <H3 note={label}>Player of the Month</H3>
               <div className="potm">
-                <NFace name={potmSpan.playerName} />
+                <NFace name={potmSpan.playerName} span={potmSpan} />
                 <div>
                   <b>{potmSpan.playerName}</b>
                   <span className="ln">
@@ -480,9 +578,9 @@ export function MonthBreak({ season, snap, you, byId, codes, spans }: { season: 
               <GameLine span={spans.get(nightTop.spanId)} line={nightTop.line} ctx={gameContext(season, night.game, byId)} />
             </section>
           )}
+          <MvpLadder season={season} snap={snap} prev={prev} spans={spans} codes={codes} youId={you.id} count={5} head="MVP ladder" note={prev ? `top five · move since ${prev.label}` : 'top five'} />
         </div>
       </div>
-      <MvpLadder season={season} snap={snap} prev={prev} spans={spans} codes={codes} youId={you.id} count={5} head="MVP ladder" note={prev ? `top five · move since ${prev.label}` : 'top five'} />
     </>
   );
 }
@@ -540,7 +638,7 @@ export function AllStarDraft({ season, you, codes, title }: { season: LiveSeason
               {k === 1 && <span className="asg-vs">vs</span>}
               <div>
                 <div className="asg-cap">
-                  <NFace name={side[0].span.playerName} />
+                  <NFace name={side[0].span.playerName} span={side[0].span} />
                   <div>
                     <b>Team {capName(k as 0 | 1)}</b>
                     <small>

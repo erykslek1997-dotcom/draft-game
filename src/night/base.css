@@ -28,25 +28,34 @@
 
 .game { max-width: 1360px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 36px; min-height: 100vh; }
 aside { display: flex; flex-direction: column; gap: 24px; }
+/* the aside stays in view while a long page scrolls (playtest 2026-10-22: the left column ended a
+   fifth of the way down and the rest was empty); taller than the screen, it scrolls on its own */
+@media (min-width: 601px) { aside { position: sticky; top: 0; align-self: start; max-height: calc(100vh / var(--z, 1)); overflow-y: auto; padding-top: 0; scrollbar-width: thin; } }
+/* Big screens (playtest 2026-10-22, "gram na dużym ekranie"): the whole frame scales up, type and
+   all, instead of a 1360px strip in the middle of a 1920 or 2560 screen. */
+@media (min-width: 1700px) { .game { --z: 1.2; zoom: 1.2; } }
+@media (min-width: 2200px) { .game { --z: 1.5; zoom: 1.5; } }
 main { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 i.note, .it { font-style: italic; }
 
 /* masthead + tally */
-.mast { border-top: 5px double var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 10px 0 8px; }
+.mast { border-top: 1.5px solid var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 12px 0 8px; }
 .mast b { display: block; font: 800 34px/1 var(--cond); letter-spacing: 0.02em; text-transform: uppercase; }
 .mast b.daily { color: var(--gold); }
 .mast small { display: block; margin-top: 6px; font: italic 500 14px var(--sans); color: var(--ink2); }
-.tally { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; margin-top: -12px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.tally { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; margin-top: -12px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+/* 2026-10-22 (playtest): one size and one baseline for all three numbers — the cap/seed in the
+   middle used to be smaller and float higher. */
 .t .k { display: block; font: 700 12px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; white-space: nowrap; }
-.t b { display: block; font: 600 40px/1 var(--num); letter-spacing: -0.02em; }
+.t b { display: block; font: 600 30px/1 var(--num); letter-spacing: -0.03em; white-space: nowrap; }
 .t.ai { text-align: right; }
 .t.ai b { color: var(--ink2); }
-.t.ai b.name { font: 800 24px/0.95 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; color: var(--ink2); }
-.t.mid { text-align: center; padding: 0 6px; }
-.t.mid b { font-size: 20px; color: var(--gold); padding-bottom: 6px; }
+.t.ai b.name { font: 800 22px/1.36 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; }
+.t.mid { text-align: center; }
+.t.mid b { color: var(--gold); }
 .t.mid b.plain { color: var(--ink2); }
-.t.mid b:not(.clock):not(:only-child) { }
-.t.mid b.clock { color: var(--ink); border: 1.5px solid var(--red); border-radius: 3px; padding: 4px 8px; font-size: 24px; }
+.t.mid b.word { font: 800 24px/1.25 var(--cond); text-transform: uppercase; letter-spacing: 0.02em; }
+.t.mid b.clock { display: inline-block; color: var(--ink); font-size: 24px; line-height: 1; border: 1.5px solid var(--red); border-radius: 3px; padding: 4px 8px; }
 .capbar { height: 4px; background: var(--rule); margin-top: -12px; }
 .capbar i { display: block; height: 100%; background: var(--gold); }
 .sub-note { margin: -16px 0 0; font-size: 14px; font-style: italic; color: var(--ink2); }
@@ -76,7 +85,8 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .order u { text-decoration: none; color: var(--red); }
 
 /* buttons */
-.actions { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+/* right under the aside's content, never pushed to the foot of a long page (playtest 2026-10-22) */
+.actions { display: flex; flex-direction: column; gap: 12px; }
 .btn { display: block; width: 100%; border-radius: 3px; padding: 14px; font: 800 18px var(--cond); letter-spacing: 0.06em; text-transform: uppercase; text-align: center; cursor: pointer; }
 .btn.off { border: 1.5px solid var(--rule3); background: transparent; color: var(--ink3); }
 .btn.go { border: 0; background: var(--ink); color: var(--bg); }
@@ -352,3 +362,17 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
   .nt aside > .actions { display: flex !important; margin-top: 0; order: 9; }
   .nt aside > .actions > :not(.links) { display: none !important; }
 }
+
+/* 2026-10-22 (playtest): the speeds sat glued to the Play button */
+.nt .speeds + .btn2, .nt .speeds + .stackb { margin-top: 18px; }
+.nt .voices-more { display: inline-block; margin-top: 10px; }
+/* a face that opens the player's window (playtest 2026-10-22): the button takes no box of its own */
+.nt .face-btn { display: contents; cursor: pointer; }
+.nt .face-btn > img, .nt .face-btn > .ini { cursor: pointer; transition: filter 0.15s; }
+.nt .face-btn:hover > img, .nt .face-btn:hover > .ini { filter: brightness(1.15); outline: 1.5px solid var(--ink3); outline-offset: 1px; }
+.nt .face-btn:focus-visible > img, .nt .face-btn:focus-visible > .ini { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* a crest that opens the team's window (playtest 2026-10-22) */
+.nt .team-btn { display: contents; cursor: pointer; }
+.nt .team-btn > .tm { cursor: pointer; }
+.nt .team-btn:hover > .tm { outline: 1.5px solid var(--ink3); outline-offset: 1px; }
+.nt .team-btn:focus-visible > .tm { outline: 2px solid var(--ink); outline-offset: 2px; }

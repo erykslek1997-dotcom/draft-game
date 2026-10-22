@@ -75,6 +75,9 @@ export interface LiveSeasonGame {
   /** Points, team A first. */
   final: [number, number];
   top: [SeasonGameTop | null, SeasonGameTop | null];
+  /** Every line of the game, side by side (2026-10-22, playtest: the stats through any night, not
+   * only at a month's end). Players who didn't get on the floor are left out. */
+  lines: [SeasonGameTop[], SeasonGameTop[]];
   /** The game's seed: `playLiveSeasonGame` plays it again with its play-by-play. */
   seed: string;
 }
@@ -264,6 +267,54 @@ export function seasonDates(rounds: number, asgAfterRound: number): string[] {
 }
 
 /** The best line of one side of a game: the most points, game score breaking a tie. */
+function gameLines(game: LiveGameResult, side: 0 | 1): SeasonGameTop[] {
+  const out: SeasonGameTop[] = [];
+  game.players[side].forEach((span, k) => {
+    const line = game.box[side][game.labels[side][k]];
+    if (line && line.min > 0) out.push({ spanId: span.id, line: { ...line } });
+  });
+  return out;
+}
+
+/** The players' lines summed over some games; span and starter come from the full line in `full`. */
+function sumGameLines(games: Iterable<{ aId: string; bId: string; lines: [SeasonGameTop[], SeasonGameTop[]] }>, full: SeasonPlayerLine[]): SeasonPlayerLine[] {
+  const byKey = new Map(full.map((l) => [`${l.teamId}|${l.span.id}`, l]));
+  const out = new Map<string, SeasonPlayerLine>();
+  for (const g of games) {
+    for (const side of [0, 1] as const) {
+      const teamId = side === 0 ? g.aId : g.bId;
+      for (const { spanId, line: box } of g.lines[side]) {
+        const key = `${teamId}|${spanId}`;
+        const base = byKey.get(key);
+        if (!base) continue;
+        const line = out.get(key) ?? { span: base.span, teamId, games: 0, totals: zero(), starter: base.starter, doubleDoubles: 0, tripleDoubles: 0 };
+        line.games++;
+        const tens = [box.pts, box.reb, box.ast, box.stl, box.blk].filter((v) => v >= 10).length;
+        if (tens >= 2) line.doubleDoubles++;
+        if (tens >= 3) line.tripleDoubles++;
+        addTo(line.totals, box);
+        out.set(key, line);
+      }
+    }
+  }
+  return [...out.values()];
+}
+
+/** The players' lines over rounds `from` to `rounds - 1`: the season through a night, or one month
+ * of it (2026-10-22, playtest: the stats during the season, not only at a month's end). */
+export function seasonLinesThrough(season: LiveSeasonResult, rounds: number, from = 0): SeasonPlayerLine[] {
+  return sumGameLines(
+    season.games.filter((g) => g.round >= from && g.round < rounds),
+    season.players,
+  );
+}
+
+/** The playoff lines over the games shown so far: `shown(round, series)` games of each series. */
+export function playoffLinesShown(playoffs: LivePlayoffResult, shown: (round: number, s: LivePlayoffSeries) => number): SeasonPlayerLine[] {
+  const games = playoffs.rounds.flatMap((r, round) => r.flatMap((s) => s.games.slice(0, shown(round, s)).map((g) => ({ aId: s.teamAId, bId: s.teamBId, lines: g.lines }))));
+  return sumGameLines(games, playoffs.players);
+}
+
 function topLine(game: LiveGameResult, side: 0 | 1): SeasonGameTop | null {
   let best: SeasonGameTop | null = null;
   let bestKey = -Infinity;
@@ -516,7 +567,7 @@ function* seasonSteps(teams: Team[], seed: string): Generator<SimProgress, LiveS
       const gameSeed = `${seed}:${a.id}:${b.id}:${g}`;
       const game = playPairingGame(pairing, gameSeed, false);
       const [sa, sb] = game.final;
-      games.push({ round, aId: a.id, bId: b.id, final: [sa, sb], top: [topLine(game, 0), topLine(game, 1)], seed: gameSeed });
+      games.push({ round, aId: a.id, bId: b.id, final: [sa, sb], top: [topLine(game, 0), topLine(game, 1)], lines: [gameLines(game, 0), gameLines(game, 1)], seed: gameSeed });
       const ra = record.get(a.id)!;
       const rb = record.get(b.id)!;
       ra.pointsFor += sa;
@@ -630,6 +681,8 @@ export interface LivePlayoffGame {
   seed: string;
   /** Points, team A first. */
   final: [number, number];
+  /** Every line of the game, team A first: the playoffs so far without what's still to come. */
+  lines: [SeasonGameTop[], SeasonGameTop[]];
 }
 
 export interface LivePlayoffSeries {
@@ -741,7 +794,7 @@ function* playoffSteps(teams: Team[], standings: LiveStandingsRow[], seed: strin
       while (wa < 4 && wb < 4) {
         const gameSeed = `${seed}:playoffs:${round}:${a.id}:${b.id}:${games.length}`;
         const game = playPairingGame(pairing, gameSeed, false);
-        games.push({ seed: gameSeed, final: game.final });
+        games.push({ seed: gameSeed, final: game.final, lines: [gameLines(game, 0), gameLines(game, 1)] });
         if (game.final[0] > game.final[1]) wa++;
         else wb++;
         addGame(lines, [a, b], game, starterIds);

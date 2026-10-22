@@ -303,6 +303,107 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
     (najlepsza piątka z ziarna dnia + twój wynik); skróty klawiszowe w drafcie na komputerze
     (1–5 karta, D draft, / szukaj) jako pierdoła.
 
+### Playtest wydania nocnego 2026-10-22 — spisane, do zrobienia
+
+Zasady z playtestu: **Mini wygląda dokładnie jak All-Time, tylko krótszy** (różnice tylko z zasad
+trybu); kolumny obok siebie kończą się mniej więcej równo (długie treści zwijane); akcje zaraz pod
+treścią, nigdy dociśnięte do dołu i nigdy zdublowane; twoje = krem, nigdy nie przesuwa treści;
+złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub słowem.
+
+**A. Szybkie** (style, teksty, drobna logika — jeden PR)
+- [ ] Licznik w aside (Cap/Teams/Rounds, Caps left/Cap/Round, Won/Seed/Lost): trzy równe kolumny,
+      jedna wielkość i linia bazowa.
+- [ ] Jedna linia u góry w obu kolumnach (dziś podwójne po lewej i nad kartami „big four”/„Finals”).
+- [ ] Kremowy wiersz „twój” nie przesuwa treści (`.order16 li.you` padding — i wszystkie inne).
+- [ ] Loteria: okrągły błysk w obrębie bębna zamiast prostokąta na całym canvasie.
+- [ ] Capy zawsze z jednym miejscem po przecinku („19.0”, nie „19”) — `fmtCaps`.
+- [ ] Teksty: „about 11.2 a pick” bez sierotki; „tap to show” → „show list” na komputerze; kropka
+      przy latach w liście („2012-14 ·”) — wyjaśnić albo usunąć.
+- [ ] Twój pick: bez podpowiedzi „X fits best / Y is still on the board”, zostaje „Up to N caps
+      on this pick”.
+- [ ] Okno gracza: tier osobno, oceny w równej siatce (6 / 3×2); ocena A nie złota.
+- [ ] Plakat: „Daily” tylko po daily; przygaszone kolory drużyn za zdjęciami (też karty „Your roster”).
+- [ ] Nagrody: „big four” bez pustego miejsca przed finałami (3 karty albo przygaszone Finals MVP).
+- [ ] Mecz na żywo: odstęp prędkości → przyciski; Play pełny, Skip obrysem; po meczu jedno
+      „Watch again” pod „▶ Game N”, bez górnego.
+- [ ] **Błąd:** po meczu play-offów nagłówek nie liczy właśnie skończonego meczu („lead 2–0”
+      zamiast 2–1). Podtytuł bez powtórzeń („beat the Moles 4–1, by 7.2 a game”; „The Sasquatch
+      were the better team. Curry did what he could: …”). Score by quarter pod wynikiem w aside.
+- [ ] Procenty przy kilku próbach („—” zamiast 3P% 50.0 przy 2 próbach).
+- [ ] Koniec gry: wyraźne „New draft” i „Main menu” (dziś tylko mały link „← Menu”).
+- [x] Przerwa miesięczna: bez kolumny ruchu przy pierwszej przerwie; twoi gracze w MVP ladder na
+      kremowo; remis „You and the Raccoons had the best month”.
+- [ ] **Daily Draw Five — błąd Jokera:** legenda droższa jako Joker niż face up (Magic 14.4 vs
+      14.3). Legenda = wysoki TAL (≈70+ / górne 10% pozycji, nie 6+ All-Star — Sharman ma TAL 56)
+      I prawdziwa cena wyraźnie wyższa niż Joker; scrub = dolne 25% TAL I tańszy. Test 1000 dni.
+      Okno „Jackpot” z pełnym tłem.
+
+**B. Więcej czasu** (logika / przebudowa na istniejących elementach)
+- [x] Loteria: bęben zostaje 1,5–2 s z kulą, potem wynik wchodzi powoli; dalej „Start the draft”.
+- [x] Duże ekrany: ramka szersza niż 1360 px i większa skala (1366 / 1920 / 2560).
+- [x] Aside przyklejony (sticky) na wszystkich ekranach, akcje pod treścią.
+- [x] Rotacja: widoczny uchwyt suwaka na styku (gałka ‖, pole ~24 px, minuty przy przeciąganiu).
+- [x] Final standings → rywal: gdzie lepszy, gdzie ty lepszy, „All metrics ▾” (wszystkie wejścia,
+      różnica ze znakiem); blok na całą szerokość / atak | obrona.
+- [x] Wyniki: The room zwijany (4–5 wypowiedzi + „Read the rest”), kolumny równe; „More”:
+      Title structure do krótszej kolumny, „Size vs. position” bez mikropasków.
+- [x] Sezon „Tonight”: domyślnie tylko twój mecz, reszta zwinięta, przełącznik Your / All games.
+- [ ] Przerwa miesięczna: MVP ladder do prawej kolumny, „Your month” w aside.
+- [x] Statystyki w trakcie symulacji sezonu (Standings / Stats / Leaders „through <data>”, pauza);
+      silnik: sumy po każdej nocy zamiast tylko na koniec miesiąca.
+- [x] Statystyki play-offów w trakcie (Regular season / Playoffs „so far”, bez spoilerów).
+- [x] Klikalne twarze i karty graczy wszędzie → okno gracza (w sezonie ze statystykami sezonu).
+- [x] Mecz na żywo: przywrócić „Key moments” (ostatnie 6 min, przed meczem i w trakcie) i ⅛.
+- [x] Box score: piątka, linia „Bench”, ławka po minutach, suma; jeden znacznik „na boisku”.
+- [x] Draw Five: animacja rozdania / wyboru / tury AI w jednym języku; AI dostaje to samo
+      rozdanie i tempo co ty (dziś cała tura AI 2,6 s), pauza „myśli”, jedna stała tempa.
+- [x] Mini = All-Time: wspólny ekran draftu (lista graczy zawsze otwarta, Big Board, Latest picks
+      w aside), ten sam board z twarzami (BoardGrid), te same wyniki i karty piątki; „Caps left”.
+
+**C. Nowe plansze** (makieta do akceptacji, potem kod)
+- [x] Okno drużyny (klik w herb/nazwę wszędzie): bilans, ocena, piątka + ławka z minutami,
+      statystyki sezonu/PO, ostatnie mecze, „ty vs oni”.
+- [x] Wyniki draftu po sezonie: blok „Your season” (bilans, PO, mistrz, nagrody, „Open the season”).
+- [x] Koniec sezonu: wyraźny blok „Champions” (mistrz z 🏆, finał, Finals MVP z twarzą).
+- [x] Plakat i podsumowanie sezonu: ocena draftu (Rating, miejsce, Talent/Off/Def/Spacing/Fit).
+- [x] Sezon: duży „twój mecz” w Tonight; „Your month” na przerwie.
+- [x] Wyniki daily Draw Five — hierarchia: jeden bohater (mecz + werdykt), twoja piątka vs
+      najlepsza, Film room, profil, Jokery na końcu; jeden nagłówek XXL (sprawdzić też Mini/All-Time).
+- [ ] Mini: turniej NCAA po drafcie (patrz 3.2 Mini Draft).
+
+**Silnik** (kalibracja, tydzień 2–3 — w Etapie 2): asysty po pozycji zamiast roli; gwiazda z
+rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
+
+**Dopisane 2026-10-22 (po grupie B)**
+- [ ] **Loteria → dwa przyciski:** „Start the draft” i „Study the board” (nazwa robocza). Drugi
+      otwiera listę graczy przed draftem: przeglądanie, filtry, gwiazdka na Big Board (wishlista),
+      bez wybierania; powrót do „Start the draft”. Big Board z tego kroku przechodzi do draftu.
+- [ ] **Hunting — przebudowa mechaniki (silnik, tydzień 2–3).** Obecna nie działa tak, jak powinna.
+      Użytkownik opisze, jak to wygląda w rzeczywistości; pytania od Claude'a: kto wybiera cel
+      (rozgrywający w PnR czy izolacja), jak ofensywa wciąga słabego obrońcę do akcji (zasłona
+      gracza, którego kryje, ghost screen, re-screen), jak broni się obrona (switch / drop / hedge /
+      blitz, scram switch, podwojenie, chowanie słabego na najsłabszym strzelcu, strefa), ile to
+      kosztuje atak (zegar, przewidywalność, mniej ruchu), kto potrafi huntować (izolacja, PnR),
+      różnica sezon vs play-offy, przykłady serii (np. Rockets 2018 na Curry'ego) i źródła danych
+      (NBA.com matchups od 2017-18, Synergy ISO/PnR PPP).
+- [ ] **Transmisja meczu żywsza (silnik + teksty).** Dziś relacja jest sztywna. Brakuje:
+  - a) **Signature moves gwiazd:** „Dirk one-legged fadeaway from 14 ft over the defender's
+       hand”. Z play-by-play NBA (od 1996-97) da się wyciągnąć typ rzutu (fadeaway, turnaround,
+       step-back, pull-up, driving layup, hook, alley-oop, putback), odległość i udział każdego
+       typu dla gracza w sezonie → tendencje per span. Przed 1996 bez pbp: krótka ręczna lista
+       ruchów legend (skyhook Kareema, Dream Shake Hakeema, baby hook Magica, fadeaway Jordana).
+  - b) **Momenty z emocją:** and-one („tough bucket at the rim — AND ONE!”), blok + kontra,
+       wsad nad kimś, seria, trójka na prowadzenie, rzut z faulem w końcówce. And-one i rzuty
+       z faulem też policzalne z pbp (trafienie + faul przy rzucie + 1 wolny).
+  - c) **Reakcja na zegar:** szybki punkt w kontrze („early bucket in transition”, czas od zmiany
+       posiadania), trudny rzut z końcówki 24 s („beats the shot clock with a tough fadeaway”),
+       buzzer-beater na koniec kwarty, końcówka meczu. Z pbp: udział gracza w kontrze i w późnym
+       zegarze.
+  - d) **Nawiązania do rzeczywistości:** zagrania wyciągnięte z pbp (ulubione strefy, ulubiony
+       podający, typowe zakończenia), opisane tak, żeby pasowały do tej ligi, nie do dat.
+  - Źródło: play-by-play (shufinskiy/nba_data, już używane do Warriors 2014–25). Najpierw sprawdzić
+    pokrycie typów rzutów po sezonach, potem plik tendencji per span w `src/data/`.
+
 ## Kolejność prac (decyzja 2026-10-10, zastąpiona planem 4 tygodni)
 
 **Decyzja 2026-10-15 (wieczór):** intro All-Time Draft i kalibracja siły AI — na sam koniec;
@@ -732,6 +833,30 @@ skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 
       Ok. 133 pkt na 48 min to dużo jak na mecz bez ławki — tempo albo skuteczność w trybie piątek
       (Draw Five, daily) mogą być zawyżone. Porównać z ligą (`seasonBaselines`) i ze średnią w
       sezonie pełnych drużyn.
+      - **Krótszy mecz piątek** (2026-10-22, user): 48 minut bez ławki nie ma sensu — skrócić
+        mecz Draw Five (zwykły i daily) do **30 albo 36 minut** (4×7,5 / 4×9). Do decyzji po
+        pomiarze: odsetek wygranych faworyta, średni wynik i rozrzut przy 30 vs 36 vs 48 (krótszy
+        mecz = więcej przypadku), zmęczenie bez zmian; licznik czasu, kwarty, faule (bonus,
+        limit fauli) i komentarz przeliczone na krótsze kwarty.
+- [ ] **Asysty w sezonie idą po pozycji, nie po roli (kalibracja, tydzień 2–3)** — playtest
+      2026-10-22, statystyki po sezonie vs karta gracza (prawdziwy okres): Jordan 1987-89 7.0 →
+      3.0, Drexler 1987-89 5.8 → 2.9, Durant 2012-14 5.1 → 2.8, Kobe 2007-09 5.1 → 3.9, McGrady
+      2001-03 5.4 → 4.1, Carter → 1.9; w drugą stronę Bird 1983-85 6.6 → 9.0. Kreatorzy na SG/SF
+      tracą asysty, część SF/PF zyskuje. Do zbadania: komu mecz daje asystę przy trafieniu
+      (liveGame), przeliczenie asyst ery według percentyla w pozycji (modernBox), rola Birda.
+      Pomiar: 30 sezonów, średnie |sezon − karta| asyst per pozycja (to samo dla pkt i zb.),
+      raport przed/po; bez zmian w silniku bez raportu.
+- [ ] **Draw Five: gwiazda z pierwszego rozdania jako pułapka (kalibracja, tydzień 2–3)** —
+      playtest 2026-10-22: w rozdaniu Doncic 2024-26 (21.8 capów) — „99% graczy weźmie go
+      pierwszym pickiem i jest skazanych na porażkę”; najlepsza piątka planszy bierze na PG
+      Blaylocka 1994-96 (14.4), a różnica capów idzie w Barkleya 1989-91 (16.1) zamiast Outlawa
+      (4.4). Gra karze oczywisty wybór, a nie zły. Do zbadania: (a) czy silnik nie zaniża
+      wartości drogich gwiazd względem capów (cena = rzuty na mecz — Doncic dużo rzuca, więc
+      drogi, a ocena za mało za niego daje); (b) jak liczona jest „najlepsza piątka” (pełne
+      przeszukanie vs heurystyka) i jak często najlepsza piątka zawiera najdroższą kartę rozdania;
+      (c) generator rozdań — czy nie daje gwiazdy, której nie da się „obudować”. Pomiar: 500
+      plansz, odsetek najlepszych piątek z najdroższą kartą, średnia strata piątki z najdroższą
+      kartą vs najlepsza; cel: gwiazda ma być dobrym wyborem, jeśli dobierzesz resztę z głową.
 
 Decyzje (2026-09-30):
 - Sezon zasadniczy szybki (bez odtwarzania meczów); dokładna symulacja dopiero w play-offach.
@@ -979,6 +1104,14 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       (`QuickDraftState.capLimit`). Test `scripts/testDailyDraft.ts`. Na później w Mini: narzucony
       gracz, styl dnia.
 - [ ] **Playtest całego trybu + lista poprawek** (S)
+- [ ] **Turniej po drafcie, styl NCAA** (2026-10-22, user). Mini dostaje „sezon” jako turniej
+      pucharowy 16 drużyn: rozstawienie 1–16 według oceny draftu (Overall), drabinka 1–16, 8–9,
+      5–12, 4–13, 6–11, 3–14, 7–10, 2–15; **jeden mecz** w każdej rundzie, przegrany odpada;
+      4 rundy (1/8 → ćwierćfinały → Final Four → finał). Mecz na żywo jak w play-offach (ten sam
+      komponent, Key moments, Skip), pozostałe mecze rundy liczone i do obejrzenia. Wygląd jak
+      play-offy All-Time (ta sama drabinka, okno drużyny, statystyki turnieju, plakat), krótsza
+      wersja. Długość meczu taka jak dla piątek (patrz „Krótszy mecz piątek” w Etapie 2). Daily
+      Mini: turniej deterministyczny z ziarna dnia, wynik turnieju w „Copy today's result”. (M)
 
 ### 3.3 All-Time Draft
 
