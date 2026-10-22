@@ -55,6 +55,7 @@ import {
   buzz,
   dayLabel,
   fmtCaps,
+  useStepScroll,
 } from '../night/ui';
 import { CapsBar, FiveSlots, LeagueMark, NightLottery, Notice, PickLog, PlayerTable, PosTabs, snakePicks, type NightRow, type TickerRow } from '../night/draft';
 import { BoardGrid } from '../night/alltime';
@@ -116,6 +117,8 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   const currentTeam = state.teams[teamIdx];
   const humanTeam = state.teams.find((t) => t.isHuman)!;
   const canPick = currentTeam.isHuman;
+  // A phone brings your pick to the top when you're on the clock.
+  useStepScroll(phase === 'draft' && canPick && !state.complete ? `you-${state.history.length}` : null);
   const codes = useMemo(() => teamCodes(state.teams), [state.teams]);
   const codeOf = (t: Team) => codes.get(t.id) ?? '';
 
@@ -532,7 +535,7 @@ function QuickDraftBoard({
         emptyLabel={(p) => (p === on ? `showing ${counts[p]} ▾` : TAP_TO_SHOW)}
       />
       {canPick ? (
-        <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now>
+        <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now className="ph-keep">
           Up to <b>{fmtCaps(maxPick)} caps</b> on this one and still fill the five.
           {haveList.length > 0 && ` Your ${haveList.length > 1 ? `${haveList.slice(0, -1).join(', ')} and ${haveList[haveList.length - 1]}` : haveList[0]} ${haveList.length === 1 ? 'is' : 'are'} set.`}
         </Prompt>
@@ -781,7 +784,7 @@ function QuickResults({
           </section>
         </>
       )}
-      <Actions links={{ ...links, onMenu: undefined }}>
+      <Actions links={{ ...links, menuPhoneOnly: true }}>
         {daily ? (
           <>
             <div className="btn2">

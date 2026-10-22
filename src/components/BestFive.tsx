@@ -59,6 +59,7 @@ import {
   fmtCaps,
   shortName,
   spanBand,
+  useStepScroll,
 } from '../night/ui';
 import LiveGameNight from '../night/LiveGameNight';
 import { NightHowTo, NightSettings } from '../night/Dialogs';
@@ -183,6 +184,8 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
   const [dialog, setDialog] = useState<'howto' | 'settings' | null>(null);
 
   const aiPhase = aiTurn?.phase ?? null;
+  // A phone brings each step to the top: your deal, the AI's turn, the lineup to lock in.
+  useStepScroll(stage === 'draft' ? `${activeSlot ?? 'set'}|${aiTurn ? aiTurn.slot : ''}|${freshSlot === activeSlot ? 'fresh' : 'open'}` : null);
   useEffect(() => {
     if (aiPhase === 'think') {
       const t = window.setTimeout(() => setAiTurn((a) => a && { ...a, phase: 'take' }), TEMPO.think);
@@ -1219,7 +1222,7 @@ function BestFiveResult({
           {challenge?.vs != null && <Kv k={`Friend’s five · ${challengeVerdict(score.composite, challenge.vs) === 'won' ? 'you win' : challengeVerdict(score.composite, challenge.vs) === 'lost' ? 'they win' : 'tied'}`} v={challenge.vs} />}
         </section>
       )}
-      <Actions links={{ ...links, onMenu: undefined }}>
+      <Actions links={{ ...links, menuPhoneOnly: true }}>
         {daily ? (
           <div className="btn2">
             <Btn kind="line" onClick={copyDailyResult}>

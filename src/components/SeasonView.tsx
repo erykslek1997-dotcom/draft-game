@@ -671,7 +671,7 @@ function SeasonBody({
           })}
         </section>
       )}
-      <Actions links={finalsDone && end ? undefined : { onMenu: onClose }}>
+      <Actions links={finalsDone && end ? { onMenu: end.onMenu, menuPhoneOnly: true } : { onMenu: onClose }}>
         {buttons}
         {finalsDone && <Btn onClick={() => setSharing(true)}>Share your season</Btn>}
         {finalsDone && end ? (
@@ -1230,7 +1230,10 @@ function Stats({ teams, season, playoffs, youId, codes, through, playoffsSoFar }
                       <span className="sb-f">
                         <NFace name={l.span.playerName} span={l.span} />
                       </span>
-                      <PlayerName line={l} />
+                      <PlayerName line={l}>
+                        <span className="nm-l">{l.span.playerName}</span>
+                        <span className="nm-s">{shortName(l.span.playerName)}</span>
+                      </PlayerName>
                       <small>{l.span.primaryPosition}</small>
                     </td>
                     <td className="tc">{codes.get(l.teamId)}</td>

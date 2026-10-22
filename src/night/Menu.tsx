@@ -122,7 +122,10 @@ export function NightMenu({
             {savedDraft && (
               <div className="m2-resume">
                 <span>
-                  Draft in progress · {savedDraft.teamName}, {savedDraft.humanPicks} of {savedDraft.rosterSize} picks
+                  <small>Draft in progress</small>
+                  <b>
+                    {savedDraft.teamName} · {savedDraft.humanPicks} of {savedDraft.rosterSize} picks
+                  </b>
                 </span>
                 <button type="button" onClick={onContinue}>
                   Continue →
