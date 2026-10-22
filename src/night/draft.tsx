@@ -220,13 +220,10 @@ export function PlayerTable({
                     {!at && ` · ${maskYears(s.playerName, s.spanLabel)}`}
                   </b>{' '}
                   {r.ruleNote ? <i className="rule-tag">· {r.ruleNote}</i> : r.taken ? <i className="rule-tag">· {r.taken}</i> : roles.length > 0 && <i>· {roles.join(' · ')}</i>}
+                  {/* the phone's one line under the name: position · years · pts / reb / ast */}
                   <span className="mst">
-                    {at && (
-                      <>
-                        {maskYears(s.playerName, s.spanLabel)}
-                        <br />
-                      </>
-                    )}
+                    {' · '}
+                    {at && <>{maskYears(s.playerName, s.spanLabel)} · </>}
                     {s.box.ppg.toFixed(1)} / {s.box.rpg.toFixed(1)} / {s.box.apg.toFixed(1)}
                   </span>
                 </div>

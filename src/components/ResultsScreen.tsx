@@ -1340,12 +1340,13 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <tr className="open">
                       <td />
                       <td colSpan={6}>
+                        {/* their five first, as cards: who they are matters most (playtest 2026-10-22) */}
+                        <div className="five-row rival-five">
+                          {primaryStarters(displayTeam(team)).map((x) => (
+                            <RosterCard key={x.slot} span={x.player} slot={x.slot} foot={null} />
+                          ))}
+                        </div>
                         <RivalEdge nick={nick} scores={edgeRows} metrics={() => ({ theirs: teamMetricValues(team), mine: humanRanked ? teamMetricValues(humanRanked.team) : {} })} />
-                        <p className="st-five">
-                          {primaryStarters(displayTeam(team))
-                            .map((x) => `${x.slot} ${maskText(x.player.playerName)}`)
-                            .join(' · ')}
-                        </p>
                       </td>
                     </tr>
                   )}

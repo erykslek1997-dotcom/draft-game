@@ -45,7 +45,7 @@ import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
-import { Actions, Btn, CapBar, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
+import { Actions, Btn, CapBar, cx, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
 import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
@@ -96,6 +96,9 @@ interface Props {
   /** 2026-09-24: back to the main menu (after a confirm — the draft is autosaved, see draftSave.ts). */
   onExit: () => void;
   /** 2026-09-25: the Draft Desk is open — GameShell holds CPU picks until it closes. */
+  /** 2026-10-22: "Study the board" off the lottery — the clock is held until `onStartClock`. */
+  studying?: boolean;
+  onStartClock?: () => void;
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -427,6 +430,8 @@ export default function DraftBoard({
   onSwapHumanSpan,
   howToPlay = [],
   onExit,
+  studying = false,
+  onStartClock,
 }: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
@@ -1642,6 +1647,13 @@ export default function DraftBoard({
                 only the hard limit — what this pick may cost and still leave enough for the rest. */}
             Up to <b>{fmtCaps(humanBudget.maxThisPick)} caps</b> on this pick.{!open.length && ' Your five is set; this one is for the bench.'}
           </Prompt>
+        ) : studying ? (
+          <div className="study">
+            <Prompt eb="Before the clock" title="Study the board" className="ph-keep">
+              Nobody picks yet. Star the players you want, then start the clock.
+            </Prompt>
+            {onStartClock && <Btn onClick={onStartClock}>Start the clock</Btn>}
+          </div>
         ) : (
           <Prompt eb={`On the clock · Pick ${overall}`} title={teamLabel(currentTeam)} now>
             {humanPicksAway === 1 ? 'Your pick is next.' : humanPicksAway ? `Your pick in ${humanPicksAway} picks.` : 'Your nine are in.'} The list stays open while they think.
@@ -1726,16 +1738,17 @@ export default function DraftBoard({
       {main}
       {rotation}
       {!state.complete && !yearsGroup && (
-        <div className="btn2 phone-only">
+        // one bar of short labels: Board · Team · Desk (playtest 2026-10-22: three buttons in one row)
+        <div className={cx('btn2 phone-only', youOnClock && callsLeft > 0 && 'n3')}>
           <Btn kind="line" onClick={() => setBoardShown((v) => !v)}>
-            {boardShown ? 'Hide board' : 'Draft board'}
+            {boardShown ? 'Hide board' : 'Board'}
           </Btn>
           <Btn kind="line" onClick={() => setActiveTab('team')}>
-            Team · {humanTeam.roster.length}/{ROSTER_SIZE}
+            Team {humanTeam.roster.length}/{ROSTER_SIZE}
           </Btn>
           {youOnClock && callsLeft > 0 && (
             <Btn kind="line" onClick={() => setCallSheetOpen(true)}>
-              Phone the desk · {callsLeft}
+              Desk · {callsLeft}
             </Btn>
           )}
         </div>

@@ -240,7 +240,10 @@ export function Slot({
           <span>{pos}</span>
         </div>
         <NFace name={span.playerName} />
-        <div className="nm">{shortName(span.playerName)}</div>
+        <div className="nm">
+          <span className="sl-l">{shortName(span.playerName)}</span>
+          <span className="sl-s">{lastName(span.playerName)}</span>
+        </div>
         <div className="sb">
           {maskYears(span.playerName, span.spanLabel)} · <CapI />
           {fmtCaps(span.fga)}
