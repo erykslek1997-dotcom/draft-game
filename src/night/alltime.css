@@ -1146,3 +1146,5 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
   .mygame .mg-t.lo { color: var(--ink3); }
   .mygame .mg-l { margin-top: 4px; font-style: italic; color: var(--ink2); font-size: 14px; }
 }
+.nt .po-draft { margin-top: 10px; border-top: 1px solid var(--cline); padding-top: 8px; }
+.nt .po-draft .pd-k { display: flex; justify-content: space-between; font: 700 10px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cink2); margin-bottom: 4px; }

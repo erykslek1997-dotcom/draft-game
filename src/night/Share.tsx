@@ -37,6 +37,9 @@ export interface PosterData {
   /** The daily Draw Five hides your five until tomorrow. */
   hidden?: boolean;
   extra?: [string, ReactNode];
+  /** The season poster's draft grade over the profile (playtest 2026-10-22, mockup MC5 B):
+   * "The draft · 3rd of 16" and "Rating 87 · best 90". */
+  draft?: [string, string];
 }
 
 const longDate = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -54,6 +57,19 @@ function numLabel(n: number, unit: 'caps' | 'ppg', small = false) {
       {v}
       {small ? <small> ppg</small> : ' ppg'}
     </>
+  );
+}
+
+function DraftProfile({ d }: { d: PosterData }) {
+  if (!d.draft) return <Profile prof={d.prof} />;
+  return (
+    <div className="po-draft">
+      <div className="pd-k">
+        <span>{d.draft[0]}</span>
+        <span>{d.draft[1]}</span>
+      </div>
+      <Profile prof={d.prof} />
+    </div>
   );
 }
 
@@ -129,7 +145,7 @@ export function Poster({ d }: { d: PosterData }) {
           ))}
         </div>
       )}
-      <Profile prof={d.prof} />
+      <DraftProfile d={d} />
       <div className="po-strip">
         {d.strip.map(([k, v]) => (
           <div key={k}>
@@ -202,8 +218,8 @@ export function Story({ d }: { d: PosterData }) {
           </div>
         </>
       )}
-      <div className="st-sec">Team profile</div>
-      <Profile prof={d.prof} />
+      <div className="st-sec">{d.draft ? 'The draft' : 'Team profile'}</div>
+      <DraftProfile d={d} />
       {d.extra && (
         <>
           <div className="st-sec">{d.extra[0]}</div>

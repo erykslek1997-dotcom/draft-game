@@ -716,6 +716,12 @@ function SeasonBody({
     season.awards.allNba.forEach((five, i) => five.filter((l) => l.teamId === you.id).forEach((l) => out.push(`All-NBA ${ord(i + 1)} ${lastName(l.span.playerName)}`)));
     return out;
   })();
+  // The draft's grade on the season poster (playtest 2026-10-22: "o ocenę draftu"; mockup MC5 B).
+  const yv = views.get(you.id);
+  const draftRows = yv ? ([['Talent', yv.talent], ['Offense', yv.offense], ['Defense', yv.defense], ['Spacing', yv.spacing], ['Fit', yv.fit]] as const) : [];
+  const lowRow = [...draftRows].sort((x, y) => x[1] - y[1])[0];
+  const highRow = [...draftRows].sort((x, y) => y[1] - x[1])[0];
+  const draftProf: PosterData['prof'] = draftRows.map(([label, v]) => ({ label, value: Math.round(v), tone: label === lowRow?.[0] ? 'lo' : label === highRow?.[0] ? 'hi' : undefined }));
   const poster: PosterData = {
     mode: 'All-Time Draft · season',
     date: new Date(),
@@ -725,7 +731,8 @@ function SeasonBody({
     five: roster.slice(0, 5).map((l) => ({ span: l.span, num: Math.round(per(l, 'pts') * 10) / 10 })),
     bench: roster.slice(5).map((l) => ({ span: l.span, num: Math.round(per(l, 'pts') * 10) / 10 })),
     unit: 'ppg',
-    prof: [],
+    prof: draftProf,
+    draft: [`The draft · ${ord(yv?.rank ?? 0)} of ${teams.length}`, `Rating ${yv?.overall ?? '—'} · best ${Math.max(...[...views.values()].map((v) => v.overall))}`],
     strip: [
       ['Season', `${record.wins}–${record.losses}`],
       ['Seed', ord(rank)],

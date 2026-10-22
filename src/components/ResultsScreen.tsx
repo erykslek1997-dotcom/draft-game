@@ -54,7 +54,7 @@ import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
-import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterCard, SubNote, Tally, fmtCaps } from '../night/ui';
+import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterCard, Tally, fmtCaps } from '../night/ui';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -1000,11 +1000,9 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     <>
       <Mast title={daily ? (daily.mode === 'bomb' ? 'Daily Bomb' : 'Daily All-Time Draft') : 'All-Time Draft'} daily={!!daily} sub={daily ? `${daily.title} · final` : `Final · ${fieldSize} teams · 9 rounds`} />
       <Tally you={ordinal(hero.rank)} mid={hero.breakdown.overall} ai={pct(titleOdds)} youK="Place" midK="Rating" aiK="Title" plain />
-      <SubNote>
-        <b>{fmtCaps(capsUsed)}</b> of {fmtCaps(capLimit)} caps used
-      </SubNote>
       <section>
-        <H3 note={`${myPicks.length} picks`}>Your draft</H3>
+        {/* Caps, not a pick count (mockup MC2): the nine are on the list below. */}
+        <H3 note={`${fmtCaps(capsUsed)} / ${fmtCaps(capLimit)} caps`}>Your draft</H3>
         <table className="log">
           <tbody>
             {myPicks.map((h) => {

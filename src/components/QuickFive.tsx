@@ -762,11 +762,8 @@ function QuickResults({
         </>
       ) : (
         <>
-          <SubNote>
-            <b>{fmtCaps(capsUsed)}</b> of {fmtCaps(state.capLimit)} caps used
-          </SubNote>
           <section>
-            <H3 note={`${myLog.length} picks`}>Your draft</H3>
+            <H3 note={`${fmtCaps(capsUsed)} / ${fmtCaps(state.capLimit)} caps`}>Your draft</H3>
             {/* The same pick log as the All-Time results (playtest 2026-10-22: Mini = All-Time, shorter). */}
             <table className="log">
               <tbody>
