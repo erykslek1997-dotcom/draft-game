@@ -331,7 +331,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
       were the better team. Curry did what he could: …”). Score by quarter pod wynikiem w aside.
 - [ ] Procenty przy kilku próbach („—” zamiast 3P% 50.0 przy 2 próbach).
 - [ ] Koniec gry: wyraźne „New draft” i „Main menu” (dziś tylko mały link „← Menu”).
-- [ ] Przerwa miesięczna: bez kolumny ruchu przy pierwszej przerwie; twoi gracze w MVP ladder na
+- [x] Przerwa miesięczna: bez kolumny ruchu przy pierwszej przerwie; twoi gracze w MVP ladder na
       kremowo; remis „You and the Raccoons had the best month”.
 - [ ] **Daily Draw Five — błąd Jokera:** legenda droższa jako Joker niż face up (Magic 14.4 vs
       14.3). Legenda = wysoki TAL (≈70+ / górne 10% pozycji, nie 6+ All-Star — Sharman ma TAL 56)
@@ -339,22 +339,22 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
       Okno „Jackpot” z pełnym tłem.
 
 **B. Więcej czasu** (logika / przebudowa na istniejących elementach)
-- [ ] Loteria: bęben zostaje 1,5–2 s z kulą, potem wynik wchodzi powoli; dalej „Start the draft”.
+- [x] Loteria: bęben zostaje 1,5–2 s z kulą, potem wynik wchodzi powoli; dalej „Start the draft”.
 - [ ] Duże ekrany: ramka szersza niż 1360 px i większa skala (1366 / 1920 / 2560).
-- [ ] Aside przyklejony (sticky) na wszystkich ekranach, akcje pod treścią.
-- [ ] Rotacja: widoczny uchwyt suwaka na styku (gałka ‖, pole ~24 px, minuty przy przeciąganiu).
+- [x] Aside przyklejony (sticky) na wszystkich ekranach, akcje pod treścią.
+- [x] Rotacja: widoczny uchwyt suwaka na styku (gałka ‖, pole ~24 px, minuty przy przeciąganiu).
 - [ ] Final standings → rywal: gdzie lepszy, gdzie ty lepszy, „All metrics ▾” (wszystkie wejścia,
       różnica ze znakiem); blok na całą szerokość / atak | obrona.
-- [ ] Wyniki: The room zwijany (4–5 wypowiedzi + „Read the rest”), kolumny równe; „More”:
+- [x] Wyniki: The room zwijany (4–5 wypowiedzi + „Read the rest”), kolumny równe; „More”:
       Title structure do krótszej kolumny, „Size vs. position” bez mikropasków.
-- [ ] Sezon „Tonight”: domyślnie tylko twój mecz, reszta zwinięta, przełącznik Your / All games.
+- [x] Sezon „Tonight”: domyślnie tylko twój mecz, reszta zwinięta, przełącznik Your / All games.
 - [ ] Przerwa miesięczna: MVP ladder do prawej kolumny, „Your month” w aside.
-- [ ] Statystyki w trakcie symulacji sezonu (Standings / Stats / Leaders „through <data>”, pauza);
+- [x] Statystyki w trakcie symulacji sezonu (Standings / Stats / Leaders „through <data>”, pauza);
       silnik: sumy po każdej nocy zamiast tylko na koniec miesiąca.
-- [ ] Statystyki play-offów w trakcie (Regular season / Playoffs „so far”, bez spoilerów).
+- [x] Statystyki play-offów w trakcie (Regular season / Playoffs „so far”, bez spoilerów).
 - [ ] Klikalne twarze i karty graczy wszędzie → okno gracza (w sezonie ze statystykami sezonu).
-- [ ] Mecz na żywo: przywrócić „Key moments” (ostatnie 6 min, przed meczem i w trakcie) i ⅛.
-- [ ] Box score: piątka, linia „Bench”, ławka po minutach, suma; jeden znacznik „na boisku”.
+- [x] Mecz na żywo: przywrócić „Key moments” (ostatnie 6 min, przed meczem i w trakcie) i ⅛.
+- [x] Box score: piątka, linia „Bench”, ławka po minutach, suma; jeden znacznik „na boisku”.
 - [ ] Draw Five: animacja rozdania / wyboru / tury AI w jednym języku; AI dostaje to samo
       rozdanie i tempo co ty (dziś cała tura AI 2,6 s), pauza „myśli”, jedna stała tempa.
 - [ ] Mini = All-Time: wspólny ekran draftu (lista graczy zawsze otwarta, Big Board, Latest picks

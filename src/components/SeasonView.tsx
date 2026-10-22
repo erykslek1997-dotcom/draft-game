@@ -9,6 +9,8 @@ import {
   playLivePlayoffGame,
   playLiveSeasonGame,
   gameScorePerGame,
+  playoffLinesShown,
+  seasonLinesThrough,
   type LivePlayInGame,
   type LivePlayoffResult,
   type LiveSeasonGame,
@@ -29,7 +31,7 @@ import LiveGameNight from '../night/LiveGameNight';
 import { LeagueMark } from '../night/league';
 import { Actions, Btn, Dialog, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, cx } from '../night/ui';
 import { ShareNight, type PosterData } from '../night/Share';
-import { AllStarBreak, AllStarDraft, CalendarDay, MonthBreak, SeasonExtras, dateLabel, standingsAt, teamGames } from './SeasonCalendar';
+import { AllStarBreak, AllStarDraft, CalendarDay, MonthBreak, SeasonExtras, dateLabel, monthOf, standingsAt, teamGames } from './SeasonCalendar';
 
 /**
  * 2026-10-08, the user (season simulation): the season after a draft. First the regular season —
@@ -46,6 +48,12 @@ export type SeasonState =
 
 /** How much of the playoffs is out: rounds before `round` in full, `game` games of that round. */
 type Reveal = { kind: 'none' } | { kind: 'live'; round: number; game: number } | { kind: 'all' };
+/** How many games of a series this moment of the playoffs has shown. */
+const shownBy = (reveal: Reveal, last: number) => (round: number, s: LivePlayoffSeries) => {
+  if (reveal.kind === 'all' || (reveal.kind === 'live' && reveal.round > last)) return s.games.length;
+  if (reveal.kind !== 'live') return 0;
+  return round < reveal.round ? s.games.length : round > reveal.round ? 0 : Math.min(s.games.length, reveal.game);
+};
 type Tab = 'overview' | 'standings' | 'stats' | 'awards';
 type Chapter = 'calendar' | 'season' | 'playoffs';
 type Watching = { round: number; series: number; game: number };
@@ -368,6 +376,11 @@ function SeasonBody({
   const rank = season.standings.findIndex((r) => r.teamId === you.id) + 1;
   const record = season.standings[rank - 1];
   const finalsDone = playoffs !== null && (reveal.kind === 'all' || (reveal.kind === 'live' && reveal.round >= playoffs.rounds.length));
+  // The playoffs so far (playtest 2026-10-22): the games shown, nothing still to come.
+  const playoffsSoFar = useMemo(
+    () => (playoffs && !finalsDone && reveal.kind === 'live' ? { ...playoffs, players: playoffLinesShown(playoffs, shownBy(reveal, playoffs.rounds.length - 1)) } : null),
+    [playoffs, finalsDone, reveal],
+  );
   const [card, setCard] = useState<SeasonPlayerLine | null>(null);
   const [sharing, setSharing] = useState(false);
   const startPlayoffs = () => {
@@ -581,7 +594,7 @@ function SeasonBody({
   let main: ReactNode;
   if (tab === 'overview') main = <Overview season={season} playoffs={playoffs} you={you} rank={rank} byId={byId} views={views} mark={mark} report={report} spans={spans} />;
   else if (tab === 'standings') main = <FullStandings season={season} byId={byId} youId={you.id} views={views} mark={mark} />;
-  else if (tab === 'stats') main = <Stats teams={teams} season={season} playoffs={finalsDone ? playoffs : null} youId={you.id} codes={codes} />;
+  else if (tab === 'stats') main = <Stats key={playoffsSoFar ? 'so-far' : 'final'} teams={teams} season={season} playoffs={finalsDone ? playoffs : playoffsSoFar} youId={you.id} codes={codes} playoffsSoFar={playoffsSoFar !== null} />;
   else main = <Awards season={season} playoffs={finalsDone ? playoffs : null} byId={byId} youId={you.id} codes={codes} />;
   return (
     <PlayerCardContext.Provider value={setCard}>
@@ -845,9 +858,9 @@ const COLUMNS: { key: SortKey; label: string; title?: string; basic?: true; valu
 const ROWS_SHOWN = 20;
 
 /** The table of everyone's season (`.box.sbox`) with your team first in the team list. */
-function Stats({ teams, season, playoffs, youId, codes }: { teams: Team[]; season: LiveSeasonResult; playoffs: LivePlayoffResult | null; youId: string; codes: Map<string, string> }) {
+function Stats({ teams, season, playoffs, youId, codes, through, playoffsSoFar }: { teams: Team[]; season: LiveSeasonResult; playoffs: LivePlayoffResult | null; youId: string; codes: Map<string, string>; through?: { label: string; share: number }; playoffsSoFar?: boolean }) {
   const [view, setView] = useState<'leaders' | 'players'>('leaders');
-  const [phase, setPhase] = useState<'season' | 'playoffs'>('season');
+  const [phase, setPhase] = useState<'season' | 'playoffs'>(playoffsSoFar ? 'playoffs' : 'season');
   const [teamId, setTeamId] = useState<string>('all');
   const [pos, setPos] = useState<'all' | 'G' | 'F' | 'C'>('all');
   const [minGames, setMinGames] = useState(0);
@@ -856,7 +869,8 @@ function Stats({ teams, season, playoffs, youId, codes }: { teams: Team[]; seaso
   const [moreStats, setMoreStats] = useState(false);
   const playoffPhase = phase === 'playoffs' && playoffs !== null;
   const pool = playoffPhase && playoffs ? playoffs.players : season.players;
-  const scale = playoffPhase ? 0.1 : 1;
+  // Part of a season (the stats so far): the bars for a leader scale with the games played.
+  const scale = playoffPhase ? (playoffsSoFar ? 0.03 : 0.1) : (through?.share ?? 1);
   const posOf = (l: SeasonPlayerLine) => (l.span.primaryPosition === 'PG' || l.span.primaryPosition === 'SG' ? 'G' : l.span.primaryPosition === 'C' ? 'C' : 'F');
   const col = COLUMNS.find((c) => c.key === sort) ?? COLUMNS[2];
   const rows = pool
@@ -865,7 +879,7 @@ function Stats({ teams, season, playoffs, youId, codes }: { teams: Team[]; seaso
   const shown = showAll ? rows : rows.slice(0, ROWS_SHOWN);
   const columns = moreStats ? COLUMNS : COLUMNS.filter((c) => c.basic);
   // Leader boards: regulars only, and a percentage needs real volume behind it.
-  const regulars = pool.filter((l) => l.games >= (playoffPhase ? 4 : AWARD_MIN_GAMES));
+  const regulars = pool.filter((l) => l.games >= (playoffPhase ? (playoffsSoFar ? 1 : 4) : Math.max(1, Math.round(AWARD_MIN_GAMES * scale))));
   const ordered = [...teams].sort((a, b) => (a.id === youId ? -1 : b.id === youId ? 1 : a.name.localeCompare(b.name)));
   const boards: [string, SeasonPlayerLine[], (l: SeasonPlayerLine) => number, (x: number) => string][] = [
     ['Points', regulars, (l) => per(l, 'pts'), f1],
@@ -880,7 +894,7 @@ function Stats({ teams, season, playoffs, youId, codes }: { teams: Team[]; seaso
   ];
   return (
     <>
-      <Prompt eb={playoffPhase ? 'Playoffs' : 'Regular season'} title="Who ran the league">
+      <Prompt eb={playoffPhase ? (playoffsSoFar ? 'Playoffs · so far' : 'Playoffs') : through ? `Regular season · through ${through.label}` : 'Regular season'} title={through ? 'The league so far' : 'Who ran the league'}>
         Per game. Tap a player for his season card.
       </Prompt>
       <div className="ptabs" role="tablist">
@@ -928,7 +942,9 @@ function Stats({ teams, season, playoffs, youId, codes }: { teams: Team[]; seaso
           )}
         </span>
       </div>
-      {view === 'leaders' ? (
+      {pool.length === 0 ? (
+        <p className="empty-note">No playoff games played yet. The numbers come in as the games are played.</p>
+      ) : view === 'leaders' ? (
         <div className="ldr-grid">
           {boards.map(([title, lines, value, fmt]) => (
             <section key={title} className="ldr">
@@ -1221,7 +1237,7 @@ function PlayoffsChapter({
   const yourRuns = rounds.map((r, round) => ({ round, index: r.findIndex(isYours) })).filter((x) => x.index >= 0);
   const live = reveal.kind === 'live' && reveal.round <= last ? reveal : null;
   const all = reveal.kind === 'all' || (reveal.kind === 'live' && reveal.round > last);
-  const shown = (round: number, s: LivePlayoffSeries) => (all ? s.games.length : !live ? 0 : round < live.round ? s.games.length : round > live.round ? 0 : Math.min(s.games.length, live.game));
+  const shown = shownBy(reveal, last);
   const run = live ? yourRuns.find((r) => r.round === live.round) : undefined;
   const yourSeries = run ? rounds[run.round][run.index] : null;
   const seriesOver = yourSeries !== null && live !== null && live.game >= yourSeries.games.length;
@@ -1916,15 +1932,18 @@ function CalendarChapter({
   const [running, setRunning] = useState(true);
   const [speed, setSpeed] = useState<(typeof CAL_SPEEDS)[number]>(1);
   const [watching, setWatching] = useState<{ kind: 'game'; game: LiveSeasonGame } | { kind: 'asg' } | null>(null);
+  // The stats so far (playtest 2026-10-22): the season pauses while they're open.
+  const [statsOpen, setStatsOpen] = useState(false);
   const pending = season.snapshots.find((s) => s.afterRound === day - 1 && !seen.includes(breakKey(s)) && (!noBreaks || s.kind === 'asg'));
   useEffect(() => {
-    if (!running || pending || watching || day >= total) return;
+    if (!running || pending || watching || statsOpen || day >= total) return;
     const t = window.setTimeout(() => setDay((d) => Math.min(total, d + 1)), 1000 / speed);
     return () => window.clearTimeout(t);
-  }, [running, pending, watching, day, total, speed, setDay]);
+  }, [running, pending, watching, statsOpen, day, total, speed, setDay]);
   useEffect(() => {
     window.scrollTo({ top: 0 });
-  }, [pending, watching]);
+  }, [pending, watching, statsOpen]);
+  const statsSoFar = useMemo(() => (statsOpen ? { ...season, players: seasonLinesThrough(season, day) } : null), [statsOpen, season, day]);
 
   const mine = teamGames(season, you.id);
   const played = mine.filter((x) => x.game.round < day);
@@ -2008,6 +2027,19 @@ function CalendarChapter({
     )
   ) : null;
   const ended = day >= total && !pending;
+  // Your month (playtest 2026-10-22): the month in review at a break, else the month so far.
+  const monthSnaps = season.snapshots.filter((s) => s.kind === 'month');
+  const reviewing = pending?.kind === 'month' ? pending : null;
+  const monthFrom = reviewing
+    ? (monthSnaps.filter((s) => s.afterRound < reviewing.afterRound).pop()?.afterRound ?? -1) + 1
+    : season.dates.findIndex((d) => d.slice(0, 7) === iso.slice(0, 7));
+  const monthTo = reviewing ? reviewing.afterRound + 1 : day;
+  const monthMine = mine.filter((x) => x.game.round >= monthFrom && x.game.round < monthTo);
+  const monthTop = monthMine.length
+    ? seasonLinesThrough(season, monthTo, monthFrom)
+        .filter((l) => l.teamId === you.id && l.games >= monthMine.length / 2)
+        .sort((a, b) => b.totals.pts / b.games - a.totals.pts / a.games)[0]
+    : undefined;
   const aside = (
     <>
       <Mast title="Your Season" sub={pending ? (pending.kind === 'asg' ? `All-Star break · game ${played.length} of ${mine.length}` : `${pending.label} in review · game ${played.length} of ${mine.length}`) : day === 0 ? 'Opening night' : `${dateLabel(iso)} · game ${played.length} of ${mine.length}`} />
@@ -2036,8 +2068,16 @@ function CalendarChapter({
             ))}
           </div>
           <div className="stackb" style={{ marginTop: 14 }}>
-            <Btn kind="line" onClick={() => setRunning((r) => !r)}>
-              {running ? 'Pause' : 'Play'}
+            <Btn
+              kind="line"
+              onClick={() => {
+                if (statsOpen) {
+                  setStatsOpen(false);
+                  setRunning(true);
+                } else setRunning((r) => !r);
+              }}
+            >
+              {running && !statsOpen ? 'Pause' : 'Play'}
             </Btn>
             <Btn kind="line" onClick={() => setDay(nextBreak ? nextBreak.afterRound + 1 : total)}>
               {nextBreak ? (nextBreak.kind === 'asg' ? 'Skip to the All-Star break' : 'Skip to the month break') : 'Skip to the end'}
@@ -2045,18 +2085,41 @@ function CalendarChapter({
           </div>
         </section>
       )}
-      {!pending && next.length > 0 && (
+      {(monthMine.length > 0 || next.length > 0) && (
         <section>
-          <H3>Next for the {mascot(you)}</H3>
-          {next.map((x) => (
-            <div key={x.game.round} className="kv">
-              <span>{dateLabel(season.dates[x.game.round])}</span>
-              <b>vs {mascot(byId.get(x.opp))}</b>
+          <H3 note={reviewing ? reviewing.label : monthOf(iso)}>Your month</H3>
+          {monthMine.length > 0 && (
+            <div className="kv">
+              <span>Record</span>
+              <b>
+                {monthMine.filter((x) => x.won).length}–{monthMine.filter((x) => !x.won).length}
+              </b>
             </div>
-          ))}
+          )}
+          {monthTop && (
+            <div className="kv">
+              <span>Top scorer</span>
+              <b>
+                {monthTop.span.playerName.split(' ').slice(-1)[0]} {(monthTop.totals.pts / monthTop.games).toFixed(1)}
+              </b>
+            </div>
+          )}
+          {next[0] && (
+            <div className="kv">
+              <span>Next</span>
+              <b>
+                {dateLabel(season.dates[next[0].game.round])} · vs {mascot(byId.get(next[0].opp))}
+              </b>
+            </div>
+          )}
         </section>
       )}
       <Actions links={{ onMenu: onClose }}>
+        {day > 0 && (
+          <Btn kind="line" onClick={() => setStatsOpen((o) => !o)}>
+            {statsOpen ? 'Back to the calendar' : 'Stats so far'}
+          </Btn>
+        )}
         {!pending && next[0] && (
           <Btn kind="line" onClick={() => setWatching({ kind: 'game', game: next[0].game })}>
             Watch the next game
@@ -2086,6 +2149,7 @@ function CalendarChapter({
       </Prompt>
     );
   else main = <CalendarDay season={season} day={day} you={you} byId={byId} codes={codes} spans={spans} />;
+  if (statsSoFar) main = <Stats teams={teams} season={statsSoFar} playoffs={null} youId={you.id} codes={codes} through={{ label: dateLabel(iso), share: day / total }} />;
   return (
     <NightGame aside={aside} overlay={overlay}>
       {main}

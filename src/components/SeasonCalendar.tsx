@@ -25,7 +25,7 @@ const COUNT_WORDS = ['', '', 'second', 'third', 'fourth', 'fifth', 'sixth', 'sev
 export function dateLabel(iso: string, long = false): string {
   return new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { weekday: long ? 'long' : 'short', month: long ? 'long' : 'short', day: 'numeric', timeZone: 'UTC' });
 }
-const monthOf = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' });
+export const monthOf = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' });
 
 export interface StandRow {
   teamId: string;
@@ -543,9 +543,9 @@ export function MonthBreak({ season, snap, you, byId, codes, spans }: { season: 
               <GameLine span={spans.get(nightTop.spanId)} line={nightTop.line} ctx={gameContext(season, night.game, byId)} />
             </section>
           )}
+          <MvpLadder season={season} snap={snap} prev={prev} spans={spans} codes={codes} youId={you.id} count={5} head="MVP ladder" note={prev ? `top five · move since ${prev.label}` : 'top five'} />
         </div>
       </div>
-      <MvpLadder season={season} snap={snap} prev={prev} spans={spans} codes={codes} youId={you.id} count={5} head="MVP ladder" note={prev ? `top five · move since ${prev.label}` : 'top five'} />
     </>
   );
 }
