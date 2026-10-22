@@ -355,7 +355,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 - [x] Klikalne twarze i karty graczy wszędzie → okno gracza (w sezonie ze statystykami sezonu).
 - [x] Mecz na żywo: przywrócić „Key moments” (ostatnie 6 min, przed meczem i w trakcie) i ⅛.
 - [x] Box score: piątka, linia „Bench”, ławka po minutach, suma; jeden znacznik „na boisku”.
-- [ ] Draw Five: animacja rozdania / wyboru / tury AI w jednym języku; AI dostaje to samo
+- [x] Draw Five: animacja rozdania / wyboru / tury AI w jednym języku; AI dostaje to samo
       rozdanie i tempo co ty (dziś cała tura AI 2,6 s), pauza „myśli”, jedna stała tempa.
 - [ ] Mini = All-Time: wspólny ekran draftu (lista graczy zawsze otwarta, Big Board, Latest picks
       w aside), ten sam board z twarzami (BoardGrid), te same wyniki i karty piątki; „Caps left”.
