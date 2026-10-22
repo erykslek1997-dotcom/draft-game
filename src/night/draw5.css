@@ -1,0 +1,65 @@
+/* Night edition: Draw Five only (mockups index.html). */
+.nt {
+/* pre-game: odds and the two fives face to face */
+.odds { display: flex; height: 8px; margin: 4px 0 6px; }
+.odds i { background: var(--ink); } .odds u { background: var(--ink4); }
+.odds-l { display: flex; justify-content: space-between; font: 600 14px var(--num); color: var(--ink2); }
+.odds-l b { color: var(--ink); font-weight: 600; }
+.vs5 { width: 100%; border-collapse: collapse; }
+.vs5 td { padding: 10px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.vs5 td.ps { width: 56px; text-align: center; font: 800 18px var(--cond); color: var(--ink3); }
+.vs5 .pl { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.vs5 td.r .pl { flex-direction: row-reverse; text-align: right; }
+.vs5 img, .vs5 .ini { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--surf2); flex: none; display: grid; place-items: center; font: 700 14px var(--cond); color: var(--ink3); }
+.vs5 b { display: block; font: 700 18px/1.1 var(--cond); color: var(--ink); }
+.vs5 small { display: block; margin-top: 2px; font: 500 12px var(--num); color: var(--ink3); }
+.vs5 td.r b { color: var(--ink2); }
+.vs5-h { display: flex; justify-content: space-between; font: 800 20px var(--cond); text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 2px; }
+.vs5-h span:last-child { color: var(--ink2); }
+/* Joker reveal: the card turns over in the middle of the table */
+.jr { position: fixed; z-index: 6; left: 50%; top: 50px; transform: translateX(-50%); width: min(380px, calc(100% - 32px)); text-align: center; }
+.jr .card { width: 220px; margin: 0 auto; box-shadow: 0 0 0 3px var(--gold), 0 24px 60px rgba(0, 0, 0, .6); }
+.jr.scrub .card { box-shadow: 0 0 0 3px var(--red), 0 24px 60px rgba(0, 0, 0, .6); }
+.card .top.jk { background: var(--gold); color: var(--cink); }
+.jr h2 { margin: 22px 0 4px; font: 800 64px/0.9 var(--cond); text-transform: uppercase; color: var(--gold); }
+.jr.scrub h2 { color: var(--red); }
+.jr p { margin: 0 0 18px; font-size: 16px; line-height: 1.5; font-style: italic; color: var(--ink2); }
+.jr p b { font-style: normal; color: var(--ink); }
+.jr-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.9); z-index: 5; }
+@media (max-width: 600px) { .vs5 b { font-size: 15px; } .vs5 img, .vs5 .ini { width: 36px; height: 36px; } .vs5 .pl { gap: 8px; } .vs5 td.ps { width: 36px; } .vs5 .fn { display: none; } .vs5 .yy { display: none; } .vs5 .pp { white-space: nowrap; } .jr h2 { font-size: 52px; } .jr { top: 30px; } }
+}
+
+/* React glue for Draw Five */
+.nt {
+  .hand-c { display: flex; min-width: 0; }
+  .hand-c > .card { flex: 1; }
+  .hand .card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .hand-c:hover > button.card:not(:disabled):not(.dim), .hand button.card:not(:disabled):not(.dim):focus-visible { box-shadow: 0 0 0 2px var(--red); transform: translateY(-6px); outline: 0; }
+  .card.joker:disabled { opacity: 0.35; }
+  .dealt { position: relative; display: flex; min-width: 0; }
+  .dealt > .card { flex: 1; }
+  .fly-back { position: absolute; inset: 0; border-radius: 3px; border: 1.5px solid var(--ink); background: repeating-linear-gradient(45deg, #121418 0 6px, #17191E 6px 12px); opacity: 0; pointer-events: none; }
+  .deal > div { display: grid; place-items: center; }
+  .ai-hand { width: 100%; text-align: inherit; cursor: pointer; }
+  .ai-c { display: flex; min-width: 0; animation: ai-in 0.4s both; animation-delay: calc(var(--i) * 140ms); }
+  .ai-c > .card { flex: 1; }
+  .ai-c .card.dim { animation: ai-dim 0.4s both; animation-delay: 1.1s; opacity: 1; }
+  .ai-c .card.ai-took { animation: ai-took 0.4s both; animation-delay: 1.1s; }
+  .ai-c .took { animation: ai-tag 0.3s both; animation-delay: 1.2s; }
+  
+  
+  
+  
+  .film p i.dn { color: var(--red); }
+  .film p i.nt-q { color: var(--ink3); }
+  .lk-inline { color: var(--ink2); font-size: 14px; text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
+  .slot.filled .sb .capi { width: 0.95em; height: 0.95em; }
+}
+@media (prefers-reduced-motion: reduce) { .nt .ai-c, .nt .ai-c .card, .nt .ai-c .took { animation-duration: 1ms; animation-delay: 0ms; } }
+
+/* keyframes cannot nest inside .nt */
+@keyframes ai-in { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+@keyframes ai-dim { to { opacity: 0.35; } }
+@keyframes ai-took { from { box-shadow: none; transform: none; } to { box-shadow: 0 0 0 2px var(--red); transform: translateY(-6px); } }
+@keyframes ai-tag { from { opacity: 0; } to { opacity: 1; } }
+.nt .mini span.s { white-space: nowrap; }

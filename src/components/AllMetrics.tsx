@@ -1,15 +1,10 @@
 import type { FitScoreResult } from '../engine/fit';
 import type { TeamMetricValues } from '../engine/teamMetrics';
 import type { DefensiveHuntabilityResult } from '../engine/defensiveHuntability';
-import { compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
-import { TeamTile } from './TeamBadge';
+import type { HistoricalCompMatch } from '../engine/historicalComps';
+import { H3 } from '../night/ui';
+import { MetricTable } from './MetricTable';
 import { archetypeDisplayName } from '../engine/championshipArchetype';
-
-/** Same red→green judgment scale as ResultsScreen's metric bars. */
-function qualityColor(v: number): string {
-  const t = Math.max(0, Math.min(100, v)) / 100;
-  return `hsl(${2 + t * 146} ${42 + Math.abs(t - 0.5) * 34}% ${30 + t * 12}%)`;
-}
 
 interface MetricDef {
   key: string;
@@ -45,26 +40,6 @@ function median(values: number[]): number {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-const TOP_RANKS = 4;
-
-function MetricRow({ def, value, field, side }: { def: MetricDef; value: number; field: number[]; side: 'offense' | 'defense' }) {
-  const v = Math.max(0, Math.min(100, Math.round(value)));
-  const med = Math.max(0, Math.min(100, median(field)));
-  const rank = field.filter((x) => x > value).length + 1;
-  const rankClass = rank <= TOP_RANKS ? 'is-top' : rank > field.length - TOP_RANKS ? 'is-bottom' : '';
-  return (
-    <div className={`all-metrics-row is-${side}`} title={`${def.hint} Field median ${Math.round(med)}.`}>
-      <span className="all-metrics-label">{def.label}</span>
-      <span className="all-metrics-track">
-        <span className="all-metrics-fill" style={{ width: `${v}%`, background: qualityColor(v) }} />
-        <span className="all-metrics-median" style={{ left: `${med}%` }} />
-      </span>
-      <b>{v}</b>
-      <span className={`all-metrics-rank ${rankClass}`}>#{rank}</span>
-    </div>
-  );
-}
-
 interface AllMetricsProps {
   values: TeamMetricValues;
   field: TeamMetricValues[];
@@ -94,81 +69,77 @@ export default function AllMetrics({ values, field, offenseScore, defenseScore, 
     ['Rebounding', inputs.positionAdjustedReboundingPercentile],
   ];
   const [primaryStyle, ...otherStyles] = inputs.championshipArchetypes;
+  const rows = (defs: MetricDef[]) =>
+    defs.map((def) => {
+      const list = field.map((f) => f[def.key]);
+      return { label: def.label, value: values[def.key], median: median(list), rank: list.filter((x) => x > values[def.key]).length + 1, of: list.length, hint: def.hint };
+    });
   return (
-    <div className="all-metrics">
-      <div className="all-metrics-legend">
-        <span><span className="all-metrics-legend-tick" aria-hidden />field median</span>
-        <span>#n = rank of {field.length} teams</span>
+    <div className="allm">
+      <p className="empty-note">The tick on each bar is the field’s median; #n is the rank among {field.length} teams.</p>
+      <div className="split">
+        <section>
+          <H3 note={`score ${Math.round(offenseScore)}`}>Offense, every input</H3>
+          <MetricTable rows={rows(OFFENSE_METRICS)} />
+        </section>
+        <section>
+          <H3 note={`score ${Math.round(defenseScore)}`}>Defense, every input</H3>
+          <MetricTable rows={rows(DEFENSE_METRICS)} />
+        </section>
       </div>
-      <div className="all-metrics-grid">
-        <div className="all-metrics-col">
-          <span className="all-metrics-kicker is-offense">Offense details · {Math.round(offenseScore)}</span>
-          {OFFENSE_METRICS.map((def) => (
-            <MetricRow key={def.key} def={def} value={values[def.key]} field={field.map((f) => f[def.key])} side="offense" />
+      <div className="allm-three">
+        <section>
+          <H3>Who guards what</H3>
+          {guards.map(([job, name, score, confirmed]) => (
+            <div key={job} className="kv">
+              <span>
+                {job}
+                {!confirmed && <i className="est"> · estimated</i>}
+              </span>
+              <b>
+                {name ?? '—'} · {Math.round(score)}
+              </b>
+            </div>
           ))}
-        </div>
-        <div className="all-metrics-col">
-          <span className="all-metrics-kicker is-defense">Defense details · {Math.round(defenseScore)}</span>
-          {DEFENSE_METRICS.map((def) => (
-            <MetricRow key={def.key} def={def} value={values[def.key]} field={field.map((f) => f[def.key])} side="defense" />
-          ))}
-        </div>
-      </div>
-      <div className="all-metrics-grid is-three">
-        <div className="all-metrics-col">
-          <span className="all-metrics-kicker">Who guards what</span>
-          <div className="all-metrics-guards">
-            {guards.map(([job, name, score, confirmed]) => (
-              <div key={job}>
-                <span className="all-metrics-label">{job}</span>
-                <span>{name ?? '—'}{!confirmed && <span className="all-metrics-estimated">estimated</span>}</span>
-                <b>{Math.round(score)}</b>
-              </div>
-            ))}
-          </div>
           {huntability && huntability.offenders.length > 0 && (
-            <p className="all-metrics-note">
-              <span className="all-metrics-label">Weakest links: </span>
+            <p className="empty-note">
+              Weakest links:{' '}
               {huntability.offenders.slice(0, 3).map((o, i) => (
-                <span key={o.playerId}>{i > 0 && ' · '}<b>{o.playerName}</b> D-TAL {o.defensiveTalent} ({o.minutes} min)</span>
+                <span key={o.playerId}>
+                  {i > 0 && ' · '}
+                  <b>{o.playerName}</b> D-TAL {o.defensiveTalent} ({o.minutes} min)
+                </span>
               ))}
             </p>
           )}
-        </div>
-        <div className="all-metrics-col">
-          <span className="all-metrics-kicker">Size vs. position</span>
-          {body.map(([label, value]) => {
-            const v = Math.max(0, Math.min(100, Math.round(value)));
-            return (
-              <div key={label} className="all-metrics-row is-body">
-                <span className="all-metrics-label">{label}</span>
-                <span className="all-metrics-track"><span className="all-metrics-fill" style={{ width: `${v}%`, background: qualityColor(v) }} /></span>
-                <b>{v}</b>
-              </div>
-            );
-          })}
-          <span className="all-metrics-caption">Percentile against players at the same position.</span>
-        </div>
-        <div className="all-metrics-col">
-          <span className="all-metrics-kicker">Style</span>
+        </section>
+        <section>
+          <H3 note="percentile at his position">Size vs. position</H3>
+          <MetricTable rows={body.map(([label, value]) => ({ label, value }))} />
+        </section>
+        <section>
+          <H3>Style</H3>
           {primaryStyle && (
-            <div className="all-metrics-styles">
-              <span className="is-primary">{archetypeDisplayName(primaryStyle.archetype)} {primaryStyle.share}%</span>
+            <>
+              <div className="kv">
+                <span>{archetypeDisplayName(primaryStyle.archetype)}</span>
+                <b>{primaryStyle.share}%</b>
+              </div>
               {otherStyles.map((entry) => (
-                <span key={entry.archetype}>{archetypeDisplayName(entry.archetype)} {entry.share}%</span>
+                <div key={entry.archetype} className="kv">
+                  <span>{archetypeDisplayName(entry.archetype)}</span>
+                  <b>{entry.share}%</b>
+                </div>
               ))}
-            </div>
+            </>
           )}
           {comp && (
-            <span className="all-metrics-comp">
-              {compBadge(comp.comp) && <TeamTile {...compBadge(comp.comp)!} label={comp.comp.team} />}
-              <span>Plays like the <b>{comp.comp.team}</b> <span className="all-metrics-caption">{comp.match}% match</span></span>
-            </span>
+            <p className="empty-note">
+              Plays like the <b>{comp.comp.team}</b>, {comp.match}% match.
+            </p>
           )}
-          {inputs.archetypeReport && inputs.archetypeReport.strengths.length > 0 && (
-            <span className="all-metrics-caption">Strengths: {inputs.archetypeReport.strengths.join(' · ')}.</span>
-          )}
-        </div>
+          {inputs.archetypeReport && inputs.archetypeReport.strengths.length > 0 && <p className="empty-note">Strengths: {inputs.archetypeReport.strengths.join(' · ')}.</p>}
+        </section>
       </div>
     </div>
   );

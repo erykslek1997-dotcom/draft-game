@@ -32,7 +32,7 @@
 .jr.scrub h2 { color: var(--red); }
 .jr p { margin: 0 0 18px; font-size: 16px; line-height: 1.5; font-style: italic; color: var(--ink2); }
 .jr p b { font-style: normal; color: var(--ink); }
-.dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.9); z-index: 5; }
+.jr-dim { position: fixed; inset: 0; background: rgba(5, 6, 9, 0.9); z-index: 5; }
 @media (max-width: 600px) { .vs5 b { font-size: 15px; } .vs5 img, .vs5 .ini { width: 36px; height: 36px; } .vs5 .pl { gap: 8px; } .vs5 td.ps { width: 36px; } .vs5 .fn { display: none; } .vs5 .yy { display: none; } .vs5 .pp { white-space: nowrap; } .jr h2 { font-size: 52px; } .jr { top: 30px; } }
 </style>
 </head>
@@ -201,8 +201,8 @@ S.dailyPreGame = () => [
   prompt('Game of the day · tonight', "The '92 Bulls", '67–15 and a second straight title. Beat the five biggest names on the board and you usually beat them too.') +
   odds(46, 54, ['You', 'Bulls']) + `<section>${vs5(YOU5, BULLS, ['You', "'92 Bulls"])}</section>` + `<button class="btn go phone-only">Tip-off</button>`];
 const jokerCard = (k, price) => { const x = p(k); return `<div class="card" style="--team:${x.c}"><div class="top jk"><span>JOKER · ${x.t}</span><span class="cost">${price}</span></div><div class="pic">${face(x)}</div><div class="nm">${x.n}</div><div class="sb">${x.pos} · ${x.y}</div><div class="roles">${x.r}</div><div class="st">${['PTS', 'REB', 'AST'].map((t, i) => `<div><b>${x.st[i]}</b><span>${t}</span></div>`).join('')}</div></div>`; };
-S.jokerTook = () => { const [l, m] = S.dailyJoker(); return [l, m + `<div class="dim"></div><div class="jr">${jokerCard('olajuwon', 9.9)}<h2>Jackpot</h2><p>The C Joker was <b>Hakeem Olajuwon</b> 1993–95, a legend, for <b>9.9 caps</b>. He would cost 21.8 face up.</p><button class="btn go">Next pick · PG</button></div>`]; };
-S.jokerScrub = () => { const [l, m] = S.dailyJoker(); return [l, m + `<div class="dim"></div><div class="jr scrub">${jokerCard('przybilla', 9.9)}<h2>Ouch</h2><p>The C Joker was <b>Joel Przybilla</b> 2005–07, a scrub, for <b>9.9 caps</b>. The other four will have to carry him.</p><button class="btn go">Next pick · PG</button></div>`]; };
+S.jokerTook = () => { const [l, m] = S.dailyJoker(); return [l, m + `<div class="jr-dim"></div><div class="jr">${jokerCard('olajuwon', 9.9)}<h2>Jackpot</h2><p>The C Joker was <b>Hakeem Olajuwon</b> 1993–95, a legend, for <b>9.9 caps</b>. He would cost 21.8 face up.</p><button class="btn go">Next pick · PG</button></div>`]; };
+S.jokerScrub = () => { const [l, m] = S.dailyJoker(); return [l, m + `<div class="jr-dim"></div><div class="jr scrub">${jokerCard('przybilla', 9.9)}<h2>Ouch</h2><p>The C Joker was <b>Joel Przybilla</b> 2005–07, a scrub, for <b>9.9 caps</b>. The other four will have to carry him.</p><button class="btn go">Next pick · PG</button></div>`]; };
 S.results = () => [
   mast('Draw Five', 'Final · against the AI (Pro)') + tally('104', 'Final', '98', { midK: 'Q4 0:00' }) + `<p class="sub-note keep"><b>You win</b> by 6</p>` +
   `<section><h3>Your number</h3><div class="kv"><span>Your five</span><b>84</b></div><div class="kv"><span>Caps used</span><b>54.3 / 62</b></div><div class="kv"><span>Matches the best</span><b>2 of 5</b></div></section>` +

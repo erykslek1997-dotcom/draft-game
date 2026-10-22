@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { dailyDayLabel, type DailyDraftDay } from '../dailyDraftDay';
+import type { DailyDraftDay } from '../dailyDraftDay';
+import { Btn, CapI, Links, Mast, dayLabel, fmtCaps } from '../night/frame';
 import { peakDraftPool } from '../engine/peakDraftPool';
 import { effectiveTalent } from '../engine/grades';
 import { dailyRuleBlocks } from '../engine/dailyDraft';
@@ -22,6 +23,8 @@ export function DailyDraftDayScreen({
   bomb,
   onStart,
   onBack,
+  onHowTo,
+  onSettings,
 }: {
   day: DailyDraftDay;
   /** Your place in today's draft order. */
@@ -32,66 +35,73 @@ export function DailyDraftDayScreen({
   bomb?: PlayerSpan;
   onStart: () => void;
   onBack: () => void;
+  onHowTo?: () => void;
+  onSettings?: () => void;
 }) {
   // How many top players the rule takes from you (the star cap takes none outright).
   const topOut = useMemo(() => {
     if (day.rule.kind !== 'team' && day.rule.kind !== 'era') return null;
     return peakDraftPool.filter((s) => effectiveTalent(s) >= TOP_TAL && dailyRuleBlocks(day.rule, s, [])).length;
   }, [day.rule]);
-  const capText = Number.isInteger(day.cap) ? String(day.cap) : day.cap.toFixed(1);
   return (
-    <div className="dd-day at-stage-in">
-      <div className="at-calm-header">
-        <button type="button" className="at-calm-btn at-calm-btn--ghost" onClick={onBack}>
-          ← Menu
-        </button>
-        <h1 className="at-calm-title">{day.mode === 'bomb' ? 'Daily Bomb' : `Daily ${day.mode === 'mini' ? 'Mini' : 'All-Time'} Draft`}</h1>
-        <span className="rs-header-spacer" aria-hidden />
-      </div>
-      <p className="dd-date">{dailyDayLabel(day.day)}</p>
-      <h2 className="dd-title">{day.title}</h2>
-      <div className="dd-rules">
-        <div className="dd-rule">
-          <span className="dd-ic dd-ic--cap">{capText}</span>
-          <span className="dd-who">Every team</span>
-          <span className="dd-what">
-            {capText} caps for your {rosterSize === 5 ? 'five' : `${rosterSize} players`}
-          </span>
-          <span className="dd-why">The CPU teams draft under the same cap.</span>
-        </div>
-        {bomb && day.bomb && (
-          <div className="dd-rule is-today is-bomb">
-            <span className="dd-ic">💣</span>
-            <span className="dd-who">Only you</span>
-            <span className="dd-what">A hidden player joins you in round {day.bomb.round}</span>
-            <span className="dd-why">
-              His {bomb.fga.toFixed(1)} caps are set aside from your first pick. Who he is waits for the results; he plays at least{' '}
-              {BOMB_MIN_MINUTES} minutes.
-            </span>
+    <div className="nt">
+      <div className="game solo">
+        <main>
+          <div className="dday">
+            <Mast title={day.mode === 'bomb' ? 'Daily Bomb' : `Daily ${day.mode === 'mini' ? 'Mini' : 'All-Time'} Draft`} sub={`${dayLabel(day.day, true)} · one try, the same league for everyone`} />
+            <h2>{day.title}</h2>
+            <p className="lead">Every rule of today’s draft, before the lottery.</p>
+            <div className="drule">
+              <span className="ic cap">
+                <CapI />
+              </span>
+              <div>
+                <span className="who">Every team</span>
+                <b>
+                  {fmtCaps(day.cap)} caps for your {rosterSize === 5 ? 'five' : `${['', '', '', '', '', 'five', 'six', 'seven', 'eight', 'nine'][rosterSize] ?? rosterSize} players`}
+                </b>
+                <p>The CPU teams draft under the same cap.</p>
+              </div>
+            </div>
+            {bomb && day.bomb && (
+              <div className="drule only">
+                <span className="ic">?</span>
+                <div>
+                  <span className="who">Only you</span>
+                  <b>A hidden player joins you in round {day.bomb.round}</b>
+                  <p>
+                    His {fmtCaps(bomb.fga)} caps are set aside from your first pick. Who he is waits for the results; he plays at least {BOMB_MIN_MINUTES} minutes.
+                  </p>
+                </div>
+              </div>
+            )}
+            {day.rule.kind !== 'open' && (
+              <div className="drule only">
+                <span className="ic">{day.rule.kind === 'stars' ? '1★' : '⊘'}</span>
+                <div>
+                  <span className="who">Only you</span>
+                  <b>{day.ruleLine}</b>
+                  <p>
+                    The CPU can still take them.
+                    {topOut !== null && topOut > 0 && ` ${topOut} of the top players are out for you.`}
+                    {day.rule.kind === 'stars' && ' MVP, Greatest peak and GOAT count.'}
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="drule">
+              <span className="ic">#{slot}</span>
+              <div>
+                <span className="who">Everyone today</span>
+                <b>You pick {ordinal(slot)}</b>
+                <p>The same league and the same rivals for every player today. One try.</p>
+              </div>
+            </div>
+            <Btn onClick={onStart}>Start today’s draft</Btn>
+            <Links onMenu={onBack} onHowTo={onHowTo} onSettings={onSettings} />
           </div>
-        )}
-        {day.rule.kind !== 'open' && (
-          <div className="dd-rule is-today">
-            <span className="dd-ic">{day.rule.kind === 'stars' ? '1★' : '⊘'}</span>
-            <span className="dd-who">Only you</span>
-            <span className="dd-what">{day.ruleLine}</span>
-            <span className="dd-why">
-              The CPU can still take them.
-              {topOut !== null && topOut > 0 && ` ${topOut} of the top players are out for you.`}
-              {day.rule.kind === 'stars' && ' MVP, Greatest peak and GOAT count.'}
-            </span>
-          </div>
-        )}
-        <div className="dd-rule">
-          <span className="dd-ic">#{slot}</span>
-          <span className="dd-who">Everyone today</span>
-          <span className="dd-what">You pick {ordinal(slot)}</span>
-          <span className="dd-why">The same league and the same rivals for every player today. One try.</span>
-        </div>
+        </main>
       </div>
-      <button type="button" className="rs-primary dd-start" onClick={onStart}>
-        Start today's draft
-      </button>
     </div>
   );
 }

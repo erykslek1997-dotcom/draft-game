@@ -1,0 +1,10 @@
+/* Night edition: Mini only (mockups mini.html). */
+.nt {
+/* warnings during the pick: a printed notice, red mark for a problem, one action */
+.notice { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0 8px 14px; border-left: 3px solid var(--red); margin: 0 0 14px; }
+.notice > i { font: 800 18px/1 var(--cond); font-style: normal; color: var(--red); text-align: center; }
+.notice p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink2); }
+.notice p b { color: var(--ink); font-weight: 600; }
+.notice a { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; }
+@media (max-width: 600px) { .notice { grid-template-columns: 18px minmax(0, 1fr); } .notice a { grid-column: 2; } }
+}

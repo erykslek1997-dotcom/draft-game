@@ -23,7 +23,9 @@ import type { PlayerSpan } from '../data/schema';
 import type { Rotation, Team } from '../engine/types';
 import DraftBoard from './DraftBoard';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
-import DraftLottery from './DraftLottery';
+import { NightLottery } from '../night/league';
+import { teamCodes } from '../engine/teamNames';
+import { Btn, buzz } from '../night/frame';
 import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { ShareCardStarter } from './shareCardImage';
 import type { FeedbackEntry } from './FeedbackToggle';
@@ -369,6 +371,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   }, [draftState, phase, challenger, commissionerMode, daily]);
 
   function handlePick(playerId: string) {
+    buzz();
     setDraftState((s) => makePick(s, playerId));
   }
 
@@ -446,38 +449,49 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   return (
     <>
       {rosterImpossible && (
-        <div className="fail-banner">
-          <h2>FAIL</h2>
-          <p>The pool ran dry — there aren't enough undrafted players left for your team to ever reach 9.</p>
-          <button className="primary-btn" onClick={handleReset}>
-            Exit Draft
-          </button>
+        <div className="nt">
+          <div className="drawer-dim" aria-hidden />
+          <div className="dlg sm" role="alertdialog" aria-modal="true">
+            <div className="dlg-head">
+              <h2>The pool ran dry</h2>
+            </div>
+            <p className="lead">There aren’t enough undrafted players left for your team to ever reach nine.</p>
+            <Btn onClick={handleReset}>Back to menu</Btn>
+          </div>
         </div>
       )}
       {phase === 'day' && daily && (
-        <div className="at-shell at-calm">
-          <DailyDraftDayScreen
-            day={daily}
-            slot={draftState.teams.find((t) => t.isHuman)?.draftSlot ?? 1}
-            rosterSize={ROSTER_SIZE}
-            bomb={draftBombSpan(draftState) ?? undefined}
-            onStart={() => setPhase('lottery')}
-            onBack={handleReset}
-          />
-        </div>
+        <DailyDraftDayScreen
+          day={daily}
+          slot={draftState.teams.find((t) => t.isHuman)?.draftSlot ?? 1}
+          rosterSize={ROSTER_SIZE}
+          bomb={draftBombSpan(draftState) ?? undefined}
+          onStart={() => setPhase('lottery')}
+          onBack={handleReset}
+        />
       )}
       {phase === 'lottery' && (
-        <DraftLottery
+        <NightLottery
           teams={draftState.teams}
           rounds={ROUNDS}
+          title={daily ? 'Daily All-Time Draft' : 'All-Time Draft'}
+          sub={`${draftState.teams.length} teams · ${ROUNDS} rounds · a season after`}
+          codeOf={(t) => teamCodes(draftState.teams).get(t.id) ?? ''}
+          capLimit={draftCapLimit(draftState)}
+          howItWorks={[
+            ['Each round', '1 player'],
+            ['Order', 'Snake'],
+            ['Roster', `5 + ${BENCH_SLOT_COUNT} bench`],
+            ['Rivals', `${draftState.teams.length - 1} CPU GMs`],
+            ['Then', 'Season + playoffs'],
+          ]}
           onDone={() => setPhase('draft')}
-          howToPlay={howToPlay}
-          onExit={handleReset}
+          links={{ onMenu: handleReset }}
         />
       )}
       {phase === 'draft' && AUTO_FINISH_FOR_TESTING && !commissionerMode && (
-        <div className="game-controls at-test-bar">
-          <button className="secondary-btn auto-finish-btn" onClick={() => setAutoFinishing(true)} disabled={autoFinishing}>
+        <div className="nt nt-test">
+          <button type="button" className="lk-inline" onClick={() => setAutoFinishing(true)} disabled={autoFinishing}>
             {autoFinishing ? `Finishing… ${draftState.history.length} / ${TOTAL_PICKS}` : 'Auto-finish (testing)'}
           </button>
         </div>

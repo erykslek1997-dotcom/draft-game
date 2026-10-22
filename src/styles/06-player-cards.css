@@ -113,42 +113,11 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 860px) {
-  .at-draft-workspace { flex-direction: column; }
-  /* 2026-09-12, user-reported live ("your team powinien być między draft board a polem
-     graczy"): column layout stacks in DOM order by default, which put "Your Five" (this card)
-     dead last — below the whole player-card grid, the opposite of where it's useful. `order: -1`
-     moves it ahead of `.at-draft-main` (the search/filter row + player cards, still one visual
-     unit together) without touching DOM order or component structure, landing it exactly between
-     the round-by-round board above `.at-draft-workspace` and the player pool below. */
-  .at-draft-sidebar { width: 100%; position: static; order: -1; }
-}
-
 /* 2026-09-11, user-reported live ("modal zamiast obecnego rozwijania karty") — the magnifying
    glass on a player card opens this instead of expanding the card in place. Same overlay pattern
    `.share-modal-overlay`/`.share-modal-card` already established (ResultsScreen.tsx), just a
    wider card since this one holds a real stats table instead of a summary. */
-.player-peek-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  z-index: 1000;
-}
-.player-peek-card {
-  position: relative;
-  width: min(760px, 100%);
-  max-height: min(560px, 85vh);
-  overflow-y: auto;
-  background: var(--at-paper-raised);
-  border: 1px solid var(--at-line);
-  border-radius: 12px;
-  padding: 24px 24px 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-}
+
 .player-peek-close {
   position: absolute;
   top: 10px;
@@ -163,88 +132,21 @@
   line-height: 1;
 }
 .player-peek-close:hover { color: var(--at-ink); border-color: var(--at-ink-faint); }
-.player-peek-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding-right: 32px;
-}
-.player-peek-name {
-  font-size: 20px;
-  margin: 0;
-  color: var(--at-ink);
-}
-.player-peek-sub {
-  font-size: 12px;
-  color: var(--at-ink-faint);
-}
-.at-controls-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 
-.at-search-input {
-  font: inherit; font-size: 13px; padding: 8px 12px; border-radius: 999px;
-  border: 1px solid var(--at-line); background: var(--at-paper); color: var(--at-ink);
-  min-width: 200px;
-}
-.at-search-input::placeholder { color: var(--at-ink-faint); }
-.at-search-input:focus, .at-fga-input:focus { outline: 2px solid var(--at-accent); outline-offset: 1px; }
-
-.at-fga-filter { display: flex; align-items: center; gap: 8px; }
 /* 2026-09-12, user-reported live (screenshot): "FILTER SHOTS" at `--at-ink-faint` (the app's
    dimmest ink) + 10px read as barely-there next to the bold, full-size "0"/"30" pills right next
    to it — bumped to the same `--at-ink-soft` weight the search placeholder and other row labels
    use, and a touch larger. */
-.at-fga-filter label {
-  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-soft);
-}
+
 /* 2026-09-12, user-reported live, same screenshot ("ikony można zmniejszyć" — the min/max shot
    pills read as oversized icon-like badges next to the label they belong to): narrower and less
    padded, so they sit as a compact pair of numbers rather than competing for attention with the
    label naming them. */
-.at-fga-input {
-  width: 38px; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; text-align: center;
-  border-radius: 999px; border: 1px solid var(--at-line); background: var(--at-pill); color: var(--at-pill-ink);
-  padding: 4px 2px; font-weight: 700;
-}
-
-.at-filter-pill {
-  font: inherit; cursor: pointer; border: none;
-  background: var(--at-pill); color: var(--at-pill-ink); border-radius: 999px;
-  font-size: 13px; font-weight: 700; padding: 8px 16px;
-  opacity: 0.55; transition: opacity .15s, box-shadow .15s;
-}
-.at-filter-pill.at-active { opacity: 1; box-shadow: 0 0 0 2px var(--at-accent) inset; }
-.at-filter-pill:hover { opacity: 0.85; }
 
 /* ---- dot tags (Talent / 3PT / Durability / Playoffs — real named tier systems) ---- */
-.at-dot-wrap {
-  position: relative; display: inline-flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; cursor: default; border-radius: 50%;
-}
-.at-dot-wrap:focus-visible { outline: 2px solid var(--at-ink-soft); outline-offset: 2px; }
-.at-dot {
-  width: 12px; height: 12px; border-radius: 50%;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--at-ink) 14%, transparent);
-}
-.at-dot.at-t1 { background: var(--at-t1); } .at-dot.at-t2 { background: var(--at-t2); } .at-dot.at-t3 { background: var(--at-t3); }
-.at-dot.at-t4 { background: var(--at-t4); } .at-dot.at-t5 { background: var(--at-t5); } .at-dot.at-t6 { background: var(--at-t6); }
 
-.at-dot-wrap::after {
-  content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%;
-  transform: translate(-50%, 4px); background: var(--at-pill); color: var(--at-pill-ink);
-  font-size: 11px; font-weight: 600; letter-spacing: 0; white-space: nowrap;
-  padding: 8px 8px; border-radius: 8px; box-shadow: var(--at-shadow);
-  opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
-}
-.at-dot-wrap::before {
-  content: ''; position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translate(-50%, 4px);
-  border: 5px solid transparent; border-top-color: var(--at-pill);
-  opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 6;
-}
-.at-dot-wrap:hover::after, .at-dot-wrap:hover::before,
-.at-dot-wrap:focus-visible::after, .at-dot-wrap:focus-visible::before {
-  opacity: 1; transform: translate(-50%, 0);
-}
+  
+  
 
 /* ---- generic name tooltip (team names) — 2026-08-16, user's own ask: team names in the
    Overview grid and the Lottery reveal grid used to sit next to the chip unconditionally, eating
@@ -299,17 +201,6 @@
    to hide every judge metric on purpose (see that table's own header comment on the 2026-08-13
    "blind scouting" redesign). Same t1-t6 colour family as `.at-grade-badge`/`.at-dot` above, just
    sized for a whole tier NAME ("Greatest peak") instead of a single letter or a bare 12px dot. */
-.at-tag-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 4px 8px; border-radius: 999px; white-space: nowrap;
-  font-size: 11px; font-weight: 700; letter-spacing: 0;
-}
-.at-tag-badge.at-t1 { background: var(--at-t1); color: var(--at-t1-ink); }
-.at-tag-badge.at-t2 { background: var(--at-t2); color: var(--at-t2-ink); }
-.at-tag-badge.at-t3 { background: var(--at-t3); color: var(--at-t3-ink); }
-.at-tag-badge.at-t4 { background: var(--at-t4); color: var(--at-t4-ink); }
-.at-tag-badge.at-t5 { background: var(--at-t5); color: var(--at-t5-ink); }
-.at-tag-badge.at-t6 { background: var(--at-t6); color: var(--at-t6-ink); }
 
 /* 2026-09-30, the user's "wariant A": one player card in every mode — the team band across the
    top (split per team, widths by seasons, see TeamBand.tsx) and the face ringed in the team's

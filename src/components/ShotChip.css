@@ -81,53 +81,12 @@
 
 /* ---- component bars — shared by BestFive.tsx's own result screen and QuickFive.tsx's
    `QuickResults` (both score on the same 5-axis talent/offense/defense/spacing/fit shape). ---- */
-.bf-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.bf-bar-row {
-  display: grid;
-  grid-template-columns: 64px 1fr 34px;
-  align-items: center;
-  gap: 8px;
-}
-.bf-bar-label {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--at-ink-faint);
-}
-.bf-bar-track {
-  height: 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--at-ink) 10%, transparent);
-  overflow: hidden;
-}
-.bf-bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--at-accent);
-}
-.bf-bar-val {
-  font-size: 12px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  color: var(--at-ink-soft);
-}
+
 /* 2026-09-11, user-reported live: "pasek nie wypełnia się" — this bar DID fill, but at
    `--at-ink-faint` (already a low-contrast muted gray) on the track's own near-black background it
    read as empty in practice, not just "de-emphasized." A muted BLUE (not gray) keeps the "this one
    is diagnostic, not a scored axis" distinction (still visibly duller than the other bars' full
    `--at-accent`) while actually being visible against the dark track. */
-.bf-bar-row--context {
-  opacity: 0.78;
-}
-.bf-bar-row--context .bf-bar-fill {
-  background: color-mix(in srgb, var(--at-accent) 45%, var(--at-ink-faint));
-}
 
 /* ---- face ---- */
 .bf-face {

@@ -3,7 +3,7 @@ import type { PlayerSpan } from '../data/schema';
 import { headshotUrl } from '../data/headshots';
 import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { bombDescription } from './bombDescription';
-import { CapIcon } from './CapIcon';
+import { Btn, CapI, H3, fmtCaps } from '../night/frame';
 
 /**
  * 2026-10-16, the Bomb daily (mockup `docs/mockups/daily-drafts.html`, screens 4 and 5): the card
@@ -12,21 +12,25 @@ import { CapIcon } from './CapIcon';
  */
 export function BombLanding({ span, round, onContinue }: { span: PlayerSpan; round: number; onContinue: () => void }) {
   return (
-    <div className="mode-help-backdrop bomb-backdrop">
-      <div className="bomb-card at-stage-in" role="alertdialog" aria-modal="true" aria-label="The Bomb joins your team">
-        <span className="bomb-k">Round {round} · The Bomb</span>
-        <h2 className="bomb-h">Someone joins your team</h2>
-        <span className="bomb-sil" aria-hidden>
+    <div className="nt">
+      <div className="drawer-dim" aria-hidden />
+      <div className="modal bombm" role="alertdialog" aria-modal="true" aria-label="The Bomb joins your team">
+        <span className="eb">Round {round} · The Bomb</span>
+        <h2>Someone joins your team</h2>
+        <span className="sil" aria-hidden>
           ?
         </span>
-        <p className="bomb-desc">{bombDescription(span)}</p>
-        <p className="bomb-meta">
-          {span.primaryPosition} · <CapIcon /> {span.fga.toFixed(1)} caps · plays at least {BOMB_MIN_MINUTES} minutes
-        </p>
-        <p className="bomb-meta">Who he is waits for the results.</p>
-        <button type="button" className="rs-primary bomb-go" onClick={onContinue} autoFocus>
-          Continue the draft
-        </button>
+        <p className="bdesc">“{bombDescription(span)}”</p>
+        <div className="bmeta">
+          <span>{span.primaryPosition}</span>
+          <span>
+            <CapI />
+            {fmtCaps(span.fga)} caps
+          </span>
+          <span>plays {BOMB_MIN_MINUTES}+ min</span>
+        </div>
+        <p className="empty-note">Who he is waits for the results.</p>
+        <Btn onClick={onContinue}>Continue the draft</Btn>
       </div>
     </div>
   );
@@ -42,32 +46,37 @@ export function BombReveal({ span, gem, onNamed }: { span: PlayerSpan; gem: bool
     if (n === 2) onNamed();
   }
   return (
-    <section className="bomb-reveal" aria-label="The Bomb revealed">
-      <div className="bomb-reveal-head">
-        <span className="bomb-k">The Bomb</span>
-        {step < 2 && (
-          <button type="button" className="at-calm-btn bomb-reveal-next" onClick={next}>
-            {step === 0 ? 'Show his face' : 'Show his name'}
-          </button>
-        )}
-      </div>
-      <div className="bomb-reveal-steps">
-        <div className="bomb-rv">
-          <span className="bomb-rv-st">1 · Description</span>
-          <span className="bomb-sil bomb-sil--sm" aria-hidden>
+    <section className="breveal" aria-label="The Bomb revealed">
+      <H3 tone="gold" note={step < 2 ? 'tap to reveal' : gem ? 'a gem today' : 'a role player'}>
+        The Bomb
+      </H3>
+      <div className="br-steps">
+        <div className="br">
+          <span className="eb">1 · Description</span>
+          <span className="sil sm" aria-hidden>
             ?
           </span>
-          <span className="bomb-rv-txt">{bombDescription(span)}</span>
+          <p>{bombDescription(span)}</p>
+          {step === 0 && (
+            <Btn kind="line" onClick={next}>
+              Show his face
+            </Btn>
+          )}
         </div>
-        <div className={`bomb-rv${step >= 1 ? '' : ' is-hidden'}`}>
-          <span className="bomb-rv-st">2 · Face</span>
-          {step >= 1 && src ? <img className="bomb-rv-face" src={src} alt="" /> : <span className="bomb-sil bomb-sil--sm">?</span>}
-          <span className="bomb-rv-txt">{step >= 1 ? (gem ? 'A gem today.' : 'A role player.') : '…'}</span>
+        <div className={`br${step >= 1 ? '' : ' hidden'}`}>
+          <span className="eb">2 · Face</span>
+          {step >= 1 && src ? <img src={src} alt="" /> : <span className="sil sm">?</span>}
+          <p>{step >= 1 ? (gem ? 'A gem today.' : 'A role player.') : '…'}</p>
+          {step === 1 && (
+            <Btn kind="line" onClick={next}>
+              Show his name
+            </Btn>
+          )}
         </div>
-        <div className={`bomb-rv${step >= 2 ? ' is-named' : ' is-hidden'}`}>
-          <span className="bomb-rv-st">3 · Name</span>
-          {step >= 2 && src ? <img className="bomb-rv-face" src={src} alt="" /> : <span className="bomb-sil bomb-sil--sm">?</span>}
-          <span className="bomb-rv-txt">
+        <div className={`br${step >= 2 ? '' : ' hidden'}`}>
+          <span className="eb">3 · Name</span>
+          {step >= 2 && src ? <img src={src} alt="" /> : <span className="sil sm">?</span>}
+          <p>
             {step >= 2 ? (
               <>
                 <b>{span.playerName}</b> · {span.spanLabel}
@@ -75,7 +84,7 @@ export function BombReveal({ span, gem, onNamed }: { span: PlayerSpan; gem: bool
             ) : (
               '…'
             )}
-          </span>
+          </p>
         </div>
       </div>
     </section>

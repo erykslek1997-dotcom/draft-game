@@ -225,9 +225,13 @@ export function LeaveDraftDialog({ text, onStay, onLeave }: { text: string; onSt
 const RIM_PRESSURE_WARN_BELOW = 55;
 const RIM_PRESSURE_WARN_MIN_STARTERS = 3;
 
+/** Three or more starters and nobody who attacks the basket. */
+export function lowRimPressure(starters: PlayerSpan[]): boolean {
+  return starters.length >= RIM_PRESSURE_WARN_MIN_STARTERS && starters.length <= 5 && rimPressureTeam(starters) < RIM_PRESSURE_WARN_BELOW;
+}
+
 export function RimPressureNote({ starters }: { starters: PlayerSpan[] }) {
-  if (starters.length < RIM_PRESSURE_WARN_MIN_STARTERS || starters.length > 5) return null;
-  if (rimPressureTeam(starters) >= RIM_PRESSURE_WARN_BELOW) return null;
+  if (!lowRimPressure(starters)) return null;
   return (
     <span className="at-your-turn-need">
       ⚠ Low rim pressure — nobody in your five attacks the basket yet. Look for a slasher or a big who finishes inside.

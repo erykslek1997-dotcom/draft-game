@@ -32,15 +32,10 @@
 }
 /* Cards share one corner radius. The intro's mode cards stay square on purpose: their terminal
    corner brackets are drawn for sharp corners. */
-.at-shell .bf-slot,
-.at-shell .bf-pool-card {
-  border-radius: var(--at-radius-card);
-}
+
 /* Buttons in a flex action row line up on one baseline — the legacy .primary-btn/.secondary-btn
    margins (built for stacked, standalone buttons) pushed "New draft" lower than its neighbours. */
-.at-shell .bf-result-actions > button,
-.at-shell .results-hero-actions > button,
-.at-shell .at-lottery-actions > button {
+.at-shell .results-hero-actions > button{
   margin: 0;
 }
 
@@ -50,8 +45,7 @@
    otherwise — with the label stacked over the number so every tile has the same width. Applies to
    the hero's Team profile, each ranking card's chips and the share card. */
 .results-hero-scores-row,
-.team-result-body .subscores,
-.share-modal-scores {
+.team-result-body .subscores{
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
@@ -69,8 +63,7 @@
    phone. Five across at every width. */
 .results-hero-scores-row.results-hero-scores-row--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .results-hero-scores-row .score-chip,
-.team-result-body .subscores .score-chip,
-.share-modal-scores .score-chip {
+.team-result-body .subscores .score-chip{
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -81,8 +74,7 @@
   text-align: center;
 }
 .results-hero-scores-row .score-chip-label,
-.team-result-body .subscores .score-chip-label,
-.share-modal-scores .score-chip-label {
+.team-result-body .subscores .score-chip-label{
   font-size: 11px;
   letter-spacing: 0;
   white-space: nowrap;
@@ -91,14 +83,9 @@
   max-width: 100%;
 }
 .results-hero-scores-row .score-chip-value,
-.team-result-body .subscores .score-chip-value,
-.share-modal-scores .score-chip-value {
+.team-result-body .subscores .score-chip-value{
   font-size: 16px;
   line-height: 1;
-}
-.team-result-body .subscores .fga-spent {
-  grid-column: 1 / -1;
-  justify-self: start;
 }
 
 /* ---- 2026-09-25, NBA-era touches (user's ask: "obecny layout jest bardzo modern… można dodać
@@ -107,47 +94,10 @@
    - years of a span that ended before the 3-point line (1979-80) get a small vintage stamp;
    - stats that didn't exist yet (3P% before 1979-80, steals/blocks before 1973-74) show a dash
      with the reason on hover instead of a misleading 0.0. */
-.at-shell .at-vintage-years {
-  display: inline-block;
-  font-family: 'Bitter', Georgia, serif;
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0;
-  color: #3d2b1f;
-  background: #ece0c3;
-  border: 1px solid #a97c37;
-  border-radius: 2px;
-  padding: 0 4px;
-  transform: rotate(-2deg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-}
-.at-shell .era-na {
-  color: var(--at-ink-faint);
-  cursor: help;
-}
-.at-shell .bf-pool-season.at-vintage-years {
-  font-size: 14px;
-  padding: 1px 8px;
-  margin: 2px 0;
-}
-.at-lottery-archive {
-  max-width: 560px;
-  margin: 14px auto 20px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--at-ink-soft);
-}
-.at-lottery-archive .at-vintage-years {
-  margin-right: 6px;
-}
 
 /* 2026-09-25, user-reported live ("nierówne odległości"): the lottery's blocks were spaced by a
    mix of margins (18 / 32 / 24px between them). One 22px rhythm: reel → result → archive note →
    Play → How to play. */
-.at-lottery .at-lottery-result { margin: 22px 0 0; }
-.at-lottery .at-lottery-archive { margin: 22px auto 0; }
-.at-lottery .at-lottery-actions { margin-top: 22px; }
-.at-lottery .at-lottery-howtoplay { margin-top: 22px; }
 
 /* ---- 2026-09-25, era stamps (user's follow-up: "może coś z okresu Bird/Magic, Jordan era,
    deadball era"). A span's years get a small stamp styled after its era — see eraStamp() in
@@ -231,11 +181,7 @@
     0 2px 4px rgba(0, 0, 0, 0.45);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
-.at-shell .bf-pool-season.era-stamp {
-  font-size: 14px;
-  padding: 1px 8px;
-  margin: 2px 0;
-}
+
 /* "averages" rides inside the era stamp on player cards — one tag instead of stamp + loose word. */
 .at-shell .era-stamp .era-stamp-suffix {
   font-weight: 500;
@@ -247,20 +193,10 @@
      kept `align-items: flex-start`, so the player-card area sized itself to its content's one-line
      width (976px) instead of the screen. Stretch it in the stacked layout.
    - The Team table ran 482px off-screen; it now scrolls inside its own box like the other tables. */
-@media (max-width: 860px) {
-  .at-draft-workspace { align-items: stretch; }
-}
+
 /* Even vertical rhythm inside the blocks the audit flagged (gaps varied 0-34px between siblings):
    one gap per block, headings sit 8px above what they label. */
-.at-shell .at-draft-main {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.at-shell .at-draft-main > * {
-  margin-top: 0;
-  margin-bottom: 0;
-}
+
 .at-shell .rotation-builder {
   display: flex;
   flex-direction: column;
@@ -276,8 +212,7 @@
 }
 .at-shell .results-hero-bars-note { margin-bottom: 0; }
 .at-shell .results-hero-actions { margin-top: 16px; }
-.at-shell .matchup-matrix-section > h3 { margin: 0 0 12px; }
-.at-shell .matchup-matrix-legend { margin-bottom: 12px; }
+
 .at-shell .results-hero-scores,
 .at-shell .results-hero-rotation {
   display: flex;
@@ -289,24 +224,9 @@
   margin-top: 0;
   margin-bottom: 0;
 }
-.at-shell .results-hero-scores > .share-modal-face-group-label,
-.at-shell .results-hero-rotation > .share-modal-face-group-label {
-  margin-bottom: -8px;
-}
-.at-shell .qf-team-panel { margin-bottom: 14px; }
+
 /* On a phone the six position pills wrapped as 4 + 2; one even row of six instead. */
-@media (max-width: 560px) {
-  .at-shell .at-position-filters {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 8px;
-  }
-  .at-shell .at-position-filters .at-filter-pill {
-    padding-left: 0;
-    padding-right: 0;
-    text-align: center;
-  }
-}
+
 /* Pace & space era (2011-today), added on the user's follow-up ("i nowoczesni zawodnicy też
    powinni coś mieć"): today's broadcast graphics — dark glass, electric-blue edge glow. */
 .at-shell .era-stamp--modern {
@@ -324,21 +244,9 @@
 }
 
 /* 2026-09-25, scouting report: every career window on record + 3 full reports per draft. */
-.at-shell .player-peek-head { flex-wrap: wrap; }
-.at-shell .player-peek-scout { margin-left: auto; }
-.at-shell .player-peek-scout-btn { margin: 0; }
-.at-shell .player-peek-scouted {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--at-good, #7fd68a);
-}
+
 /* Room for every career window and, once scouted, seven more grade columns. */
-.at-shell .player-peek-card {
-  width: min(1180px, 100%);
-  max-height: min(720px, 88vh);
-}
+
 /* The close ✕ sits dead-centre in its circle (the glyph's own line box pushed it off-centre). */
 .at-shell .player-peek-close {
   display: grid;
@@ -352,49 +260,6 @@
    but its grade columns sat far to the right behind the table's sideways scroll, under the
    sticky Draft column. On a narrow screen each career window is now a small card — years and
    Draft on top, then every stat (and, once scouted, tier + grades) as labelled cells. */
-@media (max-width: 640px) {
-  .at-shell .player-peek-card .at-draft-span-table thead { display: none; }
-  .at-shell .player-peek-card .at-draft-span-table,
-  .at-shell .player-peek-card .at-draft-span-table tbody { display: block; width: 100%; }
-  .at-shell .player-peek-card .at-draft-span-table tr {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px 8px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--at-line);
-  }
-  .at-shell .player-peek-card .at-draft-span-table td {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    padding: 0;
-    border: 0;
-    position: static;
-    background: none;
-    text-align: left;
-    font-size: 13px;
-  }
-  .at-shell .player-peek-card .at-draft-span-table td[data-label]::before {
-    content: attr(data-label);
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--at-ink-faint);
-  }
-  .at-shell .player-peek-card .at-draft-span-table td.peek-years {
-    grid-column: 1 / 4;
-    order: -2;
-    justify-content: center;
-  }
-  .at-shell .player-peek-card .at-draft-span-table td.peek-action {
-    grid-column: 4 / 6;
-    order: -1;
-    align-items: flex-end;
-    justify-content: center;
-  }
-  .at-shell .player-peek-card .at-draft-span-table td.peek-tier { grid-column: span 2; }
-}
 
 /* 2026-09-25, user-reported live on a phone:
    - "duża przerwa": stacked on a phone, the hero's profile block kept its row-layout
@@ -421,60 +286,6 @@
 }
 
 /* Years picker (Team tab) — replaces the native <select>. */
-.at-shell .years-picker-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font: inherit;
-  font-size: 13px;
-  padding: 4px 8px;
-  border-radius: 8px;
-  border: 1px solid var(--at-line);
-  background: var(--at-pill);
-  color: var(--at-ink);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.at-shell .years-picker-btn:hover { border-color: var(--at-accent); }
-.at-shell .years-picker-cost {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-variant-numeric: tabular-nums;
-  color: var(--at-ink-soft);
-}
-.at-shell .years-picker-sheet { width: min(460px, 100%); }
-.at-shell .years-picker-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.at-shell .years-picker-option {
-  width: 100%;
-  display: grid;
-  grid-template-columns: auto 1fr auto 18px;
-  align-items: center;
-  gap: 12px;
-  font: inherit;
-  font-size: 13px;
-  text-align: left;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--at-line);
-  background: var(--at-paper);
-  color: var(--at-ink);
-  cursor: pointer;
-}
-.at-shell .years-picker-option:hover { border-color: var(--at-accent); }
-.at-shell .years-picker-option.is-selected {
-  border-color: var(--at-accent);
-  background: color-mix(in srgb, var(--at-accent) 12%, var(--at-paper));
-}
-.at-shell .years-picker-tier { color: var(--at-ink-soft); }
-.at-shell .years-picker-check { color: var(--at-accent); font-weight: 800; }
 
 /* Caps explainer — opened by clicking any caps icon. */
 .cap-icon[data-caps-info] { cursor: help; }
@@ -509,50 +320,17 @@
 .caps-info-foot { font-size: 12px; color: var(--at-ink-faint); }
 
 /* 2026-09-25, playtester feedback round. */
-.at-shell .at-board-fab {
-  position: fixed;
-  right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  z-index: 60;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--at-accent);
-  background: color-mix(in srgb, var(--at-paper-raised) 88%, var(--at-accent));
-  color: var(--at-ink);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
-  cursor: pointer;
-}
 
 /* Playtester screenshot: on a slightly wider phone (above the 480px switch) each ranking card's
    detailed rotation squeezed five columns, and the TAL badges covered the minutes. The detailed
    tiles need more room, so they go two-up (odd last one centred) below 700px. */
-@media (max-width: 700px) {
-  .at-shell .results-hero-rotation-columns.rotation-columns--detailed {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .at-shell .rotation-columns--detailed > :last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-    justify-self: center;
-    width: calc(50% - 3px);
-  }
-}
-
-.at-shell .expand-all-controls { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* 2026-09-25, user's follow-up ("zamiast naklejek zrobić to w podobnym stylu ale mniej chaotyczne",
    screenshots: the top bar — Draft/Team, CPU speed, Show draft board — and the position filters):
    one calm retro treatment instead of a different sticker per button. Idle buttons are dark with a
    faint printed double frame; the active one is cream jersey stock with navy lettering and a thin
    red/blue stripe along the bottom — the Showtime pinstripe, used once, as the "you are here" mark. */
-.at-shell .at-tab-btn,
-.at-shell .at-board-toggle,
-.at-shell .at-filter-pill,
-.at-shell .retro-btn {
+.at-shell .at-board-toggle{
   /* Playtester: on a darker monitor the old #243246 edge vanished — the pills didn't read as
      buttons. A clearly visible steel-blue edge and slightly brighter lettering. */
   /* Second pass, playtester: still hard to see at low screen brightness. Border contrast against
@@ -567,16 +345,11 @@
     0 1px 2px rgba(0, 0, 0, 0.5);
   transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
-.at-shell .at-tab-btn:hover,
-.at-shell .at-board-toggle:hover,
-.at-shell .at-filter-pill:hover,
-.at-shell .retro-btn:hover {
+.at-shell .at-board-toggle:hover{
   border-color: #c3dbf5;
   background: linear-gradient(180deg, #2a4062, #1a3049);
   color: #ffffff;
 }
-.at-shell .at-tab-btn.at-active,
-.at-shell .at-filter-pill.at-active,
 .at-shell .at-board-toggle[aria-expanded='true'] {
   border-color: #d9cba6;
   color: #13295a;
@@ -607,17 +380,10 @@
 .at-shell .caps-info-ok { margin: 0; }
 .bf-shot-chip[data-caps-info] { cursor: help; }
 /* Same low-brightness pass for the search box and the caps range inputs next to the filters. */
-.at-shell .at-search-input,
-.at-shell .at-fga-input {
-  border: 1.5px solid #5f7ea6;
-  background: #0f1827;
-  color: var(--at-ink, #eef4fb);
-}
+
 /* Playtester, third pass ("góra okej, ale pozycje dalej ciemno"): the position filters kept an old
    base rule that dims every idle pill to 55% opacity, so they stayed dark whatever their colours
    were. Full opacity, same as the top-bar buttons. */
-.at-shell .at-filter-pill,
-.at-shell .at-filter-pill:hover { opacity: 1; }
 
 /* 2026-09-25, user-reported (results screen "New draft / Rematch this board / Main menu" row:
    "mało spójne z resztą"): the legacy primary/secondary buttons kept the old flat accent pill and
@@ -669,23 +435,7 @@
    the Years sheet docks to the left edge over a light scrim, so the Team table's grade columns stay
    readable and update live while the sheet stays open. The row being edited is marked in the
    table. Phones keep the centred sheet (the table is a card list there). */
-@media (min-width: 900px) {
-  .at-shell .years-picker-overlay {
-    justify-content: flex-start;
-    align-items: stretch;
-    padding: 0;
-    background: transparent;
-  }
-  .at-shell .years-picker-overlay .years-picker-sheet {
-    box-sizing: border-box;
-    width: 340px;
-    max-height: none;
-    height: 100%;
-    border-radius: 0 12px 12px 0;
-    border-left: 0;
-    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.55);
-  }
-}
+
 .at-shell tr.is-editing-years > td {
   background: color-mix(in srgb, var(--at-accent) 16%, transparent);
 }
@@ -695,115 +445,30 @@
 
 /* 2026-09-25: Years sheet — "Show all" toggle and a Done button pinned to the bottom (the corner
    ✕ alone read as unclear). */
-.at-shell .years-picker-more {
-  display: block;
-  margin: 10px auto 0;
-}
-.at-shell .years-picker-footer {
-  position: sticky;
-  bottom: 0;
-  margin: 12px -4px -4px;
-  padding: 12px 4px 4px;
-  background: inherit;
-}
-.at-shell .years-picker-done {
-  width: 100%;
-  margin: 0;
-}
 
 /* 2026-09-25, user-reported live (phone screenshot of the share card: names cut to "S…", minutes
    and "sh" running into the next column): each contributor's meta is now two parts — minutes and
    caps — shown inline on wide screens and stacked under a centred face on phones, where five
    columns only leave ~60px each. */
-.share-modal-face-meta { display: inline-flex; gap: 4px; }
-.share-modal-face-caps::before { content: '·'; margin-right: 4px; }
-@media (max-width: 560px) {
-  .share-modal-face-row { gap: 4px; }
-  .share-modal-face-group { padding: 8px 4px; }
-  .share-modal-face-card {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 4px;
-  }
-  .share-modal-face-info { align-items: center; width: 100%; }
-  .share-modal-face-name { font-size: 11px; }
-  .share-modal-face-meta { flex-direction: column; gap: 0; align-items: center; }
-  .share-modal-face-caps::before { content: none; }
-}
-.share-modal-save {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-}
-.share-modal-save .primary-btn { margin: 0; }
-.share-modal-save-note {
-  margin: 0;
-  font-size: 12px;
-  color: var(--muted);
-  text-align: center;
-}
-.share-modal-save-preview {
-  width: 100%;
-  max-width: 420px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-}
 
 /* 2026-09-25 ("między draft board a rotację"): wide screens open the Years picker inline, between
    the Team table and the Rotation card — same content as the phone sheet, as a card in the flow. */
-.at-shell .years-sheet-slot:empty { display: none; }
-.at-shell .years-picker-inline {
-  position: relative;
-  margin: 0 0 16px;
-  padding: 16px 16px;
-  background: var(--at-paper-raised);
-  border: 1px solid var(--at-accent);
-  border-radius: 12px;
-  box-shadow: var(--at-shadow);
-}
-.at-shell .years-picker-inline .years-picker-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 8px;
-}
-.at-shell .years-picker-inline .years-picker-footer { position: static; margin: 12px 0 0; padding: 0; display: flex; justify-content: flex-end; }
-.at-shell .years-picker-inline .years-picker-done { width: auto; min-width: 160px; }
 
 /* 2026-09-25: spot-minute backups on one quiet line under a rotation column (ResultsScreen). */
-.rotation-spot-line {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; padding-top: 8px;
-  border-top: 1px dashed var(--at-line, #182433);
-  font-size: 11px; color: var(--at-ink-faint, #48586d); line-height: 1.5;
-}
+
 /* 2026-09-26, user ("małe twarze tam gdzie jest Magic i Carter?", then "może bez nazwisk tylko
    twarze?"): each spot-minute backup is a 16px face + minutes; the name is in the tooltip. */
-.rotation-spot-entry { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
-.rotation-spot-entry .bf-face { flex-shrink: 0; }
 
 /* 2026-09-25, user ("rotacja się rozjeżdża"): the share modal is ~566px wide on every screen, so
    each of the five slot columns is ~100px — never enough for face + name + "36m · 12.0 caps" on
    one row. Every width now uses the stacked card: face on top, the name (initial + surname,
    wrapping on word boundaries) under it, minutes and caps on their own lines. */
-.share-modal-face-card { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
-.share-modal-face-info { align-items: center; width: 100%; }
-.share-modal-face-name { white-space: normal; overflow: visible; overflow-wrap: break-word; text-align: center; }
-.share-modal-face-meta { flex-direction: column; gap: 0; align-items: center; }
-.share-modal-face-caps::before { content: none; }
 
 /* 2026-09-25, user ("zbyt blisko krawędzi", results screen): headings and the matchup table sat on
    the cards' outer edge while everything inside a card is inset ~18px. The matchup section is now
    a card itself, and the standalone headings/controls line up with the cards' inner padding. */
-.at-shell .results-screen .matchup-matrix-section {
-  background: var(--at-paper-raised);
-  border: 1px solid var(--at-line);
-  border-radius: 12px;
-  padding: 16px 16px;
-}
-.at-shell .results-screen .results-section-title,
-.at-shell .results-screen .expand-all-controls {
+
+.at-shell .results-screen .results-section-title{
   padding-inline: 16px;
 }
 
@@ -840,13 +505,10 @@
 
 /* 2026-09-25, user ("powinno być powolne wejście"): the lottery fades in, the reel rises a beat
    later and starts spinning after LOTTERY_INTRO_MS (DraftLottery.tsx). */
-.at-lottery { animation: at-lottery-enter 700ms ease-out both; }
-.at-lottery .at-drum { animation: at-lottery-rise 800ms 350ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
 @keyframes at-lottery-enter { from { opacity: 0; } to { opacity: 1; } }
 @keyframes at-lottery-rise { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) {
-  .at-lottery, .at-lottery .at-drum { animation: none; }
-}
+
 /* 2026-09-25: names the rotation's weakest defenders under the hero's Defense details. */
 .results-hero-weak { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--at-ink-soft); }
 .results-hero-weak b { color: var(--at-ink); font-weight: 700; }
@@ -930,169 +592,6 @@
 }
 
 /* Rotation builder: drag / tap placement and the minute-split bar (group C mockup 21). */
-.rotation-dnd-hint { margin: 4px 0 0; font-size: 12px; color: var(--at-ink-faint, var(--text)); }
-.rotation-card--fits { border-color: var(--at-defense, #5ec8ff); background: color-mix(in srgb, var(--at-defense, #5ec8ff) 7%, var(--at-paper, var(--bg))); }
-.rotation-card--off { opacity: 0.8; }
-.rotation-card--drop { box-shadow: 0 0 0 2px var(--at-defense, #5ec8ff); }
-.rotation-split {
-  display: flex;
-  height: 22px;
-  margin: 6px 0 4px;
-  border-radius: 8px;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--at-ink, #eef4fb) 9%, transparent);
-  touch-action: none;
-}
-.rotation-split-seg {
-  position: relative;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  background: var(--at-brand-blue, #2f74b8);
-  box-shadow: inset -2px 0 0 var(--at-paper, var(--bg));
-}
-.rotation-split-seg.is-1 { background: color-mix(in srgb, var(--at-brand-blue, #2f74b8) 62%, var(--at-paper, var(--bg))); }
-.rotation-split-seg.is-2 { background: color-mix(in srgb, var(--at-brand-blue, #2f74b8) 40%, var(--at-paper, var(--bg))); }
-.rotation-split-label {
-  padding-left: 8px;
-  font-size: 11px;
-  line-height: 22px;
-  color: var(--at-ink, #eef4fb);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-variant-numeric: tabular-nums;
-}
-.rotation-split-handle {
-  position: absolute;
-  top: 0;
-  right: -7px;
-  width: 14px;
-  height: 100%;
-  z-index: 1;
-  cursor: ew-resize;
-  touch-action: none;
-}
-.rotation-split-handle::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 6px;
-  width: 2px;
-  border-radius: 1px;
-  background: var(--at-ink, #eef4fb);
-}
-.rotation-split-handle:focus-visible { outline: 2px solid var(--at-accent, var(--accent)); outline-offset: -2px; }
-.rotation-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: grab;
-  color: var(--at-ink-faint, var(--text));
-}
-.rotation-drag-handle:active { cursor: grabbing; }
-.rotation-stepper { display: inline-flex; align-items: center; gap: 4px; flex: none; }
-.rotation-step-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 1px solid var(--at-line, var(--border));
-  background: var(--at-pill, var(--bg));
-  color: var(--at-ink, var(--text));
-  font: inherit;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-}
-.rotation-step-btn:disabled { opacity: 0.35; cursor: default; }
-.rotation-drop-zone {
-  display: block;
-  width: 100%;
-  margin-top: 6px;
-  padding: 8px 8px;
-  border-radius: 8px;
-  border: 1px dashed var(--at-line, var(--border));
-  background: transparent;
-  text-align: center;
-  font: inherit;
-  font-size: 11px;
-  color: var(--at-ink-faint, var(--text));
-}
-.rotation-drop-zone.is-over,
-.rotation-drop-zone.is-fit { border-color: var(--at-defense, #5ec8ff); color: var(--at-defense, #5ec8ff); }
-.rotation-drop-zone.is-off { border-color: var(--at-warn, #f0a868); color: var(--at-warn, #f0a868); }
-.rotation-drop-zone.is-tap { cursor: pointer; border-style: solid; min-height: 44px; font-weight: 700; }
-.rotation-drop-zone.is-tap:disabled { opacity: 0.4; cursor: default; }
-.rotation-bench {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0 0 14px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--at-line, var(--border));
-  background: var(--at-paper, var(--bg));
-}
-.rotation-bench-title { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--at-ink-soft, var(--text)); }
-.rotation-bench-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.rotation-bench-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 4px 8px 4px 4px;
-  border-radius: 8px;
-  border: 1px solid var(--at-line, var(--border));
-  background: var(--at-pill, var(--bg));
-  color: var(--at-ink, var(--text));
-  font: inherit;
-  font-size: 12px;
-  cursor: grab;
-}
-.rotation-bench-chip.is-selected {
-  border-color: var(--at-defense, #5ec8ff);
-  background: color-mix(in srgb, var(--at-defense, #5ec8ff) 18%, var(--at-pill, var(--bg)));
-}
-.rotation-bench-name { white-space: nowrap; }
-.rotation-selected-bar {
-  position: sticky;
-  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--at-defense, #5ec8ff);
-  background: color-mix(in srgb, var(--at-brand-blue, #2f74b8) 30%, var(--at-paper, var(--bg)));
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
-}
-.rotation-selected-text { display: flex; flex-direction: column; flex: 1; min-width: 0; font-size: 12px; }
-.rotation-selected-text b { font-size: 13px; }
-.rotation-selected-cancel {
-  width: 44px;
-  height: 44px;
-  flex: none;
-  border-radius: 8px;
-  border: 1px solid var(--at-brand-blue, #2f74b8);
-  background: transparent;
-  color: var(--at-ink, var(--text));
-  font-size: 20px;
-  cursor: pointer;
-}
-@media (max-width: 480px) {
-  .rotation-step-btn { width: 44px; height: 44px; }
-  .rotation-stepper { margin-left: auto; }
-}
-@media (hover: none) {
-  .rotation-drop-zone:not(.is-tap) { display: none; }
-}
-@media (max-width: 480px) {
-  .rotation-bench-chip { flex: 1 1 100%; flex-wrap: wrap; }
-  .rotation-bench-name { white-space: normal; }
-}
 
 /* Team badges (group C mockup): our own code + season in the era's colours, no logos. */
 .team-tile {
@@ -1131,87 +630,26 @@
 
 /* Draft card: position next to the name, team chips on the meta line (2026-09-26). */
 
-.peek-teams { white-space: nowrap; }
-.peek-teams .team-chip + .team-chip { margin-left: 3px; }
-@media (max-width: 640px) {
-  .at-shell .player-peek-card .at-draft-span-table td.peek-teams {
-    grid-column: span 2;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    white-space: normal;
-  }
-  .at-shell .player-peek-card .at-draft-span-table td.peek-teams::before { flex-basis: 100%; }
-}
 /* Compact rotation builder (2026-09-26, "rotacja zbyt duża"). */
-.rotation-intro { font-size: 12px; margin: 4px 0 0; color: var(--at-ink-soft, var(--text)); }
-.rotation-cards { gap: 8px; margin: 10px 0 14px; }
-.rotation-card { padding: 8px 8px 8px; }
-.rotation-card-row { padding: 4px 0; gap: 8px; }
-.add-row-btn { margin-top: 4px; padding: 4px 8px; font-size: 11px; }
+
 /* Draft progress in the sticky header ticker (2026-09-26). */
 
 /* Learning path (2026-09-26): step labels on the menu cards and a "next step" block on results. */
-.mode-card-step {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--at-accent, #6cc3ff);
-  margin-bottom: 2px;
-}
-.path-next {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
-  margin: 16px 0 6px;
-  padding: 12px 12px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--at-accent, #6cc3ff) 45%, var(--at-line, var(--border)));
-  background: color-mix(in srgb, var(--at-accent, #6cc3ff) 8%, var(--at-paper, var(--bg)));
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--at-ink-soft, var(--text));
-}
-.path-next > span { flex: 1 1 280px; }
-.path-next b { color: var(--at-ink, var(--text)); }
+
 /* The step label sits above the name in the text column; the icon spans all three rows. */
-.mode-grid--path .mode-card { grid-template-rows: auto auto auto; }
-.mode-grid--path .mode-card-icon { grid-row: 1 / span 3; }
-.mode-grid--path .mode-card-step { grid-column: 2; grid-row: 1; }
-.mode-grid--path .mode-card-name { grid-row: 2; }
-.mode-grid--path .mode-card-desc { grid-column: 2; grid-row: 3; }
 
 /* 2026-09-26, the user: "słabo działa przyklejony stale do góry element" and "elementy często są
    blisko granicy, brak oddechu". The sticky turn bar had no background of its own, so cards
    scrolled visibly through the ticker. It now spans the card edge to edge with a solid backing
    and a hairline, and gets tighter on phones, where it has to share a small screen. */
-.at-turn-sticky {
-  background: var(--at-paper-raised);
-  margin: 0 -26px 18px;
-  padding: 8px 24px 2px;
-  border-bottom: 1px solid var(--at-line);
-  box-shadow: 0 12px 18px -16px rgba(0, 0, 0, 0.9);
-}
 
 /* Breathing room: more padding inside the panels and cards, and more space between sections. */
 .at-card { padding: 24px 24px 24px; }
 
 .at-player-card { padding: 12px 12px 12px; gap: 8px; }
 
-.qf-team-panel { gap: 8px; margin: 4px 0 20px; }
-.qf-team-card { padding: 8px 12px 8px 8px; }
-.qf-team-empty { padding: 8px 12px 8px 8px; }
-.at-controls-row { gap: 8px; }
-
-.mode-grid { gap: 12px; }
-.path-next { padding: 16px 16px; gap: 12px 16px; }
-
 @media (max-width: 640px) {
   .at-card { padding: 16px 16px 16px; }
-  .at-turn-sticky { margin: 0 -16px 14px; padding: 8px 16px 0; }
+  
 
 }

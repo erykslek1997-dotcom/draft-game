@@ -30,16 +30,6 @@
   font-size: 14px;
 }
 
-.cap-meter {
-  font-weight: 600;
-  color: var(--text-h);
-}
-
-.roster-count {
-  color: var(--text);
-  margin-bottom: 6px;
-}
-
 .mini-roster {
   list-style: none;
   margin: 0;
@@ -53,36 +43,3 @@
   border-bottom: 1px dashed var(--border);
 }
 
-.cap-remaining {
-  margin-left: auto;
-  font-weight: 600;
-}
-
-.table-scroll {
-  overflow-x: auto;
-}
-
-.player-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.player-table th,
-.player-table td {
-  padding: 8px 8px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.player-table tr.illegal {
-  opacity: 0.35;
-}
-
-.cpu-thinking {
-  padding: 40px;
-  text-align: center;
-  color: var(--text);
-  font-style: italic;
-}
