@@ -173,7 +173,7 @@ export function PlayerTable({
         {!at && <col className="c-hide" style={{ width: 58 }} />}
         <col style={{ width: 84 }} />
         {at && <col className="c-hide" style={{ width: 84 }} />}
-        {at && <col className="c-hide" style={{ width: 34 }} />}
+        {(at || onStar) && <col className="c-hide" style={{ width: 34 }} />}
         <col style={{ width: 96 }} />
       </colgroup>
       <thead>
@@ -192,7 +192,7 @@ export function PlayerTable({
               Report
             </th>
           )}
-          {at && <th className="c-hide" />}
+          {(at || onStar) && <th className="c-hide" />}
           <th />
         </tr>
       </thead>
@@ -263,7 +263,7 @@ export function PlayerTable({
                   ) : null}
                 </td>
               )}
-              {at && (
+              {(at || onStar) && (
                 <td className="c c-hide">
                   {onStar && !r.taken && (
                     <button

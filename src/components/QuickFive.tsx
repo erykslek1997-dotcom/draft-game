@@ -56,7 +56,8 @@ import {
   dayLabel,
   fmtCaps,
 } from '../night/ui';
-import { CapsBar, DraftBoardTable, FiveSlots, LeagueMark, NightLottery, Notice, PickLog, PlayerTable, PosTabs, Ticker, snakePicks, type NightRow, type TickerRow } from '../night/draft';
+import { CapsBar, FiveSlots, LeagueMark, NightLottery, Notice, PickLog, PlayerTable, PosTabs, snakePicks, type NightRow, type TickerRow } from '../night/draft';
+import { BoardGrid } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
 
@@ -328,6 +329,24 @@ function QuickDraftBoard({
   links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
 }) {
   const budget = useMemo(() => quickPickBudget(state), [state]);
+  // Your Big Board, kept per draft like the All-Time's.
+  const bbKey = `draftverse.bigboard.mini.${state.seed}`;
+  const [bigBoard, setBigBoard] = useState<string[]>(() => {
+    try {
+      return JSON.parse(window.localStorage.getItem(bbKey) ?? '[]') as string[];
+    } catch {
+      return [];
+    }
+  });
+  const toggleStar = (name: string) => {
+    const next = bigBoard.includes(name) ? bigBoard.filter((n) => n !== name) : [...bigBoard, name];
+    setBigBoard(next);
+    try {
+      window.localStorage.setItem(bbKey, JSON.stringify(next));
+    } catch {
+      // Not kept; the board still works for this visit.
+    }
+  };
   const [search, setSearch] = useState('');
   const [caps, setCaps] = useState<[number, number]>([0, CAPS_TOP]);
   const humanAssignment = useMemo(() => bestPrimaryAssignment(humanTeam.roster).assignment, [humanTeam.roster]);
@@ -380,88 +399,77 @@ function QuickDraftBoard({
   const slotsLeft = QUICK_ROUNDS - humanTeam.roster.length;
   const round = Math.min(state.round + 1, QUICK_ROUNDS);
   const sub = `Round ${round} of ${QUICK_ROUNDS} · pick ${Math.min(overall, TEAM_COUNT * QUICK_ROUNDS)} of ${TEAM_COUNT * QUICK_ROUNDS}`;
-  const sinceMine = (() => {
-    const prev = [...myPicks].reverse().find((n) => n < overall);
-    return prev ? overall - prev - 1 : null;
-  })();
   const picksAway = nextMine === null ? null : nextMine - overall;
 
+  // 2026-10-22, the user: "tak samo powinno wyglądać all time jak mini, po prostu jest krótszy" — the
+  // Mini's draft screen is the All-Time's: caps left in the tally, your Big Board and the latest picks
+  // in the aside, the player list open while the CPU picks, the board as a grid of faces.
   const asideTop = (
     <>
       <Mast title={title} daily={Boolean(daily)} sub={sub} />
-      <Tally you={fmtCaps(used)} mid={fmtCaps(state.capLimit)} ai={`${round}/${QUICK_ROUNDS}`} youK="Caps" aiK="Round" />
+      <Tally you={fmtCaps(left)} mid={fmtCaps(state.capLimit)} ai={`${round}/${QUICK_ROUNDS}`} youK="Caps left" aiK="Round" />
       <CapBar used={used} cap={state.capLimit} />
       <SubNote>
-        <b>{fmtCaps(left)} caps</b> left for {slotsLeft === 1 ? 'one spot' : `${['no', 'one', 'two', 'three', 'four', 'five'][slotsLeft]} spots`}
+        {slotsLeft > 0 ? (
+          <>
+            <b>{fmtCaps(left)} caps</b> for {slotsLeft === 1 ? 'one spot' : `${['no', 'one', 'two', 'three', 'four', 'five'][slotsLeft]} spots`}{' '}
+            {slotsLeft > 1 && <span style={{ whiteSpace: 'nowrap' }}>· about {fmtCaps(left / slotsLeft)} a pick</span>}
+          </>
+        ) : (
+          <>
+            <b>{fmtCaps(used)} caps</b> used of {fmtCaps(state.capLimit)}
+          </>
+        )}
       </SubNote>
     </>
   );
   const lineup = humanAssignment as Partial<Record<Position, PlayerSpan>>;
+  const picksMap = new Map(tickerRows.map((r) => [r.n, r.span] as const));
+  const takenAt = (name: string) => tickerRows.find((r) => r.span.playerName === name)?.n;
+  const bigBoardSection = (
+    <section>
+      <H3 note="starred">Your Big Board</H3>
+      {bigBoard.length === 0 ? (
+        <EmptyNote>Star players in the list to keep them here.</EmptyNote>
+      ) : (
+        <ol className="bboard">
+          {bigBoard.map((name) => {
+            const live = available.find((e) => e.span.playerName === name);
+            const t = takenAt(name);
+            return (
+              <li key={name} className={live ? undefined : 'gone'}>
+                <span className="bb-n">{maskName(name)}</span>
+                <span>{live ? fmtCaps(live.span.fga) : t ? `taken #${t}` : 'gone'}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
+  );
+  const picksSection = (
+    <section>
+      <H3>Your picks</H3>
+      <Kv k="Next" v={nextMine ? (canPick ? `Now · pick ${overall}` : `Pick ${nextMine}`) : '—'} />
+      <Kv k="Then" v={myPicks.filter((n) => nextMine && n > nextMine).join(' · ') || '—'} />
+    </section>
+  );
+  const aside = (actions: ReactNode) => (
+    <>
+      {asideTop}
+      {picksSection}
+      {bigBoardSection}
+      <PickLog rows={tickerRows.slice(-6)} title="Latest picks" note="around the league" newestFirst />
+      <Actions links={links}>{actions}</Actions>
+    </>
+  );
 
   if (boardOpen) {
     return (
-      <NightGame
-        aside={
-          <>
-            {asideTop}
-            <Actions links={links}>
-              <Btn onClick={() => onBoard(false)}>{canPick ? 'Back to your pick' : 'Back to the draft'}</Btn>
-            </Actions>
-          </>
-        }
-      >
-        <Prompt eb="Draft board" title="Who took whom">
-          Sixteen teams, five rounds. {canPick ? `You are on the clock at pick ${overall}.` : `${teamLabel(currentTeam)} on the clock at pick ${overall}.`}
-        </Prompt>
-        <DraftBoardTable teams={state.teams} rounds={QUICK_ROUNDS} picks={tickerRows.map((r) => ({ pickNumber: r.n, teamId: r.team.id, span: r.span }))} onClockTeamId={state.complete ? undefined : currentTeam.id} codeOf={codeOf} />
+      <NightGame aside={aside(<Btn onClick={() => onBoard(false)}>{canPick ? 'Back to your pick' : 'Back to the draft'}</Btn>)}>
+        <BoardGrid teams={state.teams} rounds={QUICK_ROUNDS} picks={picksMap} onClock={state.complete ? null : overall} round={state.round} codeOf={codeOf} windows={[[0, QUICK_ROUNDS]]} onHide={() => onBoard(false)} />
         <Btn className="phone-only" onClick={() => onBoard(false)}>
           {canPick ? 'Back to your pick' : 'Back to the draft'}
-        </Btn>
-      </NightGame>
-    );
-  }
-
-  if (!canPick) {
-    return (
-      <NightGame
-        aside={
-          <>
-            {asideTop}
-            <section>
-              <H3>Your picks</H3>
-              <Kv k="Next" v={nextMine ? `Pick ${nextMine}` : '—'} />
-              <Kv k="Then" v={myPicks.filter((n) => nextMine && n > nextMine).join(' · ') || '—'} />
-            </section>
-            <Actions links={links}>
-              <Btn disabled>{nextMine ? `Waiting for pick ${nextMine}` : 'Waiting'}</Btn>
-              <Btn kind="line" onClick={() => onBoard(true)}>
-                Draft board
-              </Btn>
-            </Actions>
-          </>
-        }
-      >
-        <Prompt eb={`On the clock · Pick ${overall}`} title={teamLabel(currentTeam)} now>
-          {picksAway === 1 ? 'Your pick is next.' : picksAway ? `Your pick in ${picksAway} picks.` : 'Your five is in.'}
-          {sinceMine !== null && sinceMine > 0 && ` ${sinceMine} ${sinceMine === 1 ? 'pick' : 'picks'} since your last.`}
-        </Prompt>
-        {picksAway !== null && picksAway > 1 && !rushToMe && (
-          <div className="clockline">
-            <Btn kind="line" onClick={onRushToMe}>
-              Skip to my pick
-            </Btn>
-            <i className="it" style={{ color: 'var(--ink3)', fontSize: 14 }}>
-              Runs the CPU picks fast.
-            </i>
-          </div>
-        )}
-        <FiveSlots lineup={lineup} note={`${humanTeam.roster.length} of 5 · ${teamLabel(humanTeam)}`} />
-        <section>
-          <H3 note="newest last">The draft so far</H3>
-          <Ticker rows={tickerRows.slice(-8)} now={{ n: overall, team: currentTeam, code: codeOf(currentTeam) }} />
-        </section>
-        <Btn kind="line" className="phone-only" onClick={() => onBoard(true)}>
-          Draft board
         </Btn>
       </NightGame>
     );
@@ -474,43 +482,47 @@ function QuickDraftBoard({
     const alt = daily ? quickDailyAlternative(state, peak.id) : null;
     const span = alt ?? peak;
     const tier = alt ? overallTierForSpan(tierContextFor(alt)) : peakTier;
-    const legal = isQuickPickLegal(state, span.id);
+    // While the CPU picks the list stays open to browse and star, the Draft buttons off.
+    const legal = canPick && isQuickPickLegal(state, span.id);
     const ruled = daily && !alt && isQuickRuleBlocked(state, peak.id) ? daily.ruleTag : undefined;
     return {
       key: peak.id,
       span,
       tier: span.fga < 2 ? 'Salary glue' : tier,
       legal,
-      hot: i === shown.findIndex((e) => isQuickPickLegal(state, (daily ? quickDailyAlternative(state, e.span.id) : null)?.id ?? e.span.id)),
+      starred: bigBoard.includes(peak.playerName),
+      hot: canPick && i === shown.findIndex((e) => isQuickPickLegal(state, (daily ? quickDailyAlternative(state, e.span.id) : null)?.id ?? e.span.id)),
       ruleNote: ruled,
-      title: ruled
-        ? `Today's rule: ${daily!.ruleLine.toLowerCase()}.`
-        : legal
-          ? `Draft ${maskName(span.playerName)}`
-          : quickPickBlockReason(state, span.id) === 'reserve'
-            ? `Too expensive right now: keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${maxPick}.`
-            : `Over the ${state.capLimit}-cap limit.`,
+      title: !canPick
+        ? `${teamLabel(currentTeam)} on the clock`
+        : ruled
+          ? `Today's rule: ${daily!.ruleLine.toLowerCase()}.`
+          : legal
+            ? `Draft ${maskName(span.playerName)}`
+            : quickPickBlockReason(state, span.id) === 'reserve'
+              ? `Too expensive right now: keep ${budget.reserved} caps for your other ${budget.slotsLeft - 1} pick${budget.slotsLeft - 1 === 1 ? '' : 's'}. This pick can cost up to ${maxPick}.`
+              : `Over the ${state.capLimit}-cap limit.`,
     };
   });
+  const actions = (
+    <>
+      <Btn kind="line" onClick={() => onBoard(true)}>
+        Show draft board
+      </Btn>
+      {!canPick && picksAway !== null && picksAway > 1 && !rushToMe && (
+        <Btn kind="line" onClick={onRushToMe}>
+          Skip to my pick
+        </Btn>
+      )}
+      {AUTO_FINISH_FOR_TESTING && (
+        <Btn kind="line" disabled={autoFinishing} onClick={onAutoFinish}>
+          {autoFinishing ? 'Finishing…' : 'Auto-finish (testing)'}
+        </Btn>
+      )}
+    </>
+  );
   return (
-    <NightGame
-      aside={
-        <>
-          {asideTop}
-          <PickLog rows={tickerRows.slice(-6)} />
-          <Actions links={links}>
-            <Btn kind="line" onClick={() => onBoard(true)}>
-              Draft board
-            </Btn>
-            {AUTO_FINISH_FOR_TESTING && (
-              <Btn kind="line" disabled={autoFinishing} onClick={onAutoFinish}>
-                {autoFinishing ? 'Finishing…' : 'Auto-finish (testing)'}
-              </Btn>
-            )}
-          </Actions>
-        </>
-      }
-    >
+    <NightGame aside={aside(actions)}>
       <FiveSlots
         lineup={lineup}
         note={`${humanTeam.roster.length} of 5 · ${teamLabel(humanTeam)}`}
@@ -518,19 +530,25 @@ function QuickDraftBoard({
         onSlot={(p) => setTab(p)}
         emptyLabel={(p) => (p === on ? `showing ${counts[p]} ▾` : TAP_TO_SHOW)}
       />
-      <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now>
-        Up to <b>{fmtCaps(maxPick)} caps</b> on this one and still fill the five.
-        {haveList.length > 0 && ` Your ${haveList.length > 1 ? `${haveList.slice(0, -1).join(', ')} and ${haveList[haveList.length - 1]}` : haveList[0]} ${haveList.length === 1 ? 'is' : 'are'} set.`}
-      </Prompt>
+      {canPick ? (
+        <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now>
+          Up to <b>{fmtCaps(maxPick)} caps</b> on this one and still fill the five.
+          {haveList.length > 0 && ` Your ${haveList.length > 1 ? `${haveList.slice(0, -1).join(', ')} and ${haveList[haveList.length - 1]}` : haveList[0]} ${haveList.length === 1 ? 'is' : 'are'} set.`}
+        </Prompt>
+      ) : (
+        <Prompt eb={`On the clock · Pick ${overall}`} title={teamLabel(currentTeam)} now>
+          {picksAway === 1 ? 'Your pick is next.' : picksAway ? `Your pick in ${picksAway} picks.` : 'Your five is in.'} The list stays open while they think.
+        </Prompt>
+      )}
       <section>
-        {lowRimPressure(humanStarters) && (
+        {canPick && lowRimPressure(humanStarters) && (
           <Notice>
             <b>Low rim pressure.</b> Nobody in your five attacks the basket yet. Look for a slasher or a big who finishes inside.
           </Notice>
         )}
         <PosTabs counts={counts} have={have} on={on} onPick={setTab} search={search} onSearch={setSearch} />
         <CapsBar lo={caps[0]} hi={caps[1]} top={CAPS_TOP} maxPick={maxPick} onChange={(lo, hi) => setCaps([lo, hi])} />
-        {!anyLegal && (
+        {canPick && !anyLegal && (
           <Notice
             action="Show players that fit"
             onAction={() => {
@@ -542,7 +560,7 @@ function QuickDraftBoard({
             <b>None of these fit this pick.</b> It can cost up to {fmtCaps(maxPick)} caps.
           </Notice>
         )}
-        <PlayerTable rows={rows} variant="mini" onDraft={(span) => onPick(span.id)} />
+        <PlayerTable rows={rows} variant="mini" onDraft={(span) => onPick(span.id)} onStar={toggleStar} />
         <div className="more">
           Showing {shown.length} of {filtered.length}
           {on !== 'ALL' && ` ${on}`}
