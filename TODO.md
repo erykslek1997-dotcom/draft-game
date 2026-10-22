@@ -343,7 +343,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 - [ ] Duże ekrany: ramka szersza niż 1360 px i większa skala (1366 / 1920 / 2560).
 - [x] Aside przyklejony (sticky) na wszystkich ekranach, akcje pod treścią.
 - [x] Rotacja: widoczny uchwyt suwaka na styku (gałka ‖, pole ~24 px, minuty przy przeciąganiu).
-- [ ] Final standings → rywal: gdzie lepszy, gdzie ty lepszy, „All metrics ▾” (wszystkie wejścia,
+- [x] Final standings → rywal: gdzie lepszy, gdzie ty lepszy, „All metrics ▾” (wszystkie wejścia,
       różnica ze znakiem); blok na całą szerokość / atak | obrona.
 - [x] Wyniki: The room zwijany (4–5 wypowiedzi + „Read the rest”), kolumny równe; „More”:
       Title structure do krótszej kolumny, „Size vs. position” bez mikropasków.

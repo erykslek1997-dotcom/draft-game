@@ -31,7 +31,7 @@ import { type FeedbackEntry } from './FeedbackToggle';
 import ChampionshipOdds from './ChampionshipOdds';
 import { markStepDone } from './pathProgress';
 import { TEAM_EXPORT_FOR_TESTING } from './testingFlags';
-import AllMetrics from './AllMetrics';
+import AllMetrics, { RivalEdge } from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 import { shortenName } from './ShotChip';
@@ -1261,10 +1261,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
               const vs = humanEval?.matchups.find((m) => m.opponentId === team.id);
               const open = openTeam === team.id;
               const mine = humanRanked ? profileRows(humanRanked.breakdown) : [];
-              const beat = profileRows(breakdown)
-                .map((r, k) => ({ label: r.label, theirs: Math.round(r.value), mine: Math.round(mine[k]?.value ?? 0) }))
-                .filter((r) => r.theirs > r.mine)
-                .sort((x, y) => y.theirs - y.mine - (x.theirs - x.mine));
+              const edgeRows = profileRows(breakdown).map((r, k) => ({ label: r.label, theirs: Math.round(r.value), mine: Math.round(mine[k]?.value ?? 0) }));
               const nick = teamLabel(team).split(' ').slice(-1)[0];
               return (
                 <Fragment key={team.id}>
@@ -1283,29 +1280,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <tr className="open">
                       <td />
                       <td colSpan={6}>
-                        <div className="edge">
-                          <b>
-                            {beat.length ? `Where ${teamLabel(team).split(' ').slice(0, -1).join(' ') || nick} beat you` : `${nick} beat you nowhere`}{' '}
-                            <span className="edge-key">
-                              <i style={{ background: 'var(--ink3)' }} />
-                              {nick}
-                              <i style={{ background: 'var(--you)' }} />
-                              you
-                            </span>
-                          </b>
-                          {beat.map((r) => (
-                            <div key={r.label} className="eg">
-                              <span>{r.label}</span>
-                              <div className="egb">
-                                <i style={{ width: `${Math.max(0, Math.min(100, r.theirs))}%` }} />
-                                <u style={{ width: `${Math.max(0, Math.min(100, r.mine))}%` }} />
-                              </div>
-                              <span className="mono">
-                                {r.theirs} vs {r.mine}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                        <RivalEdge nick={nick} scores={edgeRows} metrics={() => ({ theirs: teamMetricValues(team), mine: humanRanked ? teamMetricValues(humanRanked.team) : {} })} />
                         <p className="st-five">
                           {primaryStarters(displayTeam(team))
                             .map((x) => `${x.slot} ${maskText(x.player.playerName)}`)

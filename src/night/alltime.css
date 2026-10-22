@@ -1043,3 +1043,26 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
   .nt .odds-nums b { font-size: 22px; }
   .nt .mtab td.l { width: 110px; }
 }
+/* The final standings' opened rival (playtest 2026-10-22): two columns, then every input signed. */
+.nt {
+  .edge2 { padding: 8px 0 12px; }
+  .edge2 > .edge-key { margin: 0 0 6px; }
+  .edge2 > .edge-key i:first-child { margin-left: 0; }
+  .edge2 .edge { max-width: none; padding: 0; }
+  .edge2 > .split { margin-bottom: 10px; }
+  .edge2 > .split + .lk-inline { margin-bottom: 12px; }
+  .mcmp-r { display: grid; grid-template-columns: minmax(0, 1fr) 72px 56px 52px; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--rule); font: 500 14px var(--sans); text-transform: none; letter-spacing: 0; color: var(--ink2); }
+  .mcmp-r[title] { cursor: help; }
+  .mcmp-r > span:first-child { font: 700 14px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mcmp-r b { font: 600 15px var(--num); text-align: right; color: var(--ink); }
+  .mcmp-r b.g { color: var(--ink3); }
+  .mcmp-r.good b.g { color: var(--green); }
+  .mcmp-r.weak b.g { color: var(--red); }
+  .mcmp-h { padding-top: 0; }
+  .mcmp-h span { font: 700 11px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (max-width: 600px) {
+  .nt .mcmp-r { grid-template-columns: minmax(0, 1fr) 58px 34px 36px; gap: 6px; }
+  .nt .mcmp-r > span:first-child { white-space: normal; line-height: 1.15; }
+  .nt .edge2 .eg { grid-template-columns: 76px minmax(0, 1fr) 70px; gap: 8px; }
+}
