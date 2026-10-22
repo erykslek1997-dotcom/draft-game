@@ -375,6 +375,12 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
 
 **Poprawki PC + telefon (po #255, spisywane 2026-10-22)**
+- [ ] **Telefon — gęstość (największa wada wersji mobilnej, priorytet 1).** Wszystko jest za duże,
+      więc trzeba przewijać; telefon jest blisko oczu, więc można mniejsze i gęściej. Osobna skala
+      typografii i odstępów na ≤600 px: nagłówki ekranów (52→~32 px), winieta (34→~24), tally
+      (30→~22), tekst 16→14–15, odstępy sekcji 24→12–14, wiersze tabel i list niższe, karty mniejsze.
+      Granica czytelności: nic poniżej 11 px. Sprawdzić na 360/390/430 px, że każdy krok mieści się
+      na ekranie razem z główną akcją (patrz zasada niżej).
 - [ ] **Telefon — zasada „jeden krok = jeden ekran” (dotyczy wszystkich trybów).** Dziś trzeba
       przewijać, żeby zobaczyć to, co właśnie się dzieje. Propozycja:
   - każdy stan ekranu ma swój „punkt” (rozdanie → ręka, twój wybór → ręka, tura AI → stół AI,
