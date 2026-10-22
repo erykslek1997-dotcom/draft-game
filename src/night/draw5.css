@@ -70,3 +70,17 @@
 @keyframes ai-look { 0%, 100% { transform: none; } 35% { transform: translateY(-4px); } }
 @keyframes ai-dots { from { width: 0; } to { width: 1.2em; } }
 .nt .mini span.s { white-space: nowrap; }
+/* One hero on the Draw Five results (playtest 2026-10-22, mockup index.html #dailyResults2) */
+.nt {
+  .hero2 { border-top: 5px double var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 14px 0 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; }
+  .hero2 .eb { font: 700 12px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+  .hero2 h2 { margin: 4px 0 2px; font: 800 52px/0.95 var(--cond); text-transform: uppercase; }
+  .hero2 p { margin: 0; font-style: italic; color: var(--ink2); }
+  .hero2 p b { font-style: normal; color: var(--ink); }
+  .hero2 .hn { display: flex; gap: 20px; text-align: right; }
+  .hero2 .hn span { display: block; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .hero2 .hn b { display: block; font: 600 30px var(--num); color: var(--ink2); }
+  .hero2 .hn .you b { color: var(--ink); }
+  .small-prof .profile td { padding-top: 6px; padding-bottom: 6px; }
+}
+@media (max-width: 600px) { .nt .hero2 { grid-template-columns: 1fr; } .nt .hero2 h2 { font-size: 38px; } .nt .hero2 .hn { text-align: left; } }

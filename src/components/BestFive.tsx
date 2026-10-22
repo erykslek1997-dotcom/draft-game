@@ -1268,25 +1268,24 @@ function BestFiveResult({
 
   return (
     <NightGame className="d5" aside={aside} overlay={shareOpen ? <ShareNight d={poster} link={daily ? undefined : modeChallengeLink('roulette', seed, score.composite)} fileName={title} onClose={() => setShareOpen(false)} /> : undefined}>
-      {daily && jokers.length > 0 && <JokerRecap jokers={jokers} lineup={lineup} />}
-      <div className="headline">
-        <span className="eb">{daily ? 'Game of the day' : 'Final'}</span>
-        <b>{headline}</b>
-        {match && <i>{topScorers(match)}</i>}
-      </div>
-      <div className="verdict">
+      {/* 2026-10-22, playtest ("brak struktury"; mockup index.html #dailyResults2): one hero, the game
+          and the verdict together; then your five against the best, the why, the profile; the Jokers last. */}
+      <div className="hero2">
         <div>
-          <span className="eb">The verdict</span>
-          <h2>{GRADE_LABEL[grade]}</h2>
-          <p>{GRADE_BLURB[grade]}</p>
+          <span className="eb">{daily ? `Game of the day · ${dayLabel(daily)}` : 'Final'}</span>
+          <h2>{headline}</h2>
+          <p>
+            <b>{GRADE_LABEL[grade]}.</b> {GRADE_BLURB[grade]}
+            {match && <> {topScorers(match)}.</>}
+          </p>
         </div>
-        <div className="nums">
+        <div className="hn">
           <div className="you">
             <span>Your five</span>
             <b>{score.composite}</b>
           </div>
           <div>
-            <span>Fan-vote</span>
+            <span>Fan vote</span>
             <b>{targets.par}</b>
           </div>
           <div>
@@ -1295,6 +1294,29 @@ function BestFiveResult({
           </div>
         </div>
       </div>
+      <section>
+        <H3 note={`${hits.length} of 5 match the best`}>Starting five</H3>
+        <div className="cmp">
+          <span className="rl">You</span>
+          {STARTER_SLOTS.map((s) => (
+            <MiniCard key={s} pos={s} span={lineup[s]} hit={hits.includes(s)} />
+          ))}
+          <span className="rl">Best</span>
+          {STARTER_SLOTS.map((s) => (
+            <MiniCard key={s} pos={s} span={targets.optimalFive[s]} hit={hits.includes(s)} />
+          ))}
+        </div>
+      </section>
+      <section className="film">
+        <H3>Film room</H3>
+        {filmLines.map((l, i) => (
+          <p key={i}>
+            <i className={l.glyph === '+' ? 'up' : l.glyph === '−' ? 'dn' : 'nt-q'}>{l.glyph}</i>
+            <span>{l.body}</span>
+          </p>
+        ))}
+      </section>
+      <div className="small-prof">
       <section>
         <H3 note="yours · the best five">Team profile</H3>
         <table className="profile">
@@ -1324,28 +1346,8 @@ function BestFiveResult({
           </tbody>
         </table>
       </section>
-      <section className="film">
-        <H3>Film room</H3>
-        {filmLines.map((l, i) => (
-          <p key={i}>
-            <i className={l.glyph === '+' ? 'up' : l.glyph === '−' ? 'dn' : 'nt-q'}>{l.glyph}</i>
-            <span>{l.body}</span>
-          </p>
-        ))}
-      </section>
-      <section>
-        <H3 note={`${hits.length} of 5 match the best`}>Starting five</H3>
-        <div className="cmp">
-          <span className="rl">You</span>
-          {STARTER_SLOTS.map((s) => (
-            <MiniCard key={s} pos={s} span={lineup[s]} hit={hits.includes(s)} />
-          ))}
-          <span className="rl">Best</span>
-          {STARTER_SLOTS.map((s) => (
-            <MiniCard key={s} pos={s} span={targets.optimalFive[s]} hit={hits.includes(s)} />
-          ))}
-        </div>
-      </section>
+      </div>
+      {daily && jokers.length > 0 && <JokerRecap jokers={jokers} lineup={lineup} />}
       <div className="phone-only stackb">
         {daily ? (
           <Btn kind="line" onClick={copyDailyResult}>
@@ -1390,7 +1392,7 @@ function MiniCard({ pos, span, hit }: { pos: Position; span?: PlayerSpan; hit: b
 function JokerRecap({ jokers, lineup }: { jokers: DailyJoker[]; lineup: Lineup }) {
   return (
     <section className="recap">
-      <H3 tone="gold">Today’s Jokers</H3>
+      <H3 note={`${jokers.length} on the board`}>Today’s Jokers</H3>
       {jokers.map((j) => {
         const took = lineup[j.slot]?.id === j.card.id;
         const res = took ? (j.legend ? 'Jackpot' : 'Ouch') : j.legend ? 'Missed' : 'Dodged';
